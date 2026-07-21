@@ -99,6 +99,7 @@ import {
   firingStanceFor,
   usesAimedFiringStance,
 } from "../sprites/firing-stance.js";
+import { resolvedGunGripPoints } from "../sprites/gun-grip-points.js";
 import {
   type AlternativeHeadTextureSelection,
   assembleBoilerplate,
@@ -186,6 +187,7 @@ import {
 } from "../sprites/pose-language.js";
 import { tomeOpenArtFor, tomeOpenRotationForAim } from "../sprites/tome-open-art.js";
 import { PARTICLE_PACKS } from "../vfx/particle-manifest.js";
+import { paintedParticleDominance, paintedParticleScale } from "../vfx/particles.js";
 import { screenTrueScaleX } from "../vfx/screen-true-transform.js";
 import { resolveWeaponAuraVfxRecipe } from "../vfx/weapon-effect-recipes.js";
 
@@ -244,6 +246,9 @@ const REMOTE_SOURCE_FLASH_MS = 150;
 export const RANGED_AIM_LINGER_MS = 250;
 export const RANGED_AIM_RAISE_MS = 90;
 export const RANGED_AIM_SETTLE_MS = 180;
+const GUN_RECOIL_ACTIVE_MS = 140;
+/** A pistol is not quiet while its accepted shot is still in the retained recoil/recovery pose. */
+export const RANGED_GUN_RECOVERY_MS = GUN_RECOIL_ACTIVE_MS + RANGED_AIM_SETTLE_MS;
 /** The rear held blade's ordinary idle lean is added by the weapon pass. Close-blade poses compensate it. */
 const DUAL_BACK_WEAPON_LEAN = 0.32;
 /** Close-blade lunges are fully released before a cadence hold can sample `tt = 1`. */
@@ -427,7 +432,8 @@ export function nextFlourishStreakCount(
   return sameWeapon && acceptedMs - previousAcceptedMs <= streakWindowMs ? previousCount + 1 : 1;
 }
 
-export const PISTOL_IDLE_TWIRL_DELAY_MS = 1_000;
+export const PISTOL_IDLE_TWIRL_DELAY_MS = 500;
+export const PISTOL_DUAL_TWIRL_STAGGER_MS = 40;
 const GENERIC_IDLE_FLOURISH_DELAY_MS = 1_600;
 export const DUAL_PISTOL_HAND_RISE_BODY_FRAC = 0.035;
 
@@ -436,9 +442,16 @@ export function idleFlourishEligibleEpoch(
   def: WeaponDef | undefined,
   activityAtMs: number,
   genericPhaseOffsetMs: number,
+  recoveryEndsAtMs = activityAtMs,
 ): number {
+  const quietBeginsAtMs = weaponHasHandlingTag(def, "pistol")
+    ? Math.max(
+        activityAtMs,
+        Number.isFinite(recoveryEndsAtMs) ? recoveryEndsAtMs : activityAtMs,
+      )
+    : activityAtMs;
   return (
-    activityAtMs +
+    quietBeginsAtMs +
     (weaponHasHandlingTag(def, "pistol")
       ? PISTOL_IDLE_TWIRL_DELAY_MS
       : GENERIC_IDLE_FLOURISH_DELAY_MS + genericPhaseOffsetMs)
@@ -1947,9 +1960,11 @@ export class SpriteRig {
   private flourishReducedMotion = false;
   private flourishReducedReady = false;
   private flourishFireHeld = false;
+  private flourishAttackIntentHeld = false;
   private idleFlourishEligibleAtMs = Number.POSITIVE_INFINITY;
   private idleFlourishLastPlayedMs = -1e9;
   private idleFlourishOffsetMs = 0;
+  private gunRecoveryWallUntilMs = -1e9;
   private readonly poseLeadInput = createPoseLanguageInput();
   private readonly poseLeadSample = createPoseLanguageSample();
   private readonly poseSupportInput = createPoseLanguageInput();
@@ -2877,7 +2892,9 @@ export class SpriteRig {
     this.pushGearPlane(stack, 10, 32);
 
     if (this.poseTwoHanded) {
-      const secondaryRole = frontWeapon?.def.gripPoints?.secondary?.role;
+      const secondaryRole = frontWeapon
+        ? resolvedGunGripPoints(frontWeapon.def)?.secondary?.role
+        : undefined;
       const secondaryBehind = !!secondaryRole && !secondaryGripHandRendersAbove(secondaryRole);
       if (secondaryBehind && backHand) {
         stack.push(backHand.img);
@@ -3031,6 +3048,10 @@ export class SpriteRig {
   triggerGunRecoil(timeMs: number, hand: 0 | 1): void {
     if (!this.weapons[hand]?.def.gun) return;
     this.gunRecoilAtMs = this.presentationEpochForWallEpoch(timeMs);
+    this.gunRecoveryWallUntilMs = Math.max(
+      this.gunRecoveryWallUntilMs,
+      timeMs + RANGED_GUN_RECOVERY_MS,
+    );
     this.gunRecoilHand = hand;
   }
 
@@ -3083,6 +3104,14 @@ export class SpriteRig {
     );
   }
 
+  /** Quiet time is player-perceived wall time. The flourish animation itself still samples the
+   * freeze-aware presentation clock after it starts, so hit-stop holds a visible turn without delaying
+   * its requested ~0.5s onset by several seconds. */
+  private idleFlourishTimerNow(fallbackMs: number): number {
+    const wallNow = this.scene?.time?.now;
+    return typeof wallNow === "number" && Number.isFinite(wallNow) ? wallNow : fallbackMs;
+  }
+
   /** Actionable presentation input wins immediately; combat clocks and the broader jiggle system are intact. */
   cancelFlourish(_reason = "input"): void {
     const hadState =
@@ -3096,8 +3125,9 @@ export class SpriteRig {
     if (hadState) this.flourishCancelGeneration++;
     this.idleFlourishEligibleAtMs = idleFlourishEligibleEpoch(
       this.idleFlourishClockDef(),
-      this.presentationClockNow(),
+      this.idleFlourishTimerNow(this.presentationClockNow()),
       this.idleFlourishOffsetMs,
+      this.gunRecoveryWallUntilMs,
     );
   }
 
@@ -3177,7 +3207,7 @@ export class SpriteRig {
     this.pairCeremonyStartMs = -1e9;
     this.idleFlourishEligibleAtMs = idleFlourishEligibleEpoch(
       this.idleFlourishClockDef(),
-      epochMs,
+      this.idleFlourishTimerNow(epochMs),
       this.idleFlourishOffsetMs,
     );
   }
@@ -4406,7 +4436,7 @@ export class SpriteRig {
       if (!weapon) continue;
       const state =
         i === 0 && this.tome?.openVisible ? weapon.artGeometry?.open : weapon.artGeometry?.closed;
-      const authoredPrimary = weapon.def.gripPoints?.primary;
+      const authoredPrimary = resolvedGunGripPoints(weapon.def)?.primary;
       weapon.img.setOrigin(
         authoredPrimary?.x ?? state?.originX ?? weapon.closedOriginX,
         authoredPrimary?.y ?? state?.originY ?? weapon.closedOriginY,
@@ -4464,6 +4494,7 @@ export class SpriteRig {
     this.pairBarStep = -1;
     this.pairBarExpiresAtMs = -1e9;
     this.gunRecoilAtMs = -1e9;
+    this.gunRecoveryWallUntilMs = -1e9;
     this.rangedAimRaiseAtMs = -1e9;
     this.rangedAimActiveUntilMs = -1e9;
     if (off) {
@@ -4497,7 +4528,7 @@ export class SpriteRig {
       const artGeometry = partIndex === 0 ? weaponArtGeometryFor(piece.spriteId) : undefined;
       const closed = artGeometry?.closed;
       const pieceWorn = isWornWeapon(piece.def);
-      const authoredPrimary = piece.def.gripPoints?.primary;
+      const authoredPrimary = resolvedGunGripPoints(piece.def)?.primary;
       const originX =
         authoredPrimary?.x ?? closed?.originX ?? (pieceWorn ? 0.4 : piece.def.gripFrac);
       const originY = authoredPrimary?.y ?? closed?.originY ?? 0.5;
@@ -4542,7 +4573,9 @@ export class SpriteRig {
     if (this.poseTwoHanded) {
       // 2H: grip-role layering; pump/lever/crank/vertical hands stay above the painted mechanism.
       stack.push(this.body);
-      const secondaryRole = frontPiece?.def.gripPoints?.secondary?.role;
+      const secondaryRole = frontPiece
+        ? resolvedGunGripPoints(frontPiece.def)?.secondary?.role
+        : undefined;
       const secondaryBehind = !!secondaryRole && !secondaryGripHandRendersAbove(secondaryRole);
       if (secondaryBehind && backHand) stack.push(backHand.img);
       if (frontWpn) stack.push(frontWpn);
@@ -4585,7 +4618,7 @@ export class SpriteRig {
     else
       this.idleFlourishEligibleAtMs = idleFlourishEligibleEpoch(
         this.idleFlourishClockDef(),
-        this.presentationClockNow(),
+        this.idleFlourishTimerNow(this.presentationClockNow()),
         this.idleFlourishOffsetMs,
       );
   }
@@ -7724,6 +7757,8 @@ export class SpriteRig {
     const localAttackIntent =
       anim.isSelf && this.scene.input?.activePointer?.rightButtonDown?.() === true;
     const flourishAttackIntent = anim.fireHeld === true || localAttackIntent;
+    const flourishAttackReleased = this.flourishAttackIntentHeld && !flourishAttackIntent;
+    this.flourishAttackIntentHeld = flourishAttackIntent;
     const flourishActive = this.flourishChannels[0].active || this.flourishChannels[1].active;
     const flourishArmed = this.flourishArms[0].armed || this.flourishArms[1].armed;
     const movementOnsetOrHardChange =
@@ -7736,6 +7771,7 @@ export class SpriteRig {
         cancellationMoveUnitY,
       );
     const reducedMotion = anim.reducedMotion === true;
+    const idleFlourishWallNow = this.idleFlourishTimerNow(sceneNow);
     if (!this.flourishReducedReady) {
       this.flourishReducedMotion = reducedMotion;
       this.flourishReducedReady = true;
@@ -7748,11 +7784,12 @@ export class SpriteRig {
     }
     const beamEnded = this.flourishFireHeld && !anim.fireHeld && !!this.weaponDef?.beam;
     this.flourishFireHeld = anim.fireHeld === true;
-    if (cancellationMoveActive || flourishAttackIntent) {
+    if (cancellationMoveActive || flourishAttackIntent || flourishAttackReleased) {
       this.idleFlourishEligibleAtMs = idleFlourishEligibleEpoch(
         this.idleFlourishClockDef(),
-        sceneNow,
+        idleFlourishWallNow,
         this.idleFlourishOffsetMs,
+        this.gunRecoveryWallUntilMs,
       );
     }
     const flourishClockCut =
@@ -8235,10 +8272,10 @@ export class SpriteRig {
       );
       this.body.rotation += (hasFistGun ? 0 : leadFiringStance.bodyTurn) * rangedAimBlend;
       const recoilElapsed = sceneNow - this.gunRecoilAtMs;
-      if (recoilElapsed >= 0 && recoilElapsed < 140) {
+      if (recoilElapsed >= 0 && recoilElapsed < GUN_RECOIL_ACTIVE_MS) {
         const recoilDef = this.weapons[this.gunRecoilHand]?.def ?? this.weaponDef;
         const recoilStrength = Math.min(1.35, (recoilDef.gun?.recoil ?? 0.0017) / 0.004);
-        const recoil = Math.sin(Math.PI * (recoilElapsed / 140)) * recoilStrength;
+        const recoil = Math.sin(Math.PI * (recoilElapsed / GUN_RECOIL_ACTIVE_MS)) * recoilStrength;
         const kick = TARGET_BODY_H * 0.045 * recoil;
         const kickX = -Math.cos(heldAimLocal) * kick;
         const kickY = -Math.sin(heldAimLocal) * kick;
@@ -8993,12 +9030,15 @@ export class SpriteRig {
     }
 
     const poseRecoilElapsedMs = sceneNow - this.gunRecoilAtMs;
-    if (poseRecoilElapsedMs >= 0 && poseRecoilElapsedMs < 140) {
+    if (poseRecoilElapsedMs >= 0 && poseRecoilElapsedMs < GUN_RECOIL_ACTIVE_MS) {
       posePhase = "active";
-      posePhaseT = poseRecoilElapsedMs / 140;
-    } else if (poseRecoilElapsedMs >= 140 && poseRecoilElapsedMs < 140 + RANGED_AIM_SETTLE_MS) {
+      posePhaseT = poseRecoilElapsedMs / GUN_RECOIL_ACTIVE_MS;
+    } else if (
+      poseRecoilElapsedMs >= GUN_RECOIL_ACTIVE_MS &&
+      poseRecoilElapsedMs < RANGED_GUN_RECOVERY_MS
+    ) {
       posePhase = "recovery";
-      posePhaseT = (poseRecoilElapsedMs - 140) / RANGED_AIM_SETTLE_MS;
+      posePhaseT = (poseRecoilElapsedMs - GUN_RECOIL_ACTIVE_MS) / RANGED_AIM_SETTLE_MS;
     }
 
     // Tome trace/tap follows the accepted page scheduler rather than a free-running decorative timer. Last
@@ -9164,16 +9204,26 @@ export class SpriteRig {
     const crossfallOwnsFlourish =
       this.crossfallActive &&
       (posePhase !== "idle" || ownFront > 0.01 || ownBack > 0.01 || ownFeet > 0.01);
-    const strongerFlourishOwner =
+    const idleLeadPistol = weaponHasHandlingTag(this.weapons[0]?.def ?? this.weaponDef, "pistol");
+    const idleOffPistol = weaponHasHandlingTag(this.weapons[1]?.def, "pistol");
+    const pistolIdleTwirl = idleLeadPistol || idleOffPistol;
+    const hardFlourishOwner =
       meleePoseActive ||
       this.closeBladePoseActive ||
       crossfallOwnsFlourish ||
       brace > 0 ||
-      posePhase !== "idle" ||
-      rangedAimBlend > 0 ||
       (!hasAimedFiringWeapon && (ownFront > 0.01 || ownBack > 0.01 || ownFeet > 0.01));
+    const strongerFlourishOwner =
+      hardFlourishOwner ||
+      posePhase !== "idle" ||
+      rangedAimBlend > 0;
+    const activePistolIdleTwirl =
+      pistolIdleTwirl &&
+      this.flourishChannels.some(
+        (channel) => channel.active && channel.moment === "idle-settle",
+      );
     if (
-      strongerFlourishOwner &&
+      (activePistolIdleTwirl ? hardFlourishOwner : strongerFlourishOwner) &&
       (this.flourishChannels[0].active || this.flourishChannels[1].active)
     ) {
       this.cancelFlourish("stronger-owner");
@@ -9190,9 +9240,6 @@ export class SpriteRig {
     const anyFlourishActive = this.flourishChannels[0].active || this.flourishChannels[1].active;
     const anyFlourishArmed = this.flourishArms[0].armed || this.flourishArms[1].armed;
     const anyStowActive = !!this.stowProxies[0].img || !!this.stowProxies[1].img;
-    const idleLeadPistol = weaponHasHandlingTag(this.weapons[0]?.def ?? this.weaponDef, "pistol");
-    const idleOffPistol = weaponHasHandlingTag(this.weapons[1]?.def, "pistol");
-    const pistolIdleTwirl = idleLeadPistol || idleOffPistol;
     const hasIdleFlourish = pistolIdleTwirl
       ? (idleLeadPistol && !!this.flourishLeadSpec?.idleSettle) ||
         (idleOffPistol && !!this.flourishOffSpec?.idleSettle)
@@ -9200,15 +9247,15 @@ export class SpriteRig {
     if (
       !reducedMotion &&
       !outsidePaperView &&
-      !strongerFlourishOwner &&
+      !(pistolIdleTwirl ? hardFlourishOwner : strongerFlourishOwner) &&
       !anyFlourishActive &&
       !anyFlourishArmed &&
       !anyStowActive &&
-      gait < 0.12 &&
+      (pistolIdleTwirl || gait < 0.12) &&
       !cancellationMoveActive &&
       !flourishAttackIntent &&
       !this.comboHoldPose &&
-      sceneNow >= this.idleFlourishEligibleAtMs &&
+      idleFlourishWallNow >= this.idleFlourishEligibleAtMs &&
       (pistolIdleTwirl || sceneNow - this.idleFlourishLastPlayedMs >= 6500) &&
       hasIdleFlourish
     ) {
@@ -9216,7 +9263,12 @@ export class SpriteRig {
         if (idleLeadPistol && this.flourishLeadSpec)
           this.startFlourishChannel(0, "idle-settle", sceneNow, this.flourishLeadSpec);
         if (idleOffPistol && this.flourishOffSpec)
-          this.startFlourishChannel(1, "idle-settle", sceneNow, this.flourishOffSpec);
+          this.startFlourishChannel(
+            1,
+            "idle-settle",
+            sceneNow + (idleLeadPistol ? PISTOL_DUAL_TWIRL_STAGGER_MS : 0),
+            this.flourishOffSpec,
+          );
       } else if (this.flourishLeadSpec) {
         this.startFlourishChannel(0, "idle-settle", sceneNow, this.flourishLeadSpec);
       }
@@ -9275,7 +9327,12 @@ export class SpriteRig {
 
     this.flourishHeadX = 0;
     this.flourishHeadY = 0;
-    if (!strongerFlourishOwner) {
+    const renderPistolIdleTwirl =
+      pistolIdleTwirl &&
+      this.flourishChannels.some(
+        (channel) => channel.active && channel.moment === "idle-settle",
+      );
+    if (!(renderPistolIdleTwirl ? hardFlourishOwner : strongerFlourishOwner)) {
       const leadBaseAngle = weaponAngle;
       const offBaseAngle = Number.isNaN(backWeaponAngle)
         ? weaponAngle - this.offWeaponLean()
@@ -9604,7 +9661,7 @@ export class SpriteRig {
       const back = this.hands.find((h) => !h.front);
       if (front && back) {
         const held = this.weapons[0];
-        const grips = held?.def.gripPoints;
+        const grips = held ? resolvedGunGripPoints(held.def) : undefined;
         if (held && grips?.secondary) {
           const ownsSwingScale = this.swingHand === "both" || this.swingHand === 0;
           const base = held.baseScale / (this.baseScale || 1);
@@ -10164,7 +10221,7 @@ export class SpriteRig {
         const particle = this.paintedAuraParticles[i];
         const packId = paintedAura.packs[i % paintedAura.packs.length];
         const pack = packId ? PARTICLE_PACKS[packId] : undefined;
-        if (!particle || !pack) continue;
+        if (!particle || !pack || !packId) continue;
         const phase = stillPhase + i * 2.399 + Math.sin(t * 5.2 + i * 1.71) * 0.16;
         const orbit =
           auraRadius * paintedAura.extent * (0.72 + ((i * 37) % 5) * 0.055) * inverseRigScale;
@@ -10173,7 +10230,19 @@ export class SpriteRig {
           .setTexture(`ptcl:${packId}`, frame)
           .setPosition(Math.cos(phase) * orbit, centerY + Math.sin(phase) * orbit * 0.56)
           .setRotation(phase + Math.PI * 0.44)
-          .setScale(paintedAura.scale * inverseRigScale * (0.86 + (i % 3) * 0.08))
+          .setScale(
+            paintedParticleScale(
+              packId,
+              paintedParticleDominance(
+                this.weaponDef?.displayLength ?? auraRadius * 2,
+                paintedAura.particleDominance,
+                paintedAura.minParticlePx,
+                paintedAura.maxParticlePx,
+              ),
+            ) *
+              inverseRigScale *
+              (0.86 + (i % 3) * 0.08),
+          )
           .setAlpha(0.54 + ((i * 29) % 4) * 0.1)
           .setVisible(true);
       }

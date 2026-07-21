@@ -596,10 +596,14 @@
       typeof meta.angleAt === "function" ? finite(meta.angleAt(0), -frame.arc / 2) : -frame.arc / 2;
     frame.originX = finite(meta.originX, 0);
     frame.originY = finite(meta.originY, 0);
-    frame.bodyWidth = Math.min(42, size.body, Math.max(2, frame.reach - frame.clearance));
+    frame.bodyWidth = Math.min(
+      96,
+      finite(meta.paintedWidthPx, size.body),
+      Math.max(2, frame.reach - frame.clearance),
+    );
     // §50 Driftblade-model panel: the authored per-step combo ribbon rides the enriched accepted/predicted
     // descriptor (meta.swing.comboRibbon). Geometry only, under the shipped ceilings: widthMultiplier is
-    // re-capped at 42px; radialStart clamps the strip inside the outer [radialStart×reach, reach] band (it
+    // re-capped at 96px; radialStart clamps the strip inside the outer [radialStart×reach, reach] band (it
     // multiplies reach, so it scales with blade length automatically); widthMultiplier 0 is authored
     // SILENCE (the model's compact beat paints nothing). Absent ribbon → byte-identical legacy render.
     const ribbon = meta.swing ? meta.swing.comboRibbon : undefined;
@@ -611,9 +615,9 @@
         return;
       }
       const band = frame.reach * (1 - bounded(ribbon.radialStart, 0, 0, 0.95));
-      frame.bodyWidth = Math.max(2, Math.min(42, frame.bodyWidth * widthMul, band));
+      frame.bodyWidth = Math.max(2, Math.min(96, frame.bodyWidth * widthMul, band));
     }
-    frame.lipWidth = Math.min(9, size.lip, frame.bodyWidth);
+    frame.lipWidth = Math.min(18, Math.max(size.lip, frame.bodyWidth * 0.24), frame.bodyWidth);
     const historyMul = bounded(params.history, 1, 0, 1);
     const artCap = (frame.bodyWidth * 6.6) / Math.max(1, frame.reach - frame.bodyWidth / 2);
     frame.historyAngle =

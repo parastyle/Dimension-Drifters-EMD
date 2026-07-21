@@ -5,6 +5,19 @@
 // no-op (returns false) if the pack/texture is missing, so procedural fallbacks stay in charge underneath.
 import Phaser from "phaser";
 import { PARTICLE_PACKS } from "./particle-manifest.js";
+import {
+  paintedParticlePixels,
+  paintedParticleScale,
+  type PaintedParticleScaleContract,
+} from "./painted-particle-scale.js";
+
+export {
+  paintedParticleDisplaySize,
+  paintedParticleDominance,
+  paintedParticlePixels,
+  paintedParticleScale,
+} from "./painted-particle-scale.js";
+export type { PaintedParticleScaleContract } from "./painted-particle-scale.js";
 
 /** Queue every particle-pack spritesheet (call in scene.preload). ~48 small sheets, lazy-decoded by GL. */
 export function preloadParticlePacks(scene: Phaser.Scene): void {
@@ -22,8 +35,8 @@ export interface BurstOpts {
   spread?: number;
   /** Fling speed px/s (default 130), each particle ±40%. */
   speed?: number;
-  /** Base sprite scale (default 0.5 → ~48px particles), each ±30%. */
-  scale?: number;
+  /** Display-size contract (default 48 px), each particle ±30%. */
+  scaleContract?: PaintedParticleScaleContract;
   /** Life ms (default 380), each ±30%. */
   lifeMs?: number;
   /** Additive blend (energy/glow packs read best additive; solid shards/debris without). */
@@ -46,6 +59,7 @@ export function particleBurst(
   const key = `ptcl:${packId}`;
   if (!pack || !scene.textures.exists(key)) return false;
   const n = o.count ?? 6;
+  const baseScale = paintedParticleScale(packId, o.scaleContract ?? paintedParticlePixels(48));
   const radial = o.dirRad === undefined;
   const spread = o.spread ?? (radial ? Math.PI : 0.9);
   for (let i = 0; i < n; i++) {
@@ -56,7 +70,7 @@ export function particleBurst(
     const img = scene.add
       .image(x, y, key, frame)
       .setDepth(o.depth ?? 99500)
-      .setScale((o.scale ?? 0.5) * (0.7 + Math.random() * 0.6))
+      .setScale(baseScale * (0.7 + Math.random() * 0.6))
       .setRotation(Math.random() * Math.PI * 2);
     if (o.additive) img.setBlendMode(Phaser.BlendModes.ADD);
     scene.tweens.add({

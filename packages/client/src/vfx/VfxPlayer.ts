@@ -17,6 +17,7 @@ import type Phaser from "phaser";
 import { RENDER_DPR } from "../render-dpr.js";
 import { preloadFxPacks } from "./fx-composer.js";
 import { PARTICLE_PACKS } from "./particle-manifest.js";
+import { paintedSwingDisplayWidth } from "./painted-particle-scale.js";
 import "./vfx-render.js"; // sets globalThis.VFXRENDER
 import "./vfx-layers.js"; // sets globalThis.VFXLAYERS
 import { WEAPON_VFX, type WeaponVfx } from "./weapon-vfx.generated.js";
@@ -227,6 +228,7 @@ interface PerRuntimeSurface {
     swingArc: number;
     style: SwingDescriptor["style"];
     size?: WeaponDef["tags"]["size"];
+    paintedWidthPx: number;
     grip?: WeaponDef["tags"]["grip"];
     family?: string;
     paint: number;
@@ -406,6 +408,7 @@ export class VfxPlayer {
       swingArc,
       style: swing.style,
       size: weapon?.tags.size,
+      paintedWidthPx: paintedSwingDisplayWidth(weapon),
       grip: weapon?.tags.grip,
       family: weapon?.tags.family,
       paint: ELEMENT_PAINT[element] ?? 0,

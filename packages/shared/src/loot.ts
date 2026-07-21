@@ -253,7 +253,7 @@ function median(xs: number[]): number {
 const baseByClass = new Map<string, number[]>();
 const allBase: number[] = [];
 for (const w of Object.values(WEAPONS)) {
-  if (w.expansion || w.id === "fists") continue;
+  if (w.expansion || w.archived || w.id === "fists") continue;
   const p = effectivePower(w);
   allBase.push(p);
   const cls = w.tags.classPool;
@@ -275,7 +275,7 @@ export function classPowerMedian(classPool: string): number {
   if (base > 0) return base;
   const own = median(
     Object.values(WEAPONS)
-      .filter((w) => w.tags.classPool === classPool && w.id !== "fists")
+      .filter((w) => w.tags.classPool === classPool && w.id !== "fists" && !w.archived)
       .map(effectivePower),
   );
   return own > 0 ? own : BASE_POWER_MEDIAN;
@@ -285,6 +285,7 @@ export function classPowerMedian(classPool: string): number {
  *  shipped baseline); an EXPANSION weapon must sit inside the class-median band. Rez/support weapons are
  *  deliberate picks, not RNG. PURE. */
 export function isDropEligible(def: WeaponDef): boolean {
+  if (def.archived) return false;
   if (def.rez) return false; // support/rez weapons (Gravedigger's Spade) are deliberate picks, not RNG
   if (!def.expansion) return true;
   const anchor = classPowerMedian(def.tags.classPool);

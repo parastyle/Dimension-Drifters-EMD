@@ -1,12 +1,13 @@
 import Phaser from "phaser";
-import { particleBurst } from "./particles.js";
+import { paintedParticlePixels, particleBurst } from "./particles.js";
 import {
   TESLA_WARP_VFX_RECIPE,
   type WeaponEffectRecipe,
   weaponSwingIdentityScale,
+  weaponSwingIdentitySizePx,
 } from "./weapon-effect-recipes.js";
 
-export { weaponSwingIdentityScale };
+export { weaponSwingIdentityScale, weaponSwingIdentitySizePx };
 
 export function spawnTeslaWarpDeparture(scene: Phaser.Scene, x: number, y: number): void {
   for (const [index, pack] of TESLA_WARP_VFX_RECIPE.departurePacks.entries()) {
@@ -15,7 +16,7 @@ export function spawnTeslaWarpDeparture(scene: Phaser.Scene, x: number, y: numbe
       dirRad: -Math.PI / 2,
       spread: index === 0 ? 0.75 : Math.PI * 2,
       speed: index === 0 ? 235 : 145,
-      scale: index === 0 ? 0.42 : 0.28,
+      scaleContract: paintedParticlePixels(index === 0 ? 40.32 : 26.88),
       lifeMs: index === 0 ? 260 : 330,
       additive: true,
     });
@@ -29,7 +30,7 @@ export function spawnTeslaWarpArrival(scene: Phaser.Scene, x: number, y: number)
       dirRad: 0,
       spread: Math.PI * 2,
       speed: index === 0 ? 185 : 245,
-      scale: index === 0 ? 0.48 : 0.38,
+      scaleContract: paintedParticlePixels(index === 0 ? 46.08 : 36.48),
       lifeMs: index === 0 ? 420 : 300,
       additive: true,
     });
@@ -49,7 +50,7 @@ export function spawnWeaponProjectileImpact(
     dirRad: angle,
     spread: recipe.projectile === "electric-bolt" ? Math.PI : 1.4,
     speed: recipe.projectile === "electric-bolt" ? 210 : 150,
-    scale: 0.42,
+    scaleContract: paintedParticlePixels(40.32),
     lifeMs: 360,
     additive: recipe.additive,
   });
@@ -82,7 +83,7 @@ export function spawnWeaponSwingIdentity(
       dirRad: angle,
       spread: recipe.noGore ? 0.75 : 0.42,
       speed: recipe.noGore ? 105 : 170,
-      scale: weaponSwingIdentityScale(recipe, bladeLength),
+      scaleContract: paintedParticlePixels(weaponSwingIdentitySizePx(recipe, bladeLength)),
       lifeMs: recipe.noGore ? 420 : 330,
       additive: recipe.additive,
       sink: recipe.noGore ? 18 : 0,

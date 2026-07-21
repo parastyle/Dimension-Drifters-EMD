@@ -1,7 +1,11 @@
 import { defineConfig, devices } from "@playwright/test";
+import path from "node:path";
+
+const E2E_ROOT = import.meta.dirname;
 
 export default defineConfig({
-  testDir: "./tests",
+  testDir: path.join(E2E_ROOT, "tests"),
+  globalSetup: path.join(E2E_ROOT, "helpers/global-stack.ts"),
   fullyParallel: false,
   workers: 1,
   timeout: 120_000,
@@ -10,7 +14,7 @@ export default defineConfig({
   },
   retries: process.env.CI ? 1 : 0,
   reporter: "line",
-  outputDir: "../.tmp-bin/playwright",
+  outputDir: path.resolve(E2E_ROOT, "../.tmp-bin/playwright"),
   use: {
     ...devices["Desktop Chrome"],
     headless: true,

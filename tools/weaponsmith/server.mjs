@@ -91,6 +91,7 @@ function readBaseWeaponDefs() {
       cooldown: numberField(body, "cooldown"),
       displayLength: numberField(body, "displayLength"),
       vfxRadius: numberField(body, "vfxRadius"),
+      archived: /(?:^|\s)archived:\s*true/.test(body),
       twoHanded: /(?:^|\s)twoHanded:\s*true/.test(body),
       dual: /(?:^|\s)dual:\s*true/.test(body),
       thrown: /(?:^|\s)thrown:\s*\{/.test(body),
@@ -137,13 +138,13 @@ function weaponView(weapon) {
   };
 }
 
-/** The complete game roster: BASE_WEAPONS + GENERATED_WEAPONS, excluding only the unarmed fallback.
- * This function intentionally performs all reads on every API request. */
+/** The active authoring roster: canonical rows remain on disk, while archived weapons stay out of the
+ * ordinary listing. This function intentionally performs all reads on every API request. */
 function readWeapons() {
   const seen = new Set();
   const weapons = [];
   for (const definition of [...readBaseWeaponDefs(), ...readGeneratedWeaponDefs()]) {
-    if (!definition?.id || seen.has(definition.id)) continue;
+    if (!definition?.id || definition.archived === true || seen.has(definition.id)) continue;
     seen.add(definition.id);
     weapons.push(weaponView(definition));
   }

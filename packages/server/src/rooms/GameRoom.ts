@@ -151,7 +151,7 @@ import {
   ENEMY_RADIUS,
   type EnemyKind,
   EnemyState,
-  EXPANSION_WEAPON_IDS,
+  ACTIVE_WEAPON_CATALOG_IDS,
   EXTRACT_RADIUS,
   type ExpeditionEntryV1,
   effectiveAcceptedWeaponInterval,
@@ -213,6 +213,7 @@ import {
   MELEE_BLADE_HALFWIDTH,
   MELEE_SAMPLE_STEP,
   META_ACCOUNT_REVISION_MAX,
+  META_ACCOUNT_SCRIP_MAX,
   META_FORTUNE_LUK,
   META_JOIN_MAX_BYTES,
   META_POWER_STR,
@@ -349,6 +350,7 @@ import {
   type SwingDescriptor,
   safeSpawnPos,
   salvageValue,
+  salvageArchivedWeaponBank,
   sanitizeMetaAccountV2,
   sanitizeMetaAccountV3,
   sanitizeMetaAccountV4WithDiagnostics,
@@ -1620,7 +1622,11 @@ export class GameRoom extends Room<ArenaState> {
       if (this.state.mode !== "training") return;
       const player = this.state.players.get(client.sessionId);
       if (!player) return;
-      if (typeof message?.weapon === "string" && WEAPONS[message.weapon]) {
+      if (
+        typeof message?.weapon === "string" &&
+        WEAPONS[message.weapon] &&
+        WEAPONS[message.weapon]?.archived !== true
+      ) {
         const c = this.combat.get(client.sessionId);
         if (c) this.dissolvePair(player, c);
         if (this.belt) this.syncActiveSlot(player, c);
@@ -3695,9 +3701,8 @@ export class GameRoom extends Room<ArenaState> {
       this.state.mode = "training";
       this.resetElapsed();
       this.spawnAccum = 0;
-      // §31 SHOWROOM: browse EVERY arted weapon (active roster + the whole +300 expansion arsenal), one
-      // PAGE at a time (Z/X cycles pages). A full 314-pickup dump tanked the client to ~2fps (314 rigs +
-      // 297 lazy art loads at once), so it's paged — GALLERY_PAGE weapons per page, laid out in a grid.
+      // §31 SHOWROOM: browse every ACTIVE arted weapon (curated + expansion; archived rows stay hidden),
+      // one page at a time (Z/X cycles pages), so the gallery remains comfortably performant.
       this.galleryPage = 0;
       this.spawnGalleryPage();
       for (let i = 0; i < 3; i++) {
@@ -3760,13 +3765,11 @@ export class GameRoom extends Room<ArenaState> {
     this.sendWeaponManifest(player);
   }
 
-  /** §31 the full browsable weapon roster for the Testing-Grounds SHOWROOM: the active arsenal + every
-   *  arted expansion weapon. Shown one page at a time (perf: a full dump is ~2fps). */
+  /** §31 full browsable ACTIVE roster. Archived ids remain canonical but have no showroom page. */
   /** §41 the showroom roster, ORGANIZED: class → family → name, so every page reads as a coherent shelf
    *  ("all the melee axes together") instead of concept-file order. Stable + deterministic. */
   private static readonly GALLERY_ROSTER: readonly string[] = [
-    ...WEAPON_IDS,
-    ...EXPANSION_WEAPON_IDS,
+    ...ACTIVE_WEAPON_CATALOG_IDS,
   ].sort((a, b) => {
     const wa = WEAPONS[a];
     const wb = WEAPONS[b];
@@ -4218,6 +4221,13 @@ export class GameRoom extends Room<ArenaState> {
       throw new Error(`invalid weapon bank: ${accountResult.bank.errors.join(",")}`);
     }
     const account = accountResult.account;
+    // W4A archive migration: persisted rows are accepted only so every retired instance can be valued and
+    // removed here. Do not advance revision yet — like stale-expedition abandonment below, the client's
+    // carry was built against the exact revision it supplied. The carry commit performs the ordinary bump.
+    const archiveSalvage = salvageArchivedWeaponBank(account.weaponBank);
+    if (archiveSalvage.payout > 0) {
+      account.scrip = Math.min(META_ACCOUNT_SCRIP_MAX, account.scrip + archiveSalvage.payout);
+    }
     const requestedPetId = options?.selectedPetId ?? options?.petId;
     if (requestedPetId === "") account.selectedPetId = "";
     else if (isPetId(requestedPetId) && account.pets[requestedPetId]) {
@@ -4244,13 +4254,32 @@ export class GameRoom extends Room<ArenaState> {
     for (let i = 0; i < ARSENAL_SLOTS; i++) player.slots.push(new ArsenalSlot());
     const runId = `run_${randomBytes(12).toString("base64url")}`;
     const requestedTier = Math.max(account.prestige, this.worldTier);
-    const carry: CarrySelectionV1 = options?.carry ?? {
+    let carry: CarrySelectionV1 = options?.carry ?? {
       requestId: `auto_${randomBytes(12).toString("base64url")}`,
       expectedRevision: account.revision,
       placements: [],
       activeEntryId: "",
       requestedWorldTier: requestedTier,
     };
+    if (archiveSalvage.salvagedInstances > 0 && Array.isArray(carry.placements)) {
+      const available = new Set(account.weaponBank.stash.map((entry) => entry.entryId));
+      const migratedId = (entryId: string): string =>
+        archiveSalvage.entryIdRemap[entryId] ?? entryId;
+      const placements = carry.placements.flatMap((placement) => {
+        const entryId = migratedId(placement.entryId);
+        return available.has(entryId) ? [{ ...placement, entryId }] : [];
+      });
+      const activeEntryId = migratedId(carry.activeEntryId);
+      carry = {
+        ...carry,
+        placements,
+        activeEntryId: placements.some(
+          (placement) => placement.zone === "active" && placement.entryId === activeEntryId,
+        )
+          ? activeEntryId
+          : "",
+      };
+    }
     // Bank §2.3 — disconnect is never extraction, and there is no reservation machinery yet: an
     // account arriving at a NEW join with an OPEN expedition abandoned the old one (client killed,
     // Wi-Fi lost — the settlement only ever lived in that room's memory while the blob lives in
@@ -4272,6 +4301,14 @@ export class GameRoom extends Room<ArenaState> {
     if (abandoned?.ok) {
       // Honest ledger: the owner learns what the abandoned run cost the moment they are back.
       this.sendOwnerMessage(client.sessionId, "expeditionAbandonReceipt", abandoned);
+    }
+    if (archiveSalvage.salvagedInstances > 0) {
+      this.sendOwnerMessage(client.sessionId, "weaponArchiveSalvageReceipt", {
+        payout: archiveSalvage.payout,
+        salvagedInstances: archiveSalvage.salvagedInstances,
+        affectedEntries: archiveSalvage.affectedEntries,
+        weaponIds: archiveSalvage.salvagedWeaponIds,
+      });
     }
     this.worldTier = Math.max(this.worldTier, committed.runTier);
     this.materializeWeaponRun(player, account);
@@ -12771,7 +12808,11 @@ export class GameRoom extends Room<ArenaState> {
   private maybeDropWeapon(enemy: EnemyState): void {
     if (this.state.mode !== "arena") return; // debug-summoned wielders in training mint NO loot (verify)
     const kind = ENEMY_KINDS[enemy.kind];
-    if (!kind?.wieldsWeapon || !kind.dropWeapon) return;
+    if (
+      !kind?.wieldsWeapon ||
+      !kind.dropWeapon ||
+      WEAPONS[kind.wieldsWeapon]?.archived === true
+    ) return;
     // G-03: this known-weapon reward channel obeys the same boss anti-farm lock as mystery loot. Named
     // shifters guarantee their signature only outside that lock; ordinary rates stay deliberately scarce.
     if (this.bossId || kind.archetype === "boss") return;

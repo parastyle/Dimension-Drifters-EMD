@@ -1703,7 +1703,9 @@ export function sampleFlourish(input: FlourishInput, out: FlourishSample): Flour
           (elapsedMs - ownershipFadeAtMs) / (timing.durationMs - ownershipFadeAtMs),
         );
   out.ownership = moment === "stow" ? 0 : ownershipFade;
-  out.weaponRotationRad = (angle + (moment === "idle-settle" ? -angle : 0)) * sign;
+  // Idle settle is a real authored performance, not a pose-only ownership handoff. The previous
+  // `angle + -angle` expression zeroed every pistol idle-twirl sample in the same frame it was armed.
+  out.weaponRotationRad = angle * sign;
   out.catchOvershootRad = overshoot * sign;
   out.handForward = spec.handForward * gesture;
   out.handLateral = spec.handLateral * gesture * side;

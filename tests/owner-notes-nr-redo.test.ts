@@ -74,8 +74,12 @@ describe("owner-notes NR REDO iteration contracts", () => {
     expect(combo?.variant).toBe("sparkknuckle-voltage-boxing");
     expect(combo?.sequence.map((step) => step.motion)).toEqual(["hook", "cross", "hook", "cross"]);
     expect(combo?.sequence.map((step) => step.hand)).toEqual(["lead", "off", "lead", "off"]);
-    expect(aura).toMatchObject({ packs: ["shock-spark"], count: 4, scale: 0.085 });
-    expect(aura?.scale).toBeLessThan(0.1);
+    expect(aura).toMatchObject({
+      packs: ["shock-spark"],
+      count: 4,
+      particleDominance: 0.3,
+      maxParticlePx: 28,
+    });
 
     const rigSource = readFileSync(
       new URL("../packages/client/src/entities/SpriteRig.ts", import.meta.url),

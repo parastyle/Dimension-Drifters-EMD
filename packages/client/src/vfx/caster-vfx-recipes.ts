@@ -48,6 +48,7 @@ export type BeamVfxWidthProfile =
 export type BeamVfxRippleSignature =
   | "steady"
   | "sine"
+  | "cosine"
   | "double-helix"
   | "sawtooth"
   | "pulse-train"
@@ -67,6 +68,10 @@ export interface BeamVfxRecipe {
   readonly coreWidth: number;
   readonly ripple: BeamVfxRippleSignature;
   readonly rippleAmplitude: number;
+  /** Complete lateral cycles from source to terminus. */
+  readonly rippleFrequency: number;
+  /** Static waveform phase; cosine is also available as an identity-level shorthand. */
+  readonly ripplePhaseRad?: number;
   readonly flickerHz: number;
   readonly particleElement: CasterVfxElement;
   readonly bodyParticle: CasterParticleShape;
@@ -100,7 +105,7 @@ export interface CasterVfxProjectileRecipe {
   readonly coreRadius: number;
   readonly trailLength: number;
   readonly trailWidth: number;
-  readonly bodyScale: number;
+  readonly bodySizePx: number;
   readonly particleShape: CasterParticleShape;
 }
 
@@ -279,14 +284,15 @@ export const BEAM_VFX_RECIPES: Readonly<Record<string, BeamVfxRecipe>> = Object.
   "x2-voltcaster-machine-pistol": Object.freeze({
     signature: "voltcaster-needle-burst",
     widthProfile: "needle",
-    edgeColor: 0x189dff,
-    accentColor: 0x72f4ff,
-    coreColor: 0xffffff,
+    edgeColor: 0x5c0505,
+    accentColor: 0xff2a1f,
+    coreColor: 0xffe0d4,
     edgeWidth: 0.92,
     chromaWidth: 0.42,
     coreWidth: 0.1,
     ripple: "stutter",
     rippleAmplitude: 0.1,
+    rippleFrequency: 8,
     flickerHz: 19,
     particleElement: "shock",
     bodyParticle: "bolt",
@@ -306,6 +312,7 @@ export const BEAM_VFX_RECIPES: Readonly<Record<string, BeamVfxRecipe>> = Object.
     coreWidth: 0.08,
     ripple: "stutter",
     rippleAmplitude: 0.08,
+    rippleFrequency: 7,
     flickerHz: 17,
     particleElement: "shock",
     bodyParticle: "bolt",
@@ -313,6 +320,27 @@ export const BEAM_VFX_RECIPES: Readonly<Record<string, BeamVfxRecipe>> = Object.
     bodyFrame: 1,
     coreFrame: 6,
     impact: Object.freeze({ points: 3, rings: 0, radiusScale: 0.62, spin: -1.5 }),
+  }),
+  "x2-mirage-coilrifle": Object.freeze({
+    signature: "mirage-purple-double-helix",
+    widthProfile: "braided",
+    edgeColor: 0x32105f,
+    accentColor: 0xb14bff,
+    coreColor: 0xf1d7ff,
+    edgeWidth: 0.94,
+    chromaWidth: 0.58,
+    coreWidth: 0.12,
+    ripple: "double-helix",
+    rippleAmplitude: 0.42,
+    rippleFrequency: 4,
+    ripplePhaseRad: Math.PI / 2,
+    flickerHz: 5.5,
+    particleElement: "arcane",
+    bodyParticle: "wisp",
+    coreParticle: "spark",
+    bodyFrame: 7,
+    coreFrame: 5,
+    impact: Object.freeze({ points: 6, rings: 2, radiusScale: 0.92, spin: 1.4 }),
   }),
   "x2-null-grimoire-of-the-hollow-page": Object.freeze({
     signature: "hollow-page-aperture-ray",
@@ -325,6 +353,7 @@ export const BEAM_VFX_RECIPES: Readonly<Record<string, BeamVfxRecipe>> = Object.
     coreWidth: 0.2,
     ripple: "sine",
     rippleAmplitude: 0.18,
+    rippleFrequency: 3.5,
     flickerHz: 4,
     particleElement: "void",
     bodyParticle: "wisp",
@@ -344,6 +373,7 @@ export const BEAM_VFX_RECIPES: Readonly<Record<string, BeamVfxRecipe>> = Object.
     coreWidth: 0.23,
     ripple: "pulse-train",
     rippleAmplitude: 0.2,
+    rippleFrequency: 6,
     flickerHz: 7,
     particleElement: "holy",
     bodyParticle: "ring",
@@ -363,6 +393,7 @@ export const BEAM_VFX_RECIPES: Readonly<Record<string, BeamVfxRecipe>> = Object.
     coreWidth: 0.16,
     ripple: "sine",
     rippleAmplitude: 0.12,
+    rippleFrequency: 2.5,
     flickerHz: 3,
     particleElement: "frost",
     bodyParticle: "wisp",
@@ -382,6 +413,7 @@ export const BEAM_VFX_RECIPES: Readonly<Record<string, BeamVfxRecipe>> = Object.
     coreWidth: 0.14,
     ripple: "double-helix",
     rippleAmplitude: 0.14,
+    rippleFrequency: 3,
     flickerHz: 2,
     particleElement: "frost",
     bodyParticle: "orb",
@@ -401,6 +433,7 @@ export const BEAM_VFX_RECIPES: Readonly<Record<string, BeamVfxRecipe>> = Object.
     coreWidth: 0.3,
     ripple: "steady",
     rippleAmplitude: 0.06,
+    rippleFrequency: 1.5,
     flickerHz: 6,
     particleElement: "fire",
     bodyParticle: "mote",
@@ -420,6 +453,7 @@ export const BEAM_VFX_RECIPES: Readonly<Record<string, BeamVfxRecipe>> = Object.
     coreWidth: 0.12,
     ripple: "stutter",
     rippleAmplitude: 0.24,
+    rippleFrequency: 5.5,
     flickerHz: 13,
     particleElement: "toxic",
     bodyParticle: "splat",
@@ -437,8 +471,9 @@ export const BEAM_VFX_RECIPES: Readonly<Record<string, BeamVfxRecipe>> = Object.
     edgeWidth: 0.76,
     chromaWidth: 0.28,
     coreWidth: 0.055,
-    ripple: "sine",
+    ripple: "cosine",
     rippleAmplitude: 0.08,
+    rippleFrequency: 4,
     flickerHz: 8,
     particleElement: "shock",
     bodyParticle: "wisp",
@@ -458,6 +493,7 @@ export const BEAM_VFX_RECIPES: Readonly<Record<string, BeamVfxRecipe>> = Object.
     coreWidth: 0.19,
     ripple: "sawtooth",
     rippleAmplitude: 0.3,
+    rippleFrequency: 5,
     flickerHz: 17,
     particleElement: "shock",
     bodyParticle: "bolt",
@@ -477,6 +513,7 @@ export const BEAM_VFX_RECIPES: Readonly<Record<string, BeamVfxRecipe>> = Object.
     coreWidth: 0.18,
     ripple: "pulse-train",
     rippleAmplitude: 0.15,
+    rippleFrequency: 4,
     flickerHz: 5,
     particleElement: "frost",
     bodyParticle: "mote",
@@ -499,6 +536,7 @@ export const BEAM_VFX_RECIPES: Readonly<Record<string, BeamVfxRecipe>> = Object.
     coreWidth: 0.11,
     ripple: "sawtooth",
     rippleAmplitude: 0.22,
+    rippleFrequency: 6.5,
     flickerHz: 9,
     particleElement: "arcane",
     bodyParticle: "shard",
@@ -518,6 +556,7 @@ export const BEAM_VFX_RECIPES: Readonly<Record<string, BeamVfxRecipe>> = Object.
     coreWidth: 0.09,
     ripple: "pulse-train",
     rippleAmplitude: 0.1,
+    rippleFrequency: 5,
     flickerHz: 4.5,
     particleElement: "holy",
     bodyParticle: "shard",
@@ -537,6 +576,7 @@ export const BEAM_VFX_RECIPES: Readonly<Record<string, BeamVfxRecipe>> = Object.
     coreWidth: 0.25,
     ripple: "steady",
     rippleAmplitude: 0.03,
+    rippleFrequency: 1,
     flickerHz: 2.5,
     particleElement: "holy",
     bodyParticle: "orb",
@@ -556,6 +596,7 @@ export const BEAM_VFX_RECIPES: Readonly<Record<string, BeamVfxRecipe>> = Object.
     coreWidth: 0.16,
     ripple: "pulse-train",
     rippleAmplitude: 0.26,
+    rippleFrequency: 3,
     flickerHz: 6.5,
     particleElement: "void",
     bodyParticle: "orb",
@@ -575,6 +616,7 @@ export const BEAM_VFX_RECIPES: Readonly<Record<string, BeamVfxRecipe>> = Object.
     coreWidth: 0.07,
     ripple: "steady",
     rippleAmplitude: 0.02,
+    rippleFrequency: 2,
     flickerHz: 10,
     particleElement: "void",
     bodyParticle: "bolt",
@@ -594,6 +636,7 @@ export const BEAM_VFX_RECIPES: Readonly<Record<string, BeamVfxRecipe>> = Object.
     coreWidth: 0.21,
     ripple: "sawtooth",
     rippleAmplitude: 0.11,
+    rippleFrequency: 4.5,
     flickerHz: 5.5,
     particleElement: "holy",
     bodyParticle: "shard",
@@ -613,6 +656,7 @@ export const BEAM_VFX_RECIPES: Readonly<Record<string, BeamVfxRecipe>> = Object.
     coreWidth: 0.2,
     ripple: "sine",
     rippleAmplitude: 0.25,
+    rippleFrequency: 3.5,
     flickerHz: 12,
     particleElement: "shock",
     bodyParticle: "wisp",
@@ -632,6 +676,7 @@ export const BEAM_VFX_RECIPES: Readonly<Record<string, BeamVfxRecipe>> = Object.
     coreWidth: 0.15,
     ripple: "stutter",
     rippleAmplitude: 0.18,
+    rippleFrequency: 7.5,
     flickerHz: 15,
     particleElement: "holy",
     bodyParticle: "splat",
@@ -651,6 +696,7 @@ export const BEAM_VFX_RECIPES: Readonly<Record<string, BeamVfxRecipe>> = Object.
     coreWidth: 0.13,
     ripple: "double-helix",
     rippleAmplitude: 0.34,
+    rippleFrequency: 4.5,
     flickerHz: 8.5,
     particleElement: "void",
     bodyParticle: "bolt",
@@ -670,6 +716,7 @@ export const BEAM_VFX_RECIPES: Readonly<Record<string, BeamVfxRecipe>> = Object.
     coreWidth: 0.06,
     ripple: "stutter",
     rippleAmplitude: 0.31,
+    rippleFrequency: 8.5,
     flickerHz: 14,
     particleElement: "void",
     bodyParticle: "ring",
@@ -762,7 +809,7 @@ export function resolveCasterVfxRecipe(def: WeaponDef | undefined): CasterVfxRec
   const projectile = Object.freeze({
     ...projectileBase,
     coreRadius: 3.5 + gradeIndex * 1.1,
-    bodyScale: 0.2 + gradeIndex * 0.035,
+    bodySizePx: (3.5 + gradeIndex * 1.1) * 5.5,
   });
   const impact = Object.freeze({
     ...impactBase,

@@ -1,12 +1,8 @@
 import { readFileSync } from "node:fs";
-import {
-  EXPANSION_WEAPON_IDS,
-  WEAPONS,
-  WEAPON_RESOURCE_PROFILES,
-} from "@dd/shared";
+import { EXPANSION_WEAPON_IDS, WEAPON_RESOURCE_PROFILES, WEAPONS } from "@dd/shared";
+import { describe, expect, it } from "vitest";
 import { SPRITES } from "../packages/client/src/sprites/manifest.js";
 import { WEAPON_VFX } from "../packages/client/src/vfx/weapon-vfx.generated.js";
-import { describe, expect, it } from "vitest";
 
 const RIFLE_IDS = [
   "x2-gravedog-auto-rifle",
@@ -37,7 +33,7 @@ describe("V3X foregrip auto rifles", () => {
 
   it("publishes art-backed Testing Grounds links for every rifle in the regenerated portal", () => {
     const portal = readFileSync("tools/portal/index.html", "utf8");
-    expect(portal).toContain('"count":329');
+    expect(portal).toContain('"count":323');
     for (const id of RIFLE_IDS) {
       expect(portal, id).toContain(`"path":"/?dev=weapon:${id}"`);
       expect(portal, id).toContain(

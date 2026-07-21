@@ -6852,6 +6852,113 @@ describe("GameRoom — bank §2.3 stale-expedition abandonment at join", () => {
   });
 });
 
+// W4A — append-only archive migration and Testing-Grounds exclusion coverage.
+describe("GameRoom — W4A archived weapon retirement", () => {
+  it("auto-salvages archived instances across every bank location and repairs a mixed-pair carry", () => {
+    const h = makeRoom({ belt: true });
+    const archivedLead = roomBankInstance(
+      91,
+      "x2-mistral-kusarigama",
+      "rare",
+      "keen",
+    );
+    const survivingOffhand = roomBankInstance(92, "rattler-sabre", "rare", "swift");
+    const mixedPair: import("@dd/shared").PairedWeaponEntryV1 = {
+      kind: "pair",
+      entryId: roomPairId(91),
+      lead: archivedLead,
+      offhand: survivingOffhand,
+    };
+    const intakeWeapon = roomBankInstance(
+      93,
+      "x2-ferrous-serpent",
+      "legendary",
+      "brutal",
+    );
+    const intake: import("@dd/shared").SingleWeaponEntryV1 = {
+      kind: "single",
+      entryId: intakeWeapon.instanceId,
+      weapon: intakeWeapon,
+    };
+    const expeditionWeapon = roomBankInstance(94, "x2-locust-flail");
+    const expeditionEntry: import("@dd/shared").SingleWeaponEntryV1 = {
+      kind: "single",
+      entryId: expeditionWeapon.instanceId,
+      weapon: expeditionWeapon,
+    };
+    const account = enemyComboShared.createMetaAccountV4();
+    account.scrip = 7;
+    account.weaponBank.stash.push(mixedPair);
+    account.weaponBank.intake.push(intake);
+    account.weaponBank.lastCarry = {
+      placements: [{ entryId: mixedPair.entryId, zone: "active", start: 0 }],
+      activeEntryId: mixedPair.entryId,
+    };
+    account.weaponBank.expedition = {
+      runId: "run_archive-old",
+      commitRevision: account.revision,
+      status: "committed",
+      entries: [
+        { entry: expeditionEntry, stakeOrigin: "found", location: "field", start: 255 },
+      ],
+    };
+    const messages: Array<{ type: string; payload: unknown }> = [];
+    const client = {
+      sessionId: "archive-join",
+      send: (type: string, payload: unknown) => messages.push({ type, payload }),
+    };
+    h.room.clients.push(client);
+    h.room.onJoin(client, {
+      metaAccount: account,
+      carry: {
+        requestId: "carry-after-archive",
+        expectedRevision: account.revision,
+        placements: [{ entryId: mixedPair.entryId, zone: "active", start: 0 }],
+        activeEntryId: mixedPair.entryId,
+        requestedWorldTier: 0,
+      },
+    });
+
+    const joined = h.room.metaAccounts.get("archive-join") as import("@dd/shared").MetaAccountV4;
+    const expectedPayout =
+      scripValue(2, true) + scripValue(4, true) + scripValue(0, true);
+    expect(joined.scrip).toBe(7 + expectedPayout);
+    expect(joined.weaponBank.stash).toEqual([]);
+    expect(joined.weaponBank.intake).toEqual([]);
+    expect(joined.weaponBank.expedition?.entries).toHaveLength(1);
+    expect(joined.weaponBank.expedition?.entries[0]?.entry).toEqual({
+      kind: "single",
+      entryId: survivingOffhand.instanceId,
+      weapon: survivingOffhand,
+    });
+    expect(joined.weaponBank.lastCarry).toEqual({
+      placements: [
+        { entryId: survivingOffhand.instanceId, zone: "active", start: 0 },
+      ],
+      activeEntryId: survivingOffhand.instanceId,
+    });
+    expect(h.state().players.get("archive-join")?.weapon).toBe("rattler-sabre");
+    expect(messages.find((message) => message.type === "weaponArchiveSalvageReceipt")?.payload)
+      .toMatchObject({
+        payout: expectedPayout,
+        salvagedInstances: 3,
+        affectedEntries: 3,
+      });
+  });
+
+  it("omits archived ids from every Testing-Grounds page and rejects direct dev-equip", () => {
+    const h = makeRoom();
+    h.join("archive-gallery");
+    h.send("archive-gallery", "toggleTraining");
+    const roster = h.room.constructor.GALLERY_ROSTER as string[];
+    expect(roster).toHaveLength(323);
+    for (const id of enemyComboShared.ARCHIVED_WEAPON_IDS) expect(roster).not.toContain(id);
+    const before = h.state().players.get("archive-gallery").weapon;
+    h.send("archive-gallery", "devEquip", { weapon: "x2-mistral-kusarigama" });
+    expect(h.state().players.get("archive-gallery").weapon).toBe(before);
+  });
+});
+
 // HIT-REGISTRATION PANEL regressions - append-only authority coverage for the two field reports.
 describe("GameRoom - hit registration regressions", () => {
   function addProjectileTarget(

@@ -276,7 +276,12 @@ import {
   enemyComboOfferPhase,
   JumpEffectRenderer,
 } from "../vfx/jump-effects.js";
-import { elementPack, particleBurst, preloadParticlePacks } from "../vfx/particles.js";
+import {
+  elementPack,
+  paintedParticlePixels,
+  particleBurst,
+  preloadParticlePacks,
+} from "../vfx/particles.js";
 import { UltimateVfx } from "../vfx/ultimate-vfx.js";
 import { VfxPlayer } from "../vfx/VfxPlayer.js";
 import {
@@ -1843,7 +1848,11 @@ export class ArenaScene extends Phaser.Scene {
    *  part as the frame "<id>/<role>", so the WebGL batcher binds a single texture for a whole screen of rigs
    *  instead of one per part (the genre's standard horde-render fix). SpriteRig reads frames via `partTexture`. */
   preload(): void {
-    this.load.multiatlas(SPRITE_ATLAS, "sprites/dd-sprites.json", "sprites");
+    // MenuScene owns the cold boot load; scene transitions share one TextureManager, so queueing the same
+    // atlas again is both wasted I/O and a real Phaser console error under the e2e error gate.
+    if (!this.textures.exists(SPRITE_ATLAS)) {
+      this.load.multiatlas(SPRITE_ATLAS, "sprites/dd-sprites.json", "sprites");
+    }
     preloadParticlePacks(this); // §41 the painted element×shape particle packs (Codex factory)
     preloadImpactFlipbooks(this); // optional per-element 6-frame hit blooms; missing strips stay silent
     if (this.belt) {
@@ -11488,7 +11497,7 @@ export class ArenaScene extends Phaser.Scene {
       dirRad,
       spread: 0.7,
       speed: 190,
-      scale: crit ? 0.5 : 0.38,
+      scaleContract: paintedParticlePixels(crit ? 48 : 36.48),
       lifeMs: 340,
       sink: 10,
     });

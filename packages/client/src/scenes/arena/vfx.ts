@@ -7,7 +7,12 @@ import { FX_LIGHTNING_BALL } from "../../vfx/fx-pack-lightning-ball.js";
 import { FX_QUAKE_BURST } from "../../vfx/fx-pack-quake-burst.js";
 import { FX_TOXIC_BURST } from "../../vfx/fx-pack-toxic-burst.js";
 import { FX_VOID_IMPLOSION } from "../../vfx/fx-pack-void-implosion.js";
-import { elementPack, particleBurst } from "../../vfx/particles.js";
+import {
+  elementPack,
+  paintedParticleDominance,
+  paintedParticlePixels,
+  particleBurst,
+} from "../../vfx/particles.js";
 import {
   resolveQuakeVfxRecipe,
   type QuakeVfxRecipe,
@@ -343,7 +348,7 @@ export class TelegraphForeshadowPool {
         dirRad: dir,
         spread: kindTag === 6 ? 0.16 : 0.3,
         speed: bit === 4 ? 150 : 105,
-        scale: bit === 4 ? 0.3 : 0.24,
+        scaleContract: paintedParticlePixels(bit === 4 ? 28.8 : 23.04),
         lifeMs: bit === 4 ? 390 : 460,
         additive: recipe.additive,
         depth: recipe.ground ? 2.5 : 99971,
@@ -589,7 +594,7 @@ export function spawnMuzzleFlash(
           dirRad: ang - Math.PI / 2 + (Math.random() - 0.5) * 0.6, // curls upward off the barrel
           spread: 0.2,
           speed: 40,
-          scale: 0.5,
+          scaleContract: paintedParticlePixels(48),
           lifeMs: 700,
         },
       );
@@ -619,7 +624,7 @@ export function spawnBulletImpact(
       dirRad: ang + Math.PI, // spray back against the flight direction
       spread: 0.8,
       speed: 160,
-      scale: 0.34,
+      scaleContract: paintedParticlePixels(32.64),
       lifeMs: 300,
       additive: shape === "mote",
       sink: 8,
@@ -800,14 +805,14 @@ export function spawnExplosion(
   particleBurst(scene, elementPack(element, "shard"), x, y, {
     count: Math.round(6 + radius / 22),
     speed: radius * 2.6,
-    scale: 0.55,
+    scaleContract: paintedParticleDominance(radius, 0.66, 40, 76),
     lifeMs: 420,
     sink: 14,
   });
   particleBurst(scene, elementPack(element, "mote"), x, y, {
     count: 6,
     speed: radius * 1.4,
-    scale: 0.4,
+    scaleContract: paintedParticleDominance(radius, 0.48, 30, 58),
     lifeMs: 360,
     additive: true,
   });
@@ -816,13 +821,13 @@ export function spawnExplosion(
     dirRad: -Math.PI / 2, // smoke drifts UP
     spread: 0.5,
     speed: 55,
-    scale: 0.7,
+    scaleContract: paintedParticleDominance(radius, 0.84, 52, 88),
     lifeMs: 900,
   });
   particleBurst(scene, elementPack(element, "ring"), x, y, {
     count: 1,
     speed: 0,
-    scale: radius / 60,
+    scaleContract: paintedParticleDominance(radius, 1.6, 72, 144),
     lifeMs: 340,
     additive: true,
   });
@@ -1005,12 +1010,16 @@ function spawnQuakeVariant(
         count: shape === "ring" ? recipe.ringCount : recipe.particleCount,
         speed: shape === "ring" ? 0 : radius * 1.2,
         lifeMs: recipe.variant === "aftershock-eruption" ? 620 : 430,
-        scale:
+        scaleContract: paintedParticleDominance(
+          radius,
           recipe.variant === "hammer-slam"
-            ? 0.8
+            ? 0.9
             : recipe.variant === "double-ripple"
-              ? 1
-              : 0.65,
+              ? 1.1
+              : 0.74,
+          56,
+          112,
+        ),
         depth: 99999,
         additive: true,
         sink: recipe.variant === "aftershock-eruption" ? -18 : 4,

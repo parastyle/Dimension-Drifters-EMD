@@ -202,6 +202,22 @@ describe("size-class stance resolution", () => {
 });
 
 describe("allocation-free flourish sampler", () => {
+  it("preserves a full visible pistol rotation during idle settle", () => {
+    const input = createFlourishInput();
+    const idleSettle = WEAPON_FLOURISH_SPECS.pistol.idleSettle;
+    if (!idleSettle) throw new Error("pistol idle-settle fixture is missing");
+    input.spec = idleSettle;
+    input.moment = "idle-settle";
+    const out = createFlourishSample();
+    const samples: number[] = [];
+    for (let elapsedMs = 0; elapsedMs < input.spec.timing.durationMs; elapsedMs += 8) {
+      input.elapsedMs = elapsedMs;
+      sampleFlourish(input, out);
+      samples.push(out.weaponRotationRad);
+    }
+    expect(Math.max(...samples) - Math.min(...samples)).toBeGreaterThan(Math.PI * 1.8);
+  });
+
   it("reuses and clears caller output while remaining continuous at both phase cuts", () => {
     const input = createFlourishInput();
     input.spec = WEAPON_FLOURISH_SPECS.pistol.afterAttack;

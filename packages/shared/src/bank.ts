@@ -1,6 +1,6 @@
 import { ENEMY_KINDS } from "./enemies.js";
-import { AFFIXES, CURSED_AFFIXES, DROP_POOL, RARITIES } from "./loot.js";
-import { pairEligible, WEAPONS } from "./weapons.js";
+import { AFFIXES, CURSED_AFFIXES, DROP_POOL, RARITIES, scripValue } from "./loot.js";
+import { isActiveWeaponId, pairEligible, WEAPONS } from "./weapons.js";
 
 export const WEAPON_BANK_VERSION = 1 as const;
 export const WEAPON_STASH_BASE_CAPACITY = 72 as const;
@@ -193,7 +193,9 @@ export function weaponRarityId(index: number): WeaponRarityId {
 
 const DIRECT_ENEMY_DROP_IDS = new Set<string>();
 for (const kind of Object.values(ENEMY_KINDS)) {
-  if (kind.wieldsWeapon && (kind.dropWeapon ?? 0) > 0) DIRECT_ENEMY_DROP_IDS.add(kind.wieldsWeapon);
+  if (kind.wieldsWeapon && (kind.dropWeapon ?? 0) > 0 && isActiveWeaponId(kind.wieldsWeapon)) {
+    DIRECT_ENEMY_DROP_IDS.add(kind.wieldsWeapon);
+  }
 }
 const RANDOM_DROP_IDS = new Set(DROP_POOL);
 const MIGRATION_DROP_IDS = new Set([...DROP_POOL, ...DIRECT_ENEMY_DROP_IDS]);
@@ -211,13 +213,18 @@ export function isWeaponAcquisitionAllowed(
   weaponId: string,
   provenance: WeaponProvenance,
 ): boolean {
-  if (weaponId === "fists" || !WEAPONS[weaponId]) return false;
+  if (!isActiveWeaponId(weaponId)) return false;
   if (provenance === "enemy-drop") {
     return RANDOM_DROP_IDS.has(weaponId) || DIRECT_ENEMY_DROP_IDS.has(weaponId);
   }
   if (provenance === "boss-drop") return RANDOM_DROP_IDS.has(weaponId);
   if (provenance === "tutorial-drop") return weaponId === "rusty-cleaver";
   return MIGRATION_DROP_IDS.has(weaponId);
+}
+
+/** Archived rows are legal only long enough for the one-way join migration to value and remove them. */
+function isWeaponPersistenceAllowed(weaponId: string, provenance: WeaponProvenance): boolean {
+  return WEAPONS[weaponId]?.archived === true || isWeaponAcquisitionAllowed(weaponId, provenance);
 }
 
 export function isLegalWeaponRarityAffix(rarity: unknown, affix: unknown): boolean {
@@ -268,7 +275,7 @@ function parseInstance(value: unknown, errors: string[], path: string): WeaponIn
     typeof weaponId === "string" &&
     typeof provenance === "string" &&
     PROVENANCE_IDS.has(provenance as WeaponProvenance) &&
-    !isWeaponAcquisitionAllowed(weaponId, provenance as WeaponProvenance)
+    !isWeaponPersistenceAllowed(weaponId, provenance as WeaponProvenance)
   ) errors.push(`${path}:acquisition`);
   if (errors.some((error) => error.startsWith(`${path}:`))) return null;
   return {
@@ -518,6 +525,87 @@ export function sanitizeWeaponBankV1(input: unknown): WeaponBankSanitizeResult {
     },
     errors,
   };
+}
+
+export interface ArchivedWeaponBankSalvageResult {
+  /** Standard shop Scrip value for every retired instance, before the account-level currency clamp. */
+  payout: number;
+  salvagedInstances: number;
+  affectedEntries: number;
+  salvagedWeaponIds: string[];
+  /** A mixed pair becomes a single entry whose canonical id is the surviving instance id. */
+  entryIdRemap: Record<string, string>;
+  /** Fully retired singles/pairs disappear; callers use this to repair an in-flight carry request. */
+  removedEntryIds: string[];
+}
+
+/**
+ * One-way archived-weapon migration over every ownership location. It is deliberately idempotent and does
+ * not touch account revision/Scrip itself: the server join flow applies the payout before committing the
+ * client's carry at the revision it actually saw, matching the stale-expedition migration discipline.
+ */
+export function salvageArchivedWeaponBank(
+  bank: WeaponBankV1,
+): ArchivedWeaponBankSalvageResult {
+  const result: ArchivedWeaponBankSalvageResult = {
+    payout: 0,
+    salvagedInstances: 0,
+    affectedEntries: 0,
+    salvagedWeaponIds: [],
+    entryIdRemap: {},
+    removedEntryIds: [],
+  };
+
+  const migrateEntry = (entry: WeaponBankEntryV1): WeaponBankEntryV1 | null => {
+    const instances = weaponEntryInstances(entry);
+    const archived = instances.filter((instance) => WEAPONS[instance.weaponId]?.archived === true);
+    if (archived.length === 0) return entry;
+    result.affectedEntries++;
+    for (const instance of archived) {
+      const rarity = weaponRarityIndex(instance.rarity);
+      if (rarity >= 0) result.payout += scripValue(rarity, true);
+      result.salvagedInstances++;
+      result.salvagedWeaponIds.push(instance.weaponId);
+    }
+    const survivors = instances.filter((instance) => WEAPONS[instance.weaponId]?.archived !== true);
+    if (survivors.length === 0) {
+      result.removedEntryIds.push(entry.entryId);
+      return null;
+    }
+    if (entry.kind === "single") return entry;
+    const weapon = survivors[0];
+    if (!weapon) return null;
+    result.entryIdRemap[entry.entryId] = weapon.instanceId;
+    return { kind: "single", entryId: weapon.instanceId, weapon };
+  };
+
+  const migrateEntries = (entries: readonly WeaponBankEntryV1[]): WeaponBankEntryV1[] => {
+    const migrated: WeaponBankEntryV1[] = [];
+    for (const entry of entries) {
+      const next = migrateEntry(entry);
+      if (next) migrated.push(next);
+    }
+    return migrated;
+  };
+
+  bank.stash = migrateEntries(bank.stash);
+  bank.intake = migrateEntries(bank.intake);
+  if (bank.expedition) {
+    bank.expedition.entries = bank.expedition.entries.flatMap((row) => {
+      const entry = migrateEntry(row.entry);
+      return entry ? [{ ...row, entry }] : [];
+    });
+  }
+
+  const removed = new Set(result.removedEntryIds);
+  const migratedId = (entryId: string): string => result.entryIdRemap[entryId] ?? entryId;
+  bank.lastCarry.placements = bank.lastCarry.placements
+    .filter((placement) => !removed.has(placement.entryId))
+    .map((placement) => ({ ...placement, entryId: migratedId(placement.entryId) }));
+  if (removed.has(bank.lastCarry.activeEntryId)) bank.lastCarry.activeEntryId = "";
+  else bank.lastCarry.activeEntryId = migratedId(bank.lastCarry.activeEntryId);
+
+  return result;
 }
 
 export function countWeaponCopies(

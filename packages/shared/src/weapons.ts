@@ -639,6 +639,12 @@ export interface WeaponDef {
    *  Testing-Grounds gallery, the Q/E cycle, or the drop pool, so the +300 batch doesn't flood the game
    *  until it's curated in. Promote one by clearing this flag (or moving it to the base roster). */
   expansion?: boolean;
+  /**
+   * Retired content identity. Archived definitions stay in the canonical catalog so persisted instance
+   * ids, receipts, art, and codegen references never dangle, but every acquisition/presentation roster
+   * must treat them as inactive. Owned instances are converted to Scrip by the join migration.
+   */
+  archived?: boolean;
 }
 
 /** Damage-scaling letter grade (§10). */
@@ -1609,8 +1615,8 @@ const BASE_WEAPONS: Record<string, WeaponDef> = {
     swingArc: 1.2,
     gripFrac: 0.14,
     gripPoints: {
-      primary: { x: 0.14, y: 0.5 },
-      secondary: { x: 0.44, y: 0.63, role: "pump" },
+      primary: { x: 0.24, y: 0.6 },
+      secondary: { x: 0.55, y: 0.64, role: "pump" },
     },
     vfxRadius: 72,
     gun: {
@@ -1828,13 +1834,26 @@ for (const weapon of Object.values(WEAPONS)) {
 
 /** The §9 unarmed-fallback weapon id (empty hands). Not part of the arsenal cycle/gallery. */
 export const FISTS_WEAPON = "fists";
-/** ACTIVE arsenal (Q/E cycle · Testing-Grounds gallery · drop pool) — every weapon EXCEPT the fists
- *  fallback AND the §13 expansion batch (those are defined+arted but curated-in later, one by one). */
-export const WEAPON_IDS = Object.keys(WEAPONS).filter(
-  (id) => id !== FISTS_WEAPON && !WEAPONS[id]?.expansion,
+/** Every persisted/catalog weapon id. Runtime-only fists are intentionally not a catalog row. */
+export const WEAPON_CATALOG_IDS = Object.keys(WEAPONS).filter((id) => id !== FISTS_WEAPON);
+/** Retired rows remain addressable forever, but never enter acquisition or ordinary presentation pools. */
+export const ARCHIVED_WEAPON_IDS = WEAPON_CATALOG_IDS.filter((id) => WEAPONS[id]?.archived);
+/** The ordinary catalog surface: base + expansion, excluding archived rows. */
+export const ACTIVE_WEAPON_CATALOG_IDS = WEAPON_CATALOG_IDS.filter(
+  (id) => !WEAPONS[id]?.archived,
 );
-/** The +300 §13 expansion ids — defined + arted, held out of `WEAPON_IDS`. For curation/preview tooling. */
+/** ACTIVE curated arsenal (Q/E cycle) — excludes fists, expansion, and archived definitions. */
+export const WEAPON_IDS = Object.keys(WEAPONS).filter(
+  (id) => id !== FISTS_WEAPON && !WEAPONS[id]?.expansion && !WEAPONS[id]?.archived,
+);
+/** The +300 §13 expansion ids, including archived historical rows. Use ACTIVE_EXPANSION_WEAPON_IDS for UI. */
 export const EXPANSION_WEAPON_IDS = Object.keys(WEAPONS).filter((id) => WEAPONS[id]?.expansion);
+export const ACTIVE_EXPANSION_WEAPON_IDS = EXPANSION_WEAPON_IDS.filter(
+  (id) => !WEAPONS[id]?.archived,
+);
+export function isActiveWeaponId(id: string): boolean {
+  return id !== FISTS_WEAPON && !!WEAPONS[id] && WEAPONS[id]?.archived !== true;
+}
 export const DEFAULT_WEAPON = "rusty-cleaver";
 
 /** G4 thrown-weapon wire identity. The kind carries the authored WEAPON id; clients resolve its display

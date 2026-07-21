@@ -1,0 +1,2019 @@
+{
+  "summary": {
+    "phase": "w4g1-after",
+    "weaponId": "x-gun-ricochet-pistol",
+    "baseURL": "http://localhost:5180",
+    "capturedAt": "2026-07-21T03:17:08.816Z",
+    "attackWindow": {
+      "startSeq": 0,
+      "stopSeq": 1,
+      "sends": 7
+    },
+    "frameCount": 31,
+    "hands": [
+      {
+        "sampleCount": 31,
+        "rangeRad": 6.868751421040553,
+        "rangeTurns": 1.0931957415280844,
+        "maxDeltaFromBaselineRad": 6.488295701038183,
+        "onsetMs": 626.1999999955297
+      }
+    ],
+    "browserErrors": [
+      "[console] Texture key already in use: dd-sprites"
+    ],
+    "unexpectedBrowserErrors": [],
+    "screenshots": [
+      "docs\\owner-notes-audit-v4-evidence\\pistol-twirl-w4g1-after-450ms.png",
+      "docs\\owner-notes-audit-v4-evidence\\pistol-twirl-w4g1-after-650ms.png",
+      "docs\\owner-notes-audit-v4-evidence\\pistol-twirl-w4g1-after-850ms.png",
+      "docs\\owner-notes-audit-v4-evidence\\pistol-twirl-w4g1-after-1050ms.png"
+    ]
+  },
+  "frames": [
+    {
+      "elapsedMs": 7.399999998509884,
+      "attackSeq": 1,
+      "sceneNow": 4539.1,
+      "rigState": {
+        "idleFlourishEligibleAtMs": 4989,
+        "idleFlourishLastPlayedMs": -1000000000,
+        "moveStance": 0,
+        "downed": false,
+        "reducedMotion": false,
+        "gait": 0.1798535753001899,
+        "ultimatePhase": 0,
+        "leadIdleSettle": true,
+        "offIdleSettle": false,
+        "rangedAimRaiseAtMs": 414.98,
+        "rangedAimActiveUntilMs": 814.98,
+        "gunRecoilAtMs": 414.98,
+        "swingStart": -1000000000,
+        "stowActive": false,
+        "lastAnim": {
+          "isSelf": true,
+          "fireHeld": false,
+          "reducedMotion": false,
+          "desiredMoveX": 0,
+          "desiredMoveY": 0,
+          "moveX": -0.9998373117915541,
+          "moveY": -0.01803745961710665,
+          "speed": 13.635615012392737
+        },
+        "channels": [
+          {
+            "active": false,
+            "moment": "draw",
+            "startMs": -1000000000
+          },
+          {
+            "active": false,
+            "moment": "draw",
+            "startMs": -1000000000
+          }
+        ],
+        "arms": [
+          {
+            "armed": false,
+            "earliestStartMs": -1000000000,
+            "weaponId": ""
+          },
+          {
+            "armed": false,
+            "earliestStartMs": -1000000000,
+            "weaponId": ""
+          }
+        ]
+      },
+      "weapons": [
+        {
+          "id": "x-gun-ricochet-pistol",
+          "rotation": 0.004478951293815925,
+          "semanticRotation": 0.004478951293815925,
+          "x": 26.219904710387013,
+          "y": -6.037450104974697
+        }
+      ]
+    },
+    {
+      "elapsedMs": 60.099999994039536,
+      "attackSeq": 1,
+      "sceneNow": 4589,
+      "rigState": {
+        "idleFlourishEligibleAtMs": 4989,
+        "idleFlourishLastPlayedMs": -1000000000,
+        "moveStance": 0,
+        "downed": false,
+        "reducedMotion": false,
+        "gait": 0.16175790122616687,
+        "ultimatePhase": 0,
+        "leadIdleSettle": true,
+        "offIdleSettle": false,
+        "rangedAimRaiseAtMs": 414.98,
+        "rangedAimActiveUntilMs": 814.98,
+        "gunRecoilAtMs": 414.98,
+        "swingStart": -1000000000,
+        "stowActive": false,
+        "lastAnim": {
+          "isSelf": true,
+          "fireHeld": false,
+          "reducedMotion": false,
+          "desiredMoveX": 0,
+          "desiredMoveY": 0,
+          "moveX": -0.9998373117915395,
+          "moveY": -0.01803745961791415,
+          "speed": 11.163897347766014
+        },
+        "channels": [
+          {
+            "active": false,
+            "moment": "draw",
+            "startMs": -1000000000
+          },
+          {
+            "active": false,
+            "moment": "draw",
+            "startMs": -1000000000
+          }
+        ],
+        "arms": [
+          {
+            "armed": false,
+            "earliestStartMs": -1000000000,
+            "weaponId": ""
+          },
+          {
+            "armed": false,
+            "earliestStartMs": -1000000000,
+            "weaponId": ""
+          }
+        ]
+      },
+      "weapons": [
+        {
+          "id": "x-gun-ricochet-pistol",
+          "rotation": 0.003969046039598467,
+          "semanticRotation": 0.003969046039598467,
+          "x": 26.219925171797527,
+          "y": -6.0422941616227215
+        }
+      ]
+    },
+    {
+      "elapsedMs": 109.79999999701977,
+      "attackSeq": 1,
+      "sceneNow": 4639,
+      "rigState": {
+        "idleFlourishEligibleAtMs": 4989,
+        "idleFlourishLastPlayedMs": -1000000000,
+        "moveStance": 0,
+        "downed": false,
+        "reducedMotion": false,
+        "gait": 0.14513164956351585,
+        "ultimatePhase": 0,
+        "leadIdleSettle": true,
+        "offIdleSettle": false,
+        "rangedAimRaiseAtMs": 414.98,
+        "rangedAimActiveUntilMs": 814.98,
+        "gunRecoilAtMs": 414.98,
+        "swingStart": -1000000000,
+        "stowActive": false,
+        "lastAnim": {
+          "isSelf": true,
+          "fireHeld": false,
+          "reducedMotion": false,
+          "desiredMoveX": 0,
+          "desiredMoveY": 0,
+          "moveX": -0.9998373117915668,
+          "moveY": -0.01803745961639674,
+          "speed": 9.140226082830653
+        },
+        "channels": [
+          {
+            "active": false,
+            "moment": "draw",
+            "startMs": -1000000000
+          },
+          {
+            "active": false,
+            "moment": "draw",
+            "startMs": -1000000000
+          }
+        ],
+        "arms": [
+          {
+            "armed": false,
+            "earliestStartMs": -1000000000,
+            "weaponId": ""
+          },
+          {
+            "armed": false,
+            "earliestStartMs": -1000000000,
+            "weaponId": ""
+          }
+        ]
+      },
+      "weapons": [
+        {
+          "id": "x-gun-ricochet-pistol",
+          "rotation": 0.003515042268951163,
+          "semanticRotation": 0.003515042268951163,
+          "x": 26.219941311330203,
+          "y": -6.046607167209373
+        }
+      ]
+    },
+    {
+      "elapsedMs": 158.29999999701977,
+      "attackSeq": 1,
+      "sceneNow": 4689,
+      "rigState": {
+        "idleFlourishEligibleAtMs": 4989,
+        "idleFlourishLastPlayedMs": -1000000000,
+        "moveStance": 0,
+        "downed": false,
+        "reducedMotion": false,
+        "gait": 0.12993449122801548,
+        "ultimatePhase": 0,
+        "leadIdleSettle": true,
+        "offIdleSettle": false,
+        "rangedAimRaiseAtMs": 414.98,
+        "rangedAimActiveUntilMs": 814.98,
+        "gunRecoilAtMs": 414.98,
+        "swingStart": -1000000000,
+        "stowActive": false,
+        "lastAnim": {
+          "isSelf": true,
+          "fireHeld": false,
+          "reducedMotion": false,
+          "desiredMoveX": 0,
+          "desiredMoveY": 0,
+          "moveX": -0.9998373117915839,
+          "moveY": -0.01803745961545992,
+          "speed": 7.483384184096877
+        },
+        "channels": [
+          {
+            "active": false,
+            "moment": "draw",
+            "startMs": -1000000000
+          },
+          {
+            "active": false,
+            "moment": "draw",
+            "startMs": -1000000000
+          }
+        ],
+        "arms": [
+          {
+            "armed": false,
+            "earliestStartMs": -1000000000,
+            "weaponId": ""
+          },
+          {
+            "armed": false,
+            "earliestStartMs": -1000000000,
+            "weaponId": ""
+          }
+        ]
+      },
+      "weapons": [
+        {
+          "id": "x-gun-ricochet-pistol",
+          "rotation": 0.003111400433221334,
+          "semanticRotation": 0.003111400433221334,
+          "x": 26.219954016176985,
+          "y": -6.050441743575771
+        }
+      ]
+    },
+    {
+      "elapsedMs": 208.89999999850988,
+      "attackSeq": 1,
+      "sceneNow": 4739,
+      "rigState": {
+        "idleFlourishEligibleAtMs": 4989,
+        "idleFlourishLastPlayedMs": -1000000000,
+        "moveStance": 0,
+        "downed": false,
+        "reducedMotion": false,
+        "gait": 0.12689996695447636,
+        "ultimatePhase": 0,
+        "leadIdleSettle": true,
+        "offIdleSettle": false,
+        "rangedAimRaiseAtMs": 414.98,
+        "rangedAimActiveUntilMs": 814.98,
+        "gunRecoilAtMs": 414.98,
+        "swingStart": -1000000000,
+        "stowActive": false,
+        "lastAnim": {
+          "isSelf": true,
+          "fireHeld": false,
+          "reducedMotion": false,
+          "desiredMoveX": 0,
+          "desiredMoveY": 0,
+          "moveX": -0.999837311791556,
+          "moveY": -0.018037459616996633,
+          "speed": 33.79986882857805
+        },
+        "channels": [
+          {
+            "active": false,
+            "moment": "draw",
+            "startMs": -1000000000
+          },
+          {
+            "active": false,
+            "moment": "draw",
+            "startMs": -1000000000
+          }
+        ],
+        "arms": [
+          {
+            "armed": false,
+            "earliestStartMs": -1000000000,
+            "weaponId": ""
+          },
+          {
+            "armed": false,
+            "earliestStartMs": -1000000000,
+            "weaponId": ""
+          }
+        ]
+      },
+      "weapons": [
+        {
+          "id": "x-gun-ricochet-pistol",
+          "rotation": 0.0027815088388294384,
+          "semanticRotation": 0.0027815088388294384,
+          "x": 26.21996325026445,
+          "y": -6.053575700104368
+        }
+      ]
+    },
+    {
+      "elapsedMs": 259.19999999552965,
+      "attackSeq": 1,
+      "sceneNow": 4789.1,
+      "rigState": {
+        "idleFlourishEligibleAtMs": 4989,
+        "idleFlourishLastPlayedMs": -1000000000,
+        "moveStance": 0,
+        "downed": false,
+        "reducedMotion": false,
+        "gait": 0.11105946526598946,
+        "ultimatePhase": 0,
+        "leadIdleSettle": true,
+        "offIdleSettle": false,
+        "rangedAimRaiseAtMs": 414.98,
+        "rangedAimActiveUntilMs": 814.98,
+        "gunRecoilAtMs": 414.98,
+        "swingStart": -1000000000,
+        "stowActive": false,
+        "lastAnim": {
+          "isSelf": true,
+          "fireHeld": false,
+          "reducedMotion": false,
+          "desiredMoveX": 0,
+          "desiredMoveY": 0,
+          "moveX": 0,
+          "moveY": 0,
+          "speed": 0
+        },
+        "channels": [
+          {
+            "active": false,
+            "moment": "draw",
+            "startMs": -1000000000
+          },
+          {
+            "active": false,
+            "moment": "draw",
+            "startMs": -1000000000
+          }
+        ],
+        "arms": [
+          {
+            "armed": false,
+            "earliestStartMs": -1000000000,
+            "weaponId": ""
+          },
+          {
+            "armed": false,
+            "earliestStartMs": -1000000000,
+            "weaponId": ""
+          }
+        ]
+      },
+      "weapons": [
+        {
+          "id": "x-gun-ricochet-pistol",
+          "rotation": 0.002454744502385253,
+          "semanticRotation": 0.002454744502385253,
+          "x": 26.219971377604157,
+          "y": -6.056679950647565
+        }
+      ]
+    },
+    {
+      "elapsedMs": 309,
+      "attackSeq": 1,
+      "sceneNow": 4839.1,
+      "rigState": {
+        "idleFlourishEligibleAtMs": 4989,
+        "idleFlourishLastPlayedMs": -1000000000,
+        "moveStance": 0,
+        "downed": false,
+        "reducedMotion": false,
+        "gait": 0.09719628082797097,
+        "ultimatePhase": 0,
+        "leadIdleSettle": true,
+        "offIdleSettle": false,
+        "rangedAimRaiseAtMs": 414.98,
+        "rangedAimActiveUntilMs": 814.98,
+        "gunRecoilAtMs": 414.98,
+        "swingStart": -1000000000,
+        "stowActive": false,
+        "lastAnim": {
+          "isSelf": true,
+          "fireHeld": false,
+          "reducedMotion": false,
+          "desiredMoveX": 0,
+          "desiredMoveY": 0,
+          "moveX": 0,
+          "moveY": 0,
+          "speed": 0
+        },
+        "channels": [
+          {
+            "active": false,
+            "moment": "draw",
+            "startMs": -1000000000
+          },
+          {
+            "active": false,
+            "moment": "draw",
+            "startMs": -1000000000
+          }
+        ],
+        "arms": [
+          {
+            "armed": false,
+            "earliestStartMs": -1000000000,
+            "weaponId": ""
+          },
+          {
+            "armed": false,
+            "earliestStartMs": -1000000000,
+            "weaponId": ""
+          }
+        ]
+      },
+      "weapons": [
+        {
+          "id": "x-gun-ricochet-pistol",
+          "rotation": 0.0021657230020792895,
+          "semanticRotation": 0.0021657230020792895,
+          "x": 26.21997772081713,
+          "y": -6.059425647563767
+        }
+      ]
+    },
+    {
+      "elapsedMs": 358.79999999701977,
+      "attackSeq": 1,
+      "sceneNow": 4889,
+      "rigState": {
+        "idleFlourishEligibleAtMs": 4989,
+        "idleFlourishLastPlayedMs": -1000000000,
+        "moveStance": 0,
+        "downed": false,
+        "reducedMotion": false,
+        "gait": 0.08506359169084578,
+        "ultimatePhase": 0,
+        "leadIdleSettle": true,
+        "offIdleSettle": false,
+        "rangedAimRaiseAtMs": 414.98,
+        "rangedAimActiveUntilMs": 814.98,
+        "gunRecoilAtMs": 414.98,
+        "swingStart": -1000000000,
+        "stowActive": false,
+        "lastAnim": {
+          "isSelf": true,
+          "fireHeld": false,
+          "reducedMotion": false,
+          "desiredMoveX": 0,
+          "desiredMoveY": 0,
+          "moveX": 0,
+          "moveY": 0,
+          "speed": 0
+        },
+        "channels": [
+          {
+            "active": false,
+            "moment": "draw",
+            "startMs": -1000000000
+          },
+          {
+            "active": false,
+            "moment": "draw",
+            "startMs": -1000000000
+          }
+        ],
+        "arms": [
+          {
+            "armed": false,
+            "earliestStartMs": -1000000000,
+            "weaponId": ""
+          },
+          {
+            "armed": false,
+            "earliestStartMs": -1000000000,
+            "weaponId": ""
+          }
+        ]
+      },
+      "weapons": [
+        {
+          "id": "x-gun-ricochet-pistol",
+          "rotation": 0.0019100955988626822,
+          "semanticRotation": 0.0019100955988626822,
+          "x": 26.219982669795584,
+          "y": -6.061854102844927
+        }
+      ]
+    },
+    {
+      "elapsedMs": 410.8999999985099,
+      "attackSeq": 1,
+      "sceneNow": 4939.1,
+      "rigState": {
+        "idleFlourishEligibleAtMs": 4989,
+        "idleFlourishLastPlayedMs": -1000000000,
+        "moveStance": 0,
+        "downed": false,
+        "reducedMotion": false,
+        "gait": 0.0744453858697916,
+        "ultimatePhase": 0,
+        "leadIdleSettle": true,
+        "offIdleSettle": false,
+        "rangedAimRaiseAtMs": 414.98,
+        "rangedAimActiveUntilMs": 814.98,
+        "gunRecoilAtMs": 414.98,
+        "swingStart": -1000000000,
+        "stowActive": false,
+        "lastAnim": {
+          "isSelf": true,
+          "fireHeld": false,
+          "reducedMotion": false,
+          "desiredMoveX": 0,
+          "desiredMoveY": 0,
+          "moveX": 0,
+          "moveY": 0,
+          "speed": 0
+        },
+        "channels": [
+          {
+            "active": false,
+            "moment": "draw",
+            "startMs": -1000000000
+          },
+          {
+            "active": false,
+            "moment": "draw",
+            "startMs": -1000000000
+          }
+        ],
+        "arms": [
+          {
+            "armed": false,
+            "earliestStartMs": -1000000000,
+            "weaponId": ""
+          },
+          {
+            "armed": false,
+            "earliestStartMs": -1000000000,
+            "weaponId": ""
+          }
+        ]
+      },
+      "weapons": [
+        {
+          "id": "x-gun-ricochet-pistol",
+          "rotation": 0.0016833417936563677,
+          "semanticRotation": 0.0016833417936563677,
+          "x": 26.219986540215107,
+          "y": -6.064008260512736
+        }
+      ]
+    },
+    {
+      "elapsedMs": 466.69999999552965,
+      "attackSeq": 1,
+      "sceneNow": 4989,
+      "rigState": {
+        "idleFlourishEligibleAtMs": null,
+        "idleFlourishLastPlayedMs": -1000000000,
+        "moveStance": 0,
+        "downed": false,
+        "reducedMotion": false,
+        "gait": 0.06515261543909848,
+        "ultimatePhase": 0,
+        "leadIdleSettle": true,
+        "offIdleSettle": false,
+        "rangedAimRaiseAtMs": 414.98,
+        "rangedAimActiveUntilMs": 814.98,
+        "gunRecoilAtMs": 414.98,
+        "swingStart": -1000000000,
+        "stowActive": false,
+        "lastAnim": {
+          "isSelf": true,
+          "fireHeld": false,
+          "reducedMotion": false,
+          "desiredMoveX": 0,
+          "desiredMoveY": 0,
+          "moveX": 0,
+          "moveY": 0,
+          "speed": 0
+        },
+        "channels": [
+          {
+            "active": true,
+            "moment": "idle-settle",
+            "startMs": 816.6466666666661
+          },
+          {
+            "active": false,
+            "moment": "draw",
+            "startMs": -1000000000
+          }
+        ],
+        "arms": [
+          {
+            "armed": false,
+            "earliestStartMs": -1000000000,
+            "weaponId": ""
+          },
+          {
+            "armed": false,
+            "earliestStartMs": -1000000000,
+            "weaponId": ""
+          }
+        ]
+      },
+      "weapons": [
+        {
+          "id": "x-gun-ricochet-pistol",
+          "rotation": 0.0014838653199262808,
+          "semanticRotation": 0.0014838653199262808,
+          "x": 26.220056504732778,
+          "y": -6.063977879860816
+        }
+      ]
+    },
+    {
+      "elapsedMs": 520,
+      "attackSeq": 1,
+      "sceneNow": 5055.7,
+      "rigState": {
+        "idleFlourishEligibleAtMs": null,
+        "idleFlourishLastPlayedMs": -1000000000,
+        "moveStance": 0,
+        "downed": false,
+        "reducedMotion": false,
+        "gait": 0.05701983069816461,
+        "ultimatePhase": 0,
+        "leadIdleSettle": true,
+        "offIdleSettle": false,
+        "rangedAimRaiseAtMs": 414.98,
+        "rangedAimActiveUntilMs": 814.98,
+        "gunRecoilAtMs": 414.98,
+        "swingStart": -1000000000,
+        "stowActive": false,
+        "lastAnim": {
+          "isSelf": true,
+          "fireHeld": false,
+          "reducedMotion": false,
+          "desiredMoveX": 0,
+          "desiredMoveY": 0,
+          "moveX": 0,
+          "moveY": 0,
+          "speed": 0
+        },
+        "channels": [
+          {
+            "active": true,
+            "moment": "idle-settle",
+            "startMs": 816.6466666666661
+          },
+          {
+            "active": false,
+            "moment": "draw",
+            "startMs": -1000000000
+          }
+        ],
+        "arms": [
+          {
+            "armed": false,
+            "earliestStartMs": -1000000000,
+            "weaponId": ""
+          },
+          {
+            "armed": false,
+            "earliestStartMs": -1000000000,
+            "weaponId": ""
+          }
+        ]
+      },
+      "weapons": [
+        {
+          "id": "x-gun-ricochet-pistol",
+          "rotation": -0.07781366643905585,
+          "semanticRotation": -0.07781366643905585,
+          "x": 25.670496664051125,
+          "y": -6.575450297492681
+        }
+      ]
+    },
+    {
+      "elapsedMs": 573.5,
+      "attackSeq": 1,
+      "sceneNow": 5105.7,
+      "rigState": {
+        "idleFlourishEligibleAtMs": null,
+        "idleFlourishLastPlayedMs": -1000000000,
+        "moveStance": 0,
+        "downed": false,
+        "reducedMotion": false,
+        "gait": 0.04990223448337968,
+        "ultimatePhase": 0,
+        "leadIdleSettle": true,
+        "offIdleSettle": false,
+        "rangedAimRaiseAtMs": 414.98,
+        "rangedAimActiveUntilMs": 814.98,
+        "gunRecoilAtMs": 414.98,
+        "swingStart": -1000000000,
+        "stowActive": false,
+        "lastAnim": {
+          "isSelf": true,
+          "fireHeld": false,
+          "reducedMotion": false,
+          "desiredMoveX": 0,
+          "desiredMoveY": 0,
+          "moveX": 0,
+          "moveY": 0,
+          "speed": 0
+        },
+        "channels": [
+          {
+            "active": true,
+            "moment": "idle-settle",
+            "startMs": 816.6466666666661
+          },
+          {
+            "active": false,
+            "moment": "draw",
+            "startMs": -1000000000
+          }
+        ],
+        "arms": [
+          {
+            "armed": false,
+            "earliestStartMs": -1000000000,
+            "weaponId": ""
+          },
+          {
+            "armed": false,
+            "earliestStartMs": -1000000000,
+            "weaponId": ""
+          }
+        ]
+      },
+      "weapons": [
+        {
+          "id": "x-gun-ricochet-pistol",
+          "rotation": -0.2967178323916695,
+          "semanticRotation": -0.2967178323916695,
+          "x": 24.14889542825932,
+          "y": -8.059433133721633
+        }
+      ]
+    },
+    {
+      "elapsedMs": 626.1999999955297,
+      "attackSeq": 1,
+      "sceneNow": 5155.7,
+      "rigState": {
+        "idleFlourishEligibleAtMs": null,
+        "idleFlourishLastPlayedMs": -1000000000,
+        "moveStance": 0,
+        "downed": false,
+        "reducedMotion": false,
+        "gait": 0.04367310418047883,
+        "ultimatePhase": 0,
+        "leadIdleSettle": true,
+        "offIdleSettle": false,
+        "rangedAimRaiseAtMs": 414.98,
+        "rangedAimActiveUntilMs": 814.98,
+        "gunRecoilAtMs": 414.98,
+        "swingStart": -1000000000,
+        "stowActive": false,
+        "lastAnim": {
+          "isSelf": true,
+          "fireHeld": false,
+          "reducedMotion": false,
+          "desiredMoveX": 0,
+          "desiredMoveY": 0,
+          "moveX": 0,
+          "moveY": 0,
+          "speed": 0
+        },
+        "channels": [
+          {
+            "active": true,
+            "moment": "idle-settle",
+            "startMs": 816.6466666666661
+          },
+          {
+            "active": false,
+            "moment": "draw",
+            "startMs": -1000000000
+          }
+        ],
+        "arms": [
+          {
+            "armed": false,
+            "earliestStartMs": -1000000000,
+            "weaponId": ""
+          },
+          {
+            "armed": false,
+            "earliestStartMs": -1000000000,
+            "weaponId": ""
+          }
+        ]
+      },
+      "weapons": [
+        {
+          "id": "x-gun-ricochet-pistol",
+          "rotation": -0.37597676870855423,
+          "semanticRotation": -0.37597676870855423,
+          "x": 23.62087908489544,
+          "y": -8.023608971583915
+        }
+      ]
+    },
+    {
+      "elapsedMs": 677.5,
+      "attackSeq": 1,
+      "sceneNow": 5205.7,
+      "rigState": {
+        "idleFlourishEligibleAtMs": null,
+        "idleFlourishLastPlayedMs": -1000000000,
+        "moveStance": 0,
+        "downed": false,
+        "reducedMotion": false,
+        "gait": 0.03822153553853809,
+        "ultimatePhase": 0,
+        "leadIdleSettle": true,
+        "offIdleSettle": false,
+        "rangedAimRaiseAtMs": 414.98,
+        "rangedAimActiveUntilMs": 814.98,
+        "gunRecoilAtMs": 414.98,
+        "swingStart": -1000000000,
+        "stowActive": false,
+        "lastAnim": {
+          "isSelf": true,
+          "fireHeld": false,
+          "reducedMotion": false,
+          "desiredMoveX": 0,
+          "desiredMoveY": 0,
+          "moveX": 0,
+          "moveY": 0,
+          "speed": 0
+        },
+        "channels": [
+          {
+            "active": true,
+            "moment": "idle-settle",
+            "startMs": 816.6466666666661
+          },
+          {
+            "active": false,
+            "moment": "draw",
+            "startMs": -1000000000
+          }
+        ],
+        "arms": [
+          {
+            "armed": false,
+            "earliestStartMs": -1000000000,
+            "weaponId": ""
+          },
+          {
+            "armed": false,
+            "earliestStartMs": -1000000000,
+            "weaponId": ""
+          }
+        ]
+      },
+      "weapons": [
+        {
+          "id": "x-gun-ricochet-pistol",
+          "rotation": 0.29999402054677304,
+          "semanticRotation": 0.29999402054677304,
+          "x": 24.698819995835823,
+          "y": -5.740590279317393
+        }
+      ]
+    },
+    {
+      "elapsedMs": 723.2999999970198,
+      "attackSeq": 1,
+      "sceneNow": 5255.7,
+      "rigState": {
+        "idleFlourishEligibleAtMs": null,
+        "idleFlourishLastPlayedMs": -1000000000,
+        "moveStance": 0,
+        "downed": false,
+        "reducedMotion": false,
+        "gait": 0.03345046811618036,
+        "ultimatePhase": 0,
+        "leadIdleSettle": true,
+        "offIdleSettle": false,
+        "rangedAimRaiseAtMs": 414.98,
+        "rangedAimActiveUntilMs": 814.98,
+        "gunRecoilAtMs": 414.98,
+        "swingStart": -1000000000,
+        "stowActive": false,
+        "lastAnim": {
+          "isSelf": true,
+          "fireHeld": false,
+          "reducedMotion": false,
+          "desiredMoveX": 0,
+          "desiredMoveY": 0,
+          "moveX": 0,
+          "moveY": 0,
+          "speed": 0
+        },
+        "channels": [
+          {
+            "active": true,
+            "moment": "idle-settle",
+            "startMs": 816.6466666666661
+          },
+          {
+            "active": false,
+            "moment": "draw",
+            "startMs": -1000000000
+          }
+        ],
+        "arms": [
+          {
+            "armed": false,
+            "earliestStartMs": -1000000000,
+            "weaponId": ""
+          },
+          {
+            "armed": false,
+            "earliestStartMs": -1000000000,
+            "weaponId": ""
+          }
+        ]
+      },
+      "weapons": [
+        {
+          "id": "x-gun-ricochet-pistol",
+          "rotation": 0.9672437747015081,
+          "semanticRotation": 0.9672437747015081,
+          "x": 25.769289404712005,
+          "y": -3.38125394776693
+        }
+      ]
+    },
+    {
+      "elapsedMs": 774.2999999970198,
+      "attackSeq": 1,
+      "sceneNow": 5305.7,
+      "rigState": {
+        "idleFlourishEligibleAtMs": null,
+        "idleFlourishLastPlayedMs": -1000000000,
+        "moveStance": 0,
+        "downed": false,
+        "reducedMotion": false,
+        "gait": 0.029274957204777866,
+        "ultimatePhase": 0,
+        "leadIdleSettle": true,
+        "offIdleSettle": false,
+        "rangedAimRaiseAtMs": 414.98,
+        "rangedAimActiveUntilMs": 814.98,
+        "gunRecoilAtMs": 414.98,
+        "swingStart": -1000000000,
+        "stowActive": false,
+        "lastAnim": {
+          "isSelf": true,
+          "fireHeld": false,
+          "reducedMotion": false,
+          "desiredMoveX": 0,
+          "desiredMoveY": 0,
+          "moveX": 0,
+          "moveY": 0,
+          "speed": 0
+        },
+        "channels": [
+          {
+            "active": true,
+            "moment": "idle-settle",
+            "startMs": 816.6466666666661
+          },
+          {
+            "active": false,
+            "moment": "draw",
+            "startMs": -1000000000
+          }
+        ],
+        "arms": [
+          {
+            "armed": false,
+            "earliestStartMs": -1000000000,
+            "weaponId": ""
+          },
+          {
+            "armed": false,
+            "earliestStartMs": -1000000000,
+            "weaponId": ""
+          }
+        ]
+      },
+      "weapons": [
+        {
+          "id": "x-gun-ricochet-pistol",
+          "rotation": 1.617605231013517,
+          "semanticRotation": 1.617605231013517,
+          "x": 26.816750215769066,
+          "y": -1.0338433881087588
+        }
+      ]
+    },
+    {
+      "elapsedMs": 825.7999999970198,
+      "attackSeq": 1,
+      "sceneNow": 5355.7,
+      "rigState": {
+        "idleFlourishEligibleAtMs": null,
+        "idleFlourishLastPlayedMs": -1000000000,
+        "moveStance": 0,
+        "downed": false,
+        "reducedMotion": false,
+        "gait": 0.0256206614617457,
+        "ultimatePhase": 0,
+        "leadIdleSettle": true,
+        "offIdleSettle": false,
+        "rangedAimRaiseAtMs": 414.98,
+        "rangedAimActiveUntilMs": 814.98,
+        "gunRecoilAtMs": 414.98,
+        "swingStart": -1000000000,
+        "stowActive": false,
+        "lastAnim": {
+          "isSelf": true,
+          "fireHeld": false,
+          "reducedMotion": false,
+          "desiredMoveX": 0,
+          "desiredMoveY": 0,
+          "moveX": 0,
+          "moveY": 0,
+          "speed": 0
+        },
+        "channels": [
+          {
+            "active": true,
+            "moment": "idle-settle",
+            "startMs": 816.6466666666661
+          },
+          {
+            "active": false,
+            "moment": "draw",
+            "startMs": -1000000000
+          }
+        ],
+        "arms": [
+          {
+            "armed": false,
+            "earliestStartMs": -1000000000,
+            "weaponId": ""
+          },
+          {
+            "armed": false,
+            "earliestStartMs": -1000000000,
+            "weaponId": ""
+          }
+        ]
+      },
+      "weapons": [
+        {
+          "id": "x-gun-ricochet-pistol",
+          "rotation": 2.2440066840493813,
+          "semanticRotation": 2.2440066840493813,
+          "x": 27.827039260025,
+          "y": 1.2155161524128544
+        }
+      ]
+    },
+    {
+      "elapsedMs": 876.7999999970198,
+      "attackSeq": 1,
+      "sceneNow": 5405.7,
+      "rigState": {
+        "idleFlourishEligibleAtMs": null,
+        "idleFlourishLastPlayedMs": -1000000000,
+        "moveStance": 0,
+        "downed": false,
+        "reducedMotion": false,
+        "gait": 0.022422519327551724,
+        "ultimatePhase": 0,
+        "leadIdleSettle": true,
+        "offIdleSettle": false,
+        "rangedAimRaiseAtMs": 414.98,
+        "rangedAimActiveUntilMs": 814.98,
+        "gunRecoilAtMs": 414.98,
+        "swingStart": -1000000000,
+        "stowActive": false,
+        "lastAnim": {
+          "isSelf": true,
+          "fireHeld": false,
+          "reducedMotion": false,
+          "desiredMoveX": 0,
+          "desiredMoveY": 0,
+          "moveX": 0,
+          "moveY": 0,
+          "speed": 0
+        },
+        "channels": [
+          {
+            "active": true,
+            "moment": "idle-settle",
+            "startMs": 816.6466666666661
+          },
+          {
+            "active": false,
+            "moment": "draw",
+            "startMs": -1000000000
+          }
+        ],
+        "arms": [
+          {
+            "armed": false,
+            "earliestStartMs": -1000000000,
+            "weaponId": ""
+          },
+          {
+            "armed": false,
+            "earliestStartMs": -1000000000,
+            "weaponId": ""
+          }
+        ]
+      },
+      "weapons": [
+        {
+          "id": "x-gun-ricochet-pistol",
+          "rotation": 2.840929713098296,
+          "semanticRotation": 2.840929713098296,
+          "x": 28.788160057951984,
+          "y": 3.2837410790874775
+        }
+      ]
+    },
+    {
+      "elapsedMs": 929.5,
+      "attackSeq": 1,
+      "sceneNow": 5455.7,
+      "rigState": {
+        "idleFlourishEligibleAtMs": null,
+        "idleFlourishLastPlayedMs": -1000000000,
+        "moveStance": 0,
+        "downed": false,
+        "reducedMotion": false,
+        "gait": 0.019623590661198086,
+        "ultimatePhase": 0,
+        "leadIdleSettle": true,
+        "offIdleSettle": false,
+        "rangedAimRaiseAtMs": 414.98,
+        "rangedAimActiveUntilMs": 814.98,
+        "gunRecoilAtMs": 414.98,
+        "swingStart": -1000000000,
+        "stowActive": false,
+        "lastAnim": {
+          "isSelf": true,
+          "fireHeld": false,
+          "reducedMotion": false,
+          "desiredMoveX": 0,
+          "desiredMoveY": 0,
+          "moveX": 0,
+          "moveY": 0,
+          "speed": 0
+        },
+        "channels": [
+          {
+            "active": true,
+            "moment": "idle-settle",
+            "startMs": 816.6466666666661
+          },
+          {
+            "active": false,
+            "moment": "draw",
+            "startMs": -1000000000
+          }
+        ],
+        "arms": [
+          {
+            "armed": false,
+            "earliestStartMs": -1000000000,
+            "weaponId": ""
+          },
+          {
+            "armed": false,
+            "earliestStartMs": -1000000000,
+            "weaponId": ""
+          }
+        ]
+      },
+      "weapons": [
+        {
+          "id": "x-gun-ricochet-pistol",
+          "rotation": -2.8784141354278425,
+          "semanticRotation": -2.8784141354278425,
+          "x": 29.690895246121304,
+          "y": 5.091558826893652
+        }
+      ]
+    },
+    {
+      "elapsedMs": 980.7999999970198,
+      "attackSeq": 1,
+      "sceneNow": 5505.7,
+      "rigState": {
+        "idleFlourishEligibleAtMs": null,
+        "idleFlourishLastPlayedMs": -1000000000,
+        "moveStance": 0,
+        "downed": false,
+        "reducedMotion": false,
+        "gait": 0.017174042970500923,
+        "ultimatePhase": 0,
+        "leadIdleSettle": true,
+        "offIdleSettle": false,
+        "rangedAimRaiseAtMs": 414.98,
+        "rangedAimActiveUntilMs": 814.98,
+        "gunRecoilAtMs": 414.98,
+        "swingStart": -1000000000,
+        "stowActive": false,
+        "lastAnim": {
+          "isSelf": true,
+          "fireHeld": false,
+          "reducedMotion": false,
+          "desiredMoveX": 0,
+          "desiredMoveY": 0,
+          "moveX": 0,
+          "moveY": 0,
+          "speed": 0
+        },
+        "channels": [
+          {
+            "active": true,
+            "moment": "idle-settle",
+            "startMs": 816.6466666666661
+          },
+          {
+            "active": false,
+            "moment": "draw",
+            "startMs": -1000000000
+          }
+        ],
+        "arms": [
+          {
+            "armed": false,
+            "earliestStartMs": -1000000000,
+            "weaponId": ""
+          },
+          {
+            "armed": false,
+            "earliestStartMs": -1000000000,
+            "weaponId": ""
+          }
+        ]
+      },
+      "weapons": [
+        {
+          "id": "x-gun-ricochet-pistol",
+          "rotation": -2.3491094278921203,
+          "semanticRotation": -2.3491094278921203,
+          "x": 30.529213867573908,
+          "y": 6.563982563082209
+        }
+      ]
+    },
+    {
+      "elapsedMs": 1029.0999999940395,
+      "attackSeq": 1,
+      "sceneNow": 5555.6,
+      "rigState": {
+        "idleFlourishEligibleAtMs": null,
+        "idleFlourishLastPlayedMs": -1000000000,
+        "moveStance": 0,
+        "downed": false,
+        "reducedMotion": false,
+        "gait": 0.015030264187879498,
+        "ultimatePhase": 0,
+        "leadIdleSettle": true,
+        "offIdleSettle": false,
+        "rangedAimRaiseAtMs": 414.98,
+        "rangedAimActiveUntilMs": 814.98,
+        "gunRecoilAtMs": 414.98,
+        "swingStart": -1000000000,
+        "stowActive": false,
+        "lastAnim": {
+          "isSelf": true,
+          "fireHeld": false,
+          "reducedMotion": false,
+          "desiredMoveX": 0,
+          "desiredMoveY": 0,
+          "moveX": 0,
+          "moveY": 0,
+          "speed": 0
+        },
+        "channels": [
+          {
+            "active": true,
+            "moment": "idle-settle",
+            "startMs": 816.6466666666661
+          },
+          {
+            "active": false,
+            "moment": "draw",
+            "startMs": -1000000000
+          }
+        ],
+        "arms": [
+          {
+            "armed": false,
+            "earliestStartMs": -1000000000,
+            "weaponId": ""
+          },
+          {
+            "armed": false,
+            "earliestStartMs": -1000000000,
+            "weaponId": ""
+          }
+        ]
+      },
+      "weapons": [
+        {
+          "id": "x-gun-ricochet-pistol",
+          "rotation": -1.8535563355314553,
+          "semanticRotation": -1.8535563355314553,
+          "x": 31.301267435745014,
+          "y": 7.648301272621181
+        }
+      ]
+    },
+    {
+      "elapsedMs": 1081.1999999955297,
+      "attackSeq": 1,
+      "sceneNow": 5605.7,
+      "rigState": {
+        "idleFlourishEligibleAtMs": null,
+        "idleFlourishLastPlayedMs": -1000000000,
+        "moveStance": 0,
+        "downed": false,
+        "reducedMotion": false,
+        "gait": 0.013154086195398856,
+        "ultimatePhase": 0,
+        "leadIdleSettle": true,
+        "offIdleSettle": false,
+        "rangedAimRaiseAtMs": 414.98,
+        "rangedAimActiveUntilMs": 814.98,
+        "gunRecoilAtMs": 414.98,
+        "swingStart": -1000000000,
+        "stowActive": false,
+        "lastAnim": {
+          "isSelf": true,
+          "fireHeld": false,
+          "reducedMotion": false,
+          "desiredMoveX": 0,
+          "desiredMoveY": 0,
+          "moveX": 0,
+          "moveY": 0,
+          "speed": 0
+        },
+        "channels": [
+          {
+            "active": true,
+            "moment": "idle-settle",
+            "startMs": 816.6466666666661
+          },
+          {
+            "active": false,
+            "moment": "draw",
+            "startMs": -1000000000
+          }
+        ],
+        "arms": [
+          {
+            "armed": false,
+            "earliestStartMs": -1000000000,
+            "weaponId": ""
+          },
+          {
+            "armed": false,
+            "earliestStartMs": -1000000000,
+            "weaponId": ""
+          }
+        ]
+      },
+      "weapons": [
+        {
+          "id": "x-gun-ricochet-pistol",
+          "rotation": -1.3887804137604522,
+          "semanticRotation": -1.3887804137604522,
+          "x": 32.02148491589353,
+          "y": 8.579740092030608
+        }
+      ]
+    },
+    {
+      "elapsedMs": 1131.2999999970198,
+      "attackSeq": 1,
+      "sceneNow": 5655.7,
+      "rigState": {
+        "idleFlourishEligibleAtMs": null,
+        "idleFlourishLastPlayedMs": -1000000000,
+        "moveStance": 0,
+        "downed": false,
+        "reducedMotion": false,
+        "gait": 0.011512105274604226,
+        "ultimatePhase": 0,
+        "leadIdleSettle": true,
+        "offIdleSettle": false,
+        "rangedAimRaiseAtMs": 414.98,
+        "rangedAimActiveUntilMs": 814.98,
+        "gunRecoilAtMs": 414.98,
+        "swingStart": -1000000000,
+        "stowActive": false,
+        "lastAnim": {
+          "isSelf": true,
+          "fireHeld": false,
+          "reducedMotion": false,
+          "desiredMoveX": 0,
+          "desiredMoveY": 0,
+          "moveX": 0,
+          "moveY": 0,
+          "speed": 0
+        },
+        "channels": [
+          {
+            "active": true,
+            "moment": "idle-settle",
+            "startMs": 816.6466666666661
+          },
+          {
+            "active": false,
+            "moment": "draw",
+            "startMs": -1000000000
+          }
+        ],
+        "arms": [
+          {
+            "armed": false,
+            "earliestStartMs": -1000000000,
+            "weaponId": ""
+          },
+          {
+            "armed": false,
+            "earliestStartMs": -1000000000,
+            "weaponId": ""
+          }
+        ]
+      },
+      "weapons": [
+        {
+          "id": "x-gun-ricochet-pistol",
+          "rotation": -0.9498068856798305,
+          "semanticRotation": -0.9498068856798305,
+          "x": 32.70157227248022,
+          "y": 9.459403740560242
+        }
+      ]
+    },
+    {
+      "elapsedMs": 1182.0999999940395,
+      "attackSeq": 1,
+      "sceneNow": 5705.7,
+      "rigState": {
+        "idleFlourishEligibleAtMs": null,
+        "idleFlourishLastPlayedMs": -1000000000,
+        "moveStance": 0,
+        "downed": false,
+        "reducedMotion": false,
+        "gait": 0.010075087382347197,
+        "ultimatePhase": 0,
+        "leadIdleSettle": true,
+        "offIdleSettle": false,
+        "rangedAimRaiseAtMs": 414.98,
+        "rangedAimActiveUntilMs": 814.98,
+        "gunRecoilAtMs": 414.98,
+        "swingStart": -1000000000,
+        "stowActive": false,
+        "lastAnim": {
+          "isSelf": true,
+          "fireHeld": false,
+          "reducedMotion": false,
+          "desiredMoveX": 0,
+          "desiredMoveY": 0,
+          "moveX": 0,
+          "moveY": 0,
+          "speed": 0
+        },
+        "channels": [
+          {
+            "active": true,
+            "moment": "idle-settle",
+            "startMs": 816.6466666666661
+          },
+          {
+            "active": false,
+            "moment": "draw",
+            "startMs": -1000000000
+          }
+        ],
+        "arms": [
+          {
+            "armed": false,
+            "earliestStartMs": -1000000000,
+            "weaponId": ""
+          },
+          {
+            "armed": false,
+            "earliestStartMs": -1000000000,
+            "weaponId": ""
+          }
+        ]
+      },
+      "weapons": [
+        {
+          "id": "x-gun-ricochet-pistol",
+          "rotation": -0.5299895642729275,
+          "semanticRotation": -0.5299895642729275,
+          "x": 33.35180213759668,
+          "y": 10.300607599204348
+        }
+      ]
+    },
+    {
+      "elapsedMs": 1232.1999999955297,
+      "attackSeq": 1,
+      "sceneNow": 5772.3,
+      "rigState": {
+        "idleFlourishEligibleAtMs": null,
+        "idleFlourishLastPlayedMs": -1000000000,
+        "moveStance": 0,
+        "downed": false,
+        "reducedMotion": false,
+        "gait": 0.008817447664056512,
+        "ultimatePhase": 0,
+        "leadIdleSettle": true,
+        "offIdleSettle": false,
+        "rangedAimRaiseAtMs": 414.98,
+        "rangedAimActiveUntilMs": 814.98,
+        "gunRecoilAtMs": 414.98,
+        "swingStart": -1000000000,
+        "stowActive": false,
+        "lastAnim": {
+          "isSelf": true,
+          "fireHeld": false,
+          "reducedMotion": false,
+          "desiredMoveX": 0,
+          "desiredMoveY": 0,
+          "moveX": 0,
+          "moveY": 0,
+          "speed": 0
+        },
+        "channels": [
+          {
+            "active": true,
+            "moment": "idle-settle",
+            "startMs": 816.6466666666661
+          },
+          {
+            "active": false,
+            "moment": "draw",
+            "startMs": -1000000000
+          }
+        ],
+        "arms": [
+          {
+            "armed": false,
+            "earliestStartMs": -1000000000,
+            "weaponId": ""
+          },
+          {
+            "armed": false,
+            "earliestStartMs": -1000000000,
+            "weaponId": ""
+          }
+        ]
+      },
+      "weapons": [
+        {
+          "id": "x-gun-ricochet-pistol",
+          "rotation": -0.12143702445080429,
+          "semanticRotation": -0.12143702445080429,
+          "x": 33.984349476441515,
+          "y": 11.119179212400796
+        }
+      ]
+    },
+    {
+      "elapsedMs": 1286.5,
+      "attackSeq": 1,
+      "sceneNow": 5822.3,
+      "rigState": {
+        "idleFlourishEligibleAtMs": null,
+        "idleFlourishLastPlayedMs": -1000000000,
+        "moveStance": 0,
+        "downed": false,
+        "reducedMotion": false,
+        "gait": 0.007716794937639817,
+        "ultimatePhase": 0,
+        "leadIdleSettle": true,
+        "offIdleSettle": false,
+        "rangedAimRaiseAtMs": 414.98,
+        "rangedAimActiveUntilMs": 814.98,
+        "gunRecoilAtMs": 414.98,
+        "swingStart": -1000000000,
+        "stowActive": false,
+        "lastAnim": {
+          "isSelf": true,
+          "fireHeld": false,
+          "reducedMotion": false,
+          "desiredMoveX": 0,
+          "desiredMoveY": 0,
+          "moveX": 0,
+          "moveY": 0,
+          "speed": 0
+        },
+        "channels": [
+          {
+            "active": true,
+            "moment": "idle-settle",
+            "startMs": 816.6466666666661
+          },
+          {
+            "active": false,
+            "moment": "draw",
+            "startMs": -1000000000
+          }
+        ],
+        "arms": [
+          {
+            "armed": false,
+            "earliestStartMs": -1000000000,
+            "weaponId": ""
+          },
+          {
+            "armed": false,
+            "earliestStartMs": -1000000000,
+            "weaponId": ""
+          }
+        ]
+      },
+      "weapons": [
+        {
+          "id": "x-gun-ricochet-pistol",
+          "rotation": 0.20958934515241268,
+          "semanticRotation": 0.20958934515241268,
+          "x": 30.573421746801806,
+          "y": 6.679459415152159
+        }
+      ]
+    },
+    {
+      "elapsedMs": 1336.5999999940395,
+      "attackSeq": 1,
+      "sceneNow": 5872.4,
+      "rigState": {
+        "idleFlourishEligibleAtMs": null,
+        "idleFlourishLastPlayedMs": -1000000000,
+        "moveStance": 0,
+        "downed": false,
+        "reducedMotion": false,
+        "gait": 0.00675353303794805,
+        "ultimatePhase": 0,
+        "leadIdleSettle": true,
+        "offIdleSettle": false,
+        "rangedAimRaiseAtMs": 414.98,
+        "rangedAimActiveUntilMs": 814.98,
+        "gunRecoilAtMs": 414.98,
+        "swingStart": -1000000000,
+        "stowActive": false,
+        "lastAnim": {
+          "isSelf": true,
+          "fireHeld": false,
+          "reducedMotion": false,
+          "desiredMoveX": 0,
+          "desiredMoveY": 0,
+          "moveX": 0,
+          "moveY": 0,
+          "speed": 0
+        },
+        "channels": [
+          {
+            "active": true,
+            "moment": "idle-settle",
+            "startMs": 816.6466666666661
+          },
+          {
+            "active": false,
+            "moment": "draw",
+            "startMs": -1000000000
+          }
+        ],
+        "arms": [
+          {
+            "armed": false,
+            "earliestStartMs": -1000000000,
+            "weaponId": ""
+          },
+          {
+            "armed": false,
+            "earliestStartMs": -1000000000,
+            "weaponId": ""
+          }
+        ]
+      },
+      "weapons": [
+        {
+          "id": "x-gun-ricochet-pistol",
+          "rotation": 0.00017010030568087586,
+          "semanticRotation": 0.00017010030568087586,
+          "x": 26.5790577748155,
+          "y": 1.4818415258462645
+        }
+      ]
+    },
+    {
+      "elapsedMs": 1386,
+      "attackSeq": 1,
+      "sceneNow": 5922.4,
+      "rigState": {
+        "idleFlourishEligibleAtMs": null,
+        "idleFlourishLastPlayedMs": -1000000000,
+        "moveStance": 0,
+        "downed": false,
+        "reducedMotion": false,
+        "gait": 0.0059105119240871916,
+        "ultimatePhase": 0,
+        "leadIdleSettle": true,
+        "offIdleSettle": false,
+        "rangedAimRaiseAtMs": 414.98,
+        "rangedAimActiveUntilMs": 814.98,
+        "gunRecoilAtMs": 414.98,
+        "swingStart": -1000000000,
+        "stowActive": false,
+        "lastAnim": {
+          "isSelf": true,
+          "fireHeld": false,
+          "reducedMotion": false,
+          "desiredMoveX": 0,
+          "desiredMoveY": 0,
+          "moveX": 0,
+          "moveY": 0,
+          "speed": 0
+        },
+        "channels": [
+          {
+            "active": true,
+            "moment": "idle-settle",
+            "startMs": 816.6466666666661
+          },
+          {
+            "active": false,
+            "moment": "draw",
+            "startMs": -1000000000
+          }
+        ],
+        "arms": [
+          {
+            "armed": false,
+            "earliestStartMs": -1000000000,
+            "weaponId": ""
+          },
+          {
+            "armed": false,
+            "earliestStartMs": -1000000000,
+            "weaponId": ""
+          }
+        ]
+      },
+      "weapons": [
+        {
+          "id": "x-gun-ricochet-pistol",
+          "rotation": 0.000149385805368496,
+          "semanticRotation": 0.000149385805368496,
+          "x": 26.58125319229948,
+          "y": 1.482114834973881
+        }
+      ]
+    },
+    {
+      "elapsedMs": 1437.1999999955297,
+      "attackSeq": 1,
+      "sceneNow": 5972.4,
+      "rigState": {
+        "idleFlourishEligibleAtMs": null,
+        "idleFlourishLastPlayedMs": -1000000000,
+        "moveStance": 0,
+        "downed": false,
+        "reducedMotion": false,
+        "gait": 0.0051727223378463015,
+        "ultimatePhase": 0,
+        "leadIdleSettle": true,
+        "offIdleSettle": false,
+        "rangedAimRaiseAtMs": 414.98,
+        "rangedAimActiveUntilMs": 814.98,
+        "gunRecoilAtMs": 414.98,
+        "swingStart": -1000000000,
+        "stowActive": false,
+        "lastAnim": {
+          "isSelf": true,
+          "fireHeld": false,
+          "reducedMotion": false,
+          "desiredMoveX": 0,
+          "desiredMoveY": 0,
+          "moveX": 0,
+          "moveY": 0,
+          "speed": 0
+        },
+        "channels": [
+          {
+            "active": true,
+            "moment": "idle-settle",
+            "startMs": 816.6466666666661
+          },
+          {
+            "active": false,
+            "moment": "draw",
+            "startMs": -1000000000
+          }
+        ],
+        "arms": [
+          {
+            "armed": false,
+            "earliestStartMs": -1000000000,
+            "weaponId": ""
+          },
+          {
+            "armed": false,
+            "earliestStartMs": -1000000000,
+            "weaponId": ""
+          }
+        ]
+      },
+      "weapons": [
+        {
+          "id": "x-gun-ricochet-pistol",
+          "rotation": 0.00013177281045884115,
+          "semanticRotation": 0.00013177281045884115,
+          "x": 26.583221105451294,
+          "y": 1.4823631184032395
+        }
+      ]
+    },
+    {
+      "elapsedMs": 1475.3999999985099,
+      "attackSeq": 1,
+      "sceneNow": 6005.6,
+      "rigState": {
+        "idleFlourishEligibleAtMs": null,
+        "idleFlourishLastPlayedMs": -1000000000,
+        "moveStance": 0,
+        "downed": false,
+        "reducedMotion": false,
+        "gait": 0.004527028576900539,
+        "ultimatePhase": 0,
+        "leadIdleSettle": true,
+        "offIdleSettle": false,
+        "rangedAimRaiseAtMs": 414.98,
+        "rangedAimActiveUntilMs": 814.98,
+        "gunRecoilAtMs": 414.98,
+        "swingStart": -1000000000,
+        "stowActive": false,
+        "lastAnim": {
+          "isSelf": true,
+          "fireHeld": false,
+          "reducedMotion": false,
+          "desiredMoveX": 0,
+          "desiredMoveY": 0,
+          "moveX": 0,
+          "moveY": 0,
+          "speed": 0
+        },
+        "channels": [
+          {
+            "active": true,
+            "moment": "idle-settle",
+            "startMs": 816.6466666666661
+          },
+          {
+            "active": false,
+            "moment": "draw",
+            "startMs": -1000000000
+          }
+        ],
+        "arms": [
+          {
+            "armed": false,
+            "earliestStartMs": -1000000000,
+            "weaponId": ""
+          },
+          {
+            "armed": false,
+            "earliestStartMs": -1000000000,
+            "weaponId": ""
+          }
+        ]
+      },
+      "weapons": [
+        {
+          "id": "x-gun-ricochet-pistol",
+          "rotation": 0.00011622682026768416,
+          "semanticRotation": 0.00011622682026768416,
+          "x": 26.584984614148112,
+          "y": 1.4825840077442642
+        }
+      ]
+    },
+    {
+      "elapsedMs": 1529.3999999985099,
+      "attackSeq": 1,
+      "sceneNow": 6055.6,
+      "rigState": {
+        "idleFlourishEligibleAtMs": null,
+        "idleFlourishLastPlayedMs": 1166.6466666666663,
+        "moveStance": 0,
+        "downed": false,
+        "reducedMotion": false,
+        "gait": 0.003961934625048314,
+        "ultimatePhase": 0,
+        "leadIdleSettle": true,
+        "offIdleSettle": false,
+        "rangedAimRaiseAtMs": 414.98,
+        "rangedAimActiveUntilMs": 814.98,
+        "gunRecoilAtMs": 414.98,
+        "swingStart": -1000000000,
+        "stowActive": false,
+        "lastAnim": {
+          "isSelf": true,
+          "fireHeld": false,
+          "reducedMotion": false,
+          "desiredMoveX": 0,
+          "desiredMoveY": 0,
+          "moveX": 0,
+          "moveY": 0,
+          "speed": 0
+        },
+        "channels": [
+          {
+            "active": false,
+            "moment": "idle-settle",
+            "startMs": 816.6466666666661
+          },
+          {
+            "active": false,
+            "moment": "draw",
+            "startMs": -1000000000
+          }
+        ],
+        "arms": [
+          {
+            "armed": false,
+            "earliestStartMs": -1000000000,
+            "weaponId": ""
+          },
+          {
+            "armed": false,
+            "earliestStartMs": -1000000000,
+            "weaponId": ""
+          }
+        ]
+      },
+      "weapons": [
+        {
+          "id": "x-gun-ricochet-pistol",
+          "rotation": 0.00010171208387532715,
+          "semanticRotation": 0.00010171208387532715,
+          "x": 26.58656458430856,
+          "y": 1.482774503426212
+        }
+      ]
+    }
+  ]
+}

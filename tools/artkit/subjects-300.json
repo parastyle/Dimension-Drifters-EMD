@@ -1642,7 +1642,8 @@
     "name": "Widowmaker Wrecking-Ball",
     "tier": "medium",
     "dimension": "cross-dimension",
-    "prompt": "Weapon-only in-world sprite: an enormous two-handed wrecking-ball flail — a massive pitted dark-iron demolition sphere on a length of thick heavy oxidized chain, anchored to a riveted steel haft with a reinforced cross-brace handle. Devastating, swinging ruin. Flat orthographic full side-profile, ~4-6 colours. Faces RIGHT: huge iron wrecking-ball business-end to the RIGHT trailing the heavy chain, braced steel haft/grip on the LEFT.",
+    "prompt": "Weapon-only in-world sprite: rebuild Image 1's Widowmaker Wrecking-Ball in the same massive pitted dark-iron, gunmetal, battle-worn visual identity as a RIGID two-handed demolition maul. The huge spherical iron head is permanently socketed directly onto a thick solid riveted steel neck and reinforced cross-brace haft, forming ONE continuous connected weapon from grip to ball. Absolutely NO chain, rope, cable, hinge, gap, floating part, or disconnected head. Preserve Image 1's charcoal #3A4049 and gunmetal #5A6472 palette/material reading. Flat orthographic full side-profile, ~4-6 colours. Faces RIGHT: huge iron sphere HEAD to the RIGHT, long braced solid haft/grip to the LEFT.",
+    "styleRef": "../../packages/client/public/sprites/x2-widowmaker-wrecking-ball/part-1.png",
     "palette": {
       "primary": "#3A4049",
       "accent": "#5A6472"
@@ -1650,13 +1651,13 @@
     "tags": [
       "weapon",
       "melee",
-      "flail",
+      "maul",
       "physical",
       "2H",
       "XL",
       "mid"
     ],
-    "cardartAction": "swung in a devastating wide arc, the giant ball trailing the heavy chain with a wall of dust and flung debris bursting on impact"
+    "cardartAction": "driven down in a devastating rigid maul slam, the giant iron sphere and solid haft moving as one while a wall of dust and debris erupts on impact"
   },
   {
     "id": "x2-snakebite-lash",

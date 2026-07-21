@@ -106,7 +106,11 @@ describe("owner-notes V3C caster orders", () => {
     expect(coyoteSparks && { ...coyoteSparks, weaponId: undefined }).toEqual(
       sparkSparks && { ...sparkSparks, weaponId: undefined },
     );
-    expect(coyoteSparks).toMatchObject({ packs: ["shock-spark"], count: 4, scale: 0.085 });
+    expect(coyoteSparks).toMatchObject({
+      packs: ["shock-spark"],
+      count: 4,
+      particleDominance: 0.3,
+    });
   });
 
   it("vibrates Witherleaf through the shake idiom and emits spores at the tip", () => {
@@ -166,7 +170,10 @@ describe("owner-notes V3C caster orders", () => {
       damagePerSecond: 12.1,
       damageType: "bio",
     });
-    expect(resolveWeaponAuraVfxRecipe(definition)).toMatchObject({ scale: 0.18, extent: 1 });
+    expect(resolveWeaponAuraVfxRecipe(definition)).toMatchObject({
+      particleDominance: 0.42,
+      extent: 1,
+    });
     expect(definition.performance?.aura?.damagePerSecond).toBeCloseTo(
       definition.damage / definition.cooldown,
       1,

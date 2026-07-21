@@ -35,17 +35,43 @@ test("level-up window: earned XP opens the flex window; clicking a card's scene-
     await bootArena(page, baseURL, `weapon:${MELEE_WEAPON}`);
     await waitForDevWeapon(page, MELEE_WEAPON);
 
+    // Give the real keyboard path focus and dismiss the first-run legend. Without this, the WASD
+    // roaming below can be latched off even though the room-level auto-attack is already running.
+    await page.locator("#game-root canvas").click({ position: { x: 320, y: 180 } });
+    await page.evaluate(() => {
+      const game = (
+        globalThis as unknown as { ddGame?: { scene: { keys: { arena: unknown } } } }
+      ).ddGame;
+      const arena = game?.scene.keys.arena as
+        | {
+            game?: { hasFocus: boolean };
+            time?: { now: number };
+            verbs?: {
+              isLegendOpen?(): boolean;
+              toggleLegend?(nowMs: number): void;
+              releaseInputLatchIf?(release: boolean): void;
+            };
+          }
+        | undefined;
+      if (!arena) throw new Error("level-up test requires the live arena input surface");
+      if (arena.verbs?.isLegendOpen?.()) arena.verbs.toggleLegend?.(arena.time?.now ?? 0);
+      arena.verbs?.releaseInputLatchIf?.(true);
+      if (arena.game) arena.game.hasFocus = true;
+    });
+
     // Conjure rushers (training-only dev summon) and cut them down for XP. Level 2 costs 6 XP and a
     // critter pays 1; the cleaver one-shots them at 1/1 attributes even under the requirement penalty
     // (4 x 0.76 > 3 hp), and MELEE kills land inside the 180px Echo auto-latch reach so every kill
     // banks. Waves spawn on the 720px ring and the random map can pit-kill converging critters
-    // (terrain deaths pay nothing), so a page-side respawner re-seeds a wave whenever the field
-    // empties before the level-up lands.
+    // (terrain deaths pay nothing). A bounded page-side respawner supplies six waves while the flex
+    // is pending; it must not wait for every stranded survivor to disappear before replacing losses.
     await page.evaluate(() => {
       const holder = globalThis as unknown as { ddGame?: BrowserGame; __ddWaveTimer?: number };
+      let wavesSent = 0;
       const sendWave = (): void => {
         const room = holder.ddGame?.scene.getScene("arena").room;
         room?.send("debugSpawn", { kind: "critter", count: 8 });
+        wavesSent++;
       };
       sendWave();
       holder.__ddWaveTimer = window.setInterval(() => {
@@ -53,12 +79,8 @@ test("level-up window: earned XP opens the flex window; clicking a card's scene-
         const state = room?.state;
         const self = room?.sessionId ? state?.players?.get(room.sessionId) : undefined;
         if (!state || !self || (self.flexPending ?? 0) > 0) return;
-        let nonDummy = 0;
-        state.enemies?.forEach((enemy) => {
-          if (enemy.kind !== "dummy") nonDummy++;
-        });
-        if (nonDummy === 0) sendWave();
-      }, 1_000);
+        if (wavesSent < 6) sendWave();
+      }, 1_500);
     });
     // Swing only when the target is inside melee contact range, exactly like a player would.
     await startAutoAttack(page, 140);

@@ -22,18 +22,6 @@ declare global {
 
 test.use({ viewport: { width: 640, height: 360 } });
 
-async function runAgainstAvailableStack(
-  page: Page,
-  body: (baseURL: string) => Promise<void>,
-): Promise<void> {
-  const liveBaseURL = process.env.DD_E2E_BASE_URL;
-  if (liveBaseURL) {
-    await body(liveBaseURL);
-    return;
-  }
-  await runArenaSpec(page, body);
-}
-
 async function prepareHeldBeam(page: Page): Promise<void> {
   await page.locator("#game-root canvas").click({ position: { x: 320, y: 180 } });
   await page.mouse.move(555, 180);
@@ -154,14 +142,17 @@ async function sampleRenderedAnchor(page: Page, ownerId: string): Promise<Anchor
                   };
                 };
                 weapons?: Array<{
-                  img: {
+                img: {
                     x: number;
                     y: number;
                     width: number;
                     originX: number;
                     scaleX: number;
-                  };
-                  semanticRotation: number;
+                };
+                def: {
+                  beam?: { muzzleOffsets?: Array<{ forward: number; lateral: number }> };
+                };
+                semanticRotation: number;
                 }>;
               }
             | undefined;
@@ -190,8 +181,11 @@ async function sampleRenderedAnchor(page: Page, ownerId: string): Promise<Anchor
           if (rig && weapon && row?.phase === active && entry?.body && point) {
             const image = weapon.img;
             const tip = image.width * Math.abs(image.scaleX) * (1 - image.originX);
-            const localX = image.x + Math.cos(weapon.semanticRotation) * tip;
-            const localY = image.y + Math.sin(weapon.semanticRotation) * tip;
+            const offset = weapon.def.beam?.muzzleOffsets?.[0] ?? { forward: 0, lateral: 0 };
+            const c = Math.cos(weapon.semanticRotation);
+            const s = Math.sin(weapon.semanticRotation);
+            const localX = image.x + c * (tip + offset.forward) - s * offset.lateral;
+            const localY = image.y + s * (tip + offset.forward) + c * offset.lateral;
             const muzzle = rig.root.getWorldTransformMatrix().transformPoint(localX, localY);
             const beamX = entry.body.x + point.x * entry.body.scaleX;
             const beamY = entry.body.y + point.y * entry.body.scaleY;
@@ -231,7 +225,7 @@ function assertMovingAnchor(label: string, frames: AnchorFrame[]): void {
 }
 
 test("moving beam origins follow the final rendered weapon muzzle", async ({ page }) => {
-  await runAgainstAvailableStack(page, async (baseURL) => {
+  await runArenaSpec(page, async (baseURL) => {
     await bootArena(page, baseURL, `weapon:${BEAM_WEAPON}`);
     await waitForDevWeapon(page, BEAM_WEAPON);
     const ownerId = await page.evaluate(() => {

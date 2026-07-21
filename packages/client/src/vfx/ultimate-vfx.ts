@@ -16,7 +16,7 @@ import {
   ultimateVariantForCode,
 } from "@dd/shared";
 import type Phaser from "phaser";
-import { elementPack, particleBurst } from "./particles.js";
+import { elementPack, paintedParticlePixels, particleBurst } from "./particles.js";
 
 /** Named ultimate bands. Every value is below protected response tells (99997) and HUD (100000). */
 export const ULTIMATE_VFX_DEPTH = {
@@ -249,7 +249,7 @@ export class UltimateVfx {
     particleBurst(this.scene, elementPack(element, "mote"), x, y - 18, {
       count,
       speed: 52,
-      scale: 0.28,
+      scaleContract: paintedParticlePixels(26.88),
       lifeMs: 260,
       additive: true,
       depth: ULTIMATE_VFX_DEPTH.AirBody,
@@ -275,7 +275,7 @@ export class UltimateVfx {
     particleBurst(this.scene, elementPack("steel", "wisp"), x, y, {
       count: 2,
       speed: 32,
-      scale: 0.28,
+      scaleContract: paintedParticlePixels(26.88),
       lifeMs: 220,
       depth: ULTIMATE_VFX_DEPTH.AirBody,
     });
@@ -398,7 +398,7 @@ export class UltimateVfx {
       dirRad: 0,
       spread: Math.PI,
       speed: 130,
-      scale: 0.3,
+      scaleContract: paintedParticlePixels(28.8),
       lifeMs: 220,
       additive: true,
       depth: ULTIMATE_VFX_DEPTH.AirImpact,
@@ -411,7 +411,7 @@ export class UltimateVfx {
       particleBurst(this.scene, elementPack("arcane", "shard"), cue.x, cue.y, {
         count: record.full ? 6 : 3,
         speed: 180,
-        scale: 0.4,
+        scaleContract: paintedParticlePixels(38.4),
         lifeMs: 360,
         depth: ULTIMATE_VFX_DEPTH.AirImpact,
       });
@@ -430,7 +430,7 @@ export class UltimateVfx {
       particleBurst(this.scene, elementPack("shock", "shard"), cue.x, cue.y, {
         count: record.full ? 9 : 4,
         speed: 240,
-        scale: 0.44,
+        scaleContract: paintedParticlePixels(42.24),
         lifeMs: 360,
         additive: true,
         depth: ULTIMATE_VFX_DEPTH.AirImpact,
@@ -721,7 +721,7 @@ export class UltimateVfx {
     particleBurst(this.scene, elementPack(FAMILY_ELEMENT[cast.family], "ring"), x, y, {
       count: 1,
       speed: 0,
-      scale: 0.72,
+      scaleContract: paintedParticlePixels(69.12),
       lifeMs: 300,
       additive: true,
       depth: ULTIMATE_VFX_DEPTH.AirImpact,
@@ -766,7 +766,7 @@ export class UltimateVfx {
       particleBurst(this.scene, elementPack("steel", "shard"), cast.targetX, targetY, {
         count: cast.full ? 10 : 5,
         speed: 250,
-        scale: 0.45,
+        scaleContract: paintedParticlePixels(43.2),
         lifeMs: 460,
         sink: 18,
         depth: ULTIMATE_VFX_DEPTH.AirImpact,

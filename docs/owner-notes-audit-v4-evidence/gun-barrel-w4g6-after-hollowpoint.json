@@ -1,0 +1,51 @@
+{
+  "summary": {
+    "phase": "w4g6-after-hollowpoint",
+    "weaponId": "x2-hollowpoint-hex",
+    "baseURL": "http://localhost:5180",
+    "capturedAt": "2026-07-21T03:21:24.903Z",
+    "expectedOffset": {
+      "forward": -1,
+      "lateral": -5
+    },
+    "originDeltaPx": 0.02899421802647485,
+    "shotAngleRad": 0.0037527513727534526,
+    "browserErrors": [
+      "[console] Texture key already in use: dd-sprites"
+    ],
+    "unexpectedBrowserErrors": [],
+    "screenshot": "docs\\owner-notes-audit-v4-evidence\\gun-barrel-w4g6-after-hollowpoint.png"
+  },
+  "start": {
+    "attackSeq": 0,
+    "tick": 45,
+    "player": {
+      "x": 2400,
+      "y": 2420
+    },
+    "rawMuzzleReach": 47.04
+  },
+  "live": {
+    "currentTick": 52,
+    "ageTicks": 5,
+    "integratedSteps": 6,
+    "row": {
+      "id": "p0",
+      "x": 2704.0357755332216,
+      "y": 2415.894287109375,
+      "vx": 819.9942016601562,
+      "vy": 3.0772488117218018,
+      "bornTick": 47
+    },
+    "recoveredOrigin": {
+      "x": 2458.0375150351747,
+      "y": 2414.9711124658584
+    },
+    "paintedMuzzle": {
+      "x": 2458.04,
+      "y": 2415
+    },
+    "originDeltaPx": 0.02899421802647485,
+    "shotAngleRad": 0.0037527513727534526
+  }
+}

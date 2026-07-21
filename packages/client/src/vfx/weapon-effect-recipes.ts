@@ -14,6 +14,8 @@ export interface WeaponEffectRecipe {
   readonly swingCount?: number;
   readonly swingScaleMode?: "blade-length";
   readonly swingScaleMultiplier?: number;
+  /** Painted 96-pack display width as a fraction of the weapon's held display length. */
+  readonly swingParticleDominance?: number;
   readonly additive?: boolean;
   readonly chain?: "scattered-pages";
   readonly noGore?: boolean;
@@ -117,6 +119,7 @@ export const WEAPON_EFFECT_RECIPES = Object.freeze({
     emitter: "blade",
     swingPack: "sand-wisp",
     swingCount: 5,
+    swingParticleDominance: 0.34,
     additive: false,
   }),
   "stormfist-blue-lunge": Object.freeze({
@@ -208,18 +211,31 @@ export function weaponSwingIdentityScale(
   recipe: WeaponEffectRecipe | undefined,
   bladeLength = 0,
 ): number {
-  const multiplier = recipe?.swingScaleMultiplier ?? 1;
-  if (recipe?.swingScaleMode !== "blade-length" || !recipe.swingPack || bladeLength <= 0)
-    return (recipe?.noGore ? 0.34 : 0.46) * multiplier;
+  if (!recipe?.swingPack) return 0.46;
   const frameWidth = PARTICLE_PACKS[recipe.swingPack]?.frameWidth ?? 96;
-  return (bladeLength / Math.max(1, frameWidth)) * multiplier;
+  return weaponSwingIdentitySizePx(recipe, bladeLength) / frameWidth;
+}
+
+export function weaponSwingIdentitySizePx(
+  recipe: WeaponEffectRecipe | undefined,
+  bladeLength = 0,
+): number {
+  const multiplier = recipe?.swingScaleMultiplier ?? 1;
+  if (recipe?.swingScaleMode === "blade-length" && bladeLength > 0)
+    return bladeLength * multiplier;
+  if (bladeLength <= 0) return (recipe?.noGore ? 32.64 : 44.16) * multiplier;
+  const dominance = recipe?.swingParticleDominance ?? (recipe?.noGore ? 0.22 : 0.28);
+  return Math.max(28, Math.min(84, bladeLength * dominance)) * multiplier;
 }
 
 export interface WeaponAuraVfxRecipe {
   readonly weaponId: string;
   readonly packs: readonly string[];
   readonly count: number;
-  readonly scale: number;
+  /** Painted particle width / held weapon display length. */
+  readonly particleDominance: number;
+  readonly minParticlePx: number;
+  readonly maxParticlePx: number;
   readonly extent: number;
   readonly spinHz: number;
 }
@@ -230,7 +246,9 @@ export const WEAPON_AURA_VFX_RECIPES = Object.freeze({
     weaponId: "x2-sparkknuckle-hex-mitt",
     packs: Object.freeze(["shock-spark"]),
     count: 4,
-    scale: 0.085,
+    particleDominance: 0.3,
+    minParticlePx: 14,
+    maxParticlePx: 28,
     extent: 0.58,
     spinHz: 1.7,
   }),
@@ -238,7 +256,9 @@ export const WEAPON_AURA_VFX_RECIPES = Object.freeze({
     weaponId: "x2-fulgurite-storm-sphere",
     packs: Object.freeze(["shock-spark", "shock-bolt"]),
     count: 8,
-    scale: 0.15,
+    particleDominance: 0.44,
+    minParticlePx: 30,
+    maxParticlePx: 44,
     extent: 0.92,
     spinHz: 1.05,
   }),
@@ -246,7 +266,9 @@ export const WEAPON_AURA_VFX_RECIPES = Object.freeze({
     weaponId: "x2-galvanic-liber-of-storms",
     packs: Object.freeze(["shock-wisp", "shock-splat", "shock-bolt"]),
     count: 12,
-    scale: 0.16,
+    particleDominance: 0.4,
+    minParticlePx: 30,
+    maxParticlePx: 48,
     extent: 0.96,
     spinHz: 1.2,
   }),
@@ -254,7 +276,9 @@ export const WEAPON_AURA_VFX_RECIPES = Object.freeze({
     weaponId: "x2-sporebound-witchglobe",
     packs: Object.freeze(["toxic-wisp", "toxic-splat", "toxic-mote"]),
     count: 8,
-    scale: 0.18,
+    particleDominance: 0.42,
+    minParticlePx: 32,
+    maxParticlePx: 52,
     extent: 1,
     spinHz: 0.72,
   }),
@@ -262,7 +286,9 @@ export const WEAPON_AURA_VFX_RECIPES = Object.freeze({
     weaponId: "x2-coyote-trickster-s-sparkmitt",
     packs: Object.freeze(["shock-spark"]),
     count: 4,
-    scale: 0.085,
+    particleDominance: 0.3,
+    minParticlePx: 14,
+    maxParticlePx: 28,
     extent: 0.58,
     spinHz: 1.7,
   }),

@@ -16,7 +16,13 @@ import {
   DRIVE_THROWN_BURST_RETENTION,
 } from "./constants.js";
 import { katanaExpectedMechanic } from "./melee.js";
-import { WEAPONS, type WeaponDef, weaponAttackCooldown } from "./weapons.js";
+import {
+  ACTIVE_WEAPON_CATALOG_IDS,
+  ARCHIVED_WEAPON_IDS,
+  WEAPONS,
+  type WeaponDef,
+  weaponAttackCooldown,
+} from "./weapons.js";
 
 export const WEAPON_RESOURCE_FORMULA_VERSION = 1 as const;
 
@@ -277,7 +283,10 @@ export function deriveWeaponResourceProfile(weapon: WeaponDef): WeaponResourcePr
   });
 }
 
-/** Deterministic, reviewable formula output for all 329 catalog weapons (fists are runtime-only). */
+/**
+ * Deterministic formula output for all 329 durable ids: 323 active + 6 archived. Archived profiles remain
+ * resolvable so old receipts/instances never dangle while the join migration converts owned copies.
+ */
 export const WEAPON_RESOURCE_IDS = Object.freeze(
   Object.keys(WEAPONS)
     .filter((id) => id !== "fists")
@@ -302,6 +311,15 @@ export function weaponResourceProfile(weaponId: string): WeaponResourceProfile |
 if (WEAPON_RESOURCE_IDS.length !== 329) {
   throw new Error(
     `Drive formula expected 329 catalog weapons, received ${WEAPON_RESOURCE_IDS.length}`,
+  );
+}
+if (
+  ACTIVE_WEAPON_CATALOG_IDS.length !== 323 ||
+  ARCHIVED_WEAPON_IDS.length !== 6 ||
+  ACTIVE_WEAPON_CATALOG_IDS.length + ARCHIVED_WEAPON_IDS.length !== WEAPON_RESOURCE_IDS.length
+) {
+  throw new Error(
+    `Weapon archive census expected 323 active + 6 archived, received ${ACTIVE_WEAPON_CATALOG_IDS.length} + ${ARCHIVED_WEAPON_IDS.length}`,
   );
 }
 if (Object.keys(WEAPON_RESOURCE_OVERRIDES).length > 15) {

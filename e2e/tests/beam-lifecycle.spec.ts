@@ -61,15 +61,35 @@ test("beam lifecycle: fireHeld drives an authoritative beams row through charge,
     // Software-WebGL can occasionally leave more than the server's three-tick watchdog between rendered
     // frames, so pump that same client method on its authored 50ms cadence while held. It still mints normal
     // predictor commands and sends them through the room; no beam state or server authority is bypassed.
+    await page.locator("#game-root canvas").click({ position: { x: 320, y: 180 } });
     await page.evaluate(() => {
       const game = (globalThis as unknown as { ddGame?: BrowserGame }).ddGame;
       const scene = game?.scene.getScene("arena") as unknown as {
+        game?: { hasFocus: boolean };
         input?: { activePointer?: { rightButtonDown: () => boolean } };
-        stepNetInput?: (deltaMs: number, levelWindowOpen?: boolean) => void;
+        time?: { now: number };
+        verbs?: {
+          isLegendOpen?(): boolean;
+          toggleLegend?(nowMs: number): void;
+          releaseInputLatchIf?(release: boolean): void;
+        };
+        stepNetInput?(
+          deltaMs: number,
+          levelWindowOpen: boolean,
+          ultimatePressed: boolean,
+          nextDx: number,
+          nextDy: number,
+        ): void;
       };
       if (!scene?.input?.activePointer || !scene.stepNetInput) return;
+      if (scene.verbs?.isLegendOpen?.()) scene.verbs.toggleLegend?.(scene.time?.now ?? 0);
+      scene.verbs?.releaseInputLatchIf?.(true);
+      if (scene.game) scene.game.hasFocus = true;
       scene.input.activePointer.rightButtonDown = () => true;
-      globalThis.__ddBeamInputTimer = window.setInterval(() => scene.stepNetInput?.(50), 50);
+      globalThis.__ddBeamInputTimer = window.setInterval(
+        () => scene.stepNetInput?.(50, false, false, 0, 0),
+        50,
+      );
     });
 
     // The server ignites through Charging (0.65s for this weapon) into Active.
@@ -92,10 +112,16 @@ test("beam lifecycle: fireHeld drives an authoritative beams row through charge,
       const game = (globalThis as unknown as { ddGame?: BrowserGame }).ddGame;
       const scene = game?.scene.getScene("arena") as unknown as {
         input?: { activePointer?: { rightButtonDown: () => boolean } };
-        stepNetInput?: (deltaMs: number, levelWindowOpen?: boolean) => void;
+        stepNetInput?(
+          deltaMs: number,
+          levelWindowOpen: boolean,
+          ultimatePressed: boolean,
+          nextDx: number,
+          nextDy: number,
+        ): void;
       };
       if (scene?.input?.activePointer) scene.input.activePointer.rightButtonDown = () => false;
-      scene?.stepNetInput?.(50);
+      scene?.stepNetInput?.(50, false, false, 0, 0);
       if (globalThis.__ddBeamInputTimer) {
         window.clearInterval(globalThis.__ddBeamInputTimer);
         globalThis.__ddBeamInputTimer = undefined;

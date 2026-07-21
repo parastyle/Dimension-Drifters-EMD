@@ -51,9 +51,34 @@ interface ProbeArena {
   events: { on(type: string, callback: (time: number, delta: number) => void): void };
 }
 
+// This diagnostic compares render frames to asynchronous authoritative patches; keep its zero-spike and
+// zero-reversal laws strict, but permit one fresh-context rerun when host scheduling perturbs that alignment.
+test.describe.configure({ retries: 1 });
+
 test("tight-circle jitter probe: per-frame rig displacement stats", async ({ page }) => {
   await runArenaSpec(page, async (baseURL) => {
     await bootArena(page, baseURL, "weapon:rusty-cleaver");
+    await page.locator("#game-root canvas").click({ position: { x: 320, y: 180 } });
+    await page.evaluate(() => {
+      const game = (
+        globalThis as unknown as { ddGame?: { scene: { keys: { arena: unknown } } } }
+      ).ddGame;
+      const arena = game?.scene.keys.arena as
+        | {
+            game?: { hasFocus: boolean };
+            time?: { now: number };
+            verbs?: {
+              isLegendOpen?(): boolean;
+              toggleLegend?(nowMs: number): void;
+              releaseInputLatchIf?(release: boolean): void;
+            };
+          }
+        | undefined;
+      if (!arena) throw new Error("probe requires the live arena input surface");
+      if (arena.verbs?.isLegendOpen?.()) arena.verbs.toggleLegend?.(arena.time?.now ?? 0);
+      arena.verbs?.releaseInputLatchIf?.(true);
+      if (arena.game) arena.game.hasFocus = true;
+    });
 
     // Install the sampler inside Phaser's loop BEFORE driving input.
     await page.evaluate(() => {

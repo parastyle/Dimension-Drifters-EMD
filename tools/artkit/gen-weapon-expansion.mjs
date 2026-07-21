@@ -54,6 +54,7 @@ const MUZZLE_MODES = new Set(["parallel", "cycle"]);
 // these ids differ from caster beams through their ranged class/art/pose, never a hidden magazine resource.
 const BEAM_GUN_IDS = new Set([
   "x2-voltcaster-machine-pistol",
+  "x2-mirage-coilrifle",
   "x2-stormcaller-tesla-gatling",
 ]);
 
@@ -61,7 +62,7 @@ const BEAM_GUN_IDS = new Set([
 const TOP_KEYS = new Set([
   "id", "name", "type", "family", "theme", "element", "finish", "finishNote", "grip", "size",
   "rangeBand", "scaling", "scalingGrades", "requirements", "artPrompt", "palettePrimary",
-  "paletteAccent", "cardartAction", "behavior", "stats", "description", "banned", "expansion",
+  "paletteAccent", "cardartAction", "behavior", "stats", "description", "banned", "expansion", "archived",
   "sprite", "sizeClass", "stance", "authoritativeCombo", "comboFamily", "comboVariant", "comboBar", "katanaHook",
   "bespokeVfxSheet", "performance", "swingStyle", "effectRecipe", "effectEmitter", "effectTiming",
   "renderAboveHands", "suppressVfx", "hitStatus", "gripPoints", "handlingTags",
@@ -700,6 +701,7 @@ function mapWeapon(w) {
       scaling: Array.isArray(w.scaling) && w.scaling.length ? w.scaling : ["STR"],
     },
   };
+  if (w.archived === true) def.archived = true;
   if (gripPoints) def.gripPoints = gripPoints;
   if (handlingTags) def.tags.handling = handlingTags;
   if (w.description !== undefined) {
@@ -846,10 +848,11 @@ function mapWeapon(w) {
       }
     }
     const pellets = int(b.pellets, 1, 12, 1, "behavior.pellets");
-    if (pellets > 1) {
-      def.gun.pellets = pellets;
-      def.gun.spread = num(b.spread, 0.1, 0.9, 0.4, "behavior.spread");
-    }
+    if (pellets > 1) def.gun.pellets = pellets;
+    // Accuracy is independent of pellet count. The old conditional silently erased every authored
+    // one-projectile spread (including Coyote Stinger), making those guns laser-accurate at runtime.
+    if (b.spread !== undefined)
+      def.gun.spread = num(b.spread, 0, 0.9, 0, "behavior.spread");
     const pierce = int(b.pierce, 1, 6, 1, "behavior.pierce");
     if (pierce > 1) def.gun.pierce = pierce;
     const bounces = int(b.bounces, 0, 6, 0, "behavior.bounces");
@@ -954,6 +957,8 @@ for (const w of data.weapons) {
   }
   if (w.expansion !== undefined && typeof w.expansion !== "boolean")
     fail("expansion is not a boolean");
+  if (w.archived !== undefined && typeof w.archived !== "boolean")
+    fail("archived is not a boolean");
   out[w.id] = mapWeapon(w);
   const comboBar = comboBarOf(w);
   if (comboBar) {

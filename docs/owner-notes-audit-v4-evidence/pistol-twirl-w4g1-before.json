@@ -1,0 +1,386 @@
+{
+  "summary": {
+    "phase": "w4g1-before",
+    "weaponId": "x-gun-ricochet-pistol",
+    "baseURL": "http://localhost:5180",
+    "capturedAt": "2026-07-21T02:39:22.903Z",
+    "attackWindow": {
+      "startSeq": 0,
+      "stopSeq": 1,
+      "sends": 1
+    },
+    "frameCount": 27,
+    "hands": [
+      {
+        "sampleCount": 27,
+        "rangeRad": 0.009159880507901619,
+        "rangeTurns": 0.0014578402609636435,
+        "maxDeltaFromBaselineRad": 0.009159880507901619,
+        "onsetMs": null
+      }
+    ],
+    "browserErrors": [
+      "[console] Texture key already in use: dd-sprites"
+    ],
+    "unexpectedBrowserErrors": [],
+    "screenshots": [
+      "docs\\owner-notes-audit-v4-evidence\\pistol-twirl-w4g1-before-450ms.png",
+      "docs\\owner-notes-audit-v4-evidence\\pistol-twirl-w4g1-before-650ms.png",
+      "docs\\owner-notes-audit-v4-evidence\\pistol-twirl-w4g1-before-850ms.png",
+      "docs\\owner-notes-audit-v4-evidence\\pistol-twirl-w4g1-before-1050ms.png"
+    ]
+  },
+  "frames": [
+    {
+      "elapsedMs": 14.100000001490116,
+      "attackSeq": 1,
+      "weapons": [
+        {
+          "id": "x-gun-ricochet-pistol",
+          "rotation": 0.009535222190429238,
+          "semanticRotation": 0.009535222190429238,
+          "x": 25.713848898851875,
+          "y": -5.994239053244899
+        }
+      ]
+    },
+    {
+      "elapsedMs": 84.5,
+      "attackSeq": 1,
+      "weapons": [
+        {
+          "id": "x-gun-ricochet-pistol",
+          "rotation": 0.00846638810155298,
+          "semanticRotation": 0.00846638810155298,
+          "x": 26.219659523328225,
+          "y": -5.999570273906758
+        }
+      ]
+    },
+    {
+      "elapsedMs": 142,
+      "attackSeq": 1,
+      "weapons": [
+        {
+          "id": "x-gun-ricochet-pistol",
+          "rotation": 0.007522179805269147,
+          "semanticRotation": 0.007522179805269147,
+          "x": 26.219731231119464,
+          "y": -6.008539965760501
+        }
+      ]
+    },
+    {
+      "elapsedMs": 201,
+      "attackSeq": 1,
+      "weapons": [
+        {
+          "id": "x-gun-ricochet-pistol",
+          "rotation": 0.006649205966603233,
+          "semanticRotation": 0.006649205966603233,
+          "x": 26.2197899940588,
+          "y": -6.016833008775549
+        }
+      ]
+    },
+    {
+      "elapsedMs": 258.8999999985099,
+      "attackSeq": 1,
+      "weapons": [
+        {
+          "id": "x-gun-ricochet-pistol",
+          "rotation": 0.005880719166519555,
+          "semanticRotation": 0.005880719166519555,
+          "x": 26.219835731898307,
+          "y": -6.024133489923295
+        }
+      ]
+    },
+    {
+      "elapsedMs": 317,
+      "attackSeq": 1,
+      "weapons": [
+        {
+          "id": "x-gun-ricochet-pistol",
+          "rotation": 0.005200784922527291,
+          "semanticRotation": 0.005200784922527291,
+          "x": 26.219871521511493,
+          "y": -6.030592765965855
+        }
+      ]
+    },
+    {
+      "elapsedMs": 376.6000000014901,
+      "attackSeq": 1,
+      "weapons": [
+        {
+          "id": "x-gun-ricochet-pistol",
+          "rotation": 0.004600988296672881,
+          "semanticRotation": 0.004600988296672881,
+          "x": 26.219899446984183,
+          "y": -6.036290765396139
+        }
+      ]
+    },
+    {
+      "elapsedMs": 435.19999999552965,
+      "attackSeq": 1,
+      "weapons": [
+        {
+          "id": "x-gun-ricochet-pistol",
+          "rotation": 0.004068475258186766,
+          "semanticRotation": 0.004068475258186766,
+          "x": 26.21992137577655,
+          "y": -6.041349591674185
+        }
+      ]
+    },
+    {
+      "elapsedMs": 495.6000000014901,
+      "attackSeq": 1,
+      "weapons": [
+        {
+          "id": "x-gun-ricochet-pistol",
+          "rotation": 0.0035983063385298664,
+          "semanticRotation": 0.0035983063385298664,
+          "x": 26.21993849797596,
+          "y": -6.045816163551709
+        }
+      ]
+    },
+    {
+      "elapsedMs": 553.5,
+      "attackSeq": 1,
+      "weapons": [
+        {
+          "id": "x-gun-ricochet-pistol",
+          "rotation": 0.003180700933921088,
+          "semanticRotation": 0.003180700933921088,
+          "x": 26.21995194496297,
+          "y": -6.04978339207733
+        }
+      ]
+    },
+    {
+      "elapsedMs": 612.1999999955297,
+      "attackSeq": 1,
+      "weapons": [
+        {
+          "id": "x-gun-ricochet-pistol",
+          "rotation": 0.0028107060437534415,
+          "semanticRotation": 0.0028107060437534415,
+          "x": 26.2199624746995,
+          "y": -6.053298327741889
+        }
+      ]
+    },
+    {
+      "elapsedMs": 673.1999999955297,
+      "attackSeq": 1,
+      "weapons": [
+        {
+          "id": "x-gun-ricochet-pistol",
+          "rotation": 0.0024832982584825913,
+          "semanticRotation": 0.0024832982584825913,
+          "x": 26.21997070785641,
+          "y": -6.0564086907914705
+        }
+      ]
+    },
+    {
+      "elapsedMs": 732,
+      "attackSeq": 1,
+      "weapons": [
+        {
+          "id": "x-gun-ricochet-pistol",
+          "rotation": 0.002193327058007455,
+          "semanticRotation": 0.002193327058007455,
+          "x": 26.219977149262142,
+          "y": -6.059163409655307
+        }
+      ]
+    },
+    {
+      "elapsedMs": 791.3999999985099,
+      "attackSeq": 1,
+      "weapons": [
+        {
+          "id": "x-gun-ricochet-pistol",
+          "rotation": 0.0019365220929028482,
+          "semanticRotation": 0.0019365220929028482,
+          "x": 26.219982186945938,
+          "y": -6.061603051615878
+        }
+      ]
+    },
+    {
+      "elapsedMs": 847.6999999955297,
+      "attackSeq": 1,
+      "weapons": [
+        {
+          "id": "x-gun-ricochet-pistol",
+          "rotation": 0.001709489021855859,
+          "semanticRotation": 0.001709489021855859,
+          "x": 26.21998611882798,
+          "y": -6.063759862202279
+        }
+      ]
+    },
+    {
+      "elapsedMs": 903.1000000014901,
+      "attackSeq": 1,
+      "weapons": [
+        {
+          "id": "x-gun-ricochet-pistol",
+          "rotation": 0.0015087323851101786,
+          "semanticRotation": 0.0015087323851101786,
+          "x": 26.219989187703355,
+          "y": -6.065667047779073
+        }
+      ]
+    },
+    {
+      "elapsedMs": 960.1999999955297,
+      "attackSeq": 1,
+      "weapons": [
+        {
+          "id": "x-gun-ricochet-pistol",
+          "rotation": 0.001328152115446457,
+          "semanticRotation": 0.001328152115446457,
+          "x": 26.219991621058035,
+          "y": -6.0673825586127625
+        }
+      ]
+    },
+    {
+      "elapsedMs": 1014.5,
+      "attackSeq": 1,
+      "weapons": [
+        {
+          "id": "x-gun-ricochet-pistol",
+          "rotation": 0.0011720433251660722,
+          "semanticRotation": 0.0011720433251660722,
+          "x": 26.219993474994354,
+          "y": -6.068865590960123
+        }
+      ]
+    },
+    {
+      "elapsedMs": 1071.1999999955297,
+      "attackSeq": 1,
+      "weapons": [
+        {
+          "id": "x-gun-ricochet-pistol",
+          "rotation": 0.0010338827071798562,
+          "semanticRotation": 0.0010338827071798562,
+          "x": 26.223007008617465,
+          "y": -5.981569616030482
+        }
+      ]
+    },
+    {
+      "elapsedMs": 1129,
+      "attackSeq": 1,
+      "weapons": [
+        {
+          "id": "x-gun-ricochet-pistol",
+          "rotation": 0.0009119850084999825,
+          "semanticRotation": 0.0009119850084999825,
+          "x": 26.23668059533018,
+          "y": -5.574826249316386
+        }
+      ]
+    },
+    {
+      "elapsedMs": 1186.6000000014901,
+      "attackSeq": 1,
+      "weapons": [
+        {
+          "id": "x-gun-ricochet-pistol",
+          "rotation": 0.0008035600281193211,
+          "semanticRotation": 0.0008035600281193211,
+          "x": 26.259792225634392,
+          "y": -4.901232674282801
+        }
+      ]
+    },
+    {
+      "elapsedMs": 1243,
+      "attackSeq": 1,
+      "weapons": [
+        {
+          "id": "x-gun-ricochet-pistol",
+          "rotation": 0.0007088187350525743,
+          "semanticRotation": 0.0007088187350525743,
+          "x": 26.290996009872316,
+          "y": -4.032388380164842
+        }
+      ]
+    },
+    {
+      "elapsedMs": 1302.2999999970198,
+      "attackSeq": 1,
+      "weapons": [
+        {
+          "id": "x-gun-ricochet-pistol",
+          "rotation": 0.0006248575557901148,
+          "semanticRotation": 0.0006248575557901148,
+          "x": 26.32866887352638,
+          "y": -3.040083148676074
+        }
+      ]
+    },
+    {
+      "elapsedMs": 1362.1000000014901,
+      "attackSeq": 1,
+      "weapons": [
+        {
+          "id": "x-gun-ricochet-pistol",
+          "rotation": 0.0005497497313964317,
+          "semanticRotation": 0.0005497497313964317,
+          "x": 26.370658078082414,
+          "y": -1.9962166082639712
+        }
+      ]
+    },
+    {
+      "elapsedMs": 1423.6000000014901,
+      "attackSeq": 1,
+      "weapons": [
+        {
+          "id": "x-gun-ricochet-pistol",
+          "rotation": 0.00048462071288390973,
+          "semanticRotation": 0.00048462071288390973,
+          "x": 26.414276684893977,
+          "y": -0.9727494560718958
+        }
+      ]
+    },
+    {
+      "elapsedMs": 1480.8999999985099,
+      "attackSeq": 1,
+      "weapons": [
+        {
+          "id": "x-gun-ricochet-pistol",
+          "rotation": 0.00042646512401134373,
+          "semanticRotation": 0.00042646512401134373,
+          "x": 26.45639050678721,
+          "y": -0.04173911764999616
+        }
+      ]
+    },
+    {
+      "elapsedMs": 1540.5,
+      "attackSeq": 1,
+      "weapons": [
+        {
+          "id": "x-gun-ricochet-pistol",
+          "rotation": 0.000375341682527619,
+          "semanticRotation": 0.000375341682527619,
+          "x": 26.49352539710659,
+          "y": 0.7247405591509237
+        }
+      ]
+    }
+  ]
+}

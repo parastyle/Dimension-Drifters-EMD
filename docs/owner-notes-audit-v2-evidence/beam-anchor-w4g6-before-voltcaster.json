@@ -1,0 +1,404 @@
+{
+  "summary": {
+    "phase": "w4g6-before-voltcaster",
+    "weaponId": "x2-voltcaster-machine-pistol",
+    "baseURL": "http://localhost:5180",
+    "capturedAt": "2026-07-21T02:35:55.977Z",
+    "frameCount": 10,
+    "playerTravel": 107.20000000000027,
+    "ropeMuzzleDeltaPx": {
+      "min": 0,
+      "median": 0,
+      "p95": 4.547473508864641e-13,
+      "max": 4.547473508864641e-13,
+      "mean": 9.094947017729283e-14
+    },
+    "browserErrors": [
+      "[console] Texture key already in use: dd-sprites"
+    ],
+    "unexpectedBrowserErrors": [],
+    "screenshot": "docs\\owner-notes-audit-v2-evidence\\beam-anchor-w4g6-before-voltcaster.png"
+  },
+  "frames": [
+    {
+      "atMs": 5337.0999999940395,
+      "player": {
+        "x": 2555.758015151247,
+        "y": 2420
+      },
+      "muzzle": {
+        "x": 2635.198604855129,
+        "y": 2413.909725014929
+      },
+      "ropeOrigin": {
+        "x": 2635.198604855129,
+        "y": 2413.909725014929
+      },
+      "poseOrigin": {
+        "x": 2635.198604855129,
+        "y": 2413.909725014929
+      },
+      "authoritativeOrigin": {
+        "x": 2579.179931640625,
+        "y": 2419.98291015625
+      },
+      "ropeMuzzleDelta": 0,
+      "poseMuzzleDelta": 0,
+      "authorityMuzzleDelta": 56.346919405360055,
+      "weapon": {
+        "x": 26.21999991448835,
+        "y": -6.081274645575545,
+        "rotation": -0.0001341732188819833,
+        "semanticRotation": -0.0001341732188819833,
+        "scaleX": 0.3046875,
+        "scaleY": 0.3046875,
+        "originX": 0.14,
+        "originY": 0.5,
+        "width": 256,
+        "height": 192
+      }
+    },
+    {
+      "atMs": 5407.89999999851,
+      "player": {
+        "x": 2560.558015151247,
+        "y": 2420
+      },
+      "muzzle": {
+        "x": 2642.5109474016585,
+        "y": 2413.9067950065137
+      },
+      "ropeOrigin": {
+        "x": 2642.5109474016585,
+        "y": 2413.906795006513
+      },
+      "poseOrigin": {
+        "x": 2642.5109474016585,
+        "y": 2413.9067950065137
+      },
+      "authoritativeOrigin": {
+        "x": 2584.780029296875,
+        "y": 2419.983642578125
+      },
+      "ropeMuzzleDelta": 4.547473508864641e-13,
+      "poseMuzzleDelta": 0,
+      "authorityMuzzleDelta": 58.0498663360203,
+      "weapon": {
+        "x": 26.219999858765995,
+        "y": -6.081638122722911,
+        "rotation": -0.0001724339716879797,
+        "semanticRotation": -0.0001724339716879797,
+        "scaleX": 0.3046875,
+        "scaleY": 0.3046875,
+        "originX": 0.14,
+        "originY": 0.5,
+        "width": 256,
+        "height": 192
+      }
+    },
+    {
+      "atMs": 5468.29999999702,
+      "player": {
+        "x": 2581.358015151247,
+        "y": 2420
+      },
+      "muzzle": {
+        "x": 2665.3676418859372,
+        "y": 2413.9141556237914
+      },
+      "ropeOrigin": {
+        "x": 2665.3676418859372,
+        "y": 2413.9141556237914
+      },
+      "poseOrigin": {
+        "x": 2665.3676418859372,
+        "y": 2413.9141556237914
+      },
+      "authoritativeOrigin": {
+        "x": 2595.97998046875,
+        "y": 2419.985595703125
+      },
+      "ropeMuzzleDelta": 0,
+      "poseMuzzleDelta": 0,
+      "authorityMuzzleDelta": 69.65278129108094,
+      "weapon": {
+        "x": 26.219999972334456,
+        "y": -6.0807250140242965,
+        "rotation": -0.00007631726579049314,
+        "semanticRotation": -0.00007631726579049314,
+        "scaleX": 0.3046875,
+        "scaleY": 0.3046875,
+        "originX": 0.14,
+        "originY": 0.5,
+        "width": 256,
+        "height": 192
+      }
+    },
+    {
+      "atMs": 5528,
+      "player": {
+        "x": 2586.158015151247,
+        "y": 2420
+      },
+      "muzzle": {
+        "x": 2671.8517291229987,
+        "y": 2413.912005650739
+      },
+      "ropeOrigin": {
+        "x": 2671.8517291229987,
+        "y": 2413.912005650739
+      },
+      "poseOrigin": {
+        "x": 2671.8517291229987,
+        "y": 2413.912005650739
+      },
+      "authoritativeOrigin": {
+        "x": 2601.580078125,
+        "y": 2419.9862248741742
+      },
+      "ropeMuzzleDelta": 0,
+      "poseMuzzleDelta": 0,
+      "authorityMuzzleDelta": 70.5336875057506,
+      "weapon": {
+        "x": 26.21999994823585,
+        "y": -6.080991725228246,
+        "rotation": -0.00010439212947943588,
+        "semanticRotation": -0.00010439212947943588,
+        "scaleX": 0.3046875,
+        "scaleY": 0.3046875,
+        "originX": 0.14,
+        "originY": 0.5,
+        "width": 256,
+        "height": 192
+      }
+    },
+    {
+      "atMs": 5586.79999999702,
+      "player": {
+        "x": 2606.9580151512473,
+        "y": 2420
+      },
+      "muzzle": {
+        "x": 2694.0305560301176,
+        "y": 2413.913452438728
+      },
+      "ropeOrigin": {
+        "x": 2694.0305560301176,
+        "y": 2413.913452438728
+      },
+      "poseOrigin": {
+        "x": 2694.0305560301176,
+        "y": 2413.913452438728
+      },
+      "authoritativeOrigin": {
+        "x": 2607.179931640625,
+        "y": 2419.986328125
+      },
+      "ropeMuzzleDelta": 0,
+      "poseMuzzleDelta": 0,
+      "authorityMuzzleDelta": 87.06268302749257,
+      "weapon": {
+        "x": 26.219999965276617,
+        "y": -6.080812246436178,
+        "rotation": -0.00008549962496573471,
+        "semanticRotation": -0.00008549962496573471,
+        "scaleX": 0.3046875,
+        "scaleY": 0.3046875,
+        "originX": 0.14,
+        "originY": 0.5,
+        "width": 256,
+        "height": 192
+      }
+    },
+    {
+      "atMs": 5662.29999999702,
+      "player": {
+        "x": 2611.758015151247,
+        "y": 2420
+      },
+      "muzzle": {
+        "x": 2699.959449775379,
+        "y": 2413.9145486825496
+      },
+      "ropeOrigin": {
+        "x": 2699.959449775379,
+        "y": 2413.9145486825496
+      },
+      "poseOrigin": {
+        "x": 2699.959449775379,
+        "y": 2413.9145486825496
+      },
+      "authoritativeOrigin": {
+        "x": 2612.780029296875,
+        "y": 2419.986328125
+      },
+      "ropeMuzzleDelta": 0,
+      "poseMuzzleDelta": 0,
+      "authorityMuzzleDelta": 87.3906051046999,
+      "weapon": {
+        "x": 26.21999997593057,
+        "y": -6.08067625379705,
+        "rotation": -0.00007118461027566525,
+        "semanticRotation": -0.00007118461027566525,
+        "scaleX": 0.3046875,
+        "scaleY": 0.3046875,
+        "originX": 0.14,
+        "originY": 0.5,
+        "width": 256,
+        "height": 192
+      }
+    },
+    {
+      "atMs": 5718.29999999702,
+      "player": {
+        "x": 2632.558015151247,
+        "y": 2420
+      },
+      "muzzle": {
+        "x": 2721.68371673341,
+        "y": 2413.9148449306617
+      },
+      "ropeOrigin": {
+        "x": 2721.68371673341,
+        "y": 2413.9148449306617
+      },
+      "poseOrigin": {
+        "x": 2721.68371673341,
+        "y": 2413.9148449306617
+      },
+      "authoritativeOrigin": {
+        "x": 2623.97998046875,
+        "y": 2419.98828125
+      },
+      "ropeMuzzleDelta": 0,
+      "poseMuzzleDelta": 0,
+      "authorityMuzzleDelta": 97.89232201148018,
+      "weapon": {
+        "x": 26.219999978475556,
+        "y": -6.080639503247779,
+        "rotation": -0.00006731613139621118,
+        "semanticRotation": -0.00006731613139621118,
+        "scaleX": 0.3046875,
+        "scaleY": 0.3046875,
+        "originX": 0.14,
+        "originY": 0.5,
+        "width": 256,
+        "height": 192
+      }
+    },
+    {
+      "atMs": 5772.79999999702,
+      "player": {
+        "x": 2637.3580151512474,
+        "y": 2420
+      },
+      "muzzle": {
+        "x": 2727.2402110394423,
+        "y": 2413.915640378369
+      },
+      "ropeOrigin": {
+        "x": 2727.2402110394423,
+        "y": 2413.915640378369
+      },
+      "poseOrigin": {
+        "x": 2727.2402110394423,
+        "y": 2413.915640378369
+      },
+      "authoritativeOrigin": {
+        "x": 2629.580078125,
+        "y": 2419.9892578125
+      },
+      "ropeMuzzleDelta": 0,
+      "poseMuzzleDelta": 0,
+      "authorityMuzzleDelta": 97.84881394070507,
+      "weapon": {
+        "x": 26.21999998460568,
+        "y": -6.080540825352491,
+        "rotation": -0.000056928984502491176,
+        "semanticRotation": -0.000056928984502491176,
+        "scaleX": 0.3046875,
+        "scaleY": 0.3046875,
+        "originX": 0.14,
+        "originY": 0.5,
+        "width": 256,
+        "height": 192
+      }
+    },
+    {
+      "atMs": 5827.5,
+      "player": {
+        "x": 2658.158015151247,
+        "y": 2420
+      },
+      "muzzle": {
+        "x": 2748.6597845915826,
+        "y": 2413.9158915151525
+      },
+      "ropeOrigin": {
+        "x": 2748.6597845915826,
+        "y": 2413.9158915151525
+      },
+      "poseOrigin": {
+        "x": 2748.6597845915826,
+        "y": 2413.9158915151525
+      },
+      "authoritativeOrigin": {
+        "x": 2635.179931640625,
+        "y": 2419.990234375
+      },
+      "ropeMuzzleDelta": 0,
+      "poseMuzzleDelta": 0,
+      "authorityMuzzleDelta": 113.64231019717059,
+      "weapon": {
+        "x": 26.219999986328183,
+        "y": -6.080509671011401,
+        "rotation": -0.00005364958017395338,
+        "semanticRotation": -0.00005364958017395338,
+        "scaleX": 0.3046875,
+        "scaleY": 0.3046875,
+        "originX": 0.14,
+        "originY": 0.5,
+        "width": 256,
+        "height": 192
+      }
+    },
+    {
+      "atMs": 5886.89999999851,
+      "player": {
+        "x": 2662.9580151512473,
+        "y": 2420
+      },
+      "muzzle": {
+        "x": 2753.9670570434087,
+        "y": 2413.916651004613
+      },
+      "ropeOrigin": {
+        "x": 2753.967057043409,
+        "y": 2413.916651004613
+      },
+      "poseOrigin": {
+        "x": 2753.9670570434087,
+        "y": 2413.916651004613
+      },
+      "authoritativeOrigin": {
+        "x": 2640.780029296875,
+        "y": 2419.9912109375
+      },
+      "ropeMuzzleDelta": 4.547473508864641e-13,
+      "poseMuzzleDelta": 0,
+      "authorityMuzzleDelta": 113.34991631436178,
+      "weapon": {
+        "x": 26.219999990915696,
+        "y": -6.080415453854468,
+        "rotation": -0.000043731984694872494,
+        "semanticRotation": -0.000043731984694872494,
+        "scaleX": 0.3046875,
+        "scaleY": 0.3046875,
+        "originX": 0.14,
+        "originY": 0.5,
+        "width": 256,
+        "height": 192
+      }
+    }
+  ]
+}

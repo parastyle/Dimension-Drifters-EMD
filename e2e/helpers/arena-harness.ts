@@ -72,19 +72,23 @@ export function formatError(error: unknown): string {
 }
 
 /**
- * Run one feature spec against a freshly booted real stack with the smoke suite's console-error gate:
+ * Run one feature spec against the suite's shared real stack (or a standalone fallback) with the
+ * smoke suite's console-error gate:
  * ANY browser console error or pageerror fails the spec, even when the state assertions all passed.
- * Mirrors black-screen.smoke.spec.ts teardown ordering (page first, then the stack).
+ * The page closes per test; a locally acquired fallback stack closes immediately afterward.
  */
 export async function runArenaSpec(
   page: Page,
   body: (baseURL: string) => Promise<void>,
 ): Promise<void> {
-  const stack = await startSpecStack();
-  if (stack.status === "skipped") {
+  const sharedBaseURL = process.env.DD_E2E_BASE_URL;
+  const stack = sharedBaseURL ? undefined : await startSpecStack();
+  if (stack?.status === "skipped") {
     test.skip(true, stack.reason);
     return;
   }
+  const baseURL = sharedBaseURL ?? stack?.baseURL;
+  if (!baseURL) throw new Error("arena harness did not receive a live stack URL");
 
   const browserErrors: string[] = [];
   page.on("console", (message) => {
@@ -95,14 +99,14 @@ export async function runArenaSpec(
   let specFailure: unknown;
   let teardownFailure: unknown;
   try {
-    await body(stack.baseURL);
+    await body(baseURL);
   } catch (error) {
     specFailure = error;
   } finally {
     await page.close().catch((error: unknown) => {
       teardownFailure = error;
     });
-    await stack.close().catch((error: unknown) => {
+    await stack?.close().catch((error: unknown) => {
       teardownFailure = teardownFailure ?? error;
     });
   }
@@ -128,29 +132,6 @@ export async function bootArena(page: Page, baseURL: string, devSpec?: string): 
     "Phaser must mount a visible canvas",
   ).toBeVisible();
   await waitForArenaLive(page);
-  // A cold per-spec Vite instance broadcasts ONE full-reload once its first-load dependency optimize
-  // pass lands (the arena chunk's deps are discovered at request time). That navigation wipes any
-  // page-side probes/monkeypatches a spec installed. Absorb it deterministically: reload once ourselves
-  // (the second document runs on the final optimized dep set) and then demand a navigation-quiet window
-  // before handing the page to the spec body. This is bounded warm-up, not a semantic sleep.
-  let lastNavigationAt = Date.now();
-  const onNavigated = (): void => {
-    lastNavigationAt = Date.now();
-  };
-  page.on("framenavigated", onNavigated);
-  try {
-    await page.reload({ waitUntil: "domcontentloaded" });
-    await waitForArenaLive(page);
-    await expect
-      .poll(() => Date.now() - lastNavigationAt > 1_500, {
-        message: "the dev server should stop issuing full-reload navigations",
-        timeout: 30_000,
-      })
-      .toBe(true);
-    await waitForArenaLive(page);
-  } finally {
-    page.off("framenavigated", onNavigated);
-  }
 }
 
 /** Poll until the arena scene is active and this session's player row exists — navigation-tolerant. */

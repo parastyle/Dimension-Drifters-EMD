@@ -3565,6 +3565,7 @@
         "dex": "B",
         "str": "D"
       },
+      "archived": true,
       "id": "x2-locust-flail"
     },
     {
@@ -3749,10 +3750,11 @@
     {
       "name": "Widowmaker Wrecking-Ball",
       "type": "melee",
-      "family": "flail",
-      "theme": "demolition wrecking-ball flail",
+      "family": "maul",
+      "theme": "rigid demolition wrecking-ball maul",
       "element": "physical",
       "finish": "battle-worn",
+      "description": "A massive pitted demolition sphere permanently socketed to a riveted solid-steel neck and two-handed braced haft: the Widowmaker's old wrecking-ball identity rebuilt as one rigid crushing implement.",
       "grip": "2H",
       "size": "XL",
       "rangeBand": "mid",
@@ -3760,10 +3762,10 @@
         "STR",
         "CON"
       ],
-      "artPrompt": "Weapon-only in-world sprite: an enormous two-handed wrecking-ball flail — a massive pitted dark-iron demolition sphere on a length of thick heavy oxidized chain, anchored to a riveted steel haft with a reinforced cross-brace handle. Devastating, swinging ruin. Flat orthographic full side-profile, ~4-6 colours. Faces RIGHT: huge iron wrecking-ball business-end to the RIGHT trailing the heavy chain, braced steel haft/grip on the LEFT.",
+      "artPrompt": "Weapon-only in-world sprite: rebuild the existing Widowmaker Wrecking-Ball in the same massive pitted dark-iron, gunmetal, battle-worn visual identity as a RIGID two-handed demolition maul. The huge spherical iron head is permanently socketed directly onto a thick solid riveted steel neck and reinforced cross-brace haft, forming ONE continuous connected weapon from grip to ball. Absolutely NO chain, rope, cable, hinge, gap, floating part, or disconnected head. Preserve the original charcoal #3A4049 and gunmetal #5A6472 palette/material reading. Flat orthographic full side-profile, ~4-6 colours. Faces RIGHT: huge iron sphere HEAD to the RIGHT, long braced solid haft/grip to the LEFT.",
       "palettePrimary": "#3A4049",
       "paletteAccent": "#5A6472",
-      "cardartAction": "swung in a devastating wide arc, the giant ball trailing the heavy chain with a wall of dust and flung debris bursting on impact",
+      "cardartAction": "driven down in a devastating rigid maul slam, the giant iron sphere and solid haft moving as one while a wall of dust and debris erupts on impact",
       "behavior": {
         "kind": "quake",
         "radius": 170,
@@ -3823,6 +3825,7 @@
       "requirements": {
         "dex": 6
       },
+      "archived": true,
       "id": "x2-snakebite-lash",
       "behavior": {
         "kind": "edge"
@@ -3959,6 +3962,7 @@
         "str": 6,
         "dex": 6
       },
+      "archived": true,
       "id": "x2-nine-tail-razorlash"
     },
     {
@@ -4451,6 +4455,7 @@
         "str": 7,
         "dex": 5
       },
+      "archived": true,
       "id": "x2-ferrous-serpent"
     },
     {
@@ -4630,6 +4635,7 @@
         "dex": 7,
         "str": 5
       },
+      "archived": true,
       "id": "x2-mistral-kusarigama",
       "behavior": {
         "kind": "edge"
@@ -4678,6 +4684,7 @@
         "dex": 8,
         "str": 6
       },
+      "archived": true,
       "id": "x2-dust-devil-flail"
     },
     {
@@ -4990,7 +4997,10 @@
         "bulletKind": "tracer",
         "muzzle": "rapid",
         "muzzleColor": 11619071,
-        "recoil": 0.0008
+        "recoil": 0.0008,
+        "muzzleOffsets": [
+          { "forward": -1, "lateral": -14 }
+        ]
       },
       "stats": {
         "damage": 6,
@@ -5472,14 +5482,17 @@
         "range": 540,
         "fireRate": 0.1,
         "pellets": 1,
-        "spread": 0.1,
+        "spread": 0.18,
         "pierce": 1,
         "magazine": 18,
         "reloadSeconds": 1.5,
         "bulletKind": "tracer",
         "muzzle": "rapid",
         "muzzleColor": 11028526,
-        "recoil": 0.0008
+        "recoil": 0.0008,
+        "muzzleOffsets": [
+          { "forward": -1, "lateral": -7 }
+        ]
       },
       "stats": {
         "damage": 5,
@@ -5534,6 +5547,9 @@
         "muzzle": "spark",
         "muzzleColor": 16726996,
         "recoil": 0.0018,
+        "muzzleOffsets": [
+          { "forward": -1, "lateral": -5 }
+        ],
         "explode": {
           "radius": 48,
           "damage": 5
@@ -6359,18 +6375,13 @@
         "gripFrac": 0.12
       },
       "behavior": {
-        "kind": "gun",
-        "damage": 14,
-        "projectileSpeed": 1350,
-        "range": 860,
-        "fireRate": 0.54,
-        "pierce": 4,
-        "magazine": 6,
-        "reloadSeconds": 1.8,
-        "bulletKind": "slug",
-        "muzzle": "punch",
-        "muzzleColor": 11619071,
-        "recoil": 0.0028
+        "kind": "beam",
+        "damage": 3,
+        "range": 640,
+        "tickRate": 0.1,
+        "width": 18,
+        "chargeSeconds": 0.65,
+        "sweepLagSeconds": 0.16
       },
       "scalingGrades": {
         "dex": "B",
@@ -6391,7 +6402,7 @@
       "finish": "battle-worn",
       "grip": "2H",
       "handlingTags": ["pump"],
-      "gripPoints": { "primary": { "x": 0.14, "y": 0.5 }, "secondary": { "x": 0.43, "y": 0.62, "role": "pump" } },
+      "gripPoints": { "primary": { "x": 0.31, "y": 0.62 }, "secondary": { "x": 0.56, "y": 0.66, "role": "pump" } },
       "size": "M",
       "rangeBand": "mid",
       "scaling": [
@@ -6807,7 +6818,7 @@
       "finish": "battle-worn",
       "grip": "2H",
       "handlingTags": ["pump"],
-      "gripPoints": { "primary": { "x": 0.14, "y": 0.5 }, "secondary": { "x": 0.44, "y": 0.63, "role": "pump" } },
+      "gripPoints": { "primary": { "x": 0.31, "y": 0.64 }, "secondary": { "x": 0.63, "y": 0.7, "role": "pump" } },
       "size": "M",
       "rangeBand": "close",
       "scaling": [
@@ -6861,7 +6872,7 @@
       "finish": "worn",
       "grip": "2H",
       "handlingTags": ["pump"],
-      "gripPoints": { "primary": { "x": 0.15, "y": 0.5 }, "secondary": { "x": 0.43, "y": 0.62, "role": "pump" } },
+      "gripPoints": { "primary": { "x": 0.38, "y": 0.66 }, "secondary": { "x": 0.6, "y": 0.7, "role": "pump" } },
       "size": "M",
       "rangeBand": "close",
       "scaling": [
@@ -6971,7 +6982,7 @@
       "finish": "pristine",
       "grip": "2H",
       "handlingTags": ["pump"],
-      "gripPoints": { "primary": { "x": 0.14, "y": 0.5 }, "secondary": { "x": 0.45, "y": 0.62, "role": "pump" } },
+      "gripPoints": { "primary": { "x": 0.36, "y": 0.62 }, "secondary": { "x": 0.61, "y": 0.7, "role": "pump" } },
       "size": "M",
       "rangeBand": "close",
       "scaling": [
@@ -7026,7 +7037,7 @@
       "finish": "ornate",
       "grip": "2H",
       "handlingTags": ["pump"],
-      "gripPoints": { "primary": { "x": 0.15, "y": 0.5 }, "secondary": { "x": 0.43, "y": 0.62, "role": "pump" } },
+      "gripPoints": { "primary": { "x": 0.37, "y": 0.69 }, "secondary": { "x": 0.58, "y": 0.69, "role": "pump" } },
       "size": "M",
       "rangeBand": "close",
       "scaling": [
@@ -7132,7 +7143,7 @@
       "finish": "battle-worn",
       "grip": "2H",
       "handlingTags": ["pump"],
-      "gripPoints": { "primary": { "x": 0.12, "y": 0.5 }, "secondary": { "x": 0.42, "y": 0.64, "role": "pump" } },
+      "gripPoints": { "primary": { "x": 0.34, "y": 0.63 }, "secondary": { "x": 0.63, "y": 0.76, "role": "pump" } },
       "size": "L",
       "rangeBand": "close",
       "scaling": [
@@ -7184,7 +7195,7 @@
       "finish": "ornate",
       "grip": "2H",
       "handlingTags": ["pump"],
-      "gripPoints": { "primary": { "x": 0.15, "y": 0.5 }, "secondary": { "x": 0.43, "y": 0.62, "role": "pump" } },
+      "gripPoints": { "primary": { "x": 0.35, "y": 0.72 }, "secondary": { "x": 0.56, "y": 0.69, "role": "pump" } },
       "size": "M",
       "rangeBand": "close",
       "scaling": [
@@ -7295,7 +7306,7 @@
       "finish": "worn",
       "grip": "dual",
       "handlingTags": ["pump"],
-      "gripPoints": { "primary": { "x": 0.16, "y": 0.5 }, "secondary": { "x": 0.43, "y": 0.63, "role": "pump" } },
+      "gripPoints": { "primary": { "x": 0.25, "y": 0.67 }, "secondary": { "x": 0.55, "y": 0.63, "role": "pump" } },
       "size": "S",
       "rangeBand": "close",
       "scaling": [
@@ -7348,7 +7359,7 @@
       "finish": "battle-worn",
       "grip": "2H",
       "handlingTags": ["pump"],
-      "gripPoints": { "primary": { "x": 0.12, "y": 0.5 }, "secondary": { "x": 0.4, "y": 0.63, "role": "pump" } },
+      "gripPoints": { "primary": { "x": 0.31, "y": 0.68 }, "secondary": { "x": 0.56, "y": 0.64, "role": "pump" } },
       "size": "L",
       "rangeBand": "close",
       "scaling": [
@@ -7451,7 +7462,7 @@
       "finish": "worn",
       "grip": "2H",
       "handlingTags": ["pump"],
-      "gripPoints": { "primary": { "x": 0.12, "y": 0.5 }, "secondary": { "x": 0.42, "y": 0.64, "role": "pump" } },
+      "gripPoints": { "primary": { "x": 0.23, "y": 0.75 }, "secondary": { "x": 0.69, "y": 0.78, "role": "pump" } },
       "size": "L",
       "rangeBand": "close",
       "scaling": [
@@ -7510,7 +7521,7 @@
       "finish": "battle-worn",
       "grip": "2H",
       "handlingTags": ["pump"],
-      "gripPoints": { "primary": { "x": 0.14, "y": 0.5 }, "secondary": { "x": 0.45, "y": 0.63, "role": "pump" } },
+      "gripPoints": { "primary": { "x": 0.23, "y": 0.68 }, "secondary": { "x": 0.52, "y": 0.67, "role": "pump" } },
       "size": "M",
       "rangeBand": "close",
       "scaling": [
@@ -7569,7 +7580,7 @@
       "finish": "ornate",
       "grip": "2H",
       "handlingTags": ["pump"],
-      "gripPoints": { "primary": { "x": 0.15, "y": 0.5 }, "secondary": { "x": 0.44, "y": 0.62, "role": "pump" } },
+      "gripPoints": { "primary": { "x": 0.39, "y": 0.66 }, "secondary": { "x": 0.61, "y": 0.65, "role": "pump" } },
       "size": "M",
       "rangeBand": "close",
       "scaling": [
@@ -7625,7 +7636,7 @@
       "finish": "worn",
       "grip": "2H",
       "handlingTags": ["pump"],
-      "gripPoints": { "primary": { "x": 0.14, "y": 0.5 }, "secondary": { "x": 0.43, "y": 0.64, "role": "pump" } },
+      "gripPoints": { "primary": { "x": 0.3, "y": 0.74 }, "secondary": { "x": 0.6, "y": 0.66, "role": "pump" } },
       "size": "M",
       "rangeBand": "close",
       "scaling": [
@@ -7679,7 +7690,7 @@
       "finish": "arcane",
       "grip": "2H",
       "handlingTags": ["pump"],
-      "gripPoints": { "primary": { "x": 0.12, "y": 0.5 }, "secondary": { "x": 0.42, "y": 0.64, "role": "pump" } },
+      "gripPoints": { "primary": { "x": 0.31, "y": 0.68 }, "secondary": { "x": 0.7, "y": 0.58, "role": "pump" } },
       "size": "L",
       "rangeBand": "close",
       "scaling": [
@@ -7840,7 +7851,7 @@
       "finish": "battle-worn",
       "grip": "2H",
       "handlingTags": ["pump"],
-      "gripPoints": { "primary": { "x": 0.13, "y": 0.52 }, "secondary": { "x": 0.46, "y": 0.72, "role": "vertical-foregrip" } },
+      "gripPoints": { "primary": { "x": 0.3, "y": 0.74 }, "secondary": { "x": 0.8, "y": 0.78, "role": "vertical-foregrip" } },
       "size": "L",
       "rangeBand": "close",
       "scaling": [
@@ -8164,7 +8175,7 @@
       "finish": "worn",
       "grip": "2H",
       "handlingTags": ["pump"],
-      "gripPoints": { "primary": { "x": 0.14, "y": 0.5 }, "secondary": { "x": 0.43, "y": 0.64, "role": "pump" } },
+      "gripPoints": { "primary": { "x": 0.27, "y": 0.75 }, "secondary": { "x": 0.68, "y": 0.68, "role": "pump" } },
       "size": "L",
       "rangeBand": "close",
       "scaling": [
@@ -8734,12 +8745,12 @@
         "muzzle": "spark",
         "recoil": 0.0009,
         "muzzleOffsets": [
-          { "forward": 0, "lateral": -13 },
-          { "forward": 0, "lateral": -8 },
-          { "forward": 0, "lateral": -3 },
-          { "forward": 0, "lateral": 3 },
-          { "forward": 0, "lateral": 8 },
-          { "forward": 0, "lateral": 13 }
+          { "forward": -9, "lateral": 11 },
+          { "forward": -9, "lateral": 22 },
+          { "forward": -9, "lateral": 32 },
+          { "forward": -4, "lateral": 11 },
+          { "forward": -4, "lateral": 22 },
+          { "forward": -4, "lateral": 32 }
         ],
         "explode": {
           "radius": 40,
@@ -15290,8 +15301,8 @@
       "finish": "battle-worn",
       "grip": "2H",
       "gripPoints": {
-        "primary": { "x": 0.18, "y": 0.54 },
-        "secondary": { "x": 0.5, "y": 0.72, "role": "vertical-foregrip" }
+        "primary": { "x": 0.31, "y": 0.74 },
+        "secondary": { "x": 0.72, "y": 0.74, "role": "vertical-foregrip" }
       },
       "size": "L",
       "rangeBand": "mid",
@@ -15338,8 +15349,8 @@
       "finish": "pristine",
       "grip": "2H",
       "gripPoints": {
-        "primary": { "x": 0.17, "y": 0.53 },
-        "secondary": { "x": 0.48, "y": 0.7, "role": "vertical-foregrip" }
+        "primary": { "x": 0.29, "y": 0.74 },
+        "secondary": { "x": 0.61, "y": 0.79, "role": "vertical-foregrip" }
       },
       "size": "M",
       "rangeBand": "long",
@@ -15370,7 +15381,7 @@
         "range": 260,
         "halfArc": 0.48,
         "cooldown": 0.28,
-        "displayLength": 116,
+        "displayLength": 168.2,
         "swingArc": 1.8,
         "gripFrac": 0.17
       }
@@ -15386,8 +15397,8 @@
       "finish": "scorched",
       "grip": "2H",
       "gripPoints": {
-        "primary": { "x": 0.15, "y": 0.55 },
-        "secondary": { "x": 0.52, "y": 0.74, "role": "vertical-foregrip" }
+        "primary": { "x": 0.31, "y": 0.72 },
+        "secondary": { "x": 0.77, "y": 0.72, "role": "vertical-foregrip" }
       },
       "size": "L",
       "rangeBand": "mid",

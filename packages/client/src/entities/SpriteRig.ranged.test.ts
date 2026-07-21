@@ -428,21 +428,28 @@ describe("SpriteRig V3G grip and mechanism laws", () => {
 });
 
 describe("SpriteRig V3G pistol idle twirl", () => {
-  it("becomes eligible exactly 1s after quiet and reuses the pistol twirl beat", async () => {
-    const { idleFlourishEligibleEpoch, PISTOL_IDLE_TWIRL_DELAY_MS } = await import(
-      "./SpriteRig.js"
-    );
+  it("starts its 0.5s quiet clock after shot recovery and reuses the pistol twirl beat", async () => {
+    const {
+      idleFlourishEligibleEpoch,
+      PISTOL_DUAL_TWIRL_STAGGER_MS,
+      PISTOL_IDLE_TWIRL_DELAY_MS,
+      RANGED_GUN_RECOVERY_MS,
+    } = await import("./SpriteRig.js");
     const { weaponFlourishSpecFor } = await import("../sprites/pose-language.js");
     const pistol = WEAPONS["x-gun-revolver-cannon"];
     if (!pistol) throw new Error("missing pistol idle fixture");
-    expect(idleFlourishEligibleEpoch(pistol, 2_000, 537)).toBe(3_000);
-    expect(PISTOL_IDLE_TWIRL_DELAY_MS).toBe(1_000);
+    expect(idleFlourishEligibleEpoch(pistol, 2_000, 537)).toBe(2_500);
+    const recoveryEndsAt = 2_000 + RANGED_GUN_RECOVERY_MS;
+    expect(idleFlourishEligibleEpoch(pistol, 2_050, 537, recoveryEndsAt)).toBe(2_820);
+    expect(RANGED_GUN_RECOVERY_MS).toBe(320);
+    expect(PISTOL_IDLE_TWIRL_DELAY_MS).toBe(500);
+    expect(PISTOL_DUAL_TWIRL_STAGGER_MS).toBe(40);
     const spec = weaponFlourishSpecFor(pistol);
     expect(spec.idleSettle).toBe(spec.afterAttack);
     expect(spec.idleSettle?.rotationRad).toBe(Math.PI * 2);
   });
 
-  it("cancels an active twirl on fire and restarts its 1s quiet clock", async () => {
+  it("cancels an active twirl on fire and restarts its 0.5s quiet clock", async () => {
     const { SpriteRig } = await import("./SpriteRig.js");
     const pistol = WEAPONS["x-gun-ricochet-pistol"];
     if (!pistol) throw new Error("missing pistol cancel fixture");
@@ -485,7 +492,7 @@ describe("SpriteRig V3G pistol idle twirl", () => {
     });
     rig.cancelFlourish("accepted-attack");
     expect(rig.flourishChannels[0]?.active).toBe(false);
-    expect(rig.idleFlourishEligibleAtMs).toBe(3_000);
+    expect(rig.idleFlourishEligibleAtMs).toBe(2_500);
     expect(rig.flourishCancelEdge).toBe(1);
   });
 });

@@ -3,7 +3,13 @@ import { partTexture } from "../entities/SpriteRig.js";
 import { SPRITES } from "../sprites/manifest.js";
 import type { CasterVfxRecipe } from "./caster-vfx-recipes.js";
 import { PARTICLE_PACKS } from "./particle-manifest.js";
-import { elementPack, particleBurst } from "./particles.js";
+import {
+  elementPack,
+  paintedParticleDominance,
+  paintedParticlePixels,
+  paintedParticleScale,
+  particleBurst,
+} from "./particles.js";
 
 export const CASTER_VFX_BUDGET = Object.freeze({
   punctuationEventsPerFrame: 8,
@@ -260,7 +266,9 @@ export function spawnCasterCast(
       dirRad: angle,
       spread: recipe.form === "lance" ? 0.2 : 0.58,
       speed: reducedMotion ? 45 : 82 + (recipe.grade === "pinnacle" ? 20 : 0),
-      scale: reducedMotion ? 0.17 : 0.22,
+      scaleContract: reducedMotion
+        ? paintedParticlePixels(16.32)
+        : paintedParticleDominance(recipe.source.radius * 2, 0.56, 20, 32),
       lifeMs: reducedMotion ? 170 : 300,
       additive: true,
       depth: 99520,
@@ -406,7 +414,9 @@ export function makeCasterProjectile(
     if (pack && scene.textures.exists(`ptcl:${packId}`)) {
       const painted = scene.add
         .image(0, 0, `ptcl:${packId}`, (Math.random() * pack.count) | 0)
-        .setScale(recipe.projectile.bodyScale)
+        .setScale(
+          paintedParticleScale(packId, paintedParticlePixels(recipe.projectile.bodySizePx)),
+        )
         .setRotation(angle)
         .setBlendMode(Phaser.BlendModes.ADD);
       children.push(painted);
@@ -529,7 +539,9 @@ export function spawnCasterImpact(
       dirRad: angle,
       spread: recipe.form === "lance" ? 0.44 : Math.PI,
       speed: reducedMotion ? 55 : 105 + recipe.impact.radius * 1.5,
-      scale: reducedMotion ? 0.17 : 0.2 + recipe.impact.radius / 260,
+      scaleContract: reducedMotion
+        ? paintedParticlePixels(16.32)
+        : paintedParticleDominance(recipe.impact.radius * 2, 0.82, 24, 48),
       lifeMs: reducedMotion ? 190 : 360,
       additive: recipe.form !== "tome" && recipe.form !== "relic",
       sink: recipe.form === "tome" || recipe.form === "codex" ? 8 : 0,

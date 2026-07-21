@@ -728,9 +728,11 @@ export class BeamRenderer {
         .beginPath();
       for (let i = 0; i <= steps; i++) {
         const f = i / steps;
-        const wavePhase = f * Math.PI * (beam.widthProfile === "segmented" ? 12 : 7) + phase;
+        const wavePhase =
+          f * Math.PI * 2 * beam.rippleFrequency + phase + (beam.ripplePhaseRad ?? 0);
         let wave = 0;
         if (beam.ripple === "sine" || beam.ripple === "double-helix") wave = Math.sin(wavePhase);
+        else if (beam.ripple === "cosine") wave = Math.cos(wavePhase);
         else if (beam.ripple === "sawtooth")
           wave = 2 * (wavePhase / (Math.PI * 2) - Math.floor(wavePhase / (Math.PI * 2) + 0.5));
         else if (beam.ripple === "pulse-train") wave = Math.sin(wavePhase) > 0.45 ? 1 : -0.25;

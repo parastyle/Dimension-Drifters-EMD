@@ -103,13 +103,13 @@ describe("owner-notes W-VFX weapon identities", () => {
     expect(sparkknuckle).toMatchObject({
       packs: ["shock-spark"],
       count: 4,
-      scale: 0.085,
+      particleDominance: 0.3,
       extent: 0.58,
     });
     expect(fulgurite).toMatchObject({
       packs: ["shock-spark", "shock-bolt"],
       count: 8,
-      scale: 0.15,
+      particleDominance: 0.44,
     });
     for (const recipe of [sparkknuckle, fulgurite]) {
       if (!recipe) throw new Error("Missing revised shock-aura recipe");

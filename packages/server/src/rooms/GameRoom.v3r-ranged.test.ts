@@ -154,7 +154,9 @@ describe("GameRoom — V3R ranged authority", () => {
       `${player.id}:barrel:4`,
       `${player.id}:barrel:5`,
     ]);
-    expect(new Set(rows.map(([, row]) => row.originY.toFixed(4))).size).toBe(6);
+    expect(
+      new Set(rows.map(([, row]) => `${row.originX.toFixed(4)},${row.originY.toFixed(4)}`)).size,
+    ).toBe(6);
   });
 
   it("grows Spore-Spitter as a server-owned poison smoke zone", () => {

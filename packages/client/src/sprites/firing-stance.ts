@@ -1,4 +1,4 @@
-import { isWornWeapon, type WeaponDef } from "@dd/shared";
+import { isWornWeapon, type WeaponDef, weaponHasHandlingTag } from "@dd/shared";
 
 /** Hand-target coordinates are body-height ratios in rig-local space; negative Y is upward. */
 export const FIRING_FACE_LINE_Y = -0.22;
@@ -65,12 +65,12 @@ export const FIRING_STANCES: Readonly<Record<FiringStanceFamily, FiringStanceSpe
   },
   scattergun: {
     family: "scattergun",
-    yBand: [-0.16, -0.08],
-    lead: { x: 0.14, y: -0.125, aimReach: 0.018 },
-    off: { x: 0.09, y: -0.105, aimReach: 0.014 },
-    twoHandSpacing: 0.31,
+    yBand: [-0.12, -0.04],
+    lead: { x: 0.15, y: -0.085, aimReach: 0.018 },
+    off: { x: 0.1, y: -0.065, aimReach: 0.014 },
+    twoHandSpacing: 0.34,
     bodyAdvance: 0.016,
-    bodyTurn: 0.04,
+    bodyTurn: 0.06,
     aimed: true,
   },
   "rapid-gun": {
@@ -186,7 +186,12 @@ export function firingStanceFamilyFor(def: WeaponDef): FiringStanceFamily {
   }
 
   if (def.gun) {
-    if (delivery === "spread" || (def.gun.pellets ?? 1) > 1 || SCATTER_FAMILY.test(family)) {
+    if (
+      delivery === "spread" ||
+      (def.gun.pellets ?? 1) > 1 ||
+      SCATTER_FAMILY.test(family) ||
+      weaponHasHandlingTag(def, "pump")
+    ) {
       return "scattergun";
     }
     if (gunLaunchesPayload(def)) return "launcher";

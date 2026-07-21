@@ -36,7 +36,7 @@ const {
   DIMENSIONS,
   DIMENSION_IDS,
   ENEMY_KINDS,
-  EXPANSION_WEAPON_IDS,
+  ACTIVE_WEAPON_CATALOG_IDS,
   GEAR_CATALOG,
   GEAR_IDS,
   PET_CATALOG,
@@ -46,7 +46,6 @@ const {
   ULTIMATE_VARIANTS,
   UltimateFamily,
   WEAPONS,
-  WEAPON_IDS,
   characterName,
   ultimateCodeFor,
 } = shared;
@@ -151,7 +150,7 @@ function topStats(spread) {
     .join("/");
 }
 
-const weaponIds = [...WEAPON_IDS, ...EXPANSION_WEAPON_IDS];
+const weaponIds = [...ACTIVE_WEAPON_CATALOG_IDS];
 const weapons = weaponIds.map((id) => {
   const weapon = WEAPONS[id];
   const family = weapon?.tags?.family ?? "untyped";

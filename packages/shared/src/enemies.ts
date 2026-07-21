@@ -32,6 +32,7 @@ import {
 import { DIMENSION_ENEMY_KINDS } from "./dimensions.generated.js";
 import { clamp } from "./math.js";
 import type { Vec2 } from "./movement.js";
+import { isActiveWeaponId } from "./weapons.js";
 
 /**
  * Enemy roster + authoritative AI (§15). PURE + data-driven (§15 "data-driven module library"):
@@ -966,14 +967,14 @@ const ENEMY_MELEE_POOL: readonly string[] = [
   "x-sword-neon-katana",
   "x-sword-bone",
   "tombstone-greatsword",
-];
+].filter(isActiveWeaponId);
 const ENEMY_RANGED_POOL: readonly string[] = [
   "x-gun-revolver-cannon",
   "x-gun-coffin-shotgun",
   "x-gun-gatling",
   "x-gun-nailgun",
   "x-gun-ricochet-pistol",
-];
+].filter(isActiveWeaponId);
 const MELEE_ARCHETYPES = new Set(["rusher", "swarm", "leaper", "duelist"]);
 function hashPick(seed: string, pool: readonly string[]): string {
   let h = 0;
@@ -981,6 +982,14 @@ function hashPick(seed: string, pool: readonly string[]): string {
   return pool[h % pool.length] ?? pool[0]!;
 }
 for (const [id, kind] of Object.entries(ENEMY_KINDS)) {
+  // Archive is a catalog state, not a hand-authored enemy cleanup chore. If a future retirement names an
+  // explicit wielder, deterministically replace it from the appropriate active pool before any render/drop.
+  if (kind.wieldsWeapon && !isActiveWeaponId(kind.wieldsWeapon)) {
+    const replacementPool = MELEE_ARCHETYPES.has(kind.archetype)
+      ? ENEMY_MELEE_POOL
+      : ENEMY_RANGED_POOL;
+    kind.wieldsWeapon = hashPick(id, replacementPool);
+  }
   if (kind.archetype === "boss" || kind.archetype === "dummy" || kind.wieldsWeapon) continue;
   const pool = MELEE_ARCHETYPES.has(kind.archetype) ? ENEMY_MELEE_POOL : ENEMY_RANGED_POOL;
   kind.wieldsWeapon = hashPick(id, pool);

@@ -1,0 +1,51 @@
+{
+  "summary": {
+    "phase": "w4g6-after-coyote",
+    "weaponId": "x2-coyote-stinger",
+    "baseURL": "http://localhost:5180",
+    "capturedAt": "2026-07-21T03:21:20.707Z",
+    "expectedOffset": {
+      "forward": -1,
+      "lateral": -7
+    },
+    "originDeltaPx": 0.008040879654068573,
+    "shotAngleRad": -0.1600455348141941,
+    "browserErrors": [
+      "[console] Texture key already in use: dd-sprites"
+    ],
+    "unexpectedBrowserErrors": [],
+    "screenshot": "docs\\owner-notes-audit-v4-evidence\\gun-barrel-w4g6-after-coyote.png"
+  },
+  "start": {
+    "attackSeq": 0,
+    "tick": 46,
+    "player": {
+      "x": 2400,
+      "y": 2420
+    },
+    "rawMuzzleReach": 43.68
+  },
+  "live": {
+    "currentTick": 52,
+    "ageTicks": 4,
+    "integratedSteps": 5,
+    "row": {
+      "id": "p0",
+      "x": 2652.123046875,
+      "y": 2381.119384765625,
+      "vx": 789.7760009765625,
+      "vy": -127.49052429199219,
+      "bornTick": 48
+    },
+    "recoveredOrigin": {
+      "x": 2454.6790466308594,
+      "y": 2412.992015838623
+    },
+    "paintedMuzzle": {
+      "x": 2454.68,
+      "y": 2413
+    },
+    "originDeltaPx": 0.008040879654068573,
+    "shotAngleRad": -0.1600455348141941
+  }
+}
