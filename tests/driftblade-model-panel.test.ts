@@ -224,12 +224,12 @@ describe("driftblade-model panel", () => {
       "chop/glacier-down-up": ["x2-glacier-headtaker"],
       "chop/hollowmoon-eclipse": ["x2-hollowmoon-reaver"],
       "chop/quicksilver-up-down": ["x2-quicksilver-censer"],
+      "chop/reliquary-down-stab": ["x2-reliquary-halberd"],
       "chop/saintspar-down-swing": ["x2-saintspar-lochaber"],
       "chop/voltfang-rise": ["x2-voltfang-tachi"],
       "punch/sparkknuckle-voltage-boxing": ["x2-sparkknuckle-hex-mitt"],
       "chop/claymore-breach": ["x2-dustreaper-zweihander", "x2-tombwarden-claymore"],
       "chop/glaive-compass": [
-        "x2-blightfork-glaive",
         "x2-thunderhead-voulge",
         "x2-wickfire-fauchard",
       ],
@@ -243,6 +243,8 @@ describe("driftblade-model panel", () => {
         "x2-toxinwell-khopesh",
       ],
       "arc/mournveil-fan-spin": ["x2-mournveil-scythe"],
+      "arc/wyrmskull-sword": ["x2-wyrmskull-reliquary"],
+      "thrust/blightfork-jab": ["x2-blightfork-glaive"],
       "thrust/dustdevil-jab-slash": ["x2-dustdevil-glaive"],
       "thrust/stinger": [
         "x2-bonewhisper-jian",
@@ -288,7 +290,7 @@ describe("driftblade-model panel", () => {
     });
     expect(defaultCounts).toEqual({
       "punch/default": 20,
-      "arc/default": 116,
+      "arc/default": 113,
       "chop/default": 8,
       "rake/dagger": 1,
       "rake/claw": 5,

@@ -9,13 +9,16 @@ export interface WeaponEffectRecipe {
   readonly projectile?: "electric-bolt" | "crystal-shard-orb";
   readonly projectileColor?: number;
   readonly impactPack?: string;
+  readonly impactAnchor?: "target";
   readonly swingPack?: string;
   readonly swingCount?: number;
   readonly swingScaleMode?: "blade-length";
+  readonly swingScaleMultiplier?: number;
   readonly additive?: boolean;
   readonly chain?: "scattered-pages";
   readonly noGore?: boolean;
   readonly suppressQuakeVfx?: boolean;
+  readonly musicalNotes?: true;
 }
 
 export const WEAPON_EFFECT_RECIPES = Object.freeze({
@@ -123,6 +126,39 @@ export const WEAPON_EFFECT_RECIPES = Object.freeze({
     swingCount: 8,
     additive: true,
   }),
+  "thunderhead-electric-codex": Object.freeze({
+    id: "thunderhead-electric-codex",
+    weaponId: "x2-thunderhead-voulge",
+    emitter: "blade",
+    swingPack: "shock-spark",
+    swingCount: 18,
+    additive: true,
+  }),
+  "sermon-musical-notes": Object.freeze({
+    id: "sermon-musical-notes",
+    weaponId: "x2-sermon-bell",
+    emitter: "body",
+    musicalNotes: true,
+    suppressQuakeVfx: true,
+  }),
+  "nullspike-impact-circle": Object.freeze({
+    id: "nullspike-impact-circle",
+    weaponId: "x2-nullspike-pike",
+    emitter: "tip",
+    impactPack: "void-ring",
+    impactAnchor: "target",
+    additive: true,
+  }),
+  "quarry-quad-spatter": Object.freeze({
+    id: "quarry-quad-spatter",
+    weaponId: "x2-quarry-splitter-bardiche",
+    emitter: "blade",
+    swingPack: "blood-splat",
+    swingCount: 8,
+    swingScaleMultiplier: 4,
+    noGore: true,
+    suppressQuakeVfx: true,
+  }),
 } as const satisfies Record<WeaponEffectRecipeId, WeaponEffectRecipe>);
 
 export function resolveWeaponEffectRecipe(
@@ -145,10 +181,11 @@ export function weaponSwingIdentityScale(
   recipe: WeaponEffectRecipe | undefined,
   bladeLength = 0,
 ): number {
+  const multiplier = recipe?.swingScaleMultiplier ?? 1;
   if (recipe?.swingScaleMode !== "blade-length" || !recipe.swingPack || bladeLength <= 0)
-    return recipe?.noGore ? 0.34 : 0.46;
+    return (recipe?.noGore ? 0.34 : 0.46) * multiplier;
   const frameWidth = PARTICLE_PACKS[recipe.swingPack]?.frameWidth ?? 96;
-  return bladeLength / Math.max(1, frameWidth);
+  return (bladeLength / Math.max(1, frameWidth)) * multiplier;
 }
 
 export interface WeaponAuraVfxRecipe {

@@ -9,6 +9,7 @@ import {
   createPoseLanguageSample,
   poseImpulsePending,
   samplePoseLanguage,
+  weaponFlourishSpecFor,
   weaponPoseSpecFor,
 } from "../sprites/pose-language.js";
 import {
@@ -273,78 +274,218 @@ describe("SpriteRig BAR-4 raw Arena intent boundaries", () => {
 
 // ARM-WPN-02 — append-only lazy-art clock-cut coverage for the two audited expansion failures.
 describe("SpriteRig retained lazy-art draw transition", () => {
-  it.each(["x2-hailshot-hand-maul", "x2-codex-of-forked-tongues"])(
-    "starts %s's incoming draw after a loading hitch",
-    async (weaponId) => {
-      const { SpriteRig } = await import("./SpriteRig.js");
-      const { weaponFlourishSpecFor } = await import("../sprites/pose-language.js");
-      const def = WEAPONS[weaponId];
-      if (!def) throw new Error(`missing lazy-art flourish fixture: ${weaponId}`);
-      const spec = weaponFlourishSpecFor(def);
-      type RigInstance = InstanceType<typeof SpriteRig>;
-      const rig = Object.create(SpriteRig.prototype) as RigInstance;
+  it.each([
+    "x2-hailshot-hand-maul",
+    "x2-codex-of-forked-tongues",
+  ])("starts %s's incoming draw after a loading hitch", async (weaponId) => {
+    const { SpriteRig } = await import("./SpriteRig.js");
+    const { weaponFlourishSpecFor } = await import("../sprites/pose-language.js");
+    const def = WEAPONS[weaponId];
+    if (!def) throw new Error(`missing lazy-art flourish fixture: ${weaponId}`);
+    const spec = weaponFlourishSpecFor(def);
+    type RigInstance = InstanceType<typeof SpriteRig>;
+    const rig = Object.create(SpriteRig.prototype) as RigInstance;
+    Object.assign(rig, {
+      flourishChannels: [
+        { active: false, startMs: -1e9, moment: "draw", hand: 0, rotationSign: 1, spec },
+        { active: false, startMs: -1e9, moment: "draw", hand: 1, rotationSign: -1, spec },
+      ],
+      flourishArms: [
+        { armed: false, earliestStartMs: -1e9, weaponId: "" },
+        { armed: false, earliestStartMs: -1e9, weaponId: "" },
+      ],
+      stowProxies: [
+        { startMs: -1e9, destroyAtMs: -1e9 },
+        { startMs: -1e9, destroyAtMs: -1e9 },
+      ],
+      flourishStreaks: [
+        { count: 0, lastAcceptedMs: -1e9, weaponId: "" },
+        { count: 0, lastAcceptedMs: -1e9, weaponId: "" },
+      ],
+      flourishHeadX: 0,
+      flourishHeadY: 0,
+      pendingSwapKey: `old->${weaponId}`,
+      pendingSwapObservedKey: `old->${weaponId}`,
+      pendingSwapEpochMs: 100,
+      lastSwapKey: `old->${weaponId}`,
+      lastSwapObservedKey: `old->${weaponId}`,
+      bladeNeutralReady: true,
+      idleFlourishEligibleAtMs: 0,
+      idleFlourishOffsetMs: 0,
+      flourishLeadSpec: spec,
+      flourishOffSpec: undefined,
+      weapons: [{ def }],
+      pairCeremonyStartMs: 0,
+      presentationClockNow: () => 500,
+    });
+    const internals = SpriteRig.prototype as unknown as {
+      resetFlourishState(
+        this: RigInstance,
+        clearCounters: boolean,
+        preservePendingSwap?: boolean,
+      ): void;
+      completePendingWeaponSwap(this: RigInstance): void;
+    };
+
+    internals.resetFlourishState.call(rig, false, true);
+    expect(rig.weaponSwapPending).toBe(true);
+    internals.completePendingWeaponSwap.call(rig);
+
+    const channels = (
+      rig as unknown as {
+        flourishChannels: Array<{
+          active: boolean;
+          moment: string;
+          startMs: number;
+          spec: { family: string };
+        }>;
+      }
+    ).flourishChannels;
+    expect(channels[0]).toMatchObject({
+      active: true,
+      moment: "draw",
+      startMs: 500,
+      spec: { family: spec.family },
+    });
+  });
+});
+
+// V3G2/V3G3/V3G4/V3G5 -- append-only grip and gun-law coverage.
+describe("SpriteRig V3G grip and mechanism laws", () => {
+  it("transforms a normalized secondary anchor through weapon scale and rotation", async () => {
+    const { resolveSecondaryGripPosition } = await import("./SpriteRig.js");
+    const out = { x: 0, y: 0 };
+    resolveSecondaryGripPosition(
+      {
+        primaryX: 10,
+        primaryY: 20,
+        spriteWidth: 100,
+        spriteHeight: 40,
+        scaleX: 2,
+        scaleY: 1,
+        rotationRad: Math.PI / 2,
+        primary: { x: 0.1, y: 0.5 },
+        secondary: { x: 0.4, y: 0.75 },
+        flourishForward: 0,
+        flourishLateral: 0,
+      },
+      out,
+    );
+    expect(out.x).toBeCloseTo(0, 10);
+    expect(out.y).toBeCloseTo(80, 10);
+  });
+
+  it("samples a visible pump stroke and lever loop while reduced motion stays anchored", async () => {
+    const { sampleGunHandlingHandOffset, secondaryGripHandRendersAbove } = await import(
+      "./SpriteRig.js"
+    );
+    const out = { forward: 0, lateral: 0 };
+    sampleGunHandlingHandOffset("pump", 150, 300, 100, false, out);
+    expect(out.forward).toBeCloseTo(-9, 10);
+    expect(out.lateral).toBe(0);
+    sampleGunHandlingHandOffset("lever", 75, 300, 100, false, out);
+    expect(Math.hypot(out.forward, out.lateral)).toBeGreaterThan(4);
+    sampleGunHandlingHandOffset("pump", 150, 300, 100, true, out);
+    expect(out).toEqual({ forward: 0, lateral: 0 });
+    expect(secondaryGripHandRendersAbove("pump")).toBe(true);
+    expect(secondaryGripHandRendersAbove("lever")).toBe(true);
+  });
+
+  it("arms one mechanism flourish after every accepted tagged shot", async () => {
+    const { SpriteRig, gunHandlingMechanismFor } = await import("./SpriteRig.js");
+    const mechanisms = Object.values(WEAPONS).filter(
+      (weapon) => gunHandlingMechanismFor(weapon) !== undefined,
+    );
+    expect(mechanisms).toHaveLength(26);
+    for (const weapon of mechanisms) {
+      const rig = Object.create(SpriteRig.prototype) as {
+        weapons: Array<{ def: typeof weapon }>;
+        weaponDef: typeof weapon;
+        flourishLeadSpec: ReturnType<typeof weaponFlourishSpecFor>;
+        flourishOffSpec?: ReturnType<typeof weaponFlourishSpecFor>;
+        flourishArms: Array<{ armed: boolean; earliestStartMs: number; weaponId: string }>;
+      };
       Object.assign(rig, {
-        flourishChannels: [
-          { active: false, startMs: -1e9, moment: "draw", hand: 0, rotationSign: 1, spec },
-          { active: false, startMs: -1e9, moment: "draw", hand: 1, rotationSign: -1, spec },
-        ],
+        weapons: [{ def: weapon }],
+        weaponDef: weapon,
+        flourishLeadSpec: weaponFlourishSpecFor(weapon),
         flourishArms: [
           { armed: false, earliestStartMs: -1e9, weaponId: "" },
           { armed: false, earliestStartMs: -1e9, weaponId: "" },
         ],
-        stowProxies: [
-          { startMs: -1e9, destroyAtMs: -1e9 },
-          { startMs: -1e9, destroyAtMs: -1e9 },
-        ],
-        flourishStreaks: [
-          { count: 0, lastAcceptedMs: -1e9, weaponId: "" },
-          { count: 0, lastAcceptedMs: -1e9, weaponId: "" },
-        ],
-        flourishHeadX: 0,
-        flourishHeadY: 0,
-        pendingSwapKey: `old->${weaponId}`,
-        pendingSwapObservedKey: `old->${weaponId}`,
-        pendingSwapEpochMs: 100,
-        lastSwapKey: `old->${weaponId}`,
-        lastSwapObservedKey: `old->${weaponId}`,
-        bladeNeutralReady: true,
-        idleFlourishEligibleAtMs: 0,
-        idleFlourishOffsetMs: 0,
-        flourishLeadSpec: spec,
-        flourishOffSpec: undefined,
-        weapons: [{ def }],
-        pairCeremonyStartMs: 0,
-        presentationClockNow: () => 500,
       });
       const internals = SpriteRig.prototype as unknown as {
-        resetFlourishState(
-          this: RigInstance,
-          clearCounters: boolean,
-          preservePendingSwap?: boolean,
-        ): void;
-        completePendingWeaponSwap(this: RigInstance): void;
+        recordAcceptedRangedBeat(this: typeof rig, hand: 0 | 1, epochMs: number): void;
       };
-
-      internals.resetFlourishState.call(rig, false, true);
-      expect(rig.weaponSwapPending).toBe(true);
-      internals.completePendingWeaponSwap.call(rig);
-
-      const channels = (
-        rig as unknown as {
-          flourishChannels: Array<{
-            active: boolean;
-            moment: string;
-            startMs: number;
-            spec: { family: string };
-          }>;
-        }
-      ).flourishChannels;
-      expect(channels[0]).toMatchObject({
-        active: true,
-        moment: "draw",
-        startMs: 500,
-        spec: { family: spec.family },
+      internals.recordAcceptedRangedBeat.call(rig, 0, 2_000);
+      expect(rig.flourishArms[0], weapon.id).toEqual({
+        armed: true,
+        earliestStartMs: 2_070,
+        weaponId: weapon.id,
       });
-    },
-  );
+    }
+  });
+});
+
+describe("SpriteRig V3G pistol idle twirl", () => {
+  it("becomes eligible exactly 1s after quiet and reuses the pistol twirl beat", async () => {
+    const { idleFlourishEligibleEpoch, PISTOL_IDLE_TWIRL_DELAY_MS } = await import(
+      "./SpriteRig.js"
+    );
+    const { weaponFlourishSpecFor } = await import("../sprites/pose-language.js");
+    const pistol = WEAPONS["x-gun-revolver-cannon"];
+    if (!pistol) throw new Error("missing pistol idle fixture");
+    expect(idleFlourishEligibleEpoch(pistol, 2_000, 537)).toBe(3_000);
+    expect(PISTOL_IDLE_TWIRL_DELAY_MS).toBe(1_000);
+    const spec = weaponFlourishSpecFor(pistol);
+    expect(spec.idleSettle).toBe(spec.afterAttack);
+    expect(spec.idleSettle?.rotationRad).toBe(Math.PI * 2);
+  });
+
+  it("cancels an active twirl on fire and restarts its 1s quiet clock", async () => {
+    const { SpriteRig } = await import("./SpriteRig.js");
+    const pistol = WEAPONS["x-gun-ricochet-pistol"];
+    if (!pistol) throw new Error("missing pistol cancel fixture");
+    const rig = Object.create(SpriteRig.prototype) as {
+      flourishChannels: Array<{ active: boolean; startMs: number }>;
+      flourishArms: Array<{ armed: boolean; earliestStartMs: number; weaponId: string }>;
+      stowProxies: Array<{ img?: { destroy(): void }; startMs: number; destroyAtMs: number }>;
+      flourishHeadX: number;
+      flourishHeadY: number;
+      flourishCancelGeneration: number;
+      idleFlourishEligibleAtMs: number;
+      idleFlourishOffsetMs: number;
+      weaponDef: typeof pistol;
+      weapons: Array<{ def: typeof pistol }>;
+      presentationClockNow(): number;
+      cancelFlourish(reason?: string): void;
+      readonly flourishCancelEdge: number;
+    };
+    Object.assign(rig, {
+      flourishChannels: [
+        { active: true, startMs: 1_000 },
+        { active: false, startMs: -1e9 },
+      ],
+      flourishArms: [
+        { armed: false, earliestStartMs: -1e9, weaponId: "" },
+        { armed: false, earliestStartMs: -1e9, weaponId: "" },
+      ],
+      stowProxies: [
+        { startMs: -1e9, destroyAtMs: -1e9 },
+        { startMs: -1e9, destroyAtMs: -1e9 },
+      ],
+      flourishHeadX: 0,
+      flourishHeadY: 0,
+      flourishCancelGeneration: 0,
+      idleFlourishEligibleAtMs: Number.POSITIVE_INFINITY,
+      idleFlourishOffsetMs: 600,
+      weaponDef: pistol,
+      weapons: [{ def: pistol }],
+      presentationClockNow: () => 2_000,
+    });
+    rig.cancelFlourish("accepted-attack");
+    expect(rig.flourishChannels[0]?.active).toBe(false);
+    expect(rig.idleFlourishEligibleAtMs).toBe(3_000);
+    expect(rig.flourishCancelEdge).toBe(1);
+  });
 });

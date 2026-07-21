@@ -75,17 +75,53 @@ export function spawnWeaponSwingIdentity(
   angle: number,
   bladeLength = 0,
 ): void {
-  if (!recipe?.swingPack) return;
-  particleBurst(scene, recipe.swingPack, x, y, {
-    count: recipe.swingCount ?? 6,
-    dirRad: angle,
-    spread: recipe.noGore ? 0.75 : 0.42,
-    speed: recipe.noGore ? 105 : 170,
-    scale: weaponSwingIdentityScale(recipe, bladeLength),
-    lifeMs: recipe.noGore ? 420 : 330,
-    additive: recipe.additive,
-    sink: recipe.noGore ? 18 : 0,
-  });
+  if (!recipe) return;
+  if (recipe.swingPack)
+    particleBurst(scene, recipe.swingPack, x, y, {
+      count: recipe.swingCount ?? 6,
+      dirRad: angle,
+      spread: recipe.noGore ? 0.75 : 0.42,
+      speed: recipe.noGore ? 105 : 170,
+      scale: weaponSwingIdentityScale(recipe, bladeLength),
+      lifeMs: recipe.noGore ? 420 : 330,
+      additive: recipe.additive,
+      sink: recipe.noGore ? 18 : 0,
+    });
+  if (recipe.musicalNotes) spawnMusicalNoteParticles(scene, x, y, angle);
+}
+
+/** Bell notation is a small procedural particle family so it stays readable without a bespoke bitmap. */
+export function spawnMusicalNoteParticles(
+  scene: Phaser.Scene,
+  x: number,
+  y: number,
+  angle: number,
+): void {
+  const nx = -Math.sin(angle);
+  const ny = Math.cos(angle);
+  for (let i = 0; i < 7; i++) {
+    const side = i - 3;
+    const note = scene.add
+      .text(x + nx * side * 7, y + ny * side * 7, i % 3 === 0 ? "♫" : "♪", {
+        color: i % 2 === 0 ? "#fff4cf" : "#e8e4d8",
+        fontFamily: "serif",
+        fontSize: `${13 + (i % 3) * 2}px`,
+        fontStyle: "bold",
+      })
+      .setOrigin(0.5)
+      .setDepth(99501)
+      .setRotation(-0.2 + i * 0.07);
+    scene.tweens.add({
+      targets: note,
+      x: note.x + Math.cos(angle) * (30 + i * 5) + nx * side * 3,
+      y: note.y + Math.sin(angle) * (30 + i * 5) + ny * side * 3 - 18,
+      alpha: 0,
+      scale: 1.25,
+      duration: 430 + i * 35,
+      ease: "Sine.easeOut",
+      onComplete: () => note.destroy(),
+    });
+  }
 }
 
 /** Procedural loose sheets match the existing tome/page glyph vocabulary; no bitmap asset is needed. */

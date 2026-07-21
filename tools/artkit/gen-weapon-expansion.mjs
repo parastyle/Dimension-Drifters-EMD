@@ -32,6 +32,11 @@ const GRADES = new Set(["S", "A", "B", "C", "D", "E"]);
 const ATTRS = new Set(["str", "dex", "int", "con", "luk"]);
 const TYPES = new Set(["melee", "ranged", "caster"]);
 const GRIPS = new Set(["1H", "2H", "dual", "mounted"]);
+const HANDLING_TAGS = new Set(["lever", "pump", "pistol"]);
+const SECONDARY_GRIP_ROLES = new Set([
+  "under-barrel", "lever", "crank", "pump", "vertical-foregrip", "shoulder-RPG",
+  "two-hand-rifle",
+]);
 const SIZES = new Set(["S", "M", "L", "XL"]);
 const BANDS = new Set(["close", "mid", "long"]);
 const KINDS = new Set([
@@ -55,9 +60,9 @@ const TOP_KEYS = new Set([
   "id", "name", "type", "family", "theme", "element", "finish", "finishNote", "grip", "size",
   "rangeBand", "scaling", "scalingGrades", "requirements", "artPrompt", "palettePrimary",
   "paletteAccent", "cardartAction", "behavior", "stats", "description", "banned", "expansion",
-  "sprite", "sizeClass", "comboFamily", "comboVariant", "comboBar", "katanaHook",
+  "sprite", "sizeClass", "stance", "authoritativeCombo", "comboFamily", "comboVariant", "comboBar", "katanaHook",
   "bespokeVfxSheet", "performance", "swingStyle", "effectRecipe", "effectEmitter", "effectTiming",
-  "renderAboveHands", "suppressVfx", "hitStatus",
+  "renderAboveHands", "suppressVfx", "hitStatus", "gripPoints", "handlingTags",
 ]);
 // The sibling-block bug (§43): mechanic stats authored NEXT TO `behavior` instead of inside it were
 // silently ignored, shipping 11 weapons with default kits. Now an instant failure.
@@ -73,7 +78,7 @@ const BEHAVIOR_KEYS = {
   scatter: new Set(["kind", "count", "spread", "speed", "range", "damage", "pierce", "scalingGrades", "explode"]),
   gun: new Set(["kind", "damage", "projectileSpeed", "range", "fireRate", "pellets", "spread", "pierce",
     "bounces", "magazine", "reloadSeconds", "bulletKind", "muzzle", "muzzleColor", "recoil",
-    "projectileVisualScale", "arcHeight", "scalingGrades", "explode", "burst"]),
+    "projectileVisualScale", "projectileColor", "arcHeight", "scalingGrades", "explode", "burst"]),
   beam: new Set(["kind", "damage", "range", "tickRate", "width", "chargeSeconds", "sweepLagSeconds",
     "randomRays", "scalingGrades", "zone"]),
   groundZone: new Set(["kind", "zone"]),
@@ -82,6 +87,9 @@ const BEHAVIOR_KEYS = {
 };
 const EXPLODE_KEYS = new Set(["radius", "damage", "scalingGrades"]);
 const GUN_BURST_KEYS = new Set(["count", "intervalSeconds"]);
+const GRIP_POINTS_KEYS = new Set(["primary", "secondary"]);
+const GRIP_ANCHOR_KEYS = new Set(["x", "y"]);
+const SECONDARY_GRIP_KEYS = new Set(["x", "y", "role"]);
 const ZONE_KEYS = new Set(["trigger", "style", "initialRadius", "maxRadius", "growthPerSecond",
   "lingerSeconds", "damagePerSecond", "tickRate", "placementRange", "scalingGrades",
   "slowMultiplier", "slowSeconds", "grenadeArcHeight"]);
@@ -96,6 +104,11 @@ const EFFECT_RECIPES = new Set([
   "riftcleaver-crystal-shards", "verdict-tip-procession", "tombwarden-dark-slash",
   "choir-iron-flame-slash", "hangman-blood-spatter", "dustreaper-continuous-edge",
   "cinderbrand-fire-slash", "sanctified-holy-slash", "stormfist-blue-lunge",
+  "thunderhead-electric-codex", "sermon-musical-notes", "nullspike-impact-circle",
+  "quarry-quad-spatter",
+]);
+const STANCES = new Set([
+  "hasso-no-kamae", "tachi-no-tori", "blade-forward-high-hilt", "two-hands-on-hilt",
 ]);
 const RANDOM_RAY_KEYS = new Set(["count", "spread"]);
 const COMBO_MOTIONS = new Set([
@@ -137,10 +150,12 @@ const KATANA_HOOK_KEYS = new Set([
 const KATANA_BURST_KEYS = new Set(["radius", "damage"]);
 const PERFORMANCE_KEYS = new Set([
   "hold", "action", "continuous", "suppressSwing", "windupSeconds", "carryForwardPx", "shake",
-  "preThrowRevolutions", "lunge", "emitter", "vfxAt", "aura",
+  "carryAngleRad", "preThrowRevolutions", "lunge", "twirl", "holdScaling", "strideTap",
+  "emitter", "vfxAt", "aura",
 ]);
 const PERFORMANCE_HOLDS = new Set([
   "upright", "hanging-chain", "drag-at-feet", "steady", "aim-forward", "overhead", "shoulder-launcher",
+  "walking-staff",
 ]);
 const PERFORMANCE_ACTIONS = new Set([
   "default-swing", "hold", "page-flip", "shake", "spin", "recoil", "lunge-punch",
@@ -148,6 +163,9 @@ const PERFORMANCE_ACTIONS = new Set([
 ]);
 const PERFORMANCE_SHAKE_KEYS = new Set(["amplitudePx", "rotationRad", "frequencyHz"]);
 const PERFORMANCE_LUNGE_KEYS = new Set(["distancePx"]);
+const PERFORMANCE_TWIRL_KEYS = new Set(["plane", "pivot", "direction"]);
+const PERFORMANCE_HOLD_SCALING_KEYS = new Set(["cadence"]);
+const PERFORMANCE_STRIDE_TAP_KEYS = new Set(["amplitudePx", "phaseOffset"]);
 const PERFORMANCE_AURA_KEYS = new Set([
   "radius", "damagePerSecond", "resourcePerSecond", "tickRate", "color", "damageType",
 ]);
@@ -278,8 +296,8 @@ function comboBarOf(w) {
     fail("comboBar is not an array");
     return undefined;
   }
-  if (w.comboBar.length < 3 || w.comboBar.length > 7)
-    fail(`comboBar has ${w.comboBar.length} beats; authored bars require 3..7`);
+  if (w.comboBar.length < 1 || w.comboBar.length > 7)
+    fail(`comboBar has ${w.comboBar.length} beats; authored bars require 1..7`);
   const out = [];
   for (let i = 0; i < w.comboBar.length; i++) {
     const step = w.comboBar[i];
@@ -421,6 +439,8 @@ function performanceOf(p) {
     out.windupSeconds = num(p.windupSeconds, 0.1, 0.75, 0.5, "performance.windupSeconds");
   if (p.carryForwardPx !== undefined)
     out.carryForwardPx = num(p.carryForwardPx, 0, 80, 0, "performance.carryForwardPx");
+  if (p.carryAngleRad !== undefined)
+    out.carryAngleRad = num(p.carryAngleRad, -Math.PI, Math.PI, 0, "performance.carryAngleRad");
   if (p.preThrowRevolutions !== undefined)
     out.preThrowRevolutions = num(
       p.preThrowRevolutions, 0, 3, 0, "performance.preThrowRevolutions",
@@ -444,6 +464,43 @@ function performanceOf(p) {
       checkKeys(p.lunge, PERFORMANCE_LUNGE_KEYS, "performance.lunge");
       out.lunge = {
         distancePx: num(p.lunge.distancePx, 48, 180, 120, "performance.lunge.distancePx"),
+      };
+    }
+  }
+  if (p.twirl !== undefined) {
+    if (!p.twirl || typeof p.twirl !== "object" || Array.isArray(p.twirl)) {
+      fail("performance.twirl is not an object");
+    } else {
+      checkKeys(p.twirl, PERFORMANCE_TWIRL_KEYS, "performance.twirl");
+      out.twirl = {
+        plane: enumOf(p.twirl.plane, new Set(["screen-circle", "ground-whirlwind"]), "performance.twirl.plane"),
+        pivot: enumOf(p.twirl.pivot, new Set(["shaft-midpoint", "grip"]), "performance.twirl.pivot"),
+        direction: enumOf(p.twirl.direction, new Set(["forward", "alternate"]), "performance.twirl.direction"),
+      };
+    }
+  }
+  if (p.holdScaling !== undefined) {
+    if (!p.holdScaling || typeof p.holdScaling !== "object" || Array.isArray(p.holdScaling)) {
+      fail("performance.holdScaling is not an object");
+    } else {
+      checkKeys(p.holdScaling, PERFORMANCE_HOLD_SCALING_KEYS, "performance.holdScaling");
+      out.holdScaling = {
+        cadence: enumOf(
+          p.holdScaling.cadence,
+          new Set(["weapon-cooldown"]),
+          "performance.holdScaling.cadence",
+        ),
+      };
+    }
+  }
+  if (p.strideTap !== undefined) {
+    if (!p.strideTap || typeof p.strideTap !== "object" || Array.isArray(p.strideTap)) {
+      fail("performance.strideTap is not an object");
+    } else {
+      checkKeys(p.strideTap, PERFORMANCE_STRIDE_TAP_KEYS, "performance.strideTap");
+      out.strideTap = {
+        amplitudePx: num(p.strideTap.amplitudePx, 0, 24, 8, "performance.strideTap.amplitudePx"),
+        phaseOffset: num(p.strideTap.phaseOffset, -Math.PI * 2, Math.PI * 2, 0, "performance.strideTap.phaseOffset"),
       };
     }
   }
@@ -483,6 +540,65 @@ function hitStatusOf(status) {
   };
 }
 
+function gripAnchorOf(anchor, path, allowedKeys = GRIP_ANCHOR_KEYS) {
+  if (!anchor || typeof anchor !== "object" || Array.isArray(anchor)) {
+    fail(`${path} is not an object`);
+    return undefined;
+  }
+  checkKeys(anchor, allowedKeys, path);
+  if (anchor.x === undefined) fail(`${path}.x is required`);
+  if (anchor.y === undefined) fail(`${path}.y is required`);
+  return {
+    x: num(anchor.x, 0, 1, 0.5, `${path}.x`),
+    y: num(anchor.y, 0, 1, 0.5, `${path}.y`),
+  };
+}
+
+function gripPointsOf(points) {
+  if (points === undefined) return undefined;
+  if (!points || typeof points !== "object" || Array.isArray(points)) {
+    fail("gripPoints is not an object");
+    return undefined;
+  }
+  checkKeys(points, GRIP_POINTS_KEYS, "gripPoints");
+  const primary = gripAnchorOf(points.primary, "gripPoints.primary");
+  if (!primary) return undefined;
+  const out = { primary };
+  if (points.secondary !== undefined) {
+    const secondary = gripAnchorOf(
+      points.secondary,
+      "gripPoints.secondary",
+      SECONDARY_GRIP_KEYS,
+    );
+    if (secondary) {
+      out.secondary = {
+        ...secondary,
+        role: enumOf(
+          points.secondary.role,
+          SECONDARY_GRIP_ROLES,
+          "gripPoints.secondary.role",
+        ),
+      };
+    }
+  }
+  return out;
+}
+
+function handlingTagsOf(tags) {
+  if (tags === undefined) return undefined;
+  if (!Array.isArray(tags) || tags.length === 0) {
+    fail("handlingTags must be a non-empty array");
+    return undefined;
+  }
+  const out = [];
+  for (const [index, tag] of tags.entries()) {
+    const value = enumOf(tag, HANDLING_TAGS, `handlingTags[${index}]`);
+    if (out.includes(value)) fail(`handlingTags contains duplicate ${JSON.stringify(value)}`);
+    else out.push(value);
+  }
+  return out;
+}
+
 function mapWeapon(w) {
   checkKeys(w, TOP_KEYS, "");
   for (const k of MECH_SIBLINGS)
@@ -504,6 +620,8 @@ function mapWeapon(w) {
 
   // Edge/swing baseline (required even for guns — the held-swing fields).
   const damage = num(s.damage, 1, 40, 8, "stats.damage");
+  const gripPoints = gripPointsOf(w.gripPoints);
+  const handlingTags = handlingTagsOf(w.handlingTags);
   const def = {
     id: w.id,
     name: w.name,
@@ -555,6 +673,8 @@ function mapWeapon(w) {
       scaling: Array.isArray(w.scaling) && w.scaling.length ? w.scaling : ["STR"],
     },
   };
+  if (gripPoints) def.gripPoints = gripPoints;
+  if (handlingTags) def.tags.handling = handlingTags;
   if (w.description !== undefined) {
     if (typeof w.description !== "string") fail("description is not a string");
     else def.description = w.description;
@@ -564,6 +684,11 @@ function mapWeapon(w) {
     else def.sprite = w.sprite;
   }
   if (w.sizeClass !== undefined) def.sizeClass = enumOf(w.sizeClass, SIZE_CLASSES, "sizeClass");
+  if (w.stance !== undefined) def.stance = enumOf(w.stance, STANCES, "stance");
+  if (w.authoritativeCombo !== undefined) {
+    if (typeof w.authoritativeCombo !== "boolean") fail("authoritativeCombo is not a boolean");
+    else def.authoritativeCombo = w.authoritativeCombo;
+  }
   if (w.swingStyle !== undefined)
     def.swingStyle = enumOf(w.swingStyle, SWING_STYLES, "swingStyle");
   if (w.comboFamily !== undefined)
@@ -657,6 +782,10 @@ function mapWeapon(w) {
     if (b.projectileVisualScale !== undefined)
       def.gun.projectileVisualScale = num(
         b.projectileVisualScale, 0.5, 4, 1, "behavior.projectileVisualScale",
+      );
+    if (b.projectileColor !== undefined)
+      def.gun.projectileColor = int(
+        b.projectileColor, 0, 0xffffff, 0, "behavior.projectileColor",
       );
     if (b.arcHeight !== undefined)
       def.gun.arcHeight = num(b.arcHeight, 24, 180, 96, "behavior.arcHeight");

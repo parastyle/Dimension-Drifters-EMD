@@ -1,4 +1,12 @@
-import { isWornWeapon, meleeComboSelectionFor, swingStyleFor, type WeaponDef } from "@dd/shared";
+import {
+  isWornWeapon,
+  meleeComboSelectionFor,
+  swingStyleFor,
+  type MeleeComboStep,
+  type WeaponDef,
+  type WeaponStanceId,
+  weaponHasHandlingTag,
+} from "@dd/shared";
 import { firingStanceFamilyFor } from "./firing-stance.js";
 
 export type WeaponPoseFamily =
@@ -934,6 +942,13 @@ export interface BladeSizeStance {
   readonly movementTrailRad: number;
 }
 
+export interface NamedWeaponStance extends BladeSizeStance {
+  readonly id: WeaponStanceId;
+  /** Screen guards stay physically named; aim guards follow the cursor while retaining named handwork. */
+  readonly angleReference: "screen" | "aim";
+  readonly handReference: "screen" | "aim";
+}
+
 function frozenTiming(
   durationMs: number,
   statementAtMs = Math.max(40, Math.round(durationMs * 0.15)),
@@ -1035,6 +1050,14 @@ function flourishSpec(
       : family === "pistol"
         ? ([50, 255] as const)
         : undefined;
+  const afterAttack = flourishBeat(
+    durations[2],
+    arcs[2],
+    family === "two-hand-sword" ? 14 : family === "pistol" ? 12 : 11,
+    accents,
+    afterCuts?.[0],
+    afterCuts?.[1],
+  );
   return Object.freeze({
     family,
     draw: flourishBeat(
@@ -1046,15 +1069,9 @@ function flourishSpec(
       drawCuts?.[1],
     ),
     stow: flourishBeat(durations[1], arcs[1], 9, accents),
-    afterAttack: flourishBeat(
-      durations[2],
-      arcs[2],
-      family === "two-hand-sword" ? 14 : family === "pistol" ? 12 : 11,
-      accents,
-      afterCuts?.[0],
-      afterCuts?.[1],
-    ),
-    idleSettle: flourishBeat(durations[3], 0, 0, accents),
+    afterAttack,
+    // V3G2 reuses the existing pistol twirl performance verbatim after its one-second idle gate.
+    idleSettle: family === "pistol" ? afterAttack : flourishBeat(durations[3], 0, 0, accents),
     streakThreshold: threshold,
   });
 }
@@ -1292,6 +1309,86 @@ export const BLADE_SIZE_STANCES: Readonly<Record<BladeSizeClass, BladeSizeStance
   }),
 });
 
+/** Kenjutsu and grip guards authored once so future blades can opt in by stable stance id. */
+export const NAMED_WEAPON_STANCES: Readonly<Record<WeaponStanceId, NamedWeaponStance>> =
+  Object.freeze({
+    "hasso-no-kamae": Object.freeze({
+      ...BLADE_SIZE_STANCES.long,
+      id: "hasso-no-kamae",
+      angleReference: "screen",
+      handReference: "screen",
+      restAngleRad: -Math.PI / 2,
+      handForward: 0.12,
+      handLateral: -0.2,
+      gripSpacing: 0.32,
+      bodyTurn: 0.08,
+    }),
+    "tachi-no-tori": Object.freeze({
+      ...BLADE_SIZE_STANCES.standard,
+      id: "tachi-no-tori",
+      angleReference: "screen",
+      handReference: "screen",
+      restAngleRad: -2.14,
+      handForward: -0.1,
+      handLateral: -0.15,
+      gripSpacing: 0.48,
+      bodyTurn: -0.06,
+    }),
+    "blade-forward-high-hilt": Object.freeze({
+      ...BLADE_SIZE_STANCES.standard,
+      id: "blade-forward-high-hilt",
+      angleReference: "aim",
+      handReference: "screen",
+      restAngleRad: 0,
+      handForward: -0.06,
+      handLateral: -0.34,
+      gripSpacing: 0.28,
+      bodyTurn: 0.07,
+    }),
+    "two-hands-on-hilt": Object.freeze({
+      ...BLADE_SIZE_STANCES.standard,
+      id: "two-hands-on-hilt",
+      angleReference: "aim",
+      handReference: "aim",
+      restAngleRad: -0.2,
+      gripSpacing: 0.18,
+    }),
+  });
+
+export function namedWeaponStanceFor(def: WeaponDef | undefined): NamedWeaponStance | undefined {
+  return def?.stance ? NAMED_WEAPON_STANCES[def.stance] : undefined;
+}
+
+/** Image-origin transform that pins the physical shaft midpoint to the character centre at every angle. */
+export function shaftMidpointPivotTransform(
+  centerX: number,
+  centerY: number,
+  angle: number,
+  shaftLength: number,
+  gripFrac: number,
+): { x: number; y: number; rotation: number } {
+  const originToMidpoint = (0.5 - gripFrac) * shaftLength;
+  return {
+    x: centerX - Math.cos(angle) * originToMidpoint,
+    y: centerY - Math.sin(angle) * originToMidpoint,
+    rotation: angle,
+  };
+}
+
+export function twirlDirectionForBeat(
+  direction: "forward" | "alternate",
+  attackBeat: number,
+): -1 | 1 {
+  return direction === "alternate" && (attackBeat & 1) === 0 ? -1 : 1;
+}
+
+/** A reverse rising chop turns the painted axe head over before the upward return swipe. */
+export function comboWeaponThicknessSign(
+  step: Pick<MeleeComboStep, "motion" | "direction"> | undefined,
+): -1 | 1 {
+  return step?.motion === "rising-chop" && step.direction < 0 ? -1 : 1;
+}
+
 /** Canonical migration order: richer tag, explicit Driftblade truth, then the current S/M/L/XL field. */
 export function bladeSizeClassFor(def: WeaponDef): BladeSizeClass {
   const tags = def.tags as typeof def.tags & { readonly sizeClass?: BladeSizeClass };
@@ -1338,7 +1435,13 @@ export function weaponFlourishSpecFor(def: WeaponDef): WeaponFlourishSpec {
       spec = LONG_GUN_FLOURISH_SPECS[firingFamily as keyof typeof LONG_GUN_FLOURISH_SPECS];
     }
   }
-  return def.beam ? BEAM_FLOURISH_SPECS[spec.family] : spec;
+  const resolved = def.beam ? BEAM_FLOURISH_SPECS[spec.family] : spec;
+  if (!weaponHasHandlingTag(def, "pistol")) return resolved;
+  const pistolTwirl = WEAPON_FLOURISH_SPECS.pistol.afterAttack;
+  if (resolved.idleSettle === pistolTwirl) return resolved;
+  // Compact automatics can use a long-gun firing pose, but their authored pistol tag still grants the
+  // same idle twirl. Preserve the firing family's other beats (especially beam recovery).
+  return Object.freeze({ ...resolved, idleSettle: pistolTwirl });
 }
 
 export interface FlourishInput {
@@ -1631,6 +1734,8 @@ export interface WeaponPerformanceInput {
   phaseT: number;
   fireHeld: boolean;
   reducedMotion: boolean;
+  gait: number;
+  stridePhase: number;
 }
 
 export interface WeaponPerformanceSample {
@@ -1663,6 +1768,8 @@ export function createWeaponPerformanceInput(): WeaponPerformanceInput {
     phaseT: 0,
     fireHeld: false,
     reducedMotion: false,
+    gait: 0,
+    stridePhase: 0,
   };
 }
 
@@ -1715,10 +1822,17 @@ export function sampleWeaponPerformance(
 
   switch (spec.hold) {
     case "upright":
-      angle = -Math.PI / 2;
+      angle = spec.carryAngleRad ?? -Math.PI / 2;
       handX = 0.08 + (spec.carryForwardPx ?? 0) / 76;
       handY = -0.08;
       break;
+    case "walking-staff": {
+      angle = -Math.PI / 2;
+      handX = 0.11;
+      const tap = Math.max(0, Math.cos(input.stridePhase + (spec.strideTap?.phaseOffset ?? 0)));
+      handY = -0.06 + (tap * (spec.strideTap?.amplitudePx ?? 8) * clamp01(input.gait)) / 76;
+      break;
+    }
     case "hanging-chain":
       angle = Math.PI / 2;
       handX = 0.1;

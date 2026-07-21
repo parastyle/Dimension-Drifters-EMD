@@ -175,6 +175,7 @@ export function firingStanceFamilyFor(def: WeaponDef): FiringStanceFamily {
   const { delivery, family, grip, classPool, fireMode } = def.tags;
   if (def.thrown || delivery === "thrown") return "thrown";
   if ((def.gun || def.beam) && isWornWeapon(def)) return "fist-gun";
+  if (def.gripPoints?.secondary?.role === "shoulder-RPG") return "shoulder-launcher";
   if (def.performance?.hold === "shoulder-launcher") return "shoulder-launcher";
 
   if (classPool === "caster") {

@@ -25,6 +25,31 @@ import { GENERATED_WEAPONS } from "./weapons-expansion.generated.js";
  * from the deliberately absurd colossal outlier without teaching the rig weapon ids. */
 export type WeaponSizeClass = "short" | "standard" | "long" | "great" | "colossal";
 
+/** V3G catalog laws. Authored tags are the only membership source used by presentation code. */
+export type GunHandlingTag = "lever" | "pump" | "pistol";
+
+/** Normalized point in the weapon sprite's own unmirrored 0..1 bounds. */
+export interface WeaponGripAnchor {
+  x: number;
+  y: number;
+}
+
+/** The secondary hand's physical job. Mechanism tags remain separate so, for example, a pump-action
+ * riotgun can keep its hand on a vertical foregrip while still obeying the pump-after-shot law. */
+export type WeaponSecondaryGripRole =
+  | "under-barrel"
+  | "lever"
+  | "crank"
+  | "pump"
+  | "vertical-foregrip"
+  | "shoulder-RPG"
+  | "two-hand-rifle";
+
+export interface WeaponGripPoints {
+  primary: WeaponGripAnchor;
+  secondary?: WeaponGripAnchor & { role: WeaponSecondaryGripRole };
+}
+
 /** One declarative Driftblade-line identity hook. The server resolves these fields from the accepted
  * combo beat; the Drive/loot estimators price the same authored multipliers and finisher burst. */
 export interface KatanaHookDef {
@@ -134,7 +159,18 @@ export type WeaponEffectRecipeId =
   | "dustreaper-continuous-edge"
   | "cinderbrand-fire-slash"
   | "sanctified-holy-slash"
-  | "stormfist-blue-lunge";
+  | "stormfist-blue-lunge"
+  | "thunderhead-electric-codex"
+  | "sermon-musical-notes"
+  | "nullspike-impact-circle"
+  | "quarry-quad-spatter";
+
+/** Named, reusable neutral guards. These are authored as pose-language vocabulary rather than id checks. */
+export type WeaponStanceId =
+  | "hasso-no-kamae"
+  | "tachi-no-tori"
+  | "blade-forward-high-hilt"
+  | "two-hands-on-hilt";
 
 /** Parameterized enemy movement status shared by direct hits and Frostquill-style ground zones. */
 export interface EnemyHitStatusDef {
@@ -177,7 +213,8 @@ export type WeaponPerformanceHold =
   | "steady"
   | "aim-forward"
   | "overhead"
-  | "shoulder-launcher";
+  | "shoulder-launcher"
+  | "walking-staff";
 
 export type WeaponPerformanceAction =
   | "default-swing"
@@ -203,6 +240,8 @@ export interface WeaponPerformanceDef {
   windupSeconds?: number;
   /** Extra local carry clearance for oversized upright props, in final rendered pixels. */
   carryForwardPx?: number;
+  /** Optional neutral carry angle in local screen radians (zero points forward). */
+  carryAngleRad?: number;
   /** Full hand revolutions during a thrown weapon's anticipation/draw phase. */
   preThrowRevolutions?: number;
   /** Parameterized in-place motion; shared by every shake-capable hold state. */
@@ -214,6 +253,21 @@ export interface WeaponPerformanceDef {
   /** Authored forward displacement resolved from the accepted aim by the server at active start. */
   lunge?: {
     distancePx: number;
+  };
+  /** Full-circle attack geometry shared by overhead twirls and ground-plane Garen whirlwinds. */
+  twirl?: {
+    plane: "screen-circle" | "ground-whirlwind";
+    pivot: "shaft-midpoint" | "grip";
+    direction: "forward" | "alternate";
+  };
+  /** Hold cadence remains server-owned; total accepted swings are `1 + floor(held/cadence)`. */
+  holdScaling?: {
+    cadence: "weapon-cooldown";
+  };
+  /** Walking-staff tip contact driven by the locomotion sampler's distance-based stride phase. */
+  strideTap?: {
+    amplitudePx: number;
+    phaseOffset: number;
   };
   /** Held-implement source point. `spout` is the painted +X business end. */
   emitter?: "spout";
@@ -239,6 +293,10 @@ export interface WeaponDef {
   description?: string;
   /** Driftblade-line silhouette class for stance-by-size consumers. */
   sizeClass?: WeaponSizeClass;
+  /** Reusable named neutral stance resolved by the client pose-language registry. */
+  stance?: WeaponStanceId;
+  /** Promote this authored combo's signed arc/range/timing path into server hit geometry. */
+  authoritativeCombo?: boolean;
   /** Server-consumed accepted-beat identity hook for the katana line. */
   katanaHook?: KatanaHookDef;
   /** Authored held/attack performance and its optional continuous mechanic. */
@@ -298,6 +356,8 @@ export interface WeaponDef {
   swingStyle?: "arc" | "orbit" | "chop" | "pivot" | "thrust" | "spin" | "punch";
   /** Where the grip sits along the sprite length (0 = left tip) — the in-hand pivot. */
   gripFrac: number;
+  /** V3G normalized painted grip truth. Omitted preserves the legacy gripFrac/centreline rig behavior. */
+  gripPoints?: WeaponGripPoints;
   /** Dual-wield: render a piece in EACH hand (uses sprite parts 1 & 2). */
   dual?: boolean;
   /** Two-handed: both hands grip the haft (heavy 2H swords). */
@@ -488,6 +548,8 @@ export interface WeaponDef {
     muzzle: string;
     /** Muzzle/bullet tint (hex). Omitted → a default hot orange. */
     muzzleColor?: number;
+    /** Explicit in-flight projectile tint. The server serializes it into the generic projectile kind. */
+    projectileColor?: number;
     /** Recoil camera-kick intensity per shot (heavy slugs punch, the gatling barely buzzes). ~0.0006–0.004. */
     recoil?: number;
     /** Per-source scaling (§14 WYSIWYG) — the bullet's grades; omitted = the weapon's edge grades. */
@@ -510,6 +572,8 @@ export interface WeaponDef {
     family: string;
     rangeBand: "close" | "mid" | "long";
     scaling: string[];
+    /** Authored V3G law membership; consumers must not maintain weapon-id allowlists. */
+    handling?: GunHandlingTag[];
   };
   /**
    * §10 Elden-Ring scaling GRADES (S/A/B/C/D/E) per attribute — drives BOTH the card display and the
@@ -541,6 +605,10 @@ export interface WeaponDef {
 
 /** Damage-scaling letter grade (§10). */
 export type Grade = "S" | "A" | "B" | "C" | "D" | "E";
+
+export function weaponHasHandlingTag(weapon: WeaponDef | undefined, tag: GunHandlingTag): boolean {
+  return weapon?.tags.handling?.includes(tag) === true;
+}
 
 /** §9 GUN barrel-tip reach: distance (px) from the player CENTRE to a held gun's MUZZLE along the aim,
  *  derived from each gun's OWN held geometry — the gun pivots at `gripFrac` of its `displayLength` and the
@@ -594,6 +662,17 @@ export function meleeReach(weapon: WeaponDef, renderScale = 1): number {
 export function weaponAttackCooldown(weapon: WeaponDef): number {
   const base = weapon.gun?.fireRate ?? weapon.cast?.cooldown ?? weapon.cooldown;
   return Math.max(0.001, base * (weapon.katanaHook?.recoveryMultiplier ?? 1));
+}
+
+/** Inclusive swing count for a continuous hold: the press itself is beat one, then one per cadence. */
+export function holdScaledSwingCount(
+  heldSeconds: number,
+  cadenceSeconds: number,
+): number {
+  const held = Math.max(0, heldSeconds);
+  const cadence = Math.max(0.001, cadenceSeconds);
+  const completedCadences = Math.floor((held + cadence * 1e-9) / cadence);
+  return 1 + completedCadences;
 }
 
 /** Compatible live delivery lane for runtime pairing. Beams, thrown weapons, authored duals, and fists
@@ -1357,6 +1436,7 @@ const BASE_WEAPONS: Record<string, WeaponDef> = {
       family: "pistol",
       rangeBand: "long",
       scaling: ["DEX", "STR"],
+      handling: ["pistol"],
     },
   },
   // ── CASTERS (§38) — the caster class's signature weapons. RMB conjures a piercing arcane BOLT on a flat
@@ -1447,6 +1527,10 @@ const BASE_WEAPONS: Record<string, WeaponDef> = {
     displayLength: 120,
     swingArc: 1.2,
     gripFrac: 0.14,
+    gripPoints: {
+      primary: { x: 0.14, y: 0.5 },
+      secondary: { x: 0.44, y: 0.63, role: "pump" },
+    },
     vfxRadius: 72,
     gun: {
       damage: 5, // per pellet — devastating up close, falls off with the spread
@@ -1474,6 +1558,7 @@ const BASE_WEAPONS: Record<string, WeaponDef> = {
       family: "shotgun",
       rangeBand: "close",
       scaling: ["STR", "DEX"],
+      handling: ["pump"],
     },
   },
   // §41 the EXPLOSIVE-round demonstration: a stubby break-action grenade gun. Slow, fat, tumbling shell;
@@ -1641,6 +1726,7 @@ const BASE_WEAPONS: Record<string, WeaponDef> = {
       family: "pistol",
       rangeBand: "long",
       scaling: ["DEX", "LUK"],
+      handling: ["pistol"],
     },
   },
 };

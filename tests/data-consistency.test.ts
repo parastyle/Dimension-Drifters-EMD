@@ -146,6 +146,11 @@ describe("§43 expansion codegen: every authored gameplay field survives into th
     effectRecipe?: string;
     effectEmitter?: string;
     effectTiming?: string;
+    gripPoints?: {
+      primary: { x: number; y: number };
+      secondary?: { x: number; y: number; role: string };
+    };
+    handlingTags?: string[];
     performance?: Behavior;
     hitStatus?: Behavior;
     behavior?: Behavior;
@@ -237,6 +242,10 @@ describe("§43 expansion codegen: every authored gameplay field survives into th
         expect(def.effectEmitter, `${w.id}.effectEmitter`).toBe(w.effectEmitter);
       if (w.effectTiming !== undefined)
         expect(def.effectTiming, `${w.id}.effectTiming`).toBe(w.effectTiming);
+      if (w.gripPoints !== undefined)
+        expect(def.gripPoints, `${w.id}.gripPoints`).toEqual(w.gripPoints);
+      if (w.handlingTags !== undefined)
+        expect(def.tags.handling, `${w.id}.tags.handling`).toEqual(w.handlingTags);
       if (w.performance) {
         checkFields(w.id, def.performance, w.performance, {
           hold: { eq: true },
@@ -336,6 +345,7 @@ describe("§43 expansion codegen: every authored gameplay field survives into th
           bulletKind: { eq: true },
           muzzle: { eq: true },
           muzzleColor: { int: [0, 0xffffff] },
+          projectileColor: { int: [0, 0xffffff] },
           recoil: { num: [0.0004, 0.005] },
           pellets: { int: [1, 12], absentAs: 1 },
           pierce: { int: [1, 6], absentAs: 1 },

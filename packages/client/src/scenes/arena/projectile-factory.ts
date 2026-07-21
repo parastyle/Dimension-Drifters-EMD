@@ -12,6 +12,7 @@ import { elementPack } from "../../vfx/particles.js";
 import type { WeaponEffectRecipe } from "../../vfx/weapon-effect-recipes.js";
 import { WEAPON_VFX } from "../../vfx/weapon-vfx.generated.js";
 import { blendHex } from "./draw-util.js";
+import { projectileColorSuffix, projectileElementColor } from "./projectile-color.js";
 
 /** §9/§14/§15 projectile FACTORY — builds the in-flight render container for every projectile kind
  *  (enemy spit, own-sprite thrown implements, magma scatter ball, gun bullets). Pure factories: each takes the scene
@@ -33,19 +34,8 @@ export const GUN_FX: Record<string, GunFx> = {
   grenade: { color: 0xffb24a, size: 24, style: "boom", trail: 22, trailW: 8 }, // §41 mortar: fat lobbed shell
 };
 
-/** §35 element tint for gun bullets: the server encodes a weapon's element onto the bullet kind as
- *  "<kind>:<element>" (e.g. "tracer:fire"), so a fire gun and a frost gun read distinct even sharing a
- *  bullet shape. The suffix only overrides the COLOUR; the shape/trail/size stay the kind's. */
-const ELEMENT_COLOR: Record<string, number> = {
-  fire: 0xff6a2a,
-  frost: 0x6fd6ff,
-  shock: 0xffe24a,
-  holy: 0xffe6a0,
-  toxic: 0x9cff3b,
-  void: 0xb14bff,
-  arcane: 0x8f6aff,
-};
-
+/** §35/V3G3 projectile tint: the server encodes an element or authored #RRGGBB suffix onto the bullet
+ *  kind. The suffix only overrides colour; shape, trail, and size still come from the base kind. */
 /** The base bullet-kind with any ":<element>" suffix stripped — for sprite/sound lookups keyed on the kind. */
 export function baseKind(kind: string): string {
   const i = kind.indexOf(":");
@@ -58,8 +48,8 @@ export function gunFx(kind: string): GunFx {
   const i = kind.indexOf(":");
   const base = i < 0 ? kind : kind.slice(0, i);
   const fx = GUN_FX[base] ?? { color: 0xffb24a, size: 20, style: "heavy", trail: 24, trailW: 7 };
-  const ec = i < 0 ? undefined : ELEMENT_COLOR[kind.slice(i + 1)];
-  return ec ? { ...fx, color: ec } : fx;
+  const color = projectileColorSuffix(kind);
+  return color !== undefined ? { ...fx, color } : fx;
 }
 
 /** Enemy spit — full NEON so it reads as a THREAT against the olive scrub/dust (§28.7). */
@@ -124,7 +114,7 @@ export function makeMagma(
   const i = pr.kind.indexOf(":");
   const element = i < 0 ? "fire" : pr.kind.slice(i + 1);
   const molten = element === "fire"; // the classic magma look (also the bare-"magma" Wyrmtooth)
-  const tint = molten ? 0xff6a22 : (ELEMENT_COLOR[element] ?? 0xff6a22);
+  const tint = molten ? 0xff6a22 : (projectileElementColor(element) ?? 0xff6a22);
   const ang = Math.atan2(pr.vy, pr.vx);
   const trail = scene.add
     .ellipse(-Math.cos(ang) * 18, -Math.sin(ang) * 18, 46, 13, molten ? 0xff5a1e : tint, 0.4)

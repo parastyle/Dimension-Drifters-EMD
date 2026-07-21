@@ -144,6 +144,14 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "DEX"
       ]
     },
+    "stance": "tachi-no-tori",
+    "authoritativeCombo": true,
+    "katanaHook": {
+      "kind": "finisher-burst",
+      "summary": "Three Hails redistributes one neutral three-beat budget: 0.85x, 0.85x, then 1.30x.",
+      "finisherDamageMultiplier": 1.3,
+      "nonFinisherDamageMultiplier": 0.85
+    },
     "requirements": {
       "dex": 11
     },
@@ -1695,7 +1703,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "range": 190,
     "halfArc": 1.05,
     "cooldown": 0.62,
-    "displayLength": 150,
+    "displayLength": 300,
     "swingArc": 3,
     "gripFrac": 0.1,
     "tags": {
@@ -1712,6 +1720,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "STR"
       ]
     },
+    "authoritativeCombo": true,
     "comboFamily": "thrust",
     "comboVariant": "dustdevil-jab-slash",
     "suppressVfx": true,
@@ -1865,6 +1874,10 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "DEX"
       ]
     },
+    "authoritativeCombo": true,
+    "comboFamily": "chop",
+    "comboVariant": "reliquary-down-stab",
+    "suppressVfx": true,
     "requirements": {
       "str": 9,
       "dex": 6
@@ -1995,6 +2008,8 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "DEX"
       ]
     },
+    "effectRecipe": "nullspike-impact-circle",
+    "effectEmitter": "tip",
     "requirements": {
       "int": 8,
       "dex": 6
@@ -2070,7 +2085,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "CON"
       ]
     },
-    "effectRecipe": "hangman-blood-spatter",
+    "effectRecipe": "quarry-quad-spatter",
     "effectEmitter": "blade",
     "effectTiming": "swing-midpoint",
     "requirements": {
@@ -2116,7 +2131,8 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "performance": {
       "hold": "upright",
       "action": "default-swing",
-      "carryForwardPx": 18
+      "carryForwardPx": 18,
+      "carryAngleRad": -1.05
     },
     "requirements": {
       "str": 6,
@@ -2199,6 +2215,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "DEX"
       ]
     },
+    "authoritativeCombo": true,
     "comboFamily": "chop",
     "comboVariant": "saintspar-down-swing",
     "suppressVfx": true,
@@ -2221,7 +2238,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "range": 140,
     "halfArc": 0.7,
     "cooldown": 0.36,
-    "displayLength": 88,
+    "displayLength": 176,
     "swingArc": 2.3,
     "gripFrac": 0.14,
     "tags": {
@@ -2238,6 +2255,11 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "INT"
       ]
     },
+    "performance": {
+      "hold": "steady",
+      "action": "throw-release",
+      "preThrowRevolutions": 0
+    },
     "requirements": {
       "dex": 6,
       "int": 4
@@ -2249,7 +2271,8 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "damage": 10,
       "charges": 3,
       "refillSeconds": 1.6,
-      "pierce": 2
+      "pierce": 2,
+      "rotation": "point-forward"
     }
   },
   "x2-thunderhead-voulge": {
@@ -2264,7 +2287,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "range": 230,
     "halfArc": 1.1,
     "cooldown": 0.82,
-    "displayLength": 300,
+    "displayLength": 198,
     "swingArc": 3.1,
     "gripFrac": 0.08,
     "tags": {
@@ -2280,6 +2303,13 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "STR",
         "DEX"
       ]
+    },
+    "effectRecipe": "thunderhead-electric-codex",
+    "effectEmitter": "blade",
+    "effectTiming": "swing-midpoint",
+    "performance": {
+      "hold": "upright",
+      "action": "default-swing"
     },
     "requirements": {
       "str": 10,
@@ -2402,6 +2432,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "INT"
       ]
     },
+    "authoritativeCombo": true,
+    "comboFamily": "thrust",
+    "comboVariant": "blightfork-jab",
     "requirements": {
       "dex": 6,
       "int": 5
@@ -2881,6 +2914,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "INT"
       ]
     },
+    "effectRecipe": "sermon-musical-notes",
+    "effectEmitter": "body",
+    "effectTiming": "swing-midpoint",
     "requirements": {
       "str": 8,
       "int": 5
@@ -3420,6 +3456,14 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "description": "A long farmhand's scythe gone to war, its sweeping crescent blade notched and oil-darkened, balanced for wide ground-reaping arcs that fell a whole row at once.",
+    "performance": {
+      "hold": "walking-staff",
+      "action": "default-swing",
+      "strideTap": {
+        "amplitudePx": 10,
+        "phaseOffset": 0
+      }
+    },
     "requirements": {
       "str": 8,
       "dex": 5
@@ -3440,13 +3484,13 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "halfArc": 1.05,
     "cooldown": 0.74,
     "displayLength": 180,
-    "swingArc": 3.2,
+    "swingArc": 6.283185307179586,
     "gripFrac": 0.11,
     "tags": {
       "grip": "2H",
       "size": "L",
       "delivery": "melee-arc",
-      "fireMode": "tap-charge",
+      "fireMode": "hold",
       "element": "void",
       "classPool": "melee",
       "family": "exotic-melee",
@@ -3457,6 +3501,17 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "description": "A spectral reaper's scythe of blackened iron, its haft wrapped in rusted grave-chain and its crescent blade trailing wisps of devouring violet void that drink the light at the edge.",
+    "swingStyle": "spin",
+    "performance": {
+      "hold": "steady",
+      "action": "default-swing",
+      "continuous": true,
+      "twirl": {
+        "plane": "ground-whirlwind",
+        "pivot": "grip",
+        "direction": "alternate"
+      }
+    },
     "requirements": {
       "str": 9,
       "int": 5
@@ -3481,7 +3536,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "tags": {
       "grip": "1H",
       "size": "S",
-      "delivery": "melee-arc",
+      "delivery": "thrown",
       "fireMode": "tap-charge",
       "element": "frost",
       "classPool": "melee",
@@ -3492,10 +3547,24 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "description": "A compact curved sickle of pale rimed steel, its inner edge furred with everlasting frost so each fast hooking cut leaves a bite of killing cold.",
+    "performance": {
+      "hold": "steady",
+      "action": "throw-release",
+      "preThrowRevolutions": 0.75
+    },
     "requirements": {
       "dex": 8
     },
-    "durability": 75
+    "durability": 75,
+    "thrown": {
+      "speed": 680,
+      "range": 520,
+      "damage": 9,
+      "charges": 3,
+      "refillSeconds": 0.6,
+      "pierce": 1,
+      "rotation": "spin"
+    }
   },
   "x2-mournveil-scythe": {
     "id": "x2-mournveil-scythe",
@@ -3533,7 +3602,12 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "performance": {
       "hold": "steady",
       "action": "default-swing",
-      "continuous": true
+      "continuous": true,
+      "twirl": {
+        "plane": "screen-circle",
+        "pivot": "shaft-midpoint",
+        "direction": "forward"
+      }
     },
     "requirements": {
       "str": 9,
@@ -3595,13 +3669,13 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "halfArc": 1.05,
     "cooldown": 0.66,
     "displayLength": 165,
-    "swingArc": 3.1,
+    "swingArc": 6.283185307179586,
     "gripFrac": 0.12,
     "tags": {
       "grip": "2H",
       "size": "L",
       "delivery": "melee-arc",
-      "fireMode": "tap-charge",
+      "fireMode": "hold",
       "element": "physical",
       "classPool": "melee",
       "family": "exotic-melee",
@@ -3611,6 +3685,20 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "description": "A scythe lashed together from a curved rib-bone blade and a femur haft bound in cracked sinew, its yellowed edge whistling thin and clean through a wide killing sweep.",
+    "swingStyle": "spin",
+    "performance": {
+      "hold": "steady",
+      "action": "default-swing",
+      "continuous": true,
+      "twirl": {
+        "plane": "screen-circle",
+        "pivot": "grip",
+        "direction": "forward"
+      },
+      "holdScaling": {
+        "cadence": "weapon-cooldown"
+      }
+    },
     "requirements": {
       "str": 9
     },
@@ -4036,6 +4124,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "scaling": [
         "DEX",
         "STR"
+      ],
+      "handling": [
+        "pistol"
       ]
     },
     "requirements": {
@@ -4081,6 +4172,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "scaling": [
         "DEX",
         "LUK"
+      ],
+      "handling": [
+        "pistol"
       ]
     },
     "requirements": {
@@ -4126,6 +4220,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "scaling": [
         "STR",
         "DEX"
+      ],
+      "handling": [
+        "pistol"
       ]
     },
     "requirements": {
@@ -4173,6 +4270,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "scaling": [
         "DEX",
         "INT"
+      ],
+      "handling": [
+        "pistol"
       ]
     },
     "requirements": {
@@ -4225,6 +4325,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "scaling": [
         "DEX",
         "INT"
+      ],
+      "handling": [
+        "pistol"
       ]
     },
     "requirements": {
@@ -4268,6 +4371,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "rangeBand": "mid",
       "scaling": [
         "DEX"
+      ],
+      "handling": [
+        "pistol"
       ]
     },
     "requirements": {
@@ -4321,6 +4427,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "scaling": [
         "DEX",
         "LUK"
+      ],
+      "handling": [
+        "pistol"
       ]
     },
     "requirements": {
@@ -4366,6 +4475,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "scaling": [
         "DEX",
         "INT"
+      ],
+      "handling": [
+        "pistol"
       ]
     },
     "requirements": {
@@ -4413,6 +4525,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "scaling": [
         "DEX",
         "LUK"
+      ],
+      "handling": [
+        "pistol"
       ]
     },
     "requirements": {
@@ -4460,6 +4575,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "scaling": [
         "LUK",
         "DEX"
+      ],
+      "handling": [
+        "pistol"
       ]
     },
     "requirements": {
@@ -4504,6 +4622,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "rangeBand": "mid",
       "scaling": [
         "DEX"
+      ],
+      "handling": [
+        "pistol"
       ]
     },
     "requirements": {
@@ -4549,6 +4670,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "scaling": [
         "STR",
         "INT"
+      ],
+      "handling": [
+        "pistol"
       ]
     },
     "requirements": {
@@ -4599,6 +4723,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "scaling": [
         "STR",
         "DEX"
+      ],
+      "handling": [
+        "pistol"
       ]
     },
     "requirements": {
@@ -4647,6 +4774,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "scaling": [
         "LUK",
         "DEX"
+      ],
+      "handling": [
+        "pistol"
       ]
     },
     "requirements": {
@@ -4693,6 +4823,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "rangeBand": "mid",
       "scaling": [
         "DEX"
+      ],
+      "handling": [
+        "pistol"
       ]
     },
     "requirements": {
@@ -4739,6 +4872,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "scaling": [
         "INT",
         "DEX"
+      ],
+      "handling": [
+        "pistol"
       ]
     },
     "requirements": {
@@ -4789,6 +4925,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "scaling": [
         "INT",
         "DEX"
+      ],
+      "handling": [
+        "pistol"
       ]
     },
     "requirements": {
@@ -4837,6 +4976,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "scaling": [
         "DEX",
         "STR"
+      ],
+      "handling": [
+        "pistol"
       ]
     },
     "requirements": {
@@ -4882,6 +5024,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "rangeBand": "mid",
       "scaling": [
         "DEX"
+      ],
+      "handling": [
+        "pistol"
       ]
     },
     "requirements": {
@@ -4927,6 +5072,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "scaling": [
         "INT",
         "DEX"
+      ],
+      "handling": [
+        "pistol"
       ]
     },
     "requirements": {
@@ -4973,7 +5121,21 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "scaling": [
         "DEX",
         "STR"
+      ],
+      "handling": [
+        "lever"
       ]
+    },
+    "gripPoints": {
+      "primary": {
+        "x": 0.14,
+        "y": 0.5
+      },
+      "secondary": {
+        "x": 0.34,
+        "y": 0.66,
+        "role": "lever"
+      }
     },
     "requirements": {
       "dex": 6,
@@ -5018,7 +5180,21 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "rangeBand": "long",
       "scaling": [
         "DEX"
+      ],
+      "handling": [
+        "lever"
       ]
+    },
+    "gripPoints": {
+      "primary": {
+        "x": 0.14,
+        "y": 0.5
+      },
+      "secondary": {
+        "x": 0.33,
+        "y": 0.66,
+        "role": "lever"
+      }
     },
     "requirements": {
       "dex": 7
@@ -5160,7 +5336,21 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "scaling": [
         "DEX",
         "INT"
+      ],
+      "handling": [
+        "lever"
       ]
+    },
+    "gripPoints": {
+      "primary": {
+        "x": 0.13,
+        "y": 0.5
+      },
+      "secondary": {
+        "x": 0.33,
+        "y": 0.66,
+        "role": "lever"
+      }
     },
     "requirements": {
       "dex": 8,
@@ -5253,7 +5443,21 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "scaling": [
         "DEX",
         "INT"
+      ],
+      "handling": [
+        "lever"
       ]
+    },
+    "gripPoints": {
+      "primary": {
+        "x": 0.13,
+        "y": 0.5
+      },
+      "secondary": {
+        "x": 0.34,
+        "y": 0.67,
+        "role": "lever"
+      }
     },
     "requirements": {
       "dex": 8,
@@ -5351,7 +5555,21 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "rangeBand": "mid",
       "scaling": [
         "DEX"
+      ],
+      "handling": [
+        "lever"
       ]
+    },
+    "gripPoints": {
+      "primary": {
+        "x": 0.13,
+        "y": 0.5
+      },
+      "secondary": {
+        "x": 0.34,
+        "y": 0.67,
+        "role": "lever"
+      }
     },
     "requirements": {
       "dex": 7
@@ -5539,7 +5757,21 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "scaling": [
         "STR",
         "DEX"
+      ],
+      "handling": [
+        "pump"
       ]
+    },
+    "gripPoints": {
+      "primary": {
+        "x": 0.14,
+        "y": 0.5
+      },
+      "secondary": {
+        "x": 0.43,
+        "y": 0.62,
+        "role": "pump"
+      }
     },
     "requirements": {
       "str": 6,
@@ -5632,7 +5864,21 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "rangeBand": "mid",
       "scaling": [
         "DEX"
+      ],
+      "handling": [
+        "lever"
       ]
+    },
+    "gripPoints": {
+      "primary": {
+        "x": 0.15,
+        "y": 0.5
+      },
+      "secondary": {
+        "x": 0.34,
+        "y": 0.67,
+        "role": "lever"
+      }
     },
     "requirements": {
       "dex": 9
@@ -5771,7 +6017,21 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "scaling": [
         "DEX",
         "STR"
+      ],
+      "handling": [
+        "lever"
       ]
+    },
+    "gripPoints": {
+      "primary": {
+        "x": 0.13,
+        "y": 0.5
+      },
+      "secondary": {
+        "x": 0.34,
+        "y": 0.67,
+        "role": "lever"
+      }
     },
     "requirements": {
       "dex": 7,
@@ -5868,7 +6128,21 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "scaling": [
         "DEX",
         "STR"
+      ],
+      "handling": [
+        "lever"
       ]
+    },
+    "gripPoints": {
+      "primary": {
+        "x": 0.14,
+        "y": 0.5
+      },
+      "secondary": {
+        "x": 0.35,
+        "y": 0.68,
+        "role": "lever"
+      }
     },
     "requirements": {
       "dex": 7,
@@ -5920,7 +6194,21 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "scaling": [
         "STR",
         "DEX"
+      ],
+      "handling": [
+        "pump"
       ]
+    },
+    "gripPoints": {
+      "primary": {
+        "x": 0.14,
+        "y": 0.5
+      },
+      "secondary": {
+        "x": 0.44,
+        "y": 0.63,
+        "role": "pump"
+      }
     },
     "requirements": {
       "str": 6,
@@ -5968,7 +6256,21 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "scaling": [
         "STR",
         "DEX"
+      ],
+      "handling": [
+        "pump"
       ]
+    },
+    "gripPoints": {
+      "primary": {
+        "x": 0.15,
+        "y": 0.5
+      },
+      "secondary": {
+        "x": 0.43,
+        "y": 0.62,
+        "role": "pump"
+      }
     },
     "requirements": {
       "str": 7
@@ -6068,7 +6370,21 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "scaling": [
         "DEX",
         "INT"
+      ],
+      "handling": [
+        "pump"
       ]
+    },
+    "gripPoints": {
+      "primary": {
+        "x": 0.14,
+        "y": 0.5
+      },
+      "secondary": {
+        "x": 0.45,
+        "y": 0.62,
+        "role": "pump"
+      }
     },
     "requirements": {
       "dex": 6,
@@ -6117,7 +6433,21 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "scaling": [
         "DEX",
         "INT"
+      ],
+      "handling": [
+        "pump"
       ]
+    },
+    "gripPoints": {
+      "primary": {
+        "x": 0.15,
+        "y": 0.5
+      },
+      "secondary": {
+        "x": 0.43,
+        "y": 0.62,
+        "role": "pump"
+      }
     },
     "requirements": {
       "dex": 7,
@@ -6218,7 +6548,21 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "rangeBand": "close",
       "scaling": [
         "DEX"
+      ],
+      "handling": [
+        "pump"
       ]
+    },
+    "gripPoints": {
+      "primary": {
+        "x": 0.12,
+        "y": 0.5
+      },
+      "secondary": {
+        "x": 0.42,
+        "y": 0.64,
+        "role": "pump"
+      }
     },
     "requirements": {
       "dex": 10,
@@ -6266,7 +6610,21 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "scaling": [
         "DEX",
         "INT"
+      ],
+      "handling": [
+        "pump"
       ]
+    },
+    "gripPoints": {
+      "primary": {
+        "x": 0.15,
+        "y": 0.5
+      },
+      "secondary": {
+        "x": 0.43,
+        "y": 0.62,
+        "role": "pump"
+      }
     },
     "requirements": {
       "dex": 6,
@@ -6365,7 +6723,21 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "scaling": [
         "DEX",
         "LUK"
+      ],
+      "handling": [
+        "pump"
       ]
+    },
+    "gripPoints": {
+      "primary": {
+        "x": 0.16,
+        "y": 0.5
+      },
+      "secondary": {
+        "x": 0.43,
+        "y": 0.63,
+        "role": "pump"
+      }
     },
     "requirements": {
       "dex": 8
@@ -6410,7 +6782,21 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "rangeBand": "close",
       "scaling": [
         "STR"
+      ],
+      "handling": [
+        "pump"
       ]
+    },
+    "gripPoints": {
+      "primary": {
+        "x": 0.12,
+        "y": 0.5
+      },
+      "secondary": {
+        "x": 0.4,
+        "y": 0.63,
+        "role": "pump"
+      }
     },
     "requirements": {
       "str": 11
@@ -6505,7 +6891,21 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "scaling": [
         "DEX",
         "INT"
+      ],
+      "handling": [
+        "pump"
       ]
+    },
+    "gripPoints": {
+      "primary": {
+        "x": 0.12,
+        "y": 0.5
+      },
+      "secondary": {
+        "x": 0.42,
+        "y": 0.64,
+        "role": "pump"
+      }
     },
     "requirements": {
       "dex": 8,
@@ -6558,7 +6958,21 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "scaling": [
         "STR",
         "DEX"
+      ],
+      "handling": [
+        "pump"
       ]
+    },
+    "gripPoints": {
+      "primary": {
+        "x": 0.14,
+        "y": 0.5
+      },
+      "secondary": {
+        "x": 0.45,
+        "y": 0.63,
+        "role": "pump"
+      }
     },
     "requirements": {
       "str": 5,
@@ -6611,7 +7025,21 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "scaling": [
         "DEX",
         "LUK"
+      ],
+      "handling": [
+        "pump"
       ]
+    },
+    "gripPoints": {
+      "primary": {
+        "x": 0.15,
+        "y": 0.5
+      },
+      "secondary": {
+        "x": 0.44,
+        "y": 0.62,
+        "role": "pump"
+      }
     },
     "requirements": {
       "dex": 8,
@@ -6661,7 +7089,21 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "scaling": [
         "STR",
         "DEX"
+      ],
+      "handling": [
+        "pump"
       ]
+    },
+    "gripPoints": {
+      "primary": {
+        "x": 0.14,
+        "y": 0.5
+      },
+      "secondary": {
+        "x": 0.43,
+        "y": 0.64,
+        "role": "pump"
+      }
     },
     "requirements": {
       "str": 5,
@@ -6709,7 +7151,21 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "scaling": [
         "DEX",
         "INT"
+      ],
+      "handling": [
+        "pump"
       ]
+    },
+    "gripPoints": {
+      "primary": {
+        "x": 0.12,
+        "y": 0.5
+      },
+      "secondary": {
+        "x": 0.42,
+        "y": 0.64,
+        "role": "pump"
+      }
     },
     "requirements": {
       "dex": 8,
@@ -6759,6 +7215,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "scaling": [
         "DEX",
         "LUK"
+      ],
+      "handling": [
+        "pistol"
       ]
     },
     "requirements": {
@@ -6855,7 +7314,21 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "scaling": [
         "DEX",
         "STR"
+      ],
+      "handling": [
+        "pump"
       ]
+    },
+    "gripPoints": {
+      "primary": {
+        "x": 0.13,
+        "y": 0.52
+      },
+      "secondary": {
+        "x": 0.46,
+        "y": 0.72,
+        "role": "vertical-foregrip"
+      }
     },
     "requirements": {
       "dex": 9,
@@ -7045,7 +7518,21 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "scaling": [
         "DEX",
         "INT"
+      ],
+      "handling": [
+        "lever"
       ]
+    },
+    "gripPoints": {
+      "primary": {
+        "x": 0.12,
+        "y": 0.5
+      },
+      "secondary": {
+        "x": 0.34,
+        "y": 0.68,
+        "role": "lever"
+      }
     },
     "requirements": {
       "dex": 10,
@@ -7053,19 +7540,21 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     },
     "twoHanded": true,
     "gun": {
-      "damage": 9,
+      "damage": 13.5,
       "projectileSpeed": 1100,
       "range": 760,
-      "fireRate": 0.28,
+      "fireRate": 0.42,
       "magazine": 10,
       "reloadSeconds": 1.6,
       "bulletKind": "tracer",
       "muzzle": "spark",
       "recoil": 0.0018,
+      "projectileColor": 3401471,
       "pierce": 2,
+      "muzzleColor": 3401471,
       "explode": {
         "radius": 44,
-        "damage": 5
+        "damage": 7.5
       }
     }
   },
@@ -7097,6 +7586,17 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "STR",
         "INT"
       ]
+    },
+    "gripPoints": {
+      "primary": {
+        "x": 0.42,
+        "y": 0.62
+      },
+      "secondary": {
+        "x": 0.61,
+        "y": 0.58,
+        "role": "shoulder-RPG"
+      }
     },
     "requirements": {
       "str": 11,
@@ -7146,7 +7646,21 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "scaling": [
         "STR",
         "DEX"
+      ],
+      "handling": [
+        "pump"
       ]
+    },
+    "gripPoints": {
+      "primary": {
+        "x": 0.14,
+        "y": 0.5
+      },
+      "secondary": {
+        "x": 0.43,
+        "y": 0.64,
+        "role": "pump"
+      }
     },
     "requirements": {
       "str": 8
@@ -7197,6 +7711,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "scaling": [
         "DEX",
         "STR"
+      ],
+      "handling": [
+        "pistol"
       ]
     },
     "requirements": {
@@ -7293,6 +7810,17 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "DEX",
         "INT"
       ]
+    },
+    "gripPoints": {
+      "primary": {
+        "x": 0.12,
+        "y": 0.52
+      },
+      "secondary": {
+        "x": 0.38,
+        "y": 0.65,
+        "role": "under-barrel"
+      }
     },
     "requirements": {
       "dex": 12,
@@ -7580,6 +8108,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "scaling": [
         "DEX",
         "STR"
+      ],
+      "handling": [
+        "pistol"
       ]
     },
     "requirements": {
@@ -7840,6 +8371,17 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "STR"
       ]
     },
+    "gripPoints": {
+      "primary": {
+        "x": 0.13,
+        "y": 0.54
+      },
+      "secondary": {
+        "x": 0.38,
+        "y": 0.61,
+        "role": "two-hand-rifle"
+      }
+    },
     "requirements": {
       "str": 8,
       "luk": 5
@@ -7940,6 +8482,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "scaling": [
         "DEX",
         "LUK"
+      ],
+      "handling": [
+        "pistol"
       ]
     },
     "requirements": {
@@ -7993,6 +8538,17 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "DEX",
         "STR"
       ]
+    },
+    "gripPoints": {
+      "primary": {
+        "x": 0.1,
+        "y": 0.52
+      },
+      "secondary": {
+        "x": 0.42,
+        "y": 0.68,
+        "role": "crank"
+      }
     },
     "requirements": {
       "dex": 11,
@@ -8184,7 +8740,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "swingArc": 1.8,
     "gripFrac": 0.14,
     "tags": {
-      "grip": "1H",
+      "grip": "2H",
       "size": "M",
       "delivery": "projectile",
       "fireMode": "auto",
@@ -8197,10 +8753,22 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "STR"
       ]
     },
+    "gripPoints": {
+      "primary": {
+        "x": 0.14,
+        "y": 0.52
+      },
+      "secondary": {
+        "x": 0.43,
+        "y": 0.64,
+        "role": "under-barrel"
+      }
+    },
     "requirements": {
       "dex": 6,
       "str": 5
     },
+    "twoHanded": true,
     "gun": {
       "damage": 6,
       "projectileSpeed": 980,
@@ -8353,6 +8921,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "scaling": [
         "DEX",
         "LUK"
+      ],
+      "handling": [
+        "pistol"
       ]
     },
     "requirements": {
@@ -8564,6 +9135,17 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "INT"
       ]
     },
+    "gripPoints": {
+      "primary": {
+        "x": 0.1,
+        "y": 0.53
+      },
+      "secondary": {
+        "x": 0.39,
+        "y": 0.67,
+        "role": "under-barrel"
+      }
+    },
     "requirements": {
       "dex": 9,
       "int": 7
@@ -8614,6 +9196,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "scaling": [
         "LUK",
         "DEX"
+      ],
+      "handling": [
+        "pistol"
       ]
     },
     "requirements": {
@@ -8755,11 +9340,11 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "range": 80,
     "halfArc": 0.5,
     "cooldown": 0.3,
-    "displayLength": 84,
+    "displayLength": 168,
     "swingArc": 1.8,
     "gripFrac": 0.15,
     "tags": {
-      "grip": "1H",
+      "grip": "2H",
       "size": "S",
       "delivery": "projectile",
       "fireMode": "auto",
@@ -8772,10 +9357,22 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "INT"
       ]
     },
+    "gripPoints": {
+      "primary": {
+        "x": 0.15,
+        "y": 0.52
+      },
+      "secondary": {
+        "x": 0.44,
+        "y": 0.63,
+        "role": "two-hand-rifle"
+      }
+    },
     "requirements": {
       "dex": 6,
       "int": 4
     },
+    "twoHanded": true,
     "gun": {
       "damage": 5,
       "projectileSpeed": 940,
@@ -8820,6 +9417,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "scaling": [
         "LUK",
         "DEX"
+      ],
+      "handling": [
+        "pistol"
       ]
     },
     "requirements": {
@@ -12023,7 +12623,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "swingArc": 2.6,
     "gripFrac": 0.12,
     "tags": {
-      "grip": "1H",
+      "grip": "2H",
       "size": "M",
       "delivery": "melee-arc",
       "fireMode": "tap-charge",
@@ -12036,10 +12636,22 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "LUK"
       ]
     },
+    "gripPoints": {
+      "primary": {
+        "x": 0.12,
+        "y": 0.5
+      },
+      "secondary": {
+        "x": 0.42,
+        "y": 0.56,
+        "role": "two-hand-rifle"
+      }
+    },
     "requirements": {
       "int": 8,
       "luk": 4
     },
+    "twoHanded": true,
     "scatter": {
       "count": 5,
       "spread": 0.45,
@@ -12210,6 +12822,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "INT"
       ]
     },
+    "authoritativeCombo": true,
+    "comboFamily": "arc",
+    "comboVariant": "wyrmskull-sword",
     "requirements": {
       "int": 10
     },
@@ -13480,7 +14095,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "range": 142,
     "halfArc": 0.82,
     "cooldown": 0.32,
-    "displayLength": 130,
+    "displayLength": 260,
     "swingArc": 2.52,
     "gripFrac": 0.13,
     "tags": {
@@ -13500,6 +14115,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "description": "A magistrate's Driftblade whose edge brightens only when each draw arrives on the last cut's dying breath.",
     "sprite": "driftblade",
     "sizeClass": "standard",
+    "stance": "two-hands-on-hilt",
     "comboFamily": "chop",
     "comboVariant": "katana-stillwater-edict",
     "katanaHook": {
@@ -13596,6 +14212,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "description": "The scabbard stays where the duel began. Its final cut does not.",
     "sprite": "driftblade",
     "sizeClass": "standard",
+    "stance": "blade-forward-high-hilt",
     "comboFamily": "chop",
     "comboVariant": "katana-riftstep",
     "katanaHook": {
@@ -13644,6 +14261,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "description": "A long frost-white blade that teaches each cut to travel farther than the last.",
     "sprite": "driftblade",
     "sizeClass": "long",
+    "stance": "hasso-no-kamae",
     "comboFamily": "chop",
     "comboVariant": "katana-pale-horizon",
     "katanaHook": {
@@ -14324,40 +14942,42 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "damageMultiplier": 1,
         "knockback": 0
       }
-    },
+    }
+  ],
+  "reliquary-down-stab": [
     {
-      "name": "crosswind jab",
-      "motion": "jab",
+      "name": "reliquary falls",
+      "motion": "overhead",
       "direction": 1,
       "hand": "both",
       "timing": {
-        "activeStart": 0.1,
-        "activeEnd": 0.34,
-        "impact": 0.23,
-        "followEnd": 0.5
+        "activeStart": 0.14,
+        "activeEnd": 0.45,
+        "impact": 0.32,
+        "followEnd": 0.74
       },
       "path": {
-        "kind": "capsule",
-        "arcMultiplier": 0,
+        "kind": "sweep",
+        "arcMultiplier": 1,
         "rangeMultiplier": 1,
         "damageMultiplier": 1,
         "knockback": 0
       }
     },
     {
-      "name": "leeward slash",
-      "motion": "slash",
+      "name": "relic point",
+      "motion": "impale",
       "direction": 1,
       "hand": "both",
       "timing": {
-        "activeStart": 0.14,
-        "activeEnd": 0.43,
-        "impact": 0.3,
-        "followEnd": 0.61
+        "activeStart": 0.08,
+        "activeEnd": 0.4,
+        "impact": 0.28,
+        "followEnd": 0.68
       },
       "path": {
-        "kind": "sweep",
-        "arcMultiplier": 1,
+        "kind": "capsule",
+        "arcMultiplier": 0,
         "rangeMultiplier": 1,
         "damageMultiplier": 1,
         "knockback": 0
@@ -14385,8 +15005,8 @@ export const GENERATED_MELEE_COMBO_BARS = {
       }
     },
     {
-      "name": "guard swing",
-      "motion": "long-reap",
+      "name": "saintspar mirror-rise",
+      "motion": "rising-chop",
       "direction": -1,
       "hand": "both",
       "timing": {
@@ -14402,21 +15022,23 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "damageMultiplier": 1,
         "knockback": 0
       }
-    },
+    }
+  ],
+  "blightfork-jab": [
     {
-      "name": "saintspar chop",
-      "motion": "shoulder-chop",
+      "name": "blight jab",
+      "motion": "jab",
       "direction": 1,
       "hand": "both",
       "timing": {
-        "activeStart": 0.16,
-        "activeEnd": 0.47,
-        "impact": 0.33,
-        "followEnd": 0.65
+        "activeStart": 0.1,
+        "activeEnd": 0.36,
+        "impact": 0.24,
+        "followEnd": 0.54
       },
       "path": {
-        "kind": "sweep",
-        "arcMultiplier": 1,
+        "kind": "capsule",
+        "arcMultiplier": 0,
         "rangeMultiplier": 1,
         "damageMultiplier": 1,
         "knockback": 0
@@ -14541,6 +15163,65 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "damageMultiplier": 1,
         "knockback": 0,
         "deltaAngle": 6.283185307179586
+      }
+    }
+  ],
+  "wyrmskull-sword": [
+    {
+      "name": "fang cut",
+      "motion": "slash",
+      "direction": 1,
+      "hand": "both",
+      "timing": {
+        "activeStart": 0.14,
+        "activeEnd": 0.42,
+        "impact": 0.29,
+        "followEnd": 0.6
+      },
+      "path": {
+        "kind": "sweep",
+        "arcMultiplier": 1,
+        "rangeMultiplier": 1,
+        "damageMultiplier": 1,
+        "knockback": 0
+      }
+    },
+    {
+      "name": "skull return",
+      "motion": "slash",
+      "direction": -1,
+      "hand": "both",
+      "timing": {
+        "activeStart": 0.14,
+        "activeEnd": 0.42,
+        "impact": 0.29,
+        "followEnd": 0.6
+      },
+      "path": {
+        "kind": "sweep",
+        "arcMultiplier": -1,
+        "rangeMultiplier": 1,
+        "damageMultiplier": 1,
+        "knockback": 0
+      }
+    },
+    {
+      "name": "wyrm sentence",
+      "motion": "overhead",
+      "direction": 1,
+      "hand": "both",
+      "timing": {
+        "activeStart": 0.18,
+        "activeEnd": 0.5,
+        "impact": 0.36,
+        "followEnd": 0.68
+      },
+      "path": {
+        "kind": "sweep",
+        "arcMultiplier": 1,
+        "rangeMultiplier": 1,
+        "damageMultiplier": 1,
+        "knockback": 0
       }
     }
   ],

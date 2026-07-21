@@ -4,7 +4,12 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("phaser", () => ({ default: {} }));
 
 import { poseSupportHandFor, weaponPoseFamilyFor } from "../sprites/pose-language.js";
-import { routeSwingChannels, samplePairCeremony } from "./SpriteRig.js";
+import {
+  DUAL_PISTOL_HAND_RISE_BODY_FRAC,
+  dualPistolHandYOffset,
+  routeSwingChannels,
+  samplePairCeremony,
+} from "./SpriteRig.js";
 
 describe("dual-wield rig presentation", () => {
   it("routes an off beat onto only the rear weapon and hand channels", () => {
@@ -93,5 +98,18 @@ describe("dual-wield pose-language roles", () => {
   it("gives Crossfall both hands to the authored attack channels", () => {
     expect(poseSupportHandFor(0, true, false, true, false)).toBe(-1);
     expect(poseSupportHandFor(1, true, false, true, false)).toBe(-1);
+  });
+});
+
+// V3G1 -- append-only raised-hand silhouette coverage.
+describe("dual-pistol vertical layout", () => {
+  it("raises exactly one pistol hand and leaves mixed dual loadouts unchanged", () => {
+    const lead = WEAPONS["x-gun-revolver-cannon"];
+    const off = WEAPONS["x-gun-ricochet-pistol"];
+    const nailgun = WEAPONS["x-gun-nailgun"];
+    expect(lead && off && nailgun).toBeTruthy();
+    expect(dualPistolHandYOffset(lead, off, 0)).toBe(-DUAL_PISTOL_HAND_RISE_BODY_FRAC);
+    expect(dualPistolHandYOffset(lead, off, 1)).toBe(0);
+    expect(dualPistolHandYOffset(lead, nailgun, 0)).toBe(0);
   });
 });

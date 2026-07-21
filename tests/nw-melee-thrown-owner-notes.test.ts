@@ -44,7 +44,10 @@ describe("NW-MELEE owner-note catalog contracts", () => {
   it("keeps the ordered combo reads while every new beat preserves base damage", () => {
     expect(motions("x2-glacier-headtaker").slice(0, 2)).toEqual(["overhead", "rising-chop"]);
     expect(motions("x2-dustdevil-glaive").slice(0, 2)).toEqual(["jab", "slash"]);
-    expect(motions("x2-saintspar-lochaber").slice(0, 2)).toEqual(["overhead", "long-reap"]);
+    expect(motions("x2-saintspar-lochaber").slice(0, 2)).toEqual([
+      "overhead",
+      "rising-chop",
+    ]);
     expect(motions("x2-quicksilver-censer").slice(0, 2)).toEqual(["rising-chop", "overhead"]);
     expect(motions("x2-voltfang-tachi")[1]).toBe("rising-ward");
     expect(motions("x2-hollowmoon-reaver")).toEqual([
@@ -68,14 +71,18 @@ describe("NW-MELEE owner-note catalog contracts", () => {
     }
   });
 
-  it("reuses the established blood recipe and suppresses the replaced Quarry quake accent", () => {
-    for (const id of ["x2-quarry-splitter-bardiche", "x2-buckhorn-boarspear"]) {
-      expect(resolveWeaponEffectRecipe(weapon(id)), id).toMatchObject({
-        id: "hangman-blood-spatter",
-        swingPack: "blood-splat",
-        emitter: "blade",
-      });
-    }
+  it("scales Quarry's blood recipe fourfold and suppresses its replaced quake accent", () => {
+    expect(resolveWeaponEffectRecipe(weapon("x2-quarry-splitter-bardiche"))).toMatchObject({
+      id: "quarry-quad-spatter",
+      swingPack: "blood-splat",
+      swingScaleMultiplier: 4,
+      emitter: "blade",
+    });
+    expect(resolveWeaponEffectRecipe(weapon("x2-buckhorn-boarspear"))).toMatchObject({
+      id: "hangman-blood-spatter",
+      swingPack: "blood-splat",
+      emitter: "blade",
+    });
     expect(shouldSpawnLegacyQuakeVfx(weapon("x2-quarry-splitter-bardiche"))).toBe(false);
   });
 

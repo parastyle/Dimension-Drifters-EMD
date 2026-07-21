@@ -85,6 +85,8 @@ import {
   VastagharFoot,
   VastagharMode,
   type WeaponDef,
+  type WeaponSecondaryGripRole,
+  weaponHasHandlingTag,
 } from "@dd/shared";
 import Phaser from "phaser";
 import {
@@ -142,6 +144,7 @@ import {
   createPoseVariantSelection,
   createWeaponPerformanceInput,
   createWeaponPerformanceSample,
+  comboWeaponThicknessSign,
   FLOURISH_DUAL_AFTER_ECHO_MS,
   FLOURISH_DUAL_DRAW_ECHO_MS,
   FLOURISH_DUAL_STOW_ECHO_MS,
@@ -151,6 +154,8 @@ import {
   type MovementPostureInput,
   type MovementPostureSample,
   movementPostureFor,
+  type NamedWeaponStance,
+  namedWeaponStanceFor,
   oneHandBladePoseVariantFrom,
   POSE_ONE_HAND_BLADE_VARIANT_REGISTRY_KEY,
   POSE_PISTOL_VARIANT_REGISTRY_KEY,
@@ -166,6 +171,8 @@ import {
   sampleMovementPosture,
   samplePoseLanguage,
   sampleWeaponPerformance,
+  shaftMidpointPivotTransform,
+  twirlDirectionForBeat,
   twoHandedPoseFor,
   twoHandPoseAuthorityFrom,
   WEAPON_FLOURISH_SPECS,
@@ -417,6 +424,112 @@ export function nextFlourishStreakCount(
   streakWindowMs: number,
 ): number {
   return sameWeapon && acceptedMs - previousAcceptedMs <= streakWindowMs ? previousCount + 1 : 1;
+}
+
+export const PISTOL_IDLE_TWIRL_DELAY_MS = 1_000;
+const GENERIC_IDLE_FLOURISH_DELAY_MS = 1_600;
+export const DUAL_PISTOL_HAND_RISE_BODY_FRAC = 0.035;
+
+/** One data-driven timer law shared by equip, cancellation, and held-fire activity. */
+export function idleFlourishEligibleEpoch(
+  def: WeaponDef | undefined,
+  activityAtMs: number,
+  genericPhaseOffsetMs: number,
+): number {
+  return (
+    activityAtMs +
+    (weaponHasHandlingTag(def, "pistol")
+      ? PISTOL_IDLE_TWIRL_DELAY_MS
+      : GENERIC_IDLE_FLOURISH_DELAY_MS + genericPhaseOffsetMs)
+  );
+}
+
+/** SpriteRig layout offset in body-height units. Only a real pistol+pistol pair gets the raised lead hand. */
+export function dualPistolHandYOffset(
+  lead: WeaponDef | undefined,
+  off: WeaponDef | undefined,
+  hand: 0 | 1,
+): number {
+  if (!weaponHasHandlingTag(lead, "pistol") || !weaponHasHandlingTag(off, "pistol")) return 0;
+  return hand === 0 ? -DUAL_PISTOL_HAND_RISE_BODY_FRAC : 0;
+}
+
+export type GunHandlingMechanism = "lever" | "pump";
+
+export function gunHandlingMechanismFor(
+  def: WeaponDef | undefined,
+): GunHandlingMechanism | undefined {
+  if (!def?.gun) return undefined;
+  if (weaponHasHandlingTag(def, "lever")) return "lever";
+  if (weaponHasHandlingTag(def, "pump")) return "pump";
+  return undefined;
+}
+
+export interface GunHandlingHandOffset {
+  forward: number;
+  lateral: number;
+}
+
+/** Allocation-free short flourish in painted-weapon space. Pump travels rearward and returns; a lever hand
+ * traces one compact crank loop. Reduced motion keeps the authored grip without procedural travel. */
+export function sampleGunHandlingHandOffset(
+  mechanism: GunHandlingMechanism | undefined,
+  elapsedMs: number,
+  durationMs: number,
+  displayLength: number,
+  reducedMotion: boolean,
+  out: GunHandlingHandOffset,
+): GunHandlingHandOffset {
+  out.forward = 0;
+  out.lateral = 0;
+  if (!mechanism || reducedMotion || elapsedMs < 0 || durationMs <= 0 || elapsedMs >= durationMs)
+    return out;
+  const q = clamp01(elapsedMs / durationMs);
+  if (mechanism === "pump") {
+    out.forward = -displayLength * 0.09 * Math.sin(Math.PI * q);
+    return out;
+  }
+  const angle = q * Math.PI * 2;
+  out.forward = displayLength * 0.035 * (Math.cos(angle) - 1);
+  out.lateral = displayLength * 0.055 * Math.sin(angle);
+  return out;
+}
+
+export interface SecondaryGripTransformInput {
+  primaryX: number;
+  primaryY: number;
+  spriteWidth: number;
+  spriteHeight: number;
+  scaleX: number;
+  scaleY: number;
+  rotationRad: number;
+  primary: Readonly<{ x: number; y: number }>;
+  secondary: Readonly<{ x: number; y: number }>;
+  flourishForward: number;
+  flourishLateral: number;
+}
+
+/** Convert normalized painted anchors into the rig-local hand point after scale, rotation, and flourish. */
+export function resolveSecondaryGripPosition(
+  input: Readonly<SecondaryGripTransformInput>,
+  out: { x: number; y: number },
+): { x: number; y: number } {
+  const localX =
+    (input.secondary.x - input.primary.x) * input.spriteWidth * input.scaleX +
+    input.flourishForward;
+  const localY =
+    (input.secondary.y - input.primary.y) * input.spriteHeight * input.scaleY +
+    input.flourishLateral;
+  const c = Math.cos(input.rotationRad);
+  const s = Math.sin(input.rotationRad);
+  out.x = input.primaryX + c * localX - s * localY;
+  out.y = input.primaryY + s * localX + c * localY;
+  return out;
+}
+
+/** Pump and lever hands must stay on the foreground side of the gun's painted layer. */
+export function secondaryGripHandRendersAbove(role: WeaponSecondaryGripRole | undefined): boolean {
+  return role === "pump" || role === "lever" || role === "crank" || role === "vertical-foregrip";
 }
 
 /** ArenaScene owns these presentation services. The rig consumes them structurally so the accepted remote
@@ -1840,6 +1953,21 @@ export class SpriteRig {
   private readonly poseSupportInput = createPoseLanguageInput();
   private readonly poseSupportSample = createPoseLanguageSample();
   private readonly posePoint = { x: 0, y: 0 };
+  private readonly secondaryGripPoint = { x: 0, y: 0 };
+  private readonly secondaryGripFlourish: GunHandlingHandOffset = { forward: 0, lateral: 0 };
+  private readonly secondaryGripInput: SecondaryGripTransformInput = {
+    primaryX: 0,
+    primaryY: 0,
+    spriteWidth: 0,
+    spriteHeight: 0,
+    scaleX: 1,
+    scaleY: 1,
+    rotationRad: 0,
+    primary: { x: 0, y: 0 },
+    secondary: { x: 0, y: 0 },
+    flourishForward: 0,
+    flourishLateral: 0,
+  };
   private poseRecoilConsumedAtMs = -1e9;
   private loadoutKey = "";
   private pairBaseSeq = 0;
@@ -2747,8 +2875,15 @@ export class SpriteRig {
     this.pushGearPlane(stack, 10, 32);
 
     if (this.poseTwoHanded) {
+      const secondaryRole = frontWeapon?.def.gripPoints?.secondary?.role;
+      const secondaryBehind = !!secondaryRole && !secondaryGripHandRendersAbove(secondaryRole);
+      if (secondaryBehind && backHand) {
+        stack.push(backHand.img);
+        for (const attachment of this.gearAttachments)
+          if (attachment.spec.source.receiver === "hand-l") stack.push(attachment.image);
+      }
       if (!this.orbitBehind) this.pushWeaponLayers(stack, frontWeapon);
-      if (backHand) {
+      if (!secondaryBehind && backHand) {
         stack.push(backHand.img);
         for (const attachment of this.gearAttachments)
           if (attachment.spec.source.receiver === "hand-l") stack.push(attachment.image);
@@ -2939,6 +3074,13 @@ export class SpriteRig {
     this.flourishHeadY = 0;
   }
 
+  private idleFlourishClockDef(): WeaponDef | undefined {
+    return (
+      this.weapons?.find((weapon) => weaponHasHandlingTag(weapon.def, "pistol"))?.def ??
+      this.weaponDef
+    );
+  }
+
   /** Actionable presentation input wins immediately; combat clocks and the broader jiggle system are intact. */
   cancelFlourish(_reason = "input"): void {
     const hadState =
@@ -2950,7 +3092,11 @@ export class SpriteRig {
       !!this.stowProxies[1].img;
     this.clearFlourishActivity(true, true);
     if (hadState) this.flourishCancelGeneration++;
-    this.idleFlourishEligibleAtMs = this.presentationClockNow() + 1600 + this.idleFlourishOffsetMs;
+    this.idleFlourishEligibleAtMs = idleFlourishEligibleEpoch(
+      this.idleFlourishClockDef(),
+      this.presentationClockNow(),
+      this.idleFlourishOffsetMs,
+    );
   }
 
   /** Test/debug seam: one increment per real cancellation edge, never per polling frame. */
@@ -3027,7 +3173,11 @@ export class SpriteRig {
       );
     }
     this.pairCeremonyStartMs = -1e9;
-    this.idleFlourishEligibleAtMs = epochMs + 1600 + this.idleFlourishOffsetMs;
+    this.idleFlourishEligibleAtMs = idleFlourishEligibleEpoch(
+      this.idleFlourishClockDef(),
+      epochMs,
+      this.idleFlourishOffsetMs,
+    );
   }
 
   /** Snapshot the old visual before the equip path destroys it. Repeated lazy-art polling is idempotent. */
@@ -3113,6 +3263,12 @@ export class SpriteRig {
     if (!def) return;
     const spec = hand === 0 ? this.flourishLeadSpec : this.flourishOffSpec;
     if (!spec) return;
+    // V3G3/V3G4: every accepted mechanism shot earns one short secondary-hand flourish. A later shot may
+    // cancel and re-arm it, but no cadence threshold or weapon id gates the law.
+    if (gunHandlingMechanismFor(def)) {
+      this.armAfterAttack(hand, epochMs + 70, def);
+      return;
+    }
     // Caster recovery is body language, not another free-running spell effect. Arm the existing family
     // flourish on each accepted discrete cast; rapid fire keeps cancelling/rearming it until the actor is
     // quiet, so the final staff catch/page turn punctuates the phrase without obscuring its active cadence.
@@ -4247,9 +4403,10 @@ export class SpriteRig {
       if (!weapon) continue;
       const state =
         i === 0 && this.tome?.openVisible ? weapon.artGeometry?.open : weapon.artGeometry?.closed;
+      const authoredPrimary = weapon.def.gripPoints?.primary;
       weapon.img.setOrigin(
-        state?.originX ?? weapon.closedOriginX,
-        state?.originY ?? weapon.closedOriginY,
+        authoredPrimary?.x ?? state?.originX ?? weapon.closedOriginX,
+        authoredPrimary?.y ?? state?.originY ?? weapon.closedOriginY,
       );
       weapon.semanticRotation = weapon.img.rotation;
       weapon.img.rotation += state?.artAngle ?? 0;
@@ -4337,8 +4494,10 @@ export class SpriteRig {
       const artGeometry = partIndex === 0 ? weaponArtGeometryFor(piece.spriteId) : undefined;
       const closed = artGeometry?.closed;
       const pieceWorn = isWornWeapon(piece.def);
-      const originX = closed?.originX ?? (pieceWorn ? 0.4 : piece.def.gripFrac);
-      const originY = closed?.originY ?? 0.5;
+      const authoredPrimary = piece.def.gripPoints?.primary;
+      const originX =
+        authoredPrimary?.x ?? closed?.originX ?? (pieceWorn ? 0.4 : piece.def.gripFrac);
+      const originY = authoredPrimary?.y ?? closed?.originY ?? 0.5;
       const wScale = (piece.def.displayLength * (closed?.displayLengthMul ?? 1)) / part.w;
       img.setOrigin(originX, originY).setScale(wScale);
       this.root.add(img);
@@ -4378,10 +4537,13 @@ export class SpriteRig {
       }
     };
     if (this.poseTwoHanded) {
-      // 2H: one weapon, BOTH hands gripping it above the body.
+      // 2H: grip-role layering; pump/lever/crank/vertical hands stay above the painted mechanism.
       stack.push(this.body);
+      const secondaryRole = frontPiece?.def.gripPoints?.secondary?.role;
+      const secondaryBehind = !!secondaryRole && !secondaryGripHandRendersAbove(secondaryRole);
+      if (secondaryBehind && backHand) stack.push(backHand.img);
       if (frontWpn) stack.push(frontWpn);
-      if (backHand) stack.push(backHand.img);
+      if (!secondaryBehind && backHand) stack.push(backHand.img);
       if (frontHand) stack.push(frontHand.img);
     } else if (backWpn) {
       stack.push(this.body);
@@ -4418,8 +4580,11 @@ export class SpriteRig {
     }
     if (flourishSwapPending) this.completePendingWeaponSwap();
     else
-      this.idleFlourishEligibleAtMs =
-        this.presentationClockNow() + 1600 + this.idleFlourishOffsetMs;
+      this.idleFlourishEligibleAtMs = idleFlourishEligibleEpoch(
+        this.idleFlourishClockDef(),
+        this.presentationClockNow(),
+        this.idleFlourishOffsetMs,
+      );
   }
 
   /** Start a swing animation (damage is server-authoritative). `timeMs` is the accepted/predicted Phaser
@@ -7581,7 +7746,11 @@ export class SpriteRig {
     const beamEnded = this.flourishFireHeld && !anim.fireHeld && !!this.weaponDef?.beam;
     this.flourishFireHeld = anim.fireHeld === true;
     if (cancellationMoveActive || flourishAttackIntent) {
-      this.idleFlourishEligibleAtMs = sceneNow + 1600 + this.idleFlourishOffsetMs;
+      this.idleFlourishEligibleAtMs = idleFlourishEligibleEpoch(
+        this.idleFlourishClockDef(),
+        sceneNow,
+        this.idleFlourishOffsetMs,
+      );
     }
     const flourishClockCut =
       outsidePaperView || rootCut || rawDtMs <= 0 || rawDtMs > JIGGLE_MAX_DT_S * 1000;
@@ -7854,12 +8023,14 @@ export class SpriteRig {
     // Weapon angle — guns and melee both honor semantic +X/aim. Swing choreography may travel through
     // vertical, but neutral and held guards return to a small forward cant.
     let weaponAngle = 0;
+    let weaponThicknessSign: -1 | 1 = 1;
     let backWeaponAngle = Number.NaN;
     let ownFront = 0;
     let ownBack = 0;
     let ownFeet = 0;
     let rangedAimBlend = 0;
-    let activeBladeStance: BladeSizeStance | undefined;
+    let activeBladeStance: BladeSizeStance | NamedWeaponStance | undefined;
+    let activeNamedStance: NamedWeaponStance | undefined;
     const leadFiringStance = this.weaponDef ? firingStanceFor(this.weaponDef) : undefined;
     const hasAimedFiringWeapon = this.weapons.some((weapon) => usesAimedFiringStance(weapon.def));
     this.orbitT = -1; // §40 re-armed below only while an orbit-style swing window is live
@@ -8185,7 +8356,11 @@ export class SpriteRig {
         const poseStyle = comboPose ? (family === "rake" ? "pivot" : family) : style;
         // KNOWN STAGE-1 RESIDUAL: every signed reverse/dual/overhead comboPose below is presentation-only;
         // server damage still advances once through its untouched centered, positive single-sweep descriptor.
-        if (
+        if (def.performance?.twirl) {
+          // Named twirls own the continuous orbit seam, even when an older presentation combo remains.
+          this.orbitT = tt;
+          this.orbitSpin = true;
+        } else if (
           comboPose?.motion === "falling-gate" ||
           comboPose?.motion === "backswing-wheel" ||
           comboPose?.motion === "runaway-cleave"
@@ -8247,6 +8422,7 @@ export class SpriteRig {
           const lowGuardA = slamA - 0.18;
           const lift = TARGET_BODY_H * 0.2;
           if (pose?.motion === "rising-chop") {
+            weaponThicknessSign = comboWeaponThicknessSign(pose);
             const a = pose.timing.activeStart;
             const b = pose.timing.activeEnd;
             if (tt < a) {
@@ -8867,6 +9043,8 @@ export class SpriteRig {
       this.performanceInput.phaseT = posePhaseT;
       this.performanceInput.fireHeld = anim.fireHeld === true;
       this.performanceInput.reducedMotion = anim.reducedMotion === true || outsidePaperView;
+      this.performanceInput.gait = gait;
+      this.performanceInput.stridePhase = legPh;
       sampleWeaponPerformance(this.performanceInput, this.performanceSample);
       performancePoseActive = this.performanceSample.active;
       if (performancePoseActive) {
@@ -8992,6 +9170,13 @@ export class SpriteRig {
     const anyFlourishActive = this.flourishChannels[0].active || this.flourishChannels[1].active;
     const anyFlourishArmed = this.flourishArms[0].armed || this.flourishArms[1].armed;
     const anyStowActive = !!this.stowProxies[0].img || !!this.stowProxies[1].img;
+    const idleLeadPistol = weaponHasHandlingTag(this.weapons[0]?.def ?? this.weaponDef, "pistol");
+    const idleOffPistol = weaponHasHandlingTag(this.weapons[1]?.def, "pistol");
+    const pistolIdleTwirl = idleLeadPistol || idleOffPistol;
+    const hasIdleFlourish = pistolIdleTwirl
+      ? (idleLeadPistol && !!this.flourishLeadSpec?.idleSettle) ||
+        (idleOffPistol && !!this.flourishOffSpec?.idleSettle)
+      : !!this.flourishLeadSpec?.idleSettle;
     if (
       !reducedMotion &&
       !outsidePaperView &&
@@ -9004,10 +9189,17 @@ export class SpriteRig {
       !flourishAttackIntent &&
       !this.comboHoldPose &&
       sceneNow >= this.idleFlourishEligibleAtMs &&
-      sceneNow - this.idleFlourishLastPlayedMs >= 6500 &&
-      this.flourishLeadSpec?.idleSettle
+      (pistolIdleTwirl || sceneNow - this.idleFlourishLastPlayedMs >= 6500) &&
+      hasIdleFlourish
     ) {
-      this.startFlourishChannel(0, "idle-settle", sceneNow, this.flourishLeadSpec);
+      if (pistolIdleTwirl) {
+        if (idleLeadPistol && this.flourishLeadSpec)
+          this.startFlourishChannel(0, "idle-settle", sceneNow, this.flourishLeadSpec);
+        if (idleOffPistol && this.flourishOffSpec)
+          this.startFlourishChannel(1, "idle-settle", sceneNow, this.flourishOffSpec);
+      } else if (this.flourishLeadSpec) {
+        this.startFlourishChannel(0, "idle-settle", sceneNow, this.flourishLeadSpec);
+      }
       this.idleFlourishEligibleAtMs = Number.POSITIVE_INFINITY;
     }
 
@@ -9016,9 +9208,14 @@ export class SpriteRig {
       !strongerFlourishOwner &&
       (bladeFamily === "one-hand-blade" || bladeFamily === "two-hand-sword");
     if (bladeStanceEligible) {
-      activeBladeStance = BLADE_SIZE_STANCES[this.poseLeadBladeSize];
-      let bladeTarget = heldAimLocal + activeBladeStance.restAngleRad;
+      activeNamedStance = namedWeaponStanceFor(this.weaponDef);
+      activeBladeStance = activeNamedStance ?? BLADE_SIZE_STANCES[this.poseLeadBladeSize];
+      let bladeTarget =
+        activeNamedStance?.angleReference === "screen"
+          ? activeBladeStance.restAngleRad
+          : heldAimLocal + activeBladeStance.restAngleRad;
       if (
+        !activeNamedStance &&
         (this.poseLeadBladeSize === "great" || this.poseLeadBladeSize === "colossal") &&
         gait > 0.2 &&
         currentMoveActive
@@ -9270,14 +9467,19 @@ export class SpriteRig {
         hy += anim.aimY * reach;
       }
       if (activeBladeStance && hnd.front) {
-        aimRelativePoint(
-          activeBladeStance.handForward,
-          activeBladeStance.handLateral,
-          heldAimLocal,
-          this.posePoint,
-        );
-        hx = this.body.x + this.posePoint.x * TARGET_BODY_H;
-        hy = this.body.y + this.posePoint.y * TARGET_BODY_H;
+        if (activeNamedStance?.handReference === "screen") {
+          hx = this.body.x + activeBladeStance.handForward * TARGET_BODY_H;
+          hy = this.body.y + activeBladeStance.handLateral * TARGET_BODY_H;
+        } else {
+          aimRelativePoint(
+            activeBladeStance.handForward,
+            activeBladeStance.handLateral,
+            heldAimLocal,
+            this.posePoint,
+          );
+          hx = this.body.x + this.posePoint.x * TARGET_BODY_H;
+          hy = this.body.y + this.posePoint.y * TARGET_BODY_H;
+        }
       }
       // §40.1/§45 each hand carries its authored style offset. Most attacks drive the front; alternating rake/
       // cross/scissor steps populate the rear channel. The 2H block below still chains the haft after this.
@@ -9381,9 +9583,43 @@ export class SpriteRig {
       const front = this.hands.find((h) => h.front);
       const back = this.hands.find((h) => !h.front);
       if (front && back) {
-        const haft = this.attackHandSpacing;
-        back.img.x = front.img.x + Math.cos(weaponAngle) * haft;
-        back.img.y = front.img.y + Math.sin(weaponAngle) * haft;
+        const held = this.weapons[0];
+        const grips = held?.def.gripPoints;
+        if (held && grips?.secondary) {
+          const ownsSwingScale = this.swingHand === "both" || this.swingHand === 0;
+          const base = held.baseScale / (this.baseScale || 1);
+          const channel = this.flourishChannels[0];
+          const handling = gunHandlingMechanismFor(held.def);
+          const beat = this.beatFor(channel.spec, channel.moment);
+          sampleGunHandlingHandOffset(
+            channel.active && channel.moment === "after-attack" ? handling : undefined,
+            channel.active ? sceneNow - channel.startMs : -1,
+            beat.timing.durationMs,
+            held.def.displayLength / (this.baseScale || 1),
+            reducedMotion,
+            this.secondaryGripFlourish,
+          );
+          const gripInput = this.secondaryGripInput;
+          gripInput.primaryX = front.img.x;
+          gripInput.primaryY = front.img.y;
+          gripInput.spriteWidth = held.img.width;
+          gripInput.spriteHeight = held.img.height;
+          gripInput.scaleX = base * (ownsSwingScale ? this.weaponLengthScale : 1);
+          gripInput.scaleY = base * (ownsSwingScale ? this.attackScaleY : 1);
+          gripInput.rotationRad = weaponAngle;
+          gripInput.primary = grips.primary;
+          gripInput.secondary = grips.secondary;
+          gripInput.flourishForward = this.secondaryGripFlourish.forward;
+          gripInput.flourishLateral = this.secondaryGripFlourish.lateral;
+          resolveSecondaryGripPosition(gripInput, this.secondaryGripPoint);
+          back.img.x = this.secondaryGripPoint.x;
+          back.img.y = this.secondaryGripPoint.y;
+        } else {
+          // No authored secondary point means byte-for-byte legacy two-hand spacing behavior.
+          const haft = this.attackHandSpacing;
+          back.img.x = front.img.x + Math.cos(weaponAngle) * haft;
+          back.img.y = front.img.y + Math.sin(weaponAngle) * haft;
+        }
         back.img.rotation = 0;
         if (PROCEDURAL_JIGGLE)
           syncOwnedJigglePart(
@@ -9394,6 +9630,19 @@ export class SpriteRig {
             jiggleRebase || jiggleLodSkip,
           );
       }
+    }
+
+    // V3G1: a true pistol pair uses a deliberately asymmetric silhouette; unrelated dual loadouts are
+    // untouched. The weapon pass below follows these hand anchors, so the guns separate with the hands.
+    if (this.weapons.length > 1) {
+      const front = this.hands.find((hand) => hand.front);
+      const back = this.hands.find((hand) => !hand.front);
+      if (front)
+        front.img.y +=
+          dualPistolHandYOffset(this.weapons[0]?.def, this.weapons[1]?.def, 0) * TARGET_BODY_H;
+      if (back)
+        back.img.y +=
+          dualPistolHandYOffset(this.weapons[0]?.def, this.weapons[1]?.def, 1) * TARGET_BODY_H;
     }
 
     // Feet: alternating walk (lift + a small forward/back stride + a toe pivot) BLENDED by gait with a
@@ -9579,6 +9828,10 @@ export class SpriteRig {
         // The aim's azimuth on the GROUND circle (un-squash the screen direction).
         const azAim = Math.atan2(Math.sin(aimLocal) / SQ, Math.cos(aimLocal));
         const tt = this.orbitT;
+        const twirl = def.performance?.twirl;
+        const spinDirection = twirl
+          ? twirlDirectionForBeat(twirl.direction, this.attackBeatSeq)
+          : 1;
         let th: number;
         if (this.orbitSpin) {
           // §40.3 WHIRLWIND: full revolutions matching the weapon's full-circle swingArc (2π per turn) —
@@ -9593,12 +9846,61 @@ export class SpriteRig {
               ? (tt * tt) / (a * (2 - a))
               : (2 * tt - a) / (2 - a);
           const turns = Math.max(1, Math.round(def.swingArc / (Math.PI * 2)));
-          th = azAim + turns * Math.PI * 2 * e;
+          th = azAim + spinDirection * turns * Math.PI * 2 * e;
         } else {
           const e = tt * tt * (3 - 2 * tt); // smoothstep — wind in, whip through, settle out
           const windup = 1.5; // start this far behind the damage arc…
           const follow = 0.9; // …and carry through past it
           th = azAim - def.swingArc / 2 - windup + (def.swingArc + windup + follow) * e;
+        }
+        if (twirl?.plane === "screen-circle") {
+          const screenAngle = aimLocal + (th - azAim);
+          const localLength = def.displayLength / Math.max(0.01, this.baseScale);
+          const pivot =
+            twirl.pivot === "shaft-midpoint"
+              ? shaftMidpointPivotTransform(0, 0, screenAngle, localLength, def.gripFrac)
+              : { x: 0, y: 0, rotation: screenAngle };
+          w.img.setPosition(pivot.x, pivot.y);
+          w.img.rotation = pivot.rotation;
+          w.img.setScale(base, base);
+          const front = this.hands.find((h) => h.front);
+          const back = this.hands.find((h) => !h.front);
+          const handHalfSpan = Math.min(TARGET_BODY_H * 0.18, localLength * 0.08);
+          if (front)
+            front.img.setPosition(
+              -Math.cos(screenAngle) * handHalfSpan,
+              -Math.sin(screenAngle) * handHalfSpan,
+            );
+          if (back) {
+            back.img.setPosition(
+              Math.cos(screenAngle) * handHalfSpan,
+              Math.sin(screenAngle) * handHalfSpan,
+            );
+            back.img.rotation = 0;
+          }
+          if (PROCEDURAL_JIGGLE) {
+            if (front)
+              syncOwnedJigglePart(
+                front,
+                front.img.x,
+                front.img.y,
+                springDtS,
+                jiggleRebase || jiggleLodSkip,
+              );
+            if (back)
+              syncOwnedJigglePart(
+                back,
+                back.img.x,
+                back.img.y,
+                springDtS,
+                jiggleRebase || jiggleLodSkip,
+              );
+          }
+          if (this.orbitBehind) {
+            this.orbitBehind = false;
+            this.rebuildRenderStack();
+          }
+          continue;
         }
         const rx = Math.cos(th);
         const ry = Math.sin(th) * SQ;
@@ -9693,7 +9995,10 @@ export class SpriteRig {
       const ownsSwingScale = this.swingHand === "both" || this.swingHand === i;
       const lengthScale = ownsSwingScale ? this.weaponLengthScale : 1;
       const thicknessScale = ownsSwingScale ? this.attackScaleY : 1;
-      w.img.setScale(base * lengthScale * (this.pairWeaponScaleX[i] ?? 1), base * thicknessScale);
+      w.img.setScale(
+        base * lengthScale * (this.pairWeaponScaleX[i] ?? 1),
+        base * thicknessScale * (i === 0 && ownsSwingScale ? weaponThicknessSign : 1),
+      );
       if (i === 0 && this.attackWeaponDepth !== 0) {
         const behind = this.attackWeaponDepth < 0;
         if (behind !== this.orbitBehind) {

@@ -38,6 +38,8 @@ vi.mock("@dd/shared", () => {
     isWornWeapon: () => false,
     meleeComboSelectionFor: () => undefined,
     swingStyleFor: () => "chop",
+    weaponHasHandlingTag: (weapon: { tags?: { handling?: string[] } } | undefined, tag: string) =>
+      weapon?.tags?.handling?.includes(tag) === true,
   };
 });
 

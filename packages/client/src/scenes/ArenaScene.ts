@@ -3643,7 +3643,7 @@ export class ArenaScene extends Phaser.Scene {
     swing: SwingDescriptor,
   ): void {
     const recipe = resolveWeaponEffectRecipe(weapon);
-    if (!recipe?.swingPack) return;
+    if (!recipe?.swingPack && !recipe?.musicalNotes) return;
     const cueSeconds = weaponEffectCueSeconds(weapon, swing);
     this.time.delayedCall(cueSeconds * 1000, () => {
       const point = weaponEffectEmitterPoint(
@@ -10593,6 +10593,16 @@ export class ArenaScene extends Phaser.Scene {
     const fullReceipt = event.layer === "full" || event.layer === "ambient";
     const breakthrough = event.crit || event.finalBlow;
     const visible = this.cameras.main.worldView.contains(x, y);
+
+    const impactRecipe = resolveWeaponEffectRecipe(WEAPONS[event.weaponId]);
+    if (fullReceipt && impactRecipe?.impactAnchor === "target")
+      spawnWeaponProjectileImpact(
+        this,
+        impactRecipe,
+        x,
+        y,
+        Math.atan2(event.dirY, event.dirX),
+      );
 
     if (fullReceipt) {
       if (mode === "shimmer") rig?.flash(350, reducedFlash ? 0xdedede : color);

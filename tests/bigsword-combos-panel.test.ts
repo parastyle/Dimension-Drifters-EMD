@@ -26,7 +26,6 @@ const PANEL_ROSTER = {
   "glaive-compass": [
     "x2-thunderhead-voulge",
     "x2-wickfire-fauchard",
-    "x2-blightfork-glaive",
   ],
   "bardiche-hookbreak": ["x2-permafrost-bardiche", "x2-quarry-splitter-bardiche"],
 } as const;

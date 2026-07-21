@@ -166,6 +166,14 @@
         "swingArc": 2.3,
         "gripFrac": 0.11
       },
+      "stance": "tachi-no-tori",
+      "authoritativeCombo": true,
+      "katanaHook": {
+        "kind": "finisher-burst",
+        "summary": "Three Hails redistributes one neutral three-beat budget: 0.85x, 0.85x, then 1.30x.",
+        "nonFinisherDamageMultiplier": 0.85,
+        "finisherDamageMultiplier": 1.3
+      },
       "id": "x2-hailwidow-katana"
     },
     {
@@ -2046,7 +2054,7 @@
         "range": 190,
         "halfArc": 1.05,
         "cooldown": 0.62,
-        "displayLength": 150,
+        "displayLength": 300,
         "swingArc": 3,
         "gripFrac": 0.1
       },
@@ -2060,11 +2068,10 @@
       },
       "comboFamily": "thrust",
       "comboVariant": "dustdevil-jab-slash",
+      "authoritativeCombo": true,
       "comboBar": [
         { "name": "dust jab", "motion": "jab", "direction": 1, "hand": "both", "timing": { "activeStart": 0.1, "activeEnd": 0.34, "impact": 0.23, "followEnd": 0.5 }, "path": { "kind": "capsule", "arcMultiplier": 0, "rangeMultiplier": 1, "damageMultiplier": 1, "knockback": 0 } },
-        { "name": "devil slash", "motion": "slash", "direction": -1, "hand": "both", "timing": { "activeStart": 0.12, "activeEnd": 0.4, "impact": 0.27, "followEnd": 0.58 }, "path": { "kind": "sweep", "arcMultiplier": -1, "rangeMultiplier": 1, "damageMultiplier": 1, "knockback": 0 } },
-        { "name": "crosswind jab", "motion": "jab", "direction": 1, "hand": "both", "timing": { "activeStart": 0.1, "activeEnd": 0.34, "impact": 0.23, "followEnd": 0.5 }, "path": { "kind": "capsule", "arcMultiplier": 0, "rangeMultiplier": 1, "damageMultiplier": 1, "knockback": 0 } },
-        { "name": "leeward slash", "motion": "slash", "direction": 1, "hand": "both", "timing": { "activeStart": 0.14, "activeEnd": 0.43, "impact": 0.3, "followEnd": 0.61 }, "path": { "kind": "sweep", "arcMultiplier": 1, "rangeMultiplier": 1, "damageMultiplier": 1, "knockback": 0 } }
+        { "name": "devil slash", "motion": "slash", "direction": -1, "hand": "both", "timing": { "activeStart": 0.12, "activeEnd": 0.4, "impact": 0.27, "followEnd": 0.58 }, "path": { "kind": "sweep", "arcMultiplier": -1, "rangeMultiplier": 1, "damageMultiplier": 1, "knockback": 0 } }
       ],
       "id": "x2-dustdevil-glaive"
     },
@@ -2230,6 +2237,14 @@
         "str": 9,
         "dex": 6
       },
+      "comboFamily": "chop",
+      "comboVariant": "reliquary-down-stab",
+      "authoritativeCombo": true,
+      "comboBar": [
+        { "name": "reliquary falls", "motion": "overhead", "direction": 1, "hand": "both", "timing": { "activeStart": 0.14, "activeEnd": 0.45, "impact": 0.32, "followEnd": 0.74 }, "path": { "kind": "sweep", "arcMultiplier": 1, "rangeMultiplier": 1, "damageMultiplier": 1, "knockback": 0 } },
+        { "name": "relic point", "motion": "impale", "direction": 1, "hand": "both", "timing": { "activeStart": 0.08, "activeEnd": 0.4, "impact": 0.28, "followEnd": 0.68 }, "path": { "kind": "capsule", "arcMultiplier": 0, "rangeMultiplier": 1, "damageMultiplier": 1, "knockback": 0 } }
+      ],
+      "suppressVfx": true,
       "id": "x2-reliquary-halberd"
     },
     {
@@ -2368,6 +2383,8 @@
         "int": 8,
         "dex": 6
       },
+      "effectRecipe": "nullspike-impact-circle",
+      "effectEmitter": "tip",
       "id": "x2-nullspike-pike"
     },
     {
@@ -2436,7 +2453,7 @@
         "radius": 170,
         "damage": 8
       },
-      "effectRecipe": "hangman-blood-spatter",
+      "effectRecipe": "quarry-quad-spatter",
       "effectEmitter": "blade",
       "effectTiming": "swing-midpoint",
       "stats": {
@@ -2491,7 +2508,8 @@
       "performance": {
         "hold": "upright",
         "action": "default-swing",
-        "carryForwardPx": 18
+        "carryForwardPx": 18,
+        "carryAngleRad": -1.05
       },
       "stats": {
         "damage": 10,
@@ -2592,10 +2610,10 @@
       },
       "comboFamily": "chop",
       "comboVariant": "saintspar-down-swing",
+      "authoritativeCombo": true,
       "comboBar": [
         { "name": "chapel chop", "motion": "overhead", "direction": 1, "hand": "both", "timing": { "activeStart": 0.14, "activeEnd": 0.43, "impact": 0.3, "followEnd": 0.62 }, "path": { "kind": "sweep", "arcMultiplier": 1, "rangeMultiplier": 1, "damageMultiplier": 1, "knockback": 0 } },
-        { "name": "guard swing", "motion": "long-reap", "direction": -1, "hand": "both", "timing": { "activeStart": 0.13, "activeEnd": 0.42, "impact": 0.29, "followEnd": 0.61 }, "path": { "kind": "sweep", "arcMultiplier": -1, "rangeMultiplier": 1, "damageMultiplier": 1, "knockback": 0 } },
-        { "name": "saintspar chop", "motion": "shoulder-chop", "direction": 1, "hand": "both", "timing": { "activeStart": 0.16, "activeEnd": 0.47, "impact": 0.33, "followEnd": 0.65 }, "path": { "kind": "sweep", "arcMultiplier": 1, "rangeMultiplier": 1, "damageMultiplier": 1, "knockback": 0 } }
+        { "name": "saintspar mirror-rise", "motion": "rising-chop", "direction": -1, "hand": "both", "timing": { "activeStart": 0.13, "activeEnd": 0.42, "impact": 0.29, "followEnd": 0.61 }, "path": { "kind": "sweep", "arcMultiplier": -1, "rangeMultiplier": 1, "damageMultiplier": 1, "knockback": 0 } }
       ],
       "id": "x2-saintspar-lochaber"
     },
@@ -2616,7 +2634,7 @@
       "palettePrimary": "#3C6E6A",
       "paletteAccent": "#33E6FF",
       "artPrompt": "Weapon-only in-world sprite (no character, no background): an ice-fisher's throwing harpoon — a single rime-frosted barbed head of pale frost-blue steel, a coiled hide retrieval-cord at the socket, a weathered driftwood haft crusted with dull-teal frost. Cold, flung, lake-frontier. MEDIUM detail, ~5 colours. Flat orthographic full side-profile, faces RIGHT: frosted barbed POINT to the RIGHT, corded driftwood haft/grip on the LEFT.",
-      "cardartAction": "hurled forward spinning, a cyber-cyan frost-trail spiralling off the barb and rime bursting where it bites",
+      "cardartAction": "hurled point-first like a missile, a straight cyber-cyan frost-trail streaming behind the barb and rime bursting where it bites",
       "behavior": {
         "kind": "thrown",
         "speed": 720,
@@ -2624,14 +2642,15 @@
         "damage": 10,
         "charges": 3,
         "refillSeconds": 1.6,
-        "pierce": 2
+        "pierce": 2,
+        "rotation": "point-forward"
       },
       "stats": {
         "damage": 10,
         "range": 140,
         "halfArc": 0.7,
         "cooldown": 0.36,
-        "displayLength": 88,
+        "displayLength": 176,
         "swingArc": 2.3,
         "gripFrac": 0.14
       },
@@ -2642,6 +2661,11 @@
       "requirements": {
         "dex": 6,
         "int": 4
+      },
+      "performance": {
+        "hold": "steady",
+        "action": "throw-release",
+        "preThrowRevolutions": 0
       },
       "id": "x2-frostgig-harpoon"
     },
@@ -2675,7 +2699,7 @@
         "range": 230,
         "halfArc": 1.1,
         "cooldown": 0.82,
-        "displayLength": 300,
+        "displayLength": 198,
         "swingArc": 3.1,
         "gripFrac": 0.08
       },
@@ -2687,6 +2711,13 @@
         "str": 10,
         "dex": 6
       },
+      "performance": {
+        "hold": "upright",
+        "action": "default-swing"
+      },
+      "effectRecipe": "thunderhead-electric-codex",
+      "effectEmitter": "blade",
+      "effectTiming": "swing-midpoint",
       "id": "x2-thunderhead-voulge"
     },
     {
@@ -2822,6 +2853,12 @@
         "dex": 6,
         "int": 5
       },
+      "comboFamily": "thrust",
+      "comboVariant": "blightfork-jab",
+      "authoritativeCombo": true,
+      "comboBar": [
+        { "name": "blight jab", "motion": "jab", "direction": 1, "hand": "both", "timing": { "activeStart": 0.1, "activeEnd": 0.36, "impact": 0.24, "followEnd": 0.54 }, "path": { "kind": "capsule", "arcMultiplier": 0, "rangeMultiplier": 1, "damageMultiplier": 1, "knockback": 0 } }
+      ],
       "id": "x2-blightfork-glaive"
     },
     {
@@ -3337,6 +3374,9 @@
         "str": "B",
         "int": "C"
       },
+      "effectRecipe": "sermon-musical-notes",
+      "effectEmitter": "body",
+      "effectTiming": "swing-midpoint",
       "id": "x2-sermon-bell"
     },
     {
@@ -3962,6 +4002,11 @@
       "id": "x2-reaper-s-tithe",
       "behavior": {
         "kind": "edge"
+      },
+      "performance": {
+        "hold": "walking-staff",
+        "action": "default-swing",
+        "strideTap": { "amplitudePx": 10, "phaseOffset": 0 }
       }
     },
     {
@@ -3989,7 +4034,7 @@
         "halfArc": 1.05,
         "cooldown": 0.74,
         "displayLength": 180,
-        "swingArc": 3.2,
+        "swingArc": 6.283185307179586,
         "gripFrac": 0.11
       },
       "scalingGrades": {
@@ -4003,6 +4048,13 @@
       "id": "x2-gravechain-scythe",
       "behavior": {
         "kind": "edge"
+      },
+      "swingStyle": "spin",
+      "performance": {
+        "hold": "steady",
+        "action": "default-swing",
+        "continuous": true,
+        "twirl": { "plane": "ground-whirlwind", "pivot": "grip", "direction": "alternate" }
       }
     },
     {
@@ -4022,7 +4074,7 @@
       "artPrompt": "Weapon-only in-world sprite (no character, no background scene): a small one-handed sickle — a short wrapped grip on the FAR LEFT and a tight curved crescent blade hooking to the FAR RIGHT, the pale steel inner edge furred with a solid pale-blue rime of frost (NO emitted glow). Pristine but gritty Wild-West style, flat orthographic full side-profile, ~4-6 colours (off-white steel, dull-teal frost, charcoal, bone, tan). Faces RIGHT: sickle hook/point to the RIGHT, grip on the LEFT.",
       "palettePrimary": "#E8E4D8",
       "paletteAccent": "#3C6E6A",
-      "cardartAction": "whipped in a fast hooking cut, a crisp pale-blue frost-edge trail and a scatter of ice crystals off the inner curve",
+      "cardartAction": "thrown in a fast hooking flight, a crisp pale-blue frost trail and a scatter of ice crystals peeling off the inner curve",
       "stats": {
         "damage": 7,
         "range": 110,
@@ -4040,7 +4092,19 @@
       },
       "id": "x2-hailspur-sickle",
       "behavior": {
-        "kind": "edge"
+        "kind": "thrown",
+        "speed": 680,
+        "range": 520,
+        "damage": 9,
+        "charges": 3,
+        "refillSeconds": 0.6,
+        "pierce": 1,
+        "rotation": "spin"
+      },
+      "performance": {
+        "hold": "steady",
+        "action": "throw-release",
+        "preThrowRevolutions": 0.75
       }
     },
     {
@@ -4094,7 +4158,8 @@
       "performance": {
         "hold": "steady",
         "action": "default-swing",
-        "continuous": true
+        "continuous": true,
+        "twirl": { "plane": "screen-circle", "pivot": "shaft-midpoint", "direction": "forward" }
       }
     },
     {
@@ -4164,7 +4229,7 @@
         "halfArc": 1.05,
         "cooldown": 0.66,
         "displayLength": 165,
-        "swingArc": 3.1,
+        "swingArc": 6.283185307179586,
         "gripFrac": 0.12
       },
       "scalingGrades": {
@@ -4176,6 +4241,14 @@
       "id": "x2-hollow-harvest",
       "behavior": {
         "kind": "edge"
+      },
+      "swingStyle": "spin",
+      "performance": {
+        "hold": "steady",
+        "action": "default-swing",
+        "continuous": true,
+        "twirl": { "plane": "screen-circle", "pivot": "grip", "direction": "forward" },
+        "holdScaling": { "cadence": "weapon-cooldown" }
       }
     },
     {
@@ -4617,6 +4690,7 @@
       "finish": "battle-worn",
       "element": "physical",
       "grip": "1H",
+      "handlingTags": ["pistol"],
       "size": "S",
       "rangeBand": "long",
       "scaling": [
@@ -4669,6 +4743,7 @@
       "finish": "worn",
       "element": "physical",
       "grip": "1H",
+      "handlingTags": ["pistol"],
       "size": "S",
       "rangeBand": "mid",
       "scaling": [
@@ -4721,6 +4796,7 @@
       "finish": "battle-worn",
       "element": "physical",
       "grip": "1H",
+      "handlingTags": ["pistol"],
       "size": "M",
       "rangeBand": "long",
       "scaling": [
@@ -4774,6 +4850,7 @@
       "finish": "ornate",
       "element": "fire",
       "grip": "1H",
+      "handlingTags": ["pistol"],
       "size": "S",
       "rangeBand": "mid",
       "scaling": [
@@ -4831,6 +4908,7 @@
       "finish": "worn",
       "element": "frost",
       "grip": "1H",
+      "handlingTags": ["pistol"],
       "size": "M",
       "rangeBand": "mid",
       "scaling": [
@@ -4883,6 +4961,7 @@
       "finish": "battle-worn",
       "element": "shock",
       "grip": "1H",
+      "handlingTags": ["pistol"],
       "size": "M",
       "rangeBand": "mid",
       "scaling": [
@@ -4933,6 +5012,7 @@
       "finish": "organic",
       "element": "toxic",
       "grip": "1H",
+      "handlingTags": ["pistol"],
       "size": "M",
       "rangeBand": "mid",
       "scaling": [
@@ -4985,6 +5065,7 @@
       "finish": "pristine",
       "element": "holy",
       "grip": "1H",
+      "handlingTags": ["pistol"],
       "size": "M",
       "rangeBand": "long",
       "scaling": [
@@ -5038,6 +5119,7 @@
       "finish": "arcane",
       "element": "void",
       "grip": "1H",
+      "handlingTags": ["pistol"],
       "size": "S",
       "rangeBand": "long",
       "scaling": [
@@ -5091,6 +5173,7 @@
       "finish": "ornate",
       "element": "physical",
       "grip": "1H",
+      "handlingTags": ["pistol"],
       "size": "S",
       "rangeBand": "long",
       "scaling": [
@@ -5144,6 +5227,7 @@
       "finish": "pristine",
       "element": "physical",
       "grip": "1H",
+      "handlingTags": ["pistol"],
       "size": "S",
       "rangeBand": "mid",
       "scaling": [
@@ -5194,6 +5278,7 @@
       "finish": "battle-worn",
       "element": "fire",
       "grip": "1H",
+      "handlingTags": ["pistol"],
       "size": "M",
       "rangeBand": "long",
       "scaling": [
@@ -5251,6 +5336,7 @@
       "finish": "worn",
       "element": "physical",
       "grip": "1H",
+      "handlingTags": ["pistol"],
       "size": "M",
       "rangeBand": "close",
       "scaling": [
@@ -5304,6 +5390,7 @@
       "finish": "ornate",
       "element": "shock",
       "grip": "1H",
+      "handlingTags": ["pistol"],
       "size": "S",
       "rangeBand": "long",
       "scaling": [
@@ -5358,6 +5445,7 @@
       "finish": "battle-worn",
       "element": "physical",
       "grip": "dual",
+      "handlingTags": ["pistol"],
       "size": "S",
       "rangeBand": "mid",
       "scaling": [
@@ -5408,6 +5496,7 @@
       "finish": "arcane",
       "element": "arcane",
       "grip": "1H",
+      "handlingTags": ["pistol"],
       "size": "S",
       "rangeBand": "mid",
       "scaling": [
@@ -5465,6 +5554,7 @@
       "finish": "pristine",
       "element": "frost",
       "grip": "1H",
+      "handlingTags": ["pistol"],
       "size": "M",
       "rangeBand": "close",
       "scaling": [
@@ -5518,6 +5608,7 @@
       "finish": "pristine",
       "element": "physical",
       "grip": "1H",
+      "handlingTags": ["pistol"],
       "size": "M",
       "rangeBand": "long",
       "scaling": [
@@ -5571,6 +5662,7 @@
       "finish": "worn",
       "element": "toxic",
       "grip": "1H",
+      "handlingTags": ["pistol"],
       "size": "M",
       "rangeBand": "mid",
       "scaling": [
@@ -5621,6 +5713,7 @@
       "finish": "ornate",
       "element": "holy",
       "grip": "1H",
+      "handlingTags": ["pistol"],
       "size": "M",
       "rangeBand": "mid",
       "scaling": [
@@ -5674,6 +5767,8 @@
       "element": "physical",
       "finish": "battle-worn",
       "grip": "2H",
+      "handlingTags": ["lever"],
+      "gripPoints": { "primary": { "x": 0.14, "y": 0.5 }, "secondary": { "x": 0.34, "y": 0.66, "role": "lever" } },
       "size": "L",
       "rangeBand": "long",
       "scaling": [
@@ -5724,6 +5819,8 @@
       "element": "physical",
       "finish": "worn",
       "grip": "2H",
+      "handlingTags": ["lever"],
+      "gripPoints": { "primary": { "x": 0.14, "y": 0.5 }, "secondary": { "x": 0.33, "y": 0.66, "role": "lever" } },
       "size": "M",
       "rangeBand": "long",
       "scaling": [
@@ -5874,6 +5971,8 @@
       "element": "void",
       "finish": "arcane",
       "grip": "2H",
+      "handlingTags": ["lever"],
+      "gripPoints": { "primary": { "x": 0.13, "y": 0.5 }, "secondary": { "x": 0.33, "y": 0.66, "role": "lever" } },
       "size": "L",
       "rangeBand": "long",
       "scaling": [
@@ -5973,6 +6072,8 @@
       "element": "shock",
       "finish": "ornate",
       "grip": "2H",
+      "handlingTags": ["lever"],
+      "gripPoints": { "primary": { "x": 0.13, "y": 0.5 }, "secondary": { "x": 0.34, "y": 0.67, "role": "lever" } },
       "size": "L",
       "rangeBand": "long",
       "scaling": [
@@ -6079,6 +6180,8 @@
       "element": "toxic",
       "finish": "organic",
       "grip": "2H",
+      "handlingTags": ["lever"],
+      "gripPoints": { "primary": { "x": 0.13, "y": 0.5 }, "secondary": { "x": 0.34, "y": 0.67, "role": "lever" } },
       "size": "L",
       "rangeBand": "mid",
       "scaling": [
@@ -6277,6 +6380,8 @@
       "element": "physical",
       "finish": "battle-worn",
       "grip": "2H",
+      "handlingTags": ["pump"],
+      "gripPoints": { "primary": { "x": 0.14, "y": 0.5 }, "secondary": { "x": 0.43, "y": 0.62, "role": "pump" } },
       "size": "M",
       "rangeBand": "mid",
       "scaling": [
@@ -6378,6 +6483,8 @@
       "element": "shock",
       "finish": "ornate",
       "grip": "dual",
+      "handlingTags": ["lever"],
+      "gripPoints": { "primary": { "x": 0.15, "y": 0.5 }, "secondary": { "x": 0.34, "y": 0.67, "role": "lever" } },
       "size": "M",
       "rangeBand": "mid",
       "scaling": [
@@ -6526,6 +6633,8 @@
       "element": "physical",
       "finish": "ornate",
       "grip": "2H",
+      "handlingTags": ["lever"],
+      "gripPoints": { "primary": { "x": 0.13, "y": 0.5 }, "secondary": { "x": 0.34, "y": 0.67, "role": "lever" } },
       "size": "L",
       "rangeBand": "mid",
       "scaling": [
@@ -6630,6 +6739,8 @@
       "element": "toxic",
       "finish": "battle-worn",
       "grip": "2H",
+      "handlingTags": ["lever"],
+      "gripPoints": { "primary": { "x": 0.14, "y": 0.5 }, "secondary": { "x": 0.35, "y": 0.68, "role": "lever" } },
       "size": "M",
       "rangeBand": "mid",
       "scaling": [
@@ -6685,6 +6796,8 @@
       "element": "physical",
       "finish": "battle-worn",
       "grip": "2H",
+      "handlingTags": ["pump"],
+      "gripPoints": { "primary": { "x": 0.14, "y": 0.5 }, "secondary": { "x": 0.44, "y": 0.63, "role": "pump" } },
       "size": "M",
       "rangeBand": "close",
       "scaling": [
@@ -6737,6 +6850,8 @@
       "element": "physical",
       "finish": "worn",
       "grip": "2H",
+      "handlingTags": ["pump"],
+      "gripPoints": { "primary": { "x": 0.15, "y": 0.5 }, "secondary": { "x": 0.43, "y": 0.62, "role": "pump" } },
       "size": "M",
       "rangeBand": "close",
       "scaling": [
@@ -6845,6 +6960,8 @@
       "element": "frost",
       "finish": "pristine",
       "grip": "2H",
+      "handlingTags": ["pump"],
+      "gripPoints": { "primary": { "x": 0.14, "y": 0.5 }, "secondary": { "x": 0.45, "y": 0.62, "role": "pump" } },
       "size": "M",
       "rangeBand": "close",
       "scaling": [
@@ -6898,6 +7015,8 @@
       "element": "shock",
       "finish": "ornate",
       "grip": "2H",
+      "handlingTags": ["pump"],
+      "gripPoints": { "primary": { "x": 0.15, "y": 0.5 }, "secondary": { "x": 0.43, "y": 0.62, "role": "pump" } },
       "size": "M",
       "rangeBand": "close",
       "scaling": [
@@ -7008,6 +7127,8 @@
       "element": "physical",
       "finish": "battle-worn",
       "grip": "2H",
+      "handlingTags": ["pump"],
+      "gripPoints": { "primary": { "x": 0.12, "y": 0.5 }, "secondary": { "x": 0.42, "y": 0.64, "role": "pump" } },
       "size": "L",
       "rangeBand": "close",
       "scaling": [
@@ -7058,6 +7179,8 @@
       "element": "holy",
       "finish": "ornate",
       "grip": "2H",
+      "handlingTags": ["pump"],
+      "gripPoints": { "primary": { "x": 0.15, "y": 0.5 }, "secondary": { "x": 0.43, "y": 0.62, "role": "pump" } },
       "size": "M",
       "rangeBand": "close",
       "scaling": [
@@ -7164,6 +7287,8 @@
       "element": "physical",
       "finish": "worn",
       "grip": "dual",
+      "handlingTags": ["pump"],
+      "gripPoints": { "primary": { "x": 0.16, "y": 0.5 }, "secondary": { "x": 0.43, "y": 0.63, "role": "pump" } },
       "size": "S",
       "rangeBand": "close",
       "scaling": [
@@ -7215,6 +7340,8 @@
       "element": "physical",
       "finish": "battle-worn",
       "grip": "2H",
+      "handlingTags": ["pump"],
+      "gripPoints": { "primary": { "x": 0.12, "y": 0.5 }, "secondary": { "x": 0.4, "y": 0.63, "role": "pump" } },
       "size": "L",
       "rangeBand": "close",
       "scaling": [
@@ -7316,6 +7443,8 @@
       "element": "toxic",
       "finish": "worn",
       "grip": "2H",
+      "handlingTags": ["pump"],
+      "gripPoints": { "primary": { "x": 0.12, "y": 0.5 }, "secondary": { "x": 0.42, "y": 0.64, "role": "pump" } },
       "size": "L",
       "rangeBand": "close",
       "scaling": [
@@ -7373,6 +7502,8 @@
       "element": "fire",
       "finish": "battle-worn",
       "grip": "2H",
+      "handlingTags": ["pump"],
+      "gripPoints": { "primary": { "x": 0.14, "y": 0.5 }, "secondary": { "x": 0.45, "y": 0.63, "role": "pump" } },
       "size": "M",
       "rangeBand": "close",
       "scaling": [
@@ -7430,6 +7561,8 @@
       "element": "physical",
       "finish": "ornate",
       "grip": "2H",
+      "handlingTags": ["pump"],
+      "gripPoints": { "primary": { "x": 0.15, "y": 0.5 }, "secondary": { "x": 0.44, "y": 0.62, "role": "pump" } },
       "size": "M",
       "rangeBand": "close",
       "scaling": [
@@ -7484,6 +7617,8 @@
       "element": "physical",
       "finish": "worn",
       "grip": "2H",
+      "handlingTags": ["pump"],
+      "gripPoints": { "primary": { "x": 0.14, "y": 0.5 }, "secondary": { "x": 0.43, "y": 0.64, "role": "pump" } },
       "size": "M",
       "rangeBand": "close",
       "scaling": [
@@ -7536,6 +7671,8 @@
       "element": "shock",
       "finish": "arcane",
       "grip": "2H",
+      "handlingTags": ["pump"],
+      "gripPoints": { "primary": { "x": 0.12, "y": 0.5 }, "secondary": { "x": 0.42, "y": 0.64, "role": "pump" } },
       "size": "L",
       "rangeBand": "close",
       "scaling": [
@@ -7589,6 +7726,7 @@
       "element": "physical",
       "finish": "pristine",
       "grip": "1H",
+      "handlingTags": ["pistol"],
       "size": "S",
       "rangeBand": "close",
       "scaling": [
@@ -7694,6 +7832,8 @@
       "element": "physical",
       "finish": "battle-worn",
       "grip": "2H",
+      "handlingTags": ["pump"],
+      "gripPoints": { "primary": { "x": 0.13, "y": 0.52 }, "secondary": { "x": 0.46, "y": 0.72, "role": "vertical-foregrip" } },
       "size": "L",
       "rangeBand": "close",
       "scaling": [
@@ -7901,6 +8041,8 @@
       "element": "shock",
       "finish": "ornate",
       "grip": "2H",
+      "handlingTags": ["lever"],
+      "gripPoints": { "primary": { "x": 0.12, "y": 0.5 }, "secondary": { "x": 0.34, "y": 0.68, "role": "lever" } },
       "size": "L",
       "rangeBand": "long",
       "scaling": [
@@ -7921,19 +8063,21 @@
       "cardartAction": "the coiled barrel cracking out a cyber-cyan shock-shell with a forking arc, the lever blurred mid-cycle",
       "behavior": {
         "kind": "gun",
-        "damage": 9,
+        "damage": 13.5,
         "projectileSpeed": 1100,
         "range": 760,
-        "fireRate": 0.28,
+        "fireRate": 0.42,
         "pierce": 2,
         "magazine": 10,
         "reloadSeconds": 1.6,
         "bulletKind": "tracer",
         "muzzle": "spark",
+        "muzzleColor": 3401471,
+        "projectileColor": 3401471,
         "recoil": 0.0018,
         "explode": {
           "radius": 44,
-          "damage": 5
+          "damage": 7.5
         }
       },
       "stats": {
@@ -7955,6 +8099,7 @@
       "element": "fire",
       "finish": "battle-worn",
       "grip": "2H",
+      "gripPoints": { "primary": { "x": 0.42, "y": 0.62 }, "secondary": { "x": 0.61, "y": 0.58, "role": "shoulder-RPG" } },
       "size": "XL",
       "rangeBand": "long",
       "scaling": [
@@ -8009,6 +8154,8 @@
       "element": "physical",
       "finish": "worn",
       "grip": "2H",
+      "handlingTags": ["pump"],
+      "gripPoints": { "primary": { "x": 0.14, "y": 0.5 }, "secondary": { "x": 0.43, "y": 0.64, "role": "pump" } },
       "size": "L",
       "rangeBand": "close",
       "scaling": [
@@ -8064,6 +8211,7 @@
       "element": "physical",
       "finish": "battle-worn",
       "grip": "1H",
+      "handlingTags": ["pistol"],
       "size": "M",
       "rangeBand": "mid",
       "scaling": [
@@ -8169,6 +8317,7 @@
       "element": "frost",
       "finish": "pristine",
       "grip": "2H",
+      "gripPoints": { "primary": { "x": 0.12, "y": 0.52 }, "secondary": { "x": 0.38, "y": 0.65, "role": "under-barrel" } },
       "size": "XL",
       "rangeBand": "mid",
       "scaling": [
@@ -8480,6 +8629,7 @@
       "element": "fire",
       "finish": "worn",
       "grip": "dual",
+      "handlingTags": ["pistol"],
       "size": "M",
       "rangeBand": "close",
       "scaling": [
@@ -8755,6 +8905,7 @@
       "element": "physical",
       "finish": "battle-worn",
       "grip": "2H",
+      "gripPoints": { "primary": { "x": 0.13, "y": 0.54 }, "secondary": { "x": 0.38, "y": 0.61, "role": "two-hand-rifle" } },
       "size": "L",
       "rangeBand": "mid",
       "scaling": [
@@ -8865,6 +9016,7 @@
       "finish": "ornate",
       "element": "shock",
       "grip": "1H",
+      "handlingTags": ["pistol"],
       "size": "S",
       "rangeBand": "long",
       "scaling": [
@@ -8921,6 +9073,7 @@
       "finish": "pristine",
       "element": "physical",
       "grip": "2H",
+      "gripPoints": { "primary": { "x": 0.1, "y": 0.52 }, "secondary": { "x": 0.42, "y": 0.68, "role": "crank" } },
       "size": "L",
       "rangeBand": "long",
       "scaling": [
@@ -9137,7 +9290,8 @@
       "theme": "incendiary nailgun",
       "finish": "battle-worn",
       "element": "fire",
-      "grip": "1H",
+      "grip": "2H",
+      "gripPoints": { "primary": { "x": 0.14, "y": 0.52 }, "secondary": { "x": 0.43, "y": 0.64, "role": "under-barrel" } },
       "size": "M",
       "rangeBand": "mid",
       "scaling": [
@@ -9307,6 +9461,7 @@
       "finish": "ornate",
       "element": "shock",
       "grip": "dual",
+      "handlingTags": ["pistol"],
       "size": "S",
       "rangeBand": "mid",
       "scaling": [
@@ -9530,6 +9685,7 @@
       "finish": "battle-worn",
       "element": "shock",
       "grip": "2H",
+      "gripPoints": { "primary": { "x": 0.1, "y": 0.53 }, "secondary": { "x": 0.39, "y": 0.67, "role": "under-barrel" } },
       "size": "L",
       "rangeBand": "long",
       "scaling": [
@@ -9585,6 +9741,7 @@
       "finish": "worn",
       "element": "physical",
       "grip": "1H",
+      "handlingTags": ["pistol"],
       "size": "M",
       "rangeBand": "close",
       "scaling": [
@@ -9751,7 +9908,8 @@
       "theme": "rapid incendiary dart-thrower",
       "finish": "worn",
       "element": "fire",
-      "grip": "1H",
+      "grip": "2H",
+      "gripPoints": { "primary": { "x": 0.15, "y": 0.52 }, "secondary": { "x": 0.44, "y": 0.63, "role": "two-hand-rifle" } },
       "size": "S",
       "rangeBand": "mid",
       "scaling": [
@@ -9793,7 +9951,7 @@
         "range": 72,
         "halfArc": 0.5,
         "cooldown": 0.3,
-        "displayLength": 84,
+        "displayLength": 168,
         "swingArc": 1.1,
         "gripFrac": 0.15
       },
@@ -9807,6 +9965,7 @@
       "finish": "battle-worn",
       "element": "arcane",
       "grip": "1H",
+      "handlingTags": ["pistol"],
       "size": "M",
       "rangeBand": "long",
       "scaling": [
@@ -13047,7 +13206,8 @@
       "theme": "arcane charm fetish-pole",
       "finish": "ornate",
       "element": "arcane",
-      "grip": "1H",
+      "grip": "2H",
+      "gripPoints": { "primary": { "x": 0.12, "y": 0.5 }, "secondary": { "x": 0.42, "y": 0.56, "role": "two-hand-rifle" } },
       "size": "M",
       "rangeBand": "mid",
       "scaling": [
@@ -13277,6 +13437,14 @@
         "swingArc": 2.5,
         "gripFrac": 0.1
       },
+      "comboFamily": "arc",
+      "comboVariant": "wyrmskull-sword",
+      "authoritativeCombo": true,
+      "comboBar": [
+        { "name": "fang cut", "motion": "slash", "direction": 1, "hand": "both", "timing": { "activeStart": 0.14, "activeEnd": 0.42, "impact": 0.29, "followEnd": 0.6 }, "path": { "kind": "sweep", "arcMultiplier": 1, "rangeMultiplier": 1, "damageMultiplier": 1, "knockback": 0 } },
+        { "name": "skull return", "motion": "slash", "direction": -1, "hand": "both", "timing": { "activeStart": 0.14, "activeEnd": 0.42, "impact": 0.29, "followEnd": 0.6 }, "path": { "kind": "sweep", "arcMultiplier": -1, "rangeMultiplier": 1, "damageMultiplier": 1, "knockback": 0 } },
+        { "name": "wyrm sentence", "motion": "overhead", "direction": 1, "hand": "both", "timing": { "activeStart": 0.18, "activeEnd": 0.5, "impact": 0.36, "followEnd": 0.68 }, "path": { "kind": "sweep", "arcMultiplier": 1, "rangeMultiplier": 1, "damageMultiplier": 1, "knockback": 0 } }
+      ],
       "id": "x2-wyrmskull-reliquary"
     },
     {
@@ -14682,7 +14850,8 @@
       "palettePrimary": "#34506A",
       "paletteAccent": "#D8FFFF",
       "cardartAction": "six measured iaijutsu rulings, each arc arriving exactly as the previous reflection closes",
-      "stats": { "damage": 6.2, "range": 142, "halfArc": 0.82, "cooldown": 0.32, "displayLength": 130, "swingArc": 2.52, "gripFrac": 0.13 },
+      "stats": { "damage": 6.2, "range": 142, "halfArc": 0.82, "cooldown": 0.32, "displayLength": 260, "swingArc": 2.52, "gripFrac": 0.13 },
+      "stance": "two-hands-on-hilt",
       "behavior": { "kind": "edge" },
       "comboBar": [
         { "name": "Opening Article", "motion": "draw-cut", "direction": 1, "hand": "lead", "timing": { "activeStart": 0.12, "activeEnd": 0.37, "impact": 0.25, "followEnd": 0.58 }, "path": { "kind": "sweep", "arcMultiplier": 0.82, "rangeMultiplier": 0.98, "damageMultiplier": 0.96, "knockback": 7 }, "ribbon": { "profile": "open-c", "radialStart": 0.25, "radialEnd": 0.98, "widthMultiplier": 0.7, "end": "clean" } },
@@ -14758,6 +14927,7 @@
       "paletteAccent": "#C277FF",
       "cardartAction": "three restrained cuts and a fourth that steps through a violet seam beyond the target",
       "stats": { "damage": 6.5, "range": 150, "halfArc": 0.8, "cooldown": 0.35, "displayLength": 144, "swingArc": 2.48, "gripFrac": 0.13 },
+      "stance": "blade-forward-high-hilt",
       "behavior": { "kind": "edge" },
       "comboBar": [
         { "name": "Near Shore", "motion": "draw-cut", "direction": 1, "hand": "lead", "timing": { "activeStart": 0.13, "activeEnd": 0.38, "impact": 0.26, "followEnd": 0.58 }, "path": { "kind": "sweep", "arcMultiplier": 0.84, "rangeMultiplier": 0.98, "damageMultiplier": 0.98, "knockback": 6 }, "ribbon": { "profile": "open-c", "radialStart": 0.24, "radialEnd": 0.98, "widthMultiplier": 0.68, "end": "open" } },
@@ -14793,6 +14963,7 @@
       "paletteAccent": "#82E9FF",
       "cardartAction": "five widening frost arcs, the last cutting across a horizon the first could not reach",
       "stats": { "damage": 8, "range": 220, "halfArc": 0.88, "cooldown": 0.48, "displayLength": 225, "swingArc": 2.66, "gripFrac": 0.11 },
+      "stance": "hasso-no-kamae",
       "behavior": { "kind": "edge" },
       "comboBar": [
         { "name": "Near Snow", "motion": "draw-cut", "direction": -1, "hand": "lead", "timing": { "activeStart": 0.16, "activeEnd": 0.42, "impact": 0.29, "followEnd": 0.62 }, "path": { "kind": "sweep", "arcMultiplier": 0.78, "rangeMultiplier": 0.9, "damageMultiplier": 0.94, "knockback": 8 }, "ribbon": { "profile": "open-c", "radialStart": 0.3, "radialEnd": 0.92, "widthMultiplier": 0.72, "end": "open" } },

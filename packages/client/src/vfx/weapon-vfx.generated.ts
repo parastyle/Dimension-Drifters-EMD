@@ -454,9 +454,25 @@ export const WEAPON_VFX: Record<string, WeaponVfx> = {
     "rot": 0,
     "vfxRadius": 250
   },
-  "x2-mournveil-scythe": {
+  "x2-quarry-splitter-bardiche": {
     "suite": {},
     "rot": 0,
-    "vfxRadius": 250
+    "vfxRadius": 296
+  },
+  "x2-mournveil-scythe": {
+    "suite": {
+      "shockwave-ring": {
+        "on": true,
+        "params": {
+          "color": 0
+        }
+      }
+    },
+    "rot": 0,
+    "vfxRadius": 250,
+    "vfxOrigin": {
+      "x": -150,
+      "y": 0
+    }
   }
 };

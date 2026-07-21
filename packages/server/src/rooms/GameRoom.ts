@@ -215,6 +215,7 @@ import {
   META_POWER_STR,
   META_VITALITY_HP,
   type MeleeComboFamily,
+  type MeleeComboStep,
   type MetaAccountV4,
   MOVE_SPEED,
   type MoveStance,
@@ -7424,6 +7425,10 @@ export class GameRoom extends Room<ArenaState> {
     const melee = !weapon.gun && !weapon.thrown && !weapon.cast;
     const soloBeat =
       melee && !paired ? this.nextSoloMeleeBeat(player, c, weapon, soloCooldown) : undefined;
+    const authoritativeComboStep =
+      weapon.authoritativeCombo && soloBeat
+        ? meleeComboSelectionFor(weapon)?.sequence[soloBeat.step]
+        : undefined;
     const pairSelection = melee && paired ? meleeComboSelectionFor(weapon) : undefined;
     const pairLength = Math.max(1, pairSelection?.sequence.length ?? 1);
     const katanaEffect = melee
@@ -7487,7 +7492,15 @@ export class GameRoom extends Room<ArenaState> {
     } else {
       const descriptorCooldown = paired ? PAIR_TEMPO * soloCooldown : soloCooldown;
       const swing = swingDescriptorFor(weapon, descriptorCooldown);
-      this.resolveSwing(player, c, weapon, swing, hand, katanaEffect);
+      this.resolveSwing(
+        player,
+        c,
+        weapon,
+        swing,
+        hand,
+        katanaEffect,
+        authoritativeComboStep,
+      );
       this.setHandCooldown(c, offSlot, hand, soloCooldown, false);
       if (soloBeat)
         this.recordSoloMeleeBeat(
@@ -7525,6 +7538,7 @@ export class GameRoom extends Room<ArenaState> {
     swing: SwingDescriptor,
     hand: DualWieldHand = 0,
     katanaEffect?: KatanaBeatEffect,
+    comboStep?: Readonly<MeleeComboStep>,
   ): void {
     const attackCrit = this.weaponCritChance(player, c);
     // §14 WYSIWYG: each damage SOURCE scales independently. The EDGE uses the weapon's own grades; the
@@ -7534,16 +7548,29 @@ export class GameRoom extends Room<ArenaState> {
     // §20 WYSIWYG: the hit reach follows the RENDERED blade — floored at the sprite tip + scaled by the
     // holder's rig — so the point stops whiffing (guns already do this via gunMuzzleReach; melee was flat).
     const reach = meleeReach(weapon); // §29 weapons are a FIXED size now (not char-scaled) → fixed reach
+    const authoritativeSwing = comboStep
+      ? {
+          ...swing,
+          activeStartSeconds: comboStep.timing.activeStart * swing.poseSeconds,
+          activeEndSeconds: comboStep.timing.activeEnd * swing.poseSeconds,
+          impactSeconds:
+            (comboStep.timing.impact ?? comboStep.timing.activeEnd) * swing.poseSeconds,
+        }
+      : swing;
+    const authoritativeArc = comboStep
+      ? (comboStep.path.deltaAngle ?? weapon.swingArc * comboStep.path.arcMultiplier)
+      : weapon.swingArc;
     // Register the swept edge on the accepted descriptor. Slow active seconds can exceed the old 180ms cap,
     // but BALANCE/DPS does not multiply: cooldown + edgeDamage + arc coverage are unchanged and `hit` still
     // admits each enemy exactly once per accepted swing. Replaces any in-flight swing; pose ≤ cooldown.
     const swingKey = player.offhandSlot !== 255 ? `${player.id}:${hand}` : player.id;
     this.meleeSwings.set(swingKey, {
       playerId: player.id,
-      swing,
+      swing: authoritativeSwing,
       aim0,
-      range: reach * (katanaEffect?.reachMultiplier ?? 1),
-      swingArc: weapon.swingArc,
+      range:
+        reach * (comboStep?.path.rangeMultiplier ?? 1) * (katanaEffect?.reachMultiplier ?? 1),
+      swingArc: authoritativeArc,
       halfWidth: MELEE_BLADE_HALFWIDTH,
       edgeDamage: weapon.damage * edgePower * (katanaEffect?.damageMultiplier ?? 1),
       toughDamageMultiplier: katanaEffect?.toughDamageMultiplier ?? 1,
@@ -8803,12 +8830,16 @@ export class GameRoom extends Room<ArenaState> {
       // spanned the whole swing — a held whirlwind "blink hit" each enemy once per press despite the blade
       // visibly crossing them every turn (playtest). WYSIWYG: each completed 2π re-arms the hit set, so
       // every revolution the blade actually sweeps through an enemy damages it again.
-      if (sw.swingArc > Math.PI * 2 + 1e-6) {
-        const rev0 = Math.floor((sw.swingArc * p0) / (Math.PI * 2));
-        const rev1 = Math.floor((sw.swingArc * p1) / (Math.PI * 2));
+      const absoluteSwingArc = Math.abs(sw.swingArc);
+      if (absoluteSwingArc > Math.PI * 2 + 1e-6) {
+        const rev0 = Math.floor((absoluteSwingArc * p0) / (Math.PI * 2));
+        const rev1 = Math.floor((absoluteSwingArc * p1) / (Math.PI * 2));
         if (rev1 > rev0) sw.hit.clear();
       }
-      const steps = Math.max(1, Math.ceil((sw.swingArc * (p1 - p0)) / MELEE_SAMPLE_STEP));
+      const steps = Math.max(
+        1,
+        Math.ceil((absoluteSwingArc * (p1 - p0)) / MELEE_SAMPLE_STEP),
+      );
       const wielder = { x: player.x, y: player.y };
       this.enemyGrid.queryRadius(
         player.x,
@@ -8872,7 +8903,7 @@ export class GameRoom extends Room<ArenaState> {
       this.damageWormSlots(
         this.wormHitSlots,
         sw.edgeDamage,
-        `melee:${playerId}:${player.attackSeq}:${Math.floor((sw.swingArc * p1) / (Math.PI * 2))}`,
+        `melee:${playerId}:${player.attackSeq}:${Math.floor((absoluteSwingArc * p1) / (Math.PI * 2))}`,
         kills,
         critC,
         false,
@@ -10579,7 +10610,15 @@ export class GameRoom extends Room<ArenaState> {
     // §35 encode the weapon's ELEMENT onto the bullet kind ("tracer:fire") so the client tints the bullet to
     // its element — a fire and a frost gun read distinct even sharing a bullet shape. Physical = no suffix.
     const el = weapon.tags?.element;
-    const bulletKind = el && el !== "physical" ? `${g.bulletKind}:${el}` : g.bulletKind;
+    const projectileTint =
+      g.projectileColor === undefined
+        ? undefined
+        : `#${Math.round(g.projectileColor).toString(16).padStart(6, "0")}`;
+    const bulletKind = projectileTint
+      ? `${g.bulletKind}:${projectileTint}`
+      : el && el !== "physical"
+        ? `${g.bulletKind}:${el}`
+        : g.bulletKind;
     for (let i = 0; i < pellets; i++) {
       // Shotguns fan evenly across the cone; single-shot guns jitter within their inaccuracy.
       const ang =
