@@ -6,8 +6,6 @@ import {
   effectiveDamageMult,
   FISTS_WEAPON,
   GRADE_DMG_COEFF,
-  GUN_HAND_FORWARD,
-  gunMuzzleReach,
   meleeReach,
   nextWeapon,
   prevWeapon,
@@ -18,10 +16,14 @@ import {
   requirementPenalty,
   requirementShortfall,
   sourceDamageMult,
+  transformWeaponArtPoint,
   WEAPON_IDS,
   WEAPONS,
   weaponDamageMult,
   weaponDamageSources,
+  weaponMuzzleGripOffset,
+  weaponMuzzleWorldPoint,
+  weaponSpriteTransform,
 } from "@dd/shared";
 import { describe, expect, it } from "vitest";
 
@@ -283,39 +285,51 @@ describe("GRADE_DMG_COEFF ordering", () => {
   });
 });
 
-describe("gunMuzzleReach (§9 barrel-tip muzzle)", () => {
-  it("an undefined weapon (fists / no held sprite) just reaches the hand-forward offset", () => {
-    expect(gunMuzzleReach(undefined)).toBe(GUN_HAND_FORWARD);
-  });
-
-  it("extends the muzzle past the hand by the ungripped length of the barrel", () => {
-    const w = { gripFrac: 0.25, displayLength: 80 } as Parameters<typeof gunMuzzleReach>[0];
-    // GUN_HAND_FORWARD + (1 - 0.25) * 80 = 12 + 60
-    expect(gunMuzzleReach(w)).toBeCloseTo(GUN_HAND_FORWARD + 60, 6);
-  });
-
-  it("a fully-gripped weapon (gripFrac 1) reaches no farther than the hand", () => {
-    const w = { gripFrac: 1, displayLength: 200 } as Parameters<typeof gunMuzzleReach>[0];
-    expect(gunMuzzleReach(w)).toBeCloseTo(GUN_HAND_FORWARD, 6);
-  });
-
-  it("every shipped gun puts its muzzle out past the hand (bullets never spawn behind the barrel)", () => {
+describe("art-space muzzle transform", () => {
+  it("authors every projectile gun and beam in source PNG pixels", () => {
     for (const id of WEAPON_IDS) {
-      const w = WEAPONS[id];
-      if (!w?.gun) continue;
-      expect(gunMuzzleReach(w)).toBeGreaterThan(GUN_HAND_FORWARD);
+      const weapon = WEAPONS[id];
+      if (!weapon?.gun && !weapon?.beam) continue;
+      expect(weapon.muzzle?.points.length, id).toBeGreaterThan(0);
+      for (const point of weapon.muzzle?.points ?? []) {
+        const dimensions = weapon.muzzle?.parts[point.part];
+        expect(point.x, `${id}/x`).toBeGreaterThanOrEqual(0);
+        expect(point.x, `${id}/x`).toBeLessThan(dimensions?.width ?? 0);
+        expect(point.y, `${id}/y`).toBeGreaterThanOrEqual(0);
+        expect(point.y, `${id}/y`).toBeLessThan(dimensions?.height ?? 0);
+      }
     }
   });
 
-  it("scales the WHOLE muzzle reach by the holder's rig scale (§7) so the shot lands on the tip", () => {
-    const w = { gripFrac: 0.25, displayLength: 80 } as Parameters<typeof gunMuzzleReach>[0];
-    const base = gunMuzzleReach(w); // renderScale defaults to 1
-    // A 1.25× rig (e.g. a chunky character) puts the barrel tip 25% farther out in world space.
-    expect(gunMuzzleReach(w, 1.25)).toBeCloseTo(base * 1.25, 6);
-    // Hand-forward also scales (it's part of the same scaled rig), so a fully-gripped gun stays consistent.
-    const gripped = { gripFrac: 1, displayLength: 200 } as Parameters<typeof gunMuzzleReach>[0];
-    expect(gunMuzzleReach(gripped, 1.2)).toBeCloseTo(GUN_HAND_FORWARD * 1.2, 6);
-    expect(gunMuzzleReach(undefined, 1.2)).toBeCloseTo(GUN_HAND_FORWARD * 1.2, 6);
+  it("carries scale and mirror through the same affine as the sprite", () => {
+    const transform = weaponSpriteTransform({
+      x: 100,
+      y: 40,
+      originX: 10,
+      originY: 5,
+      rotation: 0,
+      scaleX: -2,
+      scaleY: 3,
+    });
+    expect(transformWeaponArtPoint({ x: 20, y: 7 }, transform)).toEqual({ x: 80, y: 46 });
+  });
+
+  it("scales the held-hand pose while the PNG stays a fixed on-screen size", () => {
+    const weapon = WEAPONS["x-gun-revolver-cannon"];
+    if (!weapon) throw new Error("revolver fixture required");
+    const grip = weaponMuzzleGripOffset(weapon, 0, { aimX: 1, aimY: 0, facing: 1 });
+    const base = weaponMuzzleWorldPoint(weapon, { x: 20, y: 30, aimX: 1, aimY: 0 });
+    const large = weaponMuzzleWorldPoint(weapon, {
+      x: 20,
+      y: 30,
+      aimX: 1,
+      aimY: 0,
+      renderScale: 1.25,
+    });
+    expect(large.x - base.x).toBeCloseTo(grip.x * 0.25, 8);
+    expect(large.y - base.y).toBeCloseTo(grip.y * 0.25, 8);
+    expect(large.x - 20 - grip.x * 1.25).toBeCloseTo(base.x - 20 - grip.x, 8);
+    expect(large.y - 30 - grip.y * 1.25).toBeCloseTo(base.y - 30 - grip.y, 8);
   });
 });
 

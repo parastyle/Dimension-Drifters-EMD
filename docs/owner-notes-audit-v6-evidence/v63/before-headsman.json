@@ -2,9 +2,9 @@
   "phase": "before",
   "label": "headsman",
   "weaponId": "x2-sanctified-headsman",
-  "baseURL": "http://localhost:5180",
+  "baseURL": "http://127.0.0.1:56621",
   "moduleMode": "probe-only legacy fallback partition",
-  "capturedAt": "2026-07-22T01:51:39.061Z",
+  "capturedAt": "2026-07-22T05:32:03.879Z",
   "sourceLayerIds": [
     "blade-trail"
   ],
@@ -20,8 +20,8 @@
       "anchor": "source",
       "x": 2400,
       "y": 2420,
-      "targetX": 2588.081134869066,
-      "targetY": 2389.9282922605944,
+      "targetX": 2587.1094897106445,
+      "targetY": 2384.3789421799092,
       "layerIds": [
         "blade-trail"
       ]
@@ -30,10 +30,10 @@
       "kind": "weapon-vfx-suite",
       "weaponId": "x2-sanctified-headsman",
       "anchor": "target",
-      "x": 2588.081134869066,
-      "y": 2389.9282922605944,
-      "targetX": 2588.081134869066,
-      "targetY": 2389.9282922605944,
+      "x": 2587.1094897106445,
+      "y": 2384.3789421799092,
+      "targetX": 2587.1094897106445,
+      "targetY": 2384.3789421799092,
       "layerIds": [
         "cleave-flash",
         "painted-impact",

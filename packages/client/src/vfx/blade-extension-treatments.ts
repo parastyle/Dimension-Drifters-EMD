@@ -1,20 +1,17 @@
 import {
+  BRUTALIST_GREATSWORD_IDS as SHARED_BRUTALIST_GREATSWORD_IDS,
+  type BrutalistGreatswordId as SharedBrutalistGreatswordId,
+} from "@dd/shared";
+import {
   HEADSMAN_PROTOTYPES,
+  type HeadsmanPrototype,
   headsmanPrototypeFromSearch,
   SANCTIFIED_HEADSMAN_ID,
-  type HeadsmanPrototype,
 } from "./headsman-prototypes.js";
 
-export const BRUTALIST_GREATSWORD_IDS = Object.freeze([
-  "x2-rimewrit-grave-slab",
-  "x2-pyre-gallows-brand",
-  "x2-stormrail-colossus",
-  "x2-nullwake-ordinance",
-  "x2-dawnwall-testament",
-  "x2-cairnfall-monolith",
-] as const);
+export const BRUTALIST_GREATSWORD_IDS = SHARED_BRUTALIST_GREATSWORD_IDS;
 
-export type BrutalistGreatswordId = (typeof BRUTALIST_GREATSWORD_IDS)[number];
+export type BrutalistGreatswordId = SharedBrutalistGreatswordId;
 export type BrutalistGreatswordElement = "ice" | "fire" | "electricity" | "void" | "light" | "rock";
 
 export interface BrutalistGreatswordExtensionTreatment {
@@ -23,7 +20,6 @@ export interface BrutalistGreatswordExtensionTreatment {
   readonly name: string;
   readonly textureKey: string;
   readonly url: string;
-  readonly thicknessScale: number;
 }
 
 export type BladeExtensionTreatment = HeadsmanPrototype | BrutalistGreatswordExtensionTreatment;
@@ -35,7 +31,6 @@ export const BRUTALIST_GREATSWORD_EXTENSION_TREATMENTS = Object.freeze([
     name: "Frost Crystal Edge",
     textureKey: "greatsword-extension:frost",
     url: "vfx/brutalist-greatswords/frost-crystal-edge.png",
-    thicknessScale: 0.42,
   }),
   Object.freeze({
     weaponId: "x2-pyre-gallows-brand",
@@ -43,7 +38,6 @@ export const BRUTALIST_GREATSWORD_EXTENSION_TREATMENTS = Object.freeze([
     name: "Roaring Flame Blade",
     textureKey: "greatsword-extension:fire",
     url: "vfx/brutalist-greatswords/roaring-flame-blade.png",
-    thicknessScale: 0.48,
   }),
   Object.freeze({
     weaponId: "x2-stormrail-colossus",
@@ -51,7 +45,6 @@ export const BRUTALIST_GREATSWORD_EXTENSION_TREATMENTS = Object.freeze([
     name: "Crackling Arc Edge",
     textureKey: "greatsword-extension:shock",
     url: "vfx/brutalist-greatswords/crackling-arc-edge.png",
-    thicknessScale: 0.38,
   }),
   Object.freeze({
     weaponId: "x2-nullwake-ordinance",
@@ -59,7 +52,6 @@ export const BRUTALIST_GREATSWORD_EXTENSION_TREATMENTS = Object.freeze([
     name: "Hollow Void Rim",
     textureKey: "greatsword-extension:void",
     url: "vfx/brutalist-greatswords/hollow-void-rim.png",
-    thicknessScale: 0.44,
   }),
   Object.freeze({
     weaponId: "x2-dawnwall-testament",
@@ -67,7 +59,6 @@ export const BRUTALIST_GREATSWORD_EXTENSION_TREATMENTS = Object.freeze([
     name: "Radiant Daylight Blade",
     textureKey: "greatsword-extension:light",
     url: "vfx/brutalist-greatswords/radiant-daylight-blade.png",
-    thicknessScale: 0.4,
   }),
   Object.freeze({
     weaponId: "x2-cairnfall-monolith",
@@ -75,7 +66,6 @@ export const BRUTALIST_GREATSWORD_EXTENSION_TREATMENTS = Object.freeze([
     name: "Jagged Stone Blade",
     textureKey: "greatsword-extension:rock",
     url: "vfx/brutalist-greatswords/jagged-stone-blade.png",
-    thicknessScale: 0.46,
   }),
 ] as const satisfies readonly BrutalistGreatswordExtensionTreatment[]);
 

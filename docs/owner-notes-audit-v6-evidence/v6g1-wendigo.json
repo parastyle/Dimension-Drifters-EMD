@@ -1,20 +1,20 @@
 {
   "label": "wendigo",
   "weaponId": "x2-wendigo-claws",
-  "baseURL": "http://127.0.0.1:5180",
-  "capturedAt": "2026-07-21T20:48:26.602Z",
+  "baseURL": "http://127.0.0.1:56621",
+  "capturedAt": "2026-07-22T05:34:57.187Z",
   "setup": {
     "actor": {
       "x": 2400,
       "y": 2420
     },
     "target": {
-      "x": 2612.00244140625,
-      "y": 2422.508544921875
+      "x": 2614.296630859375,
+      "y": 2400.845947265625
     }
   },
   "endpointDelta": 0,
-  "actorDelta": 105.0000000000002,
+  "actorDelta": 105.00000000000021,
   "events": [
     {
       "kind": "weapon-vfx-suite",
@@ -22,8 +22,8 @@
       "anchor": "source",
       "x": 2400,
       "y": 2420,
-      "targetX": 2504.9926501962586,
-      "targetY": 2421.2423384265626,
+      "targetX": 2504.583075630082,
+      "targetY": 2410.652257398035,
       "layerIds": [
         "twin-slash"
       ]
@@ -32,10 +32,10 @@
       "kind": "weapon-vfx-suite",
       "weaponId": "x2-wendigo-claws",
       "anchor": "target",
-      "x": 2504.9926501962586,
-      "y": 2421.2423384265626,
-      "targetX": 2504.9926501962586,
-      "targetY": 2421.2423384265626,
+      "x": 2504.583075630082,
+      "y": 2410.652257398035,
+      "targetX": 2504.583075630082,
+      "targetY": 2410.652257398035,
       "layerIds": [
         "hit-spark",
         "impact-flash"

@@ -7,6 +7,9 @@
 // 0→1 pose window (swing trail → impact burst → painted hero), then releases the surface.
 import {
   bladeAngleAt,
+  bladeExtensionGeometryFor,
+  bladeExtensionPoseAt,
+  bladeExtensionReveal,
   meleeReach,
   type SwingDescriptor,
   swingEdgeProgress,
@@ -26,7 +29,6 @@ import {
   bladeExtensionTreatmentFor,
   weaponSupportsBladeExtension,
 } from "./blade-extension-treatments.js";
-import { headsmanExtensionGeometry, headsmanExtensionReveal } from "./headsman-prototypes.js";
 import { KATANA_SLASH_ASSIGNMENTS } from "./katana-slash.generated.js";
 import { MUZZLE_FLASH_SHEET, muzzleFlashAssignmentFor } from "./muzzle-flash-catalog.js";
 import { WEAPON_VFX, type WeaponVfx } from "./weapon-vfx.generated.js";
@@ -73,6 +75,7 @@ interface Surface {
   activeTween?: Phaser.Tweens.Tween;
   releaseEvent?: Phaser.Time.TimerEvent;
   scatterKey?: string;
+  bladeExtensionAttachment?: BladeExtensionAttachment;
 }
 
 interface WeaponBladeTipPose {
@@ -81,6 +84,19 @@ interface WeaponBladeTipPose {
   readonly angle: number;
   readonly physicalBladeLength: number;
   readonly depth: number;
+}
+
+interface BladeExtensionAttachment {
+  readonly sourceBladePose?: () => WeaponBladeTipPose | undefined;
+  fallbackAngle: number;
+  fallbackStartX: number;
+  fallbackStartY: number;
+  fallbackPhysicalBladeLength: number;
+  fallbackDepth: number;
+  overlapRatio: number;
+  extensionRatio: number;
+  thicknessRatio: number;
+  reveal: number;
 }
 
 interface PerRuntimeSurface {
@@ -152,6 +168,40 @@ export class VfxPlayer {
         /* no bloom — sparks still render, just unbloomed */
       }
     }
+    // Tweens advance before Arena's rig animation in Phaser's scene step. Re-attach extended blades after
+    // that animation so a long/loaded frame cannot leave damaging art one rendered pose behind its sword.
+    scene.events.on("postupdate", this.syncBladeExtensions, this);
+    scene.events.once("shutdown", () => {
+      scene.events.off("postupdate", this.syncBladeExtensions, this);
+    });
+  }
+
+  private syncBladeExtensions(): void {
+    for (const surf of this.pool) {
+      const attachment = surf.bladeExtensionAttachment;
+      if (!attachment || attachment.reveal <= 0) continue;
+      const heldTip = attachment.sourceBladePose?.();
+      const angle = heldTip?.angle ?? attachment.fallbackAngle;
+      const physicalBladeLength =
+        heldTip?.physicalBladeLength ?? attachment.fallbackPhysicalBladeLength;
+      const overlapLength = physicalBladeLength * attachment.overlapRatio;
+      const rootX = heldTip
+        ? heldTip.x - Math.cos(angle) * overlapLength
+        : attachment.fallbackStartX;
+      const rootY = heldTip
+        ? heldTip.y - Math.sin(angle) * overlapLength
+        : attachment.fallbackStartY;
+      surf.headsmanExtension
+        .setPosition(rootX, rootY)
+        .setRotation(angle)
+        .setDepth((heldTip?.depth ?? attachment.fallbackDepth) - 1)
+        .setDisplaySize(
+          physicalBladeLength * attachment.extensionRatio * attachment.reveal,
+          physicalBladeLength * attachment.thicknessRatio,
+        )
+        .setAlpha(Math.min(1, 0.5 + attachment.reveal * 0.5))
+        .setVisible(true);
+    }
   }
 
   /** The bloom-filtered container every VFX lives under — exposed so other renderers (e.g. ArenaScene's
@@ -220,6 +270,7 @@ export class VfxPlayer {
     per.perLongTailFired = false;
     per.per = undefined;
     surf.S.paintedImpact = undefined;
+    surf.bladeExtensionAttachment = undefined;
     surf.headsmanExtension.setVisible(false);
     (surf.S.heroImg as Phaser.GameObjects.Image | undefined)?.setVisible(false);
     const emitters = surf.S as unknown as Record<string, { killAll(): unknown } | undefined>;
@@ -381,7 +432,7 @@ export class VfxPlayer {
           )
         : undefined;
     const bladeExtensionGeometry =
-      bladeExtensionTreatment && weapon ? headsmanExtensionGeometry(weapon) : undefined;
+      bladeExtensionTreatment && weapon ? bladeExtensionGeometryFor(weapon) : undefined;
     const bladeExtensionActor =
       bladeExtensionTreatment && weapon
         ? {
@@ -541,12 +592,17 @@ export class VfxPlayer {
         VR.renderLayers(S, p, "all", 1);
         if (bladeExtensionTreatment && bladeExtensionGeometry && bladeExtensionActor) {
           const elapsedSeconds = p * swing.poseSeconds;
-          const reveal = headsmanExtensionReveal(swing, elapsedSeconds);
+          const reveal = weapon ? bladeExtensionReveal(weapon, swing, elapsedSeconds) : 0;
           if (reveal > 0) {
             const edgeProgress = swingEdgeProgress(swing, elapsedSeconds);
             const heldTip = sourceBladePose?.();
+            const sharedPose = weapon
+              ? bladeExtensionPoseAt(weapon, swing, elapsedSeconds, aimRad)
+              : undefined;
             const extensionAngle =
-              heldTip?.angle ?? aimRad + bladeAngleAt(0, swingArc, edgeProgress);
+              heldTip?.angle ??
+              sharedPose?.angle ??
+              aimRad + bladeAngleAt(0, swingArc, edgeProgress);
             const extensionStartX =
               heldTip?.x ??
               bladeExtensionActor.x +
@@ -556,31 +612,33 @@ export class VfxPlayer {
               bladeExtensionActor.y +
                 Math.sin(extensionAngle) * bladeExtensionGeometry.extensionStart;
             const physicalBladeLength =
-              heldTip?.physicalBladeLength ?? bladeExtensionGeometry.physicalBladeLength;
+              heldTip?.physicalBladeLength ??
+              bladeExtensionGeometry.physicalBladeLength * (sharedPose?.lengthScale ?? 1);
             const overlapLength =
               physicalBladeLength *
               (bladeExtensionGeometry.overlapLength / bladeExtensionGeometry.physicalBladeLength);
             const extensionLength =
               physicalBladeLength *
               (bladeExtensionGeometry.extensionLength / bladeExtensionGeometry.physicalBladeLength);
-            const extensionRootX = heldTip
-              ? heldTip.x - Math.cos(extensionAngle) * overlapLength
-              : extensionStartX;
-            const extensionRootY = heldTip
-              ? heldTip.y - Math.sin(extensionAngle) * overlapLength
-              : extensionStartY;
-            surf.headsmanExtension
-              .setTexture(bladeExtensionTreatment.textureKey)
-              .setPosition(extensionRootX, extensionRootY)
-              .setRotation(extensionAngle)
-              .setDepth((heldTip?.depth ?? bladeExtensionActor.y) - 1)
-              .setDisplaySize(
-                extensionLength * reveal,
-                physicalBladeLength * bladeExtensionTreatment.thicknessScale,
-              )
-              .setAlpha(Math.min(1, 0.5 + reveal * 0.5))
-              .setVisible(true);
+            const extensionThickness =
+              physicalBladeLength *
+              (bladeExtensionGeometry.thickness / bladeExtensionGeometry.physicalBladeLength);
+            surf.headsmanExtension.setTexture(bladeExtensionTreatment.textureKey);
+            surf.bladeExtensionAttachment = {
+              sourceBladePose,
+              fallbackAngle: extensionAngle,
+              fallbackStartX: extensionStartX,
+              fallbackStartY: extensionStartY,
+              fallbackPhysicalBladeLength: physicalBladeLength,
+              fallbackDepth: heldTip?.depth ?? bladeExtensionActor.y,
+              overlapRatio: overlapLength / physicalBladeLength,
+              extensionRatio: extensionLength / physicalBladeLength,
+              thicknessRatio: extensionThickness / physicalBladeLength,
+              reveal,
+            };
+            this.syncBladeExtensions();
           } else {
+            surf.bladeExtensionAttachment = undefined;
             surf.headsmanExtension.setVisible(false);
           }
         }
@@ -592,6 +650,7 @@ export class VfxPlayer {
         const per = perRuntime(S);
         per.perBody?.setVisible(false);
         per.perLip?.setVisible(false);
+        surf.bladeExtensionAttachment = undefined;
         surf.headsmanExtension.setVisible(false);
         (S.heroImg as Phaser.GameObjects.Image | undefined)?.setVisible(false);
         const release = (): void => {

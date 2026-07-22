@@ -1,0 +1,3190 @@
+[
+  {
+    "id": "x-gun-coffin-shotgun",
+    "name": "Coffin Shotgun",
+    "sprite": "x-gun-coffin-shotgun",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 30.9
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 30.9
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x-gun-gatling",
+    "name": "Gatling",
+    "sprite": "x-gun-gatling",
+    "derived": [
+      {
+        "part": 0,
+        "x": 279,
+        "y": 57.4
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 279,
+        "y": 57.4
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x-gun-hand-mortar",
+    "name": "Hand Mortar",
+    "sprite": "x-gun-hand-mortar",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 37.4
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 37.4
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x-gun-nailgun",
+    "name": "Nailgun",
+    "sprite": "x-gun-nailgun",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 61
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 61
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x-gun-revolver-cannon",
+    "name": "Revolver Cannon",
+    "sprite": "x-gun-revolver-cannon",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 23.9
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 23.9
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x-gun-ricochet-pistol",
+    "name": "Ricochet Pistol",
+    "sprite": "x-gun-ricochet-pistol",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 25.9
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 25.9
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-ashfall-peacemaker",
+    "name": "Ashfall Peacemaker",
+    "sprite": "x2-ashfall-peacemaker",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 17.2
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 17.2
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-auroral-filament-wand",
+    "name": "Auroral Filament Wand",
+    "sprite": "x2-auroral-filament-wand",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 16
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 16
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-boneash-scattergun-rifle",
+    "name": "Boneash Scattergun-Rifle",
+    "sprite": "x2-boneash-scattergun-rifle",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 11.8
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 11.8
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-bonepicker-coachgun",
+    "name": "Bonepicker Coachgun",
+    "sprite": "x2-bonepicker-coachgun",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 19.9
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 19.9
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-boneyard-ricochet-mortar",
+    "name": "Boneyard Ricochet Mortar",
+    "sprite": "x2-boneyard-ricochet-mortar",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 81.5
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 81.5
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-boomstick-saddlegun",
+    "name": "Boomstick Saddlegun",
+    "sprite": "x2-boomstick-saddlegun",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 13.1
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 13.1
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-brasswork-volley-rifle",
+    "name": "Brasswork Volley Rifle",
+    "sprite": "x2-brasswork-volley-rifle",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 10.6
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 10.6
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-brimstone-bull",
+    "name": "Brimstone Bull",
+    "sprite": "x2-brimstone-bull",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 29.2
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 29.2
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-brimstone-gallows-rifle",
+    "name": "Brimstone Gallows-Rifle",
+    "sprite": "x2-brimstone-gallows-rifle",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 13.3
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 13.3
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-brimstone-rocket-tube",
+    "name": "Brimstone Rocket Tube",
+    "sprite": "x2-brimstone-rocket-tube",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 39.5
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 39.5
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-brinequill-tidescepter",
+    "name": "Brinequill Tidescepter",
+    "sprite": "x2-brinequill-tidescepter",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 33
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 33
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-buckshot-avalanche",
+    "name": "Buckshot Avalanche",
+    "sprite": "x2-buckshot-avalanche",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 19.8
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 19.8
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-buckshot-bramble-bow",
+    "name": "Buckshot Bramble Bow",
+    "sprite": "x2-buckshot-bramble-bow",
+    "derived": [
+      {
+        "part": 0,
+        "x": 246,
+        "y": 102
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 246,
+        "y": 102
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-buckshot-briar",
+    "name": "Buckshot Briar",
+    "sprite": "x2-buckshot-briar",
+    "derived": [
+      {
+        "part": 0,
+        "x": 253,
+        "y": 14.7
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 253,
+        "y": 14.7
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-buzzard-s-burnout",
+    "name": "Buzzard's Burnout",
+    "sprite": "x2-buzzard-s-burnout",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 48.2
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 48.2
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-buzzard-s-eye-marksman",
+    "name": "Buzzard's Eye Marksman",
+    "sprite": "x2-buzzard-s-eye-marksman",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 21.7
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 21.7
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-calamity-howitzer",
+    "name": "Calamity Howitzer",
+    "sprite": "x2-calamity-howitzer",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 16.8
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 16.8
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-carom-coachgun",
+    "name": "Carom Coachgun",
+    "sprite": "x2-carom-coachgun",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 17.8
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 17.8
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-carom-king",
+    "name": "Carom King",
+    "sprite": "x2-carom-king",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 17.9
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 17.9
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-carrion-roost-necro-scepter",
+    "name": "Carrion Roost Necro-Scepter",
+    "sprite": "x2-carrion-roost-necro-scepter",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 21.5
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 21.5
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-caustic-drum-sweeper",
+    "name": "Caustic Drum Sweeper",
+    "sprite": "x2-caustic-drum-sweeper",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 73.1
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 73.1
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-cinderbore-longrifle",
+    "name": "Cinderbore Longrifle",
+    "sprite": "x2-cinderbore-longrifle",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 12.7
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 12.7
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-cinderchoke-blunderbuss",
+    "name": "Cinderchoke Blunderbuss",
+    "sprite": "x2-cinderchoke-blunderbuss",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 47.5
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 47.5
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-cinderfan-dragoon",
+    "name": "Cinderfan Dragoon",
+    "sprite": "x2-cinderfan-dragoon",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 36.5
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 36.5
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-cinderfang-derringer",
+    "name": "Cinderfang Derringer",
+    "sprite": "x2-cinderfang-derringer",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 23.3
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 23.3
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-cinderquill-dart-caster",
+    "name": "Cinderquill Dart-Caster",
+    "sprite": "x2-cinderquill-dart-caster",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 29.5
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 29.5
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-coffin-nail-carbine",
+    "name": "Coffin-Nail Carbine",
+    "sprite": "x2-coffin-nail-carbine",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 17.9
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 17.9
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-coffinnail-driver",
+    "name": "Coffinnail Driver",
+    "sprite": "x2-coffinnail-driver",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 6
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 6
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-coyote-stinger",
+    "name": "Coyote Stinger",
+    "sprite": "x2-coyote-stinger",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 35.2
+      },
+      {
+        "part": 1,
+        "x": 255,
+        "y": 35.2
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 35.2
+      },
+      {
+        "part": 1,
+        "x": 255,
+        "y": 35.2
+      }
+    ],
+    "override": null,
+    "salvoMode": "cycle",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-doomsday-drum-cannon",
+    "name": "Doomsday Drum Cannon",
+    "sprite": "x2-doomsday-drum-cannon",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 60.1
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 60.1
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-dustdevil-riotgun",
+    "name": "Dustdevil Riotgun",
+    "sprite": "x2-dustdevil-riotgun",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 19.9
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 19.9
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-dustline-lever-action",
+    "name": "Dustline Lever-Action",
+    "sprite": "x2-dustline-lever-action",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 7.7
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 7.7
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-emberfan-pumpgun",
+    "name": "Emberfan Pumpgun",
+    "sprite": "x2-emberfan-pumpgun",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 19.8
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 19.8
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-embernail-repeater",
+    "name": "Embernail Repeater",
+    "sprite": "x2-embernail-repeater",
+    "derived": [
+      {
+        "part": 0,
+        "x": 251,
+        "y": 50
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 251,
+        "y": 50
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-fool-s-gold-revolver",
+    "name": "Fool's Gold Revolver",
+    "sprite": "x2-fool-s-gold-revolver",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 33.8
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 33.8
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-frostbite-volley-gun",
+    "name": "Frostbite Volley-Gun",
+    "sprite": "x2-frostbite-volley-gun",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 33.5
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 33.5
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-frostbore-scattergun",
+    "name": "Frostbore Scattergun",
+    "sprite": "x2-frostbore-scattergun",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 13.6
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 13.6
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-frostfang-speargun",
+    "name": "Frostfang Speargun",
+    "sprite": "x2-frostfang-speargun",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 21
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 21
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-frostquill-compendium",
+    "name": "Frostquill Compendium",
+    "sprite": "x2-frostquill-compendium",
+    "derived": [
+      {
+        "part": 0,
+        "x": 253,
+        "y": 92.7
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 253,
+        "y": 92.7
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-galvanic-coachgun",
+    "name": "Galvanic Coachgun",
+    "sprite": "x2-galvanic-coachgun",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 20.9
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 20.9
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-galvanic-overcasters",
+    "name": "Galvanic Overcasters",
+    "sprite": "x2-galvanic-overcasters",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 63.9
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 63.9
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-ghostbolt-crossbow",
+    "name": "Ghostbolt Crossbow",
+    "sprite": "x2-ghostbolt-crossbow",
+    "derived": [
+      {
+        "part": 0,
+        "x": 252,
+        "y": 63.5
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 252,
+        "y": 63.5
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-ghostwind-spectre-rail",
+    "name": "Ghostwind Spectre-Rail",
+    "sprite": "x2-ghostwind-spectre-rail",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 13.4
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 13.4
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-glasswidow-hexweave",
+    "name": "Glasswidow Hexweave",
+    "sprite": "x2-glasswidow-hexweave",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 61.5
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 61.5
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-glasswidow-punchgun",
+    "name": "Glasswidow Punchgun",
+    "sprite": "x2-glasswidow-punchgun",
+    "derived": [
+      {
+        "part": 0,
+        "x": 249,
+        "y": 42.2
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 249,
+        "y": 42.2
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-grave-anchor-harpoon",
+    "name": "Grave-Anchor Harpoon",
+    "sprite": "x2-grave-anchor-harpoon",
+    "derived": [
+      {
+        "part": 0,
+        "x": 253,
+        "y": 62
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 253,
+        "y": 62
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-gravedog-auto-rifle",
+    "name": "Gravedog Auto-Rifle",
+    "sprite": "x2-gravedog-auto-rifle",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 19.9
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 19.9
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-gravelthroat-repeater",
+    "name": "Gravelthroat Repeater",
+    "sprite": "x2-gravelthroat-repeater",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 67.9
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 67.9
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-gravelung-punt-rifle",
+    "name": "Gravelung Punt-Rifle",
+    "sprite": "x2-gravelung-punt-rifle",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 13.4
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 13.4
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-graveshot-grenade-gun",
+    "name": "Graveshot Grenade Gun",
+    "sprite": "x2-graveshot-grenade-gun",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 34.8
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 34.8
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-gravesinger-s-hex-wand",
+    "name": "Gravesinger's Hex-Wand",
+    "sprite": "x2-gravesinger-s-hex-wand",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 14
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 14
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-gravewax-twin-idols",
+    "name": "Gravewax Twin Idols",
+    "sprite": "x2-gravewax-twin-idols",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 76.5
+      },
+      {
+        "part": 1,
+        "x": 254,
+        "y": 74
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 76.5
+      },
+      {
+        "part": 1,
+        "x": 254,
+        "y": 74
+      }
+    ],
+    "override": null,
+    "salvoMode": "cycle",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-gravewind-rimfire",
+    "name": "Gravewind Rimfire",
+    "sprite": "x2-gravewind-rimfire",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 14.3
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 14.3
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-grit-snubnose",
+    "name": "Grit Snubnose",
+    "sprite": "x2-grit-snubnose",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 26.1
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 26.1
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-hailshot-hand-maul",
+    "name": "Hailshot Hand-Maul",
+    "sprite": "x2-hailshot-hand-maul",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 16.2
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 16.2
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-hailspitter-pepperbox",
+    "name": "Hailspitter Pepperbox",
+    "sprite": "x2-hailspitter-pepperbox",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 44.3
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 44.3
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-hailstorm-coilgun",
+    "name": "Hailstorm Coilgun",
+    "sprite": "x2-hailstorm-coilgun",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 17.1
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 17.1
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-hallowbore-coachgun",
+    "name": "Hallowbore Coachgun",
+    "sprite": "x2-hallowbore-coachgun",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 20.1
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 28
+      },
+      {
+        "part": 0,
+        "x": 255,
+        "y": 51
+      }
+    ],
+    "override": "The shared engraved muzzle plate joins both stacked barrels into one alpha mass; the two visible bore centres require explicit art-space points.",
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-hellbore-gatling",
+    "name": "Hellbore Gatling",
+    "sprite": "x2-hellbore-gatling",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 42
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 42
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-hellmouth-palmcaster",
+    "name": "Hellmouth Palmcaster",
+    "sprite": "x2-hellmouth-palmcaster",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 96.3
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 96.3
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-hexbolt-spitter-mitt",
+    "name": "Hexbolt Spitter-Mitt",
+    "sprite": "x2-hexbolt-spitter-mitt",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 66.2
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 66.2
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-hexbore-voidmaw",
+    "name": "Hexbore Voidmaw",
+    "sprite": "x2-hexbore-voidmaw",
+    "derived": [
+      {
+        "part": 0,
+        "x": 252,
+        "y": 35.9
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 252,
+        "y": 35.9
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-hexbore-witchrifle",
+    "name": "Hexbore Witchrifle",
+    "sprite": "x2-hexbore-witchrifle",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 25.3
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 25.3
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-hollowpoint-hex",
+    "name": "Hollowpoint Hex",
+    "sprite": "x2-hollowpoint-hex",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 30.9
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 30.9
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-hollowpoint-repeater",
+    "name": "Hollowpoint Repeater",
+    "sprite": "x2-hollowpoint-repeater",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 9.7
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 9.7
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-hollowpoint-voidgun",
+    "name": "Hollowpoint Voidgun",
+    "sprite": "x2-hollowpoint-voidgun",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 45.4
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 45.4
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-hornet-s-nest-bolter",
+    "name": "Hornet's Nest Bolter",
+    "sprite": "x2-hornet-s-nest-bolter",
+    "derived": [
+      {
+        "part": 0,
+        "x": 252,
+        "y": 71.7
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 252,
+        "y": 71.7
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-iron-marshal",
+    "name": "Iron Marshal",
+    "sprite": "x2-iron-marshal",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 17.6
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 17.6
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-ironhail-pepperbox",
+    "name": "Ironhail Pepperbox",
+    "sprite": "x2-ironhail-pepperbox",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 74.2
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 74.2
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-ironhide-buffalo-gun",
+    "name": "Ironhide Buffalo Gun",
+    "sprite": "x2-ironhide-buffalo-gun",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 34.9
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 34.9
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-leviathan-harpoon-gun",
+    "name": "Leviathan Harpoon Gun",
+    "sprite": "x2-leviathan-harpoon-gun",
+    "derived": [
+      {
+        "part": 0,
+        "x": 253,
+        "y": 22.5
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 253,
+        "y": 22.5
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-magpie-scattergun",
+    "name": "Magpie Scattergun",
+    "sprite": "x2-magpie-scattergun",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 18
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 18
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-mauler-slug-thrower",
+    "name": "Mauler Slug-Thrower",
+    "sprite": "x2-mauler-slug-thrower",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 12.5
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 12.5
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-mesa-hand-cannon",
+    "name": "Mesa Hand-Cannon",
+    "sprite": "x2-mesa-hand-cannon",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 28.4
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 28.4
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-mesa-spine-thunder-stave",
+    "name": "Mesa-Spine Thunder Stave",
+    "sprite": "x2-mesa-spine-thunder-stave",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 9.5
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 9.5
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-mirage-coilrifle",
+    "name": "Mirage Coilrifle",
+    "sprite": "x2-mirage-coilrifle",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 13.5
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 13.5
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-null-grimoire-of-the-hollow-page",
+    "name": "Null Grimoire of the Hollow Page",
+    "sprite": "x2-null-grimoire-of-the-hollow-page",
+    "derived": [
+      {
+        "part": 0,
+        "x": 254,
+        "y": 44
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 254,
+        "y": 44
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-nullsaint-reliquary",
+    "name": "Nullsaint Reliquary",
+    "sprite": "x2-nullsaint-reliquary",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 104
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 104
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-pale-horse-longgun",
+    "name": "Pale-Horse Longgun",
+    "sprite": "x2-pale-horse-longgun",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 6.9
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 6.9
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-pearl-of-penance-censer",
+    "name": "Pearl-of-Penance Censer",
+    "sprite": "x2-pearl-of-penance-censer",
+    "derived": [
+      {
+        "part": 0,
+        "x": 254,
+        "y": 35.5
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 254,
+        "y": 35.5
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-pearlbreech-volleygun",
+    "name": "Pearlbreech Volleygun",
+    "sprite": "x2-pearlbreech-volleygun",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 51.2
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 51.2
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-permafrost-cryo-bracer",
+    "name": "Permafrost Cryo-Bracer",
+    "sprite": "x2-permafrost-cryo-bracer",
+    "derived": [
+      {
+        "part": 0,
+        "x": 253,
+        "y": 42.5
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 253,
+        "y": 42.5
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-permafrost-siege-lobber",
+    "name": "Permafrost Siege Lobber",
+    "sprite": "x2-permafrost-siege-lobber",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 37.5
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 37.5
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-pinwheel-caromer",
+    "name": "Pinwheel Caromer",
+    "sprite": "x2-pinwheel-caromer",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 30.4
+      },
+      {
+        "part": 1,
+        "x": 255,
+        "y": 30.3
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 30.4
+      },
+      {
+        "part": 1,
+        "x": 255,
+        "y": 30.3
+      }
+    ],
+    "override": null,
+    "salvoMode": "cycle",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-plaguespitter-flak-gun",
+    "name": "Plaguespitter Flak Gun",
+    "sprite": "x2-plaguespitter-flak-gun",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 47
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 47
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-powderkeg-mortar",
+    "name": "Powderkeg Mortar",
+    "sprite": "x2-powderkeg-mortar",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 39.4
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 39.4
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-psalter-of-the-burning-halo",
+    "name": "Psalter of the Burning Halo",
+    "sprite": "x2-psalter-of-the-burning-halo",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 109.9
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 109.9
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-quartzlight-wayfinder",
+    "name": "Quartzlight Wayfinder",
+    "sprite": "x2-quartzlight-wayfinder",
+    "derived": [
+      {
+        "part": 0,
+        "x": 253,
+        "y": 72.5
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 253,
+        "y": 72.5
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-quicksilver-fanner",
+    "name": "Quicksilver Fanner",
+    "sprite": "x2-quicksilver-fanner",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 16
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 16
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-quicksilver-slugthrower",
+    "name": "Quicksilver Slugthrower",
+    "sprite": "x2-quicksilver-slugthrower",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 11.7
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 11.7
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-quicksilver-streetsweeper",
+    "name": "Quicksilver Streetsweeper",
+    "sprite": "x2-quicksilver-streetsweeper",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 27.9
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 27.9
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-quill-storm-repeater",
+    "name": "Quill Storm Repeater",
+    "sprite": "x2-quill-storm-repeater",
+    "derived": [
+      {
+        "part": 0,
+        "x": 241,
+        "y": 108.9
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 241,
+        "y": 108.9
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-reliquary-nailcaster",
+    "name": "Reliquary Nailcaster",
+    "sprite": "x2-reliquary-nailcaster",
+    "derived": [
+      {
+        "part": 0,
+        "x": 250,
+        "y": 46
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 43
+      },
+      {
+        "part": 0,
+        "x": 255,
+        "y": 76
+      },
+      {
+        "part": 0,
+        "x": 255,
+        "y": 110
+      }
+    ],
+    "override": "The three exposed spike tips are intentionally isolated bayonet-like extrema, which the barrel-mass heuristic rejects.",
+    "salvoMode": "parallel",
+    "barrelMode": "cycle"
+  },
+  {
+    "id": "x2-reliquary-repeater",
+    "name": "Reliquary Repeater",
+    "sprite": "x2-reliquary-repeater",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 36.3
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 36.3
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-ricochet-roulette",
+    "name": "Ricochet Roulette",
+    "sprite": "x2-ricochet-roulette",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 30.1
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 30.1
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-riftglass-prism-lantern",
+    "name": "Riftglass Prism-Lantern",
+    "sprite": "x2-riftglass-prism-lantern",
+    "derived": [
+      {
+        "part": 0,
+        "x": 123,
+        "y": 127
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 123,
+        "y": 127
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-rustwidow-pump-rifle",
+    "name": "Rustwidow Pump-Rifle",
+    "sprite": "x2-rustwidow-pump-rifle",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 7.7
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 7.7
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-saintskull-monstrance",
+    "name": "Saintskull Monstrance",
+    "sprite": "x2-saintskull-monstrance",
+    "derived": [
+      {
+        "part": 0,
+        "x": 254,
+        "y": 98.5
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 254,
+        "y": 98.5
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-sanctum-brazier-staff",
+    "name": "Sanctum Brazier-Staff",
+    "sprite": "x2-sanctum-brazier-staff",
+    "derived": [
+      {
+        "part": 0,
+        "x": 254,
+        "y": 37.4
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 254,
+        "y": 37.4
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-sanctus-siege-bombard",
+    "name": "Sanctus Siege Bombard",
+    "sprite": "x2-sanctus-siege-bombard",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 39.4
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 39.4
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-scattershell-duster",
+    "name": "Scattershell Duster",
+    "sprite": "x2-scattershell-duster",
+    "derived": [
+      {
+        "part": 0,
+        "x": 251,
+        "y": 37.2
+      },
+      {
+        "part": 1,
+        "x": 251,
+        "y": 37.2
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 252,
+        "y": 49
+      },
+      {
+        "part": 0,
+        "x": 252,
+        "y": 79
+      },
+      {
+        "part": 1,
+        "x": 252,
+        "y": 49
+      },
+      {
+        "part": 1,
+        "x": 252,
+        "y": 79
+      }
+    ],
+    "override": "Each akimbo sprite has two bores inside one opaque front plate; alpha exposes the plate edge but not the four bore centres.",
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-scattershot-saint",
+    "name": "Scattershot Saint",
+    "sprite": "x2-scattershot-saint",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 30.4
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 30.4
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-seraph-s-knuckle-reliquary",
+    "name": "Seraph's Knuckle-Reliquary",
+    "sprite": "x2-seraph-s-knuckle-reliquary",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 67.1
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 67.1
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-sidewinder-spitfire",
+    "name": "Sidewinder Spitfire",
+    "sprite": "x2-sidewinder-spitfire",
+    "derived": [
+      {
+        "part": 0,
+        "x": 253,
+        "y": 46.9
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 253,
+        "y": 46.9
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-sidewinder-twin-rifles",
+    "name": "Sidewinder Twin-Rifles",
+    "sprite": "x2-sidewinder-twin-rifles",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 13.8
+      },
+      {
+        "part": 1,
+        "x": 255,
+        "y": 13.8
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 13.8
+      },
+      {
+        "part": 1,
+        "x": 255,
+        "y": 13.8
+      }
+    ],
+    "override": null,
+    "salvoMode": "cycle",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-slughammer-breachgun",
+    "name": "Slughammer Breachgun",
+    "sprite": "x2-slughammer-breachgun",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 27.4
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 27.4
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-smoldering-eye-of-perdition",
+    "name": "Smoldering Eye of Perdition",
+    "sprite": "x2-smoldering-eye-of-perdition",
+    "derived": [
+      {
+        "part": 0,
+        "x": 254,
+        "y": 68.5
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 254,
+        "y": 68.5
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-snakebite-dart-slinger",
+    "name": "Snakebite Dart-Slinger",
+    "sprite": "x2-snakebite-dart-slinger",
+    "derived": [
+      {
+        "part": 0,
+        "x": 254,
+        "y": 26.5
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 254,
+        "y": 26.5
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-spitfire-censer-wand",
+    "name": "Spitfire Censer-Wand",
+    "sprite": "x2-spitfire-censer-wand",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 27.4
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 27.4
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-spore-spitter-blunderbuss",
+    "name": "Spore-Spitter Blunderbuss",
+    "sprite": "x2-spore-spitter-blunderbuss",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 66
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 66
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-stormcaller-tesla-gatling",
+    "name": "Stormcaller Tesla Gatling",
+    "sprite": "x2-stormcaller-tesla-gatling",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 99.9
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 241,
+        "y": 94
+      },
+      {
+        "part": 0,
+        "x": 250,
+        "y": 94
+      },
+      {
+        "part": 0,
+        "x": 241,
+        "y": 108
+      },
+      {
+        "part": 0,
+        "x": 250,
+        "y": 108
+      },
+      {
+        "part": 0,
+        "x": 241,
+        "y": 122
+      },
+      {
+        "part": 0,
+        "x": 250,
+        "y": 122
+      }
+    ],
+    "override": "Six recessed beam apertures sit inside one opaque front cap; alpha can derive the cap edge but cannot distinguish the six aperture centres.",
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-stormspur-coil-carbine",
+    "name": "Stormspur Coil Carbine",
+    "sprite": "x2-stormspur-coil-carbine",
+    "derived": [
+      {
+        "part": 0,
+        "x": 254,
+        "y": 15
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 254,
+        "y": 15
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-sunbrand-hogleg",
+    "name": "Sunbrand Hogleg",
+    "sprite": "x2-sunbrand-hogleg",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 12.9
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 12.9
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-sunbreaker-railgun",
+    "name": "Sunbreaker Railgun",
+    "sprite": "x2-sunbreaker-railgun",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 10.6
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 10.6
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-sunmote-reliquary-staff",
+    "name": "Sunmote Reliquary Staff",
+    "sprite": "x2-sunmote-reliquary-staff",
+    "derived": [
+      {
+        "part": 0,
+        "x": 254,
+        "y": 46.5
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 254,
+        "y": 46.5
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-tesla-drumbore",
+    "name": "Tesla Drumbore",
+    "sprite": "x2-tesla-drumbore",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 66.6
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 66.6
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-tesla-faradayer",
+    "name": "Tesla Faradayer",
+    "sprite": "x2-tesla-faradayer",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 84.9
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 84.9
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-thunderhead-lever-gun",
+    "name": "Thunderhead Lever-Gun",
+    "sprite": "x2-thunderhead-lever-gun",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 17
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 17
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-thunderhead-repeater-cannon",
+    "name": "Thunderhead Repeater Cannon",
+    "sprite": "x2-thunderhead-repeater-cannon",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 24.8
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 24.8
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-thunderhead-spikecaster",
+    "name": "Thunderhead Spikecaster",
+    "sprite": "x2-thunderhead-spikecaster",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 21.5
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 21.5
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-tidehook-bombarpoon",
+    "name": "Tidehook Bombarpoon",
+    "sprite": "x2-tidehook-bombarpoon",
+    "derived": [
+      {
+        "part": 0,
+        "x": 253,
+        "y": 37.5
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 253,
+        "y": 37.5
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-tracer-saint-carbine",
+    "name": "Tracer-Saint Carbine",
+    "sprite": "x2-tracer-saint-carbine",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 11.7
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 11.7
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-tumbleweed-skipper",
+    "name": "Tumbleweed Skipper",
+    "sprite": "x2-tumbleweed-skipper",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 21.3
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 21.3
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-twin-maw-greenerbore",
+    "name": "Twin-Maw Greenerbore",
+    "sprite": "x2-twin-maw-greenerbore",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 19.9
+      },
+      {
+        "part": 1,
+        "x": 255,
+        "y": 19.9
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 19.9
+      },
+      {
+        "part": 1,
+        "x": 255,
+        "y": 19.9
+      }
+    ],
+    "override": null,
+    "salvoMode": "cycle",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-venomspine-repeater",
+    "name": "Venomspine Repeater",
+    "sprite": "x2-venomspine-repeater",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 9.1
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 9.1
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-voidgrasp-null-gauntlet",
+    "name": "Voidgrasp Null-Gauntlet",
+    "sprite": "x2-voidgrasp-null-gauntlet",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 55.8
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 55.8
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-voidwell-idol",
+    "name": "Voidwell Idol",
+    "sprite": "x2-voidwell-idol",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 78.2
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 78.2
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-voltcaster-machine-pistol",
+    "name": "Voltcaster Machine Pistol",
+    "sprite": "x2-voltcaster-machine-pistol",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 39.1
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 39.1
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-voltvein-conductors",
+    "name": "Voltvein Conductors",
+    "sprite": "x2-voltvein-conductors",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 57.4
+      },
+      {
+        "part": 1,
+        "x": 254,
+        "y": 56.4
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 57.4
+      },
+      {
+        "part": 1,
+        "x": 254,
+        "y": 56.4
+      }
+    ],
+    "override": null,
+    "salvoMode": "cycle",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-whisperbarb-hand-crossbow",
+    "name": "Whisperbarb Hand-Crossbow",
+    "sprite": "x2-whisperbarb-hand-crossbow",
+    "derived": [
+      {
+        "part": 0,
+        "x": 253,
+        "y": 41.5
+      },
+      {
+        "part": 1,
+        "x": 253,
+        "y": 41.5
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 253,
+        "y": 41.5
+      },
+      {
+        "part": 1,
+        "x": 253,
+        "y": 41.5
+      }
+    ],
+    "override": null,
+    "salvoMode": "cycle",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-widowmaker-arbalest",
+    "name": "Widowmaker Arbalest",
+    "sprite": "x2-widowmaker-arbalest",
+    "derived": [
+      {
+        "part": 0,
+        "x": 252,
+        "y": 51
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 252,
+        "y": 51
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-widowmaker-cannon",
+    "name": "Widowmaker Cannon",
+    "sprite": "x2-widowmaker-cannon",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 40.4
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 40.4
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-wyrmgut-blunderbuss",
+    "name": "Wyrmgut Blunderbuss",
+    "sprite": "x2-wyrmgut-blunderbuss",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 80.4
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 80.4
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  }
+]

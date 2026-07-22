@@ -1,29 +1,32 @@
 {
   "phase": "after",
-  "baseURL": "http://127.0.0.1:5180",
-  "capturedAt": "2026-07-22T00:51:58.673Z",
+  "baseURL": "http://127.0.0.1:56621",
+  "capturedAt": "2026-07-22T05:31:40.774Z",
   "results": [
     {
       "phase": "after",
       "label": "revenant-void",
       "weaponId": "x2-revenant-knuckle",
       "element": "void",
-      "baseURL": "http://127.0.0.1:5180",
-      "capturedAt": "2026-07-22T00:51:36.487Z",
+      "baseURL": "http://127.0.0.1:56621",
+      "capturedAt": "2026-07-22T05:31:11.917Z",
       "setup": {
         "actor": {
           "x": 2400,
           "y": 2420
         },
         "target": {
-          "x": 2696.4234619140625,
-          "y": 2383.295654296875
+          "x": 2684.5040283203125,
+          "y": 2381.517333984375
         }
       },
       "visual": {
         "frozen": true,
         "ringVisible": false,
         "paintedVisible": true,
+        "sourceEventSeen": true,
+        "targetEventSeen": true,
+        "sourceFrames": 2,
         "textureKeys": [
           "ptcl:void-splat",
           "ptcl:void-splat",
@@ -42,8 +45,8 @@
           "anchor": "source",
           "x": 2400,
           "y": 2420,
-          "targetX": 2509.166293494611,
-          "targetY": 2406.48259031292,
+          "targetX": 2509.007327023207,
+          "targetY": 2405.2554194615227,
           "layerIds": [
             "twin-slash"
           ]
@@ -52,10 +55,10 @@
           "kind": "weapon-vfx-suite",
           "weaponId": "x2-revenant-knuckle",
           "anchor": "target",
-          "x": 2509.166293494611,
-          "y": 2406.48259031292,
-          "targetX": 2509.166293494611,
-          "targetY": 2406.48259031292,
+          "x": 2509.007327023207,
+          "y": 2405.2554194615227,
+          "targetX": 2509.007327023207,
+          "targetY": 2405.2554194615227,
           "layerIds": [
             "painted-impact"
           ]
@@ -64,10 +67,10 @@
           "kind": "painted-impact",
           "weaponId": "x2-revenant-knuckle",
           "anchor": "target",
-          "x": 2509.166293494611,
-          "y": 2406.48259031292,
-          "targetX": 2509.166293494611,
-          "targetY": 2406.48259031292,
+          "x": 2509.007327023207,
+          "y": 2405.2554194615227,
+          "targetX": 2509.007327023207,
+          "targetY": 2405.2554194615227,
           "pack": "void-splat",
           "count": 8,
           "spawned": true
@@ -81,7 +84,8 @@
       "assertions": {
         "genericRingRecipeRemoved": true,
         "genericRingInvisible": true,
-        "paintedElementImpactVisible": true
+        "sourceCompositionRetained": true,
+        "targetCompositionCorrect": true
       },
       "browserErrors": [],
       "unexpectedBrowserErrors": [],
@@ -92,32 +96,26 @@
       "label": "voltfang-shock",
       "weaponId": "x2-voltfang-tachi",
       "element": "shock",
-      "baseURL": "http://127.0.0.1:5180",
-      "capturedAt": "2026-07-22T00:51:43.387Z",
+      "baseURL": "http://127.0.0.1:56621",
+      "capturedAt": "2026-07-22T05:31:20.959Z",
       "setup": {
         "actor": {
           "x": 2400,
           "y": 2420
         },
         "target": {
-          "x": 2684.137939453125,
-          "y": 2386.37890625
+          "x": 2679.694091796875,
+          "y": 2375.854248046875
         }
       },
       "visual": {
         "frozen": true,
         "ringVisible": false,
-        "paintedVisible": true,
-        "textureKeys": [
-          "ptcl:shock-splat",
-          "ptcl:shock-splat",
-          "ptcl:shock-splat",
-          "ptcl:shock-splat",
-          "ptcl:shock-splat",
-          "ptcl:shock-splat",
-          "ptcl:shock-splat",
-          "ptcl:shock-splat"
-        ]
+        "paintedVisible": false,
+        "sourceEventSeen": true,
+        "targetEventSeen": false,
+        "sourceFrames": 6,
+        "textureKeys": []
       },
       "events": [
         {
@@ -126,48 +124,22 @@
           "anchor": "source",
           "x": 2400,
           "y": 2420,
-          "targetX": 2541.016233350256,
-          "targetY": 2403.3140199057334,
+          "targetX": 2540.2636134961867,
+          "targetY": 2397.861374726683,
           "layerIds": [
             "blade-trail"
           ]
-        },
-        {
-          "kind": "weapon-vfx-suite",
-          "weaponId": "x2-voltfang-tachi",
-          "anchor": "target",
-          "x": 2541.016233350256,
-          "y": 2403.3140199057334,
-          "targetX": 2541.016233350256,
-          "targetY": 2403.3140199057334,
-          "layerIds": [
-            "arc-bolt",
-            "painted-impact"
-          ]
-        },
-        {
-          "kind": "painted-impact",
-          "weaponId": "x2-voltfang-tachi",
-          "anchor": "target",
-          "x": 2541.016233350256,
-          "y": 2403.3140199057334,
-          "targetX": 2541.016233350256,
-          "targetY": 2403.3140199057334,
-          "pack": "shock-splat",
-          "count": 8,
-          "spawned": true
         }
       ],
       "layerIds": [
-        "blade-trail",
-        "arc-bolt",
-        "painted-impact"
+        "blade-trail"
       ],
       "genericLayers": [],
       "assertions": {
         "genericRingRecipeRemoved": true,
         "genericRingInvisible": true,
-        "paintedElementImpactVisible": true
+        "sourceCompositionRetained": true,
+        "targetCompositionCorrect": true
       },
       "browserErrors": [],
       "unexpectedBrowserErrors": [],
@@ -178,31 +150,26 @@
       "label": "headsman-holy",
       "weaponId": "x2-sanctified-headsman",
       "element": "holy",
-      "baseURL": "http://127.0.0.1:5180",
-      "capturedAt": "2026-07-22T00:51:49.991Z",
+      "baseURL": "http://127.0.0.1:56621",
+      "capturedAt": "2026-07-22T05:31:29.995Z",
       "setup": {
         "actor": {
           "x": 2400,
           "y": 2420
         },
         "target": {
-          "x": 2690.6290283203125,
-          "y": 2382.18359375
+          "x": 2689.075439453125,
+          "y": 2380.968994140625
         }
       },
       "visual": {
         "frozen": true,
         "ringVisible": false,
-        "paintedVisible": true,
-        "textureKeys": [
-          "ptcl:holy-splat",
-          "ptcl:holy-splat",
-          "ptcl:holy-splat",
-          "ptcl:holy-splat",
-          "ptcl:holy-splat",
-          "ptcl:holy-splat",
-          "ptcl:holy-splat"
-        ]
+        "paintedVisible": false,
+        "sourceEventSeen": true,
+        "targetEventSeen": false,
+        "sourceFrames": 6,
+        "textureKeys": []
       },
       "events": [
         {
@@ -211,50 +178,22 @@
           "anchor": "source",
           "x": 2400,
           "y": 2420,
-          "targetX": 2588.8777667954264,
-          "targetY": 2395.423382853359,
+          "targetX": 2588.7572077149425,
+          "targetY": 2394.5139756796398,
           "layerIds": [
             "blade-trail"
           ]
-        },
-        {
-          "kind": "weapon-vfx-suite",
-          "weaponId": "x2-sanctified-headsman",
-          "anchor": "target",
-          "x": 2588.8777667954264,
-          "y": 2395.423382853359,
-          "targetX": 2588.8777667954264,
-          "targetY": 2395.423382853359,
-          "layerIds": [
-            "cleave-flash",
-            "painted-impact",
-            "impact-flash"
-          ]
-        },
-        {
-          "kind": "painted-impact",
-          "weaponId": "x2-sanctified-headsman",
-          "anchor": "target",
-          "x": 2588.8777667954264,
-          "y": 2395.423382853359,
-          "targetX": 2588.8777667954264,
-          "targetY": 2395.423382853359,
-          "pack": "holy-splat",
-          "count": 7,
-          "spawned": true
         }
       ],
       "layerIds": [
-        "blade-trail",
-        "cleave-flash",
-        "painted-impact",
-        "impact-flash"
+        "blade-trail"
       ],
       "genericLayers": [],
       "assertions": {
         "genericRingRecipeRemoved": true,
         "genericRingInvisible": true,
-        "paintedElementImpactVisible": true
+        "sourceCompositionRetained": true,
+        "targetCompositionCorrect": true
       },
       "browserErrors": [],
       "unexpectedBrowserErrors": [],
@@ -265,50 +204,50 @@
       "phase": "after",
       "weaponId": "x2-sanctified-headsman",
       "treatment": "Pale Procession",
-      "baseURL": "http://127.0.0.1:5180",
-      "capturedAt": "2026-07-22T00:51:58.472Z",
+      "baseURL": "http://127.0.0.1:56621",
+      "capturedAt": "2026-07-22T05:31:40.550Z",
       "samples": [
         {
-          "angle": 3.120652221383279,
-          "physicalBladeLength": 142.5984130339082,
-          "extensionWidth": 313.042168457574,
-          "signedRootOverlap": 48.291653988425495,
-          "opaqueInset": 4.743063158448091,
-          "visibleJoinOverlap": 43.5485908299774,
+          "angle": 3.120515269310289,
+          "physicalBladeLength": 137.10268070362142,
+          "extensionWidth": 315.33616561832923,
+          "signedRootOverlap": 41.130804211086506,
+          "opaqueInset": 4.777820691186807,
+          "visibleJoinOverlap": 36.3529835198997,
           "visibleGap": 0,
-          "lateralError": 4.368580761590323,
+          "lateralError": 5.906386491005833e-14,
           "extensionDepth": 2419,
           "weaponDepth": 2420,
           "layeredBelowWeapon": true
         },
         {
-          "angle": -3.115102910461046,
-          "physicalBladeLength": 146.98568604179874,
-          "extensionWidth": 327.97634997798883,
-          "signedRootOverlap": 47.89737442357485,
-          "opaqueInset": 4.969338636030134,
-          "visibleJoinOverlap": 42.928035787544715,
+          "angle": -3.113587403985219,
+          "physicalBladeLength": 142.46897242895446,
+          "extensionWidth": 327.67863658659525,
+          "signedRootOverlap": 42.740691728686414,
+          "opaqueInset": 4.964827827069625,
+          "visibleJoinOverlap": 37.77586390161679,
           "visibleGap": 0,
-          "lateralError": 5.652144709852449,
+          "lateralError": 2.6867397195928788e-14,
           "extensionDepth": 2419,
           "weaponDepth": 2420,
           "layeredBelowWeapon": true
         },
         {
-          "angle": 3.1258422273511868,
-          "physicalBladeLength": 162.4975663391711,
-          "extensionWidth": 368.57493320801495,
-          "signedRootOverlap": 50.69696087362729,
-          "opaqueInset": 5.584468684969924,
-          "visibleJoinOverlap": 45.11249218865737,
+          "angle": 3.1254847425693946,
+          "physicalBladeLength": 158.3690467389962,
+          "extensionWidth": 364.2488074996912,
+          "signedRootOverlap": 47.51071402169884,
+          "opaqueInset": 5.518921325752897,
+          "visibleJoinOverlap": 41.99179269594594,
           "visibleGap": 0,
-          "lateralError": 4.286402164906044,
+          "lateralError": 1.5065726444163374e-13,
           "extensionDepth": 2419,
           "weaponDepth": 2420,
           "layeredBelowWeapon": true
         }
       ],
-      "angleSpan": 6.240945137812233,
+      "angleSpan": 6.239072146554614,
       "assertions": {
         "paleProcessionVisible": true,
         "zeroVisibleJoinGap": true,

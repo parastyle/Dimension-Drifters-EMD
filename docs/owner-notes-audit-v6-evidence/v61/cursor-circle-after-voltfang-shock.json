@@ -3,32 +3,26 @@
   "label": "voltfang-shock",
   "weaponId": "x2-voltfang-tachi",
   "element": "shock",
-  "baseURL": "http://127.0.0.1:5180",
-  "capturedAt": "2026-07-22T00:51:43.387Z",
+  "baseURL": "http://127.0.0.1:56621",
+  "capturedAt": "2026-07-22T05:31:20.959Z",
   "setup": {
     "actor": {
       "x": 2400,
       "y": 2420
     },
     "target": {
-      "x": 2684.137939453125,
-      "y": 2386.37890625
+      "x": 2679.694091796875,
+      "y": 2375.854248046875
     }
   },
   "visual": {
     "frozen": true,
     "ringVisible": false,
-    "paintedVisible": true,
-    "textureKeys": [
-      "ptcl:shock-splat",
-      "ptcl:shock-splat",
-      "ptcl:shock-splat",
-      "ptcl:shock-splat",
-      "ptcl:shock-splat",
-      "ptcl:shock-splat",
-      "ptcl:shock-splat",
-      "ptcl:shock-splat"
-    ]
+    "paintedVisible": false,
+    "sourceEventSeen": true,
+    "targetEventSeen": false,
+    "sourceFrames": 6,
+    "textureKeys": []
   },
   "events": [
     {
@@ -37,48 +31,22 @@
       "anchor": "source",
       "x": 2400,
       "y": 2420,
-      "targetX": 2541.016233350256,
-      "targetY": 2403.3140199057334,
+      "targetX": 2540.2636134961867,
+      "targetY": 2397.861374726683,
       "layerIds": [
         "blade-trail"
       ]
-    },
-    {
-      "kind": "weapon-vfx-suite",
-      "weaponId": "x2-voltfang-tachi",
-      "anchor": "target",
-      "x": 2541.016233350256,
-      "y": 2403.3140199057334,
-      "targetX": 2541.016233350256,
-      "targetY": 2403.3140199057334,
-      "layerIds": [
-        "arc-bolt",
-        "painted-impact"
-      ]
-    },
-    {
-      "kind": "painted-impact",
-      "weaponId": "x2-voltfang-tachi",
-      "anchor": "target",
-      "x": 2541.016233350256,
-      "y": 2403.3140199057334,
-      "targetX": 2541.016233350256,
-      "targetY": 2403.3140199057334,
-      "pack": "shock-splat",
-      "count": 8,
-      "spawned": true
     }
   ],
   "layerIds": [
-    "blade-trail",
-    "arc-bolt",
-    "painted-impact"
+    "blade-trail"
   ],
   "genericLayers": [],
   "assertions": {
     "genericRingRecipeRemoved": true,
     "genericRingInvisible": true,
-    "paintedElementImpactVisible": true
+    "sourceCompositionRetained": true,
+    "targetCompositionCorrect": true
   },
   "browserErrors": [],
   "unexpectedBrowserErrors": [],

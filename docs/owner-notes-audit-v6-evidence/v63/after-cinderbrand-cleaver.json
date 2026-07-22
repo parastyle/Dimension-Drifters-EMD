@@ -2,9 +2,9 @@
   "phase": "after",
   "label": "cinderbrand-cleaver",
   "weaponId": "x2-cinderbrand-cleaver",
-  "baseURL": "http://localhost:5180",
+  "baseURL": "http://127.0.0.1:56621",
   "moduleMode": "corrected live",
-  "capturedAt": "2026-07-22T01:52:30.837Z",
+  "capturedAt": "2026-07-22T05:33:06.012Z",
   "sourceLayerIds": [
     "blade-trail"
   ],
@@ -16,8 +16,8 @@
       "anchor": "source",
       "x": 2400,
       "y": 2420,
-      "targetX": 2556.3833167041303,
-      "targetY": 2397.455416246563,
+      "targetX": 2555.982023742372,
+      "targetY": 2394.828423386008,
       "layerIds": [
         "blade-trail"
       ]

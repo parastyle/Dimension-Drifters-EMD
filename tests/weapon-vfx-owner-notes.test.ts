@@ -12,7 +12,7 @@ import {
   weaponEffectCueSeconds,
   weaponEffectEmitterFor,
   weaponEffectEmitterPoint,
-  weaponMuzzleReach,
+  weaponMuzzleWorldPoint,
 } from "@dd/shared";
 import { describe, expect, it } from "vitest";
 import { PARTICLE_PACKS } from "../packages/client/src/vfx/particle-manifest.js";
@@ -72,8 +72,13 @@ describe("owner-notes W-VFX weapon identities", () => {
       const distance = Math.hypot(point.x - 100, point.y - 200);
       expect(Number.isFinite(point.x) && Number.isFinite(point.y), weaponId).toBe(true);
       if (emitter === "body") expect(distance, weaponId).toBe(0);
-      else if (emitter === "tip")
-        expect(distance, weaponId).toBeCloseTo(weaponMuzzleReach(definition), 8);
+      else if (emitter === "tip") {
+        const expected = definition.muzzle
+          ? weaponMuzzleWorldPoint(definition, { x: 100, y: 200, aimX: 1, aimY: 0 })
+          : { x: 100 + meleeReach(definition), y: 200 };
+        expect(point.x, weaponId).toBeCloseTo(expected.x, 8);
+        expect(point.y, weaponId).toBeCloseTo(expected.y, 8);
+      }
       else expect(distance, weaponId).toBeCloseTo(meleeReach(definition) * 0.78, 8);
     }
   });

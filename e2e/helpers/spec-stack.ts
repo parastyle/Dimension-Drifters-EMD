@@ -1,8 +1,8 @@
+import type { IncomingMessage, ServerResponse } from "node:http";
 import { createRequire } from "node:module";
-import type { AddressInfo } from "node:net";
+import { type AddressInfo, createServer as createTcpServer } from "node:net";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import { DEFAULT_PORT } from "@dd/shared";
 import { createGameServer } from "../../packages/server/dist/index.js";
 import type { StackStart } from "./real-stack.js";
 
@@ -36,6 +36,34 @@ interface ViteModule {
   createServer(options: Record<string, unknown>): Promise<ViteDevServer>;
 }
 
+interface ViteMiddlewareServer {
+  middlewares: {
+    use(
+      handler: (request: IncomingMessage, response: ServerResponse, next: () => void) => void,
+    ): void;
+  };
+}
+
+/** Redirect only HTML entry requests through the client's existing dev `?port=` escape hatch. */
+function privateGamePortPlugin(gamePort: number): Record<string, unknown> {
+  return {
+    name: "dd-e2e-private-game-port",
+    configureServer(server: ViteMiddlewareServer): void {
+      server.middlewares.use((request, response, next) => {
+        const url = new URL(request.url ?? "/", "http://dd-e2e.local");
+        if (url.pathname !== "/" || url.searchParams.has("port")) {
+          next();
+          return;
+        }
+        url.searchParams.set("port", String(gamePort));
+        response.statusCode = 302;
+        response.setHeader("location", `${url.pathname}${url.search}${url.hash}`);
+        response.end();
+      });
+    },
+  };
+}
+
 function withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> {
   return new Promise<T>((resolve, reject) => {
     const timer = setTimeout(
@@ -55,20 +83,28 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: string): 
   });
 }
 
-function hasErrorCode(error: unknown, code: string): boolean {
-  let current = error;
-  for (let depth = 0; depth < 5 && current && typeof current === "object"; depth++) {
-    if ("code" in current && current.code === code) return true;
-    current = "cause" in current ? current.cause : undefined;
-  }
-  return false;
-}
-
 async function loadVite(): Promise<ViteModule> {
   // Vite belongs to @dd/client, not the root — resolve through that workspace's package boundary.
   const requireFromClient = createRequire(pathToFileURL(path.join(CLIENT_ROOT, "package.json")));
   const viteEntry = requireFromClient.resolve("vite");
   return (await import(pathToFileURL(viteEntry).href)) as ViteModule;
+}
+
+async function findFreeLoopbackPort(): Promise<number> {
+  return await new Promise<number>((resolve, reject) => {
+    const server = createTcpServer();
+    server.unref();
+    server.once("error", reject);
+    server.listen(0, "127.0.0.1", () => {
+      const address = server.address();
+      if (!address || typeof address === "string") {
+        server.close();
+        reject(new Error("temporary TCP listener did not expose a port"));
+        return;
+      }
+      server.close((error) => (error ? reject(error) : resolve(address.port)));
+    });
+  });
 }
 
 /** Start the production Colyseus setup and a reload-proof source-serving Vite instance. */
@@ -78,34 +114,35 @@ export async function startSpecStack(): Promise<StackStart> {
 
   let gameServer: Awaited<ReturnType<typeof createGameServer>>;
   try {
-    // ArenaScene derives its endpoint from location.hostname + DEFAULT_PORT (same constraint as the smoke).
-    gameServer = await withTimeout(
-      createGameServer(DEFAULT_PORT),
-      STARTUP_TIMEOUT_MS,
-      "Colyseus startup",
-    );
+    // Feature specs use ArenaScene's dev-only `?port=` escape hatch, so the owner's DEFAULT_PORT stack can
+    // remain live while this suite owns an ephemeral game listener.
+    gameServer = await withTimeout(createGameServer(0), STARTUP_TIMEOUT_MS, "Colyseus startup");
   } catch (error) {
     if (previousDevTools === undefined) delete process.env.DD_DEV_TOOLS;
     else process.env.DD_DEV_TOOLS = previousDevTools;
 
-    if (hasErrorCode(error, "EADDRINUSE")) {
-      const reason = `feature spec skipped: client DEFAULT_PORT ${DEFAULT_PORT} is already in use`;
-      console.warn(`[e2e] ${reason}`);
-      return { status: "skipped", reason };
-    }
     throw error;
   }
+
+  const gameAddress = gameServer.transport.server?.address();
+  if (!gameAddress || typeof gameAddress === "string") {
+    await gameServer.gracefullyShutdown(false);
+    throw new Error("Colyseus did not expose its ephemeral TCP port");
+  }
+  const gamePort = gameAddress.port;
 
   let viteServer: ViteDevServer | undefined;
   try {
     const vite = await loadVite();
+    const vitePort = await findFreeLoopbackPort();
     viteServer = await vite.createServer({
       root: CLIENT_ROOT,
+      plugins: [privateGamePortPlugin(gamePort)],
       clearScreen: false,
       logLevel: "warn",
       server: {
         host: "127.0.0.1",
-        port: 0,
+        port: vitePort,
         strictPort: true,
         hmr: false,
       },

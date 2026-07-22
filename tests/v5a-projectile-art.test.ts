@@ -7,11 +7,7 @@ import {
   GUN_GENERATED_PROJECTILES,
   GUN_SPRITE_PROJECTILES,
 } from "../packages/client/src/vfx/gun-projectile-art.js";
-import {
-  gunMuzzleOffsetsForShot,
-  offsetWeaponMuzzle,
-  WEAPONS,
-} from "../packages/shared/src/index.js";
+import { WEAPONS } from "../packages/shared/src/index.js";
 
 const require = createRequire(import.meta.url);
 const { PNG } = require("../tools/artkit/node_modules/pngjs") as {
@@ -99,16 +95,9 @@ describe("V5A generated projectile identity art", () => {
     expect(gun.damage / cadenceSeconds).toBe(90);
   });
 
-  it("raises Mesa's shared visual/server muzzle lane and gives Hexbore its ordered grip", () => {
+  it("derives Mesa's shared visual/server muzzle from art and gives Hexbore its ordered grip", () => {
     const mesa = WEAPONS["x2-mesa-hand-cannon"];
-    const mesaOffsets = gunMuzzleOffsetsForShot(mesa, 1);
-    expect(mesaOffsets).toEqual([{ forward: 0, lateral: -6 }]);
-    const mesaOffset = mesaOffsets[0];
-    if (!mesaOffset) throw new Error("Mesa muzzle offset fixture required");
-    expect(offsetWeaponMuzzle(100, 100, 1, 0, mesaOffset)).toEqual({
-      x: 100,
-      y: 94,
-    });
+    expect(mesa?.muzzle?.points[0]).toMatchObject({ part: 0, x: 255, y: 28.4 });
     expect(WEAPONS["x2-hexbore-voidmaw"]?.gripPoints).toEqual({
       primary: { x: 0.2, y: 0.72 },
       secondary: { x: 0.55, y: 0.42, role: "under-barrel" },

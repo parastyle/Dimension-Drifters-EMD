@@ -49,7 +49,6 @@ const BULLET_KINDS = new Set([
 ]);
 const MUZZLES = new Set(["heavy", "boom", "rapid", "punch", "spark", "artillery"]);
 const PROJECTILE_ARTS = new Set(["weapon-crop", "generated", "arrow", "cannonball", "fireball"]);
-const MUZZLE_MODES = new Set(["parallel", "cycle"]);
 // The first gun-beam wave is explicit, not inferred from every ranged weapon. V1 still uses heat only;
 // these ids differ from caster beams through their ranged class/art/pose, never a hidden magazine resource.
 const BEAM_GUN_IDS = new Set([
@@ -90,9 +89,9 @@ const BEHAVIOR_KEYS = {
     "projectileArt", "projectileVisualScale", "projectileColor", "arcHeight", "scalingGrades", "explode", "burst",
     "userKnockbackMultiplier",
     "randomPellets",
-    "muzzleOffsets", "muzzleMode", "dualMuzzleSeparation", "sonicBoomRing", "width"]),
+    "sonicBoomRing", "width"]),
   beam: new Set(["kind", "damage", "range", "tickRate", "width", "chargeSeconds", "sweepLagSeconds",
-    "randomRays", "muzzleOffsets", "coneStream", "scalingGrades", "zone"]),
+    "randomRays", "coneStream", "scalingGrades", "zone"]),
   groundZone: new Set(["kind", "zone"]),
   glovePair: new Set(["kind", "auraColor", "auraRadius"]),
   warp: new Set(["kind", "burstRadius"]),
@@ -130,8 +129,6 @@ const RANDOM_RAY_KEYS = new Set(["count", "spread"]);
 const RANDOM_PELLET_KEYS = new Set(["min", "max", "directions"]);
 const CONE_STREAM_KEYS = new Set(["halfAngle", "flavor"]);
 const CONE_STREAM_FLAVORS = new Set(["ice", "magma"]);
-const MUZZLE_OFFSET_KEYS = new Set(["forward", "lateral"]);
-const WEAPON_MUZZLE_COUNT_CAP = 6;
 const COMBO_MOTIONS = new Set([
   "slash", "overhead", "shoulder-chop", "reverse-chop", "rising-chop", "execution-slam", "rake", "scissor",
   "jab", "cross", "hook", "haymaker", "lunge", "disengage", "impale", "fulcrum-flip", "stinger",
@@ -662,26 +659,6 @@ function gripPointsOf(points) {
   return out;
 }
 
-function muzzleOffsetsOf(offsets, path = "behavior.muzzleOffsets") {
-  if (offsets === undefined) return undefined;
-  if (!Array.isArray(offsets) || offsets.length === 0 || offsets.length > WEAPON_MUZZLE_COUNT_CAP) {
-    fail(`${path} must contain 1..${WEAPON_MUZZLE_COUNT_CAP} offsets`);
-    return undefined;
-  }
-  return offsets.map((offset, index) => {
-    const entryPath = `${path}[${index}]`;
-    if (!offset || typeof offset !== "object" || Array.isArray(offset)) {
-      fail(`${entryPath} is not an object`);
-      return { forward: 0, lateral: 0 };
-    }
-    checkKeys(offset, MUZZLE_OFFSET_KEYS, entryPath);
-    return {
-      forward: num(offset.forward, -64, 64, 0, `${entryPath}.forward`),
-      lateral: num(offset.lateral, -64, 64, 0, `${entryPath}.lateral`),
-    };
-  });
-}
-
 function handlingTagsOf(tags) {
   if (tags === undefined) return undefined;
   if (!Array.isArray(tags) || tags.length === 0) {
@@ -872,8 +849,6 @@ function mapWeapon(w) {
         };
       }
     }
-    const muzzleOffsets = muzzleOffsetsOf(b.muzzleOffsets);
-    if (muzzleOffsets) def.beam.muzzleOffsets = muzzleOffsets;
     if (b.coneStream !== undefined) {
       if (!b.coneStream || typeof b.coneStream !== "object" || Array.isArray(b.coneStream)) {
         fail("behavior.coneStream is not an object");
@@ -923,14 +898,6 @@ function mapWeapon(w) {
     };
     if (b.projectileArt !== undefined)
       def.gun.projectileArt = enumOf(b.projectileArt, PROJECTILE_ARTS, "behavior.projectileArt");
-    const muzzleOffsets = muzzleOffsetsOf(b.muzzleOffsets);
-    if (muzzleOffsets) def.gun.muzzleOffsets = muzzleOffsets;
-    if (b.muzzleMode !== undefined)
-      def.gun.muzzleMode = enumOf(b.muzzleMode, MUZZLE_MODES, "behavior.muzzleMode");
-    if (b.dualMuzzleSeparation !== undefined)
-      def.gun.dualMuzzleSeparation = num(
-        b.dualMuzzleSeparation, 0, 64, 0, "behavior.dualMuzzleSeparation",
-      );
     if (b.sonicBoomRing !== undefined) {
       if (typeof b.sonicBoomRing !== "boolean") fail("behavior.sonicBoomRing is not a boolean");
       else def.gun.sonicBoomRing = b.sonicBoomRing;

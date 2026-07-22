@@ -1,9 +1,19 @@
-import { MELEE_TWO_HAND_GRIP_REACH, type SwingDescriptor, type WeaponDef } from "@dd/shared";
+import {
+  BLADE_EXTENSION_LENGTH_MULTIPLIER,
+  BLADE_EXTENSION_OVERLAP_FRACTION,
+  type BladeExtensionGeometry,
+  bladeExtensionGeometryFor,
+  bladeExtensionReveal,
+  SANCTIFIED_HEADSMAN_ID,
+  type SwingDescriptor,
+  WEAPONS,
+  type WeaponDef,
+} from "@dd/shared";
 
-export const SANCTIFIED_HEADSMAN_ID = "x2-sanctified-headsman";
-export const SANCTIFIED_HEADSMAN_LENGTH_MULTIPLIER = 3;
+export { SANCTIFIED_HEADSMAN_ID };
+export const SANCTIFIED_HEADSMAN_LENGTH_MULTIPLIER = BLADE_EXTENSION_LENGTH_MULTIPLIER;
 /** The extension roots inside the outer 30% of the physical blade; the real sprite masks this join. */
-export const SANCTIFIED_HEADSMAN_BLADE_OVERLAP_FRACTION = 0.3;
+export const SANCTIFIED_HEADSMAN_BLADE_OVERLAP_FRACTION = BLADE_EXTENSION_OVERLAP_FRACTION;
 
 export interface HeadsmanPrototype {
   readonly proto: 1 | 2 | 3 | 4;
@@ -108,28 +118,14 @@ if (import.meta.env.DEV && typeof window !== "undefined") {
   });
 }
 
-export interface HeadsmanExtensionGeometry {
-  readonly physicalBladeLength: number;
-  readonly totalBladeLength: number;
-  readonly extensionLength: number;
-  readonly extensionStart: number;
-  readonly overlapLength: number;
-}
+export type HeadsmanExtensionGeometry = BladeExtensionGeometry;
 
 /** The magic starts beneath the outer physical blade and still ends at the exact 3x visual endpoint.
- * Authoritative reach remains unchanged by owner decision. */
+ * Compatibility name retained for prototype tests; live client and server call the shared law directly. */
 export function headsmanExtensionGeometry(weapon: WeaponDef): HeadsmanExtensionGeometry {
-  const physicalBladeLength = Math.max(1, (1 - weapon.gripFrac) * weapon.displayLength);
-  const totalBladeLength = physicalBladeLength * SANCTIFIED_HEADSMAN_LENGTH_MULTIPLIER;
-  const overlapLength = physicalBladeLength * SANCTIFIED_HEADSMAN_BLADE_OVERLAP_FRACTION;
-  return {
-    physicalBladeLength,
-    totalBladeLength,
-    extensionLength: totalBladeLength - physicalBladeLength + overlapLength,
-    extensionStart:
-      (weapon.twoHanded ? MELEE_TWO_HAND_GRIP_REACH : 0) + physicalBladeLength - overlapLength,
-    overlapLength,
-  };
+  const geometry = bladeExtensionGeometryFor(weapon);
+  if (!geometry) throw new Error(`Weapon ${weapon.id} has no shared blade-extension envelope`);
+  return geometry;
 }
 
 /** Lengthen through the end of wind-up, then hold the full 3x blade across the damage sweep. Starting the
@@ -139,12 +135,7 @@ export function headsmanExtensionReveal(
   swing: Pick<SwingDescriptor, "activeStartSeconds" | "activeEndSeconds">,
   elapsedSeconds: number,
 ): number {
-  const activeSeconds = swing.activeEndSeconds - swing.activeStartSeconds;
-  if (activeSeconds <= 0 || elapsedSeconds >= swing.activeEndSeconds) return 0;
-  const growSeconds = Math.min(swing.activeStartSeconds, Math.max(0.08, activeSeconds * 0.45));
-  const growStartSeconds = swing.activeStartSeconds - growSeconds;
-  if (elapsedSeconds < growStartSeconds) return 0;
-  if (elapsedSeconds >= swing.activeStartSeconds || growSeconds <= 0) return 1;
-  const progress = (elapsedSeconds - growStartSeconds) / growSeconds;
-  return progress * progress * (3 - 2 * progress);
+  const weapon = WEAPONS[SANCTIFIED_HEADSMAN_ID];
+  if (!weapon) return 0;
+  return bladeExtensionReveal(weapon, swing, elapsedSeconds);
 }

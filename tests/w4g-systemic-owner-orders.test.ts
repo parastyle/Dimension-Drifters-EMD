@@ -189,23 +189,22 @@ describe("W4G5 waveform beam recipes", () => {
 });
 
 describe("W4G6 barrel alignment truth", () => {
-  it("authors the painted barrel offsets for beams and bullets", () => {
-    expect(weapon("x2-voltcaster-machine-pistol").beam?.muzzleOffsets).toEqual([
-      { forward: -1, lateral: -14 },
-    ]);
-    expect(weapon("x2-stormcaller-tesla-gatling").beam?.muzzleOffsets).toEqual([
-      { forward: -9, lateral: 11 },
-      { forward: -9, lateral: 22 },
-      { forward: -9, lateral: 32 },
-      { forward: -4, lateral: 11 },
-      { forward: -4, lateral: 22 },
-      { forward: -4, lateral: 32 },
-    ]);
+  it("authors the painted barrel points in source PNG space", () => {
+    expect(weapon("x2-voltcaster-machine-pistol").muzzle?.points[0]).toMatchObject({
+      part: 0,
+      x: 255,
+      y: 39.1,
+    });
+    expect(weapon("x2-stormcaller-tesla-gatling").muzzle?.points).toHaveLength(6);
     expect(weapon("x2-coyote-stinger").gun).toMatchObject({
       spread: 0.18,
-      muzzleOffsets: [{ forward: -1, lateral: -7 }],
     });
-    expect(weapon("x2-hollowpoint-hex").gun?.muzzleOffsets).toEqual([{ forward: -1, lateral: -5 }]);
+    expect(weapon("x2-coyote-stinger").muzzle?.points).toHaveLength(2);
+    expect(weapon("x2-hollowpoint-hex").muzzle?.points[0]).toMatchObject({
+      part: 0,
+      x: 255,
+      y: 30.9,
+    });
     expect(BEAM_VFX_RECIPES["x2-voltcaster-machine-pistol"]).toMatchObject({
       edgeColor: 0x5c0505,
       accentColor: 0xff2a1f,

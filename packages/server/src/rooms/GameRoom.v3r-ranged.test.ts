@@ -1,4 +1,10 @@
-import { gunMuzzleReach, TILE_GROUND, WEAPONS, ZoneStyle } from "@dd/shared";
+import {
+  characterScale,
+  TILE_GROUND,
+  WEAPONS,
+  weaponMuzzleWorldPointsForShot,
+  ZoneStyle,
+} from "@dd/shared";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("colyseus", () => {
@@ -54,18 +60,21 @@ describe("GameRoom — V3R ranged authority", () => {
   it("cycles Reliquary Nailcaster origins through tips 1-2-3 on accepted attack sequence", () => {
     const { room, player, combat } = makeRoom("nail-cycle");
     const weapon = equip(player, combat, "x2-reliquary-nailcaster");
-    const reach = gunMuzzleReach(weapon);
-    const expected = [
-      { x: player.x + reach - 3, y: player.y - 9 },
-      { x: player.x + reach, y: player.y },
-      { x: player.x + reach - 3, y: player.y + 9 },
-    ];
-
     for (let seq = 1; seq <= 3; seq++) {
       player.attackSeq = seq;
+      const expectedOrigin = weaponMuzzleWorldPointsForShot(
+        weapon,
+        {
+          x: player.x,
+          y: player.y,
+          aimX: 1,
+          aimY: 0,
+          renderScale: characterScale(player.character),
+        },
+        seq,
+      )[0];
       room.fireGun(player, combat, weapon);
       const projectile = [...room.state.projectiles.values()].at(-1);
-      const expectedOrigin = expected[seq - 1];
       if (!expectedOrigin) throw new Error(`Missing Nailcaster origin ${seq}`);
       expect(projectile?.x).toBeCloseTo(expectedOrigin.x, 6);
       expect(projectile?.y).toBeCloseTo(expectedOrigin.y, 6);
@@ -76,9 +85,9 @@ describe("GameRoom — V3R ranged authority", () => {
   });
 
   it.each([
-    ["x2-brimstone-bull", 2],
+    ["x2-brimstone-bull", 1],
     ["x2-hallowbore-coachgun", 2],
-    ["x2-sunbreaker-railgun", 2],
+    ["x2-sunbreaker-railgun", 1],
     ["x2-scattershell-duster", 4],
   ] as const)("spawns %s parallel lanes with DPS-neutral split damage", (weaponId, count) => {
     const { room, player, combat } = makeRoom(`parallel-${weaponId}`);
@@ -117,9 +126,21 @@ describe("GameRoom — V3R ranged authority", () => {
     const gatlingFixture = makeRoom("gatling-top");
     const gatling = equip(gatlingFixture.player, gatlingFixture.combat, "x-gun-gatling");
     gatlingFixture.player.attackSeq = 1;
+    const expectedGatling = weaponMuzzleWorldPointsForShot(
+      gatling,
+      {
+        x: gatlingFixture.player.x,
+        y: gatlingFixture.player.y,
+        aimX: 1,
+        aimY: 0,
+        renderScale: characterScale(gatlingFixture.player.character),
+      },
+      1,
+    )[0];
     gatlingFixture.room.fireGun(gatlingFixture.player, gatlingFixture.combat, gatling);
     const gatlingShot = [...gatlingFixture.room.state.projectiles.values()][0];
-    expect(gatlingShot?.y).toBeCloseTo(gatlingFixture.player.y - 13, 6);
+    expect(gatlingShot?.x).toBeCloseTo(expectedGatling?.x ?? 0, 6);
+    expect(gatlingShot?.y).toBeCloseTo(expectedGatling?.y ?? 0, 6);
 
     const railFixture = makeRoom("rail-speed");
     const rail = equip(railFixture.player, railFixture.combat, "x2-sunbreaker-railgun");
@@ -132,7 +153,7 @@ describe("GameRoom — V3R ranged authority", () => {
   it("replicates six Stormcaller barrel rows under the friendly beam cap", () => {
     const { room, player, combat } = makeRoom("storm-six");
     const weapon = equip(player, combat, "x2-stormcaller-tesla-gatling");
-    if (!weapon.beam?.muzzleOffsets) throw new Error("Stormcaller barrel fixture is required");
+    if (weapon.muzzle?.points.length !== 6) throw new Error("Stormcaller barrel fixture is required");
     const input = room.inputs.get(player.id);
     input.held.fireHeld = true;
 

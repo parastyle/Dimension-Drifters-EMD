@@ -2,9 +2,9 @@
   "phase": "after",
   "label": "voltfang",
   "weaponId": "x2-voltfang-tachi",
-  "baseURL": "http://localhost:5180",
+  "baseURL": "http://127.0.0.1:56621",
   "moduleMode": "corrected live",
-  "capturedAt": "2026-07-22T01:52:07.105Z",
+  "capturedAt": "2026-07-22T05:32:38.180Z",
   "sourceLayerIds": [
     "blade-trail"
   ],
@@ -16,8 +16,8 @@
       "anchor": "source",
       "x": 2400,
       "y": 2420,
-      "targetX": 2539.474154625058,
-      "targetY": 2393.336163223846,
+      "targetX": 2540.259843049145,
+      "targetY": 2397.837499513159,
       "layerIds": [
         "blade-trail"
       ]

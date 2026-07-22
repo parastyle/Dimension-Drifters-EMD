@@ -44,11 +44,12 @@ describe("V6.1 Headsman ship decision", () => {
     expect(geometry.extensionStart + geometry.extensionLength).toBeCloseTo(
       gripReach + geometry.totalBladeLength,
     );
+    // Base card authoring is unchanged; V7-HIT derives active server reach from the shared extension.
     expect(headsman.range).toBe(160);
 
     const player = readFileSync("packages/client/src/vfx/VfxPlayer.ts", "utf8");
-    expect(player).toContain("heldTip.x - Math.cos(extensionAngle) * overlapLength");
-    expect(player).toContain(".setDepth((heldTip?.depth ?? bladeExtensionActor.y) - 1)");
+    expect(player).toContain("heldTip.x - Math.cos(angle) * overlapLength");
+    expect(player).toContain(".setDepth((heldTip?.depth ?? attachment.fallbackDepth) - 1)");
   });
 });
 

@@ -1,4 +1,5 @@
 import {
+  addImpulse,
   ARENA_HEIGHT,
   ARENA_WIDTH,
   type ArenaMap,
@@ -1108,6 +1109,15 @@ export class SelfPredictor {
       aimY: speed > 1e-4 ? dirY : 0,
     };
     this.paused = !server.alive || server.frozen;
+  }
+
+  /** Predict deterministic owner-authored impulses (currently gun recoil) at their local round edge.
+   * Hostile/contact knockback remains server-only and continues to glide through reconciliation. */
+  addPredictedImpulse(ix: number, iy: number, maxImpulse?: number): void {
+    if (this.paused || this.stalled) return;
+    const impulse = addImpulse(this.pred, ix, iy, maxImpulse);
+    this.pred.vx = impulse.vx;
+    this.pred.vy = impulse.vy;
   }
 
   /** The client-side arena map (regenerated from synced seeds) — enables predicted POI collision. Swap

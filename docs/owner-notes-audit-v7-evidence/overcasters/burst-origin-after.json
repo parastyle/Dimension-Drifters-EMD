@@ -1,0 +1,2220 @@
+{
+  "summary": {
+    "phase": "after",
+    "weaponId": "x2-galvanic-overcasters",
+    "baseURL": "http://localhost:5180",
+    "capturedAt": "2026-07-22T04:11:03.632Z",
+    "frameCount": 79,
+    "roundCount": 12,
+    "burstCount": 3,
+    "characterTravel": 1256.920809111045,
+    "originMuzzleDeltaPx": {
+      "min": 62.70306152674812,
+      "median": 140.86904336752926,
+      "p95": 271.4709941436521,
+      "max": 271.4709941436521,
+      "perRound": [
+        {
+          "burstIndex": 0,
+          "roundIndex": 0,
+          "bornTick": 60,
+          "delta": 64.99512285325734
+        },
+        {
+          "burstIndex": 0,
+          "roundIndex": 1,
+          "bornTick": 61,
+          "delta": 84.5101340808863
+        },
+        {
+          "burstIndex": 0,
+          "roundIndex": 2,
+          "bornTick": 62,
+          "delta": 110.37574641316053
+        },
+        {
+          "burstIndex": 0,
+          "roundIndex": 3,
+          "bornTick": 63,
+          "delta": 155.70449397725733
+        },
+        {
+          "burstIndex": 1,
+          "roundIndex": 0,
+          "bornTick": 109,
+          "delta": 62.70306152674812
+        },
+        {
+          "burstIndex": 1,
+          "roundIndex": 1,
+          "bornTick": 110,
+          "delta": 85.50105628468683
+        },
+        {
+          "burstIndex": 1,
+          "roundIndex": 2,
+          "bornTick": 111,
+          "delta": 105.98973562490416
+        },
+        {
+          "burstIndex": 1,
+          "roundIndex": 3,
+          "bornTick": 112,
+          "delta": 140.86904336752926
+        },
+        {
+          "burstIndex": 2,
+          "roundIndex": 0,
+          "bornTick": 157,
+          "delta": 178.4292530166249
+        },
+        {
+          "burstIndex": 2,
+          "roundIndex": 1,
+          "bornTick": 158,
+          "delta": 196.83358638850873
+        },
+        {
+          "burstIndex": 2,
+          "roundIndex": 2,
+          "bornTick": 159,
+          "delta": 226.978616320342
+        },
+        {
+          "burstIndex": 2,
+          "roundIndex": 3,
+          "bornTick": 160,
+          "delta": 271.4709941436521
+        }
+      ]
+    },
+    "renderedSpawnOriginMuzzleDeltaPx": {
+      "count": 12,
+      "max": 0,
+      "perRound": [
+        {
+          "burstIndex": 0,
+          "roundIndex": 0,
+          "bornTick": 60,
+          "delta": 0
+        },
+        {
+          "burstIndex": 0,
+          "roundIndex": 1,
+          "bornTick": 61,
+          "delta": 0
+        },
+        {
+          "burstIndex": 0,
+          "roundIndex": 2,
+          "bornTick": 62,
+          "delta": 0
+        },
+        {
+          "burstIndex": 0,
+          "roundIndex": 3,
+          "bornTick": 63,
+          "delta": 0
+        },
+        {
+          "burstIndex": 1,
+          "roundIndex": 0,
+          "bornTick": 109,
+          "delta": 0
+        },
+        {
+          "burstIndex": 1,
+          "roundIndex": 1,
+          "bornTick": 110,
+          "delta": 0
+        },
+        {
+          "burstIndex": 1,
+          "roundIndex": 2,
+          "bornTick": 111,
+          "delta": 0
+        },
+        {
+          "burstIndex": 1,
+          "roundIndex": 3,
+          "bornTick": 112,
+          "delta": 0
+        },
+        {
+          "burstIndex": 2,
+          "roundIndex": 0,
+          "bornTick": 157,
+          "delta": 0
+        },
+        {
+          "burstIndex": 2,
+          "roundIndex": 1,
+          "bornTick": 158,
+          "delta": 0
+        },
+        {
+          "burstIndex": 2,
+          "roundIndex": 2,
+          "bornTick": 159,
+          "delta": 0
+        },
+        {
+          "burstIndex": 2,
+          "roundIndex": 3,
+          "bornTick": 160,
+          "delta": 0
+        }
+      ]
+    },
+    "browserErrors": [],
+    "unexpectedBrowserErrors": [],
+    "screenshot": "docs\\owner-notes-audit-v7-evidence\\overcasters\\burst-origin-after.png"
+  },
+  "rounds": [
+    {
+      "id": "p0",
+      "detectedAtMs": 7235.5999999940395,
+      "detectedTick": 62,
+      "bornTick": 60,
+      "attackSeq": 1,
+      "ageTicks": 2,
+      "integratedSteps": 3,
+      "character": {
+        "x": 2451.2974249165045,
+        "y": 2417.101813391376
+      },
+      "authoritativeCharacter": {
+        "x": 2358.2298606283534,
+        "y": 2438.20458984375
+      },
+      "muzzle": {
+        "x": 2571.8602468295776,
+        "y": 2360.486090951432
+      },
+      "projectile": {
+        "x": 2691.9287109375,
+        "y": 2309.90185546875,
+        "vx": 1216.3697509765625,
+        "vy": -458.7424621582031
+      },
+      "renderedProjectile": {
+        "x": 2604.282104769988,
+        "y": 2345.7720115477127
+      },
+      "renderedSpawnOrigin": {
+        "x": 2566.79705959052,
+        "y": 2360.5270851803457
+      },
+      "renderedSpawnMuzzle": {
+        "x": 2566.79705959052,
+        "y": 2360.5270851803457
+      },
+      "renderedSpawnOriginMuzzleDelta": 0,
+      "origin": {
+        "x": 2509.473248291016,
+        "y": 2378.7132247924806
+      },
+      "originMuzzleDelta": 64.99512285325734,
+      "burstIndex": 0,
+      "roundIndex": 0,
+      "bornFrame": null,
+      "bornFrameOriginMuzzleDelta": null
+    },
+    {
+      "id": "p1",
+      "detectedAtMs": 7235.5999999940395,
+      "detectedTick": 62,
+      "bornTick": 61,
+      "attackSeq": 1,
+      "ageTicks": 1,
+      "integratedSteps": 2,
+      "character": {
+        "x": 2451.2974249165045,
+        "y": 2417.101813391376
+      },
+      "authoritativeCharacter": {
+        "x": 2358.2298606283534,
+        "y": 2438.20458984375
+      },
+      "muzzle": {
+        "x": 2571.8602468295776,
+        "y": 2360.486090951432
+      },
+      "projectile": {
+        "x": 2612.8095703125,
+        "y": 2339.7408248038255,
+        "vx": 1216.3697509765625,
+        "vy": -458.7424621582031
+      },
+      "renderedProjectile": {
+        "x": 2590.040659457488,
+        "y": 2351.1430260280263
+      },
+      "renderedSpawnOrigin": {
+        "x": 2566.79705959052,
+        "y": 2360.5270851803457
+      },
+      "renderedSpawnMuzzle": {
+        "x": 2566.79705959052,
+        "y": 2360.5270851803457
+      },
+      "renderedSpawnOriginMuzzleDelta": 0,
+      "origin": {
+        "x": 2491.1725952148436,
+        "y": 2385.6150710196457
+      },
+      "originMuzzleDelta": 84.5101340808863,
+      "burstIndex": 0,
+      "roundIndex": 1,
+      "bornFrame": null,
+      "bornFrameOriginMuzzleDelta": null
+    },
+    {
+      "id": "p2",
+      "detectedAtMs": 7235.5999999940395,
+      "detectedTick": 62,
+      "bornTick": 62,
+      "attackSeq": 1,
+      "ageTicks": 0,
+      "integratedSteps": 1,
+      "character": {
+        "x": 2451.2974249165045,
+        "y": 2417.101813391376
+      },
+      "authoritativeCharacter": {
+        "x": 2358.2298606283534,
+        "y": 2438.20458984375
+      },
+      "muzzle": {
+        "x": 2571.8602468295776,
+        "y": 2360.486090951432
+      },
+      "projectile": {
+        "x": 2527.9935266613284,
+        "y": 2372.597412109375,
+        "vx": 1212.59765625,
+        "vy": -468.6224670410156
+      },
+      "renderedProjectile": {
+        "x": 2574.7273748351404,
+        "y": 2356.9356876829665
+      },
+      "renderedSpawnOrigin": {
+        "x": 2566.79705959052,
+        "y": 2360.5270851803457
+      },
+      "renderedSpawnMuzzle": {
+        "x": 2566.79705959052,
+        "y": 2360.5270851803457
+      },
+      "renderedSpawnOriginMuzzleDelta": 0,
+      "origin": {
+        "x": 2467.3636438488284,
+        "y": 2396.0285354614257
+      },
+      "originMuzzleDelta": 110.37574641316053,
+      "burstIndex": 0,
+      "roundIndex": 2,
+      "bornFrame": {
+        "atMs": 7235.4000000059605,
+        "tick": 62,
+        "character": {
+          "x": 2451.2974249165045,
+          "y": 2417.101813391376
+        },
+        "authoritativeCharacter": {
+          "x": 2358.2298606283534,
+          "y": 2438.20458984375
+        },
+        "muzzle": {
+          "x": 2571.8602468295776,
+          "y": 2360.486090951432
+        },
+        "attackSeq": 1
+      },
+      "bornFrameOriginMuzzleDelta": 110.37574641316053
+    },
+    {
+      "id": "p3",
+      "detectedAtMs": 7306.5999999940395,
+      "detectedTick": 63,
+      "bornTick": 63,
+      "attackSeq": 1,
+      "ageTicks": 0,
+      "integratedSteps": 1,
+      "character": {
+        "x": 2473.5850121739527,
+        "y": 2421.031716359758
+      },
+      "authoritativeCharacter": {
+        "x": 2334.7938256783473,
+        "y": 2452.112060546875
+      },
+      "muzzle": {
+        "x": 2590.957520731806,
+        "y": 2358.8844779027
+      },
+      "projectile": {
+        "x": 2503.753173828125,
+        "y": 2384.460320110087,
+        "vx": 1206.8521728515625,
+        "vy": -483.2264099121094
+      },
+      "renderedProjectile": {
+        "x": 2574.4452554153904,
+        "y": 2358.857767358071
+      },
+      "renderedSpawnOrigin": {
+        "x": 2571.8602468295776,
+        "y": 2360.486090951432
+      },
+      "renderedSpawnMuzzle": {
+        "x": 2571.8602468295776,
+        "y": 2360.486090951432
+      },
+      "renderedSpawnOriginMuzzleDelta": 0,
+      "origin": {
+        "x": 2443.410565185547,
+        "y": 2408.621640605693
+      },
+      "originMuzzleDelta": 155.70449397725733,
+      "burstIndex": 0,
+      "roundIndex": 3,
+      "bornFrame": {
+        "atMs": 7306.5999999940395,
+        "tick": 63,
+        "character": {
+          "x": 2473.5850121739527,
+          "y": 2421.031716359758
+        },
+        "authoritativeCharacter": {
+          "x": 2334.7938256783473,
+          "y": 2452.112060546875
+        },
+        "muzzle": {
+          "x": 2590.957520731806,
+          "y": 2358.8844779027
+        },
+        "attackSeq": 1
+      },
+      "bornFrameOriginMuzzleDelta": 155.70449397725733
+    },
+    {
+      "id": "p4",
+      "detectedAtMs": 9532,
+      "detectedTick": 109,
+      "bornTick": 109,
+      "attackSeq": 2,
+      "ageTicks": 0,
+      "integratedSteps": 1,
+      "character": {
+        "x": 2956.84851044171,
+        "y": 2434.8972958122245
+      },
+      "authoritativeCharacter": {
+        "x": 2970.9747141554685,
+        "y": 2490.526988557407
+      },
+      "muzzle": {
+        "x": 3058.7652479166068,
+        "y": 2354.4585214281055
+      },
+      "projectile": {
+        "x": 3049.23681640625,
+        "y": 2326.213134765625,
+        "vx": 559.0155639648438,
+        "vy": -1173.670166015625
+      },
+      "renderedProjectile": {
+        "x": 3054.3799972046227,
+        "y": 2331.3152530071065
+      },
+      "renderedSpawnOrigin": {
+        "x": 3046.1920620455016,
+        "y": 2351.99639961566
+      },
+      "renderedSpawnMuzzle": {
+        "x": 3046.1920620455016,
+        "y": 2351.99639961566
+      },
+      "renderedSpawnOriginMuzzleDelta": 0,
+      "origin": {
+        "x": 3021.286038208008,
+        "y": 2384.8966430664063
+      },
+      "originMuzzleDelta": 48.28219557196131,
+      "burstIndex": 1,
+      "roundIndex": 0,
+      "bornFrame": {
+        "atMs": 9592.5,
+        "tick": 109,
+        "character": {
+          "x": 2978.8326876737474,
+          "y": 2438.773699406909
+        },
+        "authoritativeCharacter": {
+          "x": 2970.9747141554685,
+          "y": 2490.526988557407
+        },
+        "muzzle": {
+          "x": 3076.3486187901376,
+          "y": 2354.900207537103
+        },
+        "attackSeq": 2
+      },
+      "bornFrameOriginMuzzleDelta": 62.70306152674812
+    },
+    {
+      "id": "p5",
+      "detectedAtMs": 9651.700000017881,
+      "detectedTick": 111,
+      "bornTick": 110,
+      "attackSeq": 2,
+      "ageTicks": 1,
+      "integratedSteps": 2,
+      "character": {
+        "x": 3005.628269186919,
+        "y": 2443.498483391454
+      },
+      "authoritativeCharacter": {
+        "x": 2980.923717343992,
+        "y": 2537.165283203125
+      },
+      "muzzle": {
+        "x": 3098.0436533705906,
+        "y": 2353.0309331741705
+      },
+      "projectile": {
+        "x": 3083.099365234375,
+        "y": 2284.396484375,
+        "vx": 550.185546875,
+        "vy": -1177.835205078125
+      },
+      "renderedProjectile": {
+        "x": 3085.0829556240587,
+        "y": 2326.112456231857
+      },
+      "renderedSpawnOrigin": {
+        "x": 3076.3486187901376,
+        "y": 2354.900207537103
+      },
+      "renderedSpawnMuzzle": {
+        "x": 3076.3486187901376,
+        "y": 2354.900207537103
+      },
+      "renderedSpawnOriginMuzzleDelta": 0,
+      "origin": {
+        "x": 3028.080810546875,
+        "y": 2402.1800048828127
+      },
+      "originMuzzleDelta": 85.50105628468683,
+      "burstIndex": 1,
+      "roundIndex": 1,
+      "bornFrame": null,
+      "bornFrameOriginMuzzleDelta": null
+    },
+    {
+      "id": "p6",
+      "detectedAtMs": 9651.700000017881,
+      "detectedTick": 111,
+      "bornTick": 111,
+      "attackSeq": 2,
+      "ageTicks": 0,
+      "integratedSteps": 1,
+      "character": {
+        "x": 3005.628269186919,
+        "y": 2443.498483391454
+      },
+      "authoritativeCharacter": {
+        "x": 2980.923717343992,
+        "y": 2537.165283203125
+      },
+      "muzzle": {
+        "x": 3098.0436533705906,
+        "y": 2353.0309331741705
+      },
+      "projectile": {
+        "x": 3046.664306640625,
+        "y": 2367.453369140625,
+        "vx": 469.5760803222656,
+        "vy": -1212.2286376953125
+      },
+      "renderedProjectile": {
+        "x": 3077.4229823676296,
+        "y": 2340.592651910568
+      },
+      "renderedSpawnOrigin": {
+        "x": 3076.3486187901376,
+        "y": 2354.900207537103
+      },
+      "renderedSpawnMuzzle": {
+        "x": 3076.3486187901376,
+        "y": 2354.900207537103
+      },
+      "renderedSpawnOriginMuzzleDelta": 0,
+      "origin": {
+        "x": 3023.1855026245116,
+        "y": 2428.064801025391
+      },
+      "originMuzzleDelta": 105.98973562490416,
+      "burstIndex": 1,
+      "roundIndex": 2,
+      "bornFrame": {
+        "atMs": 9651.700000017881,
+        "tick": 111,
+        "character": {
+          "x": 3005.628269186919,
+          "y": 2443.498483391454
+        },
+        "authoritativeCharacter": {
+          "x": 2980.923717343992,
+          "y": 2537.165283203125
+        },
+        "muzzle": {
+          "x": 3098.0436533705906,
+          "y": 2353.0309331741705
+        },
+        "attackSeq": 2
+      },
+      "bornFrameOriginMuzzleDelta": 105.98973562490416
+    },
+    {
+      "id": "p7",
+      "detectedAtMs": 9714.09999999404,
+      "detectedTick": 113,
+      "bornTick": 112,
+      "attackSeq": 2,
+      "ageTicks": 1,
+      "integratedSteps": 2,
+      "character": {
+        "x": 3027.4365144258713,
+        "y": 2447.3438654289885
+      },
+      "authoritativeCharacter": {
+        "x": 2981.86865234375,
+        "y": 2608.7158203125
+      },
+      "muzzle": {
+        "x": 3115.799576469205,
+        "y": 2354.9017080233893
+      },
+      "projectile": {
+        "x": 3083.07275390625,
+        "y": 2347.836181640625,
+        "vx": 534.3892211914062,
+        "vy": -1185.085693359375
+      },
+      "renderedProjectile": {
+        "x": 3102.6522108232916,
+        "y": 2335.8997067555542
+      },
+      "renderedSpawnOrigin": {
+        "x": 3098.0436533705906,
+        "y": 2353.0309331741705
+      },
+      "renderedSpawnMuzzle": {
+        "x": 3098.0436533705906,
+        "y": 2353.0309331741705
+      },
+      "renderedSpawnOriginMuzzleDelta": 0,
+      "origin": {
+        "x": 3029.6338317871096,
+        "y": 2466.3447509765624
+      },
+      "originMuzzleDelta": 140.86904336752926,
+      "burstIndex": 1,
+      "roundIndex": 3,
+      "bornFrame": null,
+      "bornFrameOriginMuzzleDelta": null
+    },
+    {
+      "id": "p8",
+      "detectedAtMs": 11974.5,
+      "detectedTick": 158,
+      "bornTick": 157,
+      "attackSeq": 3,
+      "ageTicks": 1,
+      "integratedSteps": 2,
+      "character": {
+        "x": 3595.315750628579,
+        "y": 2467.293384493789
+      },
+      "authoritativeCharacter": {
+        "x": 3674.05908203125,
+        "y": 2690.657470703125
+      },
+      "muzzle": {
+        "x": 3686.8982147315965,
+        "y": 2377.3603396043904
+      },
+      "projectile": {
+        "x": 3667.82763671875,
+        "y": 2424.27783203125,
+        "vx": 47.64095687866211,
+        "vy": -1299.126708984375
+      },
+      "renderedProjectile": {
+        "x": 3667.77345236656,
+        "y": 2368.674911386151
+      },
+      "renderedSpawnOrigin": {
+        "x": 3666.967542292492,
+        "y": 2378.12150403656
+      },
+      "renderedSpawnMuzzle": {
+        "x": 3666.967542292492,
+        "y": 2378.12150403656
+      },
+      "renderedSpawnOriginMuzzleDelta": 0,
+      "origin": {
+        "x": 3663.0635410308837,
+        "y": 2554.1905029296877
+      },
+      "originMuzzleDelta": 178.4292530166249,
+      "burstIndex": 2,
+      "roundIndex": 0,
+      "bornFrame": null,
+      "bornFrameOriginMuzzleDelta": null
+    },
+    {
+      "id": "p9",
+      "detectedAtMs": 11974.5,
+      "detectedTick": 158,
+      "bornTick": 158,
+      "attackSeq": 3,
+      "ageTicks": 0,
+      "integratedSteps": 1,
+      "character": {
+        "x": 3595.315750628579,
+        "y": 2467.293384493789
+      },
+      "authoritativeCharacter": {
+        "x": 3674.05908203125,
+        "y": 2690.657470703125
+      },
+      "muzzle": {
+        "x": 3686.8982147315965,
+        "y": 2377.3603396043904
+      },
+      "projectile": {
+        "x": 3671.656494140625,
+        "y": 2508.67333984375,
+        "vx": -17.160642623901367,
+        "vy": -1299.88671875
+      },
+      "renderedProjectile": {
+        "x": 3667.5770248426293,
+        "y": 2383.8557159922707
+      },
+      "renderedSpawnOrigin": {
+        "x": 3666.967542292492,
+        "y": 2378.12150403656
+      },
+      "renderedSpawnMuzzle": {
+        "x": 3666.967542292492,
+        "y": 2378.12150403656
+      },
+      "renderedSpawnOriginMuzzleDelta": 0,
+      "origin": {
+        "x": 3672.51452627182,
+        "y": 2573.66767578125
+      },
+      "originMuzzleDelta": 196.83358638850873,
+      "burstIndex": 2,
+      "roundIndex": 1,
+      "bornFrame": {
+        "atMs": 11974.5,
+        "tick": 158,
+        "character": {
+          "x": 3595.315750628579,
+          "y": 2467.293384493789
+        },
+        "authoritativeCharacter": {
+          "x": 3674.05908203125,
+          "y": 2690.657470703125
+        },
+        "muzzle": {
+          "x": 3686.8982147315965,
+          "y": 2377.3603396043904
+        },
+        "attackSeq": 3
+      },
+      "bornFrameOriginMuzzleDelta": 196.83358638850873
+    },
+    {
+      "id": "p10",
+      "detectedAtMs": 12040.800000011921,
+      "detectedTick": 159,
+      "bornTick": 159,
+      "attackSeq": 3,
+      "ageTicks": 0,
+      "integratedSteps": 1,
+      "character": {
+        "x": 3609.8438774431934,
+        "y": 2469.8550852303597
+      },
+      "authoritativeCharacter": {
+        "x": 3689.860107421875,
+        "y": 2722.677490234375
+      },
+      "muzzle": {
+        "x": 3702.667735542484,
+        "y": 2379.7211511563505
+      },
+      "projectile": {
+        "x": 3679.54150390625,
+        "y": 2540.97021484375,
+        "vx": -73.70454406738281,
+        "vy": -1297.908935546875
+      },
+      "renderedProjectile": {
+        "x": 3684.5667113474465,
+        "y": 2389.072028361668
+      },
+      "renderedSpawnOrigin": {
+        "x": 3686.8982147315965,
+        "y": 2377.3603396043904
+      },
+      "renderedSpawnMuzzle": {
+        "x": 3686.8982147315965,
+        "y": 2377.3603396043904
+      },
+      "renderedSpawnOriginMuzzleDelta": 0,
+      "origin": {
+        "x": 3683.2267311096193,
+        "y": 2605.8656616210938
+      },
+      "originMuzzleDelta": 226.978616320342,
+      "burstIndex": 2,
+      "roundIndex": 2,
+      "bornFrame": {
+        "atMs": 12040.800000011921,
+        "tick": 159,
+        "character": {
+          "x": 3609.8438774431934,
+          "y": 2469.8550852303597
+        },
+        "authoritativeCharacter": {
+          "x": 3689.860107421875,
+          "y": 2722.677490234375
+        },
+        "muzzle": {
+          "x": 3702.667735542484,
+          "y": 2379.7211511563505
+        },
+        "attackSeq": 3
+      },
+      "bornFrameOriginMuzzleDelta": 226.978616320342
+    },
+    {
+      "id": "p11",
+      "detectedAtMs": 12098.800000011921,
+      "detectedTick": 160,
+      "bornTick": 160,
+      "attackSeq": 3,
+      "ageTicks": 0,
+      "integratedSteps": 1,
+      "character": {
+        "x": 3655.5855712731427,
+        "y": 2477.920579995886
+      },
+      "authoritativeCharacter": {
+        "x": 3706.9423828125,
+        "y": 2761.66259765625
+      },
+      "muzzle": {
+        "x": 3728.744131249617,
+        "y": 2374.8184516986234
+      },
+      "projectile": {
+        "x": 3697.154541015625,
+        "y": 2579.9259024667435,
+        "vx": -69.91275787353516,
+        "vy": -1298.1187744140625
+      },
+      "renderedProjectile": {
+        "x": 3700.7198861700444,
+        "y": 2398.017049808562
+      },
+      "renderedSpawnOrigin": {
+        "x": 3702.667735542484,
+        "y": 2379.7211511563505
+      },
+      "renderedSpawnMuzzle": {
+        "x": 3702.667735542484,
+        "y": 2379.7211511563505
+      },
+      "renderedSpawnOriginMuzzleDelta": 0,
+      "origin": {
+        "x": 3700.6501789093018,
+        "y": 2644.8318411874466
+      },
+      "originMuzzleDelta": 271.4709941436521,
+      "burstIndex": 2,
+      "roundIndex": 3,
+      "bornFrame": {
+        "atMs": 12098.800000011921,
+        "tick": 160,
+        "character": {
+          "x": 3655.5855712731427,
+          "y": 2477.920579995886
+        },
+        "authoritativeCharacter": {
+          "x": 3706.9423828125,
+          "y": 2761.66259765625
+        },
+        "muzzle": {
+          "x": 3728.744131249617,
+          "y": 2374.8184516986234
+        },
+        "attackSeq": 3
+      },
+      "bornFrameOriginMuzzleDelta": 271.4709941436521
+    }
+  ],
+  "frames": [
+    {
+      "atMs": 7014.300000011921,
+      "tick": 57,
+      "character": {
+        "x": 2400,
+        "y": 2420
+      },
+      "authoritativeCharacter": {
+        "x": 2400,
+        "y": 2420
+      },
+      "muzzle": {
+        "x": 2524.7561972282697,
+        "y": 2369.593628997961
+      },
+      "attackSeq": 0
+    },
+    {
+      "atMs": 7102.200000017881,
+      "tick": 57,
+      "character": {
+        "x": 2412.910920050457,
+        "y": 2422.2765435506653
+      },
+      "authoritativeCharacter": {
+        "x": 2400,
+        "y": 2420
+      },
+      "muzzle": {
+        "x": 2535.3779584216263,
+        "y": 2369.3504890821646
+      },
+      "attackSeq": 0
+    },
+    {
+      "atMs": 7171.5999999940395,
+      "tick": 59,
+      "character": {
+        "x": 2446.7778490203846,
+        "y": 2416.30489021953
+      },
+      "authoritativeCharacter": {
+        "x": 2400,
+        "y": 2420
+      },
+      "muzzle": {
+        "x": 2566.79705959052,
+        "y": 2360.5270851803457
+      },
+      "attackSeq": 0
+    },
+    {
+      "atMs": 7235.4000000059605,
+      "tick": 62,
+      "character": {
+        "x": 2451.2974249165045,
+        "y": 2417.101813391376
+      },
+      "authoritativeCharacter": {
+        "x": 2358.2298606283534,
+        "y": 2438.20458984375
+      },
+      "muzzle": {
+        "x": 2571.8602468295776,
+        "y": 2360.486090951432
+      },
+      "attackSeq": 1
+    },
+    {
+      "atMs": 7306.5999999940395,
+      "tick": 63,
+      "character": {
+        "x": 2473.5850121739527,
+        "y": 2421.031716359758
+      },
+      "authoritativeCharacter": {
+        "x": 2334.7938256783473,
+        "y": 2452.112060546875
+      },
+      "muzzle": {
+        "x": 2590.957520731806,
+        "y": 2358.8844779027
+      },
+      "attackSeq": 1
+    },
+    {
+      "atMs": 7364.5999999940395,
+      "tick": 65,
+      "character": {
+        "x": 2498.677104798792,
+        "y": 2416.607303427563
+      },
+      "authoritativeCharacter": {
+        "x": 2307.289306640625,
+        "y": 2475.312744140625
+      },
+      "muzzle": {
+        "x": 2613.7441933339833,
+        "y": 2352.4554079893524
+      },
+      "attackSeq": 1
+    },
+    {
+      "atMs": 7439.700000017881,
+      "tick": 67,
+      "character": {
+        "x": 2512.769709453905,
+        "y": 2419.092209856717
+      },
+      "authoritativeCharacter": {
+        "x": 2315.0966796875,
+        "y": 2484.74560546875
+      },
+      "muzzle": {
+        "x": 2625.424005262302,
+        "y": 2352.548611116916
+      },
+      "attackSeq": 1
+    },
+    {
+      "atMs": 7486.300000011921,
+      "tick": 68,
+      "character": {
+        "x": 2524.3457258070316,
+        "y": 2421.133373868896
+      },
+      "authoritativeCharacter": {
+        "x": 2325.09033203125,
+        "y": 2487.08740234375
+      },
+      "muzzle": {
+        "x": 2637.206020993566,
+        "y": 2352.210877811444
+      },
+      "attackSeq": 1
+    },
+    {
+      "atMs": 7553.200000017881,
+      "tick": 69,
+      "character": {
+        "x": 2538.2451682823203,
+        "y": 2423.5842205940944
+      },
+      "authoritativeCharacter": {
+        "x": 2337.2607421875,
+        "y": 2488.58056640625
+      },
+      "muzzle": {
+        "x": 2648.707630688424,
+        "y": 2352.889259785112
+      },
+      "attackSeq": 1
+    },
+    {
+      "atMs": 7613.200000017881,
+      "tick": 71,
+      "character": {
+        "x": 2542.3872442081365,
+        "y": 2423.811317118262
+      },
+      "authoritativeCharacter": {
+        "x": 2365.26171875,
+        "y": 2490.139892578125
+      },
+      "muzzle": {
+        "x": 2653.5537397813473,
+        "y": 2355.178766528253
+      },
+      "attackSeq": 1
+    },
+    {
+      "atMs": 7681.300000011921,
+      "tick": 72,
+      "character": {
+        "x": 2553.783092423876,
+        "y": 2425.8207126267557
+      },
+      "authoritativeCharacter": {
+        "x": 2380.268798828125,
+        "y": 2490.526988557407
+      },
+      "muzzle": {
+        "x": 2665.231415080529,
+        "y": 2355.152880579486
+      },
+      "attackSeq": 1
+    },
+    {
+      "atMs": 7753.0999999940395,
+      "tick": 73,
+      "character": {
+        "x": 2570.722119501465,
+        "y": 2422.8339051260255
+      },
+      "authoritativeCharacter": {
+        "x": 2395.6357421875,
+        "y": 2490.526988557407
+      },
+      "muzzle": {
+        "x": 2681.208859811463,
+        "y": 2352.451373465402
+      },
+      "attackSeq": 1
+    },
+    {
+      "atMs": 7820.800000011921,
+      "tick": 74,
+      "character": {
+        "x": 2591.522119501465,
+        "y": 2423.1005717926923
+      },
+      "authoritativeCharacter": {
+        "x": 2411.232177734375,
+        "y": 2490.526988557407
+      },
+      "muzzle": {
+        "x": 2699.2251240749615,
+        "y": 2350.2247982720005
+      },
+      "attackSeq": 1
+    },
+    {
+      "atMs": 7880.9000000059605,
+      "tick": 76,
+      "character": {
+        "x": 2596.322119501465,
+        "y": 2423.367238459359
+      },
+      "authoritativeCharacter": {
+        "x": 2442.9747141554685,
+        "y": 2490.526988557407
+      },
+      "muzzle": {
+        "x": 2705.57260044085,
+        "y": 2352.922607252686
+      },
+      "attackSeq": 1
+    },
+    {
+      "atMs": 7948.0999999940395,
+      "tick": 77,
+      "character": {
+        "x": 2617.122119501465,
+        "y": 2423.633905126026
+      },
+      "authoritativeCharacter": {
+        "x": 2458.9747141554685,
+        "y": 2490.526988557407
+      },
+      "muzzle": {
+        "x": 2724.2489444423013,
+        "y": 2350.3081240421643
+      },
+      "attackSeq": 1
+    },
+    {
+      "atMs": 8015.5999999940395,
+      "tick": 78,
+      "character": {
+        "x": 2621.922119501465,
+        "y": 2423.900571792693
+      },
+      "authoritativeCharacter": {
+        "x": 2474.9747141554685,
+        "y": 2490.526988557407
+      },
+      "muzzle": {
+        "x": 2731.3597441628385,
+        "y": 2352.6451822769804
+      },
+      "attackSeq": 1
+    },
+    {
+      "atMs": 8077,
+      "tick": 80,
+      "character": {
+        "x": 2642.722119501465,
+        "y": 2424.16723845936
+      },
+      "authoritativeCharacter": {
+        "x": 2506.9747141554685,
+        "y": 2490.526988557407
+      },
+      "muzzle": {
+        "x": 2750.608779083512,
+        "y": 2349.624232978796
+      },
+      "attackSeq": 1
+    },
+    {
+      "atMs": 8134.700000017881,
+      "tick": 81,
+      "character": {
+        "x": 2647.522119501465,
+        "y": 2424.4339051260267
+      },
+      "authoritativeCharacter": {
+        "x": 2522.9747141554685,
+        "y": 2490.526988557407
+      },
+      "muzzle": {
+        "x": 2758.2541861512686,
+        "y": 2351.7650638515174
+      },
+      "attackSeq": 1
+    },
+    {
+      "atMs": 8198.5,
+      "tick": 82,
+      "character": {
+        "x": 2668.3221195014653,
+        "y": 2424.7005717926936
+      },
+      "authoritativeCharacter": {
+        "x": 2538.9747141554685,
+        "y": 2490.526988557407
+      },
+      "muzzle": {
+        "x": 2777.144754740801,
+        "y": 2348.9477800021536
+      },
+      "attackSeq": 1
+    },
+    {
+      "atMs": 8258.09999999404,
+      "tick": 83,
+      "character": {
+        "x": 2673.122119501465,
+        "y": 2424.9672384593605
+      },
+      "authoritativeCharacter": {
+        "x": 2554.9747141554685,
+        "y": 2490.526988557407
+      },
+      "muzzle": {
+        "x": 2784.003012784549,
+        "y": 2351.7662731706246
+      },
+      "attackSeq": 1
+    },
+    {
+      "atMs": 8316.200000017881,
+      "tick": 85,
+      "character": {
+        "x": 2693.922119501465,
+        "y": 2425.2339051260274
+      },
+      "authoritativeCharacter": {
+        "x": 2586.9747141554685,
+        "y": 2490.526988557407
+      },
+      "muzzle": {
+        "x": 2802.5245027346077,
+        "y": 2349.2165079072856
+      },
+      "attackSeq": 1
+    },
+    {
+      "atMs": 8389.700000017881,
+      "tick": 86,
+      "character": {
+        "x": 2698.7221195014654,
+        "y": 2425.5005717926942
+      },
+      "authoritativeCharacter": {
+        "x": 2602.9747141554685,
+        "y": 2490.526988557407
+      },
+      "muzzle": {
+        "x": 2809.4301115650323,
+        "y": 2352.079102966192
+      },
+      "attackSeq": 1
+    },
+    {
+      "atMs": 8458.5,
+      "tick": 87,
+      "character": {
+        "x": 2719.522119501465,
+        "y": 2425.767238459361
+      },
+      "authoritativeCharacter": {
+        "x": 2618.9747141554685,
+        "y": 2490.526988557407
+      },
+      "muzzle": {
+        "x": 2827.952454892771,
+        "y": 2349.544463758104
+      },
+      "attackSeq": 1
+    },
+    {
+      "atMs": 8516.200000017881,
+      "tick": 89,
+      "character": {
+        "x": 2724.3221195014653,
+        "y": 2426.033905126028
+      },
+      "authoritativeCharacter": {
+        "x": 2650.9747141554685,
+        "y": 2490.526988557407
+      },
+      "muzzle": {
+        "x": 2834.895079135715,
+        "y": 2352.441498664787
+      },
+      "attackSeq": 1
+    },
+    {
+      "atMs": 8592.800000011921,
+      "tick": 90,
+      "character": {
+        "x": 2745.1221195014655,
+        "y": 2426.300571792695
+      },
+      "authoritativeCharacter": {
+        "x": 2666.9747141554685,
+        "y": 2490.526988557407
+      },
+      "muzzle": {
+        "x": 2853.4181076136942,
+        "y": 2349.9181499984843
+      },
+      "attackSeq": 1
+    },
+    {
+      "atMs": 8654.200000017881,
+      "tick": 91,
+      "character": {
+        "x": 2749.922119501465,
+        "y": 2426.5672384593618
+      },
+      "authoritativeCharacter": {
+        "x": 2682.9747141554685,
+        "y": 2490.526988557407
+      },
+      "muzzle": {
+        "x": 2860.390110940488,
+        "y": 2352.8419307890786
+      },
+      "attackSeq": 1
+    },
+    {
+      "atMs": 8709.90000000596,
+      "tick": 93,
+      "character": {
+        "x": 2770.7221195014654,
+        "y": 2426.8339051260286
+      },
+      "authoritativeCharacter": {
+        "x": 2714.9747141554685,
+        "y": 2490.526988557407
+      },
+      "muzzle": {
+        "x": 2878.913727453838,
+        "y": 2350.3278199004844
+      },
+      "attackSeq": 1
+    },
+    {
+      "atMs": 8779.300000011921,
+      "tick": 95,
+      "character": {
+        "x": 2775.5221195014656,
+        "y": 2427.1005717926955
+      },
+      "authoritativeCharacter": {
+        "x": 2746.9747141554685,
+        "y": 2490.526988557407
+      },
+      "muzzle": {
+        "x": 2885.908392262304,
+        "y": 2353.2722677723477
+      },
+      "attackSeq": 1
+    },
+    {
+      "atMs": 8842.800000011921,
+      "tick": 96,
+      "character": {
+        "x": 2796.3221195014653,
+        "y": 2427.3672384593624
+      },
+      "authoritativeCharacter": {
+        "x": 2762.9747141554685,
+        "y": 2490.526988557407
+      },
+      "muzzle": {
+        "x": 2904.432459839852,
+        "y": 2350.765162856015
+      },
+      "attackSeq": 1
+    },
+    {
+      "atMs": 8894.59999999404,
+      "tick": 97,
+      "character": {
+        "x": 2801.1221195014655,
+        "y": 2427.6339051260293
+      },
+      "authoritativeCharacter": {
+        "x": 2778.9747141554685,
+        "y": 2490.526988557407
+      },
+      "muzzle": {
+        "x": 2911.4447412907575,
+        "y": 2353.7256069228097
+      },
+      "attackSeq": 1
+    },
+    {
+      "atMs": 8969,
+      "tick": 98,
+      "character": {
+        "x": 2824.241425247958,
+        "y": 2427.900571792696
+      },
+      "authoritativeCharacter": {
+        "x": 2794.9747141554685,
+        "y": 2490.526988557407
+      },
+      "muzzle": {
+        "x": 2931.6252270455175,
+        "y": 2350.4493658091433
+      },
+      "attackSeq": 1
+    },
+    {
+      "atMs": 9043.5,
+      "tick": 100,
+      "character": {
+        "x": 2831.036989120093,
+        "y": 2428.167238459363
+      },
+      "authoritativeCharacter": {
+        "x": 2826.9747141554685,
+        "y": 2490.526988557407
+      },
+      "muzzle": {
+        "x": 2940.2778607608147,
+        "y": 2352.920569666594
+      },
+      "attackSeq": 1
+    },
+    {
+      "atMs": 9102,
+      "tick": 100,
+      "character": {
+        "x": 2853.5674955636337,
+        "y": 2428.4339051260295
+      },
+      "authoritativeCharacter": {
+        "x": 2826.9747141554685,
+        "y": 2490.526988557407
+      },
+      "muzzle": {
+        "x": 2960.017143067108,
+        "y": 2349.915308275249
+      },
+      "attackSeq": 1
+    },
+    {
+      "atMs": 9170.200000017881,
+      "tick": 102,
+      "character": {
+        "x": 2862.100828896967,
+        "y": 2428.7005717926963
+      },
+      "authoritativeCharacter": {
+        "x": 2858.9747141554685,
+        "y": 2490.526988557407
+      },
+      "muzzle": {
+        "x": 2970.116693827802,
+        "y": 2351.9871711600126
+      },
+      "attackSeq": 1
+    },
+    {
+      "atMs": 9233.700000017881,
+      "tick": 103,
+      "character": {
+        "x": 2886.6341622303,
+        "y": 2428.967238459363
+      },
+      "authoritativeCharacter": {
+        "x": 2874.9747141554685,
+        "y": 2490.526988557407
+      },
+      "muzzle": {
+        "x": 2991.1827330520437,
+        "y": 2348.356280401364
+      },
+      "attackSeq": 1
+    },
+    {
+      "atMs": 9291.700000017881,
+      "tick": 104,
+      "character": {
+        "x": 2894.6878427761694,
+        "y": 2429.23390512603
+      },
+      "authoritativeCharacter": {
+        "x": 2890.9747141554685,
+        "y": 2490.526988557407
+      },
+      "muzzle": {
+        "x": 3001.314250249117,
+        "y": 2350.91526830821
+      },
+      "attackSeq": 1
+    },
+    {
+      "atMs": 9348,
+      "tick": 105,
+      "character": {
+        "x": 2919.2211761095027,
+        "y": 2429.500571792697
+      },
+      "authoritativeCharacter": {
+        "x": 2906.9747141554685,
+        "y": 2490.526988557407
+      },
+      "muzzle": {
+        "x": 3022.32627117917,
+        "y": 2347.3684354890643
+      },
+      "attackSeq": 1
+    },
+    {
+      "atMs": 9419.59999999404,
+      "tick": 106,
+      "character": {
+        "x": 2927.7545094428356,
+        "y": 2429.767238459364
+      },
+      "authoritativeCharacter": {
+        "x": 2922.9747141554685,
+        "y": 2490.526988557407
+      },
+      "muzzle": {
+        "x": 3033.0818600736734,
+        "y": 2350.001067096029
+      },
+      "attackSeq": 1
+    },
+    {
+      "atMs": 9478.5,
+      "tick": 108,
+      "character": {
+        "x": 2942.995759327538,
+        "y": 2432.454682033757
+      },
+      "authoritativeCharacter": {
+        "x": 2954.9747141554685,
+        "y": 2490.526988557407
+      },
+      "muzzle": {
+        "x": 3046.1920620455016,
+        "y": 2351.99639961566
+      },
+      "attackSeq": 1
+    },
+    {
+      "atMs": 9531.90000000596,
+      "tick": 109,
+      "character": {
+        "x": 2956.84851044171,
+        "y": 2434.8972958122245
+      },
+      "authoritativeCharacter": {
+        "x": 2970.9747141554685,
+        "y": 2490.526988557407
+      },
+      "muzzle": {
+        "x": 3058.7652479166068,
+        "y": 2354.4585214281055
+      },
+      "attackSeq": 2
+    },
+    {
+      "atMs": 9592.5,
+      "tick": 109,
+      "character": {
+        "x": 2978.8326876737474,
+        "y": 2438.773699406909
+      },
+      "authoritativeCharacter": {
+        "x": 2970.9747141554685,
+        "y": 2490.526988557407
+      },
+      "muzzle": {
+        "x": 3076.3486187901376,
+        "y": 2354.900207537103
+      },
+      "attackSeq": 2
+    },
+    {
+      "atMs": 9651.700000017881,
+      "tick": 111,
+      "character": {
+        "x": 3005.628269186919,
+        "y": 2443.498483391454
+      },
+      "authoritativeCharacter": {
+        "x": 2980.923717343992,
+        "y": 2537.165283203125
+      },
+      "muzzle": {
+        "x": 3098.0436533705906,
+        "y": 2353.0309331741705
+      },
+      "attackSeq": 2
+    },
+    {
+      "atMs": 9714.09999999404,
+      "tick": 113,
+      "character": {
+        "x": 3027.4365144258713,
+        "y": 2447.3438654289885
+      },
+      "authoritativeCharacter": {
+        "x": 2981.86865234375,
+        "y": 2608.7158203125
+      },
+      "muzzle": {
+        "x": 3115.799576469205,
+        "y": 2354.9017080233893
+      },
+      "attackSeq": 2
+    },
+    {
+      "atMs": 9792.5,
+      "tick": 114,
+      "character": {
+        "x": 3034.4489131338078,
+        "y": 2448.580340520683
+      },
+      "authoritativeCharacter": {
+        "x": 2987.876953125,
+        "y": 2631.48779296875
+      },
+      "muzzle": {
+        "x": 3127.3014942038662,
+        "y": 2360.5501429496962
+      },
+      "attackSeq": 2
+    },
+    {
+      "atMs": 9851.200000017881,
+      "tick": 114,
+      "character": {
+        "x": 3062.4382655474474,
+        "y": 2453.515618523765
+      },
+      "authoritativeCharacter": {
+        "x": 2987.876953125,
+        "y": 2631.48779296875
+      },
+      "muzzle": {
+        "x": 3149.583693843052,
+        "y": 2359.0120637865375
+      },
+      "attackSeq": 2
+    },
+    {
+      "atMs": 9916.800000011921,
+      "tick": 116,
+      "character": {
+        "x": 3089.5938592879234,
+        "y": 2448.7273546701613
+      },
+      "authoritativeCharacter": {
+        "x": 3009.443483687904,
+        "y": 2655.26611328125
+      },
+      "muzzle": {
+        "x": 3174.0080458984726,
+        "y": 2353.45431928384
+      },
+      "attackSeq": 2
+    },
+    {
+      "atMs": 9978.09999999404,
+      "tick": 118,
+      "character": {
+        "x": 3109.406329102228,
+        "y": 2451.2446587544687
+      },
+      "authoritativeCharacter": {
+        "x": 3037.20166015625,
+        "y": 2664.93359375
+      },
+      "muzzle": {
+        "x": 3192.228784710205,
+        "y": 2355.692615833889
+      },
+      "attackSeq": 2
+    },
+    {
+      "atMs": 10051.700000017881,
+      "tick": 119,
+      "character": {
+        "x": 3126.7905528876436,
+        "y": 2454.309966446511
+      },
+      "authoritativeCharacter": {
+        "x": 3052.1484375,
+        "y": 2667.333740234375
+      },
+      "muzzle": {
+        "x": 3210.6878064036937,
+        "y": 2357.5528328494793
+      },
+      "attackSeq": 2
+    },
+    {
+      "atMs": 10109,
+      "tick": 120,
+      "character": {
+        "x": 3147.3175401806825,
+        "y": 2455.3310910616547
+      },
+      "authoritativeCharacter": {
+        "x": 3067.47705078125,
+        "y": 2668.864013671875
+      },
+      "muzzle": {
+        "x": 3229.8324622177597,
+        "y": 2358.786209552313
+      },
+      "attackSeq": 2
+    },
+    {
+      "atMs": 10165.40000000596,
+      "tick": 122,
+      "character": {
+        "x": 3152.117540180682,
+        "y": 2455.4655112184773
+      },
+      "authoritativeCharacter": {
+        "x": 3098.7757699942185,
+        "y": 2670.462158203125
+      },
+      "muzzle": {
+        "x": 3242.158186753674,
+        "y": 2365.144909941943
+      },
+      "attackSeq": 2
+    },
+    {
+      "atMs": 10220.40000000596,
+      "tick": 124,
+      "character": {
+        "x": 3172.9175401806824,
+        "y": 2455.732177885144
+      },
+      "authoritativeCharacter": {
+        "x": 3130.7757699942185,
+        "y": 2671.11181640625
+      },
+      "muzzle": {
+        "x": 3261.5059524280364,
+        "y": 2364.6480421956585
+      },
+      "attackSeq": 2
+    },
+    {
+      "atMs": 10341.40000000596,
+      "tick": 125,
+      "character": {
+        "x": 3177.7175401806826,
+        "y": 2455.998844551811
+      },
+      "authoritativeCharacter": {
+        "x": 3146.7757699942185,
+        "y": 2671.11181640625
+      },
+      "muzzle": {
+        "x": 3272.5692712936425,
+        "y": 2369.910845639439
+      },
+      "attackSeq": 2
+    },
+    {
+      "atMs": 10416,
+      "tick": 126,
+      "character": {
+        "x": 3200.2094673523034,
+        "y": 2456.265511218478
+      },
+      "authoritativeCharacter": {
+        "x": 3162.7757699942185,
+        "y": 2671.11181640625
+      },
+      "muzzle": {
+        "x": 3293.045145079728,
+        "y": 2367.756914047912
+      },
+      "attackSeq": 2
+    },
+    {
+      "atMs": 10479.09999999404,
+      "tick": 127,
+      "character": {
+        "x": 3206.4913770913695,
+        "y": 2456.532177885145
+      },
+      "authoritativeCharacter": {
+        "x": 3178.7757699942185,
+        "y": 2671.11181640625
+      },
+      "muzzle": {
+        "x": 3304.657249890886,
+        "y": 2371.626732410398
+      },
+      "attackSeq": 2
+    },
+    {
+      "atMs": 10532.90000000596,
+      "tick": 128,
+      "character": {
+        "x": 3228.6013390997205,
+        "y": 2456.7988445518117
+      },
+      "authoritativeCharacter": {
+        "x": 3194.7757699942185,
+        "y": 2671.11181640625
+      },
+      "muzzle": {
+        "x": 3325.157409916599,
+        "y": 2369.004294113911
+      },
+      "attackSeq": 2
+    },
+    {
+      "atMs": 10589.300000011921,
+      "tick": 130,
+      "character": {
+        "x": 3237.1346724330533,
+        "y": 2457.0655112184786
+      },
+      "authoritativeCharacter": {
+        "x": 3226.7757699942185,
+        "y": 2671.11181640625
+      },
+      "muzzle": {
+        "x": 3337.42932962154,
+        "y": 2372.125520217689
+      },
+      "attackSeq": 2
+    },
+    {
+      "atMs": 10671.40000000596,
+      "tick": 131,
+      "character": {
+        "x": 3261.4241019069477,
+        "y": 2457.3321778851455
+      },
+      "authoritativeCharacter": {
+        "x": 3242.7757699942185,
+        "y": 2671.11181640625
+      },
+      "muzzle": {
+        "x": 3358.3366829344595,
+        "y": 2369.2593129693196
+      },
+      "attackSeq": 2
+    },
+    {
+      "atMs": 10742.300000011921,
+      "tick": 132,
+      "character": {
+        "x": 3269.957435240281,
+        "y": 2457.5988445518124
+      },
+      "authoritativeCharacter": {
+        "x": 3258.7757699942185,
+        "y": 2671.11181640625
+      },
+      "muzzle": {
+        "x": 3370.3150882950276,
+        "y": 2372.719799409835
+      },
+      "attackSeq": 2
+    },
+    {
+      "atMs": 10809.90000000596,
+      "tick": 133,
+      "character": {
+        "x": 3294.490768573614,
+        "y": 2457.8655112184792
+      },
+      "authoritativeCharacter": {
+        "x": 3274.7757699942185,
+        "y": 2671.11181640625
+      },
+      "muzzle": {
+        "x": 3391.3265798314214,
+        "y": 2369.7243096561338
+      },
+      "attackSeq": 2
+    },
+    {
+      "atMs": 10873.90000000596,
+      "tick": 135,
+      "character": {
+        "x": 3303.024101906947,
+        "y": 2458.132177885146
+      },
+      "authoritativeCharacter": {
+        "x": 3306.7757699942185,
+        "y": 2671.11181640625
+      },
+      "muzzle": {
+        "x": 3403.3482734829704,
+        "y": 2373.22067977894
+      },
+      "attackSeq": 2
+    },
+    {
+      "atMs": 10932.90000000596,
+      "tick": 136,
+      "character": {
+        "x": 3327.55743524028,
+        "y": 2458.398844551813
+      },
+      "authoritativeCharacter": {
+        "x": 3322.7757699942185,
+        "y": 2671.11181640625
+      },
+      "muzzle": {
+        "x": 3424.3326040378474,
+        "y": 2370.203969423171
+      },
+      "attackSeq": 2
+    },
+    {
+      "atMs": 10988.700000017881,
+      "tick": 138,
+      "character": {
+        "x": 3336.0907685736133,
+        "y": 2458.66551121848
+      },
+      "authoritativeCharacter": {
+        "x": 3354.7757699942185,
+        "y": 2671.11181640625
+      },
+      "muzzle": {
+        "x": 3436.388669081819,
+        "y": 2373.728787050893
+      },
+      "attackSeq": 2
+    },
+    {
+      "atMs": 11051,
+      "tick": 140,
+      "character": {
+        "x": 3360.6241019069466,
+        "y": 2458.9321778851468
+      },
+      "authoritativeCharacter": {
+        "x": 3386.7757699942185,
+        "y": 2671.11181640625
+      },
+      "muzzle": {
+        "x": 3457.351786075672,
+        "y": 2370.695112481844
+      },
+      "attackSeq": 2
+    },
+    {
+      "atMs": 11132.09999999404,
+      "tick": 141,
+      "character": {
+        "x": 3369.1574352402795,
+        "y": 2459.1988445518136
+      },
+      "authoritativeCharacter": {
+        "x": 3402.7757699942185,
+        "y": 2671.11181640625
+      },
+      "muzzle": {
+        "x": 3469.4347746461244,
+        "y": 2374.242172530419
+      },
+      "attackSeq": 2
+    },
+    {
+      "atMs": 11190.90000000596,
+      "tick": 142,
+      "character": {
+        "x": 3393.690768573613,
+        "y": 2459.4655112184805
+      },
+      "authoritativeCharacter": {
+        "x": 3418.7757699942185,
+        "y": 2671.11181640625
+      },
+      "muzzle": {
+        "x": 3490.3812739461687,
+        "y": 2371.195664259665
+      },
+      "attackSeq": 2
+    },
+    {
+      "atMs": 11248.300000011921,
+      "tick": 143,
+      "character": {
+        "x": 3402.224101906946,
+        "y": 2459.7321778851474
+      },
+      "authoritativeCharacter": {
+        "x": 3434.7757699942185,
+        "y": 2671.11181640625
+      },
+      "muzzle": {
+        "x": 3502.4852517841687,
+        "y": 2374.7600259892297
+      },
+      "attackSeq": 2
+    },
+    {
+      "atMs": 11322.300000011921,
+      "tick": 144,
+      "character": {
+        "x": 3426.757435240279,
+        "y": 2459.9988445518143
+      },
+      "authoritativeCharacter": {
+        "x": 3450.7757699942185,
+        "y": 2671.11181640625
+      },
+      "muzzle": {
+        "x": 3523.418919969945,
+        "y": 2371.7032133980438
+      },
+      "attackSeq": 2
+    },
+    {
+      "atMs": 11384.90000000596,
+      "tick": 146,
+      "character": {
+        "x": 3435.2907685736122,
+        "y": 2460.265511218481
+      },
+      "authoritativeCharacter": {
+        "x": 3482.7757699942185,
+        "y": 2671.11181640625
+      },
+      "muzzle": {
+        "x": 3535.539475303548,
+        "y": 2375.2814957908477
+      },
+      "attackSeq": 2
+    },
+    {
+      "atMs": 11455.90000000596,
+      "tick": 147,
+      "character": {
+        "x": 3459.8241019069455,
+        "y": 2460.532177885148
+      },
+      "authoritativeCharacter": {
+        "x": 3498.7757699942185,
+        "y": 2671.11181640625
+      },
+      "muzzle": {
+        "x": 3556.463201346634,
+        "y": 2372.216671819498
+      },
+      "attackSeq": 2
+    },
+    {
+      "atMs": 11527.200000017881,
+      "tick": 149,
+      "character": {
+        "x": 3468.3574352402784,
+        "y": 2460.798844551815
+      },
+      "authoritativeCharacter": {
+        "x": 3530.7757699942185,
+        "y": 2671.11181640625
+      },
+      "muzzle": {
+        "x": 3568.596334829163,
+        "y": 2375.805264689214
+      },
+      "attackSeq": 2
+    },
+    {
+      "atMs": 11590.700000017881,
+      "tick": 150,
+      "character": {
+        "x": 3492.8907685736117,
+        "y": 2461.065511218482
+      },
+      "authoritativeCharacter": {
+        "x": 3546.7757699942185,
+        "y": 2671.11181640625
+      },
+      "muzzle": {
+        "x": 3589.5121846347206,
+        "y": 2372.7342655827365
+      },
+      "attackSeq": 2
+    },
+    {
+      "atMs": 11655.300000011921,
+      "tick": 151,
+      "character": {
+        "x": 3501.424101906945,
+        "y": 2461.3321778851487
+      },
+      "authoritativeCharacter": {
+        "x": 3562.7757699942185,
+        "y": 2671.11181640625
+      },
+      "muzzle": {
+        "x": 3601.655396000742,
+        "y": 2376.3314007296053
+      },
+      "attackSeq": 2
+    },
+    {
+      "atMs": 11724.40000000596,
+      "tick": 153,
+      "character": {
+        "x": 3525.957435240278,
+        "y": 2461.5988445518155
+      },
+      "authoritativeCharacter": {
+        "x": 3594.7757699942185,
+        "y": 2671.11181640625
+      },
+      "muzzle": {
+        "x": 3622.565265587895,
+        "y": 2373.255728308118
+      },
+      "attackSeq": 2
+    },
+    {
+      "atMs": 11781.800000011921,
+      "tick": 154,
+      "character": {
+        "x": 3534.490768573611,
+        "y": 2461.8655112184824
+      },
+      "authoritativeCharacter": {
+        "x": 3610.7757699942185,
+        "y": 2671.11181640625
+      },
+      "muzzle": {
+        "x": 3634.716064354091,
+        "y": 2376.8588418947556
+      },
+      "attackSeq": 2
+    },
+    {
+      "atMs": 11841.5,
+      "tick": 155,
+      "character": {
+        "x": 3559.0241019069445,
+        "y": 2462.1321778851493
+      },
+      "authoritativeCharacter": {
+        "x": 3626.7757699942185,
+        "y": 2671.11181640625
+      },
+      "muzzle": {
+        "x": 3655.621209629605,
+        "y": 2373.779478286884
+      },
+      "attackSeq": 2
+    },
+    {
+      "atMs": 11900,
+      "tick": 156,
+      "character": {
+        "x": 3567.5574352402773,
+        "y": 2462.398844551816
+      },
+      "authoritativeCharacter": {
+        "x": 3642.7757699942185,
+        "y": 2671.11181640625
+      },
+      "muzzle": {
+        "x": 3666.967542292492,
+        "y": 2378.12150403656
+      },
+      "attackSeq": 2
+    },
+    {
+      "atMs": 11974.5,
+      "tick": 158,
+      "character": {
+        "x": 3595.315750628579,
+        "y": 2467.293384493789
+      },
+      "authoritativeCharacter": {
+        "x": 3674.05908203125,
+        "y": 2690.657470703125
+      },
+      "muzzle": {
+        "x": 3686.8982147315965,
+        "y": 2377.3603396043904
+      },
+      "attackSeq": 3
+    },
+    {
+      "atMs": 12040.800000011921,
+      "tick": 159,
+      "character": {
+        "x": 3609.8438774431934,
+        "y": 2469.8550852303597
+      },
+      "authoritativeCharacter": {
+        "x": 3689.860107421875,
+        "y": 2722.677490234375
+      },
+      "muzzle": {
+        "x": 3702.667735542484,
+        "y": 2379.7211511563505
+      },
+      "attackSeq": 3
+    },
+    {
+      "atMs": 12098.800000011921,
+      "tick": 160,
+      "character": {
+        "x": 3655.5855712731427,
+        "y": 2477.920579995886
+      },
+      "authoritativeCharacter": {
+        "x": 3706.9423828125,
+        "y": 2761.66259765625
+      },
+      "muzzle": {
+        "x": 3728.744131249617,
+        "y": 2374.8184516986234
+      },
+      "attackSeq": 3
+    }
+  ]
+}

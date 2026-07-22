@@ -2,9 +2,9 @@
   "phase": "after",
   "label": "gravechain",
   "weaponId": "x2-gravechain-scythe",
-  "baseURL": "http://localhost:5180",
+  "baseURL": "http://127.0.0.1:56621",
   "moduleMode": "corrected live",
-  "capturedAt": "2026-07-22T01:52:25.005Z",
+  "capturedAt": "2026-07-22T05:32:58.384Z",
   "sourceLayerIds": [
     "blade-trail"
   ],
@@ -16,8 +16,8 @@
       "anchor": "source",
       "x": 2400,
       "y": 2420,
-      "targetX": 2601.97412433234,
-      "targetY": 2384.907933942494,
+      "targetX": 2601.927586514651,
+      "targetY": 2384.6411283499015,
       "layerIds": [
         "blade-trail"
       ]

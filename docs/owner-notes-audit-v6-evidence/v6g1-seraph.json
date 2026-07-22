@@ -1,83 +1,83 @@
 {
   "label": "seraph",
   "weaponId": "x2-seraph-s-knuckle-reliquary",
-  "baseURL": "http://127.0.0.1:5180",
-  "capturedAt": "2026-07-21T20:48:42.643Z",
+  "baseURL": "http://127.0.0.1:56621",
+  "capturedAt": "2026-07-22T05:35:11.917Z",
   "setup": {
     "actor": {
       "x": 2400,
       "y": 2420
     },
     "target": {
-      "x": 2605.90673828125,
-      "y": 2393.592041015625
+      "x": 2605.771728515625,
+      "y": 2398.991943359375
     }
   },
   "endpointDelta": 0,
-  "actorDelta": 211.61661145641003,
+  "actorDelta": 211.59071448555392,
   "events": [
     {
       "kind": "beam-cursor-endpoint",
       "weaponId": "x2-seraph-s-knuckle-reliquary",
       "anchor": "target",
-      "x": 2609.0009765625,
-      "y": 2390.876708984375,
-      "targetX": 2609.0009765625,
-      "targetY": 2390.876708984375
+      "x": 2609.09228515625,
+      "y": 2391.9306640625,
+      "targetX": 2609.09228515625,
+      "targetY": 2391.9306640625
     },
     {
       "kind": "beam-cursor-endpoint",
       "weaponId": "x2-seraph-s-knuckle-reliquary",
       "anchor": "target",
-      "x": 2609.12109375,
-      "y": 2390.771240234375,
-      "targetX": 2609.12109375,
-      "targetY": 2390.771240234375
+      "x": 2609.201416015625,
+      "y": 2391.698486328125,
+      "targetX": 2609.201416015625,
+      "targetY": 2391.698486328125
     },
     {
       "kind": "beam-cursor-endpoint",
       "weaponId": "x2-seraph-s-knuckle-reliquary",
       "anchor": "target",
-      "x": 2609.302734375,
-      "y": 2390.720947265625,
-      "targetX": 2609.302734375,
-      "targetY": 2390.720947265625
+      "x": 2609.345703125,
+      "y": 2391.473876953125,
+      "targetX": 2609.345703125,
+      "targetY": 2391.473876953125
     },
     {
       "kind": "beam-cursor-endpoint",
       "weaponId": "x2-seraph-s-knuckle-reliquary",
       "anchor": "target",
-      "x": 2609.29296875,
-      "y": 2390.58154296875,
-      "targetX": 2609.29296875,
-      "targetY": 2390.58154296875
+      "x": 2609.36767578125,
+      "y": 2391.342041015625,
+      "targetX": 2609.36767578125,
+      "targetY": 2391.342041015625
     },
     {
       "kind": "beam-cursor-endpoint",
       "weaponId": "x2-seraph-s-knuckle-reliquary",
       "anchor": "target",
-      "x": 2609.376708984375,
-      "y": 2390.548095703125,
-      "targetX": 2609.376708984375,
-      "targetY": 2390.548095703125
+      "x": 2609.40576171875,
+      "y": 2391.206298828125,
+      "targetX": 2609.40576171875,
+      "targetY": 2391.206298828125
     },
     {
       "kind": "beam-cursor-endpoint",
       "weaponId": "x2-seraph-s-knuckle-reliquary",
       "anchor": "target",
-      "x": 2609.4736328125,
-      "y": 2390.4619140625,
-      "targetX": 2609.4736328125,
-      "targetY": 2390.4619140625
+      "x": 2609.521728515625,
+      "y": 2391.01708984375,
+      "targetX": 2609.521728515625,
+      "targetY": 2391.01708984375
     },
     {
       "kind": "beam-cursor-endpoint",
       "weaponId": "x2-seraph-s-knuckle-reliquary",
       "anchor": "target",
-      "x": 2609.537109375,
-      "y": 2390.40625,
-      "targetX": 2609.537109375,
-      "targetY": 2390.40625
+      "x": 2609.579345703125,
+      "y": 2390.89453125,
+      "targetX": 2609.579345703125,
+      "targetY": 2390.89453125
     }
   ],
   "assertions": {

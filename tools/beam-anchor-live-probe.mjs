@@ -1,6 +1,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { chromium } from "@playwright/test";
+import { WEAPONS } from "../packages/shared/dist/index.js";
 
 const phase = process.argv[2] ?? "before";
 const weaponId = process.argv[3] ?? "x2-voltcaster-machine-pistol";
@@ -8,19 +9,8 @@ const baseURL = process.env.DD_E2E_BASE_URL ?? "http://localhost:5180";
 const evidenceRoot = path.resolve("docs/owner-notes-audit-v4-evidence");
 const jsonPath = path.join(evidenceRoot, `beam-anchor-${phase}.json`);
 const screenshotPath = path.join(evidenceRoot, `beam-anchor-${phase}.png`);
-const paintedMuzzleOffsets = {
-  "x2-voltcaster-machine-pistol": [{ forward: -1, lateral: -14 }],
-  "x2-stormcaller-tesla-gatling": [
-    { forward: -9, lateral: 11 },
-    { forward: -9, lateral: 22 },
-    { forward: -9, lateral: 32 },
-    { forward: -4, lateral: 11 },
-    { forward: -4, lateral: 22 },
-    { forward: -4, lateral: 32 },
-  ],
-};
-const expectedOffsets = paintedMuzzleOffsets[weaponId] ?? [{ forward: 0, lateral: 0 }];
-const sampleTarget = expectedOffsets.length * 5;
+const muzzleCount = WEAPONS[weaponId]?.muzzle?.points.length ?? 1;
+const sampleTarget = muzzleCount * 5;
 
 await mkdir(evidenceRoot, { recursive: true });
 const browser = await chromium.launch({
@@ -95,7 +85,7 @@ try {
     { timeout: 20_000 },
   );
 
-  await page.evaluate(({ target, offsets }) => {
+  await page.evaluate((target) => {
     globalThis.__ddBeamAnchorSamples = [];
     globalThis.__ddBeamAnchorSampling = true;
     const sampleFrame = () => {
@@ -108,18 +98,12 @@ try {
       const renderer = arena?.beamRenderer;
       if (rig && weapon && renderer) {
         const image = weapon.img;
-        const localTipDistance = image.width * Math.abs(image.scaleX) * (1 - image.originX);
-        const c = Math.cos(weapon.semanticRotation);
-        const s = Math.sin(weapon.semanticRotation);
         room.state.beams.forEach((row, rowKey) => {
           if (row.ownerId !== sessionId || row.phase !== 2 || row.effectiveLength <= 1) return;
           const barrelIndex = rowKey === sessionId ? 0 : Number(rowKey.split(":barrel:")[1]);
-          const offset = offsets[Number.isFinite(barrelIndex) ? barrelIndex : 0] ?? offsets[0];
-          const localMuzzleX = image.x + c * (localTipDistance + offset.forward) - s * offset.lateral;
-          const localMuzzleY = image.y + s * (localTipDistance + offset.forward) + c * offset.lateral;
-          const muzzle = rig.root
-            .getWorldTransformMatrix()
-            .transformPoint(localMuzzleX, localMuzzleY);
+          const muzzle = { x: 0, y: 0 };
+          if (!rig.writeWeaponMuzzle(0, muzzle, Number.isFinite(barrelIndex) ? barrelIndex : 0))
+            return;
           const entry = renderer.entries?.find(
             (candidate) => candidate.key?.startsWith(`${rowKey}:`) && candidate.body?.visible,
           );
@@ -158,7 +142,7 @@ try {
       else globalThis.__ddBeamAnchorSampling = false;
     };
     requestAnimationFrame(sampleFrame);
-  }, { target: sampleTarget, offsets: expectedOffsets });
+  }, sampleTarget);
 
   await page.waitForFunction(
     (target) => globalThis.__ddBeamAnchorSamples?.length >= target,

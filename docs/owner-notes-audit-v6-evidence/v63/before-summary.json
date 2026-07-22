@@ -1,15 +1,15 @@
 {
   "phase": "before",
-  "baseURL": "http://localhost:5180",
-  "capturedAt": "2026-07-22T01:51:57.359Z",
+  "baseURL": "http://127.0.0.1:56621",
+  "capturedAt": "2026-07-22T05:32:25.187Z",
   "results": [
     {
       "phase": "before",
       "label": "driftblade",
       "weaponId": "driftblade",
-      "baseURL": "http://localhost:5180",
+      "baseURL": "http://127.0.0.1:56621",
       "moduleMode": "probe-only legacy fallback partition",
-      "capturedAt": "2026-07-22T01:51:27.056Z",
+      "capturedAt": "2026-07-22T05:31:49.091Z",
       "sourceLayerIds": [
         "blade-trail"
       ],
@@ -24,8 +24,8 @@
           "anchor": "source",
           "x": 2400,
           "y": 2420,
-          "targetX": 2660.4315185546875,
-          "targetY": 2360.9150390625,
+          "targetX": 2649.6856689453125,
+          "targetY": 2381.41015625,
           "layerIds": [
             "blade-trail"
           ]
@@ -34,10 +34,10 @@
           "kind": "weapon-vfx-suite",
           "weaponId": "driftblade",
           "anchor": "target",
-          "x": 2660.4315185546875,
-          "y": 2360.9150390625,
-          "targetX": 2660.4315185546875,
-          "targetY": 2360.9150390625,
+          "x": 2649.6856689453125,
+          "y": 2381.41015625,
+          "targetX": 2649.6856689453125,
+          "targetY": 2381.41015625,
           "layerIds": [
             "cleave-flash",
             "painted-impact"
@@ -57,9 +57,9 @@
       "phase": "before",
       "label": "voltfang",
       "weaponId": "x2-voltfang-tachi",
-      "baseURL": "http://localhost:5180",
+      "baseURL": "http://127.0.0.1:56621",
       "moduleMode": "probe-only legacy fallback partition",
-      "capturedAt": "2026-07-22T01:51:32.986Z",
+      "capturedAt": "2026-07-22T05:31:56.196Z",
       "sourceLayerIds": [
         "blade-trail"
       ],
@@ -74,8 +74,8 @@
           "anchor": "source",
           "x": 2400,
           "y": 2420,
-          "targetX": 2539.7711281726447,
-          "targetY": 2394.939438766338,
+          "targetX": 2539.4185955515472,
+          "targetY": 2393.0471668570053,
           "layerIds": [
             "blade-trail"
           ]
@@ -84,10 +84,10 @@
           "kind": "weapon-vfx-suite",
           "weaponId": "x2-voltfang-tachi",
           "anchor": "target",
-          "x": 2539.7711281726447,
-          "y": 2394.939438766338,
-          "targetX": 2539.7711281726447,
-          "targetY": 2394.939438766338,
+          "x": 2539.4185955515472,
+          "y": 2393.0471668570053,
+          "targetX": 2539.4185955515472,
+          "targetY": 2393.0471668570053,
           "layerIds": [
             "arc-bolt",
             "painted-impact"
@@ -107,9 +107,9 @@
       "phase": "before",
       "label": "headsman",
       "weaponId": "x2-sanctified-headsman",
-      "baseURL": "http://localhost:5180",
+      "baseURL": "http://127.0.0.1:56621",
       "moduleMode": "probe-only legacy fallback partition",
-      "capturedAt": "2026-07-22T01:51:39.061Z",
+      "capturedAt": "2026-07-22T05:32:03.879Z",
       "sourceLayerIds": [
         "blade-trail"
       ],
@@ -125,8 +125,8 @@
           "anchor": "source",
           "x": 2400,
           "y": 2420,
-          "targetX": 2588.081134869066,
-          "targetY": 2389.9282922605944,
+          "targetX": 2587.1094897106445,
+          "targetY": 2384.3789421799092,
           "layerIds": [
             "blade-trail"
           ]
@@ -135,10 +135,10 @@
           "kind": "weapon-vfx-suite",
           "weaponId": "x2-sanctified-headsman",
           "anchor": "target",
-          "x": 2588.081134869066,
-          "y": 2389.9282922605944,
-          "targetX": 2588.081134869066,
-          "targetY": 2389.9282922605944,
+          "x": 2587.1094897106445,
+          "y": 2384.3789421799092,
+          "targetX": 2587.1094897106445,
+          "targetY": 2384.3789421799092,
           "layerIds": [
             "cleave-flash",
             "painted-impact",
@@ -159,9 +159,9 @@
       "phase": "before",
       "label": "drowned-anchor",
       "weaponId": "x-sword-anchor",
-      "baseURL": "http://localhost:5180",
+      "baseURL": "http://127.0.0.1:56621",
       "moduleMode": "probe-only legacy fallback partition",
-      "capturedAt": "2026-07-22T01:51:45.049Z",
+      "capturedAt": "2026-07-22T05:32:11.187Z",
       "sourceLayerIds": [
         "blade-trail"
       ],
@@ -176,8 +176,8 @@
           "anchor": "source",
           "x": 2400,
           "y": 2420,
-          "targetX": 2642.6709124445556,
-          "targetY": 2382.508257531467,
+          "targetX": 2642.033071711095,
+          "targetY": 2378.5899203322206,
           "layerIds": [
             "blade-trail"
           ]
@@ -186,10 +186,10 @@
           "kind": "weapon-vfx-suite",
           "weaponId": "x-sword-anchor",
           "anchor": "target",
-          "x": 2642.6709124445556,
-          "y": 2382.508257531467,
-          "targetX": 2642.6709124445556,
-          "targetY": 2382.508257531467,
+          "x": 2642.033071711095,
+          "y": 2378.5899203322206,
+          "targetX": 2642.033071711095,
+          "targetY": 2378.5899203322206,
           "layerIds": [
             "cleave-flash",
             "painted-impact"
@@ -209,9 +209,9 @@
       "phase": "before",
       "label": "gravechain",
       "weaponId": "x2-gravechain-scythe",
-      "baseURL": "http://localhost:5180",
+      "baseURL": "http://127.0.0.1:56621",
       "moduleMode": "probe-only legacy fallback partition",
-      "capturedAt": "2026-07-22T01:51:51.075Z",
+      "capturedAt": "2026-07-22T05:32:18.774Z",
       "sourceLayerIds": [
         "blade-trail"
       ],
@@ -226,8 +226,8 @@
           "anchor": "source",
           "x": 2400,
           "y": 2420,
-          "targetX": 2602.681471168602,
-          "targetY": 2389.2555493636455,
+          "targetX": 2602.047350778378,
+          "targetY": 2385.3320314492025,
           "layerIds": [
             "blade-trail"
           ]
@@ -236,10 +236,10 @@
           "kind": "weapon-vfx-suite",
           "weaponId": "x2-gravechain-scythe",
           "anchor": "target",
-          "x": 2602.681471168602,
-          "y": 2389.2555493636455,
-          "targetX": 2602.681471168602,
-          "targetY": 2389.2555493636455,
+          "x": 2602.047350778378,
+          "y": 2385.3320314492025,
+          "targetX": 2602.047350778378,
+          "targetY": 2385.3320314492025,
           "layerIds": [
             "cleave-flash",
             "painted-impact"
@@ -259,9 +259,9 @@
       "phase": "before",
       "label": "cinderbrand-cleaver",
       "weaponId": "x2-cinderbrand-cleaver",
-      "baseURL": "http://localhost:5180",
+      "baseURL": "http://127.0.0.1:56621",
       "moduleMode": "probe-only legacy fallback partition",
-      "capturedAt": "2026-07-22T01:51:57.204Z",
+      "capturedAt": "2026-07-22T05:32:25.034Z",
       "sourceLayerIds": [
         "blade-trail"
       ],
@@ -278,8 +278,8 @@
           "anchor": "source",
           "x": 2400,
           "y": 2420,
-          "targetX": 2555.6003375786163,
-          "targetY": 2392.5676296062375,
+          "targetX": 2556.1349117503223,
+          "targetY": 2395.7948490457275,
           "layerIds": [
             "blade-trail"
           ]
@@ -288,10 +288,10 @@
           "kind": "weapon-vfx-suite",
           "weaponId": "x2-cinderbrand-cleaver",
           "anchor": "target",
-          "x": 2555.6003375786163,
-          "y": 2392.5676296062375,
-          "targetX": 2555.6003375786163,
-          "targetY": 2392.5676296062375,
+          "x": 2556.1349117503223,
+          "y": 2395.7948490457275,
+          "targetX": 2556.1349117503223,
+          "targetY": 2395.7948490457275,
           "layerIds": [
             "cleave-flash",
             "painted-impact",

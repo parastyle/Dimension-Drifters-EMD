@@ -63,7 +63,6 @@ import {
   bossSpawnAt,
   type CarrySelectionV1,
   CAST_VOLLEY_PROJECTILE_CAP,
-  CENTER_MUZZLE_OFFSET,
   CHAIN_MAX_RANGE,
   type ChainCandidate,
   COMBAT_RECEIPT_CAP,
@@ -167,12 +166,9 @@ import {
   GEAR_IDS,
   type GearRunRuntime,
   GROUND_EPSILON,
-  GUN_RECOIL_BASELINE,
-  GUN_RECOIL_IMPULSE,
   generateArena,
   getDimension,
-  gunMuzzleReach,
-  gunMuzzleOffsetsForShot,
+  gunUserRecoilFor,
   HAIRTRIGGER_MAX,
   HAIRTRIGGER_WINDOW,
   HARVEST_CAP,
@@ -180,7 +176,6 @@ import {
   HIT_KNOCKBACK_IMPULSE,
   hasAugment,
   IMPULSE_FRICTION,
-  IMPULSE_MAX,
   INPUT_MSGS_PER_TICK,
   INPUT_QUEUE_MAX,
   IRON_STANCE_IFRAME_PER,
@@ -213,6 +208,11 @@ import {
   MAX_ENEMIES,
   MAX_PLAYERS,
   MAX_XP_ECHOES,
+  bladeExtensionPoseAt,
+  meleeDamageEnvelopeFor,
+  meleeDamageHalfWidthAt,
+  meleeDamageReachAt,
+  weaponUsesAuthoritativeEnvelopeCombo,
   MELEE_BLADE_HALFWIDTH,
   MELEE_SAMPLE_STEP,
   META_ACCOUNT_REVISION_MAX,
@@ -227,7 +227,6 @@ import {
   MOVE_SPEED,
   type MoveStance,
   meleeComboSelectionFor,
-  meleeReach,
   mixSeeds,
   nearestGroundPx,
   nearestPoint,
@@ -293,7 +292,6 @@ import {
   poundDamage,
   prevWeapon,
   prismaticBeamRayOffsets,
-  offsetWeaponMuzzle,
   QUAKE_REACH,
   type QuirkDef,
   type QuirkEffect,
@@ -469,7 +467,6 @@ import {
   type WeaponBankEntryV1,
   type WeaponDef,
   type ProjectileWaveformDef,
-  type WeaponMuzzleOffset,
   type WeaponInstanceV1,
   type WeaponProvenance,
   WORM_MAX_SEGMENTS,
@@ -479,8 +476,8 @@ import {
   weaponEffectEmitterPoint,
   weaponEntryInstances,
   weaponEntryPhysicalSize,
-  weaponMuzzleReach,
-  weaponPerformanceEmitterReach,
+  weaponMuzzleWorldPoint,
+  weaponMuzzleWorldPointsForShot,
   weaponRarityId,
   weaponResourceProfile,
   weaponSetBonus,
@@ -952,8 +949,8 @@ interface CombatState {
   beamPreviousLength: number;
   /** Server-chosen Prism-Lantern fan. Index zero is the ordinary primary beam row. */
   beamRayOffsets: number[];
-  /** Fixed authored barrel lane per replicated row; centre-tip for ordinary/prismatic beams. */
-  beamMuzzleOffsets: WeaponMuzzleOffset[];
+  /** Ordered art-space muzzle point index per replicated row. */
+  beamMuzzlePointIndices: number[];
   beamPreviousOriginsX: number[];
   beamPreviousOriginsY: number[];
   beamCurrentOriginsX: number[];
@@ -1270,6 +1267,10 @@ export class GameRoom extends Room<ArenaState> {
       range: number;
       swingArc: number;
       halfWidth: number;
+      /** Multiplies the canonical timed envelope for combo/katana reach modifiers. */
+      rangeMultiplier: number;
+      /** False only for special pre-throw twirls whose authored draw radius is not the weapon edge. */
+      timedWeaponEnvelope: boolean;
       edgeDamage: number;
       toughDamageMultiplier: number;
       weaponId: string;
@@ -4488,7 +4489,7 @@ export class GameRoom extends Room<ArenaState> {
       beamPreviousY: player.y,
       beamPreviousLength: 0,
       beamRayOffsets: [0],
-      beamMuzzleOffsets: [{ ...CENTER_MUZZLE_OFFSET }],
+      beamMuzzlePointIndices: [0],
       beamPreviousOriginsX: [player.x],
       beamPreviousOriginsY: [player.y],
       beamCurrentOriginsX: [player.x],
@@ -6985,9 +6986,18 @@ export class GameRoom extends Room<ArenaState> {
     const direct =
       (ult.variant === "str" ? 70 : ULT_FIREBALL_DAMAGE) * this.ultimateScale(player, ult);
     const blast = (ult.variant === "con" ? 20 : ULT_NUKE_DAMAGE) * this.ultimateScale(player, ult);
-    const muzzle = gunMuzzleReach(WEAPONS[player.weapon] ?? WEAPONS[DEFAULT_WEAPON]!);
-    const mx = player.x + aim.x * muzzle;
-    const my = player.y + aim.y * muzzle;
+    const heldWeapon = WEAPONS[player.weapon] ?? WEAPONS[DEFAULT_WEAPON]!;
+    const muzzle = heldWeapon.muzzle
+      ? weaponMuzzleWorldPoint(heldWeapon, {
+          x: player.x,
+          y: player.y,
+          aimX: aim.x,
+          aimY: aim.y,
+          renderScale: characterScale(player.character),
+        })
+      : { x: player.x, y: player.y };
+    const mx = muzzle.x;
+    const my = muzzle.y;
     this.fireProjectile(
       { x: mx, y: my },
       { x: mx + aim.x, y: my + aim.y },
@@ -7563,7 +7573,7 @@ export class GameRoom extends Room<ArenaState> {
     const soloBeat =
       melee && !paired ? this.nextSoloMeleeBeat(player, c, weapon, soloCooldown) : undefined;
     const authoritativeComboStep =
-      weapon.authoritativeCombo && soloBeat
+      weaponUsesAuthoritativeEnvelopeCombo(weapon) && soloBeat
         ? meleeComboSelectionFor(weapon)?.sequence[soloBeat.step]
         : undefined;
     const pairSelection = melee && paired ? meleeComboSelectionFor(weapon) : undefined;
@@ -7682,9 +7692,7 @@ export class GameRoom extends Room<ArenaState> {
     // layers below carry their own and may scale off DIFFERENT attributes (e.g. INT magma on a STR blade).
     const edgePower = this.heldDamageMult(weapon, weapon.scalingGrades, player, hand); // §10 edge grades × §11 req penalty
     const aim0 = Math.atan2(c.aimY, c.aimX);
-    // §20 WYSIWYG: the hit reach follows the RENDERED blade — floored at the sprite tip + scaled by the
-    // holder's rig — so the point stops whiffing (guns already do this via gunMuzzleReach; melee was flat).
-    const reach = meleeReach(weapon); // §29 weapons are a FIXED size now (not char-scaled) → fixed reach
+    const envelope = meleeDamageEnvelopeFor(weapon);
     const authoritativeSwing = comboStep
       ? {
           ...swing,
@@ -7692,6 +7700,7 @@ export class GameRoom extends Room<ArenaState> {
           activeEndSeconds: comboStep.timing.activeEnd * swing.poseSeconds,
           impactSeconds:
             (comboStep.timing.impact ?? comboStep.timing.activeEnd) * swing.poseSeconds,
+          motion: comboStep.motion,
         }
       : swing;
     const authoritativeArc = comboStep
@@ -7701,14 +7710,18 @@ export class GameRoom extends Room<ArenaState> {
     // but BALANCE/DPS does not multiply: cooldown + edgeDamage + arc coverage are unchanged and `hit` still
     // admits each enemy exactly once per accepted swing. Replaces any in-flight swing; pose ≤ cooldown.
     const swingKey = player.offhandSlot !== 255 ? `${player.id}:${hand}` : player.id;
+    const rangeMultiplier =
+      (comboStep?.path.rangeMultiplier ?? 1) * (katanaEffect?.reachMultiplier ?? 1);
+    const reach = envelope.maxReach * rangeMultiplier;
     this.meleeSwings.set(swingKey, {
       playerId: player.id,
       swing: authoritativeSwing,
       aim0,
-      range:
-        reach * (comboStep?.path.rangeMultiplier ?? 1) * (katanaEffect?.reachMultiplier ?? 1),
+      range: reach,
       swingArc: authoritativeArc,
-      halfWidth: MELEE_BLADE_HALFWIDTH,
+      halfWidth: envelope.maxHalfWidth,
+      rangeMultiplier,
+      timedWeaponEnvelope: true,
       edgeDamage: weapon.damage * edgePower * (katanaEffect?.damageMultiplier ?? 1),
       toughDamageMultiplier: katanaEffect?.toughDamageMultiplier ?? 1,
       weaponId: weapon.id,
@@ -8293,9 +8306,7 @@ export class GameRoom extends Room<ArenaState> {
       // Charging owns one primary row. The satellite budget is admitted atomically at ignition so several
       // simultaneous Prism-Lantern charges cannot all reserve the same room capacity.
       c.beamRayOffsets = [0];
-      c.beamMuzzleOffsets = [
-        { ...(weapon.beam.muzzleOffsets?.[0] ?? CENTER_MUZZLE_OFFSET) },
-      ];
+      c.beamMuzzlePointIndices = [0];
       c.beamPreviousOriginsX = [player.x];
       c.beamPreviousOriginsY = [player.y];
       c.beamCurrentOriginsX = [player.x];
@@ -8314,7 +8325,7 @@ export class GameRoom extends Room<ArenaState> {
         player,
         weapon.id,
         c.beamAngle,
-        c.beamMuzzleOffsets[0],
+        c.beamMuzzlePointIndices[0],
       );
       c.beamPreviousX = muzzle.x;
       c.beamPreviousY = muzzle.y;
@@ -8401,8 +8412,9 @@ export class GameRoom extends Room<ArenaState> {
           if (!ignition.accepted) {
             this.cancelBeam(player, id, c, false, false);
           } else {
-            const fixedMuzzles = weapon.beam.muzzleOffsets;
-            const randomRays = fixedMuzzles?.length ? undefined : weapon.beam.randomRays;
+            const fixedMuzzleCount = weapon.muzzle?.points.length ?? 1;
+            const fixedMuzzles = fixedMuzzleCount > 1 ? weapon.muzzle?.points : undefined;
+            const randomRays = fixedMuzzles ? undefined : weapon.beam.randomRays;
             const authoredCount = fixedMuzzles?.length ?? randomRays?.count ?? 1;
             const admittedCount = admittedPrismaticBeamRayCount(
               authoredCount,
@@ -8411,9 +8423,9 @@ export class GameRoom extends Room<ArenaState> {
             c.beamRayOffsets = randomRays
               ? prismaticBeamRayOffsets(admittedCount, randomRays.spread, descriptor.startSeq)
               : new Array(admittedCount).fill(0);
-            c.beamMuzzleOffsets = fixedMuzzles?.length
-              ? fixedMuzzles.slice(0, admittedCount).map((offset) => ({ ...offset }))
-              : new Array(admittedCount).fill(undefined).map(() => ({ ...CENTER_MUZZLE_OFFSET }));
+            c.beamMuzzlePointIndices = fixedMuzzles?.length
+              ? Array.from({ length: admittedCount }, (_, index) => index)
+              : new Array(admittedCount).fill(0);
             c.beamPreviousOriginsX = new Array(admittedCount);
             c.beamPreviousOriginsY = new Array(admittedCount);
             c.beamCurrentOriginsX = new Array(admittedCount);
@@ -8425,7 +8437,7 @@ export class GameRoom extends Room<ArenaState> {
                 player,
                 descriptor.weaponId,
                 c.beamAngle,
-                c.beamMuzzleOffsets[ray],
+                c.beamMuzzlePointIndices[ray],
               );
               c.beamPreviousOriginsX[ray] = rayMuzzle.x;
               c.beamPreviousOriginsY[ray] = rayMuzzle.y;
@@ -8663,8 +8675,7 @@ export class GameRoom extends Room<ArenaState> {
     rayIndex = 0,
   ): BeamState {
     const offset = c.beamRayOffsets[rayIndex] ?? 0;
-    const fixedBarrels =
-      (WEAPONS[descriptor.weaponId]?.beam?.muzzleOffsets?.length ?? 0) > 1;
+    const fixedBarrels = (WEAPONS[descriptor.weaponId]?.muzzle?.points.length ?? 0) > 1;
     const rowKey = rayIndex === 0
       ? id
       : fixedBarrels
@@ -8681,7 +8692,7 @@ export class GameRoom extends Room<ArenaState> {
       player,
       descriptor.weaponId,
       c.beamAngle,
-      c.beamMuzzleOffsets[rayIndex],
+      c.beamMuzzlePointIndices[rayIndex],
     );
     const originX = muzzle.x;
     const originY = muzzle.y;
@@ -8717,18 +8728,23 @@ export class GameRoom extends Room<ArenaState> {
     player: PlayerState,
     weaponId: string,
     angle: number,
-    offset: Readonly<WeaponMuzzleOffset> = CENTER_MUZZLE_OFFSET,
+    pointIndex = 0,
   ): { x: number; y: number } {
-    const reach = weaponMuzzleReach(WEAPONS[weaponId], characterScale(player.character));
-    const aimX = Math.cos(angle);
-    const aimY = Math.sin(angle);
-    const muzzle = offsetWeaponMuzzle(
-      player.x + aimX * reach,
-      player.y + aimY * reach,
-      aimX,
-      aimY,
-      offset,
+    const weapon = WEAPONS[weaponId];
+    if (!weapon?.muzzle) throw new Error(`Beam weapon ${weaponId} has no art-space muzzle`);
+    const muzzles = weaponMuzzleWorldPointsForShot(
+      weapon,
+      {
+        x: player.x,
+        y: player.y,
+        aimX: Math.cos(angle),
+        aimY: Math.sin(angle),
+        renderScale: characterScale(player.character),
+      },
+      1,
     );
+    const muzzle = muzzles[pointIndex] ?? muzzles[0];
+    if (!muzzle) throw new Error(`Beam weapon ${weaponId} resolved no muzzle point`);
     this.beamMuzzleScratch.x = muzzle.x;
     this.beamMuzzleScratch.y = muzzle.y;
     return this.beamMuzzleScratch;
@@ -8809,7 +8825,7 @@ export class GameRoom extends Room<ArenaState> {
         player,
         descriptor.weaponId,
         c.beamAngle,
-        c.beamMuzzleOffsets[ray],
+        c.beamMuzzlePointIndices[ray],
       );
       const currentX = muzzle.x;
       const currentY = muzzle.y;
@@ -9019,6 +9035,19 @@ export class GameRoom extends Room<ArenaState> {
         if (sw.elapsed >= sw.swing.activeEndSeconds) this.meleeSwings.delete(pid);
         continue;
       }
+      const envelopeWeapon = sw.timedWeaponEnvelope ? WEAPONS[sw.weaponId] : undefined;
+      // A tick may cross the active-end boundary. Its final supersample represents the visible edge just
+      // before that boundary, not a post-hide frame, so keep it infinitesimally inside the shared clock.
+      const collisionElapsed = Math.min(
+        sw.elapsed,
+        Math.max(sw.swing.activeStartSeconds, sw.swing.activeEndSeconds - 1e-9),
+      );
+      const collisionRange = envelopeWeapon
+        ? meleeDamageReachAt(envelopeWeapon, sw.swing, collisionElapsed) * sw.rangeMultiplier
+        : sw.range;
+      const collisionHalfWidth = envelopeWeapon
+        ? meleeDamageHalfWidthAt(envelopeWeapon, sw.swing, collisionElapsed)
+        : sw.halfWidth;
       const critC = sw.crit;
       if (this.belt) {
         // §29 BELT melee is LANE-based (SoR4 model), not the top-down angular sweep: a hit needs horizontal
@@ -9040,7 +9069,7 @@ export class GameRoom extends Room<ArenaState> {
           if (!enemy || sw.hit.has(eid) || enemy.hp <= 0) continue; // once/swing; skip dead/stale ids
           const r = ENEMY_KINDS[enemy.kind]?.radius ?? ENEMY_RADIUS;
           const fx = (enemy.x - player.x) * facing; // forward distance along the belt (in front = positive)
-          if (fx < -r * 0.5 || fx > sw.range + r + sw.halfWidth) continue;
+          if (fx < -r * 0.5 || fx > collisionRange + r + collisionHalfWidth) continue;
           // Depth window: generous for the attacker, but a mob actively rolling in depth (dodgeState) shrinks
           // its own hurtbox depth (DEPTH_DODGE_MULT) so a well-timed roll genuinely slips the swing.
           const rolling = (this.dodgeState.get(eid)?.t ?? 0) > 0;
@@ -9078,7 +9107,7 @@ export class GameRoom extends Room<ArenaState> {
             const fx = (runtime.x[slot]! - player.x) * facing;
             if (
               fx < -r * 0.5 ||
-              fx > sw.range + r + sw.halfWidth ||
+              fx > collisionRange + r + collisionHalfWidth ||
               Math.abs(runtime.y[slot]! - player.y) > DEPTH_TOL_PLAYER + r
             )
               continue;
@@ -9112,10 +9141,23 @@ export class GameRoom extends Room<ArenaState> {
         const rev1 = Math.floor((absoluteSwingArc * p1) / (Math.PI * 2));
         if (rev1 > rev0) sw.hit.clear();
       }
-      const steps = Math.max(
-        1,
-        Math.ceil((absoluteSwingArc * (p1 - p0)) / MELEE_SAMPLE_STEP),
-      );
+      const activeSeconds = sw.swing.activeEndSeconds - sw.swing.activeStartSeconds;
+      const extensionAngleAt = (progress: number): number | undefined =>
+        envelopeWeapon
+          ? bladeExtensionPoseAt(
+              envelopeWeapon,
+              sw.swing,
+              sw.swing.activeStartSeconds + progress * activeSeconds,
+              sw.aim0,
+            )?.angle
+          : undefined;
+      const extensionAngle0 = extensionAngleAt(p0);
+      const extensionAngle1 = extensionAngleAt(p1);
+      const sampledAngularTravel =
+        extensionAngle0 !== undefined && extensionAngle1 !== undefined
+          ? Math.abs(extensionAngle1 - extensionAngle0)
+          : absoluteSwingArc * (p1 - p0);
+      const steps = Math.max(1, Math.ceil(sampledAngularTravel / MELEE_SAMPLE_STEP));
       const wielder = { x: player.x, y: player.y };
       this.enemyGrid.queryRadius(
         player.x,
@@ -9134,12 +9176,27 @@ export class GameRoom extends Room<ArenaState> {
         );
       }
       for (let s = 1; s <= steps; s++) {
-        const angle = bladeAngleAt(sw.aim0, sw.swingArc, p0 + ((p1 - p0) * s) / steps);
+        const sampleProgress = p0 + ((p1 - p0) * s) / steps;
+        const sampleElapsed = Math.min(
+          sw.swing.activeEndSeconds - 1e-9,
+          sw.swing.activeStartSeconds +
+            sampleProgress * (sw.swing.activeEndSeconds - sw.swing.activeStartSeconds),
+        );
+        const extensionPose = envelopeWeapon
+          ? bladeExtensionPoseAt(envelopeWeapon, sw.swing, sampleElapsed, sw.aim0)
+          : undefined;
+        const angle = extensionPose?.angle ?? bladeAngleAt(sw.aim0, sw.swingArc, sampleProgress);
+        const sampleRange = envelopeWeapon
+          ? meleeDamageReachAt(envelopeWeapon, sw.swing, sampleElapsed) * sw.rangeMultiplier
+          : sw.range;
+        const sampleHalfWidth = envelopeWeapon
+          ? meleeDamageHalfWidthAt(envelopeWeapon, sw.swing, sampleElapsed)
+          : sw.halfWidth;
         for (const eid of this.enemyCandidates) {
           const enemy = this.state.enemies.get(eid);
           if (!enemy || sw.hit.has(eid) || enemy.hp <= 0) continue; // once/swing; skip dead/stale ids
           const r = ENEMY_KINDS[enemy.kind]?.radius ?? ENEMY_RADIUS;
-          if (bladeHitsCircle(wielder, angle, sw.range, enemy, r, sw.halfWidth)) {
+          if (bladeHitsCircle(wielder, angle, sampleRange, enemy, r, sampleHalfWidth)) {
             sw.hit.add(eid);
             this.damageEnemy(
               enemy,
@@ -9164,10 +9221,10 @@ export class GameRoom extends Room<ArenaState> {
               bladeHitsCircle(
                 wielder,
                 angle,
-                sw.range,
+                sampleRange,
                 { x: runtime.x[slot]!, y: runtime.y[slot]! },
                 runtime.segmentRadius(slot),
-                sw.halfWidth,
+                sampleHalfWidth,
               )
             ) {
               sw.hit.add(hitKey);
@@ -10830,7 +10887,13 @@ export class GameRoom extends Room<ArenaState> {
       return;
     }
     if (c.gunBurstT > 0) return;
-    this.fireGun(player, c, weapon, c.gunBurstHand);
+    this.fireGun(
+      player,
+      c,
+      weapon,
+      c.gunBurstHand,
+      weapon.gun.burst.intervalSeconds * 1000,
+    );
     c.gunBurstRemaining--;
     if (c.gunBurstRemaining <= 0) this.clearGunBurst(c);
     else c.gunBurstT += weapon.gun.burst.intervalSeconds;
@@ -10874,14 +10937,28 @@ export class GameRoom extends Room<ArenaState> {
     c: CombatState,
     weapon: WeaponDef,
     hand: DualWieldHand = 0,
+    recoilElapsedMs = 0,
   ): void {
     const g = weapon.gun;
     if (!g) return;
-    const muzzleOffsets = gunMuzzleOffsetsForShot(weapon, player.attackSeq);
-    const parallelDivisor = g.muzzleMode === "parallel" ? muzzleOffsets.length : 1;
     const pellets = Math.max(1, g.pellets ?? 1);
     const spread = g.spread ?? 0;
     const aim = this.aimDir(player, c); // §37 aim at the cursor POINT, not the rig-derived vector
+    const muzzles = weaponMuzzleWorldPointsForShot(
+      weapon,
+      {
+        x: player.x,
+        y: player.y,
+        aimX: aim.x,
+        aimY: aim.y,
+        renderScale: characterScale(player.character),
+        hand,
+        recoilElapsedMs,
+        recoilHand: hand,
+      },
+      player.attackSeq,
+    );
+    const parallelDivisor = weapon.muzzle?.barrelMode === "parallel" ? muzzles.length : 1;
     const baseAng = Math.atan2(aim.y, aim.x);
     const ttl = g.range / g.projectileSpeed;
     // §38 GUNSLINGER signature augments: Hollow-Points add pierce, Ricochet Rounds add bounces (per stack).
@@ -10891,9 +10968,6 @@ export class GameRoom extends Room<ArenaState> {
       (g.bounces ?? 0) + AUG_GUN_BOUNCE_PER * countAugment(player.augments, "ricochet-rounds");
     // §9 spawn from the BARREL TIP (player centre + aim × the gun's own muzzle reach), not the body. Scale
     // by the holder's rig size (§7) so the shot lands exactly on the rendered tip, not short of it.
-    const reach = gunMuzzleReach(weapon); // §29 fixed-size weapon → fixed muzzle reach
-    const centerMx = player.x + aim.x * reach;
-    const centerMy = player.y + aim.y * reach;
     const crit = this.weaponCritChance(player, c); // §ULT Door rider consumes once per trigger pull
     // §35 encode the weapon's ELEMENT onto the bullet kind ("tracer:fire") so the client tints the bullet to
     // its element — a fire and a frost gun read distinct even sharing a bullet shape. Physical = no suffix.
@@ -10913,7 +10987,7 @@ export class GameRoom extends Room<ArenaState> {
     const friendlyRows = this.state.projectiles.size - this.hostileProjectileCount;
     const rowsPerLane = Math.floor(
       Math.max(0, FRIENDLY_PROJECTILE_ENTITY_CAP - friendlyRows) /
-        Math.max(1, muzzleOffsets.length),
+        Math.max(1, muzzles.length),
     );
     const seededVolley = g.randomPellets
       ? serverSeededGunPelletVolley(
@@ -10946,8 +11020,7 @@ export class GameRoom extends Room<ArenaState> {
             projectileDivisor,
         }
       : undefined;
-    for (const muzzleOffset of muzzleOffsets) {
-      const muzzle = offsetWeaponMuzzle(centerMx, centerMy, aim.x, aim.y, muzzleOffset);
+    for (const muzzle of muzzles) {
       for (const ang of angles) {
         this.fireProjectile(
           muzzle,
@@ -10975,16 +11048,12 @@ export class GameRoom extends Room<ArenaState> {
     // §20 RECOIL pushback (Stage A): the shot kicks the body BACKWARD along aim, scaled by the gun's
     // authored `recoil` (which already differentiates a heavy revolver from a light gatling). Per-shot,
     // so a slow heavy gun punches once while a gatling stream accumulates a steady shove (capped).
-    const displacementMultiplier = g.userKnockbackMultiplier ?? 1;
-    const kick =
-      GUN_RECOIL_IMPULSE *
-      ((g.recoil ?? GUN_RECOIL_BASELINE) / GUN_RECOIL_BASELINE) *
-      displacementMultiplier;
+    const recoil = gunUserRecoilFor(weapon);
     const r = addImpulse(
       player,
-      -aim.x * kick,
-      -aim.y * kick,
-      IMPULSE_MAX * Math.max(1, displacementMultiplier),
+      -aim.x * recoil.impulse,
+      -aim.y * recoil.impulse,
+      recoil.maxImpulse,
     );
     player.vx = r.vx;
     player.vy = r.vy;
@@ -11063,10 +11132,18 @@ export class GameRoom extends Room<ArenaState> {
       AUG_CAST_SPLIT_PER * countAugment(player.augments, "arc-split"),
     );
     const ttl = cast.range / cast.speed;
-    const reach = gunMuzzleReach(weapon);
     const aim = this.aimDir(player, c); // §37 aim at the cursor POINT
-    const mx = player.x + aim.x * reach;
-    const my = player.y + aim.y * reach;
+    const muzzle = weapon.muzzle
+      ? weaponMuzzleWorldPoint(weapon, {
+          x: player.x,
+          y: player.y,
+          aimX: aim.x,
+          aimY: aim.y,
+          renderScale: characterScale(player.character),
+        })
+      : player;
+    const mx = muzzle.x;
+    const my = muzzle.y;
     const crit = this.weaponCritChance(player, c);
     // §35 element-tint the bolt (arcane/shock/void…) so different caster weapons read distinct.
     const el = weapon.tags?.element;
@@ -11141,6 +11218,8 @@ export class GameRoom extends Room<ArenaState> {
           range: drawDamage.range,
           swingArc: Math.PI * 2 * (weapon.performance?.preThrowRevolutions ?? 1),
           halfWidth: MELEE_BLADE_HALFWIDTH,
+          rangeMultiplier: 1,
+          timedWeaponEnvelope: false,
           edgeDamage: drawDamage.damage * damageMultiplier,
           toughDamageMultiplier: 1,
           weaponId: weapon.id,
@@ -11297,14 +11376,13 @@ export class GameRoom extends Room<ArenaState> {
     // the classic bare "magma".
     const el = weapon.tags.element;
     const kind = el && el !== "physical" ? `magma:${el}` : "magma";
-    const emitterReach = weaponPerformanceEmitterReach(weapon);
     const effectOrigin = weapon.effectEmitter
       ? weaponEffectEmitterPoint(weapon, player, baseAng, swing, delaySeconds)
       : undefined;
     const volley: PendingScatterVolley = {
       t: Math.max(0, delaySeconds),
-      originX: effectOrigin?.x ?? player.x + aim.x * emitterReach,
-      originY: effectOrigin?.y ?? player.y + aim.y * emitterReach,
+      originX: effectOrigin?.x ?? player.x,
+      originY: effectOrigin?.y ?? player.y,
       sweepX: player.x,
       sweepY: player.y,
       baseAng,

@@ -45,7 +45,8 @@ describe("V6A generated-art owner orders", () => {
     expect(geometry.extensionLength - geometry.overlapLength).toBeCloseTo(
       geometry.physicalBladeLength * 2,
     );
-    expect(headsman.range).toBe(160); // the shipped extension remains visual-only by owner decision
+    // The authored base stat remains stable; V7-HIT now resolves the larger timed server envelope.
+    expect(headsman.range).toBe(160);
   });
 
   it("grows the Headsman extension during wind-up and holds it across the active clock", () => {

@@ -3,22 +3,25 @@
   "label": "revenant-void",
   "weaponId": "x2-revenant-knuckle",
   "element": "void",
-  "baseURL": "http://127.0.0.1:5180",
-  "capturedAt": "2026-07-22T00:51:36.487Z",
+  "baseURL": "http://127.0.0.1:56621",
+  "capturedAt": "2026-07-22T05:31:11.917Z",
   "setup": {
     "actor": {
       "x": 2400,
       "y": 2420
     },
     "target": {
-      "x": 2696.4234619140625,
-      "y": 2383.295654296875
+      "x": 2684.5040283203125,
+      "y": 2381.517333984375
     }
   },
   "visual": {
     "frozen": true,
     "ringVisible": false,
     "paintedVisible": true,
+    "sourceEventSeen": true,
+    "targetEventSeen": true,
+    "sourceFrames": 2,
     "textureKeys": [
       "ptcl:void-splat",
       "ptcl:void-splat",
@@ -37,8 +40,8 @@
       "anchor": "source",
       "x": 2400,
       "y": 2420,
-      "targetX": 2509.166293494611,
-      "targetY": 2406.48259031292,
+      "targetX": 2509.007327023207,
+      "targetY": 2405.2554194615227,
       "layerIds": [
         "twin-slash"
       ]
@@ -47,10 +50,10 @@
       "kind": "weapon-vfx-suite",
       "weaponId": "x2-revenant-knuckle",
       "anchor": "target",
-      "x": 2509.166293494611,
-      "y": 2406.48259031292,
-      "targetX": 2509.166293494611,
-      "targetY": 2406.48259031292,
+      "x": 2509.007327023207,
+      "y": 2405.2554194615227,
+      "targetX": 2509.007327023207,
+      "targetY": 2405.2554194615227,
       "layerIds": [
         "painted-impact"
       ]
@@ -59,10 +62,10 @@
       "kind": "painted-impact",
       "weaponId": "x2-revenant-knuckle",
       "anchor": "target",
-      "x": 2509.166293494611,
-      "y": 2406.48259031292,
-      "targetX": 2509.166293494611,
-      "targetY": 2406.48259031292,
+      "x": 2509.007327023207,
+      "y": 2405.2554194615227,
+      "targetX": 2509.007327023207,
+      "targetY": 2405.2554194615227,
       "pack": "void-splat",
       "count": 8,
       "spawned": true
@@ -76,7 +79,8 @@
   "assertions": {
     "genericRingRecipeRemoved": true,
     "genericRingInvisible": true,
-    "paintedElementImpactVisible": true
+    "sourceCompositionRetained": true,
+    "targetCompositionCorrect": true
   },
   "browserErrors": [],
   "unexpectedBrowserErrors": [],

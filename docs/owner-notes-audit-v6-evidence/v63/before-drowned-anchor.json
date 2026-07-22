@@ -2,9 +2,9 @@
   "phase": "before",
   "label": "drowned-anchor",
   "weaponId": "x-sword-anchor",
-  "baseURL": "http://localhost:5180",
+  "baseURL": "http://127.0.0.1:56621",
   "moduleMode": "probe-only legacy fallback partition",
-  "capturedAt": "2026-07-22T01:51:45.049Z",
+  "capturedAt": "2026-07-22T05:32:11.187Z",
   "sourceLayerIds": [
     "blade-trail"
   ],
@@ -19,8 +19,8 @@
       "anchor": "source",
       "x": 2400,
       "y": 2420,
-      "targetX": 2642.6709124445556,
-      "targetY": 2382.508257531467,
+      "targetX": 2642.033071711095,
+      "targetY": 2378.5899203322206,
       "layerIds": [
         "blade-trail"
       ]
@@ -29,10 +29,10 @@
       "kind": "weapon-vfx-suite",
       "weaponId": "x-sword-anchor",
       "anchor": "target",
-      "x": 2642.6709124445556,
-      "y": 2382.508257531467,
-      "targetX": 2642.6709124445556,
-      "targetY": 2382.508257531467,
+      "x": 2642.033071711095,
+      "y": 2378.5899203322206,
+      "targetX": 2642.033071711095,
+      "targetY": 2378.5899203322206,
       "layerIds": [
         "cleave-flash",
         "painted-impact"

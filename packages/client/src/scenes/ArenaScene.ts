@@ -53,8 +53,7 @@ import {
   GROUND_EPSILON,
   generateArena,
   getDimension,
-  gunMuzzleOffsetsForShot,
-  gunMuzzleReach,
+  gunUserRecoilFor,
   hasAugment,
   INTERP_DELAY_MS,
   INTERP_SNAP_ENEMY,
@@ -73,7 +72,6 @@ import {
   type MoveStance,
   meleeReach,
   nextUpgradeCost,
-  offsetWeaponMuzzle,
   PARRY_CHAIN_CD,
   PARRY_CHAIN_RIPOSTE_AT,
   PARRY_CHAIN_WINDOW,
@@ -136,8 +134,9 @@ import {
   weaponDisplaySpriteId,
   weaponEffectCueSeconds,
   weaponEffectEmitterPoint,
-  weaponMuzzleReach,
-  weaponPerformanceEmitterReach,
+  weaponArtMuzzlePointsForShot,
+  weaponMuzzleWorldPoint,
+  weaponMuzzleWorldPointsForShot,
   weaponSetBonus,
   ZoneKind,
 } from "@dd/shared";
@@ -1255,24 +1254,15 @@ export class ArenaScene extends Phaser.Scene {
     ownerId: string,
     weaponId: string,
     rowKey: string,
-    angle: number,
+    _angle: number,
     out: BeamMuzzlePose,
   ): boolean => {
     const rig = this.blobs.get(ownerId);
-    if (!rig || rig.heldWeaponDef(0)?.id !== weaponId || !rig.writeWeaponMuzzle(0, out))
-      return false;
+    if (!rig || rig.heldWeaponDef(0)?.id !== weaponId) return false;
+    const barrelMatch = /:barrel:(\d+)$/.exec(rowKey);
+    const barrelIndex = barrelMatch ? Number(barrelMatch[1]) : 0;
+    if (!rig.writeWeaponMuzzle(0, out, barrelIndex)) return false;
     if (this.belt) out.y = BELT_Y0 + (out.y - BELT_Y0) / BELT_FORESHORTEN;
-    const offsets = WEAPONS[weaponId]?.beam?.muzzleOffsets;
-    if (offsets?.length) {
-      const barrelMatch = /:barrel:(\d+)$/.exec(rowKey);
-      const barrelIndex = barrelMatch ? Number(barrelMatch[1]) : 0;
-      const offset = offsets[barrelIndex] ?? offsets[0];
-      if (offset) {
-        const muzzle = offsetWeaponMuzzle(out.x, out.y, Math.cos(angle), Math.sin(angle), offset);
-        out.x = muzzle.x;
-        out.y = muzzle.y;
-      }
-    }
     return true;
   };
   private readonly beamAimCommand = { aimX: 1, aimY: 0, targetX: 0, targetY: 0 };
@@ -3272,8 +3262,11 @@ export class ArenaScene extends Phaser.Scene {
     if (!manifest) return false;
     const first = manifest.parts[0];
     if (!first) return false;
-    const tx = partTexture(this, spriteId, first.role);
-    if (this.textures.exists(tx.key)) {
+    const allPartsReady = manifest.parts.every((part) => {
+      const tx = partTexture(this, spriteId, part.role);
+      return this.textures.exists(tx.key);
+    });
+    if (allPartsReady) {
       const wasPending = this.pendingTomeArt.has(spriteId);
       this.ensureTomeOpenArt(spriteId);
       if (!wasPending && this.pendingTomeArt.has(spriteId)) this.load.start();
@@ -3289,7 +3282,9 @@ export class ArenaScene extends Phaser.Scene {
       // A missing file (packaging drift) must not stall the equip loop forever: mark the sprite FAILED so
       // equipWeapons falls through to empty hands (the weapon still works — it's just not drawn in hand).
       this.load.once(Phaser.Loader.Events.COMPLETE, () => {
-        if (!this.textures.exists(`${spriteId}:${first.role}`)) {
+        if (
+          manifest.parts.some((part) => !this.textures.exists(`${spriteId}:${part.role}`))
+        ) {
           this.failedArt.add(spriteId);
           console.warn(`[dd] weapon art failed to lazy-load: ${spriteId}`);
         }
@@ -3333,7 +3328,7 @@ export class ArenaScene extends Phaser.Scene {
       const heldLeadMatches = rig.heldWeaponDef(0)?.id === player.weapon;
       const heldOffMatches = offhandRenderable
         ? rig.heldWeaponDef(1)?.id === offhandWeaponId
-        : def?.dual
+        : def?.dual || def?.glovePair
           ? rig.heldWeaponDef(1)?.id === player.weapon
           : !rig.heldWeaponDef(1);
       const retryingLazyArt =
@@ -3776,11 +3771,18 @@ export class ArenaScene extends Phaser.Scene {
   ): void {
     const recipe = resolveCasterVfxRecipe(weapon);
     if (!recipe) return;
-    const reach = weaponPerformanceEmitterReach(weapon) || weaponMuzzleReach(weapon);
+    const muzzle = weapon.muzzle
+      ? weaponMuzzleWorldPoint(weapon, {
+          x: actorX,
+          y: actorY,
+          aimX: Math.cos(angle),
+          aimY: Math.sin(angle),
+        })
+      : { x: actorX, y: actorY };
     spawnCasterCast(
       this,
-      actorX + Math.cos(angle) * reach,
-      actorY + Math.sin(angle) * reach,
+      muzzle.x,
+      muzzle.y,
       angle,
       recipe,
       prefersReducedPaperMotion() || this.feedbackSettings.flashes === "reduced",
@@ -6713,7 +6715,7 @@ export class ArenaScene extends Phaser.Scene {
     if (!this.room) return;
     const room = this.room; // stable through the forEach callbacks below; disconnect swaps it after this tick
     const state = room.state.projectiles;
-    const flashedShooters = new Set<string>(); // one muzzle flash per shooter per frame (= per shot)
+    const flashedRounds = new Set<string>(); // one cue per shooter + authoritative born tick
     state.forEach((pr, id) => {
       const existing = this.projectiles.get(id);
       if (existing) {
@@ -6782,6 +6784,23 @@ export class ArenaScene extends Phaser.Scene {
                     : pr.kind === "counter" || pr.kind === "deflect"
                       ? makeCounter(this, pr) // §8 parry projectile (bounce-back counter OR Superman side-glance)
                       : makeSpit(this, pr));
+      const sourceRig = shooter ? this.blobs.get(shooter) : undefined;
+      const spawnAnchor =
+        sourcePlayer && sourceWeapon?.gun && sourceRig
+          ? this.writeLiveGunRoundMuzzle(pr, sourcePlayer, sourceWeapon, sourceRig)
+          : undefined;
+      if (spawnAnchor) {
+        // The wire row is already one or more 50 ms simulation steps downrange when it first renders.
+        // Begin this presentation at the final live held muzzle; ordinary dead reckoning takes over next.
+        container.setData("authoritativeFirstX", pr.x);
+        container.setData("authoritativeFirstY", pr.y);
+        container.setPosition(spawnAnchor.x, spawnAnchor.y);
+        container.setData("spawnOriginX", container.x);
+        container.setData("spawnOriginY", container.y);
+        container.setData("spawnMuzzleX", spawnAnchor.x);
+        container.setData("spawnMuzzleY", spawnAnchor.y);
+        container.setData("spawnBornTick", pr.bornTick);
+      }
       container.setData("kind", pr.kind);
       container.setData("hostile", pr.hostile);
       container.setData("weaponEffectRecipe", weaponEffectRecipe);
@@ -6804,8 +6823,9 @@ export class ArenaScene extends Phaser.Scene {
       if (shooter) container.setData("sourcePlayer", shooter);
       // Muzzle flash a freshly-fired gun bullet at the SHOOTER's barrel (nearest player), one per shot.
       if (fx) {
-        if (shooter && !flashedShooters.has(shooter)) {
-          flashedShooters.add(shooter);
+        const flashKey = shooter ? `${shooter}:${pr.bornTick}` : "";
+        if (shooter && !flashedRounds.has(flashKey)) {
+          flashedRounds.add(flashKey);
           // §4 v0.107: SELF already flashed at click time (predicted, sendAttack) — don't double-flash
           // when the authoritative projectile lands a round-trip later.
           const isSelf = shooter === room.sessionId;
@@ -6817,15 +6837,25 @@ export class ArenaScene extends Phaser.Scene {
             const aimY = Math.sin(ang);
             const srig = this.blobs.get(shooter);
             const flashWeapon = sourceWeapon ?? WEAPONS[p.weapon] ?? WEAPONS[DEFAULT_WEAPON];
-            const center = { x: srig?.x ?? p.x, y: srig?.y ?? p.y };
-            if (!srig?.writeWeaponMuzzle(0, center)) {
-              const reach = gunMuzzleReach(flashWeapon);
-              center.x += aimX * reach;
-              center.y += aimY * reach;
-            }
+            const muzzles =
+              flashWeapon && srig
+                ? this.writeLiveGunMuzzles(p, flashWeapon, srig, p.attackSeq, aimX, aimY)
+                : flashWeapon?.muzzle
+                  ? weaponMuzzleWorldPointsForShot(
+                      flashWeapon,
+                      {
+                        x: p.x,
+                        y: p.y,
+                        aimX,
+                        aimY,
+                        renderScale: characterScale(p.character),
+                      },
+                      p.attackSeq,
+                    )
+                  : [];
+            srig?.triggerGunRecoil(this.time.now, 0);
             if (!casterRecipe) {
-              for (const muzzleOffset of gunMuzzleOffsetsForShot(flashWeapon, p.attackSeq)) {
-                const muzzle = offsetWeaponMuzzle(center.x, center.y, aimX, aimY, muzzleOffset);
+              for (const muzzle of muzzles) {
                 spawnMuzzleFlash(
                   this,
                   muzzle.x,
@@ -6839,6 +6869,8 @@ export class ArenaScene extends Phaser.Scene {
                 if (flashWeapon?.gun?.sonicBoomRing)
                   spawnSonicBoomRing(this, muzzle.x, muzzle.y, ang, fx.color);
               }
+            } else if (srig && flashWeapon) {
+              this.spawnCasterSource(flashWeapon, srig.x, srig.y, ang);
             }
             // §19 a REMOTE shooter's gun sound (self already played its predicted shot at click time —
             // `suppressed` gates this the same way it gates the flash, so self never double-fires).
@@ -6933,6 +6965,87 @@ export class ArenaScene extends Phaser.Scene {
         this.projectiles.delete(id);
       }
     }
+  }
+
+  /** Final rendered art-space muzzle salvo, with the shared canonical affine as the lazy-art fallback. */
+  private writeLiveGunMuzzles(
+    player: PlayerState,
+    weapon: WeaponDef,
+    rig: SpriteRig,
+    acceptedSeq: number,
+    aimX: number,
+    aimY: number,
+  ): Array<{ x: number; y: number }> {
+    if (!weapon.muzzle) return [];
+    const selected = weaponArtMuzzlePointsForShot(weapon.muzzle, acceptedSeq);
+    const canonical = weaponMuzzleWorldPointsForShot(
+      weapon,
+      {
+        x: rig.x,
+        y: rig.y,
+        aimX,
+        aimY,
+        renderScale: characterScale(player.character),
+      },
+      acceptedSeq,
+    );
+    return selected.map((_point, index) => {
+      const out = { x: canonical[index]?.x ?? rig.x, y: canonical[index]?.y ?? rig.y };
+      rig.writeWeaponMuzzleForShot(acceptedSeq, index, out);
+      if (this.belt) out.y = BELT_Y0 + (out.y - BELT_Y0) / BELT_FORESHORTEN;
+      return out;
+    });
+  }
+
+  /** Resolve one newly observed authoritative gun row onto the shooter's final rendered implement tip.
+   * Multi-barrel rows select the shared art point closest to the recovered authoritative fire origin. */
+  private writeLiveGunRoundMuzzle(
+    projectile: { x: number; y: number; vx: number; vy: number; bornTick: number },
+    player: PlayerState,
+    weapon: WeaponDef,
+    rig: SpriteRig,
+  ): { x: number; y: number } | undefined {
+    if (!weapon.gun) return undefined;
+    const speed = Math.hypot(projectile.vx, projectile.vy);
+    if (speed <= 1e-4) return undefined;
+    const aimX = projectile.vx / speed;
+    const aimY = projectile.vy / speed;
+    const liveMuzzles = this.writeLiveGunMuzzles(
+      player,
+      weapon,
+      rig,
+      player.attackSeq,
+      aimX,
+      aimY,
+    );
+    if (liveMuzzles.length <= 1) return liveMuzzles[0];
+
+    const currentTick = this.room?.state.tick ?? projectile.bornTick;
+    const ageTicks = (currentTick - projectile.bornTick) >>> 0;
+    const integratedSteps = ageTicks + 1;
+    const originX = projectile.x - projectile.vx * integratedSteps * (TICK_MS / 1000);
+    const originY = projectile.y - projectile.vy * integratedSteps * (TICK_MS / 1000);
+    const authorityMuzzles = weaponMuzzleWorldPointsForShot(
+      weapon,
+      {
+        x: player.x,
+        y: player.y,
+        aimX,
+        aimY,
+        renderScale: characterScale(player.character),
+      },
+      player.attackSeq,
+    );
+    let selectedIndex = 0;
+    let best = Number.POSITIVE_INFINITY;
+    for (let index = 0; index < authorityMuzzles.length; index++) {
+      const candidate = authorityMuzzles[index]!;
+      const distance = (candidate.x - originX) ** 2 + (candidate.y - originY) ** 2;
+      if (distance >= best) continue;
+      best = distance;
+      selectedIndex = index;
+    }
+    return liveMuzzles[selectedIndex] ?? liveMuzzles[0];
   }
 
   /** Dead-reckon each projectile along its velocity, gently corrected toward the server position
@@ -9957,12 +10070,25 @@ export class ArenaScene extends Phaser.Scene {
       const visualOriginY = rig?.y ?? (this.belt ? this.beltY(self.y) : self.y);
       const angle = Math.atan2(world.y - visualOriginY, world.x - (rig?.x ?? self.x));
       const weapon = WEAPONS[self.weapon] ?? WEAPONS[DEFAULT_WEAPON];
-      const reach = weaponMuzzleReach(weapon);
+      const muzzle = { x: rig?.x ?? self.x, y: visualOriginY };
+      if (weapon?.muzzle) {
+        if (!rig?.writeWeaponMuzzleForShot(self.attackSeq, 0, muzzle)) {
+          const canonical = weaponMuzzleWorldPoint(weapon, {
+            x: muzzle.x,
+            y: muzzle.y,
+            aimX: Math.cos(angle),
+            aimY: Math.sin(angle),
+            renderScale: characterScale(self.character),
+          });
+          muzzle.x = canonical.x;
+          muzzle.y = canonical.y;
+        }
+      }
       const fx = gunFx("orb:fire");
       spawnMuzzleFlash(
         this,
-        (rig?.x ?? self.x) + Math.cos(angle) * reach,
-        visualOriginY + Math.sin(angle) * reach,
+        muzzle.x,
+        muzzle.y,
         angle,
         fx.size,
         fx.color,
@@ -10176,14 +10302,15 @@ export class ArenaScene extends Phaser.Scene {
           );
           const aimX = Math.cos(ang);
           const aimY = Math.sin(ang);
-          const center = { x: rig.x, y: rig.y };
-          if (!rig.writeWeaponMuzzle(0, center)) {
-            const reach = gunMuzzleReach(weapon);
-            center.x += aimX * reach;
-            center.y += aimY * reach;
-          }
-          for (const offset of gunMuzzleOffsetsForShot(weapon, this.localPredictedAttackSeq)) {
-            const muzzle = offsetWeaponMuzzle(center.x, center.y, aimX, aimY, offset);
+          const muzzles = this.writeLiveGunMuzzles(
+            self,
+            weapon,
+            rig,
+            this.localPredictedAttackSeq,
+            aimX,
+            aimY,
+          );
+          for (const muzzle of muzzles) {
             spawnMuzzleFlash(
               this,
               muzzle.x,
@@ -10206,13 +10333,21 @@ export class ArenaScene extends Phaser.Scene {
       // orb renders from state a round-trip later). Tinted to the weapon's element — no gunpowder look.
       if (rig) {
         const ang = Math.atan2(this.selfAim.y, this.selfAim.x);
-        const reach = gunMuzzleReach(weapon);
         const el = weapon.tags?.element;
         const fx = gunFx(el && el !== "physical" ? `orb:${el}` : "orb");
+        const muzzle = weapon.muzzle
+          ? weaponMuzzleWorldPoint(weapon, {
+              x: rig.x,
+              y: rig.y,
+              aimX: Math.cos(ang),
+              aimY: Math.sin(ang),
+              renderScale: characterScale(self.character),
+            })
+          : { x: rig.x, y: rig.y };
         spawnMuzzleFlash(
           this,
-          rig.x + Math.cos(ang) * reach,
-          rig.y + Math.sin(ang) * reach,
+          muzzle.x,
+          muzzle.y,
           ang,
           fx.size,
           fx.color,
@@ -10278,7 +10413,94 @@ export class ArenaScene extends Phaser.Scene {
       saX /= l;
       saY /= l;
     }
+    if (weapon?.gun) {
+      this.predictGunRoundRecoil(weapon, saX, saY);
+      const burst = weapon.gun.burst;
+      const predictedSeq = this.localPredictedAttackSeq;
+      if (burst && burst.count > 1) {
+        for (let round = 1; round < burst.count; round++) {
+          this.time.delayedCall(burst.intervalSeconds * round * 1000, () => {
+            if (!this.room || this.localPredictedAttackSeq !== predictedSeq) return;
+            const liveSelf = this.room.state.players.get(this.room.sessionId);
+            const liveRig = this.blobs.get(this.room.sessionId);
+            if (!liveSelf?.alive || liveSelf.weapon !== weapon.id || !liveRig) return;
+            let aimX = this.selfAim.x;
+            let aimY = this.selfAim.y;
+            if (this.belt) aimY /= BELT_FORESHORTEN;
+            const aimLength = Math.hypot(aimX, aimY) || 1;
+            aimX /= aimLength;
+            aimY /= aimLength;
+            this.predictGunRoundRecoil(weapon, aimX, aimY);
+            this.cuePredictedBurstRound(
+              liveSelf,
+              weapon,
+              liveRig,
+              aimX,
+              aimY,
+              predictedSeq,
+            );
+          });
+        }
+      }
+    }
     this.room.send("attack", { aimX: saX, aimY: saY, tx: cwx, ty: cwy });
+  }
+
+  /** Owner-authored gun recoil is deterministic and therefore belongs in self prediction. Hostile impact
+   * impulses remain server-only. Every delayed burst round calls this at its own fire edge. */
+  private predictGunRoundRecoil(weapon: WeaponDef, aimX: number, aimY: number): void {
+    const recoil = gunUserRecoilFor(weapon);
+    this.predictor?.addPredictedImpulse(
+      -aimX * recoil.impulse,
+      -aimY * recoil.impulse,
+      recoil.maxImpulse,
+    );
+  }
+
+  /** Replay follow-up burst punctuation from the current rendered implement, never the trigger snapshot. */
+  private cuePredictedBurstRound(
+    player: PlayerState,
+    weapon: WeaponDef,
+    rig: SpriteRig,
+    aimX: number,
+    aimY: number,
+    predictedSeq: number,
+  ): void {
+    const angle = Math.atan2(aimY, aimX);
+    rig.triggerGunRecoil(this.time.now, 0);
+    if (weapon.tags.classPool === "caster") {
+      this.spawnCasterSource(weapon, rig.x, rig.y, angle);
+    } else if (weapon.gun) {
+      const element = weapon.tags.element;
+      const fx = gunFx(
+        element && element !== "physical"
+          ? `${weapon.gun.bulletKind}:${element}`
+          : weapon.gun.bulletKind,
+      );
+      for (const muzzle of this.writeLiveGunMuzzles(
+        player,
+        weapon,
+        rig,
+        predictedSeq,
+        aimX,
+        aimY,
+      )) {
+        spawnMuzzleFlash(
+          this,
+          muzzle.x,
+          muzzle.y,
+          angle,
+          fx.size,
+          fx.color,
+          weapon.gun.muzzle ?? fx.style,
+          weapon.id,
+        );
+        if (weapon.gun.sonicBoomRing)
+          spawnSonicBoomRing(this, muzzle.x, muzzle.y, angle, fx.color);
+      }
+    }
+    this.audio.play(`shot:${weapon.gun?.bulletKind ?? "slug"}`, { x: rig.x });
+    this.lastSelfMuzzleAt = this.time.now;
   }
 
   private processPredictedMeleeContacts(): void {
@@ -15287,12 +15509,18 @@ export class ArenaScene extends Phaser.Scene {
         this.inputAccMs / 1000,
       );
       const angle = this.beamPredictionAngle;
-      const reach = weaponMuzzleReach(weapon, characterScale(self.character));
+      const muzzle = weaponMuzzleWorldPoint(weapon, {
+        x: predictedPos?.x ?? self.x,
+        y: predictedPos?.y ?? self.y,
+        aimX: Math.cos(angle),
+        aimY: Math.sin(angle),
+        renderScale: characterScale(self.character),
+      });
       this.predictedBeam.ownerId = room.sessionId;
       this.predictedBeam.weaponId = weapon.id;
       this.predictedBeam.startSeq = this.beamPredictionStartSeq;
-      this.predictedBeam.originX = (predictedPos?.x ?? self.x) + Math.cos(angle) * reach;
-      this.predictedBeam.originY = (predictedPos?.y ?? self.y) + Math.sin(angle) * reach;
+      this.predictedBeam.originX = muzzle.x;
+      this.predictedBeam.originY = muzzle.y;
       this.predictedBeam.angle = angle;
       this.predictedBeam.progress = this.beamPredictionProgress;
       this.predictedBeam.opacity = Math.max(0, Math.min(1, fade));

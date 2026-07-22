@@ -1,4 +1,4 @@
-import { WEAPONS } from "@dd/shared";
+import { isMonkGloveWeapon, WEAPONS } from "@dd/shared";
 import { describe, expect, it, vi } from "vitest";
 import type { SpriteManifest } from "../sprites/manifest.js";
 
@@ -43,11 +43,12 @@ describe("SpriteRig glove-pair rendering", () => {
     let lead: CapturedPiece | undefined;
     let off: CapturedPiece | undefined;
     const rig = Object.create(SpriteRig.prototype) as InstanceType<typeof SpriteRig>;
-    (rig as unknown as { equipLoadout: (a: CapturedPiece, b?: CapturedPiece) => void }).equipLoadout =
-      (a, b) => {
-        lead = a;
-        off = b;
-      };
+    (
+      rig as unknown as { equipLoadout: (a: CapturedPiece, b?: CapturedPiece) => void }
+    ).equipLoadout = (a, b) => {
+      lead = a;
+      off = b;
+    };
 
     rig.equipWeapon(weaponId, weapon, manifest);
 
@@ -56,5 +57,40 @@ describe("SpriteRig glove-pair rendering", () => {
     expect(lead?.def).toBe(weapon);
     expect(off?.def).toBe(weapon);
     expect(twoHandedPoseFor(weapon)).toBe(false);
+  });
+
+  it("routes every close worn punch weapon into the systemic monk lane", () => {
+    const monkIds = Object.values(WEAPONS)
+      .filter(isMonkGloveWeapon)
+      .map((weapon) => weapon.id);
+    expect(monkIds).toEqual(
+      expect.arrayContaining([
+        "fists",
+        "x2-revenant-knuckle",
+        "x2-sparkknuckle-hex-mitt",
+        "x2-cinderpalm-brand-glove",
+        "x2-pyreclap-mauler",
+        "x2-frostknuckle-rimewrap",
+        "x2-stormcradle-faradaygloves",
+        "x2-blightgrip-spore-mitt",
+        "x2-ironbrand-heatfist",
+        "x2-prismhex-diffraction-gauntlet",
+        "x2-coyote-trickster-s-sparkmitt",
+      ]),
+    );
+    expect(monkIds).not.toContain("x2-thunderhead-stormfists"); // authored lunge remains stronger
+    expect(monkIds).not.toContain("x2-wyrmscale-hex-talon"); // claws retain the rake vocabulary
+    expect(monkIds).not.toContain("x2-tesla-faradayer"); // projectile gauntlets retain firing poses
+  });
+
+  it("gives both held glove pairs a small server-owned forward drift", () => {
+    expect(WEAPONS["x2-sparkknuckle-hex-mitt"]?.performance?.forwardDrift).toEqual({
+      speedPxPerSecond: 42,
+      durationSeconds: 0.34,
+    });
+    expect(WEAPONS["x2-coyote-trickster-s-sparkmitt"]?.performance?.forwardDrift).toEqual({
+      speedPxPerSecond: 48,
+      durationSeconds: 0.12,
+    });
   });
 });

@@ -4993,13 +4993,7 @@
         "projectileVisualScale": 1.25,
         "muzzle": "boom",
         "muzzleColor": 11028526,
-        "recoil": 0.004,
-        "muzzleOffsets": [
-          {
-            "forward": 0,
-            "lateral": -6
-          }
-        ]
+        "recoil": 0.004
       },
       "stats": {
         "damage": 7,
@@ -5162,10 +5156,7 @@
         "bulletKind": "tracer",
         "muzzle": "rapid",
         "muzzleColor": 11619071,
-        "recoil": 0.0008,
-        "muzzleOffsets": [
-          { "forward": -1, "lateral": -14 }
-        ]
+        "recoil": 0.0008
       },
       "stats": {
         "damage": 6,
@@ -5486,11 +5477,6 @@
         "muzzle": "boom",
         "muzzleColor": 16747563,
         "recoil": 0.0038,
-        "muzzleOffsets": [
-          { "forward": 0, "lateral": -5 },
-          { "forward": 0, "lateral": 5 }
-        ],
-        "muzzleMode": "parallel",
         "explode": {
           "radius": 56,
           "damage": 6
@@ -5655,10 +5641,7 @@
         "bulletKind": "tracer",
         "muzzle": "rapid",
         "muzzleColor": 11028526,
-        "recoil": 0.0008,
-        "muzzleOffsets": [
-          { "forward": -1, "lateral": -7 }
-        ]
+        "recoil": 0.0008
       },
       "stats": {
         "damage": 5,
@@ -5713,9 +5696,6 @@
         "muzzle": "spark",
         "muzzleColor": 16726996,
         "recoil": 0.0018,
-        "muzzleOffsets": [
-          { "forward": -1, "lateral": -5 }
-        ],
         "explode": {
           "radius": 48,
           "damage": 5
@@ -6138,11 +6118,6 @@
         "muzzle": "heavy",
         "muzzleColor": 16747563,
         "recoil": 0.004,
-        "muzzleOffsets": [
-          { "forward": 0, "lateral": -5 },
-          { "forward": 0, "lateral": 5 }
-        ],
-        "muzzleMode": "parallel",
         "sonicBoomRing": true
       },
       "scalingGrades": {
@@ -7392,12 +7367,7 @@
         "bulletKind": "pellet",
         "muzzle": "punch",
         "muzzleColor": 16757307,
-        "recoil": 0.0032,
-        "muzzleOffsets": [
-          { "forward": 0, "lateral": -4 },
-          { "forward": 0, "lateral": 4 }
-        ],
-        "muzzleMode": "parallel"
+        "recoil": 0.0032
       },
       "stats": {
         "damage": 7,
@@ -8104,8 +8074,7 @@
         "reloadSeconds": 2.8,
         "bulletKind": "tracer",
         "muzzle": "rapid",
-        "recoil": 0.0007,
-        "muzzleOffsets": [{ "forward": -2, "lateral": -12 }]
+        "recoil": 0.0007
       },
       "stats": {
         "damage": 4,
@@ -8870,12 +8839,6 @@
         "bulletKind": "pellet",
         "muzzle": "boom",
         "recoil": 0.003,
-        "muzzleOffsets": [
-          { "forward": 0, "lateral": -4 },
-          { "forward": 0, "lateral": 4 }
-        ],
-        "muzzleMode": "parallel",
-        "dualMuzzleSeparation": 26,
         "explode": {
           "radius": 42,
           "damage": 24
@@ -8932,14 +8895,6 @@
         "bulletKind": "tracer",
         "muzzle": "spark",
         "recoil": 0.0009,
-        "muzzleOffsets": [
-          { "forward": -9, "lateral": 11 },
-          { "forward": -9, "lateral": 22 },
-          { "forward": -9, "lateral": 32 },
-          { "forward": -4, "lateral": 11 },
-          { "forward": -4, "lateral": 22 },
-          { "forward": -4, "lateral": 32 }
-        ],
         "explode": {
           "radius": 40,
           "damage": 3
@@ -9834,12 +9789,6 @@
         "muzzle": "spark",
         "muzzleColor": 15239408,
         "recoil": 0.0011,
-        "muzzleOffsets": [
-          { "forward": -3, "lateral": -9 },
-          { "forward": 0, "lateral": 0 },
-          { "forward": -3, "lateral": 9 }
-        ],
-        "muzzleMode": "cycle",
         "scalingGrades": {
           "dex": "B",
           "int": "C"
@@ -14288,7 +14237,11 @@
       "performance": {
         "hold": "steady",
         "action": "default-swing",
-        "continuous": true
+        "continuous": true,
+        "forwardDrift": {
+          "speedPxPerSecond": 42,
+          "durationSeconds": 0.34
+        }
       },
       "scalingGrades": {
         "int": "B",
@@ -15200,7 +15153,11 @@
       "performance": {
         "hold": "steady",
         "action": "default-swing",
-        "continuous": true
+        "continuous": true,
+        "forwardDrift": {
+          "speedPxPerSecond": 48,
+          "durationSeconds": 0.12
+        }
       },
       "scalingGrades": {
         "int": "B",
@@ -15663,8 +15620,7 @@
         "bulletKind": "tracer",
         "muzzle": "rapid",
         "muzzleColor": 16747051,
-        "recoil": 0.0011,
-        "muzzleOffsets": [{ "forward": -2, "lateral": -14 }]
+        "recoil": 0.0011
       },
       "stats": {
         "damage": 5,
@@ -15712,8 +15668,7 @@
         "bulletKind": "spark",
         "muzzle": "spark",
         "muzzleColor": 3401471,
-        "recoil": 0.0007,
-        "muzzleOffsets": [{ "forward": -2, "lateral": -10 }]
+        "recoil": 0.0007
       },
       "stats": {
         "damage": 4,
@@ -15761,8 +15716,7 @@
         "bulletKind": "tracer",
         "muzzle": "heavy",
         "muzzleColor": 16734770,
-        "recoil": 0.0018,
-        "muzzleOffsets": [{ "forward": -2, "lateral": -17 }]
+        "recoil": 0.0018
       },
       "stats": {
         "damage": 8,

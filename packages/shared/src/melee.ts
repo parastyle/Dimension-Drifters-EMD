@@ -5,7 +5,7 @@ import {
   meleeReach,
   type WeaponDef,
   type WeaponEffectEmitter,
-  weaponMuzzleReach,
+  weaponMuzzleWorldPoint,
 } from "./weapons.js";
 import { GENERATED_MELEE_COMBO_BARS } from "./weapons-expansion.generated.js";
 
@@ -1509,6 +1509,20 @@ export function swingStyleFor(def: WeaponDef): SwingStyle {
   return "arc";
 }
 
+/** Systemic monk-combo lane for empty fists and close-range worn fist weapons. Projectile/beam gauntlets
+ * keep their firing stance, claws keep their rake, and an explicitly authored performance such as
+ * Stormfists' lunge remains the stronger owner. Every other worn punch weapon shares one fast vocabulary. */
+export function isMonkGloveWeapon(def: WeaponDef): boolean {
+  return (
+    isWornWeapon(def) &&
+    swingStyleFor(def) === "punch" &&
+    !def.gun &&
+    !def.beam &&
+    !def.cast &&
+    def.performance?.suppressSwing !== true
+  );
+}
+
 /** Inverse of `p*p*(3-2*p)`, used only to locate where the EXISTING orbit envelope enters/leaves its
  *  authored damage arc amid the unchanged 1.5rad wind-up + 0.9rad follow-through. */
 function inverseSmoothstep(value: number): number {
@@ -1715,7 +1729,16 @@ export function weaponEffectEmitterPoint(
   const emitter = weaponEffectEmitterFor(def);
   if (!def || emitter === "body") return { x: actor.x, y: actor.y, angle: aimAngle };
   if (emitter === "tip") {
-    const reach = weaponMuzzleReach(def);
+    if (def.muzzle) {
+      const muzzle = weaponMuzzleWorldPoint(def, {
+        x: actor.x,
+        y: actor.y,
+        aimX: Math.cos(aimAngle),
+        aimY: Math.sin(aimAngle),
+      });
+      return { x: muzzle.x, y: muzzle.y, angle: aimAngle };
+    }
+    const reach = meleeReach(def);
     return {
       x: actor.x + Math.cos(aimAngle) * reach,
       y: actor.y + Math.sin(aimAngle) * reach,

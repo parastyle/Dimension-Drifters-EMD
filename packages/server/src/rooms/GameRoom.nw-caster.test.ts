@@ -4,7 +4,7 @@ import {
   swingDescriptorFor,
   TILE_GROUND,
   WEAPONS,
-  weaponMuzzleReach,
+  weaponEffectEmitterPoint,
 } from "@dd/shared";
 import { describe, expect, it, vi } from "vitest";
 
@@ -84,6 +84,7 @@ describe("GameRoom — NW-CASTER authority contracts", () => {
     const weapon = equip(room, player, combat, "x2-frostknuckle-rimewrap");
     if (!weapon.scatter) throw new Error("Frostknuckle scatter fixture is required");
     const random = vi.spyOn(Math, "random").mockReturnValue(0.5);
+    const expected = weaponEffectEmitterPoint(weapon, player, 0);
 
     room.fireScatter(player, combat, weapon);
 
@@ -91,8 +92,8 @@ describe("GameRoom — NW-CASTER authority contracts", () => {
     expect(room.state.projectiles.size).toBe(weapon.scatter.count);
     for (const projectile of room.state.projectiles.values()) {
       const meta = room.projectileMeta.get(projectile.id);
-      expect(projectile.x).toBeCloseTo(player.x + weaponMuzzleReach(weapon), 8);
-      expect(projectile.y).toBeCloseTo(player.y, 8);
+      expect(projectile.x).toBeCloseTo(expected.x, 8);
+      expect(projectile.y).toBeCloseTo(expected.y, 8);
       expect(meta?.firstCollisionX).toBe(player.x);
       expect(meta?.firstCollisionY).toBe(player.y);
     }

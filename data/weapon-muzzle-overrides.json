@@ -1,0 +1,42 @@
+{
+  "x2-hallowbore-coachgun": {
+    "barrelMode": "parallel",
+    "points": [
+      { "part": 0, "x": 255, "y": 28 },
+      { "part": 0, "x": 255, "y": 51 }
+    ],
+    "reason": "The shared engraved muzzle plate joins both stacked barrels into one alpha mass; the two visible bore centres require explicit art-space points."
+  },
+  "x2-reliquary-nailcaster": {
+    "barrelMode": "cycle",
+    "points": [
+      { "part": 0, "x": 255, "y": 43 },
+      { "part": 0, "x": 255, "y": 76 },
+      { "part": 0, "x": 255, "y": 110 }
+    ],
+    "reason": "The three exposed spike tips are intentionally isolated bayonet-like extrema, which the barrel-mass heuristic rejects."
+  },
+  "x2-scattershell-duster": {
+    "barrelMode": "parallel",
+    "salvoMode": "parallel",
+    "points": [
+      { "part": 0, "x": 252, "y": 49 },
+      { "part": 0, "x": 252, "y": 79 },
+      { "part": 1, "x": 252, "y": 49 },
+      { "part": 1, "x": 252, "y": 79 }
+    ],
+    "reason": "Each akimbo sprite has two bores inside one opaque front plate; alpha exposes the plate edge but not the four bore centres."
+  },
+  "x2-stormcaller-tesla-gatling": {
+    "barrelMode": "parallel",
+    "points": [
+      { "part": 0, "x": 241, "y": 94 },
+      { "part": 0, "x": 250, "y": 94 },
+      { "part": 0, "x": 241, "y": 108 },
+      { "part": 0, "x": 250, "y": 108 },
+      { "part": 0, "x": 241, "y": 122 },
+      { "part": 0, "x": 250, "y": 122 }
+    ],
+    "reason": "Six recessed beam apertures sit inside one opaque front cap; alpha can derive the cap edge but cannot distinguish the six aperture centres."
+  }
+}

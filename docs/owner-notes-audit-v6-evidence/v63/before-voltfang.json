@@ -2,9 +2,9 @@
   "phase": "before",
   "label": "voltfang",
   "weaponId": "x2-voltfang-tachi",
-  "baseURL": "http://localhost:5180",
+  "baseURL": "http://127.0.0.1:56621",
   "moduleMode": "probe-only legacy fallback partition",
-  "capturedAt": "2026-07-22T01:51:32.986Z",
+  "capturedAt": "2026-07-22T05:31:56.196Z",
   "sourceLayerIds": [
     "blade-trail"
   ],
@@ -19,8 +19,8 @@
       "anchor": "source",
       "x": 2400,
       "y": 2420,
-      "targetX": 2539.7711281726447,
-      "targetY": 2394.939438766338,
+      "targetX": 2539.4185955515472,
+      "targetY": 2393.0471668570053,
       "layerIds": [
         "blade-trail"
       ]
@@ -29,10 +29,10 @@
       "kind": "weapon-vfx-suite",
       "weaponId": "x2-voltfang-tachi",
       "anchor": "target",
-      "x": 2539.7711281726447,
-      "y": 2394.939438766338,
-      "targetX": 2539.7711281726447,
-      "targetY": 2394.939438766338,
+      "x": 2539.4185955515472,
+      "y": 2393.0471668570053,
+      "targetX": 2539.4185955515472,
+      "targetY": 2393.0471668570053,
       "layerIds": [
         "arc-bolt",
         "painted-impact"

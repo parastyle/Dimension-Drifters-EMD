@@ -6,7 +6,7 @@ import {
   GUN_SPRITE_PROJECTILES,
 } from "../packages/client/src/vfx/gun-projectile-art.js";
 import { PARTICLE_PACKS } from "../packages/client/src/vfx/particle-manifest.js";
-import { gunMuzzleOffsetsForShot, WEAPONS } from "../packages/shared/src/index.js";
+import { weaponArtMuzzlePointsForShot, WEAPONS } from "../packages/shared/src/index.js";
 
 const OWN_SPRITE_PROJECTILES = ["x2-grave-anchor-harpoon"] as const;
 
@@ -52,7 +52,8 @@ describe("V3R ranged owner orders", () => {
     const weapon = WEAPONS["x2-scattershell-duster"];
     expect(weapon?.dual).toBe(true);
     expect(sprite.parts.map((part) => part.role)).toEqual(["part-1", "part-2"]);
-    expect(gunMuzzleOffsetsForShot(weapon, 1)).toHaveLength(4);
+    if (!weapon?.muzzle) throw new Error("Duster art-space muzzle fixture required");
+    expect(weaponArtMuzzlePointsForShot(weapon.muzzle, 1)).toHaveLength(4);
     for (const part of sprite.parts) {
       const path = `packages/client/public/sprites/x2-scattershell-duster/${part.file}`;
       expect(pngDimensions(path)).toEqual({ width: 253, height: 128 });
@@ -66,9 +67,9 @@ describe("V3R ranged owner orders", () => {
     expect(WEAPONS["x2-snakebite-dart-slinger"]?.displayLength).toBe(172);
     expect(WEAPONS["x2-frostbore-scattergun"]?.displayLength).toBe(131.6);
     expect(WEAPONS["x2-ashfall-peacemaker"]?.displayLength).toBe(74.48);
-    expect(WEAPONS["x-gun-gatling"]?.gun?.muzzleOffsets).toEqual([{ forward: -2, lateral: -13 }]);
-    expect(WEAPONS["x2-reliquary-nailcaster"]?.gun?.muzzleOffsets).toHaveLength(3);
-    expect(WEAPONS["x2-stormcaller-tesla-gatling"]?.beam?.muzzleOffsets).toHaveLength(6);
+    expect(WEAPONS["x-gun-gatling"]?.muzzle?.points).toHaveLength(1);
+    expect(WEAPONS["x2-reliquary-nailcaster"]?.muzzle?.points).toHaveLength(3);
+    expect(WEAPONS["x2-stormcaller-tesla-gatling"]?.muzzle?.points).toHaveLength(6);
     expect(WEAPONS["x2-voltcaster-machine-pistol"]?.beam?.width).toBe(8);
   });
 

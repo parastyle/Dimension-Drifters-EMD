@@ -4411,12 +4411,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "muzzle": "boom",
       "recoil": 0.004,
       "projectileArt": "generated",
-      "muzzleOffsets": [
-        {
-          "forward": 0,
-          "lateral": -6
-        }
-      ],
       "projectileVisualScale": 1.25,
       "spread": 0,
       "pierce": 2,
@@ -4578,13 +4572,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "movement": {
         "chargeMul": 0.55,
         "channelMul": 0.35
-      },
-      "muzzleOffsets": [
-        {
-          "forward": -1,
-          "lateral": -14
-        }
-      ]
+      }
     }
   },
   "x2-sidewinder-spitfire": {
@@ -4882,17 +4870,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "bulletKind": "slug",
       "muzzle": "boom",
       "recoil": 0.0038,
-      "muzzleOffsets": [
-        {
-          "forward": 0,
-          "lateral": -5
-        },
-        {
-          "forward": 0,
-          "lateral": 5
-        }
-      ],
-      "muzzleMode": "parallel",
       "spread": 0,
       "muzzleColor": 16747563,
       "explode": {
@@ -5049,12 +5026,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "bulletKind": "tracer",
       "muzzle": "rapid",
       "recoil": 0.0008,
-      "muzzleOffsets": [
-        {
-          "forward": -1,
-          "lateral": -7
-        }
-      ],
       "spread": 0.18,
       "muzzleColor": 11028526
     }
@@ -5105,12 +5076,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "bulletKind": "tracer",
       "muzzle": "spark",
       "recoil": 0.0018,
-      "muzzleOffsets": [
-        {
-          "forward": -1,
-          "lateral": -5
-        }
-      ],
       "spread": 0.04,
       "muzzleColor": 16726996,
       "explode": {
@@ -5529,17 +5494,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "bulletKind": "slug",
       "muzzle": "heavy",
       "recoil": 0.004,
-      "muzzleOffsets": [
-        {
-          "forward": 0,
-          "lateral": -5
-        },
-        {
-          "forward": 0,
-          "lateral": 5
-        }
-      ],
-      "muzzleMode": "parallel",
       "sonicBoomRing": true,
       "pierce": 5,
       "muzzleColor": 16747563
@@ -6888,17 +6842,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "bulletKind": "pellet",
       "muzzle": "punch",
       "recoil": 0.0032,
-      "muzzleOffsets": [
-        {
-          "forward": 0,
-          "lateral": -4
-        },
-        {
-          "forward": 0,
-          "lateral": 4
-        }
-      ],
-      "muzzleMode": "parallel",
       "muzzleColor": 16757307
     }
   },
@@ -7661,12 +7604,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "bulletKind": "tracer",
       "muzzle": "rapid",
       "recoil": 0.0007,
-      "muzzleOffsets": [
-        {
-          "forward": -2,
-          "lateral": -12
-        }
-      ],
       "spread": 0.13
     }
   },
@@ -8439,18 +8376,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "bulletKind": "pellet",
       "muzzle": "boom",
       "recoil": 0.003,
-      "muzzleOffsets": [
-        {
-          "forward": 0,
-          "lateral": -4
-        },
-        {
-          "forward": 0,
-          "lateral": 4
-        }
-      ],
-      "muzzleMode": "parallel",
-      "dualMuzzleSeparation": 26,
       "explode": {
         "radius": 42,
         "damage": 24
@@ -8509,33 +8434,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "movement": {
         "chargeMul": 0.55,
         "channelMul": 0.35
-      },
-      "muzzleOffsets": [
-        {
-          "forward": -9,
-          "lateral": 11
-        },
-        {
-          "forward": -9,
-          "lateral": 22
-        },
-        {
-          "forward": -9,
-          "lateral": 32
-        },
-        {
-          "forward": -4,
-          "lateral": 11
-        },
-        {
-          "forward": -4,
-          "lateral": 22
-        },
-        {
-          "forward": -4,
-          "lateral": 32
-        }
-      ]
+      }
     }
   },
   "x2-calamity-howitzer": {
@@ -9411,21 +9310,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "bulletKind": "nail",
       "muzzle": "spark",
       "recoil": 0.0011,
-      "muzzleOffsets": [
-        {
-          "forward": -3,
-          "lateral": -9
-        },
-        {
-          "forward": 0,
-          "lateral": 0
-        },
-        {
-          "forward": -3,
-          "lateral": 9
-        }
-      ],
-      "muzzleMode": "cycle",
       "pierce": 3,
       "muzzleColor": 15239408,
       "scalingGrades": {
@@ -13704,7 +13588,11 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "performance": {
       "hold": "steady",
       "action": "default-swing",
-      "continuous": true
+      "continuous": true,
+      "forwardDrift": {
+        "speedPxPerSecond": 42,
+        "durationSeconds": 0.34
+      }
     },
     "requirements": {
       "int": 5
@@ -14529,7 +14417,11 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "performance": {
       "hold": "steady",
       "action": "default-swing",
-      "continuous": true
+      "continuous": true,
+      "forwardDrift": {
+        "speedPxPerSecond": 48,
+        "durationSeconds": 0.12
+      }
     },
     "requirements": {
       "int": 6,
@@ -15132,12 +15024,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "bulletKind": "tracer",
       "muzzle": "rapid",
       "recoil": 0.0011,
-      "muzzleOffsets": [
-        {
-          "forward": -2,
-          "lateral": -14
-        }
-      ],
       "spread": 0.07,
       "muzzleColor": 16747051
     }
@@ -15198,12 +15084,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "bulletKind": "spark",
       "muzzle": "spark",
       "recoil": 0.0007,
-      "muzzleOffsets": [
-        {
-          "forward": -2,
-          "lateral": -10
-        }
-      ],
       "spread": 0.045,
       "muzzleColor": 3401471
     }
@@ -15264,12 +15144,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "bulletKind": "tracer",
       "muzzle": "heavy",
       "recoil": 0.0018,
-      "muzzleOffsets": [
-        {
-          "forward": -2,
-          "lateral": -17
-        }
-      ],
       "spread": 0.11,
       "muzzleColor": 16734770
     }

@@ -2,9 +2,9 @@
   "phase": "before",
   "label": "driftblade",
   "weaponId": "driftblade",
-  "baseURL": "http://localhost:5180",
+  "baseURL": "http://127.0.0.1:56621",
   "moduleMode": "probe-only legacy fallback partition",
-  "capturedAt": "2026-07-22T01:51:27.056Z",
+  "capturedAt": "2026-07-22T05:31:49.091Z",
   "sourceLayerIds": [
     "blade-trail"
   ],
@@ -19,8 +19,8 @@
       "anchor": "source",
       "x": 2400,
       "y": 2420,
-      "targetX": 2660.4315185546875,
-      "targetY": 2360.9150390625,
+      "targetX": 2649.6856689453125,
+      "targetY": 2381.41015625,
       "layerIds": [
         "blade-trail"
       ]
@@ -29,10 +29,10 @@
       "kind": "weapon-vfx-suite",
       "weaponId": "driftblade",
       "anchor": "target",
-      "x": 2660.4315185546875,
-      "y": 2360.9150390625,
-      "targetX": 2660.4315185546875,
-      "targetY": 2360.9150390625,
+      "x": 2649.6856689453125,
+      "y": 2381.41015625,
+      "targetX": 2649.6856689453125,
+      "targetY": 2381.41015625,
       "layerIds": [
         "cleave-flash",
         "painted-impact"

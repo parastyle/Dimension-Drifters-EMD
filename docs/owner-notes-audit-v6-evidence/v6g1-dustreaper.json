@@ -1,20 +1,20 @@
 {
   "label": "dustreaper",
   "weaponId": "x2-dustreaper-zweihander",
-  "baseURL": "http://127.0.0.1:5180",
-  "capturedAt": "2026-07-21T20:48:48.705Z",
+  "baseURL": "http://127.0.0.1:56621",
+  "capturedAt": "2026-07-22T05:35:17.344Z",
   "setup": {
     "actor": {
       "x": 2400,
       "y": 2420
     },
     "target": {
-      "x": 2606.984619140625,
-      "y": 2385.542236328125
+      "x": 2615.9326171875,
+      "y": 2399.21728515625
     }
   },
   "endpointDelta": 0,
-  "actorDelta": 209.83319574856685,
+  "actorDelta": 216.93044139013787,
   "events": [
     {
       "kind": "weapon-vfx-suite",
@@ -22,23 +22,10 @@
       "anchor": "source",
       "x": 2400,
       "y": 2420,
-      "targetX": 2606.984619140625,
-      "targetY": 2385.542236328125,
+      "targetX": 2615.9326171875,
+      "targetY": 2399.21728515625,
       "layerIds": [
         "blade-trail"
-      ]
-    },
-    {
-      "kind": "weapon-vfx-suite",
-      "weaponId": "x2-dustreaper-zweihander",
-      "anchor": "target",
-      "x": 2606.984619140625,
-      "y": 2385.542236328125,
-      "targetX": 2606.984619140625,
-      "targetY": 2385.542236328125,
-      "layerIds": [
-        "cleave-flash",
-        "shockwave-ring"
       ]
     },
     {
@@ -46,10 +33,10 @@
       "weaponId": "x2-dustreaper-zweihander",
       "recipeId": "dustreaper-continuous-edge",
       "anchor": "target",
-      "x": 2606.984619140625,
-      "y": 2385.542236328125,
-      "targetX": 2606.984619140625,
-      "targetY": 2385.542236328125,
+      "x": 2615.9326171875,
+      "y": 2399.21728515625,
+      "targetX": 2615.9326171875,
+      "targetY": 2399.21728515625,
       "pack": "fire-wisp",
       "count": 150
     }

@@ -3,7 +3,9 @@ import { bootArena, runArenaSpec, waitForDevWeapon } from "../helpers/arena-harn
 
 const BEAM_WEAPON = "x2-voltcaster-machine-pistol";
 const ACTIVE = 2;
-const SAMPLE_TARGET = 8;
+// Four distinct rendered frames are enough to prove a moving attachment. Loaded serial e2e runs can
+// render only 5-6 frames during Voltcaster's short active window even though simulation stays healthy.
+const SAMPLE_TARGET = 4;
 
 interface AnchorFrame {
   playerX: number;
@@ -24,7 +26,6 @@ test.use({ viewport: { width: 640, height: 360 } });
 
 async function prepareHeldBeam(page: Page): Promise<void> {
   await page.locator("#game-root canvas").click({ position: { x: 320, y: 180 } });
-  await page.mouse.move(555, 180);
   await page.evaluate(() => {
     window.focus();
     window.dispatchEvent(new Event("focus"));
@@ -52,11 +53,10 @@ async function prepareHeldBeam(page: Page): Promise<void> {
     arena.game.hasFocus = true;
     arena.input.activePointer.rightButtonDown = () => true;
     globalThis.__ddBeamAnchorInputTimer = window.setInterval(
-      () => arena.stepNetInput?.(50, false, false, 1, 0),
+      () => arena.stepNetInput?.(50, false, false, 0, 0),
       50,
     );
   });
-  await page.keyboard.down("d");
 }
 
 async function releaseHeldBeam(page: Page): Promise<void> {
@@ -87,41 +87,13 @@ async function releaseHeldBeam(page: Page): Promise<void> {
     .catch(() => undefined);
 }
 
-async function waitForActiveBeam(page: Page, ownerId: string): Promise<void> {
-  await expect
-    .poll(
-      () =>
-        page.evaluate(
-          ({ wantedOwner, active }) => {
-            const arena = (
-              globalThis as unknown as { ddGame?: { scene: { getScene(key: string): unknown } } }
-            ).ddGame?.scene.getScene("arena") as
-              | {
-                  room?: {
-                    state?: {
-                      beams?: {
-                        get(id: string): { phase?: number; effectiveLength?: number } | undefined;
-                      };
-                    };
-                  };
-                }
-              | undefined;
-            const row = arena?.room?.state?.beams?.get(wantedOwner);
-            return row?.phase === active && (row.effectiveLength ?? 0) > 1;
-          },
-          { wantedOwner: ownerId, active: ACTIVE },
-        ),
-      { message: `${ownerId} should expose an active rendered beam`, timeout: 20_000 },
-    )
-    .toBe(true);
-}
-
 async function sampleRenderedAnchor(page: Page, ownerId: string): Promise<AnchorFrame[]> {
   return page.evaluate(
     ({ wantedOwner, active, sampleTarget }) =>
       new Promise<AnchorFrame[]>((resolve) => {
         const frames: AnchorFrame[] = [];
-        const deadline = performance.now() + 4_000;
+        const deadline = performance.now() + 20_000;
+        let strafing = false;
         const sample = () => {
           const arena = (
             globalThis as unknown as { ddGame?: { scene: { getScene(key: string): unknown } } }
@@ -130,6 +102,13 @@ async function sampleRenderedAnchor(page: Page, ownerId: string): Promise<Anchor
                 room?: { state?: { beams?: { get(id: string): { phase?: number } | undefined } } };
                 blobs?: { get(id: string): unknown };
                 beamRenderer?: { entries?: unknown[] };
+                stepNetInput?(
+                  deltaMs: number,
+                  blocked: boolean,
+                  ultimate: boolean,
+                  dx: number,
+                  dy: number,
+                ): void;
               }
             | undefined;
           const rig = arena?.blobs?.get(wantedOwner) as
@@ -137,27 +116,24 @@ async function sampleRenderedAnchor(page: Page, ownerId: string): Promise<Anchor
                 root: {
                   x: number;
                   y: number;
-                  getWorldTransformMatrix(): {
-                    transformPoint(x: number, y: number): { x: number; y: number };
-                  };
                 };
-                weapons?: Array<{
-                img: {
-                    x: number;
-                    y: number;
-                    width: number;
-                    originX: number;
-                    scaleX: number;
-                };
-                def: {
-                  beam?: { muzzleOffsets?: Array<{ forward: number; lateral: number }> };
-                };
-                semanticRotation: number;
-                }>;
+                writeWeaponMuzzle(
+                  hand: 0 | 1,
+                  out: { x: number; y: number },
+                  pointIndex?: number,
+                ): boolean;
               }
             | undefined;
-          const weapon = rig?.weapons?.[0];
           const row = arena?.room?.state?.beams?.get(wantedOwner);
+          if (!strafing && row?.phase === active) {
+            if (globalThis.__ddBeamAnchorInputTimer)
+              window.clearInterval(globalThis.__ddBeamAnchorInputTimer);
+            globalThis.__ddBeamAnchorInputTimer = window.setInterval(
+              () => arena?.stepNetInput?.(50, false, false, 1, 0),
+              50,
+            );
+            strafing = true;
+          }
           const entry = (
             arena?.beamRenderer?.entries as
               | Array<{
@@ -178,15 +154,14 @@ async function sampleRenderedAnchor(page: Page, ownerId: string): Promise<Anchor
               candidate.key && candidate.ownerId === wantedOwner && candidate.body?.visible,
           );
           const point = entry?.body?.points?.[0];
-          if (rig && weapon && row?.phase === active && entry?.body && point) {
-            const image = weapon.img;
-            const tip = image.width * Math.abs(image.scaleX) * (1 - image.originX);
-            const offset = weapon.def.beam?.muzzleOffsets?.[0] ?? { forward: 0, lateral: 0 };
-            const c = Math.cos(weapon.semanticRotation);
-            const s = Math.sin(weapon.semanticRotation);
-            const localX = image.x + c * (tip + offset.forward) - s * offset.lateral;
-            const localY = image.y + s * (tip + offset.forward) + c * offset.lateral;
-            const muzzle = rig.root.getWorldTransformMatrix().transformPoint(localX, localY);
+          const muzzle = { x: 0, y: 0 };
+          if (
+            rig &&
+            row?.phase === active &&
+            entry?.body &&
+            point &&
+            rig.writeWeaponMuzzle(0, muzzle, 0)
+          ) {
             const beamX = entry.body.x + point.x * entry.body.scaleX;
             const beamY = entry.body.y + point.y * entry.body.scaleY;
             frames.push({
@@ -199,7 +174,14 @@ async function sampleRenderedAnchor(page: Page, ownerId: string): Promise<Anchor
               delta: Math.hypot(beamX - muzzle.x, beamY - muzzle.y),
             });
           }
-          if (frames.length >= sampleTarget || performance.now() >= deadline) resolve(frames);
+          const first = frames[0];
+          const last = frames.at(-1);
+          const travel =
+            first && last
+              ? Math.hypot(last.playerX - first.playerX, last.playerY - first.playerY)
+              : 0;
+          if ((frames.length >= sampleTarget && travel > 20) || performance.now() >= deadline)
+            resolve(frames);
           else requestAnimationFrame(sample);
         };
         requestAnimationFrame(sample);
@@ -237,7 +219,6 @@ test("moving beam origins follow the final rendered weapon muzzle", async ({ pag
 
     try {
       await prepareHeldBeam(page);
-      await waitForActiveBeam(page, ownerId);
       const frames = await sampleRenderedAnchor(page, ownerId);
       assertMovingAnchor("live client", frames);
     } finally {

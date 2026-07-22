@@ -1,10 +1,11 @@
 import {
   CombatDelivery,
+  characterScale,
   EnemyState,
-  gunMuzzleReach,
   TILE_GROUND,
   thrownProjectileSpriteId,
   WEAPONS,
+  weaponMuzzleWorldPoint,
 } from "@dd/shared";
 import { describe, expect, it, vi } from "vitest";
 
@@ -118,12 +119,19 @@ describe("GameRoom — W4M server authority", () => {
     const { room, player, combat } = makeRoom("mesa-high-muzzle");
     const weapon = equip(player, combat, "x2-mesa-hand-cannon");
     if (!weapon.gun) throw new Error("Mesa projectile fixture is required");
+    const expected = weaponMuzzleWorldPoint(weapon, {
+      x: player.x,
+      y: player.y,
+      aimX: 1,
+      aimY: 0,
+      renderScale: characterScale(player.character),
+    });
 
     room.fireGun(player, combat, weapon);
 
     const projectile = [...room.state.projectiles.values()][0];
-    expect(projectile?.x).toBeCloseTo(player.x + gunMuzzleReach(weapon), 6);
-    expect(projectile?.y).toBeCloseTo(player.y - 6, 6);
+    expect(projectile?.x).toBeCloseTo(expected.x, 6);
+    expect(projectile?.y).toBeCloseTo(expected.y, 6);
     expect(projectile && room.projectileMeta.get(projectile.id)).toMatchObject({
       firstCollisionX: player.x,
       firstCollisionY: player.y,

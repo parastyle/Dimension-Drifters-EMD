@@ -2,9 +2,9 @@
   "phase": "before",
   "label": "cinderbrand-cleaver",
   "weaponId": "x2-cinderbrand-cleaver",
-  "baseURL": "http://localhost:5180",
+  "baseURL": "http://127.0.0.1:56621",
   "moduleMode": "probe-only legacy fallback partition",
-  "capturedAt": "2026-07-22T01:51:57.204Z",
+  "capturedAt": "2026-07-22T05:32:25.034Z",
   "sourceLayerIds": [
     "blade-trail"
   ],
@@ -21,8 +21,8 @@
       "anchor": "source",
       "x": 2400,
       "y": 2420,
-      "targetX": 2555.6003375786163,
-      "targetY": 2392.5676296062375,
+      "targetX": 2556.1349117503223,
+      "targetY": 2395.7948490457275,
       "layerIds": [
         "blade-trail"
       ]
@@ -31,10 +31,10 @@
       "kind": "weapon-vfx-suite",
       "weaponId": "x2-cinderbrand-cleaver",
       "anchor": "target",
-      "x": 2555.6003375786163,
-      "y": 2392.5676296062375,
-      "targetX": 2555.6003375786163,
-      "targetY": 2392.5676296062375,
+      "x": 2556.1349117503223,
+      "y": 2395.7948490457275,
+      "targetX": 2556.1349117503223,
+      "targetY": 2395.7948490457275,
       "layerIds": [
         "cleave-flash",
         "painted-impact",

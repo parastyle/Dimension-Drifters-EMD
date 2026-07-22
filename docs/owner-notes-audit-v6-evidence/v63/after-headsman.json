@@ -2,9 +2,9 @@
   "phase": "after",
   "label": "headsman",
   "weaponId": "x2-sanctified-headsman",
-  "baseURL": "http://localhost:5180",
+  "baseURL": "http://127.0.0.1:56621",
   "moduleMode": "corrected live",
-  "capturedAt": "2026-07-22T01:52:13.151Z",
+  "capturedAt": "2026-07-22T05:32:44.442Z",
   "sourceLayerIds": [
     "blade-trail"
   ],
@@ -16,8 +16,8 @@
       "anchor": "source",
       "x": 2400,
       "y": 2420,
-      "targetX": 2587.328996385275,
-      "targetY": 2385.5519519669747,
+      "targetX": 2587.154057990847,
+      "targetY": 2384.6138518971243,
       "layerIds": [
         "blade-trail"
       ]

@@ -166,6 +166,24 @@ describe("SelfPredictor — §4 v0.107 prediction + reconciliation", () => {
     expect(pred.renderPos(0, 0, 0).x).toBeCloseTo(server.x, 1);
   });
 
+  it("owner-predicted sequential gun recoil stays exact across four moving rounds", () => {
+    const server = new MockServer();
+    const pred = new SelfPredictor(server.view());
+    for (let round = 0; round < 4; round++) {
+      server.knockback(-180, 95);
+      pred.addPredictedImpulse(-180, 95);
+      const cmd = pred.mintCmd(1, 0, false);
+      server.send(cmd);
+      server.tick();
+      pred.tick(cmd);
+      pred.reconcile(server.view());
+      const rendered = pred.renderPos(1, 0, 0);
+      expect(rendered.x, `round ${round + 1} x`).toBeCloseTo(server.x, 6);
+      expect(rendered.y, `round ${round + 1} y`).toBeCloseTo(server.y, 6);
+      expect(pred.stats.errPx, `round ${round + 1} correction`).toBeLessThan(0.01);
+    }
+  });
+
   it("TELEPORT (teleportSeq bump) hard-SNAPS: no glide across the map, pending + offset cleared", () => {
     const server = new MockServer();
     const pred = new SelfPredictor(server.view());

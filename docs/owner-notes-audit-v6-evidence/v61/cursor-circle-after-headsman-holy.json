@@ -3,31 +3,26 @@
   "label": "headsman-holy",
   "weaponId": "x2-sanctified-headsman",
   "element": "holy",
-  "baseURL": "http://127.0.0.1:5180",
-  "capturedAt": "2026-07-22T00:51:49.991Z",
+  "baseURL": "http://127.0.0.1:56621",
+  "capturedAt": "2026-07-22T05:31:29.995Z",
   "setup": {
     "actor": {
       "x": 2400,
       "y": 2420
     },
     "target": {
-      "x": 2690.6290283203125,
-      "y": 2382.18359375
+      "x": 2689.075439453125,
+      "y": 2380.968994140625
     }
   },
   "visual": {
     "frozen": true,
     "ringVisible": false,
-    "paintedVisible": true,
-    "textureKeys": [
-      "ptcl:holy-splat",
-      "ptcl:holy-splat",
-      "ptcl:holy-splat",
-      "ptcl:holy-splat",
-      "ptcl:holy-splat",
-      "ptcl:holy-splat",
-      "ptcl:holy-splat"
-    ]
+    "paintedVisible": false,
+    "sourceEventSeen": true,
+    "targetEventSeen": false,
+    "sourceFrames": 6,
+    "textureKeys": []
   },
   "events": [
     {
@@ -36,50 +31,22 @@
       "anchor": "source",
       "x": 2400,
       "y": 2420,
-      "targetX": 2588.8777667954264,
-      "targetY": 2395.423382853359,
+      "targetX": 2588.7572077149425,
+      "targetY": 2394.5139756796398,
       "layerIds": [
         "blade-trail"
       ]
-    },
-    {
-      "kind": "weapon-vfx-suite",
-      "weaponId": "x2-sanctified-headsman",
-      "anchor": "target",
-      "x": 2588.8777667954264,
-      "y": 2395.423382853359,
-      "targetX": 2588.8777667954264,
-      "targetY": 2395.423382853359,
-      "layerIds": [
-        "cleave-flash",
-        "painted-impact",
-        "impact-flash"
-      ]
-    },
-    {
-      "kind": "painted-impact",
-      "weaponId": "x2-sanctified-headsman",
-      "anchor": "target",
-      "x": 2588.8777667954264,
-      "y": 2395.423382853359,
-      "targetX": 2588.8777667954264,
-      "targetY": 2395.423382853359,
-      "pack": "holy-splat",
-      "count": 7,
-      "spawned": true
     }
   ],
   "layerIds": [
-    "blade-trail",
-    "cleave-flash",
-    "painted-impact",
-    "impact-flash"
+    "blade-trail"
   ],
   "genericLayers": [],
   "assertions": {
     "genericRingRecipeRemoved": true,
     "genericRingInvisible": true,
-    "paintedElementImpactVisible": true
+    "sourceCompositionRetained": true,
+    "targetCompositionCorrect": true
   },
   "browserErrors": [],
   "unexpectedBrowserErrors": [],

@@ -40,6 +40,7 @@ import {
   TILE_PIT,
   WEAPON_IDS,
   WEAPONS,
+  weaponEffectEmitterPoint,
   weaponSetBonus,
   ZONE_RADIUS,
   ZONE_TTL,
@@ -7206,7 +7207,6 @@ describe("GameRoom — authored weapon performances", () => {
   });
 
   it("spawns Hollowbarrel pellets at the shared spout and sweeps from the shooter", async () => {
-    const { weaponPerformanceEmitterReach } = await import("@dd/shared");
     const h = makeRoom();
     h.join("scatter-spout");
     const player = h.state().players.get("scatter-spout");
@@ -7219,7 +7219,7 @@ describe("GameRoom — authored weapon performances", () => {
     combat.targetY = player.y;
     combat.aimX = 1;
     combat.aimY = 0;
-    const reach = weaponPerformanceEmitterReach(weapon);
+    const origin = weaponEffectEmitterPoint(weapon, player, 0);
     const random = vi.spyOn(Math, "random").mockReturnValue(0.5);
 
     h.room.fireScatter(player, combat, weapon);
@@ -7227,8 +7227,8 @@ describe("GameRoom — authored weapon performances", () => {
     expect(h.state().projectiles.size).toBe(weapon.scatter.count);
     for (const projectile of h.state().projectiles.values()) {
       const meta = h.room.projectileMeta.get(projectile.id);
-      expect(projectile.x).toBeCloseTo(player.x + reach, 8);
-      expect(projectile.y).toBeCloseTo(player.y, 8);
+      expect(projectile.x).toBeCloseTo(origin.x, 8);
+      expect(projectile.y).toBeCloseTo(origin.y, 8);
       expect(meta?.firstCollisionX).toBe(player.x);
       expect(meta?.firstCollisionY).toBe(player.y);
     }

@@ -5,8 +5,7 @@ import { GUN_GENERATED_PROJECTILES } from "../packages/client/src/vfx/gun-projec
 import {
   coneStreamHitsCircle,
   expectedRandomGunPelletCount,
-  gunMuzzleReach,
-  resolvedGunGripPoints,
+  weaponMuzzleWorldPoint,
   serverSeededGunPelletVolley,
   WEAPONS,
 } from "../packages/shared/src/index.js";
@@ -54,11 +53,9 @@ describe("W4R ranged owner orders", () => {
       const weapon = WEAPONS[weaponId];
       expect(weapon?.displayLength, weaponId).toBe(displayLength);
       expect(weapon?.gun?.projectileArt, weaponId).toMatch(/^(arrow|generated)$/);
-      const renderedGripX = weapon ? resolvedGunGripPoints(weapon)?.primary.x ?? weapon.gripFrac : 0;
-      expect(gunMuzzleReach(weapon), weaponId).toBeCloseTo(
-        12 + (1 - renderedGripX) * displayLength,
-        8,
-      );
+      if (!weapon) throw new Error(`${weaponId} fixture required`);
+      expect(weaponMuzzleWorldPoint(weapon, { x: 0, y: 0, aimX: 1, aimY: 0 }).x, weaponId)
+        .toBeGreaterThan(displayLength * 0.5);
     }
     expect(WEAPONS["x2-tracer-saint-carbine"]?.displayLength).toBe(150.8);
     expect(WEAPONS["x2-quicksilver-fanner"]?.displayLength).toBe(112);

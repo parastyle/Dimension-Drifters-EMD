@@ -13,12 +13,24 @@ import {
   FISTS_DAMAGE,
   FISTS_HALF_ARC,
   FISTS_RANGE,
+  GUN_RECOIL_BASELINE,
+  GUN_RECOIL_IMPULSE,
+  IMPULSE_MAX,
   MAX_PLAYERS,
   PAIR_TEMPO,
   REZ_RADIUS,
 } from "./constants.js";
 import type { Attr } from "./leveling.js";
 import { makeRng } from "./rng.js";
+import {
+  transformWeaponArtPoint,
+  type WeaponAffineTransform,
+  type WeaponArtMuzzleDefinition,
+  type WeaponArtMuzzlePoint,
+  weaponArtMuzzlePointsForShot,
+  weaponSpriteTransform,
+} from "./weapon-muzzle.js";
+import { WEAPON_ART_MUZZLES } from "./weapon-muzzles.generated.js";
 import { GENERATED_WEAPONS } from "./weapons-expansion.generated.js";
 
 /** Driftblade-line silhouette lane consumed by the stance-by-size flourish wave. This is intentionally
@@ -68,19 +80,7 @@ export function resolvedGunGripPoints(
   return DEFAULT_TWO_HAND_GUN_GRIPS;
 }
 
-/** Local displacement from the ordinary +X barrel tip, in fixed display/world pixels. */
-export interface WeaponMuzzleOffset {
-  forward: number;
-  lateral: number;
-}
-
-export type GunMuzzleMode = "parallel" | "cycle";
 export type GunProjectileArt = "weapon-crop" | "generated" | "arrow" | "cannonball" | "fireball";
-
-export const CENTER_MUZZLE_OFFSET: Readonly<WeaponMuzzleOffset> = Object.freeze({
-  forward: 0,
-  lateral: 0,
-});
 export const WEAPON_MUZZLE_COUNT_CAP = 6;
 
 /** One declarative Driftblade-line identity hook. The server resolves these fields from the accepted
@@ -141,8 +141,6 @@ export interface BeamDef {
     count: number;
     spread: number;
   };
-  /** Fixed parallel barrel lanes. They share one angle and differ only by their muzzle origin. */
-  muzzleOffsets?: WeaponMuzzleOffset[];
   /** Reusable continuous cone-stream specialization. It retains beam charge/heat/tick authority while
    * replacing the ray capsule with a widening cone and flavor-specific presentation. */
   coneStream?: {
@@ -521,6 +519,8 @@ export interface WeaponDef {
   /** Held-render sprite override — the manifest id whose sliced parts to draw in-hand, when it differs
    *  from this weapon's `id` (e.g. a not-yet-arted weapon borrowing an existing sprite as placeholder). */
   sprite?: string;
+  /** Source-PNG muzzle truth. Every launch/beam/flash consumer transforms these exact art pixels. */
+  muzzle?: WeaponArtMuzzleDefinition;
   /** §6 REZ effect — a swing within `radius` of a DOWNED ally REVIVES them (at REVIVE_HP_FRAC of max HP).
    *  Revival is loot: the Gravedigger's Spade is the M0 rez carrier. The weapon still does its edge damage. */
   rez?: { radius: number };
@@ -727,11 +727,6 @@ export interface WeaponDef {
     recoil?: number;
     /** Server-only body displacement multiplier. Does not amplify camera or held-pose shake. */
     userKnockbackMultiplier?: number;
-    /** Ordered local barrel tips. Parallel lanes emit together; cycle selects one per accepted beat. */
-    muzzleOffsets?: WeaponMuzzleOffset[];
-    muzzleMode?: GunMuzzleMode;
-    /** Full lateral separation between the two held copies of a default `dual` weapon. */
-    dualMuzzleSeparation?: number;
     /** Presentation recipe: an expanding sonic ring at every authoritative launch origin. */
     sonicBoomRing?: boolean;
     /** Per-source scaling (§14 WYSIWYG) — the bullet's grades; omitted = the weapon's edge grades. */
@@ -798,73 +793,266 @@ export function weaponHasHandlingTag(weapon: WeaponDef | undefined, tag: GunHand
   return weapon?.tags.handling?.includes(tag) === true;
 }
 
-/** §9 GUN barrel-tip reach: distance (px) from the player CENTRE to a held gun's MUZZLE along the aim,
- *  derived from each gun's OWN held geometry — the gun pivots at `gripFrac` of its `displayLength` and the
- *  barrel extends past the grip, plus the front hand sits a little forward. So bullets + the muzzle flash
- *  always leave the BARREL TIP (not the body), and a longer gun muzzles further out automatically. Server
- *  (bullet spawn) + client (muzzle flash) both call this so the shot + flash coincide.
- *
- *  `renderScale` = the holder's rig scale (`characterScale(player.character)`, §7). The whole rig — hand
- *  offset AND the barrel that extends from it — is drawn at that scale, so the WORLD muzzle distance scales
- *  with it too. Without this the shot spawned ~6–25% SHORT of the rendered barrel (every character sits at
- *  1.06–1.25×) — the "bullets out of the barrel is OK at best" playtest note. Pass the holder's scale to
- *  land the shot exactly on the tip. Defaults to 1 for callers that don't know the holder. */
-export const GUN_HAND_FORWARD = 12;
-export function gunMuzzleReach(weapon: WeaponDef | undefined, renderScale = 1): number {
-  if (!weapon) return GUN_HAND_FORWARD * renderScale;
-  const renderedGripX = resolvedGunGripPoints(weapon)?.primary.x ?? weapon.gripFrac;
-  return renderScale * (GUN_HAND_FORWARD + (1 - renderedGripX) * weapon.displayLength);
+/** Complete deterministic held-sprite pose inputs shared by authority and the live rig. */
+export interface WeaponMuzzlePose {
+  x: number;
+  y: number;
+  aimX: number;
+  aimY: number;
+  /** Complete rig/root scale. */
+  renderScale?: number;
+  /** Optional selected held-copy index for independently paired weapons. */
+  salvoIndex?: number;
+  /** Physical hand whose final held-sprite pose is being transformed. */
+  hand?: 0 | 1;
+  /** Milliseconds since the previous round's visual kick; zero is the instantaneous shot edge. */
+  recoilElapsedMs?: number;
+  /** Hand that received that kick. */
+  recoilHand?: 0 | 1;
+  /** Paper-card facing. When omitted, authority derives it from horizontal aim. */
+  facing?: -1 | 1;
 }
 
-/** Shared held-implement tip for bullets, caster bolts, and beams. */
-export const weaponMuzzleReach = gunMuzzleReach;
+export const WEAPON_MUZZLE_RECOIL_MS = 140;
+const WEAPON_POSE_BODY_HEIGHT = 76;
 
-/** Ordered per-copy muzzle data. Missing authoring remains the legacy centre-tip lane. */
-export function weaponMuzzleOffsets(
-  weapon: Pick<WeaponDef, "gun"> | undefined,
-): readonly WeaponMuzzleOffset[] {
-  const offsets = weapon?.gun?.muzzleOffsets;
-  return offsets?.length ? offsets : [CENTER_MUZZLE_OFFSET];
+export interface WeaponMuzzleGripOffset {
+  x: number;
+  y: number;
 }
 
-/** Authoritative gun lanes for one accepted beat. `acceptedSeq` is one-based like PlayerState.attackSeq. */
-export function gunMuzzleOffsetsForShot(
-  weapon: Pick<WeaponDef, "dual" | "gun"> | undefined,
-  acceptedSeq: number,
-): WeaponMuzzleOffset[] {
-  const authored = weaponMuzzleOffsets(weapon);
-  const perCopy =
-    weapon?.gun?.muzzleMode === "cycle"
-      ? [authored[(Math.max(1, acceptedSeq >>> 0) - 1) % authored.length]!]
-      : authored;
-  const separation = weapon?.dual ? Math.max(0, weapon.gun?.dualMuzzleSeparation ?? 0) : 0;
-  if (separation <= 0) return perCopy.map((offset) => ({ ...offset }));
-  const half = separation / 2;
-  const out: WeaponMuzzleOffset[] = [];
-  for (const copyOffset of [-half, half])
-    for (const offset of perCopy)
-      out.push({ forward: offset.forward, lateral: offset.lateral + copyOffset });
-  return out;
+interface WeaponMuzzleHandAnchor {
+  x: number;
+  y: number;
+  aimReach: number;
 }
 
-/** Rotate one local muzzle displacement through an accepted world-space aim. */
-export function offsetWeaponMuzzle(
-  tipX: number,
-  tipY: number,
-  aimX: number,
-  aimY: number,
-  offset: Readonly<WeaponMuzzleOffset>,
-): { x: number; y: number } {
+const MUZZLE_HAND_ANCHORS = {
+  pistol: {
+    lead: { x: 0.22, y: -0.08, aimReach: 0.025 },
+    off: { x: 0.15, y: -0.06, aimReach: 0.02 },
+  },
+  "long-gun": {
+    lead: { x: 0.15, y: -0.12, aimReach: 0.02 },
+    off: { x: 0.1, y: -0.105, aimReach: 0.015 },
+  },
+  scattergun: {
+    lead: { x: 0.15, y: -0.085, aimReach: 0.018 },
+    off: { x: 0.1, y: -0.065, aimReach: 0.014 },
+  },
+  "rapid-gun": {
+    lead: { x: 0.2, y: -0.085, aimReach: 0.022 },
+    off: { x: 0.14, y: -0.07, aimReach: 0.018 },
+  },
+  launcher: {
+    lead: { x: 0.14, y: -0.12, aimReach: 0.015 },
+    off: { x: 0.09, y: -0.105, aimReach: 0.012 },
+  },
+  "shoulder-launcher": {
+    lead: { x: -0.08, y: -0.32, aimReach: 0.008 },
+    off: { x: 0.04, y: -0.23, aimReach: 0.006 },
+  },
+  "fist-gun": {
+    lead: { x: 0.28, y: -0.04, aimReach: 0.02 },
+    off: { x: 0.22, y: -0.035, aimReach: 0.018 },
+  },
+  wand: {
+    lead: { x: 0.2, y: -0.055, aimReach: 0.018 },
+    off: { x: 0.14, y: -0.045, aimReach: 0.015 },
+  },
+  staff: {
+    lead: { x: 0.13, y: 0, aimReach: 0.015 },
+    off: { x: 0.08, y: 0.01, aimReach: 0.012 },
+  },
+  tome: {
+    lead: { x: 0.14, y: -0.02, aimReach: 0 },
+    off: { x: 0.1, y: -0.015, aimReach: 0 },
+  },
+} as const;
+
+type WeaponMuzzleStance = keyof typeof MUZZLE_HAND_ANCHORS;
+
+function weaponMuzzleStance(weapon: WeaponDef): WeaponMuzzleStance {
+  const family = weapon.tags.family ?? "";
+  const grip = weapon.tags.grip;
+  const identity = `${weapon.id} ${weapon.name}`;
+  const worn =
+    /^(gauntlet|fist)$/i.test(family) ||
+    /\b(claws?|talons?|mitts?|gloves?|vambraces?|gauntlets?|knuckles?|cestus|fists?)\b/i.test(
+      weapon.name,
+    );
+  if (worn) return "fist-gun";
+  if (
+    weapon.gripPoints?.secondary?.role === "shoulder-RPG" ||
+    weapon.performance?.hold === "shoulder-launcher"
+  )
+    return "shoulder-launcher";
+  if (weapon.tags.classPool === "caster") {
+    if (
+      /^(?:almanac|bestiary|chapbook|codex|compendium|grimoire|ledger|manuscript|psalter|spellbook|tome)$/i.test(
+        family,
+      )
+    )
+      return "tome";
+    if (/^staff$/i.test(family)) return "staff";
+    return "wand";
+  }
+  if (weapon.gun) {
+    if (
+      weapon.tags.delivery === "spread" ||
+      (weapon.gun.pellets ?? 1) > 1 ||
+      /^(?:blunderbuss|shotgun)$/i.test(family) ||
+      weaponHasHandlingTag(weapon, "pump")
+    )
+      return "scattergun";
+    if (
+      weapon.gun.explode ||
+      /grenade|rocket|mortar/i.test(weapon.gun.bulletKind) ||
+      /concussion-cannon/i.test(family) ||
+      /\b(?:bombard|howitzer|launcher|mortar)\b/i.test(identity)
+    )
+      return "launcher";
+    if (/^(?:lever-rifle|marksman-rifle|railgun|scrap-cannon)$/i.test(family)) return "long-gun";
+    if (
+      /^(?:gun|machine-pistol|nailgun)$/i.test(family) ||
+      /nail/i.test(weapon.gun.bulletKind) ||
+      ((grip === "1H" || grip === "dual") &&
+        (/tracer/i.test(weapon.gun.bulletKind) ||
+          weapon.tags.fireMode === "auto" ||
+          weapon.gun.fireRate <= 0.2))
+    )
+      return "rapid-gun";
+  }
+  return grip === "1H" || grip === "dual" ? "pistol" : "long-gun";
+}
+
+/**
+ * Shared deterministic grip/recoil pose. Authority evaluates it at each round's fire tick; the rig uses
+ * the same result to mount the actual PNG before its art point is transformed.
+ */
+export function weaponMuzzleGripOffset(
+  weapon: WeaponDef,
+  part: number,
+  pose: Pick<
+    WeaponMuzzlePose,
+    "aimX" | "aimY" | "facing" | "hand" | "recoilElapsedMs" | "recoilHand"
+  >,
+): WeaponMuzzleGripOffset {
+  const hand =
+    weapon.dual && (weapon.muzzle?.parts.length ?? 0) > 1
+      ? part === 1
+        ? 1
+        : 0
+      : (pose.hand ?? (part === 1 ? 1 : 0));
+  const aimLength = Math.hypot(pose.aimX, pose.aimY) || 1;
+  const aimX = pose.aimX / aimLength;
+  const aimY = pose.aimY / aimLength;
+  const facing = pose.facing ?? (aimX < 0 ? -1 : 1);
+  const stance = weaponMuzzleStance(weapon);
+  const anchor: WeaponMuzzleHandAnchor = MUZZLE_HAND_ANCHORS[stance][hand === 0 ? "lead" : "off"];
+  const elapsed = pose.recoilElapsedMs ?? 0;
+  let recoilForward = 0;
+  if (weapon.gun && pose.recoilHand === hand && elapsed > 0 && elapsed < WEAPON_MUZZLE_RECOIL_MS) {
+    const envelope = Math.sin(Math.PI * (elapsed / WEAPON_MUZZLE_RECOIL_MS));
+    const strength = Math.min(1.35, (weapon.gun.recoil ?? 0.0017) / 0.004);
+    recoilForward = -WEAPON_POSE_BODY_HEIGHT * 0.045 * envelope * strength;
+  }
+  const anchorY =
+    stance === "fist-gun"
+      ? Math.max(anchor.y + aimY * anchor.aimReach, -0.06)
+      : anchor.y + aimY * anchor.aimReach;
+  const directAimReach = hand === 0 ? 0.1 : 0;
   return {
-    x: tipX + aimX * offset.forward - aimY * offset.lateral,
-    y: tipY + aimY * offset.forward + aimX * offset.lateral,
+    x:
+      facing * anchor.x * WEAPON_POSE_BODY_HEIGHT +
+      aimX * (anchor.aimReach + directAimReach) * WEAPON_POSE_BODY_HEIGHT +
+      aimX * recoilForward,
+    y:
+      anchorY * WEAPON_POSE_BODY_HEIGHT +
+      aimY * directAimReach * WEAPON_POSE_BODY_HEIGHT +
+      aimY * recoilForward,
   };
 }
 
-/** Painted +X emitter reach for authored spouts. Both client punctuation and server projectile spawn call
- * this exact seam; a zero return means the weapon retains its legacy source-origin policy. */
-export function weaponPerformanceEmitterReach(weapon: WeaponDef | undefined): number {
-  return weapon?.performance?.emitter === "spout" ? weaponMuzzleReach(weapon) : 0;
+const muzzleTransformScratch: WeaponAffineTransform = { a: 1, b: 0, c: 0, d: 1, tx: 0, ty: 0 };
+
+/** Build the server/canonical sprite affine for one installed PNG part. */
+export function weaponMuzzleTransform(
+  weapon: WeaponDef,
+  part: number,
+  pose: Readonly<WeaponMuzzlePose>,
+  out: WeaponAffineTransform = { a: 1, b: 0, c: 0, d: 1, tx: 0, ty: 0 },
+): WeaponAffineTransform {
+  const art = weapon.muzzle;
+  const dimensions = art?.parts[part] ?? art?.parts[0];
+  if (!dimensions) throw new Error(`Weapon ${weapon.id} has no muzzle sprite part ${part}`);
+  const renderScale = pose.renderScale ?? 1;
+  const aimLength = Math.hypot(pose.aimX, pose.aimY) || 1;
+  const aimX = pose.aimX / aimLength;
+  const aimY = pose.aimY / aimLength;
+  const grip = resolvedGunGripPoints(weapon)?.primary;
+  // Worn/glove guns are drawn as fixed hand replacements with a 0.4 horizontal
+  // origin. Keep that pivot in the canonical affine too; using gripFrac here
+  // would shift the server muzzle by exactly 0.25 * displayLength.
+  const gripOriginX =
+    grip?.x ?? (weaponMuzzleStance(weapon) === "fist-gun" ? 0.4 : weapon.gripFrac);
+  const spriteScale = weapon.displayLength / dimensions.width;
+  const gripPose = weaponMuzzleGripOffset(weapon, part, pose);
+  return weaponSpriteTransform(
+    {
+      x: pose.x + gripPose.x * renderScale,
+      y: pose.y + gripPose.y * renderScale,
+      originX: gripOriginX * dimensions.width,
+      originY: (grip?.y ?? 0.5) * dimensions.height,
+      rotation: Math.atan2(aimY, aimX),
+      scaleX: spriteScale,
+      scaleY: spriteScale,
+    },
+    out,
+  );
+}
+
+/** Authoritative art-space launch points for one accepted beat. */
+export function weaponMuzzleWorldPointsForShot(
+  weapon: WeaponDef,
+  pose: Readonly<WeaponMuzzlePose>,
+  acceptedSeq: number,
+): Array<{ x: number; y: number; point: WeaponArtMuzzlePoint }> {
+  if (!weapon.muzzle) throw new Error(`Weapon ${weapon.id} has no art-space muzzle`);
+  const points = weaponArtMuzzlePointsForShot(weapon.muzzle, acceptedSeq, pose.salvoIndex);
+  return points.map((point) => {
+    const transform = weaponMuzzleTransform(weapon, point.part, pose, muzzleTransformScratch);
+    const world = transformWeaponArtPoint(point, transform);
+    return { x: world.x, y: world.y, point };
+  });
+}
+
+/** First canonical art-space muzzle, used by single-source performance punctuation. */
+export function weaponMuzzleWorldPoint(
+  weapon: WeaponDef,
+  pose: Readonly<WeaponMuzzlePose>,
+  acceptedSeq = 1,
+): { x: number; y: number } {
+  const point = weaponMuzzleWorldPointsForShot(weapon, pose, acceptedSeq)[0];
+  if (!point) throw new Error(`Weapon ${weapon.id} resolved an empty muzzle salvo`);
+  return { x: point.x, y: point.y };
+}
+
+/** One accepted gun round's deterministic self-recoil contract. The server applies it to authority and
+ * the owning client predicts the same impulse for the trigger round plus every scheduled burst round. */
+export function gunUserRecoilFor(
+  weapon: Pick<WeaponDef, "gun"> | undefined,
+): Readonly<{ impulse: number; maxImpulse: number }> {
+  const gun = weapon?.gun;
+  if (!gun) return { impulse: 0, maxImpulse: IMPULSE_MAX };
+  const displacementMultiplier = gun.userKnockbackMultiplier ?? 1;
+  return {
+    impulse:
+      GUN_RECOIL_IMPULSE *
+      ((gun.recoil ?? GUN_RECOIL_BASELINE) / GUN_RECOIL_BASELINE) *
+      displacementMultiplier,
+    maxImpulse: IMPULSE_MAX * Math.max(1, displacementMultiplier),
+  };
 }
 
 /** Two-hand orbit carries the grip this far from the authoritative player root before extending the blade.
@@ -876,7 +1064,7 @@ export const MELEE_TWO_HAND_GRIP_REACH = 22.8;
  *  The gun bug's melee twin (playtest: "the tips of some melee weapons don't hit"): the blade SPRITE is drawn
  *  at `displayLength` scaled by the holder's rig (`characterScale`, §7), so on every character (all sit at
  *  1.06–1.25×) the visible edge reaches further than the FLAT authored `range` the hit test used — the point
- *  whiffs. Two corrections, mirroring `gunMuzzleReach`:
+ *  whiffs. Two corrections:
  *    1. floor the reach at the rendered sprite TIP (`(1−gripFrac)×displayLength` forward of the grip), so a
  *       weapon whose ART overhangs its authored range (driftblade 320>300, coffin 200>166) still hits on the
  *       tip instead of just short of it — never SHRINKS a weapon whose range already exceeds its sprite;
@@ -1888,7 +2076,6 @@ const BASE_WEAPONS: Record<string, WeaponDef> = {
       bulletKind: "tracer",
       muzzle: "rapid",
       muzzleColor: 0xfff0a0,
-      muzzleOffsets: [{ forward: -2, lateral: -13 }],
       recoil: 0.0006, // a faint buzz — held steady so you can walk the stream onto targets
       scalingGrades: { dex: "B" },
     },
@@ -2003,6 +2190,19 @@ const BASE_WEAPONS: Record<string, WeaponDef> = {
  *  but held out of the active roster via `expansion`). Both are `WeaponDef`s, so anything keyed by id
  *  (held sprite, card art, VFX) resolves for either. */
 export const WEAPONS: Record<string, WeaponDef> = { ...BASE_WEAPONS, ...GENERATED_WEAPONS };
+
+// Muzzle authoring is generated from installed PNG alpha and merged into the weapon definitions once.
+// Consumers receive one data object; no client/server registry join or parallel offset table exists.
+for (const [weaponId, muzzle] of Object.entries(WEAPON_ART_MUZZLES)) {
+  const weapon = WEAPONS[weaponId];
+  if (!weapon) throw new Error(`Art-space muzzle references unknown weapon ${weaponId}`);
+  weapon.muzzle = muzzle;
+}
+for (const weapon of Object.values(WEAPONS)) {
+  if ((weapon.gun || weapon.beam) && !weapon.muzzle) {
+    throw new Error(`Ranged weapon ${weapon.id} has no art-space muzzle`);
+  }
+}
 
 // Off-hand charge presentation is uint8. Fail authoring loudly instead of wrapping a future magazine.
 for (const weapon of Object.values(WEAPONS)) {

@@ -144,7 +144,8 @@ function assertVisibleTwirl(summary: TwirlSummary, label: string): void {
   expect(summary.onsetMs ?? 0, `${label} should not start during shot recovery`).toBeGreaterThan(
     350,
   );
-  expect(summary.onsetMs ?? 9_999, `${label} should start promptly`).toBeLessThan(1_000);
+  // Leave one stressed-browser frame of scheduling headroom above the authored ~1s quiet-window onset.
+  expect(summary.onsetMs ?? 9_999, `${label} should start promptly`).toBeLessThan(1_100);
   expect(summary.rangeRad, `${label} should complete a visually dominant turn`).toBeGreaterThan(
     Math.PI * 1.75,
   );

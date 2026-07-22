@@ -1,15 +1,15 @@
 {
   "phase": "after",
-  "baseURL": "http://localhost:5180",
-  "capturedAt": "2026-07-22T01:52:30.994Z",
+  "baseURL": "http://127.0.0.1:56621",
+  "capturedAt": "2026-07-22T05:33:06.215Z",
   "results": [
     {
       "phase": "after",
       "label": "driftblade",
       "weaponId": "driftblade",
-      "baseURL": "http://localhost:5180",
+      "baseURL": "http://127.0.0.1:56621",
       "moduleMode": "corrected live",
-      "capturedAt": "2026-07-22T01:52:00.990Z",
+      "capturedAt": "2026-07-22T05:32:31.826Z",
       "sourceLayerIds": [
         "blade-trail"
       ],
@@ -21,8 +21,8 @@
           "anchor": "source",
           "x": 2400,
           "y": 2420,
-          "targetX": 2655.48486328125,
-          "targetY": 2379.806884765625,
+          "targetX": 2647.879638671875,
+          "targetY": 2377.2314453125,
           "layerIds": [
             "blade-trail"
           ]
@@ -41,9 +41,9 @@
       "phase": "after",
       "label": "voltfang",
       "weaponId": "x2-voltfang-tachi",
-      "baseURL": "http://localhost:5180",
+      "baseURL": "http://127.0.0.1:56621",
       "moduleMode": "corrected live",
-      "capturedAt": "2026-07-22T01:52:07.105Z",
+      "capturedAt": "2026-07-22T05:32:38.180Z",
       "sourceLayerIds": [
         "blade-trail"
       ],
@@ -55,8 +55,8 @@
           "anchor": "source",
           "x": 2400,
           "y": 2420,
-          "targetX": 2539.474154625058,
-          "targetY": 2393.336163223846,
+          "targetX": 2540.259843049145,
+          "targetY": 2397.837499513159,
           "layerIds": [
             "blade-trail"
           ]
@@ -75,9 +75,9 @@
       "phase": "after",
       "label": "headsman",
       "weaponId": "x2-sanctified-headsman",
-      "baseURL": "http://localhost:5180",
+      "baseURL": "http://127.0.0.1:56621",
       "moduleMode": "corrected live",
-      "capturedAt": "2026-07-22T01:52:13.151Z",
+      "capturedAt": "2026-07-22T05:32:44.442Z",
       "sourceLayerIds": [
         "blade-trail"
       ],
@@ -89,8 +89,8 @@
           "anchor": "source",
           "x": 2400,
           "y": 2420,
-          "targetX": 2587.328996385275,
-          "targetY": 2385.5519519669747,
+          "targetX": 2587.154057990847,
+          "targetY": 2384.6138518971243,
           "layerIds": [
             "blade-trail"
           ]
@@ -109,9 +109,9 @@
       "phase": "after",
       "label": "drowned-anchor",
       "weaponId": "x-sword-anchor",
-      "baseURL": "http://localhost:5180",
+      "baseURL": "http://127.0.0.1:56621",
       "moduleMode": "corrected live",
-      "capturedAt": "2026-07-22T01:52:19.100Z",
+      "capturedAt": "2026-07-22T05:32:50.994Z",
       "sourceLayerIds": [
         "blade-trail"
       ],
@@ -123,8 +123,8 @@
           "anchor": "source",
           "x": 2400,
           "y": 2420,
-          "targetX": 2641.4642468528064,
-          "targetY": 2375.3926016023456,
+          "targetX": 2641.6507340173584,
+          "targetY": 2376.414162290122,
           "layerIds": [
             "blade-trail"
           ]
@@ -143,9 +143,9 @@
       "phase": "after",
       "label": "gravechain",
       "weaponId": "x2-gravechain-scythe",
-      "baseURL": "http://localhost:5180",
+      "baseURL": "http://127.0.0.1:56621",
       "moduleMode": "corrected live",
-      "capturedAt": "2026-07-22T01:52:25.005Z",
+      "capturedAt": "2026-07-22T05:32:58.384Z",
       "sourceLayerIds": [
         "blade-trail"
       ],
@@ -157,8 +157,8 @@
           "anchor": "source",
           "x": 2400,
           "y": 2420,
-          "targetX": 2601.97412433234,
-          "targetY": 2384.907933942494,
+          "targetX": 2601.927586514651,
+          "targetY": 2384.6411283499015,
           "layerIds": [
             "blade-trail"
           ]
@@ -177,9 +177,9 @@
       "phase": "after",
       "label": "cinderbrand-cleaver",
       "weaponId": "x2-cinderbrand-cleaver",
-      "baseURL": "http://localhost:5180",
+      "baseURL": "http://127.0.0.1:56621",
       "moduleMode": "corrected live",
-      "capturedAt": "2026-07-22T01:52:30.837Z",
+      "capturedAt": "2026-07-22T05:33:06.012Z",
       "sourceLayerIds": [
         "blade-trail"
       ],
@@ -191,8 +191,8 @@
           "anchor": "source",
           "x": 2400,
           "y": 2420,
-          "targetX": 2556.3833167041303,
-          "targetY": 2397.455416246563,
+          "targetX": 2555.982023742372,
+          "targetY": 2394.828423386008,
           "layerIds": [
             "blade-trail"
           ]

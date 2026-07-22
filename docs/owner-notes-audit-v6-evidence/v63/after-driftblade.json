@@ -2,9 +2,9 @@
   "phase": "after",
   "label": "driftblade",
   "weaponId": "driftblade",
-  "baseURL": "http://localhost:5180",
+  "baseURL": "http://127.0.0.1:56621",
   "moduleMode": "corrected live",
-  "capturedAt": "2026-07-22T01:52:00.990Z",
+  "capturedAt": "2026-07-22T05:32:31.826Z",
   "sourceLayerIds": [
     "blade-trail"
   ],
@@ -16,8 +16,8 @@
       "anchor": "source",
       "x": 2400,
       "y": 2420,
-      "targetX": 2655.48486328125,
-      "targetY": 2379.806884765625,
+      "targetX": 2647.879638671875,
+      "targetY": 2377.2314453125,
       "layerIds": [
         "blade-trail"
       ]

@@ -2,6 +2,7 @@ import {
   ATTACK_HELD_WINDOW,
   CHOP_IMPACT_FRAC,
   comboStepForChain,
+  composeWeaponTransform,
   DUAL_MELEE_PAIR_BAR,
   DUAL_MELEE_SEQUENCE_LENGTH,
   decodeGearCosmetics,
@@ -11,6 +12,7 @@ import {
   GRAVITY_APEX_BAND,
   GROUND_EPSILON,
   INTERP_SNAP_PLAYER,
+  isMonkGloveWeapon,
   isWornWeapon,
   JIGGLE_FOOT_AIR_INERTIA,
   JIGGLE_FOOT_AIR_W,
@@ -77,6 +79,7 @@ import {
   swingDescriptorFor,
   swingDescriptorWithComboStep,
   TICK_MS,
+  transformWeaponArtPoint,
   UltimateFamily,
   type UltimateFamilyValue,
   UltimatePhase,
@@ -84,8 +87,13 @@ import {
   VastagharActionKind,
   VastagharFoot,
   VastagharMode,
+  type WeaponAffineTransform,
+  type WeaponArtMuzzlePoint,
   type WeaponDef,
+  weaponArtMuzzlePointsForShot,
   weaponHasHandlingTag,
+  weaponMuzzleGripOffset,
+  weaponSpriteTransform,
 } from "@dd/shared";
 import Phaser from "phaser";
 import {
@@ -231,6 +239,9 @@ export function forwardMeleeReadyAngle(aimLocal: number): number {
 const CLIENT_VISUAL_COMBOS = true;
 /** The authored guard eases to neutral only after accepted-cadence grace lapses. */
 const COMBO_HOLD_RELEASE_MS = 120;
+/** Sparkmitt accepts a new hand every 120 ms, but its former 76.8 ms pose could begin and end between
+ * low-rate rendered frames. Cadence remains authoritative; this only keeps each monk strike readable. */
+const MONK_FLURRY_MIN_POSE_MS = 240;
 /** G3 presentation-only bridge. It is capped below one tenth of a second and never retimes a descriptor. */
 export const COMBO_STAGE_TRANSITION_MAX_MS = 80;
 const MELEE_GLINT_LEAD_MS = 280;
@@ -1887,6 +1898,7 @@ export class SpriteRig {
     def: WeaponDef;
     worn: boolean;
     spriteId: string;
+    partIndex: 0 | 1;
     /** Geometry is resolved once from the equipped sprite identity; semantic rotation remains uncorrected. */
     artGeometry?: WeaponArtGeometry;
     closedOriginX: number;
@@ -3051,20 +3063,62 @@ export class SpriteRig {
     return { x: point.x, y: point.y };
   }
 
-  /**
-   * Copy the live held implement's +X tip after every authored pose, hand spring, art-axis correction,
-   * character mirror, and root transform. Beam presentation consumes this allocation-free seam after
-   * `animate`, so its first rendered vertex is the muzzle the player can actually see this frame.
-   */
-  writeWeaponMuzzle(hand: 0 | 1, out: { x: number; y: number }): boolean {
-    const weapon = this.weapons[hand];
+  /** Transform one authored PNG muzzle point through the final live sprite affine. */
+  private writeWeaponArtMuzzle(
+    point: WeaponArtMuzzlePoint,
+    out: { x: number; y: number },
+    preferredHand?: 0 | 1,
+  ): boolean {
+    const preferred = preferredHand === undefined ? undefined : this.weapons[preferredHand];
+    const weapon =
+      preferred?.partIndex === point.part
+        ? preferred
+        : this.weapons.find((candidate) => candidate.partIndex === point.part);
     if (!weapon?.img.active || !weapon.img.visible) return false;
     const image = weapon.img;
-    const tip = image.width * Math.abs(image.scaleX) * (1 - image.originX);
-    const localX = image.x + Math.cos(weapon.semanticRotation) * tip;
-    const localY = image.y + Math.sin(weapon.semanticRotation) * tip;
-    this.root.getWorldTransformMatrix().transformPoint(localX, localY, out);
-    return true;
+    const local = weaponSpriteTransform({
+      x: image.x,
+      y: image.y,
+      originX: image.originX * image.width,
+      originY: image.originY * image.height,
+      rotation: image.rotation,
+      scaleX: image.scaleX,
+      scaleY: image.scaleY,
+    });
+    const matrix = this.root.getWorldTransformMatrix();
+    const parent: WeaponAffineTransform = {
+      a: matrix.a,
+      b: matrix.b,
+      c: matrix.c,
+      d: matrix.d,
+      tx: matrix.tx,
+      ty: matrix.ty,
+    };
+    return !!transformWeaponArtPoint(point, composeWeaponTransform(parent, local), out);
+  }
+
+  /**
+   * Copy a specific physical barrel through position, rotation, scale, mirror, art correction, and recoil.
+   * Beam rows use the stable authored point index.
+   */
+  writeWeaponMuzzle(hand: 0 | 1, out: { x: number; y: number }, pointIndex = 0): boolean {
+    const definition = this.weapons[hand]?.def.muzzle ?? this.weaponDef?.muzzle;
+    const point = definition?.points[pointIndex] ?? definition?.points[0];
+    return point ? this.writeWeaponArtMuzzle(point, out, hand) : false;
+  }
+
+  /** Gun flashes/projectile admission use the exact same accepted-beat salvo selection as authority. */
+  writeWeaponMuzzleForShot(
+    acceptedSeq: number,
+    barrelIndex: number,
+    out: { x: number; y: number },
+  ): boolean {
+    const definition = this.weaponDef?.muzzle;
+    if (!definition) return false;
+    const points = weaponArtMuzzlePointsForShot(definition, acceptedSeq);
+    const point = points[barrelIndex] ?? points[0];
+    const hand = point?.part === 1 ? 1 : 0;
+    return point ? this.writeWeaponArtMuzzle(point, out, hand) : false;
   }
 
   /** Retained per-barrel kick. Camera shake and muzzle styling stay at Arena's hand-aware cue site. */
@@ -4355,7 +4409,10 @@ export class SpriteRig {
     }
 
     const wantsOpen =
-      tome.openTextureReady && sceneNow >= tome.openAtMs && sceneNow < tome.openUntilMs;
+      !weapon.def.muzzle &&
+      tome.openTextureReady &&
+      sceneNow >= tome.openAtMs &&
+      sceneNow < tome.openUntilMs;
     if (!wantsOpen) {
       this.setTomeClosed(tome);
       if (sceneNow >= tome.openUntilMs) tome.pendingPage = false;
@@ -4567,6 +4624,7 @@ export class SpriteRig {
         def: piece.def,
         worn: pieceWorn,
         spriteId: piece.spriteId,
+        partIndex,
         artGeometry,
         closedOriginX: originX,
         closedOriginY: originY,
@@ -8341,7 +8399,10 @@ export class SpriteRig {
       // presentation phase instead of spending hit-stop wall time.
       const el = sceneNow - this.swingStart;
       const style = this.swing?.style;
-      const dur = (this.swing?.poseSeconds ?? 0) * 1000;
+      const dur = Math.max(
+        (this.swing?.poseSeconds ?? 0) * 1000,
+        isMonkGloveWeapon(def) ? MONK_FLURRY_MIN_POSE_MS : 0,
+      );
       let tt = -1;
       let poseBlend = 1;
       let comboPose: Readonly<MeleeComboStep> | undefined;
@@ -8533,7 +8594,11 @@ export class SpriteRig {
             const b = pose?.timing.activeEnd ?? CHOP_IMPACT_FRAC;
             const follow = pose?.timing.followEnd ?? 0.66;
             const coilA = execution ? raiseA : -Math.PI / 2 - 0.35; // hang overhead vs weapon shoulder
-            const fromA = execution ? raiseA : pose?.motion === "rest-downswing" ? restA : lowGuardA;
+            const fromA = execution
+              ? raiseA
+              : pose?.motion === "rest-downswing"
+                ? restA
+                : lowGuardA;
             if (tt < a) {
               const p = tt / a;
               const e = p * (2 - p);
@@ -8739,40 +8804,66 @@ export class SpriteRig {
           // §45 PUNCH reuses the existing chamber/extension/hip-drive vocabulary as jab → rear cross →
           // haymaker. Empty fists enter here behind CLIENT_VISUAL_COMBOS; no sprite is required for hands/body.
           const pose = comboPose ?? MELEE_COMBO_SEQUENCES.punch[0];
+          const monkFlurry = isMonkGloveWeapon(def);
           const heavy = twoHandedPoseFor(def, this.poseVariants.twoHandAuthority) ? 1 : 0;
           const isCross = pose?.motion === "cross";
+          const straight = monkFlurry || pose?.motion === "jab" || isCross;
           const reach =
             TARGET_BODY_H *
-            (pose?.motion === "jab" ? 0.48 : isCross ? 0.68 + 0.18 * heavy : 0.55 + 0.25 * heavy);
+            (monkFlurry
+              ? 1
+              : pose?.motion === "jab"
+                ? 0.48
+                : isCross
+                  ? 0.68 + 0.18 * heavy
+                  : 0.55 + 0.25 * heavy);
           const wind = pose?.timing.activeStart ?? 0.1;
           const imp = pose?.timing.activeEnd ?? CHOP_IMPACT_FRAC;
           const follow = pose?.timing.followEnd ?? 0.44;
-          const direction = poseDirection < 0 ? -1 : 1;
+          const pairedMonkStrike = monkFlurry && this.weapons.length > 1;
+          const pairOffStrike = pairedMonkStrike && this.swingHand === 1;
+          const authoredOffStrike =
+            !pairedMonkStrike &&
+            pose?.hand === "off" &&
+            (this.weapons.length > 1 || def.id === "fists" || monkFlurry);
+          const offUsesBack = pairOffStrike || authoredOffStrike;
+          const direction = monkFlurry ? (offUsesBack ? -1 : 1) : poseDirection < 0 ? -1 : 1;
           let th = aimLocal; // fist direction from the shoulder
           let r = 0; // fist extension
           let drive = 0; // 0..1 body-commitment envelope
           let lateral = 0;
-          if (pose?.motion === "jab" || isCross) {
+          if (straight) {
             if (tt < wind) {
               const p = tt / wind;
-              r = reach * ((isCross ? -0.24 : -0.14) - (isCross ? 0.16 : 0.12) * p);
-              lateral = TARGET_BODY_H * (isCross ? -0.12 : 0.08) * p;
-              drive = (isCross ? 0.38 : 0.18) * p;
+              r = monkFlurry
+                ? reach * (0.04 - 0.3 * p)
+                : reach * ((isCross ? -0.24 : -0.14) - (isCross ? 0.16 : 0.12) * p);
+              lateral =
+                TARGET_BODY_H * (monkFlurry ? direction * 0.11 : isCross ? -0.12 : 0.08) * p;
+              drive = (monkFlurry ? 0.32 : isCross ? 0.38 : 0.18) * p;
             } else if (tt < imp) {
               const p = (tt - wind) / (imp - wind);
               const e = 1 - (1 - p) ** 3;
-              r = reach * ((isCross ? -0.4 : -0.26) + (isCross ? 1.4 : 1.26) * e);
-              lateral = TARGET_BODY_H * (isCross ? -0.12 : 0.08) * (1 - e);
-              drive = (isCross ? 0.38 : 0.18) + (isCross ? 0.62 : 0.72) * e;
+              r = monkFlurry
+                ? reach * (-0.26 + 1.26 * e)
+                : reach * ((isCross ? -0.4 : -0.26) + (isCross ? 1.4 : 1.26) * e);
+              lateral =
+                TARGET_BODY_H * (monkFlurry ? direction * 0.11 : isCross ? -0.12 : 0.08) * (1 - e);
+              drive =
+                (monkFlurry ? 0.32 : isCross ? 0.38 : 0.18) +
+                (monkFlurry ? 0.68 : isCross ? 0.62 : 0.72) * e;
             } else if (tt < follow) {
               r = reach;
-              drive = isCross ? 1 : 0.9;
+              drive = monkFlurry || isCross ? 1 : 0.9;
             } else {
               const p = (tt - follow) / (1 - follow);
               const e = p * (2 - p);
-              r = reach * (1 - (isCross ? 1.22 : 1.14) * e);
-              lateral = -TARGET_BODY_H * (isCross ? 0.12 : 0.08) * e;
-              drive = (isCross ? 1 : 0.9) * (1 - e) + (isCross ? 0.2 : 0.12) * e;
+              r = monkFlurry ? reach * (1 - 0.96 * e) : reach * (1 - (isCross ? 1.22 : 1.14) * e);
+              lateral =
+                -TARGET_BODY_H * (monkFlurry ? direction * 0.08 : isCross ? 0.12 : 0.08) * e;
+              drive =
+                (monkFlurry || isCross ? 1 : 0.9) * (1 - e) +
+                (monkFlurry ? 0.16 : isCross ? 0.2 : 0.12) * e;
             }
           } else {
             const haymaker = pose?.motion === "haymaker";
@@ -8805,13 +8896,12 @@ export class SpriteRig {
           weaponAngle = th; // the fist leads along its own travel
           const ox = Math.cos(th) * r - Math.sin(aimLocal) * lateral;
           const oy = Math.sin(th) * r + Math.cos(aimLocal) * lateral;
-          const offUsesBack =
-            pose?.hand === "off" && (this.weapons.length > 1 || def.id === "fists");
           if (offUsesBack) {
             backWeaponAngle = th;
             weaponAngle = restA;
             this.swingBackOffX = ox;
             this.swingBackOffY = oy;
+            swingChannelsRouted = true;
           } else {
             this.swingOffX = ox;
             this.swingOffY = oy;
@@ -8819,8 +8909,9 @@ export class SpriteRig {
           }
           // Body: the punch comes from the HIPS — paper-twist (shoulders turning through), lean into the
           // blow, a dug-in crouch. The rear cross mirrors the lean; the finisher commits the whole frame.
-          const commitScale =
-            pose?.motion === "jab"
+          const commitScale = monkFlurry
+            ? 1.12
+            : pose?.motion === "jab"
               ? 0.55
               : isCross
                 ? 1.18
@@ -8831,6 +8922,12 @@ export class SpriteRig {
           this.body.rotation +=
             direction * (0.1 + 0.09 * heavy) * drive * commitScale * Math.cos(aimLocal);
           this.body.y += (2.5 + 2.5 * heavy) * s * drive * commitScale;
+          if (monkFlurry) {
+            // The root's small authoritative drift comes from `performance.forwardDrift`; this local drive
+            // is the visible shoulder/hip step that makes each detached fist read as a connected arm.
+            this.attackArtOffX += Math.cos(aimLocal) * TARGET_BODY_H * 0.055 * drive;
+            this.attackArtOffY += Math.sin(aimLocal) * TARGET_BODY_H * 0.055 * drive;
+          }
           if (heavy || pose?.motion === "haymaker")
             this.body.scaleY *= 1 - 0.06 * drive * commitScale;
           if (
@@ -9706,6 +9803,28 @@ export class SpriteRig {
       hnd.img.y = hy;
     }
 
+    // Gun/beam sprite placement is spatial gameplay truth: mount each real hand at the exact shared
+    // grip/recoil pose that authority uses, then let the ordinary weapon pass draw the PNG from that hand.
+    if (hasAimedFiringWeapon) {
+      // The paper-card turn squash is presentation-only and has no authoritative clock. A live ranged
+      // implement commits the mirror so its complete parent affine is reproducible on the server.
+      this.root.setScale(this.facing * this.baseScale, this.baseScale);
+      for (let handIndex = 0; handIndex < this.weapons.length; handIndex++) {
+        const held = this.weapons[handIndex];
+        if (!held || !usesAimedFiringStance(held.def)) continue;
+        const gripPose = weaponMuzzleGripOffset(held.def, held.partIndex, {
+          aimX: Math.cos(heldAimLocal),
+          aimY: Math.sin(heldAimLocal),
+          facing: 1,
+          hand: handIndex === 1 ? 1 : 0,
+          recoilElapsedMs: sceneNow - this.gunRecoilAtMs,
+          recoilHand: this.gunRecoilHand,
+        });
+        held.hand.img.x = gripPose.x;
+        held.hand.img.y = gripPose.y;
+      }
+    }
+
     // Two-handed grip: place the back hand UP the haft from the front grip (along the weapon).
     // §40: skipped while an ORBIT slash is live — the orbit pass below owns both hands.
     if (this.poseTwoHanded && this.orbitT < 0 && !tomeCastingHandActive) {
@@ -9763,7 +9882,7 @@ export class SpriteRig {
 
     // V3G1: a true pistol pair uses a deliberately asymmetric silhouette; unrelated dual loadouts are
     // untouched. The weapon pass below follows these hand anchors, so the guns separate with the hands.
-    if (this.weapons.length > 1) {
+    if (this.weapons.length > 1 && !hasAimedFiringWeapon) {
       const front = this.hands.find((hand) => hand.front);
       const back = this.hands.find((hand) => !hand.front);
       if (front)

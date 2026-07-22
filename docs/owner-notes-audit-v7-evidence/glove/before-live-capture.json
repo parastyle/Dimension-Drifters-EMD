@@ -1,0 +1,1235 @@
+{
+  "weaponId": "x2-coyote-trickster-s-sparkmitt",
+  "capturedAt": "2026-07-22T02:43:59.082Z",
+  "captureMs": 583.0333333333331,
+  "frameCount": 36,
+  "attackSeqs": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5
+  ],
+  "swingActiveFrames": 0,
+  "swingStyles": [],
+  "performanceActiveFrames": 36,
+  "visibleHands": {
+    "front": false,
+    "back": false
+  },
+  "weaponHandAnchorMaxDelta": {
+    "front": 0,
+    "back": 0
+  },
+  "maxPerFrameDisplacement": {
+    "front": 0.03108484930306516,
+    "back": 0.10667003904484645
+  },
+  "peakBeatTravel": 0.575586273558874,
+  "peakBeatTravelRatio": 0.0037246882925622156,
+  "beats": [
+    {
+      "attackSeq": 0,
+      "frameCount": 2,
+      "frontTravel": 0.02647370389299306,
+      "backTravel": 0.09196972162081088,
+      "characterWidth": 155.20504984394273
+    },
+    {
+      "attackSeq": 1,
+      "frameCount": 8,
+      "frontTravel": 0.11857664509395288,
+      "backTravel": 0.5702891951567219,
+      "characterWidth": 155.31227535509666
+    },
+    {
+      "attackSeq": 2,
+      "frameCount": 8,
+      "frontTravel": 0.10810363093849558,
+      "backTravel": 0.34053777350218656,
+      "characterWidth": 155.29736921152323
+    },
+    {
+      "attackSeq": 3,
+      "frameCount": 8,
+      "frontTravel": 0.14647657662845381,
+      "backTravel": 0.26123428064728865,
+      "characterWidth": 155.05039394659036
+    },
+    {
+      "attackSeq": 4,
+      "frameCount": 8,
+      "frontTravel": 0.1924586622623022,
+      "backTravel": 0.575586273558874,
+      "characterWidth": 154.53273625829448
+    },
+    {
+      "attackSeq": 5,
+      "frameCount": 2,
+      "frontTravel": 0.03108484930306516,
+      "backTravel": 0.10667003904484645,
+      "characterWidth": 153.79526644898132
+    }
+  ],
+  "browserErrors": [],
+  "screenshots": [
+    "before-idle.png",
+    "before-held-0650ms.png",
+    "before-held-2500ms.png"
+  ],
+  "frames": [
+    {
+      "sceneNow": 282.9466666666669,
+      "attackSeq": 0,
+      "rigAttackSeq": 0,
+      "swingActive": false,
+      "swingHand": 0,
+      "performanceActive": true,
+      "fireHeld": true,
+      "frontWeapon": {
+        "x": 17.629391158730442,
+        "y": -1.8079209400040301,
+        "rotation": -0.1027974276815371,
+        "visible": true
+      },
+      "backWeapon": {
+        "x": 4.165501623957436,
+        "y": -9.522991681994927,
+        "rotation": 0.21720257231846318,
+        "visible": true
+      },
+      "frontHand": {
+        "x": 17.629391158730442,
+        "y": -1.8079209400040301,
+        "visible": false
+      },
+      "backHand": {
+        "x": 4.165501623957436,
+        "y": -9.522991681994927,
+        "visible": false
+      },
+      "characterWidth": 155.16862549379252
+    },
+    {
+      "sceneNow": 299.5933333333336,
+      "attackSeq": 0,
+      "rigAttackSeq": 1,
+      "swingActive": false,
+      "swingHand": 0,
+      "performanceActive": true,
+      "fireHeld": true,
+      "frontWeapon": {
+        "x": 17.629990080330813,
+        "y": -1.8343878682491153,
+        "rotation": -0.10490066971691547,
+        "visible": true
+      },
+      "backWeapon": {
+        "x": 4.1324623283966595,
+        "y": -9.437161415515922,
+        "rotation": 0.2150993302830848,
+        "visible": true
+      },
+      "frontHand": {
+        "x": 17.629990080330813,
+        "y": -1.8343878682491153,
+        "visible": false
+      },
+      "backHand": {
+        "x": 4.1324623283966595,
+        "y": -9.437161415515922,
+        "visible": false
+      },
+      "characterWidth": 155.20504984394273
+    },
+    {
+      "sceneNow": 316.2400000000003,
+      "attackSeq": 1,
+      "rigAttackSeq": 1,
+      "swingActive": false,
+      "swingHand": 0,
+      "performanceActive": true,
+      "fireHeld": true,
+      "frontWeapon": {
+        "x": 17.63045074504588,
+        "y": -1.857845586947297,
+        "rotation": -0.10674350122357801,
+        "visible": true
+      },
+      "backWeapon": {
+        "x": 4.105668068786464,
+        "y": -9.35036245508209,
+        "rotation": 0.21325649877642228,
+        "visible": true
+      },
+      "frontHand": {
+        "x": 17.63045074504588,
+        "y": -1.857845586947297,
+        "visible": false
+      },
+      "backHand": {
+        "x": 4.105668068786464,
+        "y": -9.35036245508209,
+        "visible": false
+      },
+      "characterWidth": 155.23605353791433
+    },
+    {
+      "sceneNow": 332.886666666667,
+      "attackSeq": 1,
+      "rigAttackSeq": 1,
+      "swingActive": false,
+      "swingHand": 0,
+      "performanceActive": true,
+      "fireHeld": true,
+      "frontWeapon": {
+        "x": 17.630805163006208,
+        "y": -1.8788412519507227,
+        "rotation": -0.10835817700110262,
+        "visible": true
+      },
+      "backWeapon": {
+        "x": 4.084758445888806,
+        "y": -9.263445311015595,
+        "rotation": 0.21164182299889767,
+        "visible": true
+      },
+      "frontHand": {
+        "x": 17.630805163006208,
+        "y": -1.8788412519507227,
+        "visible": false
+      },
+      "backHand": {
+        "x": 4.084758445888806,
+        "y": -9.263445311015595,
+        "visible": false
+      },
+      "characterWidth": 155.2617115315266
+    },
+    {
+      "sceneNow": 349.5333333333337,
+      "attackSeq": 1,
+      "rigAttackSeq": 1,
+      "swingActive": false,
+      "swingHand": 0,
+      "performanceActive": true,
+      "fireHeld": true,
+      "frontWeapon": {
+        "x": 17.63107808198359,
+        "y": -1.8978683719217304,
+        "rotation": -0.10977384778940902,
+        "visible": true
+      },
+      "backWeapon": {
+        "x": 4.069374041998902,
+        "y": -9.17721499677014,
+        "rotation": 0.21022615221059127,
+        "visible": true
+      },
+      "frontHand": {
+        "x": 17.63107808198359,
+        "y": -1.8978683719217304,
+        "visible": false
+      },
+      "backHand": {
+        "x": 4.069374041998902,
+        "y": -9.17721499677014,
+        "visible": false
+      },
+      "characterWidth": 155.28209526144053
+    },
+    {
+      "sceneNow": 366.1800000000004,
+      "attackSeq": 1,
+      "rigAttackSeq": 1,
+      "swingActive": false,
+      "swingHand": 0,
+      "performanceActive": true,
+      "fireHeld": true,
+      "frontWeapon": {
+        "x": 17.63128838559014,
+        "y": -1.91535002361537,
+        "rotation": -0.1110156215642153,
+        "visible": true
+      },
+      "backWeapon": {
+        "x": 4.059173349334646,
+        "y": -9.092430343281285,
+        "rotation": 0.208984378435785,
+        "visible": true
+      },
+      "frontHand": {
+        "x": 17.63128838559014,
+        "y": -1.91535002361537,
+        "visible": false
+      },
+      "backHand": {
+        "x": 4.059173349334646,
+        "y": -9.092430343281285,
+        "visible": false
+      },
+      "characterWidth": 155.29727331102146
+    },
+    {
+      "sceneNow": 382.8266666666671,
+      "attackSeq": 1,
+      "rigAttackSeq": 1,
+      "swingActive": false,
+      "swingHand": 0,
+      "performanceActive": true,
+      "fireHeld": true,
+      "frontWeapon": {
+        "x": 17.63145053364283,
+        "y": -1.93165153738863,
+        "rotation": -0.11210529529286539,
+        "visible": true
+      },
+      "backWeapon": {
+        "x": 4.053829700398996,
+        "y": -9.009809640638194,
+        "rotation": 0.20789470470713312,
+        "visible": true
+      },
+      "frontHand": {
+        "x": 17.63145053364283,
+        "y": -1.93165153738863,
+        "visible": false
+      },
+      "backHand": {
+        "x": 4.053829700398996,
+        "y": -9.009809640638194,
+        "visible": false
+      },
+      "characterWidth": 155.3073120638792
+    },
+    {
+      "sceneNow": 399.46666666666715,
+      "attackSeq": 1,
+      "rigAttackSeq": 1,
+      "swingActive": false,
+      "swingHand": 0,
+      "performanceActive": true,
+      "fireHeld": true,
+      "frontWeapon": {
+        "x": 17.6315756396977,
+        "y": -1.9470924674658876,
+        "rotation": -0.11306202939714183,
+        "visible": true
+      },
+      "backWeapon": {
+        "x": 4.053023151701215,
+        "y": -8.930067494742413,
+        "rotation": 0.20693797060285846,
+        "visible": true
+      },
+      "frontHand": {
+        "x": 17.6315756396977,
+        "y": -1.9470924674658876,
+        "visible": false
+      },
+      "backHand": {
+        "x": 4.053023151701215,
+        "y": -8.930067494742413,
+        "visible": false
+      },
+      "characterWidth": 155.31227535509666
+    },
+    {
+      "sceneNow": 416.1066666666672,
+      "attackSeq": 1,
+      "rigAttackSeq": 1,
+      "swingActive": false,
+      "swingHand": 0,
+      "performanceActive": true,
+      "fireHeld": true,
+      "frontWeapon": {
+        "x": 17.631672100386492,
+        "y": -1.9619264155508405,
+        "rotation": -0.11390132718545765,
+        "visible": true
+      },
+      "backWeapon": {
+        "x": 4.056462242002674,
+        "y": -8.85380575148293,
+        "rotation": 0.20609867281454264,
+        "visible": true
+      },
+      "frontHand": {
+        "x": 17.631672100386492,
+        "y": -1.9619264155508405,
+        "visible": false
+      },
+      "backHand": {
+        "x": 4.056462242002674,
+        "y": -8.85380575148293,
+        "visible": false
+      },
+      "characterWidth": 155.31223200510215
+    },
+    {
+      "sceneNow": 432.7533333333339,
+      "attackSeq": 1,
+      "rigAttackSeq": 2,
+      "swingActive": false,
+      "swingHand": 0,
+      "performanceActive": true,
+      "fireHeld": true,
+      "frontWeapon": {
+        "x": 17.631746627607786,
+        "y": -1.9764151507068175,
+        "rotation": -0.11463901767670315,
+        "visible": true
+      },
+      "backWeapon": {
+        "x": 4.063844703884932,
+        "y": -8.781608930028561,
+        "rotation": 0.20536098232329714,
+        "visible": true
+      },
+      "frontHand": {
+        "x": 17.631746627607786,
+        "y": -1.9764151507068175,
+        "visible": false
+      },
+      "backHand": {
+        "x": 4.063844703884932,
+        "y": -8.781608930028561,
+        "visible": false
+      },
+      "characterWidth": 155.30724241741834
+    },
+    {
+      "sceneNow": 449.4000000000006,
+      "attackSeq": 2,
+      "rigAttackSeq": 2,
+      "swingActive": false,
+      "swingHand": 0,
+      "performanceActive": true,
+      "fireHeld": true,
+      "frontWeapon": {
+        "x": 17.631804162769292,
+        "y": -1.9907476172374936,
+        "rotation": -0.11528683937470241,
+        "visible": true
+      },
+      "backWeapon": {
+        "x": 4.074886431320607,
+        "y": -8.714076065121306,
+        "rotation": 0.20471316062529787,
+        "visible": true
+      },
+      "frontHand": {
+        "x": 17.631804162769292,
+        "y": -1.9907476172374936,
+        "visible": false
+      },
+      "backHand": {
+        "x": 4.074886431320607,
+        "y": -8.714076065121306,
+        "visible": false
+      },
+      "characterWidth": 155.29736921152323
+    },
+    {
+      "sceneNow": 466.0466666666673,
+      "attackSeq": 2,
+      "rigAttackSeq": 2,
+      "swingActive": false,
+      "swingHand": 0,
+      "performanceActive": true,
+      "fireHeld": true,
+      "frontWeapon": {
+        "x": 17.631848593248403,
+        "y": -2.0050999751485747,
+        "rotation": -0.11585583402264987,
+        "visible": true
+      },
+      "backWeapon": {
+        "x": 4.08930336324428,
+        "y": -8.651739671241238,
+        "rotation": 0.2041441659773504,
+        "visible": true
+      },
+      "frontHand": {
+        "x": 17.631848593248403,
+        "y": -2.0050999751485747,
+        "visible": false
+      },
+      "backHand": {
+        "x": 4.08930336324428,
+        "y": -8.651739671241238,
+        "visible": false
+      },
+      "characterWidth": 155.28267662596616
+    },
+    {
+      "sceneNow": 482.693333333334,
+      "attackSeq": 2,
+      "rigAttackSeq": 2,
+      "swingActive": false,
+      "swingHand": 0,
+      "performanceActive": true,
+      "fireHeld": true,
+      "frontWeapon": {
+        "x": 17.6318829232312,
+        "y": -2.0196264626932963,
+        "rotation": -0.11635582005724743,
+        "visible": true
+      },
+      "backWeapon": {
+        "x": 4.106813272072735,
+        "y": -8.59509385332289,
+        "rotation": 0.20364417994275286,
+        "visible": true
+      },
+      "frontHand": {
+        "x": 17.6318829232312,
+        "y": -2.0196264626932963,
+        "visible": false
+      },
+      "backHand": {
+        "x": 4.106813272072735,
+        "y": -8.59509385332289,
+        "visible": false
+      },
+      "characterWidth": 155.26322999286006
+    },
+    {
+      "sceneNow": 499.3466666666674,
+      "attackSeq": 2,
+      "rigAttackSeq": 2,
+      "swingActive": false,
+      "swingHand": 0,
+      "performanceActive": true,
+      "fireHeld": true,
+      "frontWeapon": {
+        "x": 17.63190946559103,
+        "y": -2.034462853818693,
+        "rotation": -0.11679541916946512,
+        "visible": true
+      },
+      "backWeapon": {
+        "x": 4.127146352535405,
+        "y": -8.544572303805017,
+        "rotation": 0.20320458083053516,
+        "visible": true
+      },
+      "frontHand": {
+        "x": 17.63190946559103,
+        "y": -2.034462853818693,
+        "visible": false
+      },
+      "backHand": {
+        "x": 4.127146352535405,
+        "y": -8.544572303805017,
+        "visible": false
+      },
+      "characterWidth": 155.23908555904606
+    },
+    {
+      "sceneNow": 516.0000000000007,
+      "attackSeq": 2,
+      "rigAttackSeq": 2,
+      "swingActive": false,
+      "swingHand": 0,
+      "performanceActive": true,
+      "fireHeld": true,
+      "frontWeapon": {
+        "x": 17.631929994863057,
+        "y": -2.049718443604169,
+        "rotation": -0.11718207579390594,
+        "visible": true
+      },
+      "backWeapon": {
+        "x": 4.15001646802747,
+        "y": -8.50061113337386,
+        "rotation": 0.20281792420609435,
+        "visible": true
+      },
+      "frontHand": {
+        "x": 17.631929994863057,
+        "y": -2.049718443604169,
+        "visible": false
+      },
+      "backHand": {
+        "x": 4.15001646802747,
+        "y": -8.50061113337386,
+        "visible": false
+      },
+      "characterWidth": 155.21031897543915
+    },
+    {
+      "sceneNow": 532.653333333334,
+      "attackSeq": 2,
+      "rigAttackSeq": 2,
+      "swingActive": false,
+      "swingHand": 0,
+      "performanceActive": true,
+      "fireHeld": true,
+      "frontWeapon": {
+        "x": 17.631945868590773,
+        "y": -2.0654833349823063,
+        "rotation": -0.11752207026584571,
+        "visible": true
+      },
+      "backWeapon": {
+        "x": 4.1751490817085575,
+        "y": -8.463576487703012,
+        "rotation": 0.20247792973415457,
+        "visible": true
+      },
+      "frontHand": {
+        "x": 17.631945868590773,
+        "y": -2.0654833349823063,
+        "visible": false
+      },
+      "backHand": {
+        "x": 4.1751490817085575,
+        "y": -8.463576487703012,
+        "visible": false
+      },
+      "characterWidth": 155.17700127971827
+    },
+    {
+      "sceneNow": 549.313333333334,
+      "attackSeq": 2,
+      "rigAttackSeq": 2,
+      "swingActive": false,
+      "swingHand": 0,
+      "performanceActive": true,
+      "fireHeld": true,
+      "frontWeapon": {
+        "x": 17.631958123301704,
+        "y": -2.081831270192497,
+        "rotation": -0.11782053192545128,
+        "visible": true
+      },
+      "backWeapon": {
+        "x": 4.202285671543908,
+        "y": -8.433776483335134,
+        "rotation": 0.20217946807454723,
+        "visible": true
+      },
+      "frontHand": {
+        "x": 17.631958123301704,
+        "y": -2.081831270192497,
+        "visible": false
+      },
+      "backHand": {
+        "x": 4.202285671543908,
+        "y": -8.433776483335134,
+        "visible": false
+      },
+      "characterWidth": 155.13919001940656
+    },
+    {
+      "sceneNow": 565.9800000000006,
+      "attackSeq": 2,
+      "rigAttackSeq": 3,
+      "swingActive": false,
+      "swingHand": 0,
+      "performanceActive": true,
+      "fireHeld": true,
+      "frontWeapon": {
+        "x": 17.631967625003544,
+        "y": -2.0988511245912536,
+        "rotation": -0.11808367510982265,
+        "visible": true
+      },
+      "backWeapon": {
+        "x": 4.231140621247878,
+        "y": -8.41150276274319,
+        "rotation": 0.20191632489017586,
+        "visible": true
+      },
+      "frontHand": {
+        "x": 17.631967625003544,
+        "y": -2.0988511245912536,
+        "visible": false
+      },
+      "backHand": {
+        "x": 4.231140621247878,
+        "y": -8.41150276274319,
+        "visible": false
+      },
+      "characterWidth": 155.09695630747123
+    },
+    {
+      "sceneNow": 582.6466666666672,
+      "attackSeq": 3,
+      "rigAttackSeq": 3,
+      "swingActive": false,
+      "swingHand": 0,
+      "performanceActive": true,
+      "fireHeld": true,
+      "frontWeapon": {
+        "x": 17.631974950167855,
+        "y": -2.1165658407731693,
+        "rotation": -0.11831435284971192,
+        "visible": true
+      },
+      "backWeapon": {
+        "x": 4.261440956435781,
+        "y": -8.396989849340043,
+        "rotation": 0.20168564715028836,
+        "visible": true
+      },
+      "frontHand": {
+        "x": 17.631974950167855,
+        "y": -2.1165658407731693,
+        "visible": false
+      },
+      "backHand": {
+        "x": 4.261440956435781,
+        "y": -8.396989849340043,
+        "visible": false
+      },
+      "characterWidth": 155.05039394659036
+    },
+    {
+      "sceneNow": 599.3133333333338,
+      "attackSeq": 3,
+      "rigAttackSeq": 3,
+      "swingActive": false,
+      "swingHand": 0,
+      "performanceActive": true,
+      "fireHeld": true,
+      "frontWeapon": {
+        "x": 17.631980627409305,
+        "y": -2.135040486890436,
+        "rotation": -0.11851762493744644,
+        "visible": true
+      },
+      "backWeapon": {
+        "x": 4.2929006492523705,
+        "y": -8.390424207895716,
+        "rotation": 0.20148237506255384,
+        "visible": true
+      },
+      "frontHand": {
+        "x": 17.631980627409305,
+        "y": -2.135040486890436,
+        "visible": false
+      },
+      "backHand": {
+        "x": 4.2929006492523705,
+        "y": -8.390424207895716,
+        "visible": false
+      },
+      "characterWidth": 154.99958572241707
+    },
+    {
+      "sceneNow": 615.9800000000005,
+      "attackSeq": 3,
+      "rigAttackSeq": 3,
+      "swingActive": false,
+      "swingHand": 0,
+      "performanceActive": true,
+      "fireHeld": true,
+      "frontWeapon": {
+        "x": 17.63198501634411,
+        "y": -2.1542996736571793,
+        "rotation": -0.11869631359904353,
+        "visible": true
+      },
+      "backWeapon": {
+        "x": 4.325251652948534,
+        "y": -8.39193335282735,
+        "rotation": 0.20130368640095497,
+        "visible": true
+      },
+      "frontHand": {
+        "x": 17.63198501634411,
+        "y": -2.1542996736571793,
+        "visible": false
+      },
+      "backHand": {
+        "x": 4.325251652948534,
+        "y": -8.39193335282735,
+        "visible": false
+      },
+      "characterWidth": 154.944617804903
+    },
+    {
+      "sceneNow": 632.6466666666671,
+      "attackSeq": 3,
+      "rigAttackSeq": 3,
+      "swingActive": false,
+      "swingHand": 0,
+      "performanceActive": true,
+      "fireHeld": true,
+      "frontWeapon": {
+        "x": 17.6319884062818,
+        "y": -2.1743668083461984,
+        "rotation": -0.11885323190104202,
+        "visible": true
+      },
+      "backWeapon": {
+        "x": 4.358224285860487,
+        "y": -8.401596959672384,
+        "rotation": 0.20114676809895649,
+        "visible": true
+      },
+      "frontHand": {
+        "x": 17.6319884062818,
+        "y": -2.1743668083461984,
+        "visible": false
+      },
+      "backHand": {
+        "x": 4.358224285860487,
+        "y": -8.401596959672384,
+        "visible": false
+      },
+      "characterWidth": 154.8855798807086
+    },
+    {
+      "sceneNow": 649.3133333333337,
+      "attackSeq": 3,
+      "rigAttackSeq": 3,
+      "swingActive": false,
+      "swingHand": 0,
+      "performanceActive": true,
+      "fireHeld": true,
+      "frontWeapon": {
+        "x": 17.63199103774094,
+        "y": -2.1952738557048743,
+        "rotation": -0.11899173898698834,
+        "visible": true
+      },
+      "backWeapon": {
+        "x": 4.391543380225265,
+        "y": -8.419449442612276,
+        "rotation": 0.20100826101301195,
+        "visible": true
+      },
+      "frontHand": {
+        "x": 17.63199103774094,
+        "y": -2.1952738557048743,
+        "visible": false
+      },
+      "backHand": {
+        "x": 4.391543380225265,
+        "y": -8.419449442612276,
+        "visible": false
+      },
+      "characterWidth": 154.8225652570719
+    },
+    {
+      "sceneNow": 665.9800000000004,
+      "attackSeq": 3,
+      "rigAttackSeq": 3,
+      "swingActive": false,
+      "swingHand": 0,
+      "performanceActive": true,
+      "fireHeld": true,
+      "frontWeapon": {
+        "x": 17.631993063321094,
+        "y": -2.2170124130288302,
+        "rotation": -0.11911296650509229,
+        "visible": true
+      },
+      "backWeapon": {
+        "x": 4.42495533892453,
+        "y": -8.445464422003392,
+        "rotation": 0.200887033494908,
+        "visible": true
+      },
+      "frontHand": {
+        "x": 17.631993063321094,
+        "y": -2.2170124130288302,
+        "visible": false
+      },
+      "backHand": {
+        "x": 4.42495533892453,
+        "y": -8.445464422003392,
+        "visible": false
+      },
+      "characterWidth": 154.7556709388704
+    },
+    {
+      "sceneNow": 682.646666666667,
+      "attackSeq": 3,
+      "rigAttackSeq": 3,
+      "swingActive": false,
+      "swingHand": 0,
+      "performanceActive": true,
+      "fireHeld": true,
+      "frontWeapon": {
+        "x": 17.631994632319646,
+        "y": -2.2396022614435136,
+        "rotation": -0.11921970730140075,
+        "visible": true
+      },
+      "backWeapon": {
+        "x": 4.458193377366577,
+        "y": -8.479576210900909,
+        "rotation": 0.20078029269859776,
+        "visible": true
+      },
+      "frontHand": {
+        "x": 17.631994632319646,
+        "y": -2.2396022614435136,
+        "visible": false
+      },
+      "backHand": {
+        "x": 4.458193377366577,
+        "y": -8.479576210900909,
+        "visible": false
+      },
+      "characterWidth": 154.68499768056583
+    },
+    {
+      "sceneNow": 699.3133333333336,
+      "attackSeq": 3,
+      "rigAttackSeq": 4,
+      "swingActive": false,
+      "swingHand": 0,
+      "performanceActive": true,
+      "fireHeld": true,
+      "frontWeapon": {
+        "x": 17.63199584686586,
+        "y": -2.2630424159110367,
+        "rotation": -0.11931363963414654,
+        "visible": true
+      },
+      "backWeapon": {
+        "x": 4.491004648450357,
+        "y": -8.521664869668669,
+        "rotation": 0.20068636036585374,
+        "visible": true
+      },
+      "frontHand": {
+        "x": 17.63199584686586,
+        "y": -2.2630424159110367,
+        "visible": false
+      },
+      "backHand": {
+        "x": 4.491004648450357,
+        "y": -8.521664869668669,
+        "visible": false
+      },
+      "characterWidth": 154.61065001466886
+    },
+    {
+      "sceneNow": 715.9800000000002,
+      "attackSeq": 4,
+      "rigAttackSeq": 4,
+      "swingActive": false,
+      "swingHand": 0,
+      "performanceActive": true,
+      "fireHeld": true,
+      "frontWeapon": {
+        "x": 17.631996788448127,
+        "y": -2.2873307152023257,
+        "rotation": -0.11939643828136148,
+        "visible": true
+      },
+      "backWeapon": {
+        "x": 4.523141286389659,
+        "y": -8.57156301462681,
+        "rotation": 0.2006035617186388,
+        "visible": true
+      },
+      "frontHand": {
+        "x": 17.631996788448127,
+        "y": -2.2873307152023257,
+        "visible": false
+      },
+      "backHand": {
+        "x": 4.523141286389659,
+        "y": -8.57156301462681,
+        "visible": false
+      },
+      "characterWidth": 154.53273625829448
+    },
+    {
+      "sceneNow": 732.6466666666669,
+      "attackSeq": 4,
+      "rigAttackSeq": 4,
+      "swingActive": false,
+      "swingHand": 0,
+      "performanceActive": true,
+      "fireHeld": true,
+      "frontWeapon": {
+        "x": 17.631997516305827,
+        "y": -2.3124540765473975,
+        "rotation": -0.11946922155992112,
+        "visible": true
+      },
+      "backWeapon": {
+        "x": 4.5543669339087955,
+        "y": -8.629053672792942,
+        "rotation": 0.20053077844007916,
+        "visible": true
+      },
+      "frontHand": {
+        "x": 17.631997516305827,
+        "y": -2.3124540765473975,
+        "visible": false
+      },
+      "backHand": {
+        "x": 4.5543669339087955,
+        "y": -8.629053672792942,
+        "visible": false
+      },
+      "characterWidth": 154.4513684993097
+    },
+    {
+      "sceneNow": 749.3133333333335,
+      "attackSeq": 4,
+      "rigAttackSeq": 4,
+      "swingActive": false,
+      "swingHand": 0,
+      "performanceActive": true,
+      "fireHeld": true,
+      "frontWeapon": {
+        "x": 17.631998078192126,
+        "y": -2.3383982687795712,
+        "rotation": -0.11953310502728698,
+        "visible": true
+      },
+      "backWeapon": {
+        "x": 4.584452935179488,
+        "y": -8.693874663993816,
+        "rotation": 0.20046689497271153,
+        "visible": true
+      },
+      "frontHand": {
+        "x": 17.631998078192126,
+        "y": -2.3383982687795712,
+        "visible": false
+      },
+      "backHand": {
+        "x": 4.584452935179488,
+        "y": -8.693874663993816,
+        "visible": false
+      },
+      "characterWidth": 154.3666625635007
+    },
+    {
+      "sceneNow": 765.9800000000001,
+      "attackSeq": 4,
+      "rigAttackSeq": 4,
+      "swingActive": false,
+      "swingHand": 0,
+      "performanceActive": true,
+      "fireHeld": true,
+      "frontWeapon": {
+        "x": 17.631998512268584,
+        "y": -2.3651479675486202,
+        "rotation": -0.11958920374170212,
+        "visible": true
+      },
+      "backWeapon": {
+        "x": 4.613179609584147,
+        "y": -8.7657202053396,
+        "rotation": 0.20041079625829816,
+        "visible": true
+      },
+      "frontHand": {
+        "x": 17.631998512268584,
+        "y": -2.3651479675486202,
+        "visible": false
+      },
+      "backHand": {
+        "x": 4.613179609584147,
+        "y": -8.7657202053396,
+        "visible": false
+      },
+      "characterWidth": 154.27873796411234
+    },
+    {
+      "sceneNow": 782.6466666666668,
+      "attackSeq": 4,
+      "rigAttackSeq": 4,
+      "swingActive": false,
+      "swingHand": 0,
+      "performanceActive": true,
+      "fireHeld": true,
+      "frontWeapon": {
+        "x": 17.631998848740626,
+        "y": -2.3926867545022055,
+        "rotation": -0.11963863107691708,
+        "visible": true
+      },
+      "backWeapon": {
+        "x": 4.640337507051306,
+        "y": -8.844242775842634,
+        "rotation": 0.2003613689230832,
+        "visible": true
+      },
+      "frontHand": {
+        "x": 17.631998848740626,
+        "y": -2.3926867545022055,
+        "visible": false
+      },
+      "backHand": {
+        "x": 4.640337507051306,
+        "y": -8.844242775842634,
+        "visible": false
+      },
+      "characterWidth": 154.18771783503746
+    },
+    {
+      "sceneNow": 799.3133333333334,
+      "attackSeq": 4,
+      "rigAttackSeq": 4,
+      "swingActive": false,
+      "swingHand": 0,
+      "performanceActive": true,
+      "fireHeld": true,
+      "frontWeapon": {
+        "x": 17.631999108181287,
+        "y": -2.4209873749669852,
+        "rotation": -0.11968194479900518,
+        "visible": true
+      },
+      "backWeapon": {
+        "x": 4.665733908292424,
+        "y": -8.9290520404835,
+        "rotation": 0.2003180552009951,
+        "visible": true
+      },
+      "frontHand": {
+        "x": 17.631999108181287,
+        "y": -2.4209873749669852,
+        "visible": false
+      },
+      "backHand": {
+        "x": 4.665733908292424,
+        "y": -8.9290520404835,
+        "visible": false
+      },
+      "characterWidth": 154.09372884886042
+    },
+    {
+      "sceneNow": 815.98,
+      "attackSeq": 4,
+      "rigAttackSeq": 4,
+      "swingActive": false,
+      "swingHand": 0,
+      "performanceActive": true,
+      "fireHeld": true,
+      "frontWeapon": {
+        "x": 17.631999310094116,
+        "y": -2.4500313378592646,
+        "rotation": -0.11972025705998313,
+        "visible": true
+      },
+      "backWeapon": {
+        "x": 4.6891834021126755,
+        "y": -9.019723648549329,
+        "rotation": 0.20027974294001716,
+        "visible": true
+      },
+      "frontHand": {
+        "x": 17.631999310094116,
+        "y": -2.4500313378592646,
+        "visible": false
+      },
+      "backHand": {
+        "x": 4.6891834021126755,
+        "y": -9.019723648549329,
+        "visible": false
+      },
+      "characterWidth": 153.99690112088913
+    },
+    {
+      "sceneNow": 832.6466666666666,
+      "attackSeq": 4,
+      "rigAttackSeq": 5,
+      "swingActive": false,
+      "swingHand": 0,
+      "performanceActive": true,
+      "fireHeld": true,
+      "frontWeapon": {
+        "x": 17.63199946703064,
+        "y": -2.479789377445988,
+        "rotation": -0.11975412445627853,
+        "visible": true
+      },
+      "backWeapon": {
+        "x": 4.710519563773932,
+        "y": -9.11579544610613,
+        "rotation": 0.20024587554372175,
+        "visible": true
+      },
+      "frontHand": {
+        "x": 17.63199946703064,
+        "y": -2.479789377445988,
+        "visible": false
+      },
+      "backHand": {
+        "x": 4.710519563773932,
+        "y": -9.11579544610613,
+        "visible": false
+      },
+      "characterWidth": 153.8973681002405
+    },
+    {
+      "sceneNow": 849.3133333333333,
+      "attackSeq": 5,
+      "rigAttackSeq": 5,
+      "swingActive": false,
+      "swingHand": 0,
+      "performanceActive": true,
+      "fireHeld": true,
+      "frontWeapon": {
+        "x": 17.631999586958088,
+        "y": -2.510221491456135,
+        "rotation": -0.11978354816516301,
+        "visible": true
+      },
+      "backWeapon": {
+        "x": 4.729596121420734,
+        "y": -9.216770281475675,
+        "rotation": 0.20021645183483727,
+        "visible": true
+      },
+      "frontHand": {
+        "x": 17.631999586958088,
+        "y": -2.510221491456135,
+        "visible": false
+      },
+      "backHand": {
+        "x": 4.729596121420734,
+        "y": -9.216770281475675,
+        "visible": false
+      },
+      "characterWidth": 153.79526644898132
+    },
+    {
+      "sceneNow": 865.9799999999999,
+      "attackSeq": 5,
+      "rigAttackSeq": 5,
+      "swingActive": false,
+      "swingHand": 0,
+      "performanceActive": true,
+      "fireHeld": true,
+      "frontWeapon": {
+        "x": 17.631999680532356,
+        "y": -2.5413063407590593,
+        "rotation": -0.11980963914360032,
+        "visible": true
+      },
+      "backWeapon": {
+        "x": 4.746271623143311,
+        "y": -9.322128835338802,
+        "rotation": 0.20019036085639996,
+        "visible": true
+      },
+      "frontHand": {
+        "x": 17.631999680532356,
+        "y": -2.5413063407590593,
+        "visible": false
+      },
+      "backHand": {
+        "x": 4.746271623143311,
+        "y": -9.322128835338802,
+        "visible": false
+      },
+      "characterWidth": 153.69073591026444
+    }
+  ]
+}

@@ -334,8 +334,6 @@ describe("§43 expansion codegen: every authored gameplay field survives into th
           expect(def.beam?.scalingGrades, `${w.id}.beam.scalingGrades`).toEqual(
             upGrades(b.scalingGrades as Grades),
           );
-        if (b.muzzleOffsets)
-          expect(def.beam?.muzzleOffsets, `${w.id}.beam.muzzleOffsets`).toEqual(b.muzzleOffsets);
       } else if (kind === "groundZone") {
         const zone = b.zone as Behavior | undefined;
         expect(def.groundZone, `${w.id}.groundZone`).toBeDefined();
@@ -376,8 +374,6 @@ describe("§43 expansion codegen: every authored gameplay field survives into th
           projectileColor: { int: [0, 0xffffff] },
           projectileArt: { eq: true },
           projectileVisualScale: { num: [0.5, faradayer ? 12 : 4] },
-          muzzleMode: { eq: true },
-          dualMuzzleSeparation: { num: [0, 64] },
           sonicBoomRing: { eq: true },
           recoil: { num: [0.0004, 0.005] },
           userKnockbackMultiplier: { num: [0.25, 4] },
@@ -386,8 +382,6 @@ describe("§43 expansion codegen: every authored gameplay field survives into th
           bounces: { int: [0, 6], absentAs: 0 },
           scalingGrades: { grades: true },
         });
-        if (b.muzzleOffsets)
-          expect(def.gun?.muzzleOffsets, `${w.id}.gun.muzzleOffsets`).toEqual(b.muzzleOffsets);
         if (b.explode)
           checkFields(w.id, def.gun?.explode, b.explode as Behavior, {
             radius: { num: [30, calamityHowitzer || ownerExpandedBlast ? 220 : 140] },

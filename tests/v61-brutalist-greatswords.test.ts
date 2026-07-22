@@ -118,8 +118,10 @@ describe("V6.1 brutalist greatsword line", () => {
 
     const runtime = readFileSync("packages/client/src/vfx/VfxPlayer.ts", "utf8");
     expect(runtime).toContain("const heldTip = sourceBladePose?.();");
-    expect(runtime).toContain("headsmanExtensionGeometry(weapon)");
-    expect(runtime).toMatch(/\.setDepth\(\(heldTip\?\.depth \?\? bladeExtensionActor\.y\) - 1\)/);
+    expect(runtime).toContain("bladeExtensionGeometryFor(weapon)");
+    expect(runtime).toMatch(
+      /\.setDepth\(\(heldTip\?\.depth \?\? attachment\.fallbackDepth\) - 1\)/,
+    );
   });
 
   it("registers one-part sprites, Weaponsmith suites, and Testing Grounds deep links", () => {
