@@ -3560,14 +3560,14 @@ describe("GameRoom — jump-feel J1 authoritative stance/physics", () => {
   it("keeps wire fields transition-only and distinguishes organic aborts from forced cancels", () => {
     const { h, player, combat } = makeJumpFeelRoom("stance-edges");
     expect([player.moveStance, player.poundSeq, player.stanceSeq]).toEqual([0, 0, 0]);
-    sendJumpFeelInput(h, player.id, 1, { crouchHeld: true, dx: 1 });
-    expect(player.moveStance).toBe(enemyComboShared.STANCE_CROUCH);
+    sendJumpFeelInput(h, player.id, 1, { jump: true, dx: 1 });
+    expect(player.moveStance).toBe(enemyComboShared.STANCE_DASH);
     h.tick(3);
-    expect([player.moveStance, player.poundSeq, player.stanceSeq]).toEqual([1, 0, 0]);
-    sendJumpFeelInput(h, player.id, 2, { crouchHeld: false });
-    expect([player.moveStance, player.stanceSeq]).toEqual([0, 0]);
-
-    sendJumpFeelInput(h, player.id, 3, { crouchHeld: true, dx: 1 });
+    expect([player.moveStance, player.poundSeq, player.stanceSeq]).toEqual([
+      enemyComboShared.STANCE_DASH,
+      0,
+      0,
+    ]);
     h.room.damagePlayer(player, 1);
     expect(combat.stance).toBe(enemyComboShared.STANCE_NONE);
     expect([player.moveStance, player.stanceSeq]).toEqual([0, 1]);
@@ -3575,57 +3575,41 @@ describe("GameRoom — jump-feel J1 authoritative stance/physics", () => {
     expect(player.stanceSeq).toBe(1); // no transition, no wire churn
   });
 
-  it("enforces early-release/cooldown cancels and samples the launch tick's live WASD", () => {
-    const early = makeJumpFeelRoom("crouch-early");
-    sendJumpFeelInput(early.h, early.player.id, 1, { crouchHeld: true, dx: 1 });
-    sendJumpFeelInput(early.h, early.player.id, 2, { crouchHeld: true, dx: 1 });
-    sendJumpFeelInput(early.h, early.player.id, 3, { crouchHeld: true, dx: 1 });
-    sendJumpFeelInput(early.h, early.player.id, 4, { crouchHeld: false });
-    expect(early.combat.stance).toBe(enemyComboShared.STANCE_NONE);
-    expect(early.player.height).toBe(0);
-
-    const locked = makeJumpFeelRoom("crouch-lock");
-    for (let seq = 1; seq <= 9; seq++) {
-      sendJumpFeelInput(locked.h, locked.player.id, seq, { crouchHeld: true, dx: 1 });
-    }
-    sendJumpFeelInput(locked.h, locked.player.id, 10, { crouchHeld: true, dy: 1 });
+  it("launches on the first Space edge, samples live WASD, and honors cooldown", () => {
+    const locked = makeJumpFeelRoom("long-jump-immediate");
+    sendJumpFeelInput(locked.h, locked.player.id, 1, { jump: true, dy: 1 });
     expect(locked.combat.stance).toBe(enemyComboShared.STANCE_DASH);
     expect(locked.combat.dashBaseDirX).toBeCloseTo(0, 6);
     expect(locked.combat.dashBaseDirY).toBeCloseTo(1, 6);
+    expect(locked.player.height).toBeGreaterThan(0);
 
-    const cooldown = makeJumpFeelRoom("crouch-cooldown");
+    const cooldown = makeJumpFeelRoom("long-jump-cooldown");
     cooldown.combat.distJumpCd = 1;
-    for (let seq = 1; seq <= 10; seq++) {
-      sendJumpFeelInput(cooldown.h, cooldown.player.id, seq, { crouchHeld: true, dx: 1 });
-    }
+    sendJumpFeelInput(cooldown.h, cooldown.player.id, 1, { jump: true, dx: 1 });
     expect(cooldown.combat.stance).toBe(enemyComboShared.STANCE_NONE);
     expect(cooldown.player.height).toBe(0);
   });
 
-  it("soft-steers at <=45°/s within ±27°, reaches 372px, and cycles slower than MOVE_SPEED", () => {
+  it("soft-steers at <=45°/s within ±27° and reaches the authored 372px", () => {
     const reach = makeJumpFeelRoom("dash-reach");
     const startX = reach.player.x;
-    for (let seq = 1; seq <= 10; seq++) {
-      sendJumpFeelInput(reach.h, reach.player.id, seq, { crouchHeld: true, dx: 1 });
-    }
+    sendJumpFeelInput(reach.h, reach.player.id, 1, { jump: true, dx: 1 });
     expect(reach.combat.stance).toBe(enemyComboShared.STANCE_DASH);
     for (let i = 0; i < 20 && reach.combat.stance === enemyComboShared.STANCE_DASH; i++)
       reach.h.tick(1);
     expect(reach.player.x - startX).toBeCloseTo(enemyComboShared.DIST_JUMP_REACH, 5);
     expect(reach.player.x - startX).toBeGreaterThan(320);
     expect(reach.combat.lastLandingTier).toBe(enemyComboShared.LANDING_TIER_HEAVY);
-    expect(enemyComboShared.DIST_JUMP_CYCLE_SPEED).toBeLessThan(enemyComboShared.MOVE_SPEED);
+    expect(enemyComboShared.DIST_JUMP_CYCLE_SPEED).toBe(enemyComboShared.DIST_JUMP_SPEED);
     expect(reach.combat.distJumpCd).toBeGreaterThan(0);
 
     const steer = makeJumpFeelRoom("dash-steer");
-    for (let seq = 1; seq <= 10; seq++) {
-      sendJumpFeelInput(steer.h, steer.player.id, seq, { crouchHeld: true, dy: 1 });
-    }
+    sendJumpFeelInput(steer.h, steer.player.id, 1, { jump: true, dy: 1 });
     let maxTurn = 0;
-    let seq = 11;
+    let seq = 2;
     while (steer.combat.stance === enemyComboShared.STANCE_DASH && seq < 30) {
       const before = steer.combat.dashSteer;
-      sendJumpFeelInput(steer.h, steer.player.id, seq++, { dx: 1, crouchHeld: true });
+      sendJumpFeelInput(steer.h, steer.player.id, seq++, { dx: 1 });
       if (steer.combat.stance === enemyComboShared.STANCE_DASH) {
         expect(Math.abs(steer.combat.dashSteer - before)).toBeLessThanOrEqual(
           enemyComboShared.DIST_JUMP_STEER_RADIANS_PER_SECOND * 0.05 + 1e-9,
@@ -3653,9 +3637,7 @@ describe("GameRoom — jump-feel J1 authoritative stance/physics", () => {
     const dx = expected.x - player.x;
     const dy = expected.y - player.y;
     const d = Math.hypot(dx, dy);
-    for (let seq = 1; seq <= 10; seq++) {
-      sendJumpFeelInput(h, player.id, seq, { crouchHeld: true, dx: 1 });
-    }
+    sendJumpFeelInput(h, player.id, 1, { jump: true, dx: 1 });
     expect(combat.dashDirX).toBeCloseTo(dx / d, 6);
     expect(combat.dashDirY).toBeCloseTo(dy / d, 6);
     expect(combat.dashSpeed).toBeCloseTo(
@@ -3929,15 +3911,15 @@ describe("GameRoom — classmerge 21a", () => {
 
 // Wave 23 — the Megabonk slide consumes 21b's contact-only dodge budget. Every spatial fixture starts
 // on the cleared spawn disc/all-ground map so map generation cannot decide whether an authored hit connects.
-function sendSlideInput(
+// V7-MOVE — fixed tumble roll. Compatibility wire names remain `slide*`; behavior is one roll sentence.
+function sendRollInput(
   h: ReturnType<typeof makeRoom>,
   id: string,
   seq: number,
   fields: {
     dx?: number;
     dy?: number;
-    slide?: boolean;
-    slideHeld?: boolean;
+    roll?: boolean;
     jump?: boolean;
     pound?: boolean;
     fireHeld?: boolean;
@@ -3950,8 +3932,8 @@ function sendSlideInput(
     jump: fields.jump ?? false,
     crouchHeld: false,
     pound: fields.pound ?? false,
-    slide: fields.slide ?? false,
-    slideHeld: fields.slideHeld ?? fields.slide ?? false,
+    slide: fields.roll ?? false,
+    slideHeld: fields.roll ?? false,
     fireHeld: fields.fireHeld ?? false,
     aimX: 1,
     aimY: 0,
@@ -3961,632 +3943,224 @@ function sendSlideInput(
   h.tick(1);
 }
 
-function makeSlideRoom(id = "slide-player") {
+function makeRollRoom(id = "roll-player") {
   const fixture = makeJumpFeelRoom(id);
   return { ...fixture, combatInput: fixture.h.room.inputs.get(id) };
 }
 
-function beginSlide(fixture: ReturnType<typeof makeSlideRoom>, seq = 1, dx = 1, dy = 0) {
-  const speed = Math.hypot(dx, dy) || 1;
-  fixture.combatInput.mvx = (dx / speed) * enemyComboShared.SLIDE_ENTRY_SPEED;
-  fixture.combatInput.mvy = (dy / speed) * enemyComboShared.SLIDE_ENTRY_SPEED;
-  fixture.player.mvx = fixture.combatInput.mvx;
-  fixture.player.mvy = fixture.combatInput.mvy;
-  sendSlideInput(fixture.h, fixture.player.id, seq, { dx, dy, slide: true });
+function beginRoll(fixture: ReturnType<typeof makeRollRoom>, seq = 1, dx = 1, dy = 0) {
+  sendRollInput(fixture.h, fixture.player.id, seq, { dx, dy, roll: true });
   expect(fixture.combat.stance).toBe(enemyComboShared.STANCE_SLIDE);
+  expect(fixture.combat.slidePhase).toBe(enemyComboShared.SLIDE_PHASE_GROUND);
 }
 
-function addSlideMeleeEnemy(fixture: ReturnType<typeof makeSlideRoom>, id: string, offsetX = -40) {
-  const enemy = addJumpDummy(fixture.h, id, fixture.player.x + offsetX, fixture.player.y, 1_000);
+function addRollMeleeEnemy(fixture: ReturnType<typeof makeRollRoom>, id: string) {
+  const enemy = addJumpDummy(fixture.h, id, fixture.player.x - 40, fixture.player.y, 1_000);
   enemy.kind = "vault-ronin";
   return enemy;
 }
 
-describe("GameRoom — schema-23 Megabonk slide inherits the 21b dodge laws", () => {
-  it("accepts only grounded, cold-armed, non-juggled movement-gated entry commands", () => {
-    const fixture = makeSlideRoom("slide-gates");
-    fixture.combatInput.mvx = enemyComboShared.SLIDE_ENTRY_SPEED;
-    fixture.player.mvx = enemyComboShared.SLIDE_ENTRY_SPEED;
-    fixture.player.height = 1;
-    sendSlideInput(fixture.h, fixture.player.id, 1, { dx: 1, slide: true });
-    expect(fixture.combat.stance).toBe(enemyComboShared.STANCE_NONE);
-
-    fixture.player.height = 0;
-    fixture.combat.slideColdArmed = false;
-    sendSlideInput(fixture.h, fixture.player.id, 2, { dx: 1, slide: true });
-    expect(fixture.combat.stance).toBe(enemyComboShared.STANCE_NONE);
-
-    fixture.combat.slideColdArmed = true;
-    fixture.combat.juggleArmed = true;
-    sendSlideInput(fixture.h, fixture.player.id, 3, { dx: 1, slide: true });
-    expect(fixture.combat.stance).toBe(enemyComboShared.STANCE_NONE);
-
-    fixture.combat.juggleArmed = false;
-    beginSlide(fixture, 4);
+describe("GameRoom — V7 fixed tumble roll", () => {
+  it("accepts from rest, freezes cardinal/diagonal direction, and travels 188 px in eight ticks", () => {
+    for (const [name, dx, dy] of [
+      ["east", 1, 0],
+      ["west", -1, 0],
+      ["northeast", 1, -1],
+      ["southwest", -1, 1],
+    ] as const) {
+      const fixture = makeRollRoom(`roll-distance-${name}`);
+      const startX = fixture.player.x;
+      const startY = fixture.player.y;
+      beginRoll(fixture, 1, dx, dy);
+      for (let seq = 2; seq <= enemyComboShared.ROLL_DURATION_TICKS; seq++)
+        sendRollInput(fixture.h, fixture.player.id, seq, { dx: -dy, dy: dx });
+      expect(fixture.combat.stance).toBe(enemyComboShared.STANCE_NONE);
+      const movedX = fixture.player.x - startX;
+      const movedY = fixture.player.y - startY;
+      expect(Math.hypot(movedX, movedY)).toBeCloseTo(enemyComboShared.ROLL_DISTANCE, 6);
+      const length = Math.hypot(dx, dy);
+      expect(movedX / enemyComboShared.ROLL_DISTANCE).toBeCloseTo(dx / length, 6);
+      expect(movedY / enemyComboShared.ROLL_DISTANCE).toBeCloseTo(dy / length, 6);
+      expect(fixture.combat.rollCd).toBeGreaterThan(2.9);
+      expect([fixture.player.momentumX, fixture.player.momentumY]).toEqual([0, 0]);
+    }
   });
 
-  it("derives exactly five immune phase ticks before phase tick six becomes vulnerable", () => {
-    const fixture = makeSlideRoom("slide-window");
-    beginSlide(fixture);
-    const hp = fixture.player.hp;
-    const dodged = fixture.player.dodgedSeq;
-    for (let tick = 0; tick < 5; tick++) {
-      fixture.h.room.applyBossMelee(fixture.player.x - 20, fixture.player.y, 1, 0, 80, 1, 7, 0);
-      expect(fixture.player.hp).toBe(hp);
-      if (tick < 4) fixture.h.tick(1);
-    }
-    expect(fixture.combat.slidePhaseTick).toBe(enemyComboShared.SLIDE_IFRAME_TICKS);
-    expect(fixture.player.dodgedSeq).toBe((dodged + 5) & 0xff);
+  it("rejects the immediate repeat for three seconds, then accepts a new edge", () => {
+    const fixture = makeRollRoom("roll-cooldown");
+    beginRoll(fixture);
+    fixture.h.tick(enemyComboShared.ROLL_DURATION_TICKS - 1);
+    expect(fixture.combat.stance).toBe(enemyComboShared.STANCE_NONE);
+    sendRollInput(fixture.h, fixture.player.id, 2, { dx: 1, roll: true });
+    expect(fixture.combat.stance).toBe(enemyComboShared.STANCE_NONE);
+    fixture.h.tick(Math.ceil(enemyComboShared.ROLL_COOLDOWN / 0.05));
+    beginRoll(fixture, 3);
+  });
 
+  it("derives exactly five contact opening ticks before the vulnerable moving tail", () => {
+    const fixture = makeRollRoom("roll-defensive-window");
+    beginRoll(fixture);
+    const hp = fixture.player.hp;
+    const parried = fixture.player.parriedSeq;
+    for (let tick = 1; tick <= enemyComboShared.ROLL_IFRAME_TICKS; tick++) {
+      fixture.h.room.applyBossMelee(
+        fixture.player.x - 20,
+        fixture.player.y,
+        1,
+        0,
+        80,
+        1,
+        7,
+        0,
+      );
+      expect(fixture.player.hp).toBe(hp);
+      if (tick < enemyComboShared.ROLL_IFRAME_TICKS) fixture.h.tick(1);
+    }
+    expect(fixture.player.parriedSeq).toBe(parried);
     fixture.h.tick(1);
-    fixture.h.room.applyBossMelee(fixture.player.x - 20, fixture.player.y, 1, 0, 80, 1, 7, 0);
+    fixture.h.room.applyBossMelee(
+      fixture.player.x - 20,
+      fixture.player.y,
+      1,
+      0,
+      80,
+      1,
+      7,
+      0,
+    );
     expect(fixture.player.hp).toBe(hp - 7);
   });
 
-  it("null-whiffs enemy contact DPS during the slide opening", () => {
-    const fixture = makeSlideRoom("slide-contact");
-    const contactEntry = Object.entries(ENEMY_KINDS).find(([, kind]) => kind.contactDamage > 0);
-    if (!contactEntry) throw new Error("test roster needs a contact-damage enemy");
-    const [kindId, kind] = contactEntry;
-    const enemy = addJumpDummy(
-      fixture.h,
-      "slide-contact-enemy",
-      fixture.player.x + kind.radius + enemyComboShared.PLAYER_RADIUS,
-      fixture.player.y,
-    );
-    enemy.kind = kindId;
-    fixture.combat.stance = enemyComboShared.STANCE_SLIDE;
-    fixture.combat.slidePhase = enemyComboShared.SLIDE_PHASE_GROUND;
-    fixture.combat.slidePhaseTick = 0;
-    fixture.combat.momentumX = enemyComboShared.SLIDE_SPEED_CAP;
-    fixture.combat.momentumY = 0;
-    fixture.player.moveStance = enemyComboShared.STANCE_SLIDE;
-    const hp = fixture.player.hp;
-    const dodged = fixture.player.dodgedSeq;
-    fixture.h.tick(1);
-    expect(fixture.player.hp).toBe(hp);
-    expect(fixture.player.dodgedSeq).toBeGreaterThan(dodged);
-    const contacted = fixture.player.dodgedSeq;
-    enemy.x = fixture.player.x + 1_000;
-    enemy.y = fixture.player.y + 1_000;
-    fixture.h.tick(1);
-    expect(fixture.player.dodgedSeq).toBe(contacted); // no cosmetic edge without real contact
-  });
-
-  it("null-whiffs hostile projectiles without reflecting or consuming them", () => {
-    const fixture = makeSlideRoom("slide-projectile");
-    beginSlide(fixture);
-    fixture.h.room.fireProjectile(
-      { x: fixture.player.x, y: fixture.player.y },
-      { x: fixture.player.x + 1, y: fixture.player.y },
+  it("null-whiffs hostile projectiles and locked melee without reflection or parry reward", () => {
+    const projectileFixture = makeRollRoom("roll-projectile");
+    beginRoll(projectileFixture);
+    projectileFixture.h.room.fireProjectile(
+      { x: projectileFixture.player.x, y: projectileFixture.player.y },
+      { x: projectileFixture.player.x + 1, y: projectileFixture.player.y },
       0,
       13,
     );
-    const projectile = [...fixture.h.state().projectiles.values()].at(-1);
-    if (!projectile) throw new Error("expected hostile slide fixture projectile");
-    const hp = fixture.player.hp;
-    fixture.h.room.stepProjectiles(0.05);
-    expect(fixture.player.hp).toBe(hp);
-    expect(fixture.h.state().projectiles.has(projectile.id)).toBe(true);
+    const projectile = [...projectileFixture.h.state().projectiles.values()].at(-1);
+    expect(projectile).toBeDefined();
+    if (!projectile) throw new Error("expected hostile roll fixture projectile");
+    projectileFixture.h.room.stepProjectiles(0.05);
+    expect(projectileFixture.player.hp).toBe(projectileFixture.player.maxHp);
+    expect(projectileFixture.h.state().projectiles.has(projectile.id)).toBe(true);
     expect(projectile.hostile).toBe(true);
-  });
 
-  it("null-whiffs the duelist sweep without parry knockback, chain, or riposte rewards", () => {
-    const fixture = makeSlideRoom("slide-duelist");
-    beginSlide(fixture);
-    const enemy = addSlideMeleeEnemy(fixture, "slide-duelist-enemy");
-    fixture.combat.parryChain = 2;
-    const hp = fixture.player.hp;
+    const locked = makeRollRoom("roll-locked-melee");
+    beginRoll(locked);
+    const enemy = addRollMeleeEnemy(locked, "roll-duelist");
+    locked.combat.parryChain = 2;
     const enemyX = enemy.x;
-    const parried = fixture.player.parriedSeq;
-    const dodged = fixture.player.dodgedSeq;
-    fixture.h.room.duelistSwing(
+    const parried = locked.player.parriedSeq;
+    locked.h.room.duelistSwing(
       enemy,
       enemy.id,
-      fixture.player,
+      locked.player,
       { range: 200, halfArc: 1.2, damage: 20 },
       { aimX: 1, aimY: 0 },
     );
-    expect(fixture.player.hp).toBe(hp);
-    expect(fixture.player.parriedSeq).toBe(parried);
-    expect(fixture.player.dodgedSeq).toBe((dodged + 1) & 0xff);
-    expect(fixture.combat.parryChain).toBe(2);
-    expect([fixture.player.vx, fixture.player.vy]).toEqual([0, 0]);
+    expect(locked.player.hp).toBe(locked.player.maxHp);
+    expect(locked.player.parriedSeq).toBe(parried);
+    expect(locked.combat.parryChain).toBe(2);
     expect(enemy.x).toBe(enemyX);
   });
 
-  it("null-whiffs boss/worm melee wedges without accepting a worm parry", () => {
-    const fixture = makeSlideRoom("slide-worm-wedge");
-    beginSlide(fixture);
-    const acceptWormParry = vi.fn();
-    fixture.h.room.bossController = { acceptWormParry };
-    const hp = fixture.player.hp;
-    const parried = fixture.player.parriedSeq;
-    fixture.h.room.applyBossMelee(fixture.player.x - 20, fixture.player.y, 1, 0, 80, 1, 15, 200);
-    expect(fixture.player.hp).toBe(hp);
-    expect(fixture.player.parriedSeq).toBe(parried);
-    expect(acceptWormParry).not.toHaveBeenCalled();
-  });
+  it("does not broaden the opening to AoE, quake, beam, ring, or puddle damage", () => {
+    const cases = [
+      [
+        "aoe",
+        (f: ReturnType<typeof makeRollRoom>) =>
+          f.h.room.applyBossAoE(f.player.x, f.player.y, 80, 9, 0),
+      ],
+      [
+        "quake",
+        (f: ReturnType<typeof makeRollRoom>) =>
+          f.h.room.applyBossQuake(f.player.x, f.player.y, 80, 9, 0),
+      ],
+      [
+        "beam",
+        (f: ReturnType<typeof makeRollRoom>) =>
+          f.h.room.damageBeamRect(f.player.x - 20, f.player.y, 40, 20, 0, 9, 0),
+      ],
+      [
+        "ring",
+        (f: ReturnType<typeof makeRollRoom>) =>
+          f.h.room.damageRingBand(f.player.x - 50, f.player.y, 50, 2, 0, 0, 9),
+      ],
+    ] as const;
+    for (const [name, damage] of cases) {
+      const fixture = makeRollRoom(`roll-${name}`);
+      beginRoll(fixture);
+      const hp = fixture.player.hp;
+      damage(fixture);
+      expect(fixture.player.hp).toBe(hp - 9);
+    }
 
-  it("null-whiffs the juggle launcher and never arms the juggle", () => {
-    const fixture = makeSlideRoom("slide-launcher");
-    beginSlide(fixture);
-    const enemy = addSlideMeleeEnemy(fixture, "slide-launcher-enemy");
-    const hp = fixture.player.hp;
-    const juggled = fixture.player.juggledSeq;
-    fixture.h.room.comboSwing(
-      enemy,
-      enemy.id,
-      { targetId: fixture.player.id, juggleCombo: true, comboDamage: 0 },
-      { kind: "launcher", windupTicks: 6, step: 0, damageMult: 1, launch: { vh: 480, push: 90 } },
-      { range: 200, halfArc: 1.2, damageMult: 1, knockbackMult: 1 },
-      { x: enemy.x, y: enemy.y, aimX: 1, aimY: 0 },
-    );
-    expect(fixture.player.hp).toBe(hp);
-    expect(fixture.player.juggledSeq).toBe(juggled);
-    expect(fixture.combat.juggleArmed).toBe(false);
-    expect(fixture.combat.stance).toBe(enemyComboShared.STANCE_SLIDE);
-  });
-
-  it("keeps boss AoE damage unchanged during slide i-frames", () => {
-    const fixture = makeSlideRoom("slide-aoe");
-    beginSlide(fixture);
-    const hp = fixture.player.hp;
-    fixture.h.room.applyBossAoE(fixture.player.x, fixture.player.y, 80, 9, 0);
-    expect(fixture.player.hp).toBe(hp - 9);
-  });
-
-  it("keeps grounded quake damage unchanged during slide i-frames", () => {
-    const fixture = makeSlideRoom("slide-quake");
-    beginSlide(fixture);
-    const hp = fixture.player.hp;
-    fixture.h.room.applyBossQuake(fixture.player.x, fixture.player.y, 80, 9, 0);
-    expect(fixture.player.hp).toBe(hp - 9);
-  });
-
-  it("keeps beam-lane damage unchanged during slide i-frames", () => {
-    const fixture = makeSlideRoom("slide-beam");
-    beginSlide(fixture);
-    const hp = fixture.player.hp;
-    fixture.h.room.damageBeamRect(fixture.player.x - 20, fixture.player.y, 40, 20, 0, 9, 0);
-    expect(fixture.player.hp).toBe(hp - 9);
-  });
-
-  it("keeps ring-band damage unchanged during slide i-frames", () => {
-    const fixture = makeSlideRoom("slide-ring");
-    beginSlide(fixture);
-    const hp = fixture.player.hp;
-    fixture.h.room.damageRingBand(fixture.player.x - 50, fixture.player.y, 50, 2, 0, 0, 9);
-    expect(fixture.player.hp).toBe(hp - 9);
-  });
-
-  it("keeps puddle damage unchanged during slide i-frames", () => {
-    const fixture = makeSlideRoom("slide-puddle");
-    beginSlide(fixture);
+    const puddle = makeRollRoom("roll-puddle");
+    beginRoll(puddle);
     const zone = new ZoneState();
-    zone.id = "slide-puddle-zone";
-    zone.x = fixture.player.x;
-    zone.y = fixture.player.y;
+    zone.id = "roll-puddle-zone";
+    zone.x = puddle.player.x;
+    zone.y = puddle.player.y;
     zone.radius = ZONE_RADIUS;
-    fixture.h.state().zones.set(zone.id, zone);
-    fixture.h.room.zoneMeta.set(zone.id, ZONE_TTL);
-    const hp = fixture.player.hp;
-    fixture.h.room.stepZones(0.05);
-    expect(fixture.player.hp).toBeLessThan(hp);
+    puddle.h.state().zones.set(zone.id, zone);
+    puddle.h.room.zoneMeta.set(zone.id, ZONE_TTL);
+    const hp = puddle.player.hp;
+    puddle.h.room.stepZones(0.05);
+    expect(puddle.player.hp).toBeLessThan(hp);
   });
 
-  it("keeps pit falls unchanged and force-cancels a sliding player", () => {
-    const fixture = makeSlideRoom("slide-pit");
-    beginSlide(fixture);
-    const map = fixture.h.room.map;
-    const col = Math.floor(fixture.player.x / map.tileSize);
-    const row = Math.floor(fixture.player.y / map.tileSize);
+  it("keeps pit cancellation and the attack/parry channel split", () => {
+    const pit = makeRollRoom("roll-pit");
+    beginRoll(pit);
+    const map = pit.h.room.map;
+    const col = Math.floor(pit.player.x / map.tileSize);
+    const row = Math.floor(pit.player.y / map.tileSize);
     for (let y = row - 2; y <= row + 2; y++)
       for (let x = col - 1; x <= col + 4; x++) map.tiles[y * map.cols + x] = TILE_PIT;
-    const hp = fixture.player.hp;
-    const fell = fixture.player.fellSeq;
-    fixture.h.tick(1);
-    expect(fixture.player.fellSeq).toBe((fell + 1) & 0xff);
-    expect(fixture.player.hp).toBeLessThan(hp);
-    expect(fixture.combat.stance).toBe(enemyComboShared.STANCE_NONE);
-  });
+    const fell = pit.player.fellSeq;
+    pit.h.tick(1);
+    expect(pit.player.fellSeq).toBe((fell + 1) & 0xff);
+    expect(pit.combat.stance).toBe(enemyComboShared.STANCE_NONE);
 
-  it("keeps air-keep damage/juggle writes and force-clears slide carry", () => {
-    const fixture = makeSlideRoom("slide-airkeep");
-    beginSlide(fixture);
-    const enemy = addSlideMeleeEnemy(fixture, "slide-airkeep-enemy");
-    const hp = fixture.player.hp;
-    const juggled = fixture.player.juggledSeq;
-    const stanceSeq = fixture.player.stanceSeq;
-    fixture.h.room.comboSwing(
-      enemy,
-      enemy.id,
-      { targetId: fixture.player.id, juggleCombo: true, comboDamage: 0, juggleHits: 0 },
-      { kind: "airkeep", windupTicks: 6, step: 1, damageMult: 1, airkeep: { vh: 0, push: 0 } },
-      { range: 200, halfArc: 1.2, damageMult: 1, knockbackMult: 1 },
-      { x: enemy.x, y: enemy.y, aimX: 1, aimY: 0 },
-    );
-    expect(fixture.player.hp).toBeLessThan(hp);
-    expect(fixture.player.juggledSeq).toBe((juggled + 1) & 0xff);
-    expect(fixture.combat.stance).toBe(enemyComboShared.STANCE_NONE);
-    expect(fixture.player.stanceSeq).toBe((stanceSeq + 1) & 0xff);
-    expect([fixture.combat.momentumX, fixture.combat.momentumY]).toEqual([0, 0]);
-  });
-
-  it("bounds ground carving while integrating the ten-sample momentum curve", () => {
-    const fixture = makeSlideRoom("slide-direction");
-    const startX = fixture.player.x;
-    const startY = fixture.player.y;
-    beginSlide(fixture);
-    for (let seq = 2; seq <= 10; seq++)
-      sendSlideInput(fixture.h, fixture.player.id, seq, { dy: 1 });
-    let expectedX = 0;
-    let expectedY = 0;
-    let speed: number = enemyComboShared.SLIDE_SPEED_CAP;
-    let momentumX = speed;
-    let momentumY = 0;
-    for (let tick = 0; tick < enemyComboShared.SLIDE_GROUND_TICKS; tick++) {
-      if (tick > 0) {
-        const angle = enemyComboShared.slideSteeredAngle(momentumX, momentumY, 0, 1, 0.05, false);
-        momentumX = Math.cos(angle) * speed;
-        momentumY = Math.sin(angle) * speed;
-      }
-      expectedX += momentumX * 0.05;
-      expectedY += momentumY * 0.05;
-      speed = enemyComboShared.slideGroundNextSpeed(speed);
-      const scale = speed / Math.hypot(momentumX, momentumY);
-      momentumX *= scale;
-      momentumY *= scale;
-    }
-    expect(fixture.player.x - startX).toBeCloseTo(expectedX, 6);
-    expect(fixture.player.y - startY).toBeCloseTo(expectedY, 6);
-    expect(fixture.combat.stance).toBe(enemyComboShared.STANCE_NONE);
-  });
-
-  it("disarms on slide end and rejects a new edge until six qualifying run ticks", () => {
-    const fixture = makeSlideRoom("slide-rearm");
-    beginSlide(fixture);
-    fixture.h.tick(9);
-    expect(fixture.combat.stance).toBe(enemyComboShared.STANCE_NONE);
-    expect(fixture.combat.slideColdArmed).toBe(false);
-
-    sendSlideInput(fixture.h, fixture.player.id, 2, { dx: 1, slide: true });
-    expect(fixture.combat.stance).toBe(enemyComboShared.STANCE_NONE);
-    fixture.h.tick(5);
-    expect(fixture.combat.slideColdRearmTicks).toBe(enemyComboShared.SLIDE_COLD_REARM_TICKS);
-    expect(fixture.combat.slideColdArmed).toBe(true);
-    sendSlideInput(fixture.h, fixture.player.id, 3, { dx: 1, slideHeld: false });
-    beginSlide(fixture, 4);
-  });
-
-  it("enforces the attack, parry, and slide-hop channel split on exact ticks", () => {
-    const attack = makeSlideRoom("slide-attack-split");
-    beginSlide(attack);
+    const attack = makeRollRoom("roll-attack");
+    beginRoll(attack);
     attack.h.send(attack.player.id, "attack", { aimX: 1, aimY: 0 });
     expect(attack.combat.stance).toBe(enemyComboShared.STANCE_SLIDE);
-    expect(attack.combat.attackBuffer).toBe(0);
-    attack.h.tick(5);
-    expect(attack.combat.slidePhaseTick * 0.05).toBeCloseTo(
-      enemyComboShared.SLIDE_ATTACK_CANCEL_SECONDS,
-      8,
-    );
+    attack.h.tick(enemyComboShared.ROLL_ATTACK_CANCEL_TICKS - 1);
     attack.h.send(attack.player.id, "attack", { aimX: 1, aimY: 0 });
     expect(attack.combat.stance).toBe(enemyComboShared.STANCE_NONE);
     expect(attack.combat.attackBuffer).toBeGreaterThan(0);
 
-    const fromParry = makeSlideRoom("parry-slide-gate");
-    fromParry.combat.invuln = 0.1;
-    fromParry.combatInput.mvx = enemyComboShared.SLIDE_ENTRY_SPEED;
-    fromParry.player.mvx = enemyComboShared.SLIDE_ENTRY_SPEED;
-    sendSlideInput(fromParry.h, fromParry.player.id, 1, { dx: 1, slide: true });
-    expect(fromParry.combat.stance).toBe(enemyComboShared.STANCE_NONE);
-
-    const parry = makeSlideRoom("slide-parry-lock");
-    beginSlide(parry);
-    for (let tick = 1; tick <= 9; tick++) {
+    const parry = makeRollRoom("roll-parry-lock");
+    beginRoll(parry);
+    for (let tick = 1; tick < enemyComboShared.ROLL_PARRY_LOCK_TICKS; tick++) {
       parry.h.send(parry.player.id, "parry");
       parry.h.tick(1);
       expect(parry.combat.invuln).toBe(0);
     }
     parry.h.send(parry.player.id, "parry");
     parry.h.tick(1);
-    expect(parry.combat.invuln).toBeGreaterThan(0); // earliest acceptance is consume + 10
-
-    const jump = makeSlideRoom("slide-hop-buffer");
-    beginSlide(jump);
-    sendSlideInput(jump.h, jump.player.id, 2, { dx: 1, jump: true, slideHeld: true });
-    expect(jump.combat.stance).toBe(enemyComboShared.STANCE_SLIDE);
-    expect(jump.combat.slidePhase).toBe(enemyComboShared.SLIDE_PHASE_AIR);
-    expect(jump.player.height).toBeGreaterThan(0);
+    expect(parry.combat.invuln).toBeGreaterThan(0);
   });
 
-  it("bumps stanceSeq on forced slide cancellation but not natural recovery", () => {
-    const forced = makeSlideRoom("slide-forced-cancel");
-    beginSlide(forced);
-    const forcedSeq = forced.player.stanceSeq;
-    forced.h.room.zeroMoveVel(forced.player.id);
-    expect(forced.combat.stance).toBe(enemyComboShared.STANCE_NONE);
-    expect(forced.player.stanceSeq).toBe((forcedSeq + 1) & 0xff);
-    expect(forced.combat.slideColdArmed).toBe(false);
-    expect([forced.combat.momentumX, forced.combat.momentumY]).toEqual([0, 0]);
-
-    const natural = makeSlideRoom("slide-natural-end");
-    beginSlide(natural);
-    const naturalSeq = natural.player.stanceSeq;
-    natural.h.tick(9);
-    expect(natural.combat.stance).toBe(enemyComboShared.STANCE_NONE);
-    expect(natural.player.stanceSeq).toBe(naturalSeq);
+  it("buffers Space through the roll tail into the default long jump", () => {
+    const fixture = makeRollRoom("roll-to-long-jump");
+    beginRoll(fixture);
+    sendRollInput(fixture.h, fixture.player.id, 2, { dx: 1, jump: true });
+    expect(fixture.combat.jumpBuffer).toBeGreaterThan(0);
+    fixture.h.tick(enemyComboShared.ROLL_DURATION_TICKS - 1);
+    expect(fixture.combat.stance).toBe(enemyComboShared.STANCE_DASH);
+    expect(fixture.player.height).toBeGreaterThan(0);
   });
 
-  it("ships schema 23 with the dodge edge and appended slide predictor state", () => {
+  it("keeps the append-only predictor wire defaults", () => {
     const player = new enemyComboShared.PlayerState();
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(33);
-    expect(player.dodgedSeq).toBe(0);
     expect([player.momentumX, player.momentumY, player.slidePhase, player.slidePhaseTick]).toEqual([
       0, 0, 0, 0,
     ]);
-  });
-});
-
-describe("GameRoom — appended schema-23 slide momentum and chain laws", () => {
-  it("movement-gates cold entry even when the slide edge and a direction arrive together", () => {
-    const fixture = makeSlideRoom("slide-movement-gate");
-    expect(Math.hypot(fixture.player.mvx, fixture.player.mvy)).toBe(0);
-    sendSlideInput(fixture.h, fixture.player.id, 1, { dx: 1, slide: true });
-    expect(fixture.combat.stance).toBe(enemyComboShared.STANCE_NONE);
-    expect(fixture.combat.slidePhase).toBe(enemyComboShared.SLIDE_PHASE_OFF);
-    expect([fixture.player.momentumX, fixture.player.momentumY]).toEqual([0, 0]);
-  });
-
-  it("installs the 544 pop and the exact post-integration 0.97 decay values", () => {
-    const fixture = makeSlideRoom("slide-decay-values");
-    const startX = fixture.player.x;
-    beginSlide(fixture);
-    expect(fixture.player.x - startX).toBeCloseTo(enemyComboShared.SLIDE_SPEED_CAP * 0.05, 8);
-    let expected: number = enemyComboShared.SLIDE_SPEED_CAP;
-    for (let tick = 1; tick <= 5; tick++) {
-      expected = enemyComboShared.slideGroundNextSpeed(expected);
-      expect(Math.hypot(fixture.combat.momentumX, fixture.combat.momentumY)).toBeCloseTo(
-        expected,
-        8,
-      );
-      if (tick < 5) fixture.h.tick(1);
-    }
-  });
-
-  it("preserves 96% at slide-hop launch and keeps airborne magnitude through three-zone gravity", () => {
-    const fixture = makeSlideRoom("slide-hop-preservation");
-    beginSlide(fixture);
-    sendSlideInput(fixture.h, fixture.player.id, 2, {
-      dx: 1,
-      jump: true,
-      slideHeld: true,
-    });
-    const takeoffSpeed =
-      enemyComboShared.SLIDE_SPEED_CAP *
-      enemyComboShared.SLIDE_GROUND_DECAY ** 2 *
-      enemyComboShared.SLIDE_HOP_RETENTION;
-    expect(fixture.combat.slidePhase).toBe(enemyComboShared.SLIDE_PHASE_AIR);
-    expect(fixture.combat.vh).toBeLessThan(enemyComboShared.SLIDE_HOP_VERTICAL_VELOCITY);
-    expect(Math.hypot(fixture.combat.momentumX, fixture.combat.momentumY)).toBeCloseTo(
-      takeoffSpeed,
-      8,
-    );
-    const beforeAirTick = Math.hypot(fixture.combat.momentumX, fixture.combat.momentumY);
-    sendSlideInput(fixture.h, fixture.player.id, 3, { dy: 1, slideHeld: true });
-    expect(fixture.player.height).toBeGreaterThan(0);
-    expect(Math.hypot(fixture.combat.momentumX, fixture.combat.momentumY)).toBeCloseTo(
-      beforeAirTick,
-      8,
-    );
-  });
-
-  it("accepts the landing buffer at age 3 and expires it after age 3", () => {
-    const hit = makeSlideRoom("slide-land-hit");
-    hit.combat.stance = enemyComboShared.STANCE_SLIDE;
-    hit.combat.slidePhase = enemyComboShared.SLIDE_PHASE_AIR;
-    hit.combat.momentumX = 400;
-    hit.combat.momentumY = 0;
-    hit.player.moveStance = enemyComboShared.STANCE_SLIDE;
-    hit.h.room.finishPlayerLanding(hit.player, hit.combat, enemyComboShared.STANCE_SLIDE, -300);
-    hit.h.room.stepSlideStance(hit.player, hit.combat);
-    hit.h.room.stepSlideStance(hit.player, hit.combat);
-    hit.h.room.stepSlideStance(hit.player, hit.combat);
-    expect(hit.combat.slidePhaseTick).toBe(enemyComboShared.SLIDE_LAND_WINDOW_TICKS);
-    expect(hit.h.room.acceptSlideLandingChain(hit.player, hit.combat, hit.combatInput)).toBe(true);
-    expect(hit.combat.slidePhase).toBe(enemyComboShared.SLIDE_PHASE_GROUND);
-    expect(Math.hypot(hit.combat.momentumX, hit.combat.momentumY)).toBeCloseTo(
-      enemyComboShared.slideLandingSpeed(400),
-      8,
-    );
-    const acceptedSpeed = Math.hypot(hit.combat.momentumX, hit.combat.momentumY);
-    expect(hit.h.room.acceptSlideLandingChain(hit.player, hit.combat, hit.combatInput)).toBe(false);
-    expect(Math.hypot(hit.combat.momentumX, hit.combat.momentumY)).toBeCloseTo(acceptedSpeed, 8);
-
-    const miss = makeSlideRoom("slide-land-miss");
-    miss.combat.stance = enemyComboShared.STANCE_SLIDE;
-    miss.combat.slidePhase = enemyComboShared.SLIDE_PHASE_AIR;
-    miss.combat.momentumX = 400;
-    miss.combat.momentumY = 0;
-    miss.player.moveStance = enemyComboShared.STANCE_SLIDE;
-    miss.h.room.finishPlayerLanding(miss.player, miss.combat, enemyComboShared.STANCE_SLIDE, -300);
-    for (let age = 1; age <= enemyComboShared.SLIDE_LAND_WINDOW_TICKS; age++)
-      miss.h.room.stepSlideStance(miss.player, miss.combat);
-    expect(miss.combat.stance).toBe(enemyComboShared.STANCE_SLIDE);
-    miss.h.room.stepSlideStance(miss.player, miss.combat);
-    expect(miss.combat.stance).toBe(enemyComboShared.STANCE_NONE);
-    expect([miss.combat.momentumX, miss.combat.momentumY]).toEqual([0, 0]);
-  });
-
-  it("honors the two-tick pre-landing press buffer without requiring the key to remain held", () => {
-    const fixture = makeSlideRoom("slide-preland-buffer");
-    fixture.combat.stance = enemyComboShared.STANCE_SLIDE;
-    fixture.combat.slidePhase = enemyComboShared.SLIDE_PHASE_AIR;
-    fixture.combat.slidePrelandTicks = enemyComboShared.SLIDE_PRELAND_BUFFER_TICKS;
-    fixture.combat.momentumX = 400;
-    fixture.combat.momentumY = 0;
-    fixture.player.moveStance = enemyComboShared.STANCE_SLIDE;
-    fixture.combatInput.held.slideHeld = false;
-    fixture.h.room.finishPlayerLanding(
-      fixture.player,
-      fixture.combat,
-      enemyComboShared.STANCE_SLIDE,
-      -300,
-    );
-    expect(fixture.combat.slidePhase).toBe(enemyComboShared.SLIDE_PHASE_GROUND);
-    expect(Math.hypot(fixture.combat.momentumX, fixture.combat.momentumY)).toBeCloseTo(452, 8);
-  });
-
-  it("lets a fresh high airborne Space press cash slide carry into pound", () => {
-    const fixture = makeSlideRoom("slide-air-pound");
-    fixture.combat.stance = enemyComboShared.STANCE_SLIDE;
-    fixture.combat.slidePhase = enemyComboShared.SLIDE_PHASE_AIR;
-    fixture.combat.momentumX = 400;
-    fixture.combat.momentumY = 0;
-    fixture.combat.vh = 50;
-    fixture.player.moveStance = enemyComboShared.STANCE_SLIDE;
-    fixture.player.height = 50;
-    fixture.player.vh = 50;
-    sendSlideInput(fixture.h, fixture.player.id, 1, { pound: true });
-    expect(fixture.combat.stance).toBe(enemyComboShared.STANCE_POUND);
-    expect([fixture.combat.momentumX, fixture.combat.momentumY]).toEqual([0, 0]);
-    expect(fixture.player.moveStance).toBe(enemyComboShared.STANCE_POUND);
-  });
-
-  it("cannot resolve portal or weapon interactions until slide stance ends", () => {
-    const fixture = makeSlideRoom("slide-interactions");
-    beginSlide(fixture);
-    fixture.h.state().portalOpen = true;
-    fixture.h.state().portalX = fixture.player.x;
-    fixture.h.state().portalY = fixture.player.y;
-    const weapon = fixture.player.weapon;
-    const pickups = fixture.h.state().pickups.size;
-    fixture.h.room.checkExtraction([{ x: fixture.player.x, y: fixture.player.y }]);
-    fixture.h.send(fixture.player.id, "dropWeapon");
-    expect(fixture.h.state().outcome).toBe("active");
-    expect(fixture.player.weapon).toBe(weapon);
-    expect(fixture.h.state().pickups.size).toBe(pickups);
-    fixture.h.room.zeroMoveVel(fixture.player.id);
-    fixture.h.room.checkExtraction([{ x: fixture.player.x, y: fixture.player.y }]);
-    expect(fixture.h.state().outcome).toBe("victory");
-  });
-
-  it("converges perfect chains below the ceiling and makes sloppy chains decay", () => {
-    let takeoff: number = enemyComboShared.SLIDE_SPEED_CAP;
-    for (let chain = 0; chain < 128; chain++) {
-      const nextStart = enemyComboShared.slideLandingSpeed(enemyComboShared.slideHopSpeed(takeoff));
-      expect(nextStart).toBeLessThanOrEqual(enemyComboShared.SLIDE_SPEED_CAP);
-      takeoff = enemyComboShared.slideGroundNextSpeed(
-        enemyComboShared.slideGroundNextSpeed(nextStart),
-      );
-    }
-    expect(takeoff).toBeCloseTo(477.4, 1);
-    expect(enemyComboShared.slideLandingSpeed(enemyComboShared.slideHopSpeed(takeoff))).toBeCloseTo(
-      507.4,
-      1,
-    );
-    expect(enemyComboShared.slideLandingSpeed(100_000)).toBe(enemyComboShared.SLIDE_SPEED_CAP);
-
-    const sloppyFixedPoint = (groundTicks: number) => {
-      const decay = enemyComboShared.SLIDE_GROUND_DECAY ** groundTicks;
-      const retention =
-        enemyComboShared.SLIDE_HOP_RETENTION * enemyComboShared.SLIDE_LANDING_RETENTION;
-      return (decay * enemyComboShared.SLIDE_LANDING_KICK) / (1 - decay * retention);
-    };
-    const sloppy = [3, 4, 5].map(sloppyFixedPoint);
-    expect(sloppy[0]).toBeCloseTo(392, 0);
-    expect(sloppy[1]).toBeCloseTo(330.9, 1);
-    expect(sloppy[2]).toBeCloseTo(285.1, 1);
-    expect(sloppy[0]).toBeLessThan(takeoff);
-    expect(sloppy[2]).toBeLessThan(sloppy[1] as number);
-  });
-
-  it("clamps corrupted authority momentum at the server movement assignment site", () => {
-    const fixture = makeSlideRoom("slide-authority-cap");
-    beginSlide(fixture);
-    fixture.combat.momentumX = 100_000;
-    fixture.combat.momentumY = 0;
-    fixture.h.tick(1);
-    expect(Math.hypot(fixture.combat.momentumX, fixture.combat.momentumY)).toBeCloseTo(
-      enemyComboShared.SLIDE_SPEED_CAP * enemyComboShared.SLIDE_GROUND_DECAY,
-      8,
-    );
-    expect(Math.hypot(fixture.player.momentumX, fixture.player.momentumY)).toBeLessThanOrEqual(
-      enemyComboShared.SLIDE_SPEED_CAP,
-    );
-  });
-
-  it("defines i-frames only on opening phase ticks 1 through 5", () => {
-    expect(
-      enemyComboShared.slideContactInvulnerable(
-        enemyComboShared.STANCE_SLIDE,
-        enemyComboShared.SLIDE_PHASE_GROUND,
-        0,
-      ),
-    ).toBe(false);
-    for (let tick = 1; tick <= enemyComboShared.SLIDE_IFRAME_TICKS; tick++) {
-      expect(
-        enemyComboShared.slideContactInvulnerable(
-          enemyComboShared.STANCE_SLIDE,
-          enemyComboShared.SLIDE_PHASE_GROUND,
-          tick,
-        ),
-      ).toBe(true);
-    }
-    expect(
-      enemyComboShared.slideContactInvulnerable(
-        enemyComboShared.STANCE_SLIDE,
-        enemyComboShared.SLIDE_PHASE_AIR,
-        enemyComboShared.SLIDE_IFRAME_TICKS,
-      ),
-    ).toBe(true);
-    expect(
-      enemyComboShared.slideContactInvulnerable(
-        enemyComboShared.STANCE_SLIDE,
-        enemyComboShared.SLIDE_PHASE_GROUND,
-        enemyComboShared.SLIDE_IFRAME_TICKS + 1,
-      ),
-    ).toBe(false);
-    expect(
-      enemyComboShared.slideContactInvulnerable(
-        enemyComboShared.STANCE_SLIDE,
-        enemyComboShared.SLIDE_PHASE_LAND_WINDOW,
-        0,
-      ),
-    ).toBe(false);
-  });
-
-  it("leads negotiated combo landings by fast slide velocity before freezing the promise", () => {
-    const { h, player } = makeEnemyComboRoom(1);
-    const enemy = addComboEnemy(h, player, "slide-lead-leaper", "vault-ronin", 300);
-    player.mvx = enemyComboShared.SLIDE_SPEED_CAP;
-    player.mvy = 0;
-    player.vx = 0;
-    player.vy = 0;
-    const st: AnyRoom = { phase: "idle", t: 0, hits: 0, wind: 0 };
-    h.room.comboState.set(enemy.id, st);
-    const random = vi.spyOn(Math, "random").mockReturnValue(0);
-    try {
-      h.room.commitCombo(enemy, enemy.id, ENEMY_KINDS[enemy.kind], st, player, true);
-    } finally {
-      random.mockRestore();
-    }
-    const row = h.state().telegraphs.get(st.tg);
-    expect(st.negotiatedTargetX - player.x).toBeCloseTo(140, 8);
-    expect(st.negotiatedTargetY).toBeCloseTo(player.y, 8);
-    expect(row.x - player.x).toBeCloseTo(283, 8); // 250 → 283 from the 110 → 143 melee offset
-  });
-
-  it("stamps schema 23 on the room and initializes the appended momentum state", () => {
-    const fixture = makeSlideRoom("slide-schema-23");
-    expect(fixture.h.state().schemaVersion).toBe(33);
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(33);
-    expect([
-      fixture.player.momentumX,
-      fixture.player.momentumY,
-      fixture.player.slidePhase,
-      fixture.player.slidePhaseTick,
-    ]).toEqual([0, 0, 0, 0]);
   });
 });
 
@@ -4660,15 +4234,14 @@ describe("GameRoom — MAP QOL extraction intent and tick-order fairness", () =>
     fixture.player.mvx = input.mvx;
     const fell = fixture.player.fellSeq;
     sendJumpFeelInput(fixture.h, fixture.player.id, 1, { dx: 1, jump: true });
-    expect(fixture.player.x).toBeGreaterThan(lip);
-    expect(isPitAtPx(map, fixture.player.x, fixture.player.y)).toBe(true);
+    expect(fixture.player.x).toBe(lip - 8);
+    expect(isPitAtPx(map, fixture.player.x, fixture.player.y)).toBe(false);
     expect(fixture.player.height).toBeGreaterThan(0);
     expect(fixture.player.fellSeq).toBe(fell);
   });
 
-  it("launches a ready buffered slide-hop before its same-tick lip movement and pit sample", () => {
-    const fixture = makeSlideRoom("qol-slide-hop-lip");
-    beginSlide(fixture);
+  it("launches the default long jump before its same-tick lip movement and pit sample", () => {
+    const fixture = makeJumpFeelRoom("qol-long-jump-lip");
     const map = fixture.h.room.map;
     const row = Math.floor(fixture.player.y / map.tileSize);
     const col = Math.floor(fixture.player.x / map.tileSize);
@@ -4679,14 +4252,13 @@ describe("GameRoom — MAP QOL extraction intent and tick-order fairness", () =>
     fixture.combat.lastGroundX = fixture.player.x;
     fixture.combat.lastGroundY = fixture.player.y;
     const fell = fixture.player.fellSeq;
-    sendSlideInput(fixture.h, fixture.player.id, 2, {
+    sendJumpFeelInput(fixture.h, fixture.player.id, 1, {
       dx: 1,
       jump: true,
-      slideHeld: true,
     });
-    expect(fixture.player.x).toBeGreaterThan(lip);
-    expect(isPitAtPx(map, fixture.player.x, fixture.player.y)).toBe(true);
-    expect(fixture.combat.slidePhase).toBe(enemyComboShared.SLIDE_PHASE_AIR);
+    expect(fixture.player.x).toBe(lip - 20);
+    expect(isPitAtPx(map, fixture.player.x, fixture.player.y)).toBe(false);
+    expect(fixture.combat.stance).toBe(enemyComboShared.STANCE_DASH);
     expect(fixture.player.height).toBeGreaterThan(0);
     expect(fixture.player.fellSeq).toBe(fell);
   });

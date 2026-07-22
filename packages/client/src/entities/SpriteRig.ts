@@ -63,14 +63,12 @@ import {
   meleeReach,
   PLAYER_RADIUS,
   PROCEDURAL_JIGGLE,
-  SLIDE_IFRAME_TICKS,
-  SLIDE_PHASE_AIR,
+  ROLL_DURATION,
+  ROLL_IFRAME_TICKS,
+  ROLL_TICK_SECONDS,
   SLIDE_PHASE_GROUND,
-  SLIDE_PHASE_LAND_WINDOW,
   SLIDE_PHASE_OFF,
-  SLIDE_TICK_SECONDS,
   type SlidePhase,
-  STANCE_CROUCH,
   STANCE_DASH,
   STANCE_NONE,
   STANCE_POUND,
@@ -95,6 +93,7 @@ import {
   weaponMuzzleGripOffset,
   weaponSpriteTransform,
 } from "@dd/shared";
+import { rollTumbleRotation } from "../vfx/jump-effects.js";
 import Phaser from "phaser";
 import {
   type WeaponArtGeometry,
@@ -5172,7 +5171,7 @@ export class SpriteRig {
     for (const attachment of this.gearAttachments) apply(attachment.image);
   }
 
-  /** The pale unprinted face remains the slide opening's exact tell; it never borrows parry white. */
+  /** The pale unprinted face remains the roll opening's exact tell; it never borrows parry white. */
   private applySlideInkTell(on: boolean): void {
     if (!on && !this.slideReverseFace) return;
     this.slideReverseFace = on;
@@ -5194,8 +5193,8 @@ export class SpriteRig {
   private updateSlideAfterimages(timeMs: number, reducedMotion: boolean): void {
     const sampling =
       this.moveStance === STANCE_SLIDE &&
-      (this.slidePhase === SLIDE_PHASE_GROUND || this.slidePhase === SLIDE_PHASE_AIR) &&
-      this.slideRenderT <= SLIDE_IFRAME_TICKS * SLIDE_TICK_SECONDS &&
+      this.slidePhase === SLIDE_PHASE_GROUND &&
+      this.slideRenderT <= ROLL_IFRAME_TICKS * ROLL_TICK_SECONDS &&
       !reducedMotion;
     if (sampling && !this.slideEchoSampling) {
       this.slideEchoSampling = true;
@@ -7063,26 +7062,10 @@ export class SpriteRig {
       this.moveStance === STANCE_SLIDE ? (anim.slidePhase ?? SLIDE_PHASE_OFF) : SLIDE_PHASE_OFF;
     this.slideRenderT =
       this.moveStance === STANCE_SLIDE
-        ? (anim.slideTick ?? Math.floor(stanceElapsed / TICK_MS) + 1) * SLIDE_TICK_SECONDS
+        ? (anim.slideTick ?? Math.floor(stanceElapsed / TICK_MS) + 1) * ROLL_TICK_SECONDS
         : 0;
 
-    if (this.moveStance === STANCE_CROUCH) {
-      let sy: number;
-      if (stanceElapsed < 50) sy = 1 - 0.14 * (stanceElapsed / 50);
-      else if (stanceElapsed < 150) sy = 0.86;
-      else if (stanceElapsed < 200) sy = 0.86 - 0.14 * ((stanceElapsed - 150) / 50);
-      else sy = 0.72 - 0.1 * smoothstep01((stanceElapsed - 200) / 300);
-      if (reduced) sy = Math.max(0.82, sy);
-      this.body.scaleY *= sy;
-      this.body.scaleX *= 1 + (1 - sy) * 0.32;
-      this.body.y += (1 - sy) * TARGET_BODY_H * 0.18;
-      this.body.rotation += 0.1 * (anim.moveX || Math.cos(anim.aimDir));
-      this.attackShadowScaleX *= 1.08;
-      this.attackShadowScaleY *= 1.08;
-      this.attackShadowAlpha *= 1.16;
-      for (const foot of this.feet) foot.img.x += (foot.front ? 1 : -1) * TARGET_BODY_H * 0.08;
-      for (const hand of this.hands) hand.img.y += TARGET_BODY_H * 0.08;
-    } else if (this.moveStance === STANCE_POUND) {
+    if (this.moveStance === STANCE_POUND) {
       if (stanceElapsed <= 120 && !reduced) {
         const e = clamp01(stanceElapsed / 120);
         this.attackScaleY *= signedClamp(Math.cos(Math.PI * 2 * e), 0.14);
@@ -7102,28 +7085,23 @@ export class SpriteRig {
       }
     } else if (this.moveStance === STANCE_SLIDE) {
       const slidePhase = anim.slidePhase ?? SLIDE_PHASE_OFF;
-      const slideTick = anim.slideTick ?? 0;
       const heading = anim.moveX < -0.05 ? -1 : 1;
       if (slidePhase === SLIDE_PHASE_GROUND) {
-        const crease = clamp01(this.slideRenderT / SLIDE_TICK_SECONDS);
-        const squash = reduced ? 0.78 : 0.62;
-        this.body.scaleY *= 1 + (squash - 1) * crease;
-        this.body.scaleX *= 1 + 0.08 * crease;
-        this.body.rotation += heading * 0.14 * crease;
-        this.body.y += TARGET_BODY_H * 0.13 * crease;
-        for (const foot of this.feet)
-          foot.img.x += (foot.front ? heading : -heading) * TARGET_BODY_H * 0.1;
-      } else if (slidePhase === SLIDE_PHASE_AIR) {
-        this.body.scaleY *= reduced ? 0.94 : 0.9;
-        this.body.scaleX *= 1.04;
-        this.body.rotation += heading * 0.18;
-        for (const foot of this.feet) foot.img.y += TARGET_BODY_H * 0.08;
-      } else if (slidePhase === SLIDE_PHASE_LAND_WINDOW) {
-        const unfold = smoothstep01(slideTick / 3);
-        const squash = (reduced ? 0.86 : 0.76) + (1 - (reduced ? 0.86 : 0.76)) * unfold;
-        this.body.scaleY *= squash;
-        this.body.scaleX *= 1 + (1 - squash) * 0.28;
-        this.body.rotation += heading * 0.1 * (1 - unfold);
+        const progress = clamp01(this.slideRenderT / ROLL_DURATION);
+        const tuck = Math.sin(Math.PI * progress);
+        this.root.rotation += rollTumbleRotation(progress, heading, reduced);
+        this.body.scaleY *= 1 - (reduced ? 0.12 : 0.23) * tuck;
+        this.body.scaleX *= 1 + (reduced ? 0.05 : 0.12) * tuck;
+        this.body.rotation += heading * 0.18 * tuck;
+        this.body.y += TARGET_BODY_H * 0.12 * tuck;
+        for (const foot of this.feet) {
+          foot.img.x -= heading * TARGET_BODY_H * 0.06 * tuck;
+          foot.img.y -= TARGET_BODY_H * 0.1 * tuck;
+        }
+        for (const hand of this.hands) {
+          hand.img.x += heading * TARGET_BODY_H * 0.04 * tuck;
+          hand.img.y += TARGET_BODY_H * 0.08 * tuck;
+        }
       }
       for (const weapon of this.weapons) {
         weapon.img.rotation -= heading * 0.08;
@@ -10423,8 +10401,8 @@ export class SpriteRig {
     this.updateMeleeTellWeaponVisuals(sceneNow);
     this.applySlideInkTell(
       this.moveStance === STANCE_SLIDE &&
-        (this.slidePhase === SLIDE_PHASE_GROUND || this.slidePhase === SLIDE_PHASE_AIR) &&
-        this.slideRenderT <= SLIDE_IFRAME_TICKS * SLIDE_TICK_SECONDS,
+        this.slidePhase === SLIDE_PHASE_GROUND &&
+        this.slideRenderT <= ROLL_IFRAME_TICKS * ROLL_TICK_SECONDS,
     );
     this.updateJuggleFlash(sceneNow);
     this.updateSlideAfterimages(sceneNow, anim.reducedMotion === true || outsidePaperView);
@@ -10513,7 +10491,6 @@ export class SpriteRig {
     let shrink = Math.max(0.34, 1 - this.hopPx / 560);
     if (this.moveStance === STANCE_DASH) shrink = Math.max(0.85, shrink);
     if (this.moveStance === STANCE_SLIDE) shrink = Math.max(0.88, shrink) * 1.08;
-    if (this.moveStance === STANCE_CROUCH) shrink *= 1.08;
     const shadowOpen = spawnActive ? smoothstep01(spawnElapsedMs / 170) : 1;
     const shadowSpawnX = 0.45 + 0.55 * shadowOpen;
     const shadowSpawnY = 0.25 + 0.75 * shadowOpen;

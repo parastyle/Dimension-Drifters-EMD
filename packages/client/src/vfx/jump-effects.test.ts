@@ -3,7 +3,23 @@ import {
   enemyComboLeapHeight,
   enemyComboLeapVelocity,
   enemyComboOfferPhase,
+  rollTumbleRotation,
 } from "./jump-effects.js";
+
+describe("roll tumble presentation geometry", () => {
+  it("turns the whole card through one signed revolution", () => {
+    expect(rollTumbleRotation(0, 1)).toBe(0);
+    expect(rollTumbleRotation(0.5, 1)).toBeCloseTo(Math.PI);
+    expect(rollTumbleRotation(1, 1)).toBeCloseTo(Math.PI * 2);
+    expect(rollTumbleRotation(0.5, -1)).toBeCloseTo(-Math.PI);
+  });
+
+  it("clamps overshoot and gives reduced motion a bounded tuck instead of a revolution", () => {
+    expect(rollTumbleRotation(2, 1)).toBeCloseTo(Math.PI * 2);
+    expect(Math.abs(rollTumbleRotation(0.5, 1, true))).toBeCloseTo(0.32);
+    expect(rollTumbleRotation(1, 1, true)).toBeCloseTo(0);
+  });
+});
 
 describe("enemy combo leap presentation", () => {
   it("forms one committed ballistic rise, hang, and fall without moving either endpoint", () => {

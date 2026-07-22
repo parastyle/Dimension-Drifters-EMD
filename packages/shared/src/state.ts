@@ -210,7 +210,7 @@ export class PlayerState extends Schema {
    *  player is LAUNCHED or air-kept by a tough-combo juggle hit — the client edge-fires the hit-reaction /
    *  tumble pose off changes. The arc itself rides the existing synced `height`/`vh` channels. */
   @type("uint8") juggledSeq = 0;
-  /** Committed movement pose: 0 normal · 1 crouch · 2 distance jump · 3 ground pound. */
+  /** Committed movement pose: 0 normal · 1 retired charge tombstone · 2 distance jump · 3 pound · 4 roll. */
   @type("uint8") moveStance = 0;
   /** Authoritative ground-pound landing edge; remotes fire the exact-radius impact presentation from it. */
   @type("uint8") poundSeq = 0;
@@ -221,10 +221,10 @@ export class PlayerState extends Schema {
   @type("string") runCharacter = "drifter";
   /** Contact null-whiff edge. Cosmetic only; never aliases the rewarded parry receipt. APPENDED at v22. */
   @type("uint8") dodgedSeq = 0;
-  /** Player-authored slide carry replay anchor. External impulse remains exclusively in vx/vy. APPENDED at v23. */
+  /** Fixed-roll direction/speed replay anchor. External impulse remains exclusively in vx/vy. APPENDED at v23. */
   @type("number") momentumX = 0;
   @type("number") momentumY = 0;
-  /** Slide subphase + exact sentence tick, sufficient to adopt/replay a mid-chain authoritative patch. */
+  /** Append-only wire names: V7 roll phase + exact sentence tick, sufficient for mid-roll adoption/replay. */
   @type("uint8") slidePhase = 0;
   @type("uint8") slidePhaseTick = 0;
   // ── §ULT schema v24. The resolved family+variant is packed into one byte so the amended 5×4

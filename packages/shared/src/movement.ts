@@ -26,13 +26,7 @@ import {
   POUND_DAMAGE_BASE,
   POUND_DAMAGE_CAP,
   POUND_DAMAGE_PER_HEIGHT,
-  SLIDE_AIR_STEER_RADIANS_PER_SECOND,
-  SLIDE_GROUND_DECAY,
-  SLIDE_GROUND_STEER_RADIANS_PER_SECOND,
-  SLIDE_HOP_RETENTION,
-  SLIDE_LANDING_KICK,
-  SLIDE_LANDING_RETENTION,
-  SLIDE_SPEED_CAP,
+  ROLL_SPEED_CURVE,
   VERTICAL_PHASE_APEX,
   VERTICAL_PHASE_FALLING,
   VERTICAL_PHASE_GROUNDED,
@@ -320,45 +314,8 @@ export function poundDamage(triggerHeight: number): number {
   );
 }
 
-/** Hard anti-sprint/corruption ceiling for every player-authored slide assignment. */
-export function clampSlideSpeed(speed: number): number {
-  return Number.isFinite(speed) ? clamp(Math.max(0, speed), 0, SLIDE_SPEED_CAP) : 0;
-}
-
-/** Speed installed by one grounded integration. Decay happens after position consumes the current value. */
-export function slideGroundNextSpeed(speed: number): number {
-  return clampSlideSpeed(clampSlideSpeed(speed) * SLIDE_GROUND_DECAY);
-}
-
-/** One-time horizontal transfer at slide-hop liftoff. */
-export function slideHopSpeed(speed: number): number {
-  return clampSlideSpeed(clampSlideSpeed(speed) * SLIDE_HOP_RETENTION);
-}
-
-/** One-use landing retention plus scrape kick; this is the only renewable chain injection. */
-export function slideLandingSpeed(landingSpeed: number): number {
-  return clampSlideSpeed(clampSlideSpeed(landingSpeed) * SLIDE_LANDING_RETENTION + SLIDE_LANDING_KICK);
-}
-
-/** Allocation-free bounded carve shared by authority and predictor. Aim never participates. */
-export function slideSteeredAngle(
-  currentX: number,
-  currentY: number,
-  inputX: number,
-  inputY: number,
-  dtSeconds: number,
-  airborne: boolean,
-): number {
-  const current = Math.atan2(currentY, currentX);
-  const inputLength = Math.hypot(inputX, inputY);
-  if (inputLength <= 1e-4) return current;
-  const desired = Math.atan2(inputY, inputX);
-  let delta = (desired - current + Math.PI) % (Math.PI * 2);
-  if (delta < 0) delta += Math.PI * 2;
-  delta -= Math.PI;
-  const maxStep =
-    (airborne
-      ? SLIDE_AIR_STEER_RADIANS_PER_SECOND
-      : SLIDE_GROUND_STEER_RADIANS_PER_SECOND) * Math.max(0, dtSeconds);
-  return current + clamp(delta, -maxStep, maxStep);
+/** Allocation-free fixed-roll sample shared by authority, prediction replay, and fractional preview. */
+export function rollSpeedAtTick(tick: number): number {
+  const index = Math.min(ROLL_SPEED_CURVE.length - 1, Math.max(0, Math.floor(tick)));
+  return ROLL_SPEED_CURVE[index] ?? ROLL_SPEED_CURVE[ROLL_SPEED_CURVE.length - 1] ?? 0;
 }

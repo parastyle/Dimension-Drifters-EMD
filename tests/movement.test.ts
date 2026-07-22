@@ -7,6 +7,11 @@ import {
   MOVE_HITCH_DIP,
   MOVE_SPEED,
   PLAYER_RADIUS,
+  ROLL_DISTANCE,
+  ROLL_DURATION_TICKS,
+  ROLL_SPEED_CURVE,
+  ROLL_TICK_SECONDS,
+  rollSpeedAtTick,
   steerVelocity,
   stepImpulse,
   stepPlayerMovement,
@@ -14,6 +19,25 @@ import {
   stepVertical,
 } from "@dd/shared";
 import { describe, expect, it } from "vitest";
+
+describe("V7 fixed roll sentence", () => {
+  it("samples eight deterministic speeds totaling exactly 188 px over 400 ms", () => {
+    const samples = Array.from({ length: ROLL_DURATION_TICKS }, (_, tick) =>
+      rollSpeedAtTick(tick),
+    );
+    expect(samples).toEqual(ROLL_SPEED_CURVE);
+    expect(samples.reduce((distance, speed) => distance + speed * ROLL_TICK_SECONDS, 0)).toBe(
+      ROLL_DISTANCE,
+    );
+    expect(ROLL_DURATION_TICKS * ROLL_TICK_SECONDS).toBeCloseTo(0.4, 9);
+  });
+
+  it("clamps corrupted/fractional sample indices without changing the roll law", () => {
+    expect(rollSpeedAtTick(-100)).toBe(ROLL_SPEED_CURVE[0]);
+    expect(rollSpeedAtTick(3.9)).toBe(ROLL_SPEED_CURVE[3]);
+    expect(rollSpeedAtTick(100)).toBe(ROLL_SPEED_CURVE.at(-1));
+  });
+});
 
 // §26 retro #4: test the hot path first. Movement is the authoritative step shared by
 // the server tick and (later) client prediction — if it drifts, co-op desyncs.

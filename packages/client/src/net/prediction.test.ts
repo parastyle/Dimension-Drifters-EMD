@@ -1,7 +1,7 @@
 import {
   addImpulse,
+  DIST_JUMP_VERTICAL_VELOCITY,
   INTERP_SNAP_PLAYER,
-  JUMP_VELOCITY,
   stepImpulse,
   stepSteeredMovement,
   stepVertical,
@@ -296,7 +296,7 @@ describe("SelfPredictor — §4 v0.107 prediction + reconciliation", () => {
     pred.tick(jump);
     pred.reconcile({ ...preJumpPatch, ackSeq: (jump.seq - 1) >>> 0, height: 0, vh: 0 });
     const beforeAck = pred.renderPos(0, 0, 0).height;
-    const authoritativeHop = stepVertical(0, JUMP_VELOCITY, DT);
+    const authoritativeHop = stepVertical(0, DIST_JUMP_VERTICAL_VELOCITY, DT);
 
     pred.reconcile({
       ...server.view(),
@@ -326,18 +326,16 @@ describe("SelfPredictor — §4 v0.107 prediction + reconciliation", () => {
 });
 
 describe("SelfPredictor — jump-feel stance replay", () => {
-  it("replays crouch through its ten command ticks and launches the predicted distance jump", () => {
+  it("replays an immediate default distance jump through a pre-input patch", () => {
     const server = new MockServer();
     const pred = new SelfPredictor({ ...server.view(), moveStance: 0, stanceSeq: 0 });
-    const preCrouch = server.view();
+    const preJump = server.view();
 
-    const first = pred.mintCmd(1, 0, false, true, false, 1, 0);
+    const first = pred.mintCmd(1, 0, true, false, false, 1, 0);
     pred.tick(first);
-    expect(pred.moveStance).toBe(1);
-    pred.reconcile({ ...preCrouch, ackSeq: 0, moveStance: 0, stanceSeq: 0 });
-    expect(pred.moveStance).toBe(1);
-
-    for (let i = 1; i < 10; i++) pred.tick(pred.mintCmd(1, 0, false, true, false, 1, 0));
+    expect(pred.moveStance).toBe(2);
+    expect(pred.renderPos(1, 0, 0).height).toBeGreaterThan(0);
+    pred.reconcile({ ...preJump, ackSeq: 0, moveStance: 0, stanceSeq: 0 });
     expect(pred.moveStance).toBe(2);
     expect(pred.renderPos(1, 0, 0).height).toBeGreaterThan(0);
   });
@@ -364,9 +362,8 @@ describe("SelfPredictor — jump-feel stance replay", () => {
     const server = new MockServer();
     const initial = { ...server.view(), moveStance: 0 as const, stanceSeq: 0 };
     const pred = new SelfPredictor(initial);
-    pred.tick(pred.mintCmd(1, 0, false));
-    pred.tick(pred.mintCmd(1, 0, false, true));
-    expect(pred.moveStance).toBe(1);
+    pred.tick(pred.mintCmd(1, 0, false, false, false, 1, 0, true, true));
+    expect(pred.moveStance).toBe(4);
 
     const before = pred.renderPos(1, 0, 0);
     const forced = { ...initial, x: initial.x - 8, moveStance: 0 as const, stanceSeq: 1 };
@@ -379,28 +376,26 @@ describe("SelfPredictor — jump-feel stance replay", () => {
       pred.reconcile(forced);
       expect(pred.moveStance).toBe(0);
     }
-    pred.tick(pred.mintCmd(0, 0, false, true));
+    pred.tick(pred.mintCmd(0, 0, false, false, false, 1, 0, true, true));
     expect(pred.moveStance).toBe(0); // the same physical hold is not a new press
-    pred.tick(pred.mintCmd(0, 0, false, false));
-    pred.tick(pred.mintCmd(0, 0, false, true));
-    expect(pred.moveStance).toBe(1); // release then press legitimately re-arms crouch
+    pred.tick(pred.mintCmd(0, 0, false, false, false, 1, 0, false, false));
+    expect(pred.moveStance).toBe(0); // forced cancellation starts the time cooldown
   });
 });
 
 describe("jump-feel input and indicator helpers", () => {
-  it("emits tap jump only on release, hold state at 150ms, and pound on an airborne press", async () => {
+  it("emits jump on the first grounded keydown, never charges, and pounds on an airborne press", async () => {
     const { SpaceGestureClassifier } = await import("./prediction.js");
     const input = new SpaceGestureClassifier();
-    expect(input.sample(0, true, true, false, false).jump).toBe(false);
-    expect(input.sample(90, false, false, true, false)).toMatchObject({
+    expect(input.sample(0, true, true, false, false)).toMatchObject({
       jump: true,
       pound: false,
       crouchHeld: false,
     });
-
-    input.sample(200, true, true, false, false);
-    expect(input.sample(349, true, false, false, false).crouchHeld).toBe(false);
-    expect(input.sample(350, true, false, false, false).crouchHeld).toBe(true);
+    expect(input.sample(350, true, false, false, false)).toMatchObject({
+      jump: false,
+      crouchHeld: false,
+    });
     expect(input.sample(410, false, false, true, false).jump).toBe(false);
     expect(input.sample(500, true, true, false, true).pound).toBe(true);
   });
@@ -418,217 +413,117 @@ describe("jump-feel input and indicator helpers", () => {
   });
 });
 
-const slidePredictionShared = await import("@dd/shared");
+const rollPredictionShared = await import("@dd/shared");
 
-describe("SelfPredictor — schema-23 slide replay", () => {
-  it("replays the ten-tick capped decay curve deterministically", () => {
-    const initial: ServerView = {
-      x: 1000,
-      y: 1000,
-      mvx: slidePredictionShared.SLIDE_ENTRY_SPEED,
-      mvy: 0,
-      vx: 0,
-      vy: 0,
-      height: 0,
-      vh: 0,
-      ackSeq: 0,
-      teleportSeq: 0,
-      moveStance: slidePredictionShared.STANCE_NONE,
-      stanceSeq: 0,
-      alive: true,
-      frozen: false,
-    };
-    const a = new SelfPredictor(initial);
-    const b = new SelfPredictor(initial);
-    for (let tick = 0; tick < slidePredictionShared.SLIDE_GROUND_TICKS; tick++) {
-      const slide = tick === 0;
-      const aCmd = a.mintCmd(1, 0, false, false, false, 1, 0, slide, true);
-      const bCmd = b.mintCmd(1, 0, false, false, false, 1, 0, slide, true);
-      a.tick(aCmd);
-      b.tick(bCmd);
+function rollInitial(): ServerView {
+  return {
+    x: 1000,
+    y: 1000,
+    mvx: 0,
+    mvy: 0,
+    vx: 0,
+    vy: 0,
+    height: 0,
+    vh: 0,
+    ackSeq: 0,
+    teleportSeq: 0,
+    moveStance: rollPredictionShared.STANCE_NONE,
+    stanceSeq: 0,
+    alive: true,
+    frozen: false,
+  };
+}
+
+function rollCmd(pred: SelfPredictor, dx: number, dy: number, edge: boolean): PredCmd {
+  return pred.mintCmd(dx, dy, false, false, false, 1, 0, edge, edge);
+}
+
+describe("SelfPredictor — V7 fixed roll replay", () => {
+  it("replays the exact eight-sample 188 px sentence from rest with frozen direction", () => {
+    const initial = rollInitial();
+    const pred = new SelfPredictor(initial);
+    for (let tick = 0; tick < rollPredictionShared.ROLL_DURATION_TICKS; tick++) {
+      const edge = tick === 0;
+      pred.tick(rollCmd(pred, edge ? 1 : 0, edge ? 0 : 1, edge));
     }
-    const beforeReplay = a.renderPos(0, 1, 0);
-    const expectedDistance =
-      ((slidePredictionShared.SLIDE_SPEED_CAP *
-        (1 -
-          slidePredictionShared.SLIDE_GROUND_DECAY **
-            slidePredictionShared.SLIDE_GROUND_TICKS)) /
-        (1 - slidePredictionShared.SLIDE_GROUND_DECAY)) *
-      DT;
-    expect(beforeReplay.x - initial.x).toBeCloseTo(expectedDistance, 9);
+    const beforeReplay = pred.renderPos(0, 1, 0);
+    expect(beforeReplay.x - initial.x).toBeCloseTo(rollPredictionShared.ROLL_DISTANCE, 9);
     expect(beforeReplay.y).toBeCloseTo(initial.y, 9);
-    expect(a.moveStance).toBe(slidePredictionShared.STANCE_NONE);
-    expect(b.renderPos(0, 1, 0)).toEqual(beforeReplay);
+    expect(pred.moveStance).toBe(rollPredictionShared.STANCE_NONE);
+    expect(pred.slideCooldownRemaining).toBeGreaterThan(2.9);
 
-    // A delayed pre-slide patch rebases at ack 0; all ten pending commands reproduce the same state.
-    a.reconcile(initial);
-    const replayed = a.renderPos(0, 1, 0);
+    pred.reconcile(initial);
+    const replayed = pred.renderPos(0, 1, 0);
     expect(replayed.x).toBeCloseTo(beforeReplay.x, 9);
     expect(replayed.y).toBeCloseTo(beforeReplay.y, 9);
-    expect(a.moveStance).toBe(slidePredictionShared.STANCE_NONE);
   });
 
-  it("exposes the exact five-tick opening fraction and vulnerable tail", () => {
-    const server = new MockServer();
-    const pred = new SelfPredictor({
-      ...server.view(),
-      mvx: slidePredictionShared.SLIDE_ENTRY_SPEED,
-      moveStance: slidePredictionShared.STANCE_NONE,
-      stanceSeq: 0,
-    });
-    pred.tick(pred.mintCmd(1, 0, false, false, false, 1, 0, true, true));
-    expect(pred.slideInvulnerable).toBe(true); // phase tick 1
-    for (let tick = 1; tick < 5; tick++) {
-      pred.tick(pred.mintCmd(1, 0, false, false, false, 1, 0, false, true));
+  it("exposes five opening ticks, a vulnerable tail, and the independent parry lock", () => {
+    const pred = new SelfPredictor(rollInitial());
+    pred.tick(rollCmd(pred, 1, 0, true));
+    expect(pred.slideInvulnerable).toBe(true);
+    for (let tick = 1; tick < rollPredictionShared.ROLL_IFRAME_TICKS; tick++) {
+      pred.tick(rollCmd(pred, 1, 0, false));
       expect(pred.slideInvulnerable).toBe(true);
     }
-    pred.tick(pred.mintCmd(1, 0, false, false, false, 1, 0, false, true));
-    expect(pred.slideInvulnerable).toBe(false); // phase tick 6: ink/vulnerability returns
-    expect(pred.moveStance).toBe(slidePredictionShared.STANCE_SLIDE);
-    for (let tick = 6; tick <= 9; tick++) {
-      pred.tick(pred.mintCmd(1, 0, false, false, false, 1, 0, false, true));
-      expect(pred.slideParryLocked).toBe(true);
-    }
-    pred.tick(pred.mintCmd(1, 0, false, false, false, 1, 0, false, true));
-    expect(pred.slideParryLocked).toBe(false); // consume + 10: the parry seam has elapsed
+    pred.tick(rollCmd(pred, 1, 0, false));
+    expect(pred.slideInvulnerable).toBe(false);
+    expect(pred.moveStance).toBe(rollPredictionShared.STANCE_SLIDE);
+    expect(pred.slideParryLocked).toBe(true);
   });
 
-  it("adopts a stanceSeq forced cancel, strips pending slide causes, and preserves glide correction", () => {
-    const server = new MockServer();
-    const initial = {
-      ...server.view(),
-      mvx: slidePredictionShared.SLIDE_ENTRY_SPEED,
-      moveStance: slidePredictionShared.STANCE_NONE,
-      stanceSeq: 0,
-    };
+  it("adopts a forced authority cancel, clears momentum, and starts cooldown", () => {
+    const initial = rollInitial();
     const pred = new SelfPredictor(initial);
-    pred.tick(pred.mintCmd(1, 0, false, false, false, 1, 0, true, true));
-    pred.tick(pred.mintCmd(1, 0, false, false, false, 1, 0, false, true));
-    expect(pred.moveStance).toBe(slidePredictionShared.STANCE_SLIDE);
+    const entry = rollCmd(pred, 1, 0, true);
+    pred.tick(entry);
+    pred.tick(rollCmd(pred, 1, 0, false));
     const before = pred.renderPos(0, 1, 0);
-
-    const forced = {
+    pred.reconcile({
       ...initial,
       x: initial.x - 8,
-      moveStance: slidePredictionShared.STANCE_NONE,
+      ackSeq: entry.seq,
+      moveStance: rollPredictionShared.STANCE_NONE,
       stanceSeq: 1,
-    };
-    pred.reconcile(forced);
-    expect(pred.moveStance).toBe(slidePredictionShared.STANCE_NONE);
+      momentumX: 0,
+      momentumY: 0,
+      slidePhase: rollPredictionShared.SLIDE_PHASE_OFF,
+      slidePhaseTick: 0,
+    });
+    expect(pred.moveStance).toBe(rollPredictionShared.STANCE_NONE);
+    expect(pred.momentumSpeed).toBe(0);
+    expect(pred.canSlide).toBe(false);
     expect(pred.stats.errPx).toBeGreaterThan(0);
     expect(Math.abs(pred.renderPos(0, 1, 0).x - before.x)).toBeLessThan(1);
-    expect(pred.canSlide).toBe(false);
-
-    for (let patch = 0; patch < 3; patch++) {
-      pred.reconcile(forced);
-      expect(pred.moveStance).toBe(slidePredictionShared.STANCE_NONE);
-    }
   });
-});
 
-describe("schema-23 slide input treaties", () => {
-  it("binds Shift and Ctrl to identical press and hold signals", async () => {
+  it("binds Shift and Ctrl identically and requires release after an acknowledged denial", async () => {
     const { slideHeldFromBindings, slidePressedFromBindings } = await import("./prediction.js");
     expect(slidePressedFromBindings(true, false)).toBe(true);
     expect(slidePressedFromBindings(false, true)).toBe(true);
-    expect(slidePressedFromBindings(false, false)).toBe(false);
     expect(slideHeldFromBindings(true, false)).toBe(true);
     expect(slideHeldFromBindings(false, true)).toBe(true);
-    expect(slideHeldFromBindings(false, false)).toBe(false);
-  });
 
-  it("consumes grounded-slide Space on keydown and cannot leak that press into pound", async () => {
-    const { SpaceGestureClassifier } = await import("./prediction.js");
-    const input = new SpaceGestureClassifier();
-    expect(input.sample(0, true, true, false, false, true, true)).toMatchObject({
-      jump: true,
-      pound: false,
-      crouchHeld: false,
-    });
-    expect(input.sample(50, true, false, false, true, true, false)).toMatchObject({
-      jump: false,
-      pound: false,
-    });
-    input.sample(100, false, false, true, true, true, false);
-    expect(input.sample(150, true, true, false, true, true, false).pound).toBe(true);
-  });
-
-  it("adopts an acknowledged server denial and requires a physical release", () => {
-    const initial: ServerView = {
-      x: 1000,
-      y: 1000,
-      mvx: slidePredictionShared.SLIDE_ENTRY_SPEED,
-      mvy: 0,
-      vx: 0,
-      vy: 0,
-      height: 0,
-      vh: 0,
-      ackSeq: 0,
-      teleportSeq: 0,
-      moveStance: slidePredictionShared.STANCE_NONE,
-      stanceSeq: 0,
-      alive: true,
-      frozen: false,
-    };
+    const initial = rollInitial();
     const pred = new SelfPredictor(initial);
-    const pressed = pred.mintCmd(1, 0, false, false, false, 1, 0, true, true);
+    const pressed = rollCmd(pred, 1, 0, true);
     pred.tick(pressed);
-    expect(pred.moveStance).toBe(slidePredictionShared.STANCE_SLIDE);
+    expect(pred.moveStance).toBe(rollPredictionShared.STANCE_SLIDE);
     pred.reconcile({ ...initial, ackSeq: pressed.seq });
-    expect(pred.moveStance).toBe(slidePredictionShared.STANCE_NONE);
-    pred.tick(pred.mintCmd(1, 0, false, false, false, 1, 0, true, true));
-    expect(pred.moveStance).toBe(slidePredictionShared.STANCE_NONE);
+    expect(pred.moveStance).toBe(rollPredictionShared.STANCE_NONE);
+    pred.tick(rollCmd(pred, 1, 0, true));
+    expect(pred.moveStance).toBe(rollPredictionShared.STANCE_NONE);
   });
 
-  it("adopts an authority-only slide break and clears divergent momentum before replay", () => {
-    const initial: ServerView = {
-      x: 1000,
-      y: 1000,
-      mvx: slidePredictionShared.SLIDE_ENTRY_SPEED,
-      mvy: 0,
-      vx: 0,
-      vy: 0,
-      height: 0,
-      vh: 0,
-      ackSeq: 0,
-      teleportSeq: 0,
-      moveStance: slidePredictionShared.STANCE_NONE,
-      stanceSeq: 0,
-      alive: true,
-      frozen: false,
-    };
-    const pred = new SelfPredictor(initial);
-    const entry = pred.mintCmd(1, 0, false, false, false, 1, 0, true, true);
-    pred.tick(entry);
-    const held = pred.mintCmd(1, 0, false, false, false, 1, 0, false, true);
-    pred.tick(held);
-    pred.reconcile({
-      ...initial,
-      x: initial.x + slidePredictionShared.SLIDE_SPEED_CAP * DT,
-      mvx: slidePredictionShared.SLIDE_SPEED_CAP * slidePredictionShared.SLIDE_GROUND_DECAY,
-      momentumX:
-        slidePredictionShared.SLIDE_SPEED_CAP * slidePredictionShared.SLIDE_GROUND_DECAY,
-      momentumY: 0,
-      slidePhase: slidePredictionShared.SLIDE_PHASE_GROUND,
-      slidePhaseTick: 1,
-      moveStance: slidePredictionShared.STANCE_SLIDE,
-      ackSeq: entry.seq,
-    });
-    const tail = pred.mintCmd(1, 0, false, false, false, 1, 0, false, true);
-    pred.tick(tail);
-    pred.reconcile({
-      ...initial,
-      x: initial.x + 40,
-      mvx: 0,
-      momentumX: 0,
-      momentumY: 0,
-      slidePhase: slidePredictionShared.SLIDE_PHASE_OFF,
-      slidePhaseTick: 0,
-      moveStance: slidePredictionShared.STANCE_NONE,
-      ackSeq: held.seq,
-    });
-    expect(pred.moveStance).toBe(slidePredictionShared.STANCE_NONE);
-    expect(pred.momentumSpeed).toBe(0);
+  it("buffers Space during the roll and launches the long jump on the first legal tick", () => {
+    const pred = new SelfPredictor(rollInitial());
+    pred.tick(rollCmd(pred, 1, 0, true));
+    pred.tick(pred.mintCmd(1, 0, true));
+    for (let tick = 2; tick < rollPredictionShared.ROLL_DURATION_TICKS; tick++)
+      pred.tick(pred.mintCmd(1, 0, false));
+    pred.tick(pred.mintCmd(1, 0, false));
+    expect(pred.moveStance).toBe(rollPredictionShared.STANCE_DASH);
+    expect(pred.renderPos(1, 0, 0).height).toBeGreaterThan(0);
   });
 });
 

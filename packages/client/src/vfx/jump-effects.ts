@@ -9,6 +9,19 @@ function clamp01(value: number): number {
   return Math.max(0, Math.min(1, value));
 }
 
+/** Whole-card roll geometry. Full motion is one readable revolution; reduced motion keeps the tuck cue. */
+export function rollTumbleRotation(
+  fraction: number,
+  direction: number,
+  reducedMotion = false,
+): number {
+  const progress = clamp01(fraction);
+  const sign = direction < 0 ? -1 : 1;
+  return reducedMotion
+    ? sign * 0.32 * Math.sin(Math.PI * progress)
+    : sign * TAU * progress;
+}
+
 /** §51 fixed-duration enemy leap presentation. Horizontal truth stays in the snapshot buffer; this helper
  * owns only the cosmetic height channel and is pure so late-join/packet-delay catch-up can sample it. */
 export function enemyComboLeapHeight(fraction: number, peak = 48): number {

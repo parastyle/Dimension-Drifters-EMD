@@ -5,8 +5,6 @@ import {
   type ArenaMap,
   type BeltLevel,
   beltSafeX,
-  CROUCH_COMMIT_SECONDS,
-  CROUCH_HOLD_MS,
   clampBeltFloorY,
   DIST_JUMP_AIRTIME,
   DIST_JUMP_COOLDOWN,
@@ -20,8 +18,6 @@ import {
   INTERP_SNAP_PLAYER,
   INPUT_MSGS_PER_TICK,
   JUMP_BUFFER_SECONDS,
-  JUMP_COOLDOWN,
-  JUMP_VELOCITY,
   MOVE_SPEED,
   type MoveStance,
   PLAYER_RADIUS,
@@ -32,28 +28,14 @@ import {
   POUND_SPEED,
   PRED_ERR_DECAY,
   PRED_PENDING_MAX,
-  clampSlideSpeed,
+  rollSpeedAtTick,
+  ROLL_ATTACK_CANCEL_SECONDS,
+  ROLL_COOLDOWN,
+  ROLL_DURATION_TICKS,
+  ROLL_PARRY_LOCK_SECONDS,
   slideContactInvulnerable,
-  slideGroundNextSpeed,
-  slideHopSpeed,
-  slideLandingSpeed,
-  slideSteeredAngle,
-  SLIDE_ATTACK_CANCEL_SECONDS,
-  SLIDE_COLD_REARM_TICKS,
-  SLIDE_COMMIT_TICKS,
-  SLIDE_ENTRY_SPEED,
-  SLIDE_GROUND_TICKS,
-  SLIDE_HOP_MAX_TICK,
-  SLIDE_HOP_MIN_TICK,
-  SLIDE_HOP_VERTICAL_VELOCITY,
-  SLIDE_LAND_WINDOW_TICKS,
-  SLIDE_PARRY_LOCK_SECONDS,
-  SLIDE_PHASE_AIR,
   SLIDE_PHASE_GROUND,
-  SLIDE_PHASE_LAND_WINDOW,
   SLIDE_PHASE_OFF,
-  SLIDE_PRELAND_BUFFER_TICKS,
-  SLIDE_SPEED_CAP,
   type SlidePhase,
   resolveBeltObstacles,
   resolvePoiCollision,
@@ -68,7 +50,6 @@ import {
   stepSteeredMovement,
   stepVertical,
   TICK_MS,
-  verticalTimeToGround,
 } from "@dd/shared";
 
 /**
@@ -172,12 +153,7 @@ interface PendingPredCmd extends PredCmd {
   slidePhaseBefore: SlidePhase;
   slidePhaseTickBefore: number;
   slidePrevHeldBefore: boolean;
-  slideHopBufferedBefore: boolean;
-  slidePrelandTicksBefore: number;
-  slideLandMomentumXBefore: number;
-  slideLandMomentumYBefore: number;
-  slideColdArmedBefore: boolean;
-  slideColdRearmTicksBefore: number;
+  rollCdBefore: number;
   slideParryLockTBefore: number;
   aimXBefore: number;
   aimYBefore: number;
@@ -209,12 +185,7 @@ interface PredStanceState {
   slidePhase: SlidePhase;
   slidePhaseTick: number;
   slidePrevHeld: boolean;
-  slideHopBuffered: boolean;
-  slidePrelandTicks: number;
-  slideLandMomentumX: number;
-  slideLandMomentumY: number;
-  slideColdArmed: boolean;
-  slideColdRearmTicks: number;
+  rollCd: number;
   slideParryLockT: number;
   aimX: number;
   aimY: number;
@@ -236,19 +207,12 @@ export function slidePressedFromBindings(shiftPressed: boolean, ctrlPressed: boo
   return shiftPressed || ctrlPressed;
 }
 
-/**
- * Pure stateful Space classifier: tap is emitted on release, hold begins at 150ms, and an airborne press
- * is a one-shot pound. `sample()` returns the same retained object every frame.
- */
+/** Pure Space edge classifier: grounded keydown is the immediate distance jump; airborne keydown is pound. */
 export class SpaceGestureClassifier {
-  private downAtMs = -1;
-  private holdActive = false;
   private consumedUntilRelease = false;
   private readonly result: SpaceGestureResult = { jump: false, pound: false, crouchHeld: false };
 
   reset(): void {
-    this.downAtMs = -1;
-    this.holdActive = false;
     this.consumedUntilRelease = false;
     this.result.jump = false;
     this.result.pound = false;
@@ -256,13 +220,13 @@ export class SpaceGestureClassifier {
   }
 
   sample(
-    nowMs: number,
-    isDown: boolean,
+    _nowMs: number,
+    _isDown: boolean,
     justDown: boolean,
     justUp: boolean,
     airborne: boolean,
     enabled = true,
-    slideGround = false,
+    _slideGround = false,
   ): SpaceGestureResult {
     this.result.jump = false;
     this.result.pound = false;
@@ -272,40 +236,13 @@ export class SpaceGestureClassifier {
     }
     if (justUp && this.consumedUntilRelease) {
       this.consumedUntilRelease = false;
-      this.downAtMs = -1;
-      this.holdActive = false;
     }
     if (justDown && !this.consumedUntilRelease) {
-      if (slideGround) {
-        this.downAtMs = -1;
-        this.holdActive = false;
-        this.consumedUntilRelease = true;
-        this.result.jump = true;
-      } else if (airborne) {
-        this.downAtMs = -1;
-        this.holdActive = false;
-        this.result.pound = true;
-      } else {
-        this.downAtMs = nowMs;
-        this.holdActive = false;
-      }
+      this.consumedUntilRelease = true;
+      if (airborne) this.result.pound = true;
+      else this.result.jump = true;
     }
-    if (
-      isDown &&
-      !this.consumedUntilRelease &&
-      this.downAtMs >= 0 &&
-      !airborne &&
-      nowMs - this.downAtMs >= CROUCH_HOLD_MS
-    ) {
-      this.holdActive = true;
-    }
-    if (justUp && !this.consumedUntilRelease && this.downAtMs >= 0) {
-      const elapsed = nowMs - this.downAtMs;
-      if (!this.holdActive && elapsed < CROUCH_HOLD_MS) this.result.jump = true;
-      this.downAtMs = -1;
-      this.holdActive = false;
-    }
-    this.result.crouchHeld = this.holdActive && isDown;
+    this.result.crouchHeld = false;
     return this.result;
   }
 }
@@ -443,9 +380,8 @@ const PRED_PRESENT_MAX_COMMAND_DELTA = Math.PI / 18;
 
 function sanitizePredMomentum(p: PredState): void {
   const raw = Math.hypot(p.momentumX, p.momentumY);
-  const speed = clampSlideSpeed(raw);
   if (raw > 1e-4 && Number.isFinite(raw)) {
-    const scale = speed / raw;
+    const scale = Math.min(raw, rollSpeedAtTick(0)) / raw;
     p.momentumX *= scale;
     p.momentumY *= scale;
   } else {
@@ -468,64 +404,15 @@ function clearCommittedStance(s: PredStanceState): void {
   s.poundGatherT = 0;
 }
 
-function clearSlide(p: PredState, s: PredStanceState, transfer: boolean): void {
-  if (transfer) {
-    p.mvx = p.momentumX;
-    p.mvy = p.momentumY;
-  } else {
-    p.mvx = 0;
-    p.mvy = 0;
-  }
+function clearSlide(p: PredState, s: PredStanceState): void {
+  p.mvx = 0;
+  p.mvy = 0;
   p.momentumX = 0;
   p.momentumY = 0;
   s.slidePhase = SLIDE_PHASE_OFF;
   s.slidePhaseTick = 0;
-  s.slideHopBuffered = false;
-  s.slidePrelandTicks = 0;
-  s.slideLandMomentumX = 0;
-  s.slideLandMomentumY = 0;
-  s.slideColdRearmTicks = 0;
+  s.rollCd = Math.max(s.rollCd, ROLL_COOLDOWN);
   clearCommittedStance(s);
-}
-
-function launchSlideHop(p: PredState, v: PredVerticalState, s: PredStanceState): void {
-  const speed = Math.hypot(p.momentumX, p.momentumY);
-  if (speed <= 1e-4) return;
-  const next = slideHopSpeed(speed);
-  const scale = next / speed;
-  p.momentumX *= scale;
-  p.momentumY *= scale;
-  p.mvx = p.momentumX;
-  p.mvy = p.momentumY;
-  s.slidePhase = SLIDE_PHASE_AIR;
-  s.slideHopBuffered = false;
-  v.vh = SLIDE_HOP_VERTICAL_VELOCITY;
-  v.jumpCd = Math.max(v.jumpCd, JUMP_COOLDOWN);
-}
-
-function acceptSlideLanding(p: PredState, s: PredStanceState): boolean {
-  if (
-    s.stance !== STANCE_SLIDE ||
-    s.slidePhase !== SLIDE_PHASE_LAND_WINDOW ||
-    s.slidePhaseTick > SLIDE_LAND_WINDOW_TICKS
-  ) return false;
-  const speed = Math.hypot(s.slideLandMomentumX, s.slideLandMomentumY);
-  if (speed <= 1e-4) return false;
-  const next = slideLandingSpeed(speed);
-  p.momentumX = (s.slideLandMomentumX / speed) * next;
-  p.momentumY = (s.slideLandMomentumY / speed) * next;
-  p.mvx = p.momentumX;
-  p.mvy = p.momentumY;
-  s.slideLandMomentumX = 0;
-  s.slideLandMomentumY = 0;
-  s.slidePhase = SLIDE_PHASE_GROUND;
-  s.slidePhaseTick = 0;
-  s.slidePrelandTicks = 0;
-  s.slideParryLockT = Math.max(
-    s.slideParryLockT,
-    SLIDE_PARRY_LOCK_SECONDS + TICK_MS / 1000,
-  );
-  return true;
 }
 
 function steerDistanceJump(s: PredStanceState, cmd: PredCmd, dt: number): void {
@@ -592,44 +479,37 @@ function stepStanceHorizontal(
   dt: number,
   map?: ArenaMap,
   belt?: BeltLevel,
+  deferDashDisplacement = false,
 ): PredState {
-  const activeSlide =
-    s.stance === STANCE_SLIDE &&
-    (s.slidePhase === SLIDE_PHASE_GROUND || s.slidePhase === SLIDE_PHASE_AIR);
+  const activeSlide = s.stance === STANCE_SLIDE && s.slidePhase === SLIDE_PHASE_GROUND;
   if (s.stance !== STANCE_DASH && !activeSlide) {
     const rooted = s.stance === STANCE_CROUCH || s.stance === STANCE_POUND || s.recoveryT > 0;
     return stepHorizontal(p, rooted ? 0 : cmd.dx, rooted ? 0 : cmd.dy, dt, map, belt);
   }
   let mvx: number;
   let mvy: number;
-  let slideSpeed = 0;
   if (s.stance === STANCE_DASH) {
     steerDistanceJump(s, cmd, dt);
     mvx = s.dashDirX * s.dashSpeed;
     mvy = s.dashDirY * s.dashSpeed;
   } else {
-    slideSpeed = clampSlideSpeed(Math.hypot(p.momentumX, p.momentumY));
-    if (slideSpeed <= 1e-4) {
-      clearSlide(p, s, false);
+    const directionLength = Math.hypot(p.momentumX, p.momentumY);
+    if (directionLength <= 1e-4) {
+      clearSlide(p, s);
       return stepHorizontal(p, cmd.dx, cmd.dy, dt, map, belt);
     }
-    const angle = slideSteeredAngle(
-      p.momentumX,
-      p.momentumY,
-      cmd.dx,
-      cmd.dy,
-      dt,
-      s.slidePhase === SLIDE_PHASE_AIR,
-    );
-    p.momentumX = Math.cos(angle) * slideSpeed;
-    p.momentumY = Math.sin(angle) * slideSpeed;
+    const slideSpeed = rollSpeedAtTick(s.slidePhaseTick);
+    p.momentumX = (p.momentumX / directionLength) * slideSpeed;
+    p.momentumY = (p.momentumY / directionLength) * slideSpeed;
     mvx = p.momentumX;
     mvy = p.momentumY;
   }
-  const startX = p.x;
-  const startY = p.y;
-  let x = Math.max(PLAYER_RADIUS, Math.min(ARENA_WIDTH - PLAYER_RADIUS, p.x + mvx * dt));
-  let y = Math.max(PLAYER_RADIUS, Math.min(ARENA_HEIGHT - PLAYER_RADIUS, p.y + mvy * dt));
+  let x = deferDashDisplacement
+    ? p.x
+    : Math.max(PLAYER_RADIUS, Math.min(ARENA_WIDTH - PLAYER_RADIUS, p.x + mvx * dt));
+  let y = deferDashDisplacement
+    ? p.y
+    : Math.max(PLAYER_RADIUS, Math.min(ARENA_HEIGHT - PLAYER_RADIUS, p.y + mvy * dt));
   const imp = stepImpulse({ x, y }, { vx: p.vx, vy: p.vy }, dt);
   x = imp.x;
   y = imp.y;
@@ -643,24 +523,12 @@ function stepStanceHorizontal(
     y = r.y;
   }
   if (activeSlide && s.stance === STANCE_SLIDE) {
-    if (s.slidePhase === SLIDE_PHASE_GROUND) {
-      const nextSpeed = slideGroundNextSpeed(slideSpeed);
-      const scale = slideSpeed > 1e-4 ? nextSpeed / slideSpeed : 0;
-      p.momentumX *= scale;
-      p.momentumY *= scale;
-    }
     s.slidePhaseTick++;
-    const retainedSpeed = Math.hypot(p.momentumX, p.momentumY);
-    const actualSpeed = Math.hypot(x - startX, y - startY) / dt;
-    if (actualSpeed + 1 < retainedSpeed) {
-      const retained = Math.min(retainedSpeed, actualSpeed);
-      if (retained < SLIDE_ENTRY_SPEED) {
-        clearSlide(p, s, true);
-      } else {
-        const scale = retained / retainedSpeed;
-        p.momentumX *= scale;
-        p.momentumY *= scale;
-      }
+    const length = Math.hypot(p.momentumX, p.momentumY);
+    if (length > 1e-4) {
+      const nextSpeed = rollSpeedAtTick(s.slidePhaseTick);
+      p.momentumX = (p.momentumX / length) * nextSpeed;
+      p.momentumY = (p.momentumY / length) * nextSpeed;
     }
     mvx = p.momentumX;
     mvy = p.momentumY;
@@ -691,19 +559,16 @@ function consumeStanceInput(
   if (
     cmd.fireHeld &&
     s.stance === STANCE_SLIDE &&
-    s.slidePhaseTick * (TICK_MS / 1000) + 1e-9 >= SLIDE_ATTACK_CANCEL_SECONDS
+    s.slidePhaseTick * (TICK_MS / 1000) + 1e-9 >= ROLL_ATTACK_CANCEL_SECONDS
   ) {
-    clearSlide(p, s, true);
+    clearSlide(p, s);
   }
-  if (cmd.fireHeld && s.stance === STANCE_CROUCH) clearCommittedStance(s);
   if (cmd.pound) {
-    const slideAir = s.stance === STANCE_SLIDE && s.slidePhase === SLIDE_PHASE_AIR;
     if (
       v.height > POUND_MIN_HEIGHT &&
       !s.poundUsed &&
-      (s.stance === STANCE_NONE || s.stance === STANCE_DASH || slideAir)
+      (s.stance === STANCE_NONE || s.stance === STANCE_DASH)
     ) {
-      if (slideAir) clearSlide(p, s, false);
       s.poundUsed = true;
       s.poundGatherT = POUND_GATHER_SECONDS;
       v.vh = 0;
@@ -711,85 +576,46 @@ function consumeStanceInput(
       p.mvy = 0;
       s.dashSpeed = 0;
       s.stance = STANCE_POUND;
-    } else if (
-      slideAir &&
-      verticalTimeToGround(v.height, v.vh) <=
-        SLIDE_PRELAND_BUFFER_TICKS * (TICK_MS / 1000) + 1e-9
-    ) {
-      s.slideHopBuffered = true;
     } else if (v.height > GROUND_EPSILON && v.height <= POUND_MIN_HEIGHT) {
       v.jumpBuf = JUMP_BUFFER_SECONDS;
     }
   }
 
-  const slideHeld = cmd.slideHeld === true;
-  const slideReleased = !slideHeld && s.slidePrevHeld;
-  s.slidePrevHeld = slideHeld;
-  if (
-    slideReleased &&
-    s.stance === STANCE_SLIDE &&
-    s.slidePhase === SLIDE_PHASE_GROUND &&
-    s.slidePhaseTick >= SLIDE_COMMIT_TICKS
-  ) clearSlide(p, s, true);
-
-  if (cmd.slide && s.stance === STANCE_SLIDE) {
-    if (s.slidePhase === SLIDE_PHASE_LAND_WINDOW) acceptSlideLanding(p, s);
-    else if (
-      s.slidePhase === SLIDE_PHASE_AIR &&
-      verticalTimeToGround(v.height, v.vh) <=
-        SLIDE_PRELAND_BUFFER_TICKS * (TICK_MS / 1000) + 1e-9
-    ) s.slidePrelandTicks = SLIDE_PRELAND_BUFFER_TICKS;
-  }
+  s.slidePrevHeld = cmd.slideHeld === true;
 
   if (
     cmd.slide &&
     v.height <= GROUND_EPSILON &&
     s.stance === STANCE_NONE &&
     s.recoveryT <= 0 &&
-    s.slideColdArmed &&
-    Math.hypot(cmd.dx, cmd.dy) > 1e-4
+    s.rollCd <= 0
   ) {
-    const speed = Math.hypot(p.mvx, p.mvy);
-    if (speed + 1e-9 >= SLIDE_ENTRY_SPEED) {
-      p.momentumX = (p.mvx / speed) * SLIDE_SPEED_CAP;
-      p.momentumY = (p.mvy / speed) * SLIDE_SPEED_CAP;
+    let dx = cmd.dx;
+    let dy = cmd.dy;
+    let length = Math.hypot(dx, dy);
+    if (length <= 1e-4) {
+      dx = p.mvx;
+      dy = p.mvy;
+      length = Math.hypot(dx, dy);
+    }
+    if (length <= 1e-4) {
+      dx = s.aimX;
+      dy = s.aimY;
+      length = Math.hypot(dx, dy);
+    }
+    if (length > 1e-4) {
+      const speed = rollSpeedAtTick(0);
+      p.momentumX = (dx / length) * speed;
+      p.momentumY = (dy / length) * speed;
       p.mvx = p.momentumX;
       p.mvy = p.momentumY;
       s.slidePhase = SLIDE_PHASE_GROUND;
       s.slidePhaseTick = 0;
-      s.slideHopBuffered = false;
-      s.slidePrelandTicks = 0;
-      s.slideLandMomentumX = 0;
-      s.slideLandMomentumY = 0;
-      s.slideColdArmed = false;
-      s.slideColdRearmTicks = 0;
-      s.slideParryLockT = SLIDE_PARRY_LOCK_SECONDS + TICK_MS / 1000;
+      s.slideParryLockT = ROLL_PARRY_LOCK_SECONDS + TICK_MS / 1000;
       s.stance = STANCE_SLIDE;
     }
   }
-
-  const crouchHeld = cmd.crouchHeld === true;
-  const pressed = crouchHeld && !s.crouchPrevHeld;
-  const released = !crouchHeld && s.crouchPrevHeld;
-  s.crouchPrevHeld = crouchHeld;
-  if (released && s.stance === STANCE_CROUCH) clearCommittedStance(s);
-  if (
-    pressed &&
-    v.height <= GROUND_EPSILON &&
-    s.stance === STANCE_NONE &&
-    s.recoveryT <= 0 &&
-    !cmd.fireHeld
-  ) {
-    s.crouchT = 0;
-    s.crouchAimX = 0;
-    s.crouchAimY = 0;
-    const len = Math.hypot(cmd.dx, cmd.dy);
-    if (len > 1e-4) {
-      s.crouchAimX = cmd.dx / len;
-      s.crouchAimY = cmd.dy / len;
-    }
-    s.stance = STANCE_CROUCH;
-  }
+  s.crouchPrevHeld = false;
 }
 
 function launchDistanceJump(
@@ -804,11 +630,6 @@ function launchDistanceJump(
   let dx = cmd.dx;
   let dy = cmd.dy;
   let len = Math.hypot(dx, dy);
-  if (len <= 1e-4) {
-    dx = s.crouchAimX;
-    dy = s.crouchAimY;
-    len = Math.hypot(dx, dy);
-  }
   if (len <= 1e-4) {
     dx = s.aimX;
     dy = s.aimY;
@@ -849,55 +670,49 @@ function stepPredictionTick(
   belt?: BeltLevel,
 ): PredState {
   if (cmd.jump) {
-    if (s.stance === STANCE_SLIDE && s.slidePhase === SLIDE_PHASE_GROUND) {
-      if (s.slidePhaseTick < SLIDE_HOP_MIN_TICK) s.slideHopBuffered = true;
-      else if (s.slidePhaseTick <= SLIDE_HOP_MAX_TICK) launchSlideHop(p, v, s);
-      else v.jumpBuf = JUMP_BUFFER_SECONDS;
-    } else v.jumpBuf = JUMP_BUFFER_SECONDS;
+    const rollTail =
+      s.stance === STANCE_SLIDE
+        ? (ROLL_DURATION_TICKS - s.slidePhaseTick + 2) * dt
+        : 0;
+    v.jumpBuf = Math.max(JUMP_BUFFER_SECONDS, rollTail);
   }
   consumeStanceInput(p, v, s, cmd);
-  const next = stepStanceHorizontal(p, s, cmd, dt, map, belt);
-
   v.jumpCd = Math.max(0, v.jumpCd - dt);
   v.jumpBuf = Math.max(0, v.jumpBuf - dt);
   s.distJumpCd = Math.max(0, s.distJumpCd - dt);
-  s.recoveryT = Math.max(0, s.recoveryT - dt);
-  s.slideParryLockT = Math.max(0, s.slideParryLockT - dt);
-  if (s.slideParryLockT <= 1e-9) s.slideParryLockT = 0;
-  if (s.stance === STANCE_CROUCH) {
-    if (!cmd.crouchHeld) {
-      clearCommittedStance(s);
-    } else {
-      const len = Math.hypot(cmd.dx, cmd.dy);
-      if (len > 1e-4) {
-        s.crouchAimX = cmd.dx / len;
-        s.crouchAimY = cmd.dy / len;
-      }
-      s.crouchT += dt;
-      if (s.crouchT + 1e-9 >= CROUCH_COMMIT_SECONDS) {
-        if (s.distJumpCd > 0) clearCommittedStance(s);
-        else launchDistanceJump(next, v, s, cmd, indicator, map, belt);
-      }
-    }
-  }
-  const slideColdCandidate = s.stance === STANCE_NONE;
-  if (s.stance === STANCE_SLIDE && s.slidePhase === SLIDE_PHASE_GROUND) {
-    if (s.slideHopBuffered && s.slidePhaseTick >= SLIDE_HOP_MIN_TICK) launchSlideHop(next, v, s);
-    else if (s.slidePhaseTick >= SLIDE_GROUND_TICKS) clearSlide(next, s, true);
-  } else if (s.stance === STANCE_SLIDE && s.slidePhase === SLIDE_PHASE_LAND_WINDOW) {
-    s.slidePhaseTick++;
-    if (s.slidePhaseTick > SLIDE_LAND_WINDOW_TICKS) clearSlide(next, s, true);
-  }
+  let launchedDistanceJump = false;
   if (
     s.stance === STANCE_NONE &&
     s.recoveryT <= 0 &&
     v.jumpBuf > 0 &&
-    v.jumpCd <= 0 &&
+    s.distJumpCd <= 0 &&
     v.height <= GROUND_EPSILON
   ) {
     v.jumpBuf = 0;
-    v.vh = JUMP_VELOCITY;
-    v.jumpCd = JUMP_COOLDOWN;
+    launchDistanceJump(p, v, s, cmd, indicator, map, belt);
+    // launchDistanceJump mutates s.stance; read it widened so the STANCE_NONE narrowing above
+    // doesn't make this (correct) comparison look impossible. Mirrors GameRoom's launch check.
+    const stanceAfterLaunch: number = s.stance;
+    launchedDistanceJump = stanceAfterLaunch === STANCE_DASH;
+  }
+
+  const next = stepStanceHorizontal(p, s, cmd, dt, map, belt, launchedDistanceJump);
+
+  s.recoveryT = Math.max(0, s.recoveryT - dt);
+  s.rollCd = Math.max(0, s.rollCd - dt);
+  s.slideParryLockT = Math.max(0, s.slideParryLockT - dt);
+  if (s.slideParryLockT <= 1e-9) s.slideParryLockT = 0;
+  if (
+    s.stance === STANCE_SLIDE &&
+    s.slidePhase === SLIDE_PHASE_GROUND &&
+    s.slidePhaseTick >= ROLL_DURATION_TICKS
+  ) {
+    const length = Math.hypot(next.momentumX, next.momentumY);
+    const dirX = length > 1e-4 ? next.momentumX / length : 0;
+    const dirY = length > 1e-4 ? next.momentumY / length : 0;
+    clearSlide(next, s);
+    next.mvx = dirX * MOVE_SPEED;
+    next.mvy = dirY * MOVE_SPEED;
   }
 
   const wasAirborne = v.height > GROUND_EPSILON;
@@ -927,34 +742,9 @@ function stepPredictionTick(
       v.jumpCd = Math.max(v.jumpCd, 0.4);
       next.mvx = s.dashDirX * MOVE_SPEED * DIST_JUMP_LANDING_SPEED_MULT;
       next.mvy = s.dashDirY * MOVE_SPEED * DIST_JUMP_LANDING_SPEED_MULT;
-    } else if (landingStance === STANCE_SLIDE && s.slidePhase === SLIDE_PHASE_AIR) {
-      s.slideLandMomentumX = next.momentumX;
-      s.slideLandMomentumY = next.momentumY;
-      next.momentumX = 0;
-      next.momentumY = 0;
-      s.slidePhase = SLIDE_PHASE_LAND_WINDOW;
-      s.slidePhaseTick = 0;
-      const chained =
-        (cmd.slideHeld || s.slidePrelandTicks > 0) && acceptSlideLanding(next, s);
-      if (!chained) s.slideHopBuffered = false;
     }
-    if (landingStance !== STANCE_NONE && landingStance !== STANCE_SLIDE)
-      clearCommittedStance(s);
+    if (landingStance !== STANCE_NONE) clearCommittedStance(s);
     s.poundUsed = false;
-  }
-  if (!s.slideColdArmed) {
-    const qualifying =
-      slideColdCandidate &&
-      s.stance === STANCE_NONE &&
-      v.height <= GROUND_EPSILON &&
-      s.recoveryT <= 0 &&
-      Math.hypot(cmd.dx, cmd.dy) > 1e-4 &&
-      Math.hypot(next.mvx, next.mvy) + 1e-9 >= SLIDE_ENTRY_SPEED;
-    s.slideColdRearmTicks = qualifying ? s.slideColdRearmTicks + 1 : 0;
-    if (s.slideColdRearmTicks >= SLIDE_COLD_REARM_TICKS) {
-      s.slideColdArmed = true;
-      s.slideColdRearmTicks = SLIDE_COLD_REARM_TICKS;
-    }
   }
   return next;
 }
@@ -1043,12 +833,7 @@ export class SelfPredictor {
     slidePhase: SLIDE_PHASE_OFF,
     slidePhaseTick: 0,
     slidePrevHeld: false,
-    slideHopBuffered: false,
-    slidePrelandTicks: 0,
-    slideLandMomentumX: 0,
-    slideLandMomentumY: 0,
-    slideColdArmed: true,
-    slideColdRearmTicks: 0,
+    rollCd: 0,
     slideParryLockT: 0,
     aimX: 1,
     aimY: 0,
@@ -1096,14 +881,7 @@ export class SelfPredictor {
       slidePhase: (server.slidePhase ?? SLIDE_PHASE_OFF) as SlidePhase,
       slidePhaseTick: server.slidePhaseTick ?? 0,
       slidePrevHeld: false,
-      slideHopBuffered: false,
-      slidePrelandTicks: 0,
-      slideLandMomentumX:
-        server.slidePhase === SLIDE_PHASE_LAND_WINDOW ? (server.momentumX ?? 0) : 0,
-      slideLandMomentumY:
-        server.slidePhase === SLIDE_PHASE_LAND_WINDOW ? (server.momentumY ?? 0) : 0,
-      slideColdArmed: serverStance !== STANCE_SLIDE,
-      slideColdRearmTicks: 0,
+      rollCd: 0,
       slideParryLockT: 0,
       aimX: speed > 1e-4 ? dirX : 1,
       aimY: speed > 1e-4 ? dirY : 0,
@@ -1221,12 +999,7 @@ export class SelfPredictor {
       slidePhaseBefore: this.stance.slidePhase,
       slidePhaseTickBefore: this.stance.slidePhaseTick,
       slidePrevHeldBefore: this.stance.slidePrevHeld,
-      slideHopBufferedBefore: this.stance.slideHopBuffered,
-      slidePrelandTicksBefore: this.stance.slidePrelandTicks,
-      slideLandMomentumXBefore: this.stance.slideLandMomentumX,
-      slideLandMomentumYBefore: this.stance.slideLandMomentumY,
-      slideColdArmedBefore: this.stance.slideColdArmed,
-      slideColdRearmTicksBefore: this.stance.slideColdRearmTicks,
+      rollCdBefore: this.stance.rollCd,
       slideParryLockTBefore: this.stance.slideParryLockT,
       aimXBefore: this.stance.aimX,
       aimYBefore: this.stance.aimY,
@@ -1286,14 +1059,10 @@ export class SelfPredictor {
       slidePhase: (server.slidePhase ?? SLIDE_PHASE_OFF) as SlidePhase,
       slidePhaseTick: server.slidePhaseTick ?? 0,
       slidePrevHeld: this.stance.slidePrevHeld,
-      slideHopBuffered: false,
-      slidePrelandTicks: 0,
-      slideLandMomentumX:
-        server.slidePhase === SLIDE_PHASE_LAND_WINDOW ? (server.momentumX ?? 0) : 0,
-      slideLandMomentumY:
-        server.slidePhase === SLIDE_PHASE_LAND_WINDOW ? (server.momentumY ?? 0) : 0,
-      slideColdArmed: this.stance.slideColdArmed,
-      slideColdRearmTicks: this.stance.slideColdRearmTicks,
+      rollCd:
+        serverStance !== STANCE_SLIDE && this.stance.stance === STANCE_SLIDE
+          ? Math.max(this.stance.rollCd, ROLL_COOLDOWN)
+          : this.stance.rollCd,
       slideParryLockT: this.stance.slideParryLockT,
       aimX: speed > 1e-4 ? dirX : this.stance.aimX || 1,
       aimY: speed > 1e-4 ? dirY : this.stance.aimY,
@@ -1321,12 +1090,7 @@ export class SelfPredictor {
       slidePhase: cmd.slidePhaseBefore,
       slidePhaseTick: cmd.slidePhaseTickBefore,
       slidePrevHeld: cmd.slidePrevHeldBefore,
-      slideHopBuffered: cmd.slideHopBufferedBefore,
-      slidePrelandTicks: cmd.slidePrelandTicksBefore,
-      slideLandMomentumX: cmd.slideLandMomentumXBefore,
-      slideLandMomentumY: cmd.slideLandMomentumYBefore,
-      slideColdArmed: cmd.slideColdArmedBefore,
-      slideColdRearmTicks: cmd.slideColdRearmTicksBefore,
+      rollCd: cmd.rollCdBefore,
       slideParryLockT: cmd.slideParryLockTBefore,
       aimX: cmd.aimXBefore,
       aimY: cmd.aimYBefore,
@@ -1352,12 +1116,7 @@ export class SelfPredictor {
     out.slidePhase = source.slidePhase;
     out.slidePhaseTick = source.slidePhaseTick;
     out.slidePrevHeld = source.slidePrevHeld;
-    out.slideHopBuffered = source.slideHopBuffered;
-    out.slidePrelandTicks = source.slidePrelandTicks;
-    out.slideLandMomentumX = source.slideLandMomentumX;
-    out.slideLandMomentumY = source.slideLandMomentumY;
-    out.slideColdArmed = source.slideColdArmed;
-    out.slideColdRearmTicks = source.slideColdRearmTicks;
+    out.rollCd = source.rollCd;
     out.slideParryLockT = source.slideParryLockT;
     out.aimX = source.aimX;
     out.aimY = source.aimY;
@@ -1390,12 +1149,7 @@ export class SelfPredictor {
       cmd.slidePhaseBefore = adopted.slidePhase;
       cmd.slidePhaseTickBefore = adopted.slidePhaseTick;
       cmd.slidePrevHeldBefore = false;
-      cmd.slideHopBufferedBefore = false;
-      cmd.slidePrelandTicksBefore = 0;
-      cmd.slideLandMomentumXBefore = adopted.slideLandMomentumX;
-      cmd.slideLandMomentumYBefore = adopted.slideLandMomentumY;
-      cmd.slideColdArmedBefore = adopted.slideColdArmed;
-      cmd.slideColdRearmTicksBefore = adopted.slideColdRearmTicks;
+      cmd.rollCdBefore = adopted.rollCd;
       cmd.slideParryLockTBefore = adopted.slideParryLockT;
       cmd.aimXBefore = adopted.aimX;
       cmd.aimYBefore = adopted.aimY;
@@ -1735,19 +1489,15 @@ export class SelfPredictor {
     return this.stance.stance;
   }
 
-  /** Frame-fresh movement-gated admission; AIR/LAND_WINDOW edges remain legal buffer commands. */
+  /** Frame-fresh fixed-roll admission. No run-up, held-chain, or airborne continuation exists. */
   get canSlide(): boolean {
     return (
       !this.paused &&
       !this.stalled &&
-      ((this.height <= GROUND_EPSILON &&
-        this.stance.stance === STANCE_NONE &&
-        this.stance.recoveryT <= 0 &&
-        this.stance.slideColdArmed &&
-        Math.hypot(this.pred.mvx, this.pred.mvy) + 1e-9 >= SLIDE_ENTRY_SPEED) ||
-        (this.stance.stance === STANCE_SLIDE &&
-          (this.stance.slidePhase === SLIDE_PHASE_AIR ||
-            this.stance.slidePhase === SLIDE_PHASE_LAND_WINDOW)))
+      this.height <= GROUND_EPSILON &&
+      this.stance.stance === STANCE_NONE &&
+      this.stance.recoveryT <= 0 &&
+      this.stance.rollCd <= 0
     );
   }
 
@@ -1764,8 +1514,7 @@ export class SelfPredictor {
   }
 
   get slideCooldownRemaining(): number {
-    if (this.stance.slideColdArmed) return 0;
-    return (SLIDE_COLD_REARM_TICKS - this.stance.slideColdRearmTicks) * DT;
+    return this.stance.rollCd;
   }
 
   get slideParryLocked(): boolean {
@@ -1775,7 +1524,7 @@ export class SelfPredictor {
   get slideAttackLocked(): boolean {
     return (
       this.stance.stance === STANCE_SLIDE &&
-      this.stance.slidePhaseTick * DT + 1e-9 < SLIDE_ATTACK_CANCEL_SECONDS
+      this.stance.slidePhaseTick * DT + 1e-9 < ROLL_ATTACK_CANCEL_SECONDS
     );
   }
 

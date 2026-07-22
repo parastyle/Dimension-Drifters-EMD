@@ -506,17 +506,20 @@ export const GROUND_EPSILON = 0.5;
 
 /** Jump-feel committed movement stances. Normal airborne phases remain derivable from height/vh. */
 export const STANCE_NONE = 0 as const;
+/** Retired crouch/charge wire id. Kept as a tombstone so schema history never changes meaning. */
 export const STANCE_CROUCH = 1 as const;
 export const STANCE_DASH = 2 as const;
 export const STANCE_POUND = 3 as const;
-/** Schema-23 slide-hop reuses the retired roll's stance byte; wire id 4 never changed meaning mid-patch. */
-export const STANCE_SLIDE = 4 as const;
+/** Fixed dodge-roll wire id, restored without changing the append-only stance byte. */
+export const STANCE_ROLL = 4 as const;
+/** Schema-23 compatibility alias. The wire field names remain append-only; gameplay is a roll again. */
+export const STANCE_SLIDE = STANCE_ROLL;
 export type MoveStance =
   | typeof STANCE_NONE
   | typeof STANCE_CROUCH
   | typeof STANCE_DASH
   | typeof STANCE_POUND
-  | typeof STANCE_SLIDE;
+  | typeof STANCE_ROLL;
 /** Normal vertical phases are derived, never stored or serialized as part of the committed stance byte. */
 export const VERTICAL_PHASE_GROUNDED = "grounded" as const;
 export const VERTICAL_PHASE_RISING = "rising" as const;
@@ -528,10 +531,6 @@ export type VerticalPhase =
   | typeof VERTICAL_PHASE_APEX
   | typeof VERTICAL_PHASE_FALLING;
 
-/** Space is classified as a hold locally at this threshold; the held bit then rides every input command. */
-export const CROUCH_HOLD_MS = 150;
-/** Once crouching starts, ten authoritative ticks are committed before the automatic distance launch. */
-export const CROUCH_COMMIT_SECONDS = 0.5;
 export const DIST_JUMP_SPEED = 620; // px/s horizontal, below the existing impulse/interp envelope
 export const DIST_JUMP_VERTICAL_VELOCITY = 380; // px/s; ≈59px apex under the three-zone profile
 export const DIST_JUMP_AIRTIME = 0.6;
@@ -540,9 +539,8 @@ export const DIST_JUMP_STEER_RADIANS_PER_SECOND = Math.PI / 4; // 45°/s
 export const DIST_JUMP_MAX_STEER_RADIANS = DIST_JUMP_STEER_RADIANS_PER_SECOND * DIST_JUMP_AIRTIME; // ±27° over the flight
 export const DIST_JUMP_COOLDOWN = 2.5;
 export const DIST_JUMP_LANDING_SPEED_MULT = 0.6;
-/** Even ignoring its cooldown, hold + commit + flight averages below ordinary walking speed. */
-export const DIST_JUMP_CYCLE_SECONDS =
-  CROUCH_HOLD_MS / 1000 + CROUCH_COMMIT_SECONDS + DIST_JUMP_AIRTIME;
+/** Space launches immediately; the traversal sentence contains only its authored flight. */
+export const DIST_JUMP_CYCLE_SECONDS = DIST_JUMP_AIRTIME;
 export const DIST_JUMP_CYCLE_SPEED = DIST_JUMP_REACH / DIST_JUMP_CYCLE_SECONDS;
 
 export const POUND_MIN_HEIGHT = 24;
@@ -557,33 +555,31 @@ export const POUND_STAGGER_SECONDS = 0.35;
 export const POUND_RECOVERY_SECONDS = 0.25;
 export const POUND_JUMP_COOLDOWN = 0.9;
 
-/** Schema-23 Megabonk slide-hop. All timing is authored in 20 Hz ticks. The first five consumed-command
- * ticks inherit 21b's contact-only null-whiff budget; it never aliases parry `invuln` or its rewards. */
-export const SLIDE_TICK_SECONDS = 0.05 as const;
-export const SLIDE_ENTRY_SPEED = 256 as const;
-export const SLIDE_SPEED_CAP = 544 as const;
-export const SLIDE_GROUND_DECAY = 0.97 as const;
-export const SLIDE_GROUND_TICKS = 10 as const;
-export const SLIDE_COMMIT_TICKS = 3 as const;
-export const SLIDE_GROUND_STEER_RADIANS_PER_SECOND = 1.5707963267948966 as const;
-export const SLIDE_HOP_MIN_TICK = 2 as const;
-export const SLIDE_HOP_MAX_TICK = 8 as const;
-export const SLIDE_HOP_VERTICAL_VELOCITY = 285 as const;
-export const SLIDE_HOP_RETENTION = 0.96 as const;
-export const SLIDE_AIR_STEER_RADIANS_PER_SECOND = 2.0943951023931953 as const;
-export const SLIDE_LANDING_RETENTION = 0.95 as const;
-export const SLIDE_LANDING_KICK = 72 as const;
-export const SLIDE_PRELAND_BUFFER_TICKS = 2 as const;
-export const SLIDE_LAND_WINDOW_TICKS = 3 as const;
-export const SLIDE_COLD_REARM_TICKS = 6 as const;
-export const SLIDE_IFRAME_TICKS = 5 as const;
-export const SLIDE_IFRAME_SECONDS = 0.25 as const;
-export const SLIDE_ATTACK_CANCEL_TICKS = 6 as const;
-export const SLIDE_ATTACK_CANCEL_SECONDS = 0.3 as const;
-export const SLIDE_PARRY_LOCK_TICKS = 10 as const;
-export const SLIDE_PARRY_LOCK_SECONDS = 0.5 as const;
+/** V7 fixed dodge roll. Eight exact 20 Hz samples total 188 px in 400 ms. The accepted direction is
+ * frozen for the whole sentence; the first five ticks retain the existing contact/projectile/locked-melee
+ * opening, while the final three are visible vulnerable recovery. Cooldown starts at sentence end. */
+export const ROLL_TICK_SECONDS = 0.05 as const;
+export const ROLL_DURATION_TICKS = 8 as const;
+export const ROLL_DURATION = ROLL_DURATION_TICKS * ROLL_TICK_SECONDS;
+export const ROLL_DISTANCE = 188 as const;
+export const ROLL_SPEED_CURVE = [680, 640, 580, 500, 420, 340, 300, 300] as const;
+export const ROLL_IFRAME_TICKS = 5 as const;
+export const ROLL_IFRAME_SECONDS = ROLL_IFRAME_TICKS * ROLL_TICK_SECONDS;
+export const ROLL_ATTACK_CANCEL_TICKS = 6 as const;
+export const ROLL_ATTACK_CANCEL_SECONDS = ROLL_ATTACK_CANCEL_TICKS * ROLL_TICK_SECONDS;
+export const ROLL_PARRY_LOCK_TICKS = 10 as const;
+export const ROLL_PARRY_LOCK_SECONDS = ROLL_PARRY_LOCK_TICKS * ROLL_TICK_SECONDS;
+export const ROLL_COOLDOWN = 3 as const;
 
-/** Wire/replay slide subphases. `slidePhaseTick` is the age of the current slide sentence until landing. */
+/** Append-only schema aliases consumed by the shared combat seam and old wire field names. A roll has only
+ * OFF/GROUND phases; AIR/LAND_WINDOW remain reserved tombstones and are never authored by V7 movement. */
+export const SLIDE_TICK_SECONDS = ROLL_TICK_SECONDS;
+export const SLIDE_IFRAME_TICKS = ROLL_IFRAME_TICKS;
+export const SLIDE_IFRAME_SECONDS = ROLL_IFRAME_SECONDS;
+export const SLIDE_ATTACK_CANCEL_TICKS = ROLL_ATTACK_CANCEL_TICKS;
+export const SLIDE_ATTACK_CANCEL_SECONDS = ROLL_ATTACK_CANCEL_SECONDS;
+export const SLIDE_PARRY_LOCK_TICKS = ROLL_PARRY_LOCK_TICKS;
+export const SLIDE_PARRY_LOCK_SECONDS = ROLL_PARRY_LOCK_SECONDS;
 export const SLIDE_PHASE_OFF = 0 as const;
 export const SLIDE_PHASE_GROUND = 1 as const;
 export const SLIDE_PHASE_AIR = 2 as const;

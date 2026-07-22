@@ -95,13 +95,12 @@ import {
   SALVAGE_HOLD_SECONDS,
   SCHEMA_VERSION,
   SHOP_RADIUS,
-  SLIDE_COLD_REARM_TICKS,
+  ROLL_COOLDOWN,
+  ROLL_SPEED_CURVE,
+  ROLL_TICK_SECONDS,
   SLIDE_PHASE_GROUND,
   SLIDE_PHASE_OFF,
-  SLIDE_SPEED_CAP,
-  SLIDE_TICK_SECONDS,
   type SlidePhase,
-  STANCE_CROUCH,
   STANCE_DASH,
   STANCE_NONE,
   STANCE_POUND,
@@ -170,7 +169,6 @@ import {
   type WeaponInputMode,
 } from "../input-routing.js";
 import {
-  type DistanceJumpIndicator,
   type PredCmd,
   SelfPredictor,
   type ServerView,
@@ -1483,15 +1481,6 @@ export class ArenaScene extends Phaser.Scene {
   private selfPredStance: MoveStance = STANCE_NONE;
   private selfPredSlidePhase: SlidePhase = SLIDE_PHASE_OFF;
   private selfPredSlideTick = 0;
-  private readonly distanceIndicator: DistanceJumpIndicator = {
-    rawX: 0,
-    rawY: 0,
-    x: 0,
-    y: 0,
-    dirX: 1,
-    dirY: 0,
-    clamped: false,
-  };
   private readonly jumpPresentation = new Map<string, JumpPresentationState>();
   private readonly jugglePresentation = new Map<string, JugglePresentationState>();
   /** Whether the previous frame was hit-stop-frozen — on the unfreeze edge the accrued prediction
@@ -4602,7 +4591,7 @@ export class ArenaScene extends Phaser.Scene {
         this.slideDryPresses++;
         if (this.slideDryPresses === 3 && !this.slideDryToastShown) {
           this.slideDryToastShown = true;
-          this.flashBanner("Slide needs a run-up", "#c7a66c");
+          this.flashBanner("Roll cooling down", "#c7a66c");
         }
         if (this.slideDryPresses <= 3) {
           const rig = this.room ? this.blobs.get(this.room.sessionId) : undefined;
@@ -9871,7 +9860,6 @@ export class ArenaScene extends Phaser.Scene {
     if (stanceChanged || slidePhaseChanged) {
       previous.stanceStartedMs = this.animClock;
       previous.coilSecondPlayed = false;
-      if (stance === STANCE_CROUCH) this.audio.play("leap:coil", { x, amt: 0.3 * localAmt });
       if (stance === STANCE_POUND) this.audio.play("pound:tuck", { x, amt: localAmt });
       if (stance === STANCE_SLIDE && slidePhase === SLIDE_PHASE_GROUND) {
         this.jumpEffectRenderer.spawnSlideBurst(
@@ -9897,17 +9885,9 @@ export class ArenaScene extends Phaser.Scene {
     if (visible && stance === STANCE_SLIDE && slidePhase === SLIDE_PHASE_GROUND)
       this.audio.play("slide:scrape", {
         x,
-        amt: Math.min(1, Math.max(0, speed / SLIDE_SPEED_CAP)) * localAmt,
+        amt: Math.min(1, Math.max(0, speed / (ROLL_SPEED_CURVE[0] ?? 1))) * localAmt,
         ownerId: id,
       });
-    if (
-      stance === STANCE_CROUCH &&
-      !previous.coilSecondPlayed &&
-      this.animClock - previous.stanceStartedMs >= 150
-    ) {
-      previous.coilSecondPlayed = true;
-      this.audio.play("leap:coil", { x, amt: 0.62 * localAmt });
-    }
     if (stance === STANCE_POUND && vh < 0 && previous.vh >= 0)
       this.audio.play("pound:drop", { x, amt: localAmt });
 
@@ -9936,7 +9916,6 @@ export class ArenaScene extends Phaser.Scene {
     const launched = previous.height <= GROUND_EPSILON && height > GROUND_EPSILON;
     if (launched) {
       if (stance === STANCE_DASH) this.audio.play("leap:launch", { x, amt: localAmt });
-      else if (stance === STANCE_SLIDE) this.audio.play("slide:hop", { x, amt: localAmt });
       else this.audio.play("jump", { x, amt: localAmt });
     }
     const landed = previous.height > GROUND_EPSILON && height <= GROUND_EPSILON;
@@ -9973,31 +9952,9 @@ export class ArenaScene extends Phaser.Scene {
         y,
         moveX,
         moveY,
-        slideTick * SLIDE_TICK_SECONDS,
+        slideTick * ROLL_TICK_SECONDS,
         reducedMotion,
       );
-    if (
-      isSelf &&
-      stance === STANCE_CROUCH &&
-      this.predictor?.writeDistanceJumpIndicator(
-        this.distanceIndicator,
-        this.curDx,
-        this.curDy,
-        this.selfAim.x,
-        this.selfAim.y,
-      )
-    ) {
-      this.jumpEffectRenderer.drawDistanceIndicator(
-        x,
-        y + PLAYER_SHADOW_LOCAL_Y,
-        this.distanceIndicator.x,
-        (this.belt ? this.beltY(this.distanceIndicator.y) : this.distanceIndicator.y) +
-          PLAYER_SHADOW_LOCAL_Y,
-        this.distanceIndicator.clamped,
-        this.animClock,
-        reducedMotion,
-      );
-    }
 
     previous.height = height;
     previous.vh = vh;
@@ -10662,12 +10619,12 @@ export class ArenaScene extends Phaser.Scene {
       g.strokeCircle(x, y, R);
     }
 
-    // The carried-over pip now shows the six qualifying run-up ticks before another cold pop.
+    // The carried-over pip now shows the fixed roll cooldown.
     const slideCd = this.predictor?.slideCooldownRemaining ?? 0;
     const pipX = x + 27;
     const pipY = y + 20;
     if (slideCd > 0) {
-      const ready = 1 - Math.min(1, slideCd / (SLIDE_COLD_REARM_TICKS * SLIDE_TICK_SECONDS));
+      const ready = 1 - Math.min(1, slideCd / ROLL_COOLDOWN);
       g.lineStyle(2, 0xc7a66c, 0.52);
       g.beginPath();
       g.arc(pipX, pipY, 5, -Math.PI / 2, -Math.PI / 2 + ready * Math.PI * 2);
