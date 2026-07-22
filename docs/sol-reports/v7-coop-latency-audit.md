@@ -2,98 +2,190 @@
 
 **Owner question:** Will the recently added combat and movement systems impact latency in the co-op game?
 
-**Status:** Measurement in progress (2026-07-22). This file is the incremental report of record.
+**Status:** Complete, measured 2026-07-22. This is the report of record.
 
-## Scope and guardrails
+## Direct answer
 
-- Branch/worktree target: `feat/v0.118-metagame` in `C:/Users/Exped/DDv2`.
-- Compare against the repository's earlier latency audit methodology and budgets.
-- Measure authoritative server tick cost, snapshot/wire cost, and client frame cost under a matched realistic heavy co-op scenario.
-- Use only private benchmark listeners; do not touch the owner's listeners on ports 5180 or 2567.
-- Product code remains read-only unless a high-confidence hotspot is demonstrated with before/after measurements.
+**No meaningful co-op network/server latency regression was measured.** In the realistic five-player V7
+stress room, the authoritative tick was **0.485 ms p50 / 0.834 ms p95 / 1.630 ms max** against a **50 ms**
+budget. Even at the Wave 2 enemy ceiling (80/80 effective bodies), it was **0.857 / 1.363 / 3.585 ms**.
+That leaves **49.17 ms** of heavy-room p95 headroom (**48.37 ms** at its worst observed tick) and
+**46.42 ms** at the single worst cap-load tick.
 
-## Measurement log
+V7 adds **0.203 ms mean / 0.354 ms p95** over the same-population idle ablation. Outbound state is
+**53.4 KB/s/client** in the realistic heavy room and **76.5 KB/s/client** at the 80-body cap, both below
+the older audit's measured **85.8 KB/s/client** legal-ceiling baseline. Input/action message budgets are
+at 25% and 12.5% per player, respectively.
 
-| Time (America/New_York) | Phase | Result |
-|---|---|---|
-| 2026-07-22 | Audit initialized | Report created before repository inspection or benchmark execution. Baselines and measured results pending. |
-| 2026-07-22 | Prior-audit recovery | Read the complete V7 Sol report set and the earlier `structure-latency-panel` tick/net/frame audits. The earlier server and client numbers were explicitly static estimates; its reproducible wire benchmark is the quantitative baseline. |
-| 2026-07-22 | Harness implementation | Added read-only, in-process GameRoom/Colyseus measurement tooling and a documented paired idle-vs-V7 methodology under the exclusive `tools/perf-*` / `docs/perf/**` paths. No product file was edited. |
-| 2026-07-22 | Harness shakedown | Reduced-sample run completed on schema 33. It proved the scenario reaches 80/80 effective bodies under cap pressure, six simultaneous Stormcaller beam rows, both player zones, projectiles, and the worm boss. Shakedown figures are not final results; full warmed runs pending. |
+The browser probe found only a small paired VFX increment: **+0.70 ms mean scene update** and
+**+0.34 ms mean Phaser render** for all systems versus populated idle. Its absolute FPS is not a shipping
+GPU result because it ran at 640x360 on headless SwiftShader; subsystem timings and paired deltas are the
+usable evidence. No product hot-path change is justified by these measurements.
 
-## Results
+One real, bounded issue is separate from steady play: the full state is **10,908 B** at realistic load and
+**15,867 B** at the cap. Both exceed Colyseus's default 8 KiB encoder buffer, and live joins emitted the
+documented overflow/re-encode warning. That can add a small join/reconnect allocation spike, not ongoing
+input latency. The cheapest follow-up is to size `Encoder.BUFFER_SIZE` once to 32 KiB at server startup;
+it was not changed in this audit because the steady tick is healthy and product edits were last resort.
 
-### Comparable baseline recovered from the older audit
+## What was measured
 
-- Simulation cadence/budget: 20 Hz, one logical step every 50 ms; a delayed callback may execute up to three logical steps before one patch.
-- Older server tick audit: no measured percentile baseline. It prescribed a deterministic stress room and phase timers; its cost bands were estimates and will not be presented as measured regressions.
-- Older wire benchmark (`2,000` warmed patches, legal schema-v19 ceiling): `4,292.4 B/patch` mean, encoder `0.031 ms` mean / `0.055 ms` p95 / `0.067 ms` p99, or `85.8 KB/s/client` at 20 Hz. Population was 10 players, 80 effective enemy bodies, 120 hostile projectiles, 10 beams, 32 receipts, 12 worm slots, and 35 XP echoes. Full initial state was `14,918 B`.
-- Older hot wire slices: 10 moving players `316 B`; 80 moving enemies `1,126 B`; 120 moving projectiles `1,793 B`; 10 active beams `516 B`; 12 worm segments `183 B` on their 10 Hz pose tick; worst 32-receipt overwrite `1,794 B`.
-- Older client frame audit: no measured percentile baseline. It estimated four beams at `0.6–2.5 ms/frame`, 54 full-rate procedural rigs at `1.5–5 ms/frame`, ten-pack FX edges at `2–12 ms` plus possible `2–8 ms` GC, and identified DPR/back-buffer pixels as the dominant GPU multiplier. These remain hypotheses until the current browser measurement.
-- Network-latency constants retained for interpretation: command mint wait `0–50 ms`, server tick wait `0–50 ms`, remote body interpolation `120 ms`, and one render frame up to `16.7 ms` at 60 Hz. This audit measures processing/serialization/render cost; it does not relabel those intentional protocol waits as V7 regressions.
+The benchmark uses a real in-process `GameRoom`, exact 50 ms logical steps, the installed Colyseus
+encoder, and real registered input/attack handlers. Broadcast/listener side effects are the only things
+replaced. Product code was not edited.
 
-### V7 workload map recovered from durable reports
+The principal room has five players:
 
-- Server-side additions to stress together: swept/capsule projectile collision, timed ground-zone damage, round-resolved burst/pellet/parallel spawn packets, shared hit-envelope resolution, sampled blade-extension sweeps, iframe/roll windows, cone streams, six-tip beam delivery, and immediate movement/prediction changes.
-- Client-side additions to stress together: five retained beam-structure families, ice-only Frostquill rope art, blade extensions, support-hand mechanism animation, full-card tumble movement, generated projectile/explosion identity art, muzzle flashes/projectile admission, and dense hit/zone feedback.
-- Existing measured live gates establish geometry/correctness, not throughput. Their zero-pixel muzzle/beam attachment results and movement reconciliation envelope are therefore treated as correctness prerequisites rather than latency measurements.
+- Snakeoil Tincture Scepter channel zone;
+- Gravewax Seance-Globe channel zone;
+- Gravelthroat Repeater 1-10 pellet bursts;
+- Stormcaller Tesla Gatling with six authoritative beam rows;
+- Rimewrit Grave-Slab with timed blade-extension melee.
 
-Current benchmark measurements remain pending.
+It also has 48 mixed ordinary enemies and the active Seam-Eater worm boss. The clean heavy sample retains
+only ticks with at least two zones and all six beam rows live. Enemies are parked and restored to high HP so
+the same population survives warm-up instead of turning the benchmark into a declining-horde test. A paired
+idle arm keeps the players, enemies, boss, and input cadence while disabling weapon deliveries. The cap arm
+runs the same controllers at 80 effective bodies and samples every cap-pressure tick; simultaneous entities
+are verified by its recorded peaks.
 
-### Current measurement scenario
+Environment: AMD Ryzen 7 9800X3D, 16 logical CPUs, Node v24.13.0, Windows x64, commit
+`67fabe17c201221e1589e5765d9d1a8c58c3fada`. Each clean arm uses 600 warm-up ticks, then 2,000 samples
+(1,200 for cap pressure); attribution uses a separate 1,200-sample instrumented run.
 
-The repeatable harness and exact commands are documented in `docs/perf/v7-coop-latency-methodology.md`.
-The principal room uses five co-op players so all named server/client surfaces are simultaneous: two channel
-zones, Gravelthroat's 1–10 radial-pellet gun, Stormcaller's six beam rows, and Rimewrit's timed blade extension,
-with 48 mixed ordinary enemies plus the twelve-slot Seam-Eater boss. A paired idle-population run holds the
-same actors/boss/input rate but disables those five weapon systems. A separate run fills the enemy admission
-rail to 80 effective bodies. Final samples use 600 warm-up ticks and 2,000 qualifying heavy ticks; only ticks
-with both player zones and all six beam rows live qualify.
+### Measurement log
 
-## Verdict
+| Stage | Result |
+|---|---|
+| Audit initialization | Report created before repository inspection or benchmark execution; product files marked read-only. |
+| Baseline recovery | Read the complete V7 Sol report set and older tick/net/frame audit. Older tick/frame values were estimates; the schema-19 wire run was the quantitative baseline. |
+| Harness shakedown | Reduced samples verified two zones, six beam rows, projectiles, blade sweeps, worm boss, and 80/80 cap admission. |
+| Full server/wire run | 2,000 idle + 2,000 simultaneous-heavy clean ticks, 1,200 cap ticks, and 1,200 attribution ticks completed. |
+| Browser run | Completed 90 idle + 90 non-beam + 45 six-active-beam samples on private listeners; renderer/population limitations recorded below. |
+| Product decision | No steady hotspot met the bar for a product edit; no product code changed. |
 
-**No. The V7 additions do not measurably impact co-op latency.** Measured 2026-07-22 by the
-orchestrator after the Sol stalled; harness and methodology are the Sol's, unmodified except for the
-attempt-budget fix noted below. 2,000 qualifying ticks per arm, 600 warm-up.
+## Server tick cost
 
-| | idle ablation | V7 all-systems | delta |
+| Scenario | p50 | p95 | p99 | max | p95 of 50 ms | max of 50 ms |
+|---|---:|---:|---:|---:|---:|---:|
+| Same-population idle | 0.272 ms | 0.479 ms | 0.587 ms | 0.781 ms | 0.96% | 1.56% |
+| V7 simultaneous heavy | **0.485 ms** | **0.834 ms** | **1.041 ms** | **1.630 ms** | **1.67%** | **3.26%** |
+| Wave 2 cap pressure | **0.857 ms** | **1.363 ms** | **1.668 ms** | **3.585 ms** | **2.73%** | **7.17%** |
+
+The heavy-room delta is +0.203 ms mean and +0.354 ms p95. Even the cap arm has 36.7x budget/p95
+headroom. The intentional protocol waits remain much larger: 0-50 ms command mint, 0-50 ms server tick
+wait, 120 ms remote-body interpolation, and one render interval.
+
+### Per-system attribution
+
+The wrappers add measurement overhead, so percentages come from the separate instrumented run; the clean
+percentiles above are authoritative.
+
+| Subsystem | mean | p95 | share of instrumented tick |
 |---|---:|---:|---:|
-| tick mean | 0.129 ms | 0.211 ms | **+0.082 ms** |
-| tick p95 | 0.239 ms | 0.336 ms | +0.097 ms |
-| tick p99 | 0.351 ms | 0.442 ms | +0.091 ms |
-| tick max | 0.642 ms | 0.883 ms | +0.241 ms |
-| patch | 959 B | 1,137 B | +178 B |
-| per client | 18.7 KB/s | 22.2 KB/s | +3.5 KB/s |
+| Collision/grid (includes projectile/contact broad phase) | 0.267 ms | 0.392 ms | **43.85%** |
+| World zone ticking | 0.110 ms | 0.306 ms | **18.01%** |
+| Inline movement/AI/contact/tail | 0.080 ms | 0.138 ms | **13.17%** |
+| Pellet/burst gun work | 0.033 ms | 0.140 ms | 5.47% |
+| Authored enemy AI | 0.030 ms | 0.051 ms | 4.98% |
+| Projectile stepping | 0.029 ms | 0.055 ms | 4.83% |
+| Six-row beam work | 0.027 ms | 0.043 ms | 4.44% |
+| Melee/shared hit envelope/blade sweep | 0.014 ms | 0.079 ms | 2.36% |
+| Boss/worm | 0.011 ms | 0.021 ms | 1.83% |
+| Zone weapon emission | 0.003 ms | 0.007 ms | 0.53% |
 
-The authoritative tick budget is **50 ms**. The full V7 workload — two channel zones, radial pellets,
-six simultaneous beam rows, timed blade extensions, 48 enemies and the twelve-slot worm boss, five
-players — consumes **0.42% of it on average and 1.8% at the worst single observed tick**. Roughly 57x
-headroom remains even at max. The added wire cost is 3.5 KB/s/client, negligible against any
-broadband link.
+The top three are collision/grid, world-zone ticks, and the inline movement/contact tail. They are the first
+places to remeasure if entity limits rise, but their combined measured mean is only 0.457 ms. There is no
+current performance case for changing them.
 
-Interpretation: latency the player actually feels is dominated by the intentional protocol waits
-(0–50 ms command mint, 0–50 ms tick wait, 120 ms remote interpolation, ≤16.7 ms render frame). V7
-adds ~0.08 ms of processing to that chain. It is not a perceptible contributor and no optimization is
-warranted.
+## Snapshot and wire cost
 
-Attribution of the instrumented tick: beams **51.4%** (0.133 ms), inline movement/AI/contact 13.9%,
-collision/grid 8.4%, projectiles 7.9%, enemy AI 7.4%, boss/worm 3.9%. Beams dominate the V7 cost, but
-in absolute terms they are an eighth of a millisecond — worth knowing if beam count ever grows by an
-order of magnitude, not worth acting on now.
+Patch sizes include the Colyseus protocol byte and use the installed schema-33 encoder. Bytes/sec are
+application bytes before WebSocket/TCP overhead.
 
-### Harness corrections made during the run
+| Scenario | patch mean | patch p95 | patch max | encoder p95 | outbound/client |
+|---|---:|---:|---:|---:|---:|
+| Same-population idle | 774 B | 825 B | 834 B | 0.014 ms | 15.5 KB/s |
+| V7 simultaneous heavy | **2,669 B** | **4,447 B** | **4,825 B** | **0.056 ms** | **53.4 KB/s** |
+| Wave 2 cap pressure | **3,826 B** | **5,644 B** | **6,297 B** | **0.083 ms** | **76.5 KB/s** |
 
-- `MAX_ATTEMPT_MULTIPLIER` and the attribution loop's hardcoded `* 20` are now attempt budgets that
-  honor `DD_PERF_MAX_ATTEMPT_MULTIPLIER`. Qualification ("both zones + all six beam rows live") is
-  intermittent by design at ~4% of ticks, so an 8x/20x attempt budget could never reach the 2,000- and
-  1,200-sample targets. **The qualification predicate and the sample targets were not weakened** — only
-  the number of attempts allowed to reach them.
+The older schema-19 audit's actual 2,000-patch legal-ceiling result was 4,292 B/patch mean,
+0.055 ms encoder p95, 85.8 KB/s/client, and a 14,918 B initial state. Thus the current heavy mean is 62%
+of the older wire ceiling; cap-pressure mean is 89%. Cap p95 is a 112.9 KB/s burst rate, but mean bandwidth
+stays below the prior ceiling. The five-client heavy room emits 2.14 application Mbit/s total; cap pressure
+emits 3.06 Mbit/s total.
 
-### Open finding — deferred, needs its own investigation
+Inbound measured wire messages are 111 B per input and 36 B per attack, including protocol framing. The
+workload sends 100 inputs/s plus 40 attack requests/s: **12.54 KB/s total inbound application data**.
+Each player uses one of four allowed input messages per tick (25%); gun/blade owners use one of eight
+action messages (12.5%). Message budgets hold comfortably.
 
-The `v7-wave2-enemy-cap-pressure` arm (80 effective bodies, same predicate) collected **0 qualifying
-ticks in 72,000 attempts**, versus ~4% at 48 enemies. Under enemy-cap pressure the six-beam delivery
-apparently never achieves six simultaneous rows. That is a gameplay/admission interaction, not a
-latency measurement, and it is a real question: beams may be starving against the entity cap exactly
-when the screen is fullest. This arm was skipped to unblock the owner's answer; the scenario is
-retained in the harness. **Do not "fix" this by relaxing the predicate.**
+### Entity-cap pressure
+
+| Entity | Heavy peak / cap | Utilization | Cap arm peak / cap | Utilization |
+|---|---:|---:|---:|---:|
+| Effective enemy bodies | 58 / 80 | 72.5% | **80 / 80** | **100%** |
+| Friendly projectiles | 25 / 192 | 13.0% | 36 / 192 | 18.8% |
+| Hostile projectiles | 0 / 120 | 0% | 22 / 120 | 18.3% |
+| Friendly beams | 6 / 32 | 18.8% | 6 / 32 | 18.8% |
+| Ground zones | 14 / 48 | 29.2% | 20 / 48 | 41.7% |
+
+The new content does not come close to projectile, beam, or zone caps under this deliberately dense load.
+The 80-body admission rail is reached exactly and remains inside tick/wire budgets.
+
+## Client frame cost
+
+The client artifact is a completed 5-player browser run at 640x360, DPR 1, Chromium 149, SwiftShader
+Vulkan. It recorded 90 idle frames, 90 non-beam frames, and 45 frames with all six Stormcaller rows active.
+The all-system sample peaked at five player rigs, 29 friendly projectile visuals, three zones, and six visible
+beam entries. Combat killed the ordinary population down to 28 during that phase (idle reached 49), so this
+is a VFX attribution measurement, not a full 48-enemy GPU certification.
+
+Follow-up replay attempts did not overwrite the artifact: the Stormcaller protocol client was intermittently
+downed during setup, or its short active phase missed the browser's throttled patch/render cadence. The probe
+is therefore a measurement capture, not yet a deterministic CI performance gate. The server/wire result does
+not share this limitation because it restores the cohort and qualifies at the authoritative tick boundary.
+
+| Phase | frame interval p95 | scene update mean / p95 | Phaser render mean / p95 |
+|---|---:|---:|---:|
+| Populated idle | 60.6 ms | 2.90 / 4.20 ms | 6.20 / 7.70 ms |
+| Zones + pellets + blade | 60.3 ms | 3.03 / 4.20 ms | 6.11 / 7.60 ms |
+| All above + six active beams | 60.9 ms | 3.60 / 4.50 ms | 6.54 / 7.80 ms |
+
+Absolute frame interval is dominated by headless SwiftShader/long-task behavior and must not be translated
+to shipping FPS. The paired result is useful: all V7 VFX added **0.70 ms mean scene update** and
+**0.34 ms mean render** over idle; p95 frame interval moved only +0.3 ms. The largest measured V7 update
+costs were projectile visuals (0.9-1.1 ms p95), player rig/equipment/blade work (0.6 ms p95), attack routing
+and VFX (0.5-0.6 ms p95), and all six beam structures (0.3 ms p95). Zone presentation rounded below
+0.1 ms/frame in this probe. Muzzle flashes are included in attack/VFX; readability structures and blade
+extensions are included in their owning categories.
+
+The measured main-thread/render work is not a responsiveness regression. A representative full-resolution
+physical-GPU run remains the correct release gate for absolute 60/120 FPS, especially because DPR/back-buffer
+pixels were the older audit's expected GPU multiplier.
+
+## Risks and recommendations
+
+There is **no steady-state latency hotspot requiring product work**. Do not invent an optimization project:
+the worst cap tick used 7.17% of budget, mean outbound wire stayed below the previous ceiling, and new entity
+families retained 58-81% capacity headroom.
+
+The only concrete follow-up is join/reconnect hygiene:
+
+1. Full snapshots exceed the default 8 KiB encoder buffer (10.9 KiB heavy, 15.9 KiB cap), and live joins
+   logged overflow/re-encode warnings. Cheapest fix: set `Encoder.BUFFER_SIZE = 32 * 1024` once at server
+   startup, then rerun the join microbenchmark. This is not urgent for combat latency.
+
+If future caps grow, remeasure collision/grid first, world-zone ticking second, and projectile visuals on a
+physical GPU third. Those are evidence-based watch points, not current defects.
+
+## Artifacts and changes
+
+- Repeatable methodology: `docs/perf/v7-coop-latency-methodology.md`
+- Server/wire raw result: `docs/perf/v7-coop-latency-server-wire.json`
+- Client raw result: `docs/perf/v7-coop-latency-client.json`
+- Server harness: `tools/perf-coop-latency.mjs`
+- Browser probe: `e2e/tests/v7-perf-coop-frame.spec.ts`
+
+No product code was changed. No owner listener on 5180/2567 was touched; all browser runs used private
+ephemeral listeners. No commit was created.

@@ -1,0 +1,5 @@
+{
+  "description": "A level with only five cluster anchors is structurally invalid.",
+  "expected": "level must contain exactly six PoiCluster entities (observed 5)",
+  "mutation": { "kind": "remove-cluster-tree", "clusterOrdinal": 5 }
+}

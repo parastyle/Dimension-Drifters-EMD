@@ -1,0 +1,5 @@
+{
+  "description": "A ground island behind a three-tile moat exceeds the shared hop reach and must remain invalid.",
+  "expected": "shared validateArena rejected authored geometry: ground tile",
+  "mutation": { "kind": "build-stranded-island", "left": 2, "top": 2, "right": 10, "bottom": 10, "islandLeft": 5, "islandTop": 5, "islandRight": 7, "islandBottom": 7 }
+}

@@ -1,5 +1,9 @@
 import {
+  createKatanaChoreographySample,
+  type KatanaChoreographyPrimitive,
+  type MeleeComboStep,
   meleeComboSelectionFor,
+  sampleKatanaChoreography,
   swingDescriptorFor,
   swingDescriptorWithComboStep,
   WEAPONS,
@@ -35,6 +39,36 @@ const REPRESENTATIVES: ReadonlyArray<{
   { id: "drift-greatkatana-moonwake", sizeClass: "great" },
   { id: "drift-colossal-world-seam", sizeClass: "colossal" },
 ];
+
+const ACTIVE_KATANAS = [
+  "x-sword-neon-katana",
+  "x2-hailwidow-katana",
+  "x2-gravechill-nodachi",
+  "x2-voltfang-tachi",
+  "x2-cinderfang-wakizashi-pair",
+  "x2-stormpetal-odachi",
+  "drift-katana-stillwater-edict",
+  "drift-katana-stormthread",
+  "drift-katana-riftstep",
+  "drift-nodachi-pale-horizon",
+  "drift-nodachi-gatebreaker",
+  "drift-greatkatana-moonwake",
+  "drift-greatkatana-tempest-regent",
+  "drift-colossal-world-seam",
+] as const;
+
+function choreographyStep(primitive: KatanaChoreographyPrimitive): Readonly<MeleeComboStep> {
+  for (const id of ACTIVE_KATANAS) {
+    const definition = WEAPONS[id];
+    const step = definition
+      ? meleeComboSelectionFor(definition)?.sequence.find(
+          (candidate) => candidate.choreography?.primitive === primitive,
+        )
+      : undefined;
+    if (step) return step;
+  }
+  throw new Error(`missing choreography primitive ${primitive}`);
+}
 
 function boundaryPose(step: number, direction: number, end: boolean): ComboStagePoseTransform {
   const phase = step + (end ? 0.75 : 0.15);
@@ -131,5 +165,83 @@ describe("SpriteRig combo stage continuity", () => {
     expect(sample.backGripBlend).toBe(0);
     expect(sample.artX).toBe(0);
     expect(sample.artY).toBe(0);
+  });
+});
+
+describe("SpriteRig V7 katana choreography continuity", () => {
+  const primitives = [
+    "side-cut",
+    "wave-cut",
+    "knee-stab",
+    "lunge",
+    "backflip",
+    "rising-cut",
+    "spin-cut",
+    "guard-pivot",
+  ] as const satisfies readonly KatanaChoreographyPrimitive[];
+
+  it.each(
+    primitives,
+  )("returns %s to exact neutral identity at the cadence boundary", (primitive) => {
+    const sample = createKatanaChoreographySample();
+    sampleKatanaChoreography(choreographyStep(primitive), 0.5, sample);
+    expect(sample.active).toBe(true);
+    sampleKatanaChoreography(choreographyStep(primitive), 1, sample);
+    expect(sample).toEqual(createKatanaChoreographySample());
+  });
+
+  it("gives every primitive a distinct normalized body/hand/weapon/foot/root trajectory", () => {
+    const signatures = new Set<string>();
+    for (const primitive of primitives) {
+      const step = choreographyStep(primitive);
+      const sample = createKatanaChoreographySample();
+      const signature: number[] = [];
+      for (const t of [0.18, 0.34, 0.52, 0.7, 0.86]) {
+        sampleKatanaChoreography(step, t, sample);
+        signature.push(
+          sample.weaponAngleOffset,
+          sample.weaponForward,
+          sample.weaponLateral,
+          sample.bodyForward,
+          sample.bodyLateral,
+          sample.bodyLift,
+          sample.bodyTurn,
+          sample.bodyScaleX,
+          sample.bodyScaleY,
+          sample.frontFootForward,
+          sample.frontFootLateral,
+          sample.backFootForward,
+          sample.backFootLateral,
+          sample.paperRotation,
+          sample.handSpacing,
+          sample.weaponLengthScale,
+          sample.weaponDepth,
+        );
+      }
+      const quantized = signature.map((value) => Math.round(value * 1_000) / 1_000);
+      signatures.add(JSON.stringify(quantized));
+    }
+    expect(signatures).toHaveLength(primitives.length);
+  });
+
+  it("makes the owner's headline verbs legible in motion channels without VFX", () => {
+    const sample = createKatanaChoreographySample();
+
+    sampleKatanaChoreography(choreographyStep("knee-stab"), 0.5, sample);
+    expect(sample.bodyScaleY).toBeLessThan(0.8);
+    expect(sample.weaponForward).toBeGreaterThan(0.45);
+
+    sampleKatanaChoreography(choreographyStep("lunge"), 0.55, sample);
+    expect(sample.frontFootForward).toBeGreaterThan(0.3);
+    expect(sample.bodyForward).toBeGreaterThan(0.15);
+
+    sampleKatanaChoreography(choreographyStep("backflip"), 0.45, sample);
+    expect(Math.abs(sample.paperRotation)).toBeGreaterThan(Math.PI);
+    expect(sample.bodyLift).toBeGreaterThan(0.2);
+
+    // Broadside occurs at 0.30; 0.38 is already edge-on again in the deliberate full-turn waveform.
+    sampleKatanaChoreography(choreographyStep("spin-cut"), 0.3, sample);
+    expect(sample.weaponLengthScale).toBeLessThan(0.75);
+    expect(sample.bodyScaleX).toBeLessThan(0.85);
   });
 });

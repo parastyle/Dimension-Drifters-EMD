@@ -68,7 +68,7 @@ const TOP_KEYS = new Set([
   "id", "name", "type", "family", "theme", "element", "finish", "finishNote", "grip", "size",
   "rangeBand", "scaling", "scalingGrades", "requirements", "artPrompt", "palettePrimary",
   "paletteAccent", "cardartAction", "behavior", "stats", "description", "banned", "expansion", "archived",
-  "sprite", "sizeClass", "stance", "authoritativeCombo", "comboFamily", "comboVariant", "comboBar", "katanaHook",
+  "sprite", "sizeClass", "stance", "authoritativeCombo", "comboFamily", "comboVariant", "comboBar", "comboChoreography", "katanaHook",
   "bespokeVfxSheet", "performance", "swingStyle", "effectRecipe", "effectEmitter", "effectTiming",
   "renderAboveHands", "suppressVfx", "hitStatus", "gripPoints", "handlingTags",
 ]);
@@ -155,6 +155,10 @@ const COMBO_PATH_KEYS = new Set([
 const COMBO_RIBBON_KEYS = new Set([
   "profile", "radialStart", "radialEnd", "widthMultiplier", "end", "setupEcho",
 ]);
+const KATANA_CHOREOGRAPHY_PRIMITIVES = new Set([
+  "side-cut", "wave-cut", "knee-stab", "lunge", "backflip", "rising-cut", "spin-cut", "guard-pivot",
+]);
+const KATANA_CHOREOGRAPHY_KEYS = new Set(["primitive", "intensity", "hand"]);
 const KATANA_HOOK_KINDS = new Set([
   "pair-half", "draw-opener", "perfect-tempo", "storm-tempo", "finisher-dash",
   "reach-crescendo", "haste-break", "finisher-burst", "perfect-guard", "colossal-release",
@@ -312,7 +316,34 @@ function groundZoneOf(z, path = "behavior.zone") {
   return out;
 }
 
-function comboBarOf(w) {
+function comboChoreographyOf(value, expectedLength) {
+  if (value === undefined) return undefined;
+  if (!Array.isArray(value)) {
+    fail("comboChoreography is not an array");
+    return undefined;
+  }
+  if (value.length < 1 || value.length > 8)
+    fail(`comboChoreography has ${value.length} beats; authored recipes require 1..8`);
+  if (expectedLength !== undefined && value.length !== expectedLength)
+    fail(`comboChoreography has ${value.length} beats; comboBar has ${expectedLength}`);
+  return value.map((choreo, index) => {
+    const path = `comboChoreography[${index}]`;
+    if (!choreo || typeof choreo !== "object" || Array.isArray(choreo)) {
+      fail(`${path} is not an object`);
+      return { primitive: "side-cut", intensity: 1 };
+    }
+    checkKeys(choreo, KATANA_CHOREOGRAPHY_KEYS, path);
+    const mapped = {
+      primitive: enumOf(choreo.primitive, KATANA_CHOREOGRAPHY_PRIMITIVES, `${path}.primitive`),
+      intensity: num(choreo.intensity, 0.65, 1.4, 1, `${path}.intensity`),
+    };
+    if (choreo.hand !== undefined)
+      mapped.hand = enumOf(choreo.hand, COMBO_HANDS, `${path}.hand`);
+    return mapped;
+  });
+}
+
+function comboBarOf(w, choreography) {
   if (w.comboBar === undefined) return undefined;
   if (!Array.isArray(w.comboBar)) {
     fail("comboBar is not an array");
@@ -361,6 +392,8 @@ function comboBarOf(w) {
         knockback: num(movePath.knockback, 0, 160, 0, `${path}.path.knockback`),
       },
     };
+    const choreo = choreography?.[i];
+    if (choreo) mapped.choreography = choreo;
     if (timing.secondaryActiveStart !== undefined)
       mapped.timing.secondaryActiveStart = num(
         timing.secondaryActiveStart, 0, 1, activeStart, `${path}.timing.secondaryActiveStart`,
@@ -1069,8 +1102,14 @@ for (const w of data.weapons) {
     fail("expansion is not a boolean");
   if (w.archived !== undefined && typeof w.archived !== "boolean")
     fail("archived is not a boolean");
-  out[w.id] = mapWeapon(w);
-  const comboBar = comboBarOf(w);
+  const mappedWeapon = mapWeapon(w);
+  const choreography = comboChoreographyOf(
+    w.comboChoreography,
+    Array.isArray(w.comboBar) ? w.comboBar.length : undefined,
+  );
+  if (choreography) mappedWeapon.comboChoreography = choreography;
+  out[w.id] = mappedWeapon;
+  const comboBar = comboBarOf(w, choreography);
   if (comboBar) {
     if (!w.comboFamily || !w.comboVariant)
       fail("comboBar requires comboFamily + comboVariant");

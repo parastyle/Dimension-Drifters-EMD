@@ -1,0 +1,5 @@
+{
+  "description": "Authored arenas remain fixed at 4800x4800 pixels.",
+  "expected": "level dimensions must be 4800x4800px",
+  "mutation": { "kind": "set-level-dimensions", "width": 4720, "height": 4800 }
+}

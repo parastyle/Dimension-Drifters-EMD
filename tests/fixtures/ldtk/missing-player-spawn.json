@@ -1,0 +1,5 @@
+{
+  "description": "Every level requires one and only one PlayerSpawn.",
+  "expected": "level must contain exactly one PlayerSpawn (observed 0)",
+  "mutation": { "kind": "remove-player-spawn" }
+}

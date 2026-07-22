@@ -1,0 +1,5 @@
+{
+  "description": "Landmark references resolve by IID and may never dangle.",
+  "expected": "Landmark.Cluster dangles to unknown entity IID",
+  "mutation": { "kind": "set-landmark-cluster-ref", "landmarkOrdinal": 0, "entityIid": "ffffffff-ffff-4fff-8fff-ffffffffffff" }
+}

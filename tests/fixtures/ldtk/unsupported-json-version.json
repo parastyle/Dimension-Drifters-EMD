@@ -1,0 +1,5 @@
+{
+  "description": "A newer LDtk schema must require a deliberate importer upgrade.",
+  "expected": "unsupported LDtk jsonVersion; supported=1.5.3, observed=1.6.0",
+  "mutation": { "kind": "set-json-version", "value": "1.6.0" }
+}

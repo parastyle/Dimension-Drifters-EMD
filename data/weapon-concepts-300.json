@@ -162,7 +162,7 @@
         "range": 140,
         "halfArc": 0.6,
         "cooldown": 0.3,
-        "displayLength": 128,
+        "displayLength": 192,
         "swingArc": 2.3,
         "gripFrac": 0.11
       },
@@ -271,6 +271,11 @@
         { "name": "storm draw", "motion": "draw-cut", "direction": 1, "hand": "both", "timing": { "activeStart": 0.12, "activeEnd": 0.42, "impact": 0.28, "followEnd": 0.6 }, "path": { "kind": "sweep", "arcMultiplier": 1, "rangeMultiplier": 1, "damageMultiplier": 1, "knockback": 0 } },
         { "name": "voltage rise", "motion": "rising-ward", "direction": -1, "hand": "both", "timing": { "activeStart": 0.13, "activeEnd": 0.43, "impact": 0.29, "followEnd": 0.61 }, "path": { "kind": "sweep", "arcMultiplier": -1, "rangeMultiplier": 1, "damageMultiplier": 1, "knockback": 0 } },
         { "name": "thunder fall", "motion": "thunder-fall", "direction": 1, "hand": "both", "timing": { "activeStart": 0.16, "activeEnd": 0.48, "impact": 0.34, "followEnd": 0.66 }, "path": { "kind": "sweep", "arcMultiplier": 1, "rangeMultiplier": 1, "damageMultiplier": 1, "knockback": 0 } }
+      ],
+      "comboChoreography": [
+        { "primitive": "rising-cut", "intensity": 1.02 },
+        { "primitive": "wave-cut", "intensity": 1.14 },
+        { "primitive": "backflip", "intensity": 1.08 }
       ],
       "stance": "low-close-hilt",
       "gripPoints": {
@@ -747,6 +752,11 @@
         "swingArc": 2.3,
         "gripFrac": 0.15
       },
+      "comboChoreography": [
+        { "primitive": "side-cut", "intensity": 0.92, "hand": "lead" },
+        { "primitive": "wave-cut", "intensity": 1.02, "hand": "off" },
+        { "primitive": "spin-cut", "intensity": 1.18, "hand": "both" }
+      ],
       "performance": {
         "hold": "steady",
         "action": "default-swing",
@@ -15325,6 +15335,14 @@
         { "name": "Quiet Injunction", "motion": "guard-check", "direction": -1, "hand": "lead", "timing": { "activeStart": 0.22, "activeEnd": 0.47, "impact": 0.34, "followEnd": 0.67 }, "path": { "kind": "capsule", "arcMultiplier": 0.62, "rangeMultiplier": 0.9, "damageMultiplier": 0.88, "knockback": 18 }, "ribbon": { "profile": "guard-plane", "radialStart": 0.12, "radialEnd": 0.76, "widthMultiplier": 0.82, "end": "squared" } },
         { "name": "Final Hearing", "motion": "rising-ward", "direction": 1, "hand": "both", "timing": { "activeStart": 0.17, "activeEnd": 0.48, "impact": 0.35, "followEnd": 0.68 }, "path": { "kind": "sweep", "arcMultiplier": 1.08, "rangeMultiplier": 1.04, "damageMultiplier": 1.08, "knockback": 12 }, "ribbon": { "profile": "rising-plane", "radialStart": 0.16, "radialEnd": 1, "widthMultiplier": 0.8, "end": "open" } },
         { "name": "Edict Falls", "motion": "sentence-fall", "direction": -1, "hand": "both", "timing": { "activeStart": 0.24, "activeEnd": 0.59, "impact": 0.45, "followEnd": 0.79 }, "path": { "kind": "sweep", "arcMultiplier": 1.24, "rangeMultiplier": 1.08, "damageMultiplier": 1.34, "knockback": 28 }, "ribbon": { "profile": "massed-wedge", "radialStart": 0.12, "radialEnd": 1, "widthMultiplier": 0.98, "end": "squared" } }
+      ],
+      "comboChoreography": [
+        { "primitive": "guard-pivot", "intensity": 0.84 },
+        { "primitive": "side-cut", "intensity": 0.9 },
+        { "primitive": "guard-pivot", "intensity": 1.02 },
+        { "primitive": "knee-stab", "intensity": 0.88 },
+        { "primitive": "rising-cut", "intensity": 1.06 },
+        { "primitive": "lunge", "intensity": 1.12 }
       ]
     },
     {
@@ -15363,6 +15381,15 @@
         { "name": "Static Baste", "motion": "guard-check", "direction": -1, "hand": "both", "timing": { "activeStart": 0.2, "activeEnd": 0.44, "impact": 0.32, "followEnd": 0.62 }, "path": { "kind": "capsule", "arcMultiplier": 0.66, "rangeMultiplier": 0.9, "damageMultiplier": 0.9, "knockback": 16 }, "ribbon": { "profile": "broken-cross", "radialStart": 0.12, "radialEnd": 0.78, "widthMultiplier": 0.78, "end": "squared" } },
         { "name": "Thunder Seam", "motion": "thunder-fall", "direction": 1, "hand": "both", "timing": { "activeStart": 0.19, "activeEnd": 0.49, "impact": 0.37, "followEnd": 0.68 }, "path": { "kind": "sweep", "arcMultiplier": 1.12, "rangeMultiplier": 1.05, "damageMultiplier": 1.12, "knockback": 18 }, "ribbon": { "profile": "outer-crescent", "radialStart": 0.14, "radialEnd": 1, "widthMultiplier": 0.86, "end": "torn" } },
         { "name": "Sky Knotted", "motion": "sentence-fall", "direction": -1, "hand": "both", "timing": { "activeStart": 0.23, "activeEnd": 0.57, "impact": 0.44, "followEnd": 0.76 }, "path": { "kind": "sweep", "arcMultiplier": 1.28, "rangeMultiplier": 1.08, "damageMultiplier": 1.32, "knockback": 30 }, "ribbon": { "profile": "massed-wedge", "radialStart": 0.1, "radialEnd": 1, "widthMultiplier": 1, "end": "torn" } }
+      ],
+      "comboChoreography": [
+        { "primitive": "wave-cut", "intensity": 0.78 },
+        { "primitive": "side-cut", "intensity": 0.84 },
+        { "primitive": "wave-cut", "intensity": 0.98 },
+        { "primitive": "guard-pivot", "intensity": 0.92 },
+        { "primitive": "knee-stab", "intensity": 0.96 },
+        { "primitive": "rising-cut", "intensity": 1.08 },
+        { "primitive": "spin-cut", "intensity": 1.22 }
       ]
     },
     {
@@ -15399,6 +15426,12 @@
         { "name": "Fold Mark", "motion": "guard-check", "direction": -1, "hand": "lead", "timing": { "activeStart": 0.19, "activeEnd": 0.43, "impact": 0.31, "followEnd": 0.63 }, "path": { "kind": "capsule", "arcMultiplier": 0.6, "rangeMultiplier": 0.88, "damageMultiplier": 0.9, "knockback": 14 }, "ribbon": { "profile": "guard-plane", "radialStart": 0.1, "radialEnd": 0.76, "widthMultiplier": 0.78, "end": "squared" } },
         { "name": "Far Shore", "motion": "petalfall", "direction": 1, "hand": "both", "timing": { "activeStart": 0.17, "activeEnd": 0.47, "impact": 0.35, "followEnd": 0.66 }, "path": { "kind": "fan", "arcMultiplier": 1.05, "rangeMultiplier": 1.04, "damageMultiplier": 1.06, "knockback": 10 }, "ribbon": { "profile": "outer-crescent", "radialStart": 0.18, "radialEnd": 1, "widthMultiplier": 0.8, "end": "torn" } },
         { "name": "Rift Arrives", "motion": "sentence-fall", "direction": -1, "hand": "both", "timing": { "activeStart": 0.26, "activeEnd": 0.61, "impact": 0.48, "followEnd": 0.8 }, "path": { "kind": "sweep", "arcMultiplier": 1.22, "rangeMultiplier": 1.12, "damageMultiplier": 1.34, "knockback": 26 }, "ribbon": { "profile": "broken-cross", "radialStart": 0.12, "radialEnd": 1, "widthMultiplier": 0.96, "end": "clean" } }
+      ],
+      "comboChoreography": [
+        { "primitive": "knee-stab", "intensity": 0.9 },
+        { "primitive": "guard-pivot", "intensity": 0.88 },
+        { "primitive": "backflip", "intensity": 0.94 },
+        { "primitive": "lunge", "intensity": 1.24 }
       ]
     },
     {
@@ -15436,6 +15469,13 @@
         { "name": "Distant Rime", "motion": "petalfall", "direction": -1, "hand": "both", "timing": { "activeStart": 0.18, "activeEnd": 0.49, "impact": 0.36, "followEnd": 0.69 }, "path": { "kind": "fan", "arcMultiplier": 1.04, "rangeMultiplier": 1.04, "damageMultiplier": 1.05, "knockback": 12 }, "ribbon": { "profile": "heavy-sickle", "radialStart": 0.2, "radialEnd": 1, "widthMultiplier": 0.82, "end": "torn" } },
         { "name": "Skyline Ward", "motion": "rising-ward", "direction": 1, "hand": "both", "timing": { "activeStart": 0.23, "activeEnd": 0.52, "impact": 0.4, "followEnd": 0.72 }, "path": { "kind": "sweep", "arcMultiplier": 1.1, "rangeMultiplier": 1.08, "damageMultiplier": 1.08, "knockback": 18 }, "ribbon": { "profile": "rising-plane", "radialStart": 0.16, "radialEnd": 1, "widthMultiplier": 0.88, "end": "open" } },
         { "name": "Horizon Pale", "motion": "sentence-fall", "direction": -1, "hand": "both", "timing": { "activeStart": 0.27, "activeEnd": 0.64, "impact": 0.5, "followEnd": 0.83 }, "path": { "kind": "sweep", "arcMultiplier": 1.3, "rangeMultiplier": 1.16, "damageMultiplier": 1.34, "knockback": 34 }, "ribbon": { "profile": "massed-wedge", "radialStart": 0.1, "radialEnd": 1, "widthMultiplier": 1.04, "end": "clean" } }
+      ],
+      "comboChoreography": [
+        { "primitive": "side-cut", "intensity": 0.86 },
+        { "primitive": "wave-cut", "intensity": 0.96 },
+        { "primitive": "side-cut", "intensity": 1.08 },
+        { "primitive": "rising-cut", "intensity": 1.12 },
+        { "primitive": "lunge", "intensity": 1.2 }
       ]
     },
     {
@@ -15474,6 +15514,15 @@
         { "name": "Lock Split", "motion": "bind-break-cast-off", "direction": 1, "hand": "both", "timing": { "activeStart": 0.18, "activeEnd": 0.43, "impact": 0.31, "followEnd": 0.6 }, "path": { "kind": "fan", "arcMultiplier": 1.08, "rangeMultiplier": 1.04, "damageMultiplier": 1, "knockback": 20 }, "ribbon": { "profile": "broken-cross", "radialStart": 0.16, "radialEnd": 1, "widthMultiplier": 0.86, "end": "torn" } },
         { "name": "Threshold", "motion": "rising-chop", "direction": -1, "hand": "both", "timing": { "activeStart": 0.2, "activeEnd": 0.46, "impact": 0.34, "followEnd": 0.63 }, "path": { "kind": "sweep", "arcMultiplier": 1.14, "rangeMultiplier": 1.06, "damageMultiplier": 1.06, "knockback": 22 }, "ribbon": { "profile": "rising-plane", "radialStart": 0.14, "radialEnd": 1, "widthMultiplier": 0.9, "end": "open" } },
         { "name": "Gate Undone", "motion": "headsmans-drop", "direction": 1, "hand": "both", "timing": { "activeStart": 0.24, "activeEnd": 0.58, "impact": 0.45, "followEnd": 0.76 }, "path": { "kind": "sweep", "arcMultiplier": 1.24, "rangeMultiplier": 1.08, "damageMultiplier": 1.38, "knockback": 42 }, "ribbon": { "profile": "head-wedge", "radialStart": 0.08, "radialEnd": 1, "widthMultiplier": 1.08, "end": "squared" } }
+      ],
+      "comboChoreography": [
+        { "primitive": "knee-stab", "intensity": 0.9 },
+        { "primitive": "side-cut", "intensity": 1.05 },
+        { "primitive": "spin-cut", "intensity": 1.25 },
+        { "primitive": "knee-stab", "intensity": 1.15 },
+        { "primitive": "spin-cut", "intensity": 1.35 },
+        { "primitive": "rising-cut", "intensity": 1.25 },
+        { "primitive": "lunge", "intensity": 1.4 }
       ]
     },
     {
@@ -15511,6 +15560,14 @@
         { "name": "Gibbous Turn", "motion": "rising-ward", "direction": 1, "hand": "both", "timing": { "activeStart": 0.24, "activeEnd": 0.55, "impact": 0.42, "followEnd": 0.75 }, "path": { "kind": "sweep", "arcMultiplier": 1.12, "rangeMultiplier": 1.05, "damageMultiplier": 1.08, "knockback": 22 }, "ribbon": { "profile": "rising-plane", "radialStart": 0.16, "radialEnd": 1, "widthMultiplier": 0.96, "end": "open" } },
         { "name": "Full Reflection", "motion": "petalfall", "direction": -1, "hand": "both", "timing": { "activeStart": 0.26, "activeEnd": 0.58, "impact": 0.45, "followEnd": 0.78 }, "path": { "kind": "fan", "arcMultiplier": 1.2, "rangeMultiplier": 1.08, "damageMultiplier": 1.12, "knockback": 26 }, "ribbon": { "profile": "heavy-sickle", "radialStart": 0.14, "radialEnd": 1, "widthMultiplier": 1, "end": "torn" } },
         { "name": "Moonwake Breaks", "motion": "sentence-fall", "direction": 1, "hand": "both", "timing": { "activeStart": 0.3, "activeEnd": 0.68, "impact": 0.54, "followEnd": 0.86 }, "path": { "kind": "sweep", "arcMultiplier": 1.34, "rangeMultiplier": 1.12, "damageMultiplier": 1.42, "knockback": 46 }, "ribbon": { "profile": "massed-wedge", "radialStart": 0.08, "radialEnd": 1, "widthMultiplier": 1.14, "end": "open" } }
+      ],
+      "comboChoreography": [
+        { "primitive": "wave-cut", "intensity": 0.82 },
+        { "primitive": "side-cut", "intensity": 0.92 },
+        { "primitive": "backflip", "intensity": 1.02 },
+        { "primitive": "rising-cut", "intensity": 1.08 },
+        { "primitive": "spin-cut", "intensity": 1.16 },
+        { "primitive": "lunge", "intensity": 1.24 }
       ]
     },
     {
@@ -15547,6 +15604,13 @@
         { "name": "Eye Throne", "motion": "guard-check", "direction": 1, "hand": "both", "timing": { "activeStart": 0.28, "activeEnd": 0.56, "impact": 0.43, "followEnd": 0.76 }, "path": { "kind": "capsule", "arcMultiplier": 0.7, "rangeMultiplier": 0.9, "damageMultiplier": 0.9, "knockback": 30 }, "ribbon": { "profile": "guard-plane", "radialStart": 0.1, "radialEnd": 0.78, "widthMultiplier": 0.98, "end": "squared" } },
         { "name": "Crown Lightning", "motion": "thunder-fall", "direction": -1, "hand": "both", "timing": { "activeStart": 0.24, "activeEnd": 0.6, "impact": 0.47, "followEnd": 0.8 }, "path": { "kind": "fan", "arcMultiplier": 1.2, "rangeMultiplier": 1.08, "damageMultiplier": 1.14, "knockback": 28 }, "ribbon": { "profile": "broken-cross", "radialStart": 0.14, "radialEnd": 1, "widthMultiplier": 1.04, "end": "torn" } },
         { "name": "Storm Abdicates", "motion": "sentence-fall", "direction": 1, "hand": "both", "timing": { "activeStart": 0.31, "activeEnd": 0.7, "impact": 0.56, "followEnd": 0.88 }, "path": { "kind": "sweep", "arcMultiplier": 1.38, "rangeMultiplier": 1.14, "damageMultiplier": 1.46, "knockback": 50 }, "ribbon": { "profile": "head-wedge", "radialStart": 0.06, "radialEnd": 1, "widthMultiplier": 1.18, "end": "squared" } }
+      ],
+      "comboChoreography": [
+        { "primitive": "side-cut", "intensity": 0.88 },
+        { "primitive": "wave-cut", "intensity": 1 },
+        { "primitive": "guard-pivot", "intensity": 1.08 },
+        { "primitive": "backflip", "intensity": 1.12 },
+        { "primitive": "spin-cut", "intensity": 1.26 }
       ]
     },
     {
@@ -15582,6 +15646,12 @@
         { "name": "Measure Sky", "motion": "rising-ward", "direction": 1, "hand": "both", "timing": { "activeStart": 0.29, "activeEnd": 0.6, "impact": 0.46, "followEnd": 0.8 }, "path": { "kind": "sweep", "arcMultiplier": 0.94, "rangeMultiplier": 0.98, "damageMultiplier": 0.96, "knockback": 24 }, "ribbon": { "profile": "rising-plane", "radialStart": 0.24, "radialEnd": 0.98, "widthMultiplier": 1, "end": "open" } },
         { "name": "Find the Join", "motion": "guard-check", "direction": -1, "hand": "both", "timing": { "activeStart": 0.34, "activeEnd": 0.65, "impact": 0.51, "followEnd": 0.84 }, "path": { "kind": "capsule", "arcMultiplier": 0.78, "rangeMultiplier": 0.92, "damageMultiplier": 0.9, "knockback": 38 }, "ribbon": { "profile": "guard-plane", "radialStart": 0.08, "radialEnd": 0.82, "widthMultiplier": 1.12, "end": "squared" } },
         { "name": "World Opens", "motion": "sentence-fall", "direction": 1, "hand": "both", "timing": { "activeStart": 0.38, "activeEnd": 0.8, "impact": 0.66, "followEnd": 0.96 }, "path": { "kind": "sweep", "arcMultiplier": 1.5, "rangeMultiplier": 1.22, "damageMultiplier": 1.7, "knockback": 80 }, "ribbon": { "profile": "massed-wedge", "radialStart": 0.04, "radialEnd": 1, "widthMultiplier": 1.35, "end": "clean" } }
+      ],
+      "comboChoreography": [
+        { "primitive": "knee-stab", "intensity": 1.06 },
+        { "primitive": "rising-cut", "intensity": 1.16 },
+        { "primitive": "guard-pivot", "intensity": 1.22 },
+        { "primitive": "side-cut", "intensity": 1.38 }
       ]
     },
     {

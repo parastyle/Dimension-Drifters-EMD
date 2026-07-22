@@ -1761,6 +1761,11 @@ const BASE_WEAPONS: Record<string, WeaponDef> = {
     displayLength: 125,
     swingArc: 2.3,
     gripFrac: 0.12,
+    comboChoreography: Object.freeze([
+      Object.freeze({ primitive: "side-cut" as const, intensity: 1.02 }),
+      Object.freeze({ primitive: "wave-cut" as const, intensity: 1.12 }),
+      Object.freeze({ primitive: "lunge" as const, intensity: 1.18 }),
+    ]),
     // §10 on-hit proc (forge note): "jagged lightning on target, chain to 3 nearest, teal". The arc hit
     // seeds a bolt that leaps to 3 other nearby enemies for decaying damage. (Damage scales with DEX
     // grades via power; jumps/range/VFX are fixed per §14.)

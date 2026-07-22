@@ -128,7 +128,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "range": 140,
     "halfArc": 0.6,
     "cooldown": 0.3,
-    "displayLength": 128,
+    "displayLength": 192,
     "swingArc": 2.3,
     "gripFrac": 0.11,
     "tags": {
@@ -257,7 +257,21 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "jag": 0.32,
         "life": 190
       }
-    }
+    },
+    "comboChoreography": [
+      {
+        "primitive": "rising-cut",
+        "intensity": 1.02
+      },
+      {
+        "primitive": "wave-cut",
+        "intensity": 1.14
+      },
+      {
+        "primitive": "backflip",
+        "intensity": 1.08
+      }
+    ]
   },
   "x2-reverent-broadsword": {
     "id": "x2-reverent-broadsword",
@@ -596,7 +610,24 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "dex": 8
     },
     "dual": true,
-    "durability": 75
+    "durability": 75,
+    "comboChoreography": [
+      {
+        "primitive": "side-cut",
+        "intensity": 0.92,
+        "hand": "lead"
+      },
+      {
+        "primitive": "wave-cut",
+        "intensity": 1.02,
+        "hand": "off"
+      },
+      {
+        "primitive": "spin-cut",
+        "intensity": 1.18,
+        "hand": "both"
+      }
+    ]
   },
   "x2-dustreaper-zweihander": {
     "id": "x2-dustreaper-zweihander",
@@ -14615,7 +14646,33 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "int": 3
     },
     "twoHanded": true,
-    "durability": 90
+    "durability": 90,
+    "comboChoreography": [
+      {
+        "primitive": "guard-pivot",
+        "intensity": 0.84
+      },
+      {
+        "primitive": "side-cut",
+        "intensity": 0.9
+      },
+      {
+        "primitive": "guard-pivot",
+        "intensity": 1.02
+      },
+      {
+        "primitive": "knee-stab",
+        "intensity": 0.88
+      },
+      {
+        "primitive": "rising-cut",
+        "intensity": 1.06
+      },
+      {
+        "primitive": "lunge",
+        "intensity": 1.12
+      }
+    ]
   },
   "drift-katana-stormthread": {
     "id": "drift-katana-stormthread",
@@ -14663,7 +14720,37 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "int": 6
     },
     "twoHanded": true,
-    "durability": 90
+    "durability": 90,
+    "comboChoreography": [
+      {
+        "primitive": "wave-cut",
+        "intensity": 0.78
+      },
+      {
+        "primitive": "side-cut",
+        "intensity": 0.84
+      },
+      {
+        "primitive": "wave-cut",
+        "intensity": 0.98
+      },
+      {
+        "primitive": "guard-pivot",
+        "intensity": 0.92
+      },
+      {
+        "primitive": "knee-stab",
+        "intensity": 0.96
+      },
+      {
+        "primitive": "rising-cut",
+        "intensity": 1.08
+      },
+      {
+        "primitive": "spin-cut",
+        "intensity": 1.22
+      }
+    ]
   },
   "drift-katana-riftstep": {
     "id": "drift-katana-riftstep",
@@ -14712,7 +14799,25 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "int": 5
     },
     "twoHanded": true,
-    "durability": 90
+    "durability": 90,
+    "comboChoreography": [
+      {
+        "primitive": "knee-stab",
+        "intensity": 0.9
+      },
+      {
+        "primitive": "guard-pivot",
+        "intensity": 0.88
+      },
+      {
+        "primitive": "backflip",
+        "intensity": 0.94
+      },
+      {
+        "primitive": "lunge",
+        "intensity": 1.24
+      }
+    ]
   },
   "drift-nodachi-pale-horizon": {
     "id": "drift-nodachi-pale-horizon",
@@ -14760,7 +14865,29 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "str": 5
     },
     "twoHanded": true,
-    "durability": 90
+    "durability": 90,
+    "comboChoreography": [
+      {
+        "primitive": "side-cut",
+        "intensity": 0.86
+      },
+      {
+        "primitive": "wave-cut",
+        "intensity": 0.96
+      },
+      {
+        "primitive": "side-cut",
+        "intensity": 1.08
+      },
+      {
+        "primitive": "rising-cut",
+        "intensity": 1.12
+      },
+      {
+        "primitive": "lunge",
+        "intensity": 1.2
+      }
+    ]
   },
   "drift-nodachi-gatebreaker": {
     "id": "drift-nodachi-gatebreaker",
@@ -14809,7 +14936,37 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "dex": 6
     },
     "twoHanded": true,
-    "durability": 90
+    "durability": 90,
+    "comboChoreography": [
+      {
+        "primitive": "knee-stab",
+        "intensity": 0.9
+      },
+      {
+        "primitive": "side-cut",
+        "intensity": 1.05
+      },
+      {
+        "primitive": "spin-cut",
+        "intensity": 1.25
+      },
+      {
+        "primitive": "knee-stab",
+        "intensity": 1.15
+      },
+      {
+        "primitive": "spin-cut",
+        "intensity": 1.35
+      },
+      {
+        "primitive": "rising-cut",
+        "intensity": 1.25
+      },
+      {
+        "primitive": "lunge",
+        "intensity": 1.4
+      }
+    ]
   },
   "drift-greatkatana-moonwake": {
     "id": "drift-greatkatana-moonwake",
@@ -14863,7 +15020,33 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "int": 4
     },
     "twoHanded": true,
-    "durability": 90
+    "durability": 90,
+    "comboChoreography": [
+      {
+        "primitive": "wave-cut",
+        "intensity": 0.82
+      },
+      {
+        "primitive": "side-cut",
+        "intensity": 0.92
+      },
+      {
+        "primitive": "backflip",
+        "intensity": 1.02
+      },
+      {
+        "primitive": "rising-cut",
+        "intensity": 1.08
+      },
+      {
+        "primitive": "spin-cut",
+        "intensity": 1.16
+      },
+      {
+        "primitive": "lunge",
+        "intensity": 1.24
+      }
+    ]
   },
   "drift-greatkatana-tempest-regent": {
     "id": "drift-greatkatana-tempest-regent",
@@ -14915,7 +15098,29 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "int": 4
     },
     "twoHanded": true,
-    "durability": 90
+    "durability": 90,
+    "comboChoreography": [
+      {
+        "primitive": "side-cut",
+        "intensity": 0.88
+      },
+      {
+        "primitive": "wave-cut",
+        "intensity": 1
+      },
+      {
+        "primitive": "guard-pivot",
+        "intensity": 1.08
+      },
+      {
+        "primitive": "backflip",
+        "intensity": 1.12
+      },
+      {
+        "primitive": "spin-cut",
+        "intensity": 1.26
+      }
+    ]
   },
   "drift-colossal-world-seam": {
     "id": "drift-colossal-world-seam",
@@ -14966,7 +15171,25 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "int": 5
     },
     "twoHanded": true,
-    "durability": 90
+    "durability": 90,
+    "comboChoreography": [
+      {
+        "primitive": "knee-stab",
+        "intensity": 1.06
+      },
+      {
+        "primitive": "rising-cut",
+        "intensity": 1.16
+      },
+      {
+        "primitive": "guard-pivot",
+        "intensity": 1.22
+      },
+      {
+        "primitive": "side-cut",
+        "intensity": 1.38
+      }
+    ]
   },
   "x2-gravedog-auto-rifle": {
     "id": "x2-gravedog-auto-rifle",
@@ -15411,6 +15634,10 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "rangeMultiplier": 1,
         "damageMultiplier": 1,
         "knockback": 0
+      },
+      "choreography": {
+        "primitive": "rising-cut",
+        "intensity": 1.02
       }
     },
     {
@@ -15430,6 +15657,10 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "rangeMultiplier": 1,
         "damageMultiplier": 1,
         "knockback": 0
+      },
+      "choreography": {
+        "primitive": "wave-cut",
+        "intensity": 1.14
       }
     },
     {
@@ -15449,6 +15680,10 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "rangeMultiplier": 1,
         "damageMultiplier": 1,
         "knockback": 0
+      },
+      "choreography": {
+        "primitive": "backflip",
+        "intensity": 1.08
       }
     }
   ],
@@ -16961,6 +17196,10 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "damageMultiplier": 0.96,
         "knockback": 7
       },
+      "choreography": {
+        "primitive": "guard-pivot",
+        "intensity": 0.84
+      },
       "ribbon": {
         "profile": "open-c",
         "radialStart": 0.25,
@@ -16986,6 +17225,10 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "rangeMultiplier": 1,
         "damageMultiplier": 1,
         "knockback": 8
+      },
+      "choreography": {
+        "primitive": "side-cut",
+        "intensity": 0.9
       },
       "ribbon": {
         "profile": "hooked-comma",
@@ -17013,6 +17256,10 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "damageMultiplier": 1.04,
         "knockback": 9
       },
+      "choreography": {
+        "primitive": "guard-pivot",
+        "intensity": 1.02
+      },
       "ribbon": {
         "profile": "reverse-hairpin",
         "radialStart": 0.18,
@@ -17038,6 +17285,10 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "rangeMultiplier": 0.9,
         "damageMultiplier": 0.88,
         "knockback": 18
+      },
+      "choreography": {
+        "primitive": "knee-stab",
+        "intensity": 0.88
       },
       "ribbon": {
         "profile": "guard-plane",
@@ -17065,6 +17316,10 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "damageMultiplier": 1.08,
         "knockback": 12
       },
+      "choreography": {
+        "primitive": "rising-cut",
+        "intensity": 1.06
+      },
       "ribbon": {
         "profile": "rising-plane",
         "radialStart": 0.16,
@@ -17090,6 +17345,10 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "rangeMultiplier": 1.08,
         "damageMultiplier": 1.34,
         "knockback": 28
+      },
+      "choreography": {
+        "primitive": "lunge",
+        "intensity": 1.12
       },
       "ribbon": {
         "profile": "massed-wedge",
@@ -17119,6 +17378,10 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "damageMultiplier": 0.92,
         "knockback": 5
       },
+      "choreography": {
+        "primitive": "wave-cut",
+        "intensity": 0.78
+      },
       "ribbon": {
         "profile": "hooked-comma",
         "radialStart": 0.22,
@@ -17144,6 +17407,10 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "rangeMultiplier": 0.98,
         "damageMultiplier": 0.95,
         "knockback": 6
+      },
+      "choreography": {
+        "primitive": "side-cut",
+        "intensity": 0.84
       },
       "ribbon": {
         "profile": "open-c",
@@ -17171,6 +17438,10 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "damageMultiplier": 0.98,
         "knockback": 7
       },
+      "choreography": {
+        "primitive": "wave-cut",
+        "intensity": 0.98
+      },
       "ribbon": {
         "profile": "reverse-hairpin",
         "radialStart": 0.18,
@@ -17196,6 +17467,10 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "rangeMultiplier": 1.02,
         "damageMultiplier": 1,
         "knockback": 8
+      },
+      "choreography": {
+        "primitive": "guard-pivot",
+        "intensity": 0.92
       },
       "ribbon": {
         "profile": "inward-hook",
@@ -17223,6 +17498,10 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "damageMultiplier": 0.9,
         "knockback": 16
       },
+      "choreography": {
+        "primitive": "knee-stab",
+        "intensity": 0.96
+      },
       "ribbon": {
         "profile": "broken-cross",
         "radialStart": 0.12,
@@ -17249,6 +17528,10 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "damageMultiplier": 1.12,
         "knockback": 18
       },
+      "choreography": {
+        "primitive": "rising-cut",
+        "intensity": 1.08
+      },
       "ribbon": {
         "profile": "outer-crescent",
         "radialStart": 0.14,
@@ -17274,6 +17557,10 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "rangeMultiplier": 1.08,
         "damageMultiplier": 1.32,
         "knockback": 30
+      },
+      "choreography": {
+        "primitive": "spin-cut",
+        "intensity": 1.22
       },
       "ribbon": {
         "profile": "massed-wedge",
@@ -17304,6 +17591,10 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "knockback": 6,
         "deltaAngle": 0
       },
+      "choreography": {
+        "primitive": "knee-stab",
+        "intensity": 0.9
+      },
       "ribbon": {
         "profile": "guard-plane",
         "radialStart": 0.24,
@@ -17329,6 +17620,10 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "rangeMultiplier": 0.88,
         "damageMultiplier": 0.9,
         "knockback": 14
+      },
+      "choreography": {
+        "primitive": "guard-pivot",
+        "intensity": 0.88
       },
       "ribbon": {
         "profile": "guard-plane",
@@ -17356,6 +17651,10 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "damageMultiplier": 1.06,
         "knockback": 10
       },
+      "choreography": {
+        "primitive": "backflip",
+        "intensity": 0.94
+      },
       "ribbon": {
         "profile": "outer-crescent",
         "radialStart": 0.18,
@@ -17381,6 +17680,10 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "rangeMultiplier": 1.12,
         "damageMultiplier": 1.34,
         "knockback": 26
+      },
+      "choreography": {
+        "primitive": "lunge",
+        "intensity": 1.24
       },
       "ribbon": {
         "profile": "broken-cross",
@@ -17410,6 +17713,10 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "damageMultiplier": 0.94,
         "knockback": 8
       },
+      "choreography": {
+        "primitive": "side-cut",
+        "intensity": 0.86
+      },
       "ribbon": {
         "profile": "open-c",
         "radialStart": 0.3,
@@ -17435,6 +17742,10 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "rangeMultiplier": 0.98,
         "damageMultiplier": 1,
         "knockback": 10
+      },
+      "choreography": {
+        "primitive": "wave-cut",
+        "intensity": 0.96
       },
       "ribbon": {
         "profile": "outer-crescent",
@@ -17462,6 +17773,10 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "damageMultiplier": 1.05,
         "knockback": 12
       },
+      "choreography": {
+        "primitive": "side-cut",
+        "intensity": 1.08
+      },
       "ribbon": {
         "profile": "heavy-sickle",
         "radialStart": 0.2,
@@ -17488,6 +17803,10 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "damageMultiplier": 1.08,
         "knockback": 18
       },
+      "choreography": {
+        "primitive": "rising-cut",
+        "intensity": 1.12
+      },
       "ribbon": {
         "profile": "rising-plane",
         "radialStart": 0.16,
@@ -17513,6 +17832,10 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "rangeMultiplier": 1.16,
         "damageMultiplier": 1.34,
         "knockback": 34
+      },
+      "choreography": {
+        "primitive": "lunge",
+        "intensity": 1.2
       },
       "ribbon": {
         "profile": "massed-wedge",
@@ -17542,6 +17865,10 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "damageMultiplier": 0.88,
         "knockback": 10
       },
+      "choreography": {
+        "primitive": "knee-stab",
+        "intensity": 0.9
+      },
       "ribbon": {
         "profile": "hooked-comma",
         "radialStart": 0.24,
@@ -17567,6 +17894,10 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "rangeMultiplier": 0.98,
         "damageMultiplier": 0.92,
         "knockback": 14
+      },
+      "choreography": {
+        "primitive": "side-cut",
+        "intensity": 1.05
       },
       "ribbon": {
         "profile": "inward-hook",
@@ -17594,6 +17925,10 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "damageMultiplier": 0.82,
         "knockback": 26
       },
+      "choreography": {
+        "primitive": "spin-cut",
+        "intensity": 1.25
+      },
       "ribbon": {
         "profile": "guard-plane",
         "radialStart": 0.12,
@@ -17619,6 +17954,10 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "rangeMultiplier": 1.02,
         "damageMultiplier": 0.96,
         "knockback": 15
+      },
+      "choreography": {
+        "primitive": "knee-stab",
+        "intensity": 1.15
       },
       "ribbon": {
         "profile": "outer-crescent",
@@ -17646,6 +17985,10 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "damageMultiplier": 1,
         "knockback": 20
       },
+      "choreography": {
+        "primitive": "spin-cut",
+        "intensity": 1.35
+      },
       "ribbon": {
         "profile": "broken-cross",
         "radialStart": 0.16,
@@ -17672,6 +18015,10 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "damageMultiplier": 1.06,
         "knockback": 22
       },
+      "choreography": {
+        "primitive": "rising-cut",
+        "intensity": 1.25
+      },
       "ribbon": {
         "profile": "rising-plane",
         "radialStart": 0.14,
@@ -17697,6 +18044,10 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "rangeMultiplier": 1.08,
         "damageMultiplier": 1.38,
         "knockback": 42
+      },
+      "choreography": {
+        "primitive": "lunge",
+        "intensity": 1.4
       },
       "ribbon": {
         "profile": "head-wedge",
@@ -17726,6 +18077,10 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "damageMultiplier": 0.94,
         "knockback": 12
       },
+      "choreography": {
+        "primitive": "wave-cut",
+        "intensity": 0.82
+      },
       "ribbon": {
         "profile": "open-c",
         "radialStart": 0.3,
@@ -17751,6 +18106,10 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "rangeMultiplier": 0.98,
         "damageMultiplier": 1,
         "knockback": 16
+      },
+      "choreography": {
+        "primitive": "side-cut",
+        "intensity": 0.92
       },
       "ribbon": {
         "profile": "outer-crescent",
@@ -17778,6 +18137,10 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "damageMultiplier": 1.04,
         "knockback": 18
       },
+      "choreography": {
+        "primitive": "backflip",
+        "intensity": 1.02
+      },
       "ribbon": {
         "profile": "reverse-hairpin",
         "radialStart": 0.2,
@@ -17803,6 +18166,10 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "rangeMultiplier": 1.05,
         "damageMultiplier": 1.08,
         "knockback": 22
+      },
+      "choreography": {
+        "primitive": "rising-cut",
+        "intensity": 1.08
       },
       "ribbon": {
         "profile": "rising-plane",
@@ -17830,6 +18197,10 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "damageMultiplier": 1.12,
         "knockback": 26
       },
+      "choreography": {
+        "primitive": "spin-cut",
+        "intensity": 1.16
+      },
       "ribbon": {
         "profile": "heavy-sickle",
         "radialStart": 0.14,
@@ -17855,6 +18226,10 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "rangeMultiplier": 1.12,
         "damageMultiplier": 1.42,
         "knockback": 46
+      },
+      "choreography": {
+        "primitive": "lunge",
+        "intensity": 1.24
       },
       "ribbon": {
         "profile": "massed-wedge",
@@ -17884,6 +18259,10 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "damageMultiplier": 0.96,
         "knockback": 14
       },
+      "choreography": {
+        "primitive": "side-cut",
+        "intensity": 0.88
+      },
       "ribbon": {
         "profile": "open-c",
         "radialStart": 0.28,
@@ -17909,6 +18288,10 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "rangeMultiplier": 1,
         "damageMultiplier": 1.02,
         "knockback": 18
+      },
+      "choreography": {
+        "primitive": "wave-cut",
+        "intensity": 1
       },
       "ribbon": {
         "profile": "outer-crescent",
@@ -17936,6 +18319,10 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "damageMultiplier": 0.9,
         "knockback": 30
       },
+      "choreography": {
+        "primitive": "guard-pivot",
+        "intensity": 1.08
+      },
       "ribbon": {
         "profile": "guard-plane",
         "radialStart": 0.1,
@@ -17962,6 +18349,10 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "damageMultiplier": 1.14,
         "knockback": 28
       },
+      "choreography": {
+        "primitive": "backflip",
+        "intensity": 1.12
+      },
       "ribbon": {
         "profile": "broken-cross",
         "radialStart": 0.14,
@@ -17987,6 +18378,10 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "rangeMultiplier": 1.14,
         "damageMultiplier": 1.46,
         "knockback": 50
+      },
+      "choreography": {
+        "primitive": "spin-cut",
+        "intensity": 1.26
       },
       "ribbon": {
         "profile": "head-wedge",
@@ -18016,6 +18411,10 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "damageMultiplier": 0.88,
         "knockback": 18
       },
+      "choreography": {
+        "primitive": "knee-stab",
+        "intensity": 1.06
+      },
       "ribbon": {
         "profile": "open-c",
         "radialStart": 0.34,
@@ -18041,6 +18440,10 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "rangeMultiplier": 0.98,
         "damageMultiplier": 0.96,
         "knockback": 24
+      },
+      "choreography": {
+        "primitive": "rising-cut",
+        "intensity": 1.16
       },
       "ribbon": {
         "profile": "rising-plane",
@@ -18068,6 +18471,10 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "damageMultiplier": 0.9,
         "knockback": 38
       },
+      "choreography": {
+        "primitive": "guard-pivot",
+        "intensity": 1.22
+      },
       "ribbon": {
         "profile": "guard-plane",
         "radialStart": 0.08,
@@ -18093,6 +18500,10 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "rangeMultiplier": 1.22,
         "damageMultiplier": 1.7,
         "knockback": 80
+      },
+      "choreography": {
+        "primitive": "side-cut",
+        "intensity": 1.38
       },
       "ribbon": {
         "profile": "massed-wedge",

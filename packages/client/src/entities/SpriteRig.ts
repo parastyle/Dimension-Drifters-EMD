@@ -4,6 +4,7 @@ import {
   CHOP_IMPACT_FRAC,
   comboStepForChain,
   composeWeaponTransform,
+  createKatanaChoreographySample,
   DUAL_MELEE_PAIR_BAR,
   DUAL_MELEE_SEQUENCE_LENGTH,
   decodeGearCosmetics,
@@ -75,6 +76,7 @@ import {
   STANCE_POUND,
   STANCE_SLIDE,
   type SwingDescriptor,
+  sampleKatanaChoreography,
   swingDescriptorFor,
   swingDescriptorWithComboStep,
   TICK_MS,
@@ -95,7 +97,6 @@ import {
   weaponSpriteTransform,
   weaponUsesAuthoritativeEnvelopeCombo,
 } from "@dd/shared";
-import { rollTumbleRotation } from "../vfx/jump-effects.js";
 import Phaser from "phaser";
 import {
   type WeaponArtGeometry,
@@ -198,6 +199,7 @@ import {
 } from "../sprites/pose-language.js";
 import { secondaryGripHandRendersAbove } from "../sprites/secondary-grip.js";
 import { tomeOpenArtFor, tomeOpenRotationForAim } from "../sprites/tome-open-art.js";
+import { rollTumbleRotation } from "../vfx/jump-effects.js";
 import { PARTICLE_PACKS } from "../vfx/particle-manifest.js";
 import { paintedParticleDominance, paintedParticleScale } from "../vfx/particles.js";
 import { screenTrueScaleX } from "../vfx/screen-true-transform.js";
@@ -2209,6 +2211,7 @@ export class SpriteRig {
   /** One retained output record keeps the pure pose sampler allocation-free in the hot path. */
   private readonly closeBladeInput = createCloseBladePoseInput();
   private readonly closeBladePose = createCloseBladePoseSample();
+  private readonly katanaChoreographyPose = createKatanaChoreographySample();
   private closeBladePoseActive = false;
   private closeBladeBodyX = 0;
   private closeBladeBodyY = 0;
@@ -8581,7 +8584,12 @@ export class SpriteRig {
         const snapshotVariant = live ? this.swingVariant : hold.variant;
         poseVariant = snapshotVariant;
         poseDirection = live ? this.swingDirection : hold.direction;
-        comboPose = meleeComboSequenceFor(family, snapshotVariant)[snapshotStep];
+        const weaponSelection = meleeComboSelectionFor(def, style);
+        const poseSequence =
+          weaponSelection?.family === family && weaponSelection.variant === snapshotVariant
+            ? weaponSelection.sequence
+            : meleeComboSequenceFor(family, snapshotVariant);
+        comboPose = poseSequence[snapshotStep];
         if (dur > 0 && el < dur) tt = el / dur;
         else if (sceneNow <= hold.expiresAtMs) tt = 1;
         else if (sceneNow < hold.expiresAtMs + COMBO_HOLD_RELEASE_MS) {
@@ -8608,6 +8616,7 @@ export class SpriteRig {
         );
         tt = remapPoseTimeAtImpact(tt, comboPose.timing.impact, descriptorImpact);
       }
+      const poseHand = comboPose?.choreography?.hand ?? comboPose?.hand;
       if (style && tt >= 0) {
         // Combo parts follow the procedural-jiggle ownership contract: anticipation ramps in, danger is
         // exact, follow-through releases energy, and the cadence hold owns nothing.
@@ -8625,8 +8634,8 @@ export class SpriteRig {
           }
           const own = actionOwnershipAt(tt, ownActiveStart, ownActiveEnd, ownFollowEnd);
           ownFeet = own;
-          if (comboPose.hand === "lead" || comboPose.hand === "both") ownFront = own;
-          if (comboPose.hand === "off" || comboPose.hand === "both") ownBack = own;
+          if (poseHand === "lead" || poseHand === "both") ownFront = own;
+          if (poseHand === "off" || poseHand === "both") ownBack = own;
         } else {
           ownFront = 1;
           ownBack = 1;
@@ -8649,7 +8658,62 @@ export class SpriteRig {
         const poseStyle = comboPose ? comboPresentationStyleFor(family, comboPose.motion) : style;
         // KNOWN STAGE-1 RESIDUAL: every signed reverse/dual/overhead comboPose below is presentation-only;
         // server damage still advances once through its untouched centered, positive single-sweep descriptor.
-        if (def.performance?.twirl) {
+        if (comboPose?.choreography) {
+          sampleKatanaChoreography(comboPose, tt, this.katanaChoreographyPose);
+          const sampled = this.katanaChoreographyPose;
+          const fx = Math.cos(aimLocal);
+          const fy = Math.sin(aimLocal);
+          const nx = -fy;
+          const ny = fx;
+          const weaponX = TARGET_BODY_H * (fx * sampled.weaponForward + nx * sampled.weaponLateral);
+          const weaponY = TARGET_BODY_H * (fy * sampled.weaponForward + ny * sampled.weaponLateral);
+          const sampledAngle = aimLocal + sampled.weaponAngleOffset;
+          if (this.weapons.length > 1 && poseHand === "off") {
+            weaponAngle = restA;
+            backWeaponAngle = sampledAngle - this.offWeaponLean();
+            this.swingBackOffX = weaponX;
+            this.swingBackOffY = weaponY;
+            swingChannelsRouted = true;
+          } else {
+            weaponAngle = sampledAngle;
+            this.swingOffX = weaponX;
+            this.swingOffY = weaponY;
+            if (this.weapons.length > 1 && poseHand === "both") {
+              backWeaponAngle = sampledAngle + Math.PI - this.offWeaponLean();
+              this.swingBackOffX = weaponX - nx * TARGET_BODY_H * 0.14;
+              this.swingBackOffY = weaponY - ny * TARGET_BODY_H * 0.14;
+              swingChannelsRouted = true;
+            }
+          }
+          this.body.x += TARGET_BODY_H * (fx * sampled.bodyForward + nx * sampled.bodyLateral);
+          this.body.y += TARGET_BODY_H * (fy * sampled.bodyForward + ny * sampled.bodyLateral);
+          this.body.rotation += sampled.bodyTurn;
+          this.body.scaleX *= sampled.bodyScaleX;
+          this.body.scaleY *= sampled.bodyScaleY;
+          this.attackLiftPx += TARGET_BODY_H * sampled.bodyLift;
+          this.root.rotation += sampled.paperRotation;
+          this.attackHandSpacing = TARGET_BODY_H * sampled.handSpacing;
+          this.weaponLengthScale = sampled.weaponLengthScale;
+          this.attackWeaponDepth = sampled.weaponDepth;
+          this.attackFrontFootX =
+            TARGET_BODY_H * (fx * sampled.frontFootForward + nx * sampled.frontFootLateral);
+          this.attackFrontFootY =
+            TARGET_BODY_H * (fy * sampled.frontFootForward + ny * sampled.frontFootLateral);
+          this.attackBackFootX =
+            TARGET_BODY_H * (fx * sampled.backFootForward + nx * sampled.backFootLateral);
+          this.attackBackFootY =
+            TARGET_BODY_H * (fy * sampled.backFootForward + ny * sampled.backFootLateral);
+          this.attackFrontFootBlend = Math.max(this.attackFrontFootBlend, ownFeet);
+          this.attackBackFootBlend = Math.max(this.attackBackFootBlend, ownFeet);
+          this.attackShadowX =
+            TARGET_BODY_H * (fx * sampled.shadowForward + nx * sampled.shadowLateral);
+          this.attackShadowY =
+            TARGET_BODY_H * (fy * sampled.shadowForward + ny * sampled.shadowLateral);
+          this.attackShadowRotation = aimLocal + sampled.shadowRotation;
+          this.attackShadowScaleX = sampled.shadowScaleX;
+          this.attackShadowScaleY = sampled.shadowScaleY;
+          this.signatureMotion = comboPose.motion;
+        } else if (def.performance?.twirl) {
           // Named twirls own the continuous orbit seam, even when an older presentation combo remains.
           this.orbitT = tt;
           this.orbitSpin = true;

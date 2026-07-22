@@ -1,0 +1,8 @@
+{
+  "description": "A remote Cover cell at (58,58) creates a second Cover component. Shared validation rejects the topology today but does not return the offending component coordinate.",
+  "handoff": "ldtk-runtime-integration",
+  "missingSharedLaw": "Return a concrete disconnected-zone witness coordinate from validateArena instead of only invalid/disconnected map-zone layout.",
+  "expected": "shared validateArena rejected authored geometry: invalid/disconnected map-zone layout",
+  "expectedWitness": { "layer": "Zones", "col": 58, "row": 58 },
+  "mutation": { "kind": "set-int-grid-cell", "layer": "Zones", "col": 58, "row": 58, "value": 1 }
+}

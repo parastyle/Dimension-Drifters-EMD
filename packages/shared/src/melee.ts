@@ -66,6 +66,8 @@ declare module "./weapons.js" {
   interface WeaponDef {
     comboFamily?: MeleeComboFamily;
     comboVariant?: MeleeComboVariant;
+    /** Attack-only motion recipe overlaid on the weapon's unchanged family/variant routing. */
+    comboChoreography?: readonly Readonly<KatanaChoreography>[];
   }
 }
 
@@ -113,6 +115,24 @@ export type MeleeComboMotion =
   | "rest-downswing"
   | "waist-orbit";
 export type MeleeComboHand = "lead" | "off" | "both";
+export type KatanaChoreographyPrimitive =
+  | "side-cut"
+  | "wave-cut"
+  | "knee-stab"
+  | "lunge"
+  | "backflip"
+  | "rising-cut"
+  | "spin-cut"
+  | "guard-pivot";
+
+/** Attack-only body choreography. Existing timing/path fields remain the authority and economy contract;
+ * this selector chooses one reusable visible paper/weapon/foot sentence on that accepted clock. */
+export interface KatanaChoreography {
+  readonly primitive: KatanaChoreographyPrimitive;
+  readonly intensity: number;
+  /** Presentation-hand routing for paired blades; omitted preserves the underlying combo step. */
+  readonly hand?: MeleeComboHand;
+}
 /** Dual-wield's six-beat presentation bar. Crossfall stays presentation-only server-side: its accepted
  * damage event remains one lead-hand sweep, while clients render the authored `both` pose. */
 export const DUAL_MELEE_PAIR_BAR = Object.freeze([
@@ -178,6 +198,292 @@ export interface MeleeComboStep {
   };
   /** Cosmetic business-edge variation. Geometry/damage consumers must continue to use `path`/descriptor. */
   readonly ribbon?: Readonly<MeleeComboRibbon>;
+  /** V7 owner-ordered katana body motion. It is inert for authority and absent from rest-pose resolution. */
+  readonly choreography?: Readonly<KatanaChoreography>;
+}
+
+/** Normalized allocation-free katana pose channels. SpriteRig supplies body-height pixels and the live aim
+ * basis; unit/live gates can sample the exact same vocabulary without Phaser or a second animation clock. */
+export interface KatanaChoreographySample {
+  active: boolean;
+  weaponAngleOffset: number;
+  weaponForward: number;
+  weaponLateral: number;
+  bodyForward: number;
+  bodyLateral: number;
+  bodyLift: number;
+  bodyTurn: number;
+  bodyScaleX: number;
+  bodyScaleY: number;
+  frontFootForward: number;
+  frontFootLateral: number;
+  backFootForward: number;
+  backFootLateral: number;
+  paperRotation: number;
+  handSpacing: number;
+  weaponLengthScale: number;
+  weaponDepth: -1 | 0 | 1;
+  shadowForward: number;
+  shadowLateral: number;
+  shadowRotation: number;
+  shadowScaleX: number;
+  shadowScaleY: number;
+}
+
+export function createKatanaChoreographySample(): KatanaChoreographySample {
+  return {
+    active: false,
+    weaponAngleOffset: 0,
+    weaponForward: 0,
+    weaponLateral: 0,
+    bodyForward: 0,
+    bodyLateral: 0,
+    bodyLift: 0,
+    bodyTurn: 0,
+    bodyScaleX: 1,
+    bodyScaleY: 1,
+    frontFootForward: 0,
+    frontFootLateral: 0,
+    backFootForward: 0,
+    backFootLateral: 0,
+    paperRotation: 0,
+    handSpacing: 0.42,
+    weaponLengthScale: 1,
+    weaponDepth: 0,
+    shadowForward: 0,
+    shadowLateral: 0,
+    shadowRotation: 0,
+    shadowScaleX: 1,
+    shadowScaleY: 1,
+  };
+}
+
+function choreographyEase(value: number): number {
+  const t = clamp(value, 0, 1);
+  return t * t * (3 - 2 * t);
+}
+
+function resetKatanaChoreographySample(out: KatanaChoreographySample): void {
+  out.active = false;
+  out.weaponAngleOffset = 0;
+  out.weaponForward = 0;
+  out.weaponLateral = 0;
+  out.bodyForward = 0;
+  out.bodyLateral = 0;
+  out.bodyLift = 0;
+  out.bodyTurn = 0;
+  out.bodyScaleX = 1;
+  out.bodyScaleY = 1;
+  out.frontFootForward = 0;
+  out.frontFootLateral = 0;
+  out.backFootForward = 0;
+  out.backFootLateral = 0;
+  out.paperRotation = 0;
+  out.handSpacing = 0.42;
+  out.weaponLengthScale = 1;
+  out.weaponDepth = 0;
+  out.shadowForward = 0;
+  out.shadowLateral = 0;
+  out.shadowRotation = 0;
+  out.shadowScaleX = 1;
+  out.shadowScaleY = 1;
+}
+
+/** Sample one V7 katana primitive on its authored combo-step fractions. The returned root rotation is
+ * paper-only: it never changes player position or authority. At `t=1` every channel is exact identity. */
+export function sampleKatanaChoreography(
+  step: Readonly<MeleeComboStep>,
+  t: number,
+  out: KatanaChoreographySample,
+): void {
+  resetKatanaChoreographySample(out);
+  const choreography = step.choreography;
+  if (!choreography) return;
+  const tt = clamp(t, 0, 1);
+  if (tt >= 1) return;
+  out.active = true;
+  const a = Math.max(0.01, step.timing.activeStart);
+  const b = Math.max(a + 0.01, step.timing.activeEnd);
+  const follow = Math.max(b, step.timing.followEnd);
+  const wind = choreographyEase(tt / a);
+  const strike = choreographyEase((tt - a) / Math.max(0.01, b - a));
+  const release =
+    tt <= follow ? 1 : 1 - choreographyEase((tt - follow) / Math.max(0.01, 1 - follow));
+  const own = (tt < a ? 0.35 * wind : 1) * release;
+  const direction = step.direction < 0 ? -1 : 1;
+  const intensity = clamp(choreography.intensity, 0.65, 1.4);
+  const travel = (-0.22 * wind + 1.22 * strike) * own;
+  const arc = (-1.5 * wind + 2.55 * strike) * direction * own;
+
+  switch (choreography.primitive) {
+    case "side-cut":
+      out.weaponAngleOffset = arc * intensity;
+      out.weaponForward = 0.18 * travel * intensity;
+      out.weaponLateral = direction * (-0.12 * wind + 0.22 * strike) * own * intensity;
+      out.bodyForward = 0.09 * travel * intensity;
+      out.bodyLateral = direction * 0.07 * Math.sin(Math.PI * strike) * own;
+      out.bodyTurn = direction * (-0.18 * wind + 0.38 * strike) * own * intensity;
+      out.bodyScaleX = 1 - 0.08 * own;
+      out.bodyScaleY = 1 - 0.07 * Math.sin(Math.PI * strike) * own;
+      out.frontFootForward = 0.28 * strike * own * intensity;
+      out.frontFootLateral = direction * 0.16 * own;
+      out.backFootForward = -0.1 * own;
+      out.backFootLateral = -direction * 0.11 * own;
+      out.handSpacing = 0.42 + 0.08 * Math.sin(Math.PI * strike) * intensity;
+      out.shadowForward = 0.08 * strike * own;
+      out.shadowLateral = direction * 0.04 * own;
+      out.shadowRotation = direction * 0.3 * own;
+      out.shadowScaleX = 1 + 0.18 * own;
+      out.shadowScaleY = 1 - 0.14 * own;
+      break;
+    case "wave-cut": {
+      const wave = Math.sin(Math.PI * 2 * strike);
+      out.weaponAngleOffset =
+        (direction * (-1.18 * wind + 2.2 * strike) + 0.42 * wave) * own * intensity;
+      out.weaponForward = (0.04 + 0.2 * strike) * own * intensity;
+      out.weaponLateral = direction * (0.06 + 0.25 * Math.sin(Math.PI * strike)) * own * intensity;
+      out.bodyForward = 0.07 * strike * own;
+      out.bodyLateral = direction * 0.1 * wave * own;
+      out.bodyLift = 0.08 * Math.sin(Math.PI * strike) * own * intensity;
+      out.bodyTurn = direction * 0.24 * wave * own;
+      out.bodyScaleX = 1 - 0.05 * Math.abs(wave) * own;
+      out.bodyScaleY = 1 + 0.08 * Math.sin(Math.PI * strike) * own;
+      out.frontFootForward = 0.16 * strike * own;
+      out.frontFootLateral = direction * 0.2 * wave * own;
+      out.backFootForward = -0.08 * own;
+      out.backFootLateral = -direction * 0.13 * wave * own;
+      out.handSpacing = 0.4 + 0.1 * Math.abs(wave) * intensity;
+      out.weaponLengthScale = 1 - 0.12 * Math.abs(wave);
+      out.weaponDepth = wave < -0.15 ? -1 : wave > 0.15 ? 1 : 0;
+      out.shadowLateral = direction * 0.06 * wave;
+      out.shadowRotation = 0.45 * wave;
+      out.shadowScaleX = 1 + 0.14 * Math.abs(wave);
+      out.shadowScaleY = 1 - 0.1 * Math.abs(wave);
+      break;
+    }
+    case "knee-stab":
+      out.weaponAngleOffset = direction * 0.1 * (1 - strike) * own;
+      out.weaponForward = (-0.2 * wind + 0.98 * strike) * own * intensity;
+      out.weaponLateral = direction * 0.06 * (1 - strike) * own;
+      out.bodyForward = 0.2 * strike * own * intensity;
+      out.bodyLateral = -direction * 0.04 * own;
+      out.bodyTurn = direction * 0.18 * strike * own;
+      out.bodyScaleX = 1 + 0.13 * own * intensity;
+      out.bodyScaleY = 1 - 0.3 * own * intensity;
+      out.frontFootForward = 0.42 * strike * own * intensity;
+      out.frontFootLateral = direction * 0.2 * own;
+      out.backFootForward = -0.2 * own;
+      out.backFootLateral = -direction * 0.18 * own;
+      out.handSpacing = 0.28 + 0.08 * (1 - strike);
+      out.shadowForward = 0.14 * strike * own;
+      out.shadowScaleX = 1 + 0.25 * own;
+      out.shadowScaleY = 1 - 0.22 * own;
+      break;
+    case "lunge":
+      out.weaponAngleOffset = -direction * 0.08 * Math.sin(Math.PI * strike) * own;
+      out.weaponForward = (-0.24 * wind + 1.12 * strike) * own * intensity;
+      out.weaponLateral = direction * 0.07 * Math.sin(Math.PI * strike) * own;
+      out.bodyForward = 0.3 * strike * own * intensity;
+      out.bodyLateral = -direction * 0.05 * own;
+      out.bodyTurn = direction * 0.24 * strike * own;
+      out.bodyScaleX = 1 + 0.18 * strike * own * intensity;
+      out.bodyScaleY = 1 - 0.16 * strike * own;
+      out.frontFootForward = 0.58 * strike * own * intensity;
+      out.frontFootLateral = direction * 0.14 * own;
+      out.backFootForward = -0.24 * own;
+      out.backFootLateral = -direction * 0.12 * own;
+      out.handSpacing = 0.34 + 0.06 * strike;
+      out.shadowForward = 0.22 * strike * own;
+      out.shadowScaleX = 1 + 0.34 * strike * own;
+      out.shadowScaleY = 1 - 0.24 * strike * own;
+      break;
+    case "backflip": {
+      const flipT = clamp(tt / Math.max(0.01, follow), 0, 1);
+      const flip = choreographyEase(flipT);
+      out.weaponAngleOffset = direction * (0.45 + Math.PI * 2 * flip) * own;
+      out.weaponForward = 0.12 * Math.sin(Math.PI * flip) * own;
+      out.weaponLateral = direction * 0.14 * Math.sin(Math.PI * 2 * flip) * own;
+      out.bodyForward = -0.08 * Math.sin(Math.PI * flip) * intensity;
+      out.bodyLift = 0.46 * Math.sin(Math.PI * flip) * intensity;
+      out.bodyTurn = direction * 0.15 * Math.sin(Math.PI * 2 * flip);
+      out.bodyScaleX = 1 - 0.16 * Math.sin(Math.PI * flip);
+      out.bodyScaleY = 1 + 0.14 * Math.sin(Math.PI * flip);
+      out.frontFootForward = -0.12 * Math.sin(Math.PI * flip);
+      out.frontFootLateral = direction * 0.22 * Math.sin(Math.PI * flip);
+      out.backFootForward = -0.18 * Math.sin(Math.PI * flip);
+      out.backFootLateral = -direction * 0.22 * Math.sin(Math.PI * flip);
+      out.paperRotation = tt < follow ? -direction * Math.PI * 2 * flip : 0;
+      out.handSpacing = 0.3 + 0.12 * Math.abs(Math.cos(Math.PI * flip));
+      out.weaponLengthScale = 0.72 + 0.28 * Math.abs(Math.cos(Math.PI * 2 * flip));
+      const depthWave = Math.sin(Math.PI * 2 * flip);
+      out.weaponDepth = Math.abs(depthWave) < 0.08 ? 0 : depthWave < 0 ? -1 : 1;
+      out.shadowScaleX = 1 - 0.42 * Math.sin(Math.PI * flip) * release;
+      out.shadowScaleY = 1 + 0.28 * Math.sin(Math.PI * flip) * release;
+      break;
+    }
+    case "rising-cut":
+      out.weaponAngleOffset = direction * (1.45 * wind - 2.9 * strike) * own * intensity;
+      out.weaponForward = 0.14 * strike * own;
+      out.weaponLateral = -direction * (0.1 + 0.16 * strike) * own * intensity;
+      out.bodyForward = 0.08 * strike * own;
+      out.bodyLateral = -direction * 0.09 * own;
+      out.bodyLift = 0.2 * strike * own * intensity;
+      out.bodyTurn = -direction * 0.34 * strike * own;
+      out.bodyScaleX = 1 - 0.08 * strike * own;
+      out.bodyScaleY = 1 + 0.2 * strike * own * intensity;
+      out.frontFootForward = 0.22 * strike * own;
+      out.frontFootLateral = -direction * 0.16 * own;
+      out.backFootForward = -0.12 * own;
+      out.backFootLateral = direction * 0.13 * own;
+      out.handSpacing = 0.38 + 0.12 * strike;
+      out.shadowScaleX = 1 - 0.16 * strike * own;
+      out.shadowScaleY = 1 + 0.2 * strike * own;
+      break;
+    case "spin-cut": {
+      const spinT = choreographyEase(tt / Math.max(0.01, follow));
+      const spinWave = Math.sin(Math.PI * 2 * spinT);
+      out.weaponAngleOffset = direction * Math.PI * 2 * spinT * (tt < follow ? 1 : 0);
+      out.weaponForward = 0.16 * Math.sin(Math.PI * spinT) * intensity;
+      out.weaponLateral = direction * 0.2 * spinWave * intensity;
+      out.bodyForward = 0.1 * Math.sin(Math.PI * spinT);
+      out.bodyLateral = direction * 0.1 * spinWave;
+      out.bodyLift = 0.1 * Math.sin(Math.PI * spinT) * intensity;
+      out.bodyTurn = direction * 0.75 * spinWave * intensity;
+      out.bodyScaleX = 1 - 0.32 * Math.abs(spinWave);
+      out.bodyScaleY = 1 - 0.08 * Math.sin(Math.PI * spinT);
+      out.frontFootForward = 0.18 * Math.sin(Math.PI * spinT);
+      out.frontFootLateral = direction * 0.22 * spinWave;
+      out.backFootForward = -0.1 * Math.sin(Math.PI * spinT);
+      out.backFootLateral = -direction * 0.18 * spinWave;
+      out.handSpacing = 0.42 - 0.08 * own + 0.14 * Math.abs(spinWave);
+      out.weaponLengthScale = 0.28 + 0.72 * Math.abs(Math.cos(Math.PI * spinT));
+      out.weaponDepth = Math.abs(spinWave) < 0.08 ? 0 : spinWave < 0 ? -1 : 1;
+      out.shadowRotation = direction * Math.PI * spinT * release;
+      out.shadowScaleX = 1 + 0.22 * Math.sin(Math.PI * spinT);
+      out.shadowScaleY = 1 - 0.18 * Math.sin(Math.PI * spinT);
+      break;
+    }
+    case "guard-pivot":
+      out.weaponAngleOffset = direction * (-0.92 * wind + 1.28 * strike) * own * intensity;
+      out.weaponForward = (-0.08 * wind + 0.3 * strike) * own;
+      out.weaponLateral = direction * (0.18 * wind - 0.24 * strike) * own * intensity;
+      out.bodyForward = -0.04 * wind * own + 0.08 * strike * own;
+      out.bodyLateral = direction * 0.12 * (wind - strike) * own;
+      out.bodyTurn = direction * (-0.32 * wind + 0.46 * strike) * own * intensity;
+      out.bodyScaleX = 1 - 0.14 * own;
+      out.bodyScaleY = 1 - 0.08 * own;
+      out.frontFootForward = 0.12 * strike * own;
+      out.frontFootLateral = direction * 0.24 * own;
+      out.backFootForward = -0.12 * own;
+      out.backFootLateral = -direction * 0.2 * own;
+      out.handSpacing = 0.5 - 0.12 * strike;
+      out.weaponDepth = strike < 0.5 ? -1 : 1;
+      out.shadowLateral = direction * 0.08 * (wind - strike);
+      out.shadowRotation = direction * 0.55 * (wind - strike);
+      out.shadowScaleX = 1 + 0.16 * own;
+      out.shadowScaleY = 1 - 0.12 * own;
+      break;
+  }
 }
 
 /** §45 section-B authored 3-hit cycles. Arrays/step roots are frozen and fields are readonly; all fractions
@@ -844,6 +1150,7 @@ export const DRAWN_FROST_COMBO_STEP = Object.freeze({
     widthMultiplier: 1,
     end: "clean" as const,
   },
+  choreography: { primitive: "guard-pivot" as const, intensity: 1.08 },
 } as const satisfies MeleeComboStep);
 
 export const TSUBA_CHECK_COMBO_STEP = Object.freeze({
@@ -866,6 +1173,7 @@ export const TSUBA_CHECK_COMBO_STEP = Object.freeze({
     widthMultiplier: 0,
     end: "clean" as const,
   },
+  choreography: { primitive: "knee-stab" as const, intensity: 1.16 },
 } as const satisfies MeleeComboStep);
 
 export const SENTENCE_FALL_COMBO_STEP = Object.freeze({
@@ -889,6 +1197,7 @@ export const SENTENCE_FALL_COMBO_STEP = Object.freeze({
     end: "squared" as const,
     setupEcho: "neutral-dim" as const,
   },
+  choreography: { primitive: "side-cut" as const, intensity: 1.3 },
 } as const satisfies MeleeComboStep);
 
 // ── Stormpetal Odachi "Petalfall": the longest blade moves like it weighs nothing; slightly early. ──
@@ -912,6 +1221,7 @@ export const CROSSWIND_COMBO_STEP = Object.freeze({
     widthMultiplier: 0.92,
     end: "clean" as const,
   },
+  choreography: { primitive: "wave-cut" as const, intensity: 1.06 },
 } as const satisfies MeleeComboStep);
 
 export const LEAF_TURN_COMBO_STEP = Object.freeze({
@@ -934,6 +1244,7 @@ export const LEAF_TURN_COMBO_STEP = Object.freeze({
     widthMultiplier: 0,
     end: "clean" as const,
   },
+  choreography: { primitive: "guard-pivot" as const, intensity: 0.82 },
 } as const satisfies MeleeComboStep);
 
 export const PETALFALL_COMBO_STEP = Object.freeze({
@@ -956,6 +1267,7 @@ export const PETALFALL_COMBO_STEP = Object.freeze({
     widthMultiplier: 1.104,
     end: "torn" as const,
   },
+  choreography: { primitive: "backflip" as const, intensity: 1.02 },
 } as const satisfies MeleeComboStep);
 
 // ── Hailwidow Katana "Three Hails": staccato — the model's fractions at half the pose. ──
@@ -979,6 +1291,7 @@ export const FIRST_HAIL_COMBO_STEP = Object.freeze({
     widthMultiplier: 1,
     end: "clean" as const,
   },
+  choreography: { primitive: "side-cut" as const, intensity: 0.82 },
 } as const satisfies MeleeComboStep);
 
 export const WIDOWS_KNOCK_COMBO_STEP = Object.freeze({
@@ -1001,6 +1314,7 @@ export const WIDOWS_KNOCK_COMBO_STEP = Object.freeze({
     widthMultiplier: 0,
     end: "clean" as const,
   },
+  choreography: { primitive: "knee-stab" as const, intensity: 0.92 },
 } as const satisfies MeleeComboStep);
 
 export const SPLINTER_COMBO_STEP = Object.freeze({
@@ -1023,6 +1337,7 @@ export const SPLINTER_COMBO_STEP = Object.freeze({
     widthMultiplier: 1.15,
     end: "torn" as const,
   },
+  choreography: { primitive: "rising-cut" as const, intensity: 1.18 },
 } as const satisfies MeleeComboStep);
 
 // ── Voltfang Tachi "Fang, Then Thunder": contact early, paint late; the coil hums into the fall. ──
@@ -1207,6 +1522,51 @@ export interface MeleeComboSelection {
   readonly sequence: readonly Readonly<MeleeComboStep>[];
 }
 
+const WEAPON_CHOREOGRAPHY_SEQUENCE_CACHE = new Map<
+  string,
+  {
+    readonly base: readonly Readonly<MeleeComboStep>[];
+    readonly recipe: readonly Readonly<KatanaChoreography>[];
+    readonly sequence: readonly Readonly<MeleeComboStep>[];
+  }
+>();
+
+function choreographedSequenceFor(
+  def: WeaponDef,
+  base: readonly Readonly<MeleeComboStep>[],
+): readonly Readonly<MeleeComboStep>[] {
+  const recipe = def.comboChoreography;
+  if (!recipe) return base;
+  if (recipe.length !== base.length) {
+    throw new RangeError(
+      `${def.id} has ${recipe.length} choreography beats for a ${base.length}-beat combo`,
+    );
+  }
+  const cached = WEAPON_CHOREOGRAPHY_SEQUENCE_CACHE.get(def.id);
+  if (cached?.base === base && cached.recipe === recipe) return cached.sequence;
+  const sequence = Object.freeze(
+    base.map((step, index) => {
+      const choreography = recipe[index];
+      if (!choreography) throw new RangeError(`${def.id} choreography beat ${index} is missing`);
+      return Object.freeze({
+        ...step,
+        choreography: Object.freeze({ ...choreography }),
+      });
+    }),
+  );
+  WEAPON_CHOREOGRAPHY_SEQUENCE_CACHE.set(def.id, { base, recipe, sequence });
+  return sequence;
+}
+
+function comboSelectionForWeapon(
+  def: WeaponDef,
+  family: MeleeComboFamily,
+  variant: MeleeComboVariant,
+  sequence: readonly Readonly<MeleeComboStep>[],
+): MeleeComboSelection {
+  return { family, variant, sequence: choreographedSequenceFor(def, sequence) };
+}
+
 export function meleeComboFamilyForStyle(
   style: SwingStyle | undefined,
 ): MeleeComboFamily | undefined {
@@ -1296,41 +1656,31 @@ export function meleeComboSelectionFor(
 ): MeleeComboSelection | undefined {
   const closeBladeVariant = closeBladeComboVariantFor(def, style);
   if (def.comboVariant === "dagger" || def.comboVariant === "claw") {
-    return {
-      family: "rake",
-      variant: def.comboVariant,
-      sequence: MELEE_COMBO_SEQUENCES.rake,
-    };
+    return comboSelectionForWeapon(def, "rake", def.comboVariant, MELEE_COMBO_SEQUENCES.rake);
   }
   if (def.comboVariant && def.comboVariant !== "default") {
     const family = def.comboFamily ?? familyForSignatureVariant(def.comboVariant);
-    return {
+    return comboSelectionForWeapon(
+      def,
       family,
-      variant: def.comboVariant,
-      sequence: meleeComboSequenceFor(family, def.comboVariant),
-    };
+      def.comboVariant,
+      meleeComboSequenceFor(family, def.comboVariant),
+    );
   }
   if (def.comboFamily) {
     const variant = def.comboFamily === "rake" ? (closeBladeVariant ?? "default") : "default";
-    return {
-      family: def.comboFamily,
+    return comboSelectionForWeapon(
+      def,
+      def.comboFamily,
       variant,
-      sequence: meleeComboSequenceFor(def.comboFamily, variant),
-    };
+      meleeComboSequenceFor(def.comboFamily, variant),
+    );
   }
   if (closeBladeVariant) {
-    return {
-      family: "rake",
-      variant: closeBladeVariant,
-      sequence: MELEE_COMBO_SEQUENCES.rake,
-    };
+    return comboSelectionForWeapon(def, "rake", closeBladeVariant, MELEE_COMBO_SEQUENCES.rake);
   }
   if (style === "punch") {
-    return {
-      family: "punch",
-      variant: "default",
-      sequence: MELEE_COMBO_SEQUENCES.punch,
-    };
+    return comboSelectionForWeapon(def, "punch", "default", MELEE_COMBO_SEQUENCES.punch);
   }
 
   const familyTag = def.tags.family.toLowerCase();
@@ -1362,15 +1712,11 @@ export function meleeComboSelectionFor(
 
   if (variant) {
     const family = familyForSignatureVariant(variant);
-    return {
-      family,
-      variant,
-      sequence: MELEE_COMBO_VARIANT_SEQUENCES[variant],
-    };
+    return comboSelectionForWeapon(def, family, variant, MELEE_COMBO_VARIANT_SEQUENCES[variant]);
   }
   const family = meleeComboFamilyForStyle(style);
   return family
-    ? { family, variant: "default", sequence: MELEE_COMBO_SEQUENCES[family] }
+    ? comboSelectionForWeapon(def, family, "default", MELEE_COMBO_SEQUENCES[family])
     : undefined;
 }
 
@@ -1487,6 +1833,7 @@ export interface SwingDescriptor {
   readonly comboTiming?: Readonly<MeleeComboStep["timing"]>;
   readonly comboPath?: Readonly<MeleeComboStep["path"]>;
   readonly comboRibbon?: Readonly<MeleeComboRibbon>;
+  readonly comboChoreography?: Readonly<KatanaChoreography>;
 }
 
 /** Worn gear is animated around the hand, not mounted by the authored hilt pivot. Shared because this same
@@ -1660,10 +2007,11 @@ export function swingDescriptorWithComboStep(
     comboStep: index,
     motion: step.motion,
     comboDirection: step.direction,
-    comboHand: step.hand,
+    comboHand: step.choreography?.hand ?? step.hand,
     comboTiming: step.timing,
     comboPath: step.path,
     comboRibbon: step.ribbon,
+    comboChoreography: step.choreography,
   });
 }
 

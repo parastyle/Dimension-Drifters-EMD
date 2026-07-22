@@ -1,0 +1,5 @@
+{
+  "description": "Layer instance grid drift cannot be resampled by the importer.",
+  "expected": "Terrain grid must be 60x60 at 80px",
+  "mutation": { "kind": "set-layer-grid-size", "layer": "Terrain", "value": 64 }
+}

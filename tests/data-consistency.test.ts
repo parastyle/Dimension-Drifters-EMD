@@ -224,12 +224,21 @@ describe("§43 expansion codegen: every authored gameplay field survives into th
         expect(def.comboFamily, `${w.id}.comboFamily`).toBe(w.comboFamily);
       if (w.comboVariant !== undefined) {
         expect(def.comboVariant, `${w.id}.comboVariant`).toBe(w.comboVariant);
-        expect(
-          MELEE_COMBO_VARIANT_SEQUENCES[
-            w.comboVariant as keyof typeof MELEE_COMBO_VARIANT_SEQUENCES
-          ],
-          `${w.id}.comboBar`,
-        ).toEqual(w.comboBar);
+        // This suite exists to prove authored fields SURVIVE codegen, so the assertion is a subset
+        // check, not deep equality. The generator legitimately DENORMALIZES: V7 katana movesets are
+        // authored as a parallel `comboChoreography` array and merged into each step as
+        // `step.choreography` for runtime convenience. Exact equality would reject that addition
+        // while catching nothing extra — a dropped or mutated authored field still fails below.
+        const emitted = MELEE_COMBO_VARIANT_SEQUENCES[
+          w.comboVariant as keyof typeof MELEE_COMBO_VARIANT_SEQUENCES
+        ] as Record<string, unknown>[] | undefined;
+        expect(emitted, `${w.id}.comboBar present`).toBeDefined();
+        expect(emitted, `${w.id}.comboBar length`).toHaveLength(w.comboBar?.length ?? 0);
+        (w.comboBar as Record<string, unknown>[] | undefined)?.forEach((step, i) => {
+          for (const [key, value] of Object.entries(step)) {
+            expect(emitted?.[i]?.[key], `${w.id}.comboBar[${i}].${key}`).toEqual(value);
+          }
+        });
       }
       if (w.katanaHook !== undefined)
         expect(def.katanaHook, `${w.id}.katanaHook`).toEqual(w.katanaHook);
