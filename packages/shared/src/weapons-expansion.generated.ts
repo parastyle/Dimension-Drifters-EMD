@@ -5965,8 +5965,8 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "y": 0.62
       },
       "secondary": {
-        "x": 0.56,
-        "y": 0.66,
+        "x": 0.64,
+        "y": 0.78,
         "role": "pump"
       }
     },
@@ -6402,8 +6402,8 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "y": 0.64
       },
       "secondary": {
-        "x": 0.63,
-        "y": 0.7,
+        "x": 0.67,
+        "y": 0.76,
         "role": "pump"
       }
     },
@@ -6578,8 +6578,8 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "y": 0.62
       },
       "secondary": {
-        "x": 0.61,
-        "y": 0.7,
+        "x": 0.72,
+        "y": 0.79,
         "role": "pump"
       }
     },
@@ -6641,8 +6641,8 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "y": 0.69
       },
       "secondary": {
-        "x": 0.58,
-        "y": 0.69,
+        "x": 0.69,
+        "y": 0.68,
         "role": "pump"
       }
     },
@@ -6822,8 +6822,8 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "y": 0.72
       },
       "secondary": {
-        "x": 0.56,
-        "y": 0.69,
+        "x": 0.66,
+        "y": 0.58,
         "role": "pump"
       }
     },
@@ -7300,8 +7300,8 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "y": 0.74
       },
       "secondary": {
-        "x": 0.6,
-        "y": 0.66,
+        "x": 0.67,
+        "y": 0.49,
         "role": "pump"
       }
     },

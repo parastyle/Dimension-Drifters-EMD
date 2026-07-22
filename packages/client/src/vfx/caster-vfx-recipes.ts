@@ -53,6 +53,22 @@ export type BeamVfxRippleSignature =
   | "sawtooth"
   | "pulse-train"
   | "stutter";
+export type BeamVfxStructureFamily =
+  | "segmented-arcs"
+  | "converging-strands"
+  | "pulse-train"
+  | "flame-tongues"
+  | "ice-particles";
+
+export interface BeamVfxStructureRecipe {
+  readonly family: BeamVfxStructureFamily;
+  /** Generated sheet width as an inset fraction of the authoritative damage diameter. */
+  readonly artWidth: number;
+  /** Thin continuous readability core; Frostquill's ice-particle family deliberately uses zero. */
+  readonly readableCoreWidth: number;
+  readonly phaseRate: number;
+  readonly iceOnly?: true;
+}
 
 /** Presentation-only beam dialect. All widths are inset fractions of the authoritative damage band. */
 export interface BeamVfxRecipe {
@@ -84,6 +100,7 @@ export interface BeamVfxRecipe {
   readonly coreParticle: CasterParticleShape;
   readonly bodyFrame: number;
   readonly coreFrame: number;
+  readonly structure: BeamVfxStructureRecipe;
   readonly impact: {
     readonly points: number;
     readonly rings: number;
@@ -358,7 +375,8 @@ export const CASTER_VFX_SIGNATURES: Readonly<Partial<Record<string, CasterVfxSig
  * The complete beam catalog gets authored identities rather than element-only recolours. The renderer uses
  * these recipes for its inset width stack, motion trace, painted 96-pack ropes, and endpoint punctuation.
  */
-export const BEAM_VFX_RECIPES: Readonly<Record<string, BeamVfxRecipe>> = Object.freeze({
+const BEAM_VFX_BASE_RECIPES: Readonly<Record<string, Omit<BeamVfxRecipe, "structure">>> =
+  Object.freeze({
   "x2-voltcaster-machine-pistol": Object.freeze({
     signature: "voltcaster-needle-burst",
     widthProfile: "needle",
@@ -804,7 +822,81 @@ export const BEAM_VFX_RECIPES: Readonly<Record<string, BeamVfxRecipe>> = Object.
     coreFrame: 8,
     impact: Object.freeze({ points: 8, rings: 2, radiusScale: 0.78, spin: 3.1 }),
   }),
+  });
+
+const STRUCTURE_FAMILY_RECIPE: Readonly<
+  Record<BeamVfxStructureFamily, BeamVfxStructureRecipe>
+> = Object.freeze({
+  "segmented-arcs": Object.freeze({
+    family: "segmented-arcs",
+    artWidth: 0.88,
+    readableCoreWidth: 0.065,
+    phaseRate: 1.15,
+  }),
+  "converging-strands": Object.freeze({
+    family: "converging-strands",
+    artWidth: 0.92,
+    readableCoreWidth: 0.055,
+    phaseRate: 0.7,
+  }),
+  "pulse-train": Object.freeze({
+    family: "pulse-train",
+    artWidth: 0.84,
+    readableCoreWidth: 0.045,
+    phaseRate: 1.45,
+  }),
+  "flame-tongues": Object.freeze({
+    family: "flame-tongues",
+    artWidth: 0.9,
+    readableCoreWidth: 0.075,
+    phaseRate: 0.9,
+  }),
+  "ice-particles": Object.freeze({
+    family: "ice-particles",
+    artWidth: 0.92,
+    readableCoreWidth: 0,
+    phaseRate: 0.6,
+    iceOnly: true,
+  }),
 });
+
+/** Data-owned family distribution. BeamRenderer consumes only this resolved recipe and never branches by ID. */
+export const BEAM_STRUCTURE_FAMILY_BY_WEAPON: Readonly<
+  Record<string, BeamVfxStructureFamily>
+> = Object.freeze({
+  "x2-voltcaster-machine-pistol": "segmented-arcs",
+  "x2-stormcaller-tesla-gatling": "segmented-arcs",
+  "x2-mirage-coilrifle": "converging-strands",
+  "x2-permafrost-siege-lobber": "ice-particles",
+  "x2-doomsday-drum-cannon": "flame-tongues",
+  "x2-null-grimoire-of-the-hollow-page": "flame-tongues",
+  "x2-psalter-of-the-burning-halo": "pulse-train",
+  "x2-frostquill-compendium": "ice-particles",
+  "x2-brinequill-tidescepter": "converging-strands",
+  "x2-sunmote-reliquary-staff": "flame-tongues",
+  "x2-carrion-roost-necro-scepter": "segmented-arcs",
+  "x2-auroral-filament-wand": "converging-strands",
+  "x2-mesa-spine-thunder-stave": "converging-strands",
+  "x2-riftglass-prism-lantern": "segmented-arcs",
+  "x2-quartzlight-wayfinder": "pulse-train",
+  "x2-pearl-of-penance-censer": "pulse-train",
+  "x2-smoldering-eye-of-perdition": "flame-tongues",
+  "x2-nullsaint-reliquary": "pulse-train",
+  "x2-sanctum-brazier-staff": "converging-strands",
+  "x2-seraph-s-knuckle-reliquary": "pulse-train",
+  "x2-voidgrasp-null-gauntlet": "converging-strands",
+  "x2-glasswidow-hexweave": "segmented-arcs",
+});
+
+export const BEAM_VFX_RECIPES: Readonly<Record<string, BeamVfxRecipe>> = Object.freeze(
+  Object.fromEntries(
+    Object.entries(BEAM_VFX_BASE_RECIPES).map(([weaponId, recipe]) => {
+      const family = BEAM_STRUCTURE_FAMILY_BY_WEAPON[weaponId];
+      if (!family) throw new Error(`Missing V7 beam structure family for ${weaponId}`);
+      return [weaponId, Object.freeze({ ...recipe, structure: STRUCTURE_FAMILY_RECIPE[family] })];
+    }),
+  ) as Record<string, BeamVfxRecipe>,
+);
 
 const BOOK_FAMILIES =
   /^(?:almanac|bestiary|chapbook|compendium|grimoire|ledger|manuscript|psalter|spellbook|tome)$/;

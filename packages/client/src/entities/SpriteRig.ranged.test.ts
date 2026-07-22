@@ -9,7 +9,6 @@ import {
   createPoseLanguageSample,
   poseImpulsePending,
   samplePoseLanguage,
-  weaponFlourishSpecFor,
   weaponPoseSpecFor,
 } from "../sprites/pose-language.js";
 import {
@@ -375,23 +374,32 @@ describe("SpriteRig V3G grip and mechanism laws", () => {
     expect(out.y).toBeCloseTo(80, 10);
   });
 
-  it("samples a visible pump stroke and lever loop while reduced motion stays anchored", async () => {
-    const { sampleGunHandlingHandOffset, secondaryGripHandRendersAbove } = await import(
-      "./SpriteRig.js"
-    );
+  it("samples explicit back-forward and down-up phases while reduced motion stays anchored", async () => {
+    const {
+      gunHandlingCycleDurationMs,
+      sampleGunHandlingHandOffset,
+      secondaryGripHandRendersAbove,
+    } = await import("./SpriteRig.js");
     const out = { forward: 0, lateral: 0 };
-    sampleGunHandlingHandOffset("pump", 150, 300, 100, false, out);
-    expect(out.forward).toBeCloseTo(-9, 10);
+    const pumpDuration = gunHandlingCycleDurationMs("pump", 0.4);
+    sampleGunHandlingHandOffset("pump", pumpDuration * 0.42, pumpDuration, 100, false, out);
+    expect(out.forward).toBeCloseTo(-10, 10);
     expect(out.lateral).toBe(0);
-    sampleGunHandlingHandOffset("lever", 75, 300, 100, false, out);
-    expect(Math.hypot(out.forward, out.lateral)).toBeGreaterThan(4);
-    sampleGunHandlingHandOffset("pump", 150, 300, 100, true, out);
+    sampleGunHandlingHandOffset("pump", pumpDuration * 0.8, pumpDuration, 100, false, out);
+    expect(out.forward).toBeGreaterThan(-10);
+    const leverDuration = gunHandlingCycleDurationMs("lever", 0.34);
+    sampleGunHandlingHandOffset("lever", leverDuration * 0.4, leverDuration, 100, false, out);
+    expect(out.forward).toBeCloseTo(-3.5, 10);
+    expect(out.lateral).toBeCloseTo(7, 10);
+    sampleGunHandlingHandOffset("lever", leverDuration * 0.8, leverDuration, 100, false, out);
+    expect(out.lateral).toBeLessThan(7);
+    sampleGunHandlingHandOffset("pump", pumpDuration * 0.42, pumpDuration, 100, true, out);
     expect(out).toEqual({ forward: 0, lateral: 0 });
     expect(secondaryGripHandRendersAbove("pump")).toBe(true);
     expect(secondaryGripHandRendersAbove("lever")).toBe(true);
   });
 
-  it("arms one mechanism flourish after every accepted tagged shot", async () => {
+  it("starts one immediate mechanism cycle from every accepted tagged shot", async () => {
     const { SpriteRig, gunHandlingMechanismFor } = await import("./SpriteRig.js");
     const mechanisms = Object.values(WEAPONS).filter(
       (weapon) => gunHandlingMechanismFor(weapon) !== undefined,
@@ -401,28 +409,47 @@ describe("SpriteRig V3G grip and mechanism laws", () => {
       const rig = Object.create(SpriteRig.prototype) as {
         weapons: Array<{ def: typeof weapon }>;
         weaponDef: typeof weapon;
-        flourishLeadSpec: ReturnType<typeof weaponFlourishSpecFor>;
-        flourishOffSpec?: ReturnType<typeof weaponFlourishSpecFor>;
-        flourishArms: Array<{ armed: boolean; earliestStartMs: number; weaponId: string }>;
+        attackBeatSeq: number;
+        gunHandlingCycles: Array<{
+          active: boolean;
+          acceptedSeq: number;
+          mechanism?: "lever" | "pump";
+          startMs: number;
+          weaponId: string;
+        }>;
       };
       Object.assign(rig, {
         weapons: [{ def: weapon }],
         weaponDef: weapon,
-        flourishLeadSpec: weaponFlourishSpecFor(weapon),
-        flourishArms: [
-          { armed: false, earliestStartMs: -1e9, weaponId: "" },
-          { armed: false, earliestStartMs: -1e9, weaponId: "" },
+        attackBeatSeq: 17,
+        gunHandlingCycles: [
+          { active: false, acceptedSeq: 0, startMs: -1e9, weaponId: "" },
+          { active: false, acceptedSeq: 0, startMs: -1e9, weaponId: "" },
         ],
       });
       const internals = SpriteRig.prototype as unknown as {
         recordAcceptedRangedBeat(this: typeof rig, hand: 0 | 1, epochMs: number): void;
       };
       internals.recordAcceptedRangedBeat.call(rig, 0, 2_000);
-      expect(rig.flourishArms[0], weapon.id).toEqual({
-        armed: true,
-        earliestStartMs: 2_070,
+      expect(rig.gunHandlingCycles[0], weapon.id).toEqual({
+        active: true,
+        acceptedSeq: 17,
+        mechanism: gunHandlingMechanismFor(weapon),
+        startMs: 2_000,
         weaponId: weapon.id,
       });
+    }
+  });
+
+  it("fits every tagged mechanism cycle inside its accepted fire cadence", async () => {
+    const { gunHandlingCycleDurationMs, gunHandlingMechanismFor } = await import("./SpriteRig.js");
+    for (const weapon of Object.values(WEAPONS)) {
+      const mechanism = gunHandlingMechanismFor(weapon);
+      if (!mechanism) continue;
+      const fireRateMs = (weapon.gun?.fireRate ?? 0) * 1_000;
+      expect(gunHandlingCycleDurationMs(mechanism, weapon.gun?.fireRate), weapon.id).toBeLessThan(
+        fireRateMs,
+      );
     }
   });
 });

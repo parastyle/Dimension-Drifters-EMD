@@ -75,6 +75,17 @@ describe("V3G named grip truth and Thunderhead redistribution", () => {
     expect(weapon?.gripPoints?.secondary?.role, id).toBe(role);
   });
 
+  it.each([
+    ["x2-rustwidow-pump-rifle", 0.64, 0.78],
+    ["x2-buckshot-briar", 0.67, 0.76],
+    ["x2-frostbore-scattergun", 0.72, 0.79],
+    ["x2-galvanic-coachgun", 0.69, 0.68],
+    ["x2-hallowbore-coachgun", 0.66, 0.58],
+    ["x2-boomstick-saddlegun", 0.67, 0.49],
+  ] as const)("places %s's support hand on the pictured pump/fore-end", (id, x, y) => {
+    expect(WEAPONS[id]?.gripPoints?.secondary).toMatchObject({ role: "pump", x, y });
+  });
+
   it("doubles Cinderquill's held size", () => {
     expect(WEAPONS["x2-cinderquill-dart-caster"]?.displayLength).toBe(168);
   });

@@ -481,6 +481,23 @@ export function dualPistolHandYOffset(
 
 export type GunHandlingMechanism = "lever" | "pump";
 
+interface GunHandlingCycleState {
+  active: boolean;
+  acceptedSeq: number;
+  mechanism?: GunHandlingMechanism;
+  startMs: number;
+  weaponId: string;
+}
+
+function createGunHandlingCycleState(): GunHandlingCycleState {
+  return {
+    active: false,
+    acceptedSeq: 0,
+    startMs: -1e9,
+    weaponId: "",
+  };
+}
+
 export function gunHandlingMechanismFor(
   def: WeaponDef | undefined,
 ): GunHandlingMechanism | undefined {
@@ -495,8 +512,20 @@ export interface GunHandlingHandOffset {
   lateral: number;
 }
 
-/** Allocation-free short flourish in painted-weapon space. Pump travels rearward and returns; a lever hand
- * traces one compact crank loop. Reduced motion keeps the authored grip without procedural travel. */
+/** Keep a complete mechanism stroke inside the accepted trigger cadence. Fast paired levers still get a
+ * compact readable cycle per shot instead of accumulating or waiting for a quiet flourish window. */
+export function gunHandlingCycleDurationMs(
+  mechanism: GunHandlingMechanism | undefined,
+  fireRateSeconds: number | undefined,
+): number {
+  if (!mechanism) return 0;
+  const authoredMs = mechanism === "pump" ? 240 : 220;
+  if (!fireRateSeconds || fireRateSeconds <= 0) return authoredMs;
+  return Math.min(authoredMs, Math.max(96, fireRateSeconds * 1000 - 24));
+}
+
+/** Allocation-free accepted-shot mechanism phases in painted-weapon space. Pump explicitly travels back
+ * then forward to home; lever explicitly travels down then up to home. */
 export function sampleGunHandlingHandOffset(
   mechanism: GunHandlingMechanism | undefined,
   elapsedMs: number,
@@ -510,13 +539,15 @@ export function sampleGunHandlingHandOffset(
   if (!mechanism || reducedMotion || elapsedMs < 0 || durationMs <= 0 || elapsedMs >= durationMs)
     return out;
   const q = clamp01(elapsedMs / durationMs);
+  const phasedStroke = (peakAt: number): number =>
+    q <= peakAt ? smoothstep01(q / peakAt) : 1 - smoothstep01((q - peakAt) / (1 - peakAt));
   if (mechanism === "pump") {
-    out.forward = -displayLength * 0.09 * Math.sin(Math.PI * q);
+    out.forward = -displayLength * 0.1 * phasedStroke(0.42);
     return out;
   }
-  const angle = q * Math.PI * 2;
-  out.forward = displayLength * 0.035 * (Math.cos(angle) - 1);
-  out.lateral = displayLength * 0.055 * Math.sin(angle);
+  const stroke = phasedStroke(0.4);
+  out.forward = -displayLength * 0.035 * stroke;
+  out.lateral = displayLength * 0.07 * stroke;
   return out;
 }
 
@@ -1981,6 +2012,10 @@ export class SpriteRig {
   private readonly posePoint = { x: 0, y: 0 };
   private readonly secondaryGripPoint = { x: 0, y: 0 };
   private readonly secondaryGripFlourish: GunHandlingHandOffset = { forward: 0, lateral: 0 };
+  private readonly gunHandlingCycles: [GunHandlingCycleState, GunHandlingCycleState] = [
+    createGunHandlingCycleState(),
+    createGunHandlingCycleState(),
+  ];
   private readonly secondaryGripInput: SecondaryGripTransformInput = {
     primaryX: 0,
     primaryY: 0,
@@ -2932,7 +2967,10 @@ export class SpriteRig {
 
     if (frontHand) {
       if (!frontWeapon?.worn) {
-        if (frontWeapon && !this.orbitBehind) this.pushWeaponLayers(stack, frontWeapon);
+        // The two-hand branch already placed the weapon below its role-aware support hand. Re-pushing it
+        // here would cover pump/lever/crank hands despite their explicit above-art layering policy.
+        if (frontWeapon && !this.orbitBehind && !this.poseTwoHanded)
+          this.pushWeaponLayers(stack, frontWeapon);
         stack.push(frontHand.img);
         for (const attachment of this.gearAttachments)
           if (attachment.spec.source.receiver === "hand-r") stack.push(attachment.image);
@@ -3370,14 +3408,20 @@ export class SpriteRig {
   private recordAcceptedRangedBeat(hand: 0 | 1, epochMs: number): void {
     const def = this.weapons[hand]?.def ?? (hand === 0 ? this.weaponDef : undefined);
     if (!def) return;
-    const spec = hand === 0 ? this.flourishLeadSpec : this.flourishOffSpec;
-    if (!spec) return;
-    // V3G3/V3G4: every accepted mechanism shot earns one short secondary-hand flourish. A later shot may
-    // cancel and re-arm it, but no cadence threshold or weapon id gates the law.
-    if (gunHandlingMechanismFor(def)) {
-      this.armAfterAttack(hand, epochMs + 70, def);
+    const mechanism = gunHandlingMechanismFor(def);
+    if (mechanism) {
+      // V7-HANDS: accepted attackSeq owns this clock directly. It is deliberately independent of the
+      // generic flourish/quiet-input arbiter so the aimed firing mount and strafing cannot delay/cancel it.
+      const cycle = this.gunHandlingCycles[hand];
+      cycle.active = true;
+      cycle.acceptedSeq = this.attackBeatSeq;
+      cycle.mechanism = mechanism;
+      cycle.startMs = epochMs;
+      cycle.weaponId = def.id;
       return;
     }
+    const spec = hand === 0 ? this.flourishLeadSpec : this.flourishOffSpec;
+    if (!spec) return;
     // Caster recovery is body language, not another free-running spell effect. Arm the existing family
     // flourish on each accepted discrete cast; rapid fire keeps cancelling/rearming it until the actor is
     // quiet, so the final staff catch/page turn punctuates the phrase without obscuring its active cadence.
@@ -4560,6 +4604,13 @@ export class SpriteRig {
         streak.lastAcceptedMs = -1e9;
         streak.weaponId = "";
       }
+    }
+    for (const cycle of this.gunHandlingCycles) {
+      cycle.active = false;
+      cycle.acceptedSeq = 0;
+      cycle.mechanism = undefined;
+      cycle.startMs = -1e9;
+      cycle.weaponId = "";
     }
     this.destroyMeleeTellLayers();
     this.destroyTomeVisual();
@@ -9836,17 +9887,24 @@ export class SpriteRig {
         if (held && grips?.secondary) {
           const ownsSwingScale = this.swingHand === "both" || this.swingHand === 0;
           const base = held.baseScale / (this.baseScale || 1);
-          const channel = this.flourishChannels[0];
           const handling = gunHandlingMechanismFor(held.def);
-          const beat = this.beatFor(channel.spec, channel.moment);
+          const cycle = this.gunHandlingCycles[0];
+          const cycleDurationMs = gunHandlingCycleDurationMs(handling, held.def.gun?.fireRate);
+          const cycleElapsedMs = sceneNow - cycle.startMs;
+          const cycleMatches =
+            cycle.active &&
+            cycle.weaponId === held.def.id &&
+            cycle.mechanism === handling &&
+            cycle.acceptedSeq === this.attackBeatSeq;
           sampleGunHandlingHandOffset(
-            channel.active && channel.moment === "after-attack" ? handling : undefined,
-            channel.active ? sceneNow - channel.startMs : -1,
-            beat.timing.durationMs,
+            cycleMatches ? handling : undefined,
+            cycleMatches ? cycleElapsedMs : -1,
+            cycleDurationMs,
             held.def.displayLength / (this.baseScale || 1),
             reducedMotion,
             this.secondaryGripFlourish,
           );
+          if (cycleMatches && cycleElapsedMs >= cycleDurationMs) cycle.active = false;
           const gripInput = this.secondaryGripInput;
           gripInput.primaryX = front.img.x;
           gripInput.primaryY = front.img.y;

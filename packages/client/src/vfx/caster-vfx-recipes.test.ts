@@ -1,6 +1,7 @@
 import { WEAPONS } from "@dd/shared";
 import { describe, expect, it } from "vitest";
 import {
+  BEAM_STRUCTURE_FAMILY_BY_WEAPON,
   BEAM_VFX_RECIPES,
   CASTER_VFX_ELEMENTS,
   CASTER_VFX_SIGNATURES,
@@ -104,6 +105,7 @@ describe("caster VFX recipe resolver", () => {
         recipe?.beam?.bodyFrame,
         recipe?.beam?.coreFrame,
         recipe?.beam?.impact,
+        recipe?.beam?.structure,
       ]);
       expect(visualSignatures.has(visualSignature), weapon.id).toBe(false);
       visualSignatures.add(visualSignature);
@@ -121,5 +123,48 @@ describe("caster VFX recipe resolver", () => {
     }
     expect(signatures.size).toBe(BEAMS.length);
     expect(visualSignatures.size).toBe(BEAMS.length);
+  });
+
+  it("distributes all 22 beams across five data-owned structure families", () => {
+    expect(Object.keys(BEAM_STRUCTURE_FAMILY_BY_WEAPON).sort()).toEqual(
+      BEAMS.map((weapon) => weapon.id).sort(),
+    );
+    const counts = new Map<string, number>();
+    for (const weapon of BEAMS) {
+      const structure = resolveCasterVfxRecipe(weapon)?.beam?.structure;
+      expect(structure, weapon.id).toBeDefined();
+      expect(structure?.artWidth, weapon.id).toBeGreaterThan(0);
+      expect(structure?.artWidth, weapon.id).toBeLessThanOrEqual(1);
+      expect(structure?.readableCoreWidth, weapon.id).toBeGreaterThanOrEqual(0);
+      expect(structure?.readableCoreWidth, weapon.id).toBeLessThanOrEqual(0.1);
+      counts.set(
+        structure?.family ?? "missing",
+        (counts.get(structure?.family ?? "missing") ?? 0) + 1,
+      );
+    }
+    expect([...counts.keys()].sort()).toEqual(
+      [
+        "converging-strands",
+        "flame-tongues",
+        "ice-particles",
+        "pulse-train",
+        "segmented-arcs",
+      ].sort(),
+    );
+    expect(Math.min(...counts.values())).toBeGreaterThanOrEqual(2);
+  });
+
+  it("makes Frostquill's beam recipe ice-particle-only without an ID branch in the renderer", () => {
+    const frostquill = resolveCasterVfxRecipe(WEAPONS["x2-frostquill-compendium"])?.beam;
+    expect(frostquill?.structure).toEqual({
+      family: "ice-particles",
+      artWidth: 0.92,
+      readableCoreWidth: 0,
+      phaseRate: 0.6,
+      iceOnly: true,
+    });
+    expect(frostquill?.particleElement).toBe("frost");
+    expect(frostquill?.bodyParticle).toBe("wisp");
+    expect(frostquill?.coreParticle).toBe("shard");
   });
 });

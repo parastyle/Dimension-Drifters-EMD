@@ -1,0 +1,2145 @@
+{
+  "schemaVersion": 1,
+  "program": "v7-generated-identity-art",
+  "sourceOrder": "docs/owner-notes-audit-2026-07-22-v7.md",
+  "generatedAt": "2026-07-22T14:29:01.061Z",
+  "generationMode": "codex-built-in-image-generation-via-isolated-artkit-homes",
+  "supplierLiveGate": "none; consuming Sol must prove installed texture live with measured motion/geometry",
+  "jobs": [
+    {
+      "id": "brimstone-flaming-cross",
+      "name": "Brimstone Gallows-Rifle — flaming cross projectile",
+      "kind": "projectile",
+      "weaponId": "x2-brimstone-gallows-rifle",
+      "order": "shoots tiny FLAMING CROSSES (Codex-generated), aligned with barrel",
+      "status": "VALID_EXISTING",
+      "prompt": "Use case: stylized-concept\nAsset type: Dimension Drifters projectile production sprite\nPrimary request: Generate exactly one tiny flaming-cross ammunition sprite. The cross is a single dense iron-and-ember projectile: a long horizontal central shaft aimed RIGHT, a short vertical crossbar, an unmistakable cruciform silhouette, a hot ivory-orange center, ember-red edges, and two or three compact opaque flame tongues trailing LEFT. It must read as a cross at small game scale and sit on the barrel axis, not as a floating icon, plus sign, explosion, or fireball. Flat orthographic side view, entire subject visible, generous padding.\nInput images: Image 1 are reference images. Image 1 is palette, material, outline, and weapon-family style reference only; never crop, trace, detach, or copy pixels from it.\nStyle/medium: Dimension Drifters chunky western-gothic flat-cel sprite art; 4-7 colors; thick slightly uneven charcoal outline; compact readable silhouette; restrained painted wear; no photorealism.\nScene/backdrop: perfectly flat solid #00ff00 chroma-key background for deterministic local removal.\nComposition/framing: keep the one complete subject fully visible and separated from every canvas edge with generous uniform padding.\nConstraints: the backdrop is one exact flat color with no shadow, gradient, texture, reflection, floor, lighting variation, vignette, checkerboard, or border; do not use #00ff00 in the subject; no watermark; no signature; no readable text; no extra subject; no contact sheet; no baked rectangular background; no soft bloom extending into the backdrop.\nPipeline contract: use Codex's built-in image generation tool to generate the requested raster image. Generate the image only. Do not use Python, SVG, canvas, or procedural drawing. Do not copy, install, crop, trace, edit, or write any repository file because the parent artkit harvester exclusively owns post-processing and installation.",
+      "sourceReferences": [
+        "packages/client/public/sprites/x2-brimstone-gallows-rifle/part-1.png"
+      ],
+      "referenceRole": "Image 1 is palette, material, outline, and weapon-family style reference only; never crop, trace, detach, or copy pixels from it.",
+      "output": "packages/client/public/projectiles/v7/brimstone-flaming-cross.png",
+      "acceptedCandidate": "tools/artkit/out/v7-remaining/brimstone-flaming-cross/attempt-1/candidate.png",
+      "attempts": [
+        {
+          "attempt": 1,
+          "raw": "tools/artkit/out/v7-remaining/brimstone-flaming-cross/attempt-1/raw.png",
+          "candidate": "tools/artkit/out/v7-remaining/brimstone-flaming-cross/attempt-1/candidate.png",
+          "outcome": "ACCEPTED",
+          "exitCode": 0,
+          "failures": [],
+          "validation": {
+            "valid": true,
+            "failures": [],
+            "width": 160,
+            "height": 86,
+            "aspect": 2.057142857142857,
+            "visiblePixels": 3260,
+            "transparentPixels": 9868,
+            "coverage": 0.32341269841269843,
+            "keyColor": "#00ff00",
+            "keySpillPixels": 0,
+            "cornerAlpha": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "alphaBounds": {
+              "x": 8,
+              "y": 8,
+              "width": 144,
+              "height": 70
+            },
+            "gameScale": {
+              "width": 64,
+              "height": 64,
+              "visiblePixels": 2458,
+              "alphaBounds": {
+                "x": 0,
+                "y": 0,
+                "width": 64,
+                "height": 64
+              }
+            }
+          }
+        }
+      ],
+      "finalValidation": {
+        "valid": true,
+        "failures": [],
+        "width": 160,
+        "height": 86,
+        "aspect": 2.057142857142857,
+        "visiblePixels": 3260,
+        "transparentPixels": 9868,
+        "coverage": 0.32341269841269843,
+        "keyColor": "#00ff00",
+        "keySpillPixels": 0,
+        "cornerAlpha": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "alphaBounds": {
+          "x": 8,
+          "y": 8,
+          "width": 144,
+          "height": 70
+        },
+        "gameScale": {
+          "width": 64,
+          "height": 64,
+          "visiblePixels": 2458,
+          "alphaBounds": {
+            "x": 0,
+            "y": 0,
+            "width": 64,
+            "height": 64
+          }
+        }
+      }
+    },
+    {
+      "id": "tesla-faradayer-hand-drawn-bolt",
+      "name": "Tesla Faradayer — hand-drawn bolt",
+      "kind": "projectile",
+      "weaponId": "x2-tesla-faradayer",
+      "order": "hand-drawn (generated) projectiles",
+      "status": "VALID_EXISTING",
+      "prompt": "Use case: stylized-concept\nAsset type: Dimension Drifters projectile production sprite\nPrimary request: Generate exactly one hand-drawn electric bolt projectile: a deliberately inked zigzag stroke with an uneven charcoal contour, dense cyan-white painted core, two arc-violet branch nicks, a compact forked arrowhead pointing RIGHT, and a short broken tail on the LEFT. It must look authored by hand rather than like a smooth laser or software line. One connected bolt only; no orb, cloud, gun, hand, text, panel, or baked glow. Flat side view, entire subject visible, generous padding.\nInput images: Image 1 are reference images. Image 1 is palette, outline, and arc-device style reference only; never crop, trace, detach, or copy pixels from it.\nStyle/medium: Dimension Drifters chunky western-gothic flat-cel sprite art; 4-7 colors; thick slightly uneven charcoal outline; compact readable silhouette; restrained painted wear; no photorealism.\nScene/backdrop: perfectly flat solid #00ff00 chroma-key background for deterministic local removal.\nComposition/framing: keep the one complete subject fully visible and separated from every canvas edge with generous uniform padding.\nConstraints: the backdrop is one exact flat color with no shadow, gradient, texture, reflection, floor, lighting variation, vignette, checkerboard, or border; do not use #00ff00 in the subject; no watermark; no signature; no readable text; no extra subject; no contact sheet; no baked rectangular background; no soft bloom extending into the backdrop.\nPipeline contract: use Codex's built-in image generation tool to generate the requested raster image. Generate the image only. Do not use Python, SVG, canvas, or procedural drawing. Do not copy, install, crop, trace, edit, or write any repository file because the parent artkit harvester exclusively owns post-processing and installation.",
+      "sourceReferences": [
+        "packages/client/public/sprites/x2-tesla-faradayer/part-1.png"
+      ],
+      "referenceRole": "Image 1 is palette, outline, and arc-device style reference only; never crop, trace, detach, or copy pixels from it.",
+      "output": "packages/client/public/projectiles/v7/tesla-faradayer-hand-drawn-bolt.png",
+      "acceptedCandidate": "tools/artkit/out/v7-remaining/tesla-faradayer-hand-drawn-bolt/attempt-1/candidate.png",
+      "attempts": [
+        {
+          "attempt": 1,
+          "raw": "tools/artkit/out/v7-remaining/tesla-faradayer-hand-drawn-bolt/attempt-1/raw.png",
+          "candidate": "tools/artkit/out/v7-remaining/tesla-faradayer-hand-drawn-bolt/attempt-1/candidate.png",
+          "outcome": "ACCEPTED",
+          "exitCode": 0,
+          "failures": [],
+          "validation": {
+            "valid": true,
+            "failures": [],
+            "width": 192,
+            "height": 78,
+            "aspect": 2.838709677419355,
+            "visiblePixels": 4282,
+            "transparentPixels": 9914,
+            "coverage": 0.39241202346041054,
+            "keyColor": "#00ff00",
+            "keySpillPixels": 0,
+            "cornerAlpha": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "alphaBounds": {
+              "x": 8,
+              "y": 8,
+              "width": 176,
+              "height": 62
+            },
+            "gameScale": {
+              "width": 64,
+              "height": 64,
+              "visiblePixels": 2936,
+              "alphaBounds": {
+                "x": 0,
+                "y": 0,
+                "width": 64,
+                "height": 64
+              }
+            }
+          }
+        }
+      ],
+      "finalValidation": {
+        "valid": true,
+        "failures": [],
+        "width": 192,
+        "height": 78,
+        "aspect": 2.838709677419355,
+        "visiblePixels": 4282,
+        "transparentPixels": 9914,
+        "coverage": 0.39241202346041054,
+        "keyColor": "#00ff00",
+        "keySpillPixels": 0,
+        "cornerAlpha": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "alphaBounds": {
+          "x": 8,
+          "y": 8,
+          "width": 176,
+          "height": 62
+        },
+        "gameScale": {
+          "width": 64,
+          "height": 64,
+          "visiblePixels": 2936,
+          "alphaBounds": {
+            "x": 0,
+            "y": 0,
+            "width": 64,
+            "height": 64
+          }
+        }
+      }
+    },
+    {
+      "id": "plaguespitter-green-shot",
+      "name": "Plaguespitter Flak Gun — green shot",
+      "kind": "projectile",
+      "weaponId": "x2-plaguespitter-flak-gun",
+      "order": "more green projectiles at once, random patterns within cone",
+      "status": "VALID_EXISTING",
+      "prompt": "Use case: stylized-concept\nAsset type: Dimension Drifters projectile production sprite\nPrimary request: Generate exactly one compact sickly-green flak projectile: an irregular forward-thrust fungal resin glob with a hard lime core, olive crust, three tiny spore knobs contained in its silhouette, a charcoal outline, and a small pointed nose facing RIGHT. It must be solid readable ammunition that can be duplicated into a volley, not a cloud, splash, explosion, or puddle. No weapon, scene, text, shadow, mist, glow, duplicates, or contact sheet. Flat side view, entire subject visible, generous padding.\nInput images: Image 1 are reference images. Image 1 is palette, fungus, corroded-metal, and outline style reference only; never crop, trace, detach, or copy pixels from it.\nStyle/medium: Dimension Drifters chunky western-gothic flat-cel sprite art; 4-7 colors; thick slightly uneven charcoal outline; compact readable silhouette; restrained painted wear; no photorealism.\nScene/backdrop: perfectly flat solid #ff00ff chroma-key background for deterministic local removal.\nComposition/framing: keep the one complete subject fully visible and separated from every canvas edge with generous uniform padding.\nConstraints: the backdrop is one exact flat color with no shadow, gradient, texture, reflection, floor, lighting variation, vignette, checkerboard, or border; do not use #ff00ff in the subject; no watermark; no signature; no readable text; no extra subject; no contact sheet; no baked rectangular background; no soft bloom extending into the backdrop.\nPipeline contract: use Codex's built-in image generation tool to generate the requested raster image. Generate the image only. Do not use Python, SVG, canvas, or procedural drawing. Do not copy, install, crop, trace, edit, or write any repository file because the parent artkit harvester exclusively owns post-processing and installation.",
+      "sourceReferences": [
+        "packages/client/public/sprites/x2-plaguespitter-flak-gun/part-1.png"
+      ],
+      "referenceRole": "Image 1 is palette, fungus, corroded-metal, and outline style reference only; never crop, trace, detach, or copy pixels from it.",
+      "output": "packages/client/public/projectiles/v7/plaguespitter-green-shot.png",
+      "acceptedCandidate": "tools/artkit/out/v7-remaining/plaguespitter-green-shot/attempt-1/candidate.png",
+      "attempts": [
+        {
+          "attempt": 1,
+          "raw": "tools/artkit/out/v7-remaining/plaguespitter-green-shot/attempt-1/raw.png",
+          "candidate": "tools/artkit/out/v7-remaining/plaguespitter-green-shot/attempt-1/candidate.png",
+          "outcome": "ACCEPTED",
+          "exitCode": 0,
+          "failures": [],
+          "validation": {
+            "valid": true,
+            "failures": [],
+            "width": 120,
+            "height": 90,
+            "aspect": 1.4054054054054055,
+            "visiblePixels": 4858,
+            "transparentPixels": 5560,
+            "coverage": 0.6312370062370062,
+            "keyColor": "#ff00ff",
+            "keySpillPixels": 0,
+            "cornerAlpha": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "alphaBounds": {
+              "x": 8,
+              "y": 8,
+              "width": 104,
+              "height": 74
+            },
+            "gameScale": {
+              "width": 64,
+              "height": 64,
+              "visiblePixels": 2421,
+              "alphaBounds": {
+                "x": 0,
+                "y": 0,
+                "width": 64,
+                "height": 64
+              }
+            }
+          }
+        }
+      ],
+      "finalValidation": {
+        "valid": true,
+        "failures": [],
+        "width": 120,
+        "height": 90,
+        "aspect": 1.4054054054054055,
+        "visiblePixels": 4858,
+        "transparentPixels": 5560,
+        "coverage": 0.6312370062370062,
+        "keyColor": "#ff00ff",
+        "keySpillPixels": 0,
+        "cornerAlpha": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "alphaBounds": {
+          "x": 8,
+          "y": 8,
+          "width": 104,
+          "height": 74
+        },
+        "gameScale": {
+          "width": 64,
+          "height": 64,
+          "visiblePixels": 2421,
+          "alphaBounds": {
+            "x": 0,
+            "y": 0,
+            "width": 64,
+            "height": 64
+          }
+        }
+      }
+    },
+    {
+      "id": "stormcaller-electric-strand",
+      "name": "Stormcaller Tesla Gatling — electric strand",
+      "kind": "projectile",
+      "weaponId": "x2-stormcaller-tesla-gatling",
+      "order": "six visible barrel-aligned beams",
+      "status": "VALID",
+      "prompt": "Use case: stylized-concept\nAsset type: Dimension Drifters projectile production sprite\nPrimary request: Generate exactly one long, thin electric strand for one gatling barrel: a connected hand-painted cyan-white lightning filament running LEFT to RIGHT, with small alternating angular kinks, sparse short blue branchlets kept close to the core, a clear bright origin at LEFT, and a tapered advancing tip at RIGHT. It must remain visually separate when six parallel copies are used. No tube, wide beam, orb, muzzle, weapon, text, panel, background glow, or duplicate strands. Entire strand visible with generous padding.\nInput images: Image 1 are reference images. Image 1 is palette, copper-coil, cyan-accumulator, and outline style reference only; never crop, trace, detach, or copy pixels from it.\nStyle/medium: Dimension Drifters chunky western-gothic flat-cel sprite art; 4-7 colors; thick slightly uneven charcoal outline; compact readable silhouette; restrained painted wear; no photorealism.\nScene/backdrop: perfectly flat solid #00ff00 chroma-key background for deterministic local removal.\nComposition/framing: keep the one complete subject fully visible and separated from every canvas edge with generous uniform padding.\nConstraints: the backdrop is one exact flat color with no shadow, gradient, texture, reflection, floor, lighting variation, vignette, checkerboard, or border; do not use #00ff00 in the subject; no watermark; no signature; no readable text; no extra subject; no contact sheet; no baked rectangular background; no soft bloom extending into the backdrop.\nPipeline contract: use Codex's built-in image generation tool to generate the requested raster image. Generate the image only. Do not use Python, SVG, canvas, or procedural drawing. Do not copy, install, crop, trace, edit, or write any repository file because the parent artkit harvester exclusively owns post-processing and installation.",
+      "sourceReferences": [
+        "packages/client/public/sprites/x2-stormcaller-tesla-gatling/part-1.png"
+      ],
+      "referenceRole": "Image 1 is palette, copper-coil, cyan-accumulator, and outline style reference only; never crop, trace, detach, or copy pixels from it.",
+      "output": "packages/client/public/projectiles/v7/stormcaller-electric-strand.png",
+      "acceptedCandidate": "tools/artkit/out/v7-remaining/stormcaller-electric-strand/attempt-1/candidate.png",
+      "attempts": [
+        {
+          "attempt": 1,
+          "raw": "tools/artkit/out/v7-remaining/stormcaller-electric-strand/attempt-1/raw.png",
+          "candidate": "tools/artkit/out/v7-remaining/stormcaller-electric-strand/attempt-1/candidate.png",
+          "outcome": "ACCEPTED",
+          "exitCode": 0,
+          "failures": [],
+          "validation": {
+            "valid": true,
+            "failures": [],
+            "width": 272,
+            "height": 33,
+            "aspect": 15.058823529411764,
+            "visiblePixels": 1719,
+            "transparentPixels": 6422,
+            "coverage": 0.39499080882352944,
+            "keyColor": "#00ff00",
+            "keySpillPixels": 0,
+            "cornerAlpha": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "alphaBounds": {
+              "x": 8,
+              "y": 8,
+              "width": 256,
+              "height": 17
+            },
+            "gameScale": {
+              "width": 64,
+              "height": 64,
+              "visiblePixels": 3705,
+              "alphaBounds": {
+                "x": 0,
+                "y": 0,
+                "width": 64,
+                "height": 64
+              }
+            }
+          }
+        },
+        {
+          "attempt": 2,
+          "raw": "tools/artkit/out/v7-remaining/stormcaller-electric-strand/attempt-2/raw.png",
+          "candidate": "tools/artkit/out/v7-remaining/stormcaller-electric-strand/attempt-2/candidate.png",
+          "outcome": "REJECTED",
+          "exitCode": 0,
+          "failures": [
+            "alpha aspect 13.474 outside 4-11"
+          ],
+          "validation": {
+            "valid": false,
+            "failures": [
+              "alpha aspect 13.474 outside 4-11"
+            ],
+            "width": 272,
+            "height": 36,
+            "aspect": 13.473684210526315,
+            "visiblePixels": 2225,
+            "transparentPixels": 6695,
+            "coverage": 0.4574424342105263,
+            "keyColor": "#00ff00",
+            "keySpillPixels": 0,
+            "cornerAlpha": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "alphaBounds": {
+              "x": 8,
+              "y": 8,
+              "width": 256,
+              "height": 19
+            },
+            "gameScale": {
+              "width": 64,
+              "height": 64,
+              "visiblePixels": 3732,
+              "alphaBounds": {
+                "x": 0,
+                "y": 0,
+                "width": 64,
+                "height": 64
+              }
+            }
+          }
+        },
+        {
+          "attempt": 3,
+          "raw": "tools/artkit/out/v7-remaining/stormcaller-electric-strand/attempt-3/raw.png",
+          "candidate": "tools/artkit/out/v7-remaining/stormcaller-electric-strand/attempt-3/candidate.png",
+          "outcome": "REJECTED",
+          "exitCode": 0,
+          "failures": [
+            "alpha aspect 17.067 outside 4-11"
+          ],
+          "validation": {
+            "valid": false,
+            "failures": [
+              "alpha aspect 17.067 outside 4-11"
+            ],
+            "width": 272,
+            "height": 31,
+            "aspect": 17.066666666666666,
+            "visiblePixels": 1398,
+            "transparentPixels": 6217,
+            "coverage": 0.3640625,
+            "keyColor": "#00ff00",
+            "keySpillPixels": 0,
+            "cornerAlpha": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "alphaBounds": {
+              "x": 8,
+              "y": 8,
+              "width": 256,
+              "height": 15
+            },
+            "gameScale": {
+              "width": 64,
+              "height": 64,
+              "visiblePixels": 3750,
+              "alphaBounds": {
+                "x": 0,
+                "y": 0,
+                "width": 64,
+                "height": 64
+              }
+            }
+          }
+        }
+      ],
+      "finalValidation": {
+        "valid": true,
+        "failures": [],
+        "width": 272,
+        "height": 33,
+        "aspect": 15.058823529411764,
+        "visiblePixels": 1719,
+        "transparentPixels": 6422,
+        "coverage": 0.39499080882352944,
+        "keyColor": "#00ff00",
+        "keySpillPixels": 0,
+        "cornerAlpha": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "alphaBounds": {
+          "x": 8,
+          "y": 8,
+          "width": 256,
+          "height": 17
+        },
+        "gameScale": {
+          "width": 64,
+          "height": 64,
+          "visiblePixels": 3705,
+          "alphaBounds": {
+            "x": 0,
+            "y": 0,
+            "width": 64,
+            "height": 64
+          }
+        }
+      }
+    },
+    {
+      "id": "ironhide-anti-tank-shell",
+      "name": "Ironhide Buffalo Gun — anti-tank shell",
+      "kind": "projectile",
+      "weaponId": "x2-ironhide-buffalo-gun",
+      "order": "anti-tank 50-cal shell",
+      "status": "VALID",
+      "prompt": "Use case: stylized-concept\nAsset type: Dimension Drifters projectile production sprite\nPrimary request: Generate exactly one enormous anti-tank .50-caliber shell: a long faceted hardened-steel penetrator nose pointing RIGHT, a thick aged-brass case, two dark iron driving bands, a heavy extraction base on the LEFT, and one tiny rust-red identification stripe. The silhouette must feel much longer and heavier than a pistol round. One complete loose cartridge only; flat orthographic full side profile; no gun, hand, text, explosion, glow, duplicate ammunition, or panel.\nInput images: Image 1 are reference images. Image 1 is palette, material, caliber-weight, and frontier engineering reference only; never crop, trace, detach, or copy pixels from it.\nStyle/medium: Dimension Drifters chunky western-gothic flat-cel sprite art; 4-7 colors; thick slightly uneven charcoal outline; compact readable silhouette; restrained painted wear; no photorealism.\nScene/backdrop: perfectly flat solid #00ff00 chroma-key background for deterministic local removal.\nComposition/framing: keep the one complete subject fully visible and separated from every canvas edge with generous uniform padding.\nConstraints: the backdrop is one exact flat color with no shadow, gradient, texture, reflection, floor, lighting variation, vignette, checkerboard, or border; do not use #00ff00 in the subject; no watermark; no signature; no readable text; no extra subject; no contact sheet; no baked rectangular background; no soft bloom extending into the backdrop.\nPipeline contract: use Codex's built-in image generation tool to generate the requested raster image. Generate the image only. Do not use Python, SVG, canvas, or procedural drawing. Do not copy, install, crop, trace, edit, or write any repository file because the parent artkit harvester exclusively owns post-processing and installation.",
+      "sourceReferences": [
+        "packages/client/public/sprites/x2-ironhide-buffalo-gun/part-1.png"
+      ],
+      "referenceRole": "Image 1 is palette, material, caliber-weight, and frontier engineering reference only; never crop, trace, detach, or copy pixels from it.",
+      "output": "packages/client/public/projectiles/v7/ironhide-anti-tank-shell.png",
+      "acceptedCandidate": "tools/artkit/out/v7-remaining/ironhide-anti-tank-shell/attempt-1/candidate.png",
+      "attempts": [
+        {
+          "attempt": 1,
+          "raw": "tools/artkit/out/v7-remaining/ironhide-anti-tank-shell/attempt-1/raw.png",
+          "candidate": "tools/artkit/out/v7-remaining/ironhide-anti-tank-shell/attempt-1/candidate.png",
+          "outcome": "ACCEPTED",
+          "exitCode": 0,
+          "failures": [],
+          "validation": {
+            "valid": true,
+            "failures": [],
+            "width": 200,
+            "height": 48,
+            "aspect": 5.75,
+            "visiblePixels": 4002,
+            "transparentPixels": 5112,
+            "coverage": 0.6796875,
+            "keyColor": "#00ff00",
+            "keySpillPixels": 0,
+            "cornerAlpha": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "alphaBounds": {
+              "x": 8,
+              "y": 8,
+              "width": 184,
+              "height": 32
+            },
+            "gameScale": {
+              "width": 64,
+              "height": 64,
+              "visiblePixels": 3581,
+              "alphaBounds": {
+                "x": 0,
+                "y": 0,
+                "width": 64,
+                "height": 64
+              }
+            }
+          }
+        },
+        {
+          "attempt": 2,
+          "raw": "tools/artkit/out/v7-remaining/ironhide-anti-tank-shell/attempt-2/raw.png",
+          "candidate": "tools/artkit/out/v7-remaining/ironhide-anti-tank-shell/attempt-2/candidate.png",
+          "outcome": "REJECTED",
+          "exitCode": 0,
+          "failures": [
+            "alpha aspect 6.815 outside 1.8-4.6"
+          ],
+          "validation": {
+            "valid": false,
+            "failures": [
+              "alpha aspect 6.815 outside 1.8-4.6"
+            ],
+            "width": 200,
+            "height": 43,
+            "aspect": 6.814814814814815,
+            "visiblePixels": 3795,
+            "transparentPixels": 4460,
+            "coverage": 0.7638888888888888,
+            "keyColor": "#00ff00",
+            "keySpillPixels": 0,
+            "cornerAlpha": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "alphaBounds": {
+              "x": 8,
+              "y": 8,
+              "width": 184,
+              "height": 27
+            },
+            "gameScale": {
+              "width": 64,
+              "height": 64,
+              "visiblePixels": 3608,
+              "alphaBounds": {
+                "x": 0,
+                "y": 0,
+                "width": 64,
+                "height": 64
+              }
+            }
+          }
+        },
+        {
+          "attempt": 3,
+          "raw": "tools/artkit/out/v7-remaining/ironhide-anti-tank-shell/attempt-3/raw.png",
+          "candidate": "tools/artkit/out/v7-remaining/ironhide-anti-tank-shell/attempt-3/candidate.png",
+          "outcome": "REJECTED",
+          "exitCode": 0,
+          "failures": [
+            "alpha aspect 5.935 outside 1.8-4.6"
+          ],
+          "validation": {
+            "valid": false,
+            "failures": [
+              "alpha aspect 5.935 outside 1.8-4.6"
+            ],
+            "width": 200,
+            "height": 47,
+            "aspect": 5.935483870967742,
+            "visiblePixels": 4537,
+            "transparentPixels": 4578,
+            "coverage": 0.7954067321178121,
+            "keyColor": "#00ff00",
+            "keySpillPixels": 0,
+            "cornerAlpha": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "alphaBounds": {
+              "x": 8,
+              "y": 8,
+              "width": 184,
+              "height": 31
+            },
+            "gameScale": {
+              "width": 64,
+              "height": 64,
+              "visiblePixels": 3604,
+              "alphaBounds": {
+                "x": 0,
+                "y": 0,
+                "width": 64,
+                "height": 64
+              }
+            }
+          }
+        }
+      ],
+      "finalValidation": {
+        "valid": true,
+        "failures": [],
+        "width": 200,
+        "height": 48,
+        "aspect": 5.75,
+        "visiblePixels": 4002,
+        "transparentPixels": 5112,
+        "coverage": 0.6796875,
+        "keyColor": "#00ff00",
+        "keySpillPixels": 0,
+        "cornerAlpha": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "alphaBounds": {
+          "x": 8,
+          "y": 8,
+          "width": 184,
+          "height": 32
+        },
+        "gameScale": {
+          "width": 64,
+          "height": 64,
+          "visiblePixels": 3581,
+          "alphaBounds": {
+            "x": 0,
+            "y": 0,
+            "width": 64,
+            "height": 64
+          }
+        }
+      }
+    },
+    {
+      "id": "galvanic-coachgun-electric-slug",
+      "name": "Galvanic Coachgun — electric slug",
+      "kind": "projectile",
+      "weaponId": "x2-galvanic-coachgun",
+      "order": "blue electrical bullets",
+      "status": "VALID_EXISTING",
+      "prompt": "Use case: stylized-concept\nAsset type: Dimension Drifters projectile production sprite\nPrimary request: Generate exactly one blue electrical coachgun slug: a blunt compact steel projectile pointing RIGHT, wrapped by two tight painted cobalt-cyan arc bands, with a white-blue nose nick, copper base ring, and thick charcoal outline. The arcs are solid sprite marks attached to the slug, not an emitted glow or surrounding cloud. One ammunition piece only; flat side profile; no shell casing pair, gun, muzzle, text, sparks far from the silhouette, duplicate, or panel.\nInput images: Image 1 are reference images. Image 1 is palette, copper-coil, engraved-metal, and frontier style reference only; never crop, trace, detach, or copy pixels from it.\nStyle/medium: Dimension Drifters chunky western-gothic flat-cel sprite art; 4-7 colors; thick slightly uneven charcoal outline; compact readable silhouette; restrained painted wear; no photorealism.\nScene/backdrop: perfectly flat solid #00ff00 chroma-key background for deterministic local removal.\nComposition/framing: keep the one complete subject fully visible and separated from every canvas edge with generous uniform padding.\nConstraints: the backdrop is one exact flat color with no shadow, gradient, texture, reflection, floor, lighting variation, vignette, checkerboard, or border; do not use #00ff00 in the subject; no watermark; no signature; no readable text; no extra subject; no contact sheet; no baked rectangular background; no soft bloom extending into the backdrop.\nPipeline contract: use Codex's built-in image generation tool to generate the requested raster image. Generate the image only. Do not use Python, SVG, canvas, or procedural drawing. Do not copy, install, crop, trace, edit, or write any repository file because the parent artkit harvester exclusively owns post-processing and installation.",
+      "sourceReferences": [
+        "packages/client/public/sprites/x2-galvanic-coachgun/part-1.png"
+      ],
+      "referenceRole": "Image 1 is palette, copper-coil, engraved-metal, and frontier style reference only; never crop, trace, detach, or copy pixels from it.",
+      "output": "packages/client/public/projectiles/v7/galvanic-coachgun-electric-slug.png",
+      "acceptedCandidate": "tools/artkit/out/v7-remaining/galvanic-coachgun-electric-slug/attempt-1/candidate.png",
+      "attempts": [
+        {
+          "attempt": 1,
+          "raw": "tools/artkit/out/v7-remaining/galvanic-coachgun-electric-slug/attempt-1/raw.png",
+          "candidate": "tools/artkit/out/v7-remaining/galvanic-coachgun-electric-slug/attempt-1/candidate.png",
+          "outcome": "ACCEPTED",
+          "exitCode": 0,
+          "failures": [],
+          "validation": {
+            "valid": true,
+            "failures": [],
+            "width": 128,
+            "height": 96,
+            "aspect": 1.4,
+            "visiblePixels": 8318,
+            "transparentPixels": 3798,
+            "coverage": 0.9283482142857142,
+            "keyColor": "#00ff00",
+            "keySpillPixels": 0,
+            "cornerAlpha": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "alphaBounds": {
+              "x": 8,
+              "y": 8,
+              "width": 112,
+              "height": 80
+            },
+            "gameScale": {
+              "width": 64,
+              "height": 64,
+              "visiblePixels": 3118,
+              "alphaBounds": {
+                "x": 0,
+                "y": 0,
+                "width": 64,
+                "height": 64
+              }
+            }
+          }
+        }
+      ],
+      "finalValidation": {
+        "valid": true,
+        "failures": [],
+        "width": 128,
+        "height": 96,
+        "aspect": 1.4,
+        "visiblePixels": 8318,
+        "transparentPixels": 3798,
+        "coverage": 0.9283482142857142,
+        "keyColor": "#00ff00",
+        "keySpillPixels": 0,
+        "cornerAlpha": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "alphaBounds": {
+          "x": 8,
+          "y": 8,
+          "width": 112,
+          "height": 80
+        },
+        "gameScale": {
+          "width": 64,
+          "height": 64,
+          "visiblePixels": 3118,
+          "alphaBounds": {
+            "x": 0,
+            "y": 0,
+            "width": 64,
+            "height": 64
+          }
+        }
+      }
+    },
+    {
+      "id": "ricochet-icicle",
+      "name": "Ricochet Pistol — icicle shot",
+      "kind": "projectile",
+      "weaponId": "x-gun-ricochet-pistol",
+      "order": "icicle shots",
+      "status": "VALID_EXISTING",
+      "prompt": "Use case: stylized-concept\nAsset type: Dimension Drifters projectile production sprite\nPrimary request: Generate exactly one small fired icicle: a long chipped pale-blue crystal shard with a sharp point facing RIGHT, thick charcoal-blue outline, white frozen ridge, two cyan facets, and a short broken frosty base on the LEFT. It must read as physical ice ammunition and remain clear at pistol-projectile scale. Flat orthographic full side profile; no pistol, snowflake, cloud, trail, glow, text, duplicate shards, or panel.\nInput images: Image 1 are reference images. Image 1 is outline thickness, compact-gun scale, and game sprite style reference only; never crop, trace, detach, or copy pixels from it.\nStyle/medium: Dimension Drifters chunky western-gothic flat-cel sprite art; 4-7 colors; thick slightly uneven charcoal outline; compact readable silhouette; restrained painted wear; no photorealism.\nScene/backdrop: perfectly flat solid #00ff00 chroma-key background for deterministic local removal.\nComposition/framing: keep the one complete subject fully visible and separated from every canvas edge with generous uniform padding.\nConstraints: the backdrop is one exact flat color with no shadow, gradient, texture, reflection, floor, lighting variation, vignette, checkerboard, or border; do not use #00ff00 in the subject; no watermark; no signature; no readable text; no extra subject; no contact sheet; no baked rectangular background; no soft bloom extending into the backdrop.\nPipeline contract: use Codex's built-in image generation tool to generate the requested raster image. Generate the image only. Do not use Python, SVG, canvas, or procedural drawing. Do not copy, install, crop, trace, edit, or write any repository file because the parent artkit harvester exclusively owns post-processing and installation.",
+      "sourceReferences": [
+        "packages/client/public/sprites/x-gun-ricochet-pistol/part-1.png"
+      ],
+      "referenceRole": "Image 1 is outline thickness, compact-gun scale, and game sprite style reference only; never crop, trace, detach, or copy pixels from it.",
+      "output": "packages/client/public/projectiles/v7/ricochet-icicle.png",
+      "acceptedCandidate": "tools/artkit/out/v7-remaining/ricochet-icicle/attempt-1/candidate.png",
+      "attempts": [
+        {
+          "attempt": 1,
+          "raw": "tools/artkit/out/v7-remaining/ricochet-icicle/attempt-1/raw.png",
+          "candidate": "tools/artkit/out/v7-remaining/ricochet-icicle/attempt-1/candidate.png",
+          "outcome": "ACCEPTED",
+          "exitCode": 0,
+          "failures": [],
+          "validation": {
+            "valid": true,
+            "failures": [],
+            "width": 192,
+            "height": 63,
+            "aspect": 3.74468085106383,
+            "visiblePixels": 4739,
+            "transparentPixels": 6858,
+            "coverage": 0.5728965183752418,
+            "keyColor": "#00ff00",
+            "keySpillPixels": 0,
+            "cornerAlpha": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "alphaBounds": {
+              "x": 8,
+              "y": 8,
+              "width": 176,
+              "height": 47
+            },
+            "gameScale": {
+              "width": 64,
+              "height": 64,
+              "visiblePixels": 3300,
+              "alphaBounds": {
+                "x": 0,
+                "y": 0,
+                "width": 64,
+                "height": 64
+              }
+            }
+          }
+        }
+      ],
+      "finalValidation": {
+        "valid": true,
+        "failures": [],
+        "width": 192,
+        "height": 63,
+        "aspect": 3.74468085106383,
+        "visiblePixels": 4739,
+        "transparentPixels": 6858,
+        "coverage": 0.5728965183752418,
+        "keyColor": "#00ff00",
+        "keySpillPixels": 0,
+        "cornerAlpha": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "alphaBounds": {
+          "x": 8,
+          "y": 8,
+          "width": 176,
+          "height": 47
+        },
+        "gameScale": {
+          "width": 64,
+          "height": 64,
+          "visiblePixels": 3300,
+          "alphaBounds": {
+            "x": 0,
+            "y": 0,
+            "width": 64,
+            "height": 64
+          }
+        }
+      }
+    },
+    {
+      "id": "tesla-drumbore-electric-particle",
+      "name": "Tesla Drumbore — electric particle",
+      "kind": "projectile",
+      "weaponId": "x2-tesla-drumbore",
+      "order": "shoots electric particles",
+      "status": "VALID_EXISTING",
+      "prompt": "Use case: stylized-concept\nAsset type: Dimension Drifters projectile production sprite\nPrimary request: Generate exactly one compact electric particle: a dense angular cyan-white charge knot with a dark cobalt center, three short asymmetric zigzag prongs contained close to the core, a charcoal outline, and one pointed leading prong facing RIGHT. It must be a discrete projectile that can be emitted in groups, not a soft glow, fog, round lens flare, explosion, or full lightning beam. No weapon, text, duplicates, panel, or background aura.\nInput images: Image 1 are reference images. Image 1 is palette, coil, glass-insulator, and frontier technology reference only; never crop, trace, detach, or copy pixels from it.\nStyle/medium: Dimension Drifters chunky western-gothic flat-cel sprite art; 4-7 colors; thick slightly uneven charcoal outline; compact readable silhouette; restrained painted wear; no photorealism.\nScene/backdrop: perfectly flat solid #00ff00 chroma-key background for deterministic local removal.\nComposition/framing: keep the one complete subject fully visible and separated from every canvas edge with generous uniform padding.\nConstraints: the backdrop is one exact flat color with no shadow, gradient, texture, reflection, floor, lighting variation, vignette, checkerboard, or border; do not use #00ff00 in the subject; no watermark; no signature; no readable text; no extra subject; no contact sheet; no baked rectangular background; no soft bloom extending into the backdrop.\nPipeline contract: use Codex's built-in image generation tool to generate the requested raster image. Generate the image only. Do not use Python, SVG, canvas, or procedural drawing. Do not copy, install, crop, trace, edit, or write any repository file because the parent artkit harvester exclusively owns post-processing and installation.",
+      "sourceReferences": [
+        "packages/client/public/sprites/x2-tesla-drumbore/part-1.png"
+      ],
+      "referenceRole": "Image 1 is palette, coil, glass-insulator, and frontier technology reference only; never crop, trace, detach, or copy pixels from it.",
+      "output": "packages/client/public/projectiles/v7/tesla-drumbore-electric-particle.png",
+      "acceptedCandidate": "tools/artkit/out/v7-remaining/tesla-drumbore-electric-particle/attempt-1/candidate.png",
+      "attempts": [
+        {
+          "attempt": 1,
+          "raw": "tools/artkit/out/v7-remaining/tesla-drumbore-electric-particle/attempt-1/raw.png",
+          "candidate": "tools/artkit/out/v7-remaining/tesla-drumbore-electric-particle/attempt-1/candidate.png",
+          "outcome": "ACCEPTED",
+          "exitCode": 0,
+          "failures": [],
+          "validation": {
+            "valid": true,
+            "failures": [],
+            "width": 106,
+            "height": 104,
+            "aspect": 1.0227272727272727,
+            "visiblePixels": 2704,
+            "transparentPixels": 7832,
+            "coverage": 0.3414141414141414,
+            "keyColor": "#00ff00",
+            "keySpillPixels": 0,
+            "cornerAlpha": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "alphaBounds": {
+              "x": 8,
+              "y": 8,
+              "width": 90,
+              "height": 88
+            },
+            "gameScale": {
+              "width": 64,
+              "height": 64,
+              "visiblePixels": 1076,
+              "alphaBounds": {
+                "x": 0,
+                "y": 5,
+                "width": 64,
+                "height": 59
+              }
+            }
+          }
+        }
+      ],
+      "finalValidation": {
+        "valid": true,
+        "failures": [],
+        "width": 106,
+        "height": 104,
+        "aspect": 1.0227272727272727,
+        "visiblePixels": 2704,
+        "transparentPixels": 7832,
+        "coverage": 0.3414141414141414,
+        "keyColor": "#00ff00",
+        "keySpillPixels": 0,
+        "cornerAlpha": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "alphaBounds": {
+          "x": 8,
+          "y": 8,
+          "width": 90,
+          "height": 88
+        },
+        "gameScale": {
+          "width": 64,
+          "height": 64,
+          "visiblePixels": 1076,
+          "alphaBounds": {
+            "x": 0,
+            "y": 5,
+            "width": 64,
+            "height": 59
+          }
+        }
+      }
+    },
+    {
+      "id": "frostfang-pictured-harpoon",
+      "name": "Frostfang Speargun — pictured harpoon",
+      "kind": "projectile",
+      "weaponId": "x2-frostfang-speargun",
+      "order": "shoots its pictured harpoon (generated)",
+      "status": "VALID_EXISTING",
+      "prompt": "Use case: stylized-concept\nAsset type: Dimension Drifters projectile production sprite\nPrimary request: Generate exactly one new loose Frostfang harpoon matching the pictured loaded bolt in Image 1: a long white-steel shaft, large crystalline icicle-like barbed head pointing RIGHT, two small backward-facing ice barbs, pale-blue spring collar, dull-teal binding band, and a compact off-white tail cap. Preserve the pictured weapon's pristine cryo-harpoon identity while creating new pixels. Flat orthographic full side profile, perfectly horizontal, entire harpoon visible. No speargun, cable, hand, extra harpoons, glow, snow cloud, text, or panel.\nInput images: Image 1 are reference images. Image 1 is the pictured loaded-harpoon design, palette, material, and outline reference only; generate a brand-new complete loose harpoon and never crop, trace, detach, or copy pixels from it.\nStyle/medium: Dimension Drifters chunky western-gothic flat-cel sprite art; 4-7 colors; thick slightly uneven charcoal outline; compact readable silhouette; restrained painted wear; no photorealism.\nScene/backdrop: perfectly flat solid #00ff00 chroma-key background for deterministic local removal.\nComposition/framing: keep the one complete subject fully visible and separated from every canvas edge with generous uniform padding.\nConstraints: the backdrop is one exact flat color with no shadow, gradient, texture, reflection, floor, lighting variation, vignette, checkerboard, or border; do not use #00ff00 in the subject; no watermark; no signature; no readable text; no extra subject; no contact sheet; no baked rectangular background; no soft bloom extending into the backdrop.\nPipeline contract: use Codex's built-in image generation tool to generate the requested raster image. Generate the image only. Do not use Python, SVG, canvas, or procedural drawing. Do not copy, install, crop, trace, edit, or write any repository file because the parent artkit harvester exclusively owns post-processing and installation.",
+      "sourceReferences": [
+        "packages/client/public/sprites/x2-frostfang-speargun/part-1.png"
+      ],
+      "referenceRole": "Image 1 is the pictured loaded-harpoon design, palette, material, and outline reference only; generate a brand-new complete loose harpoon and never crop, trace, detach, or copy pixels from it.",
+      "output": "packages/client/public/projectiles/v7/frostfang-pictured-harpoon.png",
+      "acceptedCandidate": "tools/artkit/out/v7-remaining/frostfang-pictured-harpoon/attempt-1/candidate.png",
+      "attempts": [
+        {
+          "attempt": 1,
+          "raw": "tools/artkit/out/v7-remaining/frostfang-pictured-harpoon/attempt-1/raw.png",
+          "candidate": "tools/artkit/out/v7-remaining/frostfang-pictured-harpoon/attempt-1/candidate.png",
+          "outcome": "ACCEPTED",
+          "exitCode": 0,
+          "failures": [],
+          "validation": {
+            "valid": true,
+            "failures": [],
+            "width": 272,
+            "height": 56,
+            "aspect": 6.4,
+            "visiblePixels": 3959,
+            "transparentPixels": 10499,
+            "coverage": 0.38662109375,
+            "keyColor": "#00ff00",
+            "keySpillPixels": 0,
+            "cornerAlpha": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "alphaBounds": {
+              "x": 8,
+              "y": 8,
+              "width": 256,
+              "height": 40
+            },
+            "gameScale": {
+              "width": 64,
+              "height": 64,
+              "visiblePixels": 3502,
+              "alphaBounds": {
+                "x": 0,
+                "y": 0,
+                "width": 64,
+                "height": 64
+              }
+            }
+          }
+        }
+      ],
+      "finalValidation": {
+        "valid": true,
+        "failures": [],
+        "width": 272,
+        "height": 56,
+        "aspect": 6.4,
+        "visiblePixels": 3959,
+        "transparentPixels": 10499,
+        "coverage": 0.38662109375,
+        "keyColor": "#00ff00",
+        "keySpillPixels": 0,
+        "cornerAlpha": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "alphaBounds": {
+          "x": 8,
+          "y": 8,
+          "width": 256,
+          "height": 40
+        },
+        "gameScale": {
+          "width": 64,
+          "height": 64,
+          "visiblePixels": 3502,
+          "alphaBounds": {
+            "x": 0,
+            "y": 0,
+            "width": 64,
+            "height": 64
+          }
+        }
+      }
+    },
+    {
+      "id": "mesa-detonation",
+      "name": "Mesa Hand-Cannon — detonation",
+      "kind": "explosion",
+      "weaponId": "x2-mesa-hand-cannon",
+      "order": "explosion on detonation",
+      "status": "VALID_EXISTING",
+      "prompt": "Use case: stylized-concept\nAsset type: Dimension Drifters explosion production sprite\nPrimary request: Generate one centered hand-cannon detonation impact sprite: a compact radial blast with a dense ivory-hot center, five chunky angular orange-red flame petals, a broken dark smoke rim, and six short brass-colored shrapnel ticks contained close to the blast. Strong readable circular burst silhouette, opaque flat-cel painted shapes rather than soft glow. No gun, projectile, character, floor, scene, text, watermark, panel, border, or contact sheet. Entire effect visible with generous padding.\nInput images: Image 1 are reference images. Image 1 is palette, metal, outline, and heavy-caliber style reference only; never crop, trace, detach, or copy pixels from it.\nStyle/medium: Dimension Drifters chunky western-gothic flat-cel sprite art; 4-7 colors; thick slightly uneven charcoal outline; compact readable silhouette; restrained painted wear; no photorealism.\nScene/backdrop: perfectly flat solid #00ff00 chroma-key background for deterministic local removal.\nComposition/framing: keep the one complete subject fully visible and separated from every canvas edge with generous uniform padding.\nConstraints: the backdrop is one exact flat color with no shadow, gradient, texture, reflection, floor, lighting variation, vignette, checkerboard, or border; do not use #00ff00 in the subject; no watermark; no signature; no readable text; no extra subject; no contact sheet; no baked rectangular background; no soft bloom extending into the backdrop.\nPipeline contract: use Codex's built-in image generation tool to generate the requested raster image. Generate the image only. Do not use Python, SVG, canvas, or procedural drawing. Do not copy, install, crop, trace, edit, or write any repository file because the parent artkit harvester exclusively owns post-processing and installation.",
+      "sourceReferences": [
+        "packages/client/public/sprites/x2-mesa-hand-cannon/part-1.png"
+      ],
+      "referenceRole": "Image 1 is palette, metal, outline, and heavy-caliber style reference only; never crop, trace, detach, or copy pixels from it.",
+      "output": "packages/client/public/vfx/explosions/v7/mesa-detonation.png",
+      "acceptedCandidate": "tools/artkit/out/v7-remaining/mesa-detonation/attempt-1/candidate.png",
+      "attempts": [
+        {
+          "attempt": 1,
+          "raw": "tools/artkit/out/v7-remaining/mesa-detonation/attempt-1/raw.png",
+          "candidate": "tools/artkit/out/v7-remaining/mesa-detonation/attempt-1/candidate.png",
+          "outcome": "ACCEPTED",
+          "exitCode": 0,
+          "failures": [],
+          "validation": {
+            "valid": true,
+            "failures": [],
+            "width": 251,
+            "height": 272,
+            "aspect": 0.91796875,
+            "visiblePixels": 34586,
+            "transparentPixels": 32008,
+            "coverage": 0.5749002659574468,
+            "keyColor": "#00ff00",
+            "keySpillPixels": 0,
+            "cornerAlpha": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "alphaBounds": {
+              "x": 8,
+              "y": 8,
+              "width": 235,
+              "height": 256
+            },
+            "gameScale": {
+              "width": 64,
+              "height": 64,
+              "visiblePixels": 2286,
+              "alphaBounds": {
+                "x": 0,
+                "y": 0,
+                "width": 64,
+                "height": 64
+              }
+            }
+          }
+        }
+      ],
+      "finalValidation": {
+        "valid": true,
+        "failures": [],
+        "width": 251,
+        "height": 272,
+        "aspect": 0.91796875,
+        "visiblePixels": 34586,
+        "transparentPixels": 32008,
+        "coverage": 0.5749002659574468,
+        "keyColor": "#00ff00",
+        "keySpillPixels": 0,
+        "cornerAlpha": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "alphaBounds": {
+          "x": 8,
+          "y": 8,
+          "width": 235,
+          "height": 256
+        },
+        "gameScale": {
+          "width": 64,
+          "height": 64,
+          "visiblePixels": 2286,
+          "alphaBounds": {
+            "x": 0,
+            "y": 0,
+            "width": 64,
+            "height": 64
+          }
+        }
+      }
+    },
+    {
+      "id": "brimstone-rocket-tube-large-explosion",
+      "name": "Brimstone Rocket Tube — larger explosion treatment",
+      "kind": "explosion",
+      "weaponId": "x2-brimstone-rocket-tube",
+      "order": "bigger explosion (again)",
+      "status": "VALID_EXISTING",
+      "prompt": "Use case: stylized-concept\nAsset type: Dimension Drifters explosion production sprite\nPrimary request: Generate one exceptionally large Brimstone rocket explosion treatment: a broad radial western-gothic blast with a dense white-gold core, a ring of seven large ember-orange flame slabs, taller red-black fire tongues, and an outer crown of chunky soot clouds. The silhouette must be materially larger and heavier than an ordinary gun detonation, filling a square effect canvas while keeping all smoke and flame inside the frame. Opaque flat-cel painted shapes, not soft bloom. No rocket launcher, missile, character, ground plane, scene, text, watermark, panel, border, or contact sheet.\nInput images: Image 1 are reference images. Image 1 is palette, soot, iron, warhead, and outline style reference only; never crop, trace, detach, or copy pixels from it.\nStyle/medium: Dimension Drifters chunky western-gothic flat-cel sprite art; 4-7 colors; thick slightly uneven charcoal outline; compact readable silhouette; restrained painted wear; no photorealism.\nScene/backdrop: perfectly flat solid #00ff00 chroma-key background for deterministic local removal.\nComposition/framing: keep the one complete subject fully visible and separated from every canvas edge with generous uniform padding.\nConstraints: the backdrop is one exact flat color with no shadow, gradient, texture, reflection, floor, lighting variation, vignette, checkerboard, or border; do not use #00ff00 in the subject; no watermark; no signature; no readable text; no extra subject; no contact sheet; no baked rectangular background; no soft bloom extending into the backdrop.\nPipeline contract: use Codex's built-in image generation tool to generate the requested raster image. Generate the image only. Do not use Python, SVG, canvas, or procedural drawing. Do not copy, install, crop, trace, edit, or write any repository file because the parent artkit harvester exclusively owns post-processing and installation.",
+      "sourceReferences": [
+        "packages/client/public/sprites/x2-brimstone-rocket-tube/part-1.png"
+      ],
+      "referenceRole": "Image 1 is palette, soot, iron, warhead, and outline style reference only; never crop, trace, detach, or copy pixels from it.",
+      "output": "packages/client/public/vfx/explosions/v7/brimstone-rocket-tube-large-explosion.png",
+      "acceptedCandidate": "tools/artkit/out/v7-remaining/brimstone-rocket-tube-large-explosion/attempt-1/candidate.png",
+      "attempts": [
+        {
+          "attempt": 1,
+          "raw": "tools/artkit/out/v7-remaining/brimstone-rocket-tube-large-explosion/attempt-1/raw.png",
+          "candidate": "tools/artkit/out/v7-remaining/brimstone-rocket-tube-large-explosion/attempt-1/candidate.png",
+          "outcome": "ACCEPTED",
+          "exitCode": 0,
+          "failures": [],
+          "validation": {
+            "valid": true,
+            "failures": [],
+            "width": 393,
+            "height": 400,
+            "aspect": 0.9817708333333334,
+            "visiblePixels": 104559,
+            "transparentPixels": 50679,
+            "coverage": 0.7222521551724138,
+            "keyColor": "#00ff00",
+            "keySpillPixels": 0,
+            "cornerAlpha": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "alphaBounds": {
+              "x": 8,
+              "y": 8,
+              "width": 377,
+              "height": 384
+            },
+            "gameScale": {
+              "width": 64,
+              "height": 64,
+              "visiblePixels": 2791,
+              "alphaBounds": {
+                "x": 1,
+                "y": 0,
+                "width": 63,
+                "height": 64
+              }
+            }
+          }
+        }
+      ],
+      "finalValidation": {
+        "valid": true,
+        "failures": [],
+        "width": 393,
+        "height": 400,
+        "aspect": 0.9817708333333334,
+        "visiblePixels": 104559,
+        "transparentPixels": 50679,
+        "coverage": 0.7222521551724138,
+        "keyColor": "#00ff00",
+        "keySpillPixels": 0,
+        "cornerAlpha": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "alphaBounds": {
+          "x": 8,
+          "y": 8,
+          "width": 377,
+          "height": 384
+        },
+        "gameScale": {
+          "width": 64,
+          "height": 64,
+          "visiblePixels": 2791,
+          "alphaBounds": {
+            "x": 1,
+            "y": 0,
+            "width": 63,
+            "height": 64
+          }
+        }
+      }
+    },
+    {
+      "id": "fulgurite-blue-fill",
+      "name": "Fulgurite Storm-Sphere — blue aura fill",
+      "kind": "weapon-vfx",
+      "weaponId": "x2-fulgurite-storm-sphere",
+      "order": "blue VFX; fill the dead space between aura and player",
+      "status": "VALID_EXISTING",
+      "prompt": "Use case: stylized-concept\nAsset type: Dimension Drifters weapon-vfx production sprite\nPrimary request: Generate one dense blue storm-field fill sprite for the space between a player and an outer aura: a near-circular connected mass of hand-painted cobalt and cyan fulgurite channels, overlapping angular lightning plates, and small white-blue current knots distributed through the CENTER as well as the rim. The middle must visibly contain effect pixels; do not make a hollow ring. Keep irregular breathing gaps so the character can remain legible. Flat opaque cel shapes, no soft bloom. No character, weapon, empty central hole, text, floor, scene, panel, or border.\nInput images: Image 1 are reference images. Image 1 is palette, fulgurite channel, copper, and outline style reference only; never crop, trace, detach, or copy pixels from it.\nStyle/medium: Dimension Drifters chunky western-gothic flat-cel sprite art; 4-7 colors; thick slightly uneven charcoal outline; compact readable silhouette; restrained painted wear; no photorealism.\nScene/backdrop: perfectly flat solid #00ff00 chroma-key background for deterministic local removal.\nComposition/framing: keep the one complete subject fully visible and separated from every canvas edge with generous uniform padding.\nConstraints: the backdrop is one exact flat color with no shadow, gradient, texture, reflection, floor, lighting variation, vignette, checkerboard, or border; do not use #00ff00 in the subject; no watermark; no signature; no readable text; no extra subject; no contact sheet; no baked rectangular background; no soft bloom extending into the backdrop.\nPipeline contract: use Codex's built-in image generation tool to generate the requested raster image. Generate the image only. Do not use Python, SVG, canvas, or procedural drawing. Do not copy, install, crop, trace, edit, or write any repository file because the parent artkit harvester exclusively owns post-processing and installation.",
+      "sourceReferences": [
+        "packages/client/public/sprites/x2-fulgurite-storm-sphere/part-1.png"
+      ],
+      "referenceRole": "Image 1 is palette, fulgurite channel, copper, and outline style reference only; never crop, trace, detach, or copy pixels from it.",
+      "output": "packages/client/public/vfx/weapons/v7/fulgurite-blue-fill.png",
+      "acceptedCandidate": "tools/artkit/out/v7-remaining/fulgurite-blue-fill/attempt-1/candidate.png",
+      "attempts": [
+        {
+          "attempt": 1,
+          "raw": "tools/artkit/out/v7-remaining/fulgurite-blue-fill/attempt-1/raw.png",
+          "candidate": "tools/artkit/out/v7-remaining/fulgurite-blue-fill/attempt-1/candidate.png",
+          "outcome": "ACCEPTED",
+          "exitCode": 0,
+          "failures": [],
+          "validation": {
+            "valid": true,
+            "failures": [],
+            "width": 304,
+            "height": 294,
+            "aspect": 1.0359712230215827,
+            "visiblePixels": 59484,
+            "transparentPixels": 28258,
+            "coverage": 0.7429556354916067,
+            "keyColor": "#00ff00",
+            "keySpillPixels": 0,
+            "cornerAlpha": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "alphaBounds": {
+              "x": 8,
+              "y": 8,
+              "width": 288,
+              "height": 278
+            },
+            "gameScale": {
+              "width": 64,
+              "height": 64,
+              "visiblePixels": 2820,
+              "alphaBounds": {
+                "x": 0,
+                "y": 0,
+                "width": 64,
+                "height": 64
+              }
+            }
+          }
+        }
+      ],
+      "finalValidation": {
+        "valid": true,
+        "failures": [],
+        "width": 304,
+        "height": 294,
+        "aspect": 1.0359712230215827,
+        "visiblePixels": 59484,
+        "transparentPixels": 28258,
+        "coverage": 0.7429556354916067,
+        "keyColor": "#00ff00",
+        "keySpillPixels": 0,
+        "cornerAlpha": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "alphaBounds": {
+          "x": 8,
+          "y": 8,
+          "width": 288,
+          "height": 278
+        },
+        "gameScale": {
+          "width": 64,
+          "height": 64,
+          "visiblePixels": 2820,
+          "alphaBounds": {
+            "x": 0,
+            "y": 0,
+            "width": 64,
+            "height": 64
+          }
+        }
+      }
+    },
+    {
+      "id": "tombstone-stone-smoke",
+      "name": "Tombstone Greatsword — stones and smoke treatment",
+      "kind": "weapon-vfx",
+      "weaponId": "tombstone-greatsword",
+      "order": "stones + smoke only, delete bone particles",
+      "status": "VALID_EXISTING",
+      "prompt": "Use case: stylized-concept\nAsset type: Dimension Drifters weapon-vfx production sprite\nPrimary request: Generate one ground-impact treatment made ONLY from stones and smoke: a broad low eruption of five chunky dark granite slabs and many smaller rock chips, interwoven with three opaque charcoal-gray cel-painted smoke curls. Absolutely no bones, skulls, teeth, graves, runes, flames, energy, weapon, character, text, scene, ground rectangle, panel, or border. The effect should spread horizontally and remain readable as a heavy stone quake at game scale, with every chip contained inside the frame.\nInput images: Image 1 are reference images. Image 1 is stone palette, outline, grave-weight, and game sprite style reference only; never crop, trace, detach, or copy pixels from it.\nStyle/medium: Dimension Drifters chunky western-gothic flat-cel sprite art; 4-7 colors; thick slightly uneven charcoal outline; compact readable silhouette; restrained painted wear; no photorealism.\nScene/backdrop: perfectly flat solid #00ff00 chroma-key background for deterministic local removal.\nComposition/framing: keep the one complete subject fully visible and separated from every canvas edge with generous uniform padding.\nConstraints: the backdrop is one exact flat color with no shadow, gradient, texture, reflection, floor, lighting variation, vignette, checkerboard, or border; do not use #00ff00 in the subject; no watermark; no signature; no readable text; no extra subject; no contact sheet; no baked rectangular background; no soft bloom extending into the backdrop.\nPipeline contract: use Codex's built-in image generation tool to generate the requested raster image. Generate the image only. Do not use Python, SVG, canvas, or procedural drawing. Do not copy, install, crop, trace, edit, or write any repository file because the parent artkit harvester exclusively owns post-processing and installation.",
+      "sourceReferences": [
+        "packages/client/public/sprites/tombstone-greatsword/part-1.png"
+      ],
+      "referenceRole": "Image 1 is stone palette, outline, grave-weight, and game sprite style reference only; never crop, trace, detach, or copy pixels from it.",
+      "output": "packages/client/public/vfx/weapons/v7/tombstone-stone-smoke.png",
+      "acceptedCandidate": "tools/artkit/out/v7-remaining/tombstone-stone-smoke/attempt-1/candidate.png",
+      "attempts": [
+        {
+          "attempt": 1,
+          "raw": "tools/artkit/out/v7-remaining/tombstone-stone-smoke/attempt-1/raw.png",
+          "candidate": "tools/artkit/out/v7-remaining/tombstone-stone-smoke/attempt-1/candidate.png",
+          "outcome": "ACCEPTED",
+          "exitCode": 0,
+          "failures": [],
+          "validation": {
+            "valid": true,
+            "failures": [],
+            "width": 400,
+            "height": 187,
+            "aspect": 2.245614035087719,
+            "visiblePixels": 34229,
+            "transparentPixels": 36985,
+            "coverage": 0.5212749756335283,
+            "keyColor": "#00ff00",
+            "keySpillPixels": 0,
+            "cornerAlpha": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "alphaBounds": {
+              "x": 8,
+              "y": 8,
+              "width": 384,
+              "height": 171
+            },
+            "gameScale": {
+              "width": 64,
+              "height": 64,
+              "visiblePixels": 3148,
+              "alphaBounds": {
+                "x": 0,
+                "y": 0,
+                "width": 64,
+                "height": 64
+              }
+            }
+          }
+        }
+      ],
+      "finalValidation": {
+        "valid": true,
+        "failures": [],
+        "width": 400,
+        "height": 187,
+        "aspect": 2.245614035087719,
+        "visiblePixels": 34229,
+        "transparentPixels": 36985,
+        "coverage": 0.5212749756335283,
+        "keyColor": "#00ff00",
+        "keySpillPixels": 0,
+        "cornerAlpha": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "alphaBounds": {
+          "x": 8,
+          "y": 8,
+          "width": 384,
+          "height": 171
+        },
+        "gameScale": {
+          "width": 64,
+          "height": 64,
+          "visiblePixels": 3148,
+          "alphaBounds": {
+            "x": 0,
+            "y": 0,
+            "width": 64,
+            "height": 64
+          }
+        }
+      }
+    },
+    {
+      "id": "thunderhead-voulge-blue-effect",
+      "name": "Thunderhead Voulge — much bigger blue effect",
+      "kind": "weapon-vfx",
+      "weaponId": "x2-thunderhead-voulge",
+      "order": "blue VFX, much bigger",
+      "status": "VALID_EXISTING",
+      "prompt": "Use case: stylized-concept\nAsset type: Dimension Drifters weapon-vfx production sprite\nPrimary request: Generate one very large blue storm-cleave effect for a massive voulge: a connected broad crescent sweep traveling LEFT to RIGHT, built from a dense cobalt inner blade, bright cyan broken cutting edge, white-blue arc scars, and several short lightning forks contained close to the sweep. It must be clearly much larger than a normal weapon trail and have a heavy cleaver-like silhouette, not a thin sword slash or hollow ring. No physical weapon, character, scene, text, panel, border, or soft baked glow. Entire effect visible with generous padding.\nInput images: Image 1 are reference images. Image 1 is blade shape, scorched steel, cyan scoring, outline, and weapon-family style reference only; never crop, trace, detach, or copy pixels from it.\nStyle/medium: Dimension Drifters chunky western-gothic flat-cel sprite art; 4-7 colors; thick slightly uneven charcoal outline; compact readable silhouette; restrained painted wear; no photorealism.\nScene/backdrop: perfectly flat solid #00ff00 chroma-key background for deterministic local removal.\nComposition/framing: keep the one complete subject fully visible and separated from every canvas edge with generous uniform padding.\nConstraints: the backdrop is one exact flat color with no shadow, gradient, texture, reflection, floor, lighting variation, vignette, checkerboard, or border; do not use #00ff00 in the subject; no watermark; no signature; no readable text; no extra subject; no contact sheet; no baked rectangular background; no soft bloom extending into the backdrop.\nPipeline contract: use Codex's built-in image generation tool to generate the requested raster image. Generate the image only. Do not use Python, SVG, canvas, or procedural drawing. Do not copy, install, crop, trace, edit, or write any repository file because the parent artkit harvester exclusively owns post-processing and installation.",
+      "sourceReferences": [
+        "packages/client/public/sprites/x2-thunderhead-voulge/part-1.png"
+      ],
+      "referenceRole": "Image 1 is blade shape, scorched steel, cyan scoring, outline, and weapon-family style reference only; never crop, trace, detach, or copy pixels from it.",
+      "output": "packages/client/public/vfx/weapons/v7/thunderhead-voulge-blue-effect.png",
+      "acceptedCandidate": "tools/artkit/out/v7-remaining/thunderhead-voulge-blue-effect/attempt-1/candidate.png",
+      "attempts": [
+        {
+          "attempt": 1,
+          "raw": "tools/artkit/out/v7-remaining/thunderhead-voulge-blue-effect/attempt-1/raw.png",
+          "candidate": "tools/artkit/out/v7-remaining/thunderhead-voulge-blue-effect/attempt-1/candidate.png",
+          "outcome": "ACCEPTED",
+          "exitCode": 0,
+          "failures": [],
+          "validation": {
+            "valid": true,
+            "failures": [],
+            "width": 455,
+            "height": 240,
+            "aspect": 1.9598214285714286,
+            "visiblePixels": 51230,
+            "transparentPixels": 54738,
+            "coverage": 0.5209689228766677,
+            "keyColor": "#00ff00",
+            "keySpillPixels": 0,
+            "cornerAlpha": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "alphaBounds": {
+              "x": 8,
+              "y": 8,
+              "width": 439,
+              "height": 224
+            },
+            "gameScale": {
+              "width": 64,
+              "height": 64,
+              "visiblePixels": 2995,
+              "alphaBounds": {
+                "x": 0,
+                "y": 0,
+                "width": 64,
+                "height": 64
+              }
+            }
+          }
+        }
+      ],
+      "finalValidation": {
+        "valid": true,
+        "failures": [],
+        "width": 455,
+        "height": 240,
+        "aspect": 1.9598214285714286,
+        "visiblePixels": 51230,
+        "transparentPixels": 54738,
+        "coverage": 0.5209689228766677,
+        "keyColor": "#00ff00",
+        "keySpillPixels": 0,
+        "cornerAlpha": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "alphaBounds": {
+          "x": 8,
+          "y": 8,
+          "width": 439,
+          "height": 224
+        },
+        "gameScale": {
+          "width": 64,
+          "height": 64,
+          "visiblePixels": 2995,
+          "alphaBounds": {
+            "x": 0,
+            "y": 0,
+            "width": 64,
+            "height": 64
+          }
+        }
+      }
+    },
+    {
+      "id": "nullspike-finisher-accent",
+      "name": "Nullspike Pike — third-hit finisher accent",
+      "kind": "weapon-vfx",
+      "weaponId": "x2-nullspike-pike",
+      "order": "rapid double-stab into a knock-up-flavored finisher accent",
+      "status": "VALID",
+      "prompt": "Use case: stylized-concept\nAsset type: Dimension Drifters weapon-vfx production sprite\nPrimary request: Generate one third-hit void-pike finisher accent: a forceful forward thrust streak from LEFT to RIGHT ending in an upward-hooking arc-violet impact crown, with a matte-black spearline core, two dense purple facet bands, three short rising shard marks, and a compact white-violet impact nick at the RIGHT tip. It should suggest upward force without depicting a launched enemy. No physical pike, hand, character, creature, portal, cloud, text, panel, border, or soft glow. One connected directional accent only, entire effect visible.\nInput images: Image 1 are reference images. Image 1 is void-metal palette, pike geometry, bandage language, outline, and weapon-family style reference only; never crop, trace, detach, or copy pixels from it.\nStyle/medium: Dimension Drifters chunky western-gothic flat-cel sprite art; 4-7 colors; thick slightly uneven charcoal outline; compact readable silhouette; restrained painted wear; no photorealism.\nScene/backdrop: perfectly flat solid #00ff00 chroma-key background for deterministic local removal.\nComposition/framing: keep the one complete subject fully visible and separated from every canvas edge with generous uniform padding.\nConstraints: the backdrop is one exact flat color with no shadow, gradient, texture, reflection, floor, lighting variation, vignette, checkerboard, or border; do not use #00ff00 in the subject; no watermark; no signature; no readable text; no extra subject; no contact sheet; no baked rectangular background; no soft bloom extending into the backdrop.\nPipeline contract: use Codex's built-in image generation tool to generate the requested raster image. Generate the image only. Do not use Python, SVG, canvas, or procedural drawing. Do not copy, install, crop, trace, edit, or write any repository file because the parent artkit harvester exclusively owns post-processing and installation.",
+      "sourceReferences": [
+        "packages/client/public/sprites/x2-nullspike-pike/part-1.png"
+      ],
+      "referenceRole": "Image 1 is void-metal palette, pike geometry, bandage language, outline, and weapon-family style reference only; never crop, trace, detach, or copy pixels from it.",
+      "output": "packages/client/public/vfx/weapons/v7/nullspike-finisher-accent.png",
+      "acceptedCandidate": "tools/artkit/out/v7-remaining/nullspike-finisher-accent/attempt-3/candidate.png",
+      "attempts": [
+        {
+          "attempt": 1,
+          "raw": "tools/artkit/out/v7-remaining/nullspike-finisher-accent/attempt-1/raw.png",
+          "candidate": "tools/artkit/out/v7-remaining/nullspike-finisher-accent/attempt-1/candidate.png",
+          "outcome": "REJECTED",
+          "exitCode": 0,
+          "failures": [
+            "alpha aspect 4.400 outside 1.35-3.2"
+          ],
+          "validation": {
+            "valid": false,
+            "failures": [
+              "alpha aspect 4.400 outside 1.35-3.2"
+            ],
+            "width": 368,
+            "height": 96,
+            "aspect": 4.4,
+            "visiblePixels": 8402,
+            "transparentPixels": 25225,
+            "coverage": 0.29836647727272725,
+            "keyColor": "#00ff00",
+            "keySpillPixels": 0,
+            "cornerAlpha": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "alphaBounds": {
+              "x": 8,
+              "y": 8,
+              "width": 352,
+              "height": 80
+            },
+            "gameScale": {
+              "width": 64,
+              "height": 64,
+              "visiblePixels": 3303,
+              "alphaBounds": {
+                "x": 0,
+                "y": 0,
+                "width": 64,
+                "height": 64
+              }
+            }
+          }
+        },
+        {
+          "attempt": 2,
+          "raw": "tools/artkit/out/v7-remaining/nullspike-finisher-accent/attempt-2/raw.png",
+          "candidate": "tools/artkit/out/v7-remaining/nullspike-finisher-accent/attempt-2/candidate.png",
+          "outcome": "REJECTED",
+          "exitCode": 0,
+          "failures": [
+            "alpha aspect 3.745 outside 1.35-3.2"
+          ],
+          "validation": {
+            "valid": false,
+            "failures": [
+              "alpha aspect 3.745 outside 1.35-3.2"
+            ],
+            "width": 368,
+            "height": 110,
+            "aspect": 3.74468085106383,
+            "visiblePixels": 8827,
+            "transparentPixels": 29917,
+            "coverage": 0.26677345261121854,
+            "keyColor": "#00ff00",
+            "keySpillPixels": 0,
+            "cornerAlpha": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "alphaBounds": {
+              "x": 8,
+              "y": 8,
+              "width": 352,
+              "height": 94
+            },
+            "gameScale": {
+              "width": 64,
+              "height": 64,
+              "visiblePixels": 3193,
+              "alphaBounds": {
+                "x": 0,
+                "y": 0,
+                "width": 64,
+                "height": 64
+              }
+            }
+          }
+        },
+        {
+          "attempt": 3,
+          "raw": "tools/artkit/out/v7-remaining/nullspike-finisher-accent/attempt-3/raw.png",
+          "candidate": "tools/artkit/out/v7-remaining/nullspike-finisher-accent/attempt-3/candidate.png",
+          "outcome": "ACCEPTED",
+          "exitCode": 0,
+          "failures": [],
+          "validation": {
+            "valid": true,
+            "failures": [],
+            "width": 368,
+            "height": 123,
+            "aspect": 3.2803738317757007,
+            "visiblePixels": 9686,
+            "transparentPixels": 33731,
+            "coverage": 0.2579013233218841,
+            "keyColor": "#00ff00",
+            "keySpillPixels": 0,
+            "cornerAlpha": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "alphaBounds": {
+              "x": 9,
+              "y": 8,
+              "width": 351,
+              "height": 107
+            },
+            "gameScale": {
+              "width": 64,
+              "height": 64,
+              "visiblePixels": 3091,
+              "alphaBounds": {
+                "x": 0,
+                "y": 0,
+                "width": 64,
+                "height": 64
+              }
+            }
+          }
+        }
+      ],
+      "finalValidation": {
+        "valid": true,
+        "failures": [],
+        "width": 368,
+        "height": 123,
+        "aspect": 3.2803738317757007,
+        "visiblePixels": 9686,
+        "transparentPixels": 33731,
+        "coverage": 0.2579013233218841,
+        "keyColor": "#00ff00",
+        "keySpillPixels": 0,
+        "cornerAlpha": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "alphaBounds": {
+          "x": 9,
+          "y": 8,
+          "width": 351,
+          "height": 107
+        },
+        "gameScale": {
+          "width": 64,
+          "height": 64,
+          "visiblePixels": 3091,
+          "alphaBounds": {
+            "x": 0,
+            "y": 0,
+            "width": 64,
+            "height": 64
+          }
+        }
+      }
+    },
+    {
+      "id": "iron-throwing-star",
+      "name": "Iron Throwing Star",
+      "kind": "weapon-sprite",
+      "weaponId": "x2-iron-throwing-star",
+      "order": "new iron throwing-star weapon; sprite is also in-flight art",
+      "status": "VALID_EXISTING",
+      "prompt": "Use case: stylized-concept\nAsset type: Dimension Drifters weapon-sprite production sprite\nPrimary request: Generate exactly one complete original IRON throwing-star weapon sprite: four broad straight iron blades in a squared X arrangement, deeply concave gaps, clipped chisel tips, a round riveted gunmetal hub, worn steel facets, and a thick uneven charcoal outline. Strong simple four-point silhouette, heavy and practical, centered front-on. It must be visually distinct from fire, ice, and void variants through point count and blade geometry. One star only; no hand, character, sheath, extra stars, trail, glow, text, panel, or scene.\nInput images: Image 1 are reference images. Image 1 is game-scale outline and material rendering reference only; create a distinct original star and never crop, trace, or copy its silhouette or pixels.\nStyle/medium: Dimension Drifters chunky western-gothic flat-cel sprite art; 4-7 colors; thick slightly uneven charcoal outline; compact readable silhouette; restrained painted wear; no photorealism.\nScene/backdrop: perfectly flat solid #00ff00 chroma-key background for deterministic local removal.\nComposition/framing: keep the one complete subject fully visible and separated from every canvas edge with generous uniform padding.\nConstraints: the backdrop is one exact flat color with no shadow, gradient, texture, reflection, floor, lighting variation, vignette, checkerboard, or border; do not use #00ff00 in the subject; no watermark; no signature; no readable text; no extra subject; no contact sheet; no baked rectangular background; no soft bloom extending into the backdrop.\nPipeline contract: use Codex's built-in image generation tool to generate the requested raster image. Generate the image only. Do not use Python, SVG, canvas, or procedural drawing. Do not copy, install, crop, trace, edit, or write any repository file because the parent artkit harvester exclusively owns post-processing and installation.",
+      "sourceReferences": [
+        "packages/client/public/projectiles/coyotes-grin-throwing-blade.png"
+      ],
+      "referenceRole": "Image 1 is game-scale outline and material rendering reference only; create a distinct original star and never crop, trace, or copy its silhouette or pixels.",
+      "output": "packages/client/public/sprites/x2-iron-throwing-star/part-1.png",
+      "acceptedCandidate": "tools/artkit/out/v7-remaining/iron-throwing-star/attempt-1/candidate.png",
+      "attempts": [
+        {
+          "attempt": 1,
+          "raw": "tools/artkit/out/v7-remaining/iron-throwing-star/attempt-1/raw.png",
+          "candidate": "tools/artkit/out/v7-remaining/iron-throwing-star/attempt-1/candidate.png",
+          "outcome": "ACCEPTED",
+          "exitCode": 0,
+          "failures": [],
+          "validation": {
+            "valid": true,
+            "failures": [],
+            "width": 174,
+            "height": 176,
+            "aspect": 0.9875,
+            "visiblePixels": 12072,
+            "transparentPixels": 17511,
+            "coverage": 0.47753164556962024,
+            "keyColor": "#00ff00",
+            "keySpillPixels": 0,
+            "cornerAlpha": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "alphaBounds": {
+              "x": 8,
+              "y": 8,
+              "width": 158,
+              "height": 160
+            },
+            "gameScale": {
+              "width": 64,
+              "height": 64,
+              "visiblePixels": 1695,
+              "alphaBounds": {
+                "x": 3,
+                "y": 0,
+                "width": 61,
+                "height": 64
+              }
+            }
+          }
+        }
+      ],
+      "finalValidation": {
+        "valid": true,
+        "failures": [],
+        "width": 174,
+        "height": 176,
+        "aspect": 0.9875,
+        "visiblePixels": 12072,
+        "transparentPixels": 17511,
+        "coverage": 0.47753164556962024,
+        "keyColor": "#00ff00",
+        "keySpillPixels": 0,
+        "cornerAlpha": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "alphaBounds": {
+          "x": 8,
+          "y": 8,
+          "width": 158,
+          "height": 160
+        },
+        "gameScale": {
+          "width": 64,
+          "height": 64,
+          "visiblePixels": 1695,
+          "alphaBounds": {
+            "x": 3,
+            "y": 0,
+            "width": 61,
+            "height": 64
+          }
+        }
+      }
+    },
+    {
+      "id": "fire-throwing-star",
+      "name": "Fire Throwing Star",
+      "kind": "weapon-sprite",
+      "weaponId": "x2-fire-throwing-star",
+      "order": "new fire throwing-star weapon; sprite is also in-flight art",
+      "status": "VALID_EXISTING",
+      "prompt": "Use case: stylized-concept\nAsset type: Dimension Drifters weapon-sprite production sprite\nPrimary request: Generate exactly one complete original FIRE throwing-star weapon sprite: five hooked flame-shaped blades curving clockwise around a brass furnace hub, each blade with an ember-red outer edge and solid orange inner facet, thick uneven charcoal outline, and asymmetric flame-tip silhouette. The fire colors are painted into the metal; no emitted glow or detached flames. It must be visually distinct from iron, ice, and void variants through five-point hooked geometry. Centered front-on, one star only; no hand, character, extra stars, trail, text, panel, or scene.\nInput images: Image 1 are reference images. Image 1 is game-scale outline and material rendering reference only; create a distinct original star and never crop, trace, or copy its silhouette or pixels.\nStyle/medium: Dimension Drifters chunky western-gothic flat-cel sprite art; 4-7 colors; thick slightly uneven charcoal outline; compact readable silhouette; restrained painted wear; no photorealism.\nScene/backdrop: perfectly flat solid #00ff00 chroma-key background for deterministic local removal.\nComposition/framing: keep the one complete subject fully visible and separated from every canvas edge with generous uniform padding.\nConstraints: the backdrop is one exact flat color with no shadow, gradient, texture, reflection, floor, lighting variation, vignette, checkerboard, or border; do not use #00ff00 in the subject; no watermark; no signature; no readable text; no extra subject; no contact sheet; no baked rectangular background; no soft bloom extending into the backdrop.\nPipeline contract: use Codex's built-in image generation tool to generate the requested raster image. Generate the image only. Do not use Python, SVG, canvas, or procedural drawing. Do not copy, install, crop, trace, edit, or write any repository file because the parent artkit harvester exclusively owns post-processing and installation.",
+      "sourceReferences": [
+        "packages/client/public/projectiles/coyotes-grin-throwing-blade.png"
+      ],
+      "referenceRole": "Image 1 is game-scale outline and material rendering reference only; create a distinct original star and never crop, trace, or copy its silhouette or pixels.",
+      "output": "packages/client/public/sprites/x2-fire-throwing-star/part-1.png",
+      "acceptedCandidate": "tools/artkit/out/v7-remaining/fire-throwing-star/attempt-1/candidate.png",
+      "attempts": [
+        {
+          "attempt": 1,
+          "raw": "tools/artkit/out/v7-remaining/fire-throwing-star/attempt-1/raw.png",
+          "candidate": "tools/artkit/out/v7-remaining/fire-throwing-star/attempt-1/candidate.png",
+          "outcome": "ACCEPTED",
+          "exitCode": 0,
+          "failures": [],
+          "validation": {
+            "valid": true,
+            "failures": [],
+            "width": 165,
+            "height": 176,
+            "aspect": 0.93125,
+            "visiblePixels": 9484,
+            "transparentPixels": 18315,
+            "coverage": 0.3978187919463087,
+            "keyColor": "#00ff00",
+            "keySpillPixels": 0,
+            "cornerAlpha": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "alphaBounds": {
+              "x": 8,
+              "y": 8,
+              "width": 149,
+              "height": 160
+            },
+            "gameScale": {
+              "width": 64,
+              "height": 64,
+              "visiblePixels": 1558,
+              "alphaBounds": {
+                "x": 0,
+                "y": 0,
+                "width": 64,
+                "height": 64
+              }
+            }
+          }
+        }
+      ],
+      "finalValidation": {
+        "valid": true,
+        "failures": [],
+        "width": 165,
+        "height": 176,
+        "aspect": 0.93125,
+        "visiblePixels": 9484,
+        "transparentPixels": 18315,
+        "coverage": 0.3978187919463087,
+        "keyColor": "#00ff00",
+        "keySpillPixels": 0,
+        "cornerAlpha": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "alphaBounds": {
+          "x": 8,
+          "y": 8,
+          "width": 149,
+          "height": 160
+        },
+        "gameScale": {
+          "width": 64,
+          "height": 64,
+          "visiblePixels": 1558,
+          "alphaBounds": {
+            "x": 0,
+            "y": 0,
+            "width": 64,
+            "height": 64
+          }
+        }
+      }
+    },
+    {
+      "id": "ice-throwing-star",
+      "name": "Ice Throwing Star",
+      "kind": "weapon-sprite",
+      "weaponId": "x2-ice-throwing-star",
+      "order": "new ice throwing-star weapon; sprite is also in-flight art",
+      "status": "VALID_EXISTING",
+      "prompt": "Use case: stylized-concept\nAsset type: Dimension Drifters weapon-sprite production sprite\nPrimary request: Generate exactly one complete original ICE throwing-star weapon sprite: six long slender crystalline spikes forming a snowflake-like star, alternating large and small points, a jagged hexagonal frozen hub, chipped pale-blue facets, white ice ridges, cyan shadow planes, and a thick charcoal-blue outline. No detached frost or glow. It must be visually distinct from iron, fire, and void variants through six-point crystalline geometry. Centered front-on, one star only; no hand, character, extra stars, trail, snow cloud, text, panel, or scene.\nInput images: Image 1 are reference images. Image 1 is game-scale outline and material rendering reference only; create a distinct original star and never crop, trace, or copy its silhouette or pixels.\nStyle/medium: Dimension Drifters chunky western-gothic flat-cel sprite art; 4-7 colors; thick slightly uneven charcoal outline; compact readable silhouette; restrained painted wear; no photorealism.\nScene/backdrop: perfectly flat solid #00ff00 chroma-key background for deterministic local removal.\nComposition/framing: keep the one complete subject fully visible and separated from every canvas edge with generous uniform padding.\nConstraints: the backdrop is one exact flat color with no shadow, gradient, texture, reflection, floor, lighting variation, vignette, checkerboard, or border; do not use #00ff00 in the subject; no watermark; no signature; no readable text; no extra subject; no contact sheet; no baked rectangular background; no soft bloom extending into the backdrop.\nPipeline contract: use Codex's built-in image generation tool to generate the requested raster image. Generate the image only. Do not use Python, SVG, canvas, or procedural drawing. Do not copy, install, crop, trace, edit, or write any repository file because the parent artkit harvester exclusively owns post-processing and installation.",
+      "sourceReferences": [
+        "packages/client/public/projectiles/coyotes-grin-throwing-blade.png"
+      ],
+      "referenceRole": "Image 1 is game-scale outline and material rendering reference only; create a distinct original star and never crop, trace, or copy its silhouette or pixels.",
+      "output": "packages/client/public/sprites/x2-ice-throwing-star/part-1.png",
+      "acceptedCandidate": "tools/artkit/out/v7-remaining/ice-throwing-star/attempt-1/candidate.png",
+      "attempts": [
+        {
+          "attempt": 1,
+          "raw": "tools/artkit/out/v7-remaining/ice-throwing-star/attempt-1/raw.png",
+          "candidate": "tools/artkit/out/v7-remaining/ice-throwing-star/attempt-1/candidate.png",
+          "outcome": "ACCEPTED",
+          "exitCode": 0,
+          "failures": [],
+          "validation": {
+            "valid": true,
+            "failures": [],
+            "width": 174,
+            "height": 176,
+            "aspect": 0.9875,
+            "visiblePixels": 6086,
+            "transparentPixels": 23471,
+            "coverage": 0.24074367088607596,
+            "keyColor": "#00ff00",
+            "keySpillPixels": 0,
+            "cornerAlpha": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "alphaBounds": {
+              "x": 8,
+              "y": 8,
+              "width": 158,
+              "height": 160
+            },
+            "gameScale": {
+              "width": 64,
+              "height": 64,
+              "visiblePixels": 916,
+              "alphaBounds": {
+                "x": 3,
+                "y": 0,
+                "width": 61,
+                "height": 64
+              }
+            }
+          }
+        }
+      ],
+      "finalValidation": {
+        "valid": true,
+        "failures": [],
+        "width": 174,
+        "height": 176,
+        "aspect": 0.9875,
+        "visiblePixels": 6086,
+        "transparentPixels": 23471,
+        "coverage": 0.24074367088607596,
+        "keyColor": "#00ff00",
+        "keySpillPixels": 0,
+        "cornerAlpha": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "alphaBounds": {
+          "x": 8,
+          "y": 8,
+          "width": 158,
+          "height": 160
+        },
+        "gameScale": {
+          "width": 64,
+          "height": 64,
+          "visiblePixels": 916,
+          "alphaBounds": {
+            "x": 3,
+            "y": 0,
+            "width": 61,
+            "height": 64
+          }
+        }
+      }
+    },
+    {
+      "id": "void-throwing-star",
+      "name": "Void Throwing Star",
+      "kind": "weapon-sprite",
+      "weaponId": "x2-void-throwing-star",
+      "order": "new void throwing-star weapon; sprite is also in-flight art",
+      "status": "VALID_EXISTING",
+      "prompt": "Use case: stylized-concept\nAsset type: Dimension Drifters weapon-sprite production sprite\nPrimary request: Generate exactly one complete original VOID throwing-star weapon sprite: three large crescent-scythe blades sweeping counterclockwise around a triangular starless-black hub, with arc-violet inner facets, chipped matte-black outer metal, narrow purple bandage notches at each root, and a thick charcoal outline. No portal, emitted aura, or detached motes. It must be visually distinct from iron, fire, and ice variants through its three-lobed curved silhouette. Centered front-on, one star only; no hand, character, extra stars, trail, text, panel, or scene.\nInput images: Image 1 are reference images. Image 1 is game-scale outline and material rendering reference only; create a distinct original star and never crop, trace, or copy its silhouette or pixels.\nStyle/medium: Dimension Drifters chunky western-gothic flat-cel sprite art; 4-7 colors; thick slightly uneven charcoal outline; compact readable silhouette; restrained painted wear; no photorealism.\nScene/backdrop: perfectly flat solid #00ff00 chroma-key background for deterministic local removal.\nComposition/framing: keep the one complete subject fully visible and separated from every canvas edge with generous uniform padding.\nConstraints: the backdrop is one exact flat color with no shadow, gradient, texture, reflection, floor, lighting variation, vignette, checkerboard, or border; do not use #00ff00 in the subject; no watermark; no signature; no readable text; no extra subject; no contact sheet; no baked rectangular background; no soft bloom extending into the backdrop.\nPipeline contract: use Codex's built-in image generation tool to generate the requested raster image. Generate the image only. Do not use Python, SVG, canvas, or procedural drawing. Do not copy, install, crop, trace, edit, or write any repository file because the parent artkit harvester exclusively owns post-processing and installation.",
+      "sourceReferences": [
+        "packages/client/public/projectiles/coyotes-grin-throwing-blade.png"
+      ],
+      "referenceRole": "Image 1 is game-scale outline and material rendering reference only; create a distinct original star and never crop, trace, or copy its silhouette or pixels.",
+      "output": "packages/client/public/sprites/x2-void-throwing-star/part-1.png",
+      "acceptedCandidate": "tools/artkit/out/v7-remaining/void-throwing-star/attempt-1/candidate.png",
+      "attempts": [
+        {
+          "attempt": 1,
+          "raw": "tools/artkit/out/v7-remaining/void-throwing-star/attempt-1/raw.png",
+          "candidate": "tools/artkit/out/v7-remaining/void-throwing-star/attempt-1/candidate.png",
+          "outcome": "ACCEPTED",
+          "exitCode": 0,
+          "failures": [],
+          "validation": {
+            "valid": true,
+            "failures": [],
+            "width": 176,
+            "height": 165,
+            "aspect": 1.0738255033557047,
+            "visiblePixels": 8536,
+            "transparentPixels": 19525,
+            "coverage": 0.3580536912751678,
+            "keyColor": "#00ff00",
+            "keySpillPixels": 0,
+            "cornerAlpha": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "alphaBounds": {
+              "x": 8,
+              "y": 8,
+              "width": 160,
+              "height": 149
+            },
+            "gameScale": {
+              "width": 64,
+              "height": 64,
+              "visiblePixels": 1432,
+              "alphaBounds": {
+                "x": 0,
+                "y": 0,
+                "width": 64,
+                "height": 64
+              }
+            }
+          }
+        }
+      ],
+      "finalValidation": {
+        "valid": true,
+        "failures": [],
+        "width": 176,
+        "height": 165,
+        "aspect": 1.0738255033557047,
+        "visiblePixels": 8536,
+        "transparentPixels": 19525,
+        "coverage": 0.3580536912751678,
+        "keyColor": "#00ff00",
+        "keySpillPixels": 0,
+        "cornerAlpha": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "alphaBounds": {
+          "x": 8,
+          "y": 8,
+          "width": 160,
+          "height": 149
+        },
+        "gameScale": {
+          "width": 64,
+          "height": 64,
+          "visiblePixels": 1432,
+          "alphaBounds": {
+            "x": 0,
+            "y": 0,
+            "width": 64,
+            "height": 64
+          }
+        }
+      }
+    }
+  ],
+  "contactSheet": "docs/owner-notes-audit-v7-evidence/generated-art/v7-remaining-contact-sheet.jpg",
+  "starDistinctness": {
+    "valid": true,
+    "pairs": [
+      {
+        "a": "iron-throwing-star",
+        "b": "fire-throwing-star",
+        "iou": 0.3392299687825182,
+        "xorRatio": 0.6607700312174818,
+        "valid": true
+      },
+      {
+        "a": "iron-throwing-star",
+        "b": "ice-throwing-star",
+        "iou": 0.2508038585209003,
+        "xorRatio": 0.7491961414790996,
+        "valid": true
+      },
+      {
+        "a": "iron-throwing-star",
+        "b": "void-throwing-star",
+        "iou": 0.28096885813148786,
+        "xorRatio": 0.7190311418685121,
+        "valid": true
+      },
+      {
+        "a": "fire-throwing-star",
+        "b": "ice-throwing-star",
+        "iou": 0.36824800375763267,
+        "xorRatio": 0.6317519962423673,
+        "valid": true
+      },
+      {
+        "a": "fire-throwing-star",
+        "b": "void-throwing-star",
+        "iou": 0.31100299401197606,
+        "xorRatio": 0.6889970059880239,
+        "valid": true
+      },
+      {
+        "a": "ice-throwing-star",
+        "b": "void-throwing-star",
+        "iou": 0.2720554272517321,
+        "xorRatio": 0.7279445727482678,
+        "valid": true
+      }
+    ]
+  }
+}

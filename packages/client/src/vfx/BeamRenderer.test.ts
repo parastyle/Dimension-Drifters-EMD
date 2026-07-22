@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("phaser", () => ({ default: {} }));
 
 import { beamPaintFor, beamVisualWidth, seraphBeamCursorPose } from "./BeamRenderer.js";
+import { BEAM_STRUCTURE_ART, beamStructureWorldBounds } from "./beam-structure-art.js";
 
 describe("BeamRenderer presentation laws", () => {
   it("breathes strictly within the authoritative swept-band width at every heat state", () => {
@@ -32,5 +33,33 @@ describe("BeamRenderer presentation laws", () => {
       length: 100,
     });
     expect(seraphBeamCursorPose({ x: 10, y: 20 }, { x: 1010, y: 20 }, 640).length).toBe(640);
+  });
+
+  it("fits every generated structure alpha bound inside authoritative width and range", () => {
+    for (const art of Object.values(BEAM_STRUCTURE_ART)) {
+      expect(art.provenance, art.kind).toBe("codex-generated");
+      for (const authoritativeWidth of [8, 18, 48, 64]) {
+        const renderedWidth = authoritativeWidth * 0.92;
+        const bounds = beamStructureWorldBounds(art, 640, renderedWidth);
+        expect(bounds.longitudinalStart, art.kind).toBeGreaterThanOrEqual(0);
+        expect(bounds.longitudinalEnd, art.kind).toBeLessThanOrEqual(640);
+        expect(bounds.transverseMin, art.kind).toBeGreaterThanOrEqual(-authoritativeWidth * 0.5);
+        expect(bounds.transverseMax, art.kind).toBeLessThanOrEqual(authoritativeWidth * 0.5);
+      }
+    }
+  });
+
+  it("ships non-equivalent longitudinal occupancies and ice-only Frostquill material", () => {
+    const occupancies = Object.values(BEAM_STRUCTURE_ART).map(
+      (art) => art.energeticColumnOccupancy,
+    );
+    expect(new Set(occupancies.map((value) => value.toFixed(3))).size).toBeGreaterThanOrEqual(4);
+    expect(BEAM_STRUCTURE_ART["ice-particles"].material).toBe("ice-particles");
+    expect(BEAM_STRUCTURE_ART["ice-particles"].alphaBounds).toEqual({
+      minX: 8,
+      minY: 27,
+      maxX: 247,
+      maxY: 68,
+    });
   });
 });

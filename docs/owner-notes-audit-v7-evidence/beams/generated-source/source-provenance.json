@@ -1,0 +1,27 @@
+{
+  "segmented-arcs": {
+    "generationMode": "repository artkit runCodexExec using isolated Codex home and built-in imagegen",
+    "raw": "segmented-arcs-raw.png",
+    "log": "segmented-arcs.codex.log"
+  },
+  "converging-strands": {
+    "generationMode": "repository artkit runCodexExec using isolated Codex home and built-in imagegen",
+    "raw": "converging-strands-raw.png",
+    "log": "converging-strands.codex.log"
+  },
+  "pulse-train": {
+    "generationMode": "repository artkit runCodexExec using isolated Codex home and built-in imagegen",
+    "raw": "pulse-train-raw.png",
+    "log": "pulse-train.codex.log"
+  },
+  "flame-tongues": {
+    "generationMode": "direct built-in image_gen after bounded nested artkit attempt timed out",
+    "raw": "flame-tongues-raw.png",
+    "original": "C:/Users/Exped/.codex/generated_images/019f8a1a-8818-7bc3-a9b0-9ac239335078/exec-3f7b54cb-1d08-49d8-906a-0a741081512b.png"
+  },
+  "ice-particles": {
+    "generationMode": "direct built-in image_gen",
+    "raw": "ice-particles-raw.png",
+    "original": "C:/Users/Exped/.codex/generated_images/019f8a1a-8818-7bc3-a9b0-9ac239335078/exec-b651dcfd-1fa4-492a-9e3c-2cf5ea43a149.png"
+  }
+}

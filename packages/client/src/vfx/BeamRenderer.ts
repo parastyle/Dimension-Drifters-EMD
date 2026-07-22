@@ -7,9 +7,15 @@ import {
 } from "@dd/shared";
 import Phaser from "phaser";
 import type { ColorblindAssistMode } from "../settings.js";
+import {
+  beamStructureArtFor,
+  beamStructureWorldBounds,
+  preloadBeamStructureArt,
+} from "./beam-structure-art.js";
 import { drawCasterGlyph } from "./caster-vfx.js";
 import {
   type BeamVfxRecipe,
+  type BeamVfxStructureFamily,
   type CasterVfxRecipe,
   resolveCasterVfxRecipe,
 } from "./caster-vfx-recipes.js";
@@ -97,6 +103,24 @@ export interface PredictedBeamCharge {
   element: string;
 }
 
+export interface BeamStructureRenderTelemetry {
+  readonly family: BeamVfxStructureFamily;
+  readonly textureKey: string;
+  readonly textureReady: boolean;
+  readonly generatedSheetVisible: boolean;
+  readonly coneStream: boolean;
+  readonly iceOnly: boolean;
+  readonly authoritativeWidth: number;
+  readonly authoritativeLength: number;
+  readonly renderLength: number;
+  readonly artRenderedWidth: number;
+  readonly proceduralCoreWidth: number;
+  readonly normalWobble: number;
+  readonly maxTransverseExtent: number;
+  readonly longitudinalStart: number;
+  readonly longitudinalEnd: number;
+}
+
 interface BeamEntry {
   key: string;
   ownerId: string;
@@ -123,6 +147,7 @@ interface BeamEntry {
   renderOriginY: number;
   body: Phaser.GameObjects.Rope;
   lip: Phaser.GameObjects.Rope;
+  structure?: BeamStructureRenderTelemetry;
 }
 
 interface BeamDrawPose {
@@ -229,6 +254,7 @@ export class BeamRenderer {
 
   constructor(private readonly scene: Phaser.Scene) {
     globalThis.VFXRENDER.ensureTextures(scene);
+    preloadBeamStructureArt(scene);
     this.groundLight = scene.add.graphics().setDepth(2);
     this.graphics = scene.add.graphics().setDepth(9990);
     for (let i = 0; i < 18; i++) this.capsulePoints.push(new Phaser.Math.Vector2());
@@ -367,6 +393,7 @@ export class BeamRenderer {
       entry.lip.setVisible(false);
       entry.lastPhase = BeamPhase.Idle;
       entry.poseReady = false;
+      entry.structure = undefined;
     }
   }
 
@@ -427,6 +454,7 @@ export class BeamRenderer {
     const oy = this.projectY(pose.originY, beltY0, beltYScale);
 
     if (row.phase === BeamPhase.Charging) {
+      entry.structure = undefined;
       entry.body.setVisible(false);
       entry.lip.setVisible(false);
       this.drawCharge(
@@ -486,6 +514,7 @@ export class BeamRenderer {
 
     entry.body.setVisible(false);
     entry.lip.setVisible(false);
+    entry.structure = undefined;
     if (entry.releaseT > 0 && row.effectiveLength > 0 && row.width > 0) {
       const q = entry.releaseT / 0.08;
       this.drawCapsule(
@@ -718,6 +747,61 @@ export class BeamRenderer {
         beltYScale,
         beam?.conePolish,
       );
+      return;
+    }
+    if (beam?.structure) {
+      const structure = beam.structure;
+      const coreWidth = structure.iceOnly
+        ? 0
+        : Math.min(
+            visualWidth,
+            Math.max(1, visualWidth * Math.max(0, structure.readableCoreWidth)),
+          );
+      if (coreWidth > 0) {
+        this.drawCapsule(
+          pose.originX,
+          pose.originY,
+          pose.angle,
+          pose.length,
+          Math.min(visualWidth, coreWidth * 2.25),
+          0x100914,
+          0.78,
+          beltY0,
+          beltYScale,
+        );
+        this.drawCapsule(
+          pose.originX,
+          pose.originY,
+          pose.angle,
+          pose.length,
+          coreWidth,
+          coreColor,
+          0.92,
+          beltY0,
+          beltYScale,
+        );
+      }
+      if (redline > 0 && !structure.iceOnly) {
+        const sourceY = this.projectY(pose.originY, beltY0, beltYScale);
+        const dangerPulse = 0.5 + 0.5 * Math.sin(nowMs * 0.034 + entry.seed * Math.PI * 2);
+        const radius = visualWidth * (0.22 + dangerPulse * 0.1);
+        this.graphics
+          .lineStyle(2 + redline * 1.5, 0xff3b24, redline * (0.52 + dangerPulse * 0.38))
+          .strokeEllipse(pose.originX, sourceY, radius * 2, radius * 2 * beltYScale);
+      }
+      if (!structure.iceOnly)
+        this.drawTerminus(
+          entry,
+          row,
+          pose,
+          edgeColor,
+          visualWidth,
+          nowMs,
+          beltY0,
+          beltYScale,
+          beam,
+        );
+      if (this.colorblindShapes) this.drawElementPattern(row, pose, beltY0, beltYScale);
       return;
     }
     const edgeWidth = visualWidth * (beam?.edgeWidth ?? 1);
@@ -1157,14 +1241,33 @@ export class BeamRenderer {
     // procedural capsules remain a truth/readability backing, never the beam's sole presentation.
     const paint = beamPaintFor(row.element);
     const beam = recipe?.beam;
+    const structure = beam?.structure;
+    const coneStream = WEAPONS[row.weaponId]?.beam?.coneStream;
+    if (structure && coneStream) {
+      entry.body.setVisible(false);
+      entry.lip.setVisible(false);
+      entry.structure = {
+        family: structure.family,
+        textureKey: "",
+        textureReady: false,
+        generatedSheetVisible: false,
+        coneStream: true,
+        iceOnly: structure.iceOnly === true,
+        authoritativeWidth: row.width,
+        authoritativeLength: row.effectiveLength,
+        renderLength: pose.length,
+        artRenderedWidth: 0,
+        proceduralCoreWidth: 0,
+        normalWobble: 0,
+        maxTransverseExtent: visualWidth * 0.5,
+        longitudinalStart: 0,
+        longitudinalEnd: pose.length,
+      };
+      return;
+    }
     const particleElement = beam?.particleElement ?? paint.id;
     const bodyKey = `ptcl:${particleElement}-${beam?.bodyParticle ?? "wisp"}`;
     const lipKey = `ptcl:${particleElement}-${beam?.coreParticle ?? "bolt"}`;
-    if (!this.scene.textures.exists(bodyKey) || !this.scene.textures.exists(lipKey)) {
-      entry.body.setVisible(false);
-      entry.lip.setVisible(false);
-      return;
-    }
     const x0 = pose.originX;
     const y0 = this.projectY(pose.originY, beltY0, beltYScale);
     const x1 = pose.originX + Math.cos(pose.angle) * pose.length;
@@ -1174,6 +1277,117 @@ export class BeamRenderer {
     const redline = redlineFor(row.heat);
     const paintColor = mixColor(beam?.accentColor ?? color, 0xff3b24, redline * 0.86);
     const coreColor = mixColor(beam?.coreColor ?? 0xffffff, 0xffdf80, redline * 0.72);
+    if (structure) {
+      const art = beamStructureArtFor(structure.family);
+      const textureReady = this.scene.textures.exists(art.textureKey);
+      const artRenderedWidth = projectedWidth * Math.min(1, Math.max(0, structure.artWidth));
+      const localBounds = beamStructureWorldBounds(art, pose.length, artRenderedWidth);
+      const alphaHalfExtent = Math.max(
+        Math.abs(localBounds.transverseMin),
+        Math.abs(localBounds.transverseMax),
+      );
+      const availableWobble = Math.max(0, projectedWidth * 0.5 - alphaHalfExtent);
+      const normalWobble = Math.min(
+        availableWobble * 0.42,
+        projectedWidth * (structure.family === "pulse-train" ? 0.045 : 0.075),
+      );
+      if (textureReady) {
+        const structureColor = structure.iceOnly ? (beam?.accentColor ?? 0x91e8ff) : paintColor;
+        globalThis.VFXRENDER.updateLinearRope(
+          entry.body,
+          art.textureKey,
+          0,
+          quality,
+          x0,
+          y0,
+          x1,
+          y1,
+          artRenderedWidth,
+          structure.iceOnly ? 0.96 : 0.88,
+          structureColor,
+          phase * structure.phaseRate,
+          normalWobble,
+        );
+        if (structure.iceOnly) {
+          globalThis.VFXRENDER.updateLinearRope(
+            entry.lip,
+            art.textureKey,
+            0,
+            quality,
+            x0,
+            y0,
+            x1,
+            y1,
+            artRenderedWidth * 0.52,
+            0.58,
+            beam?.coreColor ?? 0xffffff,
+            -phase * structure.phaseRate * 1.2,
+            normalWobble * 0.45,
+          );
+        } else entry.lip.setVisible(false);
+      } else if (this.scene.textures.exists(bodyKey) && this.scene.textures.exists(lipKey)) {
+        // Load-window fallback only. Frostquill remains ice-particle-only even before its generated sheet is ready.
+        globalThis.VFXRENDER.updateLinearRope(
+          entry.body,
+          bodyKey,
+          beam?.bodyFrame ?? paint.wisp,
+          quality,
+          x0,
+          y0,
+          x1,
+          y1,
+          projectedWidth * (structure.iceOnly ? 0.42 : 0.24),
+          0.38,
+          structure.iceOnly ? (beam?.accentColor ?? 0x91e8ff) : paintColor,
+          phase,
+          0,
+        );
+        globalThis.VFXRENDER.updateLinearRope(
+          entry.lip,
+          lipKey,
+          beam?.coreFrame ?? paint.bolt,
+          quality,
+          x0,
+          y0,
+          x1,
+          y1,
+          projectedWidth * (structure.iceOnly ? 0.2 : 0.08),
+          0.46,
+          structure.iceOnly ? (beam?.coreColor ?? 0xffffff) : coreColor,
+          -phase,
+          0,
+        );
+      } else {
+        entry.body.setVisible(false);
+        entry.lip.setVisible(false);
+      }
+      const proceduralCoreWidth = structure.iceOnly
+        ? 0
+        : Math.min(visualWidth, Math.max(1, visualWidth * structure.readableCoreWidth));
+      entry.structure = {
+        family: structure.family,
+        textureKey: textureReady ? art.textureKey : bodyKey,
+        textureReady,
+        generatedSheetVisible: textureReady && entry.body.visible,
+        coneStream: false,
+        iceOnly: structure.iceOnly === true,
+        authoritativeWidth: row.width,
+        authoritativeLength: row.effectiveLength,
+        renderLength: pose.length,
+        artRenderedWidth,
+        proceduralCoreWidth,
+        normalWobble,
+        maxTransverseExtent: alphaHalfExtent + normalWobble,
+        longitudinalStart: localBounds.longitudinalStart,
+        longitudinalEnd: localBounds.longitudinalEnd,
+      };
+      return;
+    }
+    if (!this.scene.textures.exists(bodyKey) || !this.scene.textures.exists(lipKey)) {
+      entry.body.setVisible(false);
+      entry.lip.setVisible(false);
+      return;
+    }
     globalThis.VFXRENDER.updateLinearRope(
       entry.body,
       bodyKey,

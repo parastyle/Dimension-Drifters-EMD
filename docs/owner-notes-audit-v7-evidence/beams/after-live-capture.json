@@ -1,0 +1,472 @@
+{
+  "capturedAt": "2026-07-22T14:47:55.408Z",
+  "baseURL": "http://127.0.0.1:55537",
+  "thresholds": {
+    "muzzlePx": 2.5,
+    "pairwiseGridDistance": 0.1,
+    "serverSpanPx": 5
+  },
+  "assertions": {
+    "allFamiliesCaptured": true,
+    "generatedSheetsVisible": true,
+    "measuredSilhouettesDiffer": true,
+    "energeticPixelsInsideWidth": true,
+    "energeticPixelsInsideRange": true,
+    "stationaryMuzzleAttached": true,
+    "movingMuzzleAttached": true,
+    "lifecycle": true,
+    "frostquillIceOnly": true
+  },
+  "signatureDistances": [
+    {
+      "left": "segmented-arcs",
+      "right": "converging-strands",
+      "distance": 0.2526041666666667
+    },
+    {
+      "left": "segmented-arcs",
+      "right": "pulse-train",
+      "distance": 0.16145833333333334
+    },
+    {
+      "left": "segmented-arcs",
+      "right": "flame-tongues",
+      "distance": 0.2682291666666667
+    },
+    {
+      "left": "segmented-arcs",
+      "right": "ice-particles",
+      "distance": 0.17447916666666666
+    },
+    {
+      "left": "converging-strands",
+      "right": "pulse-train",
+      "distance": 0.2109375
+    },
+    {
+      "left": "converging-strands",
+      "right": "flame-tongues",
+      "distance": 0.19270833333333334
+    },
+    {
+      "left": "converging-strands",
+      "right": "ice-particles",
+      "distance": 0.171875
+    },
+    {
+      "left": "pulse-train",
+      "right": "flame-tongues",
+      "distance": 0.19010416666666666
+    },
+    {
+      "left": "pulse-train",
+      "right": "ice-particles",
+      "distance": 0.12760416666666666
+    },
+    {
+      "left": "flame-tongues",
+      "right": "ice-particles",
+      "distance": 0.13020833333333334
+    }
+  ],
+  "movingTravel": 22.39990234375,
+  "visibleMovingTravel": 9.735358166859896,
+  "movingServerSpan": 22.39990234375,
+  "maxMovingMuzzleDelta": 0,
+  "movingFrames": [
+    {
+      "playerX": 2427.632493232725,
+      "playerY": 2420,
+      "serverX": 2405.60009765625,
+      "serverY": 2420,
+      "muzzleX": 2520.294271198048,
+      "muzzleY": 2395.175857342841,
+      "beamX": 2520.294271198048,
+      "beamY": 2395.175857342841,
+      "delta": 0
+    },
+    {
+      "playerX": 2424.6537787083407,
+      "playerY": 2420,
+      "serverX": 2411.199951171875,
+      "serverY": 2420,
+      "muzzleX": 2517.32075969527,
+      "muzzleY": 2395.197133436021,
+      "beamX": 2517.32075969527,
+      "beamY": 2395.197133436021,
+      "delta": 0
+    },
+    {
+      "playerX": 2428.715013522587,
+      "playerY": 2420,
+      "serverX": 2411.199951171875,
+      "serverY": 2420,
+      "muzzleX": 2521.3777313795113,
+      "muzzleY": 2395.1796687887017,
+      "beamX": 2521.3777313795113,
+      "beamY": 2395.1796687887017,
+      "delta": 0
+    },
+    {
+      "playerX": 2426.5551968453196,
+      "playerY": 2420,
+      "serverX": 2416.800048828125,
+      "serverY": 2420,
+      "muzzleX": 2519.221903931935,
+      "muzzleY": 2395.196229087193,
+      "beamX": 2519.221903931935,
+      "beamY": 2395.196229087193,
+      "delta": 0
+    },
+    {
+      "playerX": 2432.73191027063,
+      "playerY": 2420,
+      "serverX": 2416.800048828125,
+      "serverY": 2420,
+      "muzzleX": 2525.391659716127,
+      "muzzleY": 2395.167850511272,
+      "beamX": 2525.391659716127,
+      "beamY": 2395.167850511272,
+      "delta": 0
+    },
+    {
+      "playerX": 2429.675951220753,
+      "playerY": 2420,
+      "serverX": 2422.39990234375,
+      "serverY": 2420,
+      "muzzleX": 2522.3413829761553,
+      "muzzleY": 2395.190670722228,
+      "beamX": 2522.3413829761553,
+      "beamY": 2395.190670722228,
+      "delta": 0
+    },
+    {
+      "playerX": 2439.4419195374876,
+      "playerY": 2420,
+      "serverX": 2422.39990234375,
+      "serverY": 2420,
+      "muzzleX": 2532.095589927569,
+      "muzzleY": 2395.1434450058528,
+      "beamX": 2532.095589927569,
+      "beamY": 2395.1434450058528,
+      "delta": 0
+    },
+    {
+      "playerX": 2437.367851399585,
+      "playerY": 2420,
+      "serverX": 2428,
+      "serverY": 2420,
+      "muzzleX": 2530.0268757580516,
+      "muzzleY": 2395.16473139354,
+      "beamX": 2530.0268757580516,
+      "beamY": 2395.16473139354,
+      "delta": 0
+    }
+  ],
+  "lifecycle": {
+    "phases": [
+      1,
+      2,
+      3
+    ],
+    "sawVenting": true,
+    "rowCleared": true
+  },
+  "snapshots": [
+    {
+      "family": "segmented-arcs",
+      "weaponId": "x2-voltcaster-machine-pistol",
+      "phase": 2,
+      "rowWidth": 8,
+      "rowLength": 560,
+      "textureKey": "beam-v7-structure:segmented-arcs",
+      "lipTextureKey": "vfx-blank",
+      "lipVisible": false,
+      "bodyVisible": true,
+      "bodyScaleX": 0.07154464667412609,
+      "bodyScaleY": 0.07154464667412609,
+      "beamOrigin": {
+        "x": 2519.75110899433,
+        "y": 2395.190906107791
+      },
+      "beamEndpoint": {
+        "x": 3079.655577919433,
+        "y": 2384.847517992773
+      },
+      "renderedRopeLength": 559.9999999999998,
+      "muzzle": {
+        "x": 2519.75110899433,
+        "y": 2395.190906107791
+      },
+      "muzzleDelta": 0,
+      "actualMaxTransverseExtent": 1.4081287277225725,
+      "structure": {
+        "family": "segmented-arcs",
+        "textureKey": "beam-v7-structure:segmented-arcs",
+        "textureReady": true,
+        "generatedSheetVisible": true,
+        "coneStream": false,
+        "iceOnly": false,
+        "authoritativeWidth": 8,
+        "authoritativeLength": 560,
+        "renderLength": 560,
+        "artRenderedWidth": 6.868286080716105,
+        "proceduralCoreWidth": 1,
+        "normalWobble": 0.5853652909701226,
+        "maxTransverseExtent": 1.4081287277225727,
+        "longitudinalStart": 17.5,
+        "longitudinalEnd": 542.5
+      },
+      "textureMeasurement": {
+        "width": 256,
+        "height": 96,
+        "visiblePixels": 1666,
+        "alphaBounds": {
+          "minX": 8,
+          "minY": 36,
+          "maxX": 247,
+          "maxY": 58
+        },
+        "energeticColumnOccupancy": 0.70703125,
+        "gridSignature": "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000000000000111100111011000011111100011110011110011110111111110011101111100110001100000010000000011011000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "screenshot": "docs\\owner-notes-audit-v7-evidence\\beams\\after-segmented-arcs-x2-voltcaster-machine-pistol.png"
+    },
+    {
+      "family": "converging-strands",
+      "weaponId": "x2-mirage-coilrifle",
+      "phase": 2,
+      "rowWidth": 18,
+      "rowLength": 640,
+      "textureKey": "beam-v7-structure:converging-strands",
+      "lipTextureKey": "vfx-blank",
+      "lipVisible": false,
+      "bodyVisible": true,
+      "bodyScaleX": 0.16800083962013757,
+      "bodyScaleY": 0.16800083962013757,
+      "beamOrigin": {
+        "x": 2527.4972564238005,
+        "y": 2397.4690806104068
+      },
+      "beamEndpoint": {
+        "x": 3167.3945381491285,
+        "y": 2386.003094366916
+      },
+      "renderedRopeLength": 639.9999999999997,
+      "muzzle": {
+        "x": 2527.4972564238005,
+        "y": 2397.4690806104068
+      },
+      "muzzleDelta": 0,
+      "actualMaxTransverseExtent": 6.438814788050055,
+      "structure": {
+        "family": "converging-strands",
+        "textureKey": "beam-v7-structure:converging-strands",
+        "textureReady": true,
+        "generatedSheetVisible": true,
+        "coneStream": false,
+        "iceOnly": false,
+        "authoritativeWidth": 18,
+        "authoritativeLength": 640,
+        "renderLength": 640,
+        "artRenderedWidth": 16.128080603533206,
+        "proceduralCoreWidth": 1,
+        "normalWobble": 1.314789179635859,
+        "maxTransverseExtent": 6.438814788050054,
+        "longitudinalStart": 20,
+        "longitudinalEnd": 620
+      },
+      "textureMeasurement": {
+        "width": 256,
+        "height": 96,
+        "visiblePixels": 4435,
+        "alphaBounds": {
+          "minX": 8,
+          "minY": 17,
+          "maxX": 247,
+          "maxY": 78
+        },
+        "energeticColumnOccupancy": 0.91015625,
+        "gridSignature": "000000000000000000000000000000000000000000000000000000000000000001111110000000000000000000000000011111111111110111111100000000000000000000001111100111111111000001111111111111011111100111111110011111011111000011111111111111100000000111111111111111111100000000111111000001111111100000000000011100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "screenshot": "docs\\owner-notes-audit-v7-evidence\\beams\\after-converging-strands-x2-mirage-coilrifle.png"
+    },
+    {
+      "family": "pulse-train",
+      "weaponId": "x2-quartzlight-wayfinder",
+      "phase": 2,
+      "rowWidth": 48,
+      "rowLength": 640,
+      "textureKey": "beam-v7-structure:pulse-train",
+      "lipTextureKey": "vfx-blank",
+      "lipVisible": false,
+      "bodyVisible": true,
+      "bodyScaleX": 0.39727298202525785,
+      "bodyScaleY": 0.39727298202525785,
+      "beamOrigin": {
+        "x": 2502.296367071733,
+        "y": 2414.0928761838095
+      },
+      "beamEndpoint": {
+        "x": 3142.1962544943126,
+        "y": 2402.7732438324483
+      },
+      "renderedRopeLength": 640,
+      "muzzle": {
+        "x": 2502.296367071733,
+        "y": 2414.0928761838095
+      },
+      "muzzleDelta": 0,
+      "actualMaxTransverseExtent": 12.968125198967346,
+      "structure": {
+        "family": "pulse-train",
+        "textureKey": "beam-v7-structure:pulse-train",
+        "textureReady": true,
+        "generatedSheetVisible": true,
+        "coneStream": false,
+        "iceOnly": false,
+        "authoritativeWidth": 48,
+        "authoritativeLength": 640,
+        "renderLength": 640,
+        "artRenderedWidth": 38.13820627442475,
+        "proceduralCoreWidth": 2.043118193272755,
+        "normalWobble": 2.043118193272755,
+        "maxTransverseExtent": 12.968125198967346,
+        "longitudinalStart": 20,
+        "longitudinalEnd": 620
+      },
+      "textureMeasurement": {
+        "width": 256,
+        "height": 96,
+        "visiblePixels": 3903,
+        "alphaBounds": {
+          "minX": 8,
+          "minY": 20,
+          "maxX": 247,
+          "maxY": 74
+        },
+        "energeticColumnOccupancy": 0.6640625,
+        "gridSignature": "000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000100000001000000010000001000000011100100111001001110100111010001111111101111111111101111110110011110111011111111111111111101100011100100111001001110100111010000010000000100000001000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "screenshot": "docs\\owner-notes-audit-v7-evidence\\beams\\after-pulse-train-x2-quartzlight-wayfinder.png"
+    },
+    {
+      "family": "flame-tongues",
+      "weaponId": "x2-sunmote-reliquary-staff",
+      "phase": 2,
+      "rowWidth": 56,
+      "rowLength": 640,
+      "textureKey": "beam-v7-structure:flame-tongues",
+      "lipTextureKey": "vfx-blank",
+      "lipVisible": false,
+      "bodyVisible": true,
+      "bodyScaleX": 0.49454033177165263,
+      "bodyScaleY": 0.49454033177165263,
+      "beamOrigin": {
+        "x": 2545.2840035035156,
+        "y": 2417.3005662322867
+      },
+      "beamEndpoint": {
+        "x": 3185.1799984549743,
+        "y": 2405.762990876833
+      },
+      "renderedRopeLength": 640.0000000000001,
+      "muzzle": {
+        "x": 2545.2840035035156,
+        "y": 2417.3005662322867
+      },
+      "muzzleDelta": 0,
+      "actualMaxTransverseExtent": 17.061641446122017,
+      "structure": {
+        "family": "flame-tongues",
+        "textureKey": "beam-v7-structure:flame-tongues",
+        "textureReady": true,
+        "generatedSheetVisible": true,
+        "coneStream": false,
+        "iceOnly": false,
+        "authoritativeWidth": 56,
+        "authoritativeLength": 640,
+        "renderLength": 640,
+        "artRenderedWidth": 47.475871850078654,
+        "proceduralCoreWidth": 3.956322654173221,
+        "normalWobble": 3.956322654173221,
+        "maxTransverseExtent": 17.061641446122017,
+        "longitudinalStart": 20,
+        "longitudinalEnd": 620
+      },
+      "textureMeasurement": {
+        "width": 256,
+        "height": 96,
+        "visiblePixels": 7299,
+        "alphaBounds": {
+          "minX": 8,
+          "minY": 21,
+          "maxX": 247,
+          "maxY": 73
+        },
+        "energeticColumnOccupancy": 0.921875,
+        "gridSignature": "000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000000000000001101111101100110111100001100001111111111111111111111111110001111111111111111111111111111100011111111111111111111111111111100001111111111111111111111111111000000110110111101110011011001110000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "screenshot": "docs\\owner-notes-audit-v7-evidence\\beams\\after-flame-tongues-x2-sunmote-reliquary-staff.png"
+    },
+    {
+      "family": "ice-particles",
+      "weaponId": "x2-frostquill-compendium",
+      "phase": 2,
+      "rowWidth": 56,
+      "rowLength": 640,
+      "textureKey": "beam-v7-structure:ice-particles",
+      "lipTextureKey": "beam-v7-structure:ice-particles",
+      "lipVisible": true,
+      "bodyVisible": true,
+      "bodyScaleX": 0.5275552237184461,
+      "bodyScaleY": 0.5275552237184461,
+      "beamOrigin": {
+        "x": 2514.46973589605,
+        "y": 2410.2920754578936
+      },
+      "beamEndpoint": {
+        "x": 3154.3677220895574,
+        "y": 2398.865472047697
+      },
+      "renderedRopeLength": 639.9999999999999,
+      "muzzle": {
+        "x": 2514.46973589605,
+        "y": 2410.2920754578936
+      },
+      "muzzleDelta": 0,
+      "actualMaxTransverseExtent": 14.943575141415984,
+      "structure": {
+        "family": "ice-particles",
+        "textureKey": "beam-v7-structure:ice-particles",
+        "textureReady": true,
+        "generatedSheetVisible": true,
+        "coneStream": false,
+        "iceOnly": true,
+        "authoritativeWidth": 56,
+        "authoritativeLength": 640,
+        "renderLength": 640,
+        "artRenderedWidth": 50.64530147697083,
+        "proceduralCoreWidth": 0,
+        "normalWobble": 4.128693055187839,
+        "maxTransverseExtent": 14.943575141415984,
+        "longitudinalStart": 20,
+        "longitudinalEnd": 620
+      },
+      "textureMeasurement": {
+        "width": 256,
+        "height": 96,
+        "visiblePixels": 4911,
+        "alphaBounds": {
+          "minX": 8,
+          "minY": 27,
+          "maxX": 247,
+          "maxY": 68
+        },
+        "energeticColumnOccupancy": 0.890625,
+        "gridSignature": "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000011001000110000000000000000011111111111111111111011101000001111111111111111111111111111110011111111111111111111111111111100111111111111111111111111111000000001001001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "screenshot": "docs\\owner-notes-audit-v7-evidence\\beams\\after-ice-particles-x2-frostquill-compendium.png"
+    }
+  ]
+}

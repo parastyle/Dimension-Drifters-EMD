@@ -1,0 +1,111 @@
+{
+  "capturedAt": "2026-07-22T14:00:57.139Z",
+  "baseURL": "http://127.0.0.1:57998",
+  "snapshots": [
+    {
+      "family": "segmented-arcs",
+      "weaponId": "x2-voltcaster-machine-pistol",
+      "phase": 2,
+      "rowWidth": 8,
+      "rowLength": 560,
+      "textureKey": "ptcl:shock-bolt",
+      "bodyVisible": true,
+      "bodyScaleX": 0.03672262283339505,
+      "bodyScaleY": 0.03672262283339505,
+      "beamOrigin": {
+        "x": 2492.6736192498024,
+        "y": 2395.224202695651
+      },
+      "muzzle": {
+        "x": 2492.6736192498024,
+        "y": 2395.224202695651
+      },
+      "muzzleDelta": 0,
+      "screenshot": "docs\\owner-notes-audit-v7-evidence\\beams\\before-segmented-arcs-x2-voltcaster-machine-pistol.png"
+    },
+    {
+      "family": "converging-strands",
+      "weaponId": "x2-mirage-coilrifle",
+      "phase": 2,
+      "rowWidth": 18,
+      "rowLength": 640,
+      "textureKey": "ptcl:arcane-wisp",
+      "bodyVisible": true,
+      "bodyScaleX": 0.11212182118928081,
+      "bodyScaleY": 0.11212182118928081,
+      "beamOrigin": {
+        "x": 2527.4975457123783,
+        "y": 2397.4715851954825
+      },
+      "muzzle": {
+        "x": 2527.4975457123783,
+        "y": 2397.4715851954825
+      },
+      "muzzleDelta": 0,
+      "screenshot": "docs\\owner-notes-audit-v7-evidence\\beams\\before-converging-strands-x2-mirage-coilrifle.png"
+    },
+    {
+      "family": "pulse-train",
+      "weaponId": "x2-quartzlight-wayfinder",
+      "phase": 2,
+      "rowWidth": 48,
+      "rowLength": 640,
+      "textureKey": "ptcl:holy-shard",
+      "bodyVisible": true,
+      "bodyScaleX": 0.2232544108082898,
+      "bodyScaleY": 0.2232544108082898,
+      "beamOrigin": {
+        "x": 2502.2963105684066,
+        "y": 2414.090029149919
+      },
+      "muzzle": {
+        "x": 2502.2963105684066,
+        "y": 2414.090029149919
+      },
+      "muzzleDelta": 0,
+      "screenshot": "docs\\owner-notes-audit-v7-evidence\\beams\\before-pulse-train-x2-quartzlight-wayfinder.png"
+    },
+    {
+      "family": "flame-tongues",
+      "weaponId": "x2-sunmote-reliquary-staff",
+      "phase": 2,
+      "rowWidth": 56,
+      "rowLength": 640,
+      "textureKey": "ptcl:fire-mote",
+      "bodyVisible": true,
+      "bodyScaleX": 0.405650505926529,
+      "bodyScaleY": 0.405650505926529,
+      "beamOrigin": {
+        "x": 2545.284085492206,
+        "y": 2417.3046819361016
+      },
+      "muzzle": {
+        "x": 2545.284085492206,
+        "y": 2417.3046819361016
+      },
+      "muzzleDelta": 0,
+      "screenshot": "docs\\owner-notes-audit-v7-evidence\\beams\\before-flame-tongues-x2-sunmote-reliquary-staff.png"
+    },
+    {
+      "family": "ice-particles",
+      "weaponId": "x2-frostquill-compendium",
+      "phase": 2,
+      "rowWidth": 56,
+      "rowLength": 640,
+      "textureKey": "ptcl:frost-wisp",
+      "bodyVisible": true,
+      "bodyScaleX": 0.34894877170275856,
+      "bodyScaleY": 0.34894877170275856,
+      "beamOrigin": {
+        "x": 2514.4697432879166,
+        "y": 2410.292169193488
+      },
+      "muzzle": {
+        "x": 2514.4697432879166,
+        "y": 2410.292169193488
+      },
+      "muzzleDelta": 0,
+      "screenshot": "docs\\owner-notes-audit-v7-evidence\\beams\\before-ice-particles-x2-frostquill-compendium.png"
+    }
+  ]
+}
