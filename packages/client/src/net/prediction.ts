@@ -113,25 +113,6 @@ export interface ServerView {
   alive: boolean;
   /** §12 level-window freeze (flexPending>0 || sigPending>0) — movement is server-paused. */
   frozen: boolean;
-  /** Optional combat clock used to retain locally predicted deterministic recoil until its server tick. */
-  tick?: number;
-  attackSeq?: number;
-  attackTick?: number;
-  /** True only while the authoritative owner weapon uses gun recoil. */
-  ownerGun?: boolean;
-}
-
-export interface PredictedImpulseReceipt {
-  attackSeq: number;
-  round: number;
-  intervalTicks: number;
-}
-
-interface PendingOwnerImpulse extends PredictedImpulseReceipt {
-  ix: number;
-  iy: number;
-  maxImpulse?: number;
-  createdAtServerTick: number;
 }
 
 interface PredState {
@@ -393,13 +374,6 @@ const HEIGHT_ADOPT_PX = 12;
 /** Position-only reconciliation must be unmistakably teleport-sized before it may cut. Authored pit,
  *  blink, restart, and ultimate teleports use their explicit sequence edges and still snap immediately. */
 const PRED_HARD_SNAP_PX = Math.max(INTERP_SNAP_PLAYER * 8, MOVE_SPEED * 5);
-/** Deterministic owner recoil may briefly disagree with an older patch, but it must never strand the
- * rendered body a screen-scale distance from authority while the next movement direction is held. */
-const OWNER_IMPULSE_ERROR_CAP_PX = MOVE_SPEED * 0.15;
-/** Recoil can be much faster than ordinary steering, so replaying an RTT-sized pending-input window can
- * put the visible owner multiple authoritative ticks ahead. Bound presentation (not simulation or server
- * authority) while an owner recoil receipt is recovering. */
-const OWNER_IMPULSE_PRESENTATION_RADIUS_PX = MOVE_SPEED * 0.225;
 /** While commanded movement is active, correction presentation stays inside this directional envelope:
  *  it can help forward motion, but cannot overpower it or bend a 45-degree input step into a reversal. */
 const PRED_CORRECTION_FORWARD_SHARE = 0.6;
@@ -791,11 +765,7 @@ export class SelfPredictor {
     momentumY: 0,
   };
   private readonly constrainedRenderPos = { x: 0, y: 0 };
-  private readonly ownerImpulseRenderPos = { x: 0, y: 0 };
   private readonly pending: PendingPredCmd[] = [];
-  /** Recoil is sent on the attack channel, not in input commands. Keep each predicted round replayable
-   * across older movement patches until the authoritative attack tick has actually included it. */
-  private readonly pendingOwnerImpulses: PendingOwnerImpulse[] = [];
   private readonly immediateInputGate = new ImmediateInputSendGate();
   private map?: ArenaMap;
   /** §29 belt level (floor profile + obstacles) — when set, prediction uses belt collision, not POI. */
@@ -821,11 +791,6 @@ export class SelfPredictor {
   private suppressCrouchUntilRelease = false;
   /** Denial/forced-cancel law: the same physical slide hold cannot resurrect a rejected chain. */
   private suppressSlideUntilRelease = false;
-  private authorityTick = 0;
-  private authorityAttackSeq = 0;
-  private authorityAttackTick = 0;
-  private ownerImpulseRecovery = false;
-  private ownerImpulseRecoveryUntilTick = 0;
 
   // Vertical (local-first, adopt-on-divergence).
   private height: number;
@@ -925,86 +890,15 @@ export class SelfPredictor {
       aimY: speed > 1e-4 ? dirY : 0,
     };
     this.paused = !server.alive || server.frozen;
-    this.noteCombatAuthority(server);
   }
 
   /** Predict deterministic owner-authored impulses (currently gun recoil) at their local round edge.
    * Hostile/contact knockback remains server-only and continues to glide through reconciliation. */
-  addPredictedImpulse(
-    ix: number,
-    iy: number,
-    maxImpulse?: number,
-    receipt?: PredictedImpulseReceipt,
-  ): void {
+  addPredictedImpulse(ix: number, iy: number, maxImpulse?: number): void {
     if (this.paused || this.stalled) return;
-    if (receipt) {
-      this.ownerImpulseRecovery = true;
-      this.ownerImpulseRecoveryUntilTick = (this.authorityTick + 50) >>> 0;
-    }
-    if (receipt && this.impulseReceiptConfirmed(receipt)) return;
     const impulse = addImpulse(this.pred, ix, iy, maxImpulse);
     this.pred.vx = impulse.vx;
     this.pred.vy = impulse.vy;
-    if (receipt) {
-      const duplicate = this.pendingOwnerImpulses.some(
-        (entry) => entry.attackSeq === receipt.attackSeq && entry.round === receipt.round,
-      );
-      if (!duplicate)
-        this.pendingOwnerImpulses.push({
-          ...receipt,
-          ix,
-          iy,
-          maxImpulse,
-          createdAtServerTick: this.authorityTick,
-        });
-    }
-  }
-
-  private noteCombatAuthority(server: ServerView): void {
-    if (server.tick !== undefined) this.authorityTick = server.tick >>> 0;
-    if (server.attackSeq !== undefined) this.authorityAttackSeq = server.attackSeq >>> 0;
-    if (server.attackTick !== undefined) this.authorityAttackTick = server.attackTick >>> 0;
-    if (server.ownerGun && this.authorityAttackSeq !== 0) {
-      const attackAge = (this.authorityTick - this.authorityAttackTick) >>> 0;
-      if (attackAge <= 50) {
-        this.ownerImpulseRecovery = true;
-        this.ownerImpulseRecoveryUntilTick = (this.authorityAttackTick + 50) >>> 0;
-      }
-    }
-  }
-
-  private impulseReceiptConfirmed(receipt: PredictedImpulseReceipt): boolean {
-    const seqDelta = (this.authorityAttackSeq - receipt.attackSeq) >>> 0;
-    if (seqDelta > 0 && seqDelta < 0x80000000) return true;
-    if (seqDelta !== 0) return false;
-    const dueTick =
-      (this.authorityAttackTick + receipt.round * Math.max(1, receipt.intervalTicks)) >>> 0;
-    return ((this.authorityTick - dueTick) >>> 0) < 0x80000000;
-  }
-
-  private retainUnconfirmedOwnerImpulses(server: ServerView): boolean {
-    this.noteCombatAuthority(server);
-    let confirmed = false;
-    for (let index = this.pendingOwnerImpulses.length - 1; index >= 0; index--) {
-      const entry = this.pendingOwnerImpulses[index];
-      if (!entry) continue;
-      const ageTicks = (this.authorityTick - entry.createdAtServerTick) >>> 0;
-      if (this.impulseReceiptConfirmed(entry)) {
-        confirmed = true;
-        this.pendingOwnerImpulses.splice(index, 1);
-      } else if (ageTicks < 0x80000000 && ageTicks > 40) {
-        this.pendingOwnerImpulses.splice(index, 1);
-      }
-    }
-    return confirmed;
-  }
-
-  private replayUnconfirmedOwnerImpulses(): void {
-    for (const entry of this.pendingOwnerImpulses) {
-      const impulse = addImpulse(this.pred, entry.ix, entry.iy, entry.maxImpulse);
-      this.pred.vx = impulse.vx;
-      this.pred.vy = impulse.vy;
-    }
   }
 
   /** The client-side arena map (regenerated from synced seeds) — enables predicted POI collision. Swap
@@ -1267,7 +1161,6 @@ export class SelfPredictor {
 
   /** Reconcile against a fresh patch (call from room.onStateChange — data only, never touch rigs here). */
   reconcile(server: ServerView): void {
-    const ownerImpulseConfirmed = this.retainUnconfirmedOwnerImpulses(server);
     const teleported = server.teleportSeq !== this.lastTeleportSeq;
     if (teleported) this.presentationSnapPending = true;
     this.lastTeleportSeq = server.teleportSeq;
@@ -1327,9 +1220,6 @@ export class SelfPredictor {
     sanitizePredMomentum(this.pred);
 
     if (teleported || this.needResync || pauseNow || this.paused) {
-      const retainOwnerImpulseRecovery =
-        this.ownerImpulseRecovery && !teleported && !pauseNow;
-      const retainedOwnerImpulseRecoveryUntilTick = this.ownerImpulseRecoveryUntilTick;
       // HARD RESYNC family — but the error-offset treatment differs by CAUSE (amendment #14):
       // - a TELEPORT / stall recovery SNAPS (a rift/pit/restart is a cut, not a glide): err = 0;
       // - ENTERING a freeze (level window / down) FOLDS the visual lead into the offset so the rig
@@ -1350,9 +1240,6 @@ export class SelfPredictor {
       }
       // else: staying paused / resuming — keep the (already-decayed) offset as-is.
       this.pending.length = 0;
-      this.pendingOwnerImpulses.length = 0;
-      this.ownerImpulseRecovery = false;
-      this.ownerImpulseRecoveryUntilTick = 0;
       this.needResync = false;
       this.smoothResync = false;
       this.stalled = false; // truth arrived — the stall (if any) is over
@@ -1361,12 +1248,6 @@ export class SelfPredictor {
       this.jumpBuf = 0;
       this.stance = this.stanceFromServer(server);
       this.paused = pauseNow;
-      if (retainOwnerImpulseRecovery) {
-        // A short frame-gap resync discards replay history, but not the fact that this gun's local recoil
-        // presentation is still recovering. Teleports and pauses deliberately clear it above.
-        this.ownerImpulseRecovery = true;
-        this.ownerImpulseRecoveryUntilTick = retainedOwnerImpulseRecoveryUntilTick;
-      }
       return;
     }
 
@@ -1399,26 +1280,15 @@ export class SelfPredictor {
         this.belt,
       );
     }
-    // Attack messages are ordered beside input messages but are not part of the acked input stream.
-    // Reapply only rounds whose authoritative fire tick has not arrived in this patch yet.
-    this.replayUnconfirmedOwnerImpulses();
 
     // Fold the correction into the error offset so it GLIDES out; teleport-sized error snaps.
-    if (ownerImpulseConfirmed) {
-      // A deterministic recoil edge is now present in both simulations. Retaining their old position
-      // difference as generic smoothing debt makes later WASD reversals orbit a stale pre-shot lane.
-      this.errX = 0;
-      this.errY = 0;
-    } else {
-      this.errX = visX - this.pred.x;
-      this.errY = visY - this.pred.y;
-    }
+    this.errX = visX - this.pred.x;
+    this.errY = visY - this.pred.y;
     if (Math.hypot(this.errX, this.errY) > PRED_HARD_SNAP_PX) {
       this.errX = 0;
       this.errY = 0;
       this.presentationSnapPending = true;
     }
-    this.capOwnerImpulseError();
 
     // Vertical: only a residual AFTER authoritative rebase + pending replay is real divergence (a denied
     // jump / an unpredicted launch). Adopt the replayed present, never the older acked-tick height.
@@ -1441,16 +1311,6 @@ export class SelfPredictor {
       this.errY = 0;
       this.presentationSnapPending = true;
     }
-    this.capOwnerImpulseError();
-  }
-
-  private capOwnerImpulseError(): void {
-    if (!this.ownerImpulseRecovery) return;
-    const length = Math.hypot(this.errX, this.errY);
-    if (length <= OWNER_IMPULSE_ERROR_CAP_PX || length <= 1e-4) return;
-    const scale = OWNER_IMPULSE_ERROR_CAP_PX / length;
-    this.errX *= scale;
-    this.errY *= scale;
   }
 
   /** Decay the visual error offset (call once per render frame). The exponential remains the target, but
@@ -1496,12 +1356,6 @@ export class SelfPredictor {
     if (Math.abs(this.errX) + Math.abs(this.errY) < 0.5) {
       this.errX = 0;
       this.errY = 0;
-      if (
-        this.pendingOwnerImpulses.length === 0 &&
-        Math.hypot(this.pred.vx, this.pred.vy) <= MOVE_SPEED * 0.05 &&
-        ((this.authorityTick - this.ownerImpulseRecoveryUntilTick) >>> 0) < 0x80000000
-      )
-        this.ownerImpulseRecovery = false;
     }
   }
 
@@ -1589,29 +1443,6 @@ export class SelfPredictor {
     };
   }
 
-  /** Bound gun-recoil presentation against the scene's frame-current authority row. Colyseus can expose
-   * that row one render sample before the predictor's onStateChange rebase, so renderPos's cached truth is
-   * not sufficient for this final presentation-only guard. */
-  boundOwnerImpulsePresentation(
-    authorityX: number,
-    authorityY: number,
-    candidateX: number,
-    candidateY: number,
-  ): { x: number; y: number } {
-    const out = this.ownerImpulseRenderPos;
-    out.x = candidateX;
-    out.y = candidateY;
-    if (!this.ownerImpulseRecovery) return out;
-    const dx = candidateX - authorityX;
-    const dy = candidateY - authorityY;
-    const distance = Math.hypot(dx, dy);
-    if (distance <= OWNER_IMPULSE_PRESENTATION_RADIUS_PX || distance <= 1e-4) return out;
-    const scale = OWNER_IMPULSE_PRESENTATION_RADIUS_PX / distance;
-    out.x = authorityX + dx * scale;
-    out.y = authorityY + dy * scale;
-    return out;
-  }
-
   /** Final owner-presentation gate for ordinary grounded steering. Reconciliation may leave a large
    *  decaying offset whose desired correction points across the freshly commanded heading; keep that
    *  visual step in a narrow forward cone and fold the withheld displacement back into the offset for
@@ -1633,13 +1464,6 @@ export class SelfPredictor {
       return out;
     }
     if (!enabled || this.paused || this.stalled) return out;
-    // This guard exists for reconciliation corrections during ordinary steering. Predicted recoil is
-    // legitimate body motion that may oppose WASD; rotating it into the command creates walk+fire spirals.
-    if (
-      this.ownerImpulseRecovery ||
-      Math.hypot(this.pred.vx, this.pred.vy) > MOVE_SPEED * 0.05
-    )
-      return out;
     const inputLength = Math.hypot(dx, dy);
     const stepX = candidateX - previousX;
     const stepY = candidateY - previousY;
@@ -1711,11 +1535,6 @@ export class SelfPredictor {
     return Math.hypot(this.pred.momentumX, this.pred.momentumY);
   }
 
-  /** Current deterministic simulation position without the presentation-only reconciliation offset. */
-  get simulationPos(): { x: number; y: number } {
-    return { x: this.pred.x, y: this.pred.y };
-  }
-
   /** Write the truthful local crouch target into caller-owned storage; false means no usable heading. */
   writeDistanceJumpIndicator(
     out: DistanceJumpIndicator,
@@ -1766,11 +1585,7 @@ export class SelfPredictor {
   }
 
   /** Diagnostics for the debug HUD + live verification: pending depth + current error magnitude. */
-  get stats(): { pending: number; pendingOwnerImpulses: number; errPx: number } {
-    return {
-      pending: this.pending.length,
-      pendingOwnerImpulses: this.pendingOwnerImpulses.length,
-      errPx: Math.hypot(this.errX, this.errY),
-    };
+  get stats(): { pending: number; errPx: number } {
+    return { pending: this.pending.length, errPx: Math.hypot(this.errX, this.errY) };
   }
 }

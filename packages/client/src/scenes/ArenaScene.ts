@@ -51,9 +51,9 @@ import {
   GEAR_CATALOG,
   type GearId,
   GROUND_EPSILON,
-  gunUserRecoilFor,
   generateArena,
   getDimension,
+  gunUserRecoilFor,
   hasAugment,
   INTERP_DELAY_MS,
   INTERP_SNAP_ENEMY,
@@ -1571,9 +1571,6 @@ export class ArenaScene extends Phaser.Scene {
   /** Highest attack sequence for which the owning client has already played prediction. Confirmations at or
    *  below this contiguous high-water mark must not restart the local rig/tome page. */
   private localPredictedAttackSeq = 0;
-  /** Last raw owner position consumed by the presentation constraint; retained for live regression probes. */
-  private selfPredictionCandidateX = Number.NaN;
-  private selfPredictionCandidateY = Number.NaN;
   private localParryCd = 0;
   /** §8 v0.114 PARRY COMBO — client-inferred chain counter for the local drifter (no synced field): each
    *  own-parry within `PARRY_CHAIN_WINDOW` of the last bumps `parryChain`; a lapse resets it. Drives the
@@ -6797,10 +6794,6 @@ export class ArenaScene extends Phaser.Scene {
         container.setData("spawnMuzzleX", spawnAnchor.x);
         container.setData("spawnMuzzleY", spawnAnchor.y);
         container.setData("spawnBornTick", pr.bornTick);
-        // A muzzle-anchored row must remain a continuous visible flight from that anchor. Pulling the very
-        // next frame toward the already-advanced wire row made later burst rounds teleport hundreds of px.
-        container.setData("muzzleAnchoredFlight", true);
-        container.setData("skipFirstMuzzleFlightStep", true);
       }
       container.setData("kind", pr.kind);
       container.setData("hostile", pr.hostile);
@@ -7061,19 +7054,7 @@ export class ArenaScene extends Phaser.Scene {
       const weaponId = (c.getData("sourceWeapon") as string | undefined) ?? "";
       const weapon = WEAPONS[weaponId];
       const waveform = weapon?.cast?.projectileWaveform;
-      const muzzleAnchoredFlight = c.getData("muzzleAnchoredFlight") === true;
-      if (muzzleAnchoredFlight) {
-        if (c.getData("skipFirstMuzzleFlightStep") === true) {
-          c.setData("skipFirstMuzzleFlightStep", false);
-          if (this.belt) c.setData("beltWorldY", c.y);
-        } else if (this.belt) {
-          const worldY = (c.getData("beltWorldY") as number | undefined) ?? c.y;
-          c.setPosition(c.x + pr.vx * dtSec, worldY + pr.vy * dtSec);
-          c.setData("beltWorldY", c.y);
-        } else {
-          c.setPosition(c.x + pr.vx * dtSec, c.y + pr.vy * dtSec);
-        }
-      } else if (waveform) {
+      if (waveform) {
         const authoritativeElapsed = pr.flightAgeTicks * (TICK_MS / 1000);
         const displayElapsed = Math.max(
           authoritativeElapsed,
@@ -9026,14 +9007,11 @@ export class ArenaScene extends Phaser.Scene {
       if (id === selfId && this.predictor) {
         this.predictor.decayError(deltaMs / 1000, this.curDx, this.curDy);
         const r = this.predictor.renderPos(this.curDx, this.curDy, this.inputAccMs / 1000);
-        const bounded = this.predictor.boundOwnerImpulsePresentation(player.x, player.y, r.x, r.y);
-        this.selfPredictionCandidateX = bounded.x;
-        this.selfPredictionCandidateY = bounded.y;
         const presented = this.predictor.constrainRenderStep(
           blob.x,
           blob.y,
-          bounded.x,
-          bounded.y,
+          r.x,
+          r.y,
           this.curDx,
           this.curDy,
           r.stance === STANCE_NONE,
@@ -10399,14 +10377,7 @@ export class ArenaScene extends Phaser.Scene {
       saY /= l;
     }
     if (weapon?.gun) {
-      const predictedAim = this.predictedGunAimAt(cwx, cwy, saX, saY);
-      this.predictGunRoundRecoil(
-        weapon,
-        predictedAim.x,
-        predictedAim.y,
-        this.localPredictedAttackSeq,
-        0,
-      );
+      this.predictGunRoundRecoil(weapon, saX, saY);
       const burst = weapon.gun.burst;
       const predictedSeq = this.localPredictedAttackSeq;
       if (burst && burst.count > 1) {
@@ -10416,10 +10387,13 @@ export class ArenaScene extends Phaser.Scene {
             const liveSelf = this.room.state.players.get(this.room.sessionId);
             const liveRig = this.blobs.get(this.room.sessionId);
             if (!liveSelf?.alive || liveSelf.weapon !== weapon.id || !liveRig) return;
-            const { x: aimX, y: aimY } = this.predictedGunAimAt(cwx, cwy, saX, saY);
-            // The server schedules follow-up recoil from the accepted fire tick, which is later than this
-            // local cosmetic timer by one network leg. Predicting it here moves the body several rounds
-            // ahead of authority during held fire; authoritative patches own those delayed impulses.
+            let aimX = this.selfAim.x;
+            let aimY = this.selfAim.y;
+            if (this.belt) aimY /= BELT_FORESHORTEN;
+            const aimLength = Math.hypot(aimX, aimY) || 1;
+            aimX /= aimLength;
+            aimY /= aimLength;
+            this.predictGunRoundRecoil(weapon, aimX, aimY);
             this.cuePredictedBurstRound(
               liveSelf,
               weapon,
@@ -10435,42 +10409,14 @@ export class ArenaScene extends Phaser.Scene {
     this.room.send("attack", { aimX: saX, aimY: saY, tx: cwx, ty: cwy });
   }
 
-  /** Match authority's gun aim law: every delayed round aims from the current simulation body toward the
-   * immutable cursor-world point accepted for this trigger. Camera-follow must not rewrite that target. */
-  private predictedGunAimAt(
-    targetX: number,
-    targetY: number,
-    fallbackX: number,
-    fallbackY: number,
-  ): { x: number; y: number } {
-    const room = this.room;
-    const self = room?.state.players.get(room.sessionId);
-    const origin = this.predictor?.simulationPos ?? self;
-    if (!origin) return { x: fallbackX, y: fallbackY };
-    const dx = targetX - origin.x;
-    const dy = targetY - origin.y;
-    const length = Math.hypot(dx, dy);
-    return length > 1e-3 ? { x: dx / length, y: dy / length } : { x: fallbackX, y: fallbackY };
-  }
-
-  /** Predict only the trigger round. Follow-up rounds remain on the accepted server burst clock. */
-  private predictGunRoundRecoil(
-    weapon: WeaponDef,
-    aimX: number,
-    aimY: number,
-    attackSeq: number,
-    round: number,
-  ): void {
+  /** Owner-authored gun recoil is deterministic and therefore belongs in self prediction. Hostile impact
+   * impulses remain server-only. Every delayed burst round calls this at its own fire edge. */
+  private predictGunRoundRecoil(weapon: WeaponDef, aimX: number, aimY: number): void {
     const recoil = gunUserRecoilFor(weapon);
-    const intervalTicks = Math.max(
-      1,
-      Math.round(((weapon.gun?.burst?.intervalSeconds ?? 0) * 1_000) / TICK_MS),
-    );
     this.predictor?.addPredictedImpulse(
       -aimX * recoil.impulse,
       -aimY * recoil.impulse,
       recoil.maxImpulse,
-      { attackSeq, round, intervalTicks },
     );
   }
 
@@ -15322,7 +15268,7 @@ export class ArenaScene extends Phaser.Scene {
       const self = state.players.get(selfId);
       if (self) {
         this.hydrateWeaponManifest(self);
-        const view = ArenaScene.serverView(self, state.tick);
+        const view = ArenaScene.serverView(self);
         if (this.predictor) {
           this.predictor.reconcile(view);
         } else {
@@ -15345,7 +15291,7 @@ export class ArenaScene extends Phaser.Scene {
   }
 
   /** The predictor's slice of the synced self row (frozen = the §12 level-window movement pause). */
-  private static serverView(p: PlayerState, tick: number): ServerView {
+  private static serverView(p: PlayerState): ServerView {
     return {
       x: p.x,
       y: p.y,
@@ -15365,10 +15311,6 @@ export class ArenaScene extends Phaser.Scene {
       slidePhaseTick: p.slidePhaseTick,
       alive: p.alive,
       frozen: p.flexPending > 0 || p.sigPending > 0,
-      tick,
-      attackSeq: p.attackSeq,
-      attackTick: p.attackTick,
-      ownerGun: !!WEAPONS[p.weapon]?.gun,
     };
   }
 
