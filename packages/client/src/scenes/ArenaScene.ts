@@ -517,6 +517,13 @@ const MELEE_FULL_TELL_COUNT = 6;
 const MELEE_GLINT_CREST_MS = 60;
 const ENEMY_COMBO_LEAP_PEAK = 48;
 const ENEMY_COMBO_LEAP_MS = COMBO_LEAP_AIR_TICKS * TICK_MS;
+/** A live muzzle admission is presentation truth for the opening flight. The authoritative row can already
+ * be several simulation ticks ahead when first observed, so defer correction until the shot visibly clears
+ * the implement, then catch up at a bounded rate instead of snapping toward that advanced row. */
+const MUZZLE_FLIGHT_AUTHORITY_GRACE_SECONDS = 0.4;
+const MUZZLE_FLIGHT_AUTHORITY_CONVERGENCE_PER_SECOND = 8;
+const MUZZLE_FLIGHT_AUTHORITY_MAX_CATCHUP_PX_PER_SECOND = 500;
+const MUZZLE_FLIGHT_AUTHORITY_SETTLED_PX = 1;
 
 interface EnemyWindupSample {
   serverT: number;
@@ -1571,6 +1578,9 @@ export class ArenaScene extends Phaser.Scene {
   /** Highest attack sequence for which the owning client has already played prediction. Confirmations at or
    *  below this contiguous high-water mark must not restart the local rig/tome page. */
   private localPredictedAttackSeq = 0;
+  /** Exact predictor candidate consumed by the owner rig this frame; diagnostics only, never fed back. */
+  private selfPredictionCandidateX = Number.NaN;
+  private selfPredictionCandidateY = Number.NaN;
   private localParryCd = 0;
   /** §8 v0.114 PARRY COMBO — client-inferred chain counter for the local drifter (no synced field): each
    *  own-parry within `PARRY_CHAIN_WINDOW` of the last bumps `parryChain`; a lapse resets it. Drives the
@@ -6785,7 +6795,8 @@ export class ArenaScene extends Phaser.Scene {
           : undefined;
       if (spawnAnchor) {
         // The wire row is already one or more 50 ms simulation steps downrange when it first renders.
-        // Begin this presentation at the final live held muzzle; ordinary dead reckoning takes over next.
+        // Begin this presentation at the final live held muzzle. Its opening flight owns a short-lived
+        // presentation offset so the generic authority attraction cannot pull it off that muzzle next frame.
         container.setData("authoritativeFirstX", pr.x);
         container.setData("authoritativeFirstY", pr.y);
         container.setPosition(spawnAnchor.x, spawnAnchor.y);
@@ -6794,6 +6805,9 @@ export class ArenaScene extends Phaser.Scene {
         container.setData("spawnMuzzleX", spawnAnchor.x);
         container.setData("spawnMuzzleY", spawnAnchor.y);
         container.setData("spawnBornTick", pr.bornTick);
+        container.setData("muzzleAnchoredFlight", true);
+        container.setData("muzzleFlightAgeSeconds", 0);
+        container.setData("skipFirstMuzzleFlightStep", true);
       }
       container.setData("kind", pr.kind);
       container.setData("hostile", pr.hostile);
@@ -7054,7 +7068,44 @@ export class ArenaScene extends Phaser.Scene {
       const weaponId = (c.getData("sourceWeapon") as string | undefined) ?? "";
       const weapon = WEAPONS[weaponId];
       const waveform = weapon?.cast?.projectileWaveform;
-      if (waveform) {
+      const muzzleAnchoredFlight = c.getData("muzzleAnchoredFlight") === true;
+      if (muzzleAnchoredFlight) {
+        if (c.getData("skipFirstMuzzleFlightStep") === true) {
+          c.setData("skipFirstMuzzleFlightStep", false);
+          if (this.belt) c.setData("beltWorldY", c.y);
+        } else {
+          const ageSeconds =
+            ((c.getData("muzzleFlightAgeSeconds") as number | undefined) ?? 0) + dtSec;
+          const worldY = this.belt
+            ? ((c.getData("beltWorldY") as number | undefined) ?? c.y)
+            : c.y;
+          let nextX = c.x + pr.vx * dtSec;
+          let nextY = worldY + pr.vy * dtSec;
+          if (ageSeconds > MUZZLE_FLIGHT_AUTHORITY_GRACE_SECONDS) {
+            const correctionX = pr.x - nextX;
+            const correctionY = pr.y - nextY;
+            const correctionDistance = Math.hypot(correctionX, correctionY);
+            if (correctionDistance <= MUZZLE_FLIGHT_AUTHORITY_SETTLED_PX) {
+              nextX = pr.x;
+              nextY = pr.y;
+              c.setData("muzzleAnchoredFlight", false);
+            } else {
+              const exponentialDistance =
+                correctionDistance *
+                (1 - Math.exp(-MUZZLE_FLIGHT_AUTHORITY_CONVERGENCE_PER_SECOND * dtSec));
+              const correctionStep = Math.min(
+                exponentialDistance,
+                MUZZLE_FLIGHT_AUTHORITY_MAX_CATCHUP_PX_PER_SECOND * dtSec,
+              );
+              nextX += (correctionX / correctionDistance) * correctionStep;
+              nextY += (correctionY / correctionDistance) * correctionStep;
+            }
+          }
+          c.setData("muzzleFlightAgeSeconds", ageSeconds);
+          if (this.belt) c.setData("beltWorldY", nextY);
+          c.setPosition(nextX, nextY);
+        }
+      } else if (waveform) {
         const authoritativeElapsed = pr.flightAgeTicks * (TICK_MS / 1000);
         const displayElapsed = Math.max(
           authoritativeElapsed,
@@ -9007,6 +9058,8 @@ export class ArenaScene extends Phaser.Scene {
       if (id === selfId && this.predictor) {
         this.predictor.decayError(deltaMs / 1000, this.curDx, this.curDy);
         const r = this.predictor.renderPos(this.curDx, this.curDy, this.inputAccMs / 1000);
+        this.selfPredictionCandidateX = r.x;
+        this.selfPredictionCandidateY = r.y;
         const presented = this.predictor.constrainRenderStep(
           blob.x,
           blob.y,

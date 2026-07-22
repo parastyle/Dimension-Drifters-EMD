@@ -9,13 +9,15 @@ const REQUIRED_BURSTS = 8;
 const REQUIRED_ROUNDS = REQUIRED_BURSTS * ROUNDS_PER_BURST;
 const STAGE_MS = 900;
 const MIN_CAPTURE_MS = STAGE_MS * 8;
+const POST_FIRE_SAMPLE_MS = 1_500;
 const MAX_ADMISSION_MUZZLE_DELTA_PX = 2.5;
 const MAX_PROJECTILE_PATH_ERROR_PX = 18;
 const MAX_CHARACTER_AUTHORITY_DELTA_PX = 80;
+const MAX_RENDERED_RIG_STEP_PX = 80;
 const MAX_RIG_PREDICTOR_DELTA_PX = 12;
 const EVIDENCE_PHASE = process.env.DD_V8_A1_EVIDENCE_PHASE ?? "gate";
 const EVIDENCE_DIR = path.resolve(
-  "docs/owner-notes-audit-v8-evidence/a1-overcasters",
+  "docs/owner-notes-audit-v8-evidence/a1-overcasters-redo",
   EVIDENCE_PHASE,
 );
 
@@ -37,6 +39,8 @@ interface Point {
 
 interface BurstAnchorFrame {
   wallMs: number;
+  phase: "during-fire" | "post-fire";
+  fireHeld: boolean;
   tick: number;
   attackSeq: number;
   rigAttackSeq: number;
@@ -80,6 +84,7 @@ interface BurstAnchorRound {
 
 interface BrowserProbe {
   startedAt: number;
+  releasedAt: number | null;
   fireHeld: boolean;
   sampling: boolean;
   ready: boolean;
@@ -115,11 +120,12 @@ async function holdFireAcrossReversals(page: Page): Promise<void> {
       if (!self || !rig) throw new Error("moving burst gate requires the live owner rig");
 
       const existing = new Set<string>();
-      arena.room.state.projectiles.forEach((row: { id?: string }, id: string) =>
-        existing.add(String(row.id ?? id)),
-      );
+      arena.room.state.projectiles.forEach((row: { id?: string }, id: string) => {
+        existing.add(String(row.id ?? id));
+      });
       const probe: BrowserProbe = {
         startedAt: performance.now(),
+        releasedAt: null,
         fireHeld: true,
         sampling: true,
         ready: false,
@@ -137,7 +143,6 @@ async function holdFireAcrossReversals(page: Page): Promise<void> {
         if (!probe.sampling) return;
         const wallMs = performance.now();
         const stageIndex = stageAt(wallMs);
-        const stage = stages[stageIndex] ?? stages.at(-1)!;
         const player = arena.room.state.players.get(ownerId);
         const liveRig = arena.blobs.get(ownerId);
         if (player && liveRig) {
@@ -168,6 +173,8 @@ async function holdFireAcrossReversals(page: Page): Promise<void> {
           };
           probe.frames.push({
             wallMs,
+            phase: probe.fireHeld ? "during-fire" : "post-fire",
+            fireHeld: probe.fireHeld,
             tick: arena.room.state.tick >>> 0,
             attackSeq: player.attackSeq >>> 0,
             rigAttackSeq: (liveRig.attackBeatSeq ?? 0) >>> 0,
@@ -188,13 +195,9 @@ async function holdFireAcrossReversals(page: Page): Promise<void> {
             predictorError: arena.predictor
               ? { x: Number(arena.predictor.errX), y: Number(arena.predictor.errY) }
               : null,
-            predictorPendingOwnerImpulses:
-              arena.predictor?.stats?.pendingOwnerImpulses ?? null,
+            predictorPendingOwnerImpulses: arena.predictor?.stats?.pendingOwnerImpulses ?? null,
             attackTick: player.attackTick >>> 0,
-            renderAuthorityDeltaPx: Math.hypot(
-              rendered.x - authority.x,
-              rendered.y - authority.y,
-            ),
+            renderAuthorityDeltaPx: Math.hypot(rendered.x - authority.x, rendered.y - authority.y),
             rigPredictorDeltaPx: target
               ? Math.hypot(rendered.x - Number(target.x), rendered.y - Number(target.y))
               : null,
@@ -232,7 +235,7 @@ async function holdFireAcrossReversals(page: Page): Promise<void> {
               return;
             const steps =
               row.flightAgeTicks ??
-              ((((arena.room.state.tick >>> 0) - (row.bornTick >>> 0)) >>> 0) + 1);
+              (((arena.room.state.tick >>> 0) - (row.bornTick >>> 0)) >>> 0) + 1;
             const authorityOrigin = {
               x: Number(row.x) - Number(row.vx) * Number(steps) * 0.05,
               y: Number(row.y) - Number(row.vy) * Number(steps) * 0.05,
@@ -300,8 +303,20 @@ async function driveDirectionStages(page: Page): Promise<void> {
   }
 }
 
+async function releaseFireOnly(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    const probe = globalThis.__ddBurstAnchorProbe;
+    if (!probe) throw new Error("moving burst probe must exist before fire release");
+    probe.fireHeld = false;
+    probe.releasedAt = performance.now();
+    const arena = (globalThis as any).ddGame.scene.getScene("arena");
+    arena.input.activePointer.rightButtonDown = () => false;
+  });
+}
+
 async function releaseFireAndMovement(page: Page): Promise<void> {
-  for (const key of ["w", "a", "s", "d"] as const) await page.keyboard.up(key).catch(() => undefined);
+  for (const key of ["w", "a", "s", "d"] as const)
+    await page.keyboard.up(key).catch(() => undefined);
   await page
     .evaluate(() => {
       const probe = globalThis.__ddBurstAnchorProbe;
@@ -332,6 +347,41 @@ function projectilePathError(round: BurstAnchorRound): number {
   );
 }
 
+interface RigFrameStep {
+  phase: BurstAnchorFrame["phase"];
+  stepPx: number;
+}
+
+function renderedRigSteps(frames: BurstAnchorFrame[]): RigFrameStep[] {
+  const steps: RigFrameStep[] = [];
+  for (let index = 1; index < frames.length; index++) {
+    const frame = frames[index];
+    const previous = frames[index - 1];
+    if (!frame || !previous) continue;
+    steps.push({
+      phase: frame.phase,
+      stepPx: Math.hypot(
+        frame.rendered.x - previous.rendered.x,
+        frame.rendered.y - previous.rendered.y,
+      ),
+    });
+  }
+  return steps;
+}
+
+function sequenceRegressions(
+  frames: BurstAnchorFrame[],
+  key: "attackSeq" | "rigAttackSeq",
+): number {
+  let regressions = 0;
+  for (let index = 1; index < frames.length; index++) {
+    const frame = frames[index];
+    const previous = frames[index - 1];
+    if (frame && previous && frame[key] < previous[key]) regressions++;
+  }
+  return regressions;
+}
+
 test("continuous moving Overcasters bursts keep character and projectile presentation coherent", async ({
   page,
 }) => {
@@ -350,10 +400,18 @@ test("continuous moving Overcasters bursts keep character and projectile present
         .toBe(true);
       // Keep sampling after the last required round so its real next-frame trajectory is graded.
       await page.waitForTimeout(420);
+      // Release only fire, then keep a real strafe input active through the recovery window. This is the
+      // state in which the reverted impulse-receipt implementation visibly oscillated after shooting.
+      await page.keyboard.down("d");
+      await releaseFireOnly(page);
+      await page.waitForTimeout(POST_FIRE_SAMPLE_MS);
+      await page.keyboard.up("d");
+      await page.waitForTimeout(100);
       const capture = await page.evaluate(() => {
         const probe = globalThis.__ddBurstAnchorProbe;
         return {
           startedAt: probe?.startedAt ?? 0,
+          releasedAt: probe?.releasedAt ?? null,
           frames: probe?.frames ?? [],
           rounds: probe?.rounds ?? [],
         };
@@ -372,6 +430,12 @@ test("continuous moving Overcasters bursts keep character and projectile present
         capture.frames.map((frame) => `${frame.input.x},${frame.input.y}`),
       );
       const pathErrors = capture.rounds.map(projectilePathError);
+      const rigSteps = renderedRigSteps(capture.frames);
+      const duringFrames = capture.frames.filter((frame) => frame.phase === "during-fire");
+      const postFrames = capture.frames.filter((frame) => frame.phase === "post-fire");
+      const duringRigSteps = rigSteps.filter((step) => step.phase === "during-fire");
+      const postRigSteps = rigSteps.filter((step) => step.phase === "post-fire");
+      const finalFrame = capture.frames.at(-1);
       const summary = {
         capturedAt: new Date().toISOString(),
         phase: EVIDENCE_PHASE,
@@ -379,9 +443,11 @@ test("continuous moving Overcasters bursts keep character and projectile present
           maxAdmissionMuzzleDeltaPx: MAX_ADMISSION_MUZZLE_DELTA_PX,
           maxProjectilePathErrorPx: MAX_PROJECTILE_PATH_ERROR_PX,
           maxCharacterAuthorityDeltaPx: MAX_CHARACTER_AUTHORITY_DELTA_PX,
+          maxRenderedRigStepPx: MAX_RENDERED_RIG_STEP_PX,
           maxRigPredictorDeltaPx: MAX_RIG_PREDICTOR_DELTA_PX,
+          postFireSampleMs: POST_FIRE_SAMPLE_MS,
         },
-        continuousFireHeld: true,
+        continuousFireHeldUntil: capture.releasedAt,
         directionStages: DIRECTION_STAGES,
         frameCount: capture.frames.length,
         roundCount: capture.rounds.length,
@@ -401,12 +467,31 @@ test("continuous moving Overcasters bursts keep character and projectile present
           0,
           ...capture.frames.map((frame) => frame.renderAuthorityDeltaPx),
         ),
+        maxDuringFireCharacterAuthorityDeltaPx: Math.max(
+          0,
+          ...duringFrames.map((frame) => frame.renderAuthorityDeltaPx),
+        ),
+        maxPostFireCharacterAuthorityDeltaPx: Math.max(
+          0,
+          ...postFrames.map((frame) => frame.renderAuthorityDeltaPx),
+        ),
+        maxRenderedRigStepPx: Math.max(0, ...rigSteps.map((step) => step.stepPx)),
+        maxDuringFireRenderedRigStepPx: Math.max(0, ...duringRigSteps.map((step) => step.stepPx)),
+        maxPostFireRenderedRigStepPx: Math.max(0, ...postRigSteps.map((step) => step.stepPx)),
         maxRigPredictorDeltaPx: Math.max(
           0,
           ...capture.frames.flatMap((frame) =>
             frame.rigPredictorDeltaPx === null ? [] : [frame.rigPredictorDeltaPx],
           ),
         ),
+        authorityAttackSeqRegressions: sequenceRegressions(capture.frames, "attackSeq"),
+        rigAttackSeqRegressions: sequenceRegressions(capture.frames, "rigAttackSeq"),
+        maxRigAttackSeqLead: Math.max(
+          0,
+          ...capture.frames.map((frame) => frame.rigAttackSeq - frame.attackSeq),
+        ),
+        finalAuthorityAttackSeq: finalFrame?.attackSeq ?? 0,
+        finalRigAttackSeq: finalFrame?.rigAttackSeq ?? 0,
         frames: capture.frames,
         rounds: capture.rounds.map((round, index) => ({
           ...round,
@@ -432,7 +517,12 @@ test("continuous moving Overcasters bursts keep character and projectile present
           maxAuthorityMuzzleDeltaPx: summary.maxAuthorityMuzzleDeltaPx,
           maxProjectilePathErrorPx: summary.maxProjectilePathErrorPx,
           maxCharacterAuthorityDeltaPx: summary.maxCharacterAuthorityDeltaPx,
+          maxDuringFireRenderedRigStepPx: summary.maxDuringFireRenderedRigStepPx,
+          maxPostFireRenderedRigStepPx: summary.maxPostFireRenderedRigStepPx,
+          maxPostFireCharacterAuthorityDeltaPx: summary.maxPostFireCharacterAuthorityDeltaPx,
           maxRigPredictorDeltaPx: summary.maxRigPredictorDeltaPx,
+          finalAuthorityAttackSeq: summary.finalAuthorityAttackSeq,
+          finalRigAttackSeq: summary.finalRigAttackSeq,
         })}`,
       );
 
@@ -440,34 +530,70 @@ test("continuous moving Overcasters bursts keep character and projectile present
         new Set(DIRECTION_STAGES.map((_stage, index) => index)),
       );
       for (const direction of ["-1,0", "0,-1", "0,1", "1,0"])
-        expect(actualDirections.has(direction), `real keyboard input must include ${direction}`).toBe(
-          true,
-        );
-      expect(capture.rounds.length, "many rounds must render across the held input").toBeGreaterThanOrEqual(
-        REQUIRED_ROUNDS,
-      );
-      expect(burstStarts.length, "continuous fire must cross at least eight bursts").toBeGreaterThanOrEqual(
-        REQUIRED_BURSTS,
-      );
+        expect(
+          actualDirections.has(direction),
+          `real keyboard input must include ${direction}`,
+        ).toBe(true);
+      expect(
+        capture.rounds.length,
+        "many rounds must render across the held input",
+      ).toBeGreaterThanOrEqual(REQUIRED_ROUNDS);
+      expect(
+        burstStarts.length,
+        "continuous fire must cross at least eight bursts",
+      ).toBeGreaterThanOrEqual(REQUIRED_BURSTS);
       expect(
         capture.rounds.filter((round) => round.track.length >= 2).length,
         "at least eight complete bursts must be observed beyond admission",
       ).toBeGreaterThanOrEqual(REQUIRED_ROUNDS);
-      expect(summary.maxAdmissionMuzzleDeltaPx, "admission must begin on the rendered muzzle").toBeLessThanOrEqual(
-        MAX_ADMISSION_MUZZLE_DELTA_PX,
-      );
+      expect(
+        summary.maxAdmissionMuzzleDeltaPx,
+        "admission must begin on the rendered muzzle",
+      ).toBeLessThanOrEqual(MAX_ADMISSION_MUZZLE_DELTA_PX);
       expect(
         summary.maxProjectilePathErrorPx,
         "rounds must continue smoothly from that muzzle on following frames",
       ).toBeLessThanOrEqual(MAX_PROJECTILE_PATH_ERROR_PX);
       expect(
         summary.maxCharacterAuthorityDeltaPx,
-        "rendered character must remain bounded to authoritative movement during recoil",
+        "rendered character must remain bounded to authority across fire and recovery",
+      ).toBeLessThanOrEqual(MAX_CHARACTER_AUTHORITY_DELTA_PX);
+      expect(duringFrames.length, "the gate must retain a during-fire rig window").toBeGreaterThan(
+        0,
+      );
+      expect(postFrames.length, "the gate must retain a post-fire rig window").toBeGreaterThan(0);
+      expect(
+        (postFrames.at(-1)?.wallMs ?? 0) - (postFrames[0]?.wallMs ?? Number.POSITIVE_INFINITY),
+        "post-fire recovery must remain under observation while strafing",
+      ).toBeGreaterThanOrEqual(POST_FIRE_SAMPLE_MS * 0.8);
+      expect(
+        summary.maxDuringFireRenderedRigStepPx,
+        "the rendered rig must not vibrate between frames during continuous fire",
+      ).toBeLessThanOrEqual(MAX_RENDERED_RIG_STEP_PX);
+      expect(
+        summary.maxPostFireRenderedRigStepPx,
+        "the rendered rig must not vibrate between frames after fire is released",
+      ).toBeLessThanOrEqual(MAX_RENDERED_RIG_STEP_PX);
+      expect(
+        summary.maxPostFireCharacterAuthorityDeltaPx,
+        "post-fire rendered rig recovery must stay bounded to authority",
       ).toBeLessThanOrEqual(MAX_CHARACTER_AUTHORITY_DELTA_PX);
       expect(
         summary.maxRigPredictorDeltaPx,
         "the final rig must not reject/rotate the predictor's recoil movement",
       ).toBeLessThanOrEqual(MAX_RIG_PREDICTOR_DELTA_PX);
+      expect(summary.authorityAttackSeqRegressions, "authority attackSeq must be monotonic").toBe(
+        0,
+      );
+      expect(summary.rigAttackSeqRegressions, "rig attack sequence must be monotonic").toBe(0);
+      expect(
+        summary.maxRigAttackSeqLead,
+        "predicted rig sequence may lead authority by at most one",
+      ).toBeLessThanOrEqual(1);
+      expect(
+        summary.finalRigAttackSeq,
+        "authority must confirm the final predicted rig attack sequence",
+      ).toBe(summary.finalAuthorityAttackSeq);
     } finally {
       await releaseFireAndMovement(page);
     }
