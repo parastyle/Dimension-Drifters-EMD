@@ -46,6 +46,43 @@ function failingTests(output) {
   return names;
 }
 
+// ---- Preflight: refuse to run unless the repo is QUIET -----------------------------------------
+// Both jobs are meaningless-to-harmful against in-flight work. Job 1 reports a Sol's half-finished
+// edits as "flakes"; job 2 regenerates artifacts INTO the worktree, mutating files underneath a
+// running agent. Neither is worth a nightly false alarm, so a busy repo defers instead of guessing.
+const dirtyFiles = sh("git status --porcelain").stdout.trim().split("\n").filter(Boolean);
+// Windows: execSync runs through cmd.exe, which has no `ps`/`grep` — use tasklist. An unreadable
+// process table means we do NOT know whether the fleet is working, so it counts as "not quiet".
+// Failing closed costs one skipped night; failing open corrupts a Sol's worktree.
+const taskList = sh('tasklist /FI "IMAGENAME eq codex.exe" /NH', 60_000);
+const activeAgents = taskList.ok
+  ? taskList.stdout.split("\n").filter((line) => /codex\.exe/i.test(line)).length
+  : null;
+
+const quietBlockers = [];
+if (dirtyFiles.length > 0) quietBlockers.push(`${dirtyFiles.length} uncommitted files`);
+if (activeAgents === null) quietBlockers.push("could not read the process table");
+else if (activeAgents > 0) quietBlockers.push(`${activeAgents} codex agents running`);
+
+if (quietBlockers.length > 0 && process.env.JANITOR_FORCE !== "1") {
+  const deferred = `# Janitor report — ${new Date().toISOString()}
+
+**DEFERRED — repo was not quiet.** ${quietBlockers.join("; ")}.
+
+Nothing was run and nothing was written. Both jobs require a quiet repo to say anything true:
+flake characterization would report in-flight edits as nondeterminism, and the drift job would
+regenerate artifacts into a worktree another agent is actively editing.
+
+This is the expected outcome on any night the fleet is working. It is not a failure.
+Re-runs automatically on the next scheduled pass. Override with \`JANITOR_FORCE=1\` only against a
+tree you are willing to have regenerated.
+`;
+  mkdirSync(OUT_DIR, { recursive: true });
+  writeFileSync(path.join(OUT_DIR, "latest.md"), deferred);
+  console.log(`janitor: DEFERRED — ${quietBlockers.join("; ")}`);
+  process.exit(0);
+}
+
 // ---- Job 1: flake characterization -------------------------------------------------------------
 const flakeCounts = new Map();
 let cleanRuns = 0;
@@ -77,6 +114,16 @@ const generators = [
 const generatorResults = generators.map((g) => ({ ...g, ...sh(g.cmd, 600_000) }));
 const afterStatus = sh("git status --porcelain").stdout.trim().split("\n").filter(Boolean);
 const drifted = afterStatus.length - beforeDirty;
+
+// Capture WHAT drifted, then put the tree back. The preflight guarantees it was clean, so reverting
+// tracked modifications restores exactly the committed state — the janitor must not leave the owner
+// with a pile of regenerated files to untangle in the morning. Untracked output is reported, never
+// deleted: removing files we did not author is not a risk worth taking unattended.
+const driftDiff = drifted > 0 ? sh("git diff --stat").stdout.trim() : "";
+const untracked = afterStatus.filter((line) => line.startsWith("??")).map((l) => l.slice(3));
+if (drifted > 0) sh("git checkout -- .");
+const restored = sh("git status --porcelain").stdout.trim().split("\n").filter(Boolean);
+const cleanAfterRestore = restored.length === untracked.length;
 
 // ---- Report ------------------------------------------------------------------------------------
 const stamp = new Date().toISOString();
@@ -115,8 +162,13 @@ ${runSummaries.map((r) => `- run ${r.run}: ${r.passed} passed, ${r.failed} faile
 
 ${generatorResults.map((g) => `- ${g.ok ? "OK  " : "FAIL"} — ${g.name}${g.ok ? "" : `\n  \`\`\`\n  ${g.stdout.split("\n").slice(-6).join("\n  ")}\n  \`\`\``}`).join("\n")}
 
-Worktree files changed by regeneration: **${drifted}** (was ${beforeDirty} dirty before, ${afterStatus.length} after).
-${drifted > 0 ? "Regenerated output differs from what is committed — review the diff; a generated artifact is stale in git." : "No drift: every generated artifact matches what is committed."}
+Worktree files changed by regeneration: **${drifted}**.
+${
+  drifted > 0
+    ? `Regenerated output differs from what is committed — a generated artifact is stale in git:\n\n\`\`\`\n${driftDiff}\n\`\`\`\n\n${untracked.length > 0 ? `Untracked files produced (left in place, NOT deleted):\n${untracked.map((f) => `- \`${f}\``).join("\n")}\n` : ""}`
+    : "No drift: every generated artifact matches what is committed."
+}
+Tree restored after measuring: **${cleanAfterRestore ? "yes — tracked files reverted to HEAD" : "NO — review manually"}**.
 
 ## Escalate to a real Sol if
 
