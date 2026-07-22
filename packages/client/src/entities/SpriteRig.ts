@@ -362,16 +362,23 @@ interface ComboChainState {
 }
 
 interface ComboStageTransitionState {
+  readonly acceptedAtMs: number;
   readonly startedAtMs: number;
+  readonly deadlineAtMs: number;
   readonly durationMs: number;
+  readonly root: Readonly<ComboStageParentTransform>;
   readonly parts: ReadonlyArray<{
-    readonly node: Phaser.GameObjects.Image;
+    readonly node: ComboStageTransformNode;
     readonly previous: Readonly<ComboStagePoseTransform>;
   }>;
-  readonly weapons: ReadonlyArray<{
-    readonly node: Phaser.GameObjects.Image;
+  readonly shadows: ReadonlyArray<{
+    readonly node: ComboStageTransformNode;
     readonly previous: Readonly<ComboStagePoseTransform>;
   }>;
+}
+
+interface ComboStageTransformNode extends ComboStagePoseTransform {
+  readonly active: boolean;
 }
 
 function createComboChainState(): ComboChainState {
@@ -702,8 +709,16 @@ function mixAngle(from: number, to: number, t: number): number {
   return from + delta * clamp01(t);
 }
 
-/** Finish the bridge inside the next beat's authored anticipation, capped for unchanged combo cadence. */
-export function comboStageTransitionDurationMs(activeStartSeconds: number): number {
+type ComboStageTransitionTiming = Pick<
+  RigSwingDescriptor,
+  "activeStartSeconds" | "poseSeconds" | "comboTiming"
+>;
+
+/** Finish the bridge inside the selected step's authoritative anticipation, capped for unchanged cadence. */
+export function comboStageTransitionDurationMs(swing: ComboStageTransitionTiming): number {
+  const activeStartSeconds = swing.comboTiming
+    ? swing.comboTiming.activeStart * swing.poseSeconds
+    : swing.activeStartSeconds;
   return Math.min(COMBO_STAGE_TRANSITION_MAX_MS, Math.max(0, activeStartSeconds * 1000 * 0.8));
 }
 
@@ -716,6 +731,12 @@ export function comboStageTransitionBlend(elapsedMs: number, durationMs: number)
 export interface ComboStagePoseTransform {
   x: number;
   y: number;
+  rotation: number;
+  scaleX: number;
+  scaleY: number;
+}
+
+export interface ComboStageParentTransform {
   rotation: number;
   scaleX: number;
   scaleY: number;
@@ -738,6 +759,59 @@ export function blendComboStagePoseTransform(
   out.x = previous.x + (targetX - previous.x) * blend;
   out.y = previous.y + (targetY - previous.y) * blend;
   out.rotation = mixAngle(previous.rotation, targetRotation, blend);
+  out.scaleX = previous.scaleX + (targetScaleX - previous.scaleX) * blend;
+  out.scaleY = previous.scaleY + (targetScaleY - previous.scaleY) * blend;
+}
+
+/**
+ * Preserve a presentation-only child's screen orientation while its combat-truth parent rotation changes.
+ * Parent translation is deliberately absent: movement/netcode continue to own root x/y without smoothing.
+ */
+export function blendComboStagePresentationTransform(
+  previous: Readonly<ComboStagePoseTransform>,
+  previousParent: Readonly<ComboStageParentTransform>,
+  target: Readonly<ComboStagePoseTransform>,
+  targetParent: Readonly<ComboStageParentTransform>,
+  elapsedMs: number,
+  durationMs: number,
+  out: ComboStagePoseTransform,
+): void {
+  const previousRootCos = Math.cos(previousParent.rotation);
+  const previousRootSin = Math.sin(previousParent.rotation);
+  const targetRootCos = Math.cos(targetParent.rotation);
+  const targetRootSin = Math.sin(targetParent.rotation);
+  const previousScaledX = previous.x * previousParent.scaleX;
+  const previousScaledY = previous.y * previousParent.scaleY;
+  const previousWorldX = previousScaledX * previousRootCos - previousScaledY * previousRootSin;
+  const previousWorldY = previousScaledX * previousRootSin + previousScaledY * previousRootCos;
+  const targetParentX = previousWorldX * targetRootCos + previousWorldY * targetRootSin;
+  const targetParentY = -previousWorldX * targetRootSin + previousWorldY * targetRootCos;
+  const rebasedPreviousX = targetParentX / targetParent.scaleX;
+  const rebasedPreviousY = targetParentY / targetParent.scaleY;
+
+  const previousAxisX = Math.cos(previous.rotation) * previousParent.scaleX;
+  const previousAxisY = Math.sin(previous.rotation) * previousParent.scaleY;
+  const previousAxisWorldX =
+    previousAxisX * previousRootCos - previousAxisY * previousRootSin;
+  const previousAxisWorldY =
+    previousAxisX * previousRootSin + previousAxisY * previousRootCos;
+  const targetAxisParentX =
+    (previousAxisWorldX * targetRootCos + previousAxisWorldY * targetRootSin) /
+    targetParent.scaleX;
+  const targetAxisParentY =
+    (-previousAxisWorldX * targetRootSin + previousAxisWorldY * targetRootCos) /
+    targetParent.scaleY;
+  const rebasedPreviousRotation = Math.atan2(targetAxisParentY, targetAxisParentX);
+
+  const blend = comboStageTransitionBlend(elapsedMs, durationMs);
+  const targetX = target.x;
+  const targetY = target.y;
+  const targetRotation = target.rotation;
+  const targetScaleX = target.scaleX;
+  const targetScaleY = target.scaleY;
+  out.x = rebasedPreviousX + (targetX - rebasedPreviousX) * blend;
+  out.y = rebasedPreviousY + (targetY - rebasedPreviousY) * blend;
+  out.rotation = mixAngle(rebasedPreviousRotation, targetRotation, blend);
   out.scaleX = previous.scaleX + (targetScaleX - previous.scaleX) * blend;
   out.scaleY = previous.scaleY + (targetScaleY - previous.scaleY) * blend;
 }
@@ -4033,15 +4107,17 @@ export class SpriteRig {
     this.resetComboChain(true);
   }
 
-  /** Snapshot only already-rendered local paper transforms. The next stage keeps advancing on its original
-   * descriptor clock underneath this short bridge, so accepted timing, DPS, and authored root motion stay exact. */
-  private beginComboStageTransition(startedAtMs: number, swing: RigSwingDescriptor): void {
-    const durationMs = comboStageTransitionDurationMs(swing.activeStartSeconds);
+  /** Snapshot only presentation channels. Root/weapon combat transforms stay on the authored accepted clock. */
+  private beginComboStageTransition(acceptedAtMs: number, swing: RigSwingDescriptor): void {
+    const authoredDurationMs = comboStageTransitionDurationMs(swing);
+    const deadlineAtMs = acceptedAtMs + authoredDurationMs;
+    const startedAtMs = Math.max(acceptedAtMs, this.presentationClockNow());
+    const durationMs = Math.max(0, deadlineAtMs - startedAtMs);
     if (durationMs <= 0) {
       this.comboStageTransition = undefined;
       return;
     }
-    const capture = (node: Phaser.GameObjects.Image) => ({
+    const capture = (node: ComboStageTransformNode) => ({
       node,
       previous: {
         x: node.x,
@@ -4052,45 +4128,64 @@ export class SpriteRig {
       },
     });
     this.comboStageTransition = {
+      acceptedAtMs,
       startedAtMs,
+      deadlineAtMs,
       durationMs,
+      root: {
+        rotation: this.root.rotation,
+        scaleX: this.root.scaleX,
+        scaleY: this.root.scaleY,
+      },
       parts: this.parts.map(capture),
-      weapons: this.weapons.map((weapon) => capture(weapon.img)),
+      shadows: [capture(this.shadow), capture(this.shadowHalo)],
     };
   }
 
-  /** Final stage writer after art correction and before gear followers: at elapsed zero every captured channel
-   * is bit-identical to the prior stage; by the bounded deadline the untouched next pose owns it fully. */
+  /** Bridge body-only presentation under the authored root. Weapon images are intentionally never captured. */
   private applyComboStageTransition(sceneNow: number): void {
     const transition = this.comboStageTransition;
     if (!transition) return;
+    if (
+      Math.abs(this.root.scaleX) <= 1e-6 ||
+      Math.abs(this.root.scaleY) <= 1e-6 ||
+      Math.abs(transition.root.scaleX - this.root.scaleX) > 1e-6 ||
+      Math.abs(transition.root.scaleY - this.root.scaleY) > 1e-6
+    ) {
+      this.comboStageTransition = undefined;
+      return;
+    }
     const elapsedMs = sceneNow - transition.startedAtMs;
     for (const captured of transition.parts) {
       if (!captured.node.active) continue;
-      blendComboStagePoseTransform(
+      blendComboStagePresentationTransform(
         captured.previous,
+        transition.root,
         captured.node,
+        this.root,
         elapsedMs,
         transition.durationMs,
         captured.node,
       );
     }
-    for (let index = 0; index < transition.weapons.length; index++) {
-      const captured = transition.weapons[index];
-      const weapon = this.weapons[index];
-      if (!captured || !weapon || captured.node !== weapon.img || !weapon.img.active) continue;
-      blendComboStagePoseTransform(
+  }
+
+  /** Attack-shadow channels are authored after gear/VFX followers, so their safe residual is committed last. */
+  private applyComboStageShadowTransition(sceneNow: number): void {
+    const transition = this.comboStageTransition;
+    if (!transition) return;
+    const elapsedMs = sceneNow - transition.startedAtMs;
+    for (const captured of transition.shadows) {
+      if (!captured.node.active) continue;
+      blendComboStagePresentationTransform(
         captured.previous,
-        weapon.img,
+        transition.root,
+        captured.node,
+        this.root,
         elapsedMs,
         transition.durationMs,
-        weapon.img,
+        captured.node,
       );
-      const geometry =
-        index === 0 && this.tome?.openVisible
-          ? weapon.artGeometry?.open
-          : weapon.artGeometry?.closed;
-      weapon.semanticRotation = weapon.img.rotation - (geometry?.artAngle ?? 0);
     }
     if (elapsedMs >= transition.durationMs) this.comboStageTransition = undefined;
   }
@@ -5238,6 +5333,7 @@ export class SpriteRig {
    *  effects arrive with the level-up parry augments). */
   triggerBrace(timeMs: number): void {
     this.cancelFlourish("brace");
+    this.comboStageTransition = undefined; // parry acquisition is an information-bearing sharp takeover
     // §7 v0.105 de-clunk: on a CHAIN parry (a press landing while the guard is still up), don't restart the
     // envelope from 0 — that re-ramps the raise over ~81ms and flickers the guard OFF for a frame right in
     // the Sekiro rhythm. Restart at the PLATEAU time instead so the guard holds continuously.
@@ -8036,6 +8132,8 @@ export class SpriteRig {
       outsidePaperView || rootCut || rawDtMs <= 0 || rawDtMs > JIGGLE_MAX_DT_S * 1000;
     if (flourishClockCut || this.downed || this.ultimatePhase !== UltimatePhase.Idle) {
       this.resetFlourishState(false, flourishClockCut);
+      if (this.downed || this.ultimatePhase !== UltimatePhase.Idle)
+        this.comboStageTransition = undefined;
     } else if (
       flourishAttackIntent ||
       movementOnsetOrHardChange ||
@@ -8067,6 +8165,7 @@ export class SpriteRig {
         this.airStance = this.moveStance;
       this.moveStance = nextStance;
       this.stanceStartedMs = timeMs;
+      if (nextStance !== STANCE_NONE) this.comboStageTransition = undefined;
     }
     if (this.enemyComboOwnsHop) this.hopTarget = this.enemyComboHopPx;
     if (this.hopTarget > GROUND_EPSILON && this.lastPoseHopTarget <= GROUND_EPSILON) {
@@ -8271,6 +8370,7 @@ export class SpriteRig {
     const rcy = anim.recoilY ?? 0;
     const rk = Math.min(1, Math.hypot(rcx, rcy) / 520);
     if (rk > 0.01) {
+      this.comboStageTransition = undefined; // damage recoil must read on the first presented frame
       this.body.rotation += Math.max(-1, Math.min(1, rcx / 520)) * 0.22;
       this.body.y += Math.max(-1, Math.min(1, rcy / 520)) * 5 * s;
       this.body.scaleX *= 1 + rk * 0.06;
@@ -10709,5 +10809,6 @@ export class SpriteRig {
         (shrink * 1.9 * this.attackShadowScaleY * shadowSpawnY) / shadowRootY,
       )
       .setAlpha(haloAlpha * this.attackShadowAlpha);
+    this.applyComboStageShadowTransition(sceneNow);
   }
 }

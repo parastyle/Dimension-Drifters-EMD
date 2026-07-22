@@ -1,0 +1,129 @@
+{
+  "generatedAt": "2026-07-22T21:52:37.685Z",
+  "uniqueBoundaryEvents": 1091,
+  "uniqueFlaggedEvents": 199,
+  "uniqueNamedSeamFlaggedEvents": 98,
+  "namedShare": 0.49246231155778897,
+  "counts": {
+    "within-pose / no named seam": {
+      "observed": 906,
+      "flagged": 101,
+      "partFlags": 314
+    },
+    "chain drop/expiry": {
+      "observed": 46,
+      "flagged": 6,
+      "partFlags": 18
+    },
+    "attack → rest": {
+      "observed": 64,
+      "flagged": 37,
+      "partFlags": 149
+    },
+    "combo step boundary": {
+      "observed": 34,
+      "flagged": 23,
+      "partFlags": 118
+    },
+    "weapon swap": {
+      "observed": 16,
+      "flagged": 14,
+      "partFlags": 54
+    },
+    "rest → attack": {
+      "observed": 10,
+      "flagged": 10,
+      "partFlags": 46
+    },
+    "dual-wield hand desync": {
+      "observed": 11,
+      "flagged": 5,
+      "partFlags": 23
+    },
+    "movement interrupt": {
+      "observed": 4,
+      "flagged": 3,
+      "partFlags": 22
+    }
+  },
+  "actorCounts": {
+    "local": {
+      "observed": 766,
+      "flagged": 114,
+      "namedFlagged": 37,
+      "bySeam": {
+        "within-pose / no named seam": {
+          "observed": 656,
+          "flagged": 77
+        },
+        "chain drop/expiry": {
+          "observed": 37,
+          "flagged": 3
+        },
+        "attack → rest": {
+          "observed": 32,
+          "flagged": 10
+        },
+        "combo step boundary": {
+          "observed": 19,
+          "flagged": 8
+        },
+        "weapon swap": {
+          "observed": 10,
+          "flagged": 9
+        },
+        "rest → attack": {
+          "observed": 2,
+          "flagged": 2
+        },
+        "dual-wield hand desync": {
+          "observed": 6,
+          "flagged": 2
+        },
+        "movement interrupt": {
+          "observed": 4,
+          "flagged": 3
+        }
+      }
+    },
+    "remote": {
+      "observed": 325,
+      "flagged": 85,
+      "namedFlagged": 61,
+      "bySeam": {
+        "within-pose / no named seam": {
+          "observed": 250,
+          "flagged": 24
+        },
+        "chain drop/expiry": {
+          "observed": 9,
+          "flagged": 3
+        },
+        "attack → rest": {
+          "observed": 32,
+          "flagged": 27
+        },
+        "combo step boundary": {
+          "observed": 15,
+          "flagged": 15
+        },
+        "weapon swap": {
+          "observed": 6,
+          "flagged": 5
+        },
+        "rest → attack": {
+          "observed": 8,
+          "flagged": 8
+        },
+        "dual-wield hand desync": {
+          "observed": 5,
+          "flagged": 3
+        },
+        "movement interrupt": {
+          "observed": 0,
+          "flagged": 0
+        }
+      }
+    }
+  }
+}

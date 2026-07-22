@@ -7,6 +7,7 @@ import {
   swingDescriptorFor,
   swingDescriptorWithComboStep,
   WEAPONS,
+  weaponUsesAuthoritativeEnvelopeCombo,
   type WeaponSizeClass,
 } from "@dd/shared";
 import { describe, expect, it, vi } from "vitest";
@@ -20,7 +21,9 @@ vi.mock("phaser", () => ({
 
 import {
   blendComboStagePoseTransform,
+  blendComboStagePresentationTransform,
   COMBO_STAGE_TRANSITION_MAX_MS,
+  type ComboStageParentTransform,
   type ComboStagePoseTransform,
   comboStageTransitionDurationMs,
   createCloseBladePoseInput,
@@ -81,8 +84,98 @@ function boundaryPose(step: number, direction: number, end: boolean): ComboStage
   };
 }
 
+function worldPose(
+  child: Readonly<ComboStagePoseTransform>,
+  parent: Readonly<ComboStageParentTransform>,
+): { x: number; y: number; rotation: number } {
+  const parentCos = Math.cos(parent.rotation);
+  const parentSin = Math.sin(parent.rotation);
+  const scaledX = child.x * parent.scaleX;
+  const scaledY = child.y * parent.scaleY;
+  const axisX = Math.cos(child.rotation) * parent.scaleX;
+  const axisY = Math.sin(child.rotation) * parent.scaleY;
+  return {
+    x: scaledX * parentCos - scaledY * parentSin,
+    y: scaledX * parentSin + scaledY * parentCos,
+    rotation: Math.atan2(
+      axisX * parentSin + axisY * parentCos,
+      axisX * parentCos - axisY * parentSin,
+    ),
+  };
+}
+
+function angleDistance(a: number, b: number): number {
+  return Math.abs(Math.atan2(Math.sin(a - b), Math.cos(a - b)));
+}
+
 // G3 -- append-only category coverage for Dustreaper and every authored melee sizeClass.
 describe("SpriteRig combo stage continuity", () => {
+  it.each([1, -1] as const)(
+    "keeps safe presentation channels screen-continuous under an authored root turn (facing %i)",
+    (facing) => {
+      const previousRoot = { rotation: 2.35, scaleX: facing * 1.2, scaleY: 1.2 };
+      const targetRoot = { rotation: -0.45, scaleX: facing * 1.2, scaleY: 1.2 };
+      const previous = boundaryPose(1, facing, true);
+      const target = boundaryPose(2, -facing, false);
+      const atBoundary = { ...target };
+      blendComboStagePresentationTransform(
+        previous,
+        previousRoot,
+        target,
+        targetRoot,
+        0,
+        48,
+        atBoundary,
+      );
+      const previousWorld = worldPose(previous, previousRoot);
+      const boundaryWorld = worldPose(atBoundary, targetRoot);
+      expect(boundaryWorld.x).toBeCloseTo(previousWorld.x, 10);
+      expect(boundaryWorld.y).toBeCloseTo(previousWorld.y, 10);
+      expect(angleDistance(boundaryWorld.rotation, previousWorld.rotation)).toBeLessThan(1e-10);
+
+      const afterBridge = { ...previous };
+      blendComboStagePresentationTransform(
+        previous,
+        previousRoot,
+        target,
+        targetRoot,
+        48,
+        48,
+        afterBridge,
+      );
+      expect(afterBridge.x).toBeCloseTo(target.x, 10);
+      expect(afterBridge.y).toBeCloseTo(target.y, 10);
+      expect(angleDistance(afterBridge.rotation, target.rotation)).toBeLessThan(1e-10);
+      expect(afterBridge.scaleX).toBeCloseTo(target.scaleX, 10);
+      expect(afterBridge.scaleY).toBeCloseTo(target.scaleY, 10);
+    },
+  );
+
+  it("finishes before active start for every authoritative-envelope combo step", () => {
+    let checkedSteps = 0;
+    for (const weapon of Object.values(WEAPONS)) {
+      if (!weaponUsesAuthoritativeEnvelopeCombo(weapon)) continue;
+      const selection = meleeComboSelectionFor(weapon);
+      if (!selection) continue;
+      for (let stepIndex = 0; stepIndex < selection.sequence.length; stepIndex++) {
+        const step = selection.sequence[stepIndex];
+        if (!step) continue;
+        const descriptor = swingDescriptorWithComboStep(
+          swingDescriptorFor(weapon, weapon.cooldown),
+          weapon,
+          stepIndex,
+        );
+        const stepActiveStartMs = step.timing.activeStart * descriptor.poseSeconds * 1000;
+        expect(
+          comboStageTransitionDurationMs(descriptor),
+          `${weapon.id}:${stepIndex}:ends before authoritative active start`,
+        ).toBeLessThanOrEqual(stepActiveStartMs);
+        checkedSteps++;
+      }
+    }
+    expect(checkedSteps).toBeGreaterThan(0);
+  });
+
   it.each(REPRESENTATIVES)("bridges every $id stage boundary without a pose cut", ({
     id,
     sizeClass,
@@ -111,13 +204,14 @@ describe("SpriteRig combo stage continuity", () => {
         poseSeconds: descriptor.poseSeconds,
         effectiveCooldown: descriptor.effectiveCooldown,
       };
-      const durationMs = comboStageTransitionDurationMs(descriptor.activeStartSeconds);
+      const stepActiveStartMs = nextStep.timing.activeStart * descriptor.poseSeconds * 1000;
+      const durationMs = comboStageTransitionDurationMs(descriptor);
       expect(durationMs, `${id}:${nextIndex}:positive anticipation bridge`).toBeGreaterThan(0);
       expect(durationMs, `${id}:${nextIndex}:bounded`).toBeLessThanOrEqual(
         COMBO_STAGE_TRANSITION_MAX_MS,
       );
-      expect(durationMs, `${id}:${nextIndex}:ends before active`).toBeLessThanOrEqual(
-        descriptor.activeStartSeconds * 1000,
+      expect(durationMs, `${id}:${nextIndex}:ends before step active`).toBeLessThanOrEqual(
+        stepActiveStartMs,
       );
 
       const previous = boundaryPose(nextIndex - 1, previousStep.direction, true);
