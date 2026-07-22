@@ -8,7 +8,12 @@
  */
 
 import { BEAM_MAX_RANGE, BEAM_MAX_WIDTH, PROJECTILE_RADIUS } from "./constants.js";
-import { bladeAngleAt, MELEE_BLADE_HALFWIDTH, type SwingDescriptor } from "./melee.js";
+import {
+  bladeAngleAt,
+  MELEE_BLADE_HALFWIDTH,
+  meleeComboSelectionFor,
+  type SwingDescriptor,
+} from "./melee.js";
 import { MELEE_TWO_HAND_GRIP_REACH, meleeReach, type WeaponDef } from "./weapons.js";
 
 /** Standing agreement tolerance for rendered damage bounds versus authoritative hit bounds. */
@@ -27,12 +32,6 @@ export interface BladeExtensionEnvelopeAuthoring {
   readonly lengthMultiplier: number;
   /** Fraction of the physical blade hidden beneath the magic blade's root. */
   readonly overlapFraction: number;
-  /** Complete rendered extension thickness divided by physical blade length. */
-  readonly thicknessScale: number;
-  /** Minimum wind-up growth duration. */
-  readonly growMinSeconds: number;
-  /** Growth duration as a fraction of the active window, capped by available wind-up. */
-  readonly growActiveFraction: number;
 }
 
 export interface WeaponHitEnvelopeAuthoring {
@@ -70,18 +69,17 @@ export const BLADE_EXTENSION_WEAPON_IDS = Object.freeze([
 
 export const BLADE_EXTENSION_LENGTH_MULTIPLIER = 3;
 export const BLADE_EXTENSION_OVERLAP_FRACTION = 0.3;
-export const BLADE_EXTENSION_GROW_MIN_SECONDS = 0.08;
-export const BLADE_EXTENSION_GROW_ACTIVE_FRACTION = 0.45;
+/** Owner-ruled per-combo lightsaber ignition: a short, readable ~100 ms local-axis rise. */
+export const BLADE_EXTENSION_IGNITION_SECONDS = 0.1;
+/** Presentation-only retraction after the accepted combo lifetime lapses. */
+export const BLADE_EXTENSION_RETRACTION_SECONDS = 0.09;
 
-function extensionAuthoring(thicknessScale: number): Readonly<WeaponHitEnvelopeAuthoring> {
+function extensionAuthoring(): Readonly<WeaponHitEnvelopeAuthoring> {
   return Object.freeze({
     melee: Object.freeze({
       bladeExtension: Object.freeze({
         lengthMultiplier: BLADE_EXTENSION_LENGTH_MULTIPLIER,
         overlapFraction: BLADE_EXTENSION_OVERLAP_FRACTION,
-        thicknessScale,
-        growMinSeconds: BLADE_EXTENSION_GROW_MIN_SECONDS,
-        growActiveFraction: BLADE_EXTENSION_GROW_ACTIVE_FRACTION,
       }),
     }),
   });
@@ -92,13 +90,13 @@ function extensionAuthoring(thicknessScale: number): Readonly<WeaponHitEnvelopeA
 export const LEGACY_WEAPON_HIT_ENVELOPE_OVERRIDES: Readonly<
   Partial<Record<string, Readonly<WeaponHitEnvelopeAuthoring>>>
 > = Object.freeze({
-  [SANCTIFIED_HEADSMAN_ID]: extensionAuthoring(0.32),
-  "x2-rimewrit-grave-slab": extensionAuthoring(0.42),
-  "x2-pyre-gallows-brand": extensionAuthoring(0.48),
-  "x2-stormrail-colossus": extensionAuthoring(0.38),
-  "x2-nullwake-ordinance": extensionAuthoring(0.44),
-  "x2-dawnwall-testament": extensionAuthoring(0.4),
-  "x2-cairnfall-monolith": extensionAuthoring(0.46),
+  [SANCTIFIED_HEADSMAN_ID]: extensionAuthoring(),
+  "x2-rimewrit-grave-slab": extensionAuthoring(),
+  "x2-pyre-gallows-brand": extensionAuthoring(),
+  "x2-stormrail-colossus": extensionAuthoring(),
+  "x2-nullwake-ordinance": extensionAuthoring(),
+  "x2-dawnwall-testament": extensionAuthoring(),
+  "x2-cairnfall-monolith": extensionAuthoring(),
 });
 
 export function weaponHitEnvelopeAuthoringFor(
@@ -125,7 +123,6 @@ export interface BladeExtensionGeometry {
   readonly extensionLength: number;
   readonly extensionStart: number;
   readonly overlapLength: number;
-  readonly thickness: number;
   readonly fullTipReach: number;
 }
 
@@ -242,31 +239,36 @@ export function bladeExtensionGeometryFor(
     extensionLength,
     extensionStart,
     overlapLength,
-    thickness: physicalBladeLength * Math.max(0, extension.thicknessScale),
     fullTipReach: extensionStart + extensionLength,
   });
 }
 
-/** One reveal clock for rendering and collision. It grows during late wind-up, holds across the complete
- * active edge, and disappears at the active-window boundary. */
+/** Pure local-axis ignition curve shared by presentation and authoritative emergence reach. */
+export function bladeExtensionIgnitionReveal(elapsedSeconds: number): number {
+  if (!Number.isFinite(elapsedSeconds) || elapsedSeconds <= 0) return 0;
+  if (elapsedSeconds >= BLADE_EXTENSION_IGNITION_SECONDS) return 1;
+  return smoothstep01(elapsedSeconds / BLADE_EXTENSION_IGNITION_SECONDS);
+}
+
+/**
+ * Per-combo reveal clock for authoritative reach. Step zero rises once from combo acceptance; later accepted
+ * steps are already fully lit. Combo expiry/retraction belongs to the retained wielder identity on the client,
+ * because a standalone swing descriptor cannot know whether another accepted beat will continue the chain.
+ */
 export function bladeExtensionReveal(
   weapon: WeaponDef,
-  swing: Pick<SwingDescriptor, "activeStartSeconds" | "activeEndSeconds">,
+  swing: Pick<SwingDescriptor, "activeStartSeconds" | "activeEndSeconds" | "comboStep" | "motion">,
   elapsedSeconds: number,
 ): number {
   const extension = weaponHitEnvelopeAuthoringFor(weapon)?.melee?.bladeExtension;
   if (!extension) return 0;
-  const activeSeconds = swing.activeEndSeconds - swing.activeStartSeconds;
-  if (activeSeconds <= 0 || elapsedSeconds >= swing.activeEndSeconds) return 0;
-  const growSeconds = Math.min(
-    swing.activeStartSeconds,
-    Math.max(extension.growMinSeconds, activeSeconds * extension.growActiveFraction),
-  );
-  const growStartSeconds = swing.activeStartSeconds - growSeconds;
-  if (elapsedSeconds < growStartSeconds) return 0;
-  if (elapsedSeconds >= swing.activeStartSeconds || growSeconds <= 0) return 1;
-  const progress = (elapsedSeconds - growStartSeconds) / growSeconds;
-  return progress * progress * (3 - 2 * progress);
+  if (swing.comboStep !== undefined)
+    return swing.comboStep === 0 ? bladeExtensionIgnitionReveal(elapsedSeconds) : 1;
+  const sequence = meleeComboSelectionFor(weapon)?.sequence;
+  const motionIndex = swing.motion
+    ? sequence?.findIndex((step) => step.motion === swing.motion)
+    : -1;
+  return (motionIndex ?? -1) > 0 ? 1 : bladeExtensionIgnitionReveal(elapsedSeconds);
 }
 
 export interface MeleeDamageEnvelope {
@@ -288,7 +290,9 @@ export function meleeDamageEnvelopeFor(weapon: WeaponDef, renderScale = 1): Mele
     baseReach,
     maxReach: Math.max(baseReach, bladeExtension?.fullTipReach ?? 0),
     baseHalfWidth,
-    maxHalfWidth: Math.max(baseHalfWidth, (bladeExtension?.thickness ?? 0) / 2),
+    // Extension presentation measures the held blade's alpha silhouette at its join. Shared combat has no
+    // sprite pixels, so width remains the existing blade edge rather than reintroducing an authored ratio.
+    maxHalfWidth: baseHalfWidth,
     sweepArc: weapon.swingArc,
     bladeExtension,
   });
@@ -310,28 +314,25 @@ export function meleeDamageReachAt(
   const reveal = bladeExtensionReveal(weapon, swing, elapsedSeconds);
   const lengthScale = bladeExtensionPoseAt(weapon, swing, elapsedSeconds, 0)?.lengthScale ?? 1;
   const gripReach = extension.fullTipReach - extension.totalBladeLength;
+  const emergedLength = extension.totalBladeLength - extension.physicalBladeLength;
   return Math.max(
     envelope.baseReach,
-    gripReach +
-      (extension.extensionStart - gripReach + extension.extensionLength * reveal) * lengthScale,
+    gripReach + (extension.physicalBladeLength + emergedLength * reveal) * lengthScale,
   );
 }
 
 /** Timed half-thickness of the rendered/damaging blade. */
 export function meleeDamageHalfWidthAt(
   weapon: WeaponDef,
-  swing: Pick<
+  _swing: Pick<
     SwingDescriptor,
     "activeStartSeconds" | "activeEndSeconds" | "poseSeconds" | "motion"
   >,
-  elapsedSeconds: number,
+  _elapsedSeconds: number,
   renderScale = 1,
 ): number {
   const envelope = meleeDamageEnvelopeFor(weapon, renderScale);
-  if (!envelope.bladeExtension || bladeExtensionReveal(weapon, swing, elapsedSeconds) <= 0)
-    return envelope.baseHalfWidth;
-  const lengthScale = bladeExtensionPoseAt(weapon, swing, elapsedSeconds, 0)?.lengthScale ?? 1;
-  return Math.max(envelope.baseHalfWidth, (envelope.bladeExtension.thickness / 2) * lengthScale);
+  return envelope.baseHalfWidth;
 }
 
 export interface ProjectileDamageEnvelope {

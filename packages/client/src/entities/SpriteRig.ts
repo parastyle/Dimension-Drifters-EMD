@@ -1,5 +1,6 @@
 import {
   ATTACK_HELD_WINDOW,
+  BLADE_EXTENSION_OVERLAP_FRACTION,
   CHOP_IMPACT_FRAC,
   comboStepForChain,
   composeWeaponTransform,
@@ -92,6 +93,7 @@ import {
   weaponHasHandlingTag,
   weaponMuzzleGripOffset,
   weaponSpriteTransform,
+  weaponUsesAuthoritativeEnvelopeCombo,
 } from "@dd/shared";
 import { rollTumbleRotation } from "../vfx/jump-effects.js";
 import Phaser from "phaser";
@@ -285,6 +287,65 @@ export interface RigSwingDescriptor extends SwingDescriptor {
   readonly pairStep?: number;
 }
 
+/** Final held-blade affine sampled after every rig pose writer. Extension renderers consume this value
+ * directly; they must never reconstruct aim, facing, recoil, orbit, or combo pose from actor coordinates. */
+export interface WeaponBladeAttachmentPose {
+  readonly sourceId: string;
+  readonly weaponId: string;
+  readonly hand: 0 | 1;
+  readonly comboId: string;
+  readonly comboStep: number;
+  readonly comboStartedAtMs: number;
+  readonly comboExpiresAtMs: number;
+  readonly comboActive: boolean;
+  readonly nowMs: number;
+  readonly x: number;
+  readonly y: number;
+  readonly angle: number;
+  readonly axisX: number;
+  readonly axisY: number;
+  readonly normalX: number;
+  readonly normalY: number;
+  readonly physicalBladeLength: number;
+  readonly bladeWidth: number;
+  readonly depth: number;
+}
+
+/** Measure the opaque blade span where the extension begins. The median across a narrow axial band rejects
+ * one-pixel chips/sparks while keeping the result entirely derived from the equipped sprite. */
+export function measureBladeWidthAtExtensionJoin(
+  width: number,
+  height: number,
+  gripFraction: number,
+  alphaAt: (x: number, y: number) => number,
+): number {
+  const w = Math.max(1, Math.round(width));
+  const h = Math.max(1, Math.round(height));
+  const grip = clamp01(gripFraction);
+  const physicalLength = Math.max(1, (1 - grip) * w);
+  const joinX = w - physicalLength * BLADE_EXTENSION_OVERLAP_FRACTION;
+  const bandRadius = Math.max(1, Math.round(w * 0.015));
+  const spans: number[] = [];
+  for (
+    let x = Math.max(0, Math.floor(joinX) - bandRadius);
+    x <= Math.min(w - 1, Math.ceil(joinX) + bandRadius);
+    x++
+  ) {
+    let largest = 0;
+    let run = 0;
+    for (let y = 0; y < h; y++) {
+      if (alphaAt(x, y) >= 32) {
+        run++;
+        largest = Math.max(largest, run);
+      } else run = 0;
+    }
+    if (largest > 0) spans.push(largest);
+  }
+  if (spans.length === 0) return 1;
+  spans.sort((a, b) => a - b);
+  return spans[Math.floor(spans.length / 2)] ?? 1;
+}
+
 interface ComboChainState {
   family: RigComboFamily;
   step: number;
@@ -294,6 +355,8 @@ interface ComboChainState {
   hasAttackSeq: boolean;
   attackSeq: number;
   acceptedAtMs: number;
+  generation: number;
+  startedAtMs: number;
 }
 
 interface ComboStageTransitionState {
@@ -319,6 +382,8 @@ function createComboChainState(): ComboChainState {
     hasAttackSeq: false,
     attackSeq: 0,
     acceptedAtMs: -1e9,
+    generation: 0,
+    startedAtMs: -1e9,
   };
 }
 
@@ -597,6 +662,8 @@ interface RigAttackPresentationScene extends Phaser.Scene {
     weapon: WeaponDef,
     swing: SwingDescriptor,
     exact?: boolean,
+    target?: Readonly<{ x: number; y: number }>,
+    sourceBladePose?: () => WeaponBladeAttachmentPose | undefined,
   ): void;
   spawnChain?(x: number, y: number, aim: { x: number; y: number }, weapon: WeaponDef): void;
   readonly animClock?: number;
@@ -1767,6 +1834,7 @@ export class SpriteRig {
   renderPrevY: number;
   private readonly scene: Phaser.Scene;
   private readonly isSelf: boolean;
+  private readonly bladeAttachmentSourceId: string;
   private scale: number;
   /** Rig-level UNIFORM scale multiplier (tough/boss size-up). Applied to BOTH axes every frame so
    *  the facing flip never stretches the sprite — art keeps its painted aspect ratio (§28.4). */
@@ -1931,6 +1999,8 @@ export class SpriteRig {
     partIndex: 0 | 1;
     /** Geometry is resolved once from the equipped sprite identity; semantic rotation remains uncorrected. */
     artGeometry?: WeaponArtGeometry;
+    /** Alpha-measured source-pixel span at the extension join; never authored per weapon. */
+    bladeWidthSourcePixels: number;
     closedOriginX: number;
     closedOriginY: number;
     semanticRotation: number;
@@ -2241,6 +2311,7 @@ export class SpriteRig {
     if (!manifest) throw new Error(`SpriteRig: no sprite manifest for "${spriteId}"`);
     this.scene = scene;
     this.isSelf = isSelf;
+    this.bladeAttachmentSourceId = id;
     this.scale = TARGET_BODY_H / manifest.body.h;
 
     // Build parts. Draw order (back→front): back hand, feet, body, front hand. The front
@@ -3003,12 +3074,10 @@ export class SpriteRig {
     return this.weapons[hand]?.def;
   }
 
-  /** Current world-space tip of the lead held sprite. Presentation VFX use this instead of re-deriving the
-   * rig's orbit/foreshortening/facing law, so an attached extension cannot drift away from the real blade. */
-  leadWeaponTipPose():
-    | { x: number; y: number; angle: number; physicalBladeLength: number; depth: number }
-    | undefined {
-    const held = this.weapons[0];
+  /** Current final affine of a held blade. The legacy name is retained, but the explicit hand parameter
+   * carries remote/off-hand routing through the same accessor instead of opening a parallel pose seam. */
+  leadWeaponTipPose(hand: 0 | 1 = 0): WeaponBladeAttachmentPose | undefined {
+    const held = this.weapons[hand];
     if (!held) return undefined;
     const image = held.img;
     const matrix = image.getWorldTransformMatrix();
@@ -3016,15 +3085,31 @@ export class SpriteRig {
     const localTipY = image.height * 0.5 - image.displayOriginY;
     const x = matrix.a * localTipX + matrix.c * localTipY + matrix.tx;
     const y = matrix.b * localTipX + matrix.d * localTipY + matrix.ty;
-    const pixelsPerSourcePixel = Math.hypot(matrix.a, matrix.b);
+    const axisScale = Math.hypot(matrix.a, matrix.b);
+    const normalScale = Math.hypot(matrix.c, matrix.d);
+    if (axisScale <= 1e-6 || normalScale <= 1e-6) return undefined;
+    const chain = this.comboChains[hand];
+    const nowMs = this.presentationClockNow();
+    const comboActive = chain.weaponId === held.def.id && nowMs <= chain.expiresAtMs;
     return {
+      sourceId: this.bladeAttachmentSourceId,
+      weaponId: held.def.id,
+      hand,
+      comboId: `${this.bladeAttachmentSourceId}:${hand}:${chain.generation}`,
+      comboStep: chain.step,
+      comboStartedAtMs: chain.startedAtMs,
+      comboExpiresAtMs: chain.expiresAtMs,
+      comboActive,
+      nowMs,
       x,
       y,
       angle: Math.atan2(matrix.b, matrix.a),
-      physicalBladeLength: Math.max(
-        1,
-        (1 - held.def.gripFrac) * image.width * pixelsPerSourcePixel,
-      ),
+      axisX: matrix.a / axisScale,
+      axisY: matrix.b / axisScale,
+      normalX: matrix.c / normalScale,
+      normalY: matrix.d / normalScale,
+      physicalBladeLength: Math.max(1, (1 - held.def.gripFrac) * image.width * axisScale),
+      bladeWidth: Math.max(1, held.bladeWidthSourcePixels * normalScale),
       depth: this.root.depth,
     };
   }
@@ -4180,10 +4265,13 @@ export class SpriteRig {
     const scene = this.scene as RigAttackPresentationScene;
     const exact = scene.vfxPlayer?.spawnsAtCursor(weapon.id) ?? false;
     const reach = exact ? meleeReach(weapon) : 0;
-    const anchor = this.handWorldAnchor(this.observedSignatureHand);
+    const signatureHand = this.observedSignatureHand;
+    const anchor = this.handWorldAnchor(signatureHand);
     const x = anchor.x + this.observedSignatureAim.x * reach;
     const y = anchor.y + this.observedSignatureAim.y * reach;
-    scene.spawnSlash?.(x, y, this.observedSignatureAim, weapon, swing, exact);
+    scene.spawnSlash?.(x, y, this.observedSignatureAim, weapon, swing, exact, undefined, () =>
+      this.leadWeaponTipPose(signatureHand),
+    );
     if (weapon.chainLightning)
       scene.spawnChain?.(this.root.x, this.root.y, this.observedSignatureAim, weapon);
   }
@@ -4215,6 +4303,8 @@ export class SpriteRig {
       weapon,
       swing,
       exact,
+      undefined,
+      () => this.leadWeaponTipPose(1),
     );
   }
 
@@ -4666,6 +4756,12 @@ export class SpriteRig {
       const originY = authoredPrimary?.y ?? closed?.originY ?? 0.5;
       const wScale = (piece.def.displayLength * (closed?.displayLengthMul ?? 1)) / part.w;
       img.setOrigin(originX, originY).setScale(wScale);
+      const getPixelAlpha = this.scene.textures?.getPixelAlpha;
+      const bladeWidthSourcePixels = getPixelAlpha
+        ? measureBladeWidthAtExtensionJoin(part.w, part.h, piece.def.gripFrac, (x, y) =>
+            getPixelAlpha.call(this.scene.textures, x, y, tx.key, tx.frame),
+          )
+        : Math.max(1, part.h);
       this.root.add(img);
       this.weapons.push({
         img,
@@ -4676,6 +4772,7 @@ export class SpriteRig {
         spriteId: piece.spriteId,
         partIndex,
         artGeometry,
+        bladeWidthSourcePixels,
         closedOriginX: originX,
         closedOriginY: originY,
         semanticRotation: 0,
@@ -4940,6 +5037,10 @@ export class SpriteRig {
         chain.hasAttackSeq = this.hasAttackBeatSeq;
         chain.attackSeq = this.attackBeatSeq;
         chain.acceptedAtMs = acceptedAtMs;
+        if (!continues) {
+          chain.generation = (chain.generation + 1) >>> 0;
+          chain.startedAtMs = timeMs;
+        }
         this.swingStep = step;
         this.swingDirection = authored.direction;
         this.swingFamily = family;
@@ -4954,6 +5055,30 @@ export class SpriteRig {
         // Enrich the immutable presentation clock only. Geometry/damage remain the legacy centered sweep.
         nextSwing = swingDescriptorWithComboStep(nextSwing, activeDef, step);
       }
+    } else if (nextSwing && activeDef && weaponUsesAuthoritativeEnvelopeCombo(activeDef)) {
+      // Extension-only weapons such as Sanctified Headsman may use an orbit style with no authored visual
+      // combo sequence. They still require one stable accepted-cadence identity so ignition cannot restart on
+      // each repeated hit. This is identity/lifetime plumbing only; no pose family is invented here.
+      const chain = this.comboChains[handIndex];
+      const continues = chain.weaponId === activeDef.id && timeMs <= chain.expiresAtMs;
+      const step = continues ? chain.step + 1 : 0;
+      const expiresAtMs =
+        timeMs + nextSwing.effectiveCooldown * 1000 + comboGraceMs(nextSwing.effectiveCooldown);
+      chain.family = "none";
+      chain.step = step;
+      chain.expiresAtMs = expiresAtMs;
+      chain.chainExpiresAtMs = expiresAtMs;
+      chain.weaponId = activeDef.id;
+      chain.hasAttackSeq = this.hasAttackBeatSeq;
+      chain.attackSeq = this.attackBeatSeq;
+      chain.acceptedAtMs = acceptedAtMs;
+      if (!continues) {
+        chain.generation = (chain.generation + 1) >>> 0;
+        chain.startedAtMs = timeMs;
+      }
+      this.comboStep = step;
+      this.comboExpiresAtMs = expiresAtMs;
+      nextSwing = { ...nextSwing, comboStep: step };
     } else if (!this.crossfallActive) {
       this.resetComboChain(true);
     }

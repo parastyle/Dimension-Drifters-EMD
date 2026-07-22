@@ -21,7 +21,6 @@ export interface HeadsmanPrototype {
   readonly designIntent: string;
   readonly textureKey: string;
   readonly url: string;
-  readonly thicknessScale: number;
 }
 
 export const HEADSMAN_PROTOTYPES = Object.freeze([
@@ -31,7 +30,6 @@ export const HEADSMAN_PROTOTYPES = Object.freeze([
     designIntent: "A solid ivory-gold execution edge with the heaviest, clearest material read.",
     textureKey: "headsman-proto:1",
     url: "vfx/headsman-prototypes/radiant-verdict.png",
-    thicknessScale: 0.34,
   }),
   Object.freeze({
     proto: 2,
@@ -39,7 +37,6 @@ export const HEADSMAN_PROTOTYPES = Object.freeze([
     designIntent: "A curved champagne ghost-blade with a weightless spectral body.",
     textureKey: "headsman-proto:2",
     url: "vfx/headsman-prototypes/pale-procession.png",
-    thicknessScale: 0.32,
   }),
   Object.freeze({
     proto: 3,
@@ -47,7 +44,6 @@ export const HEADSMAN_PROTOTYPES = Object.freeze([
     designIntent: "Braided prayer-light and motes weave themselves into a cutting silhouette.",
     textureKey: "headsman-proto:3",
     url: "vfx/headsman-prototypes/woven-litany.png",
-    thicknessScale: 0.38,
   }),
   Object.freeze({
     proto: 4,
@@ -55,7 +51,6 @@ export const HEADSMAN_PROTOTYPES = Object.freeze([
     designIntent: "A jagged leaded stained-glass blade with amber, ruby, and cobalt panes.",
     textureKey: "headsman-proto:4",
     url: "vfx/headsman-prototypes/cathedral-ruin.png",
-    thicknessScale: 0.4,
   }),
 ] as const satisfies readonly HeadsmanPrototype[]);
 
@@ -132,7 +127,7 @@ export function headsmanExtensionGeometry(weapon: WeaponDef): HeadsmanExtensionG
  * growth before the often-brief active edge makes the mechanism visible even at low frame cadence. All
  * prototypes use this exact clock so owner comparison is treatment-only. */
 export function headsmanExtensionReveal(
-  swing: Pick<SwingDescriptor, "activeStartSeconds" | "activeEndSeconds">,
+  swing: Pick<SwingDescriptor, "activeStartSeconds" | "activeEndSeconds" | "comboStep" | "motion">,
   elapsedSeconds: number,
 ): number {
   const weapon = WEAPONS[SANCTIFIED_HEADSMAN_ID];

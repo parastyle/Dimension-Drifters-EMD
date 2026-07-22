@@ -1,0 +1,383 @@
+{
+  "schemaVersion": 33,
+  "measuredAt": "2026-07-22T17:42:57.728Z",
+  "runtime": {
+    "node": "v24.13.0",
+    "platform": "win32",
+    "arch": "x64",
+    "logicalCpus": 16,
+    "tickRateHz": 20,
+    "tickBudgetMs": 50
+  },
+  "methodology": {
+    "workloadPlayers": [
+      {
+        "id": "zone-poison",
+        "weapon": "x2-snakeoil-tincture-scepter",
+        "role": "zone"
+      },
+      {
+        "id": "zone-nether",
+        "weapon": "x2-gravewax-seance-globe",
+        "role": "zone"
+      },
+      {
+        "id": "pellet",
+        "weapon": "x2-gravelthroat-repeater",
+        "role": "attack"
+      },
+      {
+        "id": "six-beam",
+        "weapon": "x2-stormcaller-tesla-gatling",
+        "role": "beam"
+      },
+      {
+        "id": "blade-extension",
+        "weapon": "x2-rimewrit-grave-slab",
+        "role": "attack"
+      }
+    ],
+    "ordinaryEnemyKinds": [
+      "critter",
+      "mote-swarm",
+      "pricklepulp",
+      "boothill",
+      "ronin",
+      "gatlin",
+      "vault-ronin",
+      "dust-ranger"
+    ],
+    "wormBoss": "seam-eater",
+    "warmupTicks": 40,
+    "sampleTicks": 30,
+    "activeSampleLaw": "V7 samples require >=2 zones and >=6 authoritative beam rows after the exact logical step.",
+    "patchLaw": "Installed Colyseus Encoder; one protocol byte added; dirty changes discarded after every patch."
+  },
+  "caps": {
+    "players": 10,
+    "effectiveEnemyBodies": 80,
+    "hostileProjectiles": 120,
+    "friendlyProjectiles": 192,
+    "friendlyBeams": 32,
+    "zones": 48,
+    "wormSegments": 12
+  },
+  "messages": {
+    "measuredPayloadBytesIncludingColyseusProtocol": {
+      "input": 111,
+      "attack": 36
+    },
+    "workloadMessagesPerSecond": {
+      "totalInput": 100,
+      "totalAttackRequests": 40,
+      "perPlayerInput": 20,
+      "gunOrBladeOwnerTotal": 40
+    },
+    "perTickBudgetsPerPlayer": {
+      "input": 4,
+      "action": 8
+    },
+    "budgetUtilizationPercent": {
+      "ordinaryPlayerInput": 25,
+      "gunOrBladeOwnerAction": 12.5
+    },
+    "estimatedInboundApplicationBytesPerSecond": {
+      "zoneOrBeamPlayer": 2220,
+      "gunOrBladePlayer": 2940,
+      "fivePlayerRoom": 12540
+    }
+  },
+  "scenarios": {
+    "idle": {
+      "name": "same-population-idle-ablation",
+      "schemaVersion": 33,
+      "systemsEnabled": false,
+      "ordinaryEnemyTarget": 48,
+      "attemptedTicks": 30,
+      "qualifyingTicks": 30,
+      "warmupTicks": 40,
+      "tickMs": {
+        "samples": 30,
+        "mean": 0.467283,
+        "p50": 0.4293,
+        "p95": 0.7528,
+        "p99": 1.0341,
+        "max": 1.0341
+      },
+      "patchEncodeMs": {
+        "samples": 30,
+        "mean": 0.02378,
+        "p50": 0.0218,
+        "p95": 0.0343,
+        "p99": 0.0455,
+        "max": 0.0455
+      },
+      "patchBytes": {
+        "samples": 30,
+        "mean": 1697.167,
+        "p50": 1670,
+        "p95": 1941,
+        "p99": 1952,
+        "max": 1952
+      },
+      "applicationBytesPerSecondPerClient": 33943.3,
+      "applicationMbitPerSecondRoom": 1.3577,
+      "initialStateBytesBeforeWarmup": 7219,
+      "fullStateBytesAtMeasuredLoad": 10137,
+      "fullStateEncodeMs": 0.3351,
+      "entityPeaks": {
+        "players": 5,
+        "enemyRows": 49,
+        "effectiveEnemyBodies": 58,
+        "friendlyProjectiles": 0,
+        "hostileProjectiles": 40,
+        "beams": 0,
+        "zones": 6,
+        "telegraphs": 6,
+        "xpEchoes": 0,
+        "wormActiveSegments": 10
+      }
+    },
+    "heavy": {
+      "name": "v7-simultaneous-heavy",
+      "schemaVersion": 33,
+      "systemsEnabled": true,
+      "ordinaryEnemyTarget": 48,
+      "attemptedTicks": 30,
+      "qualifyingTicks": 30,
+      "warmupTicks": 40,
+      "tickMs": {
+        "samples": 30,
+        "mean": 0.66443,
+        "p50": 0.622,
+        "p95": 0.9598,
+        "p99": 1.6037,
+        "max": 1.6037
+      },
+      "patchEncodeMs": {
+        "samples": 30,
+        "mean": 0.03185,
+        "p50": 0.0328,
+        "p95": 0.0458,
+        "p99": 0.047,
+        "max": 0.047
+      },
+      "patchBytes": {
+        "samples": 30,
+        "mean": 3267.7,
+        "p50": 3779,
+        "p95": 4909,
+        "p99": 5017,
+        "max": 5017
+      },
+      "applicationBytesPerSecondPerClient": 65354,
+      "applicationMbitPerSecondRoom": 2.6142,
+      "initialStateBytesBeforeWarmup": 7421,
+      "fullStateBytesAtMeasuredLoad": 13958,
+      "fullStateEncodeMs": 0.2286,
+      "entityPeaks": {
+        "players": 5,
+        "enemyRows": 49,
+        "effectiveEnemyBodies": 58,
+        "friendlyProjectiles": 26,
+        "hostileProjectiles": 24,
+        "beams": 6,
+        "zones": 12,
+        "telegraphs": 4,
+        "xpEchoes": 0,
+        "wormActiveSegments": 10
+      }
+    },
+    "capPressure": {
+      "name": "v7-wave2-enemy-cap-pressure",
+      "schemaVersion": 33,
+      "systemsEnabled": true,
+      "ordinaryEnemyTarget": 80,
+      "attemptedTicks": 20,
+      "qualifyingTicks": 20,
+      "warmupTicks": 40,
+      "tickMs": {
+        "samples": 20,
+        "mean": 1.03857,
+        "p50": 0.9828,
+        "p95": 1.3597,
+        "p99": 1.9937,
+        "max": 1.9937
+      },
+      "patchEncodeMs": {
+        "samples": 20,
+        "mean": 0.050595,
+        "p50": 0.048,
+        "p95": 0.0803,
+        "p99": 0.1012,
+        "max": 0.1012
+      },
+      "patchBytes": {
+        "samples": 20,
+        "mean": 4330.3,
+        "p50": 4237,
+        "p95": 5879,
+        "p99": 6568,
+        "max": 6568
+      },
+      "applicationBytesPerSecondPerClient": 86606,
+      "applicationMbitPerSecondRoom": 3.4642,
+      "initialStateBytesBeforeWarmup": 8486,
+      "fullStateBytesAtMeasuredLoad": 15263,
+      "fullStateEncodeMs": 0.2459,
+      "entityPeaks": {
+        "players": 5,
+        "enemyRows": 71,
+        "effectiveEnemyBodies": 80,
+        "friendlyProjectiles": 22,
+        "hostileProjectiles": 37,
+        "beams": 6,
+        "zones": 14,
+        "telegraphs": 5,
+        "xpEchoes": 0,
+        "wormActiveSegments": 10
+      }
+    }
+  },
+  "attribution": {
+    "attemptedTicks": 20,
+    "qualifyingTicks": 20,
+    "instrumentedTickMs": {
+      "samples": 20,
+      "mean": 0.85361,
+      "p50": 0.9057,
+      "p95": 1.0688,
+      "p99": 1.099,
+      "max": 1.099
+    },
+    "categories": [
+      {
+        "category": "collision/grid",
+        "samples": 20,
+        "mean": 0.247165,
+        "p50": 0.2378,
+        "p95": 0.271,
+        "p99": 0.3722,
+        "max": 0.3722,
+        "shareOfInstrumentedTickPercent": 28.96
+      },
+      {
+        "category": "inline movement/AI/contact/tail",
+        "samples": 20,
+        "mean": 0.139645,
+        "p50": 0.1313,
+        "p95": 0.1605,
+        "p99": 0.3024,
+        "max": 0.3024,
+        "shareOfInstrumentedTickPercent": 16.36
+      },
+      {
+        "category": "weapon: beams",
+        "samples": 20,
+        "mean": 0.1168,
+        "p50": 0.1032,
+        "p95": 0.1639,
+        "p99": 0.231,
+        "max": 0.231,
+        "shareOfInstrumentedTickPercent": 13.68
+      },
+      {
+        "category": "zones: world tick",
+        "samples": 20,
+        "mean": 0.09541,
+        "p50": 0.0434,
+        "p95": 0.1909,
+        "p99": 0.206,
+        "max": 0.206,
+        "shareOfInstrumentedTickPercent": 11.18
+      },
+      {
+        "category": "projectiles",
+        "samples": 20,
+        "mean": 0.089935,
+        "p50": 0.0909,
+        "p95": 0.1093,
+        "p99": 0.1206,
+        "max": 0.1206,
+        "shareOfInstrumentedTickPercent": 10.54
+      },
+      {
+        "category": "enemy: authored AI",
+        "samples": 20,
+        "mean": 0.072995,
+        "p50": 0.0653,
+        "p95": 0.1145,
+        "p99": 0.1471,
+        "max": 0.1471,
+        "shareOfInstrumentedTickPercent": 8.55
+      },
+      {
+        "category": "weapon: gun/pellet/burst",
+        "samples": 20,
+        "mean": 0.03411,
+        "p50": 0.001,
+        "p95": 0.1262,
+        "p99": 0.1267,
+        "max": 0.1267,
+        "shareOfInstrumentedTickPercent": 4
+      },
+      {
+        "category": "weapon: melee/hit-envelope",
+        "samples": 20,
+        "mean": 0.0267,
+        "p50": 0.0003,
+        "p95": 0.1209,
+        "p99": 0.2684,
+        "max": 0.2684,
+        "shareOfInstrumentedTickPercent": 3.13
+      },
+      {
+        "category": "boss/worm",
+        "samples": 20,
+        "mean": 0.017935,
+        "p50": 0.0152,
+        "p95": 0.036,
+        "p99": 0.0443,
+        "max": 0.0443,
+        "shareOfInstrumentedTickPercent": 2.1
+      },
+      {
+        "category": "weapon: zones",
+        "samples": 20,
+        "mean": 0.00616,
+        "p50": 0.0045,
+        "p95": 0.0115,
+        "p99": 0.0197,
+        "max": 0.0197,
+        "shareOfInstrumentedTickPercent": 0.72
+      },
+      {
+        "category": "ultimates",
+        "samples": 20,
+        "mean": 0.0044,
+        "p50": 0.0038,
+        "p95": 0.0077,
+        "p99": 0.0112,
+        "max": 0.0112,
+        "shareOfInstrumentedTickPercent": 0.52
+      },
+      {
+        "category": "XP/receipts",
+        "samples": 20,
+        "mean": 0.002355,
+        "p50": 0.0014,
+        "p95": 0.0033,
+        "p99": 0.0192,
+        "max": 0.0192,
+        "shareOfInstrumentedTickPercent": 0.28
+      }
+    ],
+    "note": "Attribution uses instance-local performance.now wrappers; clean tick percentiles come from the unwrapped run."
+  },
+  "deltas": {
+    "heavyMinusIdleTickMeanMs": 0.197147,
+    "heavyMinusIdleTickP95Ms": 0.207,
+    "heavyMinusIdlePatchMeanBytes": 1570.533,
+    "heavyMinusIdleBytesPerSecondPerClient": 31410.7
+  }
+}

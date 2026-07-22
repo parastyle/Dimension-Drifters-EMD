@@ -6,10 +6,11 @@
 // strike point, oriented to the aim, and drives the suite over the accepted/predicted swing descriptor's
 // 0→1 pose window (swing trail → impact burst → painted hero), then releases the surface.
 import {
+  BLADE_EXTENSION_RETRACTION_SECONDS,
+  type BladeExtensionGeometry,
   bladeAngleAt,
   bladeExtensionGeometryFor,
-  bladeExtensionPoseAt,
-  bladeExtensionReveal,
+  bladeExtensionIgnitionReveal,
   meleeReach,
   type SwingDescriptor,
   swingEdgeProgress,
@@ -17,6 +18,7 @@ import {
   type WeaponDef,
 } from "@dd/shared";
 import type Phaser from "phaser";
+import type { WeaponBladeAttachmentPose } from "../entities/SpriteRig.js";
 import { RENDER_DPR } from "../render-dpr.js";
 import { preloadFxPacks } from "./fx-composer.js";
 import { paintedSwingDisplayWidth } from "./painted-particle-scale.js";
@@ -69,34 +71,64 @@ const PER_LAYER_IDS = new Set(["blade-trail", "twin-slash", "thrust-streak"]);
 interface Surface {
   container: Phaser.GameObjects.Container;
   S: VfxSurface;
-  headsmanExtension: Phaser.GameObjects.Image;
   busy: boolean;
   generation: number;
   activeTween?: Phaser.Tweens.Tween;
   releaseEvent?: Phaser.Time.TimerEvent;
   scatterKey?: string;
-  bladeExtensionAttachment?: BladeExtensionAttachment;
 }
 
-interface WeaponBladeTipPose {
-  readonly x: number;
-  readonly y: number;
-  readonly angle: number;
-  readonly physicalBladeLength: number;
-  readonly depth: number;
-}
-
-interface BladeExtensionAttachment {
-  readonly sourceBladePose?: () => WeaponBladeTipPose | undefined;
-  fallbackAngle: number;
-  fallbackStartX: number;
-  fallbackStartY: number;
-  fallbackPhysicalBladeLength: number;
-  fallbackDepth: number;
-  overlapRatio: number;
-  extensionRatio: number;
-  thicknessRatio: number;
+interface BladeExtensionState {
+  readonly slotKey: string;
+  readonly image: Phaser.GameObjects.Image;
+  sourceBladePose: () => WeaponBladeAttachmentPose | undefined;
+  weaponId: string;
+  comboId: string;
+  treatmentKey: string;
+  geometry: BladeExtensionGeometry;
   reveal: number;
+  retractStartedAtMs?: number;
+  retractFromReveal: number;
+  capturedIgnitionOrigin: boolean;
+  capturedRetractionEnd: boolean;
+  hiddenSinceWallMs?: number;
+}
+
+export interface BladeExtensionDrawTransform {
+  readonly rootX: number;
+  readonly rootY: number;
+  readonly overlapLength: number;
+  readonly emergedLength: number;
+  readonly drawLength: number;
+  readonly bladeWidth: number;
+  readonly normalSign: -1 | 1;
+}
+
+/** Compose the magic section in the held blade's final local basis. No aim/facing/pose inputs exist here. */
+export function bladeExtensionDrawTransform(
+  pose: Pick<
+    WeaponBladeAttachmentPose,
+    "x" | "y" | "axisX" | "axisY" | "normalX" | "normalY" | "physicalBladeLength" | "bladeWidth"
+  >,
+  geometry: BladeExtensionGeometry,
+  reveal: number,
+): BladeExtensionDrawTransform {
+  const safePhysicalLength = Math.max(1, pose.physicalBladeLength);
+  const physicalRatio = safePhysicalLength / Math.max(1, geometry.physicalBladeLength);
+  const overlapLength = geometry.overlapLength * physicalRatio;
+  const fullEmergedLength =
+    (geometry.totalBladeLength - geometry.physicalBladeLength) * physicalRatio;
+  const emergedLength = fullEmergedLength * Math.max(0, Math.min(1, reveal));
+  const determinant = pose.axisX * pose.normalY - pose.axisY * pose.normalX;
+  return Object.freeze({
+    rootX: pose.x - pose.axisX * overlapLength,
+    rootY: pose.y - pose.axisY * overlapLength,
+    overlapLength,
+    emergedLength,
+    drawLength: overlapLength + emergedLength,
+    bladeWidth: Math.max(1, pose.bladeWidth),
+    normalSign: determinant < 0 ? -1 : 1,
+  });
 }
 
 interface PerRuntimeSurface {
@@ -139,6 +171,7 @@ const perRuntime = (S: VfxSurface): PerRuntimeSurface => S as unknown as PerRunt
 export class VfxPlayer {
   private readonly scene: Phaser.Scene;
   private readonly pool: Surface[] = [];
+  private readonly bladeExtensions = new Map<string, BladeExtensionState>();
   private readonly cap = 12;
   private stealCursor = 0;
   /** All VFX surfaces live under this container so ONE bloom filter glows every effect at once. */
@@ -173,35 +206,184 @@ export class VfxPlayer {
     scene.events.on("postupdate", this.syncBladeExtensions, this);
     scene.events.once("shutdown", () => {
       scene.events.off("postupdate", this.syncBladeExtensions, this);
+      for (const state of this.bladeExtensions.values()) state.image.destroy();
+      this.bladeExtensions.clear();
     });
   }
 
   private syncBladeExtensions(): void {
-    for (const surf of this.pool) {
-      const attachment = surf.bladeExtensionAttachment;
-      if (!attachment || attachment.reveal <= 0) continue;
-      const heldTip = attachment.sourceBladePose?.();
-      const angle = heldTip?.angle ?? attachment.fallbackAngle;
-      const physicalBladeLength =
-        heldTip?.physicalBladeLength ?? attachment.fallbackPhysicalBladeLength;
-      const overlapLength = physicalBladeLength * attachment.overlapRatio;
-      const rootX = heldTip
-        ? heldTip.x - Math.cos(angle) * overlapLength
-        : attachment.fallbackStartX;
-      const rootY = heldTip
-        ? heldTip.y - Math.sin(angle) * overlapLength
-        : attachment.fallbackStartY;
-      surf.headsmanExtension
-        .setPosition(rootX, rootY)
-        .setRotation(angle)
-        .setDepth((heldTip?.depth ?? attachment.fallbackDepth) - 1)
-        .setDisplaySize(
-          physicalBladeLength * attachment.extensionRatio * attachment.reveal,
-          physicalBladeLength * attachment.thicknessRatio,
-        )
-        .setAlpha(Math.min(1, 0.5 + attachment.reveal * 0.5))
-        .setVisible(true);
+    const wallNow = this.scene.time.now;
+    for (const [slotKey, state] of this.bladeExtensions) {
+      const pose = state.sourceBladePose();
+      if (pose && pose.weaponId === state.weaponId) {
+        if (pose.comboId !== state.comboId) {
+          state.comboId = pose.comboId;
+          state.reveal = 0;
+          state.retractStartedAtMs = undefined;
+          state.retractFromReveal = 0;
+          state.capturedIgnitionOrigin = false;
+          state.capturedRetractionEnd = false;
+        }
+        if (pose.comboActive) {
+          state.reveal = bladeExtensionIgnitionReveal(
+            Math.max(0, pose.nowMs - pose.comboStartedAtMs) / 1000,
+          );
+          state.retractStartedAtMs = undefined;
+          state.retractFromReveal = state.reveal;
+          state.capturedRetractionEnd = false;
+        } else {
+          if (state.retractStartedAtMs === undefined) {
+            state.retractStartedAtMs = pose.comboExpiresAtMs;
+            state.retractFromReveal = Math.max(
+              state.reveal,
+              bladeExtensionIgnitionReveal(
+                Math.max(0, pose.comboExpiresAtMs - pose.comboStartedAtMs) / 1000,
+              ),
+            );
+          }
+          const retractProgress =
+            (pose.nowMs - state.retractStartedAtMs) / (BLADE_EXTENSION_RETRACTION_SECONDS * 1000);
+          state.reveal = state.retractFromReveal * (1 - Math.max(0, Math.min(1, retractProgress)));
+        }
+
+        if (state.reveal > 0) {
+          const draw = bladeExtensionDrawTransform(pose, state.geometry, state.reveal);
+          state.image
+            .setTexture(state.treatmentKey)
+            .setPosition(draw.rootX, draw.rootY)
+            .setRotation(pose.angle)
+            .setDepth(pose.depth - 1)
+            .setDisplaySize(draw.drawLength, draw.bladeWidth)
+            .setAlpha(Math.min(1, 0.45 + state.reveal * 0.55))
+            .setVisible(true);
+          state.image.scaleY = Math.abs(state.image.scaleY) * draw.normalSign;
+          state.hiddenSinceWallMs = undefined;
+          this.captureBladeExtensionFrame(state, pose, draw);
+          continue;
+        }
+
+        const captureZero = pose.comboActive
+          ? !state.capturedIgnitionOrigin
+          : !state.capturedRetractionEnd;
+        if (captureZero) {
+          const draw = bladeExtensionDrawTransform(pose, state.geometry, 0);
+          state.image
+            .setTexture(state.treatmentKey)
+            .setPosition(draw.rootX, draw.rootY)
+            .setRotation(pose.angle)
+            .setDepth(pose.depth - 1)
+            .setDisplaySize(draw.drawLength, draw.bladeWidth)
+            .setVisible(false);
+          state.image.scaleY = Math.abs(state.image.scaleY) * draw.normalSign;
+          this.captureBladeExtensionFrame(state, pose, draw);
+          if (pose.comboActive) state.capturedIgnitionOrigin = true;
+          else state.capturedRetractionEnd = true;
+        }
+      }
+
+      state.image.setVisible(false);
+      state.hiddenSinceWallMs ??= wallNow;
+      if (wallNow - state.hiddenSinceWallMs >= 1_500) {
+        state.image.destroy();
+        this.bladeExtensions.delete(slotKey);
+      }
     }
+  }
+
+  private captureBladeExtensionFrame(
+    state: BladeExtensionState,
+    pose: WeaponBladeAttachmentPose,
+    draw: BladeExtensionDrawTransform,
+  ): void {
+    const audit = globalThis as unknown as {
+      __ddV7BladeExtensionCapture?: boolean;
+      __ddV7BladeExtensionPhase?: string;
+      __ddV7BladeExtensionFrames?: Array<Record<string, number | string | boolean>>;
+    };
+    if (!audit.__ddV7BladeExtensionCapture) return;
+    const imageAxisX = Math.cos(state.image.rotation);
+    const imageAxisY = Math.sin(state.image.rotation);
+    const joinX = state.image.x + imageAxisX * draw.overlapLength;
+    const joinY = state.image.y + imageAxisY * draw.overlapLength;
+    const errorX = joinX - pose.x;
+    const errorY = joinY - pose.y;
+    audit.__ddV7BladeExtensionFrames ??= [];
+    const frames = audit.__ddV7BladeExtensionFrames;
+    frames.push({
+      wallMs: performance.now(),
+      nowMs: pose.nowMs,
+      sourceId: pose.sourceId,
+      weaponId: state.weaponId,
+      hand: pose.hand,
+      comboId: state.comboId,
+      comboStep: pose.comboStep,
+      comboActive: pose.comboActive,
+      phase: audit.__ddV7BladeExtensionPhase ?? "unlabeled",
+      reveal: state.reveal,
+      bladeTipX: pose.x,
+      bladeTipY: pose.y,
+      bladeAngle: pose.angle,
+      bladeAxisX: pose.axisX,
+      bladeAxisY: pose.axisY,
+      bladeWidth: pose.bladeWidth,
+      physicalBladeLength: pose.physicalBladeLength,
+      extensionRootX: state.image.x,
+      extensionRootY: state.image.y,
+      extensionAngle: state.image.rotation,
+      extensionWidth: Math.abs(state.image.displayHeight),
+      extensionLength: state.image.displayWidth,
+      overlapLength: draw.overlapLength,
+      emergedLength: draw.emergedLength,
+      axialError: errorX * pose.axisX + errorY * pose.axisY,
+      lateralError: errorX * pose.normalX + errorY * pose.normalY,
+      angleError: Math.atan2(
+        Math.sin(state.image.rotation - pose.angle),
+        Math.cos(state.image.rotation - pose.angle),
+      ),
+    });
+    if (frames.length > 12_000) frames.splice(0, frames.length - 12_000);
+  }
+
+  private retainBladeExtension(
+    weaponId: string,
+    treatmentKey: string,
+    geometry: BladeExtensionGeometry,
+    sourceBladePose: () => WeaponBladeAttachmentPose | undefined,
+  ): void {
+    const pose = sourceBladePose();
+    if (!pose || pose.weaponId !== weaponId) return;
+    const slotKey = `${pose.sourceId}:${pose.hand}`;
+    let state = this.bladeExtensions.get(slotKey);
+    if (!state) {
+      state = {
+        slotKey,
+        image: this.scene.add.image(0, 0, treatmentKey).setOrigin(0, 0.5).setVisible(false),
+        sourceBladePose,
+        weaponId,
+        comboId: pose.comboId,
+        treatmentKey,
+        geometry,
+        reveal: 0,
+        retractFromReveal: 0,
+        capturedIgnitionOrigin: false,
+        capturedRetractionEnd: false,
+      };
+      this.bladeExtensions.set(slotKey, state);
+    } else {
+      state.sourceBladePose = sourceBladePose;
+      state.weaponId = weaponId;
+      state.treatmentKey = treatmentKey;
+      state.geometry = geometry;
+      if (state.comboId !== pose.comboId) {
+        state.comboId = pose.comboId;
+        state.reveal = 0;
+        state.retractStartedAtMs = undefined;
+        state.retractFromReveal = 0;
+        state.capturedIgnitionOrigin = false;
+        state.capturedRetractionEnd = false;
+      }
+    }
+    this.syncBladeExtensions();
   }
 
   /** The bloom-filtered container every VFX lives under — exposed so other renderers (e.g. ArenaScene's
@@ -270,8 +452,6 @@ export class VfxPlayer {
     per.perLongTailFired = false;
     per.per = undefined;
     surf.S.paintedImpact = undefined;
-    surf.bladeExtensionAttachment = undefined;
-    surf.headsmanExtension.setVisible(false);
     (surf.S.heroImg as Phaser.GameObjects.Image | undefined)?.setVisible(false);
     const emitters = surf.S as unknown as Record<string, { killAll(): unknown } | undefined>;
     for (const key of ["eSpark", "eEmber", "eSoftAdd", "eSoftNorm", "eStreak", "eScatter"])
@@ -306,14 +486,7 @@ export class VfxPlayer {
         container.add(heroImg);
         S.heroImg = heroImg;
         globalThis.VFXRENDER.attachSurface(this.scene, S);
-        // Keep the extension top-level so it can sort immediately beneath the wielder container. The
-        // physical weapon sprite masks the overlapped magic/metal join.
-        const headsmanExtension = this.scene.add
-          .image(0, 0, "vfx-blank")
-          .setOrigin(0, 0.5)
-          .setDepth(0)
-          .setVisible(false);
-        surf = { container, S, headsmanExtension, busy: false, generation: 0 };
+        surf = { container, S, busy: false, generation: 0 };
         this.pool.push(surf);
       }
     }
@@ -337,7 +510,7 @@ export class VfxPlayer {
     element = "physical",
     targetX = x,
     targetY = y,
-    sourceBladePose?: () => WeaponBladeTipPose | undefined,
+    sourceBladePose?: () => WeaponBladeAttachmentPose | undefined,
     partition?: {
       readonly suite: Suite;
       readonly anchor: "source" | "target";
@@ -433,13 +606,13 @@ export class VfxPlayer {
         : undefined;
     const bladeExtensionGeometry =
       bladeExtensionTreatment && weapon ? bladeExtensionGeometryFor(weapon) : undefined;
-    const bladeExtensionActor =
-      bladeExtensionTreatment && weapon
-        ? {
-            x: x - Math.cos(aimRad) * weapon.range * 0.6,
-            y: y - Math.sin(aimRad) * weapon.range * 0.6,
-          }
-        : undefined;
+    if (bladeExtensionTreatment && bladeExtensionGeometry && sourceBladePose)
+      this.retainBladeExtension(
+        weaponId,
+        bladeExtensionTreatment.textureKey,
+        bladeExtensionGeometry,
+        sourceBladePose,
+      );
     // Authored suite wins; else a synthesized ELEMENT + ARCHETYPE fallback (§35/§36) so every un-authored
     // expansion weapon reads unique by both its element AND its physical shape (thrust / cleave / twin / fast).
     S.suite = partition.suite;
@@ -590,58 +763,6 @@ export class VfxPlayer {
         S.gfxAdd?.clear();
         VR.renderHero(this.scene, S, p);
         VR.renderLayers(S, p, "all", 1);
-        if (bladeExtensionTreatment && bladeExtensionGeometry && bladeExtensionActor) {
-          const elapsedSeconds = p * swing.poseSeconds;
-          const reveal = weapon ? bladeExtensionReveal(weapon, swing, elapsedSeconds) : 0;
-          if (reveal > 0) {
-            const edgeProgress = swingEdgeProgress(swing, elapsedSeconds);
-            const heldTip = sourceBladePose?.();
-            const sharedPose = weapon
-              ? bladeExtensionPoseAt(weapon, swing, elapsedSeconds, aimRad)
-              : undefined;
-            const extensionAngle =
-              heldTip?.angle ??
-              sharedPose?.angle ??
-              aimRad + bladeAngleAt(0, swingArc, edgeProgress);
-            const extensionStartX =
-              heldTip?.x ??
-              bladeExtensionActor.x +
-                Math.cos(extensionAngle) * bladeExtensionGeometry.extensionStart;
-            const extensionStartY =
-              heldTip?.y ??
-              bladeExtensionActor.y +
-                Math.sin(extensionAngle) * bladeExtensionGeometry.extensionStart;
-            const physicalBladeLength =
-              heldTip?.physicalBladeLength ??
-              bladeExtensionGeometry.physicalBladeLength * (sharedPose?.lengthScale ?? 1);
-            const overlapLength =
-              physicalBladeLength *
-              (bladeExtensionGeometry.overlapLength / bladeExtensionGeometry.physicalBladeLength);
-            const extensionLength =
-              physicalBladeLength *
-              (bladeExtensionGeometry.extensionLength / bladeExtensionGeometry.physicalBladeLength);
-            const extensionThickness =
-              physicalBladeLength *
-              (bladeExtensionGeometry.thickness / bladeExtensionGeometry.physicalBladeLength);
-            surf.headsmanExtension.setTexture(bladeExtensionTreatment.textureKey);
-            surf.bladeExtensionAttachment = {
-              sourceBladePose,
-              fallbackAngle: extensionAngle,
-              fallbackStartX: extensionStartX,
-              fallbackStartY: extensionStartY,
-              fallbackPhysicalBladeLength: physicalBladeLength,
-              fallbackDepth: heldTip?.depth ?? bladeExtensionActor.y,
-              overlapRatio: overlapLength / physicalBladeLength,
-              extensionRatio: extensionLength / physicalBladeLength,
-              thicknessRatio: extensionThickness / physicalBladeLength,
-              reveal,
-            };
-            this.syncBladeExtensions();
-          } else {
-            surf.bladeExtensionAttachment = undefined;
-            surf.headsmanExtension.setVisible(false);
-          }
-        }
       },
       onComplete: () => {
         if (surf.generation !== generation) return;
@@ -650,8 +771,6 @@ export class VfxPlayer {
         const per = perRuntime(S);
         per.perBody?.setVisible(false);
         per.perLip?.setVisible(false);
-        surf.bladeExtensionAttachment = undefined;
-        surf.headsmanExtension.setVisible(false);
         (S.heroImg as Phaser.GameObjects.Image | undefined)?.setVisible(false);
         const release = (): void => {
           if (surf.generation !== generation) return;

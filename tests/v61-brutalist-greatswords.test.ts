@@ -116,12 +116,18 @@ describe("V6.1 brutalist greatsword line", () => {
     );
     expect(daylight.equals(procession)).toBe(false);
 
+    // V7.1 unification: the extension has NO pose solver of its own. It draws in the blade's
+    // sampled basis, takes its width from the blade's MEASURED width (never an authored
+    // thickness), and sits one layer under the physical blade so the join stays hidden.
+    // These pin the architecture, not a particular line of code — the behavioural coverage
+    // lives in VfxPlayer.blade-extension.test.ts / SpriteRig.blade-extension.test.ts.
     const runtime = readFileSync("packages/client/src/vfx/VfxPlayer.ts", "utf8");
-    expect(runtime).toContain("const heldTip = sourceBladePose?.();");
     expect(runtime).toContain("bladeExtensionGeometryFor(weapon)");
-    expect(runtime).toMatch(
-      /\.setDepth\(\(heldTip\?\.depth \?\? attachment\.fallbackDepth\) - 1\)/,
+    expect(runtime, "extension must not resolve its own pose").not.toContain(
+      "bladeExtensionPoseAt",
     );
+    expect(runtime, "width must be measured, not authored").not.toContain("thicknessScale");
+    expect(runtime).toMatch(/\.setDepth\(pose\.depth - 1\)[\s\S]{0,80}?draw\.bladeWidth/);
   });
 
   it("registers one-part sprites, Weaponsmith suites, and Testing Grounds deep links", () => {

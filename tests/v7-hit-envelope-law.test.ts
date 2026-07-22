@@ -4,7 +4,9 @@ import {
   beamDamageEnvelopeFor,
   beamDescriptorFor,
   bladeExtensionGeometryFor,
+  bladeExtensionIgnitionReveal,
   bladeExtensionPoseAt,
+  bladeExtensionReveal,
   HIT_ENVELOPE_TOLERANCE_PX,
   hitEnvelopeExtentsAgree,
   meleeComboSelectionFor,
@@ -18,6 +20,7 @@ import {
   WEAPON_CATALOG_IDS,
   WEAPONS,
   weaponDamageEnvelopeFor,
+  weaponHitEnvelopeAuthoringFor,
   weaponUsesAuthoritativeEnvelopeCombo,
 } from "@dd/shared";
 import { describe, expect, it } from "vitest";
@@ -54,7 +57,7 @@ describe("V7-HIT standing VFX-collision law", () => {
     }
   });
 
-  it("keeps every flagship extension's rendered tip/thickness within the server envelope tolerance", () => {
+  it("keeps every flagship extension's full tip within the server envelope without authored width", () => {
     for (const id of BLADE_EXTENSION_WEAPON_IDS) {
       const weapon = WEAPONS[id];
       expect(weapon, id).toBeDefined();
@@ -74,22 +77,51 @@ describe("V7-HIT standing VFX-collision law", () => {
         ),
         `${id}/reach`,
       ).toBe(true);
-      expect(
-        hitEnvelopeExtentsAgree(
-          visual.thickness / 2,
-          meleeDamageHalfWidthAt(weapon, swing, activeMidpoint),
-        ),
-        `${id}/halfWidth`,
-      ).toBe(true);
-      expect(server.maxReach, `${id}/maxReach`).toBeCloseTo(visual.fullTipReach, 8);
-      expect(server.maxHalfWidth, `${id}/maxHalfWidth`).toBeCloseTo(
-        Math.max(server.baseHalfWidth, visual.thickness / 2),
-        8,
+      expect(meleeDamageHalfWidthAt(weapon, swing, activeMidpoint), `${id}/halfWidth`).toBe(
+        server.baseHalfWidth,
       );
+      expect(server.maxReach, `${id}/maxReach`).toBeCloseTo(visual.fullTipReach, 8);
+      expect(server.maxHalfWidth, `${id}/maxHalfWidth`).toBe(server.baseHalfWidth);
+      expect(
+        weaponHitEnvelopeAuthoringFor(weapon)?.melee?.bladeExtension,
+        `${id}/no-authored-thickness`,
+      ).not.toHaveProperty("thicknessScale");
       expect(
         Math.abs(server.maxReach - visual.fullTipReach),
         `${id}/tolerance=${HIT_ENVELOPE_TOLERANCE_PX}`,
       ).toBeLessThanOrEqual(HIT_ENVELOPE_TOLERANCE_PX);
+    }
+  });
+
+  it("makes reach follow the one 100ms combo ignition and holds full reach on later hits", () => {
+    expect(bladeExtensionIgnitionReveal(0)).toBe(0);
+    expect(bladeExtensionIgnitionReveal(0.05)).toBeCloseTo(0.5, 8);
+    expect(bladeExtensionIgnitionReveal(0.1)).toBe(1);
+    for (const id of BLADE_EXTENSION_WEAPON_IDS) {
+      const weapon = WEAPONS[id];
+      if (!weapon) throw new Error(`Missing extension fixture: ${id}`);
+      const base = swingDescriptorFor(weapon, weapon.cooldown);
+      const opening = { ...base, comboStep: 0 };
+      const continuation = { ...base, comboStep: 1 };
+      const envelope = meleeDamageEnvelopeFor(weapon);
+      const samples = [0, 0.025, 0.05, 0.075, 0.1] as const;
+      let previousReach = envelope.baseReach;
+      for (const elapsed of samples) {
+        const reveal = bladeExtensionReveal(weapon, opening, elapsed);
+        const reach = meleeDamageReachAt(weapon, opening, elapsed);
+        expect(reach, `${id}/opening/${elapsed}`).toBeGreaterThanOrEqual(previousReach);
+        if (reveal < 1) expect(reach, `${id}/short/${elapsed}`).toBeLessThan(envelope.maxReach);
+        previousReach = reach;
+      }
+      expect(meleeDamageReachAt(weapon, opening, 0.1), `${id}/opening-full`).toBeCloseTo(
+        envelope.maxReach,
+        8,
+      );
+      expect(bladeExtensionReveal(weapon, continuation, 0), `${id}/no-reignite`).toBe(1);
+      expect(meleeDamageReachAt(weapon, continuation, 0), `${id}/continuation-full`).toBeCloseTo(
+        envelope.maxReach,
+        8,
+      );
     }
   });
 
@@ -219,15 +251,19 @@ describe("V7-HIT standing VFX-collision law", () => {
     }
   });
 
-  it("makes both flagship consumers import the shared timed geometry instead of local numbers", () => {
+  it("keeps collision on shared timing while presentation reads only the final rig attachment", () => {
     const client = readFileSync("packages/client/src/vfx/VfxPlayer.ts", "utf8");
+    const rig = readFileSync("packages/client/src/entities/SpriteRig.ts", "utf8");
     const server = readFileSync("packages/server/src/rooms/GameRoom.ts", "utf8");
     expect(client).toContain("bladeExtensionGeometryFor(weapon)");
-    expect(client).toContain("bladeExtensionPoseAt(weapon, swing, elapsedSeconds, aimRad)");
-    expect(client).toContain("bladeExtensionReveal(weapon, swing, elapsedSeconds)");
-    expect(client).toMatch(/heldTip\?\.angle\s*\?\?\s*sharedPose\?\.angle/);
-    expect(client).toContain("heldTip?.physicalBladeLength ??");
+    expect(client).toContain("bladeExtensionDrawTransform(pose, state.geometry, state.reveal)");
+    expect(client).not.toContain("bladeExtensionPoseAt(");
+    expect(client).not.toContain("fallbackAngle");
+    expect(client).not.toContain("thicknessRatio");
     expect(client).toContain('scene.events.on("postupdate", this.syncBladeExtensions, this)');
+    expect(rig).toContain("measureBladeWidthAtExtensionJoin(");
+    expect(rig).toMatch(/\(\)\s*=>\s*\n?\s*this\.leadWeaponTipPose\(signatureHand\)/);
+    expect(rig).toContain("() => this.leadWeaponTipPose(1)");
     expect(server).toContain("meleeDamageReachAt(envelopeWeapon, sw.swing, sampleElapsed)");
     expect(server).toContain("meleeDamageHalfWidthAt(envelopeWeapon, sw.swing, sampleElapsed)");
     expect(server).toContain(

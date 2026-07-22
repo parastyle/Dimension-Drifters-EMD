@@ -49,13 +49,13 @@ describe("V6A generated-art owner orders", () => {
     expect(headsman.range).toBe(160);
   });
 
-  it("grows the Headsman extension during wind-up and holds it across the active clock", () => {
-    const swing = { activeStartSeconds: 0.2, activeEndSeconds: 0.6 };
-    expect(headsmanExtensionReveal(swing, 0.01)).toBe(0);
-    expect(headsmanExtensionReveal(swing, 0.11)).toBeGreaterThan(0);
-    expect(headsmanExtensionReveal(swing, 0.2)).toBe(1);
-    expect(headsmanExtensionReveal(swing, 0.4)).toBe(1);
-    expect(headsmanExtensionReveal(swing, 0.6)).toBe(0);
+  it("ignites the Headsman once at combo start and keeps later hits fully lit", () => {
+    const opening = { activeStartSeconds: 0.2, activeEndSeconds: 0.6, comboStep: 0 };
+    expect(headsmanExtensionReveal(opening, 0)).toBe(0);
+    expect(headsmanExtensionReveal(opening, 0.05)).toBeCloseTo(0.5, 8);
+    expect(headsmanExtensionReveal(opening, 0.1)).toBe(1);
+    expect(headsmanExtensionReveal(opening, 0.6)).toBe(1);
+    expect(headsmanExtensionReveal({ ...opening, comboStep: 1 }, 0)).toBe(1);
   });
 
   it("swaps the stable Spade id to the generated Gravewarden Buster and only widens its radius", () => {

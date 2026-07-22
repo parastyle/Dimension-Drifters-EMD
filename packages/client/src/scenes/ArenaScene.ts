@@ -159,6 +159,7 @@ import {
   rawFlourishIntentCancels,
   SPRITE_ATLAS,
   SpriteRig,
+  type WeaponBladeAttachmentPose,
 } from "../entities/SpriteRig.js";
 import { WormRig } from "../entities/WormRig.js";
 import {
@@ -10321,7 +10322,8 @@ export class ArenaScene extends Phaser.Scene {
       // cursor" (Weaponsmith), the VFX erupts at the clamped cursor (greatsword-quake style) instead.
       const rx = rig?.x ?? self.x;
       const ry = rig?.y ?? self.y;
-      const bladePose = rig ? () => rig.leadWeaponTipPose() : undefined;
+      const bladeHand = rig?.activeSwingHand === 1 ? 1 : 0;
+      const bladePose = rig ? () => rig.leadWeaponTipPose(bladeHand) : undefined;
       if (this.vfxPlayer.spawnsAtCursor(weapon.id)) {
         // §37 clamp in WORLD space (selfWy, not the projected rig y — mixed spaces skewed the radius), then
         // belt-project the epicenter for the draw so the eruption sits ON the cursor, not below it.
@@ -15002,9 +15004,7 @@ export class ArenaScene extends Phaser.Scene {
     swing: SwingDescriptor,
     exact = false,
     target?: Readonly<{ x: number; y: number }>,
-    sourceBladePose?: () =>
-      | { x: number; y: number; angle: number; physicalBladeLength: number; depth: number }
-      | undefined,
+    sourceBladePose?: () => WeaponBladeAttachmentPose | undefined,
   ): void {
     if (weapon.suppressVfx) return;
     const ang = Math.atan2(aim.y, aim.x);
