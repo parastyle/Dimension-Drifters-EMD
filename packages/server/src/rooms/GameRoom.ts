@@ -603,6 +603,7 @@ interface InputState {
   held: InputCmd;
   lastSeq: number;
   msgBudget: number;
+  traversalEdgeBudget: number;
   lastFreshFireTick: number;
   /** §44 per-tick budget for ACTION messages (attack/parry/grab/cycle/…) — the input budget's sibling,
    *  so a modified client can't monopolize the event loop with non-movement RPCs between ticks. */
@@ -1453,8 +1454,16 @@ export class GameRoom extends Room<ArenaState> {
       ) => {
         const rec = this.inputs.get(client.sessionId);
         if (!rec) return;
-        if (rec.msgBudget <= 0) return; // over the per-tick budget — ignore (flood guard)
-        rec.msgBudget--;
+        const traversalEdge =
+          message?.jump === true || message?.pound === true || message?.slide === true;
+        if (rec.msgBudget > 0) rec.msgBudget--;
+        else {
+          // The real client may send three capped catch-up heartbeats before a physical traversal edge in
+          // one loaded render frame. Preserve one such edge without opening the flood gate: the ordinary
+          // budget, this single reserved slot, monotonic seq validation, and the queue cap all still apply.
+          if (!traversalEdge || rec.traversalEdgeBudget <= 0) return;
+          rec.traversalEdgeBudget--;
+        }
         const seq = Number.isFinite(message?.seq) ? (message?.seq as number) >>> 0 : 0;
         // Monotonic AND bounded, WRAP-AWARE: the uint32 forward delta must be 1..10000. This drops
         // replays/regressions (delta 0 or huge), drops hostile negatives (coerce to ~4.29e9 → huge
@@ -4916,6 +4925,7 @@ export class GameRoom extends Room<ArenaState> {
       },
       lastSeq: 0,
       msgBudget: INPUT_MSGS_PER_TICK,
+      traversalEdgeBudget: 1,
       lastFreshFireTick: 0,
       actionBudget: ACTION_MSGS_PER_TICK,
       mvx: 0,
@@ -5320,6 +5330,7 @@ export class GameRoom extends Room<ArenaState> {
       const tickCombat = this.combat.get(id);
       if (tickCombat) tickCombat.ultAccrualThisTick = 0;
       input.msgBudget = INPUT_MSGS_PER_TICK;
+      input.traversalEdgeBudget = 1;
       input.actionBudget = ACTION_MSGS_PER_TICK; // §44 refill the action budget alongside input's
       let cmd: InputCmd | undefined;
       const queuedCount = input.queue.length;

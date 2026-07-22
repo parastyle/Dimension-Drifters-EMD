@@ -234,7 +234,10 @@ export class SpaceGestureClassifier {
       this.reset();
       return this.result;
     }
-    if (justUp && this.consumedUntilRelease) {
+    // Phaser can coalesce a short down→up between loaded render samples: the physical key is already up,
+    // but `JustUp` may no longer be observable. Treat the stable released state as the same latch-clear edge
+    // so a later real press is never suppressed forever. `justDown` wins below for a fresh same-sample tap.
+    if ((justUp || (!_isDown && !justDown)) && this.consumedUntilRelease) {
       this.consumedUntilRelease = false;
     }
     if (justDown && !this.consumedUntilRelease) {

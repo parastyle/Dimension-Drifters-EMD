@@ -4578,30 +4578,34 @@ export class ArenaScene extends Phaser.Scene {
       !levelWindowInputBlocked
     ) {
       const parryWindowOpen = (this.time.now - this.lastParryPress) / 1000 < PARRY_IFRAMES;
-      if (this.predictor?.canSlide && !parryWindowOpen) {
+      if (!parryWindowOpen) {
+        // Always deliver one physical edge. Prediction still refuses an ineligible local roll, while
+        // authority decides whether its cooldown/recovery treaty accepts or rejects the request.
         this.slideQueued = true;
-        this.slideDryPresses = 0;
-        this.slideDryWindowAt = -1e9;
         // Both bindings are latency-critical; stepNetInput sees this latch and mints an immediate command.
-      } else if ((this.predictor?.slideCooldownRemaining ?? 0) > 0) {
-        if (this.time.now - this.slideDryWindowAt > 2_000) {
-          this.slideDryWindowAt = this.time.now;
+        if (this.predictor?.canSlide) {
           this.slideDryPresses = 0;
-        }
-        this.slideDryPresses++;
-        if (this.slideDryPresses === 3 && !this.slideDryToastShown) {
-          this.slideDryToastShown = true;
-          this.flashBanner("Roll cooling down", "#c7a66c");
-        }
-        if (this.slideDryPresses <= 3) {
-          const rig = this.room ? this.blobs.get(this.room.sessionId) : undefined;
-          if (rig)
-            this.jumpEffectRenderer.spawnSlideDry(
-              rig.x,
-              (this.belt ? this.beltY(rig.y) : rig.y) + PLAYER_SHADOW_LOCAL_Y,
-              this.belt ? BELT_FORESHORTEN : 1,
-            );
-          this.audio.play("slide:dry", { x: rig?.x, amt: 0.35 });
+          this.slideDryWindowAt = -1e9;
+        } else if ((this.predictor?.slideCooldownRemaining ?? 0) > 0) {
+          if (this.time.now - this.slideDryWindowAt > 2_000) {
+            this.slideDryWindowAt = this.time.now;
+            this.slideDryPresses = 0;
+          }
+          this.slideDryPresses++;
+          if (this.slideDryPresses === 3 && !this.slideDryToastShown) {
+            this.slideDryToastShown = true;
+            this.flashBanner("Roll cooling down", "#c7a66c");
+          }
+          if (this.slideDryPresses <= 3) {
+            const rig = this.room ? this.blobs.get(this.room.sessionId) : undefined;
+            if (rig)
+              this.jumpEffectRenderer.spawnSlideDry(
+                rig.x,
+                (this.belt ? this.beltY(rig.y) : rig.y) + PLAYER_SHADOW_LOCAL_Y,
+                this.belt ? BELT_FORESHORTEN : 1,
+              );
+            this.audio.play("slide:dry", { x: rig?.x, amt: 0.35 });
+          }
         }
       }
     }

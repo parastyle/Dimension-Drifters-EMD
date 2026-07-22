@@ -3961,6 +3961,49 @@ function addRollMeleeEnemy(fixture: ReturnType<typeof makeRollRoom>, id: string)
 }
 
 describe("GameRoom — V7 fixed tumble roll", () => {
+  it("reserves one traversal edge after four catch-up heartbeats exhaust the ordinary tick budget", () => {
+    const fixture = makeRollRoom("roll-reserved-edge");
+    for (let seq = 1; seq <= enemyComboShared.INPUT_MSGS_PER_TICK; seq++) {
+      fixture.h.send(fixture.player.id, "input", {
+        seq,
+        dx: 1,
+        dy: 0,
+        jump: false,
+        crouchHeld: false,
+        pound: false,
+        slide: false,
+        slideHeld: false,
+        fireHeld: false,
+        aimX: 1,
+        aimY: 0,
+        targetX: 0,
+        targetY: 0,
+      });
+    }
+    const edgeSeq = enemyComboShared.INPUT_MSGS_PER_TICK + 1;
+    fixture.h.send(fixture.player.id, "input", {
+      seq: edgeSeq,
+      dx: -1,
+      dy: 0,
+      jump: false,
+      crouchHeld: false,
+      pound: false,
+      slide: true,
+      slideHeld: true,
+      fireHeld: false,
+      aimX: -1,
+      aimY: 0,
+      targetX: 0,
+      targetY: 0,
+    });
+
+    fixture.h.tick(1);
+
+    expect(fixture.player.ackSeq).toBe(edgeSeq);
+    expect(fixture.combat.stance).toBe(enemyComboShared.STANCE_SLIDE);
+    expect(fixture.combat.momentumX).toBeLessThan(0);
+  });
+
   it("accepts from rest, freezes cardinal/diagonal direction, and travels 188 px in eight ticks", () => {
     for (const [name, dx, dy] of [
       ["east", 1, 0],

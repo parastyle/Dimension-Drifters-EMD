@@ -400,6 +400,14 @@ describe("jump-feel input and indicator helpers", () => {
     expect(input.sample(500, true, true, false, true).pound).toBe(true);
   });
 
+  it("re-arms from the stable released state when a loaded frame coalesces the JustUp edge", async () => {
+    const { SpaceGestureClassifier } = await import("./prediction.js");
+    const input = new SpaceGestureClassifier();
+    expect(input.sample(0, true, true, false, false).jump).toBe(true);
+    expect(input.sample(16, false, false, false, false).jump).toBe(false);
+    expect(input.sample(32, true, true, false, true).pound).toBe(true);
+  });
+
   it("marks only server-validation changes red and reports the exact validated endpoint", async () => {
     const { writeDistanceJumpIndicator } = await import("./prediction.js");
     const out = { rawX: 0, rawY: 0, x: 0, y: 0, dirX: 0, dirY: 0, clamped: false };
