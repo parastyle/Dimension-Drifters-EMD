@@ -47,9 +47,15 @@ describe("V6.1 Headsman ship decision", () => {
     // Base card authoring is unchanged; V7-HIT derives active server reach from the shared extension.
     expect(headsman.range).toBe(160);
 
+    // V7.1 unification replaced the old world-space reconstruction: the extension is now composed in
+    // the blade's own sampled basis, so there is no `heldTip`/angle arithmetic left to pin. What still
+    // matters is the SHIP DECISION itself — root under the physical blade, no second pose solver, and
+    // width measured rather than authored. Behavioural coverage: VfxPlayer.blade-extension.test.ts.
     const player = readFileSync("packages/client/src/vfx/VfxPlayer.ts", "utf8");
-    expect(player).toContain("heldTip.x - Math.cos(angle) * overlapLength");
-    expect(player).toContain(".setDepth((heldTip?.depth ?? attachment.fallbackDepth) - 1)");
+    expect(player).toContain("bladeExtensionGeometryFor(weapon)");
+    expect(player, "extension must not resolve its own pose").not.toContain("bladeExtensionPoseAt");
+    expect(player, "width must be measured, not authored").not.toContain("thicknessScale");
+    expect(player).toMatch(/\.setDepth\(pose\.depth - 1\)/);
   });
 });
 
