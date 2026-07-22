@@ -74,3 +74,20 @@ Every katana gets a bespoke moveset (combo choreography, not just VFX); rest sta
 | Idol of the Pale Verdict | +1.4x size |
 
 Watermark: all notes ≤ 2026-07-22T02:35:18Z ledgered.
+
+## V7.1 — BLADE-EXTENSION UNIFICATION (owner design ruling, chat 2026-07-22)
+
+Owner: the extension VFX "would completely misalign with the sword" when swung; proposed merging
+VFX + sword into one asset so they cannot desync ("as one does a paper fold so does the other"),
+width matched exactly, plus the extension rising out of the blade like a lightsaber.
+RULING (agreed, with one amendment): do NOT bake a flat merged asset — that blocks the rise and
+forces re-renders. Instead ONE TRANSFORM: the extension is drawn from the blade's own node /
+composited into a single quad of length `blade + extension x reveal`, inheriting the blade affine
+(rotation, mirror, recoil) by construction. Width is DERIVED from the blade's measured width in
+that same local space, never authored. Same-class defect as the muzzle 14.6px drift: the extension
+was resolving its own pose and lagging an interpolation step during fast swings.
+LIGHTSABER RISE: animate local length 0 -> full along the blade axis; it also hides the join by
+emerging from inside the blade. Hit envelope follows the rise (short during emergence, full at the
+active edge) per the V7 collision law. Applies to Sanctified Headsman + all six brutalist
+greatswords via blade-extension-treatments.
+OPEN: rise timing — per-swing ignition (~100ms, default) vs held-while-drawn. Owner to pick.

@@ -424,6 +424,9 @@ test("V7-MOVE: fixed tumble roll and immediate default long jump", async ({ page
     await bootArena(page, baseURL, "weapon:rusty-cleaver");
     await page.locator("#game-root canvas").click({ position: { x: 320, y: 180 } });
     await mountProbe(page);
+    // The focus click is also a real primary-pointer gameplay edge. Let its short
+    // parry lock expire before proving that the first physical roll key is accepted.
+    await waitServerTicks(page, 12);
 
     const rollMeasures: RollMeasure[] = [];
     for (let index = 0; index < DIRECTIONS.length; index++) {
@@ -498,7 +501,9 @@ test("V7-MOVE: fixed tumble roll and immediate default long jump", async ({ page
         if (sent || !self || self.moveStance !== 2 || self.height <= 24) return;
         sent = true;
         arena.room.send("input", {
-          seq: (self.ackSeq + 1) >>> 0,
+          // Stay ahead of the browser input manager's queued sequence numbers. The live
+          // room rejects stale/duplicate inputs before evaluating the pound bit.
+          seq: (self.ackSeq + 0x10000) >>> 0,
           dx: 1,
           dy: 0,
           jump: false,
