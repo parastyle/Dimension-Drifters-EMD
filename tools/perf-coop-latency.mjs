@@ -31,7 +31,11 @@ const WARMUP_TICKS = Number(process.env.DD_PERF_WARMUP_TICKS ?? 600);
 const SAMPLE_TICKS = Number(process.env.DD_PERF_SAMPLE_TICKS ?? 2000);
 const CAP_SAMPLE_TICKS = Number(process.env.DD_PERF_CAP_SAMPLE_TICKS ?? 1200);
 const ATTR_SAMPLE_TICKS = Number(process.env.DD_PERF_ATTR_SAMPLE_TICKS ?? 1200);
-const MAX_ATTEMPT_MULTIPLIER = 8;
+// Qualification ("both zones + all six beam rows live after the step") is intermittent BY DESIGN:
+// beams overheat, release, and cool on real cadence, so only ~4% of ticks qualify. 8x attempts can
+// therefore never reach the 2000-sample target. Raise attempts to reach the sample count — do not
+// lower the sample count, and never relax the qualification predicate itself.
+const MAX_ATTEMPT_MULTIPLIER = Number(process.env.DD_PERF_MAX_ATTEMPT_MULTIPLIER ?? 8);
 
 // The older audit already identified the installed encoder's 8 KiB overflow/re-encode path. Keep the
 // steady-patch timing focused on dirty-state work; full-snapshot size is recorded separately below.
@@ -447,7 +451,11 @@ async function runAttributionBenchmark() {
   perCategory["inline movement/AI/contact/tail"] = [];
   const totals = [];
   let attempted = 0;
-  while (totals.length < ATTR_SAMPLE_TICKS && attempted < ATTR_SAMPLE_TICKS * 20) {
+  // Same ~4% qualification rate as the clean heavy run, so this needs the same attempt headroom.
+  while (
+    totals.length < ATTR_SAMPLE_TICKS &&
+    attempted < ATTR_SAMPLE_TICKS * Math.max(20, MAX_ATTEMPT_MULTIPLIER)
+  ) {
     attempted++;
     scenario.prepareTick();
     probe.beginTick();

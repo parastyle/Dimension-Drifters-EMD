@@ -1,0 +1,389 @@
+{
+  "measuredAt": "2026-07-22T18:16:50.133Z",
+  "environment": {
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.7827.55 Safari/537.36",
+    "devicePixelRatio": 1,
+    "hardwareConcurrency": 16,
+    "cssViewport": {
+      "width": 640,
+      "height": 360
+    },
+    "backBuffer": {
+      "width": 640,
+      "height": 360,
+      "pixels": 230400
+    },
+    "webglVendor": "Google Inc. (Google)",
+    "webglRenderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+    "feedbackSettings": {
+      "damageNumbers": "all",
+      "damageNumberStyle": "detailed",
+      "damageNumberScale": 1,
+      "hitConfirmAudio": true,
+      "confirmVolume": 1,
+      "hitSparks": true,
+      "screenShake": 1,
+      "hitStop": true,
+      "flashes": "full",
+      "colorblindAssist": "off"
+    }
+  },
+  "methodology": {
+    "viewportCss": "640x360",
+    "players": 5,
+    "ordinaryEnemyTarget": 48,
+    "boss": "seam-eater (twelve-slot worm)",
+    "phases": {
+      "idle": "Same population, no player weapon deliveries.",
+      "nonbeam": "Two channel zones + Gravelthroat pellets/muzzle flashes + Rimewrit blade extension.",
+      "all": "Nonbeam phase plus six simultaneously active Stormcaller beam structures."
+    },
+    "qualifyingLaw": "All-system frames require six authoritative phase-2 beam rows; idle/nonbeam frames require zero active beams."
+  },
+  "phases": {
+    "idle": {
+      "name": "idle",
+      "frames": 90,
+      "frameIntervalMs": {
+        "samples": 90,
+        "mean": 57.3422,
+        "p50": 57.2,
+        "p95": 60.6,
+        "p99": 66.8,
+        "max": 66.8
+      },
+      "sceneUpdateMs": {
+        "samples": 90,
+        "mean": 2.8978,
+        "p50": 2.7,
+        "p95": 4.2,
+        "p99": 11.6,
+        "max": 11.6
+      },
+      "phaserRenderMs": {
+        "samples": 90,
+        "mean": 6.1978,
+        "p50": 6.1,
+        "p95": 7.7,
+        "p99": 8.3,
+        "max": 8.3
+      },
+      "residualUpdateMs": {
+        "samples": 90,
+        "mean": 0.8278,
+        "p50": 0.8,
+        "p95": 1.2,
+        "p99": 2,
+        "max": 2
+      },
+      "missedFramePercent": 100,
+      "over33msPercent": 100,
+      "subsystemUpdateMs": {
+        "enemy rigs/telegraphs": {
+          "samples": 90,
+          "mean": 0.8956,
+          "p50": 0.9,
+          "p95": 1.4,
+          "p99": 8,
+          "max": 8
+        },
+        "HUD/UI/debug": {
+          "samples": 90,
+          "mean": 0.6678,
+          "p50": 0.6,
+          "p95": 0.9,
+          "p99": 5,
+          "max": 5
+        },
+        "player rigs/equip": {
+          "samples": 90,
+          "mean": 0.3511,
+          "p50": 0.4,
+          "p95": 0.6,
+          "p99": 0.8,
+          "max": 0.8
+        },
+        "attack routing/VFX": {
+          "samples": 90,
+          "mean": 0.1322,
+          "p50": 0,
+          "p95": 0.5,
+          "p99": 0.7,
+          "max": 0.7
+        },
+        "beams": {
+          "samples": 90,
+          "mean": 0.0156,
+          "p50": 0,
+          "p95": 0.1,
+          "p99": 0.1,
+          "max": 0.1
+        },
+        "projectiles": {
+          "samples": 90,
+          "mean": 0.0067,
+          "p50": 0,
+          "p95": 0.1,
+          "p99": 0.1,
+          "max": 0.1
+        },
+        "zones": {
+          "samples": 90,
+          "mean": 0.0011,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0.1,
+          "max": 0.1
+        }
+      },
+      "entityPeaks": {
+        "players": 5,
+        "enemyRows": 49,
+        "projectiles": 0,
+        "friendlyProjectiles": 0,
+        "zones": 0,
+        "beams": 0,
+        "activeBeams": 0,
+        "playerRigs": 5,
+        "enemyRigs": 48,
+        "projectileVisuals": 0,
+        "zoneVisuals": 0,
+        "visibleBeamEntries": 0
+      }
+    },
+    "nonbeam": {
+      "name": "nonbeam",
+      "frames": 90,
+      "frameIntervalMs": {
+        "samples": 90,
+        "mean": 57.2456,
+        "p50": 57.2,
+        "p95": 60.3,
+        "p99": 61.8,
+        "max": 61.8
+      },
+      "sceneUpdateMs": {
+        "samples": 90,
+        "mean": 3.0256,
+        "p50": 2.9,
+        "p95": 4.2,
+        "p99": 7.2,
+        "max": 7.2
+      },
+      "phaserRenderMs": {
+        "samples": 90,
+        "mean": 6.1111,
+        "p50": 6.2,
+        "p95": 7.6,
+        "p99": 8.9,
+        "max": 8.9
+      },
+      "residualUpdateMs": {
+        "samples": 90,
+        "mean": 1.0133,
+        "p50": 1,
+        "p95": 1.4,
+        "p99": 1.5,
+        "max": 1.5
+      },
+      "missedFramePercent": 100,
+      "over33msPercent": 100,
+      "subsystemUpdateMs": {
+        "HUD/UI/debug": {
+          "samples": 90,
+          "mean": 0.6289,
+          "p50": 0.6,
+          "p95": 0.7,
+          "p99": 4.7,
+          "max": 4.7
+        },
+        "enemy rigs/telegraphs": {
+          "samples": 90,
+          "mean": 0.4967,
+          "p50": 0.4,
+          "p95": 1.3,
+          "p99": 1.6,
+          "max": 1.6
+        },
+        "player rigs/equip": {
+          "samples": 90,
+          "mean": 0.4267,
+          "p50": 0.4,
+          "p95": 0.6,
+          "p99": 1,
+          "max": 1
+        },
+        "projectiles": {
+          "samples": 90,
+          "mean": 0.28,
+          "p50": 0.1,
+          "p95": 1.1,
+          "p99": 1.2,
+          "max": 1.2
+        },
+        "attack routing/VFX": {
+          "samples": 90,
+          "mean": 0.1544,
+          "p50": 0.1,
+          "p95": 0.6,
+          "p99": 1,
+          "max": 1
+        },
+        "beams": {
+          "samples": 90,
+          "mean": 0.0244,
+          "p50": 0,
+          "p95": 0.1,
+          "p99": 0.1,
+          "max": 0.1
+        },
+        "zones": {
+          "samples": 90,
+          "mean": 0.0011,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0.1,
+          "max": 0.1
+        }
+      },
+      "entityPeaks": {
+        "players": 5,
+        "enemyRows": 26,
+        "projectiles": 30,
+        "friendlyProjectiles": 30,
+        "zones": 0,
+        "beams": 1,
+        "activeBeams": 0,
+        "playerRigs": 5,
+        "enemyRigs": 25,
+        "projectileVisuals": 30,
+        "zoneVisuals": 0,
+        "visibleBeamEntries": 0
+      }
+    },
+    "all": {
+      "name": "all",
+      "frames": 45,
+      "frameIntervalMs": {
+        "samples": 45,
+        "mean": 57.8044,
+        "p50": 57.5,
+        "p95": 60.9,
+        "p99": 62,
+        "max": 62
+      },
+      "sceneUpdateMs": {
+        "samples": 45,
+        "mean": 3.6,
+        "p50": 3.5,
+        "p95": 4.5,
+        "p99": 5.7,
+        "max": 5.7
+      },
+      "phaserRenderMs": {
+        "samples": 45,
+        "mean": 6.5378,
+        "p50": 6.4,
+        "p95": 7.8,
+        "p99": 8.5,
+        "max": 8.5
+      },
+      "residualUpdateMs": {
+        "samples": 45,
+        "mean": 1.1067,
+        "p50": 1.1,
+        "p95": 1.3,
+        "p99": 1.5,
+        "max": 1.5
+      },
+      "missedFramePercent": 100,
+      "over33msPercent": 100,
+      "subsystemUpdateMs": {
+        "enemy rigs/telegraphs": {
+          "samples": 45,
+          "mean": 0.7289,
+          "p50": 0.6,
+          "p95": 1.5,
+          "p99": 2.7,
+          "max": 2.7
+        },
+        "HUD/UI/debug": {
+          "samples": 45,
+          "mean": 0.6022,
+          "p50": 0.6,
+          "p95": 0.7,
+          "p99": 0.8,
+          "max": 0.8
+        },
+        "player rigs/equip": {
+          "samples": 45,
+          "mean": 0.4467,
+          "p50": 0.5,
+          "p95": 0.6,
+          "p99": 0.7,
+          "max": 0.7
+        },
+        "projectiles": {
+          "samples": 45,
+          "mean": 0.3578,
+          "p50": 0.2,
+          "p95": 0.9,
+          "p99": 1,
+          "max": 1
+        },
+        "attack routing/VFX": {
+          "samples": 45,
+          "mean": 0.1978,
+          "p50": 0.2,
+          "p95": 0.5,
+          "p99": 0.7,
+          "max": 0.7
+        },
+        "beams": {
+          "samples": 45,
+          "mean": 0.16,
+          "p50": 0.1,
+          "p95": 0.3,
+          "p99": 0.6,
+          "max": 0.6
+        },
+        "zones": {
+          "samples": 45,
+          "mean": 0,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0
+        }
+      },
+      "entityPeaks": {
+        "players": 5,
+        "enemyRows": 28,
+        "projectiles": 29,
+        "friendlyProjectiles": 29,
+        "zones": 3,
+        "beams": 6,
+        "activeBeams": 6,
+        "playerRigs": 5,
+        "enemyRigs": 27,
+        "projectileVisuals": 29,
+        "zoneVisuals": 3,
+        "visibleBeamEntries": 6
+      }
+    }
+  },
+  "deltas": {
+    "nonbeamMinusIdleFrameP95Ms": -0.3,
+    "allMinusNonbeamFrameP95Ms": 0.6,
+    "allMinusIdleUpdateMeanMs": 0.7022,
+    "allMinusIdleRenderMeanMs": 0.34
+  },
+  "longTasksMs": {
+    "samples": 2526,
+    "mean": 56.943,
+    "p50": 57,
+    "p95": 60,
+    "p99": 64,
+    "max": 82
+  }
+}

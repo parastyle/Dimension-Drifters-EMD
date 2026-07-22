@@ -52,4 +52,48 @@ with both player zones and all six beam rows live qualify.
 
 ## Verdict
 
-Pending measured evidence.
+**No. The V7 additions do not measurably impact co-op latency.** Measured 2026-07-22 by the
+orchestrator after the Sol stalled; harness and methodology are the Sol's, unmodified except for the
+attempt-budget fix noted below. 2,000 qualifying ticks per arm, 600 warm-up.
+
+| | idle ablation | V7 all-systems | delta |
+|---|---:|---:|---:|
+| tick mean | 0.129 ms | 0.211 ms | **+0.082 ms** |
+| tick p95 | 0.239 ms | 0.336 ms | +0.097 ms |
+| tick p99 | 0.351 ms | 0.442 ms | +0.091 ms |
+| tick max | 0.642 ms | 0.883 ms | +0.241 ms |
+| patch | 959 B | 1,137 B | +178 B |
+| per client | 18.7 KB/s | 22.2 KB/s | +3.5 KB/s |
+
+The authoritative tick budget is **50 ms**. The full V7 workload — two channel zones, radial pellets,
+six simultaneous beam rows, timed blade extensions, 48 enemies and the twelve-slot worm boss, five
+players — consumes **0.42% of it on average and 1.8% at the worst single observed tick**. Roughly 57x
+headroom remains even at max. The added wire cost is 3.5 KB/s/client, negligible against any
+broadband link.
+
+Interpretation: latency the player actually feels is dominated by the intentional protocol waits
+(0–50 ms command mint, 0–50 ms tick wait, 120 ms remote interpolation, ≤16.7 ms render frame). V7
+adds ~0.08 ms of processing to that chain. It is not a perceptible contributor and no optimization is
+warranted.
+
+Attribution of the instrumented tick: beams **51.4%** (0.133 ms), inline movement/AI/contact 13.9%,
+collision/grid 8.4%, projectiles 7.9%, enemy AI 7.4%, boss/worm 3.9%. Beams dominate the V7 cost, but
+in absolute terms they are an eighth of a millisecond — worth knowing if beam count ever grows by an
+order of magnitude, not worth acting on now.
+
+### Harness corrections made during the run
+
+- `MAX_ATTEMPT_MULTIPLIER` and the attribution loop's hardcoded `* 20` are now attempt budgets that
+  honor `DD_PERF_MAX_ATTEMPT_MULTIPLIER`. Qualification ("both zones + all six beam rows live") is
+  intermittent by design at ~4% of ticks, so an 8x/20x attempt budget could never reach the 2,000- and
+  1,200-sample targets. **The qualification predicate and the sample targets were not weakened** — only
+  the number of attempts allowed to reach them.
+
+### Open finding — deferred, needs its own investigation
+
+The `v7-wave2-enemy-cap-pressure` arm (80 effective bodies, same predicate) collected **0 qualifying
+ticks in 72,000 attempts**, versus ~4% at 48 enemies. Under enemy-cap pressure the six-beam delivery
+apparently never achieves six simultaneous rows. That is a gameplay/admission interaction, not a
+latency measurement, and it is a real question: beams may be starving against the entity cap exactly
+when the screen is fullest. This arm was skipped to unblock the owner's answer; the scenario is
+retained in the harness. **Do not "fix" this by relaxing the predicate.**

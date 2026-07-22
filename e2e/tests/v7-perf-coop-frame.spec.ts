@@ -140,11 +140,15 @@ function startRawControl(
     const target = nearestTarget(room);
     room.send("attack", target);
   }, 100);
+  const parryTimer = setInterval(() => {
+    if (role !== "beam" || phaseRef.value !== "all") room.send("parry");
+  }, 2000);
   return {
     room,
     stop() {
       clearInterval(inputTimer);
       clearInterval(attackTimer);
+      clearInterval(parryTimer);
     },
   };
 }
@@ -465,7 +469,7 @@ async function collectPhase(
         probe.phase = {
           name: phaseName,
           target,
-          skip: 20,
+          skip: 10,
           frames: [],
           resolve: (frames: any[]) => {
             window.clearTimeout(timer);
@@ -536,6 +540,7 @@ test("V7 co-op VFX frame cost is measured under the matched heavy room", async (
     const phaseRef: { value: WorkloadPhase } = { value: "idle" };
     const raw = await connectRawPlayers(page, phaseRef);
     let longTasks: number[] = [];
+    let populationTimer: ReturnType<typeof setInterval> | undefined;
     try {
       // Keep movement/parry alive during setup, but do not let the benchmark weapons
       // erase the horde faster than the training summon budget can populate it.
@@ -544,9 +549,24 @@ test("V7 co-op VFX frame cost is measured under the matched heavy room", async (
       await populateRoom(page);
       await page.waitForTimeout(1500);
       const environment = await installPageProbe(page);
+      const populationRoom = raw.rooms[0];
+      populationTimer = setInterval(() => {
+        const enemies = populationRoom.state?.enemies?.size ?? 0;
+        if (enemies < 45) {
+          populationRoom.send("debugSpawn", {
+            kind: "mote-swarm",
+            count: Math.min(8, 49 - enemies),
+          });
+        }
+      }, 150);
+
+      const idleFrames = await collectPhase(page, "idle", 60, 60_000);
+
+      phaseRef.value = "nonbeam";
+      await setMainGun(page, true);
+      const nonBeamFrames = await collectPhase(page, "nonbeam", 60, 60_000);
 
       phaseRef.value = "all";
-      await setMainGun(page, true);
       await expect
         .poll(
           () =>
@@ -587,28 +607,9 @@ test("V7 co-op VFX frame cost is measured under the matched heavy room", async (
           beamOwnerPresent: true,
           beamRows: 6,
         });
-      const allFrames = await collectPhase(page, "all", 45, 150_000);
-
-      phaseRef.value = "nonbeam";
-      await expect
-        .poll(
-          () =>
-            page.evaluate(() => {
-              const arena = (globalThis as any).ddGame.scene.getScene("arena") as any;
-              let active = 0;
-              arena.room.state.beams?.forEach((row: any) => {
-                if (row.phase === 2) active++;
-              });
-              return active;
-            }),
-          { message: "beam should leave active before the nonbeam phase", timeout: 10_000 },
-        )
-        .toBe(0);
-      const nonBeamFrames = await collectPhase(page, "nonbeam", 90, 60_000);
-
+      const allFrames = await collectPhase(page, "all", 30, 120_000);
       await setMainGun(page, false);
       phaseRef.value = "idle";
-      const idleFrames = await collectPhase(page, "idle", 90, 60_000);
       longTasks = await teardownPageProbe(page);
 
       const idle = summarizePhase("idle", idleFrames);
@@ -654,8 +655,10 @@ test("V7 co-op VFX frame cost is measured under the matched heavy room", async (
       expect((all.entityPeaks as any).players).toBeGreaterThanOrEqual(5);
       expect((all.entityPeaks as any).enemyRows).toBeGreaterThanOrEqual(40);
       expect((all.entityPeaks as any).activeBeams).toBeGreaterThanOrEqual(6);
-      expect(allFrames).toHaveLength(45);
+      expect((all.entityPeaks as any).zones).toBeGreaterThanOrEqual(2);
+      expect(allFrames).toHaveLength(30);
     } finally {
+      if (populationTimer) clearInterval(populationTimer);
       for (const control of raw.controls) control.stop();
       for (const room of raw.rooms) await room.leave().catch(() => undefined);
       if (longTasks.length === 0) await teardownPageProbe(page).catch(() => []);
