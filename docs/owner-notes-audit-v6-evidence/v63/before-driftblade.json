@@ -1,0 +1,50 @@
+{
+  "phase": "before",
+  "label": "driftblade",
+  "weaponId": "driftblade",
+  "baseURL": "http://localhost:5180",
+  "moduleMode": "probe-only legacy fallback partition",
+  "capturedAt": "2026-07-22T01:51:27.056Z",
+  "sourceLayerIds": [
+    "blade-trail"
+  ],
+  "targetLayerIds": [
+    "cleave-flash",
+    "painted-impact"
+  ],
+  "events": [
+    {
+      "kind": "weapon-vfx-suite",
+      "weaponId": "driftblade",
+      "anchor": "source",
+      "x": 2400,
+      "y": 2420,
+      "targetX": 2660.4315185546875,
+      "targetY": 2360.9150390625,
+      "layerIds": [
+        "blade-trail"
+      ]
+    },
+    {
+      "kind": "weapon-vfx-suite",
+      "weaponId": "driftblade",
+      "anchor": "target",
+      "x": 2660.4315185546875,
+      "y": 2360.9150390625,
+      "targetX": 2660.4315185546875,
+      "targetY": 2360.9150390625,
+      "layerIds": [
+        "cleave-flash",
+        "painted-impact"
+      ]
+    }
+  ],
+  "assertions": {
+    "sourceCompositionRetained": true,
+    "targetComposition": true,
+    "browserClean": true
+  },
+  "browserErrors": [],
+  "unexpectedBrowserErrors": [],
+  "screenshot": "docs\\owner-notes-audit-v6-evidence\\v63\\before-driftblade.png"
+}

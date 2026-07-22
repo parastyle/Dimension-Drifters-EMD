@@ -1,0 +1,52 @@
+{
+  "phase": "before",
+  "label": "headsman",
+  "weaponId": "x2-sanctified-headsman",
+  "baseURL": "http://localhost:5180",
+  "moduleMode": "probe-only legacy fallback partition",
+  "capturedAt": "2026-07-22T01:51:39.061Z",
+  "sourceLayerIds": [
+    "blade-trail"
+  ],
+  "targetLayerIds": [
+    "cleave-flash",
+    "painted-impact",
+    "impact-flash"
+  ],
+  "events": [
+    {
+      "kind": "weapon-vfx-suite",
+      "weaponId": "x2-sanctified-headsman",
+      "anchor": "source",
+      "x": 2400,
+      "y": 2420,
+      "targetX": 2588.081134869066,
+      "targetY": 2389.9282922605944,
+      "layerIds": [
+        "blade-trail"
+      ]
+    },
+    {
+      "kind": "weapon-vfx-suite",
+      "weaponId": "x2-sanctified-headsman",
+      "anchor": "target",
+      "x": 2588.081134869066,
+      "y": 2389.9282922605944,
+      "targetX": 2588.081134869066,
+      "targetY": 2389.9282922605944,
+      "layerIds": [
+        "cleave-flash",
+        "painted-impact",
+        "impact-flash"
+      ]
+    }
+  ],
+  "assertions": {
+    "sourceCompositionRetained": true,
+    "targetComposition": true,
+    "browserClean": true
+  },
+  "browserErrors": [],
+  "unexpectedBrowserErrors": [],
+  "screenshot": "docs\\owner-notes-audit-v6-evidence\\v63\\before-headsman.png"
+}

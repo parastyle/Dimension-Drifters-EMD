@@ -16,6 +16,11 @@ export const GENERIC_IMPACT_RING_LAYER_IDS = Object.freeze([
   "sigil-ring",
 ] as const);
 export const CIRCLE_IMPACT_LAYER_IDS = GENERIC_IMPACT_RING_LAYER_IDS;
+/** V6.3 owner-ledger exceptions whose pre-existing fallback hit cue was explicitly ordered on-target. */
+export const EXPLICIT_FALLBACK_IMPACT_WEAPON_IDS = Object.freeze([
+  "x2-wendigo-claws",
+  "x2-revenant-knuckle",
+] as const);
 
 export const ELEMENT_HUE: Readonly<Record<string, number>> = Object.freeze({
   physical: 0.55,
@@ -73,42 +78,15 @@ export function replaceGenericImpactRings(suite: WeaponVfxSuite, element: string
   return resolved;
 }
 
-function elementFlourish(element: string, hue: number): WeaponVfxSuite {
-  switch (element) {
-    case "fire":
+function explicitFallbackImpactSuite(weaponId: string): WeaponVfxSuite {
+  switch (weaponId) {
+    case "x2-wendigo-claws":
       return {
-        "ember-rain": { on: true, params: { count: 14, color: hue } },
-        "impact-flash": { on: true, params: { intensity: 0.6 } },
-      };
-    case "shock":
-      return {
-        "arc-bolt": { on: true, params: { color: hue } },
-        "painted-impact": paintedImpact(element, 8, 0.78),
-      };
-    case "frost":
-      return {
-        "hit-spark": { on: true, params: { count: 16, color: hue } },
+        "hit-spark": { on: true, params: { count: 16, color: ELEMENT_HUE.frost ?? 0.54 } },
         "impact-flash": { on: true, params: { intensity: 0.5 } },
       };
-    case "holy":
-      return {
-        "painted-impact": paintedImpact(element, 7, 0.78),
-        "impact-flash": { on: true, params: { intensity: 0.65 } },
-      };
-    case "toxic":
-      return {
-        "ember-rain": { on: true, params: { count: 12, color: hue } },
-        "hit-spark": { on: true, params: { count: 10, color: hue } },
-      };
-    case "void":
-      return {
-        "painted-impact": paintedImpact(element, 8, 0.84),
-      };
-    case "arcane":
-      return {
-        "painted-impact": paintedImpact(element, 7, 0.8),
-        "arc-bolt": { on: true, params: { color: hue } },
-      };
+    case "x2-revenant-knuckle":
+      return { "painted-impact": paintedImpact("void", 8, 0.84) };
     default:
       return {};
   }
@@ -145,12 +123,11 @@ export function buildWeaponFallbackSuite(
   else if (heavy)
     base = {
       "blade-trail": { on: true, params: perParams },
-      "cleave-flash": { on: true, params: { intensity: 0.85 } },
-      "painted-impact": paintedImpact(element, 8, 0.78),
     };
   else base = { "blade-trail": { on: true, params: perParams } };
-  if (energy) base["impact-flash"] = { on: true, params: { intensity: 0.6 } };
-  return { ...base, ...elementFlourish(element, hue) };
+  // Owner correction (V6.3): "ONLY relocate effects that were already character-centered."
+  // A synthesized fallback may describe weapon motion, but it may never manufacture a hit/cursor cue.
+  return base;
 }
 
 const FALLBACK_CACHE = new Map<string, WeaponVfxSuite>();
@@ -167,12 +144,13 @@ export function weaponVfxSuiteFor(
   let suite = FALLBACK_CACHE.get(key);
   if (!suite) {
     const built = buildWeaponFallbackSuite(element, style, WEAPONS[weaponId]?.tags);
+    const explicitImpact = explicitFallbackImpactSuite(weaponId);
     const deleted =
       weaponId === "x2-riftcaller-naginata"
         ? new Set<string>(RIFTCALLER_DELETED_AURA_LAYERS)
         : undefined;
     suite = Object.fromEntries(
-      Object.entries(built).filter(([layerId]) => !deleted?.has(layerId)),
+      Object.entries({ ...built, ...explicitImpact }).filter(([layerId]) => !deleted?.has(layerId)),
     ) as WeaponVfxSuite;
     FALLBACK_CACHE.set(key, suite);
   }

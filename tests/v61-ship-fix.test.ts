@@ -10,6 +10,7 @@ import {
 import { WEAPON_VFX } from "../packages/client/src/vfx/weapon-vfx.generated.js";
 import {
   GENERIC_IMPACT_RING_LAYER_IDS,
+  splitWeaponVfxSuite,
   weaponVfxSuiteFor,
 } from "../packages/client/src/vfx/weapon-vfx-suite.js";
 
@@ -52,26 +53,22 @@ describe("V6.1 Headsman ship decision", () => {
 });
 
 describe("V6.1 generic cursor-circle regression", () => {
-  it("emits no generic ring primitive from any resolved live weapon recipe", () => {
-    let paintedImpactRecipes = 0;
+  it("emits no generic ring primitive and does not require a replacement impact", () => {
     for (const definition of Object.values(WEAPONS)) {
       if (definition.archived) continue;
       const swing = swingDescriptorFor(definition, definition.cooldown);
       const suite = weaponVfxSuiteFor(definition.id, definition.tags.element, swing.style).suite;
       for (const layerId of GENERIC_IMPACT_RING_LAYER_IDS)
         expect(suite[layerId]?.on, `${definition.id}:${layerId}`).not.toBe(true);
-      if (suite["painted-impact"]?.on) {
-        paintedImpactRecipes += 1;
+      if (suite["painted-impact"]?.on)
         expect(suite["painted-impact"]?.params.paint, definition.id).toBeTypeOf("number");
-      }
     }
-    expect(paintedImpactRecipes).toBeGreaterThan(20);
 
     for (const [weaponId, recipe] of Object.entries(WEAPON_VFX))
       for (const layerId of GENERIC_IMPACT_RING_LAYER_IDS)
         expect(recipe.suite[layerId]?.on, `${weaponId}:${layerId}`).not.toBe(true);
 
-    for (const id of ["x2-revenant-knuckle", "x2-voltfang-tachi", "x2-sanctified-headsman"]) {
+    for (const id of ["x2-revenant-knuckle", "x2-mournveil-scythe", "drift-colossal-world-seam"]) {
       const definition = WEAPONS[id];
       if (!definition) throw new Error(`missing V6.1 fixture ${id}`);
       const swing = swingDescriptorFor(definition, definition.cooldown);
@@ -79,6 +76,14 @@ describe("V6.1 generic cursor-circle regression", () => {
         weaponVfxSuiteFor(id, definition.tags.element, swing.style).suite["painted-impact"],
         id,
       ).toMatchObject({ on: true });
+    }
+
+    for (const id of ["x2-voltfang-tachi", "x2-sanctified-headsman"]) {
+      const definition = WEAPONS[id];
+      if (!definition) throw new Error(`missing V6.3 targetless fixture ${id}`);
+      const swing = swingDescriptorFor(definition, definition.cooldown);
+      const suite = weaponVfxSuiteFor(id, definition.tags.element, swing.style).suite;
+      expect(Object.keys(splitWeaponVfxSuite(suite).target), id).toEqual([]);
     }
   });
 

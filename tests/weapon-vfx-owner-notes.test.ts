@@ -105,8 +105,9 @@ describe("owner-notes W-VFX weapon identities", () => {
     expect(WEAPON_EFFECT_RECIPES["whispervolume-page-scatter"].chain).toBe("scattered-pages");
   });
 
-  it("classifies every effect recipe and clamps all hit punctuation to weapon impact reach", () => {
-    const moved = [
+  it("clamps defined hit punctuation without requiring every weapon to define one", () => {
+    // Owner correction (V6.3): "no weapon is ever REQUIRED to have an impact effect."
+    const explicitImpacts = [
       "x2-hexbloom-rapier",
       "x2-sermon-bell",
       "x2-tombwarden-claymore",
@@ -122,7 +123,7 @@ describe("owner-notes W-VFX weapon identities", () => {
       if (recipe?.classification === "impact" && (recipe.impactPack || recipe.musicalNotes))
         expect(definition.effectTiming, definition.id).toBe("impact");
     }
-    for (const weaponId of moved) {
+    for (const weaponId of explicitImpacts) {
       const definition = weapon(weaponId);
       const recipe = resolveWeaponEffectRecipe(definition);
       if (!recipe) throw new Error(`Missing impact recipe for ${weaponId}`);

@@ -1,0 +1,34 @@
+{
+  "phase": "after",
+  "label": "gravechain",
+  "weaponId": "x2-gravechain-scythe",
+  "baseURL": "http://localhost:5180",
+  "moduleMode": "corrected live",
+  "capturedAt": "2026-07-22T01:52:25.005Z",
+  "sourceLayerIds": [
+    "blade-trail"
+  ],
+  "targetLayerIds": [],
+  "events": [
+    {
+      "kind": "weapon-vfx-suite",
+      "weaponId": "x2-gravechain-scythe",
+      "anchor": "source",
+      "x": 2400,
+      "y": 2420,
+      "targetX": 2601.97412433234,
+      "targetY": 2384.907933942494,
+      "layerIds": [
+        "blade-trail"
+      ]
+    }
+  ],
+  "assertions": {
+    "sourceCompositionRetained": true,
+    "targetComposition": true,
+    "browserClean": true
+  },
+  "browserErrors": [],
+  "unexpectedBrowserErrors": [],
+  "screenshot": "docs\\owner-notes-audit-v6-evidence\\v63\\after-gravechain.png"
+}

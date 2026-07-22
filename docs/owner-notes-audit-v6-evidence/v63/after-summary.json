@@ -1,0 +1,211 @@
+{
+  "phase": "after",
+  "baseURL": "http://localhost:5180",
+  "capturedAt": "2026-07-22T01:52:30.994Z",
+  "results": [
+    {
+      "phase": "after",
+      "label": "driftblade",
+      "weaponId": "driftblade",
+      "baseURL": "http://localhost:5180",
+      "moduleMode": "corrected live",
+      "capturedAt": "2026-07-22T01:52:00.990Z",
+      "sourceLayerIds": [
+        "blade-trail"
+      ],
+      "targetLayerIds": [],
+      "events": [
+        {
+          "kind": "weapon-vfx-suite",
+          "weaponId": "driftblade",
+          "anchor": "source",
+          "x": 2400,
+          "y": 2420,
+          "targetX": 2655.48486328125,
+          "targetY": 2379.806884765625,
+          "layerIds": [
+            "blade-trail"
+          ]
+        }
+      ],
+      "assertions": {
+        "sourceCompositionRetained": true,
+        "targetComposition": true,
+        "browserClean": true
+      },
+      "browserErrors": [],
+      "unexpectedBrowserErrors": [],
+      "screenshot": "docs\\owner-notes-audit-v6-evidence\\v63\\after-driftblade.png"
+    },
+    {
+      "phase": "after",
+      "label": "voltfang",
+      "weaponId": "x2-voltfang-tachi",
+      "baseURL": "http://localhost:5180",
+      "moduleMode": "corrected live",
+      "capturedAt": "2026-07-22T01:52:07.105Z",
+      "sourceLayerIds": [
+        "blade-trail"
+      ],
+      "targetLayerIds": [],
+      "events": [
+        {
+          "kind": "weapon-vfx-suite",
+          "weaponId": "x2-voltfang-tachi",
+          "anchor": "source",
+          "x": 2400,
+          "y": 2420,
+          "targetX": 2539.474154625058,
+          "targetY": 2393.336163223846,
+          "layerIds": [
+            "blade-trail"
+          ]
+        }
+      ],
+      "assertions": {
+        "sourceCompositionRetained": true,
+        "targetComposition": true,
+        "browserClean": true
+      },
+      "browserErrors": [],
+      "unexpectedBrowserErrors": [],
+      "screenshot": "docs\\owner-notes-audit-v6-evidence\\v63\\after-voltfang.png"
+    },
+    {
+      "phase": "after",
+      "label": "headsman",
+      "weaponId": "x2-sanctified-headsman",
+      "baseURL": "http://localhost:5180",
+      "moduleMode": "corrected live",
+      "capturedAt": "2026-07-22T01:52:13.151Z",
+      "sourceLayerIds": [
+        "blade-trail"
+      ],
+      "targetLayerIds": [],
+      "events": [
+        {
+          "kind": "weapon-vfx-suite",
+          "weaponId": "x2-sanctified-headsman",
+          "anchor": "source",
+          "x": 2400,
+          "y": 2420,
+          "targetX": 2587.328996385275,
+          "targetY": 2385.5519519669747,
+          "layerIds": [
+            "blade-trail"
+          ]
+        }
+      ],
+      "assertions": {
+        "sourceCompositionRetained": true,
+        "targetComposition": true,
+        "browserClean": true
+      },
+      "browserErrors": [],
+      "unexpectedBrowserErrors": [],
+      "screenshot": "docs\\owner-notes-audit-v6-evidence\\v63\\after-headsman.png"
+    },
+    {
+      "phase": "after",
+      "label": "drowned-anchor",
+      "weaponId": "x-sword-anchor",
+      "baseURL": "http://localhost:5180",
+      "moduleMode": "corrected live",
+      "capturedAt": "2026-07-22T01:52:19.100Z",
+      "sourceLayerIds": [
+        "blade-trail"
+      ],
+      "targetLayerIds": [],
+      "events": [
+        {
+          "kind": "weapon-vfx-suite",
+          "weaponId": "x-sword-anchor",
+          "anchor": "source",
+          "x": 2400,
+          "y": 2420,
+          "targetX": 2641.4642468528064,
+          "targetY": 2375.3926016023456,
+          "layerIds": [
+            "blade-trail"
+          ]
+        }
+      ],
+      "assertions": {
+        "sourceCompositionRetained": true,
+        "targetComposition": true,
+        "browserClean": true
+      },
+      "browserErrors": [],
+      "unexpectedBrowserErrors": [],
+      "screenshot": "docs\\owner-notes-audit-v6-evidence\\v63\\after-drowned-anchor.png"
+    },
+    {
+      "phase": "after",
+      "label": "gravechain",
+      "weaponId": "x2-gravechain-scythe",
+      "baseURL": "http://localhost:5180",
+      "moduleMode": "corrected live",
+      "capturedAt": "2026-07-22T01:52:25.005Z",
+      "sourceLayerIds": [
+        "blade-trail"
+      ],
+      "targetLayerIds": [],
+      "events": [
+        {
+          "kind": "weapon-vfx-suite",
+          "weaponId": "x2-gravechain-scythe",
+          "anchor": "source",
+          "x": 2400,
+          "y": 2420,
+          "targetX": 2601.97412433234,
+          "targetY": 2384.907933942494,
+          "layerIds": [
+            "blade-trail"
+          ]
+        }
+      ],
+      "assertions": {
+        "sourceCompositionRetained": true,
+        "targetComposition": true,
+        "browserClean": true
+      },
+      "browserErrors": [],
+      "unexpectedBrowserErrors": [],
+      "screenshot": "docs\\owner-notes-audit-v6-evidence\\v63\\after-gravechain.png"
+    },
+    {
+      "phase": "after",
+      "label": "cinderbrand-cleaver",
+      "weaponId": "x2-cinderbrand-cleaver",
+      "baseURL": "http://localhost:5180",
+      "moduleMode": "corrected live",
+      "capturedAt": "2026-07-22T01:52:30.837Z",
+      "sourceLayerIds": [
+        "blade-trail"
+      ],
+      "targetLayerIds": [],
+      "events": [
+        {
+          "kind": "weapon-vfx-suite",
+          "weaponId": "x2-cinderbrand-cleaver",
+          "anchor": "source",
+          "x": 2400,
+          "y": 2420,
+          "targetX": 2556.3833167041303,
+          "targetY": 2397.455416246563,
+          "layerIds": [
+            "blade-trail"
+          ]
+        }
+      ],
+      "assertions": {
+        "sourceCompositionRetained": true,
+        "targetComposition": true,
+        "browserClean": true
+      },
+      "browserErrors": [],
+      "unexpectedBrowserErrors": [],
+      "screenshot": "docs\\owner-notes-audit-v6-evidence\\v63\\after-cinderbrand-cleaver.png"
+    }
+  ]
+}

@@ -1,0 +1,34 @@
+{
+  "phase": "after",
+  "label": "cinderbrand-cleaver",
+  "weaponId": "x2-cinderbrand-cleaver",
+  "baseURL": "http://localhost:5180",
+  "moduleMode": "corrected live",
+  "capturedAt": "2026-07-22T01:52:30.837Z",
+  "sourceLayerIds": [
+    "blade-trail"
+  ],
+  "targetLayerIds": [],
+  "events": [
+    {
+      "kind": "weapon-vfx-suite",
+      "weaponId": "x2-cinderbrand-cleaver",
+      "anchor": "source",
+      "x": 2400,
+      "y": 2420,
+      "targetX": 2556.3833167041303,
+      "targetY": 2397.455416246563,
+      "layerIds": [
+        "blade-trail"
+      ]
+    }
+  ],
+  "assertions": {
+    "sourceCompositionRetained": true,
+    "targetComposition": true,
+    "browserClean": true
+  },
+  "browserErrors": [],
+  "unexpectedBrowserErrors": [],
+  "screenshot": "docs\\owner-notes-audit-v6-evidence\\v63\\after-cinderbrand-cleaver.png"
+}

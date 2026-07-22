@@ -1,0 +1,34 @@
+{
+  "phase": "after",
+  "label": "driftblade",
+  "weaponId": "driftblade",
+  "baseURL": "http://localhost:5180",
+  "moduleMode": "corrected live",
+  "capturedAt": "2026-07-22T01:52:00.990Z",
+  "sourceLayerIds": [
+    "blade-trail"
+  ],
+  "targetLayerIds": [],
+  "events": [
+    {
+      "kind": "weapon-vfx-suite",
+      "weaponId": "driftblade",
+      "anchor": "source",
+      "x": 2400,
+      "y": 2420,
+      "targetX": 2655.48486328125,
+      "targetY": 2379.806884765625,
+      "layerIds": [
+        "blade-trail"
+      ]
+    }
+  ],
+  "assertions": {
+    "sourceCompositionRetained": true,
+    "targetComposition": true,
+    "browserClean": true
+  },
+  "browserErrors": [],
+  "unexpectedBrowserErrors": [],
+  "screenshot": "docs\\owner-notes-audit-v6-evidence\\v63\\after-driftblade.png"
+}

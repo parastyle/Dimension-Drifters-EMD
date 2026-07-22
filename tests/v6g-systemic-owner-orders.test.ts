@@ -14,6 +14,7 @@ import {
 } from "../packages/client/src/vfx/weapon-effect-recipes.js";
 import {
   CIRCLE_IMPACT_LAYER_IDS,
+  EXPLICIT_FALLBACK_IMPACT_WEAPON_IDS,
   HIT_CLASS_TRIGGERS,
   RIFTCALLER_DELETED_AURA_LAYERS,
   splitWeaponVfxSuite,
@@ -32,7 +33,9 @@ function pngDimensions(path: string): { width: number; height: number } {
 }
 
 describe("V6G1 whole-catalog impact-anchor law", () => {
-  it("classifies every renderer layer and makes every hit-class layer target-anchored", () => {
+  it("conditionally target-anchors defined hit effects without requiring effect creation", () => {
+    // Owner correction (V6.3): "ONLY relocate effects that were already character-centered."
+    // A weapon with no hit/impact layer is valid; this gate must never manufacture visual composition.
     for (const [layerId, layer] of Object.entries(globalThis.VFXLAYERS.LAYERS)) {
       expect(layer.anchor, `${layerId}:anchor`).toBeTruthy();
       if ((HIT_CLASS_TRIGGERS as readonly string[]).includes(layer.trigger))
@@ -42,12 +45,14 @@ describe("V6G1 whole-catalog impact-anchor law", () => {
       if (recipe.classification === "impact") expect(recipe.impactAnchor, recipe.id).toBe("target");
       else expect(recipe.impactAnchor, recipe.id).not.toBe("target");
     }
-    let resolvedCatalogLayers = 0;
     const closeCombatFamilies = new Set<string>();
+    const targetlessWeapons = new Set<string>();
     for (const definition of Object.values(WEAPONS)) {
       if (definition.archived) continue;
       const swing = swingDescriptorFor(definition, definition.cooldown);
       const { suite } = weaponVfxSuiteFor(definition.id, definition.tags.element, swing.style);
+      const split = splitWeaponVfxSuite(suite);
+      if (Object.keys(split.target).length === 0) targetlessWeapons.add(definition.id);
       if (
         /fist|claw|gauntlet|knuckle|vambrace/i.test(
           `${definition.id} ${definition.name} ${definition.tags.family}`,
@@ -56,20 +61,27 @@ describe("V6G1 whole-catalog impact-anchor law", () => {
         closeCombatFamilies.add(definition.id);
       for (const [layerId, enabled] of Object.entries(suite)) {
         if (!enabled.on) continue;
-        resolvedCatalogLayers += 1;
         const layer = globalThis.VFXLAYERS.LAYERS[layerId];
         expect(layer, `${definition.id}:${layerId}`).toBeDefined();
         if (layer && (HIT_CLASS_TRIGGERS as readonly string[]).includes(layer.trigger))
           expect(layer.anchor, `${definition.id}:${layerId}`).toBe("target");
       }
     }
-    expect(resolvedCatalogLayers).toBeGreaterThan(300);
+    for (const id of [
+      "driftblade",
+      "x2-voltfang-tachi",
+      "x2-sanctified-headsman",
+      "x2-gravechain-scythe",
+    ])
+      expect(targetlessWeapons, id).toContain(id);
+    for (const id of ["x-sword-buzzsaw", "x2-mournveil-scythe", "drift-colossal-world-seam"])
+      expect(targetlessWeapons, id).not.toContain(id);
     expect(closeCombatFamilies).toContain("x2-wendigo-claws");
     expect(closeCombatFamilies).toContain("x2-revenant-knuckle");
   });
 
   it("routes named impacts to the target without emitting either generic cursor ring", () => {
-    for (const id of ["x2-wendigo-claws", "x2-revenant-knuckle"]) {
+    for (const id of EXPLICIT_FALLBACK_IMPACT_WEAPON_IDS) {
       const definition = weapon(id);
       const swing = swingDescriptorFor(definition, definition.cooldown);
       const { suite } = weaponVfxSuiteFor(id, definition.tags.element, swing.style);
@@ -78,6 +90,25 @@ describe("V6G1 whole-catalog impact-anchor law", () => {
       if (id === "x2-revenant-knuckle") expect(split.target["painted-impact"], id).toBeDefined();
       for (const layerId of Object.keys(split.target))
         expect(globalThis.VFXLAYERS.LAYERS[layerId]?.anchor, `${id}:${layerId}`).toBe("target");
+    }
+
+    for (const id of [
+      "x2-hexbloom-rapier",
+      "x2-sermon-bell",
+      "x2-tombwarden-claymore",
+      "x2-hangman-s-greatcleaver",
+      "x2-cinderbrand-pike",
+      "x2-dustreaper-zweihander",
+      "x2-nullspike-pike",
+    ]) {
+      const definition = weapon(id);
+      const swing = swingDescriptorFor(definition, definition.cooldown);
+      const suite = weaponVfxSuiteFor(id, definition.tags.element, swing.style).suite;
+      expect(Object.keys(splitWeaponVfxSuite(suite).target), `${id}:dedupe`).toEqual([]);
+      expect(resolveWeaponEffectRecipe(definition), `${id}:explicit recipe`).toMatchObject({
+        classification: "impact",
+        impactAnchor: "target",
+      });
     }
 
     const circleSharers = Object.values(WEAPONS)
@@ -96,6 +127,7 @@ describe("V6G1 whole-catalog impact-anchor law", () => {
     const riftSuite = weaponVfxSuiteFor(rift.id, rift.tags.element, riftSwing.style).suite;
     for (const layerId of RIFTCALLER_DELETED_AURA_LAYERS)
       expect(riftSuite[layerId], layerId).toBeUndefined();
+    expect(Object.keys(splitWeaponVfxSuite(riftSuite).target)).toEqual([]);
 
     const dustreaper = weapon("x2-dustreaper-zweihander");
     const recipe = resolveWeaponEffectRecipe(dustreaper);

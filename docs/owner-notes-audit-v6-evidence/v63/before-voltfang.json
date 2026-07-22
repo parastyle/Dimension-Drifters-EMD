@@ -1,0 +1,50 @@
+{
+  "phase": "before",
+  "label": "voltfang",
+  "weaponId": "x2-voltfang-tachi",
+  "baseURL": "http://localhost:5180",
+  "moduleMode": "probe-only legacy fallback partition",
+  "capturedAt": "2026-07-22T01:51:32.986Z",
+  "sourceLayerIds": [
+    "blade-trail"
+  ],
+  "targetLayerIds": [
+    "arc-bolt",
+    "painted-impact"
+  ],
+  "events": [
+    {
+      "kind": "weapon-vfx-suite",
+      "weaponId": "x2-voltfang-tachi",
+      "anchor": "source",
+      "x": 2400,
+      "y": 2420,
+      "targetX": 2539.7711281726447,
+      "targetY": 2394.939438766338,
+      "layerIds": [
+        "blade-trail"
+      ]
+    },
+    {
+      "kind": "weapon-vfx-suite",
+      "weaponId": "x2-voltfang-tachi",
+      "anchor": "target",
+      "x": 2539.7711281726447,
+      "y": 2394.939438766338,
+      "targetX": 2539.7711281726447,
+      "targetY": 2394.939438766338,
+      "layerIds": [
+        "arc-bolt",
+        "painted-impact"
+      ]
+    }
+  ],
+  "assertions": {
+    "sourceCompositionRetained": true,
+    "targetComposition": true,
+    "browserClean": true
+  },
+  "browserErrors": [],
+  "unexpectedBrowserErrors": [],
+  "screenshot": "docs\\owner-notes-audit-v6-evidence\\v63\\before-voltfang.png"
+}

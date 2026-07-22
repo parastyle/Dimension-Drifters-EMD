@@ -42,6 +42,7 @@ function unexpectedErrors(messages) {
 }
 
 for (const [label, weaponId, element] of scope === "headsman" ? [] : circleCases) {
+  const explicitPaintedImpact = weaponId === "x2-revenant-knuckle";
   const page = await context.newPage();
   const browserErrors = [];
   page.on("console", (message) => {
@@ -53,7 +54,7 @@ for (const [label, weaponId, element] of scope === "headsman" ? [] : circleCases
   try {
     await waitForWeapon(page, weaponId);
     const setup = await page.evaluate(
-      ({ probePhase, ringLayers, expectedElement }) => {
+      ({ probePhase, ringLayers, expectedElement, expectsPaintedImpact, wanted }) => {
         window.focus();
         window.dispatchEvent(new Event("focus"));
         const arena = globalThis.ddGame.scene.getScene("arena");
@@ -67,6 +68,9 @@ for (const [label, weaponId, element] of scope === "headsman" ? [] : circleCases
           frozen: false,
           ringVisible: false,
           paintedVisible: false,
+          sourceEventSeen: false,
+          targetEventSeen: false,
+          sourceFrames: 0,
           textureKeys: [],
         };
 
@@ -90,7 +94,22 @@ for (const [label, weaponId, element] of scope === "headsman" ? [] : circleCases
           state.ringVisible ||= !!ringSurface;
           state.paintedVisible ||= painted.length > 0;
           state.textureKeys = painted.map((child) => child.texture.key);
-          const found = probePhase === "before" ? state.ringVisible : state.paintedVisible;
+          const events = (globalThis.__ddV6GAnchorEvents ?? []).filter(
+            (event) => event.weaponId === wanted,
+          );
+          state.sourceEventSeen ||= events.some(
+            (event) => event.kind === "weapon-vfx-suite" && event.anchor === "source",
+          );
+          state.targetEventSeen ||= events.some(
+            (event) => event.kind === "weapon-vfx-suite" && event.anchor === "target",
+          );
+          if (state.sourceEventSeen) state.sourceFrames += 1;
+          const found =
+            probePhase === "before"
+              ? state.ringVisible
+              : expectsPaintedImpact
+                ? state.paintedVisible
+                : state.sourceFrames >= 6;
           if (found) {
             state.frozen = true;
             arena.scene.pause();
@@ -119,6 +138,8 @@ for (const [label, weaponId, element] of scope === "headsman" ? [] : circleCases
         probePhase: phase,
         ringLayers: genericRingLayers,
         expectedElement: element,
+        expectsPaintedImpact: explicitPaintedImpact,
+        wanted: weaponId,
       },
     );
 
@@ -151,7 +172,12 @@ for (const [label, weaponId, element] of scope === "headsman" ? [] : circleCases
         : {
             genericRingRecipeRemoved: captured.genericLayers.length === 0,
             genericRingInvisible: captured.visual?.ringVisible === false,
-            paintedElementImpactVisible: captured.visual?.paintedVisible === true,
+            sourceCompositionRetained: captured.visual?.sourceEventSeen === true,
+            targetCompositionCorrect: explicitPaintedImpact
+              ? captured.visual?.targetEventSeen === true &&
+                captured.visual?.paintedVisible === true
+              : captured.visual?.targetEventSeen === false &&
+                captured.visual?.paintedVisible === false,
           };
     const result = {
       phase,

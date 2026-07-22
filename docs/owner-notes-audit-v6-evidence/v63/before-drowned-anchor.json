@@ -1,0 +1,50 @@
+{
+  "phase": "before",
+  "label": "drowned-anchor",
+  "weaponId": "x-sword-anchor",
+  "baseURL": "http://localhost:5180",
+  "moduleMode": "probe-only legacy fallback partition",
+  "capturedAt": "2026-07-22T01:51:45.049Z",
+  "sourceLayerIds": [
+    "blade-trail"
+  ],
+  "targetLayerIds": [
+    "cleave-flash",
+    "painted-impact"
+  ],
+  "events": [
+    {
+      "kind": "weapon-vfx-suite",
+      "weaponId": "x-sword-anchor",
+      "anchor": "source",
+      "x": 2400,
+      "y": 2420,
+      "targetX": 2642.6709124445556,
+      "targetY": 2382.508257531467,
+      "layerIds": [
+        "blade-trail"
+      ]
+    },
+    {
+      "kind": "weapon-vfx-suite",
+      "weaponId": "x-sword-anchor",
+      "anchor": "target",
+      "x": 2642.6709124445556,
+      "y": 2382.508257531467,
+      "targetX": 2642.6709124445556,
+      "targetY": 2382.508257531467,
+      "layerIds": [
+        "cleave-flash",
+        "painted-impact"
+      ]
+    }
+  ],
+  "assertions": {
+    "sourceCompositionRetained": true,
+    "targetComposition": true,
+    "browserClean": true
+  },
+  "browserErrors": [],
+  "unexpectedBrowserErrors": [],
+  "screenshot": "docs\\owner-notes-audit-v6-evidence\\v63\\before-drowned-anchor.png"
+}

@@ -1,0 +1,50 @@
+{
+  "phase": "before",
+  "label": "gravechain",
+  "weaponId": "x2-gravechain-scythe",
+  "baseURL": "http://localhost:5180",
+  "moduleMode": "probe-only legacy fallback partition",
+  "capturedAt": "2026-07-22T01:51:51.075Z",
+  "sourceLayerIds": [
+    "blade-trail"
+  ],
+  "targetLayerIds": [
+    "cleave-flash",
+    "painted-impact"
+  ],
+  "events": [
+    {
+      "kind": "weapon-vfx-suite",
+      "weaponId": "x2-gravechain-scythe",
+      "anchor": "source",
+      "x": 2400,
+      "y": 2420,
+      "targetX": 2602.681471168602,
+      "targetY": 2389.2555493636455,
+      "layerIds": [
+        "blade-trail"
+      ]
+    },
+    {
+      "kind": "weapon-vfx-suite",
+      "weaponId": "x2-gravechain-scythe",
+      "anchor": "target",
+      "x": 2602.681471168602,
+      "y": 2389.2555493636455,
+      "targetX": 2602.681471168602,
+      "targetY": 2389.2555493636455,
+      "layerIds": [
+        "cleave-flash",
+        "painted-impact"
+      ]
+    }
+  ],
+  "assertions": {
+    "sourceCompositionRetained": true,
+    "targetComposition": true,
+    "browserClean": true
+  },
+  "browserErrors": [],
+  "unexpectedBrowserErrors": [],
+  "screenshot": "docs\\owner-notes-audit-v6-evidence\\v63\\before-gravechain.png"
+}

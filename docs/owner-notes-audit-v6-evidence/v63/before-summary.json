@@ -1,0 +1,313 @@
+{
+  "phase": "before",
+  "baseURL": "http://localhost:5180",
+  "capturedAt": "2026-07-22T01:51:57.359Z",
+  "results": [
+    {
+      "phase": "before",
+      "label": "driftblade",
+      "weaponId": "driftblade",
+      "baseURL": "http://localhost:5180",
+      "moduleMode": "probe-only legacy fallback partition",
+      "capturedAt": "2026-07-22T01:51:27.056Z",
+      "sourceLayerIds": [
+        "blade-trail"
+      ],
+      "targetLayerIds": [
+        "cleave-flash",
+        "painted-impact"
+      ],
+      "events": [
+        {
+          "kind": "weapon-vfx-suite",
+          "weaponId": "driftblade",
+          "anchor": "source",
+          "x": 2400,
+          "y": 2420,
+          "targetX": 2660.4315185546875,
+          "targetY": 2360.9150390625,
+          "layerIds": [
+            "blade-trail"
+          ]
+        },
+        {
+          "kind": "weapon-vfx-suite",
+          "weaponId": "driftblade",
+          "anchor": "target",
+          "x": 2660.4315185546875,
+          "y": 2360.9150390625,
+          "targetX": 2660.4315185546875,
+          "targetY": 2360.9150390625,
+          "layerIds": [
+            "cleave-flash",
+            "painted-impact"
+          ]
+        }
+      ],
+      "assertions": {
+        "sourceCompositionRetained": true,
+        "targetComposition": true,
+        "browserClean": true
+      },
+      "browserErrors": [],
+      "unexpectedBrowserErrors": [],
+      "screenshot": "docs\\owner-notes-audit-v6-evidence\\v63\\before-driftblade.png"
+    },
+    {
+      "phase": "before",
+      "label": "voltfang",
+      "weaponId": "x2-voltfang-tachi",
+      "baseURL": "http://localhost:5180",
+      "moduleMode": "probe-only legacy fallback partition",
+      "capturedAt": "2026-07-22T01:51:32.986Z",
+      "sourceLayerIds": [
+        "blade-trail"
+      ],
+      "targetLayerIds": [
+        "arc-bolt",
+        "painted-impact"
+      ],
+      "events": [
+        {
+          "kind": "weapon-vfx-suite",
+          "weaponId": "x2-voltfang-tachi",
+          "anchor": "source",
+          "x": 2400,
+          "y": 2420,
+          "targetX": 2539.7711281726447,
+          "targetY": 2394.939438766338,
+          "layerIds": [
+            "blade-trail"
+          ]
+        },
+        {
+          "kind": "weapon-vfx-suite",
+          "weaponId": "x2-voltfang-tachi",
+          "anchor": "target",
+          "x": 2539.7711281726447,
+          "y": 2394.939438766338,
+          "targetX": 2539.7711281726447,
+          "targetY": 2394.939438766338,
+          "layerIds": [
+            "arc-bolt",
+            "painted-impact"
+          ]
+        }
+      ],
+      "assertions": {
+        "sourceCompositionRetained": true,
+        "targetComposition": true,
+        "browserClean": true
+      },
+      "browserErrors": [],
+      "unexpectedBrowserErrors": [],
+      "screenshot": "docs\\owner-notes-audit-v6-evidence\\v63\\before-voltfang.png"
+    },
+    {
+      "phase": "before",
+      "label": "headsman",
+      "weaponId": "x2-sanctified-headsman",
+      "baseURL": "http://localhost:5180",
+      "moduleMode": "probe-only legacy fallback partition",
+      "capturedAt": "2026-07-22T01:51:39.061Z",
+      "sourceLayerIds": [
+        "blade-trail"
+      ],
+      "targetLayerIds": [
+        "cleave-flash",
+        "painted-impact",
+        "impact-flash"
+      ],
+      "events": [
+        {
+          "kind": "weapon-vfx-suite",
+          "weaponId": "x2-sanctified-headsman",
+          "anchor": "source",
+          "x": 2400,
+          "y": 2420,
+          "targetX": 2588.081134869066,
+          "targetY": 2389.9282922605944,
+          "layerIds": [
+            "blade-trail"
+          ]
+        },
+        {
+          "kind": "weapon-vfx-suite",
+          "weaponId": "x2-sanctified-headsman",
+          "anchor": "target",
+          "x": 2588.081134869066,
+          "y": 2389.9282922605944,
+          "targetX": 2588.081134869066,
+          "targetY": 2389.9282922605944,
+          "layerIds": [
+            "cleave-flash",
+            "painted-impact",
+            "impact-flash"
+          ]
+        }
+      ],
+      "assertions": {
+        "sourceCompositionRetained": true,
+        "targetComposition": true,
+        "browserClean": true
+      },
+      "browserErrors": [],
+      "unexpectedBrowserErrors": [],
+      "screenshot": "docs\\owner-notes-audit-v6-evidence\\v63\\before-headsman.png"
+    },
+    {
+      "phase": "before",
+      "label": "drowned-anchor",
+      "weaponId": "x-sword-anchor",
+      "baseURL": "http://localhost:5180",
+      "moduleMode": "probe-only legacy fallback partition",
+      "capturedAt": "2026-07-22T01:51:45.049Z",
+      "sourceLayerIds": [
+        "blade-trail"
+      ],
+      "targetLayerIds": [
+        "cleave-flash",
+        "painted-impact"
+      ],
+      "events": [
+        {
+          "kind": "weapon-vfx-suite",
+          "weaponId": "x-sword-anchor",
+          "anchor": "source",
+          "x": 2400,
+          "y": 2420,
+          "targetX": 2642.6709124445556,
+          "targetY": 2382.508257531467,
+          "layerIds": [
+            "blade-trail"
+          ]
+        },
+        {
+          "kind": "weapon-vfx-suite",
+          "weaponId": "x-sword-anchor",
+          "anchor": "target",
+          "x": 2642.6709124445556,
+          "y": 2382.508257531467,
+          "targetX": 2642.6709124445556,
+          "targetY": 2382.508257531467,
+          "layerIds": [
+            "cleave-flash",
+            "painted-impact"
+          ]
+        }
+      ],
+      "assertions": {
+        "sourceCompositionRetained": true,
+        "targetComposition": true,
+        "browserClean": true
+      },
+      "browserErrors": [],
+      "unexpectedBrowserErrors": [],
+      "screenshot": "docs\\owner-notes-audit-v6-evidence\\v63\\before-drowned-anchor.png"
+    },
+    {
+      "phase": "before",
+      "label": "gravechain",
+      "weaponId": "x2-gravechain-scythe",
+      "baseURL": "http://localhost:5180",
+      "moduleMode": "probe-only legacy fallback partition",
+      "capturedAt": "2026-07-22T01:51:51.075Z",
+      "sourceLayerIds": [
+        "blade-trail"
+      ],
+      "targetLayerIds": [
+        "cleave-flash",
+        "painted-impact"
+      ],
+      "events": [
+        {
+          "kind": "weapon-vfx-suite",
+          "weaponId": "x2-gravechain-scythe",
+          "anchor": "source",
+          "x": 2400,
+          "y": 2420,
+          "targetX": 2602.681471168602,
+          "targetY": 2389.2555493636455,
+          "layerIds": [
+            "blade-trail"
+          ]
+        },
+        {
+          "kind": "weapon-vfx-suite",
+          "weaponId": "x2-gravechain-scythe",
+          "anchor": "target",
+          "x": 2602.681471168602,
+          "y": 2389.2555493636455,
+          "targetX": 2602.681471168602,
+          "targetY": 2389.2555493636455,
+          "layerIds": [
+            "cleave-flash",
+            "painted-impact"
+          ]
+        }
+      ],
+      "assertions": {
+        "sourceCompositionRetained": true,
+        "targetComposition": true,
+        "browserClean": true
+      },
+      "browserErrors": [],
+      "unexpectedBrowserErrors": [],
+      "screenshot": "docs\\owner-notes-audit-v6-evidence\\v63\\before-gravechain.png"
+    },
+    {
+      "phase": "before",
+      "label": "cinderbrand-cleaver",
+      "weaponId": "x2-cinderbrand-cleaver",
+      "baseURL": "http://localhost:5180",
+      "moduleMode": "probe-only legacy fallback partition",
+      "capturedAt": "2026-07-22T01:51:57.204Z",
+      "sourceLayerIds": [
+        "blade-trail"
+      ],
+      "targetLayerIds": [
+        "cleave-flash",
+        "painted-impact",
+        "ember-rain",
+        "impact-flash"
+      ],
+      "events": [
+        {
+          "kind": "weapon-vfx-suite",
+          "weaponId": "x2-cinderbrand-cleaver",
+          "anchor": "source",
+          "x": 2400,
+          "y": 2420,
+          "targetX": 2555.6003375786163,
+          "targetY": 2392.5676296062375,
+          "layerIds": [
+            "blade-trail"
+          ]
+        },
+        {
+          "kind": "weapon-vfx-suite",
+          "weaponId": "x2-cinderbrand-cleaver",
+          "anchor": "target",
+          "x": 2555.6003375786163,
+          "y": 2392.5676296062375,
+          "targetX": 2555.6003375786163,
+          "targetY": 2392.5676296062375,
+          "layerIds": [
+            "cleave-flash",
+            "painted-impact",
+            "ember-rain",
+            "impact-flash"
+          ]
+        }
+      ],
+      "assertions": {
+        "sourceCompositionRetained": true,
+        "targetComposition": true,
+        "browserClean": true
+      },
+      "browserErrors": [],
+      "unexpectedBrowserErrors": [],
+      "screenshot": "docs\\owner-notes-audit-v6-evidence\\v63\\before-cinderbrand-cleaver.png"
+    }
+  ]
+}
