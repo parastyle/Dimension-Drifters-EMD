@@ -114,7 +114,13 @@ export const WEAPON_VFX: Record<string, WeaponVfx> = {
       }
     },
     "rot": 0,
-    "vfxRadius": 104
+    "vfxRadius": 104,
+    "scatter": {
+      "url": "vfx/x-sword-bone-scatter.png",
+      "frameWidth": 249,
+      "frameHeight": 249,
+      "count": 8
+    }
   },
   "x-sword-railspike": {
     "suite": {},

@@ -1,0 +1,30 @@
+{
+  "capturedAt": "2026-07-22T21:00:07.760Z",
+  "attackSeq": 1,
+  "projectileIds": [
+    "p0",
+    "p1",
+    "p2",
+    "p3",
+    "p4",
+    "p5"
+  ],
+  "kinds": [
+    "magma",
+    "magma",
+    "magma",
+    "magma",
+    "magma",
+    "magma"
+  ],
+  "paintedIds": [
+    "p0",
+    "p1",
+    "p2",
+    "p3",
+    "p4",
+    "p5"
+  ],
+  "textureLoaded": true,
+  "textureFrameTotal": 9
+}

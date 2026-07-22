@@ -1,0 +1,414 @@
+{
+  "summary": {
+    "schemaVersion": 1,
+    "capturedAt": "2026-07-22T20:56:15.575Z",
+    "durationSeconds": 7.072,
+    "baseURL": "http://127.0.0.1:51699",
+    "selection": "explicit",
+    "catalogCount": 138,
+    "selectedCount": 1,
+    "tolerancePx": 3,
+    "samplePolicy": {
+      "always": [
+        "base roster",
+        "one per gun/beam family",
+        "all multi-barrel",
+        "all burst",
+        "all dual",
+        "owner-reported muzzle regressions"
+      ],
+      "rotation": "stable id hash, one of 24 UTC-daily buckets",
+      "fullFlag": "--full or DD_FULL_MUZZLE_SWEEP=1"
+    },
+    "passedWeapons": 1,
+    "failedWeapons": 0,
+    "maxDeltaPx": 0,
+    "maxPresentationDeltaPx": 0,
+    "maxInitialAuthorityDeltaPx": 0.00012932308955722943,
+    "unexpectedBrowserErrors": [],
+    "excludedNonMuzzleRows": [
+      {
+        "weaponId": "x2-spore-spitter-blunderbuss",
+        "reason": "runtime channel ground-zone dispatch supersedes the legacy gun block; no muzzle spawn exists"
+      }
+    ]
+  },
+  "weapons": [
+    {
+      "weaponId": "x2-buzzard-s-burnout",
+      "name": "Buzzard's Burnout",
+      "deliveryKind": "gun",
+      "family": "machine-pistol",
+      "spriteId": "x2-buzzard-s-burnout",
+      "partFile": "part-1.png",
+      "displayLength": 80,
+      "expansion": true,
+      "dual": false,
+      "muzzleCount": 1,
+      "burstCount": 1,
+      "sampleReasons": [
+        "explicit"
+      ],
+      "attempts": 1,
+      "artPoint": {
+        "x": 255,
+        "y": 48.2,
+        "normalizedX": 0.99609375,
+        "normalizedY": 0.2536842105263158,
+        "width": 256,
+        "height": 190,
+        "part": 0
+      },
+      "artParts": [
+        {
+          "part": 0,
+          "partFile": "part-1.png",
+          "width": 256,
+          "height": 190,
+          "points": [
+            {
+              "x": 255,
+              "y": 48.2,
+              "normalizedX": 0.99609375,
+              "normalizedY": 0.2536842105263158,
+              "derived": {
+                "x": 255,
+                "y": 48.2
+              }
+            }
+          ]
+        }
+      ],
+      "cases": [
+        {
+          "mode": "stationary",
+          "acceptedSeq": 1,
+          "startTick": 43,
+          "startPlayer": {
+            "x": 2400,
+            "y": 2420
+          },
+          "finalPlayer": {
+            "x": 2391.369140625,
+            "y": 2420.001220703125
+          },
+          "motionDistancePx": 0,
+          "shots": [
+            {
+              "kind": "projectile",
+              "shotIndex": 0,
+              "bornTick": 49,
+              "observedTick": 49,
+              "player": {
+                "x": 2400,
+                "y": 2420,
+                "aimDir": -0.0003486270143184811
+              },
+              "motionDistancePx": 0,
+              "lanes": [
+                {
+                  "x": 2492.954479980469,
+                  "y": 2398.88779296875,
+                  "bornTick": 49,
+                  "projectileId": "p0",
+                  "visibleSpawnOrigin": {
+                    "x": 2489.414549407049,
+                    "y": 2398.8923550135682,
+                    "screen": {
+                      "x": 409.859966286896,
+                      "y": 158.92184044923215
+                    }
+                  },
+                  "spriteMuzzleAtSpawn": {
+                    "x": 2489.414549407049,
+                    "y": 2398.8923550135682,
+                    "screen": {
+                      "x": 409.859966286896,
+                      "y": 158.92184044923215
+                    }
+                  },
+                  "screen": {
+                    "x": 413.39989686031595,
+                    "y": 158.917278404414
+                  },
+                  "paintedMuzzle": {
+                    "barrelIndex": 0,
+                    "part": 0,
+                    "x": 2492.954396604502,
+                    "y": 2398.887891826778,
+                    "directArtCenter": {
+                      "x": 2492.954396604502,
+                      "y": 2398.887891826778
+                    },
+                    "rigRoot": {
+                      "x": 2400,
+                      "y": 2420
+                    },
+                    "rigRootMatrix": {
+                      "a": 1,
+                      "b": 0,
+                      "c": 0,
+                      "d": 1,
+                      "tx": 2400,
+                      "ty": 2420
+                    },
+                    "weaponLocal": {
+                      "x": 24.47199943653687,
+                      "y": -6.463232469637332,
+                      "rotation": -0.0003486270171286776,
+                      "scaleX": 0.3125,
+                      "scaleY": 0.3125,
+                      "originX": 0.14,
+                      "originY": 0.5,
+                      "width": 256,
+                      "height": 190,
+                      "textureKey": "x2-buzzard-s-burnout:part-1",
+                      "frameName": "__BASE"
+                    },
+                    "screen": {
+                      "x": 413.00863018010796,
+                      "y": 158.92617711175944
+                    },
+                    "artPoint": {
+                      "x": 255,
+                      "y": 48.2,
+                      "normalizedX": 0.99609375,
+                      "normalizedY": 0.2536842105263158,
+                      "width": 256,
+                      "height": 190,
+                      "part": 0
+                    }
+                  },
+                  "authorityDeltaPx": 0.00012932308955722943,
+                  "presentationDeltaPx": 0,
+                  "deltaPx": 0
+                }
+              ],
+              "paintedMuzzles": [
+                {
+                  "barrelIndex": 0,
+                  "part": 0,
+                  "x": 2492.954396604502,
+                  "y": 2398.887891826778,
+                  "directArtCenter": {
+                    "x": 2492.954396604502,
+                    "y": 2398.887891826778
+                  },
+                  "rigRoot": {
+                    "x": 2400,
+                    "y": 2420
+                  },
+                  "rigRootMatrix": {
+                    "a": 1,
+                    "b": 0,
+                    "c": 0,
+                    "d": 1,
+                    "tx": 2400,
+                    "ty": 2420
+                  },
+                  "weaponLocal": {
+                    "x": 24.47199943653687,
+                    "y": -6.463232469637332,
+                    "rotation": -0.0003486270171286776,
+                    "scaleX": 0.3125,
+                    "scaleY": 0.3125,
+                    "originX": 0.14,
+                    "originY": 0.5,
+                    "width": 256,
+                    "height": 190,
+                    "textureKey": "x2-buzzard-s-burnout:part-1",
+                    "frameName": "__BASE"
+                  },
+                  "screen": {
+                    "x": 413.00863018010796,
+                    "y": 158.92617711175944
+                  },
+                  "artPoint": {
+                    "x": 255,
+                    "y": 48.2,
+                    "normalizedX": 0.99609375,
+                    "normalizedY": 0.2536842105263158,
+                    "width": 256,
+                    "height": 190,
+                    "part": 0
+                  }
+                }
+              ],
+              "predictedAtMs": 4456.699999999255
+            }
+          ],
+          "maxDeltaPx": 0,
+          "maxAuthorityDeltaPx": 0.00012932308955722943,
+          "passed": true,
+          "screenshot": "docs/owner-notes-audit-v8-evidence/a3-buzzards-burnout/after/captures/x2-buzzard-s-burnout--stationary.jpg"
+        },
+        {
+          "mode": "strafing",
+          "acceptedSeq": 2,
+          "startTick": 76,
+          "startPlayer": {
+            "x": 2400,
+            "y": 2420
+          },
+          "finalPlayer": {
+            "x": 2392.4029375013324,
+            "y": 2176.071674041855
+          },
+          "motionDistancePx": 67.5,
+          "shots": [
+            {
+              "kind": "projectile",
+              "shotIndex": 0,
+              "bornTick": 85,
+              "observedTick": 85,
+              "player": {
+                "x": 2400,
+                "y": 2352.5,
+                "aimDir": 0.30069699883461
+              },
+              "motionDistancePx": 67.5,
+              "lanes": [
+                {
+                  "x": 2490.5856597900392,
+                  "y": 2370.069747881834,
+                  "bornTick": 85,
+                  "projectileId": "p1",
+                  "visibleSpawnOrigin": {
+                    "x": 2488.243958117863,
+                    "y": 2359.248963150307,
+                    "screen": {
+                      "x": 409.60575640031857,
+                      "y": 147.67667365941043
+                    }
+                  },
+                  "spriteMuzzleAtSpawn": {
+                    "x": 2488.243958117863,
+                    "y": 2359.248963150307,
+                    "screen": {
+                      "x": 409.60575640031857,
+                      "y": 147.67667365941043
+                    }
+                  },
+                  "screen": {
+                    "x": 411.947458072495,
+                    "y": 158.49745839093703
+                  },
+                  "paintedMuzzle": {
+                    "barrelIndex": 0,
+                    "part": 0,
+                    "x": 2490.963911463118,
+                    "y": 2371.0911560827194,
+                    "directArtCenter": {
+                      "x": 2490.963911463118,
+                      "y": 2371.0911560827194
+                    },
+                    "rigRoot": {
+                      "x": 2400,
+                      "y": 2354.742045356236
+                    },
+                    "rigRootMatrix": {
+                      "a": 1,
+                      "b": 0,
+                      "c": 0,
+                      "d": 1,
+                      "tx": 2400,
+                      "ty": 2354.741943359375
+                    },
+                    "weaponLocal": {
+                      "x": 23.43133943383475,
+                      "y": -2.1920924184095796,
+                      "rotation": 0.4783338234745038,
+                      "scaleX": 0.3125,
+                      "scaleY": 0.3125,
+                      "originX": 0.14,
+                      "originY": 0.5,
+                      "width": 256,
+                      "height": 190,
+                      "textureKey": "x2-buzzard-s-burnout:part-1",
+                      "frameName": "__BASE"
+                    },
+                    "screen": {
+                      "x": 412.4750686667253,
+                      "y": 140.09818991962948
+                    },
+                    "artPoint": {
+                      "x": 255,
+                      "y": 48.2,
+                      "normalizedX": 0.99609375,
+                      "normalizedY": 0.2536842105263158,
+                      "width": 256,
+                      "height": 190,
+                      "part": 0
+                    }
+                  },
+                  "authorityDeltaPx": 1.0891965116650877,
+                  "presentationDeltaPx": 0,
+                  "deltaPx": 0
+                }
+              ],
+              "paintedMuzzles": [
+                {
+                  "barrelIndex": 0,
+                  "part": 0,
+                  "x": 2490.963911463118,
+                  "y": 2371.0911560827194,
+                  "directArtCenter": {
+                    "x": 2490.963911463118,
+                    "y": 2371.0911560827194
+                  },
+                  "rigRoot": {
+                    "x": 2400,
+                    "y": 2354.742045356236
+                  },
+                  "rigRootMatrix": {
+                    "a": 1,
+                    "b": 0,
+                    "c": 0,
+                    "d": 1,
+                    "tx": 2400,
+                    "ty": 2354.741943359375
+                  },
+                  "weaponLocal": {
+                    "x": 23.43133943383475,
+                    "y": -2.1920924184095796,
+                    "rotation": 0.4783338234745038,
+                    "scaleX": 0.3125,
+                    "scaleY": 0.3125,
+                    "originX": 0.14,
+                    "originY": 0.5,
+                    "width": 256,
+                    "height": 190,
+                    "textureKey": "x2-buzzard-s-burnout:part-1",
+                    "frameName": "__BASE"
+                  },
+                  "screen": {
+                    "x": 412.4750686667253,
+                    "y": 140.09818991962948
+                  },
+                  "artPoint": {
+                    "x": 255,
+                    "y": 48.2,
+                    "normalizedX": 0.99609375,
+                    "normalizedY": 0.2536842105263158,
+                    "width": 256,
+                    "height": 190,
+                    "part": 0
+                  }
+                }
+              ],
+              "predictedAtMs": 6224.599999997765
+            }
+          ],
+          "maxDeltaPx": 0,
+          "maxAuthorityDeltaPx": 1.0891965116650877,
+          "passed": true,
+          "screenshot": "docs/owner-notes-audit-v8-evidence/a3-buzzards-burnout/after/captures/x2-buzzard-s-burnout--strafing.jpg"
+        }
+      ],
+      "maxDeltaPx": 0,
+      "maxAuthorityDeltaPx": 1.0891965116650877,
+      "initialAuthorityDeltaPx": 0.00012932308955722943,
+      "passed": true
+    }
+  ]
+}

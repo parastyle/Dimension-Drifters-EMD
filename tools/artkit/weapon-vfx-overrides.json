@@ -1,6 +1,12 @@
 {
   "//": "§14 AUDIT-4 — intentional hand-overrides merged AFTER build-weapon-vfx.mjs generates from assignments.json, so a re-bake can NEVER clobber them. Per weapon id: a partial WeaponVfx (deep-merged); `suite.<layer>: null` DELETES that layer from the output (the safe way to force a generated-on layer off). Edit THIS file, never weapon-vfx.generated.ts.",
   "x-sword-bone": {
+    "scatter": {
+      "url": "vfx/x-sword-bone-scatter.png",
+      "frameWidth": 249,
+      "frameHeight": 249,
+      "count": 8
+    },
     "suite": {
       "magma-scatter": null
     }

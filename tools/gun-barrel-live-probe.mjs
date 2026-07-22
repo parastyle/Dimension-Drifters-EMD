@@ -12,6 +12,9 @@ const REPO_ROOT = path.resolve(import.meta.dirname, "..");
 const DEFAULT_OUTPUT = path.join(REPO_ROOT, "packages/client/public/muzzle-reference");
 const DEFAULT_TOLERANCE_PX = 3;
 const ROTATING_SAMPLE_BUCKETS = 24;
+/** Owner-reported regressions remain in every sampled run even when their family representative or
+ * rotating daily bucket changes. This is coverage, never a per-weapon geometry exception. */
+const OWNER_REPORTED_MUZZLE_REGRESSIONS = Object.freeze(["x2-buzzard-s-burnout"]);
 const args = process.argv.slice(2);
 
 function option(name) {
@@ -72,6 +75,11 @@ function sampledRows(rows, dayBucket) {
     if ((weapon.muzzle?.points.length ?? 1) > 1) add(weapon, "multi-barrel");
     if ((weapon.gun?.burst?.count ?? 1) > 1) add(weapon, "burst");
     if (weapon.dual) add(weapon, "dual");
+  }
+  for (const id of OWNER_REPORTED_MUZZLE_REGRESSIONS) {
+    const weapon = rows.find((candidate) => candidate.id === id);
+    if (!weapon) throw new Error(`owner-reported muzzle regression is not an active delivery: ${id}`);
+    add(weapon, "owner-reported-regression");
   }
 
   const byFamily = new Map();
@@ -943,7 +951,14 @@ const summary = {
   selectedCount: selection.length,
   tolerancePx,
   samplePolicy: {
-    always: ["base roster", "one per gun/beam family", "all multi-barrel", "all burst", "all dual"],
+    always: [
+      "base roster",
+      "one per gun/beam family",
+      "all multi-barrel",
+      "all burst",
+      "all dual",
+      "owner-reported muzzle regressions",
+    ],
     rotation: `stable id hash, one of ${ROTATING_SAMPLE_BUCKETS} UTC-daily buckets`,
     fullFlag: "--full or DD_FULL_MUZZLE_SWEEP=1",
   },

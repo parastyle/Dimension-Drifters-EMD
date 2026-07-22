@@ -13,8 +13,8 @@ const OUTPUT = process.env.DD_MUZZLE_OUTPUT ?? path.join(".tmp-bin", `muzzle-e2e
 
 /**
  * Default policy: every base gun, every multi-barrel/burst/dual outlier, one deterministic member of
- * every gun/beam family, plus a UTC-daily 1/24 catalog rotation. Catalog/muzzle changes and release
- * qualification run `DD_FULL_MUZZLE_SWEEP=1 pnpm e2e -- gun-barrel-live-probe.spec.ts`.
+ * every gun/beam family, retained owner-reported regressions, plus a UTC-daily 1/24 catalog rotation.
+ * Catalog/muzzle changes and release qualification run the full sweep below.
  */
 test.setTimeout(FULL ? 30 * 60_000 : 10 * 60_000);
 
