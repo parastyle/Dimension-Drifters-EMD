@@ -90,4 +90,5 @@ LIGHTSABER RISE: animate local length 0 -> full along the blade axis; it also hi
 emerging from inside the blade. Hit envelope follows the rise (short during emergence, full at the
 active edge) per the V7 collision law. Applies to Sanctified Headsman + all six brutalist
 greatswords via blade-extension-treatments.
-OPEN: rise timing — per-swing ignition (~100ms, default) vs held-while-drawn. Owner to pick.
+RISE TIMING (owner ruled): PER-COMBO ignition — one rise at combo start, stays lit for the whole
+combo (no re-ignition between hits), retracts when the combo ends/drops. Not per-swing, not held.

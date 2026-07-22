@@ -501,9 +501,9 @@ test("V7-MOVE: fixed tumble roll and immediate default long jump", async ({ page
         if (sent || !self || self.moveStance !== 2 || self.height <= 24) return;
         sent = true;
         arena.room.send("input", {
-          // Stay ahead of the browser input manager's queued sequence numbers. The live
-          // room rejects stale/duplicate inputs before evaluating the pound bit.
-          seq: (self.ackSeq + 0x10000) >>> 0,
+          // Stay ahead of the browser input manager's queued sequence numbers while remaining
+          // inside the live room's bounded +10,000 forward window.
+          seq: (self.ackSeq + 9_000) >>> 0,
           dx: 1,
           dy: 0,
           jump: false,
