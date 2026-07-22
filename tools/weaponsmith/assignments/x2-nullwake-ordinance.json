@@ -1,0 +1,23 @@
+{
+  "vfxSubject": "vfx-x2-nullwake-ordinance",
+  "image": null,
+  "suite": {
+    "blade-trail": {
+      "on": true,
+      "params": {
+        "reach": 1,
+        "paint": 6,
+        "history": 0.94,
+        "bodyAlpha": 0.16,
+        "lipAlpha": 0.34,
+        "color": 0.8
+      }
+    },
+    "painted-impact": { "on": true, "params": { "paint": 6, "count": 9, "size": 0.94 } },
+    "impact-flash": { "on": true, "params": { "intensity": 0.44 } }
+  },
+  "rot": 0,
+  "notes": "A near-black wake protects the hollow-center read while the existing void splat pack carries the purple-rim impact.",
+  "vfxRadius": 190,
+  "displayLength": 238
+}

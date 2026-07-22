@@ -7,20 +7,30 @@ import {
   headsmanExtensionGeometry,
   headsmanExtensionReveal,
   headsmanPrototypeFromSearch,
+  resolveHeadsmanTreatment,
+  SANCTIFIED_HEADSMAN_BLADE_OVERLAP_FRACTION,
   SANCTIFIED_HEADSMAN_LENGTH_MULTIPLIER,
+  SANCTIFIED_HEADSMAN_PRODUCTION_TREATMENT,
 } from "../packages/client/src/vfx/headsman-prototypes.js";
 import { PAGE_PROJECTILE_ART } from "../packages/client/src/vfx/page-projectile-art.js";
 import { WEAPONS } from "../packages/shared/src/weapons.js";
 
 describe("V6A generated-art owner orders", () => {
-  it("keeps four distinct Headsman treatments behind proto=1..4 on one 3x mechanism", () => {
+  it("ships Pale Procession while keeping four dev references on one seamless 3x mechanism", () => {
     expect(HEADSMAN_PROTOTYPES).toHaveLength(4);
     expect(new Set(HEADSMAN_PROTOTYPES.map((prototype) => prototype.url)).size).toBe(4);
     for (const prototype of HEADSMAN_PROTOTYPES)
       expect(
-        headsmanPrototypeFromSearch(`?dev=weapon:x2-sanctified-headsman&proto=${prototype.proto}`),
+        resolveHeadsmanTreatment(
+          `?dev=weapon:x2-sanctified-headsman&proto=${prototype.proto}`,
+          "",
+          true,
+        ),
       ).toBe(prototype);
-    expect(headsmanPrototypeFromSearch("?dev=weapon:x2-sanctified-headsman").proto).toBe(1);
+    expect(headsmanPrototypeFromSearch("?dev=weapon:x2-sanctified-headsman").proto).toBe(2);
+    expect(resolveHeadsmanTreatment("?proto=4", "#p1", false)).toBe(
+      SANCTIFIED_HEADSMAN_PRODUCTION_TREATMENT,
+    );
 
     const headsman = WEAPONS["x2-sanctified-headsman"];
     expect(headsman).toBeDefined();
@@ -29,8 +39,13 @@ describe("V6A generated-art owner orders", () => {
     expect(geometry.totalBladeLength).toBeCloseTo(
       geometry.physicalBladeLength * SANCTIFIED_HEADSMAN_LENGTH_MULTIPLIER,
     );
-    expect(geometry.extensionLength).toBeCloseTo(geometry.physicalBladeLength * 2);
-    expect(headsman.range).toBe(160); // prototype visuals do not silently rebalance damage reach
+    expect(geometry.overlapLength).toBeCloseTo(
+      geometry.physicalBladeLength * SANCTIFIED_HEADSMAN_BLADE_OVERLAP_FRACTION,
+    );
+    expect(geometry.extensionLength - geometry.overlapLength).toBeCloseTo(
+      geometry.physicalBladeLength * 2,
+    );
+    expect(headsman.range).toBe(160); // the shipped extension remains visual-only by owner decision
   });
 
   it("grows the Headsman extension during wind-up and holds it across the active clock", () => {

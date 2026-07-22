@@ -1,0 +1,56 @@
+[
+  {
+    "id": "v6-1-greatsword-extension-frost",
+    "name": "Rimewrit Grave-Slab — Frost Crystal Extension",
+    "kind": "vfx",
+    "styleRef": "out/x2-sanctified-headsman/identity-ref.png",
+    "prompt": "Use case: stylized-concept. Asset type: Dimension Drifters elemental blade-extension VFX texture. Generate one standalone very long frost-crystal greatsword blade extension pointing RIGHT. This is only the additional magical blade beyond a physical sword tip: begin at the LEFT with a wide overlapping attachment root that can sit underneath the real blade, then extend as one connected 4.5:1 heroic slab silhouette to a hard chisel point on the RIGHT. Treatment: pale blue translucent-looking crystal planes, a dense white frozen cutting lip, angular hoarfrost ridges, and a few tiny attached splinters kept close to the silhouette. It must read as a materialized blade, not a slash arc. No weapon, hilt, character, scene, text, circles, panel, border, duplicate, contact sheet, or loose distant debris. Keep the complete extension visible with generous flat chroma padding.",
+    "palette": { "primary": "ice blue and frost white", "accent": "deep glacial cyan" },
+    "tags": ["weapon-vfx", "blade-extension", "frost", "crystal-edge"]
+  },
+  {
+    "id": "v6-1-greatsword-extension-fire",
+    "name": "Pyre-Gallows Brand — Roaring Flame Extension",
+    "kind": "vfx",
+    "styleRef": "out/x2-sanctified-headsman/identity-ref.png",
+    "prompt": "Use case: stylized-concept. Asset type: Dimension Drifters elemental blade-extension VFX texture. Generate one standalone very long roaring flame greatsword blade extension pointing RIGHT. This is only the additional magical blade beyond a physical sword tip: begin at the LEFT with a broad overlapping furnace root that can sit underneath the real blade, then extend as one connected 4.5:1 heroic slab silhouette to a hooked flame point on the RIGHT. Treatment: dense white-yellow heat core, saturated orange cutting body, red outer tongues flowing backward, all tongues connected into a coherent blade rather than separate particles. It must read as a roaring fire blade, not a slash arc or explosion. No weapon, hilt, character, scene, smoke, text, circles, panel, border, duplicate, contact sheet, or distant embers. Keep the complete extension visible with generous flat chroma padding.",
+    "palette": { "primary": "white heat and furnace orange", "accent": "deep ember red" },
+    "tags": ["weapon-vfx", "blade-extension", "fire", "roaring-flame"]
+  },
+  {
+    "id": "v6-1-greatsword-extension-shock",
+    "name": "Stormrail Colossus — Crackling Arc Extension",
+    "kind": "vfx",
+    "styleRef": "out/x2-sanctified-headsman/identity-ref.png",
+    "prompt": "Use case: stylized-concept. Asset type: Dimension Drifters elemental blade-extension VFX texture. Generate one standalone very long electrical greatsword blade extension pointing RIGHT. This is only the additional magical blade beyond a physical sword tip: begin at the LEFT with a broad overlapping conductor root that can sit underneath the real blade, then extend as one connected 4.5:1 heroic edge silhouette to a fork-clipped point on the RIGHT. Treatment: a bright blue-white live cutting rail bound by several thick crackling cyan arcs, with short violet branchlets crossing the body; keep the current connected and blade-shaped, not a loose lightning bolt. No weapon, hilt, character, scene, text, circles, panel, border, duplicate, contact sheet, or distant sparks. Keep the complete extension visible with generous flat chroma padding.",
+    "palette": { "primary": "blue-white electricity and cyan", "accent": "arc violet" },
+    "tags": ["weapon-vfx", "blade-extension", "shock", "arc-edge"]
+  },
+  {
+    "id": "v6-1-greatsword-extension-void",
+    "name": "Nullwake Ordinance — Hollow Void Extension",
+    "kind": "vfx",
+    "styleRef": "out/x2-sanctified-headsman/identity-ref.png",
+    "prompt": "Use case: stylized-concept. Asset type: Dimension Drifters elemental blade-extension VFX texture. Generate one standalone very long hollow void greatsword blade extension pointing RIGHT. This is only the additional magical blade beyond a physical sword tip: begin at the LEFT with a broad overlapping black root that can sit underneath the real blade, then extend as one connected 4.5:1 heroic slab silhouette to an offset tomb-lintel point on the RIGHT. Treatment: an almost-black hollow interior painted as swallowed space, a crisp luminous purple outer rim and cutting lip, sparse inward violet wisps, and no ordinary steel body. Preserve a strongly readable solid outer blade silhouette while the center feels absent. No weapon, hilt, character, scene, stars, text, circles, portal, panel, border, duplicate, contact sheet, or distant motes. Keep the complete extension visible with generous flat chroma padding.",
+    "palette": { "primary": "starless black", "accent": "saturated violet rim" },
+    "tags": ["weapon-vfx", "blade-extension", "void", "hollow-rim"]
+  },
+  {
+    "id": "v6-1-greatsword-extension-light",
+    "name": "Dawnwall Testament — Radiant Daylight Extension",
+    "kind": "vfx",
+    "styleRef": "out/x2-sanctified-headsman/identity-ref.png",
+    "prompt": "Use case: stylized-concept. Asset type: Dimension Drifters elemental blade-extension VFX texture. Generate one standalone very long radiant daylight greatsword blade extension pointing RIGHT. This is only the additional magical blade beyond a physical sword tip: begin at the LEFT with a broad overlapping buttress root that can sit underneath the real blade, then extend as one connected 4.5:1 heroic architectural slab silhouette to a low angular point on the RIGHT. Treatment: hard opaque blue-white daylight planes, a brilliant white meridian, pale cyan prism facets, and straight sun-ray buttresses. Make it materially distinct from Sanctified Headsman's champagne-gold translucent Pale Procession: no gold, no ghost blade, no spectral afterimages, no prayer motes. It must read as a radiant blade, not a slash arc. No weapon, hilt, character, scene, halo, symbols, text, circles, panel, border, duplicate, or contact sheet. Keep the complete extension visible with generous flat chroma padding.",
+    "palette": { "primary": "hard white daylight", "accent": "pale cyan and sky blue" },
+    "tags": ["weapon-vfx", "blade-extension", "holy", "radiant-daylight"]
+  },
+  {
+    "id": "v6-1-greatsword-extension-rock",
+    "name": "Cairnfall Monolith — Jagged Stone Extension",
+    "kind": "vfx",
+    "styleRef": "out/x2-sanctified-headsman/identity-ref.png",
+    "prompt": "Use case: stylized-concept. Asset type: Dimension Drifters elemental blade-extension VFX texture. Generate one standalone very long jagged stone greatsword blade extension pointing RIGHT. This is only the additional supernatural blade beyond a physical sword tip: begin at the LEFT with a broad overlapping bedrock root that can sit underneath the real blade, then extend as one connected 4.5:1 heroic monolith silhouette to a fractured chisel point on the RIGHT. Treatment: massive interlocked grey mesa-stone plates, ochre fracture faces, dark iron mineral seams, a jagged cutting edge, and two or three tiny close chips. It must read as a continuous stone blade growing from the sword, not a pile of rocks or explosion. No weapon, hilt, character, scene, dust cloud, glow, text, circles, panel, border, duplicate, contact sheet, or distant debris. Keep the complete extension visible with generous flat chroma padding.",
+    "palette": { "primary": "mesa grey stone", "accent": "ochre fracture and dark iron" },
+    "tags": ["weapon-vfx", "blade-extension", "physical", "jagged-stone"]
+  }
+]

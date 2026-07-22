@@ -144,10 +144,10 @@ describe("V3M exact combo and VFX orders", () => {
     expect(comboWeaponThicknessSign(second)).toBe(-1);
   });
 
-  it("retains only Mournveil's centered red circle and scales Quarry VFX fourfold", () => {
+  it("replaces Mournveil's old circle with holy impact art and scales Quarry VFX fourfold", () => {
     const mournveil = WEAPON_VFX["x2-mournveil-scythe"]!;
-    expect(Object.keys(mournveil.suite ?? {})).toEqual(["shockwave-ring"]);
-    expect(mournveil.suite?.["shockwave-ring"]?.params.color).toBe(0);
+    expect(Object.keys(mournveil.suite ?? {})).toEqual(["painted-impact"]);
+    expect(mournveil.suite?.["painted-impact"]?.params.paint).toBe(4);
     expect(mournveil.vfxOrigin).toEqual({ x: -150, y: 0 });
     expect(WEAPON_VFX["x2-quarry-splitter-bardiche"]?.vfxRadius).toBe(296);
     expect(resolveWeaponEffectRecipe(weapon("x2-quarry-splitter-bardiche"))).toMatchObject({

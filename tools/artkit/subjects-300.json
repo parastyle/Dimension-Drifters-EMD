@@ -6386,5 +6386,65 @@
       "vertical-foregrip"
     ],
     "cardartAction": "leaned into the iron foregrip as a slow heavy burst hammers out in red-orange furnace flashes"
+  },
+  {
+    "id": "x2-rimewrit-grave-slab",
+    "name": "Rimewrit Grave-Slab",
+    "tier": "medium",
+    "dimension": "cross-dimension",
+    "prompt": "Weapon-only in-world sprite (no character, no hands, no background scene): Rimewrit Grave-Slab, one original massive two-handed brutalist greatsword in the game's western-gothic register. A simple heroic pale grave-iron slab blade with broad stepped shoulders, one deep straight frost-blue fuller, a short clipped chisel point, a plain blackened crossbar, a long two-hand hilt wrapped in blue-grey hide, and a square cairn pommel. The physical weapon is inactive: frost is baked onto the metal edge, with no emitted magic or extension in this render. Trademark-distinct original design: no recognizable video-game sword proportions, no circular holes, no motorcycle-like guard, no fusion or transforming parts. One connected weapon, flat orthographic full side-profile, TIP RIGHT and hilt LEFT, fully visible, restrained 5-6 colour cel-shaded game art, massive simple silhouette.",
+    "palette": { "primary": "#A9C9D8", "accent": "#E8FBFF" },
+    "tags": ["weapon", "melee", "greatsword", "frost", "2H", "XL", "mid", "brutalist"],
+    "cardartAction": "heaved through a glacial verdict as a long frost-crystal edge grows beyond the real tip and sheds hard white splinters"
+  },
+  {
+    "id": "x2-pyre-gallows-brand",
+    "name": "Pyre-Gallows Brand",
+    "tier": "medium",
+    "dimension": "cross-dimension",
+    "prompt": "Weapon-only in-world sprite (no character, no hands, no background scene): Pyre-Gallows Brand, one original massive two-handed brutalist greatsword in the game's western-gothic register. A simple heroic black forge-iron slab with an asymmetrical stepped furnace spine, shallow rectangular heat vents filled with solid ember-red metal, a blunt clipped butcher point, a severe gallows-beam guard, long soot-dark leather two-hand grip, and trapdoor-shaped pommel. The physical weapon is inactive: no open flame, smoke, glow bloom, or extension in this render. Trademark-distinct original design: no recognizable video-game sword proportions, no circular holes, no motorcycle-like guard, no fusion or transforming parts. One connected weapon, flat orthographic full side-profile, TIP RIGHT and hilt LEFT, fully visible, restrained 5-6 colour cel-shaded game art, massive simple silhouette.",
+    "palette": { "primary": "#2B292B", "accent": "#E85B2A" },
+    "tags": ["weapon", "melee", "greatsword", "fire", "2H", "XL", "mid", "brutalist"],
+    "cardartAction": "driven through a roaring execution cut as a connected orange flame blade lengthens from beneath the black iron tip"
+  },
+  {
+    "id": "x2-stormrail-colossus",
+    "name": "Stormrail Colossus",
+    "tier": "medium",
+    "dimension": "cross-dimension",
+    "prompt": "Weapon-only in-world sprite (no character, no hands, no background scene): Stormrail Colossus, one original massive two-handed brutalist greatsword in the game's western-gothic register. A simple heroic blue-black steel slab built like a single frontier rail, with three broad copper grounding ribs across the blade face, a narrow lightning-shaped engraved fuller, a fork-clipped but still solid point, a plain insulated iron guard, long storm-hide two-hand grip, and ceramic grounding-cap pommel. The physical weapon is inactive: the cyan is solid inlay only, with no lightning arcs, glow, or extension in this render. Trademark-distinct original design: no recognizable video-game sword proportions, no circular holes, no motorcycle-like guard, no fusion or transforming parts. One connected weapon, flat orthographic full side-profile, TIP RIGHT and hilt LEFT, fully visible, restrained 5-6 colour cel-shaded game art, massive simple silhouette.",
+    "palette": { "primary": "#273848", "accent": "#43C8F5" },
+    "tags": ["weapon", "melee", "greatsword", "shock", "2H", "XL", "mid", "brutalist"],
+    "cardartAction": "whipped into a fast weighted crosscut while a blue-white crackling arc edge bridges from beneath the true blade to impossible length"
+  },
+  {
+    "id": "x2-nullwake-ordinance",
+    "name": "Nullwake Ordinance",
+    "tier": "medium",
+    "dimension": "cross-dimension",
+    "prompt": "Weapon-only in-world sprite (no character, no hands, no background scene): Nullwake Ordinance, one original massive two-handed brutalist greatsword in the game's western-gothic register. A simple heroic starless gunmetal slab shaped like a narrowed chapel door, with one broad painted-black recessed fuller that does NOT cut through the blade, a thin solid violet temper line, square shoulders, an offset tomb-lintel point, a severe dark crossguard, long corded two-hand hilt, and sealed black reliquary pommel. The physical weapon is inactive: no void emission, particles, glow, or extension in this render. Trademark-distinct original design: no recognizable video-game sword proportions, no circular holes, no motorcycle-like guard, no fusion or transforming parts. One connected weapon, flat orthographic full side-profile, TIP RIGHT and hilt LEFT, fully visible, restrained 5-6 colour cel-shaded game art, massive simple silhouette.",
+    "palette": { "primary": "#15131C", "accent": "#A74BDB" },
+    "tags": ["weapon", "melee", "greatsword", "void", "2H", "XL", "mid", "brutalist"],
+    "cardartAction": "lowered in a soundless black cut while a hollow absence edged in purple grows beneath the physical tip and erases the trail behind it"
+  },
+  {
+    "id": "x2-dawnwall-testament",
+    "name": "Dawnwall Testament",
+    "tier": "medium",
+    "dimension": "cross-dimension",
+    "prompt": "Weapon-only in-world sprite (no character, no hands, no background scene): Dawnwall Testament, one original massive two-handed brutalist greatsword in the game's western-gothic register. A simple heroic pale bastion-steel slab with buttress-like stepped shoulders, a broad taper to a low angular point, one straight blue-white meridian inlay, a plain squared chapel-beam guard, long white-hide two-hand grip, and compact dawnstone pommel. Austere solar architecture rather than ornate religion. The physical weapon is inactive: no glow bloom, halo, spectral gold, particles, or extension in this render. Trademark-distinct original design: no recognizable video-game sword proportions, no circular holes, no motorcycle-like guard, no fusion or transforming parts. One connected weapon, flat orthographic full side-profile, TIP RIGHT and hilt LEFT, fully visible, restrained 5-6 colour cel-shaded game art, massive simple silhouette.",
+    "palette": { "primary": "#DCE4E7", "accent": "#9DE9FF" },
+    "tags": ["weapon", "melee", "greatsword", "holy", "2H", "XL", "mid", "brutalist"],
+    "cardartAction": "raised into a radiant breach as a hard blue-white daylight blade builds from beneath the steel, bright and architectural rather than spectral gold"
+  },
+  {
+    "id": "x2-cairnfall-monolith",
+    "name": "Cairnfall Monolith",
+    "tier": "medium",
+    "dimension": "cross-dimension",
+    "prompt": "Weapon-only in-world sprite (no character, no hands, no background scene): Cairnfall Monolith, one original massive two-handed brutalist greatsword in the game's western-gothic register. A simple heroic rectangular mesa-stone slab caged by two dark iron edge rails, with three huge natural fracture planes, a jagged but compact chisel point, a plain mine-brace crossguard, long rawhide two-hand hilt, and survey-stake pommel. The blade is solid quarried stone and iron, not a club. The physical weapon is inactive: no flying rocks, dust, quake, glow, or extension in this render. Trademark-distinct original design: no recognizable video-game sword proportions, no circular holes, no motorcycle-like guard, no fusion or transforming parts. One connected weapon, flat orthographic full side-profile, TIP RIGHT and hilt LEFT, fully visible, restrained 5-6 colour cel-shaded game art, massive simple silhouette.",
+    "palette": { "primary": "#66645B", "accent": "#C49A5A" },
+    "tags": ["weapon", "melee", "greatsword", "physical", "2H", "XL", "mid", "brutalist", "rock"],
+    "cardartAction": "committed into a crushing horizon cut while a jagged connected stone blade thrusts out beneath the real point and sheds only a few close chips"
   }
 ]

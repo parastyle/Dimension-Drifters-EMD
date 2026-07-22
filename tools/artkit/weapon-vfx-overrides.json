@@ -18,10 +18,12 @@
       "y": 0
     },
     "suite": {
-      "shockwave-ring": {
+      "painted-impact": {
         "on": true,
         "params": {
-          "color": 0
+          "paint": 4,
+          "count": 8,
+          "size": 0.9
         }
       }
     }

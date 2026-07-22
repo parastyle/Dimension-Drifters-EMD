@@ -14,11 +14,11 @@
       }
     },
     "drift-petals": { "on": true, "params": { "count": 14, "color": 0.55 } },
-    "shockwave-ring": { "on": true, "params": { "color": 0.55 } },
+    "painted-impact": { "on": true, "params": { "paint": 2, "count": 8, "size": 0.9 } },
     "impact-flash": { "on": true, "params": { "intensity": 0.82 } }
   },
   "rot": 0,
-  "notes": "Broad persistent lunar wake with a cold finisher ring. Frost particle packs supply crystalline wake motes. Flagged for a bespoke finisher sheet.",
+  "notes": "Broad persistent lunar wake with a crystalline frost-splat finisher. Frost particle packs supply the organic impact art. Flagged for a bespoke finisher sheet.",
   "vfxRadius": 190,
   "displayLength": 335
 }

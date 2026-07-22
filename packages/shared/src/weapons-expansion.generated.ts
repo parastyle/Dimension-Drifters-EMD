@@ -15273,6 +15273,248 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "spread": 0.11,
       "muzzleColor": 16734770
     }
+  },
+  "x2-rimewrit-grave-slab": {
+    "id": "x2-rimewrit-grave-slab",
+    "name": "Rimewrit Grave-Slab",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "A",
+      "int": "D"
+    },
+    "damage": 14,
+    "range": 186,
+    "halfArc": 1.02,
+    "cooldown": 0.92,
+    "displayLength": 226,
+    "swingArc": 3.08,
+    "gripFrac": 0.1,
+    "tags": {
+      "grip": "2H",
+      "size": "XL",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "frost",
+      "classPool": "melee",
+      "family": "greatsword",
+      "rangeBand": "mid",
+      "scaling": [
+        "STR",
+        "INT"
+      ]
+    },
+    "description": "A frost court's last warrant hammered into a massive iron slab, its square shoulders wearing a permanent white rime.",
+    "sizeClass": "great",
+    "stance": "two-hands-on-hilt",
+    "swingStyle": "chop",
+    "hitStatus": {
+      "kind": "slow",
+      "multiplier": 0.1,
+      "seconds": 0.8
+    },
+    "requirements": {
+      "str": 12,
+      "int": 4
+    },
+    "twoHanded": true,
+    "durability": 90
+  },
+  "x2-pyre-gallows-brand": {
+    "id": "x2-pyre-gallows-brand",
+    "name": "Pyre-Gallows Brand",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "A"
+    },
+    "damage": 13,
+    "range": 180,
+    "halfArc": 1.08,
+    "cooldown": 0.8,
+    "displayLength": 232,
+    "swingArc": 3.18,
+    "gripFrac": 0.09,
+    "tags": {
+      "grip": "2H",
+      "size": "XL",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "fire",
+      "classPool": "melee",
+      "family": "greatsword",
+      "rangeBand": "mid",
+      "scaling": [
+        "STR"
+      ]
+    },
+    "description": "A condemned forge's gate bar sharpened into a war blade, black at the spine and furnace-red along the sentence edge.",
+    "sizeClass": "great",
+    "stance": "two-hands-on-hilt",
+    "swingStyle": "chop",
+    "requirements": {
+      "str": 13
+    },
+    "twoHanded": true,
+    "durability": 90
+  },
+  "x2-stormrail-colossus": {
+    "id": "x2-stormrail-colossus",
+    "name": "Stormrail Colossus",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "B",
+      "dex": "C"
+    },
+    "damage": 11.5,
+    "range": 176,
+    "halfArc": 0.96,
+    "cooldown": 0.7,
+    "displayLength": 218,
+    "swingArc": 3.02,
+    "gripFrac": 0.11,
+    "tags": {
+      "grip": "2H",
+      "size": "XL",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "shock",
+      "classPool": "melee",
+      "family": "greatsword",
+      "rangeBand": "mid",
+      "scaling": [
+        "STR",
+        "DEX"
+      ]
+    },
+    "description": "A frontier lightning rail recast as a great blade, copper grounding ribs counting every thunderstroke across its blue-black face.",
+    "sizeClass": "great",
+    "stance": "two-hands-on-hilt",
+    "swingStyle": "chop",
+    "requirements": {
+      "str": 10,
+      "dex": 7
+    },
+    "twoHanded": true,
+    "durability": 90
+  },
+  "x2-nullwake-ordinance": {
+    "id": "x2-nullwake-ordinance",
+    "name": "Nullwake Ordinance",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "B",
+      "int": "B"
+    },
+    "damage": 15,
+    "range": 190,
+    "halfArc": 1,
+    "cooldown": 0.94,
+    "displayLength": 238,
+    "swingArc": 3.1,
+    "gripFrac": 0.085,
+    "tags": {
+      "grip": "2H",
+      "size": "XL",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "void",
+      "classPool": "melee",
+      "family": "greatsword",
+      "rangeBand": "mid",
+      "scaling": [
+        "STR",
+        "INT"
+      ]
+    },
+    "description": "A chapel door of starless iron narrowed to an edge, its hollow-black fuller swallowing every reflection except a violet rim.",
+    "sizeClass": "great",
+    "stance": "two-hands-on-hilt",
+    "swingStyle": "chop",
+    "requirements": {
+      "str": 11,
+      "int": 7
+    },
+    "twoHanded": true,
+    "durability": 90
+  },
+  "x2-dawnwall-testament": {
+    "id": "x2-dawnwall-testament",
+    "name": "Dawnwall Testament",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "B",
+      "int": "C"
+    },
+    "damage": 12.5,
+    "range": 182,
+    "halfArc": 1.04,
+    "cooldown": 0.78,
+    "displayLength": 224,
+    "swingArc": 3.14,
+    "gripFrac": 0.1,
+    "tags": {
+      "grip": "2H",
+      "size": "XL",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "holy",
+      "classPool": "melee",
+      "family": "greatsword",
+      "rangeBand": "mid",
+      "scaling": [
+        "STR",
+        "INT"
+      ]
+    },
+    "description": "A sunlit bastion plate given a hilt, pale and uncompromising, with a blue-white meridian dividing its broad face.",
+    "sizeClass": "great",
+    "stance": "two-hands-on-hilt",
+    "swingStyle": "chop",
+    "requirements": {
+      "str": 10,
+      "int": 6
+    },
+    "twoHanded": true,
+    "durability": 90
+  },
+  "x2-cairnfall-monolith": {
+    "id": "x2-cairnfall-monolith",
+    "name": "Cairnfall Monolith",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "A",
+      "con": "D"
+    },
+    "damage": 16,
+    "range": 194,
+    "halfArc": 1.12,
+    "cooldown": 1.02,
+    "displayLength": 242,
+    "swingArc": 3.24,
+    "gripFrac": 0.08,
+    "tags": {
+      "grip": "2H",
+      "size": "XL",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "physical",
+      "classPool": "melee",
+      "family": "greatsword",
+      "rangeBand": "mid",
+      "scaling": [
+        "STR",
+        "CON"
+      ]
+    },
+    "description": "A mesa standing stone bound to a miner's hilt, every blunt plane waiting for the swing that makes the mountain continue.",
+    "sizeClass": "great",
+    "stance": "two-hands-on-hilt",
+    "swingStyle": "chop",
+    "requirements": {
+      "str": 14,
+      "con": 5
+    },
+    "twoHanded": true,
+    "durability": 90
   }
 };
 

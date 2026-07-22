@@ -1,0 +1,86 @@
+{
+  "phase": "after",
+  "label": "voltfang-shock",
+  "weaponId": "x2-voltfang-tachi",
+  "element": "shock",
+  "baseURL": "http://127.0.0.1:5180",
+  "capturedAt": "2026-07-22T00:51:43.387Z",
+  "setup": {
+    "actor": {
+      "x": 2400,
+      "y": 2420
+    },
+    "target": {
+      "x": 2684.137939453125,
+      "y": 2386.37890625
+    }
+  },
+  "visual": {
+    "frozen": true,
+    "ringVisible": false,
+    "paintedVisible": true,
+    "textureKeys": [
+      "ptcl:shock-splat",
+      "ptcl:shock-splat",
+      "ptcl:shock-splat",
+      "ptcl:shock-splat",
+      "ptcl:shock-splat",
+      "ptcl:shock-splat",
+      "ptcl:shock-splat",
+      "ptcl:shock-splat"
+    ]
+  },
+  "events": [
+    {
+      "kind": "weapon-vfx-suite",
+      "weaponId": "x2-voltfang-tachi",
+      "anchor": "source",
+      "x": 2400,
+      "y": 2420,
+      "targetX": 2541.016233350256,
+      "targetY": 2403.3140199057334,
+      "layerIds": [
+        "blade-trail"
+      ]
+    },
+    {
+      "kind": "weapon-vfx-suite",
+      "weaponId": "x2-voltfang-tachi",
+      "anchor": "target",
+      "x": 2541.016233350256,
+      "y": 2403.3140199057334,
+      "targetX": 2541.016233350256,
+      "targetY": 2403.3140199057334,
+      "layerIds": [
+        "arc-bolt",
+        "painted-impact"
+      ]
+    },
+    {
+      "kind": "painted-impact",
+      "weaponId": "x2-voltfang-tachi",
+      "anchor": "target",
+      "x": 2541.016233350256,
+      "y": 2403.3140199057334,
+      "targetX": 2541.016233350256,
+      "targetY": 2403.3140199057334,
+      "pack": "shock-splat",
+      "count": 8,
+      "spawned": true
+    }
+  ],
+  "layerIds": [
+    "blade-trail",
+    "arc-bolt",
+    "painted-impact"
+  ],
+  "genericLayers": [],
+  "assertions": {
+    "genericRingRecipeRemoved": true,
+    "genericRingInvisible": true,
+    "paintedElementImpactVisible": true
+  },
+  "browserErrors": [],
+  "unexpectedBrowserErrors": [],
+  "screenshot": "docs\\owner-notes-audit-v6-evidence\\v61\\cursor-circle-after-voltfang-shock.png"
+}

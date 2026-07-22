@@ -1,0 +1,23 @@
+{
+  "vfxSubject": "vfx-x2-stormrail-colossus",
+  "image": null,
+  "suite": {
+    "blade-trail": {
+      "on": true,
+      "params": {
+        "reach": 1,
+        "paint": 3,
+        "history": 0.88,
+        "bodyAlpha": 0.18,
+        "lipAlpha": 0.38,
+        "color": 0.63
+      }
+    },
+    "painted-impact": { "on": true, "params": { "paint": 3, "count": 10, "size": 0.84 } },
+    "impact-flash": { "on": true, "params": { "intensity": 0.78 } }
+  },
+  "rot": 0,
+  "notes": "A narrow shock wake and bright electrical impact sit behind the generated crackling arc-edge treatment.",
+  "vfxRadius": 176,
+  "displayLength": 218
+}

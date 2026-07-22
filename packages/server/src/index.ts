@@ -26,8 +26,12 @@ export async function createGameServer(port: number): Promise<Server> {
 
 const entryPath = process.argv[1];
 if (entryPath && resolve(entryPath) === fileURLToPath(import.meta.url)) {
-  createGameServer(DEFAULT_PORT).catch((err: unknown) => {
-    console.error("[dd-server] failed to start:", err);
-    process.exit(1);
-  });
+  // DD_PORT lets an interactive session hold a private port while e2e harnesses use DEFAULT_PORT.
+  const envPort = Number(process.env.DD_PORT);
+  createGameServer(Number.isInteger(envPort) && envPort > 0 ? envPort : DEFAULT_PORT).catch(
+    (err: unknown) => {
+      console.error("[dd-server] failed to start:", err);
+      process.exit(1);
+    },
+  );
 }

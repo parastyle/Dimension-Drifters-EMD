@@ -1635,10 +1635,12 @@
           "intensity": 1
         }
       },
-      "shockwave-ring": {
+      "painted-impact": {
         "on": true,
         "params": {
-          "color": 0.5
+          "paint": 6,
+          "count": 10,
+          "size": 1.05
         }
       },
       "impact-flash": {
@@ -1649,7 +1651,7 @@
       }
     },
     "rot": 0,
-    "notes": "Maximum-length white seam, black afteredge and room-scale release ring. Void packs reuse high-contrast seam motes. Flagged for a bespoke colossal release sheet.",
+    "notes": "Maximum-length white seam, black afteredge and a room-scale void-splat release. Void packs reuse high-contrast seam motes. Flagged for a bespoke colossal release sheet.",
     "vfxRadius": 240,
     "displayLength": 400
   },
@@ -1675,10 +1677,12 @@
           "color": 0.55
         }
       },
-      "shockwave-ring": {
+      "painted-impact": {
         "on": true,
         "params": {
-          "color": 0.55
+          "paint": 2,
+          "count": 8,
+          "size": 0.9
         }
       },
       "impact-flash": {
@@ -1689,7 +1693,7 @@
       }
     },
     "rot": 0,
-    "notes": "Broad persistent lunar wake with a cold finisher ring. Frost particle packs supply crystalline wake motes. Flagged for a bespoke finisher sheet.",
+    "notes": "Broad persistent lunar wake with a crystalline frost-splat finisher. Frost particle packs supply the organic impact art. Flagged for a bespoke finisher sheet.",
     "vfxRadius": 190,
     "displayLength": 335
   },
@@ -1719,10 +1723,12 @@
           "rings": 2
         }
       },
-      "shockwave-ring": {
+      "painted-impact": {
         "on": true,
         "params": {
-          "color": 0.15
+          "paint": 3,
+          "count": 9,
+          "size": 0.92
         }
       }
     },
@@ -2007,6 +2013,76 @@
     "vfxRadius": 86,
     "displayLength": 150
   },
+  "x2-cairnfall-monolith": {
+    "vfxSubject": "vfx-x2-cairnfall-monolith",
+    "image": null,
+    "suite": {
+      "blade-trail": {
+        "on": true,
+        "params": {
+          "reach": 1,
+          "paint": 0,
+          "history": 0.92,
+          "bodyAlpha": 0.2,
+          "lipAlpha": 0.3,
+          "color": 0.1
+        }
+      },
+      "painted-impact": {
+        "on": true,
+        "params": {
+          "paint": 0,
+          "count": 11,
+          "size": 1
+        }
+      },
+      "impact-flash": {
+        "on": true,
+        "params": {
+          "intensity": 0.38
+        }
+      }
+    },
+    "rot": 0,
+    "notes": "Muted dust-steel wake leaves the jagged stone extension readable; the impact remains within the existing physical pack.",
+    "vfxRadius": 194,
+    "displayLength": 242
+  },
+  "x2-dawnwall-testament": {
+    "vfxSubject": "vfx-x2-dawnwall-testament",
+    "image": null,
+    "suite": {
+      "blade-trail": {
+        "on": true,
+        "params": {
+          "reach": 1,
+          "paint": 4,
+          "history": 0.88,
+          "bodyAlpha": 0.18,
+          "lipAlpha": 0.36,
+          "color": 0.55
+        }
+      },
+      "painted-impact": {
+        "on": true,
+        "params": {
+          "paint": 4,
+          "count": 9,
+          "size": 0.88
+        }
+      },
+      "impact-flash": {
+        "on": true,
+        "params": {
+          "intensity": 0.82
+        }
+      }
+    },
+    "rot": 0,
+    "notes": "Hard blue-white daylight, not champagne procession-light: restrained wake, architectural extension, crisp holy impact.",
+    "vfxRadius": 182,
+    "displayLength": 224
+  },
   "x2-gravedog-auto-rifle": {
     "vfxSubject": "vfx-x2-gravedog-auto-rifle",
     "image": null,
@@ -2036,6 +2112,146 @@
     "notes": "Controlled amber workhorse bursts; the gun recipe supplies rapid muzzle timing and physical tracers.",
     "vfxRadius": 72,
     "displayLength": 132
+  },
+  "x2-nullwake-ordinance": {
+    "vfxSubject": "vfx-x2-nullwake-ordinance",
+    "image": null,
+    "suite": {
+      "blade-trail": {
+        "on": true,
+        "params": {
+          "reach": 1,
+          "paint": 6,
+          "history": 0.94,
+          "bodyAlpha": 0.16,
+          "lipAlpha": 0.34,
+          "color": 0.8
+        }
+      },
+      "painted-impact": {
+        "on": true,
+        "params": {
+          "paint": 6,
+          "count": 9,
+          "size": 0.94
+        }
+      },
+      "impact-flash": {
+        "on": true,
+        "params": {
+          "intensity": 0.44
+        }
+      }
+    },
+    "rot": 0,
+    "notes": "A near-black wake protects the hollow-center read while the existing void splat pack carries the purple-rim impact.",
+    "vfxRadius": 190,
+    "displayLength": 238
+  },
+  "x2-pyre-gallows-brand": {
+    "vfxSubject": "vfx-x2-pyre-gallows-brand",
+    "image": null,
+    "suite": {
+      "blade-trail": {
+        "on": true,
+        "params": {
+          "reach": 1,
+          "paint": 1,
+          "history": 0.9,
+          "bodyAlpha": 0.2,
+          "lipAlpha": 0.36,
+          "color": 0.03
+        }
+      },
+      "painted-impact": {
+        "on": true,
+        "params": {
+          "paint": 1,
+          "count": 10,
+          "size": 0.9
+        }
+      },
+      "impact-flash": {
+        "on": true,
+        "params": {
+          "intensity": 0.72
+        }
+      }
+    },
+    "rot": 0,
+    "notes": "A restrained ember wake supports the roaring flame extension; the hit resolves through existing fire splat and flash layers.",
+    "vfxRadius": 180,
+    "displayLength": 232
+  },
+  "x2-rimewrit-grave-slab": {
+    "vfxSubject": "vfx-x2-rimewrit-grave-slab",
+    "image": null,
+    "suite": {
+      "blade-trail": {
+        "on": true,
+        "params": {
+          "reach": 1,
+          "paint": 2,
+          "history": 0.9,
+          "bodyAlpha": 0.2,
+          "lipAlpha": 0.34,
+          "color": 0.54
+        }
+      },
+      "painted-impact": {
+        "on": true,
+        "params": {
+          "paint": 2,
+          "count": 9,
+          "size": 0.86
+        }
+      },
+      "impact-flash": {
+        "on": true,
+        "params": {
+          "intensity": 0.5
+        }
+      }
+    },
+    "rot": 0,
+    "notes": "Low-alpha frost wake leaves the generated crystal extension dominant; the target uses the shared frost splat pack.",
+    "vfxRadius": 186,
+    "displayLength": 226
+  },
+  "x2-stormrail-colossus": {
+    "vfxSubject": "vfx-x2-stormrail-colossus",
+    "image": null,
+    "suite": {
+      "blade-trail": {
+        "on": true,
+        "params": {
+          "reach": 1,
+          "paint": 3,
+          "history": 0.88,
+          "bodyAlpha": 0.18,
+          "lipAlpha": 0.38,
+          "color": 0.63
+        }
+      },
+      "painted-impact": {
+        "on": true,
+        "params": {
+          "paint": 3,
+          "count": 10,
+          "size": 0.84
+        }
+      },
+      "impact-flash": {
+        "on": true,
+        "params": {
+          "intensity": 0.78
+        }
+      }
+    },
+    "rot": 0,
+    "notes": "A narrow shock wake and bright electrical impact sit behind the generated crackling arc-edge treatment.",
+    "vfxRadius": 176,
+    "displayLength": 218
   },
   "x2-stormspur-coil-carbine": {
     "vfxSubject": "vfx-x2-stormspur-coil-carbine",

@@ -1,0 +1,325 @@
+{
+  "phase": "after",
+  "baseURL": "http://127.0.0.1:5180",
+  "capturedAt": "2026-07-22T00:51:58.673Z",
+  "results": [
+    {
+      "phase": "after",
+      "label": "revenant-void",
+      "weaponId": "x2-revenant-knuckle",
+      "element": "void",
+      "baseURL": "http://127.0.0.1:5180",
+      "capturedAt": "2026-07-22T00:51:36.487Z",
+      "setup": {
+        "actor": {
+          "x": 2400,
+          "y": 2420
+        },
+        "target": {
+          "x": 2696.4234619140625,
+          "y": 2383.295654296875
+        }
+      },
+      "visual": {
+        "frozen": true,
+        "ringVisible": false,
+        "paintedVisible": true,
+        "textureKeys": [
+          "ptcl:void-splat",
+          "ptcl:void-splat",
+          "ptcl:void-splat",
+          "ptcl:void-splat",
+          "ptcl:void-splat",
+          "ptcl:void-splat",
+          "ptcl:void-splat",
+          "ptcl:void-splat"
+        ]
+      },
+      "events": [
+        {
+          "kind": "weapon-vfx-suite",
+          "weaponId": "x2-revenant-knuckle",
+          "anchor": "source",
+          "x": 2400,
+          "y": 2420,
+          "targetX": 2509.166293494611,
+          "targetY": 2406.48259031292,
+          "layerIds": [
+            "twin-slash"
+          ]
+        },
+        {
+          "kind": "weapon-vfx-suite",
+          "weaponId": "x2-revenant-knuckle",
+          "anchor": "target",
+          "x": 2509.166293494611,
+          "y": 2406.48259031292,
+          "targetX": 2509.166293494611,
+          "targetY": 2406.48259031292,
+          "layerIds": [
+            "painted-impact"
+          ]
+        },
+        {
+          "kind": "painted-impact",
+          "weaponId": "x2-revenant-knuckle",
+          "anchor": "target",
+          "x": 2509.166293494611,
+          "y": 2406.48259031292,
+          "targetX": 2509.166293494611,
+          "targetY": 2406.48259031292,
+          "pack": "void-splat",
+          "count": 8,
+          "spawned": true
+        }
+      ],
+      "layerIds": [
+        "twin-slash",
+        "painted-impact"
+      ],
+      "genericLayers": [],
+      "assertions": {
+        "genericRingRecipeRemoved": true,
+        "genericRingInvisible": true,
+        "paintedElementImpactVisible": true
+      },
+      "browserErrors": [],
+      "unexpectedBrowserErrors": [],
+      "screenshot": "docs\\owner-notes-audit-v6-evidence\\v61\\cursor-circle-after-revenant-void.png"
+    },
+    {
+      "phase": "after",
+      "label": "voltfang-shock",
+      "weaponId": "x2-voltfang-tachi",
+      "element": "shock",
+      "baseURL": "http://127.0.0.1:5180",
+      "capturedAt": "2026-07-22T00:51:43.387Z",
+      "setup": {
+        "actor": {
+          "x": 2400,
+          "y": 2420
+        },
+        "target": {
+          "x": 2684.137939453125,
+          "y": 2386.37890625
+        }
+      },
+      "visual": {
+        "frozen": true,
+        "ringVisible": false,
+        "paintedVisible": true,
+        "textureKeys": [
+          "ptcl:shock-splat",
+          "ptcl:shock-splat",
+          "ptcl:shock-splat",
+          "ptcl:shock-splat",
+          "ptcl:shock-splat",
+          "ptcl:shock-splat",
+          "ptcl:shock-splat",
+          "ptcl:shock-splat"
+        ]
+      },
+      "events": [
+        {
+          "kind": "weapon-vfx-suite",
+          "weaponId": "x2-voltfang-tachi",
+          "anchor": "source",
+          "x": 2400,
+          "y": 2420,
+          "targetX": 2541.016233350256,
+          "targetY": 2403.3140199057334,
+          "layerIds": [
+            "blade-trail"
+          ]
+        },
+        {
+          "kind": "weapon-vfx-suite",
+          "weaponId": "x2-voltfang-tachi",
+          "anchor": "target",
+          "x": 2541.016233350256,
+          "y": 2403.3140199057334,
+          "targetX": 2541.016233350256,
+          "targetY": 2403.3140199057334,
+          "layerIds": [
+            "arc-bolt",
+            "painted-impact"
+          ]
+        },
+        {
+          "kind": "painted-impact",
+          "weaponId": "x2-voltfang-tachi",
+          "anchor": "target",
+          "x": 2541.016233350256,
+          "y": 2403.3140199057334,
+          "targetX": 2541.016233350256,
+          "targetY": 2403.3140199057334,
+          "pack": "shock-splat",
+          "count": 8,
+          "spawned": true
+        }
+      ],
+      "layerIds": [
+        "blade-trail",
+        "arc-bolt",
+        "painted-impact"
+      ],
+      "genericLayers": [],
+      "assertions": {
+        "genericRingRecipeRemoved": true,
+        "genericRingInvisible": true,
+        "paintedElementImpactVisible": true
+      },
+      "browserErrors": [],
+      "unexpectedBrowserErrors": [],
+      "screenshot": "docs\\owner-notes-audit-v6-evidence\\v61\\cursor-circle-after-voltfang-shock.png"
+    },
+    {
+      "phase": "after",
+      "label": "headsman-holy",
+      "weaponId": "x2-sanctified-headsman",
+      "element": "holy",
+      "baseURL": "http://127.0.0.1:5180",
+      "capturedAt": "2026-07-22T00:51:49.991Z",
+      "setup": {
+        "actor": {
+          "x": 2400,
+          "y": 2420
+        },
+        "target": {
+          "x": 2690.6290283203125,
+          "y": 2382.18359375
+        }
+      },
+      "visual": {
+        "frozen": true,
+        "ringVisible": false,
+        "paintedVisible": true,
+        "textureKeys": [
+          "ptcl:holy-splat",
+          "ptcl:holy-splat",
+          "ptcl:holy-splat",
+          "ptcl:holy-splat",
+          "ptcl:holy-splat",
+          "ptcl:holy-splat",
+          "ptcl:holy-splat"
+        ]
+      },
+      "events": [
+        {
+          "kind": "weapon-vfx-suite",
+          "weaponId": "x2-sanctified-headsman",
+          "anchor": "source",
+          "x": 2400,
+          "y": 2420,
+          "targetX": 2588.8777667954264,
+          "targetY": 2395.423382853359,
+          "layerIds": [
+            "blade-trail"
+          ]
+        },
+        {
+          "kind": "weapon-vfx-suite",
+          "weaponId": "x2-sanctified-headsman",
+          "anchor": "target",
+          "x": 2588.8777667954264,
+          "y": 2395.423382853359,
+          "targetX": 2588.8777667954264,
+          "targetY": 2395.423382853359,
+          "layerIds": [
+            "cleave-flash",
+            "painted-impact",
+            "impact-flash"
+          ]
+        },
+        {
+          "kind": "painted-impact",
+          "weaponId": "x2-sanctified-headsman",
+          "anchor": "target",
+          "x": 2588.8777667954264,
+          "y": 2395.423382853359,
+          "targetX": 2588.8777667954264,
+          "targetY": 2395.423382853359,
+          "pack": "holy-splat",
+          "count": 7,
+          "spawned": true
+        }
+      ],
+      "layerIds": [
+        "blade-trail",
+        "cleave-flash",
+        "painted-impact",
+        "impact-flash"
+      ],
+      "genericLayers": [],
+      "assertions": {
+        "genericRingRecipeRemoved": true,
+        "genericRingInvisible": true,
+        "paintedElementImpactVisible": true
+      },
+      "browserErrors": [],
+      "unexpectedBrowserErrors": [],
+      "screenshot": "docs\\owner-notes-audit-v6-evidence\\v61\\cursor-circle-after-headsman-holy.png"
+    },
+    {
+      "label": "headsman-seam",
+      "phase": "after",
+      "weaponId": "x2-sanctified-headsman",
+      "treatment": "Pale Procession",
+      "baseURL": "http://127.0.0.1:5180",
+      "capturedAt": "2026-07-22T00:51:58.472Z",
+      "samples": [
+        {
+          "angle": 3.120652221383279,
+          "physicalBladeLength": 142.5984130339082,
+          "extensionWidth": 313.042168457574,
+          "signedRootOverlap": 48.291653988425495,
+          "opaqueInset": 4.743063158448091,
+          "visibleJoinOverlap": 43.5485908299774,
+          "visibleGap": 0,
+          "lateralError": 4.368580761590323,
+          "extensionDepth": 2419,
+          "weaponDepth": 2420,
+          "layeredBelowWeapon": true
+        },
+        {
+          "angle": -3.115102910461046,
+          "physicalBladeLength": 146.98568604179874,
+          "extensionWidth": 327.97634997798883,
+          "signedRootOverlap": 47.89737442357485,
+          "opaqueInset": 4.969338636030134,
+          "visibleJoinOverlap": 42.928035787544715,
+          "visibleGap": 0,
+          "lateralError": 5.652144709852449,
+          "extensionDepth": 2419,
+          "weaponDepth": 2420,
+          "layeredBelowWeapon": true
+        },
+        {
+          "angle": 3.1258422273511868,
+          "physicalBladeLength": 162.4975663391711,
+          "extensionWidth": 368.57493320801495,
+          "signedRootOverlap": 50.69696087362729,
+          "opaqueInset": 5.584468684969924,
+          "visibleJoinOverlap": 45.11249218865737,
+          "visibleGap": 0,
+          "lateralError": 4.286402164906044,
+          "extensionDepth": 2419,
+          "weaponDepth": 2420,
+          "layeredBelowWeapon": true
+        }
+      ],
+      "angleSpan": 6.240945137812233,
+      "assertions": {
+        "paleProcessionVisible": true,
+        "zeroVisibleJoinGap": true,
+        "outerBladeOverlap": true,
+        "alignedAcrossSwing": true,
+        "layeredBelowPhysicalWeapon": true,
+        "sampledArc": true
+      },
+      "browserErrors": [],
+      "unexpectedBrowserErrors": [],
+      "screenshot": "docs\\owner-notes-audit-v6-evidence\\v61\\headsman-seam-after-mid-swing.png"
+    }
+  ]
+}

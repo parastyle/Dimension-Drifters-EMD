@@ -246,6 +246,16 @@
       anchor: "target",
       params: [P("intensity", "Intensity", 0, 1, 0.4)],
     },
+    "painted-impact": {
+      label: "Painted elemental impact",
+      trigger: "impact",
+      anchor: "target",
+      params: [
+        P("paint", "Paint set", 0, 7, 0, 1),
+        P("count", "Particles", 3, 12, 6, 1),
+        P("size", "Size", 0.45, 1.1, 0.72),
+      ],
+    },
   };
 
   // Composite draw order: ground/area → flight/projectile → swing/beam/cast → motes/hit/spark → painted on top.
@@ -279,6 +289,7 @@
     "charge-glow",
     "muzzle-flash",
     "cleave-flash",
+    "painted-impact",
     "impact-flash",
     "hero-skin",
   ];

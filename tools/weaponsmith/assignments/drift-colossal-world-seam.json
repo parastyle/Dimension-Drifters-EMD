@@ -5,11 +5,11 @@
     "slash-arc": { "on": true, "params": { "reach": 1.4, "width": 10, "color": 0.5 } },
     "edge-trail": { "on": true, "params": { "reach": 1.6, "color": 0.5, "len": 1.4 } },
     "cleave-flash": { "on": true, "params": { "intensity": 1 } },
-    "shockwave-ring": { "on": true, "params": { "color": 0.5 } },
+    "painted-impact": { "on": true, "params": { "paint": 6, "count": 10, "size": 1.05 } },
     "impact-flash": { "on": true, "params": { "intensity": 1 } }
   },
   "rot": 0,
-  "notes": "Maximum-length white seam, black afteredge and room-scale release ring. Void packs reuse high-contrast seam motes. Flagged for a bespoke colossal release sheet.",
+  "notes": "Maximum-length white seam, black afteredge and a room-scale void-splat release. Void packs reuse high-contrast seam motes. Flagged for a bespoke colossal release sheet.",
   "vfxRadius": 240,
   "displayLength": 400
 }

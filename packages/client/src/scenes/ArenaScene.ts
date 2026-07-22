@@ -4203,7 +4203,13 @@ export class ArenaScene extends Phaser.Scene {
     const status = document.getElementById("status");
     // §4 secure deployments must use WSS; localhost/http development remains the same WS endpoint.
     const scheme = location.protocol === "https:" ? "wss" : "ws";
-    const client = new Client(`${scheme}://${location.hostname}:${DEFAULT_PORT}`);
+    // Dev escape hatch: `?port=2568` points this client at a private game server so an interactive
+    // session never fights an e2e harness for DEFAULT_PORT. Ignored outside dev builds.
+    const portOverride = import.meta.env.DEV
+      ? Number(new URLSearchParams(location.search).get("port"))
+      : Number.NaN;
+    const port = Number.isInteger(portOverride) && portOverride > 0 ? portOverride : DEFAULT_PORT;
+    const client = new Client(`${scheme}://${location.hostname}:${port}`);
 
     // Retry with backoff: on a cold `pnpm dev`, the Vite client is ready seconds before
     // the Colyseus server finishes starting. Without retry, the first load throws and
@@ -14814,7 +14820,7 @@ export class ArenaScene extends Phaser.Scene {
     exact = false,
     target?: Readonly<{ x: number; y: number }>,
     sourceBladePose?: () =>
-      | { x: number; y: number; angle: number; physicalBladeLength: number }
+      | { x: number; y: number; angle: number; physicalBladeLength: number; depth: number }
       | undefined,
   ): void {
     if (weapon.suppressVfx) return;

@@ -68,13 +68,14 @@ describe("V6G1 whole-catalog impact-anchor law", () => {
     expect(closeCombatFamilies).toContain("x2-revenant-knuckle");
   });
 
-  it("routes Wendigo and every Revenant circle-sharing melee to the attacked target", () => {
+  it("routes named impacts to the target without emitting either generic cursor ring", () => {
     for (const id of ["x2-wendigo-claws", "x2-revenant-knuckle"]) {
       const definition = weapon(id);
       const swing = swingDescriptorFor(definition, definition.cooldown);
       const { suite } = weaponVfxSuiteFor(id, definition.tags.element, swing.style);
       const split = splitWeaponVfxSuite(suite);
       expect(Object.keys(split.target), id).not.toHaveLength(0);
+      if (id === "x2-revenant-knuckle") expect(split.target["painted-impact"], id).toBeDefined();
       for (const layerId of Object.keys(split.target))
         expect(globalThis.VFXLAYERS.LAYERS[layerId]?.anchor, `${id}:${layerId}`).toBe("target");
     }
@@ -86,18 +87,7 @@ describe("V6G1 whole-catalog impact-anchor law", () => {
         const { suite } = weaponVfxSuiteFor(definition.id, definition.tags.element, swing.style);
         return CIRCLE_IMPACT_LAYER_IDS.some((layerId) => suite[layerId]?.on);
       });
-    expect(circleSharers.map(({ id }) => id)).toContain("x2-revenant-knuckle");
-    for (const definition of circleSharers) {
-      const swing = swingDescriptorFor(definition, definition.cooldown);
-      const split = splitWeaponVfxSuite(
-        weaponVfxSuiteFor(definition.id, definition.tags.element, swing.style).suite,
-      );
-      for (const layerId of CIRCLE_IMPACT_LAYER_IDS)
-        if (split.target[layerId]?.on)
-          expect(globalThis.VFXLAYERS.LAYERS[layerId]?.anchor, `${definition.id}:${layerId}`).toBe(
-            "target",
-          );
-    }
+    expect(circleSharers).toEqual([]);
   });
 
   it("deletes Riftcaller's self aura and moves Dustreaper's 30x flame to the clamped target", () => {

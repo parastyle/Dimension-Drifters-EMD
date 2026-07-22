@@ -1,0 +1,67 @@
+{
+  "phase": "before",
+  "label": "revenant-void",
+  "weaponId": "x2-revenant-knuckle",
+  "element": "void",
+  "baseURL": "http://localhost:5180",
+  "capturedAt": "2026-07-22T00:03:29.638Z",
+  "setup": {
+    "actor": {
+      "x": 2400,
+      "y": 2420
+    },
+    "target": {
+      "x": 2671.018798828125,
+      "y": 2382.111572265625
+    }
+  },
+  "visual": {
+    "frozen": true,
+    "ringVisible": true,
+    "paintedVisible": false,
+    "textureKeys": []
+  },
+  "events": [
+    {
+      "kind": "weapon-vfx-suite",
+      "weaponId": "x2-revenant-knuckle",
+      "anchor": "source",
+      "x": 2400,
+      "y": 2420,
+      "targetX": 2508.9405817560973,
+      "targetY": 2404.7701068078886,
+      "layerIds": [
+        "twin-slash"
+      ]
+    },
+    {
+      "kind": "weapon-vfx-suite",
+      "weaponId": "x2-revenant-knuckle",
+      "anchor": "target",
+      "x": 2508.9405817560973,
+      "y": 2404.7701068078886,
+      "targetX": 2508.9405817560973,
+      "targetY": 2404.7701068078886,
+      "layerIds": [
+        "shockwave-ring",
+        "sigil-ring"
+      ]
+    }
+  ],
+  "layerIds": [
+    "twin-slash",
+    "shockwave-ring",
+    "sigil-ring"
+  ],
+  "genericLayers": [
+    "shockwave-ring",
+    "sigil-ring"
+  ],
+  "assertions": {
+    "genericRingRecipeReproduced": true,
+    "genericRingVisible": true
+  },
+  "browserErrors": [],
+  "unexpectedBrowserErrors": [],
+  "screenshot": "docs\\owner-notes-audit-v6-evidence\\v61\\cursor-circle-before-revenant-void.png"
+}

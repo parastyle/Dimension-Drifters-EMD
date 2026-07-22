@@ -1,0 +1,23 @@
+{
+  "vfxSubject": "vfx-x2-cairnfall-monolith",
+  "image": null,
+  "suite": {
+    "blade-trail": {
+      "on": true,
+      "params": {
+        "reach": 1,
+        "paint": 0,
+        "history": 0.92,
+        "bodyAlpha": 0.2,
+        "lipAlpha": 0.3,
+        "color": 0.1
+      }
+    },
+    "painted-impact": { "on": true, "params": { "paint": 0, "count": 11, "size": 1 } },
+    "impact-flash": { "on": true, "params": { "intensity": 0.38 } }
+  },
+  "rot": 0,
+  "notes": "Muted dust-steel wake leaves the jagged stone extension readable; the impact remains within the existing physical pack.",
+  "vfxRadius": 194,
+  "displayLength": 242
+}

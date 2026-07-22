@@ -1,0 +1,23 @@
+{
+  "vfxSubject": "vfx-x2-rimewrit-grave-slab",
+  "image": null,
+  "suite": {
+    "blade-trail": {
+      "on": true,
+      "params": {
+        "reach": 1,
+        "paint": 2,
+        "history": 0.9,
+        "bodyAlpha": 0.2,
+        "lipAlpha": 0.34,
+        "color": 0.54
+      }
+    },
+    "painted-impact": { "on": true, "params": { "paint": 2, "count": 9, "size": 0.86 } },
+    "impact-flash": { "on": true, "params": { "intensity": 0.5 } }
+  },
+  "rot": 0,
+  "notes": "Low-alpha frost wake leaves the generated crystal extension dominant; the target uses the shared frost splat pack.",
+  "vfxRadius": 186,
+  "displayLength": 226
+}

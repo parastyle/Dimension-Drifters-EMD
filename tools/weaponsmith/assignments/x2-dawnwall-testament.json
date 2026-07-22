@@ -1,0 +1,23 @@
+{
+  "vfxSubject": "vfx-x2-dawnwall-testament",
+  "image": null,
+  "suite": {
+    "blade-trail": {
+      "on": true,
+      "params": {
+        "reach": 1,
+        "paint": 4,
+        "history": 0.88,
+        "bodyAlpha": 0.18,
+        "lipAlpha": 0.36,
+        "color": 0.55
+      }
+    },
+    "painted-impact": { "on": true, "params": { "paint": 4, "count": 9, "size": 0.88 } },
+    "impact-flash": { "on": true, "params": { "intensity": 0.82 } }
+  },
+  "rot": 0,
+  "notes": "Hard blue-white daylight, not champagne procession-light: restrained wake, architectural extension, crisp holy impact.",
+  "vfxRadius": 182,
+  "displayLength": 224
+}

@@ -10,7 +10,12 @@ export const RIFTCALLER_DELETED_AURA_LAYERS = Object.freeze([
   "shockwave-ring",
   "sigil-ring",
 ] as const);
-export const CIRCLE_IMPACT_LAYER_IDS = Object.freeze(["shockwave-ring", "sigil-ring"] as const);
+/** Legacy generic primitives retained in the dev palette but forbidden from every resolved live suite. */
+export const GENERIC_IMPACT_RING_LAYER_IDS = Object.freeze([
+  "shockwave-ring",
+  "sigil-ring",
+] as const);
+export const CIRCLE_IMPACT_LAYER_IDS = GENERIC_IMPACT_RING_LAYER_IDS;
 
 export const ELEMENT_HUE: Readonly<Record<string, number>> = Object.freeze({
   physical: 0.55,
@@ -45,6 +50,29 @@ const ELEMENT_COLOR: Readonly<Record<string, number>> = Object.freeze({
   arcane: 0x8f6aff,
 });
 
+function paintedImpact(element: string, count = 6, size = 0.72): WeaponVfxLayer {
+  return {
+    on: true,
+    params: { paint: ELEMENT_PAINT[element] ?? 0, count, size },
+  };
+}
+
+/** Replace every old impact ring with installed element-splat art before a suite reaches live rendering. */
+export function replaceGenericImpactRings(suite: WeaponVfxSuite, element: string): WeaponVfxSuite {
+  let replaced = false;
+  const resolved: WeaponVfxSuite = {};
+  for (const [layerId, layer] of Object.entries(suite)) {
+    if ((GENERIC_IMPACT_RING_LAYER_IDS as readonly string[]).includes(layerId)) {
+      replaced ||= layer.on;
+      continue;
+    }
+    resolved[layerId] = layer;
+  }
+  if (replaced && !resolved["painted-impact"]?.on)
+    resolved["painted-impact"] = paintedImpact(element, 7, 0.78);
+  return resolved;
+}
+
 function elementFlourish(element: string, hue: number): WeaponVfxSuite {
   switch (element) {
     case "fire":
@@ -55,7 +83,7 @@ function elementFlourish(element: string, hue: number): WeaponVfxSuite {
     case "shock":
       return {
         "arc-bolt": { on: true, params: { color: hue } },
-        "shockwave-ring": { on: true, params: { color: hue } },
+        "painted-impact": paintedImpact(element, 8, 0.78),
       };
     case "frost":
       return {
@@ -64,7 +92,7 @@ function elementFlourish(element: string, hue: number): WeaponVfxSuite {
       };
     case "holy":
       return {
-        "sigil-ring": { on: true, params: { color: hue, size: 1 } },
+        "painted-impact": paintedImpact(element, 7, 0.78),
         "impact-flash": { on: true, params: { intensity: 0.65 } },
       };
     case "toxic":
@@ -74,12 +102,11 @@ function elementFlourish(element: string, hue: number): WeaponVfxSuite {
       };
     case "void":
       return {
-        "shockwave-ring": { on: true, params: { color: hue } },
-        "sigil-ring": { on: true, params: { color: hue, size: 1.1 } },
+        "painted-impact": paintedImpact(element, 8, 0.84),
       };
     case "arcane":
       return {
-        "sigil-ring": { on: true, params: { color: hue, size: 1.2 } },
+        "painted-impact": paintedImpact(element, 7, 0.8),
         "arc-bolt": { on: true, params: { color: hue } },
       };
     default:
@@ -119,7 +146,7 @@ export function buildWeaponFallbackSuite(
     base = {
       "blade-trail": { on: true, params: perParams },
       "cleave-flash": { on: true, params: { intensity: 0.85 } },
-      "shockwave-ring": { on: true, params: { color: hue } },
+      "painted-impact": paintedImpact(element, 8, 0.78),
     };
   else base = { "blade-trail": { on: true, params: perParams } };
   if (energy) base["impact-flash"] = { on: true, params: { intensity: 0.6 } };
@@ -135,7 +162,7 @@ export function weaponVfxSuiteFor(
 ): { readonly suite: WeaponVfxSuite; readonly authored: boolean; readonly vfx?: WeaponVfx } {
   const vfx = WEAPON_VFX[weaponId];
   const authored = !!(vfx?.suite && Object.keys(vfx.suite).length > 0);
-  if (authored) return { suite: vfx.suite, authored, vfx };
+  if (authored) return { suite: replaceGenericImpactRings(vfx.suite, element), authored, vfx };
   const key = weaponId || `el:${element}:${style}`;
   let suite = FALLBACK_CACHE.get(key);
   if (!suite) {

@@ -2957,7 +2957,7 @@ export class SpriteRig {
   /** Current world-space tip of the lead held sprite. Presentation VFX use this instead of re-deriving the
    * rig's orbit/foreshortening/facing law, so an attached extension cannot drift away from the real blade. */
   leadWeaponTipPose():
-    | { x: number; y: number; angle: number; physicalBladeLength: number }
+    | { x: number; y: number; angle: number; physicalBladeLength: number; depth: number }
     | undefined {
     const held = this.weapons[0];
     if (!held) return undefined;
@@ -2976,6 +2976,7 @@ export class SpriteRig {
         1,
         (1 - held.def.gripFrac) * image.width * pixelsPerSourcePixel,
       ),
+      depth: this.root.depth,
     };
   }
 

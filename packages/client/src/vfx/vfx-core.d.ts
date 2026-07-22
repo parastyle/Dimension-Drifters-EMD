@@ -18,6 +18,7 @@ declare global {
     emitStreak?: unknown;
     eScatter?: unknown;
     scatterMeta?: unknown;
+    paintedImpact?: (params: Record<string, number>) => void;
   }
 
   interface VfxRender {

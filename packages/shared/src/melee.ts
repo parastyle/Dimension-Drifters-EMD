@@ -1265,6 +1265,12 @@ function bigSwordPanelVariantFor(def: WeaponDef): SignatureMeleeComboVariant | u
     case "x-sword-coffin":
     case "x-sword-bone":
     case "x2-riftcleaver-greatblade":
+    case "x2-rimewrit-grave-slab":
+    case "x2-pyre-gallows-brand":
+    case "x2-stormrail-colossus":
+    case "x2-nullwake-ordinance":
+    case "x2-dawnwall-testament":
+    case "x2-cairnfall-monolith":
       return "greatsword-momentum";
     case "x2-tombwarden-claymore":
     case "x2-dustreaper-zweihander":

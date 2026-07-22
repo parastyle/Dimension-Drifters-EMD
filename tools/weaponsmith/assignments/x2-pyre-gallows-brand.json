@@ -1,0 +1,23 @@
+{
+  "vfxSubject": "vfx-x2-pyre-gallows-brand",
+  "image": null,
+  "suite": {
+    "blade-trail": {
+      "on": true,
+      "params": {
+        "reach": 1,
+        "paint": 1,
+        "history": 0.9,
+        "bodyAlpha": 0.2,
+        "lipAlpha": 0.36,
+        "color": 0.03
+      }
+    },
+    "painted-impact": { "on": true, "params": { "paint": 1, "count": 10, "size": 0.9 } },
+    "impact-flash": { "on": true, "params": { "intensity": 0.72 } }
+  },
+  "rot": 0,
+  "notes": "A restrained ember wake supports the roaring flame extension; the hit resolves through existing fire splat and flash layers.",
+  "vfxRadius": 180,
+  "displayLength": 232
+}

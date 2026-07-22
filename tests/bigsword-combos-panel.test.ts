@@ -21,12 +21,15 @@ const PANEL_ROSTER = {
     "tombstone-greatsword",
     "x-sword-coffin",
     "x-sword-bone",
+    "x2-rimewrit-grave-slab",
+    "x2-pyre-gallows-brand",
+    "x2-stormrail-colossus",
+    "x2-nullwake-ordinance",
+    "x2-dawnwall-testament",
+    "x2-cairnfall-monolith",
   ],
   "claymore-breach": ["x2-tombwarden-claymore", "x2-dustreaper-zweihander"],
-  "glaive-compass": [
-    "x2-thunderhead-voulge",
-    "x2-wickfire-fauchard",
-  ],
+  "glaive-compass": ["x2-thunderhead-voulge", "x2-wickfire-fauchard"],
   "bardiche-hookbreak": ["x2-permafrost-bardiche", "x2-quarry-splitter-bardiche"],
 } as const;
 

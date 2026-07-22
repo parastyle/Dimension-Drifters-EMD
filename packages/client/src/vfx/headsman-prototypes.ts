@@ -2,6 +2,8 @@ import { MELEE_TWO_HAND_GRIP_REACH, type SwingDescriptor, type WeaponDef } from 
 
 export const SANCTIFIED_HEADSMAN_ID = "x2-sanctified-headsman";
 export const SANCTIFIED_HEADSMAN_LENGTH_MULTIPLIER = 3;
+/** The extension roots inside the outer 30% of the physical blade; the real sprite masks this join. */
+export const SANCTIFIED_HEADSMAN_BLADE_OVERLAP_FRACTION = 0.3;
 
 export interface HeadsmanPrototype {
   readonly proto: 1 | 2 | 3 | 4;
@@ -47,21 +49,33 @@ export const HEADSMAN_PROTOTYPES = Object.freeze([
   }),
 ] as const satisfies readonly HeadsmanPrototype[]);
 
+export const SANCTIFIED_HEADSMAN_PRODUCTION_TREATMENT = HEADSMAN_PROTOTYPES[1];
+
 /** Dev grammar: `?dev=weapon:x2-sanctified-headsman&proto=1..4`, or the hash form `#p1..4` —
- * the hash survives chat/link handlers that strip second query parameters. Invalid/missing values
- * use proto 1 strictly as a review placeholder; this does not declare an owner-selected winner. */
-export function headsmanPrototypeFromSearch(search: string, hash = ""): HeadsmanPrototype {
+ * the hash survives chat/link handlers that strip second query parameters. These references are dev-only;
+ * invalid/missing values resolve to the shipped Pale Procession treatment. */
+let devCycleOverride: string | null = null;
+
+/** Production is locked to Pale Procession; URL/hash selection survives only in dev builds. */
+export function resolveHeadsmanTreatment(
+  search: string,
+  hash: string,
+  devMode: boolean,
+  cycleOverride: string | null = devCycleOverride,
+): HeadsmanPrototype {
+  if (!devMode) return SANCTIFIED_HEADSMAN_PRODUCTION_TREATMENT;
   const fromHash = /^#p([1-4])$/.exec(hash)?.[1];
-  const raw = devCycleOverride ?? fromHash ?? new URLSearchParams(search).get("proto");
+  const raw = cycleOverride ?? fromHash ?? new URLSearchParams(search).get("proto");
   const proto = Number(raw);
   return (
-    HEADSMAN_PROTOTYPES.find((candidate) => candidate.proto === proto) ?? HEADSMAN_PROTOTYPES[0]
+    HEADSMAN_PROTOTYPES.find((candidate) => candidate.proto === proto) ??
+    SANCTIFIED_HEADSMAN_PRODUCTION_TREATMENT
   );
 }
 
-/** Dev-only live cycle: the owner's chat client strips URL queries entirely, so P cycles the
- * prototype in-game instead. Holds the last choice for the session; null defers to the URL. */
-let devCycleOverride: string | null = null;
+export function headsmanPrototypeFromSearch(search: string, hash = ""): HeadsmanPrototype {
+  return resolveHeadsmanTreatment(search, hash, import.meta.env.DEV);
+}
 
 if (import.meta.env.DEV && typeof window !== "undefined") {
   window.addEventListener("keydown", (event) => {
@@ -69,7 +83,9 @@ if (import.meta.env.DEV && typeof window !== "undefined") {
     const target = event.target as HTMLElement | null;
     // Never steal the key from note bubbles or other text inputs.
     if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA")) return;
-    const current = Number(devCycleOverride ?? "0");
+    const current = Number(
+      devCycleOverride ?? String(SANCTIFIED_HEADSMAN_PRODUCTION_TREATMENT.proto),
+    );
     const next = current >= 4 || current < 1 ? 1 : current + 1;
     devCycleOverride = String(next);
     const chosen = HEADSMAN_PROTOTYPES[next - 1] ?? HEADSMAN_PROTOTYPES[0];
@@ -83,7 +99,7 @@ if (import.meta.env.DEV && typeof window !== "undefined") {
         "padding:10px 18px;border-radius:8px;font:600 15px system-ui;pointer-events:none";
       document.body.appendChild(toast);
     }
-    toast.textContent = `HEADSMAN PROTOTYPE ${next} — ${chosen.name} (P to cycle)`;
+    toast.textContent = `HEADSMAN DEV TREATMENT ${next} — ${chosen.name} (P to cycle)`;
     toast.style.opacity = "1";
     clearTimeout((toast as HTMLElement & { hideTimer?: number }).hideTimer);
     (toast as HTMLElement & { hideTimer?: number }).hideTimer = window.setTimeout(() => {
@@ -97,19 +113,22 @@ export interface HeadsmanExtensionGeometry {
   readonly totalBladeLength: number;
   readonly extensionLength: number;
   readonly extensionStart: number;
+  readonly overlapLength: number;
 }
 
-/** One geometry law shared by all four treatments: the magic starts at the physical tip and makes the
- * total visible blade exactly 3x the physical blade length. It is visual-only; authoritative range is
- * deliberately unchanged pending the owner's reach decision. */
+/** The magic starts beneath the outer physical blade and still ends at the exact 3x visual endpoint.
+ * Authoritative reach remains unchanged by owner decision. */
 export function headsmanExtensionGeometry(weapon: WeaponDef): HeadsmanExtensionGeometry {
   const physicalBladeLength = Math.max(1, (1 - weapon.gripFrac) * weapon.displayLength);
   const totalBladeLength = physicalBladeLength * SANCTIFIED_HEADSMAN_LENGTH_MULTIPLIER;
+  const overlapLength = physicalBladeLength * SANCTIFIED_HEADSMAN_BLADE_OVERLAP_FRACTION;
   return {
     physicalBladeLength,
     totalBladeLength,
-    extensionLength: totalBladeLength - physicalBladeLength,
-    extensionStart: (weapon.twoHanded ? MELEE_TWO_HAND_GRIP_REACH : 0) + physicalBladeLength,
+    extensionLength: totalBladeLength - physicalBladeLength + overlapLength,
+    extensionStart:
+      (weapon.twoHanded ? MELEE_TWO_HAND_GRIP_REACH : 0) + physicalBladeLength - overlapLength,
+    overlapLength,
   };
 }
 

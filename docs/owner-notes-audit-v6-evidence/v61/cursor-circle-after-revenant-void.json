@@ -1,0 +1,84 @@
+{
+  "phase": "after",
+  "label": "revenant-void",
+  "weaponId": "x2-revenant-knuckle",
+  "element": "void",
+  "baseURL": "http://127.0.0.1:5180",
+  "capturedAt": "2026-07-22T00:51:36.487Z",
+  "setup": {
+    "actor": {
+      "x": 2400,
+      "y": 2420
+    },
+    "target": {
+      "x": 2696.4234619140625,
+      "y": 2383.295654296875
+    }
+  },
+  "visual": {
+    "frozen": true,
+    "ringVisible": false,
+    "paintedVisible": true,
+    "textureKeys": [
+      "ptcl:void-splat",
+      "ptcl:void-splat",
+      "ptcl:void-splat",
+      "ptcl:void-splat",
+      "ptcl:void-splat",
+      "ptcl:void-splat",
+      "ptcl:void-splat",
+      "ptcl:void-splat"
+    ]
+  },
+  "events": [
+    {
+      "kind": "weapon-vfx-suite",
+      "weaponId": "x2-revenant-knuckle",
+      "anchor": "source",
+      "x": 2400,
+      "y": 2420,
+      "targetX": 2509.166293494611,
+      "targetY": 2406.48259031292,
+      "layerIds": [
+        "twin-slash"
+      ]
+    },
+    {
+      "kind": "weapon-vfx-suite",
+      "weaponId": "x2-revenant-knuckle",
+      "anchor": "target",
+      "x": 2509.166293494611,
+      "y": 2406.48259031292,
+      "targetX": 2509.166293494611,
+      "targetY": 2406.48259031292,
+      "layerIds": [
+        "painted-impact"
+      ]
+    },
+    {
+      "kind": "painted-impact",
+      "weaponId": "x2-revenant-knuckle",
+      "anchor": "target",
+      "x": 2509.166293494611,
+      "y": 2406.48259031292,
+      "targetX": 2509.166293494611,
+      "targetY": 2406.48259031292,
+      "pack": "void-splat",
+      "count": 8,
+      "spawned": true
+    }
+  ],
+  "layerIds": [
+    "twin-slash",
+    "painted-impact"
+  ],
+  "genericLayers": [],
+  "assertions": {
+    "genericRingRecipeRemoved": true,
+    "genericRingInvisible": true,
+    "paintedElementImpactVisible": true
+  },
+  "browserErrors": [],
+  "unexpectedBrowserErrors": [],
+  "screenshot": "docs\\owner-notes-audit-v6-evidence\\v61\\cursor-circle-after-revenant-void.png"
+}

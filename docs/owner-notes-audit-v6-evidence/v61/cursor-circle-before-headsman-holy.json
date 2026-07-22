@@ -1,0 +1,71 @@
+{
+  "phase": "before",
+  "label": "headsman-holy",
+  "weaponId": "x2-sanctified-headsman",
+  "element": "holy",
+  "baseURL": "http://localhost:5180",
+  "capturedAt": "2026-07-22T00:03:43.298Z",
+  "setup": {
+    "actor": {
+      "x": 2400,
+      "y": 2420
+    },
+    "target": {
+      "x": 2678.11474609375,
+      "y": 2389.01220703125
+    }
+  },
+  "visual": {
+    "frozen": true,
+    "ringVisible": true,
+    "paintedVisible": false,
+    "textureKeys": []
+  },
+  "events": [
+    {
+      "kind": "weapon-vfx-suite",
+      "weaponId": "x2-sanctified-headsman",
+      "anchor": "source",
+      "x": 2400,
+      "y": 2420,
+      "targetX": 2589.2985898730744,
+      "targetY": 2398.9081823432484,
+      "layerIds": [
+        "blade-trail"
+      ]
+    },
+    {
+      "kind": "weapon-vfx-suite",
+      "weaponId": "x2-sanctified-headsman",
+      "anchor": "target",
+      "x": 2589.2985898730744,
+      "y": 2398.9081823432484,
+      "targetX": 2589.2985898730744,
+      "targetY": 2398.9081823432484,
+      "layerIds": [
+        "cleave-flash",
+        "shockwave-ring",
+        "sigil-ring",
+        "impact-flash"
+      ]
+    }
+  ],
+  "layerIds": [
+    "blade-trail",
+    "cleave-flash",
+    "shockwave-ring",
+    "sigil-ring",
+    "impact-flash"
+  ],
+  "genericLayers": [
+    "shockwave-ring",
+    "sigil-ring"
+  ],
+  "assertions": {
+    "genericRingRecipeReproduced": true,
+    "genericRingVisible": true
+  },
+  "browserErrors": [],
+  "unexpectedBrowserErrors": [],
+  "screenshot": "docs\\owner-notes-audit-v6-evidence\\v61\\cursor-circle-before-headsman-holy.png"
+}

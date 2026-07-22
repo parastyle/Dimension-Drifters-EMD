@@ -18,15 +18,15 @@ import { RENDER_DPR } from "../render-dpr.js";
 import { preloadFxPacks } from "./fx-composer.js";
 import { paintedSwingDisplayWidth } from "./painted-particle-scale.js";
 import { PARTICLE_PACKS } from "./particle-manifest.js";
+import { elementPack, paintedParticlePixels, particleBurst } from "./particles.js";
 import "./vfx-render.js"; // sets globalThis.VFXRENDER
 import "./vfx-layers.js"; // sets globalThis.VFXLAYERS
 import {
-  HEADSMAN_PROTOTYPES,
-  headsmanExtensionGeometry,
-  headsmanExtensionReveal,
-  headsmanPrototypeFromSearch,
-  SANCTIFIED_HEADSMAN_ID,
-} from "./headsman-prototypes.js";
+  ALL_BLADE_EXTENSION_TEXTURES,
+  bladeExtensionTreatmentFor,
+  weaponSupportsBladeExtension,
+} from "./blade-extension-treatments.js";
+import { headsmanExtensionGeometry, headsmanExtensionReveal } from "./headsman-prototypes.js";
 import { KATANA_SLASH_ASSIGNMENTS } from "./katana-slash.generated.js";
 import { MUZZLE_FLASH_SHEET, muzzleFlashAssignmentFor } from "./muzzle-flash-catalog.js";
 import { WEAPON_VFX, type WeaponVfx } from "./weapon-vfx.generated.js";
@@ -80,6 +80,7 @@ interface WeaponBladeTipPose {
   readonly y: number;
   readonly angle: number;
   readonly physicalBladeLength: number;
+  readonly depth: number;
 }
 
 interface PerRuntimeSurface {
@@ -199,8 +200,8 @@ export class VfxPlayer {
       frameWidth: MUZZLE_FLASH_SHEET.frameWidth,
       frameHeight: MUZZLE_FLASH_SHEET.frameHeight,
     });
-    for (const prototype of HEADSMAN_PROTOTYPES)
-      scene.load.image(prototype.textureKey, prototype.url);
+    for (const treatment of ALL_BLADE_EXTENSION_TEXTURES)
+      scene.load.image(treatment.textureKey, treatment.url);
   }
 
   /** Stop every owner of a surface before reassigning it. Generation checks are still required: Phaser can
@@ -218,6 +219,7 @@ export class VfxPlayer {
     per.muzzleFlashImg?.setVisible(false);
     per.perLongTailFired = false;
     per.per = undefined;
+    surf.S.paintedImpact = undefined;
     surf.headsmanExtension.setVisible(false);
     (surf.S.heroImg as Phaser.GameObjects.Image | undefined)?.setVisible(false);
     const emitters = surf.S as unknown as Record<string, { killAll(): unknown } | undefined>;
@@ -253,12 +255,12 @@ export class VfxPlayer {
         container.add(heroImg);
         S.heroImg = heroImg;
         globalThis.VFXRENDER.attachSurface(this.scene, S);
-        // Keep the owner-review blade as a top-level world image. The bloom-root filter can disappear on
-        // scaled/high-DPI cameras, while this long comparison-critical silhouette must remain WYSIWYG.
+        // Keep the extension top-level so it can sort immediately beneath the wielder container. The
+        // physical weapon sprite masks the overlapped magic/metal join.
         const headsmanExtension = this.scene.add
           .image(0, 0, "vfx-blank")
           .setOrigin(0, 0.5)
-          .setDepth(99001)
+          .setDepth(0)
           .setVisible(false);
         surf = { container, S, headsmanExtension, busy: false, generation: 0 };
         this.pool.push(surf);
@@ -327,9 +329,9 @@ export class VfxPlayer {
         return;
       }
       const split = splitWeaponVfxSuite(suite);
-      // The Headsman's review extension is a source-anchored weapon treatment in its own right. Keep
+      // Blade extensions are source-anchored weapon treatments in their own right. Keep
       // a source surface even when the authored suite happens to contain only target-anchored layers.
-      if (Object.keys(split.source).length > 0 || weaponId === SANCTIFIED_HEADSMAN_ID)
+      if (Object.keys(split.source).length > 0 || weaponSupportsBladeExtension(weaponId))
         this.playSwing(
           weaponId,
           x,
@@ -370,17 +372,18 @@ export class VfxPlayer {
     const surf = this.acquire();
     const generation = surf.generation;
     const S = surf.S;
-    const headsmanPrototype =
-      partition.anchor === "source" && weaponId === SANCTIFIED_HEADSMAN_ID
-        ? headsmanPrototypeFromSearch(
+    const bladeExtensionTreatment =
+      partition.anchor === "source"
+        ? bladeExtensionTreatmentFor(
+            weaponId,
             globalThis.location?.search ?? "",
             globalThis.location?.hash ?? "",
           )
         : undefined;
-    const headsmanGeometry =
-      headsmanPrototype && weapon ? headsmanExtensionGeometry(weapon) : undefined;
-    const headsmanActor =
-      headsmanPrototype && weapon
+    const bladeExtensionGeometry =
+      bladeExtensionTreatment && weapon ? headsmanExtensionGeometry(weapon) : undefined;
+    const bladeExtensionActor =
+      bladeExtensionTreatment && weapon
         ? {
             x: x - Math.cos(aimRad) * weapon.range * 0.6,
             y: y - Math.sin(aimRad) * weapon.range * 0.6,
@@ -484,6 +487,34 @@ export class VfxPlayer {
       });
       if (events.length > 256) events.splice(0, events.length - 256);
     }
+    S.paintedImpact = (params) => {
+      const pack = elementPack(element, "splat");
+      const count = Math.max(3, Math.min(12, Math.round(params.count ?? 6)));
+      const displayPixels = Math.max(36, Math.min(84, S.R * (params.size ?? 0.72)));
+      const spawned = particleBurst(this.scene, pack, ox, oy, {
+        count,
+        spread: Math.PI * 2,
+        speed: Math.max(90, Math.min(190, S.R * 1.4)),
+        scaleContract: paintedParticlePixels(displayPixels),
+        lifeMs: 440,
+        additive: element !== "physical",
+      });
+      if (audit.__ddV6GAnchorCapture) {
+        audit.__ddV6GAnchorEvents ??= [];
+        audit.__ddV6GAnchorEvents.push({
+          kind: "painted-impact",
+          weaponId,
+          anchor: partition.anchor,
+          x: ox,
+          y: oy,
+          targetX,
+          targetY,
+          pack,
+          count,
+          spawned,
+        });
+      }
+    };
     const activeSeconds = Math.max(0, swing.activeEndSeconds - swing.activeStartSeconds);
     const followSeconds = Math.min(
       Math.max(0, swing.poseSeconds - swing.activeEndSeconds),
@@ -508,7 +539,7 @@ export class VfxPlayer {
         S.gfxAdd?.clear();
         VR.renderHero(this.scene, S, p);
         VR.renderLayers(S, p, "all", 1);
-        if (headsmanPrototype && headsmanGeometry && headsmanActor) {
+        if (bladeExtensionTreatment && bladeExtensionGeometry && bladeExtensionActor) {
           const elapsedSeconds = p * swing.poseSeconds;
           const reveal = headsmanExtensionReveal(swing, elapsedSeconds);
           if (reveal > 0) {
@@ -518,19 +549,34 @@ export class VfxPlayer {
               heldTip?.angle ?? aimRad + bladeAngleAt(0, swingArc, edgeProgress);
             const extensionStartX =
               heldTip?.x ??
-              headsmanActor.x + Math.cos(extensionAngle) * headsmanGeometry.extensionStart;
+              bladeExtensionActor.x +
+                Math.cos(extensionAngle) * bladeExtensionGeometry.extensionStart;
             const extensionStartY =
               heldTip?.y ??
-              headsmanActor.y + Math.sin(extensionAngle) * headsmanGeometry.extensionStart;
+              bladeExtensionActor.y +
+                Math.sin(extensionAngle) * bladeExtensionGeometry.extensionStart;
             const physicalBladeLength =
-              heldTip?.physicalBladeLength ?? headsmanGeometry.physicalBladeLength;
+              heldTip?.physicalBladeLength ?? bladeExtensionGeometry.physicalBladeLength;
+            const overlapLength =
+              physicalBladeLength *
+              (bladeExtensionGeometry.overlapLength / bladeExtensionGeometry.physicalBladeLength);
+            const extensionLength =
+              physicalBladeLength *
+              (bladeExtensionGeometry.extensionLength / bladeExtensionGeometry.physicalBladeLength);
+            const extensionRootX = heldTip
+              ? heldTip.x - Math.cos(extensionAngle) * overlapLength
+              : extensionStartX;
+            const extensionRootY = heldTip
+              ? heldTip.y - Math.sin(extensionAngle) * overlapLength
+              : extensionStartY;
             surf.headsmanExtension
-              .setTexture(headsmanPrototype.textureKey)
-              .setPosition(extensionStartX, extensionStartY)
+              .setTexture(bladeExtensionTreatment.textureKey)
+              .setPosition(extensionRootX, extensionRootY)
               .setRotation(extensionAngle)
+              .setDepth((heldTip?.depth ?? bladeExtensionActor.y) - 1)
               .setDisplaySize(
-                physicalBladeLength * 2 * reveal,
-                physicalBladeLength * headsmanPrototype.thicknessScale,
+                extensionLength * reveal,
+                physicalBladeLength * bladeExtensionTreatment.thicknessScale,
               )
               .setAlpha(Math.min(1, 0.5 + reveal * 0.5))
               .setVisible(true);

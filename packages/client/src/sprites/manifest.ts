@@ -6712,6 +6712,32 @@ export const SPRITES = {
       }
     ]
   },
+  "x2-cairnfall-monolith": {
+    "id": "x2-cairnfall-monolith",
+    "kind": "weapon",
+    "canvas": {
+      "w": 492,
+      "h": 492
+    },
+    "body": {
+      "cx": 278.7,
+      "cy": 245.73,
+      "w": 484,
+      "h": 137
+    },
+    "parts": [
+      {
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 484,
+        "h": 137,
+        "cx": 278.7,
+        "cy": 245.73,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
+  },
   "x2-calamity-howitzer": {
     "id": "x2-calamity-howitzer",
     "kind": "weapon",
@@ -7607,6 +7633,32 @@ export const SPRITES = {
         "h": 143,
         "cx": 146.12,
         "cy": 141.76,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
+  },
+  "x2-dawnwall-testament": {
+    "id": "x2-dawnwall-testament",
+    "kind": "weapon",
+    "canvas": {
+      "w": 505,
+      "h": 505
+    },
+    "body": {
+      "cx": 270.77,
+      "cy": 249.85,
+      "w": 484,
+      "h": 135
+    },
+    "parts": [
+      {
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 484,
+        "h": 135,
+        "cx": 270.77,
+        "cy": 249.85,
         "ox": 0,
         "oy": 0
       }
@@ -10536,6 +10588,32 @@ export const SPRITES = {
       }
     ]
   },
+  "x2-nullwake-ordinance": {
+    "id": "x2-nullwake-ordinance",
+    "kind": "weapon",
+    "canvas": {
+      "w": 485,
+      "h": 485
+    },
+    "body": {
+      "cx": 261.54,
+      "cy": 240.65,
+      "w": 484,
+      "h": 200
+    },
+    "parts": [
+      {
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 484,
+        "h": 200,
+        "cx": 261.54,
+        "cy": 240.65,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
+  },
   "x2-obsidian-maw-void-staff": {
     "id": "x2-obsidian-maw-void-staff",
     "kind": "weapon",
@@ -10993,6 +11071,32 @@ export const SPRITES = {
         "h": 152,
         "cx": 140.72,
         "cy": 141.62,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
+  },
+  "x2-pyre-gallows-brand": {
+    "id": "x2-pyre-gallows-brand",
+    "kind": "weapon",
+    "canvas": {
+      "w": 505,
+      "h": 505
+    },
+    "body": {
+      "cx": 258.29,
+      "cy": 259.5,
+      "w": 484,
+      "h": 194
+    },
+    "parts": [
+      {
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 484,
+        "h": 194,
+        "cx": 258.29,
+        "cy": 259.5,
         "ox": 0,
         "oy": 0
       }
@@ -11741,6 +11845,32 @@ export const SPRITES = {
         "h": 35,
         "cx": 141.23,
         "cy": 133.55,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
+  },
+  "x2-rimewrit-grave-slab": {
+    "id": "x2-rimewrit-grave-slab",
+    "kind": "weapon",
+    "canvas": {
+      "w": 501,
+      "h": 501
+    },
+    "body": {
+      "cx": 283.77,
+      "cy": 249.79,
+      "w": 484,
+      "h": 149
+    },
+    "parts": [
+      {
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 484,
+        "h": 149,
+        "cx": 283.77,
+        "cy": 249.79,
         "ox": 0,
         "oy": 0
       }
@@ -12717,6 +12847,32 @@ export const SPRITES = {
         "h": 23,
         "cx": 117.67,
         "cy": 130.82,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
+  },
+  "x2-stormrail-colossus": {
+    "id": "x2-stormrail-colossus",
+    "kind": "weapon",
+    "canvas": {
+      "w": 495,
+      "h": 495
+    },
+    "body": {
+      "cx": 279.9,
+      "cy": 243.58,
+      "w": 484,
+      "h": 140
+    },
+    "parts": [
+      {
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 484,
+        "h": 140,
+        "cx": 279.9,
+        "cy": 243.58,
         "ox": 0,
         "oy": 0
       }

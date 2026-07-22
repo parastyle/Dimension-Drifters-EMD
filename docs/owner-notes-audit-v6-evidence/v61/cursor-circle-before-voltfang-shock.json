@@ -1,0 +1,66 @@
+{
+  "phase": "before",
+  "label": "voltfang-shock",
+  "weaponId": "x2-voltfang-tachi",
+  "element": "shock",
+  "baseURL": "http://localhost:5180",
+  "capturedAt": "2026-07-22T00:03:36.427Z",
+  "setup": {
+    "actor": {
+      "x": 2400,
+      "y": 2420
+    },
+    "target": {
+      "x": 2683.2406005859375,
+      "y": 2377.6533203125
+    }
+  },
+  "visual": {
+    "frozen": true,
+    "ringVisible": true,
+    "paintedVisible": false,
+    "textureKeys": []
+  },
+  "events": [
+    {
+      "kind": "weapon-vfx-suite",
+      "weaponId": "x2-voltfang-tachi",
+      "anchor": "source",
+      "x": 2400,
+      "y": 2420,
+      "targetX": 2540.4390862473706,
+      "targetY": 2399.0032608721353,
+      "layerIds": [
+        "blade-trail"
+      ]
+    },
+    {
+      "kind": "weapon-vfx-suite",
+      "weaponId": "x2-voltfang-tachi",
+      "anchor": "target",
+      "x": 2540.4390862473706,
+      "y": 2399.0032608721353,
+      "targetX": 2540.4390862473706,
+      "targetY": 2399.0032608721353,
+      "layerIds": [
+        "arc-bolt",
+        "shockwave-ring"
+      ]
+    }
+  ],
+  "layerIds": [
+    "blade-trail",
+    "arc-bolt",
+    "shockwave-ring"
+  ],
+  "genericLayers": [
+    "shockwave-ring"
+  ],
+  "assertions": {
+    "genericRingRecipeReproduced": true,
+    "genericRingVisible": true
+  },
+  "browserErrors": [],
+  "unexpectedBrowserErrors": [],
+  "screenshot": "docs\\owner-notes-audit-v6-evidence\\v61\\cursor-circle-before-voltfang-shock.png"
+}

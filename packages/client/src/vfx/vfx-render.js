@@ -1026,6 +1026,13 @@
 
   // particle layers: { trigger phase, fire(S,g,o) → explode a burst from a pooled emitter }
   const PARTS = {
+    "painted-impact": {
+      at: 0.3,
+      add: true,
+      // Live play routes this marker to installed Codex element-splat art. It deliberately emits no
+      // Graphics circle/rim primitive; optional preview hosts may leave the callback absent.
+      fire: (S, _g, o) => S.paintedImpact?.(o.params),
+    },
     "hit-spark": {
       at: 0.3,
       add: true,

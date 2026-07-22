@@ -145,10 +145,12 @@ export const WEAPON_VFX: Record<string, WeaponVfx> = {
           "intensity": 1
         }
       },
-      "shockwave-ring": {
+      "painted-impact": {
         "on": true,
         "params": {
-          "color": 0.5
+          "paint": 6,
+          "count": 10,
+          "size": 1.05
         }
       },
       "impact-flash": {
@@ -181,10 +183,12 @@ export const WEAPON_VFX: Record<string, WeaponVfx> = {
           "color": 0.55
         }
       },
-      "shockwave-ring": {
+      "painted-impact": {
         "on": true,
         "params": {
-          "color": 0.55
+          "paint": 2,
+          "count": 8,
+          "size": 0.9
         }
       },
       "impact-flash": {
@@ -221,10 +225,12 @@ export const WEAPON_VFX: Record<string, WeaponVfx> = {
           "rings": 2
         }
       },
-      "shockwave-ring": {
+      "painted-impact": {
         "on": true,
         "params": {
-          "color": 0.15
+          "paint": 3,
+          "count": 9,
+          "size": 0.92
         }
       }
     },
@@ -475,6 +481,68 @@ export const WEAPON_VFX: Record<string, WeaponVfx> = {
     "rot": 0,
     "vfxRadius": 86
   },
+  "x2-cairnfall-monolith": {
+    "suite": {
+      "blade-trail": {
+        "on": true,
+        "params": {
+          "reach": 1,
+          "paint": 0,
+          "history": 0.92,
+          "bodyAlpha": 0.2,
+          "lipAlpha": 0.3,
+          "color": 0.1
+        }
+      },
+      "painted-impact": {
+        "on": true,
+        "params": {
+          "paint": 0,
+          "count": 11,
+          "size": 1
+        }
+      },
+      "impact-flash": {
+        "on": true,
+        "params": {
+          "intensity": 0.38
+        }
+      }
+    },
+    "rot": 0,
+    "vfxRadius": 194
+  },
+  "x2-dawnwall-testament": {
+    "suite": {
+      "blade-trail": {
+        "on": true,
+        "params": {
+          "reach": 1,
+          "paint": 4,
+          "history": 0.88,
+          "bodyAlpha": 0.18,
+          "lipAlpha": 0.36,
+          "color": 0.55
+        }
+      },
+      "painted-impact": {
+        "on": true,
+        "params": {
+          "paint": 4,
+          "count": 9,
+          "size": 0.88
+        }
+      },
+      "impact-flash": {
+        "on": true,
+        "params": {
+          "intensity": 0.82
+        }
+      }
+    },
+    "rot": 0,
+    "vfxRadius": 182
+  },
   "x2-gravedog-auto-rifle": {
     "suite": {
       "muzzle-flash": {
@@ -500,6 +568,130 @@ export const WEAPON_VFX: Record<string, WeaponVfx> = {
     },
     "rot": 0,
     "vfxRadius": 72
+  },
+  "x2-nullwake-ordinance": {
+    "suite": {
+      "blade-trail": {
+        "on": true,
+        "params": {
+          "reach": 1,
+          "paint": 6,
+          "history": 0.94,
+          "bodyAlpha": 0.16,
+          "lipAlpha": 0.34,
+          "color": 0.8
+        }
+      },
+      "painted-impact": {
+        "on": true,
+        "params": {
+          "paint": 6,
+          "count": 9,
+          "size": 0.94
+        }
+      },
+      "impact-flash": {
+        "on": true,
+        "params": {
+          "intensity": 0.44
+        }
+      }
+    },
+    "rot": 0,
+    "vfxRadius": 190
+  },
+  "x2-pyre-gallows-brand": {
+    "suite": {
+      "blade-trail": {
+        "on": true,
+        "params": {
+          "reach": 1,
+          "paint": 1,
+          "history": 0.9,
+          "bodyAlpha": 0.2,
+          "lipAlpha": 0.36,
+          "color": 0.03
+        }
+      },
+      "painted-impact": {
+        "on": true,
+        "params": {
+          "paint": 1,
+          "count": 10,
+          "size": 0.9
+        }
+      },
+      "impact-flash": {
+        "on": true,
+        "params": {
+          "intensity": 0.72
+        }
+      }
+    },
+    "rot": 0,
+    "vfxRadius": 180
+  },
+  "x2-rimewrit-grave-slab": {
+    "suite": {
+      "blade-trail": {
+        "on": true,
+        "params": {
+          "reach": 1,
+          "paint": 2,
+          "history": 0.9,
+          "bodyAlpha": 0.2,
+          "lipAlpha": 0.34,
+          "color": 0.54
+        }
+      },
+      "painted-impact": {
+        "on": true,
+        "params": {
+          "paint": 2,
+          "count": 9,
+          "size": 0.86
+        }
+      },
+      "impact-flash": {
+        "on": true,
+        "params": {
+          "intensity": 0.5
+        }
+      }
+    },
+    "rot": 0,
+    "vfxRadius": 186
+  },
+  "x2-stormrail-colossus": {
+    "suite": {
+      "blade-trail": {
+        "on": true,
+        "params": {
+          "reach": 1,
+          "paint": 3,
+          "history": 0.88,
+          "bodyAlpha": 0.18,
+          "lipAlpha": 0.38,
+          "color": 0.63
+        }
+      },
+      "painted-impact": {
+        "on": true,
+        "params": {
+          "paint": 3,
+          "count": 10,
+          "size": 0.84
+        }
+      },
+      "impact-flash": {
+        "on": true,
+        "params": {
+          "intensity": 0.78
+        }
+      }
+    },
+    "rot": 0,
+    "vfxRadius": 176
   },
   "x2-stormspur-coil-carbine": {
     "suite": {
@@ -539,10 +731,12 @@ export const WEAPON_VFX: Record<string, WeaponVfx> = {
   },
   "x2-mournveil-scythe": {
     "suite": {
-      "shockwave-ring": {
+      "painted-impact": {
         "on": true,
         "params": {
-          "color": 0
+          "paint": 4,
+          "count": 8,
+          "size": 0.9
         }
       }
     },
