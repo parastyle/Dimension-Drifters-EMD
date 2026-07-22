@@ -109,3 +109,13 @@ raw-texture scale. Order: a catalog-wide particle-readability pass — every rec
 measured against a role-based floor (trail/burst/impact/aura each get a minimum % of character
 height), enforced through the W4G2 scale contract as law, with per-family live captures for owner
 review. Runs after V6M/V6C + the V6.1 pair.
+
+## V6.3 — ANCHOR-LAW CORRECTION (owner clarification, chat)
+
+The V5G2 order was misread as "every weapon gets an impact effect at cursor." The owner meant:
+ONLY relocate effects that were already character-centered. The sweeps therefore ADDED vestigial
+cursor VFX ("double circling tiny particles") on top of weapons whose VFX were already good.
+CORRECTION: git-archaeology the two sweep commits (f738040, ee27031 + the 9064298 partial fix);
+classify per weapon MOVED (keep) vs ADDED (delete, restoring pre-sweep visuals); explicit
+per-weapon owner orders stay; the coverage law is rewritten to conditional form — a character-
+anchored HIT effect must sit at impact, but no weapon is ever REQUIRED to have an impact effect.
