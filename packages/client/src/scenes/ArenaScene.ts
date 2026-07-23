@@ -348,6 +348,10 @@ import {
 } from "./arena/floor-renderer.js";
 import { makeGroundZonePatch, syncGroundZonePatch } from "./arena/ground-zone-renderer.js";
 import {
+  hasDriveForPredictedAttack,
+  localAttackPredictionLeadGate,
+} from "./arena/local-attack-prediction.js";
+import {
   baseKind,
   GUN_FX,
   gunFx,
@@ -1583,6 +1587,9 @@ export class ArenaScene extends Phaser.Scene {
   /** Highest attack sequence for which the owning client has already played prediction. Confirmations at or
    *  below this contiguous high-water mark must not restart the local rig/tome page. */
   private localPredictedAttackSeq = 0;
+  /** Wall-clock start of the one outstanding speculative beat; a rejected/lost beat self-heals after a
+   *  bounded acknowledgement window instead of permanently locking held fire. */
+  private localPredictedAttackAtMs = -1e9;
   /** Exact predictor candidate consumed by the owner rig this frame; diagnostics only, never fed back. */
   private selfPredictionCandidateX = Number.NaN;
   private selfPredictionCandidateY = Number.NaN;
@@ -2261,6 +2268,7 @@ export class ArenaScene extends Phaser.Scene {
     this.lastHurt = 0;
     this.localAtkCd = 0;
     this.localPredictedAttackSeq = 0;
+    this.localPredictedAttackAtMs = -1e9;
     this.localParryCd = 0;
     this.parryChain = 0;
     this.parryChainAt = 0;
@@ -3442,7 +3450,10 @@ export class ArenaScene extends Phaser.Scene {
       if (previous === undefined) {
         this.lastAttackSeq.set(id, seq);
         this.lastAttackHeld.set(id, player.attackHeld);
-        if (!remote) this.localPredictedAttackSeq = seq;
+        if (!remote) {
+          this.localPredictedAttackSeq = seq;
+          this.localPredictedAttackAtMs = -1e9;
+        }
         const epoch = this.attackClientEpoch(player.attackTick, remote);
         rig.setAttackBeat(seq, player.attackHeld, epoch);
         // A join can land inside the short authoritative latch. Let a newly-observed remote catch up to the
@@ -3465,9 +3476,13 @@ export class ArenaScene extends Phaser.Scene {
         const confirmed = (seq - previous) >>> 0;
         const predicted = (this.localPredictedAttackSeq - previous) >>> 0;
         const predictionCovers = confirmed > 0 && predicted < 0x80000000 && confirmed <= predicted;
-        if (predictionCovers) return;
+        if (predictionCovers) {
+          if (seq === this.localPredictedAttackSeq) this.localPredictedAttackAtMs = -1e9;
+          return;
+        }
         // This can happen after reconnect/state bootstrap or if another local action path lacked prediction.
         this.localPredictedAttackSeq = seq;
+        this.localPredictedAttackAtMs = -1e9;
       }
       this.triggerAcceptedRigAttack(rig, player, epoch);
     });
@@ -10226,21 +10241,25 @@ export class ArenaScene extends Phaser.Scene {
     if (weapon?.beam || weapon?.groundZone?.trigger === "channel" || weapon?.performance?.aura)
       return;
     if (!weapon?.warp) {
-      const predictionLead = (this.localPredictedAttackSeq - self.attackSeq) >>> 0;
-      if (predictionLead >= 0x80000000) {
-        this.localPredictedAttackSeq = self.attackSeq >>> 0;
-      } else if (predictionLead > 0) {
-        // The presentation high-water mark has one outstanding acceptance. Keep held fire live and retry
-        // next frame after authority catches up instead of opening a second speculative beat: under latency
-        // that second slot can outlive a Drive rejection and leave the firing rig permanently ahead.
-        return;
-      }
+      const leadGate = localAttackPredictionLeadGate({
+        predictedSeq: this.localPredictedAttackSeq,
+        authoritativeSeq: self.attackSeq,
+        predictedAtMs: this.localPredictedAttackAtMs,
+        nowMs: this.time.now,
+      });
+      this.localPredictedAttackSeq = leadGate.predictedSeq;
+      // The presentation high-water mark keeps one ordinary in-flight acceptance isolated. A genuinely
+      // stranded beat is resynchronized by the bounded gate above, so rejection cannot lock held fire.
+      if (leadGate.blocked) return;
     }
-    // Schema 30: thrown weapons + guns bill the Drive bar — don't animate/fire when the next shot is
-    // unaffordable (the server's spend seam rejects it too). Replaces the retired `charges` gate.
-    if (weapon?.thrown || weapon?.gun || weapon?.warp) {
-      const drive = Math.floor(Number(self.dualWield?.weaponResource?.valueQ) || 0) / 100;
-      if (drive + 1e-9 < driveCostView(weapon.id).cost) return;
+    // Every discrete tap profile bills Drive on the server (melee and caster included). Keep this generic
+    // positive-cost check before prediction so client presentation advances only for an affordable attack.
+    const driveCost = weapon ? driveCostView(weapon.id).cost : 0;
+    if (
+      driveCost > 0 &&
+      !hasDriveForPredictedAttack(self.dualWield?.weaponResource?.valueQ, driveCost)
+    ) {
+      return;
     }
     // §10 v0.104 de-clunk: fold in the held weapon's affix cooldown multiplier — the SERVER gates fire on
     // `cooldown × lootCooldownMult`, so if the client's send cadence ignores it, a Heavy/slow weapon sends
@@ -10256,6 +10275,7 @@ export class ArenaScene extends Phaser.Scene {
     // consumes this high-water slot as confirmation, so neither the swing nor an open-tome page restarts.
     if (!weapon?.warp) {
       this.localPredictedAttackSeq = (this.localPredictedAttackSeq + 1) >>> 0;
+      this.localPredictedAttackAtMs = this.time.now;
       rig?.setAttackBeat(this.localPredictedAttackSeq, true, this.time.now);
     }
     // §20 WYSIWYG: freeze the aim at swing-start so the blade sweeps the SAME arc the server's swept hitbox
