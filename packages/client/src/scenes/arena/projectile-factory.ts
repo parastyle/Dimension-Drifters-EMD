@@ -20,6 +20,7 @@ import type { WeaponEffectRecipe } from "../../vfx/weapon-effect-recipes.js";
 import { WEAPON_VFX } from "../../vfx/weapon-vfx.generated.js";
 import { blendHex } from "./draw-util.js";
 import { projectileColorSuffix, projectileElementColor } from "./projectile-color.js";
+import { projectileArtTransform } from "./projectile-facing.js";
 
 /** §9/§14/§15 projectile FACTORY — builds the in-flight render container for every projectile kind
  *  (enemy spit, own-sprite thrown implements, magma scatter ball, gun bullets). Pure factories: each takes the scene
@@ -346,8 +347,10 @@ export function makeGunIdentityProjectile(
       glow.destroy();
       return null;
     }
-    const projectile = scene.add.image(0, 0, textureKey).setRotation(angle);
-    projectile.setScale(recipe.displayLength / Math.max(1, sprite.width));
+    const facing = projectileArtTransform(pr.vx, pr.vy, sprite.facing);
+    const projectile = scene.add.image(0, 0, textureKey).setRotation(facing.rotation);
+    const spriteScale = recipe.displayLength / Math.max(1, sprite.width);
+    projectile.setScale(spriteScale * facing.scaleX, spriteScale);
     children.push(projectile);
   } else {
     const packId = GUN_PROJECTILE_ART_PACKS[art];
