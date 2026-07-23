@@ -1939,11 +1939,19 @@
         "int": 5
       },
       "behavior": {
-        "kind": "chainLightning",
-        "jumps": 4,
-        "range": 200,
-        "damage": 4,
-        "falloff": 0.8
+        "kind": "thrown",
+        "speed": 700,
+        "range": 560,
+        "damage": 8,
+        "charges": 4,
+        "refillSeconds": 1.92,
+        "pierce": 2
+      },
+      "performance": {
+        "hold": "steady",
+        "action": "throw-release",
+        "suppressSwing": true,
+        "carryAngleRad": -1.2217304763960306
       },
       "id": "x2-stormcrow-twin-hatchets"
     },
@@ -2078,6 +2086,14 @@
         "refillSeconds": 1.8,
         "pierce": 3,
         "rotation": "point-forward"
+      },
+      "performance": {
+        "hold": "steady",
+        "action": "throw-release",
+        "suppressSwing": true,
+        "carryAngleRad": -1.2217304763960306,
+        "preThrowRevolutions": 0,
+        "throwHeightPx": 28
       },
       "stats": {
         "damage": 12,
@@ -2698,7 +2714,19 @@
       "artPrompt": "Weapon-only in-world sprite (no character, no background): an officer's short spontoon spear — a slim engraved steel spearhead with two small curled side-flukes shaped like coiled snakes, a brass-collared tan-leather grip, a tasselled cord at the socket with a dull-teal venom-sheen on the point. Quick, finesse, frontier-officer. MEDIUM detail, ~5 colours. Flat orthographic full side-profile, faces RIGHT: coiling spearhead POINT to the RIGHT, brass-collared grip on the LEFT.",
       "cardartAction": "snapped forward in a darting fast jab, a cyber-cyan edge-flick and fine venom-mist streaking off the slim point",
       "behavior": {
-        "kind": "edge"
+        "kind": "thrown",
+        "speed": 720,
+        "range": 600,
+        "damage": 14,
+        "charges": 3,
+        "refillSeconds": 1.92,
+        "pierce": 2
+      },
+      "performance": {
+        "hold": "steady",
+        "action": "throw-release",
+        "suppressSwing": true,
+        "carryAngleRad": -1.2217304763960306
       },
       "stats": {
         "damage": 7,

@@ -1617,7 +1617,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "tags": {
       "grip": "dual",
       "size": "S",
-      "delivery": "melee-arc",
+      "delivery": "thrown",
       "fireMode": "tap-charge",
       "element": "shock",
       "classPool": "melee",
@@ -1629,17 +1629,25 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "description": "A pair of cobalt-chased hatchets that snap with caged current, each crossing bite leaping a forked arc to whatever stands nearest.",
+    "performance": {
+      "hold": "steady",
+      "action": "throw-release",
+      "suppressSwing": true,
+      "carryAngleRad": -1.2217304763960306
+    },
     "requirements": {
       "dex": 6,
       "int": 5
     },
     "dual": true,
     "durability": 75,
-    "chainLightning": {
-      "jumps": 4,
-      "range": 200,
-      "damage": 4,
-      "falloff": 0.8
+    "thrown": {
+      "speed": 700,
+      "range": 560,
+      "damage": 8,
+      "charges": 4,
+      "refillSeconds": 1.92,
+      "pierce": 2
     }
   },
   "x2-reliquary-broadaxe": {
@@ -1766,6 +1774,14 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "DEX",
         "STR"
       ]
+    },
+    "performance": {
+      "hold": "steady",
+      "action": "throw-release",
+      "suppressSwing": true,
+      "carryAngleRad": -1.2217304763960306,
+      "preThrowRevolutions": 0,
+      "throwHeightPx": 28
     },
     "requirements": {
       "dex": 7,
@@ -2292,7 +2308,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "tags": {
       "grip": "1H",
       "size": "M",
-      "delivery": "melee-arc",
+      "delivery": "thrown",
       "fireMode": "tap-charge",
       "element": "physical",
       "classPool": "melee",
@@ -2303,10 +2319,24 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "LUK"
       ]
     },
+    "performance": {
+      "hold": "steady",
+      "action": "throw-release",
+      "suppressSwing": true,
+      "carryAngleRad": -1.2217304763960306
+    },
     "requirements": {
       "dex": 7
     },
-    "durability": 75
+    "durability": 75,
+    "thrown": {
+      "speed": 720,
+      "range": 600,
+      "damage": 14,
+      "charges": 3,
+      "refillSeconds": 1.92,
+      "pierce": 2
+    }
   },
   "x2-saintspar-lochaber": {
     "id": "x2-saintspar-lochaber",
