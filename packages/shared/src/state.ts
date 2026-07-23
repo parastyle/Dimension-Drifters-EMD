@@ -1,4 +1,5 @@
 import { ArraySchema, MapSchema, Schema, type } from "@colyseus/schema";
+import { DEFAULT_CHARACTER } from "./characters.js";
 import { SCHEMA_VERSION } from "./constants.js";
 import { DEFAULT_DIMENSION } from "./dimensions.js";
 import type { Attr } from "./leveling.js";
@@ -95,7 +96,7 @@ export class PlayerState extends Schema {
   /** Equipped weapon id (keys WEAPONS + the sprite manifest). */
   @type("string") weapon = "rusty-cleaver";
   /** §7 chosen CHARACTER skin (keys the sprite manifest). C may cycle this cosmetically mid-run. */
-  @type("string") character = "drifter";
+  @type("string") character: string = DEFAULT_CHARACTER;
   /** §9 aim direction (radians, atan2 of the cursor aim) — synced so EVERY client can point a player's
    *  held GUN barrel + render their shots along their real aim. The local player uses its own live cursor;
    *  this drives remote players' gun pose. Updated server-side from the aim each shot. */
@@ -218,7 +219,7 @@ export class PlayerState extends Schema {
   @type("uint8") stanceSeq = 0;
   /** §classmerge run-boundary identity snapshot. Character cycling may change `character` cosmetically,
    *  but spread/quirk consumers use this field until the next authored snapshot edge. APPENDED at v21. */
-  @type("string") runCharacter = "drifter";
+  @type("string") runCharacter: string = DEFAULT_CHARACTER;
   /** Contact null-whiff edge. Cosmetic only; never aliases the rewarded parry receipt. APPENDED at v22. */
   @type("uint8") dodgedSeq = 0;
   /** Fixed-roll direction/speed replay anchor. External impulse remains exclusively in vx/vy. APPENDED at v23. */

@@ -435,6 +435,26 @@ describe("pet v1 account sanitization and deterministic progression", () => {
 });
 
 describe("gear G1/G2 shared catalog, account, and allocation laws", () => {
+  it("emits one typed whole-art selection contract while retaining the legacy roster", () => {
+    expect(petShared.WHOLE_ART_CHARACTERS).toEqual([
+      "proto-samurai",
+      "proto-sheriff",
+      "proto-witch",
+    ]);
+    expect(petShared.DEFAULT_CHARACTER).toBe("proto-sheriff");
+    expect(petShared.PLAYABLE_CHARACTERS).toContain("drifter");
+    expect(petShared.PLAYABLE_CHARACTERS).toContain("cc-asha-the-ash-walker");
+    for (const id of petShared.WHOLE_ART_CHARACTERS) {
+      expect(petShared.isWholeArtCharacter(id)).toBe(true);
+    }
+    expect(petShared.isWholeArtCharacter("drifter")).toBe(false);
+    expect(petShared.isWholeArtCharacter("cc-asha-the-ash-walker")).toBe(false);
+    expect(petShared.nextWholeArtCharacter("proto-samurai")).toBe("proto-sheriff");
+    expect(petShared.nextWholeArtCharacter("proto-sheriff")).toBe("proto-witch");
+    expect(petShared.nextWholeArtCharacter("proto-witch")).toBe("proto-samurai");
+    expect(petShared.nextWholeArtCharacter("drifter")).toBe("proto-sheriff");
+  });
+
   it("ships the 96 authored launch rows with closed slots/codes and enforces every slot budget", () => {
     expect(petShared.GEAR_SLOTS).toEqual([
       "hat",
@@ -650,13 +670,17 @@ describe("gear G1/G2 shared catalog, account, and allocation laws", () => {
     expect(petShared.ATTRS.reduce((sum, attr) => sum + first.allocRun[attr], 0)).toBe(15);
   });
 
-  it("pins schema 31 while retaining the nested final wire envelope", () => {
+  it("pins schema 33, relevant field positions, and the nested final wire envelope", () => {
     expect(petShared.SCHEMA_VERSION).toBe(33);
     const playerSymbols = Object.getOwnPropertySymbols(petShared.PlayerState);
     const playerMetadata = (
       petShared.PlayerState as unknown as Record<symbol, Record<number, { name: string }>>
     )[playerSymbols[0]!];
     if (!playerMetadata) throw new Error("PlayerState schema metadata is required");
+    expect([playerMetadata[7]?.name, playerMetadata[54]?.name]).toEqual([
+      "character",
+      "runCharacter",
+    ]);
     expect(playerMetadata[63]?.name).toBe("dualWield");
     expect(playerMetadata[64]).toBeUndefined();
     const tailSymbols = Object.getOwnPropertySymbols(petShared.DualWieldState);
@@ -666,6 +690,10 @@ describe("gear G1/G2 shared catalog, account, and allocation laws", () => {
     if (!tailMetadata) throw new Error("DualWieldState schema metadata is required");
     expect([tailMetadata[4]?.name, tailMetadata[5]?.name]).toEqual(["gearUpper", "gearLower"]);
     const player = new petShared.PlayerState();
+    expect([player.character, player.runCharacter]).toEqual([
+      petShared.DEFAULT_CHARACTER,
+      petShared.DEFAULT_CHARACTER,
+    ]);
     player.gearUpper = "1,2,3,4,5";
     player.gearLower = "6,7,8";
     expect([player.dualWield.gearUpper, player.dualWield.gearLower]).toEqual([
