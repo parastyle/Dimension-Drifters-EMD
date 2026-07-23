@@ -4367,9 +4367,14 @@ export class ArenaScene extends Phaser.Scene {
     const gearUpper = player.dualWield?.gearUpper ?? "";
     const gearLower = player.dualWield?.gearLower ?? "";
     const gearSynced = !!manifest && gearUpper.length > 0 && gearLower.length > 0;
-    // Synced wardrobe players always start from the one complete Drifter skeleton. The selected legacy kit
-    // remains only as a compatibility scaffold for rooms whose appended gear tail is genuinely absent.
-    const rigSpriteId = gearSynced ? PLAYER_SPRITE : charId;
+    // Whole-art characters (the new prototype/roster direction, e.g. proto-*) render their OWN complete
+    // sprite and IGNORE the wardrobe gear overlay — this is what finally lets `player.character` drive the
+    // VISUAL, not just stats. Legacy drifter-skeleton players still use the synced gear. (Wardrobe is being
+    // retired; when the whole cast is authored art, this collapses to "always render your character".)
+    const isWholeArtCharacter =
+      typeof player.character === "string" && player.character.startsWith("proto-");
+    const useGear = gearSynced && !isWholeArtCharacter;
+    const rigSpriteId = useGear ? PLAYER_SPRITE : charId;
     const rig = new SpriteRig(
       this,
       player.x,
@@ -4377,9 +4382,9 @@ export class ArenaScene extends Phaser.Scene {
       isSelf,
       id,
       rigSpriteId,
-      gearSynced ? manifest : undefined,
+      useGear ? manifest : undefined,
     );
-    if (gearSynced && manifest)
+    if (useGear && manifest)
       rig.equipSyncedGear(
         gearUpper,
         gearLower,
@@ -9002,8 +9007,12 @@ export class ArenaScene extends Phaser.Scene {
               ? this.petMetaAccount.prestige
               : (player.dualWield?.prestige ?? 0),
           );
-        // The 40-kit swap remains only for compatibility rooms whose gear tail is genuinely absent.
-        if (!gearSynced && this.charOf.get(id) !== player.character) {
+        // Rebuild the rig when the character changes. For legacy compatibility rooms this only fired when
+        // the gear tail was absent; whole-art characters (proto-*) must ALSO rebuild so a mid-session
+        // devEquip/character swap actually re-renders as the new character instead of the stale drifter.
+        const isWholeArtCharacter =
+          typeof player.character === "string" && player.character.startsWith("proto-");
+        if ((!gearSynced || isWholeArtCharacter) && this.charOf.get(id) !== player.character) {
           this.removeBlob(id);
           this.addBlob(player, id);
         }
