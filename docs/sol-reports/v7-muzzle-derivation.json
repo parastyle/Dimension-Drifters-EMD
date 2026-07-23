@@ -956,6 +956,28 @@
     "barrelMode": "parallel"
   },
   {
+    "id": "x2-ember-fan",
+    "name": "Ember Fan",
+    "sprite": "x2-ember-fan",
+    "derived": [
+      {
+        "part": 0,
+        "x": 254,
+        "y": 147.3
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 151
+      }
+    ],
+    "override": "The cinder shard cone originates at the ember fan's far-right glowing blade edge.",
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
     "id": "x2-emberfan-pumpgun",
     "name": "Emberfan Pumpgun",
     "sprite": "x2-emberfan-pumpgun",
@@ -1833,6 +1855,28 @@
       }
     ],
     "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-iron-war-fan",
+    "name": "Iron War Fan",
+    "sprite": "x2-iron-war-fan",
+    "derived": [
+      {
+        "part": 0,
+        "x": 246,
+        "y": 166.6
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 246,
+        "y": 172
+      }
+    ],
+    "override": "The finisher gust leaves from the midpoint of the rigid fan's visible leading steel edge.",
     "salvoMode": "parallel",
     "barrelMode": "parallel"
   },
@@ -2834,6 +2878,28 @@
       }
     ],
     "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-storm-fan",
+    "name": "Storm Fan",
+    "sprite": "x2-storm-fan",
+    "derived": [
+      {
+        "part": 0,
+        "x": 379,
+        "y": 100.5
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 383,
+        "y": 99
+      }
+    ],
+    "override": "The returning slash arc launches from the far-right leading edge of the crossed fan pair.",
     "salvoMode": "parallel",
     "barrelMode": "parallel"
   },

@@ -1,6 +1,6 @@
 # V7 Muzzle Derivation Table
 
-Generated from sprite alpha for all 148 active projectile-gun and beam definitions. Coordinates are source-PNG pixels.
+Generated from sprite alpha for all 151 active projectile-gun and beam definitions. Coordinates are source-PNG pixels.
 
 | Weapon | Derived barrel tip | Authored muzzle point(s) | Override |
 | --- | --- | --- | --- |
@@ -47,6 +47,7 @@ Generated from sprite alpha for all 148 active projectile-gun and beam definitio
 | `x2-doomsday-drum-cannon` (Doomsday Drum Cannon) | part-1 (255, 60.1) | part-1 (255, 60.1) | No |
 | `x2-dustdevil-riotgun` (Dustdevil Riotgun) | part-1 (255, 19.9) | part-1 (255, 19.9) | No |
 | `x2-dustline-lever-action` (Dustline Lever-Action) | part-1 (255, 7.7) | part-1 (255, 7.7) | No |
+| `x2-ember-fan` (Ember Fan) | part-1 (254, 147.3) | part-1 (255, 151) | Yes - The cinder shard cone originates at the ember fan's far-right glowing blade edge. |
 | `x2-emberfan-pumpgun` (Emberfan Pumpgun) | part-1 (255, 19.8) | part-1 (255, 19.8) | No |
 | `x2-embernail-repeater` (Embernail Repeater) | part-1 (251, 50) | part-1 (251, 50) | No |
 | `x2-exploding-present-lobber` (Exploding Present Lobber) | part-1 (510, 98.2) | part-1 (511, 103) | Yes - The arced present leaves from the centre of the wrapped-box muzzle face. |
@@ -85,6 +86,7 @@ Generated from sprite alpha for all 148 active projectile-gun and beam definitio
 | `x2-hollowpoint-voidgun` (Hollowpoint Voidgun) | part-1 (255, 45.4) | part-1 (255, 45.4) | No |
 | `x2-hornet-s-nest-bolter` (Hornet's Nest Bolter) | part-1 (252, 71.7) | part-1 (252, 71.7) | No |
 | `x2-iron-marshal` (Iron Marshal) | part-1 (255, 17.6) | part-1 (255, 17.6) | No |
+| `x2-iron-war-fan` (Iron War Fan) | part-1 (246, 166.6) | part-1 (246, 172) | Yes - The finisher gust leaves from the midpoint of the rigid fan's visible leading steel edge. |
 | `x2-ironhail-pepperbox` (Ironhail Pepperbox) | part-1 (255, 74.2) | part-1 (255, 74.2) | No |
 | `x2-ironhide-buffalo-gun` (Ironhide Buffalo Gun) | part-1 (255, 34.9) | part-1 (255, 34.9) | No |
 | `x2-leviathan-harpoon-gun` (Leviathan Harpoon Gun) | part-1 (253, 22.5) | part-1 (253, 22.5) | No |
@@ -128,6 +130,7 @@ Generated from sprite alpha for all 148 active projectile-gun and beam definitio
 | `x2-snakebite-dart-slinger` (Snakebite Dart-Slinger) | part-1 (254, 26.5) | part-1 (254, 26.5) | No |
 | `x2-spitfire-censer-wand` (Spitfire Censer-Wand) | part-1 (255, 27.4) | part-1 (255, 27.4) | No |
 | `x2-spore-spitter-blunderbuss` (Spore-Spitter Blunderbuss) | part-1 (255, 66) | part-1 (255, 66) | No |
+| `x2-storm-fan` (Storm Fan) | part-1 (379, 100.5) | part-1 (383, 99) | Yes - The returning slash arc launches from the far-right leading edge of the crossed fan pair. |
 | `x2-stormcaller-tesla-gatling` (Stormcaller Tesla Gatling) | part-1 (255, 99.9) | part-1 (241, 94)<br>part-1 (250, 94)<br>part-1 (241, 108)<br>part-1 (250, 108)<br>part-1 (241, 122)<br>part-1 (250, 122) | Yes - Six recessed beam apertures sit inside one opaque front cap; alpha can derive the cap edge but cannot distinguish the six aperture centres. |
 | `x2-stormspur-coil-carbine` (Stormspur Coil Carbine) | part-1 (254, 15) | part-1 (254, 15) | No |
 | `x2-sunbrand-hogleg` (Sunbrand Hogleg) | part-1 (255, 12.9) | part-1 (255, 12.9) | No |

@@ -963,6 +963,29 @@ export const WEAPON_ART_MUZZLES = {
     "salvoMode": "parallel",
     "barrelMode": "parallel"
   },
+  "x2-ember-fan": {
+    "sprite": "x2-ember-fan",
+    "parts": [
+      {
+        "width": 256,
+        "height": 215
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 151,
+        "derived": {
+          "x": 254,
+          "y": 147.3
+        },
+        "overrideReason": "The cinder shard cone originates at the ember fan's far-right glowing blade edge."
+      }
+    ],
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
   "x2-emberfan-pumpgun": {
     "sprite": "x2-emberfan-pumpgun",
     "parts": [
@@ -1881,6 +1904,29 @@ export const WEAPON_ART_MUZZLES = {
           "x": 255,
           "y": 17.6
         }
+      }
+    ],
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  "x2-iron-war-fan": {
+    "sprite": "x2-iron-war-fan",
+    "parts": [
+      {
+        "width": 247,
+        "height": 256
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 246,
+        "y": 172,
+        "derived": {
+          "x": 246,
+          "y": 166.6
+        },
+        "overrideReason": "The finisher gust leaves from the midpoint of the rigid fan's visible leading steel edge."
       }
     ],
     "salvoMode": "parallel",
@@ -2920,6 +2966,29 @@ export const WEAPON_ART_MUZZLES = {
           "x": 255,
           "y": 66
         }
+      }
+    ],
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  "x2-storm-fan": {
+    "sprite": "x2-storm-fan",
+    "parts": [
+      {
+        "width": 384,
+        "height": 224
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 383,
+        "y": 99,
+        "derived": {
+          "x": 379,
+          "y": 100.5
+        },
+        "overrideReason": "The returning slash arc launches from the far-right leading edge of the crossed fan pair."
       }
     ],
     "salvoMode": "parallel",

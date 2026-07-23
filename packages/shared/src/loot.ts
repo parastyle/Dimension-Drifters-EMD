@@ -24,7 +24,7 @@ import {
 import { clamp } from "./math.js";
 import { katanaExpectedMechanic } from "./melee.js";
 import type { WeaponDef } from "./weapons.js";
-import { WEAPONS } from "./weapons.js";
+import { hybridProjectileDamagePerAcceptedBeat, WEAPONS } from "./weapons.js";
 
 /** One rarity tier. `dmg` multiplies every damage source of the weapon; `weight` is the base drop odds
  *  share (LUK up-weights the higher tiers); `salvage` is the tier's carried-salvage value; `color` is the
@@ -218,6 +218,7 @@ export function effectivePower(def: WeaponDef): number {
     perUse += def.scatter.count * def.scatter.damage * 0.7; // cone — not every pellet lands
     if (def.scatter.explode) perUse += def.scatter.explode.damage;
   }
+  perUse += hybridProjectileDamagePerAcceptedBeat(def);
   let cadence = Math.max(0.12, def.cooldown);
   if (def.thrown) {
     // Charge downtime: fold the refill into the cadence (3 throws then a 1.5s wait isn't a machine gun).

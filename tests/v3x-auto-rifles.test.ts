@@ -33,7 +33,7 @@ describe("V3X foregrip auto rifles", () => {
 
   it("publishes art-backed Testing Grounds links for every rifle in the regenerated portal", () => {
     const portal = readFileSync("tools/portal/index.html", "utf8");
-    expect(portal).toContain('"count":339');
+    expect(portal).toContain('"count":342');
     for (const id of RIFLE_IDS) {
       expect(portal, id).toContain(`"path":"/?dev=weapon:${id}"`);
       expect(portal, id).toContain(

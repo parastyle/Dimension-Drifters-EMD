@@ -1,9 +1,9 @@
 {
   "generated": "2026-06-17",
   "source": "design-300-weapons workflow (15 agents)",
-  "count": 331,
+  "count": 334,
   "byType": {
-    "melee": 123,
+    "melee": 126,
     "ranged": 111,
     "caster": 97
   },
@@ -16569,6 +16569,120 @@
         "cardartAction": "kicking hard into a wide stance as seven bright confetti shards erupt in a chaotic close cone",
         "stats": { "damage": 3, "range": 90, "halfArc": 0.65, "cooldown": 0.9, "displayLength": 172, "swingArc": 1.1, "gripFrac": 0.23 },
         "behavior": { "kind": "gun", "damage": 3, "projectileSpeed": 900, "range": 380, "fireRate": 0.9, "pellets": 7, "spread": 0.55, "magazine": 2, "reloadSeconds": 1.5, "bulletKind": "pellet", "muzzle": "boom", "muzzleColor": 16733855, "recoil": 0.005, "userKnockbackMultiplier": 2.2, "scalingGrades": { "str": "B", "dex": "C" } }
+    },
+    {
+        "id": "x2-iron-war-fan",
+        "name": "Iron War Fan",
+        "description": "A rigid riveted tessen worked through three close steel cuts; the accepted third cut releases a separate narrow cutting gust from its leading edge.",
+        "type": "melee",
+        "family": "war-fan",
+        "theme": "rigid blackened-iron tessen with static painted ribbon guards",
+        "element": "physical",
+        "finish": "battle-worn",
+        "grip": "2H",
+        "gripPoints": { "primary": { "x": 0.13, "y": 0.64 }, "secondary": { "x": 0.27, "y": 0.64, "role": "handle" } },
+        "poseLanguage": { "idle": "secondary-grip", "feet": "combat-plant" },
+        "size": "M",
+        "rangeBand": "close",
+        "scaling": ["STR", "DEX"],
+        "scalingGrades": { "str": "B", "dex": "C" },
+        "requirements": { "str": 7, "dex": 5 },
+        "palettePrimary": "#303337",
+        "paletteAccent": "#848A8C",
+        "artPrompt": "Weapon-only in-world sprite: a folding iron war fan (tessen) in OPEN configuration — steel ribs, blackened iron guards, riveted spine, subtle etched motif on the fan surface. Gritty dark-comic cel, ~4–8 colours. Flat orthographic side profile, faces RIGHT with the open fan blades to the RIGHT. Flat #00ff00 background. No character, no wind.",
+        "cardartAction": "closing two rigid steel cuts before the third drives a short knife-thin gust straight from the fan edge",
+        "authoritativeCombo": true,
+        "comboFamily": "arc",
+        "comboVariant": "iron-war-fan-threefold",
+        "comboBar": [
+          { "name": "Rivet Cut", "motion": "slash", "direction": -1, "hand": "both", "timing": { "activeStart": 0.2, "activeEnd": 0.5, "impact": 0.36, "followEnd": 0.72 }, "path": { "kind": "sweep", "arcMultiplier": 0.86, "rangeMultiplier": 0.96, "damageMultiplier": 1, "knockback": 12 }, "ribbon": { "profile": "open-c", "radialStart": 0.26, "radialEnd": 0.94, "widthMultiplier": 0.72, "end": "clean" } },
+          { "name": "Guard Return", "motion": "reverse-chop", "direction": 1, "hand": "both", "timing": { "activeStart": 0.21, "activeEnd": 0.52, "impact": 0.38, "followEnd": 0.73 }, "path": { "kind": "sweep", "arcMultiplier": 0.96, "rangeMultiplier": 1, "damageMultiplier": 1, "knockback": 14 }, "ribbon": { "profile": "reverse-hairpin", "radialStart": 0.22, "radialEnd": 0.98, "widthMultiplier": 0.76, "end": "squared" } },
+          { "name": "Iron Gale Finisher", "motion": "long-reap", "direction": -1, "hand": "both", "timing": { "activeStart": 0.22, "activeEnd": 0.56, "impact": 0.42, "followEnd": 0.76 }, "path": { "kind": "capsule", "arcMultiplier": 1.08, "rangeMultiplier": 1.04, "damageMultiplier": 1, "knockback": 20 }, "ribbon": { "profile": "massed-wedge", "radialStart": 0.18, "radialEnd": 1, "widthMultiplier": 0.82, "end": "clean" } }
+        ],
+        "comboChoreography": [
+          { "primitive": "side-cut", "intensity": 0.9 },
+          { "primitive": "wave-cut", "intensity": 1 },
+          { "primitive": "lunge", "intensity": 1.12 }
+        ],
+        "performance": { "hold": "aim-forward", "action": "default-swing", "comboForwardPx": 8 },
+        "stats": { "damage": 12, "range": 90, "halfArc": 0.82, "cooldown": 0.8, "displayLength": 104, "swingArc": 2.35, "gripFrac": 0.27 },
+        "behavior": { "kind": "hybrid", "projectile": { "style": "cutting-gust", "trigger": "combo-finisher", "comboLength": 3, "speed": 760, "range": 180, "damage": 12, "count": 1, "spread": 0, "pierce": 1, "scalingGrades": { "str": "B", "dex": "C" } } }
+    },
+    {
+        "id": "x2-ember-fan",
+        "name": "Ember Fan",
+        "description": "An ember-steel war fan whose close sweeps retain their blade hit while releasing three small authoritative cinder shards in a short cone.",
+        "type": "melee",
+        "family": "war-fan",
+        "theme": "cooling ember-steel fan with static painted ribbon guards",
+        "element": "fire",
+        "finish": "battle-worn",
+        "grip": "2H",
+        "gripPoints": { "primary": { "x": 0.17, "y": 0.55 }, "secondary": { "x": 0.35, "y": 0.52, "role": "handle" } },
+        "poseLanguage": { "idle": "secondary-grip", "feet": "combat-plant" },
+        "size": "M",
+        "rangeBand": "close",
+        "scaling": ["DEX", "INT"],
+        "scalingGrades": { "dex": "B", "int": "C" },
+        "requirements": { "dex": 7, "int": 5 },
+        "palettePrimary": "#342E2D",
+        "paletteAccent": "#F05B22",
+        "artPrompt": "Weapon-only in-world sprite: an open war fan whose blades are forged from cooling ember-steel — dark iron ribs with glowing red-orange fissures along the fan blades, small charred edges, wooden pivot. Gritty dark-comic cel, ~4–8 colours. Flat orthographic side profile, faces RIGHT with the open ember fan to the RIGHT. Flat #00ff00 background. No character, no flame VFX.",
+        "cardartAction": "sweeping close as three cinder-bright blade shards shear out in a short triangular cone",
+        "authoritativeCombo": true,
+        "comboFamily": "arc",
+        "comboVariant": "ember-fan-cinder-sweeps",
+        "comboBar": [
+          { "name": "Coal Sweep", "motion": "long-reap", "direction": -1, "hand": "both", "timing": { "activeStart": 0.19, "activeEnd": 0.49, "impact": 0.34, "followEnd": 0.7 }, "path": { "kind": "fan", "arcMultiplier": 0.92, "rangeMultiplier": 0.98, "damageMultiplier": 1, "knockback": 10 }, "ribbon": { "profile": "outer-crescent", "radialStart": 0.2, "radialEnd": 0.96, "widthMultiplier": 0.82, "end": "torn" } },
+          { "name": "Fissure Return", "motion": "choked-turn", "direction": 1, "hand": "both", "timing": { "activeStart": 0.2, "activeEnd": 0.51, "impact": 0.36, "followEnd": 0.71 }, "path": { "kind": "fan", "arcMultiplier": 1, "rangeMultiplier": 1, "damageMultiplier": 1, "knockback": 12 }, "ribbon": { "profile": "heavy-sickle", "radialStart": 0.18, "radialEnd": 0.98, "widthMultiplier": 0.86, "end": "torn" } },
+          { "name": "Cinder Bloom", "motion": "petalfall", "direction": -1, "hand": "both", "timing": { "activeStart": 0.21, "activeEnd": 0.54, "impact": 0.39, "followEnd": 0.74 }, "path": { "kind": "fan", "arcMultiplier": 1.08, "rangeMultiplier": 1.03, "damageMultiplier": 1, "knockback": 16 }, "ribbon": { "profile": "massed-wedge", "radialStart": 0.14, "radialEnd": 1, "widthMultiplier": 0.92, "end": "torn" } }
+        ],
+        "comboChoreography": [
+          { "primitive": "wave-cut", "intensity": 0.92 },
+          { "primitive": "side-cut", "intensity": 1 },
+          { "primitive": "spin-cut", "intensity": 1.08 }
+        ],
+        "performance": { "hold": "aim-forward", "action": "default-swing", "comboForwardPx": 6 },
+        "stats": { "damage": 12, "range": 88, "halfArc": 0.92, "cooldown": 0.8, "displayLength": 102, "swingArc": 2.55, "gripFrac": 0.35 },
+        "behavior": { "kind": "hybrid", "projectile": { "style": "cinder-blade-cone", "trigger": "each-swing", "comboLength": 3, "speed": 620, "range": 150, "damage": 4, "count": 3, "spread": 0.34, "pierce": 1, "scalingGrades": { "dex": "B", "int": "C" } } }
+    },
+    {
+        "id": "x2-storm-fan",
+        "name": "Storm Fan",
+        "description": "A paired crossed-fan set whose X-shaped melee strike launches a narrow authoritative storm arc that reverses after 300 ms and returns to its owner.",
+        "type": "melee",
+        "family": "paired-war-fan",
+        "theme": "crossed ink-blue storm fans with static painted ribbon guards",
+        "element": "shock",
+        "finish": "arcane",
+        "grip": "2H",
+        "gripPoints": { "primary": { "x": 0.46, "y": 0.84 }, "secondary": { "x": 0.63, "y": 0.54, "role": "handle" } },
+        "poseLanguage": { "idle": "secondary-grip", "feet": "wide-plant" },
+        "size": "L",
+        "rangeBand": "close",
+        "scaling": ["DEX", "INT"],
+        "scalingGrades": { "dex": "B", "int": "C" },
+        "requirements": { "dex": 8, "int": 5 },
+        "palettePrimary": "#1C3045",
+        "paletteAccent": "#8DB7C9",
+        "artPrompt": "Weapon-only in-world sprite: a pair of open war fans held crossed (X shape) — steel ribs, dark ink-blue lacquer, cloudy storm-motif ink on the surfaces, small silver electric etchings on the guards. Gritty dark-comic cel, ~4–8 colours. Flat orthographic side profile, faces RIGHT, crossed fans overlapping. Flat #00ff00 background. No character, no lightning.",
+        "cardartAction": "crossing both fans through one narrow X strike as a blue-white slash arc flies out and hooks home",
+        "authoritativeCombo": true,
+        "comboFamily": "arc",
+        "comboVariant": "storm-fan-crossed-return",
+        "comboBar": [
+          { "name": "Cloud Cross", "motion": "cross", "direction": -1, "hand": "both", "timing": { "activeStart": 0.2, "activeEnd": 0.5, "impact": 0.35, "followEnd": 0.71 }, "path": { "kind": "dual-sweep", "arcMultiplier": 0.94, "rangeMultiplier": 0.98, "damageMultiplier": 1, "knockback": 12 }, "ribbon": { "profile": "broken-cross", "radialStart": 0.18, "radialEnd": 0.96, "widthMultiplier": 0.8, "end": "clean" } },
+          { "name": "Rain Scissor", "motion": "scissor", "direction": 1, "hand": "both", "timing": { "activeStart": 0.21, "activeEnd": 0.52, "impact": 0.37, "followEnd": 0.72 }, "path": { "kind": "dual-sweep", "arcMultiplier": 1, "rangeMultiplier": 1, "damageMultiplier": 1, "knockback": 14 }, "ribbon": { "profile": "reverse-hairpin", "radialStart": 0.16, "radialEnd": 0.98, "widthMultiplier": 0.84, "end": "hooked" } },
+          { "name": "Thunder X", "motion": "bind-break-cast-off", "direction": -1, "hand": "both", "timing": { "activeStart": 0.22, "activeEnd": 0.55, "impact": 0.4, "followEnd": 0.75 }, "path": { "kind": "dual-sweep", "arcMultiplier": 1.08, "rangeMultiplier": 1.04, "damageMultiplier": 1, "knockback": 18 }, "ribbon": { "profile": "broken-cross", "radialStart": 0.12, "radialEnd": 1, "widthMultiplier": 0.94, "end": "open" } }
+        ],
+        "comboChoreography": [
+          { "primitive": "guard-pivot", "intensity": 0.94 },
+          { "primitive": "wave-cut", "intensity": 1.02 },
+          { "primitive": "spin-cut", "intensity": 1.12 }
+        ],
+        "performance": { "hold": "aim-forward", "action": "default-swing", "comboForwardPx": 6 },
+        "stats": { "damage": 12, "range": 92, "halfArc": 0.88, "cooldown": 0.8, "displayLength": 126, "swingArc": 2.45, "gripFrac": 0.46 },
+        "behavior": { "kind": "hybrid", "projectile": { "style": "returning-arc", "trigger": "each-swing", "comboLength": 3, "speed": 700, "range": 210, "damage": 2, "count": 1, "spread": 0, "pierce": 1, "returnAfterSeconds": 0.3, "scalingGrades": { "dex": "B", "int": "C" } } }
     }
   ]
 }

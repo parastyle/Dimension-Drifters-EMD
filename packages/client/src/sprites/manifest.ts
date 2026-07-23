@@ -15536,6 +15536,60 @@ export const SPRITES = {
         "oy": 0
       }
     ]
+  },
+  "x2-iron-war-fan": {
+    "id": "x2-iron-war-fan",
+    "kind": "weapon",
+    "canvas": { "w": 247, "h": 256 },
+    "body": { "cx": 150.04, "cy": 124.96, "w": 247, "h": 256 },
+    "parts": [
+      {
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 247,
+        "h": 256,
+        "cx": 150.04,
+        "cy": 124.96,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
+  },
+  "x2-ember-fan": {
+    "id": "x2-ember-fan",
+    "kind": "weapon",
+    "canvas": { "w": 256, "h": 215 },
+    "body": { "cx": 169.61, "cy": 110.03, "w": 256, "h": 215 },
+    "parts": [
+      {
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 215,
+        "cx": 169.61,
+        "cy": 110.03,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
+  },
+  "x2-storm-fan": {
+    "id": "x2-storm-fan",
+    "kind": "weapon",
+    "canvas": { "w": 384, "h": 224 },
+    "body": { "cx": 191.39, "cy": 84.22, "w": 384, "h": 224 },
+    "parts": [
+      {
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 384,
+        "h": 224,
+        "cx": 191.39,
+        "cy": 84.22,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   }
 } as const satisfies Record<string, SpriteManifest>;
 

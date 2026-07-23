@@ -47,7 +47,7 @@ const SIZES = new Set(["S", "M", "L", "XL"]);
 const BANDS = new Set(["close", "mid", "long"]);
 const KINDS = new Set([
   "edge", "thrown", "quake", "chainLightning", "scatter", "gun", "beam", "groundZone",
-  "glovePair", "warp", "cast",
+  "glovePair", "warp", "cast", "hybrid",
 ]);
 const SWING_STYLES = new Set(["arc", "orbit", "chop", "pivot", "thrust", "spin", "punch"]);
 const BULLET_KINDS = new Set([
@@ -107,6 +107,7 @@ const BEHAVIOR_KEYS = {
     "randomRays", "coneStream", "scalingGrades", "zone"]),
   cast: new Set(["kind", "damage", "speed", "range", "cooldown", "pierce", "bulletKind",
     "scalingGrades", "volley", "projectileWaveform", "explode"]),
+  hybrid: new Set(["kind", "projectile"]),
   groundZone: new Set(["kind", "zone"]),
   glovePair: new Set(["kind", "auraColor", "auraRadius"]),
   warp: new Set(["kind", "burstRadius"]),
@@ -114,6 +115,14 @@ const BEHAVIOR_KEYS = {
 const EXPLODE_KEYS = new Set(["radius", "damage", "scalingGrades"]);
 const CAST_VOLLEY_KEYS = new Set(["count", "spread"]);
 const PROJECTILE_WAVEFORM_KEYS = new Set(["amplitudePx", "frequencyHz", "phaseRad"]);
+const HYBRID_PROJECTILE_KEYS = new Set([
+  "style", "trigger", "comboLength", "speed", "range", "damage", "count", "spread", "pierce",
+  "returnAfterSeconds", "scalingGrades",
+]);
+const HYBRID_PROJECTILE_STYLES = new Set([
+  "cutting-gust", "cinder-blade-cone", "returning-arc",
+]);
+const HYBRID_PROJECTILE_TRIGGERS = new Set(["each-swing", "combo-finisher"]);
 const GUN_BURST_KEYS = new Set(["count", "intervalSeconds"]);
 const GRIP_POINTS_KEYS = new Set(["primary", "secondary"]);
 const GRIP_ANCHOR_KEYS = new Set(["x", "y"]);
@@ -843,7 +852,9 @@ function mapWeapon(w) {
                 : kind === "glovePair"
                   ? "glove-pair"
                   : kind === "warp"
-                    ? "warp"
+                ? "warp"
+                : kind === "hybrid"
+                  ? "melee-hybrid"
                     : "melee-arc",
       fireMode: isGroundZone || isBeam || kind === "glovePair" ||
         (type === "melee" && w.performance?.continuous === true)
@@ -1143,6 +1154,63 @@ function mapWeapon(w) {
     def.warp = {
       burstRadius: num(b.burstRadius, 24, 100, 48, "behavior.burstRadius"),
     };
+  } else if (kind === "hybrid") {
+    const projectile = b.projectile;
+    if (!projectile || typeof projectile !== "object" || Array.isArray(projectile)) {
+      fail("behavior.projectile is not an object");
+    } else {
+      checkKeys(projectile, HYBRID_PROJECTILE_KEYS, "behavior.projectile");
+      const style = enumOf(
+        projectile.style,
+        HYBRID_PROJECTILE_STYLES,
+        "behavior.projectile.style",
+      );
+      const trigger = enumOf(
+        projectile.trigger,
+        HYBRID_PROJECTILE_TRIGGERS,
+        "behavior.projectile.trigger",
+      );
+      const comboLength = int(
+        projectile.comboLength,
+        1,
+        8,
+        Array.isArray(w.comboBar) ? w.comboBar.length : 1,
+        "behavior.projectile.comboLength",
+      );
+      if (!w.authoritativeCombo) fail("behavior(hybrid) requires authoritativeCombo=true");
+      if (!Array.isArray(w.comboBar) || w.comboBar.length !== comboLength)
+        fail("behavior.projectile.comboLength must match the authored comboBar");
+      if (trigger === "combo-finisher" && comboLength < 2)
+        fail("combo-finisher hybrid projectiles require a multi-beat combo");
+      def.hybridProjectile = {
+        style,
+        trigger,
+        comboLength,
+        speed: num(projectile.speed, 300, 1200, 700, "behavior.projectile.speed"),
+        range: num(projectile.range, 80, 260, 160, "behavior.projectile.range"),
+        damage: num(projectile.damage, 0.5, 30, 4, "behavior.projectile.damage"),
+        count: int(projectile.count, 1, 6, 1, "behavior.projectile.count"),
+        spread: num(projectile.spread, 0, 0.7, 0, "behavior.projectile.spread"),
+        pierce: int(projectile.pierce, 1, 5, 1, "behavior.projectile.pierce"),
+      };
+      if (style === "cutting-gust" && def.hybridProjectile.count !== 1)
+        fail("cutting-gust must author exactly one narrow projectile");
+      if (style === "cinder-blade-cone" && def.hybridProjectile.count < 2)
+        fail("cinder-blade-cone must author at least two shards");
+      if (style === "returning-arc") {
+        def.hybridProjectile.returnAfterSeconds = num(
+          projectile.returnAfterSeconds,
+          0.25,
+          0.35,
+          0.3,
+          "behavior.projectile.returnAfterSeconds",
+        );
+      } else if (projectile.returnAfterSeconds !== undefined) {
+        fail("behavior.projectile.returnAfterSeconds is reserved for returning-arc");
+      }
+      const g = grades(projectile.scalingGrades, "behavior.projectile.scalingGrades", undefined);
+      if (g) def.hybridProjectile.scalingGrades = g;
+    }
   } else if (kind === "thrown") {
     def.thrown = {
       speed: num(b.speed, 300, 1200, 680, "behavior.speed"),

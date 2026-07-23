@@ -152,7 +152,7 @@ async function existingPartFiles(spriteId) {
 const definitions = {};
 const snapshot = [];
 const ranged = Object.values(WEAPONS)
-  .filter((weapon) => weapon.gun || weapon.beam || weapon.cast)
+  .filter((weapon) => weapon.gun || weapon.beam || weapon.cast || weapon.hybridProjectile)
   .sort((left, right) => left.id.localeCompare(right.id));
 
 for (const weapon of ranged) {
@@ -241,5 +241,5 @@ if (CHECK) {
     writeFile(SNAPSHOT, snapshotText),
     writeFile(TABLE, tableText),
   ]);
-  console.log(`derived ${snapshot.length} ranged muzzle definitions`);
+  console.log(`derived ${snapshot.length} projectile/beam muzzle definitions`);
 }

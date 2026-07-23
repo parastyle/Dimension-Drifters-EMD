@@ -660,6 +660,17 @@ interface PendingScatterVolley {
   kind: string;
 }
 
+/** B3 accepted fan beat waiting for its melee impact epoch before the real projectile is emitted. */
+interface PendingHybridProjectile {
+  t: number;
+  playerId: string;
+  weaponId: string;
+  aimX: number;
+  aimY: number;
+  damage: number;
+  crit: number;
+}
+
 /** One accepted authored lunge per player. A Map hard-caps this transient at MAX_PLAYERS. */
 interface PendingWeaponLunge {
   t: number;
@@ -1165,6 +1176,8 @@ export class GameRoom extends Room<ArenaState> {
       firstCollisionX?: number;
       firstCollisionY?: number;
       firstStep: boolean;
+      /** B3 point-blank hybrids retain their muzzle row for one patch before entering collision. */
+      deferredSteps?: number;
       /** Landing-trigger ground zone; skips airborne contact and blooms when travel truth expires. */
       landingZoneDamage?: number;
       /** Enemy-to-enemy redirects left for an authored thrown ricochet. */
@@ -1288,6 +1301,8 @@ export class GameRoom extends Room<ArenaState> {
   }[] = [];
   /** Accepted scatter descriptors waiting for an authored impact epoch (Cinderchoke downswing). */
   private readonly pendingScatterVolleys: PendingScatterVolley[] = [];
+  /** Accepted fan hybrids waiting for the close edge's authored impact epoch. */
+  private readonly pendingHybridProjectiles: PendingHybridProjectile[] = [];
   /** Accepted punch lunges waiting for active start; final displacement is validated by server navigation. */
   private readonly pendingWeaponLunges = new Map<string, PendingWeaponLunge>();
   /** Accepted authored draws waiting for their visible pre-throw revolution to complete. */
@@ -2330,6 +2345,7 @@ export class GameRoom extends Room<ArenaState> {
     this.meleeSwings.clear();
     this.pendingQuakes.length = 0; // §40.2 no landed-blade detonation may carry across a run boundary
     this.pendingScatterVolleys.length = 0;
+    this.pendingHybridProjectiles.length = 0;
     this.pendingWeaponLunges.clear();
     this.pendingWeaponThrows.length = 0;
     this.pickupGrace.clear();
@@ -5928,6 +5944,10 @@ export class GameRoom extends Room<ArenaState> {
           }
         }
       } else if (weapon && canAct) {
+        if (weapon.hybridProjectile) {
+          this.resolveHandAttack(player, c, 0);
+          return;
+        }
         c.attackBuffer = 0;
         // §44 AUTHORITATIVE EPOCH: construct exactly once when `canAct` accepts — never on message arrival.
         // Client prediction starts from local send until a later swing-seq protocol can reconcile buffering.
@@ -6105,6 +6125,17 @@ export class GameRoom extends Room<ArenaState> {
     if (this.state.outcome !== "active") {
       this.clearCombatEntities();
       return;
+    }
+    // B3 fan payloads are authored at the melee impact epoch, but enter the shared projectile rail
+    // after this tick's projectile pass. That preserves melee-before-projectile authority and guarantees
+    // the replicated row exists for one patch before a point-blank swept collision can consume it.
+    for (let i = this.pendingHybridProjectiles.length - 1; i >= 0; i--) {
+      const pending = this.pendingHybridProjectiles[i];
+      if (!pending) continue;
+      pending.t -= dt;
+      if (pending.t > 0) continue;
+      this.emitHybridProjectile(pending);
+      this.pendingHybridProjectiles.splice(i, 1);
     }
     // 5.4 Zoners drop corrosive puddles; puddles DoT players inside + expire (§15 area denial).
     this.stepZoners(dt);
@@ -7337,7 +7368,16 @@ export class GameRoom extends Room<ArenaState> {
     } else {
       const descriptorCooldown = paired ? PAIR_TEMPO * soloCooldown : soloCooldown;
       const swing = swingDescriptorFor(weapon, descriptorCooldown);
-      this.resolveSwing(player, c, weapon, swing, hand, katanaEffect, authoritativeComboStep);
+      this.resolveSwing(
+        player,
+        c,
+        weapon,
+        swing,
+        hand,
+        katanaEffect,
+        authoritativeComboStep,
+        soloBeat ? { step: soloBeat.step, length: soloBeat.length } : undefined,
+      );
       this.setHandCooldown(c, offSlot, hand, soloCooldown, false);
       if (soloBeat)
         this.recordSoloMeleeBeat(
@@ -7376,6 +7416,7 @@ export class GameRoom extends Room<ArenaState> {
     hand: DualWieldHand = 0,
     katanaEffect?: KatanaBeatEffect,
     comboStep?: Readonly<MeleeComboStep>,
+    hybridBeat?: Readonly<{ step: number; length: number }>,
   ): void {
     const attackCrit = this.weaponCritChance(player, c);
     // §14 WYSIWYG: each damage SOURCE scales independently. The EDGE uses the weapon's own grades; the
@@ -7649,6 +7690,27 @@ export class GameRoom extends Room<ArenaState> {
       );
 
     // §6 REZ (Gravedigger's Spade): the swing REVIVES the nearest downed ally within range (at 30% HP).
+    const hybrid = weapon.hybridProjectile;
+    const hybridTriggerAccepted =
+      hybridBeat !== undefined &&
+      (hybrid?.trigger === "each-swing" ||
+        (hybrid?.trigger === "combo-finisher" &&
+          hybridBeat.step === hybridBeat.length - 1 &&
+          hybridBeat.length === hybrid.comboLength));
+    if (hybrid && hybridTriggerAccepted) {
+      this.pendingHybridProjectiles.push({
+        t: authoritativeSwing.impactSeconds,
+        playerId: player.id,
+        weaponId: weapon.id,
+        aimX: Math.cos(aim0),
+        aimY: Math.sin(aim0),
+        damage:
+          hybrid.damage *
+          this.heldDamageMult(weapon, hybrid.scalingGrades, player, hand),
+        crit: attackCrit,
+      });
+    }
+
     if (weapon.rez) this.tryRez(player, weapon.rez.radius);
   }
 
@@ -10582,6 +10644,7 @@ export class GameRoom extends Room<ArenaState> {
       firstCollisionX: firstCollisionFrom?.x,
       firstCollisionY: firstCollisionFrom?.y,
       firstStep: true,
+      deferredSteps: delivery === CombatDelivery.HybridProjectile ? 1 : 0,
       landingZoneDamage,
       ricochetHops: targetRicochet?.hops,
       ricochetRange: targetRicochet?.range,
@@ -11205,6 +11268,55 @@ export class GameRoom extends Room<ArenaState> {
         volley.sourceWeaponId,
         CombatDelivery.Scatter,
         { x: volley.sweepX, y: volley.sweepY },
+      );
+    }
+  }
+
+  /** Emit one B3 fan payload from the actual painted leading edge. The close swept edge has already
+   * advanced through this impact epoch; these rows then travel and collide through the shared authority rail. */
+  private emitHybridProjectile(pending: PendingHybridProjectile): void {
+    const player = this.state.players.get(pending.playerId);
+    const weapon = WEAPONS[pending.weaponId];
+    const hybrid = weapon?.hybridProjectile;
+    if (!player?.alive || !weapon || !hybrid || !weapon.muzzle) return;
+    const muzzle = weaponMuzzleWorldPoint(weapon, {
+      x: player.x,
+      y: player.y,
+      aimX: pending.aimX,
+      aimY: pending.aimY,
+      renderScale: characterScale(player.character),
+    });
+    const baseAngle = Math.atan2(pending.aimY, pending.aimX);
+    const damagePerProjectile = pending.damage / Math.max(1, hybrid.count);
+    const outboundSeconds = hybrid.returnAfterSeconds ?? hybrid.range / hybrid.speed;
+    const ttl = hybrid.returnAfterSeconds === undefined ? outboundSeconds : outboundSeconds * 2;
+    for (let index = 0; index < hybrid.count; index++) {
+      const offset =
+        hybrid.count > 1
+          ? (index / (hybrid.count - 1) - 0.5) * 2 * hybrid.spread
+          : 0;
+      const angle = baseAngle + offset;
+      this.fireProjectile(
+        muzzle,
+        { x: muzzle.x + Math.cos(angle), y: muzzle.y + Math.sin(angle) },
+        hybrid.speed,
+        damagePerProjectile,
+        false,
+        `fan:${hybrid.style}`,
+        hybrid.pierce,
+        ttl,
+        undefined,
+        0,
+        pending.crit,
+        player.id,
+        weapon.id,
+        CombatDelivery.HybridProjectile,
+        player,
+        undefined,
+        undefined,
+        undefined,
+        0,
+        hybrid.returnAfterSeconds,
       );
     }
   }
@@ -13025,11 +13137,18 @@ export class GameRoom extends Room<ArenaState> {
     const doomed: string[] = [];
     this.state.projectiles.forEach((pr, id) => {
       const meta = this.projectileMeta.get(id);
+      if (meta && (meta.deferredSteps ?? 0) > 0) {
+        meta.deferredSteps = (meta.deferredSteps ?? 0) - 1;
+        if (meta.returnToOwner && !meta.returnToOwner.returning)
+          meta.returnToOwner.outboundSeconds -= dt;
+        return;
+      }
       const sweptFriendly =
         !meta?.hostile &&
         (meta?.firstStep === true ||
           meta?.delivery === CombatDelivery.Gun ||
-          meta?.delivery === CombatDelivery.Cast);
+          meta?.delivery === CombatDelivery.Cast ||
+          meta?.delivery === CombatDelivery.HybridProjectile);
       let projectileFromX = meta?.firstCollisionX ?? pr.x;
       let projectileFromY = meta?.firstCollisionY ?? pr.y;
       if (meta) {

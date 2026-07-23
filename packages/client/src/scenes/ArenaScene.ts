@@ -319,6 +319,10 @@ import {
   spawnWackyWeaponImpact,
   wackyWeaponShotAudioCue,
 } from "../vfx/wacky-weapon-vfx.js";
+import {
+  makeFanHybridProjectile,
+  spawnFanHybridImpact,
+} from "../vfx/fan-hybrid-vfx.js";
 import { type XpMotePoint, type XpMoteReceipt, XpMoteRenderer } from "../vfx/xp-motes.js";
 import { localAttackCooldownSeconds } from "./arena/attack-cadence.js";
 import {
@@ -6850,7 +6854,11 @@ export class ArenaScene extends Phaser.Scene {
       const wackyIdentity = sourceWeapon
         ? makeWackyProjectile(this, pr, sourceWeapon.id)
         : null;
+      const fanHybridIdentity = sourceWeapon?.hybridProjectile
+        ? makeFanHybridProjectile(this, pr, sourceWeapon.id)
+        : null;
       const container =
+        fanHybridIdentity ??
         wackyIdentity ??
         gunIdentity ??
         (weaponEffectRecipe?.projectile === "electric-bolt"
@@ -6877,6 +6885,8 @@ export class ArenaScene extends Phaser.Scene {
       const sourceRig = shooter ? this.blobs.get(shooter) : undefined;
       const spawnAnchorKind = sourceWeapon?.gun
         ? "muzzle"
+        : sourceWeapon?.hybridProjectile
+          ? "muzzle"
         : sourceWeapon?.thrown && isThrownProjectileKind(pr.kind)
           ? "throw"
           : undefined;
@@ -7006,6 +7016,14 @@ export class ArenaScene extends Phaser.Scene {
             | undefined;
           const impactAngle = (c.getData("ang") as number) ?? 0;
           const sourceWeaponId = c.getData("sourceWeapon") as string | undefined;
+          const fanHybridImpact = spawnFanHybridImpact(
+            this,
+            sourceWeaponId,
+            c.x,
+            c.y,
+            impactAngle,
+            prefersReducedPaperMotion() || this.feedbackSettings.flashes === "reduced",
+          );
           const wackyImpact = spawnWackyWeaponImpact(
             this,
             sourceWeaponId,
@@ -7067,7 +7085,7 @@ export class ArenaScene extends Phaser.Scene {
                 prefersReducedPaperMotion() || this.feedbackSettings.flashes === "reduced",
               );
             }
-          } else if (wackyImpact) {
+          } else if (fanHybridImpact || wackyImpact) {
             // The B2 recipe supplied its complete impact punctuation.
           } else if (weaponEffectRecipe?.projectile) {
             // The authored projectile recipe already supplied its complete impact punctuation above.
@@ -7130,7 +7148,7 @@ export class ArenaScene extends Phaser.Scene {
     weapon: WeaponDef,
     rig: SpriteRig,
   ): { x: number; y: number } | undefined {
-    if (!weapon.gun) return undefined;
+    if (!weapon.gun && !weapon.hybridProjectile) return undefined;
     const speed = Math.hypot(projectile.vx, projectile.vy);
     if (speed <= 1e-4) return undefined;
     const aimX = projectile.vx / speed;
@@ -7269,6 +7287,14 @@ export class ArenaScene extends Phaser.Scene {
       }
       const thrown = isThrownProjectileKind(pr.kind);
       const payload = c.getData("arcPayload") as Phaser.GameObjects.Container | undefined;
+      const fanHybridPayload = c.getData(
+        "fanHybridPayload",
+      ) as Phaser.GameObjects.Container | undefined;
+      if (fanHybridPayload) {
+        const angle = Math.atan2(pr.vy, pr.vx);
+        fanHybridPayload.rotation = angle;
+        c.setData("ang", angle);
+      }
       if (thrown) {
         const rotating = payload ?? c;
         if (thrownProjectileRotationPolicy(pr.kind) === "point-forward")

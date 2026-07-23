@@ -16677,6 +16677,274 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "dex": "C"
       }
     }
+  },
+  "x2-iron-war-fan": {
+    "id": "x2-iron-war-fan",
+    "name": "Iron War Fan",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "B",
+      "dex": "C"
+    },
+    "damage": 12,
+    "range": 90,
+    "halfArc": 0.82,
+    "cooldown": 0.8,
+    "displayLength": 104,
+    "swingArc": 2.35,
+    "gripFrac": 0.27,
+    "tags": {
+      "grip": "2H",
+      "size": "M",
+      "delivery": "melee-hybrid",
+      "fireMode": "tap-charge",
+      "element": "physical",
+      "classPool": "melee",
+      "family": "war-fan",
+      "rangeBand": "close",
+      "scaling": [
+        "STR",
+        "DEX"
+      ]
+    },
+    "gripPoints": {
+      "primary": {
+        "x": 0.13,
+        "y": 0.64
+      },
+      "secondary": {
+        "x": 0.27,
+        "y": 0.64,
+        "role": "handle"
+      }
+    },
+    "poseLanguage": {
+      "idle": "secondary-grip",
+      "feet": "combat-plant"
+    },
+    "description": "A rigid riveted tessen worked through three close steel cuts; the accepted third cut releases a separate narrow cutting gust from its leading edge.",
+    "authoritativeCombo": true,
+    "comboFamily": "arc",
+    "comboVariant": "iron-war-fan-threefold",
+    "performance": {
+      "hold": "aim-forward",
+      "action": "default-swing",
+      "comboForwardPx": 8
+    },
+    "requirements": {
+      "str": 7,
+      "dex": 5
+    },
+    "twoHanded": true,
+    "durability": 90,
+    "hybridProjectile": {
+      "style": "cutting-gust",
+      "trigger": "combo-finisher",
+      "comboLength": 3,
+      "speed": 760,
+      "range": 180,
+      "damage": 12,
+      "count": 1,
+      "spread": 0,
+      "pierce": 1,
+      "scalingGrades": {
+        "str": "B",
+        "dex": "C"
+      }
+    },
+    "comboChoreography": [
+      {
+        "primitive": "side-cut",
+        "intensity": 0.9
+      },
+      {
+        "primitive": "wave-cut",
+        "intensity": 1
+      },
+      {
+        "primitive": "lunge",
+        "intensity": 1.12
+      }
+    ]
+  },
+  "x2-ember-fan": {
+    "id": "x2-ember-fan",
+    "name": "Ember Fan",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "B",
+      "int": "C"
+    },
+    "damage": 12,
+    "range": 88,
+    "halfArc": 0.92,
+    "cooldown": 0.8,
+    "displayLength": 102,
+    "swingArc": 2.55,
+    "gripFrac": 0.35,
+    "tags": {
+      "grip": "2H",
+      "size": "M",
+      "delivery": "melee-hybrid",
+      "fireMode": "tap-charge",
+      "element": "fire",
+      "classPool": "melee",
+      "family": "war-fan",
+      "rangeBand": "close",
+      "scaling": [
+        "DEX",
+        "INT"
+      ]
+    },
+    "gripPoints": {
+      "primary": {
+        "x": 0.17,
+        "y": 0.55
+      },
+      "secondary": {
+        "x": 0.35,
+        "y": 0.52,
+        "role": "handle"
+      }
+    },
+    "poseLanguage": {
+      "idle": "secondary-grip",
+      "feet": "combat-plant"
+    },
+    "description": "An ember-steel war fan whose close sweeps retain their blade hit while releasing three small authoritative cinder shards in a short cone.",
+    "authoritativeCombo": true,
+    "comboFamily": "arc",
+    "comboVariant": "ember-fan-cinder-sweeps",
+    "performance": {
+      "hold": "aim-forward",
+      "action": "default-swing",
+      "comboForwardPx": 6
+    },
+    "requirements": {
+      "dex": 7,
+      "int": 5
+    },
+    "twoHanded": true,
+    "durability": 90,
+    "hybridProjectile": {
+      "style": "cinder-blade-cone",
+      "trigger": "each-swing",
+      "comboLength": 3,
+      "speed": 620,
+      "range": 150,
+      "damage": 4,
+      "count": 3,
+      "spread": 0.34,
+      "pierce": 1,
+      "scalingGrades": {
+        "dex": "B",
+        "int": "C"
+      }
+    },
+    "comboChoreography": [
+      {
+        "primitive": "wave-cut",
+        "intensity": 0.92
+      },
+      {
+        "primitive": "side-cut",
+        "intensity": 1
+      },
+      {
+        "primitive": "spin-cut",
+        "intensity": 1.08
+      }
+    ]
+  },
+  "x2-storm-fan": {
+    "id": "x2-storm-fan",
+    "name": "Storm Fan",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "B",
+      "int": "C"
+    },
+    "damage": 12,
+    "range": 92,
+    "halfArc": 0.88,
+    "cooldown": 0.8,
+    "displayLength": 126,
+    "swingArc": 2.45,
+    "gripFrac": 0.46,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "melee-hybrid",
+      "fireMode": "tap-charge",
+      "element": "shock",
+      "classPool": "melee",
+      "family": "paired-war-fan",
+      "rangeBand": "close",
+      "scaling": [
+        "DEX",
+        "INT"
+      ]
+    },
+    "gripPoints": {
+      "primary": {
+        "x": 0.46,
+        "y": 0.84
+      },
+      "secondary": {
+        "x": 0.63,
+        "y": 0.54,
+        "role": "handle"
+      }
+    },
+    "poseLanguage": {
+      "idle": "secondary-grip",
+      "feet": "wide-plant"
+    },
+    "description": "A paired crossed-fan set whose X-shaped melee strike launches a narrow authoritative storm arc that reverses after 300 ms and returns to its owner.",
+    "authoritativeCombo": true,
+    "comboFamily": "arc",
+    "comboVariant": "storm-fan-crossed-return",
+    "performance": {
+      "hold": "aim-forward",
+      "action": "default-swing",
+      "comboForwardPx": 6
+    },
+    "requirements": {
+      "dex": 8,
+      "int": 5
+    },
+    "twoHanded": true,
+    "durability": 90,
+    "hybridProjectile": {
+      "style": "returning-arc",
+      "trigger": "each-swing",
+      "comboLength": 3,
+      "speed": 700,
+      "range": 210,
+      "damage": 2,
+      "count": 1,
+      "spread": 0,
+      "pierce": 1,
+      "returnAfterSeconds": 0.3,
+      "scalingGrades": {
+        "dex": "B",
+        "int": "C"
+      }
+    },
+    "comboChoreography": [
+      {
+        "primitive": "guard-pivot",
+        "intensity": 0.94
+      },
+      {
+        "primitive": "wave-cut",
+        "intensity": 1.02
+      },
+      {
+        "primitive": "spin-cut",
+        "intensity": 1.12
+      }
+    ]
   }
 };
 
@@ -19635,6 +19903,282 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "radialEnd": 1,
         "widthMultiplier": 1.35,
         "end": "clean"
+      }
+    }
+  ],
+  "iron-war-fan-threefold": [
+    {
+      "name": "Rivet Cut",
+      "motion": "slash",
+      "direction": -1,
+      "hand": "both",
+      "timing": {
+        "activeStart": 0.2,
+        "activeEnd": 0.5,
+        "impact": 0.36,
+        "followEnd": 0.72
+      },
+      "path": {
+        "kind": "sweep",
+        "arcMultiplier": 0.86,
+        "rangeMultiplier": 0.96,
+        "damageMultiplier": 1,
+        "knockback": 12
+      },
+      "choreography": {
+        "primitive": "side-cut",
+        "intensity": 0.9
+      },
+      "ribbon": {
+        "profile": "open-c",
+        "radialStart": 0.26,
+        "radialEnd": 0.94,
+        "widthMultiplier": 0.72,
+        "end": "clean"
+      }
+    },
+    {
+      "name": "Guard Return",
+      "motion": "reverse-chop",
+      "direction": 1,
+      "hand": "both",
+      "timing": {
+        "activeStart": 0.21,
+        "activeEnd": 0.52,
+        "impact": 0.38,
+        "followEnd": 0.73
+      },
+      "path": {
+        "kind": "sweep",
+        "arcMultiplier": 0.96,
+        "rangeMultiplier": 1,
+        "damageMultiplier": 1,
+        "knockback": 14
+      },
+      "choreography": {
+        "primitive": "wave-cut",
+        "intensity": 1
+      },
+      "ribbon": {
+        "profile": "reverse-hairpin",
+        "radialStart": 0.22,
+        "radialEnd": 0.98,
+        "widthMultiplier": 0.76,
+        "end": "squared"
+      }
+    },
+    {
+      "name": "Iron Gale Finisher",
+      "motion": "long-reap",
+      "direction": -1,
+      "hand": "both",
+      "timing": {
+        "activeStart": 0.22,
+        "activeEnd": 0.56,
+        "impact": 0.42,
+        "followEnd": 0.76
+      },
+      "path": {
+        "kind": "capsule",
+        "arcMultiplier": 1.08,
+        "rangeMultiplier": 1.04,
+        "damageMultiplier": 1,
+        "knockback": 20
+      },
+      "choreography": {
+        "primitive": "lunge",
+        "intensity": 1.12
+      },
+      "ribbon": {
+        "profile": "massed-wedge",
+        "radialStart": 0.18,
+        "radialEnd": 1,
+        "widthMultiplier": 0.82,
+        "end": "clean"
+      }
+    }
+  ],
+  "ember-fan-cinder-sweeps": [
+    {
+      "name": "Coal Sweep",
+      "motion": "long-reap",
+      "direction": -1,
+      "hand": "both",
+      "timing": {
+        "activeStart": 0.19,
+        "activeEnd": 0.49,
+        "impact": 0.34,
+        "followEnd": 0.7
+      },
+      "path": {
+        "kind": "fan",
+        "arcMultiplier": 0.92,
+        "rangeMultiplier": 0.98,
+        "damageMultiplier": 1,
+        "knockback": 10
+      },
+      "choreography": {
+        "primitive": "wave-cut",
+        "intensity": 0.92
+      },
+      "ribbon": {
+        "profile": "outer-crescent",
+        "radialStart": 0.2,
+        "radialEnd": 0.96,
+        "widthMultiplier": 0.82,
+        "end": "torn"
+      }
+    },
+    {
+      "name": "Fissure Return",
+      "motion": "choked-turn",
+      "direction": 1,
+      "hand": "both",
+      "timing": {
+        "activeStart": 0.2,
+        "activeEnd": 0.51,
+        "impact": 0.36,
+        "followEnd": 0.71
+      },
+      "path": {
+        "kind": "fan",
+        "arcMultiplier": 1,
+        "rangeMultiplier": 1,
+        "damageMultiplier": 1,
+        "knockback": 12
+      },
+      "choreography": {
+        "primitive": "side-cut",
+        "intensity": 1
+      },
+      "ribbon": {
+        "profile": "heavy-sickle",
+        "radialStart": 0.18,
+        "radialEnd": 0.98,
+        "widthMultiplier": 0.86,
+        "end": "torn"
+      }
+    },
+    {
+      "name": "Cinder Bloom",
+      "motion": "petalfall",
+      "direction": -1,
+      "hand": "both",
+      "timing": {
+        "activeStart": 0.21,
+        "activeEnd": 0.54,
+        "impact": 0.39,
+        "followEnd": 0.74
+      },
+      "path": {
+        "kind": "fan",
+        "arcMultiplier": 1.08,
+        "rangeMultiplier": 1.03,
+        "damageMultiplier": 1,
+        "knockback": 16
+      },
+      "choreography": {
+        "primitive": "spin-cut",
+        "intensity": 1.08
+      },
+      "ribbon": {
+        "profile": "massed-wedge",
+        "radialStart": 0.14,
+        "radialEnd": 1,
+        "widthMultiplier": 0.92,
+        "end": "torn"
+      }
+    }
+  ],
+  "storm-fan-crossed-return": [
+    {
+      "name": "Cloud Cross",
+      "motion": "cross",
+      "direction": -1,
+      "hand": "both",
+      "timing": {
+        "activeStart": 0.2,
+        "activeEnd": 0.5,
+        "impact": 0.35,
+        "followEnd": 0.71
+      },
+      "path": {
+        "kind": "dual-sweep",
+        "arcMultiplier": 0.94,
+        "rangeMultiplier": 0.98,
+        "damageMultiplier": 1,
+        "knockback": 12
+      },
+      "choreography": {
+        "primitive": "guard-pivot",
+        "intensity": 0.94
+      },
+      "ribbon": {
+        "profile": "broken-cross",
+        "radialStart": 0.18,
+        "radialEnd": 0.96,
+        "widthMultiplier": 0.8,
+        "end": "clean"
+      }
+    },
+    {
+      "name": "Rain Scissor",
+      "motion": "scissor",
+      "direction": 1,
+      "hand": "both",
+      "timing": {
+        "activeStart": 0.21,
+        "activeEnd": 0.52,
+        "impact": 0.37,
+        "followEnd": 0.72
+      },
+      "path": {
+        "kind": "dual-sweep",
+        "arcMultiplier": 1,
+        "rangeMultiplier": 1,
+        "damageMultiplier": 1,
+        "knockback": 14
+      },
+      "choreography": {
+        "primitive": "wave-cut",
+        "intensity": 1.02
+      },
+      "ribbon": {
+        "profile": "reverse-hairpin",
+        "radialStart": 0.16,
+        "radialEnd": 0.98,
+        "widthMultiplier": 0.84,
+        "end": "hooked"
+      }
+    },
+    {
+      "name": "Thunder X",
+      "motion": "bind-break-cast-off",
+      "direction": -1,
+      "hand": "both",
+      "timing": {
+        "activeStart": 0.22,
+        "activeEnd": 0.55,
+        "impact": 0.4,
+        "followEnd": 0.75
+      },
+      "path": {
+        "kind": "dual-sweep",
+        "arcMultiplier": 1.08,
+        "rangeMultiplier": 1.04,
+        "damageMultiplier": 1,
+        "knockback": 18
+      },
+      "choreography": {
+        "primitive": "spin-cut",
+        "intensity": 1.12
+      },
+      "ribbon": {
+        "profile": "broken-cross",
+        "radialStart": 0.12,
+        "radialEnd": 1,
+        "widthMultiplier": 0.94,
+        "end": "open"
       }
     }
   ]

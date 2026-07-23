@@ -71,6 +71,7 @@ export const CombatDelivery = {
   Zone: 11,
   Aura: 12,
   Warp: 13,
+  HybridProjectile: 14,
 } as const;
 export type CombatDeliveryValue = (typeof CombatDelivery)[keyof typeof CombatDelivery];
 

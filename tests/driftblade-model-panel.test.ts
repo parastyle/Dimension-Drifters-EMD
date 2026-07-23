@@ -240,6 +240,9 @@ describe("driftblade-model panel", () => {
       "chop/cinderbrand-alternating-chops": ["x2-cinderbrand-cleaver"],
       "chop/dustdevil-chop-stab": ["x2-dustdevil-glaive"],
       "chop/reapers-tithe-rest-and-orbit": ["x2-reaper-s-tithe"],
+      "arc/ember-fan-cinder-sweeps": ["x2-ember-fan"],
+      "arc/iron-war-fan-threefold": ["x2-iron-war-fan"],
+      "arc/storm-fan-crossed-return": ["x2-storm-fan"],
       "arc/hero-spin": [
         "rattler-sabre",
         "x2-brimstone-falcata",

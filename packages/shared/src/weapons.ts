@@ -470,6 +470,25 @@ export interface WeaponPerformanceDef {
   };
 }
 
+/** B3 fan contract: an accepted melee beat keeps its normal swept-edge authority and schedules this
+ * additional server-owned projectile at that beat's authored impact epoch. `damage` is the complete
+ * launch payload, split evenly across `count`; a returning arc can deal it once per outbound/return leg. */
+export interface HybridProjectileDef {
+  style: "cutting-gust" | "cinder-blade-cone" | "returning-arc";
+  trigger: "each-swing" | "combo-finisher";
+  /** Authored combo length used to price a finisher-only payload without presentation inference. */
+  comboLength: number;
+  speed: number;
+  range: number;
+  damage: number;
+  count: number;
+  spread: number;
+  pierce: number;
+  /** Reverse toward the living owner after this many seconds and re-arm one hit ledger. */
+  returnAfterSeconds?: number;
+  scalingGrades?: Partial<Record<Attr, Grade>>;
+}
+
 export interface WeaponDef {
   /** Matches the installed sprite id (texture key base = `${id}:part-1`). */
   id: string;
@@ -497,6 +516,8 @@ export interface WeaponDef {
   suppressVfx?: boolean;
   /** Status applied by each authoritative direct melee hit. */
   hitStatus?: EnemyHitStatusDef;
+  /** A real projectile layered onto the accepted melee combo; never a replacement for the swept edge. */
+  hybridProjectile?: HybridProjectileDef;
   /** Non-worn props that intentionally sit in front of visible hands (for example, hand-held idols). */
   renderAboveHands?: boolean;
   /** A single two-hand slot occupied by a matched worn glove on each hand. Cosmetic aura only; accepted
@@ -1155,6 +1176,16 @@ export function weaponAttackCooldown(weapon: WeaponDef): number {
   return Math.max(0.001, base * (weapon.katanaHook?.recoveryMultiplier ?? 1));
 }
 
+/** Expected single-target hybrid contribution per accepted melee beat. Returning arcs re-arm once. */
+export function hybridProjectileDamagePerAcceptedBeat(weapon: WeaponDef): number {
+  const hybrid = weapon.hybridProjectile;
+  if (!hybrid) return 0;
+  const triggerRate =
+    hybrid.trigger === "combo-finisher" ? 1 / Math.max(1, hybrid.comboLength) : 1;
+  const contactCount = hybrid.returnAfterSeconds === undefined ? 1 : 2;
+  return Math.max(0, hybrid.damage) * triggerRate * contactCount;
+}
+
 /** Inclusive swing count for a continuous hold: the press itself is beat one, then one per cadence. */
 export function holdScaledSwingCount(heldSeconds: number, cadenceSeconds: number): number {
   const held = Math.max(0, heldSeconds);
@@ -1213,6 +1244,7 @@ export function pairDamagePerUse(weapon: WeaponDef): number {
     damage += Math.max(0, weapon.scatter.damage) * Math.max(0, weapon.scatter.count) * 0.7;
     damage += Math.max(0, weapon.scatter.explode?.damage ?? 0);
   }
+  damage += hybridProjectileDamagePerAcceptedBeat(weapon);
   return damage;
 }
 
@@ -2287,8 +2319,12 @@ const derivingWeaponMuzzles = (
   globalThis as typeof globalThis & { __DD_GENERATING_WEAPON_MUZZLES__?: boolean }
 ).__DD_GENERATING_WEAPON_MUZZLES__;
 for (const weapon of Object.values(WEAPONS)) {
-  if (!derivingWeaponMuzzles && (weapon.gun || weapon.beam || weapon.cast) && !weapon.muzzle) {
-    throw new Error(`Ranged weapon ${weapon.id} has no art-space muzzle`);
+  if (
+    !derivingWeaponMuzzles &&
+    (weapon.gun || weapon.beam || weapon.cast || weapon.hybridProjectile) &&
+    !weapon.muzzle
+  ) {
+    throw new Error(`Projectile/beam weapon ${weapon.id} has no art-space muzzle`);
   }
 }
 

@@ -91,5 +91,23 @@
       { "part": 0, "x": 1379, "y": 291 }
     ],
     "reason": "The spread originates at the centre of the oversized bell opening, not the lower grip silhouette."
+  },
+  "x2-iron-war-fan": {
+    "points": [
+      { "part": 0, "x": 246, "y": 172 }
+    ],
+    "reason": "The finisher gust leaves from the midpoint of the rigid fan's visible leading steel edge."
+  },
+  "x2-ember-fan": {
+    "points": [
+      { "part": 0, "x": 255, "y": 151 }
+    ],
+    "reason": "The cinder shard cone originates at the ember fan's far-right glowing blade edge."
+  },
+  "x2-storm-fan": {
+    "points": [
+      { "part": 0, "x": 383, "y": 99 }
+    ],
+    "reason": "The returning slash arc launches from the far-right leading edge of the crossed fan pair."
   }
 }
