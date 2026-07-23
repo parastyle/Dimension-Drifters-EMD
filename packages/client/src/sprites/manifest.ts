@@ -11644,23 +11644,23 @@ export const SPRITES = {
     "id": "x2-mournveil-scythe",
     "kind": "weapon",
     "canvas": {
-      "w": 261,
-      "h": 261
+      "w": 742,
+      "h": 742
     },
     "body": {
-      "cx": 171.22,
-      "cy": 128,
-      "w": 256,
-      "h": 128
+      "cx": 486.5,
+      "cy": 363,
+      "w": 728,
+      "h": 364
     },
     "parts": [
       {
         "role": "part-1",
         "file": "part-1.png",
-        "w": 256,
-        "h": 128,
-        "cx": 171.22,
-        "cy": 128,
+        "w": 728,
+        "h": 364,
+        "cx": 486.5,
+        "cy": 363,
         "ox": 0,
         "oy": 0
       }

@@ -1,0 +1,58 @@
+{
+  "subject": "x2-mournveil-scythe",
+  "displayLength": 364,
+  "collisionLength": 280,
+  "registrationTolerancePx": 1,
+  "before": {
+    "bitmap": {
+      "width": 256,
+      "height": 128,
+      "sha256": "ecc290d13e25c39d131b9b298352a12a5f284441cbce16e6f74ee7c49465f047"
+    },
+    "manifest": {
+      "canvas": {
+        "w": 261,
+        "h": 261
+      },
+      "body": {
+        "cx": 171.22,
+        "cy": 128,
+        "w": 256,
+        "h": 128
+      }
+    },
+    "sourcePixelsPerDisplayPixel": 0.7032967032967034
+  },
+  "after": {
+    "bitmap": {
+      "width": 728,
+      "height": 364,
+      "sha256": "7ec2efd5c0a6d3b6a66822e9aa0312f7f8ce73d34719773fb7d3e47bcfbe3447"
+    },
+    "manifest": {
+      "canvas": {
+        "w": 742,
+        "h": 742
+      },
+      "body": {
+        "cx": 486.5,
+        "cy": 363,
+        "w": 728,
+        "h": 364
+      }
+    },
+    "sourcePixelsPerDisplayPixel": 2
+  },
+  "densityFactor": 2.84375,
+  "displaySpaceDeltaPx": {
+    "manifestCentroidX": -0.1292011855707087,
+    "manifestCentroidY": -0.4379382635726148,
+    "manifestWidth": 0.10525554832648565,
+    "manifestHeight": 0.052627774163242824,
+    "gripX": 0,
+    "gripY": 0,
+    "bladeEdgeLeft": 0,
+    "bladeEdgeRight": 0
+  },
+  "result": "PASS"
+}
