@@ -1766,7 +1766,19 @@ export function twirlDirectionForBeat(
   return direction === "alternate" && (attackBeat & 1) === 0 ? -1 : 1;
 }
 
-/** Continuous caster whirl phase routed into the same ground-plane orbit used by Garen-style blades. */
+export type ContinuousTwirlAxis = "pitch" | "yaw";
+
+/** Semantic full-body axis for the two continuous spin families. Screen-circle is weapon-only. */
+export function continuousTwirlAxisFor(
+  spec: WeaponPerformanceSpec | undefined,
+): ContinuousTwirlAxis | undefined {
+  if (spec?.action !== "spin") return undefined;
+  if (spec.twirl?.plane === "continuous-frontflip") return "pitch";
+  if (spec.twirl?.plane === "ground-whirlwind") return "yaw";
+  return undefined;
+}
+
+/** Cadence-locked phase shared by held ground-plane whirls and vertical frontflips. */
 export function continuousWhirlPhase(
   spec: WeaponPerformanceSpec | undefined,
   fireHeld: boolean,
@@ -1774,14 +1786,7 @@ export function continuousWhirlPhase(
   timeS: number,
   cadenceSeconds: number,
 ): number {
-  if (
-    !spec ||
-    spec.action !== "spin" ||
-    spec.twirl?.plane !== "ground-whirlwind" ||
-    !fireHeld ||
-    reducedMotion
-  )
-    return -1;
+  if (continuousTwirlAxisFor(spec) === undefined || !fireHeld || reducedMotion) return -1;
   const cadence = Math.max(0.1, cadenceSeconds);
   return (((timeS / cadence) % 1) + 1) % 1;
 }
@@ -1795,6 +1800,17 @@ export function continuousWhirlAngle(
   originAngle: number,
 ): number {
   return originAngle + direction * Math.max(1, turns) * Math.PI * 2 * phase;
+}
+
+/** Forward somersault around the side-view pitch axis. Facing mirrors the rotation direction so the
+ * head always pitches toward travel; integer turns close with identical position and velocity. */
+export function continuousFrontflipAngle(
+  phase: number,
+  turns: number,
+  direction: -1 | 1,
+  facing: -1 | 1,
+): number {
+  return -direction * facing * Math.max(1, turns) * Math.PI * 2 * phase;
 }
 
 /** A reverse rising chop turns the painted axe head over before the upward return swipe. */
@@ -2391,7 +2407,10 @@ export function sampleWeaponPerformance(
     out.offsetX -= Math.cos(input.aimLocal) * 0.065 * kick;
     out.offsetY -= Math.sin(input.aimLocal) * 0.065 * kick;
   } else if (spec.action === "spin") {
-    if (input.fireHeld && !input.reducedMotion) angle += input.timeS * Math.PI * 4.4;
+    // A frontflip rotates the shared rig root, so the buster stays locked to both hands instead of
+    // independently twirling inside the somersault.
+    if (input.fireHeld && !input.reducedMotion && spec.twirl?.plane !== "continuous-frontflip")
+      angle += input.timeS * Math.PI * 4.4;
   } else if (spec.action === "lunge-punch" && input.phase !== "idle") {
     const eased = smoothstep01(phaseT);
     const forward =

@@ -7,7 +7,8 @@ import {
 } from "@dd/shared";
 import { describe, expect, it } from "vitest";
 import {
-  continuousWhirlAngle,
+  continuousFrontflipAngle,
+  continuousTwirlAxisFor,
   continuousWhirlPhase,
   createWeaponPerformanceInput,
   createWeaponPerformanceSample,
@@ -136,20 +137,22 @@ describe("owner ledger B8 pose, grip, and combo language", () => {
     });
   });
 
-  it("keeps Gravewarden's fixed-rate held spin position- and velocity-continuous", () => {
+  it("keeps Gravewarden's held frontflip pitch-continuous without ground-plane yaw", () => {
     const gravewarden = b8Weapon("gravediggers-spade");
     expect(gravewarden.performance).toMatchObject({
       action: "spin",
       continuous: true,
       suppressSwing: true,
       twirl: {
-        plane: "ground-whirlwind",
+        plane: "continuous-frontflip",
         pivot: "grip",
         direction: "forward",
         visualRevolutions: 1,
       },
       holdScaling: { cadence: "weapon-cooldown" },
     });
+    expect(continuousTwirlAxisFor(gravewarden.performance)).toBe("pitch");
+    expect(gravewarden.performance?.twirl?.plane).not.toBe("ground-whirlwind");
     expect(
       continuousWhirlPhase(
         gravewarden.performance,
@@ -160,15 +163,12 @@ describe("owner ledger B8 pose, grip, and combo language", () => {
       ),
     ).toBe(0);
     const epsilon = 1e-6;
-    const origin = -0.41;
-    const start = continuousWhirlAngle(0, 1, 1, origin);
-    const end = continuousWhirlAngle(1, 1, 1, origin);
+    const start = continuousFrontflipAngle(0, 1, 1, 1);
+    const end = continuousFrontflipAngle(1, 1, 1, 1);
     expect(Math.cos(end)).toBeCloseTo(Math.cos(start), 12);
     expect(Math.sin(end)).toBeCloseTo(Math.sin(start), 12);
-    expect(
-      (end - continuousWhirlAngle(1 - epsilon, 1, 1, origin)) / epsilon,
-    ).toBeCloseTo(
-      (continuousWhirlAngle(epsilon, 1, 1, origin) - start) / epsilon,
+    expect((end - continuousFrontflipAngle(1 - epsilon, 1, 1, 1)) / epsilon).toBeCloseTo(
+      (continuousFrontflipAngle(epsilon, 1, 1, 1) - start) / epsilon,
       8,
     );
   });

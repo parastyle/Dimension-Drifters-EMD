@@ -437,9 +437,9 @@ export interface WeaponPerformanceDef {
     /** Defer the accepted melee/secondary impact until the collision-clamped server dash has arrived. */
     impactAtDestination?: boolean;
   };
-  /** Full-circle attack geometry shared by overhead twirls and ground-plane Garen whirlwinds. */
+  /** Full-circle attack geometry shared by overhead twirls, ground-plane yaw, and vertical frontflips. */
   twirl?: {
-    plane: "screen-circle" | "ground-whirlwind";
+    plane: "screen-circle" | "ground-whirlwind" | "continuous-frontflip";
     pivot: "shaft-midpoint" | "grip";
     direction: "forward" | "alternate";
     /** Presentation turns per accepted beat; authoritative damage remains the authored swing arc. */
@@ -1485,8 +1485,8 @@ const BASE_WEAPONS: Record<string, WeaponDef> = {
       scaling: ["STR"],
     },
   },
-  // §6/§15 #10 GRAVEWARDEN BUSTER — the stable M0 rez-carrier id now presents an original heroic
-  // greatblade. B8 replaces the reset-prone frontflip with one fixed-rate held whirlwind. The attack
+  // §6/§15 #10 GRAVEWARDEN BUSTER — the stable M0 rez-carrier id presents an original heroic
+  // greatblade. B8's amended action is one fixed-rate held frontflip around the pitch axis. The attack
   // still resolves the same complete-circle damage, active timing, base damage, and cadence.
   "gravediggers-spade": {
     id: "gravediggers-spade",
@@ -1509,7 +1509,7 @@ const BASE_WEAPONS: Record<string, WeaponDef> = {
       continuous: true,
       suppressSwing: true,
       twirl: {
-        plane: "ground-whirlwind",
+        plane: "continuous-frontflip",
         pivot: "grip",
         direction: "forward",
         visualRevolutions: 1,

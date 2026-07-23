@@ -149,6 +149,8 @@ import {
   classifyHandRole,
   comboPresentationStyleFor,
   comboWeaponThicknessSign,
+  continuousFrontflipAngle,
+  continuousTwirlAxisFor,
   continuousWhirlAngle,
   continuousWhirlPhase,
   createFlourishInput,
@@ -2028,7 +2030,7 @@ export class SpriteRig {
   private vastagharDepthFront = false;
   /** §29 quantized display-list depth last sent to Phaser; unchanged writes force a global re-sort. */
   private lastDepth = Number.NaN;
-  private facing = 1;
+  private facing: -1 | 1 = 1;
   /** §7 v0.105 de-clunk — smoothed 0..1 GAIT (≈ speed/MOVE_SPEED): scales the stride/lift/lean so the walk
    *  cycle ramps in + fades out instead of snapping on a binary flag (the old check was dead code that kept
    *  the jog running ~1.3s after you stopped). */
@@ -9721,6 +9723,7 @@ export class SpriteRig {
         ownFront = Math.max(ownFront, this.performanceSample.ownership);
         if (this.poseTwoHanded) ownBack = Math.max(ownBack, this.performanceSample.ownership);
       }
+      const twirlAxis = continuousTwirlAxisFor(this.performanceSpec);
       const whirlPhase = continuousWhirlPhase(
         this.performanceSpec,
         anim.fireHeld === true,
@@ -9729,9 +9732,20 @@ export class SpriteRig {
         this.weaponDef?.cooldown ?? 0.4,
       );
       if (whirlPhase >= 0) {
-        this.orbitT = whirlPhase;
-        this.orbitSpin = true;
-        performanceWhirlActive = true;
+        const twirl = this.performanceSpec.twirl;
+        const direction = twirl ? twirlDirectionForBeat(twirl.direction, this.attackBeatSeq) : 1;
+        const turns =
+          twirl?.visualRevolutions ??
+          Math.max(1, Math.round((this.weaponDef?.swingArc ?? Math.PI * 2) / (Math.PI * 2)));
+        if (twirlAxis === "pitch") {
+          // B8 amendment: rotate the shared paper rig, so body, limbs, and held buster frontflip as one.
+          // Do not arm orbitSpin: its scaleX mirror-turn is the rejected ground-plane yaw choreography.
+          this.root.rotation += continuousFrontflipAngle(whirlPhase, turns, direction, this.facing);
+        } else {
+          this.orbitT = whirlPhase;
+          this.orbitSpin = true;
+          performanceWhirlActive = true;
+        }
       }
     }
 
