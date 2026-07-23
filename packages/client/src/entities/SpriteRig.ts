@@ -204,6 +204,7 @@ import {
   isWholeArtCharacterId,
   isWholeArtCharacterPartRole,
   wholeArtCharacterTextureKey,
+  wholeArtCharacterVisualScale,
 } from "../sprites/whole-art-character.js";
 import { rollTumbleRotation } from "../vfx/jump-effects.js";
 import { PARTICLE_PACKS } from "../vfx/particle-manifest.js";
@@ -1949,8 +1950,13 @@ export class SpriteRig {
   private readonly isSelf: boolean;
   private readonly bladeAttachmentSourceId: string;
   private scale: number;
+  /** Client-only authored envelope correction; never enters shared/server characterScale or authority. */
+  private readonly visualEnvelopeScale: number;
+  /** Caller-owned gameplay/render multiplier retained separately from the final visual root transform. */
+  private callerRigScale = 1;
   /** Rig-level UNIFORM scale multiplier (tough/boss size-up). Applied to BOTH axes every frame so
-   *  the facing flip never stretches the sprite — art keeps its painted aspect ratio (§28.4). */
+   *  the facing flip never stretches the sprite — art keeps its painted aspect ratio (§28.4). This is the
+   *  composed final scale so weapon/VFX counter-scaling and animation math all see one transform. */
   private baseScale = 1;
   private readonly body: Phaser.GameObjects.Image;
   /** Two retained, body-card-only slide echoes; their slots are recycled for every slide. */
@@ -2434,6 +2440,8 @@ export class SpriteRig {
     this.isSelf = isSelf;
     this.bladeAttachmentSourceId = id;
     this.scale = TARGET_BODY_H / manifest.body.h;
+    this.visualEnvelopeScale = wholeArtCharacterVisualScale(spriteId);
+    this.baseScale = this.callerRigScale * this.visualEnvelopeScale;
     this.preserveAuthoredRestHandSpread = isWholeArtCharacterId(spriteId);
 
     // Build parts. Draw order (back→front): back hand, feet, body, front hand. The front
@@ -2605,7 +2613,7 @@ export class SpriteRig {
     order.push(this.observedSourceRing, this.observedSourceFlash, this.pairGlint);
     if (this.label) order.push(this.label);
 
-    this.root = scene.add.container(x, y, order);
+    this.root = scene.add.container(x, y, order).setScale(this.baseScale);
     this.renderPrevX = x;
     this.renderPrevY = y;
     this.jigglePrevRootX = x;
@@ -4126,12 +4134,13 @@ export class SpriteRig {
   /** Scale the whole rig UNIFORMLY (bosses/toughs are BIGGER, not more detailed — §28.6). Stored so
    *  `animate()` re-applies it to both axes (the facing flip only touches scaleX). */
   setRigScale(mult: number): void {
-    if (mult !== this.baseScale) {
+    if (mult !== this.callerRigScale) {
       this.resetFlourishState(false);
       this.resetSecondaryMotion();
     }
-    this.baseScale = mult;
-    this.root.setScale(mult);
+    this.callerRigScale = mult;
+    this.baseScale = mult * this.visualEnvelopeScale;
+    this.root.setScale(this.baseScale);
   }
 
   /** Add a pulsing glow behind the body — the §15 "tough = glowier" tell. Lives in the container
@@ -10873,9 +10882,7 @@ export class SpriteRig {
         }
       }
       const stillPhase =
-        anim.reducedMotion === true || !paintedAura
-          ? 0
-          : t * Math.PI * 2 * paintedAura.spinHz;
+        anim.reducedMotion === true || !paintedAura ? 0 : t * Math.PI * 2 * paintedAura.spinHz;
       for (
         let i = 0;
         paintedAura && i < Math.min(paintedAura.count, this.paintedAuraParticles.length);

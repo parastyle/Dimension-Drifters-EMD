@@ -1,3 +1,4 @@
+import { PLAYABLE_CHARACTERS } from "@dd/shared";
 import type Phaser from "phaser";
 import { SPRITES, type SpriteManifest, type SpritePart } from "./manifest.js";
 
@@ -15,14 +16,29 @@ export type WholeArtCharacterTextureState = "ready" | "pending" | "missing";
 
 /**
  * The generated sprite manifest does not yet carry a render-mode field: legacy Drifter/cc-* wardrobe
- * scaffolds also happen to have six sliced parts. Keep this explicit until generation emits that semantic
- * bit, so adding the load path cannot silently opt a wardrobe character out of gear.
+ * scaffolds also happen to have six sliced parts. Source the semantic candidates from the shared playable
+ * roster's proto subset, then retain the six-part qualification below as the client asset guard.
  */
-export const WHOLE_ART_CHARACTER_IDS: ReadonlySet<string> = new Set([
-  "proto-samurai",
-  "proto-sheriff",
-  "proto-witch",
-]);
+export const WHOLE_ART_CHARACTER_IDS: ReadonlySet<string> = new Set(
+  PLAYABLE_CHARACTERS.filter((characterId) => characterId.startsWith("proto-")),
+);
+
+const LEGACY_REFERENCE_CHARACTER_ID = "drifter";
+const MIN_VISUAL_ENVELOPE_SCALE = 0.65;
+const MAX_VISUAL_ENVELOPE_SCALE = 0.95;
+const MIN_ART_DIRECTION_ENVELOPE_FRACTION = 0.95;
+const MAX_ART_DIRECTION_ENVELOPE_FRACTION = 1;
+
+/**
+ * Broad authored head silhouettes read slightly larger than their rectangular full-part bounds. These
+ * bounded fractions keep the initial geometry audit on its art-directed target while the scale itself
+ * remains derived from current manifest geometry.
+ */
+const WHOLE_ART_ENVELOPE_FRACTIONS: Readonly<Record<string, number>> = Object.freeze({
+  "proto-samurai": 0.98,
+  "proto-sheriff": 0.97,
+  "proto-witch": 0.958,
+});
 
 interface WholeArtTextureRegistry {
   readonly pending: Set<string>;
@@ -58,6 +74,44 @@ export function isWholeArtCharacterId(
   characterId: string | null | undefined,
 ): characterId is string {
   return wholeArtCharacterManifest(characterId) !== undefined;
+}
+
+/**
+ * Static texture-rectangle height normalized to one authored body height. Because SpriteRig normalizes
+ * every body to the same target height, this is also the deterministic rendered-height comparison.
+ */
+export function characterStaticEnvelopeHeight(characterId: string): number | undefined {
+  const manifest = (SPRITES as Readonly<Record<string, SpriteManifest>>)[characterId];
+  if (manifest?.kind !== "character" || manifest.body.h <= 0 || manifest.parts.length === 0) {
+    return undefined;
+  }
+  let minY = Number.POSITIVE_INFINITY;
+  let maxY = Number.NEGATIVE_INFINITY;
+  for (const part of manifest.parts) {
+    minY = Math.min(minY, part.oy - part.h / 2);
+    maxY = Math.max(maxY, part.oy + part.h / 2);
+  }
+  return (maxY - minY) / manifest.body.h;
+}
+
+/**
+ * Client-only root multiplier that makes a whole-art rig fit the retained Drifter visual envelope.
+ * Legacy/unknown rigs deliberately return 1 and continue to use only the caller's ordinary rig scale.
+ */
+export function wholeArtCharacterVisualScale(characterId: string | null | undefined): number {
+  if (!characterId || !wholeArtCharacterManifest(characterId)) return 1;
+  const referenceHeight = characterStaticEnvelopeHeight(LEGACY_REFERENCE_CHARACTER_ID);
+  const characterHeight = characterStaticEnvelopeHeight(characterId);
+  if (!referenceHeight || !characterHeight) return 1;
+  const authoredFraction = WHOLE_ART_ENVELOPE_FRACTIONS[characterId] ?? 1;
+  const boundedFraction = Math.max(
+    MIN_ART_DIRECTION_ENVELOPE_FRACTION,
+    Math.min(MAX_ART_DIRECTION_ENVELOPE_FRACTION, authoredFraction),
+  );
+  return Math.max(
+    MIN_VISUAL_ENVELOPE_SCALE,
+    Math.min(MAX_VISUAL_ENVELOPE_SCALE, (referenceHeight / characterHeight) * boundedFraction),
+  );
 }
 
 export function wholeArtCharacterTextureKey(
