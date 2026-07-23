@@ -1,11 +1,22 @@
 import {
+  makeRng,
   projectileWaveformPositionAt,
   swingDescriptorFor,
   TILE_GROUND,
   WEAPONS,
   ZoneStyle,
 } from "@dd/shared";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+// Determinism (audit-qa RNG-parity, same as GameRoom.test.ts): pin Math.random per test so cross-file
+// suite ordering cannot shift the global stream and flip position-sensitive spatial/combat assertions.
+beforeEach(() => {
+  const detRng = makeRng(0x9e3779b9);
+  vi.spyOn(Math, "random").mockImplementation(() => detRng.next());
+});
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 vi.mock("colyseus", () => {
   class Room {
