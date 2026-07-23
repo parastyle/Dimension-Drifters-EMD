@@ -4,7 +4,6 @@ import { expect, type Page, test } from "@playwright/test";
 import { bootArena, runArenaSpec, waitForDevWeapon } from "../helpers/arena-harness.js";
 
 const WEAPON_IDS = [
-  "x2-sanctified-headsman",
   "x2-rimewrit-grave-slab",
   "x2-pyre-gallows-brand",
   "x2-stormrail-colossus",

@@ -3694,7 +3694,8 @@ export class ArenaScene extends Phaser.Scene {
     actorWorld?: Readonly<{ x: number; y: number }>,
   ): void {
     const recipe = resolveWeaponEffectRecipe(weapon);
-    if (!recipe?.swingPack && !recipe?.impactPack && !recipe?.musicalNotes) return;
+    if (!recipe?.swingPack && !recipe?.impactPack && !recipe?.musicalNotes && !recipe?.paintedSwing)
+      return;
     const cueSeconds = this.destinationReadyCueSeconds(
       weapon,
       swing,

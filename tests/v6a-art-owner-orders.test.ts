@@ -1,61 +1,54 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { PROJECTILE_SPRITES } from "../packages/client/src/sprites/projectile-manifest.js";
 import { THROWN_GENERATED_PROJECTILES } from "../packages/client/src/vfx/gun-projectile-art.js";
 import {
-  HEADSMAN_PROTOTYPES,
-  headsmanExtensionGeometry,
-  headsmanExtensionReveal,
-  headsmanPrototypeFromSearch,
-  resolveHeadsmanTreatment,
-  SANCTIFIED_HEADSMAN_BLADE_OVERLAP_FRACTION,
-  SANCTIFIED_HEADSMAN_LENGTH_MULTIPLIER,
-  SANCTIFIED_HEADSMAN_PRODUCTION_TREATMENT,
-} from "../packages/client/src/vfx/headsman-prototypes.js";
+  ALL_BLADE_EXTENSION_TEXTURES,
+  weaponSupportsBladeExtension,
+} from "../packages/client/src/vfx/blade-extension-treatments.js";
+import { resolveWeaponEffectRecipe } from "../packages/client/src/vfx/weapon-effect-recipes.js";
 import { PAGE_PROJECTILE_ART } from "../packages/client/src/vfx/page-projectile-art.js";
+import {
+  bladeExtensionGeometryFor,
+  meleeDamageEnvelopeFor,
+} from "../packages/shared/src/hit-envelope.js";
+import { swingDescriptorFor } from "../packages/shared/src/melee.js";
+import { meleeReach } from "../packages/shared/src/weapons.js";
 import { WEAPONS } from "../packages/shared/src/weapons.js";
 
 describe("V6A generated-art owner orders", () => {
-  it("ships Pale Procession while keeping four dev references on one seamless 3x mechanism", () => {
-    expect(HEADSMAN_PROTOTYPES).toHaveLength(4);
-    expect(new Set(HEADSMAN_PROTOTYPES.map((prototype) => prototype.url)).size).toBe(4);
-    for (const prototype of HEADSMAN_PROTOTYPES)
-      expect(
-        resolveHeadsmanTreatment(
-          `?dev=weapon:x2-sanctified-headsman&proto=${prototype.proto}`,
-          "",
-          true,
-        ),
-      ).toBe(prototype);
-    expect(headsmanPrototypeFromSearch("?dev=weapon:x2-sanctified-headsman").proto).toBe(2);
-    expect(resolveHeadsmanTreatment("?proto=4", "#p1", false)).toBe(
-      SANCTIFIED_HEADSMAN_PRODUCTION_TREATMENT,
-    );
-
+  it("retires every Headsman-only generated-art extension hook", () => {
     const headsman = WEAPONS["x2-sanctified-headsman"];
     expect(headsman).toBeDefined();
     if (!headsman) throw new Error("missing Sanctified Headsman fixture");
-    const geometry = headsmanExtensionGeometry(headsman);
-    expect(geometry.totalBladeLength).toBeCloseTo(
-      geometry.physicalBladeLength * SANCTIFIED_HEADSMAN_LENGTH_MULTIPLIER,
-    );
-    expect(geometry.overlapLength).toBeCloseTo(
-      geometry.physicalBladeLength * SANCTIFIED_HEADSMAN_BLADE_OVERLAP_FRACTION,
-    );
-    expect(geometry.extensionLength - geometry.overlapLength).toBeCloseTo(
-      geometry.physicalBladeLength * 2,
-    );
-    // The authored base stat remains stable; V7-HIT now resolves the larger timed server envelope.
-    expect(headsman.range).toBe(160);
+    expect(existsSync("packages/client/src/vfx/headsman-prototypes.ts")).toBe(false);
+    expect(weaponSupportsBladeExtension(headsman.id)).toBe(false);
+    expect(
+      ALL_BLADE_EXTENSION_TEXTURES.some((treatment) => treatment.weaponId === headsman.id),
+    ).toBe(false);
+    expect(bladeExtensionGeometryFor(headsman)).toBeUndefined();
+    const ordinaryReach = meleeReach(headsman);
+    expect(meleeDamageEnvelopeFor(headsman)).toMatchObject({
+      baseReach: ordinaryReach,
+      maxReach: ordinaryReach,
+    });
+    expect(resolveWeaponEffectRecipe(headsman)).toBeUndefined();
+    expect(headsman.suppressVfx).toBe(true);
   });
 
-  it("ignites the Headsman once at combo start and keeps later hits fully lit", () => {
-    const opening = { activeStartSeconds: 0.2, activeEndSeconds: 0.6, comboStep: 0 };
-    expect(headsmanExtensionReveal(opening, 0)).toBe(0);
-    expect(headsmanExtensionReveal(opening, 0.05)).toBeCloseTo(0.5, 8);
-    expect(headsmanExtensionReveal(opening, 0.1)).toBe(1);
-    expect(headsmanExtensionReveal(opening, 0.6)).toBe(1);
-    expect(headsmanExtensionReveal({ ...opening, comboStep: 1 }, 0)).toBe(1);
+  it("keeps the Headsman's ordinary sword damage and timing with no ignition path", () => {
+    const headsman = WEAPONS["x2-sanctified-headsman"];
+    expect(headsman).toMatchObject({
+      damage: 13,
+      cooldown: 0.74,
+      range: 160,
+      suppressVfx: true,
+    });
+    expect(swingDescriptorFor(headsman, headsman.cooldown).style).toBe("orbit");
+    const playerSource = readFileSync("packages/client/src/vfx/VfxPlayer.ts", "utf8");
+    expect(playerSource).not.toContain("headsman-proto");
+    expect(playerSource).not.toContain("headsmanExtensionReveal");
+    expect(playerSource).not.toContain("x2-sanctified-headsman");
   });
 
   it("swaps the stable Spade id to the generated Gravewarden Buster and only widens its radius", () => {

@@ -17,6 +17,7 @@ import {
 } from "../../vfx/particles.js";
 import { resolveProjectileExplosionVfxRecipe } from "../../vfx/projectile-explosion-vfx-recipes.js";
 import { type QuakeVfxRecipe, resolveQuakeVfxRecipe } from "../../vfx/quake-vfx-recipes.js";
+import { weaponPaintedQuakeFor } from "../../vfx/weapon-vfx-suite.js";
 
 /**
  * Transient combat VFX factories, extracted from ArenaScene. Each is a pure spawner: it takes the scene
@@ -729,6 +730,41 @@ export function spawnQuake(
   weapon?: WeaponDef,
   projectionYScale = 1,
 ): void {
+  const paintedQuake = weaponPaintedQuakeFor(weapon?.id);
+  if (paintedQuake && scene.textures.exists(paintedQuake.textureKey)) {
+    const audit = globalThis as unknown as {
+      __ddB10VfxCapture?: boolean;
+      __ddB10VfxEvents?: Array<Record<string, unknown>>;
+    };
+    if (audit.__ddB10VfxCapture) {
+      audit.__ddB10VfxEvents ??= [];
+      audit.__ddB10VfxEvents.push({
+        kind: "painted-quake",
+        weaponId: weapon?.id,
+        textureKey: paintedQuake.textureKey,
+        subjects: paintedQuake.subjects,
+        removedSubjects: paintedQuake.removedSubjects,
+        displayDiameter: quake.radius * 2 * paintedQuake.diameterMultiplier,
+        damageDiameter: quake.radius * 2,
+      });
+    }
+    spawnQuakeHero(
+      scene,
+      x,
+      y,
+      quake.radius,
+      {
+        image: paintedQuake.textureKey,
+        radius: paintedQuake.diameterMultiplier,
+        flash: 0,
+        dust: 0,
+        debris: 0,
+        shake: quake.vfx?.shake ?? 0.13,
+      },
+      projectionYScale,
+    );
+    return;
+  }
   // §49 every quake gets the rock pack; gravekeeper/tombstone/grave semantics trade it for bone/soul art.
   const variant = resolveQuakeVfxRecipe(weapon);
   if (variant?.smokeOnly) {

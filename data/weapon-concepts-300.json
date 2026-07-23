@@ -1357,9 +1357,7 @@
       "palettePrimary": "#E8E4D8",
       "paletteAccent": "#FF8A2B",
       "cardartAction": "brought down in one solemn vertical cleave, a warm golden halo-flash blooming along the mirror edge",
-      "effectRecipe": "sanctified-holy-slash",
-      "effectEmitter": "blade",
-      "effectTiming": "swing-midpoint",
+      "suppressVfx": true,
       "finishNote": "pristine",
       "stats": {
         "damage": 13,

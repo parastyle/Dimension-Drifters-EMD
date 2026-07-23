@@ -28,9 +28,13 @@ describe("NW-MELEE owner-note catalog contracts", () => {
     });
     expect(weapon("x2-sanctified-headsman")).toMatchObject({
       displayLength: 186.3,
-      effectRecipe: "sanctified-holy-slash",
-      effectEmitter: "blade",
+      damage: 13,
+      cooldown: 0.74,
+      suppressVfx: true,
     });
+    expect(weapon("x2-sanctified-headsman").effectRecipe).toBeUndefined();
+    expect(weapon("x2-sanctified-headsman").effectEmitter).toBeUndefined();
+    expect(weapon("x2-sanctified-headsman").effectTiming).toBeUndefined();
     expect(weapon("drift-nodachi-pale-horizon").twoHanded).toBe(true);
     expect(weapon("x2-voltfang-tachi").twoHanded).toBe(true);
     expect(weapon("drift-greatkatana-moonwake").bespokeVfxSheet).toBe(true);

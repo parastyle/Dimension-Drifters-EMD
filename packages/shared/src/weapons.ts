@@ -249,7 +249,6 @@ export type WeaponEffectRecipeId =
   | "hangman-blood-spatter"
   | "dustreaper-continuous-edge"
   | "cinderbrand-fire-slash"
-  | "sanctified-holy-slash"
   | "stormfist-blue-lunge"
   | "thunderhead-electric-codex"
   | "sermon-musical-notes"

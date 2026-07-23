@@ -126,7 +126,7 @@ describe("V7-HIT standing VFX-collision law", () => {
   });
 
   it("shares the brutalist backswing/runaway angle and foreshortening with server reach", () => {
-    for (const id of BLADE_EXTENSION_WEAPON_IDS.slice(1)) {
+    for (const id of BLADE_EXTENSION_WEAPON_IDS) {
       const weapon = WEAPONS[id];
       const sequence = weapon && meleeComboSelectionFor(weapon)?.sequence;
       expect(sequence, `${id}/momentum-sequence`).toHaveLength(3);
@@ -156,6 +156,20 @@ describe("V7-HIT standing VFX-collision law", () => {
         ).toBe(true);
       }
     }
+  });
+
+  it("keeps Sanctified Headsman on its ordinary blade envelope with no ignition hook", () => {
+    const headsman = WEAPONS["x2-sanctified-headsman"];
+    if (!headsman) throw new Error("Missing Sanctified Headsman fixture");
+    const envelope = meleeDamageEnvelopeFor(headsman);
+    const swing = swingDescriptorFor(headsman, headsman.cooldown);
+    expect(BLADE_EXTENSION_WEAPON_IDS).not.toContain(headsman.id);
+    expect(weaponHitEnvelopeAuthoringFor(headsman)?.melee?.bladeExtension).toBeUndefined();
+    expect(bladeExtensionGeometryFor(headsman)).toBeUndefined();
+    expect(bladeExtensionReveal(headsman, swing, 0.05)).toBe(0);
+    expect(envelope.maxReach).toBe(envelope.baseReach);
+    expect(meleeDamageReachAt(headsman, swing, swing.activeEndSeconds)).toBe(envelope.baseReach);
+    expect(weaponUsesAuthoritativeEnvelopeCombo(headsman)).toBe(false);
   });
 
   it("normalizes beam geometry once and preserves the legacy shared projectile radius until authored", () => {

@@ -4,6 +4,35 @@
 // SOURCES then re-run `node tools/artkit/build-weapon-vfx.mjs` — never hand-edit this file.
 
 export interface WeaponVfxLayer { on: boolean; params: Record<string, number>; }
+export interface WeaponVfxPaintedAura {
+  textureKey: string;
+  url: string;
+  /** Final width relative to the exact authoritative aura diameter. */
+  diameterMultiplier: number;
+  verticalScale: number;
+  layers: number[];
+  alpha: number;
+  subjects: string[];
+}
+export interface WeaponVfxPaintedSwing {
+  textureKey: string;
+  url: string;
+  /** Final forward width relative to the exact authoritative melee extent. */
+  extentMultiplier: number;
+  originX: number;
+  tint: number;
+  lifeMs: number;
+  subjects: string[];
+}
+export interface WeaponVfxPaintedQuake {
+  textureKey: string;
+  url: string;
+  /** Final width relative to the exact authoritative quake diameter. */
+  diameterMultiplier: number;
+  lifeMs: number;
+  subjects: string[];
+  removedSubjects: string[];
+}
 export interface WeaponVfx {
   suite: Record<string, WeaponVfxLayer>;
   rot: number;
@@ -16,6 +45,11 @@ export interface WeaponVfx {
   /** Texture path under public/ for the painted hero skin (e.g. "vfx/rattler-sabre.png"). */
   hero?: string;
   scatter?: { url: string; frameWidth: number; frameHeight: number; count: number };
+  /** Suppress the synthesized suite when an explicit painted treatment owns the full silhouette. */
+  suppressFallback?: boolean;
+  paintedAura?: WeaponVfxPaintedAura;
+  paintedSwing?: WeaponVfxPaintedSwing;
+  paintedQuake?: WeaponVfxPaintedQuake;
 }
 
 export const WEAPON_VFX: Record<string, WeaponVfx> = {
@@ -751,6 +785,59 @@ export const WEAPON_VFX: Record<string, WeaponVfx> = {
     "vfxOrigin": {
       "x": -150,
       "y": 0
+    }
+  },
+  "x2-fulgurite-storm-sphere": {
+    "suite": {},
+    "rot": 0,
+    "paintedAura": {
+      "textureKey": "b10:fulgurite-blue-fill",
+      "url": "vfx/weapons/v7/fulgurite-blue-fill.png",
+      "diameterMultiplier": 1,
+      "verticalScale": 0.56,
+      "layers": [
+        1,
+        0.62
+      ],
+      "alpha": 0.62,
+      "subjects": [
+        "blue-lightning",
+        "storm-plates",
+        "center-fill"
+      ]
+    }
+  },
+  "tombstone-greatsword": {
+    "suite": {},
+    "rot": 0,
+    "paintedQuake": {
+      "textureKey": "b10:tombstone-stone-smoke",
+      "url": "vfx/weapons/v7/tombstone-stone-smoke.png",
+      "diameterMultiplier": 1,
+      "lifeMs": 840,
+      "subjects": [
+        "stone",
+        "smoke"
+      ],
+      "removedSubjects": [
+        "bone"
+      ]
+    }
+  },
+  "x2-thunderhead-voulge": {
+    "suite": {},
+    "rot": 0,
+    "suppressFallback": true,
+    "paintedSwing": {
+      "textureKey": "b10:thunderhead-voulge-blue",
+      "url": "vfx/weapons/v7/thunderhead-voulge-blue-effect.png",
+      "extentMultiplier": 1,
+      "originX": 0.04,
+      "tint": 3401471,
+      "lifeMs": 840,
+      "subjects": [
+        "blue-electric-arc"
+      ]
     }
   }
 };

@@ -1,3 +1,4 @@
+import { meleeReach, WEAPONS } from "@dd/shared";
 import type Phaser from "phaser";
 import { pageProjectileArtFor } from "./page-projectile-art.js";
 import { paintedParticlePixels, particleBurst } from "./particles.js";
@@ -8,6 +9,10 @@ import {
   weaponSwingIdentityScale,
   weaponSwingIdentitySizePx,
 } from "./weapon-effect-recipes.js";
+import {
+  weaponPaintedSwingFor,
+  weaponPaintedSwingGeometryFor,
+} from "./weapon-vfx-suite.js";
 
 export { weaponSwingIdentityScale, weaponSwingIdentitySizePx };
 
@@ -78,6 +83,10 @@ export function spawnWeaponSwingIdentity(
   bladeLength = 0,
 ): void {
   if (!recipe) return;
+  if (recipe.paintedSwing) {
+    spawnPaintedWeaponSwing(scene, recipe, x, y, angle);
+    return;
+  }
   const cuePack = recipe.impactAnchor === "target" ? recipe.impactPack : recipe.swingPack;
   if (cuePack)
     particleBurst(scene, cuePack, x, y, {
@@ -91,6 +100,71 @@ export function spawnWeaponSwingIdentity(
       sink: recipe.noGore ? 18 : 0,
     });
   if (recipe.musicalNotes) spawnMusicalNoteParticles(scene, x, y, angle);
+}
+
+/** Existing directional art is rooted back at the wielder and ends exactly at the damage envelope. */
+export function spawnPaintedWeaponSwing(
+  scene: Phaser.Scene,
+  recipe: WeaponEffectRecipe,
+  emitterX: number,
+  emitterY: number,
+  angle: number,
+): void {
+  const weapon = WEAPONS[recipe.weaponId];
+  const treatment = weaponPaintedSwingFor(recipe.weaponId);
+  if (!weapon || !treatment || !scene.textures.exists(treatment.textureKey)) return;
+  const geometry = weaponPaintedSwingGeometryFor(weapon, treatment);
+  if (!geometry) return;
+  const reach = meleeReach(weapon);
+  const actorX = emitterX - Math.cos(angle) * reach * 0.78;
+  const actorY = emitterY - Math.sin(angle) * reach * 0.78;
+  const source = scene.textures.get(treatment.textureKey).getSourceImage();
+  const finalScale = geometry.displayWidth / Math.max(1, source.width);
+  const image = scene.add
+    .image(actorX, actorY, treatment.textureKey)
+    .setName(`weapon-painted-swing:${recipe.weaponId}`)
+    .setOrigin(treatment.originX, 0.5)
+    .setRotation(angle)
+    .setTint(treatment.tint)
+    .setDepth(100100)
+    .setScale(finalScale * 0.72)
+    .setAlpha(0.12);
+  const audit = globalThis as unknown as {
+    __ddB10VfxCapture?: boolean;
+    __ddB10VfxEvents?: Array<Record<string, unknown>>;
+  };
+  if (audit.__ddB10VfxCapture) {
+    audit.__ddB10VfxEvents ??= [];
+    audit.__ddB10VfxEvents.push({
+      kind: "painted-swing",
+      weaponId: recipe.weaponId,
+      textureKey: treatment.textureKey,
+      subjects: treatment.subjects,
+      x: actorX,
+      y: actorY,
+      angle,
+      displayWidth: geometry.displayWidth,
+      forwardExtent: geometry.forwardExtent,
+      damageExtent: meleeReach(weapon),
+      tint: treatment.tint,
+    });
+  }
+  scene.tweens.add({
+    targets: image,
+    scaleX: finalScale,
+    scaleY: finalScale,
+    alpha: 0.96,
+    duration: Math.round(treatment.lifeMs * 0.28),
+    ease: "Cubic.easeOut",
+  });
+  scene.tweens.add({
+    targets: image,
+    alpha: 0,
+    delay: Math.round(treatment.lifeMs * 0.5),
+    duration: Math.round(treatment.lifeMs * 0.5),
+    ease: "Cubic.easeIn",
+    onComplete: () => image.destroy(),
+  });
 }
 
 export function spawnWeaponRadialIdentity(

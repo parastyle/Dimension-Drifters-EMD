@@ -209,6 +209,7 @@ import { PARTICLE_PACKS } from "../vfx/particle-manifest.js";
 import { paintedParticleDominance, paintedParticleScale } from "../vfx/particles.js";
 import { screenTrueScaleX } from "../vfx/screen-true-transform.js";
 import { resolveWeaponAuraVfxRecipe } from "../vfx/weapon-effect-recipes.js";
+import { weaponPaintedAuraFor } from "../vfx/weapon-vfx-suite.js";
 
 export { GEAR_PARTS_MANIFEST } from "../sprites/gear-parts.js";
 
@@ -2411,6 +2412,7 @@ export class SpriteRig {
   private readonly auraRing: Phaser.GameObjects.Ellipse;
   private readonly gloveAuraBoltA: Phaser.GameObjects.Rectangle;
   private readonly gloveAuraBoltB: Phaser.GameObjects.Rectangle;
+  private readonly paintedAuraFill: readonly Phaser.GameObjects.Image[];
   private readonly paintedAuraParticles: readonly Phaser.GameObjects.Image[];
   private readonly pairGlint: Phaser.GameObjects.Rectangle;
 
@@ -2558,6 +2560,14 @@ export class SpriteRig {
       .setOrigin(0.15, 0.5)
       .setBlendMode(Phaser.BlendModes.ADD)
       .setVisible(false);
+    this.paintedAuraFill = Array.from({ length: 2 }, (_, index) => {
+      const image = scene.add
+        .image(0, 0, "ptcl:shock-spark", 0)
+        .setBlendMode(Phaser.BlendModes.ADD)
+        .setVisible(false);
+      image.name = `weapon-painted-aura:${index}`;
+      return image;
+    });
     this.paintedAuraParticles = Array.from({ length: 12 }, (_, index) =>
       scene.add
         .image(0, 0, "ptcl:shock-spark", index % (PARTICLE_PACKS["shock-spark"]?.count ?? 1))
@@ -2571,6 +2581,7 @@ export class SpriteRig {
       this.auraRing,
       this.gloveAuraBoltA,
       this.gloveAuraBoltB,
+      ...this.paintedAuraFill,
       ...this.paintedAuraParticles,
     );
 
@@ -3103,6 +3114,7 @@ export class SpriteRig {
       this.auraRing,
       this.gloveAuraBoltA,
       this.gloveAuraBoltB,
+      ...this.paintedAuraFill,
       ...this.paintedAuraParticles,
       this.slideAfterimageB,
       this.slideAfterimageA,
@@ -10814,17 +10826,55 @@ export class SpriteRig {
       auraRadius !== undefined && auraColor !== undefined && anim.fireHeld === true && !this.downed;
     const gloveAuraActive = !!gloveAura && auraActive;
     const paintedAura = resolveWeaponAuraVfxRecipe(this.weaponDef);
-    const paintedAuraActive = auraActive && paintedAura !== undefined;
+    const paintedAuraTreatment = weaponPaintedAuraFor(this.weaponDef?.id);
+    const paintedAuraActive =
+      auraActive && (paintedAura !== undefined || paintedAuraTreatment !== undefined);
     this.auraGlow.setVisible(auraActive && !paintedAuraActive);
     this.auraRing.setVisible(auraActive && !paintedAuraActive);
     this.gloveAuraBoltA.setVisible(gloveAuraActive && !paintedAuraActive);
     this.gloveAuraBoltB.setVisible(gloveAuraActive && !paintedAuraActive);
+    for (const fill of this.paintedAuraFill) fill.setVisible(false);
     for (const particle of this.paintedAuraParticles) particle.setVisible(false);
     if (paintedAuraActive) {
       const inverseRigScale = 1 / Math.max(0.01, this.baseScale || 1);
       const centerY = TARGET_BODY_H * 0.18;
-      const stillPhase = anim.reducedMotion === true ? 0 : t * Math.PI * 2 * paintedAura.spinHz;
-      for (let i = 0; i < Math.min(paintedAura.count, this.paintedAuraParticles.length); i++) {
+      if (paintedAuraTreatment) {
+        const worldDiameter = auraRadius * 2 * paintedAuraTreatment.diameterMultiplier;
+        // The retained field is damage geometry, not body squash/spawn art. Counter the root's live
+        // per-axis scale so its outer layer remains the exact aura envelope on every animation frame.
+        const localDiameterX = worldDiameter / Math.max(0.01, Math.abs(this.root.scaleX));
+        const localDiameterY = worldDiameter / Math.max(0.01, Math.abs(this.root.scaleY));
+        for (
+          let i = 0;
+          i < Math.min(paintedAuraTreatment.layers.length, this.paintedAuraFill.length);
+          i++
+        ) {
+          const fill = this.paintedAuraFill[i];
+          const layerScale = paintedAuraTreatment.layers[i];
+          if (!fill || layerScale === undefined) continue;
+          const turn =
+            anim.reducedMotion === true ? 0 : t * (i === 0 ? 0.17 : -0.23) + i * Math.PI * 0.37;
+          fill
+            .setTexture(paintedAuraTreatment.textureKey)
+            .setPosition(0, centerY)
+            .setRotation(turn)
+            .setDisplaySize(
+              localDiameterX * layerScale,
+              localDiameterY * layerScale * paintedAuraTreatment.verticalScale,
+            )
+            .setAlpha(paintedAuraTreatment.alpha * (i === 0 ? 1 : 0.72))
+            .setVisible(true);
+        }
+      }
+      const stillPhase =
+        anim.reducedMotion === true || !paintedAura
+          ? 0
+          : t * Math.PI * 2 * paintedAura.spinHz;
+      for (
+        let i = 0;
+        paintedAura && i < Math.min(paintedAura.count, this.paintedAuraParticles.length);
+        i++
+      ) {
         const particle = this.paintedAuraParticles[i];
         const packId = paintedAura.packs[i % paintedAura.packs.length];
         const pack = packId ? PARTICLE_PACKS[packId] : undefined;
