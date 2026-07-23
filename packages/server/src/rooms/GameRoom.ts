@@ -672,6 +672,13 @@ interface PendingWeaponLunge {
   distancePx: number;
   durationSeconds: number;
   invulnerable: boolean;
+  impactAtDestination: boolean;
+  destinationQuake?: {
+    radius: number;
+    damage: number;
+    crit: number;
+    zoneDamagePerSecond?: number;
+  };
   elapsedSeconds?: number;
   startX?: number;
   startY?: number;
@@ -1255,6 +1262,11 @@ export class GameRoom extends Room<ArenaState> {
       hitStatus?: WeaponDef["hitStatus"];
       elapsed: number;
       hit: Set<string>;
+      /** Destination-bound attacks cannot advance collision until their server dash has arrived. */
+      waitForWeaponLunge?: boolean;
+      /** Immutable legal endpoint used by destination-bound impact collision. */
+      originX?: number;
+      originY?: number;
     }
   >();
   /** §40.2 quakes awaiting their blade-LANDING moment (damage/epicenter captured at swing time; detonated
@@ -7433,6 +7445,8 @@ export class GameRoom extends Room<ArenaState> {
     const rangeMultiplier =
       (comboStep?.path.rangeMultiplier ?? 1) * (katanaEffect?.reachMultiplier ?? 1);
     const reach = envelope.maxReach * rangeMultiplier;
+    const authoredLunge = weapon.performance?.lunge;
+    const impactAtDestination = hand === 0 && authoredLunge?.impactAtDestination === true;
     this.meleeSwings.set(swingKey, {
       playerId: player.id,
       swing: authoritativeSwing,
@@ -7449,12 +7463,12 @@ export class GameRoom extends Room<ArenaState> {
       hitStatus: weapon.hitStatus,
       elapsed: 0,
       hit: new Set<string>(),
+      waitForWeaponLunge: impactAtDestination,
     });
 
-    const authoredLunge = weapon.performance?.lunge;
     if (authoredLunge && hand === 0) {
       this.pendingWeaponLunges.set(player.id, {
-        t: swing.activeStartSeconds,
+        t: authoritativeSwing.activeStartSeconds,
         playerId: player.id,
         weaponId: weapon.id,
         aimX: Math.cos(aim0),
@@ -7462,6 +7476,7 @@ export class GameRoom extends Room<ArenaState> {
         distancePx: authoredLunge.distancePx,
         durationSeconds: authoredLunge.durationSeconds ?? TICK_MS / 1000,
         invulnerable: authoredLunge.invulnerable === true,
+        impactAtDestination,
       });
     } else if (weapon.performance?.forwardDrift && hand === 0) {
       const drift = weapon.performance.forwardDrift;
@@ -7474,6 +7489,7 @@ export class GameRoom extends Room<ArenaState> {
         distancePx: drift.speedPxPerSecond * drift.durationSeconds,
         durationSeconds: drift.durationSeconds,
         invulnerable: false,
+        impactAtDestination: false,
       });
     }
 
@@ -7627,22 +7643,34 @@ export class GameRoom extends Room<ArenaState> {
     // still required to remove the residual network/buffer epoch offset — no protocol expansion in this P0.
     if (weapon.quake) {
       const qPower = this.heldDamageMult(weapon, weapon.quake.scalingGrades, player, hand);
-      const ep = clampQuakeEpicenter(player, { x: c.targetX, y: c.targetY }, QUAKE_REACH);
-      this.pendingQuakes.push({
-        t: swing.impactSeconds,
-        x: ep.x,
-        y: ep.y,
-        radius: weapon.quake.radius,
-        damage: weapon.quake.damage * qPower,
-        crit: attackCrit,
-        sourcePlayerId: player.id,
-        sourceWeaponId: weapon.id,
-        zoneDamagePerSecond:
-          weapon.groundZone?.trigger === "impact"
-            ? weapon.groundZone.damagePerSecond *
-              this.heldDamageMult(weapon, weapon.groundZone.scalingGrades, player, hand)
-            : undefined,
-      });
+      const zoneDamagePerSecond =
+        weapon.groundZone?.trigger === "impact"
+          ? weapon.groundZone.damagePerSecond *
+            this.heldDamageMult(weapon, weapon.groundZone.scalingGrades, player, hand)
+          : undefined;
+      if (impactAtDestination) {
+        const lunge = this.pendingWeaponLunges.get(player.id);
+        if (lunge)
+          lunge.destinationQuake = {
+            radius: weapon.quake.radius,
+            damage: weapon.quake.damage * qPower,
+            crit: attackCrit,
+            zoneDamagePerSecond,
+          };
+      } else {
+        const ep = clampQuakeEpicenter(player, { x: c.targetX, y: c.targetY }, QUAKE_REACH);
+        this.pendingQuakes.push({
+          t: swing.impactSeconds,
+          x: ep.x,
+          y: ep.y,
+          radius: weapon.quake.radius,
+          damage: weapon.quake.damage * qPower,
+          crit: attackCrit,
+          sourcePlayerId: player.id,
+          sourceWeaponId: weapon.id,
+          zoneDamagePerSecond,
+        });
+      }
     }
 
     // Scatter shot (§14 WYSIWYG): fling real magma projectiles that each deal an INT-scaled hit + explode.
@@ -7812,6 +7840,55 @@ export class GameRoom extends Room<ArenaState> {
     c.auraInputWasHeld = held;
   }
 
+  private cancelDestinationLungeImpact(playerId: string, weaponId: string): void {
+    for (const key of [playerId, `${playerId}:0`]) {
+      const swing = this.meleeSwings.get(key);
+      if (swing?.waitForWeaponLunge && swing.weaponId === weaponId) this.meleeSwings.delete(key);
+    }
+  }
+
+  /** Unlock one accepted punch at its immutable legal endpoint and release its destination-only layers. */
+  private releaseDestinationLungeImpact(
+    player: PlayerState,
+    combat: CombatState,
+    lunge: PendingWeaponLunge,
+  ): void {
+    if (!lunge.impactAtDestination) return;
+    for (const key of [player.id, `${player.id}:0`]) {
+      const swing = this.meleeSwings.get(key);
+      if (!swing?.waitForWeaponLunge || swing.weaponId !== lunge.weaponId) continue;
+      swing.waitForWeaponLunge = false;
+      swing.elapsed = Math.max(swing.elapsed, swing.swing.activeStartSeconds);
+      swing.originX = player.x;
+      swing.originY = player.y;
+    }
+    const quake = lunge.destinationQuake;
+    lunge.destinationQuake = undefined;
+    if (!quake) return;
+    this.detonate(
+      player.x,
+      player.y,
+      quake.radius,
+      quake.damage,
+      quake.crit,
+      player.id,
+      lunge.weaponId,
+      CombatDelivery.Quake,
+    );
+    const weapon = WEAPONS[lunge.weaponId];
+    if (quake.zoneDamagePerSecond !== undefined && weapon?.groundZone?.trigger === "impact")
+      this.spawnWeaponGroundZoneAt(
+        player,
+        weapon,
+        player.x,
+        player.y,
+        quake.zoneDamagePerSecond,
+        quake.crit,
+      );
+    combat.lastGroundX = player.x;
+    combat.lastGroundY = player.y;
+  }
+
   /** Resolve an accepted lunge across its authored active window. Cursor intent is captured at acceptance;
    * the endpoint is validated once and every intermediate displacement stays on that accepted segment. */
   private stepPendingWeaponLunges(dt: number): void {
@@ -7820,12 +7897,16 @@ export class GameRoom extends Room<ArenaState> {
       const combat = this.combat.get(playerId);
       if (!player?.alive || !combat || player.weapon !== lunge.weaponId) {
         if (combat) combat.weaponLungeIFrameUntilTick = this.state.tick;
+        this.cancelDestinationLungeImpact(playerId, lunge.weaponId);
         this.pendingWeaponLunges.delete(playerId);
         continue;
       }
+      let travelDt = dt;
       if (lunge.elapsedSeconds === undefined) {
-        lunge.t = Math.max(0, lunge.t - dt);
+        const waitSeconds = lunge.t;
+        lunge.t = Math.max(0, waitSeconds - dt);
         if (lunge.t > 1e-9) continue;
+        travelDt = Math.max(0, dt - waitSeconds);
         const destination = this.navValidDest(
           player,
           combat,
@@ -7836,21 +7917,21 @@ export class GameRoom extends Room<ArenaState> {
         const dx = destination.x - player.x;
         const dy = destination.y - player.y;
         // A pit/obstacle correction may slide sideways, but it may never turn the authored lunge backward.
-        if (dx * lunge.aimX + dy * lunge.aimY <= 0) {
-          this.pendingWeaponLunges.delete(playerId);
-          continue;
-        }
+        const blocked = dx * lunge.aimX + dy * lunge.aimY <= 0;
         lunge.elapsedSeconds = 0;
         lunge.startX = player.x;
         lunge.startY = player.y;
-        lunge.endX = destination.x;
-        lunge.endY = destination.y;
+        lunge.endX = blocked ? player.x : destination.x;
+        lunge.endY = blocked ? player.y : destination.y;
         if (lunge.invulnerable) {
           combat.weaponLungeIFrameUntilTick =
             (this.state.tick + ticksFromSeconds(lunge.durationSeconds)) >>> 0;
         }
       }
-      lunge.elapsedSeconds = Math.min(lunge.durationSeconds, (lunge.elapsedSeconds ?? 0) + dt);
+      lunge.elapsedSeconds = Math.min(
+        lunge.durationSeconds,
+        (lunge.elapsedSeconds ?? 0) + travelDt,
+      );
       const progress = lunge.elapsedSeconds / lunge.durationSeconds;
       player.x =
         (lunge.startX ?? player.x) +
@@ -7860,7 +7941,10 @@ export class GameRoom extends Room<ArenaState> {
         ((lunge.endY ?? player.y) - (lunge.startY ?? player.y)) * progress;
       combat.lastGroundX = player.x;
       combat.lastGroundY = player.y;
-      if (progress >= 1) this.pendingWeaponLunges.delete(playerId);
+      if (progress >= 1) {
+        this.releaseDestinationLungeImpact(player, combat, lunge);
+        this.pendingWeaponLunges.delete(playerId);
+      }
     }
   }
 
@@ -8745,6 +8829,9 @@ export class GameRoom extends Room<ArenaState> {
         this.meleeSwings.delete(pid);
         continue;
       }
+      if (sw.waitForWeaponLunge) continue;
+      const impactX = sw.originX ?? player.x;
+      const impactY = sw.originY ?? player.y;
       const p0 = swingEdgeProgress(sw.swing, sw.elapsed);
       sw.elapsed += dt;
       const p1 = swingEdgeProgress(sw.swing, sw.elapsed);
@@ -8775,23 +8862,23 @@ export class GameRoom extends Room<ArenaState> {
         const facing = Math.cos(sw.aim0) >= 0 ? 1 : -1;
         const forwardPad = MAX_ENEMY_RADIUS + sw.halfWidth;
         this.enemyGrid.queryAabb(
-          player.x - (facing > 0 ? MAX_ENEMY_RADIUS * 0.5 : sw.range + forwardPad),
-          player.y - DEPTH_TOL_PLAYER - MAX_ENEMY_RADIUS,
-          player.x + (facing > 0 ? sw.range + forwardPad : MAX_ENEMY_RADIUS * 0.5),
-          player.y + DEPTH_TOL_PLAYER + MAX_ENEMY_RADIUS,
+          impactX - (facing > 0 ? MAX_ENEMY_RADIUS * 0.5 : sw.range + forwardPad),
+          impactY - DEPTH_TOL_PLAYER - MAX_ENEMY_RADIUS,
+          impactX + (facing > 0 ? sw.range + forwardPad : MAX_ENEMY_RADIUS * 0.5),
+          impactY + DEPTH_TOL_PLAYER + MAX_ENEMY_RADIUS,
           this.enemyCandidates,
         );
         for (const eid of this.enemyCandidates) {
           const enemy = this.state.enemies.get(eid);
           if (!enemy || sw.hit.has(eid) || enemy.hp <= 0) continue; // once/swing; skip dead/stale ids
           const r = ENEMY_KINDS[enemy.kind]?.radius ?? ENEMY_RADIUS;
-          const fx = (enemy.x - player.x) * facing; // forward distance along the belt (in front = positive)
+          const fx = (enemy.x - impactX) * facing; // forward distance along the belt (in front = positive)
           if (fx < -r * 0.5 || fx > collisionRange + r + collisionHalfWidth) continue;
           // Depth window: generous for the attacker, but a mob actively rolling in depth (dodgeState) shrinks
           // its own hurtbox depth (DEPTH_DODGE_MULT) so a well-timed roll genuinely slips the swing.
           const rolling = (this.dodgeState.get(eid)?.t ?? 0) > 0;
           const depthWin = DEPTH_TOL_PLAYER + r * (rolling ? DEPTH_DODGE_MULT : 1);
-          if (Math.abs(enemy.y - player.y) > depthWin) continue;
+          if (Math.abs(enemy.y - impactY) > depthWin) continue;
           sw.hit.add(eid);
           this.damageEnemy(
             enemy,
@@ -8802,8 +8889,8 @@ export class GameRoom extends Room<ArenaState> {
             playerId,
             sw.weaponId,
             CombatDelivery.Melee,
-            player.x,
-            player.y,
+            impactX,
+            impactY,
           );
           this.applyEnemyHitStatus(eid, sw.hitStatus);
         }
@@ -8811,21 +8898,21 @@ export class GameRoom extends Room<ArenaState> {
         if (runtime) {
           this.wormHitSlots.length = 0;
           this.wormSegmentGrid.queryAabb(
-            player.x - (facing > 0 ? 26 : sw.range + sw.halfWidth + 52),
-            player.y - DEPTH_TOL_PLAYER - 52,
-            player.x + (facing > 0 ? sw.range + sw.halfWidth + 52 : 26),
-            player.y + DEPTH_TOL_PLAYER + 52,
+            impactX - (facing > 0 ? 26 : sw.range + sw.halfWidth + 52),
+            impactY - DEPTH_TOL_PLAYER - 52,
+            impactX + (facing > 0 ? sw.range + sw.halfWidth + 52 : 26),
+            impactY + DEPTH_TOL_PLAYER + 52,
             this.wormSegmentCandidates,
           );
           for (const slot of this.wormSegmentCandidates) {
             const hitKey = `worm:${slot}:${runtime.segmentGeneration(slot)}`;
             if (sw.hit.has(hitKey)) continue;
             const r = runtime.segmentRadius(slot);
-            const fx = (runtime.x[slot]! - player.x) * facing;
+            const fx = (runtime.x[slot]! - impactX) * facing;
             if (
               fx < -r * 0.5 ||
               fx > collisionRange + r + collisionHalfWidth ||
-              Math.abs(runtime.y[slot]! - player.y) > DEPTH_TOL_PLAYER + r
+              Math.abs(runtime.y[slot]! - impactY) > DEPTH_TOL_PLAYER + r
             )
               continue;
             sw.hit.add(hitKey);
@@ -8841,8 +8928,8 @@ export class GameRoom extends Room<ArenaState> {
             playerId,
             sw.weaponId,
             CombatDelivery.Melee,
-            player.x,
-            player.y,
+            impactX,
+            impactY,
           );
         }
         if (sw.elapsed >= sw.swing.activeEndSeconds) this.meleeSwings.delete(pid);
@@ -8875,10 +8962,10 @@ export class GameRoom extends Room<ArenaState> {
           ? Math.abs(extensionAngle1 - extensionAngle0)
           : absoluteSwingArc * (p1 - p0);
       const steps = Math.max(1, Math.ceil(sampledAngularTravel / MELEE_SAMPLE_STEP));
-      const wielder = { x: player.x, y: player.y };
+      const wielder = { x: impactX, y: impactY };
       this.enemyGrid.queryRadius(
-        player.x,
-        player.y,
+        impactX,
+        impactY,
         sw.range + sw.halfWidth + MAX_ENEMY_RADIUS,
         this.enemyCandidates,
       );
@@ -8886,8 +8973,8 @@ export class GameRoom extends Room<ArenaState> {
       this.wormHitSlots.length = 0;
       if (runtime) {
         this.wormSegmentGrid.queryRadius(
-          player.x,
-          player.y,
+          impactX,
+          impactY,
           sw.range + sw.halfWidth + 52,
           this.wormSegmentCandidates,
         );
@@ -8924,8 +9011,8 @@ export class GameRoom extends Room<ArenaState> {
               playerId,
               sw.weaponId,
               CombatDelivery.Melee,
-              player.x,
-              player.y,
+              impactX,
+              impactY,
             );
             this.applyEnemyHitStatus(eid, sw.hitStatus);
           }
@@ -8960,8 +9047,8 @@ export class GameRoom extends Room<ArenaState> {
         playerId,
         sw.weaponId,
         CombatDelivery.Melee,
-        player.x,
-        player.y,
+        impactX,
+        impactY,
       );
       if (sw.elapsed >= sw.swing.activeEndSeconds) this.meleeSwings.delete(pid);
     }

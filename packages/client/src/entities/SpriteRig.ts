@@ -9310,8 +9310,8 @@ export class SpriteRig {
             direction * (0.1 + 0.09 * heavy) * drive * commitScale * Math.cos(aimLocal);
           this.body.y += (2.5 + 2.5 * heavy) * s * drive * commitScale;
           if (monkFlurry) {
-            // The root's small authoritative drift comes from `performance.forwardDrift`; this local drive
-            // is the visible shoulder/hip step that makes each detached fist read as a connected arm.
+            // Presentation only: the shoulder/hip step keeps detached fists connected to the paper body.
+            // It never moves the rig root; only an explicit server-authored movement datum may do that.
             this.attackArtOffX += Math.cos(aimLocal) * TARGET_BODY_H * 0.055 * drive;
             this.attackArtOffY += Math.sin(aimLocal) * TARGET_BODY_H * 0.055 * drive;
           }

@@ -13700,11 +13700,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "performance": {
       "hold": "steady",
       "action": "default-swing",
-      "continuous": true,
-      "forwardDrift": {
-        "speedPxPerSecond": 42,
-        "durationSeconds": 0.34
-      }
+      "continuous": true
     },
     "requirements": {
       "int": 5
@@ -14438,8 +14434,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "windupSeconds": 0.3,
       "lunge": {
         "distancePx": 480,
-        "durationSeconds": 0.05,
-        "invulnerable": true
+        "durationSeconds": 0.025,
+        "invulnerable": true,
+        "impactAtDestination": true
       }
     },
     "requirements": {
