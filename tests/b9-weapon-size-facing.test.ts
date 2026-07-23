@@ -49,10 +49,26 @@ const SIZE_ORDERS = [
 const EXPECTED_ASSET_DIMENSIONS = {
   "x2-idol-of-the-pale-verdict": { width: 256, height: 176 },
   "x-sword-whirlwind": { width: 256, height: 90 },
-  "x2-mournveil-scythe": { width: 256, height: 128 },
+  "x2-mournveil-scythe": { width: 728, height: 364 },
   "x2-gravewind-rimfire": { width: 256, height: 99 },
   "x2-prismhex-diffraction-gauntlet": { width: 256, height: 162 },
 } as const;
+
+const MOURNVEIL_PRE_RESTORATION_MANIFEST = {
+  canvas: { w: 261, h: 261 },
+  body: { cx: 171.22, cy: 128, w: 256, h: 128 },
+  part: {
+    role: "part-1",
+    file: "part-1.png",
+    w: 256,
+    h: 128,
+    cx: 171.22,
+    cy: 128,
+    ox: 0,
+    oy: 0,
+  },
+} as const;
+const MOURNVEIL_REGISTRATION_TOLERANCE_PX = 1;
 
 const RIG_SOURCE = readFileSync(
   new URL("../packages/client/src/entities/SpriteRig.ts", import.meta.url),
@@ -122,6 +138,91 @@ describe("B9 presentation-only weapon size orders", () => {
       expect(part, id).toBeDefined();
       expect({ width: part?.w, height: part?.h }, id).toEqual(expected);
     }
+  });
+});
+
+describe("B9 Mournveil native-resolution restoration", () => {
+  it("retains 364 display length and the pre-order 280 collision datum", () => {
+    const mournveil = WEAPONS["x2-mournveil-scythe"];
+    expect(mournveil.displayLength).toBe(364);
+    expect(mournveil.collisionLength).toBe(280);
+    expect(mournveil.damage).toBe(14);
+    expect(mournveil.range).toBe(250);
+    expect(mournveil.cooldown).toBe(0.82);
+    expect(mournveil.swingArc).toBe(Math.PI * 2);
+  });
+
+  it("ships a true 2x-density held sprite through the generated manifest", () => {
+    const mournveil = SPRITES["x2-mournveil-scythe"];
+    const part = mournveil.parts[0];
+    const bitmap = readFileSync(
+      new URL("../packages/client/public/sprites/x2-mournveil-scythe/part-1.png", import.meta.url),
+    );
+
+    expect(part.role).toBe(MOURNVEIL_PRE_RESTORATION_MANIFEST.part.role);
+    expect(part.file).toBe(MOURNVEIL_PRE_RESTORATION_MANIFEST.part.file);
+    expect({ width: bitmap.readUInt32BE(16), height: bitmap.readUInt32BE(20) }).toEqual({
+      width: 728,
+      height: 364,
+    });
+    expect({ width: part.w, height: part.h }).toEqual({ width: 728, height: 364 });
+    expect(part.w / WEAPONS["x2-mournveil-scythe"].displayLength).toBe(2);
+  });
+
+  it("keeps manifest grip and blade-edge registration within one display pixel", () => {
+    const before = MOURNVEIL_PRE_RESTORATION_MANIFEST;
+    const after = SPRITES["x2-mournveil-scythe"];
+    const part = after.parts[0];
+    const displayLength = WEAPONS["x2-mournveil-scythe"].displayLength;
+    const displayDelta = (beforeFraction: number, afterFraction: number) =>
+      Math.abs(afterFraction - beforeFraction) * displayLength;
+
+    expect(
+      displayDelta(before.body.cx / before.canvas.w, after.body.cx / after.canvas.w),
+    ).toBeLessThanOrEqual(MOURNVEIL_REGISTRATION_TOLERANCE_PX);
+    expect(
+      displayDelta(before.body.cy / before.canvas.h, after.body.cy / after.canvas.h),
+    ).toBeLessThanOrEqual(MOURNVEIL_REGISTRATION_TOLERANCE_PX);
+    expect(
+      displayDelta(before.part.w / before.canvas.w, part.w / after.canvas.w),
+    ).toBeLessThanOrEqual(MOURNVEIL_REGISTRATION_TOLERANCE_PX);
+    expect(
+      displayDelta(before.part.h / before.canvas.h, part.h / after.canvas.h),
+    ).toBeLessThanOrEqual(MOURNVEIL_REGISTRATION_TOLERANCE_PX);
+
+    const gripBefore = {
+      x: WEAPONS["x2-mournveil-scythe"].gripFrac * displayLength,
+      y: (before.part.h / before.part.w) * displayLength * 0.5,
+    };
+    const gripAfter = {
+      x: WEAPONS["x2-mournveil-scythe"].gripFrac * displayLength,
+      y: (part.h / part.w) * displayLength * 0.5,
+    };
+    expect(Math.abs(gripAfter.x - gripBefore.x)).toBeLessThanOrEqual(
+      MOURNVEIL_REGISTRATION_TOLERANCE_PX,
+    );
+    expect(Math.abs(gripAfter.y - gripBefore.y)).toBeLessThanOrEqual(
+      MOURNVEIL_REGISTRATION_TOLERANCE_PX,
+    );
+
+    const bladeEdgesBefore = {
+      left: -gripBefore.x,
+      right: displayLength - gripBefore.x,
+    };
+    const bladeEdgesAfter = {
+      left: -gripAfter.x,
+      right: displayLength - gripAfter.x,
+    };
+    expect(Math.abs(bladeEdgesAfter.left - bladeEdgesBefore.left)).toBeLessThanOrEqual(
+      MOURNVEIL_REGISTRATION_TOLERANCE_PX,
+    );
+    expect(Math.abs(bladeEdgesAfter.right - bladeEdgesBefore.right)).toBeLessThanOrEqual(
+      MOURNVEIL_REGISTRATION_TOLERANCE_PX,
+    );
+    expect({ ox: part.ox, oy: part.oy }).toEqual({
+      ox: before.part.ox,
+      oy: before.part.oy,
+    });
   });
 });
 
