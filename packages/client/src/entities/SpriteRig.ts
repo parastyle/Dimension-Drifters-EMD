@@ -199,6 +199,11 @@ import {
 } from "../sprites/pose-language.js";
 import { secondaryGripHandRendersAbove } from "../sprites/secondary-grip.js";
 import { tomeOpenArtFor, tomeOpenRotationForAim } from "../sprites/tome-open-art.js";
+import {
+  isWholeArtCharacterId,
+  isWholeArtCharacterPartRole,
+  wholeArtCharacterTextureKey,
+} from "../sprites/whole-art-character.js";
 import { rollTumbleRotation } from "../vfx/jump-effects.js";
 import { PARTICLE_PACKS } from "../vfx/particle-manifest.js";
 import { paintedParticleDominance, paintedParticleScale } from "../vfx/particles.js";
@@ -221,6 +226,13 @@ export function partTexture(
   spriteId: string,
   role: string,
 ): { key: string; frame?: string } {
+  if (
+    isWholeArtCharacterId(spriteId) &&
+    isWholeArtCharacterPartRole(role) &&
+    scene.textures.exists(wholeArtCharacterTextureKey(spriteId, role))
+  ) {
+    return { key: wholeArtCharacterTextureKey(spriteId, role) };
+  }
   const frame = `${spriteId}/${role}`;
   if (scene.textures.exists(SPRITE_ATLAS) && scene.textures.get(SPRITE_ATLAS).has(frame)) {
     return { key: SPRITE_ATLAS, frame };
@@ -2417,7 +2429,7 @@ export class SpriteRig {
     this.isSelf = isSelf;
     this.bladeAttachmentSourceId = id;
     this.scale = TARGET_BODY_H / manifest.body.h;
-    this.preserveAuthoredRestHandSpread = spriteId.startsWith("proto-");
+    this.preserveAuthoredRestHandSpread = isWholeArtCharacterId(spriteId);
 
     // Build parts. Draw order (back→front): back hand, feet, body, front hand. The front
     // hand is the one on the side the art faces (right = +x); the other tucks behind.

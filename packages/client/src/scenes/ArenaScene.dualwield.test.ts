@@ -155,3 +155,121 @@ describe("ArenaScene dual-wield render synchronization", () => {
     expect(scene.equippedOffhand.get("remote-player")).toBe("");
   });
 });
+
+interface BlobSyncRigHarness {
+  equipSyncedGear(
+    gearUpper: string,
+    gearLower: string,
+    manifest: unknown,
+    prestige: number,
+  ): boolean;
+}
+
+interface BlobSyncPlayerHarness {
+  character: string;
+  dualWield: {
+    gearUpper: string;
+    gearLower: string;
+    prestige: number;
+  };
+}
+
+interface BlobSyncArenaHarness {
+  room: {
+    sessionId: string;
+    state: {
+      players: {
+        forEach(callback: (player: BlobSyncPlayerHarness, id: string) => void): void;
+        has(id: string): boolean;
+      };
+    };
+  };
+  blobs: Map<string, BlobSyncRigHarness>;
+  charOf: Map<string, string>;
+  petMetaAccount: { prestige: number };
+  addBlob(player: BlobSyncPlayerHarness, id: string): void;
+  removeBlob(id: string): void;
+  syncBlobs(): void;
+}
+
+function blobSyncScene(
+  character: string,
+  previouslyRenderedCharacter = character,
+): {
+  scene: BlobSyncArenaHarness;
+  rig: BlobSyncRigHarness;
+  addBlob: ReturnType<typeof vi.fn>;
+  removeBlob: ReturnType<typeof vi.fn>;
+} {
+  const player: BlobSyncPlayerHarness = {
+    character,
+    dualWield: {
+      gearUpper: "synced-upper",
+      gearLower: "synced-lower",
+      prestige: 2,
+    },
+  };
+  const rig: BlobSyncRigHarness = {
+    equipSyncedGear: vi.fn(() => true),
+  };
+  const addBlob = vi.fn();
+  const removeBlob = vi.fn();
+  const scene = Object.create(ArenaScene.prototype) as BlobSyncArenaHarness;
+  scene.room = {
+    sessionId: "local-player",
+    state: {
+      players: {
+        forEach: (callback) => callback(player, "remote-player"),
+        has: (id) => id === "remote-player",
+      },
+    },
+  };
+  scene.blobs = new Map([["remote-player", rig]]);
+  scene.charOf = new Map([["remote-player", previouslyRenderedCharacter]]);
+  scene.petMetaAccount = { prestige: 0 };
+  scene.addBlob = addBlob;
+  scene.removeBlob = removeBlob;
+  return { scene, rig, addBlob, removeBlob };
+}
+
+describe("ArenaScene whole-art render-mode synchronization", () => {
+  it.each([
+    "proto-sheriff",
+    "proto-samurai",
+    "proto-witch",
+  ])("never sends synced wardrobe gear into an existing %s rig", (characterId) => {
+    const { scene, rig, addBlob, removeBlob } = blobSyncScene(characterId);
+
+    scene.syncBlobs();
+
+    expect(rig.equipSyncedGear).not.toHaveBeenCalled();
+    expect(removeBlob).not.toHaveBeenCalled();
+    expect(addBlob).not.toHaveBeenCalled();
+  });
+
+  it("keeps the legacy Drifter wardrobe path unchanged", () => {
+    const { scene, rig, addBlob, removeBlob } = blobSyncScene("drifter");
+
+    scene.syncBlobs();
+
+    expect(rig.equipSyncedGear).toHaveBeenCalledOnce();
+    expect(rig.equipSyncedGear).toHaveBeenCalledWith(
+      "synced-upper",
+      "synced-lower",
+      expect.anything(),
+      2,
+    );
+    expect(removeBlob).not.toHaveBeenCalled();
+    expect(addBlob).not.toHaveBeenCalled();
+  });
+
+  it("rebuilds before wardrobe can overwrite a rig crossing into whole-art mode", () => {
+    const { scene, rig, addBlob, removeBlob } = blobSyncScene("proto-sheriff", "drifter");
+
+    scene.syncBlobs();
+
+    expect(removeBlob).toHaveBeenCalledWith("remote-player");
+    expect(addBlob).toHaveBeenCalledOnce();
+    expect(rig.equipSyncedGear).not.toHaveBeenCalled();
+  });
+});

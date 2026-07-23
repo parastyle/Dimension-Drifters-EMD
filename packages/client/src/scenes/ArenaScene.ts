@@ -195,6 +195,10 @@ import {
   weaponPoseFamilyFor,
 } from "../sprites/pose-language.js";
 import { tomeOpenArtFor } from "../sprites/tome-open-art.js";
+import {
+  ensureWholeArtCharacterTextures,
+  isWholeArtCharacterId,
+} from "../sprites/whole-art-character.js";
 import { backpackTileIntent } from "../ui/armory/backpack-actions.js";
 import {
   ARMORY_COLORS,
@@ -4373,8 +4377,12 @@ export class ArenaScene extends Phaser.Scene {
     // sprite and IGNORE the wardrobe gear overlay — this is what finally lets `player.character` drive the
     // VISUAL, not just stats. Legacy drifter-skeleton players still use the synced gear. (Wardrobe is being
     // retired; when the whole cast is authored art, this collapses to "always render your character".)
-    const isWholeArtCharacter =
-      typeof player.character === "string" && player.character.startsWith("proto-");
+    const isWholeArtCharacter = isWholeArtCharacterId(charId);
+    // A whole-art rig is created only after all six loose cuts are in TextureManager. syncBlobs retries on
+    // the next render frame, giving the async loader a natural ready barrier with no boilerplate flash.
+    if (isWholeArtCharacter && ensureWholeArtCharacterTextures(this, charId) !== "ready") {
+      return;
+    }
     const useGear = gearSynced && !isWholeArtCharacter;
     const rigSpriteId = useGear ? PLAYER_SPRITE : charId;
     const rig = new SpriteRig(
@@ -8997,6 +9005,19 @@ export class ArenaScene extends Phaser.Scene {
       if (!this.blobs.has(id)) this.addBlob(player, id);
       else {
         const rig = this.blobs.get(id);
+        const previousCharacter = this.charOf.get(id);
+        const isWholeArtCharacter = isWholeArtCharacterId(player.character);
+        const wasWholeArtCharacter = isWholeArtCharacterId(previousCharacter);
+        const characterChanged = previousCharacter !== player.character;
+        // Crossing either side of the whole-art boundary changes the retained skeleton's texture contract.
+        // Rebuild before any wardrobe call so a character-owned rig can never be retargeted to gear-bake.
+        if (characterChanged && (isWholeArtCharacter || wasWholeArtCharacter)) {
+          this.removeBlob(id);
+          this.addBlob(player, id);
+          return;
+        }
+        // Whole-art rigs never enter the boilerplate/gear-bake pipeline, including on later sync frames.
+        if (isWholeArtCharacter) return;
         // Reflection law (see addBlob): only the nested dualWield row exists on decoded client rows.
         const gearSynced =
           !!rig &&
@@ -9009,12 +9030,8 @@ export class ArenaScene extends Phaser.Scene {
               ? this.petMetaAccount.prestige
               : (player.dualWield?.prestige ?? 0),
           );
-        // Rebuild the rig when the character changes. For legacy compatibility rooms this only fired when
-        // the gear tail was absent; whole-art characters (proto-*) must ALSO rebuild so a mid-session
-        // devEquip/character swap actually re-renders as the new character instead of the stale drifter.
-        const isWholeArtCharacter =
-          typeof player.character === "string" && player.character.startsWith("proto-");
-        if ((!gearSynced || isWholeArtCharacter) && this.charOf.get(id) !== player.character) {
+        // Compatibility rooms without the gear tail still render their selected legacy manifest.
+        if (!gearSynced && characterChanged) {
           this.removeBlob(id);
           this.addBlob(player, id);
         }

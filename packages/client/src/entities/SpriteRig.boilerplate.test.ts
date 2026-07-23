@@ -28,6 +28,10 @@ import {
   gearTextureBakeCacheForScene,
 } from "../sprites/gear-texture-baker.js";
 import {
+  WHOLE_ART_CHARACTER_PART_ROLES,
+  wholeArtCharacterTextureKey,
+} from "../sprites/whole-art-character.js";
+import {
   FLOATING_HEAD_SPRING_TUNING,
   type FloatingHeadSpringState,
   SpriteRig,
@@ -159,8 +163,9 @@ class FakeContainer extends FakeDisplayObject {
   }
 }
 
-function fakeScene(): Phaser.Scene {
+function fakeScene(extraTextureKeys: readonly string[] = []): Phaser.Scene {
   const textureFrames = new Map<string, Set<string>>();
+  const extraTextures = new Set(extraTextureKeys);
   const scene = {
     add: {
       image: (x: number, y: number, key: string, frame?: string) =>
@@ -172,7 +177,8 @@ function fakeScene(): Phaser.Scene {
         new FakeContainer(x, y, children),
     },
     textures: {
-      exists: (key: string) => key.startsWith("boilerplate:") || key.startsWith("gear:"),
+      exists: (key: string) =>
+        extraTextures.has(key) || key.startsWith("boilerplate:") || key.startsWith("gear:"),
       get: (key: string) => ({
         has: (frame: string) => textureFrames.get(key)?.has(frame) === true,
         add: (frame: string) => {
@@ -259,6 +265,47 @@ describe("SpriteRig character-owned floating head", () => {
     expect(head.y - restY).toBeGreaterThan(0.5);
     expect(head.y - restY).toBeLessThanOrEqual(FLOATING_HEAD_SPRING_TUNING.maxOffsetY);
   });
+
+  it.each(["proto-samurai", "proto-sheriff", "proto-witch"])(
+    "retains all six %s character textures and its authored floating-head mount",
+    (characterId) => {
+      const characterKeys = WHOLE_ART_CHARACTER_PART_ROLES.map((role) =>
+        wholeArtCharacterTextureKey(characterId, role),
+      );
+      const rig = new SpriteRig(
+        fakeScene(characterKeys),
+        0,
+        0,
+        false,
+        `${characterId}-rig`,
+        characterId,
+      );
+      const truth = rig as unknown as ManifestHeadRigTruth;
+      const renderedKeys = [
+        truth.body.texture.key,
+        truth.boilerplateHead?.texture.key,
+        ...truth.hands.map((hand) => hand.img.texture.key),
+        ...truth.feet.map((foot) => foot.img.texture.key),
+      ];
+      expect(renderedKeys.sort()).toEqual([...characterKeys].sort());
+      expect(renderedKeys.every((key) => key?.startsWith(`char:${characterId}:`))).toBe(true);
+      expect(truth.gearAttachments).toHaveLength(0);
+      expect(truth.slideAfterimageA.texture.key).toBe(
+        wholeArtCharacterTextureKey(characterId, "body"),
+      );
+      expect(truth.manifestHeadOffset).toBeDefined();
+
+      const head = truth.boilerplateHead;
+      if (!head) return;
+      truth.body.setPosition(3, 5).setRotation(0).setScale(0.46, 0.44);
+      truth.syncFloatingHeadPose(1 / 60, false, true, false, 0, 0, 0, 0, false, 0);
+      const restY = head.y;
+      for (let frame = 0; frame < 30; frame++)
+        truth.syncFloatingHeadPose(1 / 60, false, false, false, 0, 0, 0, 0, false, 2);
+      expect(head.y - restY).toBeGreaterThan(0.5);
+      expect(head.y - restY).toBeLessThanOrEqual(FLOATING_HEAD_SPRING_TUNING.maxOffsetY);
+    },
+  );
 });
 
 describe("SpriteRig boilerplate assembly truth", () => {

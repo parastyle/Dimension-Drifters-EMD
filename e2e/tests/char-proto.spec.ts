@@ -3,7 +3,7 @@ import path from "node:path";
 import { expect, test } from "@playwright/test";
 import { bootArena, runArenaSpec } from "../helpers/arena-harness.js";
 
-const EVIDENCE_DIR = path.resolve("docs/owner-notes-audit-v8-evidence/char-proto");
+const EVIDENCE_DIR = path.resolve("docs/owner-notes-audit-v8-evidence/char-rig-render");
 const PROTOTYPES = ["proto-sheriff", "proto-samurai", "proto-witch"] as const;
 const PART_ROLES = ["body", "head", "hand-l", "hand-r", "foot-l", "foot-r"] as const;
 const HEAD_OY = {
@@ -35,7 +35,8 @@ interface BrowserRig {
   manifestHeadOffset?: Readonly<{ x: number; y: number }>;
   parts: BrowserImage[];
   hands: Array<{ img: BrowserImage; front: boolean; ox: number; oy: number }>;
-  feet: Array<{ img: BrowserImage }>;
+  feet: Array<{ img: BrowserImage; front: boolean }>;
+  gearAttachments: Array<{ spec: { slot: string } }>;
   weapons: Array<{ img: BrowserImage; worn: boolean; def: { id: string } }>;
   root: BrowserContainer;
   label?: BrowserImage;
@@ -52,7 +53,10 @@ interface BrowserArena {
   addBlob(player: unknown, id: string): void;
   blobs: { get(id: string): BrowserRig | undefined };
   cameras: { main: { setZoom(value: number): void } };
-  game: { hasFocus: boolean };
+  game: {
+    hasFocus: boolean;
+    textures: { getTextureKeys(): string[] };
+  };
   objectiveEconomyText?: BrowserImage;
   objectiveHudGfx?: BrowserImage;
   objectiveLocationText?: BrowserImage;
@@ -110,22 +114,31 @@ for (const characterId of PROTOTYPES) {
           { message: `the private dev room should apply ${characterId}`, timeout: 30_000 },
         )
         .toBe(characterId);
-
-      // The v4 account mounts wardrobe art over character identities. Remount the same decoded row through
-      // ArenaScene's real legacy-character branch so this private visual proof exercises the authored sprite.
-      await page.evaluate(() => {
-        const arena = (globalThis as unknown as BrowserGlobal).ddGame.scene.getScene("arena");
-        const id = arena.room.sessionId;
-        const player = arena.room.state.players.get(id);
-        if (!player?.dualWield)
-          throw new Error("private prototype row has no dual-wield schema tail");
-        player.dualWield.gearUpper = "";
-        player.dualWield.gearLower = "";
-        player.petId = "";
-        player.petLevelBand = 0;
-        arena.removeBlob(id);
-        arena.addBlob(player, id);
-      });
+      await expect
+        .poll(
+          () =>
+            page.evaluate((wanted) => {
+              const arena = (globalThis as unknown as BrowserGlobal).ddGame.scene.getScene("arena");
+              const rig = arena.blobs.get(arena.room.sessionId);
+              const prefix = `char:${wanted}:`;
+              return {
+                textureCount: arena.game.textures
+                  .getTextureKeys()
+                  .filter((key) => key.startsWith(prefix)).length,
+                body: rig?.body.texture.key ?? null,
+                head: rig?.boilerplateHead?.texture.key ?? null,
+              };
+            }, characterId),
+          {
+            message: `${characterId} should load all six loose textures before its rig appears`,
+            timeout: 30_000,
+          },
+        )
+        .toEqual({
+          textureCount: 6,
+          body: `char:${characterId}:body`,
+          head: `char:${characterId}:head`,
+        });
 
       const canvas = page.locator("#game-root canvas");
       await canvas.click({ position: { x: 1100, y: 620 } });
@@ -176,19 +189,26 @@ for (const characterId of PROTOTYPES) {
             return result;
           };
         }
-        const partFrames = [
-          rig.body,
-          head,
-          ...rig.hands.map((part) => part.img),
-          ...rig.feet.map((part) => part.img),
-        ].map((part) => part.frame.name);
+        const textureManagerKeys = arena.game.textures
+          .getTextureKeys()
+          .filter((key) => key.startsWith(`char:${player?.character}:`))
+          .sort();
+        const rigPartTextures = {
+          body: rig.body.texture.key,
+          head: head.texture.key,
+          "hand-l": rig.hands.find((part) => !part.front)?.img.texture.key ?? null,
+          "hand-r": rig.hands.find((part) => part.front)?.img.texture.key ?? null,
+          "foot-l": rig.feet.find((part) => !part.front)?.img.texture.key ?? null,
+          "foot-r": rig.feet.find((part) => part.front)?.img.texture.key ?? null,
+        };
         return {
           character: player?.character ?? null,
           gearUpper: player?.dualWield?.gearUpper ?? "",
           gearLower: player?.dualWield?.gearLower ?? "",
           bodyIdentity: `${rig.body.texture.key}/${rig.body.frame.name}`,
           headIdentity: `${head.texture.key}/${head.frame.name}`,
-          partFrames,
+          textureManagerKeys,
+          rigPartTextures,
           manifestHeadOffset: rig.manifestHeadOffset ?? null,
           genericPartCount: rig.parts.length,
           handCount: rig.hands.length,
@@ -196,6 +216,7 @@ for (const characterId of PROTOTYPES) {
           hands: rig.hands.map((hand) => ({
             role: hand.front ? "hand-r" : "hand-l",
             frame: hand.img.frame.name,
+            texture: hand.img.texture.key,
             visible: hand.img.visible,
             rootIndex: rig.root.getIndex(hand.img),
             x: hand.img.x,
@@ -217,22 +238,33 @@ for (const characterId of PROTOTYPES) {
           restGapPx: rig.body.y - rig.body.displayHeight / 2 - (head.y + head.displayHeight / 2),
           bodyDisplay: { width: rig.body.displayWidth, height: rig.body.displayHeight },
           headDisplay: { width: head.displayWidth, height: head.displayHeight },
+          gearAttachmentSlots: rig.gearAttachments.map((attachment) => attachment.spec.slot),
         };
       });
 
       expect(mounted.character).toBe(characterId);
-      expect(mounted.bodyIdentity).toMatch(new RegExp(`${characterId}(?::|/)body`));
-      expect(mounted.headIdentity).toMatch(new RegExp(`${characterId}(?::|/)head`));
-      expect(mounted.partFrames.slice().sort()).toEqual(
-        PART_ROLES.map((role) => `${characterId}/${role}`).sort(),
+      expect(mounted.gearUpper).not.toBe("");
+      expect(mounted.gearLower).not.toBe("");
+      expect(mounted.bodyIdentity).toBe(`char:${characterId}:body/__BASE`);
+      expect(mounted.headIdentity).toBe(`char:${characterId}:head/__BASE`);
+      expect(mounted.textureManagerKeys).toEqual(
+        PART_ROLES.map((role) => `char:${characterId}:${role}`).sort(),
       );
+      expect(Object.values(mounted.rigPartTextures).sort()).toEqual(
+        PART_ROLES.map((role) => `char:${characterId}:${role}`).sort(),
+      );
+      expect(
+        Object.values(mounted.rigPartTextures).some((key) => key?.startsWith("gear-bake:")),
+      ).toBe(false);
+      expect(mounted.gearAttachmentSlots).toEqual([]);
       expect(mounted.manifestHeadOffset).not.toBeNull();
       expect(mounted.manifestHeadOffset?.y).toBe(HEAD_OY[characterId]);
       expect(mounted.genericPartCount).toBe(5);
       expect(mounted.handCount).toBe(2);
       expect(mounted.hands.map((hand) => hand.role).sort()).toEqual(["hand-l", "hand-r"]);
       for (const hand of mounted.hands) {
-        expect(hand.frame).toBe(`${characterId}/${hand.role}`);
+        expect(hand.frame).toBe("__BASE");
+        expect(hand.texture).toBe(`char:${characterId}:${hand.role}`);
         expect(hand.visible, `${characterId}/${hand.role} should render at rest`).toBe(true);
         expect(
           hand.rootIndex,
