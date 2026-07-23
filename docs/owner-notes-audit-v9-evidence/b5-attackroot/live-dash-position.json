@@ -1,0 +1,123 @@
+{
+  "capturedAt": "2026-07-23T05:51:30.101Z",
+  "transport": "ws://127.0.0.1:61817",
+  "privatePort": 61817,
+  "stormfists": {
+    "start": {
+      "x": 2400,
+      "y": 2420,
+      "seq": 0,
+      "tick": 5
+    },
+    "end": {
+      "x": 1920,
+      "y": 2420,
+      "seq": 1,
+      "tick": 15
+    },
+    "legalTravelPx": 480,
+    "authoredDistancePx": 480,
+    "authoredDurationSeconds": 0.025,
+    "observedFrames": [
+      {
+        "observedAtMs": 497.8005,
+        "tick": 5,
+        "weapon": "x2-thunderhead-stormfists",
+        "attackSeq": 0,
+        "attackTick": 0,
+        "x": 2400,
+        "y": 2420,
+        "hp": 100
+      },
+      {
+        "observedAtMs": 560.5758,
+        "tick": 6,
+        "weapon": "x2-thunderhead-stormfists",
+        "attackSeq": 1,
+        "attackTick": 6,
+        "x": 2400,
+        "y": 2420,
+        "hp": 100
+      },
+      {
+        "observedAtMs": 650.596,
+        "tick": 8,
+        "weapon": "x2-thunderhead-stormfists",
+        "attackSeq": 1,
+        "attackTick": 6,
+        "x": 2400,
+        "y": 2420,
+        "hp": 100
+      },
+      {
+        "observedAtMs": 727.0181,
+        "tick": 9,
+        "weapon": "x2-thunderhead-stormfists",
+        "attackSeq": 1,
+        "attackTick": 6,
+        "x": 2400,
+        "y": 2420,
+        "hp": 100
+      },
+      {
+        "observedAtMs": 788.8275,
+        "tick": 11,
+        "weapon": "x2-thunderhead-stormfists",
+        "attackSeq": 1,
+        "attackTick": 6,
+        "x": 2400,
+        "y": 2420,
+        "hp": 100
+      },
+      {
+        "observedAtMs": 852.727,
+        "tick": 12,
+        "weapon": "x2-thunderhead-stormfists",
+        "attackSeq": 1,
+        "attackTick": 6,
+        "x": 1920,
+        "y": 2420,
+        "hp": 100
+      },
+      {
+        "observedAtMs": 939.271,
+        "tick": 14,
+        "weapon": "x2-thunderhead-stormfists",
+        "attackSeq": 1,
+        "attackTick": 6,
+        "x": 1920,
+        "y": 2420,
+        "hp": 100
+      },
+      {
+        "observedAtMs": 1006.2932,
+        "tick": 15,
+        "weapon": "x2-thunderhead-stormfists",
+        "attackSeq": 1,
+        "attackTick": 6,
+        "x": 1920,
+        "y": 2420,
+        "hp": 100
+      }
+    ],
+    "pass": true
+  },
+  "sparkknuckle": {
+    "start": {
+      "x": 1920,
+      "y": 2420,
+      "seq": 1,
+      "tick": 16
+    },
+    "end": {
+      "x": 1920,
+      "y": 2420,
+      "seq": 5,
+      "tick": 53
+    },
+    "comboBeats": 4,
+    "authoritativeTravelPx": 0,
+    "pass": true
+  },
+  "pass": true
+}

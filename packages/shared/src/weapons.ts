@@ -416,6 +416,8 @@ export interface WeaponPerformanceDef {
     durationSeconds?: number;
     /** Damage immunity is active only while the authored lunge clock is live; it never counts as a parry. */
     invulnerable?: boolean;
+    /** Defer the accepted melee/secondary impact until the collision-clamped server dash has arrived. */
+    impactAtDestination?: boolean;
   };
   /** Full-circle attack geometry shared by overhead twirls and ground-plane Garen whirlwinds. */
   twirl?: {

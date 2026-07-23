@@ -189,7 +189,9 @@ const PERFORMANCE_ACTIONS = new Set([
   "overhead-downswing", "throw-release",
 ]);
 const PERFORMANCE_SHAKE_KEYS = new Set(["amplitudePx", "rotationRad", "frequencyHz"]);
-const PERFORMANCE_LUNGE_KEYS = new Set(["distancePx", "durationSeconds", "invulnerable"]);
+const PERFORMANCE_LUNGE_KEYS = new Set([
+  "distancePx", "durationSeconds", "invulnerable", "impactAtDestination",
+]);
 const PERFORMANCE_PRE_THROW_DAMAGE_KEYS = new Set(["damage", "range"]);
 const PERFORMANCE_FORWARD_DRIFT_KEYS = new Set(["speedPxPerSecond", "durationSeconds"]);
 const PERFORMANCE_TWIRL_KEYS = new Set(["plane", "pivot", "direction", "visualRevolutions"]);
@@ -563,7 +565,7 @@ function performanceOf(p) {
       if (p.lunge.durationSeconds !== undefined)
         out.lunge.durationSeconds = num(
           p.lunge.durationSeconds,
-          0.05,
+          0.025,
           0.6,
           0.2,
           "performance.lunge.durationSeconds",
@@ -572,6 +574,11 @@ function performanceOf(p) {
         if (typeof p.lunge.invulnerable !== "boolean")
           fail("performance.lunge.invulnerable is not a boolean");
         else out.lunge.invulnerable = p.lunge.invulnerable;
+      }
+      if (p.lunge.impactAtDestination !== undefined) {
+        if (typeof p.lunge.impactAtDestination !== "boolean")
+          fail("performance.lunge.impactAtDestination is not a boolean");
+        else out.lunge.impactAtDestination = p.lunge.impactAtDestination;
       }
     }
   }

@@ -1,4 +1,4 @@
-import { isMonkGloveWeapon, WEAPONS } from "@dd/shared";
+import { isMonkGloveWeapon, meleeComboSelectionFor, WEAPONS } from "@dd/shared";
 import { describe, expect, it, vi } from "vitest";
 import type { SpriteManifest } from "../sprites/manifest.js";
 
@@ -83,11 +83,29 @@ describe("SpriteRig glove-pair rendering", () => {
     expect(monkIds).not.toContain("x2-tesla-faradayer"); // projectile gauntlets retain firing poses
   });
 
-  it("gives both held glove pairs a small server-owned forward drift", () => {
-    expect(WEAPONS["x2-sparkknuckle-hex-mitt"]?.performance?.forwardDrift).toEqual({
-      speedPxPerSecond: 42,
-      durationSeconds: 0.34,
+  it("keeps Sparkknuckle's approved glove frames while removing only its authored root drift", () => {
+    const sparkknuckle = WEAPONS["x2-sparkknuckle-hex-mitt"];
+    if (!sparkknuckle) throw new Error("Missing Sparkknuckle fixture");
+    const combo = meleeComboSelectionFor(sparkknuckle);
+
+    expect(sparkknuckle.performance).toEqual({
+      hold: "steady",
+      action: "default-swing",
+      continuous: true,
     });
+    expect(sparkknuckle.glovePair).toEqual({ auraColor: 0x33e6ff, auraRadius: 48 });
+    expect(combo).toMatchObject({
+      family: "punch",
+      variant: "sparkknuckle-voltage-boxing",
+    });
+    expect(combo?.sequence.map(({ name, motion, hand }) => ({ name, motion, hand }))).toEqual([
+      { name: "lead rising hook", motion: "hook", hand: "lead" },
+      { name: "rear voltage cross", motion: "cross", hand: "off" },
+      { name: "off-side body hook", motion: "hook", hand: "lead" },
+      { name: "thunder cross finisher", motion: "cross", hand: "off" },
+    ]);
+
+    // The sibling owner-approved Coyote movement remains authored; the B5 deletion is weapon-local.
     expect(WEAPONS["x2-coyote-trickster-s-sparkmitt"]?.performance?.forwardDrift).toEqual({
       speedPxPerSecond: 48,
       durationSeconds: 0.12,

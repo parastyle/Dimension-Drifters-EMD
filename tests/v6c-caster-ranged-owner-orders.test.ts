@@ -109,12 +109,13 @@ describe("V6C caster/ranged owner orders", () => {
     });
   });
 
-  it("compresses Stormfists travel and immunity into exactly 50ms while keeping DPS intact", () => {
+  it("compresses Stormfists travel to 25ms while keeping one-tick immunity and DPS intact", () => {
     const definition = weapon("x2-thunderhead-stormfists");
     expect(definition.performance?.lunge).toEqual({
       distancePx: 480,
-      durationSeconds: 0.05,
+      durationSeconds: 0.025,
       invulnerable: true,
+      impactAtDestination: true,
     });
     expect((definition.damage + (definition.quake?.damage ?? 0)) / definition.cooldown).toBe(17.5);
   });

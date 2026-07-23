@@ -117,13 +117,18 @@ describe("owner-notes NW-CASTER contracts", () => {
     expect(weapon("x2-marshlight-bog-censer-wand").performance?.emitter).toBe("spout");
   });
 
-  it("authors Stormfists as a blue, two-hand lunge-punch with the V5R fourfold displacement", () => {
+  it("authors Stormfists as a blue, destination-impact lunge-punch at twice traversal speed", () => {
     const stormfists = weapon("x2-thunderhead-stormfists");
     expect(stormfists.performance).toMatchObject({
       action: "lunge-punch",
       windupSeconds: 0.3,
       suppressSwing: true,
-      lunge: { distancePx: 480, durationSeconds: 0.05, invulnerable: true },
+      lunge: {
+        distancePx: 480,
+        durationSeconds: 0.025,
+        invulnerable: true,
+        impactAtDestination: true,
+      },
     });
     expect(CASTER_VFX_PALETTE_OVERRIDES[stormfists.id]).toEqual({
       core: 0xffffff,

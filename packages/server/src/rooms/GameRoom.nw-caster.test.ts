@@ -157,7 +157,9 @@ describe("GameRoom — NW-CASTER authority contracts", () => {
     expect(room.pendingWeaponLunges.size).toBe(1);
     expect(room.pendingWeaponLunges.get(player.id)?.distancePx).toBe(480);
 
-    room.stepPendingWeaponLunges(swing.activeStartSeconds + 0.01);
+    room.stepPendingWeaponLunges(swing.activeStartSeconds);
+    expect(player.x).toBe(startX);
+    room.stepPendingWeaponLunges(weapon.performance?.lunge?.durationSeconds ?? 0);
 
     const displacement = Math.hypot(player.x - startX, player.y - startY);
     expect(validate).toHaveBeenCalled();
