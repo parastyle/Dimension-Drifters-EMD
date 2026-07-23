@@ -268,17 +268,23 @@ describe("V6G3/V6G4 painted effect programs", () => {
 describe("V6G5 forward staff grip law", () => {
   it("places a second hand further up every cursor-pointed two-hand staff shaft", () => {
     const cursorStaffExceptions = new Set(["x-staff-storm-rod", "x2-gravesinger-s-hex-wand"]);
+    // B8 reclassified Hollowbarrel from a forward staff to a horn held to the face (owner order): its
+    // support hand rests on the central handle, not up the shaft — so it is outside this forward-staff law.
+    const hornPoseExceptions = new Set(["x2-hollowbarrel-spell-scattergun-staff"]);
     const ids = Object.values(WEAPONS)
       .filter(
         (definition) =>
           !definition.archived &&
+          !hornPoseExceptions.has(definition.id) &&
           definition.tags.classPool === "caster" &&
           definition.tags.grip === "2H" &&
           (/staff|stave/i.test(`${definition.id} ${definition.tags.family}`) ||
             cursorStaffExceptions.has(definition.id)),
       )
       .map(({ id }) => id);
-    expect(ids).toHaveLength(12);
+    // 10 after B8: Saint-Bough Frost Crozier became a 1H walking staff (drops via the 2H filter) and
+    // Hollowbarrel became a horn-to-face weapon (excluded above) — both per owner orders.
+    expect(ids).toHaveLength(10);
     for (const id of ids) {
       const definition = weapon(id);
       expect(definition.tags.grip, id).toBe("2H");

@@ -242,7 +242,6 @@ describe("driftblade-model panel", () => {
       "chop/reapers-tithe-rest-and-orbit": ["x2-reaper-s-tithe"],
       "arc/hero-spin": [
         "rattler-sabre",
-        "x-sword-neon-katana",
         "x2-brimstone-falcata",
         "x2-saltbrand-cutlass",
         "x2-sandsong-saber",
@@ -254,19 +253,20 @@ describe("driftblade-model panel", () => {
       "rake/frostfang-forward-rend": ["x2-frostfang-rakes"],
       "thrust/blightfork-jab": ["x2-blightfork-glaive"],
       "thrust/marrowpike-triple-stab": ["x2-marrowpike-ranseur"],
+      "thrust/nullspike-three-thrust": ["x2-nullspike-pike"],
       "thrust/stinger": [
         "x2-bonewhisper-jian",
         "x2-buckhorn-boarspear",
         "x2-cinderbrand-pike",
         "x2-galvanic-lancepole",
         "x2-hexbloom-rapier",
-        "x2-nullspike-pike",
         "x2-phantom-estoc",
         "x2-sidewinder-spontoon",
         "x2-sunlance-javelin-pike",
         "x2-venomtongue-trident",
       ],
       "thrust/verdict-procession": ["x2-verdict-longsword"],
+      "thrust/voltedge-stab": ["x-sword-neon-katana"],
       "thrust/wyrmskull-spear-jabs": ["x2-wyrmskull-reliquary"],
       "chop/pommel": ["x2-mauler-slug-thrower", "x2-slughammer-breachgun", "x2-thunderhead-sledge"],
       "chop/quake-mauler": [
@@ -290,7 +290,6 @@ describe("driftblade-model panel", () => {
         "x2-plaguethresh",
         "x2-reckoning-s-sun-orb",
         "x2-rotgrove-totem",
-        "x2-saint-bough-frost-crozier",
         "x2-saint-calamity",
         "x2-sermon-bell",
         "x2-sluicebox-maul-axe",
@@ -300,7 +299,7 @@ describe("driftblade-model panel", () => {
     expect(defaultCounts).toEqual({
       "punch/default": 19,
       "arc/default": 121,
-      "chop/default": 7,
+      "chop/default": 8,
       "rake/dagger": 1,
       "rake/claw": 4,
     });
