@@ -14672,10 +14672,6 @@
       "requirements": {
         "int": 6
       },
-      "poseLanguage": {
-        "idle": "casting-gesture",
-        "feet": "loose-plant"
-      },
       "id": "x2-hellmouth-palmcaster"
     },
     {
@@ -14942,6 +14938,9 @@
       "requirements": {
         "int": 6,
         "str": 5
+      },
+      "poseLanguage": {
+        "idle": "mirror-guard"
       },
       "id": "x2-ironbrand-heatfist"
     },

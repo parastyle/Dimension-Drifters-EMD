@@ -1,0 +1,128 @@
+{
+  "capturedAt": "2026-07-23T18:15:15.256Z",
+  "vitePort": 65348,
+  "gamePort": 65347,
+  "protectedPorts": [
+    5180,
+    2567
+  ],
+  "rows": 4,
+  "characterId": "proto-sheriff",
+  "weapons": [
+    {
+      "id": "x2-ironbrand-heatfist",
+      "pose": "mirror-guard",
+      "authoredPose": "mirror-guard"
+    },
+    {
+      "id": "x2-hellmouth-palmcaster",
+      "pose": "casting-gesture",
+      "authoredPose": null
+    }
+  ],
+  "facings": [
+    "right",
+    "left"
+  ],
+  "minWorldFacingMarginPx": 24.494873046875,
+  "minVisibleEdgeClearancePx": 10.083290984676076,
+  "maxPrimaryGripOriginDeltaPx": 0,
+  "captures": [
+    {
+      "characterId": "proto-sheriff",
+      "weaponId": "x2-ironbrand-heatfist",
+      "expectedPose": "mirror-guard",
+      "authoredPose": "mirror-guard",
+      "facing": "right",
+      "committedFacing": 1,
+      "body": {
+        "x": 0.9119999789153743,
+        "width": 84.67725523719176,
+        "worldX": 2400.5703125
+      },
+      "freeHand": {
+        "x": 40.079268421459616,
+        "width": 28.047619047619047,
+        "worldX": 2425.065185546875,
+        "localFacingMarginPx": 39.16726844254424,
+        "worldFacingMarginPx": 24.494873046875,
+        "visibleFacingEdgePx": 54.10307794526914,
+        "bodyFacingEdgePx": 43.250627597511254
+      },
+      "primaryGripOriginDeltaPx": 0,
+      "screenshot": "docs/owner-notes-audit-v10-evidence/b16-glove-hand/proto-sheriff-x2-ironbrand-heatfist-right.png"
+    },
+    {
+      "characterId": "proto-sheriff",
+      "weaponId": "x2-ironbrand-heatfist",
+      "expectedPose": "mirror-guard",
+      "authoredPose": "mirror-guard",
+      "facing": "left",
+      "committedFacing": -1,
+      "body": {
+        "x": 0.9119999999999073,
+        "width": 86.3923424523871,
+        "worldX": 2399.33544921875
+      },
+      "freeHand": {
+        "x": 40.167652687060006,
+        "width": 28.047619047619047,
+        "worldX": 2370.729736328125,
+        "localFacingMarginPx": 39.2556526870601,
+        "worldFacingMarginPx": 28.605712890625,
+        "visibleFacingEdgePx": 54.19146221086953,
+        "bodyFacingEdgePx": 44.108171226193456
+      },
+      "primaryGripOriginDeltaPx": 0,
+      "screenshot": "docs/owner-notes-audit-v10-evidence/b16-glove-hand/proto-sheriff-x2-ironbrand-heatfist-left.png"
+    },
+    {
+      "characterId": "proto-sheriff",
+      "weaponId": "x2-hellmouth-palmcaster",
+      "expectedPose": "casting-gesture",
+      "authoredPose": null,
+      "facing": "right",
+      "committedFacing": 1,
+      "body": {
+        "x": 0.45599999999995366,
+        "width": 85.9591577031977,
+        "worldX": 2400.332763671875
+      },
+      "freeHand": {
+        "x": 40.591317613087575,
+        "width": 28.047619047619047,
+        "worldX": 2429.61181640625,
+        "localFacingMarginPx": 40.13531761308762,
+        "worldFacingMarginPx": 29.279052734375,
+        "visibleFacingEdgePx": 54.6151271368971,
+        "bodyFacingEdgePx": 43.435578851598805
+      },
+      "primaryGripOriginDeltaPx": 0,
+      "screenshot": "docs/owner-notes-audit-v10-evidence/b16-glove-hand/proto-sheriff-x2-hellmouth-palmcaster-right.png"
+    },
+    {
+      "characterId": "proto-sheriff",
+      "weaponId": "x2-hellmouth-palmcaster",
+      "expectedPose": "casting-gesture",
+      "authoredPose": null,
+      "facing": "left",
+      "committedFacing": -1,
+      "body": {
+        "x": 0.45599999999995366,
+        "width": 86.32620477182402,
+        "worldX": 2399.667236328125
+      },
+      "freeHand": {
+        "x": 40.92141663393989,
+        "width": 28.047619047619047,
+        "worldX": 2370.1474609375,
+        "localFacingMarginPx": 40.46541663393994,
+        "worldFacingMarginPx": 29.519775390625,
+        "visibleFacingEdgePx": 54.94522615774942,
+        "bodyFacingEdgePx": 43.619102385911965
+      },
+      "primaryGripOriginDeltaPx": 0,
+      "screenshot": "docs/owner-notes-audit-v10-evidence/b16-glove-hand/proto-sheriff-x2-hellmouth-palmcaster-left.png"
+    }
+  ]
+}

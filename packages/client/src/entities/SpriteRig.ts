@@ -9284,7 +9284,9 @@ export class SpriteRig {
           const authoredOffStrike =
             !pairedMonkStrike &&
             pose?.hand === "off" &&
-            (this.weapons.length > 1 || def.id === "fists" || monkFlurry);
+            (this.weapons.length > 1 ||
+              def.id === "fists" ||
+              (monkFlurry && def.poseLanguage?.idle === undefined));
           const offUsesBack = pairOffStrike || authoredOffStrike;
           const direction = monkFlurry ? (offUsesBack ? -1 : 1) : poseDirection < 0 ? -1 : 1;
           let th = aimLocal; // fist direction from the shoulder

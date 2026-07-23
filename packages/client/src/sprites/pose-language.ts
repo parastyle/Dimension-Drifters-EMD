@@ -824,6 +824,24 @@ export function classifyHandRole(
     return frame.phase === "recovery" ? "recovering" : "action-owned";
   }
 
+  // An authored idle pose on the otherwise paired `fists` lane is the catalog's explicit
+  // single-worn-glove occupancy contract: the equipped lead remains the only attack surface.
+  const singleWornGlove =
+    !!def &&
+    def.poseLanguage?.idle !== undefined &&
+    def.glovePair === undefined &&
+    def.dual !== true &&
+    def.tags.grip === "1H" &&
+    frame.dualEquipped !== true &&
+    frame.pairedAimed !== true &&
+    isWornWeapon(def) &&
+    weaponPoseFamilyFor(def) === "fists";
+  if (singleWornGlove) {
+    if (hand === 1) return "authored-idle";
+    if (frame.phase === "idle" || terminalRecovery) return "hard-constrained";
+    return frame.phase === "recovery" ? "recovering" : "action-owned";
+  }
+
   const paired =
     frame.dualEquipped === true ||
     frame.pairedAimed === true ||

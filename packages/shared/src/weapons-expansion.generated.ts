@@ -14012,10 +14012,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "INT"
       ]
     },
-    "poseLanguage": {
-      "idle": "casting-gesture",
-      "feet": "loose-plant"
-    },
     "requirements": {
       "int": 6
     },
@@ -14297,6 +14293,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "INT",
         "STR"
       ]
+    },
+    "poseLanguage": {
+      "idle": "mirror-guard"
     },
     "requirements": {
       "int": 6,
