@@ -597,7 +597,11 @@ function performanceOf(p) {
     } else {
       checkKeys(p.twirl, PERFORMANCE_TWIRL_KEYS, "performance.twirl");
       out.twirl = {
-        plane: enumOf(p.twirl.plane, new Set(["screen-circle", "ground-whirlwind"]), "performance.twirl.plane"),
+        plane: enumOf(
+          p.twirl.plane,
+          new Set(["screen-circle", "ground-whirlwind", "continuous-frontflip"]),
+          "performance.twirl.plane",
+        ),
         pivot: enumOf(p.twirl.pivot, new Set(["shaft-midpoint", "grip"]), "performance.twirl.pivot"),
         direction: enumOf(p.twirl.direction, new Set(["forward", "alternate"]), "performance.twirl.direction"),
       };

@@ -51,7 +51,7 @@ describe("V6A generated-art owner orders", () => {
     expect(playerSource).not.toContain("x2-sanctified-headsman");
   });
 
-  it("keeps the stable Gravewarden art and combat contract with the superseding seamless whirl", () => {
+  it("keeps the stable Gravewarden art and combat contract with the seamless frontflip", () => {
     expect(WEAPONS["gravediggers-spade"]).toMatchObject({
       id: "gravediggers-spade",
       name: "Gravewarden Buster",
@@ -65,7 +65,7 @@ describe("V6A generated-art owner orders", () => {
         action: "spin",
         continuous: true,
         suppressSwing: true,
-        twirl: { plane: "ground-whirlwind", direction: "forward", visualRevolutions: 1 },
+        twirl: { plane: "continuous-frontflip", direction: "forward", visualRevolutions: 1 },
       },
     });
   });
