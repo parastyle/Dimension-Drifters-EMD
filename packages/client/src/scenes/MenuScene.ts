@@ -1,6 +1,7 @@
 import {
   type ArenaState,
   beltLevelFor,
+  DEFAULT_CHARACTER,
   DEFAULT_DIMENSION,
   DIMENSION_IDS,
   GEAR_CATALOG,
@@ -15,6 +16,8 @@ import {
   petLevelForXp,
   petModsForLevel,
   STARTER_GEAR_LOADOUT,
+  type WholeArtCharacter,
+  WHOLE_ART_CHARACTERS,
   weaponEntryInstances,
 } from "@dd/shared";
 import type { Room } from "colyseus.js";
@@ -26,13 +29,10 @@ import { SPRITE_ATLAS } from "../entities/SpriteRig.js";
 import type { LaunchIntent } from "../net/matchmaking.js";
 import { RENDER_DPR } from "../render-dpr.js";
 import {
-  boilerplateTextureKey,
-  boilerplateTextureUrl,
   gearClickVisibility,
   gearClickVisibilityNotice,
   gearManifestItem,
   gearTextureKey,
-  gearTextureUrl,
   GEAR_PARTS_MANIFEST,
 } from "../sprites/gear-parts.js";
 import {
@@ -65,6 +65,16 @@ import {
 } from "../ui/armory-ui/virtual-grid.js";
 import { routeArmoryUiInput } from "../input-routing.js";
 import {
+  characterSelectionOptions,
+  loadCharacterSelection,
+  routeCharacterSelectionKey,
+  saveCharacterSelection,
+} from "../ui/character-select.js";
+import {
+  buildCharacterPortrait,
+  queueCharacterPreviewTextures,
+} from "../ui/characters/preview.js";
+import {
   loadPetMetaAccount,
   petSelectionView,
   savePetMetaAccount,
@@ -77,7 +87,7 @@ import {
   WARDROBE_ITEM_CARD_WIDTH,
   WARDROBE_ITEM_TEXT_WIDTH,
   WARDROBE_LAYOUT,
-  wardrobeViewportLayout,
+  type wardrobeViewportLayout,
 } from "../ui/wardrobe/layout.js";
 import {
   applyWardrobePreset,
@@ -183,6 +193,14 @@ interface CompanionChip {
   lock: Phaser.GameObjects.Text;
 }
 
+interface CharacterCardControl {
+  id: WholeArtCharacter;
+  root: Phaser.GameObjects.Container;
+  frame: Phaser.GameObjects.Rectangle;
+  name: Phaser.GameObjects.Text;
+  status: Phaser.GameObjects.Text;
+}
+
 interface WardrobeTileControl {
   root: Phaser.GameObjects.Container;
   paper: Phaser.GameObjects.Graphics;
@@ -212,7 +230,53 @@ interface MenuSceneData {
   prestigeGameCleared?: boolean;
 }
 
-type MenuTab = "wardrobe" | "armory" | "run";
+export type MenuTab = "characters" | "armory" | "run";
+
+export const INITIAL_MENU_TAB: MenuTab = "characters";
+
+export const MENU_TAB_DESCRIPTORS = [
+  { tab: "characters", label: "CHARACTERS", width: 142 },
+  { tab: "armory", label: "ARMORY / CARRY", width: 176 },
+  { tab: "run", label: "DESTINATIONS", width: 142 },
+] as const satisfies ReadonlyArray<{ tab: MenuTab; label: string; width: number }>;
+
+export function menuTabVisibility(tab: MenuTab): {
+  characters: boolean;
+  companions: boolean;
+  armory: boolean;
+  destinations: boolean;
+  prestige: boolean;
+  fullScreen: boolean;
+} {
+  return {
+    characters: tab === "characters",
+    companions: tab === "characters",
+    armory: tab === "armory",
+    destinations: tab === "run",
+    prestige: tab === "run",
+    fullScreen: tab === "characters" || tab === "armory",
+  };
+}
+
+export function menuLaunchSelections(
+  selectedCharacterId: WholeArtCharacter,
+  selectedPetId: PetId | "",
+): { selectedCharacterId: WholeArtCharacter; selectedPetId: PetId | "" } {
+  return { selectedCharacterId, selectedPetId };
+}
+
+export const DESTINATION_PRESTIGE_COPY = {
+  context: "DESTINATION DIFFICULTY",
+  review: "ADVANCE WORLD TIER · REVIEW",
+  reveal: "NEW WORLD TIER ACTIVE\nREVIEW DESTINATIONS AND CARRY",
+} as const;
+
+export function destinationPrestigeEligibilityCopy(view: {
+  nextWorldTier: number | null;
+  eligibilityCopy: string;
+}): string {
+  return view.nextWorldTier === null ? "WORLD TIER 30 · CAP" : view.eligibilityCopy;
+}
 
 export class MenuScene extends Phaser.Scene {
   private title!: Phaser.GameObjects.Text;
@@ -237,9 +301,18 @@ export class MenuScene extends Phaser.Scene {
   private companionName?: Phaser.GameObjects.Text;
   private companionDetail?: Phaser.GameObjects.Text;
   private companionChips: CompanionChip[] = [];
-  private menuTab: MenuTab = "wardrobe";
+  private menuTab: MenuTab = INITIAL_MENU_TAB;
   private tabRow?: Phaser.GameObjects.Container;
   private readonly tabButtons = new Map<MenuTab, Phaser.GameObjects.Container>();
+  private characterRoot?: Phaser.GameObjects.Container;
+  private characterChrome?: Phaser.GameObjects.Graphics;
+  private characterTitle?: Phaser.GameObjects.Text;
+  private characterSubtitle?: Phaser.GameObjects.Text;
+  private characterHint?: Phaser.GameObjects.Text;
+  private characterCards: CharacterCardControl[] = [];
+  private selectedCharacterId: WholeArtCharacter = DEFAULT_CHARACTER;
+  private characterFocusIndex = 0;
+  private characterCardScale = 1;
   private wardrobeRoot?: Phaser.GameObjects.Container;
   private wardrobeChrome?: Phaser.GameObjects.Graphics;
   private wardrobePresetState!: WardrobePresetState;
@@ -287,6 +360,8 @@ export class MenuScene extends Phaser.Scene {
   private prestigeFlow?: PrestigeReceiptFlow;
   private prestigeRevealPlayedFor = -1;
   private prestigeDisposers: Array<() => void> = [];
+  private destinationsWorldTier?: Phaser.GameObjects.Container;
+  private destinationsPrestigeLayer?: Phaser.GameObjects.Container;
   private armoryRoot?: Phaser.GameObjects.Container;
   private armoryChrome?: Phaser.GameObjects.Graphics;
   private armoryDraft!: ArmoryDraft;
@@ -343,22 +418,9 @@ export class MenuScene extends Phaser.Scene {
     if (!this.textures.exists(SPRITE_ATLAS)) {
       this.load.multiatlas(SPRITE_ATLAS, "sprites/dd-sprites.json", "sprites");
     }
-    // The shared baker owns every composed result. Preloading only its canonical six base sources keeps the
-    // first wardrobe pose visible while the initial scene-scoped lease is acquired.
-    if (GEAR_PARTS_MANIFEST) {
-      for (const part of GEAR_PARTS_MANIFEST.boilerplate.parts) {
-        const key = boilerplateTextureKey(part.id);
-        if (!this.textures.exists(key)) {
-          this.load.image(key, boilerplateTextureUrl(part.texture));
-        }
-      }
-      for (const slot of GEAR_PARTS_MANIFEST.slots) {
-        for (const item of slot.items) {
-          const key = gearTextureKey(item);
-          if (!this.textures.exists(key)) this.load.image(key, gearTextureUrl(item));
-        }
-      }
-    }
+    // Ordinary identity is the small shared whole-art roster. Queue its six authored cuts only: the
+    // dormant Wardrobe boilerplate and complete gear manifest are intentionally absent from menu preload.
+    queueCharacterPreviewTextures(this);
     // Until dedicated portraits land, the folio uses the approved Hatchling body cutouts. These are the
     // only pet textures loaded by the menu; ArenaScene keeps all animated stage parts lazy.
     for (const petId of PET_IDS) {
@@ -385,9 +447,17 @@ export class MenuScene extends Phaser.Scene {
     this.companionName = undefined;
     this.companionDetail = undefined;
     this.companionChips = [];
-    this.menuTab = "wardrobe";
+    this.menuTab = INITIAL_MENU_TAB;
     this.tabRow = undefined;
     this.tabButtons.clear();
+    this.characterRoot = undefined;
+    this.characterChrome = undefined;
+    this.characterTitle = undefined;
+    this.characterSubtitle = undefined;
+    this.characterHint = undefined;
+    this.characterCards = [];
+    this.characterFocusIndex = 0;
+    this.characterCardScale = 1;
     this.wardrobeRoot = undefined;
     this.wardrobeChrome = undefined;
     this.wardrobePreviewSurface = undefined;
@@ -414,6 +484,8 @@ export class MenuScene extends Phaser.Scene {
     this.prestigeHoldStartedAt = -1;
     this.prestigeFlow = undefined;
     this.prestigeRevealPlayedFor = -1;
+    this.destinationsWorldTier = undefined;
+    this.destinationsPrestigeLayer = undefined;
     this.armoryRoot = undefined;
     this.armoryRows = [];
     this.armoryCards = [];
@@ -423,6 +495,7 @@ export class MenuScene extends Phaser.Scene {
     this.armoryFocusedEntryId = "";
     this.launchIntent = "quick";
     this.launching = false;
+    this.selectedCharacterId = loadCharacterSelection().selectedCharacterId;
     // §39 DEV PORTAL deep-link: boss/weapon/character/gear/pet specs skip the menu and drop straight into
     // Testing Grounds. Gear and pet specs project the normal local account BEFORE ArenaScene reads it, so
     // the server joins with the complete closet + equipped slot, or the owned + selected companion.
@@ -434,7 +507,11 @@ export class MenuScene extends Phaser.Scene {
         if (inspected !== account) savePetMetaAccount(inspected);
       }
       void ensureArenaScene(this.scene).then(() =>
-        this.scene.start("arena", { dimensionId: DEFAULT_DIMENSION, dev }),
+        this.scene.start("arena", {
+          dimensionId: DEFAULT_DIMENSION,
+          dev,
+          selectedCharacterId: this.selectedCharacterId,
+        }),
       );
       return;
     }
@@ -452,6 +529,10 @@ export class MenuScene extends Phaser.Scene {
     this.audio = (this.game.registry.get("audio") as AudioBus | undefined) ?? new AudioBus();
     this.game.registry.set("audio", this.audio);
     this.metaAccount = loadPetMetaAccount();
+    this.characterFocusIndex = Math.max(
+      0,
+      WHOLE_ART_CHARACTERS.indexOf(this.selectedCharacterId),
+    );
     // DEV CLOSET — `?closet=1`, dev builds only: own the ENTIRE gear catalog locally so any outfit
     // can be dressed without farming. Purely a local-trust cosmetic grant (the server sanitizes the
     // account at join either way); it persists, so one visit unlocks the wardrobe from then on.
@@ -492,7 +573,7 @@ export class MenuScene extends Phaser.Scene {
       .text(0, 0, "DIMENSION DRIFTERS", { fontSize: "52px", color: TITLE_COLOR, fontStyle: "bold" })
       .setOrigin(0.5, 0.5);
     this.subtitle = this.add
-      .text(0, 0, "GEAR IS WHO YOU ARE · WEAPONS ARE WHAT YOU RISK", {
+      .text(0, 0, "CHOOSE YOUR HERO · WEAPONS ARE WHAT YOU RISK", {
         fontSize: "18px",
         color: ACCENT,
       })
@@ -515,30 +596,26 @@ export class MenuScene extends Phaser.Scene {
       )
       .setOrigin(0.5, 0.5);
 
-    // Each tab owns its key grammar: presets in Wardrobe, carry review in Armory, destinations in Run.
+    // Each active tab owns its key grammar: character cards, carry review, or destinations.
     this.input.keyboard?.on("keydown", (e: KeyboardEvent) => {
-      if (this.menuTab === "wardrobe") {
-        if (this.handleCatalogSearchKey(e, "wardrobe")) return;
-        const route = routeArmoryUiInput(this.armoryUiSample(e, "wardrobe"));
-        if (route.move) {
-          this.wardrobeKeyboardFocus = true;
-          this.wardrobeFocus.move(route.move);
-          this.refreshWardrobeWorkspace();
+      if (this.menuTab === "characters") {
+        if (e.key === "Escape" || e.key === "Tab") {
+          this.setMenuTab("run");
+          e.preventDefault();
+          return;
         }
-        if (route.contextDelta !== 0) this.moveWardrobeSlot(route.contextDelta);
-        if (route.pageDelta !== 0) {
-          this.wardrobeKeyboardFocus = true;
-          this.wardrobeFocus.move(route.pageDelta < 0 ? "page-previous" : "page-next");
-          this.refreshWardrobeWorkspace();
-        }
-        if (route.preset !== null) this.applyWardrobePresetIndex(route.preset - 1);
-        if (route.reset) this.equipWardrobe(STARTER_GEAR_LOADOUT[this.selectedGearSlot]);
-        if (route.primary) this.activateWardrobeFocus();
-        if (route.close) {
-          if (this.prestigeDrawerOpen) {
-            this.prestigeDrawerOpen = false;
-            this.refreshPrestigeSurface();
-          } else this.setMenuTab("run");
+        const route = routeCharacterSelectionKey(
+          e.key,
+          this.characterFocusIndex,
+          this.characterCards.length,
+        );
+        if (!route.handled) return;
+        this.characterFocusIndex = route.focusIndex;
+        if (route.activate) {
+          const id = this.characterCards[this.characterFocusIndex]?.id;
+          if (id) this.selectCharacter(id);
+        } else {
+          this.refreshCharacterWorkspace();
         }
         e.preventDefault();
         return;
@@ -569,6 +646,12 @@ export class MenuScene extends Phaser.Scene {
         return;
       }
       if (this.menuTab !== "run") return;
+      if (this.prestigeDrawerOpen && e.key === "Escape") {
+        this.prestigeDrawerOpen = false;
+        this.prestigeRoot?.setVisible(false);
+        e.preventDefault();
+        return;
+      }
       if (e.key === "b" || e.key === "B") {
         this.launch(DEFAULT_DIMENSION, true);
         return;
@@ -595,11 +678,12 @@ export class MenuScene extends Phaser.Scene {
 
     this.buildTabRow();
     this.buildIntentRow();
-    this.buildWardrobeWorkspace();
+    this.buildCharacterWorkspace();
     this.buildArmoryWorkspace();
     this.buildCompanionRow();
+    this.buildDestinationsPrestige();
     this.buildAudioRow();
-    this.setMenuTab("wardrobe");
+    this.setMenuTab(INITIAL_MENU_TAB);
     this.layout();
   }
 
@@ -716,7 +800,6 @@ export class MenuScene extends Phaser.Scene {
       const packCapacity =
         12 + (selectedPet ? petModsForLevel(selectedPet, petLevelForXp(petXp)).bagCapacityAdd : 0);
       this.armoryDraft = createArmoryDraft(this.metaAccount, packCapacity);
-      this.refreshWardrobeWorkspace();
       this.refreshArmoryWorkspace();
       this.refreshPrestigeSurface();
     }) as () => void;
@@ -786,6 +869,23 @@ export class MenuScene extends Phaser.Scene {
     parent.add(root);
     this.prestigeRoot = root;
     this.refreshPrestigeSurface();
+  }
+
+  private buildDestinationsPrestige(): void {
+    this.destinationsWorldTier = this.makeMenuChip(
+      `WORLD TIER ${this.metaAccount.prestige}`,
+      170,
+      () => {
+        this.prestigeDrawerOpen = !this.prestigeDrawerOpen;
+        this.prestigeRoot?.setVisible(this.prestigeDrawerOpen);
+        this.refreshPrestigeSurface();
+        this.layoutDestinationsPrestige();
+      },
+      46,
+    ).setDepth(65);
+    this.destinationsPrestigeLayer = this.add.container(0, 0).setDepth(70);
+    this.buildPrestigeDrawer(this.destinationsPrestigeLayer);
+    this.prestigeRoot?.setVisible(false);
   }
 
   private buildPrestigeSurface(parent: Phaser.GameObjects.Container): void {
@@ -912,9 +1012,13 @@ export class MenuScene extends Phaser.Scene {
     )
       return;
     const view = prestigeCeremonyView(this.metaAccount, this.hasPrestigeGameClear());
+    const eligibilityCopy = destinationPrestigeEligibilityCopy(view);
+    (this.destinationsWorldTier?.getData("text") as Phaser.GameObjects.Text | undefined)?.setText(
+      `WORLD TIER ${view.worldTier}`,
+    );
     if (this.prestigePanel) {
       this.prestigeTierText.setText(
-        `WORLD TIER ${view.worldTier}${view.nextWorldTier ? `  â†’  ${view.nextWorldTier}` : "  Â·  CAP"}\n${view.nextHatPromise}`,
+        `WORLD TIER ${view.worldTier}${view.nextWorldTier ? `  →  ${view.nextWorldTier}` : "  ·  CAP"}\n${DESTINATION_PRESTIGE_COPY.context}`,
       );
       this.prestigeCostText.setText(`AT RISK\n${view.costCopy}`);
       this.prestigeSurvivorText.setText(view.survivorCopy);
@@ -925,10 +1029,10 @@ export class MenuScene extends Phaser.Scene {
         : pending
           ? "FAREWELL SENT  Â·  AWAITING ACCOUNT"
           : !view.eligible
-            ? view.eligibilityCopy
+            ? eligibilityCopy
             : this.prestigeArmed
               ? `HOLD 2.0s  Â·  WORLD TIER ${view.worldTier} â†’ ${view.nextWorldTier}`
-              : "FAREWELL THE ARMORY  Â·  REVIEW";
+              : DESTINATION_PRESTIGE_COPY.review;
       this.prestigeButtonText.setText(label).setFontSize(14);
       this.prestigeButtonBg
         .setFillStyle(view.eligible && !pending ? 0x342b1a : ARMORY_COLORS.surface2, 1)
@@ -937,7 +1041,7 @@ export class MenuScene extends Phaser.Scene {
     }
     this.setBoundedWardrobeText(
       this.prestigeTierText,
-      `PRESTIGE ${view.worldTier} · WORLD TIER ${view.worldTier}\n${view.nextHatPromise}`,
+      `PRESTIGE ${view.worldTier} · WORLD TIER ${view.worldTier}\n${DESTINATION_PRESTIGE_COPY.context}`,
       WARDROBE_LAYOUT.prestigeTier,
     );
     this.setBoundedWardrobeText(this.prestigeCostText, view.costCopy, WARDROBE_LAYOUT.prestigeCost);
@@ -956,10 +1060,10 @@ export class MenuScene extends Phaser.Scene {
           ? "RECEIPT HELD · REFRESHING ACCOUNT"
           : "FAREWELL SENT · AWAITING RECEIPT"
         : !view.eligible
-          ? view.eligibilityCopy
+          ? eligibilityCopy
           : this.prestigeArmed
             ? `HOLD 2.0s · WORLD TIER ${view.worldTier} → ${view.nextWorldTier}`
-            : "FAREWELL THE ARMORY · REVIEW";
+            : DESTINATION_PRESTIGE_COPY.review;
     this.prestigeButtonText.setFontSize(label.length > 34 ? 8 : 9);
     const fittedLabel = truncateMeasuredLine(
       label,
@@ -998,7 +1102,7 @@ export class MenuScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
     const detail = this.add
-      .text(0, 18, `HAT TIER ${Math.min(30, prestige + 1)} REVEALED\nTHE SPRING TOWER GROWS`, {
+      .text(0, 18, DESTINATION_PRESTIGE_COPY.reveal, {
         fontFamily: "monospace",
         fontSize: "13px",
         color: "#e8f5ff",
@@ -1033,13 +1137,8 @@ export class MenuScene extends Phaser.Scene {
   }
 
   private buildTabRow(): void {
-    const rows: Array<{ tab: MenuTab; label: string; width: number }> = [
-      { tab: "wardrobe", label: "WARDROBE", width: 142 },
-      { tab: "armory", label: "ARMORY / CARRY", width: 176 },
-      { tab: "run", label: "DESTINATIONS", width: 142 },
-    ];
     this.tabRow = this.add.container(0, 0).setDepth(60);
-    rows.forEach(({ tab, label, width }, index) => {
+    MENU_TAB_DESCRIPTORS.forEach(({ tab, label, width }, index) => {
       const chip = this.makeMenuChip(label, width, () => this.setMenuTab(tab));
       chip.setPosition((index - 1) * 166, 0).setData("tab", tab);
       this.tabRow?.add(chip);
@@ -1048,14 +1147,9 @@ export class MenuScene extends Phaser.Scene {
   }
 
   private setMenuTab(tab: MenuTab): void {
-    if (tab !== "wardrobe" && this.wardrobeHoveredGearId) {
-      this.wardrobeHoveredGearId = undefined;
-      this.wardrobePreviewSurface?.refresh(
-        this.metaAccount.equippedGear,
-        this.metaAccount.prestige,
-      );
-    }
     this.menuTab = tab;
+    const visibility = menuTabVisibility(tab);
+    if (tab !== "run") this.prestigeDrawerOpen = false;
     for (const [id, chip] of this.tabButtons) {
       const selected = id === tab;
       (chip.getData("bg") as Phaser.GameObjects.Rectangle)
@@ -1065,17 +1159,214 @@ export class MenuScene extends Phaser.Scene {
         selected ? TITLE_COLOR : "#8d8794",
       );
     }
-    this.wardrobeRoot?.setVisible(tab === "wardrobe");
-    this.companionRow?.setVisible(tab === "wardrobe");
-    this.armoryRoot?.setVisible(tab === "armory");
-    this.intentRow?.setVisible(tab === "run");
-    this.hint?.setVisible(tab === "run");
-    for (const card of this.cards) card.root.setVisible(tab === "run");
-    if (tab === "wardrobe") this.refreshWardrobeWorkspace();
+    this.characterRoot?.setVisible(visibility.characters);
+    this.companionRow?.setVisible(visibility.companions);
+    this.armoryRoot?.setVisible(visibility.armory);
+    this.intentRow?.setVisible(visibility.destinations);
+    this.destinationsWorldTier?.setVisible(visibility.prestige);
+    this.destinationsPrestigeLayer?.setVisible(visibility.prestige);
+    this.prestigeRoot?.setVisible(visibility.prestige && this.prestigeDrawerOpen);
+    this.hint?.setVisible(visibility.destinations);
+    for (const card of this.cards) card.root.setVisible(visibility.destinations);
+    if (tab === "characters") this.refreshCharacterWorkspace();
     if (tab === "armory") this.refreshArmoryWorkspace();
+    if (tab === "run") this.refreshPrestigeSurface();
     this.layout();
   }
 
+  private buildCharacterWorkspace(): void {
+    const root = this.add.container(0, 0).setDepth(10);
+    this.characterChrome = this.add.graphics();
+    this.characterTitle = this.add
+      .text(0, 0, "CHOOSE YOUR CHARACTER", armoryTextStyle("pageTitle"))
+      .setOrigin(0.5);
+    this.characterSubtitle = this.add
+      .text(0, 0, "Your whole-art hero is saved for every destination.", {
+        ...armoryTextStyle("body", "textSecondary"),
+        align: "center",
+      })
+      .setOrigin(0.5);
+    this.characterHint = this.add
+      .text(0, 0, "Arrows move · Enter / Space selects · Tab opens Destinations", {
+        ...armoryTextStyle("secondary", "textMuted", true),
+        align: "center",
+      })
+      .setOrigin(0.5);
+    root.add([
+      this.characterChrome,
+      this.characterTitle,
+      this.characterSubtitle,
+      this.characterHint,
+    ]);
+
+    for (const option of characterSelectionOptions(this.selectedCharacterId)) {
+      const frame = this.add
+        .rectangle(0, 0, 260, 390, ARMORY_COLORS.surface1, 1)
+        .setStrokeStyle(2, ARMORY_COLORS.border, 1);
+      const portraitPaper = this.add
+        .rectangle(0, -32, 226, 278, ARMORY_COLORS.surface0, 1)
+        .setStrokeStyle(1, ARMORY_COLORS.stitch, 0.9);
+      const portrait = buildCharacterPortrait(this, option.id, 210, 258).setPosition(0, -32);
+      const name = this.add
+        .text(0, 132, option.name, armoryTextStyle("section"))
+        .setOrigin(0.5)
+        .setWordWrapWidth(230)
+        .setAlign("center");
+      const status = this.add
+        .text(0, 168, "", armoryTextStyle("secondary", "textMuted", true))
+        .setOrigin(0.5);
+      const hitZone = this.add
+        .rectangle(0, 0, 260, 390, 0xffffff, 0.001)
+        .setInteractive({ useHandCursor: true });
+      const cardRoot = this.add.container(0, 0, [
+        frame,
+        portraitPaper,
+        portrait,
+        name,
+        status,
+        hitZone,
+      ]);
+      const card: CharacterCardControl = {
+        id: option.id,
+        root: cardRoot,
+        frame,
+        name,
+        status,
+      };
+      hitZone
+        .on("pointerover", () => {
+          this.characterFocusIndex = this.characterCards.indexOf(card);
+          this.refreshCharacterWorkspace();
+        })
+        .on("pointerdown", () => {
+          this.audio.resume();
+          this.selectCharacter(card.id);
+        });
+      root.add(cardRoot);
+      this.characterCards.push(card);
+    }
+    this.characterRoot = root;
+    this.refreshCharacterWorkspace();
+  }
+
+  private selectCharacter(id: WholeArtCharacter): void {
+    const selection = saveCharacterSelection(id);
+    this.selectedCharacterId = selection.selectedCharacterId;
+    this.characterFocusIndex = Math.max(
+      0,
+      WHOLE_ART_CHARACTERS.indexOf(this.selectedCharacterId),
+    );
+    this.audio.play("armory:stage");
+    this.refreshCharacterWorkspace();
+  }
+
+  private refreshCharacterWorkspace(): void {
+    for (const [index, card] of this.characterCards.entries()) {
+      const selected = card.id === this.selectedCharacterId;
+      const focused = index === this.characterFocusIndex;
+      card.frame
+        .setFillStyle(selected ? 0x14232a : ARMORY_COLORS.surface1, 1)
+        .setStrokeStyle(
+          selected ? 3 : focused ? 2.5 : 1.5,
+          selected
+            ? ARMORY_COLORS.success
+            : focused
+              ? ARMORY_COLORS.accent
+              : ARMORY_COLORS.border,
+          1,
+        );
+      card.name.setColor(selected ? TITLE_COLOR : ARMORY_CSS_COLORS.textPrimary);
+      card.status
+        .setText(selected ? "SELECTED · READY" : focused ? "ENTER TO SELECT" : "AVAILABLE")
+        .setColor(selected ? ARMORY_CSS_COLORS.success : ARMORY_CSS_COLORS.textMuted);
+      card.root.setScale((focused ? 1.025 : 1) * this.characterCardScale);
+    }
+  }
+
+  private layoutCharacterWorkspace(): void {
+    if (!this.characterRoot || !this.characterChrome) return;
+    const w = this.screenW();
+    const h = this.screenH();
+    const chrome = this.characterChrome.clear();
+    chrome.fillStyle(ARMORY_COLORS.bg, 0.99).fillRect(0, 0, w, h);
+    this.characterTitle?.setPosition(w / 2, 92);
+    this.characterSubtitle?.setPosition(w / 2, 124);
+
+    const cardWidth = 260;
+    const cardHeight = 390;
+    const gap = 24;
+    const count = this.characterCards.length;
+    const columns = Math.min(
+      Math.max(1, count),
+      Math.max(1, Math.floor((w - 48 + gap) / (cardWidth + gap))),
+    );
+    const rows = Math.max(1, Math.ceil(count / columns));
+    const availableHeight = Math.max(180, h - 310);
+    const rawGridWidth = columns * cardWidth + (columns - 1) * gap;
+    const rawGridHeight = rows * cardHeight + (rows - 1) * gap;
+    const scale = Math.max(
+      0.45,
+      Math.min(1, (w - 48) / rawGridWidth, availableHeight / rawGridHeight),
+    );
+    this.characterCardScale = scale;
+    const pitchX = (cardWidth + gap) * scale;
+    const pitchY = (cardHeight + gap) * scale;
+    const gridWidth = columns * cardWidth * scale + (columns - 1) * gap * scale;
+    const gridHeight = rows * cardHeight * scale + (rows - 1) * gap * scale;
+    const startX = (w - gridWidth) / 2 + (cardWidth * scale) / 2;
+    const startY =
+      150 +
+      Math.max(0, (availableHeight - gridHeight) / 2) +
+      (cardHeight * scale) / 2;
+    this.characterCards.forEach((card, index) => {
+      card.root
+        .setPosition(
+          startX + (index % columns) * pitchX,
+          startY + Math.floor(index / columns) * pitchY,
+        )
+        .setScale((index === this.characterFocusIndex ? 1.025 : 1) * scale);
+    });
+
+    this.characterHint?.setPosition(w / 2, h - 142);
+    const companionScale = Math.min(1, (w - 40) / 580);
+    this.companionRow?.setPosition(w / 2, h - 72).setScale(companionScale);
+  }
+
+  private layoutDestinationsPrestige(): void {
+    const w = this.screenW();
+    const h = this.screenH();
+    this.destinationsWorldTier?.setPosition(w - 110, 44);
+    if (!this.prestigeRoot || !this.prestigePanel) return;
+    const drawerWidth = Math.min(404, Math.max(300, w - 40));
+    const drawerHeight = Math.min(640, Math.max(420, h - 140));
+    this.prestigeRoot.setPosition(
+      w - drawerWidth / 2 - 20,
+      Math.max(drawerHeight / 2 + 70, h / 2),
+    );
+    this.prestigePanel.setSize(drawerWidth, drawerHeight);
+    this.prestigeTierText
+      ?.setPosition(-drawerWidth / 2 + 22, -drawerHeight / 2 + 24)
+      .setWordWrapWidth(drawerWidth - 44);
+    this.prestigeCostText
+      ?.setPosition(-drawerWidth / 2 + 22, -drawerHeight / 2 + 132)
+      .setWordWrapWidth(drawerWidth - 44);
+    this.prestigeSurvivorText
+      ?.setPosition(-drawerWidth / 2 + 22, 32)
+      .setWordWrapWidth(drawerWidth - 44);
+    this.prestigeButtonBg
+      ?.setPosition(0, drawerHeight / 2 - 54)
+      .setSize(drawerWidth - 44, 52);
+    this.prestigeButtonText?.setPosition(0, drawerHeight / 2 - 54);
+    const holdTrack = this.prestigeRoot.list[6] as Phaser.GameObjects.Rectangle | undefined;
+    holdTrack
+      ?.setPosition(-drawerWidth / 2 + 22, drawerHeight / 2 - 20)
+      .setSize(drawerWidth - 44, 6);
+    this.prestigeHoldFill
+      ?.setPosition(-drawerWidth / 2 + 22, drawerHeight / 2 - 20)
+      .setSize(drawerWidth - 44, 6);
+  }
+
+  // biome-ignore lint/correctness/noUnusedPrivateClassMembers: retained as the dormant Wardrobe archive.
   private buildWardrobeWorkspace(): void {
     const root = this.add.container(0, 0).setDepth(10);
     this.wardrobeChrome = this.add.graphics();
@@ -1242,6 +1533,7 @@ export class MenuScene extends Phaser.Scene {
     this.refreshWardrobeWorkspace();
   }
 
+  // biome-ignore lint/correctness/noUnusedPrivateClassMembers: retained as dormant Wardrobe key grammar.
   private moveWardrobeSlot(direction: -1 | 1): void {
     const index = GEAR_SLOTS.indexOf(this.selectedGearSlot);
     this.selectedGearSlot = GEAR_SLOTS[(index + direction + GEAR_SLOTS.length) % GEAR_SLOTS.length] ?? "hat";
@@ -1277,6 +1569,7 @@ export class MenuScene extends Phaser.Scene {
     this.equipWardrobe(item.id);
   }
 
+  // biome-ignore lint/correctness/noUnusedPrivateClassMembers: retained as dormant Wardrobe layout code.
   private layoutWardrobeWorkspace(layout: ReturnType<typeof wardrobeViewportLayout>): void {
     if (!this.wardrobeRoot || !this.wardrobeChrome) return;
     this.wardrobeLayout = layout;
@@ -2536,7 +2829,7 @@ export class MenuScene extends Phaser.Scene {
     this.intentCaption.setText(
       this.launchIntent === "quick"
         ? "Pick a card to JOIN a live run with the same pick — or start one if none is open.   (H toggles)"
-        : "Pick a card to HOST a fresh run — drifters making the same pick can still join you.   (H toggles)",
+        : "Pick a card to HOST a fresh run — players making the same pick can still join you.   (H toggles)",
     );
   }
 
@@ -2823,21 +3116,16 @@ export class MenuScene extends Phaser.Scene {
     const w = this.screenW();
     const h = this.screenH();
     const titleY = Math.max(52, Math.min(86, h * 0.09));
-    const fullScreenWorkspace = this.menuTab === "wardrobe" || this.menuTab === "armory";
-    const wardrobeLayout = wardrobeViewportLayout(w, h);
+    const fullScreenWorkspace = menuTabVisibility(this.menuTab).fullScreen;
     this.title
       .setVisible(!fullScreenWorkspace)
       .setPosition(w / 2, titleY)
       .setFontSize(Math.min(52, w / 13));
     this.subtitle.setVisible(!fullScreenWorkspace).setPosition(w / 2, titleY + 40);
-    const workspaceNavX = Math.min(
-      w - 260,
-      wardrobeLayout.presetRowRect.x + wardrobeLayout.presetRowRect.width + 245,
-    );
-    this.tabRow?.setPosition(fullScreenWorkspace ? workspaceNavX : w / 2, fullScreenWorkspace ? 44 : titleY + 76);
-    this.layoutWardrobeWorkspace(wardrobeLayout);
+    this.tabRow?.setPosition(w / 2, fullScreenWorkspace ? 44 : titleY + 76);
+    this.layoutCharacterWorkspace();
     this.layoutArmoryWorkspace();
-    if (this.menuTab === "wardrobe") this.refreshWardrobeWorkspace();
+    this.layoutDestinationsPrestige();
     // §50 finding #1 — the launch-intent selector sits between the subtitle and the card grid.
     this.intentRow?.setPosition(w / 2, titleY + 126);
 
@@ -2898,7 +3186,7 @@ export class MenuScene extends Phaser.Scene {
             bossRush,
             belt,
             beltLevel,
-            selectedPetId: account.selectedPetId,
+            ...menuLaunchSelections(this.selectedCharacterId, account.selectedPetId),
             carry,
           }),
         ),
