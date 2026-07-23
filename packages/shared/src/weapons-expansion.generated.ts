@@ -16019,6 +16019,59 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "rotation": "point-forward"
     }
   },
+  "x2-iron-chakram": {
+    "id": "x2-iron-chakram",
+    "name": "Iron Chakram",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "B",
+      "luk": "C"
+    },
+    "damage": 8,
+    "range": 104,
+    "halfArc": 0.62,
+    "cooldown": 0.4,
+    "displayLength": 76,
+    "swingArc": 2.4,
+    "gripFrac": 0.5,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "thrown",
+      "fireMode": "tap-charge",
+      "element": "physical",
+      "classPool": "melee",
+      "family": "thrown",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "LUK"
+      ]
+    },
+    "description": "A broad battle-worn iron throwing ring that bites one target, then caroms through nearby enemies before its momentum fails.",
+    "performance": {
+      "hold": "steady",
+      "action": "throw-release",
+      "suppressSwing": true,
+      "windupSeconds": 0.19,
+      "preThrowRevolutions": 0.5
+    },
+    "requirements": {
+      "dex": 7
+    },
+    "durability": 75,
+    "thrown": {
+      "speed": 920,
+      "range": 700,
+      "damage": 8,
+      "charges": 4,
+      "refillSeconds": 1.5,
+      "pierce": 1,
+      "rotation": "spin",
+      "ricochetHops": 2,
+      "ricochetRange": 360
+    }
+  },
   "x2-m50-anti-materiel-rifle": {
     "id": "x2-m50-anti-materiel-rifle",
     "name": "M-50 Anti-Materiel Rifle",

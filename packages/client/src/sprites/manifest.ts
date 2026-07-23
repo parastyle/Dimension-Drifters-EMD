@@ -10126,6 +10126,32 @@ export const SPRITES = {
       }
     ]
   },
+  "x2-iron-chakram": {
+    "id": "x2-iron-chakram",
+    "kind": "weapon",
+    "canvas": {
+      "w": 284,
+      "h": 284
+    },
+    "body": {
+      "cx": 142.95,
+      "cy": 141.14,
+      "w": 256,
+      "h": 254
+    },
+    "parts": [
+      {
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 254,
+        "cx": 142.95,
+        "cy": 141.14,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
+  },
   "x2-iron-marshal": {
     "id": "x2-iron-marshal",
     "kind": "weapon",

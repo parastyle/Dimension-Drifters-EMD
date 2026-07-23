@@ -162,6 +162,7 @@ export const CARD_ART_IDS = [
   "x2-hornet-s-nest-bolter",
   "x2-ice-throwing-star",
   "x2-idol-of-the-pale-verdict",
+  "x2-iron-chakram",
   "x2-iron-marshal",
   "x2-iron-throwing-star",
   "x2-iron-vow-bearded-axe",

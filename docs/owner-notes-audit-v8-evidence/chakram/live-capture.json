@@ -1,0 +1,186 @@
+{
+  "capturedAt": "2026-07-23T04:12:43.439Z",
+  "weaponId": "x2-iron-chakram",
+  "thresholds": {
+    "maxThrowOriginErrorPx": 0.25,
+    "maxRicochetRangePx": 360,
+    "minBounces": 1,
+    "minFlightTravelPx": 18,
+    "minAuthoritativeTurnRadians": 0.35
+  },
+  "result": {
+    "startAttackSeq": 0,
+    "acceptedAttackSeq": 1,
+    "bounceCount": 1,
+    "damagedEnemyIds": [
+      "e0",
+      "e6"
+    ],
+    "flightTravelPx": 651.3464187905711,
+    "observedTurnRadians": 0.876732439373863,
+    "authoritativeTurnRadians": 1.6676626453191863,
+    "targetPlan": {
+      "direct": {
+        "id": "e0",
+        "kind": "choirmath",
+        "hp": 440,
+        "x": 2404.943603515625,
+        "y": 1700.0169677734375
+      },
+      "second": {
+        "id": "e6",
+        "kind": "choirmath",
+        "hp": 440,
+        "x": 2122.92431640625,
+        "y": 1755.4482421875
+      },
+      "hopDistancePx": 287.4152126886244,
+      "plannedTurnRadians": 1.7717398680509722,
+      "initialEnemies": [
+        {
+          "id": "e0",
+          "kind": "choirmath",
+          "hp": 440,
+          "x": 2404.943603515625,
+          "y": 1700.0169677734375
+        },
+        {
+          "id": "e1",
+          "kind": "choirmath",
+          "hp": 440,
+          "x": 1822.3878173828125,
+          "y": 2849.842041015625
+        },
+        {
+          "id": "e2",
+          "kind": "choirmath",
+          "hp": 440,
+          "x": 1968.8935546875,
+          "y": 2996.6690689310935
+        },
+        {
+          "id": "e3",
+          "kind": "choirmath",
+          "hp": 440,
+          "x": 1768.051513671875,
+          "y": 2765.0233133187107
+        },
+        {
+          "id": "e4",
+          "kind": "choirmath",
+          "hp": 440,
+          "x": 2909.101318359375,
+          "y": 2929.132568359375
+        },
+        {
+          "id": "e5",
+          "kind": "choirmath",
+          "hp": 440,
+          "x": 3111.1123046875,
+          "y": 2307.220703125
+        },
+        {
+          "id": "e6",
+          "kind": "choirmath",
+          "hp": 440,
+          "x": 2122.92431640625,
+          "y": 1755.4482421875
+        },
+        {
+          "id": "e7",
+          "kind": "choirmath",
+          "hp": 440,
+          "x": 2293.104248046875,
+          "y": 3132.0205078125
+        }
+      ]
+    },
+    "projectile": {
+      "projectileIds": [
+        "p0"
+      ],
+      "projectileId": "p0",
+      "attackSeq": 1,
+      "kind": "thrown:x2-iron-chakram",
+      "sourcePlayerId": "hKbGodo5m",
+      "sourceWeaponId": "x2-iron-chakram",
+      "anchorKind": "throw",
+      "releaseAnchor": {
+        "x": 2404.7017628185554,
+        "y": 2382.6289682983424
+      },
+      "spawnOrigin": {
+        "x": 2404.7017628185554,
+        "y": 2382.6289682983424
+      },
+      "spawnThrow": {
+        "x": 2404.7017628185554,
+        "y": 2382.6289682983424
+      },
+      "releaseErrorPx": 0,
+      "originMetadataErrorPx": 0,
+      "path": [
+        {
+          "x": 2404.7017628185554,
+          "y": 2382.6289682983424,
+          "wallMs": 10730.69999999553
+        },
+        {
+          "x": 2405.3228332315343,
+          "y": 2292.176698645022,
+          "wallMs": 10828.5
+        },
+        {
+          "x": 2406.565100394029,
+          "y": 2111.253759771731,
+          "wallMs": 11019.10000000149
+        },
+        {
+          "x": 2405.464235966705,
+          "y": 1922.9611190323733,
+          "wallMs": 11216.10000000149
+        },
+        {
+          "x": 2347.4539252642167,
+          "y": 1798.4841735883622,
+          "wallMs": 11410.5
+        },
+        {
+          "x": 2210.779603332573,
+          "y": 1760.8200319428126,
+          "wallMs": 11602.69999999553
+        }
+      ],
+      "velocities": [
+        {
+          "vx": 6.316826820373535,
+          "vy": -919.9783325195312,
+          "wallMs": 10730.69999999553
+        },
+        {
+          "vx": -916.2764892578125,
+          "vy": 82.68840026855469,
+          "wallMs": 11410.5
+        }
+      ],
+      "hitEvents": [
+        {
+          "enemyId": "e0",
+          "hpBefore": 440,
+          "hpAfter": 436.4639892578125,
+          "x": 2347.4539252642167,
+          "y": 1798.4841735883622,
+          "wallMs": 11410.60000000149
+        },
+        {
+          "enemyId": "e6",
+          "hpBefore": 440,
+          "hpAfter": 436.4639892578125,
+          "x": 2210.779603332573,
+          "y": 1760.8200319428126,
+          "wallMs": 11799
+        }
+      ]
+    }
+  }
+}

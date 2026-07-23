@@ -173,5 +173,20 @@ export function characterScale(id: string): number {
   return CHARACTER_SCALE[id] ?? 1;
 }
 const CHARACTER_SCALE: Record<string, number> = {
-
+  "cc-asha-the-ash-walker": 1.114,
+  "cc-brother-cassian-the-ashen-crusader": 1.128,
+  "cc-brother-tendo-of-the-still-bell": 1.116,
+  "cc-bryda-houndcall": 1.25,
+  "cc-corvane-the-crimson-draught": 1.06,
+  "cc-crowmantle-sel": 1.185,
+  "cc-dame-veyra-of-the-thornwatch": 1.142,
+  "cc-doctor-phineas-quill-esq": 1.117,
+  "cc-elias-parson-thorne": 1.25,
+  "cc-hollowmaw": 1.116,
+  "cc-mawkin-sourgrin-the-hex-witch": 1.097,
+  "cc-pyra-cinderhowl-the-flame-caster": 1.25,
+  "cc-sable-cipher": 1.25,
+  "cc-the-hollow-mask": 1.12,
+  "cc-tinker-magnus-brasswick": 1.22,
+  "cc-yuki-the-hollow-smile": 1.25,
 };

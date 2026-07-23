@@ -1,9 +1,9 @@
 {
   "generated": "2026-06-17",
   "source": "design-300-weapons workflow (15 agents)",
-  "count": 323,
+  "count": 324,
   "byType": {
-    "melee": 120,
+    "melee": 121,
     "ranged": 108,
     "caster": 95
   },
@@ -16246,6 +16246,29 @@
         "stats": { "damage": 9, "range": 100, "halfArc": 0.58, "cooldown": 0.3, "displayLength": 72, "swingArc": 2.2, "gripFrac": 0.3 },
         "performance": { "hold": "steady", "action": "throw-release", "suppressSwing": true, "windupSeconds": 0.16, "preThrowRevolutions": 0.5 },
         "behavior": { "kind": "thrown", "speed": 940, "range": 620, "damage": 9, "charges": 4, "refillSeconds": 1.3, "pierce": 2, "rotation": "point-forward" }
+    },
+    {
+        "id": "x2-iron-chakram",
+        "name": "Iron Chakram",
+        "description": "A broad battle-worn iron throwing ring that bites one target, then caroms through nearby enemies before its momentum fails.",
+        "type": "melee",
+        "family": "thrown",
+        "theme": "battle-worn iron ricochet chakram",
+        "element": "physical",
+        "finish": "battle-worn",
+        "grip": "1H",
+        "size": "M",
+        "rangeBand": "mid",
+        "scaling": ["DEX", "LUK"],
+        "scalingGrades": { "dex": "B", "luk": "C" },
+        "requirements": { "dex": 7 },
+        "palettePrimary": "#5E6670",
+        "paletteAccent": "#AAB2BA",
+        "artPrompt": "Weapon-only in-world sprite (no character, no hands, no background scene): Iron Chakram, one broad circular forged-steel throwing ring with a large open center, eight shallow outward cutting teeth integrated into the outer rim, four dark leather grip wraps spaced around the inner rim, chipped battle-worn edges, cool grey steel facets, and a thick charcoal outline. One complete connected physical weapon, flat orthographic face-on view, centered and fully visible, restrained 5-colour cel-shaded game art, bold readable silhouette. Not a throwing star, saw blade, shield, gear, halo, or circular saw.",
+        "cardartAction": "caroming from one splintered training target toward a second nearby target along a single sharply bent silver flight trail",
+        "stats": { "damage": 8, "range": 104, "halfArc": 0.62, "cooldown": 0.4, "displayLength": 76, "swingArc": 2.4, "gripFrac": 0.5 },
+        "performance": { "hold": "steady", "action": "throw-release", "suppressSwing": true, "windupSeconds": 0.19, "preThrowRevolutions": 0.5 },
+        "behavior": { "kind": "thrown", "speed": 920, "range": 700, "damage": 8, "charges": 4, "refillSeconds": 1.5, "pierce": 1, "rotation": "spin", "ricochetHops": 2, "ricochetRange": 360 }
     },
     {
         "id": "x2-m50-anti-materiel-rifle",
