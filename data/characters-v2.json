@@ -1,0 +1,82 @@
+{
+  "schemaVersion": "characters-v2-reference-v1",
+  "styleLockId": "DRIFTER_STYLE_LOCK_V1",
+  "canonicalBody": {
+    "allCharactersSameSize": true,
+    "sourceCanvasPx": [1024, 1024],
+    "bodyHeightUnitPx": 512,
+    "runtimeBodyHeightPx": 76,
+    "bodyRootPx": [512, 512]
+  },
+  "houseStylePreamble": "Match DRIFTER_STYLE_LOCK_V1: one same-scale compact no-neck paper-cut figure in a shallow high three-quarter, screen-right arena read; bold slightly imperfect #101014 contour; restrained 4-6-color matte palette; flat base plus one hard shadow and at most one hard highlight per material; grim occult-western wear; sparse detail that remains legible at 76 px; one bespoke opaque face-concealing head overlapping a closed shoulder roof; no visible biological face, neck, props, VFX, gradients, or soft, photoreal, anime, pixel-art, or 3D rendering.",
+  "characters": [
+    {
+      "id": "drifter",
+      "name": "The Drifter",
+      "role": "anchor-house-style-reference",
+      "identityRead": "shadow-faced occult-western road ghost",
+      "assets": {
+        "body": "packages/client/public/sprites/chars-v2/drifter/body.png",
+        "head": "packages/client/public/sprites/chars-v2/drifter/head.png"
+      },
+      "concealment": {
+        "mode": "eclipse-brim",
+        "positive": "A battered low diagonal slouch-hat brim covers a complete opaque matte-charcoal shadow wedge from brim to the head's closed lower edge.",
+        "opaqueBackstop": "#22252B solid painted head mass; there is no transparent void and no face underneath.",
+        "allowedAbstractLight": "none",
+        "forbidden": "No skin, eye, eye dot, glint, iris, pupil, eyelid, brow, nose, nostril, cheek, mouth, lips, teeth, jaw, beard, moustache, stubble, ear, expression, or readable profile."
+      },
+      "palette": {
+        "outline": "#101014",
+        "voidDeepShadow": "#22252B",
+        "weatheredDusterTan": "#C49A5A",
+        "boneDustHighlight": "#CFC6AE",
+        "fadedIndigoCloth": "#4E5C73",
+        "oxbloodLeather": "#A8482E"
+      },
+      "proportions": {
+        "bodyHeightUnitPx": 512,
+        "runtimeBodyHeightPx": 76,
+        "torsoWidthToHeightTarget": 0.95,
+        "torsoWidthToHeightBand": [0.9, 1.0],
+        "mountedHeadHeightB": 0.46,
+        "mountedHeadHeightBandB": [0.44, 0.48],
+        "mountedHeadWidthToShoulderTarget": 0.73,
+        "mountedHeadWidthToShoulderBand": [0.7, 0.77]
+      },
+      "bodyLayer": {
+        "assetSizePx": [576, 544],
+        "alphaBoundsPx": [24, 16, 552, 528],
+        "canonicalAssetOriginPx": [224, 315],
+        "canonicalAlphaBoundsPx": [248, 331, 776, 843],
+        "contains": ["torso", "arms", "hands", "legs", "feet"],
+        "excludes": ["head", "neck", "neck-stub", "connector"]
+      },
+      "headRig": {
+        "separateLayer": true,
+        "assetSizePx": [576, 320],
+        "alphaBoundsPx": [22, 25, 553, 301],
+        "sourceAlphaHeightPx": 276,
+        "sourceAlphaHeightB": 0.5390625,
+        "socketB": [0, -0.38],
+        "socketPxOnCanonicalCanvas": [512, 317.44],
+        "pivotUV": [0.5, 0.55],
+        "pivotPx": [288, 176],
+        "mountScale": 0.85,
+        "mountedAlphaHeightPx": 234.6,
+        "mountedAlphaHeightB": 0.458203125,
+        "restOverlapB": 0.18,
+        "restOverlapSourcePx": 92.16,
+        "restOverlapRuntimePx": 13.68,
+        "bobLimitRuntimePx": [4, 4],
+        "bobLimitSourcePx": [26.947368, 26.947368],
+        "worstCaseMinimumOverlapB": 0.1,
+        "noNeck": true
+      },
+      "sha256": {
+        "body": "ac1e9c9590669f42388b79f01e2c9f313220cd1d38fc6e8a092d15393b912551",
+        "head": "71a3df303b60676976f95f74de62a6549873ac06f77ff78d0663e9c53ad35057"
+      }
+    }
+  ]
+}
