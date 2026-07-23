@@ -205,17 +205,6 @@ export const WEAPON_EFFECT_RECIPES = Object.freeze({
     radialDistribution: "full-circle",
     additive: true,
   }),
-  "drowned-anchor-deluge": Object.freeze({
-    id: "drowned-anchor-deluge",
-    weaponId: "x-sword-anchor",
-    emitter: "blade",
-    classification: "weapon-motion",
-    swingPack: "water-splat",
-    swingCount: 150,
-    swingParticleDominance: 0.34,
-    radialDistribution: "full-circle",
-    additive: false,
-  }),
   "stormfist-blue-lunge": Object.freeze({
     id: "stormfist-blue-lunge",
     weaponId: "x2-thunderhead-stormfists",

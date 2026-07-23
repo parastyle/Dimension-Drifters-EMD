@@ -807,23 +807,6 @@ export const WEAPON_VFX: Record<string, WeaponVfx> = {
       ]
     }
   },
-  "tombstone-greatsword": {
-    "suite": {},
-    "rot": 0,
-    "paintedQuake": {
-      "textureKey": "b10:tombstone-stone-smoke",
-      "url": "vfx/weapons/v7/tombstone-stone-smoke.png",
-      "diameterMultiplier": 1,
-      "lifeMs": 840,
-      "subjects": [
-        "stone",
-        "smoke"
-      ],
-      "removedSubjects": [
-        "bone"
-      ]
-    }
-  },
   "x2-thunderhead-voulge": {
     "suite": {},
     "rot": 0,

@@ -260,7 +260,6 @@ export type WeaponEffectRecipeId =
   | "gravechain-dominant-spin"
   | "hollow-harvest-circle"
   | "abyssal-whirlwind-vortex"
-  | "drowned-anchor-deluge"
   | "void-caster-explosion"
   | "hexbloom-toxic-impact"
   | "cinderbrand-magma-impact"
@@ -1525,6 +1524,7 @@ const BASE_WEAPONS: Record<string, WeaponDef> = {
     displayLength: 76,
     swingArc: 2.6,
     gripFrac: 0.12,
+    suppressVfx: true,
     // Thrown: hurl a spinning cleaver at the cursor; 3 charges, then a short refill (§10).
     thrown: {
       speed: 660,
@@ -1561,21 +1561,11 @@ const BASE_WEAPONS: Record<string, WeaponDef> = {
     swingArc: 3.0,
     gripFrac: 0.1,
     twoHanded: true,
-    // Quake AoE (gameplay) + the Codex earthquake VFX authored in the Weaponsmith (candidate-8).
-    // §14 WYSIWYG "hits as big as it looks": the damage radius now matches the painted erupt's extent
-    // (grown 185→270), and `vfx.radius: 1.0` locks the visual to the hitbox (visual diameter = 2×radius),
-    // so the erupt you see IS the area that damages. (Was 1.46 → the visual overhung the hitbox.)
+    suppressVfx: true,
+    // The authoritative quake remains even though the owner removed its bespoke presentation.
     quake: {
       radius: 270,
       damage: 8,
-      vfx: {
-        image: "vfx-quake-tombstone",
-        radius: 1.0,
-        flash: 0.12,
-        dust: 1,
-        debris: 40,
-        shake: 0.13,
-      },
     },
     tags: {
       grip: "2H",
@@ -1721,9 +1711,6 @@ const BASE_WEAPONS: Record<string, WeaponDef> = {
     swingArc: 3.1,
     gripFrac: 0.1,
     twoHanded: true,
-    effectRecipe: "drowned-anchor-deluge",
-    effectEmitter: "blade",
-    effectTiming: "swing-midpoint",
     tags: {
       grip: "2H",
       size: "L",

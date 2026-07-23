@@ -4,8 +4,8 @@ import {
   bladeExtensionGeometryFor,
   meleeDamageEnvelopeFor,
   meleeReach,
-  weaponDamageEnvelopeFor,
   WEAPONS,
+  weaponDamageEnvelopeFor,
 } from "@dd/shared";
 import { describe, expect, it } from "vitest";
 import {
@@ -107,32 +107,21 @@ describe("B10 weapon VFX cleanup/reuse", () => {
       expect(coverage, `radial band ${index} must not become a dead annulus`).toBeGreaterThan(0.9);
   });
 
-  it("renders Tombstone quake with stones and smoke but no bone subject", () => {
+  it("records Tombstone's B10 stone-and-smoke treatment as superseded by B15", () => {
     const weapon = WEAPONS["tombstone-greatsword"];
     if (!weapon) throw new Error("Missing Tombstone Greatsword fixture");
     const treatment = weaponPaintedQuakeFor(weapon.id);
-    expect(treatment).toMatchObject({
-      textureKey: "b10:tombstone-stone-smoke",
-      url: "vfx/weapons/v7/tombstone-stone-smoke.png",
-      diameterMultiplier: 1,
-      subjects: ["stone", "smoke"],
-      removedSubjects: ["bone"],
+    expect(treatment).toBeUndefined();
+    expect(WEAPON_VFX[weapon.id]).toBeUndefined();
+    expect(weapon).toMatchObject({
+      suppressVfx: true,
+      quake: { radius: 270, damage: 8 },
     });
-    expect(treatment?.subjects).not.toContain("bone");
-    const quake = weaponDamageEnvelopeFor(weapon).quake;
-    expect(quake?.radius).toBe(270);
-    expect((quake?.radius ?? 0) * 2 * (treatment?.diameterMultiplier ?? 0)).toBe(540);
-    expect(rasterCensus(`packages/client/public/${treatment?.url}`).visibleFraction).toBeGreaterThan(
-      0.4,
-    );
-
-    const source = readFileSync("packages/client/src/scenes/arena/vfx.ts", "utf8");
-    const paintedBranch = source.indexOf("if (paintedQuake &&");
-    const paintedReturn = source.indexOf("return;", paintedBranch);
-    const graveFallback = source.indexOf('grave ? "grave-call"', paintedBranch);
-    expect(paintedBranch).toBeGreaterThan(-1);
-    expect(paintedReturn).toBeGreaterThan(paintedBranch);
-    expect(paintedReturn).toBeLessThan(graveFallback);
+    expect(weapon.quake?.vfx).toBeUndefined();
+    expect(weaponVfxSuiteFor(weapon.id, weapon.tags.element, "chop")).toMatchObject({
+      authored: true,
+      suite: {},
+    });
   });
 
   it("sizes the Voulge's reused blue electrical art to its complete damage reach", () => {
@@ -182,9 +171,9 @@ describe("B10 weapon VFX cleanup/reuse", () => {
     expect(resolveWeaponEffectRecipe(weapon)).toBeUndefined();
     expect(WEAPON_VFX[weapon.id]).toBeUndefined();
     expect(weaponSupportsBladeExtension(weapon.id)).toBe(false);
-    expect(
-      ALL_BLADE_EXTENSION_TEXTURES.some((treatment) => treatment.weaponId === weapon.id),
-    ).toBe(false);
+    expect(ALL_BLADE_EXTENSION_TEXTURES.some((treatment) => treatment.weaponId === weapon.id)).toBe(
+      false,
+    );
     expect(bladeExtensionGeometryFor(weapon)).toBeUndefined();
     const ordinaryReach = meleeReach(weapon);
     expect(meleeDamageEnvelopeFor(weapon)).toMatchObject({

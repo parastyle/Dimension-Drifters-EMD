@@ -171,17 +171,13 @@ describe("V6M melee owner orders", () => {
     expect(reaper.authoritativeCombo).toBe(true);
   });
 
-  it("gives Drowned Anchor thirtyfold-density painted water without an impact-anchor violation", () => {
+  it("records Drowned Anchor's thirtyfold water order as superseded by the remove-VFX note", () => {
     const drowned = weapon("x-sword-anchor");
     const recipe = resolveWeaponEffectRecipe(drowned);
-    expect(recipe).toMatchObject({
-      classification: "weapon-motion",
-      swingPack: "water-splat",
-      swingCount: 150,
-      radialDistribution: "full-circle",
-    });
-    expect(weaponSwingIdentitySizePx(recipe, drowned.displayLength)).toBe(84);
-    expect(recipe?.impactAnchor).toBeUndefined();
+    expect(drowned.effectRecipe).toBeUndefined();
+    expect(drowned.effectEmitter).toBeUndefined();
+    expect(drowned.effectTiming).toBeUndefined();
+    expect(recipe).toBeUndefined();
   });
 
   it("types Galvanic's direct poison separately from its electric chain", () => {

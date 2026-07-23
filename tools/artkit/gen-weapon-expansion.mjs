@@ -125,7 +125,7 @@ const EFFECT_RECIPES = new Set([
   "quarry-quad-spatter", "witherleaf-tip-spores", "snakeoil-tip-sparks",
   "gravechain-dominant-spin", "void-caster-explosion", "hexbloom-toxic-impact",
   "cinderbrand-magma-impact", "cinderchoke-fire-impact", "hollow-harvest-circle",
-  "abyssal-whirlwind-vortex", "drowned-anchor-deluge",
+  "abyssal-whirlwind-vortex",
 ]);
 const STANCES = new Set([
   "hasso-no-kamae", "tachi-no-tori", "blade-forward-high-hilt", "near-ear-blade-up",
