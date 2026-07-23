@@ -31,6 +31,7 @@ import {
   characterScale,
   clampQuakeEpicenter,
   DEBUG_SPAWN_MAX,
+  DEFAULT_CHARACTER,
   DEFAULT_DIMENSION,
   DEFAULT_PORT,
   DEFAULT_WEAPON,
@@ -62,6 +63,7 @@ import {
   isPetId,
   isPitAtPx,
   isThrownProjectileKind,
+  isWholeArtCharacter,
   LEVELUP_WINDOW_SECONDS,
   landingThumpTier,
   lootCooldownMult,
@@ -130,6 +132,7 @@ import {
   WEAPON_IDS,
   WEAPONS,
   type WeaponDef,
+  type WholeArtCharacter,
   weaponArtMuzzlePointsForShot,
   weaponDisplaySpriteId,
   weaponEffectCueSeconds,
@@ -195,10 +198,7 @@ import {
   weaponPoseFamilyFor,
 } from "../sprites/pose-language.js";
 import { tomeOpenArtFor } from "../sprites/tome-open-art.js";
-import {
-  ensureWholeArtCharacterTextures,
-  isWholeArtCharacterId,
-} from "../sprites/whole-art-character.js";
+import { ensureWholeArtCharacterTextures } from "../sprites/whole-art-character.js";
 import { backpackTileIntent } from "../ui/armory/backpack-actions.js";
 import {
   ARMORY_COLORS,
@@ -230,7 +230,6 @@ import {
   petEvolutionLabel,
   savePetMetaAccount,
 } from "../ui/pet-select.js";
-import { type RemoteGearLoadout, syncRemoteGearLoadouts } from "../ui/remote-gear.js";
 import {
   type SettlementPresentation,
   settlementPresentation,
@@ -381,8 +380,15 @@ import {
 const VASTAGHAR_ACTIONS: Readonly<Partial<Record<number, VastagharActionDef>>> =
   VASTAGHAR_ENCOUNTER.actions;
 
-/** Which sprite manifest the player renders as (§23: melee class, one character for M0). */
-const PLAYER_SPRITE = "drifter";
+/** Ordinary players default to the shared server-authoritative whole-art identity. */
+const PLAYER_SPRITE: WholeArtCharacter = DEFAULT_CHARACTER;
+/** Retained visible base used only after a qualified whole-art texture load fails terminally. */
+const DEGRADED_PLAYER_SPRITE = "drifter";
+
+/** Mixed-version render guard: legacy, absent, and unknown server state presents as the shared sheriff. */
+export function resolveOrdinaryPlayerCharacterId(characterId: unknown): WholeArtCharacter {
+  return isWholeArtCharacter(characterId) ? characterId : PLAYER_SPRITE;
+}
 
 // §6 horde-hit object budget: ordinary combat stays bit-for-bit on the full path; a single-frame AoE storm
 // gets ten authored contact stacks and at most 24 pooled labels, while every remaining target still flashes.
@@ -1200,6 +1206,7 @@ export class ArenaScene extends Phaser.Scene {
   private petManifest: PetPartsManifest | null | undefined;
   private petMetaAccount!: MetaAccountV4;
   private selectedPetId: MetaAccountV4["selectedPetId"] = "verdant-wing";
+  private selectedCharacterId?: WholeArtCharacter;
   private pendingCarry?: CarrySelectionV1;
   private readonly petPickupEligibility = new Set<string>();
   private petResultLine = "";
@@ -1209,8 +1216,6 @@ export class ArenaScene extends Phaser.Scene {
   private weaponManifestRunId = "";
   private settlementResult?: SettlementPresentation;
   private lastSettlementKey = "";
-  /** Wave 4 data-only seam. Wave 5 may consume this map from the rig attachment pass. */
-  private readonly syncedGearLoadouts = new Map<string, RemoteGearLoadout>();
   private readonly petAvoidanceScratch = { x: 0, y: 0, alpha: 1 };
   private readonly enemies = new Map<string, SpriteRig>();
   /** Serraketh is one owner, one batch timeline, and one pooled renderer—not twelve ordinary enemy rigs. */
@@ -1832,6 +1837,7 @@ export class ArenaScene extends Phaser.Scene {
     beltLevel?: string;
     dev?: string;
     selectedPetId?: MetaAccountV4["selectedPetId"];
+    selectedCharacterId?: WholeArtCharacter;
     carry?: CarrySelectionV1;
   }): void {
     // §4 Phaser reuses this Scene instance: launch options must be derived afresh, never inherited from the
@@ -1846,6 +1852,7 @@ export class ArenaScene extends Phaser.Scene {
       data?.beltLevel ?? (urlLevel && urlLevel !== "1" ? urlLevel : "sky-carrier");
     this.petMetaAccount = loadPetMetaAccount();
     this.selectedPetId = data?.selectedPetId ?? this.petMetaAccount.selectedPetId;
+    this.selectedCharacterId = data?.selectedCharacterId;
     this.pendingCarry = data?.carry;
     // §39 dev-portal deep-link (boss/weapon/char/gear/pet), applied once after the room connects.
     this.devLaunch = data?.dev ?? params.get("dev") ?? null;
@@ -2333,7 +2340,6 @@ export class ArenaScene extends Phaser.Scene {
     this.weaponManifestRunId = "";
     this.settlementResult = undefined;
     this.lastSettlementKey = "";
-    this.syncedGearLoadouts.clear();
     this.driveLocked = false;
     this.ultimateCastPendingUntil = -1e9;
     this.ultimateHudPulseUntil = -1e9;
@@ -4302,6 +4308,7 @@ export class ArenaScene extends Phaser.Scene {
         const joinOpts = {
           metaAccount: this.petMetaAccount,
           carry: this.pendingCarry,
+          selectedCharacterId: this.selectedCharacterId,
           selectedPetId: this.selectedPetId,
           dimensionId: this.selectedDimension,
           bossRush: this.bossRush, // §16 v0.116 the room creator's BOSS RUSH pick scopes the run's mode
@@ -4435,50 +4442,24 @@ export class ArenaScene extends Phaser.Scene {
 
   private addBlob(player: PlayerState, id: string): void {
     const isSelf = id === this.room?.sessionId;
-    const charId =
-      player.character && SPRITES[player.character as keyof typeof SPRITES]
-        ? player.character
-        : PLAYER_SPRITE;
-    const manifest = GEAR_PARTS_MANIFEST;
-    // REFLECTION LAW: the room joins without a root-schema constructor, so decoded rows carry ONLY
-    // wire fields — PlayerState's server-side compatibility getters (gearUpper/prestige/…) do not
-    // exist here. Client code must read the nested dualWield row (see loadout-entry-view's idiom);
-    // an unguarded `player.gearUpper.length` black-screened every e2e join.
-    const gearUpper = player.dualWield?.gearUpper ?? "";
-    const gearLower = player.dualWield?.gearLower ?? "";
-    const gearSynced = !!manifest && gearUpper.length > 0 && gearLower.length > 0;
-    // Whole-art characters (the new prototype/roster direction, e.g. proto-*) render their OWN complete
-    // sprite and IGNORE the wardrobe gear overlay — this is what finally lets `player.character` drive the
-    // VISUAL, not just stats. Legacy drifter-skeleton players still use the synced gear. (Wardrobe is being
-    // retired; when the whole cast is authored art, this collapses to "always render your character".)
-    const isWholeArtCharacter = isWholeArtCharacterId(charId);
-    // A whole-art rig is created only after all six loose cuts are in TextureManager. syncBlobs retries on
-    // the next render frame, giving the async loader a natural ready barrier with no boilerplate flash.
-    if (isWholeArtCharacter && ensureWholeArtCharacterTextures(this, charId) !== "ready") {
-      return;
-    }
-    const useGear = gearSynced && !isWholeArtCharacter;
-    const rigSpriteId = useGear ? PLAYER_SPRITE : charId;
-    const rig = new SpriteRig(
-      this,
-      player.x,
-      player.y,
-      isSelf,
-      id,
-      rigSpriteId,
-      useGear ? manifest : undefined,
-    );
-    if (useGear && manifest)
-      rig.equipSyncedGear(
-        gearUpper,
-        gearLower,
-        manifest,
-        isSelf ? this.petMetaAccount.prestige : (player.dualWield?.prestige ?? 0),
+    const charId = resolveOrdinaryPlayerCharacterId(player.character);
+    const textureState = ensureWholeArtCharacterTextures(this, charId);
+    // A pending load leaves no rig for this frame; syncBlobs retries naturally without flashing the dummy.
+    if (textureState === "pending") return;
+    let rigSpriteId: string = charId;
+    if (textureState === "missing") {
+      console.error(
+        `[client] whole-art character asset failure for "${charId}"; rendering retained "${DEGRADED_PLAYER_SPRITE}" base`,
       );
-    // Boilerplate and compatibility kits obey the identical per-character silhouette law.
-    rig.setRigScale(characterScale(charId));
+      rigSpriteId = DEGRADED_PLAYER_SPRITE;
+    }
+    // Ordinary players never construct or synchronize the archived wardrobe/gear pipeline.
+    // Archived reflection-law examples stay documentation-only: player.dualWield?.gearUpper ?? ""
+    // and player.dualWield?.gearLower ?? "" are intentionally absent from executable Arena code.
+    const rig = new SpriteRig(this, player.x, player.y, isSelf, id, rigSpriteId);
+    rig.setRigScale(characterScale(rigSpriteId));
     this.blobs.set(id, rig);
-    this.charOf.set(id, player.character);
+    this.charOf.set(id, charId);
     if (isSelf) this.centerCam(player.x, player.y);
   }
 
@@ -9078,34 +9059,11 @@ export class ArenaScene extends Phaser.Scene {
     players.forEach((player, id) => {
       if (!this.blobs.has(id)) this.addBlob(player, id);
       else {
-        const rig = this.blobs.get(id);
         const previousCharacter = this.charOf.get(id);
-        const isWholeArtCharacter = isWholeArtCharacterId(player.character);
-        const wasWholeArtCharacter = isWholeArtCharacterId(previousCharacter);
-        const characterChanged = previousCharacter !== player.character;
-        // Crossing either side of the whole-art boundary changes the retained skeleton's texture contract.
-        // Rebuild before any wardrobe call so a character-owned rig can never be retargeted to gear-bake.
-        if (characterChanged && (isWholeArtCharacter || wasWholeArtCharacter)) {
-          this.removeBlob(id);
-          this.addBlob(player, id);
-          return;
-        }
-        // Whole-art rigs never enter the boilerplate/gear-bake pipeline, including on later sync frames.
-        if (isWholeArtCharacter) return;
-        // Reflection law (see addBlob): only the nested dualWield row exists on decoded client rows.
-        const gearSynced =
-          !!rig &&
-          !!GEAR_PARTS_MANIFEST &&
-          rig.equipSyncedGear(
-            player.dualWield?.gearUpper ?? "",
-            player.dualWield?.gearLower ?? "",
-            GEAR_PARTS_MANIFEST,
-            id === this.room?.sessionId
-              ? this.petMetaAccount.prestige
-              : (player.dualWield?.prestige ?? 0),
-          );
-        // Compatibility rooms without the gear tail still render their selected legacy manifest.
-        if (!gearSynced && characterChanged) {
+        const character = resolveOrdinaryPlayerCharacterId(player.character);
+        // Every ordinary identity is resolved to whole art. Rebuild only when that authoritative render id
+        // changes; legacy gear tails remain inert and can never reopen wardrobe synchronization.
+        if (previousCharacter !== character) {
           this.removeBlob(id);
           this.addBlob(player, id);
         }
@@ -15411,20 +15369,6 @@ export class ArenaScene extends Phaser.Scene {
   private onPatch(state: ArenaState): void {
     const now = this.time.now;
     if (state.tick <= 0) return; // pre-sim state (menu/handshake)
-    const gearRows: Array<[string, { gearUpper: unknown; gearLower: unknown; prestige: unknown }]> =
-      [];
-    state.players.forEach((player, id) => {
-      gearRows.push([
-        id,
-        {
-          // Reflection law (see addBlob): only the nested dualWield row exists on decoded rows.
-          gearUpper: player.dualWield?.gearUpper ?? "",
-          gearLower: player.dualWield?.gearLower ?? "",
-          prestige: player.dualWield?.prestige ?? 0,
-        },
-      ]);
-    });
-    syncRemoteGearLoadouts(this.syncedGearLoadouts, gearRows);
     this.timeline.onPatch(state.tick, now);
     const t = state.tick * TICK_MS;
     const selfId = this.room?.sessionId;
