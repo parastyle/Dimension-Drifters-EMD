@@ -27,3 +27,17 @@ Binding decisions from the owner. Implementation Sols MUST honor these over any 
 8. **Kunai** — add as a thrown weapon (does not exist yet).
 9. **Plain .50-cal sniper** — add a normal, non-occult .50-cal bolt sniper ALONGSIDE the existing
    crusader-themed `x2-barrett-50-cal-sniper` (keep the Barrett).
+10. **Ricocheting chakrams** — build chakrams as a thrown weapon whose projectile RICOCHETS/bounces.
+    The ricochet mechanic already exists in the catalog (`ricochetHops`, `ricochetRange`, `bounces`;
+    see `x-gun-ricochet-pistol`, `x2-ricochet-roulette`), and thrown delivery exists — combine them.
+    Queued right behind the thrown+sniper Sol to avoid a weapon-catalog collision.
+
+## Note: the ".50cal bleed" question (2026-07-23)
+
+Investigated: there is **no `bleed` status or mechanic** on the Barrett, the Ironhide 50-cal, or ANY
+of the 327 weapons — `hitStatus`/`status` are both `undefined` on the Barrett, and zero weapon defs
+contain the string "bleed". The only "bleed" in the codebase is graphics jargon: "full-bleed" card
+art (a layout term) and a VFX alpha that "bleeds past the tear-off". So whatever the owner saw is
+VISUAL (red hit particles or blood in the generated Barrett art), not a gameplay bleed — consistent
+with the owner also flagging the Barrett's art as unwantedly "crusader"-themed. The new PLAIN sniper
+avoids that theming.
