@@ -1,3 +1,4 @@
+import { bladeExtensionGeometryFor, meleeDamageEnvelopeFor, WEAPONS } from "@dd/shared";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("phaser", () => ({
@@ -8,6 +9,7 @@ vi.mock("phaser", () => ({
 }));
 
 import { measureBladeWidthAtExtensionJoin } from "./SpriteRig.js";
+import { weaponSupportsBladeExtension } from "../vfx/blade-extension-treatments.js";
 
 function alphaBlade(width: number, height: number, bladeTop: number, bladeBottom: number) {
   return (x: number, y: number): number =>
@@ -33,5 +35,15 @@ describe("SpriteRig blade-extension attachment", () => {
     const broad = measureBladeWidthAtExtensionJoin(120, 48, 0.08, alphaBlade(120, 48, 8, 38));
     expect(narrow).toBe(9);
     expect(broad).toBe(31);
+  });
+
+  it("does not attach, measure, or extend Sanctified Headsman's ordinary blade", () => {
+    const headsman = WEAPONS["x2-sanctified-headsman"];
+    if (!headsman) throw new Error("Missing Sanctified Headsman fixture");
+    const envelope = meleeDamageEnvelopeFor(headsman);
+    expect(weaponSupportsBladeExtension(headsman.id)).toBe(false);
+    expect(bladeExtensionGeometryFor(headsman)).toBeUndefined();
+    expect(envelope.bladeExtension).toBeUndefined();
+    expect(envelope.maxReach).toBe(envelope.baseReach);
   });
 });

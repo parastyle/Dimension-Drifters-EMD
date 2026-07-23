@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 import {
   ACTIVE_WEAPON_CATALOG_IDS,
   ARCHIVED_WEAPON_IDS,
+  bladeExtensionGeometryFor,
   DROP_POOL,
   meleeComboSelectionFor,
   WEAPON_CATALOG_IDS,
@@ -18,7 +19,6 @@ import {
   brutalistGreatswordExtensionFor,
   weaponSupportsBladeExtension,
 } from "../packages/client/src/vfx/blade-extension-treatments.js";
-import { headsmanExtensionGeometry } from "../packages/client/src/vfx/headsman-prototypes.js";
 import { WEAPON_VFX } from "../packages/client/src/vfx/weapon-vfx.generated.js";
 
 const LINE = [
@@ -100,7 +100,9 @@ describe("V6.1 brutalist greatsword line", () => {
       expect(weaponSupportsBladeExtension(id), id).toBe(true);
       expect(existsSync(`packages/client/public/${treatment?.url}`), id).toBe(true);
 
-      const geometry = headsmanExtensionGeometry(weapon);
+      const geometry = bladeExtensionGeometryFor(weapon);
+      expect(geometry, `${id}/geometry`).toBeDefined();
+      if (!geometry) continue;
       expect(geometry.totalBladeLength / geometry.physicalBladeLength, id).toBeCloseTo(3, 8);
       expect(geometry.overlapLength / geometry.physicalBladeLength, id).toBeCloseTo(0.3, 8);
       expect(geometry.extensionLength, id).toBeGreaterThan(

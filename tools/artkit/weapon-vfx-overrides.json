@@ -33,5 +33,52 @@
         }
       }
     }
+  },
+  "x2-fulgurite-storm-sphere": {
+    "paintedAura": {
+      "textureKey": "b10:fulgurite-blue-fill",
+      "url": "vfx/weapons/v7/fulgurite-blue-fill.png",
+      "diameterMultiplier": 1,
+      "verticalScale": 0.56,
+      "layers": [
+        1,
+        0.62
+      ],
+      "alpha": 0.62,
+      "subjects": [
+        "blue-lightning",
+        "storm-plates",
+        "center-fill"
+      ]
+    }
+  },
+  "tombstone-greatsword": {
+    "paintedQuake": {
+      "textureKey": "b10:tombstone-stone-smoke",
+      "url": "vfx/weapons/v7/tombstone-stone-smoke.png",
+      "diameterMultiplier": 1,
+      "lifeMs": 840,
+      "subjects": [
+        "stone",
+        "smoke"
+      ],
+      "removedSubjects": [
+        "bone"
+      ]
+    }
+  },
+  "x2-thunderhead-voulge": {
+    "suppressFallback": true,
+    "paintedSwing": {
+      "textureKey": "b10:thunderhead-voulge-blue",
+      "url": "vfx/weapons/v7/thunderhead-voulge-blue-effect.png",
+      "extentMultiplier": 1,
+      "originX": 0.04,
+      "tint": 3401471,
+      "lifeMs": 840,
+      "subjects": [
+        "blue-electric-arc"
+      ]
+    }
   }
 }

@@ -1125,9 +1125,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "description": "A flawless white-gold execution cleaver chased with a vigil-cross, its mirror bit humming with a sanctified warmth that judges in one heavy stroke.",
-    "effectRecipe": "sanctified-holy-slash",
-    "effectEmitter": "blade",
-    "effectTiming": "swing-midpoint",
+    "suppressVfx": true,
     "requirements": {
       "str": 10
     },

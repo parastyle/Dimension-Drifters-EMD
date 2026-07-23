@@ -128,7 +128,7 @@ describe("GameRoom — V7-HIT blade-extension authority", () => {
     }
   });
 
-  it("deals unchanged edge damage at the visible 3x tip for Headsman and all six brutalist blades", () => {
+  it("deals unchanged edge damage at the visible 3x tip for all six brutalist blades", () => {
     for (const weaponId of BLADE_EXTENSION_WEAPON_IDS) {
       const { room, player, combat } = makeRoom(`v7-hit-${weaponId}`);
       const weapon = WEAPONS[weaponId];
@@ -162,5 +162,43 @@ describe("GameRoom — V7-HIT blade-extension authority", () => {
 
       expect(10_000 - enemy.hp, `${weaponId}/sameDamage`).toBeCloseTo(expectedDamage, 8);
     }
+  });
+
+  it("keeps Sanctified Headsman damage inside its ordinary blade envelope", () => {
+    const { room, player, combat } = makeRoom("b10-headsman-normal-envelope");
+    const weapon = WEAPONS["x2-sanctified-headsman"];
+    if (!weapon) throw new Error("Missing Sanctified Headsman fixture");
+    player.weapon = weapon.id;
+    combat.lastWeapon = weapon.id;
+    const envelope = meleeDamageEnvelopeFor(weapon);
+    expect(envelope.maxReach).toBe(envelope.baseReach);
+
+    const inside = new EnemyState();
+    inside.id = "b10-headsman-inside";
+    inside.kind = "dummy";
+    inside.x = player.x + envelope.maxReach - 2;
+    inside.y = player.y;
+    inside.hp = 10_000;
+    room.state.enemies.set(inside.id, inside);
+
+    const oldExtensionOnly = new EnemyState();
+    oldExtensionOnly.id = "b10-headsman-old-extension-only";
+    oldExtensionOnly.kind = "dummy";
+    oldExtensionOnly.x = player.x + envelope.maxReach * 2;
+    oldExtensionOnly.y = player.y;
+    oldExtensionOnly.hp = 10_000;
+    room.state.enemies.set(oldExtensionOnly.id, oldExtensionOnly);
+    room.rebuildEnemyGrid();
+
+    const swing = swingDescriptorFor(weapon, weapon.cooldown);
+    room.resolveSwing(player, combat, weapon, swing);
+    const active = room.meleeSwings.get(player.id);
+    expect(active?.range).toBe(envelope.baseReach);
+    if (!active) throw new Error("Missing active Headsman swing");
+    active.crit = 0;
+    room.stepMeleeSwings(swing.activeEndSeconds + 0.001);
+
+    expect(inside.hp).toBeLessThan(10_000);
+    expect(oldExtensionOnly.hp).toBe(10_000);
   });
 });

@@ -2,12 +2,6 @@ import {
   BRUTALIST_GREATSWORD_IDS as SHARED_BRUTALIST_GREATSWORD_IDS,
   type BrutalistGreatswordId as SharedBrutalistGreatswordId,
 } from "@dd/shared";
-import {
-  HEADSMAN_PROTOTYPES,
-  type HeadsmanPrototype,
-  headsmanPrototypeFromSearch,
-  SANCTIFIED_HEADSMAN_ID,
-} from "./headsman-prototypes.js";
 
 export const BRUTALIST_GREATSWORD_IDS = SHARED_BRUTALIST_GREATSWORD_IDS;
 
@@ -22,7 +16,7 @@ export interface BrutalistGreatswordExtensionTreatment {
   readonly url: string;
 }
 
-export type BladeExtensionTreatment = HeadsmanPrototype | BrutalistGreatswordExtensionTreatment;
+export type BladeExtensionTreatment = BrutalistGreatswordExtensionTreatment;
 
 export const BRUTALIST_GREATSWORD_EXTENSION_TREATMENTS = Object.freeze([
   Object.freeze({
@@ -74,7 +68,6 @@ const BRUTALIST_TREATMENT_BY_ID = new Map(
 );
 
 export const ALL_BLADE_EXTENSION_TEXTURES = Object.freeze([
-  ...HEADSMAN_PROTOTYPES,
   ...BRUTALIST_GREATSWORD_EXTENSION_TREATMENTS,
 ] as const);
 
@@ -85,18 +78,10 @@ export function brutalistGreatswordExtensionFor(
 }
 
 export function weaponSupportsBladeExtension(weaponId: string): boolean {
-  return (
-    weaponId === SANCTIFIED_HEADSMAN_ID ||
-    BRUTALIST_TREATMENT_BY_ID.has(weaponId as BrutalistGreatswordId)
-  );
+  return BRUTALIST_TREATMENT_BY_ID.has(weaponId as BrutalistGreatswordId);
 }
 
-/** One resolver feeds the Headsman and its elemental sibling family into the same geometry/clock seam. */
-export function bladeExtensionTreatmentFor(
-  weaponId: string,
-  search = "",
-  hash = "",
-): BladeExtensionTreatment | undefined {
-  if (weaponId === SANCTIFIED_HEADSMAN_ID) return headsmanPrototypeFromSearch(search, hash);
+/** One resolver feeds the retained brutalist family into the shared geometry/clock seam. */
+export function bladeExtensionTreatmentFor(weaponId: string): BladeExtensionTreatment | undefined {
   return brutalistGreatswordExtensionFor(weaponId);
 }

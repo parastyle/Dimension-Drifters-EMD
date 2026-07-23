@@ -1,6 +1,18 @@
-import { type SwingDescriptor, WEAPONS, type WeaponDef } from "@dd/shared";
+import {
+  meleeDamageEnvelopeFor,
+  type SwingDescriptor,
+  WEAPONS,
+  type WeaponDef,
+} from "@dd/shared";
 import "./vfx-layers.js";
-import { WEAPON_VFX, type WeaponVfx, type WeaponVfxLayer } from "./weapon-vfx.generated.js";
+import {
+  WEAPON_VFX,
+  type WeaponVfx,
+  type WeaponVfxLayer,
+  type WeaponVfxPaintedAura,
+  type WeaponVfxPaintedQuake,
+  type WeaponVfxPaintedSwing,
+} from "./weapon-vfx.generated.js";
 
 export type WeaponVfxSuite = WeaponVfx["suite"];
 export type WeaponVfxAnchor = "character" | "weapon" | "muzzle" | "flight" | "target";
@@ -137,9 +149,11 @@ export function weaponVfxSuiteFor(
   element: string,
   style: SwingDescriptor["style"],
 ): { readonly suite: WeaponVfxSuite; readonly authored: boolean; readonly vfx?: WeaponVfx } {
+  if (WEAPONS[weaponId]?.suppressVfx) return { suite: {}, authored: true };
   const vfx = WEAPON_VFX[weaponId];
   const authored = !!(vfx?.suite && Object.keys(vfx.suite).length > 0);
   if (authored) return { suite: replaceGenericImpactRings(vfx.suite, element), authored, vfx };
+  if (vfx?.suppressFallback) return { suite: {}, authored: true, vfx };
   const key = weaponId || `el:${element}:${style}`;
   let suite = FALLBACK_CACHE.get(key);
   if (!suite) {
@@ -155,6 +169,44 @@ export function weaponVfxSuiteFor(
     FALLBACK_CACHE.set(key, suite);
   }
   return { suite, authored, vfx };
+}
+
+export function weaponPaintedAuraFor(weaponId: string | undefined): WeaponVfxPaintedAura | undefined {
+  return weaponId ? WEAPON_VFX[weaponId]?.paintedAura : undefined;
+}
+
+export function weaponPaintedSwingFor(
+  weaponId: string | undefined,
+): WeaponVfxPaintedSwing | undefined {
+  return weaponId ? WEAPON_VFX[weaponId]?.paintedSwing : undefined;
+}
+
+export interface WeaponPaintedSwingGeometry {
+  readonly displayWidth: number;
+  readonly forwardExtent: number;
+  readonly backwardOverlap: number;
+}
+
+/** Size directional painted art so its farthest visible tip is the authoritative melee reach. */
+export function weaponPaintedSwingGeometryFor(
+  weapon: WeaponDef,
+  treatment = weaponPaintedSwingFor(weapon.id),
+): WeaponPaintedSwingGeometry | undefined {
+  if (!treatment) return undefined;
+  const originX = Math.max(0, Math.min(0.95, treatment.originX));
+  const forwardExtent = meleeDamageEnvelopeFor(weapon).maxReach * treatment.extentMultiplier;
+  const displayWidth = forwardExtent / (1 - originX);
+  return Object.freeze({
+    displayWidth,
+    forwardExtent,
+    backwardOverlap: displayWidth * originX,
+  });
+}
+
+export function weaponPaintedQuakeFor(
+  weaponId: string | undefined,
+): WeaponVfxPaintedQuake | undefined {
+  return weaponId ? WEAPON_VFX[weaponId]?.paintedQuake : undefined;
 }
 
 export function weaponVfxLayerAnchor(layerId: string): WeaponVfxAnchor {

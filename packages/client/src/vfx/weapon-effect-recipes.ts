@@ -35,6 +35,8 @@ export interface WeaponEffectRecipe {
   readonly radialDistribution?: "full-circle";
   /** Painted 96-pack display width as a fraction of the weapon's held display length. */
   readonly swingParticleDominance?: number;
+  /** Existing full-silhouette art from the generated weapon VFX catalog replaces particle packs. */
+  readonly paintedSwing?: true;
   readonly additive?: boolean;
   readonly chain?: "scattered-pages";
   readonly noGore?: boolean;
@@ -159,17 +161,6 @@ export const WEAPON_EFFECT_RECIPES = Object.freeze({
     swingCount: 8,
     additive: true,
   }),
-  "sanctified-holy-slash": Object.freeze({
-    id: "sanctified-holy-slash",
-    weaponId: "x2-sanctified-headsman",
-    emitter: "blade",
-    classification: "weapon-motion",
-    swingPack: "holy-bolt",
-    swingCount: 20,
-    swingScaleMode: "blade-length",
-    swingScaleMultiplier: 1.35,
-    additive: true,
-  }),
   "dustreaper-continuous-edge": Object.freeze({
     id: "dustreaper-continuous-edge",
     weaponId: "x2-dustreaper-zweihander",
@@ -239,8 +230,7 @@ export const WEAPON_EFFECT_RECIPES = Object.freeze({
     weaponId: "x2-thunderhead-voulge",
     emitter: "blade",
     classification: "weapon-motion",
-    swingPack: "shock-spark",
-    swingCount: 18,
+    paintedSwing: true,
     additive: true,
   }),
   "sermon-musical-notes": Object.freeze({

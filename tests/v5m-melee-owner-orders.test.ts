@@ -37,13 +37,14 @@ describe("V5M melee owner orders", () => {
     });
   });
 
-  it("makes Sanctified Headsman's holy slash both denser and blade-scale dominant", () => {
-    const recipe = resolveWeaponEffectRecipe(weapon("x2-sanctified-headsman"));
-    expect(recipe).toMatchObject({
-      swingPack: "holy-bolt",
-      swingCount: 20,
-      swingScaleMode: "blade-length",
-      swingScaleMultiplier: 1.35,
+  it("applies the later Headsman no-VFX order without changing nominal DPS", () => {
+    const headsman = weapon("x2-sanctified-headsman");
+    expect(resolveWeaponEffectRecipe(headsman)).toBeUndefined();
+    expect(headsman).toMatchObject({
+      damage: 13,
+      cooldown: 0.74,
+      range: 160,
+      suppressVfx: true,
     });
   });
 

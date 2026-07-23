@@ -155,15 +155,14 @@ describe("V3M exact combo and VFX orders", () => {
     });
   });
 
-  it("replaces Sermon's quake look with notes and gives Thunderhead dense Codex sparks", () => {
+  it("replaces Sermon's quake look with notes and promotes Thunderhead to its painted sweep", () => {
     expect(resolveWeaponEffectRecipe(weapon("x2-sermon-bell"))).toMatchObject({
       musicalNotes: true,
       suppressQuakeVfx: true,
     });
-    expect(resolveWeaponEffectRecipe(weapon("x2-thunderhead-voulge"))).toMatchObject({
-      swingPack: "shock-spark",
-      swingCount: 18,
-    });
+    const thunderhead = resolveWeaponEffectRecipe(weapon("x2-thunderhead-voulge"));
+    expect(thunderhead).toMatchObject({ paintedSwing: true });
+    expect(thunderhead?.swingPack).toBeUndefined();
   });
 
   it("applies the remaining exact size, carry, and VFX-suppression orders", () => {

@@ -57,7 +57,6 @@ declare module "./weapons.js" {
   }
 }
 
-export const SANCTIFIED_HEADSMAN_ID = "x2-sanctified-headsman" as const;
 export const BRUTALIST_GREATSWORD_IDS = Object.freeze([
   "x2-rimewrit-grave-slab",
   "x2-pyre-gallows-brand",
@@ -67,10 +66,7 @@ export const BRUTALIST_GREATSWORD_IDS = Object.freeze([
   "x2-cairnfall-monolith",
 ] as const);
 export type BrutalistGreatswordId = (typeof BRUTALIST_GREATSWORD_IDS)[number];
-export const BLADE_EXTENSION_WEAPON_IDS = Object.freeze([
-  SANCTIFIED_HEADSMAN_ID,
-  ...BRUTALIST_GREATSWORD_IDS,
-] as const);
+export const BLADE_EXTENSION_WEAPON_IDS = BRUTALIST_GREATSWORD_IDS;
 
 export const BLADE_EXTENSION_LENGTH_MULTIPLIER = 3;
 export const BLADE_EXTENSION_OVERLAP_FRACTION = 0.3;
@@ -90,12 +86,11 @@ function extensionAuthoring(): Readonly<WeaponHitEnvelopeAuthoring> {
   });
 }
 
-/** Migration overrides for the seven visual-only extensions named by the owner. New weapon definitions
+/** Migration overrides for the six visual-only extensions named by the owner. New weapon definitions
  * should author `hitEnvelope` beside their other shared weapon geometry. */
 export const LEGACY_WEAPON_HIT_ENVELOPE_OVERRIDES: Readonly<
   Partial<Record<string, Readonly<WeaponHitEnvelopeAuthoring>>>
 > = Object.freeze({
-  [SANCTIFIED_HEADSMAN_ID]: extensionAuthoring(),
   "x2-rimewrit-grave-slab": extensionAuthoring(),
   "x2-pyre-gallows-brand": extensionAuthoring(),
   "x2-stormrail-colossus": extensionAuthoring(),

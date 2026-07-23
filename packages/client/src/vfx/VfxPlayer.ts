@@ -421,6 +421,9 @@ export class VfxPlayer {
           frameHeight: vfx.scatter.frameHeight,
         });
       }
+      for (const painted of [vfx.paintedAura, vfx.paintedSwing, vfx.paintedQuake])
+        if (painted && !scene.textures.exists(painted.textureKey))
+          scene.load.image(painted.textureKey, painted.url);
     }
     for (const assignment of Object.values(KATANA_SLASH_ASSIGNMENTS)) {
       scene.load.spritesheet(assignment.key, assignment.url, {
@@ -597,13 +600,7 @@ export class VfxPlayer {
     const generation = surf.generation;
     const S = surf.S;
     const bladeExtensionTreatment =
-      partition.anchor === "source"
-        ? bladeExtensionTreatmentFor(
-            weaponId,
-            globalThis.location?.search ?? "",
-            globalThis.location?.hash ?? "",
-          )
-        : undefined;
+      partition.anchor === "source" ? bladeExtensionTreatmentFor(weaponId) : undefined;
     const bladeExtensionGeometry =
       bladeExtensionTreatment && weapon ? bladeExtensionGeometryFor(weapon) : undefined;
     if (bladeExtensionTreatment && bladeExtensionGeometry && sourceBladePose)
