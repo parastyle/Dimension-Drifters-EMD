@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "shelfUpgrades": 0,
+  "stash": [
+    {
+      "kind": "single",
+      "entryId": "wi_b6coffinnail0000000000",
+      "weapon": {
+        "instanceId": "wi_b6coffinnail0000000000",
+        "weaponId": "x2-coffin-nail-carbine",
+        "rarity": "rare",
+        "affix": "keen",
+        "provenance": "enemy-drop",
+        "sourceWorldTier": 3
+      }
+    },
+    {
+      "kind": "single",
+      "entryId": "wi_b6burninghalo000000000",
+      "weapon": {
+        "instanceId": "wi_b6burninghalo000000000",
+        "weaponId": "x2-psalter-of-the-burning-halo",
+        "rarity": "legendary",
+        "affix": "brutal",
+        "provenance": "boss-drop",
+        "sourceWorldTier": 6
+      }
+    }
+  ],
+  "intake": [],
+  "lastCarry": {
+    "placements": [],
+    "activeEntryId": ""
+  },
+  "expedition": null
+}

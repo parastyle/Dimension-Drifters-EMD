@@ -6039,6 +6039,7 @@
       "requirements": {
         "dex": 7
       },
+      "archived": true,
       "id": "x2-coffin-nail-carbine"
     },
     {
@@ -10688,6 +10689,7 @@
       "requirements": {
         "int": 13
       },
+      "archived": true,
       "id": "x2-psalter-of-the-burning-halo"
     },
     {

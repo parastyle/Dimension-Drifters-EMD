@@ -1,0 +1,85 @@
+{
+  "batch": "B6",
+  "durable": 343,
+  "active": 332,
+  "archived": 11,
+  "activeExpansion": 303,
+  "priorArchivedIds": [
+    "drift-wakizashi-hushglass",
+    "drift-wakizashi-kagewake",
+    "x2-dust-devil-flail",
+    "x2-ferrous-serpent",
+    "x2-locust-flail",
+    "x2-mistral-kusarigama",
+    "x2-nine-tail-razorlash",
+    "x2-quicksilver-chainblade",
+    "x2-snakebite-lash"
+  ],
+  "intendedStateChanges": [
+    "x2-coffin-nail-carbine",
+    "x2-psalter-of-the-burning-halo"
+  ],
+  "currentArchivedIds": [
+    "drift-wakizashi-hushglass",
+    "drift-wakizashi-kagewake",
+    "x2-coffin-nail-carbine",
+    "x2-dust-devil-flail",
+    "x2-ferrous-serpent",
+    "x2-locust-flail",
+    "x2-mistral-kusarigama",
+    "x2-nine-tail-razorlash",
+    "x2-psalter-of-the-burning-halo",
+    "x2-quicksilver-chainblade",
+    "x2-snakebite-lash"
+  ],
+  "targets": {
+    "x2-coffin-nail-carbine": {
+      "canonicalId": "x2-coffin-nail-carbine",
+      "name": "Coffin-Nail Carbine",
+      "archived": true,
+      "resourceResolved": true,
+      "absentFromActiveCatalog": true,
+      "absentFromActiveExpansion": true,
+      "absentFromSelection": true,
+      "absentFromDropPool": true,
+      "absentFromEnemyWields": true,
+      "acquisitionAllowed": {
+        "enemy-drop": false,
+        "boss-drop": false,
+        "tutorial-drop": false,
+        "migration-earned": false
+      }
+    },
+    "x2-psalter-of-the-burning-halo": {
+      "canonicalId": "x2-psalter-of-the-burning-halo",
+      "name": "Psalter of the Burning Halo",
+      "archived": true,
+      "resourceResolved": true,
+      "absentFromActiveCatalog": true,
+      "absentFromActiveExpansion": true,
+      "absentFromSelection": true,
+      "absentFromDropPool": true,
+      "absentFromEnemyWields": true,
+      "acquisitionAllowed": {
+        "enemy-drop": false,
+        "boss-drop": false,
+        "tutorial-drop": false,
+        "migration-earned": false
+      }
+    }
+  },
+  "saveSafety": {
+    "fixture": "tests/fixtures/b6-archived-weapon-bank-v1.json",
+    "sanitizeOk": true,
+    "loadedIds": [
+      "x2-coffin-nail-carbine",
+      "x2-psalter-of-the-burning-halo"
+    ],
+    "salvagedIds": [
+      "x2-coffin-nail-carbine",
+      "x2-psalter-of-the-burning-halo"
+    ],
+    "salvagedInstances": 2,
+    "remainingStash": 0
+  }
+}

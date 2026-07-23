@@ -5410,6 +5410,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "lever"
       ]
     },
+    "archived": true,
     "gripPoints": {
       "primary": {
         "x": 0.14,
@@ -10249,6 +10250,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "INT"
       ]
     },
+    "archived": true,
     "requirements": {
       "int": 13
     },
