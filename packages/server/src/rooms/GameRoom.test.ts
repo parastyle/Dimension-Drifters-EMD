@@ -2532,6 +2532,9 @@ describe("GameRoom — §50 spin re-hits per revolution", () => {
   it("ONE whirlwind press (4π sweep) dips a pinned enemy at least twice", () => {
     const h = makeRoom();
     h.join("p1");
+    // Determinism: clear POIs AND flatten the map to ground so a randomly-placed pit tile can't
+    // swallow the sweep in a full-suite RNG stream (matches the sibling parry test at ~L2570).
+    h.room.map.tiles.fill(TILE_GROUND);
     h.send("p1", "toggleTraining");
     h.tick(1);
     const p = h.state().players.get("p1");
