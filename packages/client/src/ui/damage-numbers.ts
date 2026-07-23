@@ -502,6 +502,7 @@ const ATLAS_STYLES: readonly AtlasStyle[] = [
 /** Runtime-atlas BitmapText adapter. No Text canvases or Phaser tweens are created after construction. */
 export class DamageNumberRenderer {
   readonly engine: DamageNumberEngine;
+  private readonly screenRoot: Phaser.GameObjects.Container;
   private readonly labels: Phaser.GameObjects.BitmapText[] = [];
   private readonly shownInteger: Int32Array;
   private readonly shownStyle: Int8Array;
@@ -522,19 +523,19 @@ export class DamageNumberRenderer {
     this.dpr = textRenderDpr(renderDpr);
     this.baseScale = 1 / this.dpr;
     this.ensureAtlas();
+    this.screenRoot = scene.add.container(0, 0).setScrollFactor(0).setDepth(DAMAGE_NUMBER_DEPTH);
     this.shownInteger = new Int32Array(this.engine.size);
     this.shownStyle = new Int8Array(this.engine.size);
     this.shownInteger.fill(-1);
     this.shownStyle.fill(-1);
     for (let slot = 0; slot < this.engine.size; slot++) {
-      this.labels.push(
-        scene.add
-          .bitmapText(0, 0, `${FONT_PREFIX}0`, "0", 14 * this.dpr)
-          .setOrigin(0.5)
-          .setDepth(DAMAGE_NUMBER_DEPTH)
-          .setScale(this.baseScale)
-          .setVisible(false),
-      );
+      const label = scene.add
+        .bitmapText(0, 0, `${FONT_PREFIX}0`, "0", 14 * this.dpr)
+        .setOrigin(0.5)
+        .setScale(this.baseScale)
+        .setVisible(false);
+      this.screenRoot.add(label);
+      this.labels.push(label);
     }
   }
 
@@ -588,6 +589,7 @@ export class DamageNumberRenderer {
     this.engine.clear();
     for (const label of this.labels) if (label.active) label.destroy();
     this.labels.length = 0;
+    if (this.screenRoot.active) this.screenRoot.destroy();
   }
 
   private renderSlot(
@@ -629,11 +631,18 @@ export class DamageNumberRenderer {
     const alpha = fade * (view.attribution === "teammate" ? 0.75 : 1);
     const rise = anchored ? 0 : (reducedMotion ? 12 : released ? 40 : 30) * clamp01(age / life);
     const drift = anchored || reducedMotion ? 0 : ((slot & 1) * 2 - 1) * 8 * clamp01(age / life);
+    const camera = this.scene.cameras.main;
+    // Phaser 4 exposes this accessor at runtime but omits it from BaseCamera's declaration.
+    const cameraRotation = (camera as Phaser.Cameras.Scene2D.Camera & { rotation: number })
+      .rotation;
     label
-      .setPosition(view.x + drift, view.y - rise)
-      // Damage glyphs live directly on the scene display list: owner facing never enters this matrix. Keep
-      // both axes explicit so a future pooling/display-layer refactor cannot silently reintroduce reflection.
-      .setScale(screenTrueScaleX(1, 1, scale), Math.abs(scale))
+      // The source stays in world coordinates, while the retained label lives in a scroll-free overlay.
+      // Subtracting the live camera scroll makes both routes land on the same screen point after Phaser
+      // applies its camera matrix. The label then counter-rotates the camera, so nested/reflected source
+      // containers can affect the hit position without ever turning the glyph baseline.
+      .setPosition(view.x + drift - camera.scrollX, view.y - rise - camera.scrollY)
+      .setRotation(-cameraRotation)
+      .setScale(screenTrueScaleX(camera.zoomX, camera.zoomY, scale), Math.abs(scale))
       .setAlpha(alpha)
       .setVisible(true);
   }

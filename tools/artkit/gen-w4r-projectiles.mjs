@@ -265,6 +265,33 @@ const supplementalAssets = [
   ["thunderhead-smoke-ring", "x2-thunderhead-repeater-cannon", "projectiles/v8/thunderhead-smoke-ring.png", { width: 112, height: 112 }],
 ].map(([id, weaponId, url, normalize]) => ({ id, weaponId, url, normalize }));
 
+/** Directional side-profile art with a meaningful authored top. These sprites face left by mirroring
+ * horizontally and retain at most a quarter-turn of flight tilt; they must never be spun through pi. */
+const mirrorUprightProjectileIds = new Set([
+  "barrett-50cal-round",
+  "brimstone-flaming-cross",
+  "brimstone-rocket-warhead",
+  "calamity-howitzer-battleship-shell",
+  "frostfang-pictured-harpoon",
+  "galvanic-coachgun-electric-slug",
+  "ghostbolt-crossbow-arrow",
+  "hand-mortar-shell",
+  "hexbore-voidmaw-rune",
+  "ironhide-anti-tank-shell",
+  "leviathan-harpoon-gun-harpoon",
+  "m50-50cal-round",
+  "mesa-hand-cannon-50cal",
+  "plaguespitter-green-shot",
+  "quill-storm-repeater-arrow",
+  "ricochet-icicle",
+  "saintskull-monstrance-holy-skull",
+  "tesla-drumbore-electric-particle",
+  "tesla-faradayer-hand-drawn-bolt",
+  "thunderhead-blue-helix",
+  "tidehook-bombarpoon-harpoon",
+  "widowmaker-arbalest-arrow",
+]);
+
 const options = { only: undefined, force: false, manifestOnly: false, maxAttempts: 3 };
 for (const arg of process.argv.slice(2)) {
   if (arg === "--force") options.force = true;
@@ -496,7 +523,16 @@ async function writeProjectileManifest() {
     if (!existsSync(path)) continue;
     const metadata = await sharp(path).metadata();
     if (!metadata.width || !metadata.height) continue;
-    entries.push({ id, source, url, width: metadata.width, height: metadata.height });
+    const asymmetric = mirrorUprightProjectileIds.has(id);
+    entries.push({
+      id,
+      source,
+      url,
+      width: metadata.width,
+      height: metadata.height,
+      asymmetric,
+      facing: asymmetric ? "mirror-upright" : "rotate",
+    });
   }
   const body = entries
     .map(
@@ -506,6 +542,8 @@ async function writeProjectileManifest() {
         `    width: ${entry.width},\n` +
         `    height: ${entry.height},\n` +
         `    source: "${entry.source}",\n` +
+        `    asymmetric: ${entry.asymmetric},\n` +
+        `    facing: "${entry.facing}",\n` +
         `  },`,
     )
     .join("\n");
@@ -518,6 +556,8 @@ async function writeProjectileManifest() {
       `  readonly width: number;\n` +
       `  readonly height: number;\n` +
       `  readonly source: "generated" | "edited";\n` +
+      `  readonly asymmetric: boolean;\n` +
+      `  readonly facing: "rotate" | "mirror-upright";\n` +
       `}\n` +
       `export const PROJECTILE_SPRITES = {\n${body}\n` +
       `} as const satisfies Record<string, ProjectileSpriteManifestEntry>;\n\n` +

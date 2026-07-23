@@ -1,0 +1,73 @@
+{
+  "capturedAt": "2026-07-23T06:02:20.675Z",
+  "privateBaseURL": "http://127.0.0.1:51115",
+  "right": {
+    "id": "p0",
+    "vx": 560,
+    "vy": 0,
+    "speed": 560,
+    "artRotation": 0,
+    "artScaleX": 0.5925925925925926,
+    "artScaleY": 0.5925925925925926,
+    "projectileSprite": "saintskull-monstrance-holy-skull",
+    "textureKey": "gun-generated:x2-saintskull-monstrance",
+    "flightTravelPx": 46.666666666667425,
+    "forwardDotVelocity": 1,
+    "topScreen": {
+      "x": 0,
+      "y": -1
+    }
+  },
+  "left": {
+    "id": "p0",
+    "vx": -560,
+    "vy": 0,
+    "speed": 560,
+    "artRotation": 0,
+    "artScaleX": -0.5925925925925926,
+    "artScaleY": 0.5925925925925926,
+    "projectileSprite": "saintskull-monstrance-holy-skull",
+    "textureKey": "gun-generated:x2-saintskull-monstrance",
+    "flightTravelPx": 46.666666666667425,
+    "forwardDotVelocity": 1,
+    "topScreen": {
+      "x": 0,
+      "y": -1
+    }
+  },
+  "damage": {
+    "text": "42!",
+    "camera": {
+      "scrollX": 2103.162739936696,
+      "scrollY": 2252.5129841617177,
+      "zoomX": 1.35,
+      "zoomY": 1.35,
+      "rotation": 0.22
+    },
+    "sourceWorld": {
+      "x": 2546.41064453125,
+      "y": 2420.16845703125
+    },
+    "sourceWorldDeterminant": -0.9875096523975415,
+    "screenRoot": {
+      "parentIsNull": true,
+      "scrollFactorX": 0,
+      "scrollFactorY": 0
+    },
+    "baselineScreen": {
+      "x": 1,
+      "y": -9.29418300507449e-9,
+      "angle": -9.29418300507449e-9
+    },
+    "screenDeterminant": 0.45562501919351656,
+    "glyphScreen": {
+      "x": 534.2578286640928,
+      "y": 343.80378106902026
+    },
+    "sourceScreen": {
+      "x": 534.569064517229,
+      "y": 351.46489721552643
+    },
+    "presentationOffsetPx": 7.667435579549071
+  }
+}
