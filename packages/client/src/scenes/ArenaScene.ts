@@ -361,6 +361,10 @@ import {
   makeSpit,
   makeThrownWeapon,
 } from "./arena/projectile-factory.js";
+import {
+  stepAuthoritativeStraightFlight,
+  usesAuthoritativeStraightFlight,
+} from "./arena/projectile-trajectory.js";
 import { sampleProjectileWaveformFromAuthoritative } from "./arena/projectile-waveform.js";
 import {
   preloadImpactFlipbooks,
@@ -6814,6 +6818,10 @@ export class ArenaScene extends Phaser.Scene {
       const sourcePlayer = shooter ? room.state.players.get(shooter) : undefined;
       const sourceWeaponId = pr.sourceWeaponId || sourcePlayer?.weapon || "";
       const sourceWeapon = WEAPONS[sourceWeaponId];
+      const authoritativeStraightFlight = usesAuthoritativeStraightFlight(
+        sourceWeaponId,
+        sourceWeapon?.gun?.arcHeight,
+      );
       const weaponEffectRecipe = resolveWeaponEffectRecipe(sourceWeapon);
       const projectileKind = baseKind(pr.kind);
       const comet = projectileKind === "fireball";
@@ -6870,7 +6878,7 @@ export class ArenaScene extends Phaser.Scene {
               ? this.writeLiveThrownOrigin(sourceRig)
               : undefined
           : undefined;
-      if (spawnAnchor) {
+      if (spawnAnchor && !authoritativeStraightFlight) {
         // The wire row is already one or more 50 ms simulation steps downrange when it first renders.
         // Begin this presentation at the final live held muzzle or throw hand. Its opening flight owns a
         // short-lived presentation offset so generic authority attraction cannot pull it off the source.
@@ -7151,8 +7159,26 @@ export class ArenaScene extends Phaser.Scene {
       const weaponId = (c.getData("sourceWeapon") as string | undefined) ?? "";
       const weapon = WEAPONS[weaponId];
       const waveform = weapon?.cast?.projectileWaveform;
+      const authoritativeStraightFlight = usesAuthoritativeStraightFlight(
+        weaponId,
+        weapon?.gun?.arcHeight,
+      );
       const muzzleAnchoredFlight = c.getData("muzzleAnchoredFlight") === true;
-      if (muzzleAnchoredFlight) {
+      if (authoritativeStraightFlight) {
+        const worldY = this.belt ? ((c.getData("beltWorldY") as number | undefined) ?? c.y) : c.y;
+        const sample = stepAuthoritativeStraightFlight(
+          pr,
+          {
+            x: c.x,
+            y: worldY,
+            observedFlightAgeTicks: c.getData("authorityFlightAgeTicks") as number | undefined,
+          },
+          dtSec,
+        );
+        c.setData("authorityFlightAgeTicks", sample.observedFlightAgeTicks);
+        if (this.belt) c.setData("beltWorldY", sample.y);
+        c.setPosition(sample.x, sample.y);
+      } else if (muzzleAnchoredFlight) {
         if (c.getData("skipFirstMuzzleFlightStep") === true) {
           c.setData("skipFirstMuzzleFlightStep", false);
           if (this.belt) c.setData("beltWorldY", c.y);
