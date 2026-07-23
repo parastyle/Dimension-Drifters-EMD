@@ -1,7 +1,7 @@
 # Pet Art & Generation Pipeline
 
-**Panel role:** Sol `pet-4-art-pipeline`  
-**Status:** Investigation in progress; this report is being expanded as evidence is verified.
+**Panel role:** Sol `pet-4-art-pipeline`
+**Status:** Complete design direction; implementation and image generation are intentionally deferred.
 
 ## 1am summary
 
@@ -23,11 +23,12 @@ Assumptions to verify rather than interrupt the owner:
 ## Verified codebase facts (working record)
 
 - `docs/sol-reports/README.md` requires an initial report of record, incremental updates, and validation last. The task's stricter output path makes this design document the report of record for this Sol.
-- `packages/shared/src/pets.ts` is shipped truth: it contains exactly **8 pet IDs**, not 24. `PET_STAGE_DEFS` maps Hatchling to levels 1–3, Awakened to 4–7, and Ascendant to 8–10. Its stable account-facing replacement slots are exactly `core`, `primary`, and `secondary`; its comment explicitly reserves them for future fusion/evolution replacement without account migration.
+- `packages/shared/src/pets.ts` is shipped truth: it contains exactly **8 pet IDs**, not 24. `PET_STAGE_DEFS` maps Hatchling to levels 1–3, Awakened to 4–7, and Ascendant to 8–10. `PET_PART_SLOTS` is the stable account-facing replacement list—exactly `core`, `primary`, and `secondary`—and its comment explicitly reserves those slots for future fusion/evolution replacement without account migration.
 - The “24” found in current tests is **24 forms**, not 24 shipped pets: 8 identities × 3 stages. `packages/client/src/sprites/pet-parts.test.ts` says “all 24 forms,” then asserts the manifest has 8 pets.
 - `packages/client/public/sprites/pets/pet-parts-manifest.json` is a complete generated runtime manifest: schema 1, `PET_SOCKET_FRAME_V1`, 72 expected/installed PNGs, and zero missing, extra, or invalid files. Every installed texture stays on a 1024×1024 canvas. The fixed body root is `(512,510)` and the normalized body axis is 256 source pixels.
 - The manifest's art-mount vocabulary is deliberately more concrete than the three account-facing replacement slots. Root render sockets are `side.far`, `side.near`, `side.paired`, `rear`, `crown`, `shell`, `dorsal`, and `ventral`; `tailTip` is a child socket on a `rear` part. `body` is the root layer. These are **render sockets**, not additional persisted fusion slots.
 - The eight current kits prove the intended range: wing cards occupy `side.*`; newt/gecko tails and the firefly ribbon use `rear`; snail/tortoise caps use `shell`; crests/halos/rings use `crown`; plates/panniers/lenses use `dorsal` or `ventral`; and Gilded Gecko's balance pan proves a part can attach to another part through `tailTip`. Depth planes run from far-side `-20`, through rear `-10` and body `0`, to body-top accessories `10`, near-side/child `20`, and crown `30`.
+- Direct visual inspection of installed cutouts confirms the manifest is not theoretical: `verdant-wing/s3/near-wing.png` has a wide ordinary painted root collar; `gilded-gecko/s3/balance-pan.png` includes a compact opaque tail-tip mounting tab; `slate-tortoise/s3/shell-cap.png` is a complete independent shell mass; and `verdant-wing/s3/body.png` retains its own closed outlined body. The large transparent margins reflect full-canvas registration, not accidental waste.
 - `packages/client/src/sprites/pet-parts.ts` already performs the owner's required second normalization step. It assembles freely sized alpha bounds around the invariant root/pivots, then scales the largest assembled dimension to **30 px Hatchling, 37 px Awakened, or 44 px Ascendant**. It retains full untrimmed images so pivots remain exact, sorts layers by manifest plane, and resolves both raw body sockets and normalized child sockets. Bigness across stages is therefore already expressed by the band envelope; source-pixel size is not the runtime contract.
 - `tools/artkit/gen-pets.mjs` is the existing pet-specific canonical source → generation → validation path. Its source declares identity, exact palette roles, stage descriptions, part IDs, render sockets, parents, spring presets, and semantic bans. It generates stage-first, body-first; later bodies and recurring parts edit the prior-stage master; new parts reference the current body plus the stage-1 identity. Raw masters are resumable, installs remain untrimmed, and the generator emits the machine manifest. This report will extend that idiom rather than propose a parallel generator.
 - The wider `tools/artkit` confirms the house idiom. `README.md`, `orchestrate.mjs`, and `lib/prompts.mjs` separate canonical subject/style data from isolated candidate generation and human promotion; an accepted identity image becomes the later reference lock. `gen-vfx-subjects.mjs` derives short asset prompts from canonical weapon behavior and always attaches that weapon's accepted art. `gen-particle-packs.mjs` then shows the deterministic half: chroma key, connected-component dissection, fixed-cell normalization, packaging, and manifest emission. `lib/emit.mjs` and generators' `--check` modes detect drift without writing. Pet production should use the same sequence: **canonical pet-line record → isolated candidates/edits → explicit promotion → deterministic key/register/assemble → machine and human checks → generated manifest/install**.
@@ -75,7 +76,7 @@ An aura is always a separate root-centered far/near secondary layer or an establ
 
 ## Base jig and two-step scale normalization
 
-The binding reference is `PET_BASE_JIG_V1`, derived from—not replacing—`PET_SOCKET_FRAME_V1`. It is a 1024×1024 authoring guide with the existing body root `(512,510)`, +X/screen-right body axis `L=256`, all eight existing root sockets, the `tailTip` child socket, and a virtual foot/hover baseline at `rootY + 0.5L = 638`. Grounded feet or belly stock meet that baseline; a hover form records a deliberate clear gap above it while its virtual shadow still belongs there. The guide also identifies far/near depth and the non-printing safe region. It is attached as the first geometry reference to every new identity job; tooling strips/keys the output, and any copied guide mark is a rejection.
+The binding reference for new fleet work is `PET_BASE_JIG_V2`, the additive authoring guide for proposed `PET_SOCKET_FRAME_V2`. It inherits—without moving—the v1 body root `(512,510)`, +X/screen-right body axis `L=256`, all eight existing root sockets, and the `tailTip` child socket, then visibly documents pet-2's 13 proposed receivers. It also adds a virtual foot/hover baseline at `rootY + 0.5L = 638`. Grounded feet or belly stock meet that baseline; a hover form records a deliberate clear gap above it while its virtual shadow still belongs there. The guide identifies far/near depth and the non-printing safe region. It is attached as the first geometry reference to every new identity job; tooling strips/keys the output, and any copied guide mark is a rejection. Legacy v1 forms retain their original coordinates and can be lifted into v2 without changing pixels.
 
 **The jig does not dictate creature size or silhouette.** It defines the ruler, ground registration, facing, and sockets. A dumpling Hatchling, long eel, broad hulk, and cathedral-winged Ascendant may occupy radically different extents in `L` while their root, baseline, and attachment grammar stay identical. This is exactly why a base anchor and varied size are compatible.
 
@@ -93,6 +94,20 @@ The existing 30/37/44 px values remain exact defaults for shipped records. New f
 | Ascendant | 40–54 px | 44 px | elegant chibi elder through true mega-form |
 
 A line's targets must be monotonic and normally rise by at least 4 px then 5 px. Silhouette area is reviewed alongside maximum extent: a 54 px two-pixel-thin halo does not make a body feel huge, while a 44 px dense stone hulk can. **Bigness is authored expression; the anchor is invariant.** Same-band size variation survives because the per-form target is data, not a single global constant.
+
+### Calibration lines before fleet production
+
+The first approved batch must prove range and rig stress, not merely produce the easiest pets first:
+
+| Line | Named tree | Pipeline stress it proves |
+|---|---|---|
+| Verdant Wing | `Budwing → Fernkite ↗ Canopy Seraph / ↘ Bramble Atlas` | Same identity can become a tall airy six-wing primary or a low square shell/foot hulk; this is the branch silhouette gate. |
+| Biscuit Jackalope | `Biscuit Button → Springhare ↗ Prairie Cherub / ↘ Warren Regent` | Cute stays valid from tiny ear-crown pear to four ear-wings or six-footed guardian; oversized soft anatomy must still slice and fuse cleanly. |
+| Manymoon Oracle | `Hushbell → Moon Jelly → Sevenfold Orrery` | `withBody` eyelid mantle, multi-island moon cards, face/core overlays, and far/near aura/orbit planes remain companionable rather than hostile noise. |
+| Hearth Newt | `Coalplip → Kiln Salamander → Hearth Wyrm` | A legacy form becomes a 52 px cozy mega-form with a freely generated long body, three paired foot cards, tail, mane, crown, and core without moving its base registration. |
+| Rivet Mule | `Rivet Foal → Gantry Mule → Walking Workshop` | Hard-surface Mechamorph, six limbs, asymmetric tool silhouettes, a rear flywheel, and a tiny rider stay within the same matte cutout language. |
+
+Approve these five whole lines before bulk Wave A. Together they exercise organic, plush, eldritch, legacy-mega, and mechanical extremes plus every expensive receiver class. A failure here changes the canonical prompt/jig/check version before hundreds of downstream calls, not after.
 
 ## Production flow: canonical source → gen → check → promote
 
@@ -135,7 +150,7 @@ PALETTE
 CAMERA AND POSE
 - Slightly high three-quarter top-down arena view with about 0.62 visual depth compression, facing +X / screen-right. Show top and near/front planes. Not side profile, front view, or isometric.
 - Neutral follow/rest anatomy. No attack, lunge, run, snap, celebration, dramatic action pose, motion trail, or wind-blown cloth.
-- Match PET_BASE_JIG_V1 for direction, root/baseline, source ruler L, and registration only. Do not copy the jig's neutral silhouette or any guide marks. Apparent size comes from the named form and its later target-envelope normalization.
+- Match PET_BASE_JIG_V2 for direction, root/baseline, source ruler L, and registration only. Do not copy the jig's neutral silhouette or any guide marks. Apparent size comes from the named form and its later target-envelope normalization.
 
 MODULAR ART LAW
 - Render ONLY the one declared render part or declared slot-card component set. Do not include the assembled pet and do not paint anatomy owned by another render part.
@@ -155,7 +170,7 @@ OUTPUT
 # PET JOB — {petId} / stage {band} {stageName} / {partId}
 
 REFERENCE ORDER — BINDING
-- Image 1: PET_BASE_JIG_V1. Geometry/ruler only; never copy guide pixels.
+- Image 1: PET_BASE_JIG_V2. Geometry/ruler only; never copy guide pixels.
 - Image 2: PET_BESTIARY_STYLE_BOARD_V1. Rendering breadth only; never copy creature content.
 - Image 3: {promoted current-stage body or "none; this job establishes the Hatchling body"}.
 - Image 4: {approved earlier-stage version of this same part, if recurring}.
@@ -225,7 +240,7 @@ Each example below is the **literal job text appended directly to the literal ho
 # PET JOB — biscuit-jackalope / stage 1 Hatchling / ear-antler-crown
 
 REFERENCE ORDER — BINDING
-- Image 1: PET_BASE_JIG_V1. Geometry/ruler only; never copy guide pixels.
+- Image 1: PET_BASE_JIG_V2. Geometry/ruler only; never copy guide pixels.
 - Image 2: PET_BESTIARY_STYLE_BOARD_V1. Rendering breadth only; never copy creature content.
 - Image 3: the promoted Biscuit Button Hatchling body. It establishes this pet's pear proportions, face, materials, palette, and lighting direction. Do not render that body.
 - No earlier-stage version exists. No sibling part is needed.
@@ -272,7 +287,7 @@ Generate exactly one 1024x1024 PNG for ear-antler-crown. Preserve every identity
 # PET JOB — manymoon-oracle / stage 1 Hatchling / body
 
 REFERENCE ORDER — BINDING
-- Image 1: PET_BASE_JIG_V1. Geometry/ruler only; never copy guide pixels.
+- Image 1: PET_BASE_JIG_V2. Geometry/ruler only; never copy guide pixels.
 - Image 2: PET_BESTIARY_STYLE_BOARD_V1. Rendering breadth only; never copy creature content.
 - No creature identity reference exists. This body establishes the canonical Hushbell identity master.
 
@@ -318,7 +333,7 @@ Generate exactly one 1024x1024 PNG for body. Preserve every identity and geometr
 # PET JOB — hearth-newt / stage 3 Ascendant / body
 
 REFERENCE ORDER — BINDING
-- Image 1: PET_BASE_JIG_V1. Geometry/ruler only; never copy guide pixels.
+- Image 1: PET_BASE_JIG_V2. Geometry/ruler only; never copy guide pixels.
 - Image 2: PET_BESTIARY_STYLE_BOARD_V1. Rendering breadth only; never copy creature content.
 - Image 3: the promoted Awakened Kiln Salamander body. EDIT from it; preserve the exact broad charcoal smile-mask, furnace material language, root, baseline, socket registration, light direction, and outline character.
 - Image 4: the promoted Hatchling Coalplip body. It is the lineage identity check, not a size or silhouette limit.
@@ -421,25 +436,25 @@ A candidate is rejected at the first failed section; attractive rendering does n
 
 ## Cost and production volume
 
-Pet-2's recommended 2–3 / 4–5 / 6–8 cutout cadence means **12–16 installed PNGs per unbranched three-band line**; use 15 as the planning mean. Therefore:
+Pet-2's silhouette gate uses a typical 2–3 / 4–5 / 6–8 cadence, but its final production estimate correctly reserves 9 Ascendant placements on average and 11–12 for exceptional hero forms. Use its **16.5 placements per unbranched line** as the fleet budget rather than pretending every mega-form stays typical. Therefore:
 
 | Scope | Installed part estimate | Notes |
 |---|---:|---|
-| 16 pet-1 additions | 192–256; **240 planning** | Matches pet-1's representative 3/5/7 estimate. |
-| All 24 default lines at the new cadence | 288–384; **360 planning** | Includes dramatically refreshed shipped lines rather than assuming all 72 old files satisfy the new trees. Reuse is a review decision, not a quota. |
-| Each extra Ascendant branch | +6–8 | Pay only for pet-2's frozen branch endpoints; never multiply every line by default. |
+| 16 pet-1 additions | **~264 placements/files** | Fleet mean; simple oozes can sit below it while Choir/Orrery/mega forms sit above it. |
+| All 24 default lines at the new cadence | **~396 placements/files** | Pet-2's binding estimate, versus 216 at the old 2/3/4 cadence. Includes dramatically refreshed shipped lines; reuse is reviewed, not assumed. |
+| Four-pet Ascendant branch pilot | **+28–40 placements; ~20–30 genuinely new bitmaps** | One extra endpoint each for Verdant Wing, Copper Snail, Slate Tortoise, and Biscuit Jackalope. Do not branch all 24 by default. |
 | Fusion pairs | **0 new creature PNGs** | 24 identities create 276 unordered pairs; art cost remains registered donor groups plus a small neutral keepsake/aura set. |
 
-The current 72 installed PNGs total 9.81 MiB, averaging about 139.5 KiB each. At that observed compression, 240 expansion files are roughly **33 MiB** and a 360-file default fleet roughly **49 MiB**, before branches; multi-island cards may be larger. Runtime still loads only the selected form's loose textures, but 6–8 Ascendant layers versus today's maximum four doubles per-pet draw calls and must pass pet-5's four-player/LOD budget.
+The current 72 installed PNGs total 9.81 MiB, averaging about 139.5 KiB each. At that observed compression, 264 expansion files are roughly **36 MiB** and a 396-file default fleet roughly **54 MiB**, before the branch pilot; multi-island cards may be larger. Runtime still loads only the selected form's loose textures, but 9 average and 11–12 exceptional Ascendant layers versus today's maximum four can triple per-pet draw calls and must pass pet-5's four-player/LOD budget.
 
 Generation-call budget uses the existing one-image, isolated-job discipline:
 
 - Per line, body identity work is 3 Hatchling + 2 Awakened + 3 Ascendant candidates = 8 calls.
 - Non-body render parts start with one call apiece and are regenerated only from a specific failed gate.
-- For 16 additions at the 240-file planning count: 128 body calls + 192 non-body calls = **320 initial calls**. Reserve 25–40% for seam, silhouette, palette, and semantic failures: **400–448 calls**.
-- For all 24 lines at 360 planned files: 192 body calls + 288 non-body calls = **480 initial**, or roughly **600–672 with reserve**. Each branch adds about 8–10 more calls under the same policy.
+- For 16 additions at roughly 264 files: 128 body calls + 216 non-body calls = **344 initial calls**. Reserve 25–40% for seam, silhouette, palette, and semantic failures: **430–482 calls**.
+- For all 24 default lines at roughly 396 files: 192 body calls + 324 non-body calls = **516 initial**, or roughly **645–722 with reserve**. The four branch endpoints add three body candidates each plus their genuinely new appendages—roughly another 32–52 calls before rerender reserve.
 
-At the 2–6 machine minutes per isolated generation observed in adjacent artkit planning, Wave A/B production is about **13–45 serial machine-hours** for the additions before queue/rate-limit delays. Human review is the expensive portion: 48 new default forms × roughly 15–25 minutes for silhouette, assembly, gameplay, and sentinel decisions is **12–20 hours**, plus approximately 4–8 hours for style lock, palette assignment, branch/fusion boards, rejection feedback, and final wave regression—about **16–28 human production hours** for the 16 additions.
+At the 2–6 machine minutes per isolated generation observed in adjacent artkit planning, Wave A/B production is about **14–48 serial machine-hours** for the additions before queue/rate-limit delays. Human review is the expensive portion: 48 new default forms × roughly 15–25 minutes for silhouette, assembly, gameplay, and sentinel decisions is **12–20 hours**, plus approximately 4–8 hours for style lock, palette assignment, branch/fusion boards, rejection feedback, and final wave regression—about **16–28 human production hours** for the 16 additions.
 
 One-time pipeline engineering is approximately **5–8 engineering days**: strict canonical compiler and dependency graph; fixed jig/reference/provenance/promotion flow; `PET_FORM_SLOTS_V1` socket-frame/manifest extension; component/palette/baseline/extent/assembly/fusion checks; contact sheets; and pet integration into asset/check drift gates. Pet-5's account/protocol/UI/runtime migration is separate and not hidden inside this estimate.
 
@@ -448,11 +463,11 @@ One-time pipeline engineering is approximately **5–8 engineering days**: stric
 | Track | Binding input this pipeline needs | Cost if late or changed |
 |---|---|---|
 | **pet-1 roster** | Freeze all 24 IDs, wave order, base silhouette phrase, distinctive recognition feature, permanent forbidden read, material intent, and palette direction. The 16 names and two waves in its report are the current baseline. | An ID or primary hook change after Hatchling promotion strands all three stages and fusion provenance. Palette direction missing at compile time forces inconsistent ad-hoc swatches. |
-| **pet-2 evolution** | Freeze `PET_FORM_SLOTS_V1`, stable form keys, branch count, exact per-form recipe, two lineage anchors, transformation/hero mutation, `free|withBody` candidates, cutout budget, and size class/target envelope. | Socket/form-key drift invalidates prompts, manifests, saved fusion sources, and approved composites. Branches are a direct +6–8 PNG cost each. |
+| **pet-2 evolution** | Freeze `PET_FORM_SLOTS_V1`, `PET_SOCKET_FRAME_V2`'s 13 receiver additions, stable form keys, the four-pet branch pilot, exact per-form recipe, two lineage anchors, transformation/hero mutation, `free|withBody` candidates, cutout budget, and size class/target envelope. | Socket/form-key drift invalidates prompts, manifests, saved fusion sources, and approved composites. The pilot already adds 28–40 placements / about 20–30 new bitmaps. |
 | **pet-3 fusion** | Freeze atomic group/subtree rules, same-band donor policy, adversarial receiver set, palette/tint contract, `fusionPolicy`, neutral aura/orbit requirements, and launch keepsake list. | Over-broad “anything swaps individually” breaks pairs/dependencies; late palette policy forces rerendering collars/aura masks or multiplies QA. |
 | **pet-5 systems** | Versioned form/socket/manifest schema; donor-aware texture resolver; `(petId, band, formKey)` selection; per-form envelope/baseline consumption; new receiver and motion behavior; declared layer/performance limits; manifest-v1 fallback; catalog↔manifest and asset checks. | Art can be generated and reviewed out of runtime, but cannot be declared fusion-ready or installed safely without donor resolution, form keys, and performance/compatibility gates. |
 
-Owner involvement is concentrated into taste decisions, not mechanical triage: approve `PET_BASE_JIG_V1` plus the three-pet breadth board, approve each wave's black-silhouette/form board and new palettes, then select mechanically valid promoted assemblies in batches. The owner never needs to inspect invalid alpha, connector, or dependency attempts.
+Owner involvement is concentrated into taste decisions, not mechanical triage: approve `PET_BASE_JIG_V2` plus the three-pet breadth board, approve each wave's black-silhouette/form board and new palettes, then select mechanically valid promoted assemblies in batches. The owner never needs to inspect invalid alpha, connector, or dependency attempts.
 
 ## Assumptions; no blocking owner question
 
@@ -462,3 +477,12 @@ Owner involvement is concentrated into taste decisions, not mechanical triage: a
 - The example Biscuit/Manymoon palettes are production-direction proposals because pet-1 freezes identities, not exact swatches. They enter the canonical record only after the wave palette board is approved.
 - Static matte aura cards are part art; emitted glow/particles remain VFX. No visual slot carries stats.
 - No owner choice blocks the pipeline design. Ascendant branch count, final palette picks, and saved-fusion limits can be frozen at their respective roster/art/system gates without changing the architecture.
+
+## Validation
+
+- Re-read `docs/sol-reports/README.md` and maintained this user-specified report as the incremental report of record; validation is appended last.
+- Re-parsed shipped truth: `packages/shared/src/pets.ts` has 8 IDs and exact logical `PET_PART_SLOTS` `core|primary|secondary`; the installed manifest has 8 pets, 24 stage forms, 72 expected/72 installed parts, schema 1 / `PET_SOCKET_FRAME_V1`, and zero missing, extra, or invalid rows.
+- Re-read the generation/consumer evidence cited above: `tools/artkit/gen-pets.mjs`, artkit style/prompt/emit/check patterns, `packages/client/src/sprites/pet-parts.ts`, `pet-parts.test.ts`, `PetRig.ts`, and representative installed body/wing/tail-child/shell cutouts. No generator was executed because it can write manifests/locks and this task permits only the report write.
+- Consumed the final live handoffs from all four sibling reports: pet-1's 16 IDs/two waves; pet-2's 14 authored lines, four-pet branch pilot, `PET_FORM_SLOTS_V1`, 13 proposed v2 receivers, and 396-placement estimate; pet-3's donor-aware `free|withBody` fusion rules; and pet-5's manifest/runtime/performance/check touch-list.
+- Structural check reports balanced Markdown fences, exactly three filled literal example prompts, all required sections, and zero trailing-whitespace lines. `git diff --check -- docs/design/pet-4-art-pipeline.md` reports no content errors (only the checkout's normal LF→CRLF notice).
+- Scope check: this track changed only `docs/design/pet-4-art-pipeline.md`. It generated no images and changed no product code, asset, catalog, generated file, test, or sibling report; it did not inspect through or touch the running services on ports 5180/2567.
