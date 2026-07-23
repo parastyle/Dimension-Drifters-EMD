@@ -29,16 +29,8 @@ const MAX_VISUAL_ENVELOPE_SCALE = 0.95;
 const MIN_ART_DIRECTION_ENVELOPE_FRACTION = 0.95;
 const MAX_ART_DIRECTION_ENVELOPE_FRACTION = 1;
 
-/**
- * Broad authored head silhouettes read slightly larger than their rectangular full-part bounds. These
- * bounded fractions keep the initial geometry audit on its art-directed target while the scale itself
- * remains derived from current manifest geometry.
- */
-const WHOLE_ART_ENVELOPE_FRACTIONS: Readonly<Record<string, number>> = Object.freeze({
-  "proto-samurai": 0.98,
-  "proto-sheriff": 0.97,
-  "proto-witch": 0.958,
-});
+/** Optional art-direction fractions; the no-thumb roster uses geometry-derived scaling unchanged. */
+const WHOLE_ART_ENVELOPE_FRACTIONS: Readonly<Record<string, number>> = Object.freeze({});
 
 interface WholeArtTextureRegistry {
   readonly pending: Set<string>;

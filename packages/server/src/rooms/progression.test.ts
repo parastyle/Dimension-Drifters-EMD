@@ -435,23 +435,48 @@ describe("pet v1 account sanitization and deterministic progression", () => {
 });
 
 describe("gear G1/G2 shared catalog, account, and allocation laws", () => {
-  it("emits one typed whole-art selection contract while retaining the legacy roster", () => {
+  it("emits the exact 37-character no-thumb whole-art selection contract", () => {
     expect(petShared.WHOLE_ART_CHARACTERS).toEqual([
+      "proto-alien-void-scholar",
       "proto-armored-bean-heavy",
       "proto-blob-bruiser",
+      "proto-blue-spectral-demon-hunter",
+      "proto-bone-cleric",
       "proto-capsule-tactical-unit",
+      "proto-carnival-harlequin",
+      "proto-clockwork-butler",
+      "proto-cowboy",
+      "proto-cowboy-hidden-face",
+      "proto-cyberpunk-hacker",
+      "proto-desert-nomad",
+      "proto-frost-rune-guardian",
       "proto-geometric-robot-pod",
+      "proto-gothic-vampire-hunter",
       "proto-helmeted-enforcer",
       "proto-hooded-rogue",
+      "proto-junkyard-mechanic",
       "proto-masked-oval-fighter",
+      "proto-molten-forge-golem",
+      "proto-mushroom-alchemist",
       "proto-mutant-lump",
+      "proto-ninja-purple",
       "proto-paper-cutout-fighter",
+      "proto-pirate-captain",
+      "proto-plague-doctor",
+      "proto-punk-occult-summoner",
+      "proto-red-rebel-demon-hunter",
+      "proto-red-rebel-demon-hunter-v2",
+      "proto-royal-executioner",
       "proto-samurai",
-      "proto-sheriff",
       "proto-soft-mascot-fighter",
-      "proto-witch",
+      "proto-space-miner",
+      "proto-swamp-shaman",
+      "proto-templar-knight",
+      "proto-toxic-wasteland-scavenger",
+      "proto-wizard",
     ]);
-    expect(petShared.DEFAULT_CHARACTER).toBe("proto-sheriff");
+    expect(petShared.WHOLE_ART_CHARACTERS).toHaveLength(37);
+    expect(petShared.DEFAULT_CHARACTER).toBe("proto-cowboy-hidden-face");
     expect(petShared.PLAYABLE_CHARACTERS).toContain("drifter");
     expect(petShared.PLAYABLE_CHARACTERS).toContain("cc-asha-the-ash-walker");
     for (const id of petShared.WHOLE_ART_CHARACTERS) {
@@ -459,13 +484,13 @@ describe("gear G1/G2 shared catalog, account, and allocation laws", () => {
     }
     expect(petShared.isWholeArtCharacter("drifter")).toBe(false);
     expect(petShared.isWholeArtCharacter("cc-asha-the-ash-walker")).toBe(false);
-    expect(petShared.nextWholeArtCharacter("proto-samurai")).toBe("proto-sheriff");
-    expect(petShared.nextWholeArtCharacter("proto-sheriff")).toBe(
+    expect(petShared.isWholeArtCharacter("proto-sheriff")).toBe(false);
+    expect(petShared.isWholeArtCharacter("proto-witch")).toBe(false);
+    expect(petShared.nextWholeArtCharacter("proto-samurai")).toBe(
       "proto-soft-mascot-fighter",
     );
-    expect(petShared.nextWholeArtCharacter("proto-soft-mascot-fighter")).toBe("proto-witch");
-    expect(petShared.nextWholeArtCharacter("proto-witch")).toBe("proto-armored-bean-heavy");
-    expect(petShared.nextWholeArtCharacter("drifter")).toBe("proto-sheriff");
+    expect(petShared.nextWholeArtCharacter("proto-wizard")).toBe("proto-alien-void-scholar");
+    expect(petShared.nextWholeArtCharacter("drifter")).toBe("proto-cowboy-hidden-face");
   });
 
   it("ships the 96 authored launch rows with closed slots/codes and enforces every slot budget", () => {

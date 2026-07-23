@@ -3892,7 +3892,7 @@ describe("GameRoom — jump-feel J1 authoritative stance/physics", () => {
 });
 
 describe("GameRoom — whole-art join selection authority", () => {
-  it("defaults a missing selection to the sheriff", () => {
+  it("defaults a missing selection to the hidden-face cowboy", () => {
     const h = makeRoom();
     h.join("default-character");
     const player = h.state().players.get("default-character");
@@ -3901,7 +3901,7 @@ describe("GameRoom — whole-art join selection authority", () => {
       enemyComboShared.DEFAULT_CHARACTER,
       enemyComboShared.DEFAULT_CHARACTER,
     ]);
-    expect(enemyComboShared.DEFAULT_CHARACTER).toBe("proto-sheriff");
+    expect(enemyComboShared.DEFAULT_CHARACTER).toBe("proto-cowboy-hidden-face");
   });
 
   it.each(enemyComboShared.WHOLE_ART_CHARACTERS)(
@@ -3921,7 +3921,7 @@ describe("GameRoom — whole-art join selection authority", () => {
   );
 
   it.each(["drifter", "cc-asha-the-ash-walker", "unknown-character"])(
-    "falls back to the sheriff for legacy or unknown selection %s",
+    "falls back to the hidden-face cowboy for legacy or unknown selection %s",
     (selectedCharacterId) => {
       const h = makeRoom();
       const client = { sessionId: `invalid-${selectedCharacterId}` };
@@ -3930,13 +3930,13 @@ describe("GameRoom — whole-art join selection authority", () => {
       const player = h.state().players.get(client.sessionId);
 
       expect([player.character, player.runCharacter]).toEqual([
-        "proto-sheriff",
-        "proto-sheriff",
+        "proto-cowboy-hidden-face",
+        "proto-cowboy-hidden-face",
       ]);
     },
   );
 
-  it("cycles only within the whole-art subset and resets a legacy id to the sheriff", () => {
+  it("cycles only within the whole-art subset and resets a legacy id to the shared default", () => {
     const h = makeRoom();
     h.join("whole-art-cycle");
     const player = h.state().players.get("whole-art-cycle");
@@ -3985,26 +3985,26 @@ describe("GameRoom — classmerge 21a", () => {
     h.join("identity");
     const player = h.state().players.get("identity");
     const combat = h.room.combat.get("identity");
-    expect(player.runCharacter).toBe("proto-sheriff");
+    expect(player.runCharacter).toBe("proto-cowboy-hidden-face");
     expect([player.str, player.dex, player.int, player.con, player.luk]).toEqual([2, 2, 2, 2, 2]);
 
     h.send("identity", "cycleCharacter");
-    expect(player.character).toBe("proto-soft-mascot-fighter");
-    expect(player.runCharacter).toBe("proto-sheriff");
-    expect(combat.identityCharacter).toBe("proto-sheriff");
+    expect(player.character).toBe("proto-cyberpunk-hacker");
+    expect(player.runCharacter).toBe("proto-cowboy-hidden-face");
+    expect(combat.identityCharacter).toBe("proto-cowboy-hidden-face");
     expect([player.str, player.dex, player.int, player.con, player.luk]).toEqual([2, 2, 2, 2, 2]);
 
     h.room.restartRun();
-    expect(player.runCharacter).toBe("proto-soft-mascot-fighter");
+    expect(player.runCharacter).toBe("proto-cyberpunk-hacker");
     expect(combat.identityCharacter).toBe(player.runCharacter);
     expect([player.str, player.dex, player.int, player.con, player.luk]).toEqual([2, 2, 2, 2, 2]);
 
     player.str += 5; // earned allocation survives the next boundary's spread-delta rebase
     h.tick(1); // refill the action budget
     h.send("identity", "cycleCharacter");
-    expect(player.character).toBe("proto-witch");
+    expect(player.character).toBe("proto-desert-nomad");
     h.room.transitionDimension();
-    expect(player.runCharacter).toBe("proto-witch");
+    expect(player.runCharacter).toBe("proto-desert-nomad");
     expect([player.str, player.dex, player.int, player.con, player.luk]).toEqual([7, 2, 2, 2, 2]);
   });
 
@@ -4017,7 +4017,7 @@ describe("GameRoom — classmerge 21a", () => {
     const allocatedTotal = attrTotal(player) - 10;
     h.send("training-kit", "cycleCharacter");
 
-    expect(player.character).toBe("proto-soft-mascot-fighter");
+    expect(player.character).toBe("proto-cyberpunk-hacker");
     expect(player.runCharacter).toBe(player.character);
     expect([player.str, player.dex, player.int, player.con, player.luk]).toEqual([2, 6, 2, 2, 2]);
     expect(attrTotal(player) - 10).toBe(allocatedTotal);
@@ -4075,14 +4075,14 @@ describe("GameRoom — classmerge 21a", () => {
     expect(ally.hp - before).toBe(enemyComboShared.PARRY_CHAIN_HEAL);
   });
 
-  it("retains schema 21 while defaulting character identity to the shared sheriff", () => {
+  it("retains schema 21 while defaulting character identity to the shared default", () => {
     const player = new enemyComboShared.PlayerState();
     expect(enemyComboShared.SCHEMA_VERSION).toBe(33);
     expect([player.character, player.runCharacter]).toEqual([
       enemyComboShared.DEFAULT_CHARACTER,
       enemyComboShared.DEFAULT_CHARACTER,
     ]);
-    expect(enemyComboShared.DEFAULT_CHARACTER).toBe("proto-sheriff");
+    expect(enemyComboShared.DEFAULT_CHARACTER).toBe("proto-cowboy-hidden-face");
   });
 });
 
@@ -5847,7 +5847,7 @@ describe("gear G2 archived account compatibility and inert runtime", () => {
           ...enemyComboShared.sanitizeMetaAccountV4(account).equippedGear,
         };
       },
-      "proto-witch",
+      "proto-wizard",
     );
     if (!sanitizedEquipped) throw new Error("sanitized gear fixture was not captured");
     const archivedRuntime = enemyComboShared.resolveGearLoadout(sanitizedEquipped);
@@ -5866,11 +5866,11 @@ describe("gear G2 archived account compatibility and inert runtime", () => {
     expect(geared.player.gearMaxHpAdd).toBe(0);
     expect([geared.player.gearUpper, geared.player.gearLower]).toEqual(["", ""]);
     expect([geared.player.character, geared.player.runCharacter]).toEqual([
-      "proto-witch",
-      "proto-witch",
+      "proto-wizard",
+      "proto-wizard",
     ]);
     expect(enemyComboShared.ATTRS.map((attr) => geared.player[attr])).toEqual([2, 2, 2, 2, 2]);
-    expect(geared.combat.identityCharacter).toBe("proto-witch");
+    expect(geared.combat.identityCharacter).toBe("proto-wizard");
     expect(geared.combat.quirk.id).toBe("unwritten");
     expect(geared.combat.mods.drawLockMult).toBe(1);
     expect(enemyComboShared.ATTRS.map((attr) => geared.player.allocRun[attr])).toEqual([
@@ -5932,7 +5932,10 @@ describe("gear G2 archived account compatibility and inert runtime", () => {
     expect(account.ownedGear).toEqual(migrated.ownedGear);
     expect(account.equippedGear).toEqual(migrated.equippedGear);
     expect(h.room.gearRuns.has(client.sessionId)).toBe(false);
-    expect([player.character, player.runCharacter]).toEqual(["proto-sheriff", "proto-sheriff"]);
+    expect([player.character, player.runCharacter]).toEqual([
+      "proto-cowboy-hidden-face",
+      "proto-cowboy-hidden-face",
+    ]);
     expect([player.str, player.dex, player.int, player.con, player.luk]).toEqual([2, 2, 2, 2, 2]);
     expect(player.maxHp).toBe(PLAYER_MAX_HP);
     expect(player.hp).toBe(player.maxHp);

@@ -399,7 +399,7 @@ const PLAYER_SPRITE: WholeArtCharacter = DEFAULT_CHARACTER;
 /** Retained visible base used only after a qualified whole-art texture load fails terminally. */
 const DEGRADED_PLAYER_SPRITE = "drifter";
 
-/** Mixed-version render guard: legacy, absent, and unknown server state presents as the shared sheriff. */
+/** Mixed-version render guard: legacy, absent, and unknown server state presents as the shared default. */
 export function resolveOrdinaryPlayerCharacterId(characterId: unknown): WholeArtCharacter {
   return isWholeArtCharacter(characterId) ? characterId : PLAYER_SPRITE;
 }

@@ -1,4 +1,4 @@
-import { WEAPONS, type WeaponDef } from "@dd/shared";
+import { WEAPONS, type WeaponDef, WHOLE_ART_CHARACTERS } from "@dd/shared";
 import { describe, expect, it } from "vitest";
 import { SPRITES, type SpriteManifest } from "../sprites/manifest.js";
 import {
@@ -9,7 +9,7 @@ import {
 
 const TARGET_BODY_HEIGHT = 76;
 const FACING_SIDE_FLOOR = TARGET_BODY_HEIGHT * FACING_SIDE_FLOOR_BODY_FRAC;
-const WHOLE_ART_PROTOS = ["proto-samurai", "proto-sheriff", "proto-witch"] as const;
+const WHOLE_ART_PROTOS = WHOLE_ART_CHARACTERS;
 const ONE_HAND_REPROS = [
   "rattler-sabre",
   "x2-tumbleweed-flail",

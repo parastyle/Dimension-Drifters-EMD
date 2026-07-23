@@ -21,7 +21,7 @@ const ids = [...manifest.matchAll(/^\s{2}"?([a-z0-9][a-z0-9-]*)"?:\s*\{\s*$/gm)]
 const ccs = ids.filter((id) => id.startsWith("cc-")).sort();
 const prototypes = ids.filter((id) => id.startsWith("proto-")).sort();
 const roster = ["drifter", ...ccs, ...prototypes];
-const defaultCharacter = "proto-sheriff";
+const defaultCharacter = "proto-cowboy-hidden-face";
 if (!prototypes.includes(defaultCharacter)) {
   throw new Error(`Default whole-art character ${defaultCharacter} is not installed`);
 }
@@ -60,21 +60,14 @@ const pretty = {
   "cc-brother-cassian-the-ashen-crusader": "Brother Cassian",
   "cc-halcyon-7": "Halcyon-7",
   "cc-pyra-cinderhowl-the-flame-caster": "Pyra Cinderhowl",
-  "proto-armored-bean-heavy": "Prototype Armored Bean Heavy",
-  "proto-blob-bruiser": "Prototype Blob Bruiser",
-  "proto-capsule-tactical-unit": "Prototype Capsule Tactical Unit",
-  "proto-geometric-robot-pod": "Prototype Geometric Robot Pod",
-  "proto-helmeted-enforcer": "Prototype Helmeted Enforcer",
-  "proto-hooded-rogue": "Prototype Hooded Rogue",
-  "proto-masked-oval-fighter": "Prototype Masked Oval Fighter",
-  "proto-mutant-lump": "Prototype Mutant Lump",
-  "proto-paper-cutout-fighter": "Prototype Paper Cutout Fighter",
-  "proto-samurai": "Prototype Samurai",
-  "proto-sheriff": "Prototype Sheriff",
-  "proto-soft-mascot-fighter": "Prototype Soft Mascot Fighter",
-  "proto-witch": "Prototype Witch",
 };
-const nameOf = (id) => pretty[id] ?? names[id] ?? id;
+const titleCaseId = (id) =>
+  id
+    .replace(/^proto-/, "")
+    .replace(/-/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+const nameOf = (id) =>
+  pretty[id] ?? names[id] ?? (id.startsWith("proto-") ? `Prototype ${titleCaseId(id)}` : id);
 
 // Per-character render scale: the rig normalises every BODY to the same height, so characters drawn with
 // a small/thin silhouette read as "tiny" next to chunky ones. Measure each one's rendered footprint
@@ -111,8 +104,9 @@ const scaleOf = (id) => {
   return Math.min(1.25, Math.max(1, Math.sqrt(median / a))); // gentle, capped at +25%
 };
 // Â§classmerge identity data. This lived in the generated output during the metagame migration, but the
-// roster generator did not own it and erased it on `pnpm gen`. Keep the documented 40-kit migration table
-// here so characters.ts remains a pure generated file and full generation is safe.
+// roster generator did not own it and erased it on `pnpm gen`. Keep the documented legacy migration table
+// here and assign every visual-only owner prototype the same neutral kit, so characters.ts remains a pure
+// generated file and full generation is safe.
 const kits = {
   drifter: [[2, 2, 2, 2, 2], "unwritten"],
   "cc-asha-the-ash-walker": [[2, 2, 2, 3, 1], "mend-the-broken"],
@@ -154,19 +148,9 @@ const kits = {
   "cc-thornroot": [[2, 1, 2, 4, 1], "regrow"],
   "cc-tinker-magnus-brasswick": [[1, 2, 4, 2, 1], "pressurized"],
   "cc-yuki-the-hollow-smile": [[2, 4, 1, 1, 2], "fox-dance"],
-  "proto-armored-bean-heavy": [[2, 2, 2, 2, 2], "unwritten"],
-  "proto-blob-bruiser": [[2, 2, 2, 2, 2], "unwritten"],
-  "proto-capsule-tactical-unit": [[2, 2, 2, 2, 2], "unwritten"],
-  "proto-geometric-robot-pod": [[2, 2, 2, 2, 2], "unwritten"],
-  "proto-helmeted-enforcer": [[2, 2, 2, 2, 2], "unwritten"],
-  "proto-hooded-rogue": [[2, 2, 2, 2, 2], "unwritten"],
-  "proto-masked-oval-fighter": [[2, 2, 2, 2, 2], "unwritten"],
-  "proto-mutant-lump": [[2, 2, 2, 2, 2], "unwritten"],
-  "proto-paper-cutout-fighter": [[2, 2, 2, 2, 2], "unwritten"],
-  "proto-samurai": [[2, 2, 2, 2, 2], "unwritten"],
-  "proto-sheriff": [[2, 2, 2, 2, 2], "unwritten"],
-  "proto-soft-mascot-fighter": [[2, 2, 2, 2, 2], "unwritten"],
-  "proto-witch": [[2, 2, 2, 2, 2], "unwritten"],
+  ...Object.fromEntries(
+    prototypes.map((id) => [id, [[2, 2, 2, 2, 2], "unwritten"]]),
+  ),
 };
 for (const id of roster) {
   if (!kits[id]) throw new Error(`Missing character kit for ${id}`);
@@ -204,8 +188,8 @@ ${prototypes.map((id) => `  ${JSON.stringify(id)},`).join("\n")}
 
 export type WholeArtCharacter = (typeof WHOLE_ART_CHARACTERS)[number];
 
-/** Â§classmerge sum-10 starting identity and signature quirk; generated beside the roster so every
- * promoted playable must deliberately receive a kit before generation can succeed. */
+/** Â§classmerge sum-10 starting identity and signature quirk; legacy characters retain their authored
+ * kits while visual-only owner prototypes receive the neutral Unwritten kit. */
 export const CHARACTER_KITS = {
 ${kitRows.join("\n")}
 } as const satisfies Record<PlayableCharacter, {

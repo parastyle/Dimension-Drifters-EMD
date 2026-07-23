@@ -339,7 +339,7 @@ describe("ArenaScene whole-art ordinary player creation", () => {
     "drifter",
     "cc-asha-the-ash-walker",
     "unknown-character",
-  ])("renders legacy or missing character state %s as the shared sheriff fallback", (characterId) => {
+  ])("renders legacy or missing character state %s as the shared default fallback", (characterId) => {
     const { scene, rig, args } = createBlob(characterId);
 
     expect(args?.[5]).toBe(DEFAULT_CHARACTER);
@@ -362,7 +362,7 @@ describe("ArenaScene whole-art ordinary player creation", () => {
   it("does not flash the retained dummy while whole-art textures are pending", () => {
     blobRuntime.textureState = "pending";
 
-    const { scene, rig, args } = createBlob("proto-sheriff");
+    const { scene, rig, args } = createBlob(DEFAULT_CHARACTER);
 
     expect(args).toBeUndefined();
     expect(rig).toBeUndefined();
@@ -375,16 +375,16 @@ describe("ArenaScene whole-art ordinary player creation", () => {
     const error = vi.spyOn(console, "error").mockImplementation(() => {});
 
     try {
-      const { scene, rig, args } = createBlob("proto-witch");
+      const { scene, rig, args } = createBlob("proto-wizard");
 
       expect(args?.[5]).toBe("drifter");
       expect(args).toHaveLength(6);
       expect(rig?.equipSyncedGear).not.toHaveBeenCalled();
       expect(scene.blobs.has("remote-player")).toBe(true);
-      expect(scene.charOf.get("remote-player")).toBe("proto-witch");
+      expect(scene.charOf.get("remote-player")).toBe("proto-wizard");
       expect(error).toHaveBeenCalledWith(
         expect.stringContaining(
-          'whole-art character asset failure for "proto-witch"; rendering retained "drifter" base',
+          'whole-art character asset failure for "proto-wizard"; rendering retained "drifter" base',
         ),
       );
     } finally {
@@ -406,7 +406,7 @@ describe("ArenaScene whole-art render-mode synchronization", () => {
     expect(addBlob).not.toHaveBeenCalled();
   });
 
-  it("keeps legacy Drifter gear tails inert after they resolve visually to the sheriff", () => {
+  it("keeps legacy Drifter gear tails inert after they resolve visually to the shared default", () => {
     const { scene, rig, addBlob, removeBlob } = blobSyncScene("drifter", DEFAULT_CHARACTER);
 
     scene.syncBlobs();
@@ -417,7 +417,10 @@ describe("ArenaScene whole-art render-mode synchronization", () => {
   });
 
   it("rebuilds for an authoritative whole-art-to-whole-art character change", () => {
-    const { scene, rig, addBlob, removeBlob } = blobSyncScene("proto-samurai", "proto-sheriff");
+    const { scene, rig, addBlob, removeBlob } = blobSyncScene(
+      "proto-samurai",
+      DEFAULT_CHARACTER,
+    );
 
     scene.syncBlobs();
 

@@ -28,8 +28,8 @@ describe("character selection persistence", () => {
   it.each([
     undefined,
     null,
-    "proto-witch",
-    { version: 0, selectedCharacterId: "proto-witch" },
+    "proto-retired-character",
+    { version: 0, selectedCharacterId: "proto-retired-character" },
     { version: 1, selectedCharacterId: "drifter" },
     { version: 1, selectedCharacterId: 4 },
   ])("defaults a missing, corrupt, legacy, or non-whole-art value", (value) => {
@@ -51,23 +51,23 @@ describe("character selection persistence", () => {
       selectedCharacterId: DEFAULT_CHARACTER,
     });
     expect(
-      saveCharacterSelection("proto-witch", {
+      saveCharacterSelection("proto-wizard", {
         getItem: () => null,
         setItem: () => {
           throw new Error("blocked");
         },
       }),
-    ).toEqual({ version: 1, selectedCharacterId: "proto-witch" });
+    ).toEqual({ version: 1, selectedCharacterId: "proto-wizard" });
   });
 });
 
 describe("character selection behavior", () => {
   it("projects exactly the shared whole-art roster with one readable selected card", () => {
-    const options = characterSelectionOptions("proto-witch");
+    const options = characterSelectionOptions("proto-wizard");
     expect(options.map((option) => option.id)).toEqual([...WHOLE_ART_CHARACTERS]);
     expect(options.every((option) => option.name.length > 0)).toBe(true);
     expect(options.filter((option) => option.selected).map((option) => option.id)).toEqual([
-      "proto-witch",
+      "proto-wizard",
     ]);
   });
 

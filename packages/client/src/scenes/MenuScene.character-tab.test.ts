@@ -91,13 +91,13 @@ describe("MenuScene Characters tab contract", () => {
       id: (typeof WHOLE_ART_CHARACTERS)[number],
     ) => void;
 
-    selectCharacter.call(sceneState, "proto-witch");
+    selectCharacter.call(sceneState, "proto-wizard");
 
-    expect(sceneState.selectedCharacterId).toBe("proto-witch");
-    expect(sceneState.characterFocusIndex).toBe(WHOLE_ART_CHARACTERS.indexOf("proto-witch"));
+    expect(sceneState.selectedCharacterId).toBe("proto-wizard");
+    expect(sceneState.characterFocusIndex).toBe(WHOLE_ART_CHARACTERS.indexOf("proto-wizard"));
     expect(JSON.parse(values.get(CHARACTER_SELECTION_STORAGE_KEY) ?? "")).toEqual({
       version: 1,
-      selectedCharacterId: "proto-witch",
+      selectedCharacterId: "proto-wizard",
     });
     expect(refreshCharacterWorkspace).toHaveBeenCalledOnce();
     expect(play).toHaveBeenCalledWith("armory:stage");

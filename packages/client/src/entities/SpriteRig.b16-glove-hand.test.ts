@@ -1,4 +1,4 @@
-import { WEAPONS, type WeaponDef } from "@dd/shared";
+import { WEAPONS, type WeaponDef, WHOLE_ART_CHARACTERS } from "@dd/shared";
 import { describe, expect, it } from "vitest";
 import { SPRITES, type SpriteManifest } from "../sprites/manifest.js";
 import {
@@ -8,7 +8,7 @@ import {
 } from "../sprites/pose-language.js";
 
 const TARGET_BODY_HEIGHT = 76;
-const WHOLE_ART_PROTOS = ["proto-samurai", "proto-sheriff", "proto-witch"] as const;
+const WHOLE_ART_PROTOS = WHOLE_ART_CHARACTERS;
 const OWNER_NOTE_WEAPONS = [
   { id: "x2-ironbrand-heatfist", pose: "mirror-guard" },
   { id: "x2-hellmouth-palmcaster", pose: "casting-gesture" },

@@ -29,8 +29,13 @@ const arg = (k, d) => {
   return hit ? hit.slice(k.length + 3) : d;
 };
 const ids = (arg("ids", "") || "").split(",").map((s) => s.trim()).filter(Boolean);
+const retiredIds = (arg("retire-ids", "") || "").split(",").map((s) => s.trim()).filter(Boolean);
 const kind = arg("kind", "character");
 const POST_KEY = arg("post-key", "0") === "1";
+const conflictingIds = ids.filter((id) => retiredIds.includes(id));
+if (conflictingIds.length > 0) {
+  throw new Error(`Cannot install and retire the same id(s): ${conflictingIds.join(", ")}`);
+}
 
 // --- Pre-size to game-res (best practice) ---------------------------------
 // Codex masters are ~1000-1700px; the rig draws them at ~84px (character body) or
@@ -42,12 +47,6 @@ const POST_KEY = arg("post-key", "0") === "1";
 const PRESIZE = arg("presize", "1") !== "0";
 const CHAR_BODY_TARGET = Number(arg("char-target", "168")); // source body height after presize (≈2x the 84px draw)
 const WEAPON_LONG_TARGET = Number(arg("weapon-target", "256")); // source longest side floor (≈2x the ≤124px draw)
-// Owner-approved source-space head seating for the three authored prototype sheets.
-const PROTOTYPE_HEAD_OY = Object.freeze({
-  "proto-samurai": -331,
-  "proto-sheriff": -287,
-  "proto-witch": -313,
-});
 // Stable presentation-only image-facing datums. These preserve the exact installed bitmap while correcting
 // artwork whose painted handedness is opposite the rig hand. The rig composes this local X mirror with its
 // ordinary actor-facing root mirror; Y is deliberately untouched so the subject can never become upside down.
@@ -98,9 +97,6 @@ for (const id of ids) {
   const manifest = JSON.parse(readFileSync(partsJson, "utf8"));
   const imageFacing = SPRITE_IMAGE_FACING[id];
   if (imageFacing) manifest.imageFacing = imageFacing;
-  const prototypeHeadOy = PROTOTYPE_HEAD_OY[id];
-  const prototypeHead = manifest.parts.find((part) => part.role === "head");
-  if (prototypeHead && Number.isFinite(prototypeHeadOy)) prototypeHead.oy = prototypeHeadOy;
   const srcDir = join(ROOT, "out", id, "parts");
   const dstDir = join(CLIENT_PUBLIC, id);
   rmSync(dstDir, { recursive: true, force: true });
@@ -205,6 +201,11 @@ if (existsSync(manifestTs)) {
       existing = {};
     }
   }
+}
+for (const retiredId of retiredIds) {
+  delete existing[retiredId];
+  rmSync(join(CLIENT_PUBLIC, retiredId), { recursive: true, force: true });
+  log(`retired ${retiredId} from manifest and public/sprites`);
 }
 for (const e of entries) existing[e.id] = e;
 const sorted = Object.fromEntries(Object.keys(existing).sort().map((k) => [k, existing[k]]));

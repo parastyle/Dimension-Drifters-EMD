@@ -350,21 +350,21 @@ describe("SpriteRig character-owned floating head", () => {
     expect(authoredParts.every((part) => part.parentContainer === root)).toBe(true);
   });
 
-  it("composes sheriff envelope correction at the root while legacy rigs remain scale 1", () => {
+  it("composes the default whole-art envelope correction while legacy rigs remain scale 1", () => {
     const drifter = new SpriteRig(fakeScene(), 0, 0, false, "drifter-reference", "drifter");
     const drifterTruth = drifter as unknown as ManifestHeadRigTruth;
-    const sheriffKeys = WHOLE_ART_CHARACTER_PART_ROLES.map((role) =>
-      wholeArtCharacterTextureKey("proto-sheriff", role),
+    const cowboyKeys = WHOLE_ART_CHARACTER_PART_ROLES.map((role) =>
+      wholeArtCharacterTextureKey("proto-cowboy-hidden-face", role),
     );
-    const sheriff = new SpriteRig(
-      fakeScene(sheriffKeys),
+    const cowboy = new SpriteRig(
+      fakeScene(cowboyKeys),
       0,
       0,
       false,
-      "sheriff-envelope",
-      "proto-sheriff",
+      "cowboy-envelope",
+      "proto-cowboy-hidden-face",
     );
-    const sheriffTruth = sheriff as unknown as ManifestHeadRigTruth;
+    const cowboyTruth = cowboy as unknown as ManifestHeadRigTruth;
     const boilerplate = new SpriteRig(
       fakeScene(),
       0,
@@ -374,22 +374,22 @@ describe("SpriteRig character-owned floating head", () => {
       "drifter",
       compatibilityPairManifest(),
     );
-    const visualScale = wholeArtCharacterVisualScale("proto-sheriff");
+    const visualScale = wholeArtCharacterVisualScale("proto-cowboy-hidden-face");
     const drifterHeight = staticRigEnvelopeHeight(drifter, drifterTruth);
-    const sheriffHeight = staticRigEnvelopeHeight(sheriff, sheriffTruth);
+    const cowboyHeight = staticRigEnvelopeHeight(cowboy, cowboyTruth);
 
     expect(drifter.root.scaleX).toBe(1);
     expect(drifter.root.scaleY).toBe(1);
     expect(boilerplate.root.scaleX).toBe(1);
     expect(boilerplate.root.scaleY).toBe(1);
-    expect(sheriff.root.scaleX).toBeCloseTo(visualScale, 10);
-    expect(sheriff.root.scaleY).toBeCloseTo(visualScale, 10);
-    expect(sheriffHeight / drifterHeight).toBeCloseTo(0.97, 10);
-    expect(Math.abs(sheriffHeight - drifterHeight)).toBeLessThan(5);
+    expect(cowboy.root.scaleX).toBeCloseTo(visualScale, 10);
+    expect(cowboy.root.scaleY).toBeCloseTo(visualScale, 10);
+    expect(cowboyHeight / drifterHeight).toBeCloseTo(1, 10);
+    expect(Math.abs(cowboyHeight - drifterHeight)).toBeLessThan(5);
 
-    sheriff.setRigScale(1.25);
-    expect(sheriff.root.scaleX).toBeCloseTo(visualScale * 1.25, 10);
-    expect(sheriff.root.scaleY).toBeCloseTo(visualScale * 1.25, 10);
+    cowboy.setRigScale(1.25);
+    expect(cowboy.root.scaleX).toBeCloseTo(visualScale * 1.25, 10);
+    expect(cowboy.root.scaleY).toBeCloseTo(visualScale * 1.25, 10);
   });
 });
 
