@@ -1,5 +1,12 @@
-import { CombatDelivery, EnemyState, swingDescriptorFor, TILE_GROUND, WEAPONS } from "@dd/shared";
-import { describe, expect, it, vi } from "vitest";
+import {
+  CombatDelivery,
+  EnemyState,
+  makeRng,
+  swingDescriptorFor,
+  TILE_GROUND,
+  WEAPONS,
+} from "@dd/shared";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("colyseus", () => {
   class Room {
@@ -51,8 +58,14 @@ function equip(player: AnyRoom, combat: AnyRoom, id: string) {
 }
 
 describe("GameRoom — V6M melee authority", () => {
+  // Restore any per-test Math.random seed so it cannot leak into sibling tests.
+  afterEach(() => vi.restoreAllMocks());
   it("advances Cinderbrand's accepted held beat through server navigation at 72 px/s", () => {
     const { room, player, combat } = makeRoom("cinderbrand-drift");
+    // Seed Math.random: the lunge/nav accounting is otherwise sensitive to the global RNG stream
+    // position, which full-suite ordering shifts (a catalog change flipped this px-window assertion).
+    const rng = makeRng(0xc17de701);
+    vi.spyOn(Math, "random").mockImplementation(() => rng.next());
     const weapon = equip(player, combat, "x2-cinderbrand-cleaver");
     const swing = swingDescriptorFor(weapon, weapon.cooldown);
     const startX = player.x;

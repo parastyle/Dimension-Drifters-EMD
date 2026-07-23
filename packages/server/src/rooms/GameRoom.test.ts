@@ -74,6 +74,18 @@ const { GameRoom } = await import("./GameRoom.js");
 // biome-ignore lint/suspicious/noExplicitAny: the harness reaches private room internals (update/combat) on purpose.
 type AnyRoom = any;
 
+// Determinism (audit-qa RNG-parity): pin Math.random per test so cross-file suite ordering cannot shift
+// the global stream and flip position-sensitive spatial/combat assertions (this file's map-gen + spawn +
+// nav + spread all draw from Math.random). Tests needing a specific roll still override this with their
+// own vi.spyOn (installed later, so it wins); tolerant tests are unaffected. afterEach restores the spy.
+beforeEach(() => {
+  const detRng = makeRng(0x9e3779b9);
+  vi.spyOn(Math, "random").mockImplementation(() => detRng.next());
+});
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
 function makeRoom(options?: { dimensionId?: string; bossRush?: boolean; belt?: boolean }) {
   const room = new GameRoom() as AnyRoom;
   const handlers = new Map<string, (c: { sessionId: string }, m?: unknown) => void>();
