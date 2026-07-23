@@ -43,7 +43,7 @@ type Primitive =
   | "guard-pivot";
 
 const HEADLINES = [
-  { id: "x-sword-neon-katana", primitive: "side-cut", label: "side-slash" },
+  { id: "x-sword-neon-katana", primitive: "lunge", label: "voltedge-stab" },
   { id: "drift-katana-stormthread", primitive: "wave-cut", label: "wave-path" },
   { id: "drift-greatkatana-moonwake", primitive: "backflip", label: "backflip" },
   { id: "x2-hailwidow-katana", primitive: "knee-stab", label: "knees-bent-stab" },
@@ -874,11 +874,18 @@ test("all 14 active katanas have VFX-independent authoritative bespoke motion fi
       (capture) => JSON.stringify(capture.restBefore) === JSON.stringify(capture.restAfter),
     );
     const restMatchesBaseline = captures.every((capture) => {
+      if (capture.id === "x-sword-neon-katana")
+        return capture.restBefore.stance === "near-ear-blade-up";
       const before = baselineById.get(capture.id);
       return !!before && JSON.stringify(capture.restBefore) === JSON.stringify(before.restBefore);
     });
     const dpsMatchesBaseline = captures.every((capture) => {
       const before = baselineById.get(capture.id);
+      if (capture.id === "x-sword-neon-katana" && before) {
+        const { katanaHook: _afterHook, ...afterNominal } = capture.definition.dps;
+        const { katanaHook: _beforeHook, ...beforeNominal } = before.definition.dps;
+        return JSON.stringify(afterNominal) === JSON.stringify(beforeNominal);
+      }
       return (
         !!before && JSON.stringify(capture.definition.dps) === JSON.stringify(before.definition.dps)
       );
@@ -923,9 +930,9 @@ test("all 14 active katanas have VFX-independent authoritative bespoke motion fi
       pairwiseMotionDistance:
         pairDistances.length === 91 &&
         pairDistances.every((pair) => pair.distance >= MIN_PAIR_FINGERPRINT_DISTANCE),
-      headlineSideSlash:
+      headlineVoltedgeStab:
         EVIDENCE_PHASE === "before" ||
-        headlinePrimitives.get("x-sword-neon-katana")?.has("side-cut") === true,
+        headlinePrimitives.get("x-sword-neon-katana")?.has("lunge") === true,
       headlineWave:
         EVIDENCE_PHASE === "before" ||
         headlinePrimitives.get("drift-katana-stormthread")?.has("wave-cut") === true,

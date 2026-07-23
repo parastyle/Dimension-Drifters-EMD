@@ -21,7 +21,7 @@ const ACTIVE_KATANAS = [
 ] as const;
 
 const EXPECTED_BARS = {
-  "x-sword-neon-katana": ["side-cut", "wave-cut", "lunge"],
+  "x-sword-neon-katana": ["lunge", "knee-stab", "lunge"],
   "x2-hailwidow-katana": ["side-cut", "knee-stab", "rising-cut"],
   "x2-gravechill-nodachi": ["guard-pivot", "knee-stab", "side-cut"],
   "x2-voltfang-tachi": ["rising-cut", "wave-cut", "backflip"],
@@ -147,10 +147,14 @@ describe("V7 bespoke katana move catalog", () => {
     }
   });
 
-  it("keeps rest-source bytes unchanged, apart from Hailwidow's separately ordered blade size", () => {
+  it("keeps rest-source bytes unchanged apart from the explicit Hailwidow and Voltedge overrides", () => {
     for (const capture of baseline.captures) {
       const id = capture.id as (typeof ACTIVE_KATANAS)[number];
       const definition = weapon(id);
+      if (id === "x-sword-neon-katana") {
+        expect(definition.stance).toBe("near-ear-blade-up");
+        continue;
+      }
       expect(
         {
           stance: definition.stance ?? null,
@@ -191,9 +195,21 @@ describe("V7 bespoke katana move catalog", () => {
     expect(hailwidow.stance).toBe("tachi-no-tori");
   });
 
-  it("leaves Neon and Cinderfang on their prior routes and Cinderfang's arc mechanics", () => {
+  it("moves Voltedge to authoritative stab capsules while retaining Cinderfang's arc mechanics", () => {
     const arc = MELEE_COMBO_SEQUENCES.arc;
-    expect(meleeComboSelectionFor(weapon("x-sword-neon-katana"))?.variant).toBe("hero-spin");
+    const voltedge = weapon("x-sword-neon-katana");
+    const voltedgeSelection = meleeComboSelectionFor(voltedge);
+    expect(voltedge.authoritativeCombo).toBe(true);
+    expect(voltedgeSelection?.variant).toBe("voltedge-stab");
+    expect(voltedgeSelection?.sequence).toHaveLength(3);
+    expect(
+      voltedgeSelection?.sequence.every(
+        (step) =>
+          step.path.kind === "capsule" &&
+          step.path.arcMultiplier === 0 &&
+          step.path.damageMultiplier === 1,
+      ),
+    ).toBe(true);
     expect(meleeComboSelectionFor(weapon("x2-cinderfang-wakizashi-pair"))?.variant).toBe("default");
     const bar = sequence("x2-cinderfang-wakizashi-pair");
     for (let index = 0; index < arc.length; index++) {

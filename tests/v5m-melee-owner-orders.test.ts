@@ -8,6 +8,8 @@ import {
 import { describe, expect, it } from "vitest";
 import {
   comboPresentationStyleFor,
+  continuousWhirlAngle,
+  continuousWhirlPhase,
   createWeaponPerformanceInput,
   createWeaponPerformanceSample,
   edgeLeadScaleY,
@@ -198,7 +200,7 @@ describe("V5M melee owner orders", () => {
 
   it("places Nullspike's far hand on the painted purple handle", () => {
     expect(weapon("x2-nullspike-pike").gripPoints?.secondary).toEqual({
-      x: 0.45,
+      x: 0.34,
       y: 0.5,
       role: "shaft",
     });
@@ -226,7 +228,7 @@ describe("V5M melee owner orders", () => {
     expect(point).toMatchObject({ x: 80, y: 25 });
   });
 
-  it("performs a full Gravedigger frontflip without moving legacy active damage timing", () => {
+  it("performs a fixed-rate seamless Gravewarden whirl without moving legacy active damage timing", () => {
     const spade = weapon("gravediggers-spade");
     const descriptor = swingDescriptorFor(spade, spade.cooldown);
     const legacy = swingDescriptorFor(
@@ -236,14 +238,29 @@ describe("V5M melee owner orders", () => {
     expect(spade.swingArc).toBeCloseTo(Math.PI * 2, 10);
     expect(descriptor.activeStartSeconds).toBeCloseTo(legacy.activeStartSeconds, 10);
     expect(descriptor.activeEndSeconds).toBeCloseTo(legacy.activeEndSeconds, 10);
-
-    const input = createWeaponPerformanceInput();
-    input.spec = spade.performance!;
-    input.phase = "recovery";
-    input.phaseT = 1;
-    const sample = sampleWeaponPerformance(input, createWeaponPerformanceSample());
-    expect(sample.wholeBodyRotation).toBeCloseTo(-Math.PI * 2, 10);
-    expect(sample.wholeBodyLift).toBeCloseTo(0, 10);
+    expect(spade.performance).toMatchObject({
+      action: "spin",
+      continuous: true,
+      suppressSwing: true,
+      twirl: { plane: "ground-whirlwind", direction: "forward", visualRevolutions: 1 },
+      holdScaling: { cadence: "weapon-cooldown" },
+    });
+    expect(continuousWhirlPhase(spade.performance, true, false, 0, spade.cooldown)).toBe(0);
+    const origin = 0.37;
+    const start = continuousWhirlAngle(0, 1, 1, origin);
+    const end = continuousWhirlAngle(1, 1, 1, origin);
+    expect(Math.cos(end)).toBeCloseTo(Math.cos(start), 12);
+    expect(Math.sin(end)).toBeCloseTo(Math.sin(start), 12);
+    const epsilon = 1e-5;
+    const speedBefore =
+      (continuousWhirlAngle(1, 1, 1, origin) -
+        continuousWhirlAngle(1 - epsilon, 1, 1, origin)) /
+      epsilon;
+    const speedAfter =
+      (continuousWhirlAngle(epsilon, 1, 1, origin) -
+        continuousWhirlAngle(0, 1, 1, origin)) /
+      epsilon;
+    expect(speedBefore).toBeCloseTo(speedAfter, 8);
   });
 
   it("marks Anvil-Drop as smoke-only while retaining the budgeted hammer-slam shake", () => {

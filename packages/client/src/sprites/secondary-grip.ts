@@ -7,6 +7,7 @@ export function secondaryGripHandRendersAbove(role: WeaponSecondaryGripRole | un
     role === "pump" ||
     role === "lever" ||
     role === "crank" ||
+    role === "horizontal-foregrip" ||
     role === "vertical-foregrip" ||
     role === "handle"
   );

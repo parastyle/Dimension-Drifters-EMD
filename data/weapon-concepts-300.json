@@ -2470,8 +2470,70 @@
       "effectTiming": "impact",
       "gripPoints": {
         "primary": { "x": 0.08, "y": 0.5 },
-        "secondary": { "x": 0.45, "y": 0.5, "role": "shaft" }
+        "secondary": { "x": 0.34, "y": 0.5, "role": "shaft" }
       },
+      "comboFamily": "thrust",
+      "comboVariant": "nullspike-three-thrust",
+      "authoritativeCombo": true,
+      "comboBar": [
+        {
+          "name": "wrapped-line setup",
+          "motion": "jab",
+          "direction": 1,
+          "hand": "both",
+          "timing": {
+            "activeStart": 0.12,
+            "activeEnd": 0.34,
+            "impact": 0.31,
+            "followEnd": 0.46
+          },
+          "path": {
+            "kind": "capsule",
+            "arcMultiplier": 0,
+            "rangeMultiplier": 0.86,
+            "damageMultiplier": 1,
+            "knockback": 0
+          }
+        },
+        {
+          "name": "driving second thrust",
+          "motion": "lunge",
+          "direction": -1,
+          "hand": "both",
+          "timing": {
+            "activeStart": 0.14,
+            "activeEnd": 0.48,
+            "impact": 0.44,
+            "followEnd": 0.58
+          },
+          "path": {
+            "kind": "capsule",
+            "arcMultiplier": 0,
+            "rangeMultiplier": 1,
+            "damageMultiplier": 1,
+            "knockback": 0
+          }
+        },
+        {
+          "name": "voidspike finisher",
+          "motion": "impale",
+          "direction": 1,
+          "hand": "both",
+          "timing": {
+            "activeStart": 0.2,
+            "activeEnd": 0.58,
+            "impact": 0.54,
+            "followEnd": 0.72
+          },
+          "path": {
+            "kind": "capsule",
+            "arcMultiplier": 0,
+            "rangeMultiplier": 1.12,
+            "damageMultiplier": 1,
+            "knockback": 88
+          }
+        }
+      ],
       "id": "x2-nullspike-pike"
     },
     {
@@ -5397,6 +5459,9 @@
         "swingArc": 1.1,
         "gripFrac": 0.16
       },
+      "gripPoints": {
+        "primary": { "x": 0.53, "y": 0.72 }
+      },
       "id": "x2-fool-s-gold-revolver"
     },
     {
@@ -6145,6 +6210,10 @@
       "requirements": {
         "dex": 11,
         "int": 5
+      },
+      "gripPoints": {
+        "primary": { "x": 0.43, "y": 0.67 },
+        "secondary": { "x": 0.55, "y": 0.64, "role": "horizontal-foregrip" }
       },
       "id": "x2-sunbreaker-railgun"
     },
@@ -11595,7 +11664,7 @@
         }
       },
       "performance": {
-        "hold": "aim-forward",
+        "hold": "horn-to-face",
         "action": "recoil",
         "suppressSwing": true,
         "emitter": "spout"
@@ -11614,8 +11683,8 @@
         "dex": "D"
       },
       "gripPoints": {
-        "primary": { "x": 0.1, "y": 0.5 },
-        "secondary": { "x": 0.42, "y": 0.5, "role": "shaft" }
+        "primary": { "x": 0.28, "y": 0.5 },
+        "secondary": { "x": 0.54, "y": 0.5, "role": "handle" }
       },
       "id": "x2-hollowbarrel-spell-scattergun-staff"
     },
@@ -11802,7 +11871,7 @@
       "theme": "holy frozen-shepherd crook quake staff",
       "finish": "pristine",
       "description": "A tall ivory shepherd's crozier sheathed in everlasting frost, its curled crook planted to bloom a consecrated ring of killing ice across the ground.",
-      "grip": "2H",
+      "grip": "1H",
       "size": "L",
       "rangeBand": "mid",
       "element": "frost",
@@ -11834,8 +11903,12 @@
         "int": "A"
       },
       "gripPoints": {
-        "primary": { "x": 0.1, "y": 0.5 },
-        "secondary": { "x": 0.4, "y": 0.5, "role": "shaft" }
+        "primary": { "x": 0.2, "y": 0.68 }
+      },
+      "performance": {
+        "hold": "one-hand-walking-staff",
+        "action": "default-swing",
+        "strideTap": { "amplitudePx": 10, "phaseOffset": 0.35 }
       },
       "id": "x2-saint-bough-frost-crozier"
     },

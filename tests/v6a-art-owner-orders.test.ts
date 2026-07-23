@@ -51,7 +51,7 @@ describe("V6A generated-art owner orders", () => {
     expect(playerSource).not.toContain("x2-sanctified-headsman");
   });
 
-  it("swaps the stable Spade id to the generated Gravewarden Buster and only widens its radius", () => {
+  it("keeps the stable Gravewarden art and combat contract with the superseding seamless whirl", () => {
     expect(WEAPONS["gravediggers-spade"]).toMatchObject({
       id: "gravediggers-spade",
       name: "Gravewarden Buster",
@@ -60,7 +60,13 @@ describe("V6A generated-art owner orders", () => {
       cooldown: 0.6,
       swingArc: Math.PI * 2,
       timingSwingArc: 2.7,
-      performance: { hold: "steady", action: "default-swing", frontflip: true },
+      performance: {
+        hold: "steady",
+        action: "spin",
+        continuous: true,
+        suppressSwing: true,
+        twirl: { plane: "ground-whirlwind", direction: "forward", visualRevolutions: 1 },
+      },
     });
   });
 

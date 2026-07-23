@@ -1348,6 +1348,22 @@ export const NAMED_WEAPON_STANCES: Readonly<Record<WeaponStanceId, NamedWeaponSt
       gripSpacing: 0.28,
       bodyTurn: 0.07,
     }),
+    "near-ear-blade-up": Object.freeze({
+      ...BLADE_SIZE_STANCES.standard,
+      id: "near-ear-blade-up",
+      angleReference: "screen",
+      handReference: "screen",
+      restAngleRad: -Math.PI / 2,
+      handForward: 0.08,
+      handLateral: -0.3,
+      gripSpacing: 0.2,
+      bodyForward: -0.015,
+      bodyTurn: 0.09,
+      frontFootForward: 0.11,
+      frontFootLateral: 0.08,
+      backFootForward: -0.14,
+      backFootLateral: -0.09,
+    }),
     "two-hands-on-hilt": Object.freeze({
       ...BLADE_SIZE_STANCES.standard,
       id: "two-hands-on-hilt",
@@ -1433,6 +1449,17 @@ export function continuousWhirlPhase(
     return -1;
   const cadence = Math.max(0.1, cadenceSeconds);
   return ((timeS / cadence) % 1 + 1) % 1;
+}
+
+/** Unwrapped fixed-rate whirl angle. Integer turns make phase 0/1 visually identical while preserving
+ * the same derivative on both sides of the modulo seam. */
+export function continuousWhirlAngle(
+  phase: number,
+  turns: number,
+  direction: -1 | 1,
+  originAngle: number,
+): number {
+  return originAngle + direction * Math.max(1, turns) * Math.PI * 2 * phase;
 }
 
 /** A reverse rising chop turns the painted axe head over before the upward return swipe. */
@@ -1895,6 +1922,26 @@ export function sampleWeaponPerformance(
       // Both hands actually close on the shaft: the lower grip follows the same planted staff line.
       out.backHandX = handX;
       out.backHandY = handY + 0.22;
+      out.backHandBlend = 1;
+      break;
+    }
+    case "one-hand-walking-staff": {
+      angle = -Math.PI / 2;
+      handX = 0.13;
+      const tap = Math.max(0, Math.cos(input.stridePhase + (spec.strideTap?.phaseOffset ?? 0)));
+      handY = -0.08 + (tap * (spec.strideTap?.amplitudePx ?? 8) * clamp01(input.gait)) / 76;
+      break;
+    }
+    case "horn-to-face": {
+      angle = input.aimLocal;
+      const cosine = Math.cos(input.aimLocal);
+      const sine = Math.sin(input.aimLocal);
+      const forward = 0.06;
+      const lateral = -0.25;
+      handX = cosine * forward - sine * lateral;
+      handY = sine * forward + cosine * lateral;
+      out.backHandX = cosine * -0.12 + sine * -0.13;
+      out.backHandY = sine * -0.12 - cosine * -0.13;
       out.backHandBlend = 1;
       break;
     }

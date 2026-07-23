@@ -34,7 +34,7 @@ const TYPES = new Set(["melee", "ranged", "caster"]);
 const GRIPS = new Set(["1H", "2H", "dual", "mounted"]);
 const HANDLING_TAGS = new Set(["bolt", "lever", "pump", "pistol"]);
 const SECONDARY_GRIP_ROLES = new Set([
-  "under-barrel", "bolt", "lever", "crank", "pump", "vertical-foregrip", "shoulder-RPG",
+  "under-barrel", "bolt", "lever", "crank", "pump", "horizontal-foregrip", "vertical-foregrip", "shoulder-RPG",
   "two-hand-rifle", "shaft", "handle",
 ]);
 const SIZES = new Set(["S", "M", "L", "XL"]);
@@ -128,8 +128,8 @@ const EFFECT_RECIPES = new Set([
   "abyssal-whirlwind-vortex", "drowned-anchor-deluge",
 ]);
 const STANCES = new Set([
-  "hasso-no-kamae", "tachi-no-tori", "blade-forward-high-hilt", "two-hands-on-hilt",
-  "low-close-hilt",
+  "hasso-no-kamae", "tachi-no-tori", "blade-forward-high-hilt", "near-ear-blade-up",
+  "two-hands-on-hilt", "low-close-hilt",
 ]);
 const RANDOM_RAY_KEYS = new Set(["count", "spread"]);
 const RANDOM_PELLET_KEYS = new Set(["min", "max", "directions", "halfAngle"]);
@@ -184,7 +184,7 @@ const PERFORMANCE_KEYS = new Set([
 ]);
 const PERFORMANCE_HOLDS = new Set([
   "upright", "hanging-chain", "drag-at-feet", "steady", "aim-forward", "overhead", "shoulder-launcher",
-  "walking-staff",
+  "walking-staff", "one-hand-walking-staff", "horn-to-face",
 ]);
 const PERFORMANCE_ACTIONS = new Set([
   "default-swing", "hold", "page-flip", "shake", "spin", "recoil", "lunge-punch", "jab",

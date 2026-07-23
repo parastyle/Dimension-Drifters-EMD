@@ -58,6 +58,7 @@ export type MeleeComboVariant =
   | "nodachi-petalfall"
   | "katana-threehails"
   | "katana-thunderlag"
+  | "voltedge-stab"
   | GeneratedMeleeComboVariant;
 
 /** Weapon-authored combo seam. Optional fields let current data use shared shape defaults while future
@@ -1386,6 +1387,68 @@ export const COIL_DRAG_COMBO_STEP = Object.freeze({
   },
 } as const satisfies MeleeComboStep);
 
+/** Voltedge's superseding B8 language: every accepted beat is a point-forward stab capsule. Damage stays
+ * neutral across the three-beat sentence; the last beat reads as empowered through reach and knockback. */
+export const VOLTEDGE_STAB_COMBO_SEQUENCE = Object.freeze([
+  Object.freeze({
+    name: "ear-guard snap stab",
+    motion: "jab" as const,
+    direction: 1 as const,
+    hand: "lead" as const,
+    timing: {
+      activeStart: 0.12,
+      activeEnd: 0.38,
+      impact: 0.35,
+      followEnd: 0.48,
+    },
+    path: {
+      kind: "capsule" as const,
+      arcMultiplier: 0,
+      rangeMultiplier: 0.94,
+      damageMultiplier: 1,
+      knockback: 0,
+    },
+  }),
+  Object.freeze({
+    name: "driving center-line stab",
+    motion: "lunge" as const,
+    direction: -1 as const,
+    hand: "lead" as const,
+    timing: {
+      activeStart: 0.14,
+      activeEnd: 0.44,
+      impact: 0.41,
+      followEnd: 0.54,
+    },
+    path: {
+      kind: "capsule" as const,
+      arcMultiplier: 0,
+      rangeMultiplier: 1,
+      damageMultiplier: 1,
+      knockback: 0,
+    },
+  }),
+  Object.freeze({
+    name: "blade-up step-through impale",
+    motion: "impale" as const,
+    direction: 1 as const,
+    hand: "both" as const,
+    timing: {
+      activeStart: 0.2,
+      activeEnd: 0.56,
+      impact: 0.53,
+      followEnd: 0.68,
+    },
+    path: {
+      kind: "capsule" as const,
+      arcMultiplier: 0,
+      rangeMultiplier: 1.08,
+      damageMultiplier: 1,
+      knockback: 64,
+    },
+  }),
+] as const satisfies readonly Readonly<MeleeComboStep>[]);
+
 export const THUNDER_FALL_COMBO_STEP = Object.freeze({
   name: "thunder",
   motion: "thunder-fall" as const,
@@ -1497,6 +1560,7 @@ export const MELEE_COMBO_VARIANT_SEQUENCES: Readonly<
     COIL_DRAG_COMBO_STEP,
     THUNDER_FALL_COMBO_STEP,
   ]),
+  "voltedge-stab": VOLTEDGE_STAB_COMBO_SEQUENCE,
   ...GENERATED_VARIANT_SEQUENCES,
 });
 
@@ -1576,7 +1640,7 @@ export function meleeComboFamilyForStyle(
 }
 
 function familyForSignatureVariant(variant: SignatureMeleeComboVariant): MeleeComboFamily {
-  if (variant === "stinger") return "thrust";
+  if (variant === "stinger" || variant === "voltedge-stab") return "thrust";
   if (variant === "hero-spin") return "arc";
   // R4-1 (analyst): the default is correct for every chop-family variant, including all four
   // Driftblade-model adopters. A future NON-chop variant must add its mapping here FIRST, or it silently

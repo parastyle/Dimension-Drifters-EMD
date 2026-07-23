@@ -72,7 +72,7 @@ describe("GameRoom — V5M melee authority", () => {
     expect(Math.hypot(player.x - startX, player.y - startY)).toBeLessThanOrEqual(distance + 1e-8);
   });
 
-  it("damages targets around the complete Gravedigger frontflip circle exactly once", () => {
+  it("damages targets around the complete Gravewarden whirlwind circle exactly once", () => {
     const { room, player, combat } = makeRoom("spade-circle");
     const weapon = equip(room, player, combat, "gravediggers-spade");
     const targets = [
