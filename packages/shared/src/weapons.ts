@@ -55,6 +55,7 @@ export type WeaponSecondaryGripRole =
   | "lever"
   | "crank"
   | "pump"
+  | "horizontal-foregrip"
   | "vertical-foregrip"
   | "shoulder-RPG"
   | "two-hand-rifle"
@@ -271,6 +272,7 @@ export type WeaponStanceId =
   | "hasso-no-kamae"
   | "tachi-no-tori"
   | "blade-forward-high-hilt"
+  | "near-ear-blade-up"
   | "two-hands-on-hilt"
   | "low-close-hilt";
 
@@ -352,7 +354,9 @@ export type WeaponPerformanceHold =
   | "aim-forward"
   | "overhead"
   | "shoulder-launcher"
-  | "walking-staff";
+  | "walking-staff"
+  | "one-hand-walking-staff"
+  | "horn-to-face";
 
 export type WeaponPerformanceAction =
   | "default-swing"
@@ -1454,8 +1458,8 @@ const BASE_WEAPONS: Record<string, WeaponDef> = {
     },
   },
   // §6/§15 #10 GRAVEWARDEN BUSTER — the stable M0 rez-carrier id now presents an original heroic
-  // greatblade. Its full-frontflip descriptor and cadence remain unchanged; V6A only widens the
-  // complete-circle damage radius and replaces the former tombstone placeholder art.
+  // greatblade. B8 replaces the reset-prone frontflip with one fixed-rate held whirlwind. The attack
+  // still resolves the same complete-circle damage, active timing, base damage, and cadence.
   "gravediggers-spade": {
     id: "gravediggers-spade",
     name: "Gravewarden Buster",
@@ -1471,7 +1475,19 @@ const BASE_WEAPONS: Record<string, WeaponDef> = {
     timingSwingArc: 2.7,
     gripFrac: 0.1,
     twoHanded: true,
-    performance: { hold: "steady", action: "default-swing", frontflip: true },
+    performance: {
+      hold: "steady",
+      action: "spin",
+      continuous: true,
+      suppressSwing: true,
+      twirl: {
+        plane: "ground-whirlwind",
+        pivot: "grip",
+        direction: "forward",
+        visualRevolutions: 1,
+      },
+      holdScaling: { cadence: "weapon-cooldown" },
+    },
     durability: 90,
     rez: { radius: REZ_RADIUS }, // §6 the swing revives a downed ally in range
     tags: {
@@ -1792,11 +1808,16 @@ const BASE_WEAPONS: Record<string, WeaponDef> = {
     cooldown: 0.28,
     displayLength: 125,
     swingArc: 2.3,
+    swingStyle: "thrust",
     gripFrac: 0.12,
+    stance: "near-ear-blade-up",
+    comboFamily: "thrust",
+    comboVariant: "voltedge-stab",
+    authoritativeCombo: true,
     comboChoreography: Object.freeze([
-      Object.freeze({ primitive: "side-cut" as const, intensity: 1.02 }),
-      Object.freeze({ primitive: "wave-cut" as const, intensity: 1.12 }),
-      Object.freeze({ primitive: "lunge" as const, intensity: 1.18 }),
+      Object.freeze({ primitive: "lunge" as const, intensity: 1.02 }),
+      Object.freeze({ primitive: "knee-stab" as const, intensity: 1.1 }),
+      Object.freeze({ primitive: "lunge" as const, intensity: 1.2 }),
     ]),
     // §10 on-hit proc (forge note): "jagged lightning on target, chain to 3 nearest, teal". The arc hit
     // seeds a bolt that leaps to 3 other nearby enemies for decaying damage. (Damage scales with DEX

@@ -148,6 +148,7 @@ import {
   bladeSizeClassFor,
   comboPresentationStyleFor,
   comboWeaponThicknessSign,
+  continuousWhirlAngle,
   continuousWhirlPhase,
   createFlourishInput,
   createFlourishSample,
@@ -10495,7 +10496,7 @@ export class SpriteRig {
                 : (2 * tt - a) / (2 - a);
           const turns =
             twirl?.visualRevolutions ?? Math.max(1, Math.round(def.swingArc / (Math.PI * 2)));
-          th = azAim + spinDirection * turns * Math.PI * 2 * e;
+          th = continuousWhirlAngle(e, turns, spinDirection, azAim);
         } else {
           const e = tt * tt * (3 - 2 * tt); // smoothstep — wind in, whip through, settle out
           const windup = 1.5; // start this far behind the damage arc…

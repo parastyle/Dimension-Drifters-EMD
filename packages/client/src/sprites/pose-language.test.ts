@@ -300,7 +300,8 @@ describe("weapon performance pose states", () => {
     "x2-coffin-nail-rosary-orb": ["hanging-chain", "default-swing"],
     "x2-emberleaf-chapbook": ["steady", "page-flip"],
     "x2-tallowtongue-pyre-stave": ["steady", "shake"],
-    "x2-hollowbarrel-spell-scattergun-staff": ["aim-forward", "recoil"],
+    "x2-hollowbarrel-spell-scattergun-staff": ["horn-to-face", "recoil"],
+    "x2-saint-bough-frost-crozier": ["one-hand-walking-staff", "default-swing"],
     "x2-hexbloom-scattergrimoire": ["steady", "shake"],
     "x2-cinderchoke-brazier-orb": ["steady", "overhead-downswing"],
     "x2-fulgurite-storm-sphere": ["overhead", "shake"],
@@ -386,6 +387,40 @@ describe("weapon performance pose states", () => {
 
     expect(launcher).toMatchObject({ handX: -0.08, handY: -0.32, weaponAngle: 0 });
     expect(hatchet.weaponAngle).toBe(-Math.PI / 2);
+  });
+
+  it("plants Saint-Bough as a one-hand walking staff without claiming the far hand", () => {
+    const input = createWeaponPerformanceInput();
+    const out = createWeaponPerformanceSample();
+    input.spec = performance("x2-saint-bough-frost-crozier");
+    input.gait = 0.8;
+    input.stridePhase = -0.35;
+    const contact = { ...sampleWeaponPerformance(input, out) };
+    input.stridePhase = Math.PI - 0.35;
+    const lifted = { ...sampleWeaponPerformance(input, out) };
+
+    expect(contact.weaponAngle).toBe(-Math.PI / 2);
+    expect(contact.backHandBlend).toBe(0);
+    expect(contact.handY).toBeGreaterThan(lifted.handY);
+    expect(contact.handY - lifted.handY).toBeCloseTo((10 * 0.8) / 76);
+  });
+
+  it("raises Hollowbarrel to the face and keeps its playing hand on the horn", () => {
+    const input = createWeaponPerformanceInput();
+    const out = createWeaponPerformanceSample();
+    input.spec = performance("x2-hollowbarrel-spell-scattergun-staff");
+    input.aimLocal = 0;
+    const sampled = sampleWeaponPerformance(input, out);
+
+    expect(sampled).toMatchObject({
+      active: true,
+      weaponAngle: 0,
+      handX: 0.06,
+      handY: -0.25,
+      backHandX: -0.12,
+      backHandY: 0.13,
+      backHandBlend: 1,
+    });
   });
 
   it("lets upright and hanging-chain rest poses yield to their ordinary attack swings", () => {

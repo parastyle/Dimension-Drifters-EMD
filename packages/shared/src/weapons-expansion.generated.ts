@@ -2123,11 +2123,14 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "y": 0.5
       },
       "secondary": {
-        "x": 0.45,
+        "x": 0.34,
         "y": 0.5,
         "role": "shaft"
       }
     },
+    "authoritativeCombo": true,
+    "comboFamily": "thrust",
+    "comboVariant": "nullspike-three-thrust",
     "effectRecipe": "nullspike-impact-circle",
     "effectEmitter": "tip",
     "effectTiming": "impact",
@@ -4794,6 +4797,12 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "pistol"
       ]
     },
+    "gripPoints": {
+      "primary": {
+        "x": 0.53,
+        "y": 0.72
+      }
+    },
     "requirements": {
       "luk": 9,
       "dex": 5
@@ -5529,6 +5538,17 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "DEX",
         "INT"
       ]
+    },
+    "gripPoints": {
+      "primary": {
+        "x": 0.43,
+        "y": 0.67
+      },
+      "secondary": {
+        "x": 0.55,
+        "y": 0.64,
+        "role": "horizontal-foregrip"
+      }
     },
     "requirements": {
       "dex": 11,
@@ -11190,18 +11210,18 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     },
     "gripPoints": {
       "primary": {
-        "x": 0.1,
+        "x": 0.28,
         "y": 0.5
       },
       "secondary": {
-        "x": 0.42,
+        "x": 0.54,
         "y": 0.5,
-        "role": "shaft"
+        "role": "handle"
       }
     },
     "description": "A scuffed iron staff ending in a flared blunderbuss mouth packed with rune-etched shot, coughing a wide spray of splintering ice slivers.",
     "performance": {
-      "hold": "aim-forward",
+      "hold": "horn-to-face",
       "action": "recoil",
       "suppressSwing": true,
       "emitter": "spout"
@@ -11431,7 +11451,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "swingArc": 2.9,
     "gripFrac": 0.1,
     "tags": {
-      "grip": "2H",
+      "grip": "1H",
       "size": "L",
       "delivery": "melee-slam",
       "fireMode": "tap-charge",
@@ -11445,20 +11465,22 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     },
     "gripPoints": {
       "primary": {
-        "x": 0.1,
-        "y": 0.5
-      },
-      "secondary": {
-        "x": 0.4,
-        "y": 0.5,
-        "role": "shaft"
+        "x": 0.2,
+        "y": 0.68
       }
     },
     "description": "A tall ivory shepherd's crozier sheathed in everlasting frost, its curled crook planted to bloom a consecrated ring of killing ice across the ground.",
+    "performance": {
+      "hold": "one-hand-walking-staff",
+      "action": "default-swing",
+      "strideTap": {
+        "amplitudePx": 10,
+        "phaseOffset": 0.35
+      }
+    },
     "requirements": {
       "int": 10
     },
-    "twoHanded": true,
     "quake": {
       "radius": 150,
       "damage": 7
@@ -16688,6 +16710,65 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "rangeMultiplier": 1,
         "damageMultiplier": 1,
         "knockback": 0
+      }
+    }
+  ],
+  "nullspike-three-thrust": [
+    {
+      "name": "wrapped-line setup",
+      "motion": "jab",
+      "direction": 1,
+      "hand": "both",
+      "timing": {
+        "activeStart": 0.12,
+        "activeEnd": 0.34,
+        "impact": 0.31,
+        "followEnd": 0.46
+      },
+      "path": {
+        "kind": "capsule",
+        "arcMultiplier": 0,
+        "rangeMultiplier": 0.86,
+        "damageMultiplier": 1,
+        "knockback": 0
+      }
+    },
+    {
+      "name": "driving second thrust",
+      "motion": "lunge",
+      "direction": -1,
+      "hand": "both",
+      "timing": {
+        "activeStart": 0.14,
+        "activeEnd": 0.48,
+        "impact": 0.44,
+        "followEnd": 0.58
+      },
+      "path": {
+        "kind": "capsule",
+        "arcMultiplier": 0,
+        "rangeMultiplier": 1,
+        "damageMultiplier": 1,
+        "knockback": 0
+      }
+    },
+    {
+      "name": "voidspike finisher",
+      "motion": "impale",
+      "direction": 1,
+      "hand": "both",
+      "timing": {
+        "activeStart": 0.2,
+        "activeEnd": 0.58,
+        "impact": 0.54,
+        "followEnd": 0.72
+      },
+      "path": {
+        "kind": "capsule",
+        "arcMultiplier": 0,
+        "rangeMultiplier": 1.12,
+        "damageMultiplier": 1,
+        "knockback": 88
       }
     }
   ],
