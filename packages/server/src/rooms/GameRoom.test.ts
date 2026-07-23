@@ -1922,27 +1922,19 @@ describe("GameRoom — §31 meta upgrades", () => {
     expect(p.maxHp).toBe(PLAYER_MAX_HP);
   });
 
-  it("buyUpgrade at the shop deducts scrip + bumps the level & stat; rejects far / broke / maxed", () => {
+  it("keeps the retired buyUpgrade endpoint inert so archived gear cannot consume scrip", () => {
     const h = makeRoom({ belt: true });
     h.join("pU");
     const p = h.state().players.get("pU");
-    const shopX = h.state().beltShopX;
+    const account = h.room.metaAccounts.get("pU");
     p.scrip = 100;
-    p.x = shopX;
+    p.x = h.state().beltShopX;
+    const beforeOwned = [...account.ownedGear];
     h.send("pU", "buyUpgrade", { id: "vitality" }); // cost 30
-    expect(p.upVitality).toBe(1);
-    expect(p.scrip).toBe(70);
-    expect(p.maxHp).toBe(PLAYER_MAX_HP + META_VITALITY_HP);
-    // too far from the vendor → rejected.
-    p.x = shopX + 500;
-    h.send("pU", "buyUpgrade", { id: "vitality" });
-    expect(p.upVitality).toBe(1);
-    // can't afford → rejected.
-    p.x = shopX;
-    p.scrip = 5;
-    h.send("pU", "buyUpgrade", { id: "fortune" }); // cost 40
-    expect(p.upFortune).toBe(0);
-    expect(p.scrip).toBe(5);
+    expect(p.scrip).toBe(100);
+    expect([p.upVitality, p.upFortune, p.upPower]).toEqual([0, 0, 0]);
+    expect(p.maxHp).toBe(PLAYER_MAX_HP);
+    expect(account.ownedGear).toEqual(beforeOwned);
   });
 });
 
@@ -3803,6 +3795,70 @@ describe("GameRoom — jump-feel J1 authoritative stance/physics", () => {
   });
 });
 
+describe("GameRoom — whole-art join selection authority", () => {
+  it("defaults a missing selection to the sheriff", () => {
+    const h = makeRoom();
+    h.join("default-character");
+    const player = h.state().players.get("default-character");
+
+    expect([player.character, player.runCharacter]).toEqual([
+      enemyComboShared.DEFAULT_CHARACTER,
+      enemyComboShared.DEFAULT_CHARACTER,
+    ]);
+    expect(enemyComboShared.DEFAULT_CHARACTER).toBe("proto-sheriff");
+  });
+
+  it.each(enemyComboShared.WHOLE_ART_CHARACTERS)(
+    "accepts the installed whole-art selection %s",
+    (selectedCharacterId) => {
+      const h = makeRoom();
+      const client = { sessionId: `selected-${selectedCharacterId}` };
+      h.room.clients.push(client);
+      h.room.onJoin(client, { selectedCharacterId });
+      const player = h.state().players.get(client.sessionId);
+
+      expect([player.character, player.runCharacter]).toEqual([
+        selectedCharacterId,
+        selectedCharacterId,
+      ]);
+    },
+  );
+
+  it.each(["drifter", "cc-asha-the-ash-walker", "unknown-character"])(
+    "falls back to the sheriff for legacy or unknown selection %s",
+    (selectedCharacterId) => {
+      const h = makeRoom();
+      const client = { sessionId: `invalid-${selectedCharacterId}` };
+      h.room.clients.push(client);
+      h.room.onJoin(client, { selectedCharacterId });
+      const player = h.state().players.get(client.sessionId);
+
+      expect([player.character, player.runCharacter]).toEqual([
+        "proto-sheriff",
+        "proto-sheriff",
+      ]);
+    },
+  );
+
+  it("cycles only within the whole-art subset and resets a legacy id to the sheriff", () => {
+    const h = makeRoom();
+    h.join("whole-art-cycle");
+    const player = h.state().players.get("whole-art-cycle");
+    player.character = "drifter";
+    const seen = new Set<string>();
+
+    for (let i = 0; i < enemyComboShared.WHOLE_ART_CHARACTERS.length * 2; i++) {
+      h.tick(1);
+      h.send("whole-art-cycle", "cycleCharacter");
+      seen.add(player.character);
+    }
+
+    expect([...seen].every((id) => enemyComboShared.isWholeArtCharacter(id))).toBe(true);
+    expect(seen.has("drifter")).toBe(false);
+    expect([...seen].some((id) => id.startsWith("cc-"))).toBe(false);
+  });
+});
+
 // Wave 21a — appended class-dissolution economy, identity-snapshot, quirk-seam, and schema fixtures.
 describe("GameRoom — classmerge 21a", () => {
   const attrTotal = (player: { str: number; dex: number; int: number; con: number; luk: number }) =>
@@ -3833,27 +3889,27 @@ describe("GameRoom — classmerge 21a", () => {
     h.join("identity");
     const player = h.state().players.get("identity");
     const combat = h.room.combat.get("identity");
-    expect(player.runCharacter).toBe("drifter");
+    expect(player.runCharacter).toBe("proto-sheriff");
     expect([player.str, player.dex, player.int, player.con, player.luk]).toEqual([2, 2, 2, 2, 2]);
 
     h.send("identity", "cycleCharacter");
-    expect(player.character).toBe("cc-asha-the-ash-walker");
-    expect(player.runCharacter).toBe("drifter");
-    expect(combat.identityCharacter).toBe("drifter");
+    expect(player.character).toBe("proto-witch");
+    expect(player.runCharacter).toBe("proto-sheriff");
+    expect(combat.identityCharacter).toBe("proto-sheriff");
     expect([player.str, player.dex, player.int, player.con, player.luk]).toEqual([2, 2, 2, 2, 2]);
 
     h.room.restartRun();
-    expect(player.runCharacter).toBe("cc-asha-the-ash-walker");
+    expect(player.runCharacter).toBe("proto-witch");
     expect(combat.identityCharacter).toBe(player.runCharacter);
-    expect([player.str, player.dex, player.int, player.con, player.luk]).toEqual([2, 2, 2, 3, 1]);
+    expect([player.str, player.dex, player.int, player.con, player.luk]).toEqual([2, 2, 2, 2, 2]);
 
     player.str += 5; // earned allocation survives the next boundary's spread-delta rebase
     h.tick(1); // refill the action budget
     h.send("identity", "cycleCharacter");
-    expect(player.character).toBe("cc-bastion-vance");
+    expect(player.character).toBe("proto-samurai");
     h.room.transitionDimension();
-    expect(player.runCharacter).toBe("cc-bastion-vance");
-    expect([player.str, player.dex, player.int, player.con, player.luk]).toEqual([8, 1, 1, 4, 1]);
+    expect(player.runCharacter).toBe("proto-samurai");
+    expect([player.str, player.dex, player.int, player.con, player.luk]).toEqual([7, 2, 2, 2, 2]);
   });
 
   it("re-snapshots every training cycle by spread delta and preserves allocated points", () => {
@@ -3865,11 +3921,11 @@ describe("GameRoom — classmerge 21a", () => {
     const allocatedTotal = attrTotal(player) - 10;
     h.send("training-kit", "cycleCharacter");
 
-    expect(player.character).toBe("cc-asha-the-ash-walker");
+    expect(player.character).toBe("proto-witch");
     expect(player.runCharacter).toBe(player.character);
-    expect([player.str, player.dex, player.int, player.con, player.luk]).toEqual([2, 6, 2, 3, 1]);
+    expect([player.str, player.dex, player.int, player.con, player.luk]).toEqual([2, 6, 2, 2, 2]);
     expect(attrTotal(player) - 10).toBe(allocatedTotal);
-    expect(player.maxHp).toBe(PLAYER_MAX_HP + enemyComboShared.CON_HP_PER);
+    expect(player.maxHp).toBe(PLAYER_MAX_HP);
     expect(player.hp).toBe(player.maxHp);
   });
 
@@ -3923,10 +3979,14 @@ describe("GameRoom — classmerge 21a", () => {
     expect(ally.hp - before).toBe(enemyComboShared.PARRY_CHAIN_HEAL);
   });
 
-  it("appends runCharacter at schema 21 with a safe Drifter default", () => {
+  it("retains schema 21 while defaulting character identity to the shared sheriff", () => {
     const player = new enemyComboShared.PlayerState();
     expect(enemyComboShared.SCHEMA_VERSION).toBe(33);
-    expect(player.runCharacter).toBe("drifter");
+    expect([player.character, player.runCharacter]).toEqual([
+      enemyComboShared.DEFAULT_CHARACTER,
+      enemyComboShared.DEFAULT_CHARACTER,
+    ]);
+    expect(enemyComboShared.DEFAULT_CHARACTER).toBe("proto-sheriff");
   });
 });
 
@@ -5638,14 +5698,20 @@ describe("server-tuning wave — momentum, melee pressure, and enemy separation"
 function joinGearAccount(
   h: ReturnType<typeof makeRoom>,
   id: string,
-  configure: (account: ReturnType<typeof enemyComboShared.createMetaAccountV3>) => void,
+  configure: (account: ReturnType<typeof enemyComboShared.createMetaAccountV4>) => void,
+  selectedCharacterId?: unknown,
 ) {
-  const account = enemyComboShared.createMetaAccountV3();
+  const messages: Array<{ type: string; payload: unknown }> = [];
+  const account = enemyComboShared.createMetaAccountV4();
   configure(account);
-  const client = { sessionId: id };
+  const client = {
+    sessionId: id,
+    send: (type: string, payload: unknown) => messages.push({ type, payload }),
+  };
   h.room.clients.push(client);
-  h.room.onJoin(client, { metaAccount: account });
+  h.room.onJoin(client, { metaAccount: account, selectedCharacterId });
   return {
+    messages,
     player: h.state().players.get(id),
     combat: h.room.combat.get(id),
     gear: h.room.gearRuns.get(id),
@@ -5654,7 +5720,7 @@ function joinGearAccount(
 }
 
 function equipGearSet(
-  account: ReturnType<typeof enemyComboShared.createMetaAccountV3>,
+  account: ReturnType<typeof enemyComboShared.createMetaAccountV4>,
   setId: string,
 ) {
   for (const slot of enemyComboShared.GEAR_SLOTS) {
@@ -5666,47 +5732,73 @@ function equipGearSet(
   }
 }
 
-describe("gear G2 join authority and frozen runtime", () => {
-  it("gives validated v3 gear precedence while leaving legacy character kits as the no-loadout fallback", () => {
+describe("gear G2 archived account compatibility and inert runtime", () => {
+  it("round-trips a full V4 gear account while the chosen whole-art kit owns combat", () => {
     const h = makeRoom();
-    const geared = joinGearAccount(h, "gear-neon", (account) =>
-      equipGearSet(account, "neon-mirage"),
+    let sanitizedEquipped:
+      | Record<
+          (typeof enemyComboShared.GEAR_SLOTS)[number],
+          (typeof enemyComboShared.GEAR_IDS)[number]
+        >
+      | undefined;
+    const geared = joinGearAccount(
+      h,
+      "gear-neon",
+      (account) => {
+        account.ownedGear = [...enemyComboShared.GEAR_IDS];
+        equipGearSet(account, "neon-mirage");
+        sanitizedEquipped = {
+          ...enemyComboShared.sanitizeMetaAccountV4(account).equippedGear,
+        };
+      },
+      "proto-witch",
     );
-    expect(enemyComboShared.ATTRS.map((attr) => geared.player[attr])).toEqual([1, 4, 1, 2, 2]);
-    expect(geared.player.gearSeeded).toBe(true);
-    expect(geared.combat.quirk.id).toBe("package-deal");
-    expect(geared.combat.mods.drawLockMult).toBe(0);
-    expect(geared.player.runCharacter).toBe("drifter");
-    expect([geared.player.upVitality, geared.player.upFortune, geared.player.upPower]).toEqual([
-      0, 0, 0,
+    if (!sanitizedEquipped) throw new Error("sanitized gear fixture was not captured");
+    const archivedRuntime = enemyComboShared.resolveGearLoadout(sanitizedEquipped);
+
+    expect(enemyComboShared.ATTRS.map((attr) => archivedRuntime.baseStats[attr])).toEqual([
+      1, 4, 1, 2, 2,
     ]);
-    expect(
-      enemyComboShared.decodeGearCosmetics(geared.player.gearUpper, geared.player.gearLower),
-    ).toEqual(geared.account.equippedGear);
+    expect(archivedRuntime.quirk.id).toBe("package-deal");
+    expect(archivedRuntime.mods.drawLockMult).toBe(0);
+    expect(geared.account.ownedGear).toEqual(enemyComboShared.GEAR_IDS);
+    expect(geared.account.equippedGear).toEqual(sanitizedEquipped);
+
+    expect(geared.gear).toBeUndefined();
+    expect(h.room.gearRuns.has("gear-neon")).toBe(false);
+    expect(geared.player.gearSeeded).toBe(false);
+    expect(geared.player.gearMaxHpAdd).toBe(0);
+    expect([geared.player.gearUpper, geared.player.gearLower]).toEqual(["", ""]);
+    expect([geared.player.character, geared.player.runCharacter]).toEqual([
+      "proto-witch",
+      "proto-witch",
+    ]);
+    expect(enemyComboShared.ATTRS.map((attr) => geared.player[attr])).toEqual([2, 2, 2, 2, 2]);
+    expect(geared.combat.identityCharacter).toBe("proto-witch");
+    expect(geared.combat.quirk.id).toBe("unwritten");
+    expect(geared.combat.mods.drawLockMult).toBe(1);
     expect(enemyComboShared.ATTRS.map((attr) => geared.player.allocRun[attr])).toEqual([
       0, 0, 0, 0, 0,
     ]);
 
-    h.state().mode = "training";
-    h.send("gear-neon", "cycleCharacter");
-    expect(enemyComboShared.ATTRS.map((attr) => geared.player[attr])).toEqual([1, 4, 1, 2, 2]);
-    expect(geared.combat.quirk.id).toBe("package-deal");
-
-    const fallback = makeRoom();
-    fallback.join("legacy-character");
-    const legacyPlayer = fallback.state().players.get("legacy-character");
-    expect(legacyPlayer.gearSeeded).toBe(false);
-    expect(fallback.room.gearRuns.has("legacy-character")).toBe(false);
-    expect(fallback.room.combat.get("legacy-character").quirk.id).toBe("unwritten");
-    expect([legacyPlayer.gearUpper, legacyPlayer.gearLower]).toEqual(["", ""]);
+    h.room.publishAccountMutation(geared.player);
+    const accountResponse = [...geared.messages]
+      .reverse()
+      .find((message) => message.type === "metaAccount")
+      ?.payload as import("@dd/shared").MetaAccountV4 | undefined;
+    expect(accountResponse?.ownedGear).toEqual(enemyComboShared.GEAR_IDS);
+    expect(accountResponse?.equippedGear).toEqual(sanitizedEquipped);
   });
 
-  it("runs a hat's legacy descriptor through the same authoritative parry interpreter", () => {
+  it("keeps the archived gear snapshot helper available only through an explicit compatibility call", () => {
     const gearRoom = makeRoom();
     const geared = joinGearAccount(gearRoom, "gear-asha", (account) => {
       account.ownedGear.push("ash-walker-hat");
       account.equippedGear.hat = "ash-walker-hat";
     });
+    expect(geared.combat.quirk.id).toBe("unwritten");
+    const archivedRuntime = enemyComboShared.resolveGearLoadout(geared.account.equippedGear);
+    gearRoom.room.snapshotGearRun(geared.player, geared.combat, archivedRuntime, false);
     gearRoom.join("gear-ally");
     const gearAlly = gearRoom.state().players.get("gear-ally");
     geared.player.x = gearAlly.x = 500;
@@ -5730,7 +5822,7 @@ describe("gear G2 join authority and frozen runtime", () => {
     expect([gearHeal, legacyAlly.hp - 40]).toEqual([7, 7]);
   });
 
-  it("applies migrated starter-line gear once and leaves upgrade tombstones out of run power", () => {
+  it("retains migrated gear and pet state but does not apply upgrade tombstones as run power", () => {
     const old = enemyComboShared.createMetaAccountV2();
     old.upgrades = { vitality: 3, fortune: 2, power: 1 };
     const migrated = enemyComboShared.sanitizeMetaAccountV3(old);
@@ -5739,10 +5831,18 @@ describe("gear G2 join authority and frozen runtime", () => {
     h.room.clients.push(client);
     h.room.onJoin(client, { metaAccount: migrated });
     const player = h.state().players.get(client.sessionId);
-    expect([player.str, player.dex, player.int, player.con, player.luk]).toEqual([3, 2, 2, 2, 4]);
-    expect(player.maxHp).toBe(PLAYER_MAX_HP + 60);
+    const account = h.room.metaAccounts.get(client.sessionId);
+
+    expect(account.ownedGear).toEqual(migrated.ownedGear);
+    expect(account.equippedGear).toEqual(migrated.equippedGear);
+    expect(h.room.gearRuns.has(client.sessionId)).toBe(false);
+    expect([player.character, player.runCharacter]).toEqual(["proto-sheriff", "proto-sheriff"]);
+    expect([player.str, player.dex, player.int, player.con, player.luk]).toEqual([2, 2, 2, 2, 2]);
+    expect(player.maxHp).toBe(PLAYER_MAX_HP);
     expect(player.hp).toBe(player.maxHp);
     expect([player.upVitality, player.upFortune, player.upPower]).toEqual([0, 0, 0]);
+    expect([player.gearSeeded, player.gearUpper, player.gearLower]).toEqual([false, "", ""]);
+    expect(player.petId).toBe(old.selectedPetId);
     expect(enemyComboShared.ATTRS.map((attr) => player.allocRun[attr])).toEqual([0, 0, 0, 0, 0]);
   });
 });

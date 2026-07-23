@@ -96,6 +96,7 @@ import {
   countWeaponCopies,
   critChanceFor,
   DEBUG_SPAWN_MAX,
+  DEFAULT_CHARACTER,
   DEFAULT_DIMENSION,
   DEFAULT_WEAPON,
   DEFLECT_SPEED,
@@ -162,7 +163,6 @@ import {
   FISTS_WEAPON,
   FRIENDLY_BEAM_ENTITY_CAP,
   FRIENDLY_PROJECTILE_ENTITY_CAP,
-  GEAR_IDS,
   type GearRunRuntime,
   GROUND_EPSILON,
   generateArena,
@@ -186,6 +186,7 @@ import {
   isPetId,
   isPitAtPx,
   isPlayableCharacter,
+  isWholeArtCharacter,
   JUGGLE_LANDING_MERCY,
   JUGGLE_MAX_AIR_HITS,
   JUGGLE_MAX_CONTROL_SECONDS,
@@ -194,7 +195,6 @@ import {
   katanaBeatEffectFor,
   LANDING_TIER_SOFT,
   type LandingThumpTier,
-  LEGACY_UPGRADE_GRANTS,
   LEVEL_CAP,
   LEVELUP_WINDOW_SECONDS,
   LOOT_TIER_LUK_BOSS,
@@ -225,8 +225,7 @@ import {
   mixSeeds,
   nearestGroundPx,
   nearestPoint,
-  nextCharacter,
-  nextUpgradeCost,
+  nextWholeArtCharacter,
   nextWeapon,
   PAIR_TEMPO,
   PARRY_BUFFER_SECONDS,
@@ -310,7 +309,6 @@ import {
   requirementPenalty,
   resolveBeltObstacles,
   resolveBodyCollisions,
-  resolveGearLoadout,
   resolvePoiCollisionInto,
   rollAffix,
   rollBankAwareDropWeapon,
@@ -1970,54 +1968,9 @@ export class GameRoom extends Room<ArenaState> {
       }
     });
 
-    this.onMessage("buyUpgrade", (client, message: { id?: string }) => {
-      const player = this.state.players.get(client.sessionId);
-      if (!player?.alive || !this.belt) return;
-      if (this.combat.get(client.sessionId)?.stance === STANCE_SLIDE) return;
-      const shopX = this.state.beltShopX;
-      if (shopX <= 0 || Math.abs(player.x - shopX) > SHOP_RADIUS) return;
-      const id = message?.id;
-      if (id !== "vitality" && id !== "fortune" && id !== "power") return;
-      const account = this.metaAccounts.get(player.id);
-      if (!account) return;
-      const grants = LEGACY_UPGRADE_GRANTS[id];
-      let ownedRank = 0;
-      for (let rank = 1; rank < grants.length; rank++) {
-        const gearId = grants[rank];
-        if (gearId && account.ownedGear.includes(gearId)) ownedRank = rank;
-      }
-      const legacyRank =
-        id === "vitality"
-          ? player.upVitality
-          : id === "fortune"
-            ? player.upFortune
-            : player.upPower;
-      const cur = Math.max(ownedRank, legacyRank);
-      const cost = nextUpgradeCost(id, cur);
-      if (cost === null || player.scrip < cost) return; // maxed or can't afford
-      player.scrip -= cost;
-      const granted = grants[cur + 1];
-      if (granted && !account.ownedGear.includes(granted)) {
-        const requested = new Set([...account.ownedGear, granted]);
-        account.ownedGear = GEAR_IDS.filter((gearId) => requested.has(gearId));
-      }
-      // A v3 wardrobe is frozen for the run. The compatibility path keeps old clients playable while the
-      // client wardrobe wave is absent; its tombstones never feed a gear-seeded run.
-      if (this.gearRuns.has(player.id)) {
-        this.publishAccountMutation(player);
-        return;
-      } else if (id === "vitality") {
-        player.upVitality += 1;
-        player.maxHp += META_VITALITY_HP;
-        player.hp = Math.min(player.maxHp, player.hp + META_VITALITY_HP); // heal the new headroom
-      } else if (id === "fortune") {
-        player.upFortune += 1;
-        player.luk += META_FORTUNE_LUK;
-      } else {
-        player.upPower += 1;
-        player.str += META_POWER_STR;
-      }
-      this.publishAccountMutation(player);
+    this.onMessage("buyUpgrade", () => {
+      // Retired Wardrobe compatibility endpoint. Old clients may still send this message, but archived
+      // gear is inert and invisible in ordinary play, so the server must not charge or grant it.
     });
 
     // §classmerge C key: cosmetic during a run; Testing Grounds deliberately re-snapshots the full kit.
@@ -2025,7 +1978,7 @@ export class GameRoom extends Room<ArenaState> {
       if (!this.takeAction(client)) return; // §44 action budget
       const player = this.state.players.get(client.sessionId);
       if (!player) return;
-      player.character = nextCharacter(player.character);
+      player.character = nextWholeArtCharacter(player.character);
       if (this.state.mode === "training") {
         this.snapshotRunIdentity(player, this.combat.get(client.sessionId), true);
       }
@@ -3314,7 +3267,7 @@ export class GameRoom extends Room<ArenaState> {
     rebase: boolean,
     topUpMaxHp = true,
   ): void {
-    const identity = isPlayableCharacter(player.character) ? player.character : "drifter";
+    const identity = isPlayableCharacter(player.character) ? player.character : DEFAULT_CHARACTER;
     const nextSpread = spreadForCharacter(identity);
     if (rebase) {
       const previousSpread = spreadForCharacter(player.runCharacter);
@@ -4203,6 +4156,7 @@ export class GameRoom extends Room<ArenaState> {
       up?: unknown;
       metaAccount?: unknown;
       carry?: CarrySelectionV1;
+      selectedCharacterId?: unknown;
       selectedPetId?: unknown;
       petId?: unknown;
     },
@@ -4232,6 +4186,9 @@ export class GameRoom extends Room<ArenaState> {
     player.maxHp = PLAYER_MAX_HP;
     player.alive = true;
     player.weapon = DEFAULT_WEAPON;
+    player.character = isWholeArtCharacter(options?.selectedCharacterId)
+      ? options.selectedCharacterId
+      : DEFAULT_CHARACTER;
     // §29/§31 restore the player's persisted meta ACCOUNT (belt only): scrip bank + permanent upgrade
     // levels. Client-supplied → clamped (a sane bound; the persistence model is an MVP, not a trusted
     // economy). The upgrades then apply their stat bonuses to this fresh player.
@@ -4277,20 +4234,16 @@ export class GameRoom extends Room<ArenaState> {
     this.metaAccounts.set(client.sessionId, account);
     player.scrip = account.scrip;
     player.prestige = account.prestige;
-    if (suppliedGearAccount) {
-      const gear = resolveGearLoadout(account.equippedGear);
-      this.gearRuns.set(client.sessionId, gear);
-      this.snapshotGearRun(player, undefined, gear, false);
-      player.hp = player.maxHp;
-    } else {
-      // Compatibility sequencing: current v2 clients retain their playable kit until they send a v3
-      // wardrobe. The canonical account has already migrated the three upgrade tracks to owned items.
+    if (!suppliedGearAccount) {
+      // Compatibility sequencing: legacy v2 permanent upgrade levels remain bounded migration input.
       player.upVitality = legacyAccount.upgrades.vitality;
       player.upFortune = legacyAccount.upgrades.fortune;
       player.upPower = legacyAccount.upgrades.power;
-      this.snapshotRunCharacter(player, undefined, false, false);
-      player.hp = player.maxHp;
     }
+    // Persisted gear remains sanitized in the canonical account but is archived runtime-inert state.
+    // Every ordinary join snapshots the selected/default whole-art kit and creates no gear run.
+    this.snapshotRunCharacter(player, undefined, false, false);
+    player.hp = player.maxHp;
     this.snapshotPetRun(player, account.selectedPetId);
     for (let i = 0; i < ARSENAL_SLOTS; i++) player.slots.push(new ArsenalSlot());
     const runId = `run_${randomBytes(12).toString("base64url")}`;
@@ -4367,12 +4320,11 @@ export class GameRoom extends Room<ArenaState> {
     this.state.players.set(client.sessionId, player);
     if (this.hostId === null) this.hostId = client.sessionId; // first joiner is the co-op host
     this.inputs.set(client.sessionId, this.freshInputState());
-    const joinedGear = this.gearRuns.get(client.sessionId);
-    const joinedQuirk = joinedGear?.quirk ?? quirkForCharacter(player.runCharacter);
+    const joinedQuirk = quirkForCharacter(player.runCharacter);
     this.combat.set(client.sessionId, {
       identityCharacter: player.runCharacter,
       quirk: joinedQuirk,
-      mods: joinedGear?.mods ?? runtimeModsForQuirk(joinedQuirk),
+      mods: runtimeModsForQuirk(joinedQuirk),
       aimX: 1,
       aimY: 0,
       targetX: 0,
