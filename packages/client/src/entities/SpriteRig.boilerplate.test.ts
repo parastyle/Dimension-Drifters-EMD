@@ -205,6 +205,7 @@ interface RigTruth {
 }
 
 interface ManifestHeadRigTruth extends RigTruth {
+  scale: number;
   manifestHeadOffset?: Readonly<{ x: number; y: number }>;
   floatingHeadSpring: FloatingHeadSpringState;
   syncFloatingHeadPose(
@@ -240,13 +241,18 @@ describe("SpriteRig character-owned floating head", () => {
     expect(truth.parts.some((part) => part.texture.key === "drifter:head")).toBe(false);
     if (!head || !truth.manifestHeadOffset) return;
 
-    truth.body.setPosition(5, 7).setRotation(0.08).setScale(0.46, 0.44);
+    truth.body.setPosition(5, 7).setRotation(0).setScale(0.46, 0.44);
     truth.syncFloatingHeadPose(1 / 60, false, true, false, 0, 0, 0, 0, false, 0);
     const restY = head.y;
+    const uninsetY = truth.body.y + truth.manifestHeadOffset.y * truth.body.scaleY;
     expect(truth.floatingHeadSpring.ready).toBe(true);
     expect(head.scaleX).toBeCloseTo(truth.body.scaleX, 10);
     expect(head.scaleY).toBeCloseTo(truth.body.scaleY, 10);
     expect(head.y).toBeLessThan(truth.body.y);
+    expect(head.y - uninsetY).toBeCloseTo(
+      (FLOATING_HEAD_SPRING_TUNING.manifestRestInsetPx / truth.scale) * truth.body.scaleY,
+      10,
+    );
 
     for (let frame = 0; frame < 30; frame++)
       truth.syncFloatingHeadPose(1 / 60, false, false, false, 0, 0, 0, 0, false, 2);

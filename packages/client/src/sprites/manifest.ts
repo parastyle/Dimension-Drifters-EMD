@@ -3061,8 +3061,8 @@ export const SPRITES = {
       {
         "role": "head",
         "file": "head.png",
-        "w": 134,
-        "h": 82,
+        "w": 155,
+        "h": 106,
         "cx": 319.68,
         "cy": 58.6,
         "ox": 19.28,

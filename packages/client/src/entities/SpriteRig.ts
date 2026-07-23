@@ -1365,6 +1365,7 @@ export interface FloatingHeadSpringTuning {
   maxVelocity: number;
   reducedAngularFrequency: number;
   reducedMaxOffset: number;
+  manifestRestInsetPx: number;
   walkBobPx: number;
   dashLagPx: number;
   slideLagPx: number;
@@ -1377,17 +1378,18 @@ export interface FloatingHeadSpringTuning {
 export const FLOATING_HEAD_SPRING_TUNING: Readonly<FloatingHeadSpringTuning> = Object.freeze({
   angularFrequency: 8.4,
   dampingRatio: 0.48,
-  maxOffsetX: 4,
-  maxOffsetY: 4,
-  maxVelocity: 72,
+  maxOffsetX: 3,
+  maxOffsetY: 1.75,
+  maxVelocity: 48,
   reducedAngularFrequency: 30,
   reducedMaxOffset: 0.35,
-  walkBobPx: 1.15,
-  dashLagPx: 2.2,
-  slideLagPx: 2.6,
-  airHangPx: 1.35,
-  landingDipPx: 1.55,
-  bigAttackLeadPx: 2.4,
+  manifestRestInsetPx: 4.5,
+  walkBobPx: 0.55,
+  dashLagPx: 1.4,
+  slideLagPx: 1.7,
+  airHangPx: 0.75,
+  landingDipPx: 0.85,
+  bigAttackLeadPx: 1.6,
 });
 
 /** One counter-phase step beat. The authored body socket remains the zero/rest geometry. */
@@ -7852,7 +7854,8 @@ export class SpriteRig {
       ? resolvedSocket && root
         ? resolvedSocket.y - root.y
         : boilerplateSource.y / assemblyScale
-      : (manifestSource?.y ?? 0);
+      : (manifestSource?.y ?? 0) +
+        FLOATING_HEAD_SPRING_TUNING.manifestRestInsetPx / Math.max(this.scale, 1e-6);
     const dx = localX * this.body.scaleX;
     const dy = localY * this.body.scaleY;
     const cosine = Math.cos(this.body.rotation);
