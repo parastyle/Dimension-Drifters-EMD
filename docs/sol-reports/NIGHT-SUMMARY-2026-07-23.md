@@ -15,7 +15,7 @@ Autonomous run while the owner slept. Everything below is committed + **pushed**
 
 ### Game-notes program (ledger `docs/sol-reports/notes-ledger-v9.md`)
 403 owner notes → 243 normalized intents → **211 already done**, 32 outstanding, batched B1–B13.
-Landed 6 of the mechanical batches (game-first):
+Landed 7 of the mechanical batches (game-first):
 - **B1** — damage numbers stay screen-upright through the real transform chain; 22 asymmetric
   projectiles (incl. holy skull) mirror instead of rotating through π.
 - **B4** — Galvanic Overcasters moving-fire regression fixed (rig/authority 444px→48px, live-gated at
@@ -27,6 +27,10 @@ Landed 6 of the mechanical batches (game-first):
   never changes gameplay reach/muzzle); Prismhex mirrored (thumb correct both facings).
 - **B10** — Fulgurite blue + no dead annulus; Tombstone bone particles removed (stones+smoke kept);
   Thunderhead Voulge big blue; Sanctified Headsman extendo-blade VFX/override fully removed.
+- **B8** — pose/grip/combo for 8 weapons: Gravewarden continuous beyblade spin, Saint-Bough one-hand
+  walking staff, Nullspike 3-thrust combo, Voltedge near-ear stab, Sunbreaker/Fool's-Gold grip fixes,
+  Hollowbarrel horn-to-face. (Landed after `continue`: reconciled the 2 invariance tests its intentional
+  routing/reclassification changes broke — verified only the 3 intended weapons moved.)
 
 ### Audits (5-Sol read-only fleet) — `docs/sol-reports/audit-*.md`
 structure, movement, weapons, QA, and an orchestration synthesis. Headline: the codebase has a
@@ -44,13 +48,9 @@ stream position, so any catalog change reshuffled it and flipped position-sensit
 ### On branches, ready for completion
 - **B7 thrown conversions** (`sol/b7-thrown`) — Sidewinder Spontoon / Stormcrow Twin-Hatchets /
   Boothook Harpoon. The implementing Sol **hung twice** on this task; the branch has code-only WIP with
-  **no tests and no verification** — do not merge as-is; finish + verify.
-- **B8 pose/grip/combo** (`sol/b8-pose`) — all 8 weapons implemented (Gravewarden spin, Saint-Bough
-  one-hand staff, Nullspike 3-thrust, Voltedge stab, Sunbreaker/Fool's-Gold grips, Hollowbarrel
-  horn-to-face) with 37 live-gallery evidence captures, BUT the Sol hung before **reconciling two
-  invariance tests** its intentional changes broke: `driftblade-model-panel` routing table (Voltedge et
-  al. moved buckets) and `v6g` forward-staff count (12→11 after Saint-Bough reclassified). Reverted to
-  keep main green; reconcile those two tests, then merge.
+  **no tests and no verification**, and it branched from before the wave landed so it conflicts heavily
+  with current main — do not merge as-is. Cleanest path: re-implement fresh from current main (or by
+  hand) with a thrown-behavior test + live gate. THE ONLY mechanical batch not landed.
 
 ### Need generated art + owner aesthetic review (queued in ledger)
 - **B2** seven "wacky" weapons (unicorn rainbow beam + fish launcher, rubber-chicken flail, etc.)
