@@ -92,7 +92,7 @@ The concept source frequently asks for a right-facing side profile, while the ga
 - **Top/crown read:** a brim needs a visible underside wedge; a veil needs a crown/halo; a smooth mask needs ears/horns/crest/hood edge; a low cowl needs a pointed, split, or swept rim. At least one landmark remains visible when the face plane is foreshortened by the gameplay presentation.
 - **Motion envelope:** inspect rest, ±4 px X, ±4 px Y, walk counter-bob, dash/slide lag, airborne hang, landing dip, large-attack lead, flourish lead up to its existing cap, body lean/flip, and the root's tumble rotation. No spring extreme can reveal an authored face, transparent hole, neck nub, or incompatible body seam.
 - **Monochrome survival:** `applySlideInkTell()` currently applies a pale full-fill tint to the head, body, gear, and weapon during the protected ground-roll opening. Interior color and surface markings vanish. Every character therefore needs an outer-contour differentiator; “same round hood, different eye color” is not acceptable.
-- **Party read:** no two rows below share the same combination of outer contour + facial-plane geometry + top landmark. Palette remains a confirmation channel, not the primary identifier. Review all 40 as solid silhouettes at the current 76 px body target, then test likely-confusable four-ups (western hats, closed helms, smooth tech heads, masks, and smoky casters) in motion.
+- **Party read:** no two rows below share the same combination of outer contour + facial-plane geometry + top landmark. Palette remains a confirmation channel, not the primary identifier. Review all 32 retained heads as solid silhouettes at the current 76 px body target, then test likely-confusable four-ups (western hats, closed helms, smooth tech heads, masks, and smoky casters) in motion.
 
 Highest-risk treatments at gameplay scale are smoke/ash, a held object, sheer veils, hanging fringe, and low brims: they require the solid backstops and minimum thicknesses above. Long horns/plumes/halos are safer for recognition but risk cropped bounds or exaggerated bob leverage; chars-3 must include their full alpha bounds in the character-owned head socket/footprint. Rigid full masks, closed helms, bone faces, and nonhuman shells are the lowest compliance risk, but still need different outer contours to avoid roster sameness.
 
@@ -157,3 +157,56 @@ This is the binding face map for the 32-character carry-forward recommended by `
 ### Eight live IDs not commissioned in the 32-character plan
 
 Chars-1 cuts Cordell, Buzzard, Dunkel, Deepfall, Halcyon-7, Grix, Pyra, and Sir Galloway as identity overlaps. Do not spend prompt or review cycles on new concealment for them. Until chars-5 removes/remaps those live IDs, their existing face status is migration evidence only: Cordell, Deepfall, Halcyon-7, and Galloway already have a shadow/sealed-head seed; Buzzard, Dunkel, Grix, and Pyra expose anatomy and therefore may **not** be routed through the new renderer as temporary art. Use chars-1's cosmetic fallback aliases during migration (Cordell→Drifter, Buzzard→Bandida, Dunkel→Cassian, Deepfall→Bastion, Halcyon→Sable, Grix→Bastion, Pyra→Cinderpyre, Galloway→Cassian) rather than shipping a face-law exception.
+
+## Concrete execution plan for the face-law track
+
+1. **Freeze `FACE_LAW_V1` with the 32-row map.** Each `data/character-art-plan` job owned by chars-4 must carry five explicit face fields: concealment, opaque backstop, allowed abstract light (including “none”), signature contour, and character-specific forbidden leak. A missing field fails job compilation. The eight cuts have no job row.
+2. **Lock the Drifter first.** Review four Drifter attempts as chars-4 proposes. The approved one freezes the face-void value, minimum brim-shadow wedge, absence of eye lights, top-plane read, and full-fill contour. It is the semantic reference for “shadow,” but its hat/void construction is not copied to the rest of the cast.
+3. **Prove range with Kuro-Oni and Iridia.** Kuro-Oni proves a wide rigid full mask with painted features; Iridia proves opaque cloth/halo treatment without a hidden face or gameplay blob. Approval of all three anchors is required before fleet production.
+4. **Run the eight-character stress pilot already proposed by chars-4:** Drifter, Kuro-Oni, Iridia, The Hollow Mask, Cinderpyre, Bastion, Neon, and Cassian. This covers shadow, ritual full mask, veils, porcelain, nonhuman void, tech visor, aero shroud, and great-helm before volume generation.
+5. **Generate the remaining 24 as three face-risk batches of eight:**
+   - Soft/partial covers: Asha, Hollowmaw, Magdalene, Mawkin, Mei-Ling, Mirelurk, Sōjiro, Bandida.
+   - Rigid/ritual faces: Tendo, Bryda, Veyra, Phineas, Gravewake, Odette, Raijin, Yuki.
+   - Material/tech faces: Cogwarden, Corvane, Crowmantle, Elias, Sable, Mordrane, Thornroot, Tinker-Magnus.
+6. **Fail closed before owner review.** Machine checks may verify alpha closure, solid void coverage, head locality, minimum feature thickness, bounds, and chars-3's nine spring extremes. A human must judge anatomy: stylized face detection is not sufficient. Use reason codes `FACE_LEAK`, `BACKSTOP_MISSING`, `PROP_DEPENDENCY`, `BOB_REVEAL`, `TINT_COLLAPSE`, and `SILHOUETTE_COLLISION`; reject and regenerate the complete attempt rather than paint over it downstream.
+7. **Run adversarial co-op collision tests.** At 76 px, show each four-up first in normal color, then grayscale, then solid/full-fill silhouette, with labels hidden during review. These eight sets intentionally group near-neighbors rather than easy contrasts:
+   - Drifter / Bandida / Magdalene / Elias
+   - Phineas / Mawkin / Sōjiro / Mirelurk
+   - Bastion / Cassian / Veyra / Mordrane
+   - Kuro-Oni / The Hollow Mask / Yuki / Bryda
+   - Cinderpyre / Hollowmaw / Thornroot / Sable
+   - Tendo / Raijin / Tinker-Magnus / Odette
+   - Asha / Iridia / Mei-Ling / Crowmantle
+   - Gravewake / Corvane / Cogwarden / Neon
+
+   Any identity that requires its color label, lore, weapon, or a zoomed portrait to disambiguate fails. Adjust that head's gross contour—not merely a tiny emblem—and rerun both its cluster and the full 32-head sheet.
+8. **Keep a permanent regression board.** The final evidence is one 32-head source close-up board, one 76 px body+head board, one grayscale silhouette board, one pale-fill board, and nine-position bob strips for every accepted head. Any later prompt, outline, scale, socket, tint, or palette change reruns the affected row against all prior neighbors.
+
+## Cost and handoffs to the other four tracks
+
+The face law eliminates expression production—**zero** blink, mouth, eye-direction, or emotion variants—but it adds deliberate identity and QA work. The selected plan needs 32 unique concealment specifications and 32 character-owned heads. A complete review card contains one source face close-up, one 76 px color view, one grayscale silhouette, one mirrored rest view, one pale-fill view, and nine spring extremes: **14 face-relevant views per character, 448 view cells total**, composited rather than necessarily rendered as separate files. It also adds eight adversarial four-player sheets and one full-cast comparison. Chars-1's eight cuts avoid eight prompt/review cycles and 16 final body/head layers relative to a 40-character fleet; restoring any cut later costs a fresh unique treatment and the full regression pass.
+
+| Track | Required handoff / dependency | Cost of getting it wrong or changing it late |
+|---|---|---|
+| **`chars-1-roster`** | Authoritative retained IDs, rank, player fantasy, body silhouette, and visual signature. Its current answer is 32 retained / 8 cut. Chars-1's identity call remains authoritative; this report's exact face construction supersedes provisional face suggestions where they differ. | A restored or swapped ID requires a new concealment row, collision review, generation attempts, and owner approval; reusing another character's head language breaks cast legibility. |
+| **`chars-3-headrig`** | Authoritative `B` geometry, 0.85 mount, fixed socket/pivot, head bounds, 0.16–0.20B rest overlap, ≥0.10B worst-case overlap, ±4 px extreme compositor, and alpha ownership for horns/halos/veils/pipes. | A late geometry change can invalidate every opacity, overlap, minimum-pixel, crop, and bob verdict. This report defers to chars-3 wherever geometry is stricter. |
+| **`chars-4-pipeline`** | Copy the semantic law and each row's positive construction/forbidden leaks into the locked prompt/art-plan record; preserve the opaque backstop through keying/slicing; generate the close-up, gameplay, tint, mirror, bob, and collision evidence; require human face review. | A normal face authored beneath a veil/smoke/glass layer cannot be repaired by extraction. A changed face instruction invalidates that character's attempts and approval hash. |
+| **`chars-5-migration`** | Switch atomically to character-owned body+head pairs; a missing/rejected head must fail closed or use the compliant Drifter pair, never a blank pale face. Apply the eight cut aliases before any noncompliant legacy art enters the new renderer. Remove wardrobe face receivers and alternative-head selection without removing the retained spring/tint paths. | A mixed-version fallback, missing texture, or body-only frame can expose a generic/legacy face and violate the law even when all promoted art is valid. |
+
+## Assumptions and owner questions
+
+No owner question blocks this plan. Assumptions recorded for implementation:
+
+- Chars-1's 32-character recommendation is the production baseline; the current 40-ID code state is a migration concern, not a request to commission eight extra characters.
+- “No face” means no living facial anatomy, not “no face-like symbol.” The mandate explicitly calls for skull/bone faces and allows mask-painted features, so rigid skulls, mask fangs/grins, and abstract lights are legal under the fixed/nonliving exceptions above.
+- Chars-3's frozen geometry is authoritative. The current 76 px body target, 0.85 mount, and ±4 px spring values are verified starting facts; proportional thresholds must be recomputed if that track deliberately changes them before production.
+- The face treatment is permanent across gameplay, portraits, cards, marketing art, damage/downed states, and future skins. A future cosmetic may change a whole character identity only by passing the same gate; it may never uncover the underlying face.
+- Emissive marks may pulse as non-expressive VFX but do not blink, look around, form brows/mouths, or become a substitute facial-animation system.
+
+## Validation results
+
+- Read the reporting README, all 50 complete concept records, the complete 40-ID roster/kit file, the full character-class/quirk module, the relevant floating-head construction/spring/final-sync/tint/tumble paths, the current head-scale normalization, and the evolving reports from chars-1, chars-3, chars-4, and chars-5. Reconciled this report to chars-1's final 32-character recommendation and chars-3's stricter overlap geometry.
+- Programmatically compared the assignment-table IDs with `PLAYABLE_CHARACTERS` minus the eight named cuts: **32 rows, 32 unique IDs, 32 expected, 0 missing, 0 unexpected, 0 duplicates**.
+- Parsed the assignment treatments: **32 rows and 32 unique treatment names**. The vocabulary explicitly covers all mandated families: hard brim shadow, full/half masks, cowls/hoods, helms/visors, veils, bandanas, bandages, skull/bone and animal skulls, void/negative space, abstract eye/slit, smoke/ash, held or mounted object occlusion, porcelain/Nō masks, gas masks, and mourning veils.
+- Markdown checks found 32 well-formed assignment rows, no `TODO`/`TBD`/`FIXME` markers, and no whitespace errors (`git diff --check`; only the workspace's LF→CRLF warning was emitted).
+- This track wrote only `docs/design/chars-2-facelaw.md`. It generated no images, changed no code/assets/catalogs/tests, and did not inspect, stop, replace, or bind the live game services.

@@ -6,7 +6,7 @@ Replace wardrobe assembly with a controlled whole-character production line: eac
 
 ## Mandate and working assumptions
 
-This report defines the prompt system and production method that turns the canonical roster, concealment law, and separated-head rig contract into reviewable generated character art. It plans only; it does not generate or modify product assets. Working assumptions pending repository verification: whole characters remain bespoke; heads are character-bound rather than interchangeable; the only art separation is head from body; and final acceptance requires human owner sign-off at the style-lock and character-identity gates.
+This report defines the prompt system and production method that turns the canonical roster, concealment law, and separated-head rig contract into reviewable generated character art. It plans only; it does not generate or modify product assets. Whole characters remain bespoke; heads are character-bound rather than interchangeable; the head is the only new identity/modularity separation while the existing procedural hands/feet remain rig parts; and final acceptance requires human owner sign-off at the style-lock and character-identity gates.
 
 ## Verification log
 
@@ -93,22 +93,24 @@ The current wrapper exposes no image seed. Accordingly, the production lock is t
 
 ### 3. Produce transparent, role-labelled parts
 
-The model generates one coherent **1024x1024** source plate on exact `#00ff00`, matching the current gear source frame and the proven chroma workflow. It shows six pieces from the same character in fixed guide regions: one head, one torso/body card, two existing procedural hand blobs, and two existing procedural feet. The source head floats above the body with a clean green gap so the pieces can be recovered; a compositor then mounts it at the head socket with the authored overlap. This is still one whole-character prompt and one identity, not six independently generated costume parts.
+The model generates one coherent **1920x1080** source plate on exact `#00ff00`, matching chars-3's final exploded-plate contract and the established full-character render rule. It shows six pieces from the same character in fixed guide regions: one head, one torso/body card, two existing procedural hand blobs, and two existing procedural feet. The source head floats above the body with at least `0.08B_source` uninterrupted green clearance from every other island so the pieces can be recovered; a compositor then ignores the exploded offset and mounts it at the normalized socket. This is still one whole-character prompt and one identity, not six independently generated costume parts. Geometry metadata remains normalized to chars-3's canonical `B_source=512` / 1024-square socket frame, so runtime is not coupled to raw canvas pixels.
 
 Run the pinned chroma key/despill, then a new `playable-character-v2` slicing mode. It identifies the central-above-body component as `head`, lateral middle components as hands, and lower components as feet; it rejects rather than guesses when roles are ambiguous. All decorations must be alpha-connected to their owning part (horns to head, coat tails to body, cuffs to hands), so halos, smoke, loose charms, and VFX cannot become stray seventh components.
 
-Deliver role files with real alpha—`head.png`, `body.png`, `hand-l.png`, `hand-r.png`, `foot-l.png`, `foot-r.png`—plus source-centroid offsets/pivots. Run the existing deterministic `#101014` outline pass after slicing, pack only after promotion, and retain the original raw/keyed plate for audit.
+Deliver role files with real alpha—`head.png`, `body.png`, `hand-l.png`, `hand-r.png`, `foot-l.png`, `foot-r.png`—and head metadata `{socketXB:0, socketYB:-0.38, pivotU, pivotV, mountScale:0.85, overlapB}` plus measured mounted head/body dimensions and alpha bounds. Produce `identity-ref` by deterministically compositing those exact accepted pixels at the socket, never by a second rerender. Run the existing deterministic `#101014` outline pass after slicing, pack only after promotion, and retain the original raw/keyed plate for audit.
+
+If the exploded plate remains unreliable after calibrated retries, the only permitted fallback is a coordinated Codex **edit/extraction** from the same owner-approved whole-character identity: derive a head-only layer and a headless body plate with the hidden shoulder roof completed while attaching the approved identity as reference. Two fresh independent head/body generations are forbidden; matching costume names do not prove matching design, lighting, proportion, or seam geometry.
 
 ### 4. Check before a human sees it
 
 Machine gates should emit one JSON verdict per attempt and a labeled preview, but must never auto-promote art:
 
-- exact square source, decodable PNG, uniform opaque green field at all four corners, no checkerboard/fake alpha, and successful despill;
+- exact `1920x1080` source, decodable PNG, uniform opaque green field at all four corners, no checkerboard/fake alpha, and successful despill;
 - exactly six semantic components at or above the existing `0.05%` minimum-area floor, with no unexplained seventh component or loose particle;
 - head/body/hands/feet in their guide regions; all alpha bounds inside the safe canvas envelope; no clipped silhouette;
 - closed head bottom and closed body/shoulder top, no neck, connector peg, cropped-open surface, or transparent hole in either part;
-- chars-3 proportion bands and socket metadata pass; until superseded, use the verified core targets `0.92-1.00` torso W:H, `0.82-0.90` core-head:torso width, `0.36-0.39` head-zone share, and `8-12%` vertical head/body overlap in the rest composite. Costume extensions may exceed the core outline only inside the fixed total-head envelope (current normalization allows up to `1.35x` base width);
-- at mounted `0.85` head scale and 76 px body height, render rest, mirror, pale roll tint, and a 3x3 `x/y = -4, 0, +4 px` motion strip. No pose may reveal a neck/cut seam or make the head read as another character;
+- chars-3 geometry passes: socket `(0,-0.38B)`; pivot `u .46-.54 / v .52-.58`; mounted head height `0.44-.48B`; mounted head width `0.70-.77` of shoulder/torso width; torso W:H `0.90-1.00`; shoulder:hip `0.95-1.05`; rest overlap `0.16-.20B`; planted core `1.18-1.24B`; and ornament extensions no more than `0.22B` upward / `0.15B` laterally;
+- at mounted `0.85` head scale and 76 px body height, render rest, mirror, pale roll tint, and a 3x3 `x/y = -4, 0, +4 px` motion strip. Every extreme retains at least `0.10B` vertical and `45%` lower-head-width horizontal alpha overlap with no daylight, neck, or cut seam;
 - palette clustering excludes alpha-edge blends and the deterministic outline, allows only the row's swatches plus standardized one-band shadow/one highlight, limits meaningful clusters to 4-6, and flags if less than 90% of opaque interior pixels fall within a tolerant color-distance band. Palette checking is a rejection/inspection signal, never an automatic recolor that conceals drift;
 - no baked floor, ground/contact shadow, held weapon/prop, radiating light, particles, smoke, or motion trail.
 
@@ -120,6 +122,8 @@ For each mechanically valid attempt, build one review card containing: raw plate
 
 Promotion states are explicit: `generated -> mechanical-pass -> art-review-pass -> owner-approved -> installed`. A failed attempt remains in the ledger with a reason code such as `FACE_LEAK`, `HEAD_NOT_SEPARABLE`, `OFF_PALETTE`, `CAMERA_DRIFT`, or `PROPORTION_DRIFT`. Copy/install only an owner-approved winner whose prompt and reference hashes still match the approval record.
 
+Promotion is atomic per character. A retained character never installs with only some of its six roles. During the compatibility release, an incomplete v2 row stays on its complete legacy renderer. After the character-only cutover, a missing/corrupt row falls back to the **entire approved Drifter v2 kit** and emits an error/telemetry event; it never pairs character A's body with Drifter's or character B's head. Offline completeness/asset gates must make that fallback unreachable in a healthy build.
+
 ## Locked house-style preamble
 
 This is the invariant text injected byte-for-byte before every retained character. The raw green field is intentional: the **delivered** role PNGs are transparent, produced by the repository's tested keyer rather than by trusting model alpha.
@@ -127,7 +131,7 @@ This is the invariant text injected byte-for-byte before every retained characte
 ```text
 # DIMENSION DRIFTERS PLAYABLE CHARACTER RIG SOURCE — HOUSE STYLE V1 — LOCKED
 
-Generate exactly ONE original, character-owned 1024x1024 raster rig source plate for the single entity named in CHARACTER JOB below. This is one coherent whole-character design shown as its animation-ready pieces, not a wardrobe kit, costume catalogue, portrait, sprite sheet, scene, or collection of alternate characters.
+Generate exactly ONE original, character-owned 1920x1080 raster rig source plate for the single entity named in CHARACTER JOB below. This is one coherent whole-character design shown as its animation-ready pieces, not a wardrobe kit, costume catalogue, portrait, sprite sheet, scene, or collection of alternate characters.
 
 REFERENCE LAW
 The attached approved images govern rendering, camera, contour weight, body grammar, head scale, and part layout. Match those axes exactly. They do not grant permission to copy another character's clothes, palette, headwear, or motifs. The CHARACTER JOB governs identity. If a source concept conflicts with this locked block, this locked block wins.
@@ -138,11 +142,11 @@ Use the game's shallow high three-quarter/top-down arena view while the characte
 HOUSE SILHOUETTE AND RIG GRAMMAR
 Use the same no-neck little-figure species as the approved Drifter: a compact rounded squat torso/body card with no waist and no realistic anatomy; one large character-specific head; two detached simple mitten/bean hand blobs; two detached chunky foot blobs. No painted arms, full legs, fingers, thumbs, knuckles, or anatomical joints.
 
-Render exactly SIX semantic art islands in the attached guide regions: HEAD, BODY, LEFT HAND, RIGHT HAND, LEFT FOOT, RIGHT FOOT. Every costume feature belongs to and physically touches its owning island. No loose seventh component. Keep clear pure-green source gaps between all six islands so deterministic slicing can recover them.
+Render exactly SIX semantic art islands in the attached guide regions: HEAD, BODY, LEFT HAND, RIGHT HAND, LEFT FOOT, RIGHT FOOT. Every costume feature belongs to and physically touches its owning island. No loose seventh component. Keep at least 0.08 body-source-height of uninterrupted pure-green clearance between islands so deterministic slicing can recover them.
 
-The HEAD is unique to this character and never interchangeable. Draw it as a complete closed shape with a fully painted lower edge. Draw the BODY as a complete closed shoulder/collar shape with a fully painted upper edge. Absolutely no neck, throat, skin cylinder, connector post, collar peg, cut-open seam, or head-sized hole. The source plate shows a green gap for slicing; the game mounts the head at 0.85 scale so its lower edge overlaps the body's upper edge by 8-12% and can bob by ±4 gameplay pixels. Both closed silhouettes must still look intentional if that bob briefly opens space between them.
+The HEAD is unique to this character and never interchangeable. Draw it as a complete closed shape with a fully painted lower edge. Draw the BODY as a complete closed shoulder/collar roof with a fully painted upper edge. Absolutely no neck, throat, skin cylinder, connector post, collar peg, cut-open seam, or head-sized hole. The source plate shows a green gap for slicing; the game mounts the head at scale 0.85 on socket (0,-0.38 body heights), overlapping the body's roof by 0.16-0.20 body heights at rest while it bobs by ±4 gameplay pixels. At every extreme, at least 0.10 body heights of vertical overlap and 45% of the lower-head width remain; no transparent daylight opens between head and roof.
 
-Keep core proportions locked to the guide: torso width:height 0.92-1.00; shoulder:hip width 0.95-1.05; core head width 0.82-0.90 of torso width; head zone 0.36-0.39 of assembled head-plus-body height. Costume identity may extend within the guide envelope, but may not replace the shared underlying body grammar.
+Keep core proportions locked to the guide: torso width:height 0.90-1.00; shoulder:hip width 0.95-1.05; mounted head height 0.44-0.48 body heights; mounted head width 0.70-0.77 of shoulder/torso width; complete planted core 1.18-1.24 body heights. Head pivot targets (u=0.50,v=0.55) and may vary only within u 0.46-0.54 / v 0.52-0.58. Costume identity may extend at most 0.22 body heights upward or 0.15 laterally beyond the core envelope, but may not replace the shared underlying body grammar.
 
 HARD FACE LAW — ZERO TOLERANCE
 The biological face zone is unavailable canvas. Cover it edge-to-edge with the opaque concealment treatment named in CHARACTER JOB. The treatment must be self-contained on the head and remain complete without a hand, weapon, prop, body pose, VFX, lighting trick, or camera crop. A dark void must be solid matte near-black; a mask/helm/veil must be opaque material backed by solid darkness. Abstract painted slits, sigils, or inanimate mask fangs are permitted only when the job explicitly names them and they reveal no anatomy.
@@ -161,7 +165,7 @@ EMPTY AND EFFECT-FREE
 Hands are empty. Do not draw any held weapon, shield, staff, book, card, bottle, tool, talisman, spell, or prop; the game equips weapons and places hands procedurally. No aura, smoke, steam, fire, sparks, lightning, particles, floating glyphs, orbiting objects, dust trail, motion trail, glow cloud, or baked runtime VFX. Worn holsters, closed pouches, attached scabbards, and body-connected costume motifs are allowed only when the CHARACTER JOB names them.
 
 FINAL SELF-CHECK BEFORE RETURNING
-One character; one 1024x1024 PNG; exact green field; exactly six separated, unclipped, role-readable islands; coherent matching costume across every part; right-facing shallow top-down read; neutral planted pose; no neck; closed head and body edges; rig proportions; 4-6 exact colors; flat cel; empty hands; no prop/VFX/ground/text; and absolutely no visible biological face or facial feature. If any item fails, correct it before returning the single image.
+One character; one 1920x1080 PNG; exact green field; exactly six separated, unclipped, role-readable islands; coherent matching costume across every part; right-facing shallow top-down read; neutral planted pose; no neck; closed head and body edges; rig proportions; 4-6 exact colors; flat cel; empty hands; no prop/VFX/ground/text; and absolutely no visible biological face or facial feature. If any item fails, correct it before returning the single image.
 ```
 
 ## Per-character prompt template
@@ -177,8 +181,22 @@ IDENTITY NORTH STAR: [one sentence: what must read at 76 px]
 
 BODY/SILHOUETTE: [torso mass, garment/material blocking, one signature body motif; neutral and empty-handed]
 HEAD SILHOUETTE: [unique head mass, attached adornment, closed lower edge]
-FACE CONCEALMENT — POSITIVE: [exact opaque treatment and what the face zone contains]
-FACE CONCEALMENT — CHARACTER-SPECIFIC FORBIDDEN: [ways this concept is likely to leak]
+CONCEALMENT: [chars-2 assigned treatment]
+OPAQUE BACKSTOP: [solid mask/cloth/plate/black void that independently blocks the whole zone]
+SIGNATURE CONTOUR: [gameplay-scale outer landmark]
+ALLOWED ABSTRACT LIGHT: [none, or exact non-anatomical mark]
+FORBIDDEN LEAK: [ways this concept is likely to reveal or imply anatomy]
+
+FACE LAW — HARD REJECTION RULE:
+No directly visible biological face or facial skin, at any resolution or angle. Render no real eye,
+eyelid, nose, nostril, cheek, lips, teeth-in-flesh, jaw skin, or uncovered profile. The entire face zone
+is permanently replaced by [CONCEALMENT], backed by [OPAQUE BACKSTOP]. Its unmistakable gameplay
+landmark is [SIGNATURE CONTOUR]. The only eye-like light allowed is [ALLOWED ABSTRACT LIGHT]; it is a
+flat non-anatomical mark with no iris/pupil/sclera/eyelid. [FORBIDDEN LEAK]. Painted/carved features on
+a clearly rigid mask are allowed and never animate. Do not author a face beneath smoke, glass, veil,
+holes, or shadow. The concealment is part of this character's own separate head layer, never supplied
+by a hand, weapon, body layer, crop, or lighting. No neck. The head overlaps/floats above the body and
+must stay fully concealed while bobbing 4 px in any direction, mirrored, tumbling, and full-fill tinted.
 
 EXACT PALETTE — no substitutions:
 - outline: #101014
@@ -196,9 +214,17 @@ QUIRK FLAVOR, NOT A MECHANIC PROMISE: [optional visual mood only]
 The result must read first as [short silhouette phrase], second as a member of the exact same cast as the approved references.
 ```
 
+After the filled job, the compiler appends chars-3's contract verbatim:
+
+```text
+Render one bespoke, coherent Dimension Drifters character in neutral planted side profile facing screen-right. The head shown is this character's permanent head, never generic and never interchangeable. Draw it as its own fully disconnected opaque island above the body, with uninterrupted flat-green clearance around it. Draw no neck, throat, skin column, stump, connector, or collar peg. Finish the head's lower edge as an opaque mask/hood/helmet/shadow mass and finish the body's upper edge as a broad closed opaque shoulder/collar roof; when recomposed at the documented socket, the head must sit down over that roof rather than meet it edge-to-edge. Nothing—hair, scarf, veil, rope, pipe, strap, cable, halo support, outline, shadow, or VFX—may bridge head to body. The whole face zone is permanently concealed by the character-owned head art; no biological eye, nose, mouth, cheek, jaw, skin, or readable profile is visible. Empty hands, no held weapon, no baked shadow, no particles, no text.
+```
+
+The literal negative list appended last is: `uncovered face, visible facial skin, realistic eye, iris, pupil, eyelid, nose, nostril, lips, mouth, flesh teeth, cheek, ear/profile, raised visor, open helmet, transparent face veil, see-through smoke face, face behind glass, hand as sole face cover, neck`.
+
 ## Three literal example prompts
 
-Each production stdin payload is the exact locked preamble above followed immediately by exactly one block below. There is no hidden rewriting. During Drifter calibration, the references are the current legacy Drifter composite plus the chars-3 geometry guide. For Kuro-Oni and Iridia, Image 1 becomes the approved new Drifter. After all three are approved, their fixed, hash-pinned cast board is attached to every remaining roster job.
+Each production stdin payload is the exact locked preamble above, followed by exactly one filled block below, the fixed chars-3 suffix, and the literal negative list. There is no hidden rewriting. During Drifter calibration, the references are the current legacy Drifter composite plus the chars-3 geometry guide. For Kuro-Oni and Iridia, Image 1 becomes the approved new Drifter. After all three are approved, their fixed, hash-pinned cast board is attached to every remaining roster job.
 
 ### Example 1 — The Drifter
 
@@ -210,9 +236,15 @@ ARCHETYPE READ: shadow-faced occult-western road ghost
 IDENTITY NORTH STAR: At 76 px, read instantly as a battered low-brim hat over a completely black face void, above a lean dust-worn duster body.
 
 BODY/SILHOUETTE: Compact rounded torso under a weathered tan duster that hugs the body and ends in two short body-connected angular coat tails; a small faded-indigo shirt block, oxblood belt and closed holster, and bone-dust edge wear. Keep both mitten hands empty and relaxed in their guide regions; the holster is worn and closed, never held.
-HEAD SILHOUETTE: Oversized battered slouch hat with a low wide diagonal brim and a wrapped high cowl beneath it; hat, cowl, and enclosed void form one alpha-connected head island with a complete rounded lower edge.
-FACE CONCEALMENT — POSITIVE: The brim and high cowl enclose the entire face zone as one solid matte #22252B void. No eye dots; the darkness itself is the face treatment.
-FACE CONCEALMENT — CHARACTER-SPECIFIC FORBIDDEN: Do not lift the brim, light the profile, show skin between brim and cowl, draw an eye glint, nose, mouth, stubble, beard, or bandana-shaped facial contour inside the void.
+HEAD SILHOUETTE: Oversized battered slouch hat with the cast's widest clean low diagonal brim over a thick enclosed shadow wedge; hat and solid shadow mass form one alpha-connected head island with a complete rounded lower edge.
+CONCEALMENT: Eclipse Brim — the entire region from brim to the closed lower head edge is one matte-charcoal shadow wedge.
+OPAQUE BACKSTOP: Solid #22252B painted head mass; there is no transparent void and no face underneath.
+SIGNATURE CONTOUR: Widest clean horizontal western brim over a shadow wedge at least 3 rendered pixels thick.
+ALLOWED ABSTRACT LIGHT: none.
+FORBIDDEN LEAK: Do not add a bandana, lift the brim, light the profile, show skin, eye dots/glints, nose, mouth, stubble, beard, or facial contour inside the shadow.
+
+FACE LAW — HARD REJECTION RULE:
+No directly visible biological face or facial skin, at any resolution or angle. Render no real eye, eyelid, nose, nostril, cheek, lips, teeth-in-flesh, jaw skin, or uncovered profile. The entire face zone is permanently replaced by the Eclipse Brim's matte-charcoal shadow wedge, backed by solid #22252B painted head mass. Its unmistakable gameplay landmark is the cast's widest clean horizontal western brim over a shadow wedge at least 3 rendered pixels thick. No eye-like light is allowed. Do not add a bandana, lift the brim, light the profile, show skin, eye dots/glints, nose, mouth, stubble, beard, or facial contour inside the shadow. Painted/carved mask features are not relevant here. Do not author a face beneath shadow. The concealment is part of this character's own separate head layer, never supplied by a hand, weapon, body layer, crop, or lighting. No neck. The head overlaps/floats above the body and must stay fully concealed while bobbing 4 px in any direction, mirrored, tumbling, and full-fill tinted.
 
 EXACT PALETTE — no substitutions:
 - outline: #101014
@@ -241,8 +273,14 @@ IDENTITY NORTH STAR: At 76 px, read as a broad black-iron lamellar body crowned 
 
 BODY/SILHOUETTE: Top-heavy compact torso broadened by two alpha-connected blackened-iron lamellar shoulder masses over an oxblood-lacquer body shell; thick empty gauntlet blobs and planted armored foot blobs. Keep the center clean and bold; no club.
 HEAD SILHOUETTE: One large sealed crimson oni mask with two attached swept horns and attached black hood backing. The mask, horns, hood, and brass mask-fangs are one alpha-connected head island with a closed lower edge; the horns may extend within the fixed head envelope.
-FACE CONCEALMENT — POSITIVE: A fully rigid opaque demon mask backed everywhere by a solid #22252B void. Narrow eye slits are painted dark shapes, not holes. Brass fangs are sculpted inanimate mask ornaments, not biological teeth.
-FACE CONCEALMENT — CHARACTER-SPECIFIC FORBIDDEN: No human skin around mask edges, no eyes inside slits, no open mouth, tongue, gums, biological teeth, cheek, jaw, beard, or mask lifted/turned aside.
+CONCEALMENT: Temple Oni — full opaque crimson lacquer demon mask.
+OPAQUE BACKSTOP: Opaque black wrap and solid #22252B darkness behind every mask edge and opening.
+SIGNATURE CONTOUR: Broad twin horns and projecting brass-fanged mask jaw.
+ALLOWED ABSTRACT LIGHT: none; large eye shapes are flat black-backed painted mask shapes, not openings.
+FORBIDDEN LEAK: No human skin around edges, no eyes inside shapes, no open biological mouth, tongue, gums, flesh teeth, cheek, jaw, beard, or mask lifted/turned aside.
+
+FACE LAW — HARD REJECTION RULE:
+No directly visible biological face or facial skin, at any resolution or angle. Render no real eye, eyelid, nose, nostril, cheek, lips, teeth-in-flesh, jaw skin, or uncovered profile. The entire face zone is permanently replaced by a full opaque crimson lacquer Temple Oni mask, backed by opaque black wrap and solid #22252B darkness. Its unmistakable gameplay landmark is the broad twin-horn contour and projecting brass-fanged mask jaw. No eye-like light is allowed; large eye shapes are flat black-backed painted mask shapes, not openings. No human skin may appear around edges; no eyes inside shapes; no open biological mouth, tongue, gums, flesh teeth, cheek, jaw, beard, or lifted/turned mask. Painted/carved features and brass fangs are fixed inanimate mask decoration and never animate. Do not author a face beneath holes or shadow. The concealment is part of this character's own separate head layer, never supplied by a hand, weapon, body layer, crop, or lighting. No neck. The head overlaps/floats above the body and must stay fully concealed while bobbing 4 px in any direction, mirrored, tumbling, and full-fill tinted.
 
 EXACT PALETTE — no substitutions:
 - outline: #101014
@@ -269,9 +307,15 @@ ARCHETYPE READ: occult astral seer hidden behind ritual cloth
 IDENTITY NORTH STAR: At 76 px, read as a serene indigo bell body beneath a layered veiled head and thin attached gold halo, with one small violet sigil accent.
 
 BODY/SILHOUETTE: Compact rounded torso wrapped in stacked indigo and midnight cloth bands that hug the body and end in a clean bell hem; pale-gold star-leaf marks are sparse and large. Two empty covered mitten hands hover open but neutral in their guide regions; no constellation or spell between them.
-HEAD SILHOUETTE: A deep indigo cowl wrapped by overlapping opaque silver-white ritual blindfold and veil bands, suggesting nine layers without nine loose pieces. A thin pale-gold halo ring touches and is structurally attached to the veil crown at two points so the whole head remains one island. Closed dark lower edge, no neck.
-FACE CONCEALMENT — POSITIVE: Beneath the cowl is a solid #22252B void; opaque blindfold and veil bands cover the full face zone edge-to-edge. One small flat arc-violet sigil may be painted on the blindfold, with no glow.
-FACE CONCEALMENT — CHARACTER-SPECIFIC FORBIDDEN: No transparent gauze, skin through cloth, eye under/above the blindfold, nose ridge, lips, readable profile, face-shaped lighting, lifted veil, or separate floating veil/halo component.
+HEAD SILHOUETTE: A deep indigo cowl carrying nine distinct but crown-connected opaque veil planes, crossed by a solid silver-white blindfold. A thin pale-gold halo ring touches and is structurally attached to the veil crown at two points so the whole head remains one island. Closed dark lower edge, no neck.
+CONCEALMENT: Ninefold Oracle Shroud — nine distinct opaque veil planes fully replace the face, crossed by an opaque blindfold.
+OPAQUE BACKSTOP: Solid #22252B void beneath every veil and blindfold plane.
+SIGNATURE CONTOUR: Circular attached gold halo plus a fan of staggered veil tails.
+ALLOWED ABSTRACT LIGHT: one small flat arc-violet sigil painted on the blindfold, no bloom and no facial placement.
+FORBIDDEN LEAK: No transparent gauze, skin through cloth, eye under/above blindfold, nose ridge, lips, readable profile, face-shaped lighting, lifted veil, indistinguishable smoke wisps, or separate floating veil/halo component.
+
+FACE LAW — HARD REJECTION RULE:
+No directly visible biological face or facial skin, at any resolution or angle. Render no real eye, eyelid, nose, nostril, cheek, lips, teeth-in-flesh, jaw skin, or uncovered profile. The entire face zone is permanently replaced by the Ninefold Oracle Shroud's nine distinct opaque veil planes and solid blindfold, backed by a solid #22252B void. Its unmistakable gameplay landmark is the circular attached gold halo plus a fan of staggered veil tails. The only eye-like light allowed is one small flat arc-violet sigil painted on the blindfold; it is a non-anatomical mark with no iris, pupil, sclera, or eyelid. No transparent gauze, skin through cloth, eye under/above blindfold, nose ridge, lips, readable profile, face-shaped lighting, lifted veil, indistinguishable smoke wisps, or separate floating veil/halo component. Painted mask features are not relevant here. Do not author a face beneath veil or shadow. The concealment is part of this character's own separate head layer, never supplied by a hand, weapon, body layer, crop, or lighting. No neck. The head overlaps/floats above the body and must stay fully concealed while bobbing 4 px in any direction, mirrored, tumbling, and full-fill tinted.
 
 EXACT PALETTE — no substitutions:
 - outline: #101014
@@ -308,7 +352,7 @@ Use 4-6 meaningful colors per character, at most one neon accent, and the same v
 
 ### Proportion and camera discipline
 
-The attached geometry guide, not prose alone, fixes source regions, body mass, head socket, overlap, and shallow top-down camera. Every candidate is measured against the same guide before subjective review. Distinction comes from outer costume/head silhouette inside the envelope—not a different anatomy system, line language, camera, or detail density. The 76 px and grayscale views are binding evidence: a character that works only as a 1024 px illustration does not work in this game.
+The attached geometry guide, not prose alone, fixes source regions, body mass, head socket, overlap, and shallow top-down camera. Every candidate is measured against the same guide before subjective review. Distinction comes from outer costume/head silhouette inside the envelope—not a different anatomy system, line language, camera, or detail density. The 76 px and grayscale views are binding evidence: a character that works only at source resolution does not work in this game.
 
 ## Face law at generation and review time
 
@@ -331,7 +375,7 @@ The review card and approval ledger must make every box answerable from retained
 
 ### Mechanical output
 
-- [ ] Raw is one decodable 1024x1024 PNG on uniform exact `#00ff00`; final role files have true alpha and clean despilled edges.
+- [ ] Raw is one decodable 1920x1080 PNG on uniform exact `#00ff00`; final role files have true alpha and clean despilled edges.
 - [ ] Exactly six intended semantic islands are recovered and labeled correctly: head, body, two hands, two feet. Nothing is clipped; no stray ornament, prop, shadow, or VFX becomes another part.
 - [ ] Head lower edge and body upper edge are independently closed and painted. There is no neck, peg, socket art, cut-open seam, or transparent head hole.
 - [ ] Core proportion, safe-envelope, pivot, socket, head-scale, and rest-overlap measurements pass the current chars-3 geometry version.
@@ -344,6 +388,8 @@ The review card and approval ledger must make every box answerable from retained
 - [ ] Mask/helm/veil openings are painted/opaque or backed by featureless darkness; no anatomy is visible or implied through them.
 - [ ] Concealment is part of the head itself and does not depend on a hand, weapon, prop, pose, crop, shadow direction, VFX, or another body layer.
 - [ ] Mirror, pale roll tint, and every head-bob extreme reveal no face. Any doubt is a failure and regeneration.
+- [ ] At gameplay scale, the principal void/cover is at least 3 px thick; any permitted abstract slit/rune has a flat core at least 2 px thick; the stable landmark is about 4x4 px or projects at least 4 px beyond the ordinary head mass.
+- [ ] Walk, dash, slide/tumble, jump/landing, attack lead, flourish, downed/death treatment, afterimage/tint, mirror, and reduced-motion proofs retain the same cover; the 3x3 grid is the minimum geometry sweep, not the only visual state.
 
 ### House style and identity
 
@@ -372,8 +418,8 @@ Recommended order:
 1. Freeze chars-1 roster/order, chars-2 concealment table, and chars-3 geometry guide. Compile all jobs; zero missing/error rows is the entry gate.
 2. Generate four Drifters, pass gates, and obtain owner sign-off on `DRIFTER_STYLE_LOCK_V1`.
 3. Generate Kuro-Oni and Iridia; obtain owner sign-off on the three-character breadth board and freeze `CHARACTER_REFERENCE_BUNDLE_V1`.
-4. Finish an eight-character stress pilot by adding The Hollow Mask (flat mask), Cinderpyre (non-human), Bastion Vance (wide armor), Neon Mirage (slim tech), and Brother Cassian (closed helm). This exercises concealment and silhouette extremes before volume work.
-5. Produce the remaining retained identities in **three mixed batches of eight** following chars-1's production rank. Mix archetypes/palettes within each batch; do not run 8 similar cowls or armored bodies in a row, which hides drift until too late.
+4. Complete chars-1's **rank 1-8 anchor block** after the trio: Gravewake, The Hollow Mask, The Bandida, Sir Mordrane, and Hollowmaw. This is the first binding eight-character monochrome/co-op gate.
+5. Produce chars-1's remaining ranked blocks exactly: ranks 9-16 (occult/material), 17-24 (western/duelist), and 25-32 (motion/support). Within a block, interleave different silhouette/palette jobs rather than running similar cowls or helms consecutively; no block advances until all eight pass the monochrome lineup.
 6. After every batch, review 76 px color, grayscale, and palette boards against all previously approved characters. Owner promotes winners in the batch sheet; failed rows re-enter only their own attempt queue.
 7. Finish with one full 32-character gameplay-scale cast board, extreme-head-motion spot checks, and final owner sign-off. Only then hand approved assets to chars-5's runtime migration sequence.
 
@@ -385,7 +431,7 @@ Automation owns completeness, hashes, alpha/keying, component count/roles, geome
 |---|---|---|
 | **chars-1-roster** | Final retained ids, production rank, 76 px identity phrase, silhouette signature, and palette intent. Current recommendation is 32. | Queue size and job rows change. An id cut after approval strands its art; an id added later costs a full character cycle. |
 | **chars-2-facelaw** | One positive opaque concealment construction and character-specific forbidden-leak list per retained id, plus rulings on any abstract mask/light marks. | A concealment change invalidates that character's generated attempts; face review cannot be “fixed downstream.” |
-| **chars-3-headrig** | Versioned 1024 guide, exact semantic roles, core proportion bands, source pivots/socket, mount scale, overlap range, safe envelope, and extreme-motion compositor. | Geometry changes can invalidate every sliced head/body pair. This is the most expensive late dependency. |
+| **chars-3-headrig** | Versioned 1920x1080 exploded-plate guide plus normalized 1024/512 socket frame, exact semantic roles, pivots/socket, mount scale, overlap/roof bands, safe envelope, metadata, and extreme-motion compositor. | Geometry changes can invalidate every sliced head/body pair. This is the most expensive late dependency. |
 | **chars-5-migration** | Character-owned runtime manifest/file contract, activation flag/fallback behavior, persistence-safe switchover, and the point at which wardrobe catalogs/assets may be retired. | Art can be approved out of runtime, but early installation risks breaking saved accounts, server modifiers, or the approved body animation path. |
 
 This track costs the one-time 3-5 engineering days above, 121-145 expected generation calls and roughly 16-26 combined production/style-review hours for the 32-character plan, plus owner review time of roughly 2-3 hours when batched. It depends additionally on keeping the existing Codex wrapper, chroma keyer, outline pass, contact-sheet idiom, asset checker, and approved body animation stable through the migration.
@@ -397,7 +443,7 @@ No question blocks planning. The report proceeds with these explicit assumptions
 - chars-1's 32-character recommendation is the production baseline; all formulas show the 40-character fallback if the owner retains everyone.
 - Abstract **inanimate** mask marks, painted slits, sigils, or a non-biological light band are allowed only when chars-2 assigns them; biological eyes or inferred anatomy are never allowed. The Drifter uses no eye marks.
 - Hands remain empty because weapon/hand placement is runtime-owned. A concept whose old identity depended on a held prop must move that read into attached costume silhouette or be reconsidered by chars-1.
-- The current `0.85` head scale and measured proportion/overlap bands are the implementation baseline, but chars-3's frozen successor guide is authoritative before generation starts.
+- Chars-3's final `1920x1080` exploded-plate contract, normalized socket `(0,-0.38B)`, `0.85` mount, and `0.16-0.20B` rest-overlap band are authoritative generation inputs; they are no longer provisional wardrobe values.
 - One exact concept-specific hue outside the current house palette is allowed when chars-1/owner freezes it in the art plan; adjective-only palette improvisation is not.
 - Owner approvals may be batched, but no character is installed without a winner-specific approval hash.
 
