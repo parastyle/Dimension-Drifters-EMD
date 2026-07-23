@@ -4300,6 +4300,690 @@ export const SPRITES = {
       }
     ]
   },
+  "proto-armored-bean-heavy": {
+    "id": "proto-armored-bean-heavy",
+    "kind": "character",
+    "canvas": {
+      "w": 1040,
+      "h": 586
+    },
+    "body": {
+      "cx": 513.96,
+      "cy": 333.51,
+      "w": 194,
+      "h": 168
+    },
+    "parts": [
+      {
+        "role": "body",
+        "file": "body.png",
+        "w": 194,
+        "h": 168,
+        "cx": 513.96,
+        "cy": 333.51,
+        "ox": 0,
+        "oy": 0
+      },
+      {
+        "role": "head",
+        "file": "head.png",
+        "w": 163,
+        "h": 159,
+        "cx": 528.89,
+        "cy": 155.56,
+        "ox": 14.93,
+        "oy": -177.96
+      },
+      {
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 72,
+        "h": 88,
+        "cx": 342.22,
+        "cy": 341.6,
+        "ox": -171.73,
+        "oy": 8.09
+      },
+      {
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 71,
+        "h": 88,
+        "cx": 694.4,
+        "cy": 340.98,
+        "ox": 181.07,
+        "oy": 7.47
+      },
+      {
+        "role": "foot-l",
+        "file": "foot-l.png",
+        "w": 98,
+        "h": 66,
+        "cx": 412.53,
+        "cy": 461.07,
+        "ox": -100.8,
+        "oy": 127.56
+      },
+      {
+        "role": "foot-r",
+        "file": "foot-r.png",
+        "w": 98,
+        "h": 65,
+        "cx": 612.89,
+        "cy": 460.44,
+        "ox": 98.93,
+        "oy": 126.93
+      }
+    ]
+  },
+  "proto-blob-bruiser": {
+    "id": "proto-blob-bruiser",
+    "kind": "character",
+    "canvas": {
+      "w": 1000,
+      "h": 563
+    },
+    "body": {
+      "cx": 490.85,
+      "cy": 338.39,
+      "w": 194,
+      "h": 168
+    },
+    "parts": [
+      {
+        "role": "body",
+        "file": "body.png",
+        "w": 194,
+        "h": 168,
+        "cx": 490.85,
+        "cy": 338.39,
+        "ox": 0,
+        "oy": 0
+      },
+      {
+        "role": "head",
+        "file": "head.png",
+        "w": 188,
+        "h": 175,
+        "cx": 494.43,
+        "cy": 144.09,
+        "ox": 3.59,
+        "oy": -194.31
+      },
+      {
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 62,
+        "h": 79,
+        "cx": 358.12,
+        "cy": 355.13,
+        "ox": -132.73,
+        "oy": 16.74
+      },
+      {
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 60,
+        "h": 78,
+        "cx": 625.96,
+        "cy": 355.73,
+        "ox": 135.12,
+        "oy": 17.34
+      },
+      {
+        "role": "foot-l",
+        "file": "foot-l.png",
+        "w": 88,
+        "h": 64,
+        "cx": 414.32,
+        "cy": 462.15,
+        "ox": -76.53,
+        "oy": 123.76
+      },
+      {
+        "role": "foot-r",
+        "file": "foot-r.png",
+        "w": 88,
+        "h": 63,
+        "cx": 570.36,
+        "cy": 462.15,
+        "ox": 79.52,
+        "oy": 123.76
+      }
+    ]
+  },
+  "proto-capsule-tactical-unit": {
+    "id": "proto-capsule-tactical-unit",
+    "kind": "character",
+    "canvas": {
+      "w": 1133,
+      "h": 637
+    },
+    "body": {
+      "cx": 557.52,
+      "cy": 367.16,
+      "w": 167,
+      "h": 168
+    },
+    "parts": [
+      {
+        "role": "body",
+        "file": "body.png",
+        "w": 167,
+        "h": 168,
+        "cx": 557.52,
+        "cy": 367.16,
+        "ox": 0,
+        "oy": 0
+      },
+      {
+        "role": "head",
+        "file": "head.png",
+        "w": 159,
+        "h": 186,
+        "cx": 565.65,
+        "cy": 169.35,
+        "ox": 8.13,
+        "oy": -198.48
+      },
+      {
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 58,
+        "h": 81,
+        "cx": 418.65,
+        "cy": 389.52,
+        "ox": -138.87,
+        "oy": 21.68
+      },
+      {
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 58,
+        "h": 81,
+        "cx": 708.58,
+        "cy": 388.84,
+        "ox": 151.06,
+        "oy": 21
+      },
+      {
+        "role": "foot-l",
+        "file": "foot-l.png",
+        "w": 99,
+        "h": 70,
+        "cx": 489.77,
+        "cy": 504,
+        "ox": -67.06,
+        "oy": 136.84
+      },
+      {
+        "role": "foot-r",
+        "file": "foot-r.png",
+        "w": 100,
+        "h": 70,
+        "cx": 638.13,
+        "cy": 504,
+        "ox": 80.61,
+        "oy": 136.16
+      }
+    ]
+  },
+  "proto-geometric-robot-pod": {
+    "id": "proto-geometric-robot-pod",
+    "kind": "character",
+    "canvas": {
+      "w": 1003,
+      "h": 565
+    },
+    "body": {
+      "cx": 495.6,
+      "cy": 333,
+      "w": 199,
+      "h": 168
+    },
+    "parts": [
+      {
+        "role": "body",
+        "file": "body.png",
+        "w": 199,
+        "h": 168,
+        "cx": 495.6,
+        "cy": 333,
+        "ox": 0,
+        "oy": 0
+      },
+      {
+        "role": "head",
+        "file": "head.png",
+        "w": 166,
+        "h": 136,
+        "cx": 512.4,
+        "cy": 147.6,
+        "ox": 16.8,
+        "oy": -184.8
+      },
+      {
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 65,
+        "h": 92,
+        "cx": 335.4,
+        "cy": 342,
+        "ox": -160.2,
+        "oy": 9.6
+      },
+      {
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 65,
+        "h": 92,
+        "cx": 663,
+        "cy": 342,
+        "ox": 167.4,
+        "oy": 9.6
+      },
+      {
+        "role": "foot-l",
+        "file": "foot-l.png",
+        "w": 103,
+        "h": 66,
+        "cx": 409.8,
+        "cy": 456.6,
+        "ox": -85.8,
+        "oy": 124.2
+      },
+      {
+        "role": "foot-r",
+        "file": "foot-r.png",
+        "w": 104,
+        "h": 66,
+        "cx": 576.6,
+        "cy": 456.6,
+        "ox": 81,
+        "oy": 123.6
+      }
+    ]
+  },
+  "proto-helmeted-enforcer": {
+    "id": "proto-helmeted-enforcer",
+    "kind": "character",
+    "canvas": {
+      "w": 930,
+      "h": 523
+    },
+    "body": {
+      "cx": 458.38,
+      "cy": 300.95,
+      "w": 180,
+      "h": 168
+    },
+    "parts": [
+      {
+        "role": "body",
+        "file": "body.png",
+        "w": 180,
+        "h": 168,
+        "cx": 458.38,
+        "cy": 300.95,
+        "ox": 0,
+        "oy": 0
+      },
+      {
+        "role": "head",
+        "file": "head.png",
+        "w": 142,
+        "h": 139,
+        "cx": 465.06,
+        "cy": 137.96,
+        "ox": 6.68,
+        "oy": -163.55
+      },
+      {
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 60,
+        "h": 76,
+        "cx": 326.54,
+        "cy": 294.83,
+        "ox": -131.84,
+        "oy": -6.12
+      },
+      {
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 58,
+        "h": 76,
+        "cx": 593.56,
+        "cy": 294.83,
+        "ox": 135.18,
+        "oy": -6.12
+      },
+      {
+        "role": "foot-l",
+        "file": "foot-l.png",
+        "w": 83,
+        "h": 54,
+        "cx": 388.29,
+        "cy": 425.01,
+        "ox": -70.09,
+        "oy": 123.5
+      },
+      {
+        "role": "foot-r",
+        "file": "foot-r.png",
+        "w": 81,
+        "h": 53,
+        "cx": 536.26,
+        "cy": 424.45,
+        "ox": 77.88,
+        "oy": 123.5
+      }
+    ]
+  },
+  "proto-hooded-rogue": {
+    "id": "proto-hooded-rogue",
+    "kind": "character",
+    "canvas": {
+      "w": 1060,
+      "h": 597
+    },
+    "body": {
+      "cx": 519.22,
+      "cy": 367.06,
+      "w": 178,
+      "h": 168
+    },
+    "parts": [
+      {
+        "role": "body",
+        "file": "body.png",
+        "w": 178,
+        "h": 168,
+        "cx": 519.22,
+        "cy": 367.06,
+        "ox": 0,
+        "oy": 0
+      },
+      {
+        "role": "head",
+        "file": "head.png",
+        "w": 200,
+        "h": 193,
+        "cx": 523.02,
+        "cy": 176.24,
+        "ox": 4.44,
+        "oy": -191.46
+      },
+      {
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 52,
+        "h": 74,
+        "cx": 400.66,
+        "cy": 375.31,
+        "ox": -118.55,
+        "oy": 8.24
+      },
+      {
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 53,
+        "h": 75,
+        "cx": 655.52,
+        "cy": 374.04,
+        "ox": 136.94,
+        "oy": 6.34
+      },
+      {
+        "role": "foot-l",
+        "file": "foot-l.png",
+        "w": 79,
+        "h": 53,
+        "cx": 455.82,
+        "cy": 478.01,
+        "ox": -63.4,
+        "oy": 110.94
+      },
+      {
+        "role": "foot-r",
+        "file": "foot-r.png",
+        "w": 79,
+        "h": 53,
+        "cx": 593.39,
+        "cy": 476.74,
+        "ox": 74.17,
+        "oy": 109.68
+      }
+    ]
+  },
+  "proto-masked-oval-fighter": {
+    "id": "proto-masked-oval-fighter",
+    "kind": "character",
+    "canvas": {
+      "w": 1076,
+      "h": 606
+    },
+    "body": {
+      "cx": 531.03,
+      "cy": 357.89,
+      "w": 149,
+      "h": 168
+    },
+    "parts": [
+      {
+        "role": "body",
+        "file": "body.png",
+        "w": 149,
+        "h": 168,
+        "cx": 531.03,
+        "cy": 357.89,
+        "ox": 0,
+        "oy": 0
+      },
+      {
+        "role": "head",
+        "file": "head.png",
+        "w": 122,
+        "h": 165,
+        "cx": 545.2,
+        "cy": 175.72,
+        "ox": 14.16,
+        "oy": -182.16
+      },
+      {
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 61,
+        "h": 78,
+        "cx": 399.08,
+        "cy": 370.11,
+        "ox": -131.95,
+        "oy": 12.23
+      },
+      {
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 60,
+        "h": 78,
+        "cx": 667.49,
+        "cy": 370.11,
+        "ox": 136.46,
+        "oy": 12.23
+      },
+      {
+        "role": "foot-l",
+        "file": "foot-l.png",
+        "w": 75,
+        "h": 56,
+        "cx": 455.08,
+        "cy": 483.4,
+        "ox": -75.31,
+        "oy": 125.52
+      },
+      {
+        "role": "foot-r",
+        "file": "foot-r.png",
+        "w": 72,
+        "h": 55,
+        "cx": 605.06,
+        "cy": 483.4,
+        "ox": 74.02,
+        "oy": 125.52
+      }
+    ]
+  },
+  "proto-mutant-lump": {
+    "id": "proto-mutant-lump",
+    "kind": "character",
+    "canvas": {
+      "w": 965,
+      "h": 543
+    },
+    "body": {
+      "cx": 472.25,
+      "cy": 333.69,
+      "w": 168,
+      "h": 168
+    },
+    "parts": [
+      {
+        "role": "body",
+        "file": "body.png",
+        "w": 168,
+        "h": 168,
+        "cx": 472.25,
+        "cy": 333.69,
+        "ox": 0,
+        "oy": 0
+      },
+      {
+        "role": "head",
+        "file": "head.png",
+        "w": 160,
+        "h": 157,
+        "cx": 490.14,
+        "cy": 169.73,
+        "ox": 17.9,
+        "oy": -163.96
+      },
+      {
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 51,
+        "h": 68,
+        "cx": 345.81,
+        "cy": 337.15,
+        "ox": -126.43,
+        "oy": 2.89
+      },
+      {
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 53,
+        "h": 68,
+        "cx": 596.37,
+        "cy": 337.73,
+        "ox": 124.7,
+        "oy": 3.46
+      },
+      {
+        "role": "foot-l",
+        "file": "foot-l.png",
+        "w": 79,
+        "h": 53,
+        "cx": 410.47,
+        "cy": 437.61,
+        "ox": -61.77,
+        "oy": 103.92
+      },
+      {
+        "role": "foot-r",
+        "file": "foot-r.png",
+        "w": 80,
+        "h": 52,
+        "cx": 544.99,
+        "cy": 437.61,
+        "ox": 73.32,
+        "oy": 103.92
+      }
+    ]
+  },
+  "proto-paper-cutout-fighter": {
+    "id": "proto-paper-cutout-fighter",
+    "kind": "character",
+    "canvas": {
+      "w": 1156,
+      "h": 651
+    },
+    "body": {
+      "cx": 572.44,
+      "cy": 389.23,
+      "w": 178,
+      "h": 168
+    },
+    "parts": [
+      {
+        "role": "body",
+        "file": "body.png",
+        "w": 178,
+        "h": 168,
+        "cx": 572.44,
+        "cy": 389.23,
+        "ox": 0,
+        "oy": 0
+      },
+      {
+        "role": "head",
+        "file": "head.png",
+        "w": 176,
+        "h": 230,
+        "cx": 579.36,
+        "cy": 188.74,
+        "ox": 6.91,
+        "oy": -200.49
+      },
+      {
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 66,
+        "h": 86,
+        "cx": 433.48,
+        "cy": 397.53,
+        "ox": -138.96,
+        "oy": 8.3
+      },
+      {
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 67,
+        "h": 85,
+        "cx": 715.56,
+        "cy": 397.53,
+        "ox": 143.11,
+        "oy": 8.3
+      },
+      {
+        "role": "foot-l",
+        "file": "foot-l.png",
+        "w": 98,
+        "h": 65,
+        "cx": 503.31,
+        "cy": 511.6,
+        "ox": -69.14,
+        "oy": 122.37
+      },
+      {
+        "role": "foot-r",
+        "file": "foot-r.png",
+        "w": 95,
+        "h": 64,
+        "cx": 647.8,
+        "cy": 511.6,
+        "ox": 75.36,
+        "oy": 122.37
+      }
+    ]
+  },
   "proto-samurai": {
     "id": "proto-samurai",
     "kind": "character",
@@ -4449,6 +5133,82 @@ export const SPRITES = {
         "cy": 476.72,
         "ox": 79.97,
         "oy": 123.99
+      }
+    ]
+  },
+  "proto-soft-mascot-fighter": {
+    "id": "proto-soft-mascot-fighter",
+    "kind": "character",
+    "canvas": {
+      "w": 1137,
+      "h": 640
+    },
+    "body": {
+      "cx": 555.01,
+      "cy": 377.49,
+      "w": 175,
+      "h": 168
+    },
+    "parts": [
+      {
+        "role": "body",
+        "file": "body.png",
+        "w": 175,
+        "h": 168,
+        "cx": 555.01,
+        "cy": 377.49,
+        "ox": 0,
+        "oy": 0
+      },
+      {
+        "role": "head",
+        "file": "head.png",
+        "w": 192,
+        "h": 165,
+        "cx": 557.05,
+        "cy": 191.81,
+        "ox": 2.04,
+        "oy": -185.68
+      },
+      {
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 66,
+        "h": 88,
+        "cx": 410.82,
+        "cy": 389.05,
+        "ox": -143.51,
+        "oy": 10.88
+      },
+      {
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 65,
+        "h": 88,
+        "cx": 703.29,
+        "cy": 389.05,
+        "ox": 148.28,
+        "oy": 10.88
+      },
+      {
+        "role": "foot-l",
+        "file": "foot-l.png",
+        "w": 92,
+        "h": 66,
+        "cx": 487,
+        "cy": 510.12,
+        "ox": -67.34,
+        "oy": 132.63
+      },
+      {
+        "role": "foot-r",
+        "file": "foot-r.png",
+        "w": 90,
+        "h": 65,
+        "cx": 641.39,
+        "cy": 510.12,
+        "ox": 86.38,
+        "oy": 132.63
       }
     ]
   },

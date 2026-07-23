@@ -79,8 +79,18 @@ export interface QuirkDef {
  */
 export const CHARACTER_LINEAGE = {
   drifter: "bruiser",
+  "proto-armored-bean-heavy": "bruiser",
+  "proto-blob-bruiser": "bruiser",
+  "proto-capsule-tactical-unit": "bruiser",
+  "proto-geometric-robot-pod": "bruiser",
+  "proto-helmeted-enforcer": "bruiser",
+  "proto-hooded-rogue": "bruiser",
+  "proto-masked-oval-fighter": "bruiser",
+  "proto-mutant-lump": "bruiser",
+  "proto-paper-cutout-fighter": "bruiser",
   "proto-samurai": "bruiser",
   "proto-sheriff": "bruiser",
+  "proto-soft-mascot-fighter": "bruiser",
   "proto-witch": "bruiser",
   "cc-asha-the-ash-walker": "bruiser",
   "cc-bryda-houndcall": "bruiser",

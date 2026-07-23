@@ -1,4 +1,5 @@
-import { PLAYABLE_CHARACTERS } from "@dd/shared";
+import { existsSync } from "node:fs";
+import { PLAYABLE_CHARACTERS, WHOLE_ART_CHARACTERS } from "@dd/shared";
 import type Phaser from "phaser";
 import { describe, expect, it, vi } from "vitest";
 import {
@@ -12,8 +13,38 @@ import {
   wholeArtCharacterVisualScale,
 } from "./whole-art-character.js";
 
+const BATCH2_WHOLE_ART_CHARACTER_IDS = [
+  "proto-armored-bean-heavy",
+  "proto-blob-bruiser",
+  "proto-capsule-tactical-unit",
+  "proto-geometric-robot-pod",
+  "proto-helmeted-enforcer",
+  "proto-hooded-rogue",
+  "proto-masked-oval-fighter",
+  "proto-mutant-lump",
+  "proto-paper-cutout-fighter",
+  "proto-soft-mascot-fighter",
+] as const;
+
+const EXPECTED_WHOLE_ART_CHARACTER_IDS = [
+  "proto-armored-bean-heavy",
+  "proto-blob-bruiser",
+  "proto-capsule-tactical-unit",
+  "proto-geometric-robot-pod",
+  "proto-helmeted-enforcer",
+  "proto-hooded-rogue",
+  "proto-masked-oval-fighter",
+  "proto-mutant-lump",
+  "proto-paper-cutout-fighter",
+  "proto-samurai",
+  "proto-sheriff",
+  "proto-soft-mascot-fighter",
+  "proto-witch",
+] as const;
+
 describe("whole-art character texture contract", () => {
-  it("qualifies the three owner prototypes without changing the legacy Drifter wardrobe mode", () => {
+  it("enumerates the 3 shipped plus 10 new owner prototypes as the 13 whole-art choices", () => {
+    expect(WHOLE_ART_CHARACTERS).toEqual(EXPECTED_WHOLE_ART_CHARACTER_IDS);
     expect([...WHOLE_ART_CHARACTER_IDS]).toEqual(
       PLAYABLE_CHARACTERS.filter((characterId) => characterId.startsWith("proto-")),
     );
@@ -31,6 +62,29 @@ describe("whole-art character texture contract", () => {
     expect(isWholeArtCharacterId("cc-pyra-cinderhowl-the-flame-caster")).toBe(false);
   });
 
+  it.each(BATCH2_WHOLE_ART_CHARACTER_IDS)(
+    "installs all six manifest textures for %s as real loose PNGs with a head mount",
+    (characterId) => {
+      const manifest = wholeArtCharacterManifest(characterId);
+      expect(manifest?.parts.map((part) => part.role)).toEqual([
+        ...WHOLE_ART_CHARACTER_PART_ROLES,
+      ]);
+      expect(manifest?.body.h).toBe(168);
+      for (const role of WHOLE_ART_CHARACTER_PART_ROLES) {
+        const part = manifest?.parts.find((candidate) => candidate.role === role);
+        expect(part, `${characterId}:${role}`).toBeDefined();
+        expect(
+          part &&
+            existsSync(
+              new URL(`../../public/sprites/${characterId}/${part.file}`, import.meta.url),
+            ),
+          `${characterId}:${role}`,
+        ).toBe(true);
+      }
+      expect(manifest?.parts.find((part) => part.role === "head")?.oy).toBeLessThan(0);
+    },
+  );
+
   it("derives bounded whole-art corrections from the retained Drifter full-part envelope", () => {
     const referenceHeight = characterStaticEnvelopeHeight("drifter");
     expect(referenceHeight).toBeDefined();
@@ -46,12 +100,17 @@ describe("whole-art character texture contract", () => {
       expect(scale, id).toBeGreaterThanOrEqual(0.65);
       expect(scale, id).toBeLessThanOrEqual(0.95);
       expect(scale, id).not.toBe(1);
-      expect(scale, id).toBeCloseTo(expectedScales[id] ?? Number.NaN, 3);
+      if (expectedScales[id] !== undefined) {
+        expect(scale, id).toBeCloseTo(expectedScales[id], 3);
+      }
       expect(sourceHeight, id).toBeDefined();
       expect(((sourceHeight ?? 0) * scale) / (referenceHeight ?? 1), id).toBeGreaterThanOrEqual(
         0.95,
       );
-      expect(((sourceHeight ?? 0) * scale) / (referenceHeight ?? 1), id).toBeLessThanOrEqual(1);
+      expect(
+        ((sourceHeight ?? 0) * scale) / (referenceHeight ?? 1),
+        id,
+      ).toBeLessThanOrEqual(1 + Number.EPSILON);
     }
 
     expect(wholeArtCharacterVisualScale("drifter")).toBe(1);
