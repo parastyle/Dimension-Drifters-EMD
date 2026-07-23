@@ -34,8 +34,8 @@ import {
   SET_BONUS_3,
   SHIFTER_KIND_IDS,
   salvageValue,
-  swingDescriptorFor,
   scripValue,
+  swingDescriptorFor,
   TILE_GROUND,
   TILE_PIT,
   WEAPON_IDS,
@@ -3904,37 +3904,37 @@ describe("GameRoom — whole-art join selection authority", () => {
     expect(enemyComboShared.DEFAULT_CHARACTER).toBe("proto-cowboy-hidden-face");
   });
 
-  it.each(enemyComboShared.WHOLE_ART_CHARACTERS)(
-    "accepts the installed whole-art selection %s",
-    (selectedCharacterId) => {
-      const h = makeRoom();
-      const client = { sessionId: `selected-${selectedCharacterId}` };
-      h.room.clients.push(client);
-      h.room.onJoin(client, { selectedCharacterId });
-      const player = h.state().players.get(client.sessionId);
+  it.each(
+    enemyComboShared.WHOLE_ART_CHARACTERS,
+  )("accepts the installed whole-art selection %s", (selectedCharacterId) => {
+    const h = makeRoom();
+    const client = { sessionId: `selected-${selectedCharacterId}` };
+    h.room.clients.push(client);
+    h.room.onJoin(client, { selectedCharacterId });
+    const player = h.state().players.get(client.sessionId);
 
-      expect([player.character, player.runCharacter]).toEqual([
-        selectedCharacterId,
-        selectedCharacterId,
-      ]);
-    },
-  );
+    expect([player.character, player.runCharacter]).toEqual([
+      selectedCharacterId,
+      selectedCharacterId,
+    ]);
+  });
 
-  it.each(["drifter", "cc-asha-the-ash-walker", "unknown-character"])(
-    "falls back to the hidden-face cowboy for legacy or unknown selection %s",
-    (selectedCharacterId) => {
-      const h = makeRoom();
-      const client = { sessionId: `invalid-${selectedCharacterId}` };
-      h.room.clients.push(client);
-      h.room.onJoin(client, { selectedCharacterId });
-      const player = h.state().players.get(client.sessionId);
+  it.each([
+    "drifter",
+    "cc-asha-the-ash-walker",
+    "unknown-character",
+  ])("falls back to the hidden-face cowboy for legacy or unknown selection %s", (selectedCharacterId) => {
+    const h = makeRoom();
+    const client = { sessionId: `invalid-${selectedCharacterId}` };
+    h.room.clients.push(client);
+    h.room.onJoin(client, { selectedCharacterId });
+    const player = h.state().players.get(client.sessionId);
 
-      expect([player.character, player.runCharacter]).toEqual([
-        "proto-cowboy-hidden-face",
-        "proto-cowboy-hidden-face",
-      ]);
-    },
-  );
+    expect([player.character, player.runCharacter]).toEqual([
+      "proto-cowboy-hidden-face",
+      "proto-cowboy-hidden-face",
+    ]);
+  });
 
   it("cycles only within the whole-art subset and resets a legacy id to the shared default", () => {
     const h = makeRoom();
@@ -4223,31 +4223,13 @@ describe("GameRoom — V7 fixed tumble roll", () => {
     const hp = fixture.player.hp;
     const parried = fixture.player.parriedSeq;
     for (let tick = 1; tick <= enemyComboShared.ROLL_IFRAME_TICKS; tick++) {
-      fixture.h.room.applyBossMelee(
-        fixture.player.x - 20,
-        fixture.player.y,
-        1,
-        0,
-        80,
-        1,
-        7,
-        0,
-      );
+      fixture.h.room.applyBossMelee(fixture.player.x - 20, fixture.player.y, 1, 0, 80, 1, 7, 0);
       expect(fixture.player.hp).toBe(hp);
       if (tick < enemyComboShared.ROLL_IFRAME_TICKS) fixture.h.tick(1);
     }
     expect(fixture.player.parriedSeq).toBe(parried);
     fixture.h.tick(1);
-    fixture.h.room.applyBossMelee(
-      fixture.player.x - 20,
-      fixture.player.y,
-      1,
-      0,
-      80,
-      1,
-      7,
-      0,
-    );
+    fixture.h.room.applyBossMelee(fixture.player.x - 20, fixture.player.y, 1, 0, 80, 1, 7, 0);
     expect(fixture.player.hp).toBe(hp - 7);
   });
 
@@ -5880,8 +5862,9 @@ describe("gear G2 archived account compatibility and inert runtime", () => {
     h.room.publishAccountMutation(geared.player);
     const accountResponse = [...geared.messages]
       .reverse()
-      .find((message) => message.type === "metaAccount")
-      ?.payload as import("@dd/shared").MetaAccountV4 | undefined;
+      .find((message) => message.type === "metaAccount")?.payload as
+      | import("@dd/shared").MetaAccountV4
+      | undefined;
     expect(accountResponse?.ownedGear).toEqual(enemyComboShared.GEAR_IDS);
     expect(accountResponse?.equippedGear).toEqual(sanitizedEquipped);
   });
@@ -6722,12 +6705,7 @@ describe("GameRoom — bank §2.3 stale-expedition abandonment at join", () => {
 describe("GameRoom — W4A archived weapon retirement", () => {
   it("auto-salvages archived instances across every bank location and repairs a mixed-pair carry", () => {
     const h = makeRoom({ belt: true });
-    const archivedLead = roomBankInstance(
-      91,
-      "x2-mistral-kusarigama",
-      "rare",
-      "keen",
-    );
+    const archivedLead = roomBankInstance(91, "x2-mistral-kusarigama", "rare", "keen");
     const survivingOffhand = roomBankInstance(92, "rattler-sabre", "rare", "swift");
     const mixedPair: import("@dd/shared").PairedWeaponEntryV1 = {
       kind: "pair",
@@ -6735,12 +6713,7 @@ describe("GameRoom — W4A archived weapon retirement", () => {
       lead: archivedLead,
       offhand: survivingOffhand,
     };
-    const intakeWeapon = roomBankInstance(
-      93,
-      "x2-ferrous-serpent",
-      "legendary",
-      "brutal",
-    );
+    const intakeWeapon = roomBankInstance(93, "x2-ferrous-serpent", "legendary", "brutal");
     const intake: import("@dd/shared").SingleWeaponEntryV1 = {
       kind: "single",
       entryId: intakeWeapon.instanceId,
@@ -6764,9 +6737,7 @@ describe("GameRoom — W4A archived weapon retirement", () => {
       runId: "run_archive-old",
       commitRevision: account.revision,
       status: "committed",
-      entries: [
-        { entry: expeditionEntry, stakeOrigin: "found", location: "field", start: 255 },
-      ],
+      entries: [{ entry: expeditionEntry, stakeOrigin: "found", location: "field", start: 255 }],
     };
     const messages: Array<{ type: string; payload: unknown }> = [];
     const client = {
@@ -6786,8 +6757,7 @@ describe("GameRoom — W4A archived weapon retirement", () => {
     });
 
     const joined = h.room.metaAccounts.get("archive-join") as import("@dd/shared").MetaAccountV4;
-    const expectedPayout =
-      scripValue(2, true) + scripValue(4, true) + scripValue(0, true);
+    const expectedPayout = scripValue(2, true) + scripValue(4, true) + scripValue(0, true);
     expect(joined.scrip).toBe(7 + expectedPayout);
     expect(joined.weaponBank.stash).toEqual([]);
     expect(joined.weaponBank.intake).toEqual([]);
@@ -6798,18 +6768,17 @@ describe("GameRoom — W4A archived weapon retirement", () => {
       weapon: survivingOffhand,
     });
     expect(joined.weaponBank.lastCarry).toEqual({
-      placements: [
-        { entryId: survivingOffhand.instanceId, zone: "active", start: 0 },
-      ],
+      placements: [{ entryId: survivingOffhand.instanceId, zone: "active", start: 0 }],
       activeEntryId: survivingOffhand.instanceId,
     });
     expect(h.state().players.get("archive-join")?.weapon).toBe("rattler-sabre");
-    expect(messages.find((message) => message.type === "weaponArchiveSalvageReceipt")?.payload)
-      .toMatchObject({
-        payout: expectedPayout,
-        salvagedInstances: 3,
-        affectedEntries: 3,
-      });
+    expect(
+      messages.find((message) => message.type === "weaponArchiveSalvageReceipt")?.payload,
+    ).toMatchObject({
+      payout: expectedPayout,
+      salvagedInstances: 3,
+      affectedEntries: 3,
+    });
   });
 
   it("omits archived ids from every Testing-Grounds page and rejects direct dev-equip", () => {
@@ -6817,7 +6786,7 @@ describe("GameRoom — W4A archived weapon retirement", () => {
     h.join("archive-gallery");
     h.send("archive-gallery", "toggleTraining");
     const roster = h.room.constructor.GALLERY_ROSTER as string[];
-    expect(roster).toHaveLength(342);
+    expect(roster).toHaveLength(346);
     for (const id of enemyComboShared.ARCHIVED_WEAPON_IDS) expect(roster).not.toContain(id);
     const before = h.state().players.get("archive-gallery").weapon;
     h.send("archive-gallery", "devEquip", { weapon: "x2-mistral-kusarigama" });
@@ -7400,7 +7369,12 @@ describe("GameRoom - NW melee and thrown mechanics", () => {
     const definition = WEAPONS["x2-mournveil-scythe"];
     if (!definition) throw new Error("Mournveil fan-spin fixture is required");
 
-    h.room.resolveSwing(player, combat, definition, swingDescriptorFor(definition, definition.cooldown));
+    h.room.resolveSwing(
+      player,
+      combat,
+      definition,
+      swingDescriptorFor(definition, definition.cooldown),
+    );
     const active = h.room.meleeSwings.get(player.id);
 
     expect(definition.performance).toMatchObject({ continuous: true, action: "default-swing" });

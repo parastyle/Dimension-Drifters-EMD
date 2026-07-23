@@ -919,6 +919,43 @@ export const WEAPON_ART_MUZZLES = {
     "salvoMode": "parallel",
     "barrelMode": "parallel"
   },
+  "x2-drunken-fist-wraps": {
+    "sprite": "x2-drunken-fist-wraps",
+    "parts": [
+      {
+        "width": 512,
+        "height": 235
+      },
+      {
+        "width": 468,
+        "height": 228
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 249,
+        "y": 123.2,
+        "derived": {
+          "x": 510,
+          "y": 94
+        },
+        "overrideReason": "The sway sequence alternates alpha-weighted striking-hand centroids, including the rigid gourd-wrist haymaker."
+      },
+      {
+        "part": 1,
+        "x": 246.4,
+        "y": 120,
+        "derived": {
+          "x": 467,
+          "y": 95
+        },
+        "overrideReason": "The sway sequence alternates alpha-weighted striking-hand centroids, including the rigid gourd-wrist haymaker."
+      }
+    ],
+    "salvoMode": "cycle",
+    "barrelMode": "parallel"
+  },
   "x2-dustdevil-riotgun": {
     "sprite": "x2-dustdevil-riotgun",
     "parts": [
@@ -1909,6 +1946,43 @@ export const WEAPON_ART_MUZZLES = {
     "salvoMode": "parallel",
     "barrelMode": "parallel"
   },
+  "x2-iron-palm-wraps": {
+    "sprite": "x2-iron-palm-wraps",
+    "parts": [
+      {
+        "width": 512,
+        "height": 264
+      },
+      {
+        "width": 511,
+        "height": 267
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 250.2,
+        "y": 130.2,
+        "derived": {
+          "x": 507,
+          "y": 113
+        },
+        "overrideReason": "The authored points are the alpha-weighted iron-knuckle striking-hand centroids at impact, not projectile bores."
+      },
+      {
+        "part": 1,
+        "x": 249.4,
+        "y": 134.3,
+        "derived": {
+          "x": 506,
+          "y": 116.5
+        },
+        "overrideReason": "The authored points are the alpha-weighted iron-knuckle striking-hand centroids at impact, not projectile bores."
+      }
+    ],
+    "salvoMode": "cycle",
+    "barrelMode": "parallel"
+  },
   "x2-iron-war-fan": {
     "sprite": "x2-iron-war-fan",
     "parts": [
@@ -2125,6 +2199,29 @@ export const WEAPON_ART_MUZZLES = {
           "x": 255,
           "y": 13.5
         }
+      }
+    ],
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  "x2-muay-thai-wraps": {
+    "sprite": "x2-muay-thai-wraps",
+    "parts": [
+      {
+        "width": 384,
+        "height": 323
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 196,
+        "y": 161.3,
+        "derived": {
+          "x": 383,
+          "y": 56.6
+        },
+        "overrideReason": "For melee impact punctuation, muzzle means the alpha-weighted striking-hand centroid at the authored elbow, knee, or kick impact frame."
       }
     ],
     "salvoMode": "parallel",
@@ -3589,6 +3686,43 @@ export const WEAPON_ART_MUZZLES = {
       }
     ],
     "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  "x2-wing-chun-wraps": {
+    "sprite": "x2-wing-chun-wraps",
+    "parts": [
+      {
+        "width": 512,
+        "height": 208
+      },
+      {
+        "width": 511,
+        "height": 208
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 264.5,
+        "y": 106.5,
+        "derived": {
+          "x": 511,
+          "y": 110.3
+        },
+        "overrideReason": "Each centerline beat alternates the alpha-weighted centroid of the authored striking hand at impact."
+      },
+      {
+        "part": 1,
+        "x": 264.2,
+        "y": 106.7,
+        "derived": {
+          "x": 510,
+          "y": 67.9
+        },
+        "overrideReason": "Each centerline beat alternates the alpha-weighted centroid of the authored striking hand at impact."
+      }
+    ],
+    "salvoMode": "cycle",
     "barrelMode": "parallel"
   },
   "x2-wyrmgut-blunderbuss": {

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Derive held-gun muzzle points from installed sprite alpha.
+ * Derive held-weapon source points from installed sprite alpha.
  *
  * The checked-in output is runtime/shared data. Explicit points in
  * data/weapon-muzzle-overrides.json win only for silhouettes whose alpha cannot express separate bores.
@@ -152,13 +152,21 @@ async function existingPartFiles(spriteId) {
 const definitions = {};
 const snapshot = [];
 const ranged = Object.values(WEAPONS)
-  .filter((weapon) => weapon.gun || weapon.beam || weapon.cast || weapon.hybridProjectile)
+  .filter(
+    (weapon) =>
+      weapon.gun ||
+      weapon.beam ||
+      weapon.cast ||
+      weapon.hybridProjectile ||
+      weapon.impactMuzzle,
+  )
   .sort((left, right) => left.id.localeCompare(right.id));
 
 for (const weapon of ranged) {
   const spriteId = weapon.sprite ?? weapon.id;
   const installedPartFiles = await existingPartFiles(spriteId);
-  const partFiles = weapon.dual ? installedPartFiles : installedPartFiles.slice(0, 1);
+  const partFiles =
+    weapon.dual || weapon.impactMuzzle ? installedPartFiles : installedPartFiles.slice(0, 1);
   const derivedParts = [];
   for (let part = 0; part < partFiles.length; part++) {
     const { data, info } = await sharp(partFiles[part])
@@ -213,7 +221,7 @@ const pointList = (points) =>
 const tableText = `${[
   "# V7 Muzzle Derivation Table",
   "",
-  `Generated from sprite alpha for all ${snapshot.length} active projectile-gun and beam definitions. Coordinates are source-PNG pixels.`,
+  `Generated from sprite alpha for all ${snapshot.length} active projectile, beam, and authored melee-impact definitions. Coordinates are source-PNG pixels.`,
   "",
   "| Weapon | Derived barrel tip | Authored muzzle point(s) | Override |",
   "| --- | --- | --- | --- |",

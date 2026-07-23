@@ -16945,6 +16945,243 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "intensity": 1.12
       }
     ]
+  },
+  "x2-muay-thai-wraps": {
+    "id": "x2-muay-thai-wraps",
+    "name": "Muay Thai Wraps",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "B",
+      "dex": "D"
+    },
+    "damage": 15,
+    "range": 72,
+    "halfArc": 0.72,
+    "cooldown": 0.75,
+    "displayLength": 62,
+    "swingArc": 2.4,
+    "gripFrac": 0.18,
+    "tags": {
+      "grip": "2H",
+      "size": "M",
+      "delivery": "glove-pair",
+      "fireMode": "hold",
+      "element": "physical",
+      "classPool": "melee",
+      "family": "gauntlet",
+      "rangeBand": "close",
+      "scaling": [
+        "STR",
+        "DEX"
+      ]
+    },
+    "collisionLength": 68,
+    "poseLanguage": {
+      "idle": "mirror-guard",
+      "feet": "wide-plant"
+    },
+    "description": "Blood-red fighting wraps built around committed elbows, a rising knee, and a brutal close roundhouse finish.",
+    "authoritativeCombo": true,
+    "impactMuzzle": true,
+    "swingStyle": "punch",
+    "comboFamily": "punch",
+    "comboVariant": "muay-thai-eight-limbs",
+    "performance": {
+      "hold": "steady",
+      "action": "default-swing",
+      "continuous": true,
+      "comboForwardPx": 6
+    },
+    "requirements": {
+      "str": 7,
+      "dex": 4
+    },
+    "twoHanded": true,
+    "durability": 90,
+    "glovePair": {
+      "auraColor": 14108471,
+      "auraRadius": 54
+    }
+  },
+  "x2-wing-chun-wraps": {
+    "id": "x2-wing-chun-wraps",
+    "name": "Wing Chun Wraps",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "B",
+      "str": "D"
+    },
+    "damage": 4,
+    "range": 62,
+    "halfArc": 0.34,
+    "cooldown": 0.2,
+    "displayLength": 58,
+    "swingArc": 1.8,
+    "gripFrac": 0.16,
+    "tags": {
+      "grip": "2H",
+      "size": "S",
+      "delivery": "glove-pair",
+      "fireMode": "hold",
+      "element": "physical",
+      "classPool": "melee",
+      "family": "gauntlet",
+      "rangeBand": "close",
+      "scaling": [
+        "DEX",
+        "STR"
+      ]
+    },
+    "collisionLength": 62,
+    "poseLanguage": {
+      "idle": "mirror-guard",
+      "feet": "combat-plant"
+    },
+    "description": "White precision wraps that drive a three-hit straight-line chain-punch blitz through an ultra-short centerline.",
+    "authoritativeCombo": true,
+    "impactMuzzle": true,
+    "swingStyle": "punch",
+    "comboFamily": "punch",
+    "comboVariant": "wing-chun-centerline-blitz",
+    "performance": {
+      "hold": "steady",
+      "action": "default-swing",
+      "continuous": true,
+      "comboForwardPx": 3
+    },
+    "requirements": {
+      "dex": 8,
+      "str": 3
+    },
+    "twoHanded": true,
+    "durability": 90,
+    "glovePair": {
+      "auraColor": 16250090,
+      "auraRadius": 26
+    }
+  },
+  "x2-drunken-fist-wraps": {
+    "id": "x2-drunken-fist-wraps",
+    "name": "Drunken Fist Wraps",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "B",
+      "luk": "C"
+    },
+    "damage": 10,
+    "range": 86,
+    "halfArc": 0.82,
+    "cooldown": 0.5,
+    "displayLength": 66,
+    "swingArc": 2.55,
+    "gripFrac": 0.18,
+    "tags": {
+      "grip": "2H",
+      "size": "M",
+      "delivery": "glove-pair",
+      "fireMode": "hold",
+      "element": "arcane",
+      "classPool": "melee",
+      "family": "gauntlet",
+      "rangeBand": "close",
+      "scaling": [
+        "DEX",
+        "LUK"
+      ]
+    },
+    "collisionLength": 76,
+    "poseLanguage": {
+      "idle": "mirror-guard",
+      "feet": "loose-plant"
+    },
+    "description": "Gourd-braced old wraps that sway and weave between crooked straights before an off-balance wide haymaker.",
+    "authoritativeCombo": true,
+    "impactMuzzle": true,
+    "swingStyle": "punch",
+    "comboFamily": "punch",
+    "comboVariant": "drunken-fist-swaying-cup",
+    "performance": {
+      "hold": "steady",
+      "action": "default-swing",
+      "continuous": true,
+      "comboForwardPx": 8,
+      "forwardDrift": {
+        "speedPxPerSecond": 42,
+        "durationSeconds": 0.14,
+        "comboStepMultipliers": [
+          0.65,
+          1.05,
+          1.45
+        ]
+      }
+    },
+    "requirements": {
+      "dex": 6,
+      "luk": 6
+    },
+    "twoHanded": true,
+    "durability": 90,
+    "glovePair": {
+      "auraColor": 9201080,
+      "auraRadius": 44
+    }
+  },
+  "x2-iron-palm-wraps": {
+    "id": "x2-iron-palm-wraps",
+    "name": "Iron Palm Wraps",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "B",
+      "con": "C"
+    },
+    "damage": 18,
+    "range": 78,
+    "halfArc": 0.68,
+    "cooldown": 0.9,
+    "displayLength": 72,
+    "swingArc": 2.2,
+    "gripFrac": 0.18,
+    "tags": {
+      "grip": "2H",
+      "size": "M",
+      "delivery": "glove-pair",
+      "fireMode": "hold",
+      "element": "physical",
+      "classPool": "melee",
+      "family": "gauntlet",
+      "rangeBand": "close",
+      "scaling": [
+        "STR",
+        "CON"
+      ]
+    },
+    "collisionLength": 78,
+    "poseLanguage": {
+      "idle": "mirror-guard",
+      "feet": "wide-plant"
+    },
+    "description": "Black iron-plated wraps that drive knuckle spikes through two ponderous blows and a crushing two-hand palm finish.",
+    "authoritativeCombo": true,
+    "impactMuzzle": true,
+    "swingStyle": "punch",
+    "comboFamily": "punch",
+    "comboVariant": "iron-palm-forge-gate",
+    "performance": {
+      "hold": "steady",
+      "action": "default-swing",
+      "continuous": true,
+      "comboForwardPx": 4
+    },
+    "requirements": {
+      "str": 9,
+      "con": 6
+    },
+    "twoHanded": true,
+    "durability": 90,
+    "glovePair": {
+      "auraColor": 13218168,
+      "auraRadius": 40
+    }
   }
 };
 
@@ -20179,6 +20416,250 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "radialEnd": 1,
         "widthMultiplier": 0.94,
         "end": "open"
+      }
+    }
+  ],
+  "muay-thai-eight-limbs": [
+    {
+      "name": "Scar Elbow",
+      "motion": "elbow",
+      "direction": 1,
+      "hand": "lead",
+      "timing": {
+        "activeStart": 0.24,
+        "activeEnd": 0.54,
+        "impact": 0.48,
+        "followEnd": 0.72
+      },
+      "path": {
+        "kind": "sweep",
+        "arcMultiplier": 0.55,
+        "rangeMultiplier": 0.82,
+        "damageMultiplier": 1,
+        "knockback": 16
+      }
+    },
+    {
+      "name": "Rising Clinch Knee",
+      "motion": "knee-strike",
+      "direction": -1,
+      "hand": "off",
+      "timing": {
+        "activeStart": 0.29,
+        "activeEnd": 0.62,
+        "impact": 0.55,
+        "followEnd": 0.78
+      },
+      "path": {
+        "kind": "capsule",
+        "arcMultiplier": 0,
+        "rangeMultiplier": 0.88,
+        "damageMultiplier": 1,
+        "knockback": 22,
+        "deltaAngle": 0
+      }
+    },
+    {
+      "name": "Red Roundhouse",
+      "motion": "roundhouse-kick",
+      "direction": 1,
+      "hand": "both",
+      "timing": {
+        "activeStart": 0.34,
+        "activeEnd": 0.69,
+        "impact": 0.61,
+        "followEnd": 0.86
+      },
+      "path": {
+        "kind": "sweep",
+        "arcMultiplier": 1.08,
+        "rangeMultiplier": 1,
+        "damageMultiplier": 1,
+        "knockback": 30
+      }
+    }
+  ],
+  "wing-chun-centerline-blitz": [
+    {
+      "name": "Centerline One",
+      "motion": "chain-punch",
+      "direction": 1,
+      "hand": "lead",
+      "timing": {
+        "activeStart": 0.06,
+        "activeEnd": 0.24,
+        "impact": 0.2,
+        "followEnd": 0.36
+      },
+      "path": {
+        "kind": "capsule",
+        "arcMultiplier": 0,
+        "rangeMultiplier": 1.08,
+        "damageMultiplier": 1,
+        "knockback": 2,
+        "deltaAngle": 0
+      }
+    },
+    {
+      "name": "Centerline Two",
+      "motion": "chain-punch",
+      "direction": -1,
+      "hand": "off",
+      "timing": {
+        "activeStart": 0.05,
+        "activeEnd": 0.22,
+        "impact": 0.18,
+        "followEnd": 0.34
+      },
+      "path": {
+        "kind": "capsule",
+        "arcMultiplier": 0,
+        "rangeMultiplier": 1.12,
+        "damageMultiplier": 1,
+        "knockback": 2,
+        "deltaAngle": 0
+      }
+    },
+    {
+      "name": "Centerline Three",
+      "motion": "chain-punch",
+      "direction": 1,
+      "hand": "lead",
+      "timing": {
+        "activeStart": 0.05,
+        "activeEnd": 0.23,
+        "impact": 0.19,
+        "followEnd": 0.35
+      },
+      "path": {
+        "kind": "capsule",
+        "arcMultiplier": 0,
+        "rangeMultiplier": 1.16,
+        "damageMultiplier": 1,
+        "knockback": 4,
+        "deltaAngle": 0
+      }
+    }
+  ],
+  "drunken-fist-swaying-cup": [
+    {
+      "name": "Crooked Cup Jab",
+      "motion": "sway-jab",
+      "direction": 1,
+      "hand": "lead",
+      "timing": {
+        "activeStart": 0.14,
+        "activeEnd": 0.42,
+        "impact": 0.36,
+        "followEnd": 0.62
+      },
+      "path": {
+        "kind": "capsule",
+        "arcMultiplier": 0.08,
+        "rangeMultiplier": 0.86,
+        "damageMultiplier": 1,
+        "knockback": 8,
+        "deltaAngle": 0.08
+      }
+    },
+    {
+      "name": "Under-Table Cross",
+      "motion": "weave-cross",
+      "direction": -1,
+      "hand": "off",
+      "timing": {
+        "activeStart": 0.18,
+        "activeEnd": 0.48,
+        "impact": 0.4,
+        "followEnd": 0.68
+      },
+      "path": {
+        "kind": "capsule",
+        "arcMultiplier": -0.1,
+        "rangeMultiplier": 0.94,
+        "damageMultiplier": 1,
+        "knockback": 10,
+        "deltaAngle": -0.12
+      }
+    },
+    {
+      "name": "Gourd Moon Haymaker",
+      "motion": "gourd-haymaker",
+      "direction": 1,
+      "hand": "lead",
+      "timing": {
+        "activeStart": 0.22,
+        "activeEnd": 0.56,
+        "impact": 0.48,
+        "followEnd": 0.78
+      },
+      "path": {
+        "kind": "sweep",
+        "arcMultiplier": 1.28,
+        "rangeMultiplier": 1.08,
+        "damageMultiplier": 1,
+        "knockback": 18
+      }
+    }
+  ],
+  "iron-palm-forge-gate": [
+    {
+      "name": "Iron Knuckle Gate",
+      "motion": "iron-knuckle",
+      "direction": 1,
+      "hand": "lead",
+      "timing": {
+        "activeStart": 0.3,
+        "activeEnd": 0.62,
+        "impact": 0.56,
+        "followEnd": 0.8
+      },
+      "path": {
+        "kind": "capsule",
+        "arcMultiplier": 0,
+        "rangeMultiplier": 0.86,
+        "damageMultiplier": 1,
+        "knockback": 24,
+        "deltaAngle": 0
+      }
+    },
+    {
+      "name": "Anvil Knuckle Return",
+      "motion": "iron-knuckle",
+      "direction": -1,
+      "hand": "off",
+      "timing": {
+        "activeStart": 0.33,
+        "activeEnd": 0.66,
+        "impact": 0.59,
+        "followEnd": 0.83
+      },
+      "path": {
+        "kind": "capsule",
+        "arcMultiplier": -0.16,
+        "rangeMultiplier": 0.9,
+        "damageMultiplier": 1,
+        "knockback": 28,
+        "deltaAngle": -0.18
+      }
+    },
+    {
+      "name": "Forge-Gate Palm",
+      "motion": "iron-palm",
+      "direction": 1,
+      "hand": "both",
+      "timing": {
+        "activeStart": 0.4,
+        "activeEnd": 0.75,
+        "impact": 0.68,
+        "followEnd": 0.92
+      },
+      "path": {
+        "kind": "fan",
+        "arcMultiplier": 0.42,
+        "rangeMultiplier": 1,
+        "damageMultiplier": 1,
+        "knockback": 42
       }
     }
   ]

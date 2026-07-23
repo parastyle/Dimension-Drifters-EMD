@@ -19,8 +19,8 @@ import {
 import { describe, expect, it } from "vitest";
 
 describe("Drive formula v1", () => {
-  it("covers the frozen 353-weapon catalog in deterministic id order", () => {
-    expect(WEAPON_RESOURCE_IDS).toHaveLength(353);
+  it("covers the frozen 357-weapon catalog in deterministic id order", () => {
+    expect(WEAPON_RESOURCE_IDS).toHaveLength(357);
     expect(WEAPON_RESOURCE_IDS).toEqual([...WEAPON_RESOURCE_IDS].sort());
     expect(Object.keys(WEAPON_RESOURCE_PROFILES)).toEqual(WEAPON_RESOURCE_IDS);
 
@@ -36,7 +36,7 @@ describe("Drive formula v1", () => {
         expect(profile.neutralCost % DRIVE_COST_QUANTUM).toBe(0);
       }
     }
-    expect(census).toEqual({ melee: 175, thrown: 27, gun: 121, cast: 3, beam: 23, zone: 4 });
+    expect(census).toEqual({ melee: 179, thrown: 27, gun: 121, cast: 3, beam: 23, zone: 4 });
   });
 
   it("pins every coefficient, frozen median, and the bounded utility overrides", () => {

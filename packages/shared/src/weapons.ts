@@ -420,6 +420,8 @@ export interface WeaponPerformanceDef {
   forwardDrift?: {
     speedPxPerSecond: number;
     durationSeconds: number;
+    /** Optional authored multiplier per combo beat. Omitted keeps one identical displacement per swing. */
+    comboStepMultipliers?: readonly number[];
   };
   /** Parameterized in-place motion; shared by every shake-capable hold state. */
   shake?: {
@@ -580,6 +582,8 @@ export interface WeaponDef {
   sprite?: string;
   /** Source-PNG muzzle truth. Every launch/beam/flash consumer transforms these exact art pixels. */
   muzzle?: WeaponArtMuzzleDefinition;
+  /** Melee-only source point: `muzzle` is the striking-hand centroid at the authored impact frame. */
+  impactMuzzle?: true;
   /** §6 REZ effect — a swing within `radius` of a DOWNED ally REVIVES them (at REVIVE_HP_FRAC of max HP).
    *  Revival is loot: the Gravedigger's Spade is the M0 rez carrier. The weapon still does its edge damage. */
   rez?: { radius: number };
@@ -1180,8 +1184,7 @@ export function weaponAttackCooldown(weapon: WeaponDef): number {
 export function hybridProjectileDamagePerAcceptedBeat(weapon: WeaponDef): number {
   const hybrid = weapon.hybridProjectile;
   if (!hybrid) return 0;
-  const triggerRate =
-    hybrid.trigger === "combo-finisher" ? 1 / Math.max(1, hybrid.comboLength) : 1;
+  const triggerRate = hybrid.trigger === "combo-finisher" ? 1 / Math.max(1, hybrid.comboLength) : 1;
   const contactCount = hybrid.returnAfterSeconds === undefined ? 1 : 2;
   return Math.max(0, hybrid.damage) * triggerRate * contactCount;
 }
@@ -2321,7 +2324,7 @@ const derivingWeaponMuzzles = (
 for (const weapon of Object.values(WEAPONS)) {
   if (
     !derivingWeaponMuzzles &&
-    (weapon.gun || weapon.beam || weapon.cast || weapon.hybridProjectile) &&
+    (weapon.gun || weapon.beam || weapon.cast || weapon.hybridProjectile || weapon.impactMuzzle) &&
     !weapon.muzzle
   ) {
     throw new Error(`Projectile/beam weapon ${weapon.id} has no art-space muzzle`);

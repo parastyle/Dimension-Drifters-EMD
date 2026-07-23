@@ -1,0 +1,1702 @@
+{
+  "capturedAt": "2026-07-23T23:48:06.288Z",
+  "baseURL": "http://127.0.0.1:51463",
+  "clientPort": 51463,
+  "gamePort": 51461,
+  "protectedPorts": [
+    5180,
+    2567
+  ],
+  "characterId": "proto-cowboy-hidden-face",
+  "nominalCooldownMs": {
+    "x2-muay-thai-wraps": 750,
+    "x2-wing-chun-wraps": 200,
+    "x2-drunken-fist-wraps": 500,
+    "x2-iron-palm-wraps": 900
+  },
+  "observedCadenceMs": {
+    "x2-muay-thai-wraps": 787.4499999999998,
+    "x2-wing-chun-wraps": 254.14999999999964,
+    "x2-drunken-fist-wraps": 524.9750000000004,
+    "x2-iron-palm-wraps": 916.625
+  },
+  "assertions": {
+    "eightFacingCaptures": true,
+    "fourDistinctSwingStyles": true,
+    "fourDistinctImpactStyles": true,
+    "allWeaponsConfirmedContact": true,
+    "exactComboSignatures": true,
+    "cadenceOrder": true,
+    "privatePorts": true,
+    "wholeArtCharacter": "proto-cowboy-hidden-face"
+  },
+  "captures": [
+    {
+      "weaponId": "x2-muay-thai-wraps",
+      "facing": "right",
+      "target": {
+        "id": "dummy2",
+        "x": 2600,
+        "y": 2570,
+        "distance": 51.456962458223344
+      },
+      "attackSeqBefore": 0,
+      "attackSeqAfter": 4,
+      "steps": [
+        0,
+        1,
+        2
+      ],
+      "motions": [
+        "elbow",
+        "knee-strike",
+        "roundhouse-kick"
+      ],
+      "swingStyle": "red-eight-limbs-aura",
+      "impactStyle": "heavy-dust-cloud",
+      "intervalsMs": [
+        833.3000000000011,
+        799.8999999999996
+      ],
+      "contacts": [
+        {
+          "layer": "full",
+          "targetId": "dummy2",
+          "sourcePlayerId": "N0926VH0_",
+          "selfHit": true,
+          "matchedPrediction": false,
+          "weaponId": "x2-muay-thai-wraps",
+          "delivery": 1,
+          "element": "physical",
+          "dirX": 0.46361228823661804,
+          "dirY": -0.8860381841659546,
+          "damage": 4.087500095367432,
+          "crit": false,
+          "finalBlow": false,
+          "tick": 172,
+          "x": 0,
+          "y": 0
+        },
+        {
+          "layer": "full",
+          "targetId": "dummy2",
+          "sourcePlayerId": "N0926VH0_",
+          "selfHit": true,
+          "matchedPrediction": false,
+          "weaponId": "x2-muay-thai-wraps",
+          "delivery": 1,
+          "element": "physical",
+          "dirX": 0.46361228823661804,
+          "dirY": -0.8860381841659546,
+          "damage": 4.087500095367432,
+          "crit": false,
+          "finalBlow": false,
+          "tick": 189,
+          "x": 0,
+          "y": 0
+        },
+        {
+          "layer": "full",
+          "targetId": "dummy2",
+          "sourcePlayerId": "N0926VH0_",
+          "selfHit": true,
+          "matchedPrediction": false,
+          "weaponId": "x2-muay-thai-wraps",
+          "delivery": 1,
+          "element": "physical",
+          "dirX": 0.46361228823661804,
+          "dirY": -0.8860381841659546,
+          "damage": 4.087500095367432,
+          "crit": false,
+          "finalBlow": false,
+          "tick": 205,
+          "x": 0,
+          "y": 0
+        },
+        {
+          "layer": "full",
+          "targetId": "dummy2",
+          "sourcePlayerId": "N0926VH0_",
+          "selfHit": true,
+          "matchedPrediction": false,
+          "weaponId": "x2-muay-thai-wraps",
+          "delivery": 1,
+          "element": "physical",
+          "dirX": 0.46361228823661804,
+          "dirY": -0.8860381841659546,
+          "damage": 4.087500095367432,
+          "crit": false,
+          "finalBlow": false,
+          "tick": 221,
+          "x": 0,
+          "y": 0
+        }
+      ],
+      "vfx": [
+        {
+          "kind": "swing",
+          "weaponId": "x2-muay-thai-wraps",
+          "style": "red-eight-limbs-aura",
+          "x": 2669.597841796775,
+          "y": 2613.6195034263174,
+          "timeMs": 10830.9,
+          "comboStep": 0,
+          "motion": "elbow"
+        },
+        {
+          "kind": "impact",
+          "weaponId": "x2-muay-thai-wraps",
+          "style": "heavy-dust-cloud",
+          "x": 2617.22509765625,
+          "y": 2563.571403336679,
+          "timeMs": 11097.5
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-muay-thai-wraps",
+          "style": "red-eight-limbs-aura",
+          "x": 2669.5978417968727,
+          "y": 2613.6196099803506,
+          "timeMs": 11664.2,
+          "comboStep": 1,
+          "motion": "knee-strike"
+        },
+        {
+          "kind": "impact",
+          "weaponId": "x2-muay-thai-wraps",
+          "style": "heavy-dust-cloud",
+          "x": 2617.22509765625,
+          "y": 2563.571403336679,
+          "timeMs": 11914.2
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-muay-thai-wraps",
+          "style": "red-eight-limbs-aura",
+          "x": 2669.5978417968727,
+          "y": 2613.6196099803506,
+          "timeMs": 12464.1,
+          "comboStep": 2,
+          "motion": "roundhouse-kick"
+        },
+        {
+          "kind": "impact",
+          "weaponId": "x2-muay-thai-wraps",
+          "style": "heavy-dust-cloud",
+          "x": 2617.22509765625,
+          "y": 2563.571403336679,
+          "timeMs": 12714.1
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-muay-thai-wraps",
+          "style": "red-eight-limbs-aura",
+          "x": 2669.5978417968727,
+          "y": 2613.6196099803506,
+          "timeMs": 13264.1,
+          "comboStep": 0,
+          "motion": "elbow"
+        },
+        {
+          "kind": "impact",
+          "weaponId": "x2-muay-thai-wraps",
+          "style": "heavy-dust-cloud",
+          "x": 2617.22509765625,
+          "y": 2563.571403336679,
+          "timeMs": 13530.8
+        }
+      ],
+      "screenshot": "docs/owner-notes-audit-v10-evidence/b14-kungfu/x2-muay-thai-wraps-right.png"
+    },
+    {
+      "weaponId": "x2-muay-thai-wraps",
+      "facing": "left",
+      "target": {
+        "id": "dummy1",
+        "x": 2400,
+        "y": 2570,
+        "distance": 50.30409289247234
+      },
+      "attackSeqBefore": 4,
+      "attackSeqAfter": 8,
+      "steps": [
+        0,
+        1,
+        2
+      ],
+      "motions": [
+        "elbow",
+        "knee-strike",
+        "roundhouse-kick"
+      ],
+      "swingStyle": "red-eight-limbs-aura",
+      "impactStyle": "heavy-dust-cloud",
+      "intervalsMs": [
+        783.2999999999993,
+        733.2999999999993
+      ],
+      "contacts": [
+        {
+          "layer": "full",
+          "targetId": "dummy1",
+          "sourcePlayerId": "N0926VH0_",
+          "selfHit": true,
+          "matchedPrediction": false,
+          "weaponId": "x2-muay-thai-wraps",
+          "delivery": 1,
+          "element": "physical",
+          "dirX": -0.7489117980003357,
+          "dirY": 0.6626697182655334,
+          "damage": 4.087500095367432,
+          "crit": false,
+          "finalBlow": false,
+          "tick": 364,
+          "x": 0,
+          "y": 0
+        },
+        {
+          "layer": "full",
+          "targetId": "dummy1",
+          "sourcePlayerId": "N0926VH0_",
+          "selfHit": true,
+          "matchedPrediction": false,
+          "weaponId": "x2-muay-thai-wraps",
+          "delivery": 1,
+          "element": "physical",
+          "dirX": -0.7489117980003357,
+          "dirY": 0.6626697182655334,
+          "damage": 4.087500095367432,
+          "crit": false,
+          "finalBlow": false,
+          "tick": 380,
+          "x": 0,
+          "y": 0
+        },
+        {
+          "layer": "full",
+          "targetId": "dummy1",
+          "sourcePlayerId": "N0926VH0_",
+          "selfHit": true,
+          "matchedPrediction": false,
+          "weaponId": "x2-muay-thai-wraps",
+          "delivery": 1,
+          "element": "physical",
+          "dirX": -0.7489117980003357,
+          "dirY": 0.6626697182655334,
+          "damage": 8.175000190734863,
+          "crit": true,
+          "finalBlow": false,
+          "tick": 395,
+          "x": 0,
+          "y": 0
+        },
+        {
+          "layer": "full",
+          "targetId": "dummy1",
+          "sourcePlayerId": "N0926VH0_",
+          "selfHit": true,
+          "matchedPrediction": false,
+          "weaponId": "x2-muay-thai-wraps",
+          "delivery": 1,
+          "element": "physical",
+          "dirX": -0.7489117980003357,
+          "dirY": 0.6626697182655334,
+          "damage": 4.087500095367432,
+          "crit": false,
+          "finalBlow": false,
+          "tick": 410,
+          "x": 0,
+          "y": 0
+        }
+      ],
+      "vfx": [
+        {
+          "kind": "swing",
+          "weaponId": "x2-muay-thai-wraps",
+          "style": "red-eight-limbs-aura",
+          "x": 2314.015195312503,
+          "y": 2551.3571564685785,
+          "timeMs": 20397.2,
+          "comboStep": 0,
+          "motion": "elbow"
+        },
+        {
+          "kind": "impact",
+          "weaponId": "x2-muay-thai-wraps",
+          "style": "heavy-dust-cloud",
+          "x": 2352.134033203125,
+          "y": 2587.141357421875,
+          "timeMs": 20663.9
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-muay-thai-wraps",
+          "style": "red-eight-limbs-aura",
+          "x": 2314.015195312503,
+          "y": 2551.3571564685785,
+          "timeMs": 21180.5,
+          "comboStep": 1,
+          "motion": "knee-strike"
+        },
+        {
+          "kind": "impact",
+          "weaponId": "x2-muay-thai-wraps",
+          "style": "heavy-dust-cloud",
+          "x": 2352.134033203125,
+          "y": 2587.141357421875,
+          "timeMs": 21497.1
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-muay-thai-wraps",
+          "style": "red-eight-limbs-aura",
+          "x": 2314.015195312503,
+          "y": 2551.3571564685785,
+          "timeMs": 21913.8,
+          "comboStep": 2,
+          "motion": "roundhouse-kick"
+        },
+        {
+          "kind": "impact",
+          "weaponId": "x2-muay-thai-wraps",
+          "style": "heavy-dust-cloud",
+          "x": 2352.134033203125,
+          "y": 2587.141357421875,
+          "timeMs": 22263.7
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-muay-thai-wraps",
+          "style": "red-eight-limbs-aura",
+          "x": 2314.015195312503,
+          "y": 2551.3571564685785,
+          "timeMs": 22713.8,
+          "comboStep": 0,
+          "motion": "elbow"
+        },
+        {
+          "kind": "impact",
+          "weaponId": "x2-muay-thai-wraps",
+          "style": "heavy-dust-cloud",
+          "x": 2352.134033203125,
+          "y": 2587.141357421875,
+          "timeMs": 22963.7
+        }
+      ],
+      "screenshot": "docs/owner-notes-audit-v10-evidence/b14-kungfu/x2-muay-thai-wraps-left.png"
+    },
+    {
+      "weaponId": "x2-wing-chun-wraps",
+      "facing": "right",
+      "target": {
+        "id": "dummy2",
+        "x": 2617.22509765625,
+        "y": 2563.571403336679,
+        "distance": 45.59940372914997
+      },
+      "attackSeqBefore": 8,
+      "attackSeqAfter": 14,
+      "steps": [
+        0,
+        1,
+        2
+      ],
+      "motions": [
+        "chain-punch",
+        "chain-punch",
+        "chain-punch"
+      ],
+      "swingStyle": "white-centerline-flash",
+      "impactStyle": "precise-white-flash",
+      "intervalsMs": [
+        249.90000000000146,
+        266.6999999999971
+      ],
+      "contacts": [
+        {
+          "layer": "full",
+          "targetId": "dummy2",
+          "sourcePlayerId": "N0926VH0_",
+          "selfHit": true,
+          "matchedPrediction": false,
+          "weaponId": "x2-wing-chun-wraps",
+          "delivery": 1,
+          "element": "physical",
+          "dirX": 0.9223877787590027,
+          "dirY": -0.3862651586532593,
+          "damage": 1.090000033378601,
+          "crit": false,
+          "finalBlow": false,
+          "tick": 603,
+          "x": 0,
+          "y": 0
+        },
+        {
+          "layer": "full",
+          "targetId": "dummy2",
+          "sourcePlayerId": "N0926VH0_",
+          "selfHit": true,
+          "matchedPrediction": false,
+          "weaponId": "x2-wing-chun-wraps",
+          "delivery": 1,
+          "element": "physical",
+          "dirX": 0.9223877787590027,
+          "dirY": -0.3862651586532593,
+          "damage": 2.180000066757202,
+          "crit": true,
+          "finalBlow": false,
+          "tick": 608,
+          "x": 0,
+          "y": 0
+        },
+        {
+          "layer": "full",
+          "targetId": "dummy2",
+          "sourcePlayerId": "N0926VH0_",
+          "selfHit": true,
+          "matchedPrediction": false,
+          "weaponId": "x2-wing-chun-wraps",
+          "delivery": 1,
+          "element": "physical",
+          "dirX": 0.9223877787590027,
+          "dirY": -0.3862651586532593,
+          "damage": 1.090000033378601,
+          "crit": false,
+          "finalBlow": false,
+          "tick": 613,
+          "x": 0,
+          "y": 0
+        },
+        {
+          "layer": "full",
+          "targetId": "dummy2",
+          "sourcePlayerId": "N0926VH0_",
+          "selfHit": true,
+          "matchedPrediction": false,
+          "weaponId": "x2-wing-chun-wraps",
+          "delivery": 1,
+          "element": "physical",
+          "dirX": 0.9223877787590027,
+          "dirY": -0.3862651586532593,
+          "damage": 1.090000033378601,
+          "crit": false,
+          "finalBlow": false,
+          "tick": 618,
+          "x": 0,
+          "y": 0
+        },
+        {
+          "layer": "full",
+          "targetId": "dummy2",
+          "sourcePlayerId": "N0926VH0_",
+          "selfHit": true,
+          "matchedPrediction": false,
+          "weaponId": "x2-wing-chun-wraps",
+          "delivery": 1,
+          "element": "physical",
+          "dirX": 0.9223877787590027,
+          "dirY": -0.3862651586532593,
+          "damage": 1.090000033378601,
+          "crit": false,
+          "finalBlow": false,
+          "tick": 624,
+          "x": 0,
+          "y": 0
+        },
+        {
+          "layer": "full",
+          "targetId": "dummy2",
+          "sourcePlayerId": "N0926VH0_",
+          "selfHit": true,
+          "matchedPrediction": false,
+          "weaponId": "x2-wing-chun-wraps",
+          "delivery": 1,
+          "element": "physical",
+          "dirX": 0.9223877787590027,
+          "dirY": -0.3862651586532593,
+          "damage": 1.090000033378601,
+          "crit": false,
+          "finalBlow": false,
+          "tick": 629,
+          "x": 0,
+          "y": 0
+        }
+      ],
+      "vfx": [
+        {
+          "kind": "swing",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "white-centerline-flash",
+          "x": 2722.8172558593737,
+          "y": 2569.4213993673375,
+          "timeMs": 32430.1,
+          "comboStep": 0,
+          "motion": "chain-punch"
+        },
+        {
+          "kind": "impact",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "precise-white-flash",
+          "x": 2713.14111328125,
+          "y": 2542.1162109375,
+          "timeMs": 32596.6
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "white-centerline-flash",
+          "x": 2722.8172558593737,
+          "y": 2569.4213993673375,
+          "timeMs": 32680,
+          "comboStep": 1,
+          "motion": "chain-punch"
+        },
+        {
+          "kind": "impact",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "precise-white-flash",
+          "x": 2713.2355107963226,
+          "y": 2542.076680414681,
+          "timeMs": 32863.4
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "white-centerline-flash",
+          "x": 2722.8172558593737,
+          "y": 2569.421399355357,
+          "timeMs": 32946.7,
+          "comboStep": 2,
+          "motion": "chain-punch"
+        },
+        {
+          "kind": "impact",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "precise-white-flash",
+          "x": 2713.350766534331,
+          "y": 2542.0284151655605,
+          "timeMs": 33130
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "white-centerline-flash",
+          "x": 2722.8172558593737,
+          "y": 2569.4213993673375,
+          "timeMs": 33213.3,
+          "comboStep": 0,
+          "motion": "chain-punch"
+        },
+        {
+          "kind": "impact",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "precise-white-flash",
+          "x": 2713.2362278071937,
+          "y": 2542.076380154504,
+          "timeMs": 33396.7
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "white-centerline-flash",
+          "x": 2722.8172558593737,
+          "y": 2569.4213993673375,
+          "timeMs": 33480,
+          "comboStep": 1,
+          "motion": "chain-punch"
+        },
+        {
+          "kind": "impact",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "precise-white-flash",
+          "x": 2713.2339476938614,
+          "y": 2542.0773349897245,
+          "timeMs": 33663.3
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "white-centerline-flash",
+          "x": 2722.8172558593737,
+          "y": 2569.4213993673375,
+          "timeMs": 33746.6,
+          "comboStep": 2,
+          "motion": "chain-punch"
+        },
+        {
+          "kind": "impact",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "precise-white-flash",
+          "x": 2713.233964604797,
+          "y": 2542.07732790799,
+          "timeMs": 33913.3
+        }
+      ],
+      "screenshot": "docs/owner-notes-audit-v10-evidence/b14-kungfu/x2-wing-chun-wraps-right.png"
+    },
+    {
+      "weaponId": "x2-wing-chun-wraps",
+      "facing": "left",
+      "target": {
+        "id": "dummy1",
+        "x": 2352.134033203125,
+        "y": 2587.141357421875,
+        "distance": 52.40735770290596
+      },
+      "attackSeqBefore": 14,
+      "attackSeqAfter": 20,
+      "steps": [
+        0,
+        1,
+        2
+      ],
+      "motions": [
+        "chain-punch",
+        "chain-punch",
+        "chain-punch"
+      ],
+      "swingStyle": "white-centerline-flash",
+      "impactStyle": "",
+      "intervalsMs": [
+        266.70000000000437,
+        233.29999999999563
+      ],
+      "contacts": [],
+      "vfx": [
+        {
+          "kind": "swing",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "white-centerline-flash",
+          "x": 2405.749882812514,
+          "y": 2580.8322295841667,
+          "timeMs": 47312.7,
+          "comboStep": 0,
+          "motion": "chain-punch"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "white-centerline-flash",
+          "x": 2405.749882812514,
+          "y": 2580.8322295841667,
+          "timeMs": 47579.4,
+          "comboStep": 1,
+          "motion": "chain-punch"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "white-centerline-flash",
+          "x": 2405.749882812514,
+          "y": 2580.8322295841667,
+          "timeMs": 47812.7,
+          "comboStep": 2,
+          "motion": "chain-punch"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "white-centerline-flash",
+          "x": 2405.749882812514,
+          "y": 2580.8322295841667,
+          "timeMs": 48096.1,
+          "comboStep": 0,
+          "motion": "chain-punch"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "white-centerline-flash",
+          "x": 2405.749882812514,
+          "y": 2580.8322295841667,
+          "timeMs": 48362.7,
+          "comboStep": 1,
+          "motion": "chain-punch"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "white-centerline-flash",
+          "x": 2405.749882812514,
+          "y": 2580.8322295841667,
+          "timeMs": 48629.3,
+          "comboStep": 2,
+          "motion": "chain-punch"
+        }
+      ],
+      "screenshot": "docs/owner-notes-audit-v10-evidence/b14-kungfu/x2-wing-chun-wraps-left.png"
+    },
+    {
+      "weaponId": "x2-drunken-fist-wraps",
+      "facing": "right",
+      "target": {
+        "id": "dummy2",
+        "x": 2713.14111328125,
+        "y": 2542.1162109375,
+        "distance": 57.012447884573035
+      },
+      "attackSeqBefore": 20,
+      "attackSeqAfter": 23,
+      "steps": [
+        0,
+        1,
+        2
+      ],
+      "motions": [
+        "sway-jab",
+        "weave-cross",
+        "gourd-haymaker"
+      ],
+      "swingStyle": "mist-purple-sway-sweep",
+      "impactStyle": "misty-purple-wide-sweep",
+      "intervalsMs": [
+        500,
+        516.5999999999985
+      ],
+      "contacts": [
+        {
+          "layer": "upgrade",
+          "targetId": "dummy2",
+          "sourcePlayerId": "N0926VH0_",
+          "selfHit": true,
+          "matchedPrediction": true,
+          "weaponId": "x2-drunken-fist-wraps",
+          "delivery": 1,
+          "element": "arcane",
+          "dirX": 0.7403168678283691,
+          "dirY": 0.6722581386566162,
+          "damage": 2.762500047683716,
+          "crit": false,
+          "finalBlow": false,
+          "tick": 1125,
+          "x": 0,
+          "y": 0
+        },
+        {
+          "layer": "upgrade",
+          "targetId": "dummy2",
+          "sourcePlayerId": "N0926VH0_",
+          "selfHit": true,
+          "matchedPrediction": true,
+          "weaponId": "x2-drunken-fist-wraps",
+          "delivery": 1,
+          "element": "arcane",
+          "dirX": 0.7063119411468506,
+          "dirY": 0.7079007029533386,
+          "damage": 2.762500047683716,
+          "crit": false,
+          "finalBlow": false,
+          "tick": 1136,
+          "x": 0,
+          "y": 0
+        },
+        {
+          "layer": "upgrade",
+          "targetId": "dummy2",
+          "sourcePlayerId": "N0926VH0_",
+          "selfHit": true,
+          "matchedPrediction": true,
+          "weaponId": "x2-drunken-fist-wraps",
+          "delivery": 1,
+          "element": "arcane",
+          "dirX": 0.6687178611755371,
+          "dirY": 0.7435162663459778,
+          "damage": 2.762500047683716,
+          "crit": false,
+          "finalBlow": false,
+          "tick": 1147,
+          "x": 0,
+          "y": 0
+        }
+      ],
+      "vfx": [
+        {
+          "kind": "swing",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "mist-purple-sway-sweep",
+          "x": 2816.938476562488,
+          "y": 2527.1517791024216,
+          "timeMs": 58462.3,
+          "comboStep": 0,
+          "motion": "sway-jab"
+        },
+        {
+          "kind": "impact",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "misty-purple-wide-sweep",
+          "x": 2773.649169921875,
+          "y": 2563.45703125,
+          "timeMs": 58712.3
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "mist-purple-sway-sweep",
+          "x": 2820.7604980468636,
+          "y": 2527.1517804490177,
+          "timeMs": 58962.3,
+          "comboStep": 1,
+          "motion": "weave-cross"
+        },
+        {
+          "kind": "impact",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "misty-purple-wide-sweep",
+          "x": 2776.0422667503067,
+          "y": 2565.790272949219,
+          "timeMs": 59312.3
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "mist-purple-sway-sweep",
+          "x": 2824.582519531239,
+          "y": 2527.151781661617,
+          "timeMs": 59478.9,
+          "comboStep": 2,
+          "motion": "gourd-haymaker"
+        },
+        {
+          "kind": "impact",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "misty-purple-wide-sweep",
+          "x": 2777.1712890625,
+          "y": 2567.026939038614,
+          "timeMs": 59812.3
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "mist-purple-sway-sweep",
+          "x": 2828.4044206697827,
+          "y": 2527.1517827918997,
+          "timeMs": 59995.6,
+          "comboStep": 0,
+          "motion": "sway-jab"
+        }
+      ],
+      "screenshot": "docs/owner-notes-audit-v10-evidence/b14-kungfu/x2-drunken-fist-wraps-right.png"
+    },
+    {
+      "weaponId": "x2-drunken-fist-wraps",
+      "facing": "left",
+      "target": {
+        "id": "dummy1",
+        "x": 2261.818359375,
+        "y": 2568.5673828125,
+        "distance": 47.10759342930556
+      },
+      "attackSeqBefore": 23,
+      "attackSeqAfter": 29,
+      "steps": [
+        0,
+        1,
+        2
+      ],
+      "motions": [
+        "sway-jab",
+        "weave-cross",
+        "gourd-haymaker"
+      ],
+      "swingStyle": "mist-purple-sway-sweep",
+      "impactStyle": "misty-purple-wide-sweep",
+      "intervalsMs": [
+        566.6000000000058,
+        516.6999999999971
+      ],
+      "contacts": [
+        {
+          "layer": "full",
+          "targetId": "dummy0",
+          "sourcePlayerId": "N0926VH0_",
+          "selfHit": true,
+          "matchedPrediction": false,
+          "weaponId": "x2-drunken-fist-wraps",
+          "delivery": 1,
+          "element": "arcane",
+          "dirX": -0.9823839664459229,
+          "dirY": -0.1868736296892166,
+          "damage": 2.762500047683716,
+          "crit": false,
+          "finalBlow": false,
+          "tick": 1374,
+          "x": 0,
+          "y": 0
+        },
+        {
+          "layer": "upgrade",
+          "targetId": "dummy1",
+          "sourcePlayerId": "N0926VH0_",
+          "selfHit": true,
+          "matchedPrediction": true,
+          "weaponId": "x2-drunken-fist-wraps",
+          "delivery": 1,
+          "element": "arcane",
+          "dirX": -0.8913605213165283,
+          "dirY": -0.4532950818538666,
+          "damage": 2.762500047683716,
+          "crit": false,
+          "finalBlow": false,
+          "tick": 1374,
+          "x": 0,
+          "y": 0
+        },
+        {
+          "layer": "upgrade",
+          "targetId": "dummy0",
+          "sourcePlayerId": "N0926VH0_",
+          "selfHit": true,
+          "matchedPrediction": true,
+          "weaponId": "x2-drunken-fist-wraps",
+          "delivery": 1,
+          "element": "arcane",
+          "dirX": -0.9797461628913879,
+          "dirY": -0.20024359226226807,
+          "damage": 5.525000095367432,
+          "crit": true,
+          "finalBlow": false,
+          "tick": 1385,
+          "x": 0,
+          "y": 0
+        },
+        {
+          "layer": "full",
+          "targetId": "dummy1",
+          "sourcePlayerId": "N0926VH0_",
+          "selfHit": true,
+          "matchedPrediction": false,
+          "weaponId": "x2-drunken-fist-wraps",
+          "delivery": 1,
+          "element": "arcane",
+          "dirX": -0.8759199380874634,
+          "dirY": -0.4824564754962921,
+          "damage": 2.762500047683716,
+          "crit": false,
+          "finalBlow": false,
+          "tick": 1385,
+          "x": 0,
+          "y": 0
+        },
+        {
+          "layer": "full",
+          "targetId": "dummy0",
+          "sourcePlayerId": "N0926VH0_",
+          "selfHit": true,
+          "matchedPrediction": false,
+          "weaponId": "x2-drunken-fist-wraps",
+          "delivery": 1,
+          "element": "arcane",
+          "dirX": -0.9766634702682495,
+          "dirY": -0.21477533876895905,
+          "damage": 2.762500047683716,
+          "crit": false,
+          "finalBlow": false,
+          "tick": 1405,
+          "x": 0,
+          "y": 0
+        },
+        {
+          "layer": "upgrade",
+          "targetId": "dummy1",
+          "sourcePlayerId": "N0926VH0_",
+          "selfHit": true,
+          "matchedPrediction": true,
+          "weaponId": "x2-drunken-fist-wraps",
+          "delivery": 1,
+          "element": "arcane",
+          "dirX": -0.8581922054290771,
+          "dirY": -0.5133285522460938,
+          "damage": 2.762500047683716,
+          "crit": false,
+          "finalBlow": false,
+          "tick": 1405,
+          "x": 0,
+          "y": 0
+        },
+        {
+          "layer": "full",
+          "targetId": "dummy0",
+          "sourcePlayerId": "N0926VH0_",
+          "selfHit": true,
+          "matchedPrediction": false,
+          "weaponId": "x2-drunken-fist-wraps",
+          "delivery": 1,
+          "element": "arcane",
+          "dirX": -0.9731181263923645,
+          "dirY": -0.2303064465522766,
+          "damage": 5.525000095367432,
+          "crit": true,
+          "finalBlow": false,
+          "tick": 1416,
+          "x": 0,
+          "y": 0
+        },
+        {
+          "layer": "upgrade",
+          "targetId": "dummy1",
+          "sourcePlayerId": "N0926VH0_",
+          "selfHit": true,
+          "matchedPrediction": true,
+          "weaponId": "x2-drunken-fist-wraps",
+          "delivery": 1,
+          "element": "arcane",
+          "dirX": -0.8381549119949341,
+          "dirY": -0.5454322099685669,
+          "damage": 2.762500047683716,
+          "crit": false,
+          "finalBlow": false,
+          "tick": 1416,
+          "x": 0,
+          "y": 0
+        },
+        {
+          "layer": "full",
+          "targetId": "dummy0",
+          "sourcePlayerId": "N0926VH0_",
+          "selfHit": true,
+          "matchedPrediction": false,
+          "weaponId": "x2-drunken-fist-wraps",
+          "delivery": 1,
+          "element": "arcane",
+          "dirX": -0.9690428376197815,
+          "dirY": -0.24689258635044098,
+          "damage": 5.525000095367432,
+          "crit": true,
+          "finalBlow": false,
+          "tick": 1427,
+          "x": 0,
+          "y": 0
+        },
+        {
+          "layer": "upgrade",
+          "targetId": "dummy1",
+          "sourcePlayerId": "N0926VH0_",
+          "selfHit": true,
+          "matchedPrediction": true,
+          "weaponId": "x2-drunken-fist-wraps",
+          "delivery": 1,
+          "element": "arcane",
+          "dirX": -0.8155735731124878,
+          "dirY": -0.5786533355712891,
+          "damage": 2.762500047683716,
+          "crit": false,
+          "finalBlow": false,
+          "tick": 1427,
+          "x": 0,
+          "y": 0
+        },
+        {
+          "layer": "full",
+          "targetId": "dummy0",
+          "sourcePlayerId": "N0926VH0_",
+          "selfHit": true,
+          "matchedPrediction": false,
+          "weaponId": "x2-drunken-fist-wraps",
+          "delivery": 1,
+          "element": "arcane",
+          "dirX": -0.9643611311912537,
+          "dirY": -0.26458942890167236,
+          "damage": 2.762500047683716,
+          "crit": false,
+          "finalBlow": false,
+          "tick": 1438,
+          "x": 0,
+          "y": 0
+        },
+        {
+          "layer": "upgrade",
+          "targetId": "dummy1",
+          "sourcePlayerId": "N0926VH0_",
+          "selfHit": true,
+          "matchedPrediction": true,
+          "weaponId": "x2-drunken-fist-wraps",
+          "delivery": 1,
+          "element": "arcane",
+          "dirX": -0.7804244160652161,
+          "dirY": -0.6252501606941223,
+          "damage": 2.762500047683716,
+          "crit": false,
+          "finalBlow": false,
+          "tick": 1439,
+          "x": 0,
+          "y": 0
+        }
+      ],
+      "vfx": [
+        {
+          "kind": "swing",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "mist-purple-sway-sweep",
+          "x": 2146.778320312505,
+          "y": 2576.3977341459877,
+          "timeMs": 70945.1,
+          "comboStep": 0,
+          "motion": "sway-jab"
+        },
+        {
+          "kind": "impact",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "misty-purple-wide-sweep",
+          "x": 2176.386474609375,
+          "y": 2565.93017578125,
+          "timeMs": 71211.7
+        },
+        {
+          "kind": "impact",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "misty-purple-wide-sweep",
+          "x": 2181.745849609375,
+          "y": 2551.1396484375,
+          "timeMs": 71211.7
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "mist-purple-sway-sweep",
+          "x": 2142.95629882813,
+          "y": 2576.3977342844323,
+          "timeMs": 71445.1,
+          "comboStep": 0,
+          "motion": "sway-jab"
+        },
+        {
+          "kind": "impact",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "misty-purple-wide-sweep",
+          "x": 2175.995849609375,
+          "y": 2565.852417004103,
+          "timeMs": 71711.8
+        },
+        {
+          "kind": "impact",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "misty-purple-wide-sweep",
+          "x": 2181.34228515625,
+          "y": 2550.923828125,
+          "timeMs": 71711.8
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "mist-purple-sway-sweep",
+          "x": 2139.134277343755,
+          "y": 2576.3977343562074,
+          "timeMs": 71961.7,
+          "comboStep": 1,
+          "motion": "weave-cross"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "mist-purple-sway-sweep",
+          "x": 2139.134277343755,
+          "y": 2576.397734150217,
+          "timeMs": 72478.4,
+          "comboStep": 1,
+          "motion": "weave-cross"
+        },
+        {
+          "kind": "impact",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "misty-purple-wide-sweep",
+          "x": 2170.24769231546,
+          "y": 2564.627978515625,
+          "timeMs": 72745.1
+        },
+        {
+          "kind": "impact",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "misty-purple-wide-sweep",
+          "x": 2176.8213570782364,
+          "y": 2548.315869140625,
+          "timeMs": 72745.1
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "mist-purple-sway-sweep",
+          "x": 2135.31225585938,
+          "y": 2576.397734288244,
+          "timeMs": 73011.7,
+          "comboStep": 0,
+          "motion": "sway-jab"
+        },
+        {
+          "kind": "impact",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "misty-purple-wide-sweep",
+          "x": 2166.6228515625,
+          "y": 2563.7775594886302,
+          "timeMs": 73295
+        },
+        {
+          "kind": "impact",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "misty-purple-wide-sweep",
+          "x": 2174.1089081871132,
+          "y": 2546.568310546875,
+          "timeMs": 73295
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "mist-purple-sway-sweep",
+          "x": 2131.490234375005,
+          "y": 2576.3977342812136,
+          "timeMs": 73578.3,
+          "comboStep": 1,
+          "motion": "weave-cross"
+        },
+        {
+          "kind": "impact",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "misty-purple-wide-sweep",
+          "x": 2163.027099609375,
+          "y": 2562.869287109375,
+          "timeMs": 73845
+        },
+        {
+          "kind": "impact",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "misty-purple-wide-sweep",
+          "x": 2171.536669921875,
+          "y": 2544.7619140625,
+          "timeMs": 73845
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "mist-purple-sway-sweep",
+          "x": 2127.66821289063,
+          "y": 2576.3977342841536,
+          "timeMs": 74095,
+          "comboStep": 2,
+          "motion": "gourd-haymaker"
+        },
+        {
+          "kind": "impact",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "misty-purple-wide-sweep",
+          "x": 2161.498291015625,
+          "y": 2562.45849609375,
+          "timeMs": 74345
+        },
+        {
+          "kind": "impact",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "misty-purple-wide-sweep",
+          "x": 2170.489501953125,
+          "y": 2543.969482421875,
+          "timeMs": 74445
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "mist-purple-sway-sweep",
+          "x": 2123.846191406255,
+          "y": 2576.3977345451303,
+          "timeMs": 74611.7,
+          "comboStep": 0,
+          "motion": "sway-jab"
+        }
+      ],
+      "screenshot": "docs/owner-notes-audit-v10-evidence/b14-kungfu/x2-drunken-fist-wraps-left.png"
+    },
+    {
+      "weaponId": "x2-iron-palm-wraps",
+      "facing": "right",
+      "target": {
+        "id": "dummy2",
+        "x": 2777.899169921875,
+        "y": 2567.847279877463,
+        "distance": 52.62402807158113
+      },
+      "attackSeqBefore": 29,
+      "attackSeqAfter": 33,
+      "steps": [
+        0,
+        1,
+        2
+      ],
+      "motions": [
+        "iron-knuckle",
+        "iron-knuckle",
+        "iron-palm"
+      ],
+      "swingStyle": "black-iron-drive",
+      "impactStyle": "iron-sparks-shockwave",
+      "intervalsMs": [
+        916.6999999999971,
+        916.6000000000058
+      ],
+      "contacts": [
+        {
+          "layer": "full",
+          "targetId": "dummy2",
+          "sourcePlayerId": "N0926VH0_",
+          "selfHit": true,
+          "matchedPrediction": false,
+          "weaponId": "x2-iron-palm-wraps",
+          "delivery": 1,
+          "element": "physical",
+          "dirX": 0.9973531365394592,
+          "dirY": 0.07270967960357666,
+          "damage": 4.972499847412109,
+          "crit": false,
+          "finalBlow": false,
+          "tick": 1707,
+          "x": 0,
+          "y": 0
+        },
+        {
+          "layer": "full",
+          "targetId": "dummy2",
+          "sourcePlayerId": "N0926VH0_",
+          "selfHit": true,
+          "matchedPrediction": false,
+          "weaponId": "x2-iron-palm-wraps",
+          "delivery": 1,
+          "element": "physical",
+          "dirX": 0.9973531365394592,
+          "dirY": 0.07270967960357666,
+          "damage": 4.972499847412109,
+          "crit": false,
+          "finalBlow": false,
+          "tick": 1728,
+          "x": 0,
+          "y": 0
+        },
+        {
+          "layer": "full",
+          "targetId": "dummy2",
+          "sourcePlayerId": "N0926VH0_",
+          "selfHit": true,
+          "matchedPrediction": false,
+          "weaponId": "x2-iron-palm-wraps",
+          "delivery": 1,
+          "element": "physical",
+          "dirX": 0.9973531365394592,
+          "dirY": 0.07270967960357666,
+          "damage": 4.972499847412109,
+          "crit": false,
+          "finalBlow": false,
+          "tick": 1746,
+          "x": 0,
+          "y": 0
+        },
+        {
+          "layer": "full",
+          "targetId": "dummy2",
+          "sourcePlayerId": "N0926VH0_",
+          "selfHit": true,
+          "matchedPrediction": false,
+          "weaponId": "x2-iron-palm-wraps",
+          "delivery": 1,
+          "element": "physical",
+          "dirX": 0.9973531365394592,
+          "dirY": 0.07270967960357666,
+          "damage": 4.972499847412109,
+          "crit": false,
+          "finalBlow": false,
+          "tick": 1764,
+          "x": 0,
+          "y": 0
+        }
+      ],
+      "vfx": [
+        {
+          "kind": "swing",
+          "weaponId": "x2-iron-palm-wraps",
+          "style": "black-iron-drive",
+          "x": 2888.524892578105,
+          "y": 2566.5711037222454,
+          "timeMs": 87561.2,
+          "comboStep": 0,
+          "motion": "iron-knuckle"
+        },
+        {
+          "kind": "impact",
+          "weaponId": "x2-iron-palm-wraps",
+          "style": "iron-sparks-shockwave",
+          "x": 2859.0994801341394,
+          "y": 2570.7508555379713,
+          "timeMs": 87827.8
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-iron-palm-wraps",
+          "style": "black-iron-drive",
+          "x": 2888.524892578105,
+          "y": 2566.5709860462307,
+          "timeMs": 88577.7,
+          "comboStep": 0,
+          "motion": "iron-knuckle"
+        },
+        {
+          "kind": "impact",
+          "weaponId": "x2-iron-palm-wraps",
+          "style": "iron-sparks-shockwave",
+          "x": 2859.0994801341394,
+          "y": 2570.7508555379713,
+          "timeMs": 88844.5
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-iron-palm-wraps",
+          "style": "black-iron-drive",
+          "x": 2888.524892578105,
+          "y": 2566.5709860462307,
+          "timeMs": 89494.4,
+          "comboStep": 1,
+          "motion": "iron-knuckle"
+        },
+        {
+          "kind": "impact",
+          "weaponId": "x2-iron-palm-wraps",
+          "style": "iron-sparks-shockwave",
+          "x": 2859.0994801341394,
+          "y": 2570.7508555379713,
+          "timeMs": 89777.7
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-iron-palm-wraps",
+          "style": "black-iron-drive",
+          "x": 2888.524892578105,
+          "y": 2566.5709860462307,
+          "timeMs": 90411,
+          "comboStep": 2,
+          "motion": "iron-palm"
+        },
+        {
+          "kind": "impact",
+          "weaponId": "x2-iron-palm-wraps",
+          "style": "iron-sparks-shockwave",
+          "x": 2859.0994801341394,
+          "y": 2570.7508555379713,
+          "timeMs": 90677.7
+        }
+      ],
+      "screenshot": "docs/owner-notes-audit-v10-evidence/b14-kungfu/x2-iron-palm-wraps-right.png"
+    },
+    {
+      "weaponId": "x2-iron-palm-wraps",
+      "facing": "left",
+      "target": {
+        "id": "dummy1",
+        "x": 2168.1405120148274,
+        "y": 2542.09556694298,
+        "distance": 54.6369444399653
+      },
+      "attackSeqBefore": 33,
+      "attackSeqAfter": 36,
+      "steps": [
+        0,
+        1,
+        2
+      ],
+      "motions": [
+        "iron-knuckle",
+        "iron-knuckle",
+        "iron-palm"
+      ],
+      "swingStyle": "black-iron-drive",
+      "impactStyle": "iron-sparks-shockwave",
+      "intervalsMs": [
+        916.6999999999971,
+        916.5
+      ],
+      "contacts": [
+        {
+          "layer": "full",
+          "targetId": "dummy0",
+          "sourcePlayerId": "N0926VH0_",
+          "selfHit": true,
+          "matchedPrediction": false,
+          "weaponId": "x2-iron-palm-wraps",
+          "delivery": 1,
+          "element": "physical",
+          "dirX": -0.5709060430526733,
+          "dirY": 0.8210154175758362,
+          "damage": 4.972499847412109,
+          "crit": false,
+          "finalBlow": false,
+          "tick": 1952,
+          "x": 0,
+          "y": 0
+        },
+        {
+          "layer": "full",
+          "targetId": "dummy1",
+          "sourcePlayerId": "N0926VH0_",
+          "selfHit": true,
+          "matchedPrediction": false,
+          "weaponId": "x2-iron-palm-wraps",
+          "delivery": 1,
+          "element": "physical",
+          "dirX": -0.9945490956306458,
+          "dirY": 0.10426919162273407,
+          "damage": 4.972499847412109,
+          "crit": false,
+          "finalBlow": false,
+          "tick": 1952,
+          "x": 0,
+          "y": 0
+        },
+        {
+          "layer": "full",
+          "targetId": "dummy0",
+          "sourcePlayerId": "N0926VH0_",
+          "selfHit": true,
+          "matchedPrediction": false,
+          "weaponId": "x2-iron-palm-wraps",
+          "delivery": 1,
+          "element": "physical",
+          "dirX": -0.5709060430526733,
+          "dirY": 0.8210154175758362,
+          "damage": 4.972499847412109,
+          "crit": false,
+          "finalBlow": false,
+          "tick": 1970,
+          "x": 0,
+          "y": 0
+        },
+        {
+          "layer": "full",
+          "targetId": "dummy1",
+          "sourcePlayerId": "N0926VH0_",
+          "selfHit": true,
+          "matchedPrediction": false,
+          "weaponId": "x2-iron-palm-wraps",
+          "delivery": 1,
+          "element": "physical",
+          "dirX": -0.9945490956306458,
+          "dirY": 0.10426919162273407,
+          "damage": 4.972499847412109,
+          "crit": false,
+          "finalBlow": false,
+          "tick": 1970,
+          "x": 0,
+          "y": 0
+        },
+        {
+          "layer": "full",
+          "targetId": "dummy0",
+          "sourcePlayerId": "N0926VH0_",
+          "selfHit": true,
+          "matchedPrediction": false,
+          "weaponId": "x2-iron-palm-wraps",
+          "delivery": 1,
+          "element": "physical",
+          "dirX": -0.5709060430526733,
+          "dirY": 0.8210154175758362,
+          "damage": 4.972499847412109,
+          "crit": false,
+          "finalBlow": false,
+          "tick": 1989,
+          "x": 0,
+          "y": 0
+        },
+        {
+          "layer": "full",
+          "targetId": "dummy1",
+          "sourcePlayerId": "N0926VH0_",
+          "selfHit": true,
+          "matchedPrediction": false,
+          "weaponId": "x2-iron-palm-wraps",
+          "delivery": 1,
+          "element": "physical",
+          "dirX": -0.9945490956306458,
+          "dirY": 0.10426919162273407,
+          "damage": 4.972499847412109,
+          "crit": false,
+          "finalBlow": false,
+          "tick": 1989,
+          "x": 0,
+          "y": 0
+        }
+      ],
+      "vfx": [
+        {
+          "kind": "swing",
+          "weaponId": "x2-iron-palm-wraps",
+          "style": "black-iron-drive",
+          "x": 2075.570810546882,
+          "y": 2539.662877216941,
+          "timeMs": 99794,
+          "comboStep": 0,
+          "motion": "iron-knuckle"
+        },
+        {
+          "kind": "impact",
+          "weaponId": "x2-iron-palm-wraps",
+          "style": "iron-sparks-shockwave",
+          "x": 2131.5018260786997,
+          "y": 2583.997802734375,
+          "timeMs": 100043.9
+        },
+        {
+          "kind": "impact",
+          "weaponId": "x2-iron-palm-wraps",
+          "style": "iron-sparks-shockwave",
+          "x": 2108.6251000490297,
+          "y": 2545.29345703125,
+          "timeMs": 100043.9
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-iron-palm-wraps",
+          "style": "black-iron-drive",
+          "x": 2075.570810546882,
+          "y": 2539.6628772164604,
+          "timeMs": 100710.7,
+          "comboStep": 1,
+          "motion": "iron-knuckle"
+        },
+        {
+          "kind": "impact",
+          "weaponId": "x2-iron-palm-wraps",
+          "style": "iron-sparks-shockwave",
+          "x": 2131.5018260786997,
+          "y": 2583.997802734375,
+          "timeMs": 100960.6
+        },
+        {
+          "kind": "impact",
+          "weaponId": "x2-iron-palm-wraps",
+          "style": "iron-sparks-shockwave",
+          "x": 2108.6251000490297,
+          "y": 2545.29345703125,
+          "timeMs": 100960.6
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-iron-palm-wraps",
+          "style": "black-iron-drive",
+          "x": 2075.570810546882,
+          "y": 2539.6628772164604,
+          "timeMs": 101627.2,
+          "comboStep": 2,
+          "motion": "iron-palm"
+        },
+        {
+          "kind": "impact",
+          "weaponId": "x2-iron-palm-wraps",
+          "style": "iron-sparks-shockwave",
+          "x": 2131.5018260786997,
+          "y": 2583.997802734375,
+          "timeMs": 101960.6
+        },
+        {
+          "kind": "impact",
+          "weaponId": "x2-iron-palm-wraps",
+          "style": "iron-sparks-shockwave",
+          "x": 2108.6251000490297,
+          "y": 2545.29345703125,
+          "timeMs": 101960.6
+        }
+      ],
+      "screenshot": "docs/owner-notes-audit-v10-evidence/b14-kungfu/x2-iron-palm-wraps-left.png"
+    }
+  ]
+}

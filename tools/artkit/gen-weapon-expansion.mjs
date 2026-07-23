@@ -81,6 +81,7 @@ const TOP_KEYS = new Set([
   "sprite", "sizeClass", "stance", "authoritativeCombo", "comboFamily", "comboVariant", "comboBar", "comboChoreography", "katanaHook",
   "bespokeVfxSheet", "performance", "swingStyle", "effectRecipe", "effectEmitter", "effectTiming",
   "renderAboveHands", "suppressVfx", "hitStatus", "gripPoints", "handlingTags", "poseLanguage",
+  "impactMuzzle",
 ]);
 // The sibling-block bug (§43): mechanic stats authored NEXT TO `behavior` instead of inside it were
 // silently ignored, shipping 11 weapons with default kits. Now an instant failure.
@@ -158,6 +159,8 @@ const CONE_STREAM_FLAVORS = new Set(["ice", "magma"]);
 const COMBO_MOTIONS = new Set([
   "slash", "overhead", "shoulder-chop", "reverse-chop", "rising-chop", "execution-slam", "rake", "scissor",
   "jab", "cross", "hook", "haymaker", "lunge", "disengage", "impale", "fulcrum-flip", "stinger",
+  "elbow", "knee-strike", "roundhouse-kick", "chain-punch", "sway-jab", "weave-cross",
+  "gourd-haymaker", "iron-knuckle", "iron-palm",
   "spin-release", "pommel-bash", "true-charged-slam", "falling-gate", "backswing-wheel",
   "runaway-cleave", "highland-gate", "rising-ward", "bind-break-cast-off", "long-reap",
   "shaft-switch", "compass-rose", "headsmans-drop", "hook-and-haul", "gallows-turn", "draw-cut",
@@ -215,7 +218,9 @@ const PERFORMANCE_LUNGE_KEYS = new Set([
   "distancePx", "durationSeconds", "invulnerable", "impactAtDestination",
 ]);
 const PERFORMANCE_PRE_THROW_DAMAGE_KEYS = new Set(["damage", "range"]);
-const PERFORMANCE_FORWARD_DRIFT_KEYS = new Set(["speedPxPerSecond", "durationSeconds"]);
+const PERFORMANCE_FORWARD_DRIFT_KEYS = new Set([
+  "speedPxPerSecond", "durationSeconds", "comboStepMultipliers",
+]);
 const PERFORMANCE_TWIRL_KEYS = new Set(["plane", "pivot", "direction", "visualRevolutions"]);
 const PERFORMANCE_HOLD_SCALING_KEYS = new Set(["cadence"]);
 const PERFORMANCE_STRIDE_TAP_KEYS = new Set(["amplitudePx", "phaseOffset"]);
@@ -569,6 +574,26 @@ function performanceOf(p) {
         speedPxPerSecond: num(p.forwardDrift.speedPxPerSecond, 8, 240, 60, "performance.forwardDrift.speedPxPerSecond"),
         durationSeconds: num(p.forwardDrift.durationSeconds, 0.05, 0.75, 0.3, "performance.forwardDrift.durationSeconds"),
       };
+      if (p.forwardDrift.comboStepMultipliers !== undefined) {
+        if (
+          !Array.isArray(p.forwardDrift.comboStepMultipliers) ||
+          p.forwardDrift.comboStepMultipliers.length < 1 ||
+          p.forwardDrift.comboStepMultipliers.length > 8
+        ) {
+          fail("performance.forwardDrift.comboStepMultipliers must contain 1..8 beats");
+        } else {
+          out.forwardDrift.comboStepMultipliers = p.forwardDrift.comboStepMultipliers.map(
+            (value, index) =>
+              num(
+                value,
+                0.25,
+                2,
+                1,
+                `performance.forwardDrift.comboStepMultipliers[${index}]`,
+              ),
+          );
+        }
+      }
     }
   }
   if (p.edgeLeadFlip !== undefined) {
@@ -895,6 +920,10 @@ function mapWeapon(w) {
   if (w.authoritativeCombo !== undefined) {
     if (typeof w.authoritativeCombo !== "boolean") fail("authoritativeCombo is not a boolean");
     else def.authoritativeCombo = w.authoritativeCombo;
+  }
+  if (w.impactMuzzle !== undefined) {
+    if (w.impactMuzzle !== true) fail("impactMuzzle must be true when authored");
+    else def.impactMuzzle = true;
   }
   if (w.swingStyle !== undefined)
     def.swingStyle = enumOf(w.swingStyle, SWING_STYLES, "swingStyle");
@@ -1315,6 +1344,11 @@ for (const w of data.weapons) {
       fail("comboBar requires comboFamily + comboVariant");
     else if (comboBars[w.comboVariant]) fail(`duplicate comboVariant ${w.comboVariant}`);
     else comboBars[w.comboVariant] = comboBar;
+    if (
+      Array.isArray(w.performance?.forwardDrift?.comboStepMultipliers) &&
+      w.performance.forwardDrift.comboStepMultipliers.length !== comboBar.length
+    )
+      fail("performance.forwardDrift.comboStepMultipliers must match comboBar length");
   } else if (w.comboFamily !== undefined || w.comboVariant !== undefined) {
     fail("comboFamily/comboVariant require comboBar");
   }

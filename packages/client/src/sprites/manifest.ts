@@ -10644,6 +10644,42 @@ export const SPRITES = {
       }
     ]
   },
+  "x2-drunken-fist-wraps": {
+    "id": "x2-drunken-fist-wraps",
+    "kind": "weapon",
+    "canvas": {
+      "w": 512,
+      "h": 235
+    },
+    "body": {
+      "cx": 248.96,
+      "cy": 123.2,
+      "w": 512,
+      "h": 235
+    },
+    "parts": [
+      {
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 512,
+        "h": 235,
+        "cx": 248.96,
+        "cy": 123.2,
+        "ox": 0,
+        "oy": 0
+      },
+      {
+        "role": "part-2",
+        "file": "part-2.png",
+        "w": 468,
+        "h": 228,
+        "cx": 246.39,
+        "cy": 119.96,
+        "ox": -2.57,
+        "oy": -3.24
+      }
+    ]
+  },
   "x2-dust-devil-flail": {
     "id": "x2-dust-devil-flail",
     "kind": "weapon",
@@ -12972,6 +13008,42 @@ export const SPRITES = {
       }
     ]
   },
+  "x2-iron-palm-wraps": {
+    "id": "x2-iron-palm-wraps",
+    "kind": "weapon",
+    "canvas": {
+      "w": 512,
+      "h": 267
+    },
+    "body": {
+      "cx": 250.21,
+      "cy": 130.2,
+      "w": 512,
+      "h": 264
+    },
+    "parts": [
+      {
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 512,
+        "h": 264,
+        "cx": 250.21,
+        "cy": 130.2,
+        "ox": 0,
+        "oy": 0
+      },
+      {
+        "role": "part-2",
+        "file": "part-2.png",
+        "w": 511,
+        "h": 267,
+        "cx": 249.36,
+        "cy": 134.3,
+        "ox": -0.85,
+        "oy": 4.1
+      }
+    ]
+  },
   "x2-iron-war-fan": {
     "id": "x2-iron-war-fan",
     "kind": "weapon",
@@ -13667,6 +13739,32 @@ export const SPRITES = {
         "h": 364,
         "cx": 486.5,
         "cy": 363,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
+  },
+  "x2-muay-thai-wraps": {
+    "id": "x2-muay-thai-wraps",
+    "kind": "weapon",
+    "canvas": {
+      "w": 384,
+      "h": 323
+    },
+    "body": {
+      "cx": 196.02,
+      "cy": 161.29,
+      "w": 384,
+      "h": 323
+    },
+    "parts": [
+      {
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 384,
+        "h": 323,
+        "cx": 196.02,
+        "cy": 161.29,
         "ox": 0,
         "oy": 0
       }
@@ -17336,6 +17434,42 @@ export const SPRITES = {
         "cy": 120.02,
         "ox": 0,
         "oy": 0
+      }
+    ]
+  },
+  "x2-wing-chun-wraps": {
+    "id": "x2-wing-chun-wraps",
+    "kind": "weapon",
+    "canvas": {
+      "w": 512,
+      "h": 208
+    },
+    "body": {
+      "cx": 264.46,
+      "cy": 106.5,
+      "w": 512,
+      "h": 208
+    },
+    "parts": [
+      {
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 512,
+        "h": 208,
+        "cx": 264.46,
+        "cy": 106.5,
+        "ox": 0,
+        "oy": 0
+      },
+      {
+        "role": "part-2",
+        "file": "part-2.png",
+        "w": 511,
+        "h": 208,
+        "cx": 264.24,
+        "cy": 106.73,
+        "ox": -0.22,
+        "oy": 0.23
       }
     ]
   },

@@ -217,6 +217,12 @@ import { paintedParticleDominance, paintedParticleScale } from "../vfx/particles
 import { screenTrueScaleX } from "../vfx/screen-true-transform.js";
 import { resolveWeaponAuraVfxRecipe } from "../vfx/weapon-effect-recipes.js";
 import { weaponPaintedAuraFor } from "../vfx/weapon-vfx-suite.js";
+import {
+  createKungFuWrapPoseInput,
+  createKungFuWrapPoseSample,
+  isKungFuWrapMotion,
+  sampleKungFuWrapPose,
+} from "./kung-fu-wrap-pose.js";
 
 export { GEAR_PARTS_MANIFEST } from "../sprites/gear-parts.js";
 
@@ -2383,6 +2389,8 @@ export class SpriteRig {
   /** One retained output record keeps the pure pose sampler allocation-free in the hot path. */
   private readonly closeBladeInput = createCloseBladePoseInput();
   private readonly closeBladePose = createCloseBladePoseSample();
+  private readonly kungFuWrapPoseInput = createKungFuWrapPoseInput();
+  private readonly kungFuWrapPose = createKungFuWrapPoseSample();
   private readonly katanaChoreographyPose = createKatanaChoreographySample();
   private closeBladePoseActive = false;
   private closeBladeBodyX = 0;
@@ -5209,7 +5217,11 @@ export class SpriteRig {
         : undefined;
     if (nextSwing && selection && activeDef) {
       const { family, variant, sequence } = selection;
-      const chain = this.comboChains[handIndex];
+      // Authored kung-fu wraps are one two-hand scroll even though glovePair mirrors the same texture into
+      // two worn slots. Their accepted cadence advances one shared three-beat bar; legacy mitts retain the
+      // per-hand voltage-boxing chains they shipped with.
+      const comboChainHand = activeDef.glovePair && activeDef.impactMuzzle ? 0 : handIndex;
+      const chain = this.comboChains[comboChainHand];
       const continues =
         chain.family === family && chain.weaponId === activeDef.id && timeMs <= chain.expiresAtMs;
       const previousStep = chain.step;
@@ -9265,145 +9277,219 @@ export class SpriteRig {
           // §45 PUNCH reuses the existing chamber/extension/hip-drive vocabulary as jab → rear cross →
           // haymaker. Empty fists enter here behind CLIENT_VISUAL_COMBOS; no sprite is required for hands/body.
           const pose = comboPose ?? MELEE_COMBO_SEQUENCES.punch[0];
-          const monkFlurry = isMonkGloveWeapon(def);
-          const heavy = twoHandedPoseFor(def, this.poseVariants.twoHandAuthority) ? 1 : 0;
-          const isCross = pose?.motion === "cross";
-          const straight = monkFlurry || pose?.motion === "jab" || isCross;
-          const reach =
-            TARGET_BODY_H *
-            (monkFlurry
-              ? 1
+          if (pose && isKungFuWrapMotion(pose.motion)) {
+            const input = this.kungFuWrapPoseInput;
+            input.motion = pose.motion;
+            input.hand = pose.hand;
+            input.direction = poseDirection;
+            input.timing = pose.timing;
+            input.t = tt;
+            const sampled = sampleKungFuWrapPose(input, this.kungFuWrapPose);
+            aimRelativePoint(sampled.handForward, sampled.handLateral, aimLocal, this.posePoint);
+            const leadX = this.posePoint.x * TARGET_BODY_H;
+            const leadY = this.posePoint.y * TARGET_BODY_H;
+            aimRelativePoint(
+              sampled.rearHandForward,
+              sampled.rearHandLateral,
+              aimLocal,
+              this.posePoint,
+            );
+            const rearX = this.posePoint.x * TARGET_BODY_H;
+            const rearY = this.posePoint.y * TARGET_BODY_H;
+            if (pose.hand === "off") {
+              weaponAngle = restA;
+              backWeaponAngle = aimLocal + sampled.handAngleOffset;
+              this.swingBackOffX = leadX;
+              this.swingBackOffY = leadY;
+              this.swingOffX = rearX;
+              this.swingOffY = rearY;
+              swingChannelsRouted = true;
+            } else {
+              weaponAngle = aimLocal + sampled.handAngleOffset;
+              this.swingOffX = leadX;
+              this.swingOffY = leadY;
+              if (this.weapons.length > 1) {
+                backWeaponAngle = aimLocal + sampled.rearHandAngleOffset;
+                this.swingBackOffX = rearX;
+                this.swingBackOffY = rearY;
+              }
+            }
+            aimRelativePoint(sampled.bodyForward, sampled.bodyLateral, aimLocal, this.posePoint);
+            this.body.x += this.posePoint.x * TARGET_BODY_H;
+            this.body.y += this.posePoint.y * TARGET_BODY_H - sampled.bodyLift * TARGET_BODY_H;
+            this.body.rotation += sampled.bodyRotation * Math.cos(aimLocal);
+            this.body.scaleX *= sampled.bodyScaleX;
+            this.body.scaleY *= sampled.bodyScaleY;
+            const liftSign = Math.cos(aimLocal) < 0 ? 1 : -1;
+            aimRelativePoint(
+              sampled.frontFootForward,
+              sampled.frontFootLateral + sampled.frontFootLift * liftSign,
+              aimLocal,
+              this.posePoint,
+            );
+            this.attackFrontFootX = this.posePoint.x * TARGET_BODY_H;
+            this.attackFrontFootY = this.posePoint.y * TARGET_BODY_H;
+            aimRelativePoint(
+              sampled.backFootForward,
+              sampled.backFootLateral + sampled.backFootLift * liftSign,
+              aimLocal,
+              this.posePoint,
+            );
+            this.attackBackFootX = this.posePoint.x * TARGET_BODY_H;
+            this.attackBackFootY = this.posePoint.y * TARGET_BODY_H;
+            this.attackFrontFootBlend = sampled.footBlend;
+            this.attackBackFootBlend = sampled.footBlend;
+            ownFeet = sampled.footBlend;
+            const impactHand = pose.hand === "off" ? 1 : 0;
+            this.pairWeaponScaleX[impactHand] = 1 + sampled.impactSnap * 0.24;
+            if (pose.hand === "both") this.pairWeaponScaleX[1] = 1 + sampled.impactSnap * 0.18;
+            this.pairGlintAlpha = Math.max(
+              this.pairGlintAlpha,
+              sampled.impactSnap * (pose.motion === "chain-punch" ? 0.72 : 0.9),
+            );
+          } else {
+            const monkFlurry = isMonkGloveWeapon(def);
+            const heavy = twoHandedPoseFor(def, this.poseVariants.twoHandAuthority) ? 1 : 0;
+            const isCross = pose?.motion === "cross";
+            const straight = monkFlurry || pose?.motion === "jab" || isCross;
+            const reach =
+              TARGET_BODY_H *
+              (monkFlurry
+                ? 1
+                : pose?.motion === "jab"
+                  ? 0.48
+                  : isCross
+                    ? 0.68 + 0.18 * heavy
+                    : 0.55 + 0.25 * heavy);
+            const wind = pose?.timing.activeStart ?? 0.1;
+            const imp = pose?.timing.activeEnd ?? CHOP_IMPACT_FRAC;
+            const follow = pose?.timing.followEnd ?? 0.44;
+            const pairedMonkStrike = monkFlurry && this.weapons.length > 1;
+            const pairOffStrike = pairedMonkStrike && this.swingHand === 1;
+            const authoredOffStrike =
+              !pairedMonkStrike &&
+              pose?.hand === "off" &&
+              (this.weapons.length > 1 ||
+                def.id === "fists" ||
+                (monkFlurry && def.poseLanguage?.idle === undefined));
+            const offUsesBack = pairOffStrike || authoredOffStrike;
+            const direction = monkFlurry ? (offUsesBack ? -1 : 1) : poseDirection < 0 ? -1 : 1;
+            let th = aimLocal; // fist direction from the shoulder
+            let r = 0; // fist extension
+            let drive = 0; // 0..1 body-commitment envelope
+            let lateral = 0;
+            if (straight) {
+              if (tt < wind) {
+                const p = tt / wind;
+                r = monkFlurry
+                  ? reach * (0.04 - 0.3 * p)
+                  : reach * ((isCross ? -0.24 : -0.14) - (isCross ? 0.16 : 0.12) * p);
+                lateral =
+                  TARGET_BODY_H * (monkFlurry ? direction * 0.11 : isCross ? -0.12 : 0.08) * p;
+                drive = (monkFlurry ? 0.32 : isCross ? 0.38 : 0.18) * p;
+              } else if (tt < imp) {
+                const p = (tt - wind) / (imp - wind);
+                const e = 1 - (1 - p) ** 3;
+                r = monkFlurry
+                  ? reach * (-0.26 + 1.26 * e)
+                  : reach * ((isCross ? -0.4 : -0.26) + (isCross ? 1.4 : 1.26) * e);
+                lateral =
+                  TARGET_BODY_H *
+                  (monkFlurry ? direction * 0.11 : isCross ? -0.12 : 0.08) *
+                  (1 - e);
+                drive =
+                  (monkFlurry ? 0.32 : isCross ? 0.38 : 0.18) +
+                  (monkFlurry ? 0.68 : isCross ? 0.62 : 0.72) * e;
+              } else if (tt < follow) {
+                r = reach;
+                drive = monkFlurry || isCross ? 1 : 0.9;
+              } else {
+                const p = (tt - follow) / (1 - follow);
+                const e = p * (2 - p);
+                r = monkFlurry ? reach * (1 - 0.96 * e) : reach * (1 - (isCross ? 1.22 : 1.14) * e);
+                lateral =
+                  -TARGET_BODY_H * (monkFlurry ? direction * 0.08 : isCross ? 0.12 : 0.08) * e;
+                drive =
+                  (monkFlurry || isCross ? 1 : 0.9) * (1 - e) +
+                  (monkFlurry ? 0.16 : isCross ? 0.2 : 0.12) * e;
+              }
+            } else {
+              const haymaker = pose?.motion === "haymaker";
+              const hook = (haymaker ? 1.05 : 0.62) + 0.45 * heavy;
+              if (tt < wind) {
+                const p = tt / wind;
+                th = aimLocal - direction * hook * p;
+                r = reach * (0.12 + 0.2 * p);
+                drive = (haymaker ? 0.42 : 0.3) * p;
+              } else if (tt < imp) {
+                const p = (tt - wind) / (imp - wind);
+                const e = 1 - (1 - p) ** 3;
+                th = aimLocal + direction * hook * (-1 + (haymaker ? 1.5 : 1.35) * e);
+                r = reach * (0.32 + 0.68 * e);
+                drive = 0.3 + 0.7 * e;
+              } else if (tt < follow) {
+                const p = (tt - imp) / (follow - imp);
+                th = aimLocal + direction * hook * (haymaker ? 0.5 + 0.16 * p : 0.35 + 0.12 * p);
+                r = reach * (1 - 0.12 * p);
+                drive = 1 - 0.12 * p;
+              } else {
+                const p = (tt - follow) / (1 - follow);
+                const e = p * (2 - p);
+                const hold = haymaker && heavy ? 0.72 : 0.22;
+                th = aimLocal + direction * hook * ((haymaker ? 0.66 : 0.47) * (1 - e) + hold * e);
+                r = reach * (0.88 * (1 - e) + 0.16 * e);
+                drive = 0.88 * (1 - e) + (haymaker ? 0.3 : 0.18) * e;
+              }
+            }
+            weaponAngle = th; // the fist leads along its own travel
+            const ox = Math.cos(th) * r - Math.sin(aimLocal) * lateral;
+            const oy = Math.sin(th) * r + Math.cos(aimLocal) * lateral;
+            if (offUsesBack) {
+              backWeaponAngle = th;
+              weaponAngle = restA;
+              this.swingBackOffX = ox;
+              this.swingBackOffY = oy;
+              swingChannelsRouted = true;
+            } else {
+              this.swingOffX = ox;
+              this.swingOffY = oy;
+              if (this.weapons.length > 1) backWeaponAngle = restA;
+            }
+            // Body: the punch comes from the HIPS — paper-twist (shoulders turning through), lean into the
+            // blow, a dug-in crouch. The rear cross mirrors the lean; the finisher commits the whole frame.
+            const commitScale = monkFlurry
+              ? 1.12
               : pose?.motion === "jab"
-                ? 0.48
+                ? 0.55
                 : isCross
-                  ? 0.68 + 0.18 * heavy
-                  : 0.55 + 0.25 * heavy);
-          const wind = pose?.timing.activeStart ?? 0.1;
-          const imp = pose?.timing.activeEnd ?? CHOP_IMPACT_FRAC;
-          const follow = pose?.timing.followEnd ?? 0.44;
-          const pairedMonkStrike = monkFlurry && this.weapons.length > 1;
-          const pairOffStrike = pairedMonkStrike && this.swingHand === 1;
-          const authoredOffStrike =
-            !pairedMonkStrike &&
-            pose?.hand === "off" &&
-            (this.weapons.length > 1 ||
-              def.id === "fists" ||
-              (monkFlurry && def.poseLanguage?.idle === undefined));
-          const offUsesBack = pairOffStrike || authoredOffStrike;
-          const direction = monkFlurry ? (offUsesBack ? -1 : 1) : poseDirection < 0 ? -1 : 1;
-          let th = aimLocal; // fist direction from the shoulder
-          let r = 0; // fist extension
-          let drive = 0; // 0..1 body-commitment envelope
-          let lateral = 0;
-          if (straight) {
-            if (tt < wind) {
-              const p = tt / wind;
-              r = monkFlurry
-                ? reach * (0.04 - 0.3 * p)
-                : reach * ((isCross ? -0.24 : -0.14) - (isCross ? 0.16 : 0.12) * p);
-              lateral =
-                TARGET_BODY_H * (monkFlurry ? direction * 0.11 : isCross ? -0.12 : 0.08) * p;
-              drive = (monkFlurry ? 0.32 : isCross ? 0.38 : 0.18) * p;
-            } else if (tt < imp) {
-              const p = (tt - wind) / (imp - wind);
-              const e = 1 - (1 - p) ** 3;
-              r = monkFlurry
-                ? reach * (-0.26 + 1.26 * e)
-                : reach * ((isCross ? -0.4 : -0.26) + (isCross ? 1.4 : 1.26) * e);
-              lateral =
-                TARGET_BODY_H * (monkFlurry ? direction * 0.11 : isCross ? -0.12 : 0.08) * (1 - e);
-              drive =
-                (monkFlurry ? 0.32 : isCross ? 0.38 : 0.18) +
-                (monkFlurry ? 0.68 : isCross ? 0.62 : 0.72) * e;
-            } else if (tt < follow) {
-              r = reach;
-              drive = monkFlurry || isCross ? 1 : 0.9;
-            } else {
-              const p = (tt - follow) / (1 - follow);
-              const e = p * (2 - p);
-              r = monkFlurry ? reach * (1 - 0.96 * e) : reach * (1 - (isCross ? 1.22 : 1.14) * e);
-              lateral =
-                -TARGET_BODY_H * (monkFlurry ? direction * 0.08 : isCross ? 0.12 : 0.08) * e;
-              drive =
-                (monkFlurry || isCross ? 1 : 0.9) * (1 - e) +
-                (monkFlurry ? 0.16 : isCross ? 0.2 : 0.12) * e;
+                  ? 1.18
+                  : pose?.motion === "haymaker"
+                    ? 1.2
+                    : 0.85;
+            this.body.scaleX *= 1 - (0.12 + 0.1 * heavy) * drive * commitScale;
+            this.body.rotation +=
+              direction * (0.1 + 0.09 * heavy) * drive * commitScale * Math.cos(aimLocal);
+            this.body.y += (2.5 + 2.5 * heavy) * s * drive * commitScale;
+            if (monkFlurry) {
+              // Presentation only: the shoulder/hip step keeps detached fists connected to the paper body.
+              // It never moves the rig root; only an explicit server-authored movement datum may do that.
+              this.attackArtOffX += Math.cos(aimLocal) * TARGET_BODY_H * 0.055 * drive;
+              this.attackArtOffY += Math.sin(aimLocal) * TARGET_BODY_H * 0.055 * drive;
             }
-          } else {
-            const haymaker = pose?.motion === "haymaker";
-            const hook = (haymaker ? 1.05 : 0.62) + 0.45 * heavy;
-            if (tt < wind) {
-              const p = tt / wind;
-              th = aimLocal - direction * hook * p;
-              r = reach * (0.12 + 0.2 * p);
-              drive = (haymaker ? 0.42 : 0.3) * p;
-            } else if (tt < imp) {
-              const p = (tt - wind) / (imp - wind);
-              const e = 1 - (1 - p) ** 3;
-              th = aimLocal + direction * hook * (-1 + (haymaker ? 1.5 : 1.35) * e);
-              r = reach * (0.32 + 0.68 * e);
-              drive = 0.3 + 0.7 * e;
-            } else if (tt < follow) {
-              const p = (tt - imp) / (follow - imp);
-              th = aimLocal + direction * hook * (haymaker ? 0.5 + 0.16 * p : 0.35 + 0.12 * p);
-              r = reach * (1 - 0.12 * p);
-              drive = 1 - 0.12 * p;
-            } else {
-              const p = (tt - follow) / (1 - follow);
-              const e = p * (2 - p);
-              const hold = haymaker && heavy ? 0.72 : 0.22;
-              th = aimLocal + direction * hook * ((haymaker ? 0.66 : 0.47) * (1 - e) + hold * e);
-              r = reach * (0.88 * (1 - e) + 0.16 * e);
-              drive = 0.88 * (1 - e) + (haymaker ? 0.3 : 0.18) * e;
+            if (heavy || pose?.motion === "haymaker")
+              this.body.scaleY *= 1 - 0.06 * drive * commitScale;
+            if (
+              (poseVariant === "sparkknuckle-voltage-boxing" ||
+                poseVariant === "coyote-voltage-boxing") &&
+              pose?.timing.impact !== undefined
+            ) {
+              const impactFrame = Math.max(0, 1 - Math.abs(tt - pose.timing.impact) / 0.055);
+              const snap = impactFrame * impactFrame;
+              this.pairWeaponScaleX[pose.hand === "off" ? 1 : 0] = 1 + snap * 0.28;
+              this.pairGlintAlpha = Math.max(this.pairGlintAlpha, snap * 0.82);
+              this.body.rotation += direction * snap * 0.09 * Math.cos(aimLocal);
+              this.body.scaleY *= 1 - snap * 0.08;
             }
-          }
-          weaponAngle = th; // the fist leads along its own travel
-          const ox = Math.cos(th) * r - Math.sin(aimLocal) * lateral;
-          const oy = Math.sin(th) * r + Math.cos(aimLocal) * lateral;
-          if (offUsesBack) {
-            backWeaponAngle = th;
-            weaponAngle = restA;
-            this.swingBackOffX = ox;
-            this.swingBackOffY = oy;
-            swingChannelsRouted = true;
-          } else {
-            this.swingOffX = ox;
-            this.swingOffY = oy;
-            if (this.weapons.length > 1) backWeaponAngle = restA;
-          }
-          // Body: the punch comes from the HIPS — paper-twist (shoulders turning through), lean into the
-          // blow, a dug-in crouch. The rear cross mirrors the lean; the finisher commits the whole frame.
-          const commitScale = monkFlurry
-            ? 1.12
-            : pose?.motion === "jab"
-              ? 0.55
-              : isCross
-                ? 1.18
-                : pose?.motion === "haymaker"
-                  ? 1.2
-                  : 0.85;
-          this.body.scaleX *= 1 - (0.12 + 0.1 * heavy) * drive * commitScale;
-          this.body.rotation +=
-            direction * (0.1 + 0.09 * heavy) * drive * commitScale * Math.cos(aimLocal);
-          this.body.y += (2.5 + 2.5 * heavy) * s * drive * commitScale;
-          if (monkFlurry) {
-            // Presentation only: the shoulder/hip step keeps detached fists connected to the paper body.
-            // It never moves the rig root; only an explicit server-authored movement datum may do that.
-            this.attackArtOffX += Math.cos(aimLocal) * TARGET_BODY_H * 0.055 * drive;
-            this.attackArtOffY += Math.sin(aimLocal) * TARGET_BODY_H * 0.055 * drive;
-          }
-          if (heavy || pose?.motion === "haymaker")
-            this.body.scaleY *= 1 - 0.06 * drive * commitScale;
-          if (
-            (poseVariant === "sparkknuckle-voltage-boxing" ||
-              poseVariant === "coyote-voltage-boxing") &&
-            pose?.timing.impact !== undefined
-          ) {
-            const impactFrame = Math.max(0, 1 - Math.abs(tt - pose.timing.impact) / 0.055);
-            const snap = impactFrame * impactFrame;
-            this.pairWeaponScaleX[pose.hand === "off" ? 1 : 0] = 1 + snap * 0.28;
-            this.pairGlintAlpha = Math.max(this.pairGlintAlpha, snap * 0.82);
-            this.body.rotation += direction * snap * 0.09 * Math.cos(aimLocal);
-            this.body.scaleY *= 1 - snap * 0.08;
           }
         } else if (poseStyle === "thrust") {
           // §45 THRUST keeps the existing locked-blade lunge envelope, with an outside draw, mirrored

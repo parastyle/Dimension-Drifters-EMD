@@ -49,11 +49,11 @@ describe("B6 weapon catalog archives", () => {
   it("reports exactly the two ordered archive state changes", () => {
     const expected = [...PRE_B6_ARCHIVE_IDS, ...B6_ARCHIVE_IDS].sort();
     expect([...ARCHIVED_WEAPON_IDS].sort()).toEqual(expected);
-    expect(WEAPON_CATALOG_IDS).toHaveLength(353);
-    expect(ACTIVE_WEAPON_CATALOG_IDS).toHaveLength(342);
+    expect(WEAPON_CATALOG_IDS).toHaveLength(357);
+    expect(ACTIVE_WEAPON_CATALOG_IDS).toHaveLength(346);
     expect(ARCHIVED_WEAPON_IDS).toHaveLength(11);
-    expect(ACTIVE_EXPANSION_WEAPON_IDS).toHaveLength(313);
-    expect(WEAPON_RESOURCE_IDS).toHaveLength(353);
+    expect(ACTIVE_EXPANSION_WEAPON_IDS).toHaveLength(317);
+    expect(WEAPON_RESOURCE_IDS).toHaveLength(357);
 
     const concepts = JSON.parse(readFileSync("data/weapon-concepts-300.json", "utf8")) as {
       weapons: { id: string; archived?: boolean }[];

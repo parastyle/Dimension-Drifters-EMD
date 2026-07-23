@@ -225,8 +225,8 @@ import {
   mixSeeds,
   nearestGroundPx,
   nearestPoint,
-  nextWholeArtCharacter,
   nextWeapon,
+  nextWholeArtCharacter,
   PAIR_TEMPO,
   PARRY_BUFFER_SECONDS,
   PARRY_CHAIN_CD,
@@ -1052,6 +1052,27 @@ interface XpFlightMeta {
 }
 
 type XpBoundary = "extract" | "descent" | "belt-victory" | "bossrush-victory" | "boss-clear";
+
+export interface WeaponComboForwardDrift {
+  readonly distancePx: number;
+  readonly durationSeconds: number;
+}
+
+/** Resolve one accepted combo beat's server-owned walking displacement. Most weapons keep one fixed
+ * drift; authored martial sequences may vary the same bounded movement by beat without client inference. */
+export function weaponComboForwardDrift(
+  weapon: Readonly<WeaponDef>,
+  comboStepIndex: number | undefined,
+): WeaponComboForwardDrift | undefined {
+  const drift = weapon.performance?.forwardDrift;
+  if (!drift) return undefined;
+  const step = Math.max(0, Math.trunc(comboStepIndex ?? 0));
+  const multiplier = drift.comboStepMultipliers?.[step] ?? 1;
+  return {
+    distancePx: drift.speedPxPerSecond * drift.durationSeconds * multiplier,
+    durationSeconds: drift.durationSeconds,
+  };
+}
 
 /**
  * Authoritative PvE room (§4 RoR2-style host-authoritative sync via Colyseus).
@@ -7477,19 +7498,20 @@ export class GameRoom extends Room<ArenaState> {
         invulnerable: authoredLunge.invulnerable === true,
         impactAtDestination,
       });
-    } else if (weapon.performance?.forwardDrift && hand === 0) {
-      const drift = weapon.performance.forwardDrift;
-      this.pendingWeaponLunges.set(player.id, {
-        t: 0,
-        playerId: player.id,
-        weaponId: weapon.id,
-        aimX: Math.cos(aim0),
-        aimY: Math.sin(aim0),
-        distancePx: drift.speedPxPerSecond * drift.durationSeconds,
-        durationSeconds: drift.durationSeconds,
-        invulnerable: false,
-        impactAtDestination: false,
-      });
+    } else if (hand === 0) {
+      const drift = weaponComboForwardDrift(weapon, hybridBeat?.step);
+      if (drift)
+        this.pendingWeaponLunges.set(player.id, {
+          t: 0,
+          playerId: player.id,
+          weaponId: weapon.id,
+          aimX: Math.cos(aim0),
+          aimY: Math.sin(aim0),
+          distancePx: drift.distancePx,
+          durationSeconds: drift.durationSeconds,
+          invulnerable: false,
+          impactAtDestination: false,
+        });
     }
 
     if (katanaEffect?.invulnerabilitySeconds)
@@ -7704,9 +7726,7 @@ export class GameRoom extends Room<ArenaState> {
         weaponId: weapon.id,
         aimX: Math.cos(aim0),
         aimY: Math.sin(aim0),
-        damage:
-          hybrid.damage *
-          this.heldDamageMult(weapon, hybrid.scalingGrades, player, hand),
+        damage: hybrid.damage * this.heldDamageMult(weapon, hybrid.scalingGrades, player, hand),
         crit: attackCrit,
       });
     }
@@ -11291,10 +11311,7 @@ export class GameRoom extends Room<ArenaState> {
     const outboundSeconds = hybrid.returnAfterSeconds ?? hybrid.range / hybrid.speed;
     const ttl = hybrid.returnAfterSeconds === undefined ? outboundSeconds : outboundSeconds * 2;
     for (let index = 0; index < hybrid.count; index++) {
-      const offset =
-        hybrid.count > 1
-          ? (index / (hybrid.count - 1) - 0.5) * 2 * hybrid.spread
-          : 0;
+      const offset = hybrid.count > 1 ? (index / (hybrid.count - 1) - 0.5) * 2 * hybrid.spread : 0;
       const angle = baseAngle + offset;
       this.fireProjectile(
         muzzle,
@@ -13403,11 +13420,7 @@ export class GameRoom extends Room<ArenaState> {
         }
         for (const eid of kills) this.state.enemies.delete(eid);
         // Bouncing rounds survive a spent pierce — they re-arm on the next carom (above).
-        if (
-          meta.pierce <= 0 &&
-          (meta.bounces ?? 0) <= 0 &&
-          meta.returnToOwner === undefined
-        )
+        if (meta.pierce <= 0 && (meta.bounces ?? 0) <= 0 && meta.returnToOwner === undefined)
           doomed.push(id);
       }
     });

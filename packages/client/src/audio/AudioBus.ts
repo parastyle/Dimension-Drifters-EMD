@@ -830,6 +830,39 @@ export class AudioBus {
           x,
         });
         break;
+      case "kungfu:iron-clang":
+        if (this.throttled("kungFuIronClang", 110)) return;
+        if (
+          this.sampleFirst("parry-clang", {
+            volume: 0.55 + 0.25 * amt,
+            pan: this.panOf(x),
+            rate: 0.94 + Math.random() * 0.08,
+            minIntervalMs: 110,
+            priority: "normal",
+          })
+        )
+          return;
+        this.noise(0.075, {
+          gain: 0.18 + 0.14 * amt,
+          type: "highpass",
+          freq: 2_600,
+          q: 1.4,
+          sweepTo: 1_100,
+          x,
+        });
+        this.tone(740, 0.09, {
+          type: "square",
+          gain: 0.1 + 0.08 * amt,
+          sweepTo: 510,
+          x,
+        });
+        this.tone(1_280, 0.055, {
+          type: "triangle",
+          gain: 0.07 + 0.05 * amt,
+          sweepTo: 920,
+          x,
+        });
+        break;
       case "melee:heavy":
         if (this.throttled(amt >= 0.75 ? "meleeHeavySelf" : "meleeHeavy", 55)) return;
         if (

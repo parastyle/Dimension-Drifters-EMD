@@ -1,6 +1,6 @@
 # V7 Muzzle Derivation Table
 
-Generated from sprite alpha for all 151 active projectile-gun and beam definitions. Coordinates are source-PNG pixels.
+Generated from sprite alpha for all 155 active projectile, beam, and authored melee-impact definitions. Coordinates are source-PNG pixels.
 
 | Weapon | Derived barrel tip | Authored muzzle point(s) | Override |
 | --- | --- | --- | --- |
@@ -45,6 +45,7 @@ Generated from sprite alpha for all 151 active projectile-gun and beam definitio
 | `x2-confetti-cannon` (Confetti Cannon) | part-1 (1379, 281.7) | part-1 (1379, 291) | Yes - The spread originates at the centre of the oversized bell opening, not the lower grip silhouette. |
 | `x2-coyote-stinger` (Coyote Stinger) | part-1 (255, 35.2)<br>part-2 (255, 35.2) | part-1 (255, 35.2)<br>part-2 (255, 35.2) | No |
 | `x2-doomsday-drum-cannon` (Doomsday Drum Cannon) | part-1 (255, 60.1) | part-1 (255, 60.1) | No |
+| `x2-drunken-fist-wraps` (Drunken Fist Wraps) | part-1 (510, 94)<br>part-2 (467, 95) | part-1 (249, 123.2)<br>part-2 (246.4, 120) | Yes - The sway sequence alternates alpha-weighted striking-hand centroids, including the rigid gourd-wrist haymaker. |
 | `x2-dustdevil-riotgun` (Dustdevil Riotgun) | part-1 (255, 19.9) | part-1 (255, 19.9) | No |
 | `x2-dustline-lever-action` (Dustline Lever-Action) | part-1 (255, 7.7) | part-1 (255, 7.7) | No |
 | `x2-ember-fan` (Ember Fan) | part-1 (254, 147.3) | part-1 (255, 151) | Yes - The cinder shard cone originates at the ember fan's far-right glowing blade edge. |
@@ -86,6 +87,7 @@ Generated from sprite alpha for all 151 active projectile-gun and beam definitio
 | `x2-hollowpoint-voidgun` (Hollowpoint Voidgun) | part-1 (255, 45.4) | part-1 (255, 45.4) | No |
 | `x2-hornet-s-nest-bolter` (Hornet's Nest Bolter) | part-1 (252, 71.7) | part-1 (252, 71.7) | No |
 | `x2-iron-marshal` (Iron Marshal) | part-1 (255, 17.6) | part-1 (255, 17.6) | No |
+| `x2-iron-palm-wraps` (Iron Palm Wraps) | part-1 (507, 113)<br>part-2 (506, 116.5) | part-1 (250.2, 130.2)<br>part-2 (249.4, 134.3) | Yes - The authored points are the alpha-weighted iron-knuckle striking-hand centroids at impact, not projectile bores. |
 | `x2-iron-war-fan` (Iron War Fan) | part-1 (246, 166.6) | part-1 (246, 172) | Yes - The finisher gust leaves from the midpoint of the rigid fan's visible leading steel edge. |
 | `x2-ironhail-pepperbox` (Ironhail Pepperbox) | part-1 (255, 74.2) | part-1 (255, 74.2) | No |
 | `x2-ironhide-buffalo-gun` (Ironhide Buffalo Gun) | part-1 (255, 34.9) | part-1 (255, 34.9) | No |
@@ -96,6 +98,7 @@ Generated from sprite alpha for all 151 active projectile-gun and beam definitio
 | `x2-mesa-hand-cannon` (Mesa Hand-Cannon) | part-1 (255, 28.4) | part-1 (255, 28.4) | No |
 | `x2-mesa-spine-thunder-stave` (Mesa-Spine Thunder Stave) | part-1 (255, 9.5) | part-1 (255, 9.5) | No |
 | `x2-mirage-coilrifle` (Mirage Coilrifle) | part-1 (255, 13.5) | part-1 (255, 13.5) | No |
+| `x2-muay-thai-wraps` (Muay Thai Wraps) | part-1 (383, 56.6) | part-1 (196, 161.3) | Yes - For melee impact punctuation, muzzle means the alpha-weighted striking-hand centroid at the authored elbow, knee, or kick impact frame. |
 | `x2-null-grimoire-of-the-hollow-page` (Null Grimoire of the Hollow Page) | part-1 (254, 44) | part-1 (254, 44) | No |
 | `x2-nullsaint-reliquary` (Nullsaint Reliquary) | part-1 (255, 104) | part-1 (255, 104) | No |
 | `x2-pale-horse-longgun` (Pale-Horse Longgun) | part-1 (255, 6.9) | part-1 (255, 6.9) | No |
@@ -154,5 +157,6 @@ Generated from sprite alpha for all 151 active projectile-gun and beam definitio
 | `x2-whisperbarb-hand-crossbow` (Whisperbarb Hand-Crossbow) | part-1 (253, 41.5)<br>part-2 (253, 41.5) | part-1 (253, 41.5)<br>part-2 (253, 41.5) | No |
 | `x2-widowmaker-arbalest` (Widowmaker Arbalest) | part-1 (252, 51) | part-1 (252, 51) | No |
 | `x2-widowmaker-cannon` (Widowmaker Cannon) | part-1 (255, 40.4) | part-1 (255, 40.4) | No |
+| `x2-wing-chun-wraps` (Wing Chun Wraps) | part-1 (511, 110.3)<br>part-2 (510, 67.9) | part-1 (264.5, 106.5)<br>part-2 (264.2, 106.7) | Yes - Each centerline beat alternates the alpha-weighted centroid of the authored striking hand at impact. |
 | `x2-wyrmgut-blunderbuss` (Wyrmgut Blunderbuss) | part-1 (255, 80.4) | part-1 (255, 80.4) | No |
 

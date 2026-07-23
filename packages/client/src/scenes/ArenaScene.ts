@@ -275,6 +275,7 @@ import {
   meleeTellUsesDoublePulse,
   parryDoublePulseStrength,
 } from "../vfx/colorblind-assist.js";
+import { makeFanHybridProjectile, spawnFanHybridImpact } from "../vfx/fan-hybrid-vfx.js";
 import { playFxPack } from "../vfx/fx-composer.js";
 import { preloadGeneratedGunProjectiles } from "../vfx/gun-projectile-art.js";
 import { HitEffectRenderer, IMPACT_RING_DEPTH, SPEED_LINE_DEPTH } from "../vfx/hit-effects.js";
@@ -284,6 +285,11 @@ import {
   enemyComboOfferPhase,
   JumpEffectRenderer,
 } from "../vfx/jump-effects.js";
+import {
+  resolveKungFuWrapVfxRecipe,
+  spawnKungFuWrapImpact,
+  spawnKungFuWrapSwing,
+} from "../vfx/kung-fu-wrap-vfx.js";
 import { pageProjectileArtFor, preloadPageProjectileArt } from "../vfx/page-projectile-art.js";
 import {
   elementPack,
@@ -300,6 +306,12 @@ import {
   VastagharVfx,
 } from "../vfx/vastaghar-vfx.js";
 import {
+  makeWackyProjectile,
+  resolveWackyWeaponVfxRecipe,
+  spawnWackyWeaponImpact,
+  wackyWeaponShotAudioCue,
+} from "../vfx/wacky-weapon-vfx.js";
+import {
   resolveWeaponEffectRecipe,
   shouldSpawnLegacyQuakeVfx,
   type WeaponEffectRecipe,
@@ -313,16 +325,6 @@ import {
   spawnWeaponRadialIdentity,
   spawnWeaponSwingIdentity,
 } from "../vfx/weapon-effect-vfx.js";
-import {
-  makeWackyProjectile,
-  resolveWackyWeaponVfxRecipe,
-  spawnWackyWeaponImpact,
-  wackyWeaponShotAudioCue,
-} from "../vfx/wacky-weapon-vfx.js";
-import {
-  makeFanHybridProjectile,
-  spawnFanHybridImpact,
-} from "../vfx/fan-hybrid-vfx.js";
 import { type XpMotePoint, type XpMoteReceipt, XpMoteRenderer } from "../vfx/xp-motes.js";
 import { localAttackCooldownSeconds } from "./arena/attack-cadence.js";
 import {
@@ -6851,9 +6853,7 @@ export class ArenaScene extends Phaser.Scene {
             sourceWeapon.gun.projectileVisualScale ?? 1,
           )
         : null;
-      const wackyIdentity = sourceWeapon
-        ? makeWackyProjectile(this, pr, sourceWeapon.id)
-        : null;
+      const wackyIdentity = sourceWeapon ? makeWackyProjectile(this, pr, sourceWeapon.id) : null;
       const fanHybridIdentity = sourceWeapon?.hybridProjectile
         ? makeFanHybridProjectile(this, pr, sourceWeapon.id)
         : null;
@@ -6887,9 +6887,9 @@ export class ArenaScene extends Phaser.Scene {
         ? "muzzle"
         : sourceWeapon?.hybridProjectile
           ? "muzzle"
-        : sourceWeapon?.thrown && isThrownProjectileKind(pr.kind)
-          ? "throw"
-          : undefined;
+          : sourceWeapon?.thrown && isThrownProjectileKind(pr.kind)
+            ? "throw"
+            : undefined;
       const spawnAnchor =
         sourcePlayer && sourceWeapon && sourceRig
           ? spawnAnchorKind === "muzzle"
@@ -7287,9 +7287,9 @@ export class ArenaScene extends Phaser.Scene {
       }
       const thrown = isThrownProjectileKind(pr.kind);
       const payload = c.getData("arcPayload") as Phaser.GameObjects.Container | undefined;
-      const fanHybridPayload = c.getData(
-        "fanHybridPayload",
-      ) as Phaser.GameObjects.Container | undefined;
+      const fanHybridPayload = c.getData("fanHybridPayload") as
+        | Phaser.GameObjects.Container
+        | undefined;
       if (fanHybridPayload) {
         const angle = Math.atan2(pr.vy, pr.vx);
         fanHybridPayload.rotation = angle;
@@ -10520,10 +10520,9 @@ export class ArenaScene extends Phaser.Scene {
               spawnSonicBoomRing(this, muzzle.x, muzzle.y, ang, fx.color);
           }
         }
-        this.audio.play(
-          wackyWeaponShotAudioCue(weapon.id, `shot:${weapon.gun.bulletKind}`),
-          { x: rig.x },
-        ); // §19 predicted shot sound
+        this.audio.play(wackyWeaponShotAudioCue(weapon.id, `shot:${weapon.gun.bulletKind}`), {
+          x: rig.x,
+        }); // §19 predicted shot sound
         this.lastSelfMuzzleAt = this.time.now;
       }
     } else if (weapon?.cast && weapon.tags.classPool !== "caster") {
@@ -11271,6 +11270,23 @@ export class ArenaScene extends Phaser.Scene {
       wackyRecipe?.impactAudio
     )
       this.audio.play(wackyRecipe.impactAudio, {
+        x,
+        amt: Math.min(1, event.damage / 30),
+      });
+    const kungFuRecipe = resolveKungFuWrapVfxRecipe(event.weaponId);
+    if (
+      (fullReceipt || event.layer === "upgrade") &&
+      spawnKungFuWrapImpact(
+        this,
+        event.weaponId,
+        x,
+        y,
+        Math.atan2(event.dirY, event.dirX),
+        reducedFlash,
+      ) &&
+      kungFuRecipe?.impactAudio
+    )
+      this.audio.play(kungFuRecipe.impactAudio, {
         x,
         amt: Math.min(1, event.damage / 30),
       });
@@ -15283,6 +15299,37 @@ export class ArenaScene extends Phaser.Scene {
     const reach = exact ? 0 : (weapon.range ?? 100) * 0.6;
     const sx = x + Math.cos(ang) * reach;
     const sy = y + Math.sin(ang) * reach;
+    if (resolveKungFuWrapVfxRecipe(weapon.id)) {
+      const hand = swing.comboHand === "off" ? 1 : 0;
+      const source = weapon.muzzle
+        ? weaponMuzzleWorldPoint(
+            weapon,
+            {
+              x,
+              y,
+              aimX: aim.x,
+              aimY: aim.y,
+              hand,
+              salvoIndex: hand,
+            },
+            (swing.comboStep ?? 0) + 1,
+          )
+        : { x, y };
+      const impact = target ?? { x: sx, y: sy };
+      spawnKungFuWrapSwing(
+        this,
+        weapon.id,
+        source.x,
+        source.y,
+        impact.x,
+        impact.y,
+        ang,
+        swing.comboStep,
+        swing.motion,
+        prefersReducedPaperMotion() || this.feedbackSettings.flashes === "reduced",
+      );
+      return;
+    }
     // SIZE: the weapon's authored fixed vfxRadius (resolved in VfxPlayer); this is only the fallback for
     // weapons with no baked VFX entry. Fixed per §14 — never derived from range/level/stat.
     this.vfxPlayer.playSwing(

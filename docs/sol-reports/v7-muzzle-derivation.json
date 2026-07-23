@@ -912,6 +912,38 @@
     "barrelMode": "parallel"
   },
   {
+    "id": "x2-drunken-fist-wraps",
+    "name": "Drunken Fist Wraps",
+    "sprite": "x2-drunken-fist-wraps",
+    "derived": [
+      {
+        "part": 0,
+        "x": 510,
+        "y": 94
+      },
+      {
+        "part": 1,
+        "x": 467,
+        "y": 95
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 249,
+        "y": 123.2
+      },
+      {
+        "part": 1,
+        "x": 246.4,
+        "y": 120
+      }
+    ],
+    "override": "The sway sequence alternates alpha-weighted striking-hand centroids, including the rigid gourd-wrist haymaker.",
+    "salvoMode": "cycle",
+    "barrelMode": "parallel"
+  },
+  {
     "id": "x2-dustdevil-riotgun",
     "name": "Dustdevil Riotgun",
     "sprite": "x2-dustdevil-riotgun",
@@ -1859,6 +1891,38 @@
     "barrelMode": "parallel"
   },
   {
+    "id": "x2-iron-palm-wraps",
+    "name": "Iron Palm Wraps",
+    "sprite": "x2-iron-palm-wraps",
+    "derived": [
+      {
+        "part": 0,
+        "x": 507,
+        "y": 113
+      },
+      {
+        "part": 1,
+        "x": 506,
+        "y": 116.5
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 250.2,
+        "y": 130.2
+      },
+      {
+        "part": 1,
+        "x": 249.4,
+        "y": 134.3
+      }
+    ],
+    "override": "The authored points are the alpha-weighted iron-knuckle striking-hand centroids at impact, not projectile bores.",
+    "salvoMode": "cycle",
+    "barrelMode": "parallel"
+  },
+  {
     "id": "x2-iron-war-fan",
     "name": "Iron War Fan",
     "sprite": "x2-iron-war-fan",
@@ -2075,6 +2139,28 @@
       }
     ],
     "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-muay-thai-wraps",
+    "name": "Muay Thai Wraps",
+    "sprite": "x2-muay-thai-wraps",
+    "derived": [
+      {
+        "part": 0,
+        "x": 383,
+        "y": 56.6
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 196,
+        "y": 161.3
+      }
+    ],
+    "override": "For melee impact punctuation, muzzle means the alpha-weighted striking-hand centroid at the authored elbow, knee, or kick impact frame.",
     "salvoMode": "parallel",
     "barrelMode": "parallel"
   },
@@ -3462,6 +3548,38 @@
     ],
     "override": null,
     "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-wing-chun-wraps",
+    "name": "Wing Chun Wraps",
+    "sprite": "x2-wing-chun-wraps",
+    "derived": [
+      {
+        "part": 0,
+        "x": 511,
+        "y": 110.3
+      },
+      {
+        "part": 1,
+        "x": 510,
+        "y": 67.9
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 264.5,
+        "y": 106.5
+      },
+      {
+        "part": 1,
+        "x": 264.2,
+        "y": 106.7
+      }
+    ],
+    "override": "Each centerline beat alternates the alpha-weighted centroid of the authored striking hand at impact.",
+    "salvoMode": "cycle",
     "barrelMode": "parallel"
   },
   {
