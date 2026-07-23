@@ -77,6 +77,9 @@ describe("GameRoom — W4R ranged authority", () => {
     const weapon = equip(first.player, first.combat, "x2-gravelthroat-repeater");
     equip(second.player, second.combat, weapon.id);
     if (!weapon.gun?.randomPellets) throw new Error("Gravelthroat random-pellet rule is required");
+    if (weapon.gun.randomPellets.directions !== "cone")
+      throw new Error("Gravelthroat cone rule is required");
+    const halfAngle = weapon.gun.randomPellets.halfAngle;
     first.player.attackSeq = 17;
     second.player.attackSeq = 17;
     const expected = serverSeededGunPelletVolley(
@@ -93,11 +96,61 @@ describe("GameRoom — W4R ranged authority", () => {
     expect(firstRows.map((row) => [row.vx, row.vy])).toEqual(
       secondRows.map((row) => [row.vx, row.vy]),
     );
+    firstRows.forEach((row, index) => {
+      expect(Math.atan2(row.vy, row.vx)).toBeCloseTo(expected.angles[index] ?? 0, 10);
+    });
+    expect(firstRows.every((row) => Math.abs(Math.atan2(row.vy, row.vx)) <= halfAngle)).toBe(true);
     expect(
       firstRows.reduce((sum, row) => sum + (first.room.projectileMeta.get(row.id)?.damage ?? 0), 0),
     ).toBeCloseTo(
       weapon.gun.damage *
         first.room.heldDamageMult(weapon, weapon.gun.scalingGrades, first.player, 0),
+      8,
+    );
+  });
+
+  it("fires Plaguespitter's larger random green volley only inside its forward cone", () => {
+    const { room, player, combat } = makeRoom("plaguespitter-cone");
+    const weapon = equip(player, combat, "x2-plaguespitter-flak-gun");
+    if (!weapon.gun?.randomPellets || !weapon.gun.explode)
+      throw new Error("Plaguespitter cone/explosion fixtures are required");
+    if (weapon.gun.randomPellets.directions !== "cone")
+      throw new Error("Plaguespitter cone rule is required");
+    const halfAngle = weapon.gun.randomPellets.halfAngle;
+
+    room.fireGun(player, combat, weapon);
+
+    const rows = [...room.state.projectiles.values()];
+    expect(rows.length).toBeGreaterThanOrEqual(3);
+    expect(rows.length).toBeLessThanOrEqual(7);
+    expect(rows.every((row) => Math.abs(Math.atan2(row.vy, row.vx)) <= halfAngle)).toBe(true);
+    const multiplier = room.heldDamageMult(weapon, weapon.gun.scalingGrades, player, 0);
+    expect(
+      rows.reduce((sum, row) => sum + (room.projectileMeta.get(row.id)?.damage ?? 0), 0),
+    ).toBeCloseTo(weapon.gun.damage * multiplier, 8);
+    expect(
+      rows.reduce((sum, row) => sum + (room.projectileMeta.get(row.id)?.explode?.damage ?? 0), 0),
+    ).toBeCloseTo(weapon.gun.explode.damage * multiplier, 8);
+  });
+
+  it.each([
+    ["x2-sidewinder-spitfire", 2],
+    ["x2-hailspitter-pepperbox", 7],
+  ] as const)("fires %s as %i parallel barrel lanes sharing one damage pool", (weaponId, laneCount) => {
+    const { room, player, combat } = makeRoom(`parallel-${weaponId}`);
+    const weapon = equip(player, combat, weaponId);
+    if (!weapon.gun) throw new Error(`${weaponId} gun fixture is required`);
+
+    room.fireGun(player, combat, weapon);
+
+    const rows = [...room.state.projectiles.values()];
+    expect(rows).toHaveLength(laneCount);
+    expect(new Set(rows.map((row) => `${row.vx},${row.vy}`)).size).toBe(1);
+    expect(new Set(rows.map((row) => `${row.x},${row.y}`)).size).toBe(laneCount);
+    expect(
+      rows.reduce((sum, row) => sum + (room.projectileMeta.get(row.id)?.damage ?? 0), 0),
+    ).toBeCloseTo(
+      weapon.gun.damage * room.heldDamageMult(weapon, weapon.gun.scalingGrades, player, 0),
       8,
     );
   });

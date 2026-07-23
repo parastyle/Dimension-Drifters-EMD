@@ -92,10 +92,60 @@ export const GUN_GENERATED_PROJECTILES: Readonly<
     url: PROJECTILE_SPRITES["brimstone-rocket-warhead"].url,
     displayLength: 50,
   }),
+  "x2-brimstone-gallows-rifle": Object.freeze({
+    spriteId: "brimstone-flaming-cross",
+    url: PROJECTILE_SPRITES["brimstone-flaming-cross"].url,
+    displayLength: 34,
+  }),
+  "x2-frostfang-speargun": Object.freeze({
+    spriteId: "frostfang-pictured-harpoon",
+    url: PROJECTILE_SPRITES["frostfang-pictured-harpoon"].url,
+    displayLength: 96,
+  }),
+  "x2-galvanic-coachgun": Object.freeze({
+    spriteId: "galvanic-coachgun-electric-slug",
+    url: PROJECTILE_SPRITES["galvanic-coachgun-electric-slug"].url,
+    displayLength: 32,
+  }),
+  "x2-ironhide-buffalo-gun": Object.freeze({
+    spriteId: "ironhide-anti-tank-shell",
+    url: PROJECTILE_SPRITES["ironhide-anti-tank-shell"].url,
+    displayLength: 72,
+  }),
+  "x2-plaguespitter-flak-gun": Object.freeze({
+    spriteId: "plaguespitter-green-shot",
+    url: PROJECTILE_SPRITES["plaguespitter-green-shot"].url,
+    displayLength: 34,
+  }),
+  "x2-tesla-drumbore": Object.freeze({
+    spriteId: "tesla-drumbore-electric-particle",
+    url: PROJECTILE_SPRITES["tesla-drumbore-electric-particle"].url,
+    displayLength: 30,
+  }),
+  "x2-tesla-faradayer": Object.freeze({
+    spriteId: "tesla-faradayer-hand-drawn-bolt",
+    url: PROJECTILE_SPRITES["tesla-faradayer-hand-drawn-bolt"].url,
+    displayLength: 68,
+  }),
+  "x2-thunderhead-lever-gun": Object.freeze({
+    spriteId: "thunderhead-blue-helix",
+    url: PROJECTILE_SPRITES["thunderhead-blue-helix"].url,
+    displayLength: 68,
+  }),
+  "x2-thunderhead-repeater-cannon": Object.freeze({
+    spriteId: "thunderhead-smoke-ring",
+    url: PROJECTILE_SPRITES["thunderhead-smoke-ring"].url,
+    displayLength: 62,
+  }),
   "x2-calamity-howitzer": Object.freeze({
     spriteId: "calamity-howitzer-battleship-shell",
     url: PROJECTILE_SPRITES["calamity-howitzer-battleship-shell"].url,
     displayLength: 92,
+  }),
+  "x-gun-ricochet-pistol": Object.freeze({
+    spriteId: "ricochet-icicle",
+    url: PROJECTILE_SPRITES["ricochet-icicle"].url,
+    displayLength: 44,
   }),
 });
 

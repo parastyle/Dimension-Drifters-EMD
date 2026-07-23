@@ -378,7 +378,12 @@ describe("§43 expansion codegen: every authored gameplay field survives into th
           damage: { num: [1, singleShot ? 120 : 40] },
           projectileSpeed: { num: [400, 4000] },
           range: { num: [280, 1100] },
-          fireRate: { num: [0.05, calamityHowitzer ? 3 : singleShot ? 1.5 : 0.9] },
+          fireRate: {
+            num: [
+              0.05,
+              w.id === "x2-mesa-hand-cannon" ? 1.2 : calamityHowitzer ? 3 : singleShot ? 1.5 : 0.9,
+            ],
+          },
           magazine: { int: [1, 80] },
           reloadSeconds: { num: [0.6, calamityHowitzer ? 5 : 3] },
           bulletKind: { eq: true },
@@ -389,7 +394,7 @@ describe("§43 expansion codegen: every authored gameplay field survives into th
           projectileVisualScale: { num: [0.5, faradayer ? 12 : 4] },
           sonicBoomRing: { eq: true },
           recoil: { num: [0.0004, 0.005] },
-          userKnockbackMultiplier: { num: [0.25, 4] },
+          userKnockbackMultiplier: { num: [0.25, 5] },
           pellets: { int: [1, 12], absentAs: 1 },
           pierce: { int: [1, 6], absentAs: 1 },
           bounces: { int: [0, 6], absentAs: 0 },

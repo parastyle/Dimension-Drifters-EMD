@@ -1,6 +1,7 @@
 import { randomBytes } from "node:crypto";
 import {
   ACTION_MSGS_PER_TICK,
+  ACTIVE_WEAPON_CATALOG_IDS,
   ARENA_HEIGHT,
   ARENA_WIDTH,
   ARSENAL_SLOTS,
@@ -57,12 +58,13 @@ import {
   beltPitAtX,
   beltSafeX,
   bladeAngleAt,
+  bladeExtensionPoseAt,
   bladeHitsCircle,
   bladeHitsCircleXY,
   bossDefFor,
   bossSpawnAt,
-  type CarrySelectionV1,
   CAST_VOLLEY_PROJECTILE_CAP,
+  type CarrySelectionV1,
   CHAIN_MAX_RANGE,
   type ChainCandidate,
   COMBAT_RECEIPT_CAP,
@@ -149,7 +151,6 @@ import {
   ENEMY_RADIUS,
   type EnemyKind,
   EnemyState,
-  ACTIVE_WEAPON_CATALOG_IDS,
   EXTRACT_RADIUS,
   type ExpeditionEntryV1,
   effectiveAcceptedWeaponInterval,
@@ -204,11 +205,6 @@ import {
   MAX_ENEMIES,
   MAX_PLAYERS,
   MAX_XP_ECHOES,
-  bladeExtensionPoseAt,
-  meleeDamageEnvelopeFor,
-  meleeDamageHalfWidthAt,
-  meleeDamageReachAt,
-  weaponUsesAuthoritativeEnvelopeCombo,
   MELEE_BLADE_HALFWIDTH,
   MELEE_SAMPLE_STEP,
   META_ACCOUNT_REVISION_MAX,
@@ -223,6 +219,9 @@ import {
   MOVE_SPEED,
   type MoveStance,
   meleeComboSelectionFor,
+  meleeDamageEnvelopeFor,
+  meleeDamageHalfWidthAt,
+  meleeDamageReachAt,
   mixSeeds,
   nearestGroundPx,
   nearestPoint,
@@ -272,6 +271,7 @@ import {
   PROJECTILE_RADIUS,
   PROJECTILE_TTL,
   ProjectileState,
+  type ProjectileWaveformDef,
   pairDamagePerUse,
   pairEligible,
   pairRequirementPenalty,
@@ -288,6 +288,7 @@ import {
   poundDamage,
   prevWeapon,
   prismaticBeamRayOffsets,
+  projectileWaveformPositionAt,
   QUAKE_REACH,
   type QuirkDef,
   type QuirkEffect,
@@ -300,6 +301,10 @@ import {
   RETURN_STEP_MAX,
   REVIVE_HP_FRAC,
   RIFT_CHANNEL_SECONDS,
+  ROLL_ATTACK_CANCEL_SECONDS,
+  ROLL_COOLDOWN,
+  ROLL_DURATION_TICKS,
+  ROLL_PARRY_LOCK_SECONDS,
   type RuntimeMods,
   randomSeed,
   requirementPenalty,
@@ -312,10 +317,6 @@ import {
   rollDropWeapon,
   rollRarity,
   rollSpeedAtTick,
-  ROLL_ATTACK_CANCEL_SECONDS,
-  ROLL_COOLDOWN,
-  ROLL_DURATION_TICKS,
-  ROLL_PARRY_LOCK_SECONDS,
   runtimeModsForQuirk,
   SECOND_WIND_BASE,
   SECOND_WIND_PER_CON,
@@ -338,8 +339,8 @@ import {
   STANCE_SLIDE,
   type SwingDescriptor,
   safeSpawnPos,
-  salvageValue,
   salvageArchivedWeaponBank,
+  salvageValue,
   sanitizeMetaAccountV2,
   sanitizeMetaAccountV3,
   sanitizeMetaAccountV4WithDiagnostics,
@@ -445,11 +446,9 @@ import {
   WEAPON_IDS,
   WEAPON_PACK_MAX_CAPACITY,
   WEAPONS,
-  projectileWaveformPositionAt,
   type WeaponBankCuratorInputV1,
   type WeaponBankEntryV1,
   type WeaponDef,
-  type ProjectileWaveformDef,
   type WeaponInstanceV1,
   type WeaponProvenance,
   WORM_MAX_SEGMENTS,
@@ -464,6 +463,7 @@ import {
   weaponRarityId,
   weaponResourceProfile,
   weaponSetBonus,
+  weaponUsesAuthoritativeEnvelopeCombo,
   XP_ECHO_ARM_MAX_MS,
   XP_ECHO_ARM_MS,
   XP_ECHO_ARM_TIER_MS,
@@ -3798,17 +3798,17 @@ export class GameRoom extends Room<ArenaState> {
   /** §31 full browsable ACTIVE roster. Archived ids remain canonical but have no showroom page. */
   /** §41 the showroom roster, ORGANIZED: class → family → name, so every page reads as a coherent shelf
    *  ("all the melee axes together") instead of concept-file order. Stable + deterministic. */
-  private static readonly GALLERY_ROSTER: readonly string[] = [
-    ...ACTIVE_WEAPON_CATALOG_IDS,
-  ].sort((a, b) => {
-    const wa = WEAPONS[a];
-    const wb = WEAPONS[b];
-    const c = (wa?.tags?.classPool ?? "").localeCompare(wb?.tags?.classPool ?? "");
-    if (c !== 0) return c;
-    const f = (wa?.tags?.family ?? "").localeCompare(wb?.tags?.family ?? "");
-    if (f !== 0) return f;
-    return (wa?.name ?? a).localeCompare(wb?.name ?? b);
-  });
+  private static readonly GALLERY_ROSTER: readonly string[] = [...ACTIVE_WEAPON_CATALOG_IDS].sort(
+    (a, b) => {
+      const wa = WEAPONS[a];
+      const wb = WEAPONS[b];
+      const c = (wa?.tags?.classPool ?? "").localeCompare(wb?.tags?.classPool ?? "");
+      if (c !== 0) return c;
+      const f = (wa?.tags?.family ?? "").localeCompare(wb?.tags?.family ?? "");
+      if (f !== 0) return f;
+      return (wa?.name ?? a).localeCompare(wb?.name ?? b);
+    },
+  );
   private static readonly GALLERY_PAGE = 42; // weapons per page (14×3 grid) — comfortably performant
   private galleryPage = 0;
 
@@ -5449,8 +5449,7 @@ export class GameRoom extends Room<ArenaState> {
       let nextX: number;
       let nextY: number;
       const activeRoll =
-        beamRuntime?.stance === STANCE_SLIDE &&
-        beamRuntime.slidePhase === SLIDE_PHASE_GROUND;
+        beamRuntime?.stance === STANCE_SLIDE && beamRuntime.slidePhase === SLIDE_PHASE_GROUND;
       if (beamRuntime?.stance === STANCE_DASH || activeRoll) {
         const deferDashDisplacement =
           beamRuntime?.stance === STANCE_DASH && this.distanceJumpLaunches.delete(id);
@@ -5603,8 +5602,7 @@ export class GameRoom extends Room<ArenaState> {
       }
       if (c.pitGrace > 0) c.pitGrace = Math.max(0, c.pitGrace - dt);
       if (this.ultimateOwnsMovement(player)) return;
-      if (player.height > GROUND_EPSILON || c.vh > 0)
-        return; // airborne distance jump / launch — the vertical sentence carries you over
+      if (player.height > GROUND_EPSILON || c.vh > 0) return; // airborne distance jump / launch — the vertical sentence carries you over
       // §29 belt PITS — gaps in the deck; grounded-over-a-gap falls (chip + snap back to the edge you came
       // from), a jump clears it. Enemies (which can't jump) get kited in for free kills (5.6 below).
       if (this.belt && this.beltLevel) {
@@ -6021,14 +6019,7 @@ export class GameRoom extends Room<ArenaState> {
           const owner = this.state.players.get(q.sourcePlayerId);
           const weapon = WEAPONS[q.sourceWeaponId];
           if (owner && weapon?.groundZone?.trigger === "impact") {
-            this.spawnWeaponGroundZoneAt(
-              owner,
-              weapon,
-              q.x,
-              q.y,
-              q.zoneDamagePerSecond,
-              q.crit,
-            );
+            this.spawnWeaponGroundZoneAt(owner, weapon, q.x, q.y, q.zoneDamagePerSecond, q.crit);
           }
         }
         this.pendingQuakes.splice(i, 1);
@@ -7376,15 +7367,7 @@ export class GameRoom extends Room<ArenaState> {
     } else {
       const descriptorCooldown = paired ? PAIR_TEMPO * soloCooldown : soloCooldown;
       const swing = swingDescriptorFor(weapon, descriptorCooldown);
-      this.resolveSwing(
-        player,
-        c,
-        weapon,
-        swing,
-        hand,
-        katanaEffect,
-        authoritativeComboStep,
-      );
+      this.resolveSwing(player, c, weapon, swing, hand, katanaEffect, authoritativeComboStep);
       this.setHandCooldown(c, offSlot, hand, soloCooldown, false);
       if (soloBeat)
         this.recordSoloMeleeBeat(
@@ -7657,12 +7640,7 @@ export class GameRoom extends Room<ArenaState> {
         zoneDamagePerSecond:
           weapon.groundZone?.trigger === "impact"
             ? weapon.groundZone.damagePerSecond *
-              this.heldDamageMult(
-                weapon,
-                weapon.groundZone.scalingGrades,
-                player,
-                hand,
-              )
+              this.heldDamageMult(weapon, weapon.groundZone.scalingGrades, player, hand)
             : undefined,
       });
     }
@@ -7872,13 +7850,14 @@ export class GameRoom extends Room<ArenaState> {
             (this.state.tick + ticksFromSeconds(lunge.durationSeconds)) >>> 0;
         }
       }
-      lunge.elapsedSeconds = Math.min(
-        lunge.durationSeconds,
-        (lunge.elapsedSeconds ?? 0) + dt,
-      );
+      lunge.elapsedSeconds = Math.min(lunge.durationSeconds, (lunge.elapsedSeconds ?? 0) + dt);
       const progress = lunge.elapsedSeconds / lunge.durationSeconds;
-      player.x = (lunge.startX ?? player.x) + ((lunge.endX ?? player.x) - (lunge.startX ?? player.x)) * progress;
-      player.y = (lunge.startY ?? player.y) + ((lunge.endY ?? player.y) - (lunge.startY ?? player.y)) * progress;
+      player.x =
+        (lunge.startX ?? player.x) +
+        ((lunge.endX ?? player.x) - (lunge.startX ?? player.x)) * progress;
+      player.y =
+        (lunge.startY ?? player.y) +
+        ((lunge.endY ?? player.y) - (lunge.startY ?? player.y)) * progress;
       combat.lastGroundX = player.x;
       combat.lastGroundY = player.y;
       if (progress >= 1) this.pendingWeaponLunges.delete(playerId);
@@ -8413,11 +8392,12 @@ export class GameRoom extends Room<ArenaState> {
   ): BeamState {
     const offset = c.beamRayOffsets[rayIndex] ?? 0;
     const fixedBarrels = (WEAPONS[descriptor.weaponId]?.muzzle?.points.length ?? 0) > 1;
-    const rowKey = rayIndex === 0
-      ? id
-      : fixedBarrels
-        ? `${id}:barrel:${rayIndex}`
-        : `${id}:prism:${rayIndex}:${Math.round(offset * 1_000_000)}`;
+    const rowKey =
+      rayIndex === 0
+        ? id
+        : fixedBarrels
+          ? `${id}:barrel:${rayIndex}`
+          : `${id}:prism:${rayIndex}:${Math.round(offset * 1_000_000)}`;
     let row = this.state.beams.get(rowKey);
     if (!row) {
       row = new BeamState();
@@ -10318,10 +10298,10 @@ export class GameRoom extends Room<ArenaState> {
       def.style === "poison-smoke"
         ? ZoneStyle.PoisonSmoke
         : def.style === "nether"
-        ? ZoneStyle.Nether
-        : def.style === "ice"
-          ? ZoneStyle.Ice
-          : ZoneStyle.Poison;
+          ? ZoneStyle.Nether
+          : def.style === "ice"
+            ? ZoneStyle.Ice
+            : ZoneStyle.Poison;
     zone.ownerId = player.id;
     zone.weaponId = weapon.id;
     zone.seed = ((this.zoneSeq * 40503) ^ this.state.tick) & 0xffff;
@@ -10624,13 +10604,7 @@ export class GameRoom extends Room<ArenaState> {
       return;
     }
     if (c.gunBurstT > 0) return;
-    this.fireGun(
-      player,
-      c,
-      weapon,
-      c.gunBurstHand,
-      weapon.gun.burst.intervalSeconds * 1000,
-    );
+    this.fireGun(player, c, weapon, c.gunBurstHand, weapon.gun.burst.intervalSeconds * 1000);
     c.gunBurstRemaining--;
     if (c.gunBurstRemaining <= 0) this.clearGunBurst(c);
     else c.gunBurstT += weapon.gun.burst.intervalSeconds;
@@ -10718,13 +10692,12 @@ export class GameRoom extends Room<ArenaState> {
       : el && el !== "physical"
         ? `${g.bulletKind}:${el}`
         : g.bulletKind;
-    // Resolve inaccuracy once per pellet so simultaneous barrel lanes remain exactly parallel. Gravelthroat's
-    // full-circle count/headings come from the server-minted room seed + accepted attack epoch, never a client roll or
-    // global Math.random. Admission is bounded before allocation and fireProjectile enforces the arena cap again.
+    // Resolve inaccuracy once per pellet so simultaneous barrel lanes remain exactly parallel. Random count/headings
+    // come from the server-minted room seed + accepted attack epoch, never a client roll or global Math.random.
+    // Radial headings are absolute; cone headings are bounded offsets about the accepted aim direction.
     const friendlyRows = this.state.projectiles.size - this.hostileProjectileCount;
     const rowsPerLane = Math.floor(
-      Math.max(0, FRIENDLY_PROJECTILE_ENTITY_CAP - friendlyRows) /
-        Math.max(1, muzzles.length),
+      Math.max(0, FRIENDLY_PROJECTILE_ENTITY_CAP - friendlyRows) / Math.max(1, muzzles.length),
     );
     const seededVolley = g.randomPellets
       ? serverSeededGunPelletVolley(
@@ -10734,26 +10707,32 @@ export class GameRoom extends Room<ArenaState> {
         )
       : undefined;
     const angles = seededVolley
-      ? [...seededVolley.angles]
+      ? seededVolley.angles.map((angle) =>
+          g.randomPellets?.directions === "cone" ? baseAng + angle : angle,
+        )
       : Array.from({ length: pellets }, (_, i) =>
           pellets > 1
             ? baseAng + (i / (pellets - 1) - 0.5) * 2 * spread
             : baseAng + (Math.random() - 0.5) * 2 * spread,
         );
-    // Gravelthroat authors one six-damage trigger pool at 0.15s. Divide by the server-owned requested roll,
-    // not the admitted count: 1-10 directions preserve 40 baseline DPS, while an arena-cap truncation can
-    // only remove damage and can never concentrate the pool into the surviving entities.
+    // Random-pellet guns author one trigger damage pool. Divide by the server-owned requested roll, not the
+    // admitted count: direction/count variance changes coverage without changing aggregate DPS, while an
+    // arena-cap truncation can only remove damage and never concentrate it into surviving entities.
     const randomPelletDivisor = seededVolley?.requestedCount ?? 1;
     const projectileDivisor = parallelDivisor * randomPelletDivisor;
     const dmg =
-      (g.damage * this.heldDamageMult(weapon, g.scalingGrades, player, hand)) /
-      projectileDivisor;
+      (g.damage * this.heldDamageMult(weapon, g.scalingGrades, player, hand)) / projectileDivisor;
     const explode = g.explode
       ? {
           radius: g.explode.radius,
           damage:
-            g.explode.damage *
-            this.heldDamageMult(weapon, g.explode.scalingGrades ?? g.scalingGrades, player, hand) /
+            (g.explode.damage *
+              this.heldDamageMult(
+                weapon,
+                g.explode.scalingGrades ?? g.scalingGrades,
+                player,
+                hand,
+              )) /
             projectileDivisor,
         }
       : undefined;
@@ -10911,8 +10890,7 @@ export class GameRoom extends Room<ArenaState> {
     // The authored volley is one accepted payload split evenly over a bounded simultaneous fan.
     const volleySpread = cast.volley?.spread ?? 0;
     for (let i = 0; i < volleyCount; i++) {
-      const offset =
-        volleyCount > 1 ? (i / (volleyCount - 1) - 0.5) * 2 * volleySpread : 0;
+      const offset = volleyCount > 1 ? (i / (volleyCount - 1) - 0.5) * 2 * volleySpread : 0;
       emit(baseAng + offset);
     }
     // Arc Split remains extra projectiles; volley weapons add the forks just outside their authored fan.
@@ -11063,13 +11041,7 @@ export class GameRoom extends Room<ArenaState> {
       if (enemy.hp > 0 && !(id === this.bossId && this.bossController?.wormRuntime))
         candidates.push({ id, x: enemy.x, y: enemy.y });
     });
-    const target = selectChainTargets(
-      pr,
-      candidates,
-      1,
-      meta.ricochetRange ?? 260,
-      meta.hit,
-    )[0];
+    const target = selectChainTargets(pr, candidates, 1, meta.ricochetRange ?? 260, meta.hit)[0];
     if (!target) return false;
     const dx = target.x - pr.x;
     const dy = target.y - pr.y;
@@ -12951,11 +12923,8 @@ export class GameRoom extends Room<ArenaState> {
   private maybeDropWeapon(enemy: EnemyState): void {
     if (this.state.mode !== "arena") return; // debug-summoned wielders in training mint NO loot (verify)
     const kind = ENEMY_KINDS[enemy.kind];
-    if (
-      !kind?.wieldsWeapon ||
-      !kind.dropWeapon ||
-      WEAPONS[kind.wieldsWeapon]?.archived === true
-    ) return;
+    if (!kind?.wieldsWeapon || !kind.dropWeapon || WEAPONS[kind.wieldsWeapon]?.archived === true)
+      return;
     // G-03: this known-weapon reward channel obeys the same boss anti-farm lock as mystery loot. Named
     // shifters guarantee their signature only outside that lock; ordinary rates stay deliberately scarce.
     if (this.bossId || kind.archetype === "boss") return;

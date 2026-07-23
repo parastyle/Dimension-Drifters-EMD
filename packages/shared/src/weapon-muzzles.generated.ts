@@ -1403,12 +1403,73 @@ export const WEAPON_ART_MUZZLES = {
     "points": [
       {
         "part": 0,
-        "x": 255,
-        "y": 44.3,
+        "x": 252,
+        "y": 41,
         "derived": {
           "x": 255,
           "y": 44.3
-        }
+        },
+        "overrideReason": "The seven frosted pepperbox bores share one connected front plate; explicit art-space centres span the painted barrel cluster and launch one tight parallel lane each."
+      },
+      {
+        "part": 0,
+        "x": 252,
+        "y": 54,
+        "derived": {
+          "x": 255,
+          "y": 44.3
+        },
+        "overrideReason": "The seven frosted pepperbox bores share one connected front plate; explicit art-space centres span the painted barrel cluster and launch one tight parallel lane each."
+      },
+      {
+        "part": 0,
+        "x": 252,
+        "y": 67,
+        "derived": {
+          "x": 255,
+          "y": 44.3
+        },
+        "overrideReason": "The seven frosted pepperbox bores share one connected front plate; explicit art-space centres span the painted barrel cluster and launch one tight parallel lane each."
+      },
+      {
+        "part": 0,
+        "x": 252,
+        "y": 81,
+        "derived": {
+          "x": 255,
+          "y": 44.3
+        },
+        "overrideReason": "The seven frosted pepperbox bores share one connected front plate; explicit art-space centres span the painted barrel cluster and launch one tight parallel lane each."
+      },
+      {
+        "part": 0,
+        "x": 252,
+        "y": 95,
+        "derived": {
+          "x": 255,
+          "y": 44.3
+        },
+        "overrideReason": "The seven frosted pepperbox bores share one connected front plate; explicit art-space centres span the painted barrel cluster and launch one tight parallel lane each."
+      },
+      {
+        "part": 0,
+        "x": 252,
+        "y": 109,
+        "derived": {
+          "x": 255,
+          "y": 44.3
+        },
+        "overrideReason": "The seven frosted pepperbox bores share one connected front plate; explicit art-space centres span the painted barrel cluster and launch one tight parallel lane each."
+      },
+      {
+        "part": 0,
+        "x": 252,
+        "y": 122,
+        "derived": {
+          "x": 255,
+          "y": 44.3
+        },
+        "overrideReason": "The seven frosted pepperbox bores share one connected front plate; explicit art-space centres span the painted barrel cluster and launch one tight parallel lane each."
       }
     ],
     "salvoMode": "parallel",
@@ -1540,17 +1601,17 @@ export const WEAPON_ART_MUZZLES = {
     "parts": [
       {
         "width": 256,
-        "height": 134
+        "height": 162
       }
     ],
     "points": [
       {
         "part": 0,
-        "x": 252,
-        "y": 35.9,
+        "x": 255,
+        "y": 26.9,
         "derived": {
-          "x": 252,
-          "y": 35.9
+          "x": 255,
+          "y": 26.9
         }
       }
     ],
@@ -2562,11 +2623,22 @@ export const WEAPON_ART_MUZZLES = {
       {
         "part": 0,
         "x": 253,
-        "y": 46.9,
+        "y": 42,
         "derived": {
           "x": 253,
           "y": 46.9
-        }
+        },
+        "overrideReason": "The organic muzzle is one joined alpha mass; the owner-ordered twin parallel venom lanes need two explicit centres spanning its open mouth."
+      },
+      {
+        "part": 0,
+        "x": 253,
+        "y": 52,
+        "derived": {
+          "x": 253,
+          "y": 46.9
+        },
+        "overrideReason": "The organic muzzle is one joined alpha mass; the owner-ordered twin parallel venom lanes need two explicit centres spanning its open mouth."
       }
     ],
     "salvoMode": "parallel",

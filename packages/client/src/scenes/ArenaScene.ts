@@ -288,6 +288,7 @@ import {
   particleBurst,
   preloadParticlePacks,
 } from "../vfx/particles.js";
+import { preloadProjectileExplosionArt } from "../vfx/projectile-explosion-vfx-recipes.js";
 import { UltimateVfx } from "../vfx/ultimate-vfx.js";
 import { VfxPlayer } from "../vfx/VfxPlayer.js";
 import {
@@ -1851,6 +1852,7 @@ export class ArenaScene extends Phaser.Scene {
     preloadParticlePacks(this); // §41 the painted element×shape particle packs (Codex factory)
     preloadCasterPaintedArt(this);
     preloadGeneratedGunProjectiles(this);
+    preloadProjectileExplosionArt(this);
     preloadPageProjectileArt(this);
     preloadImpactFlipbooks(this); // optional per-element 6-frame hit blooms; missing strips stay silent
     if (this.belt) {

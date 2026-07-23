@@ -3592,7 +3592,8 @@
         "randomPellets": {
           "min": 1,
           "max": 10,
-          "directions": "radial"
+          "directions": "cone",
+          "halfAngle": 0.48
         },
         "pierce": 1,
         "magazine": 30,
@@ -4992,7 +4993,7 @@
         "damage": 16,
         "projectileSpeed": 1050,
         "range": 720,
-        "fireRate": 0.7,
+        "fireRate": 1.2,
         "pellets": 1,
         "spread": 0,
         "pierce": 2,
@@ -5003,7 +5004,11 @@
         "projectileVisualScale": 1.25,
         "muzzle": "boom",
         "muzzleColor": 11028526,
-        "recoil": 0.004
+        "recoil": 0.004,
+        "explode": {
+          "radius": 74,
+          "damage": 11.428571428571
+        }
       },
       "stats": {
         "damage": 7,
@@ -5107,7 +5112,7 @@
         "range": 520,
         "fireRate": 0.14,
         "pellets": 1,
-        "spread": 0.13,
+        "spread": 0,
         "pierce": 1,
         "magazine": 12,
         "reloadSeconds": 1.5,
@@ -5212,7 +5217,7 @@
         "range": 540,
         "fireRate": 0.1,
         "pellets": 1,
-        "spread": 0.16,
+        "spread": 0,
         "pierce": 1,
         "magazine": 20,
         "reloadSeconds": 1.7,
@@ -5960,7 +5965,7 @@
         "range": 720,
         "halfArc": 0.5,
         "cooldown": 0.5,
-        "displayLength": 150,
+        "displayLength": 240,
         "swingArc": 1.1,
         "gripFrac": 0.14
       },
@@ -6282,6 +6287,7 @@
         "magazine": 10,
         "reloadSeconds": 1.6,
         "bulletKind": "tracer",
+        "projectileArt": "generated",
         "muzzle": "spark",
         "muzzleColor": 3401983,
         "recoil": 0.0018
@@ -6488,6 +6494,7 @@
         "magazine": 3,
         "reloadSeconds": 2,
         "bulletKind": "slug",
+        "projectileArt": "generated",
         "muzzle": "heavy",
         "muzzleColor": 12886362,
         "recoil": 0.004
@@ -6737,6 +6744,7 @@
         "magazine": 4,
         "reloadSeconds": 2.1,
         "bulletKind": "slug",
+        "projectileVisualScale": 2,
         "muzzle": "boom",
         "muzzleColor": 16747563,
         "recoil": 0.004,
@@ -7225,6 +7233,7 @@
         "magazine": 2,
         "reloadSeconds": 1.3,
         "bulletKind": "tracer",
+        "projectileArt": "generated",
         "muzzle": "spark",
         "muzzleColor": 3397375,
         "recoil": 0.003
@@ -7873,6 +7882,7 @@
         "magazine": 14,
         "reloadSeconds": 2.1,
         "bulletKind": "tracer",
+        "projectileArt": "generated",
         "muzzle": "spark",
         "muzzleColor": 3397375,
         "recoil": 0.0016
@@ -8248,6 +8258,7 @@
         "magazine": 10,
         "reloadSeconds": 1.6,
         "bulletKind": "tracer",
+        "projectileArt": "generated",
         "muzzle": "spark",
         "muzzleColor": 3401471,
         "projectileColor": 3401471,
@@ -8276,7 +8287,7 @@
       "element": "fire",
       "finish": "battle-worn",
       "grip": "2H",
-      "gripPoints": { "primary": { "x": 0.42, "y": 0.62 }, "secondary": { "x": 0.61, "y": 0.58, "role": "shoulder-RPG" } },
+      "gripPoints": { "primary": { "x": 0.28, "y": 0.74 }, "secondary": { "x": 0.61, "y": 0.58, "role": "shoulder-RPG" } },
       "size": "XL",
       "rangeBand": "long",
       "scaling": [
@@ -8392,6 +8403,7 @@
       "finish": "battle-worn",
       "grip": "1H",
       "handlingTags": ["pistol"],
+      "gripPoints": { "primary": { "x": 0.38, "y": 0.7 } },
       "size": "M",
       "rangeBand": "mid",
       "scaling": [
@@ -8498,7 +8510,7 @@
       "element": "frost",
       "finish": "pristine",
       "grip": "2H",
-      "gripPoints": { "primary": { "x": 0.12, "y": 0.52 }, "secondary": { "x": 0.38, "y": 0.65, "role": "under-barrel" } },
+      "gripPoints": { "primary": { "x": 0.43, "y": 0.68 }, "secondary": { "x": 0.78, "y": 0.54, "role": "under-barrel" } },
       "size": "XL",
       "rangeBand": "mid",
       "scaling": [
@@ -8675,10 +8687,17 @@
         "projectileSpeed": 660,
         "range": 540,
         "fireRate": 0.24,
+        "randomPellets": {
+          "min": 3,
+          "max": 7,
+          "directions": "cone",
+          "halfAngle": 0.34
+        },
         "pierce": 1,
         "magazine": 16,
         "reloadSeconds": 2,
         "bulletKind": "pellet",
+        "projectileArt": "generated",
         "muzzle": "spark",
         "recoil": 0.0014,
         "explode": {
@@ -8737,6 +8756,7 @@
         "projectileVisualScale": 4,
         "muzzle": "boom",
         "recoil": 0.0038,
+        "userKnockbackMultiplier": 5,
         "explode": {
           "radius": 70,
           "damage": 12
@@ -8760,16 +8780,12 @@
       "theme": "dark-iron cannon firing collapsing void shells",
   "element": "void",
   "finish": "arcane",
-  "grip": "2H",
+  "grip": "1H",
+  "handlingTags": ["pistol"],
   "gripPoints": {
     "primary": {
-      "x": 0.2,
-      "y": 0.72
-    },
-    "secondary": {
-      "x": 0.55,
-      "y": 0.42,
-      "role": "under-barrel"
+      "x": 0.35,
+      "y": 0.68
     }
   },
   "size": "L",
@@ -8785,7 +8801,7 @@
       },
       "palettePrimary": "#22252B",
       "paletteAccent": "#B14BFF",
-      "artPrompt": "Weapon-only in-world sprite (no character, no background): a sinister obsidian-black hand-cannon with a yawning octagonal muzzle ringed in jagged arc-violet runes carved into the metal, a hooked breech and a bone-wrapped grip. Faces RIGHT: the yawning muzzle points RIGHT, the grip on the LEFT; flat side-profile, ~5 colours, starless black iron with solid arc-violet rune inlays (no glow).",
+      "artPrompt": "Weapon-only in-world sprite (no character, no background): a compact one-handed obsidian-black hand-cannon pistol with a short octagonal barrel collar, jagged arc-violet runes carved into the metal, a hooked breech, visible trigger, and bone-wrapped grip. Faces RIGHT. COMPLETELY FLAT orthographic full side-profile: show no bore opening, ellipse, muzzle face, foreshortening, or three-quarter perspective; only the thin side edge of the muzzle collar. ~5 colours, starless black iron with solid arc-violet rune inlays (no glow).",
       "cardartAction": "the yawning muzzle exhaling a collapsing arc-violet void-shell that bends the light inward, dark tendrils curling off the bore",
       "behavior": {
         "kind": "gun",
@@ -8812,7 +8828,7 @@
         "range": 80,
         "halfArc": 0.55,
         "cooldown": 0.8,
-        "displayLength": 140,
+        "displayLength": 112,
         "swingArc": 1,
         "gripFrac": 0.12
       },
@@ -9749,6 +9765,7 @@
         "magazine": 5,
         "reloadSeconds": 1.6,
         "bulletKind": "slug",
+        "projectileArt": "generated",
         "muzzle": "heavy",
         "muzzleColor": 3397375,
         "recoil": 0.0026,
@@ -14490,7 +14507,8 @@
         "magazine": 12,
         "reloadSeconds": 1.2,
         "bulletKind": "spark",
-        "projectileVisualScale": 10,
+        "projectileArt": "generated",
+        "projectileVisualScale": 1,
         "projectileColor": 11619327,
         "muzzle": "spark",
         "muzzleColor": 11619327,
@@ -15787,11 +15805,12 @@
         "projectileSpeed": 900,
         "range": 620,
         "fireRate": 0.25,
-        "spread": 0.11,
+        "spread": 0,
         "pierce": 1,
         "magazine": 18,
         "reloadSeconds": 2.1,
         "bulletKind": "tracer",
+        "projectileArt": "generated",
         "muzzle": "heavy",
         "muzzleColor": 16734770,
         "recoil": 0.0018

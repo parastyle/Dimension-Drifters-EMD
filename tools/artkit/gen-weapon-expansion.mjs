@@ -130,7 +130,7 @@ const STANCES = new Set([
   "low-close-hilt",
 ]);
 const RANDOM_RAY_KEYS = new Set(["count", "spread"]);
-const RANDOM_PELLET_KEYS = new Set(["min", "max", "directions"]);
+const RANDOM_PELLET_KEYS = new Set(["min", "max", "directions", "halfAngle"]);
 const CONE_STREAM_KEYS = new Set(["halfAngle", "flavor"]);
 const CONE_STREAM_FLAVORS = new Set(["ice", "magma"]);
 const COMBO_MOTIONS = new Set([
@@ -908,6 +908,13 @@ function mapWeapon(w) {
       }
     }
   } else if (isGun) {
+    const maxFireRate = w.id === "x2-mesa-hand-cannon"
+      ? 1.2
+      : isCalamityHowitzer
+        ? 3
+        : isSingleShotGun
+          ? 1.5
+          : 0.9;
     def.gun = {
       damage: num(b.damage, 1, isSingleShotGun ? 120 : 40, damage, "behavior.damage"),
       projectileSpeed: num(b.projectileSpeed, 400, 4000, 900, "behavior.projectileSpeed"),
@@ -915,7 +922,7 @@ function mapWeapon(w) {
       fireRate: num(
         b.fireRate,
         0.05,
-        isCalamityHowitzer ? 3 : isSingleShotGun ? 1.5 : 0.9,
+        maxFireRate,
         0.3,
         "behavior.fireRate",
       ),
@@ -951,7 +958,7 @@ function mapWeapon(w) {
       def.gun.userKnockbackMultiplier = num(
         b.userKnockbackMultiplier,
         0.25,
-        4,
+        5,
         1,
         "behavior.userKnockbackMultiplier",
       );
@@ -980,15 +987,29 @@ function mapWeapon(w) {
         if (b.pellets !== undefined) fail("behavior.randomPellets cannot be combined with behavior.pellets");
         const min = int(b.randomPellets.min, 1, 10, 1, "behavior.randomPellets.min");
         const max = int(b.randomPellets.max, min, 10, 10, "behavior.randomPellets.max");
-        def.gun.randomPellets = {
-          min,
-          max,
-          directions: enumOf(
-            b.randomPellets.directions,
-            new Set(["radial"]),
-            "behavior.randomPellets.directions",
-          ),
-        };
+        const directions = enumOf(
+          b.randomPellets.directions,
+          new Set(["radial", "cone"]),
+          "behavior.randomPellets.directions",
+        );
+        if (directions === "cone") {
+          def.gun.randomPellets = {
+            min,
+            max,
+            directions,
+            halfAngle: num(
+              b.randomPellets.halfAngle,
+              0.02,
+              Math.PI,
+              0.35,
+              "behavior.randomPellets.halfAngle",
+            ),
+          };
+        } else {
+          if (b.randomPellets.halfAngle !== undefined)
+            fail("behavior.randomPellets.halfAngle requires directions=cone");
+          def.gun.randomPellets = { min, max, directions };
+        }
       }
     }
     // Accuracy is independent of pellet count. The old conditional silently erased every authored

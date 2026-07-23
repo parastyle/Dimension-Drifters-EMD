@@ -5,9 +5,9 @@ import { GUN_GENERATED_PROJECTILES } from "../packages/client/src/vfx/gun-projec
 import {
   coneStreamHitsCircle,
   expectedRandomGunPelletCount,
-  weaponMuzzleWorldPoint,
   serverSeededGunPelletVolley,
   WEAPONS,
+  weaponMuzzleWorldPoint,
 } from "../packages/shared/src/index.js";
 
 const CROSSBOW_LENGTHS = Object.freeze({
@@ -54,8 +54,10 @@ describe("W4R ranged owner orders", () => {
       expect(weapon?.displayLength, weaponId).toBe(displayLength);
       expect(weapon?.gun?.projectileArt, weaponId).toMatch(/^(arrow|generated)$/);
       if (!weapon) throw new Error(`${weaponId} fixture required`);
-      expect(weaponMuzzleWorldPoint(weapon, { x: 0, y: 0, aimX: 1, aimY: 0 }).x, weaponId)
-        .toBeGreaterThan(displayLength * 0.5);
+      expect(
+        weaponMuzzleWorldPoint(weapon, { x: 0, y: 0, aimX: 1, aimY: 0 }).x,
+        weaponId,
+      ).toBeGreaterThan(displayLength * 0.5);
     }
     expect(WEAPONS["x2-tracer-saint-carbine"]?.displayLength).toBe(150.8);
     expect(WEAPONS["x2-quicksilver-fanner"]?.displayLength).toBe(112);
@@ -69,7 +71,12 @@ describe("W4R ranged owner orders", () => {
     const magma = WEAPONS["x2-doomsday-drum-cannon"]?.beam;
     if (!gravel?.randomPellets || !fanner?.pellets || !buckshot?.explode || !frost || !magma)
       throw new Error("W4R damage fixtures are required");
-    expect(gravel?.randomPellets).toEqual({ min: 1, max: 10, directions: "radial" });
+    expect(gravel?.randomPellets).toEqual({
+      min: 1,
+      max: 10,
+      directions: "cone",
+      halfAngle: 0.48,
+    });
     expect(expectedRandomGunPelletCount(gravel.randomPellets)).toBe(5.5);
     expect(gravel.damage / gravel.fireRate).toBeCloseTo((4 * 6) / 0.6, 8);
     expect(fanner).toMatchObject({ damage: 1, pellets: 6, spread: 0.22 });
@@ -83,7 +90,7 @@ describe("W4R ranged owner orders", () => {
     expect(magma.damagePerSecond).toBeCloseTo((7 + 6) / 0.34, 8);
   });
 
-  it("makes the Gravelthroat roll reproducible, variable, radial, and cap-admitted", () => {
+  it("makes the Gravelthroat roll reproducible, variable, cone-bound, and cap-admitted", () => {
     const rule = WEAPONS["x2-gravelthroat-repeater"]?.gun?.randomPellets;
     if (!rule) throw new Error("Gravelthroat random-pellet rule is required");
     const rolls = Array.from({ length: 64 }, (_, seed) =>
@@ -97,7 +104,7 @@ describe("W4R ranged owner orders", () => {
     );
     const capped = serverSeededGunPelletVolley(rule, 0x44aa22, 3);
     expect(capped.angles).toHaveLength(Math.min(3, capped.requestedCount));
-    expect(capped.angles.every((angle) => angle >= -Math.PI && angle < Math.PI)).toBe(true);
+    expect(capped.angles.every((angle) => angle >= -0.48 && angle < 0.48)).toBe(true);
   });
 
   it("installs the requested projectile identities and generated-art registrations", () => {

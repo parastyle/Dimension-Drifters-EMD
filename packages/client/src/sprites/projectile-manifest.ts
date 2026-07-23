@@ -13,6 +13,12 @@ export const PROJECTILE_SPRITES = {
     height: 45,
     source: "generated",
   },
+  "brimstone-flaming-cross": {
+    url: "projectiles/v7/brimstone-flaming-cross.png",
+    width: 160,
+    height: 86,
+    source: "generated",
+  },
   "brimstone-rocket-warhead": {
     url: "projectiles/brimstone-rocket-warhead.png",
     width: 85,
@@ -29,6 +35,18 @@ export const PROJECTILE_SPRITES = {
     url: "projectiles/coyotes-grin-throwing-blade.png",
     width: 192,
     height: 73,
+    source: "generated",
+  },
+  "frostfang-pictured-harpoon": {
+    url: "projectiles/v7/frostfang-pictured-harpoon.png",
+    width: 272,
+    height: 56,
+    source: "generated",
+  },
+  "galvanic-coachgun-electric-slug": {
+    url: "projectiles/v7/galvanic-coachgun-electric-slug.png",
+    width: 128,
+    height: 96,
     source: "generated",
   },
   "ghostbolt-crossbow-arrow": {
@@ -49,6 +67,12 @@ export const PROJECTILE_SPRITES = {
     height: 116,
     source: "generated",
   },
+  "ironhide-anti-tank-shell": {
+    url: "projectiles/v7/ironhide-anti-tank-shell.png",
+    width: 200,
+    height: 48,
+    source: "generated",
+  },
   "leviathan-harpoon-gun-harpoon": {
     url: "projectiles/leviathan-harpoon-gun-harpoon.png",
     width: 272,
@@ -67,9 +91,21 @@ export const PROJECTILE_SPRITES = {
     height: 63,
     source: "generated",
   },
+  "plaguespitter-green-shot": {
+    url: "projectiles/v7/plaguespitter-green-shot.png",
+    width: 120,
+    height: 90,
+    source: "generated",
+  },
   "quill-storm-repeater-arrow": {
     url: "projectiles/quill-storm-repeater-arrow.png",
     width: 208,
+    height: 63,
+    source: "generated",
+  },
+  "ricochet-icicle": {
+    url: "projectiles/v7/ricochet-icicle.png",
+    width: 192,
     height: 63,
     source: "generated",
   },
@@ -77,6 +113,30 @@ export const PROJECTILE_SPRITES = {
     url: "projectiles/saintskull-monstrance-holy-skull.png",
     width: 162,
     height: 176,
+    source: "generated",
+  },
+  "tesla-drumbore-electric-particle": {
+    url: "projectiles/v7/tesla-drumbore-electric-particle.png",
+    width: 106,
+    height: 104,
+    source: "generated",
+  },
+  "tesla-faradayer-hand-drawn-bolt": {
+    url: "projectiles/v7/tesla-faradayer-hand-drawn-bolt.png",
+    width: 192,
+    height: 78,
+    source: "generated",
+  },
+  "thunderhead-blue-helix": {
+    url: "projectiles/v8/thunderhead-blue-helix.png",
+    width: 176,
+    height: 49,
+    source: "generated",
+  },
+  "thunderhead-smoke-ring": {
+    url: "projectiles/v8/thunderhead-smoke-ring.png",
+    width: 128,
+    height: 124,
     source: "generated",
   },
   "tidehook-bombarpoon-harpoon": {

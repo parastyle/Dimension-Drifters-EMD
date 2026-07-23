@@ -38,5 +38,28 @@
       { "part": 0, "x": 250, "y": 122 }
     ],
     "reason": "Six recessed beam apertures sit inside one opaque front cap; alpha can derive the cap edge but cannot distinguish the six aperture centres."
+  },
+  "x2-sidewinder-spitfire": {
+    "barrelMode": "parallel",
+    "salvoMode": "parallel",
+    "points": [
+      { "part": 0, "x": 253, "y": 42 },
+      { "part": 0, "x": 253, "y": 52 }
+    ],
+    "reason": "The organic muzzle is one joined alpha mass; the owner-ordered twin parallel venom lanes need two explicit centres spanning its open mouth."
+  },
+  "x2-hailspitter-pepperbox": {
+    "barrelMode": "parallel",
+    "salvoMode": "parallel",
+    "points": [
+      { "part": 0, "x": 252, "y": 41 },
+      { "part": 0, "x": 252, "y": 54 },
+      { "part": 0, "x": 252, "y": 67 },
+      { "part": 0, "x": 252, "y": 81 },
+      { "part": 0, "x": 252, "y": 95 },
+      { "part": 0, "x": 252, "y": 109 },
+      { "part": 0, "x": 252, "y": 122 }
+    ],
+    "reason": "The seven frosted pepperbox bores share one connected front plate; explicit art-space centres span the painted barrel cluster and launch one tight parallel lane each."
   }
 }

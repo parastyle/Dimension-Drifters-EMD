@@ -1397,11 +1397,41 @@
     "points": [
       {
         "part": 0,
-        "x": 255,
-        "y": 44.3
+        "x": 252,
+        "y": 41
+      },
+      {
+        "part": 0,
+        "x": 252,
+        "y": 54
+      },
+      {
+        "part": 0,
+        "x": 252,
+        "y": 67
+      },
+      {
+        "part": 0,
+        "x": 252,
+        "y": 81
+      },
+      {
+        "part": 0,
+        "x": 252,
+        "y": 95
+      },
+      {
+        "part": 0,
+        "x": 252,
+        "y": 109
+      },
+      {
+        "part": 0,
+        "x": 252,
+        "y": 122
       }
     ],
-    "override": null,
+    "override": "The seven frosted pepperbox bores share one connected front plate; explicit art-space centres span the painted barrel cluster and launch one tight parallel lane each.",
     "salvoMode": "parallel",
     "barrelMode": "parallel"
   },
@@ -1527,15 +1557,15 @@
     "derived": [
       {
         "part": 0,
-        "x": 252,
-        "y": 35.9
+        "x": 255,
+        "y": 26.9
       }
     ],
     "points": [
       {
         "part": 0,
-        "x": 252,
-        "y": 35.9
+        "x": 255,
+        "y": 26.9
       }
     ],
     "override": null,
@@ -2521,10 +2551,15 @@
       {
         "part": 0,
         "x": 253,
-        "y": 46.9
+        "y": 42
+      },
+      {
+        "part": 0,
+        "x": 253,
+        "y": 52
       }
     ],
-    "override": null,
+    "override": "The organic muzzle is one joined alpha mass; the owner-ordered twin parallel venom lanes need two explicit centres spanning its open mouth.",
     "salvoMode": "parallel",
     "barrelMode": "parallel"
   },
