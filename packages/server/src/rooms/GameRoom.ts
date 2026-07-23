@@ -167,7 +167,7 @@ import {
   GROUND_EPSILON,
   generateArena,
   getDimension,
-  gunUserRecoilFor,
+  gunLocomotionRecoilFor,
   HAIRTRIGGER_MAX,
   HAIRTRIGGER_WINDOW,
   HARVEST_CAP,
@@ -10848,10 +10848,10 @@ export class GameRoom extends Room<ArenaState> {
         );
       }
     }
-    // §20 RECOIL pushback (Stage A): the shot kicks the body BACKWARD along aim, scaled by the gun's
-    // authored `recoil` (which already differentiates a heavy revolver from a light gatling). Per-shot,
-    // so a slow heavy gun punches once while a gatling stream accumulates a steady shove (capped).
-    const recoil = gunUserRecoilFor(weapon);
+    // §20 RECOIL pushback (Stage A): most guns kick the body backward along aim. Presentation-only
+    // exceptions keep their authored rig/camera response without injecting velocity into authoritative
+    // locomotion; remote interpolation therefore observes the same stable movement-only root.
+    const recoil = gunLocomotionRecoilFor(weapon);
     const r = addImpulse(
       player,
       -aim.x * recoil.impulse,

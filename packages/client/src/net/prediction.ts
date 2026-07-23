@@ -1,8 +1,8 @@
 import {
-  addImpulse,
   ARENA_HEIGHT,
   ARENA_WIDTH,
   type ArenaMap,
+  addImpulse,
   type BeltLevel,
   beltSafeX,
   clampBeltFloorY,
@@ -15,8 +15,8 @@ import {
   DIST_JUMP_STEER_RADIANS_PER_SECOND,
   DIST_JUMP_VERTICAL_VELOCITY,
   GROUND_EPSILON,
-  INTERP_SNAP_PLAYER,
   INPUT_MSGS_PER_TICK,
+  INTERP_SNAP_PLAYER,
   JUMP_BUFFER_SECONDS,
   MOVE_SPEED,
   type MoveStance,
@@ -28,17 +28,16 @@ import {
   POUND_SPEED,
   PRED_ERR_DECAY,
   PRED_PENDING_MAX,
-  rollSpeedAtTick,
   ROLL_ATTACK_CANCEL_SECONDS,
   ROLL_COOLDOWN,
   ROLL_DURATION_TICKS,
   ROLL_PARRY_LOCK_SECONDS,
-  slideContactInvulnerable,
+  resolveBeltObstacles,
+  resolvePoiCollision,
+  rollSpeedAtTick,
   SLIDE_PHASE_GROUND,
   SLIDE_PHASE_OFF,
   type SlidePhase,
-  resolveBeltObstacles,
-  resolvePoiCollision,
   STANCE_CROUCH,
   STANCE_DASH,
   STANCE_NONE,
@@ -46,6 +45,7 @@ import {
   STANCE_SLIDE,
   safeSpawnPos,
   shortestAngleDelta,
+  slideContactInvulnerable,
   stepImpulse,
   stepSteeredMovement,
   stepVertical,
@@ -380,6 +380,9 @@ const PRED_CORRECTION_FORWARD_SHARE = 0.6;
 const PRED_CORRECTION_REVERSE_SHARE = 0.1;
 const PRED_CORRECTION_SIDE_SHARE = 0.05;
 const PRED_PRESENT_MAX_COMMAND_DELTA = Math.PI / 18;
+/** A locomotion-only firing presentation may lead authority, but stale correction debt never gets a
+ * multi-character leash. This leaves 32 px of margin under B4's unchanged 80 px live bound. */
+export const LOCOMOTION_ONLY_AUTHORITY_RADIUS_PX = 48;
 
 function sanitizePredMomentum(p: PredState): void {
   const raw = Math.hypot(p.momentumX, p.momentumY);
@@ -674,9 +677,7 @@ function stepPredictionTick(
 ): PredState {
   if (cmd.jump) {
     const rollTail =
-      s.stance === STANCE_SLIDE
-        ? (ROLL_DURATION_TICKS - s.slidePhaseTick + 2) * dt
-        : 0;
+      s.stance === STANCE_SLIDE ? (ROLL_DURATION_TICKS - s.slidePhaseTick + 2) * dt : 0;
     v.jumpBuf = Math.max(JUMP_BUFFER_SECONDS, rollTail);
   }
   consumeStanceInput(p, v, s, cmd);
@@ -765,6 +766,7 @@ export class SelfPredictor {
     momentumY: 0,
   };
   private readonly constrainedRenderPos = { x: 0, y: 0 };
+  private readonly authorityBoundRenderPos = { x: 0, y: 0 };
   private readonly pending: PendingPredCmd[] = [];
   private readonly immediateInputGate = new ImmediateInputSendGate();
   private map?: ArenaMap;
@@ -1441,6 +1443,33 @@ export class SelfPredictor {
       slidePhase: this.stance.slidePhase,
       slideTick: this.stance.slidePhaseTick,
     };
+  }
+
+  /**
+   * Bound a locomotion-only owner presentation to the frame-current authority row. Ordinary prediction
+   * lead remains untouched inside the radius. Excess stale reconciliation debt is retired from the visual
+   * offset at the same time, so repeated direction changes cannot leave the rig orbiting an old lane.
+   * Simulation position and pending input replay are never clamped or rewritten here.
+   */
+  boundLocomotionPresentation(
+    authorityX: number,
+    authorityY: number,
+    candidateX: number,
+    candidateY: number,
+  ): { x: number; y: number } {
+    const out = this.authorityBoundRenderPos;
+    out.x = candidateX;
+    out.y = candidateY;
+    const dx = candidateX - authorityX;
+    const dy = candidateY - authorityY;
+    const distance = Math.hypot(dx, dy);
+    if (distance <= LOCOMOTION_ONLY_AUTHORITY_RADIUS_PX || distance <= 1e-4) return out;
+    const scale = LOCOMOTION_ONLY_AUTHORITY_RADIUS_PX / distance;
+    out.x = authorityX + dx * scale;
+    out.y = authorityY + dy * scale;
+    this.errX += out.x - candidateX;
+    this.errY += out.y - candidateY;
+    return out;
   }
 
   /** Final owner-presentation gate for ordinary grounded steering. Reconciliation may leave a large

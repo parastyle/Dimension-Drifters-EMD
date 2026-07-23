@@ -53,7 +53,7 @@ import {
   GROUND_EPSILON,
   generateArena,
   getDimension,
-  gunUserRecoilFor,
+  gunLocomotionRecoilFor,
   hasAugment,
   INTERP_DELAY_MS,
   INTERP_SNAP_ENEMY,
@@ -9155,16 +9155,22 @@ export class ArenaScene extends Phaser.Scene {
       if (id === selfId && this.predictor) {
         this.predictor.decayError(deltaMs / 1000, this.curDx, this.curDy);
         const r = this.predictor.renderPos(this.curDx, this.curDy, this.inputAccMs / 1000);
-        this.selfPredictionCandidateX = r.x;
-        this.selfPredictionCandidateY = r.y;
+        const weapon = WEAPONS[player.weapon];
+        const presentationOnlyGunRecoil =
+          !!weapon?.gun && gunLocomotionRecoilFor(weapon).impulse <= 0;
+        const candidate = presentationOnlyGunRecoil
+          ? this.predictor.boundLocomotionPresentation(player.x, player.y, r.x, r.y)
+          : r;
+        this.selfPredictionCandidateX = candidate.x;
+        this.selfPredictionCandidateY = candidate.y;
         const presented = this.predictor.constrainRenderStep(
           blob.x,
           blob.y,
-          r.x,
-          r.y,
+          candidate.x,
+          candidate.y,
           this.curDx,
           this.curDy,
-          r.stance === STANCE_NONE,
+          r.stance === STANCE_NONE && !presentationOnlyGunRecoil,
         );
         blob.setPosition(presented.x, presented.y);
         this.selfPredHeight = r.height;
@@ -10218,6 +10224,17 @@ export class ArenaScene extends Phaser.Scene {
     const weapon = WEAPONS[self.weapon] ?? WEAPONS[DEFAULT_WEAPON];
     if (weapon?.beam || weapon?.groundZone?.trigger === "channel" || weapon?.performance?.aura)
       return;
+    if (!weapon?.warp) {
+      const predictionLead = (this.localPredictedAttackSeq - self.attackSeq) >>> 0;
+      if (predictionLead >= 0x80000000) {
+        this.localPredictedAttackSeq = self.attackSeq >>> 0;
+      } else if (predictionLead > 0) {
+        // The presentation high-water mark has one outstanding acceptance. Keep held fire live and retry
+        // next frame after authority catches up instead of opening a second speculative beat: under latency
+        // that second slot can outlive a Drive rejection and leave the firing rig permanently ahead.
+        return;
+      }
+    }
     // Schema 30: thrown weapons + guns bill the Drive bar — don't animate/fire when the next shot is
     // unaffordable (the server's spend seam rejects it too). Replaces the retired `charges` gate.
     if (weapon?.thrown || weapon?.gun || weapon?.warp) {
@@ -10237,8 +10254,6 @@ export class ArenaScene extends Phaser.Scene {
     // Predict the next contiguous accepted beat alongside the existing pose. The authoritative edge later
     // consumes this high-water slot as confirmation, so neither the swing nor an open-tome page restarts.
     if (!weapon?.warp) {
-      const predictionLead = (this.localPredictedAttackSeq - self.attackSeq) >>> 0;
-      if (predictionLead >= 0x80000000) this.localPredictedAttackSeq = self.attackSeq >>> 0;
       this.localPredictedAttackSeq = (this.localPredictedAttackSeq + 1) >>> 0;
       rig?.setAttackBeat(this.localPredictedAttackSeq, true, this.time.now);
     }
@@ -10555,10 +10570,11 @@ export class ArenaScene extends Phaser.Scene {
     this.room.send("attack", { aimX: saX, aimY: saY, tx: cwx, ty: cwy });
   }
 
-  /** Owner-authored gun recoil is deterministic and therefore belongs in self prediction. Hostile impact
-   * impulses remain server-only. Every delayed burst round calls this at its own fire edge. */
+  /** Mirror only recoil that authority declares locomotion-owning. Presentation-only gun recoil remains
+   * on the rig/camera clocks above and can never enter the predictor position sampled by later muzzles. */
   private predictGunRoundRecoil(weapon: WeaponDef, aimX: number, aimY: number): void {
-    const recoil = gunUserRecoilFor(weapon);
+    const recoil = gunLocomotionRecoilFor(weapon);
+    if (recoil.impulse <= 0) return;
     this.predictor?.addPredictedImpulse(
       -aimX * recoil.impulse,
       -aimY * recoil.impulse,

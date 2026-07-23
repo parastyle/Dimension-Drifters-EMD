@@ -1,5 +1,7 @@
 import {
   characterScale,
+  gunLocomotionRecoilFor,
+  gunUserRecoilFor,
   TICK_MS,
   TILE_GROUND,
   WEAPONS,
@@ -71,6 +73,40 @@ function recoveredOrigin(
 }
 
 describe("V7 moving multi-round gun origin authority", () => {
+  it("keeps Overcasters body recoil out of authority while retaining authored presentation recoil", () => {
+    for (const aimX of [-1, 1]) {
+      const h = makeRoom(`overcasters-recoil-${aimX}`);
+      const weapon = WEAPONS["x2-galvanic-overcasters"];
+      if (!weapon?.gun?.burst) throw new Error("Galvanic Overcasters gun fixture is required");
+      h.player.weapon = weapon.id;
+      h.player.x = 2_200;
+      h.player.y = 2_300;
+      h.player.vx = 0;
+      h.player.vy = 0;
+      h.combat.aimX = aimX;
+      h.combat.aimY = 0;
+      h.combat.targetX = h.player.x + aimX * weapon.gun.range;
+      h.combat.targetY = h.player.y;
+
+      const authored = gunUserRecoilFor(weapon);
+      const locomotion = gunLocomotionRecoilFor(weapon);
+      expect(authored.impulse).toBeGreaterThan(0);
+      expect(locomotion.impulse).toBe(0);
+
+      for (let round = 0; round < weapon.gun.burst.count; round++) {
+        h.room.fireGun(
+          h.player,
+          h.combat,
+          weapon,
+          0,
+          round * weapon.gun.burst.intervalSeconds * 1_000,
+        );
+        expect(h.player.vx, `round ${round + 1} aim ${aimX} vx`).toBe(0);
+        expect(h.player.vy, `round ${round + 1} aim ${aimX} vy`).toBe(0);
+      }
+    }
+  });
+
   it("resolves every delayed Overcasters round from the live player transform on that fire tick", () => {
     const weapon = WEAPONS["x2-galvanic-overcasters"];
     if (!weapon?.gun?.burst) throw new Error("Overcasters burst fixture is required");
