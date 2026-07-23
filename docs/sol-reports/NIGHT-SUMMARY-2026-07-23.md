@@ -15,7 +15,7 @@ Autonomous run while the owner slept. Everything below is committed + **pushed**
 
 ### Game-notes program (ledger `docs/sol-reports/notes-ledger-v9.md`)
 403 owner notes → 243 normalized intents → **211 already done**, 32 outstanding, batched B1–B13.
-Landed 7 of the mechanical batches (game-first):
+Landed **all 8** mechanical batches (game-first); only the 5 art-heavy batches remain (need your eye):
 - **B1** — damage numbers stay screen-upright through the real transform chain; 22 asymmetric
   projectiles (incl. holy skull) mirror instead of rotating through π.
 - **B4** — Galvanic Overcasters moving-fire regression fixed (rig/authority 444px→48px, live-gated at
@@ -45,12 +45,13 @@ stream position, so any catalog change reshuffled it and flipped position-sensit
 
 ## Deferred (NOT merged) — with reasons
 
-### On branches, ready for completion
-- **B7 thrown conversions** (`sol/b7-thrown`) — Sidewinder Spontoon / Stormcrow Twin-Hatchets /
-  Boothook Harpoon. The implementing Sol **hung twice** on this task; the branch has code-only WIP with
-  **no tests and no verification**, and it branched from before the wave landed so it conflicts heavily
-  with current main — do not merge as-is. Cleanest path: re-implement fresh from current main (or by
-  hand) with a thrown-behavior test + live gate. THE ONLY mechanical batch not landed.
+### B7 — now LANDED (was the hard one)
+- **B7 thrown conversions** — Sidewinder Spontoon (edge→thrown) + Stormcrow Twin-Hatchets
+  (chainLightning→thrown), both DPS-preserved own-sprite throws; Boothook Harpoon given an
+  over-the-shoulder no-spin release. The Sol hung twice on the live-gate; the winning run dropped the
+  live gate for a unit test (`tests/b7-thrown.test.ts`) and passed. **One follow-up:** Stormcrow's
+  chain-on-hit couldn't be retained on a thrown weapon (the chain path requires `weapon.gun`) — it keeps
+  its shock identity; restoring the actual chain needs a small server/behavior change.
 
 ### Need generated art + owner aesthetic review (queued in ledger)
 - **B2** seven "wacky" weapons (unicorn rainbow beam + fish launcher, rubber-chicken flail, etc.)
@@ -61,6 +62,7 @@ per agent" law and past art-bleed lessons).
 
 ## Suggested next moves
 1. Try the sheriff/samurai/witch in-game (`?dev=char:proto-*`) and confirm they read right.
-2. Reconcile B8's two invariance tests → merge `sol/b8-pose` (fast, high value — 8 weapons).
-3. Complete + verify B7 (`sol/b7-thrown`).
-4. Review/kick off the art batches (B2/B3/B11/B12/B13) when you can art-direct.
+2. Review/kick off the art batches **B2/B3/B11/B12/B13** when you can art-direct — the only outstanding
+   notes left, deliberately held because they need generated art + your aesthetic call.
+3. (Small) Restore Stormcrow Twin-Hatchets' chain-on-hit on its new thrown delivery (needs a small
+   server/behavior change so a thrown weapon can carry the chain effect).
