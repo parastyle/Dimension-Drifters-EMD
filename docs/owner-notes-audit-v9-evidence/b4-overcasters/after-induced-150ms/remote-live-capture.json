@@ -1,0 +1,6515 @@
+{
+  "capturedAt": "2026-07-23T06:04:56.937Z",
+  "profile": "after-induced-150ms",
+  "inducedLatencyMs": 150,
+  "actor": "remote",
+  "actorId": "cj3QT4lGF",
+  "thresholds": {
+    "maxAdmissionMuzzleDeltaPx": 2.5,
+    "maxProjectilePathErrorPx": 18,
+    "maxCharacterAuthorityDeltaPx": 80,
+    "maxRenderedRigStepPx": 80,
+    "postFireSampleMs": 1500
+  },
+  "frameCount": 148,
+  "roundCount": 36,
+  "burstCount": 9,
+  "visitedStages": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+  ],
+  "maxAdmissionMuzzleDeltaPx": 0,
+  "maxAuthorityMuzzleDeltaPx": 47.49619140627226,
+  "maxProjectilePathErrorPx": 16.862903851950797,
+  "maxCharacterAuthorityDeltaPx": 19.199999999999818,
+  "maxDuringFireRenderedRigStepPx": 50.63999999999987,
+  "maxPostFireRenderedRigStepPx": 50.87359467345868,
+  "maxPostFireCharacterAuthorityDeltaPx": 18.39359709565406,
+  "authorityAttackSeqRegressions": 0,
+  "rigAttackSeqRegressions": 0,
+  "maxRigAttackSeqLead": 0,
+  "finalAuthorityAttackSeq": 9,
+  "finalRigAttackSeq": 9,
+  "frames": [
+    {
+      "wallMs": 6226.5,
+      "phase": "during-fire",
+      "tick": 52,
+      "attackSeq": 0,
+      "rigAttackSeq": 0,
+      "stage": 0,
+      "input": {
+        "x": 1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2472.700317892212,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": 0,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2472.700317892212,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 0
+    },
+    {
+      "wallMs": 6288.89999999851,
+      "phase": "during-fire",
+      "tick": 55,
+      "attackSeq": 0,
+      "rigAttackSeq": 0,
+      "stage": 0,
+      "input": {
+        "x": 1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2472.700317892212,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": 0,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2472.700317892212,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 0
+    },
+    {
+      "wallMs": 6350.10000000149,
+      "phase": "during-fire",
+      "tick": 55,
+      "attackSeq": 0,
+      "rigAttackSeq": 0,
+      "stage": 0,
+      "input": {
+        "x": 1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2472.700317892212,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": 0,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2472.700317892212,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 0
+    },
+    {
+      "wallMs": 6415.29999999702,
+      "phase": "during-fire",
+      "tick": 56,
+      "attackSeq": 0,
+      "rigAttackSeq": 0,
+      "stage": 0,
+      "input": {
+        "x": 1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2472.700317892212,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": 0,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2472.700317892212,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 0
+    },
+    {
+      "wallMs": 6526.79999999702,
+      "phase": "during-fire",
+      "tick": 59,
+      "attackSeq": 1,
+      "rigAttackSeq": 1,
+      "stage": 0,
+      "input": {
+        "x": 1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2492.200317892212,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": 260,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2503.9003178922117,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 11.699999999999818
+    },
+    {
+      "wallMs": 6641.69999999553,
+      "phase": "during-fire",
+      "tick": 61,
+      "attackSeq": 1,
+      "rigAttackSeq": 1,
+      "stage": 0,
+      "input": {
+        "x": 1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2524.200317892212,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": 320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2543.4003178922117,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 19.199999999999818
+    },
+    {
+      "wallMs": 6718,
+      "phase": "during-fire",
+      "tick": 63,
+      "attackSeq": 1,
+      "rigAttackSeq": 1,
+      "stage": 0,
+      "input": {
+        "x": 1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2556.200317892212,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": 320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2575.4003178922117,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 19.199999999999818
+    },
+    {
+      "wallMs": 6774.89999999851,
+      "phase": "during-fire",
+      "tick": 63,
+      "attackSeq": 1,
+      "rigAttackSeq": 1,
+      "stage": 0,
+      "input": {
+        "x": 1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2556.200317892212,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": 320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2575.4003178922117,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 19.199999999999818
+    },
+    {
+      "wallMs": 6853.10000000149,
+      "phase": "during-fire",
+      "tick": 66,
+      "attackSeq": 1,
+      "rigAttackSeq": 1,
+      "stage": 0,
+      "input": {
+        "x": 1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2604.200317892212,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": 320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2621.2243178907815,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 17.023999998569707
+    },
+    {
+      "wallMs": 6923.69999999553,
+      "phase": "during-fire",
+      "tick": 66,
+      "attackSeq": 1,
+      "rigAttackSeq": 1,
+      "stage": 0,
+      "input": {
+        "x": 1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2604.200317892212,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": 320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2623.4003178922117,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 19.199999999999818
+    },
+    {
+      "wallMs": 6988.29999999702,
+      "phase": "during-fire",
+      "tick": 68,
+      "attackSeq": 1,
+      "rigAttackSeq": 1,
+      "stage": 0,
+      "input": {
+        "x": 1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2636.200317892212,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": 320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2655.4003178922117,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 19.199999999999818
+    },
+    {
+      "wallMs": 7050.29999999702,
+      "phase": "during-fire",
+      "tick": 69,
+      "attackSeq": 1,
+      "rigAttackSeq": 1,
+      "stage": 0,
+      "input": {
+        "x": 1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2652.200317892212,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": 320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2671.4003178922117,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 19.199999999999818
+    },
+    {
+      "wallMs": 7133,
+      "phase": "during-fire",
+      "tick": 70,
+      "attackSeq": 2,
+      "rigAttackSeq": 2,
+      "stage": 0,
+      "input": {
+        "x": 1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2668.200317892212,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": 320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2687.4003178922117,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 19.199999999999818
+    },
+    {
+      "wallMs": 7220.39999999851,
+      "phase": "during-fire",
+      "tick": 72,
+      "attackSeq": 2,
+      "rigAttackSeq": 2,
+      "stage": 0,
+      "input": {
+        "x": 1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2700.200317892212,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": 320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2719.4003178922117,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 19.199999999999818
+    },
+    {
+      "wallMs": 7279.89999999851,
+      "phase": "during-fire",
+      "tick": 74,
+      "attackSeq": 2,
+      "rigAttackSeq": 2,
+      "stage": 0,
+      "input": {
+        "x": 1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2716.200317892212,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": 0,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2716.200317892212,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 0
+    },
+    {
+      "wallMs": 7373.29999999702,
+      "phase": "during-fire",
+      "tick": 75,
+      "attackSeq": 2,
+      "rigAttackSeq": 2,
+      "stage": 0,
+      "input": {
+        "x": 1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2722.700317892212,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": 130,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2730.500317892212,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 7.800000000000182
+    },
+    {
+      "wallMs": 7449.69999999553,
+      "phase": "during-fire",
+      "tick": 76,
+      "attackSeq": 2,
+      "rigAttackSeq": 2,
+      "stage": 1,
+      "input": {
+        "x": -1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2735.700317892212,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": 260,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2751.3003178922118,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 15.599999999999909
+    },
+    {
+      "wallMs": 7509.69999999553,
+      "phase": "during-fire",
+      "tick": 78,
+      "attackSeq": 2,
+      "rigAttackSeq": 2,
+      "stage": 1,
+      "input": {
+        "x": -1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2767.700317892212,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": 320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2786.9003178922117,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 19.199999999999818
+    },
+    {
+      "wallMs": 7591.60000000149,
+      "phase": "during-fire",
+      "tick": 80,
+      "attackSeq": 2,
+      "rigAttackSeq": 2,
+      "stage": 1,
+      "input": {
+        "x": -1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2799.700317892212,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": 320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2801.684317890781,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 1.9839999985692884
+    },
+    {
+      "wallMs": 7652.5,
+      "phase": "during-fire",
+      "tick": 81,
+      "attackSeq": 2,
+      "rigAttackSeq": 2,
+      "stage": 1,
+      "input": {
+        "x": -1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2784.372314453125,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": -306.55999755859375,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2779.2834173131755,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 5.088897139949495
+    },
+    {
+      "wallMs": 7747.10000000149,
+      "phase": "during-fire",
+      "tick": 84,
+      "attackSeq": 3,
+      "rigAttackSeq": 3,
+      "stage": 1,
+      "input": {
+        "x": -1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2736.372314453125,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": -320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2745.012314453125,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 8.639999999999873
+    },
+    {
+      "wallMs": 7824.89999999851,
+      "phase": "during-fire",
+      "tick": 85,
+      "attackSeq": 3,
+      "rigAttackSeq": 3,
+      "stage": 1,
+      "input": {
+        "x": -1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2720.372314453125,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": -320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2719.668314452171,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 0.7040000009537835
+    },
+    {
+      "wallMs": 7885.5,
+      "phase": "during-fire",
+      "tick": 86,
+      "attackSeq": 3,
+      "rigAttackSeq": 3,
+      "stage": 1,
+      "input": {
+        "x": -1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2704.372314453125,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": -320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2700.1163144516945,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 4.256000001430493
+    },
+    {
+      "wallMs": 7981.89999999851,
+      "phase": "during-fire",
+      "tick": 88,
+      "attackSeq": 3,
+      "rigAttackSeq": 3,
+      "stage": 1,
+      "input": {
+        "x": -1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2672.372314453125,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": -320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2669.2363144516944,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 3.1360000014306024
+    },
+    {
+      "wallMs": 8082.89999999851,
+      "phase": "during-fire",
+      "tick": 90,
+      "attackSeq": 3,
+      "rigAttackSeq": 3,
+      "stage": 1,
+      "input": {
+        "x": -1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2640.372314453125,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": -320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2636.9163144516947,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 3.4560000014303114
+    },
+    {
+      "wallMs": 8142.39999999851,
+      "phase": "during-fire",
+      "tick": 91,
+      "attackSeq": 3,
+      "rigAttackSeq": 3,
+      "stage": 1,
+      "input": {
+        "x": -1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2624.372314453125,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": -320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2617.972314453125,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 6.400000000000091
+    },
+    {
+      "wallMs": 8247.5,
+      "phase": "during-fire",
+      "tick": 93,
+      "attackSeq": 3,
+      "rigAttackSeq": 3,
+      "stage": 1,
+      "input": {
+        "x": -1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2592.372314453125,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": -320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2584.372314453125,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 8
+    },
+    {
+      "wallMs": 8354.69999999553,
+      "phase": "during-fire",
+      "tick": 93,
+      "attackSeq": 3,
+      "rigAttackSeq": 3,
+      "stage": 1,
+      "input": {
+        "x": -1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2592.372314453125,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": -320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2573.172314453125,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 19.199999999999818
+    },
+    {
+      "wallMs": 8415.79999999702,
+      "phase": "during-fire",
+      "tick": 97,
+      "attackSeq": 4,
+      "rigAttackSeq": 4,
+      "stage": 1,
+      "input": {
+        "x": -1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2528.372314453125,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": -320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2531.5083144521714,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 3.135999999046362
+    },
+    {
+      "wallMs": 8488.79999999702,
+      "phase": "during-fire",
+      "tick": 97,
+      "attackSeq": 4,
+      "rigAttackSeq": 4,
+      "stage": 1,
+      "input": {
+        "x": -1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2528.372314453125,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": -320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2509.172314453125,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 19.199999999999818
+    },
+    {
+      "wallMs": 8552.79999999702,
+      "phase": "during-fire",
+      "tick": 100,
+      "attackSeq": 4,
+      "rigAttackSeq": 4,
+      "stage": 2,
+      "input": {
+        "x": 1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2480.372314453125,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": -320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2486.580314452648,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 6.207999999523054
+    },
+    {
+      "wallMs": 8642.19999999553,
+      "phase": "during-fire",
+      "tick": 101,
+      "attackSeq": 4,
+      "rigAttackSeq": 4,
+      "stage": 2,
+      "input": {
+        "x": 1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2464.372314453125,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": -320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2457.9083144521715,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 6.464000000953547
+    },
+    {
+      "wallMs": 8726.79999999702,
+      "phase": "during-fire",
+      "tick": 102,
+      "attackSeq": 4,
+      "rigAttackSeq": 4,
+      "stage": 2,
+      "input": {
+        "x": 1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2479.700317892212,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": 306.55999755859375,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2496.4691536554865,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 16.768835763274637
+    },
+    {
+      "wallMs": 8794.10000000149,
+      "phase": "during-fire",
+      "tick": 105,
+      "attackSeq": 4,
+      "rigAttackSeq": 4,
+      "stage": 2,
+      "input": {
+        "x": 1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2527.700317892212,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": 320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2518.6443178931654,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 9.055999999046435
+    },
+    {
+      "wallMs": 8862.39999999851,
+      "phase": "during-fire",
+      "tick": 106,
+      "attackSeq": 4,
+      "rigAttackSeq": 4,
+      "stage": 2,
+      "input": {
+        "x": 1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2543.700317892212,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": 320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2540.5643178931655,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 3.135999999046362
+    },
+    {
+      "wallMs": 8938.29999999702,
+      "phase": "during-fire",
+      "tick": 106,
+      "attackSeq": 4,
+      "rigAttackSeq": 4,
+      "stage": 2,
+      "input": {
+        "x": 1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2543.700317892212,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": 320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2562.9003178922117,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 19.199999999999818
+    },
+    {
+      "wallMs": 9006.39999999851,
+      "phase": "during-fire",
+      "tick": 108,
+      "attackSeq": 5,
+      "rigAttackSeq": 5,
+      "stage": 2,
+      "input": {
+        "x": 1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2575.700317892212,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": 320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2586.2923178926885,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 10.592000000476673
+    },
+    {
+      "wallMs": 9067.5,
+      "phase": "during-fire",
+      "tick": 109,
+      "attackSeq": 5,
+      "rigAttackSeq": 5,
+      "stage": 2,
+      "input": {
+        "x": 1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2591.700317892212,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": 320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2605.972317892689,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 14.272000000476964
+    },
+    {
+      "wallMs": 9143.69999999553,
+      "phase": "during-fire",
+      "tick": 110,
+      "attackSeq": 5,
+      "rigAttackSeq": 5,
+      "stage": 2,
+      "input": {
+        "x": 1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2607.700317892212,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": 320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2626.9003178922117,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 19.199999999999818
+    },
+    {
+      "wallMs": 9247.29999999702,
+      "phase": "during-fire",
+      "tick": 113,
+      "attackSeq": 5,
+      "rigAttackSeq": 5,
+      "stage": 2,
+      "input": {
+        "x": 1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2655.700317892212,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": 320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2663.6683178941194,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 7.968000001907512
+    },
+    {
+      "wallMs": 9263.69999999553,
+      "phase": "during-fire",
+      "tick": 114,
+      "attackSeq": 5,
+      "rigAttackSeq": 5,
+      "stage": 2,
+      "input": {
+        "x": 1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2671.700317892212,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": 320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2668.948317894119,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 2.7519999980927423
+    },
+    {
+      "wallMs": 9388.89999999851,
+      "phase": "during-fire",
+      "tick": 116,
+      "attackSeq": 5,
+      "rigAttackSeq": 5,
+      "stage": 2,
+      "input": {
+        "x": 1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2703.700317892212,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": 320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2709.076317893642,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 5.376000001430384
+    },
+    {
+      "wallMs": 9481.69999999553,
+      "phase": "during-fire",
+      "tick": 118,
+      "attackSeq": 5,
+      "rigAttackSeq": 5,
+      "stage": 2,
+      "input": {
+        "x": 1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2719.700317892212,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": 0,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2719.700317892212,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 0
+    },
+    {
+      "wallMs": 9591.89999999851,
+      "phase": "during-fire",
+      "tick": 119,
+      "attackSeq": 5,
+      "rigAttackSeq": 5,
+      "stage": 2,
+      "input": {
+        "x": 1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2726.200317892212,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": 130,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2734.000317892212,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 7.800000000000182
+    },
+    {
+      "wallMs": 9650.10000000149,
+      "phase": "during-fire",
+      "tick": 122,
+      "attackSeq": 5,
+      "rigAttackSeq": 5,
+      "stage": 3,
+      "input": {
+        "x": -1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2771.200317892212,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": 320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2764.160317892212,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 7.039999999999964
+    },
+    {
+      "wallMs": 9717.79999999702,
+      "phase": "during-fire",
+      "tick": 123,
+      "attackSeq": 5,
+      "rigAttackSeq": 5,
+      "stage": 3,
+      "input": {
+        "x": -1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2787.200317892212,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": 320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2785.8243178931657,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 1.3759999990461438
+    },
+    {
+      "wallMs": 9791.39999999851,
+      "phase": "during-fire",
+      "tick": 125,
+      "attackSeq": 5,
+      "rigAttackSeq": 5,
+      "stage": 3,
+      "input": {
+        "x": -1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2819.200317892212,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": 320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2809.4403178922116,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 9.760000000000218
+    },
+    {
+      "wallMs": 9856.39999999851,
+      "phase": "during-fire",
+      "tick": 126,
+      "attackSeq": 5,
+      "rigAttackSeq": 5,
+      "stage": 3,
+      "input": {
+        "x": -1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2803.872314453125,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": -306.55999755859375,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2808.685307531628,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 4.812993078503041
+    },
+    {
+      "wallMs": 9949,
+      "phase": "during-fire",
+      "tick": 127,
+      "attackSeq": 5,
+      "rigAttackSeq": 5,
+      "stage": 3,
+      "input": {
+        "x": -1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2787.872314453125,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": -320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2779.3603144526483,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 8.512000000476746
+    },
+    {
+      "wallMs": 10015,
+      "phase": "during-fire",
+      "tick": 128,
+      "attackSeq": 5,
+      "rigAttackSeq": 5,
+      "stage": 3,
+      "input": {
+        "x": -1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2771.872314453125,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": -320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2758.3363144516943,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 13.536000001430693
+    },
+    {
+      "wallMs": 10097.69999999553,
+      "phase": "during-fire",
+      "tick": 131,
+      "attackSeq": 5,
+      "rigAttackSeq": 5,
+      "stage": 3,
+      "input": {
+        "x": -1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2719.700317892212,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": 0,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2719.700317892212,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 0
+    },
+    {
+      "wallMs": 10158.19999999553,
+      "phase": "during-fire",
+      "tick": 132,
+      "attackSeq": 5,
+      "rigAttackSeq": 5,
+      "stage": 3,
+      "input": {
+        "x": -1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2713.200317892212,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": -130,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2714.968317891437,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 1.7679999992251396
+    },
+    {
+      "wallMs": 10239.39999999851,
+      "phase": "during-fire",
+      "tick": 134,
+      "attackSeq": 5,
+      "rigAttackSeq": 5,
+      "stage": 3,
+      "input": {
+        "x": -1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2684.200317892212,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": -320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2693.6543178904835,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 9.453999998271684
+    },
+    {
+      "wallMs": 10295.19999999553,
+      "phase": "during-fire",
+      "tick": 135,
+      "attackSeq": 5,
+      "rigAttackSeq": 5,
+      "stage": 3,
+      "input": {
+        "x": -1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2668.200317892212,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": -320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2676.7123178903043,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 8.511999998092506
+    },
+    {
+      "wallMs": 10389.69999999553,
+      "phase": "during-fire",
+      "tick": 136,
+      "attackSeq": 5,
+      "rigAttackSeq": 5,
+      "stage": 3,
+      "input": {
+        "x": -1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2652.200317892212,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": -320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2646.6323178903044,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 5.568000001907421
+    },
+    {
+      "wallMs": 10450.79999999702,
+      "phase": "during-fire",
+      "tick": 137,
+      "attackSeq": 6,
+      "rigAttackSeq": 6,
+      "stage": 3,
+      "input": {
+        "x": -1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2636.200317892212,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": -320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2627.1123178903044,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 9.088000001907403
+    },
+    {
+      "wallMs": 10518.60000000149,
+      "phase": "during-fire",
+      "tick": 139,
+      "attackSeq": 6,
+      "rigAttackSeq": 6,
+      "stage": 3,
+      "input": {
+        "x": -1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2604.200317892212,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": -320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2605.448317891735,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 1.2479999995230173
+    },
+    {
+      "wallMs": 10578.10000000149,
+      "phase": "during-fire",
+      "tick": 139,
+      "attackSeq": 6,
+      "rigAttackSeq": 6,
+      "stage": 3,
+      "input": {
+        "x": -1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2604.200317892212,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": -320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2586.184317890781,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 18.01600000143071
+    },
+    {
+      "wallMs": 10650.39999999851,
+      "phase": "during-fire",
+      "tick": 141,
+      "attackSeq": 6,
+      "rigAttackSeq": 6,
+      "stage": 3,
+      "input": {
+        "x": -1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2572.200317892212,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": -320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2563.336317891258,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 8.864000000953638
+    },
+    {
+      "wallMs": 10717.60000000149,
+      "phase": "during-fire",
+      "tick": 142,
+      "attackSeq": 6,
+      "rigAttackSeq": 6,
+      "stage": 4,
+      "input": {
+        "x": 1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2556.200317892212,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": -320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2541.640317892212,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 14.559999999999945
+    },
+    {
+      "wallMs": 10780.29999999702,
+      "phase": "during-fire",
+      "tick": 144,
+      "attackSeq": 6,
+      "rigAttackSeq": 6,
+      "stage": 4,
+      "input": {
+        "x": 1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2524.200317892212,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": -320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2523.5923178926887,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 0.6079999995231447
+    },
+    {
+      "wallMs": 10845.19999999553,
+      "phase": "during-fire",
+      "tick": 146,
+      "attackSeq": 6,
+      "rigAttackSeq": 6,
+      "stage": 4,
+      "input": {
+        "x": 1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2492.200317892212,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": -320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2502.8563178936424,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 10.656000001430584
+    },
+    {
+      "wallMs": 10861.89999999851,
+      "phase": "during-fire",
+      "tick": 146,
+      "attackSeq": 6,
+      "rigAttackSeq": 6,
+      "stage": 4,
+      "input": {
+        "x": 1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2492.200317892212,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": -320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2497.448317894119,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 5.248000001907258
+    },
+    {
+      "wallMs": 10971.39999999851,
+      "phase": "during-fire",
+      "tick": 147,
+      "attackSeq": 6,
+      "rigAttackSeq": 6,
+      "stage": 4,
+      "input": {
+        "x": 1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2507.5283203125,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": 306.55999755859375,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2520.710402393948,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 13.182082081447788
+    },
+    {
+      "wallMs": 11046.5,
+      "phase": "during-fire",
+      "tick": 149,
+      "attackSeq": 6,
+      "rigAttackSeq": 6,
+      "stage": 4,
+      "input": {
+        "x": 1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2539.5283203125,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": 320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2544.9363203120233,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 5.4079999995233266
+    },
+    {
+      "wallMs": 11106.89999999851,
+      "phase": "during-fire",
+      "tick": 150,
+      "attackSeq": 6,
+      "rigAttackSeq": 6,
+      "stage": 4,
+      "input": {
+        "x": 1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2555.5283203125,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": 320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2564.5203203105925,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 8.991999998092524
+    },
+    {
+      "wallMs": 11174.29999999702,
+      "phase": "during-fire",
+      "tick": 152,
+      "attackSeq": 6,
+      "rigAttackSeq": 6,
+      "stage": 4,
+      "input": {
+        "x": 1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2587.5283203125,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": 320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2586.1843203115463,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 1.3440000009536561
+    },
+    {
+      "wallMs": 11229.5,
+      "phase": "during-fire",
+      "tick": 154,
+      "attackSeq": 6,
+      "rigAttackSeq": 6,
+      "stage": 4,
+      "input": {
+        "x": 1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2619.5283203125,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": 320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2603.9123203110694,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 15.61600000143062
+    },
+    {
+      "wallMs": 11246.29999999702,
+      "phase": "during-fire",
+      "tick": 154,
+      "attackSeq": 6,
+      "rigAttackSeq": 6,
+      "stage": 4,
+      "input": {
+        "x": 1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2619.5283203125,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": 320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2609.3203203105927,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 10.208000001907294
+    },
+    {
+      "wallMs": 11384.79999999702,
+      "phase": "during-fire",
+      "tick": 155,
+      "attackSeq": 6,
+      "rigAttackSeq": 6,
+      "stage": 4,
+      "input": {
+        "x": 1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2635.5283203125,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": 320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2653.640320310593,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 18.11199999809287
+    },
+    {
+      "wallMs": 11445.5,
+      "phase": "during-fire",
+      "tick": 157,
+      "attackSeq": 6,
+      "rigAttackSeq": 6,
+      "stage": 4,
+      "input": {
+        "x": 1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2667.5283203125,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": 320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2672.680320310593,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 5.151999998092833
+    },
+    {
+      "wallMs": 11532.19999999553,
+      "phase": "during-fire",
+      "tick": 158,
+      "attackSeq": 6,
+      "rigAttackSeq": 6,
+      "stage": 4,
+      "input": {
+        "x": 1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2683.5283203125,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": 320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2700.8083203125,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 17.2800000000002
+    },
+    {
+      "wallMs": 11604.79999999702,
+      "phase": "during-fire",
+      "tick": 161,
+      "attackSeq": 6,
+      "rigAttackSeq": 6,
+      "stage": 4,
+      "input": {
+        "x": 1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2715.5283203125,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": 0,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2715.5283203125,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 0
+    },
+    {
+      "wallMs": 11692.10000000149,
+      "phase": "during-fire",
+      "tick": 162,
+      "attackSeq": 6,
+      "rigAttackSeq": 6,
+      "stage": 4,
+      "input": {
+        "x": 1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2722.0283203125,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": 130,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2723.809320311919,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 1.780999999418782
+    },
+    {
+      "wallMs": 11786.89999999851,
+      "phase": "during-fire",
+      "tick": 165,
+      "attackSeq": 6,
+      "rigAttackSeq": 6,
+      "stage": 4,
+      "input": {
+        "x": 1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2767.0283203125,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": 320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2758.9963203120233,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 8.032000000476728
+    },
+    {
+      "wallMs": 11865.10000000149,
+      "phase": "during-fire",
+      "tick": 165,
+      "attackSeq": 6,
+      "rigAttackSeq": 6,
+      "stage": 5,
+      "input": {
+        "x": -1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2767.0283203125,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": 320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2783.9883203125,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 16.960000000000036
+    },
+    {
+      "wallMs": 11922.69999999553,
+      "phase": "during-fire",
+      "tick": 166,
+      "attackSeq": 6,
+      "rigAttackSeq": 6,
+      "stage": 5,
+      "input": {
+        "x": -1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2783.0283203125,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": 320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2802.2283203125,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 19.199999999999818
+    },
+    {
+      "wallMs": 11982.5,
+      "phase": "during-fire",
+      "tick": 168,
+      "attackSeq": 7,
+      "rigAttackSeq": 7,
+      "stage": 5,
+      "input": {
+        "x": -1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2815.0283203125,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": 320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2821.236320312023,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 6.207999999523054
+    },
+    {
+      "wallMs": 12057.79999999702,
+      "phase": "during-fire",
+      "tick": 170,
+      "attackSeq": 7,
+      "rigAttackSeq": 7,
+      "stage": 5,
+      "input": {
+        "x": -1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2783.700317892212,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": -320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2785.266718013226,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 1.5664001210143397
+    },
+    {
+      "wallMs": 12141.79999999702,
+      "phase": "during-fire",
+      "tick": 170,
+      "attackSeq": 7,
+      "rigAttackSeq": 7,
+      "stage": 5,
+      "input": {
+        "x": -1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2783.700317892212,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": -320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2764.903516440039,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 18.796801452172986
+    },
+    {
+      "wallMs": 12199,
+      "phase": "during-fire",
+      "tick": 172,
+      "attackSeq": 7,
+      "rigAttackSeq": 7,
+      "stage": 5,
+      "input": {
+        "x": -1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2751.700317892212,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": -320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2740.020317892212,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 11.679999999999836
+    },
+    {
+      "wallMs": 12289.5,
+      "phase": "during-fire",
+      "tick": 174,
+      "attackSeq": 7,
+      "rigAttackSeq": 7,
+      "stage": 5,
+      "input": {
+        "x": -1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2719.700317892212,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": -320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2711.028317891735,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 8.672000000477055
+    },
+    {
+      "wallMs": 12378.5,
+      "phase": "during-fire",
+      "tick": 176,
+      "attackSeq": 7,
+      "rigAttackSeq": 7,
+      "stage": 5,
+      "input": {
+        "x": -1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2687.700317892212,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": -320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2682.452317892689,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 5.247999999523017
+    },
+    {
+      "wallMs": 12395.79999999702,
+      "phase": "during-fire",
+      "tick": 177,
+      "attackSeq": 7,
+      "rigAttackSeq": 7,
+      "stage": 5,
+      "input": {
+        "x": -1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2671.700317892212,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": -320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2676.8843178907814,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 5.183999998569561
+    },
+    {
+      "wallMs": 12539.19999999553,
+      "phase": "during-fire",
+      "tick": 178,
+      "attackSeq": 7,
+      "rigAttackSeq": 7,
+      "stage": 5,
+      "input": {
+        "x": -1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2655.700317892212,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": -320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2636.500317892212,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 19.199999999999818
+    },
+    {
+      "wallMs": 12599.29999999702,
+      "phase": "during-fire",
+      "tick": 181,
+      "attackSeq": 7,
+      "rigAttackSeq": 7,
+      "stage": 5,
+      "input": {
+        "x": -1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2607.700317892212,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": -320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2611.9243178907814,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 4.223999998569525
+    },
+    {
+      "wallMs": 12674.29999999702,
+      "phase": "during-fire",
+      "tick": 182,
+      "attackSeq": 7,
+      "rigAttackSeq": 7,
+      "stage": 5,
+      "input": {
+        "x": -1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2591.700317892212,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": -320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2587.8603178922117,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 3.8400000000001455
+    },
+    {
+      "wallMs": 12776.39999999851,
+      "phase": "during-fire",
+      "tick": 184,
+      "attackSeq": 7,
+      "rigAttackSeq": 7,
+      "stage": 5,
+      "input": {
+        "x": -1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2559.700317892212,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": -320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2555.0923178926887,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 4.607999999523145
+    },
+    {
+      "wallMs": 12853.69999999553,
+      "phase": "during-fire",
+      "tick": 185,
+      "attackSeq": 7,
+      "rigAttackSeq": 7,
+      "stage": 5,
+      "input": {
+        "x": -1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2543.700317892212,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": -320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2530.356317891258,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 13.344000000953656
+    },
+    {
+      "wallMs": 12915.5,
+      "phase": "during-fire",
+      "tick": 186,
+      "attackSeq": 7,
+      "rigAttackSeq": 7,
+      "stage": 5,
+      "input": {
+        "x": -1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2527.700317892212,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": -320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2510.644317890781,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 17.056000001430675
+    },
+    {
+      "wallMs": 13005.19999999553,
+      "phase": "during-fire",
+      "tick": 189,
+      "attackSeq": 7,
+      "rigAttackSeq": 7,
+      "stage": 6,
+      "input": {
+        "x": 1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2479.700317892212,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": -320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2481.908317891735,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 2.2079999995230537
+    },
+    {
+      "wallMs": 13065,
+      "phase": "during-fire",
+      "tick": 190,
+      "attackSeq": 7,
+      "rigAttackSeq": 7,
+      "stage": 6,
+      "input": {
+        "x": 1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2463.700317892212,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": -320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2462.7723178926885,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 0.9279999995233084
+    },
+    {
+      "wallMs": 13140,
+      "phase": "during-fire",
+      "tick": 191,
+      "attackSeq": 7,
+      "rigAttackSeq": 7,
+      "stage": 6,
+      "input": {
+        "x": 1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2447.700317892212,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": -320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2438.740317892212,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 8.960000000000036
+    },
+    {
+      "wallMs": 13216.60000000149,
+      "phase": "during-fire",
+      "tick": 192,
+      "attackSeq": 7,
+      "rigAttackSeq": 7,
+      "stage": 6,
+      "input": {
+        "x": 1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2463.0283203125,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": 306.55999755859375,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2479.827810966506,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 16.79949065400615
+    },
+    {
+      "wallMs": 13277.29999999702,
+      "phase": "during-fire",
+      "tick": 194,
+      "attackSeq": 7,
+      "rigAttackSeq": 7,
+      "stage": 6,
+      "input": {
+        "x": 1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2495.0283203125,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": 320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2499.8283203125,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 4.800000000000182
+    },
+    {
+      "wallMs": 13330.39999999851,
+      "phase": "during-fire",
+      "tick": 195,
+      "attackSeq": 7,
+      "rigAttackSeq": 7,
+      "stage": 6,
+      "input": {
+        "x": 1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2511.0283203125,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": 320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2516.9483203125,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 5.920000000000073
+    },
+    {
+      "wallMs": 13397.5,
+      "phase": "during-fire",
+      "tick": 196,
+      "attackSeq": 7,
+      "rigAttackSeq": 7,
+      "stage": 6,
+      "input": {
+        "x": 1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2527.0283203125,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": 320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2538.420320312977,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 11.392000000476855
+    },
+    {
+      "wallMs": 13461.29999999702,
+      "phase": "during-fire",
+      "tick": 198,
+      "attackSeq": 8,
+      "rigAttackSeq": 8,
+      "stage": 6,
+      "input": {
+        "x": 1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2559.0283203125,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": 320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2558.7083203125,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 0.3200000000001637
+    },
+    {
+      "wallMs": 13544.60000000149,
+      "phase": "during-fire",
+      "tick": 198,
+      "attackSeq": 8,
+      "rigAttackSeq": 8,
+      "stage": 6,
+      "input": {
+        "x": 1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2559.0283203125,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": 320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2578.2283203125,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 19.199999999999818
+    },
+    {
+      "wallMs": 13562.10000000149,
+      "phase": "during-fire",
+      "tick": 200,
+      "attackSeq": 8,
+      "rigAttackSeq": 8,
+      "stage": 6,
+      "input": {
+        "x": 1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2591.0283203125,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": 320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2590.900320312977,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 0.12799999952312646
+    },
+    {
+      "wallMs": 13666.60000000149,
+      "phase": "during-fire",
+      "tick": 202,
+      "attackSeq": 8,
+      "rigAttackSeq": 8,
+      "stage": 6,
+      "input": {
+        "x": 1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2623.0283203125,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": 320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2624.1483203125,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 1.1199999999998909
+    },
+    {
+      "wallMs": 13738.29999999702,
+      "phase": "during-fire",
+      "tick": 203,
+      "attackSeq": 8,
+      "rigAttackSeq": 8,
+      "stage": 6,
+      "input": {
+        "x": 1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2639.0283203125,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": 320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2647.0603203129767,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 8.032000000476728
+    },
+    {
+      "wallMs": 13800.79999999702,
+      "phase": "during-fire",
+      "tick": 204,
+      "attackSeq": 8,
+      "rigAttackSeq": 8,
+      "stage": 6,
+      "input": {
+        "x": 1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2655.0283203125,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": 320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2667.4123203134536,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 12.38400000095362
+    },
+    {
+      "wallMs": 13867.5,
+      "phase": "during-fire",
+      "tick": 205,
+      "attackSeq": 8,
+      "rigAttackSeq": 8,
+      "stage": 6,
+      "input": {
+        "x": 1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2671.0283203125,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": 320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2688.756320312023,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 17.727999999523036
+    },
+    {
+      "wallMs": 13958.89999999851,
+      "phase": "during-fire",
+      "tick": 206,
+      "attackSeq": 8,
+      "rigAttackSeq": 8,
+      "stage": 7,
+      "input": {
+        "x": -1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2687.0283203125,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": 320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2706.2283203125,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 19.199999999999818
+    },
+    {
+      "wallMs": 14017.69999999553,
+      "phase": "during-fire",
+      "tick": 209,
+      "attackSeq": 8,
+      "rigAttackSeq": 8,
+      "stage": 7,
+      "input": {
+        "x": -1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2719.0283203125,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": 0,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2719.0283203125,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 0
+    },
+    {
+      "wallMs": 14096.5,
+      "phase": "during-fire",
+      "tick": 209,
+      "attackSeq": 8,
+      "rigAttackSeq": 8,
+      "stage": 7,
+      "input": {
+        "x": -1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2719.0283203125,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": 0,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2719.0283203125,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 0
+    },
+    {
+      "wallMs": 14156,
+      "phase": "during-fire",
+      "tick": 211,
+      "attackSeq": 8,
+      "rigAttackSeq": 8,
+      "stage": 7,
+      "input": {
+        "x": -1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2738.5283203125,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": 260,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2747.0108203125,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 8.482500000000073
+    },
+    {
+      "wallMs": 14172.39999999851,
+      "phase": "during-fire",
+      "tick": 212,
+      "attackSeq": 8,
+      "rigAttackSeq": 8,
+      "stage": 7,
+      "input": {
+        "x": -1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2725.5283203125,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": -260,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2722.876320311725,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 2.652000000774933
+    },
+    {
+      "wallMs": 14304.19999999553,
+      "phase": "during-fire",
+      "tick": 212,
+      "attackSeq": 8,
+      "rigAttackSeq": 8,
+      "stage": 7,
+      "input": {
+        "x": -1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2725.5283203125,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": -260,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2709.9283203125,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 15.599999999999909
+    },
+    {
+      "wallMs": 14369.29999999702,
+      "phase": "during-fire",
+      "tick": 216,
+      "attackSeq": 8,
+      "rigAttackSeq": 8,
+      "stage": 7,
+      "input": {
+        "x": -1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2661.5283203125,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": -320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2659.2883203125,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 2.2399999999997817
+    },
+    {
+      "wallMs": 14445.19999999553,
+      "phase": "during-fire",
+      "tick": 217,
+      "attackSeq": 8,
+      "rigAttackSeq": 8,
+      "stage": 7,
+      "input": {
+        "x": -1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2645.5283203125,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": -320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2634.904320311546,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 10.624000000953856
+    },
+    {
+      "wallMs": 14509.60000000149,
+      "phase": "during-fire",
+      "tick": 218,
+      "attackSeq": 8,
+      "rigAttackSeq": 8,
+      "stage": 7,
+      "input": {
+        "x": -1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2629.5283203125,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": -320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2614.360320312977,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 15.16799999952309
+    },
+    {
+      "wallMs": 14583.39999999851,
+      "phase": "during-fire",
+      "tick": 219,
+      "attackSeq": 8,
+      "rigAttackSeq": 8,
+      "stage": 7,
+      "input": {
+        "x": -1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2613.5283203125,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": -320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2594.3283203125,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 19.199999999999818
+    },
+    {
+      "wallMs": 14644.19999999553,
+      "phase": "during-fire",
+      "tick": 221,
+      "attackSeq": 8,
+      "rigAttackSeq": 8,
+      "stage": 7,
+      "input": {
+        "x": -1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2581.5283203125,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": -320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2571.256320312023,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 10.272000000476964
+    },
+    {
+      "wallMs": 14712.10000000149,
+      "phase": "during-fire",
+      "tick": 222,
+      "attackSeq": 8,
+      "rigAttackSeq": 8,
+      "stage": 7,
+      "input": {
+        "x": -1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2565.5283203125,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": -320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2550.0723203110697,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 15.456000001430311
+    },
+    {
+      "wallMs": 14774.79999999702,
+      "phase": "during-fire",
+      "tick": 224,
+      "attackSeq": 8,
+      "rigAttackSeq": 8,
+      "stage": 7,
+      "input": {
+        "x": -1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2533.5283203125,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": -320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2535.736320312023,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 2.2079999995230537
+    },
+    {
+      "wallMs": 14843.10000000149,
+      "phase": "during-fire",
+      "tick": 225,
+      "attackSeq": 8,
+      "rigAttackSeq": 8,
+      "stage": 7,
+      "input": {
+        "x": -1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2517.5283203125,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": -320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2513.7843203115463,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 3.744000000953747
+    },
+    {
+      "wallMs": 14915.19999999553,
+      "phase": "during-fire",
+      "tick": 226,
+      "attackSeq": 8,
+      "rigAttackSeq": 8,
+      "stage": 7,
+      "input": {
+        "x": -1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2501.5283203125,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": -320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2490.776320312023,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 10.752000000476983
+    },
+    {
+      "wallMs": 14983,
+      "phase": "during-fire",
+      "tick": 227,
+      "attackSeq": 9,
+      "rigAttackSeq": 9,
+      "stage": 7,
+      "input": {
+        "x": -1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2485.5283203125,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": -320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2469.3043203115462,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 16.224000000953765
+    },
+    {
+      "wallMs": 15050.5,
+      "phase": "during-fire",
+      "tick": 229,
+      "attackSeq": 9,
+      "rigAttackSeq": 9,
+      "stage": 7,
+      "input": {
+        "x": -1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2453.5283203125,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": -320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2447.7043203115463,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 5.824000000953674
+    },
+    {
+      "wallMs": 15159,
+      "phase": "during-fire",
+      "tick": 232,
+      "attackSeq": 9,
+      "rigAttackSeq": 9,
+      "stage": 7,
+      "input": {
+        "x": -1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2405.5283203125,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": -320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2409.112320313454,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 3.5840000009538926
+    },
+    {
+      "wallMs": 15232.60000000149,
+      "phase": "during-fire",
+      "tick": 232,
+      "attackSeq": 9,
+      "rigAttackSeq": 9,
+      "stage": 7,
+      "input": {
+        "x": -1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2405.5283203125,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": -320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2386.3283203125,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 19.199999999999818
+    },
+    {
+      "wallMs": 15291.79999999702,
+      "phase": "during-fire",
+      "tick": 234,
+      "attackSeq": 9,
+      "rigAttackSeq": 9,
+      "stage": 7,
+      "input": {
+        "x": -1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2373.5283203125,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": -320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2366.5523203134535,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 6.975999999046508
+    },
+    {
+      "wallMs": 15353.39999999851,
+      "phase": "during-fire",
+      "tick": 236,
+      "attackSeq": 9,
+      "rigAttackSeq": 9,
+      "stage": 7,
+      "input": {
+        "x": -1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2341.5283203125,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": -320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2346.8723203134537,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 5.344000000953656
+    },
+    {
+      "wallMs": 15427.19999999553,
+      "phase": "during-fire",
+      "tick": 237,
+      "attackSeq": 9,
+      "rigAttackSeq": 9,
+      "stage": 7,
+      "input": {
+        "x": -1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2325.5283203125,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": -320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2323.192320313454,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 2.33599999904618
+    },
+    {
+      "wallMs": 15502.5,
+      "phase": "post-fire",
+      "tick": 239,
+      "attackSeq": 9,
+      "rigAttackSeq": 9,
+      "stage": 7,
+      "input": {
+        "x": 1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2293.5283203125,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": -320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2299.192320313454,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 5.66400000095382
+    },
+    {
+      "wallMs": 15566.10000000149,
+      "phase": "post-fire",
+      "tick": 240,
+      "attackSeq": 9,
+      "rigAttackSeq": 9,
+      "stage": 7,
+      "input": {
+        "x": 1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2277.5283203125,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": -320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2279.1603203129766,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 1.632000000476637
+    },
+    {
+      "wallMs": 15624.10000000149,
+      "phase": "post-fire",
+      "tick": 240,
+      "attackSeq": 9,
+      "rigAttackSeq": 9,
+      "stage": 7,
+      "input": {
+        "x": 1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2277.5283203125,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": -320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2260.376320314407,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 17.151999998092833
+    },
+    {
+      "wallMs": 15698.39999999851,
+      "phase": "post-fire",
+      "tick": 241,
+      "attackSeq": 9,
+      "rigAttackSeq": 9,
+      "stage": 7,
+      "input": {
+        "x": 1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2292.856317892212,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": 306.55999755859375,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2311.249914987866,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 18.39359709565406
+    },
+    {
+      "wallMs": 15759.69999999553,
+      "phase": "post-fire",
+      "tick": 243,
+      "attackSeq": 9,
+      "rigAttackSeq": 9,
+      "stage": 7,
+      "input": {
+        "x": 1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2324.856317892212,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": 320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2337.656317892212,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 12.800000000000182
+    },
+    {
+      "wallMs": 15830.29999999702,
+      "phase": "post-fire",
+      "tick": 245,
+      "attackSeq": 9,
+      "rigAttackSeq": 9,
+      "stage": 7,
+      "input": {
+        "x": 1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2356.856317892212,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": 320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2360.1843178917347,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 3.3279999995229446
+    },
+    {
+      "wallMs": 15920.89999999851,
+      "phase": "post-fire",
+      "tick": 247,
+      "attackSeq": 9,
+      "rigAttackSeq": 9,
+      "stage": 7,
+      "input": {
+        "x": 1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2388.856317892212,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": 320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2389.2083178903044,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 0.35199999809265137
+    },
+    {
+      "wallMs": 16008.69999999553,
+      "phase": "post-fire",
+      "tick": 248,
+      "attackSeq": 9,
+      "rigAttackSeq": 9,
+      "stage": 7,
+      "input": {
+        "x": 1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2404.856317892212,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": 320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2417.304317891735,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 12.44799999952329
+    },
+    {
+      "wallMs": 16066.89999999851,
+      "phase": "post-fire",
+      "tick": 250,
+      "attackSeq": 9,
+      "rigAttackSeq": 9,
+      "stage": 7,
+      "input": {
+        "x": 1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2436.856317892212,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": 320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2435.8963178922118,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 0.9600000000000364
+    },
+    {
+      "wallMs": 16158.79999999702,
+      "phase": "post-fire",
+      "tick": 251,
+      "attackSeq": 9,
+      "rigAttackSeq": 9,
+      "stage": 7,
+      "input": {
+        "x": 1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2452.856317892212,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": 320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2465.304317891735,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 12.44799999952329
+    },
+    {
+      "wallMs": 16210.39999999851,
+      "phase": "post-fire",
+      "tick": 253,
+      "attackSeq": 9,
+      "rigAttackSeq": 9,
+      "stage": 7,
+      "input": {
+        "x": 1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2484.856317892212,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": 320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2481.8803178907815,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 2.976000001430293
+    },
+    {
+      "wallMs": 16310.29999999702,
+      "phase": "post-fire",
+      "tick": 255,
+      "attackSeq": 9,
+      "rigAttackSeq": 9,
+      "stage": 7,
+      "input": {
+        "x": 1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2516.856317892212,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": 320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2513.784317891735,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 3.0720000004766916
+    },
+    {
+      "wallMs": 16410.79999999702,
+      "phase": "post-fire",
+      "tick": 256,
+      "attackSeq": 9,
+      "rigAttackSeq": 9,
+      "stage": 7,
+      "input": {
+        "x": 1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2532.856317892212,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": 320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2545.9763178922117,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 13.11999999999989
+    },
+    {
+      "wallMs": 16470.19999999553,
+      "phase": "post-fire",
+      "tick": 257,
+      "attackSeq": 9,
+      "rigAttackSeq": 9,
+      "stage": 7,
+      "input": {
+        "x": 1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2548.856317892212,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": 320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2564.952317891258,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 16.0959999990464
+    },
+    {
+      "wallMs": 16534,
+      "phase": "post-fire",
+      "tick": 259,
+      "attackSeq": 9,
+      "rigAttackSeq": 9,
+      "stage": 7,
+      "input": {
+        "x": 1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2580.856317892212,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": 320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2585.464317891735,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 4.607999999523145
+    },
+    {
+      "wallMs": 16604.79999999702,
+      "phase": "post-fire",
+      "tick": 261,
+      "attackSeq": 9,
+      "rigAttackSeq": 9,
+      "stage": 7,
+      "input": {
+        "x": 1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2612.856317892212,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": 320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2608.024317891735,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 4.83200000047691
+    },
+    {
+      "wallMs": 16681.29999999702,
+      "phase": "post-fire",
+      "tick": 262,
+      "attackSeq": 9,
+      "rigAttackSeq": 9,
+      "stage": 7,
+      "input": {
+        "x": 1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2628.856317892212,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": 320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2632.6003178907813,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 3.7439999985695067
+    },
+    {
+      "wallMs": 16789,
+      "phase": "post-fire",
+      "tick": 264,
+      "attackSeq": 9,
+      "rigAttackSeq": 9,
+      "stage": 7,
+      "input": {
+        "x": 1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2660.856317892212,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": 320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2667.032317891258,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 6.175999999046326
+    },
+    {
+      "wallMs": 16847.5,
+      "phase": "post-fire",
+      "tick": 265,
+      "attackSeq": 9,
+      "rigAttackSeq": 9,
+      "stage": 7,
+      "input": {
+        "x": 1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2676.856317892212,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": 320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2685.6883178903045,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 8.83199999809267
+    },
+    {
+      "wallMs": 16916.89999999851,
+      "phase": "post-fire",
+      "tick": 267,
+      "attackSeq": 9,
+      "rigAttackSeq": 9,
+      "stage": 7,
+      "input": {
+        "x": 1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2708.856317892212,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": 320,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2707.9603178907814,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 0.896000001430366
+    },
+    {
+      "wallMs": 16973.39999999851,
+      "phase": "post-fire",
+      "tick": 269,
+      "attackSeq": 9,
+      "rigAttackSeq": 9,
+      "stage": 7,
+      "input": {
+        "x": 1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2708.856317892212,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": 0,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2708.856317892212,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 0
+    },
+    {
+      "wallMs": 17030.60000000149,
+      "phase": "post-fire",
+      "tick": 269,
+      "attackSeq": 9,
+      "rigAttackSeq": 9,
+      "stage": 7,
+      "input": {
+        "x": 1,
+        "y": 0
+      },
+      "authority": {
+        "x": 2708.856317892212,
+        "y": 2476.937255859375,
+        "vx": 0,
+        "vy": 0,
+        "mvx": 0,
+        "mvy": 0
+      },
+      "rendered": {
+        "x": 2708.856317892212,
+        "y": 2476.937255859375
+      },
+      "renderAuthorityDeltaPx": 0
+    }
+  ],
+  "rounds": [
+    {
+      "id": "p0",
+      "bornTick": 58,
+      "observedTick": 59,
+      "attackSeq": 1,
+      "rigAttackSeq": 1,
+      "vx": 1300,
+      "vy": 0.0001604770659469068,
+      "authorityOrigin": {
+        "x": 2614.014404296875,
+        "y": 2466.0925132491684
+      },
+      "visibleSpawnOrigin": {
+        "x": 2607.514501953125,
+        "y": 2466.092568359375
+      },
+      "spriteMuzzleAtSpawn": {
+        "x": 2607.514501953125,
+        "y": 2466.092568359375
+      },
+      "admissionDeltaPx": 0,
+      "authorityMuzzleDeltaPx": 6.499902343983538,
+      "track": [
+        {
+          "wallMs": 6526.79999999702,
+          "sceneNow": 6521.5,
+          "deltaSec": 0.016666666666666663,
+          "x": 2607.514501953125,
+          "y": 2466.092568359375,
+          "serverX": 2744.014404296875,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 6641.69999999553,
+          "sceneNow": 6639.60000000149,
+          "deltaSec": 0.016666666666666663,
+          "x": 2629.1811686197916,
+          "y": 2466.092571033993,
+          "serverX": 2874.014404296875,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 6718,
+          "sceneNow": 6716.69999999553,
+          "deltaSec": 0.016666666666666663,
+          "x": 2650.847835286458,
+          "y": 2466.092573708611,
+          "serverX": 3004.014404296875,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 6774.89999999851,
+          "sceneNow": 6773.39999999851,
+          "deltaSec": 0.016666666666666663,
+          "x": 2672.5145019531246,
+          "y": 2466.092576383229,
+          "serverX": 3004.014404296875,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 6853.10000000149,
+          "sceneNow": 6851.19999999553,
+          "deltaSec": 0.016666666666666663,
+          "x": 2694.181168619791,
+          "y": 2466.0925790578467,
+          "serverX": 3199.014404296875,
+          "serverY": 2466.092529296875
+        }
+      ],
+      "roundIndex": 0,
+      "burstOrdinal": 1,
+      "roundOrdinal": 1,
+      "pathErrorPx": 6.431098710768743e-13
+    },
+    {
+      "id": "p1",
+      "bornTick": 59,
+      "observedTick": 59,
+      "attackSeq": 1,
+      "rigAttackSeq": 1,
+      "vx": 1300,
+      "vy": 0.00016481922648381442,
+      "authorityOrigin": {
+        "x": 2624.3182320445203,
+        "y": 2466.0925210559135
+      },
+      "visibleSpawnOrigin": {
+        "x": 2607.514501953125,
+        "y": 2466.092568359375
+      },
+      "spriteMuzzleAtSpawn": {
+        "x": 2607.514501953125,
+        "y": 2466.092568359375
+      },
+      "admissionDeltaPx": 0,
+      "authorityMuzzleDeltaPx": 16.803730091461787,
+      "track": [
+        {
+          "wallMs": 6526.79999999702,
+          "sceneNow": 6521.5,
+          "deltaSec": 0.016666666666666663,
+          "x": 2607.514501953125,
+          "y": 2466.092568359375,
+          "serverX": 2689.3182320445203,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 6641.69999999553,
+          "sceneNow": 6639.60000000149,
+          "deltaSec": 0.016666666666666663,
+          "x": 2629.1811686197916,
+          "y": 2466.0925711063624,
+          "serverX": 2819.3182320445194,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 6718,
+          "sceneNow": 6716.69999999553,
+          "deltaSec": 0.016666666666666663,
+          "x": 2650.847835286458,
+          "y": 2466.0925738533497,
+          "serverX": 2949.3182320445185,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 6774.89999999851,
+          "sceneNow": 6773.39999999851,
+          "deltaSec": 0.016666666666666663,
+          "x": 2672.5145019531246,
+          "y": 2466.092576600337,
+          "serverX": 2949.3182320445185,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 6853.10000000149,
+          "sceneNow": 6851.19999999553,
+          "deltaSec": 0.016666666666666663,
+          "x": 2694.181168619791,
+          "y": 2466.0925793473243,
+          "serverX": 3144.318232044517,
+          "serverY": 2466.092529296875
+        }
+      ],
+      "roundIndex": 1,
+      "burstOrdinal": 1,
+      "roundOrdinal": 2,
+      "pathErrorPx": 1.016845989170083e-12
+    },
+    {
+      "id": "p2",
+      "bornTick": 60,
+      "observedTick": 61,
+      "attackSeq": 1,
+      "rigAttackSeq": 1,
+      "vx": 1300,
+      "vy": 0.00017049623420462012,
+      "authorityOrigin": {
+        "x": 2640.318232078604,
+        "y": 2466.0925122472518
+      },
+      "visibleSpawnOrigin": {
+        "x": 2637.6211701095835,
+        "y": 2466.092568359375
+      },
+      "spriteMuzzleAtSpawn": {
+        "x": 2637.6211701095835,
+        "y": 2466.092568359375
+      },
+      "admissionDeltaPx": 0,
+      "authorityMuzzleDeltaPx": 2.6970619696042273,
+      "track": [
+        {
+          "wallMs": 6641.69999999553,
+          "sceneNow": 6639.60000000149,
+          "deltaSec": 0.016666666666666663,
+          "x": 2637.6211701095835,
+          "y": 2466.092568359375,
+          "serverX": 2770.318232078604,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 6718,
+          "sceneNow": 6716.69999999553,
+          "deltaSec": 0.016666666666666663,
+          "x": 2659.28783677625,
+          "y": 2466.092571200979,
+          "serverX": 2900.318232078603,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 6774.89999999851,
+          "sceneNow": 6773.39999999851,
+          "deltaSec": 0.016666666666666663,
+          "x": 2680.9545034429166,
+          "y": 2466.092574042583,
+          "serverX": 2900.318232078603,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 6853.10000000149,
+          "sceneNow": 6851.19999999553,
+          "deltaSec": 0.016666666666666663,
+          "x": 2702.621170109583,
+          "y": 2466.0925768841867,
+          "serverX": 3095.318232078602,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 6923.69999999553,
+          "sceneNow": 6922.5,
+          "deltaSec": 0.016666666666666663,
+          "x": 2724.2878367762496,
+          "y": 2466.0925797257905,
+          "serverX": 3095.318232078602,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 6988.29999999702,
+          "sceneNow": 6987.39999999851,
+          "deltaSec": 0.016666666666666663,
+          "x": 2745.954503442916,
+          "y": 2466.0925825673944,
+          "serverX": 3225.318232078601,
+          "serverY": 2466.092529296875
+        }
+      ],
+      "roundIndex": 2,
+      "burstOrdinal": 1,
+      "roundOrdinal": 3,
+      "pathErrorPx": 9.094947017729282e-13
+    },
+    {
+      "id": "p3",
+      "bornTick": 61,
+      "observedTick": 61,
+      "attackSeq": 1,
+      "rigAttackSeq": 1,
+      "vx": 1300,
+      "vy": 0.0001765788038028404,
+      "authorityOrigin": {
+        "x": 2656.3182321151207,
+        "y": 2466.0925204679347
+      },
+      "visibleSpawnOrigin": {
+        "x": 2637.6211701095835,
+        "y": 2466.092568359375
+      },
+      "spriteMuzzleAtSpawn": {
+        "x": 2637.6211701095835,
+        "y": 2466.092568359375
+      },
+      "admissionDeltaPx": 0,
+      "authorityMuzzleDeltaPx": 18.697062005598525,
+      "track": [
+        {
+          "wallMs": 6641.69999999553,
+          "sceneNow": 6639.60000000149,
+          "deltaSec": 0.016666666666666663,
+          "x": 2637.6211701095835,
+          "y": 2466.092568359375,
+          "serverX": 2721.3182321151207,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 6718,
+          "sceneNow": 6716.69999999553,
+          "deltaSec": 0.016666666666666663,
+          "x": 2659.28783677625,
+          "y": 2466.0925713023553,
+          "serverX": 2851.31823211512,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 6774.89999999851,
+          "sceneNow": 6773.39999999851,
+          "deltaSec": 0.016666666666666663,
+          "x": 2680.9545034429166,
+          "y": 2466.0925742453355,
+          "serverX": 2851.31823211512,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 6853.10000000149,
+          "sceneNow": 6851.19999999553,
+          "deltaSec": 0.016666666666666663,
+          "x": 2702.621170109583,
+          "y": 2466.0925771883158,
+          "serverX": 3046.3182321151185,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 6923.69999999553,
+          "sceneNow": 6922.5,
+          "deltaSec": 0.016666666666666663,
+          "x": 2724.2878367762496,
+          "y": 2466.092580131296,
+          "serverX": 3046.3182321151185,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 6988.29999999702,
+          "sceneNow": 6987.39999999851,
+          "deltaSec": 0.016666666666666663,
+          "x": 2745.954503442916,
+          "y": 2466.0925830742763,
+          "serverX": 3176.3182321151176,
+          "serverY": 2466.092529296875
+        }
+      ],
+      "roundIndex": 3,
+      "burstOrdinal": 1,
+      "roundOrdinal": 4,
+      "pathErrorPx": 1.2862197421537486e-12
+    },
+    {
+      "id": "p4",
+      "bornTick": 70,
+      "observedTick": 70,
+      "attackSeq": 2,
+      "rigAttackSeq": 2,
+      "vx": 1300,
+      "vy": 0.00018164100765716285,
+      "authorityOrigin": {
+        "x": 2803.014404296875,
+        "y": 2466.0925202148246
+      },
+      "visibleSpawnOrigin": {
+        "x": 2804.718203125,
+        "y": 2466.092568359375
+      },
+      "spriteMuzzleAtSpawn": {
+        "x": 2804.718203125,
+        "y": 2466.092568359375
+      },
+      "admissionDeltaPx": 0,
+      "authorityMuzzleDeltaPx": 1.7037988288051598,
+      "track": [
+        {
+          "wallMs": 7133,
+          "sceneNow": 7130,
+          "deltaSec": 0.016666666666666663,
+          "x": 2804.718203125,
+          "y": 2466.092568359375,
+          "serverX": 2868.014404296875,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 7220.39999999851,
+          "sceneNow": 7217.89999999851,
+          "deltaSec": 0.016666666666666663,
+          "x": 2826.3848697916665,
+          "y": 2466.092571386725,
+          "serverX": 2998.014404296875,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 7279.89999999851,
+          "sceneNow": 7276.10000000149,
+          "deltaSec": 0.016666666666666663,
+          "x": 2848.051536458333,
+          "y": 2466.092574414075,
+          "serverX": 3128.014404296875,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 7373.29999999702,
+          "sceneNow": 7371.79999999702,
+          "deltaSec": 0.016666666666666663,
+          "x": 2869.7182031249995,
+          "y": 2466.092577441425,
+          "serverX": 3193.014404296875,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 7449.69999999553,
+          "sceneNow": 7447.79999999702,
+          "deltaSec": 0.016666666666666663,
+          "x": 2891.384869791666,
+          "y": 2466.092580468775,
+          "serverX": 3258.014404296875,
+          "serverY": 2466.092529296875
+        }
+      ],
+      "roundIndex": 4,
+      "burstOrdinal": 2,
+      "roundOrdinal": 1,
+      "pathErrorPx": 6.431098710768743e-13
+    },
+    {
+      "id": "p5",
+      "bornTick": 71,
+      "observedTick": 72,
+      "attackSeq": 2,
+      "rigAttackSeq": 2,
+      "vx": 1300,
+      "vy": 0.00018856067617889494,
+      "authorityOrigin": {
+        "x": 2816.3182321870554,
+        "y": 2466.0925104408075
+      },
+      "visibleSpawnOrigin": {
+        "x": 2821.1211701095835,
+        "y": 2466.092568359375
+      },
+      "spriteMuzzleAtSpawn": {
+        "x": 2821.1211701095835,
+        "y": 2466.092568359375
+      },
+      "admissionDeltaPx": 0,
+      "authorityMuzzleDeltaPx": 4.802937922877365,
+      "track": [
+        {
+          "wallMs": 7220.39999999851,
+          "sceneNow": 7217.89999999851,
+          "deltaSec": 0.016666666666666663,
+          "x": 2821.1211701095835,
+          "y": 2466.092568359375,
+          "serverX": 2946.3182321870554,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 7279.89999999851,
+          "sceneNow": 7276.10000000149,
+          "deltaSec": 0.016666666666666663,
+          "x": 2842.78783677625,
+          "y": 2466.092571502053,
+          "serverX": 3076.3182321870536,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 7373.29999999702,
+          "sceneNow": 7371.79999999702,
+          "deltaSec": 0.016666666666666663,
+          "x": 2864.4545034429166,
+          "y": 2466.092574644731,
+          "serverX": 3141.3182321870527,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 7449.69999999553,
+          "sceneNow": 7447.79999999702,
+          "deltaSec": 0.016666666666666663,
+          "x": 2886.121170109583,
+          "y": 2466.092577787409,
+          "serverX": 3206.3182321870518,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 7509.69999999553,
+          "sceneNow": 7508.69999999553,
+          "deltaSec": 0.016666666666666663,
+          "x": 2907.7878367762496,
+          "y": 2466.092580930087,
+          "serverX": 3336.31823218705,
+          "serverY": 2466.092529296875
+        }
+      ],
+      "roundIndex": 5,
+      "burstOrdinal": 2,
+      "roundOrdinal": 2,
+      "pathErrorPx": 6.431098710768743e-13
+    },
+    {
+      "id": "p6",
+      "bornTick": 72,
+      "observedTick": 72,
+      "attackSeq": 2,
+      "rigAttackSeq": 2,
+      "vx": 1300,
+      "vy": 0.0001960283552762121,
+      "authorityOrigin": {
+        "x": 2832.318232231889,
+        "y": 2466.092519495457
+      },
+      "visibleSpawnOrigin": {
+        "x": 2821.1211701095835,
+        "y": 2466.092568359375
+      },
+      "spriteMuzzleAtSpawn": {
+        "x": 2821.1211701095835,
+        "y": 2466.092568359375
+      },
+      "admissionDeltaPx": 0,
+      "authorityMuzzleDeltaPx": 11.197062122412017,
+      "track": [
+        {
+          "wallMs": 7220.39999999851,
+          "sceneNow": 7217.89999999851,
+          "deltaSec": 0.016666666666666663,
+          "x": 2821.1211701095835,
+          "y": 2466.092568359375,
+          "serverX": 2897.318232231889,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 7279.89999999851,
+          "sceneNow": 7276.10000000149,
+          "deltaSec": 0.016666666666666663,
+          "x": 2842.78783677625,
+          "y": 2466.092571626514,
+          "serverX": 3027.318232231887,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 7373.29999999702,
+          "sceneNow": 7371.79999999702,
+          "deltaSec": 0.016666666666666663,
+          "x": 2864.4545034429166,
+          "y": 2466.0925748936534,
+          "serverX": 3092.318232231886,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 7449.69999999553,
+          "sceneNow": 7447.79999999702,
+          "deltaSec": 0.016666666666666663,
+          "x": 2886.121170109583,
+          "y": 2466.0925781607925,
+          "serverX": 3157.3182322318853,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 7509.69999999553,
+          "sceneNow": 7508.69999999553,
+          "deltaSec": 0.016666666666666663,
+          "x": 2907.7878367762496,
+          "y": 2466.0925814279317,
+          "serverX": 3287.3182322318835,
+          "serverY": 2466.092529296875
+        }
+      ],
+      "roundIndex": 6,
+      "burstOrdinal": 2,
+      "roundOrdinal": 3,
+      "pathErrorPx": 6.431098710768743e-13
+    },
+    {
+      "id": "p7",
+      "bornTick": 73,
+      "observedTick": 74,
+      "attackSeq": 2,
+      "rigAttackSeq": 2,
+      "vx": 1300,
+      "vy": 0.00018164100765716285,
+      "authorityOrigin": {
+        "x": 2848.318232145513,
+        "y": 2466.0925111327742
+      },
+      "visibleSpawnOrigin": {
+        "x": 2849.9212189377085,
+        "y": 2466.092568359375
+      },
+      "spriteMuzzleAtSpawn": {
+        "x": 2849.9212189377085,
+        "y": 2466.092568359375
+      },
+      "admissionDeltaPx": 0,
+      "authorityMuzzleDeltaPx": 1.6029867932171735,
+      "track": [
+        {
+          "wallMs": 7279.89999999851,
+          "sceneNow": 7276.10000000149,
+          "deltaSec": 0.016666666666666663,
+          "x": 2849.9212189377085,
+          "y": 2466.092568359375,
+          "serverX": 2978.318232145513,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 7373.29999999702,
+          "sceneNow": 7371.79999999702,
+          "deltaSec": 0.016666666666666663,
+          "x": 2871.587885604375,
+          "y": 2466.092571386725,
+          "serverX": 3043.3182321455124,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 7449.69999999553,
+          "sceneNow": 7447.79999999702,
+          "deltaSec": 0.016666666666666663,
+          "x": 2893.2545522710416,
+          "y": 2466.092574414075,
+          "serverX": 3108.318232145512,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 7509.69999999553,
+          "sceneNow": 7508.69999999553,
+          "deltaSec": 0.016666666666666663,
+          "x": 2914.921218937708,
+          "y": 2466.092577441425,
+          "serverX": 3238.318232145511,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 7591.60000000149,
+          "sceneNow": 7590.79999999702,
+          "deltaSec": 0.016666666666666663,
+          "x": 2936.5878856043746,
+          "y": 2466.092580468775,
+          "serverX": 3368.31823214551,
+          "serverY": 2466.092529296875
+        }
+      ],
+      "roundIndex": 7,
+      "burstOrdinal": 2,
+      "roundOrdinal": 4,
+      "pathErrorPx": 6.431098710768743e-13
+    },
+    {
+      "id": "p8",
+      "bornTick": 82,
+      "observedTick": 84,
+      "attackSeq": 3,
+      "rigAttackSeq": 3,
+      "vx": 1300,
+      "vy": 0.000158604234457016,
+      "authorityOrigin": {
+        "x": 2903.1863813444065,
+        "y": 2466.09250550624
+      },
+      "visibleSpawnOrigin": {
+        "x": 2911.7578790543394,
+        "y": 2466.092568359375
+      },
+      "spriteMuzzleAtSpawn": {
+        "x": 2911.7578790543394,
+        "y": 2466.092568359375
+      },
+      "admissionDeltaPx": 0,
+      "authorityMuzzleDeltaPx": 8.571497710163273,
+      "track": [
+        {
+          "wallMs": 7747.10000000149,
+          "sceneNow": 7744.19999999553,
+          "deltaSec": 0.016666666666666663,
+          "x": 2911.7578790543394,
+          "y": 2466.092568359375,
+          "serverX": 3098.1863813444065,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 7824.89999999851,
+          "sceneNow": 7823.39999999851,
+          "deltaSec": 0.016666666666666663,
+          "x": 2933.424545721006,
+          "y": 2466.092571002779,
+          "serverX": 3163.186381344406,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 7885.5,
+          "sceneNow": 7884.5,
+          "deltaSec": 0.016666666666666663,
+          "x": 2955.0912123876724,
+          "y": 2466.092573646183,
+          "serverX": 3228.1863813444056,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 7981.89999999851,
+          "sceneNow": 7981,
+          "deltaSec": 0.024649999999999995,
+          "x": 2987.1362123876725,
+          "y": 2466.0925775557776,
+          "serverX": 3358.1863813444047,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 8082.89999999851,
+          "sceneNow": 8082,
+          "deltaSec": 0.03308333333333333,
+          "x": 3030.1445457210057,
+          "y": 2466.0925828029344,
+          "serverX": 3488.186381344404,
+          "serverY": 2466.092529296875
+        }
+      ],
+      "roundIndex": 8,
+      "burstOrdinal": 3,
+      "roundOrdinal": 1,
+      "pathErrorPx": 6.431098710768743e-13
+    },
+    {
+      "id": "p9",
+      "bornTick": 83,
+      "observedTick": 84,
+      "attackSeq": 3,
+      "rigAttackSeq": 3,
+      "vx": 1300,
+      "vy": 0.00015367977903224528,
+      "authorityOrigin": {
+        "x": 2884.490234375,
+        "y": 2466.092513928897
+      },
+      "visibleSpawnOrigin": {
+        "x": 2911.7578790543394,
+        "y": 2466.092568359375
+      },
+      "spriteMuzzleAtSpawn": {
+        "x": 2911.7578790543394,
+        "y": 2466.092568359375
+      },
+      "admissionDeltaPx": 0,
+      "authorityMuzzleDeltaPx": 27.267644679393676,
+      "track": [
+        {
+          "wallMs": 7747.10000000149,
+          "sceneNow": 7744.19999999553,
+          "deltaSec": 0.016666666666666663,
+          "x": 2911.7578790543394,
+          "y": 2466.092568359375,
+          "serverX": 3014.490234375,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 7824.89999999851,
+          "sceneNow": 7823.39999999851,
+          "deltaSec": 0.016666666666666663,
+          "x": 2933.424545721006,
+          "y": 2466.0925709207045,
+          "serverX": 3079.490234375,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 7885.5,
+          "sceneNow": 7884.5,
+          "deltaSec": 0.016666666666666663,
+          "x": 2955.0912123876724,
+          "y": 2466.092573482034,
+          "serverX": 3144.490234375,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 7981.89999999851,
+          "sceneNow": 7981,
+          "deltaSec": 0.024649999999999995,
+          "x": 2987.1362123876725,
+          "y": 2466.0925772702403,
+          "serverX": 3274.490234375,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 8082.89999999851,
+          "sceneNow": 8082,
+          "deltaSec": 0.03308333333333333,
+          "x": 3030.1445457210057,
+          "y": 2466.09258235448,
+          "serverX": 3404.490234375,
+          "serverY": 2466.092529296875
+        }
+      ],
+      "roundIndex": 9,
+      "burstOrdinal": 3,
+      "roundOrdinal": 2,
+      "pathErrorPx": 6.431098710768743e-13
+    },
+    {
+      "id": "p10",
+      "bornTick": 84,
+      "observedTick": 84,
+      "attackSeq": 3,
+      "rigAttackSeq": 3,
+      "vx": 1300,
+      "vy": 0.00014905208081472665,
+      "authorityOrigin": {
+        "x": 2868.490234375,
+        "y": 2466.092521844271
+      },
+      "visibleSpawnOrigin": {
+        "x": 2911.7578790543394,
+        "y": 2466.092568359375
+      },
+      "spriteMuzzleAtSpawn": {
+        "x": 2911.7578790543394,
+        "y": 2466.092568359375
+      },
+      "admissionDeltaPx": 0,
+      "authorityMuzzleDeltaPx": 43.26764467936435,
+      "track": [
+        {
+          "wallMs": 7747.10000000149,
+          "sceneNow": 7744.19999999553,
+          "deltaSec": 0.016666666666666663,
+          "x": 2911.7578790543394,
+          "y": 2466.092568359375,
+          "serverX": 2933.490234375,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 7824.89999999851,
+          "sceneNow": 7823.39999999851,
+          "deltaSec": 0.016666666666666663,
+          "x": 2933.424545721006,
+          "y": 2466.0925708435766,
+          "serverX": 2998.490234375,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 7885.5,
+          "sceneNow": 7884.5,
+          "deltaSec": 0.016666666666666663,
+          "x": 2955.0912123876724,
+          "y": 2466.092573327778,
+          "serverX": 3063.490234375,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 7981.89999999851,
+          "sceneNow": 7981,
+          "deltaSec": 0.024649999999999995,
+          "x": 2987.1362123876725,
+          "y": 2466.092577001912,
+          "serverX": 3193.490234375,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 8082.89999999851,
+          "sceneNow": 8082,
+          "deltaSec": 0.03308333333333333,
+          "x": 3030.1445457210057,
+          "y": 2466.092581933052,
+          "serverX": 3323.490234375,
+          "serverY": 2466.092529296875
+        }
+      ],
+      "roundIndex": 10,
+      "burstOrdinal": 3,
+      "roundOrdinal": 3,
+      "pathErrorPx": 6.431098710768743e-13
+    },
+    {
+      "id": "p11",
+      "bornTick": 85,
+      "observedTick": 85,
+      "attackSeq": 3,
+      "rigAttackSeq": 3,
+      "vx": 1300,
+      "vy": 0.00014041742542758584,
+      "authorityOrigin": {
+        "x": 2852.490234375,
+        "y": 2466.092522276004
+      },
+      "visibleSpawnOrigin": {
+        "x": 2878.7329865158335,
+        "y": 2466.092568359375
+      },
+      "spriteMuzzleAtSpawn": {
+        "x": 2878.7329865158335,
+        "y": 2466.092568359375
+      },
+      "admissionDeltaPx": 0,
+      "authorityMuzzleDeltaPx": 26.242752140874007,
+      "track": [
+        {
+          "wallMs": 7824.89999999851,
+          "sceneNow": 7823.39999999851,
+          "deltaSec": 0.016666666666666663,
+          "x": 2878.7329865158335,
+          "y": 2466.092568359375,
+          "serverX": 2917.490234375,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 7885.5,
+          "sceneNow": 7884.5,
+          "deltaSec": 0.016666666666666663,
+          "x": 2900.3996531825,
+          "y": 2466.0925706996654,
+          "serverX": 2982.490234375,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 7981.89999999851,
+          "sceneNow": 7981,
+          "deltaSec": 0.024649999999999995,
+          "x": 2932.4446531825,
+          "y": 2466.092574160955,
+          "serverX": 3112.490234375,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 8082.89999999851,
+          "sceneNow": 8082,
+          "deltaSec": 0.03308333333333333,
+          "x": 2975.4529865158333,
+          "y": 2466.0925788064314,
+          "serverX": 3242.490234375,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 8142.39999999851,
+          "sceneNow": 8141.19999999553,
+          "deltaSec": 0.03733666666621964,
+          "x": 3023.990653181919,
+          "y": 2466.09258404915,
+          "serverX": 3307.490234375,
+          "serverY": 2466.092529296875
+        }
+      ],
+      "roundIndex": 11,
+      "burstOrdinal": 3,
+      "roundOrdinal": 4,
+      "pathErrorPx": 4.547473508864641e-13
+    },
+    {
+      "id": "p12",
+      "bornTick": 94,
+      "observedTick": 97,
+      "attackSeq": 4,
+      "rigAttackSeq": 4,
+      "vx": 1300,
+      "vy": 0.00014041742542758584,
+      "authorityOrigin": {
+        "x": 2711.1863812352212,
+        "y": 2466.09250121339
+      },
+      "visibleSpawnOrigin": {
+        "x": 2707.98642578125,
+        "y": 2466.092568359375
+      },
+      "spriteMuzzleAtSpawn": {
+        "x": 2707.98642578125,
+        "y": 2466.092568359375
+      },
+      "admissionDeltaPx": 0,
+      "authorityMuzzleDeltaPx": 3.199955454675618,
+      "track": [
+        {
+          "wallMs": 8415.79999999702,
+          "sceneNow": 8411.39999999851,
+          "deltaSec": 0.05935666666651764,
+          "x": 2707.98642578125,
+          "y": 2466.092568359375,
+          "serverX": 2971.1863812352212,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 8488.79999999702,
+          "sceneNow": 8487.79999999702,
+          "deltaSec": 0.06532999999970197,
+          "x": 2792.9154257808627,
+          "y": 2466.0925775328456,
+          "serverX": 2971.1863812352212,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 8552.79999999702,
+          "sceneNow": 8551.79999999702,
+          "deltaSec": 0.0700633333330353,
+          "x": 2883.9977591138086,
+          "y": 2466.0925873709584,
+          "serverX": 3166.18638123522,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 8642.19999999553,
+          "sceneNow": 8641.39999999851,
+          "deltaSec": 0.07735666666651765,
+          "x": 2984.5614257802813,
+          "y": 2466.0925982331823,
+          "serverX": 3231.1863812352194,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 8726.79999999702,
+          "sceneNow": 8725.89999999851,
+          "deltaSec": 0.08413999999985099,
+          "x": 3093.9434257800876,
+          "y": 2466.0926100479046,
+          "serverX": 3296.186381235219,
+          "serverY": 2466.092529296875
+        }
+      ],
+      "roundIndex": 12,
+      "burstOrdinal": 4,
+      "roundOrdinal": 1,
+      "pathErrorPx": 0
+    },
+    {
+      "id": "p13",
+      "bornTick": 95,
+      "observedTick": 97,
+      "attackSeq": 4,
+      "rigAttackSeq": 4,
+      "vx": 1300,
+      "vy": 0.0001365440693916753,
+      "authorityOrigin": {
+        "x": 2692.490234375,
+        "y": 2466.0925088152644
+      },
+      "visibleSpawnOrigin": {
+        "x": 2707.98642578125,
+        "y": 2466.092568359375
+      },
+      "spriteMuzzleAtSpawn": {
+        "x": 2707.98642578125,
+        "y": 2466.092568359375
+      },
+      "admissionDeltaPx": 0,
+      "authorityMuzzleDeltaPx": 15.496191406364488,
+      "track": [
+        {
+          "wallMs": 8415.79999999702,
+          "sceneNow": 8411.39999999851,
+          "deltaSec": 0.05935666666651764,
+          "x": 2707.98642578125,
+          "y": 2466.092568359375,
+          "serverX": 2887.490234375,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 8488.79999999702,
+          "sceneNow": 8487.79999999702,
+          "deltaSec": 0.06532999999970197,
+          "x": 2792.9154257808627,
+          "y": 2466.092577279799,
+          "serverX": 2887.490234375,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 8552.79999999702,
+          "sceneNow": 8551.79999999702,
+          "deltaSec": 0.0700633333330353,
+          "x": 2883.9977591138086,
+          "y": 2466.092586846532,
+          "serverX": 3082.490234375,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 8642.19999999553,
+          "sceneNow": 8641.39999999851,
+          "deltaSec": 0.07735666666651765,
+          "x": 2984.5614257802813,
+          "y": 2466.092597409126,
+          "serverX": 3147.490234375,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 8726.79999999702,
+          "sceneNow": 8725.89999999851,
+          "deltaSec": 0.08413999999985099,
+          "x": 3093.9434257800876,
+          "y": 2466.092608897944,
+          "serverX": 3212.490234375,
+          "serverY": 2466.092529296875
+        }
+      ],
+      "roundIndex": 13,
+      "burstOrdinal": 4,
+      "roundOrdinal": 2,
+      "pathErrorPx": 4.547473508864641e-13
+    },
+    {
+      "id": "p14",
+      "bornTick": 96,
+      "observedTick": 97,
+      "attackSeq": 4,
+      "rigAttackSeq": 4,
+      "vx": 1300,
+      "vy": 0.0001365440693916753,
+      "authorityOrigin": {
+        "x": 2676.490234375,
+        "y": 2466.0925156424682
+      },
+      "visibleSpawnOrigin": {
+        "x": 2707.98642578125,
+        "y": 2466.092568359375
+      },
+      "spriteMuzzleAtSpawn": {
+        "x": 2707.98642578125,
+        "y": 2466.092568359375
+      },
+      "admissionDeltaPx": 0,
+      "authorityMuzzleDeltaPx": 31.496191406294205,
+      "track": [
+        {
+          "wallMs": 8415.79999999702,
+          "sceneNow": 8411.39999999851,
+          "deltaSec": 0.05935666666651764,
+          "x": 2707.98642578125,
+          "y": 2466.092568359375,
+          "serverX": 2806.490234375,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 8488.79999999702,
+          "sceneNow": 8487.79999999702,
+          "deltaSec": 0.06532999999970197,
+          "x": 2792.9154257808627,
+          "y": 2466.092577279799,
+          "serverX": 2806.490234375,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 8552.79999999702,
+          "sceneNow": 8551.79999999702,
+          "deltaSec": 0.0700633333330353,
+          "x": 2883.9977591138086,
+          "y": 2466.092586846532,
+          "serverX": 3001.490234375,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 8642.19999999553,
+          "sceneNow": 8641.39999999851,
+          "deltaSec": 0.07735666666651765,
+          "x": 2984.5614257802813,
+          "y": 2466.092597409126,
+          "serverX": 3066.490234375,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 8726.79999999702,
+          "sceneNow": 8725.89999999851,
+          "deltaSec": 0.08413999999985099,
+          "x": 3093.9434257800876,
+          "y": 2466.092608897944,
+          "serverX": 3131.490234375,
+          "serverY": 2466.092529296875
+        }
+      ],
+      "roundIndex": 14,
+      "burstOrdinal": 4,
+      "roundOrdinal": 3,
+      "pathErrorPx": 4.547473508864641e-13
+    },
+    {
+      "id": "p15",
+      "bornTick": 97,
+      "observedTick": 97,
+      "attackSeq": 4,
+      "rigAttackSeq": 4,
+      "vx": 1300,
+      "vy": 0.0001365440693916753,
+      "authorityOrigin": {
+        "x": 2660.490234375,
+        "y": 2466.0925224696716
+      },
+      "visibleSpawnOrigin": {
+        "x": 2707.98642578125,
+        "y": 2466.092568359375
+      },
+      "spriteMuzzleAtSpawn": {
+        "x": 2707.98642578125,
+        "y": 2466.092568359375
+      },
+      "admissionDeltaPx": 0,
+      "authorityMuzzleDeltaPx": 47.49619140627226,
+      "track": [
+        {
+          "wallMs": 8415.79999999702,
+          "sceneNow": 8411.39999999851,
+          "deltaSec": 0.05935666666651764,
+          "x": 2707.98642578125,
+          "y": 2466.092568359375,
+          "serverX": 2725.490234375,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 8488.79999999702,
+          "sceneNow": 8487.79999999702,
+          "deltaSec": 0.06532999999970197,
+          "x": 2792.9154257808627,
+          "y": 2466.092577279799,
+          "serverX": 2725.490234375,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 8552.79999999702,
+          "sceneNow": 8551.79999999702,
+          "deltaSec": 0.0700633333330353,
+          "x": 2883.9977591138086,
+          "y": 2466.092586846532,
+          "serverX": 2920.490234375,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 8642.19999999553,
+          "sceneNow": 8641.39999999851,
+          "deltaSec": 0.07735666666651765,
+          "x": 2984.5614257802813,
+          "y": 2466.092597409126,
+          "serverX": 2985.490234375,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 8726.79999999702,
+          "sceneNow": 8725.89999999851,
+          "deltaSec": 0.08413999999985099,
+          "x": 3093.9434257800876,
+          "y": 2466.092608897944,
+          "serverX": 3050.490234375,
+          "serverY": 2466.092529296875
+        }
+      ],
+      "roundIndex": 15,
+      "burstOrdinal": 4,
+      "roundOrdinal": 4,
+      "pathErrorPx": 4.547473508864641e-13
+    },
+    {
+      "id": "p16",
+      "bornTick": 107,
+      "observedTick": 108,
+      "attackSeq": 5,
+      "rigAttackSeq": 5,
+      "vx": 1300,
+      "vy": 0.00018856067617889494,
+      "authorityOrigin": {
+        "x": 2694.514404296875,
+        "y": 2466.0925104408075
+      },
+      "visibleSpawnOrigin": {
+        "x": 2697.714453125,
+        "y": 2466.092568359375
+      },
+      "spriteMuzzleAtSpawn": {
+        "x": 2697.714453125,
+        "y": 2466.092568359375
+      },
+      "admissionDeltaPx": 0,
+      "authorityMuzzleDeltaPx": 3.200048828649233,
+      "track": [
+        {
+          "wallMs": 9006.39999999851,
+          "sceneNow": 9004.29999999702,
+          "deltaSec": 0.07581000000014902,
+          "x": 2697.714453125,
+          "y": 2466.092568359375,
+          "serverX": 2824.514404296875,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 9067.5,
+          "sceneNow": 9065.79999999702,
+          "deltaSec": 0.07121999999955297,
+          "x": 2790.300453124419,
+          "y": 2466.0925817886664,
+          "serverX": 2889.514404296875,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 9143.69999999553,
+          "sceneNow": 9141.79999999702,
+          "deltaSec": 0.07303999999985099,
+          "x": 2885.2524531242257,
+          "y": 2466.0925955611383,
+          "serverX": 2954.514404296875,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 9247.29999999702,
+          "sceneNow": 9246.10000000149,
+          "deltaSec": 0.07583000000044703,
+          "x": 2983.831453124807,
+          "y": 2466.092609859694,
+          "serverX": 3149.514404296875,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 9263.69999999553,
+          "sceneNow": 9262.60000000149,
+          "deltaSec": 0.07108000000044704,
+          "x": 3076.235453125388,
+          "y": 2466.092623262587,
+          "serverX": 3214.514404296875,
+          "serverY": 2466.092529296875
+        }
+      ],
+      "roundIndex": 16,
+      "burstOrdinal": 5,
+      "roundOrdinal": 1,
+      "pathErrorPx": 4.547473508864641e-13
+    },
+    {
+      "id": "p17",
+      "bornTick": 108,
+      "observedTick": 108,
+      "attackSeq": 5,
+      "rigAttackSeq": 5,
+      "vx": 1300,
+      "vy": 0.0001960283552762121,
+      "authorityOrigin": {
+        "x": 2707.818232231889,
+        "y": 2466.092519495457
+      },
+      "visibleSpawnOrigin": {
+        "x": 2697.714453125,
+        "y": 2466.092568359375
+      },
+      "spriteMuzzleAtSpawn": {
+        "x": 2697.714453125,
+        "y": 2466.092568359375
+      },
+      "admissionDeltaPx": 0,
+      "authorityMuzzleDeltaPx": 10.103779107007009,
+      "track": [
+        {
+          "wallMs": 9006.39999999851,
+          "sceneNow": 9004.29999999702,
+          "deltaSec": 0.07581000000014902,
+          "x": 2697.714453125,
+          "y": 2466.092568359375,
+          "serverX": 2772.818232231889,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 9067.5,
+          "sceneNow": 9065.79999999702,
+          "deltaSec": 0.07121999999955297,
+          "x": 2790.300453124419,
+          "y": 2466.0925823205143,
+          "serverX": 2837.818232231888,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 9143.69999999553,
+          "sceneNow": 9141.79999999702,
+          "deltaSec": 0.07303999999985099,
+          "x": 2885.2524531242257,
+          "y": 2466.092596638425,
+          "serverX": 2902.818232231887,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 9247.29999999702,
+          "sceneNow": 9246.10000000149,
+          "deltaSec": 0.07583000000044703,
+          "x": 2983.831453124807,
+          "y": 2466.0926115032553,
+          "serverX": 3097.8182322318844,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 9263.69999999553,
+          "sceneNow": 9262.60000000149,
+          "deltaSec": 0.07108000000044704,
+          "x": 3076.235453125388,
+          "y": 2466.0926254369506,
+          "serverX": 3162.8182322318835,
+          "serverY": 2466.092529296875
+        }
+      ],
+      "roundIndex": 17,
+      "burstOrdinal": 5,
+      "roundOrdinal": 2,
+      "pathErrorPx": 6.431098710768743e-13
+    },
+    {
+      "id": "p18",
+      "bornTick": 109,
+      "observedTick": 109,
+      "attackSeq": 5,
+      "rigAttackSeq": 5,
+      "vx": 1300,
+      "vy": 0.0001960283552762121,
+      "authorityOrigin": {
+        "x": 2723.818232231889,
+        "y": 2466.092519495457
+      },
+      "visibleSpawnOrigin": {
+        "x": 2718.1391959696825,
+        "y": 2466.092568359375
+      },
+      "spriteMuzzleAtSpawn": {
+        "x": 2718.1391959696825,
+        "y": 2466.092568359375
+      },
+      "admissionDeltaPx": 0,
+      "authorityMuzzleDeltaPx": 5.679036262416628,
+      "track": [
+        {
+          "wallMs": 9067.5,
+          "sceneNow": 9065.79999999702,
+          "deltaSec": 0.07121999999955297,
+          "x": 2718.1391959696825,
+          "y": 2466.092568359375,
+          "serverX": 2788.818232231889,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 9143.69999999553,
+          "sceneNow": 9141.79999999702,
+          "deltaSec": 0.07303999999985099,
+          "x": 2813.091195969489,
+          "y": 2466.092582677286,
+          "serverX": 2853.818232231888,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 9247.29999999702,
+          "sceneNow": 9246.10000000149,
+          "deltaSec": 0.07583000000044703,
+          "x": 2911.6701959700704,
+          "y": 2466.092597542116,
+          "serverX": 3048.8182322318853,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 9263.69999999553,
+          "sceneNow": 9262.60000000149,
+          "deltaSec": 0.07108000000044704,
+          "x": 3004.0741959706515,
+          "y": 2466.0926114758113,
+          "serverX": 3113.8182322318844,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 9388.89999999851,
+          "sceneNow": 9388,
+          "deltaSec": 0.07466000000014901,
+          "x": 3101.1321959708453,
+          "y": 2466.092626111288,
+          "serverX": 3243.8182322318826,
+          "serverY": 2466.092529296875
+        }
+      ],
+      "roundIndex": 18,
+      "burstOrdinal": 5,
+      "roundOrdinal": 3,
+      "pathErrorPx": 6.431098710768743e-13
+    },
+    {
+      "id": "p19",
+      "bornTick": 110,
+      "observedTick": 110,
+      "attackSeq": 5,
+      "rigAttackSeq": 5,
+      "vx": 1300,
+      "vy": 0.00018856067617889494,
+      "authorityOrigin": {
+        "x": 2739.8182321870563,
+        "y": 2466.092519868841
+      },
+      "visibleSpawnOrigin": {
+        "x": 2737.7950959572736,
+        "y": 2466.092568359375
+      },
+      "spriteMuzzleAtSpawn": {
+        "x": 2737.7950959572736,
+        "y": 2466.092568359375
+      },
+      "admissionDeltaPx": 0,
+      "authorityMuzzleDeltaPx": 2.023136230363832,
+      "track": [
+        {
+          "wallMs": 9143.69999999553,
+          "sceneNow": 9141.79999999702,
+          "deltaSec": 0.07303999999985099,
+          "x": 2737.7950959572736,
+          "y": 2466.092568359375,
+          "serverX": 2804.8182321870563,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 9247.29999999702,
+          "sceneNow": 9246.10000000149,
+          "deltaSec": 0.07583000000044703,
+          "x": 2836.374095957855,
+          "y": 2466.092582657931,
+          "serverX": 2999.8182321870536,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 9263.69999999553,
+          "sceneNow": 9262.60000000149,
+          "deltaSec": 0.07108000000044704,
+          "x": 2928.778095958436,
+          "y": 2466.092596060824,
+          "serverX": 3064.8182321870527,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 9388.89999999851,
+          "sceneNow": 9388,
+          "deltaSec": 0.07466000000014901,
+          "x": 3025.83609595863,
+          "y": 2466.092610138764,
+          "serverX": 3194.818232187051,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 9481.69999999553,
+          "sceneNow": 9480.19999999553,
+          "deltaSec": 0.07542999999970197,
+          "x": 3123.8950959582426,
+          "y": 2466.092624361896,
+          "serverX": 3324.818232187049,
+          "serverY": 2466.092529296875
+        }
+      ],
+      "roundIndex": 19,
+      "burstOrdinal": 5,
+      "roundOrdinal": 4,
+      "pathErrorPx": 4.547473508864641e-13
+    },
+    {
+      "id": "p20",
+      "bornTick": 137,
+      "observedTick": 137,
+      "attackSeq": 6,
+      "rigAttackSeq": 6,
+      "vx": 1300,
+      "vy": 0.00013725407188758254,
+      "authorityOrigin": {
+        "x": 2771.014404296875,
+        "y": 2466.0925224341713
+      },
+      "visibleSpawnOrigin": {
+        "x": 2781.44638671875,
+        "y": 2466.092568359375
+      },
+      "spriteMuzzleAtSpawn": {
+        "x": 2781.44638671875,
+        "y": 2466.092568359375
+      },
+      "admissionDeltaPx": 0,
+      "authorityMuzzleDeltaPx": 10.43198242197618,
+      "track": [
+        {
+          "wallMs": 10450.79999999702,
+          "sceneNow": 10449.60000000149,
+          "deltaSec": 0.07327000000029803,
+          "x": 2781.44638671875,
+          "y": 2466.092568359375,
+          "serverX": 2836.014404296875,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 10518.60000000149,
+          "sceneNow": 10517.29999999702,
+          "deltaSec": 0.07266000000014901,
+          "x": 2875.904386718944,
+          "y": 2466.092578332256,
+          "serverX": 2966.014404296875,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 10578.10000000149,
+          "sceneNow": 10577.5,
+          "deltaSec": 0.0722,
+          "x": 2969.764386718944,
+          "y": 2466.0925882419997,
+          "serverX": 2966.014404296875,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 10650.39999999851,
+          "sceneNow": 10648.89999999851,
+          "deltaSec": 0.07011000000014901,
+          "x": 3060.907386719138,
+          "y": 2466.0925978648825,
+          "serverX": 3096.014404296875,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 10717.60000000149,
+          "sceneNow": 10716.69999999553,
+          "deltaSec": 0.07031999999955296,
+          "x": 3152.323386718557,
+          "y": 2466.092607516589,
+          "serverX": 3161.014404296875,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 10780.29999999702,
+          "sceneNow": 10779.5,
+          "deltaSec": 0.06828000000044704,
+          "x": 3241.087386719138,
+          "y": 2466.092616888297,
+          "serverX": 3291.014404296875,
+          "serverY": 2466.092529296875
+        }
+      ],
+      "roundIndex": 20,
+      "burstOrdinal": 6,
+      "roundOrdinal": 1,
+      "pathErrorPx": 6.431098710768743e-13
+    },
+    {
+      "id": "p21",
+      "bornTick": 138,
+      "observedTick": 139,
+      "attackSeq": 6,
+      "rigAttackSeq": 6,
+      "vx": 1300,
+      "vy": 0.00014041742542758584,
+      "authorityOrigin": {
+        "x": 2752.318231898024,
+        "y": 2466.0925152551326
+      },
+      "visibleSpawnOrigin": {
+        "x": 2758.941920016283,
+        "y": 2466.092568359375
+      },
+      "spriteMuzzleAtSpawn": {
+        "x": 2758.941920016283,
+        "y": 2466.092568359375
+      },
+      "admissionDeltaPx": 0,
+      "authorityMuzzleDeltaPx": 6.623688118471874,
+      "track": [
+        {
+          "wallMs": 10518.60000000149,
+          "sceneNow": 10517.29999999702,
+          "deltaSec": 0.07266000000014901,
+          "x": 2758.941920016283,
+          "y": 2466.092568359375,
+          "serverX": 2882.318231898024,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 10578.10000000149,
+          "sceneNow": 10577.5,
+          "deltaSec": 0.0722,
+          "x": 2852.801920016283,
+          "y": 2466.092578497513,
+          "serverX": 2882.318231898024,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 10650.39999999851,
+          "sceneNow": 10648.89999999851,
+          "deltaSec": 0.07011000000014901,
+          "x": 2943.9449200164768,
+          "y": 2466.0925883421787,
+          "serverX": 3012.318231898023,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 10717.60000000149,
+          "sceneNow": 10716.69999999553,
+          "deltaSec": 0.07031999999955296,
+          "x": 3035.3609200158958,
+          "y": 2466.092598216332,
+          "serverX": 3077.3182318980225,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 10780.29999999702,
+          "sceneNow": 10779.5,
+          "deltaSec": 0.06828000000044704,
+          "x": 3124.124920016477,
+          "y": 2466.092607804034,
+          "serverX": 3207.3182318980216,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 10845.19999999553,
+          "sceneNow": 10844.29999999702,
+          "deltaSec": 0.06866999999955298,
+          "x": 3213.395920015896,
+          "y": 2466.0926174464985,
+          "serverX": 3337.3182318980207,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 10861.89999999851,
+          "sceneNow": 10861.19999999553,
+          "deltaSec": 0.06225999999940395,
+          "x": 3311.1968238670283,
+          "y": 2466.0925881777944,
+          "serverX": 3337.3182318980207,
+          "serverY": 2466.092529296875
+        }
+      ],
+      "roundIndex": 21,
+      "burstOrdinal": 6,
+      "roundOrdinal": 2,
+      "pathErrorPx": 16.862903851950797
+    },
+    {
+      "id": "p22",
+      "bornTick": 139,
+      "observedTick": 139,
+      "attackSeq": 6,
+      "rigAttackSeq": 6,
+      "vx": 1300,
+      "vy": 0.0001365440693916753,
+      "authorityOrigin": {
+        "x": 2736.318231874769,
+        "y": 2466.0925224696716
+      },
+      "visibleSpawnOrigin": {
+        "x": 2758.941920016283,
+        "y": 2466.092568359375
+      },
+      "spriteMuzzleAtSpawn": {
+        "x": 2758.941920016283,
+        "y": 2466.092568359375
+      },
+      "admissionDeltaPx": 0,
+      "authorityMuzzleDeltaPx": 22.623688141560404,
+      "track": [
+        {
+          "wallMs": 10518.60000000149,
+          "sceneNow": 10517.29999999702,
+          "deltaSec": 0.07266000000014901,
+          "x": 2758.941920016283,
+          "y": 2466.092568359375,
+          "serverX": 2801.318231874769,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 10578.10000000149,
+          "sceneNow": 10577.5,
+          "deltaSec": 0.0722,
+          "x": 2852.801920016283,
+          "y": 2466.092578217857,
+          "serverX": 2801.318231874769,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 10650.39999999851,
+          "sceneNow": 10648.89999999851,
+          "deltaSec": 0.07011000000014901,
+          "x": 2943.9449200164768,
+          "y": 2466.0925877909617,
+          "serverX": 2931.318231874768,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 10717.60000000149,
+          "sceneNow": 10716.69999999553,
+          "deltaSec": 0.07031999999955296,
+          "x": 3035.3609200158958,
+          "y": 2466.0925973927406,
+          "serverX": 2996.3182318747677,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 10780.29999999702,
+          "sceneNow": 10779.5,
+          "deltaSec": 0.06828000000044704,
+          "x": 3124.124920016477,
+          "y": 2466.09260671597,
+          "serverX": 3126.3182318747668,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 10845.19999999553,
+          "sceneNow": 10844.29999999702,
+          "deltaSec": 0.06866999999955298,
+          "x": 3213.395920015896,
+          "y": 2466.092616092451,
+          "serverX": 3256.318231874766,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 10861.89999999851,
+          "sceneNow": 10861.19999999553,
+          "deltaSec": 0.06225999999940395,
+          "x": 3279.420225555587,
+          "y": 2466.0925872083953,
+          "serverX": 3256.318231874766,
+          "serverY": 2466.092529296875
+        }
+      ],
+      "roundIndex": 22,
+      "burstOrdinal": 6,
+      "roundOrdinal": 3,
+      "pathErrorPx": 14.913694459580276
+    },
+    {
+      "id": "p23",
+      "bornTick": 140,
+      "observedTick": 141,
+      "attackSeq": 6,
+      "rigAttackSeq": 6,
+      "vx": 1300,
+      "vy": 0.00014041742542758584,
+      "authorityOrigin": {
+        "x": 2720.318231898024,
+        "y": 2466.0925152551326
+      },
+      "visibleSpawnOrigin": {
+        "x": 2720.998388671875,
+        "y": 2466.092568359375
+      },
+      "spriteMuzzleAtSpawn": {
+        "x": 2720.998388671875,
+        "y": 2466.092568359375
+      },
+      "admissionDeltaPx": 0,
+      "authorityMuzzleDeltaPx": 0.6801567759242909,
+      "track": [
+        {
+          "wallMs": 10650.39999999851,
+          "sceneNow": 10648.89999999851,
+          "deltaSec": 0.07011000000014901,
+          "x": 2720.998388671875,
+          "y": 2466.092568359375,
+          "serverX": 2850.318231898024,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 10717.60000000149,
+          "sceneNow": 10716.69999999553,
+          "deltaSec": 0.07031999999955296,
+          "x": 2812.414388671294,
+          "y": 2466.0925782335285,
+          "serverX": 2915.3182318980234,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 10780.29999999702,
+          "sceneNow": 10779.5,
+          "deltaSec": 0.06828000000044704,
+          "x": 2901.1783886718754,
+          "y": 2466.09258782123,
+          "serverX": 3045.3182318980225,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 10845.19999999553,
+          "sceneNow": 10844.29999999702,
+          "deltaSec": 0.06866999999955298,
+          "x": 2990.4493886712944,
+          "y": 2466.092597463695,
+          "serverX": 3175.3182318980216,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 10861.89999999851,
+          "sceneNow": 10861.19999999553,
+          "deltaSec": 0.06225999999940395,
+          "x": 3071.3873886705196,
+          "y": 2466.092606206084,
+          "serverX": 3175.3182318980216,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 10971.39999999851,
+          "sceneNow": 10970.60000000149,
+          "deltaSec": 0.0676,
+          "x": 3159.2673886705197,
+          "y": 2466.092615698302,
+          "serverX": 3240.318231898021,
+          "serverY": 2466.092529296875
+        }
+      ],
+      "roundIndex": 23,
+      "burstOrdinal": 6,
+      "roundOrdinal": 4,
+      "pathErrorPx": 4.547473508864641e-13
+    },
+    {
+      "id": "p24",
+      "bornTick": 167,
+      "observedTick": 168,
+      "attackSeq": 7,
+      "rigAttackSeq": 7,
+      "vx": 1300,
+      "vy": 0.00018164100765716285,
+      "authorityOrigin": {
+        "x": 2933.84228515625,
+        "y": 2466.0925111327742
+      },
+      "visibleSpawnOrigin": {
+        "x": 2937.042333984375,
+        "y": 2466.092568359375
+      },
+      "spriteMuzzleAtSpawn": {
+        "x": 2937.042333984375,
+        "y": 2466.092568359375
+      },
+      "admissionDeltaPx": 0,
+      "authorityMuzzleDeltaPx": 3.2000488286367834,
+      "track": [
+        {
+          "wallMs": 11982.5,
+          "sceneNow": 11980.69999999553,
+          "deltaSec": 0.07518999999985099,
+          "x": 2937.042333984375,
+          "y": 2466.092568359375,
+          "serverX": 3063.84228515625,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 12057.79999999702,
+          "sceneNow": 12056.29999999702,
+          "deltaSec": 0.08106000000014901,
+          "x": 3042.420333984569,
+          "y": 2466.092583083195,
+          "serverX": 3193.84228515625,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 12141.79999999702,
+          "sceneNow": 12141,
+          "deltaSec": 0.07568000000044704,
+          "x": 3140.80433398515,
+          "y": 2466.0925968297865,
+          "serverX": 3193.84228515625,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 12199,
+          "sceneNow": 12197.79999999702,
+          "deltaSec": 0.07541000000014901,
+          "x": 3238.837333985344,
+          "y": 2466.0926105273347,
+          "serverX": 3323.84228515625,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 12289.5,
+          "sceneNow": 12288.39999999851,
+          "deltaSec": 0.07567999999970197,
+          "x": 3337.2213339849563,
+          "y": 2466.092624273926,
+          "serverX": 3453.84228515625,
+          "serverY": 2466.092529296875
+        }
+      ],
+      "roundIndex": 24,
+      "burstOrdinal": 7,
+      "roundOrdinal": 1,
+      "pathErrorPx": 4.547473508864641e-13
+    },
+    {
+      "id": "p25",
+      "bornTick": 168,
+      "observedTick": 168,
+      "attackSeq": 7,
+      "rigAttackSeq": 7,
+      "vx": 1300,
+      "vy": 0.00018856067617889494,
+      "authorityOrigin": {
+        "x": 2947.146240234375,
+        "y": 2466.092519868841
+      },
+      "visibleSpawnOrigin": {
+        "x": 2937.042333984375,
+        "y": 2466.092568359375
+      },
+      "spriteMuzzleAtSpawn": {
+        "x": 2937.042333984375,
+        "y": 2466.092568359375
+      },
+      "admissionDeltaPx": 0,
+      "authorityMuzzleDeltaPx": 10.103906250116268,
+      "track": [
+        {
+          "wallMs": 11982.5,
+          "sceneNow": 11980.69999999553,
+          "deltaSec": 0.07518999999985099,
+          "x": 2937.042333984375,
+          "y": 2466.092568359375,
+          "serverX": 3012.146240234375,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 12057.79999999702,
+          "sceneNow": 12056.29999999702,
+          "deltaSec": 0.08106000000014901,
+          "x": 3042.420333984569,
+          "y": 2466.0925836441033,
+          "serverX": 3142.146240234375,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 12141.79999999702,
+          "sceneNow": 12141,
+          "deltaSec": 0.07568000000044704,
+          "x": 3140.80433398515,
+          "y": 2466.0925979143753,
+          "serverX": 3142.146240234375,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 12199,
+          "sceneNow": 12197.79999999702,
+          "deltaSec": 0.07541000000014901,
+          "x": 3238.837333985344,
+          "y": 2466.092612133736,
+          "serverX": 3272.146240234375,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 12289.5,
+          "sceneNow": 12288.39999999851,
+          "deltaSec": 0.07567999999970197,
+          "x": 3337.2213339849563,
+          "y": 2466.092626404008,
+          "serverX": 3402.146240234375,
+          "serverY": 2466.092529296875
+        }
+      ],
+      "roundIndex": 25,
+      "burstOrdinal": 7,
+      "roundOrdinal": 2,
+      "pathErrorPx": 0
+    },
+    {
+      "id": "p26",
+      "bornTick": 169,
+      "observedTick": 170,
+      "attackSeq": 7,
+      "rigAttackSeq": 7,
+      "vx": 1300,
+      "vy": 0.0001694646489340812,
+      "authorityOrigin": {
+        "x": 2931.81823207241,
+        "y": 2466.0925123504103
+      },
+      "visibleSpawnOrigin": {
+        "x": 2953.0781623922257,
+        "y": 2466.092568359375
+      },
+      "spriteMuzzleAtSpawn": {
+        "x": 2953.0781623922257,
+        "y": 2466.092568359375
+      },
+      "admissionDeltaPx": 0,
+      "authorityMuzzleDeltaPx": 21.25993031988957,
+      "track": [
+        {
+          "wallMs": 12057.79999999702,
+          "sceneNow": 12056.29999999702,
+          "deltaSec": 0.08106000000014901,
+          "x": 2953.0781623922257,
+          "y": 2466.092568359375,
+          "serverX": 3061.81823207241,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 12141.79999999702,
+          "sceneNow": 12141,
+          "deltaSec": 0.07568000000044704,
+          "x": 3051.462162392807,
+          "y": 2466.0925811844595,
+          "serverX": 3061.81823207241,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 12199,
+          "sceneNow": 12197.79999999702,
+          "deltaSec": 0.07541000000014901,
+          "x": 3149.4951623930006,
+          "y": 2466.0925939637887,
+          "serverX": 3191.818232072409,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 12289.5,
+          "sceneNow": 12288.39999999851,
+          "deltaSec": 0.07567999999970197,
+          "x": 3247.879162392613,
+          "y": 2466.092606788873,
+          "serverX": 3321.818232072408,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 12378.5,
+          "sceneNow": 12377.69999999553,
+          "deltaSec": 0.07740999999940396,
+          "x": 3348.5121623918385,
+          "y": 2466.0926199071314,
+          "serverX": 3451.818232072407,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 12395.79999999702,
+          "sceneNow": 12395.10000000149,
+          "deltaSec": 0.07038000000044704,
+          "x": 3440.00616239242,
+          "y": 2466.0926318340535,
+          "serverX": 3516.8182320724068,
+          "serverY": 2466.092529296875
+        }
+      ],
+      "roundIndex": 26,
+      "burstOrdinal": 7,
+      "roundOrdinal": 3,
+      "pathErrorPx": 6.431098710768743e-13
+    },
+    {
+      "id": "p27",
+      "bornTick": 170,
+      "observedTick": 170,
+      "attackSeq": 7,
+      "rigAttackSeq": 7,
+      "vx": 1300,
+      "vy": 0.0001638544345041737,
+      "authorityOrigin": {
+        "x": 2915.818232038731,
+        "y": 2466.092521104153
+      },
+      "visibleSpawnOrigin": {
+        "x": 2953.0781623922257,
+        "y": 2466.092568359375
+      },
+      "spriteMuzzleAtSpawn": {
+        "x": 2953.0781623922257,
+        "y": 2466.092568359375
+      },
+      "admissionDeltaPx": 0,
+      "authorityMuzzleDeltaPx": 37.2599303535248,
+      "track": [
+        {
+          "wallMs": 12057.79999999702,
+          "sceneNow": 12056.29999999702,
+          "deltaSec": 0.08106000000014901,
+          "x": 2953.0781623922257,
+          "y": 2466.092568359375,
+          "serverX": 2980.818232038731,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 12141.79999999702,
+          "sceneNow": 12141,
+          "deltaSec": 0.07568000000044704,
+          "x": 3051.462162392807,
+          "y": 2466.0925807598787,
+          "serverX": 2980.818232038731,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 12199,
+          "sceneNow": 12197.79999999702,
+          "deltaSec": 0.07541000000014901,
+          "x": 3149.4951623930006,
+          "y": 2466.0925931161414,
+          "serverX": 3110.81823203873,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 12289.5,
+          "sceneNow": 12288.39999999851,
+          "deltaSec": 0.07567999999970197,
+          "x": 3247.879162392613,
+          "y": 2466.092605516645,
+          "serverX": 3240.818232038729,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 12378.5,
+          "sceneNow": 12377.69999999553,
+          "deltaSec": 0.07740999999940396,
+          "x": 3348.5121623918385,
+          "y": 2466.092618200617,
+          "serverX": 3370.818232038728,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 12395.79999999702,
+          "sceneNow": 12395.10000000149,
+          "deltaSec": 0.07038000000044704,
+          "x": 3440.00616239242,
+          "y": 2466.092629732692,
+          "serverX": 3435.8182320387277,
+          "serverY": 2466.092529296875
+        }
+      ],
+      "roundIndex": 27,
+      "burstOrdinal": 7,
+      "roundOrdinal": 4,
+      "pathErrorPx": 4.547473508864641e-13
+    },
+    {
+      "id": "p28",
+      "bornTick": 198,
+      "observedTick": 198,
+      "attackSeq": 8,
+      "rigAttackSeq": 8,
+      "vx": 1300,
+      "vy": 0.0001752114185364917,
+      "authorityOrigin": {
+        "x": 2693.84228515625,
+        "y": 2466.092520536304
+      },
+      "visibleSpawnOrigin": {
+        "x": 2673.23447265625,
+        "y": 2466.092568359375
+      },
+      "spriteMuzzleAtSpawn": {
+        "x": 2673.23447265625,
+        "y": 2466.092568359375
+      },
+      "admissionDeltaPx": 0,
+      "authorityMuzzleDeltaPx": 20.607812500055395,
+      "track": [
+        {
+          "wallMs": 13461.29999999702,
+          "sceneNow": 13460.29999999702,
+          "deltaSec": 0.06846000000014901,
+          "x": 2673.23447265625,
+          "y": 2466.092568359375,
+          "serverX": 2758.84228515625,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 13544.60000000149,
+          "sceneNow": 13543.89999999851,
+          "deltaSec": 0.06908999999985099,
+          "x": 2763.0514726560564,
+          "y": 2466.092580464732,
+          "serverX": 2758.84228515625,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 13562.10000000149,
+          "sceneNow": 13560.89999999851,
+          "deltaSec": 0.06462999999970198,
+          "x": 2847.070472655669,
+          "y": 2466.0925917886457,
+          "serverX": 2888.84228515625,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 13666.60000000149,
+          "sceneNow": 13664.79999999702,
+          "deltaSec": 0.066039999999851,
+          "x": 2932.9224726554753,
+          "y": 2466.092603359608,
+          "serverX": 3018.84228515625,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 13738.29999999702,
+          "sceneNow": 13736.39999999851,
+          "deltaSec": 0.06722000000029803,
+          "x": 3020.3084726558627,
+          "y": 2466.0926151373196,
+          "serverX": 3083.84228515625,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 13800.79999999702,
+          "sceneNow": 13800,
+          "deltaSec": 0.06607000000029803,
+          "x": 3106.1994726562502,
+          "y": 2466.0926267135383,
+          "serverX": 3148.84228515625,
+          "serverY": 2466.092529296875
+        }
+      ],
+      "roundIndex": 28,
+      "burstOrdinal": 8,
+      "roundOrdinal": 1,
+      "pathErrorPx": 4.547473508864641e-13
+    },
+    {
+      "id": "p29",
+      "bornTick": 199,
+      "observedTick": 200,
+      "attackSeq": 8,
+      "rigAttackSeq": 8,
+      "vx": 1300,
+      "vy": 0.00018164100765716285,
+      "authorityOrigin": {
+        "x": 2707.146240234375,
+        "y": 2466.0925111327742
+      },
+      "visibleSpawnOrigin": {
+        "x": 2712.877895570987,
+        "y": 2466.092568359375
+      },
+      "spriteMuzzleAtSpawn": {
+        "x": 2712.877895570987,
+        "y": 2466.092568359375
+      },
+      "admissionDeltaPx": 0,
+      "authorityMuzzleDeltaPx": 5.731655336897903,
+      "track": [
+        {
+          "wallMs": 13562.10000000149,
+          "sceneNow": 13560.89999999851,
+          "deltaSec": 0.06462999999970198,
+          "x": 2712.877895570987,
+          "y": 2466.092568359375,
+          "serverX": 2837.146240234375,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 13666.60000000149,
+          "sceneNow": 13664.79999999702,
+          "deltaSec": 0.066039999999851,
+          "x": 2798.7298955707934,
+          "y": 2466.092580354947,
+          "serverX": 2967.146240234375,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 13738.29999999702,
+          "sceneNow": 13736.39999999851,
+          "deltaSec": 0.06722000000029803,
+          "x": 2886.1158955711808,
+          "y": 2466.0925925648557,
+          "serverX": 3032.146240234375,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 13800.79999999702,
+          "sceneNow": 13800,
+          "deltaSec": 0.06607000000029803,
+          "x": 2972.0068955715683,
+          "y": 2466.092604565877,
+          "serverX": 3097.146240234375,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 13867.5,
+          "sceneNow": 13866.69999999553,
+          "deltaSec": 0.06505999999940396,
+          "x": 3056.5848955707934,
+          "y": 2466.092616383441,
+          "serverX": 3162.146240234375,
+          "serverY": 2466.092529296875
+        }
+      ],
+      "roundIndex": 29,
+      "burstOrdinal": 8,
+      "roundOrdinal": 2,
+      "pathErrorPx": 0
+    },
+    {
+      "id": "p30",
+      "bornTick": 200,
+      "observedTick": 200,
+      "attackSeq": 8,
+      "rigAttackSeq": 8,
+      "vx": 1300,
+      "vy": 0.00018856067617889494,
+      "authorityOrigin": {
+        "x": 2723.146240234375,
+        "y": 2466.092519868841
+      },
+      "visibleSpawnOrigin": {
+        "x": 2712.877895570987,
+        "y": 2466.092568359375
+      },
+      "spriteMuzzleAtSpawn": {
+        "x": 2712.877895570987,
+        "y": 2466.092568359375
+      },
+      "admissionDeltaPx": 0,
+      "authorityMuzzleDeltaPx": 10.268344663502273,
+      "track": [
+        {
+          "wallMs": 13562.10000000149,
+          "sceneNow": 13560.89999999851,
+          "deltaSec": 0.06462999999970198,
+          "x": 2712.877895570987,
+          "y": 2466.092568359375,
+          "serverX": 2788.146240234375,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 13666.60000000149,
+          "sceneNow": 13664.79999999702,
+          "deltaSec": 0.066039999999851,
+          "x": 2798.7298955707934,
+          "y": 2466.0925808119223,
+          "serverX": 2918.146240234375,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 13738.29999999702,
+          "sceneNow": 13736.39999999851,
+          "deltaSec": 0.06722000000029803,
+          "x": 2886.1158955711808,
+          "y": 2466.092593486971,
+          "serverX": 2983.146240234375,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 13800.79999999702,
+          "sceneNow": 13800,
+          "deltaSec": 0.06607000000029803,
+          "x": 2972.0068955715683,
+          "y": 2466.092605945175,
+          "serverX": 3048.146240234375,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 13867.5,
+          "sceneNow": 13866.69999999553,
+          "deltaSec": 0.06505999999940396,
+          "x": 3056.5848955707934,
+          "y": 2466.0926182129324,
+          "serverX": 3113.146240234375,
+          "serverY": 2466.092529296875
+        }
+      ],
+      "roundIndex": 30,
+      "burstOrdinal": 8,
+      "roundOrdinal": 3,
+      "pathErrorPx": 4.547473508864641e-13
+    },
+    {
+      "id": "p31",
+      "bornTick": 201,
+      "observedTick": 202,
+      "attackSeq": 8,
+      "rigAttackSeq": 8,
+      "vx": 1300,
+      "vy": 0.00018856067617889494,
+      "authorityOrigin": {
+        "x": 2739.146240234375,
+        "y": 2466.0925104408075
+      },
+      "visibleSpawnOrigin": {
+        "x": 2722.7436536788364,
+        "y": 2466.092568359375
+      },
+      "spriteMuzzleAtSpawn": {
+        "x": 2722.7436536788364,
+        "y": 2466.092568359375
+      },
+      "admissionDeltaPx": 0,
+      "authorityMuzzleDeltaPx": 16.402586555640873,
+      "track": [
+        {
+          "wallMs": 13666.60000000149,
+          "sceneNow": 13664.79999999702,
+          "deltaSec": 0.066039999999851,
+          "x": 2722.7436536788364,
+          "y": 2466.092568359375,
+          "serverX": 2869.146240234375,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 13738.29999999702,
+          "sceneNow": 13736.39999999851,
+          "deltaSec": 0.06722000000029803,
+          "x": 2810.129653679224,
+          "y": 2466.092581034424,
+          "serverX": 2934.146240234375,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 13800.79999999702,
+          "sceneNow": 13800,
+          "deltaSec": 0.06607000000029803,
+          "x": 2896.0206536796113,
+          "y": 2466.0925934926277,
+          "serverX": 2999.146240234375,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 13867.5,
+          "sceneNow": 13866.69999999553,
+          "deltaSec": 0.06505999999940396,
+          "x": 2980.5986536788364,
+          "y": 2466.092605760385,
+          "serverX": 3064.146240234375,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 13958.89999999851,
+          "sceneNow": 13958.10000000149,
+          "deltaSec": 0.06818000000044704,
+          "x": 3069.2326536794176,
+          "y": 2466.092618616452,
+          "serverX": 3129.146240234375,
+          "serverY": 2466.092529296875
+        }
+      ],
+      "roundIndex": 31,
+      "burstOrdinal": 8,
+      "roundOrdinal": 4,
+      "pathErrorPx": 0
+    },
+    {
+      "id": "p32",
+      "bornTick": 227,
+      "observedTick": 227,
+      "attackSeq": 9,
+      "rigAttackSeq": 9,
+      "vx": 1300,
+      "vy": 0.0001365440693916753,
+      "authorityOrigin": {
+        "x": 2620.34228515625,
+        "y": 2466.0925224696716
+      },
+      "visibleSpawnOrigin": {
+        "x": 2625.5904296875,
+        "y": 2466.092568359375
+      },
+      "spriteMuzzleAtSpawn": {
+        "x": 2625.5904296875,
+        "y": 2466.092568359375
+      },
+      "admissionDeltaPx": 0,
+      "authorityMuzzleDeltaPx": 5.24814453145072,
+      "track": [
+        {
+          "wallMs": 14983,
+          "sceneNow": 14981.60000000149,
+          "deltaSec": 0.06784000000059605,
+          "x": 2625.5904296875,
+          "y": 2466.092568359375,
+          "serverX": 2685.34228515625,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 15050.5,
+          "sceneNow": 15049.10000000149,
+          "deltaSec": 0.06808000000044703,
+          "x": 2714.094429688081,
+          "y": 2466.0925776552954,
+          "serverX": 2815.34228515625,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 15159,
+          "sceneNow": 15157.89999999851,
+          "deltaSec": 0.071339999999851,
+          "x": 2806.8364296878876,
+          "y": 2466.0925873963492,
+          "serverX": 3010.34228515625,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 15232.60000000149,
+          "sceneNow": 15231.79999999702,
+          "deltaSec": 0.07231000000014902,
+          "x": 2900.8394296880815,
+          "y": 2466.092597269851,
+          "serverX": 3010.34228515625,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 15291.79999999702,
+          "sceneNow": 15290.89999999851,
+          "deltaSec": 0.07081000000014902,
+          "x": 2992.892429688275,
+          "y": 2466.0926069385364,
+          "serverX": 3140.34228515625,
+          "serverY": 2466.092529296875
+        }
+      ],
+      "roundIndex": 32,
+      "burstOrdinal": 9,
+      "roundOrdinal": 1,
+      "pathErrorPx": 0
+    },
+    {
+      "id": "p33",
+      "bornTick": 228,
+      "observedTick": 229,
+      "attackSeq": 9,
+      "rigAttackSeq": 9,
+      "vx": 1300,
+      "vy": 0.00014041742542758584,
+      "authorityOrigin": {
+        "x": 2601.646240234375,
+        "y": 2466.0925152551326
+      },
+      "visibleSpawnOrigin": {
+        "x": 2601.129276273485,
+        "y": 2466.092568359375
+      },
+      "spriteMuzzleAtSpawn": {
+        "x": 2601.129276273485,
+        "y": 2466.092568359375
+      },
+      "admissionDeltaPx": 0,
+      "authorityMuzzleDeltaPx": 0.5169639636173465,
+      "track": [
+        {
+          "wallMs": 15050.5,
+          "sceneNow": 15049.10000000149,
+          "deltaSec": 0.06808000000044703,
+          "x": 2601.129276273485,
+          "y": 2466.092568359375,
+          "serverX": 2731.646240234375,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 15159,
+          "sceneNow": 15157.89999999851,
+          "deltaSec": 0.071339999999851,
+          "x": 2693.8712762732916,
+          "y": 2466.0925783767543,
+          "serverX": 2926.646240234375,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 15232.60000000149,
+          "sceneNow": 15231.79999999702,
+          "deltaSec": 0.07231000000014902,
+          "x": 2787.8742762734855,
+          "y": 2466.092588530338,
+          "serverX": 2926.646240234375,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 15291.79999999702,
+          "sceneNow": 15290.89999999851,
+          "deltaSec": 0.07081000000014902,
+          "x": 2879.927276273679,
+          "y": 2466.092598473296,
+          "serverX": 3056.646240234375,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 15353.39999999851,
+          "sceneNow": 15352.39999999851,
+          "deltaSec": 0.0709,
+          "x": 2972.097276273679,
+          "y": 2466.0926084288917,
+          "serverX": 3186.646240234375,
+          "serverY": 2466.092529296875
+        }
+      ],
+      "roundIndex": 33,
+      "burstOrdinal": 9,
+      "roundOrdinal": 2,
+      "pathErrorPx": 4.547473508864641e-13
+    },
+    {
+      "id": "p34",
+      "bornTick": 229,
+      "observedTick": 229,
+      "attackSeq": 9,
+      "rigAttackSeq": 9,
+      "vx": 1300,
+      "vy": 0.0001365440693916753,
+      "authorityOrigin": {
+        "x": 2585.646240234375,
+        "y": 2466.0925224696716
+      },
+      "visibleSpawnOrigin": {
+        "x": 2601.129276273485,
+        "y": 2466.092568359375
+      },
+      "spriteMuzzleAtSpawn": {
+        "x": 2601.129276273485,
+        "y": 2466.092568359375
+      },
+      "admissionDeltaPx": 0,
+      "authorityMuzzleDeltaPx": 15.483036039178181,
+      "track": [
+        {
+          "wallMs": 15050.5,
+          "sceneNow": 15049.10000000149,
+          "deltaSec": 0.06808000000044703,
+          "x": 2601.129276273485,
+          "y": 2466.092568359375,
+          "serverX": 2650.646240234375,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 15159,
+          "sceneNow": 15157.89999999851,
+          "deltaSec": 0.071339999999851,
+          "x": 2693.8712762732916,
+          "y": 2466.092578100429,
+          "serverX": 2845.646240234375,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 15232.60000000149,
+          "sceneNow": 15231.79999999702,
+          "deltaSec": 0.07231000000014902,
+          "x": 2787.8742762734855,
+          "y": 2466.0925879739307,
+          "serverX": 2845.646240234375,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 15291.79999999702,
+          "sceneNow": 15290.89999999851,
+          "deltaSec": 0.07081000000014902,
+          "x": 2879.927276273679,
+          "y": 2466.092597642616,
+          "serverX": 2975.646240234375,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 15353.39999999851,
+          "sceneNow": 15352.39999999851,
+          "deltaSec": 0.0709,
+          "x": 2972.097276273679,
+          "y": 2466.0926073235905,
+          "serverX": 3105.646240234375,
+          "serverY": 2466.092529296875
+        }
+      ],
+      "roundIndex": 34,
+      "burstOrdinal": 9,
+      "roundOrdinal": 3,
+      "pathErrorPx": 4.547473508864641e-13
+    },
+    {
+      "id": "p35",
+      "bornTick": 230,
+      "observedTick": 232,
+      "attackSeq": 9,
+      "rigAttackSeq": 9,
+      "vx": 1300,
+      "vy": 0.00014041742542758584,
+      "authorityOrigin": {
+        "x": 2569.646240234375,
+        "y": 2466.092508234261
+      },
+      "visibleSpawnOrigin": {
+        "x": 2579.5286852493714,
+        "y": 2466.092568359375
+      },
+      "spriteMuzzleAtSpawn": {
+        "x": 2579.5286852493714,
+        "y": 2466.092568359375
+      },
+      "admissionDeltaPx": 0,
+      "authorityMuzzleDeltaPx": 9.882445015179293,
+      "track": [
+        {
+          "wallMs": 15159,
+          "sceneNow": 15157.89999999851,
+          "deltaSec": 0.071339999999851,
+          "x": 2579.5286852493714,
+          "y": 2466.092568359375,
+          "serverX": 2764.646240234375,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 15232.60000000149,
+          "sceneNow": 15231.79999999702,
+          "deltaSec": 0.07231000000014902,
+          "x": 2673.5316852495653,
+          "y": 2466.092578512959,
+          "serverX": 2764.646240234375,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 15291.79999999702,
+          "sceneNow": 15290.89999999851,
+          "deltaSec": 0.07081000000014902,
+          "x": 2765.584685249759,
+          "y": 2466.092588455917,
+          "serverX": 2894.646240234375,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 15353.39999999851,
+          "sceneNow": 15352.39999999851,
+          "deltaSec": 0.0709,
+          "x": 2857.754685249759,
+          "y": 2466.0925984115124,
+          "serverX": 3024.646240234375,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 15427.19999999553,
+          "sceneNow": 15426.39999999851,
+          "deltaSec": 0.07167999999970198,
+          "x": 2950.9386852493717,
+          "y": 2466.0926084766334,
+          "serverX": 3089.646240234375,
+          "serverY": 2466.092529296875
+        },
+        {
+          "wallMs": 15502.5,
+          "sceneNow": 15501.39999999851,
+          "deltaSec": 0.072739999999851,
+          "x": 3045.500685249178,
+          "y": 2466.0926186905967,
+          "serverX": 3219.646240234375,
+          "serverY": 2466.092529296875
+        }
+      ],
+      "roundIndex": 35,
+      "burstOrdinal": 9,
+      "roundOrdinal": 4,
+      "pathErrorPx": 4.547473508864641e-13
+    }
+  ]
+}

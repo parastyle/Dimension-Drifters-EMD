@@ -1,14 +1,22 @@
 import {
   addImpulse,
   DIST_JUMP_VERTICAL_VELOCITY,
+  gunLocomotionRecoilFor,
+  gunUserRecoilFor,
   INTERP_SNAP_PLAYER,
   stepImpulse,
   stepSteeredMovement,
   stepVertical,
   TICK_MS,
+  WEAPONS,
 } from "@dd/shared";
 import { describe, expect, it } from "vitest";
-import { type PredCmd, SelfPredictor, type ServerView } from "./prediction.js";
+import {
+  LOCOMOTION_ONLY_AUTHORITY_RADIUS_PX,
+  type PredCmd,
+  SelfPredictor,
+  type ServerView,
+} from "./prediction.js";
 
 /**
  * §4 v0.107 reconciliation correctness — the predictor against a MOCK SERVER running the SAME shared
@@ -181,6 +189,33 @@ describe("SelfPredictor — §4 v0.107 prediction + reconciliation", () => {
       expect(rendered.x, `round ${round + 1} x`).toBeCloseTo(server.x, 6);
       expect(rendered.y, `round ${round + 1} y`).toBeCloseTo(server.y, 6);
       expect(pred.stats.errPx, `round ${round + 1} correction`).toBeLessThan(0.01);
+    }
+  });
+
+  it("keeps Overcasters presentation recoil out of predicted locomotion at low and induced latency", () => {
+    const weapon = WEAPONS["x2-galvanic-overcasters"];
+    expect(gunUserRecoilFor(weapon).impulse).toBeGreaterThan(0);
+    expect(gunLocomotionRecoilFor(weapon).impulse).toBe(0);
+
+    for (const latency of [0, 3]) {
+      const server = new MockServer();
+      const pred = new SelfPredictor(server.view());
+      const before = pred.renderPos(0, 0, 0);
+      const recoil = gunLocomotionRecoilFor(weapon);
+      pred.addPredictedImpulse(-recoil.impulse, 0, recoil.maxImpulse);
+      expect(pred.renderPos(0, 0, 0), `latency ${latency} recoil edge`).toMatchObject(before);
+
+      run(pred, server, [...hold(1, 0, 24), ...hold(-1, 0, 24), ...hold(1, 0, 24)], latency);
+      const moving = pred.renderPos(1, 0, 0);
+      const bounded = pred.boundLocomotionPresentation(server.x, server.y, moving.x, moving.y);
+      expect(
+        Math.hypot(bounded.x - server.x, bounded.y - server.y),
+        `latency ${latency} authority radius`,
+      ).toBeLessThanOrEqual(LOCOMOTION_ONLY_AUTHORITY_RADIUS_PX);
+      run(pred, server, hold(0, 0, 40), latency);
+      const settled = pred.renderPos(0, 0, 0);
+      expect(settled.x, `latency ${latency} settled x`).toBeCloseTo(server.x, 1);
+      expect(settled.y, `latency ${latency} settled y`).toBeCloseTo(server.y, 1);
     }
   });
 
@@ -567,17 +602,7 @@ describe("input transport — immediate changes retain the 20Hz heartbeat", () =
     for (let edge = 0; edge < latencyPrediction.IMMEDIATE_INPUT_SEND_CAP + 4; edge++) {
       fireHeld = !fireHeld;
       if (
-        predictor.shouldMintImmediateInput(
-          1,
-          0,
-          false,
-          false,
-          false,
-          false,
-          false,
-          fireHeld,
-          false,
-        )
+        predictor.shouldMintImmediateInput(1, 0, false, false, false, false, false, fireHeld, false)
       )
         extras++;
     }

@@ -1047,8 +1047,9 @@ export function weaponMuzzleWorldPoint(
   return { x: point.x, y: point.y };
 }
 
-/** One accepted gun round's deterministic self-recoil contract. The server applies it to authority and
- * the owning client predicts the same impulse for the trigger round plus every scheduled burst round. */
+/** One accepted gun round's authored body-recoil magnitude. Most guns apply this to authoritative
+ * locomotion and mirror it in owner prediction; presentation-only exceptions retain the same authored
+ * magnitude for camera/weapon response without feeding it into the player root. */
 export function gunUserRecoilFor(
   weapon: Pick<WeaponDef, "gun"> | undefined,
 ): Readonly<{ impulse: number; maxImpulse: number }> {
@@ -1062,6 +1063,26 @@ export function gunUserRecoilFor(
       displacementMultiplier,
     maxImpulse: IMPULSE_MAX * Math.max(1, displacementMultiplier),
   };
+}
+
+const NO_GUN_LOCOMOTION_RECOIL = Object.freeze({ impulse: 0, maxImpulse: IMPULSE_MAX });
+const PRESENTATION_ONLY_GUN_RECOIL_IDS = new Set(["x2-galvanic-overcasters"]);
+
+/**
+ * Body-motion policy for gun recoil. Galvanic Overcasters already has a complete cosmetic recoil
+ * sentence (rig kick, muzzle flash, sound, and camera response); feeding each of its four 50 ms rounds
+ * into locomotion made the body and its later muzzle samples chase speculative/authoritative impulses.
+ * Keep the weapon response, but leave local prediction and server/remote position channels locomotion-only.
+ *
+ * This is deliberately a shared code policy rather than a generated catalog datum: the authored recoil
+ * magnitude is still correct, and no content value changes. Both authority and prediction consume this
+ * helper so the exception cannot become a client-only divergence again.
+ */
+export function gunLocomotionRecoilFor(
+  weapon: Pick<WeaponDef, "id" | "gun"> | undefined,
+): Readonly<{ impulse: number; maxImpulse: number }> {
+  if (weapon && PRESENTATION_ONLY_GUN_RECOIL_IDS.has(weapon.id)) return NO_GUN_LOCOMOTION_RECOIL;
+  return gunUserRecoilFor(weapon);
 }
 
 /** Two-hand orbit carries the grip this far from the authoritative player root before extending the blade.
