@@ -45,8 +45,18 @@ export const PLAYABLE_CHARACTERS = [
   "cc-thornroot",
   "cc-tinker-magnus-brasswick",
   "cc-yuki-the-hollow-smile",
+  "proto-armored-bean-heavy",
+  "proto-blob-bruiser",
+  "proto-capsule-tactical-unit",
+  "proto-geometric-robot-pod",
+  "proto-helmeted-enforcer",
+  "proto-hooded-rogue",
+  "proto-masked-oval-fighter",
+  "proto-mutant-lump",
+  "proto-paper-cutout-fighter",
   "proto-samurai",
   "proto-sheriff",
+  "proto-soft-mascot-fighter",
   "proto-witch",
 ] as const;
 
@@ -54,8 +64,18 @@ export type PlayableCharacter = (typeof PLAYABLE_CHARACTERS)[number];
 
 /** Installed whole-art characters available to ordinary player selection. */
 export const WHOLE_ART_CHARACTERS = [
+  "proto-armored-bean-heavy",
+  "proto-blob-bruiser",
+  "proto-capsule-tactical-unit",
+  "proto-geometric-robot-pod",
+  "proto-helmeted-enforcer",
+  "proto-hooded-rogue",
+  "proto-masked-oval-fighter",
+  "proto-mutant-lump",
+  "proto-paper-cutout-fighter",
   "proto-samurai",
   "proto-sheriff",
+  "proto-soft-mascot-fighter",
   "proto-witch",
 ] as const satisfies readonly PlayableCharacter[];
 
@@ -104,8 +124,18 @@ export const CHARACTER_KITS = {
   "cc-thornroot": { spread: { str: 2, dex: 1, int: 2, con: 4, luk: 1 }, quirk: "regrow" },
   "cc-tinker-magnus-brasswick": { spread: { str: 1, dex: 2, int: 4, con: 2, luk: 1 }, quirk: "pressurized" },
   "cc-yuki-the-hollow-smile": { spread: { str: 2, dex: 4, int: 1, con: 1, luk: 2 }, quirk: "fox-dance" },
+  "proto-armored-bean-heavy": { spread: { str: 2, dex: 2, int: 2, con: 2, luk: 2 }, quirk: "unwritten" },
+  "proto-blob-bruiser": { spread: { str: 2, dex: 2, int: 2, con: 2, luk: 2 }, quirk: "unwritten" },
+  "proto-capsule-tactical-unit": { spread: { str: 2, dex: 2, int: 2, con: 2, luk: 2 }, quirk: "unwritten" },
+  "proto-geometric-robot-pod": { spread: { str: 2, dex: 2, int: 2, con: 2, luk: 2 }, quirk: "unwritten" },
+  "proto-helmeted-enforcer": { spread: { str: 2, dex: 2, int: 2, con: 2, luk: 2 }, quirk: "unwritten" },
+  "proto-hooded-rogue": { spread: { str: 2, dex: 2, int: 2, con: 2, luk: 2 }, quirk: "unwritten" },
+  "proto-masked-oval-fighter": { spread: { str: 2, dex: 2, int: 2, con: 2, luk: 2 }, quirk: "unwritten" },
+  "proto-mutant-lump": { spread: { str: 2, dex: 2, int: 2, con: 2, luk: 2 }, quirk: "unwritten" },
+  "proto-paper-cutout-fighter": { spread: { str: 2, dex: 2, int: 2, con: 2, luk: 2 }, quirk: "unwritten" },
   "proto-samurai": { spread: { str: 2, dex: 2, int: 2, con: 2, luk: 2 }, quirk: "unwritten" },
   "proto-sheriff": { spread: { str: 2, dex: 2, int: 2, con: 2, luk: 2 }, quirk: "unwritten" },
+  "proto-soft-mascot-fighter": { spread: { str: 2, dex: 2, int: 2, con: 2, luk: 2 }, quirk: "unwritten" },
   "proto-witch": { spread: { str: 2, dex: 2, int: 2, con: 2, luk: 2 }, quirk: "unwritten" },
 } as const satisfies Record<PlayableCharacter, {
   readonly spread: Readonly<Record<"str" | "dex" | "int" | "con" | "luk", number>>;
@@ -186,8 +216,18 @@ const CHARACTER_NAMES: Record<string, string> = {
   "cc-thornroot": "Thornroot",
   "cc-tinker-magnus-brasswick": "Tinker-Magnus Brasswick",
   "cc-yuki-the-hollow-smile": "Yuki",
+  "proto-armored-bean-heavy": "Prototype Armored Bean Heavy",
+  "proto-blob-bruiser": "Prototype Blob Bruiser",
+  "proto-capsule-tactical-unit": "Prototype Capsule Tactical Unit",
+  "proto-geometric-robot-pod": "Prototype Geometric Robot Pod",
+  "proto-helmeted-enforcer": "Prototype Helmeted Enforcer",
+  "proto-hooded-rogue": "Prototype Hooded Rogue",
+  "proto-masked-oval-fighter": "Prototype Masked Oval Fighter",
+  "proto-mutant-lump": "Prototype Mutant Lump",
+  "proto-paper-cutout-fighter": "Prototype Paper Cutout Fighter",
   "proto-samurai": "Prototype Samurai",
   "proto-sheriff": "Prototype Sheriff",
+  "proto-soft-mascot-fighter": "Prototype Soft Mascot Fighter",
   "proto-witch": "Prototype Witch",
 };
 

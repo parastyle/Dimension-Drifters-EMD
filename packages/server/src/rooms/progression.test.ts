@@ -437,8 +437,18 @@ describe("pet v1 account sanitization and deterministic progression", () => {
 describe("gear G1/G2 shared catalog, account, and allocation laws", () => {
   it("emits one typed whole-art selection contract while retaining the legacy roster", () => {
     expect(petShared.WHOLE_ART_CHARACTERS).toEqual([
+      "proto-armored-bean-heavy",
+      "proto-blob-bruiser",
+      "proto-capsule-tactical-unit",
+      "proto-geometric-robot-pod",
+      "proto-helmeted-enforcer",
+      "proto-hooded-rogue",
+      "proto-masked-oval-fighter",
+      "proto-mutant-lump",
+      "proto-paper-cutout-fighter",
       "proto-samurai",
       "proto-sheriff",
+      "proto-soft-mascot-fighter",
       "proto-witch",
     ]);
     expect(petShared.DEFAULT_CHARACTER).toBe("proto-sheriff");
@@ -450,8 +460,11 @@ describe("gear G1/G2 shared catalog, account, and allocation laws", () => {
     expect(petShared.isWholeArtCharacter("drifter")).toBe(false);
     expect(petShared.isWholeArtCharacter("cc-asha-the-ash-walker")).toBe(false);
     expect(petShared.nextWholeArtCharacter("proto-samurai")).toBe("proto-sheriff");
-    expect(petShared.nextWholeArtCharacter("proto-sheriff")).toBe("proto-witch");
-    expect(petShared.nextWholeArtCharacter("proto-witch")).toBe("proto-samurai");
+    expect(petShared.nextWholeArtCharacter("proto-sheriff")).toBe(
+      "proto-soft-mascot-fighter",
+    );
+    expect(petShared.nextWholeArtCharacter("proto-soft-mascot-fighter")).toBe("proto-witch");
+    expect(petShared.nextWholeArtCharacter("proto-witch")).toBe("proto-armored-bean-heavy");
     expect(petShared.nextWholeArtCharacter("drifter")).toBe("proto-sheriff");
   });
 

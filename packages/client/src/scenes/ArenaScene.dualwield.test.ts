@@ -44,7 +44,7 @@ vi.mock("../entities/SpriteRig.js", async (importOriginal) => {
   return { ...actual, SpriteRig: SpriteRigStub };
 });
 
-const { ArenaScene } = await import("./ArenaScene.js");
+const { ArenaScene, resolveOrdinaryPlayerCharacterId } = await import("./ArenaScene.js");
 const arenaSource = readFileSync(new URL("./ArenaScene.ts", import.meta.url), "utf8");
 
 beforeEach(() => {
@@ -351,6 +351,7 @@ describe("ArenaScene whole-art ordinary player creation", () => {
   it.each(
     WHOLE_ART_CHARACTERS,
   )("constructs selected whole-art character %s without entering the gear path", (characterId) => {
+    expect(resolveOrdinaryPlayerCharacterId(characterId)).toBe(characterId);
     const { rig, args } = createBlob(characterId);
 
     expect(args?.[5]).toBe(characterId);

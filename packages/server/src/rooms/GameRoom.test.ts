@@ -3893,22 +3893,22 @@ describe("GameRoom — classmerge 21a", () => {
     expect([player.str, player.dex, player.int, player.con, player.luk]).toEqual([2, 2, 2, 2, 2]);
 
     h.send("identity", "cycleCharacter");
-    expect(player.character).toBe("proto-witch");
+    expect(player.character).toBe("proto-soft-mascot-fighter");
     expect(player.runCharacter).toBe("proto-sheriff");
     expect(combat.identityCharacter).toBe("proto-sheriff");
     expect([player.str, player.dex, player.int, player.con, player.luk]).toEqual([2, 2, 2, 2, 2]);
 
     h.room.restartRun();
-    expect(player.runCharacter).toBe("proto-witch");
+    expect(player.runCharacter).toBe("proto-soft-mascot-fighter");
     expect(combat.identityCharacter).toBe(player.runCharacter);
     expect([player.str, player.dex, player.int, player.con, player.luk]).toEqual([2, 2, 2, 2, 2]);
 
     player.str += 5; // earned allocation survives the next boundary's spread-delta rebase
     h.tick(1); // refill the action budget
     h.send("identity", "cycleCharacter");
-    expect(player.character).toBe("proto-samurai");
+    expect(player.character).toBe("proto-witch");
     h.room.transitionDimension();
-    expect(player.runCharacter).toBe("proto-samurai");
+    expect(player.runCharacter).toBe("proto-witch");
     expect([player.str, player.dex, player.int, player.con, player.luk]).toEqual([7, 2, 2, 2, 2]);
   });
 
@@ -3921,7 +3921,7 @@ describe("GameRoom — classmerge 21a", () => {
     const allocatedTotal = attrTotal(player) - 10;
     h.send("training-kit", "cycleCharacter");
 
-    expect(player.character).toBe("proto-witch");
+    expect(player.character).toBe("proto-soft-mascot-fighter");
     expect(player.runCharacter).toBe(player.character);
     expect([player.str, player.dex, player.int, player.con, player.luk]).toEqual([2, 6, 2, 2, 2]);
     expect(attrTotal(player) - 10).toBe(allocatedTotal);
