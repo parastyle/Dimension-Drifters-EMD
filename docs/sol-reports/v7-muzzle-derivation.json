@@ -132,6 +132,50 @@
     "barrelMode": "parallel"
   },
   {
+    "id": "x-staff-arcane-lance",
+    "name": "Arcanist's Lance",
+    "sprite": "x-staff-arcane-lance",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 18
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 18
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x-staff-storm-rod",
+    "name": "Stormcaller Rod",
+    "sprite": "x-staff-storm-rod",
+    "derived": [
+      {
+        "part": 0,
+        "x": 249,
+        "y": 32
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 249,
+        "y": 32
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
     "id": "x2-ashfall-peacemaker",
     "name": "Ashfall Peacemaker",
     "sprite": "x2-ashfall-peacemaker",
@@ -392,6 +436,28 @@
       }
     ],
     "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-bubble-wand-swarm-caster",
+    "name": "Bubble Wand Swarm Caster",
+    "sprite": "x2-bubble-wand-swarm-caster",
+    "derived": [
+      {
+        "part": 0,
+        "x": 287,
+        "y": 128.9
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 299,
+        "y": 70
+      }
+    ],
+    "override": "The bubble swarm originates at the business edge of the painted ring, up-and-right from the handle.",
     "salvoMode": "parallel",
     "barrelMode": "parallel"
   },
@@ -770,6 +836,28 @@
     "barrelMode": "parallel"
   },
   {
+    "id": "x2-confetti-cannon",
+    "name": "Confetti Cannon",
+    "sprite": "x2-confetti-cannon",
+    "derived": [
+      {
+        "part": 0,
+        "x": 1379,
+        "y": 281.7
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 1379,
+        "y": 291
+      }
+    ],
+    "override": "The spread originates at the centre of the oversized bell opening, not the lower grip silhouette.",
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
     "id": "x2-coyote-stinger",
     "name": "Coyote Stinger",
     "sprite": "x2-coyote-stinger",
@@ -908,6 +996,50 @@
       }
     ],
     "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-exploding-present-lobber",
+    "name": "Exploding Present Lobber",
+    "sprite": "x2-exploding-present-lobber",
+    "derived": [
+      {
+        "part": 0,
+        "x": 510,
+        "y": 98.2
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 511,
+        "y": 103
+      }
+    ],
+    "override": "The arced present leaves from the centre of the wrapped-box muzzle face.",
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-fish-launcher",
+    "name": "Fish Launcher",
+    "sprite": "x2-fish-launcher",
+    "derived": [
+      {
+        "part": 0,
+        "x": 764,
+        "y": 143.1
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 767,
+        "y": 109
+      }
+    ],
+    "override": "The cone originates at the visible centre of the trout's open mouth.",
     "salvoMode": "parallel",
     "barrelMode": "parallel"
   },
@@ -3046,6 +3178,28 @@
     ],
     "override": null,
     "salvoMode": "cycle",
+    "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-unicorn-rainbow-beam",
+    "name": "Unicorn Rainbow Beam",
+    "sprite": "x2-unicorn-rainbow-beam",
+    "derived": [
+      {
+        "part": 0,
+        "x": 376,
+        "y": 68.5
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 383,
+        "y": 99
+      }
+    ],
+    "override": "The beam must anchor at the painted unicorn-horn tip, not the broader pearl housing selected by alpha mass.",
+    "salvoMode": "parallel",
     "barrelMode": "parallel"
   },
   {

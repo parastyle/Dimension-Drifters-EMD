@@ -700,6 +700,7 @@ interface PendingWeaponThrow {
   landingDamagePerSecond?: number;
   ricochet?: { hops: number; range: number };
   arcHeight?: number;
+  returning?: boolean;
 }
 
 /** One server-private Drive authority. The result row is reused so the 20 Hz seam allocates nothing. */
@@ -1175,6 +1176,11 @@ export class GameRoom extends Room<ArenaState> {
         originY: number;
         elapsedSeconds: number;
         definition: ProjectileWaveformDef;
+      };
+      /** Outbound timer and return-leg state for true boomerang projectiles. */
+      returnToOwner?: {
+        outboundSeconds: number;
+        returning: boolean;
       };
     }
   >();
@@ -10527,6 +10533,7 @@ export class GameRoom extends Room<ArenaState> {
     targetRicochet?: { hops: number; range: number },
     projectileWaveform?: ProjectileWaveformDef,
     arcHeight = 0,
+    returnAfterSeconds?: number,
   ): void {
     // §16 the documented budget is ARENA-wide: reject generic spitters here too. Friendly player fire is
     // and friendly rows each have an explicit ceiling; a reflected hostile shot changes sides and frees
@@ -10586,6 +10593,10 @@ export class GameRoom extends Room<ArenaState> {
             definition: projectileWaveform,
           }
         : undefined,
+      returnToOwner:
+        returnAfterSeconds !== undefined
+          ? { outboundSeconds: returnAfterSeconds, returning: false }
+          : undefined,
     });
     if (hostile) this.hostileProjectileCount++;
   }
@@ -10882,6 +10893,19 @@ export class GameRoom extends Room<ArenaState> {
       Math.min(CAST_VOLLEY_PROJECTILE_CAP, Math.trunc(cast.volley?.count ?? 1)),
     );
     const projectileDamage = totalDamage / volleyCount;
+    const totalExplosionDamage = cast.explode
+      ? cast.explode.damage *
+        this.heldCastDamageMult(
+          weapon,
+          cast.explode.scalingGrades ?? cast.scalingGrades,
+          player,
+          hand,
+        ) *
+        dmgMul
+      : 0;
+    const projectileExplosion = cast.explode
+      ? { radius: cast.explode.radius, damage: totalExplosionDamage / volleyCount }
+      : undefined;
     const forks = Math.min(
       AUG_CAST_SPLIT_MAX,
       AUG_CAST_SPLIT_PER * countAugment(player.augments, "arc-split"),
@@ -10914,7 +10938,7 @@ export class GameRoom extends Room<ArenaState> {
         bulletKind,
         cast.pierce ?? 99,
         ttl,
-        undefined,
+        projectileExplosion,
         0,
         crit,
         player.id,
@@ -10951,7 +10975,8 @@ export class GameRoom extends Room<ArenaState> {
     if (!t) return;
     const damageMultiplier = this.heldDamageMult(weapon, t.scalingGrades, player, hand);
     const dmg = t.damage * damageMultiplier; // §14 source grades × §11 req penalty
-    const ttl = t.range / t.speed;
+    const outboundSeconds = t.range / t.speed;
+    const ttl = outboundSeconds * (t.returning ? 2 : 1);
     const aim = this.aimDir(player, c); // §37 aim at the cursor POINT, not the rig-derived vector
     const drawSeconds = weapon.performance?.windupSeconds ?? 0;
     if ((weapon.performance?.preThrowRevolutions ?? 0) > 0 && drawSeconds > 0) {
@@ -11003,6 +11028,7 @@ export class GameRoom extends Room<ArenaState> {
           ? { hops: t.ricochetHops, range: t.ricochetRange ?? Math.min(t.range, 320) }
           : undefined,
         arcHeight: t.arcHeight ?? weapon.groundZone?.grenadeArcHeight,
+        returning: t.returning,
       });
       return;
     }
@@ -11031,6 +11057,7 @@ export class GameRoom extends Room<ArenaState> {
         : undefined,
       undefined,
       t.arcHeight ?? weapon.groundZone?.grenadeArcHeight ?? 0,
+      t.returning ? outboundSeconds : undefined,
     );
   }
 
@@ -11048,7 +11075,7 @@ export class GameRoom extends Room<ArenaState> {
       false,
       pending.kind,
       pending.pierce,
-      pending.range / pending.speed,
+      (pending.range / pending.speed) * (pending.returning ? 2 : 1),
       undefined,
       0,
       pending.crit,
@@ -11060,6 +11087,7 @@ export class GameRoom extends Room<ArenaState> {
       pending.ricochet,
       undefined,
       pending.arcHeight ?? 0,
+      pending.returning ? pending.range / pending.speed : undefined,
     );
   }
 
@@ -13009,6 +13037,34 @@ export class GameRoom extends Room<ArenaState> {
         meta.firstCollisionY = undefined;
         meta.firstStep = false;
       }
+      if (meta?.returnToOwner) {
+        const returning = meta.returnToOwner;
+        if (!returning.returning) {
+          returning.outboundSeconds -= dt;
+          if (returning.outboundSeconds <= 0) {
+            returning.returning = true;
+            meta.hit.clear();
+            meta.pierce = meta.pierceMax ?? meta.pierce;
+          }
+        }
+        if (returning.returning) {
+          const owner = this.state.players.get(meta.sourcePlayerId ?? "");
+          if (!owner || !owner.alive) {
+            doomed.push(id);
+            return;
+          }
+          const dx = owner.x - pr.x;
+          const dy = owner.y - pr.y;
+          const distance = Math.hypot(dx, dy);
+          const speed = Math.hypot(pr.vx, pr.vy);
+          if (distance <= Math.max(PLAYER_RADIUS, speed * dt)) {
+            doomed.push(id);
+            return;
+          }
+          pr.vx = (dx / distance) * speed;
+          pr.vy = (dy / distance) * speed;
+        }
+      }
       if (meta?.waveform) {
         meta.waveform.elapsedSeconds += dt;
         const sample = projectileWaveformPositionAt(
@@ -13228,7 +13284,12 @@ export class GameRoom extends Room<ArenaState> {
         }
         for (const eid of kills) this.state.enemies.delete(eid);
         // Bouncing rounds survive a spent pierce — they re-arm on the next carom (above).
-        if (meta.pierce <= 0 && (meta.bounces ?? 0) <= 0) doomed.push(id);
+        if (
+          meta.pierce <= 0 &&
+          (meta.bounces ?? 0) <= 0 &&
+          meta.returnToOwner === undefined
+        )
+          doomed.push(id);
       }
     });
     for (const id of doomed) {

@@ -152,7 +152,7 @@ async function existingPartFiles(spriteId) {
 const definitions = {};
 const snapshot = [];
 const ranged = Object.values(WEAPONS)
-  .filter((weapon) => weapon.gun || weapon.beam)
+  .filter((weapon) => weapon.gun || weapon.beam || weapon.cast)
   .sort((left, right) => left.id.localeCompare(right.id));
 
 for (const weapon of ranged) {

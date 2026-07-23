@@ -16197,6 +16197,486 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "pierce": 4,
       "muzzleColor": 16766820
     }
+  },
+  "x2-unicorn-rainbow-beam": {
+    "id": "x2-unicorn-rainbow-beam",
+    "name": "Unicorn Rainbow Beam",
+    "expansion": true,
+    "scalingGrades": {
+      "int": "B",
+      "luk": "C"
+    },
+    "damage": 8,
+    "range": 120,
+    "halfArc": 0.5,
+    "cooldown": 0.65,
+    "displayLength": 104,
+    "swingArc": 1.8,
+    "gripFrac": 0.2,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "beam",
+      "fireMode": "hold",
+      "element": "arcane",
+      "classPool": "caster",
+      "family": "wand",
+      "rangeBand": "long",
+      "scaling": [
+        "INT",
+        "LUK"
+      ]
+    },
+    "gripPoints": {
+      "primary": {
+        "x": 0.2,
+        "y": 0.72
+      }
+    },
+    "description": "A pearl-and-gold unicorn-horn emitter that sustains a broad five-strand rainbow ribbon from its painted horn tip.",
+    "requirements": {
+      "int": 7,
+      "luk": 4
+    },
+    "beam": {
+      "damagePerSecond": 20,
+      "tickRate": 0.1,
+      "width": 64,
+      "range": 520,
+      "chargeSeconds": 0.65,
+      "sweepLagSeconds": 0.12,
+      "overheat": {
+        "maxChannelSeconds": 1.25,
+        "heatPerSecond": 0.6,
+        "coolPerSecond": 0.35,
+        "ignitionHeat": 0.25,
+        "lockSeconds": 1.5,
+        "restartHeat": 0.35
+      },
+      "movement": {
+        "chargeMul": 0.55,
+        "channelMul": 0.35
+      },
+      "scalingGrades": {
+        "int": "B",
+        "luk": "C"
+      }
+    }
+  },
+  "x2-fish-launcher": {
+    "id": "x2-fish-launcher",
+    "name": "Fish Launcher",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "B",
+      "str": "C"
+    },
+    "damage": 5,
+    "range": 120,
+    "halfArc": 0.58,
+    "cooldown": 0.9,
+    "displayLength": 158,
+    "swingArc": 1.8,
+    "gripFrac": 0.25,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "blunderbuss",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "STR"
+      ]
+    },
+    "gripPoints": {
+      "primary": {
+        "x": 0.25,
+        "y": 0.69
+      },
+      "secondary": {
+        "x": 0.52,
+        "y": 0.61,
+        "role": "horizontal-foregrip"
+      }
+    },
+    "poseLanguage": {
+      "idle": "secondary-grip",
+      "feet": "combat-plant"
+    },
+    "description": "A trout-mouthed blunderbuss that launches a close cone of tumbling fish with a wet slap on contact.",
+    "requirements": {
+      "dex": 6,
+      "str": 5
+    },
+    "twoHanded": true,
+    "gun": {
+      "damage": 5,
+      "projectileSpeed": 720,
+      "range": 520,
+      "fireRate": 0.9,
+      "magazine": 4,
+      "reloadSeconds": 1.6,
+      "bulletKind": "pellet",
+      "muzzle": "boom",
+      "recoil": 0.0032,
+      "pellets": 4,
+      "spread": 0.36,
+      "muzzleColor": 7259865,
+      "scalingGrades": {
+        "dex": "B",
+        "str": "C"
+      }
+    }
+  },
+  "x2-squeaky-mallet": {
+    "id": "x2-squeaky-mallet",
+    "name": "Squeaky Mallet",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "B",
+      "con": "C"
+    },
+    "damage": 15,
+    "range": 82,
+    "halfArc": 1.05,
+    "cooldown": 1.5,
+    "displayLength": 116,
+    "swingArc": 3.1,
+    "gripFrac": 0.16,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "melee-slam",
+      "fireMode": "tap-charge",
+      "element": "physical",
+      "classPool": "melee",
+      "family": "maul",
+      "rangeBand": "close",
+      "scaling": [
+        "STR",
+        "CON"
+      ]
+    },
+    "collisionLength": 90,
+    "gripPoints": {
+      "primary": {
+        "x": 0.16,
+        "y": 0.78
+      },
+      "secondary": {
+        "x": 0.28,
+        "y": 0.71,
+        "role": "handle"
+      }
+    },
+    "poseLanguage": {
+      "idle": "secondary-grip",
+      "feet": "wide-plant"
+    },
+    "description": "An oversized vinyl mauler with a short reach, a long reset, and one enormous squeaking impact.",
+    "swingStyle": "chop",
+    "performance": {
+      "hold": "steady",
+      "action": "overhead-downswing",
+      "windupSeconds": 0.48
+    },
+    "requirements": {
+      "str": 8,
+      "con": 5
+    },
+    "twoHanded": true,
+    "durability": 90,
+    "quake": {
+      "radius": 90,
+      "damage": 7.5,
+      "scalingGrades": {
+        "str": "B",
+        "con": "C"
+      }
+    }
+  },
+  "x2-exploding-present-lobber": {
+    "id": "x2-exploding-present-lobber",
+    "name": "Exploding Present Lobber",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "B",
+      "luk": "C"
+    },
+    "damage": 8,
+    "range": 110,
+    "halfArc": 0.55,
+    "cooldown": 0.9,
+    "displayLength": 124,
+    "swingArc": 1.8,
+    "gripFrac": 0.25,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "heavy-ordnance",
+      "rangeBand": "mid",
+      "scaling": [
+        "STR",
+        "LUK"
+      ]
+    },
+    "gripPoints": {
+      "primary": {
+        "x": 0.25,
+        "y": 0.72
+      },
+      "secondary": {
+        "x": 0.49,
+        "y": 0.62,
+        "role": "under-barrel"
+      }
+    },
+    "poseLanguage": {
+      "idle": "secondary-grip",
+      "feet": "wide-plant"
+    },
+    "description": "A wrapped-box grenade launcher that arcs a dubious gift into a confetti-shrapnel detonation.",
+    "requirements": {
+      "str": 7,
+      "luk": 5
+    },
+    "twoHanded": true,
+    "gun": {
+      "damage": 8,
+      "projectileSpeed": 540,
+      "range": 580,
+      "fireRate": 0.9,
+      "magazine": 3,
+      "reloadSeconds": 1.7,
+      "bulletKind": "grenade",
+      "muzzle": "artillery",
+      "recoil": 0.0035,
+      "arcHeight": 120,
+      "muzzleColor": 16755285,
+      "scalingGrades": {
+        "str": "B",
+        "luk": "C"
+      },
+      "explode": {
+        "radius": 58,
+        "damage": 11,
+        "scalingGrades": {
+          "str": "B",
+          "luk": "C"
+        }
+      }
+    }
+  },
+  "x2-bubble-wand-swarm-caster": {
+    "id": "x2-bubble-wand-swarm-caster",
+    "name": "Bubble Wand Swarm Caster",
+    "expansion": true,
+    "scalingGrades": {
+      "int": "B",
+      "luk": "C"
+    },
+    "damage": 16,
+    "range": 100,
+    "halfArc": 0.52,
+    "cooldown": 0.9,
+    "displayLength": 90,
+    "swingArc": 1.8,
+    "gripFrac": 0.18,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "arcane",
+      "classPool": "caster",
+      "family": "wand",
+      "rangeBand": "mid",
+      "scaling": [
+        "INT",
+        "LUK"
+      ]
+    },
+    "gripPoints": {
+      "primary": {
+        "x": 0.18,
+        "y": 0.78
+      }
+    },
+    "description": "A residue-coated ring wand that releases a drifting five-bubble fan, each pop carrying a small arcane splash.",
+    "requirements": {
+      "int": 7,
+      "luk": 5
+    },
+    "cast": {
+      "damage": 16,
+      "speed": 520,
+      "range": 520,
+      "cooldown": 0.9,
+      "pierce": 1,
+      "bulletKind": "orb",
+      "scalingGrades": {
+        "int": "B",
+        "luk": "C"
+      },
+      "volley": {
+        "count": 5,
+        "spread": 0.2
+      },
+      "projectileWaveform": {
+        "amplitudePx": 20,
+        "frequencyHz": 1.4
+      },
+      "explode": {
+        "radius": 36,
+        "damage": 4,
+        "scalingGrades": {
+          "int": "B",
+          "luk": "C"
+        }
+      }
+    }
+  },
+  "x2-boomerang-boot": {
+    "id": "x2-boomerang-boot",
+    "name": "Boomerang Boot",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "B",
+      "dex": "C"
+    },
+    "damage": 10,
+    "range": 88,
+    "halfArc": 0.62,
+    "cooldown": 0.42,
+    "displayLength": 82,
+    "swingArc": 2.3,
+    "gripFrac": 0.35,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "thrown",
+      "fireMode": "tap-charge",
+      "element": "physical",
+      "classPool": "melee",
+      "family": "thrown",
+      "rangeBand": "mid",
+      "scaling": [
+        "STR",
+        "DEX"
+      ]
+    },
+    "gripPoints": {
+      "primary": {
+        "x": 0.35,
+        "y": 0.63
+      }
+    },
+    "description": "A curved iron-toed work boot thrown sole-first on an outbound arc that reverses and returns to its owner.",
+    "performance": {
+      "hold": "steady",
+      "action": "throw-release",
+      "suppressSwing": true,
+      "windupSeconds": 0.22,
+      "preThrowRevolutions": 0.5
+    },
+    "requirements": {
+      "str": 6,
+      "dex": 5
+    },
+    "durability": 75,
+    "thrown": {
+      "speed": 680,
+      "range": 520,
+      "damage": 10,
+      "charges": 3,
+      "refillSeconds": 1.8,
+      "pierce": 2,
+      "arcHeight": 56,
+      "rotation": "spin",
+      "returning": true,
+      "scalingGrades": {
+        "str": "B",
+        "dex": "C"
+      }
+    }
+  },
+  "x2-confetti-cannon": {
+    "id": "x2-confetti-cannon",
+    "name": "Confetti Cannon",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "B",
+      "dex": "C"
+    },
+    "damage": 3,
+    "range": 90,
+    "halfArc": 0.65,
+    "cooldown": 0.9,
+    "displayLength": 172,
+    "swingArc": 1.8,
+    "gripFrac": 0.23,
+    "tags": {
+      "grip": "2H",
+      "size": "XL",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "scrap-cannon",
+      "rangeBand": "close",
+      "scaling": [
+        "STR",
+        "DEX"
+      ]
+    },
+    "gripPoints": {
+      "primary": {
+        "x": 0.23,
+        "y": 0.72
+      },
+      "secondary": {
+        "x": 0.46,
+        "y": 0.61,
+        "role": "horizontal-foregrip"
+      }
+    },
+    "poseLanguage": {
+      "idle": "secondary-grip",
+      "feet": "wide-plant"
+    },
+    "description": "An immense striped party cannon whose loud recoil throws a mechanically honest shotgun cone of confetti shrapnel.",
+    "requirements": {
+      "str": 10,
+      "dex": 5
+    },
+    "twoHanded": true,
+    "gun": {
+      "damage": 3,
+      "projectileSpeed": 900,
+      "range": 380,
+      "fireRate": 0.9,
+      "magazine": 2,
+      "reloadSeconds": 1.5,
+      "bulletKind": "pellet",
+      "muzzle": "boom",
+      "recoil": 0.005,
+      "userKnockbackMultiplier": 2.2,
+      "pellets": 7,
+      "spread": 0.55,
+      "muzzleColor": 16733855,
+      "scalingGrades": {
+        "str": "B",
+        "dex": "C"
+      }
+    }
   }
 };
 

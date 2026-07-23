@@ -313,6 +313,12 @@ import {
   spawnWeaponRadialIdentity,
   spawnWeaponSwingIdentity,
 } from "../vfx/weapon-effect-vfx.js";
+import {
+  makeWackyProjectile,
+  resolveWackyWeaponVfxRecipe,
+  spawnWackyWeaponImpact,
+  wackyWeaponShotAudioCue,
+} from "../vfx/wacky-weapon-vfx.js";
 import { type XpMotePoint, type XpMoteReceipt, XpMoteRenderer } from "../vfx/xp-motes.js";
 import { localAttackCooldownSeconds } from "./arena/attack-cadence.js";
 import {
@@ -6841,7 +6847,11 @@ export class ArenaScene extends Phaser.Scene {
             sourceWeapon.gun.projectileVisualScale ?? 1,
           )
         : null;
+      const wackyIdentity = sourceWeapon
+        ? makeWackyProjectile(this, pr, sourceWeapon.id)
+        : null;
       const container =
+        wackyIdentity ??
         gunIdentity ??
         (weaponEffectRecipe?.projectile === "electric-bolt"
           ? makeBullet(this, pr, sourceWeapon?.gun?.projectileVisualScale ?? 1, weaponEffectRecipe)
@@ -6973,7 +6983,11 @@ export class ArenaScene extends Phaser.Scene {
             }
             // §19 a REMOTE shooter's gun sound (self already played its predicted shot at click time —
             // `suppressed` gates this the same way it gates the flash, so self never double-fires).
-            if (!comet) this.audio.play(`shot:${baseKind(pr.kind)}`, { x: p.x });
+            if (!comet)
+              this.audio.play(
+                wackyWeaponShotAudioCue(sourceWeaponId, `shot:${baseKind(pr.kind)}`),
+                { x: p.x },
+              );
           }
           if (isSelf && comet) this.audio.play("ult:fire:launch", { x: p?.x, amt: 1 });
         }
@@ -6991,6 +7005,16 @@ export class ArenaScene extends Phaser.Scene {
             | WeaponEffectRecipe
             | undefined;
           const impactAngle = (c.getData("ang") as number) ?? 0;
+          const sourceWeaponId = c.getData("sourceWeapon") as string | undefined;
+          const wackyImpact = spawnWackyWeaponImpact(
+            this,
+            sourceWeaponId,
+            "projectile-death",
+            c.x,
+            c.y,
+            impactAngle,
+            prefersReducedPaperMotion() || this.feedbackSettings.flashes === "reduced",
+          );
           spawnWeaponProjectileImpact(this, weaponEffectRecipe, c.x, c.y, impactAngle);
           if (er > 0) {
             // §41 ANY exploding projectile erupts (was magma-only — explosive gun rounds got a plain
@@ -7043,6 +7067,8 @@ export class ArenaScene extends Phaser.Scene {
                 prefersReducedPaperMotion() || this.feedbackSettings.flashes === "reduced",
               );
             }
+          } else if (wackyImpact) {
+            // The B2 recipe supplied its complete impact punctuation.
           } else if (weaponEffectRecipe?.projectile) {
             // The authored projectile recipe already supplied its complete impact punctuation above.
           } else if (casterRecipe) {
@@ -10468,7 +10494,10 @@ export class ArenaScene extends Phaser.Scene {
               spawnSonicBoomRing(this, muzzle.x, muzzle.y, ang, fx.color);
           }
         }
-        this.audio.play(`shot:${weapon.gun.bulletKind}`, { x: rig.x }); // §19 predicted shot sound
+        this.audio.play(
+          wackyWeaponShotAudioCue(weapon.id, `shot:${weapon.gun.bulletKind}`),
+          { x: rig.x },
+        ); // §19 predicted shot sound
         this.lastSelfMuzzleAt = this.time.now;
       }
     } else if (weapon?.cast && weapon.tags.classPool !== "caster") {
@@ -10628,7 +10657,10 @@ export class ArenaScene extends Phaser.Scene {
         if (weapon.gun.sonicBoomRing) spawnSonicBoomRing(this, muzzle.x, muzzle.y, angle, fx.color);
       }
     }
-    this.audio.play(`shot:${weapon.gun?.bulletKind ?? "slug"}`, { x: rig.x });
+    this.audio.play(
+      wackyWeaponShotAudioCue(weapon.id, `shot:${weapon.gun?.bulletKind ?? "slug"}`),
+      { x: rig.x },
+    );
     this.lastSelfMuzzleAt = this.time.now;
   }
 
@@ -11198,6 +11230,24 @@ export class ArenaScene extends Phaser.Scene {
     const fullReceipt = event.layer === "full" || event.layer === "ambient";
     const breakthrough = event.crit || event.finalBlow;
     const visible = this.cameras.main.worldView.contains(x, y);
+    const wackyRecipe = resolveWackyWeaponVfxRecipe(event.weaponId);
+    if (
+      fullReceipt &&
+      spawnWackyWeaponImpact(
+        this,
+        event.weaponId,
+        "receipt",
+        x,
+        y,
+        Math.atan2(event.dirY, event.dirX),
+        reducedFlash,
+      ) &&
+      wackyRecipe?.impactAudio
+    )
+      this.audio.play(wackyRecipe.impactAudio, {
+        x,
+        amt: Math.min(1, event.damage / 30),
+      });
 
     const impactRecipe = resolveWeaponEffectRecipe(WEAPONS[event.weaponId]);
     if (fullReceipt && impactRecipe?.impactAnchor === "target")

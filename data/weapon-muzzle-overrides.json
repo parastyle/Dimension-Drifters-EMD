@@ -61,5 +61,35 @@
       { "part": 0, "x": 252, "y": 122 }
     ],
     "reason": "The seven frosted pepperbox bores share one connected front plate; explicit art-space centres span the painted barrel cluster and launch one tight parallel lane each."
+  },
+  "x2-unicorn-rainbow-beam": {
+    "points": [
+      { "part": 0, "x": 383, "y": 99 }
+    ],
+    "reason": "The beam must anchor at the painted unicorn-horn tip, not the broader pearl housing selected by alpha mass."
+  },
+  "x2-fish-launcher": {
+    "points": [
+      { "part": 0, "x": 767, "y": 109 }
+    ],
+    "reason": "The cone originates at the visible centre of the trout's open mouth."
+  },
+  "x2-exploding-present-lobber": {
+    "points": [
+      { "part": 0, "x": 511, "y": 103 }
+    ],
+    "reason": "The arced present leaves from the centre of the wrapped-box muzzle face."
+  },
+  "x2-bubble-wand-swarm-caster": {
+    "points": [
+      { "part": 0, "x": 299, "y": 70 }
+    ],
+    "reason": "The bubble swarm originates at the business edge of the painted ring, up-and-right from the handle."
+  },
+  "x2-confetti-cannon": {
+    "points": [
+      { "part": 0, "x": 1379, "y": 291 }
+    ],
+    "reason": "The spread originates at the centre of the oversized bell opening, not the lower grip silhouette."
   }
 }

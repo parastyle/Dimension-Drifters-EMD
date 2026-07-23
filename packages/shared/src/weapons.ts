@@ -588,6 +588,8 @@ export interface WeaponDef {
     ricochetHops?: number;
     /** Maximum acquisition distance for each enemy ricochet. */
     ricochetRange?: number;
+    /** Reverse course after the outbound leg, re-arm once, and fly back to the owning player. */
+    returning?: true;
     /** Per-source scaling (§14 WYSIWYG) — this projectile's own grades; omitted = the weapon's edge grades. */
     scalingGrades?: Partial<Record<Attr, Grade>>;
   };
@@ -705,6 +707,12 @@ export interface WeaponDef {
     };
     /** Server/client shared sine path. The server moves and collides on this curve; the client samples it. */
     projectileWaveform?: ProjectileWaveformDef;
+    /** Small AoE payload applied when each authored bolt expires or makes its final contact. */
+    explode?: {
+      radius: number;
+      damage: number;
+      scalingGrades?: Partial<Record<Attr, Grade>>;
+    };
   };
   /** Charge, ignite once, then sustain one server-authoritative swept capsule until release/overheat. */
   beam?: BeamDef;
@@ -2279,7 +2287,7 @@ const derivingWeaponMuzzles = (
   globalThis as typeof globalThis & { __DD_GENERATING_WEAPON_MUZZLES__?: boolean }
 ).__DD_GENERATING_WEAPON_MUZZLES__;
 for (const weapon of Object.values(WEAPONS)) {
-  if (!derivingWeaponMuzzles && (weapon.gun || weapon.beam) && !weapon.muzzle) {
+  if (!derivingWeaponMuzzles && (weapon.gun || weapon.beam || weapon.cast) && !weapon.muzzle) {
     throw new Error(`Ranged weapon ${weapon.id} has no art-space muzzle`);
   }
 }

@@ -14,8 +14,8 @@ const CASTERS = Object.values(WEAPONS).filter((weapon) => weapon.tags.classPool 
 const BEAMS = Object.values(WEAPONS).filter((weapon) => weapon.beam);
 
 describe("caster VFX recipe resolver", () => {
-  it("resolves every one of the 96 caster ids to a complete non-default recipe", () => {
-    expect(CASTERS).toHaveLength(96);
+  it("resolves every one of the 98 caster ids to a complete non-default recipe", () => {
+    expect(CASTERS).toHaveLength(98);
     const resolved = CASTERS.map((weapon) => [weapon, resolveCasterVfxRecipe(weapon)] as const);
     const missing = resolved.filter(([, recipe]) => !recipe).map(([weapon]) => weapon.id);
     expect(missing).toEqual([]);
@@ -77,7 +77,7 @@ describe("caster VFX recipe resolver", () => {
   });
 
   it("resolves every beam weapon id to a distinct authored recipe signature", () => {
-    expect(BEAMS).toHaveLength(22);
+    expect(BEAMS).toHaveLength(23);
     expect(Object.keys(BEAM_VFX_RECIPES).sort()).toEqual(BEAMS.map((weapon) => weapon.id).sort());
     const signatures = new Set<string>();
     const visualSignatures = new Set<string>();
@@ -125,7 +125,7 @@ describe("caster VFX recipe resolver", () => {
     expect(visualSignatures.size).toBe(BEAMS.length);
   });
 
-  it("distributes all 22 beams across five data-owned structure families", () => {
+  it("distributes all 23 beams across five data-owned structure families", () => {
     expect(Object.keys(BEAM_STRUCTURE_FAMILY_BY_WEAPON).sort()).toEqual(
       BEAMS.map((weapon) => weapon.id).sort(),
     );

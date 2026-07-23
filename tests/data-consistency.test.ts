@@ -203,10 +203,18 @@ describe("§43 expansion codegen: every authored gameplay field survives into th
     "scatter",
     "gun",
     "beam",
+    "groundZone",
     "glovePair",
     "warp",
+    "cast",
   ];
-  const BEAM_GUN_IDS = new Set(["x2-voltcaster-machine-pistol", "x2-stormcaller-tesla-gatling"]);
+  const BEAM_GUN_IDS = new Set([
+    "x2-voltcaster-machine-pistol",
+    "x2-mirage-coilrifle",
+    "x2-stormcaller-tesla-gatling",
+    "x2-permafrost-siege-lobber",
+    "x2-doomsday-drum-cannon",
+  ]);
   it("no concept authors a mechanic block as a SIBLING of behavior (the 11-weapon data-loss bug)", () => {
     for (const w of concepts)
       for (const k of MECH_SIBLINGS)
@@ -377,6 +385,39 @@ describe("§43 expansion codegen: every authored gameplay field survives into th
             scalingGrades: { grades: true },
           });
         }
+      } else if (kind === "cast") {
+        expect(def.cast, `${w.id}.cast`).toBeDefined();
+        checkFields(w.id, def.cast, b, {
+          damage: { num: [1, 60] },
+          speed: { num: [240, 1400] },
+          range: { num: [180, 900] },
+          cooldown: { num: [0.2, 2.5] },
+          pierce: { int: [1, 99] },
+          bulletKind: { eq: true },
+          scalingGrades: { grades: true },
+        });
+        if (b.volley)
+          checkFields(w.id, def.cast?.volley, b.volley as Behavior, {
+            count: { int: [2, 6] },
+            spread: { num: [0.02, 0.8] },
+          });
+        if (b.projectileWaveform)
+          checkFields(
+            w.id,
+            def.cast?.projectileWaveform,
+            b.projectileWaveform as Behavior,
+            {
+              amplitudePx: { num: [1, 80] },
+              frequencyHz: { num: [0.1, 8] },
+              phaseRad: { num: [-Math.PI * 2, Math.PI * 2] },
+            },
+          );
+        if (b.explode)
+          checkFields(w.id, def.cast?.explode, b.explode as Behavior, {
+            radius: { num: [30, 100] },
+            damage: { num: [1, 30] },
+            scalingGrades: { grades: true },
+          });
       } else if (kind === "gun" || ranged) {
         expect(def.gun, `${w.id}.gun`).toBeDefined();
         const singleShot = singleShotGunIds.has(w.id);
@@ -428,6 +469,7 @@ describe("§43 expansion codegen: every authored gameplay field survives into th
           rotation: { eq: true },
           ricochetHops: { int: [0, 4] },
           ricochetRange: { num: [80, 900] },
+          returning: { eq: true },
           scalingGrades: { grades: true },
         });
       } else if (kind === "glovePair") {

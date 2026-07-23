@@ -293,12 +293,13 @@ describe("driftblade-model panel", () => {
         "x2-saint-calamity",
         "x2-sermon-bell",
         "x2-sluicebox-maul-axe",
+        "x2-squeaky-mallet",
         "x2-widowmaker-wrecking-ball",
       ],
     });
     expect(defaultCounts).toEqual({
       "punch/default": 19,
-      "arc/default": 121,
+      "arc/default": 124,
       "chop/default": 8,
       "rake/dagger": 1,
       "rake/claw": 4,

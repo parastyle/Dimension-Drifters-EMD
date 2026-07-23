@@ -79,6 +79,8 @@ export interface BeamVfxRecipe {
   readonly coreColor: number;
   /** Optional per-authoritative-row palette for prismatic multi-beam weapons. */
   readonly rainbowPalette?: readonly number[];
+  /** Parallel inset ribbon colors rendered together inside one authoritative beam row. */
+  readonly strandPalette?: readonly number[];
   readonly edgeWidth: number;
   readonly chromaWidth: number;
   readonly coreWidth: number;
@@ -822,6 +824,27 @@ const BEAM_VFX_BASE_RECIPES: Readonly<Record<string, Omit<BeamVfxRecipe, "struct
     coreFrame: 8,
     impact: Object.freeze({ points: 8, rings: 2, radiusScale: 0.78, spin: 3.1 }),
   }),
+  "x2-unicorn-rainbow-beam": Object.freeze({
+    signature: "unicorn-five-strand-rainbow-ribbon",
+    widthProfile: "ribbon",
+    edgeColor: 0x261132,
+    accentColor: 0xff6ca8,
+    coreColor: 0xffffff,
+    strandPalette: Object.freeze([0xff3d5a, 0xff982e, 0xffe85a, 0x54d975, 0x5c83f2]),
+    edgeWidth: 0.96,
+    chromaWidth: 0.9,
+    coreWidth: 0.08,
+    ripple: "sine",
+    rippleAmplitude: 0.08,
+    rippleFrequency: 2.5,
+    flickerHz: 5,
+    particleElement: "arcane",
+    bodyParticle: "wisp",
+    coreParticle: "spark",
+    bodyFrame: 5,
+    coreFrame: 3,
+    impact: Object.freeze({ points: 10, rings: 2, radiusScale: 1.08, spin: 1.1 }),
+  }),
   });
 
 const STRUCTURE_FAMILY_RECIPE: Readonly<
@@ -886,6 +909,7 @@ export const BEAM_STRUCTURE_FAMILY_BY_WEAPON: Readonly<
   "x2-seraph-s-knuckle-reliquary": "pulse-train",
   "x2-voidgrasp-null-gauntlet": "converging-strands",
   "x2-glasswidow-hexweave": "segmented-arcs",
+  "x2-unicorn-rainbow-beam": "converging-strands",
 });
 
 export const BEAM_VFX_RECIPES: Readonly<Record<string, BeamVfxRecipe>> = Object.freeze(

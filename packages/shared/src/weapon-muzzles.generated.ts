@@ -134,6 +134,50 @@ export const WEAPON_ART_MUZZLES = {
     "salvoMode": "parallel",
     "barrelMode": "parallel"
   },
+  "x-staff-arcane-lance": {
+    "sprite": "x-staff-arcane-lance",
+    "parts": [
+      {
+        "width": 256,
+        "height": 38
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 18,
+        "derived": {
+          "x": 255,
+          "y": 18
+        }
+      }
+    ],
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  "x-staff-storm-rod": {
+    "sprite": "x-staff-storm-rod",
+    "parts": [
+      {
+        "width": 256,
+        "height": 65
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 249,
+        "y": 32,
+        "derived": {
+          "x": 249,
+          "y": 32
+        }
+      }
+    ],
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
   "x2-ashfall-peacemaker": {
     "sprite": "x2-ashfall-peacemaker",
     "parts": [
@@ -393,6 +437,29 @@ export const WEAPON_ART_MUZZLES = {
           "x": 255,
           "y": 33
         }
+      }
+    ],
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  "x2-bubble-wand-swarm-caster": {
+    "sprite": "x2-bubble-wand-swarm-caster",
+    "parts": [
+      {
+        "width": 300,
+        "height": 221
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 299,
+        "y": 70,
+        "derived": {
+          "x": 287,
+          "y": 128.9
+        },
+        "overrideReason": "The bubble swarm originates at the business edge of the painted ring, up-and-right from the handle."
       }
     ],
     "salvoMode": "parallel",
@@ -772,6 +839,29 @@ export const WEAPON_ART_MUZZLES = {
     "salvoMode": "parallel",
     "barrelMode": "parallel"
   },
+  "x2-confetti-cannon": {
+    "sprite": "x2-confetti-cannon",
+    "parts": [
+      {
+        "width": 1380,
+        "height": 693
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 1379,
+        "y": 291,
+        "derived": {
+          "x": 1379,
+          "y": 281.7
+        },
+        "overrideReason": "The spread originates at the centre of the oversized bell opening, not the lower grip silhouette."
+      }
+    ],
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
   "x2-coyote-stinger": {
     "sprite": "x2-coyote-stinger",
     "parts": [
@@ -912,6 +1002,52 @@ export const WEAPON_ART_MUZZLES = {
           "x": 251,
           "y": 50
         }
+      }
+    ],
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  "x2-exploding-present-lobber": {
+    "sprite": "x2-exploding-present-lobber",
+    "parts": [
+      {
+        "width": 512,
+        "height": 224
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 511,
+        "y": 103,
+        "derived": {
+          "x": 510,
+          "y": 98.2
+        },
+        "overrideReason": "The arced present leaves from the centre of the wrapped-box muzzle face."
+      }
+    ],
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  "x2-fish-launcher": {
+    "sprite": "x2-fish-launcher",
+    "parts": [
+      {
+        "width": 768,
+        "height": 218
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 767,
+        "y": 109,
+        "derived": {
+          "x": 764,
+          "y": 143.1
+        },
+        "overrideReason": "The cone originates at the visible centre of the trout's open mouth."
       }
     ],
     "salvoMode": "parallel",
@@ -3159,6 +3295,29 @@ export const WEAPON_ART_MUZZLES = {
       }
     ],
     "salvoMode": "cycle",
+    "barrelMode": "parallel"
+  },
+  "x2-unicorn-rainbow-beam": {
+    "sprite": "x2-unicorn-rainbow-beam",
+    "parts": [
+      {
+        "width": 384,
+        "height": 217
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 383,
+        "y": 99,
+        "derived": {
+          "x": 376,
+          "y": 68.5
+        },
+        "overrideReason": "The beam must anchor at the painted unicorn-horn tip, not the broader pearl housing selected by alpha mass."
+      }
+    ],
+    "salvoMode": "parallel",
     "barrelMode": "parallel"
   },
   "x2-venomspine-repeater": {

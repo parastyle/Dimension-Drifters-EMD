@@ -15410,6 +15410,132 @@ export const SPRITES = {
         "oy": 0
       }
     ]
+  },
+  "x2-unicorn-rainbow-beam": {
+    "id": "x2-unicorn-rainbow-beam",
+    "kind": "weapon",
+    "canvas": { "w": 384, "h": 217 },
+    "body": { "cx": 124.26, "cy": 86.54, "w": 384, "h": 217 },
+    "parts": [
+      {
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 384,
+        "h": 217,
+        "cx": 124.26,
+        "cy": 86.54,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
+  },
+  "x2-fish-launcher": {
+    "id": "x2-fish-launcher",
+    "kind": "weapon",
+    "canvas": { "w": 768, "h": 218 },
+    "body": { "cx": 407.25, "cy": 103.37, "w": 768, "h": 218 },
+    "parts": [
+      {
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 768,
+        "h": 218,
+        "cx": 407.25,
+        "cy": 103.37,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
+  },
+  "x2-squeaky-mallet": {
+    "id": "x2-squeaky-mallet",
+    "kind": "weapon",
+    "canvas": { "w": 384, "h": 241 },
+    "body": { "cx": 276.8, "cy": 120.39, "w": 384, "h": 241 },
+    "parts": [
+      {
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 384,
+        "h": 241,
+        "cx": 276.8,
+        "cy": 120.39,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
+  },
+  "x2-exploding-present-lobber": {
+    "id": "x2-exploding-present-lobber",
+    "kind": "weapon",
+    "canvas": { "w": 512, "h": 224 },
+    "body": { "cx": 261.21, "cy": 99.47, "w": 512, "h": 224 },
+    "parts": [
+      {
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 512,
+        "h": 224,
+        "cx": 261.21,
+        "cy": 99.47,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
+  },
+  "x2-bubble-wand-swarm-caster": {
+    "id": "x2-bubble-wand-swarm-caster",
+    "kind": "weapon",
+    "canvas": { "w": 300, "h": 221 },
+    "body": { "cx": 168.99, "cy": 114.05, "w": 300, "h": 221 },
+    "parts": [
+      {
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 300,
+        "h": 221,
+        "cx": 168.99,
+        "cy": 114.05,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
+  },
+  "x2-boomerang-boot": {
+    "id": "x2-boomerang-boot",
+    "kind": "weapon",
+    "canvas": { "w": 246, "h": 256 },
+    "body": { "cx": 112.2, "cy": 139.54, "w": 246, "h": 256 },
+    "parts": [
+      {
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 246,
+        "h": 256,
+        "cx": 112.2,
+        "cy": 139.54,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
+  },
+  "x2-confetti-cannon": {
+    "id": "x2-confetti-cannon",
+    "kind": "weapon",
+    "canvas": { "w": 1380, "h": 693 },
+    "body": { "cx": 768.28, "cy": 317.99, "w": 1380, "h": 693 },
+    "parts": [
+      {
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 1380,
+        "h": 693,
+        "cx": 768.28,
+        "cy": 317.99,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   }
 } as const satisfies Record<string, SpriteManifest>;
 

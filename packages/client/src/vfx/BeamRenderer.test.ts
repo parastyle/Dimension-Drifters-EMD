@@ -2,7 +2,12 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("phaser", () => ({ default: {} }));
 
-import { beamPaintFor, beamVisualWidth, seraphBeamCursorPose } from "./BeamRenderer.js";
+import {
+  beamPaintFor,
+  beamRibbonStrands,
+  beamVisualWidth,
+  seraphBeamCursorPose,
+} from "./BeamRenderer.js";
 import { BEAM_STRUCTURE_ART, beamStructureWorldBounds } from "./beam-structure-art.js";
 
 describe("BeamRenderer presentation laws", () => {
@@ -33,6 +38,18 @@ describe("BeamRenderer presentation laws", () => {
       length: 100,
     });
     expect(seraphBeamCursorPose({ x: 10, y: 20 }, { x: 1010, y: 20 }, 640).length).toBe(640);
+  });
+
+  it("keeps the unicorn's five colored ribbon strands broad and inside its damage band", () => {
+    const width = 64;
+    const strands = beamRibbonStrands(width, [1, 2, 3, 4, 5]);
+    expect(strands).toHaveLength(5);
+    expect(new Set(strands.map((strand) => strand.color)).size).toBe(5);
+    const paintedMin = Math.min(...strands.map((strand) => strand.offset - strand.width / 2));
+    const paintedMax = Math.max(...strands.map((strand) => strand.offset + strand.width / 2));
+    expect(paintedMin).toBeGreaterThanOrEqual(-width / 2);
+    expect(paintedMax).toBeLessThanOrEqual(width / 2);
+    expect(paintedMax - paintedMin).toBeGreaterThan(width * 0.8);
   });
 
   it("fits every generated structure alpha bound inside authoritative width and range", () => {

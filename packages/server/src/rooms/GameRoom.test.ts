@@ -139,6 +139,102 @@ describe("GameRoom — Coilshot authored pre-throw draw", () => {
   });
 });
 
+describe("GameRoom — B2 wacky projectile authority", () => {
+  function addTarget(
+    h: ReturnType<typeof makeRoom>,
+    id: string,
+    x: number,
+    y: number,
+    hp = 1_000,
+  ): EnemyState {
+    const enemy = new EnemyState();
+    enemy.id = id;
+    enemy.kind = "critter";
+    enemy.hp = hp;
+    enemy.x = x;
+    enemy.y = y;
+    h.state().enemies.set(id, enemy);
+    h.room.rebuildEnemyGrid();
+    return enemy;
+  }
+
+  it("flies the Boomerang Boot out, damages, reverses, re-arms, and returns to its owner", () => {
+    const h = makeRoom();
+    h.join("boot-owner");
+    const player = h.state().players.get("boot-owner");
+    const weapon = WEAPONS["x2-boomerang-boot"];
+    if (!weapon?.thrown?.returning) throw new Error("B2 returning boot fixture is required");
+    const target = addTarget(h, "boot-target", player.x + 34, player.y);
+
+    h.room.emitWeaponThrow(
+      {
+        t: 0,
+        playerId: player.id,
+        weaponId: weapon.id,
+        aimX: 1,
+        aimY: 0,
+        speed: 200,
+        range: 60,
+        damage: weapon.thrown.damage,
+        pierce: weapon.thrown.pierce,
+        kind: `thrown:${weapon.id}`,
+        crit: 0,
+        arcHeight: weapon.thrown.arcHeight,
+        returning: true,
+      },
+      player.x,
+      player.y,
+    );
+    const projectile = [...h.state().projectiles.values()][0];
+    expect(projectile?.sourceWeaponId).toBe(weapon.id);
+    expect(projectile?.vx).toBeGreaterThan(0);
+
+    h.tick(3);
+    expect(target.hp).toBeLessThan(1_000);
+    h.tick(4);
+    expect(projectile?.vx).toBeLessThan(0);
+    h.tick(8);
+    expect(h.state().projectiles.size).toBe(0);
+  });
+
+  it("splits Bubble Wand damage across five drifting bolts and detonates each small pop AoE", () => {
+    const h = makeRoom();
+    h.join("bubble-owner");
+    const player = h.state().players.get("bubble-owner");
+    const combat = h.room.combat.get(player.id);
+    const weapon = WEAPONS["x2-bubble-wand-swarm-caster"];
+    if (!weapon?.cast?.explode) throw new Error("B2 bubble cast fixture is required");
+    combat.aimX = 1;
+    combat.aimY = 0;
+    combat.targetX = player.x + 400;
+    combat.targetY = player.y;
+    const direct = addTarget(h, "bubble-direct", player.x + 105, player.y);
+    const splash = addTarget(h, "bubble-splash", player.x + 105, player.y);
+
+    h.room.fireCast(player, combat, weapon);
+    const projectiles = [...h.state().projectiles.values()];
+    expect(projectiles).toHaveLength(5);
+    expect(new Set(projectiles.map((projectile) => projectile.vy.toFixed(3))).size).toBe(5);
+    for (const projectile of projectiles) {
+      expect(projectile.sourceWeaponId).toBe(weapon.id);
+      expect(projectile.explodeR).toBe(36);
+    }
+
+    h.tick(8);
+    expect(direct.hp).toBeLessThan(1_000);
+    h.room.detonate(
+      splash.x,
+      splash.y,
+      weapon.cast.explode.radius,
+      weapon.cast.explode.damage,
+      0,
+      player.id,
+      weapon.id,
+    );
+    expect(splash.hp).toBeLessThan(1_000);
+  });
+});
+
 describe("GameRoom — join/leave + host", () => {
   it("a join adds a living, full-HP player on the spawn disc; the first joiner is host", () => {
     const h = makeRoom();
@@ -6718,7 +6814,7 @@ describe("GameRoom — W4A archived weapon retirement", () => {
     h.join("archive-gallery");
     h.send("archive-gallery", "toggleTraining");
     const roster = h.room.constructor.GALLERY_ROSTER as string[];
-    expect(roster).toHaveLength(332);
+    expect(roster).toHaveLength(339);
     for (const id of enemyComboShared.ARCHIVED_WEAPON_IDS) expect(roster).not.toContain(id);
     const before = h.state().players.get("archive-gallery").weapon;
     h.send("archive-gallery", "devEquip", { weapon: "x2-mistral-kusarigama" });

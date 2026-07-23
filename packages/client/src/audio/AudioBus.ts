@@ -668,6 +668,22 @@ export class AudioBus {
         });
         break;
       // High-frequency combat — per gun bulletKind (mirrors the GUN_FX visual split).
+      case "wacky:wet-slap":
+        if (this.throttled("wackyWetSlap", 55)) return;
+        this.noise(0.085, { gain: 0.28, type: "bandpass", freq: 850, q: 0.8, x });
+        this.tone(190, 0.08, { type: "sine", gain: 0.18, sweepTo: 105, x });
+        break;
+      case "wacky:squeak-hit":
+        if (this.throttled("wackySqueak", 85)) return;
+        this.tone(1180, 0.13, { type: "square", gain: 0.2, sweepTo: 1680, x });
+        this.tone(760, 0.1, { type: "triangle", gain: 0.12, sweepTo: 1080, x });
+        break;
+      case "wacky:confetti-shot":
+        if (this.throttled("shot", 65)) return;
+        this.noise(0.18, { gain: 0.52, type: "lowpass", freq: 1250, q: 0.7, x });
+        this.tone(105, 0.14, { type: "sine", gain: 0.38, sweepTo: 48, x });
+        this.noise(0.055, { gain: 0.16, type: "highpass", freq: 3800, q: 1.4, x });
+        break;
       case "shot:slug":
         if (this.throttled("shot", 30)) return;
         // Sample-first (doc §2.1/§5): AudioBus's throttle above gates BOTH paths; rate jitter +

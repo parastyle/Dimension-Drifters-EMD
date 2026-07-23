@@ -67,6 +67,28 @@ export interface BeamCursorPose {
   length: number;
 }
 
+export interface BeamRibbonStrand {
+  readonly color: number;
+  /** Perpendicular art-space offset from the authoritative centerline. */
+  readonly offset: number;
+  readonly width: number;
+}
+
+/** Five parallel strands remain inset inside the authoritative damage diameter. */
+export function beamRibbonStrands(
+  visualWidth: number,
+  palette: readonly number[],
+): readonly BeamRibbonStrand[] {
+  const count = Math.max(1, palette.length);
+  const spacing = visualWidth * 0.18;
+  const strandWidth = visualWidth * 0.16;
+  return palette.map((color, index) => ({
+    color,
+    offset: (index - (count - 1) / 2) * spacing,
+    width: strandWidth,
+  }));
+}
+
 export function seraphBeamCursorPose(
   origin: Readonly<BeamMuzzlePose>,
   cursor: Readonly<BeamCursorTarget>,
@@ -119,6 +141,9 @@ export interface BeamStructureRenderTelemetry {
   readonly maxTransverseExtent: number;
   readonly longitudinalStart: number;
   readonly longitudinalEnd: number;
+  readonly visualWidth: number;
+  readonly strandCount: number;
+  readonly strandPalette: readonly number[];
 }
 
 interface BeamEntry {
@@ -751,6 +776,34 @@ export class BeamRenderer {
     }
     if (beam?.structure) {
       const structure = beam.structure;
+      if (beam.strandPalette?.length) {
+        this.drawCapsule(
+          pose.originX,
+          pose.originY,
+          pose.angle,
+          pose.length,
+          visualWidth * 0.94,
+          edgeColor,
+          0.78,
+          beltY0,
+          beltYScale,
+        );
+        const nx = Math.cos(pose.angle + Math.PI / 2);
+        const ny = Math.sin(pose.angle + Math.PI / 2);
+        for (const strand of beamRibbonStrands(visualWidth, beam.strandPalette)) {
+          this.drawCapsule(
+            pose.originX + nx * strand.offset,
+            pose.originY + ny * strand.offset,
+            pose.angle,
+            pose.length,
+            strand.width,
+            strand.color,
+            0.92,
+            beltY0,
+            beltYScale,
+          );
+        }
+      }
       const coreWidth = structure.iceOnly
         ? 0
         : Math.min(
@@ -1262,6 +1315,9 @@ export class BeamRenderer {
         maxTransverseExtent: visualWidth * 0.5,
         longitudinalStart: 0,
         longitudinalEnd: pose.length,
+        visualWidth,
+        strandCount: beam?.strandPalette?.length ?? 0,
+        strandPalette: beam?.strandPalette ?? [],
       };
       return;
     }
@@ -1380,6 +1436,9 @@ export class BeamRenderer {
         maxTransverseExtent: alphaHalfExtent + normalWobble,
         longitudinalStart: localBounds.longitudinalStart,
         longitudinalEnd: localBounds.longitudinalEnd,
+        visualWidth,
+        strandCount: beam?.strandPalette?.length ?? 0,
+        strandPalette: beam?.strandPalette ?? [],
       };
       return;
     }

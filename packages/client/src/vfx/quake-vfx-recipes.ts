@@ -47,7 +47,7 @@ export interface QuakeVfxRecipe {
 }
 
 /**
- * Honest pre-V3X inventory: these were the 31 catalog weapons whose quake reached the same
+ * Honest inventory: these are the 32 catalog weapons whose quake reaches the same
  * `quake-burst` component pack plus the same procedural gold ellipse/dust/debris fallback as
  * Anvil-Heart. Grave-call semantics, Tombstone's hero quake, and explicitly suppressed/replaced
  * quake recipes are intentionally outside this family.
@@ -84,6 +84,7 @@ export const LEGACY_ANVIL_QUAKE_CLUSTER_IDS = Object.freeze([
   "x2-pyreclap-mauler",
   "x2-ironbrand-heatfist",
   "x2-thunderhead-stormfists",
+  "x2-squeaky-mallet",
 ] as const);
 
 /** Explicit distribution keeps visual authorship reviewable instead of hiding it behind an id hash. */
@@ -119,6 +120,7 @@ export const ANVIL_QUAKE_VARIANT_ASSIGNMENTS = Object.freeze({
   "x2-pyreclap-mauler": "hammer-slam",
   "x2-ironbrand-heatfist": "aftershock-eruption",
   "x2-thunderhead-stormfists": "hammer-slam",
+  "x2-squeaky-mallet": "aftershock-eruption",
 } as const satisfies Record<
   (typeof LEGACY_ANVIL_QUAKE_CLUSTER_IDS)[number],
   QuakeVfxVariantId

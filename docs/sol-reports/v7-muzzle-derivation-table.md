@@ -1,6 +1,6 @@
 # V7 Muzzle Derivation Table
 
-Generated from sprite alpha for all 141 active projectile-gun and beam definitions. Coordinates are source-PNG pixels.
+Generated from sprite alpha for all 148 active projectile-gun and beam definitions. Coordinates are source-PNG pixels.
 
 | Weapon | Derived barrel tip | Authored muzzle point(s) | Override |
 | --- | --- | --- | --- |
@@ -10,6 +10,8 @@ Generated from sprite alpha for all 141 active projectile-gun and beam definitio
 | `x-gun-nailgun` (Nailgun) | part-1 (255, 61) | part-1 (255, 61) | No |
 | `x-gun-revolver-cannon` (Revolver Cannon) | part-1 (255, 23.9) | part-1 (255, 23.9) | No |
 | `x-gun-ricochet-pistol` (Ricochet Pistol) | part-1 (255, 25.9) | part-1 (255, 25.9) | No |
+| `x-staff-arcane-lance` (Arcanist's Lance) | part-1 (255, 18) | part-1 (255, 18) | No |
+| `x-staff-storm-rod` (Stormcaller Rod) | part-1 (249, 32) | part-1 (249, 32) | No |
 | `x2-ashfall-peacemaker` (Ashfall Peacemaker) | part-1 (255, 17.2) | part-1 (255, 17.2) | No |
 | `x2-auroral-filament-wand` (Auroral Filament Wand) | part-1 (255, 16) | part-1 (255, 16) | No |
 | `x2-barrett-50-cal-sniper` (Barrett .50-Cal Sniper) | part-1 (255, 15.5) | part-1 (255, 15.5) | No |
@@ -22,6 +24,7 @@ Generated from sprite alpha for all 141 active projectile-gun and beam definitio
 | `x2-brimstone-gallows-rifle` (Brimstone Gallows-Rifle) | part-1 (255, 13.3) | part-1 (255, 13.3) | No |
 | `x2-brimstone-rocket-tube` (Brimstone Rocket Tube) | part-1 (255, 39.5) | part-1 (255, 39.5) | No |
 | `x2-brinequill-tidescepter` (Brinequill Tidescepter) | part-1 (255, 33) | part-1 (255, 33) | No |
+| `x2-bubble-wand-swarm-caster` (Bubble Wand Swarm Caster) | part-1 (287, 128.9) | part-1 (299, 70) | Yes - The bubble swarm originates at the business edge of the painted ring, up-and-right from the handle. |
 | `x2-buckshot-avalanche` (Buckshot Avalanche) | part-1 (255, 19.8) | part-1 (255, 19.8) | No |
 | `x2-buckshot-bramble-bow` (Buckshot Bramble Bow) | part-1 (246, 102) | part-1 (246, 102) | No |
 | `x2-buckshot-briar` (Buckshot Briar) | part-1 (253, 14.7) | part-1 (253, 14.7) | No |
@@ -39,12 +42,15 @@ Generated from sprite alpha for all 141 active projectile-gun and beam definitio
 | `x2-cinderquill-dart-caster` (Cinderquill Dart-Caster) | part-1 (255, 29.5) | part-1 (255, 29.5) | No |
 | `x2-coffin-nail-carbine` (Coffin-Nail Carbine) | part-1 (255, 17.9) | part-1 (255, 17.9) | No |
 | `x2-coffinnail-driver` (Coffinnail Driver) | part-1 (255, 6) | part-1 (255, 6) | No |
+| `x2-confetti-cannon` (Confetti Cannon) | part-1 (1379, 281.7) | part-1 (1379, 291) | Yes - The spread originates at the centre of the oversized bell opening, not the lower grip silhouette. |
 | `x2-coyote-stinger` (Coyote Stinger) | part-1 (255, 35.2)<br>part-2 (255, 35.2) | part-1 (255, 35.2)<br>part-2 (255, 35.2) | No |
 | `x2-doomsday-drum-cannon` (Doomsday Drum Cannon) | part-1 (255, 60.1) | part-1 (255, 60.1) | No |
 | `x2-dustdevil-riotgun` (Dustdevil Riotgun) | part-1 (255, 19.9) | part-1 (255, 19.9) | No |
 | `x2-dustline-lever-action` (Dustline Lever-Action) | part-1 (255, 7.7) | part-1 (255, 7.7) | No |
 | `x2-emberfan-pumpgun` (Emberfan Pumpgun) | part-1 (255, 19.8) | part-1 (255, 19.8) | No |
 | `x2-embernail-repeater` (Embernail Repeater) | part-1 (251, 50) | part-1 (251, 50) | No |
+| `x2-exploding-present-lobber` (Exploding Present Lobber) | part-1 (510, 98.2) | part-1 (511, 103) | Yes - The arced present leaves from the centre of the wrapped-box muzzle face. |
+| `x2-fish-launcher` (Fish Launcher) | part-1 (764, 143.1) | part-1 (767, 109) | Yes - The cone originates at the visible centre of the trout's open mouth. |
 | `x2-fool-s-gold-revolver` (Fool's Gold Revolver) | part-1 (255, 33.8) | part-1 (255, 33.8) | No |
 | `x2-frostbite-volley-gun` (Frostbite Volley-Gun) | part-1 (255, 33.5) | part-1 (255, 33.5) | No |
 | `x2-frostbore-scattergun` (Frostbore Scattergun) | part-1 (255, 13.6) | part-1 (255, 13.6) | No |
@@ -136,6 +142,7 @@ Generated from sprite alpha for all 141 active projectile-gun and beam definitio
 | `x2-tracer-saint-carbine` (Tracer-Saint Carbine) | part-1 (255, 11.7) | part-1 (255, 11.7) | No |
 | `x2-tumbleweed-skipper` (Tumbleweed Skipper) | part-1 (255, 21.3) | part-1 (255, 21.3) | No |
 | `x2-twin-maw-greenerbore` (Twin-Maw Greenerbore) | part-1 (255, 19.9)<br>part-2 (255, 19.9) | part-1 (255, 19.9)<br>part-2 (255, 19.9) | No |
+| `x2-unicorn-rainbow-beam` (Unicorn Rainbow Beam) | part-1 (376, 68.5) | part-1 (383, 99) | Yes - The beam must anchor at the painted unicorn-horn tip, not the broader pearl housing selected by alpha mass. |
 | `x2-venomspine-repeater` (Venomspine Repeater) | part-1 (255, 9.1) | part-1 (255, 9.1) | No |
 | `x2-voidgrasp-null-gauntlet` (Voidgrasp Null-Gauntlet) | part-1 (255, 55.8) | part-1 (255, 55.8) | No |
 | `x2-voidwell-idol` (Voidwell Idol) | part-1 (255, 78.2) | part-1 (255, 78.2) | No |

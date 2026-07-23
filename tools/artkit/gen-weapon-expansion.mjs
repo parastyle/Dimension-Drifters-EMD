@@ -47,7 +47,7 @@ const SIZES = new Set(["S", "M", "L", "XL"]);
 const BANDS = new Set(["close", "mid", "long"]);
 const KINDS = new Set([
   "edge", "thrown", "quake", "chainLightning", "scatter", "gun", "beam", "groundZone",
-  "glovePair", "warp",
+  "glovePair", "warp", "cast",
 ]);
 const SWING_STYLES = new Set(["arc", "orbit", "chop", "pivot", "thrust", "spin", "punch"]);
 const BULLET_KINDS = new Set([
@@ -86,13 +86,14 @@ const TOP_KEYS = new Set([
 // silently ignored, shipping 11 weapons with default kits. Now an instant failure.
 const MECH_SIBLINGS = [
   "thrown", "quake", "chainLightning", "scatter", "gun", "beam", "groundZone", "glovePair", "warp",
+  "cast",
 ];
 const STATS_KEYS = new Set([
   "damage", "range", "halfArc", "cooldown", "displayLength", "collisionLength", "swingArc", "gripFrac",
 ]);
 const BEHAVIOR_KEYS = {
   edge: new Set(["kind"]),
-  thrown: new Set(["kind", "speed", "range", "damage", "charges", "refillSeconds", "pierce", "arcHeight", "rotation", "ricochetHops", "ricochetRange", "scalingGrades", "zone"]),
+  thrown: new Set(["kind", "speed", "range", "damage", "charges", "refillSeconds", "pierce", "arcHeight", "rotation", "ricochetHops", "ricochetRange", "returning", "scalingGrades", "zone"]),
   quake: new Set(["kind", "radius", "damage", "scalingGrades", "zone"]),
   chainLightning: new Set(["kind", "jumps", "range", "damage", "falloff", "scalingGrades", "vfx"]),
   scatter: new Set(["kind", "count", "spread", "aim", "speed", "range", "damage", "pierce", "scalingGrades", "explode"]),
@@ -104,11 +105,15 @@ const BEHAVIOR_KEYS = {
     "sonicBoomRing", "width"]),
   beam: new Set(["kind", "damage", "range", "tickRate", "width", "chargeSeconds", "sweepLagSeconds",
     "randomRays", "coneStream", "scalingGrades", "zone"]),
+  cast: new Set(["kind", "damage", "speed", "range", "cooldown", "pierce", "bulletKind",
+    "scalingGrades", "volley", "projectileWaveform", "explode"]),
   groundZone: new Set(["kind", "zone"]),
   glovePair: new Set(["kind", "auraColor", "auraRadius"]),
   warp: new Set(["kind", "burstRadius"]),
 };
 const EXPLODE_KEYS = new Set(["radius", "damage", "scalingGrades"]);
+const CAST_VOLLEY_KEYS = new Set(["count", "spread"]);
+const PROJECTILE_WAVEFORM_KEYS = new Set(["amplitudePx", "frequencyHz", "phaseRad"]);
 const GUN_BURST_KEYS = new Set(["count", "intervalSeconds"]);
 const GRIP_POINTS_KEYS = new Set(["primary", "secondary"]);
 const GRIP_ANCHOR_KEYS = new Set(["x", "y"]);
@@ -298,6 +303,22 @@ function explodeOf(e, path, rMax, damageMax = 30) {
   };
   const g = grades(e.scalingGrades, `${path}.scalingGrades`, undefined);
   if (g) out.scalingGrades = g;
+  return out;
+}
+
+function projectileWaveformOf(waveform, path) {
+  if (waveform === undefined) return undefined;
+  if (!waveform || typeof waveform !== "object" || Array.isArray(waveform)) {
+    fail(`${path} is not an object`);
+    return undefined;
+  }
+  checkKeys(waveform, PROJECTILE_WAVEFORM_KEYS, path);
+  const out = {
+    amplitudePx: num(waveform.amplitudePx, 1, 80, 20, `${path}.amplitudePx`),
+    frequencyHz: num(waveform.frequencyHz, 0.1, 8, 1.4, `${path}.frequencyHz`),
+  };
+  if (waveform.phaseRad !== undefined)
+    out.phaseRad = num(waveform.phaseRad, -Math.PI * 2, Math.PI * 2, 0, `${path}.phaseRad`);
   return out;
 }
 
@@ -768,6 +789,7 @@ function mapWeapon(w) {
   const rangeBand = enumOf(w.rangeBand, BANDS, "rangeBand");
   const isBeam = kind === "beam" || BEAM_GUN_IDS.has(w.id);
   const isGun = !isBeam && (kind === "gun" || type === "ranged");
+  const isCast = kind === "cast";
   const isSingleShotGun = SINGLE_SHOT_GUN_IDS.has(w.id);
   const isCalamityHowitzer = w.id === "x2-calamity-howitzer";
   const explosionRadiusMax =
@@ -812,6 +834,8 @@ function mapWeapon(w) {
           ? "beam"
           : isGun
             ? "projectile"
+            : isCast
+              ? "projectile"
             : kind === "thrown"
               ? "thrown"
               : kind === "quake"
@@ -824,7 +848,7 @@ function mapWeapon(w) {
       fireMode: isGroundZone || isBeam || kind === "glovePair" ||
         (type === "melee" && w.performance?.continuous === true)
         ? "hold"
-        : isGun && !isSingleShotGun
+        : (isGun && !isSingleShotGun) || isCast
           ? "auto"
           : "tap-charge",
       element: typeof w.element === "string" ? w.element : "physical",
@@ -1082,6 +1106,34 @@ function mapWeapon(w) {
       isCalamityHowitzer ? 60 : 30,
     );
     if (ex) def.gun.explode = ex;
+  } else if (isCast) {
+    def.cast = {
+      damage: num(b.damage, 1, 60, damage, "behavior.damage"),
+      speed: num(b.speed, 240, 1400, 560, "behavior.speed"),
+      range: num(b.range ?? s.range, 180, 900, 520, "behavior.range"),
+      cooldown: num(b.cooldown ?? s.cooldown, 0.2, 2.5, 0.9, "behavior.cooldown"),
+      pierce: int(b.pierce, 1, 99, 1, "behavior.pierce"),
+      bulletKind: b.bulletKind === undefined
+        ? "orb"
+        : enumOf(b.bulletKind, BULLET_KINDS, "behavior.bulletKind"),
+    };
+    const g = grades(b.scalingGrades, "behavior.scalingGrades", undefined);
+    if (g) def.cast.scalingGrades = g;
+    if (b.volley !== undefined) {
+      if (!b.volley || typeof b.volley !== "object" || Array.isArray(b.volley)) {
+        fail("behavior.volley is not an object");
+      } else {
+        checkKeys(b.volley, CAST_VOLLEY_KEYS, "behavior.volley");
+        def.cast.volley = {
+          count: int(b.volley.count, 2, 6, 5, "behavior.volley.count"),
+          spread: num(b.volley.spread, 0.02, 0.8, 0.2, "behavior.volley.spread"),
+        };
+      }
+    }
+    const waveform = projectileWaveformOf(b.projectileWaveform, "behavior.projectileWaveform");
+    if (waveform) def.cast.projectileWaveform = waveform;
+    const ex = explodeOf(b.explode, "behavior.explode", 100, 30);
+    if (ex) def.cast.explode = ex;
   } else if (kind === "glovePair") {
     def.glovePair = {
       auraColor: int(b.auraColor, 0, 0xffffff, 0x33e6ff, "behavior.auraColor"),
@@ -1108,6 +1160,10 @@ function mapWeapon(w) {
       def.thrown.ricochetHops = int(b.ricochetHops, 0, 4, 0, "behavior.ricochetHops");
     if (b.ricochetRange !== undefined)
       def.thrown.ricochetRange = num(b.ricochetRange, 80, 900, 260, "behavior.ricochetRange");
+    if (b.returning !== undefined) {
+      if (b.returning !== true) fail("behavior.returning must be true when authored");
+      else def.thrown.returning = true;
+    }
     const g = grades(b.scalingGrades, "behavior.scalingGrades", undefined);
     if (g) def.thrown.scalingGrades = g;
   } else if (kind === "quake") {
