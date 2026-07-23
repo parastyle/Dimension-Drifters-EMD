@@ -46,7 +46,7 @@ import {
   ZONE_TTL,
   ZoneState,
 } from "@dd/shared";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // The authoritative 20Hz tick (GameRoom) had ZERO tests (audit cluster ②) — only live co-op exercised the
 // boss phases / rez / wipe / melee integration. This harness stubs the Colyseus `Room` base so we can
@@ -2315,6 +2315,8 @@ const { BOSS_PROJECTILE_BUDGET: HOSTILE_PROJECTILE_CEILING } = await import("@dd
 
 // ── §46 terminal-room quiescence + arena-wide hostile-projectile admission (audit follow-up). ────────────
 describe("GameRoom — §46 terminal quiescence + hostile projectile ceiling", () => {
+  // Restore any per-test Math.random seed so a deterministic stub cannot leak into later tests.
+  afterEach(() => vi.restoreAllMocks());
   it("a WIPE clears every combat transient, idles enemy AI, and restart revives the full simulation", () => {
     const h = makeRoom();
     h.join("p1");
@@ -2368,6 +2370,10 @@ describe("GameRoom — §46 terminal quiescence + hostile projectile ceiling", (
   it("spitter volleys obey the hostile ceiling, and a parry-reflection frees exactly one slot", () => {
     const h = makeRoom();
     h.join("p1");
+    // Seed Math.random so this ceiling/parry accounting is independent of the global RNG stream
+    // position (full-suite ordering shifts it and flaked the parry-frees-one-slot assertion).
+    const rng = makeRng(0x46ce11a1);
+    vi.spyOn(Math, "random").mockImplementation(() => rng.next());
     const p = h.state().players.get("p1");
     // Map-RNG law: this test pins a volley path near spawn — random POIs/pits under it (likelier since
     // the QOL-03 gate-disc solver reshapes spawn-adjacent terrain) would annihilate the volley mid-step.
