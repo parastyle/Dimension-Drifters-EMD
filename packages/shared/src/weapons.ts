@@ -82,7 +82,7 @@ export function resolvedGunGripPoints(
 }
 
 export type GunProjectileArt = "weapon-crop" | "generated" | "arrow" | "cannonball" | "fireball";
-export const WEAPON_MUZZLE_COUNT_CAP = 6;
+export const WEAPON_MUZZLE_COUNT_CAP = 7;
 
 /** One declarative Driftblade-line identity hook. The server resolves these fields from the accepted
  * combo beat; the Drive/loot estimators price the same authored multipliers and finisher burst. */
@@ -165,12 +165,20 @@ export interface ServerSeededGunPelletVolley {
   readonly angles: readonly number[];
 }
 
+export type GunRandomPellets = Readonly<
+  { min: number; max: number } & (
+    | { directions: "radial" }
+    | { directions: "cone"; halfAngle: number }
+  )
+>;
+
 /**
  * Server-seeded random pellet descriptor. The server owns the seed and only replicates admitted projectile
- * rows; clients never predict the roll. Every heading is sampled independently across the full circle.
+ * rows; clients never predict the roll. Radial headings are absolute around the full circle; cone headings
+ * are offsets about the accepted aim direction and never leave their authored half-angle.
  */
 export function serverSeededGunPelletVolley(
-  randomPellets: Readonly<{ min: number; max: number; directions: "radial" }>,
+  randomPellets: GunRandomPellets,
   seed: number,
   availableRows = RANDOM_GUN_PELLET_CAP,
 ): ServerSeededGunPelletVolley {
@@ -179,9 +187,13 @@ export function serverSeededGunPelletVolley(
   const rng = makeRng(seed);
   const requestedCount = rng.int(min, max);
   const admitted = Math.max(0, Math.min(requestedCount, Math.trunc(availableRows)));
+  const extent =
+    randomPellets.directions === "cone"
+      ? Math.max(0, Math.min(Math.PI, randomPellets.halfAngle))
+      : Math.PI;
   return Object.freeze({
     requestedCount,
-    angles: Object.freeze(Array.from({ length: admitted }, () => rng.range(-Math.PI, Math.PI))),
+    angles: Object.freeze(Array.from({ length: admitted }, () => rng.range(-extent, extent))),
   });
 }
 
@@ -694,12 +706,8 @@ export interface WeaponDef {
     };
     /** Bullets per trigger pull — >1 = a shotgun SPREAD volley (one ammo spends all pellets). Default 1. */
     pellets?: number;
-    /** Server-seeded pellet count and full-circle headings. Mutually exclusive with fixed `pellets`. */
-    randomPellets?: {
-      min: number;
-      max: number;
-      directions: "radial";
-    };
+    /** Server-seeded pellet count/headings. Mutually exclusive with fixed `pellets`. */
+    randomPellets?: GunRandomPellets;
     /** Cone half-angle (radians): pellet spread for shotguns, or muzzle inaccuracy for autos. Default 0. */
     spread?: number;
     /** Enemies a single bullet cuts through before dying (default 1). */
@@ -2161,6 +2169,7 @@ const BASE_WEAPONS: Record<string, WeaponDef> = {
       magazine: 8,
       reloadSeconds: 1.2,
       bulletKind: "spark",
+      projectileArt: "generated",
       muzzle: "spark",
       muzzleColor: 0x5dd6ff,
       projectileColor: 0x3f9dff,

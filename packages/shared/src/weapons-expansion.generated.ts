@@ -3186,7 +3186,8 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "randomPellets": {
         "min": 1,
         "max": 10,
-        "directions": "radial"
+        "directions": "cone",
+        "halfAngle": 0.48
       }
     }
   },
@@ -4435,7 +4436,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "damage": 16,
       "projectileSpeed": 1050,
       "range": 720,
-      "fireRate": 0.7,
+      "fireRate": 1.2,
       "magazine": 5,
       "reloadSeconds": 1.7,
       "bulletKind": "slug",
@@ -4445,7 +4446,11 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "projectileVisualScale": 1.25,
       "spread": 0,
       "pierce": 2,
-      "muzzleColor": 11028526
+      "muzzleColor": 11028526,
+      "explode": {
+        "radius": 74,
+        "damage": 11.428571428571
+      }
     }
   },
   "x2-cinderfang-derringer": {
@@ -4548,7 +4553,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "bulletKind": "slug",
       "muzzle": "rapid",
       "recoil": 0.0012,
-      "spread": 0.13,
+      "spread": 0,
       "muzzleColor": 3401983
     }
   },
@@ -4651,7 +4656,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "bulletKind": "nail",
       "muzzle": "rapid",
       "recoil": 0.0009,
-      "spread": 0.16,
+      "spread": 0,
       "muzzleColor": 10288955
     }
   },
@@ -5326,7 +5331,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "range": 320,
     "halfArc": 0.5,
     "cooldown": 0.5,
-    "displayLength": 150,
+    "displayLength": 240,
     "swingArc": 1.8,
     "gripFrac": 0.14,
     "tags": {
@@ -5709,6 +5714,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "bulletKind": "tracer",
       "muzzle": "spark",
       "recoil": 0.0018,
+      "projectileArt": "generated",
       "pierce": 2,
       "muzzleColor": 3401983
     }
@@ -5927,6 +5933,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "bulletKind": "slug",
       "muzzle": "heavy",
       "recoil": 0.004,
+      "projectileArt": "generated",
       "pierce": 4,
       "muzzleColor": 12886362
     }
@@ -6194,6 +6201,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "bulletKind": "slug",
       "muzzle": "boom",
       "recoil": 0.004,
+      "projectileVisualScale": 2,
       "muzzleColor": 16747563,
       "explode": {
         "radius": 68,
@@ -6734,6 +6742,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "bulletKind": "tracer",
       "muzzle": "spark",
       "recoil": 0.003,
+      "projectileArt": "generated",
       "pellets": 7,
       "spread": 0.33,
       "pierce": 2,
@@ -7455,6 +7464,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "bulletKind": "tracer",
       "muzzle": "spark",
       "recoil": 0.0016,
+      "projectileArt": "generated",
       "pellets": 5,
       "spread": 0.31,
       "pierce": 2,
@@ -7837,6 +7847,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "bulletKind": "tracer",
       "muzzle": "spark",
       "recoil": 0.0018,
+      "projectileArt": "generated",
       "projectileColor": 3401471,
       "pierce": 2,
       "muzzleColor": 3401471,
@@ -7877,8 +7888,8 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     },
     "gripPoints": {
       "primary": {
-        "x": 0.42,
-        "y": 0.62
+        "x": 0.28,
+        "y": 0.74
       },
       "secondary": {
         "x": 0.61,
@@ -8007,6 +8018,12 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "pistol"
       ]
     },
+    "gripPoints": {
+      "primary": {
+        "x": 0.38,
+        "y": 0.7
+      }
+    },
     "requirements": {
       "dex": 7,
       "str": 5
@@ -8106,12 +8123,12 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     },
     "gripPoints": {
       "primary": {
-        "x": 0.12,
-        "y": 0.52
+        "x": 0.43,
+        "y": 0.68
       },
       "secondary": {
-        "x": 0.38,
-        "y": 0.65,
+        "x": 0.78,
+        "y": 0.54,
         "role": "under-barrel"
       }
     },
@@ -8297,6 +8314,13 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "bulletKind": "pellet",
       "muzzle": "spark",
       "recoil": 0.0014,
+      "projectileArt": "generated",
+      "randomPellets": {
+        "min": 3,
+        "max": 7,
+        "directions": "cone",
+        "halfAngle": 0.34
+      },
       "explode": {
         "radius": 58,
         "damage": 7
@@ -8348,6 +8372,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "recoil": 0.0038,
       "projectileArt": "cannonball",
       "projectileVisualScale": 4,
+      "userKnockbackMultiplier": 5,
       "explode": {
         "radius": 70,
         "damage": 12
@@ -8365,11 +8390,11 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "range": 80,
     "halfArc": 0.55,
     "cooldown": 0.8,
-    "displayLength": 140,
+    "displayLength": 112,
     "swingArc": 1.8,
     "gripFrac": 0.12,
     "tags": {
-      "grip": "2H",
+      "grip": "1H",
       "size": "L",
       "delivery": "projectile",
       "fireMode": "auto",
@@ -8379,23 +8404,20 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "rangeBand": "long",
       "scaling": [
         "INT"
+      ],
+      "handling": [
+        "pistol"
       ]
     },
     "gripPoints": {
       "primary": {
-        "x": 0.2,
-        "y": 0.72
-      },
-      "secondary": {
-        "x": 0.55,
-        "y": 0.42,
-        "role": "under-barrel"
+        "x": 0.35,
+        "y": 0.68
       }
     },
     "requirements": {
       "int": 12
     },
-    "twoHanded": true,
     "gun": {
       "damage": 12,
       "projectileSpeed": 560,
@@ -9346,6 +9368,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "bulletKind": "slug",
       "muzzle": "heavy",
       "recoil": 0.0026,
+      "projectileArt": "generated",
       "pierce": 4,
       "muzzleColor": 3397375,
       "scalingGrades": {
@@ -13900,7 +13923,8 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "bulletKind": "spark",
       "muzzle": "spark",
       "recoil": 0.0008,
-      "projectileVisualScale": 10,
+      "projectileArt": "generated",
+      "projectileVisualScale": 1,
       "projectileColor": 11619327,
       "pierce": 2,
       "muzzleColor": 11619327
@@ -15423,7 +15447,8 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "bulletKind": "tracer",
       "muzzle": "heavy",
       "recoil": 0.0018,
-      "spread": 0.11,
+      "projectileArt": "generated",
+      "spread": 0,
       "muzzleColor": 16734770
     }
   },

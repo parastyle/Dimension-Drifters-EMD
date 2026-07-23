@@ -3,13 +3,13 @@ import {
   deriveWeaponResourceProfile,
   projectileWaveformPositionAt,
   WEAPONS,
-  weaponResourceProfile,
   type WeaponDef,
+  weaponResourceProfile,
 } from "@dd/shared";
 import { describe, expect, it } from "vitest";
-import { secondaryGripHandRendersAbove } from "../packages/client/src/sprites/secondary-grip.js";
-import { PROJECTILE_SPRITES } from "../packages/client/src/sprites/projectile-manifest.js";
 import { sampleProjectileWaveformFromAuthoritative } from "../packages/client/src/scenes/arena/projectile-waveform.js";
+import { PROJECTILE_SPRITES } from "../packages/client/src/sprites/projectile-manifest.js";
+import { secondaryGripHandRendersAbove } from "../packages/client/src/sprites/secondary-grip.js";
 import {
   BEAM_VFX_RECIPES,
   CASTER_TEXTURE_PROJECTILES,
@@ -66,7 +66,10 @@ describe("V5R ranged/caster owner orders", () => {
       ((graveshot.gun?.damage ?? 0) + (graveshot.gun?.explode?.damage ?? 0)) / 0.7,
     ).toBeCloseTo(19 / 0.7, 8);
 
-    expect(weapon("x2-tesla-faradayer").gun?.projectileVisualScale).toBe(10);
+    expect(weapon("x2-tesla-faradayer").gun).toMatchObject({
+      projectileArt: "generated",
+      projectileVisualScale: 1,
+    });
     expect(weapon("x2-tidehook-bombarpoon").gun?.projectileVisualScale).toBe(1.75);
     expect(1.75 / 1.25).toBe(1.4);
     expect(weapon("x2-mauler-slug-thrower").gun).toMatchObject({

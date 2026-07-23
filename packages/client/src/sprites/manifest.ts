@@ -9740,23 +9740,23 @@ export const SPRITES = {
     "id": "x2-hexbore-voidmaw",
     "kind": "weapon",
     "canvas": {
-      "w": 276,
-      "h": 276
+      "w": 356,
+      "h": 197
     },
     "body": {
-      "cx": 130.09,
-      "cy": 129.43,
+      "cx": 162.79,
+      "cy": 82.24,
       "w": 256,
-      "h": 134
+      "h": 162
     },
     "parts": [
       {
         "role": "part-1",
         "file": "part-1.png",
         "w": 256,
-        "h": 134,
-        "cx": 130.09,
-        "cy": 129.43,
+        "h": 162,
+        "cx": 162.79,
+        "cy": 82.24,
         "ox": 0,
         "oy": 0
       }

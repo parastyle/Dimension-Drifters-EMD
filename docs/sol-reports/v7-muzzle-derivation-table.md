@@ -66,13 +66,13 @@ Generated from sprite alpha for all 141 active projectile-gun and beam definitio
 | `x2-gravewind-rimfire` (Gravewind Rimfire) | part-1 (255, 14.3) | part-1 (255, 14.3) | No |
 | `x2-grit-snubnose` (Grit Snubnose) | part-1 (255, 26.1) | part-1 (255, 26.1) | No |
 | `x2-hailshot-hand-maul` (Hailshot Hand-Maul) | part-1 (255, 16.2) | part-1 (255, 16.2) | No |
-| `x2-hailspitter-pepperbox` (Hailspitter Pepperbox) | part-1 (255, 44.3) | part-1 (255, 44.3) | No |
+| `x2-hailspitter-pepperbox` (Hailspitter Pepperbox) | part-1 (255, 44.3) | part-1 (252, 41)<br>part-1 (252, 54)<br>part-1 (252, 67)<br>part-1 (252, 81)<br>part-1 (252, 95)<br>part-1 (252, 109)<br>part-1 (252, 122) | Yes - The seven frosted pepperbox bores share one connected front plate; explicit art-space centres span the painted barrel cluster and launch one tight parallel lane each. |
 | `x2-hailstorm-coilgun` (Hailstorm Coilgun) | part-1 (255, 17.1) | part-1 (255, 17.1) | No |
 | `x2-hallowbore-coachgun` (Hallowbore Coachgun) | part-1 (255, 20.1) | part-1 (255, 28)<br>part-1 (255, 51) | Yes - The shared engraved muzzle plate joins both stacked barrels into one alpha mass; the two visible bore centres require explicit art-space points. |
 | `x2-hellbore-gatling` (Hellbore Gatling) | part-1 (255, 42) | part-1 (255, 42) | No |
 | `x2-hellmouth-palmcaster` (Hellmouth Palmcaster) | part-1 (255, 96.3) | part-1 (255, 96.3) | No |
 | `x2-hexbolt-spitter-mitt` (Hexbolt Spitter-Mitt) | part-1 (255, 66.2) | part-1 (255, 66.2) | No |
-| `x2-hexbore-voidmaw` (Hexbore Voidmaw) | part-1 (252, 35.9) | part-1 (252, 35.9) | No |
+| `x2-hexbore-voidmaw` (Hexbore Voidmaw) | part-1 (255, 26.9) | part-1 (255, 26.9) | No |
 | `x2-hexbore-witchrifle` (Hexbore Witchrifle) | part-1 (255, 25.3) | part-1 (255, 25.3) | No |
 | `x2-hollowpoint-hex` (Hollowpoint Hex) | part-1 (255, 30.9) | part-1 (255, 30.9) | No |
 | `x2-hollowpoint-repeater` (Hollowpoint Repeater) | part-1 (255, 9.7) | part-1 (255, 9.7) | No |
@@ -115,7 +115,7 @@ Generated from sprite alpha for all 141 active projectile-gun and beam definitio
 | `x2-scattershell-duster` (Scattershell Duster) | part-1 (251, 37.2)<br>part-2 (251, 37.2) | part-1 (252, 49)<br>part-1 (252, 79)<br>part-2 (252, 49)<br>part-2 (252, 79) | Yes - Each akimbo sprite has two bores inside one opaque front plate; alpha exposes the plate edge but not the four bore centres. |
 | `x2-scattershot-saint` (Scattershot Saint) | part-1 (255, 30.4) | part-1 (255, 30.4) | No |
 | `x2-seraph-s-knuckle-reliquary` (Seraph's Knuckle-Reliquary) | part-1 (255, 67.1) | part-1 (255, 67.1) | No |
-| `x2-sidewinder-spitfire` (Sidewinder Spitfire) | part-1 (253, 46.9) | part-1 (253, 46.9) | No |
+| `x2-sidewinder-spitfire` (Sidewinder Spitfire) | part-1 (253, 46.9) | part-1 (253, 42)<br>part-1 (253, 52) | Yes - The organic muzzle is one joined alpha mass; the owner-ordered twin parallel venom lanes need two explicit centres spanning its open mouth. |
 | `x2-sidewinder-twin-rifles` (Sidewinder Twin-Rifles) | part-1 (255, 13.8)<br>part-2 (255, 13.8) | part-1 (255, 13.8)<br>part-2 (255, 13.8) | No |
 | `x2-slughammer-breachgun` (Slughammer Breachgun) | part-1 (255, 27.4) | part-1 (255, 27.4) | No |
 | `x2-smoldering-eye-of-perdition` (Smoldering Eye of Perdition) | part-1 (254, 68.5) | part-1 (254, 68.5) | No |

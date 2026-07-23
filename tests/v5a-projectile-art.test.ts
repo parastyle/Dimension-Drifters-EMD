@@ -95,12 +95,15 @@ describe("V5A generated projectile identity art", () => {
     expect(gun.damage / cadenceSeconds).toBe(90);
   });
 
-  it("derives Mesa's shared visual/server muzzle from art and gives Hexbore its ordered grip", () => {
+  it("derives Mesa's shared visual/server muzzle and gives Hexbore its flat one-hand pose", () => {
     const mesa = WEAPONS["x2-mesa-hand-cannon"];
     expect(mesa?.muzzle?.points[0]).toMatchObject({ part: 0, x: 255, y: 28.4 });
+    expect(WEAPONS["x2-hexbore-voidmaw"]).toMatchObject({
+      displayLength: 112,
+      tags: { grip: "1H", handling: ["pistol"] },
+    });
     expect(WEAPONS["x2-hexbore-voidmaw"]?.gripPoints).toEqual({
-      primary: { x: 0.2, y: 0.72 },
-      secondary: { x: 0.55, y: 0.42, role: "under-barrel" },
+      primary: { x: 0.35, y: 0.68 },
     });
   });
 

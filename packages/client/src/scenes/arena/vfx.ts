@@ -15,8 +15,8 @@ import {
   paintedParticlePixels,
   particleBurst,
 } from "../../vfx/particles.js";
-import { type QuakeVfxRecipe, resolveQuakeVfxRecipe } from "../../vfx/quake-vfx-recipes.js";
 import { resolveProjectileExplosionVfxRecipe } from "../../vfx/projectile-explosion-vfx-recipes.js";
+import { type QuakeVfxRecipe, resolveQuakeVfxRecipe } from "../../vfx/quake-vfx-recipes.js";
 
 /**
  * Transient combat VFX factories, extracted from ArenaScene. Each is a pure spawner: it takes the scene
@@ -646,6 +646,22 @@ export function spawnExplosion(
   const visualElement = recipe?.element ?? element;
   const pack = recipe?.pack ?? explosionPack(radius, visualElement);
   if (pack) playFxPack(scene, pack, x, y, { intensity: radius });
+  const painted = recipe?.paintedTexture;
+  if (painted && scene.textures.exists(painted.key)) {
+    const sprite = scene.add.image(x, y, painted.key).setDepth(99012).setAlpha(0.96);
+    sprite.setScale((radius * 2 * painted.diameterMultiplier) / Math.max(1, sprite.width));
+    const finalScale = sprite.scaleX;
+    sprite.setScale(finalScale * 0.42);
+    scene.tweens.add({
+      targets: sprite,
+      scaleX: finalScale,
+      scaleY: finalScale,
+      alpha: { from: 0.96, to: 0 },
+      ease: "Quad.easeOut",
+      duration: painted.lifeMs,
+      onComplete: () => sprite.destroy(),
+    });
+  }
   // PAINTED eruption (§41): element shards blasted out past the rim, embers/motes inside, smoke wisps
   // rising and lingering, plus ONE painted ring frame punched up as the halo. All degrade to no-ops
   // pre-load; the procedural composite below always renders.

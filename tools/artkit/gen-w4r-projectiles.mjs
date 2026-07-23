@@ -15,6 +15,7 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import sharp from "sharp";
 import { configureCodex, runCodexExec } from "./lib/codex.mjs";
+import { emit, isCheck } from "./lib/emit.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repo = resolve(here, "../..");
@@ -248,18 +249,38 @@ ${commonPrompt}`,
   },
 ];
 
-const options = { only: undefined, force: false, maxAttempts: 3 };
+/** Accepted projectiles supplied by later owner-note art runs. This generator owns their runtime
+ * manifest registration too, so generated output is never hand-edited when a supplier uses a
+ * versioned subdirectory. */
+const supplementalAssets = [
+  ["brimstone-flaming-cross", "x2-brimstone-gallows-rifle", "projectiles/v7/brimstone-flaming-cross.png"],
+  ["frostfang-pictured-harpoon", "x2-frostfang-speargun", "projectiles/v7/frostfang-pictured-harpoon.png"],
+  ["galvanic-coachgun-electric-slug", "x2-galvanic-coachgun", "projectiles/v7/galvanic-coachgun-electric-slug.png"],
+  ["ironhide-anti-tank-shell", "x2-ironhide-buffalo-gun", "projectiles/v7/ironhide-anti-tank-shell.png"],
+  ["plaguespitter-green-shot", "x2-plaguespitter-flak-gun", "projectiles/v7/plaguespitter-green-shot.png"],
+  ["ricochet-icicle", "x-gun-ricochet-pistol", "projectiles/v7/ricochet-icicle.png"],
+  ["tesla-drumbore-electric-particle", "x2-tesla-drumbore", "projectiles/v7/tesla-drumbore-electric-particle.png"],
+  ["tesla-faradayer-hand-drawn-bolt", "x2-tesla-faradayer", "projectiles/v7/tesla-faradayer-hand-drawn-bolt.png"],
+  ["thunderhead-blue-helix", "x2-thunderhead-lever-gun", "projectiles/v8/thunderhead-blue-helix.png", { width: 160, height: 80 }],
+  ["thunderhead-smoke-ring", "x2-thunderhead-repeater-cannon", "projectiles/v8/thunderhead-smoke-ring.png", { width: 112, height: 112 }],
+].map(([id, weaponId, url, normalize]) => ({ id, weaponId, url, normalize }));
+
+const options = { only: undefined, force: false, manifestOnly: false, maxAttempts: 3 };
 for (const arg of process.argv.slice(2)) {
   if (arg === "--force") options.force = true;
+  else if (arg === "--manifest-only") options.manifestOnly = true;
+  else if (arg === "--check") continue;
   else if (arg.startsWith("--only=")) options.only = arg.slice(7);
   else if (arg.startsWith("--max-attempts=")) options.maxAttempts = Number(arg.slice(15));
   else if (arg === "--help" || arg === "-h") {
-    console.log("Usage: node tools/artkit/gen-w4r-projectiles.mjs [--only=<asset-id>] [--force] [--max-attempts=1..3]");
+    console.log("Usage: node tools/artkit/gen-w4r-projectiles.mjs [--only=<asset-id>] [--force] [--manifest-only] [--max-attempts=1..3]");
     process.exit(0);
   } else throw new Error(`Unknown argument: ${arg}`);
 }
 if (!Number.isInteger(options.maxAttempts) || options.maxAttempts < 1 || options.maxAttempts > 3)
   throw new Error("--max-attempts must be an integer from 1 to 3");
+if (isCheck && !options.manifestOnly)
+  throw new Error("--check is only supported with --manifest-only");
 
 function disallowedRenderLog(path) {
   if (!existsSync(path)) return false;
@@ -434,28 +455,61 @@ async function installBrimstoneWarhead() {
 }
 
 async function writeProjectileManifest() {
-  const assetKinds = new Map(jobs.map((job) => [job.id, "generated"]));
-  assetKinds.set("brimstone-rocket-warhead", "edited");
+  const assets = new Map(
+    jobs.map((job) => [
+      job.id,
+      { source: "generated", path: resolve(installed, `${job.id}.png`), url: `projectiles/${job.id}.png` },
+    ]),
+  );
+  assets.set("brimstone-rocket-warhead", {
+    source: "edited",
+    path: resolve(installed, "brimstone-rocket-warhead.png"),
+    url: "projectiles/brimstone-rocket-warhead.png",
+  });
+  for (const asset of supplementalAssets) {
+    const path = resolve(repo, "packages/client/public", asset.url);
+    if (asset.normalize && existsSync(path) && !isCheck) {
+      const normalized = await sharp(path)
+        .trim({ background: { r: 0, g: 0, b: 0, alpha: 0 } })
+        .resize({
+          width: asset.normalize.width,
+          height: asset.normalize.height,
+          fit: "inside",
+          withoutEnlargement: false,
+        })
+        .extend({
+          top: 8,
+          bottom: 8,
+          left: 8,
+          right: 8,
+          background: { r: 0, g: 0, b: 0, alpha: 0 },
+        })
+        .png({ compressionLevel: 9 })
+        .toBuffer();
+      writeFileSync(path, normalized);
+    }
+    assets.set(asset.id, { source: "generated", path, url: asset.url });
+  }
   const entries = [];
-  for (const [id, source] of [...assetKinds].sort(([a], [b]) => a.localeCompare(b))) {
-    const path = resolve(installed, `${id}.png`);
+  for (const [id, asset] of [...assets].sort(([a], [b]) => a.localeCompare(b))) {
+    const { path, source, url } = asset;
     if (!existsSync(path)) continue;
     const metadata = await sharp(path).metadata();
     if (!metadata.width || !metadata.height) continue;
-    entries.push({ id, source, width: metadata.width, height: metadata.height });
+    entries.push({ id, source, url, width: metadata.width, height: metadata.height });
   }
   const body = entries
     .map(
       (entry) =>
         `  "${entry.id}": {\n` +
-        `    url: "projectiles/${entry.id}.png",\n` +
+        `    url: "${entry.url}",\n` +
         `    width: ${entry.width},\n` +
         `    height: ${entry.height},\n` +
         `    source: "${entry.source}",\n` +
         `  },`,
     )
     .join("\n");
-  writeFileSync(
+  emit(
     manifestPath,
     `// AUTO-GENERATED by tools/artkit/gen-w4r-projectiles.mjs. Do not edit by hand.\n` +
       `// Standalone in-flight identity sprites; generated entries use weapon art as reference, never as crop data.\n` +
@@ -468,11 +522,16 @@ async function writeProjectileManifest() {
       `export const PROJECTILE_SPRITES = {\n${body}\n` +
       `} as const satisfies Record<string, ProjectileSpriteManifestEntry>;\n\n` +
       `export type ProjectileSpriteId = keyof typeof PROJECTILE_SPRITES;\n`,
+    "projectile-manifest.ts",
   );
   return entries.length;
 }
 
-const selected = options.only ? jobs.filter((job) => job.id === options.only) : jobs;
+const selected = options.manifestOnly
+  ? []
+  : options.only
+    ? jobs.filter((job) => job.id === options.only)
+    : jobs;
 if (options.only && selected.length === 0 && options.only !== "brimstone-rocket-warhead")
   throw new Error(`Unknown projectile asset ${options.only}`);
 const outcomes = [];
@@ -485,10 +544,11 @@ async function renderWorker() {
   }
 }
 await Promise.all(Array.from({ length: Math.min(3, selected.length) }, renderWorker));
-if (!options.only || options.only === "brimstone-rocket-warhead")
+if (!options.manifestOnly && (!options.only || options.only === "brimstone-rocket-warhead"))
   outcomes.push(await installBrimstoneWarhead());
 const manifestCount = await writeProjectileManifest();
-writeFileSync(resolve(out, "render-outcomes.json"), `${JSON.stringify(outcomes, null, 2)}\n`);
+if (!isCheck)
+  writeFileSync(resolve(out, "render-outcomes.json"), `${JSON.stringify(outcomes, null, 2)}\n`);
 console.table(
   outcomes.map(({ id, weaponId, status, attempts, width, height, failures }) => ({
     id,
