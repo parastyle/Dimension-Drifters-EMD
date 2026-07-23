@@ -38,6 +38,15 @@ RULE:
    `docs/design/pet-2-evolution.md`.
 6. **Layered-texture pets** (owner ask): give pets the SAME bobbing feel characters get, via a 2-layer
    trick — one image on top of another representing a different depth. Design task in progress.
+7. **PETS ARE ROBOTIC (owner ask, 2026-07-23).** The whole pet line reads as MECHANICAL/ROBOTIC —
+   drones, constructs, chrome, servos, plating, glowing optics, antennae, jointed limbs, exhaust,
+   little mechanical critters. NOT organic. The owner saw a pet that looked like a "rock-turd"
+   (an unappealing organic lump) and rejected it. ANTI-EXAMPLE to design AWAY from: shapeless organic
+   blobs, rock/stone lumps, mud/turd shapes, amorphous ooze. The pet-1 roster's organic entries
+   (jackalope, ghost-coyote, moon ooze, grave-beetle, etc.) are RECAST as robotic equivalents. The
+   art pipeline gets an explicit review gate that REJECTS any render reading as an organic lump.
+   Robotic does not mean cold/ugly — cute robots, majestic drones, weird contraptions are all in;
+   the through-line is "built, not grown."
 
 ## Weapons (owner ask, 2026-07-23)
 
