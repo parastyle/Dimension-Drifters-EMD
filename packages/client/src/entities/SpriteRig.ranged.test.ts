@@ -419,7 +419,7 @@ describe("SpriteRig V3G grip and mechanism laws", () => {
     const mechanisms = Object.values(WEAPONS).filter(
       (weapon) => gunHandlingMechanismFor(weapon) !== undefined,
     );
-    expect(mechanisms).toHaveLength(31);
+    expect(mechanisms).toHaveLength(32);
     for (const weapon of mechanisms) {
       const rig = Object.create(SpriteRig.prototype) as {
         weapons: Array<{ def: typeof weapon }>;

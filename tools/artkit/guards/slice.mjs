@@ -4,18 +4,19 @@
 // Cuts a KEYED (transparent-background) sprite into its flat-green-gap-separated
 // pieces by connected-component labeling on the alpha mask — NO hand-cutting
 // (§26 #2). Serves two callers that share the exact same need:
-//   • Characters/enemies (§18, §28.3): body + detached hands + feet, driven by the
+//   • Characters/enemies (§18, §28.3): body + optional detached head + hands + feet, driven by the
 //     procedural rig — the pieces the engine animates independently.
 //   • Articulated weapons (§28.11): staff + pendulum cage etc., rigged in-engine.
 //
 // It does NOT classify weapon parts (those are positional, handled by the rig) —
-// for characters it labels parts by geometry: body = largest blob; a part below
-// the body's lower edge is a FOOT, otherwise a HAND; left/right by centroid x.
+// for characters it labels parts by geometry: body = largest blob; the top-most
+// detached blob above the body is the HEAD; a remaining part below the body's
+// lower edge is a FOOT, otherwise a HAND; left/right by centroid x.
 // Builds with fewer parts just work (hands-only floaters → no feet; pure blobs →
 // body only), because we only emit what we actually find.
 //
 // Output (under out/<id>/parts/ by default):
-//   <role>.png            one tightly-cropped PNG per part (body/hand-l/hand-r/foot-l/foot-r…)
+//   <role>.png            one tightly-cropped PNG per part (body/head/hand-l/hand-r/foot-l/foot-r…)
 //   parts.json            geometry manifest the client rig consumes (see SHAPE below)
 //
 //   node guards/slice.mjs --id=drifter
@@ -142,9 +143,19 @@ function classify(comps) {
   const bodyBottom = body.bbox.y + body.bbox.h;
   const rest = sorted.slice(1);
 
+  // A separated character head is the top-most substantial island above the
+  // largest (body) island. This must happen before the legacy limb classifier:
+  // otherwise the newly detached head is indistinguishable from a high hand.
+  // Existing baked-head characters have no qualifying island and keep their
+  // five-part manifests unchanged.
+  const head = rest
+    .filter((c) => c.bbox.y < body.bbox.y && c.cy < body.cy)
+    .sort((a, b) => a.cy - b.cy || a.bbox.y - b.bbox.y)[0];
+  const limbs = head ? rest.filter((c) => c !== head) : rest;
+
   const hands = [];
   const feet = [];
-  for (const c of rest) {
+  for (const c of limbs) {
     // A foot sits below the body's lower edge (boots under the duster); everything
     // else floating beside the body is a hand. Hovering builds simply have no feet.
     if (c.cy > bodyBottom - body.bbox.h * 0.12) feet.push(c);
@@ -155,6 +166,7 @@ function classify(comps) {
   side(feet);
 
   const named = [{ role: "body", comp: body }];
+  if (head) named.push({ role: "head", comp: head });
   const tag = (arr, base) => {
     if (arr.length === 1) named.push({ role: base, comp: arr[0] });
     else if (arr.length === 2) {

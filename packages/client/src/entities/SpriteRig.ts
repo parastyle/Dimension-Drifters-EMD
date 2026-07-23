@@ -1915,7 +1915,7 @@ interface PaperDeathState {
 
 /**
  * Sliced-procedural character/enemy rig (§18, §28.11). Renders a subject's harvest-sliced
- * parts (body + detached hands/feet, cut by tools/artkit/guards/slice.mjs) as separate
+ * parts (body + optional detached head + detached hands/feet, cut by tools/artkit/guards/slice.mjs) as separate
  * sprites in a container, then drives them with PURELY PROCEDURAL animation — bob, squash,
  * lean, independent hand/foot drift, walk shuffle, side-profile facing flip, and the front
  * hand reaching toward the cursor (the weapon anchor, §9). No frame animation (§18).
@@ -1943,8 +1943,10 @@ export class SpriteRig {
   private readonly hands: RigHand[] = [];
   private readonly feet: RigFoot[] = [];
   private readonly parts: Phaser.GameObjects.Image[] = [];
-  /** The blank kit head owns a bounded follower around the manifest socket; no neck/overlap geometry exists. */
+  /** One retained floating-head node: character-owned manifest art first, boilerplate gear art when installed. */
   private boilerplateHead?: Phaser.GameObjects.Image;
+  /** Source-pixel centroid offset for a sliced character-owned head; body scale converts it to rig space. */
+  private readonly manifestHeadOffset?: Readonly<{ x: number; y: number }>;
   private boilerplateManifest?: GearPartsManifest;
   private boilerplateAssembly?: BoilerplateAssembly;
   private boilerplateBodyAssembly?: BoilerplateAssemblyPart;
@@ -2414,13 +2416,13 @@ export class SpriteRig {
 
     // Build parts. Draw order (back→front): back hand, feet, body, front hand. The front
     // hand is the one on the side the art faces (right = +x); the other tucks behind.
-    const make = (role: string): Phaser.GameObjects.Image | undefined => {
+    const make = (role: string, trackAsBodyOrLimb = true): Phaser.GameObjects.Image | undefined => {
       const part = manifest.parts.find((p) => p.role === role);
       if (!part) return undefined;
       const tx = partTexture(scene, spriteId, role);
       const img = scene.add.image(part.ox * this.scale, part.oy * this.scale, tx.key, tx.frame);
       img.setOrigin(0.5).setScale(this.scale);
-      this.parts.push(img);
+      if (trackAsBodyOrLimb) this.parts.push(img);
       return img;
     };
 
@@ -2470,6 +2472,12 @@ export class SpriteRig {
     const bodyImg = make("body");
     if (!bodyImg) throw new Error(`SpriteRig: "${spriteId}" has no body part`);
     this.body = bodyImg;
+    const headPart = manifest.parts.find((part) => part.role === "head");
+    const headImg = headPart ? make("head", false) : undefined;
+    if (headPart && headImg) {
+      this.boilerplateHead = headImg;
+      this.manifestHeadOffset = { x: headPart.ox, y: headPart.oy };
+    }
 
     const bodyFrame = this.body.frame.name;
     this.slideAfterimageA = scene.add
@@ -2494,6 +2502,7 @@ export class SpriteRig {
     for (const f of this.feet) order.push(f.img);
     for (const h of this.hands) if (!h.front) order.push(h.img);
     order.push(this.body);
+    if (this.boilerplateHead) order.push(this.boilerplateHead);
     for (const h of this.hands) if (h.front) order.push(h.img);
 
     this.label = isSelf
@@ -3281,6 +3290,12 @@ export class SpriteRig {
     if (!rigHand) return { x: this.root.x, y: this.root.y };
     const point = this.root.getWorldTransformMatrix().transformPoint(rigHand.img.x, rigHand.img.y);
     return { x: point.x, y: point.y };
+  }
+
+  /** Final rendered release hand for the accepted attack beat. Thrown delivery uses this presentation
+   * origin while its immutable server projectile continues to launch from authoritative player state. */
+  throwWorldAnchor(): { x: number; y: number } {
+    return this.handWorldAnchor(this.swingHand === 1 ? 1 : 0);
   }
 
   /** Transform one authored PNG muzzle point through the final live sprite affine. */
@@ -7800,7 +7815,7 @@ export class SpriteRig {
     out.y = Math.sin(localAim) * distance * anticipation * 0.72;
   }
 
-  private syncBoilerplateHeadPose(
+  private syncFloatingHeadPose(
     elapsedSeconds: number,
     outsidePaperView: boolean,
     rebase: boolean,
@@ -7813,19 +7828,31 @@ export class SpriteRig {
     movementHeadBobPx: number,
   ): void {
     const head = this.boilerplateHead;
-    const source = this.boilerplateHeadAssembly;
-    if (!head || !source || !this.boilerplateReady) return;
+    const boilerplateSource = this.boilerplateReady ? this.boilerplateHeadAssembly : undefined;
+    const manifestSource = this.manifestHeadOffset;
+    if (!head || (!boilerplateSource && !manifestSource)) return;
     if (outsidePaperView) {
       this.floatingHeadLodSleeping = true;
       return;
     }
     const assemblyScale = this.boilerplateAssembly?.scale ?? 1;
-    const root = this.boilerplateManifest?.socketFrame.bodyRootSource;
-    const resolvedSocket = this.gearAssembly?.rigSockets.head;
+    const root = boilerplateSource
+      ? this.boilerplateManifest?.socketFrame.bodyRootSource
+      : undefined;
+    const resolvedSocket = boilerplateSource ? this.gearAssembly?.rigSockets.head : undefined;
     // The equipped torso's post-normalization alpha top/center owns the rest socket. Falling back to the
-    // boilerplate assembly preserves pre-load behavior; resolved base gear produces the identical numbers.
-    const localX = resolvedSocket && root ? resolvedSocket.x - root.x : source.x / assemblyScale;
-    const localY = resolvedSocket && root ? resolvedSocket.y - root.y : source.y / assemblyScale;
+    // boilerplate assembly preserves pre-load behavior. A sliced character head instead retains the exact
+    // source-space centroid offset emitted beside its body by the existing ArtKit component slicer.
+    const localX = boilerplateSource
+      ? resolvedSocket && root
+        ? resolvedSocket.x - root.x
+        : boilerplateSource.x / assemblyScale
+      : (manifestSource?.x ?? 0);
+    const localY = boilerplateSource
+      ? resolvedSocket && root
+        ? resolvedSocket.y - root.y
+        : boilerplateSource.y / assemblyScale
+      : (manifestSource?.y ?? 0);
     const dx = localX * this.body.scaleX;
     const dy = localY * this.body.scaleY;
     const cosine = Math.cos(this.body.rotation);
@@ -7864,11 +7891,14 @@ export class SpriteRig {
     stepFloatingHeadSpring(this.floatingHeadSpring, input);
     this.floatingHeadLodSleeping = false;
     const determinantSign = this.body.scaleX * this.body.scaleY < 0 ? -1 : 1;
-    const headMountScale =
-      this.gearAssembly?.headMountScale ?? source.source.mountScale ?? HEAD_MOUNT_SCALE;
+    const headMountScale = boilerplateSource
+      ? (this.gearAssembly?.headMountScale ??
+        boilerplateSource.source.mountScale ??
+        HEAD_MOUNT_SCALE)
+      : 1;
     head
       .setPosition(this.floatingHeadSpring.x, this.floatingHeadSpring.y)
-      .setRotation(this.body.rotation + determinantSign * source.rotation)
+      .setRotation(this.body.rotation + determinantSign * (boilerplateSource?.rotation ?? 0))
       .setScale(this.body.scaleX * headMountScale, this.body.scaleY * headMountScale)
       .setVisible(true);
   }
@@ -10697,7 +10727,7 @@ export class SpriteRig {
     }
     const localMoveX = anim.moveX * this.facing;
     this.sampleFloatingHeadAttackLead(sceneNow, anim, anim.reducedMotion === true);
-    this.syncBoilerplateHeadPose(
+    this.syncFloatingHeadPose(
       springDtS,
       outsidePaperView,
       jiggleRebase,

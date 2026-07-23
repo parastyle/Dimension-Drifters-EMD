@@ -5,7 +5,7 @@
 // step bridges the two: for each subject it (1) slices the keyed identity-ref if not
 // already sliced, (2) copies the part PNGs into packages/client/public/sprites/<id>/,
 // and (3) regenerates packages/client/src/sprites/manifest.ts — a typed manifest the
-// client imports statically (no runtime fetch; offsets/sizes drive the procedural rig).
+// client imports statically (no runtime fetch; body/head/limb offsets drive the procedural rig).
 //
 //   node harvest-install.mjs --ids=drifter
 //   node harvest-install.mjs --ids=drifter,critter,boothill --kind=character

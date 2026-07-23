@@ -63,6 +63,7 @@ const BEAM_GUN_IDS = new Set([
 // WeaponDef cadence, and independent codegen validation agree.
 const SINGLE_SHOT_GUN_IDS = new Set([
   "x2-barrett-50-cal-sniper",
+  "x2-m50-anti-materiel-rifle",
   "x2-saintskull-monstrance",
 ]);
 

@@ -52,6 +52,25 @@ Composition/framing: flat orthographic full side-profile, perfectly horizontal, 
 ${commonPrompt}`,
   },
   {
+    id: "m50-50cal-round",
+    weaponId: "x2-m50-anti-materiel-rifle",
+    reference: resolve(
+      repo,
+      "packages/client/public/sprites/x2-m50-anti-materiel-rifle/part-1.png",
+    ),
+    maxWidth: 176,
+    maxHeight: 88,
+    minAspect: 2.2,
+    maxAspect: 5.5,
+    prompt: `Use case: stylized-concept
+Asset type: Dimension Drifters in-flight .50-cal projectile VFX sprite
+Primary request: Generate one brand-new plain modern-military .50-caliber anti-materiel round inspired by Image 1; the rifle is only a style and material reference and must never be cropped.
+Input images: Image 1 is a style, palette, material, and caliber-weight reference only; it is not an edit target and no pixels should be copied or cropped.
+Subject: one complete heavy .50-cal cartridge with a long dark copper-jacketed projectile, short thick muted-brass case silhouette, blackened steel extraction rim, and no decorative markings; physical ammunition, not an orb.
+Composition/framing: flat orthographic full side-profile, perfectly horizontal, projectile nose points RIGHT, entire round visible with generous padding.
+${commonPrompt}`,
+  },
+  {
     id: "coyotes-grin-throwing-blade",
     weaponId: "x2-coyote-s-grin",
     reference: resolve(repo, "packages/client/public/sprites/x2-coyote-s-grin/part-5.png"),

@@ -1741,6 +1741,28 @@
     "barrelMode": "parallel"
   },
   {
+    "id": "x2-m50-anti-materiel-rifle",
+    "name": "M-50 Anti-Materiel Rifle",
+    "sprite": "x2-m50-anti-materiel-rifle",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 20.1
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 20.1
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
     "id": "x2-magpie-scattergun",
     "name": "Magpie Scattergun",
     "sprite": "x2-magpie-scattergun",

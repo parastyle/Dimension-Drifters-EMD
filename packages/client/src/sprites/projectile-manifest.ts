@@ -55,6 +55,12 @@ export const PROJECTILE_SPRITES = {
     height: 66,
     source: "generated",
   },
+  "m50-50cal-round": {
+    url: "projectiles/m50-50cal-round.png",
+    width: 192,
+    height: 47,
+    source: "generated",
+  },
   "mesa-hand-cannon-50cal": {
     url: "projectiles/mesa-hand-cannon-50cal.png",
     width: 160,

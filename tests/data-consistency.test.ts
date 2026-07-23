@@ -161,7 +161,11 @@ describe("§43 expansion codegen: every authored gameplay field survives into th
   const concepts = (readJson("../data/weapon-concepts-300.json") as { weapons: Concept[] }).weapons;
   const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
   const iclamp = (v: number, lo: number, hi: number) => Math.round(clamp(v, lo, hi));
-  const singleShotGunIds = new Set(["x2-barrett-50-cal-sniper", "x2-saintskull-monstrance"]);
+  const singleShotGunIds = new Set([
+    "x2-barrett-50-cal-sniper",
+    "x2-m50-anti-materiel-rifle",
+    "x2-saintskull-monstrance",
+  ]);
 
   const upGrades = (g: Grades) =>
     g && Object.fromEntries(Object.entries(g).map(([a, v]) => [a, v.toUpperCase()]));

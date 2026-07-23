@@ -90,14 +90,14 @@ import {
   RARITIES,
   RARITY_CURSED,
   RING_BAND_HALF,
+  ROLL_COOLDOWN,
+  ROLL_SPEED_CURVE,
+  ROLL_TICK_SECONDS,
   ROOM_NAME,
   requirementPenalty,
   SALVAGE_HOLD_SECONDS,
   SCHEMA_VERSION,
   SHOP_RADIUS,
-  ROLL_COOLDOWN,
-  ROLL_SPEED_CURVE,
-  ROLL_TICK_SECONDS,
   SLIDE_PHASE_GROUND,
   SLIDE_PHASE_OFF,
   type SlidePhase,
@@ -130,10 +130,10 @@ import {
   WEAPON_IDS,
   WEAPONS,
   type WeaponDef,
+  weaponArtMuzzlePointsForShot,
   weaponDisplaySpriteId,
   weaponEffectCueSeconds,
   weaponEffectEmitterPoint,
-  weaponArtMuzzlePointsForShot,
   weaponMuzzleWorldPoint,
   weaponMuzzleWorldPointsForShot,
   weaponSetBonus,
@@ -3282,9 +3282,7 @@ export class ArenaScene extends Phaser.Scene {
       // A missing file (packaging drift) must not stall the equip loop forever: mark the sprite FAILED so
       // equipWeapons falls through to empty hands (the weapon still works — it's just not drawn in hand).
       this.load.once(Phaser.Loader.Events.COMPLETE, () => {
-        if (
-          manifest.parts.some((part) => !this.textures.exists(`${spriteId}:${part.role}`))
-        ) {
+        if (manifest.parts.some((part) => !this.textures.exists(`${spriteId}:${part.role}`))) {
           this.failedArt.add(spriteId);
           console.warn(`[dd] weapon art failed to lazy-load: ${spriteId}`);
         }
@@ -6789,21 +6787,36 @@ export class ArenaScene extends Phaser.Scene {
                       ? makeCounter(this, pr) // §8 parry projectile (bounce-back counter OR Superman side-glance)
                       : makeSpit(this, pr));
       const sourceRig = shooter ? this.blobs.get(shooter) : undefined;
+      const spawnAnchorKind = sourceWeapon?.gun
+        ? "muzzle"
+        : sourceWeapon?.thrown && isThrownProjectileKind(pr.kind)
+          ? "throw"
+          : undefined;
       const spawnAnchor =
-        sourcePlayer && sourceWeapon?.gun && sourceRig
-          ? this.writeLiveGunRoundMuzzle(pr, sourcePlayer, sourceWeapon, sourceRig)
+        sourcePlayer && sourceWeapon && sourceRig
+          ? spawnAnchorKind === "muzzle"
+            ? this.writeLiveGunRoundMuzzle(pr, sourcePlayer, sourceWeapon, sourceRig)
+            : spawnAnchorKind === "throw"
+              ? this.writeLiveThrownOrigin(sourceRig)
+              : undefined
           : undefined;
       if (spawnAnchor) {
         // The wire row is already one or more 50 ms simulation steps downrange when it first renders.
-        // Begin this presentation at the final live held muzzle. Its opening flight owns a short-lived
-        // presentation offset so the generic authority attraction cannot pull it off that muzzle next frame.
+        // Begin this presentation at the final live held muzzle or throw hand. Its opening flight owns a
+        // short-lived presentation offset so generic authority attraction cannot pull it off the source.
         container.setData("authoritativeFirstX", pr.x);
         container.setData("authoritativeFirstY", pr.y);
         container.setPosition(spawnAnchor.x, spawnAnchor.y);
         container.setData("spawnOriginX", container.x);
         container.setData("spawnOriginY", container.y);
-        container.setData("spawnMuzzleX", spawnAnchor.x);
-        container.setData("spawnMuzzleY", spawnAnchor.y);
+        container.setData("spawnAnchorKind", spawnAnchorKind);
+        if (spawnAnchorKind === "muzzle") {
+          container.setData("spawnMuzzleX", spawnAnchor.x);
+          container.setData("spawnMuzzleY", spawnAnchor.y);
+        } else {
+          container.setData("spawnThrowX", spawnAnchor.x);
+          container.setData("spawnThrowY", spawnAnchor.y);
+        }
         container.setData("spawnBornTick", pr.bornTick);
         container.setData("muzzleAnchoredFlight", true);
         container.setData("muzzleFlightAgeSeconds", 0);
@@ -7018,14 +7031,7 @@ export class ArenaScene extends Phaser.Scene {
     if (speed <= 1e-4) return undefined;
     const aimX = projectile.vx / speed;
     const aimY = projectile.vy / speed;
-    const liveMuzzles = this.writeLiveGunMuzzles(
-      player,
-      weapon,
-      rig,
-      player.attackSeq,
-      aimX,
-      aimY,
-    );
+    const liveMuzzles = this.writeLiveGunMuzzles(player, weapon, rig, player.attackSeq, aimX, aimY);
     if (liveMuzzles.length <= 1) return liveMuzzles[0];
 
     const currentTick = this.room?.state.tick ?? projectile.bornTick;
@@ -7056,6 +7062,13 @@ export class ArenaScene extends Phaser.Scene {
     return liveMuzzles[selectedIndex] ?? liveMuzzles[0];
   }
 
+  /** Resolve an own-sprite thrown row onto the accepted beat's final rendered release hand. */
+  private writeLiveThrownOrigin(rig: SpriteRig): { x: number; y: number } {
+    const out = rig.throwWorldAnchor();
+    if (this.belt) out.y = BELT_Y0 + (out.y - BELT_Y0) / BELT_FORESHORTEN;
+    return out;
+  }
+
   /** Dead-reckon each projectile along its velocity, gently corrected toward the server position
    *  (straight-line bullets look crisper extrapolated than lerped between 20Hz snapshots). */
   private moveProjectiles(dtSec: number): void {
@@ -7076,9 +7089,7 @@ export class ArenaScene extends Phaser.Scene {
         } else {
           const ageSeconds =
             ((c.getData("muzzleFlightAgeSeconds") as number | undefined) ?? 0) + dtSec;
-          const worldY = this.belt
-            ? ((c.getData("beltWorldY") as number | undefined) ?? c.y)
-            : c.y;
+          const worldY = this.belt ? ((c.getData("beltWorldY") as number | undefined) ?? c.y) : c.y;
           let nextX = c.x + pr.vx * dtSec;
           let nextY = worldY + pr.vy * dtSec;
           if (ageSeconds > MUZZLE_FLIGHT_AUTHORITY_GRACE_SECONDS) {
@@ -10100,15 +10111,7 @@ export class ArenaScene extends Phaser.Scene {
         }
       }
       const fx = gunFx("orb:fire");
-      spawnMuzzleFlash(
-        this,
-        muzzle.x,
-        muzzle.y,
-        angle,
-        fx.size,
-        fx.color,
-        fx.style,
-      );
+      spawnMuzzleFlash(this, muzzle.x, muzzle.y, angle, fx.size, fx.color, fx.style);
       this.lastSelfMuzzleAt = this.time.now;
     }
   }
@@ -10359,15 +10362,7 @@ export class ArenaScene extends Phaser.Scene {
               renderScale: characterScale(self.character),
             })
           : { x: rig.x, y: rig.y };
-        spawnMuzzleFlash(
-          this,
-          muzzle.x,
-          muzzle.y,
-          ang,
-          fx.size,
-          fx.color,
-          fx.style,
-        );
+        spawnMuzzleFlash(this, muzzle.x, muzzle.y, ang, fx.size, fx.color, fx.style);
         this.lastSelfMuzzleAt = this.time.now;
       }
     } else if (weapon && !weapon.warp && !weapon.thrown && swing) {
@@ -10447,14 +10442,7 @@ export class ArenaScene extends Phaser.Scene {
             aimX /= aimLength;
             aimY /= aimLength;
             this.predictGunRoundRecoil(weapon, aimX, aimY);
-            this.cuePredictedBurstRound(
-              liveSelf,
-              weapon,
-              liveRig,
-              aimX,
-              aimY,
-              predictedSeq,
-            );
+            this.cuePredictedBurstRound(liveSelf, weapon, liveRig, aimX, aimY, predictedSeq);
           });
         }
       }
@@ -10511,8 +10499,7 @@ export class ArenaScene extends Phaser.Scene {
           weapon.gun.muzzle ?? fx.style,
           weapon.id,
         );
-        if (weapon.gun.sonicBoomRing)
-          spawnSonicBoomRing(this, muzzle.x, muzzle.y, angle, fx.color);
+        if (weapon.gun.sonicBoomRing) spawnSonicBoomRing(this, muzzle.x, muzzle.y, angle, fx.color);
       }
     }
     this.audio.play(`shot:${weapon.gun?.bulletKind ?? "slug"}`, { x: rig.x });

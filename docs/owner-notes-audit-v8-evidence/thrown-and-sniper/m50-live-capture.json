@@ -1,0 +1,98 @@
+{
+  "capturedAt": "2026-07-23T02:23:13.330Z",
+  "thresholds": {
+    "maxOnsetMs": 70,
+    "maxOnsetFrames": 1,
+    "maxMuzzleErrorPx": 2.5,
+    "minPhaseBodyRatio": 0.06,
+    "minStrafeTravelPx": 12
+  },
+  "weaponId": "x2-m50-anti-materiel-rifle",
+  "startSeq": 0,
+  "worldTravelPx": 169.09497451162608,
+  "rounds": [
+    {
+      "id": "p0",
+      "attackSeq": 1,
+      "mode": "stationary",
+      "delta": 0
+    },
+    {
+      "id": "p1",
+      "attackSeq": 2,
+      "mode": "strafing",
+      "delta": 0
+    },
+    {
+      "id": "p2",
+      "attackSeq": 3,
+      "mode": "strafing",
+      "delta": 0
+    }
+  ],
+  "cycles": [
+    {
+      "attackSeq": 1,
+      "mode": "stationary",
+      "authorityConfirmed": true,
+      "onsetMs": 54.20000000298023,
+      "onsetFrames": 1,
+      "acceptedOnsetMs": 0,
+      "extremumIndices": [
+        8,
+        10,
+        13,
+        15
+      ],
+      "backBodyRatio": 0.3194143706645799,
+      "downBodyRatio": 0.2512350899945839,
+      "upBodyRatio": 0.24709054453918466,
+      "forwardBodyRatio": 0.19815870058077026,
+      "returnErrorPx": 7.755684626330685e-15,
+      "supportVisibleAboveArt": true,
+      "supportOverlapsArt": true
+    },
+    {
+      "attackSeq": 2,
+      "mode": "strafing",
+      "authorityConfirmed": true,
+      "onsetMs": 0,
+      "onsetFrames": 0,
+      "acceptedOnsetMs": 0,
+      "extremumIndices": [
+        2,
+        4,
+        6,
+        8
+      ],
+      "backBodyRatio": 0.29718003616883665,
+      "downBodyRatio": 0.25825371286898335,
+      "upBodyRatio": 0.22772691175270587,
+      "forwardBodyRatio": 0.17033657142973496,
+      "returnErrorPx": 0,
+      "supportVisibleAboveArt": true,
+      "supportOverlapsArt": true
+    },
+    {
+      "attackSeq": 3,
+      "mode": "strafing",
+      "authorityConfirmed": true,
+      "onsetMs": 0,
+      "onsetFrames": 0,
+      "acceptedOnsetMs": -56.399999998509884,
+      "extremumIndices": [
+        2,
+        4,
+        6,
+        7
+      ],
+      "backBodyRatio": 0.31209411818172417,
+      "downBodyRatio": 0.25006219325268497,
+      "upBodyRatio": 0.20269600323998713,
+      "forwardBodyRatio": 0.1936351720201831,
+      "returnErrorPx": 0,
+      "supportVisibleAboveArt": true,
+      "supportOverlapsArt": true
+    }
+  ]
+}

@@ -68,6 +68,41 @@ function fundAuraStep(room: AnyRoom, player: AnyRoom, combat: AnyRoom, weapon: A
 }
 
 describe("GameRoom — W4M server authority", () => {
+  it("releases every V8 star and kunai through the authoritative own-sprite thrown path", () => {
+    const ids = [
+      "x2-iron-throwing-star",
+      "x2-fire-throwing-star",
+      "x2-ice-throwing-star",
+      "x2-void-throwing-star",
+      "x2-kunai",
+    ] as const;
+
+    for (const id of ids) {
+      const { room, player, combat } = makeRoom(`v8-${id}`);
+      const weapon = equip(player, combat, id);
+      if (!weapon.thrown || !weapon.performance?.windupSeconds)
+        throw new Error(`${id} thrown windup fixture is required`);
+
+      room.throwWeapon(player, combat, weapon);
+      expect(room.state.projectiles.size, `${id}: no early release`).toBe(0);
+      expect(room.pendingWeaponThrows, `${id}: queued release`).toHaveLength(1);
+
+      const pending = room.pendingWeaponThrows[0];
+      room.emitWeaponThrow(pending, player.x, player.y);
+      const projectile = [...room.state.projectiles.values()][0];
+      expect(projectile?.kind, `${id}: encoded weapon identity`).toBe(`thrown:${id}`);
+      expect(thrownProjectileSpriteId(projectile?.kind ?? ""), `${id}: own sprite`).toBe(id);
+      expect(
+        projectile && room.projectileMeta.get(projectile.id),
+        `${id}: authority meta`,
+      ).toMatchObject({
+        sourcePlayerId: player.id,
+        sourceWeaponId: id,
+        delivery: CombatDelivery.Thrown,
+      });
+    }
+  });
+
   it("damages through Fulgurite's exact 450px server aura", () => {
     const { room, player, combat } = makeRoom("fulgurite-450");
     const weapon = equip(player, combat, "x2-fulgurite-storm-sphere");
@@ -173,11 +208,7 @@ describe("GameRoom — W4M server authority", () => {
     expect(verdigris.room.meleeSwings.get(verdigris.player.id)?.range).toBe(400);
 
     const wyrmskull = makeRoom("wyrmskull-stab");
-    const wyrmskullWeapon = equip(
-      wyrmskull.player,
-      wyrmskull.combat,
-      "x2-wyrmskull-reliquary",
-    );
+    const wyrmskullWeapon = equip(wyrmskull.player, wyrmskull.combat, "x2-wyrmskull-reliquary");
     wyrmskull.room.resolveHandAttack(wyrmskull.player, wyrmskull.combat, 0);
     expect(wyrmskullWeapon.authoritativeCombo).toBe(true);
     expect(wyrmskull.room.meleeSwings.get(wyrmskull.player.id)?.swingArc).toBe(0);

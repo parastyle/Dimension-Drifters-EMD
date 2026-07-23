@@ -58,6 +58,7 @@ describe("V3G catalog gun-handling laws", () => {
       [
         "x2-barrett-50-cal-sniper",
         "x2-buzzard-s-eye-marksman",
+        "x2-m50-anti-materiel-rifle",
         "x2-mauler-slug-thrower",
         "x2-pale-horse-longgun",
         "x2-tracer-saint-carbine",

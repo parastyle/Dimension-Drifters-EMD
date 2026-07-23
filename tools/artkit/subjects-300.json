@@ -6456,5 +6456,65 @@
     "palette": { "primary": "#343A40", "accent": "#C49152" },
     "tags": ["weapon", "ranged", "marksman-rifle", "physical", "2H", "XL", "long", "bolt-action", "anti-materiel"],
     "cardartAction": "braced at a dead-still firing line as the enormous brake vents one ivory-orange blast and a single copper .50 slug tears into the ash haze"
+  },
+  {
+    "id": "x2-iron-throwing-star",
+    "name": "Iron Throwing Star",
+    "tier": "medium",
+    "dimension": "cross-dimension",
+    "prompt": "Weapon-only in-world sprite (no character, no hands, no background scene): Iron Throwing Star, one compact four-point forged-iron shuriken with a square center finger-ring, thick practical blades, chipped dark edges, and one restrained steel highlight. Plain physical tool with no magic, symbols, text, or decoration. Flat orthographic face-on view, one complete connected star centered and fully visible, restrained 4-5 colour cel-shaded game art, thick uneven charcoal outline, transparent-ready silhouette, no trail, particles, shadow, border, or ground.",
+    "palette": { "primary": "#646B72", "accent": "#B7BDC2" },
+    "tags": ["weapon", "melee", "thrown", "physical", "1H", "S", "mid", "throwing-star"],
+    "cardartAction": "spinning edge-on through dusty air, its chipped iron points cutting one tight silver-grey arc"
+  },
+  {
+    "id": "x2-fire-throwing-star",
+    "name": "Fire Throwing Star",
+    "tier": "medium",
+    "dimension": "cross-dimension",
+    "prompt": "Weapon-only in-world sprite (no character, no hands, no background scene): Fire Throwing Star, one compact four-point blackened-steel shuriken with a round center finger-ring, broad flame-notched points, and solid ember-orange heated edges contained inside the metal. No emitted flames, sparks, smoke, runes, text, or symbols. Flat orthographic face-on view, one complete connected star centered and fully visible, restrained 4-5 colour cel-shaded game art, thick uneven charcoal outline, transparent-ready silhouette, no trail, particles, shadow, border, or ground.",
+    "palette": { "primary": "#352E2B", "accent": "#E45B2A" },
+    "tags": ["weapon", "melee", "thrown", "fire", "1H", "S", "mid", "throwing-star"],
+    "cardartAction": "spinning through a short ember-orange heat wake as the four hot edges score a burning circle"
+  },
+  {
+    "id": "x2-ice-throwing-star",
+    "name": "Ice Throwing Star",
+    "tier": "medium",
+    "dimension": "cross-dimension",
+    "prompt": "Weapon-only in-world sprite (no character, no hands, no background scene): Ice Throwing Star, one compact four-point pale frost-steel shuriken with a hexagonal center finger-ring, tapering crystalline points, and a solid dull-cyan rime crust contained along the blade edges. No emitted mist, snow, glow, runes, text, or symbols. Flat orthographic face-on view, one complete connected star centered and fully visible, restrained 4-5 colour cel-shaded game art, thick uneven charcoal outline, transparent-ready silhouette, no trail, particles, shadow, border, or ground.",
+    "palette": { "primary": "#A9C7D4", "accent": "#62D5E8" },
+    "tags": ["weapon", "melee", "thrown", "frost", "1H", "S", "mid", "throwing-star"],
+    "cardartAction": "spinning through a crisp cyan frost wake, shedding a few close ice grains from its four rimed points"
+  },
+  {
+    "id": "x2-void-throwing-star",
+    "name": "Void Throwing Star",
+    "tier": "medium",
+    "dimension": "cross-dimension",
+    "prompt": "Weapon-only in-world sprite (no character, no hands, no background scene): Void Throwing Star, one compact four-point violet-black shuriken with a diamond center finger-ring, thick asymmetrical points, and narrow muted-purple inner bevels that look cut from deep shadow while remaining solid metal. No emitted smoke, portal, particles, runes, text, or symbols. Flat orthographic face-on view, one complete connected star centered and fully visible, restrained 4-5 colour cel-shaded game art, thick uneven charcoal outline, transparent-ready silhouette, no trail, shadow, border, or ground.",
+    "palette": { "primary": "#211A31", "accent": "#8B5FC7" },
+    "tags": ["weapon", "melee", "thrown", "void", "1H", "S", "mid", "throwing-star"],
+    "cardartAction": "spinning across a narrow violet-black wake that pinches the ash haze inward around its four points"
+  },
+  {
+    "id": "x2-kunai",
+    "name": "Kunai",
+    "tier": "medium",
+    "dimension": "cross-dimension",
+    "prompt": "Weapon-only in-world sprite (no character, no hands, no background scene): Kunai, one plain balanced black-iron throwing knife with a broad leaf-shaped point, short faceted neck, tan cord-wrapped grip, and round iron ring pommel. Practical, worn, non-magical, with no ornament, text, logo, symbol, glow, or particles. Flat orthographic full side-profile, POINT RIGHT and ring pommel LEFT, one complete connected knife fully visible, restrained 4-5 colour cel-shaded game art, thick uneven charcoal outline, transparent-ready silhouette, no trail, shadow, border, or ground.",
+    "palette": { "primary": "#34383D", "accent": "#8B5A3C" },
+    "tags": ["weapon", "melee", "thrown", "physical", "1H", "S", "mid", "kunai"],
+    "cardartAction": "cast point-first through dusty air in a straight dark streak, the ring pommel trailing one tight cord flick"
+  },
+  {
+    "id": "x2-m50-anti-materiel-rifle",
+    "name": "M-50 Anti-Materiel Rifle",
+    "tier": "medium",
+    "dimension": "cross-dimension",
+    "prompt": "Weapon-only in-world sprite (no character, no hands, no background scene): M-50 Anti-Materiel Rifle, one original plain modern-military .50-caliber bolt-action rifle. Long matte-black free-float barrel with a large rectangular multi-port brake, simple olive-drab aluminum chassis, straight adjustable shoulder stock with black recoil pad, box magazine, conventional black telescopic sight, folding bipod, and clearly visible swept bolt handle behind the chamber. Clean practical service weapon, no western, gothic, occult, saint, crusader, religious, fantasy, ceremonial, engraved, glowing, or branded motifs. Trademark-distinct fictional design with no manufacturer marks. One complete connected rifle, flat orthographic full side-profile, stock LEFT and muzzle RIGHT, fully visible, restrained 5-6 colour cel-shaded game art, thick uneven charcoal outline, transparent-ready silhouette, no muzzle flash, smoke, glow, text, logo, border, ground, or shadow.",
+    "palette": { "primary": "#39423F", "accent": "#8B806A" },
+    "tags": ["weapon", "ranged", "marksman-rifle", "physical", "2H", "XL", "long", "bolt-action", "anti-materiel", "modern-military"],
+    "cardartAction": "braced on a plain dust-range firing mat as the muzzle brake vents one hard white-orange blast and a single .50-caliber round drives rightward"
   }
 ]

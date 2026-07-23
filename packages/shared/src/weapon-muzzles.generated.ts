@@ -1755,6 +1755,28 @@ export const WEAPON_ART_MUZZLES = {
     "salvoMode": "parallel",
     "barrelMode": "parallel"
   },
+  "x2-m50-anti-materiel-rifle": {
+    "sprite": "x2-m50-anti-materiel-rifle",
+    "parts": [
+      {
+        "width": 256,
+        "height": 53
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 20.1,
+        "derived": {
+          "x": 255,
+          "y": 20.1
+        }
+      }
+    ],
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
   "x2-magpie-scattergun": {
     "sprite": "x2-magpie-scattergun",
     "parts": [

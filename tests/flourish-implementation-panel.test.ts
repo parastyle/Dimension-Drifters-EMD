@@ -25,7 +25,7 @@ describe("flourish implementation ownership panel", () => {
   it("routes authored head performance only through the existing floating-head spring input", () => {
     const headSync = methodBody(
       rigSource,
-      "private syncBoilerplateHeadPose(",
+      "private syncFloatingHeadPose(",
       "private topSocketPosition(",
     );
     expect(headSync).toContain("input.authoredOffsetX =");

@@ -15735,6 +15735,331 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "pierce": 5,
       "muzzleColor": 16757060
     }
+  },
+  "x2-iron-throwing-star": {
+    "id": "x2-iron-throwing-star",
+    "name": "Iron Throwing Star",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "B",
+      "luk": "D"
+    },
+    "damage": 8,
+    "range": 90,
+    "halfArc": 0.6,
+    "cooldown": 0.32,
+    "displayLength": 56,
+    "swingArc": 2.2,
+    "gripFrac": 0.5,
+    "tags": {
+      "grip": "1H",
+      "size": "S",
+      "delivery": "thrown",
+      "fireMode": "tap-charge",
+      "element": "physical",
+      "classPool": "melee",
+      "family": "thrown",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "LUK"
+      ]
+    },
+    "description": "A plain forged-iron four-point star, balanced around a square finger-ring for repeatable close-range throws.",
+    "performance": {
+      "hold": "steady",
+      "action": "throw-release",
+      "suppressSwing": true,
+      "windupSeconds": 0.18,
+      "preThrowRevolutions": 0.5
+    },
+    "requirements": {
+      "dex": 5
+    },
+    "durability": 75,
+    "thrown": {
+      "speed": 860,
+      "range": 560,
+      "damage": 8,
+      "charges": 4,
+      "refillSeconds": 1.2,
+      "pierce": 2,
+      "rotation": "spin"
+    }
+  },
+  "x2-fire-throwing-star": {
+    "id": "x2-fire-throwing-star",
+    "name": "Fire Throwing Star",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "B",
+      "int": "C"
+    },
+    "damage": 10,
+    "range": 90,
+    "halfArc": 0.6,
+    "cooldown": 0.42,
+    "displayLength": 58,
+    "swingArc": 2.2,
+    "gripFrac": 0.5,
+    "tags": {
+      "grip": "1H",
+      "size": "S",
+      "delivery": "thrown",
+      "fireMode": "tap-charge",
+      "element": "fire",
+      "classPool": "melee",
+      "family": "thrown",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "INT"
+      ]
+    },
+    "description": "A blackened four-point star with ember-red cutting edges that carries furnace heat into every throw.",
+    "performance": {
+      "hold": "steady",
+      "action": "throw-release",
+      "suppressSwing": true,
+      "windupSeconds": 0.2,
+      "preThrowRevolutions": 0.5
+    },
+    "requirements": {
+      "dex": 6,
+      "int": 4
+    },
+    "durability": 75,
+    "thrown": {
+      "speed": 820,
+      "range": 580,
+      "damage": 10,
+      "charges": 3,
+      "refillSeconds": 1.6,
+      "pierce": 2,
+      "rotation": "spin"
+    }
+  },
+  "x2-ice-throwing-star": {
+    "id": "x2-ice-throwing-star",
+    "name": "Ice Throwing Star",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "B",
+      "int": "C"
+    },
+    "damage": 8,
+    "range": 90,
+    "halfArc": 0.6,
+    "cooldown": 0.36,
+    "displayLength": 58,
+    "swingArc": 2.2,
+    "gripFrac": 0.5,
+    "tags": {
+      "grip": "1H",
+      "size": "S",
+      "delivery": "thrown",
+      "fireMode": "tap-charge",
+      "element": "frost",
+      "classPool": "melee",
+      "family": "thrown",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "INT"
+      ]
+    },
+    "description": "A pale frost-steel four-point star whose heavy rimed blades hold their edge in killing cold.",
+    "performance": {
+      "hold": "steady",
+      "action": "throw-release",
+      "suppressSwing": true,
+      "windupSeconds": 0.19,
+      "preThrowRevolutions": 0.5
+    },
+    "requirements": {
+      "dex": 6,
+      "int": 5
+    },
+    "durability": 75,
+    "thrown": {
+      "speed": 800,
+      "range": 560,
+      "damage": 8,
+      "charges": 4,
+      "refillSeconds": 1.4,
+      "pierce": 2,
+      "rotation": "spin"
+    }
+  },
+  "x2-void-throwing-star": {
+    "id": "x2-void-throwing-star",
+    "name": "Void Throwing Star",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "B",
+      "int": "B"
+    },
+    "damage": 12,
+    "range": 90,
+    "halfArc": 0.6,
+    "cooldown": 0.5,
+    "displayLength": 60,
+    "swingArc": 2.2,
+    "gripFrac": 0.5,
+    "tags": {
+      "grip": "1H",
+      "size": "S",
+      "delivery": "thrown",
+      "fireMode": "tap-charge",
+      "element": "void",
+      "classPool": "melee",
+      "family": "thrown",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "INT"
+      ]
+    },
+    "description": "A dense violet-black four-point star with missing-looking inner bevels that makes a throw feel briefly weightless.",
+    "performance": {
+      "hold": "steady",
+      "action": "throw-release",
+      "suppressSwing": true,
+      "windupSeconds": 0.22,
+      "preThrowRevolutions": 0.5
+    },
+    "requirements": {
+      "dex": 8,
+      "int": 8
+    },
+    "durability": 75,
+    "thrown": {
+      "speed": 760,
+      "range": 600,
+      "damage": 12,
+      "charges": 3,
+      "refillSeconds": 1.8,
+      "pierce": 3,
+      "rotation": "spin"
+    }
+  },
+  "x2-kunai": {
+    "id": "x2-kunai",
+    "name": "Kunai",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "A",
+      "luk": "D"
+    },
+    "damage": 9,
+    "range": 100,
+    "halfArc": 0.58,
+    "cooldown": 0.3,
+    "displayLength": 72,
+    "swingArc": 2.2,
+    "gripFrac": 0.3,
+    "tags": {
+      "grip": "1H",
+      "size": "S",
+      "delivery": "thrown",
+      "fireMode": "tap-charge",
+      "element": "physical",
+      "classPool": "melee",
+      "family": "thrown",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "LUK"
+      ]
+    },
+    "description": "A balanced black-iron throwing knife with a leaf point, corded grip, and ring pommel built for a straight decisive cast.",
+    "performance": {
+      "hold": "steady",
+      "action": "throw-release",
+      "suppressSwing": true,
+      "windupSeconds": 0.16,
+      "preThrowRevolutions": 0.5
+    },
+    "requirements": {
+      "dex": 7
+    },
+    "durability": 75,
+    "thrown": {
+      "speed": 940,
+      "range": 620,
+      "damage": 9,
+      "charges": 4,
+      "refillSeconds": 1.3,
+      "pierce": 2,
+      "rotation": "point-forward"
+    }
+  },
+  "x2-m50-anti-materiel-rifle": {
+    "id": "x2-m50-anti-materiel-rifle",
+    "name": "M-50 Anti-Materiel Rifle",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "A",
+      "str": "B"
+    },
+    "damage": 32,
+    "range": 320,
+    "halfArc": 0.5,
+    "cooldown": 1.05,
+    "displayLength": 202,
+    "swingArc": 1.8,
+    "gripFrac": 0.1,
+    "tags": {
+      "grip": "2H",
+      "size": "XL",
+      "delivery": "projectile",
+      "fireMode": "tap-charge",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "marksman-rifle",
+      "rangeBand": "long",
+      "scaling": [
+        "DEX",
+        "STR"
+      ],
+      "handling": [
+        "bolt"
+      ]
+    },
+    "gripPoints": {
+      "primary": {
+        "x": 0.29,
+        "y": 0.66
+      },
+      "secondary": {
+        "x": 0.43,
+        "y": 0.61,
+        "role": "bolt"
+      }
+    },
+    "description": "A clean modern .50-caliber bolt rifle with a rigid chassis, long free-float barrel, and practical field optics for defeating hard targets at range.",
+    "requirements": {
+      "dex": 12,
+      "str": 12
+    },
+    "twoHanded": true,
+    "gun": {
+      "damage": 32,
+      "projectileSpeed": 2200,
+      "range": 1100,
+      "fireRate": 1.05,
+      "magazine": 5,
+      "reloadSeconds": 2.6,
+      "bulletKind": "slug",
+      "muzzle": "heavy",
+      "recoil": 0.0048,
+      "projectileArt": "generated",
+      "sonicBoomRing": true,
+      "projectileVisualScale": 1.3,
+      "userKnockbackMultiplier": 1.5,
+      "pierce": 4,
+      "muzzleColor": 16766820
+    }
   }
 };
 

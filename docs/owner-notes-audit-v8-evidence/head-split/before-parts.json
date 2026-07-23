@@ -1,0 +1,66 @@
+{
+  "id": "drifter",
+  "kind": "character",
+  "canvas": {
+    "w": 1672,
+    "h": 941
+  },
+  "body": {
+    "cx": 829,
+    "cy": 369,
+    "w": 535,
+    "h": 646
+  },
+  "parts": [
+    {
+      "role": "body",
+      "file": "body.png",
+      "w": 535,
+      "h": 646,
+      "cx": 829,
+      "cy": 369,
+      "ox": 0,
+      "oy": 0
+    },
+    {
+      "role": "hand-l",
+      "file": "hand-l.png",
+      "w": 133,
+      "h": 155,
+      "cx": 531,
+      "cy": 545,
+      "ox": -298,
+      "oy": 176
+    },
+    {
+      "role": "hand-r",
+      "file": "hand-r.png",
+      "w": 133,
+      "h": 155,
+      "cx": 1097,
+      "cy": 545,
+      "ox": 268,
+      "oy": 176
+    },
+    {
+      "role": "foot-l",
+      "file": "foot-l.png",
+      "w": 206,
+      "h": 180,
+      "cx": 688,
+      "cy": 809,
+      "ox": -140,
+      "oy": 440
+    },
+    {
+      "role": "foot-r",
+      "file": "foot-r.png",
+      "w": 217,
+      "h": 173,
+      "cx": 967,
+      "cy": 813,
+      "ox": 138,
+      "oy": 444
+    }
+  ]
+}

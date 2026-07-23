@@ -1,0 +1,154 @@
+{
+  "capturedAt": "2026-07-23T02:33:27.862Z",
+  "thresholds": {
+    "maxThrowOriginErrorPx": 0.25,
+    "minFlightTravelPx": 18
+  },
+  "captures": [
+    {
+      "id": "x2-iron-throwing-star",
+      "projectileId": "p0",
+      "attackSeq": 1,
+      "kind": "thrown:x2-iron-throwing-star",
+      "sourcePlayerId": "diCV1g2WN",
+      "sourceWeaponId": "x2-iron-throwing-star",
+      "anchorKind": "throw",
+      "releaseAnchor": {
+        "x": 2385.0085883957986,
+        "y": 2430.059998109792
+      },
+      "spawnOrigin": {
+        "x": 2385.0085883957986,
+        "y": 2430.059998109792
+      },
+      "spawnThrow": {
+        "x": 2385.0085883957986,
+        "y": 2430.059998109792
+      },
+      "authoritativeFirst": {
+        "x": 2443,
+        "y": 2420
+      },
+      "releaseErrorPx": 0,
+      "originMetadataErrorPx": 0,
+      "authoritativeLeadPx": 58.857517632133664,
+      "flightTravelPx": 157.66666666666833
+    },
+    {
+      "id": "x2-fire-throwing-star",
+      "projectileId": "p0",
+      "attackSeq": 1,
+      "kind": "thrown:x2-fire-throwing-star",
+      "sourcePlayerId": "C-755RAWh",
+      "sourceWeaponId": "x2-fire-throwing-star",
+      "anchorKind": "throw",
+      "releaseAnchor": {
+        "x": 2384.926296969832,
+        "y": 2429.014405052982
+      },
+      "spawnOrigin": {
+        "x": 2384.926296969832,
+        "y": 2429.014405052982
+      },
+      "spawnThrow": {
+        "x": 2384.926296969832,
+        "y": 2429.014405052982
+      },
+      "authoritativeFirst": {
+        "x": 2441,
+        "y": 2420
+      },
+      "releaseErrorPx": 0,
+      "originMetadataErrorPx": 0,
+      "authoritativeLeadPx": 56.79365871270046,
+      "flightTravelPx": 231.00219999999945
+    },
+    {
+      "id": "x2-ice-throwing-star",
+      "projectileId": "p0",
+      "attackSeq": 1,
+      "kind": "thrown:x2-ice-throwing-star",
+      "sourcePlayerId": "tyxdNIZTO",
+      "sourceWeaponId": "x2-ice-throwing-star",
+      "anchorKind": "throw",
+      "releaseAnchor": {
+        "x": 2385.4635639577145,
+        "y": 2428.249157125062
+      },
+      "spawnOrigin": {
+        "x": 2385.4635639577145,
+        "y": 2428.249157125062
+      },
+      "spawnThrow": {
+        "x": 2385.4635639577145,
+        "y": 2428.249157125062
+      },
+      "authoritativeFirst": {
+        "x": 2440,
+        "y": 2420.021484375
+      },
+      "releaseErrorPx": 0,
+      "originMetadataErrorPx": 0,
+      "authoritativeLeadPx": 55.15358061881755,
+      "flightTravelPx": 133.33333224638366
+    },
+    {
+      "id": "x2-void-throwing-star",
+      "projectileId": "p0",
+      "attackSeq": 1,
+      "kind": "thrown:x2-void-throwing-star",
+      "sourcePlayerId": "2C3uGMbpJ",
+      "sourceWeaponId": "x2-void-throwing-star",
+      "anchorKind": "throw",
+      "releaseAnchor": {
+        "x": 2385.0176284321665,
+        "y": 2431.369246686256
+      },
+      "spawnOrigin": {
+        "x": 2385.0176284321665,
+        "y": 2431.369246686256
+      },
+      "spawnThrow": {
+        "x": 2385.0176284321665,
+        "y": 2431.369246686256
+      },
+      "authoritativeFirst": {
+        "x": 2437.999755859375,
+        "y": 2420.116943359375
+      },
+      "releaseErrorPx": 0,
+      "originMetadataErrorPx": 0,
+      "authoritativeLeadPx": 54.163827014651524,
+      "flightTravelPx": 205.18986693111168
+    },
+    {
+      "id": "x2-kunai",
+      "projectileId": "p0",
+      "attackSeq": 1,
+      "kind": "thrown:x2-kunai",
+      "sourcePlayerId": "fAhqp7vtT",
+      "sourceWeaponId": "x2-kunai",
+      "anchorKind": "throw",
+      "releaseAnchor": {
+        "x": 2386.3977584738645,
+        "y": 2429.6927479662186
+      },
+      "spawnOrigin": {
+        "x": 2386.3977584738645,
+        "y": 2429.6927479662186
+      },
+      "spawnThrow": {
+        "x": 2386.3977584738645,
+        "y": 2429.6927479662186
+      },
+      "authoritativeFirst": {
+        "x": 2447,
+        "y": 2420.0390625
+      },
+      "releaseErrorPx": 0,
+      "originMetadataErrorPx": 0,
+      "authoritativeLeadPx": 61.36632073925189,
+      "flightTravelPx": 175.46667035384138
+    }
+  ]
+}

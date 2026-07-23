@@ -36,6 +36,11 @@ export const GUN_GENERATED_PROJECTILES: Readonly<
     url: PROJECTILE_SPRITES["barrett-50cal-round"].url,
     displayLength: 54,
   }),
+  "x2-m50-anti-materiel-rifle": Object.freeze({
+    spriteId: "m50-50cal-round",
+    url: PROJECTILE_SPRITES["m50-50cal-round"].url,
+    displayLength: 54,
+  }),
   "x2-widowmaker-arbalest": Object.freeze({
     spriteId: "widowmaker-arbalest-arrow",
     url: PROJECTILE_SPRITES["widowmaker-arbalest-arrow"].url,

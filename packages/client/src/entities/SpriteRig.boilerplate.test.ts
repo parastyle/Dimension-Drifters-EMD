@@ -204,6 +204,23 @@ interface RigTruth {
   placeNodeGear(attachment: RigTruth["gearAttachments"][number]): void;
 }
 
+interface ManifestHeadRigTruth extends RigTruth {
+  manifestHeadOffset?: Readonly<{ x: number; y: number }>;
+  floatingHeadSpring: FloatingHeadSpringState;
+  syncFloatingHeadPose(
+    elapsedSeconds: number,
+    outsidePaperView: boolean,
+    rebase: boolean,
+    reducedMotion: boolean,
+    localMoveX: number,
+    moveY: number,
+    localSpringSignalX: number,
+    springSignalY: number,
+    landed: boolean,
+    movementHeadBobPx: number,
+  ): void;
+}
+
 function compatibilityPairManifest(): GearPartsManifest {
   const candidate = replacementPairManifestInput("rig-compatibility-r1") as GearPartsManifest;
   candidate.schemaVersion = 1;
@@ -212,6 +229,31 @@ function compatibilityPairManifest(): GearPartsManifest {
   if (!manifest) throw new Error("synthetic pair compatibility manifest failed validation");
   return manifest;
 }
+
+describe("SpriteRig character-owned floating head", () => {
+  it("routes the sliced Drifter head through the existing bounded spring without gear", () => {
+    const rig = new SpriteRig(fakeScene(), 0, 0, false, "manifest-head-rig", "drifter");
+    const truth = rig as unknown as ManifestHeadRigTruth;
+    const head = truth.boilerplateHead;
+    expect(head?.texture.key).toBe("drifter:head");
+    expect(truth.manifestHeadOffset).toBeDefined();
+    expect(truth.parts.some((part) => part.texture.key === "drifter:head")).toBe(false);
+    if (!head || !truth.manifestHeadOffset) return;
+
+    truth.body.setPosition(5, 7).setRotation(0.08).setScale(0.46, 0.44);
+    truth.syncFloatingHeadPose(1 / 60, false, true, false, 0, 0, 0, 0, false, 0);
+    const restY = head.y;
+    expect(truth.floatingHeadSpring.ready).toBe(true);
+    expect(head.scaleX).toBeCloseTo(truth.body.scaleX, 10);
+    expect(head.scaleY).toBeCloseTo(truth.body.scaleY, 10);
+    expect(head.y).toBeLessThan(truth.body.y);
+
+    for (let frame = 0; frame < 30; frame++)
+      truth.syncFloatingHeadPose(1 / 60, false, false, false, 0, 0, 0, 0, false, 2);
+    expect(head.y - restY).toBeGreaterThan(0.5);
+    expect(head.y - restY).toBeLessThanOrEqual(FLOATING_HEAD_SPRING_TUNING.maxOffsetY);
+  });
+});
 
 describe("SpriteRig boilerplate assembly truth", () => {
   it("atomically removes the legacy kit, fills absent limbs, and preserves rig scale", () => {

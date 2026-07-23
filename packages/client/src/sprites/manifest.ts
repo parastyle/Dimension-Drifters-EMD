@@ -3038,65 +3038,75 @@ export const SPRITES = {
     "id": "drifter",
     "kind": "character",
     "canvas": {
-      "w": 435,
-      "h": 245
+      "w": 620,
+      "h": 349
     },
     "body": {
-      "cx": 215.59,
-      "cy": 95.96,
-      "w": 139,
+      "cx": 300.03,
+      "cy": 175.42,
+      "w": 141,
       "h": 168
     },
     "parts": [
       {
         "role": "body",
         "file": "body.png",
-        "w": 139,
+        "w": 141,
         "h": 168,
-        "cx": 215.59,
-        "cy": 95.96,
+        "cx": 300.03,
+        "cy": 175.42,
         "ox": 0,
         "oy": 0
       },
       {
+        "role": "head",
+        "file": "head.png",
+        "w": 134,
+        "h": 82,
+        "cx": 319.68,
+        "cy": 58.6,
+        "ox": 19.28,
+        "oy": -116.45
+      },
+      {
         "role": "hand-l",
         "file": "hand-l.png",
-        "w": 35,
-        "h": 40,
-        "cx": 138.09,
-        "cy": 141.73,
-        "ox": -77.5,
-        "oy": 45.77
+        "w": 45,
+        "h": 54,
+        "cx": 195.44,
+        "cy": 203.23,
+        "ox": -104.95,
+        "oy": 28.19
       },
       {
         "role": "hand-r",
         "file": "hand-r.png",
-        "w": 35,
-        "h": 40,
-        "cx": 285.29,
-        "cy": 141.73,
-        "ox": 69.7,
-        "oy": 45.77
+        "w": 45,
+        "h": 54,
+        "cx": 406.46,
+        "cy": 203.23,
+        "ox": 106.44,
+        "oy": 27.81
       },
       {
         "role": "foot-l",
         "file": "foot-l.png",
-        "w": 54,
-        "h": 47,
-        "cx": 178.92,
-        "cy": 210.39,
-        "ox": -36.41,
-        "oy": 114.43
+        "w": 85,
+        "h": 72,
+        "cx": 251.44,
+        "cy": 298.54,
+        "ox": -48.58,
+        "oy": 123.13
       },
       {
         "role": "foot-r",
         "file": "foot-r.png",
-        "w": 56,
-        "h": 45,
-        "cx": 251.48,
-        "cy": 211.43,
-        "ox": 35.89,
-        "oy": 115.47
+        "w": 89,
+        "h": 68,
+        "cx": 361.96,
+        "cy": 299.66,
+        "ox": 61.56,
+        "oy": 124.24
       }
     ]
   },
@@ -8038,6 +8048,32 @@ export const SPRITES = {
       }
     ]
   },
+  "x2-fire-throwing-star": {
+    "id": "x2-fire-throwing-star",
+    "kind": "weapon",
+    "canvas": {
+      "w": 289,
+      "h": 289
+    },
+    "body": {
+      "cx": 143.09,
+      "cy": 142.4,
+      "w": 256,
+      "h": 254
+    },
+    "parts": [
+      {
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 254,
+        "cx": 143.09,
+        "cy": 142.4,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
+  },
   "x2-fool-s-gold-revolver": {
     "id": "x2-fool-s-gold-revolver",
     "kind": "weapon",
@@ -9810,6 +9846,32 @@ export const SPRITES = {
       }
     ]
   },
+  "x2-ice-throwing-star": {
+    "id": "x2-ice-throwing-star",
+    "kind": "weapon",
+    "canvas": {
+      "w": 297,
+      "h": 297
+    },
+    "body": {
+      "cx": 147.87,
+      "cy": 144.09,
+      "w": 255,
+      "h": 256
+    },
+    "parts": [
+      {
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 255,
+        "h": 256,
+        "cx": 147.87,
+        "cy": 144.09,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
+  },
   "x2-idol-of-the-pale-verdict": {
     "id": "x2-idol-of-the-pale-verdict",
     "kind": "weapon",
@@ -9857,6 +9919,32 @@ export const SPRITES = {
         "h": 117,
         "cx": 112.09,
         "cy": 119.99,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
+  },
+  "x2-iron-throwing-star": {
+    "id": "x2-iron-throwing-star",
+    "kind": "weapon",
+    "canvas": {
+      "w": 310,
+      "h": 310
+    },
+    "body": {
+      "cx": 154.69,
+      "cy": 151.97,
+      "w": 256,
+      "h": 256
+    },
+    "parts": [
+      {
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 256,
+        "cx": 154.69,
+        "cy": 151.97,
         "ox": 0,
         "oy": 0
       }
@@ -10002,6 +10090,32 @@ export const SPRITES = {
       }
     ]
   },
+  "x2-kunai": {
+    "id": "x2-kunai",
+    "kind": "weapon",
+    "canvas": {
+      "w": 280,
+      "h": 93
+    },
+    "body": {
+      "cx": 139.3,
+      "cy": 44.54,
+      "w": 256,
+      "h": 49
+    },
+    "parts": [
+      {
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 49,
+        "cx": 139.3,
+        "cy": 44.54,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
+  },
   "x2-ledger-of-spent-souls": {
     "id": "x2-ledger-of-spent-souls",
     "kind": "weapon",
@@ -10101,6 +10215,32 @@ export const SPRITES = {
         "h": 147,
         "cx": 158.58,
         "cy": 136.08,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
+  },
+  "x2-m50-anti-materiel-rifle": {
+    "id": "x2-m50-anti-materiel-rifle",
+    "kind": "weapon",
+    "canvas": {
+      "w": 270,
+      "h": 90
+    },
+    "body": {
+      "cx": 106.52,
+      "cy": 42.71,
+      "w": 256,
+      "h": 53
+    },
+    "parts": [
+      {
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 53,
+        "cx": 106.52,
+        "cy": 42.71,
         "ox": 0,
         "oy": 0
       }
@@ -13725,6 +13865,32 @@ export const SPRITES = {
         "h": 103,
         "cx": 130.02,
         "cy": 135.54,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
+  },
+  "x2-void-throwing-star": {
+    "id": "x2-void-throwing-star",
+    "kind": "weapon",
+    "canvas": {
+      "w": 281,
+      "h": 281
+    },
+    "body": {
+      "cx": 139.86,
+      "cy": 139.86,
+      "w": 254,
+      "h": 256
+    },
+    "parts": [
+      {
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 254,
+        "h": 256,
+        "cx": 139.86,
+        "cy": 139.86,
         "ox": 0,
         "oy": 0
       }

@@ -35,10 +35,10 @@ const PRIMARY_GREATSWORD_DPS_MEDIAN = 16.67;
 describe("V6.1 brutalist greatsword line", () => {
   it("ships six active two-hand slabs in the authored DPS band and existing status vocabulary", () => {
     expect(BRUTALIST_GREATSWORD_IDS).toEqual(LINE.map(([id]) => id));
-    expect(WEAPON_CATALOG_IDS).toHaveLength(336);
-    expect(ACTIVE_WEAPON_CATALOG_IDS).toHaveLength(327);
+    expect(WEAPON_CATALOG_IDS).toHaveLength(342);
+    expect(ACTIVE_WEAPON_CATALOG_IDS).toHaveLength(333);
     expect(ARCHIVED_WEAPON_IDS).toHaveLength(9);
-    expect(WEAPON_RESOURCE_IDS).toHaveLength(336);
+    expect(WEAPON_RESOURCE_IDS).toHaveLength(342);
 
     for (const [id, name, element, damage, cooldown, expectedDps] of LINE) {
       const weapon = WEAPONS[id];
@@ -135,7 +135,7 @@ describe("V6.1 brutalist greatsword line", () => {
     const assignments = JSON.parse(
       readFileSync("tools/weaponsmith/assignments.json", "utf8"),
     ) as Record<string, { suite?: Record<string, { on?: boolean }> }>;
-    expect(portal).toContain('"count":327');
+    expect(portal).toContain('"count":333');
 
     for (const [id] of LINE) {
       const sprite = SPRITES[id as keyof typeof SPRITES];
