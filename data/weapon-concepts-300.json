@@ -11938,6 +11938,10 @@
         "action": "default-swing",
         "strideTap": { "amplitudePx": 10, "phaseOffset": 0.35 }
       },
+      "poseLanguage": {
+        "idle": "hip-rest",
+        "feet": "combat-plant"
+      },
       "id": "x2-saint-bough-frost-crozier"
     },
     {
@@ -14667,6 +14671,10 @@
       },
       "requirements": {
         "int": 6
+      },
+      "poseLanguage": {
+        "idle": "casting-gesture",
+        "feet": "loose-plant"
       },
       "id": "x2-hellmouth-palmcaster"
     },

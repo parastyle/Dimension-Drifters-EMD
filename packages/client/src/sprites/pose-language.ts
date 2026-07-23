@@ -1,11 +1,14 @@
 import {
+  type IdleFootPose,
+  type IdleHandPose,
   isWornWeapon,
-  meleeComboSelectionFor,
   type MeleeComboFamily,
   type MeleeComboMotion,
-  swingStyleFor,
-  type SwingStyle,
   type MeleeComboStep,
+  meleeComboSelectionFor,
+  resolvedGunGripPoints,
+  type SwingStyle,
+  swingStyleFor,
   type WeaponDef,
   type WeaponStanceId,
   weaponHasHandlingTag,
@@ -41,6 +44,115 @@ export type OffHandVerb =
 export type PistolPoseVariant = "sternum-guard" | "firing-clasp";
 export type OneHandBladePoseVariant = "duelist-wing" | "chest-guard";
 export type TwoHandPoseAuthority = "metadata" | "art";
+
+export type HandSemanticRole =
+  | "hard-constrained"
+  | "action-owned"
+  | "recovering"
+  | "authored-idle"
+  | "absent-replaced"
+  | "explicit-test-failure";
+
+export const FACING_SIDE_FLOOR_BODY_FRAC = 0.03;
+
+export interface IdleHandPoseSpec {
+  readonly pose: IdleHandPose;
+  /** Absolute canonical facing-local X, normalized by body height. */
+  readonly facingX: number;
+  /** Screen Y relative to the body, normalized by body height. */
+  readonly screenY: number;
+  readonly aimBiasX: number;
+  readonly aimBiasY: number;
+  readonly movementScale: number;
+}
+
+function idleHandSpec(spec: IdleHandPoseSpec): IdleHandPoseSpec {
+  return Object.freeze(spec);
+}
+
+/** Five-pose neutral vocabulary. `secondary-grip` is a semantic hard constraint, never a free target. */
+export const IDLE_HAND_POSE_SPECS: Readonly<Record<IdleHandPose, IdleHandPoseSpec>> = Object.freeze(
+  {
+    "secondary-grip": idleHandSpec({
+      pose: "secondary-grip",
+      facingX: 0.03,
+      screenY: 0,
+      aimBiasX: 0,
+      aimBiasY: 0,
+      movementScale: 0,
+    }),
+    "mirror-guard": idleHandSpec({
+      pose: "mirror-guard",
+      facingX: 0.51,
+      screenY: -0.13,
+      aimBiasX: 0.012,
+      aimBiasY: 0.018,
+      movementScale: 0.42,
+    }),
+    "low-guard": idleHandSpec({
+      pose: "low-guard",
+      facingX: 0.52,
+      screenY: 0.035,
+      aimBiasX: 0.01,
+      aimBiasY: 0.012,
+      movementScale: 0.5,
+    }),
+    "casting-gesture": idleHandSpec({
+      pose: "casting-gesture",
+      facingX: 0.52,
+      screenY: -0.055,
+      aimBiasX: 0.014,
+      aimBiasY: 0.024,
+      movementScale: 0.35,
+    }),
+    "hip-rest": idleHandSpec({
+      pose: "hip-rest",
+      facingX: 0.5,
+      screenY: 0.13,
+      aimBiasX: 0.006,
+      aimBiasY: 0.006,
+      movementScale: 0.28,
+    }),
+  },
+);
+
+export interface IdleFootPoseSpec {
+  readonly pose: IdleFootPose;
+  readonly frontX: number;
+  readonly frontY: number;
+  readonly backX: number;
+  readonly backY: number;
+  readonly gaitFade: number;
+}
+
+export const IDLE_FOOT_POSE_SPECS: Readonly<Record<IdleFootPose, IdleFootPoseSpec>> = Object.freeze(
+  {
+    "loose-plant": Object.freeze({
+      pose: "loose-plant",
+      frontX: 0.025,
+      frontY: 0.035,
+      backX: -0.025,
+      backY: -0.035,
+      gaitFade: 0.68,
+    }),
+    "combat-plant": Object.freeze({
+      pose: "combat-plant",
+      frontX: 0.055,
+      frontY: 0.06,
+      backX: -0.075,
+      backY: -0.07,
+      gaitFade: 0.58,
+    }),
+    "wide-plant": Object.freeze({
+      pose: "wide-plant",
+      frontX: 0.085,
+      frontY: 0.075,
+      backX: -0.11,
+      backY: -0.09,
+      gaitFade: 0.5,
+    }),
+  },
+);
 
 export interface PoseVariantSelection {
   pistol: PistolPoseVariant;
@@ -626,6 +738,195 @@ export function weaponPoseSpecFor(
     if (firingFamily === "rapid-gun") return RAPID_GUN_POSE_SPEC;
   }
   return WEAPON_POSE_SPECS[family];
+}
+
+export interface IdleHandPoseResolution {
+  readonly pose: IdleHandPose;
+  readonly usedFallback: boolean;
+}
+
+/** Family defaults cover the live catalog; `usedFallback` is reserved as an explicit authoring alarm. */
+export function idleHandPoseResolutionFor(def: WeaponDef): IdleHandPoseResolution {
+  if (def.poseLanguage?.idle) return { pose: def.poseLanguage.idle, usedFallback: false };
+  const resolution = weaponPoseResolutionFor(def);
+  if (resolution.hardTwoHanded) return { pose: "secondary-grip", usedFallback: false };
+  switch (resolution.family) {
+    case "one-hand-blade":
+    case "close-blade":
+      return { pose: "mirror-guard", usedFallback: false };
+    case "one-hand-blunt":
+    case "pistol":
+    case "thrown":
+    case "long-gun":
+      return { pose: "low-guard", usedFallback: false };
+    case "focus":
+    case "tome":
+    case "fist-gun":
+      return { pose: "casting-gesture", usedFallback: false };
+    case "two-hand-sword":
+    case "two-hand-heavy":
+    case "polearm":
+      return { pose: "secondary-grip", usedFallback: false };
+    case "fists":
+      // Both hands are equipment surfaces, so this named resolution is diagnostic-only and never applied.
+      return { pose: "low-guard", usedFallback: false };
+    default:
+      return { pose: "low-guard", usedFallback: true };
+  }
+}
+
+export function idleHandPoseFor(def: WeaponDef): IdleHandPose {
+  return idleHandPoseResolutionFor(def).pose;
+}
+
+export function idleFootPoseFor(def: WeaponDef): IdleFootPose {
+  if (def.poseLanguage?.feet) return def.poseLanguage.feet;
+  switch (weaponPoseFamilyFor(def)) {
+    case "pistol":
+    case "fist-gun":
+    case "focus":
+    case "tome":
+    case "fists":
+      return "loose-plant";
+    case "two-hand-sword":
+    case "two-hand-heavy":
+      return "wide-plant";
+    default:
+      return "combat-plant";
+  }
+}
+
+export interface HandSemanticFrameState {
+  readonly phase: PoseActionPhase;
+  readonly phaseT: number;
+  readonly strikingHand?: 0 | 1;
+  readonly dualEquipped?: boolean;
+  readonly pairedAimed?: boolean;
+  readonly bothHandsOwned?: boolean;
+  readonly actionOwnedHands?: readonly [boolean, boolean];
+  readonly visibleHands?: readonly [boolean, boolean];
+  readonly replacedHands?: readonly [boolean, boolean];
+}
+
+/** Exhaustive, priority-ordered semantic classification for every rendered hand. */
+export function classifyHandRole(
+  def: WeaponDef | undefined,
+  frame: HandSemanticFrameState,
+  hand: 0 | 1,
+): HandSemanticRole {
+  if (frame.visibleHands?.[hand] === false || frame.replacedHands?.[hand] === true) {
+    return "absent-replaced";
+  }
+
+  const terminalRecovery = frame.phase === "recovery" && frame.phaseT >= 1;
+  const thrownAction = !!def?.thrown && frame.phase !== "idle" && !terminalRecovery;
+  if (thrownAction) {
+    return frame.phase === "recovery" ? "recovering" : "action-owned";
+  }
+
+  const paired =
+    frame.dualEquipped === true ||
+    frame.pairedAimed === true ||
+    def?.dual === true ||
+    def?.tags.grip === "dual" ||
+    def?.glovePair !== undefined;
+  const wornPair = !!def && isWornWeapon(def) && weaponPoseFamilyFor(def) === "fists";
+  const hardTwoHanded = !!def && twoHandedPoseFor(def);
+  const hasPhysicalSecondary =
+    !!def && (hardTwoHanded || resolvedGunGripPoints(def)?.secondary !== undefined);
+  if (paired || wornPair || (hand === 0 && !!def) || (hand === 1 && hasPhysicalSecondary)) {
+    return "hard-constrained";
+  }
+
+  if (frame.bothHandsOwned || frame.actionOwnedHands?.[hand]) return "action-owned";
+  if (frame.phase === "anticipation" || frame.phase === "active") return "action-owned";
+  if (frame.phase === "recovery" && !terminalRecovery) return "recovering";
+  if (frame.phase === "idle" || terminalRecovery) return "authored-idle";
+  return "explicit-test-failure";
+}
+
+export interface IdleHandTargetInput {
+  readonly bodyX: number;
+  readonly bodyY: number;
+  readonly bodyHeight: number;
+  readonly aimLocal: number;
+  readonly movementX?: number;
+  readonly movementY?: number;
+  readonly microX?: number;
+  readonly microY?: number;
+  /** Real manifest evidence is accepted deliberately but cannot influence the absolute target. */
+  readonly manifestSocketX?: number;
+  readonly recoveryT?: number;
+  readonly recoveryForward?: number;
+  readonly recoveryLateral?: number;
+}
+
+export interface IdleHandTarget {
+  x: number;
+  y: number;
+}
+
+/** Absolute canonical target. Movement/micro-motion compose first; the facing-side floor clamps last. */
+export function resolveIdleHandTarget(
+  def: WeaponDef,
+  input: IdleHandTargetInput,
+  out: IdleHandTarget,
+): IdleHandTarget {
+  const spec = IDLE_HAND_POSE_SPECS[idleHandPoseFor(def)];
+  const aimCos = Math.cos(input.aimLocal);
+  const aimSin = Math.sin(input.aimLocal);
+  let targetX =
+    input.bodyX +
+    (spec.facingX + aimCos * spec.aimBiasX) * input.bodyHeight +
+    (input.movementX ?? 0) * spec.movementScale +
+    (input.microX ?? 0);
+  let targetY =
+    input.bodyY +
+    (spec.screenY + aimSin * spec.aimBiasY) * input.bodyHeight +
+    (input.movementY ?? 0) * spec.movementScale +
+    (input.microY ?? 0);
+
+  if (
+    input.recoveryT !== undefined &&
+    input.recoveryT < 1 &&
+    input.recoveryForward !== undefined &&
+    input.recoveryLateral !== undefined
+  ) {
+    const t = smoothstep01(input.recoveryT);
+    const recovery = aimRelativePoint(
+      input.recoveryForward,
+      input.recoveryLateral,
+      input.aimLocal,
+      { x: 0, y: 0 },
+    );
+    targetX = mix(input.bodyX + recovery.x * input.bodyHeight, targetX, t);
+    targetY = mix(input.bodyY + recovery.y * input.bodyHeight, targetY, t);
+  }
+
+  targetX = Math.max(input.bodyX + FACING_SIDE_FLOOR_BODY_FRAC * input.bodyHeight + 1e-9, targetX);
+  out.x = targetX;
+  out.y = targetY;
+  return out;
+}
+
+export interface FootPoseOffset {
+  x: number;
+  y: number;
+}
+
+/** Exactly one neutral profile contributes a bounded posture bias; named stances replace this selection. */
+export function resolveFootPoseOffset(
+  pose: IdleFootPose,
+  front: boolean,
+  gait: number,
+  bodyHeight: number,
+  out: FootPoseOffset,
+): FootPoseOffset {
+  const spec = IDLE_FOOT_POSE_SPECS[pose];
+  const blend = 1 - clamp01(gait) * spec.gaitFade;
+  out.x = (front ? spec.frontX : spec.backX) * bodyHeight * blend;
+  out.y = (front ? spec.frontY : spec.backY) * bodyHeight * blend;
+  return out;
 }
 
 export type FlourishMoment = "draw" | "stow" | "after-attack" | "idle-settle";
@@ -1389,6 +1690,22 @@ export function namedWeaponStanceFor(def: WeaponDef | undefined): NamedWeaponSta
   return def?.stance ? NAMED_WEAPON_STANCES[def.stance] : undefined;
 }
 
+/** A named/blade stance replaces the family foot profile; the two can never be accumulated. */
+export function resolveWeaponFootPoseOffset(
+  def: WeaponDef,
+  stance: BladeSizeStance | NamedWeaponStance | undefined,
+  front: boolean,
+  gait: number,
+  bodyHeight: number,
+  out: FootPoseOffset,
+): FootPoseOffset {
+  if (!stance) return resolveFootPoseOffset(idleFootPoseFor(def), front, gait, bodyHeight, out);
+  const blend = 1 - clamp01(gait) * 0.5;
+  out.x = (front ? stance.frontFootForward : stance.backFootForward) * bodyHeight * blend;
+  out.y = (front ? stance.frontFootLateral : stance.backFootLateral) * bodyHeight * blend;
+  return out;
+}
+
 /** A combo's authored motion wins over its broad family when the two intentionally diverge. */
 export function comboPresentationStyleFor(
   family: MeleeComboFamily | "none",
@@ -1448,7 +1765,7 @@ export function continuousWhirlPhase(
   )
     return -1;
   const cadence = Math.max(0.1, cadenceSeconds);
-  return ((timeS / cadence) % 1 + 1) % 1;
+  return (((timeS / cadence) % 1) + 1) % 1;
 }
 
 /** Unwrapped fixed-rate whirl angle. Integer turns make phase 0/1 visually identical while preserving

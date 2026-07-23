@@ -11499,6 +11499,10 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "y": 0.68
       }
     },
+    "poseLanguage": {
+      "idle": "hip-rest",
+      "feet": "combat-plant"
+    },
     "description": "A tall ivory shepherd's crozier sheathed in everlasting frost, its curled crook planted to bloom a consecrated ring of killing ice across the ground.",
     "performance": {
       "hold": "one-hand-walking-staff",
@@ -14007,6 +14011,10 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "scaling": [
         "INT"
       ]
+    },
+    "poseLanguage": {
+      "idle": "casting-gesture",
+      "feet": "loose-plant"
     },
     "requirements": {
       "int": 6
