@@ -2,6 +2,24 @@
 
 Binding decisions from the owner. Implementation Sols MUST honor these over any panel recommendation.
 
+## ⚠️ STANDING ART-GENERATION LAW (owner, 2026-07-23) — applies to ALL image generation
+
+**One image-generation SUBJECT per agent. Never batch multiple subjects in one agent.**
+
+Owner's diagnosis, confirmed: when a single agent generates more than one image subject, earlier
+subjects BLEED into later ones — theme/style/content contaminates across subjects in the same context.
+This is why `x2-barrett-50-cal-sniper` came out crusader/blood-themed: the bolt-action Sol generated
+it in the same agent as 5 occult-themed rifles, and their theme bled onto it.
+
+RULE:
+- Each character, each weapon, each pet form, each VFX subject gets its OWN agent for its image
+  generation. No agent produces art for two subjects.
+- COHERENCE is preserved NOT by sequential same-context generation but by a SHARED REFERENCE: generate
+  the anchor/base subject first (e.g. the Drifter), then give every other subject's isolated agent that
+  reference image + the house-style preamble. Shared reference = cohesion without bleed.
+- Retroactive: the batched Barrett art (and any other batched art) is suspect and should be
+  regenerated in isolation.
+
 ## Characters (whole-prompted, no-face, bobbing head)
 
 1. **Roster: cut all 8.** Drop Cordell, Buzzard, Dunkel, Deepfall, Halcyon-7, Grix, Pyra, and Sir
