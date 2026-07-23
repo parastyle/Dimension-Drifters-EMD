@@ -286,6 +286,7 @@ describe("§43 expansion codegen: every authored gameplay field survives into th
         halfArc: { num: [0.3, 1.4] },
         cooldown: { num: [0.12, 1.5] },
         displayLength: { num: [40, 400] },
+        collisionLength: { num: [40, 400] },
         swingArc: {
           num: w.swingStyle === "spin" ? [Math.PI * 2, Math.PI * 6] : [1.8, 3.4],
         },

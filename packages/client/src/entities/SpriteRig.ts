@@ -139,7 +139,7 @@ import {
   gearTextureBakeCacheForScene,
 } from "../sprites/gear-texture-baker.js";
 import { resolvedGunGripPoints } from "../sprites/gun-grip-points.js";
-import { SPRITES, type SpriteManifest } from "../sprites/manifest.js";
+import { SPRITES, type SpriteManifest, spriteImageFacingX } from "../sprites/manifest.js";
 import {
   aimRelativePoint,
   BLADE_SIZE_STANCES,
@@ -2112,6 +2112,8 @@ export class SpriteRig {
     worn: boolean;
     spriteId: string;
     partIndex: 0 | 1;
+    /** Stable local image-facing datum, composed with (never substituted for) the actor-facing root mirror. */
+    imageFacingX: 1 | -1;
     /** Geometry is resolved once from the equipped sprite identity; semantic rotation remains uncorrected. */
     artGeometry?: WeaponArtGeometry;
     /** Alpha-measured source-pixel span at the extension join; never authored per weapon. */
@@ -4809,6 +4811,7 @@ export class SpriteRig {
       weapon.semanticRotation = weapon.img.rotation;
       weapon.img.scaleY *= edgeLeadScaleY(weapon.def.performance?.edgeLeadFlip);
       weapon.img.rotation += state?.artAngle ?? 0;
+      weapon.img.scaleX *= weapon.imageFacingX;
     }
   }
 
@@ -4902,11 +4905,12 @@ export class SpriteRig {
       const closed = artGeometry?.closed;
       const pieceWorn = isWornWeapon(piece.def);
       const authoredPrimary = resolvedGunGripPoints(piece.def)?.primary;
+      const imageFacingX = spriteImageFacingX(piece.manifest.imageFacing);
       const originX =
         authoredPrimary?.x ?? closed?.originX ?? (pieceWorn ? 0.4 : piece.def.gripFrac);
       const originY = authoredPrimary?.y ?? closed?.originY ?? 0.5;
       const wScale = (piece.def.displayLength * (closed?.displayLengthMul ?? 1)) / part.w;
-      img.setOrigin(originX, originY).setScale(wScale);
+      img.setOrigin(originX, originY).setScale(wScale * imageFacingX, wScale);
       const getPixelAlpha = this.scene.textures?.getPixelAlpha;
       const bladeWidthSourcePixels = getPixelAlpha
         ? measureBladeWidthAtExtensionJoin(part.w, part.h, piece.def.gripFrac, (x, y) =>
@@ -4922,6 +4926,7 @@ export class SpriteRig {
         worn: pieceWorn,
         spriteId: piece.spriteId,
         partIndex,
+        imageFacingX,
         artGeometry,
         bladeWidthSourcePixels,
         closedOriginX: originX,

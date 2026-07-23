@@ -502,6 +502,9 @@ export interface WeaponDef {
   cooldown: number;
   /** On-screen length of the weapon sprite, px (drives scale). */
   displayLength: number;
+  /** Optional pre-presentation-order length used by authoritative reach and muzzle geometry. Omitted keeps
+   * the ordinary WYSIWYG contract where collision follows displayLength. */
+  collisionLength?: number;
   /**
    * FIXED in-world VFX size — the swing effect's radius (px). Static per weapon, authored in the
    * Weaponsmith; it is the one scalar (`S.R`) the renderer scales every layer from. §14 ruling: attack/
@@ -1004,10 +1007,10 @@ export function weaponMuzzleTransform(
   const grip = resolvedGunGripPoints(weapon)?.primary;
   // Worn/glove guns are drawn as fixed hand replacements with a 0.4 horizontal
   // origin. Keep that pivot in the canonical affine too; using gripFrac here
-  // would shift the server muzzle by exactly 0.25 * displayLength.
+  // would shift the server muzzle by exactly 0.25 * weaponCollisionLength.
   const gripOriginX =
     grip?.x ?? (weaponMuzzleStance(weapon) === "fist-gun" ? 0.4 : weapon.gripFrac);
-  const spriteScale = weapon.displayLength / dimensions.width;
+  const spriteScale = weaponCollisionLength(weapon) / dimensions.width;
   const gripPose = weaponMuzzleGripOffset(weapon, part, pose);
   return weaponSpriteTransform(
     {
@@ -1092,19 +1095,28 @@ export function gunLocomotionRecoilFor(
  * business end from outrunning server reach. */
 export const MELEE_TWO_HAND_GRIP_REACH = 22.8;
 
-/** §20 WYSIWYG melee reach: the effective hit `range` of a swept blade, in world px from the player centre.
- *  The gun bug's melee twin (playtest: "the tips of some melee weapons don't hit"): the blade SPRITE is drawn
- *  at `displayLength` scaled by the holder's rig (`characterScale`, §7), so on every character (all sit at
- *  1.06–1.25×) the visible edge reaches further than the FLAT authored `range` the hit test used — the point
- *  whiffs. Two corrections:
- *    1. floor the reach at the rendered sprite TIP (`(1−gripFrac)×displayLength` forward of the grip), so a
- *       weapon whose ART overhangs its authored range (driftblade 320>300, coffin 200>166) still hits on the
- *       tip instead of just short of it — never SHRINKS a weapon whose range already exceeds its sprite;
+/** Authoritative held-art length. A presentation-only size order can preserve the prior collision datum. */
+export function weaponCollisionLength(
+  weapon: Pick<WeaponDef, "displayLength" | "collisionLength">,
+): number {
+  return weapon.collisionLength ?? weapon.displayLength;
+}
+
+/** §20 held-art melee reach: the effective hit `range` of a swept blade, in world px from the player centre.
+ *  The gun bug's melee twin (playtest: "the tips of some melee weapons don't hit"): ordinary blade sprites
+ *  use `displayLength`, while explicit presentation-only orders retain their prior authority in
+ *  `collisionLength`. Both are scaled by the holder's rig (`characterScale`, §7), so on every character (all
+ *  sit at 1.06–1.25×) the held-art edge can reach further than the FLAT authored `range` the hit test used —
+ *  the point whiffs. Two corrections:
+ *    1. floor the reach at the authoritative art TIP (`(1−gripFrac)×weaponCollisionLength` forward of the
+ *       grip), so a weapon whose ordinary art overhangs its authored range (driftblade 320>300, coffin
+ *       200>166) still hits on the tip instead of just short of it — never SHRINKS a weapon whose range
+ *       already exceeds its sprite;
  *    2. scale the whole reach by the holder's `renderScale`, so a big character's longer-drawn blade hits as
  *       far as it looks. Pure + shared so the server hit test and any client preview can't drift. */
 export function meleeReach(weapon: WeaponDef, renderScale = 1): number {
   const spriteTip =
-    (1 - weapon.gripFrac) * weapon.displayLength +
+    (1 - weapon.gripFrac) * weaponCollisionLength(weapon) +
     (weapon.twoHanded ? MELEE_TWO_HAND_GRIP_REACH : 0);
   return renderScale * Math.max(weapon.range, spriteTip);
 }
@@ -1576,7 +1588,8 @@ const BASE_WEAPONS: Record<string, WeaponDef> = {
     range: 150,
     halfArc: Math.PI, // full-circle contact fallback
     cooldown: 1.0, // a long committed spin
-    displayLength: 118,
+    displayLength: 236,
+    collisionLength: 118,
     swingArc: Math.PI * 4, // TWO full revolutions of swept edge — WYSIWYG with the two-turn spin animation
     gripFrac: 0.12,
     twoHanded: true,

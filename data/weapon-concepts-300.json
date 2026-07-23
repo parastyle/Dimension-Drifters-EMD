@@ -4280,7 +4280,8 @@
         "range": 250,
         "halfArc": 1.1,
         "cooldown": 0.82,
-        "displayLength": 280,
+        "displayLength": 364,
+        "collisionLength": 280,
         "swingArc": 6.283185307179586,
         "gripFrac": 0.5
       },
@@ -5339,7 +5340,8 @@
         "range": 64,
         "halfArc": 0.5,
         "cooldown": 0.44,
-        "displayLength": 54,
+        "displayLength": 108,
+        "collisionLength": 54,
         "swingArc": 1.1,
         "gripFrac": 0.16
       },
@@ -13279,7 +13281,8 @@
         "range": 140,
         "halfArc": 1,
         "cooldown": 0.7,
-        "displayLength": 148,
+        "displayLength": 207.2,
+        "collisionLength": 148,
         "swingArc": 2.3,
         "gripFrac": 0.1
       },

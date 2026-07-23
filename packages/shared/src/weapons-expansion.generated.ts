@@ -3755,7 +3755,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "range": 250,
     "halfArc": 1.1,
     "cooldown": 0.82,
-    "displayLength": 280,
+    "displayLength": 364,
     "swingArc": 6.283185307179586,
     "gripFrac": 0.5,
     "tags": {
@@ -3772,6 +3772,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "DEX"
       ]
     },
+    "collisionLength": 280,
     "description": "An ornate twin-bladed war-scythe of silvered steel, a crescent at each end of the long haft chased with mourning-veil filigree, sweeping in immense double-cutting arcs.",
     "swingStyle": "spin",
     "comboFamily": "arc",
@@ -4723,7 +4724,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "range": 80,
     "halfArc": 0.5,
     "cooldown": 0.44,
-    "displayLength": 54,
+    "displayLength": 108,
     "swingArc": 1.8,
     "gripFrac": 0.16,
     "tags": {
@@ -4743,6 +4744,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "pistol"
       ]
     },
+    "collisionLength": 54,
     "requirements": {
       "dex": 7,
       "luk": 4
@@ -12881,7 +12883,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "range": 140,
     "halfArc": 1,
     "cooldown": 0.7,
-    "displayLength": 148,
+    "displayLength": 207.2,
     "swingArc": 2.3,
     "gripFrac": 0.1,
     "tags": {
@@ -12897,6 +12899,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "INT"
       ]
     },
+    "collisionLength": 148,
     "gripPoints": {
       "primary": {
         "x": 0.22,

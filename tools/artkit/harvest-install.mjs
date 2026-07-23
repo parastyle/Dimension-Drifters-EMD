@@ -48,6 +48,12 @@ const PROTOTYPE_HEAD_OY = Object.freeze({
   "proto-sheriff": -287,
   "proto-witch": -313,
 });
+// Stable presentation-only image-facing datums. These preserve the exact installed bitmap while correcting
+// artwork whose painted handedness is opposite the rig hand. The rig composes this local X mirror with its
+// ordinary actor-facing root mirror; Y is deliberately untouched so the subject can never become upside down.
+const SPRITE_IMAGE_FACING = Object.freeze({
+  "x2-prismhex-diffraction-gauntlet": "mirror-x",
+});
 
 // A weapon's pre-size target scales with its on-screen length (`displayLength` in weapons.ts) — a
 // long sword (e.g. displayLength 320) needs a ~640px texture, not the 256 floor, or it upscales soft.
@@ -90,6 +96,8 @@ const entries = [];
 for (const id of ids) {
   const partsJson = ensureSliced(id);
   const manifest = JSON.parse(readFileSync(partsJson, "utf8"));
+  const imageFacing = SPRITE_IMAGE_FACING[id];
+  if (imageFacing) manifest.imageFacing = imageFacing;
   const prototypeHeadOy = PROTOTYPE_HEAD_OY[id];
   const prototypeHead = manifest.parts.find((part) => part.role === "head");
   if (prototypeHead && Number.isFinite(prototypeHeadOy)) prototypeHead.oy = prototypeHeadOy;
@@ -216,15 +224,21 @@ export interface SpritePart {
   ox: number;
   oy: number;
 }
+export type SpriteImageFacing = "mirror-x";
 export interface SpriteManifest {
   id: string;
   kind: string;
+  imageFacing?: SpriteImageFacing;
   canvas: { w: number; h: number };
   body: { cx: number; cy: number; w: number; h: number };
   parts: SpritePart[];
 }
 
 export const SPRITES = ${JSON.stringify(sorted, null, 2)} as const satisfies Record<string, SpriteManifest>;
+
+export function spriteImageFacingX(imageFacing: SpriteImageFacing | undefined): 1 | -1 {
+  return imageFacing === "mirror-x" ? -1 : 1;
+}
 
 export type SpriteId = keyof typeof SPRITES;
 `;

@@ -13,9 +13,11 @@ export interface SpritePart {
   ox: number;
   oy: number;
 }
+export type SpriteImageFacing = "mirror-x";
 export interface SpriteManifest {
   id: string;
   kind: string;
+  imageFacing?: SpriteImageFacing;
   canvas: { w: number; h: number };
   body: { cx: number; cy: number; w: number; h: number };
   parts: SpritePart[];
@@ -11411,6 +11413,7 @@ export const SPRITES = {
   "x2-prismhex-diffraction-gauntlet": {
     "id": "x2-prismhex-diffraction-gauntlet",
     "kind": "weapon",
+    "imageFacing": "mirror-x",
     "canvas": {
       "w": 298,
       "h": 298
@@ -14649,5 +14652,9 @@ export const SPRITES = {
     ]
   }
 } as const satisfies Record<string, SpriteManifest>;
+
+export function spriteImageFacingX(imageFacing: SpriteImageFacing | undefined): 1 | -1 {
+  return imageFacing === "mirror-x" ? -1 : 1;
+}
 
 export type SpriteId = keyof typeof SPRITES;

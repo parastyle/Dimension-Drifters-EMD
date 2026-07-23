@@ -14,7 +14,12 @@ import {
   meleeComboSelectionFor,
   type SwingDescriptor,
 } from "./melee.js";
-import { MELEE_TWO_HAND_GRIP_REACH, meleeReach, type WeaponDef } from "./weapons.js";
+import {
+  MELEE_TWO_HAND_GRIP_REACH,
+  meleeReach,
+  type WeaponDef,
+  weaponCollisionLength,
+} from "./weapons.js";
 
 /** Standing agreement tolerance for rendered damage bounds versus authoritative hit bounds. */
 export const HIT_ENVELOPE_TOLERANCE_PX = 1;
@@ -227,7 +232,8 @@ export function bladeExtensionGeometryFor(
   const extension = weaponHitEnvelopeAuthoringFor(weapon)?.melee?.bladeExtension;
   if (!extension) return undefined;
   const scale = Math.max(0, Number.isFinite(renderScale) ? renderScale : 1);
-  const physicalBladeLength = Math.max(1, (1 - weapon.gripFrac) * weapon.displayLength) * scale;
+  const physicalBladeLength =
+    Math.max(1, (1 - weapon.gripFrac) * weaponCollisionLength(weapon)) * scale;
   const totalBladeLength = physicalBladeLength * Math.max(1, extension.lengthMultiplier);
   const overlapLength = physicalBladeLength * Math.max(0, Math.min(1, extension.overlapFraction));
   const extensionLength = totalBladeLength - physicalBladeLength + overlapLength;

@@ -81,7 +81,9 @@ const TOP_KEYS = new Set([
 const MECH_SIBLINGS = [
   "thrown", "quake", "chainLightning", "scatter", "gun", "beam", "groundZone", "glovePair", "warp",
 ];
-const STATS_KEYS = new Set(["damage", "range", "halfArc", "cooldown", "displayLength", "swingArc", "gripFrac"]);
+const STATS_KEYS = new Set([
+  "damage", "range", "halfArc", "cooldown", "displayLength", "collisionLength", "swingArc", "gripFrac",
+]);
 const BEHAVIOR_KEYS = {
   edge: new Set(["kind"]),
   thrown: new Set(["kind", "speed", "range", "damage", "charges", "refillSeconds", "pierce", "arcHeight", "rotation", "ricochetHops", "ricochetRange", "scalingGrades", "zone"]),
@@ -800,6 +802,15 @@ function mapWeapon(w) {
       scaling: Array.isArray(w.scaling) && w.scaling.length ? w.scaling : ["STR"],
     },
   };
+  if (s.collisionLength !== undefined) {
+    def.collisionLength = num(
+      s.collisionLength,
+      40,
+      400,
+      90,
+      "stats.collisionLength",
+    );
+  }
   if (w.archived === true) def.archived = true;
   if (gripPoints) def.gripPoints = gripPoints;
   if (handlingTags) def.tags.handling = handlingTags;

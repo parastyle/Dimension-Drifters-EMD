@@ -1,0 +1,217 @@
+{
+  "phase": "before",
+  "capturedAt": "2026-07-23T06:35:20.108Z",
+  "baseURL": "http://127.0.0.1:51526",
+  "privatePorts": {
+    "client": 51526,
+    "forbiddenOwnerPortsAbsent": true
+  },
+  "sizes": [
+    {
+      "id": "x2-idol-of-the-pale-verdict",
+      "displayLength": 148,
+      "source": {
+        "width": 256,
+        "height": 176
+      },
+      "origin": {
+        "x": 0.22,
+        "y": 0.77
+      },
+      "localScale": {
+        "x": 0.578125,
+        "y": 0.578125
+      },
+      "manifestFacingX": 1,
+      "actorFacing": 1,
+      "facingBlend": 0.9987775433769838,
+      "rootScale": {
+        "x": 0.9987775433769838,
+        "y": 1
+      },
+      "worldDeterminant": 0.3338199542453085,
+      "orientedBoundingBox": {
+        "lengthPx": 147.826890712455,
+        "thicknessPx": 101.74463957796485
+      },
+      "axisAlignedBoundingBox": {
+        "x": 2378.449694969654,
+        "y": 2320.742706680298,
+        "width": 165.70012259483337,
+        "height": 130.2652072906494
+      }
+    },
+    {
+      "id": "x-sword-whirlwind",
+      "displayLength": 118,
+      "source": {
+        "width": 256,
+        "height": 90
+      },
+      "origin": {
+        "x": 0.12,
+        "y": 0.5
+      },
+      "localScale": {
+        "x": 0.4609375,
+        "y": 0.4609375
+      },
+      "manifestFacingX": 1,
+      "actorFacing": 1,
+      "facingBlend": 0.9988017975690001,
+      "rootScale": {
+        "x": 0.9988017975690001,
+        "y": 1
+      },
+      "worldDeterminant": 0.21220880311088597,
+      "orientedBoundingBox": {
+        "lengthPx": 117.87919702661411,
+        "thicknessPx": 41.477145204445996
+      },
+      "axisAlignedBoundingBox": {
+        "x": 2284.972030554414,
+        "y": 2401.1360596609115,
+        "width": 124.75228807330132,
+        "height": 83.36195492744446
+      }
+    },
+    {
+      "id": "x2-mournveil-scythe",
+      "displayLength": 280,
+      "source": {
+        "width": 256,
+        "height": 128
+      },
+      "origin": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "localScale": {
+        "x": 1.09375,
+        "y": 1.09375
+      },
+      "manifestFacingX": 1,
+      "actorFacing": 1,
+      "facingBlend": 0.9972793727521707,
+      "rootScale": {
+        "x": 0.9972793727521707,
+        "y": 1
+      },
+      "worldDeterminant": 1.193034226452901,
+      "orientedBoundingBox": {
+        "lengthPx": 279.24912661624006,
+        "thicknessPx": 139.99454252495087
+      },
+      "axisAlignedBoundingBox": {
+        "x": 2270.080370903015,
+        "y": 2330.9448223114014,
+        "width": 293.9452152252197,
+        "height": 172.51514053344727
+      }
+    },
+    {
+      "id": "x2-gravewind-rimfire",
+      "displayLength": 54,
+      "source": {
+        "width": 256,
+        "height": 99
+      },
+      "origin": {
+        "x": 0.16,
+        "y": 0.5
+      },
+      "localScale": {
+        "x": 0.2109375,
+        "y": 0.2109375
+      },
+      "manifestFacingX": 1,
+      "actorFacing": 1,
+      "facingBlend": 0.9986215737366666,
+      "rootScale": {
+        "x": 1,
+        "y": 1
+      },
+      "worldDeterminant": 0.04449462924078855,
+      "orientedBoundingBox": {
+        "lengthPx": 54.00000020300294,
+        "thicknessPx": 20.882812578505042
+      },
+      "axisAlignedBoundingBox": {
+        "x": 2415.8310184535717,
+        "y": 2403.098616059795,
+        "width": 54.00181074910688,
+        "height": 20.887494841124862
+      }
+    }
+  ],
+  "prismhex": {
+    "right": {
+      "id": "x2-prismhex-diffraction-gauntlet",
+      "displayLength": 90,
+      "source": {
+        "width": 256,
+        "height": 162
+      },
+      "origin": {
+        "x": 0.4,
+        "y": 0.5
+      },
+      "localScale": {
+        "x": 0.3515625,
+        "y": 0.3515625
+      },
+      "manifestFacingX": 1,
+      "actorFacing": 1,
+      "facingBlend": 0.9989583745147882,
+      "rootScale": {
+        "x": 0.9989583745147882,
+        "y": 1
+      },
+      "worldDeterminant": 0.12346743726017684,
+      "orientedBoundingBox": {
+        "lengthPx": 89.91029717242951,
+        "thicknessPx": 56.950562714104834
+      },
+      "axisAlignedBoundingBox": {
+        "x": 2385.8206023529174,
+        "y": 2382.0602504074573,
+        "width": 99.76725934445858,
+        "height": 74.41400617361069
+      }
+    },
+    "left": {
+      "id": "x2-prismhex-diffraction-gauntlet",
+      "displayLength": 90,
+      "source": {
+        "width": 256,
+        "height": 162
+      },
+      "origin": {
+        "x": 0.4,
+        "y": 0.5
+      },
+      "localScale": {
+        "x": 0.3515625,
+        "y": 0.3515625
+      },
+      "manifestFacingX": 1,
+      "actorFacing": -1,
+      "facingBlend": -1,
+      "rootScale": {
+        "x": -1,
+        "y": 1
+      },
+      "worldDeterminant": -0.12359618811915496,
+      "orientedBoundingBox": {
+        "lengthPx": 89.9999988032052,
+        "thicknessPx": 56.953124242653296
+      },
+      "axisAlignedBoundingBox": {
+        "x": 2308.3324130296705,
+        "y": 2388.589377605915,
+        "width": 99.92452025413513,
+        "height": 74.52374112606049
+      }
+    }
+  }
+}
