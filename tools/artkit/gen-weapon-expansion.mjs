@@ -32,9 +32,9 @@ const GRADES = new Set(["S", "A", "B", "C", "D", "E"]);
 const ATTRS = new Set(["str", "dex", "int", "con", "luk"]);
 const TYPES = new Set(["melee", "ranged", "caster"]);
 const GRIPS = new Set(["1H", "2H", "dual", "mounted"]);
-const HANDLING_TAGS = new Set(["lever", "pump", "pistol"]);
+const HANDLING_TAGS = new Set(["bolt", "lever", "pump", "pistol"]);
 const SECONDARY_GRIP_ROLES = new Set([
-  "under-barrel", "lever", "crank", "pump", "vertical-foregrip", "shoulder-RPG",
+  "under-barrel", "bolt", "lever", "crank", "pump", "vertical-foregrip", "shoulder-RPG",
   "two-hand-rifle", "shaft", "handle",
 ]);
 const SIZES = new Set(["S", "M", "L", "XL"]);
@@ -61,7 +61,10 @@ const BEAM_GUN_IDS = new Set([
 // Owner-ordered heavy single shots use gun behavior, but deliberately sit outside the catalog's
 // common semi-auto damage/cadence bands. Keep the exception declarative so source data, generated
 // WeaponDef cadence, and independent codegen validation agree.
-const SINGLE_SHOT_GUN_IDS = new Set(["x2-saintskull-monstrance"]);
+const SINGLE_SHOT_GUN_IDS = new Set([
+  "x2-barrett-50-cal-sniper",
+  "x2-saintskull-monstrance",
+]);
 
 // Key whitelists — an authored key outside these is a FAILURE, never a silent drop.
 const TOP_KEYS = new Set([

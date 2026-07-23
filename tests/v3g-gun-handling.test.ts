@@ -4,7 +4,7 @@ import { projectileColorSuffix } from "../packages/client/src/scenes/arena/proje
 
 const catalog = Object.values(WEAPONS);
 
-function tagged(tag: "lever" | "pump" | "pistol"): WeaponDef[] {
+function tagged(tag: "bolt" | "lever" | "pump" | "pistol"): WeaponDef[] {
   return catalog.filter((weapon) => weaponHasHandlingTag(weapon, tag));
 }
 
@@ -47,6 +47,25 @@ describe("V3G catalog gun-handling laws", () => {
       expect(["pump", "vertical-foregrip"], weapon.id).toContain(
         weapon.gripPoints?.secondary?.role,
       );
+    }
+  });
+
+  it("pins the owner-classified and catalog-inferred bolt-action census", () => {
+    const boltIds = tagged("bolt")
+      .map((weapon) => weapon.id)
+      .sort();
+    expect(boltIds).toEqual(
+      [
+        "x2-barrett-50-cal-sniper",
+        "x2-buzzard-s-eye-marksman",
+        "x2-mauler-slug-thrower",
+        "x2-pale-horse-longgun",
+        "x2-tracer-saint-carbine",
+      ].sort(),
+    );
+    for (const id of boltIds) {
+      expect(WEAPONS[id]?.gripPoints?.secondary?.role, id).toBe("bolt");
+      expect(WEAPONS[id]?.gripPoints?.primary, id).toBeDefined();
     }
   });
 

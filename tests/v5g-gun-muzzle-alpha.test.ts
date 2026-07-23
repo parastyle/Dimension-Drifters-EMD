@@ -61,8 +61,8 @@ describe("V7 catalog-wide art-space muzzle law", () => {
       }
     }
 
-    expect(weaponCount).toBe(139);
-    expect(pointCount).toBeGreaterThanOrEqual(139);
+    expect(weaponCount).toBe(140);
+    expect(pointCount).toBeGreaterThanOrEqual(140);
     expect(failures, failures.join("\n")).toEqual([]);
   });
 

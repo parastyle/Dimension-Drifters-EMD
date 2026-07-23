@@ -1,0 +1,3164 @@
+{
+  "summary": {
+    "schemaVersion": 1,
+    "capturedAt": "2026-07-23T00:25:34.929Z",
+    "durationSeconds": 25.364,
+    "baseURL": "http://127.0.0.1:51909",
+    "selection": "explicit",
+    "catalogCount": 139,
+    "selectedCount": 6,
+    "tolerancePx": 3,
+    "samplePolicy": {
+      "always": [
+        "base roster",
+        "one per gun/beam family",
+        "all multi-barrel",
+        "all burst",
+        "all dual",
+        "owner-reported muzzle regressions"
+      ],
+      "rotation": "stable id hash, one of 24 UTC-daily buckets",
+      "fullFlag": "--full or DD_FULL_MUZZLE_SWEEP=1"
+    },
+    "passedWeapons": 6,
+    "failedWeapons": 0,
+    "maxDeltaPx": 0,
+    "maxPresentationDeltaPx": 0,
+    "maxInitialAuthorityDeltaPx": 0.5002064655374356,
+    "unexpectedBrowserErrors": [],
+    "excludedNonMuzzleRows": [
+      {
+        "weaponId": "x2-spore-spitter-blunderbuss",
+        "reason": "runtime channel ground-zone dispatch supersedes the legacy gun block; no muzzle spawn exists"
+      }
+    ]
+  },
+  "weapons": [
+    {
+      "weaponId": "x2-tracer-saint-carbine",
+      "name": "Tracer-Saint Carbine",
+      "deliveryKind": "gun",
+      "family": "marksman-rifle",
+      "spriteId": "x2-tracer-saint-carbine",
+      "partFile": "part-1.png",
+      "displayLength": 150.8,
+      "expansion": true,
+      "dual": false,
+      "muzzleCount": 1,
+      "burstCount": 1,
+      "sampleReasons": [
+        "explicit"
+      ],
+      "attempts": 1,
+      "artPoint": {
+        "x": 255,
+        "y": 11.7,
+        "normalizedX": 0.99609375,
+        "normalizedY": 0.20526315789473684,
+        "width": 256,
+        "height": 57,
+        "part": 0
+      },
+      "artParts": [
+        {
+          "part": 0,
+          "partFile": "part-1.png",
+          "width": 256,
+          "height": 57,
+          "points": [
+            {
+              "x": 255,
+              "y": 11.7,
+              "normalizedX": 0.99609375,
+              "normalizedY": 0.20526315789473684,
+              "derived": {
+                "x": 255,
+                "y": 11.7
+              }
+            }
+          ]
+        }
+      ],
+      "cases": [
+        {
+          "mode": "stationary",
+          "acceptedSeq": 1,
+          "startTick": 43,
+          "startPlayer": {
+            "x": 2400,
+            "y": 2420
+          },
+          "finalPlayer": {
+            "x": 2385.2396334499326,
+            "y": 2419.982421875
+          },
+          "motionDistancePx": 0,
+          "shots": [
+            {
+              "kind": "projectile",
+              "shotIndex": 0,
+              "bornTick": 49,
+              "observedTick": 49,
+              "player": {
+                "x": 2400,
+                "y": 2420,
+                "aimDir": 0.0031309672631323338
+              },
+              "motionDistancePx": 0,
+              "lanes": [
+                {
+                  "x": 2527.047155761719,
+                  "y": 2395.637840771675,
+                  "bornTick": 49,
+                  "projectileId": "p0",
+                  "visibleSpawnOrigin": {
+                    "x": 2526.729174600496,
+                    "y": 2395.5937961835916,
+                    "screen": {
+                      "x": 445.6246204494082,
+                      "y": 155.32375869830548
+                    }
+                  },
+                  "spriteMuzzleAtSpawn": {
+                    "x": 2526.729174600496,
+                    "y": 2395.5937961835916,
+                    "screen": {
+                      "x": 445.6246204494082,
+                      "y": 155.32375869830548
+                    }
+                  },
+                  "screen": {
+                    "x": 445.94260161063085,
+                    "y": 155.36780328638906
+                  },
+                  "paintedMuzzle": {
+                    "barrelIndex": 0,
+                    "part": 0,
+                    "x": 2527.0472272583206,
+                    "y": 2395.637746745088,
+                    "directArtCenter": {
+                      "x": 2527.0472272583206,
+                      "y": 2395.637746745088
+                    },
+                    "rigRoot": {
+                      "x": 2400,
+                      "y": 2420
+                    },
+                    "rigRootMatrix": {
+                      "a": 1,
+                      "b": 0,
+                      "c": 0,
+                      "d": 1,
+                      "tx": 2400,
+                      "ty": 2420
+                    },
+                    "weaponLocal": {
+                      "x": 20.51995529855997,
+                      "y": -9.091445626115194,
+                      "rotation": 0.003130967164224785,
+                      "scaleX": 0.5890625,
+                      "scaleY": 0.5890625,
+                      "originX": 0.29,
+                      "originY": 0.67,
+                      "width": 256,
+                      "height": 57,
+                      "textureKey": "x2-tracer-saint-carbine:part-1",
+                      "frameName": "__BASE"
+                    },
+                    "screen": {
+                      "x": 445.6198309421129,
+                      "y": 155.28878195114294
+                    },
+                    "artPoint": {
+                      "x": 255,
+                      "y": 11.7,
+                      "normalizedX": 0.99609375,
+                      "normalizedY": 0.20526315789473684,
+                      "width": 256,
+                      "height": 57,
+                      "part": 0
+                    }
+                  },
+                  "authorityDeltaPx": 0.00011812181498458613,
+                  "presentationDeltaPx": 0,
+                  "deltaPx": 0
+                }
+              ],
+              "paintedMuzzles": [
+                {
+                  "barrelIndex": 0,
+                  "part": 0,
+                  "x": 2527.0472272583206,
+                  "y": 2395.637746745088,
+                  "directArtCenter": {
+                    "x": 2527.0472272583206,
+                    "y": 2395.637746745088
+                  },
+                  "rigRoot": {
+                    "x": 2400,
+                    "y": 2420
+                  },
+                  "rigRootMatrix": {
+                    "a": 1,
+                    "b": 0,
+                    "c": 0,
+                    "d": 1,
+                    "tx": 2400,
+                    "ty": 2420
+                  },
+                  "weaponLocal": {
+                    "x": 20.51995529855997,
+                    "y": -9.091445626115194,
+                    "rotation": 0.003130967164224785,
+                    "scaleX": 0.5890625,
+                    "scaleY": 0.5890625,
+                    "originX": 0.29,
+                    "originY": 0.67,
+                    "width": 256,
+                    "height": 57,
+                    "textureKey": "x2-tracer-saint-carbine:part-1",
+                    "frameName": "__BASE"
+                  },
+                  "screen": {
+                    "x": 445.6198309421129,
+                    "y": 155.28878195114294
+                  },
+                  "artPoint": {
+                    "x": 255,
+                    "y": 11.7,
+                    "normalizedX": 0.99609375,
+                    "normalizedY": 0.20526315789473684,
+                    "width": 256,
+                    "height": 57,
+                    "part": 0
+                  }
+                }
+              ],
+              "predictedAtMs": 4399.70000000298
+            }
+          ],
+          "maxDeltaPx": 0,
+          "maxAuthorityDeltaPx": 0.00011812181498458613,
+          "passed": true,
+          "screenshot": "docs/owner-notes-audit-v8-evidence/bolt-action/muzzle-regression/captures/x2-tracer-saint-carbine--stationary.jpg"
+        },
+        {
+          "mode": "strafing",
+          "acceptedSeq": 2,
+          "startTick": 75,
+          "startPlayer": {
+            "x": 2400,
+            "y": 2420
+          },
+          "finalPlayer": {
+            "x": 2386.46325626215,
+            "y": 2152
+          },
+          "motionDistancePx": 67.5,
+          "shots": [
+            {
+              "kind": "projectile",
+              "shotIndex": 0,
+              "bornTick": 84,
+              "observedTick": 84,
+              "player": {
+                "x": 2400,
+                "y": 2352.5,
+                "aimDir": 0.5006274580955505
+              },
+              "motionDistancePx": 67.5,
+              "lanes": [
+                {
+                  "x": 2523.6362414668547,
+                  "y": 2375.154725348372,
+                  "bornTick": 84,
+                  "projectileId": "p1",
+                  "visibleSpawnOrigin": {
+                    "x": 2520.5004144246086,
+                    "y": 2373.274153124349,
+                    "screen": {
+                      "x": 442.2589401629757,
+                      "y": 163.85432925652458
+                    }
+                  },
+                  "spriteMuzzleAtSpawn": {
+                    "x": 2520.5004144246086,
+                    "y": 2373.274153124349,
+                    "screen": {
+                      "x": 442.2589401629757,
+                      "y": 163.85432925652458
+                    }
+                  },
+                  "screen": {
+                    "x": 445.3947672052218,
+                    "y": 165.73490148054725
+                  },
+                  "paintedMuzzle": {
+                    "barrelIndex": 0,
+                    "part": 0,
+                    "x": 2520.3024924797246,
+                    "y": 2382.287450107543,
+                    "directArtCenter": {
+                      "x": 2520.3024924797246,
+                      "y": 2382.287450107543
+                    },
+                    "rigRoot": {
+                      "x": 2400,
+                      "y": 2349.611993009989
+                    },
+                    "rigRootMatrix": {
+                      "a": 1,
+                      "b": 0,
+                      "c": 0,
+                      "d": 1,
+                      "tx": 2400,
+                      "ty": 2349.612060546875
+                    },
+                    "weaponLocal": {
+                      "x": 19.400807991496297,
+                      "y": -4.742618193119427,
+                      "rotation": 0.5006274408155811,
+                      "scaleX": 0.5890625,
+                      "scaleY": 0.5890625,
+                      "originX": 0.29,
+                      "originY": 0.67,
+                      "width": 256,
+                      "height": 57,
+                      "textureKey": "x2-tracer-saint-carbine:part-1",
+                      "frameName": "__BASE"
+                    },
+                    "screen": {
+                      "x": 442.8205198599735,
+                      "y": 153.87019023349467
+                    },
+                    "artPoint": {
+                      "x": 255,
+                      "y": 11.7,
+                      "normalizedX": 0.99609375,
+                      "normalizedY": 0.20526315789473684,
+                      "width": 256,
+                      "height": 57,
+                      "part": 0
+                    }
+                  },
+                  "authorityDeltaPx": 7.8733502906504,
+                  "presentationDeltaPx": 0,
+                  "deltaPx": 0
+                }
+              ],
+              "paintedMuzzles": [
+                {
+                  "barrelIndex": 0,
+                  "part": 0,
+                  "x": 2520.3024924797246,
+                  "y": 2382.287450107543,
+                  "directArtCenter": {
+                    "x": 2520.3024924797246,
+                    "y": 2382.287450107543
+                  },
+                  "rigRoot": {
+                    "x": 2400,
+                    "y": 2349.611993009989
+                  },
+                  "rigRootMatrix": {
+                    "a": 1,
+                    "b": 0,
+                    "c": 0,
+                    "d": 1,
+                    "tx": 2400,
+                    "ty": 2349.612060546875
+                  },
+                  "weaponLocal": {
+                    "x": 19.400807991496297,
+                    "y": -4.742618193119427,
+                    "rotation": 0.5006274408155811,
+                    "scaleX": 0.5890625,
+                    "scaleY": 0.5890625,
+                    "originX": 0.29,
+                    "originY": 0.67,
+                    "width": 256,
+                    "height": 57,
+                    "textureKey": "x2-tracer-saint-carbine:part-1",
+                    "frameName": "__BASE"
+                  },
+                  "screen": {
+                    "x": 442.8205198599735,
+                    "y": 153.87019023349467
+                  },
+                  "artPoint": {
+                    "x": 255,
+                    "y": 11.7,
+                    "normalizedX": 0.99609375,
+                    "normalizedY": 0.20526315789473684,
+                    "width": 256,
+                    "height": 57,
+                    "part": 0
+                  }
+                }
+              ],
+              "predictedAtMs": 6161.30000000447
+            }
+          ],
+          "maxDeltaPx": 0,
+          "maxAuthorityDeltaPx": 7.8733502906504,
+          "passed": true,
+          "screenshot": "docs/owner-notes-audit-v8-evidence/bolt-action/muzzle-regression/captures/x2-tracer-saint-carbine--strafing.jpg"
+        }
+      ],
+      "maxDeltaPx": 0,
+      "maxAuthorityDeltaPx": 7.8733502906504,
+      "initialAuthorityDeltaPx": 0.00011812181498458613,
+      "passed": true
+    },
+    {
+      "weaponId": "x2-buzzard-s-eye-marksman",
+      "name": "Buzzard's Eye Marksman",
+      "deliveryKind": "gun",
+      "family": "marksman-rifle",
+      "spriteId": "x2-buzzard-s-eye-marksman",
+      "partFile": "part-1.png",
+      "displayLength": 158,
+      "expansion": true,
+      "dual": false,
+      "muzzleCount": 1,
+      "burstCount": 4,
+      "sampleReasons": [
+        "explicit"
+      ],
+      "attempts": 1,
+      "artPoint": {
+        "x": 255,
+        "y": 21.7,
+        "normalizedX": 0.99609375,
+        "normalizedY": 0.3144927536231884,
+        "width": 256,
+        "height": 69,
+        "part": 0
+      },
+      "artParts": [
+        {
+          "part": 0,
+          "partFile": "part-1.png",
+          "width": 256,
+          "height": 69,
+          "points": [
+            {
+              "x": 255,
+              "y": 21.7,
+              "normalizedX": 0.99609375,
+              "normalizedY": 0.3144927536231884,
+              "derived": {
+                "x": 255,
+                "y": 21.7
+              }
+            }
+          ]
+        }
+      ],
+      "cases": [
+        {
+          "mode": "stationary",
+          "acceptedSeq": 3,
+          "startTick": 117,
+          "startPlayer": {
+            "x": 2400,
+            "y": 2420
+          },
+          "finalPlayer": {
+            "x": 2202.55126953125,
+            "y": 2420.461669921875
+          },
+          "motionDistancePx": 90.58782281266706,
+          "shots": [
+            {
+              "kind": "projectile",
+              "shotIndex": 0,
+              "bornTick": 123,
+              "observedTick": 123,
+              "player": {
+                "x": 2400,
+                "y": 2420,
+                "aimDir": -0.013463872484862804
+              },
+              "motionDistancePx": 0,
+              "lanes": [
+                {
+                  "x": 2533.523114013672,
+                  "y": 2395.4434509754183,
+                  "bornTick": 123,
+                  "projectileId": "p2",
+                  "visibleSpawnOrigin": {
+                    "x": 2499.7524872672484,
+                    "y": 2395.756425222846,
+                    "screen": {
+                      "x": 429.1885481405948,
+                      "y": 156.39896942299129
+                    }
+                  },
+                  "spriteMuzzleAtSpawn": {
+                    "x": 2499.7524872672484,
+                    "y": 2395.756425222846,
+                    "screen": {
+                      "x": 429.1885481405948,
+                      "y": 156.39896942299129
+                    }
+                  },
+                  "screen": {
+                    "x": 462.95917488701843,
+                    "y": 156.08599517556377
+                  },
+                  "paintedMuzzle": {
+                    "barrelIndex": 0,
+                    "part": 0,
+                    "x": 2533.459366494957,
+                    "y": 2394.947323207577,
+                    "directArtCenter": {
+                      "x": 2533.459366494957,
+                      "y": 2394.947323207577
+                    },
+                    "rigRoot": {
+                      "x": 2400,
+                      "y": 2420
+                    },
+                    "rigRootMatrix": {
+                      "a": 1,
+                      "b": 0,
+                      "c": 0,
+                      "d": 1,
+                      "tx": 2400,
+                      "ty": 2420
+                    },
+                    "weaponLocal": {
+                      "x": 20.51917339456603,
+                      "y": -9.242786806453752,
+                      "rotation": -0.013463872395416132,
+                      "scaleX": 0.6171875,
+                      "scaleY": 0.6171875,
+                      "originX": 0.28,
+                      "originY": 0.65,
+                      "width": 256,
+                      "height": 69,
+                      "textureKey": "x2-buzzard-s-eye-marksman:part-1",
+                      "frameName": "__BASE"
+                    },
+                    "screen": {
+                      "x": 453.5255544919146,
+                      "y": 156.42745832166747
+                    },
+                    "artPoint": {
+                      "x": 255,
+                      "y": 21.7,
+                      "normalizedX": 0.99609375,
+                      "normalizedY": 0.3144927536231884,
+                      "width": 256,
+                      "height": 69,
+                      "part": 0
+                    }
+                  },
+                  "authorityDeltaPx": 0.5002064655374356,
+                  "presentationDeltaPx": 0,
+                  "deltaPx": 0
+                }
+              ],
+              "paintedMuzzles": [
+                {
+                  "barrelIndex": 0,
+                  "part": 0,
+                  "x": 2533.459366494957,
+                  "y": 2394.947323207577,
+                  "directArtCenter": {
+                    "x": 2533.459366494957,
+                    "y": 2394.947323207577
+                  },
+                  "rigRoot": {
+                    "x": 2400,
+                    "y": 2420
+                  },
+                  "rigRootMatrix": {
+                    "a": 1,
+                    "b": 0,
+                    "c": 0,
+                    "d": 1,
+                    "tx": 2400,
+                    "ty": 2420
+                  },
+                  "weaponLocal": {
+                    "x": 20.51917339456603,
+                    "y": -9.242786806453752,
+                    "rotation": -0.013463872395416132,
+                    "scaleX": 0.6171875,
+                    "scaleY": 0.6171875,
+                    "originX": 0.28,
+                    "originY": 0.65,
+                    "width": 256,
+                    "height": 69,
+                    "textureKey": "x2-buzzard-s-eye-marksman:part-1",
+                    "frameName": "__BASE"
+                  },
+                  "screen": {
+                    "x": 453.5255544919146,
+                    "y": 156.42745832166747
+                  },
+                  "artPoint": {
+                    "x": 255,
+                    "y": 21.7,
+                    "normalizedX": 0.99609375,
+                    "normalizedY": 0.3144927536231884,
+                    "width": 256,
+                    "height": 69,
+                    "part": 0
+                  }
+                }
+              ],
+              "predictedAtMs": 8113.10000000149
+            },
+            {
+              "kind": "projectile",
+              "shotIndex": 1,
+              "bornTick": 124,
+              "observedTick": 124,
+              "player": {
+                "x": 2380.442138671875,
+                "y": 2420.183837890625,
+                "aimDir": -0.0057718949392437935
+              },
+              "motionDistancePx": 19.558725318900432,
+              "lanes": [
+                {
+                  "x": 2511.3108764648437,
+                  "y": 2395.979939222336,
+                  "bornTick": 124,
+                  "projectileId": "p3",
+                  "visibleSpawnOrigin": {
+                    "x": 2454.0072044251015,
+                    "y": 2396.310136405754,
+                    "screen": {
+                      "x": 404.3978210400278,
+                      "y": 156.62647126238744
+                    }
+                  },
+                  "spriteMuzzleAtSpawn": {
+                    "x": 2454.0072044251015,
+                    "y": 2396.310136405754,
+                    "screen": {
+                      "x": 404.3978210400278,
+                      "y": 156.62647126238744
+                    }
+                  },
+                  "screen": {
+                    "x": 461.70149307977,
+                    "y": 156.29627407896942
+                  },
+                  "paintedMuzzle": {
+                    "barrelIndex": 0,
+                    "part": 0,
+                    "x": 2454.0072044251015,
+                    "y": 2396.310136405754,
+                    "directArtCenter": {
+                      "x": 2454.0072044251015,
+                      "y": 2396.310136405754
+                    },
+                    "rigRoot": {
+                      "x": 2323.0745470895117,
+                      "y": 2420.4080946462213
+                    },
+                    "rigRootMatrix": {
+                      "a": 1,
+                      "b": 0,
+                      "c": 0,
+                      "d": 1,
+                      "tx": 2323.074462890625,
+                      "ty": 2420.408203125
+                    },
+                    "weaponLocal": {
+                      "x": 17.874281438935895,
+                      "y": -9.157369287493454,
+                      "rotation": -0.005771894975818981,
+                      "scaleX": 0.6171875,
+                      "scaleY": 0.6171875,
+                      "originX": 0.28,
+                      "originY": 0.65,
+                      "width": 256,
+                      "height": 69,
+                      "textureKey": "x2-buzzard-s-eye-marksman:part-1",
+                      "frameName": "__BASE"
+                    },
+                    "screen": {
+                      "x": 404.3978210400278,
+                      "y": 156.62647126238744
+                    },
+                    "artPoint": {
+                      "x": 255,
+                      "y": 21.7,
+                      "normalizedX": 0.99609375,
+                      "normalizedY": 0.3144927536231884,
+                      "width": 256,
+                      "height": 69,
+                      "part": 0
+                    }
+                  },
+                  "authorityDeltaPx": 57.30462336861022,
+                  "presentationDeltaPx": 0,
+                  "deltaPx": 0
+                }
+              ],
+              "paintedMuzzles": [
+                {
+                  "barrelIndex": 0,
+                  "part": 0,
+                  "x": 2454.0072044251015,
+                  "y": 2396.310136405754,
+                  "directArtCenter": {
+                    "x": 2454.0072044251015,
+                    "y": 2396.310136405754
+                  },
+                  "rigRoot": {
+                    "x": 2323.0745470895117,
+                    "y": 2420.4080946462213
+                  },
+                  "rigRootMatrix": {
+                    "a": 1,
+                    "b": 0,
+                    "c": 0,
+                    "d": 1,
+                    "tx": 2323.074462890625,
+                    "ty": 2420.408203125
+                  },
+                  "weaponLocal": {
+                    "x": 17.874281438935895,
+                    "y": -9.157369287493454,
+                    "rotation": -0.005771894975818981,
+                    "scaleX": 0.6171875,
+                    "scaleY": 0.6171875,
+                    "originX": 0.28,
+                    "originY": 0.65,
+                    "width": 256,
+                    "height": 69,
+                    "textureKey": "x2-buzzard-s-eye-marksman:part-1",
+                    "frameName": "__BASE"
+                  },
+                  "screen": {
+                    "x": 404.3978210400278,
+                    "y": 156.62647126238744
+                  },
+                  "artPoint": {
+                    "x": 255,
+                    "y": 21.7,
+                    "normalizedX": 0.99609375,
+                    "normalizedY": 0.3144927536231884,
+                    "width": 256,
+                    "height": 69,
+                    "part": 0
+                  }
+                }
+              ],
+              "predictedAtMs": 8249.89999999851
+            },
+            {
+              "kind": "projectile",
+              "shotIndex": 2,
+              "bornTick": 125,
+              "observedTick": 125,
+              "player": {
+                "x": 2348.4129456858327,
+                "y": 2420.314208984375,
+                "aimDir": -0.0057718949392437935
+              },
+              "motionDistancePx": 51.58801120511148,
+              "lanes": [
+                {
+                  "x": 2479.3096435546877,
+                  "y": 2396.3317901849746,
+                  "bornTick": 125,
+                  "projectileId": "p4",
+                  "visibleSpawnOrigin": {
+                    "x": 2406.909897638687,
+                    "y": 2396.6266945885664,
+                    "screen": {
+                      "x": 386.37946822218464,
+                      "y": 156.67914418712144
+                    }
+                  },
+                  "spriteMuzzleAtSpawn": {
+                    "x": 2406.909897638687,
+                    "y": 2396.6266945885664,
+                    "screen": {
+                      "x": 386.37946822218464,
+                      "y": 156.67914418712144
+                    }
+                  },
+                  "screen": {
+                    "x": 458.7792141381851,
+                    "y": 156.38423978352967
+                  },
+                  "paintedMuzzle": {
+                    "barrelIndex": 0,
+                    "part": 0,
+                    "x": 2406.909897638687,
+                    "y": 2396.6266945885664,
+                    "directArtCenter": {
+                      "x": 2406.909897638687,
+                      "y": 2396.6266945885664
+                    },
+                    "rigRoot": {
+                      "x": 2275.953333186848,
+                      "y": 2420.533573671846
+                    },
+                    "rigRootMatrix": {
+                      "a": 1,
+                      "b": 0,
+                      "c": 0,
+                      "d": 1,
+                      "tx": 2275.953369140625,
+                      "ty": 2420.53369140625
+                    },
+                    "weaponLocal": {
+                      "x": 17.874332897142526,
+                      "y": -9.147021309659785,
+                      "rotation": -0.004173580999950133,
+                      "scaleX": 0.6171875,
+                      "scaleY": 0.6171875,
+                      "originX": 0.28,
+                      "originY": 0.65,
+                      "width": 256,
+                      "height": 69,
+                      "textureKey": "x2-buzzard-s-eye-marksman:part-1",
+                      "frameName": "__BASE"
+                    },
+                    "screen": {
+                      "x": 386.37946822218464,
+                      "y": 156.67914418712144
+                    },
+                    "artPoint": {
+                      "x": 255,
+                      "y": 21.7,
+                      "normalizedX": 0.99609375,
+                      "normalizedY": 0.3144927536231884,
+                      "width": 256,
+                      "height": 69,
+                      "part": 0
+                    }
+                  },
+                  "authorityDeltaPx": 72.40034652754562,
+                  "presentationDeltaPx": 0,
+                  "deltaPx": 0
+                }
+              ],
+              "paintedMuzzles": [
+                {
+                  "barrelIndex": 0,
+                  "part": 0,
+                  "x": 2406.909897638687,
+                  "y": 2396.6266945885664,
+                  "directArtCenter": {
+                    "x": 2406.909897638687,
+                    "y": 2396.6266945885664
+                  },
+                  "rigRoot": {
+                    "x": 2275.953333186848,
+                    "y": 2420.533573671846
+                  },
+                  "rigRootMatrix": {
+                    "a": 1,
+                    "b": 0,
+                    "c": 0,
+                    "d": 1,
+                    "tx": 2275.953369140625,
+                    "ty": 2420.53369140625
+                  },
+                  "weaponLocal": {
+                    "x": 17.874332897142526,
+                    "y": -9.147021309659785,
+                    "rotation": -0.004173580999950133,
+                    "scaleX": 0.6171875,
+                    "scaleY": 0.6171875,
+                    "originX": 0.28,
+                    "originY": 0.65,
+                    "width": 256,
+                    "height": 69,
+                    "textureKey": "x2-buzzard-s-eye-marksman:part-1",
+                    "frameName": "__BASE"
+                  },
+                  "screen": {
+                    "x": 386.37946822218464,
+                    "y": 156.67914418712144
+                  },
+                  "artPoint": {
+                    "x": 255,
+                    "y": 21.7,
+                    "normalizedX": 0.99609375,
+                    "normalizedY": 0.3144927536231884,
+                    "width": 256,
+                    "height": 69,
+                    "part": 0
+                  }
+                }
+              ],
+              "predictedAtMs": 8298.5
+            },
+            {
+              "kind": "projectile",
+              "shotIndex": 3,
+              "bornTick": 126,
+              "observedTick": 126,
+              "player": {
+                "x": 2309.4130859375,
+                "y": 2420.40576171875,
+                "aimDir": -0.004173581022769213
+              },
+              "motionDistancePx": 90.58782281266706,
+              "lanes": [
+                {
+                  "x": 2440.3326416015625,
+                  "y": 2396.6096748828886,
+                  "bornTick": 126,
+                  "projectileId": "p5",
+                  "visibleSpawnOrigin": {
+                    "x": 2359.3599874071497,
+                    "y": 2396.8184079032403,
+                    "screen": {
+                      "x": 373.650132019935,
+                      "y": 156.68331225408656
+                    }
+                  },
+                  "spriteMuzzleAtSpawn": {
+                    "x": 2359.3599874071497,
+                    "y": 2396.8184079032403,
+                    "screen": {
+                      "x": 373.650132019935,
+                      "y": 156.68331225408656
+                    }
+                  },
+                  "screen": {
+                    "x": 454.6227862143478,
+                    "y": 156.47457923373486
+                  },
+                  "paintedMuzzle": {
+                    "barrelIndex": 0,
+                    "part": 0,
+                    "x": 2359.3599874071497,
+                    "y": 2396.8184079032403,
+                    "directArtCenter": {
+                      "x": 2359.3599874071497,
+                      "y": 2396.8184079032403
+                    },
+                    "rigRoot": {
+                      "x": 2228.3820545904096,
+                      "y": 2420.5515868173643
+                    },
+                    "rigRootMatrix": {
+                      "a": 1,
+                      "b": 0,
+                      "c": 0,
+                      "d": 1,
+                      "tx": 2228.382080078125,
+                      "ty": 2420.551513671875
+                    },
+                    "weaponLocal": {
+                      "x": 17.874365348300582,
+                      "y": -9.137605423094016,
+                      "rotation": -0.0027192440885990266,
+                      "scaleX": 0.6171875,
+                      "scaleY": 0.6171875,
+                      "originX": 0.28,
+                      "originY": 0.65,
+                      "width": 256,
+                      "height": 69,
+                      "textureKey": "x2-buzzard-s-eye-marksman:part-1",
+                      "frameName": "__BASE"
+                    },
+                    "screen": {
+                      "x": 373.650132019935,
+                      "y": 156.68331225408656
+                    },
+                    "artPoint": {
+                      "x": 255,
+                      "y": 21.7,
+                      "normalizedX": 0.99609375,
+                      "normalizedY": 0.3144927536231884,
+                      "width": 256,
+                      "height": 69,
+                      "part": 0
+                    }
+                  },
+                  "authorityDeltaPx": 80.9729232321629,
+                  "presentationDeltaPx": 0,
+                  "deltaPx": 0
+                }
+              ],
+              "paintedMuzzles": [
+                {
+                  "barrelIndex": 0,
+                  "part": 0,
+                  "x": 2359.3599874071497,
+                  "y": 2396.8184079032403,
+                  "directArtCenter": {
+                    "x": 2359.3599874071497,
+                    "y": 2396.8184079032403
+                  },
+                  "rigRoot": {
+                    "x": 2228.3820545904096,
+                    "y": 2420.5515868173643
+                  },
+                  "rigRootMatrix": {
+                    "a": 1,
+                    "b": 0,
+                    "c": 0,
+                    "d": 1,
+                    "tx": 2228.382080078125,
+                    "ty": 2420.551513671875
+                  },
+                  "weaponLocal": {
+                    "x": 17.874365348300582,
+                    "y": -9.137605423094016,
+                    "rotation": -0.0027192440885990266,
+                    "scaleX": 0.6171875,
+                    "scaleY": 0.6171875,
+                    "originX": 0.28,
+                    "originY": 0.65,
+                    "width": 256,
+                    "height": 69,
+                    "textureKey": "x2-buzzard-s-eye-marksman:part-1",
+                    "frameName": "__BASE"
+                  },
+                  "screen": {
+                    "x": 373.650132019935,
+                    "y": 156.68331225408656
+                  },
+                  "artPoint": {
+                    "x": 255,
+                    "y": 21.7,
+                    "normalizedX": 0.99609375,
+                    "normalizedY": 0.3144927536231884,
+                    "width": 256,
+                    "height": 69,
+                    "part": 0
+                  }
+                }
+              ],
+              "predictedAtMs": 8346.70000000298
+            }
+          ],
+          "maxDeltaPx": 0,
+          "maxAuthorityDeltaPx": 80.9729232321629,
+          "passed": true,
+          "screenshot": "docs/owner-notes-audit-v8-evidence/bolt-action/muzzle-regression/captures/x2-buzzard-s-eye-marksman--stationary.jpg"
+        },
+        {
+          "mode": "strafing",
+          "acceptedSeq": 4,
+          "startTick": 151,
+          "startPlayer": {
+            "x": 2400,
+            "y": 2420
+          },
+          "finalPlayer": {
+            "x": 2203.552490234375,
+            "y": 2140.129150390625
+          },
+          "motionDistancePx": 177.9277514774253,
+          "shots": [
+            {
+              "kind": "projectile",
+              "shotIndex": 0,
+              "bornTick": 158,
+              "observedTick": 158,
+              "player": {
+                "x": 2400,
+                "y": 2368.5,
+                "aimDir": 0.4333875775337219
+              },
+              "motionDistancePx": 51.5,
+              "lanes": [
+                {
+                  "x": 2533.7613036222924,
+                  "y": 2372.79825592041,
+                  "bornTick": 158,
+                  "projectileId": "p6",
+                  "visibleSpawnOrigin": {
+                    "x": 2529.052839950558,
+                    "y": 2373.0596145983727,
+                    "screen": {
+                      "x": 451.33592288210457,
+                      "y": 173.81614087078606
+                    }
+                  },
+                  "spriteMuzzleAtSpawn": {
+                    "x": 2529.052839950558,
+                    "y": 2373.0596145983727,
+                    "screen": {
+                      "x": 451.33592288210457,
+                      "y": 173.81614087078606
+                    }
+                  },
+                  "screen": {
+                    "x": 456.0443865538391,
+                    "y": 173.5547821928235
+                  },
+                  "paintedMuzzle": {
+                    "barrelIndex": 0,
+                    "part": 0,
+                    "x": 2529.052839950558,
+                    "y": 2373.0596145983727,
+                    "directArtCenter": {
+                      "x": 2529.052839950558,
+                      "y": 2373.0596145983727
+                    },
+                    "rigRoot": {
+                      "x": 2400,
+                      "y": 2345.9837333333335
+                    },
+                    "rigRootMatrix": {
+                      "a": 1,
+                      "b": 0,
+                      "c": 0,
+                      "d": 1,
+                      "tx": 2400,
+                      "ty": 2345.983642578125
+                    },
+                    "weaponLocal": {
+                      "x": 19.746613311526502,
+                      "y": -5.444616179519663,
+                      "rotation": 0.41479531558775484,
+                      "scaleX": 0.6171875,
+                      "scaleY": 0.6171875,
+                      "originX": 0.28,
+                      "originY": 0.65,
+                      "width": 256,
+                      "height": 69,
+                      "textureKey": "x2-buzzard-s-eye-marksman:part-1",
+                      "frameName": "__BASE"
+                    },
+                    "screen": {
+                      "x": 452.2802518248459,
+                      "y": 160.05924441802063
+                    },
+                    "artPoint": {
+                      "x": 255,
+                      "y": 21.7,
+                      "normalizedX": 0.99609375,
+                      "normalizedY": 0.3144927536231884,
+                      "width": 256,
+                      "height": 69,
+                      "part": 0
+                    }
+                  },
+                  "authorityDeltaPx": 4.715711876969393,
+                  "presentationDeltaPx": 0,
+                  "deltaPx": 0
+                }
+              ],
+              "paintedMuzzles": [
+                {
+                  "barrelIndex": 0,
+                  "part": 0,
+                  "x": 2529.052839950558,
+                  "y": 2373.0596145983727,
+                  "directArtCenter": {
+                    "x": 2529.052839950558,
+                    "y": 2373.0596145983727
+                  },
+                  "rigRoot": {
+                    "x": 2400,
+                    "y": 2345.9837333333335
+                  },
+                  "rigRootMatrix": {
+                    "a": 1,
+                    "b": 0,
+                    "c": 0,
+                    "d": 1,
+                    "tx": 2400,
+                    "ty": 2345.983642578125
+                  },
+                  "weaponLocal": {
+                    "x": 19.746613311526502,
+                    "y": -5.444616179519663,
+                    "rotation": 0.41479531558775484,
+                    "scaleX": 0.6171875,
+                    "scaleY": 0.6171875,
+                    "originX": 0.28,
+                    "originY": 0.65,
+                    "width": 256,
+                    "height": 69,
+                    "textureKey": "x2-buzzard-s-eye-marksman:part-1",
+                    "frameName": "__BASE"
+                  },
+                  "screen": {
+                    "x": 452.2802518248459,
+                    "y": 160.05924441802063
+                  },
+                  "artPoint": {
+                    "x": 255,
+                    "y": 21.7,
+                    "normalizedX": 0.99609375,
+                    "normalizedY": 0.3144927536231884,
+                    "width": 256,
+                    "height": 69,
+                    "part": 0
+                  }
+                }
+              ],
+              "predictedAtMs": 9878.80000000447
+            },
+            {
+              "kind": "projectile",
+              "shotIndex": 1,
+              "bornTick": 159,
+              "observedTick": 159,
+              "player": {
+                "x": 2380.9365234375,
+                "y": 2348.125732421875,
+                "aimDir": 0.6316342353820801
+              },
+              "motionDistancePx": 74.35944108545262,
+              "lanes": [
+                {
+                  "x": 2512.407330322266,
+                  "y": 2329.8746284484864,
+                  "bornTick": 159,
+                  "projectileId": "p7",
+                  "visibleSpawnOrigin": {
+                    "x": 2493.077307063891,
+                    "y": 2304.3069537926704,
+                    "screen": {
+                      "x": 421.369987005884,
+                      "y": 162.52345761565448
+                    }
+                  },
+                  "spriteMuzzleAtSpawn": {
+                    "x": 2493.077307063891,
+                    "y": 2304.3069537926704,
+                    "screen": {
+                      "x": 421.369987005884,
+                      "y": 162.52345761565448
+                    }
+                  },
+                  "screen": {
+                    "x": 440.7000102642587,
+                    "y": 188.09113227147054
+                  },
+                  "paintedMuzzle": {
+                    "barrelIndex": 0,
+                    "part": 0,
+                    "x": 2493.077307063891,
+                    "y": 2304.3069537926704,
+                    "directArtCenter": {
+                      "x": 2493.077307063891,
+                      "y": 2304.3069537926704
+                    },
+                    "rigRoot": {
+                      "x": 2382.23485718425,
+                      "y": 2245.232601859459
+                    },
+                    "rigRootMatrix": {
+                      "a": 1,
+                      "b": 0,
+                      "c": 0,
+                      "d": 1,
+                      "tx": 2382.23486328125,
+                      "ty": 2245.232666015625
+                    },
+                    "weaponLocal": {
+                      "x": 16.35230544544113,
+                      "y": -4.777521875766046,
+                      "rotation": 0.7198824314819561,
+                      "scaleX": 0.6171875,
+                      "scaleY": 0.6171875,
+                      "originX": 0.28,
+                      "originY": 0.65,
+                      "width": 256,
+                      "height": 69,
+                      "textureKey": "x2-buzzard-s-eye-marksman:part-1",
+                      "frameName": "__BASE"
+                    },
+                    "screen": {
+                      "x": 421.369987005884,
+                      "y": 162.52345761565448
+                    },
+                    "artPoint": {
+                      "x": 255,
+                      "y": 21.7,
+                      "normalizedX": 0.99609375,
+                      "normalizedY": 0.3144927536231884,
+                      "width": 256,
+                      "height": 69,
+                      "part": 0
+                    }
+                  },
+                  "authorityDeltaPx": 32.05239127545659,
+                  "presentationDeltaPx": 0,
+                  "deltaPx": 0
+                }
+              ],
+              "paintedMuzzles": [
+                {
+                  "barrelIndex": 0,
+                  "part": 0,
+                  "x": 2493.077307063891,
+                  "y": 2304.3069537926704,
+                  "directArtCenter": {
+                    "x": 2493.077307063891,
+                    "y": 2304.3069537926704
+                  },
+                  "rigRoot": {
+                    "x": 2382.23485718425,
+                    "y": 2245.232601859459
+                  },
+                  "rigRootMatrix": {
+                    "a": 1,
+                    "b": 0,
+                    "c": 0,
+                    "d": 1,
+                    "tx": 2382.23486328125,
+                    "ty": 2245.232666015625
+                  },
+                  "weaponLocal": {
+                    "x": 16.35230544544113,
+                    "y": -4.777521875766046,
+                    "rotation": 0.7198824314819561,
+                    "scaleX": 0.6171875,
+                    "scaleY": 0.6171875,
+                    "originX": 0.28,
+                    "originY": 0.65,
+                    "width": 256,
+                    "height": 69,
+                    "textureKey": "x2-buzzard-s-eye-marksman:part-1",
+                    "frameName": "__BASE"
+                  },
+                  "screen": {
+                    "x": 421.369987005884,
+                    "y": 162.52345761565448
+                  },
+                  "artPoint": {
+                    "x": 255,
+                    "y": 21.7,
+                    "normalizedX": 0.99609375,
+                    "normalizedY": 0.3144927536231884,
+                    "width": 256,
+                    "height": 69,
+                    "part": 0
+                  }
+                }
+              ],
+              "predictedAtMs": 10007.89999999851
+            },
+            {
+              "kind": "projectile",
+              "shotIndex": 2,
+              "bornTick": 160,
+              "observedTick": 160,
+              "player": {
+                "x": 2349.240478515625,
+                "y": 2328.4950171160144,
+                "aimDir": 0.7198824286460876
+              },
+              "motionDistancePx": 104.64077080144824,
+              "lanes": [
+                {
+                  "x": 2479.463232421875,
+                  "y": 2299.8428161621096,
+                  "bornTick": 160,
+                  "projectileId": "p8",
+                  "visibleSpawnOrigin": {
+                    "x": 2473.4938408960784,
+                    "y": 2248.432400378521,
+                    "screen": {
+                      "x": 407.9723977537401,
+                      "y": 148.41069740231296
+                    }
+                  },
+                  "spriteMuzzleAtSpawn": {
+                    "x": 2473.4938408960784,
+                    "y": 2248.432400378521,
+                    "screen": {
+                      "x": 407.9723977537401,
+                      "y": 148.41069740231296
+                    }
+                  },
+                  "screen": {
+                    "x": 413.9417892795368,
+                    "y": 199.82111318590162
+                  },
+                  "paintedMuzzle": {
+                    "barrelIndex": 0,
+                    "part": 0,
+                    "x": 2473.4938408960784,
+                    "y": 2248.432400378521,
+                    "directArtCenter": {
+                      "x": 2473.4938408960784,
+                      "y": 2248.432400378521
+                    },
+                    "rigRoot": {
+                      "x": 2370.5659870892696,
+                      "y": 2179.055151034316
+                    },
+                    "rigRootMatrix": {
+                      "a": 1,
+                      "b": 0,
+                      "c": 0,
+                      "d": 1,
+                      "tx": 2370.56591796875,
+                      "ty": 2179.05517578125
+                    },
+                    "weaponLocal": {
+                      "x": 15.85610838675575,
+                      "y": -4.2701714974602645,
+                      "rotation": 0.8276814339282179,
+                      "scaleX": 0.6171875,
+                      "scaleY": 0.6171875,
+                      "originX": 0.28,
+                      "originY": 0.65,
+                      "width": 256,
+                      "height": 69,
+                      "textureKey": "x2-buzzard-s-eye-marksman:part-1",
+                      "frameName": "__BASE"
+                    },
+                    "screen": {
+                      "x": 407.9723977537401,
+                      "y": 148.41069740231296
+                    },
+                    "artPoint": {
+                      "x": 255,
+                      "y": 21.7,
+                      "normalizedX": 0.99609375,
+                      "normalizedY": 0.3144927536231884,
+                      "width": 256,
+                      "height": 69,
+                      "part": 0
+                    }
+                  },
+                  "authorityDeltaPx": 51.75581596525856,
+                  "presentationDeltaPx": 0,
+                  "deltaPx": 0
+                }
+              ],
+              "paintedMuzzles": [
+                {
+                  "barrelIndex": 0,
+                  "part": 0,
+                  "x": 2473.4938408960784,
+                  "y": 2248.432400378521,
+                  "directArtCenter": {
+                    "x": 2473.4938408960784,
+                    "y": 2248.432400378521
+                  },
+                  "rigRoot": {
+                    "x": 2370.5659870892696,
+                    "y": 2179.055151034316
+                  },
+                  "rigRootMatrix": {
+                    "a": 1,
+                    "b": 0,
+                    "c": 0,
+                    "d": 1,
+                    "tx": 2370.56591796875,
+                    "ty": 2179.05517578125
+                  },
+                  "weaponLocal": {
+                    "x": 15.85610838675575,
+                    "y": -4.2701714974602645,
+                    "rotation": 0.8276814339282179,
+                    "scaleX": 0.6171875,
+                    "scaleY": 0.6171875,
+                    "originX": 0.28,
+                    "originY": 0.65,
+                    "width": 256,
+                    "height": 69,
+                    "textureKey": "x2-buzzard-s-eye-marksman:part-1",
+                    "frameName": "__BASE"
+                  },
+                  "screen": {
+                    "x": 407.9723977537401,
+                    "y": 148.41069740231296
+                  },
+                  "artPoint": {
+                    "x": 255,
+                    "y": 21.7,
+                    "normalizedX": 0.99609375,
+                    "normalizedY": 0.3144927536231884,
+                    "width": 256,
+                    "height": 69,
+                    "part": 0
+                  }
+                }
+              ],
+              "predictedAtMs": 10053.5
+            },
+            {
+              "kind": "projectile",
+              "shotIndex": 3,
+              "bornTick": 161,
+              "observedTick": 162,
+              "player": {
+                "x": 2271.320556640625,
+                "y": 2297.118408203125,
+                "aimDir": 0.8276814222335815
+              },
+              "motionDistancePx": 177.9277514774253,
+              "lanes": [
+                {
+                  "x": 2437.2272046832886,
+                  "y": 2268.094725036621,
+                  "bornTick": 161,
+                  "projectileId": "p9",
+                  "visibleSpawnOrigin": {
+                    "x": 2466.354714473661,
+                    "y": 2206.0299980979366,
+                    "screen": {
+                      "x": 407.3799346433566,
+                      "y": 147.8616830144192
+                    }
+                  },
+                  "spriteMuzzleAtSpawn": {
+                    "x": 2466.354714473661,
+                    "y": 2206.0299980979366,
+                    "screen": {
+                      "x": 407.3799346433566,
+                      "y": 147.8616830144192
+                    }
+                  },
+                  "screen": {
+                    "x": 378.2524248529844,
+                    "y": 209.92640995310373
+                  },
+                  "paintedMuzzle": {
+                    "barrelIndex": 0,
+                    "part": 0,
+                    "x": 2466.354714473661,
+                    "y": 2206.0299980979366,
+                    "directArtCenter": {
+                      "x": 2466.354714473661,
+                      "y": 2206.0299980979366
+                    },
+                    "rigRoot": {
+                      "x": 2363.1470585884927,
+                      "y": 2136.980316706816
+                    },
+                    "rigRootMatrix": {
+                      "a": 1,
+                      "b": 0,
+                      "c": 0,
+                      "d": 1,
+                      "tx": 2363.14697265625,
+                      "ty": 2136.980224609375
+                    },
+                    "weaponLocal": {
+                      "x": 15.873404208611307,
+                      "y": -4.286120269913573,
+                      "rotation": 0.8241092892397326,
+                      "scaleX": 0.6171875,
+                      "scaleY": 0.6171875,
+                      "originX": 0.28,
+                      "originY": 0.65,
+                      "width": 256,
+                      "height": 69,
+                      "textureKey": "x2-buzzard-s-eye-marksman:part-1",
+                      "frameName": "__BASE"
+                    },
+                    "screen": {
+                      "x": 407.3799346433566,
+                      "y": 147.8616830144192
+                    },
+                    "artPoint": {
+                      "x": 255,
+                      "y": 21.7,
+                      "normalizedX": 0.99609375,
+                      "normalizedY": 0.3144927536231884,
+                      "width": 256,
+                      "height": 69,
+                      "part": 0
+                    }
+                  },
+                  "authorityDeltaPx": 68.55977068632671,
+                  "presentationDeltaPx": 0,
+                  "deltaPx": 0
+                }
+              ],
+              "paintedMuzzles": [
+                {
+                  "barrelIndex": 0,
+                  "part": 0,
+                  "x": 2466.354714473661,
+                  "y": 2206.0299980979366,
+                  "directArtCenter": {
+                    "x": 2466.354714473661,
+                    "y": 2206.0299980979366
+                  },
+                  "rigRoot": {
+                    "x": 2363.1470585884927,
+                    "y": 2136.980316706816
+                  },
+                  "rigRootMatrix": {
+                    "a": 1,
+                    "b": 0,
+                    "c": 0,
+                    "d": 1,
+                    "tx": 2363.14697265625,
+                    "ty": 2136.980224609375
+                  },
+                  "weaponLocal": {
+                    "x": 15.873404208611307,
+                    "y": -4.286120269913573,
+                    "rotation": 0.8241092892397326,
+                    "scaleX": 0.6171875,
+                    "scaleY": 0.6171875,
+                    "originX": 0.28,
+                    "originY": 0.65,
+                    "width": 256,
+                    "height": 69,
+                    "textureKey": "x2-buzzard-s-eye-marksman:part-1",
+                    "frameName": "__BASE"
+                  },
+                  "screen": {
+                    "x": 407.3799346433566,
+                    "y": 147.8616830144192
+                  },
+                  "artPoint": {
+                    "x": 255,
+                    "y": 21.7,
+                    "normalizedX": 0.99609375,
+                    "normalizedY": 0.3144927536231884,
+                    "width": 256,
+                    "height": 69,
+                    "part": 0
+                  }
+                }
+              ],
+              "predictedAtMs": 10100.10000000149
+            }
+          ],
+          "maxDeltaPx": 0,
+          "maxAuthorityDeltaPx": 68.55977068632671,
+          "passed": true,
+          "screenshot": "docs/owner-notes-audit-v8-evidence/bolt-action/muzzle-regression/captures/x2-buzzard-s-eye-marksman--strafing.jpg"
+        }
+      ],
+      "maxDeltaPx": 0,
+      "maxAuthorityDeltaPx": 80.9729232321629,
+      "initialAuthorityDeltaPx": 0.5002064655374356,
+      "passed": true
+    },
+    {
+      "weaponId": "x2-pale-horse-longgun",
+      "name": "Pale-Horse Longgun",
+      "deliveryKind": "gun",
+      "family": "marksman-rifle",
+      "spriteId": "x2-pale-horse-longgun",
+      "partFile": "part-1.png",
+      "displayLength": 150,
+      "expansion": true,
+      "dual": false,
+      "muzzleCount": 1,
+      "burstCount": 1,
+      "sampleReasons": [
+        "explicit"
+      ],
+      "attempts": 1,
+      "artPoint": {
+        "x": 255,
+        "y": 6.9,
+        "normalizedX": 0.99609375,
+        "normalizedY": 0.16046511627906979,
+        "width": 256,
+        "height": 43,
+        "part": 0
+      },
+      "artParts": [
+        {
+          "part": 0,
+          "partFile": "part-1.png",
+          "width": 256,
+          "height": 43,
+          "points": [
+            {
+              "x": 255,
+              "y": 6.9,
+              "normalizedX": 0.99609375,
+              "normalizedY": 0.16046511627906979,
+              "derived": {
+                "x": 255,
+                "y": 6.9
+              }
+            }
+          ]
+        }
+      ],
+      "cases": [
+        {
+          "mode": "stationary",
+          "acceptedSeq": 5,
+          "startTick": 193,
+          "startPlayer": {
+            "x": 2400,
+            "y": 2420
+          },
+          "finalPlayer": {
+            "x": 2351.203125,
+            "y": 2420.19691264634
+          },
+          "motionDistancePx": 17.88243184228493,
+          "shots": [
+            {
+              "kind": "projectile",
+              "shotIndex": 0,
+              "bornTick": 198,
+              "observedTick": 199,
+              "player": {
+                "x": 2382.11865234375,
+                "y": 2420.19691264634,
+                "aimDir": -0.015586812980473042
+              },
+              "motionDistancePx": 17.88243184228493,
+              "lanes": [
+                {
+                  "x": 2527.78291015625,
+                  "y": 2396.5076667785643,
+                  "bornTick": 198,
+                  "projectileId": "p10",
+                  "visibleSpawnOrigin": {
+                    "x": 2527.782857513579,
+                    "y": 2396.507727767425,
+                    "screen": {
+                      "x": 448.0286678026823,
+                      "y": 157.36193324636088
+                    }
+                  },
+                  "spriteMuzzleAtSpawn": {
+                    "x": 2527.782857513579,
+                    "y": 2396.507727767425,
+                    "screen": {
+                      "x": 448.0286678026823,
+                      "y": 157.36193324636088
+                    }
+                  },
+                  "screen": {
+                    "x": 448.02872044535343,
+                    "y": 157.36187225750018
+                  },
+                  "paintedMuzzle": {
+                    "barrelIndex": 0,
+                    "part": 0,
+                    "x": 2527.782857513579,
+                    "y": 2396.507727767425,
+                    "directArtCenter": {
+                      "x": 2527.782857513579,
+                      "y": 2396.507727767425
+                    },
+                    "rigRoot": {
+                      "x": 2400,
+                      "y": 2420
+                    },
+                    "rigRootMatrix": {
+                      "a": 1,
+                      "b": 0,
+                      "c": 0,
+                      "d": 1,
+                      "tx": 2400,
+                      "ty": 2420
+                    },
+                    "weaponLocal": {
+                      "x": 20.51944706268236,
+                      "y": -9.220425449633467,
+                      "rotation": -0.011011785005550223,
+                      "scaleX": 0.5859375,
+                      "scaleY": 0.5859375,
+                      "originX": 0.28,
+                      "originY": 0.68,
+                      "width": 256,
+                      "height": 43,
+                      "textureKey": "x2-pale-horse-longgun:part-1",
+                      "frameName": "__BASE"
+                    },
+                    "screen": {
+                      "x": 448.1303398739051,
+                      "y": 157.71524978412754
+                    },
+                    "artPoint": {
+                      "x": 255,
+                      "y": 6.9,
+                      "normalizedX": 0.99609375,
+                      "normalizedY": 0.16046511627906979,
+                      "width": 256,
+                      "height": 43,
+                      "part": 0
+                    }
+                  },
+                  "authorityDeltaPx": 0.00008056607195546193,
+                  "presentationDeltaPx": 0,
+                  "deltaPx": 0
+                }
+              ],
+              "paintedMuzzles": [
+                {
+                  "barrelIndex": 0,
+                  "part": 0,
+                  "x": 2527.782857513579,
+                  "y": 2396.507727767425,
+                  "directArtCenter": {
+                    "x": 2527.782857513579,
+                    "y": 2396.507727767425
+                  },
+                  "rigRoot": {
+                    "x": 2400,
+                    "y": 2420
+                  },
+                  "rigRootMatrix": {
+                    "a": 1,
+                    "b": 0,
+                    "c": 0,
+                    "d": 1,
+                    "tx": 2400,
+                    "ty": 2420
+                  },
+                  "weaponLocal": {
+                    "x": 20.51944706268236,
+                    "y": -9.220425449633467,
+                    "rotation": -0.011011785005550223,
+                    "scaleX": 0.5859375,
+                    "scaleY": 0.5859375,
+                    "originX": 0.28,
+                    "originY": 0.68,
+                    "width": 256,
+                    "height": 43,
+                    "textureKey": "x2-pale-horse-longgun:part-1",
+                    "frameName": "__BASE"
+                  },
+                  "screen": {
+                    "x": 448.1303398739051,
+                    "y": 157.71524978412754
+                  },
+                  "artPoint": {
+                    "x": 255,
+                    "y": 6.9,
+                    "normalizedX": 0.99609375,
+                    "normalizedY": 0.16046511627906979,
+                    "width": 256,
+                    "height": 43,
+                    "part": 0
+                  }
+                }
+              ],
+              "predictedAtMs": 11919.20000000298
+            }
+          ],
+          "maxDeltaPx": 0,
+          "maxAuthorityDeltaPx": 0.00008056607195546193,
+          "passed": true,
+          "screenshot": "docs/owner-notes-audit-v8-evidence/bolt-action/muzzle-regression/captures/x2-pale-horse-longgun--stationary.jpg"
+        },
+        {
+          "mode": "strafing",
+          "acceptedSeq": 6,
+          "startTick": 226,
+          "startPlayer": {
+            "x": 2400,
+            "y": 2420
+          },
+          "finalPlayer": {
+            "x": 2351.880126953125,
+            "y": 2143.3427734375
+          },
+          "motionDistancePx": 72.64711875223179,
+          "shots": [
+            {
+              "kind": "projectile",
+              "shotIndex": 0,
+              "bornTick": 233,
+              "observedTick": 234,
+              "player": {
+                "x": 2382.36669921875,
+                "y": 2349.525390625,
+                "aimDir": 0.3752906620502472
+              },
+              "motionDistancePx": 72.64711875223179,
+              "lanes": [
+                {
+                  "x": 2528.4878173828124,
+                  "y": 2365.857583618164,
+                  "bornTick": 233,
+                  "projectileId": "p11",
+                  "visibleSpawnOrigin": {
+                    "x": 2519.91261965898,
+                    "y": 2362.4342772713603,
+                    "screen": {
+                      "x": 440.3429131263433,
+                      "y": 173.53596834466225
+                    }
+                  },
+                  "spriteMuzzleAtSpawn": {
+                    "x": 2519.91261965898,
+                    "y": 2362.4342772713603,
+                    "screen": {
+                      "x": 440.3429131263433,
+                      "y": 173.53596834466225
+                    }
+                  },
+                  "screen": {
+                    "x": 448.9181108501757,
+                    "y": 176.9592746914659
+                  },
+                  "paintedMuzzle": {
+                    "barrelIndex": 0,
+                    "part": 0,
+                    "x": 2519.91261965898,
+                    "y": 2362.4342772713603,
+                    "directArtCenter": {
+                      "x": 2519.91261965898,
+                      "y": 2362.4342772713603
+                    },
+                    "rigRoot": {
+                      "x": 2400,
+                      "y": 2327.0960533333337
+                    },
+                    "rigRootMatrix": {
+                      "a": 1,
+                      "b": 0,
+                      "c": 0,
+                      "d": 1,
+                      "tx": 2400,
+                      "ty": 2327.095947265625
+                    },
+                    "weaponLocal": {
+                      "x": 19.400475297868077,
+                      "y": -4.742010163533648,
+                      "rotation": 0.5007034384183342,
+                      "scaleX": 0.5859375,
+                      "scaleY": 0.5859375,
+                      "originX": 0.28,
+                      "originY": 0.68,
+                      "width": 256,
+                      "height": 43,
+                      "textureKey": "x2-pale-horse-longgun:part-1",
+                      "frameName": "__BASE"
+                    },
+                    "screen": {
+                      "x": 440.5287554986344,
+                      "y": 155.48170785540742
+                    },
+                    "artPoint": {
+                      "x": 255,
+                      "y": 6.9,
+                      "normalizedX": 0.99609375,
+                      "normalizedY": 0.16046511627906979,
+                      "width": 256,
+                      "height": 43,
+                      "part": 0
+                    }
+                  },
+                  "authorityDeltaPx": 9.233257407160615,
+                  "presentationDeltaPx": 0,
+                  "deltaPx": 0
+                }
+              ],
+              "paintedMuzzles": [
+                {
+                  "barrelIndex": 0,
+                  "part": 0,
+                  "x": 2519.91261965898,
+                  "y": 2362.4342772713603,
+                  "directArtCenter": {
+                    "x": 2519.91261965898,
+                    "y": 2362.4342772713603
+                  },
+                  "rigRoot": {
+                    "x": 2400,
+                    "y": 2327.0960533333337
+                  },
+                  "rigRootMatrix": {
+                    "a": 1,
+                    "b": 0,
+                    "c": 0,
+                    "d": 1,
+                    "tx": 2400,
+                    "ty": 2327.095947265625
+                  },
+                  "weaponLocal": {
+                    "x": 19.400475297868077,
+                    "y": -4.742010163533648,
+                    "rotation": 0.5007034384183342,
+                    "scaleX": 0.5859375,
+                    "scaleY": 0.5859375,
+                    "originX": 0.28,
+                    "originY": 0.68,
+                    "width": 256,
+                    "height": 43,
+                    "textureKey": "x2-pale-horse-longgun:part-1",
+                    "frameName": "__BASE"
+                  },
+                  "screen": {
+                    "x": 440.5287554986344,
+                    "y": 155.48170785540742
+                  },
+                  "artPoint": {
+                    "x": 255,
+                    "y": 6.9,
+                    "normalizedX": 0.99609375,
+                    "normalizedY": 0.16046511627906979,
+                    "width": 256,
+                    "height": 43,
+                    "part": 0
+                  }
+                }
+              ],
+              "predictedAtMs": 13651.39999999851
+            }
+          ],
+          "maxDeltaPx": 0,
+          "maxAuthorityDeltaPx": 9.233257407160615,
+          "passed": true,
+          "screenshot": "docs/owner-notes-audit-v8-evidence/bolt-action/muzzle-regression/captures/x2-pale-horse-longgun--strafing.jpg"
+        }
+      ],
+      "maxDeltaPx": 0,
+      "maxAuthorityDeltaPx": 9.233257407160615,
+      "initialAuthorityDeltaPx": 0.00008056607195546193,
+      "passed": true
+    },
+    {
+      "weaponId": "x2-mauler-slug-thrower",
+      "name": "Mauler Slug-Thrower",
+      "deliveryKind": "gun",
+      "family": "heavy-ordnance",
+      "spriteId": "x2-mauler-slug-thrower",
+      "partFile": "part-1.png",
+      "displayLength": 160,
+      "expansion": true,
+      "dual": false,
+      "muzzleCount": 1,
+      "burstCount": 1,
+      "sampleReasons": [
+        "explicit"
+      ],
+      "attempts": 1,
+      "artPoint": {
+        "x": 255,
+        "y": 12.5,
+        "normalizedX": 0.99609375,
+        "normalizedY": 0.1893939393939394,
+        "width": 256,
+        "height": 66,
+        "part": 0
+      },
+      "artParts": [
+        {
+          "part": 0,
+          "partFile": "part-1.png",
+          "width": 256,
+          "height": 66,
+          "points": [
+            {
+              "x": 255,
+              "y": 12.5,
+              "normalizedX": 0.99609375,
+              "normalizedY": 0.1893939393939394,
+              "derived": {
+                "x": 255,
+                "y": 12.5
+              }
+            }
+          ]
+        }
+      ],
+      "cases": [
+        {
+          "mode": "stationary",
+          "acceptedSeq": 7,
+          "startTick": 267,
+          "startPlayer": {
+            "x": 2400,
+            "y": 2420
+          },
+          "finalPlayer": {
+            "x": 2339.002685546875,
+            "y": 2420.205810546875
+          },
+          "motionDistancePx": 22.35299828006936,
+          "shots": [
+            {
+              "kind": "projectile",
+              "shotIndex": 0,
+              "bornTick": 271,
+              "observedTick": 272,
+              "player": {
+                "x": 2377.64794921875,
+                "y": 2420.205810546875,
+                "aimDir": -0.013193759135901928
+              },
+              "motionDistancePx": 22.35299828006936,
+              "lanes": [
+                {
+                  "x": 2541.295556640625,
+                  "y": 2388.620362963852,
+                  "bornTick": 271,
+                  "projectileId": "p12",
+                  "visibleSpawnOrigin": {
+                    "x": 2541.295521433402,
+                    "y": 2388.620362923117,
+                    "screen": {
+                      "x": 461.3941787556132,
+                      "y": 149.3270065031893
+                    }
+                  },
+                  "spriteMuzzleAtSpawn": {
+                    "x": 2541.295521433402,
+                    "y": 2388.620362923117,
+                    "screen": {
+                      "x": 461.3941787556132,
+                      "y": 149.3270065031893
+                    }
+                  },
+                  "screen": {
+                    "x": 461.39421396283615,
+                    "y": 149.3270065439242
+                  },
+                  "paintedMuzzle": {
+                    "barrelIndex": 0,
+                    "part": 0,
+                    "x": 2541.295521433402,
+                    "y": 2388.620362923117,
+                    "directArtCenter": {
+                      "x": 2541.295521433402,
+                      "y": 2388.620362923117
+                    },
+                    "rigRoot": {
+                      "x": 2400,
+                      "y": 2420
+                    },
+                    "rigRootMatrix": {
+                      "a": 1,
+                      "b": 0,
+                      "c": 0,
+                      "d": 1,
+                      "tx": 2400,
+                      "ty": 2420
+                    },
+                    "weaponLocal": {
+                      "x": 20.51961328736713,
+                      "y": -9.203985051508507,
+                      "rotation": -0.009209017389581575,
+                      "scaleX": 0.625,
+                      "scaleY": 0.625,
+                      "originX": 0.24,
+                      "originY": 0.7,
+                      "width": 256,
+                      "height": 66,
+                      "textureKey": "x2-mauler-slug-thrower:part-1",
+                      "frameName": "__BASE"
+                    },
+                    "screen": {
+                      "x": 461.4367885375282,
+                      "y": 149.6322036052734
+                    },
+                    "artPoint": {
+                      "x": 255,
+                      "y": 12.5,
+                      "normalizedX": 0.99609375,
+                      "normalizedY": 0.1893939393939394,
+                      "width": 256,
+                      "height": 66,
+                      "part": 0
+                    }
+                  },
+                  "authorityDeltaPx": 0.0000352072465013696,
+                  "presentationDeltaPx": 0,
+                  "deltaPx": 0
+                }
+              ],
+              "paintedMuzzles": [
+                {
+                  "barrelIndex": 0,
+                  "part": 0,
+                  "x": 2541.295521433402,
+                  "y": 2388.620362923117,
+                  "directArtCenter": {
+                    "x": 2541.295521433402,
+                    "y": 2388.620362923117
+                  },
+                  "rigRoot": {
+                    "x": 2400,
+                    "y": 2420
+                  },
+                  "rigRootMatrix": {
+                    "a": 1,
+                    "b": 0,
+                    "c": 0,
+                    "d": 1,
+                    "tx": 2400,
+                    "ty": 2420
+                  },
+                  "weaponLocal": {
+                    "x": 20.51961328736713,
+                    "y": -9.203985051508507,
+                    "rotation": -0.009209017389581575,
+                    "scaleX": 0.625,
+                    "scaleY": 0.625,
+                    "originX": 0.24,
+                    "originY": 0.7,
+                    "width": 256,
+                    "height": 66,
+                    "textureKey": "x2-mauler-slug-thrower:part-1",
+                    "frameName": "__BASE"
+                  },
+                  "screen": {
+                    "x": 461.4367885375282,
+                    "y": 149.6322036052734
+                  },
+                  "artPoint": {
+                    "x": 255,
+                    "y": 12.5,
+                    "normalizedX": 0.99609375,
+                    "normalizedY": 0.1893939393939394,
+                    "width": 256,
+                    "height": 66,
+                    "part": 0
+                  }
+                }
+              ],
+              "predictedAtMs": 15585
+            }
+          ],
+          "maxDeltaPx": 0,
+          "maxAuthorityDeltaPx": 0.0000352072465013696,
+          "passed": true,
+          "screenshot": "docs/owner-notes-audit-v8-evidence/bolt-action/muzzle-regression/captures/x2-mauler-slug-thrower--stationary.jpg"
+        },
+        {
+          "mode": "strafing",
+          "acceptedSeq": 8,
+          "startTick": 299,
+          "startPlayer": {
+            "x": 2400,
+            "y": 2420
+          },
+          "finalPlayer": {
+            "x": 2339.8837890625,
+            "y": 2156.9866997508075
+          },
+          "motionDistancePx": 51.5,
+          "shots": [
+            {
+              "kind": "projectile",
+              "shotIndex": 0,
+              "bornTick": 305,
+              "observedTick": 305,
+              "player": {
+                "x": 2400,
+                "y": 2368.5,
+                "aimDir": 0.49062925577163696
+              },
+              "motionDistancePx": 51.5,
+              "lanes": [
+                {
+                  "x": 2543.182586669922,
+                  "y": 2360.6864051818848,
+                  "bornTick": 305,
+                  "projectileId": "p13",
+                  "visibleSpawnOrigin": {
+                    "x": 2537.4860151942516,
+                    "y": 2362.986196152487,
+                    "screen": {
+                      "x": 458.03083635020994,
+                      "y": 171.83632587991042
+                    }
+                  },
+                  "spriteMuzzleAtSpawn": {
+                    "x": 2537.4860151942516,
+                    "y": 2362.986196152487,
+                    "screen": {
+                      "x": 458.03083635020994,
+                      "y": 171.83632587991042
+                    }
+                  },
+                  "screen": {
+                    "x": 463.72740782588016,
+                    "y": 169.5365349093081
+                  },
+                  "paintedMuzzle": {
+                    "barrelIndex": 0,
+                    "part": 0,
+                    "x": 2537.4860151942516,
+                    "y": 2362.986196152487,
+                    "directArtCenter": {
+                      "x": 2537.4860151942516,
+                      "y": 2362.986196152487
+                    },
+                    "rigRoot": {
+                      "x": 2400,
+                      "y": 2333.7571855405017
+                    },
+                    "rigRootMatrix": {
+                      "a": 1,
+                      "b": 0,
+                      "c": 0,
+                      "d": 1,
+                      "tx": 2400,
+                      "ty": 2333.757080078125
+                    },
+                    "weaponLocal": {
+                      "x": 19.589058699464672,
+                      "y": -5.105810465769958,
+                      "rotation": 0.45576834814165323,
+                      "scaleX": 0.625,
+                      "scaleY": 0.625,
+                      "originX": 0.24,
+                      "originY": 0.7,
+                      "width": 256,
+                      "height": 66,
+                      "textureKey": "x2-mauler-slug-thrower:part-1",
+                      "frameName": "__BASE"
+                    },
+                    "screen": {
+                      "x": 458.26608285738394,
+                      "y": 155.6906634347497
+                    },
+                    "artPoint": {
+                      "x": 255,
+                      "y": 12.5,
+                      "normalizedX": 0.99609375,
+                      "normalizedY": 0.1893939393939394,
+                      "width": 256,
+                      "height": 66,
+                      "part": 0
+                    }
+                  },
+                  "authorityDeltaPx": 6.143286179715511,
+                  "presentationDeltaPx": 0,
+                  "deltaPx": 0
+                }
+              ],
+              "paintedMuzzles": [
+                {
+                  "barrelIndex": 0,
+                  "part": 0,
+                  "x": 2537.4860151942516,
+                  "y": 2362.986196152487,
+                  "directArtCenter": {
+                    "x": 2537.4860151942516,
+                    "y": 2362.986196152487
+                  },
+                  "rigRoot": {
+                    "x": 2400,
+                    "y": 2333.7571855405017
+                  },
+                  "rigRootMatrix": {
+                    "a": 1,
+                    "b": 0,
+                    "c": 0,
+                    "d": 1,
+                    "tx": 2400,
+                    "ty": 2333.757080078125
+                  },
+                  "weaponLocal": {
+                    "x": 19.589058699464672,
+                    "y": -5.105810465769958,
+                    "rotation": 0.45576834814165323,
+                    "scaleX": 0.625,
+                    "scaleY": 0.625,
+                    "originX": 0.24,
+                    "originY": 0.7,
+                    "width": 256,
+                    "height": 66,
+                    "textureKey": "x2-mauler-slug-thrower:part-1",
+                    "frameName": "__BASE"
+                  },
+                  "screen": {
+                    "x": 458.26608285738394,
+                    "y": 155.6906634347497
+                  },
+                  "artPoint": {
+                    "x": 255,
+                    "y": 12.5,
+                    "normalizedX": 0.99609375,
+                    "normalizedY": 0.1893939393939394,
+                    "width": 256,
+                    "height": 66,
+                    "part": 0
+                  }
+                }
+              ],
+              "predictedAtMs": 17248
+            }
+          ],
+          "maxDeltaPx": 0,
+          "maxAuthorityDeltaPx": 6.143286179715511,
+          "passed": true,
+          "screenshot": "docs/owner-notes-audit-v8-evidence/bolt-action/muzzle-regression/captures/x2-mauler-slug-thrower--strafing.jpg"
+        }
+      ],
+      "maxDeltaPx": 0,
+      "maxAuthorityDeltaPx": 6.143286179715511,
+      "initialAuthorityDeltaPx": 0.0000352072465013696,
+      "passed": true
+    },
+    {
+      "weaponId": "x2-barrett-50-cal-sniper",
+      "name": "Barrett .50-Cal Sniper",
+      "deliveryKind": "gun",
+      "family": "marksman-rifle",
+      "spriteId": "x2-barrett-50-cal-sniper",
+      "partFile": "part-1.png",
+      "displayLength": 198,
+      "expansion": true,
+      "dual": false,
+      "muzzleCount": 1,
+      "burstCount": 1,
+      "sampleReasons": [
+        "explicit"
+      ],
+      "attempts": 1,
+      "artPoint": {
+        "x": 255,
+        "y": 15.5,
+        "normalizedX": 0.99609375,
+        "normalizedY": 0.3229166666666667,
+        "width": 256,
+        "height": 48,
+        "part": 0
+      },
+      "artParts": [
+        {
+          "part": 0,
+          "partFile": "part-1.png",
+          "width": 256,
+          "height": 48,
+          "points": [
+            {
+              "x": 255,
+              "y": 15.5,
+              "normalizedX": 0.99609375,
+              "normalizedY": 0.3229166666666667,
+              "derived": {
+                "x": 255,
+                "y": 15.5
+              }
+            }
+          ]
+        }
+      ],
+      "cases": [
+        {
+          "mode": "stationary",
+          "acceptedSeq": 9,
+          "startTick": 339,
+          "startPlayer": {
+            "x": 2400,
+            "y": 2420
+          },
+          "finalPlayer": {
+            "x": 2277.194091796875,
+            "y": 2420.784423828125
+          },
+          "motionDistancePx": 0,
+          "shots": [
+            {
+              "kind": "projectile",
+              "shotIndex": 0,
+              "bornTick": 345,
+              "observedTick": 345,
+              "player": {
+                "x": 2400,
+                "y": 2420,
+                "aimDir": -0.01515874918550253
+              },
+              "motionDistancePx": 0,
+              "lanes": [
+                {
+                  "x": 2568.1114990234373,
+                  "y": 2397.4284706115723,
+                  "bornTick": 345,
+                  "projectileId": "p14",
+                  "visibleSpawnOrigin": {
+                    "x": 2564.451051253361,
+                    "y": 2397.94845547915,
+                    "screen": {
+                      "x": 484.54923445284203,
+                      "y": 158.52980964853577
+                    }
+                  },
+                  "spriteMuzzleAtSpawn": {
+                    "x": 2564.451051253361,
+                    "y": 2397.94845547915,
+                    "screen": {
+                      "x": 484.54923445284203,
+                      "y": 158.52980964853577
+                    }
+                  },
+                  "screen": {
+                    "x": 488.2096822229182,
+                    "y": 158.00982478095784
+                  },
+                  "paintedMuzzle": {
+                    "barrelIndex": 0,
+                    "part": 0,
+                    "x": 2568.1114335250395,
+                    "y": 2397.428452396745,
+                    "directArtCenter": {
+                      "x": 2568.1114335250395,
+                      "y": 2397.428452396745
+                    },
+                    "rigRoot": {
+                      "x": 2400,
+                      "y": 2420
+                    },
+                    "rigRootMatrix": {
+                      "a": 1,
+                      "b": 0,
+                      "c": 0,
+                      "d": 1,
+                      "tx": 2400,
+                      "ty": 2420
+                    },
+                    "weaponLocal": {
+                      "x": 20.51947651205832,
+                      "y": -9.217714615164134,
+                      "rotation": -0.010714526843548455,
+                      "scaleX": 0.7734375,
+                      "scaleY": 0.7734375,
+                      "originX": 0.25,
+                      "originY": 0.64,
+                      "width": 256,
+                      "height": 48,
+                      "textureKey": "x2-barrett-50-cal-sniper:part-1",
+                      "frameName": "__BASE"
+                    },
+                    "screen": {
+                      "x": 488.31014126782384,
+                      "y": 158.60502410522167
+                    },
+                    "artPoint": {
+                      "x": 255,
+                      "y": 15.5,
+                      "normalizedX": 0.99609375,
+                      "normalizedY": 0.3229166666666667,
+                      "width": 256,
+                      "height": 48,
+                      "part": 0
+                    }
+                  },
+                  "authorityDeltaPx": 0.00006798396908789999,
+                  "presentationDeltaPx": 0,
+                  "deltaPx": 0
+                }
+              ],
+              "paintedMuzzles": [
+                {
+                  "barrelIndex": 0,
+                  "part": 0,
+                  "x": 2568.1114335250395,
+                  "y": 2397.428452396745,
+                  "directArtCenter": {
+                    "x": 2568.1114335250395,
+                    "y": 2397.428452396745
+                  },
+                  "rigRoot": {
+                    "x": 2400,
+                    "y": 2420
+                  },
+                  "rigRootMatrix": {
+                    "a": 1,
+                    "b": 0,
+                    "c": 0,
+                    "d": 1,
+                    "tx": 2400,
+                    "ty": 2420
+                  },
+                  "weaponLocal": {
+                    "x": 20.51947651205832,
+                    "y": -9.217714615164134,
+                    "rotation": -0.010714526843548455,
+                    "scaleX": 0.7734375,
+                    "scaleY": 0.7734375,
+                    "originX": 0.25,
+                    "originY": 0.64,
+                    "width": 256,
+                    "height": 48,
+                    "textureKey": "x2-barrett-50-cal-sniper:part-1",
+                    "frameName": "__BASE"
+                  },
+                  "screen": {
+                    "x": 488.31014126782384,
+                    "y": 158.60502410522167
+                  },
+                  "artPoint": {
+                    "x": 255,
+                    "y": 15.5,
+                    "normalizedX": 0.99609375,
+                    "normalizedY": 0.3229166666666667,
+                    "width": 256,
+                    "height": 48,
+                    "part": 0
+                  }
+                }
+              ],
+              "predictedAtMs": 19209.10000000149
+            }
+          ],
+          "maxDeltaPx": 0,
+          "maxAuthorityDeltaPx": 0.00006798396908789999,
+          "passed": true,
+          "screenshot": "docs/owner-notes-audit-v8-evidence/bolt-action/muzzle-regression/captures/x2-barrett-50-cal-sniper--stationary.jpg"
+        },
+        {
+          "mode": "strafing",
+          "acceptedSeq": 10,
+          "startTick": 370,
+          "startPlayer": {
+            "x": 2400,
+            "y": 2420
+          },
+          "finalPlayer": {
+            "x": 2278.263916015625,
+            "y": 2199.143902807152
+          },
+          "motionDistancePx": 67.5,
+          "shots": [
+            {
+              "kind": "projectile",
+              "shotIndex": 0,
+              "bornTick": 379,
+              "observedTick": 379,
+              "player": {
+                "x": 2400,
+                "y": 2352.5,
+                "aimDir": 0.5038937926292419
+              },
+              "motionDistancePx": 67.5,
+              "lanes": [
+                {
+                  "x": 2568.4267700195314,
+                  "y": 2352.4363754272463,
+                  "bornTick": 379,
+                  "projectileId": "p15",
+                  "visibleSpawnOrigin": {
+                    "x": 2553.3190873956414,
+                    "y": 2361.342903980564,
+                    "screen": {
+                      "x": 473.91180931214103,
+                      "y": 190.9815975003844
+                    }
+                  },
+                  "spriteMuzzleAtSpawn": {
+                    "x": 2553.3190873956414,
+                    "y": 2361.342903980564,
+                    "screen": {
+                      "x": 473.91180931214103,
+                      "y": 190.9815975003844
+                    }
+                  },
+                  "screen": {
+                    "x": 489.01949193603105,
+                    "y": 182.07506894706648
+                  },
+                  "paintedMuzzle": {
+                    "barrelIndex": 0,
+                    "part": 0,
+                    "x": 2554.4358120528177,
+                    "y": 2381.464415714608,
+                    "directArtCenter": {
+                      "x": 2554.4358120528177,
+                      "y": 2381.464415714608
+                    },
+                    "rigRoot": {
+                      "x": 2400,
+                      "y": 2325.1613333333335
+                    },
+                    "rigRootMatrix": {
+                      "a": 1,
+                      "b": 0,
+                      "c": 0,
+                      "d": 1,
+                      "tx": 2400,
+                      "ty": 2325.161376953125
+                    },
+                    "weaponLocal": {
+                      "x": 19.38646727317952,
+                      "y": -4.716508147568288,
+                      "rotation": 0.5038937913230654,
+                      "scaleX": 0.7734375,
+                      "scaleY": 0.7734375,
+                      "originX": 0.25,
+                      "originY": 0.64,
+                      "width": 256,
+                      "height": 48,
+                      "textureKey": "x2-barrett-50-cal-sniper:part-1",
+                      "frameName": "__BASE"
+                    },
+                    "screen": {
+                      "x": 475.6510866613635,
+                      "y": 176.32254543623185
+                    },
+                    "artPoint": {
+                      "x": 255,
+                      "y": 15.5,
+                      "normalizedX": 0.99609375,
+                      "normalizedY": 0.3229166666666667,
+                      "width": 256,
+                      "height": 48,
+                      "part": 0
+                    }
+                  },
+                  "authorityDeltaPx": 32.22381150253723,
+                  "presentationDeltaPx": 0,
+                  "deltaPx": 0
+                }
+              ],
+              "paintedMuzzles": [
+                {
+                  "barrelIndex": 0,
+                  "part": 0,
+                  "x": 2554.4358120528177,
+                  "y": 2381.464415714608,
+                  "directArtCenter": {
+                    "x": 2554.4358120528177,
+                    "y": 2381.464415714608
+                  },
+                  "rigRoot": {
+                    "x": 2400,
+                    "y": 2325.1613333333335
+                  },
+                  "rigRootMatrix": {
+                    "a": 1,
+                    "b": 0,
+                    "c": 0,
+                    "d": 1,
+                    "tx": 2400,
+                    "ty": 2325.161376953125
+                  },
+                  "weaponLocal": {
+                    "x": 19.38646727317952,
+                    "y": -4.716508147568288,
+                    "rotation": 0.5038937913230654,
+                    "scaleX": 0.7734375,
+                    "scaleY": 0.7734375,
+                    "originX": 0.25,
+                    "originY": 0.64,
+                    "width": 256,
+                    "height": 48,
+                    "textureKey": "x2-barrett-50-cal-sniper:part-1",
+                    "frameName": "__BASE"
+                  },
+                  "screen": {
+                    "x": 475.6510866613635,
+                    "y": 176.32254543623185
+                  },
+                  "artPoint": {
+                    "x": 255,
+                    "y": 15.5,
+                    "normalizedX": 0.99609375,
+                    "normalizedY": 0.3229166666666667,
+                    "width": 256,
+                    "height": 48,
+                    "part": 0
+                  }
+                }
+              ],
+              "predictedAtMs": 20908.70000000298
+            }
+          ],
+          "maxDeltaPx": 0,
+          "maxAuthorityDeltaPx": 32.22381150253723,
+          "passed": true,
+          "screenshot": "docs/owner-notes-audit-v8-evidence/bolt-action/muzzle-regression/captures/x2-barrett-50-cal-sniper--strafing.jpg"
+        }
+      ],
+      "maxDeltaPx": 0,
+      "maxAuthorityDeltaPx": 32.22381150253723,
+      "initialAuthorityDeltaPx": 0.00006798396908789999,
+      "passed": true
+    },
+    {
+      "weaponId": "x2-sidewinder-twin-rifles",
+      "name": "Sidewinder Twin-Rifles",
+      "deliveryKind": "gun",
+      "family": "lever-rifle",
+      "spriteId": "x2-sidewinder-twin-rifles",
+      "partFile": "part-1.png",
+      "displayLength": 104,
+      "expansion": true,
+      "dual": true,
+      "muzzleCount": 2,
+      "burstCount": 1,
+      "sampleReasons": [
+        "explicit"
+      ],
+      "attempts": 1,
+      "artPoint": {
+        "x": 255,
+        "y": 13.8,
+        "normalizedX": 0.99609375,
+        "normalizedY": 0.16428571428571428,
+        "width": 256,
+        "height": 84,
+        "part": 0
+      },
+      "artParts": [
+        {
+          "part": 0,
+          "partFile": "part-1.png",
+          "width": 256,
+          "height": 84,
+          "points": [
+            {
+              "x": 255,
+              "y": 13.8,
+              "normalizedX": 0.99609375,
+              "normalizedY": 0.16428571428571428,
+              "derived": {
+                "x": 255,
+                "y": 13.8
+              }
+            }
+          ]
+        },
+        {
+          "part": 1,
+          "partFile": "part-2.png",
+          "width": 256,
+          "height": 84,
+          "points": [
+            {
+              "x": 255,
+              "y": 13.8,
+              "normalizedX": 0.99609375,
+              "normalizedY": 0.16428571428571428,
+              "derived": {
+                "x": 255,
+                "y": 13.8
+              }
+            }
+          ]
+        }
+      ],
+      "cases": [
+        {
+          "mode": "stationary",
+          "acceptedSeq": 11,
+          "startTick": 412,
+          "startPlayer": {
+            "x": 2400,
+            "y": 2420
+          },
+          "finalPlayer": {
+            "x": 2385.23974609375,
+            "y": 2420.031494140625
+          },
+          "motionDistancePx": 0,
+          "shots": [
+            {
+              "kind": "projectile",
+              "shotIndex": 0,
+              "bornTick": 418,
+              "observedTick": 418,
+              "player": {
+                "x": 2400,
+                "y": 2420,
+                "aimDir": -0.007982486858963966
+              },
+              "motionDistancePx": 0,
+              "lanes": [
+                {
+                  "x": 2508.447573852539,
+                  "y": 2398.875876045227,
+                  "bornTick": 418,
+                  "projectileId": "p16",
+                  "visibleSpawnOrigin": {
+                    "x": 2499.9248368333033,
+                    "y": 2398.9242354516955,
+                    "screen": {
+                      "x": 422.308352471533,
+                      "y": 159.3497680891105
+                    }
+                  },
+                  "spriteMuzzleAtSpawn": {
+                    "x": 2499.9248368333033,
+                    "y": 2398.9242354516955,
+                    "screen": {
+                      "x": 422.308352471533,
+                      "y": 159.3497680891105
+                    }
+                  },
+                  "screen": {
+                    "x": 430.8310894907686,
+                    "y": 159.30140868264198
+                  },
+                  "paintedMuzzle": {
+                    "barrelIndex": 0,
+                    "part": 0,
+                    "x": 2508.4192075779906,
+                    "y": 2398.648914027617,
+                    "directArtCenter": {
+                      "x": 2508.4192075779906,
+                      "y": 2398.648914027617
+                    },
+                    "rigRoot": {
+                      "x": 2400,
+                      "y": 2420
+                    },
+                    "rigRootMatrix": {
+                      "a": 1,
+                      "b": 0,
+                      "c": 0,
+                      "d": 1,
+                      "tx": 2400,
+                      "ty": 2420
+                    },
+                    "weaponLocal": {
+                      "x": 20.519709437928103,
+                      "y": -9.192799503879398,
+                      "rotation": -0.00798248651501865,
+                      "scaleX": 0.40625,
+                      "scaleY": 0.40625,
+                      "originX": 0.15,
+                      "originY": 0.5,
+                      "width": 256,
+                      "height": 84,
+                      "textureKey": "x2-sidewinder-twin-rifles:part-1",
+                      "frameName": "__BASE"
+                    },
+                    "screen": {
+                      "x": 428.6230743166807,
+                      "y": 159.52527497886012
+                    },
+                    "artPoint": {
+                      "x": 255,
+                      "y": 13.8,
+                      "normalizedX": 0.99609375,
+                      "normalizedY": 0.16428571428571428,
+                      "width": 256,
+                      "height": 84,
+                      "part": 0
+                    }
+                  },
+                  "authorityDeltaPx": 0.22872779229745624,
+                  "presentationDeltaPx": 0,
+                  "deltaPx": 0
+                }
+              ],
+              "paintedMuzzles": [
+                {
+                  "barrelIndex": 0,
+                  "part": 0,
+                  "x": 2508.4192075779906,
+                  "y": 2398.648914027617,
+                  "directArtCenter": {
+                    "x": 2508.4192075779906,
+                    "y": 2398.648914027617
+                  },
+                  "rigRoot": {
+                    "x": 2400,
+                    "y": 2420
+                  },
+                  "rigRootMatrix": {
+                    "a": 1,
+                    "b": 0,
+                    "c": 0,
+                    "d": 1,
+                    "tx": 2400,
+                    "ty": 2420
+                  },
+                  "weaponLocal": {
+                    "x": 20.519709437928103,
+                    "y": -9.192799503879398,
+                    "rotation": -0.00798248651501865,
+                    "scaleX": 0.40625,
+                    "scaleY": 0.40625,
+                    "originX": 0.15,
+                    "originY": 0.5,
+                    "width": 256,
+                    "height": 84,
+                    "textureKey": "x2-sidewinder-twin-rifles:part-1",
+                    "frameName": "__BASE"
+                  },
+                  "screen": {
+                    "x": 428.6230743166807,
+                    "y": 159.52527497886012
+                  },
+                  "artPoint": {
+                    "x": 255,
+                    "y": 13.8,
+                    "normalizedX": 0.99609375,
+                    "normalizedY": 0.16428571428571428,
+                    "width": 256,
+                    "height": 84,
+                    "part": 0
+                  }
+                }
+              ],
+              "predictedAtMs": 22880.10000000149
+            }
+          ],
+          "maxDeltaPx": 0,
+          "maxAuthorityDeltaPx": 0.22872779229745624,
+          "passed": true,
+          "screenshot": "docs/owner-notes-audit-v8-evidence/bolt-action/muzzle-regression/captures/x2-sidewinder-twin-rifles--stationary.jpg"
+        },
+        {
+          "mode": "strafing",
+          "acceptedSeq": 12,
+          "startTick": 444,
+          "startPlayer": {
+            "x": 2400,
+            "y": 2420
+          },
+          "finalPlayer": {
+            "x": 2385.367431640625,
+            "y": 2181.499267578125
+          },
+          "motionDistancePx": 51.5,
+          "shots": [
+            {
+              "kind": "projectile",
+              "shotIndex": 0,
+              "bornTick": 451,
+              "observedTick": 451,
+              "player": {
+                "x": 2400,
+                "y": 2368.5,
+                "aimDir": 0.3918082118034363
+              },
+              "motionDistancePx": 51.5,
+              "lanes": [
+                {
+                  "x": 2497.4662536621095,
+                  "y": 2360.872062842737,
+                  "bornTick": 451,
+                  "projectileId": "p17",
+                  "visibleSpawnOrigin": {
+                    "x": 2491.0752312075097,
+                    "y": 2347.3184366308906,
+                    "screen": {
+                      "x": 411.19271930168316,
+                      "y": 162.1246001752852
+                    }
+                  },
+                  "spriteMuzzleAtSpawn": {
+                    "x": 2491.0752312075097,
+                    "y": 2347.3184366308906,
+                    "screen": {
+                      "x": 411.19271930168316,
+                      "y": 162.1246001752852
+                    }
+                  },
+                  "screen": {
+                    "x": 417.58374175628296,
+                    "y": 175.67822638713142
+                  },
+                  "paintedMuzzle": {
+                    "barrelIndex": 0,
+                    "part": 1,
+                    "x": 2491.0752312075097,
+                    "y": 2347.3184366308906,
+                    "directArtCenter": {
+                      "x": 2491.0752312075097,
+                      "y": 2347.3184366308906
+                    },
+                    "rigRoot": {
+                      "x": 2400,
+                      "y": 2322.0125333333335
+                    },
+                    "rigRootMatrix": {
+                      "a": 1,
+                      "b": 0,
+                      "c": 0,
+                      "d": 1,
+                      "tx": 2400,
+                      "ty": 2322.012451171875
+                    },
+                    "weaponLocal": {
+                      "x": 8.59645058350935,
+                      "y": -7.4262074082981275,
+                      "rotation": 0.5072587161020206,
+                      "scaleX": 0.40625,
+                      "scaleY": 0.40625,
+                      "originX": 0.15,
+                      "originY": 0.5,
+                      "width": 256,
+                      "height": 84,
+                      "textureKey": "x2-sidewinder-twin-rifles:part-2",
+                      "frameName": "__BASE"
+                    },
+                    "screen": {
+                      "x": 411.2413147364887,
+                      "y": 144.26394616214657
+                    },
+                    "artPoint": {
+                      "x": 255,
+                      "y": 13.8,
+                      "normalizedX": 0.99609375,
+                      "normalizedY": 0.16428571428571428,
+                      "width": 256,
+                      "height": 84,
+                      "part": 1
+                    }
+                  },
+                  "authorityDeltaPx": 14.984857406917289,
+                  "presentationDeltaPx": 0,
+                  "deltaPx": 0
+                }
+              ],
+              "paintedMuzzles": [
+                {
+                  "barrelIndex": 0,
+                  "part": 1,
+                  "x": 2491.0752312075097,
+                  "y": 2347.3184366308906,
+                  "directArtCenter": {
+                    "x": 2491.0752312075097,
+                    "y": 2347.3184366308906
+                  },
+                  "rigRoot": {
+                    "x": 2400,
+                    "y": 2322.0125333333335
+                  },
+                  "rigRootMatrix": {
+                    "a": 1,
+                    "b": 0,
+                    "c": 0,
+                    "d": 1,
+                    "tx": 2400,
+                    "ty": 2322.012451171875
+                  },
+                  "weaponLocal": {
+                    "x": 8.59645058350935,
+                    "y": -7.4262074082981275,
+                    "rotation": 0.5072587161020206,
+                    "scaleX": 0.40625,
+                    "scaleY": 0.40625,
+                    "originX": 0.15,
+                    "originY": 0.5,
+                    "width": 256,
+                    "height": 84,
+                    "textureKey": "x2-sidewinder-twin-rifles:part-2",
+                    "frameName": "__BASE"
+                  },
+                  "screen": {
+                    "x": 411.2413147364887,
+                    "y": 144.26394616214657
+                  },
+                  "artPoint": {
+                    "x": 255,
+                    "y": 13.8,
+                    "normalizedX": 0.99609375,
+                    "normalizedY": 0.16428571428571428,
+                    "width": 256,
+                    "height": 84,
+                    "part": 1
+                  }
+                }
+              ],
+              "predictedAtMs": 24561.10000000149
+            }
+          ],
+          "maxDeltaPx": 0,
+          "maxAuthorityDeltaPx": 14.984857406917289,
+          "passed": true,
+          "screenshot": "docs/owner-notes-audit-v8-evidence/bolt-action/muzzle-regression/captures/x2-sidewinder-twin-rifles--strafing.jpg"
+        }
+      ],
+      "maxDeltaPx": 0,
+      "maxAuthorityDeltaPx": 14.984857406917289,
+      "initialAuthorityDeltaPx": 0.22872779229745624,
+      "passed": true
+    }
+  ]
+}

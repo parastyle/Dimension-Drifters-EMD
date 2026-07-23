@@ -176,6 +176,28 @@
     "barrelMode": "parallel"
   },
   {
+    "id": "x2-barrett-50-cal-sniper",
+    "name": "Barrett .50-Cal Sniper",
+    "sprite": "x2-barrett-50-cal-sniper",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 15.5
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 15.5
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
     "id": "x2-boneash-scattergun-rifle",
     "name": "Boneash Scattergun-Rifle",
     "sprite": "x2-boneash-scattergun-rifle",

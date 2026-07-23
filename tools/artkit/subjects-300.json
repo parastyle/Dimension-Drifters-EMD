@@ -6446,5 +6446,15 @@
     "palette": { "primary": "#66645B", "accent": "#C49A5A" },
     "tags": ["weapon", "melee", "greatsword", "physical", "2H", "XL", "mid", "brutalist", "rock"],
     "cardartAction": "committed into a crushing horizon cut while a jagged connected stone blade thrusts out beneath the real point and sheds only a few close chips"
+  },
+  {
+    "id": "x2-barrett-50-cal-sniper",
+    "name": "Barrett .50-Cal Sniper",
+    "tier": "medium",
+    "dimension": "cross-dimension",
+    "prompt": "Weapon-only in-world sprite (no character, no hands, no background scene): Barrett .50-Cal Sniper, an original western-gothic .50-cal anti-materiel bolt-action rifle. An exceptionally long gunmetal barrel ends in a huge rectangular two-port muzzle brake; a slab-sided weathered receiver carries a clearly raised swept bolt handle, a long brass-and-black scope, a five-round box magazine, rust-red leather cheek rest, and a heavily braced frontier stock. Trademark-distinct original design with no real manufacturer marks. Flat orthographic full side-profile, stock LEFT and muzzle RIGHT, fully visible, 5-6 restrained cel-shaded colours, thick uneven black outline, transparent-ready silhouette, no muzzle flash, smoke, glow, text, logo, border, ground, or shadow.",
+    "palette": { "primary": "#343A40", "accent": "#C49152" },
+    "tags": ["weapon", "ranged", "marksman-rifle", "physical", "2H", "XL", "long", "bolt-action", "anti-materiel"],
+    "cardartAction": "braced at a dead-still firing line as the enormous brake vents one ivory-orange blast and a single copper .50 slug tears into the ash haze"
   }
 ]

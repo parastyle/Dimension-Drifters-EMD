@@ -178,6 +178,28 @@ export const WEAPON_ART_MUZZLES = {
     "salvoMode": "parallel",
     "barrelMode": "parallel"
   },
+  "x2-barrett-50-cal-sniper": {
+    "sprite": "x2-barrett-50-cal-sniper",
+    "parts": [
+      {
+        "width": 256,
+        "height": 48
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 15.5,
+        "derived": {
+          "x": 255,
+          "y": 15.5
+        }
+      }
+    ],
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
   "x2-boneash-scattergun-rifle": {
     "sprite": "x2-boneash-scattergun-rifle",
     "parts": [

@@ -5457,7 +5457,21 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "rangeBand": "long",
       "scaling": [
         "DEX"
+      ],
+      "handling": [
+        "bolt"
       ]
+    },
+    "gripPoints": {
+      "primary": {
+        "x": 0.28,
+        "y": 0.65
+      },
+      "secondary": {
+        "x": 0.39,
+        "y": 0.61,
+        "role": "bolt"
+      }
     },
     "requirements": {
       "dex": 12
@@ -5835,7 +5849,21 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "rangeBand": "long",
       "scaling": [
         "DEX"
+      ],
+      "handling": [
+        "bolt"
       ]
+    },
+    "gripPoints": {
+      "primary": {
+        "x": 0.29,
+        "y": 0.67
+      },
+      "secondary": {
+        "x": 0.43,
+        "y": 0.61,
+        "role": "bolt"
+      }
     },
     "requirements": {
       "dex": 9
@@ -6198,7 +6226,21 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "rangeBand": "long",
       "scaling": [
         "DEX"
+      ],
+      "handling": [
+        "bolt"
       ]
+    },
+    "gripPoints": {
+      "primary": {
+        "x": 0.28,
+        "y": 0.68
+      },
+      "secondary": {
+        "x": 0.38,
+        "y": 0.62,
+        "role": "bolt"
+      }
     },
     "requirements": {
       "dex": 10
@@ -8176,7 +8218,21 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "rangeBand": "long",
       "scaling": [
         "STR"
+      ],
+      "handling": [
+        "bolt"
       ]
+    },
+    "gripPoints": {
+      "primary": {
+        "x": 0.24,
+        "y": 0.7
+      },
+      "secondary": {
+        "x": 0.35,
+        "y": 0.64,
+        "role": "bolt"
+      }
     },
     "requirements": {
       "str": 13
@@ -15612,6 +15668,73 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     },
     "twoHanded": true,
     "durability": 90
+  },
+  "x2-barrett-50-cal-sniper": {
+    "id": "x2-barrett-50-cal-sniper",
+    "name": "Barrett .50-Cal Sniper",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "A",
+      "str": "B"
+    },
+    "damage": 34,
+    "range": 320,
+    "halfArc": 0.5,
+    "cooldown": 1.15,
+    "displayLength": 198,
+    "swingArc": 1.8,
+    "gripFrac": 0.1,
+    "tags": {
+      "grip": "2H",
+      "size": "XL",
+      "delivery": "projectile",
+      "fireMode": "tap-charge",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "marksman-rifle",
+      "rangeBand": "long",
+      "scaling": [
+        "DEX",
+        "STR"
+      ],
+      "handling": [
+        "bolt"
+      ]
+    },
+    "gripPoints": {
+      "primary": {
+        "x": 0.25,
+        "y": 0.64
+      },
+      "secondary": {
+        "x": 0.38,
+        "y": 0.61,
+        "role": "bolt"
+      }
+    },
+    "description": "A deliberate anti-materiel bolt rifle whose huge brake, long barrel, and slab receiver turn one accepted shot into a verdict against armor.",
+    "requirements": {
+      "dex": 12,
+      "str": 13
+    },
+    "twoHanded": true,
+    "gun": {
+      "damage": 34,
+      "projectileSpeed": 2100,
+      "range": 1100,
+      "fireRate": 1.15,
+      "magazine": 5,
+      "reloadSeconds": 2.8,
+      "bulletKind": "slug",
+      "muzzle": "heavy",
+      "recoil": 0.005,
+      "projectileArt": "generated",
+      "sonicBoomRing": true,
+      "projectileVisualScale": 1.35,
+      "userKnockbackMultiplier": 1.6,
+      "pierce": 5,
+      "muzzleColor": 16757060
+    }
   }
 };
 

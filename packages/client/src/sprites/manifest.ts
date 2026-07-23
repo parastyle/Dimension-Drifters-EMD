@@ -6016,6 +6016,32 @@ export const SPRITES = {
       }
     ]
   },
+  "x2-barrett-50-cal-sniper": {
+    "id": "x2-barrett-50-cal-sniper",
+    "kind": "weapon",
+    "canvas": {
+      "w": 260,
+      "h": 97
+    },
+    "body": {
+      "cx": 100.75,
+      "cy": 47.65,
+      "w": 256,
+      "h": 48
+    },
+    "parts": [
+      {
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 48,
+        "cx": 100.75,
+        "cy": 47.65,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
+  },
   "x2-blightfork-glaive": {
     "id": "x2-blightfork-glaive",
     "kind": "weapon",

@@ -31,6 +31,11 @@ export const GUN_SPRITE_PROJECTILES: Readonly<Partial<Record<string, GunSpritePr
 export const GUN_GENERATED_PROJECTILES: Readonly<
   Partial<Record<string, GeneratedGunProjectileRecipe>>
 > = Object.freeze({
+  "x2-barrett-50-cal-sniper": Object.freeze({
+    spriteId: "barrett-50cal-round",
+    url: PROJECTILE_SPRITES["barrett-50cal-round"].url,
+    displayLength: 54,
+  }),
   "x2-widowmaker-arbalest": Object.freeze({
     spriteId: "widowmaker-arbalest-arrow",
     url: PROJECTILE_SPRITES["widowmaker-arbalest-arrow"].url,

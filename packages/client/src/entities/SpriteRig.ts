@@ -552,7 +552,7 @@ export function dualPistolHandYOffset(
   return hand === 0 ? -DUAL_PISTOL_HAND_RISE_BODY_FRAC : 0;
 }
 
-export type GunHandlingMechanism = "lever" | "pump";
+export type GunHandlingMechanism = "bolt" | "lever" | "pump";
 
 interface GunHandlingCycleState {
   active: boolean;
@@ -575,6 +575,7 @@ export function gunHandlingMechanismFor(
   def: WeaponDef | undefined,
 ): GunHandlingMechanism | undefined {
   if (!def?.gun) return undefined;
+  if (weaponHasHandlingTag(def, "bolt")) return "bolt";
   if (weaponHasHandlingTag(def, "lever")) return "lever";
   if (weaponHasHandlingTag(def, "pump")) return "pump";
   return undefined;
@@ -592,13 +593,14 @@ export function gunHandlingCycleDurationMs(
   fireRateSeconds: number | undefined,
 ): number {
   if (!mechanism) return 0;
-  const authoredMs = mechanism === "pump" ? 240 : 220;
+  const authoredMs = mechanism === "bolt" ? 520 : mechanism === "pump" ? 240 : 220;
   if (!fireRateSeconds || fireRateSeconds <= 0) return authoredMs;
   return Math.min(authoredMs, Math.max(96, fireRateSeconds * 1000 - 24));
 }
 
 /** Allocation-free accepted-shot mechanism phases in painted-weapon space. Pump explicitly travels back
- * then forward to home; lever explicitly travels down then up to home. */
+ * then forward to home; lever explicitly travels down then up to home; bolt visits four authored extrema:
+ * back (unbolt), down (lift), up (re-seat), then forward (ram home) before settling to its painted anchor. */
 export function sampleGunHandlingHandOffset(
   mechanism: GunHandlingMechanism | undefined,
   elapsedMs: number,
@@ -614,6 +616,28 @@ export function sampleGunHandlingHandOffset(
   const q = clamp01(elapsedMs / durationMs);
   const phasedStroke = (peakAt: number): number =>
     q <= peakAt ? smoothstep01(q / peakAt) : 1 - smoothstep01((q - peakAt) / (1 - peakAt));
+  if (mechanism === "bolt") {
+    const phases = [
+      { q: 0, forward: 0, lateral: 0 },
+      { q: 0.3, forward: -0.115, lateral: 0 },
+      { q: 0.5, forward: -0.08, lateral: 0.1 },
+      { q: 0.68, forward: -0.04, lateral: -0.09 },
+      { q: 0.86, forward: 0.08, lateral: 0 },
+      { q: 1, forward: 0, lateral: 0 },
+    ] as const;
+    let phaseIndex = 0;
+    while (phaseIndex < phases.length - 2) {
+      const next = phases[phaseIndex + 1];
+      if (!next || q <= next.q) break;
+      phaseIndex++;
+    }
+    const from = phases[phaseIndex] ?? phases[0];
+    const to = phases[phaseIndex + 1] ?? phases[5];
+    const t = smoothstep01((q - from.q) / Math.max(0.001, to.q - from.q));
+    out.forward = displayLength * (from.forward + (to.forward - from.forward) * t);
+    out.lateral = displayLength * (from.lateral + (to.lateral - from.lateral) * t);
+    return out;
+  }
   if (mechanism === "pump") {
     out.forward = -displayLength * 0.1 * phasedStroke(0.42);
     return out;
@@ -791,13 +815,10 @@ export function blendComboStagePresentationTransform(
 
   const previousAxisX = Math.cos(previous.rotation) * previousParent.scaleX;
   const previousAxisY = Math.sin(previous.rotation) * previousParent.scaleY;
-  const previousAxisWorldX =
-    previousAxisX * previousRootCos - previousAxisY * previousRootSin;
-  const previousAxisWorldY =
-    previousAxisX * previousRootSin + previousAxisY * previousRootCos;
+  const previousAxisWorldX = previousAxisX * previousRootCos - previousAxisY * previousRootSin;
+  const previousAxisWorldY = previousAxisX * previousRootSin + previousAxisY * previousRootCos;
   const targetAxisParentX =
-    (previousAxisWorldX * targetRootCos + previousAxisWorldY * targetRootSin) /
-    targetParent.scaleX;
+    (previousAxisWorldX * targetRootCos + previousAxisWorldY * targetRootSin) / targetParent.scaleX;
   const targetAxisParentY =
     (-previousAxisWorldX * targetRootSin + previousAxisWorldY * targetRootCos) /
     targetParent.scaleY;
@@ -10639,6 +10660,41 @@ export class SpriteRig {
     // Copy the FINAL authored/jiggle/spawn transform. No tween or external caller competes for weapon state.
     this.applyWeaponArtGeometry();
     this.applyComboStageTransition(sceneNow);
+    // Dual mechanism hands are trigger hands and mechanism hands at once. Every late pose/lift pass has
+    // already re-seated held art onto its canonical aimed hand, so displace only the rendered hand here:
+    // each accepted alternating Sidewinder shot gets an independent lever cycle while both gun/muzzle
+    // affines remain byte-for-byte at the authoritative mount.
+    if (this.weapons.length > 1 && this.orbitT < 0) {
+      for (let handIndex = 0; handIndex < this.weapons.length; handIndex++) {
+        const held = this.weapons[handIndex];
+        if (!held) continue;
+        const handling = gunHandlingMechanismFor(held.def);
+        if (!handling) continue;
+        const cycle = this.gunHandlingCycles[handIndex] ?? this.gunHandlingCycles[0];
+        const cycleDurationMs = gunHandlingCycleDurationMs(handling, held.def.gun?.fireRate);
+        const cycleElapsedMs = sceneNow - cycle.startMs;
+        const cycleMatches =
+          cycle.active &&
+          cycle.weaponId === held.def.id &&
+          cycle.mechanism === handling &&
+          cycle.acceptedSeq === this.attackBeatSeq;
+        sampleGunHandlingHandOffset(
+          cycleMatches ? handling : undefined,
+          cycleMatches ? cycleElapsedMs : -1,
+          cycleDurationMs,
+          held.def.displayLength / (this.baseScale || 1),
+          reducedMotion,
+          this.secondaryGripFlourish,
+        );
+        if (cycleMatches && cycleElapsedMs >= cycleDurationMs) cycle.active = false;
+        const c = Math.cos(held.img.rotation);
+        const s = Math.sin(held.img.rotation);
+        held.hand.img.x +=
+          c * this.secondaryGripFlourish.forward - s * this.secondaryGripFlourish.lateral;
+        held.hand.img.y +=
+          s * this.secondaryGripFlourish.forward + c * this.secondaryGripFlourish.lateral;
+      }
+    }
     const localMoveX = anim.moveX * this.facing;
     this.sampleFloatingHeadAttackLead(sceneNow, anim, anim.reducedMotion === true);
     this.syncBoilerplateHeadPose(

@@ -1,10 +1,10 @@
 {
   "generated": "2026-06-17",
   "source": "design-300-weapons workflow (15 agents)",
-  "count": 316,
+  "count": 317,
   "byType": {
     "melee": 115,
-    "ranged": 106,
+    "ranged": 107,
     "caster": 95
   },
   "weapons": [
@@ -6044,6 +6044,8 @@
       "element": "physical",
       "finish": "pristine",
       "grip": "2H",
+      "handlingTags": ["bolt"],
+      "gripPoints": { "primary": { "x": 0.28, "y": 0.65 }, "secondary": { "x": 0.39, "y": 0.61, "role": "bolt" } },
       "size": "L",
       "rangeBand": "long",
       "scaling": [
@@ -6407,6 +6409,8 @@
       "element": "holy",
       "finish": "pristine",
       "grip": "2H",
+      "handlingTags": ["bolt"],
+      "gripPoints": { "primary": { "x": 0.29, "y": 0.67 }, "secondary": { "x": 0.43, "y": 0.61, "role": "bolt" } },
       "size": "M",
       "rangeBand": "long",
       "scaling": [
@@ -6757,6 +6761,8 @@
       "element": "frost",
       "finish": "worn",
       "grip": "2H",
+      "handlingTags": ["bolt"],
+      "gripPoints": { "primary": { "x": 0.28, "y": 0.68 }, "secondary": { "x": 0.38, "y": 0.62, "role": "bolt" } },
       "size": "L",
       "rangeBand": "long",
       "scaling": [
@@ -8594,6 +8600,8 @@
       "element": "physical",
       "finish": "battle-worn",
       "grip": "2H",
+      "handlingTags": ["bolt"],
+      "gripPoints": { "primary": { "x": 0.24, "y": 0.7 }, "secondary": { "x": 0.35, "y": 0.64, "role": "bolt" } },
       "size": "L",
       "rangeBand": "long",
       "scaling": [
@@ -16063,6 +16071,47 @@
         "behavior":  {
                          "kind":  "edge"
                      }
+    },
+    {
+        "id": "x2-barrett-50-cal-sniper",
+        "name": "Barrett .50-Cal Sniper",
+        "description": "A deliberate anti-materiel bolt rifle whose huge brake, long barrel, and slab receiver turn one accepted shot into a verdict against armor.",
+        "type": "ranged",
+        "family": "marksman-rifle",
+        "theme": "bolt-action .50-cal anti-materiel sniper",
+        "element": "physical",
+        "finish": "battle-worn",
+        "grip": "2H",
+        "handlingTags": ["bolt"],
+        "gripPoints": { "primary": { "x": 0.25, "y": 0.64 }, "secondary": { "x": 0.38, "y": 0.61, "role": "bolt" } },
+        "size": "XL",
+        "rangeBand": "long",
+        "scaling": ["DEX", "STR"],
+        "scalingGrades": { "dex": "A", "str": "B" },
+        "requirements": { "dex": 12, "str": 13 },
+        "palettePrimary": "#3A4049",
+        "paletteAccent": "#A8482E",
+        "artPrompt": "Weapon-only in-world sprite (no character, no hands, no background scene): Barrett .50-Cal Sniper, one original massive western-gothic bolt-action anti-materiel rifle. A very long heavy gunmetal barrel with a huge rectangular two-port muzzle brake, thick slab receiver, unmistakable raised bolt handle behind the chamber, compact brass-rimmed scope, long box magazine, dark rust-red cheek rest, and braced shoulder stock with a deep recoil pad. One complete connected weapon, flat orthographic full side-profile, muzzle and brake point RIGHT, stock LEFT, restrained 5-6 colour cel-shaded game art, bold readable silhouette.",
+        "cardartAction": "recoiling from one thunderous shot as a huge copper-jacketed .50-cal slug tears rightward through a hard ivory-orange muzzle blast and a tight wake of pressure smoke",
+        "stats": { "damage": 34, "range": 320, "halfArc": 0.5, "cooldown": 1.15, "displayLength": 198, "swingArc": 1, "gripFrac": 0.1 },
+        "behavior": {
+          "kind": "gun",
+          "damage": 34,
+          "projectileSpeed": 2100,
+          "range": 1100,
+          "fireRate": 1.15,
+          "pierce": 5,
+          "magazine": 5,
+          "reloadSeconds": 2.8,
+          "bulletKind": "slug",
+          "projectileArt": "generated",
+          "projectileVisualScale": 1.35,
+          "sonicBoomRing": true,
+          "muzzle": "heavy",
+          "muzzleColor": 16757060,
+          "recoil": 0.005,
+          "userKnockbackMultiplier": 1.6
+        }
     }
   ]
 }

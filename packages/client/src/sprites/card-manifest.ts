@@ -25,6 +25,7 @@ export const CARD_ART_IDS = [
   "x2-anvil-heart-quake-maul-staff",
   "x2-ashfall-peacemaker",
   "x2-auroral-filament-wand",
+  "x2-barrett-50-cal-sniper",
   "x2-blightfork-glaive",
   "x2-blightgrip-spore-mitt",
   "x2-bogwater-twinbits",

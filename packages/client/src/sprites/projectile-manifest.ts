@@ -7,6 +7,12 @@ export interface ProjectileSpriteManifestEntry {
   readonly source: "generated" | "edited";
 }
 export const PROJECTILE_SPRITES = {
+  "barrett-50cal-round": {
+    url: "projectiles/barrett-50cal-round.png",
+    width: 192,
+    height: 45,
+    source: "generated",
+  },
   "brimstone-rocket-warhead": {
     url: "projectiles/brimstone-rocket-warhead.png",
     width: 85,

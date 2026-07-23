@@ -39,7 +39,7 @@ import { GENERATED_WEAPONS } from "./weapons-expansion.generated.js";
 export type WeaponSizeClass = "short" | "standard" | "long" | "great" | "colossal";
 
 /** V3G catalog laws. Authored tags are the only membership source used by presentation code. */
-export type GunHandlingTag = "lever" | "pump" | "pistol";
+export type GunHandlingTag = "bolt" | "lever" | "pump" | "pistol";
 
 /** Normalized point in the weapon sprite's own unmirrored 0..1 bounds. */
 export interface WeaponGripAnchor {
@@ -51,6 +51,7 @@ export interface WeaponGripAnchor {
  * riotgun can keep its hand on a vertical foregrip while still obeying the pump-after-shot law. */
 export type WeaponSecondaryGripRole =
   | "under-barrel"
+  | "bolt"
   | "lever"
   | "crank"
   | "pump"
@@ -2203,8 +2204,11 @@ for (const [weaponId, muzzle] of Object.entries(WEAPON_ART_MUZZLES)) {
   if (!weapon) throw new Error(`Art-space muzzle references unknown weapon ${weaponId}`);
   weapon.muzzle = muzzle;
 }
+const derivingWeaponMuzzles = (
+  globalThis as typeof globalThis & { __DD_GENERATING_WEAPON_MUZZLES__?: boolean }
+).__DD_GENERATING_WEAPON_MUZZLES__;
 for (const weapon of Object.values(WEAPONS)) {
-  if ((weapon.gun || weapon.beam) && !weapon.muzzle) {
+  if (!derivingWeaponMuzzles && (weapon.gun || weapon.beam) && !weapon.muzzle) {
     throw new Error(`Ranged weapon ${weapon.id} has no art-space muzzle`);
   }
 }

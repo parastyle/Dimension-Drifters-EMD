@@ -374,7 +374,7 @@ describe("SpriteRig V3G grip and mechanism laws", () => {
     expect(out.y).toBeCloseTo(80, 10);
   });
 
-  it("samples explicit back-forward and down-up phases while reduced motion stays anchored", async () => {
+  it("samples pump, lever, and ordered four-phase bolt strokes while reduced motion stays anchored", async () => {
     const {
       gunHandlingCycleDurationMs,
       sampleGunHandlingHandOffset,
@@ -393,10 +393,25 @@ describe("SpriteRig V3G grip and mechanism laws", () => {
     expect(out.lateral).toBeCloseTo(7, 10);
     sampleGunHandlingHandOffset("lever", leverDuration * 0.8, leverDuration, 100, false, out);
     expect(out.lateral).toBeLessThan(7);
+    const boltDuration = gunHandlingCycleDurationMs("bolt", 1.15);
+    expect(boltDuration).toBe(520);
+    sampleGunHandlingHandOffset("bolt", boltDuration * 0.3, boltDuration, 100, false, out);
+    expect(out.forward).toBeCloseTo(-11.5, 10);
+    expect(out.lateral).toBe(0);
+    sampleGunHandlingHandOffset("bolt", boltDuration * 0.5, boltDuration, 100, false, out);
+    expect(out.forward).toBeCloseTo(-8, 10);
+    expect(out.lateral).toBeCloseTo(10, 10);
+    sampleGunHandlingHandOffset("bolt", boltDuration * 0.68, boltDuration, 100, false, out);
+    expect(out.forward).toBeCloseTo(-4, 10);
+    expect(out.lateral).toBeCloseTo(-9, 10);
+    sampleGunHandlingHandOffset("bolt", boltDuration * 0.86, boltDuration, 100, false, out);
+    expect(out.forward).toBeCloseTo(8, 10);
+    expect(out.lateral).toBe(0);
     sampleGunHandlingHandOffset("pump", pumpDuration * 0.42, pumpDuration, 100, true, out);
     expect(out).toEqual({ forward: 0, lateral: 0 });
     expect(secondaryGripHandRendersAbove("pump")).toBe(true);
     expect(secondaryGripHandRendersAbove("lever")).toBe(true);
+    expect(secondaryGripHandRendersAbove("bolt")).toBe(true);
   });
 
   it("starts one immediate mechanism cycle from every accepted tagged shot", async () => {
@@ -404,7 +419,7 @@ describe("SpriteRig V3G grip and mechanism laws", () => {
     const mechanisms = Object.values(WEAPONS).filter(
       (weapon) => gunHandlingMechanismFor(weapon) !== undefined,
     );
-    expect(mechanisms).toHaveLength(26);
+    expect(mechanisms).toHaveLength(31);
     for (const weapon of mechanisms) {
       const rig = Object.create(SpriteRig.prototype) as {
         weapons: Array<{ def: typeof weapon }>;
@@ -413,7 +428,7 @@ describe("SpriteRig V3G grip and mechanism laws", () => {
         gunHandlingCycles: Array<{
           active: boolean;
           acceptedSeq: number;
-          mechanism?: "lever" | "pump";
+          mechanism?: "bolt" | "lever" | "pump";
           startMs: number;
           weaponId: string;
         }>;
@@ -439,6 +454,55 @@ describe("SpriteRig V3G grip and mechanism laws", () => {
         weaponId: weapon.id,
       });
     }
+  });
+
+  it("retains independent accepted-shot lever clocks for both Sidewinder hands", async () => {
+    const { SpriteRig } = await import("./SpriteRig.js");
+    const sidewinder = WEAPONS["x2-sidewinder-twin-rifles"];
+    if (!sidewinder) throw new Error("missing Sidewinder dual-lever fixture");
+    const rig = Object.create(SpriteRig.prototype) as {
+      weapons: Array<{ def: typeof sidewinder }>;
+      weaponDef: typeof sidewinder;
+      attackBeatSeq: number;
+      gunHandlingCycles: Array<{
+        active: boolean;
+        acceptedSeq: number;
+        mechanism?: "bolt" | "lever" | "pump";
+        startMs: number;
+        weaponId: string;
+      }>;
+    };
+    Object.assign(rig, {
+      weapons: [{ def: sidewinder }, { def: sidewinder }],
+      weaponDef: sidewinder,
+      attackBeatSeq: 40,
+      gunHandlingCycles: [
+        { active: false, acceptedSeq: 0, startMs: -1e9, weaponId: "" },
+        { active: false, acceptedSeq: 0, startMs: -1e9, weaponId: "" },
+      ],
+    });
+    const internals = SpriteRig.prototype as unknown as {
+      recordAcceptedRangedBeat(this: typeof rig, hand: 0 | 1, epochMs: number): void;
+    };
+    internals.recordAcceptedRangedBeat.call(rig, 0, 1_000);
+    rig.attackBeatSeq = 41;
+    internals.recordAcceptedRangedBeat.call(rig, 1, 1_140);
+    expect(rig.gunHandlingCycles).toEqual([
+      {
+        active: true,
+        acceptedSeq: 40,
+        mechanism: "lever",
+        startMs: 1_000,
+        weaponId: sidewinder.id,
+      },
+      {
+        active: true,
+        acceptedSeq: 41,
+        mechanism: "lever",
+        startMs: 1_140,
+        weaponId: sidewinder.id,
+      },
+    ]);
   });
 
   it("fits every tagged mechanism cycle inside its accepted fire cadence", async () => {
