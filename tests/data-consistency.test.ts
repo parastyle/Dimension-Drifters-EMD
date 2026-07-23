@@ -1,4 +1,7 @@
-import { readFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   DIMENSIONS,
@@ -146,6 +149,10 @@ describe("§43 expansion codegen: every authored gameplay field survives into th
     effectRecipe?: string;
     effectEmitter?: string;
     effectTiming?: string;
+    poseLanguage?: {
+      idle?: string;
+      feet?: string;
+    };
     gripPoints?: {
       primary: { x: number; y: number };
       secondary?: { x: number; y: number; role: string };
@@ -256,6 +263,8 @@ describe("§43 expansion codegen: every authored gameplay field survives into th
         expect(def.effectEmitter, `${w.id}.effectEmitter`).toBe(w.effectEmitter);
       if (w.effectTiming !== undefined)
         expect(def.effectTiming, `${w.id}.effectTiming`).toBe(w.effectTiming);
+      if (w.poseLanguage !== undefined)
+        expect(def.poseLanguage, `${w.id}.poseLanguage`).toEqual(w.poseLanguage);
       if (w.gripPoints !== undefined)
         expect(def.gripPoints, `${w.id}.gripPoints`).toEqual(w.gripPoints);
       if (w.handlingTags !== undefined)
@@ -469,6 +478,55 @@ describe("§43 expansion codegen: every authored gameplay field survives into th
       }
     });
   }
+});
+
+describe("B17 poseLanguage strict generator fixtures", () => {
+  const repositoryRoot = fileURLToPath(new URL("../", import.meta.url));
+  const source = readJson("../data/weapon-concepts-300.json") as {
+    weapons: Array<Record<string, unknown> & { banned?: boolean }>;
+  };
+
+  it("rejects unknown pose names, unknown keys, and secondary-grip without a secondary point", () => {
+    const cases = [
+      {
+        name: "unknown-pose",
+        poseLanguage: { idle: "thumbs-behind-back" },
+        error: "poseLanguage.idle",
+      },
+      {
+        name: "unknown-key",
+        poseLanguage: { idle: "low-guard", recovery: "snap" },
+        error: "unknown key poseLanguage.recovery",
+      },
+      {
+        name: "missing-secondary",
+        poseLanguage: { idle: "secondary-grip" },
+        error: "secondary-grip requires gripPoints.secondary",
+      },
+    ] as const;
+
+    for (const fixture of cases) {
+      const tempDir = mkdtempSync(join(tmpdir(), `dd-b17-${fixture.name}-`));
+      try {
+        const mutated = structuredClone(source);
+        const target = mutated.weapons.find((weapon) => !weapon.banned);
+        if (!target) throw new Error("missing generator fixture weapon");
+        delete target.gripPoints;
+        target.poseLanguage = fixture.poseLanguage;
+        const input = join(tempDir, "weapon-concepts.json");
+        writeFileSync(input, JSON.stringify(mutated), "utf8");
+        const result = spawnSync(process.execPath, ["tools/artkit/gen-weapon-expansion.mjs"], {
+          cwd: repositoryRoot,
+          env: { ...process.env, DD_WEAPON_CONCEPTS_SRC: input },
+          encoding: "utf8",
+        });
+        expect(result.status, fixture.name).toBe(1);
+        expect(result.stderr, fixture.name).toContain(fixture.error);
+      } finally {
+        rmSync(tempDir, { recursive: true, force: true });
+      }
+    }
+  }, 30_000);
 });
 
 // §17 the dimension registry is partly codegen'd; its rosters/bosses are raw kind-id strings. A typo or a

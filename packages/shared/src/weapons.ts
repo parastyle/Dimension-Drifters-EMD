@@ -67,6 +67,22 @@ export interface WeaponGripPoints {
   secondary?: WeaponGripAnchor & { role: WeaponSecondaryGripRole };
 }
 
+/** Presentation-only neutral hand vocabulary. Hard owners still take precedence per rendered frame. */
+export type IdleHandPose =
+  | "secondary-grip"
+  | "mirror-guard"
+  | "low-guard"
+  | "casting-gesture"
+  | "hip-rest";
+
+/** Planted lower-body profiles are independent from the facing-side hand rule. */
+export type IdleFootPose = "loose-plant" | "combat-plant" | "wide-plant";
+
+export interface WeaponPoseLanguageDef {
+  idle?: IdleHandPose;
+  feet?: IdleFootPose;
+}
+
 /** Shared fallback because render mounting and authoritative muzzle reach must resolve the same pivot. */
 export const DEFAULT_TWO_HAND_GUN_GRIPS: Readonly<WeaponGripPoints> = Object.freeze({
   primary: Object.freeze({ x: 0.3, y: 0.66 }),
@@ -464,6 +480,8 @@ export interface WeaponDef {
   sizeClass?: WeaponSizeClass;
   /** Reusable named neutral stance resolved by the client pose-language registry. */
   stance?: WeaponStanceId;
+  /** Optional presentation overrides; family defaults remain client-owned and action owners win. */
+  poseLanguage?: WeaponPoseLanguageDef;
   /** Promote this authored combo's signed arc/range/timing path into server hit geometry. */
   authoritativeCombo?: boolean;
   /** Server-consumed accepted-beat identity hook for the katana line. */
@@ -1810,6 +1828,7 @@ const BASE_WEAPONS: Record<string, WeaponDef> = {
     swingStyle: "thrust",
     gripFrac: 0.12,
     stance: "near-ear-blade-up",
+    poseLanguage: { idle: "mirror-guard", feet: "wide-plant" },
     comboFamily: "thrust",
     comboVariant: "voltedge-stab",
     authoritativeCombo: true,

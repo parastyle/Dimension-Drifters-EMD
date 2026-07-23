@@ -2,11 +2,19 @@ import { swingDescriptorFor, WEAPONS, type WeaponDef } from "@dd/shared";
 import { describe, expect, it } from "vitest";
 import {
   aimRelativePoint,
+  classifyHandRole,
   createPoseLanguageInput,
   createPoseLanguageSample,
   createWeaponPerformanceInput,
   createWeaponPerformanceSample,
   DEFAULT_POSE_VARIANTS,
+  FACING_SIDE_FLOOR_BODY_FRAC,
+  IDLE_FOOT_POSE_SPECS,
+  IDLE_HAND_POSE_SPECS,
+  idleFootPoseFor,
+  idleHandPoseFor,
+  idleHandPoseResolutionFor,
+  NAMED_WEAPON_STANCES,
   nextPoseShowroomOption,
   type PoseActionPhase,
   type PoseLanguageInput,
@@ -15,6 +23,9 @@ import {
   poseBlendUnderOwnership,
   poseImpulsePending,
   poseShowroomVariantSetFor,
+  resolveFootPoseOffset,
+  resolveIdleHandTarget,
+  resolveWeaponFootPoseOffset,
   samplePoseLanguage,
   sampleWeaponPerformance,
   twoHandedPoseFor,
@@ -102,6 +113,199 @@ describe("weapon pose-language classifier", () => {
     expect(
       weaponPoseResolutionFor(shotgun, variants({ twoHandAuthority: "art" })).hardTwoHanded,
     ).toBe(false);
+  });
+});
+
+describe("B17 semantic hand-role and five-pose laws", () => {
+  const idleFrame = {
+    phase: "idle" as const,
+    phaseT: 0,
+  };
+
+  it("classifies every visible catalog hand without an unowned fallback", () => {
+    for (const def of Object.values(WEAPONS)) {
+      const roles = ([0, 1] as const).map((hand) => classifyHandRole(def, idleFrame, hand));
+      expect(roles, def.id).not.toContain("explicit-test-failure");
+      expect(roles, def.id).not.toContain("absent-replaced");
+    }
+  });
+
+  it("pins hard owners, explicit action owners, recovery, idle, and structural replacement", () => {
+    const dual = weapon("x2-coyote-s-grin");
+    const fists = weapon("x2-sparkknuckle-hex-mitt");
+    const rifle = weapon("x2-hollowbarrel-spell-scattergun-staff");
+    const caster = weapon("x2-saint-s-knucklebone-censer-orb");
+    const thrown = weapon("x2-saloon-tomahawk");
+    const blade = weapon("rattler-sabre");
+
+    expect([0, 1].map((hand) => classifyHandRole(dual, idleFrame, hand as 0 | 1))).toEqual([
+      "hard-constrained",
+      "hard-constrained",
+    ]);
+    expect([0, 1].map((hand) => classifyHandRole(fists, idleFrame, hand as 0 | 1))).toEqual([
+      "hard-constrained",
+      "hard-constrained",
+    ]);
+    expect([0, 1].map((hand) => classifyHandRole(rifle, idleFrame, hand as 0 | 1))).toEqual([
+      "hard-constrained",
+      "hard-constrained",
+    ]);
+    expect(
+      classifyHandRole(
+        caster,
+        { phase: "active", phaseT: 0.5, actionOwnedHands: [false, true] },
+        1,
+      ),
+    ).toBe("action-owned");
+    expect(classifyHandRole(thrown, { phase: "active", phaseT: 0.5 }, 0)).toBe("action-owned");
+    expect(classifyHandRole(thrown, { phase: "recovery", phaseT: 0.5 }, 1)).toBe("recovering");
+    expect(classifyHandRole(blade, idleFrame, 0)).toBe("hard-constrained");
+    expect(classifyHandRole(blade, idleFrame, 1)).toBe("authored-idle");
+    expect(classifyHandRole(blade, { phase: "recovery", phaseT: 0.5 }, 1)).toBe("recovering");
+    expect(classifyHandRole(blade, { phase: "recovery", phaseT: 1 }, 1)).toBe("authored-idle");
+    expect(classifyHandRole(blade, { ...idleFrame, visibleHands: [true, false] }, 1)).toBe(
+      "absent-replaced",
+    );
+  });
+
+  it("resolves every catalog row to the named vocabulary without the fail-safe", () => {
+    const vocabulary = Object.keys(IDLE_HAND_POSE_SPECS);
+    expect(vocabulary).toEqual([
+      "secondary-grip",
+      "mirror-guard",
+      "low-guard",
+      "casting-gesture",
+      "hip-rest",
+    ]);
+    for (const def of Object.values(WEAPONS)) {
+      const resolution = idleHandPoseResolutionFor(def);
+      expect(vocabulary, def.id).toContain(resolution.pose);
+      expect(resolution.usedFallback, def.id).toBe(false);
+    }
+    expect(idleHandPoseFor(weapon("x2-saint-bough-frost-crozier"))).toBe("hip-rest");
+    expect(idleHandPoseFor(weapon("x2-hellmouth-palmcaster"))).toBe("casting-gesture");
+    expect(idleHandPoseFor(weapon("x-sword-neon-katana"))).toBe("mirror-guard");
+  });
+
+  it("keeps idle and terminal recovery continuous, finite, bounded, and facing-side after one mirror", () => {
+    const aims = [-Math.PI, -Math.PI / 2, 0, Math.PI / 2, Math.PI];
+    for (const def of Object.values(WEAPONS)) {
+      if (classifyHandRole(def, idleFrame, 1) !== "authored-idle") continue;
+      for (const aimLocal of aims) {
+        const base = {
+          bodyX: 3,
+          bodyY: -4,
+          bodyHeight: 76,
+          aimLocal,
+          movementX: -8,
+          movementY: 3,
+          microX: -5,
+          microY: 2,
+          manifestSocketX: -62,
+        };
+        const idle = resolveIdleHandTarget(def, base, { x: 0, y: 0 });
+        const terminal = resolveIdleHandTarget(
+          def,
+          {
+            ...base,
+            recoveryT: 1,
+            recoveryForward: weaponPoseSpecFor(def).recovery.forward,
+            recoveryLateral: weaponPoseSpecFor(def).recovery.lateral,
+          },
+          { x: 0, y: 0 },
+        );
+        expect(terminal, `${def.id}:${aimLocal}:continuity`).toEqual(idle);
+        expect(Number.isFinite(idle.x + idle.y), def.id).toBe(true);
+        expect(Math.hypot(idle.x - base.bodyX, idle.y - base.bodyY), def.id).toBeLessThan(40);
+        for (const facing of [-1, 1] as const) {
+          const worldDeltaX = (idle.x - base.bodyX) * facing;
+          expect(
+            worldDeltaX * facing,
+            `${def.id}:${idleHandPoseFor(def)}:hand=1:idle:facing=${facing}:aim=${aimLocal}`,
+          ).toBeGreaterThanOrEqual(FACING_SIDE_FLOOR_BODY_FRAC * base.bodyHeight);
+        }
+      }
+    }
+  });
+
+  it("removes only micro-motion under reduced motion, not semantic placement", () => {
+    const def = weapon("x2-saint-s-knucklebone-censer-orb");
+    const common = { bodyX: 0, bodyY: 0, bodyHeight: 76, aimLocal: 0.4 };
+    const animated = resolveIdleHandTarget(
+      def,
+      { ...common, microX: 1.4, microY: -0.7 },
+      { x: 0, y: 0 },
+    );
+    const reduced = resolveIdleHandTarget(def, common, { x: 0, y: 0 });
+    expect(idleHandPoseFor(def)).toBe("casting-gesture");
+    expect(animated).not.toEqual(reduced);
+    expect(animated.x).toBeGreaterThanOrEqual(76 * FACING_SIDE_FLOOR_BODY_FRAC);
+    expect(reduced.x).toBeGreaterThanOrEqual(76 * FACING_SIDE_FLOOR_BODY_FRAC);
+  });
+});
+
+describe("B17 neutral foot-profile laws", () => {
+  it("selects one finite planted profile and brackets the body at every gait sample", () => {
+    for (const def of Object.values(WEAPONS)) {
+      const pose = idleFootPoseFor(def);
+      expect(IDLE_FOOT_POSE_SPECS[pose], def.id).toBeDefined();
+      for (const gait of [0, 0.5, 1]) {
+        const front = resolveFootPoseOffset(pose, true, gait, 76, { x: 0, y: 0 });
+        const back = resolveFootPoseOffset(pose, false, gait, 76, { x: 0, y: 0 });
+        expect(Number.isFinite(front.x + front.y + back.x + back.y), def.id).toBe(true);
+        expect(front.x, `${def.id}:${gait}:front`).toBeGreaterThan(0);
+        expect(back.x, `${def.id}:${gait}:back`).toBeLessThan(0);
+        expect(front.x - back.x, `${def.id}:${gait}:width`).toBeGreaterThan(1);
+      }
+    }
+  });
+
+  it("keeps the proven overrides on their named profiles", () => {
+    expect(idleFootPoseFor(weapon("x2-hellmouth-palmcaster"))).toBe("loose-plant");
+    expect(idleFootPoseFor(weapon("x2-saint-bough-frost-crozier"))).toBe("combat-plant");
+    expect(idleFootPoseFor(weapon("x-sword-neon-katana"))).toBe("wide-plant");
+  });
+
+  it("keeps planted feet separated, mirrored, and in the ground band across gait phases", () => {
+    for (const pose of Object.keys(IDLE_FOOT_POSE_SPECS) as Array<
+      keyof typeof IDLE_FOOT_POSE_SPECS
+    >) {
+      for (const gait of [0, 0.5, 1]) {
+        for (const phase of [0, Math.PI / 2, Math.PI, (Math.PI * 3) / 2]) {
+          const frontBias = resolveFootPoseOffset(pose, true, gait, 76, { x: 0, y: 0 });
+          const backBias = resolveFootPoseOffset(pose, false, gait, 76, { x: 0, y: 0 });
+          const stride = Math.sin(phase) * 9 * gait;
+          const frontX = 24 + frontBias.x + stride;
+          const backX = -24 + backBias.x - stride;
+          const frontY = 52 + frontBias.y - Math.max(0, Math.sin(phase)) * 10 * gait;
+          const backY = 52 + backBias.y - Math.max(0, Math.sin(phase + Math.PI)) * 10 * gait;
+          expect(frontX, `${pose}:${gait}:${phase}:uncrossed`).toBeGreaterThan(backX);
+          expect(frontX - backX, `${pose}:${gait}:${phase}:width`).toBeGreaterThan(20);
+          expect(frontY, `${pose}:${gait}:${phase}:front-ground`).toBeGreaterThan(35);
+          expect(backY, `${pose}:${gait}:${phase}:back-ground`).toBeGreaterThan(35);
+          for (const facing of [-1, 1] as const) {
+            expect(frontX * facing, `${pose}:${facing}:front-mirror`).toBe(
+              facing === 1 ? frontX : -frontX,
+            );
+            expect(backX * facing, `${pose}:${facing}:back-mirror`).toBe(
+              facing === 1 ? backX : -backX,
+            );
+          }
+        }
+      }
+    }
+  });
+
+  it("replaces the family profile with a named stance and keeps terminal recovery identical", () => {
+    const def = weapon("x-sword-neon-katana");
+    const stance = NAMED_WEAPON_STANCES["near-ear-blade-up"];
+    const named = resolveWeaponFootPoseOffset(def, stance, true, 0, 76, { x: 0, y: 0 });
+    const family = resolveFootPoseOffset(idleFootPoseFor(def), true, 0, 76, { x: 0, y: 0 });
+    expect(named.x).toBe(stance.frontFootForward * 76);
+    expect(named.y).toBe(stance.frontFootLateral * 76);
+    expect(named.x).not.toBe(stance.frontFootForward * 76 + family.x);
+    const terminalRecovery = resolveWeaponFootPoseOffset(def, stance, true, 0, 76, { x: 0, y: 0 });
+    expect(terminalRecovery).toEqual(named);
   });
 });
 

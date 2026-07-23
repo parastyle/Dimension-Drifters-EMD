@@ -17,7 +17,9 @@ import { emit, isCheck } from "./lib/emit.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)));
 const REPO = resolve(ROOT, "..", "..");
-const SRC = join(REPO, "data", "weapon-concepts-300.json");
+const SRC = process.env.DD_WEAPON_CONCEPTS_SRC
+  ? resolve(process.env.DD_WEAPON_CONCEPTS_SRC)
+  : join(REPO, "data", "weapon-concepts-300.json");
 const OUT = join(REPO, "packages", "shared", "src", "weapons-expansion.generated.ts");
 
 // ── validation state ──────────────────────────────────────────────────────────────────────────────
@@ -33,6 +35,10 @@ const ATTRS = new Set(["str", "dex", "int", "con", "luk"]);
 const TYPES = new Set(["melee", "ranged", "caster"]);
 const GRIPS = new Set(["1H", "2H", "dual", "mounted"]);
 const HANDLING_TAGS = new Set(["bolt", "lever", "pump", "pistol"]);
+const IDLE_HAND_POSES = new Set([
+  "secondary-grip", "mirror-guard", "low-guard", "casting-gesture", "hip-rest",
+]);
+const IDLE_FOOT_POSES = new Set(["loose-plant", "combat-plant", "wide-plant"]);
 const SECONDARY_GRIP_ROLES = new Set([
   "under-barrel", "bolt", "lever", "crank", "pump", "horizontal-foregrip", "vertical-foregrip", "shoulder-RPG",
   "two-hand-rifle", "shaft", "handle",
@@ -74,7 +80,7 @@ const TOP_KEYS = new Set([
   "paletteAccent", "cardartAction", "behavior", "stats", "description", "banned", "expansion", "archived",
   "sprite", "sizeClass", "stance", "authoritativeCombo", "comboFamily", "comboVariant", "comboBar", "comboChoreography", "katanaHook",
   "bespokeVfxSheet", "performance", "swingStyle", "effectRecipe", "effectEmitter", "effectTiming",
-  "renderAboveHands", "suppressVfx", "hitStatus", "gripPoints", "handlingTags",
+  "renderAboveHands", "suppressVfx", "hitStatus", "gripPoints", "handlingTags", "poseLanguage",
 ]);
 // The sibling-block bug (§43): mechanic stats authored NEXT TO `behavior` instead of inside it were
 // silently ignored, shipping 11 weapons with default kits. Now an instant failure.
@@ -203,6 +209,7 @@ const PERFORMANCE_AURA_KEYS = new Set([
   "radius", "damagePerSecond", "resourcePerSecond", "tickRate", "color", "damageType",
 ]);
 const HIT_STATUS_KEYS = new Set(["kind", "multiplier", "seconds"]);
+const POSE_LANGUAGE_KEYS = new Set(["idle", "feet"]);
 const HIT_STATUS_KINDS = new Set(["slow"]);
 const THROWN_ROTATIONS = new Set(["spin", "point-forward"]);
 const SCATTER_AIMS = new Set(["cone", "radial-random"]);
@@ -720,6 +727,26 @@ function handlingTagsOf(tags) {
   return out;
 }
 
+function poseLanguageOf(language, gripPoints) {
+  if (language === undefined) return undefined;
+  if (!language || typeof language !== "object" || Array.isArray(language)) {
+    fail("poseLanguage is not an object");
+    return undefined;
+  }
+  checkKeys(language, POSE_LANGUAGE_KEYS, "poseLanguage");
+  const out = {};
+  if (language.idle !== undefined) {
+    out.idle = enumOf(language.idle, IDLE_HAND_POSES, "poseLanguage.idle");
+    if (out.idle === "secondary-grip" && !gripPoints?.secondary) {
+      fail("poseLanguage.idle secondary-grip requires gripPoints.secondary");
+    }
+  }
+  if (language.feet !== undefined) {
+    out.feet = enumOf(language.feet, IDLE_FOOT_POSES, "poseLanguage.feet");
+  }
+  return out;
+}
+
 function mapWeapon(w) {
   checkKeys(w, TOP_KEYS, "");
   for (const k of MECH_SIBLINGS)
@@ -751,6 +778,7 @@ function mapWeapon(w) {
   const damage = num(s.damage, 1, 40, 8, "stats.damage");
   const gripPoints = gripPointsOf(w.gripPoints);
   const handlingTags = handlingTagsOf(w.handlingTags);
+  const poseLanguage = poseLanguageOf(w.poseLanguage, gripPoints);
   const def = {
     id: w.id,
     name: w.name,
@@ -813,6 +841,7 @@ function mapWeapon(w) {
   }
   if (w.archived === true) def.archived = true;
   if (gripPoints) def.gripPoints = gripPoints;
+  if (poseLanguage) def.poseLanguage = poseLanguage;
   if (handlingTags) def.tags.handling = handlingTags;
   if (w.description !== undefined) {
     if (typeof w.description !== "string") fail("description is not a string");

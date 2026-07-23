@@ -146,6 +146,7 @@ import {
   type BladeSizeClass,
   type BladeSizeStance,
   bladeSizeClassFor,
+  classifyHandRole,
   comboPresentationStyleFor,
   comboWeaponThicknessSign,
   continuousWhirlAngle,
@@ -182,6 +183,8 @@ import {
   pistolPoseVariantFrom,
   poseImpulsePending,
   poseSupportHandFor,
+  resolveIdleHandTarget,
+  resolveWeaponFootPoseOffset,
   sampleFlourish,
   sampleMovementPosture,
   samplePoseLanguage,
@@ -1969,8 +1972,6 @@ export class SpriteRig {
   private boilerplateHead?: Phaser.GameObjects.Image;
   /** Source-pixel centroid offset for a sliced character-owned head; body scale converts it to rig space. */
   private readonly manifestHeadOffset?: Readonly<{ x: number; y: number }>;
-  /** Owner-authored prototype hands are already composed as a visible two-hand rest silhouette. */
-  private readonly preserveAuthoredRestHandSpread: boolean;
   private boilerplateManifest?: GearPartsManifest;
   private boilerplateAssembly?: BoilerplateAssembly;
   private boilerplateBodyAssembly?: BoilerplateAssemblyPart;
@@ -2204,6 +2205,52 @@ export class SpriteRig {
   private readonly poseSupportInput = createPoseLanguageInput();
   private readonly poseSupportSample = createPoseLanguageSample();
   private readonly posePoint = { x: 0, y: 0 };
+  private readonly idleHandTarget = { x: 0, y: 0 };
+  private readonly footPoseOffset = { x: 0, y: 0 };
+  private readonly handRoleFrame: {
+    phase: PoseActionPhase;
+    phaseT: number;
+    dualEquipped: boolean;
+    pairedAimed: boolean;
+    bothHandsOwned: boolean;
+    actionOwnedHands: [boolean, boolean];
+    visibleHands: [boolean, boolean];
+  } = {
+    phase: "idle",
+    phaseT: 0,
+    dualEquipped: false,
+    pairedAimed: false,
+    bothHandsOwned: false,
+    actionOwnedHands: [false, false],
+    visibleHands: [true, true],
+  };
+  private readonly idleHandTargetInput: {
+    bodyX: number;
+    bodyY: number;
+    bodyHeight: number;
+    aimLocal: number;
+    movementX: number;
+    movementY: number;
+    microX: number;
+    microY: number;
+    manifestSocketX: number;
+    recoveryT: number | undefined;
+    recoveryForward: number | undefined;
+    recoveryLateral: number | undefined;
+  } = {
+    bodyX: 0,
+    bodyY: 0,
+    bodyHeight: TARGET_BODY_H,
+    aimLocal: 0,
+    movementX: 0,
+    movementY: 0,
+    microX: 0,
+    microY: 0,
+    manifestSocketX: 0,
+    recoveryT: undefined,
+    recoveryForward: undefined,
+    recoveryLateral: undefined,
+  };
   private readonly secondaryGripPoint = { x: 0, y: 0 };
   private readonly secondaryGripFlourish: GunHandlingHandOffset = { forward: 0, lateral: 0 };
   private readonly gunHandlingCycles: [GunHandlingCycleState, GunHandlingCycleState] = [
@@ -2442,8 +2489,6 @@ export class SpriteRig {
     this.scale = TARGET_BODY_H / manifest.body.h;
     this.visualEnvelopeScale = wholeArtCharacterVisualScale(spriteId);
     this.baseScale = this.callerRigScale * this.visualEnvelopeScale;
-    this.preserveAuthoredRestHandSpread = isWholeArtCharacterId(spriteId);
-
     // Build parts. Draw order (back→front): back hand, feet, body, front hand. The front
     // hand is the one on the side the art faces (right = +x); the other tucks behind.
     const make = (role: string, trackAsBodyOrLimb = true): Phaser.GameObjects.Image | undefined => {
@@ -9699,18 +9744,13 @@ export class SpriteRig {
       !!this.weapons[1] &&
       usesAimedFiringStance(this.weapons[0].def) &&
       usesAimedFiringStance(this.weapons[1].def);
-    // The generic one-hand idle pose pulls the support hand onto the torso. That is correct for the
-    // Drifter kit, but fully occludes the owner's already-composed left prototype hand behind the body.
-    const poseSupportHand =
-      this.preserveAuthoredRestHandSpread && posePhase === "idle"
-        ? -1
-        : poseSupportHandFor(
-            strikingHand,
-            posePhase !== "idle",
-            this.poseTwoHanded,
-            this.crossfallActive || this.swingHand === "both",
-            pairedAimed,
-          );
+    const poseSupportHand = poseSupportHandFor(
+      strikingHand,
+      posePhase !== "idle",
+      this.poseTwoHanded,
+      this.crossfallActive || this.swingHand === "both",
+      pairedAimed,
+    );
 
     const poseCloseBladeSuppressed =
       this.closeBladePoseActive ||
@@ -10045,6 +10085,21 @@ export class SpriteRig {
       !!leadFiringStance?.castingHand &&
       !!this.weaponDef &&
       usesAimedFiringStance(this.weaponDef);
+    const semanticDef = this.weapons[0]?.def ?? this.weaponDef;
+    this.handRoleFrame.phase = posePhase;
+    this.handRoleFrame.phaseT = posePhaseT;
+    this.handRoleFrame.dualEquipped = this.weapons.length > 1;
+    this.handRoleFrame.pairedAimed = pairedAimed;
+    this.handRoleFrame.bothHandsOwned =
+      this.crossfallActive || this.swingHand === "both" || brace > 0;
+    const semanticActionPhase = posePhase === "anticipation" || posePhase === "active";
+    this.handRoleFrame.actionOwnedHands[0] =
+      semanticActionPhase && (ownFront > 0.01 || performancePoseActive);
+    this.handRoleFrame.actionOwnedHands[1] =
+      semanticActionPhase &&
+      (ownBack > 0.01 || (performancePoseActive && this.performanceSample.backHandBlend > 0));
+    this.handRoleFrame.visibleHands[0] = this.hands.some((hand) => hand.front);
+    this.handRoleFrame.visibleHands[1] = this.hands.some((hand) => !hand.front);
     for (const hnd of this.hands) {
       const handPhaseSign = hnd.front ? 1 : -1;
       const swingX = movementPose.handSwingPx * handPhaseSign * s;
@@ -10059,6 +10114,7 @@ export class SpriteRig {
         hy += idleY;
       }
       const handIndex = hnd.front ? 0 : 1;
+      const semanticRole = classifyHandRole(semanticDef, this.handRoleFrame, handIndex);
       const heldFiringDef = this.weapons[handIndex]?.def;
       const castsFromFreeHand = !hnd.front && !heldFiringDef && tomeCastingHandActive;
       const posedFiringDef = heldFiringDef ?? (castsFromFreeHand ? this.weaponDef : undefined);
@@ -10068,8 +10124,38 @@ export class SpriteRig {
         hy -= movementPose.weaponCarryUpPx * s;
       }
       if (
+        semanticDef &&
         handIndex === poseSupportHand &&
         poseHandSample &&
+        !poseCloseBladeSuppressed &&
+        !this.crossfallActive &&
+        (semanticRole === "authored-idle" || semanticRole === "recovering")
+      ) {
+        const targetInput = this.idleHandTargetInput;
+        targetInput.bodyX = this.body.x;
+        targetInput.bodyY = this.body.y;
+        targetInput.bodyHeight = TARGET_BODY_H;
+        targetInput.aimLocal = heldAimLocal;
+        targetInput.movementX = swingX + movementPose.handTrailXPx * s;
+        targetInput.movementY = bobY + movementPose.handTrailYPx * s + idleY;
+        targetInput.microX = 0;
+        targetInput.microY = 0;
+        targetInput.manifestSocketX = hnd.ox;
+        targetInput.recoveryT = semanticRole === "recovering" ? posePhaseT : undefined;
+        targetInput.recoveryForward =
+          semanticRole === "recovering" ? (poseHandSample?.offForward ?? undefined) : undefined;
+        targetInput.recoveryLateral =
+          semanticRole === "recovering" ? (poseHandSample?.offLateral ?? undefined) : undefined;
+        resolveIdleHandTarget(semanticDef, targetInput, this.idleHandTarget);
+        hx = this.idleHandTarget.x;
+        hy = this.idleHandTarget.y;
+      } else if (
+        handIndex === poseSupportHand &&
+        poseHandSample &&
+        (semanticRole === "action-owned" ||
+          (semanticRole === "hard-constrained" &&
+            posePhase !== "idle" &&
+            this.weapons.length > 1)) &&
         !poseCloseBladeSuppressed &&
         !this.crossfallActive
       ) {
@@ -10218,6 +10304,11 @@ export class SpriteRig {
           hy += (1 - own) * hnd.jy;
         }
       }
+      // Authored-idle is the only semantic state with the universal late post-condition. All action,
+      // grip, mechanism, channel, flourish, and non-terminal recovery owners have already bypassed it.
+      if (semanticRole === "authored-idle") {
+        hx = Math.max(hx, this.body.x + TARGET_BODY_H * 0.03 + 1e-9);
+      }
       hnd.img.x = hx;
       hnd.img.y = hy;
     }
@@ -10348,27 +10439,19 @@ export class SpriteRig {
       if (!PROCEDURAL_JIGGLE) {
         fy += idle;
       }
-      if (this.poseLeadSpec && !poseCloseBladeSuppressed && !this.crossfallActive) {
-        aimRelativePoint(
-          ft.front ? this.poseLeadSample.frontFootForward : this.poseLeadSample.backFootForward,
-          ft.front ? this.poseLeadSample.frontFootLateral : this.poseLeadSample.backFootLateral,
-          heldAimLocal,
-          this.posePoint,
+      if (semanticDef && !poseCloseBladeSuppressed && !this.crossfallActive) {
+        // A blade-size or named stance is the single neutral profile for this frame. It replaces the
+        // family profile instead of being double-added, and remains independent of upper-body aim.
+        resolveWeaponFootPoseOffset(
+          semanticDef,
+          activeBladeStance,
+          ft.front,
+          gait,
+          TARGET_BODY_H,
+          this.footPoseOffset,
         );
-        fx += this.posePoint.x * TARGET_BODY_H * this.poseLeadSample.footBlend;
-        fy += this.posePoint.y * TARGET_BODY_H * this.poseLeadSample.footBlend;
-      }
-      if (activeBladeStance) {
-        const movementX = fx - ft.ox;
-        const movementY = fy - ft.oy;
-        aimRelativePoint(
-          ft.front ? activeBladeStance.frontFootForward : activeBladeStance.backFootForward,
-          ft.front ? activeBladeStance.frontFootLateral : activeBladeStance.backFootLateral,
-          heldAimLocal,
-          this.posePoint,
-        );
-        fx = ft.ox + this.posePoint.x * TARGET_BODY_H + movementX;
-        fy = ft.oy + this.posePoint.y * TARGET_BODY_H + movementY;
+        fx += this.footPoseOffset.x;
+        fy += this.footPoseOffset.y;
       }
       const footBlend = ft.front
         ? clamp01(this.attackFrontFootBlend)
