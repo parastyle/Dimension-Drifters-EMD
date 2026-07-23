@@ -27,9 +27,12 @@ import {
   type GearTextureResource,
   gearTextureBakeCacheForScene,
 } from "../sprites/gear-texture-baker.js";
+import { SPRITES, type SpriteManifest } from "../sprites/manifest.js";
 import {
+  WHOLE_ART_CHARACTER_IDS,
   WHOLE_ART_CHARACTER_PART_ROLES,
   wholeArtCharacterTextureKey,
+  wholeArtCharacterVisualScale,
 } from "../sprites/whole-art-character.js";
 import {
   FLOATING_HEAD_SPRING_TUNING,
@@ -56,11 +59,11 @@ class FakeDisplayObject {
   texture: { key: string };
   frame: { name: string; width: number; height: number };
 
-  constructor(x = 0, y = 0, key = "shape", frame = "__BASE") {
+  constructor(x = 0, y = 0, key = "shape", frame = "__BASE", frameWidth = 168, frameHeight = 168) {
     this.x = x;
     this.y = y;
     this.texture = { key };
-    this.frame = { name: frame, width: 168, height: 168 };
+    this.frame = { name: frame, width: frameWidth, height: frameHeight };
   }
 
   setOrigin(x: number, y = x): this {
@@ -163,13 +166,28 @@ class FakeContainer extends FakeDisplayObject {
   }
 }
 
+function spriteFrameDimensions(
+  textureKey: string,
+): Readonly<{ width: number; height: number }> | undefined {
+  const looseKey = textureKey.startsWith("char:") ? textureKey.slice("char:".length) : textureKey;
+  const roleSeparator = looseKey.lastIndexOf(":");
+  if (roleSeparator < 0) return undefined;
+  const spriteId = looseKey.slice(0, roleSeparator);
+  const role = looseKey.slice(roleSeparator + 1);
+  const manifest = (SPRITES as Readonly<Record<string, SpriteManifest>>)[spriteId];
+  const part = manifest?.parts.find((candidate) => candidate.role === role);
+  return part ? { width: part.w, height: part.h } : undefined;
+}
+
 function fakeScene(extraTextureKeys: readonly string[] = []): Phaser.Scene {
   const textureFrames = new Map<string, Set<string>>();
   const extraTextures = new Set(extraTextureKeys);
   const scene = {
     add: {
-      image: (x: number, y: number, key: string, frame?: string) =>
-        new FakeDisplayObject(x, y, key, frame),
+      image: (x: number, y: number, key: string, frame?: string) => {
+        const dimensions = spriteFrameDimensions(key);
+        return new FakeDisplayObject(x, y, key, frame, dimensions?.width, dimensions?.height);
+      },
       ellipse: (x: number, y: number) => new FakeDisplayObject(x, y),
       rectangle: (x: number, y: number) => new FakeDisplayObject(x, y),
       text: (x: number, y: number) => new FakeDisplayObject(x, y),
@@ -208,6 +226,24 @@ interface RigTruth {
     velocity: number;
   }>;
   placeNodeGear(attachment: RigTruth["gearAttachments"][number]): void;
+}
+
+function staticRigEnvelopeHeight(rig: SpriteRig, truth: RigTruth): number {
+  const images = [
+    truth.body,
+    truth.boilerplateHead,
+    ...truth.hands.map((hand) => hand.img),
+    ...truth.feet.map((foot) => foot.img),
+  ].filter((image): image is FakeDisplayObject => image !== undefined);
+  const minY = Math.min(
+    ...images.map((image) => image.y - image.frame.height * image.originY * Math.abs(image.scaleY)),
+  );
+  const maxY = Math.max(
+    ...images.map(
+      (image) => image.y + image.frame.height * (1 - image.originY) * Math.abs(image.scaleY),
+    ),
+  );
+  return (maxY - minY) * Math.abs((rig.root as unknown as FakeContainer).scaleY);
 }
 
 interface ManifestHeadRigTruth extends RigTruth {
@@ -266,46 +302,95 @@ describe("SpriteRig character-owned floating head", () => {
     expect(head.y - restY).toBeLessThanOrEqual(FLOATING_HEAD_SPRING_TUNING.maxOffsetY);
   });
 
-  it.each(["proto-samurai", "proto-sheriff", "proto-witch"])(
-    "retains all six %s character textures and its authored floating-head mount",
-    (characterId) => {
-      const characterKeys = WHOLE_ART_CHARACTER_PART_ROLES.map((role) =>
-        wholeArtCharacterTextureKey(characterId, role),
-      );
-      const rig = new SpriteRig(
-        fakeScene(characterKeys),
-        0,
-        0,
-        false,
-        `${characterId}-rig`,
-        characterId,
-      );
-      const truth = rig as unknown as ManifestHeadRigTruth;
-      const renderedKeys = [
-        truth.body.texture.key,
-        truth.boilerplateHead?.texture.key,
-        ...truth.hands.map((hand) => hand.img.texture.key),
-        ...truth.feet.map((foot) => foot.img.texture.key),
-      ];
-      expect(renderedKeys.sort()).toEqual([...characterKeys].sort());
-      expect(renderedKeys.every((key) => key?.startsWith(`char:${characterId}:`))).toBe(true);
-      expect(truth.gearAttachments).toHaveLength(0);
-      expect(truth.slideAfterimageA.texture.key).toBe(
-        wholeArtCharacterTextureKey(characterId, "body"),
-      );
-      expect(truth.manifestHeadOffset).toBeDefined();
+  it.each([
+    ...WHOLE_ART_CHARACTER_IDS,
+  ])("retains all six %s character textures and its authored floating-head mount", (characterId) => {
+    const characterKeys = WHOLE_ART_CHARACTER_PART_ROLES.map((role) =>
+      wholeArtCharacterTextureKey(characterId, role),
+    );
+    const rig = new SpriteRig(
+      fakeScene(characterKeys),
+      0,
+      0,
+      false,
+      `${characterId}-rig`,
+      characterId,
+    );
+    const truth = rig as unknown as ManifestHeadRigTruth;
+    const renderedKeys = [
+      truth.body.texture.key,
+      truth.boilerplateHead?.texture.key,
+      ...truth.hands.map((hand) => hand.img.texture.key),
+      ...truth.feet.map((foot) => foot.img.texture.key),
+    ];
+    expect(renderedKeys.sort()).toEqual([...characterKeys].sort());
+    expect(renderedKeys.every((key) => key?.startsWith(`char:${characterId}:`))).toBe(true);
+    expect(truth.gearAttachments).toHaveLength(0);
+    expect(truth.slideAfterimageA.texture.key).toBe(
+      wholeArtCharacterTextureKey(characterId, "body"),
+    );
+    expect(truth.manifestHeadOffset).toBeDefined();
 
-      const head = truth.boilerplateHead;
-      if (!head) return;
-      truth.body.setPosition(3, 5).setRotation(0).setScale(0.46, 0.44);
-      truth.syncFloatingHeadPose(1 / 60, false, true, false, 0, 0, 0, 0, false, 0);
-      const restY = head.y;
-      for (let frame = 0; frame < 30; frame++)
-        truth.syncFloatingHeadPose(1 / 60, false, false, false, 0, 0, 0, 0, false, 2);
-      expect(head.y - restY).toBeGreaterThan(0.5);
-      expect(head.y - restY).toBeLessThanOrEqual(FLOATING_HEAD_SPRING_TUNING.maxOffsetY);
-    },
-  );
+    const head = truth.boilerplateHead;
+    if (!head) return;
+    const root = rig.root as unknown as FakeContainer;
+    const authoredParts = [truth.body, head, ...truth.hands, ...truth.feet].map((part) =>
+      "img" in part ? part.img : part,
+    );
+    expect(root.scaleX).toBeCloseTo(wholeArtCharacterVisualScale(characterId), 10);
+    expect(root.scaleY).toBeCloseTo(wholeArtCharacterVisualScale(characterId), 10);
+    expect(authoredParts.every((part) => part.parentContainer === root)).toBe(true);
+    truth.body.setPosition(3, 5).setRotation(0).setScale(0.46, 0.44);
+    truth.syncFloatingHeadPose(1 / 60, false, true, false, 0, 0, 0, 0, false, 0);
+    const restY = head.y;
+    for (let frame = 0; frame < 30; frame++)
+      truth.syncFloatingHeadPose(1 / 60, false, false, false, 0, 0, 0, 0, false, 2);
+    expect(head.y - restY).toBeGreaterThan(0.5);
+    expect(head.y - restY).toBeLessThanOrEqual(FLOATING_HEAD_SPRING_TUNING.maxOffsetY);
+    expect(authoredParts.every((part) => part.parentContainer === root)).toBe(true);
+  });
+
+  it("composes sheriff envelope correction at the root while legacy rigs remain scale 1", () => {
+    const drifter = new SpriteRig(fakeScene(), 0, 0, false, "drifter-reference", "drifter");
+    const drifterTruth = drifter as unknown as ManifestHeadRigTruth;
+    const sheriffKeys = WHOLE_ART_CHARACTER_PART_ROLES.map((role) =>
+      wholeArtCharacterTextureKey("proto-sheriff", role),
+    );
+    const sheriff = new SpriteRig(
+      fakeScene(sheriffKeys),
+      0,
+      0,
+      false,
+      "sheriff-envelope",
+      "proto-sheriff",
+    );
+    const sheriffTruth = sheriff as unknown as ManifestHeadRigTruth;
+    const boilerplate = new SpriteRig(
+      fakeScene(),
+      0,
+      0,
+      false,
+      "boilerplate-reference",
+      "drifter",
+      compatibilityPairManifest(),
+    );
+    const visualScale = wholeArtCharacterVisualScale("proto-sheriff");
+    const drifterHeight = staticRigEnvelopeHeight(drifter, drifterTruth);
+    const sheriffHeight = staticRigEnvelopeHeight(sheriff, sheriffTruth);
+
+    expect(drifter.root.scaleX).toBe(1);
+    expect(drifter.root.scaleY).toBe(1);
+    expect(boilerplate.root.scaleX).toBe(1);
+    expect(boilerplate.root.scaleY).toBe(1);
+    expect(sheriff.root.scaleX).toBeCloseTo(visualScale, 10);
+    expect(sheriff.root.scaleY).toBeCloseTo(visualScale, 10);
+    expect(sheriffHeight / drifterHeight).toBeCloseTo(0.97, 10);
+    expect(Math.abs(sheriffHeight - drifterHeight)).toBeLessThan(5);
+
+    sheriff.setRigScale(1.25);
+    expect(sheriff.root.scaleX).toBeCloseTo(visualScale * 1.25, 10);
+    expect(sheriff.root.scaleY).toBeCloseTo(visualScale * 1.25, 10);
+  });
 });
 
 describe("SpriteRig boilerplate assembly truth", () => {

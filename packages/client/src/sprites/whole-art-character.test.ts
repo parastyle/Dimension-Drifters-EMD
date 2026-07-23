@@ -1,16 +1,23 @@
+import { PLAYABLE_CHARACTERS } from "@dd/shared";
 import type Phaser from "phaser";
 import { describe, expect, it, vi } from "vitest";
 import {
+  characterStaticEnvelopeHeight,
   ensureWholeArtCharacterTextures,
   isWholeArtCharacterId,
+  WHOLE_ART_CHARACTER_IDS,
   WHOLE_ART_CHARACTER_PART_ROLES,
   wholeArtCharacterManifest,
   wholeArtCharacterTextureKey,
+  wholeArtCharacterVisualScale,
 } from "./whole-art-character.js";
 
 describe("whole-art character texture contract", () => {
   it("qualifies the three owner prototypes without changing the legacy Drifter wardrobe mode", () => {
-    for (const id of ["proto-samurai", "proto-sheriff", "proto-witch"]) {
+    expect([...WHOLE_ART_CHARACTER_IDS]).toEqual(
+      PLAYABLE_CHARACTERS.filter((characterId) => characterId.startsWith("proto-")),
+    );
+    for (const id of WHOLE_ART_CHARACTER_IDS) {
       const manifest = wholeArtCharacterManifest(id);
       expect(manifest?.kind).toBe("character");
       expect(
@@ -22,6 +29,34 @@ describe("whole-art character texture contract", () => {
     }
     expect(isWholeArtCharacterId("drifter")).toBe(false);
     expect(isWholeArtCharacterId("cc-pyra-cinderhowl-the-flame-caster")).toBe(false);
+  });
+
+  it("derives bounded whole-art corrections from the retained Drifter full-part envelope", () => {
+    const referenceHeight = characterStaticEnvelopeHeight("drifter");
+    expect(referenceHeight).toBeDefined();
+    const expectedScales: Readonly<Record<string, number>> = {
+      "proto-samurai": 0.847,
+      "proto-sheriff": 0.73,
+      "proto-witch": 0.739,
+    };
+
+    for (const id of WHOLE_ART_CHARACTER_IDS) {
+      const scale = wholeArtCharacterVisualScale(id);
+      const sourceHeight = characterStaticEnvelopeHeight(id);
+      expect(scale, id).toBeGreaterThanOrEqual(0.65);
+      expect(scale, id).toBeLessThanOrEqual(0.95);
+      expect(scale, id).not.toBe(1);
+      expect(scale, id).toBeCloseTo(expectedScales[id] ?? Number.NaN, 3);
+      expect(sourceHeight, id).toBeDefined();
+      expect(((sourceHeight ?? 0) * scale) / (referenceHeight ?? 1), id).toBeGreaterThanOrEqual(
+        0.95,
+      );
+      expect(((sourceHeight ?? 0) * scale) / (referenceHeight ?? 1), id).toBeLessThanOrEqual(1);
+    }
+
+    expect(wholeArtCharacterVisualScale("drifter")).toBe(1);
+    expect(wholeArtCharacterVisualScale("cc-pyra-cinderhowl-the-flame-caster")).toBe(1);
+    expect(wholeArtCharacterVisualScale("boilerplate")).toBe(1);
   });
 
   it("queues all six loose files once and becomes ready only after TextureManager owns every key", () => {
