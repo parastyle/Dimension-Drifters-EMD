@@ -2,7 +2,8 @@
 // Regenerates packages/shared/src/characters.ts — the §7 playable roster — from the INSTALLED character
 // sprites (the manifest) + the concept names. Run after promoting + harvest-installing new characters:
 //   node tools/artkit/gen-character-roster.mjs
-// Playable = the Drifter + every installed `cc-*` (concept characters); enemies are excluded.
+// Playable = the Drifter + every installed `cc-*` concept character + explicitly installed
+// `proto-*` owner prototype; enemies are excluded.
 // `--check` skips with a warning when untracked out/*/parts/parts.json inputs are absent (fresh checkout).
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
@@ -17,7 +18,8 @@ const outFile = resolve(here, "../../packages/shared/src/characters.ts");
 const manifest = readFileSync(manifestTs, "utf8");
 const ids = [...manifest.matchAll(/^\s{2}"?([a-z0-9][a-z0-9-]*)"?:\s*\{\s*$/gm)].map((m) => m[1]);
 const ccs = ids.filter((id) => id.startsWith("cc-")).sort();
-const roster = ["drifter", ...ccs];
+const prototypes = ids.filter((id) => id.startsWith("proto-")).sort();
+const roster = ["drifter", ...ccs, ...prototypes];
 const partsFile = (id) => resolve(here, `out/${id}/parts/parts.json`);
 const missingParts = roster.filter((id) => !existsSync(partsFile(id)));
 if (isCheck && missingParts.length > 0) {
@@ -44,6 +46,9 @@ const pretty = {
   "cc-brother-cassian-the-ashen-crusader": "Brother Cassian",
   "cc-halcyon-7": "Halcyon-7",
   "cc-pyra-cinderhowl-the-flame-caster": "Pyra Cinderhowl",
+  "proto-samurai": "Prototype Samurai",
+  "proto-sheriff": "Prototype Sheriff",
+  "proto-witch": "Prototype Witch",
 };
 const nameOf = (id) => pretty[id] ?? names[id] ?? id;
 
@@ -73,6 +78,9 @@ const areas = roster.map((id) => ({ id, a: footprint(id) })).filter((x) => x.a !
 const sorted = areas.map((x) => x.a).sort((a, b) => a - b);
 const median = sorted[Math.floor(sorted.length / 2)] ?? 1;
 const scaleOf = (id) => {
+  // Owner-authored prototype intake is already normalized to the canonical 76 px body unit.
+  // Preserve that exact scale instead of applying the optional thin-silhouette presentation bump.
+  if (id.startsWith("proto-")) return 1;
   const a = footprint(id);
   if (a == null || a >= median) return 1;
   return Math.min(1.25, Math.max(1, Math.sqrt(median / a))); // gentle, capped at +25%
@@ -121,6 +129,9 @@ const kits = {
   "cc-thornroot": [[2, 1, 2, 4, 1], "regrow"],
   "cc-tinker-magnus-brasswick": [[1, 2, 4, 2, 1], "pressurized"],
   "cc-yuki-the-hollow-smile": [[2, 4, 1, 1, 2], "fox-dance"],
+  "proto-samurai": [[2, 2, 2, 2, 2], "unwritten"],
+  "proto-sheriff": [[2, 2, 2, 2, 2], "unwritten"],
+  "proto-witch": [[2, 2, 2, 2, 2], "unwritten"],
 };
 for (const id of roster) {
   if (!kits[id]) throw new Error(`Missing character kit for ${id}`);
@@ -195,5 +206,7 @@ ${Object.entries(scales)
 `;
 emit(outFile, body, "characters.ts");
 if (!isCheck) {
-  console.log(`character roster: ${roster.length} playable (drifter + ${ccs.length} cc-*) -> ${outFile}`);
+  console.log(
+    `character roster: ${roster.length} playable (drifter + ${ccs.length} cc-* + ${prototypes.length} proto-*) -> ${outFile}`,
+  );
 }

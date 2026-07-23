@@ -9,7 +9,7 @@
 //   • Articulated weapons (§28.11): staff + pendulum cage etc., rigged in-engine.
 //
 // It does NOT classify weapon parts (those are positional, handled by the rig) —
-// for characters it labels parts by geometry: body = largest blob; the top-most
+// for characters it labels parts by geometry: body = largest central blob; the top-most
 // detached blob above the body is the HEAD; a remaining part below the body's
 // lower edge is a FOOT, otherwise a HAND; left/right by centroid x.
 // Builds with fewer parts just work (hands-only floaters → no feet; pure blobs →
@@ -139,9 +139,24 @@ function labelComponents(mask, w, h) {
 /** Assign character part roles by geometry relative to the body blob. */
 function classify(comps) {
   const sorted = [...comps].sort((a, b) => b.area - a.area);
-  const body = sorted[0];
+  let body = sorted[0];
+  // A tall hat/helmet can make a detached head the largest island in the authored
+  // six-part layout. In that case the torso is the next substantial island directly
+  // below it on the same centre line. Keep the ordinary largest-island rule unless
+  // that unambiguous stacked pair exists, so baked-head and irregular builds retain
+  // their established classification.
+  const lowerCentralBody = sorted
+    .slice(1)
+    .filter(
+      (c) =>
+        c.cy > body.cy &&
+        c.area >= body.area * 0.3 &&
+        Math.abs(c.cx - body.cx) <= Math.max(c.bbox.w, body.bbox.w) * 0.25,
+    )
+    .sort((a, b) => b.area - a.area)[0];
+  if (lowerCentralBody) body = lowerCentralBody;
   const bodyBottom = body.bbox.y + body.bbox.h;
-  const rest = sorted.slice(1);
+  const rest = sorted.filter((c) => c !== body);
 
   // A separated character head is the top-most substantial island above the
   // largest (body) island. This must happen before the legacy limb classifier:
