@@ -12,6 +12,7 @@
 //   node guards/chroma-key.mjs --only=drifter   # one subject's out/ dir
 //   node guards/chroma-key.mjs <file.png>...     # explicit files
 //   flags: --tolerance=N (default 90) · --despill=0..1 (default 0.5)
+//          --in-place=1 (overwrite inputs) · --preview=0 (skip charcoal preview)
 
 import { existsSync, readdirSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -27,6 +28,8 @@ const flag = (name, def) => {
 };
 const TOL = Number(flag("tolerance", "90")); // how green-dominant a pixel must be to key
 const DESPILL = Number(flag("despill", "0.5")); // 0..1 green-edge suppression
+const IN_PLACE = flag("in-place", "0") === "1";
+const WRITE_PREVIEW = flag("preview", "1") !== "0";
 const BG = { r: 0x22, g: 0x25, b: 0x2b }; // charcoal preview backdrop (palette base)
 
 function isKeyableGreen(r, g, b) {
@@ -74,8 +77,10 @@ async function keyOne(file) {
     }
   }
   const base = file.replace(/\.png$/i, "");
-  await sharp(data, { raw: { width, height, channels: 4 } }).png().toFile(`${base}.keyed.png`);
-  await sharp(preview, { raw: { width, height, channels: 4 } }).png().toFile(`${base}.preview.png`);
+  const keyedPath = IN_PLACE ? file : `${base}.keyed.png`;
+  await sharp(data, { raw: { width, height, channels: 4 } }).png().toFile(keyedPath);
+  if (WRITE_PREVIEW)
+    await sharp(preview, { raw: { width, height, channels: 4 } }).png().toFile(`${base}.preview.png`);
   const pct = ((keyed / (width * height)) * 100).toFixed(1);
   console.log(`keyed ${file.split(/[/\\]/).slice(-2).join("/")} — ${pct}% removed`);
   if (Number(pct) < 5) console.warn(`  ⚠ very little keyed (${pct}%) — check the render had a flat #00ff00 field`);

@@ -4298,6 +4298,234 @@ export const SPRITES = {
       }
     ]
   },
+  "proto-samurai": {
+    "id": "proto-samurai",
+    "kind": "character",
+    "canvas": {
+      "w": 803,
+      "h": 452
+    },
+    "body": {
+      "cx": 393.6,
+      "cy": 281.28,
+      "w": 165,
+      "h": 168
+    },
+    "parts": [
+      {
+        "role": "body",
+        "file": "body.png",
+        "w": 165,
+        "h": 168,
+        "cx": 393.6,
+        "cy": 281.28,
+        "ox": 0,
+        "oy": 0
+      },
+      {
+        "role": "head",
+        "file": "head.png",
+        "w": 161,
+        "h": 162,
+        "cx": 405.6,
+        "cy": 114.24,
+        "ox": 12,
+        "oy": -158.88
+      },
+      {
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 54,
+        "h": 67,
+        "cx": 275.04,
+        "cy": 281.28,
+        "ox": -118.08,
+        "oy": -0.48
+      },
+      {
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 50,
+        "h": 66,
+        "cx": 517.92,
+        "cy": 280.8,
+        "ox": 124.32,
+        "oy": -0.96
+      },
+      {
+        "role": "foot-l",
+        "file": "foot-l.png",
+        "w": 76,
+        "h": 52,
+        "cx": 331.2,
+        "cy": 395.52,
+        "ox": -62.4,
+        "oy": 114.24
+      },
+      {
+        "role": "foot-r",
+        "file": "foot-r.png",
+        "w": 77,
+        "h": 51,
+        "cx": 465.6,
+        "cy": 395.04,
+        "ox": 72.48,
+        "oy": 113.28
+      }
+    ]
+  },
+  "proto-sheriff": {
+    "id": "proto-sheriff",
+    "kind": "character",
+    "canvas": {
+      "w": 1037,
+      "h": 583
+    },
+    "body": {
+      "cx": 517.64,
+      "cy": 352.74,
+      "w": 187,
+      "h": 168
+    },
+    "parts": [
+      {
+        "role": "body",
+        "file": "body.png",
+        "w": 187,
+        "h": 168,
+        "cx": 517.64,
+        "cy": 352.74,
+        "ox": 0,
+        "oy": 0
+      },
+      {
+        "role": "head",
+        "file": "head.png",
+        "w": 304,
+        "h": 200,
+        "cx": 528.8,
+        "cy": 161.18,
+        "ox": 10.54,
+        "oy": -177.91
+      },
+      {
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 62,
+        "h": 81,
+        "cx": 380.63,
+        "cy": 368.24,
+        "ox": -137,
+        "oy": 15.5
+      },
+      {
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 60,
+        "h": 79,
+        "cx": 652.78,
+        "cy": 371.96,
+        "ox": 134.52,
+        "oy": 19.84
+      },
+      {
+        "role": "foot-l",
+        "file": "foot-l.png",
+        "w": 95,
+        "h": 70,
+        "cx": 443.25,
+        "cy": 476.72,
+        "ox": -75.01,
+        "oy": 123.99
+      },
+      {
+        "role": "foot-r",
+        "file": "foot-r.png",
+        "w": 93,
+        "h": 69,
+        "cx": 598.23,
+        "cy": 476.72,
+        "ox": 79.97,
+        "oy": 123.99
+      }
+    ]
+  },
+  "proto-witch": {
+    "id": "proto-witch",
+    "kind": "character",
+    "canvas": {
+      "w": 962,
+      "h": 541
+    },
+    "body": {
+      "cx": 475.23,
+      "cy": 345.21,
+      "w": 197,
+      "h": 168
+    },
+    "parts": [
+      {
+        "role": "body",
+        "file": "body.png",
+        "w": 197,
+        "h": 168,
+        "cx": 475.23,
+        "cy": 345.21,
+        "ox": 0,
+        "oy": 0
+      },
+      {
+        "role": "head",
+        "file": "head.png",
+        "w": 273,
+        "h": 204,
+        "cx": 475.23,
+        "cy": 146.14,
+        "ox": 0.58,
+        "oy": -180.08
+      },
+      {
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 61,
+        "h": 81,
+        "cx": 339.45,
+        "cy": 345.21,
+        "ox": -135.78,
+        "oy": 0.58
+      },
+      {
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 60,
+        "h": 81,
+        "cx": 615.04,
+        "cy": 345.21,
+        "ox": 139.81,
+        "oy": 0
+      },
+      {
+        "role": "foot-l",
+        "file": "foot-l.png",
+        "w": 81,
+        "h": 58,
+        "cx": 384.9,
+        "cy": 460.27,
+        "ox": -90.33,
+        "oy": 115.07
+      },
+      {
+        "role": "foot-r",
+        "file": "foot-r.png",
+        "w": 82,
+        "h": 57,
+        "cx": 547.73,
+        "cy": 459.12,
+        "ox": 72.49,
+        "oy": 113.92
+      }
+    ]
+  },
   "quickdraw-vane": {
     "id": "quickdraw-vane",
     "kind": "character",

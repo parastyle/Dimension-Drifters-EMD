@@ -1947,6 +1947,8 @@ export class SpriteRig {
   private boilerplateHead?: Phaser.GameObjects.Image;
   /** Source-pixel centroid offset for a sliced character-owned head; body scale converts it to rig space. */
   private readonly manifestHeadOffset?: Readonly<{ x: number; y: number }>;
+  /** Owner-authored prototype hands are already composed as a visible two-hand rest silhouette. */
+  private readonly preserveAuthoredRestHandSpread: boolean;
   private boilerplateManifest?: GearPartsManifest;
   private boilerplateAssembly?: BoilerplateAssembly;
   private boilerplateBodyAssembly?: BoilerplateAssemblyPart;
@@ -2413,6 +2415,7 @@ export class SpriteRig {
     this.isSelf = isSelf;
     this.bladeAttachmentSourceId = id;
     this.scale = TARGET_BODY_H / manifest.body.h;
+    this.preserveAuthoredRestHandSpread = spriteId.startsWith("proto-");
 
     // Build parts. Draw order (back→front): back hand, feet, body, front hand. The front
     // hand is the one on the side the art faces (right = +x); the other tucks behind.
@@ -9654,13 +9657,18 @@ export class SpriteRig {
       !!this.weapons[1] &&
       usesAimedFiringStance(this.weapons[0].def) &&
       usesAimedFiringStance(this.weapons[1].def);
-    const poseSupportHand = poseSupportHandFor(
-      strikingHand,
-      posePhase !== "idle",
-      this.poseTwoHanded,
-      this.crossfallActive || this.swingHand === "both",
-      pairedAimed,
-    );
+    // The generic one-hand idle pose pulls the support hand onto the torso. That is correct for the
+    // Drifter kit, but fully occludes the owner's already-composed left prototype hand behind the body.
+    const poseSupportHand =
+      this.preserveAuthoredRestHandSpread && posePhase === "idle"
+        ? -1
+        : poseSupportHandFor(
+            strikingHand,
+            posePhase !== "idle",
+            this.poseTwoHanded,
+            this.crossfallActive || this.swingHand === "both",
+            pairedAimed,
+          );
 
     const poseCloseBladeSuppressed =
       this.closeBladePoseActive ||

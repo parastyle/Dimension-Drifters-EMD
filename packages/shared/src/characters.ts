@@ -44,6 +44,9 @@ export const PLAYABLE_CHARACTERS = [
   "cc-thornroot",
   "cc-tinker-magnus-brasswick",
   "cc-yuki-the-hollow-smile",
+  "proto-samurai",
+  "proto-sheriff",
+  "proto-witch",
 ] as const;
 
 export type PlayableCharacter = (typeof PLAYABLE_CHARACTERS)[number];
@@ -91,6 +94,9 @@ export const CHARACTER_KITS = {
   "cc-thornroot": { spread: { str: 2, dex: 1, int: 2, con: 4, luk: 1 }, quirk: "regrow" },
   "cc-tinker-magnus-brasswick": { spread: { str: 1, dex: 2, int: 4, con: 2, luk: 1 }, quirk: "pressurized" },
   "cc-yuki-the-hollow-smile": { spread: { str: 2, dex: 4, int: 1, con: 1, luk: 2 }, quirk: "fox-dance" },
+  "proto-samurai": { spread: { str: 2, dex: 2, int: 2, con: 2, luk: 2 }, quirk: "unwritten" },
+  "proto-sheriff": { spread: { str: 2, dex: 2, int: 2, con: 2, luk: 2 }, quirk: "unwritten" },
+  "proto-witch": { spread: { str: 2, dex: 2, int: 2, con: 2, luk: 2 }, quirk: "unwritten" },
 } as const satisfies Record<PlayableCharacter, {
   readonly spread: Readonly<Record<"str" | "dex" | "int" | "con" | "luk", number>>;
   readonly quirk: string;
@@ -156,6 +162,9 @@ const CHARACTER_NAMES: Record<string, string> = {
   "cc-thornroot": "Thornroot",
   "cc-tinker-magnus-brasswick": "Tinker-Magnus Brasswick",
   "cc-yuki-the-hollow-smile": "Yuki",
+  "proto-samurai": "Prototype Samurai",
+  "proto-sheriff": "Prototype Sheriff",
+  "proto-witch": "Prototype Witch",
 };
 
 /** §7 per-character render-scale bump for small-footprint skins (so the thin/compact ones don't read as
@@ -164,20 +173,5 @@ export function characterScale(id: string): number {
   return CHARACTER_SCALE[id] ?? 1;
 }
 const CHARACTER_SCALE: Record<string, number> = {
-  "cc-asha-the-ash-walker": 1.114,
-  "cc-brother-cassian-the-ashen-crusader": 1.128,
-  "cc-brother-tendo-of-the-still-bell": 1.116,
-  "cc-bryda-houndcall": 1.25,
-  "cc-corvane-the-crimson-draught": 1.06,
-  "cc-crowmantle-sel": 1.185,
-  "cc-dame-veyra-of-the-thornwatch": 1.142,
-  "cc-doctor-phineas-quill-esq": 1.117,
-  "cc-elias-parson-thorne": 1.25,
-  "cc-hollowmaw": 1.116,
-  "cc-mawkin-sourgrin-the-hex-witch": 1.097,
-  "cc-pyra-cinderhowl-the-flame-caster": 1.25,
-  "cc-sable-cipher": 1.25,
-  "cc-the-hollow-mask": 1.12,
-  "cc-tinker-magnus-brasswick": 1.22,
-  "cc-yuki-the-hollow-smile": 1.25,
+
 };

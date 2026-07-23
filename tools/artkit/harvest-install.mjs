@@ -9,6 +9,7 @@
 //
 //   node harvest-install.mjs --ids=drifter
 //   node harvest-install.mjs --ids=drifter,critter,boothill --kind=character
+//   node harvest-install.mjs --ids=prototype --post-key=1  # remove resize-introduced chroma fringe
 //
 // Re-run any time you re-slice or promote a new anchor; it's idempotent.
 
@@ -29,6 +30,7 @@ const arg = (k, d) => {
 };
 const ids = (arg("ids", "") || "").split(",").map((s) => s.trim()).filter(Boolean);
 const kind = arg("kind", "character");
+const POST_KEY = arg("post-key", "0") === "1";
 
 // --- Pre-size to game-res (best practice) ---------------------------------
 // Codex masters are ~1000-1700px; the rig draws them at ~84px (character body) or
@@ -40,6 +42,12 @@ const kind = arg("kind", "character");
 const PRESIZE = arg("presize", "1") !== "0";
 const CHAR_BODY_TARGET = Number(arg("char-target", "168")); // source body height after presize (≈2x the 84px draw)
 const WEAPON_LONG_TARGET = Number(arg("weapon-target", "256")); // source longest side floor (≈2x the ≤124px draw)
+// Owner-approved source-space head seating for the three authored prototype sheets.
+const PROTOTYPE_HEAD_OY = Object.freeze({
+  "proto-samurai": -331,
+  "proto-sheriff": -287,
+  "proto-witch": -313,
+});
 
 // A weapon's pre-size target scales with its on-screen length (`displayLength` in weapons.ts) — a
 // long sword (e.g. displayLength 320) needs a ~640px texture, not the 256 floor, or it upscales soft.
@@ -82,6 +90,9 @@ const entries = [];
 for (const id of ids) {
   const partsJson = ensureSliced(id);
   const manifest = JSON.parse(readFileSync(partsJson, "utf8"));
+  const prototypeHeadOy = PROTOTYPE_HEAD_OY[id];
+  const prototypeHead = manifest.parts.find((part) => part.role === "head");
+  if (prototypeHead && Number.isFinite(prototypeHeadOy)) prototypeHead.oy = prototypeHeadOy;
   const srcDir = join(ROOT, "out", id, "parts");
   const dstDir = join(CLIENT_PUBLIC, id);
   rmSync(dstDir, { recursive: true, force: true });
@@ -101,6 +112,7 @@ for (const id of ids) {
     }
   }
   const fileToPart = new Map(manifest.parts.map((p) => [p.file, p]));
+  const installedPngs = [];
 
   for (const f of readdirSync(srcDir)) {
     if (!f.endsWith(".png")) continue;
@@ -121,6 +133,25 @@ for (const id of ids) {
     } else {
       cpSync(join(srcDir, f), join(dstDir, f));
     }
+    installedPngs.push(join(dstDir, f));
+  }
+
+  // Lanczos may reintroduce faint chroma RGB at very low-alpha edge pixels. Owner-authored green-screen
+  // intake can opt into one final pass through the SAME pinned keyer (not a second local algorithm)
+  // before atlas packing. Full despill is safe only for explicitly green-free subjects, hence opt-in.
+  if (POST_KEY) {
+    const keyed = spawnSync(
+      process.execPath,
+      [
+        join(ROOT, "guards", "chroma-key.mjs"),
+        "--in-place=1",
+        "--preview=0",
+        "--despill=1",
+        ...installedPngs,
+      ],
+      { cwd: ROOT, stdio: "inherit" },
+    );
+    if (keyed.status !== 0) throw new Error(`post-presize chroma-key failed for ${id}`);
   }
 
   // Scale the rest of the geometry (positions/centroids/bbox/canvas) by the same factor so

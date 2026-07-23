@@ -6,8 +6,8 @@
 import {
   CHARACTER_KITS,
   DEFAULT_CHARACTER,
-  type PlayableCharacter,
   PLAYABLE_CHARACTERS,
+  type PlayableCharacter,
 } from "./characters.js";
 import type { Attr } from "./leveling.js";
 
@@ -79,6 +79,9 @@ export interface QuirkDef {
  */
 export const CHARACTER_LINEAGE = {
   drifter: "bruiser",
+  "proto-samurai": "bruiser",
+  "proto-sheriff": "bruiser",
+  "proto-witch": "bruiser",
   "cc-asha-the-ash-walker": "bruiser",
   "cc-bryda-houndcall": "bruiser",
   "cc-deepfall-korr": "bruiser",
