@@ -1426,7 +1426,7 @@ export const GEAR_CATALOG = {
     budgetUnits: 1,
     powerTag: "economy:duplicate-scrip",
     stats: {},
-    effectText: "Duplicate gear yields +10% Scrip, rounded down after the run total",
+    effectText: "Duplicate gear yields +10% Money, rounded down after the run total",
     effectAvailability: "inert",
     artKey: "house-edge-glasses",
     legacySetId: "house-edge",

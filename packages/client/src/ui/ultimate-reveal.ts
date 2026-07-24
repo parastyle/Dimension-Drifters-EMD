@@ -23,7 +23,6 @@ export function ultimateSeqEdge(
 export interface UltimateInputGate {
   alive: boolean;
   modal: boolean;
-  nearShop: boolean;
   unlocked: boolean;
   charge: number;
   phase: number;
@@ -33,7 +32,7 @@ export interface UltimateInputGate {
 
 /** Client affordance only. The server repeats every one of these checks authoritatively. */
 export function ultimateInputAffordance(gate: UltimateInputGate): "send" | "dry" | "blocked" {
-  if (!gate.alive || gate.modal || gate.nearShop) return "blocked";
+  if (!gate.alive || gate.modal) return "blocked";
   if (gate.pending) return "blocked";
   if (gate.doorReturn) return "send";
   if (!gate.unlocked || gate.charge < 100 || gate.phase !== UltimatePhase.Idle) return "dry";

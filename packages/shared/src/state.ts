@@ -11,7 +11,7 @@ export class ArsenalSlot extends Schema {
   @type("string") weapon = "";
   @type("uint8") rarity = 0;
   @type("string") affix = "";
-  /** §13 salvage/shop provenance — true only if this weapon traces back to an enemy drop (bankable value). */
+  /** Earned provenance used by weapon banking and B20 L3 disassembly eligibility. */
   @type("boolean") earned = false;
   // G-01 server-private combat ledger. These deliberately have no `@type`: only the active slot's
   // charges/maxCharges are presentation state, while stowed cooldown debt remains authoritative server data.
@@ -133,9 +133,6 @@ export class PlayerState extends Schema {
    *  the same numbers (WYSIWYG). */
   @type("uint8") weaponRarity = 0;
   @type("string") weaponAffix = "";
-  /** §13 salvage-bag stub: count of weapons salvaged (hold-drop). The real parts economy (§13) isn't
-   *  built yet — this just tallies + drives the HUD readout so the hold-to-salvage action has feedback. */
-  @type("number") salvaged = 0;
   /** §5/§20 jump (Stage B): HEIGHT in px above the ground (0 = grounded). A real vertical axis under
    *  gravity — the jump seeds the upward velocity, the §8 parry-launch will add to it. Synced so every
    *  client lifts the rig; the server gates pit-falling on it (§17 — airborne, height>0, clears gaps). */
@@ -177,16 +174,10 @@ export class PlayerState extends Schema {
   @type([ArsenalSlot]) slots = new ArraySchema<ArsenalSlot>();
   /** Which of the 3 slots is in hand (0–2). */
   @type("uint8") activeSlot = 0;
-  /** Overflow storage — weapons carried but not in a slot. Sellable at a shopkeeper. */
+  /** Finite overflow storage. Earned rows can be disassembled directly from the bag panel. */
   @type([ArsenalSlot]) bag = new ArraySchema<ArsenalSlot>();
-  /** §10 SCRIP — the belt meta-currency earned by selling weapons to a shopkeeper (distinct from run
-   *  salvage). Synced for the HUD; the persistence layer (send-home) rides on top of this counter. */
-  @type("uint16") scrip = 0;
-  /** §31 v0.118 META-PROGRESSION upgrade levels (permanent, bought with scrip). Synced so the shop UI +
-   *  HUD reflect purchases; seeded from the persisted account on join, applied to the starting stats. */
-  @type("uint8") upVitality = 0;
-  @type("uint8") upFortune = 0;
-  @type("uint8") upPower = 0;
+  /** B20 L3 run money. It starts at zero and banks 100% through terminal meta-account settlement. */
+  @type("uint32") scrip = 0;
   // ── SYNCED ATTACK BEAT — APPENDED for wire safety. Weapon identity + `aimDir` already describe the pose;
   // these fields expose only the authoritative acceptance edge so remote clients can start its animation.
   /** Monotonic uint32 counter bumped exactly once when the server accepts and fires an attack. */
@@ -462,6 +453,10 @@ export class PickupState extends Schema {
   /** Public coarse weapon class for mystery-drop glyphs ("melee" | "ranged" | "caster"). This preserves
    *  the intended type tell without serializing the exact hidden weapon identity. Appended for wire safety. */
   @type("string") weaponClass = "";
+  /** B20 L3: true only for earned run weapons which may become money in place. */
+  @type("boolean") disassemblable = false;
+  /** Optional owner visibility for an overflowed chest reward. Empty means squad-visible. */
+  @type("string") ownerId = "";
 }
 
 /**
@@ -698,8 +693,8 @@ export class ArenaState extends Schema {
   @type("string") dimensionId = DEFAULT_DIMENSION;
   /** Run outcome (§16): "active" while playing, "victory" once a player extracts, "defeat" on a §6 wipe. */
   @type("string") outcome = "active";
-  /** Extraction portal — opened when the dimension boss falls; step in to BANK the squad's carried
-   *  salvage and end the run in victory (§6 "bank now"). */
+  /** Extraction portal — opened when the dimension boss falls; stepping in ends the run in victory,
+   *  settles weapon escrow, and banks 100% of run money. */
   @type("boolean") portalOpen = false;
   @type("number") portalX = 0;
   @type("number") portalY = 0;
@@ -712,9 +707,6 @@ export class ArenaState extends Schema {
   @type("number") riftCharge = 0;
   /** §6 chain depth — 1 on a fresh run, +1 per rift descent. Drives the H2 difficulty scaling + the HUD. */
   @type("uint8") depth = 1;
-  /** §6/§13 the squad's BANKED salvage (v0.103 "bank or lose"): carried `player.salvaged` is deposited
-   *  here on extraction and LOST on a wipe. Survives restarts within the room session (the M0 "account"). */
-  @type("number") bankedSalvage = 0;
   /** §16 OLD RUST phase (0 = no boss · 1 paces/bullet-walls · 2 +punch-slams · 3 enrage). Drives the
    *  client's heat-haze/aggression tell. */
   @type("number") bossPhase = 0;
@@ -741,9 +733,6 @@ export class ArenaState extends Schema {
    *  room's wave is uncleared (a closed gate); 0 = open (no lock). `beltRoomName` labels the room banner. */
   @type("number") beltLockX = 0;
   @type("string") beltRoomName = "";
-  /** §29 v0.118 world-x of the belt SHOPKEEPER (0 = none). Synced so every client draws the vendor + gates
-   *  the sell interaction on proximity. */
-  @type("number") beltShopX = 0;
   /** Whole elapsed run seconds for the HUD. Appended wire replacement for the legacy per-tick float. */
   @type("uint32") elapsedSeconds = 0;
   /** Collectible enemy money rewards introduced with schema v34. */

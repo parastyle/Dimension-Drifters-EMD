@@ -10,13 +10,13 @@ describe("objective HUD copy", () => {
       bossActive: false,
       portalOpen: false,
       bossEtaSeconds: 83.9,
-      carriedSalvage: 12,
-      bankedSalvage: 40,
+      runMoney: 12,
+      bankedMoney: 40,
     });
 
     expect(copy.location).toBe("Verdant Ruins · Depth 3");
     expect(copy.objective).toBe("Survive · Boss in 1:23");
-    expect(copy.economy).toBe("⛏ 12 carried · 40 banked");
+    expect(copy.economy).toBe("◈ 12 run money · 40 banked");
     expect(`${copy.location} ${copy.objective} ${copy.economy}`).not.toMatch(
       /RMB|LMB|STR|DEX|KIT|character/i,
     );
@@ -30,8 +30,8 @@ describe("objective HUD copy", () => {
       bossActive: false,
       portalOpen: true,
       bossEtaSeconds: 0,
-      carriedSalvage: 5,
-      bankedSalvage: 9,
+      runMoney: 5,
+      bankedMoney: 9,
       lagging: true,
     });
     expect(portal.objective).toBe("Choose a gate · Bank & end or push deeper");
@@ -44,8 +44,8 @@ describe("objective HUD copy", () => {
       bossActive: true,
       portalOpen: false,
       bossEtaSeconds: 0,
-      carriedSalvage: 0,
-      bankedSalvage: 0,
+      runMoney: 0,
+      bankedMoney: 0,
     });
     expect(rush.location).toBe("Frostfell · Depth 11");
     expect(rush.objective).toBe("Boss 10/10 · Cut it down");
@@ -57,14 +57,14 @@ describe("objective HUD copy", () => {
       bossActive: false,
       portalOpen: false,
       bossEtaSeconds: 0,
-      carriedSalvage: 0,
-      bankedSalvage: 0,
+      runMoney: 0,
+      bankedMoney: 0,
       beltRoomName: "The Catwalk",
       beltLocked: true,
     });
     expect(belt.location).toBe("The Catwalk");
     expect(belt.objective).toBe("Clear this room");
-    expect(belt.economy).toBeUndefined();
+    expect(belt.economy).toBe("◈ 0 run money · 0 banked");
   });
 
   it("formats negative and hour-scale countdowns without prose", () => {

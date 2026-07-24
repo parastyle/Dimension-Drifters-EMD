@@ -387,7 +387,7 @@ describe("gear G1/G2 shared catalog, account, and allocation laws", () => {
   });
 
   it("pins schema 35 without run stats or level fields and keeps the nested gear envelope", () => {
-    expect(petShared.SCHEMA_VERSION).toBe(36);
+    expect(petShared.SCHEMA_VERSION).toBe(37);
     const playerSymbols = Object.getOwnPropertySymbols(petShared.PlayerState);
     const playerMetadata = (
       petShared.PlayerState as unknown as Record<symbol, Record<number, { name: string }>>
@@ -674,43 +674,6 @@ describe("weapon bank B2 — carry, settlement, pair, sale, and prestige conserv
       lostPhysical: 2,
     });
     expect(defeat.weaponBank.stash).toEqual([safeDefeat]);
-  });
-
-  it("persists a pair as one stash entry, sells both components once, and never resurrects on retry", () => {
-    const candidates = petShared.DROP_POOL.flatMap((lead) =>
-      petShared.DROP_POOL.map((offhand) => [lead, offhand] as const),
-    ).find(([lead, offhand]) =>
-      petShared.pairEligible(petShared.WEAPONS[lead], petShared.WEAPONS[offhand]),
-    );
-    expect(candidates).toBeDefined();
-    if (!candidates) return;
-    const account = petShared.createMetaAccountV4();
-    const pair: import("@dd/shared").PairedWeaponEntryV1 = {
-      kind: "pair",
-      entryId: bankPairId(20),
-      lead: bankWeapon(30, candidates[0], "legendary", "brutal"),
-      offhand: bankWeapon(31, candidates[1], "rare", "keen"),
-    };
-    account.weaponBank.stash.push(pair);
-    const revision = account.revision;
-    const sale = ultimateProgression.sellWeaponBankEntry(account, {
-      requestId: "pair-sale",
-      expectedRevision: revision,
-      entryId: pair.entryId,
-      from: "stash",
-    });
-    expect(sale).toMatchObject({ ok: true, payout: 78 });
-    expect(account.weaponBank.stash).toEqual([]);
-    const scrip = account.scrip;
-    expect(
-      ultimateProgression.sellWeaponBankEntry(account, {
-        requestId: "pair-sale",
-        expectedRevision: revision,
-        entryId: pair.entryId,
-        from: "stash",
-      }).ok,
-    ).toBe(false);
-    expect(account.scrip).toBe(scrip);
   });
 
   it("prestige clears stash/intake/pairs/last-carry for zero Scrip while preserving permanent state", () => {

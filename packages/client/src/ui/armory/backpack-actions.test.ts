@@ -7,9 +7,8 @@ describe("backpack reversible/destructive intent separation", () => {
     expect(backpackTileIntent("inventory", "slot")).toBe("stow");
   });
 
-  it("makes SELL tiles selection-only and reserves selling for the detail action", () => {
-    expect(backpackTileIntent("sell", "bag")).toBe("select");
-    expect(backpackTileIntent("sell", "slot")).toBe("select");
-    expect(backpackPrimaryIntent("sell", "bag")).toBe("sell");
+  it("uses the bag detail action for damage-budget disassembly", () => {
+    expect(backpackPrimaryIntent("inventory", "bag")).toBe("disassemble");
+    expect(backpackPrimaryIntent("inventory", "slot")).toBe("stow");
   });
 });

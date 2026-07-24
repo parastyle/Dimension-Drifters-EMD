@@ -7,8 +7,8 @@ export interface ObjectiveHudCopyInput {
   bossActive: boolean;
   portalOpen: boolean;
   bossEtaSeconds: number;
-  carriedSalvage: number;
-  bankedSalvage: number;
+  runMoney: number;
+  bankedMoney: number;
   beltRoomName?: string;
   beltLocked?: boolean;
   lagging?: boolean;
@@ -68,9 +68,9 @@ export function objectiveHudCopy(input: ObjectiveHudCopyInput): ObjectiveHudCopy
         ? `${input.dimensionName} · Testing Grounds`
         : `${input.dimensionName} · Depth ${depth}`;
   const economy =
-    input.mode === "arena" || input.mode === "bossrush"
-      ? `⛏ ${Math.max(0, Math.floor(input.carriedSalvage))} carried · ${Math.max(0, Math.floor(input.bankedSalvage))} banked`
-      : undefined;
+    input.mode === "training"
+      ? undefined
+      : `◈ ${Math.max(0, Math.floor(input.runMoney))} run money · ${Math.max(0, Math.floor(input.bankedMoney))} banked`;
 
   let objective: string;
   let accent = 0x8ba7b8;

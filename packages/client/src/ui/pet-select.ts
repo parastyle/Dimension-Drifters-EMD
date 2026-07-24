@@ -110,10 +110,8 @@ function petBonusCopy(id: PetId, level: number): readonly [string, string] {
       ];
     case "gilded-gecko":
       return [
-        `Earned sale Scrip +${Math.round(mods.saleBonusRate * 100)}%${nextCopy(
-          `+${Math.round(next.saleBonusRate * 100)}%`,
-        )}`,
-        "Level 10: minted Scrip run cap increases to 30",
+        "Archived economy perk · no in-run effect",
+        "Disassembly values stay fixed for every pet",
       ];
     case "brass-crab":
       return [

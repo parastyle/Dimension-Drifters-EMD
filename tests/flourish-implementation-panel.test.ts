@@ -166,12 +166,12 @@ describe("flourish raw Arena cancellation panel", () => {
     expect(freezeGateAt).toBeLessThan(animateAt);
   });
 
-  it("does not add bag, shop, or menu keys to the raw cancellation grammar", () => {
+  it("does not add inventory or menu keys to the raw cancellation grammar", () => {
     const decision = methodBody(
       rigSource,
       "export function rawFlourishIntentCancels(",
       "export function nextFlourishStreakCount(",
     );
-    expect(decision).not.toMatch(/bag|shop|menu|TAB|ESC|ultimate/);
+    expect(decision).not.toMatch(/bag|menu|TAB|ESC|ultimate/);
   });
 });

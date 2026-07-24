@@ -19,7 +19,6 @@ import {
   BEAM_MAX_WIDTH,
   BEAM_RECOVERY_SECONDS,
   LUCK_RARITY_PER,
-  SCRIP_BY_RARITY,
 } from "./constants.js";
 import { clamp } from "./math.js";
 import { katanaExpectedMechanic } from "./melee.js";
@@ -27,26 +26,25 @@ import type { WeaponDef } from "./weapons.js";
 import { hybridProjectileDamagePerAcceptedBeat, WEAPONS } from "./weapons.js";
 
 /** One rarity tier. `dmg` multiplies every damage source of the weapon; `weight` is the base drop odds
- *  share (LUK up-weights the higher tiers); `salvage` is the tier's carried-salvage value; `color` is the
+ *  share (LUK up-weights the higher tiers); `color` is the
  *  tier cue used on pickups/cards (cursed's ghostly purple is the §10 pre-pickup telegraph). */
 export interface RarityDef {
   id: string;
   name: string;
   weight: number;
   dmg: number;
-  salvage: number;
   color: number;
 }
 
 /** Index into RARITIES is the synced `rarity` value (uint8) — 0 = Common. */
 export const RARITIES: readonly RarityDef[] = [
-  { id: "common", name: "Common", weight: 46, dmg: 1.0, salvage: 1, color: 0x9aa5b1 },
-  { id: "uncommon", name: "Uncommon", weight: 26, dmg: 1.08, salvage: 2, color: 0x59c96b },
-  { id: "rare", name: "Rare", weight: 14, dmg: 1.18, salvage: 3, color: 0x4aa3ff },
-  { id: "really-rare", name: "Really Rare", weight: 7, dmg: 1.3, salvage: 5, color: 0x2fd6c3 },
-  { id: "legendary", name: "Legendary", weight: 4, dmg: 1.45, salvage: 8, color: 0xffa53a },
-  { id: "ultimate", name: "Ultimate", weight: 1.6, dmg: 1.65, salvage: 12, color: 0xff4a6a },
-  { id: "cursed", name: "Cursed", weight: 1.4, dmg: 1.5, salvage: 4, color: 0xa06bff },
+  { id: "common", name: "Common", weight: 46, dmg: 1.0, color: 0x9aa5b1 },
+  { id: "uncommon", name: "Uncommon", weight: 26, dmg: 1.08, color: 0x59c96b },
+  { id: "rare", name: "Rare", weight: 14, dmg: 1.18, color: 0x4aa3ff },
+  { id: "really-rare", name: "Really Rare", weight: 7, dmg: 1.3, color: 0x2fd6c3 },
+  { id: "legendary", name: "Legendary", weight: 4, dmg: 1.45, color: 0xffa53a },
+  { id: "ultimate", name: "Ultimate", weight: 1.6, dmg: 1.65, color: 0xff4a6a },
+  { id: "cursed", name: "Cursed", weight: 1.4, dmg: 1.5, color: 0xa06bff },
 ] as const;
 
 export const RARITY_COMMON = 0;
@@ -130,18 +128,6 @@ export function lootDamageMult(rarity: number, affixId: string): number {
 /** The held weapon's cooldown/fire-rate multiplier from its affix (rarity never touches speed). */
 export function lootCooldownMult(affixId: string): number {
   return affixById(affixId).cd;
-}
-
-/** §13 carried-salvage value of salvaging an EARNED weapon of this rarity. */
-export function salvageValue(rarity: number): number {
-  return RARITIES[rarity]?.salvage ?? 1;
-}
-
-/** §29 v0.118 SCRIP paid at a shopkeeper for SELLING a weapon. Only earned (enemy-dropped) weapons pay —
- *  conjured/gallery weapons sell for nothing (the same anti-launder rule as salvage). */
-export function scripValue(rarity: number, earned: boolean): number {
-  if (!earned) return 0;
-  return SCRIP_BY_RARITY[Math.min(rarity, SCRIP_BY_RARITY.length - 1)] ?? SCRIP_BY_RARITY[0];
 }
 
 /**

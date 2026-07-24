@@ -9,14 +9,14 @@ import { describe, expect, it } from "vitest";
 import { pairPreview } from "./pair-preview.js";
 
 describe("pairPreview", () => {
-  it("shows a deterministic eligible gun pair, better-half fee, and separate magazines", () => {
+  it("shows a deterministic eligible gun pair with zero in-run service fee", () => {
     const preview = pairPreview({
       lead: { weaponId: "x-gun-nailgun", rarity: 1, affix: "swift", earned: true },
       off: { weaponId: "x-gun-ricochet-pistol", rarity: 3, affix: "keen", earned: true },
       loadoutIds: ["x-gun-nailgun", "x-gun-ricochet-pistol", "rusty-cleaver"],
     });
     expect(preview.eligible).toBe(true);
-    expect(preview.fee).toBe(34);
+    expect(preview.fee).toBe(0);
     expect(preview.separateMagazines).toBe(true);
     expect(preview.leadDamage).toBeGreaterThan(0);
     expect(preview.offDamage).toBeGreaterThan(0);

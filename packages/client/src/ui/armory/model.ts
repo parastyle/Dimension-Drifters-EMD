@@ -2,7 +2,7 @@ import {
   type CarryPlacementV1,
   type CarrySelectionV1,
   type MetaAccountV4,
-  scripValue,
+  weaponDisassemblyValue,
   WEAPON_ACTIVE_CAPACITY,
   WEAPON_PACK_BASE_CAPACITY,
   WEAPONS,
@@ -256,10 +256,10 @@ export function moveArmoryEntryZone(
 }
 
 export function armoryEntryValue(entry: WeaponBankEntryV1): number {
-  return weaponEntryInstances(entry).reduce((sum, instance) => {
-    const rarity = weaponRarityIndex(instance.rarity);
-    return sum + (rarity >= 0 ? scripValue(rarity, true) : 0);
-  }, 0);
+  return weaponEntryInstances(entry).reduce(
+    (sum, instance) => sum + weaponDisassemblyValue(instance.weaponId),
+    0,
+  );
 }
 
 export function armoryEntryName(entry: WeaponBankEntryV1): string {

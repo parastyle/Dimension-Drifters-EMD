@@ -1,9 +1,7 @@
 /**
- * §31 v0.118 META-PROGRESSION — permanent upgrades bought with belt SCRIP (the "send stuff back" sink).
- * Pure + data-driven: the catalog, next-level cost, and stat application live here so the server (buy +
- * apply-on-spawn) and the client (shop UI + persistence) share one source of truth. Levels persist across
- * runs (client localStorage bank today; a server/account store can replace the transport without touching
- * this). Kept deliberately small — three legible tracks, three levels each.
+ * Legacy meta-upgrade catalog retained for persisted MetaLevels compatibility. B20 L3 has no live in-run
+ * purchase route and does not apply these rows. The pure catalog remains available to future out-of-run
+ * work without changing the existing account shape.
  */
 
 export type MetaUpgradeId = "vitality" | "fortune" | "power";
@@ -11,10 +9,10 @@ export type MetaUpgradeId = "vitality" | "fortune" | "power";
 export interface MetaUpgrade {
   id: MetaUpgradeId;
   name: string;
-  /** One-line effect per level, for the shop UI. */
+  /** One-line legacy effect per level. */
   desc: string;
   maxLevel: number;
-  /** Scrip cost to buy each successive level (index 0 = 1st level). */
+  /** Dormant money cost for each successive level (index 0 = 1st level). */
   costs: readonly number[];
 }
 
@@ -55,7 +53,7 @@ export function sanitizeMetaLevels(input: unknown): MetaLevels {
   return { vitality: lvl("vitality"), fortune: lvl("fortune"), power: lvl("power") };
 }
 
-/** Scrip cost to buy the NEXT level of `id` given the current level, or null if already maxed. PURE. */
+/** Dormant next-level cost lookup retained for persisted catalog compatibility. PURE. */
 export function nextUpgradeCost(id: MetaUpgradeId, currentLevel: number): number | null {
   const u = META_UPGRADES.find((x) => x.id === id);
   if (!u || currentLevel >= u.maxLevel) return null;
@@ -148,7 +146,7 @@ export interface PetProgressReceipt {
 export const META_ACCOUNT_V2_VERSION = 2 as const;
 export const META_ACCOUNT_V3_VERSION = 3 as const;
 export const META_ACCOUNT_VERSION = 4 as const;
-export const META_ACCOUNT_SCRIP_MAX = 65535 as const;
+export const META_ACCOUNT_SCRIP_MAX = 0xffff_ffff as const;
 export const META_ACCOUNT_REVISION_MAX = 0xffffffff as const;
 export const STARTER_PET_ID: PetId = "verdant-wing";
 

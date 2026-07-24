@@ -11,6 +11,7 @@ export * from "./collision.js";
 export * from "./combat.js";
 export * from "./constants.js";
 export * from "./dimensions.js";
+export * from "./economy.js";
 export * from "./enemies.js";
 export * from "./gear.js";
 export * from "./hit-envelope.js";

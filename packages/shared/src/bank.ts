@@ -1,5 +1,6 @@
 import { ENEMY_KINDS } from "./enemies.js";
-import { AFFIXES, CURSED_AFFIXES, DROP_POOL, RARITIES, scripValue } from "./loot.js";
+import { weaponDisassemblyValue } from "./economy.js";
+import { AFFIXES, CURSED_AFFIXES, DROP_POOL, RARITIES } from "./loot.js";
 import { isActiveWeaponId, pairEligible, WEAPONS } from "./weapons.js";
 
 export const WEAPON_BANK_VERSION = 1 as const;
@@ -528,7 +529,7 @@ export function sanitizeWeaponBankV1(input: unknown): WeaponBankSanitizeResult {
 }
 
 export interface ArchivedWeaponBankSalvageResult {
-  /** Standard shop Scrip value for every retired instance, before the account-level currency clamp. */
+  /** Shared disassembly value for every retired instance, before the account-level currency clamp. */
   payout: number;
   salvagedInstances: number;
   affectedEntries: number;
@@ -541,7 +542,7 @@ export interface ArchivedWeaponBankSalvageResult {
 
 /**
  * One-way archived-weapon migration over every ownership location. It is deliberately idempotent and does
- * not touch account revision/Scrip itself: the server join flow applies the payout before committing the
+ * not touch account revision/money itself: the server join flow applies the payout before committing the
  * client's carry at the revision it actually saw, matching the stale-expedition migration discipline.
  */
 export function salvageArchivedWeaponBank(
@@ -562,8 +563,7 @@ export function salvageArchivedWeaponBank(
     if (archived.length === 0) return entry;
     result.affectedEntries++;
     for (const instance of archived) {
-      const rarity = weaponRarityIndex(instance.rarity);
-      if (rarity >= 0) result.payout += scripValue(rarity, true);
+      result.payout += weaponDisassemblyValue(instance.weaponId);
       result.salvagedInstances++;
       result.salvagedWeaponIds.push(instance.weaponId);
     }

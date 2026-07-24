@@ -43,7 +43,6 @@ import {
   type BeltLevel,
   BOSS_DEF_IDS,
   BOSS_PROJECTILE_BUDGET,
-  BOSS_SALVAGE_PER_DEPTH,
   BOSSRUSH_BREATHER,
   BOSSRUSH_HEAL_FRAC,
   type BossCounterSummary,
@@ -115,6 +114,7 @@ import {
   DEPTH_TOL_ENEMY,
   DEPTH_TOL_PLAYER,
   DIMENSIONS,
+  DISASSEMBLY_HOLD_TICKS,
   DIST_JUMP_AIRTIME,
   DIST_JUMP_COOLDOWN,
   DIST_JUMP_LANDING_SPEED_MULT,
@@ -207,7 +207,6 @@ import {
   META_ACCOUNT_REVISION_MAX,
   META_ACCOUNT_SCRIP_MAX,
   META_JOIN_MAX_BYTES,
-  META_VITALITY_HP,
   MONEY_DROP_ARM_TICKS,
   MONEY_DROP_FLIGHT_TICKS,
   MONEY_DROP_REACH_MAX,
@@ -216,6 +215,7 @@ import {
   type MeleeComboFamily,
   type MeleeComboStep,
   type MetaAccountV4,
+  type MoneyBankReceipt,
   type MoveStance,
   meleeComboGraceMs,
   meleeComboSelectionFor,
@@ -337,9 +337,7 @@ import {
   SHIFTER_HP_PER_WAVE,
   SHIFTER_INTERVAL,
   SHIFTER_KIND_IDS,
-  SHIFTER_SALVAGE_PER_DEPTH,
   SHIFTER_TIER_SECONDS,
-  SHOP_RADIUS,
   type SingleWeaponEntryV1,
   SLIDE_PHASE_GROUND,
   SLIDE_PHASE_OFF,
@@ -353,12 +351,10 @@ import {
   type SwingDescriptor,
   safeSpawnPos,
   salvageArchivedWeaponBank,
-  salvageValue,
   sanitizeMetaAccountV2,
   sanitizeMetaAccountV3,
   sanitizeMetaAccountV4WithDiagnostics,
   sanitizeMetaLevels,
-  scripValue,
   selectChainTargets,
   serverSeededGunPelletVolley,
   shortestAngleDelta,
@@ -457,6 +453,7 @@ import {
   type WeaponBankEntryV1,
   type WeaponDef,
   type WeaponInstanceV1,
+  type WeaponDisassemblyReceipt,
   type WeaponProvenance,
   WORM_MAX_SEGMENTS,
   weaponAttackCooldown,
@@ -464,6 +461,7 @@ import {
   weaponEffectEmitterPoint,
   weaponEntryInstances,
   weaponEntryPhysicalSize,
+  weaponDisassemblyValue,
   weaponMuzzleWorldPoint,
   weaponMuzzleWorldPointsForShot,
   weaponRarityId,
@@ -489,8 +487,6 @@ import {
 import {
   bankPetBondXp,
   commitWeaponCarry,
-  type StashSaleResult,
-  sellWeaponBankEntry,
   settleWeaponExpedition,
   type WeaponSettlementResult,
   wipeWeaponBankForPrestige,
@@ -968,9 +964,8 @@ interface CombatState {
   /** Graveside Manner's bounded event receipt; no per-tick allocation or synced counter. */
   killHealWindowStart: number;
   killHealWindowAmount: number;
-  /** §13 salvage PROVENANCE (v0.103 anti-exploit): true only while the held weapon traces back to an
-   *  ENEMY DROP. Cycled/conjured/gallery weapons are false — salvaging them pays nothing, so the
-   *  cycle→salvage loop can't mint bankable salvage from thin air. */
+  /** Earned provenance (v0.103 anti-exploit): true only while the held weapon traces back to an enemy
+   *  drop/account row. Cycled, conjured, and gallery weapons cannot mint money through disassembly. */
   heldEarned: boolean;
   /** G-02 Bulwark success reward: absorb points, never an extension of parry invulnerability. */
   bulwarkShield: number;
@@ -1193,7 +1188,6 @@ export class GameRoom extends Room<ArenaState> {
   private worldTier = 0;
   private readonly disconnectedPlayers = new Map<string, DisconnectedPlayerReservation>();
   private readonly weaponSettlementReceipts = new Map<string, WeaponSettlementResult>();
-  private readonly stashSaleReceipts = new Map<string, StashSaleResult>();
   private readonly prestigeReceipts = new Map<string, unknown>();
   /** One optional farewell per terminal game clear; consumed only by an accepted prestige receipt. */
   private readonly prestigeGameClearReceipts = new Set<string>();
@@ -1375,6 +1369,11 @@ export class GameRoom extends Room<ArenaState> {
   private readonly earnedPickups = new Set<string>();
   /** Mint/provenance/owner rail for bankable loot and exact player-owned field stakes. */
   private readonly pickupWeaponBankMeta = new Map<string, PickupWeaponBankMeta>();
+  /** Server-clock hold intents make floor disassembly authoritative instead of trusting a client duration. */
+  private readonly floorDisassemblyIntents = new Map<
+    string,
+    { pickupId: string; readyTick: number }
+  >();
   /** Audit #14: precise Brand durations are gameplay-only. EnemyState.branded is a transition-only 0/1 flag. */
   private readonly brandedTimers = new Map<string, number>();
   /** §8 Conflagration: pending deferred Emberguard re-pulses (the "burning zone" POC). Each fires one more
@@ -1488,7 +1487,6 @@ export class GameRoom extends Room<ArenaState> {
     // §36 the SELECTED belt level (menu level-select). Each level scopes its own dimension (roster/palette),
     // so no two selections are the same run. Unknown id → Sky Carrier.
     this.beltLevel = this.belt ? beltLevelFor(options?.beltLevel ?? "sky-carrier") : null;
-    this.state.beltShopX = this.beltLevel?.shopX ?? 0; // §29 sync the shopkeeper's world-x (0 = no vendor)
 
     // §17 the run's DIMENSION — a belt level fixes its own; else the menu pick. `getDimension` resolves an
     // unknown/missing id back to Wild West, so a stale client can't desync the roster/boss/palette. The id
@@ -1691,7 +1689,7 @@ export class GameRoom extends Room<ArenaState> {
     });
 
     // Cycle through the roster (§9 arsenal). Q = forward, E = back (dir < 0). A cycled weapon is
-    // CONJURED, not earned — it carries no salvage value (v0.103 provenance, see `heldEarned`).
+    // CONJURED, not earned, and therefore cannot be disassembled (see `heldEarned`).
     this.onMessage("cycleWeapon", (client, message: { dir?: number }) => {
       if (!this.takeAction(client)) return; // §44 action budget
       const player = this.state.players.get(client.sessionId);
@@ -1842,84 +1840,7 @@ export class GameRoom extends Room<ArenaState> {
       this.sendWeaponManifest(player);
     });
 
-    // §29 ARSENAL SELL: trade a bag or slot weapon to the shopkeeper for SCRIP. Gated on proximity to the
-    // vendor (beltShopX) + alive; only EARNED weapons pay (anti-launder). Selling the active slot empties the
-    // hand to fists.
-    this.onMessage("sellWeapon", (client, message: { from?: "bag" | "slot"; index?: number }) => {
-      const player = this.state.players.get(client.sessionId);
-      if (!player?.alive || !this.belt) return;
-      const shopX = this.state.beltShopX;
-      if (shopX <= 0 || Math.abs(player.x - shopX) > SHOP_RADIUS) return; // not at the vendor
-      const idx = Math.floor(message?.index ?? -1);
-      const c = this.combat.get(client.sessionId);
-      if (message?.from === "slot") {
-        if (idx < 0 || idx >= ARSENAL_SLOTS) return;
-        if (c && this.slotTouchesPair(player, idx)) this.dissolvePair(player, c);
-        if (idx === player.activeSlot) this.syncActiveSlot(player, c);
-        const s = player.slots[idx]!;
-        if (!s.weapon) return;
-        if (s.bankEntryId) return;
-        player.scrip = Math.min(
-          65535,
-          player.scrip + this.petSalePayout(player, s.rarity, s.earned),
-        );
-        this.copySlot(s, null);
-        if (idx === player.activeSlot) this.loadSlot(player, c, idx);
-        this.publishAccountMutation(player);
-      } else {
-        if (idx < 0 || idx >= player.bag.length) return;
-        const b = player.bag[idx]!;
-        if (b.bankEntryId) return;
-        player.scrip = Math.min(
-          65535,
-          player.scrip + this.petSalePayout(player, b.rarity, b.earned),
-        );
-        player.bag.splice(idx, 1);
-        this.publishAccountMutation(player);
-      }
-    });
-
-    // Safe account-side shop conversion. The client supplies identity + revision, never price or rarity.
-    this.onMessage(
-      "sellStashEntry",
-      (
-        client,
-        message: {
-          requestId?: string;
-          expectedRevision?: number;
-          entryId?: string;
-          from?: "stash" | "intake";
-        },
-      ) => {
-        if (!this.takeAction(client)) return;
-        const account = this.metaAccounts.get(client.sessionId);
-        const player =
-          this.state.players.get(client.sessionId) ??
-          this.disconnectedPlayers.get(client.sessionId)?.player;
-        if (!account || !player) return;
-        const requestId = typeof message?.requestId === "string" ? message.requestId : "";
-        const receiptKey = `${client.sessionId}:${requestId}`;
-        const replay = this.stashSaleReceipts.get(receiptKey);
-        if (replay) {
-          this.sendOwnerMessage(client.sessionId, "stashSaleReceipt", replay);
-          this.sendOwnerMessage(client.sessionId, "metaAccount", account);
-          return;
-        }
-        const result = sellWeaponBankEntry(account, {
-          requestId,
-          expectedRevision: message?.expectedRevision as number,
-          entryId: typeof message?.entryId === "string" ? message.entryId : "",
-          from: message?.from === "intake" ? "intake" : "stash",
-        });
-        if (!result.ok) return;
-        this.stashSaleReceipts.set(receiptKey, result);
-        player.scrip = account.scrip;
-        this.sendOwnerMessage(client.sessionId, "stashSaleReceipt", result);
-        this.sendOwnerMessage(client.sessionId, "metaAccount", account);
-      },
-    );
-
-    // Prestige tower visuals arrive later; this is the revisioned account int + all-weapon wipe hook.
+    // Prestige is a terminal account conversion, independent of the retired in-run economy UI.
     this.onMessage(
       "prestigeReset",
       (client, message: { requestId?: string; expectedRevision?: number }) => {
@@ -1960,88 +1881,6 @@ export class GameRoom extends Room<ArenaState> {
       },
     );
 
-    // §31 META BUY: spend scrip at the shopkeeper on a PERMANENT upgrade level (persists across runs). Gated
-    // on proximity + alive; server-authoritative cost check + stat application (the client can't grant itself
-    // a level — it only requests, and re-persists the synced result).
-    // Dual-wield BIND is a deliberate shop service. The pair is only a link from the active slot to one
-    // other occupied arsenal row; both halves keep their own identity and G-01 debt in place.
-    this.onMessage("bindPair", (client, message: { off?: number }) => {
-      if (!this.takeAction(client)) return;
-      const player = this.state.players.get(client.sessionId);
-      const c = this.combat.get(client.sessionId);
-      if (!player?.alive || !c || !this.belt) return;
-      if (c.stance === STANCE_SLIDE) return;
-      const shopX = this.state.beltShopX;
-      if (shopX <= 0 || Math.abs(player.x - shopX) > SHOP_RADIUS) return;
-      const offIndex = Math.floor(message?.off ?? -1);
-      if (
-        offIndex < 0 ||
-        offIndex >= ARSENAL_SLOTS ||
-        offIndex === player.activeSlot ||
-        player.offhandSlot === offIndex
-      )
-        return;
-
-      this.syncActiveSlot(player, c);
-      const leadSlot = player.slots[player.activeSlot];
-      const offSlot = player.slots[offIndex];
-      const lead = WEAPONS[leadSlot?.weapon ?? ""];
-      const off = WEAPONS[offSlot?.weapon ?? ""];
-      if (!leadSlot || !offSlot || !lead || !off || !pairEligible(lead, off)) return;
-      const fee = Math.max(
-        scripValue(leadSlot.rarity, leadSlot.earned),
-        scripValue(offSlot.rarity, offSlot.earned),
-      );
-      if (player.scrip < fee) return;
-
-      if (player.offhandSlot !== 255) this.dissolvePair(player, c, false);
-      this.initializeStoredWeaponResource(player, offSlot);
-      player.scrip -= fee;
-      player.offhandSlot = offIndex;
-      player.pairBaseSeq = player.attackSeq;
-      player.offMaxCharges = 0;
-      player.offCharges = 0;
-      c.offLastWeapon = offSlot.weapon;
-      c.pairComboSeq = undefined;
-      c.pairComboAcceptedAtMs = 0;
-      c.pairComboId = `${lead.id}|${off.id}`;
-      c.pairComboFamily = meleeComboSelectionFor(lead)?.family ?? "arc";
-      c.pairComboStep = 0;
-      c.pairComboExpiresAtMs = 0;
-      this.bindRunWeaponPair(player, leadSlot, offSlot);
-      const quirkMult = c.mods.drawLockMult;
-      c.drawLock = Math.max(c.drawLock, WEAPON_DRAW_LOCK_SECONDS * quirkMult);
-      if (c.beamPhase !== 0 || c.beamDescriptor) {
-        this.cancelBeam(player, player.id, c, true, true);
-      }
-      if (fee > 0) this.publishAccountMutation(player);
-      this.sendWeaponManifest(player);
-    });
-
-    // UNBIND is free but remains a shop service. No refund and no ledger writes: the off row is already live.
-    this.onMessage("unbindPair", (client) => {
-      if (!this.takeAction(client)) return;
-      const player = this.state.players.get(client.sessionId);
-      const c = this.combat.get(client.sessionId);
-      if (!player?.alive || !c || !this.belt) return;
-      const shopX = this.state.beltShopX;
-      if (shopX <= 0 || Math.abs(player.x - shopX) > SHOP_RADIUS) return;
-      if (player.offhandSlot !== 255) {
-        const durable = this.unbindRunWeaponPair(player);
-        this.dissolvePair(player, c, true);
-        if (durable) {
-          this.syncWeaponRunFromArsenal(player);
-          this.publishAccountMutation(player);
-          this.sendWeaponManifest(player);
-        }
-      }
-    });
-
-    this.onMessage("buyUpgrade", () => {
-      // Retired Wardrobe compatibility endpoint. Old clients may still send this message, but archived
-      // gear is inert and invisible in ordinary play, so the server must not charge or grant it.
-    });
-
     // §classmerge C key: cosmetic during a run; Testing Grounds deliberately re-snapshots the full kit.
     this.onMessage("cycleCharacter", (client) => {
       if (!this.takeAction(client)) return; // §44 action budget
@@ -2056,7 +1895,7 @@ export class GameRoom extends Room<ArenaState> {
     // §9/§13 R-TAP = DROP the held weapon on the floor (grabbable) in front of you; you fall back to
     // FISTS (§9). The drop gets a brief grace so it doesn't snap straight back to you (DROP_GRACE_SECONDS).
     // Provenance (v0.103): the dropped pickup INHERITS the held weapon's earned flag, so an earned drop
-    // stays salvageable after a re-grab but a conjured one can never launder into salvage value.
+    // stays disassemblable after a re-grab but a conjured one can never launder into money.
     this.onMessage("dropWeapon", (client) => {
       if (!this.takeAction(client)) return; // §44 action budget (each drop allocates a synced pickup)
       const player = this.state.players.get(client.sessionId);
@@ -2066,31 +1905,65 @@ export class GameRoom extends Room<ArenaState> {
       this.dropHeldWeapon(player, c);
     });
 
-    // §13 R-HOLD = SALVAGE the held weapon (consumed, no pickup) → fall back to FISTS. §6 v0.103: salvage
-    // is now the BANKABLE run currency, so it only pays for weapons that trace back to an ENEMY DROP
-    // (`heldEarned` provenance) — an unearned weapon still salvages away (QoL) but is worth nothing.
-    this.onMessage("salvageWeapon", (client) => {
-      if (!this.takeAction(client)) return; // §44 action budget
+    // B20 L3: an exact floor row is latched on E-down, then consumed only after the server hold clock.
+    this.onMessage("beginDisassembleFloor", (client, message?: { pickupId?: unknown }) => {
+      if (!this.takeAction(client)) return;
       const player = this.state.players.get(client.sessionId);
-      if (!player?.alive || player.weapon === FISTS_WEAPON) return;
-      const c = this.combat.get(client.sessionId);
-      if (c?.stance === STANCE_SLIDE) return;
-      const bankEntryId = player.slots[player.activeSlot]?.bankEntryId ?? "";
-      if (c) this.dissolvePair(player, c);
-      if (c) this.saveWeaponResource(player, c);
-      if (bankEntryId) {
-        this.consumeRunWeaponEntry(player, bankEntryId);
-      } else if (c?.heldEarned) {
-        player.salvaged += salvageValue(player.weaponRarity); // §13 v0.104: rarity drives the parts value
-        c.heldEarned = false;
-      }
-      player.weapon = FISTS_WEAPON;
-      player.weaponRarity = RARITY_COMMON;
-      player.weaponAffix = "";
-      if (this.belt) this.copySlot(player.slots[player.activeSlot]!, null);
-      if (c) this.restoreWeaponResource(player, c);
-      this.syncWeaponRunFromArsenal(player);
-      this.sendWeaponManifest(player);
+      const pickupId =
+        typeof message?.pickupId === "string" && message.pickupId.length <= 160
+          ? message.pickupId
+          : "";
+      const pickup = pickupId ? this.state.pickups.get(pickupId) : undefined;
+      if (!player?.alive || !pickup || !this.canDisassembleFloorPickup(player, pickup)) return;
+      if (this.combat.get(player.id)?.stance === STANCE_SLIDE) return;
+      this.floorDisassemblyIntents.set(player.id, {
+        pickupId,
+        readyTick: (this.state.tick + DISASSEMBLY_HOLD_TICKS) >>> 0,
+      });
+    });
+
+    this.onMessage("cancelDisassembleFloor", (client) => {
+      if (!this.takeAction(client)) return;
+      this.floorDisassemblyIntents.delete(client.sessionId);
+    });
+
+    this.onMessage("disassembleFloorWeapon", (client, message?: { pickupId?: unknown }) => {
+      if (!this.takeAction(client)) return;
+      const player = this.state.players.get(client.sessionId);
+      const pickupId =
+        typeof message?.pickupId === "string" && message.pickupId.length <= 160
+          ? message.pickupId
+          : "";
+      const intent = this.floorDisassemblyIntents.get(client.sessionId);
+      const pickup = pickupId ? this.state.pickups.get(pickupId) : undefined;
+      if (
+        !player?.alive ||
+        !pickup ||
+        !intent ||
+        intent.pickupId !== pickupId ||
+        !tickReached(this.state.tick, intent.readyTick) ||
+        !this.canDisassembleFloorPickup(player, pickup) ||
+        this.combat.get(player.id)?.stance === STANCE_SLIDE
+      )
+        return;
+      this.floorDisassemblyIntents.delete(player.id);
+      this.disassembleFloorPickup(player, pickup);
+    });
+
+    this.onMessage("disassembleBagWeapon", (client, message?: { index?: unknown }) => {
+      if (!this.takeAction(client)) return;
+      const player = this.state.players.get(client.sessionId);
+      const index = Math.floor(Number(message?.index));
+      if (
+        !player?.alive ||
+        !this.belt ||
+        !Number.isInteger(index) ||
+        index < 0 ||
+        index >= player.bag.length ||
+        this.combat.get(player.id)?.stance === STANCE_SLIDE
+      )
+        return;
+      this.disassembleBagPickup(player, index);
     });
 
     // §13 E near a ground weapon = GRAB it. Current clients name the exact synced pickup highlighted at
@@ -2101,6 +1974,7 @@ export class GameRoom extends Room<ArenaState> {
       if (!this.takeAction(client)) return; // §44 action budget (O(pickups) scan per call)
       const player = this.state.players.get(client.sessionId);
       if (!player?.alive) return;
+      this.floorDisassemblyIntents.delete(client.sessionId);
       if (this.combat.get(client.sessionId)?.stance === STANCE_SLIDE) return;
       const suppliedPickupId = message?.pickupId;
       const requestedPickupId =
@@ -2114,6 +1988,7 @@ export class GameRoom extends Room<ArenaState> {
       let bestD = Number.POSITIVE_INFINITY;
       const consider = (pk: PickupState, pid: string): void => {
         if ((this.pickupGrace.get(pid) ?? 0) > 0) return;
+        if (pk.ownerId && pk.ownerId !== player.id) return;
         const bankMeta = this.pickupWeaponBankMeta.get(pid);
         if (bankMeta?.entry && bankMeta.ownerId && bankMeta.ownerId !== player.id) return;
         if (
@@ -2190,10 +2065,7 @@ export class GameRoom extends Room<ArenaState> {
         }
       }
       if (grabbed.id.startsWith("drop")) {
-        this.state.pickups.delete(grabbed.id);
-        this.pickupGrace.delete(grabbed.id);
-        if (this.earnedPickups.delete(grabbed.id)) this.publishPetPickupEligibility();
-        this.pickupWeaponBankMeta.delete(grabbed.id);
+        this.clearFloorPickup(grabbed.id);
       }
       this.sendWeaponManifest(player);
     });
@@ -2403,6 +2275,7 @@ export class GameRoom extends Room<ArenaState> {
       this.publishPetPickupEligibility();
     }
     this.pickupWeaponBankMeta.clear();
+    this.floorDisassemblyIntents.clear();
     this.brandedTimers.clear();
     this.burnPulses.length = 0;
     this.state.beams.clear();
@@ -2499,6 +2372,8 @@ export class GameRoom extends Room<ArenaState> {
     const sp = this.placePickupPos(dropX, dropY); // §29 belt: keep the drop on the deck (band + off pits)
     pk.x = sp.x;
     pk.y = sp.y;
+    pk.disassemblable = !!bankEntry || !!c?.heldEarned;
+    pk.ownerId = bankEntry ? player.id : "";
     this.state.pickups.set(pk.id, pk);
     this.pickupGrace.set(pk.id, DROP_GRACE_SECONDS);
     if (bankEntry) {
@@ -2534,6 +2409,85 @@ export class GameRoom extends Room<ArenaState> {
   // array in sync and move weapons between hand / slots / bag. ──
   /** Copy one stored weapon into another (or clear `dst` when `src` is null). */
   /** Initialize a never-drawn stored weapon exactly once. Rebinding a ready row never grants resources. */
+  private weaponEntryDisassemblyValue(entry: WeaponBankEntryV1): number {
+    return weaponEntryInstances(entry).reduce(
+      (total, instance) => total + weaponDisassemblyValue(instance.weaponId),
+      0,
+    );
+  }
+
+  private canDisassembleFloorPickup(player: PlayerState, pickup: PickupState): boolean {
+    if (!pickup.disassemblable || (this.pickupGrace.get(pickup.id) ?? 0) > 0) return false;
+    if (pickup.ownerId && pickup.ownerId !== player.id) return false;
+    const bankMeta = this.pickupWeaponBankMeta.get(pickup.id);
+    if (bankMeta?.ownerId && bankMeta.ownerId !== player.id) return false;
+    const radius = Math.max(
+      PICKUP_RADIUS,
+      this.petRuns.get(player.id)?.mods.earnedPickupRadius ?? 0,
+    );
+    return (pickup.x - player.x) ** 2 + (pickup.y - player.y) ** 2 <= radius * radius;
+  }
+
+  private clearFloorPickup(pickupId: string): void {
+    this.state.pickups.delete(pickupId);
+    this.pickupGrace.delete(pickupId);
+    const eligibilityChanged = this.earnedPickups.delete(pickupId);
+    this.pickupWeaponBankMeta.delete(pickupId);
+    for (const [playerId, intent] of this.floorDisassemblyIntents) {
+      if (intent.pickupId === pickupId) this.floorDisassemblyIntents.delete(playerId);
+    }
+    if (eligibilityChanged) this.publishPetPickupEligibility();
+  }
+
+  private disassembleFloorPickup(player: PlayerState, pickup: PickupState): void {
+    const bankEntry = this.pickupWeaponBankMeta.get(pickup.id)?.entry;
+    const value = bankEntry
+      ? this.weaponEntryDisassemblyValue(bankEntry)
+      : weaponDisassemblyValue(pickup.weapon);
+    if (value <= 0) return;
+    const receipt: WeaponDisassemblyReceipt = {
+      source: "floor",
+      pickupId: pickup.id,
+      weaponId: pickup.weapon,
+      value,
+      x: pickup.x,
+      y: pickup.y,
+    };
+    if (bankEntry) this.consumeRunWeaponEntry(player, bankEntry.entryId);
+    this.clearFloorPickup(pickup.id);
+    this.awardMoney(value, player.id);
+    this.sendOwnerMessage(player.id, "weaponDisassembled", receipt);
+    this.syncWeaponRunFromArsenal(player);
+    this.sendWeaponManifest(player);
+  }
+
+  private disassembleBagPickup(player: PlayerState, index: number): void {
+    const slot = player.bag[index];
+    if (!slot?.weapon || slot.homeIssue || (!slot.earned && !slot.bankEntryId)) return;
+    const bankRow = slot.bankEntryId
+      ? this.weaponRuns.get(player.id)?.entries.get(slot.bankEntryId)
+      : undefined;
+    if (slot.bankEntryId && !bankRow) return;
+    const value = bankRow
+      ? this.weaponEntryDisassemblyValue(bankRow.entry)
+      : weaponDisassemblyValue(slot.weapon);
+    if (value <= 0) return;
+    const receipt: WeaponDisassemblyReceipt = {
+      source: "bag",
+      pickupId: "",
+      weaponId: slot.weapon,
+      value,
+      x: player.x,
+      y: player.y,
+    };
+    if (bankRow) this.consumeRunWeaponEntry(player, bankRow.entry.entryId);
+    else player.bag.splice(index, 1);
+    this.awardMoney(value, player.id);
+    this.syncWeaponRunFromArsenal(player);
+    this.sendWeaponManifest(player);
+    this.sendOwnerMessage(player.id, "weaponDisassembled", receipt);
+  }
+
   private initializeStoredWeaponResource(player: PlayerState, slot: ArsenalSlot): void {
     if (slot.resourceReady && slot.resourceWeapon === slot.weapon) return;
     slot.resourceWeapon = slot.weapon;
@@ -3060,6 +3014,64 @@ export class GameRoom extends Room<ArenaState> {
     return true;
   }
 
+  private dropChestWeapon(player: PlayerState, chest: ChestState, weaponId: string): boolean {
+    if (!WEAPONS[weaponId]) return false;
+    const pickup = new PickupState();
+    pickup.id = `dropChest${this.pickupSeq++}`;
+    pickup.weapon = weaponId;
+    pickup.weaponPublic = weaponId;
+    pickup.rarity = RARITY_COMMON;
+    pickup.affix = "";
+    pickup.affixPublic = "";
+    pickup.known = true;
+    pickup.disassemblable = true;
+    pickup.ownerId = player.id;
+    const placed = this.placePickupPos(chest.x + PICKUP_RADIUS, chest.y);
+    pickup.x = placed.x;
+    pickup.y = placed.y;
+    this.state.pickups.set(pickup.id, pickup);
+    this.earnedPickups.add(pickup.id);
+    this.pickupWeaponBankMeta.set(pickup.id, {
+      provenance: "enemy-drop",
+      ownerId: player.id,
+      ownerLockUntil: Number.POSITIVE_INFINITY,
+    });
+    this.publishPetPickupEligibility();
+    return true;
+  }
+
+  private maybeDropEnemyWeapon(enemy: EnemyState, kind: EnemyKind): void {
+    if (
+      this.state.mode !== "arena" ||
+      kind.archetype === "boss" ||
+      kind.archetype === "dummy" ||
+      !kind.wieldsWeapon ||
+      !WEAPONS[kind.wieldsWeapon] ||
+      Math.random() >= (kind.dropWeapon ?? 0)
+    )
+      return;
+    const pickup = new PickupState();
+    pickup.id = `dropEnemy${this.pickupSeq++}`;
+    pickup.weapon = kind.wieldsWeapon;
+    pickup.weaponPublic = kind.wieldsWeapon;
+    pickup.rarity = RARITY_COMMON;
+    pickup.affix = "";
+    pickup.affixPublic = "";
+    pickup.known = true;
+    pickup.disassemblable = true;
+    const placed = this.placePickupPos(enemy.x, enemy.y);
+    pickup.x = placed.x;
+    pickup.y = placed.y;
+    this.state.pickups.set(pickup.id, pickup);
+    this.earnedPickups.add(pickup.id);
+    this.pickupWeaponBankMeta.set(pickup.id, {
+      provenance: "enemy-drop",
+      ownerId: "",
+      ownerLockUntil: 0,
+    });
+    this.publishPetPickupEligibility();
+  }
+
   private grantCommonRelic(player: PlayerState, id: CommonRelicId): number {
     const relics = player.relics;
     const increment = (value: number): number =>
@@ -3140,11 +3152,13 @@ export class GameRoom extends Room<ArenaState> {
       ownedRareIds,
       weaponIds: WEAPON_IDS,
     });
-    if (reward.weapon && !this.chestWeaponBagSlot(player)) {
-      this.sendOwnerMessage(playerId, "chestOpenDenied", { reason: "bag-full", chestId });
-      return;
+    if (reward.weapon) {
+      if (this.chestWeaponBagSlot(player)) {
+        if (!this.grantChestWeapon(player, reward.weapon.id)) return;
+      } else {
+        if (!this.dropChestWeapon(player, chest, reward.weapon.id)) return;
+      }
     }
-    if (reward.weapon && !this.grantChestWeapon(player, reward.weapon.id)) return;
     const relicReceipts: Array<{
       id: CommonRelicId | RareRelicId;
       rarity: "common" | "rare";
@@ -3187,23 +3201,6 @@ export class GameRoom extends Room<ArenaState> {
       relics: relicReceipts,
       money: reward.money,
     });
-  }
-
-  /** Base earned sale plus Gecko's fractional, per-run-capped mint. Unearned/zero sales never feed it. */
-  private petSalePayout(player: PlayerState, rarity: number, earned: boolean): number {
-    const base = scripValue(rarity, earned);
-    if (base <= 0 || !player.alive) return base;
-    const pet = this.petRuns.get(player.id);
-    if (!pet || pet.mods.saleBonusRate <= 0 || pet.geckoMinted >= pet.mods.saleBonusCap)
-      return base;
-    pet.geckoFraction += base * pet.mods.saleBonusRate;
-    const available = Math.max(0, Math.floor(pet.mods.saleBonusCap - pet.geckoMinted));
-    const minted = Math.min(available, Math.floor(pet.geckoFraction));
-    if (minted > 0) {
-      pet.geckoFraction -= minted;
-      pet.geckoMinted += minted;
-    }
-    return base + minted;
   }
 
   /** Persist only the active weapon instance's cadence debt before identity changes. */
@@ -3508,7 +3505,7 @@ export class GameRoom extends Room<ArenaState> {
       combat.mods = runtimeModsForQuirk(quirk);
     }
     const previousMax = player.maxHp;
-    player.maxHp = PLAYER_MAX_HP + META_VITALITY_HP * player.upVitality;
+    player.maxHp = PLAYER_MAX_HP;
     if (topUpMaxHp && player.maxHp > previousMax) player.hp += player.maxHp - previousMax;
     player.hp = Math.min(player.hp, player.maxHp);
   }
@@ -3523,9 +3520,6 @@ export class GameRoom extends Room<ArenaState> {
     player.character = "drifter";
     player.runCharacter = "drifter";
     player.gearSeeded = true;
-    player.upVitality = 0;
-    player.upFortune = 0;
-    player.upPower = 0;
     const cosmetics = encodeGearCosmetics(runtime.idsBySlot);
     player.gearUpper = cosmetics.gearUpper;
     player.gearLower = cosmetics.gearLower;
@@ -3660,18 +3654,6 @@ export class GameRoom extends Room<ArenaState> {
     account.revision = Math.min(META_ACCOUNT_REVISION_MAX, account.revision + 1);
   }
 
-  private syncAccountFromPlayer(player: PlayerState, account: MetaAccountV4): void {
-    account.scrip = Math.max(0, Math.min(65535, Math.floor(player.scrip)));
-  }
-
-  private publishAccountMutation(player: PlayerState): void {
-    const account = this.metaAccounts.get(player.id);
-    if (!account) return;
-    this.syncAccountFromPlayer(player, account);
-    this.bumpAccountRevision(account);
-    this.sendOwnerMessage(player.id, "metaAccount", account);
-  }
-
   /** New run/ready boundary: only the pet identity and presentation band enter public run state. */
   private snapshotPetRun(player: PlayerState, selectedPetId: PetId | ""): void {
     const account = this.metaAccounts.get(player.id);
@@ -3787,7 +3769,7 @@ export class GameRoom extends Room<ArenaState> {
     return false;
   }
 
-  /** One idempotent account commit for pets, Scrip, and exact weapon escrow on every terminal route. */
+  /** One idempotent account commit for pets, money, and exact weapon escrow on every terminal route. */
   private settleMetaAccounts(outcome: "defeat" | "victory"): void {
     this.metaAccounts.forEach((account, playerId) => {
       if (this.petSettledAccounts.has(playerId)) return;
@@ -3796,9 +3778,23 @@ export class GameRoom extends Room<ArenaState> {
       else this.prestigeGameClearReceipts.delete(playerId);
       const player =
         this.state.players.get(playerId) ?? this.disconnectedPlayers.get(playerId)?.player;
+      const previousBank = Math.max(
+        0,
+        Math.min(META_ACCOUNT_SCRIP_MAX, Math.floor(account.scrip)),
+      );
+      const runMoney = player
+        ? Math.max(0, Math.min(META_ACCOUNT_SCRIP_MAX, Math.floor(player.scrip)))
+        : 0;
+      account.scrip = Math.min(META_ACCOUNT_SCRIP_MAX, previousBank + runMoney);
+      if (player) player.scrip = 0;
+      const moneyReceipt: MoneyBankReceipt = {
+        outcome,
+        banked: account.scrip - previousBank,
+        previousBank,
+        bankTotal: account.scrip,
+      };
       if (player) {
         this.syncWeaponRunFromArsenal(player);
-        this.syncAccountFromPlayer(player, account);
       }
       const pet = this.petRuns.get(playerId);
       let receipt: PetProgressReceipt | undefined;
@@ -3829,6 +3825,7 @@ export class GameRoom extends Room<ArenaState> {
         this.sendOwnerMessage(playerId, "weaponSettlementReceipt", weaponReceipt);
       }
       this.bumpAccountRevision(account);
+      this.sendOwnerMessage(playerId, "moneyBankReceipt", moneyReceipt);
       if (receipt) this.sendOwnerMessage(playerId, "petProgressReceipt", receipt);
       this.sendOwnerMessage(playerId, "metaAccount", account);
       this.weaponRuns.delete(playerId);
@@ -3877,14 +3874,12 @@ export class GameRoom extends Room<ArenaState> {
     this.state.depth = 1;
     this.petDimensionEpoch = 0;
     this.visitedDims.clear();
-    // §6 bank-or-lose (v0.103): stepping OUT of a live run into the workshop ABORTS the expedition —
-    // everything carried is lost (only extraction banks). Without this, T is a wipe-panic button that
-    // launders deep-run salvage through a depth reset (adversarial-verify finding F2). Also clear the
+    // Stepping OUT of a live run into the workshop aborts the weapon expedition. Without this, T is a
+    // panic button that launders at-stake weapons through a depth reset. Also clear the
     // elapsed-clock parry timestamps (elapsed resets below) + weapon provenance (the gallery is free).
     this.state.players.forEach((p) => {
       this.resetPetAccrual(p.id);
       p.dualWield.relics = new RelicState();
-      p.salvaged = 0;
       p.ultCharge = 0;
       // …and the held weapon sheds its rolled loot identity too — without this, the workshop is a
       // risk-free reroll booth whose Legendary rides back into the real run (adversarial-verify).
@@ -4050,7 +4045,7 @@ export class GameRoom extends Room<ArenaState> {
     this.resetExtractionIntent();
     // §6 chain (v0.103): a fresh RUN resets the chain — depth 1, rift closed, visited wiped, back to the
     // menu-picked HOME dimension, and a freshly-minted map (every run gets new terrain). Only
-    // `bankedSalvage` survives (the M0 "account").
+    // Persistent meta-account money survives; run money is minted fresh.
     this.state.riftOpen = false;
     this.state.riftCharge = 0;
     this.state.depth = 1;
@@ -4088,8 +4083,7 @@ export class GameRoom extends Room<ArenaState> {
           this.createWeaponRun(id, account);
         }
       }
-      // Fresh run: reset run-scoped combat, snapshot flavor identity, and clear carried salvage.
-      player.salvaged = 0;
+      // Fresh run: reset run-scoped combat and snapshot flavor identity.
       player.weaponRarity = RARITY_COMMON;
       player.weaponAffix = "";
       player.dualWield.relics = new RelicState();
@@ -4399,7 +4393,7 @@ export class GameRoom extends Room<ArenaState> {
     // levels. Client-supplied → clamped (a sane bound; the persistence model is an MVP, not a trusted
     // economy). The upgrades then apply their stat bonuses to this fresh player.
     // §44 (Sol audit): client-authored progression is only honoured while dev tools are on — on a public
-    // deploy any client could join claiming 65,535 scrip + max upgrades. INTERIM until an authenticated
+    // deploy any client could join claiming 65,535 legacy money + max upgrades. INTERIM until an authenticated
     // account store owns progression; production joins start at the defaults.
     const trustLegacyMeta = this.belt && this.devToolsEnabled();
     const suppliedGearAccount =
@@ -4438,14 +4432,8 @@ export class GameRoom extends Room<ArenaState> {
       account.selectedPetId = requestedPetId;
     }
     this.metaAccounts.set(client.sessionId, account);
-    player.scrip = account.scrip;
+    player.scrip = 0;
     player.prestige = account.prestige;
-    if (!suppliedGearAccount) {
-      // Compatibility sequencing: legacy v2 permanent upgrade levels remain bounded migration input.
-      player.upVitality = legacyAccount.upgrades.vitality;
-      player.upFortune = legacyAccount.upgrades.fortune;
-      player.upPower = legacyAccount.upgrades.power;
-    }
     // Persisted gear remains sanitized in the canonical account but is archived runtime-inert state.
     // Every ordinary join snapshots the selected/default whole-art kit and creates no gear run.
     this.snapshotRunCharacter(player, undefined, false, false);
@@ -5842,7 +5830,7 @@ export class GameRoom extends Room<ArenaState> {
       player.fellSeq++;
     });
 
-    // 2.7 MONEY drops: movement establishes pickup reach first; collection credits the existing scrip rail.
+    // 2.7 MONEY drops: movement establishes pickup reach first; collection credits the run-money rail.
     // Fresh kills later in this sub-step keep their short readable settle before they can launch.
     this.stepMoneyDrops();
     this.stepVastagharVictory();
@@ -6523,15 +6511,6 @@ export class GameRoom extends Room<ArenaState> {
     ) {
       // §6 "bank or LOSE" (v0.103): a wipe drops everything the squad was carrying — only what was
       // banked at an extraction survives. This is the teeth of the extract-vs-descend decision.
-      let lost = 0;
-      this.state.players.forEach((p) => {
-        lost += p.salvaged;
-        p.salvaged = 0;
-      });
-      if (lost > 0)
-        console.log(
-          `[room ${this.roomId}] squad WIPED at depth ${this.state.depth} — ${lost} carried salvage lost`,
-        );
       this.enterTerminalOutcome("defeat");
       return;
     }
@@ -9577,7 +9556,6 @@ export class GameRoom extends Room<ArenaState> {
     for (const eid of kills) this.state.enemies.delete(eid);
   }
 
-  /** Enemy rewards are squad-shared through the existing per-player scrip balance. */
   /** End every threat before the first celebration patch; player clocks/position remain untouched. */
   private beginVastagharClear(x: number, y: number): void {
     const encounter = this.vastagharEncounter;
@@ -9659,7 +9637,7 @@ export class GameRoom extends Room<ArenaState> {
     this.vastagharVictoryMode = "";
   }
 
-  /** Credit a collected drop through the existing per-player scrip currency. */
+  /** Credit a collected drop through the per-player run-money rail. */
   private awardMoney(amount: number, ownerId = ""): void {
     const payout = Math.max(0, Math.floor(amount));
     if (payout <= 0) return;
@@ -9815,29 +9793,17 @@ export class GameRoom extends Room<ArenaState> {
     }
   }
   private completeExtraction(): void {
-    let banked = 0;
-    this.state.players.forEach((player) => {
-      banked += player.salvaged;
-      player.salvaged = 0;
-    });
-    this.state.bankedSalvage += banked;
     this.state.riftOpen = false;
     this.enterTerminalOutcome("victory");
     console.log(
-      `[room ${this.roomId}] run extracted at depth ${this.state.depth} — VICTORY (+${banked} banked, ${this.state.bankedSalvage} total)`,
+      `[room ${this.roomId}] run extracted at depth ${this.state.depth} — VICTORY`,
     );
   }
 
   private completeBossRushVictory(): void {
-    let banked = 0;
-    this.state.players.forEach((player) => {
-      banked += player.salvaged;
-      player.salvaged = 0;
-    });
-    this.state.bankedSalvage += banked;
     this.enterTerminalOutcome("victory");
     console.log(
-      `[room ${this.roomId}] BOSS RUSH cleared all ${BOSS_DEF_IDS.length} bosses — VICTORY (+${banked} banked)`,
+      `[room ${this.roomId}] BOSS RUSH cleared all ${BOSS_DEF_IDS.length} bosses — VICTORY`,
     );
   }
 
@@ -11499,8 +11465,9 @@ export class GameRoom extends Room<ArenaState> {
       this.duelTokens.delete(combo.targetId);
     if (combo) combo.strike = undefined;
     const kind = ENEMY_KINDS[enemy.kind];
-    // B20 L2: enemy, anatomy, and boss deaths never mint money or weapons. Chests own all
-    // in-run itemization; this death path retains only combat/progression cleanup and gates.
+    if (kind) this.maybeDropEnemyWeapon(enemy, kind);
+    // B20 L3: eligible authored wielders may leave one disassemblable floor weapon. The
+    // pre-existing combat/progression cleanup and boss gates still run through this death path.
     if (kind?.archetype === "boss" && flagship) {
       if (this.bossPetAwardEligible) this.awardPetDimensionClear();
       this.beginVastagharClear(enemy.x, enemy.y);
@@ -11515,19 +11482,13 @@ export class GameRoom extends Room<ArenaState> {
         // §16 v0.116 the gauntlet: heal + reward + queue the next boss (or win on the last).
         this.advanceBossRush();
       } else {
-        // B20 L2: boss kills open progression, but weapon itemization comes only from chests.
+        // Boss kills open progression; the ordinary authored-wielder drop rule is resolved above.
         this.openPortal(enemy.x, enemy.y);
       }
     }
     // §6/§17 v0.103: putting DOWN a shifter incursion (instead of just outlasting its window) pays the
     // squad a depth-scaled bounty — the chain's second wage source, and it rewards engaging the elite.
-    if (kind?.shifter) {
-      const bounty = SHIFTER_SALVAGE_PER_DEPTH * this.state.depth;
-      this.state.players.forEach((p) => {
-        if (p.alive) p.salvaged += bounty;
-      });
-    }
-    // B20 L2: ordinary, tough, wielding, shifter, and boss enemies never mint weapon pickups.
+    // Money remains on the L1 drop rail; L3 adds only the eligible authored weapon pickup above.
     const killer = sourcePlayerId ? this.state.players.get(sourcePlayerId) : undefined;
     const killerCombat = sourcePlayerId ? this.combat.get(sourcePlayerId) : undefined;
     if (killer && killerCombat) this.applyKillQuirk(killer, killerCombat, enemy);
@@ -14013,10 +13974,8 @@ export class GameRoom extends Room<ArenaState> {
    *  drop, then either QUEUE the next boss (escalating `depth`) or, on the final boss, WIN the run (bank + clean
    *  the field, mirroring `checkExtraction`). */
   private advanceBossRush(): void {
-    const wage = BOSS_SALVAGE_PER_DEPTH * this.state.depth;
     this.state.players.forEach((p) => {
       if (!p.alive) return;
-      p.salvaged += wage;
       this.applyHeal(p, p.maxHp * BOSSRUSH_HEAL_FRAC);
     });
     this.bossRushIndex++;
@@ -14297,16 +14256,10 @@ export class GameRoom extends Room<ArenaState> {
     this.resetChestDirector();
   }
 
-  /** §6 the boss falls → open BOTH gates of the greed decision: the amber EXTRACTION portal (bank the
-   *  carried salvage, end in victory) and the violet DEEPER rift (descend to depth+1 — harder, richer).
-   *  QOL-03 solves them jointly as reachable, full-footprint safe discs with a protected separation.
-   *  The boss ALSO pays the chain's real wage (v0.103 — the "richer" in the rift's promise): every living
-   *  player pockets BOSS_SALVAGE_PER_DEPTH × depth carried salvage — bank it now or gamble it deeper. */
+  /** §6 the boss falls → open BOTH gates of the greed decision: the amber EXTRACTION portal (bank 100% of
+   *  run money and end in victory) and the violet DEEPER rift (descend to depth+1 — harder, richer).
+   *  QOL-03 solves them jointly as reachable, full-footprint safe discs with protected separation. */
   private openPortal(x: number, y: number): void {
-    const wage = BOSS_SALVAGE_PER_DEPTH * this.state.depth;
-    this.state.players.forEach((p) => {
-      if (p.alive) p.salvaged += wage;
-    });
     const gates = placeArenaGatePair(this.map, x, y, EXTRACT_RADIUS);
     const gateValidation = validateArenaGatePair(this.map, gates);
     if (!gateValidation.ok)
@@ -14333,7 +14286,7 @@ export class GameRoom extends Room<ArenaState> {
   }
 
   /** §6 rift descent (v0.103, the chain): depth+1, a NEW dimension + freshly-seeded map, the same squad —
-   *  levels/attributes/weapons/augments/carried salvage/HP all persist (that's the greed: you push in
+   *  levels/attributes/weapons/augments/run money/HP all persist (that's the greed: you push in
    *  whatever shape the last fight left you). The field is cleared, the clock and boss director reset. */
   private transitionDimension(): void {
     // Normal descent reaches this only after the cleanup vacuum; defensive cleanup prevents stale rows if a

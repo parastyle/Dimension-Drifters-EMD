@@ -34,8 +34,8 @@ import {
   SET_BONUS_2,
   SET_BONUS_3,
   SHIFTER_KIND_IDS,
-  salvageValue,
-  scripValue,
+  DISASSEMBLY_HOLD_TICKS,
+  weaponDisassemblyValue,
   swingDescriptorFor,
   TILE_GROUND,
   TILE_PIT,
@@ -1269,7 +1269,7 @@ describe("GameRoom — §6 dimension chain (v0.103: extract-vs-descend, bank-or-
     const h = makeRoom({ dimensionId: "wild-west" });
     h.join("p1");
     const p = h.state().players.get("p1");
-    p.salvaged = 5;
+    p.scrip = 5;
     p.weapon = "gravediggers-spade";
     p.hp = 61;
     const e = new EnemyState(); // some horde that must NOT follow through the rift
@@ -1297,8 +1297,8 @@ describe("GameRoom — §6 dimension chain (v0.103: extract-vs-descend, bank-or-
     expect(st.outcome).toBe("active"); // the run continues
     expect(st.portalOpen).toBe(false);
     expect(st.riftOpen).toBe(false);
-    // The squad carried through intact — arsenal, carried salvage, and chip damage survive.
-    expect(p.salvaged).toBe(5);
+    // The squad carried through intact — arsenal, run money, and chip damage survive.
+    expect(p.scrip).toBe(5);
     expect(p.weapon).toBe("gravediggers-spade");
     expect(p.hp).toBeGreaterThanOrEqual(61); // chip damage carried (+ ~2s of always-on regen while channeling)…
     expect(p.hp).toBeLessThan(80); // …NOT healed back to full by the descent
@@ -1307,32 +1307,32 @@ describe("GameRoom — §6 dimension chain (v0.103: extract-vs-descend, bank-or-
     expect(d).toBeLessThanOrEqual(150);
   });
 
-  it("extraction BANKS the squad's carried salvage (victory reserves the bank)", () => {
+  it("extraction banks 100% of run money into the persistent meta account", () => {
     const h = makeRoom();
     h.join("p1");
     const p = h.state().players.get("p1");
-    p.salvaged = 7;
+    p.scrip = 7;
     p.x = h.room.map.spawnX;
     p.y = h.room.map.spawnY;
     openGatesAtSpawn(h);
-    h.state().riftOpen = false; // isolate the extract path
+    h.state().riftOpen = false;
     h.tick(1);
     expect(h.state().outcome).toBe("victory");
-    expect(h.state().bankedSalvage).toBe(7); // banked…
-    expect(p.salvaged).toBe(0); // …and no longer carried
+    expect(h.room.metaAccounts.get("p1").scrip).toBe(7);
+    expect(p.scrip).toBe(0);
   });
 
-  it("a WIPE loses everything carried (bank-or-LOSE) — banked survives", () => {
+  it("a wipe also banks 100% of run money", () => {
     const h = makeRoom();
     h.join("p1");
     const p = h.state().players.get("p1");
-    h.state().bankedSalvage = 12; // an earlier extraction's bank
-    p.salvaged = 9; // this run's carry
+    h.room.metaAccounts.get("p1").scrip = 12;
+    p.scrip = 9;
     p.hp = 0;
     h.tick(1);
     expect(h.state().outcome).toBe("defeat");
-    expect(p.salvaged).toBe(0); // carried salvage is GONE
-    expect(h.state().bankedSalvage).toBe(12); // the bank is safe
+    expect(p.scrip).toBe(0);
+    expect(h.room.metaAccounts.get("p1").scrip).toBe(21);
   });
 
   it("stepping OUT of the rift drains the channel — no accidental commit", () => {
@@ -1353,40 +1353,32 @@ describe("GameRoom — §6 dimension chain (v0.103: extract-vs-descend, bank-or-
     expect(h.state().riftCharge).toBe(0); // charge drained
   });
 
-  it("EXPLOIT GUARD: a cycled (conjured) weapon salvages for NOTHING; an earned floor weapon pays", () => {
+  it("floor disassembly requires an exact server-timed hold and pays the damage-budget curve", () => {
     const h = makeRoom();
     h.join("p1");
     const p = h.state().players.get("p1");
     p.x = h.room.map.spawnX;
     p.y = h.room.map.spawnY;
-    // The old infinite-money loop: cycle a weapon out of thin air, salvage it, repeat.
-    h.send("p1", "cycleWeapon", { dir: 1 });
-    h.send("p1", "salvageWeapon");
-    h.send("p1", "cycleWeapon", { dir: 1 });
-    h.send("p1", "salvageWeapon");
-    expect(p.salvaged).toBe(0); // conjured weapons are worthless — the printer is dead
-    // A chest-issued weapon put down on the floor retains earned provenance → it pays.
     const pk = new PickupState();
     pk.id = "drop900";
     pk.weapon = "gravediggers-spade";
+    pk.weaponPublic = pk.weapon;
     pk.x = p.x;
     pk.y = p.y;
-    h.state().pickups.set("drop900", pk);
-    h.room.earnedPickups.add("drop900");
-    h.send("p1", "grabWeapon");
-    h.send("p1", "salvageWeapon");
-    expect(p.salvaged).toBe(1); // earned → banked-able
-  });
-
-  it("EXPLOIT GUARD: toggling into the Testing Grounds ABORTS the run — carried salvage is lost", () => {
-    const h = makeRoom();
-    h.join("p1");
-    const p = h.state().players.get("p1");
-    h.state().bankedSalvage = 4;
-    p.salvaged = 9; // deep-run carry someone tries to launder through the workshop
-    h.send("p1", "toggleTraining");
-    expect(p.salvaged).toBe(0); // the expedition is over — only extraction banks
-    expect(h.state().bankedSalvage).toBe(4); // the bank itself is untouched
+    pk.disassemblable = true;
+    h.state().pickups.set(pk.id, pk);
+    h.room.earnedPickups.add(pk.id);
+    h.send("p1", "beginDisassembleFloor", { pickupId: pk.id });
+    h.send("p1", "disassembleFloorWeapon", { pickupId: pk.id });
+    expect(p.scrip).toBe(0);
+    expect(h.state().pickups.has(pk.id)).toBe(true);
+    h.tick(DISASSEMBLY_HOLD_TICKS - 1);
+    h.send("p1", "disassembleFloorWeapon", { pickupId: pk.id });
+    expect(p.scrip).toBe(0);
+    h.tick(1);
+    h.send("p1", "disassembleFloorWeapon", { pickupId: pk.id });
+    expect(p.scrip).toBe(weaponDisassemblyValue(pk.weapon));
+    expect(h.state().pickups.has(pk.id)).toBe(false);
   });
 
   it("deeper spawns are spongier: a depth-3 spawn carries more HP than depth-1", () => {
@@ -1457,29 +1449,11 @@ describe("GameRoom — chest-only weapon itemization", () => {
     expect(p.weaponAffix).toBe("keen");
   });
 
-  it("salvaging an earned weapon pays its RARITY value; cycling shreds the loot identity", () => {
-    const h = makeRoom();
-    h.join("p1");
-    const p = h.state().players.get("p1");
-    p.x = h.room.map.spawnX;
-    p.y = h.room.map.spawnY;
-    const pk = new PickupState();
-    pk.id = "drop801";
-    pk.weapon = "tombstone-greatsword";
-    pk.rarity = 4; // Legendary → salvage 8
-    pk.affix = "keen";
-    pk.x = p.x;
-    pk.y = p.y;
-    h.state().pickups.set("drop801", pk);
-    h.room.earnedPickups.add("drop801");
-    h.send("p1", "grabWeapon");
-    h.send("p1", "salvageWeapon");
-    expect(p.salvaged).toBe(salvageValue(4)); // 8 — the tier drives the parts value
-    expect(p.weaponRarity).toBe(0); // identity shredded with the weapon
-    // A cycled (conjured) weapon carries NO loot identity.
-    h.send("p1", "cycleWeapon", { dir: 1 });
-    expect(p.weaponRarity).toBe(0);
-    expect(p.weaponAffix).toBe("");
+  it("disassembling a floor weapon ignores loot rarity and uses authored damage budget", () => {
+    const low = weaponDisassemblyValue("rusty-cleaver");
+    const high = weaponDisassemblyValue("tombstone-greatsword");
+    expect(high).toBeGreaterThan(low);
+    expect(weaponDisassemblyValue("tombstone-greatsword")).toBe(high);
   });
 
   it("A11: grabbing while holding a weapon SWAPS — the held weapon drops as a pickup, not destroyed", () => {
@@ -1779,29 +1753,17 @@ describe("GameRoom — §29 belt arsenal (3 slots + bag)", () => {
     expect(p.weapon).toBe("wyrmtooth-dagger");
   });
 
-  it("sellWeapon pays SCRIP by rarity at the shopkeeper — earned only, proximity-gated", () => {
+  it("disassembles an earned bag row in place without a vendor", () => {
     const h = makeRoom({ belt: true });
     h.join("p1");
     const p = h.state().players.get("p1");
-    const shopX = h.state().beltShopX;
-    expect(shopX).toBeGreaterThan(0); // the level places a vendor
-    grabAt(h, "drop910", "tombstone-greatsword", 4, "keen", true); // earned Legendary → slot 1
-    grabAt(h, "drop911", "rusty-cleaver", 1, "", false); // UNEARNED → slot 2
-    // Too far from the vendor → rejected.
-    p.x = shopX + 400;
-    h.send("p1", "sellWeapon", { from: "slot", index: 1 });
-    expect(p.scrip).toBe(0);
-    expect(p.slots[1].weapon).toBe("tombstone-greatsword");
-    // At the vendor → the earned Legendary pays its tier's scrip.
-    p.x = shopX;
-    h.send("p1", "sellWeapon", { from: "slot", index: 1 });
-    expect(p.scrip).toBe(scripValue(4, true));
-    expect(p.slots[1].weapon).toBe(""); // sold → slot cleared
-    // The unearned cleaver sells for NOTHING (still removed).
-    const before = p.scrip;
-    h.send("p1", "sellWeapon", { from: "slot", index: 2 });
-    expect(p.scrip).toBe(before); // +0
-    expect(p.slots[2].weapon).toBe("");
+    const stored = new enemyComboShared.ArsenalSlot();
+    stored.weapon = "tombstone-greatsword";
+    stored.earned = true;
+    p.bag.push(stored);
+    h.send("p1", "disassembleBagWeapon", { index: 0 });
+    expect(p.scrip).toBe(weaponDisassemblyValue(stored.weapon));
+    expect(p.bag).toHaveLength(0);
   });
 
   it("belt floor-weapon placement lands ON the deck band, nudged clear of pits", () => {
@@ -1816,14 +1778,16 @@ describe("GameRoom — §29 belt arsenal (3 slots + bag)", () => {
     expect(pos.y).toBeLessThanOrEqual(BELT_Y0 + DEPTH_MAX);
   });
 
-  it("belt join RESTORES persisted scrip (clamped to uint16); arena ignores it", () => {
+  it("legacy persisted scrip migrates to the account while run money starts at zero", () => {
     const belt = makeRoom({ belt: true });
     belt.room.clients.push({ sessionId: "pB" });
     belt.room.onJoin({ sessionId: "pB" }, { scrip: 123 });
-    expect(belt.state().players.get("pB").scrip).toBe(123);
+    expect(belt.state().players.get("pB").scrip).toBe(0);
+    expect(belt.room.metaAccounts.get("pB").scrip).toBe(123);
     belt.room.clients.push({ sessionId: "pC" });
     belt.room.onJoin({ sessionId: "pC" }, { scrip: 999999 });
-    expect(belt.state().players.get("pC").scrip).toBe(65535); // clamped
+    expect(belt.state().players.get("pC").scrip).toBe(0);
+    expect(belt.room.metaAccounts.get("pC").scrip).toBe(65535);
     const arena = makeRoom();
     arena.room.clients.push({ sessionId: "pA" });
     arena.room.onJoin({ sessionId: "pA" }, { scrip: 500 });
@@ -1915,69 +1879,26 @@ describe("GameRoom — §30 weapon set-bonus", () => {
   });
 });
 
-// B20 L1: extraction has no character-stat premium.
-describe("GameRoom — stat-free extraction", () => {
-  it("banks exactly the carried salvage", () => {
+// B20 L3: every terminal route banks run money with no tax.
+describe("GameRoom — terminal money banking", () => {
+  it("emits the bank receipt and clears run money", () => {
     const h = makeRoom();
-    h.join("p1");
+    const messages: Array<{ type: string; payload: unknown }> = [];
+    const client = {
+      sessionId: "p1",
+      send: (type: string, payload: unknown) => messages.push({ type, payload }),
+    };
+    h.room.clients.push(client);
+    h.room.onJoin(client);
     const p = h.state().players.get("p1");
-    p.salvaged = 100;
-    h.state().portalOpen = true;
-    h.state().portalX = p.x;
-    h.state().portalY = p.y;
-    h.room.checkExtraction([{ x: p.x, y: p.y }]);
-    expect(h.state().outcome).toBe("victory");
-    expect(h.state().bankedSalvage).toBe(100);
-    expect(p.salvaged).toBe(0); // banked out
-  });
-});
-
-// ── §31 v0.118 META-PROGRESSION: permanent upgrades bought with scrip, seeded from the persisted account
-// on a belt join. L1 removes their retired character-stat projection without changing the meta rail. ──
-describe("GameRoom — §31 meta upgrades", () => {
-  it("seeds persisted upgrade levels while character stats remain absent", () => {
-    const h = makeRoom({ belt: true });
-    h.room.clients.push({ sessionId: "pU" });
-    h.room.onJoin({ sessionId: "pU" }, { up: { vitality: 2, fortune: 1, power: 3 } });
-    const p = h.state().players.get("pU");
-    expect(p.upVitality).toBe(2);
-    expect(p.upFortune).toBe(1);
-    expect(p.upPower).toBe(3);
-    expect(p.maxHp).toBe(PLAYER_MAX_HP + 2 * META_VITALITY_HP);
-    expect(p.hp).toBe(p.maxHp);
-    expect("luk" in p).toBe(false);
-    expect("str" in p).toBe(false);
-    // over-max / garbage clamps.
-    h.room.clients.push({ sessionId: "pV" });
-    h.room.onJoin({ sessionId: "pV" }, { up: { vitality: 99, fortune: -5, power: "x" } });
-    const q = h.state().players.get("pV");
-    expect(q.upVitality).toBe(3); // catalog max
-    expect(q.upFortune).toBe(0);
-    expect(q.upPower).toBe(0);
-  });
-
-  it("non-belt ignores upgrades entirely", () => {
-    const h = makeRoom();
-    h.room.clients.push({ sessionId: "pU" });
-    h.room.onJoin({ sessionId: "pU" }, { up: { vitality: 3 } });
-    const p = h.state().players.get("pU");
-    expect(p.upVitality).toBe(0);
-    expect(p.maxHp).toBe(PLAYER_MAX_HP);
-  });
-
-  it("keeps the retired buyUpgrade endpoint inert so archived gear cannot consume scrip", () => {
-    const h = makeRoom({ belt: true });
-    h.join("pU");
-    const p = h.state().players.get("pU");
-    const account = h.room.metaAccounts.get("pU");
     p.scrip = 100;
-    p.x = h.state().beltShopX;
-    const beforeOwned = [...account.ownedGear];
-    h.send("pU", "buyUpgrade", { id: "vitality" }); // cost 30
-    expect(p.scrip).toBe(100);
-    expect([p.upVitality, p.upFortune, p.upPower]).toEqual([0, 0, 0]);
-    expect(p.maxHp).toBe(PLAYER_MAX_HP);
-    expect(account.ownedGear).toEqual(beforeOwned);
+    h.room.enterTerminalOutcome("victory");
+    expect(p.scrip).toBe(0);
+    expect(h.room.metaAccounts.get("p1").scrip).toBe(100);
+    expect(messages.find((message) => message.type === "moneyBankReceipt")?.payload).toMatchObject({
+      banked: 100,
+      bankTotal: 100,
+    });
   });
 });
 
@@ -2265,8 +2186,6 @@ describe("GameRoom — §44 safety gates", () => {
     });
     const p = h.state().players.get("rich");
     expect(p.scrip).toBe(0);
-    expect(p.upVitality).toBe(0);
-    expect(p.upPower).toBe(0);
   });
 });
 
@@ -2326,7 +2245,7 @@ describe("improve2 integrity regressions", () => {
     expect(combat.bulwarkShield).toBeGreaterThan(0);
   });
 
-  it("G-03 retires ordinary, tough, and wielding enemy weapon pickups in favor of chests", () => {
+  it("authored wielders can drop disassemblable floor weapons", () => {
     const h = makeRoom();
     h.join("drop-law");
     const row = Object.entries(ENEMY_KINDS).find(
@@ -2346,7 +2265,11 @@ describe("improve2 integrity regressions", () => {
       h.state().enemies.set(enemy.id, enemy);
       h.room.damageEnemy(enemy, enemy.id, 1, []);
     }
-    expect(h.state().pickups.size).toBe(0);
+    expect(h.state().pickups.size).toBe(2);
+    h.state().pickups.forEach((pickup: PickupState) => {
+      expect(pickup.disassemblable).toBe(true);
+      expect(pickup.weapon).toBe(row[1].wieldsWeapon);
+    });
     rng.mockRestore();
   });
 
@@ -2391,7 +2314,7 @@ describe("improve2 integrity regressions", () => {
     expect(receipt?.delivery).toBe(CombatDelivery.Gun);
     expect(h.state().combatReceipts.length).toBe(COMBAT_RECEIPT_CAP);
     expect([...h.state().combatReceipts]).toEqual(rows);
-    expect(h.state().schemaVersion).toBe(36);
+    expect(h.state().schemaVersion).toBe(37);
   });
 });
 
@@ -3484,7 +3407,7 @@ describe("GameRoom — §51 tough-enemy melee combos (Wave 1 authority)", () => 
   });
 
   it("ships schema 19, named depth decks, and guardrail-safe authored literals", () => {
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(36);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(37);
     expect(new EnemyState().comboSeq).toBe(0);
     expect(new EnemyState().comboFlags).toBe(0);
     expect(herePlayerJuggledDefault()).toBe(0);
@@ -3847,7 +3770,7 @@ describe("GameRoom — jump-feel J1 authoritative stance/physics", () => {
 
   it("ships schema 21 with the three appended uint8 stance/VFX defaults", () => {
     const player = new enemyComboShared.PlayerState();
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(36);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(37);
     expect([player.moveStance, player.poundSeq, player.stanceSeq]).toEqual([0, 0, 0]);
   });
 });
@@ -4008,7 +3931,7 @@ describe("GameRoom — flavor-only character identity", () => {
 
   it("retains schema 21 while defaulting character identity to the shared default", () => {
     const player = new enemyComboShared.PlayerState();
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(36);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(37);
     expect([player.character, player.runCharacter]).toEqual([
       enemyComboShared.DEFAULT_CHARACTER,
       enemyComboShared.DEFAULT_CHARACTER,
@@ -4770,8 +4693,8 @@ describe("ULT U1 lifecycle, co-op, and schema 25", () => {
     const h = makeRoom();
     h.join("ult-schema");
     const player = h.state().players.get("ult-schema");
-    expect(h.state().schemaVersion).toBe(36);
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(36);
+    expect(h.state().schemaVersion).toBe(37);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(37);
     expect([
       player.ultimate.archetype,
       player.ultimate.charge,
@@ -4831,7 +4754,7 @@ describe("pet v1 join snapshot, lock, and schema 25", () => {
     h.room.clients.push(client);
     h.room.onJoin(client, { metaAccount: account, selectedPetId: "brass-crab" });
     const player = h.state().players.get("pet-lock");
-    expect([h.state().schemaVersion, enemyComboShared.SCHEMA_VERSION]).toEqual([36, 36]);
+    expect([h.state().schemaVersion, enemyComboShared.SCHEMA_VERSION]).toEqual([37, 37]);
     expect({ petId: player.petId, petLevelBand: player.petLevelBand }).toEqual({
       petId: "hearth-newt",
       petLevelBand: 3,
@@ -4935,18 +4858,6 @@ describe("pet v1 approved roster bonus enforcement", () => {
     const low = makeRoom();
     const lowPet = joinPet(low, "copper-nine", "copper-snail", 2700);
     expect(low.room.bagCapacity(lowPet.player)).toBe(12);
-  });
-
-  it("Gilded Gecko mints only earned-sale fractions and stops at the approved level-10 cap", () => {
-    const h = makeRoom({ belt: true });
-    const { player, pet } = joinPet(h, "gecko-max", "gilded-gecko", 3600);
-    expect(h.room.petSalePayout(player, 4, false)).toBe(0);
-    expect(h.room.petSalePayout(player, 4, true)).toBe(72);
-    expect(h.room.petSalePayout(player, 4, true)).toBe(72);
-    expect(h.room.petSalePayout(player, 4, true)).toBe(66);
-    expect(h.room.petSalePayout(player, 4, true)).toBe(60);
-    expect(pet.geckoMinted).toBe(30);
-    expect(pet.geckoFraction).toBeCloseTo(6, 8);
   });
 
   it("Brass Crab cannot accelerate retired reload debt; stowed cadence still ages once", () => {
@@ -5208,7 +5119,6 @@ function makeDualWieldFixture(
     offAffix?: string;
     leadEarned?: boolean;
     offEarned?: boolean;
-    scrip?: number;
     leadCharges?: number;
     offCharges?: number;
     leadCooldown?: number;
@@ -5222,13 +5132,12 @@ function makeDualWieldFixture(
   h.state().mode = "training";
   const player = h.state().players.values().next().value;
   const combat = h.room.combat.get(player.id);
-  player.x = h.state().beltShopX;
+  player.x = h.room.map.spawnX;
   player.y = BELT_Y0 + DEPTH_MAX * 0.5;
   player.activeSlot = 0;
   player.weapon = leadId;
   player.weaponRarity = options.leadRarity ?? 0;
   player.weaponAffix = options.leadAffix ?? "";
-  player.scrip = options.scrip ?? 100;
   combat.lastWeapon = leadId;
   combat.heldEarned = options.leadEarned ?? false;
 
@@ -5258,7 +5167,14 @@ function makeDualWieldFixture(
   off.reload = 0;
   off.resourceCharges = 0;
 
-  h.send(player.id, "bindPair", { off: 1 });
+  const pairId = "wp_dual_fixture_pair_0000";
+  lead.bankEntryId = pairId;
+  lead.bankEntryKind = "pair";
+  lead.bankPairRole = "lead";
+  off.bankEntryId = pairId;
+  off.bankEntryKind = "pair";
+  off.bankPairRole = "offhand";
+  h.room.activateMaterializedPair(player, combat);
   return { h, player, combat, lead, off };
 }
 
@@ -5298,43 +5214,6 @@ describe("GameRoom — dual-wield schema 27 server core", () => {
     ).toBe(false);
   });
 
-  it("charges the better half's real sell value, unbinds free, and preserves anti-launder identity", () => {
-    const f = makeDualWieldFixture("rattler-sabre", "x2-sandsong-saber", {
-      leadRarity: 1,
-      offRarity: 3,
-      leadAffix: "keen",
-      offAffix: "swift",
-      leadEarned: true,
-      offEarned: true,
-      scrip: 100,
-    });
-    expect(f.player.offhandSlot).toBe(1);
-    expect(f.player.scrip).toBe(100 - scripValue(3, true));
-    const identities = [
-      [f.lead.weapon, f.lead.rarity, f.lead.affix, f.lead.earned],
-      [f.off.weapon, f.off.rarity, f.off.affix, f.off.earned],
-    ];
-    f.h.send(f.player.id, "unbindPair");
-    expect(f.player.offhandSlot).toBe(255);
-    expect(f.player.scrip).toBe(100 - scripValue(3, true));
-    expect([
-      [f.lead.weapon, f.lead.rarity, f.lead.affix, f.lead.earned],
-      [f.off.weapon, f.off.rarity, f.off.affix, f.off.earned],
-    ]).toEqual(identities);
-
-    const noLaunder = makeDualWieldFixture("rattler-sabre", "x2-sandsong-saber", {
-      leadRarity: 2,
-      offRarity: 4,
-      leadEarned: true,
-      offEarned: false,
-      scrip: 100,
-    });
-    expect(noLaunder.player.scrip).toBe(100 - scripValue(2, true));
-    noLaunder.h.send(noLaunder.player.id, "unbindPair");
-    noLaunder.h.send(noLaunder.player.id, "sellWeapon", { from: "slot", index: 1 });
-    expect(noLaunder.player.scrip).toBe(100 - scripValue(2, true));
-  });
-
   it("moves zero cooldown, reload, or ammo state across bind and unbind", () => {
     const f = makeDualWieldFixture("x-gun-revolver-cannon", "x-gun-nailgun", {
       leadCharges: 2,
@@ -5348,7 +5227,7 @@ describe("GameRoom — dual-wield schema 27 server core", () => {
       lead: [f.combat.cd, f.combat.reloadCd, f.player.charges],
       off: [f.off.cooldown, f.off.reload, f.off.resourceCharges],
     };
-    f.h.send(f.player.id, "unbindPair");
+    f.h.room.dissolvePair(f.player, f.combat);
     expect({
       lead: [f.combat.cd, f.combat.reloadCd, f.player.charges],
       off: [f.off.cooldown, f.off.reload, f.off.resourceCharges],
@@ -5359,7 +5238,7 @@ describe("GameRoom — dual-wield schema 27 server core", () => {
     const f = makeDualWieldFixture("rattler-sabre", "x2-sandsong-saber", { offCooldown: 1 });
     f.h.tick(10);
     expect(f.off.cooldown).toBeCloseTo(0.5, 8);
-    f.h.send(f.player.id, "unbindPair");
+    f.h.room.dissolvePair(f.player, f.combat);
     f.h.tick(10);
     expect(f.off.cooldown).toBeCloseTo(0, 8);
   });
@@ -5442,7 +5321,7 @@ describe("GameRoom — dual-wield schema 27 server core", () => {
     const pairedLead = f.h.room.heldDamageMult(weapon, f.player, 0);
     (f.player as unknown as { dex: number }).dex = 999;
     expect(f.h.room.heldDamageMult(weapon, f.player, 0)).toBe(pairedLead);
-    f.h.send(f.player.id, "unbindPair");
+    f.h.room.dissolvePair(f.player, f.combat);
     expect(enemyComboShared.classCount(f.h.room.loadoutIds(f.player), "melee")).toBe(2);
   });
 
@@ -5530,8 +5409,8 @@ describe("GameRoom — dual-wield schema 27 server core", () => {
     expect(new Set(weaponIds)).toEqual(new Set(["rattler-sabre", "x2-sandsong-saber"]));
 
     const fresh = new enemyComboShared.PlayerState();
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(36);
-    expect(new enemyComboShared.ArenaState().schemaVersion).toBe(36);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(37);
+    expect(new enemyComboShared.ArenaState().schemaVersion).toBe(37);
     expect(fresh.dualWield).toMatchObject({
       offhandSlot: 255,
       pairBaseSeq: 0,
@@ -5730,7 +5609,6 @@ describe("gear G2 archived account compatibility and inert runtime", () => {
     expect(geared.combat.quirk.id).toBe("unwritten");
     expect(geared.combat.mods.drawLockMult).toBe(1);
 
-    h.room.publishAccountMutation(geared.player);
     const accountResponse = [...geared.messages]
       .reverse()
       .find((message) => message.type === "metaAccount")?.payload as
@@ -5793,7 +5671,6 @@ describe("gear G2 archived account compatibility and inert runtime", () => {
     expect(["str", "dex", "int", "con", "luk"].some((key) => key in player)).toBe(false);
     expect(player.maxHp).toBe(PLAYER_MAX_HP);
     expect(player.hp).toBe(player.maxHp);
-    expect([player.upVitality, player.upFortune, player.upPower]).toEqual([0, 0, 0]);
     expect([player.gearSeeded, player.gearUpper, player.gearLower]).toEqual([false, "", ""]);
     expect(player.petId).toBe(old.selectedPetId);
   });
@@ -5952,7 +5829,7 @@ describe("GameRoom — weapon bank carry and exact pair projection", () => {
   });
 });
 
-describe("GameRoom — at-stake ledger across down/rez, wipe, disconnect, and shop settlement", () => {
+describe("GameRoom — at-stake ledger across down/rez, wipe, disconnect, and terminal settlement", () => {
   it("down and revive preserve exact escrow; a downed owner still banks with squad extraction", () => {
     const h = makeRoom({ belt: true });
     const carried = roomBankSingle(10);
@@ -6042,37 +5919,6 @@ describe("GameRoom — at-stake ledger across down/rez, wipe, disconnect, and sh
     expect(joined.account.weaponBank.stash).toEqual([carried]);
   });
 
-  it("home sale consumes one exact id once and a replay returns the receipt without printing Scrip", () => {
-    const h = makeRoom({ belt: true });
-    const sold = roomBankSingle(40);
-    const joined = joinWeaponAccount(
-      h,
-      "bank-home-sale",
-      [sold],
-      [{ entryId: sold.entryId, zone: "active", start: 1 }],
-      sold.entryId,
-    );
-    h.room.completeExtraction();
-    const revision = joined.account.revision;
-    h.send(joined.player.id, "sellStashEntry", {
-      requestId: "sale-once",
-      expectedRevision: revision,
-      entryId: sold.entryId,
-      from: "stash",
-    });
-    expect(joined.account.scrip).toBe(4);
-    expect(joined.account.weaponBank.stash).toEqual([]);
-    h.send(joined.player.id, "sellStashEntry", {
-      requestId: "sale-once",
-      expectedRevision: revision,
-      entryId: sold.entryId,
-      from: "stash",
-    });
-    expect(joined.account.scrip).toBe(4);
-    expect(joined.messages.filter((message) => message.type === "stashSaleReceipt")).toHaveLength(
-      2,
-    );
-  });
 });
 
 describe("GameRoom - weapon-bank explicit abandon boundary", () => {
@@ -6140,8 +5986,8 @@ describe("GameRoom — schema-31 Drive authority", () => {
     );
     const cost = enemyComboShared.driveCostForProfile(profile, interval);
 
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(36);
-    expect(h.state().schemaVersion).toBe(36);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(37);
+    expect(h.state().schemaVersion).toBe(37);
     expect(player.weaponResource).toBe(player.dualWield.weaponResource);
     expect(player.weaponResource).toMatchObject({
       valueQ: 10_000,
@@ -6429,7 +6275,7 @@ describe("GameRoom — schema-31 public prestige ceremony", () => {
     )[tailSymbols[0]!];
     if (!metadata) throw new Error("DualWieldState schema metadata is required");
     expect(metadata[7]).toMatchObject({ name: "prestige", type: "uint8" });
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(36);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(37);
   });
 });
 
@@ -6627,7 +6473,10 @@ describe("GameRoom — W4A archived weapon retirement", () => {
     });
 
     const joined = h.room.metaAccounts.get("archive-join") as import("@dd/shared").MetaAccountV4;
-    const expectedPayout = scripValue(2, true) + scripValue(4, true) + scripValue(0, true);
+    const expectedPayout =
+      weaponDisassemblyValue(archivedLead.weaponId) +
+      weaponDisassemblyValue(intakeWeapon.weaponId) +
+      weaponDisassemblyValue(expeditionWeapon.weaponId);
     expect(joined.scrip).toBe(7 + expectedPayout);
     expect(joined.weaponBank.stash).toEqual([]);
     expect(joined.weaponBank.intake).toEqual([]);

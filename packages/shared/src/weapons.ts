@@ -826,7 +826,7 @@ export interface WeaponDef {
   /**
    * Retired content identity. Archived definitions stay in the canonical catalog so persisted instance
    * ids, receipts, art, and codegen references never dangle, but every acquisition/presentation roster
-   * must treat them as inactive. Owned instances are converted to Scrip by the join migration.
+   * must treat them as inactive. Owned instances are converted to money by the join migration.
    */
   archived?: boolean;
 }

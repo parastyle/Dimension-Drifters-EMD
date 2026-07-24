@@ -185,11 +185,11 @@ describe("wardrobe prestige ceremony model", () => {
       },
     });
     expect(view.costCopy).toContain("ENTIRE WEAPON BANK WIPED");
-    expect(view.costCopy).toContain("SCRIP PAID · 0");
+    expect(view.costCopy).toContain("MONEY PAID · 0");
     expect(view.survivorCopy).toContain("Fists + Home-Issue Rusty Cleaver starter floor");
     expect(view.survivorCopy).toContain("gear");
     expect(view.survivorCopy).toContain("pets");
-    expect(view.survivorCopy).toContain("321 Scrip");
+    expect(view.survivorCopy).toContain("321 Money");
 
     account.prestige = 30;
     expect(prestigeCeremonyView(account, true)).toMatchObject({

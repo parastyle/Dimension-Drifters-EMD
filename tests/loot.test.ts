@@ -17,7 +17,6 @@ import {
   rollAffix,
   rollDropWeapon,
   rollRarity,
-  salvageValue,
   WEAPONS,
 } from "@dd/shared";
 import { describe, expect, it } from "vitest";
@@ -48,11 +47,6 @@ describe("§10 rarity canon", () => {
     expect(RARITIES[RARITY_CURSED]?.dmg).toBeGreaterThan(1);
   });
 
-  it("salvage value rises through the non-cursed ladder (§13 rarity drives the parts value)", () => {
-    for (let i = 1; i < RARITY_CURSED; i++) {
-      expect(salvageValue(i)).toBeGreaterThan(salvageValue(i - 1));
-    }
-  });
 });
 
 describe("rollRarity (§11 LUK reads into rarity)", () => {

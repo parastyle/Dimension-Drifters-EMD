@@ -66,8 +66,6 @@ export interface BeltLevel {
   obstacles: readonly BeltObstacle[];
   /** Ordered rooms (clear-to-advance gates), last is the boss. */
   rooms: readonly BeltRoom[];
-  /** §29 v0.118 world-x of the SHOPKEEPER (sell bag/slot weapons for scrip). Omitted / 0 = no vendor. */
-  shopX?: number;
 }
 
 /** Is belt position `x` over a pit gap? PURE. */
@@ -176,9 +174,7 @@ export const SKY_CARRIER: BeltLevel = {
     { gateX: 3750, wave: 6, name: "Arena Mouth" },
     { gateX: ARENA_WIDTH, wave: 0, boss: true, bossKind: "world-titan", name: "The Bridge" },
   ],
-  // Vendor at the mouth of the Catwalk (just past the first gate) — you reach them with loot from the
-  // Flight Deck fight, and can always backtrack to sell. On clear deck (clear of the 1560–1670 pit).
-  shopX: 2050,
+  // The Catwalk opens just past the first gate on clear deck (clear of the 1560–1670 pit).
 };
 
 /** §36 FROSTFELL DESCENT — a glacier chasm. Narrow crevasse pinches, more pits, frost roster, Hollow King. */
@@ -209,7 +205,6 @@ export const FROST_CHASM: BeltLevel = {
     { gateX: 3400, wave: 6, name: "Frost Gate" },
     { gateX: ARENA_WIDTH, wave: 0, boss: true, name: "The Hollow Throne" },
   ],
-  shopX: 1780,
 };
 
 /** §36 VERDANT OVERGROWTH — a sunken ruin swallowed by jungle. Root-choked, few pits, verdant roster. */
@@ -237,7 +232,6 @@ export const VERDANT_RUIN: BeltLevel = {
     { gateX: 3600, wave: 6, name: "Ruin Mouth" },
     { gateX: ARENA_WIDTH, wave: 0, boss: true, name: "The Heart-Stone" },
   ],
-  shopX: 1980,
 };
 
 /** §36 NEON UNDERGRID — a cyber sublevel. Long clean sightlines, catwalk pits over the void, cyber roster. */
@@ -268,7 +262,6 @@ export const NEON_UNDERGRID: BeltLevel = {
     { gateX: 3800, wave: 7, name: "Reactor Gate" },
     { gateX: ARENA_WIDTH, wave: 0, boss: true, name: "The Core" },
   ],
-  shopX: 1850,
 };
 
 /** §36 ASHLAND FORGE — a live volcanic foundry. Lava-gap pits, the cinder roster, the Molten Brute (Ver'Kaln
@@ -300,7 +293,6 @@ export const ASHLAND_FORGE: BeltLevel = {
     { gateX: 3600, wave: 7, name: "Crucible Gate" },
     { gateX: ARENA_WIDTH, wave: 0, boss: true, name: "The Crucible" },
   ],
-  shopX: 1880,
 };
 
 export const BELT_LEVELS: Record<string, BeltLevel> = {

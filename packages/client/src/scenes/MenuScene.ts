@@ -3108,7 +3108,7 @@ export class MenuScene extends Phaser.Scene {
     const progress = !selected.owned
       ? selected.id === "slate-tortoise"
         ? "Wild egg · Verdant Ruins terminal victories"
-        : "◈ 160 Scrip egg · Companion shop"
+        : "◈ 160 Money egg · Companion shop"
       : selected.nextBondXp === null
         ? "Maxed Bond"
         : `${selected.bondXp.toLocaleString()} / ${selected.nextBondXp.toLocaleString()} Bond XP`;

@@ -7,10 +7,7 @@ import {
   petStageBandForLevel,
   sanitizeBondXp,
   META_ACCOUNT_REVISION_MAX,
-  META_ACCOUNT_SCRIP_MAX,
   sanitizeWeaponBankV1,
-  scripValue,
-  weaponEntryInstances,
   weaponEntryMinimumWorldTier,
   weaponEntryPhysicalSize,
   weaponRarityIndex,
@@ -103,21 +100,6 @@ export interface WeaponSettlementResult {
   lostPhysical: number;
 }
 
-export interface StashSaleRequest {
-  requestId: string;
-  expectedRevision: number;
-  entryId: string;
-  from: "stash" | "intake";
-}
-
-export interface StashSaleResult {
-  ok: boolean;
-  error?: WeaponBankTransactionError;
-  entryId: string;
-  payout: number;
-  revision: number;
-}
-
 function bumpMetaRevision(account: MetaAccountV4): void {
   account.revision = Math.min(META_ACCOUNT_REVISION_MAX, account.revision + 1);
 }
@@ -132,16 +114,6 @@ export function weaponBankStashCapacity(account: Pick<MetaAccountV4, "weaponBank
     Math.min(WEAPON_STASH_MAX_SHELVES, Math.floor(account.weaponBank.shelfUpgrades)),
   );
   return WEAPON_STASH_BASE_CAPACITY + WEAPON_STASH_SHELF_SIZE * shelves;
-}
-
-export function weaponBankEntrySaleValue(entry: WeaponBankEntryV1): number {
-  let value = 0;
-  for (const instance of weaponEntryInstances(entry)) {
-    const rarity = weaponRarityIndex(instance.rarity);
-    if (rarity < 0) return 0;
-    value += scripValue(rarity, true);
-  }
-  return value;
 }
 
 /** Atomic Stash -> expedition move. No selected instance remains safe after this succeeds. */
@@ -284,46 +256,6 @@ export function settleWeaponExpedition(
     lostEntries,
     lostPhysical,
   };
-}
-
-/** Irreversible safe-location conversion. The exact entry disappears before Scrip is credited. */
-export function sellWeaponBankEntry(
-  account: MetaAccountV4,
-  request: StashSaleRequest,
-  advanceRevision = true,
-): StashSaleResult {
-  const fail = (error: WeaponBankTransactionError): StashSaleResult => ({
-    ok: false,
-    error,
-    entryId: typeof request?.entryId === "string" ? request.entryId : "",
-    payout: 0,
-    revision: account.revision,
-  });
-  if (!sanitizeWeaponBankV1(account.weaponBank).ok) return fail("invalid-account");
-  if (!isBoundedRequestId(request?.requestId) || !isBoundedRequestId(request?.entryId)) return fail("invalid-request");
-  if (request.expectedRevision !== account.revision) return fail("stale-revision");
-  if (account.weaponBank.expedition) return fail("expedition-active");
-  const location = request.from === "stash"
-    ? account.weaponBank.stash
-    : request.from === "intake"
-      ? account.weaponBank.intake
-      : null;
-  if (!location) return fail("invalid-request");
-  const index = location.findIndex((entry) => entry.entryId === request.entryId);
-  if (index < 0) return fail("missing-entry");
-  const entry = location[index]!;
-  const payout = weaponBankEntrySaleValue(entry);
-  if (payout <= 0) return fail("invalid-account");
-  location.splice(index, 1);
-  account.scrip = Math.min(META_ACCOUNT_SCRIP_MAX, account.scrip + payout);
-  account.weaponBank.lastCarry.placements = account.weaponBank.lastCarry.placements.filter(
-    (placement) => placement.entryId !== entry.entryId,
-  );
-  if (account.weaponBank.lastCarry.activeEntryId === entry.entryId) {
-    account.weaponBank.lastCarry.activeEntryId = "";
-  }
-  if (advanceRevision) bumpMetaRevision(account);
-  return { ok: true, entryId: entry.entryId, payout, revision: account.revision };
 }
 
 /** Prestige hook for the later hat-tower wave: all weapon power goes, permanent journey state stays. */

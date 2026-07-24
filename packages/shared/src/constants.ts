@@ -10,7 +10,7 @@
  *  decodes new patches with corrupted offsets (HP reads as aim, etc.). The server stamps it on
  *  `ArenaState.schemaVersion`; the client compares on join and tells the player to hard-reload on a
  *  mismatch instead of rendering silently-corrupt state. */
-export const SCHEMA_VERSION = 36 as const; // B26 parry receipt + B20 L2 chest/relic authority
+export const SCHEMA_VERSION = 37 as const; // B20 L3 floor disassembly + shop teardown
 
 /** §ULT stat-free damage/activity meter and action tuning (20Hz tick epochs). */
 export const ULT_CHARGE_MAX = 100 as const;
@@ -400,8 +400,7 @@ export const MAX_MONEY_DROPS = 48;
 export const MONEY_DROP_ARM_TICKS = 6;
 export const MONEY_DROP_FLIGHT_TICKS = 6;
 
-/** §29 v0.118 ARSENAL: a fixed 3-slot loadout (the belt "carry 3 weapons, swap instantly") plus a bag for
- *  overflow you haul to a shopkeeper. */
+/** §29 v0.118 ARSENAL: a fixed 3-slot loadout plus a finite bag. */
 export const ARSENAL_SLOTS = 3;
 /** G-01 one responsive, shared draw gate after any held-weapon transition. Kept separate from each
  * weapon's restored cooldown so swapping never erases debt and the gate never overwrites a longer debt. */
@@ -418,15 +417,9 @@ export const DUAL_MATCHED_OFFHAND_BASE_MULT = 1.1;
 /** v18 fixed-size authoritative hit/final-blow receipt ring. Allocated once when the room is created. */
 export const COMBAT_RECEIPT_CAP = 32;
 export const BAG_CAP = 12;
-/** §29 shopkeeper interaction reach (world px) + SCRIP paid per rarity tier when selling an EARNED weapon
- *  (unearned/conjured weapons sell for nothing — same anti-launder rule as salvage). Indexed by rarity. */
-export const SHOP_RADIUS = 90;
-export const SCRIP_BY_RARITY = [4, 9, 18, 34, 60] as const;
-/** §9/§13 drop & salvage: after a player DROPS a weapon it can't be re-grabbed for this long (sec), so a
+/** §9/B20 L3 drop interaction: after a player DROPS a weapon it can't be re-grabbed for this long (sec), so a
  *  drop at your feet doesn't snap straight back. */
 export const DROP_GRACE_SECONDS = 0.7;
-/** §13 hold-to-salvage: seconds the drop key must be HELD before the held weapon salvages (tap = drop). */
-export const SALVAGE_HOLD_SECONDS = 0.6;
 
 /** §5 JUMP (Spacebar) — universal traversal that clears barriers + pitfalls, with no i-frames. Defensive
  *  channels stay distinct: parry answers WHITE and owns every reward; schema-23 slide opening answers
@@ -625,8 +618,8 @@ export const BOSSRUSH_HEAL_FRAC = 0.5;
 
 /**
  * §6 DIMENSION CHAIN (v0.103, audit C1/H2/H6) — the greed loop. Clearing a boss offers TWO portals:
- * EXTRACT (bank the squad's carried salvage, run ends in victory) or the RIFT (descend: depth+1, a new
- * dimension + freshly-seeded map, same squad/levels/weapons/HP — risk it all for a bigger bank).
+ * EXTRACT (settle the run and bank 100% of run money) or the RIFT (descend: depth+1, a new dimension +
+ * freshly-seeded map, same squad/levels/weapons/HP/run money — risk it all for a bigger bank).
  * Difficulty scales with DEPTH on top of the clock/player scaling: enemy+boss HP, tough chance, and a
  * faster boss clock. A WIPE loses everything carried ("bank or lose"). All tuning.
  */
@@ -635,11 +628,6 @@ export const DEPTH_HP_PER = 0.25;
 /** Extra enemy DAMAGE per depth beyond 1 (contact/melee/projectile/DoT/slam). Without a damage axis the
  *  chain punishes patience, not skill — player EHP grows ~+40% per 10 levels while enemy damage sat flat. */
 export const DEPTH_DMG_PER = 0.12;
-/** §6 the chain's WAGES (v0.103) — what pushing deeper actually EARNS. Every living player pockets
- *  carried salvage on the two capstone moments, scaled by depth: bank it at the portal or gamble it
- *  deeper. (A depth-5 chain carries ~5+10+15+20+25 = 75 from bosses alone vs 5 for bank-at-1.) */
-export const BOSS_SALVAGE_PER_DEPTH = 5;
-export const SHIFTER_SALVAGE_PER_DEPTH = 3;
 /** §6 the rift is a CHANNEL, not a tripwire: a living player must hold the rift for this long (a synced
  *  0→1 charge the client draws) before the squad commits — one misstep or one griefer can't yank four
  *  players into depth+1. Extraction stays instant (it's the benign direction). */

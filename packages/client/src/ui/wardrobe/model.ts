@@ -221,13 +221,13 @@ export function prestigeCeremonyView(
       `${atStake.totalEntries} entries · ${atStake.physicalWeapons} weapons`,
       `Stash ${atStake.stashEntries} · Intake ${atStake.intakeEntries} · Pairs ${atStake.pairEntries}`,
       `Distinct bases ${atStake.distinctWeaponIds} · Last Carry refs ${atStake.lastCarryReferences}`,
-      "SCRIP PAID · 0",
+      "MONEY PAID · 0",
     ].join("\n"),
     survivorCopy: [
       "SURVIVE",
       "Fists + Home-Issue Rusty Cleaver starter floor",
       `${account.ownedGear.length} unlocked gear · ${Object.keys(account.pets).length} pets`,
-      `${account.scrip.toLocaleString()} Scrip · Armory shelves · cosmetics`,
+      `${account.scrip.toLocaleString()} Money · Armory shelves · cosmetics`,
     ].join("\n"),
   };
 }

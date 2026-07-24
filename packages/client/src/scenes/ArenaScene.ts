@@ -42,11 +42,11 @@ import {
   DEFAULT_WEAPON,
   DEFLECT_TTL,
   DEPTH_MAX,
+  DISASSEMBLY_HOLD_SECONDS,
   depthHpScale,
   dodgeProfileFor,
   EMBERGUARD_HALF_ARC,
   EMBERGUARD_RANGE,
-  EMPTY_META,
   EMPTY_RELIC_STACKS,
   ENEMY_KINDS,
   ENEMY_RADIUS,
@@ -73,13 +73,11 @@ import {
   landingThumpTier,
   lootCooldownMult,
   lootDamageMult,
-  META_UPGRADES,
   MAP_ZONE_SCAR,
   type MetaAccountV4,
-  type MetaLevels,
+  type MoneyBankReceipt,
   type MoveStance,
   meleeReach,
-  nextUpgradeCost,
   PARRY_CHAIN_CD,
   PARRY_CHAIN_RIPOSTE_AT,
   PARRY_CHAIN_WINDOW,
@@ -104,9 +102,7 @@ import {
   relicEnergyCapacity,
   relicParryRadius,
   ROOM_NAME,
-  SALVAGE_HOLD_SECONDS,
   SCHEMA_VERSION,
-  SHOP_RADIUS,
   SLIDE_PHASE_GROUND,
   SLIDE_PHASE_OFF,
   type SlidePhase,
@@ -115,9 +111,6 @@ import {
   STANCE_POUND,
   STANCE_SLIDE,
   type SwingDescriptor,
-  salvageValue,
-  sanitizeMetaLevels,
-  scripValue,
   selectChainTargets,
   stepBeamAngle,
   swingDescriptorFor,
@@ -141,10 +134,12 @@ import {
   WEAPON_IDS,
   WEAPONS,
   type WeaponDef,
+  type WeaponDisassemblyReceipt,
   type WholeArtCharacter,
   WormBossMode,
   weaponArtMuzzlePointsForShot,
   weaponDisplaySpriteId,
+  weaponDisassemblyValue,
   weaponEffectCueSeconds,
   weaponEffectEmitterPoint,
   weaponMuzzleWorldPoint,
@@ -676,12 +671,6 @@ interface CarouselDock {
   inspectStartedAt: number;
   blocked: boolean;
 }
-
-type PairCandidateSelection = {
-  source: "slot" | "bag";
-  index: number;
-  identity: string;
-};
 
 interface MeleeTellCandidate {
   id: string;
@@ -1231,6 +1220,8 @@ export class ArenaScene extends Phaser.Scene {
   private weaponManifestRunId = "";
   private settlementResult?: SettlementPresentation;
   private lastSettlementKey = "";
+  private moneyResultLine = "";
+  private lastMoneyReceiptKey = "";
   private readonly petAvoidanceScratch = { x: 0, y: 0, alpha: 1 };
   private readonly enemies = new Map<string, SpriteRig>();
   /** Serraketh is one owner, one batch timeline, and one pooled renderer—not twelve ordinary enemy rigs. */
@@ -1739,24 +1730,24 @@ export class ArenaScene extends Phaser.Scene {
   private summonCount = 1; // the multiplier (× this many per spawn click)
   private summonTough = false;
   private summonBossPage = 0;
-  // §9/§13 drop & salvage (R): tap = drop the held weapon, HOLD = salvage it. `rHold` = seconds R has
-  // been down; `rSalvaged` guards the one-shot salvage so a long hold doesn't fire it every frame.
-  private rHold = 0;
-  private rSalvaged = false;
+  /** B20 L3: the exact floor row captured on E-down and its local hold presentation. */
+  private eHold = 0;
+  private eHoldPickupId = "";
+  private eDisassembled = false;
+  private eDisassemblyLastRequestAt = -1e9;
   /** Nearest grabbable pickup this frame (world px), for the E prompt and highlight ring. */
   private grabTarget: { x: number; y: number } | null = null;
   private grabTargetId = "";
+  private grabTargetDisassemblable = false;
   private galleryLabelFocusId = "";
   private grabRadius = PICKUP_RADIUS;
   /** The pulsing amber ring drawn on the pickup E will take. */
   private grabGfx!: Phaser.GameObjects.Graphics;
   private grabPromptText!: Phaser.GameObjects.Text;
-  private dropBar?: Phaser.GameObjects.Graphics;
-  private dropBarLabel?: Phaser.GameObjects.Text;
   // §9 non-belt navigator: a fixed mirrored-L dock, virtualized passive chips, and one lazy keyboard
   // inspector. The synchronized player row is always the source of the elbow's identity and resources.
   private carouselDock?: CarouselDock;
-  // §29 belt arsenal HUD (replaces the carousel in belt mode): 3 slot chips + scrip/bag readout, and a
+  // §29 belt arsenal HUD (replaces the carousel in belt mode): 3 slot chips + money/bag readout, and a
   // Tab-toggled bag panel with clickable entries (click a bag weapon → equip into the active slot; click a
   // slot → stash to bag). Immediate-mode Graphics + pooled Text; interactive zones rebuilt when the panel opens.
   private arsenalG: Phaser.GameObjects.Graphics | null = null;
@@ -1766,13 +1757,8 @@ export class ArenaScene extends Phaser.Scene {
   private bagG: Phaser.GameObjects.Graphics | null = null;
   private bagTexts: Phaser.GameObjects.Text[] = [];
   private bagZones: Phaser.GameObjects.Rectangle[] = [];
+  private bagDisassembleZones: Phaser.GameObjects.Rectangle[] = [];
   private slotZones: Phaser.GameObjects.Rectangle[] = [];
-  private pairSlotZones: Phaser.GameObjects.Rectangle[] = [];
-  private bagPairZones: Phaser.GameObjects.Rectangle[] = [];
-  private pairConfirmZone: Phaser.GameObjects.Rectangle | null = null;
-  private unbindZone: Phaser.GameObjects.Rectangle | null = null;
-  private pairCandidate: PairCandidateSelection | null = null;
-  private pairRequestLockedUntil = 0;
   private lastPairKey = "";
   // dockux-panel §3: Backpack item-card pooled art thumbnails, the display-order sort mapping (server bag
   // order stays authoritative for messages), hover state, and the open/close choreography clocks.
@@ -1782,21 +1768,12 @@ export class ArenaScene extends Phaser.Scene {
   private bagPanelShown = false;
   private bagPanelOpenAt = 0;
   private bagPanelCloseAt = 0; // >0 while the 150 ms close drop is playing (zones already disabled)
-  private bagPanelMode: "bag" | "shop" = "bag";
-  private bagWorkflow: "inventory" | "sell" | "bind" | "upgrades" = "inventory";
+  private bagWorkflow: "inventory" = "inventory";
   private bagFocusCell = 0;
   private bagSelected: { source: "bag" | "slot"; index: number } | null = null;
   private bagTabZones: Phaser.GameObjects.Rectangle[] = [];
   private bagActionZone: Phaser.GameObjects.Rectangle | null = null;
   private bagRenderSignature = "";
-  // §29 shopkeeper: a world-space vendor drawn at state.beltShopX; `shopOpen` is the SELL overlay (F near
-  // the vendor). When open, the same slot/bag zones sell for scrip instead of swapping/equipping.
-  private shopNpcG: Phaser.GameObjects.Graphics | null = null;
-  private shopPromptText: Phaser.GameObjects.Text | null = null;
-  private shopOpen = false;
-  private lastScrip = -1; // §29 track scrip to flash a "+N" confirmation on a sale (−1 = uninitialised)
-  private lastUpgradeSig = ""; // §31 track upgrade levels to persist on purchase
-  private buyZones: Phaser.GameObjects.Rectangle[] = []; // §31 shop upgrade-buy click zones
   private readonly debugEl = document.getElementById("debug");
 
   constructor() {
@@ -2098,6 +2075,7 @@ export class ArenaScene extends Phaser.Scene {
     this.arsenalPairArt = null;
     this.bagTexts = [];
     this.bagZones = [];
+    this.bagDisassembleZones = [];
     this.bagTabZones = [];
     this.bagActionZone = null;
     this.bagRenderSignature = "";
@@ -2105,14 +2083,7 @@ export class ArenaScene extends Phaser.Scene {
     this.bagFocusCell = 0;
     this.bagWorkflow = "inventory";
     this.slotZones = [];
-    this.pairSlotZones = [];
-    this.bagPairZones = [];
-    this.pairConfirmZone = null;
-    this.unbindZone = null;
-    this.pairCandidate = null;
-    this.pairRequestLockedUntil = 0;
     this.lastPairKey = "";
-    this.buyZones = [];
     this.bagArts = [];
     this.bagDisplayOrder = [];
     this.bagHoverCell = -1;
@@ -2175,12 +2146,8 @@ export class ArenaScene extends Phaser.Scene {
     this.restartBtn = undefined!;
     this.grabGfx = undefined!;
     this.grabPromptText = undefined!;
-    this.dropBar = undefined;
-    this.dropBarLabel = undefined;
     this.arsenalG = null;
     this.bagG = null;
-    this.shopNpcG = null;
-    this.shopPromptText = null;
 
     // Net/prediction, arena identity, clocks, one-shot latches, and camera state.
     this.lastParryPress = -9999;
@@ -2288,15 +2255,14 @@ export class ArenaScene extends Phaser.Scene {
     this.summonCount = 1;
     this.summonTough = false;
     this.summonBossPage = 0;
-    this.rHold = 0;
-    this.rSalvaged = false;
+    this.eHold = 0;
+    this.eHoldPickupId = "";
+    this.eDisassembled = false;
+    this.eDisassemblyLastRequestAt = -1e9;
     this.grabTarget = null;
     this.grabTargetId = "";
     this.grabRadius = PICKUP_RADIUS;
     this.bagOpen = false;
-    this.shopOpen = false;
-    this.lastScrip = -1;
-    this.lastUpgradeSig = "";
     this.petManifest = undefined;
     this.petResultLine = "";
     this.lastPetReceiptKey = "";
@@ -2304,6 +2270,8 @@ export class ArenaScene extends Phaser.Scene {
     this.weaponManifestRunId = "";
     this.settlementResult = undefined;
     this.lastSettlementKey = "";
+    this.moneyResultLine = "";
+    this.lastMoneyReceiptKey = "";
     this.driveLocked = false;
     this.ultimateCastPendingUntil = -1e9;
     this.ultimateHudPulseUntil = -1e9;
@@ -2730,7 +2698,7 @@ export class ArenaScene extends Phaser.Scene {
       .setDepth(100002)
       .setVisible(false);
 
-    // Playtest control: restart the run. Top-right corner (R is now drop/salvage, §9/§13).
+    // Playtest control: restart the run. Top-right corner (R now only drops, §9/§13).
     this.restartBtn = this.add
       .text(0, 0, "⟳ Restart Run", {
         fontSize: "14px",
@@ -2755,20 +2723,6 @@ export class ArenaScene extends Phaser.Scene {
         prestigeGameCleared: room.state.outcome === "victory",
       });
     });
-
-    // §9/§13 drop/salvage hold bar — fills while R is held; release before full = drop, full = salvage.
-    this.dropBar = this.add.graphics().setScrollFactor(0).setDepth(100003).setVisible(false);
-    this.dropBarLabel = this.add
-      .text(0, 0, "", {
-        fontSize: "12px",
-        color: "#ffe7a8",
-        fontStyle: "bold",
-        align: "center",
-      })
-      .setScrollFactor(0)
-      .setOrigin(0.5)
-      .setDepth(100003)
-      .setVisible(false);
 
     // Equipped-weapon readout (sits just above the HP bar).
     this.weaponText = this.add
@@ -2917,8 +2871,12 @@ export class ArenaScene extends Phaser.Scene {
     const TAU = Math.PI * 2;
     const ADD = Phaser.BlendModes.ADD;
     const state = this.room.state.pickups;
+    const selfId = this.room.sessionId;
+    const visibleIds = new Set<string>();
     const reducedMotion = prefersReducedPaperMotion();
     state.forEach((pk, id) => {
+      if (pk.ownerId && pk.ownerId !== selfId) return;
+      visibleIds.add(id);
       const existing0 = this.pickups.get(id);
       if (existing0) {
         const renderedWeapon = existing0.getData("pickupWeapon") as string | undefined;
@@ -2955,7 +2913,6 @@ export class ArenaScene extends Phaser.Scene {
         color: 0x9aa5b1,
         dmg: 1,
         weight: 0,
-        salvage: 1,
         id: "common",
       };
       // A KNOWN pickup renders its real art — but an expansion weapon's parts lazy-load at runtime, so
@@ -3120,7 +3077,7 @@ export class ArenaScene extends Phaser.Scene {
       this.pickups.set(id, container);
     });
     for (const id of this.pickups.keys()) {
-      if (!state.has(id)) {
+      if (!visibleIds.has(id)) {
         const pickup = this.pickups.get(id);
         if (pickup) this.beginPickupExit(pickup);
         this.pickups.delete(id);
@@ -4353,8 +4310,6 @@ export class ArenaScene extends Phaser.Scene {
           bossRush: this.bossRush, // §16 v0.116 the room creator's BOSS RUSH pick scopes the run's mode
           belt: this.belt, // §29 belt-scroller mode — the server shapes the sim into a belt band
           beltLevel: this.belt ? this.selectedBeltLevel : undefined, // §36 which belt level to load
-          scrip: this.belt ? this.loadBankedScrip() : 0, // §29 restore the player's persisted meta-scrip
-          up: this.belt ? this.loadUpgrades() : undefined, // §31 restore permanent upgrade levels
         };
         // §39 a DEV-PORTAL deep-link gets its OWN fresh room via create() (never joinOrCreate) — otherwise it
         // lands in a live/other-tab co-op room as a NON-host, and the host-only dev messages (spawnBossDef,
@@ -4404,6 +4359,17 @@ export class ArenaScene extends Phaser.Scene {
             this.onWeaponSettlementReceipt(payload);
           },
         ) as () => void;
+        const disposeMoneyBank = room.onMessage<unknown>("moneyBankReceipt", (payload) => {
+          if (generation !== this.connectionGeneration || this.room !== room) return;
+          this.onMoneyBankReceipt(payload);
+        }) as () => void;
+        const disposeWeaponDisassembled = room.onMessage<unknown>(
+          "weaponDisassembled",
+          (payload) => {
+            if (generation !== this.connectionGeneration || this.room !== room) return;
+            this.onWeaponDisassembled(payload);
+          },
+        ) as () => void;
         const disposeOwnerNoteAck = room.onMessage<{ saved?: unknown; reason?: unknown }>(
           "ownerNoteAck",
           (payload) => {
@@ -4423,14 +4389,14 @@ export class ArenaScene extends Phaser.Scene {
             if (generation !== this.connectionGeneration || this.room !== room) return;
             const drops = [
               receipt.weapon
-                ? `${receipt.weapon.name} T${receipt.weapon.tier + 1} → BAG`
+                ? `${receipt.weapon.name} T${receipt.weapon.tier + 1}`
                 : "",
               ...receipt.relics.map((relic) =>
                 relic.rarity === "rare"
                   ? `RARE ${relic.label}`
                   : `${relic.label}${relic.stacks > 1 ? ` ×${relic.stacks}` : ""}`,
               ),
-              receipt.money > 0 ? `+${receipt.money} SCRIP` : "",
+              receipt.money > 0 ? `+${receipt.money} MONEY` : "",
             ].filter(Boolean);
             const scar = receipt.zone === MAP_ZONE_SCAR;
             this.flashBanner(
@@ -4466,6 +4432,8 @@ export class ArenaScene extends Phaser.Scene {
           disposePetPickup,
           disposeWeaponManifest,
           disposeWeaponSettlement,
+          disposeMoneyBank,
+          disposeWeaponDisassembled,
           disposeOwnerNoteAck,
           disposeChestOpened,
           disposeChestDenied,
@@ -4577,7 +4545,6 @@ export class ArenaScene extends Phaser.Scene {
     if (!ownerNoteModalOpen && Phaser.Input.Keyboard.JustDown(this.keys.H)) {
       if (!this.verbs.isLegendOpen()) {
         this.bagOpen = false;
-        this.shopOpen = false;
         if (this.summonOpen) this.closeSummonMenu();
       }
       this.verbs.toggleLegend(this.time.now);
@@ -4599,14 +4566,11 @@ export class ArenaScene extends Phaser.Scene {
     const cam = this.cameras.main;
     this.audio.setListener(cam.scrollX + cam.width / cam.zoom / 2, cam.width / cam.zoom / 2);
     // Weapon verbs stay physically distinct: E interacts, Q cycles, Z/X page the training gallery, and
-    // R owns only drop/salvage. G/T become hard-modal owner notes only inside Testing Grounds; T retains
+    // R owns only drop. G/T become hard-modal owner notes only inside Testing Grounds; T retains
     // its enter-Testing-Grounds verb outside. Restart remains the on-screen button, top-right.
     const selfP = this.room.state.players.get(this.room.sessionId);
     const alive = !!selfP && selfP.alive;
     const ultimatePressed = Phaser.Input.Keyboard.JustDown(this.keys.F);
-    const beltShopX = this.belt ? (this.room.state.beltShopX ?? 0) : 0;
-    const nearBeltShop =
-      this.belt && !!selfP && beltShopX > 0 && Math.abs(selfP.x - beltShopX) <= SHOP_RADIUS;
     if (this.summonOpen && this.room.state.mode !== "training") this.closeSummonMenu();
     const summonClosePressed =
       this.summonOpen &&
@@ -4621,8 +4585,7 @@ export class ArenaScene extends Phaser.Scene {
       : this.room.state.mode === "training"
         ? "training"
         : "arena";
-    if (this.shopOpen && !nearBeltShop) this.closeBackpackModal();
-    const armoryModalOpen = this.bagOpen || this.shopOpen;
+    const armoryModalOpen = this.bagOpen;
     const higherModalOpen =
       this.verbs.isModalBlocking() ||
       this.summonOpen ||
@@ -4663,7 +4626,7 @@ export class ArenaScene extends Phaser.Scene {
       }
       if (armoryInput.workflowDelta !== 0) this.moveBackpackWorkflow(armoryInput.workflowDelta);
       if (armoryInput.primary && selfP) this.activateBackpackSelection(selfP);
-      if (armoryInput.close || (this.shopOpen && ultimatePressed)) this.closeBackpackModal();
+      if (armoryInput.close) this.closeBackpackModal();
     }
     const competingModalOpen =
       this.verbs.isModalBlocking() || this.summonOpen || summonClosePressed || armoryModalOpen;
@@ -4755,10 +4718,17 @@ export class ArenaScene extends Phaser.Scene {
         }
       }
     }
-    let canSalvage = false;
     this.grabTarget = null;
     this.grabTargetId = "";
+    this.grabTargetDisassemblable = false;
     this.grabRadius = PICKUP_RADIUS;
+    if (gameplayInputBlocked && this.eHoldPickupId) {
+      this.room.send("cancelDisassembleFloor");
+      this.eHold = 0;
+      this.eHoldPickupId = "";
+      this.eDisassembled = false;
+      this.eDisassemblyLastRequestAt = -1e9;
+    }
     if (!gameplayInputBlocked) {
       const holdingWeapon = !!selfP && selfP.weapon !== FISTS_WEAPON;
       // The nearest grabbable pickup within arm's reach drives one visible E prompt and one exact target id.
@@ -4768,6 +4738,7 @@ export class ArenaScene extends Phaser.Scene {
       if (selfP && alive) {
         let bestD = Number.POSITIVE_INFINITY;
         this.room.state.pickups.forEach((pk, id) => {
+          if (pk.ownerId && pk.ownerId !== this.room?.sessionId) return;
           const dx = pk.x - selfP.x;
           const dy = pk.y - selfP.y;
           const d = dx * dx + dy * dy;
@@ -4780,6 +4751,7 @@ export class ArenaScene extends Phaser.Scene {
             grabPickupId = id;
             this.grabTargetId = id;
             this.grabTarget = { x: pk.x, y: pk.y };
+            this.grabTargetDisassemblable = pk.disassemblable;
             this.grabRadius = radius;
           }
         });
@@ -4795,34 +4767,63 @@ export class ArenaScene extends Phaser.Scene {
           grabChestId = id;
           this.grabTargetId = id;
           this.grabTarget = { x: chest.x, y: chest.y };
+          this.grabTargetDisassemblable = false;
           this.grabRadius = CHEST_OPEN_RADIUS;
         });
       }
-      canSalvage = alive && holdingWeapon && !nearPickup;
-      if (this.keys.R.isDown && canSalvage) {
-        this.rHold += this.deltaSec;
-        if (this.rHold >= SALVAGE_HOLD_SECONDS && !this.rSalvaged) {
-          this.room.send("salvageWeapon");
-          this.audio.play("weapon:salvage");
-          this.rSalvaged = true;
-        }
-      }
-      if (Phaser.Input.Keyboard.JustUp(this.keys.R)) {
-        if (
-          !this.rSalvaged &&
-          !nearPickup &&
-          this.rHold > 0.02 &&
-          this.rHold < SALVAGE_HOLD_SECONDS &&
-          holdingWeapon
-        ) {
-          this.room.send("dropWeapon"); // a quick tap (not a grab, not a salvage-hold) = drop
-        }
-        this.rHold = 0;
-        this.rSalvaged = false;
-      }
+      if (Phaser.Input.Keyboard.JustDown(this.keys.R) && alive && holdingWeapon)
+        this.room.send("dropWeapon");
       // Jump-feel Space routing is sampled above the context block so a level-window edge also clears the
       // hold latch. Tap emits on release; held state and airborne pound ride the next numbered command.
       const interactPressed = Phaser.Input.Keyboard.JustDown(this.keys.E);
+      const interactReleased = Phaser.Input.Keyboard.JustUp(this.keys.E);
+      if (interactPressed) {
+        if (grabChestId) {
+          this.room.send("openChest", { chestId: grabChestId });
+          this.audio.play("weapon:pickup", { x: selfP?.x, amt: 0.7 });
+        } else if (grabPickupId) {
+          this.eHold = 0;
+          this.eHoldPickupId = grabPickupId;
+          this.eDisassembled = false;
+          this.eDisassemblyLastRequestAt = -1e9;
+          if (this.grabTargetDisassemblable)
+            this.room.send("beginDisassembleFloor", { pickupId: grabPickupId });
+        }
+      }
+      if (this.eHoldPickupId && this.keys.E.isDown) {
+        if (grabPickupId !== this.eHoldPickupId) {
+          this.room.send("cancelDisassembleFloor");
+          this.eHold = 0;
+          this.eHoldPickupId = "";
+          this.eDisassembled = false;
+          this.eDisassemblyLastRequestAt = -1e9;
+        } else if (this.grabTargetDisassemblable) {
+          this.eHold += this.deltaSec;
+          // One authority-tick margin avoids a partial-tick race while retaining the ~0.4 s hold idiom.
+          // A render stall can advance the client hold clock before the server has observed eight ticks.
+          // Retry at 10 Hz while held; authority still owns the first request that is actually ready.
+          if (
+            this.eHold >= DISASSEMBLY_HOLD_SECONDS + TICK_MS / 1000 &&
+            this.time.now - this.eDisassemblyLastRequestAt >= TICK_MS * 2
+          ) {
+            this.room.send("disassembleFloorWeapon", { pickupId: this.eHoldPickupId });
+            this.eDisassemblyLastRequestAt = this.time.now;
+            this.eDisassembled = true;
+          }
+        }
+      }
+      if (interactReleased && this.eHoldPickupId) {
+        if (!this.eDisassembled) {
+          this.room.send("grabWeapon", { pickupId: this.eHoldPickupId });
+          this.room.send("cancelDisassembleFloor");
+          this.wakeCarouselDock();
+          this.audio.play("weapon:pickup", { x: selfP?.x, amt: 1 });
+        }
+        this.eHold = 0;
+        this.eHoldPickupId = "";
+        this.eDisassembled = false;
+        this.eDisassemblyLastRequestAt = -1e9;
+      }
       const cyclePressed = Phaser.Input.Keyboard.JustDown(this.keys.Q);
       const previousPagePressed = Phaser.Input.Keyboard.JustDown(this.keys.Z);
       const nextPagePressed = Phaser.Input.Keyboard.JustDown(this.keys.X);
@@ -4836,16 +4837,6 @@ export class ArenaScene extends Phaser.Scene {
         previousPagePressed,
         nextPagePressed,
       });
-      if (weaponInput.pickup) {
-        if (grabChestId) {
-          this.room.send("openChest", { chestId: grabChestId });
-          this.audio.play("weapon:pickup", { x: selfP?.x, amt: 0.7 });
-        } else if (grabPickupId) {
-          this.room.send("grabWeapon", { pickupId: grabPickupId });
-          this.wakeCarouselDock();
-          this.audio.play("weapon:pickup", { x: selfP?.x, amt: 1 });
-        }
-      }
       rawFlourishIntent.interaction = weaponInput.pickup;
       rawFlourishIntent.weaponSelection = !!selfP && weaponInput.cycle;
       // Belt: Q advances through occupied arsenal entries; 1/2/3 jump straight to a slot.
@@ -4884,7 +4875,6 @@ export class ArenaScene extends Phaser.Scene {
         if (this.belt) {
           this.bagOpen = !this.bagOpen;
           if (this.bagOpen) {
-            this.shopOpen = false; // one overlay at a time
             this.openBackpackWorkflow("inventory");
           }
         } else {
@@ -4893,21 +4883,9 @@ export class ArenaScene extends Phaser.Scene {
           else this.closeSummonMenu();
         }
       }
-      // §29 F = trade with the shopkeeper when standing near them; walking away auto-closes the SELL overlay.
-      if (this.belt) {
-        if (ultimatePressed && nearBeltShop) {
-          this.shopOpen = !this.shopOpen;
-          if (this.shopOpen) {
-            this.bagOpen = false;
-            this.openBackpackWorkflow("sell");
-          }
-        }
-        if (!nearBeltShop) this.shopOpen = false;
-      }
-      if (ultimatePressed && !nearBeltShop) this.sendUltimate();
+      if (ultimatePressed) this.sendUltimate();
       if (Phaser.Input.Keyboard.JustDown(this.keys.C)) this.room?.send("cycleCharacter"); // §7 swap skin
     }
-    this.updateDropBar(canSalvage);
     this.renderGrabHighlight();
 
     rawFlourishIntent.desiredMoveX = gameplayInputBlocked
@@ -4926,7 +4904,7 @@ export class ArenaScene extends Phaser.Scene {
     this.stepNetInput(
       deltaMs,
       gameplayInputBlocked,
-      ultimatePressed && !nearBeltShop && !gameplayInputBlocked,
+      ultimatePressed && !gameplayInputBlocked,
       rawFlourishIntent.desiredMoveX,
       rawFlourishIntent.desiredMoveY,
     ); // §4 v0.107 mint/send/predict this frame's input commands
@@ -7745,6 +7723,41 @@ export class ArenaScene extends Phaser.Scene {
     this.audio.play(row.outcome === "victory" ? "settlement:kept" : "settlement:lost");
   }
 
+  private onMoneyBankReceipt(payload: unknown): void {
+    if (!payload || typeof payload !== "object" || Array.isArray(payload)) return;
+    const row = payload as Partial<MoneyBankReceipt>;
+    if (
+      (row.outcome !== "victory" && row.outcome !== "defeat") ||
+      !Number.isFinite(row.banked) ||
+      !Number.isFinite(row.previousBank) ||
+      !Number.isFinite(row.bankTotal)
+    )
+      return;
+    const key = `${row.outcome}:${row.previousBank}:${row.banked}:${row.bankTotal}`;
+    if (key === this.lastMoneyReceiptKey) return;
+    this.lastMoneyReceiptKey = key;
+    this.moneyResultLine = `MONEY BANKED +◈${Math.max(0, Math.floor(row.banked ?? 0))} · ACCOUNT ◈${Math.max(0, Math.floor(row.bankTotal ?? 0))}`;
+  }
+
+  private onWeaponDisassembled(payload: unknown): void {
+    if (!payload || typeof payload !== "object" || Array.isArray(payload)) return;
+    const row = payload as Partial<WeaponDisassemblyReceipt>;
+    if (
+      (row.source !== "floor" && row.source !== "bag") ||
+      typeof row.weaponId !== "string" ||
+      !Number.isFinite(row.value) ||
+      !Number.isFinite(row.x) ||
+      !Number.isFinite(row.y)
+    )
+      return;
+    const x = Number(row.x);
+    const y = this.belt ? this.beltY(Number(row.y)) : Number(row.y);
+    this.spawnHitSpark(x, y, -Math.PI / 2, true, 0xffd479);
+    this.audio.play("weapon:salvage", { x, amt: 1 });
+    this.flashBanner(`DISASSEMBLED · +◈${Math.max(0, Math.floor(row.value ?? 0))} MONEY`, "#ffe27a");
+    this.bagRenderSignature = "";
+  }
+
   /** Boss health bar + approach banner + victory screen (§16). */
   private onPetProgressReceipt(payload: unknown): void {
     if (!payload || typeof payload !== "object") return;
@@ -7936,11 +7949,12 @@ export class ArenaScene extends Phaser.Scene {
       const outcome = ceremony
         ? `${ceremony.heading}\n${ceremony.primary}\n${ceremony.detail}`
         : "BANKING CARRY · awaiting settlement receipt";
+      const money = this.moneyResultLine || "BANKING MONEY · awaiting terminal receipt";
       this.victoryText
         .setText(
           this.room.state.mode === "bossrush"
-            ? `☠  GAUNTLET CLEARED  ☠\n${outcome}\n(Wardrobe — top-right)`
-            : `EXTRACTED · DEPTH ${this.room.state.depth}\n${outcome}\n(Wardrobe — top-right)`,
+            ? `☠  GAUNTLET CLEARED  ☠\n${money}\n${outcome}\n(Wardrobe — top-right)`
+            : `EXTRACTED · DEPTH ${this.room.state.depth}\n${money}\n${outcome}\n(Wardrobe — top-right)`,
         )
         .setText(`${this.victoryText.text}${this.petResultLine ? `\n${this.petResultLine}` : ""}`)
         .setPosition(this.screenW() / 2, this.screenH() / 2);
@@ -8061,8 +8075,11 @@ export class ArenaScene extends Phaser.Scene {
       keyboard.enabled = false;
       this.ownerNoteKeyboardPaused = true;
     }
-    this.rHold = 0;
-    this.rSalvaged = false;
+    if (this.eHoldPickupId) this.room?.send("cancelDisassembleFloor");
+    this.eHold = 0;
+    this.eHoldPickupId = "";
+    this.eDisassembled = false;
+    this.eDisassemblyLastRequestAt = -1e9;
     this.jumpQueued = false;
     this.poundQueued = false;
     this.slideQueued = false;
@@ -8097,8 +8114,8 @@ export class ArenaScene extends Phaser.Scene {
       });
   }
 
-  private openBackpackWorkflow(workflow: "inventory" | "sell"): void {
-    this.bagWorkflow = workflow;
+  private openBackpackWorkflow(_workflow: "inventory"): void {
+    this.bagWorkflow = "inventory";
     this.bagFocusCell = 0;
     this.bagSelected = null;
     this.bagHoverCell = -1;
@@ -8107,7 +8124,6 @@ export class ArenaScene extends Phaser.Scene {
 
   private closeBackpackModal(): void {
     this.bagOpen = false;
-    this.shopOpen = false;
     this.bagSelected = null;
     this.bagHoverCell = -1;
     this.bagRenderSignature = "";
@@ -8128,58 +8144,27 @@ export class ArenaScene extends Phaser.Scene {
     this.bagRenderSignature = "";
   }
 
-  private moveBackpackWorkflow(delta: -1 | 1): void {
-    if (!this.shopOpen) return;
-    const workflows = ["sell", "bind", "upgrades"] as const;
-    const index = Math.max(0, workflows.indexOf(this.bagWorkflow as (typeof workflows)[number]));
-    this.bagWorkflow = workflows[(index + delta + workflows.length) % workflows.length] ?? "sell";
-    this.bagSelected = null;
-    this.bagRenderSignature = "";
+  private moveBackpackWorkflow(_delta: -1 | 1): void {
+    // B20 L3 has one uninterrupted bag surface; there are no trading workflows.
   }
 
   private activateBackpackSelection(self: PlayerState): void {
-    if (this.bagWorkflow === "upgrades") {
-      const upgrade = META_UPGRADES[this.bagFocusCell % META_UPGRADES.length];
-      if (upgrade) this.room?.send("buyUpgrade", { id: upgrade.id });
-      return;
-    }
     const selected = this.bagSelected;
     if (!selected) return;
-    if (this.bagWorkflow === "inventory") {
-      if (selected.source === "bag") {
-        this.room?.send("bagEquip", { index: selected.index, slot: self.activeSlot });
-      } else if (self.bag.length >= BAG_CAP) {
-        this.flashBanner(`Pack full — ${BAG_CAP}/${BAG_CAP}`, ARMORY_CSS_COLORS.warning);
-      } else {
-        this.room?.send("bagStore", { slot: selected.index });
+    if (selected.source === "bag") {
+      const item = self.bag[selected.index];
+      if (!item?.weapon || item.homeIssue || (!item.earned && !item.bankEntryId)) {
+        this.flashBanner("This weapon cannot be disassembled", ARMORY_CSS_COLORS.warning);
+        return;
       }
-      return;
-    }
-    if (this.bagWorkflow === "sell") {
-      this.room?.send("sellWeapon", { from: selected.source, index: selected.index });
+      this.room?.send("disassembleBagWeapon", { index: selected.index });
       this.bagSelected = null;
       this.bagRenderSignature = "";
       return;
     }
-    const entry = loadoutEntryView(self);
-    if (entry.offId) {
-      this.room?.send("unbindPair");
-      return;
-    }
-    const candidate =
-      selected.source === "bag"
-        ? this.bagPairItem(self, selected.index)
-        : this.slotPairItem(self, selected.index);
-    if (!candidate || !pairEligible(WEAPONS[entry.leadId], WEAPONS[candidate.weaponId])) {
-      this.flashBanner("Select a compatible weapon to bind", ARMORY_CSS_COLORS.warning);
-      return;
-    }
-    this.pairCandidate = {
-      source: selected.source,
-      index: selected.index,
-      identity: this.pairItemIdentity(candidate),
-    };
-    this.confirmPair(self);
+    if (self.bag.length >= BAG_CAP)
+      this.flashBanner(`Pack full — ${BAG_CAP}/${BAG_CAP}`, ARMORY_CSS_COLORS.warning);
+    else this.room?.send("bagStore", { slot: selected.index });
   }
 
   private inputModalBlocked(self: PlayerState | undefined): boolean {
@@ -8187,7 +8172,6 @@ export class ArenaScene extends Phaser.Scene {
       this.verbs.isModalBlocking() ||
       this.summonOpen ||
       this.bagOpen ||
-      this.shopOpen ||
       !!this.ownerNoteUi?.isOpen()
     );
   }
@@ -8216,7 +8200,7 @@ export class ArenaScene extends Phaser.Scene {
 
   private offerContextHint(id: ContextHintId): void {
     const self = this.room?.state.players.get(this.room.sessionId);
-    if (this.inputModalBlocked(self) || this.summonOpen || this.bagOpen || this.shopOpen) {
+    if (this.inputModalBlocked(self) || this.summonOpen || this.bagOpen) {
       return;
     }
     this.verbs.offerHint(id, this.time.now);
@@ -9602,7 +9586,6 @@ export class ArenaScene extends Phaser.Scene {
     const affordance = ultimateInputAffordance({
       alive: self.alive,
       modal: this.inputModalBlocked(self),
-      nearShop: false,
       unlocked: family !== UltimateFamily.Locked,
       charge: row.charge,
       phase: row.phase,
@@ -10233,8 +10216,24 @@ export class ArenaScene extends Phaser.Scene {
     const pulse = 0.5 + 0.5 * Math.sin(this.time.now * 0.008);
     g.lineStyle(2.5 + pulse, 0xffd479, 0.55 + 0.35 * pulse);
     g.strokeCircle(t.x, t.y, this.grabRadius * (0.7 + 0.06 * pulse));
+    const holdingForDisassembly =
+      this.grabTargetDisassemblable &&
+      this.eHoldPickupId === this.grabTargetId &&
+      this.keys.E.isDown;
+    const holdPercent = Math.min(
+      100,
+      Math.round((this.eHold / DISASSEMBLY_HOLD_SECONDS) * 100),
+    );
     this.grabPromptText
-      .setText(this.grabTargetId.startsWith("chest:") ? "[E] OPEN CHEST" : "[E] PICK UP")
+      .setText(
+        this.grabTargetId.startsWith("chest:")
+          ? "[E] OPEN CHEST"
+          : holdingForDisassembly
+            ? `[E] DISASSEMBLING ${holdPercent}%`
+            : this.grabTargetDisassemblable
+              ? "[E] TAP PICK UP · HOLD DISASSEMBLE"
+              : "[E] PICK UP",
+      )
       .setPosition(t.x, t.y - 45)
       .setVisible(true);
   }
@@ -11908,10 +11907,7 @@ export class ArenaScene extends Phaser.Scene {
   private renderObjectiveHud(scale: number): void {
     const state = this.room?.state;
     const depth = state?.depth ?? 1;
-    let carriedSalvage = 0;
-    state?.players.forEach((player) => {
-      carriedSalvage += player.salvaged;
-    });
+    const self = state?.players.get(this.room?.sessionId ?? "");
     const bossActive = (state?.bossPhase ?? 0) >= 1;
     const lagging =
       this.predictor !== null && (this.predictor.isStalled || this.predictor.stats.pending > 24);
@@ -11930,8 +11926,8 @@ export class ArenaScene extends Phaser.Scene {
       bossActive,
       portalOpen: !!state?.portalOpen,
       bossEtaSeconds: Math.max(0, bossSpawnAt(depth) - (state?.elapsedSeconds ?? 0)),
-      carriedSalvage,
-      bankedSalvage: state?.bankedSalvage ?? 0,
+      runMoney: self?.scrip ?? 0,
+      bankedMoney: this.petMetaAccount?.scrip ?? 0,
       beltRoomName: state?.beltRoomName,
       beltLocked: (state?.beltLockX ?? 0) > 0,
       lagging,
@@ -11971,7 +11967,7 @@ export class ArenaScene extends Phaser.Scene {
         pages = Number(rawPages) || 0;
       });
       if (page > 0) {
-        copy.location = `WEAPON EVALUATION  ·  PAGE ${String(page).padStart(2, "0")}/${String(pages).padStart(2, "0")}  ·  ${count} WEAPONS  ·  [Z/X] PAGE  ·  [Q] CYCLE  ·  [E] PICK UP  ·  [R] DROP/HOLD SALVAGE  ·  [/] PORTAL SEARCH  ·  [G/T] OWNER NOTES`;
+        copy.location = `WEAPON EVALUATION  ·  PAGE ${String(page).padStart(2, "0")}/${String(pages).padStart(2, "0")}  ·  ${count} WEAPONS  ·  [Z/X] PAGE  ·  [Q] CYCLE  ·  [E] PICK UP  ·  [R] DROP  ·  [/] PORTAL SEARCH  ·  [G/T] OWNER NOTES`;
       }
     }
     const layout = objectiveHudLayout({
@@ -12187,9 +12183,15 @@ export class ArenaScene extends Phaser.Scene {
           : wiped
             ? "\nCLOSING THE CARRY · awaiting settlement receipt"
             : "";
+      const money =
+        wiped && this.moneyResultLine
+          ? `\n${this.moneyResultLine}`
+          : wiped
+            ? "\nBANKING MONEY · awaiting terminal receipt"
+            : "";
       this.deathText
         .setText(
-          `${wiped ? "DEFEATED — THE SQUAD IS DOWN" : "DOWNED"}\n${cause}${prior}\n${recovery}${stakes}`,
+          `${wiped ? "DEFEATED — THE SQUAD IS DOWN" : "DOWNED"}\n${cause}${prior}\n${recovery}${money}${stakes}`,
         )
         .setText(
           `${this.deathText.text}${wiped && this.petResultLine ? `\n${this.petResultLine}` : ""}`,
@@ -12271,43 +12273,6 @@ export class ArenaScene extends Phaser.Scene {
     };
     this.applyCarouselDockFade(0);
     if (this.belt) root.setVisible(false);
-  }
-
-  /** §9/§13 draw the drop/salvage HOLD bar while R is held — a bar above the card carousel filling
-   *  0→1 over SALVAGE_HOLD_SECONDS. Release before full = DROP the weapon; hold to full = SALVAGE it. */
-  private updateDropBar(canDrop: boolean): void {
-    const bar = this.dropBar;
-    const label = this.dropBarLabel;
-    if (!bar || !label) return;
-    const holding = canDrop && this.keys.R.isDown && this.rHold > 0.02;
-    if (!holding) {
-      bar.setVisible(false);
-      label.setVisible(false);
-      return;
-    }
-    const frac = Math.min(1, this.rHold / SALVAGE_HOLD_SECONDS);
-    const w = 180;
-    const h = 12;
-    const x = this.screenW() / 2 - w / 2;
-    const y = this.screenH() - 132;
-    const done = frac >= 1;
-    bar.clear();
-    bar.fillStyle(0x000000, 0.55).fillRoundedRect(x - 2, y - 2, w + 4, h + 4, 5);
-    bar.fillStyle(0x2a2a2a, 1).fillRoundedRect(x, y, w, h, 4);
-    bar.fillStyle(done ? 0xff5a4a : 0xffb24a, 1).fillRoundedRect(x, y, w * frac, h, 4);
-    bar.setVisible(true);
-    // dockux-panel §2.2: key-hint grammar, and the payout on completion — the bar's whole point is the
-    // greed decision, so show what salvaging just paid.
-    const self = this.room?.state.players.get(this.room?.sessionId ?? "");
-    label
-      .setText(
-        done
-          ? `Salvaged +${salvageValue(self?.weaponRarity ?? 0)}`
-          : "[R] Hold to salvage · Release to drop",
-      )
-      .setColor(done ? "#ff8a5a" : "#ffe7a8")
-      .setPosition(this.screenW() / 2, y - 12)
-      .setVisible(true);
   }
 
   private stopCarouselDockFade(dock: CarouselDock): void {
@@ -12932,42 +12897,6 @@ export class ArenaScene extends Phaser.Scene {
     }
   }
 
-  /** §29 meta-progression bank: the player's SCRIP persisted in localStorage, restored on belt join and
-   *  re-saved whenever it changes. MVP persistence (client-local, single-machine) — a server/account bank
-   *  can replace it later without touching the earn/sell loop. Clamped to the uint16 sync ceiling. */
-  private loadBankedScrip(): number {
-    try {
-      const v = Number.parseInt(localStorage.getItem("dd.beltScrip") ?? "0", 10);
-      return Number.isFinite(v) ? Math.max(0, Math.min(65535, v)) : 0;
-    } catch {
-      return 0; // storage blocked (private mode / sandbox) → start fresh, no crash
-    }
-  }
-  private saveBankedScrip(scrip: number): void {
-    try {
-      localStorage.setItem("dd.beltScrip", String(Math.max(0, Math.min(65535, Math.floor(scrip)))));
-    } catch {
-      /* storage blocked — non-fatal, scrip just won't persist this session */
-    }
-  }
-
-  /** §31 the persisted permanent-upgrade levels (the meta "account"), restored on belt join + re-saved on
-   *  purchase. Client-local MVP (matches the scrip bank); a server/account store can replace the transport. */
-  private loadUpgrades(): MetaLevels {
-    try {
-      return sanitizeMetaLevels(JSON.parse(localStorage.getItem("dd.beltUpgrades") ?? "{}"));
-    } catch {
-      return { ...EMPTY_META };
-    }
-  }
-  private saveUpgrades(levels: MetaLevels): void {
-    try {
-      localStorage.setItem("dd.beltUpgrades", JSON.stringify(sanitizeMetaLevels(levels)));
-    } catch {
-      /* storage blocked — non-fatal */
-    }
-  }
-
   /** §29 a pooled, screen-pinned HUD text (lazily created), used by the arsenal + bag readouts. */
   private hudText(
     pool: Phaser.GameObjects.Text[],
@@ -13027,10 +12956,6 @@ export class ArenaScene extends Phaser.Scene {
     return { wid: sl?.weapon ?? "", rarity: sl?.rarity ?? 0, linkedOff: false, paired: false };
   }
 
-  private pairItemIdentity(item: PairPreviewItem): string {
-    return `${item.weaponId}|${item.rarity}|${item.affix}|${Number(item.earned)}`;
-  }
-
   private slotPairItem(self: PlayerState, slot: number): PairPreviewItem | undefined {
     if (slot === self.activeSlot) {
       const entry = loadoutEntryView(self);
@@ -13046,28 +12971,8 @@ export class ArenaScene extends Phaser.Scene {
     return { weaponId: item.weapon, rarity: item.rarity, affix: item.affix, earned: item.earned };
   }
 
-  private bagPairItem(self: PlayerState, index: number): PairPreviewItem | undefined {
-    const item = self.bag[index];
-    if (!item?.weapon) return undefined;
-    return { weaponId: item.weapon, rarity: item.rarity, affix: item.affix, earned: item.earned };
-  }
-
-  private selectedPairItem(self: PlayerState): PairPreviewItem | undefined {
-    const selected = this.pairCandidate;
-    if (!selected) return undefined;
-    const item =
-      selected.source === "slot"
-        ? this.slotPairItem(self, selected.index)
-        : this.bagPairItem(self, selected.index);
-    if (!item || this.pairItemIdentity(item) !== selected.identity) {
-      this.pairCandidate = null;
-      return undefined;
-    }
-    return item;
-  }
-
   /** §29 belt ARSENAL HUD — 3 slot chips (active raised + bright rarity border, others dim) showing the
-   *  weapon name tinted by rarity + the slot key, plus a scrip + bag readout. Click a chip to swap to it (or,
+   *  weapon name tinted by rarity + the slot key, plus a money + bag readout. Click a chip to swap to it (or,
    *  with the bag open, to stash it). Immediate-mode Graphics + pooled Text + persistent click zones. */
   private updateArsenalHud(): void {
     const self = this.room?.state.players.get(this.room?.sessionId ?? "");
@@ -13077,7 +12982,7 @@ export class ArenaScene extends Phaser.Scene {
     if (!this.arsenalG) this.arsenalG = this.add.graphics().setScrollFactor(0).setDepth(100048);
     const g = this.arsenalG;
     g.clear();
-    const panelUp = this.bagOpen || this.shopOpen;
+    const panelUp = this.bagOpen;
     const modal = backpackModalLayout(this.screenW(), this.screenH());
     const chipW = panelUp ? Math.min(344, (modal.dock.width - 240) / 3) : 220;
     const chipH = panelUp ? (modal.mode === "wide" ? 72 : 64) : 64;
@@ -13193,7 +13098,7 @@ export class ArenaScene extends Phaser.Scene {
               ? "STOW"
               : "SELECT",
         )
-        .setColor(this.shopOpen ? "#ffd24a" : "#9fb0c2")
+        .setColor("#9fb0c2")
         .setPosition(x + chipW - 6 * s, y + 4 * s)
         .setVisible(panelUp);
       tag.setFontSize(14).setOrigin(1, 0);
@@ -13211,7 +13116,7 @@ export class ArenaScene extends Phaser.Scene {
           const live = loadoutEntryView(me);
           if (i === live.leadSlot && live.offId) {
             this.flashBanner(
-              "Unbind for free at the Trading Post before moving either half",
+              "Bound pairs move as one atomic entry",
               "#ff8a2b",
             );
             return;
@@ -13225,7 +13130,7 @@ export class ArenaScene extends Phaser.Scene {
             if (me.bag.length >= BAG_CAP)
               this.flashBanner(`Pack full — ${BAG_CAP}/${BAG_CAP}`, "#ff8a2b");
             else this.room?.send("bagStore", { slot: i });
-          } else if (this.bagOpen || this.shopOpen) {
+          } else if (this.bagOpen) {
             this.bagSelected = { source: "slot", index: i };
             this.bagRenderSignature = "";
           } else {
@@ -13235,54 +13140,15 @@ export class ArenaScene extends Phaser.Scene {
         this.slotZones[i] = z;
       }
       z.setPosition(x + chipW / 2, y + chipH / 2).setSize(chipW, chipH);
-
-      const canPairSlot = false;
-      const slotPairItem = canPairSlot ? this.slotPairItem(self, i) : undefined;
-      const pairSlotSelected =
-        !!slotPairItem &&
-        this.pairCandidate?.source === "slot" &&
-        this.pairCandidate.index === i &&
-        this.pairCandidate.identity === this.pairItemIdentity(slotPairItem);
-      let pairZone = this.pairSlotZones[i];
-      if (!pairZone) {
-        pairZone = this.add
-          .rectangle(0, 0, 1, 1, 0xffffff, 0.001)
-          .setScrollFactor(0)
-          .setDepth(100050)
-          .setInteractive();
-        pairZone.on("pointerdown", () => {
-          if (!this.shopOpen) return;
-          const me = this.room?.state.players.get(this.room?.sessionId ?? "");
-          const item = me ? this.slotPairItem(me, i) : undefined;
-          const lead = me ? loadoutEntryView(me) : undefined;
-          if (!item || !lead || !pairEligible(WEAPONS[lead.leadId], WEAPONS[item.weaponId])) return;
-          this.pairCandidate = {
-            source: "slot",
-            index: i,
-            identity: this.pairItemIdentity(item),
-          };
-        });
-        this.pairSlotZones[i] = pairZone;
-      }
-      pairZone
-        .setVisible(canPairSlot)
-        .setPosition(x + chipW - 19 * s, y + chipH - 15 * s)
-        .setSize(38 * s, 30 * s);
-      if (canPairSlot) {
-        g.fillStyle(0x0a0805, 0.92)
-          .fillRoundedRect(x + chipW - 36 * s, y + chipH - 27 * s, 30 * s, 21 * s, 5 * s)
-          .lineStyle(1.5 * s, pairSlotSelected ? 0x9cff6a : 0xffd479, 0.95)
-          .strokeRoundedRect(x + chipW - 36 * s, y + chipH - 27 * s, 30 * s, 21 * s, 5 * s);
-        pairGlyph.setColor(pairSlotSelected ? "#9cff6a" : "#ffd479").setVisible(true);
-      }
     }
+
     // §30 class set-bonus for the current loadout (active slot = live held weapon, others = stored).
     const loadout = [0, 1, 2].map((i) => this.slotView(self, i, entry).wid);
     const setB = weaponSetBonus(loadout, entry.leadId);
-    // scrip + pack + set-bonus readout above the chips (dockux-panel §2.2 vocabulary). While the panel
+    // Money + pack + set-bonus readout above the chips (dockux-panel §2.2 vocabulary). While the panel
     // is open the capacity lives in the panel title instead (§3.2) — no duplicate Pack readout.
-    const parts = ["[Q] Next slot", `◈ ${self.scrip} Scrip`];
-    if (!(this.bagOpen || this.shopOpen))
+    const parts = ["[Q] Next slot", `◈ ${self.scrip} Money`];
+    if (!this.bagOpen)
       parts.push(`Pack ${self.bag.length}/${BAG_CAP}`, "[Tab] Backpack");
     if (setB > 1) parts.push(`⚔ Set bonus +${Math.round((setB - 1) * 100)}%`);
     const info = this.hudText(this.arsenalTexts, 6, 100049)
@@ -13292,59 +13158,30 @@ export class ArenaScene extends Phaser.Scene {
     info.setFontSize(14).setOrigin(0.5, 1);
     if (this.lastPairKey && entry.pairKey !== this.lastPairKey) {
       if (entry.offId) {
-        this.pairCandidate = null;
-        this.pairRequestLockedUntil = 0;
         const leadName = WEAPONS[entry.leadId]?.name ?? "Unknown weapon";
         const offName = WEAPONS[entry.offId]?.name ?? "Unknown weapon";
         this.flashBanner(`Bound — ${leadName} × ${offName}`, "#ffd479");
         this.audio.play("grab");
       } else if (this.lastPairKey.includes("|")) {
-        this.pairCandidate = null;
         this.flashBanner("Unbound — no fee", "#9cff6a");
       }
     }
     this.lastPairKey = entry.pairKey;
-    // §29 sale feedback: flash the scrip gained + a pickup blip when the total ticks up, and PERSIST the
-    // running scrip bank so it carries to the next run (meta-progression — "send stuff back").
-    if (self.scrip !== this.lastScrip) {
-      if (this.lastScrip >= 0 && self.scrip > this.lastScrip) {
-        this.flashBanner(`+◈ ${self.scrip - this.lastScrip} Scrip`, "#ffe27a");
-        this.audio.play("grab");
-      }
-      this.saveBankedScrip(self.scrip);
-      this.lastScrip = self.scrip;
-    }
-    // §31 persist permanent-upgrade levels whenever a purchase lands (the synced levels tick up).
-    const upSig = `${self.upVitality},${self.upFortune},${self.upPower}`;
-    if (upSig !== this.lastUpgradeSig) {
-      this.saveUpgrades({
-        vitality: self.upVitality,
-        fortune: self.upFortune,
-        power: self.upPower,
-      });
-      this.lastUpgradeSig = upSig;
-    }
-    this.updateShopkeeper(self, s);
     // dockux-panel §3.5 open/close choreography — the dock's deliberate pair (120 ms cubic-out rise /
     // 150 ms cubic-in drop). Zones disable on frame 0 of the close; reduced motion snaps both.
-    const wantPanel = this.bagOpen || this.shopOpen;
+    const wantPanel = this.bagOpen;
     if (wantPanel) {
       if (!this.bagPanelShown) {
         this.bagPanelShown = true;
         this.bagPanelOpenAt = this.time.now;
       }
       this.bagPanelCloseAt = 0;
-      this.bagPanelMode = this.shopOpen ? "shop" : "bag";
       this.renderArmoryBackpackPanel(self);
     } else if (this.bagPanelShown) {
       if (this.bagPanelCloseAt === 0) {
         this.bagPanelCloseAt = this.time.now;
         for (const z of this.bagZones) z.setVisible(false);
-        for (const z of this.buyZones) z.setVisible(false);
-        for (const z of this.pairSlotZones) z.setVisible(false);
-        for (const z of this.bagPairZones) z.setVisible(false);
-        this.pairConfirmZone?.setVisible(false);
-        this.unbindZone?.setVisible(false);
+        for (const z of this.bagDisassembleZones) z.setVisible(false);
         this.bagHoverCell = -1;
       }
       const done = prefersReducedPaperMotion() || this.time.now - this.bagPanelCloseAt >= 150;
@@ -13355,57 +13192,6 @@ export class ArenaScene extends Phaser.Scene {
       } else {
         this.renderArmoryBackpackPanel(self);
       }
-    }
-  }
-
-  /** §29 draw the world-space SHOPKEEPER at state.beltShopX (a lit market stall + keeper), a "Press F"
-   *  prompt when the local player is in range, and re-tint when the SELL overlay is open. */
-  private updateShopkeeper(self: PlayerState, _s: number): void {
-    const shopX = this.room?.state.beltShopX ?? 0;
-    if (shopX <= 0 || !this.beltLevel) {
-      this.shopNpcG?.setVisible(false);
-      this.shopPromptText?.setVisible(false);
-      return;
-    }
-    if (!this.shopNpcG) {
-      // WORLD space (scrolls with the camera) — depth just above the deck so the stall sits on the floor.
-      this.shopNpcG = this.add.graphics().setDepth(BELT_Y0 + DEPTH_MAX + 5);
-      const midDepth = BELT_Y0 + DEPTH_MAX * 0.5;
-      const gy = this.beltY(midDepth); // screen-plane ground line at the stall's depth
-      const gx = shopX;
-      const g = this.shopNpcG;
-      // awning
-      g.fillStyle(0x8a2f3a, 1).fillRect(gx - 54, gy - 150, 108, 20);
-      for (let i = 0; i < 6; i++)
-        g.fillStyle(i % 2 ? 0xf2e6c8 : 0xd8b448, 1).fillRect(gx - 54 + i * 18, gy - 132, 18, 12);
-      // posts + counter
-      g.fillStyle(0x5a4632, 1)
-        .fillRect(gx - 52, gy - 130, 6, 130)
-        .fillRect(gx + 46, gy - 130, 6, 130);
-      g.fillStyle(0x6b503a, 1).fillRect(gx - 56, gy - 44, 112, 16);
-      // keeper (head + cloak)
-      g.fillStyle(0x2a3550, 1).fillRect(gx - 16, gy - 96, 32, 52);
-      g.fillStyle(0xe3b58f, 1).fillCircle(gx, gy - 104, 13);
-      g.fillStyle(0x1d2740, 1).fillRect(gx - 15, gy - 118, 30, 10); // hood brim
-      // sign (wide enough for TRADING POST — dockux-panel §2.1 canonical vendor name)
-      g.fillStyle(0x101722, 0.9).fillRect(gx - 52, gy - 176, 104, 20);
-      this.shopPromptText = this.add
-        .text(gx, gy - 166, "TRADING POST", {
-          fontFamily: "monospace",
-          color: "#ffd479",
-        })
-        .setOrigin(0.5, 0.5)
-        .setDepth(BELT_Y0 + DEPTH_MAX + 6);
-      this.shopPromptText.setFontSize(12);
-    }
-    this.shopNpcG.setVisible(true);
-    // Proximity prompt (screen-pinned would need a second object; reuse the world sign text swapping label).
-    // Open = the stall name stays up, green (the open panel already shows the state); near = the key hint.
-    const near = Math.abs(self.x - shopX) <= SHOP_RADIUS;
-    if (this.shopPromptText) {
-      this.shopPromptText
-        .setText(this.shopOpen ? "TRADING POST" : near ? "[F] Trade" : "TRADING POST")
-        .setColor(this.shopOpen || near ? "#9cff6a" : "#ffd479");
     }
   }
 
@@ -13507,9 +13293,6 @@ export class ArenaScene extends Phaser.Scene {
       entry.pairKey,
       entry.leadSlot,
       self.scrip,
-      self.upVitality,
-      self.upFortune,
-      self.upPower,
       this.bagSelected?.source,
       this.bagSelected?.index,
       this.bagFocusCell,
@@ -13521,11 +13304,6 @@ export class ArenaScene extends Phaser.Scene {
     const g = this.bagG.setVisible(true).setAlpha(1).clear();
     for (const text of this.bagTexts) text?.setVisible(false);
     for (const art of this.bagArts) art?.setVisible(false);
-    for (const zone of this.buyZones) zone.setVisible(false);
-    for (const zone of this.pairSlotZones) zone.setVisible(false);
-    for (const zone of this.bagPairZones) zone.setVisible(false);
-    this.pairConfirmZone?.setVisible(false);
-    this.unbindZone?.setVisible(false);
 
     g.fillStyle(ARMORY_COLORS.bg, 0.66).fillRect(0, 0, this.screenW(), this.screenH());
     drawArmoryPanel(g, layout.panel.x, layout.panel.y, layout.panel.width, layout.panel.height, {
@@ -13577,12 +13355,12 @@ export class ArenaScene extends Phaser.Scene {
       .setOrigin(1, 0)
       .setVisible(true);
 
-    const workflows = ["inventory", "sell", "bind", "upgrades"] as const;
+    const workflows = ["inventory"] as const;
     const tabWidth = layout.mode === "wide" ? 132 : 108;
     workflows.forEach((workflow, index) => {
       const x = layout.header.x + 250 + index * (tabWidth + 8);
       const y = layout.header.y + layout.header.height / 2;
-      const enabled = workflow === "inventory" || this.shopOpen;
+      const enabled = true;
       drawArmoryPanel(g, x, y - 23, tabWidth, 46, {
         major: false,
         selected: this.bagWorkflow === workflow,
@@ -13612,7 +13390,7 @@ export class ArenaScene extends Phaser.Scene {
           .setInteractive({ useHandCursor: true });
         zone.on("pointerdown", () => {
           const target = workflows[index];
-          if (!target || (target !== "inventory" && !this.shopOpen)) return;
+          if (!target) return;
           this.bagWorkflow = target;
           this.bagSelected = null;
           this.bagRenderSignature = "";
@@ -13643,6 +13421,7 @@ export class ArenaScene extends Phaser.Scene {
           .setOrigin(0.5)
           .setVisible(true);
         this.bagZones[cellIndex]?.setVisible(false);
+        this.bagDisassembleZones[cellIndex]?.setVisible(false);
         continue;
       }
       const rarityName = RARITIES[item.rarity]?.name ?? "Common";
@@ -13709,7 +13488,7 @@ export class ArenaScene extends Phaser.Scene {
           this.bagFocusCell = cellIndex;
           this.bagRenderSignature = "";
           if (backpackTileIntent(this.bagWorkflow, "bag") === "equip") {
-            this.activateBackpackSelection(me);
+            this.room?.send("bagEquip", { index, slot: me.activeSlot });
           }
         });
         this.bagZones[cellIndex] = zone;
@@ -13718,18 +13497,77 @@ export class ArenaScene extends Phaser.Scene {
         .setVisible(true)
         .setPosition(rect.x + rect.width / 2, rect.y + rect.height / 2)
         .setSize(rect.width, rect.height);
+
+      const disassemblyValue = item.bankEntryId
+        ? self.bag.reduce(
+            (total, row) =>
+              total +
+              (row.bankEntryId === item.bankEntryId
+                ? weaponDisassemblyValue(row.weapon)
+                : 0),
+            0,
+          )
+        : item.earned
+          ? weaponDisassemblyValue(item.weapon)
+          : 0;
+      const canDisassemble =
+        disassemblyValue > 0 &&
+        !item.homeIssue &&
+        (item.earned || item.bankEntryId.length > 0);
+      const buttonWidth = Math.min(132, rect.width - 20);
+      const buttonHeight = 28;
+      const buttonX = rect.x + rect.width - buttonWidth - 10;
+      const buttonY = rect.y + rect.height - buttonHeight - 10;
+      drawArmoryPanel(g, buttonX, buttonY, buttonWidth, buttonHeight, {
+        major: false,
+        fill: canDisassemble ? 0x342b1a : ARMORY_COLORS.surface0,
+        accent: canDisassemble ? ARMORY_COLORS.action : ARMORY_COLORS.border,
+      });
+      this.hudText(this.bagTexts, 90 + cellIndex, 100053)
+        .setText(canDisassemble ? `DISASSEMBLE +◈${disassemblyValue}` : "LOCKED")
+        .setPosition(buttonX + buttonWidth / 2, buttonY + buttonHeight / 2)
+        .setColor(
+          canDisassemble ? ARMORY_CSS_COLORS.action : ARMORY_CSS_COLORS.textMuted,
+        )
+        .setFontSize(11)
+        .setFontStyle("bold")
+        .setOrigin(0.5)
+        .setVisible(true);
+      let disassembleZone = this.bagDisassembleZones[cellIndex];
+      if (!disassembleZone) {
+        disassembleZone = this.add
+          .rectangle(0, 0, 1, 1, 0xffffff, 0.001)
+          .setScrollFactor(0)
+          .setDepth(100055)
+          .setInteractive({ useHandCursor: true });
+        disassembleZone.on("pointerdown", () => {
+          const index = this.bagDisplayOrder[cellIndex];
+          const me = this.room?.state.players.get(this.room?.sessionId ?? "");
+          if (!me || index === undefined || index >= me.bag.length) return;
+          this.room?.send("disassembleBagWeapon", { index });
+        });
+        this.bagDisassembleZones[cellIndex] = disassembleZone;
+      }
+      disassembleZone
+        .setVisible(canDisassemble)
+        .setPosition(buttonX + buttonWidth / 2, buttonY + buttonHeight / 2)
+        .setSize(buttonWidth, buttonHeight);
     }
 
     let selectedWeaponId = "";
     let selectedRarity = 0;
     let selectedAffix = "";
     let selectedEarned = false;
+    let selectedBankEntryId = "";
+    let selectedHomeIssue = false;
     if (this.bagSelected?.source === "bag") {
       const selected = self.bag[this.bagSelected.index];
       selectedWeaponId = selected?.weapon ?? "";
       selectedRarity = selected?.rarity ?? 0;
       selectedAffix = selected?.affix ?? "";
       selectedEarned = selected?.earned ?? false;
+      selectedBankEntryId = selected?.bankEntryId ?? "";
+      selectedHomeIssue = selected?.homeIssue ?? false;
     } else if (this.bagSelected?.source === "slot") {
       const selected = this.slotPairItem(self, this.bagSelected.index);
       selectedWeaponId = selected?.weaponId ?? "";
@@ -13742,9 +13580,7 @@ export class ArenaScene extends Phaser.Scene {
     const detailX = layout.detail.x + 20;
     const detailWidth = layout.detail.width - 40;
     this.hudText(this.bagTexts, 50, 100046)
-      .setText(
-        this.bagWorkflow === "upgrades" ? "PERMANENT UPGRADE" : (weapon?.name ?? "SELECT AN ITEM"),
-      )
+      .setText(weapon?.name ?? "SELECT AN ITEM")
       .setPosition(detailX, layout.detail.y + 20)
       .setWordWrapWidth(detailWidth)
       .setColor(ARMORY_CSS_COLORS.textPrimary)
@@ -13757,41 +13593,31 @@ export class ArenaScene extends Phaser.Scene {
       "Choose a tile with arrows or pointer. Selection stays here while you compare.";
     let actionLabel = "SELECT AN ITEM";
     let actionEnabled = false;
-    if (this.bagWorkflow === "upgrades") {
-      const upgradeIndex = this.bagFocusCell % META_UPGRADES.length;
-      const upgrade = META_UPGRADES[upgradeIndex];
-      const level =
-        upgrade?.id === "vitality"
-          ? self.upVitality
-          : upgrade?.id === "fortune"
-            ? self.upFortune
-            : self.upPower;
-      const cost = upgrade ? nextUpgradeCost(upgrade.id, level) : null;
-      detailCopy = upgrade
-        ? `${upgrade.name}  ${level}/${upgrade.maxLevel}\n${upgrade.desc}\n\nPermanent across runs.\nScrip available  ◈${self.scrip}`
-        : "No upgrade selected";
-      actionLabel = cost === null ? "MAXIMUM RANK" : `BUY ${upgrade?.name.toUpperCase()}  ◈${cost}`;
-      actionEnabled = cost !== null && self.scrip >= cost;
-    } else if (weapon) {
-      const value = scripValue(selectedRarity, selectedEarned);
-      detailCopy = `${rarityMark(rarityName)}\n${selectedAffix ? affixById(selectedAffix).name : "No affix"}\n\n${this.bagSelected?.source === "slot" ? `Active cell ${(this.bagSelected.index ?? 0) + 1}` : "Stored in backpack"}\nValue  ◈${value}\n\n${this.bagWorkflow === "sell" ? "Selling is final for this run." : this.bagWorkflow === "bind" ? "Binding creates one atomic two-cell pair." : `Equips into active cell ${self.activeSlot + 1}.`}`;
-      if (this.bagWorkflow === "inventory") {
-        actionLabel =
-          this.bagSelected?.source === "slot"
-            ? "STOW IN BACKPACK"
-            : `EQUIP IN ACTIVE ${self.activeSlot + 1}`;
-        actionEnabled = true;
-      } else if (this.bagWorkflow === "sell") {
-        actionLabel = value > 0 ? `SELL FOR ◈${value}` : "NO SELL VALUE";
-        actionEnabled = value > 0;
+    if (weapon) {
+      const value = selectedBankEntryId
+        ? self.bag.reduce(
+            (total, item) =>
+              total +
+              (item.bankEntryId === selectedBankEntryId
+                ? weaponDisassemblyValue(item.weapon)
+                : 0),
+            0,
+          )
+        : selectedEarned
+          ? weaponDisassemblyValue(selectedWeaponId)
+          : 0;
+      const isBagItem = this.bagSelected?.source === "bag";
+      detailCopy = `${rarityMark(rarityName)}\n${selectedAffix ? affixById(selectedAffix).name : "No affix"}\n\n${isBagItem ? "Stored in backpack" : `Active cell ${(this.bagSelected?.index ?? 0) + 1}`}\nDisassembly value  ◈${value} money\n\n${isBagItem ? "Clicking the tile equips it. The action below disassembles it in place." : "Move this weapon into the finite backpack."}`;
+      if (isBagItem) {
+        actionLabel = value > 0 ? `DISASSEMBLE  +◈${value} MONEY` : "CANNOT DISASSEMBLE";
+        actionEnabled =
+          value > 0 &&
+          !selectedHomeIssue &&
+          (selectedEarned || selectedBankEntryId.length > 0);
       } else {
-        actionLabel = entry.offId ? "UNBIND PAIR — FREE" : "BIND SELECTED PAIR";
-        actionEnabled = !!entry.offId || pairEligible(WEAPONS[entry.leadId], weapon);
+        actionLabel = "STOW IN BACKPACK";
+        actionEnabled = self.bag.length < BAG_CAP;
       }
-    } else if (this.bagWorkflow === "bind" && entry.offId) {
-      detailCopy = `${WEAPONS[entry.leadId]?.name ?? "Lead"} × ${WEAPONS[entry.offId]?.name ?? "Off-hand"}\n\nAtomic pair occupies two active cells.`;
-      actionLabel = "UNBIND PAIR — FREE";
-      actionEnabled = true;
     }
     this.hudText(this.bagTexts, 51, 100046)
       .setText(detailCopy)
@@ -13838,7 +13664,7 @@ export class ArenaScene extends Phaser.Scene {
       .setSize(actionRect.width, actionRect.height);
     this.hudText(this.bagTexts, 53, 100046)
       .setText(
-        `[Q] ACTIVE SLOT  ·  [1–3] DIRECT  ·  [Z/X] WORKFLOW  ·  [ENTER] ACTION  ·  [TAB/ESC] CLOSE  ·  ◈${self.scrip}`,
+        `[Q] ACTIVE SLOT  ·  [1–3] DIRECT  ·  [ENTER] ACTION  ·  [TAB/ESC] CLOSE  ·  ◈${self.scrip} MONEY`,
       )
       .setPosition(layout.dock.x + layout.dock.width - 24, layout.dock.y + layout.dock.height - 18)
       .setColor(ARMORY_CSS_COLORS.textSecondary)
@@ -13847,664 +13673,13 @@ export class ArenaScene extends Phaser.Scene {
       .setVisible(true);
   }
 
-  private renderBagPanel(self: PlayerState, s: number): void {
-    if (!this.bagG) this.bagG = this.add.graphics().setScrollFactor(0).setDepth(100044);
-    const g = this.bagG.setVisible(true);
-    g.clear();
-    const shop = this.bagPanelMode === "shop";
-    const entry = loadoutEntryView(self);
-    // §3.5 choreography: 120 ms cubic-out rise on open, 150 ms cubic-in drop on close (zones are
-    // already disabled by the caller on close frame 0). Reduced motion snaps.
-    const reduced = prefersReducedPaperMotion();
-    const closing = this.bagPanelCloseAt > 0;
-    let panelAlpha = 1;
-    let rise = 0;
-    if (closing) {
-      const q = paperClamp01((this.time.now - this.bagPanelCloseAt) / 150);
-      const e = q * q * q; // Cubic.easeIn
-      panelAlpha = 1 - e;
-      rise = 8 * s * e;
-    } else if (!reduced) {
-      const e = paperCubicOut((this.time.now - this.bagPanelOpenAt) / 120);
-      panelAlpha = e;
-      rise = 8 * s * (1 - e);
-    }
-    const zonesActive = !closing;
-    g.setAlpha(panelAlpha);
-    const show = (t: Phaser.GameObjects.Text) => t.setVisible(true).setAlpha(panelAlpha);
-
-    const panelW = Math.min(this.screenW() - 80 * s, 720 * s);
-    const upgradeBandH = shop ? 74 * s : 0;
-    const pairBandH = shop ? 100 * s : 0;
-    const bandH = upgradeBandH + pairBandH;
-    const headerH = 34 * s;
-    const cellH = 56 * s;
-    const rowGap = 8 * s;
-    const panelH = headerH + bandH + 3 * (cellH + rowGap) + 14 * s;
-    const px = this.screenW() / 2 - panelW / 2;
-    const py = this.screenH() - 84 * s - panelH - 18 * s + rise;
-    g.fillStyle(0x070a0f, 0.92).fillRoundedRect(px, py, panelW, panelH, 10 * s);
-    this.drawPanelFrame(g, px, py, panelW, panelH, s); // §37 Clean Minimal border
-
-    // §3.2 capacity lives in the title and turns amber at full; §3.4 one key hint per mode.
-    const full = self.bag.length >= BAG_CAP;
-    const title = this.hudText(this.bagTexts, 0, 100046)
-      .setText(shop ? "TRADING POST" : `BACKPACK ${self.bag.length}/${BAG_CAP}`)
-      .setColor(shop ? "#ffd479" : full ? "#ff8a2b" : "#9fb0c2")
-      .setPosition(px + 16 * s, py + 10 * s);
-    title
-      .setFontSize(13 * s)
-      .setOrigin(0, 0)
-      .setFontStyle("bold");
-    show(title);
-    const hint = this.hudText(this.bagTexts, 1, 100046)
-      .setText(shop ? "[Click] Sell · [F] Close" : "[Click] Equip · [Tab] Close")
-      .setColor("#7a8290")
-      .setPosition(px + panelW - 16 * s, py + 12 * s);
-    hint
-      .setFontSize(10 * s)
-      .setOrigin(1, 0)
-      .setFontStyle("normal");
-    show(hint);
-
-    if (shop) {
-      this.renderUpgradeBand(self, s, px, py + headerH, panelW, panelAlpha, zonesActive);
-      this.renderBindBand(
-        self,
-        s,
-        px,
-        py + headerH + upgradeBandH,
-        panelW,
-        pairBandH,
-        panelAlpha,
-        zonesActive,
-      );
-    } else {
-      // Bag mode: make sure the shop's upgrade band (zones + texts) is hidden so it can't intercept clicks.
-      for (const z of this.buyZones) z.setVisible(false);
-      for (const z of this.pairSlotZones) z.setVisible(false);
-      for (const z of this.bagPairZones) z.setVisible(false);
-      this.pairConfirmZone?.setVisible(false);
-      this.unbindZone?.setVisible(false);
-      for (let i = 70; i <= 80; i++) this.bagTexts[i]?.setVisible(false);
-      for (let i = 82; i <= 89; i++) this.bagTexts[i]?.setVisible(false);
-    }
-
-    // §3.2 display-order sort (tier desc → name asc → stable). The server's bag array order stays
-    // authoritative for messages: visual cell k targets index bagDisplayOrder[k], rebuilt in the same
-    // pass as the zones so a sort can never retarget a click mid-flight.
-    this.bagDisplayOrder = self.bag
-      .map((_, idx) => idx)
-      .sort((a, b) => {
-        const ia = self.bag[a];
-        const ib = self.bag[b];
-        const tierDelta = (ib?.rarity ?? 0) - (ia?.rarity ?? 0);
-        if (tierDelta !== 0) return tierDelta;
-        const nameA = WEAPONS[ia?.weapon ?? ""]?.name ?? "Unknown weapon";
-        const nameB = WEAPONS[ib?.weapon ?? ""]?.name ?? "Unknown weapon";
-        return nameA.localeCompare(nameB) || a - b;
-      });
-
-    const cols = 4;
-    const cellW = (panelW - 32 * s) / cols;
-    const gx = px + 16 * s;
-    const gy = py + headerH + bandH;
-    let hoverLine = "";
-    for (let k = 0; k < BAG_CAP; k++) {
-      const bagIndex = this.bagDisplayOrder[k];
-      const item = bagIndex === undefined ? undefined : self.bag[bagIndex];
-      const zone = (() => {
-        let z = this.bagZones[k];
-        if (!z) {
-          z = this.add
-            .rectangle(0, 0, 1, 1, 0xffffff, 0.001)
-            .setScrollFactor(0)
-            .setDepth(100045)
-            .setInteractive();
-          z.on("pointerdown", () => {
-            const idx = this.bagDisplayOrder[k];
-            const me = this.room?.state.players.get(this.room?.sessionId ?? "");
-            if (idx === undefined || !me || idx >= me.bag.length) return;
-            if (this.shopOpen) this.room?.send("sellWeapon", { from: "bag", index: idx });
-            else if (this.bagOpen) this.room?.send("bagEquip", { index: idx, slot: me.activeSlot });
-          });
-          z.on("pointerover", () => {
-            this.bagHoverCell = k;
-          });
-          z.on("pointerout", () => {
-            if (this.bagHoverCell === k) this.bagHoverCell = -1;
-          });
-          this.bagZones[k] = z;
-        }
-        return z;
-      })();
-      const cx = gx + (k % cols) * cellW;
-      const cy = gy + Math.floor(k / cols) * (cellH + rowGap);
-      const w = cellW - 8 * s;
-      if (!item?.weapon) {
-        // §3.1 empty cells RENDER: the player sees 12 sockets, 7 full — capacity stays readable.
-        zone.setVisible(false);
-        g.lineStyle(Math.max(1, 1 * s), 0x3a3f47, 0.5);
-        this.dashedRect(g, cx, cy, w, cellH, 6 * s, 4 * s);
-        this.bagArts[k]?.setVisible(false);
-        this.bagTexts[10 + k]?.setVisible(false);
-        this.bagTexts[25 + k]?.setVisible(false);
-        this.bagTexts[40 + k]?.setVisible(false);
-        this.bagTexts[100 + k]?.setVisible(false);
-        this.bagPairZones[k]?.setVisible(false);
-        continue;
-      }
-      const bagItem: PairPreviewItem = {
-        weaponId: item.weapon,
-        rarity: item.rarity,
-        affix: item.affix,
-        earned: item.earned,
-      };
-      const pairable =
-        shop && !entry.offId && pairEligible(WEAPONS[entry.leadId], WEAPONS[item.weapon]);
-      const pairSelected =
-        pairable &&
-        this.pairCandidate?.source === "bag" &&
-        this.pairCandidate.index === bagIndex &&
-        this.pairCandidate.identity === this.pairItemIdentity(bagItem);
-      const hovered = zonesActive && this.bagHoverCell === k;
-      const col = RARITIES[item.rarity]?.color ?? 0x9aa5b1;
-      const colHex = `#${col.toString(16).padStart(6, "0")}`;
-      g.fillStyle(0x121821, 0.95).fillRoundedRect(cx, cy, w, cellH, 6 * s);
-      // §3.3 the border shifts to amber on hover in Trading mode — this click sells.
-      g.lineStyle(
-        (pairSelected ? 2.5 : 1.5) * s,
-        pairSelected ? 0x9cff6a : shop && hovered ? 0xffd24a : col,
-        hovered || pairSelected ? 1 : 0.8,
-      ).strokeRoundedRect(cx, cy, w, cellH, 6 * s);
-      // §3.1 item card in the dock's visual language: 44×44 art thumbnail off the shared cardbg bake.
-      const artKey = bakeCardArt(this, item.weapon, 212, 296, 14);
-      let art = this.bagArts[k];
-      if (!art) {
-        art = this.add.image(0, 0, artKey).setScrollFactor(0).setDepth(100045);
-        this.bagArts[k] = art;
-      } else if (art.texture.key !== artKey) {
-        art.setTexture(artKey);
-      }
-      const artSize = 44 * s;
-      const dispH = (artSize * 296) / 212; // crop shows the top 212 square of the 212×296 bake
-      art
-        .setCrop(0, 0, 212, 212)
-        .setDisplaySize(artSize, dispH)
-        .setPosition(cx + 6 * s + artSize / 2, cy + 6 * s + dispH / 2)
-        .setVisible(true)
-        .setAlpha(panelAlpha);
-      const baseName = WEAPONS[item.weapon]?.name ?? "Unknown weapon";
-      const shownName = baseName.length > 16 ? `${baseName.slice(0, 15)}…` : baseName;
-      const nameT = this.hudText(this.bagTexts, 10 + k, 100046)
-        .setText(shownName)
-        .setColor(colHex)
-        .setPosition(cx + 6 * s + artSize + 6 * s, cy + 7 * s);
-      nameT
-        .setFontSize(12 * s)
-        .setOrigin(0, 0)
-        .setFontStyle("bold");
-      show(nameT);
-      const affixName = item.affix ? affixById(item.affix).name : "";
-      const tierLine = [RARITIES[item.rarity]?.name ?? "", affixName].filter(Boolean).join(" · ");
-      const tierT = this.hudText(this.bagTexts, 25 + k, 100046)
-        .setText(tierLine)
-        .setColor(colHex)
-        .setPosition(cx + 6 * s + artSize + 6 * s, cy + 24 * s);
-      tierT
-        .setFontSize(10 * s)
-        .setOrigin(0, 0)
-        .setFontStyle("normal");
-      show(tierT);
-      // §4 redundant tier pips beside the tier name.
-      if (item.rarity > 0 && tierLine) {
-        const pipR = Math.max(2, 2.2 * s);
-        drawTierPips(
-          g,
-          tierT.x + tierT.displayWidth + 4 * s + pipR,
-          cy + 24 * s + tierT.displayHeight / 2,
-          item.rarity,
-          pipR,
-        );
-      }
-      // §3.3 value chip — Trading mode only; price is trade-context information.
-      const price = scripValue(item.rarity, item.earned);
-      if (shop) {
-        const valueT = this.hudText(this.bagTexts, 40 + k, 100046)
-          .setText(price > 0 ? `◈ ${price}` : "No value")
-          .setColor(price > 0 ? "#9cff6a" : "#5a6472")
-          .setPosition(cx + w - 6 * s, cy + cellH - 4 * s);
-        valueT
-          .setFontSize((price > 0 ? 11 : 10) * s)
-          .setOrigin(1, 1)
-          .setFontStyle(price > 0 ? "bold" : "normal");
-        show(valueT);
-      } else {
-        this.bagTexts[40 + k]?.setVisible(false);
-      }
-      const pairBadge = this.hudText(this.bagTexts, 100 + k, 100051)
-        .setText("⚯")
-        .setColor(pairSelected ? "#9cff6a" : "#ffd479")
-        .setPosition(cx + w - 7 * s, cy + 5 * s)
-        .setVisible(pairable)
-        .setAlpha(panelAlpha);
-      pairBadge.setFontSize(14 * s).setOrigin(1, 0);
-      let pairZone = this.bagPairZones[k];
-      if (!pairZone) {
-        pairZone = this.add
-          .rectangle(0, 0, 1, 1, 0xffffff, 0.001)
-          .setScrollFactor(0)
-          .setDepth(100052)
-          .setInteractive();
-        pairZone.on("pointerdown", () => {
-          if (!this.shopOpen) return;
-          const idx = this.bagDisplayOrder[k];
-          const me = this.room?.state.players.get(this.room?.sessionId ?? "");
-          const selected = idx === undefined || !me ? undefined : this.bagPairItem(me, idx);
-          const lead = me ? loadoutEntryView(me) : undefined;
-          if (
-            idx === undefined ||
-            !selected ||
-            !lead ||
-            !pairEligible(WEAPONS[lead.leadId], WEAPONS[selected.weaponId])
-          )
-            return;
-          this.pairCandidate = {
-            source: "bag",
-            index: idx,
-            identity: this.pairItemIdentity(selected),
-          };
-        });
-        this.bagPairZones[k] = pairZone;
-      }
-      pairZone
-        .setVisible(pairable && zonesActive)
-        .setPosition(cx + w - 18 * s, cy + 17 * s)
-        .setSize(36 * s, 34 * s);
-      if (pairable) {
-        g.fillStyle(0x0a0805, 0.9)
-          .fillRoundedRect(cx + w - 34 * s, cy + 4 * s, 28 * s, 24 * s, 5 * s)
-          .lineStyle(1 * s, pairSelected ? 0x9cff6a : 0xffd479, 0.9)
-          .strokeRoundedRect(cx + w - 34 * s, cy + 4 * s, 28 * s, 24 * s, 5 * s);
-      }
-      if (hovered) {
-        hoverLine = shop
-          ? price > 0
-            ? `Sell ${baseName} for ◈ ${price}`
-            : `${baseName} has no sell value`
-          : `Equip ${baseName} — swaps with slot ${self.activeSlot + 1}`;
-      }
-      zone
-        .setVisible(zonesActive)
-        .setPosition(cx + w / 2, cy + cellH / 2)
-        .setSize(w, cellH);
-    }
-
-    // §2.2 empty-state: an empty pack says so instead of rendering an unexplained hole.
-    const emptyMain = this.hudText(this.bagTexts, 2, 100046);
-    const emptySub = this.hudText(this.bagTexts, 3, 100046);
-    if (self.bag.length === 0) {
-      const gridMidY = gy + (3 * (cellH + rowGap) - rowGap) / 2;
-      emptyMain
-        .setText("Your pack is empty")
-        .setColor("#9fb0c2")
-        .setPosition(px + panelW / 2, gridMidY - 10 * s)
-        .setFontSize(13 * s)
-        .setOrigin(0.5, 1)
-        .setFontStyle("bold");
-      show(emptyMain);
-      emptySub
-        .setText(shop ? "Nothing to sell" : "Click a slot below to stow its weapon")
-        .setColor("#7a8290")
-        .setPosition(px + panelW / 2, gridMidY + 4 * s)
-        .setFontSize(10 * s)
-        .setOrigin(0.5, 0)
-        .setFontStyle("normal");
-      show(emptySub);
-    } else {
-      emptyMain.setVisible(false);
-      emptySub.setVisible(false);
-    }
-
-    // §3.4 hover footer — the affordance lives on the thing, spelled out once at the panel foot.
-    const footer = this.hudText(this.bagTexts, 4, 100046);
-    if (hoverLine) {
-      footer
-        .setText(hoverLine)
-        .setColor("#cfd6de")
-        .setPosition(px + panelW / 2, py + panelH - 5 * s)
-        .setFontSize(11 * s)
-        .setOrigin(0.5, 1)
-        .setFontStyle("normal");
-      show(footer);
-    } else {
-      footer.setVisible(false);
-    }
-  }
-
-  private confirmPair(self: PlayerState): void {
-    if (this.time.now < this.pairRequestLockedUntil) return;
-    const entry = loadoutEntryView(self);
-    if (entry.offId) return;
-    const candidate = this.selectedPairItem(self);
-    if (!candidate) return;
-    const lead: PairPreviewItem = {
-      weaponId: entry.leadId,
-      rarity: entry.rarity,
-      affix: entry.affix,
-      earned: entry.earned,
-    };
-    const preview = pairPreview({
-      lead,
-      off: candidate,
-      loadoutIds: [0, 1, 2].map((slot) => this.slotView(self, slot, entry).wid),
-    });
-    if (!preview.eligible) {
-      this.flashBanner("These weapons cannot be bound", "#ff8a2b");
-      return;
-    }
-    if (self.scrip < preview.fee) {
-      this.flashBanner(`Not enough Scrip — need ◈ ${preview.fee}`, "#ff8a2b");
-      return;
-    }
-    const selected = this.pairCandidate;
-    if (!selected) return;
-    this.pairRequestLockedUntil = this.time.now + 1200;
-    if (selected.source === "slot") {
-      this.room?.send("bindPair", { off: selected.index });
-    } else {
-      const offSlots = [0, 1, 2]
-        .filter((slot) => slot !== entry.leadSlot)
-        .sort((a, b) => Number(!!self.slots[a]?.weapon) - Number(!!self.slots[b]?.weapon) || a - b);
-      const target = offSlots[0];
-      if (target === undefined) return;
-      // Colyseus preserves message order: first move the chosen pack identity into its deterministic
-      // arsenal row, then bind that row. The preview remains exact and no mutation happens before confirm.
-      this.room?.send("bagEquip", { index: selected.index, slot: target });
-      this.room?.send("bindPair", { off: target });
-    }
-  }
-
-  private renderBindBand(
-    self: PlayerState,
-    s: number,
-    px: number,
-    y: number,
-    panelW: number,
-    h: number,
-    panelAlpha: number,
-    zonesActive: boolean,
-  ): void {
-    const g = this.bagG;
-    if (!g) return;
-    const entry = loadoutEntryView(self);
-    const lead: PairPreviewItem = {
-      weaponId: entry.leadId,
-      rarity: entry.rarity,
-      affix: entry.affix,
-      earned: entry.earned,
-    };
-    const candidate = entry.offId ? undefined : this.selectedPairItem(self);
-    const preview = candidate
-      ? pairPreview({
-          lead,
-          off: candidate,
-          loadoutIds: [0, 1, 2].map((slot) => this.slotView(self, slot, entry).wid),
-        })
-      : undefined;
-    const eligibleCount = entry.offId
-      ? 0
-      : [
-          ...[0, 1, 2]
-            .filter((slot) => slot !== entry.leadSlot)
-            .map((slot) => self.slots[slot]?.weapon ?? ""),
-          ...self.bag.map((item) => item.weapon),
-        ].filter((id) => pairEligible(WEAPONS[entry.leadId], WEAPONS[id])).length;
-    const bx = px + 16 * s;
-    const bw = panelW - 32 * s;
-    const buttonW = 132 * s;
-    const buttonH = 42 * s;
-    const buttonX = bx + bw - buttonW;
-    const buttonY = y + (h - buttonH) / 2;
-    g.fillStyle(0x0d1219, 0.98)
-      .fillRoundedRect(bx, y + 4 * s, bw, h - 8 * s, 7 * s)
-      .lineStyle(1.5 * s, entry.offId ? 0x9cff6a : 0xffd479, 0.75)
-      .strokeRoundedRect(bx, y + 4 * s, bw, h - 8 * s, 7 * s);
-    const show = (text: Phaser.GameObjects.Text) => text.setVisible(true).setAlpha(panelAlpha);
-    const title = this.hudText(this.bagTexts, 82, 100046)
-      .setText(entry.offId ? "BOUND PAIR" : "BIND")
-      .setColor(entry.offId ? "#9cff6a" : "#ffd479")
-      .setPosition(bx + 10 * s, y + 10 * s)
-      .setFontSize(11 * s)
-      .setFontStyle("bold");
-    show(title);
-
-    const line1 = this.hudText(this.bagTexts, 83, 100046)
-      .setPosition(bx + 10 * s, y + 29 * s)
-      .setFontSize(12 * s)
-      .setFontStyle("bold");
-    const line2 = this.hudText(this.bagTexts, 84, 100046)
-      .setPosition(bx + 10 * s, y + 48 * s)
-      .setFontSize(10 * s);
-    const line3 = this.hudText(this.bagTexts, 85, 100046)
-      .setPosition(bx + 10 * s, y + 64 * s)
-      .setFontSize(10 * s);
-    const truth = this.hudText(this.bagTexts, 86, 100046)
-      .setPosition(bx + 10 * s, y + 80 * s)
-      .setFontSize(9 * s)
-      .setColor("#7a8290");
-    const fmt = (value: number) =>
-      Number.isInteger(value) ? String(value) : value.toFixed(1).replace(/\.0$/, "");
-
-    if (entry.offId) {
-      const leadName = WEAPONS[entry.leadId]?.name ?? "Unknown weapon";
-      const offName = WEAPONS[entry.offId]?.name ?? "Unknown weapon";
-      line1.setText(`${leadName} × ${offName}`).setColor("#f1e8cf");
-      line2.setText("One atomic loadout entry · alternating hands").setColor("#cfd6de");
-      line3.setText("Unbind fee ◈ 0").setColor("#9cff6a");
-      truth.setText(
-        "Both halves keep their exact tier, affix, cadence debt, and one shared Drive bar.",
-      );
-    } else if (candidate && preview?.eligible) {
-      const leadName = WEAPONS[lead.weaponId]?.name ?? "Unknown weapon";
-      const offName = WEAPONS[candidate.weaponId]?.name ?? "Unknown weapon";
-      line1.setText(`${leadName} × ${offName}`).setColor("#f1e8cf");
-      line2
-        .setText(
-          `Damage ${fmt(preview.leadDamage)} + ${fmt(preview.offDamage)} · Pair ${fmt(preview.combinedDps)}/s`,
-        )
-        .setColor("#cfd6de");
-      line3
-        .setText(
-          `Cadence ${preview.leadGapSeconds.toFixed(2)}s / ${preview.offGapSeconds.toFixed(2)}s${preview.separateMagazines ? " · Separate magazines" : ""}`,
-        )
-        .setColor("#cfd6de");
-      truth.setText(
-        `Fee ◈ ${preview.fee} — better half's sell value · Preview is final; no rerolls.`,
-      );
-    } else {
-      line1
-        .setText(
-          eligibleCount > 0
-            ? "Choose an ⚯ weapon from your slots or pack"
-            : "No compatible carried weapon",
-        )
-        .setColor(eligibleCount > 0 ? "#f1e8cf" : "#7a8290");
-      line2.setText("The held weapon stays in the lead hand.").setColor("#cfd6de");
-      line3
-        .setText("Requires a different one-handed weapon of the same class and delivery.")
-        .setColor("#7a8290");
-      truth.setText("Nothing changes until you review the preview and confirm.");
-    }
-    show(line1);
-    show(line2);
-    show(line3);
-    show(truth);
-
-    const buttonEnabled = entry.offId || !!preview?.eligible;
-    const requestPending = !entry.offId && this.time.now < this.pairRequestLockedUntil;
-    const affordable = entry.offId || !preview || self.scrip >= preview.fee;
-    g.fillStyle(buttonEnabled ? 0x151d24 : 0x0a0d11, 0.98)
-      .fillRoundedRect(buttonX, buttonY, buttonW, buttonH, 7 * s)
-      .lineStyle(2 * s, buttonEnabled ? (affordable ? 0xffd479 : 0xff8a2b) : 0x39424e, 0.9)
-      .strokeRoundedRect(buttonX, buttonY, buttonW, buttonH, 7 * s);
-    const button = this.hudText(this.bagTexts, 87, 100053)
-      .setText(
-        entry.offId
-          ? "Unbind — Free"
-          : requestPending
-            ? "Binding…"
-            : preview
-              ? `Bind — ◈ ${preview.fee}`
-              : "Select off-hand",
-      )
-      .setColor(buttonEnabled ? (affordable ? "#f1e8cf" : "#ff8a2b") : "#5c6672")
-      .setPosition(buttonX + buttonW / 2, buttonY + buttonH / 2)
-      .setFontSize(11 * s)
-      .setFontStyle("bold")
-      .setOrigin(0.5);
-    show(button);
-
-    if (!this.pairConfirmZone) {
-      this.pairConfirmZone = this.add
-        .rectangle(0, 0, 1, 1, 0xffffff, 0.001)
-        .setScrollFactor(0)
-        .setDepth(100054)
-        .setInteractive();
-      this.pairConfirmZone.on("pointerdown", () => {
-        const me = this.room?.state.players.get(this.room?.sessionId ?? "");
-        if (this.shopOpen && me) this.confirmPair(me);
-      });
-    }
-    if (!this.unbindZone) {
-      this.unbindZone = this.add
-        .rectangle(0, 0, 1, 1, 0xffffff, 0.001)
-        .setScrollFactor(0)
-        .setDepth(100054)
-        .setInteractive();
-      this.unbindZone.on("pointerdown", () => {
-        if (this.shopOpen) this.room?.send("unbindPair");
-      });
-    }
-    this.pairConfirmZone
-      .setVisible(zonesActive && !entry.offId && !!preview?.eligible && !requestPending)
-      .setPosition(buttonX + buttonW / 2, buttonY + buttonH / 2)
-      .setSize(buttonW, buttonH);
-    this.unbindZone
-      .setVisible(zonesActive && !!entry.offId)
-      .setPosition(buttonX + buttonW / 2, buttonY + buttonH / 2)
-      .setSize(buttonW, buttonH);
-  }
-
-  /** §31 the shop's permanent-upgrade BUY band: one card per META_UPGRADE with its owned level, effect, and
-   *  next-level scrip cost. Click to buy (server-authoritative). Amber = affordable, grey = broke, dim = maxed. */
-  private renderUpgradeBand(
-    self: PlayerState,
-    s: number,
-    px: number,
-    y: number,
-    panelW: number,
-    panelAlpha: number,
-    zonesActive: boolean,
-  ): void {
-    const g = this.bagG;
-    if (!g) return;
-    const n = META_UPGRADES.length;
-    const colW = (panelW - 32 * s) / n;
-    const bx = px + 16 * s;
-    const h = 62 * s;
-    const curOf = (id: string) =>
-      id === "vitality" ? self.upVitality : id === "fortune" ? self.upFortune : self.upPower;
-    for (let i = 0; i < n; i++) {
-      const u = META_UPGRADES[i]!;
-      const cur = curOf(u.id);
-      const cost = nextUpgradeCost(u.id, cur);
-      const maxed = cost === null;
-      const afford = cost !== null && self.scrip >= cost;
-      const cx = bx + i * colW;
-      const w = colW - 8 * s;
-      g.fillStyle(0x121821, 0.95).fillRoundedRect(cx, y, w, h, 6 * s);
-      g.lineStyle(1.5 * s, maxed ? 0x5a6472 : afford ? 0xffd24a : 0x3a3f47, 0.95).strokeRoundedRect(
-        cx,
-        y,
-        w,
-        h,
-        6 * s,
-      );
-      const label = this.hudText(this.bagTexts, 70 + i, 100046)
-        .setText(`${u.name}  ${cur}/${u.maxLevel}\n${u.desc}`)
-        .setColor("#cfe0f0")
-        .setVisible(true)
-        .setAlpha(panelAlpha)
-        .setPosition(cx + w / 2, y + 8 * s);
-      label
-        .setFontSize(10.5 * s)
-        .setOrigin(0.5, 0)
-        .setAlign("center");
-      const costT = this.hudText(this.bagTexts, 75 + i, 100046)
-        .setText(maxed ? "Maxed" : `◈ ${cost}`)
-        .setColor(maxed ? "#5a6472" : afford ? "#9cff6a" : "#7a8290")
-        .setVisible(true)
-        .setAlpha(panelAlpha)
-        .setPosition(cx + w / 2, y + h - 7 * s);
-      costT.setFontSize(11 * s).setOrigin(0.5, 1);
-      let z = this.buyZones[i];
-      if (!z) {
-        z = this.add
-          .rectangle(0, 0, 1, 1, 0xffffff, 0.001)
-          .setScrollFactor(0)
-          .setDepth(100045)
-          .setInteractive();
-        z.on("pointerdown", () => {
-          if (!this.shopOpen) return;
-          // dockux-panel §2.2: an unaffordable click gets told, not swallowed.
-          const me = this.room?.state.players.get(this.room?.sessionId ?? "");
-          const up = META_UPGRADES[i];
-          if (me && up) {
-            const live =
-              up.id === "vitality"
-                ? me.upVitality
-                : up.id === "fortune"
-                  ? me.upFortune
-                  : me.upPower;
-            const liveCost = nextUpgradeCost(up.id, live);
-            if (liveCost !== null && me.scrip < liveCost) {
-              this.flashBanner("Not enough Scrip", "#ff8a2b");
-              return;
-            }
-          }
-          this.room?.send("buyUpgrade", { id: META_UPGRADES[i]?.id });
-        });
-        this.buyZones[i] = z;
-      }
-      z.setVisible(zonesActive)
-        .setPosition(cx + w / 2, y + h / 2)
-        .setSize(w, h);
-    }
-    // §2.2 the permanence promise moves out of the old run-on title into one quiet sub-line.
-    const sub = this.hudText(this.bagTexts, 80, 100046)
-      .setText("Upgrades are permanent — they carry across runs")
-      .setColor("#7a8290")
-      .setVisible(true)
-      .setAlpha(panelAlpha)
-      .setPosition(px + panelW / 2, y + h + 2 * s);
-    sub
-      .setFontSize(9 * s)
-      .setOrigin(0.5, 0)
-      .setFontStyle("normal");
-  }
-
   /** Hide the bag overlay + its zones/texts/art thumbnails (panel closed). */
   private hideBagPanel(): void {
     this.bagG?.setVisible(false);
     for (const z of this.bagZones) z.setVisible(false);
+    for (const z of this.bagDisassembleZones) z.setVisible(false);
     for (const z of this.bagTabZones) z.setVisible(false);
     this.bagActionZone?.setVisible(false);
-    for (const z of this.buyZones) z.setVisible(false);
-    for (const z of this.pairSlotZones) z.setVisible(false);
-    for (const z of this.bagPairZones) z.setVisible(false);
-    this.pairConfirmZone?.setVisible(false);
-    this.unbindZone?.setVisible(false);
     for (const a of this.bagArts) a?.setVisible(false);
     for (let i = 1; i < this.bagTexts.length; i++) this.bagTexts[i]?.setVisible(false);
     this.bagTexts[0]?.setVisible(false);

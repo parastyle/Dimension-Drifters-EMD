@@ -5,7 +5,6 @@ import {
   PAIR_TEMPO,
   pairDamagePerUse,
   pairEligible,
-  scripValue,
   WEAPONS,
   weaponAttackCooldown,
   weaponDamageSources,
@@ -60,10 +59,7 @@ const EMPTY_PREVIEW: Omit<PairPreview, "fee"> = {
 export function pairPreview(input: PairPreviewInput): PairPreview {
   const lead = WEAPONS[input.lead.weaponId];
   const off = WEAPONS[input.off.weaponId];
-  const fee = Math.max(
-    scripValue(input.lead.rarity, input.lead.earned),
-    scripValue(input.off.rarity, input.off.earned),
-  );
+  const fee = 0;
   if (!lead || !off || !pairEligible(lead, off)) return { ...EMPTY_PREVIEW, fee };
 
   const leadRaw =

@@ -279,7 +279,7 @@ export const QUIRKS = {
   "a-better-owner": {
     id: "a-better-owner",
     name: "A Better Owner",
-    blurb: "Rolling through an enemy pickpockets one scrip on a per-enemy cooldown.",
+    blurb: "Rolling through an enemy pickpockets one money on a per-enemy cooldown.",
     availability: "inert",
     inert: inert("dodge-roll", "Wave 21b owns roll overlap events."),
   },
@@ -300,9 +300,9 @@ export const QUIRKS = {
   "snake-oil": {
     id: "snake-oil",
     name: "Snake Oil",
-    blurb: "The shopkeeper shows one extra offer per visit.",
+    blurb: "No effect under the current run economy.",
     availability: "inert",
-    inert: inert("shop-offers", "The shop has no authoritative per-player offer draft."),
+    inert: inert("retired-offers", "That offer-draft subsystem was retired."),
   },
   "already-dead": {
     id: "already-dead",

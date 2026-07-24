@@ -22,7 +22,6 @@ describe("ultimateInputAffordance", () => {
   const ready = {
     alive: true,
     modal: false,
-    nearShop: false,
     unlocked: true,
     charge: 100,
     phase: UltimatePhase.Idle,
@@ -36,10 +35,9 @@ describe("ultimateInputAffordance", () => {
     expect(ultimateInputAffordance({ ...ready, charge: 0, doorReturn: true })).toBe("send");
   });
 
-  it("keeps death, modal, shop, and pending gates silent", () => {
+  it("keeps death, modal, and pending gates silent", () => {
     expect(ultimateInputAffordance({ ...ready, alive: false })).toBe("blocked");
     expect(ultimateInputAffordance({ ...ready, modal: true })).toBe("blocked");
-    expect(ultimateInputAffordance({ ...ready, nearShop: true })).toBe("blocked");
     expect(ultimateInputAffordance({ ...ready, pending: true })).toBe("blocked");
   });
 });

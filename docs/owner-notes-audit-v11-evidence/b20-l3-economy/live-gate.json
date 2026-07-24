@@ -1,0 +1,114 @@
+{
+  "pass": true,
+  "character": "proto-cowboy-hidden-face",
+  "ports": {
+    "client": 53055,
+    "game": 53051,
+    "forbidden": [
+      5180,
+      2567
+    ],
+    "forbiddenTouched": false
+  },
+  "deterministicLiveFixture": {
+    "scope": "test process only",
+    "enemy": "thornblade-warden",
+    "hp": 1,
+    "dropWeapon": 1,
+    "randomRoll": 0.25,
+    "productionCatalogModified": false
+  },
+  "enemyKill": {
+    "kind": "thornblade-warden",
+    "floorDrop": {
+      "id": "dropEnemy0",
+      "x": 1003.8602294921875,
+      "y": 2299.48193359375,
+      "weaponPublic": "x-sword-coffin",
+      "rarity": 0,
+      "affixPublic": "",
+      "known": true,
+      "weaponClass": "",
+      "disassemblable": true,
+      "ownerId": "",
+      "weapon": "x-sword-coffin",
+      "approachDistance": 0
+    },
+    "bagDrop": {
+      "id": "dropEnemy1",
+      "x": 966.1972045898438,
+      "y": 2375.433349609375,
+      "weaponPublic": "x-sword-coffin",
+      "rarity": 0,
+      "affixPublic": "",
+      "known": true,
+      "weaponClass": "",
+      "disassemblable": true,
+      "ownerId": "",
+      "weapon": "x-sword-coffin",
+      "approachDistance": 0
+    },
+    "approachFixture": "Colyseus local-room relocation plus sub-second pickup-to-player stabilization after the real enemy drop"
+  },
+  "floorDisassembly": {
+    "holdThresholdMs": 400,
+    "observedHoldMs": 3682,
+    "capturedPrompt": "[E] DISASSEMBLING 100%",
+    "evidenceCaptureDelay": "test-only completion transport delay released immediately after the held-E PNG",
+    "moneyBefore": 0,
+    "moneyAfter": 5,
+    "receipt": {
+      "source": "floor",
+      "pickupId": "dropEnemy0",
+      "weaponId": "x-sword-coffin",
+      "value": 5,
+      "x": 1156.8752033348117,
+      "y": 2400
+    },
+    "screenshots": [
+      "docs/owner-notes-audit-v11-evidence/b20-l3-economy/floor-hold-progress.png",
+      "docs/owner-notes-audit-v11-evidence/b20-l3-economy/floor-money-pop.png"
+    ]
+  },
+  "bagDisassembly": {
+    "storedItem": {
+      "weapon": "x-sword-coffin",
+      "rarity": 0,
+      "affix": "",
+      "earned": true
+    },
+    "moneyBefore": 5,
+    "moneyAfter": 10,
+    "receipt": {
+      "source": "bag",
+      "pickupId": "",
+      "weaponId": "x-sword-coffin",
+      "value": 5,
+      "x": 1132.5275081852888,
+      "y": 2400
+    },
+    "screenshots": [
+      "docs/owner-notes-audit-v11-evidence/b20-l3-economy/bag-disassembly-action.png",
+      "docs/owner-notes-audit-v11-evidence/b20-l3-economy/bag-money-pop.png"
+    ]
+  },
+  "autoBanking": {
+    "runMoneyAtTerminal": 10,
+    "receipt": {
+      "outcome": "defeat",
+      "banked": 10,
+      "previousBank": 0,
+      "bankTotal": 10
+    },
+    "playerRunMoneyAfter": 0,
+    "clientAccountTotal": 10,
+    "endScreenLine": "MONEY BANKED +◈10 · ACCOUNT ◈10",
+    "screenshot": "docs/owner-notes-audit-v11-evidence/b20-l3-economy/run-end-banked-total.png"
+  },
+  "shopkeeper": {
+    "displayMatches": [],
+    "textureMatches": [],
+    "fieldMatches": [],
+    "screenshot": "docs/owner-notes-audit-v11-evidence/b20-l3-economy/arena-no-shopkeeper.png"
+  }
+}
