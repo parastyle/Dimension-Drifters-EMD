@@ -1,0 +1,11 @@
+{
+  "weaponId": "x2-coyote-stinger",
+  "lead": {
+    "rangeRad": 6.657500673994008,
+    "onsetMs": 617.1999999992549
+  },
+  "off": {
+    "rangeRad": 6.743089850339924,
+    "onsetMs": 775.6999999992549
+  }
+}

@@ -36,7 +36,9 @@ test("Coilshot completes a visible in-hand revolution before the server releases
 }) => {
   await runArenaSpec(page, async (baseURL) => {
     const weaponId = "x2-coilshot-meteor";
-    const evidenceRoot = path.resolve("docs/owner-notes-audit-v5-evidence");
+    const evidenceRoot = process.env.DD_E2E_EVIDENCE_DIR
+      ? path.resolve(process.env.DD_E2E_EVIDENCE_DIR, "coilshot-twirl")
+      : path.resolve("docs/owner-notes-audit-v5-evidence");
     await mkdir(evidenceRoot, { recursive: true });
     await bootArena(page, baseURL, `weapon:${weaponId}`);
     await waitForDevWeapon(page, weaponId);

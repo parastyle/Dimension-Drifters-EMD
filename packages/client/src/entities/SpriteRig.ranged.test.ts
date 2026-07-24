@@ -675,6 +675,102 @@ describe("SpriteRig V3G grip and mechanism laws", () => {
 });
 
 describe("SpriteRig V3G pistol idle twirl", () => {
+  it("hands B35's persistent shoulder aim to an earned idle flourish only", async () => {
+    const { flourishCanOverridePersistentGunAim } = await import("./SpriteRig.js");
+
+    expect(flourishCanOverridePersistentGunAim(true, true, true)).toBe(true);
+    expect(flourishCanOverridePersistentGunAim(true, true, false)).toBe(false);
+    expect(flourishCanOverridePersistentGunAim(true, false, true)).toBe(false);
+    expect(flourishCanOverridePersistentGunAim(false, true, true)).toBe(false);
+  });
+
+  it("keeps accepted flourish arms across a transient render-clock cut", async () => {
+    const { SpriteRig } = await import("./SpriteRig.js");
+    const destroyProxy = vi.fn();
+    const kunai = WEAPONS["x2-kunai"];
+    if (!kunai) throw new Error("missing clock-cut flourish fixture");
+    type FlourishResetRig = {
+      flourishChannels: Array<{ active: boolean; startMs: number; moment: string }>;
+      flourishArms: Array<{ armed: boolean; earliestStartMs: number; weaponId: string }>;
+      flourishStreaks: Array<{ count: number; lastAcceptedMs: number; weaponId: string }>;
+      stowProxies: Array<{
+        img?: { destroy(): void };
+        startMs: number;
+        destroyAtMs: number;
+      }>;
+      flourishHeadX: number;
+      flourishHeadY: number;
+      pendingSwapKey: string;
+      pendingSwapObservedKey: string;
+      pendingSwapEpochMs: number;
+      bladeNeutralReady: boolean;
+      idleFlourishEligibleAtMs: number;
+      weaponDef: typeof kunai;
+      weapons: Array<{ def: typeof kunai }>;
+      presentationClockNow(): number;
+    };
+    const rig = Object.create(SpriteRig.prototype) as FlourishResetRig;
+    Object.assign(rig, {
+      flourishChannels: [
+        { active: true, startMs: 1_100, moment: "after-attack" },
+        { active: false, startMs: -1e9, moment: "draw" },
+      ],
+      flourishArms: [
+        { armed: false, earliestStartMs: 1_150, weaponId: kunai.id },
+        { armed: true, earliestStartMs: 1_450, weaponId: kunai.id },
+      ],
+      flourishStreaks: [
+        { count: 0, lastAcceptedMs: -1e9, weaponId: "" },
+        { count: 0, lastAcceptedMs: -1e9, weaponId: "" },
+      ],
+      stowProxies: [
+        { img: { destroy: destroyProxy }, startMs: 1_050, destroyAtMs: 1_250 },
+        { startMs: -1e9, destroyAtMs: -1e9 },
+      ],
+      flourishHeadX: 4,
+      flourishHeadY: -2,
+      pendingSwapKey: "",
+      pendingSwapObservedKey: "",
+      pendingSwapEpochMs: -1e9,
+      bladeNeutralReady: true,
+      idleFlourishEligibleAtMs: 2_000,
+      weaponDef: kunai,
+      weapons: [{ def: kunai }, { def: kunai }],
+      presentationClockNow: () => 1_200,
+    });
+    const internals = SpriteRig.prototype as unknown as {
+      resetFlourishState(
+        this: typeof rig,
+        clearCounters: boolean,
+        preservePendingSwap?: boolean,
+        preserveArms?: boolean,
+      ): void;
+    };
+
+    internals.resetFlourishState.call(rig, false, true, true);
+
+    expect(rig.flourishChannels[0]).toMatchObject({ active: false, startMs: -1e9 });
+    expect(rig.flourishArms[0]).toEqual({
+      armed: true,
+      earliestStartMs: 1_200,
+      weaponId: kunai.id,
+    });
+    expect(rig.flourishArms[1]).toEqual({
+      armed: true,
+      earliestStartMs: 1_450,
+      weaponId: kunai.id,
+    });
+    expect(destroyProxy).toHaveBeenCalledOnce();
+    expect(rig.stowProxies[0]!.img).toBeUndefined();
+
+    internals.resetFlourishState.call(rig, false);
+    expect(rig.flourishArms[0]).toEqual({
+      armed: false,
+      earliestStartMs: -1e9,
+      weaponId: "",
+    });
+  });
+
   it("starts its 0.5s quiet clock after shot recovery and reuses the pistol twirl beat", async () => {
     const {
       idleFlourishEligibleEpoch,

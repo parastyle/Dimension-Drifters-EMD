@@ -718,6 +718,16 @@ export function idleFlourishEligibleEpoch(
   );
 }
 
+/** B35 keeps guns shouldered at rest. An accepted flourish may briefly take that same idle ownership,
+ * while unearned idle motion and every live attack phase continue to yield to the aimed stance. */
+export function flourishCanOverridePersistentGunAim(
+  hasGunHeld: boolean,
+  poseIsIdle: boolean,
+  flourishArmedOrActive: boolean,
+): boolean {
+  return hasGunHeld && poseIsIdle && flourishArmedOrActive;
+}
+
 /** Layout offset for one authored dual-pistol definition. */
 export function authoredDualPistolHandYOffset(weapon: WeaponDef | undefined, hand: 0 | 1): number {
   if (!weapon?.dual || !weaponHasHandlingTag(weapon, "pistol")) return 0;
@@ -3899,8 +3909,25 @@ export class SpriteRig {
     return this.pendingSwapKey.length > 0;
   }
 
-  private resetFlourishState(clearCounters: boolean, preservePendingSwap = false): void {
-    this.clearFlourishActivity(true, true);
+  private resetFlourishState(
+    clearCounters: boolean,
+    preservePendingSwap = false,
+    preserveArms = false,
+  ): void {
+    // An accepted attack arm is gameplay/presentation intent, not an in-flight render sample. Transient
+    // animation-clock cuts must discard partial channels and proxies without erasing that earned punctuation.
+    // Semantic resets (input, swap, downed/ultimate, destroy) retain the default and clear the arms.
+    if (preserveArms) {
+      const restartAtMs = this.presentationClockNow();
+      for (const hand of [0, 1] as const) {
+        const channel = this.flourishChannels[hand];
+        const arm = this.flourishArms[hand];
+        if (!channel.active || channel.moment !== "after-attack" || arm.armed) continue;
+        const def = this.weapons[hand]?.def ?? (hand === 0 ? this.weaponDef : undefined);
+        if (def) this.armAfterAttack(hand, restartAtMs, def);
+      }
+    }
+    this.clearFlourishActivity(!preserveArms, true);
     if (preservePendingSwap && this.pendingSwapKey) {
       // §FLOURISH a lazy image decode can create the same clock cut as a background-tab hitch. Keep the
       // authoritative identity transition, but rebase its eventual draw to the attachment frame.
@@ -9137,14 +9164,19 @@ export class SpriteRig {
         this.gunRecoveryWallUntilMs,
       );
     }
-    const flourishClockCut =
-      outsidePaperView || rootCut || rawDtMs <= 0 || rawDtMs > JIGGLE_MAX_DT_S * 1000;
+    const flourishTimingCut = rootCut || rawDtMs <= 0 || rawDtMs > JIGGLE_MAX_DT_S * 1000;
+    const flourishClockCut = outsidePaperView || flourishTimingCut;
     const preserveEndHookArmThroughAttackIntent =
       this.weaponDef?.performance?.flourishStyle === "pistol-end-hook" && flourishArmed;
-    if (flourishClockCut || this.downed || this.ultimatePhase !== UltimatePhase.Idle) {
-      this.resetFlourishState(false, flourishClockCut);
-      if (this.downed || this.ultimatePhase !== UltimatePhase.Idle)
-        this.comboStageTransition = undefined;
+    const flourishSemanticallyInterrupted =
+      this.downed || this.ultimatePhase !== UltimatePhase.Idle;
+    if (flourishClockCut || flourishSemanticallyInterrupted) {
+      this.resetFlourishState(
+        false,
+        flourishClockCut,
+        flourishTimingCut && !outsidePaperView && !flourishSemanticallyInterrupted,
+      );
+      if (flourishSemanticallyInterrupted) this.comboStageTransition = undefined;
     } else if (
       (flourishAttackIntent && !preserveEndHookArmThroughAttackIntent) ||
       movementOnsetOrHardChange ||
@@ -11011,7 +11043,15 @@ export class SpriteRig {
       (!hasAimedFiringWeapon &&
         !endHookFlourishCanOwnIdle &&
         (ownFront > 0.01 || ownBack > 0.01 || ownFeet > 0.01));
-    const strongerFlourishOwner = hardFlourishOwner || posePhase !== "idle" || rangedAimBlend > 0;
+    const flourishOverridesPersistentGunAim = flourishCanOverridePersistentGunAim(
+      hasGunHeld,
+      posePhase === "idle",
+      flourishArmed || this.flourishChannels[0].active || this.flourishChannels[1].active,
+    );
+    const strongerFlourishOwner =
+      hardFlourishOwner ||
+      posePhase !== "idle" ||
+      (rangedAimBlend > 0 && !flourishOverridesPersistentGunAim);
     const activePistolIdleTwirl =
       pistolIdleTwirl &&
       this.flourishChannels.some((channel) => channel.active && channel.moment === "idle-settle");
