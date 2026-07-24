@@ -3364,7 +3364,12 @@ export class ArenaScene extends Phaser.Scene {
     room.state.players.forEach((player, id) => {
       const rig = this.blobs.get(id);
       if (!rig) return;
-      rig.setAuthoritativeAttackClock(player.attackTick, room.state.tick);
+      rig.setAuthoritativeAttackClock(
+        player.attackTick,
+        room.state.tick,
+        player.charges,
+        player.maxCharges,
+      );
       const seq = player.attackSeq >>> 0;
       const previous = this.lastAttackSeq.get(id);
       const previousHeld = this.lastAttackHeld.get(id);
@@ -4311,28 +4316,23 @@ export class ArenaScene extends Phaser.Scene {
             }
           },
         ) as () => void;
-        const disposeChestOpened = room.onMessage<ChestOpenReceipt>(
-          "chestOpened",
-          (receipt) => {
-            if (generation !== this.connectionGeneration || this.room !== room) return;
-            const drops = [
-              receipt.weapon
-                ? `${receipt.weapon.name} T${receipt.weapon.tier + 1}`
-                : "",
-              ...receipt.relics.map((relic) =>
-                relic.rarity === "rare"
-                  ? `RARE ${relic.label}`
-                  : `${relic.label}${relic.stacks > 1 ? ` ×${relic.stacks}` : ""}`,
-              ),
-              receipt.money > 0 ? `+${receipt.money} MONEY` : "",
-            ].filter(Boolean);
-            const scar = receipt.zone === MAP_ZONE_SCAR;
-            this.flashBanner(
-              `${scar ? "SCAR" : "COMMONS"} CHEST · ${drops.join(" · ")}`,
-              scar ? "#e8a9c0" : "#ffd479",
-            );
-          },
-        ) as () => void;
+        const disposeChestOpened = room.onMessage<ChestOpenReceipt>("chestOpened", (receipt) => {
+          if (generation !== this.connectionGeneration || this.room !== room) return;
+          const drops = [
+            receipt.weapon ? `${receipt.weapon.name} T${receipt.weapon.tier + 1}` : "",
+            ...receipt.relics.map((relic) =>
+              relic.rarity === "rare"
+                ? `RARE ${relic.label}`
+                : `${relic.label}${relic.stacks > 1 ? ` ×${relic.stacks}` : ""}`,
+            ),
+            receipt.money > 0 ? `+${receipt.money} MONEY` : "",
+          ].filter(Boolean);
+          const scar = receipt.zone === MAP_ZONE_SCAR;
+          this.flashBanner(
+            `${scar ? "SCAR" : "COMMONS"} CHEST · ${drops.join(" · ")}`,
+            scar ? "#e8a9c0" : "#ffd479",
+          );
+        }) as () => void;
         const disposeChestDenied = room.onMessage<{ reason?: string }>(
           "chestOpenDenied",
           (payload) => {
@@ -7265,8 +7265,7 @@ export class ArenaScene extends Phaser.Scene {
           if (blade)
             blade.setScale(
               (rotating.getData("barrelRollBaseScaleX") as number | undefined) ?? blade.scaleX,
-              ((rotating.getData("barrelRollBaseScaleY") as number | undefined) ?? 1) *
-                roll.scaleY,
+              ((rotating.getData("barrelRollBaseScaleY") as number | undefined) ?? 1) * roll.scaleY,
             );
           rotating.setData("barrelRollElapsedSeconds", elapsedSeconds);
           const audit = globalThis as unknown as {
@@ -7286,8 +7285,7 @@ export class ArenaScene extends Phaser.Scene {
               scaleRatio: roll.scaleY,
               elapsedSeconds,
             });
-            if (audit.__ddB28BarrelRollAudit.length > 512)
-              audit.__ddB28BarrelRollAudit.shift();
+            if (audit.__ddB28BarrelRollAudit.length > 512) audit.__ddB28BarrelRollAudit.shift();
           }
         } else {
           rotating.rotation += dtSec * 22;
@@ -7716,7 +7714,10 @@ export class ArenaScene extends Phaser.Scene {
     const y = this.belt ? this.beltY(Number(row.y)) : Number(row.y);
     this.spawnHitSpark(x, y, -Math.PI / 2, true, 0xffd479);
     this.audio.play("weapon:salvage", { x, amt: 1 });
-    this.flashBanner(`DISASSEMBLED · +◈${Math.max(0, Math.floor(row.value ?? 0))} MONEY`, "#ffe27a");
+    this.flashBanner(
+      `DISASSEMBLED · +◈${Math.max(0, Math.floor(row.value ?? 0))} MONEY`,
+      "#ffe27a",
+    );
     this.bagRenderSignature = "";
   }
 
@@ -10182,10 +10183,7 @@ export class ArenaScene extends Phaser.Scene {
       this.grabTargetDisassemblable &&
       this.eHoldPickupId === this.grabTargetId &&
       this.keys.E.isDown;
-    const holdPercent = Math.min(
-      100,
-      Math.round((this.eHold / DISASSEMBLY_HOLD_SECONDS) * 100),
-    );
+    const holdPercent = Math.min(100, Math.round((this.eHold / DISASSEMBLY_HOLD_SECONDS) * 100));
     this.grabPromptText
       .setText(
         this.grabTargetId.startsWith("chest:")
@@ -12470,9 +12468,7 @@ export class ArenaScene extends Phaser.Scene {
     const leadName = unarmed ? "Unarmed" : (def?.name ?? "Unknown weapon");
     dock.junction.name.setText(leadName.length > 17 ? `${leadName.slice(0, 16)}…` : leadName);
     dock.junction.loot
-      .setText(
-        [rarity?.name ?? "", affix].filter(Boolean).join(" · "),
-      )
+      .setText([rarity?.name ?? "", affix].filter(Boolean).join(" · "))
       .setColor(rarity ? `#${rarity.color.toString(16).padStart(6, "0")}` : "#d8cfb8");
     const leadCost = driveCostView(entry.leadId);
     dock.junction.resource
@@ -12951,8 +12947,7 @@ export class ArenaScene extends Phaser.Scene {
     // Money + pack + set-bonus readout above the chips (dockux-panel §2.2 vocabulary). While the panel
     // is open the capacity lives in the panel title instead (§3.2) — no duplicate Pack readout.
     const parts = ["[Q] Next slot", `◈ ${self.scrip} Money`];
-    if (!this.bagOpen)
-      parts.push(`Pack ${self.bag.length}/${BAG_CAP}`, "[Tab] Backpack");
+    if (!this.bagOpen) parts.push(`Pack ${self.bag.length}/${BAG_CAP}`, "[Tab] Backpack");
     if (setB > 1) parts.push(`⚔ Set bonus +${Math.round((setB - 1) * 100)}%`);
     const info = this.hudText(this.arsenalTexts, 6, 100049)
       .setText(parts.join(" · "))
@@ -13294,18 +13289,14 @@ export class ArenaScene extends Phaser.Scene {
         ? self.bag.reduce(
             (total, row) =>
               total +
-              (row.bankEntryId === item.bankEntryId
-                ? weaponDisassemblyValue(row.weapon)
-                : 0),
+              (row.bankEntryId === item.bankEntryId ? weaponDisassemblyValue(row.weapon) : 0),
             0,
           )
         : item.earned
           ? weaponDisassemblyValue(item.weapon)
           : 0;
       const canDisassemble =
-        disassemblyValue > 0 &&
-        !item.homeIssue &&
-        (item.earned || item.bankEntryId.length > 0);
+        disassemblyValue > 0 && !item.homeIssue && (item.earned || item.bankEntryId.length > 0);
       const buttonWidth = Math.min(132, rect.width - 20);
       const buttonHeight = 28;
       const buttonX = rect.x + rect.width - buttonWidth - 10;
@@ -13318,9 +13309,7 @@ export class ArenaScene extends Phaser.Scene {
       this.hudText(this.bagTexts, 90 + cellIndex, 100053)
         .setText(canDisassemble ? `DISASSEMBLE +◈${disassemblyValue}` : "LOCKED")
         .setPosition(buttonX + buttonWidth / 2, buttonY + buttonHeight / 2)
-        .setColor(
-          canDisassemble ? ARMORY_CSS_COLORS.action : ARMORY_CSS_COLORS.textMuted,
-        )
+        .setColor(canDisassemble ? ARMORY_CSS_COLORS.action : ARMORY_CSS_COLORS.textMuted)
         .setFontSize(11)
         .setFontStyle("bold")
         .setOrigin(0.5)
@@ -13390,9 +13379,7 @@ export class ArenaScene extends Phaser.Scene {
         ? self.bag.reduce(
             (total, item) =>
               total +
-              (item.bankEntryId === selectedBankEntryId
-                ? weaponDisassemblyValue(item.weapon)
-                : 0),
+              (item.bankEntryId === selectedBankEntryId ? weaponDisassemblyValue(item.weapon) : 0),
             0,
           )
         : selectedEarned
@@ -13403,9 +13390,7 @@ export class ArenaScene extends Phaser.Scene {
       if (isBagItem) {
         actionLabel = value > 0 ? `DISASSEMBLE  +◈${value} MONEY` : "CANNOT DISASSEMBLE";
         actionEnabled =
-          value > 0 &&
-          !selectedHomeIssue &&
-          (selectedEarned || selectedBankEntryId.length > 0);
+          value > 0 && !selectedHomeIssue && (selectedEarned || selectedBankEntryId.length > 0);
       } else {
         actionLabel = "STOW IN BACKPACK";
         actionEnabled = self.bag.length < BAG_CAP;

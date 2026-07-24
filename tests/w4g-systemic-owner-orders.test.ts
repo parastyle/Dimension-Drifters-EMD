@@ -98,7 +98,7 @@ describe("W4G2 painted 96-pack scale contract", () => {
 });
 
 describe("W4G3 low-stock shotgun stance", () => {
-  it("puts every shotgun trigger hand and pump hand on reviewed painted anchors", () => {
+  it("puts every shotgun trigger and support hand on reviewed painted anchors", () => {
     const shotguns = Object.values(WEAPONS).filter(
       (definition) =>
         !!definition.gun &&
@@ -111,7 +111,9 @@ describe("W4G3 low-stock shotgun stance", () => {
       const secondary = definition.gripPoints?.secondary;
       expect(primary?.x, `${definition.id}:trigger`).toBeGreaterThanOrEqual(0.23);
       expect(secondary?.x, `${definition.id}:pump`).toBeGreaterThan(primary?.x ?? 1);
-      expect(["pump", "vertical-foregrip"], definition.id).toContain(secondary?.role);
+      expect(["horizontal-foregrip", "pump", "vertical-foregrip"], definition.id).toContain(
+        secondary?.role,
+      );
       expect(firingStanceFor(definition).family, definition.id).toBe("scattergun");
       expect(firingStanceFor(definition).lead.y, definition.id).toBeGreaterThan(-0.1);
     }

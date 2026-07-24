@@ -34,7 +34,7 @@ const fail = (msg) => errors.push(`${CUR}: ${msg}`);
 
 const TYPES = new Set(["melee", "ranged", "caster"]);
 const GRIPS = new Set(["1H", "2H", "dual", "mounted"]);
-const HANDLING_TAGS = new Set(["bolt", "lever", "pump", "pistol"]);
+const HANDLING_TAGS = new Set(["bolt", "break", "lever", "pump", "pistol"]);
 const IDLE_HAND_POSES = new Set([
   "secondary-grip", "mirror-guard", "low-guard", "casting-gesture", "hip-rest",
   "praying-mantis", "crane-guard",
@@ -83,7 +83,7 @@ const TOP_KEYS = new Set([
   "paletteAccent", "cardartAction", "behavior", "stats", "description", "banned", "expansion", "archived",
   "sprite", "firingFrame", "sizeClass", "stance", "authoritativeCombo", "comboFamily", "comboVariant", "comboBar", "comboChoreography", "katanaHook",
   "bespokeVfxSheet", "performance", "swingStyle", "effectRecipe", "effectEmitter", "effectTiming",
-  "renderAboveHands", "suppressVfx", "hitStatus", "gripPoints", "handlingTags", "poseLanguage",
+  "renderAboveHands", "suppressVfx", "hitStatus", "gripPoints", "handlingTags", "breakAction", "poseLanguage",
   "impactMuzzle", "rapidThrust",
 ]);
 // The sibling-block bug (§43): mechanic stats authored NEXT TO `behavior` instead of inside it were
@@ -131,6 +131,7 @@ const GUN_BURST_KEYS = new Set(["count", "intervalSeconds"]);
 const GRIP_POINTS_KEYS = new Set(["primary", "secondary"]);
 const GRIP_ANCHOR_KEYS = new Set(["x", "y"]);
 const SECONDARY_GRIP_KEYS = new Set(["x", "y", "role"]);
+const BREAK_ACTION_KEYS = new Set(["hinge", "openAngleRad"]);
 const ZONE_KEYS = new Set(["trigger", "style", "initialRadius", "maxRadius", "growthPerSecond",
   "lingerSeconds", "damagePerSecond", "tickRate", "placementRange",
   "slowMultiplier", "slowSeconds", "grenadeArcHeight"]);
@@ -851,6 +852,27 @@ function handlingTagsOf(tags) {
   return out;
 }
 
+function breakActionOf(action) {
+  if (action === undefined) return undefined;
+  if (!action || typeof action !== "object" || Array.isArray(action)) {
+    fail("breakAction is not an object");
+    return undefined;
+  }
+  checkKeys(action, BREAK_ACTION_KEYS, "breakAction");
+  const hinge = gripAnchorOf(action.hinge, "breakAction.hinge");
+  if (!hinge) return undefined;
+  return {
+    hinge,
+    openAngleRad: num(
+      action.openAngleRad,
+      Math.PI * 0.13,
+      Math.PI * 0.24,
+      Math.PI / 6,
+      "breakAction.openAngleRad",
+    ),
+  };
+}
+
 function poseLanguageOf(language, gripPoints) {
   if (language === undefined) return undefined;
   if (!language || typeof language !== "object" || Array.isArray(language)) {
@@ -903,6 +925,7 @@ function mapWeapon(w) {
   const damage = num(s.damage, 1, 40, 8, "stats.damage");
   const gripPoints = gripPointsOf(w.gripPoints);
   const handlingTags = handlingTagsOf(w.handlingTags);
+  const breakAction = breakActionOf(w.breakAction);
   const poseLanguage = poseLanguageOf(w.poseLanguage, gripPoints);
   const def = {
     id: w.id,
@@ -969,6 +992,13 @@ function mapWeapon(w) {
   }
   if (w.archived === true) def.archived = true;
   if (gripPoints) def.gripPoints = gripPoints;
+  if (breakAction) {
+    if (!isGun) fail("breakAction requires gun delivery");
+    if (!handlingTags?.includes("break")) fail("breakAction requires handlingTags to include break");
+    def.breakAction = breakAction;
+  } else if (handlingTags?.includes("break")) {
+    fail("handlingTags break requires breakAction");
+  }
   if (poseLanguage) def.poseLanguage = poseLanguage;
   if (handlingTags) def.tags.handling = handlingTags;
   if (w.description !== undefined) {
@@ -1389,6 +1419,8 @@ function mapWeapon(w) {
     if (ex) def.scatter.explode = ex;
   }
   const groundZone = groundZoneOf(b.zone);
+  if (def.breakAction && def.gun?.magazine !== 2)
+    fail("breakAction requires behavior.magazine = 2");
   if (groundZone) def.groundZone = groundZone;
   if (isGroundZone && groundZone?.trigger !== "channel")
     fail("behavior(groundZone).zone.trigger must be channel");

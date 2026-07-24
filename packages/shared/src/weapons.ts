@@ -36,7 +36,7 @@ export type WeaponSizeClass = "short" | "standard" | "long" | "great" | "colossa
 export type WeaponTier = 1 | 2 | 3 | 4 | 5;
 
 /** V3G catalog laws. Authored tags are the only membership source used by presentation code. */
-export type GunHandlingTag = "bolt" | "lever" | "pump" | "pistol";
+export type GunHandlingTag = "bolt" | "break" | "lever" | "pump" | "pistol";
 
 /** Normalized point in the weapon sprite's own unmirrored 0..1 bounds. */
 export interface WeaponGripAnchor {
@@ -62,6 +62,13 @@ export type WeaponSecondaryGripRole =
 export interface WeaponGripPoints {
   primary: WeaponGripAnchor;
   secondary?: WeaponGripAnchor & { role: WeaponSecondaryGripRole };
+}
+
+/** Registered two-piece break-action art. The receiver remains on the primary grip while part 2 pivots
+ * around this source-pixel-normalized hinge. Timing is supplied by the shared break mechanism sampler. */
+export interface WeaponBreakActionDef {
+  hinge: WeaponGripAnchor;
+  openAngleRad: number;
 }
 
 /** Presentation-only neutral hand vocabulary. Hard owners still take precedence per rendered frame. */
@@ -581,6 +588,8 @@ export interface WeaponDef {
   gripFrac: number;
   /** V3G normalized painted grip truth. Omitted preserves the legacy gripFrac/centreline rig behavior. */
   gripPoints?: WeaponGripPoints;
+  /** Two-piece break-action presentation/resource contract. Requires handling:break and a two-shot gun. */
+  breakAction?: WeaponBreakActionDef;
   /** Dual-wield: render a piece in EACH hand (uses sprite parts 1 & 2). */
   dual?: boolean;
   /** Two-handed: both hands grip the haft (heavy 2H swords). */
@@ -983,8 +992,9 @@ export function weaponMuzzleGripOffset(
     "aimX" | "aimY" | "facing" | "hand" | "recoilElapsedMs" | "recoilHand"
   >,
 ): WeaponMuzzleGripOffset {
-  const hand =
-    weapon.dual && (weapon.muzzle?.parts.length ?? 0) > 1
+  const hand = weapon.breakAction
+    ? 0
+    : weapon.dual && (weapon.muzzle?.parts.length ?? 0) > 1
       ? part === 1
         ? 1
         : 0

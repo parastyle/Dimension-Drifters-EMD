@@ -5642,7 +5642,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "INT"
       ],
       "handling": [
-        "pump"
+        "break"
       ]
     },
     "gripPoints": {
@@ -5651,19 +5651,26 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "y": 0.62
       },
       "secondary": {
-        "x": 0.72,
-        "y": 0.79,
-        "role": "pump"
+        "x": 0.58,
+        "y": 0.68,
+        "role": "horizontal-foregrip"
       }
+    },
+    "breakAction": {
+      "hinge": {
+        "x": 0.4341814159,
+        "y": 0.5294117647
+      },
+      "openAngleRad": 0.5235987756
     },
     "twoHanded": true,
     "gun": {
-      "damage": 5,
+      "damage": 7,
       "projectileSpeed": 800,
       "range": 380,
       "fireRate": 0.5,
-      "magazine": 6,
-      "reloadSeconds": 1.4,
+      "magazine": 2,
+      "reloadSeconds": 0.9,
       "bulletKind": "pellet",
       "muzzle": "punch",
       "recoil": 0.0026,

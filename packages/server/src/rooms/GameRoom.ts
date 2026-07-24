@@ -176,6 +176,7 @@ import {
   IRON_STANCE_KNOCKBACK_PER,
   inMeleeArc,
   isAugment,
+  isBreakActionWeapon,
   isCharacterUnlocked,
   isInsidePoi,
   isPetId,
@@ -628,6 +629,8 @@ interface InputState {
 
 interface WeaponResourceLedger {
   cooldown: number;
+  reload: number;
+  charges: number;
 }
 
 type WeaponSpendReason = "tap" | "beam-ignite" | "beam-active" | "beam-cancel" | "aura-active";
@@ -1074,12 +1077,7 @@ interface DuelistComboState {
   juggleInterruptHp?: number;
 }
 
-type RewardBoundary =
-  | "extract"
-  | "descent"
-  | "belt-victory"
-  | "bossrush-victory"
-  | "boss-clear";
+type RewardBoundary = "extract" | "descent" | "belt-victory" | "bossrush-victory" | "boss-clear";
 
 export interface WeaponComboForwardDrift {
   readonly distancePx: number;
@@ -2054,9 +2052,7 @@ export class GameRoom extends Room<ArenaState> {
     this.onMessage("openChest", (client, message?: { chestId?: unknown }) => {
       if (!this.takeAction(client)) return;
       const chestId =
-        typeof message?.chestId === "string" && message.chestId.length <= 80
-          ? message.chestId
-          : "";
+        typeof message?.chestId === "string" && message.chestId.length <= 80 ? message.chestId : "";
       if (!chestId) return;
       this.openChestForPlayer(client.sessionId, chestId);
     });
@@ -2195,17 +2191,8 @@ export class GameRoom extends Room<ArenaState> {
         const attackReady = message?.attackReady === true;
         for (let i = 0; i < count; i++) {
           const angle =
-            suppliedAngle === undefined
-              ? undefined
-              : suppliedAngle + (i - (count - 1) / 2) * 0.22;
-          this.debugSpawnOne(
-            kindId,
-            tough,
-            player,
-            angle,
-            suppliedDistance,
-            attackReady,
-          );
+            suppliedAngle === undefined ? undefined : suppliedAngle + (i - (count - 1) / 2) * 0.22;
+          this.debugSpawnOne(kindId, tough, player, angle, suppliedDistance, attackReady);
         }
       },
     );
@@ -2728,11 +2715,7 @@ export class GameRoom extends Room<ArenaState> {
       this.state.portalOpen
     )
       return;
-    const advanced = advanceChestCadence(
-      this.chestCadence,
-      this.state.tick,
-      this.chestRoomSeed,
-    );
+    const advanced = advanceChestCadence(this.chestCadence, this.state.tick, this.chestRoomSeed);
     this.chestCadence = advanced.state;
     for (const directive of advanced.spawns) {
       const existing = [...this.state.chests.values()].map((chest) => ({
@@ -2832,10 +2815,7 @@ export class GameRoom extends Room<ArenaState> {
       return;
     this.state.players.forEach((_player, playerId) => {
       const account = this.metaAccounts.get(playerId);
-      if (
-        !account?.unlockedWeapons.includes(weaponId) ||
-        Math.random() >= (kind.dropWeapon ?? 0)
-      )
+      if (!account?.unlockedWeapons.includes(weaponId) || Math.random() >= (kind.dropWeapon ?? 0))
         return;
       const pickup = new PickupState();
       pickup.id = `dropEnemy${this.pickupSeq++}`;
@@ -2872,10 +2852,7 @@ export class GameRoom extends Room<ArenaState> {
         if (relics.energyPool > before) {
           const combat = this.combat.get(player.id);
           if (combat) {
-            combat.drive.valueF = Math.min(
-              relicEnergyCapacity(relics),
-              combat.drive.valueF + 10,
-            );
+            combat.drive.valueF = Math.min(relicEnergyCapacity(relics), combat.drive.valueF + 10);
             player.weaponResource.valueQ = Math.floor(combat.drive.valueF * 100 + 1e-7);
           }
         }
@@ -2926,18 +2903,13 @@ export class GameRoom extends Room<ArenaState> {
     const dx = player.x - chest.x;
     const dy = player.y - chest.y;
     if (dx * dx + dy * dy > CHEST_OPEN_RADIUS * CHEST_OPEN_RADIUS) return;
-    const ownedRareIds = player.relics.ownedRare
-      .split(",")
-      .filter(isRareRelicId) as RareRelicId[];
+    const ownedRareIds = player.relics.ownedRare.split(",").filter(isRareRelicId) as RareRelicId[];
     const account = this.metaAccounts.get(playerId);
     const reward = rollChestReward({
       roomSeed: this.chestRoomSeed,
       chestSequence: Number(chest.id.split(":")[1]) || 0,
       spawnTick: chest.spawnTick,
-      elapsedSeconds: Math.max(
-        0,
-        ((this.state.tick - this.chestRunStartTick) * TICK_MS) / 1_000,
-      ),
+      elapsedSeconds: Math.max(0, ((this.state.tick - this.chestRunStartTick) * TICK_MS) / 1_000),
       zone: chest.zone as MapZoneId,
       kind: chest.kind as ChestKind,
       playerKey: playerId,
@@ -2999,22 +2971,30 @@ export class GameRoom extends Room<ArenaState> {
   /** Persist only the active weapon instance's cadence debt before identity changes. */
   private saveWeaponResource(player: PlayerState, c: CombatState): void {
     if (!c.lastWeapon) return;
+    const resourceWeapon = WEAPONS[c.lastWeapon];
+    const breakAction = isBreakActionWeapon(resourceWeapon);
     if (this.belt) {
       const slot = player.slots[player.activeSlot];
       if (!slot || slot.weapon !== c.lastWeapon) return;
       slot.resourceWeapon = c.lastWeapon;
       slot.resourceReady = true;
       slot.cooldown = Math.max(0, c.cd);
-      slot.reload = 0;
-      slot.resourceCharges = 0;
+      slot.reload = breakAction ? Math.max(0, c.reloadCd) : 0;
+      slot.resourceCharges = breakAction ? Math.max(0, player.charges) : 0;
       return;
     }
     let ledger = c.weaponLedger.get(c.lastWeapon);
     if (!ledger) {
-      ledger = { cooldown: 0 };
+      ledger = {
+        cooldown: 0,
+        reload: 0,
+        charges: breakAction ? resourceWeapon.gun.magazine : 0,
+      };
       c.weaponLedger.set(c.lastWeapon, ledger);
     }
     ledger.cooldown = Math.max(0, c.cd);
+    ledger.reload = breakAction ? Math.max(0, c.reloadCd) : 0;
+    ledger.charges = breakAction ? Math.max(0, player.charges) : 0;
   }
 
   /** Restore a weapon's own debt. Only a genuinely new pickup may initialize a fresh resource row. */
@@ -3025,25 +3005,35 @@ export class GameRoom extends Room<ArenaState> {
     applyDrawLock = true,
   ): void {
     const weaponId = player.weapon;
+    const resourceWeapon = WEAPONS[weaponId];
+    const breakAction = isBreakActionWeapon(resourceWeapon);
     let cooldown = 0;
+    let reload = 0;
+    let charges = breakAction ? resourceWeapon.gun.magazine : 0;
     if (this.belt) {
       const slot = player.slots[player.activeSlot];
       if (!genuinelyNewPickup && slot?.resourceReady && slot.resourceWeapon === weaponId) {
         cooldown = slot.cooldown;
+        if (breakAction) {
+          reload = slot.reload;
+          charges = slot.resourceCharges;
+        }
       } else if (slot) {
         slot.resourceWeapon = weaponId;
         slot.resourceReady = true;
         slot.cooldown = 0;
         slot.reload = 0;
-        slot.resourceCharges = 0;
+        slot.resourceCharges = charges;
       }
     } else {
       let ledger = c.weaponLedger.get(weaponId);
       if (!ledger || genuinelyNewPickup) {
-        ledger = { cooldown: 0 };
+        ledger = { cooldown: 0, reload: 0, charges };
         c.weaponLedger.set(weaponId, ledger);
       }
       cooldown = ledger.cooldown;
+      reload = breakAction ? ledger.reload : 0;
+      charges = breakAction ? ledger.charges : 0;
     }
     c.lastWeapon = weaponId;
     c.cd = Math.max(0, cooldown);
@@ -3051,14 +3041,14 @@ export class GameRoom extends Room<ArenaState> {
     c.gunBurstT = 0;
     c.gunBurstWeaponId = "";
     c.gunBurstHand = 0;
-    c.reloadCd = 0;
+    c.reloadCd = breakAction ? Math.max(0, reload) : 0;
     c.attackBuffer = 0;
     if (applyDrawLock) {
       const quirkMult = c.mods.drawLockMult;
       c.drawLock = Math.max(c.drawLock, WEAPON_DRAW_LOCK_SECONDS * quirkMult);
     }
-    player.maxCharges = 0;
-    player.charges = 0;
+    player.maxCharges = breakAction ? resourceWeapon.gun.magazine : 0;
+    player.charges = breakAction ? Math.max(0, Math.min(player.maxCharges, charges)) : 0;
   }
 
   private transitionWeapon(
@@ -3089,6 +3079,24 @@ export class GameRoom extends Room<ArenaState> {
     this.restoreWeaponResource(player, c, genuinelyNewPickup, applyDrawLock);
   }
 
+  /** Frostbore's two-shell exception reuses the retained private reload/resource row. The row advances on
+   * the fixed simulation clock and mirrors only its two public counters for deterministic remote posing. */
+  private stepHeldBreakActionReload(
+    player: PlayerState,
+    c: CombatState,
+    weapon: WeaponDef | undefined,
+    dt: number,
+  ): void {
+    if (!isBreakActionWeapon(weapon)) return;
+    player.maxCharges = weapon.gun.magazine;
+    if (player.charges > 0) {
+      c.reloadCd = 0;
+      return;
+    }
+    c.reloadCd = Math.max(0, c.reloadCd - dt);
+    if (c.reloadCd <= 0) player.charges = weapon.gun.magazine;
+  }
+
   /** Stowed debts progress normally; swapping changes identity, never the passage of time. */
   private stepStowedWeaponResources(player: PlayerState, c: CombatState, dt: number): void {
     if (this.belt) {
@@ -3103,13 +3111,31 @@ export class GameRoom extends Room<ArenaState> {
     for (const [weaponId, ledger] of c.weaponLedger) {
       if (weaponId === player.weapon) continue;
       ledger.cooldown = Math.max(0, ledger.cooldown - dt);
+      const resourceWeapon = WEAPONS[weaponId];
+      const breakAction = isBreakActionWeapon(resourceWeapon);
+      if (breakAction && ledger.charges === 0) {
+        const stowedRate = this.petRuns.get(player.id)?.mods.stowedReloadRate ?? 1;
+        ledger.reload = Math.max(0, ledger.reload - dt * stowedRate);
+        if (ledger.reload <= 0) ledger.charges = resourceWeapon.gun.magazine;
+      } else if (!breakAction) {
+        ledger.reload = 0;
+        ledger.charges = 0;
+      }
     }
   }
 
   private stepStoredSlot(player: PlayerState, slot: ArsenalSlot, dt: number): void {
     slot.cooldown = Math.max(0, slot.cooldown - dt);
-    slot.reload = 0;
-    slot.resourceCharges = 0;
+    const resourceWeapon = WEAPONS[slot.resourceWeapon || slot.weapon];
+    const breakAction = isBreakActionWeapon(resourceWeapon);
+    if (breakAction && slot.resourceCharges === 0) {
+      const stowedRate = this.petRuns.get(player.id)?.mods.stowedReloadRate ?? 1;
+      slot.reload = Math.max(0, slot.reload - dt * stowedRate);
+      if (slot.reload <= 0) slot.resourceCharges = resourceWeapon.gun.magazine;
+    } else if (!breakAction) {
+      slot.reload = 0;
+      slot.resourceCharges = 0;
+    }
   }
 
   /** Write the live held weapon (+ loot identity + earned provenance) INTO the active slot, so the slots
@@ -3207,11 +3233,7 @@ export class GameRoom extends Room<ArenaState> {
 
   /** Stat-free held damage multiplier. Authored source damage is modified only by the held weapon's
    * non-stat factors: loot identity, weapon-set bonus, and runtime effects. */
-  private heldDamageMult(
-    weapon: WeaponDef,
-    player: PlayerState,
-    _hand: WeaponHand = 0,
-  ): number {
+  private heldDamageMult(weapon: WeaponDef, player: PlayerState, _hand: WeaponHand = 0): number {
     const c = this.combat.get(player.id);
     return (
       lootDamageMult(player.weaponRarity, player.weaponAffix) *
@@ -3233,11 +3255,7 @@ export class GameRoom extends Room<ArenaState> {
     return mult;
   }
 
-  private heldCastDamageMult(
-    weapon: WeaponDef,
-    player: PlayerState,
-    hand: WeaponHand = 0,
-  ): number {
+  private heldCastDamageMult(weapon: WeaponDef, player: PlayerState, hand: WeaponHand = 0): number {
     return this.heldDamageMult(weapon, player, hand);
   }
 
@@ -3531,10 +3549,7 @@ export class GameRoom extends Room<ArenaState> {
       else this.prestigeGameClearReceipts.delete(playerId);
       const player =
         this.state.players.get(playerId) ?? this.disconnectedPlayers.get(playerId)?.player;
-      const previousBank = Math.max(
-        0,
-        Math.min(META_ACCOUNT_SCRIP_MAX, Math.floor(account.scrip)),
-      );
+      const previousBank = Math.max(0, Math.min(META_ACCOUNT_SCRIP_MAX, Math.floor(account.scrip)));
       const runMoney = player
         ? Math.max(0, Math.min(META_ACCOUNT_SCRIP_MAX, Math.floor(player.scrip)))
         : 0;
@@ -4668,9 +4683,8 @@ export class GameRoom extends Room<ArenaState> {
       );
       player.hp = deathWard.hp;
       if (deathWard.triggered) {
-        player.relics.deathWardReadyTick = (
-          this.state.tick + Math.ceil((DEATH_WARD_COOLDOWN_SECONDS * 1000) / TICK_MS)
-        ) >>> 0;
+        player.relics.deathWardReadyTick =
+          (this.state.tick + Math.ceil((DEATH_WARD_COOLDOWN_SECONDS * 1000) / TICK_MS)) >>> 0;
         this.sendOwnerMessage(player.id, "relicTriggered", {
           id: "one-shot-protection",
           readyTick: player.relics.deathWardReadyTick,
@@ -5649,9 +5663,7 @@ export class GameRoom extends Room<ArenaState> {
       c.attackBuffer = Math.max(0, c.attackBuffer - dt);
       c.parryBuffer = Math.max(0, c.parryBuffer - dt);
       const acting =
-        this.state.outcome === "active" &&
-        player.alive &&
-        player.ultPhase === UltimatePhase.Idle;
+        this.state.outcome === "active" && player.alive && player.ultPhase === UltimatePhase.Idle;
       // BUFFERED PARRY — a press that arrived on cooldown fires the instant the cd drains.
       if (
         acting &&
@@ -5702,13 +5714,14 @@ export class GameRoom extends Room<ArenaState> {
       const weapon = WEAPONS[player.weapon] ?? WEAPONS[DEFAULT_WEAPON];
 
       // Restore the identity-local cadence row when the equipped weapon changes. Drive stays player-global;
-      // legacy ammo, charge, and reload schema slots remain zeroed tombstones.
+      // schema-37 resource slots remain tombstones except for Frostbore's explicit two-shell exception.
       if (c.lastWeapon !== player.weapon) {
         // Direct server-side identity edits (tests/dev setup) restore debt but are not a player quick-swap.
         // Network-reachable swap handlers apply the shared draw gate at the transition edge above.
         this.transitionWeapon(player, c, false, false);
       }
 
+      this.stepHeldBreakActionReload(player, c, weapon, dt);
       this.stepGunBurst(player, c, weapon, acting);
 
       if (weapon?.performance?.aura) {
@@ -5773,8 +5786,8 @@ export class GameRoom extends Room<ArenaState> {
           }
         }
       } else if (weapon?.gun) {
-        // Schema-30 gun cadence survives; magazines/reload are authoring-only inputs to the Drive formula.
-        if (canAct) {
+        const breakAction = isBreakActionWeapon(weapon);
+        if (canAct && (!breakAction || (player.charges > 0 && c.reloadCd <= 0))) {
           c.attackBuffer = 0;
           const cooldown = weapon.gun.fireRate * cdMul * this.weaponRecoveryMult(player, weapon);
           const interval = effectiveAcceptedWeaponInterval(weapon, cooldown);
@@ -5796,7 +5809,21 @@ export class GameRoom extends Room<ArenaState> {
             this.stampAttackBeat(player);
             this.fireGun(player, c, weapon);
             this.armGunBurst(c, weapon, 0);
-            c.cd += cooldown; // accumulating cadence carries its sub-tick remainder
+            if (breakAction) {
+              player.maxCharges = weapon.gun.magazine;
+              player.charges = Math.max(0, player.charges - 1);
+              if (player.charges === 0) {
+                c.reloadCd =
+                  weapon.gun.reloadSeconds *
+                  (this.petRuns.get(player.id)?.mods.reloadDurationMultiplier ?? 1) *
+                  this.weaponRecoveryMult(player, weapon);
+                c.cd = c.reloadCd;
+              } else {
+                c.cd += cooldown;
+              }
+            } else {
+              c.cd += cooldown; // accumulating cadence carries its sub-tick remainder
+            }
           }
         }
       } else if (weapon?.thrown) {
@@ -6239,7 +6266,6 @@ export class GameRoom extends Room<ArenaState> {
         enemy.branded = 0;
       }
     }
-
   }
 
   private ultimateOwnsMovement(player: PlayerState): boolean {
@@ -7210,14 +7236,7 @@ export class GameRoom extends Room<ArenaState> {
       );
       c.cd = soloCooldown;
       if (soloBeat)
-        this.recordSoloMeleeBeat(
-          player,
-          c,
-          weapon,
-          soloBeat.family,
-          soloBeat.step,
-          soloCooldown,
-        );
+        this.recordSoloMeleeBeat(player, c, weapon, soloBeat.family, soloBeat.step, soloCooldown);
     }
     return true;
   }
@@ -7509,8 +7528,7 @@ export class GameRoom extends Room<ArenaState> {
       const qPower = this.heldDamageMult(weapon, player, hand);
       const zoneDamagePerSecond =
         weapon.groundZone?.trigger === "impact"
-          ? weapon.groundZone.damagePerSecond *
-            this.heldDamageMult(weapon, player, hand)
+          ? weapon.groundZone.damagePerSecond * this.heldDamageMult(weapon, player, hand)
           : undefined;
       if (impactAtDestination) {
         const lunge = this.pendingWeaponLunges.get(player.id);
@@ -8790,10 +8808,7 @@ export class GameRoom extends Room<ArenaState> {
         if (!enemy || enemy.hp <= 0) continue;
         const radius = ENEMY_KINDS[enemy.kind]?.radius ?? ENEMY_RADIUS;
         const forward = (enemy.x - impactX) * facing;
-        if (
-          forward < -radius * 0.5 ||
-          forward > collisionRange + radius + collisionHalfWidth
-        )
+        if (forward < -radius * 0.5 || forward > collisionRange + radius + collisionHalfWidth)
           continue;
         const rolling = (this.dodgeState.get(enemyId)?.t ?? 0) > 0;
         const depthWindow = DEPTH_TOL_PLAYER + radius * (rolling ? DEPTH_DODGE_MULT : 1);
@@ -8849,16 +8864,7 @@ export class GameRoom extends Room<ArenaState> {
       const enemy = this.state.enemies.get(enemyId);
       if (!enemy || enemy.hp <= 0) continue;
       const radius = ENEMY_KINDS[enemy.kind]?.radius ?? ENEMY_RADIUS;
-      if (
-        bladeHitsCircle(
-          wielder,
-          sw.aim0,
-          collisionRange,
-          enemy,
-          radius,
-          collisionHalfWidth,
-        )
-      )
+      if (bladeHitsCircle(wielder, sw.aim0, collisionRange, enemy, radius, collisionHalfWidth))
         applyEnemy(enemy, enemyId);
     }
 
@@ -9199,10 +9205,7 @@ export class GameRoom extends Room<ArenaState> {
     const encounter = this.vastagharEncounter;
     if (!encounter || encounter.state.mode !== VastagharMode.Victory) return;
     if (encounter.advanceVictory(this.state.tick)) this.completeVastagharVictoryPresentation();
-    if (
-      this.vastagharMoneyAwarded &&
-      ((this.state.tick - this.vastagharVictoryReadyTick) | 0) >= 0
-    )
+    if (this.vastagharMoneyAwarded && ((this.state.tick - this.vastagharVictoryReadyTick) | 0) >= 0)
       this.completeRewardBoundary("boss-clear");
   }
 
@@ -9394,9 +9397,7 @@ export class GameRoom extends Room<ArenaState> {
   private completeExtraction(): void {
     this.state.riftOpen = false;
     this.enterTerminalOutcome("victory");
-    console.log(
-      `[room ${this.roomId}] run extracted at depth ${this.state.depth} — VICTORY`,
-    );
+    console.log(`[room ${this.roomId}] run extracted at depth ${this.state.depth} — VICTORY`);
   }
 
   private completeBossRushVictory(): void {
@@ -10657,8 +10658,7 @@ export class GameRoom extends Room<ArenaState> {
         crit: attackCrit,
         landingDamagePerSecond:
           weapon.groundZone?.trigger === "landing"
-            ? weapon.groundZone.damagePerSecond *
-              this.heldDamageMult(weapon, player, hand)
+            ? weapon.groundZone.damagePerSecond * this.heldDamageMult(weapon, player, hand)
             : undefined,
         ricochet: t.ricochetHops
           ? { hops: t.ricochetHops, range: t.ricochetRange ?? Math.min(t.range, 320) }
@@ -10685,8 +10685,7 @@ export class GameRoom extends Room<ArenaState> {
       CombatDelivery.Thrown,
       undefined,
       weapon.groundZone?.trigger === "landing"
-        ? weapon.groundZone.damagePerSecond *
-            this.heldDamageMult(weapon, player, hand)
+        ? weapon.groundZone.damagePerSecond * this.heldDamageMult(weapon, player, hand)
         : undefined,
       t.ricochetHops
         ? { hops: t.ricochetHops, range: t.ricochetRange ?? Math.min(t.range, 320) }
@@ -13105,13 +13104,7 @@ export class GameRoom extends Room<ArenaState> {
     // §8 parry reward (ranged): flash + FLOW cd + chain build + a flat sliver heal. Kept a flat heal (not the
     // melee chain-scaled one) so parrying INTO a bullet-wall can't fully heal you — it's UMPH, not a fountain.
     player.parriedSeq = (player.parriedSeq + 1) % 100000;
-    this.applyDirectionalParryReaction(
-      player,
-      pc,
-      incomingX,
-      incomingY,
-      preventedDamage,
-    );
+    this.applyDirectionalParryReaction(player, pc, incomingX, incomingY, preventedDamage);
     pc.parryCd = Math.min(pc.parryCd, PARRY_CHAIN_CD);
     pc.parryChain = pc.parryChainT > 0 ? pc.parryChain + 1 : 1;
     pc.parryChainT = PARRY_CHAIN_WINDOW;
@@ -13419,8 +13412,7 @@ export class GameRoom extends Room<ArenaState> {
     )
       return;
     const gain =
-      Math.max(0, applied) * ULT_CHARGE_PER_DAMAGE +
-      (finalBlow ? ULT_CHARGE_KILL_BONUS : 0);
+      Math.max(0, applied) * ULT_CHARGE_PER_DAMAGE + (finalBlow ? ULT_CHARGE_KILL_BONUS : 0);
     const admitted = Math.min(gain, ULT_CHARGE_TICK_CAP - c.ultAccrualThisTick, 1 - c.ultChargeF);
     if (admitted <= 0) return;
     c.ultAccrualThisTick += admitted;

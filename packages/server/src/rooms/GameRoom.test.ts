@@ -4853,7 +4853,7 @@ describe("pet v1 approved roster bonus enforcement", () => {
     player.weapon = "rusty-cleaver";
     h.room.restoreWeaponResource(player, combat, false, false);
     h.room.stepStowedWeaponResources(player, combat, 0.05);
-    expect(shotgun).toEqual({ cooldown: 0 });
+    expect(shotgun).toEqual({ cooldown: 0, reload: 0, charges: 0 });
     expect(combat.drive.valueF).toBe(42.25);
   });
 

@@ -1,0 +1,503 @@
+{
+  "assertions": {
+    "bothFacings": true,
+    "closedMuzzlesValid": true,
+    "closedBoresDistinct": true,
+    "twoShotsThenReload": true,
+    "openingMuzzlesBlocked": true,
+    "privatePorts": true,
+    "remoteObserved": true,
+    "shellEjectObserved": true,
+    "timingFromClock": true,
+    "wholeArtCharacter": "proto-cowboy-hidden-face"
+  },
+  "baseURL": "http://127.0.0.1:64401",
+  "captures": [
+    {
+      "after": {
+        "active": false,
+        "angleRad": 0,
+        "barrelRotationRad": -3.005062207961373e-7,
+        "ejectStrength": 0,
+        "muzzleAllowed": true,
+        "phase": "closed",
+        "shellCount": 0,
+        "attackSeq": 6,
+        "attackTick": 483,
+        "charges": 2,
+        "clockTick": 576,
+        "elapsedTicks": 93,
+        "facing": 1,
+        "maxCharges": 2,
+        "muzzle": [
+          {
+            "acceptedSeq": 5,
+            "ok": true,
+            "x": 2258.7960885739994,
+            "y": 2403.596299558807
+          },
+          {
+            "acceptedSeq": 6,
+            "ok": true,
+            "x": 2258.7960904332153,
+            "y": 2409.783246589282
+          }
+        ]
+      },
+      "eject": {
+        "before": {
+          "active": false,
+          "angleRad": 0,
+          "barrelRotationRad": -3.005056150584551e-7,
+          "ejectStrength": 0,
+          "muzzleAllowed": true,
+          "phase": "closed",
+          "shellCount": 0,
+          "attackSeq": 2,
+          "attackTick": 202,
+          "charges": 2,
+          "clockTick": 296,
+          "elapsedTicks": 94,
+          "facing": 1,
+          "maxCharges": 2,
+          "muzzle": [
+            {
+              "acceptedSeq": 1,
+              "ok": true,
+              "x": 2417.3956979490063,
+              "y": 2403.596299558861
+            },
+            {
+              "acceptedSeq": 2,
+              "ok": true,
+              "x": 2417.3956998082185,
+              "y": 2409.783246589336
+            }
+          ]
+        },
+        "firstAcceptedSeq": 3,
+        "phase": {
+          "active": true,
+          "angleRad": 0.5235987756,
+          "barrelRotationRad": 0.5235984923118338,
+          "ejectStrength": 0.5633200580636216,
+          "muzzleAllowed": false,
+          "phase": "eject",
+          "shellCount": 2,
+          "attackSeq": 4,
+          "attackTick": 341,
+          "charges": 0,
+          "clockTick": 347,
+          "elapsedTicks": 6,
+          "facing": 1,
+          "maxCharges": 2,
+          "muzzle": [
+            {
+              "acceptedSeq": 3,
+              "ok": false,
+              "x": 0,
+              "y": 0
+            },
+            {
+              "acceptedSeq": 4,
+              "ok": false,
+              "x": 0,
+              "y": 0
+            }
+          ]
+        },
+        "screenshot": "docs/owner-notes-audit-v11-evidence/b32-frostbore-breakaction/local-right-eject-beat.png",
+        "secondAcceptedSeq": 4
+      },
+      "facing": "right",
+      "opening": {
+        "before": {
+          "active": false,
+          "angleRad": 0,
+          "barrelRotationRad": -0.0000015720749750869345,
+          "ejectStrength": 0,
+          "muzzleAllowed": true,
+          "phase": "closed",
+          "shellCount": 0,
+          "attackSeq": 0,
+          "attackTick": 0,
+          "charges": 2,
+          "clockTick": 159,
+          "elapsedTicks": 159,
+          "facing": 1,
+          "maxCharges": 2,
+          "muzzle": [
+            {
+              "acceptedSeq": 1,
+              "ok": true,
+              "x": 2496.6954872186725,
+              "y": 2403.5961862050335
+            },
+            {
+              "acceptedSeq": 2,
+              "ok": true,
+              "x": 2496.695496945017,
+              "y": 2409.7831332355013
+            }
+          ]
+        },
+        "firstAcceptedSeq": 1,
+        "phase": {
+          "active": true,
+          "angleRad": 0.5234062866125366,
+          "barrelRotationRad": 0.5234060048514735,
+          "ejectStrength": 0,
+          "muzzleAllowed": false,
+          "phase": "opening",
+          "shellCount": 0,
+          "attackSeq": 2,
+          "attackTick": 202,
+          "charges": 0,
+          "clockTick": 207,
+          "elapsedTicks": 5,
+          "facing": 1,
+          "maxCharges": 2,
+          "muzzle": [
+            {
+              "acceptedSeq": 1,
+              "ok": false,
+              "x": 0,
+              "y": 0
+            },
+            {
+              "acceptedSeq": 2,
+              "ok": false,
+              "x": 0,
+              "y": 0
+            }
+          ]
+        },
+        "screenshot": "docs/owner-notes-audit-v11-evidence/b32-frostbore-breakaction/local-right-break-open.png",
+        "secondAcceptedSeq": 2
+      },
+      "snapShut": {
+        "before": {
+          "active": false,
+          "angleRad": 0,
+          "barrelRotationRad": -3.005059188154746e-7,
+          "ejectStrength": 0,
+          "muzzleAllowed": true,
+          "phase": "closed",
+          "shellCount": 0,
+          "attackSeq": 4,
+          "attackTick": 341,
+          "charges": 2,
+          "clockTick": 438,
+          "elapsedTicks": 97,
+          "facing": 1,
+          "maxCharges": 2,
+          "muzzle": [
+            {
+              "acceptedSeq": 3,
+              "ok": true,
+              "x": 2338.095893261503,
+              "y": 2403.596299558834
+            },
+            {
+              "acceptedSeq": 4,
+              "ok": true,
+              "x": 2338.095895120717,
+              "y": 2409.783246589309
+            }
+          ]
+        },
+        "firstAcceptedSeq": 5,
+        "phase": {
+          "active": true,
+          "angleRad": 0.16645702886696154,
+          "barrelRotationRad": 0.16645672911998588,
+          "ejectStrength": 0,
+          "muzzleAllowed": false,
+          "phase": "closing",
+          "shellCount": 0,
+          "attackSeq": 6,
+          "attackTick": 483,
+          "charges": 0,
+          "clockTick": 496,
+          "elapsedTicks": 13,
+          "facing": 1,
+          "maxCharges": 2,
+          "muzzle": [
+            {
+              "acceptedSeq": 5,
+              "ok": false,
+              "x": 0,
+              "y": 0
+            },
+            {
+              "acceptedSeq": 6,
+              "ok": false,
+              "x": 0,
+              "y": 0
+            }
+          ]
+        },
+        "screenshot": "docs/owner-notes-audit-v11-evidence/b32-frostbore-breakaction/local-right-snap-shut.png",
+        "secondAcceptedSeq": 6
+      },
+      "sourceId": "mzFwd02ZQ",
+      "viewpoint": "local"
+    },
+    {
+      "after": {
+        "active": false,
+        "angleRad": 0,
+        "barrelRotationRad": -8.742278012618954e-8,
+        "ejectStrength": 0,
+        "muzzleAllowed": true,
+        "phase": "closed",
+        "shellCount": 0,
+        "attackSeq": 6,
+        "attackTick": 882,
+        "charges": 2,
+        "clockTick": 966,
+        "elapsedTicks": 84,
+        "facing": -1,
+        "maxCharges": 2,
+        "muzzle": [
+          {
+            "acceptedSeq": 5,
+            "ok": true,
+            "x": 1196.8258570845564,
+            "y": 2497.0565236322195
+          },
+          {
+            "acceptedSeq": 6,
+            "ok": true,
+            "x": 1196.8258565436763,
+            "y": 2503.243470662695
+          }
+        ]
+      },
+      "eject": {
+        "before": {
+          "active": false,
+          "angleRad": 0,
+          "barrelRotationRad": -8.742278012618954e-8,
+          "ejectStrength": 0,
+          "muzzleAllowed": true,
+          "phase": "closed",
+          "shellCount": 0,
+          "attackSeq": 2,
+          "attackTick": 667,
+          "charges": 2,
+          "clockTick": 750,
+          "elapsedTicks": 83,
+          "facing": -1,
+          "maxCharges": 2,
+          "muzzle": [
+            {
+              "acceptedSeq": 1,
+              "ok": true,
+              "x": 1038.2262477095564,
+              "y": 2497.0565236322195
+            },
+            {
+              "acceptedSeq": 2,
+              "ok": true,
+              "x": 1038.2262471686763,
+              "y": 2503.243470662695
+            }
+          ]
+        },
+        "firstAcceptedSeq": 3,
+        "phase": {
+          "active": true,
+          "angleRad": 0.5235987756,
+          "barrelRotationRad": 0.5235986881772199,
+          "ejectStrength": 0.9396926207859083,
+          "muzzleAllowed": false,
+          "phase": "eject",
+          "shellCount": 2,
+          "attackSeq": 4,
+          "attackTick": 775,
+          "charges": 0,
+          "clockTick": 782,
+          "elapsedTicks": 7,
+          "facing": -1,
+          "maxCharges": 2,
+          "muzzle": [
+            {
+              "acceptedSeq": 3,
+              "ok": false,
+              "x": 0,
+              "y": 0
+            },
+            {
+              "acceptedSeq": 4,
+              "ok": false,
+              "x": 0,
+              "y": 0
+            }
+          ]
+        },
+        "screenshot": "docs/owner-notes-audit-v11-evidence/b32-frostbore-breakaction/remote-left-eject-beat.png",
+        "secondAcceptedSeq": 4
+      },
+      "facing": "left",
+      "opening": {
+        "before": {
+          "active": false,
+          "angleRad": 0,
+          "barrelRotationRad": -8.742278012618954e-8,
+          "ejectStrength": 0,
+          "muzzleAllowed": true,
+          "phase": "closed",
+          "shellCount": 0,
+          "attackSeq": 0,
+          "attackTick": 0,
+          "charges": 2,
+          "clockTick": 638,
+          "elapsedTicks": 638,
+          "facing": -1,
+          "maxCharges": 2,
+          "muzzle": [
+            {
+              "acceptedSeq": 1,
+              "ok": true,
+              "x": 2314.702443998619,
+              "y": 2497.0565236322195
+            },
+            {
+              "acceptedSeq": 2,
+              "ok": true,
+              "x": 2314.702443457739,
+              "y": 2503.243470662695
+            }
+          ]
+        },
+        "firstAcceptedSeq": 1,
+        "phase": {
+          "active": true,
+          "angleRad": 0.5234062866125366,
+          "barrelRotationRad": 0.5234061991897576,
+          "ejectStrength": 0,
+          "muzzleAllowed": false,
+          "phase": "opening",
+          "shellCount": 0,
+          "attackSeq": 2,
+          "attackTick": 667,
+          "charges": 0,
+          "clockTick": 672,
+          "elapsedTicks": 5,
+          "facing": -1,
+          "maxCharges": 2,
+          "muzzle": [
+            {
+              "acceptedSeq": 1,
+              "ok": false,
+              "x": 0,
+              "y": 0
+            },
+            {
+              "acceptedSeq": 2,
+              "ok": false,
+              "x": 0,
+              "y": 0
+            }
+          ]
+        },
+        "screenshot": "docs/owner-notes-audit-v11-evidence/b32-frostbore-breakaction/remote-left-break-open.png",
+        "secondAcceptedSeq": 2
+      },
+      "snapShut": {
+        "before": {
+          "active": false,
+          "angleRad": 0,
+          "barrelRotationRad": -8.742278012618954e-8,
+          "ejectStrength": 0,
+          "muzzleAllowed": true,
+          "phase": "closed",
+          "shellCount": 0,
+          "attackSeq": 4,
+          "attackTick": 775,
+          "charges": 2,
+          "clockTick": 858,
+          "elapsedTicks": 83,
+          "facing": -1,
+          "maxCharges": 2,
+          "muzzle": [
+            {
+              "acceptedSeq": 3,
+              "ok": true,
+              "x": 1117.5260523970564,
+              "y": 2497.0565236322195
+            },
+            {
+              "acceptedSeq": 4,
+              "ok": true,
+              "x": 1117.5260518561763,
+              "y": 2503.243470662695
+            }
+          ]
+        },
+        "firstAcceptedSeq": 5,
+        "phase": {
+          "active": true,
+          "angleRad": 0.16645702886696154,
+          "barrelRotationRad": 0.16645694144418144,
+          "ejectStrength": 0,
+          "muzzleAllowed": false,
+          "phase": "closing",
+          "shellCount": 0,
+          "attackSeq": 6,
+          "attackTick": 882,
+          "charges": 0,
+          "clockTick": 895,
+          "elapsedTicks": 13,
+          "facing": -1,
+          "maxCharges": 2,
+          "muzzle": [
+            {
+              "acceptedSeq": 5,
+              "ok": false,
+              "x": 0,
+              "y": 0
+            },
+            {
+              "acceptedSeq": 6,
+              "ok": false,
+              "x": 0,
+              "y": 0
+            }
+          ]
+        },
+        "screenshot": "docs/owner-notes-audit-v11-evidence/b32-frostbore-breakaction/remote-left-snap-shut.png",
+        "secondAcceptedSeq": 6
+      },
+      "sourceId": "0Qxy8e7q5",
+      "viewpoint": "remote"
+    }
+  ],
+  "capturedAt": "2026-07-24T17:15:06.011Z",
+  "characterId": "proto-cowboy-hidden-face",
+  "clientPort": 64401,
+  "expected": {
+    "ejectWindowTicks": [
+      6,
+      10
+    ],
+    "openingWindowTicks": [
+      2,
+      5
+    ],
+    "openAngleDeg": 30,
+    "reloadSeconds": 0.9,
+    "reloadTicks": 18,
+    "snapShutWindowTicks": [
+      11,
+      14
+    ]
+  },
+  "gamePort": 64399,
+  "protectedPorts": [
+    5180,
+    2567
+  ],
+  "weaponId": "x2-frostbore-scattergun"
+}
