@@ -294,6 +294,7 @@ import {
   JumpEffectRenderer,
 } from "../vfx/jump-effects.js";
 import {
+  kungFuWrapBeatAudioCue,
   resolveKungFuWrapVfxRecipe,
   spawnKungFuWrapImpact,
   spawnKungFuWrapSwing,
@@ -3740,7 +3741,12 @@ export class ArenaScene extends Phaser.Scene {
       const aim = { x: Math.cos(player.aimDir), y: Math.sin(player.aimDir) };
       this.spawnChain(rig.x, rig.y, aim, weapon, rig.activeSwing ?? swing);
     }
-    this.playWeaponSourceAudio(weapon, rig.x, player.id === this.room?.sessionId);
+    this.playWeaponSourceAudio(
+      weapon,
+      rig.x,
+      player.id === this.room?.sessionId,
+      rig.activeSwing ?? swing,
+    );
   }
 
   private cueWeaponSwingIdentity(
@@ -3931,12 +3937,18 @@ export class ArenaScene extends Phaser.Scene {
   }
 
   /** Accepted source/whiff sound; impact remains independently driven by authoritative HP loss. */
-  private playWeaponSourceAudio(weapon: WeaponDef, x: number, local: boolean): void {
+  private playWeaponSourceAudio(
+    weapon: WeaponDef,
+    x: number,
+    local: boolean,
+    swing?: SwingDescriptor,
+  ): void {
     if (weapon.gun || weapon.beam || weapon.thrown) return;
     const family = weapon.tags.family.toLowerCase();
     const generatedCue = generatedImageWeaponAudioCue(weapon.id);
-    let cue = generatedCue ?? "melee:light";
-    if (!generatedCue) {
+    const kungFuCue = kungFuWrapBeatAudioCue(weapon.id, swing?.comboLimb, swing?.motion);
+    let cue = generatedCue ?? kungFuCue ?? "melee:light";
+    if (!generatedCue && !kungFuCue) {
       if (
         weapon.cast ||
         weapon.tags.classPool === "caster" ||
@@ -10395,7 +10407,8 @@ export class ArenaScene extends Phaser.Scene {
         element: weapon.tags.element ?? "physical",
       });
     }
-    if (weapon && !weapon.warp) this.playWeaponSourceAudio(weapon, rig?.x ?? self.x, true);
+    if (weapon && !weapon.warp)
+      this.playWeaponSourceAudio(weapon, rig?.x ?? self.x, true, rig?.activeSwing ?? swing);
     // Cursor world position (for slam-at-cursor weapons).
     const cam = this.cameras.main;
     const px = this.pointerScreen.set ? this.pointerScreen.x : this.input.activePointer.x;
@@ -10623,6 +10636,7 @@ export class ArenaScene extends Phaser.Scene {
           true,
           undefined,
           bladePose,
+          rig,
         );
       } else {
         const ep = clampQuakeEpicenter(
@@ -10642,6 +10656,7 @@ export class ArenaScene extends Phaser.Scene {
             y: this.belt ? this.beltY(ep.y) : ep.y,
           },
           bladePose,
+          rig,
         );
       }
       // Chain-lightning on-hit proc (§10) — teal bolt leaps to the nearest enemies (server owns the damage).
@@ -15320,6 +15335,7 @@ export class ArenaScene extends Phaser.Scene {
     exact = false,
     target?: Readonly<{ x: number; y: number }>,
     sourceBladePose?: () => WeaponBladeAttachmentPose | undefined,
+    sourceRig?: SpriteRig,
   ): void {
     if (weapon.suppressVfx) return;
     const ang = Math.atan2(aim.y, aim.x);
@@ -15358,20 +15374,25 @@ export class ArenaScene extends Phaser.Scene {
     const sy = y + Math.sin(ang) * reach;
     if (resolveKungFuWrapVfxRecipe(weapon.id)) {
       const hand = swing.comboHand === "off" ? 1 : 0;
-      const source = weapon.muzzle
-        ? weaponMuzzleWorldPoint(
-            weapon,
-            {
-              x,
-              y,
-              aimX: aim.x,
-              aimY: aim.y,
-              hand,
-              salvoIndex: hand,
-            },
-            (swing.comboStep ?? 0) + 1,
-          )
-        : { x, y };
+      const liveSource = { x: 0, y: 0 };
+      const hasLiveSource =
+        sourceRig?.writeKungFuWrapMuzzle(swing.comboLimb, hand, liveSource) === true;
+      const source = hasLiveSource
+        ? liveSource
+        : weapon.muzzle
+          ? weaponMuzzleWorldPoint(
+              weapon,
+              {
+                x,
+                y,
+                aimX: aim.x,
+                aimY: aim.y,
+                hand,
+                salvoIndex: hand,
+              },
+              (swing.comboStep ?? 0) + 1,
+            )
+          : { x, y };
       const impact = target ?? { x: sx, y: sy };
       spawnKungFuWrapSwing(
         this,
@@ -15383,6 +15404,7 @@ export class ArenaScene extends Phaser.Scene {
         ang,
         swing.comboStep,
         swing.motion,
+        swing.comboLimb,
         prefersReducedPaperMotion() || this.feedbackSettings.flashes === "reduced",
       );
       return;

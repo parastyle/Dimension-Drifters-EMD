@@ -526,6 +526,8 @@ export interface WeaponDef {
   glovePair?: {
     auraColor: number;
     auraRadius: number;
+    /** Part 1 replaces both hands and part 2 replaces both feet. */
+    wrapsFeet?: boolean;
   };
   /** Cursor warp replaces the ordinary attack. The server validates and originates the move, then applies
    * one arrival burst using the weapon's normal damage/scaling. */

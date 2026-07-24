@@ -94,6 +94,17 @@ export type MeleeComboMotion =
   | "gourd-haymaker"
   | "iron-knuckle"
   | "iron-palm"
+  | "teep-kick"
+  | "spinning-back-elbow"
+  | "oblique-kick"
+  | "double-palm"
+  | "weave-backfist"
+  | "sweeping-leg"
+  | "falling-haymaker"
+  | "crushing-palm"
+  | "stomp-kick"
+  | "windup-palm"
+  | "quake-double-palm"
   | "lunge"
   | "disengage"
   | "impale"
@@ -125,6 +136,7 @@ export type MeleeComboMotion =
   | "rest-downswing"
   | "waist-orbit";
 export type MeleeComboHand = "lead" | "off" | "both";
+export type MeleeComboLimb = "hand" | "foot";
 export type KatanaChoreographyPrimitive =
   | "side-cut"
   | "wave-cut"
@@ -189,32 +201,24 @@ export function comboRibbonFanOutScaleAt(
   ribbon: Readonly<MeleeComboRibbon> | undefined,
   progress: number,
 ): number {
-  if (
-    ribbon?.fanOutStartScale === undefined ||
-    ribbon.fanOutEndScale === undefined
-  )
-    return 1;
+  if (ribbon?.fanOutStartScale === undefined || ribbon.fanOutEndScale === undefined) return 1;
   const p = clamp(progress, 0, 1);
   const eased = p * p * (3 - 2 * p);
-  return (
-    ribbon.fanOutStartScale +
-    (ribbon.fanOutEndScale - ribbon.fanOutStartScale) * eased
-  );
+  return ribbon.fanOutStartScale + (ribbon.fanOutEndScale - ribbon.fanOutStartScale) * eased;
 }
 
 export function comboRibbonWidthMultiplierAt(
   ribbon: Readonly<MeleeComboRibbon>,
   progress: number,
 ): number {
-  return Math.max(
-    0,
-    ribbon.widthMultiplier * comboRibbonFanOutScaleAt(ribbon, progress),
-  );
+  return Math.max(0, ribbon.widthMultiplier * comboRibbonFanOutScaleAt(ribbon, progress));
 }
 
 export interface MeleeComboStep {
   readonly name: string;
   readonly motion: MeleeComboMotion;
+  /** Physical worn-limb art that owns this beat's source/impact punctuation. */
+  readonly limb?: MeleeComboLimb;
   /** +1 forehand/lead, −1 reverse/off-side, 0 opposing paths. Cosmetic until signed server paths land. */
   readonly direction: -1 | 0 | 1;
   readonly hand: MeleeComboHand;
@@ -236,6 +240,12 @@ export interface MeleeComboStep {
     readonly rangeMultiplier: number;
     readonly damageMultiplier: number;
     readonly knockback: number;
+  };
+  /** Server-owned character displacement authored on this exact accepted combo beat. */
+  readonly rootMotion?: {
+    readonly forwardPx: number;
+    readonly lateralPx: number;
+    readonly durationSeconds: number;
   };
   /** Cosmetic business-edge variation. Geometry/damage consumers must continue to use `path`/descriptor. */
   readonly ribbon?: Readonly<MeleeComboRibbon>;
@@ -525,10 +535,7 @@ export function sampleKatanaChoreography(
       out.shadowScaleY = 1 - 0.12 * own;
       break;
   }
-  if (
-    step.ribbon?.fanOutStartScale !== undefined &&
-    step.ribbon.fanOutEndScale !== undefined
-  ) {
+  if (step.ribbon?.fanOutStartScale !== undefined && step.ribbon.fanOutEndScale !== undefined) {
     const activeProgress = clamp(
       (tt - step.timing.activeStart) /
         Math.max(0.01, step.timing.activeEnd - step.timing.activeStart),
@@ -1948,6 +1955,7 @@ export interface SwingDescriptor {
   readonly motion?: MeleeComboMotion;
   readonly comboDirection?: -1 | 0 | 1;
   readonly comboHand?: MeleeComboHand;
+  readonly comboLimb?: MeleeComboLimb;
   readonly comboTiming?: Readonly<MeleeComboStep["timing"]>;
   readonly comboPath?: Readonly<MeleeComboStep["path"]>;
   readonly comboRibbon?: Readonly<MeleeComboRibbon>;
@@ -2126,6 +2134,7 @@ export function swingDescriptorWithComboStep(
     motion: step.motion,
     comboDirection: step.direction,
     comboHand: step.choreography?.hand ?? step.hand,
+    comboLimb: step.limb,
     comboTiming: step.timing,
     comboPath: step.path,
     comboRibbon: step.ribbon,

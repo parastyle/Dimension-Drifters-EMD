@@ -636,6 +636,27 @@ describe("input transport — immediate changes retain the 20Hz heartbeat", () =
 
 // Movement-reconciliation wave — append-only regression proof for the owner jitter fix.
 describe("owner reconciliation presentation — aligned ticks and bounded correction", () => {
+  it("folds B19-sized authoritative combo root motion into a glide instead of a teleport", () => {
+    const server = new MockServer();
+    const predictor = new SelfPredictor(server.view());
+    const before = predictor.renderPos(0, 0, 0);
+    const forced = { ...server.view(), x: server.x + 16, y: server.y - 11 };
+
+    predictor.reconcile(forced);
+    expect(predictor.renderPos(0, 0, 0)).toMatchObject(before);
+    expect(predictor.stats.errPx).toBeCloseTo(Math.hypot(16, 11), 8);
+
+    let previous = before;
+    for (let frame = 0; frame < 30; frame++) {
+      predictor.decayError(1 / 60, 0, 0);
+      const next = predictor.renderPos(0, 0, 0);
+      expect(Math.hypot(next.x - previous.x, next.y - previous.y)).toBeLessThan(4);
+      previous = next;
+    }
+    expect(previous.x).toBeGreaterThan(before.x + 14);
+    expect(previous.y).toBeLessThan(before.y - 9);
+  });
+
   it("keeps a movement-only edge transport-only until the next fixed heartbeat", () => {
     const predictor = new SelfPredictor(new MockServer().view());
     const before = predictor.renderPos(0, 0, 0);

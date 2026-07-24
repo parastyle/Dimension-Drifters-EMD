@@ -6,6 +6,7 @@ import {
 
 export {
   KUNG_FU_WRAP_VFX_RECIPES,
+  kungFuWrapBeatAudioCue,
   resolveKungFuWrapVfxRecipe,
 } from "./kung-fu-wrap-vfx-recipes.js";
 
@@ -18,6 +19,7 @@ export interface KungFuWrapVfxAuditEvent {
   readonly timeMs: number;
   readonly comboStep?: number;
   readonly motion?: string;
+  readonly limb?: "hand" | "foot";
 }
 
 function auditKungFuWrapVfx(event: KungFuWrapVfxAuditEvent): void {
@@ -52,6 +54,7 @@ function drawSwing(
   dx: number,
   dy: number,
   angle: number,
+  limb: "hand" | "foot" | undefined,
   reducedMotion: boolean,
 ): void {
   if (recipe.swing === "red-eight-limbs-aura") {
@@ -94,6 +97,12 @@ function drawSwing(
     graphics.lineStyle(2, recipe.primaryColor, 0.86).lineBetween(2, -2, dx, dy);
     graphics.fillStyle(recipe.accentColor, 0.72).fillCircle(dx, dy, reducedMotion ? 6 : 9);
   }
+  if (limb === "foot") {
+    graphics.lineStyle(4, recipe.accentColor, 0.72);
+    graphics.strokeEllipse(0, 4, reducedMotion ? 20 : 29, reducedMotion ? 9 : 13);
+    graphics.lineStyle(2, recipe.primaryColor, 0.84);
+    graphics.lineBetween(-8, 7, dx * 0.72, dy * 0.72 + 7);
+  }
 }
 
 /** Accepted swing punctuation. Source is the generated art-space hand centroid; impact is predicted reach. */
@@ -107,6 +116,7 @@ export function spawnKungFuWrapSwing(
   angle: number,
   comboStep: number | undefined,
   motion: string | undefined,
+  limb: "hand" | "foot" | undefined,
   reducedMotion = false,
 ): boolean {
   const recipe = resolveKungFuWrapVfxRecipe(weaponId);
@@ -114,9 +124,10 @@ export function spawnKungFuWrapSwing(
   const graphics = scene.add.graphics().setPosition(sourceX, sourceY).setDepth(100120);
   const dx = impactX - sourceX;
   const dy = impactY - sourceY;
-  drawSwing(graphics, recipe, dx, dy, angle, reducedMotion);
+  drawSwing(graphics, recipe, dx, dy, angle, limb, reducedMotion);
   graphics.setData("kungFuWrapSwingStyle", recipe.swing);
   graphics.setData("kungFuWrapWeaponId", weaponId);
+  graphics.setData("kungFuWrapLimb", limb ?? "hand");
   auditKungFuWrapVfx({
     kind: "swing",
     weaponId,
@@ -126,11 +137,18 @@ export function spawnKungFuWrapSwing(
     timeMs: scene.time.now,
     comboStep,
     motion,
+    limb,
   });
   fadeAndDestroy(
     scene,
     graphics,
-    recipe.swing === "white-centerline-flash" ? 105 : 260,
+    recipe.swing === "white-centerline-flash"
+      ? limb === "foot"
+        ? 145
+        : 105
+      : limb === "foot"
+        ? 300
+        : 260,
     reducedMotion ? 1.04 : 1.18,
   );
   return true;

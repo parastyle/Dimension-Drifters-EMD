@@ -11,6 +11,17 @@ export type KungFuWrapMotion = Extract<
   | "gourd-haymaker"
   | "iron-knuckle"
   | "iron-palm"
+  | "teep-kick"
+  | "spinning-back-elbow"
+  | "oblique-kick"
+  | "double-palm"
+  | "weave-backfist"
+  | "sweeping-leg"
+  | "falling-haymaker"
+  | "crushing-palm"
+  | "stomp-kick"
+  | "windup-palm"
+  | "quake-double-palm"
 >;
 
 export interface KungFuWrapPoseInput {
@@ -118,7 +129,18 @@ export function isKungFuWrapMotion(
     motion === "weave-cross" ||
     motion === "gourd-haymaker" ||
     motion === "iron-knuckle" ||
-    motion === "iron-palm"
+    motion === "iron-palm" ||
+    motion === "teep-kick" ||
+    motion === "spinning-back-elbow" ||
+    motion === "oblique-kick" ||
+    motion === "double-palm" ||
+    motion === "weave-backfist" ||
+    motion === "sweeping-leg" ||
+    motion === "falling-haymaker" ||
+    motion === "crushing-palm" ||
+    motion === "stomp-kick" ||
+    motion === "windup-palm" ||
+    motion === "quake-double-palm"
   );
 }
 
@@ -216,6 +238,38 @@ export function sampleKungFuWrapPose(
       out.backFootForward = -0.16;
       out.backFootLateral = -direction * 0.14;
       break;
+    case "teep-kick":
+      out.handForward = 0.06 * ownership;
+      out.handLateral = direction * 0.1;
+      out.rearHandForward = 0.04 * ownership;
+      out.rearHandLateral = -direction * 0.11;
+      out.bodyForward = 0.1 * ownership;
+      out.bodyLateral = -direction * 0.035 * ownership;
+      out.bodyLift = 0.025 * ownership;
+      out.bodyRotation = -direction * 0.08 * ownership;
+      out.bodyScaleY = 1 - 0.05 * ownership;
+      out.frontFootForward = 0.78 * clamp01(extension);
+      out.frontFootLateral = direction * 0.04;
+      out.frontFootLift = 0.2 * ownership;
+      out.backFootForward = -0.16;
+      out.backFootLateral = -direction * 0.1;
+      break;
+    case "spinning-back-elbow":
+      out.handForward = 0.46 * Math.max(0.25, clamp01(extension));
+      out.handLateral = direction * 0.2 * (1 - 2 * clamp01(extension));
+      out.handAngleOffset = direction * (-1.2 + 1.85 * clamp01(extension));
+      out.rearHandForward = 0.04;
+      out.rearHandLateral = -direction * 0.14;
+      out.bodyForward = 0.1 * ownership;
+      out.bodyLateral = -direction * 0.08 * ownership;
+      out.bodyLift = 0.035 * ownership;
+      out.bodyRotation = direction * 0.52 * ownership;
+      out.bodyScaleX = 1 - 0.22 * ownership;
+      out.frontFootForward = 0.2;
+      out.frontFootLateral = direction * 0.18;
+      out.backFootForward = -0.14;
+      out.backFootLateral = -direction * 0.16;
+      break;
     case "chain-punch":
       out.handForward = 0.9 * extension;
       out.handLateral = direction * 0.045 * (1 - clamp01(extension));
@@ -226,6 +280,34 @@ export function sampleKungFuWrapPose(
       out.frontFootLateral = direction * 0.04;
       out.backFootForward = -0.06;
       out.backFootLateral = -direction * 0.035;
+      break;
+    case "oblique-kick":
+      out.handForward = 0.05;
+      out.handLateral = direction * 0.08;
+      out.rearHandForward = 0.05;
+      out.rearHandLateral = -direction * 0.08;
+      out.bodyForward = 0.07 * ownership;
+      out.bodyLateral = -direction * 0.04 * ownership;
+      out.bodyRotation = -direction * 0.07 * ownership;
+      out.frontFootForward = 0.62 * clamp01(extension);
+      out.frontFootLateral = direction * 0.07;
+      out.frontFootLift = 0.13 * ownership;
+      out.backFootForward = -0.12;
+      out.backFootLateral = -direction * 0.08;
+      break;
+    case "double-palm":
+      out.handForward = 0.78 * extension;
+      out.handLateral = direction * 0.045;
+      out.rearHandForward = 0.72 * extension;
+      out.rearHandLateral = -direction * 0.045;
+      out.bodyForward = 0.13 * ownership;
+      out.bodyLift = -0.02 * ownership;
+      out.bodyScaleX = 1 - 0.1 * ownership;
+      out.bodyScaleY = 1 - 0.06 * ownership;
+      out.frontFootForward = 0.18;
+      out.frontFootLateral = 0.1;
+      out.backFootForward = -0.14;
+      out.backFootLateral = -0.1;
       break;
     case "sway-jab":
       out.handForward = 0.66 * extension;
@@ -255,6 +337,36 @@ export function sampleKungFuWrapPose(
       out.backFootForward = -0.06;
       out.backFootLateral = direction * 0.08;
       break;
+    case "weave-backfist":
+      out.handForward = 0.62 * Math.max(0.18, clamp01(extension));
+      out.handLateral = direction * 0.21 * (1 - 2 * clamp01(extension));
+      out.handAngleOffset = direction * (-0.72 + 1.24 * clamp01(extension));
+      out.bodyForward = 0.07 * ownership;
+      out.bodyLateral = direction * 0.2 * ownership;
+      out.bodyLift = 0.015 * ownership;
+      out.bodyRotation = -direction * 0.26 * ownership;
+      out.bodyScaleX = 1 - 0.1 * ownership;
+      out.frontFootForward = 0.14;
+      out.frontFootLateral = direction * 0.17;
+      out.backFootForward = -0.1;
+      out.backFootLateral = -direction * 0.05;
+      break;
+    case "sweeping-leg":
+      out.handForward = 0.05;
+      out.handLateral = direction * 0.15;
+      out.rearHandForward = -0.02;
+      out.rearHandLateral = -direction * 0.14;
+      out.bodyForward = 0.04 * ownership;
+      out.bodyLateral = direction * 0.12 * ownership;
+      out.bodyLift = -0.12 * ownership;
+      out.bodyRotation = direction * 0.38 * ownership;
+      out.bodyScaleY = 1 - 0.22 * ownership;
+      out.frontFootForward = 0.62 * Math.max(0.2, clamp01(extension));
+      out.frontFootLateral = direction * 0.3 * (1 - 2 * clamp01(extension));
+      out.frontFootLift = 0.06 * ownership;
+      out.backFootForward = -0.18;
+      out.backFootLateral = -direction * 0.12;
+      break;
     case "gourd-haymaker":
       out.handForward = 0.76 * Math.max(0.18, clamp01(extension));
       out.handLateral = direction * 0.2 * (1 - 2 * clamp01(extension));
@@ -269,6 +381,21 @@ export function sampleKungFuWrapPose(
       out.frontFootLateral = direction * 0.18;
       out.backFootForward = -0.12;
       out.backFootLateral = -direction * 0.13;
+      break;
+    case "falling-haymaker":
+      out.handForward = 0.82 * Math.max(0.16, clamp01(extension));
+      out.handLateral = direction * 0.24 * (1 - 2 * clamp01(extension));
+      out.handAngleOffset = direction * (-1.08 + 1.7 * clamp01(extension));
+      out.bodyForward = 0.14 * ownership;
+      out.bodyLateral = direction * 0.16 * (1 - clamp01(extension)) * ownership;
+      out.bodyLift = -0.09 * clamp01(extension) * ownership;
+      out.bodyRotation = direction * 0.42 * ownership;
+      out.bodyScaleX = 1 - 0.16 * ownership;
+      out.bodyScaleY = 1 - 0.13 * ownership;
+      out.frontFootForward = 0.24;
+      out.frontFootLateral = direction * 0.2;
+      out.backFootForward = -0.14;
+      out.backFootLateral = -direction * 0.14;
       break;
     case "iron-knuckle":
       out.handForward = 0.73 * extension;
@@ -296,6 +423,64 @@ export function sampleKungFuWrapPose(
       out.frontFootLateral = direction * 0.13;
       out.backFootForward = -0.18;
       out.backFootLateral = -direction * 0.13;
+      break;
+    case "crushing-palm":
+      out.handForward = 0.7 * extension;
+      out.handLateral = direction * 0.06 * (1 - clamp01(extension));
+      out.handAngleOffset = -direction * 0.08;
+      out.bodyForward = 0.13 * ownership;
+      out.bodyLift = -0.03 * ownership;
+      out.bodyRotation = direction * 0.14 * ownership;
+      out.bodyScaleX = 1 - 0.13 * ownership;
+      out.bodyScaleY = 1 - 0.1 * ownership;
+      out.frontFootForward = 0.2;
+      out.frontFootLateral = direction * 0.1;
+      out.backFootForward = -0.16;
+      out.backFootLateral = -direction * 0.1;
+      break;
+    case "stomp-kick":
+      out.handForward = 0.04;
+      out.handLateral = direction * 0.12;
+      out.rearHandForward = 0.03;
+      out.rearHandLateral = -direction * 0.1;
+      out.bodyForward = 0.11 * ownership;
+      out.bodyLift = 0.04 * (1 - clamp01(extension)) * ownership;
+      out.bodyRotation = -direction * 0.1 * ownership;
+      out.bodyScaleY = 1 - 0.12 * ownership;
+      out.frontFootForward = 0.58 * clamp01(extension);
+      out.frontFootLateral = direction * 0.04;
+      out.frontFootLift = 0.24 * (1 - clamp01(extension)) * ownership;
+      out.backFootForward = -0.18;
+      out.backFootLateral = -direction * 0.12;
+      break;
+    case "windup-palm":
+      out.handForward = 0.5 * extension;
+      out.handLateral = -direction * 0.18 * (1 - clamp01(extension));
+      out.handAngleOffset = direction * (0.4 - 0.28 * clamp01(extension));
+      out.rearHandForward = 0.08;
+      out.rearHandLateral = direction * 0.12;
+      out.bodyForward = -0.035 * ownership;
+      out.bodyLateral = -direction * 0.08 * ownership;
+      out.bodyRotation = -direction * 0.28 * ownership;
+      out.bodyScaleX = 1 - 0.1 * ownership;
+      out.frontFootForward = 0.1;
+      out.frontFootLateral = -direction * 0.1;
+      out.backFootForward = -0.2;
+      out.backFootLateral = direction * 0.11;
+      break;
+    case "quake-double-palm":
+      out.handForward = 0.78 * extension;
+      out.handLateral = direction * 0.1;
+      out.rearHandForward = 0.72 * extension;
+      out.rearHandLateral = -direction * 0.1;
+      out.bodyForward = 0.2 * ownership;
+      out.bodyLift = -0.06 * ownership;
+      out.bodyScaleX = 1 - 0.18 * ownership;
+      out.bodyScaleY = 1 - 0.16 * ownership;
+      out.frontFootForward = 0.26;
+      out.frontFootLateral = 0.15;
+      out.backFootForward = -0.22;
+      out.backFootLateral = -0.15;
       break;
   }
   return out;

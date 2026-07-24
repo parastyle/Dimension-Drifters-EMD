@@ -1,0 +1,2875 @@
+{
+  "capturedAt": "2026-07-24T03:52:51.712Z",
+  "baseURL": "http://127.0.0.1:52790",
+  "clientPort": 52790,
+  "gamePort": 52789,
+  "protectedPorts": [
+    5180,
+    2567
+  ],
+  "characterId": "proto-cowboy-hidden-face",
+  "nominalCooldownMs": {
+    "x2-muay-thai-wraps": 750,
+    "x2-wing-chun-wraps": 200,
+    "x2-drunken-fist-wraps": 500,
+    "x2-iron-palm-wraps": 900
+  },
+  "observedCadenceMs": {
+    "x2-muay-thai-wraps": 783.3000000000002,
+    "x2-wing-chun-wraps": 245.81250000000045,
+    "x2-drunken-fist-wraps": 522.8999999999987,
+    "x2-iron-palm-wraps": 963.8499999999985
+  },
+  "assertions": {
+    "eightFacingCaptures": true,
+    "fourDistinctSwingStyles": true,
+    "observedImpactStylesMatchRecipes": true,
+    "exactComboSignatures": true,
+    "everyCaptureHasTwoWrappedHandsAndFeet": true,
+    "everyCaptureHasPunchKickEvidence": true,
+    "everyCaptureHasAuthoritativeTravel": true,
+    "cadenceOrder": true,
+    "privatePorts": true,
+    "wholeArtCharacter": "proto-cowboy-hidden-face"
+  },
+  "captures": [
+    {
+      "weaponId": "x2-muay-thai-wraps",
+      "facing": "right",
+      "target": {
+        "id": "open-lane:right",
+        "x": 2492,
+        "y": 2420,
+        "distance": 92
+      },
+      "attackSeqBefore": 0,
+      "attackSeqAfter": 7,
+      "steps": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "motions": [
+        "teep-kick",
+        "elbow",
+        "elbow",
+        "knee-strike",
+        "spinning-back-elbow"
+      ],
+      "limbs": [
+        "foot",
+        "hand",
+        "hand",
+        "foot",
+        "hand"
+      ],
+      "swingStyle": "red-eight-limbs-aura",
+      "impactStyle": "",
+      "intervalsMs": [
+        800,
+        800,
+        783.2999999999993,
+        783.2000000000007
+      ],
+      "travel": {
+        "start": {
+          "x": 2400,
+          "y": 2420
+        },
+        "end": {
+          "x": 2450,
+          "y": 2420
+        },
+        "distancePx": 50,
+        "expectedPx": 39,
+        "positionSamples": [
+          {
+            "attackSeq": 0,
+            "x": 2400,
+            "y": 2420,
+            "timeMs": 10184.5
+          },
+          {
+            "attackSeq": 1,
+            "x": 2400,
+            "y": 2420,
+            "timeMs": 10267.8
+          },
+          {
+            "attackSeq": 1,
+            "x": 2410,
+            "y": 2420,
+            "timeMs": 10451.2
+          },
+          {
+            "attackSeq": 1,
+            "x": 2410,
+            "y": 2420,
+            "timeMs": 10617.8
+          },
+          {
+            "attackSeq": 1,
+            "x": 2410,
+            "y": 2420,
+            "timeMs": 10801.2
+          },
+          {
+            "attackSeq": 1,
+            "x": 2410,
+            "y": 2420,
+            "timeMs": 10984.5
+          },
+          {
+            "attackSeq": 2,
+            "x": 2417.066650390625,
+            "y": 2420,
+            "timeMs": 11167.8
+          },
+          {
+            "attackSeq": 2,
+            "x": 2420,
+            "y": 2420,
+            "timeMs": 11334.5
+          },
+          {
+            "attackSeq": 2,
+            "x": 2420,
+            "y": 2420,
+            "timeMs": 11517.8
+          },
+          {
+            "attackSeq": 2,
+            "x": 2420,
+            "y": 2420,
+            "timeMs": 11684.5
+          },
+          {
+            "attackSeq": 3,
+            "x": 2420,
+            "y": 2420,
+            "timeMs": 11851.1
+          },
+          {
+            "attackSeq": 3,
+            "x": 2430,
+            "y": 2420,
+            "timeMs": 12034.5
+          },
+          {
+            "attackSeq": 3,
+            "x": 2430,
+            "y": 2420,
+            "timeMs": 12201.1
+          },
+          {
+            "attackSeq": 3,
+            "x": 2430,
+            "y": 2420,
+            "timeMs": 12384.4
+          },
+          {
+            "attackSeq": 3,
+            "x": 2430,
+            "y": 2420,
+            "timeMs": 12551.1
+          },
+          {
+            "attackSeq": 4,
+            "x": 2432.89990234375,
+            "y": 2420,
+            "timeMs": 12734.5
+          },
+          {
+            "attackSeq": 4,
+            "x": 2440,
+            "y": 2420,
+            "timeMs": 12917.8
+          },
+          {
+            "attackSeq": 4,
+            "x": 2440,
+            "y": 2420,
+            "timeMs": 13084.5
+          },
+          {
+            "attackSeq": 4,
+            "x": 2440,
+            "y": 2420,
+            "timeMs": 13251
+          },
+          {
+            "attackSeq": 5,
+            "x": 2440,
+            "y": 2420,
+            "timeMs": 13417.8
+          },
+          {
+            "attackSeq": 5,
+            "x": 2450,
+            "y": 2420,
+            "timeMs": 13584.4
+          },
+          {
+            "attackSeq": 5,
+            "x": 2450,
+            "y": 2420,
+            "timeMs": 13767.8
+          },
+          {
+            "attackSeq": 5,
+            "x": 2450,
+            "y": 2420,
+            "timeMs": 13934.4
+          },
+          {
+            "attackSeq": 5,
+            "x": 2450,
+            "y": 2420,
+            "timeMs": 14101
+          }
+        ]
+      },
+      "contacts": [],
+      "vfx": [
+        {
+          "kind": "swing",
+          "weaponId": "x2-muay-thai-wraps",
+          "style": "red-eight-limbs-aura",
+          "x": 2478.559999999999,
+          "y": 2419.999987409166,
+          "timeMs": 10084.5,
+          "comboStep": 0,
+          "motion": "teep-kick",
+          "limb": "foot"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-muay-thai-wraps",
+          "style": "red-eight-limbs-aura",
+          "x": 2488.559999999999,
+          "y": 2419.999987374738,
+          "timeMs": 10884.5,
+          "comboStep": 1,
+          "motion": "elbow",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-muay-thai-wraps",
+          "style": "red-eight-limbs-aura",
+          "x": 2498.559999999999,
+          "y": 2419.999987388665,
+          "timeMs": 11684.5,
+          "comboStep": 2,
+          "motion": "elbow",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-muay-thai-wraps",
+          "style": "red-eight-limbs-aura",
+          "x": 2508.559999999999,
+          "y": 2419.999987373338,
+          "timeMs": 12467.8,
+          "comboStep": 3,
+          "motion": "knee-strike",
+          "limb": "foot"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-muay-thai-wraps",
+          "style": "red-eight-limbs-aura",
+          "x": 2518.559999999999,
+          "y": 2419.9999873794322,
+          "timeMs": 13251,
+          "comboStep": 4,
+          "motion": "spinning-back-elbow",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-muay-thai-wraps",
+          "style": "red-eight-limbs-aura",
+          "x": 2528.559999999999,
+          "y": 2419.9999873700226,
+          "timeMs": 14017.7,
+          "comboStep": 0,
+          "motion": "teep-kick",
+          "limb": "foot"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-muay-thai-wraps",
+          "style": "red-eight-limbs-aura",
+          "x": 2538.559999999999,
+          "y": 2419.999987376566,
+          "timeMs": 14767.7,
+          "comboStep": 1,
+          "motion": "elbow",
+          "limb": "hand"
+        }
+      ],
+      "rig": {
+        "handOverlayCount": 2,
+        "footOverlayCount": 2,
+        "handPartIndices": [
+          0,
+          0
+        ],
+        "footPartIndices": [
+          1,
+          1
+        ],
+        "baseHandsVisible": [
+          false,
+          false
+        ],
+        "baseFeetVisible": [
+          false,
+          false
+        ],
+        "handOverlayVisible": [
+          true,
+          true
+        ],
+        "footOverlayVisible": [
+          true,
+          true
+        ],
+        "handFrames": [
+          "x2-muay-thai-wraps:part-1:__BASE",
+          "x2-muay-thai-wraps:part-1:__BASE"
+        ],
+        "footFrames": [
+          "x2-muay-thai-wraps:part-2:__BASE",
+          "x2-muay-thai-wraps:part-2:__BASE"
+        ],
+        "facing": 1,
+        "rootScaleX": 0.6623394857766067
+      },
+      "handScreenshot": "docs/owner-notes-audit-v10-evidence/b19-kungfu-rework/x2-muay-thai-wraps-right-hand.png",
+      "footScreenshot": "docs/owner-notes-audit-v10-evidence/b19-kungfu-rework/x2-muay-thai-wraps-right-foot.png"
+    },
+    {
+      "weaponId": "x2-muay-thai-wraps",
+      "facing": "left",
+      "target": {
+        "id": "open-lane:left",
+        "x": 2378,
+        "y": 2420,
+        "distance": 92
+      },
+      "attackSeqBefore": 7,
+      "attackSeqAfter": 14,
+      "steps": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "motions": [
+        "teep-kick",
+        "elbow",
+        "elbow",
+        "knee-strike",
+        "spinning-back-elbow"
+      ],
+      "limbs": [
+        "foot",
+        "hand",
+        "hand",
+        "foot",
+        "hand"
+      ],
+      "swingStyle": "red-eight-limbs-aura",
+      "impactStyle": "",
+      "intervalsMs": [
+        800,
+        766.7000000000007,
+        783.2000000000007,
+        750
+      ],
+      "travel": {
+        "start": {
+          "x": 2470,
+          "y": 2420
+        },
+        "end": {
+          "x": 2420,
+          "y": 2420
+        },
+        "distancePx": 50,
+        "expectedPx": 39,
+        "positionSamples": [
+          {
+            "attackSeq": 7,
+            "x": 2470,
+            "y": 2420,
+            "timeMs": 20017.5
+          },
+          {
+            "attackSeq": 8,
+            "x": 2462.933349609375,
+            "y": 2420,
+            "timeMs": 20200.8
+          },
+          {
+            "attackSeq": 8,
+            "x": 2460,
+            "y": 2420,
+            "timeMs": 20367.4
+          },
+          {
+            "attackSeq": 8,
+            "x": 2460,
+            "y": 2420,
+            "timeMs": 20550.8
+          },
+          {
+            "attackSeq": 8,
+            "x": 2460,
+            "y": 2420,
+            "timeMs": 20734.1
+          },
+          {
+            "attackSeq": 9,
+            "x": 2460,
+            "y": 2420,
+            "timeMs": 20900.7
+          },
+          {
+            "attackSeq": 9,
+            "x": 2450,
+            "y": 2420,
+            "timeMs": 21067.4
+          },
+          {
+            "attackSeq": 9,
+            "x": 2450,
+            "y": 2420,
+            "timeMs": 21234
+          },
+          {
+            "attackSeq": 9,
+            "x": 2450,
+            "y": 2420,
+            "timeMs": 21400.8
+          },
+          {
+            "attackSeq": 9,
+            "x": 2450,
+            "y": 2420,
+            "timeMs": 21584
+          },
+          {
+            "attackSeq": 10,
+            "x": 2442.933349609375,
+            "y": 2420,
+            "timeMs": 21750.7
+          },
+          {
+            "attackSeq": 10,
+            "x": 2440,
+            "y": 2420,
+            "timeMs": 21934.1
+          },
+          {
+            "attackSeq": 10,
+            "x": 2440,
+            "y": 2420,
+            "timeMs": 22100.7
+          },
+          {
+            "attackSeq": 10,
+            "x": 2440,
+            "y": 2420,
+            "timeMs": 22284
+          },
+          {
+            "attackSeq": 11,
+            "x": 2440,
+            "y": 2420,
+            "timeMs": 22450.7
+          },
+          {
+            "attackSeq": 11,
+            "x": 2430,
+            "y": 2420,
+            "timeMs": 22617.3
+          },
+          {
+            "attackSeq": 11,
+            "x": 2430,
+            "y": 2420,
+            "timeMs": 22800.7
+          },
+          {
+            "attackSeq": 11,
+            "x": 2430,
+            "y": 2420,
+            "timeMs": 22950.6
+          },
+          {
+            "attackSeq": 11,
+            "x": 2430,
+            "y": 2420,
+            "timeMs": 23117.4
+          },
+          {
+            "attackSeq": 12,
+            "x": 2422.933349609375,
+            "y": 2420,
+            "timeMs": 23300.6
+          },
+          {
+            "attackSeq": 12,
+            "x": 2420,
+            "y": 2420,
+            "timeMs": 23450.6
+          },
+          {
+            "attackSeq": 12,
+            "x": 2420,
+            "y": 2420,
+            "timeMs": 23617.4
+          },
+          {
+            "attackSeq": 12,
+            "x": 2420,
+            "y": 2420,
+            "timeMs": 23767.3
+          },
+          {
+            "attackSeq": 12,
+            "x": 2420,
+            "y": 2420,
+            "timeMs": 23950.7
+          }
+        ]
+      },
+      "contacts": [],
+      "vfx": [
+        {
+          "kind": "swing",
+          "weaponId": "x2-muay-thai-wraps",
+          "style": "red-eight-limbs-aura",
+          "x": 2391.440000000001,
+          "y": 2419.99998740917,
+          "timeMs": 19934.1,
+          "comboStep": 0,
+          "motion": "teep-kick",
+          "limb": "foot"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-muay-thai-wraps",
+          "style": "red-eight-limbs-aura",
+          "x": 2381.440000000001,
+          "y": 2419.99998738609,
+          "timeMs": 20734.1,
+          "comboStep": 1,
+          "motion": "elbow",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-muay-thai-wraps",
+          "style": "red-eight-limbs-aura",
+          "x": 2371.440000000001,
+          "y": 2419.9999873766988,
+          "timeMs": 21500.8,
+          "comboStep": 2,
+          "motion": "elbow",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-muay-thai-wraps",
+          "style": "red-eight-limbs-aura",
+          "x": 2361.440000000001,
+          "y": 2419.999987384127,
+          "timeMs": 22284,
+          "comboStep": 3,
+          "motion": "knee-strike",
+          "limb": "foot"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-muay-thai-wraps",
+          "style": "red-eight-limbs-aura",
+          "x": 2351.440000000001,
+          "y": 2419.999987383356,
+          "timeMs": 23034,
+          "comboStep": 4,
+          "motion": "spinning-back-elbow",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-muay-thai-wraps",
+          "style": "red-eight-limbs-aura",
+          "x": 2341.440000000001,
+          "y": 2419.999987393242,
+          "timeMs": 23850.6,
+          "comboStep": 0,
+          "motion": "teep-kick",
+          "limb": "foot"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-muay-thai-wraps",
+          "style": "red-eight-limbs-aura",
+          "x": 2331.440000000001,
+          "y": 2419.99998738339,
+          "timeMs": 24617.3,
+          "comboStep": 1,
+          "motion": "elbow",
+          "limb": "hand"
+        }
+      ],
+      "rig": {
+        "handOverlayCount": 2,
+        "footOverlayCount": 2,
+        "handPartIndices": [
+          0,
+          0
+        ],
+        "footPartIndices": [
+          1,
+          1
+        ],
+        "baseHandsVisible": [
+          false,
+          false
+        ],
+        "baseFeetVisible": [
+          false,
+          false
+        ],
+        "handOverlayVisible": [
+          true,
+          true
+        ],
+        "footOverlayVisible": [
+          true,
+          true
+        ],
+        "handFrames": [
+          "x2-muay-thai-wraps:part-1:__BASE",
+          "x2-muay-thai-wraps:part-1:__BASE"
+        ],
+        "footFrames": [
+          "x2-muay-thai-wraps:part-2:__BASE",
+          "x2-muay-thai-wraps:part-2:__BASE"
+        ],
+        "facing": -1,
+        "rootScaleX": -0.6623394948394149
+      },
+      "handScreenshot": "docs/owner-notes-audit-v10-evidence/b19-kungfu-rework/x2-muay-thai-wraps-left-hand.png",
+      "footScreenshot": "docs/owner-notes-audit-v10-evidence/b19-kungfu-rework/x2-muay-thai-wraps-left-foot.png"
+    },
+    {
+      "weaponId": "x2-wing-chun-wraps",
+      "facing": "right",
+      "target": {
+        "id": "open-lane:right",
+        "x": 2492,
+        "y": 2420,
+        "distance": 92
+      },
+      "attackSeqBefore": 14,
+      "attackSeqAfter": 32,
+      "steps": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "motions": [
+        "chain-punch",
+        "chain-punch",
+        "chain-punch",
+        "oblique-kick",
+        "double-palm"
+      ],
+      "limbs": [
+        "hand",
+        "hand",
+        "hand",
+        "foot",
+        "hand"
+      ],
+      "swingStyle": "white-centerline-flash",
+      "impactStyle": "",
+      "intervalsMs": [
+        233.20000000000073,
+        233.40000000000146,
+        266.59999999999854,
+        250
+      ],
+      "travel": {
+        "start": {
+          "x": 2400,
+          "y": 2420
+        },
+        "end": {
+          "x": 2414.597900390625,
+          "y": 2420
+        },
+        "distancePx": 14.597900390625,
+        "expectedPx": 26,
+        "positionSamples": [
+          {
+            "attackSeq": 14,
+            "x": 2400,
+            "y": 2420,
+            "timeMs": 30417
+          },
+          {
+            "attackSeq": 15,
+            "x": 2402.597900390625,
+            "y": 2420,
+            "timeMs": 30567
+          },
+          {
+            "attackSeq": 15,
+            "x": 2403,
+            "y": 2420,
+            "timeMs": 30733.7
+          },
+          {
+            "attackSeq": 16,
+            "x": 2406,
+            "y": 2420,
+            "timeMs": 30883.6
+          },
+          {
+            "attackSeq": 17,
+            "x": 2406.722900390625,
+            "y": 2420,
+            "timeMs": 31067
+          },
+          {
+            "attackSeq": 17,
+            "x": 2409,
+            "y": 2420,
+            "timeMs": 31233.7
+          },
+          {
+            "attackSeq": 18,
+            "x": 2412,
+            "y": 2420,
+            "timeMs": 31400.3
+          },
+          {
+            "attackSeq": 19,
+            "x": 2414.597900390625,
+            "y": 2420,
+            "timeMs": 31567
+          }
+        ]
+      },
+      "contacts": [],
+      "vfx": [
+        {
+          "kind": "swing",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "white-centerline-flash",
+          "x": 2474.879999999999,
+          "y": 2419.9999879989605,
+          "timeMs": 30333.8,
+          "comboStep": 0,
+          "motion": "chain-punch",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "white-centerline-flash",
+          "x": 2476.774135781361,
+          "y": 2419.9999879024795,
+          "timeMs": 30567,
+          "comboStep": 1,
+          "motion": "chain-punch",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "white-centerline-flash",
+          "x": 2479.4631693662864,
+          "y": 2419.9999878654617,
+          "timeMs": 30800.4,
+          "comboStep": 2,
+          "motion": "chain-punch",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "white-centerline-flash",
+          "x": 2481.602900390624,
+          "y": 2419.99998789795,
+          "timeMs": 31067,
+          "comboStep": 3,
+          "motion": "oblique-kick",
+          "limb": "foot"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "white-centerline-flash",
+          "x": 2485.502801535524,
+          "y": 2419.99998782797,
+          "timeMs": 31317,
+          "comboStep": 4,
+          "motion": "double-palm",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "white-centerline-flash",
+          "x": 2488.788098846918,
+          "y": 2419.999987844093,
+          "timeMs": 31567,
+          "comboStep": 0,
+          "motion": "chain-punch",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "white-centerline-flash",
+          "x": 2491.774135781361,
+          "y": 2419.9999878606372,
+          "timeMs": 31800.3,
+          "comboStep": 1,
+          "motion": "chain-punch",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "white-centerline-flash",
+          "x": 2494.502801535524,
+          "y": 2419.999987857041,
+          "timeMs": 32050.3,
+          "comboStep": 2,
+          "motion": "chain-punch",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "white-centerline-flash",
+          "x": 2497.502801535524,
+          "y": 2419.999987843471,
+          "timeMs": 32300.3,
+          "comboStep": 3,
+          "motion": "oblique-kick",
+          "limb": "foot"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "white-centerline-flash",
+          "x": 2500.5411106546912,
+          "y": 2419.999987840421,
+          "timeMs": 32567,
+          "comboStep": 4,
+          "motion": "double-palm",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "white-centerline-flash",
+          "x": 2503.5409982331776,
+          "y": 2419.9999878503645,
+          "timeMs": 32816.9,
+          "comboStep": 0,
+          "motion": "chain-punch",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "white-centerline-flash",
+          "x": 2506.8196783678363,
+          "y": 2419.9999878352432,
+          "timeMs": 33083.6,
+          "comboStep": 1,
+          "motion": "chain-punch",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "white-centerline-flash",
+          "x": 2509.819551121606,
+          "y": 2419.99998783863,
+          "timeMs": 33350.2,
+          "comboStep": 2,
+          "motion": "chain-punch",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "white-centerline-flash",
+          "x": 2512.5411106546912,
+          "y": 2419.999987854632,
+          "timeMs": 33583.6,
+          "comboStep": 3,
+          "motion": "oblique-kick",
+          "limb": "foot"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "white-centerline-flash",
+          "x": 2515.7598900733524,
+          "y": 2419.999987848647,
+          "timeMs": 33800.2,
+          "comboStep": 4,
+          "motion": "double-palm",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "white-centerline-flash",
+          "x": 2516.879999999999,
+          "y": 2419.9999879562993,
+          "timeMs": 34066.9,
+          "comboStep": 4,
+          "motion": "double-palm",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "white-centerline-flash",
+          "x": 2519.879999999999,
+          "y": 2419.999987854947,
+          "timeMs": 34333.5,
+          "comboStep": 0,
+          "motion": "chain-punch",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "white-centerline-flash",
+          "x": 2522.1067071612074,
+          "y": 2419.9999878623184,
+          "timeMs": 34616.9,
+          "comboStep": 1,
+          "motion": "chain-punch",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "white-centerline-flash",
+          "x": 2525.091054052424,
+          "y": 2419.9999878536028,
+          "timeMs": 34866.8,
+          "comboStep": 2,
+          "motion": "chain-punch",
+          "limb": "hand"
+        }
+      ],
+      "rig": {
+        "handOverlayCount": 2,
+        "footOverlayCount": 2,
+        "handPartIndices": [
+          0,
+          0
+        ],
+        "footPartIndices": [
+          1,
+          1
+        ],
+        "baseHandsVisible": [
+          false,
+          false
+        ],
+        "baseFeetVisible": [
+          false,
+          false
+        ],
+        "handOverlayVisible": [
+          true,
+          true
+        ],
+        "footOverlayVisible": [
+          true,
+          true
+        ],
+        "handFrames": [
+          "x2-wing-chun-wraps:part-1:__BASE",
+          "x2-wing-chun-wraps:part-1:__BASE"
+        ],
+        "footFrames": [
+          "x2-wing-chun-wraps:part-2:__BASE",
+          "x2-wing-chun-wraps:part-2:__BASE"
+        ],
+        "facing": 1,
+        "rootScaleX": 0.6623394948461528
+      },
+      "handScreenshot": "docs/owner-notes-audit-v10-evidence/b19-kungfu-rework/x2-wing-chun-wraps-right-hand.png",
+      "footScreenshot": "docs/owner-notes-audit-v10-evidence/b19-kungfu-rework/x2-wing-chun-wraps-right-foot.png"
+    },
+    {
+      "weaponId": "x2-wing-chun-wraps",
+      "facing": "left",
+      "target": {
+        "id": "open-lane:left",
+        "x": 2362,
+        "y": 2420,
+        "distance": 92
+      },
+      "attackSeqBefore": 32,
+      "attackSeqAfter": 50,
+      "steps": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "motions": [
+        "chain-punch",
+        "chain-punch",
+        "chain-punch",
+        "oblique-kick",
+        "double-palm"
+      ],
+      "limbs": [
+        "hand",
+        "hand",
+        "hand",
+        "foot",
+        "hand"
+      ],
+      "swingStyle": "white-centerline-flash",
+      "impactStyle": "",
+      "intervalsMs": [
+        233.3000000000029,
+        266.59999999999854,
+        233.40000000000146,
+        250
+      ],
+      "travel": {
+        "start": {
+          "x": 2454,
+          "y": 2420
+        },
+        "end": {
+          "x": 2439,
+          "y": 2420
+        },
+        "distancePx": 15,
+        "expectedPx": 26,
+        "positionSamples": [
+          {
+            "attackSeq": 32,
+            "x": 2454,
+            "y": 2420,
+            "timeMs": 40000
+          },
+          {
+            "attackSeq": 33,
+            "x": 2453.277099609375,
+            "y": 2420,
+            "timeMs": 40166.7
+          },
+          {
+            "attackSeq": 33,
+            "x": 2451,
+            "y": 2420,
+            "timeMs": 40333.3
+          },
+          {
+            "attackSeq": 34,
+            "x": 2448,
+            "y": 2420,
+            "timeMs": 40499.9
+          },
+          {
+            "attackSeq": 35,
+            "x": 2447.277099609375,
+            "y": 2420,
+            "timeMs": 40666.7
+          },
+          {
+            "attackSeq": 35,
+            "x": 2445,
+            "y": 2420,
+            "timeMs": 40816.7
+          },
+          {
+            "attackSeq": 36,
+            "x": 2442.402099609375,
+            "y": 2420,
+            "timeMs": 40983.3
+          },
+          {
+            "attackSeq": 37,
+            "x": 2441.277099609375,
+            "y": 2420,
+            "timeMs": 41166.6
+          },
+          {
+            "attackSeq": 37,
+            "x": 2439,
+            "y": 2420,
+            "timeMs": 41333.3
+          }
+        ]
+      },
+      "contacts": [],
+      "vfx": [
+        {
+          "kind": "swing",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "white-centerline-flash",
+          "x": 2379.120000000001,
+          "y": 2419.9999879989596,
+          "timeMs": 40000,
+          "comboStep": 0,
+          "motion": "chain-punch",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "white-centerline-flash",
+          "x": 2376.9577316403847,
+          "y": 2419.9999878859585,
+          "timeMs": 40233.3,
+          "comboStep": 1,
+          "motion": "chain-punch",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "white-centerline-flash",
+          "x": 2373.9578321742138,
+          "y": 2419.999987854289,
+          "timeMs": 40499.9,
+          "comboStep": 2,
+          "motion": "chain-punch",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "white-centerline-flash",
+          "x": 2371.2257797719526,
+          "y": 2419.999987866868,
+          "timeMs": 40733.3,
+          "comboStep": 3,
+          "motion": "oblique-kick",
+          "limb": "foot"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "white-centerline-flash",
+          "x": 2368.225864218639,
+          "y": 2419.9999878621484,
+          "timeMs": 40983.3,
+          "comboStep": 4,
+          "motion": "double-palm",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "white-centerline-flash",
+          "x": 2365.211901153082,
+          "y": 2419.999987861885,
+          "timeMs": 41250,
+          "comboStep": 0,
+          "motion": "chain-punch",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "white-centerline-flash",
+          "x": 2361.9577316403847,
+          "y": 2419.9999878462977,
+          "timeMs": 41500,
+          "comboStep": 1,
+          "motion": "chain-punch",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "white-centerline-flash",
+          "x": 2358.9412091365953,
+          "y": 2419.999987849903,
+          "timeMs": 41749.9,
+          "comboStep": 2,
+          "motion": "chain-punch",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "white-centerline-flash",
+          "x": 2356.211901153082,
+          "y": 2419.9999878663843,
+          "timeMs": 41999.9,
+          "comboStep": 3,
+          "motion": "oblique-kick",
+          "limb": "foot"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "white-centerline-flash",
+          "x": 2352.120000000001,
+          "y": 2419.999987821428,
+          "timeMs": 42266.6,
+          "comboStep": 4,
+          "motion": "double-palm",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "white-centerline-flash",
+          "x": 2349.9577316403847,
+          "y": 2419.999987860195,
+          "timeMs": 42516.6,
+          "comboStep": 0,
+          "motion": "chain-punch",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "white-centerline-flash",
+          "x": 2346.120000000001,
+          "y": 2419.999987831012,
+          "timeMs": 42783.3,
+          "comboStep": 1,
+          "motion": "chain-punch",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "white-centerline-flash",
+          "x": 2343.908945947576,
+          "y": 2419.9999878602925,
+          "timeMs": 43049.9,
+          "comboStep": 2,
+          "motion": "chain-punch",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "white-centerline-flash",
+          "x": 2340.924819324804,
+          "y": 2419.999987852363,
+          "timeMs": 43299.9,
+          "comboStep": 3,
+          "motion": "oblique-kick",
+          "limb": "foot"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "white-centerline-flash",
+          "x": 2337.9412091365953,
+          "y": 2419.999987851082,
+          "timeMs": 43549.8,
+          "comboStep": 4,
+          "motion": "double-palm",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "white-centerline-flash",
+          "x": 2335.1848801583715,
+          "y": 2419.9999878664894,
+          "timeMs": 43816.5,
+          "comboStep": 0,
+          "motion": "chain-punch",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "white-centerline-flash",
+          "x": 2331.924915908918,
+          "y": 2419.999987848362,
+          "timeMs": 44083.2,
+          "comboStep": 1,
+          "motion": "chain-punch",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "white-centerline-flash",
+          "x": 2329.4588893453088,
+          "y": 2419.999987860869,
+          "timeMs": 44316.5,
+          "comboStep": 2,
+          "motion": "chain-punch",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "white-centerline-flash",
+          "x": 2326.225864218639,
+          "y": 2419.99998786044,
+          "timeMs": 44549.8,
+          "comboStep": 3,
+          "motion": "oblique-kick",
+          "limb": "foot"
+        }
+      ],
+      "rig": {
+        "handOverlayCount": 2,
+        "footOverlayCount": 2,
+        "handPartIndices": [
+          0,
+          0
+        ],
+        "footPartIndices": [
+          1,
+          1
+        ],
+        "baseHandsVisible": [
+          false,
+          false
+        ],
+        "baseFeetVisible": [
+          false,
+          false
+        ],
+        "handOverlayVisible": [
+          true,
+          true
+        ],
+        "footOverlayVisible": [
+          true,
+          true
+        ],
+        "handFrames": [
+          "x2-wing-chun-wraps:part-1:__BASE",
+          "x2-wing-chun-wraps:part-1:__BASE"
+        ],
+        "footFrames": [
+          "x2-wing-chun-wraps:part-2:__BASE",
+          "x2-wing-chun-wraps:part-2:__BASE"
+        ],
+        "facing": -1,
+        "rootScaleX": -0.6623394948396206
+      },
+      "handScreenshot": "docs/owner-notes-audit-v10-evidence/b19-kungfu-rework/x2-wing-chun-wraps-left-hand.png",
+      "footScreenshot": "docs/owner-notes-audit-v10-evidence/b19-kungfu-rework/x2-wing-chun-wraps-left-foot.png"
+    },
+    {
+      "weaponId": "x2-drunken-fist-wraps",
+      "facing": "right",
+      "target": {
+        "id": "open-lane:right",
+        "x": 2492,
+        "y": 2420,
+        "distance": 92
+      },
+      "attackSeqBefore": 50,
+      "attackSeqAfter": 57,
+      "steps": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "motions": [
+        "sway-jab",
+        "weave-cross",
+        "weave-backfist",
+        "sweeping-leg",
+        "falling-haymaker"
+      ],
+      "limbs": [
+        "hand",
+        "hand",
+        "hand",
+        "foot",
+        "hand"
+      ],
+      "swingStyle": "mist-purple-sway-sweep",
+      "impactStyle": "",
+      "intervalsMs": [
+        583.2999999999956,
+        533.3000000000029,
+        516.5999999999985,
+        483.40000000000146
+      ],
+      "travel": {
+        "start": {
+          "x": 2400,
+          "y": 2420
+        },
+        "end": {
+          "x": 2415.3570626554106,
+          "y": 2454.843994140625
+        },
+        "distancePx": 38.078121028670985,
+        "expectedPx": 50.36603774659812,
+        "positionSamples": [
+          {
+            "attackSeq": 50,
+            "x": 2400,
+            "y": 2420,
+            "timeMs": 50482.9
+          },
+          {
+            "attackSeq": 51,
+            "x": 2402.640000987265,
+            "y": 2426.159912109375,
+            "timeMs": 50649.6
+          },
+          {
+            "attackSeq": 51,
+            "x": 2403,
+            "y": 2427,
+            "timeMs": 50832.9
+          },
+          {
+            "attackSeq": 51,
+            "x": 2403,
+            "y": 2427,
+            "timeMs": 50966.2
+          },
+          {
+            "attackSeq": 52,
+            "x": 2404.592041015625,
+            "y": 2430.649798080433,
+            "timeMs": 51149.6
+          },
+          {
+            "attackSeq": 52,
+            "x": 2406.044921875,
+            "y": 2433.98046875,
+            "timeMs": 51282.8
+          },
+          {
+            "attackSeq": 52,
+            "x": 2406.044921875,
+            "y": 2433.98046875,
+            "timeMs": 51466.2
+          },
+          {
+            "attackSeq": 53,
+            "x": 2406.044921875,
+            "y": 2433.98046875,
+            "timeMs": 51649.6
+          },
+          {
+            "attackSeq": 53,
+            "x": 2409.143310546875,
+            "y": 2440.9375,
+            "timeMs": 51832.9
+          },
+          {
+            "attackSeq": 53,
+            "x": 2409.143310546875,
+            "y": 2440.9375,
+            "timeMs": 51999.5
+          },
+          {
+            "attackSeq": 54,
+            "x": 2409.6572265625,
+            "y": 2442.090222742175,
+            "timeMs": 52166.2
+          },
+          {
+            "attackSeq": 54,
+            "x": 2411.872314453125,
+            "y": 2447.05859375,
+            "timeMs": 52349.5
+          },
+          {
+            "attackSeq": 54,
+            "x": 2412.244384765625,
+            "y": 2447.893310546875,
+            "timeMs": 52516.1
+          },
+          {
+            "attackSeq": 55,
+            "x": 2412.244384765625,
+            "y": 2447.893310546875,
+            "timeMs": 52699.5
+          },
+          {
+            "attackSeq": 55,
+            "x": 2413.871826171875,
+            "y": 2451.527587890625,
+            "timeMs": 52832.8
+          },
+          {
+            "attackSeq": 55,
+            "x": 2415.3570626554106,
+            "y": 2454.843994140625,
+            "timeMs": 52999.5
+          },
+          {
+            "attackSeq": 55,
+            "x": 2415.3570626554106,
+            "y": 2454.843994140625,
+            "timeMs": 53166.1
+          },
+          {
+            "attackSeq": 55,
+            "x": 2415.3570626554106,
+            "y": 2454.843994140625,
+            "timeMs": 53332.8
+          },
+          {
+            "attackSeq": 55,
+            "x": 2415.3570626554106,
+            "y": 2454.843994140625,
+            "timeMs": 53516.1
+          },
+          {
+            "attackSeq": 55,
+            "x": 2415.3570626554106,
+            "y": 2454.843994140625,
+            "timeMs": 53682.7
+          }
+        ]
+      },
+      "contacts": [],
+      "vfx": [
+        {
+          "kind": "swing",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "mist-purple-sway-sweep",
+          "x": 2485.999999999999,
+          "y": 2419.9999862167547,
+          "timeMs": 50399.6,
+          "comboStep": 0,
+          "motion": "sway-jab",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "mist-purple-sway-sweep",
+          "x": 2488.9982221978057,
+          "y": 2426.4470272910576,
+          "timeMs": 50882.9,
+          "comboStep": 0,
+          "motion": "sway-jab",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "mist-purple-sway-sweep",
+          "x": 2492.0424405308822,
+          "y": 2433.3271808875684,
+          "timeMs": 51466.2,
+          "comboStep": 1,
+          "motion": "weave-cross",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "mist-purple-sway-sweep",
+          "x": 2495.1394116497395,
+          "y": 2440.118601284701,
+          "timeMs": 51999.5,
+          "comboStep": 2,
+          "motion": "weave-backfist",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "mist-purple-sway-sweep",
+          "x": 2498.2383884497585,
+          "y": 2446.8777661740314,
+          "timeMs": 52516.1,
+          "comboStep": 3,
+          "motion": "sweeping-leg",
+          "limb": "foot"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "mist-purple-sway-sweep",
+          "x": 2501.085757540137,
+          "y": 2452.8817957269907,
+          "timeMs": 52999.5,
+          "comboStep": 4,
+          "motion": "falling-haymaker",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "mist-purple-sway-sweep",
+          "x": 2501.3570597675584,
+          "y": 2454.8217071364284,
+          "timeMs": 53599.4,
+          "comboStep": 4,
+          "motion": "falling-haymaker",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "mist-purple-sway-sweep",
+          "x": 2504.350498771692,
+          "y": 2460.533463640073,
+          "timeMs": 54116.1,
+          "comboStep": 0,
+          "motion": "sway-jab",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "mist-purple-sway-sweep",
+          "x": 2507.488108380548,
+          "y": 2467.4745719002617,
+          "timeMs": 54632.8,
+          "comboStep": 1,
+          "motion": "weave-cross",
+          "limb": "hand"
+        }
+      ],
+      "rig": {
+        "handOverlayCount": 2,
+        "footOverlayCount": 2,
+        "handPartIndices": [
+          0,
+          0
+        ],
+        "footPartIndices": [
+          1,
+          1
+        ],
+        "baseHandsVisible": [
+          false,
+          false
+        ],
+        "baseFeetVisible": [
+          false,
+          false
+        ],
+        "handOverlayVisible": [
+          true,
+          true
+        ],
+        "footOverlayVisible": [
+          true,
+          true
+        ],
+        "handFrames": [
+          "x2-drunken-fist-wraps:part-1:__BASE",
+          "x2-drunken-fist-wraps:part-1:__BASE"
+        ],
+        "footFrames": [
+          "x2-drunken-fist-wraps:part-2:__BASE",
+          "x2-drunken-fist-wraps:part-2:__BASE"
+        ],
+        "facing": 1,
+        "rootScaleX": 0.6623394948474242
+      },
+      "handScreenshot": "docs/owner-notes-audit-v10-evidence/b19-kungfu-rework/x2-drunken-fist-wraps-right-hand.png",
+      "footScreenshot": "docs/owner-notes-audit-v10-evidence/b19-kungfu-rework/x2-drunken-fist-wraps-right-foot.png"
+    },
+    {
+      "weaponId": "x2-drunken-fist-wraps",
+      "facing": "left",
+      "target": {
+        "id": "open-lane:left",
+        "x": 2329.498046875,
+        "y": 2468.781982421875,
+        "distance": 92
+      },
+      "attackSeqBefore": 57,
+      "attackSeqAfter": 74,
+      "steps": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "motions": [
+        "sway-jab",
+        "weave-cross",
+        "weave-backfist",
+        "sweeping-leg",
+        "falling-haymaker"
+      ],
+      "limbs": [
+        "hand",
+        "hand",
+        "hand",
+        "foot",
+        "hand"
+      ],
+      "swingStyle": "mist-purple-sway-sweep",
+      "impactStyle": "misty-purple-wide-sweep",
+      "intervalsMs": [
+        533.3000000000029,
+        516.6999999999971,
+        516.6999999999971,
+        499.8999999999942
+      ],
+      "travel": {
+        "start": {
+          "x": 2421.498046875,
+          "y": 2468.781982421875
+        },
+        "end": {
+          "x": 2406.1585664982163,
+          "y": 2433.9307800616843
+        },
+        "distancePx": 38.07763075850035,
+        "expectedPx": 50.36603774659812,
+        "positionSamples": [
+          {
+            "attackSeq": 57,
+            "x": 2421.498046875,
+            "y": 2468.781982421875,
+            "timeMs": 60182.5
+          },
+          {
+            "attackSeq": 58,
+            "x": 2421.498046875,
+            "y": 2468.781982421875,
+            "timeMs": 60365.9
+          },
+          {
+            "attackSeq": 58,
+            "x": 2418.858154296875,
+            "y": 2462.621945000729,
+            "timeMs": 60532.5
+          },
+          {
+            "attackSeq": 58,
+            "x": 2418.498046875,
+            "y": 2461.781982421875,
+            "timeMs": 60699.2
+          },
+          {
+            "attackSeq": 58,
+            "x": 2418.498046875,
+            "y": 2461.781982421875,
+            "timeMs": 60882.5
+          },
+          {
+            "attackSeq": 59,
+            "x": 2415.73095703125,
+            "y": 2455.677978515625,
+            "timeMs": 61065.8
+          },
+          {
+            "attackSeq": 59,
+            "x": 2415.353759765625,
+            "y": 2454.8455812615402,
+            "timeMs": 61232.5
+          },
+          {
+            "attackSeq": 59,
+            "x": 2415.353759765625,
+            "y": 2454.8455812615402,
+            "timeMs": 61399.2
+          },
+          {
+            "attackSeq": 59,
+            "x": 2415.353759765625,
+            "y": 2454.8455812615402,
+            "timeMs": 61582.4
+          },
+          {
+            "attackSeq": 59,
+            "x": 2415.353759765625,
+            "y": 2454.8455812615402,
+            "timeMs": 61749.1
+          },
+          {
+            "attackSeq": 60,
+            "x": 2414.855853202255,
+            "y": 2453.685893737553,
+            "timeMs": 61899.2
+          },
+          {
+            "attackSeq": 60,
+            "x": 2412.349365234375,
+            "y": 2447.847412109375,
+            "timeMs": 62049.1
+          },
+          {
+            "attackSeq": 60,
+            "x": 2412.349365234375,
+            "y": 2447.847412109375,
+            "timeMs": 62215.7
+          },
+          {
+            "attackSeq": 60,
+            "x": 2412.349365234375,
+            "y": 2447.847412109375,
+            "timeMs": 62399.1
+          },
+          {
+            "attackSeq": 61,
+            "x": 2410.7349745582287,
+            "y": 2444.20751953125,
+            "timeMs": 62549.1
+          },
+          {
+            "attackSeq": 61,
+            "x": 2409.26171875,
+            "y": 2440.8857421875,
+            "timeMs": 62732.4
+          },
+          {
+            "attackSeq": 61,
+            "x": 2409.26171875,
+            "y": 2440.8857421875,
+            "timeMs": 62915.7
+          },
+          {
+            "attackSeq": 62,
+            "x": 2409.26171875,
+            "y": 2440.8857421875,
+            "timeMs": 63065.8
+          },
+          {
+            "attackSeq": 62,
+            "x": 2406.531005859375,
+            "y": 2434.765380859375,
+            "timeMs": 63232.4
+          },
+          {
+            "attackSeq": 62,
+            "x": 2406.1585664982163,
+            "y": 2433.9307800616843,
+            "timeMs": 63415.7
+          },
+          {
+            "attackSeq": 62,
+            "x": 2406.1585664982163,
+            "y": 2433.9307800616843,
+            "timeMs": 63582.4
+          }
+        ]
+      },
+      "contacts": [
+        {
+          "layer": "full",
+          "targetId": "dummy1",
+          "sourcePlayerId": "SthprEWUs",
+          "selfHit": true,
+          "matchedPrediction": false,
+          "weaponId": "x2-drunken-fist-wraps",
+          "delivery": 1,
+          "element": "arcane",
+          "dirX": -0.20775911211967468,
+          "dirY": 0.9781800508499146,
+          "damage": 2.762500047683716,
+          "crit": false,
+          "finalBlow": false,
+          "tick": 1158,
+          "x": 0,
+          "y": 0
+        },
+        {
+          "layer": "full",
+          "targetId": "dummy1",
+          "sourcePlayerId": "SthprEWUs",
+          "selfHit": true,
+          "matchedPrediction": false,
+          "weaponId": "x2-drunken-fist-wraps",
+          "delivery": 1,
+          "element": "arcane",
+          "dirX": -0.1684894859790802,
+          "dirY": 0.9857034683227539,
+          "damage": 2.762500047683716,
+          "crit": false,
+          "finalBlow": false,
+          "tick": 1169,
+          "x": 0,
+          "y": 0
+        },
+        {
+          "layer": "full",
+          "targetId": "dummy1",
+          "sourcePlayerId": "SthprEWUs",
+          "selfHit": true,
+          "matchedPrediction": false,
+          "weaponId": "x2-drunken-fist-wraps",
+          "delivery": 1,
+          "element": "arcane",
+          "dirX": -0.13216204941272736,
+          "dirY": 0.9912281036376953,
+          "damage": 2.762500047683716,
+          "crit": false,
+          "finalBlow": false,
+          "tick": 1188,
+          "x": 0,
+          "y": 0
+        },
+        {
+          "layer": "full",
+          "targetId": "dummy1",
+          "sourcePlayerId": "SthprEWUs",
+          "selfHit": true,
+          "matchedPrediction": false,
+          "weaponId": "x2-drunken-fist-wraps",
+          "delivery": 1,
+          "element": "arcane",
+          "dirX": -0.10058488696813583,
+          "dirY": 0.9949284791946411,
+          "damage": 2.762500047683716,
+          "crit": false,
+          "finalBlow": false,
+          "tick": 1200,
+          "x": 0,
+          "y": 0
+        }
+      ],
+      "vfx": [
+        {
+          "kind": "swing",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "mist-purple-sway-sweep",
+          "x": 2335.498046875007,
+          "y": 2468.781947947919,
+          "timeMs": 60182.5,
+          "comboStep": 1,
+          "motion": "weave-cross",
+          "limb": "hand"
+        },
+        {
+          "kind": "impact",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "misty-purple-wide-sweep",
+          "x": 2400,
+          "y": 2570,
+          "timeMs": 60449.2
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "mist-purple-sway-sweep",
+          "x": 2332.6714790847236,
+          "y": 2463.3818940116444,
+          "timeMs": 60699.2,
+          "comboStep": 0,
+          "motion": "sway-jab",
+          "limb": "hand"
+        },
+        {
+          "kind": "impact",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "misty-purple-wide-sweep",
+          "x": 2400,
+          "y": 2570,
+          "timeMs": 60982.5
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "mist-purple-sway-sweep",
+          "x": 2329.529382139191,
+          "y": 2456.438457768897,
+          "timeMs": 61232.5,
+          "comboStep": 1,
+          "motion": "weave-cross",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "mist-purple-sway-sweep",
+          "x": 2329.353764133295,
+          "y": 2454.8729900054846,
+          "timeMs": 61749.1,
+          "comboStep": 1,
+          "motion": "weave-cross",
+          "limb": "hand"
+        },
+        {
+          "kind": "impact",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "misty-purple-wide-sweep",
+          "x": 2400,
+          "y": 2570,
+          "timeMs": 61899.2
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "mist-purple-sway-sweep",
+          "x": 2326.3512820980154,
+          "y": 2448.4216044741447,
+          "timeMs": 62315.7,
+          "comboStep": 0,
+          "motion": "sway-jab",
+          "limb": "hand"
+        },
+        {
+          "kind": "impact",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "misty-purple-wide-sweep",
+          "x": 2400,
+          "y": 2570,
+          "timeMs": 62549.1
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "mist-purple-sway-sweep",
+          "x": 2323.2658399866004,
+          "y": 2441.727666002763,
+          "timeMs": 62915.7,
+          "comboStep": 1,
+          "motion": "weave-cross",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "mist-purple-sway-sweep",
+          "x": 2320.323712941134,
+          "y": 2435.457629618961,
+          "timeMs": 63415.7,
+          "comboStep": 2,
+          "motion": "weave-backfist",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "mist-purple-sway-sweep",
+          "x": 2317.2474950996084,
+          "y": 2428.596174841038,
+          "timeMs": 63899,
+          "comboStep": 3,
+          "motion": "sweeping-leg",
+          "limb": "foot"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "mist-purple-sway-sweep",
+          "x": 2317.0632384850687,
+          "y": 2427.0047055965133,
+          "timeMs": 64415.7,
+          "comboStep": 3,
+          "motion": "sweeping-leg",
+          "limb": "foot"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "mist-purple-sway-sweep",
+          "x": 2314.064207785641,
+          "y": 2420.9783882348565,
+          "timeMs": 64932.3,
+          "comboStep": 0,
+          "motion": "sway-jab",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "mist-purple-sway-sweep",
+          "x": 2310.9867445440213,
+          "y": 2414.317381412204,
+          "timeMs": 65448.9,
+          "comboStep": 1,
+          "motion": "weave-cross",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "mist-purple-sway-sweep",
+          "x": 2310.97681001654,
+          "y": 2413.034106598801,
+          "timeMs": 65982.3,
+          "comboStep": 1,
+          "motion": "weave-cross",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "mist-purple-sway-sweep",
+          "x": 2307.9778809546456,
+          "y": 2406.937263025273,
+          "timeMs": 66498.9,
+          "comboStep": 0,
+          "motion": "sway-jab",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "mist-purple-sway-sweep",
+          "x": 2304.9062068496573,
+          "y": 2400.246045808727,
+          "timeMs": 67032.3,
+          "comboStep": 1,
+          "motion": "weave-cross",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "mist-purple-sway-sweep",
+          "x": 2301.768947067295,
+          "y": 2393.18068434706,
+          "timeMs": 67565.6,
+          "comboStep": 2,
+          "motion": "weave-backfist",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "mist-purple-sway-sweep",
+          "x": 2298.8093938259954,
+          "y": 2386.670293625373,
+          "timeMs": 68065.6,
+          "comboStep": 3,
+          "motion": "sweeping-leg",
+          "limb": "foot"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "mist-purple-sway-sweep",
+          "x": 2298.642209399265,
+          "y": 2385.183690980656,
+          "timeMs": 68598.9,
+          "comboStep": 3,
+          "motion": "sweeping-leg",
+          "limb": "foot"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "mist-purple-sway-sweep",
+          "x": 2295.6402599094145,
+          "y": 2378.790201250416,
+          "timeMs": 69148.8,
+          "comboStep": 0,
+          "motion": "sway-jab",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "mist-purple-sway-sweep",
+          "x": 2292.538751584493,
+          "y": 2371.826170163913,
+          "timeMs": 69682.1,
+          "comboStep": 1,
+          "motion": "weave-cross",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "mist-purple-sway-sweep",
+          "x": 2289.437368351447,
+          "y": 2364.8774979518066,
+          "timeMs": 70198.8,
+          "comboStep": 2,
+          "motion": "weave-backfist",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "mist-purple-sway-sweep",
+          "x": 2286.342497214179,
+          "y": 2358.501518728594,
+          "timeMs": 70715.5,
+          "comboStep": 3,
+          "motion": "sweeping-leg",
+          "limb": "foot"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "mist-purple-sway-sweep",
+          "x": 2283.4121078470525,
+          "y": 2351.8998872681964,
+          "timeMs": 71215.4,
+          "comboStep": 4,
+          "motion": "falling-haymaker",
+          "limb": "hand"
+        }
+      ],
+      "rig": {
+        "handOverlayCount": 2,
+        "footOverlayCount": 2,
+        "handPartIndices": [
+          0,
+          0
+        ],
+        "footPartIndices": [
+          1,
+          1
+        ],
+        "baseHandsVisible": [
+          false,
+          false
+        ],
+        "baseFeetVisible": [
+          false,
+          false
+        ],
+        "handOverlayVisible": [
+          true,
+          true
+        ],
+        "footOverlayVisible": [
+          true,
+          true
+        ],
+        "handFrames": [
+          "x2-drunken-fist-wraps:part-1:__BASE",
+          "x2-drunken-fist-wraps:part-1:__BASE"
+        ],
+        "footFrames": [
+          "x2-drunken-fist-wraps:part-2:__BASE",
+          "x2-drunken-fist-wraps:part-2:__BASE"
+        ],
+        "facing": -1,
+        "rootScaleX": -0.6623394948466812
+      },
+      "handScreenshot": "docs/owner-notes-audit-v10-evidence/b19-kungfu-rework/x2-drunken-fist-wraps-left-hand.png",
+      "footScreenshot": "docs/owner-notes-audit-v10-evidence/b19-kungfu-rework/x2-drunken-fist-wraps-left-foot.png"
+    },
+    {
+      "weaponId": "x2-iron-palm-wraps",
+      "facing": "right",
+      "target": {
+        "id": "open-lane:right",
+        "x": 2461.235706816466,
+        "y": 2350.334349538423,
+        "distance": 92
+      },
+      "attackSeqBefore": 74,
+      "attackSeqAfter": 80,
+      "steps": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "motions": [
+        "crushing-palm",
+        "stomp-kick",
+        "windup-palm",
+        "quake-double-palm"
+      ],
+      "limbs": [
+        "hand",
+        "foot",
+        "hand",
+        "hand"
+      ],
+      "swingStyle": "black-iron-drive",
+      "impactStyle": "",
+      "intervalsMs": [
+        983.3000000000029,
+        983.1999999999971,
+        983.3999999999942
+      ],
+      "travel": {
+        "start": {
+          "x": 2369.235706816466,
+          "y": 2350.334349538423
+        },
+        "end": {
+          "x": 2389.235706816466,
+          "y": 2350.334352193798
+        },
+        "distancePx": 20.000000000000174,
+        "expectedPx": 36,
+        "positionSamples": [
+          {
+            "attackSeq": 74,
+            "x": 2369.235706816466,
+            "y": 2350.334349538423,
+            "timeMs": 77331.8
+          },
+          {
+            "attackSeq": 75,
+            "x": 2371.165771484375,
+            "y": 2350.334349804663,
+            "timeMs": 77498.5
+          },
+          {
+            "attackSeq": 75,
+            "x": 2374.235706816466,
+            "y": 2350.3343502281637,
+            "timeMs": 77681.8
+          },
+          {
+            "attackSeq": 75,
+            "x": 2374.235706816466,
+            "y": 2350.3343502281637,
+            "timeMs": 77865.1
+          },
+          {
+            "attackSeq": 75,
+            "x": 2374.235706816466,
+            "y": 2350.3343502281637,
+            "timeMs": 77998.4
+          },
+          {
+            "attackSeq": 75,
+            "x": 2374.235706816466,
+            "y": 2350.3343502281637,
+            "timeMs": 78181.8
+          },
+          {
+            "attackSeq": 76,
+            "x": 2374.235706816466,
+            "y": 2350.3343502281637,
+            "timeMs": 78348.4
+          },
+          {
+            "attackSeq": 76,
+            "x": 2377.728271484375,
+            "y": 2350.3343506978176,
+            "timeMs": 78548.5
+          },
+          {
+            "attackSeq": 76,
+            "x": 2379.235706816466,
+            "y": 2350.3343509005385,
+            "timeMs": 78715.1
+          },
+          {
+            "attackSeq": 76,
+            "x": 2379.235706816466,
+            "y": 2350.3343509005385,
+            "timeMs": 78898.5
+          },
+          {
+            "attackSeq": 76,
+            "x": 2379.235706816466,
+            "y": 2350.3343509005385,
+            "timeMs": 79081.8
+          },
+          {
+            "attackSeq": 76,
+            "x": 2379.235706816466,
+            "y": 2350.3343509005385,
+            "timeMs": 79248.4
+          },
+          {
+            "attackSeq": 77,
+            "x": 2381.165771484375,
+            "y": 2350.3343511534495,
+            "timeMs": 79431.8
+          },
+          {
+            "attackSeq": 77,
+            "x": 2384.235706816466,
+            "y": 2350.3343515557476,
+            "timeMs": 79615.1
+          },
+          {
+            "attackSeq": 77,
+            "x": 2384.235706816466,
+            "y": 2350.3343515557476,
+            "timeMs": 79798.4
+          },
+          {
+            "attackSeq": 77,
+            "x": 2384.235706816466,
+            "y": 2350.3343515557476,
+            "timeMs": 79965.1
+          },
+          {
+            "attackSeq": 77,
+            "x": 2384.235706816466,
+            "y": 2350.3343515557476,
+            "timeMs": 80148.3
+          },
+          {
+            "attackSeq": 78,
+            "x": 2384.235706816466,
+            "y": 2350.3343515557476,
+            "timeMs": 80331.7
+          },
+          {
+            "attackSeq": 78,
+            "x": 2386.165771484375,
+            "y": 2350.334351802035,
+            "timeMs": 80515.1
+          },
+          {
+            "attackSeq": 78,
+            "x": 2389.235706816466,
+            "y": 2350.334352193798,
+            "timeMs": 80698.3
+          },
+          {
+            "attackSeq": 78,
+            "x": 2389.235706816466,
+            "y": 2350.334352193798,
+            "timeMs": 80865
+          },
+          {
+            "attackSeq": 78,
+            "x": 2389.235706816466,
+            "y": 2350.334352193798,
+            "timeMs": 81048.3
+          },
+          {
+            "attackSeq": 78,
+            "x": 2389.235706816466,
+            "y": 2350.334352193798,
+            "timeMs": 81198.4
+          }
+        ]
+      },
+      "contacts": [],
+      "vfx": [
+        {
+          "kind": "swing",
+          "weaponId": "x2-iron-palm-wraps",
+          "style": "black-iron-drive",
+          "x": 2455.9957068164654,
+          "y": 2350.334361506801,
+          "timeMs": 77248.5,
+          "comboStep": 0,
+          "motion": "crushing-palm",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-iron-palm-wraps",
+          "style": "black-iron-drive",
+          "x": 2460.9957068164654,
+          "y": 2350.334361892288,
+          "timeMs": 78181.8,
+          "comboStep": 0,
+          "motion": "crushing-palm",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-iron-palm-wraps",
+          "style": "black-iron-drive",
+          "x": 2465.9957068164654,
+          "y": 2350.3343622656794,
+          "timeMs": 79165.1,
+          "comboStep": 1,
+          "motion": "stomp-kick",
+          "limb": "foot"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-iron-palm-wraps",
+          "style": "black-iron-drive",
+          "x": 2470.9957068164654,
+          "y": 2350.334362627202,
+          "timeMs": 80148.3,
+          "comboStep": 2,
+          "motion": "windup-palm",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-iron-palm-wraps",
+          "style": "black-iron-drive",
+          "x": 2475.9957068164654,
+          "y": 2350.3343629830188,
+          "timeMs": 81131.7,
+          "comboStep": 3,
+          "motion": "quake-double-palm",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-iron-palm-wraps",
+          "style": "black-iron-drive",
+          "x": 2480.9957068164654,
+          "y": 2350.334363328124,
+          "timeMs": 82065,
+          "comboStep": 0,
+          "motion": "crushing-palm",
+          "limb": "hand"
+        }
+      ],
+      "rig": {
+        "handOverlayCount": 2,
+        "footOverlayCount": 2,
+        "handPartIndices": [
+          0,
+          0
+        ],
+        "footPartIndices": [
+          1,
+          1
+        ],
+        "baseHandsVisible": [
+          false,
+          false
+        ],
+        "baseFeetVisible": [
+          false,
+          false
+        ],
+        "handOverlayVisible": [
+          true,
+          true
+        ],
+        "footOverlayVisible": [
+          true,
+          true
+        ],
+        "handFrames": [
+          "x2-iron-palm-wraps:part-1:__BASE",
+          "x2-iron-palm-wraps:part-1:__BASE"
+        ],
+        "footFrames": [
+          "x2-iron-palm-wraps:part-2:__BASE",
+          "x2-iron-palm-wraps:part-2:__BASE"
+        ],
+        "facing": 1,
+        "rootScaleX": 0.6623394948446055
+      },
+      "handScreenshot": "docs/owner-notes-audit-v10-evidence/b19-kungfu-rework/x2-iron-palm-wraps-right-hand.png",
+      "footScreenshot": "docs/owner-notes-audit-v10-evidence/b19-kungfu-rework/x2-iron-palm-wraps-right-foot.png"
+    },
+    {
+      "weaponId": "x2-iron-palm-wraps",
+      "facing": "left",
+      "target": {
+        "id": "open-lane:left",
+        "x": 2307.235706816466,
+        "y": 2350.334353421954,
+        "distance": 92
+      },
+      "attackSeqBefore": 80,
+      "attackSeqAfter": 86,
+      "steps": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "motions": [
+        "crushing-palm",
+        "stomp-kick",
+        "windup-palm",
+        "quake-double-palm"
+      ],
+      "limbs": [
+        "hand",
+        "foot",
+        "hand",
+        "hand"
+      ],
+      "swingStyle": "black-iron-drive",
+      "impactStyle": "",
+      "intervalsMs": [
+        966.5999999999913,
+        916.6000000000058,
+        950
+      ],
+      "travel": {
+        "start": {
+          "x": 2399.235706816466,
+          "y": 2350.334353421954
+        },
+        "end": {
+          "x": 2379.235706816466,
+          "y": 2350.3343556938185
+        },
+        "distancePx": 20.000000000000128,
+        "expectedPx": 36,
+        "positionSamples": [
+          {
+            "attackSeq": 80,
+            "x": 2399.235706816466,
+            "y": 2350.334353421954,
+            "timeMs": 87298.1
+          },
+          {
+            "attackSeq": 81,
+            "x": 2399.235706816466,
+            "y": 2350.334353421954,
+            "timeMs": 87481.4
+          },
+          {
+            "attackSeq": 81,
+            "x": 2395.7431640625,
+            "y": 2350.3343538340378,
+            "timeMs": 87664.7
+          },
+          {
+            "attackSeq": 81,
+            "x": 2394.235706816466,
+            "y": 2350.3343540119095,
+            "timeMs": 87831.4
+          },
+          {
+            "attackSeq": 81,
+            "x": 2394.235706816466,
+            "y": 2350.3343540119095,
+            "timeMs": 87998.1
+          },
+          {
+            "attackSeq": 81,
+            "x": 2394.235706816466,
+            "y": 2350.3343540119095,
+            "timeMs": 88181.4
+          },
+          {
+            "attackSeq": 81,
+            "x": 2394.235706816466,
+            "y": 2350.3343540119095,
+            "timeMs": 88348.1
+          },
+          {
+            "attackSeq": 82,
+            "x": 2393.8681640625,
+            "y": 2350.3343540541914,
+            "timeMs": 88498
+          },
+          {
+            "attackSeq": 82,
+            "x": 2389.235706816466,
+            "y": 2350.3343545871726,
+            "timeMs": 88681.4
+          },
+          {
+            "attackSeq": 82,
+            "x": 2389.235706816466,
+            "y": 2350.3343545871726,
+            "timeMs": 88848.1
+          },
+          {
+            "attackSeq": 82,
+            "x": 2389.235706816466,
+            "y": 2350.3343545871726,
+            "timeMs": 89031.4
+          },
+          {
+            "attackSeq": 82,
+            "x": 2389.235706816466,
+            "y": 2350.3343545871726,
+            "timeMs": 89181.3
+          },
+          {
+            "attackSeq": 83,
+            "x": 2389.235706816466,
+            "y": 2350.3343545871726,
+            "timeMs": 89364.6
+          },
+          {
+            "attackSeq": 83,
+            "x": 2385.7431640625,
+            "y": 2350.3343549787633,
+            "timeMs": 89531.4
+          },
+          {
+            "attackSeq": 83,
+            "x": 2384.235706816466,
+            "y": 2350.334355147789,
+            "timeMs": 89714.6
+          },
+          {
+            "attackSeq": 83,
+            "x": 2384.235706816466,
+            "y": 2350.334355147789,
+            "timeMs": 89898
+          },
+          {
+            "attackSeq": 83,
+            "x": 2384.235706816466,
+            "y": 2350.334355147789,
+            "timeMs": 90048
+          },
+          {
+            "attackSeq": 83,
+            "x": 2384.235706816466,
+            "y": 2350.334355147789,
+            "timeMs": 90214.6
+          },
+          {
+            "attackSeq": 84,
+            "x": 2382.3056640625,
+            "y": 2350.3343553585564,
+            "timeMs": 90398
+          },
+          {
+            "attackSeq": 84,
+            "x": 2379.235706816466,
+            "y": 2350.3343556938185,
+            "timeMs": 90581.3
+          },
+          {
+            "attackSeq": 84,
+            "x": 2379.235706816466,
+            "y": 2350.3343556938185,
+            "timeMs": 90747.9
+          },
+          {
+            "attackSeq": 84,
+            "x": 2379.235706816466,
+            "y": 2350.3343556938185,
+            "timeMs": 90914.6
+          },
+          {
+            "attackSeq": 84,
+            "x": 2379.235706816466,
+            "y": 2350.3343556938185,
+            "timeMs": 91081.3
+          }
+        ]
+      },
+      "contacts": [],
+      "vfx": [
+        {
+          "kind": "swing",
+          "weaponId": "x2-iron-palm-wraps",
+          "style": "black-iron-drive",
+          "x": 2312.4757068164668,
+          "y": 2350.334363658864,
+          "timeMs": 87298.1,
+          "comboStep": 0,
+          "motion": "crushing-palm",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-iron-palm-wraps",
+          "style": "black-iron-drive",
+          "x": 2307.4757068164668,
+          "y": 2350.3343639898817,
+          "timeMs": 88264.7,
+          "comboStep": 1,
+          "motion": "stomp-kick",
+          "limb": "foot"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-iron-palm-wraps",
+          "style": "black-iron-drive",
+          "x": 2302.4757068164668,
+          "y": 2350.3343643100557,
+          "timeMs": 89181.3,
+          "comboStep": 2,
+          "motion": "windup-palm",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-iron-palm-wraps",
+          "style": "black-iron-drive",
+          "x": 2297.4757068164668,
+          "y": 2350.334364618961,
+          "timeMs": 90131.3,
+          "comboStep": 3,
+          "motion": "quake-double-palm",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-iron-palm-wraps",
+          "style": "black-iron-drive",
+          "x": 2292.4757068164668,
+          "y": 2350.334364921585,
+          "timeMs": 91081.3,
+          "comboStep": 0,
+          "motion": "crushing-palm",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-iron-palm-wraps",
+          "style": "black-iron-drive",
+          "x": 2287.4757068164663,
+          "y": 2350.3343652199655,
+          "timeMs": 92014.6,
+          "comboStep": 1,
+          "motion": "stomp-kick",
+          "limb": "foot"
+        }
+      ],
+      "rig": {
+        "handOverlayCount": 2,
+        "footOverlayCount": 2,
+        "handPartIndices": [
+          0,
+          0
+        ],
+        "footPartIndices": [
+          1,
+          1
+        ],
+        "baseHandsVisible": [
+          false,
+          false
+        ],
+        "baseFeetVisible": [
+          false,
+          false
+        ],
+        "handOverlayVisible": [
+          true,
+          true
+        ],
+        "footOverlayVisible": [
+          true,
+          true
+        ],
+        "handFrames": [
+          "x2-iron-palm-wraps:part-1:__BASE",
+          "x2-iron-palm-wraps:part-1:__BASE"
+        ],
+        "footFrames": [
+          "x2-iron-palm-wraps:part-2:__BASE",
+          "x2-iron-palm-wraps:part-2:__BASE"
+        ],
+        "facing": -1,
+        "rootScaleX": -0.6623394948476841
+      },
+      "handScreenshot": "docs/owner-notes-audit-v10-evidence/b19-kungfu-rework/x2-iron-palm-wraps-left-hand.png",
+      "footScreenshot": "docs/owner-notes-audit-v10-evidence/b19-kungfu-rework/x2-iron-palm-wraps-left-foot.png"
+    }
+  ]
+}

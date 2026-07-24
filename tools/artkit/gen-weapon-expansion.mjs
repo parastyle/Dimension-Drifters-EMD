@@ -110,7 +110,7 @@ const BEHAVIOR_KEYS = {
     "scalingGrades", "volley", "projectileWaveform", "explode"]),
   hybrid: new Set(["kind", "projectile"]),
   groundZone: new Set(["kind", "zone"]),
-  glovePair: new Set(["kind", "auraColor", "auraRadius"]),
+  glovePair: new Set(["kind", "auraColor", "auraRadius", "wrapsFeet"]),
   warp: new Set(["kind", "burstRadius"]),
 };
 const EXPLODE_KEYS = new Set(["radius", "damage", "scalingGrades"]);
@@ -161,6 +161,9 @@ const COMBO_MOTIONS = new Set([
   "jab", "cross", "hook", "haymaker", "lunge", "disengage", "impale", "fulcrum-flip", "stinger",
   "elbow", "knee-strike", "roundhouse-kick", "chain-punch", "sway-jab", "weave-cross",
   "gourd-haymaker", "iron-knuckle", "iron-palm",
+  "teep-kick", "spinning-back-elbow", "oblique-kick", "double-palm", "weave-backfist",
+  "sweeping-leg", "falling-haymaker", "crushing-palm", "stomp-kick", "windup-palm",
+  "quake-double-palm",
   "spin-release", "pommel-bash", "true-charged-slam", "falling-gate", "backswing-wheel",
   "runaway-cleave", "highland-gate", "rising-ward", "bind-break-cast-off", "long-reap",
   "shaft-switch", "compass-rose", "headsmans-drop", "hook-and-haul", "gallows-turn", "draw-cut",
@@ -168,19 +171,23 @@ const COMBO_MOTIONS = new Set([
   "splinter-fall", "rest-downswing", "waist-orbit",
 ]);
 const COMBO_HANDS = new Set(["lead", "off", "both"]);
+const COMBO_LIMBS = new Set(["hand", "foot"]);
 const COMBO_PATHS = new Set(["sweep", "fan", "dual-sweep", "capsule"]);
 const RIBBON_PROFILES = new Set([
   "massed-wedge", "hooked-comma", "open-c", "guard-plane", "rising-plane", "broken-cross",
   "outer-crescent", "reverse-hairpin", "open-annulus", "head-wedge", "inward-hook", "heavy-sickle",
 ]);
 const RIBBON_ENDS = new Set(["clean", "squared", "torn", "hooked", "open"]);
-const COMBO_STEP_KEYS = new Set(["name", "motion", "direction", "hand", "timing", "path", "ribbon"]);
+const COMBO_STEP_KEYS = new Set([
+  "name", "motion", "limb", "direction", "hand", "timing", "path", "rootMotion", "ribbon",
+]);
 const COMBO_TIMING_KEYS = new Set([
   "activeStart", "activeEnd", "impact", "followEnd", "secondaryActiveStart", "secondaryActiveEnd",
 ]);
 const COMBO_PATH_KEYS = new Set([
   "kind", "arcMultiplier", "deltaAngle", "rangeMultiplier", "damageMultiplier", "knockback",
 ]);
+const COMBO_ROOT_MOTION_KEYS = new Set(["forwardPx", "lateralPx", "durationSeconds"]);
 const COMBO_RIBBON_KEYS = new Set([
   "profile", "radialStart", "radialEnd", "widthMultiplier", "end", "setupEcho",
   "fanOutStartScale", "fanOutEndScale",
@@ -443,6 +450,27 @@ function comboBarOf(w, choreography) {
         knockback: num(movePath.knockback, 0, 160, 0, `${path}.path.knockback`),
       },
     };
+    if (step.limb !== undefined)
+      mapped.limb = enumOf(step.limb, COMBO_LIMBS, `${path}.limb`);
+    if (step.rootMotion !== undefined) {
+      const rootMotion = step.rootMotion;
+      if (!rootMotion || typeof rootMotion !== "object" || Array.isArray(rootMotion)) {
+        fail(`${path}.rootMotion is not an object`);
+      } else {
+        checkKeys(rootMotion, COMBO_ROOT_MOTION_KEYS, `${path}.rootMotion`);
+        mapped.rootMotion = {
+          forwardPx: num(rootMotion.forwardPx, -64, 64, 0, `${path}.rootMotion.forwardPx`),
+          lateralPx: num(rootMotion.lateralPx, -64, 64, 0, `${path}.rootMotion.lateralPx`),
+          durationSeconds: num(
+            rootMotion.durationSeconds,
+            0.05,
+            0.4,
+            0.12,
+            `${path}.rootMotion.durationSeconds`,
+          ),
+        };
+      }
+    }
     const choreo = choreography?.[i];
     if (choreo) mapped.choreography = choreo;
     if (timing.secondaryActiveStart !== undefined)
@@ -1213,6 +1241,10 @@ function mapWeapon(w) {
       auraColor: int(b.auraColor, 0, 0xffffff, 0x33e6ff, "behavior.auraColor"),
       auraRadius: num(b.auraRadius, 24, 90, 52, "behavior.auraRadius"),
     };
+    if (b.wrapsFeet !== undefined) {
+      if (typeof b.wrapsFeet !== "boolean") fail("behavior.wrapsFeet is not a boolean");
+      else def.glovePair.wrapsFeet = b.wrapsFeet;
+    }
   } else if (kind === "warp") {
     def.warp = {
       burstRadius: num(b.burstRadius, 24, 100, 48, "behavior.burstRadius"),

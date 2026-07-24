@@ -55,6 +55,7 @@ import {
   MELEE_COMBO_SEQUENCES,
   type MeleeComboFamily,
   type MeleeComboHand,
+  type MeleeComboLimb,
   type MeleeComboMotion,
   type MeleeComboStep,
   type MeleeComboVariant,
@@ -309,6 +310,36 @@ export interface RigLoadoutPiece {
   readonly manifest: SpriteManifest;
   /** Authored twin sprites are the only loadout allowed to select part 1. Arbitrary pairs use part 0. */
   readonly partIndex?: 0 | 1;
+}
+
+export type WrapRigReceiver = "hand-r" | "hand-l" | "foot-r" | "foot-l";
+
+export interface WrapRigMount {
+  readonly receiver: WrapRigReceiver;
+  readonly partIndex: 0 | 1;
+}
+
+const NO_WRAP_RIG_MOUNTS = Object.freeze([] as readonly WrapRigMount[]);
+const FOUR_LIMB_WRAP_RIG_MOUNTS = Object.freeze([
+  Object.freeze({ receiver: "hand-r", partIndex: 0 }),
+  Object.freeze({ receiver: "hand-l", partIndex: 0 }),
+  Object.freeze({ receiver: "foot-r", partIndex: 1 }),
+  Object.freeze({ receiver: "foot-l", partIndex: 1 }),
+] as const satisfies readonly WrapRigMount[]);
+
+/** One hand source and one foot source become four independent joint-mounted worn sprites. */
+export function wrapRigMountPlan(
+  def: Readonly<WeaponDef>,
+  manifest: Readonly<SpriteManifest>,
+): readonly WrapRigMount[] {
+  return def.glovePair?.wrapsFeet === true && manifest.parts.length >= 2
+    ? FOUR_LIMB_WRAP_RIG_MOUNTS
+    : NO_WRAP_RIG_MOUNTS;
+}
+
+/** Final horizontal art sign: the actor root owns facing; each source keeps its authored image direction. */
+export function wrapRigFacingSign(actorFacing: -1 | 1, imageFacingX: -1 | 1): -1 | 1 {
+  return actorFacing * imageFacingX < 0 ? -1 : 1;
 }
 
 /** Optional rig-only routing metadata. Shared combat truth remains the immutable SwingDescriptor payload. */
@@ -2158,6 +2189,14 @@ export class SpriteRig {
     tellRim?: Phaser.GameObjects.Image;
     tellEcho?: Phaser.GameObjects.Image;
   }[] = [];
+  /** B19 worn foot sprites stay separate from held-hand weapon channels, which are intentionally 0/1 only. */
+  private wrapFootWeapons: {
+    img: Phaser.GameObjects.Image;
+    foot: RigFoot;
+    baseScale: number;
+    imageFacingX: 1 | -1;
+    partIndex: 1;
+  }[] = [];
   private weaponDef?: WeaponDef;
   /** Session-local art-direction choices are read from Phaser's registry and cached as descriptor refs. */
   private readonly poseVariants = createPoseVariantSelection();
@@ -3142,6 +3181,7 @@ export class SpriteRig {
       if (attachment.spec.stackIndex >= 0) this.hatAttachments.push(attachment);
     this.hatAttachments.sort((a, b) => a.spec.stackIndex - b.spec.stackIndex);
     if (changed) {
+      this.syncWeaponHandReplacement();
       this.rebuildRenderStack();
       this.restTint();
     }
@@ -3179,15 +3219,26 @@ export class SpriteRig {
     return this.weapons[handIndex]?.worn === true;
   }
 
+  private weaponReplacesFootReceiver(receiver: "foot-l" | "foot-r"): boolean {
+    const front = receiver === "foot-r";
+    return this.wrapFootWeapons.some((weapon) => weapon.foot.front === front);
+  }
+
   private syncWeaponHandReplacement(): void {
     for (const hand of this.hands) {
       const receiver = hand.front ? "hand-r" : "hand-l";
       hand.img.setVisible(!this.weaponReplacesHandReceiver(receiver));
     }
+    for (const foot of this.feet) {
+      const receiver = foot.front ? "foot-r" : "foot-l";
+      foot.img.setVisible(!this.weaponReplacesFootReceiver(receiver));
+    }
     for (const attachment of this.gearAttachments) {
       const receiver = attachment.spec.source.receiver;
       if (receiver === "hand-l" || receiver === "hand-r") {
         attachment.image.setVisible(!this.weaponReplacesHandReceiver(receiver));
+      } else if (receiver === "foot-l" || receiver === "foot-r") {
+        attachment.image.setVisible(!this.weaponReplacesFootReceiver(receiver));
       }
     }
   }
@@ -3213,6 +3264,8 @@ export class SpriteRig {
       const receiver = foot.front ? "foot-r" : "foot-l";
       for (const attachment of this.gearAttachments)
         if (attachment.spec.source.receiver === receiver) stack.push(attachment.image);
+      const wrap = this.wrapFootWeapons.find((candidate) => candidate.foot === foot);
+      if (wrap) stack.push(wrap.img);
     }
 
     const frontHand = this.hands.find((hand) => hand.front);
@@ -3477,6 +3530,44 @@ export class SpriteRig {
     const point = points[barrelIndex] ?? points[0];
     const hand = point?.part === 1 ? 1 : 0;
     return point ? this.writeWeaponArtMuzzle(point, out, hand) : false;
+  }
+
+  /** B19 swing punctuation reads the final independent hand/foot worn-sprite affine. */
+  writeKungFuWrapMuzzle(
+    limb: MeleeComboLimb | undefined,
+    side: 0 | 1,
+    out: { x: number; y: number },
+  ): boolean {
+    const definition = this.weaponDef?.muzzle;
+    if (!definition) return false;
+    const partIndex = limb === "foot" ? 1 : 0;
+    const point = definition.points.find((candidate) => candidate.part === partIndex);
+    if (!point) return false;
+    if (partIndex === 0) return this.writeWeaponArtMuzzle(point, out, side);
+    const wrappedFoot = this.wrapFootWeapons.find(
+      (candidate) => candidate.foot.front === (side === 0),
+    );
+    if (!wrappedFoot?.img.active || !wrappedFoot.img.visible) return false;
+    const image = wrappedFoot.img;
+    const local = weaponSpriteTransform({
+      x: image.x,
+      y: image.y,
+      originX: image.originX * image.width,
+      originY: image.originY * image.height,
+      rotation: image.rotation,
+      scaleX: image.scaleX,
+      scaleY: image.scaleY,
+    });
+    const matrix = this.root.getWorldTransformMatrix();
+    const parent: WeaponAffineTransform = {
+      a: matrix.a,
+      b: matrix.b,
+      c: matrix.c,
+      d: matrix.d,
+      tx: matrix.tx,
+      ty: matrix.ty,
+    };
+    return !!transformWeaponArtPoint(point, composeWeaponTransform(parent, local), out);
   }
 
   /** Retained per-barrel kick. Camera shake and muzzle styling stay at Arena's hand-aware cue site. */
@@ -4979,6 +5070,24 @@ export class SpriteRig {
     }
   }
 
+  /** Copy the final hidden foot receiver transforms onto the visible B19 worn overlays. */
+  private syncWrapFootWeapons(): void {
+    const sourceScale = this.scale || 1;
+    for (const wrapped of this.wrapFootWeapons) {
+      const foot = wrapped.foot.img;
+      const fixedScale = wrapped.baseScale / (this.baseScale || 1);
+      wrapped.img
+        .setPosition(foot.x, foot.y)
+        .setRotation(foot.rotation)
+        .setScale(
+          fixedScale * wrapped.imageFacingX * (foot.scaleX / sourceScale),
+          fixedScale * (foot.scaleY / sourceScale),
+        )
+        .setAlpha(foot.alpha)
+        .setVisible(true);
+    }
+  }
+
   /** Equip (or swap) a weapon — one piece per hand (dual-wield uses both hands + both sprite
    *  parts). Each piece points along semantic +X in its hand, pivoting at the grip, and is inserted just
    *  BELOW that hand in the container so the hand overlays the hilt. */
@@ -4991,6 +5100,11 @@ export class SpriteRig {
           ? { spriteId, def, manifest, partIndex: 1 }
           : undefined;
     this.equipLoadout(lead, off);
+  }
+
+  private destroyWrapFootWeapons(): void {
+    for (const weapon of this.wrapFootWeapons) weapon.img.destroy();
+    this.wrapFootWeapons.length = 0;
   }
 
   /** Equip one independently-authored part per hand through the final art-geometry correction seam. */
@@ -5021,6 +5135,7 @@ export class SpriteRig {
     }
     this.destroyMeleeTellLayers();
     this.destroyTomeVisual();
+    this.destroyWrapFootWeapons();
     for (const w of this.weapons) w.img.destroy();
     this.weapons = [];
     this.weaponDef = def;
@@ -5122,6 +5237,31 @@ export class SpriteRig {
     };
     const frontWpn = attach(lead, frontHand);
     const backWpn = attach(off, backHand);
+    const wrapMounts = wrapRigMountPlan(def, manifest);
+    const footPart = manifest.parts[1];
+    if (footPart) {
+      const footTexture = partTexture(this.scene, spriteId, footPart.role);
+      const imageFacingX = spriteImageFacingX(manifest.imageFacing);
+      const footScale = def.displayLength / footPart.w;
+      for (const mount of wrapMounts) {
+        if (mount.partIndex !== 1) continue;
+        const front = mount.receiver === "foot-r";
+        const foot = this.feet.find((candidate) => candidate.front === front);
+        if (!foot) continue;
+        const img = this.scene.add
+          .image(foot.img.x, foot.img.y, footTexture.key, footTexture.frame)
+          .setOrigin(0.5)
+          .setScale(footScale * imageFacingX, footScale);
+        this.root.add(img);
+        this.wrapFootWeapons.push({
+          img,
+          foot,
+          baseScale: footScale,
+          imageFacingX,
+          partIndex: 1,
+        });
+      }
+    }
     const frontPiece = this.weapons[0];
     const backPiece = this.weapons[1];
     this.syncWeaponHandReplacement();
@@ -5912,6 +6052,7 @@ export class SpriteRig {
     }
     this.destroyMeleeTellLayers();
     this.destroyTomeVisual();
+    this.destroyWrapFootWeapons();
     for (const w of this.weapons) w.img.destroy();
     this.weapons = [];
     this.syncWeaponHandReplacement();
@@ -5938,6 +6079,7 @@ export class SpriteRig {
     this.flashTimer = undefined;
     this.destroyMeleeTellLayers();
     this.destroyTomeVisual();
+    this.destroyWrapFootWeapons();
     for (const w of this.weapons) w.img.destroy();
     this.hatOverflowLabel?.destroy();
     this.hatOverflowLabel = undefined;
@@ -9086,10 +9228,7 @@ export class SpriteRig {
           ) {
             const fanOutProgress = Phaser.Math.Clamp(
               (tt - comboPose.timing.activeStart) /
-                Math.max(
-                  0.01,
-                  comboPose.timing.activeEnd - comboPose.timing.activeStart,
-                ),
+                Math.max(0.01, comboPose.timing.activeEnd - comboPose.timing.activeStart),
               0,
               1,
             );
@@ -9121,10 +9260,7 @@ export class SpriteRig {
                 comboStep: this.comboStep,
                 poseProgress: tt,
                 fanOutProgress,
-                fanOutScale: comboRibbonFanOutScaleAt(
-                  comboPose.ribbon,
-                  fanOutProgress,
-                ),
+                fanOutScale: comboRibbonFanOutScaleAt(comboPose.ribbon, fanOutProgress),
                 weaponLengthScale: this.weaponLengthScale,
               });
               if (frames.length > 2_048) frames.splice(0, frames.length - 2_048);
@@ -11168,6 +11304,7 @@ export class SpriteRig {
       dashLean,
       landed,
     );
+    this.syncWrapFootWeapons();
     const leadWeapon = this.weapons[0];
     const offWeapon = this.weapons[1];
     if (this.pairGlintAlpha > 0 && leadWeapon && offWeapon && !outsidePaperView) {

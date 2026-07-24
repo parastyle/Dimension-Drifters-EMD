@@ -1058,6 +1058,23 @@ export interface WeaponComboForwardDrift {
   readonly durationSeconds: number;
 }
 
+export interface WeaponComboRootMotion {
+  readonly forwardPx: number;
+  readonly lateralPx: number;
+  readonly durationSeconds: number;
+}
+
+/** Resolve authored character displacement from the same combo index that owns damage and presentation. */
+export function weaponComboRootMotion(
+  weapon: Readonly<WeaponDef>,
+  comboStepIndex: number | undefined,
+): WeaponComboRootMotion | undefined {
+  const sequence = meleeComboSelectionFor(weapon)?.sequence;
+  if (!sequence?.length) return undefined;
+  const step = Math.max(0, Math.trunc(comboStepIndex ?? 0)) % sequence.length;
+  return sequence[step]?.rootMotion;
+}
+
 /** Resolve one accepted combo beat's server-owned walking displacement. Most weapons keep one fixed
  * drift; authored martial sequences may vary the same bounded movement by beat without client inference. */
 export function weaponComboForwardDrift(
@@ -7476,7 +7493,11 @@ export class GameRoom extends Room<ArenaState> {
       halfWidth: envelope.maxHalfWidth,
       rangeMultiplier,
       timedWeaponEnvelope: true,
-      edgeDamage: weapon.damage * edgePower * (katanaEffect?.damageMultiplier ?? 1),
+      edgeDamage:
+        weapon.damage *
+        edgePower *
+        (katanaEffect?.damageMultiplier ?? 1) *
+        (comboStep?.rootMotion ? comboStep.path.damageMultiplier : 1),
       toughDamageMultiplier: katanaEffect?.toughDamageMultiplier ?? 1,
       weaponId: weapon.id,
       crit: attackCrit,
@@ -7499,19 +7520,40 @@ export class GameRoom extends Room<ArenaState> {
         impactAtDestination,
       });
     } else if (hand === 0) {
-      const drift = weaponComboForwardDrift(weapon, hybridBeat?.step);
-      if (drift)
-        this.pendingWeaponLunges.set(player.id, {
-          t: 0,
-          playerId: player.id,
-          weaponId: weapon.id,
-          aimX: Math.cos(aim0),
-          aimY: Math.sin(aim0),
-          distancePx: drift.distancePx,
-          durationSeconds: drift.durationSeconds,
-          invulnerable: false,
-          impactAtDestination: false,
-        });
+      const rootMotion = comboStep?.rootMotion ?? weaponComboRootMotion(weapon, hybridBeat?.step);
+      if (rootMotion) {
+        const forwardX = Math.cos(aim0);
+        const forwardY = Math.sin(aim0);
+        const moveX = forwardX * rootMotion.forwardPx - forwardY * rootMotion.lateralPx;
+        const moveY = forwardY * rootMotion.forwardPx + forwardX * rootMotion.lateralPx;
+        const distancePx = Math.hypot(moveX, moveY);
+        if (distancePx > 1e-6)
+          this.pendingWeaponLunges.set(player.id, {
+            t: authoritativeSwing.activeStartSeconds,
+            playerId: player.id,
+            weaponId: weapon.id,
+            aimX: moveX / distancePx,
+            aimY: moveY / distancePx,
+            distancePx,
+            durationSeconds: rootMotion.durationSeconds,
+            invulnerable: false,
+            impactAtDestination: false,
+          });
+      } else {
+        const drift = weaponComboForwardDrift(weapon, hybridBeat?.step);
+        if (drift)
+          this.pendingWeaponLunges.set(player.id, {
+            t: 0,
+            playerId: player.id,
+            weaponId: weapon.id,
+            aimX: Math.cos(aim0),
+            aimY: Math.sin(aim0),
+            distancePx: drift.distancePx,
+            durationSeconds: drift.durationSeconds,
+            invulnerable: false,
+            impactAtDestination: false,
+          });
+      }
     }
 
     if (katanaEffect?.invulnerabilitySeconds)
@@ -7929,8 +7971,47 @@ export class GameRoom extends Room<ArenaState> {
     combat.lastGroundY = player.y;
   }
 
+  /** Clamp an arena lunge to the last unobstructed point on its accepted segment. Endpoint navigation can
+   * legitimately snap a target out of a pit or POI; sampling prevents that correction from carrying the
+   * player through the intervening obstacle. Belt endpoints already use the belt's swept safe-X resolver. */
+  private navValidLungeDest(
+    player: PlayerState,
+    combat: CombatState,
+    targetX: number,
+    targetY: number,
+    maxRange: number,
+  ): Vec2 {
+    const destination = this.navValidDest(player, combat, targetX, targetY, maxRange);
+    if (this.belt && this.beltLevel) return destination;
+    const dx = destination.x - player.x;
+    const dy = destination.y - player.y;
+    const distance = Math.hypot(dx, dy);
+    const samples = Math.max(1, Math.ceil(distance / 2));
+    let safeX = player.x;
+    let safeY = player.y;
+    for (let sample = 1; sample <= samples; sample++) {
+      const progress = sample / samples;
+      const x = player.x + dx * progress;
+      const y = player.y + dy * progress;
+      if (isPitAtPx(this.map, x, y)) break;
+      if (this.map.pois.length > 0) {
+        const resolved = resolvePoiCollisionInto(
+          this.map,
+          x,
+          y,
+          PLAYER_RADIUS,
+          this.poiResolveScratch,
+        );
+        if (Math.hypot(resolved.x - x, resolved.y - y) > 1e-6) break;
+      }
+      safeX = x;
+      safeY = y;
+    }
+    return { x: safeX, y: safeY };
+  }
+
   /** Resolve an accepted lunge across its authored active window. Cursor intent is captured at acceptance;
-   * the endpoint is validated once and every intermediate displacement stays on that accepted segment. */
+   * the endpoint and complete travel segment are navigation-validated before authoritative movement. */
   private stepPendingWeaponLunges(dt: number): void {
     for (const [playerId, lunge] of this.pendingWeaponLunges) {
       const player = this.state.players.get(playerId);
@@ -7947,7 +8028,7 @@ export class GameRoom extends Room<ArenaState> {
         lunge.t = Math.max(0, waitSeconds - dt);
         if (lunge.t > 1e-9) continue;
         travelDt = Math.max(0, dt - waitSeconds);
-        const destination = this.navValidDest(
+        const destination = this.navValidLungeDest(
           player,
           combat,
           player.x + lunge.aimX * lunge.distancePx,
@@ -7968,10 +8049,9 @@ export class GameRoom extends Room<ArenaState> {
             (this.state.tick + ticksFromSeconds(lunge.durationSeconds)) >>> 0;
         }
       }
-      lunge.elapsedSeconds = Math.min(
-        lunge.durationSeconds,
-        (lunge.elapsedSeconds ?? 0) + travelDt,
-      );
+      const nextElapsed = (lunge.elapsedSeconds ?? 0) + travelDt;
+      lunge.elapsedSeconds =
+        nextElapsed + 1e-9 >= lunge.durationSeconds ? lunge.durationSeconds : nextElapsed;
       const progress = lunge.elapsedSeconds / lunge.durationSeconds;
       player.x =
         (lunge.startX ?? player.x) +

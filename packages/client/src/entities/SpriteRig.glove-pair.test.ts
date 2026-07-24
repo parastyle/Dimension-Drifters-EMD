@@ -1,10 +1,10 @@
 import { isMonkGloveWeapon, meleeComboSelectionFor, WEAPONS } from "@dd/shared";
 import { describe, expect, it, vi } from "vitest";
-import type { SpriteManifest } from "../sprites/manifest.js";
+import { SPRITES, type SpriteManifest, spriteImageFacingX } from "../sprites/manifest.js";
 
 vi.mock("phaser", () => ({ default: {} }));
 
-const { SpriteRig } = await import("./SpriteRig.js");
+const { SpriteRig, wrapRigFacingSign, wrapRigMountPlan } = await import("./SpriteRig.js");
 const { twoHandedPoseFor } = await import("../sprites/pose-language.js");
 
 interface CapturedPiece {
@@ -16,6 +16,33 @@ interface CapturedPiece {
 
 // W-CONVERT — append-only rig proof: one authored glove is intentionally mounted on each hand.
 describe("SpriteRig glove-pair rendering", () => {
+  it.each([
+    "x2-muay-thai-wraps",
+    "x2-wing-chun-wraps",
+    "x2-drunken-fist-wraps",
+    "x2-iron-palm-wraps",
+  ] as const)("mounts %s as two independent hands and two independent feet", (weaponId) => {
+    const weapon = WEAPONS[weaponId];
+    const manifest = SPRITES[weaponId];
+    if (!weapon || !manifest) throw new Error(`Missing B19 wrap fixture: ${weaponId}`);
+    const mounts = wrapRigMountPlan(weapon, manifest);
+
+    expect(weapon.glovePair?.wrapsFeet).toBe(true);
+    expect(mounts).toEqual([
+      { receiver: "hand-r", partIndex: 0 },
+      { receiver: "hand-l", partIndex: 0 },
+      { receiver: "foot-r", partIndex: 1 },
+      { receiver: "foot-l", partIndex: 1 },
+    ]);
+    expect(mounts.filter((mount) => mount.partIndex === 0)).toHaveLength(2);
+    expect(mounts.filter((mount) => mount.partIndex === 1)).toHaveLength(2);
+    expect(new Set(mounts.map((mount) => mount.receiver)).size).toBe(4);
+
+    const imageFacing = spriteImageFacingX((manifest as SpriteManifest).imageFacing);
+    expect(wrapRigFacingSign(1, imageFacing)).toBe(imageFacing);
+    expect(wrapRigFacingSign(-1, imageFacing)).toBe(-imageFacing);
+  });
+
   it.each([
     "x2-coyote-trickster-s-sparkmitt",
     "x2-sparkknuckle-hex-mitt",

@@ -5,6 +5,18 @@ import { SnapshotBuffer, TimelineSync } from "./snapshots.js";
 /** §4 v0.107 snapshot-buffer interpolation — remote entities on the server-tick timeline. */
 
 describe("SnapshotBuffer", () => {
+  it("interpolates remote B19 root motion between authoritative snapshots", () => {
+    const snapshots = new SnapshotBuffer();
+
+    snapshots.push(100, 1_000, 1_000);
+    snapshots.push(150, 1_008, 996);
+
+    expect(snapshots.sample(125, 260)).toMatchObject({
+      x: 1_004,
+      y: 998,
+    });
+  });
+
   it("linearly interpolates between bracketing snapshots", () => {
     const b = new SnapshotBuffer();
     b.push(100, 0, 0);

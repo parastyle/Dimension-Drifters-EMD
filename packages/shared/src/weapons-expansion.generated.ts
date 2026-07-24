@@ -16979,7 +16979,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "idle": "mirror-guard",
       "feet": "wide-plant"
     },
-    "description": "Blood-red fighting wraps built around committed elbows, a rising knee, and a brutal close roundhouse finish.",
+    "description": "Crimson wraps for a five-beat advance: teep, paired elbows, clinch knee, and a spinning back-elbow finish.",
     "authoritativeCombo": true,
     "impactMuzzle": true,
     "swingStyle": "punch",
@@ -16999,7 +16999,8 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "durability": 90,
     "glovePair": {
       "auraColor": 14108471,
-      "auraRadius": 54
+      "auraRadius": 54,
+      "wrapsFeet": true
     }
   },
   "x2-wing-chun-wraps": {
@@ -17036,7 +17037,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "idle": "mirror-guard",
       "feet": "combat-plant"
     },
-    "description": "White precision wraps that drive a three-hit straight-line chain-punch blitz through an ultra-short centerline.",
+    "description": "White precision wraps for a five-beat centerline blitz: a chain-punch triplet, low oblique kick, and double-palm burst.",
     "authoritativeCombo": true,
     "impactMuzzle": true,
     "swingStyle": "punch",
@@ -17056,7 +17057,8 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "durability": 90,
     "glovePair": {
       "auraColor": 16250090,
-      "auraRadius": 26
+      "auraRadius": 26,
+      "wrapsFeet": true
     }
   },
   "x2-drunken-fist-wraps": {
@@ -17093,7 +17095,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "idle": "mirror-guard",
       "feet": "loose-plant"
     },
-    "description": "Gourd-braced old wraps that sway and weave between crooked straights before an off-balance wide haymaker.",
+    "description": "Wine-stained wraps for five directional feints: swaying jab, reverse cross, weaving backfist, leg sweep, and falling haymaker.",
     "authoritativeCombo": true,
     "impactMuzzle": true,
     "swingStyle": "punch",
@@ -17103,16 +17105,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "hold": "steady",
       "action": "default-swing",
       "continuous": true,
-      "comboForwardPx": 8,
-      "forwardDrift": {
-        "speedPxPerSecond": 42,
-        "durationSeconds": 0.14,
-        "comboStepMultipliers": [
-          0.65,
-          1.05,
-          1.45
-        ]
-      }
+      "comboForwardPx": 8
     },
     "requirements": {
       "dex": 6,
@@ -17122,7 +17115,8 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "durability": 90,
     "glovePair": {
       "auraColor": 9201080,
-      "auraRadius": 44
+      "auraRadius": 44,
+      "wrapsFeet": true
     }
   },
   "x2-iron-palm-wraps": {
@@ -17159,7 +17153,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "idle": "mirror-guard",
       "feet": "wide-plant"
     },
-    "description": "Black iron-plated wraps that drive knuckle spikes through two ponderous blows and a crushing two-hand palm finish.",
+    "description": "Grey iron-plated wraps for a crushing palm, plated stomp, coiled wind-up, and double-palm quake finish.",
     "authoritativeCombo": true,
     "impactMuzzle": true,
     "swingStyle": "punch",
@@ -17179,7 +17173,8 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "durability": 90,
     "glovePair": {
       "auraColor": 13218168,
-      "auraRadius": 40
+      "auraRadius": 40,
+      "wrapsFeet": true
     }
   }
 };
@@ -20438,61 +20433,130 @@ export const GENERATED_MELEE_COMBO_BARS = {
   ],
   "muay-thai-eight-limbs": [
     {
-      "name": "Scar Elbow",
+      "name": "Rope-Ridge Teep",
+      "motion": "teep-kick",
+      "direction": 1,
+      "hand": "lead",
+      "timing": {
+        "activeStart": 0.18,
+        "activeEnd": 0.48,
+        "impact": 0.4,
+        "followEnd": 0.65
+      },
+      "path": {
+        "kind": "capsule",
+        "arcMultiplier": 0,
+        "rangeMultiplier": 1.05,
+        "damageMultiplier": 0.8,
+        "knockback": 14,
+        "deltaAngle": 0
+      },
+      "limb": "foot",
+      "rootMotion": {
+        "forwardPx": 10,
+        "lateralPx": 0,
+        "durationSeconds": 0.12
+      }
+    },
+    {
+      "name": "Scar Lead Elbow",
       "motion": "elbow",
       "direction": 1,
       "hand": "lead",
       "timing": {
-        "activeStart": 0.24,
-        "activeEnd": 0.54,
-        "impact": 0.48,
-        "followEnd": 0.72
+        "activeStart": 0.2,
+        "activeEnd": 0.5,
+        "impact": 0.43,
+        "followEnd": 0.68
       },
       "path": {
         "kind": "sweep",
         "arcMultiplier": 0.55,
         "rangeMultiplier": 0.82,
-        "damageMultiplier": 1,
+        "damageMultiplier": 0.9,
         "knockback": 16
+      },
+      "limb": "hand",
+      "rootMotion": {
+        "forwardPx": 4,
+        "lateralPx": 0,
+        "durationSeconds": 0.1
+      }
+    },
+    {
+      "name": "Scar Rear Elbow",
+      "motion": "elbow",
+      "direction": -1,
+      "hand": "off",
+      "timing": {
+        "activeStart": 0.21,
+        "activeEnd": 0.51,
+        "impact": 0.44,
+        "followEnd": 0.69
+      },
+      "path": {
+        "kind": "sweep",
+        "arcMultiplier": -0.62,
+        "rangeMultiplier": 0.84,
+        "damageMultiplier": 0.9,
+        "knockback": 18
+      },
+      "limb": "hand",
+      "rootMotion": {
+        "forwardPx": 5,
+        "lateralPx": 0,
+        "durationSeconds": 0.1
       }
     },
     {
       "name": "Rising Clinch Knee",
       "motion": "knee-strike",
-      "direction": -1,
-      "hand": "off",
+      "direction": 1,
+      "hand": "both",
       "timing": {
-        "activeStart": 0.29,
-        "activeEnd": 0.62,
-        "impact": 0.55,
+        "activeStart": 0.27,
+        "activeEnd": 0.6,
+        "impact": 0.53,
         "followEnd": 0.78
       },
       "path": {
         "kind": "capsule",
         "arcMultiplier": 0,
-        "rangeMultiplier": 0.88,
-        "damageMultiplier": 1,
-        "knockback": 22,
+        "rangeMultiplier": 0.92,
+        "damageMultiplier": 1.1,
+        "knockback": 24,
         "deltaAngle": 0
+      },
+      "limb": "foot",
+      "rootMotion": {
+        "forwardPx": 12,
+        "lateralPx": 0,
+        "durationSeconds": 0.14
       }
     },
     {
-      "name": "Red Roundhouse",
-      "motion": "roundhouse-kick",
-      "direction": 1,
-      "hand": "both",
+      "name": "Red Wheel Back-Elbow",
+      "motion": "spinning-back-elbow",
+      "direction": -1,
+      "hand": "off",
       "timing": {
         "activeStart": 0.34,
-        "activeEnd": 0.69,
-        "impact": 0.61,
-        "followEnd": 0.86
+        "activeEnd": 0.72,
+        "impact": 0.64,
+        "followEnd": 0.9
       },
       "path": {
         "kind": "sweep",
-        "arcMultiplier": 1.08,
-        "rangeMultiplier": 1,
-        "damageMultiplier": 1,
-        "knockback": 30
+        "arcMultiplier": -1.22,
+        "rangeMultiplier": 1.02,
+        "damageMultiplier": 1.3,
+        "knockback": 34
+      },
+      "limb": "hand",
+      "rootMotion": {
+        "forwardPx": 8,
+        "lateralPx": 0,
+        "durationSeconds": 0.16
       }
     }
   ],
@@ -20503,18 +20567,24 @@ export const GENERATED_MELEE_COMBO_BARS = {
       "direction": 1,
       "hand": "lead",
       "timing": {
-        "activeStart": 0.06,
-        "activeEnd": 0.24,
-        "impact": 0.2,
-        "followEnd": 0.36
+        "activeStart": 0.04,
+        "activeEnd": 0.2,
+        "impact": 0.15,
+        "followEnd": 0.28
       },
       "path": {
         "kind": "capsule",
         "arcMultiplier": 0,
         "rangeMultiplier": 1.08,
-        "damageMultiplier": 1,
+        "damageMultiplier": 0.8,
         "knockback": 2,
         "deltaAngle": 0
+      },
+      "limb": "hand",
+      "rootMotion": {
+        "forwardPx": 3,
+        "lateralPx": 0,
+        "durationSeconds": 0.08
       }
     },
     {
@@ -20523,18 +20593,24 @@ export const GENERATED_MELEE_COMBO_BARS = {
       "direction": -1,
       "hand": "off",
       "timing": {
-        "activeStart": 0.05,
-        "activeEnd": 0.22,
-        "impact": 0.18,
-        "followEnd": 0.34
+        "activeStart": 0.03,
+        "activeEnd": 0.18,
+        "impact": 0.13,
+        "followEnd": 0.26
       },
       "path": {
         "kind": "capsule",
         "arcMultiplier": 0,
         "rangeMultiplier": 1.12,
-        "damageMultiplier": 1,
+        "damageMultiplier": 0.8,
         "knockback": 2,
         "deltaAngle": 0
+      },
+      "limb": "hand",
+      "rootMotion": {
+        "forwardPx": 3,
+        "lateralPx": 0,
+        "durationSeconds": 0.08
       }
     },
     {
@@ -20543,18 +20619,75 @@ export const GENERATED_MELEE_COMBO_BARS = {
       "direction": 1,
       "hand": "lead",
       "timing": {
-        "activeStart": 0.05,
-        "activeEnd": 0.23,
-        "impact": 0.19,
-        "followEnd": 0.35
+        "activeStart": 0.03,
+        "activeEnd": 0.19,
+        "impact": 0.14,
+        "followEnd": 0.27
       },
       "path": {
         "kind": "capsule",
         "arcMultiplier": 0,
         "rangeMultiplier": 1.16,
-        "damageMultiplier": 1,
-        "knockback": 4,
+        "damageMultiplier": 0.8,
+        "knockback": 3,
         "deltaAngle": 0
+      },
+      "limb": "hand",
+      "rootMotion": {
+        "forwardPx": 4,
+        "lateralPx": 0,
+        "durationSeconds": 0.08
+      }
+    },
+    {
+      "name": "Knee-Gate Oblique",
+      "motion": "oblique-kick",
+      "direction": -1,
+      "hand": "off",
+      "timing": {
+        "activeStart": 0.1,
+        "activeEnd": 0.34,
+        "impact": 0.28,
+        "followEnd": 0.48
+      },
+      "path": {
+        "kind": "capsule",
+        "arcMultiplier": -0.06,
+        "rangeMultiplier": 1.05,
+        "damageMultiplier": 1.1,
+        "knockback": 8,
+        "deltaAngle": -0.08
+      },
+      "limb": "foot",
+      "rootMotion": {
+        "forwardPx": 7,
+        "lateralPx": 0,
+        "durationSeconds": 0.1
+      }
+    },
+    {
+      "name": "Endless-Knot Double Palm",
+      "motion": "double-palm",
+      "direction": 0,
+      "hand": "both",
+      "timing": {
+        "activeStart": 0.12,
+        "activeEnd": 0.42,
+        "impact": 0.34,
+        "followEnd": 0.56
+      },
+      "path": {
+        "kind": "fan",
+        "arcMultiplier": 0.24,
+        "rangeMultiplier": 1.2,
+        "damageMultiplier": 1.5,
+        "knockback": 18
+      },
+      "limb": "hand",
+      "rootMotion": {
+        "forwardPx": 9,
+        "lateralPx": 0,
+        "durationSeconds": 0.12
       }
     }
   ],
@@ -20565,64 +20698,132 @@ export const GENERATED_MELEE_COMBO_BARS = {
       "direction": 1,
       "hand": "lead",
       "timing": {
-        "activeStart": 0.14,
-        "activeEnd": 0.42,
-        "impact": 0.36,
-        "followEnd": 0.62
+        "activeStart": 0.12,
+        "activeEnd": 0.4,
+        "impact": 0.34,
+        "followEnd": 0.6
       },
       "path": {
         "kind": "capsule",
         "arcMultiplier": 0.08,
         "rangeMultiplier": 0.86,
-        "damageMultiplier": 1,
-        "knockback": 8,
+        "damageMultiplier": 0.8,
+        "knockback": 7,
         "deltaAngle": 0.08
+      },
+      "limb": "hand",
+      "rootMotion": {
+        "forwardPx": 3,
+        "lateralPx": 7,
+        "durationSeconds": 0.14
       }
     },
     {
-      "name": "Under-Table Cross",
+      "name": "Wrong-Way Cup Cross",
       "motion": "weave-cross",
       "direction": -1,
       "hand": "off",
       "timing": {
-        "activeStart": 0.18,
-        "activeEnd": 0.48,
-        "impact": 0.4,
-        "followEnd": 0.68
+        "activeStart": 0.16,
+        "activeEnd": 0.46,
+        "impact": 0.38,
+        "followEnd": 0.66
       },
       "path": {
         "kind": "capsule",
-        "arcMultiplier": -0.1,
-        "rangeMultiplier": 0.94,
-        "damageMultiplier": 1,
-        "knockback": 10,
-        "deltaAngle": -0.12
+        "arcMultiplier": -0.12,
+        "rangeMultiplier": 0.92,
+        "damageMultiplier": 0.9,
+        "knockback": 9,
+        "deltaAngle": -0.14
+      },
+      "limb": "hand",
+      "rootMotion": {
+        "forwardPx": -3,
+        "lateralPx": -9,
+        "durationSeconds": 0.14
       }
     },
     {
-      "name": "Gourd Moon Haymaker",
-      "motion": "gourd-haymaker",
+      "name": "Lantern-Weave Backfist",
+      "motion": "weave-backfist",
       "direction": 1,
       "hand": "lead",
       "timing": {
-        "activeStart": 0.22,
-        "activeEnd": 0.56,
-        "impact": 0.48,
-        "followEnd": 0.78
+        "activeStart": 0.14,
+        "activeEnd": 0.45,
+        "impact": 0.37,
+        "followEnd": 0.65
       },
       "path": {
         "kind": "sweep",
-        "arcMultiplier": 1.28,
-        "rangeMultiplier": 1.08,
-        "damageMultiplier": 1,
-        "knockback": 18
+        "arcMultiplier": 0.72,
+        "rangeMultiplier": 0.96,
+        "damageMultiplier": 0.9,
+        "knockback": 11
+      },
+      "limb": "hand",
+      "rootMotion": {
+        "forwardPx": 5,
+        "lateralPx": 8,
+        "durationSeconds": 0.14
+      }
+    },
+    {
+      "name": "Spilled-Wine Leg Sweep",
+      "motion": "sweeping-leg",
+      "direction": -1,
+      "hand": "both",
+      "timing": {
+        "activeStart": 0.2,
+        "activeEnd": 0.55,
+        "impact": 0.47,
+        "followEnd": 0.75
+      },
+      "path": {
+        "kind": "sweep",
+        "arcMultiplier": -1.18,
+        "rangeMultiplier": 1.12,
+        "damageMultiplier": 1.1,
+        "knockback": 16
+      },
+      "limb": "foot",
+      "rootMotion": {
+        "forwardPx": -2,
+        "lateralPx": -11,
+        "durationSeconds": 0.14
+      }
+    },
+    {
+      "name": "Falling Gourd Haymaker",
+      "motion": "falling-haymaker",
+      "direction": 1,
+      "hand": "lead",
+      "timing": {
+        "activeStart": 0.24,
+        "activeEnd": 0.62,
+        "impact": 0.54,
+        "followEnd": 0.84
+      },
+      "path": {
+        "kind": "sweep",
+        "arcMultiplier": 1.34,
+        "rangeMultiplier": 1.1,
+        "damageMultiplier": 1.3,
+        "knockback": 24
+      },
+      "limb": "hand",
+      "rootMotion": {
+        "forwardPx": 12,
+        "lateralPx": 4,
+        "durationSeconds": 0.16
       }
     }
   ],
   "iron-palm-forge-gate": [
     {
-      "name": "Iron Knuckle Gate",
-      "motion": "iron-knuckle",
+      "name": "Crushing Gate Palm",
+      "motion": "crushing-palm",
       "direction": 1,
       "hand": "lead",
       "timing": {
@@ -20634,49 +20835,92 @@ export const GENERATED_MELEE_COMBO_BARS = {
       "path": {
         "kind": "capsule",
         "arcMultiplier": 0,
-        "rangeMultiplier": 0.86,
-        "damageMultiplier": 1,
+        "rangeMultiplier": 0.88,
+        "damageMultiplier": 0.9,
         "knockback": 24,
         "deltaAngle": 0
+      },
+      "limb": "hand",
+      "rootMotion": {
+        "forwardPx": 5,
+        "lateralPx": 0,
+        "durationSeconds": 0.16
       }
     },
     {
-      "name": "Anvil Knuckle Return",
-      "motion": "iron-knuckle",
+      "name": "Iron Mountain Stomp",
+      "motion": "stomp-kick",
       "direction": -1,
       "hand": "off",
       "timing": {
-        "activeStart": 0.33,
-        "activeEnd": 0.66,
-        "impact": 0.59,
-        "followEnd": 0.83
+        "activeStart": 0.34,
+        "activeEnd": 0.68,
+        "impact": 0.61,
+        "followEnd": 0.84
       },
       "path": {
         "kind": "capsule",
-        "arcMultiplier": -0.16,
-        "rangeMultiplier": 0.9,
+        "arcMultiplier": -0.06,
+        "rangeMultiplier": 0.96,
         "damageMultiplier": 1,
-        "knockback": 28,
-        "deltaAngle": -0.18
+        "knockback": 30,
+        "deltaAngle": -0.08
+      },
+      "limb": "foot",
+      "rootMotion": {
+        "forwardPx": 12,
+        "lateralPx": 0,
+        "durationSeconds": 0.16
       }
     },
     {
-      "name": "Forge-Gate Palm",
-      "motion": "iron-palm",
-      "direction": 1,
+      "name": "Anvil-Coil Wind-Up",
+      "motion": "windup-palm",
+      "direction": -1,
+      "hand": "off",
+      "timing": {
+        "activeStart": 0.36,
+        "activeEnd": 0.7,
+        "impact": 0.63,
+        "followEnd": 0.86
+      },
+      "path": {
+        "kind": "sweep",
+        "arcMultiplier": -0.48,
+        "rangeMultiplier": 0.9,
+        "damageMultiplier": 1,
+        "knockback": 26
+      },
+      "limb": "hand",
+      "rootMotion": {
+        "forwardPx": -3,
+        "lateralPx": 0,
+        "durationSeconds": 0.18
+      }
+    },
+    {
+      "name": "Forge-Gate Quake Palm",
+      "motion": "quake-double-palm",
+      "direction": 0,
       "hand": "both",
       "timing": {
-        "activeStart": 0.4,
-        "activeEnd": 0.75,
-        "impact": 0.68,
-        "followEnd": 0.92
+        "activeStart": 0.42,
+        "activeEnd": 0.78,
+        "impact": 0.7,
+        "followEnd": 0.94
       },
       "path": {
         "kind": "fan",
-        "arcMultiplier": 0.42,
-        "rangeMultiplier": 1,
-        "damageMultiplier": 1,
-        "knockback": 42
+        "arcMultiplier": 0.5,
+        "rangeMultiplier": 1.08,
+        "damageMultiplier": 1.1,
+        "knockback": 48
+      },
+      "limb": "hand",
+      "rootMotion": {
+        "forwardPx": 16,
+        "lateralPx": 0,
+        "durationSeconds": 0.2
       }
     }
   ]

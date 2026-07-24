@@ -14,7 +14,7 @@ const { PNG } = require("../tools/artkit/node_modules/pngjs") as {
   };
 };
 
-const B14_WRAPS = [
+const B19_WRAPS = [
   "x2-muay-thai-wraps",
   "x2-wing-chun-wraps",
   "x2-drunken-fist-wraps",
@@ -22,7 +22,7 @@ const B14_WRAPS = [
 ] as const;
 
 const NATIVE_PARTS: Readonly<
-  Record<(typeof B14_WRAPS)[number], readonly (readonly [number, number])[]>
+  Record<(typeof B19_WRAPS)[number], readonly (readonly [number, number])[]>
 > = {
   "x2-muay-thai-wraps": [
     [380, 512],
@@ -61,16 +61,57 @@ function visibleAlphaBounds(data: Buffer, width: number, height: number) {
   return { visible, minX, minY, maxX, maxY };
 }
 
-function comboSteps(id: (typeof B14_WRAPS)[number]) {
+function significantAlphaComponents(data: Buffer, width: number, height: number): number {
+  const visited = new Uint8Array(width * height);
+  const stack = new Int32Array(width * height);
+  let components = 0;
+  for (let start = 0; start < visited.length; start++) {
+    if (visited[start] || (data[start * 4 + 3] ?? 0) <= 16) continue;
+    let head = 0;
+    let tail = 1;
+    let area = 0;
+    stack[0] = start;
+    visited[start] = 1;
+    while (head < tail) {
+      const index = stack[head++]!;
+      area++;
+      const x = index % width;
+      const up = index - width;
+      const down = index + width;
+      const left = index - 1;
+      const right = index + 1;
+      if (up >= 0 && !visited[up] && (data[up * 4 + 3] ?? 0) > 16) {
+        visited[up] = 1;
+        stack[tail++] = up;
+      }
+      if (down < visited.length && !visited[down] && (data[down * 4 + 3] ?? 0) > 16) {
+        visited[down] = 1;
+        stack[tail++] = down;
+      }
+      if (x > 0 && !visited[left] && (data[left * 4 + 3] ?? 0) > 16) {
+        visited[left] = 1;
+        stack[tail++] = left;
+      }
+      if (x + 1 < width && !visited[right] && (data[right * 4 + 3] ?? 0) > 16) {
+        visited[right] = 1;
+        stack[tail++] = right;
+      }
+    }
+    if (area >= 64) components++;
+  }
+  return components;
+}
+
+function comboSteps(id: (typeof B19_WRAPS)[number]) {
   return meleeComboSelectionFor(WEAPONS[id]!)?.sequence;
 }
 
-describe("B14 kung-fu wrap catalog", () => {
-  it("publishes four active dual-hand glove pairs with distinct combo and VFX signatures", () => {
-    expect(new Set(B14_WRAPS).size).toBe(4);
+describe("B19 kung-fu wrap rework", () => {
+  it("publishes four active four-limb wrap sets with distinct combo, root, and VFX signatures", () => {
+    expect(new Set(B19_WRAPS).size).toBe(4);
     const comboSignatures = new Set<string>();
     const vfxSignatures = new Set<string>();
-    for (const id of B14_WRAPS) {
+    for (const id of B19_WRAPS) {
       const weapon = WEAPONS[id];
       expect(weapon, id).toBeDefined();
       expect(weapon?.expansion, id).toBe(true);
@@ -84,6 +125,7 @@ describe("B14 kung-fu wrap catalog", () => {
       });
       expect(weapon?.twoHanded, id).toBe(true);
       expect(weapon?.glovePair, id).toBeDefined();
+      expect(weapon?.glovePair?.wrapsFeet, id).toBe(true);
       expect(weapon?.poseLanguage?.idle, id).toBe("mirror-guard");
       expect(weapon?.authoritativeCombo, id).toBe(true);
       expect(weapon?.impactMuzzle, id).toBe(true);
@@ -102,42 +144,64 @@ describe("B14 kung-fu wrap catalog", () => {
     expect(vfxSignatures.size).toBe(4);
   });
 
-  it("pins eight-limbs, centerline blitz, swaying cup, and forge-gate choreography", () => {
-    expect(comboSteps("x2-muay-thai-wraps")?.map((step) => step.motion)).toEqual([
-      "elbow",
-      "knee-strike",
-      "roundhouse-kick",
+  it("pins the longer punch/kick beat charts and authored displacement", () => {
+    expect(comboSteps("x2-muay-thai-wraps")?.map((step) => [step.motion, step.limb])).toEqual([
+      ["teep-kick", "foot"],
+      ["elbow", "hand"],
+      ["elbow", "hand"],
+      ["knee-strike", "foot"],
+      ["spinning-back-elbow", "hand"],
     ]);
     expect(
-      comboSteps("x2-wing-chun-wraps")?.map((step) => [step.motion, step.hand, step.path.kind]),
+      comboSteps("x2-wing-chun-wraps")?.map((step) => [step.motion, step.hand, step.limb]),
     ).toEqual([
-      ["chain-punch", "lead", "capsule"],
-      ["chain-punch", "off", "capsule"],
-      ["chain-punch", "lead", "capsule"],
+      ["chain-punch", "lead", "hand"],
+      ["chain-punch", "off", "hand"],
+      ["chain-punch", "lead", "hand"],
+      ["oblique-kick", "off", "foot"],
+      ["double-palm", "both", "hand"],
     ]);
-    expect(comboSteps("x2-drunken-fist-wraps")?.map((step) => step.motion)).toEqual([
-      "sway-jab",
-      "weave-cross",
-      "gourd-haymaker",
+    expect(comboSteps("x2-drunken-fist-wraps")?.map((step) => [step.motion, step.limb])).toEqual([
+      ["sway-jab", "hand"],
+      ["weave-cross", "hand"],
+      ["weave-backfist", "hand"],
+      ["sweeping-leg", "foot"],
+      ["falling-haymaker", "hand"],
     ]);
-    expect(WEAPONS["x2-drunken-fist-wraps"]?.performance?.forwardDrift).toEqual({
-      speedPxPerSecond: 42,
-      durationSeconds: 0.14,
-      comboStepMultipliers: [0.65, 1.05, 1.45],
-    });
-    expect(comboSteps("x2-iron-palm-wraps")?.map((step) => step.motion)).toEqual([
-      "iron-knuckle",
-      "iron-knuckle",
-      "iron-palm",
+    expect(
+      comboSteps("x2-drunken-fist-wraps")?.map((step) => [
+        step.rootMotion?.forwardPx,
+        step.rootMotion?.lateralPx,
+      ]),
+    ).toEqual([
+      [3, 7],
+      [-3, -9],
+      [5, 8],
+      [-2, -11],
+      [12, 4],
     ]);
-    expect(comboSteps("x2-iron-palm-wraps")?.at(-1)?.path.knockback).toBe(42);
+    expect(comboSteps("x2-iron-palm-wraps")?.map((step) => [step.motion, step.limb])).toEqual([
+      ["crushing-palm", "hand"],
+      ["stomp-kick", "foot"],
+      ["windup-palm", "hand"],
+      ["quake-double-palm", "hand"],
+    ]);
+    expect(comboSteps("x2-iron-palm-wraps")?.at(-1)?.path.knockback).toBe(48);
   });
 
-  it("keeps every nominal cadence in the 18-22 DPS ballpark with the requested ordering", () => {
-    const weapons = B14_WRAPS.map((id) => WEAPONS[id]!);
+  it("keeps every redistributed combo inside ±10% of shipped DPS with requested cadence ordering", () => {
+    const weapons = B19_WRAPS.map((id) => WEAPONS[id]!);
     for (const weapon of weapons) {
-      expect(weapon.damage / weapon.cooldown, weapon.id).toBeGreaterThanOrEqual(18);
-      expect(weapon.damage / weapon.cooldown, weapon.id).toBeLessThanOrEqual(22);
+      const steps = comboSteps(weapon.id as (typeof B19_WRAPS)[number]) ?? [];
+      const averageDamage =
+        steps.reduce((sum, step) => sum + step.path.damageMultiplier, 0) /
+        Math.max(1, steps.length);
+      const shippedDps = weapon.damage / weapon.cooldown;
+      const redistributedDps = shippedDps * averageDamage;
+      expect(redistributedDps, weapon.id).toBeGreaterThanOrEqual(shippedDps * 0.9);
+      expect(redistributedDps, weapon.id).toBeLessThanOrEqual(shippedDps * 1.1);
+      expect(redistributedDps, weapon.id).toBeGreaterThanOrEqual(18);
+      expect(redistributedDps, weapon.id).toBeLessThanOrEqual(22);
     }
     const muay = WEAPONS["x2-muay-thai-wraps"]!;
     const wing = WEAPONS["x2-wing-chun-wraps"]!;
@@ -153,7 +217,7 @@ describe("B14 kung-fu wrap catalog", () => {
   });
 
   it("ships every authored part at its native dimensions with broad visible alpha bounds", () => {
-    for (const id of B14_WRAPS) {
+    for (const id of B19_WRAPS) {
       const parts = NATIVE_PARTS[id];
       const expectedCanvas = {
         w: Math.max(...parts.map(([width]) => width)),
@@ -173,6 +237,10 @@ describe("B14 kung-fu wrap catalog", () => {
           h: height,
         });
         const bounds = visibleAlphaBounds(png.data, png.width, png.height);
+        expect(
+          significantAlphaComponents(png.data, png.width, png.height),
+          `${id}/part-${index + 1} must remain one item, never a fused pair`,
+        ).toBe(1);
         expect(bounds.visible, `${id}/part-${index + 1}`).toBeGreaterThan(8_000);
         expect(bounds.maxX - bounds.minX, `${id}/part-${index + 1}`).toBeGreaterThan(width * 0.42);
         expect(bounds.maxY - bounds.minY, `${id}/part-${index + 1}`).toBeGreaterThan(height * 0.42);
@@ -185,7 +253,7 @@ describe("B14 kung-fu wrap catalog", () => {
     const source = JSON.parse(readFileSync("data/weapon-concepts-300.json", "utf8")) as {
       weapons: Array<{ id: string; theme?: string; artPrompt?: string }>;
     };
-    for (const id of B14_WRAPS) {
+    for (const id of B19_WRAPS) {
       const weapon = WEAPONS[id]!;
       for (const [index, point] of (weapon.muzzle?.points ?? []).entries()) {
         const path = `packages/client/public/sprites/${id}/part-${index + 1}.png`;
