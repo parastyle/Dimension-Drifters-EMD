@@ -89,9 +89,9 @@ describe("weapon pose-language classifier", () => {
   });
 
   it("keeps beam and dual as overlays over the same base family", () => {
-    const beamPistol = weapon("x2-voltcaster-machine-pistol");
-    const withoutBeam = { ...beamPistol, beam: undefined };
-    expect(weaponPoseFamilyFor(beamPistol)).toBe(weaponPoseFamilyFor(withoutBeam));
+    const beamGun = weapon("x2-stormcaller-tesla-gatling");
+    const withoutBeam = { ...beamGun, beam: undefined };
+    expect(weaponPoseFamilyFor(beamGun)).toBe(weaponPoseFamilyFor(withoutBeam));
 
     const dualBlade = weapon("x2-coyote-s-grin");
     const withoutDual = {
@@ -102,18 +102,18 @@ describe("weapon pose-language classifier", () => {
     expect(weaponPoseFamilyFor(dualBlade)).toBe(weaponPoseFamilyFor(withoutDual));
   });
 
-  it("switches disputed 2H geometry between metadata and current-art truth", () => {
+  it("makes physical 2H ranged grip metadata authoritative under either art policy", () => {
     const shotgun = weapon("x-gun-coffin-shotgun");
     expect(shotgun.tags.grip).toBe("2H");
     expect(shotgun.twoHanded).not.toBe(true);
     expect(twoHandedPoseFor(shotgun, "metadata")).toBe(true);
-    expect(twoHandedPoseFor(shotgun, "art")).toBe(false);
+    expect(twoHandedPoseFor(shotgun, "art")).toBe(true);
     expect(
       weaponPoseResolutionFor(shotgun, variants({ twoHandAuthority: "metadata" })).hardTwoHanded,
     ).toBe(true);
     expect(
       weaponPoseResolutionFor(shotgun, variants({ twoHandAuthority: "art" })).hardTwoHanded,
-    ).toBe(false);
+    ).toBe(true);
   });
 });
 

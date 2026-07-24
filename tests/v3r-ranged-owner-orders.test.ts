@@ -70,7 +70,10 @@ describe("V3R ranged owner orders", () => {
     expect(WEAPONS["x-gun-gatling"]?.muzzle?.points).toHaveLength(1);
     expect(WEAPONS["x2-reliquary-nailcaster"]?.muzzle?.points).toHaveLength(3);
     expect(WEAPONS["x2-stormcaller-tesla-gatling"]?.muzzle?.points).toHaveLength(6);
-    expect(WEAPONS["x2-voltcaster-machine-pistol"]?.beam?.width).toBe(8);
+    expect(WEAPONS["x2-voltcaster-machine-pistol"]?.gun).toMatchObject({
+      bulletKind: "laser",
+      magazine: 24,
+    });
   });
 
   it("retains the V3G grip laws on overlapping V3R weapons", () => {

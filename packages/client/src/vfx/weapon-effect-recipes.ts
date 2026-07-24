@@ -91,6 +91,14 @@ export const WEAPON_EFFECT_RECIPES = Object.freeze({
     impactPack: "arcane-shard",
     additive: true,
   }),
+  "mauler-fire-impact": Object.freeze({
+    id: "mauler-fire-impact",
+    weaponId: "x2-mauler-slug-thrower",
+    emitter: "tip",
+    classification: "projectile-impact",
+    impactPack: "fire-splat",
+    additive: true,
+  }),
   "whispervolume-page-scatter": Object.freeze({
     id: "whispervolume-page-scatter",
     weaponId: "x2-twin-whispervolumes",

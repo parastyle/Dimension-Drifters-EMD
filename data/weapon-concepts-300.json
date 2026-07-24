@@ -1217,6 +1217,17 @@
         "swingArc": 12.566370614359172,
         "gripFrac": 0.06
       },
+      "gripPoints": {
+        "primary": {
+          "x": 0.1,
+          "y": 0.52
+        },
+        "secondary": {
+          "x": 0.54,
+          "y": 0.52,
+          "role": "shaft"
+        }
+      },
       "swingStyle": "spin",
       "performance": {
         "hold": "steady",
@@ -2084,7 +2095,8 @@
         "range": 154,
         "halfArc": 0.95,
         "cooldown": 0.64,
-        "displayLength": 128,
+        "displayLength": 172.8,
+        "collisionLength": 128,
         "swingArc": 6.283185307179586,
         "gripFrac": 0.1
       },
@@ -5315,20 +5327,20 @@
       "behavior": {
         "kind": "gun",
         "damage": 6,
-        "projectileSpeed": 820,
+        "projectileSpeed": 4000,
         "range": 560,
         "fireRate": 0.08,
-        "width": 8,
         "pellets": 1,
-        "spread": 0.12,
+        "spread": 0,
         "pierce": 1,
         "magazine": 24,
         "reloadSeconds": 1.8,
-        "bulletKind": "tracer",
+        "bulletKind": "laser",
         "muzzle": "rapid",
         "muzzleColor": 11619071,
         "recoil": 0.0008
       },
+      "fireMode": "semi-auto",
       "stats": {
         "damage": 6,
         "range": 68,
@@ -5536,8 +5548,8 @@
       },
       "gripPoints": {
         "primary": {
-          "x": 0.38,
-          "y": 0.64
+          "x": 0.22,
+          "y": 0.66
         }
       },
       "id": "x2-fool-s-gold-revolver"
@@ -5569,15 +5581,19 @@
         "projectileSpeed": 880,
         "range": 540,
         "fireRate": 0.12,
-        "pellets": 6,
-        "spread": 0.22,
+        "pellets": 1,
+        "spread": 0.03,
         "pierce": 1,
         "magazine": 6,
         "reloadSeconds": 1.1,
         "bulletKind": "slug",
         "muzzle": "rapid",
         "muzzleColor": 15264472,
-        "recoil": 0.0009
+        "recoil": 0.0009,
+        "burst": {
+          "count": 6,
+          "intervalSeconds": 0.05
+        }
       },
       "stats": {
         "damage": 5,
@@ -6455,6 +6471,7 @@
         "magazine": 5,
         "reloadSeconds": 1.9,
         "bulletKind": "slug",
+        "projectileArt": "generated",
         "muzzle": "boom",
         "muzzleColor": 16747563,
         "recoil": 0.0038,
@@ -6754,7 +6771,18 @@
         "bulletKind": "slug",
         "muzzle": "punch",
         "muzzleColor": 11619071,
-        "recoil": 0.0038
+        "recoil": 0.0038,
+        "chainLightning": {
+          "jumps": 3,
+          "range": 220,
+          "damage": 4,
+          "falloff": 0.75,
+          "vfx": {
+            "color": 0.9,
+            "jag": 0.42,
+            "life": 220
+          }
+        }
       },
       "id": "x2-ghostwind-spectre-rail"
     },
@@ -8761,9 +8789,12 @@
         "bulletKind": "fire-plume",
         "projectileVisualScale": 1.4,
         "projectileColor": 16738858,
-        "muzzle": "heavy",
+        "muzzle": "artillery",
+        "muzzleColor": 16738858,
         "recoil": 0.004
       },
+      "effectRecipe": "mauler-fire-impact",
+      "effectEmitter": "tip",
       "stats": {
         "damage": 7,
         "range": 84,
@@ -8928,9 +8959,16 @@
         "range": 80,
         "halfArc": 0.55,
         "cooldown": 0.8,
-        "displayLength": 112,
+        "displayLength": 97.44,
+        "collisionLength": 112,
         "swingArc": 1,
         "gripFrac": 0.12
+      },
+      "gripPoints": {
+        "primary": {
+          "x": 0.22,
+          "y": 0.62
+        }
       },
       "id": "x2-hexbore-voidmaw"
     },
@@ -11942,7 +11980,8 @@
         "range": 720,
         "halfArc": 0.5,
         "cooldown": 0.5,
-        "displayLength": 92,
+        "displayLength": 46,
+        "collisionLength": 92,
         "swingArc": 1.1,
         "gripFrac": 0.12
       },
@@ -11951,6 +11990,7 @@
         "damage": 5,
         "range": 720,
         "tickRate": 0.12,
+        "width": 57.6,
         "randomRays": {
           "count": 7,
           "spread": 1.05
@@ -14000,7 +14040,7 @@
         "reloadSeconds": 1.2,
         "bulletKind": "spark",
         "projectileArt": "generated",
-        "projectileVisualScale": 1,
+        "projectileVisualScale": 3.5,
         "projectileColor": 11619327,
         "muzzle": "spark",
         "muzzleColor": 11619327,
@@ -14238,7 +14278,8 @@
         "kind": "beam",
         "damage": 4,
         "range": 460,
-        "tickRate": 0.1
+        "tickRate": 0.1,
+        "width": 19
       },
       "id": "x2-voidgrasp-null-gauntlet"
     },

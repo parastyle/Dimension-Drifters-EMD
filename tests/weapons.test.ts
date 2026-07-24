@@ -288,7 +288,6 @@ describe("meleeReach (§20 WYSIWYG — the blade tip must connect)", () => {
 const {
   BEAM_AGGREGATE_TARGET_CAP: BEAM_TARGET_CAP,
   BEAM_MAX_RANGE: BEAM_RANGE_CAP,
-  BEAM_MAX_TURN_RATE: BEAM_TURN_CAP,
   BEAM_MAX_WIDTH: BEAM_WIDTH_CAP,
   BEAM_MIN_CHARGE_SECONDS: BEAM_CHARGE_FLOOR,
   beamDescriptorFor: makeBeamDescriptor,
@@ -299,12 +298,12 @@ const {
 describe("beam weapons — hard panel laws", () => {
   const beamDefs = Object.values(WEAPONS).filter((weapon) => weapon.beam);
 
-  it("keeps the 18 caster beams plus the five named energy guns after Gilded's zone conversion", () => {
+  it("keeps the 18 caster beams plus four channelled energy guns after Voltcaster's pulse conversion", () => {
     expect(beamDefs.filter((weapon) => weapon.tags.classPool === "caster")).toHaveLength(18);
-    expect(WEAPONS["x2-voltcaster-machine-pistol"]?.beam).toBeDefined();
+    expect(WEAPONS["x2-voltcaster-machine-pistol"]?.gun?.bulletKind).toBe("laser");
     expect(WEAPONS["x2-stormcaller-tesla-gatling"]?.beam).toBeDefined();
     expect(WEAPONS["x2-mirage-coilrifle"]?.beam).toBeDefined();
-    expect(beamDefs).toHaveLength(23);
+    expect(beamDefs).toHaveLength(22);
     for (const weapon of beamDefs) expect(weapon.gun, weapon.id).toBeUndefined();
   });
 
@@ -335,9 +334,9 @@ describe("beam weapons — hard panel laws", () => {
     expect(Object.isFrozen(descriptor)).toBe(true);
   });
 
-  it("caps live aim rotation at 75 degrees/second even with a zero-ish lag", () => {
-    const next = steerBeamAngle(0, Math.PI, 0.001, 0.05);
-    expect(Math.abs(next)).toBeCloseTo(BEAM_TURN_CAP * 0.05, 8);
+  it("locks every laser directly to the weapon's current aim without lag", () => {
+    expect(steerBeamAngle(0, Math.PI, 0.8, 0.001)).toBe(Math.PI);
+    expect(steerBeamAngle(Math.PI, -2.4, 0.001, 0.05)).toBe(-2.4);
   });
 
   it("normalizes DPS by actual dt and shares output above three contacts", () => {

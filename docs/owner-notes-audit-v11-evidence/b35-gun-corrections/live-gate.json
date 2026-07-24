@@ -1,0 +1,121 @@
+{
+  "gate": "B35 gun presentation corrections",
+  "character": "proto-cowboy-hidden-face",
+  "privateStacks": [
+    {
+      "vitePort": 62714,
+      "gamePort": 62712
+    },
+    {
+      "vitePort": 50399,
+      "gamePort": 59382
+    }
+  ],
+  "reservedPortsAvoided": [
+    5180,
+    2567
+  ],
+  "facingMatrix": {
+    "01": "order-01-x2-riftglass-prism-lantern-{right,left}.png",
+    "02-cinderpalm": "order-02-cinderpalm-x2-cinderpalm-brand-glove-{right,left}.png",
+    "02-gatling": "order-02-gatling-x-gun-gatling-{right,left}.png",
+    "02-random-revolver": "order-02-random-revolver-x-gun-revolver-cannon-{right,left}.png",
+    "02-random-nailgun": "order-02-random-nailgun-x-gun-nailgun-{right,left}.png",
+    "03": "order-03-x2-voltvein-conductors-{right,left}.png",
+    "04": "order-04-x2-voidgrasp-null-gauntlet-{right,left}.png",
+    "05": "order-05-x2-prismhex-diffraction-gauntlet-{right,left}.png",
+    "06": "order-06-x2-iron-vow-bearded-axe-{right,left}.png",
+    "07": "order-07-x2-permafrost-bardiche-{right,left}.png",
+    "08": "dedicated-laser-rigid-lock-{right,left}-fast-swing.png",
+    "09": "order-09-x2-cinderbore-longrifle-{right,left}.png",
+    "10": "order-10-x2-voltcaster-machine-pistol-{right,left}.png",
+    "11": "order-11-x2-coyote-stinger-{right,left}.png",
+    "12": "order-12-x2-ghostwind-spectre-rail-{right,left}.png",
+    "13": "order-13-x2-quicksilver-fanner-{right,left}.png",
+    "14": "order-14-x2-fool-s-gold-revolver-{right,left}.png",
+    "15": "order-15-x2-mauler-slug-thrower-{right,left}.png",
+    "16": "order-16-x2-hexbore-voidmaw-{right,left}.png",
+    "17": "order-17-x2-tesla-faradayer-{right,left}.png",
+    "18": "dedicated-shoulder-stance-head-nod-{right,left}.png"
+  },
+  "dedicatedChecks": {
+    "strayHandClass": {
+      "cinderpalmFreeHandFacingMarginPx": {
+        "right": 26.319,
+        "left": 26.953
+      },
+      "gatlingPoseTwoHanded": true,
+      "gatlingSupportHandFacingMarginPx": {
+        "right": 71.001,
+        "left": 71.001
+      },
+      "randomOneHandedFacingMarginsPx": {
+        "x-gun-revolver-cannon": {
+          "right": 27.062,
+          "left": 26.293
+        },
+        "x-gun-nailgun": {
+          "right": 26.723,
+          "left": 26.649
+        }
+      }
+    },
+    "alternatingGloves": {
+      "rightRecoilHands": [
+        0,
+        1
+      ],
+      "leftRecoilHands": [
+        0,
+        1
+      ],
+      "screenshots": "dedicated-alternating-hands-{right,left}-shot-{1,2}.png"
+    },
+    "laserLaw": {
+      "activeAngleFlipsPerFacing": 7,
+      "maxRenderToTargetErrorRad": 0,
+      "screenshots": "dedicated-laser-rigid-lock-{right,left}-fast-swing.png"
+    },
+    "coyoteBarrelOrigin": {
+      "wirePartsObserved": [
+        0,
+        1
+      ],
+      "minimumDistanceFromSpawnToHandPx": 38.621,
+      "screenshots": "dedicated-coyote-barrel-origin-{right,left}-shot-{1,2}.png"
+    },
+    "ghostwindChain": {
+      "authoredHue": 0.9,
+      "receiptColor": "0xb07bd6",
+      "directHitDamageObserved": 15,
+      "screenshots": "dedicated-ghostwind-purple-chain-hit-{right,left}.png"
+    },
+    "fanner": {
+      "onePressOrdinalsRight": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "onePressOrdinalsLeft": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "screenshots": "dedicated-fanner-{right,left}-sequential-shot-{1,2,3,4,5,6}.png"
+    },
+    "shoulderStance": {
+      "headNodDeltaRad": {
+        "right": 0.08,
+        "left": 0.08
+      },
+      "twoHandedRiflePose": true,
+      "screenshots": "dedicated-shoulder-stance-head-nod-{right,left}.png"
+    }
+  }
+}

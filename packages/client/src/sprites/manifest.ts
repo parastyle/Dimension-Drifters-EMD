@@ -14421,7 +14421,6 @@ export const SPRITES = {
   "x2-prismhex-diffraction-gauntlet": {
     "id": "x2-prismhex-diffraction-gauntlet",
     "kind": "weapon",
-    "imageFacing": "mirror-x",
     "canvas": {
       "w": 298,
       "h": 298

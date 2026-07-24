@@ -139,7 +139,7 @@ describe("B24 shared radial fallback removal", () => {
     });
 
     expect(sha256("packages/client/src/vfx/weapon-effect-recipes.ts")).toBe(
-      "8EF269EB013F8B7621AFEE26B88976B2D2152C13461B040598810A8336E805AB",
+      "2BC0F13EF3D976DDC31DE977B245A0F45B7E3B615EF5FB40D0AD0D92AEB77255",
     );
     expect(sha256("packages/client/src/vfx/weapon-effect-vfx.ts")).toBe(
       "813C0739A4D53BAB740C934A2D0FCEEEB256970F1D20224665D64A6D58FEBD54",

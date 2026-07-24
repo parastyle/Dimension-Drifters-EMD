@@ -7084,6 +7084,64 @@ describe("GameRoom - NB projectile contracts", () => {
     expect(h.room.projectileSeq - firstProjectileSeq).toBe(4);
   });
 
+  it("emits one Quicksilver press as six sequential rows for one resource spend", () => {
+    const weaponId = "x2-quicksilver-fanner";
+    const weapon = WEAPONS[weaponId];
+    if (!weapon?.gun?.burst) throw new Error("Fanner burst fixture is required");
+    const { h, player } = projectileRoom("fanner", weaponId);
+    const combat = h.room.combat.get(player.id);
+    h.room.setWeaponResourceRegenOverride(player.id, "paused");
+    combat.drive.valueF = 100;
+    player.weaponResource.valueQ = 10_000;
+
+    h.send(player.id, "attack", {
+      aimX: 1,
+      aimY: 0,
+      tx: player.x + weapon.gun.range,
+      ty: player.y,
+    });
+    h.tick(1);
+    const afterTriggerCost = combat.drive.valueF;
+    h.tick(5);
+
+    const rounds = [...h.state().projectiles.values()].filter(
+      (row) => row.sourceWeaponId === weaponId,
+    );
+    expect(weapon.gun).toMatchObject({
+      damage: 1,
+      burst: { count: 6, intervalSeconds: 0.05 },
+    });
+    expect(weapon.gun.pellets).toBeUndefined();
+    expect(rounds).toHaveLength(6);
+    expect(rounds.map((row) => row.sourceBurstIndex)).toEqual([0, 1, 2, 3, 4, 5]);
+    expect(new Set(rounds.map((row) => row.bornTick)).size).toBe(6);
+    expect(combat.drive.valueF).toBe(afterTriggerCost);
+  });
+
+  it("stamps Coyote rounds with the exact alternating barrel part", () => {
+    const weaponId = "x2-coyote-stinger";
+    const weapon = WEAPONS[weaponId];
+    if (!weapon?.gun || weapon.muzzle?.salvoMode !== "cycle")
+      throw new Error("Coyote alternating muzzle fixture is required");
+    const { h, player } = projectileRoom("coyote-muzzle", weaponId);
+    const combat = h.room.combat.get(player.id);
+    combat.aimX = 1;
+    combat.aimY = 0;
+    combat.targetX = player.x + weapon.gun.range;
+    combat.targetY = player.y;
+
+    player.attackSeq = 1;
+    h.room.fireGun(player, combat, weapon);
+    player.attackSeq = 2;
+    h.room.fireGun(player, combat, weapon);
+
+    const rounds = [...h.state().projectiles.values()].filter(
+      (row) => row.sourceWeaponId === weaponId,
+    );
+    expect(rounds.map((row) => row.sourceMuzzlePart)).toEqual([0, 1]);
+    expect(rounds.every((row) => Math.abs(row.x - player.x) > 20)).toBe(true);
+  });
+
   it("makes every Arcanist held-fire cadence request an accepted projectile beat", () => {
     const weaponId = "x-staff-arcane-lance";
     const weapon = WEAPONS[weaponId];

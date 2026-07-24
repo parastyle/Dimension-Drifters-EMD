@@ -169,9 +169,8 @@ export function beamCyclePower(def: WeaponDef, cycle: BeamPowerCycleValue): numb
   const ventSeconds = (early ? BEAM_RECOVERY_SECONDS : beam.lockSeconds) + coolingSeconds;
   const widthNorm = Math.min(1, beam.width / BEAM_MAX_WIDTH);
   const rangeNorm = Math.min(1, beam.range / BEAM_MAX_RANGE);
-  // A narrow/ranged beam only realizes that theoretical coverage if the player can actually sweep it onto
-  // new bodies. Price lag and turn cap independently so one cannot hide the other at the aggregate cap.
-  // This is an efficiency discount only: control can never inflate authored DPS or the three-target budget.
+  // Presentation lock does not rebalance the existing beam economy: retain the authored control
+  // datums as valuation weights even though renderer/authority no longer interpolate through them.
   const sweepControl =
     0.55 * clamp(0.16 / Math.max(0.04, beam.sweepLagSeconds), 0.65, 1) +
     0.45 * clamp(beam.maxTurnRate / 8, 0.65, 1);

@@ -54,14 +54,13 @@ const KINDS = new Set([
 ]);
 const SWING_STYLES = new Set(["arc", "orbit", "chop", "pivot", "thrust", "spin", "punch"]);
 const BULLET_KINDS = new Set([
-  "slug", "pellet", "tracer", "nail", "ricochet", "spark", "orb", "grenade", "fire-plume",
+  "slug", "pellet", "tracer", "nail", "ricochet", "spark", "orb", "grenade", "fire-plume", "laser",
 ]);
 const MUZZLES = new Set(["heavy", "boom", "rapid", "punch", "spark", "artillery"]);
 const PROJECTILE_ARTS = new Set(["weapon-crop", "generated", "arrow", "cannonball", "fireball"]);
 // The first gun-beam wave is explicit, not inferred from every ranged weapon. V1 still uses heat only;
 // these ids differ from caster beams through their ranged class/art/pose, never a hidden magazine resource.
 const BEAM_GUN_IDS = new Set([
-  "x2-voltcaster-machine-pistol",
   "x2-mirage-coilrifle",
   "x2-stormcaller-tesla-gatling",
   "x2-permafrost-siege-lobber",
@@ -105,6 +104,7 @@ const BEHAVIOR_KEYS = {
   gun: new Set(["kind", "damage", "projectileSpeed", "range", "fireRate", "pellets", "spread", "pierce",
     "bounces", "magazine", "reloadSeconds", "bulletKind", "muzzle", "muzzleColor", "recoil",
     "projectileArt", "projectileVisualScale", "projectileColor", "arcHeight", "explode", "burst",
+    "chainLightning",
     "userKnockbackMultiplier",
     "randomPellets",
     "sonicBoomRing", "width"]),
@@ -157,6 +157,7 @@ const EFFECT_RECIPES = new Set([
   "gravechain-dominant-spin", "void-caster-explosion", "hexbloom-toxic-impact",
   "cinderbrand-magma-impact", "cinderchoke-fire-impact", "hollow-harvest-circle",
   "abyssal-whirlwind-vortex", "wyrmscale-fire-slash",
+  "mauler-fire-impact",
 ]);
 const STANCES = new Set([
   "hasso-no-kamae", "tachi-no-tori", "blade-forward-high-hilt", "near-ear-blade-up",
@@ -1253,6 +1254,36 @@ function mapWeapon(w) {
             b.burst.intervalSeconds, 0.05, 0.3, 0.08, "behavior.burst.intervalSeconds",
           ),
         };
+      }
+    }
+    if (b.chainLightning !== undefined) {
+      const chain = b.chainLightning;
+      if (!chain || typeof chain !== "object" || Array.isArray(chain)) {
+        fail("behavior.chainLightning is not an object");
+      } else {
+        checkKeys(
+          chain,
+          new Set(["jumps", "range", "damage", "falloff", "vfx"]),
+          "behavior.chainLightning",
+        );
+        def.chainLightning = {
+          jumps: int(chain.jumps, 1, 6, 3, "behavior.chainLightning.jumps"),
+          range: num(chain.range, 100, 240, 180, "behavior.chainLightning.range"),
+          damage: num(chain.damage, 1, 24, 5, "behavior.chainLightning.damage"),
+          falloff: num(chain.falloff, 0.5, 1, 0.8, "behavior.chainLightning.falloff"),
+        };
+        if (chain.vfx !== undefined) {
+          checkKeys(
+            chain.vfx,
+            new Set(["color", "jag", "life"]),
+            "behavior.chainLightning.vfx",
+          );
+          def.chainLightning.vfx = {
+            color: num(chain.vfx.color, 0, 1, 0.5, "behavior.chainLightning.vfx.color"),
+            jag: num(chain.vfx.jag, 0, 1, 0.25, "behavior.chainLightning.vfx.jag"),
+            life: num(chain.vfx.life, 60, 600, 200, "behavior.chainLightning.vfx.life"),
+          };
+        }
       }
     }
     const pellets = int(b.pellets, 1, 12, 1, "behavior.pellets");

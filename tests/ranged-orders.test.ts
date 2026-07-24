@@ -111,9 +111,9 @@ describe("Batch R ranged owner orders", () => {
     expect(WEAPONS["x2-gravelung-punt-rifle"]?.gun?.projectileVisualScale).toBe(2);
     const hexbore = WEAPONS["x2-hexbore-voidmaw"];
     expect(hexbore).toMatchObject({
-      displayLength: 112,
+      displayLength: 97.44,
       tags: { grip: "1H", handling: ["pistol"] },
-      gripPoints: { primary: { x: 0.35, y: 0.68 } },
+      gripPoints: { primary: { x: 0.22, y: 0.62 } },
     });
     expect(hexbore?.gripPoints?.secondary).toBeUndefined();
     const sanctus = WEAPONS["x2-sanctus-siege-bombard"];

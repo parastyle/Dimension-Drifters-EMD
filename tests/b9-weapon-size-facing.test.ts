@@ -226,7 +226,7 @@ describe("B9 Mournveil native-resolution restoration", () => {
   });
 });
 
-describe("B9 Prismhex stable image-facing datum", () => {
+describe("B35 Prismhex correct actor-facing mirror axis", () => {
   it("retains the exact installed gauntlet bitmap instead of regenerating a similar subject", () => {
     const bitmap = readFileSync(
       new URL(
@@ -239,19 +239,21 @@ describe("B9 Prismhex stable image-facing datum", () => {
     );
   });
 
-  it("authors one deterministic horizontal-only mirror and applies it at the final rig seam", () => {
+  it("removes the erroneous local mirror and leaves actor-facing as the only mirror axis", () => {
     const prismhex = SPRITES["x2-prismhex-diffraction-gauntlet"];
-    expect(prismhex.imageFacing).toBe("mirror-x");
-    expect(spriteImageFacingX(prismhex.imageFacing)).toBe(-1);
+    expect(prismhex.imageFacing).toBeUndefined();
+    expect(spriteImageFacingX(prismhex.imageFacing)).toBe(1);
     expect(spriteImageFacingX(undefined)).toBe(1);
-    expect(HARVEST_SOURCE).toContain('"x2-prismhex-diffraction-gauntlet": "mirror-x"');
+    expect(HARVEST_SOURCE).not.toContain(
+      '"x2-prismhex-diffraction-gauntlet": "mirror-x"',
+    );
     expect(RIG_SOURCE.match(/weapon\.img\.scaleX \*= weapon\.imageFacingX/g)).toHaveLength(1);
     expect(RIG_SOURCE).not.toContain("weapon.img.scaleY *= weapon.imageFacingX");
   });
 
   it.each([
     1, -1,
-  ] as const)("composes the painted X mirror with actor facing %i while Y remains upright", (actorFacing) => {
+  ] as const)("mirrors once with actor facing %i while the painted Y axis remains upright", (actorFacing) => {
     const imageFacingX = spriteImageFacingX(
       SPRITES["x2-prismhex-diffraction-gauntlet"].imageFacing,
     );
@@ -274,10 +276,10 @@ describe("B9 Prismhex stable image-facing datum", () => {
       scaleY: 1,
     });
     const screen = composeWeaponTransform(root, image);
-    expect(screen.a, "one local X mirror").toBe(-actorFacing);
+    expect(screen.a, "one actor-facing X mirror").toBe(actorFacing);
     expect(screen.d, "no vertical inversion").toBe(1);
     expect(Math.sign(screen.a * screen.d - screen.b * screen.c), "composed handedness").toBe(
-      -actorFacing,
+      actorFacing,
     );
   });
 });

@@ -1,7 +1,6 @@
 import {
   BeamPhase,
   FRIENDLY_BEAM_ENTITY_CAP,
-  shortestAngleDelta,
   TICK_MS,
   WEAPONS,
 } from "@dd/shared";
@@ -65,6 +64,11 @@ export interface BeamCursorPose {
   originY: number;
   angle: number;
   length: number;
+}
+
+/** Client presentation half of laser law: snapshots never rotate a beam behind its weapon. */
+export function rigidBeamRenderAngle(targetAngle: number): number {
+  return targetAngle;
 }
 
 export interface BeamRibbonStrand {
@@ -158,7 +162,6 @@ interface BeamEntry {
   seed: number;
   poseReady: boolean;
   poseT: number;
-  fromAngle: number;
   targetAngle: number;
   renderAngle: number;
   fromLength: number;
@@ -338,7 +341,6 @@ export class BeamRenderer {
         seed: 0,
         poseReady: false,
         poseT: 1,
-        fromAngle: 0,
         targetAngle: 0,
         renderAngle: 0,
         fromLength: 0,
@@ -691,7 +693,8 @@ export class BeamRenderer {
    * Patches describe the authoritative previous→current collision sweep. Presentation plays that segment as
    * one moving ray instead of painting its whole union. The ray origin is then rebased to the already-rendered
    * owner root, so local prediction and the delayed remote snapshot timeline keep the emitter welded to the
-   * weapon. Remote angle/length advance over one 20 Hz patch; owner rows take the latest authority directly.
+   * weapon. Beam angle always takes the latest authority directly (laser law); only length and origin may
+   * advance over one remote 20 Hz patch.
    */
   private resolveDrawPose(
     entry: BeamEntry,
@@ -705,9 +708,8 @@ export class BeamRenderer {
     if (!entry.poseReady) {
       entry.poseReady = true;
       entry.poseT = local ? 1 : 0;
-      entry.fromAngle = row.previousAngle;
       entry.targetAngle = row.angle;
-      entry.renderAngle = local ? row.angle : row.previousAngle;
+      entry.renderAngle = row.angle;
       entry.fromLength = row.previousLength;
       entry.targetLength = row.effectiveLength;
       entry.renderLength = local ? row.effectiveLength : row.previousLength;
@@ -723,7 +725,6 @@ export class BeamRenderer {
       row.originX !== entry.targetOriginX ||
       row.originY !== entry.targetOriginY
     ) {
-      entry.fromAngle = entry.renderAngle;
       entry.fromLength = entry.renderLength;
       entry.fromOriginX = entry.renderOriginX;
       entry.fromOriginY = entry.renderOriginY;
@@ -735,8 +736,7 @@ export class BeamRenderer {
     }
     entry.poseT = local ? 1 : Math.min(1, entry.poseT + (dt * 1000) / TICK_MS);
     const t = entry.poseT;
-    entry.renderAngle =
-      entry.fromAngle + shortestAngleDelta(entry.fromAngle, entry.targetAngle) * t;
+    entry.renderAngle = rigidBeamRenderAngle(entry.targetAngle);
     entry.renderLength = entry.fromLength + (entry.targetLength - entry.fromLength) * t;
     entry.renderOriginX = entry.fromOriginX + (entry.targetOriginX - entry.fromOriginX) * t;
     entry.renderOriginY = entry.fromOriginY + (entry.targetOriginY - entry.fromOriginY) * t;

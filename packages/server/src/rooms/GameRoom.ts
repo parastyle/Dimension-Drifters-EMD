@@ -10619,6 +10619,8 @@ export class GameRoom extends Room<ArenaState> {
     returnAfterSeconds?: number,
     damageEnvelope?: ProjectileDamageEnvelope,
     visualScale = 1,
+    sourceMuzzlePart = 0,
+    sourceBurstIndex = 0,
   ): void {
     // §16 the documented budget is ARENA-wide: reject generic spitters here too. Friendly player fire is
     // and friendly rows each have an explicit ceiling; a reflected hostile shot changes sides and frees
@@ -10648,6 +10650,8 @@ export class GameRoom extends Room<ArenaState> {
     pr.arcHeight = Math.max(0, arcHeight);
     pr.flightTicks = Math.min(0xffff, ticksFromSeconds(ttl));
     pr.visualScale = Math.max(0.01, visualScale);
+    pr.sourceMuzzlePart = Math.max(0, Math.min(0xff, Math.trunc(sourceMuzzlePart)));
+    pr.sourceBurstIndex = Math.max(0, Math.min(0xff, Math.trunc(sourceBurstIndex)));
     this.state.projectiles.set(pr.id, pr);
     this.projectileMeta.set(pr.id, {
       ttl,
@@ -10740,7 +10744,15 @@ export class GameRoom extends Room<ArenaState> {
       return;
     }
     if (c.gunBurstT > 0) return;
-    this.fireGun(player, c, weapon, c.gunBurstHand, weapon.gun.burst.intervalSeconds * 1000);
+    const burstIndex = weapon.gun.burst.count - c.gunBurstRemaining;
+    this.fireGun(
+      player,
+      c,
+      weapon,
+      c.gunBurstHand,
+      weapon.gun.burst.intervalSeconds * 1000,
+      burstIndex,
+    );
     c.gunBurstRemaining--;
     if (c.gunBurstRemaining <= 0) this.clearGunBurst(c);
     else c.gunBurstT += weapon.gun.burst.intervalSeconds;
@@ -10785,6 +10797,7 @@ export class GameRoom extends Room<ArenaState> {
     weapon: WeaponDef,
     hand: WeaponHand = 0,
     recoilElapsedMs = 0,
+    burstIndex = 0,
   ): void {
     const g = weapon.gun;
     if (!g) return;
@@ -10886,6 +10899,11 @@ export class GameRoom extends Room<ArenaState> {
           undefined,
           undefined,
           g.arcHeight ?? 0,
+          undefined,
+          undefined,
+          g.projectileVisualScale ?? 1,
+          muzzle.point.part,
+          burstIndex,
         );
       }
     }

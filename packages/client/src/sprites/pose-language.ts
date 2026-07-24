@@ -621,6 +621,11 @@ export function twoHandedPoseFor(
 ): boolean {
   // A glove pair occupies the 2H equipment slot but still mounts one independent part on each hand.
   if (def.glovePair) return false;
+  // Ranged grip metadata is physical muzzle geometry, not an art-style preference. In particular,
+  // generated 2H guns synthesize a support grip from this tag, so the pose must consume that grip too.
+  if (def.gun || def.beam) {
+    return def.tags.grip === "2H" || def.tags.grip === "mounted" || def.twoHanded === true;
+  }
   return authority === "metadata"
     ? def.tags.grip === "2H" || def.twoHanded === true
     : def.twoHanded === true;
@@ -864,11 +869,10 @@ export function classifyHandRole(
     return frame.phase === "recovery" ? "recovering" : "action-owned";
   }
 
-  // An authored idle pose on the otherwise paired `fists` lane is the catalog's explicit
-  // single-worn-glove occupancy contract: the equipped lead remains the only attack surface.
+  // A true 1H worn weapon occupies one hand regardless of whether its idle pose was explicitly authored.
+  // Treating the entire `fists` family as paired left the free hand on an unowned manifest socket.
   const singleWornGlove =
     !!def &&
-    def.poseLanguage?.idle !== undefined &&
     def.glovePair === undefined &&
     def.dual !== true &&
     def.tags.grip === "1H" &&
@@ -888,11 +892,10 @@ export function classifyHandRole(
     def?.dual === true ||
     def?.tags.grip === "dual" ||
     def?.glovePair !== undefined;
-  const wornPair = !!def && isWornWeapon(def) && weaponPoseFamilyFor(def) === "fists";
   const hardTwoHanded = !!def && twoHandedPoseFor(def);
   const hasPhysicalSecondary =
     !!def && (hardTwoHanded || resolvedGunGripPoints(def)?.secondary !== undefined);
-  if (paired || wornPair || (hand === 0 && !!def) || (hand === 1 && hasPhysicalSecondary)) {
+  if (paired || (hand === 0 && !!def) || (hand === 1 && hasPhysicalSecondary)) {
     return "hard-constrained";
   }
 

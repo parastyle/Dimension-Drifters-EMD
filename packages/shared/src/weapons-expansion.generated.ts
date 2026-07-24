@@ -866,6 +866,17 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "DEX"
       ]
     },
+    "gripPoints": {
+      "primary": {
+        "x": 0.1,
+        "y": 0.52
+      },
+      "secondary": {
+        "x": 0.54,
+        "y": 0.52,
+        "role": "shaft"
+      }
+    },
     "description": "A long-hafted crescent bardiche carved from blue glacier-iron, rime crusting its sweeping reach so the air it carves goes white with cold.",
     "swingStyle": "spin",
     "performance": {
@@ -1425,7 +1436,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
     "range": 154,
     "halfArc": 0.95,
     "cooldown": 0.64,
-    "displayLength": 128,
+    "displayLength": 172.8,
     "swingArc": 6.283185307179586,
     "gripFrac": 0.1,
     "tags": {
@@ -1442,6 +1453,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "DEX"
       ]
     },
+    "collisionLength": 128,
     "description": "A mirror-bright knightly battleaxe with a deep hooked beard and a vow-script throat, a balanced and disciplined cleave that splits a line clean through.",
     "swingStyle": "spin",
     "performance": {
@@ -3847,8 +3859,8 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
     "tags": {
       "grip": "1H",
       "size": "M",
-      "delivery": "beam",
-      "fireMode": "hold",
+      "delivery": "projectile",
+      "fireMode": "semi-auto",
       "element": "shock",
       "classPool": "ranged",
       "family": "machine-pistol",
@@ -3860,25 +3872,18 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "pistol"
       ]
     },
-    "beam": {
-      "damagePerSecond": 75,
-      "tickRate": 0.1,
-      "width": 8,
+    "gun": {
+      "damage": 6,
+      "projectileSpeed": 4000,
       "range": 560,
-      "chargeSeconds": 0.65,
-      "sweepLagSeconds": 0.22,
-      "overheat": {
-        "maxChannelSeconds": 1.25,
-        "heatPerSecond": 0.6,
-        "coolPerSecond": 0.35,
-        "ignitionHeat": 0.25,
-        "lockSeconds": 1.5,
-        "restartHeat": 0.35
-      },
-      "movement": {
-        "chargeMul": 0.55,
-        "channelMul": 0.35
-      }
+      "fireRate": 0.08,
+      "magazine": 24,
+      "reloadSeconds": 1.8,
+      "bulletKind": "laser",
+      "muzzle": "rapid",
+      "recoil": 0.0008,
+      "spread": 0,
+      "muzzleColor": 11619071
     }
   },
   "x2-sidewinder-spitfire": {
@@ -4043,8 +4048,8 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
     },
     "gripPoints": {
       "primary": {
-        "x": 0.38,
-        "y": 0.64
+        "x": 0.22,
+        "y": 0.66
       }
     },
     "gun": {
@@ -4099,8 +4104,11 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "bulletKind": "slug",
       "muzzle": "rapid",
       "recoil": 0.0009,
-      "pellets": 6,
-      "spread": 0.22,
+      "burst": {
+        "count": 6,
+        "intervalSeconds": 0.05
+      },
+      "spread": 0.03,
       "muzzleColor": 15264472
     }
   },
@@ -4897,6 +4905,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "bulletKind": "slug",
       "muzzle": "boom",
       "recoil": 0.0038,
+      "projectileArt": "generated",
       "pierce": 2,
       "muzzleColor": 16747563,
       "explode": {
@@ -5190,6 +5199,17 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "recoil": 0.0038,
       "pierce": 6,
       "muzzleColor": 11619071
+    },
+    "chainLightning": {
+      "jumps": 3,
+      "range": 220,
+      "damage": 4,
+      "falloff": 0.75,
+      "vfx": {
+        "color": 0.9,
+        "jag": 0.42,
+        "life": 220
+      }
     }
   },
   "x2-sidewinder-twin-rifles": {
@@ -7075,6 +7095,8 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "role": "bolt"
       }
     },
+    "effectRecipe": "mauler-fire-impact",
+    "effectEmitter": "tip",
     "twoHanded": true,
     "gun": {
       "damage": 16,
@@ -7084,11 +7106,12 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "magazine": 4,
       "reloadSeconds": 2.2,
       "bulletKind": "fire-plume",
-      "muzzle": "heavy",
+      "muzzle": "artillery",
       "recoil": 0.004,
       "projectileVisualScale": 1.4,
       "projectileColor": 16738858,
-      "pierce": 3
+      "pierce": 3,
+      "muzzleColor": 16738858
     }
   },
   "x2-plaguespitter-flak-gun": {
@@ -7192,7 +7215,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
     "range": 80,
     "halfArc": 0.55,
     "cooldown": 0.8,
-    "displayLength": 112,
+    "displayLength": 97.44,
     "swingArc": 1.8,
     "gripFrac": 0.12,
     "tags": {
@@ -7211,10 +7234,11 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "pistol"
       ]
     },
+    "collisionLength": 112,
     "gripPoints": {
       "primary": {
-        "x": 0.35,
-        "y": 0.68
+        "x": 0.22,
+        "y": 0.62
       }
     },
     "gun": {
@@ -10122,7 +10146,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
     "range": 720,
     "halfArc": 0.5,
     "cooldown": 0.5,
-    "displayLength": 92,
+    "displayLength": 46,
     "swingArc": 1.8,
     "gripFrac": 0.12,
     "tags": {
@@ -10138,12 +10162,13 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "INT"
       ]
     },
+    "collisionLength": 92,
     "effectRecipe": "riftglass-rainbow-volley",
     "effectEmitter": "tip",
     "beam": {
       "damagePerSecond": 41.66666666666667,
       "tickRate": 0.1,
-      "width": 48,
+      "width": 57.6,
       "range": 640,
       "chargeSeconds": 0.65,
       "sweepLagSeconds": 0.22,
@@ -11854,7 +11879,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "muzzle": "spark",
       "recoil": 0.0008,
       "projectileArt": "generated",
-      "projectileVisualScale": 1,
+      "projectileVisualScale": 3.5,
       "projectileColor": 11619327,
       "pierce": 2,
       "muzzleColor": 11619327
@@ -12083,7 +12108,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
     "beam": {
       "damagePerSecond": 40,
       "tickRate": 0.1,
-      "width": 48,
+      "width": 19,
       "range": 460,
       "chargeSeconds": 0.65,
       "sweepLagSeconds": 0.22,

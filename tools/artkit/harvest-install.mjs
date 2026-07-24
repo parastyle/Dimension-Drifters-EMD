@@ -47,12 +47,9 @@ if (conflictingIds.length > 0) {
 const PRESIZE = arg("presize", "1") !== "0";
 const CHAR_BODY_TARGET = Number(arg("char-target", "168")); // source body height after presize (≈2x the 84px draw)
 const WEAPON_LONG_TARGET = Number(arg("weapon-target", "256")); // source longest side floor (≈2x the ≤124px draw)
-// Stable presentation-only image-facing datums. These preserve the exact installed bitmap while correcting
-// artwork whose painted handedness is opposite the rig hand. The rig composes this local X mirror with its
-// ordinary actor-facing root mirror; Y is deliberately untouched so the subject can never become upside down.
-const SPRITE_IMAGE_FACING = Object.freeze({
-  "x2-prismhex-diffraction-gauntlet": "mirror-x",
-});
+// Stable presentation-only image-facing datums. The ordinary actor-facing root mirror is the authoritative
+// left/right axis; avoid an extra local mirror unless source art is genuinely painted backward.
+const SPRITE_IMAGE_FACING = Object.freeze({});
 
 // A weapon's pre-size target scales with its on-screen length (`displayLength` in weapons.ts) — a
 // long sword (e.g. displayLength 320) needs a ~640px texture, not the 256 floor, or it upscales soft.

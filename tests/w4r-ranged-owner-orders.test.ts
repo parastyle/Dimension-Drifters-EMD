@@ -63,13 +63,13 @@ describe("W4R ranged owner orders", () => {
     expect(WEAPONS["x2-quicksilver-fanner"]?.displayLength).toBe(112);
   });
 
-  it("keeps the fan, buckshot, random-pellet, and cone conversions DPS-neutral", () => {
+  it("keeps the superseded sequential fan payload and the other ranged conversions pinned", () => {
     const gravel = WEAPONS["x2-gravelthroat-repeater"]?.gun;
     const fanner = WEAPONS["x2-quicksilver-fanner"]?.gun;
     const buckshot = WEAPONS["x2-buckshot-avalanche"]?.gun;
     const frost = WEAPONS["x2-permafrost-siege-lobber"]?.beam;
     const magma = WEAPONS["x2-doomsday-drum-cannon"]?.beam;
-    if (!gravel?.randomPellets || !fanner?.pellets || !buckshot?.explode || !frost || !magma)
+    if (!gravel?.randomPellets || !fanner?.burst || !buckshot?.explode || !frost || !magma)
       throw new Error("W4R damage fixtures are required");
     expect(gravel?.randomPellets).toEqual({
       min: 1,
@@ -79,8 +79,12 @@ describe("W4R ranged owner orders", () => {
     });
     expect(expectedRandomGunPelletCount(gravel.randomPellets)).toBe(5.5);
     expect(gravel.damage / gravel.fireRate).toBeCloseTo((4 * 6) / 0.6, 8);
-    expect(fanner).toMatchObject({ damage: 1, pellets: 6, spread: 0.22 });
-    expect((fanner.damage * fanner.pellets) / fanner.fireRate).toBeCloseTo(6 / 0.12, 8);
+    expect(fanner).toMatchObject({
+      damage: 1,
+      spread: 0.03,
+      burst: { count: 6, intervalSeconds: 0.05 },
+    });
+    expect(fanner.damage * fanner.burst.count).toBe(6);
     expect(buckshot).toMatchObject({ damage: 9, pellets: 4, projectileVisualScale: 2 });
     expect(((buckshot.damage + buckshot.explode.damage) * 4) / buckshot.fireRate).toBeCloseTo(
       ((4 + 3) * 9) / 0.72,
