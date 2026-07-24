@@ -105,6 +105,7 @@ export type MeleeComboMotion =
   | "stomp-kick"
   | "windup-palm"
   | "quake-double-palm"
+  | "backflip-head-kick"
   | "lunge"
   | "disengage"
   | "impale"

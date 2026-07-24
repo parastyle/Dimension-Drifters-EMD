@@ -174,6 +174,8 @@ import {
   type FlourishSample,
   type MovementPostureInput,
   type MovementPostureSample,
+  isMartialIdleHandPose,
+  martialIdleHandAngleFor,
   movementPostureFor,
   type NamedWeaponStance,
   namedWeaponStanceFor,
@@ -340,6 +342,34 @@ export function wrapRigMountPlan(
 /** Final horizontal art sign: the actor root owns facing; each source keeps its authored image direction. */
 export function wrapRigFacingSign(actorFacing: -1 | 1, imageFacingX: -1 | 1): -1 | 1 {
   return actorFacing * imageFacingX < 0 ? -1 : 1;
+}
+
+export interface WrapRigScaleInput {
+  readonly sourceWidth: number;
+  readonly sourceHeight: number;
+  readonly receiverWidth: number;
+  readonly receiverHeight: number;
+  readonly receiverScaleX: number;
+  readonly receiverScaleY: number;
+  readonly rigScaleX: number;
+  readonly rigScaleY: number;
+  readonly padding: number;
+}
+
+/**
+ * Worn wrap art is clothing, not a fixed-size held prop. Fit its complete canvas inside a lightly padded
+ * copy of the receiver's current on-screen envelope so transparent 512px source canvases can never make a
+ * fist or boot character-sized.
+ */
+export function wrapRigReceiverRelativeScale(input: Readonly<WrapRigScaleInput>): number {
+  const sourceWidth = Math.max(1, Math.abs(input.sourceWidth));
+  const sourceHeight = Math.max(1, Math.abs(input.sourceHeight));
+  const padding = Math.max(1, Math.min(1.25, input.padding));
+  const receiverWorldWidth =
+    Math.max(1, Math.abs(input.receiverWidth * input.receiverScaleX * input.rigScaleX)) * padding;
+  const receiverWorldHeight =
+    Math.max(1, Math.abs(input.receiverHeight * input.receiverScaleY * input.rigScaleY)) * padding;
+  return Math.min(receiverWorldWidth / sourceWidth, receiverWorldHeight / sourceHeight);
 }
 
 /** Optional rig-only routing metadata. Shared combat truth remains the immutable SwingDescriptor payload. */
@@ -2297,6 +2327,7 @@ export class SpriteRig {
     microX: number;
     microY: number;
     manifestSocketX: number;
+    hand: 0 | 1;
     recoveryT: number | undefined;
     recoveryForward: number | undefined;
     recoveryLateral: number | undefined;
@@ -2310,6 +2341,7 @@ export class SpriteRig {
     microX: 0,
     microY: 0,
     manifestSocketX: 0,
+    hand: 0,
     recoveryT: undefined,
     recoveryForward: undefined,
     recoveryLateral: undefined,
@@ -2537,8 +2569,6 @@ export class SpriteRig {
   private readonly shadowHalo: Phaser.GameObjects.Ellipse;
   private readonly auraGlow: Phaser.GameObjects.Ellipse;
   private readonly auraRing: Phaser.GameObjects.Ellipse;
-  private readonly gloveAuraBoltA: Phaser.GameObjects.Rectangle;
-  private readonly gloveAuraBoltB: Phaser.GameObjects.Rectangle;
   private readonly paintedAuraFill: readonly Phaser.GameObjects.Image[];
   private readonly paintedAuraParticles: readonly Phaser.GameObjects.Image[];
   private readonly pairGlint: Phaser.GameObjects.Rectangle;
@@ -2677,16 +2707,6 @@ export class SpriteRig {
       .setStrokeStyle(3, 0x33e6ff, 0)
       .setBlendMode(Phaser.BlendModes.ADD)
       .setVisible(false);
-    this.gloveAuraBoltA = scene.add
-      .rectangle(0, 0, 16, 2.4, 0xffffff, 0.9)
-      .setOrigin(0.15, 0.5)
-      .setBlendMode(Phaser.BlendModes.ADD)
-      .setVisible(false);
-    this.gloveAuraBoltB = scene.add
-      .rectangle(0, 0, 12, 2, 0xffffff, 0.82)
-      .setOrigin(0.15, 0.5)
-      .setBlendMode(Phaser.BlendModes.ADD)
-      .setVisible(false);
     this.paintedAuraFill = Array.from({ length: 2 }, (_, index) => {
       const image = scene.add
         .image(0, 0, "ptcl:shock-spark", 0)
@@ -2706,8 +2726,6 @@ export class SpriteRig {
       this.shadow,
       this.auraGlow,
       this.auraRing,
-      this.gloveAuraBoltA,
-      this.gloveAuraBoltB,
       ...this.paintedAuraFill,
       ...this.paintedAuraParticles,
     );
@@ -3251,8 +3269,6 @@ export class SpriteRig {
       this.shadow,
       this.auraGlow,
       this.auraRing,
-      this.gloveAuraBoltA,
-      this.gloveAuraBoltB,
       ...this.paintedAuraFill,
       ...this.paintedAuraParticles,
       this.slideAfterimageB,
@@ -5183,12 +5199,27 @@ export class SpriteRig {
       const artGeometry = partIndex === 0 ? weaponArtGeometryFor(piece.spriteId) : undefined;
       const closed = artGeometry?.closed;
       const pieceWorn = isWornWeapon(piece.def);
+      const wornWrap = piece.def.glovePair?.wrapsFeet === true && partIndex === 0;
       const authoredPrimary = resolvedGunGripPoints(piece.def)?.primary;
       const imageFacingX = spriteImageFacingX(piece.manifest.imageFacing);
       const originX =
-        authoredPrimary?.x ?? closed?.originX ?? (pieceWorn ? 0.4 : piece.def.gripFrac);
+        authoredPrimary?.x ??
+        closed?.originX ??
+        (wornWrap ? 0.5 : pieceWorn ? 0.4 : piece.def.gripFrac);
       const originY = authoredPrimary?.y ?? closed?.originY ?? 0.5;
-      const wScale = (piece.def.displayLength * (closed?.displayLengthMul ?? 1)) / part.w;
+      const wScale = wornWrap
+        ? wrapRigReceiverRelativeScale({
+            sourceWidth: part.w,
+            sourceHeight: part.h,
+            receiverWidth: hand.img.width,
+            receiverHeight: hand.img.height,
+            receiverScaleX: hand.img.scaleX,
+            receiverScaleY: hand.img.scaleY,
+            rigScaleX: this.baseScale,
+            rigScaleY: this.baseScale,
+            padding: 1.16,
+          })
+        : (piece.def.displayLength * (closed?.displayLengthMul ?? 1)) / part.w;
       const resolvedFiringFrame = resolveWeaponFiringFrame(piece.def, piece.spriteId);
       const firingPart = resolvedFiringFrame?.manifest.parts[partIndex];
       const firingTexture =
@@ -5242,12 +5273,22 @@ export class SpriteRig {
     if (footPart) {
       const footTexture = partTexture(this.scene, spriteId, footPart.role);
       const imageFacingX = spriteImageFacingX(manifest.imageFacing);
-      const footScale = def.displayLength / footPart.w;
       for (const mount of wrapMounts) {
         if (mount.partIndex !== 1) continue;
         const front = mount.receiver === "foot-r";
         const foot = this.feet.find((candidate) => candidate.front === front);
         if (!foot) continue;
+        const footScale = wrapRigReceiverRelativeScale({
+          sourceWidth: footPart.w,
+          sourceHeight: footPart.h,
+          receiverWidth: foot.img.width,
+          receiverHeight: foot.img.height,
+          receiverScaleX: foot.img.scaleX,
+          receiverScaleY: foot.img.scaleY,
+          rigScaleX: this.baseScale,
+          rigScaleY: this.baseScale,
+          padding: 1.12,
+        });
         const img = this.scene.add
           .image(foot.img.x, foot.img.y, footTexture.key, footTexture.frame)
           .setOrigin(0.5)
@@ -9598,10 +9639,21 @@ export class SpriteRig {
             const input = this.kungFuWrapPoseInput;
             input.motion = pose.motion;
             input.hand = pose.hand;
+            input.limb = pose.limb ?? "hand";
             input.direction = poseDirection;
             input.timing = pose.timing;
+            input.strikeReachBodyHeights =
+              (meleeReach(def) * pose.path.rangeMultiplier) / TARGET_BODY_H;
             input.t = tt;
             const sampled = sampleKungFuWrapPose(input, this.kungFuWrapPose);
+            if (sampled.flipProgress >= 0) {
+              this.root.rotation += rollTumbleRotation(
+                sampled.flipProgress,
+                -this.facing,
+                anim.reducedMotion === true || outsidePaperView,
+              );
+              this.attackLiftPx += sampled.wholeBodyLift * TARGET_BODY_H;
+            }
             aimRelativePoint(sampled.handForward, sampled.handLateral, aimLocal, this.posePoint);
             const leadX = this.posePoint.x * TARGET_BODY_H;
             const leadY = this.posePoint.y * TARGET_BODY_H;
@@ -10534,6 +10586,10 @@ export class SpriteRig {
       }
       const handIndex = hnd.front ? 0 : 1;
       const semanticRole = classifyHandRole(semanticDef, this.handRoleFrame, handIndex);
+      const martialIdle =
+        posePhase === "idle" &&
+        semanticDef?.glovePair !== undefined &&
+        isMartialIdleHandPose(semanticDef.poseLanguage?.idle);
       const heldFiringDef = this.weapons[handIndex]?.def;
       const castsFromFreeHand = !hnd.front && !heldFiringDef && tomeCastingHandActive;
       const posedFiringDef = heldFiringDef ?? (castsFromFreeHand ? this.weaponDef : undefined);
@@ -10542,7 +10598,25 @@ export class SpriteRig {
           (movementPose.weaponCarryForwardPx + movementPose.weaponTrailSwayPx * handPhaseSign) * s;
         hy -= movementPose.weaponCarryUpPx * s;
       }
-      if (
+      if (martialIdle && semanticDef) {
+        const targetInput = this.idleHandTargetInput;
+        targetInput.bodyX = this.body.x;
+        targetInput.bodyY = this.body.y;
+        targetInput.bodyHeight = TARGET_BODY_H;
+        targetInput.aimLocal = heldAimLocal;
+        targetInput.movementX = swingX + movementPose.handTrailXPx * s;
+        targetInput.movementY = bobY + movementPose.handTrailYPx * s + idleY;
+        targetInput.microX = 0;
+        targetInput.microY = 0;
+        targetInput.manifestSocketX = hnd.ox;
+        targetInput.hand = handIndex;
+        targetInput.recoveryT = undefined;
+        targetInput.recoveryForward = undefined;
+        targetInput.recoveryLateral = undefined;
+        resolveIdleHandTarget(semanticDef, targetInput, this.idleHandTarget);
+        hx = this.idleHandTarget.x;
+        hy = this.idleHandTarget.y;
+      } else if (
         semanticDef &&
         handIndex === poseSupportHand &&
         poseHandSample &&
@@ -10560,6 +10634,7 @@ export class SpriteRig {
         targetInput.microX = 0;
         targetInput.microY = 0;
         targetInput.manifestSocketX = hnd.ox;
+        targetInput.hand = handIndex;
         targetInput.recoveryT = semanticRole === "recovering" ? posePhaseT : undefined;
         targetInput.recoveryForward =
           semanticRole === "recovering" ? (poseHandSample?.offForward ?? undefined) : undefined;
@@ -10589,12 +10664,17 @@ export class SpriteRig {
         hx += (targetX - hx) * poseHandSample.offBlend;
         hy += (targetY - hy) * poseHandSample.offBlend;
       }
-      if (hnd.front && performancePoseActive) {
+      if (!martialIdle && hnd.front && performancePoseActive) {
         const targetX = this.body.x + this.performanceSample.handX * TARGET_BODY_H;
         const targetY = this.body.y + this.performanceSample.handY * TARGET_BODY_H;
         hx += (targetX - hx) * this.performanceSample.handBlend;
         hy += (targetY - hy) * this.performanceSample.handBlend;
-      } else if (!hnd.front && performancePoseActive && this.performanceSample.backHandBlend > 0) {
+      } else if (
+        !martialIdle &&
+        !hnd.front &&
+        performancePoseActive &&
+        this.performanceSample.backHandBlend > 0
+      ) {
         const targetX = this.body.x + this.performanceSample.backHandX * TARGET_BODY_H;
         const targetY = this.body.y + this.performanceSample.backHandY * TARGET_BODY_H;
         hx += (targetX - hx) * this.performanceSample.backHandBlend;
@@ -10930,6 +11010,18 @@ export class SpriteRig {
       ft.img.rotation = PROCEDURAL_JIGGLE
         ? movementPose.footPivotRad * footPhaseSign - (ft.jx / JIGGLE_FOOT_MAX_X) * 0.18
         : movementPose.footPivotRad * footPhaseSign;
+    }
+
+    if (
+      posePhase === "idle" &&
+      semanticDef?.glovePair !== undefined &&
+      isMartialIdleHandPose(semanticDef.poseLanguage?.idle) &&
+      !anyFlourishActive
+    ) {
+      const leadAngle = martialIdleHandAngleFor(semanticDef, 0);
+      const offAngle = martialIdleHandAngleFor(semanticDef, 1);
+      if (leadAngle !== undefined) weaponAngle = leadAngle;
+      if (offAngle !== undefined) backWeaponAngle = offAngle - this.offWeaponLean();
     }
 
     this.applyUltimatePose(timeMs);
@@ -11336,21 +11428,19 @@ export class SpriteRig {
     this.updateSlideAfterimages(sceneNow, anim.reducedMotion === true || outsidePaperView);
     // §5/§20 the grounded shadow shrinks + fades as the rig rises, so height reads as altitude (the gap
     // between the lifted art and the planted shadow). The shadow itself never lifts.
+    // Standing law: worn weapons never create player-root aura/glow layers. Only an explicit
+    // server-authored aura delivery may publish its gameplay field here.
     const performanceAura = this.performanceSpec?.aura;
-    const gloveAura = this.weaponDef?.glovePair;
-    const auraRadius = performanceAura?.radius ?? gloveAura?.auraRadius;
-    const auraColor = performanceAura?.color ?? gloveAura?.auraColor;
+    const auraRadius = performanceAura?.radius;
+    const auraColor = performanceAura?.color;
     const auraActive =
       auraRadius !== undefined && auraColor !== undefined && anim.fireHeld === true && !this.downed;
-    const gloveAuraActive = !!gloveAura && auraActive;
     const paintedAura = resolveWeaponAuraVfxRecipe(this.weaponDef);
     const paintedAuraTreatment = weaponPaintedAuraFor(this.weaponDef?.id);
     const paintedAuraActive =
       auraActive && (paintedAura !== undefined || paintedAuraTreatment !== undefined);
     this.auraGlow.setVisible(auraActive && !paintedAuraActive);
     this.auraRing.setVisible(auraActive && !paintedAuraActive);
-    this.gloveAuraBoltA.setVisible(gloveAuraActive && !paintedAuraActive);
-    this.gloveAuraBoltB.setVisible(gloveAuraActive && !paintedAuraActive);
     for (const fill of this.paintedAuraFill) fill.setVisible(false);
     for (const particle of this.paintedAuraParticles) particle.setVisible(false);
     if (paintedAuraActive) {
@@ -11425,31 +11515,13 @@ export class SpriteRig {
       const inverseRigScale = 1 / Math.max(0.01, this.baseScale || 1);
       const diameter = auraRadius * 2 * (1 + pulse) * inverseRigScale;
       this.auraGlow
-        .setFillStyle(auraColor, gloveAuraActive ? 0.1 : 0.13)
+        .setFillStyle(auraColor, 0.13)
         .setDisplaySize(diameter, diameter * 0.56)
         .setAlpha(0.72);
       this.auraRing
-        .setStrokeStyle(gloveAuraActive ? 2 : 3, auraColor, 0.72)
+        .setStrokeStyle(3, auraColor, 0.72)
         .setDisplaySize(diameter * 0.96, diameter * 0.54)
         .setAlpha(0.82);
-      if (gloveAuraActive) {
-        const phase = anim.reducedMotion === true ? 0 : t * Math.PI * 9;
-        const boltRadius = diameter * 0.36;
-        const centerY = TARGET_BODY_H * 0.18;
-        this.gloveAuraBoltA
-          .setPosition(Math.cos(phase) * boltRadius, centerY + Math.sin(phase) * boltRadius * 0.48)
-          .setRotation(phase + Math.PI * 0.58)
-          .setFillStyle(auraColor, 0.9)
-          .setAlpha(0.68 + Math.sin(phase * 1.7) * 0.2);
-        this.gloveAuraBoltB
-          .setPosition(
-            Math.cos(phase + Math.PI) * boltRadius,
-            centerY + Math.sin(phase + Math.PI) * boltRadius * 0.48,
-          )
-          .setRotation(phase - Math.PI * 0.42)
-          .setFillStyle(auraColor, 0.82)
-          .setAlpha(0.62 + Math.cos(phase * 1.3) * 0.22);
-      }
     }
 
     let shrink = Math.max(0.34, 1 - this.hopPx / 560);

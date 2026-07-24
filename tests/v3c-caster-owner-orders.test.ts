@@ -88,7 +88,7 @@ describe("owner-notes V3C caster orders", () => {
     expect(attack.active).toBe(false);
   });
 
-  it("mirrors Sparkknuckle's alternating monk-fist combo and tiny sparks on Coyote", () => {
+  it("mirrors Sparkknuckle's alternating monk-fist combo on Coyote without player auras", () => {
     const coyote = weapon("x2-coyote-trickster-s-sparkmitt");
     const sparkknuckle = weapon("x2-sparkknuckle-hex-mitt");
     const coyoteCombo = meleeComboSelectionFor(coyote);
@@ -106,14 +106,8 @@ describe("owner-notes V3C caster orders", () => {
     );
     const coyoteSparks = resolveWeaponAuraVfxRecipe(coyote);
     const sparkSparks = resolveWeaponAuraVfxRecipe(sparkknuckle);
-    expect(coyoteSparks && { ...coyoteSparks, weaponId: undefined }).toEqual(
-      sparkSparks && { ...sparkSparks, weaponId: undefined },
-    );
-    expect(coyoteSparks).toMatchObject({
-      packs: ["shock-spark"],
-      count: 4,
-      particleDominance: 0.3,
-    });
+    expect(coyoteSparks).toBeUndefined();
+    expect(sparkSparks).toBeUndefined();
   });
 
   it("vibrates Witherleaf through the shake idiom and emits spores at the tip", () => {

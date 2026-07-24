@@ -37,8 +37,11 @@ const GRIPS = new Set(["1H", "2H", "dual", "mounted"]);
 const HANDLING_TAGS = new Set(["bolt", "lever", "pump", "pistol"]);
 const IDLE_HAND_POSES = new Set([
   "secondary-grip", "mirror-guard", "low-guard", "casting-gesture", "hip-rest",
+  "praying-mantis", "crane-guard",
 ]);
-const IDLE_FOOT_POSES = new Set(["loose-plant", "combat-plant", "wide-plant"]);
+const IDLE_FOOT_POSES = new Set([
+  "loose-plant", "combat-plant", "wide-plant", "crane-one-leg",
+]);
 const SECONDARY_GRIP_ROLES = new Set([
   "under-barrel", "bolt", "lever", "crank", "pump", "horizontal-foregrip", "vertical-foregrip", "shoulder-RPG",
   "two-hand-rifle", "shaft", "handle",
@@ -110,7 +113,7 @@ const BEHAVIOR_KEYS = {
     "scalingGrades", "volley", "projectileWaveform", "explode"]),
   hybrid: new Set(["kind", "projectile"]),
   groundZone: new Set(["kind", "zone"]),
-  glovePair: new Set(["kind", "auraColor", "auraRadius", "wrapsFeet"]),
+  glovePair: new Set(["kind", "wrapsFeet"]),
   warp: new Set(["kind", "burstRadius"]),
 };
 const EXPLODE_KEYS = new Set(["radius", "damage", "scalingGrades"]);
@@ -163,7 +166,7 @@ const COMBO_MOTIONS = new Set([
   "gourd-haymaker", "iron-knuckle", "iron-palm",
   "teep-kick", "spinning-back-elbow", "oblique-kick", "double-palm", "weave-backfist",
   "sweeping-leg", "falling-haymaker", "crushing-palm", "stomp-kick", "windup-palm",
-  "quake-double-palm",
+  "quake-double-palm", "backflip-head-kick",
   "spin-release", "pommel-bash", "true-charged-slam", "falling-gate", "backswing-wheel",
   "runaway-cleave", "highland-gate", "rising-ward", "bind-break-cast-off", "long-reap",
   "shaft-switch", "compass-rose", "headsmans-drop", "hook-and-haul", "gallows-turn", "draw-cut",
@@ -1237,10 +1240,7 @@ function mapWeapon(w) {
     const ex = explodeOf(b.explode, "behavior.explode", 100, 30);
     if (ex) def.cast.explode = ex;
   } else if (kind === "glovePair") {
-    def.glovePair = {
-      auraColor: int(b.auraColor, 0, 0xffffff, 0x33e6ff, "behavior.auraColor"),
-      auraRadius: num(b.auraRadius, 24, 90, 52, "behavior.auraRadius"),
-    };
+    def.glovePair = {};
     if (b.wrapsFeet !== undefined) {
       if (typeof b.wrapsFeet !== "boolean") fail("behavior.wrapsFeet is not a boolean");
       else def.glovePair.wrapsFeet = b.wrapsFeet;

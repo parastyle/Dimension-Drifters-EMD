@@ -1,5 +1,5 @@
 export type KungFuWrapSwingStyle =
-  | "red-eight-limbs-aura"
+  | "crimson-roundhouse-arc"
   | "white-centerline-flash"
   | "mist-purple-sway-sweep"
   | "black-iron-drive";
@@ -22,8 +22,8 @@ export interface KungFuWrapVfxRecipe {
 export const KUNG_FU_WRAP_VFX_RECIPES: Readonly<Record<string, KungFuWrapVfxRecipe>> =
   Object.freeze({
     "x2-muay-thai-wraps": Object.freeze({
-      signature: "teep-elbow-clinch-spin-with-crimson-eight-limbs-aura-and-heavy-dust",
-      swing: "red-eight-limbs-aura",
+      signature: "teep-elbow-clinch-roundhouse-with-crimson-strike-arc-and-heavy-dust",
+      swing: "crimson-roundhouse-arc",
       impact: "heavy-dust-cloud",
       primaryColor: 0xd74737,
       accentColor: 0x6f1d25,
@@ -36,7 +36,7 @@ export const KUNG_FU_WRAP_VFX_RECIPES: Readonly<Record<string, KungFuWrapVfxReci
       accentColor: 0xc9d4d8,
     }),
     "x2-drunken-fist-wraps": Object.freeze({
-      signature: "alternating-mist-purple-weaves-foot-sweep-and-falling-haymaker",
+      signature: "alternating-mist-purple-weaves-foot-sweep-backflip-head-kick-and-crane",
       swing: "mist-purple-sway-sweep",
       impact: "misty-purple-wide-sweep",
       primaryColor: 0x8d63b7,

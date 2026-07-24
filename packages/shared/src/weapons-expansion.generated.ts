@@ -13762,10 +13762,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "int": 5
     },
     "twoHanded": true,
-    "glovePair": {
-      "auraColor": 3401471,
-      "auraRadius": 48
-    }
+    "glovePair": {}
   },
   "x2-cinderpalm-brand-glove": {
     "id": "x2-cinderpalm-brand-glove",
@@ -14597,10 +14594,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "luk": 4
     },
     "twoHanded": true,
-    "glovePair": {
-      "auraColor": 3401471,
-      "auraRadius": 48
-    }
+    "glovePair": {}
   },
   "x2-permafrost-cryo-bracer": {
     "id": "x2-permafrost-cryo-bracer",
@@ -16953,10 +16947,10 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "str": "B",
       "dex": "D"
     },
-    "damage": 15,
-    "range": 72,
+    "damage": 8,
+    "range": 92,
     "halfArc": 0.72,
-    "cooldown": 0.75,
+    "cooldown": 0.4,
     "displayLength": 62,
     "swingArc": 2.4,
     "gripFrac": 0.18,
@@ -16974,12 +16968,12 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "DEX"
       ]
     },
-    "collisionLength": 68,
+    "collisionLength": 84,
     "poseLanguage": {
       "idle": "mirror-guard",
       "feet": "wide-plant"
     },
-    "description": "Crimson wraps for a five-beat advance: teep, paired elbows, clinch knee, and a spinning back-elbow finish.",
+    "description": "Crimson wraps for a fast five-beat advance: long teep, paired elbows, clinch knee, and a full sweeping roundhouse finish.",
     "authoritativeCombo": true,
     "impactMuzzle": true,
     "swingStyle": "punch",
@@ -16998,8 +16992,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "twoHanded": true,
     "durability": 90,
     "glovePair": {
-      "auraColor": 14108471,
-      "auraRadius": 54,
       "wrapsFeet": true
     }
   },
@@ -17011,10 +17003,10 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "dex": "B",
       "str": "D"
     },
-    "damage": 4,
-    "range": 62,
+    "damage": 2.4,
+    "range": 86,
     "halfArc": 0.34,
-    "cooldown": 0.2,
+    "cooldown": 0.12,
     "displayLength": 58,
     "swingArc": 1.8,
     "gripFrac": 0.16,
@@ -17032,12 +17024,12 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "STR"
       ]
     },
-    "collisionLength": 62,
+    "collisionLength": 72,
     "poseLanguage": {
-      "idle": "mirror-guard",
+      "idle": "praying-mantis",
       "feet": "combat-plant"
     },
-    "description": "White precision wraps for a five-beat centerline blitz: a chain-punch triplet, low oblique kick, and double-palm burst.",
+    "description": "White precision wraps for a five-beat centerline blitz held in a hooked-hand praying mantis guard.",
     "authoritativeCombo": true,
     "impactMuzzle": true,
     "swingStyle": "punch",
@@ -17056,8 +17048,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "twoHanded": true,
     "durability": 90,
     "glovePair": {
-      "auraColor": 16250090,
-      "auraRadius": 26,
       "wrapsFeet": true
     }
   },
@@ -17069,10 +17059,10 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "dex": "B",
       "luk": "C"
     },
-    "damage": 10,
-    "range": 86,
+    "damage": 6,
+    "range": 96,
     "halfArc": 0.82,
-    "cooldown": 0.5,
+    "cooldown": 0.3,
     "displayLength": 66,
     "swingArc": 2.55,
     "gripFrac": 0.18,
@@ -17090,12 +17080,12 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "LUK"
       ]
     },
-    "collisionLength": 76,
+    "collisionLength": 86,
     "poseLanguage": {
-      "idle": "mirror-guard",
-      "feet": "loose-plant"
+      "idle": "crane-guard",
+      "feet": "crane-one-leg"
     },
-    "description": "Wine-stained wraps for five directional feints: swaying jab, reverse cross, weaving backfist, leg sweep, and falling haymaker.",
+    "description": "Wine-stained wraps for fast directional feints, a crane one-leg guard, and an overhead backflip head kick.",
     "authoritativeCombo": true,
     "impactMuzzle": true,
     "swingStyle": "punch",
@@ -17114,8 +17104,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "twoHanded": true,
     "durability": 90,
     "glovePair": {
-      "auraColor": 9201080,
-      "auraRadius": 44,
       "wrapsFeet": true
     }
   },
@@ -17127,10 +17115,10 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "str": "B",
       "con": "C"
     },
-    "damage": 18,
-    "range": 78,
+    "damage": 11,
+    "range": 96,
     "halfArc": 0.68,
-    "cooldown": 0.9,
+    "cooldown": 0.55,
     "displayLength": 72,
     "swingArc": 2.2,
     "gripFrac": 0.18,
@@ -17148,7 +17136,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "CON"
       ]
     },
-    "collisionLength": 78,
+    "collisionLength": 88,
     "poseLanguage": {
       "idle": "mirror-guard",
       "feet": "wide-plant"
@@ -17172,8 +17160,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "twoHanded": true,
     "durability": 90,
     "glovePair": {
-      "auraColor": 13218168,
-      "auraRadius": 40,
       "wrapsFeet": true
     }
   }
@@ -20438,15 +20424,15 @@ export const GENERATED_MELEE_COMBO_BARS = {
       "direction": 1,
       "hand": "lead",
       "timing": {
-        "activeStart": 0.18,
-        "activeEnd": 0.48,
-        "impact": 0.4,
-        "followEnd": 0.65
+        "activeStart": 0.12,
+        "activeEnd": 0.42,
+        "impact": 0.34,
+        "followEnd": 0.58
       },
       "path": {
         "kind": "capsule",
         "arcMultiplier": 0,
-        "rangeMultiplier": 1.05,
+        "rangeMultiplier": 1.3,
         "damageMultiplier": 0.8,
         "knockback": 14,
         "deltaAngle": 0
@@ -20455,7 +20441,7 @@ export const GENERATED_MELEE_COMBO_BARS = {
       "rootMotion": {
         "forwardPx": 10,
         "lateralPx": 0,
-        "durationSeconds": 0.12
+        "durationSeconds": 0.1
       }
     },
     {
@@ -20464,15 +20450,15 @@ export const GENERATED_MELEE_COMBO_BARS = {
       "direction": 1,
       "hand": "lead",
       "timing": {
-        "activeStart": 0.2,
-        "activeEnd": 0.5,
-        "impact": 0.43,
-        "followEnd": 0.68
+        "activeStart": 0.12,
+        "activeEnd": 0.42,
+        "impact": 0.34,
+        "followEnd": 0.58
       },
       "path": {
         "kind": "sweep",
         "arcMultiplier": 0.55,
-        "rangeMultiplier": 0.82,
+        "rangeMultiplier": 1.18,
         "damageMultiplier": 0.9,
         "knockback": 16
       },
@@ -20480,7 +20466,7 @@ export const GENERATED_MELEE_COMBO_BARS = {
       "rootMotion": {
         "forwardPx": 4,
         "lateralPx": 0,
-        "durationSeconds": 0.1
+        "durationSeconds": 0.08
       }
     },
     {
@@ -20489,15 +20475,15 @@ export const GENERATED_MELEE_COMBO_BARS = {
       "direction": -1,
       "hand": "off",
       "timing": {
-        "activeStart": 0.21,
-        "activeEnd": 0.51,
-        "impact": 0.44,
-        "followEnd": 0.69
+        "activeStart": 0.13,
+        "activeEnd": 0.43,
+        "impact": 0.35,
+        "followEnd": 0.59
       },
       "path": {
         "kind": "sweep",
         "arcMultiplier": -0.62,
-        "rangeMultiplier": 0.84,
+        "rangeMultiplier": 1.22,
         "damageMultiplier": 0.9,
         "knockback": 18
       },
@@ -20505,7 +20491,7 @@ export const GENERATED_MELEE_COMBO_BARS = {
       "rootMotion": {
         "forwardPx": 5,
         "lateralPx": 0,
-        "durationSeconds": 0.1
+        "durationSeconds": 0.08
       }
     },
     {
@@ -20514,15 +20500,15 @@ export const GENERATED_MELEE_COMBO_BARS = {
       "direction": 1,
       "hand": "both",
       "timing": {
-        "activeStart": 0.27,
-        "activeEnd": 0.6,
-        "impact": 0.53,
-        "followEnd": 0.78
+        "activeStart": 0.16,
+        "activeEnd": 0.48,
+        "impact": 0.4,
+        "followEnd": 0.66
       },
       "path": {
         "kind": "capsule",
         "arcMultiplier": 0,
-        "rangeMultiplier": 0.92,
+        "rangeMultiplier": 1.28,
         "damageMultiplier": 1.1,
         "knockback": 24,
         "deltaAngle": 0
@@ -20531,32 +20517,32 @@ export const GENERATED_MELEE_COMBO_BARS = {
       "rootMotion": {
         "forwardPx": 12,
         "lateralPx": 0,
-        "durationSeconds": 0.14
+        "durationSeconds": 0.1
       }
     },
     {
-      "name": "Red Wheel Back-Elbow",
-      "motion": "spinning-back-elbow",
+      "name": "Crimson Wheel Roundhouse",
+      "motion": "roundhouse-kick",
       "direction": -1,
-      "hand": "off",
+      "hand": "both",
       "timing": {
-        "activeStart": 0.34,
-        "activeEnd": 0.72,
-        "impact": 0.64,
-        "followEnd": 0.9
+        "activeStart": 0.22,
+        "activeEnd": 0.62,
+        "impact": 0.52,
+        "followEnd": 0.78
       },
       "path": {
         "kind": "sweep",
-        "arcMultiplier": -1.22,
-        "rangeMultiplier": 1.02,
+        "arcMultiplier": -1.5,
+        "rangeMultiplier": 1.48,
         "damageMultiplier": 1.3,
         "knockback": 34
       },
-      "limb": "hand",
+      "limb": "foot",
       "rootMotion": {
         "forwardPx": 8,
         "lateralPx": 0,
-        "durationSeconds": 0.16
+        "durationSeconds": 0.12
       }
     }
   ],
@@ -20567,15 +20553,15 @@ export const GENERATED_MELEE_COMBO_BARS = {
       "direction": 1,
       "hand": "lead",
       "timing": {
-        "activeStart": 0.04,
-        "activeEnd": 0.2,
-        "impact": 0.15,
-        "followEnd": 0.28
+        "activeStart": 0.02,
+        "activeEnd": 0.17,
+        "impact": 0.11,
+        "followEnd": 0.23
       },
       "path": {
         "kind": "capsule",
         "arcMultiplier": 0,
-        "rangeMultiplier": 1.08,
+        "rangeMultiplier": 1.3,
         "damageMultiplier": 0.8,
         "knockback": 2,
         "deltaAngle": 0
@@ -20584,7 +20570,7 @@ export const GENERATED_MELEE_COMBO_BARS = {
       "rootMotion": {
         "forwardPx": 3,
         "lateralPx": 0,
-        "durationSeconds": 0.08
+        "durationSeconds": 0.05
       }
     },
     {
@@ -20593,15 +20579,15 @@ export const GENERATED_MELEE_COMBO_BARS = {
       "direction": -1,
       "hand": "off",
       "timing": {
-        "activeStart": 0.03,
-        "activeEnd": 0.18,
-        "impact": 0.13,
-        "followEnd": 0.26
+        "activeStart": 0.02,
+        "activeEnd": 0.16,
+        "impact": 0.1,
+        "followEnd": 0.22
       },
       "path": {
         "kind": "capsule",
         "arcMultiplier": 0,
-        "rangeMultiplier": 1.12,
+        "rangeMultiplier": 1.34,
         "damageMultiplier": 0.8,
         "knockback": 2,
         "deltaAngle": 0
@@ -20610,7 +20596,7 @@ export const GENERATED_MELEE_COMBO_BARS = {
       "rootMotion": {
         "forwardPx": 3,
         "lateralPx": 0,
-        "durationSeconds": 0.08
+        "durationSeconds": 0.05
       }
     },
     {
@@ -20619,15 +20605,15 @@ export const GENERATED_MELEE_COMBO_BARS = {
       "direction": 1,
       "hand": "lead",
       "timing": {
-        "activeStart": 0.03,
-        "activeEnd": 0.19,
-        "impact": 0.14,
-        "followEnd": 0.27
+        "activeStart": 0.02,
+        "activeEnd": 0.17,
+        "impact": 0.11,
+        "followEnd": 0.23
       },
       "path": {
         "kind": "capsule",
         "arcMultiplier": 0,
-        "rangeMultiplier": 1.16,
+        "rangeMultiplier": 1.38,
         "damageMultiplier": 0.8,
         "knockback": 3,
         "deltaAngle": 0
@@ -20636,7 +20622,7 @@ export const GENERATED_MELEE_COMBO_BARS = {
       "rootMotion": {
         "forwardPx": 4,
         "lateralPx": 0,
-        "durationSeconds": 0.08
+        "durationSeconds": 0.05
       }
     },
     {
@@ -20645,15 +20631,15 @@ export const GENERATED_MELEE_COMBO_BARS = {
       "direction": -1,
       "hand": "off",
       "timing": {
-        "activeStart": 0.1,
-        "activeEnd": 0.34,
-        "impact": 0.28,
-        "followEnd": 0.48
+        "activeStart": 0.07,
+        "activeEnd": 0.3,
+        "impact": 0.23,
+        "followEnd": 0.4
       },
       "path": {
         "kind": "capsule",
         "arcMultiplier": -0.06,
-        "rangeMultiplier": 1.05,
+        "rangeMultiplier": 1.4,
         "damageMultiplier": 1.1,
         "knockback": 8,
         "deltaAngle": -0.08
@@ -20662,7 +20648,7 @@ export const GENERATED_MELEE_COMBO_BARS = {
       "rootMotion": {
         "forwardPx": 7,
         "lateralPx": 0,
-        "durationSeconds": 0.1
+        "durationSeconds": 0.07
       }
     },
     {
@@ -20671,15 +20657,15 @@ export const GENERATED_MELEE_COMBO_BARS = {
       "direction": 0,
       "hand": "both",
       "timing": {
-        "activeStart": 0.12,
-        "activeEnd": 0.42,
-        "impact": 0.34,
-        "followEnd": 0.56
+        "activeStart": 0.08,
+        "activeEnd": 0.34,
+        "impact": 0.27,
+        "followEnd": 0.46
       },
       "path": {
         "kind": "fan",
         "arcMultiplier": 0.24,
-        "rangeMultiplier": 1.2,
+        "rangeMultiplier": 1.5,
         "damageMultiplier": 1.5,
         "knockback": 18
       },
@@ -20687,7 +20673,7 @@ export const GENERATED_MELEE_COMBO_BARS = {
       "rootMotion": {
         "forwardPx": 9,
         "lateralPx": 0,
-        "durationSeconds": 0.12
+        "durationSeconds": 0.08
       }
     }
   ],
@@ -20698,15 +20684,15 @@ export const GENERATED_MELEE_COMBO_BARS = {
       "direction": 1,
       "hand": "lead",
       "timing": {
-        "activeStart": 0.12,
-        "activeEnd": 0.4,
-        "impact": 0.34,
-        "followEnd": 0.6
+        "activeStart": 0.08,
+        "activeEnd": 0.34,
+        "impact": 0.27,
+        "followEnd": 0.5
       },
       "path": {
         "kind": "capsule",
         "arcMultiplier": 0.08,
-        "rangeMultiplier": 0.86,
+        "rangeMultiplier": 1.18,
         "damageMultiplier": 0.8,
         "knockback": 7,
         "deltaAngle": 0.08
@@ -20715,7 +20701,7 @@ export const GENERATED_MELEE_COMBO_BARS = {
       "rootMotion": {
         "forwardPx": 3,
         "lateralPx": 7,
-        "durationSeconds": 0.14
+        "durationSeconds": 0.1
       }
     },
     {
@@ -20724,15 +20710,15 @@ export const GENERATED_MELEE_COMBO_BARS = {
       "direction": -1,
       "hand": "off",
       "timing": {
-        "activeStart": 0.16,
-        "activeEnd": 0.46,
-        "impact": 0.38,
-        "followEnd": 0.66
+        "activeStart": 0.1,
+        "activeEnd": 0.38,
+        "impact": 0.3,
+        "followEnd": 0.54
       },
       "path": {
         "kind": "capsule",
         "arcMultiplier": -0.12,
-        "rangeMultiplier": 0.92,
+        "rangeMultiplier": 1.22,
         "damageMultiplier": 0.9,
         "knockback": 9,
         "deltaAngle": -0.14
@@ -20741,7 +20727,7 @@ export const GENERATED_MELEE_COMBO_BARS = {
       "rootMotion": {
         "forwardPx": -3,
         "lateralPx": -9,
-        "durationSeconds": 0.14
+        "durationSeconds": 0.1
       }
     },
     {
@@ -20750,15 +20736,15 @@ export const GENERATED_MELEE_COMBO_BARS = {
       "direction": 1,
       "hand": "lead",
       "timing": {
-        "activeStart": 0.14,
-        "activeEnd": 0.45,
-        "impact": 0.37,
-        "followEnd": 0.65
+        "activeStart": 0.09,
+        "activeEnd": 0.37,
+        "impact": 0.29,
+        "followEnd": 0.53
       },
       "path": {
         "kind": "sweep",
         "arcMultiplier": 0.72,
-        "rangeMultiplier": 0.96,
+        "rangeMultiplier": 1.25,
         "damageMultiplier": 0.9,
         "knockback": 11
       },
@@ -20766,7 +20752,7 @@ export const GENERATED_MELEE_COMBO_BARS = {
       "rootMotion": {
         "forwardPx": 5,
         "lateralPx": 8,
-        "durationSeconds": 0.14
+        "durationSeconds": 0.1
       }
     },
     {
@@ -20775,15 +20761,15 @@ export const GENERATED_MELEE_COMBO_BARS = {
       "direction": -1,
       "hand": "both",
       "timing": {
-        "activeStart": 0.2,
-        "activeEnd": 0.55,
-        "impact": 0.47,
-        "followEnd": 0.75
+        "activeStart": 0.13,
+        "activeEnd": 0.48,
+        "impact": 0.39,
+        "followEnd": 0.64
       },
       "path": {
         "kind": "sweep",
         "arcMultiplier": -1.18,
-        "rangeMultiplier": 1.12,
+        "rangeMultiplier": 1.38,
         "damageMultiplier": 1.1,
         "knockback": 16
       },
@@ -20791,32 +20777,32 @@ export const GENERATED_MELEE_COMBO_BARS = {
       "rootMotion": {
         "forwardPx": -2,
         "lateralPx": -11,
-        "durationSeconds": 0.14
+        "durationSeconds": 0.1
       }
     },
     {
-      "name": "Falling Gourd Haymaker",
-      "motion": "falling-haymaker",
-      "direction": 1,
-      "hand": "lead",
+      "name": "Upside-Down Gourd Head Kick",
+      "motion": "backflip-head-kick",
+      "direction": -1,
+      "hand": "both",
       "timing": {
-        "activeStart": 0.24,
-        "activeEnd": 0.62,
-        "impact": 0.54,
-        "followEnd": 0.84
+        "activeStart": 0.16,
+        "activeEnd": 0.58,
+        "impact": 0.42,
+        "followEnd": 0.82
       },
       "path": {
         "kind": "sweep",
-        "arcMultiplier": 1.34,
-        "rangeMultiplier": 1.1,
+        "arcMultiplier": -1.5,
+        "rangeMultiplier": 1.5,
         "damageMultiplier": 1.3,
         "knockback": 24
       },
-      "limb": "hand",
+      "limb": "foot",
       "rootMotion": {
         "forwardPx": 12,
         "lateralPx": 4,
-        "durationSeconds": 0.16
+        "durationSeconds": 0.12
       }
     }
   ],
@@ -20827,15 +20813,15 @@ export const GENERATED_MELEE_COMBO_BARS = {
       "direction": 1,
       "hand": "lead",
       "timing": {
-        "activeStart": 0.3,
-        "activeEnd": 0.62,
-        "impact": 0.56,
-        "followEnd": 0.8
+        "activeStart": 0.2,
+        "activeEnd": 0.54,
+        "impact": 0.46,
+        "followEnd": 0.7
       },
       "path": {
         "kind": "capsule",
         "arcMultiplier": 0,
-        "rangeMultiplier": 0.88,
+        "rangeMultiplier": 1.2,
         "damageMultiplier": 0.9,
         "knockback": 24,
         "deltaAngle": 0
@@ -20844,7 +20830,7 @@ export const GENERATED_MELEE_COMBO_BARS = {
       "rootMotion": {
         "forwardPx": 5,
         "lateralPx": 0,
-        "durationSeconds": 0.16
+        "durationSeconds": 0.12
       }
     },
     {
@@ -20853,15 +20839,15 @@ export const GENERATED_MELEE_COMBO_BARS = {
       "direction": -1,
       "hand": "off",
       "timing": {
-        "activeStart": 0.34,
-        "activeEnd": 0.68,
-        "impact": 0.61,
-        "followEnd": 0.84
+        "activeStart": 0.22,
+        "activeEnd": 0.58,
+        "impact": 0.49,
+        "followEnd": 0.74
       },
       "path": {
         "kind": "capsule",
         "arcMultiplier": -0.06,
-        "rangeMultiplier": 0.96,
+        "rangeMultiplier": 1.32,
         "damageMultiplier": 1,
         "knockback": 30,
         "deltaAngle": -0.08
@@ -20870,7 +20856,7 @@ export const GENERATED_MELEE_COMBO_BARS = {
       "rootMotion": {
         "forwardPx": 12,
         "lateralPx": 0,
-        "durationSeconds": 0.16
+        "durationSeconds": 0.12
       }
     },
     {
@@ -20879,15 +20865,15 @@ export const GENERATED_MELEE_COMBO_BARS = {
       "direction": -1,
       "hand": "off",
       "timing": {
-        "activeStart": 0.36,
-        "activeEnd": 0.7,
-        "impact": 0.63,
-        "followEnd": 0.86
+        "activeStart": 0.24,
+        "activeEnd": 0.6,
+        "impact": 0.51,
+        "followEnd": 0.76
       },
       "path": {
         "kind": "sweep",
         "arcMultiplier": -0.48,
-        "rangeMultiplier": 0.9,
+        "rangeMultiplier": 1.24,
         "damageMultiplier": 1,
         "knockback": 26
       },
@@ -20895,7 +20881,7 @@ export const GENERATED_MELEE_COMBO_BARS = {
       "rootMotion": {
         "forwardPx": -3,
         "lateralPx": 0,
-        "durationSeconds": 0.18
+        "durationSeconds": 0.14
       }
     },
     {
@@ -20904,15 +20890,15 @@ export const GENERATED_MELEE_COMBO_BARS = {
       "direction": 0,
       "hand": "both",
       "timing": {
-        "activeStart": 0.42,
-        "activeEnd": 0.78,
-        "impact": 0.7,
-        "followEnd": 0.94
+        "activeStart": 0.28,
+        "activeEnd": 0.68,
+        "impact": 0.58,
+        "followEnd": 0.84
       },
       "path": {
         "kind": "fan",
         "arcMultiplier": 0.5,
-        "rangeMultiplier": 1.08,
+        "rangeMultiplier": 1.48,
         "damageMultiplier": 1.1,
         "knockback": 48
       },
@@ -20920,7 +20906,7 @@ export const GENERATED_MELEE_COMBO_BARS = {
       "rootMotion": {
         "forwardPx": 16,
         "lateralPx": 0,
-        "durationSeconds": 0.2
+        "durationSeconds": 0.16
       }
     }
   ]

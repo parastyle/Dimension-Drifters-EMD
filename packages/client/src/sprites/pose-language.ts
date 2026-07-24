@@ -61,6 +61,12 @@ export interface IdleHandPoseSpec {
   readonly facingX: number;
   /** Screen Y relative to the body, normalized by body height. */
   readonly screenY: number;
+  /** Optional rear-hand silhouette; omitted keeps the ordinary shared placement. */
+  readonly offFacingX?: number;
+  readonly offScreenY?: number;
+  /** Worn-hand art rotations used only by the two martial idle silhouettes. */
+  readonly leadAngleRad?: number;
+  readonly offAngleRad?: number;
   readonly aimBiasX: number;
   readonly aimBiasY: number;
   readonly movementScale: number;
@@ -70,7 +76,7 @@ function idleHandSpec(spec: IdleHandPoseSpec): IdleHandPoseSpec {
   return Object.freeze(spec);
 }
 
-/** Five-pose neutral vocabulary. `secondary-grip` is a semantic hard constraint, never a free target. */
+/** Neutral hand vocabulary. `secondary-grip` is a semantic hard constraint, never a free target. */
 export const IDLE_HAND_POSE_SPECS: Readonly<Record<IdleHandPose, IdleHandPoseSpec>> = Object.freeze(
   {
     "secondary-grip": idleHandSpec({
@@ -113,6 +119,30 @@ export const IDLE_HAND_POSE_SPECS: Readonly<Record<IdleHandPose, IdleHandPoseSpe
       aimBiasY: 0.006,
       movementScale: 0.28,
     }),
+    "praying-mantis": idleHandSpec({
+      pose: "praying-mantis",
+      facingX: 0.49,
+      screenY: -0.28,
+      offFacingX: 0.25,
+      offScreenY: -0.08,
+      leadAngleRad: 1.02,
+      offAngleRad: -0.72,
+      aimBiasX: 0,
+      aimBiasY: 0,
+      movementScale: 0.24,
+    }),
+    "crane-guard": idleHandSpec({
+      pose: "crane-guard",
+      facingX: 0.48,
+      screenY: -0.24,
+      offFacingX: 0.29,
+      offScreenY: -0.17,
+      leadAngleRad: 0.58,
+      offAngleRad: -0.48,
+      aimBiasX: 0,
+      aimBiasY: 0,
+      movementScale: 0.22,
+    }),
   },
 );
 
@@ -150,6 +180,14 @@ export const IDLE_FOOT_POSE_SPECS: Readonly<Record<IdleFootPose, IdleFootPoseSpe
       backX: -0.11,
       backY: -0.09,
       gaitFade: 0.5,
+    }),
+    "crane-one-leg": Object.freeze({
+      pose: "crane-one-leg",
+      frontX: 0.12,
+      frontY: -0.48,
+      backX: -0.08,
+      backY: 0.02,
+      gaitFade: 0.8,
     }),
   },
 );
@@ -876,6 +914,8 @@ export interface IdleHandTargetInput {
   readonly microY?: number;
   /** Real manifest evidence is accepted deliberately but cannot influence the absolute target. */
   readonly manifestSocketX?: number;
+  /** Facing-local hand identity. Martial silhouettes use distinct hooked/guarded targets. */
+  readonly hand?: 0 | 1;
   readonly recoveryT?: number;
   readonly recoveryForward?: number;
   readonly recoveryLateral?: number;
@@ -893,16 +933,19 @@ export function resolveIdleHandTarget(
   out: IdleHandTarget,
 ): IdleHandTarget {
   const spec = IDLE_HAND_POSE_SPECS[idleHandPoseFor(def)];
+  const offHand = input.hand === 1;
+  const facingX = offHand ? (spec.offFacingX ?? spec.facingX) : spec.facingX;
+  const screenY = offHand ? (spec.offScreenY ?? spec.screenY) : spec.screenY;
   const aimCos = Math.cos(input.aimLocal);
   const aimSin = Math.sin(input.aimLocal);
   let targetX =
     input.bodyX +
-    (spec.facingX + aimCos * spec.aimBiasX) * input.bodyHeight +
+    (facingX + aimCos * spec.aimBiasX) * input.bodyHeight +
     (input.movementX ?? 0) * spec.movementScale +
     (input.microX ?? 0);
   let targetY =
     input.bodyY +
-    (spec.screenY + aimSin * spec.aimBiasY) * input.bodyHeight +
+    (screenY + aimSin * spec.aimBiasY) * input.bodyHeight +
     (input.movementY ?? 0) * spec.movementScale +
     (input.microY ?? 0);
 
@@ -927,6 +970,22 @@ export function resolveIdleHandTarget(
   out.x = targetX;
   out.y = targetY;
   return out;
+}
+
+export function isMartialIdleHandPose(
+  pose: IdleHandPose | undefined,
+): pose is "praying-mantis" | "crane-guard" {
+  return pose === "praying-mantis" || pose === "crane-guard";
+}
+
+export function martialIdleHandAngleFor(
+  def: WeaponDef | undefined,
+  hand: 0 | 1,
+): number | undefined {
+  const pose = def?.poseLanguage?.idle;
+  if (!isMartialIdleHandPose(pose)) return undefined;
+  const spec = IDLE_HAND_POSE_SPECS[pose];
+  return hand === 0 ? spec.leadAngleRad : spec.offAngleRad;
 }
 
 export interface FootPoseOffset {

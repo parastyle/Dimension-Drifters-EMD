@@ -4,7 +4,8 @@ import { SPRITES, type SpriteManifest, spriteImageFacingX } from "../sprites/man
 
 vi.mock("phaser", () => ({ default: {} }));
 
-const { SpriteRig, wrapRigFacingSign, wrapRigMountPlan } = await import("./SpriteRig.js");
+const { SpriteRig, wrapRigFacingSign, wrapRigMountPlan, wrapRigReceiverRelativeScale } =
+  await import("./SpriteRig.js");
 const { twoHandedPoseFor } = await import("../sprites/pose-language.js");
 
 interface CapturedPiece {
@@ -24,7 +25,7 @@ describe("SpriteRig glove-pair rendering", () => {
   ] as const)("mounts %s as two independent hands and two independent feet", (weaponId) => {
     const weapon = WEAPONS[weaponId];
     const manifest = SPRITES[weaponId];
-    if (!weapon || !manifest) throw new Error(`Missing B19 wrap fixture: ${weaponId}`);
+    if (!weapon || !manifest) throw new Error(`Missing B23 wrap fixture: ${weaponId}`);
     const mounts = wrapRigMountPlan(weapon, manifest);
 
     expect(weapon.glovePair?.wrapsFeet).toBe(true);
@@ -110,7 +111,39 @@ describe("SpriteRig glove-pair rendering", () => {
     expect(monkIds).not.toContain("x2-tesla-faradayer"); // projectile gauntlets retain firing poses
   });
 
-  it("keeps Sparkknuckle's approved glove frames while removing only its authored root drift", () => {
+  it("fits full wrap canvases to hand and foot receivers instead of held-prop display length", () => {
+    const handScale = wrapRigReceiverRelativeScale({
+      sourceWidth: 512,
+      sourceHeight: 368,
+      receiverWidth: 42,
+      receiverHeight: 34,
+      receiverScaleX: 1,
+      receiverScaleY: 1,
+      rigScaleX: 1,
+      rigScaleY: 1,
+      padding: 1.16,
+    });
+    const footScale = wrapRigReceiverRelativeScale({
+      sourceWidth: 512,
+      sourceHeight: 417,
+      receiverWidth: 46,
+      receiverHeight: 30,
+      receiverScaleX: 1,
+      receiverScaleY: 1,
+      rigScaleX: 1,
+      rigScaleY: 1,
+      padding: 1.12,
+    });
+
+    expect(512 * handScale).toBeLessThanOrEqual(42 * 1.16);
+    expect(368 * handScale).toBeLessThanOrEqual(34 * 1.16);
+    expect(512 * footScale).toBeLessThanOrEqual(46 * 1.12);
+    expect(417 * footScale).toBeLessThanOrEqual(30 * 1.12);
+    expect(handScale).toBeLessThan(62 / 512);
+    expect(footScale).toBeLessThan(62 / 512);
+  });
+
+  it("keeps Sparkknuckle's approved glove frames while banning its former player aura", () => {
     const sparkknuckle = WEAPONS["x2-sparkknuckle-hex-mitt"];
     if (!sparkknuckle) throw new Error("Missing Sparkknuckle fixture");
     const combo = meleeComboSelectionFor(sparkknuckle);
@@ -120,7 +153,7 @@ describe("SpriteRig glove-pair rendering", () => {
       action: "default-swing",
       continuous: true,
     });
-    expect(sparkknuckle.glovePair).toEqual({ auraColor: 0x33e6ff, auraRadius: 48 });
+    expect(sparkknuckle.glovePair).toEqual({});
     expect(combo).toMatchObject({
       family: "punch",
       variant: "sparkknuckle-voltage-boxing",

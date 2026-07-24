@@ -1,4 +1,9 @@
-import type { MeleeComboHand, MeleeComboMotion, MeleeComboStep } from "@dd/shared";
+import type {
+  MeleeComboHand,
+  MeleeComboLimb,
+  MeleeComboMotion,
+  MeleeComboStep,
+} from "@dd/shared";
 
 export type KungFuWrapMotion = Extract<
   MeleeComboMotion,
@@ -22,13 +27,17 @@ export type KungFuWrapMotion = Extract<
   | "stomp-kick"
   | "windup-palm"
   | "quake-double-palm"
+  | "backflip-head-kick"
 >;
 
 export interface KungFuWrapPoseInput {
   motion: KungFuWrapMotion;
   hand: MeleeComboHand;
+  limb: MeleeComboLimb;
   direction: -1 | 0 | 1;
   timing: Readonly<MeleeComboStep["timing"]>;
+  /** Exact authoritative center-to-envelope reach normalized by the shared 76px body height. */
+  strikeReachBodyHeights: number;
   t: number;
 }
 
@@ -55,6 +64,9 @@ export interface KungFuWrapPoseSample {
   backFootLift: number;
   footBlend: number;
   impactSnap: number;
+  wholeBodyLift: number;
+  /** Full-card tumble progress consumed by the same roll rotation helper as the movement kit. */
+  flipProgress: number;
 }
 
 export function createKungFuWrapPoseSample(): KungFuWrapPoseSample {
@@ -80,6 +92,8 @@ export function createKungFuWrapPoseSample(): KungFuWrapPoseSample {
     backFootLift: 0,
     footBlend: 0,
     impactSnap: 0,
+    wholeBodyLift: 0,
+    flipProgress: -1,
   };
 }
 
@@ -87,8 +101,10 @@ export function createKungFuWrapPoseInput(): KungFuWrapPoseInput {
   return {
     motion: "chain-punch",
     hand: "lead",
+    limb: "hand",
     direction: 1,
     timing: { activeStart: 0.1, activeEnd: 0.4, impact: 0.32, followEnd: 0.55 },
+    strikeReachBodyHeights: 1.35,
     t: 0,
   };
 }
@@ -115,6 +131,8 @@ function resetKungFuWrapPoseSample(out: KungFuWrapPoseSample): void {
   out.backFootLift = 0;
   out.footBlend = 0;
   out.impactSnap = 0;
+  out.wholeBodyLift = 0;
+  out.flipProgress = -1;
 }
 
 export function isKungFuWrapMotion(
@@ -140,7 +158,8 @@ export function isKungFuWrapMotion(
     motion === "crushing-palm" ||
     motion === "stomp-kick" ||
     motion === "windup-palm" ||
-    motion === "quake-double-palm"
+    motion === "quake-double-palm" ||
+    motion === "backflip-head-kick"
   );
 }
 
@@ -222,22 +241,27 @@ export function sampleKungFuWrapPose(
       out.backFootForward = -0.12;
       out.backFootLateral = -direction * 0.1;
       break;
-    case "roundhouse-kick":
+    case "roundhouse-kick": {
+      const arcProgress = smooth(
+        (input.t - input.timing.activeStart) /
+          Math.max(0.001, impact - input.timing.activeStart),
+      );
       out.handForward = 0.08 * ownership;
       out.handLateral = direction * 0.12;
       out.rearHandForward = 0.06 * ownership;
       out.rearHandLateral = -direction * 0.1;
-      out.bodyForward = 0.07 * ownership;
-      out.bodyLateral = -direction * 0.08 * ownership;
-      out.bodyLift = 0.05 * ownership;
-      out.bodyRotation = direction * 0.31 * ownership;
-      out.bodyScaleX = 1 - 0.13 * ownership;
-      out.frontFootForward = 0.7 * clamp01(extension);
-      out.frontFootLateral = direction * 0.18 * ownership;
-      out.frontFootLift = 0.29 * ownership;
-      out.backFootForward = -0.16;
-      out.backFootLateral = -direction * 0.14;
+      out.bodyForward = 0.1 * ownership;
+      out.bodyLateral = -direction * 0.12 * ownership;
+      out.bodyLift = 0.08 * ownership;
+      out.bodyRotation = direction * 0.48 * ownership;
+      out.bodyScaleX = 1 - 0.18 * ownership;
+      out.frontFootForward = 0.88 * clamp01(extension);
+      out.frontFootLateral = direction * (-0.42 + arcProgress * 0.84) * ownership;
+      out.frontFootLift = 0.34 * ownership;
+      out.backFootForward = -0.2;
+      out.backFootLateral = -direction * 0.17;
       break;
+    }
     case "teep-kick":
       out.handForward = 0.06 * ownership;
       out.handLateral = direction * 0.1;
@@ -482,6 +506,41 @@ export function sampleKungFuWrapPose(
       out.backFootForward = -0.22;
       out.backFootLateral = -0.15;
       break;
+    case "backflip-head-kick": {
+      const flipProgress = clamp01(input.t / Math.max(0.001, input.timing.followEnd));
+      const apex = Math.sin(Math.PI * flipProgress);
+      const overhead = Math.sin(Math.PI * clamp01(flipProgress * 1.2));
+      out.flipProgress = flipProgress;
+      out.wholeBodyLift = 0.48 * apex;
+      out.handForward = -0.08 * apex;
+      out.handLateral = direction * 0.18 * apex;
+      out.rearHandForward = -0.12 * apex;
+      out.rearHandLateral = -direction * 0.17 * apex;
+      out.bodyForward = -0.08 * apex;
+      out.bodyLateral = direction * 0.05 * Math.sin(Math.PI * 2 * flipProgress);
+      out.bodyScaleX = 1 - 0.16 * apex;
+      out.bodyScaleY = 1 + 0.12 * apex;
+      out.frontFootForward = 0.92 * Math.max(clamp01(extension), overhead * 0.82);
+      out.frontFootLateral = direction * 0.22 * Math.sin(Math.PI * 2 * flipProgress);
+      out.frontFootLift = 0.48 * overhead;
+      out.backFootForward = -0.28 * apex;
+      out.backFootLateral = -direction * 0.2 * apex;
+      out.backFootLift = 0.24 * apex;
+      break;
+    }
+  }
+
+  // The visible striking receiver and the accepted hit envelope share this authored reach. Subtract the
+  // neutral joint offset so the limb travels to, rather than beyond, the server's center-to-edge distance.
+  if (extension > 0) {
+    const limbTravel = Math.max(0.58, input.strikeReachBodyHeights - 0.46) * extension;
+    if (input.limb === "foot") {
+      out.frontFootForward = Math.max(out.frontFootForward, limbTravel);
+    } else {
+      out.handForward = Math.max(out.handForward, limbTravel);
+      if (input.hand === "both")
+        out.rearHandForward = Math.max(out.rearHandForward, limbTravel * 0.94);
+    }
   }
   return out;
 }
