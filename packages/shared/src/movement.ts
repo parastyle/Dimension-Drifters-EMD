@@ -158,12 +158,14 @@ export function stepSteeredMovement(
   speed: number = MOVE_SPEED,
   yMin: number = PLAYER_RADIUS,
   yMax: number = ARENA_HEIGHT - PLAYER_RADIUS,
+  xMin: number = PLAYER_RADIUS,
+  xMax: number = ARENA_WIDTH - PLAYER_RADIUS,
 ): { x: number; y: number; vx: number; vy: number } {
   // §29 belt mode passes a shallow [yMin, yMax] DEPTH BAND instead of the full arena, so the same movement
   // sim confines players to the belt band; both the server and the client predictor pass identical bounds.
   const v = steerVelocity(vel, input, dtSeconds, speed);
   return {
-    x: clamp(pos.x + v.vx * dtSeconds, PLAYER_RADIUS, ARENA_WIDTH - PLAYER_RADIUS),
+    x: clamp(pos.x + v.vx * dtSeconds, xMin, xMax),
     y: clamp(pos.y + v.vy * dtSeconds, yMin, yMax),
     vx: v.vx,
     vy: v.vy,
@@ -181,8 +183,10 @@ export function stepImpulse(
   pos: Vec2,
   vel: Impulse,
   dtSeconds: number,
+  xMin: number = PLAYER_RADIUS,
+  xMax: number = ARENA_WIDTH - PLAYER_RADIUS,
 ): { x: number; y: number; vx: number; vy: number } {
-  const x = clamp(pos.x + vel.vx * dtSeconds, PLAYER_RADIUS, ARENA_WIDTH - PLAYER_RADIUS);
+  const x = clamp(pos.x + vel.vx * dtSeconds, xMin, xMax);
   const y = clamp(pos.y + vel.vy * dtSeconds, PLAYER_RADIUS, ARENA_HEIGHT - PLAYER_RADIUS);
   const decay = Math.exp(-IMPULSE_FRICTION * dtSeconds); // frame-rate-independent friction
   let vx = vel.vx * decay;

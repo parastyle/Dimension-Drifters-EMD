@@ -89,7 +89,12 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-function makeRoom(options?: { dimensionId?: string; bossRush?: boolean; belt?: boolean }) {
+function makeRoom(options?: {
+  dimensionId?: string;
+  bossRush?: boolean;
+  belt?: boolean;
+  beltLevel?: string;
+}) {
   const room = new GameRoom() as AnyRoom;
   const handlers = new Map<string, (c: { sessionId: string }, m?: unknown) => void>();
   room.onMessage = (type: string, fn: (c: { sessionId: string }, m?: unknown) => void) =>
@@ -1994,6 +1999,57 @@ describe("GameRoom — B26 directional parry reactions", () => {
 });
 
 // ── §36 belt bosses (bespoke arena fights now run belt finales) must stay ON the deck when they reposition. ──
+describe("GameRoom — B34 corporate-grid LDtk belt consumption", () => {
+  it("places the first player at PlayerSpawn and clamps movement to lane/end bounds", () => {
+    const h = makeRoom({ belt: true, beltLevel: "corporate-grid" });
+    h.join("corporate-player");
+    const player = h.state().players.get("corporate-player");
+    expect({ x: player.x, y: player.y }).toEqual({ x: 420, y: BELT_Y0 + 780 });
+
+    player.x = 20;
+    player.y = BELT_Y0 + 300;
+    h.tick();
+    expect(player.x).toBe(144);
+    expect(player.y).toBe(BELT_Y0 + 474);
+
+    h.state().beltLockX = 0;
+    player.x = 5140;
+    player.y = BELT_Y0 + 1000;
+    h.tick();
+    expect(player.x).toBe(5016);
+    expect(player.y).toBe(BELT_Y0 + 906);
+  });
+
+  it("spawns an early room wave from generated anchors ahead of the player", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0.1);
+    const h = makeRoom({ belt: true, beltLevel: "corporate-grid" });
+    h.join("corporate-wave-player");
+    const player = h.state().players.get("corporate-wave-player");
+    h.room.spawnBeltWave(4, 120, 1440, 0);
+    expect(h.state().enemies.size).toBe(4);
+    expect(
+      [...h.state().enemies.values()].every(
+        (enemy: { x: number }) => enemy.x > player.x && [780, 1380].includes(enemy.x),
+      ),
+    ).toBe(true);
+  });
+
+  it("absorbs a projectile swept into a Collision_IntGrid solid-1 cell", () => {
+    const h = makeRoom({ belt: true, beltLevel: "corporate-grid" });
+    h.join("corporate-projectile-player");
+    h.room.fireProjectile(
+      { x: 600, y: BELT_Y0 + 500 },
+      { x: 600, y: BELT_Y0 + 200 },
+      800,
+      10,
+      false,
+    );
+    expect(h.state().projectiles.size).toBe(1);
+    h.room.stepProjectiles(0.5);
+    expect(h.state().projectiles.size).toBe(0);
+  });
+});
+
 describe("GameRoom — §36 belt boss stays on the deck", () => {
   it("moveBoss clamps a repositioning boss to the level length + floor band", () => {
     const h = makeRoom({ belt: true });

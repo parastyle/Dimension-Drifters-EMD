@@ -16,6 +16,7 @@ const manifestPaths = {
   projectiles: resolve(ROOT, "packages/client/src/sprites/projectile-manifest.ts"),
   particles: resolve(ROOT, "packages/client/src/vfx/particle-manifest.ts"),
   weaponVfx: resolve(ROOT, "packages/client/src/vfx/weapon-vfx.generated.ts"),
+  corporateGrid: resolve(ROOT, "packages/shared/src/corporate-grid-map.generated.ts"),
 };
 const atlasPath = resolve(PUBLIC, "sprites/dd-sprites.json");
 
@@ -186,6 +187,13 @@ const weaponVfxUrls = extractPropertyStrings(
   "weapon-vfx.generated.ts",
 );
 for (const url of weaponVfxUrls) recordAsset(url, "weapon-vfx.generated.ts");
+
+const corporateGridUrls = extractPropertyStrings(
+  readSource(manifestPaths.corporateGrid, "corporate-grid-map.generated.ts"),
+  ["publicPath"],
+  "corporate-grid-map.generated.ts",
+);
+for (const url of corporateGridUrls) recordAsset(url, "corporate-grid-map.generated.ts");
 
 let atlasFrames = [];
 try {

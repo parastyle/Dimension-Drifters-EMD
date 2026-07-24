@@ -53,8 +53,11 @@ import {
   beamStepDamage,
   beamSweepSampleCount,
   beltLevelFor,
+  beltPlayableXBounds,
   beltPitAtX,
+  beltProjectileBlocked,
   beltSafeX,
+  corporateGridFloorForBelt,
   bladeAngleAt,
   bladeExtensionPoseAt,
   bladeHitsCircle,
@@ -319,8 +322,10 @@ import {
   RelicState,
   RELIC_COMMON_STACK_CAP,
   resolveBeltObstacles,
+  resolveBeltNavigation,
   resolveBodyCollisions,
   resolvePoiCollisionInto,
+  selectCorporateWaveAnchor,
   rollChestReward,
   resolveOneShotProtection,
   resolveRelicRevive,
@@ -4267,8 +4272,23 @@ export class GameRoom extends Room<ArenaState> {
     // (±100px stays inside the cleared centre, never over a pit). §29 belt spawns at the START of the belt
     // (the mouth of room 0), mid-depth, so the room progression flows left→right.
     if (this.belt) {
-      player.x = 180 + Math.random() * 120;
-      player.y = BELT_Y0 + DEPTH_MAX * (0.4 + Math.random() * 0.2);
+      const floor = this.beltLevel ? corporateGridFloorForBelt(this.beltLevel) : undefined;
+      const authoredSpawn = floor?.playerSpawns[0];
+      if (this.beltLevel && authoredSpawn) {
+        const ordinal = this.state.players.size;
+        const scatter = ordinal === 0 ? 0 : (Math.ceil(ordinal / 2) * (ordinal % 2 ? 1 : -1)) * 36;
+        const spawn = resolveBeltNavigation(
+          this.beltLevel,
+          authoredSpawn.x + scatter,
+          BELT_Y0 + authoredSpawn.y,
+          PLAYER_RADIUS,
+        );
+        player.x = spawn.x;
+        player.y = spawn.y;
+      } else {
+        player.x = 180 + Math.random() * 120;
+        player.y = BELT_Y0 + DEPTH_MAX * (0.4 + Math.random() * 0.2);
+      }
     } else {
       player.x = this.map.spawnX + (Math.random() * 200 - 100);
       player.y = this.map.spawnY + (Math.random() * 200 - 100);
@@ -4955,7 +4975,12 @@ export class GameRoom extends Room<ArenaState> {
     dx /= len;
     dy /= len;
 
-    const rawX = clamp(player.x + dx * DIST_JUMP_REACH, PLAYER_RADIUS, ARENA_WIDTH - PLAYER_RADIUS);
+    const beltX = this.beltLevel ? beltPlayableXBounds(this.beltLevel) : undefined;
+    const rawX = clamp(
+      player.x + dx * DIST_JUMP_REACH,
+      (beltX?.minX ?? 0) + PLAYER_RADIUS,
+      (beltX?.maxX ?? ARENA_WIDTH) - PLAYER_RADIUS,
+    );
     const rawY = clamp(
       player.y + dy * DIST_JUMP_REACH,
       PLAYER_RADIUS,
@@ -4964,8 +4989,10 @@ export class GameRoom extends Room<ArenaState> {
     let targetX: number;
     let targetY: number;
     if (this.belt && this.beltLevel) {
-      targetX = beltSafeX(this.beltLevel, rawX, player.x);
-      targetY = clampBeltFloorY(this.beltLevel, targetX, rawY, PLAYER_RADIUS);
+      const safeX = beltSafeX(this.beltLevel, rawX, player.x);
+      const target = resolveBeltNavigation(this.beltLevel, safeX, rawY, PLAYER_RADIUS);
+      targetX = target.x;
+      targetY = target.y;
     } else {
       const safe = safeSpawnPos(this.map, rawX, rawY, PLAYER_RADIUS);
       targetX = safe.x;
@@ -5386,6 +5413,9 @@ export class GameRoom extends Room<ArenaState> {
           : channelSpeed;
       let nextX: number;
       let nextY: number;
+      const beltX = this.beltLevel ? beltPlayableXBounds(this.beltLevel) : undefined;
+      const minBeltX = (beltX?.minX ?? 0) + PLAYER_RADIUS;
+      const maxBeltX = (beltX?.maxX ?? ARENA_WIDTH) - PLAYER_RADIUS;
       const activeRoll =
         beamRuntime?.stance === STANCE_SLIDE && beamRuntime.slidePhase === SLIDE_PHASE_GROUND;
       if (beamRuntime?.stance === STANCE_DASH || activeRoll) {
@@ -5411,7 +5441,7 @@ export class GameRoom extends Room<ArenaState> {
         }
         nextX = deferDashDisplacement
           ? player.x
-          : clamp(player.x + input.mvx * dt, PLAYER_RADIUS, ARENA_WIDTH - PLAYER_RADIUS);
+          : clamp(player.x + input.mvx * dt, minBeltX, maxBeltX);
         nextY = deferDashDisplacement
           ? player.y
           : clamp(
@@ -5444,6 +5474,8 @@ export class GameRoom extends Room<ArenaState> {
               beamSpeed,
               BELT_Y0,
               BELT_Y0 + DEPTH_MAX,
+              minBeltX,
+              maxBeltX,
             )
           : stepSteeredMovement(
               player,
@@ -5466,7 +5498,7 @@ export class GameRoom extends Room<ArenaState> {
       // then decay it. The authoritative position is the input base PLUS the shove.
       player.x = nextX;
       player.y = nextY;
-      const imp = stepImpulse(player, player, dt);
+      const imp = stepImpulse(player, player, dt, minBeltX, maxBeltX);
       player.x = imp.x;
       player.y = imp.y;
       player.vx = imp.vx;
@@ -5486,7 +5518,14 @@ export class GameRoom extends Room<ArenaState> {
       ids.push(id);
       bodies.push({ x: player.x, y: player.y });
     });
-    const resolved = resolveBodyCollisions(bodies);
+    const bodyBeltX = this.beltLevel ? beltPlayableXBounds(this.beltLevel) : undefined;
+    const resolved = resolveBodyCollisions(
+      bodies,
+      PLAYER_RADIUS,
+      2,
+      (bodyBeltX?.minX ?? 0) + PLAYER_RADIUS,
+      (bodyBeltX?.maxX ?? ARENA_WIDTH) - PLAYER_RADIUS,
+    );
     resolved.forEach((pos, i) => {
       const id = ids[i];
       if (!id) return;
@@ -5501,15 +5540,27 @@ export class GameRoom extends Room<ArenaState> {
     // this belt-x + route out of deck obstacles — the accurate edge/obstacle collision under the art.
     if (this.belt && this.beltLevel) {
       const level = this.beltLevel;
+      const floor = corporateGridFloorForBelt(level);
       // §29 room GATE — a closed gate (beltLockX>0) caps how far right the squad can advance until the
       // room's wave is cleared; else the whole belt is open.
       const rightBound =
         (this.state.beltLockX > 0 ? this.state.beltLockX : level.length) - PLAYER_RADIUS;
       this.state.players.forEach((player) => {
         if (!player.alive) return;
-        const o = resolveBeltObstacles(level, player.x, player.y, PLAYER_RADIUS);
-        player.x = Math.min(o.x, rightBound);
-        player.y = clampBeltFloorY(level, player.x, o.y, PLAYER_RADIUS);
+        if (floor) {
+          const resolved = resolveBeltNavigation(
+            level,
+            Math.min(player.x, rightBound),
+            player.y,
+            PLAYER_RADIUS,
+          );
+          player.x = Math.min(resolved.x, rightBound);
+          player.y = resolved.y;
+        } else {
+          const o = resolveBeltObstacles(level, player.x, player.y, PLAYER_RADIUS);
+          player.x = Math.min(o.x, rightBound);
+          player.y = clampBeltFloorY(level, player.x, o.y, PLAYER_RADIUS);
+        }
       });
     } else if (!this.belt) {
       this.state.players.forEach((player) => {
@@ -6085,14 +6136,21 @@ export class GameRoom extends Room<ArenaState> {
     // wedge/push-out guards that keep normal bodies un-stuck.
     if (this.belt && this.beltLevel) {
       const level = this.beltLevel;
+      const floor = corporateGridFloorForBelt(level);
       this.state.enemies.forEach((enemy, eid) => {
         const er = ENEMY_KINDS[enemy.kind]?.radius ?? ENEMY_RADIUS;
-        if (eid !== this.bossId) {
+        if (floor) {
+          const resolved = resolveBeltNavigation(level, enemy.x, enemy.y, er);
+          enemy.x = resolved.x;
+          enemy.y = resolved.y;
+        } else if (eid !== this.bossId) {
           const o = resolveBeltObstacles(level, enemy.x, enemy.y, er); // boss crushes through obstacles
           enemy.x = o.x;
           enemy.y = o.y;
+          enemy.y = clampBeltFloorY(level, enemy.x, enemy.y, er);
+        } else {
+          enemy.y = clampBeltFloorY(level, enemy.x, enemy.y, er);
         }
-        enemy.y = clampBeltFloorY(level, enemy.x, enemy.y, er); // everything stays on the deck
       });
     } else if (!this.belt) {
       this.state.enemies.forEach((enemy, eid) => {
@@ -6303,8 +6361,21 @@ export class GameRoom extends Room<ArenaState> {
       ? clampQuakeEpicenter(player, { x: targetX, y: targetY }, Math.max(0, maxRange))
       : { x: targetX, y: targetY };
     if (this.belt && this.beltLevel) {
+      const floor = corporateGridFloorForBelt(this.beltLevel);
       const right =
         (this.state.beltLockX > 0 ? this.state.beltLockX : this.beltLevel.length) - PLAYER_RADIUS;
+      if (floor) {
+        const min = floor.playableBounds.minX + PLAYER_RADIUS;
+        const max = Math.min(right, floor.playableBounds.maxX - PLAYER_RADIUS);
+        const safeX = beltSafeX(this.beltLevel, clamp(ranged.x, min, max), player.x);
+        const resolved = resolveBeltNavigation(
+          this.beltLevel,
+          safeX,
+          ranged.y,
+          PLAYER_RADIUS,
+        );
+        return { x: Math.min(max, resolved.x), y: resolved.y };
+      }
       let x = clamp(ranged.x, PLAYER_RADIUS, right);
       x = beltSafeX(this.beltLevel, x, player.x);
       const obstacle = resolveBeltObstacles(
@@ -12777,16 +12848,34 @@ export class GameRoom extends Room<ArenaState> {
         doomed.push(id);
         return;
       }
-      const oob = pr.x < 0 || pr.x > ARENA_WIDTH || pr.y < 0 || pr.y > ARENA_HEIGHT;
+      const corporateFloor =
+        this.belt && this.beltLevel ? corporateGridFloorForBelt(this.beltLevel) : undefined;
+      if (
+        corporateFloor &&
+        this.beltLevel &&
+        beltProjectileBlocked(
+          this.beltLevel,
+          projectileFromX,
+          projectileFromY,
+          pr.x,
+          pr.y,
+          PROJECTILE_RADIUS,
+        )
+      ) {
+        doomed.push(id);
+        return;
+      }
+      const worldWidth = corporateFloor?.width ?? ARENA_WIDTH;
+      const oob = pr.x < 0 || pr.x > worldWidth || pr.y < 0 || pr.y > ARENA_HEIGHT;
       if (oob) {
         // §9 ricochet rounds CAROM off the arena walls; everything else expires at the edge. On each
         // carom the round RE-ARMS — fresh pierce, cleared hit-set (can re-tag enemies), refreshed life —
         // so it actually "keeps hunting" down the new leg.
         if ((meta.bounces ?? 0) > 0) {
           meta.bounces = (meta.bounces ?? 0) - 1;
-          if (pr.x < 0 || pr.x > ARENA_WIDTH) pr.vx = -pr.vx;
+          if (pr.x < 0 || pr.x > worldWidth) pr.vx = -pr.vx;
           if (pr.y < 0 || pr.y > ARENA_HEIGHT) pr.vy = -pr.vy;
-          pr.x = clamp(pr.x, 0, ARENA_WIDTH);
+          pr.x = clamp(pr.x, 0, worldWidth);
           pr.y = clamp(pr.y, 0, ARENA_HEIGHT);
           meta.hit.clear();
           meta.pierce = meta.pierceMax ?? meta.pierce;
@@ -12803,7 +12892,7 @@ export class GameRoom extends Room<ArenaState> {
       // surface, and re-arm (fresh pierce/hit-set/life) so it keeps hunting. Everything else is ABSORBED
       // (exploding rounds detonate via the doomed loop). Cover works both ways — a landmark in YOUR line
       // eats your shots too.
-      const hitPoi = poiCollisionAt(this.map, pr.x, pr.y);
+      const hitPoi = corporateFloor ? undefined : poiCollisionAt(this.map, pr.x, pr.y);
       if (hitPoi) {
         if ((meta.bounces ?? 0) > 0) {
           meta.bounces = (meta.bounces ?? 0) - 1;
@@ -13296,9 +13385,23 @@ export class GameRoom extends Room<ArenaState> {
   }
 
   /** §29 spawn a room's wave: `n` enemies spread across the room's belt x-range, on the authored floor. */
-  private spawnBeltWave(n: number, x0: number, x1: number): void {
+  private spawnBeltWave(
+    n: number,
+    x0: number,
+    x1: number,
+    depth = this.beltLevel?.corporateDepth ?? 0,
+  ): void {
     const level = this.beltLevel;
     if (!level || n <= 0) return;
+    const floor = corporateGridFloorForBelt(level);
+    let squadX = 0;
+    let squadCount = 0;
+    this.state.players.forEach((player) => {
+      if (!player.alive) return;
+      squadX += player.x;
+      squadCount++;
+    });
+    squadX = squadCount > 0 ? squadX / squadCount : floor?.playerSpawns[0]?.x ?? x0;
     const players = this.livingCount();
     for (let i = 0; i < n; i++) {
       const kindId = pickEnemyKind(Math.random(), getDimension(this.state.dimensionId).roster);
@@ -13315,11 +13418,36 @@ export class GameRoom extends Room<ArenaState> {
         (enemy.tough ? TOUGH_HP_MULT : 1) *
         enemyHpScale(players) *
         depthHpScale(this.state.depth);
-      // spread across the room x, avoiding pits; depth on the authored floor.
-      let ex = x0 + 100 + Math.random() * Math.max(1, x1 - x0 - 200);
-      if (beltPitAtX(level, ex)) ex = beltSafeX(level, ex, x0);
-      enemy.x = ex;
-      enemy.y = clampBeltFloorY(level, ex, BELT_Y0 + Math.random() * DEPTH_MAX, kind.radius);
+      if (floor) {
+        const anchor = selectCorporateWaveAnchor(
+          floor,
+          squadX,
+          depth,
+          Math.random(),
+          Math.random(),
+          x0,
+          x1,
+        );
+        const resolved = resolveBeltNavigation(
+          level,
+          anchor.x,
+          BELT_Y0 + anchor.y,
+          kind.radius,
+        );
+        enemy.x = resolved.x;
+        enemy.y = resolved.y;
+      } else {
+        // Legacy belts retain their random room spread and pit avoidance.
+        let ex = x0 + 100 + Math.random() * Math.max(1, x1 - x0 - 200);
+        if (beltPitAtX(level, ex)) ex = beltSafeX(level, ex, x0);
+        enemy.x = ex;
+        enemy.y = clampBeltFloorY(
+          level,
+          ex,
+          BELT_Y0 + Math.random() * DEPTH_MAX,
+          kind.radius,
+        );
+      }
       this.state.enemies.set(enemy.id, enemy);
       this.insertEnemyGrid(enemy.id, enemy);
     }

@@ -13,14 +13,18 @@ import {
   type BeltLevel,
   BOSS_DEF_IDS,
   BOSSES,
+  beltCameraBounds,
   beltBounds,
   beltLevelFor,
+  corporateGridFloorForBelt,
+  corporateGridTilesetFor,
   bossSpawnAt,
   CAM_FOLLOW_TAU,
   CAM_SNAP_DIST,
   type CarrySelectionV1,
   CHAIN_MAX_RANGE,
   type ChainCandidate,
+  type CorporateGridFloor,
   COMBO_FLAG_AIRBORNE,
   COMBO_FLAG_EMPOWERED,
   COMBO_FLAG_JUGGLE,
@@ -1660,6 +1664,8 @@ export class ArenaScene extends Phaser.Scene {
   private lastSeedKey = "";
   /** Every game object the floor bake created, so a rebuild can destroy the lot. */
   private floorObjs: Phaser.GameObjects.GameObject[] = [];
+  /** B34 generated LDtk tilemaps retained for scene-restart teardown. */
+  private beltTilemaps: Phaser.Tilemaps.Tilemap[] = [];
   /** §6 v0.103: until this clock, enemy-REMOVAL VFX are muted — a rift descent bulk-clears the old
    *  dimension's horde and the removals must read as "left behind", not a mass death celebration. */
   private removalFxMuteUntil = 0;
@@ -1832,8 +1838,18 @@ export class ArenaScene extends Phaser.Scene {
     preloadPageProjectileArt(this);
     preloadImpactFlipbooks(this); // optional per-element 6-frame hit blooms; missing strips stay silent
     if (this.belt) {
+      const selectedLevel = beltLevelFor(this.selectedBeltLevel);
+      const corporateFloor = corporateGridFloorForBelt(selectedLevel);
+      if (corporateFloor) {
+        for (const layer of corporateFloor.renderLayers) {
+          const tileset = corporateGridTilesetFor(layer.tilesetId);
+          if (!tileset) continue;
+          const key = `corporate-grid:${tileset.id}`;
+          if (!this.textures.exists(key)) this.load.image(key, tileset.publicPath);
+        }
+      }
       // §29 sky-carrier alone owns its four room backdrops + deck; themed levels must not download them.
-      if (this.selectedBeltLevel === "sky-carrier") {
+      if (!corporateFloor && this.selectedBeltLevel === "sky-carrier") {
         this.load.image("belt-sky", "belt/sky-carrier.png");
         this.load.image("belt-sky-bridge", "belt/sky-bridge.png");
         this.load.image("belt-sky-catwalk", "belt/sky-catwalk.png"); // §31 per-room backdrops (Codex)
@@ -1844,7 +1860,7 @@ export class ArenaScene extends Phaser.Scene {
       // strip per non-sky-carrier level. init() ran before preload, so the selected level is known; only its
       // own art loads. Keys are PER-LEVEL (texture keys outlive scene restarts — a shared key would show the
       // previous level's art on the next run).
-      if (this.selectedBeltLevel !== "sky-carrier") {
+      if (!corporateFloor && this.selectedBeltLevel !== "sky-carrier") {
         this.load.image(
           `belt-bg:${this.selectedBeltLevel}`,
           `belt/bg-${this.selectedBeltLevel}.png`,
@@ -2064,6 +2080,7 @@ export class ArenaScene extends Phaser.Scene {
     this.poiSprites = [];
     this.dust.length = 0;
     this.floorObjs = [];
+    this.beltTilemaps = [];
     this.summonObjects = [];
     this.carouselDock = undefined;
     this.arsenalTexts = [];
@@ -4128,6 +4145,7 @@ export class ArenaScene extends Phaser.Scene {
     const worldFold = riftDescent ? this.capturePaperWorldFold() : undefined;
     for (const o of this.floorObjs) o.destroy();
     this.floorObjs = [];
+    this.beltTilemaps = [];
     this.poiSprites = [];
     this.arenaMap = generateArena({
       seedTerrain: s.seedTerrain,
@@ -8633,6 +8651,12 @@ export class ArenaScene extends Phaser.Scene {
   private buildBeltFloor(): void {
     const theme = this.beltTheme();
     this.cameras.main.setBackgroundColor(theme.sky); // §36 dimension-themed sky (behind any backdrop)
+    const level = this.beltLevel ?? beltLevelFor(this.selectedBeltLevel);
+    const corporateFloor = corporateGridFloorForBelt(level);
+    if (corporateFloor) {
+      this.buildCorporateGridFloor(corporateFloor);
+      return;
+    }
     // §29/§36/§37 Codex backdrops: sky-carrier keeps its per-room sky set + drifting clouds; every other
     // level now gets its OWN Codex vista (belt/bg-<levelId>.png, gen-belt-backdrops.mjs), with the palette
     // sky as the fallback if the art didn't load.
@@ -8655,7 +8679,6 @@ export class ArenaScene extends Phaser.Scene {
         .setDepth(-200);
       this.floorObjs.push(this.beltBackdrop);
     }
-    const level = this.beltLevel ?? beltLevelFor(this.selectedBeltLevel);
     const w = level.length;
     // Sample the near/far edges across the belt and build the deck polygon in projected (screen-plane) space.
     const step = 48;
@@ -8753,6 +8776,51 @@ export class ArenaScene extends Phaser.Scene {
       gl.strokePath();
     }
     this.floorObjs.push(gl);
+  }
+
+  /** B34 render the generated LDtk layers in their authored bottom-to-top order. */
+  private buildCorporateGridFloor(floor: CorporateGridFloor): void {
+    this.cameras.main.setBackgroundColor(0x101722);
+    for (const [layerIndex, sourceLayer] of floor.renderLayers.entries()) {
+      const tilesetModel = corporateGridTilesetFor(sourceLayer.tilesetId);
+      if (!tilesetModel) throw new Error(`missing corporate-grid tileset ${sourceLayer.tilesetId}`);
+      const textureKey = `corporate-grid:${tilesetModel.id}`;
+      if (!this.textures.exists(textureKey))
+        throw new Error(`corporate-grid texture was not loaded: ${tilesetModel.publicPath}`);
+      const rows: number[][] = [];
+      for (let row = 0; row < floor.rows; row++) {
+        rows.push(
+          sourceLayer.indices.slice(row * floor.cols, (row + 1) * floor.cols) as number[],
+        );
+      }
+      const map = this.make.tilemap({
+        data: rows,
+        tileWidth: floor.gridSize,
+        tileHeight: floor.gridSize,
+      });
+      const tileset = map.addTilesetImage(
+        tilesetModel.id,
+        textureKey,
+        tilesetModel.gridSize,
+        tilesetModel.gridSize,
+        0,
+        0,
+        0,
+      );
+      if (!tileset) throw new Error(`failed to bind corporate-grid tileset ${tilesetModel.id}`);
+      const layer = map.createLayer(0, tileset, 0, BELT_Y0, false) as Phaser.Tilemaps.TilemapLayer;
+      layer.setScale(1, BELT_FORESHORTEN);
+      layer.setDepth(layerIndex === 0 ? -160 : -20);
+      if (sourceLayer.id === "parallax-city-backdrop") layer.setScrollFactor(0.35, 1);
+      layer.forEachTile((tile) => {
+        const index = tile.y * floor.cols + tile.x;
+        const flip = sourceLayer.flips[index] ?? 0;
+        tile.flipX = (flip & 1) !== 0;
+        tile.flipY = (flip & 2) !== 0;
+      });
+      this.beltTilemaps.push(map);
+      this.floorObjs.push(layer);
+    }
   }
 
   /** §37 one-time CANVAS BAKE of the level's Codex deck texture, clipped to the deck trapezoid: per ≤2048px
@@ -8870,11 +8938,14 @@ export class ArenaScene extends Phaser.Scene {
     const zoom = cam.height / BELT_VIEW_H;
     if (Math.abs(cam.zoom - zoom) > 1e-4) cam.setZoom(zoom); // only on resize, not every frame
     const viewW = cam.width / zoom;
+    const level = this.beltLevel ?? beltLevelFor(this.selectedBeltLevel);
+    const bounds = beltCameraBounds(level);
     // §29 a closed room gate (beltLockX>0) caps the camera's right reach so the barrier sits at the edge.
     const lock = this.room?.state.beltLockX ?? 0;
-    const rightLimit = lock > 0 ? lock : (this.beltLevel?.length ?? ARENA_WIDTH);
-    const maxX = Math.max(0, rightLimit - viewW);
-    const wantX = Math.min(maxX, Math.max(0, self.x - viewW * 0.42));
+    const rightLimit = Math.min(bounds.maxX, lock > 0 ? lock : level.length);
+    const minX = bounds.minX;
+    const maxX = Math.max(minX, rightLimit - viewW);
+    const wantX = Math.min(maxX, Math.max(minX, self.x - viewW * 0.42));
     if (!this.camFocus) this.camFocus = { x: wantX, y: 0 };
     const a = 1 - Math.exp(-this.deltaSec / CAM_FOLLOW_TAU);
     this.camFocus.x += (wantX - this.camFocus.x) * a;

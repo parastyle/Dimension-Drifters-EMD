@@ -4,8 +4,8 @@ import {
   type ArenaMap,
   addImpulse,
   type BeltLevel,
+  beltPlayableXBounds,
   beltSafeX,
-  clampBeltFloorY,
   DIST_JUMP_AIRTIME,
   DIST_JUMP_COOLDOWN,
   DIST_JUMP_LANDING_SPEED_MULT,
@@ -36,7 +36,7 @@ import {
   ROLL_ATTACK_CANCEL_SECONDS,
   ROLL_DURATION_TICKS,
   ROLL_PARRY_LOCK_SECONDS,
-  resolveBeltObstacles,
+  resolveBeltNavigation,
   resolvePoiCollision,
   SLIDE_PHASE_GROUND,
   SLIDE_PHASE_OFF,
@@ -285,11 +285,17 @@ export function writeDistanceJumpIndicator(
   out.dirY = dy;
   out.rawX = x + dx * DIST_JUMP_REACH;
   out.rawY = y + dy * DIST_JUMP_REACH;
-  const boundedX = Math.max(PLAYER_RADIUS, Math.min(ARENA_WIDTH - PLAYER_RADIUS, out.rawX));
+  const beltX = belt ? beltPlayableXBounds(belt) : undefined;
+  const boundedX = Math.max(
+    (beltX?.minX ?? 0) + PLAYER_RADIUS,
+    Math.min((beltX?.maxX ?? ARENA_WIDTH) - PLAYER_RADIUS, out.rawX),
+  );
   const boundedY = Math.max(PLAYER_RADIUS, Math.min(ARENA_HEIGHT - PLAYER_RADIUS, out.rawY));
   if (belt) {
-    out.x = beltSafeX(belt, boundedX, x);
-    out.y = clampBeltFloorY(belt, out.x, boundedY, PLAYER_RADIUS);
+    const safeX = beltSafeX(belt, boundedX, x);
+    const resolved = resolveBeltNavigation(belt, safeX, boundedY, PLAYER_RADIUS);
+    out.x = resolved.x;
+    out.y = resolved.y;
   } else if (map) {
     const safe = safeSpawnPos(map, boundedX, boundedY, PLAYER_RADIUS);
     out.x = safe.x;
@@ -456,22 +462,33 @@ function stepHorizontal(
   map?: ArenaMap,
   belt?: BeltLevel,
 ): PredState {
+  const beltX = belt ? beltPlayableXBounds(belt) : undefined;
   const moved = stepSteeredMovement(
     { x: s.x, y: s.y },
     { vx: s.mvx, vy: s.mvy },
     { dx, dy },
     dt,
     relicMoveSpeed(relics),
+    undefined,
+    undefined,
+    (beltX?.minX ?? 0) + PLAYER_RADIUS,
+    (beltX?.maxX ?? ARENA_WIDTH) - PLAYER_RADIUS,
   );
-  const imp = stepImpulse(moved, { vx: s.vx, vy: s.vy }, dt);
+  const imp = stepImpulse(
+    moved,
+    { vx: s.vx, vy: s.vy },
+    dt,
+    (beltX?.minX ?? 0) + PLAYER_RADIUS,
+    (beltX?.maxX ?? ARENA_WIDTH) - PLAYER_RADIUS,
+  );
   let x = imp.x;
   let y = imp.y;
   if (belt) {
     // §29 belt: route out of deck obstacles + clamp DEPTH to the authored floor profile (mirrors the
     // server's belt collision so local prediction lands where the server puts you — no edge rubber-band).
-    const o = resolveBeltObstacles(belt, x, y, PLAYER_RADIUS);
-    x = o.x;
-    y = clampBeltFloorY(belt, o.x, o.y, PLAYER_RADIUS);
+    const resolved = resolveBeltNavigation(belt, x, y, PLAYER_RADIUS);
+    x = resolved.x;
+    y = resolved.y;
   } else if (map) {
     const r = resolvePoiCollision(map, x, y, PLAYER_RADIUS);
     x = r.x;
@@ -506,6 +523,7 @@ function stepStanceHorizontal(
   }
   let mvx: number;
   let mvy: number;
+  const beltX = belt ? beltPlayableXBounds(belt) : undefined;
   if (s.stance === STANCE_DASH) {
     steerDistanceJump(s, cmd, dt);
     mvx = s.dashDirX * s.dashSpeed;
@@ -524,17 +542,26 @@ function stepStanceHorizontal(
   }
   let x = deferDashDisplacement
     ? p.x
-    : Math.max(PLAYER_RADIUS, Math.min(ARENA_WIDTH - PLAYER_RADIUS, p.x + mvx * dt));
+    : Math.max(
+        (beltX?.minX ?? 0) + PLAYER_RADIUS,
+        Math.min((beltX?.maxX ?? ARENA_WIDTH) - PLAYER_RADIUS, p.x + mvx * dt),
+      );
   let y = deferDashDisplacement
     ? p.y
     : Math.max(PLAYER_RADIUS, Math.min(ARENA_HEIGHT - PLAYER_RADIUS, p.y + mvy * dt));
-  const imp = stepImpulse({ x, y }, { vx: p.vx, vy: p.vy }, dt);
+  const imp = stepImpulse(
+    { x, y },
+    { vx: p.vx, vy: p.vy },
+    dt,
+    (beltX?.minX ?? 0) + PLAYER_RADIUS,
+    (beltX?.maxX ?? ARENA_WIDTH) - PLAYER_RADIUS,
+  );
   x = imp.x;
   y = imp.y;
   if (belt) {
-    const o = resolveBeltObstacles(belt, x, y, PLAYER_RADIUS);
-    x = o.x;
-    y = clampBeltFloorY(belt, o.x, o.y, PLAYER_RADIUS);
+    const resolved = resolveBeltNavigation(belt, x, y, PLAYER_RADIUS);
+    x = resolved.x;
+    y = resolved.y;
   } else if (map) {
     const r = resolvePoiCollision(map, x, y, PLAYER_RADIUS);
     x = r.x;
