@@ -239,3 +239,25 @@ For the **entire remaining program**, add the five v9 art-batch integrators (B2,
 `char-rig-batch2` currently shares the main-tree base at `0c68a51` and is expected to overlap character-part/rig surfaces. B8, B16, and B17 must not merge against its stale base or overwrite its `SpriteRig`/pose changes. `dead-parts-panel` is the semantic dependency for B16/B17 and the Hellmouth clause; this ledger cites and waits for it rather than inventing a competing unused-limb policy.
 
 Verdict: 247 total normalized v10 intents = 230 DONE/SKIP + 17 OUTSTANDING; the 10 new notes are 0 DONE / 10 OUTSTANDING; 17 numbered batches post-update (8 shipped for v9 scope, 9 outstanding, with B1/B8/B9/B10 carrying post-ship amendments); recommended v10 new-work fan-out is 7 implementation lanes + 5 one-subject art Sols = 12 bounded roles; interactions: B16/B17/Hellmouth wait for `dead-parts-panel`, while B8/B16/B17 must rebase after `char-rig-batch2`.
+
+---
+
+## v10 addendum — owner chat notes, 2026-07-23 (post-B14 ship)
+
+### B18 — Fan weapons: fan-out attack motion + elemental tornado VFX
+
+**Exact note (chat, 2026-07-23):** "Fans should be fanning outwards when attacking, creating tornado VFX of various elements per fan."
+
+Subjects: `x2-iron-war-fan` (physical → iron-gale tornado), `x2-ember-fan` (fire → fire tornado), `x2-storm-fan` (shock, paired → storm/lightning tornado). All three painted-open sprites shipped in B3; the ask is (a) the attack animation reads as the fan sweeping OUTWARDS, and (b) each attack spawns a bespoke elemental tornado VFX. Three one-subject art Sols cover the tornado funnels (`vfx-tornado-iron-gale`, `vfx-tornado-ember-fire`, `vfx-tornado-storm-shock`); one integrator wires motion + VFX + hit-envelope alignment. Merge serially after B13.
+
+**Generated art:** YES — 3 subjects (in flight).
+
+### B19 — Kung-fu wraps rework (owner: "no rush")
+
+**Exact note (chat, 2026-07-23):** "the kung fu gloves are a disaster … our characters hands are blobs, why do ours include fingers? Also the hand wraps can be generated as just 1 hand wrap then just duplicate it (which is what you did for some, but you duplicated the pair and put 4 handwrapped hands on one character) … I want elaborate kung-fu combos showcasing the best of their fantasized martial art. That includes foot wraps I guess, punching and kicking, and forced character displacement in the animation."
+
+Defects in shipped B14: wrap art shows human FINGERS (characters have finger-free blob mitts); Muay Thai `part-1.png` is a fused PAIR of fists, so per-hand duplication renders 4 fists. Rework per style (`x2-muay-thai-wraps`, `x2-wing-chun-wraps`, `x2-drunken-fist-wraps`, `x2-iron-palm-wraps`): (a) ONE single-hand finger-free wrap sprite, rig duplicates it per hand; (b) matching FOOT wrap sprite, rig duplicates per foot; (c) elaborate style-showcase combos mixing punches AND kicks with forced character displacement baked into the combo (server-authoritative motion). Art regen first (one subject per Sol), then one integrator. Priority: after B18 (owner said no rush).
+
+**Generated art:** YES — up to 8 subjects (4 hand wraps + 4 foot wraps).
+
+Post-addendum batch count: **19** (B18, B19 appended).
