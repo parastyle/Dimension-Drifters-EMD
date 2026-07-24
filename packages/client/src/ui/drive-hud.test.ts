@@ -42,4 +42,17 @@ describe("Drive HUD model", () => {
     expect(view.affordable).toBe(false);
     expect(view.overlay).toBe("EMPTY · WAIT");
   });
+
+  it("renders relic-expanded Drive against the authoritative capacity", () => {
+    const view = driveHudView({
+      valueQ: 12_000,
+      capacity: 130,
+      regenMode: 0,
+      beamLockEndTick: 0,
+      tick: 1,
+      weaponId: "rusty-cleaver",
+    });
+    expect(view.value).toBe(120);
+    expect(view.fraction).toBeCloseTo(120 / 130);
+  });
 });

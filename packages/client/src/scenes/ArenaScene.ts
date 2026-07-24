@@ -29,7 +29,12 @@ import {
   COMBO_LEAP_RANGE,
   CombatDelivery,
   characterScale,
+  type ChestOpenReceipt,
+  CHEST_KIND_WEAPON_CACHE,
+  CHEST_OPEN_RADIUS,
   clampQuakeEpicenter,
+  COMMON_RELIC_DEFS,
+  commonRelicStacks,
   DEBUG_SPAWN_MAX,
   DEFAULT_CHARACTER,
   DEFAULT_DIMENSION,
@@ -38,9 +43,11 @@ import {
   DEFLECT_TTL,
   DEPTH_MAX,
   depthHpScale,
+  dodgeProfileFor,
   EMBERGUARD_HALF_ARC,
   EMBERGUARD_RANGE,
   EMPTY_META,
+  EMPTY_RELIC_STACKS,
   ENEMY_KINDS,
   ENEMY_RADIUS,
   type EnemyKind,
@@ -67,6 +74,7 @@ import {
   lootCooldownMult,
   lootDamageMult,
   META_UPGRADES,
+  MAP_ZONE_SCAR,
   type MetaAccountV4,
   type MetaLevels,
   type MoveStance,
@@ -86,12 +94,15 @@ import {
   petLevelForXp,
   petModsForLevel,
   QUAKE_REACH,
+  RARE_RELIC_DEFS,
   RARITIES,
   RARITY_CURSED,
   RING_BAND_HALF,
   ROLL_COOLDOWN,
   ROLL_SPEED_CURVE,
   ROLL_TICK_SECONDS,
+  relicEnergyCapacity,
+  relicParryRadius,
   ROOM_NAME,
   SALVAGE_HOLD_SECONDS,
   SCHEMA_VERSION,
@@ -1646,6 +1657,8 @@ export class ArenaScene extends Phaser.Scene {
   /** §7 last-rendered character skin per player — recreate the rig when it changes (C-key swap). */
   private readonly charOf = new Map<string, string>();
   private readonly pickups = new Map<string, Phaser.GameObjects.Container>();
+  /** L2 chests are visual props only: no physics body and no movement collision. */
+  private readonly chests = new Map<string, Phaser.GameObjects.Container>();
   /** Rendered enemy projectiles (§15 spit), dead-reckoned from server (x,y,vx,vy). */
   private readonly projectiles = new Map<string, Phaser.GameObjects.Container>();
   /** Rendered zoner puddles (§15 area denial). */
@@ -1678,6 +1691,7 @@ export class ArenaScene extends Phaser.Scene {
   private readonly lastFell = new Map<string, number>();
   private weaponText!: Phaser.GameObjects.Text;
   private augmentText!: Phaser.GameObjects.Text;
+  private relicText!: Phaser.GameObjects.Text;
   private objectiveHudGfx!: Phaser.GameObjects.Graphics;
   private objectiveText!: Phaser.GameObjects.Text;
   private objectiveLocationText!: Phaser.GameObjects.Text;
@@ -2065,6 +2079,7 @@ export class ArenaScene extends Phaser.Scene {
     this.equippedOffhand.clear();
     this.charOf.clear();
     this.pickups.clear();
+    this.chests.clear();
     this.projectiles.clear();
     this.zones.clear();
     this.lastFell.clear();
@@ -2133,6 +2148,7 @@ export class ArenaScene extends Phaser.Scene {
     this.ownerNoteKeyboardPaused = false;
     this.weaponText = undefined!;
     this.augmentText = undefined!;
+    this.relicText = undefined!;
     this.objectiveHudGfx = undefined!;
     this.objectiveText = undefined!;
     this.objectiveLocationText = undefined!;
@@ -2645,6 +2661,7 @@ export class ArenaScene extends Phaser.Scene {
     this.hpText.setFontSize(12 * s);
     this.weaponText.setFontSize(13 * s);
     this.augmentText.setFontSize(12 * s);
+    this.relicText.setFontSize(11 * s);
     this.objectiveText.setFontSize(Math.max(15, 16 * s));
     this.objectiveLocationText.setFontSize(Math.max(10, 11 * s));
     this.objectiveEconomyText.setFontSize(Math.max(10, 11 * s));
@@ -2784,6 +2801,23 @@ export class ArenaScene extends Phaser.Scene {
       .setShadow(0, 1, "#000000", 2, true, true)
       .setResolution(Math.max(2, Math.ceil(RENDER_DPR)))
       .setDepth(100002);
+
+    // L2 relic inventory: a compact always-live icon row, never a gameplay-blocking panel.
+    this.relicText = this.add
+      .text(0, 0, "", {
+        fontFamily: "monospace",
+        fontSize: "11px",
+        color: "#8fe8d3",
+        fontStyle: "bold",
+        backgroundColor: "#0a0805",
+        padding: { x: 4, y: 2 },
+      })
+      .setScrollFactor(0)
+      .setOrigin(0, 1)
+      .setShadow(0, 1, "#000000", 2, true, true)
+      .setResolution(Math.max(2, Math.ceil(RENDER_DPR)))
+      .setDepth(100002)
+      .setVisible(false);
 
     // Finding #11: retained top HUD = objective/progress, session-vital chips, and a resolving notice chip.
     // Every glyph rides a dark plate; objective copy is width-bound and may use at most two lines.
@@ -3095,6 +3129,62 @@ export class ArenaScene extends Phaser.Scene {
   }
 
   /** §41 destroy a pickup AND its plain-object spin counter; Phaser cannot infer that ownership itself. */
+  /** L2 placeholder chest prop. Geometry is intentionally body-free so it never blocks movement. */
+  private syncChests(): void {
+    if (!this.room) return;
+    const rows = this.room.state.chests;
+    const selfId = this.room.sessionId;
+    rows.forEach((chest, id) => {
+      const opened = chest.openedBy?.get(selfId) === true;
+      let container = this.chests.get(id);
+      if (!container) {
+        const scar = chest.zone === MAP_ZONE_SCAR;
+        const cache = chest.kind === CHEST_KIND_WEAPON_CACHE;
+        const wood = scar ? 0x70464f : 0x6a4b2c;
+        const trim = cache ? 0xffd479 : scar ? 0xd991aa : 0xcaa56a;
+        const shadow = this.add.ellipse(0, 11, 54, 18, 0x080705, 0.38);
+        const body = this.add.rectangle(0, 0, 48, 27, wood, 1).setStrokeStyle(2, trim, 0.9);
+        const band = this.add.rectangle(0, 0, 7, 27, trim, 0.9);
+        const lid = this.add.rectangle(0, -16, 50, 12, wood, 1).setStrokeStyle(2, trim, 1);
+        const latch = this.add.rectangle(0, -7, 7, 9, trim, 1).setStrokeStyle(1, 0x2d2115, 0.8);
+        const label = this.add
+          .text(0, 21, `${scar ? "SCAR" : "COMMONS"}${cache ? " · CACHE" : ""}`, {
+            fontFamily: "monospace",
+            fontSize: "9px",
+            color: scar ? "#e8b4c5" : "#d9c79e",
+            fontStyle: "bold",
+          })
+          .setOrigin(0.5, 0);
+        container = this.add
+          .container(chest.x, chest.y, [shadow, body, band, lid, latch, label])
+          .setDepth(15 + chest.y * 0.001);
+        container.setData("body", body);
+        container.setData("band", band);
+        container.setData("lid", lid);
+        container.setData("latch", latch);
+        container.setData("opened", !opened);
+        this.chests.set(id, container);
+      }
+      container.setPosition(chest.x, chest.y);
+      if (container.getData("opened") !== opened) {
+        container.setData("opened", opened);
+        const body = container.getData("body") as Phaser.GameObjects.Rectangle;
+        const band = container.getData("band") as Phaser.GameObjects.Rectangle;
+        const lid = container.getData("lid") as Phaser.GameObjects.Rectangle;
+        const latch = container.getData("latch") as Phaser.GameObjects.Rectangle;
+        body.setAlpha(opened ? 0.55 : 1);
+        band.setAlpha(opened ? 0.55 : 1);
+        lid.setPosition(opened ? -5 : 0, opened ? -27 : -16).setAngle(opened ? -15 : 0);
+        latch.setVisible(!opened);
+      }
+    });
+    for (const [id, container] of this.chests) {
+      if (rows.has(id)) continue;
+      container.destroy(true);
+      this.chests.delete(id);
+    }
+  }
+
   private destroyPickup(pickup: Phaser.GameObjects.Container): void {
     this.closingPickups.delete(pickup);
     for (const key of ["spawnTween", "spinTween", "exitTween"]) {
@@ -4327,6 +4417,49 @@ export class ArenaScene extends Phaser.Scene {
             }
           },
         ) as () => void;
+        const disposeChestOpened = room.onMessage<ChestOpenReceipt>(
+          "chestOpened",
+          (receipt) => {
+            if (generation !== this.connectionGeneration || this.room !== room) return;
+            const drops = [
+              receipt.weapon
+                ? `${receipt.weapon.name} T${receipt.weapon.tier + 1} → BAG`
+                : "",
+              ...receipt.relics.map((relic) =>
+                relic.rarity === "rare"
+                  ? `RARE ${relic.label}`
+                  : `${relic.label}${relic.stacks > 1 ? ` ×${relic.stacks}` : ""}`,
+              ),
+              receipt.money > 0 ? `+${receipt.money} SCRIP` : "",
+            ].filter(Boolean);
+            const scar = receipt.zone === MAP_ZONE_SCAR;
+            this.flashBanner(
+              `${scar ? "SCAR" : "COMMONS"} CHEST · ${drops.join(" · ")}`,
+              scar ? "#e8a9c0" : "#ffd479",
+            );
+          },
+        ) as () => void;
+        const disposeChestDenied = room.onMessage<{ reason?: string }>(
+          "chestOpenDenied",
+          (payload) => {
+            if (generation !== this.connectionGeneration || this.room !== room) return;
+            this.flashBanner(
+              payload?.reason === "bag-full" ? "CHEST WAITING · BAG FULL" : "CHEST UNAVAILABLE",
+              "#ff8a2b",
+            );
+          },
+        ) as () => void;
+        const disposeRelicTriggered = room.onMessage<{ id?: string }>(
+          "relicTriggered",
+          (payload) => {
+            if (generation !== this.connectionGeneration || this.room !== room) return;
+            const label =
+              payload?.id === "revive"
+                ? "SECOND WIND · REVIVED"
+                : "DEATH WARD · LETHAL HIT BLOCKED";
+            this.flashBanner(label, "#8fe8d3");
+          },
+        ) as () => void;
         this.roomStateDisposers.push(
           disposeMetaAccount,
           disposePetProgress,
@@ -4334,6 +4467,9 @@ export class ArenaScene extends Phaser.Scene {
           disposeWeaponManifest,
           disposeWeaponSettlement,
           disposeOwnerNoteAck,
+          disposeChestOpened,
+          disposeChestDenied,
+          disposeRelicTriggered,
         );
         // §4 schema handshake (audit): if the server's schema version ≠ ours, our compiled state schema is
         // stale → Colyseus would decode patches with corrupted field offsets. Detect on the first state and
@@ -4621,12 +4757,14 @@ export class ArenaScene extends Phaser.Scene {
     }
     let canSalvage = false;
     this.grabTarget = null;
+    this.grabTargetId = "";
     this.grabRadius = PICKUP_RADIUS;
     if (!gameplayInputBlocked) {
       const holdingWeapon = !!selfP && selfP.weapon !== FISTS_WEAPON;
       // The nearest grabbable pickup within arm's reach drives one visible E prompt and one exact target id.
       let nearPickup = false;
       let grabPickupId = "";
+      let grabChestId = "";
       if (selfP && alive) {
         let bestD = Number.POSITIVE_INFINITY;
         this.room.state.pickups.forEach((pk, id) => {
@@ -4644,6 +4782,20 @@ export class ArenaScene extends Phaser.Scene {
             this.grabTarget = { x: pk.x, y: pk.y };
             this.grabRadius = radius;
           }
+        });
+        this.room.state.chests.forEach((chest, id) => {
+          if (chest.openedBy?.get(this.room?.sessionId ?? "") === true) return;
+          const dx = chest.x - selfP.x;
+          const dy = chest.y - selfP.y;
+          const d = dx * dx + dy * dy;
+          if (d > CHEST_OPEN_RADIUS * CHEST_OPEN_RADIUS || d > bestD) return;
+          bestD = d;
+          nearPickup = true;
+          grabPickupId = "";
+          grabChestId = id;
+          this.grabTargetId = id;
+          this.grabTarget = { x: chest.x, y: chest.y };
+          this.grabRadius = CHEST_OPEN_RADIUS;
         });
       }
       canSalvage = alive && holdingWeapon && !nearPickup;
@@ -4684,10 +4836,15 @@ export class ArenaScene extends Phaser.Scene {
         previousPagePressed,
         nextPagePressed,
       });
-      if (weaponInput.pickup && grabPickupId) {
-        this.room.send("grabWeapon", { pickupId: grabPickupId });
-        this.wakeCarouselDock();
-        this.audio.play("weapon:pickup", { x: selfP?.x, amt: 1 });
+      if (weaponInput.pickup) {
+        if (grabChestId) {
+          this.room.send("openChest", { chestId: grabChestId });
+          this.audio.play("weapon:pickup", { x: selfP?.x, amt: 0.7 });
+        } else if (grabPickupId) {
+          this.room.send("grabWeapon", { pickupId: grabPickupId });
+          this.wakeCarouselDock();
+          this.audio.play("weapon:pickup", { x: selfP?.x, amt: 1 });
+        }
       }
       rawFlourishIntent.interaction = weaponInput.pickup;
       rawFlourishIntent.weaponSelection = !!selfP && weaponInput.cycle;
@@ -4787,6 +4944,7 @@ export class ArenaScene extends Phaser.Scene {
     this.syncEnemies();
     this.updateVastagharPresentation(deltaMs);
     this.syncPickups();
+    this.syncChests();
     this.syncProjectiles();
     this.syncZones();
     this.syncPortal();
@@ -9278,6 +9436,19 @@ export class ArenaScene extends Phaser.Scene {
     }
     const x = blob.x;
     const y = this.belt ? this.beltY(blob.y) : blob.y;
+    const playerRow = this.room?.state.players.get(id);
+    const dodgeId = playerRow?.dualWield?.relics?.activeDodge ?? "";
+    const dodgeProfile = dodgeProfileFor(dodgeId);
+    const dodgeActive = stance === STANCE_SLIDE && slidePhase === SLIDE_PHASE_GROUND;
+    // Presentation only: every profile keeps the same authoritative fair i-frame ticks.
+    if (playerRow?.alive && (dodgeActive || previous.stance === STANCE_SLIDE)) {
+      blob.root.setAlpha(dodgeActive && dodgeProfile.presentation === "phase" ? 0.45 : 1);
+      blob.root.setAngle(
+        dodgeActive && dodgeProfile.presentation === "flip"
+          ? Math.sin((slideTick / Math.max(1, ROLL_SPEED_CURVE.length - 1)) * Math.PI) * 18
+          : 0,
+      );
+    }
     const visible = isSelf || this.cameras.main.worldView.contains(blob.x, blob.y);
     const localAmt = isSelf ? 1 : 0.35;
     const stanceChanged = stance !== previous.stance;
@@ -9295,6 +9466,19 @@ export class ArenaScene extends Phaser.Scene {
           reducedMotion || !visible,
           this.belt ? BELT_FORESHORTEN : 1,
         );
+        if (dodgeProfile.presentation === "shuffle") {
+          this.jumpEffectRenderer.spawnSlidePlant(
+            x,
+            y + PLAYER_SHADOW_LOCAL_Y,
+            -moveY,
+            moveX,
+            reducedMotion || !visible,
+            this.belt ? BELT_FORESHORTEN : 1,
+          );
+        }
+        if (isSelf && dodgeProfile.id) {
+          this.flashBanner(dodgeProfile.label.toUpperCase(), "#8fe8d3");
+        }
         this.audio.play("slide", { x, amt: localAmt });
       } else if (previous.stance === STANCE_SLIDE && previous.slidePhase === SLIDE_PHASE_GROUND) {
         this.jumpEffectRenderer.spawnSlidePlant(
@@ -9378,6 +9562,20 @@ export class ArenaScene extends Phaser.Scene {
         moveX,
         moveY,
         slideTick * ROLL_TICK_SECONDS,
+        reducedMotion,
+      );
+    if (
+      visible &&
+      stance === STANCE_SLIDE &&
+      slidePhase === SLIDE_PHASE_GROUND &&
+      dodgeProfile.presentation === "bloodhound"
+    )
+      this.jumpEffectRenderer.drawSlideWake(
+        x - moveX * 8,
+        y - moveY * 8,
+        moveX,
+        moveY,
+        slideTick * ROLL_TICK_SECONDS + 0.08,
         reducedMotion,
       );
 
@@ -9979,6 +10177,20 @@ export class ArenaScene extends Phaser.Scene {
     const rig = this.blobs.get(selfId);
     this.audio.play("parry:brace", { x: rig?.x ?? self.x, amt: 1 });
     rig?.triggerBrace(this.animClock);
+    const reach = relicParryRadius(self.dualWield?.relics ?? EMPTY_RELIC_STACKS);
+    if (rig && reach > relicParryRadius(EMPTY_RELIC_STACKS)) {
+      const reachRing = this.add
+        .circle(rig.x, rig.y, reach)
+        .setStrokeStyle(2, 0x8fe8d3, 0.42)
+        .setDepth(99990);
+      this.tweens.add({
+        targets: reachRing,
+        alpha: 0,
+        scale: 1.08,
+        duration: 180,
+        onComplete: () => reachRing.destroy(),
+      });
+    }
     // §8 local-player parry-augment VFX (server owns the damage; this reads the owned set + live aim).
     if (rig && self.augments) this.spawnParryFx(rig.x, rig.y, self.augments);
   }
@@ -10021,7 +10233,10 @@ export class ArenaScene extends Phaser.Scene {
     const pulse = 0.5 + 0.5 * Math.sin(this.time.now * 0.008);
     g.lineStyle(2.5 + pulse, 0xffd479, 0.55 + 0.35 * pulse);
     g.strokeCircle(t.x, t.y, this.grabRadius * (0.7 + 0.06 * pulse));
-    this.grabPromptText.setPosition(t.x, t.y - 45).setVisible(true);
+    this.grabPromptText
+      .setText(this.grabTargetId.startsWith("chest:") ? "[E] OPEN CHEST" : "[E] PICK UP")
+      .setPosition(t.x, t.y - 45)
+      .setVisible(true);
   }
 
   private copperPickupPromptRadius(): number {
@@ -11489,6 +11704,7 @@ export class ArenaScene extends Phaser.Scene {
     const beamRow = this.room?.state.beams.get(self.id);
     const view = driveHudView({
       valueQ: resource.valueQ,
+      capacity: relicEnergyCapacity(self.dualWield?.relics ?? EMPTY_RELIC_STACKS),
       regenMode: resource.regenMode,
       beamLockEndTick: resource.beamLockEndTick,
       tick,
@@ -11903,6 +12119,25 @@ export class ArenaScene extends Phaser.Scene {
     }
     this.renderDriveHud(self, heldWeapon, barX, hudRailY, s);
     this.renderUltimateHud(self, barX, hudRailY, s);
+
+    const relics = self?.dualWield?.relics;
+    if (relics) {
+      const commons = COMMON_RELIC_DEFS.flatMap((def) => {
+        const stacks = commonRelicStacks(relics, def.id);
+        return stacks > 0 ? [`${def.hud}${stacks > 1 ? `×${stacks}` : ""}`] : [];
+      });
+      const ownedRare = new Set(relics.ownedRare.split(",").filter(Boolean));
+      const rares = RARE_RELIC_DEFS.filter((def) => ownedRare.has(def.id)).map(
+        (def) => `[${def.hud}]`,
+      );
+      const parts = [...commons, ...rares];
+      this.relicText
+        .setPosition(barX, hudRailY - 82 * s)
+        .setText(`RELICS ${parts.join(" · ")}`)
+        .setVisible(parts.length > 0);
+    } else {
+      this.relicText.setVisible(false);
+    }
 
     // §8 owned parry augments — a compact "name ×count" summary above the weapon readout.
     if (self?.augments) {
@@ -14688,9 +14923,11 @@ export class ArenaScene extends Phaser.Scene {
         this.hydrateWeaponManifest(self);
         const view = ArenaScene.serverView(self);
         if (this.predictor) {
+          this.predictor.setRelics(self.dualWield?.relics);
           this.predictor.reconcile(view);
         } else {
           this.predictor = new SelfPredictor(view);
+          this.predictor.setRelics(self.dualWield?.relics);
           this.selfPredHeight = view.height;
           this.selfPredVh = view.vh;
           this.selfPredStance = view.moveStance ?? STANCE_NONE;

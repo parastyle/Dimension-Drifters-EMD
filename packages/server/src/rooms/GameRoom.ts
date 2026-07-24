@@ -8,6 +8,8 @@ import {
   type ArenaMap,
   ArenaState,
   ArsenalSlot,
+  advanceChestCadence,
+  appendRareRelic,
   ATTACK_BUFFER_SECONDS,
   ATTACK_HELD_WINDOW,
   type Attr,
@@ -64,7 +66,14 @@ import {
   type CarrySelectionV1,
   CHAIN_MAX_RANGE,
   type ChainCandidate,
+  type ChestCadenceState,
+  type ChestKind,
+  chestCadenceInitial,
+  CHEST_OPEN_RADIUS,
+  ChestState,
   COMBAT_RECEIPT_CAP,
+  COMMON_RELIC_DEFS,
+  type CommonRelicId,
   COMBO_DAMAGE_CAP_FRAC,
   COMBO_FLAG_AIRBORNE,
   COMBO_FLAG_EMPOWERED,
@@ -95,6 +104,7 @@ import {
   countWeaponCopies,
   critChanceFor,
   DEBUG_SPAWN_MAX,
+  DEATH_WARD_COOLDOWN_SECONDS,
   DEFAULT_CHARACTER,
   DEFAULT_DIMENSION,
   DEFAULT_WEAPON,
@@ -122,8 +132,6 @@ import {
   DRIVE_MAX_GENERIC_RECOVERY_MULT,
   DRIVE_PRESSURE_MEMORY_SECONDS,
   DRIVE_THREAT_RADIUS,
-  DROP_CHANCE_TOUGH,
-  DROP_CHANCE_TRASH,
   DROP_GRACE_SECONDS,
   DriveRegenMode,
   type DriveRegenModeValue,
@@ -165,6 +173,7 @@ import {
   HAIRTRIGGER_WINDOW,
   HIT_KNOCKBACK_IMPULSE,
   hasAugment,
+  hasRareRelic,
   IMPULSE_FRICTION,
   INPUT_MSGS_PER_TICK,
   INPUT_QUEUE_MAX,
@@ -176,17 +185,17 @@ import {
   isPetId,
   isPitAtPx,
   isPlayableCharacter,
+  isRareRelicId,
   isWholeArtCharacter,
   JUGGLE_LANDING_MERCY,
   JUGGLE_MAX_AIR_HITS,
+  type MapZoneId,
   JUGGLE_MAX_CONTROL_SECONDS,
   JUMP_BUFFER_SECONDS,
   type KatanaBeatEffect,
   katanaBeatEffectFor,
   LANDING_TIER_SOFT,
   type LandingThumpTier,
-  LOOT_TIER_RARITY_BOSS,
-  LOOT_TIER_RARITY_TOUGH,
   landingThumpTier,
   lootCooldownMult,
   lootDamageMult,
@@ -207,7 +216,6 @@ import {
   type MeleeComboFamily,
   type MeleeComboStep,
   type MetaAccountV4,
-  MOVE_SPEED,
   type MoveStance,
   meleeComboGraceMs,
   meleeComboSelectionFor,
@@ -232,7 +240,6 @@ import {
   PARRY_LAUNCH,
   PARRY_LAUNCH_MAX,
   PARRY_PUSH,
-  PARRY_RADIUS,
   PARRY_REFLECT_DMG_MULT,
   PARRY_REFLECT_MIN_DAMAGE,
   PARRY_REFLECT_PIERCE,
@@ -278,6 +285,7 @@ import {
   pickEnemyKind,
   pickToughCombo,
   placeArenaGatePair,
+  placeChestOnArena,
   poiCollisionAt,
   pointInAnnulusGap,
   pointInOrientedRect,
@@ -293,6 +301,8 @@ import {
   quirkForCharacter,
   RARITIES,
   RARITY_COMMON,
+  RARE_RELIC_DEFS,
+  type RareRelicId,
   RESPAWN_CLEAR_RADIUS,
   RETURN_DASH_TICKS,
   RETURN_STAGGER_TICKS,
@@ -300,19 +310,27 @@ import {
   REVIVE_HP_FRAC,
   RIFT_CHANNEL_SECONDS,
   ROLL_ATTACK_CANCEL_SECONDS,
-  ROLL_COOLDOWN,
   ROLL_DURATION_TICKS,
   ROLL_PARRY_LOCK_SECONDS,
   type RuntimeMods,
   randomSeed,
+  relicCritAdd,
+  relicDodgeCooldown,
+  relicEnergyCapacity,
+  relicEnergyRegenAdd,
+  relicHpRegenAdd,
+  relicJumpCount,
+  relicMoveSpeed,
+  relicParryRadius,
+  relicRollSpeedAtTick,
+  RelicState,
+  RELIC_COMMON_STACK_CAP,
   resolveBeltObstacles,
   resolveBodyCollisions,
   resolvePoiCollisionInto,
-  rollAffix,
-  rollBankAwareDropWeapon,
-  rollDropWeapon,
-  rollRarity,
-  rollSpeedAtTick,
+  rollChestReward,
+  resolveOneShotProtection,
+  resolveRelicRevive,
   runtimeModsForQuirk,
   SECOND_WIND_BASE,
   SHIFTER_FIRST_SECONDS,
@@ -360,7 +378,6 @@ import {
   TOUGH_COMBOS,
   TOUGH_DAMAGE_MULT,
   TOUGH_HP_MULT,
-  TOUGH_MONEY_MULT,
   type ToughComboDef,
   type ToughComboReturn,
   type ToughComboStep,
@@ -442,7 +459,6 @@ import {
   type WeaponInstanceV1,
   type WeaponProvenance,
   WORM_MAX_SEGMENTS,
-  WORM_TOTAL_MONEY,
   weaponAttackCooldown,
   weaponEffectCueSeconds,
   weaponEffectEmitterPoint,
@@ -466,7 +482,6 @@ import { type Client, Room } from "colyseus";
 import { appendOwnerNote, sanitizeOwnerNote } from "../owner-notes.js";
 import {
   BossController,
-  conserveVastagharVictoryMoney,
   type VastagharEmitSink,
   VastagharEncounterRuntime,
   type VastagharTarget,
@@ -1175,8 +1190,6 @@ export class GameRoom extends Room<ArenaState> {
   private readonly metaAccounts = new Map<string, MetaAccountV4>();
   /** Account-private move-not-copy escrow. Nothing here is synchronized at 20 Hz. */
   private readonly weaponRuns = new Map<string, RunWeaponLedger>();
-  private readonly weaponCuratorOrder: string[] = [];
-  private weaponCuratorRecipient = 0;
   private worldTier = 0;
   private readonly disconnectedPlayers = new Map<string, DisconnectedPlayerReservation>();
   private readonly weaponSettlementReceipts = new Map<string, WeaponSettlementResult>();
@@ -1219,7 +1232,6 @@ export class GameRoom extends Room<ArenaState> {
   /** §16 v0.109 the injected boss emit-surface, built lazily (see `bossSink`). */
   private _bossSink: VastagharEmitSink | null = null;
   /** Anatomy money is paid immediately; this counter conserves the fixed encounter total at core death. */
-  private wormMoneyPaid = 0;
   /** Server-side projectile metadata not worth syncing. Keyed by projectile id. `explode` (baked at
    *  spawn with this source's scaling) detonates an AoE on the projectile's death (§14 scatter shot). */
   private readonly projectileMeta = new Map<
@@ -1358,15 +1370,9 @@ export class GameRoom extends Room<ArenaState> {
   /** §9/§13 per-DROPPED-pickup grace timer (sec): while > 0 the pickup can't be re-grabbed, so a weapon
    *  dropped at your feet doesn't snap straight back. Keyed by pickup id; only set for player drops. */
   private readonly pickupGrace = new Map<string, number>();
-  /** §13 v0.103 salvage provenance: pickup ids whose weapon came off an ENEMY (earned → salvageable).
-   *  Gallery/conjured pickups are never in here. Pruned with the pickup; cleared with the transients. */
+  /** Earned floor-weapon provenance. A chest weapon remains earned if its owner puts it down; free
+   *  gallery/conjured pickups never enter this set. Pruned with the pickup and cleared with transients. */
   private readonly earnedPickups = new Set<string>();
-  /** Audit #15: exact mystery-loot identities never enter Schema state before reveal. Rarity remains public
-   *  on the pickup for its intended glow; this map is the authoritative weapon/rarity/affix identity. */
-  private readonly hiddenPickupIdentities = new Map<
-    string,
-    { weapon: string; rarity: number; affix: string }
-  >();
   /** Mint/provenance/owner rail for bankable loot and exact player-owned field stakes. */
   private readonly pickupWeaponBankMeta = new Map<string, PickupWeaponBankMeta>();
   /** Audit #14: precise Brand durations are gameplay-only. EnemyState.branded is a transition-only 0/1 flag. */
@@ -1393,6 +1399,13 @@ export class GameRoom extends Room<ArenaState> {
   private zoneSeq = 0;
   private pickupSeq = 0;
   private moneyDropSeq = 0;
+  private chestRoomSeed = 0;
+  private chestRunStartTick = 0;
+  private chestCadence: ChestCadenceState = {
+    nextSpawnTick: 0,
+    lastWeaponChestTick: 0,
+    sequence: 0,
+  };
   /** polish #7 fixed preallocated authoritative combat receipt ring (v18). */
   private combatReceiptSeq = 0;
   private combatReceiptCursor = 0;
@@ -2129,18 +2142,6 @@ export class GameRoom extends Room<ArenaState> {
       }
       if (!best) return;
       const grabbed = best as PickupState;
-      // Audit #15: reveal from the server-only identity rail only after the authoritative grab succeeds.
-      // A consumed `drop*` is deleted before the next patch; a persistent pickup keeps the revealed fields.
-      const hidden = this.hiddenPickupIdentities.get(grabbed.id);
-      if (hidden) {
-        grabbed.weapon = hidden.weapon;
-        grabbed.weaponPublic = hidden.weapon;
-        grabbed.rarity = hidden.rarity;
-        grabbed.affix = hidden.affix;
-        grabbed.affixPublic = hidden.affix;
-        grabbed.known = true;
-        this.hiddenPickupIdentities.delete(grabbed.id);
-      }
       const pickupBankMeta = this.pickupWeaponBankMeta.get(grabbed.id);
       let bankEntry = pickupBankMeta?.entry;
       if (!bankEntry && pickupBankMeta && this.weaponRuns.has(player.id)) {
@@ -2175,12 +2176,10 @@ export class GameRoom extends Room<ArenaState> {
         // DESTROYED the Legendary. No-op on fists (empty hands = a plain pickup, nothing to drop).
         this.dropHeldWeapon(player, c);
         player.weapon = grabbed.weapon;
-        // §10 v0.104 the grab is the mystery REVEAL: the drop's rolled rarity + affix become the held
-        // weapon's loot identity (the server multiplies damage/cooldown from these synced fields).
+        // A floor swap carries the exact weapon identity already shown by the pickup.
         player.weaponRarity = grabbed.rarity;
         player.weaponAffix = grabbed.affix;
-        // Provenance rides the grab: an enemy-dropped weapon is EARNED (salvageable), the Testing-Grounds
-        // gallery + conjured drops are not.
+        // Provenance rides the grab: chest-issued gear is earned; Testing-Grounds/conjured gear is not.
         if (c) {
           c.heldEarned = this.earnedPickups.has(grabbed.id);
           this.restoreWeaponResource(player, c, true);
@@ -2194,7 +2193,6 @@ export class GameRoom extends Room<ArenaState> {
         this.state.pickups.delete(grabbed.id);
         this.pickupGrace.delete(grabbed.id);
         if (this.earnedPickups.delete(grabbed.id)) this.publishPetPickupEligibility();
-        this.hiddenPickupIdentities.delete(grabbed.id);
         this.pickupWeaponBankMeta.delete(grabbed.id);
       }
       this.sendWeaponManifest(player);
@@ -2203,6 +2201,18 @@ export class GameRoom extends Room<ArenaState> {
     // §5 JUMP (Spacebar) — a low all-class traversal HOP, then a cooldown so it isn't spammable. PURE
     // movement, NOT a dodge (no i-frames — the parry stays the defensive tool). The §17 pitfall layer reads
     // `airborne` to let a hopping player clear a gap.
+    // B20 L2 chest OPEN is a budgeted, distance-validated interaction. Contents are rolled only here,
+    // from a chest/player-specific seed, and the consumed bit is written only after delivery.
+    this.onMessage("openChest", (client, message?: { chestId?: unknown }) => {
+      if (!this.takeAction(client)) return;
+      const chestId =
+        typeof message?.chestId === "string" && message.chestId.length <= 80
+          ? message.chestId
+          : "";
+      if (!chestId) return;
+      this.openChestForPlayer(client.sessionId, chestId);
+    });
+
     this.onMessage("jump", (client) => {
       if (!this.takeAction(client)) return; // §44 action budget
       const c = this.combat.get(client.sessionId);
@@ -2392,7 +2402,6 @@ export class GameRoom extends Room<ArenaState> {
       this.earnedPickups.clear();
       this.publishPetPickupEligibility();
     }
-    this.hiddenPickupIdentities.clear();
     this.pickupWeaponBankMeta.clear();
     this.brandedTimers.clear();
     this.burnPulses.length = 0;
@@ -2442,6 +2451,7 @@ export class GameRoom extends Room<ArenaState> {
     this.state.projectiles.clear();
     this.state.zones.clear();
     this.clearTransients();
+    this.resetChestDirector();
   }
 
   /** §6 enter a terminal result exactly once through the full combat teardown path. */
@@ -2734,7 +2744,6 @@ export class GameRoom extends Room<ArenaState> {
     };
     const run = { runId: expedition.runId, entries, byInstanceId, curator };
     this.weaponRuns.set(playerId, run);
-    if (!this.weaponCuratorOrder.includes(playerId)) this.weaponCuratorOrder.push(playerId);
     return run;
   }
 
@@ -2908,16 +2917,6 @@ export class GameRoom extends Room<ArenaState> {
     return true;
   }
 
-  private nextWeaponCurator(): WeaponBankCuratorInputV1 | undefined {
-    if (this.weaponCuratorOrder.length === 0) return undefined;
-    for (let tries = 0; tries < this.weaponCuratorOrder.length; tries++) {
-      const index = this.weaponCuratorRecipient++ % this.weaponCuratorOrder.length;
-      const input = this.weaponRuns.get(this.weaponCuratorOrder[index]!)?.curator;
-      if (input) return input;
-    }
-    return undefined;
-  }
-
   private activateMaterializedPair(player: PlayerState, c: CombatState): void {
     const leadSlot = player.slots[player.activeSlot];
     if (!leadSlot || leadSlot.bankEntryKind !== "pair" || leadSlot.bankPairRole !== "lead") return;
@@ -2972,6 +2971,222 @@ export class GameRoom extends Room<ArenaState> {
 
   private bagCapacity(player: PlayerState): number {
     return BAG_CAP + (this.petRuns.get(player.id)?.mods.bagCapacityAdd ?? 0);
+  }
+
+  private resetChestDirector(): void {
+    this.state.chests.clear();
+    this.chestRoomSeed = mixSeeds(
+      this.state.seedTerrain,
+      this.state.seedHazard,
+      this.state.seedTheme,
+      this.state.seedDecor,
+      0xc4e57,
+    );
+    this.chestRunStartTick = this.state.tick;
+    this.chestCadence = chestCadenceInitial(this.state.tick, this.chestRoomSeed);
+  }
+
+  private stepChestDirector(): void {
+    if (
+      this.belt ||
+      this.state.mode !== "arena" ||
+      this.state.outcome !== "active" ||
+      this.state.portalOpen
+    )
+      return;
+    const advanced = advanceChestCadence(
+      this.chestCadence,
+      this.state.tick,
+      this.chestRoomSeed,
+    );
+    this.chestCadence = advanced.state;
+    for (const directive of advanced.spawns) {
+      const existing = [...this.state.chests.values()].map((chest) => ({
+        x: chest.x,
+        y: chest.y,
+      }));
+      const placement = placeChestOnArena(
+        this.map,
+        this.chestRoomSeed,
+        directive.sequence,
+        directive.spawnTick,
+        existing,
+      );
+      const chest = new ChestState();
+      chest.id = `chest:${directive.sequence}:${directive.spawnTick}`;
+      chest.x = placement.x;
+      chest.y = placement.y;
+      chest.zone = placement.zone;
+      chest.kind = directive.kind;
+      chest.spawnTick = directive.spawnTick;
+      this.state.chests.set(chest.id, chest);
+    }
+  }
+
+  private refreshChestOpened(chest: ChestState): void {
+    let opened = this.state.players.size > 0;
+    this.state.players.forEach((_player, id) => {
+      if (!chest.openedBy.get(id)) opened = false;
+    });
+    chest.opened = opened;
+  }
+
+  private refreshAllChestOpened(): void {
+    this.state.chests.forEach((chest) => {
+      this.refreshChestOpened(chest);
+    });
+  }
+
+  private chestWeaponBagSlot(player: PlayerState): ArsenalSlot | undefined {
+    for (const slot of player.bag) if (!slot.weapon) return slot;
+    if (player.bag.length >= this.bagCapacity(player)) return undefined;
+    const slot = new ArsenalSlot();
+    player.bag.push(slot);
+    return slot;
+  }
+
+  private grantChestWeapon(player: PlayerState, weaponId: string): boolean {
+    const slot = this.chestWeaponBagSlot(player);
+    if (!slot || !WEAPONS[weaponId]) return false;
+    this.copySlot(slot, null);
+    slot.weapon = weaponId;
+    slot.rarity = RARITY_COMMON;
+    slot.affix = "";
+    slot.earned = true;
+    slot.resourceWeapon = weaponId;
+    slot.resourceReady = false;
+    this.syncWeaponRunFromArsenal(player);
+    this.sendWeaponManifest(player);
+    return true;
+  }
+
+  private grantCommonRelic(player: PlayerState, id: CommonRelicId): number {
+    const relics = player.relics;
+    const increment = (value: number): number =>
+      Math.min(RELIC_COMMON_STACK_CAP, Math.max(0, Math.floor(value)) + 1);
+    switch (id) {
+      case "energy-pool": {
+        const before = relics.energyPool;
+        relics.energyPool = increment(relics.energyPool);
+        if (relics.energyPool > before) {
+          const combat = this.combat.get(player.id);
+          if (combat) {
+            combat.drive.valueF = Math.min(
+              relicEnergyCapacity(relics),
+              combat.drive.valueF + 10,
+            );
+            player.weaponResource.valueQ = Math.floor(combat.drive.valueF * 100 + 1e-7);
+          }
+        }
+        return relics.energyPool;
+      }
+      case "energy-regen":
+        relics.energyRegen = increment(relics.energyRegen);
+        return relics.energyRegen;
+      case "parry-reach":
+        relics.parryReach = increment(relics.parryReach);
+        return relics.parryReach;
+      case "dodge-recovery":
+        relics.dodgeRecovery = increment(relics.dodgeRecovery);
+        return relics.dodgeRecovery;
+      case "move-speed":
+        relics.moveSpeed = increment(relics.moveSpeed);
+        return relics.moveSpeed;
+      case "hp-regen":
+        relics.hpRegen = increment(relics.hpRegen);
+        return relics.hpRegen;
+      case "luck":
+        relics.luck = increment(relics.luck);
+        return relics.luck;
+      case "crit":
+        relics.crit = increment(relics.crit);
+        return relics.crit;
+      case "jump-count":
+        relics.jumpCount = increment(relics.jumpCount);
+        relics.airJumpsRemaining = Math.min(255, relics.airJumpsRemaining + 1);
+        return relics.jumpCount;
+    }
+    return 0;
+  }
+
+  private grantRareRelic(player: PlayerState, id: RareRelicId): number {
+    const relics = player.relics;
+    if (hasRareRelic(relics.ownedRare, id)) return 1;
+    relics.ownedRare = appendRareRelic(relics.ownedRare, id);
+    if (id.startsWith("dodge-")) relics.activeDodge = id;
+    if (id === "revive") relics.reviveAvailable = true;
+    return 1;
+  }
+
+  private openChestForPlayer(playerId: string, chestId: string): void {
+    const player = this.state.players.get(playerId);
+    const chest = this.state.chests.get(chestId);
+    if (!player?.alive || !chest || chest.openedBy.get(playerId)) return;
+    const dx = player.x - chest.x;
+    const dy = player.y - chest.y;
+    if (dx * dx + dy * dy > CHEST_OPEN_RADIUS * CHEST_OPEN_RADIUS) return;
+    const ownedRareIds = player.relics.ownedRare
+      .split(",")
+      .filter(isRareRelicId) as RareRelicId[];
+    const reward = rollChestReward({
+      roomSeed: this.chestRoomSeed,
+      chestSequence: Number(chest.id.split(":")[1]) || 0,
+      spawnTick: chest.spawnTick,
+      elapsedSeconds: Math.max(0, ((chest.spawnTick - this.chestRunStartTick) * TICK_MS) / 1_000),
+      zone: chest.zone as MapZoneId,
+      kind: chest.kind as ChestKind,
+      playerKey: playerId,
+      luckStacks: player.relics.luck,
+      ownedRareIds,
+      weaponIds: WEAPON_IDS,
+    });
+    if (reward.weapon && !this.chestWeaponBagSlot(player)) {
+      this.sendOwnerMessage(playerId, "chestOpenDenied", { reason: "bag-full", chestId });
+      return;
+    }
+    if (reward.weapon && !this.grantChestWeapon(player, reward.weapon.id)) return;
+    const relicReceipts: Array<{
+      id: CommonRelicId | RareRelicId;
+      rarity: "common" | "rare";
+      label: string;
+      stacks: number;
+    }> = [];
+    for (const relic of reward.relics) {
+      if (relic.rarity === "rare") {
+        const id = relic.id as RareRelicId;
+        const stacks = this.grantRareRelic(player, id);
+        relicReceipts.push({
+          ...relic,
+          label: RARE_RELIC_DEFS.find((def) => def.id === id)?.label ?? id,
+          stacks,
+        });
+      } else {
+        const id = relic.id as CommonRelicId;
+        const stacks = this.grantCommonRelic(player, id);
+        relicReceipts.push({
+          ...relic,
+          label: COMMON_RELIC_DEFS.find((def) => def.id === id)?.label ?? id,
+          stacks,
+        });
+      }
+    }
+    if (reward.money > 0) this.dropMoney(chest.x, chest.y, reward.money, playerId);
+    chest.openedBy.set(playerId, true);
+    this.refreshChestOpened(chest);
+    const weapon = reward.weapon
+      ? {
+          ...reward.weapon,
+          name: WEAPONS[reward.weapon.id]?.name ?? reward.weapon.id,
+        }
+      : undefined;
+    this.sendOwnerMessage(playerId, "chestOpened", {
+      chestId,
+      zone: chest.zone,
+      kind: chest.kind,
+      weapon,
+      relics: relicReceipts,
+      money: reward.money,
+    });
   }
 
   /** Base earned sale plus Gecko's fractional, per-run-capped mint. Unearned/zero sales never feed it. */
@@ -3654,6 +3869,7 @@ export class GameRoom extends Room<ArenaState> {
     this.state.projectiles.clear();
     this.state.zones.clear();
     this.clearTransients();
+    this.resetChestDirector();
     this.state.outcome = "active";
     this.state.portalOpen = false;
     this.resetExtractionIntent();
@@ -3667,6 +3883,7 @@ export class GameRoom extends Room<ArenaState> {
     // elapsed-clock parry timestamps (elapsed resets below) + weapon provenance (the gallery is free).
     this.state.players.forEach((p) => {
       this.resetPetAccrual(p.id);
+      p.dualWield.relics = new RelicState();
       p.salvaged = 0;
       p.ultCharge = 0;
       // …and the held weapon sheds its rolled loot identity too — without this, the workshop is a
@@ -3681,6 +3898,7 @@ export class GameRoom extends Room<ArenaState> {
       c.heldEarned = false;
       c.ultChargeF = 0;
       c.ultAccrualThisTick = 0;
+      c.drive.valueF = Math.min(DRIVE_CAPACITY, c.drive.valueF);
     });
     this.bossSpawned = false;
     this.clearBoss();
@@ -3874,6 +4092,7 @@ export class GameRoom extends Room<ArenaState> {
       player.salvaged = 0;
       player.weaponRarity = RARITY_COMMON;
       player.weaponAffix = "";
+      player.dualWield.relics = new RelicState();
       this.snapshotRunIdentity(player, c, false);
       // Augments remain an empty hook until a non-level acquisition lane owns them.
       player.augments = "";
@@ -4154,6 +4373,9 @@ export class GameRoom extends Room<ArenaState> {
     ) {
       this.disconnectedPlayers.delete(client.sessionId);
       this.state.players.set(client.sessionId, disconnected.player);
+      this.state.chests.forEach((chest) => {
+        if (!chest.openedBy.get(client.sessionId)) chest.opened = false;
+      });
       this.combat.set(client.sessionId, disconnected.combat);
       this.inputs.set(client.sessionId, this.freshInputState());
       if (this.hostId === null) this.hostId = client.sessionId;
@@ -4305,6 +4527,9 @@ export class GameRoom extends Room<ArenaState> {
       player.y = this.map.spawnY + (Math.random() * 200 - 100);
     }
     this.state.players.set(client.sessionId, player);
+    this.state.chests.forEach((chest) => {
+      if (!chest.openedBy.get(client.sessionId)) chest.opened = false;
+    });
     if (this.hostId === null) this.hostId = client.sessionId; // first joiner is the co-op host
     this.inputs.set(client.sessionId, this.freshInputState());
     const joinedQuirk = quirkForCharacter(player.runCharacter);
@@ -4464,6 +4689,7 @@ export class GameRoom extends Room<ArenaState> {
     }
     this.clearBeamRows(client.sessionId);
     this.state.players.delete(client.sessionId);
+    this.refreshAllChestOpened();
     this.inputs.delete(client.sessionId);
     this.combat.delete(client.sessionId);
     // Transport loss is not a terminal weapon result. Account, pet accrual, exact escrow, and the private
@@ -4484,10 +4710,13 @@ export class GameRoom extends Room<ArenaState> {
     drive.forceEngaged = mode === "forceEngaged";
   }
 
-  private drivePendingValue(c: CombatState): number {
+  private drivePendingValue(player: PlayerState, c: CombatState): number {
     return Math.max(
       0,
-      Math.min(DRIVE_CAPACITY, c.drive.valueF + c.drive.tickCreditF - c.drive.tickDebitF),
+      Math.min(
+        relicEnergyCapacity(player.relics),
+        c.drive.valueF + c.drive.tickCreditF - c.drive.tickDebitF,
+      ),
     );
   }
 
@@ -4547,14 +4776,19 @@ export class GameRoom extends Room<ArenaState> {
     );
     const rebuildingEmptyBeam =
       drive.beamLockEndTick !== 0 &&
-      this.drivePendingValue(c) + 1e-9 < DRIVE_BEAM_RESTART_THRESHOLD;
+      this.drivePendingValue(player, c) + 1e-9 < DRIVE_BEAM_RESTART_THRESHOLD;
     if (drive.regenMode !== DriveRegenMode.Paused && rebuildingEmptyBeam) {
       // This is the old beam-only vent row translated into the shared bar, not generic/hiding recovery.
       drive.regenMode = DriveRegenMode.Floor;
       drive.tickCreditF =
-        (DRIVE_BEAM_RESTART_THRESHOLD / ((this.beamEmptyRecoveryTicks(c) * TICK_MS) / 1000)) * dt;
+        (DRIVE_BEAM_RESTART_THRESHOLD / ((this.beamEmptyRecoveryTicks(c) * TICK_MS) / 1000) +
+          relicEnergyRegenAdd(player.relics)) *
+        dt;
     } else {
-      drive.tickCreditF = driveRegenPerSecond(drive.regenMode, genericRecovery) * dt;
+      drive.tickCreditF =
+        (driveRegenPerSecond(drive.regenMode, genericRecovery) +
+          relicEnergyRegenAdd(player.relics)) *
+        dt;
     }
     drive.recoveryDebtF = Math.max(0, drive.recoveryDebtF - dt);
   }
@@ -4564,7 +4798,10 @@ export class GameRoom extends Room<ArenaState> {
     const drive = c.drive;
     drive.valueF = Math.max(
       0,
-      Math.min(DRIVE_CAPACITY, drive.valueF + drive.tickCreditF - drive.tickDebitF),
+      Math.min(
+        relicEnergyCapacity(player.relics),
+        drive.valueF + drive.tickCreditF - drive.tickDebitF,
+      ),
     );
     player.weaponResource.valueQ = Math.max(0, Math.floor(drive.valueF * 100 + 1e-7));
     player.weaponResource.regenMode = drive.regenMode;
@@ -4577,7 +4814,7 @@ export class GameRoom extends Room<ArenaState> {
   /** Credits are a separate authority seam and cannot clear release or minimum-lock gates. */
   private creditWeaponResource(player: PlayerState, c: CombatState, amount: number): number {
     const credit = Number.isFinite(amount) ? Math.max(0, amount) : 0;
-    c.drive.valueF = Math.min(DRIVE_CAPACITY, c.drive.valueF + credit);
+    c.drive.valueF = Math.min(relicEnergyCapacity(player.relics), c.drive.valueF + credit);
     player.weaponResource.valueQ = Math.floor(c.drive.valueF * 100 + 1e-7);
     return credit;
   }
@@ -4623,7 +4860,7 @@ export class GameRoom extends Room<ArenaState> {
     }
     if (!Number.isFinite(requested) || requested < 0) return result;
 
-    const available = this.drivePendingValue(c);
+    const available = this.drivePendingValue(player, c);
     const partial =
       reason === "beam-active" || reason === "beam-cancel" || reason === "aura-active";
     if (!partial && available + 1e-9 < requested) return result;
@@ -4700,7 +4937,23 @@ export class GameRoom extends Room<ArenaState> {
       left -= absorbed;
     }
     if (left > 0) {
-      player.hp = Math.max(0, player.hp - left);
+      const deathWard = resolveOneShotProtection(
+        player.hp,
+        player.maxHp,
+        left,
+        hasRareRelic(player.relics.ownedRare, "one-shot-protection"),
+        tickReached(this.state.tick, player.relics.deathWardReadyTick),
+      );
+      player.hp = deathWard.hp;
+      if (deathWard.triggered) {
+        player.relics.deathWardReadyTick = (
+          this.state.tick + Math.ceil((DEATH_WARD_COOLDOWN_SECONDS * 1000) / TICK_MS)
+        ) >>> 0;
+        this.sendOwnerMessage(player.id, "relicTriggered", {
+          id: "one-shot-protection",
+          readyTick: player.relics.deathWardReadyTick,
+        });
+      }
       if (c?.mods.parryChainNeverExpires) {
         c.parryChain = 0;
         c.parryChainT = 0;
@@ -4766,7 +5019,7 @@ export class GameRoom extends Room<ArenaState> {
         length = Math.hypot(dx, dy);
       }
       if (length > 1e-4) {
-        const speed = rollSpeedAtTick(0);
+        const speed = relicRollSpeedAtTick(player.relics, 0);
         c.momentumX = (dx / length) * speed;
         c.momentumY = (dy / length) * speed;
         c.slidePhase = SLIDE_PHASE_GROUND;
@@ -4794,7 +5047,7 @@ export class GameRoom extends Room<ArenaState> {
     if (c.stance === STANCE_SLIDE && c.slidePhase === SLIDE_PHASE_GROUND) {
       const raw = Math.hypot(c.momentumX, c.momentumY);
       if (raw > 1e-4 && Number.isFinite(raw)) {
-        const scale = rollSpeedAtTick(c.slidePhaseTick) / raw;
+        const scale = relicRollSpeedAtTick(player.relics, c.slidePhaseTick) / raw;
         c.momentumX *= scale;
         c.momentumY *= scale;
       } else {
@@ -4822,7 +5075,7 @@ export class GameRoom extends Room<ArenaState> {
         player.mvx = input.mvx;
         player.mvy = input.mvy;
       }
-      c.rollCd = Math.max(c.rollCd, ROLL_COOLDOWN);
+      c.rollCd = Math.max(c.rollCd, relicDodgeCooldown(player.relics));
       c.momentumX = 0;
       c.momentumY = 0;
       c.slidePhase = SLIDE_PHASE_OFF;
@@ -4891,8 +5144,9 @@ export class GameRoom extends Room<ArenaState> {
     this.cancelMoveStance(player, c, false);
     const input = this.inputs.get(player.id);
     if (input) {
-      input.mvx = dirX * MOVE_SPEED;
-      input.mvy = dirY * MOVE_SPEED;
+      const moveSpeed = relicMoveSpeed(player.relics);
+      input.mvx = dirX * moveSpeed;
+      input.mvy = dirY * moveSpeed;
       player.mvx = input.mvx;
       player.mvy = input.mvy;
     }
@@ -4919,16 +5173,26 @@ export class GameRoom extends Room<ArenaState> {
       const acting = this.state.outcome === "active" && player.alive;
       if (!acting) return;
 
+      const grounded = player.height <= GROUND_EPSILON;
+      const airJump =
+        !grounded &&
+        player.relics.airJumpsRemaining > 0 &&
+        (c.stance === STANCE_NONE || c.stance === STANCE_DASH);
       if (
-        c.stance === STANCE_NONE &&
+        (c.stance === STANCE_NONE || airJump) &&
         c.recoveryT <= 0 &&
         c.jumpBuffer > 0 &&
-        c.distJumpCd <= 0 &&
-        player.height <= GROUND_EPSILON
+        (grounded ? c.distJumpCd <= 0 : airJump)
       ) {
         c.jumpBuffer = 0;
         const input = this.inputs.get(id);
         if (input) {
+          if (airJump) {
+            this.cancelMoveStance(player, c, false);
+            player.relics.airJumpsRemaining--;
+          } else {
+            player.relics.airJumpsRemaining = relicJumpCount(player.relics);
+          }
           this.launchDistanceJump(player, c, input);
           // launchDistanceJump mutates c.stance; read it widened so the narrowing from the
           // STANCE_NONE guard above doesn't make this (correct) comparison look impossible.
@@ -5037,8 +5301,9 @@ export class GameRoom extends Room<ArenaState> {
       c.jumpCd = Math.max(c.jumpCd, 0.4);
       const input = this.inputs.get(player.id);
       if (input) {
-        input.mvx = c.dashDirX * MOVE_SPEED * DIST_JUMP_LANDING_SPEED_MULT;
-        input.mvy = c.dashDirY * MOVE_SPEED * DIST_JUMP_LANDING_SPEED_MULT;
+        const moveSpeed = relicMoveSpeed(player.relics);
+        input.mvx = c.dashDirX * moveSpeed * DIST_JUMP_LANDING_SPEED_MULT;
+        input.mvy = c.dashDirY * moveSpeed * DIST_JUMP_LANDING_SPEED_MULT;
         player.mvx = input.mvx;
         player.mvy = input.mvy;
       }
@@ -5369,14 +5634,15 @@ export class GameRoom extends Room<ArenaState> {
       ) {
         this.cancelMoveStance(player, beamRuntime, true);
       }
+      const baseMoveSpeed = relicMoveSpeed(player.relics);
       const channelSpeed = beamRuntime?.beamDescriptor
-        ? MOVE_SPEED *
+        ? baseMoveSpeed *
           (beamRuntime.beamPhase === 1
             ? beamRuntime.beamDescriptor.chargeMoveMul
             : beamRuntime.beamPhase === 2
               ? beamRuntime.beamDescriptor.channelMoveMul
               : 1)
-        : MOVE_SPEED;
+        : baseMoveSpeed;
       const beamSpeed =
         player.ultPhase === UltimatePhase.Windup &&
         ultimateFamilyForCode(player.ultArchetype) === UltimateFamily.SunspiteComet
@@ -5400,7 +5666,7 @@ export class GameRoom extends Room<ArenaState> {
             input.mvx = 0;
             input.mvy = 0;
           } else {
-            const speed = rollSpeedAtTick(beamRuntime.slidePhaseTick);
+            const speed = relicRollSpeedAtTick(player.relics, beamRuntime.slidePhaseTick);
             beamRuntime.momentumX = (beamRuntime.momentumX / directionLength) * speed;
             beamRuntime.momentumY = (beamRuntime.momentumY / directionLength) * speed;
             input.mvx = beamRuntime.momentumX;
@@ -5420,7 +5686,7 @@ export class GameRoom extends Room<ArenaState> {
         if (activeRoll && beamRuntime?.stance === STANCE_SLIDE) {
           beamRuntime.slidePhaseTick++;
           const length = Math.hypot(beamRuntime.momentumX, beamRuntime.momentumY);
-          const nextSpeed = rollSpeedAtTick(beamRuntime.slidePhaseTick);
+          const nextSpeed = relicRollSpeedAtTick(player.relics, beamRuntime.slidePhaseTick);
           if (length > 1e-4) {
             beamRuntime.momentumX = (beamRuntime.momentumX / length) * nextSpeed;
             beamRuntime.momentumY = (beamRuntime.momentumY / length) * nextSpeed;
@@ -5585,6 +5851,7 @@ export class GameRoom extends Room<ArenaState> {
     if (this.state.mode === "arena") {
       if (this.state.outcome === "active") {
         this.advanceElapsed(dt);
+        this.stepChestDirector();
         if (this.belt) {
           // §29 belt: room-gated progression REPLACES the continuous director + boss clock + shifters —
           // walk into a room, the gate locks, clear the wave, the gate opens, advance; the last room = boss.
@@ -5700,7 +5967,10 @@ export class GameRoom extends Room<ArenaState> {
       }
       player.vh = c.vh; // §4 v0.107 synced mirror — the predicting client rebases its jump arc exactly
       const landed = wasAirborne && player.height <= GROUND_EPSILON;
-      if (landed) this.finishPlayerLanding(player, c, landingStance, impactVh);
+      if (landed) {
+        player.relics.airJumpsRemaining = relicJumpCount(player.relics);
+        this.finishPlayerLanding(player, c, landingStance, impactVh);
+      }
       this.syncSlideWire(player, c);
       // §51 G10 landing mercy: an enemy-initiated launch (juggle) that returns to ground grants a brief
       // melee/contact immunity — armed ONLY by the launcher hit, never by the player's own jumps.
@@ -6208,6 +6478,22 @@ export class GameRoom extends Room<ArenaState> {
         player.hp = 0;
         const c = this.combat.get(player.id);
         if (c) this.cancelMoveStance(player, c, true);
+        const relicRevive = resolveRelicRevive(
+          player.maxHp,
+          hasRareRelic(player.relics.ownedRare, "revive"),
+          player.relics.reviveAvailable,
+        );
+        if (relicRevive.revived) {
+          player.relics.reviveAvailable = relicRevive.available;
+          player.hp = relicRevive.hp;
+          player.revivedSeq = (player.revivedSeq + 1) % 100000;
+          player.alive = true;
+          this.zeroMoveVel(player.id);
+          this.clearEnemiesNear(player.x, player.y, RESPAWN_CLEAR_RADIUS);
+          this.sendOwnerMessage(player.id, "relicTriggered", { id: "revive" });
+          anyAlive = true;
+          return;
+        }
         player.alive = false; // DOWNED
         if (this.vastagharEncounter) this.vastagharDownTicks.set(player.id, this.state.tick);
         return;
@@ -6218,7 +6504,7 @@ export class GameRoom extends Room<ArenaState> {
       const pitRegenMultiplier =
         pet && pet.tortoisePitRegenSeconds > 0 ? pet.mods.pitRegenMultiplier : 1;
       const regen =
-        PLAYER_REGEN *
+        (PLAYER_REGEN + relicHpRegenAdd(player.relics)) *
         (combat?.mods.regenMult ?? 1) *
         (pet?.mods.passiveRegenMultiplier ?? 1) *
         pitRegenMultiplier;
@@ -6639,12 +6925,13 @@ export class GameRoom extends Room<ArenaState> {
     return 1;
   }
 
-  /** Empty B20 additive seam for relic and other future crit modifiers. */
+  /** L1's additive seam now consumes the run-scoped L2 crit line. */
   private critAdditiveModifiers(
-    _player: PlayerState,
+    player: PlayerState,
     _combat: CombatState | undefined,
   ): readonly number[] {
-    return [];
+    const relicCrit = relicCritAdd(player.relics);
+    return relicCrit > 0 ? [relicCrit] : [];
   }
 
   private flatCritChance(player: PlayerState, combat?: CombatState): number {
@@ -8144,7 +8431,7 @@ export class GameRoom extends Room<ArenaState> {
       (c.drive.beamRecoveryEndTick === 0 ||
         tickReached(this.state.tick, c.drive.beamRecoveryEndTick)) &&
       !c.drive.beamRequireRelease &&
-      this.drivePendingValue(c) + 1e-9 >= DRIVE_BEAM_RESTART_THRESHOLD
+      this.drivePendingValue(player, c) + 1e-9 >= DRIVE_BEAM_RESTART_THRESHOLD
     ) {
       const classDamage =
         weapon.tags.classPool === "caster"
@@ -8495,7 +8782,7 @@ export class GameRoom extends Room<ArenaState> {
       !tickReached(this.state.tick, c.drive.beamRecoveryEndTick);
     const awaitingThreshold =
       c.drive.beamLockEndTick !== 0 &&
-      this.drivePendingValue(c) + 1e-9 < DRIVE_BEAM_RESTART_THRESHOLD;
+      this.drivePendingValue(player, c) + 1e-9 < DRIVE_BEAM_RESTART_THRESHOLD;
     if (!lockActive && !recoveryActive && !awaitingThreshold && !c.drive.beamRequireRelease) {
       this.clearBeamRows(id);
       if (c.beamPhase === 0) c.beamDescriptor = undefined;
@@ -8506,7 +8793,8 @@ export class GameRoom extends Room<ArenaState> {
         ? c.beamDescriptor
         : beamDescriptorFor(weapon, this.state.tick, 0, 1, 1);
     const overheated = lockActive || c.drive.beamRequireRelease;
-    const spentFraction = 1 - this.drivePendingValue(c) / DRIVE_CAPACITY;
+    const spentFraction =
+      1 - this.drivePendingValue(player, c) / relicEnergyCapacity(player.relics);
     this.syncBeamRow(
       player,
       id,
@@ -8567,7 +8855,7 @@ export class GameRoom extends Room<ArenaState> {
         : descriptor.width;
     row.halfWidth = row.width / 2;
     // Schema-30 compatibility alias only. Gameplay never reads this field; the shared bar is the heat.
-    row.heat = 1 - this.drivePendingValue(c) / DRIVE_CAPACITY;
+    row.heat = 1 - this.drivePendingValue(player, c) / relicEnergyCapacity(player.relics);
     row.intensity = Math.max(0, Math.min(1, intensity));
     row.element = WEAPONS[descriptor.weaponId]?.tags.element ?? "physical";
     row.previousOriginX = c.beamPreviousOriginsX[rayIndex] ?? c.beamPreviousX;
@@ -9329,11 +9617,11 @@ export class GameRoom extends Room<ArenaState> {
     this.state.telegraphs.clear();
   }
 
-  /** Advance the authoritative collapse, award its money once, then open the ordinary reward route. */
+  /** Advance the authoritative collapse, then open the ordinary reward route without minting boss loot. */
   private stepVastagharVictory(): void {
     const encounter = this.vastagharEncounter;
     if (!encounter || encounter.state.mode !== VastagharMode.Victory) return;
-    if (encounter.advanceVictory(this.state.tick)) this.awardVastagharVictoryMoney();
+    if (encounter.advanceVictory(this.state.tick)) this.completeVastagharVictoryPresentation();
     if (
       this.vastagharMoneyAwarded &&
       ((this.state.tick - this.vastagharVictoryReadyTick) | 0) >= 0
@@ -9341,20 +9629,13 @@ export class GameRoom extends Room<ArenaState> {
       this.completeRewardBoundary("boss-clear");
   }
 
-  /** The flagship death mints one flat money crown exactly once. */
-  private awardVastagharVictoryMoney(): void {
+  /** B20 L2: preserve the collapse beat but retire the old boss-money itemization channel. */
+  private completeVastagharVictoryPresentation(): void {
     const encounter = this.vastagharEncounter;
     if (!encounter || this.vastagharMoneyAwarded) return;
-    const bossMoney = bossDefFor("world-titan").vastaghar?.bossMoney ?? 110;
-    const total = conserveVastagharVictoryMoney(0, bossMoney);
-    this.dropMoney(this.vastagharVictoryX, this.vastagharVictoryY, total);
     this.vastagharMoneyAwarded = true;
-    this.vastagharVictoryReadyTick = (
-      this.state.tick +
-      MONEY_DROP_ARM_TICKS +
-      MONEY_DROP_FLIGHT_TICKS
-    ) >>> 0;
-    encounter.setVictoryMoney(total);
+    this.vastagharVictoryReadyTick = this.state.tick;
+    encounter.setVictoryMoney(0);
   }
 
   private completeVastagharClear(): void {
@@ -9371,46 +9652,23 @@ export class GameRoom extends Room<ArenaState> {
     encounter.markRewardsOpen(this.state.tick);
     this.state.bossKind = "";
     if (this.vastagharVictoryMode === "bossrush") {
-      this.advanceBossRush(this.vastagharVictoryX, this.vastagharVictoryY);
+      this.advanceBossRush();
     } else {
       this.openPortal(this.vastagharVictoryX, this.vastagharVictoryY);
-      if (this.state.mode === "arena") {
-        const loot = this.vastagharLootPoint();
-        this.dropLoot(loot.x, loot.y, 1, LOOT_TIER_RARITY_BOSS);
-      }
     }
     this.vastagharVictoryMode = "";
   }
 
-  private vastagharLootPoint(): Vec2 {
-    const separation = EXTRACT_RADIUS + PICKUP_RADIUS + 32;
-    const separation2 = separation * separation;
-    for (let i = 0; i < 8; i++) {
-      const angle = (i / 8) * Math.PI * 2;
-      const candidate = safeSpawnPos(
-        this.map,
-        this.vastagharVictoryX + Math.cos(angle) * 240,
-        this.vastagharVictoryY + Math.sin(angle) * 240,
-        PICKUP_RADIUS,
-      );
-      const ex = candidate.x - this.state.portalX;
-      const ey = candidate.y - this.state.portalY;
-      const rx = candidate.x - this.state.riftX;
-      const ry = candidate.y - this.state.riftY;
-      if (ex * ex + ey * ey >= separation2 && rx * rx + ry * ry >= separation2) return candidate;
-    }
-    return safeSpawnPos(
-      this.map,
-      this.vastagharVictoryX + 320,
-      this.vastagharVictoryY,
-      PICKUP_RADIUS,
-    );
-  }
-
   /** Credit a collected drop through the existing per-player scrip currency. */
-  private awardMoney(amount: number): void {
+  private awardMoney(amount: number, ownerId = ""): void {
     const payout = Math.max(0, Math.floor(amount));
     if (payout <= 0) return;
+    if (ownerId) {
+      const owner =
+        this.state.players.get(ownerId) ?? this.disconnectedPlayers.get(ownerId)?.player;
+      if (owner) owner.scrip = Math.min(META_ACCOUNT_SCRIP_MAX, owner.scrip + payout);
+      return;
+    }
     this.state.players.forEach((player) => {
       player.scrip = Math.min(META_ACCOUNT_SCRIP_MAX, player.scrip + payout);
     });
@@ -9424,12 +9682,18 @@ export class GameRoom extends Room<ArenaState> {
     );
   }
 
-  private nearestMoneyCollector(x: number, y: number, requireReach: boolean): PlayerState | null {
+  private nearestMoneyCollector(
+    x: number,
+    y: number,
+    requireReach: boolean,
+    ownerId = "",
+  ): PlayerState | null {
     let best: PlayerState | null = null;
     let bestId = "";
     let bestD2 = Number.POSITIVE_INFINITY;
     this.state.players.forEach((player, id) => {
       if (!player.alive) return;
+      if (ownerId && id !== ownerId) return;
       const dx = player.x - x;
       const dy = player.y - y;
       const d2 = dx * dx + dy * dy;
@@ -9444,8 +9708,8 @@ export class GameRoom extends Room<ArenaState> {
     return best;
   }
 
-  /** Convert one paid enemy death into a bounded collectible money row. Overflow merges; value is conserved. */
-  private dropMoney(x: number, y: number, value: number): void {
+  /** Convert one chest money roll into a bounded collectible row. Overflow merges; value is conserved. */
+  private dropMoney(x: number, y: number, value: number, ownerId = ""): void {
     const amount = Math.max(0, Math.floor(value));
     if (amount <= 0 || this.state.players.size === 0) return;
     let target: MoneyDropState | undefined;
@@ -9453,6 +9717,7 @@ export class GameRoom extends Room<ArenaState> {
     if (this.state.moneyDrops.size >= MAX_MONEY_DROPS) {
       this.state.moneyDrops.forEach((drop) => {
         if (drop.delivered) return;
+        if (drop.ownerId !== ownerId) return;
         const dx = drop.x - x;
         const dy = drop.y - y;
         const d2 = dx * dx + dy * dy;
@@ -9467,7 +9732,7 @@ export class GameRoom extends Room<ArenaState> {
       return;
     }
     if (this.state.moneyDrops.size >= MAX_MONEY_DROPS) {
-      this.awardMoney(amount);
+      this.awardMoney(amount, ownerId);
       return;
     }
     const drop = new MoneyDropState();
@@ -9477,6 +9742,7 @@ export class GameRoom extends Room<ArenaState> {
     drop.value = amount;
     drop.seed = (Math.imul(this.moneyDropSeq, 40503) + Math.imul(this.state.tick, 7919)) & 0xffff;
     drop.bornTick = this.state.tick;
+    drop.ownerId = ownerId;
     this.state.moneyDrops.set(drop.id, drop);
   }
 
@@ -9496,13 +9762,13 @@ export class GameRoom extends Room<ArenaState> {
           return;
         }
         if (tickReached(this.state.tick, drop.collectTick)) {
-          this.awardMoney(drop.value);
+          this.awardMoney(drop.value, drop.ownerId);
           drop.delivered = true;
         }
         return;
       }
       if (!tickReached(this.state.tick, (drop.bornTick + MONEY_DROP_ARM_TICKS) >>> 0)) return;
-      const collector = this.nearestMoneyCollector(drop.x, drop.y, true);
+      const collector = this.nearestMoneyCollector(drop.x, drop.y, true, drop.ownerId);
       if (!collector) return;
       drop.collectorId = collector.id;
       drop.launchTick = this.state.tick;
@@ -9512,12 +9778,19 @@ export class GameRoom extends Room<ArenaState> {
   }
 
   private drainMoneyDrops(): void {
-    let unpaid = 0;
+    let squadUnpaid = 0;
+    const ownerUnpaid = new Map<string, number>();
     this.state.moneyDrops.forEach((drop) => {
-      if (!drop.delivered) unpaid += drop.value;
+      if (drop.delivered) return;
+      if (drop.ownerId) {
+        ownerUnpaid.set(drop.ownerId, (ownerUnpaid.get(drop.ownerId) ?? 0) + drop.value);
+      } else {
+        squadUnpaid += drop.value;
+      }
     });
     this.state.moneyDrops.clear();
-    this.awardMoney(unpaid);
+    this.awardMoney(squadUnpaid);
+    for (const [ownerId, amount] of ownerUnpaid) this.awardMoney(amount, ownerId);
   }
 
   /** Committed transitions conserve every uncollected money row before teardown. */
@@ -9624,11 +9897,8 @@ export class GameRoom extends Room<ArenaState> {
     );
     this.updateEnemyGrid(this.bossId, boss);
     this.rebuildWormSegmentGrid();
-    for (;;) {
-      const reward = this.bossController.drainWormReward();
-      if (!reward) break;
-      this.wormMoneyPaid += reward.value;
-      this.dropMoney(reward.x, reward.y, reward.value);
+    while (this.bossController.drainWormReward()) {
+      // B20 L2: consume the legacy anatomy-reward queue without minting non-chest itemization.
     }
   }
 
@@ -9645,7 +9915,6 @@ export class GameRoom extends Room<ArenaState> {
     this.bossController?.dispose(this.bossSink, this.state.tick);
     this.bossController = null;
     this.wormSegmentGrid.clear();
-    this.wormMoneyPaid = 0;
     this.bossId = null;
     this.bossPetAwardEligible = false;
     this.bossAddIds.clear();
@@ -11115,11 +11384,8 @@ export class GameRoom extends Room<ArenaState> {
       didCrit,
       result.terminal,
     );
-    for (;;) {
-      const reward = controller.drainWormReward();
-      if (!reward) break;
-      this.wormMoneyPaid += reward.value;
-      this.dropMoney(reward.x, reward.y, reward.value);
+    while (controller.drainWormReward()) {
+      // B20 L2: consume the legacy anatomy-reward queue without minting non-chest itemization.
     }
     this.rebuildWormSegmentGrid();
     if (result.terminal) this.damageEnemy(boss, boss.id, 0, kills, 0);
@@ -11233,14 +11499,8 @@ export class GameRoom extends Room<ArenaState> {
       this.duelTokens.delete(combo.targetId);
     if (combo) combo.strike = undefined;
     const kind = ENEMY_KINDS[enemy.kind];
-    if (wormRoot) this.dropMoney(enemy.x, enemy.y, Math.max(0, WORM_TOTAL_MONEY - this.wormMoneyPaid));
-    else if (!flagship) {
-      this.dropMoney(
-        enemy.x,
-        enemy.y,
-        (kind?.moneyValue ?? 0) * (enemy.tough ? TOUGH_MONEY_MULT : 1),
-      );
-    }
+    // B20 L2: enemy, anatomy, and boss deaths never mint money or weapons. Chests own all
+    // in-run itemization; this death path retains only combat/progression cleanup and gates.
     if (kind?.archetype === "boss" && flagship) {
       if (this.bossPetAwardEligible) this.awardPetDimensionClear();
       this.beginVastagharClear(enemy.x, enemy.y);
@@ -11253,15 +11513,9 @@ export class GameRoom extends Room<ArenaState> {
       if (enemy.id === this.bossId) this.clearBoss();
       if (this.state.mode === "bossrush") {
         // §16 v0.116 the gauntlet: heal + reward + queue the next boss (or win on the last).
-        this.advanceBossRush(enemy.x, enemy.y);
+        this.advanceBossRush();
       } else {
-        // §13 "no guaranteed weapon drops EXCEPT bosses" — with a heavy tier bonus on the rarity table
-        // (§13 "tier affects drop rate AND rarity"), so the capstone drop rarely lands Common. ARENA-only:
-        // a debug-summoned Testing-Grounds boss must never mint carryable loot (adversarial-verify — the
-        // training reroll-laundering exploit). QOL-01: reserve/create the reward BEFORE the gate lifecycle
-        // begins, so extraction can never outrun the capstone drop.
-        if (this.state.mode === "arena")
-          this.dropLoot(enemy.x, enemy.y, 1, LOOT_TIER_RARITY_BOSS);
+        // B20 L2: boss kills open progression, but weapon itemization comes only from chests.
         this.openPortal(enemy.x, enemy.y);
       }
     }
@@ -11272,18 +11526,8 @@ export class GameRoom extends Room<ArenaState> {
       this.state.players.forEach((p) => {
         if (p.alive) p.salvaged += bounty;
       });
-    } else if (kind?.archetype !== "boss" && this.state.mode === "arena" && !this.bossId) {
-      // §13 v0.104: ANY enemy can drop — tier drives the rate AND up-weights the rarity table (toughs
-      // roll richer). SUPPRESSED while the boss is ALIVE: without that, kiting an unkilled boss makes
-      // the pre-portal arena an unbounded salvage farm (adversarial-verify) — kill it to loot again.
-      this.dropLoot(
-        enemy.x,
-        enemy.y,
-        enemy.tough ? DROP_CHANCE_TOUGH : DROP_CHANCE_TRASH,
-        enemy.tough ? LOOT_TIER_RARITY_TOUGH : 0,
-      );
     }
-    this.maybeDropWeapon(enemy); // §13 wielding enemies drop the SPECIFIC weapon they carry
+    // B20 L2: ordinary, tough, wielding, shifter, and boss enemies never mint weapon pickups.
     const killer = sourcePlayerId ? this.state.players.get(sourcePlayerId) : undefined;
     const killerCombat = sourcePlayerId ? this.combat.get(sourcePlayerId) : undefined;
     if (killer && killerCombat) this.applyKillQuirk(killer, killerCombat, enemy);
@@ -11332,47 +11576,9 @@ export class GameRoom extends Room<ArenaState> {
     }
   }
 
-  /** §13 v0.104 roll an in-run MYSTERY loot drop at (x,y) with the given chance: identity from the
-   *  power-banded DROP_POOL; rarity from the flat base plus the killer's TIER bonus (§13 "tier
-   *  affects drop rate AND rarity"); the single §10 affix rolled here-and-now. The pickup telegraphs
-   *  type + rarity but hides WHICH weapon until grabbed (mystery dopamine); cursed reads ghostly purple. */
-  private dropLoot(x: number, y: number, chance: number, tierRarityBonus = 0): void {
-    if (chance < 1 && Math.random() > chance) return;
-    const pk = new PickupState();
-    pk.id = `drop${this.pickupSeq++}`;
-    const curator = this.nextWeaponCurator();
-    const weapon = rollBankAwareDropWeapon(curator, Math.random());
-    if (curator) {
-      curator.runIssuedByWeaponId.set(weapon, (curator.runIssuedByWeaponId.get(weapon) ?? 0) + 1);
-    }
-    const rarity = rollRarity(Math.random(), 1 + tierRarityBonus);
-    const affix = rollAffix(Math.random(), rarity).id;
-    this.hiddenPickupIdentities.set(pk.id, { weapon, rarity, affix });
-    // Only the intended public tells enter Schema: rarity glow/name + coarse class glyph. Exact weapon and
-    // affix remain empty placeholders until the authoritative grab reveals the server-only identity.
-    pk.weapon = weapon;
-    pk.weaponPublic = "";
-    pk.rarity = rarity;
-    pk.affix = affix;
-    pk.affixPublic = "";
-    pk.weaponClass = WEAPONS[weapon]?.tags.classPool ?? "";
-    pk.known = false;
-    const sp = this.placePickupPos(x, y);
-    pk.x = sp.x;
-    pk.y = sp.y;
-    this.state.pickups.set(pk.id, pk);
-    this.earnedPickups.add(pk.id); // a loot drop is EARNED — it carries §13 salvage value
-    this.pickupWeaponBankMeta.set(pk.id, {
-      provenance: tierRarityBonus >= LOOT_TIER_RARITY_BOSS ? "boss-drop" : "enemy-drop",
-      ownerId: curator?.accountId ?? "",
-      ownerLockUntil: curator ? this.state.elapsed + 2 : 0,
-    });
-    this.publishPetPickupEligibility();
-  }
-
-  /** §29 place a dropped pickup on solid ground: the BELT deck (clamped into the depth band, nudged off any
-   *  pit gap) in belt mode, else the procgen arena's safe-spawn nudge. Keeps loot grabbable, never in a pit
-   *  or off the walkable floor. */
+  /** §29 place a floor pickup on solid ground: the BELT deck (clamped into the depth band, nudged off any
+   *  pit gap) in belt mode, else the procgen arena's safe-spawn nudge. Keeps swaps and explicitly issued
+   *  pickups grabbable, never in a pit or off the walkable floor. */
   private placePickupPos(x: number, y: number): { x: number; y: number } {
     if (this.belt && this.beltLevel) {
       const bx = beltSafeX(this.beltLevel, x, x);
@@ -11508,7 +11714,8 @@ export class GameRoom extends Room<ArenaState> {
     c.parryCd = PARRY_COOLDOWN * c.mods.parryCooldownMult;
     c.parryOpenedTick = this.state.tick;
     const knockback = PARRY_KNOCKBACK * c.mods.parryKnockbackMult;
-    const r2 = PARRY_RADIUS * PARRY_RADIUS;
+    const parryRadius = relicParryRadius(player.relics);
+    const r2 = parryRadius * parryRadius;
     this.state.enemies.forEach((enemy, id) => {
       if (id === this.bossId && (this.bossController?.wormRuntime || this.vastagharEncounter))
         return;
@@ -11580,7 +11787,8 @@ export class GameRoom extends Room<ArenaState> {
 
     // Hex — Brand (mark nearby enemies), Emberguard (fire wave), Conflagration (a deferred re-pulse).
     if (hasAugment(owned, "brand")) {
-      const r2 = PARRY_RADIUS * PARRY_RADIUS;
+      const parryRadius = relicParryRadius(player.relics);
+      const r2 = parryRadius * parryRadius;
       this.state.enemies.forEach((enemy) => {
         const dx = enemy.x - player.x;
         const dy = enemy.y - player.y;
@@ -11590,7 +11798,7 @@ export class GameRoom extends Room<ArenaState> {
         }
       });
       const root = this.bossId ? this.state.enemies.get(this.bossId) : undefined;
-      if (root && this.collectWormRadiusHits(player.x, player.y, PARRY_RADIUS).length > 0) {
+      if (root && this.collectWormRadiusHits(player.x, player.y, parryRadius).length > 0) {
         this.brandedTimers.set(root.id, BRAND_DURATION);
         root.branded = 1;
       }
@@ -12935,39 +13143,6 @@ export class GameRoom extends Room<ArenaState> {
     });
   }
 
-  /** §13 weapon drop: when a wielding enemy dies, roll its `dropWeapon` chance → spawn a grabbable pickup. */
-  private maybeDropWeapon(enemy: EnemyState): void {
-    if (this.state.mode !== "arena") return; // debug-summoned wielders in training mint NO loot (verify)
-    const kind = ENEMY_KINDS[enemy.kind];
-    if (!kind?.wieldsWeapon || !kind.dropWeapon || WEAPONS[kind.wieldsWeapon]?.archived === true)
-      return;
-    // G-03: this known-weapon reward channel obeys the same boss anti-farm lock as mystery loot. Named
-    // shifters guarantee their signature only outside that lock; ordinary rates stay deliberately scarce.
-    if (this.bossId || kind.archetype === "boss") return;
-    const chance = kind.shifter ? 1 : enemy.tough ? 0.06 : 0.02;
-    if (Math.random() > chance) return;
-    const pk = new PickupState();
-    pk.id = `drop${this.pickupSeq++}`;
-    pk.weapon = kind.wieldsWeapon;
-    pk.weaponPublic = kind.wieldsWeapon;
-    // §13 the wielder's drop is identity-KNOWN (you saw the sword it swung) but its rarity/affix still
-    // roll on drop (v0.104) — same squad-LUK table as the mystery channel (one rarity economy).
-    pk.rarity = rollRarity(Math.random());
-    pk.affix = rollAffix(Math.random(), pk.rarity).id;
-    pk.affixPublic = pk.affix;
-    const sp = this.placePickupPos(enemy.x, enemy.y);
-    pk.x = sp.x;
-    pk.y = sp.y;
-    this.state.pickups.set(pk.id, pk);
-    this.earnedPickups.add(pk.id); // §13 v0.103: an ENEMY drop is EARNED — it carries salvage value
-    this.pickupWeaponBankMeta.set(pk.id, {
-      provenance: "enemy-drop",
-      ownerId: "",
-      ownerLockUntil: 0,
-    });
-    this.publishPetPickupEligibility();
-  }
-
   /** Advance every projectile, expire at TTL/arena edge. HOSTILE projectiles hit players (parry-/
    *  level-immune); FRIENDLY (thrown) projectiles cut through enemies up to their pierce count. */
   private stepProjectiles(dt: number): void {
@@ -13837,14 +14012,13 @@ export class GameRoom extends Room<ArenaState> {
   /** §16 v0.116 BOSS RUSH — a boss just fell: pay the squad a depth-scaled wage + a mid-run heal + a mystery
    *  drop, then either QUEUE the next boss (escalating `depth`) or, on the final boss, WIN the run (bank + clean
    *  the field, mirroring `checkExtraction`). */
-  private advanceBossRush(x: number, y: number): void {
+  private advanceBossRush(): void {
     const wage = BOSS_SALVAGE_PER_DEPTH * this.state.depth;
     this.state.players.forEach((p) => {
       if (!p.alive) return;
       p.salvaged += wage;
       this.applyHeal(p, p.maxHp * BOSSRUSH_HEAL_FRAC);
     });
-    this.dropLoot(x, y, 1, LOOT_TIER_RARITY_BOSS); // the reward for the clear (boss-tier rarity)
     this.bossRushIndex++;
     if (this.bossRushIndex >= BOSS_DEF_IDS.length) {
       // GAUNTLET CLEARED: the boss core catches before progression presentation is torn down and banked.
@@ -14120,6 +14294,7 @@ export class GameRoom extends Room<ArenaState> {
     // surfaces loudly instead of shipping an unplayable arena.
     const v = validateArena(this.map);
     if (!v.ok) console.error(`[room ${this.roomId}] mapgen produced an invalid arena: ${v.reason}`);
+    this.resetChestDirector();
   }
 
   /** §6 the boss falls → open BOTH gates of the greed decision: the amber EXTRACTION portal (bank the

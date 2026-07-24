@@ -4,6 +4,7 @@ export const DRIVE_COST_PIP_COUNT = 5;
 
 export interface DriveHudInput {
   valueQ: number;
+  capacity?: number;
   regenMode: number;
   beamLockEndTick: number;
   tick: number;
@@ -54,7 +55,8 @@ export function driveCostView(weaponId: string): DriveCostView {
 }
 
 export function driveHudView(input: DriveHudInput): DriveHudView {
-  const value = Math.max(0, Math.min(DRIVE_CAPACITY, Math.floor(Number(input.valueQ) || 0) / 100));
+  const capacity = Math.max(1, Number(input.capacity) || DRIVE_CAPACITY);
+  const value = Math.max(0, Math.min(capacity, Math.floor(Number(input.valueQ) || 0) / 100));
   const cost = driveCostView(input.weaponId);
   const locked =
     cost.branch === "beam" &&
@@ -62,8 +64,8 @@ export function driveHudView(input: DriveHudInput): DriveHudView {
   const affordable = value + 1e-9 >= cost.cost && !locked;
   return {
     value,
-    fraction: value / DRIVE_CAPACITY,
-    debitFraction: Math.min(value, cost.cost) / DRIVE_CAPACITY,
+    fraction: value / capacity,
+    debitFraction: Math.min(value, cost.cost) / capacity,
     affordable,
     locked,
     low: value <= Math.max(25, cost.cost),

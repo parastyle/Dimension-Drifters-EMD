@@ -18,7 +18,12 @@ import {
   INPUT_MSGS_PER_TICK,
   INTERP_SNAP_PLAYER,
   JUMP_BUFFER_SECONDS,
+  EMPTY_RELIC_STACKS,
   MOVE_SPEED,
+  type RelicStacks,
+  relicDodgeCooldown,
+  relicMoveSpeed,
+  relicRollSpeedAtTick,
   type MoveStance,
   PLAYER_RADIUS,
   POUND_GATHER_SECONDS,
@@ -29,12 +34,10 @@ import {
   PRED_ERR_DECAY,
   PRED_PENDING_MAX,
   ROLL_ATTACK_CANCEL_SECONDS,
-  ROLL_COOLDOWN,
   ROLL_DURATION_TICKS,
   ROLL_PARRY_LOCK_SECONDS,
   resolveBeltObstacles,
   resolvePoiCollision,
-  rollSpeedAtTick,
   SLIDE_PHASE_GROUND,
   SLIDE_PHASE_OFF,
   type SlidePhase,
@@ -381,10 +384,10 @@ const PRED_PRESENT_MAX_COMMAND_DELTA = Math.PI / 18;
  * multi-character leash. This leaves 32 px of margin under B4's unchanged 80 px live bound. */
 export const LOCOMOTION_ONLY_AUTHORITY_RADIUS_PX = 48;
 
-function sanitizePredMomentum(p: PredState): void {
+function sanitizePredMomentum(p: PredState, relics: Readonly<RelicStacks>): void {
   const raw = Math.hypot(p.momentumX, p.momentumY);
   if (raw > 1e-4 && Number.isFinite(raw)) {
-    const scale = Math.min(raw, rollSpeedAtTick(0)) / raw;
+    const scale = Math.min(raw, relicRollSpeedAtTick(relics, 0)) / raw;
     p.momentumX *= scale;
     p.momentumY *= scale;
   } else {
@@ -407,14 +410,18 @@ function clearCommittedStance(s: PredStanceState): void {
   s.poundGatherT = 0;
 }
 
-function clearSlide(p: PredState, s: PredStanceState): void {
+function clearSlide(
+  p: PredState,
+  s: PredStanceState,
+  relics: Readonly<RelicStacks>,
+): void {
   p.mvx = 0;
   p.mvy = 0;
   p.momentumX = 0;
   p.momentumY = 0;
   s.slidePhase = SLIDE_PHASE_OFF;
   s.slidePhaseTick = 0;
-  s.rollCd = Math.max(s.rollCd, ROLL_COOLDOWN);
+  s.rollCd = Math.max(s.rollCd, relicDodgeCooldown(relics));
   clearCommittedStance(s);
 }
 
@@ -444,11 +451,18 @@ function stepHorizontal(
   s: PredState,
   dx: number,
   dy: number,
+  relics: Readonly<RelicStacks>,
   dt: number,
   map?: ArenaMap,
   belt?: BeltLevel,
 ): PredState {
-  const moved = stepSteeredMovement({ x: s.x, y: s.y }, { vx: s.mvx, vy: s.mvy }, { dx, dy }, dt);
+  const moved = stepSteeredMovement(
+    { x: s.x, y: s.y },
+    { vx: s.mvx, vy: s.mvy },
+    { dx, dy },
+    dt,
+    relicMoveSpeed(relics),
+  );
   const imp = stepImpulse(moved, { vx: s.vx, vy: s.vy }, dt);
   let x = imp.x;
   let y = imp.y;
@@ -479,6 +493,7 @@ function stepStanceHorizontal(
   p: PredState,
   s: PredStanceState,
   cmd: PredCmd,
+  relics: Readonly<RelicStacks>,
   dt: number,
   map?: ArenaMap,
   belt?: BeltLevel,
@@ -487,7 +502,7 @@ function stepStanceHorizontal(
   const activeSlide = s.stance === STANCE_SLIDE && s.slidePhase === SLIDE_PHASE_GROUND;
   if (s.stance !== STANCE_DASH && !activeSlide) {
     const rooted = s.stance === STANCE_CROUCH || s.stance === STANCE_POUND || s.recoveryT > 0;
-    return stepHorizontal(p, rooted ? 0 : cmd.dx, rooted ? 0 : cmd.dy, dt, map, belt);
+    return stepHorizontal(p, rooted ? 0 : cmd.dx, rooted ? 0 : cmd.dy, relics, dt, map, belt);
   }
   let mvx: number;
   let mvy: number;
@@ -498,10 +513,10 @@ function stepStanceHorizontal(
   } else {
     const directionLength = Math.hypot(p.momentumX, p.momentumY);
     if (directionLength <= 1e-4) {
-      clearSlide(p, s);
-      return stepHorizontal(p, cmd.dx, cmd.dy, dt, map, belt);
+      clearSlide(p, s, relics);
+      return stepHorizontal(p, cmd.dx, cmd.dy, relics, dt, map, belt);
     }
-    const slideSpeed = rollSpeedAtTick(s.slidePhaseTick);
+    const slideSpeed = relicRollSpeedAtTick(relics, s.slidePhaseTick);
     p.momentumX = (p.momentumX / directionLength) * slideSpeed;
     p.momentumY = (p.momentumY / directionLength) * slideSpeed;
     mvx = p.momentumX;
@@ -529,7 +544,7 @@ function stepStanceHorizontal(
     s.slidePhaseTick++;
     const length = Math.hypot(p.momentumX, p.momentumY);
     if (length > 1e-4) {
-      const nextSpeed = rollSpeedAtTick(s.slidePhaseTick);
+      const nextSpeed = relicRollSpeedAtTick(relics, s.slidePhaseTick);
       p.momentumX = (p.momentumX / length) * nextSpeed;
       p.momentumY = (p.momentumY / length) * nextSpeed;
     }
@@ -553,6 +568,7 @@ function consumeStanceInput(
   v: PredVerticalState,
   s: PredStanceState,
   cmd: PredCmd,
+  relics: Readonly<RelicStacks>,
 ): void {
   const aimLen = Math.hypot(cmd.aimX ?? 0, cmd.aimY ?? 0);
   if (aimLen > 1e-4) {
@@ -564,7 +580,7 @@ function consumeStanceInput(
     s.stance === STANCE_SLIDE &&
     s.slidePhaseTick * (TICK_MS / 1000) + 1e-9 >= ROLL_ATTACK_CANCEL_SECONDS
   ) {
-    clearSlide(p, s);
+    clearSlide(p, s, relics);
   }
   if (cmd.pound) {
     if (
@@ -607,7 +623,7 @@ function consumeStanceInput(
       length = Math.hypot(dx, dy);
     }
     if (length > 1e-4) {
-      const speed = rollSpeedAtTick(0);
+      const speed = relicRollSpeedAtTick(relics, 0);
       p.momentumX = (dx / length) * speed;
       p.momentumY = (dy / length) * speed;
       p.mvx = p.momentumX;
@@ -667,6 +683,7 @@ function stepPredictionTick(
   v: PredVerticalState,
   s: PredStanceState,
   cmd: PredCmd,
+  relics: Readonly<RelicStacks>,
   dt: number,
   indicator: DistanceJumpIndicator,
   map?: ArenaMap,
@@ -677,7 +694,7 @@ function stepPredictionTick(
       s.stance === STANCE_SLIDE ? (ROLL_DURATION_TICKS - s.slidePhaseTick + 2) * dt : 0;
     v.jumpBuf = Math.max(JUMP_BUFFER_SECONDS, rollTail);
   }
-  consumeStanceInput(p, v, s, cmd);
+  consumeStanceInput(p, v, s, cmd, relics);
   v.jumpCd = Math.max(0, v.jumpCd - dt);
   v.jumpBuf = Math.max(0, v.jumpBuf - dt);
   s.distJumpCd = Math.max(0, s.distJumpCd - dt);
@@ -697,7 +714,7 @@ function stepPredictionTick(
     launchedDistanceJump = stanceAfterLaunch === STANCE_DASH;
   }
 
-  const next = stepStanceHorizontal(p, s, cmd, dt, map, belt, launchedDistanceJump);
+  const next = stepStanceHorizontal(p, s, cmd, relics, dt, map, belt, launchedDistanceJump);
 
   s.recoveryT = Math.max(0, s.recoveryT - dt);
   s.rollCd = Math.max(0, s.rollCd - dt);
@@ -711,9 +728,10 @@ function stepPredictionTick(
     const length = Math.hypot(next.momentumX, next.momentumY);
     const dirX = length > 1e-4 ? next.momentumX / length : 0;
     const dirY = length > 1e-4 ? next.momentumY / length : 0;
-    clearSlide(next, s);
-    next.mvx = dirX * MOVE_SPEED;
-    next.mvy = dirY * MOVE_SPEED;
+    clearSlide(next, s, relics);
+    const moveSpeed = relicMoveSpeed(relics);
+    next.mvx = dirX * moveSpeed;
+    next.mvy = dirY * moveSpeed;
   }
 
   const wasAirborne = v.height > GROUND_EPSILON;
@@ -741,8 +759,9 @@ function stepPredictionTick(
       s.recoveryT = POUND_RECOVERY_SECONDS;
     } else if (landingStance === STANCE_DASH) {
       v.jumpCd = Math.max(v.jumpCd, 0.4);
-      next.mvx = s.dashDirX * MOVE_SPEED * DIST_JUMP_LANDING_SPEED_MULT;
-      next.mvy = s.dashDirY * MOVE_SPEED * DIST_JUMP_LANDING_SPEED_MULT;
+      const moveSpeed = relicMoveSpeed(relics);
+      next.mvx = s.dashDirX * moveSpeed * DIST_JUMP_LANDING_SPEED_MULT;
+      next.mvy = s.dashDirY * moveSpeed * DIST_JUMP_LANDING_SPEED_MULT;
     }
     if (landingStance !== STANCE_NONE) clearCommittedStance(s);
     s.poundUsed = false;
@@ -752,6 +771,7 @@ function stepPredictionTick(
 
 export class SelfPredictor {
   private pred: PredState;
+  private relics: Readonly<RelicStacks> = EMPTY_RELIC_STACKS;
   private readonly previewPred: PredState = {
     x: 0,
     y: 0,
@@ -855,7 +875,7 @@ export class SelfPredictor {
       momentumX: server.momentumX ?? 0,
       momentumY: server.momentumY ?? 0,
     };
-    sanitizePredMomentum(this.pred);
+    sanitizePredMomentum(this.pred, this.relics);
     this.height = server.height;
     this.vh = server.vh;
     this.lastTeleportSeq = server.teleportSeq;
@@ -909,6 +929,11 @@ export class SelfPredictor {
   /** §29 set the belt level so prediction uses the authored floor/obstacle collision (not POI). */
   setBeltLevel(level: BeltLevel | undefined): void {
     this.belt = level;
+  }
+
+  /** Keep client locomotion and dodge prediction aligned with server-owned relic effects. */
+  setRelics(relics: Readonly<RelicStacks> | undefined): void {
+    this.relics = relics ?? EMPTY_RELIC_STACKS;
   }
 
   /** True when a held-state change or one-shot edge should mint before the next 20Hz heartbeat. */
@@ -1017,6 +1042,7 @@ export class SelfPredictor {
       vert,
       this.stance,
       pending,
+      this.relics,
       DT,
       this.indicatorScratch,
       this.map,
@@ -1063,7 +1089,7 @@ export class SelfPredictor {
       slidePrevHeld: this.stance.slidePrevHeld,
       rollCd:
         serverStance !== STANCE_SLIDE && this.stance.stance === STANCE_SLIDE
-          ? Math.max(this.stance.rollCd, ROLL_COOLDOWN)
+          ? Math.max(this.stance.rollCd, relicDodgeCooldown(this.relics))
           : this.stance.rollCd,
       slideParryLockT: this.stance.slideParryLockT,
       aimX: speed > 1e-4 ? dirX : this.stance.aimX || 1,
@@ -1216,7 +1242,7 @@ export class SelfPredictor {
       momentumX: server.momentumX ?? 0,
       momentumY: server.momentumY ?? 0,
     };
-    sanitizePredMomentum(this.pred);
+    sanitizePredMomentum(this.pred, this.relics);
 
     if (teleported || this.needResync || pauseNow || this.paused) {
       // HARD RESYNC family — but the error-offset treatment differs by CAUSE (amendment #14):
@@ -1273,6 +1299,7 @@ export class SelfPredictor {
         replayVert,
         replayStance,
         cmd,
+        this.relics,
         DT,
         this.indicatorScratch,
         this.map,
@@ -1322,7 +1349,7 @@ export class SelfPredictor {
     let correctionX = this.errX * (k - 1);
     let correctionY = this.errY * (k - 1);
     const inputLength = Math.hypot(dx, dy);
-    const movementBudget = MOVE_SPEED * dt;
+    const movementBudget = relicMoveSpeed(this.relics) * dt;
     if (inputLength > 1e-4) {
       const ux = dx / inputLength;
       const uy = dy / inputLength;
@@ -1412,6 +1439,7 @@ export class SelfPredictor {
         previewPred,
         previewStance,
         this.previewCmd,
+        this.relics,
         frac,
         this.map,
         this.belt,

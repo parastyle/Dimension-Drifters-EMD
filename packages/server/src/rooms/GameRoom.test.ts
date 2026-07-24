@@ -11,7 +11,6 @@ import {
   DEFAULT_WEAPON,
   DEPTH_MAX,
   DIMENSIONS,
-  DROP_POOL,
   DUMMY_HP,
   draftAugments,
   ENEMY_KINDS,
@@ -639,7 +638,7 @@ describe("GameRoom — §13 damageEnemy (the one damage primitive, both paths)",
     expect(after.hp).toBe(DUMMY_HP); // reset, not killed
   });
 
-  it("a kill creates a collectible money drop and credits scrip on collection", () => {
+  it("a kill advances combat without minting weapon or money itemization", () => {
     const h = makeRoom();
     h.join("p1");
     const p = h.state().players.get("p1");
@@ -658,7 +657,9 @@ describe("GameRoom — §13 damageEnemy (the one damage primitive, both paths)",
     h.send("p1", "attack", { aimX: 1, aimY: 0 });
     h.tick(16);
     expect(h.state().enemies.has("v")).toBe(false); // killed
-    expect(p.scrip).toBeGreaterThan(before);
+    expect(p.scrip).toBe(before);
+    expect(h.state().moneyDrops.size).toBe(0);
+    expect(h.state().pickups.size).toBe(0);
   });
 });
 
@@ -1352,7 +1353,7 @@ describe("GameRoom — §6 dimension chain (v0.103: extract-vs-descend, bank-or-
     expect(h.state().riftCharge).toBe(0); // charge drained
   });
 
-  it("EXPLOIT GUARD: a cycled (conjured) weapon salvages for NOTHING; an enemy drop pays (provenance)", () => {
+  it("EXPLOIT GUARD: a cycled (conjured) weapon salvages for NOTHING; an earned floor weapon pays", () => {
     const h = makeRoom();
     h.join("p1");
     const p = h.state().players.get("p1");
@@ -1364,14 +1365,14 @@ describe("GameRoom — §6 dimension chain (v0.103: extract-vs-descend, bank-or-
     h.send("p1", "cycleWeapon", { dir: 1 });
     h.send("p1", "salvageWeapon");
     expect(p.salvaged).toBe(0); // conjured weapons are worthless — the printer is dead
-    // An ENEMY-DROPPED weapon carries provenance → it pays.
+    // A chest-issued weapon put down on the floor retains earned provenance → it pays.
     const pk = new PickupState();
     pk.id = "drop900";
     pk.weapon = "gravediggers-spade";
     pk.x = p.x;
     pk.y = p.y;
     h.state().pickups.set("drop900", pk);
-    h.room.earnedPickups.add("drop900"); // as maybeDropWeapon marks it
+    h.room.earnedPickups.add("drop900");
     h.send("p1", "grabWeapon");
     h.send("p1", "salvageWeapon");
     expect(p.salvaged).toBe(1); // earned → banked-able
@@ -1410,8 +1411,8 @@ describe("GameRoom — §6 dimension chain (v0.103: extract-vs-descend, bank-or-
   });
 });
 
-describe("GameRoom — §10/§13 loot spine (v0.104: rarity, affix, mystery drops, provenance value)", () => {
-  it("killing the BOSS guarantees a mystery drop with a rolled rarity/affix (earned)", () => {
+describe("GameRoom — chest-only weapon itemization", () => {
+  it("a boss kill opens progression without minting a legacy weapon pickup", () => {
     const h = makeRoom();
     h.join("p1");
     const p = h.state().players.get("p1");
@@ -1430,14 +1431,8 @@ describe("GameRoom — §10/§13 loot spine (v0.104: rarity, affix, mystery drop
     });
     h.send("p1", "attack", { aimX: 1, aimY: 0 });
     h.tick(4);
-    let loot: PickupState | undefined;
-    h.state().pickups.forEach((pk: PickupState) => {
-      if (!pk.known) loot = pk;
-    });
-    expect(loot).toBeDefined(); // §13 "no guaranteed weapon drops except bosses" — this IS the boss
-    expect(loot?.known).toBe(false); // mystery: type+rarity telegraphed, identity hidden
-    expect(DROP_POOL).toContain(loot?.weapon); // identity comes from the power-banded pool
-    expect(h.room.earnedPickups.has(loot?.id)).toBe(true); // loot drops carry salvage value
+    expect(h.state().portalOpen).toBe(true);
+    expect(h.state().pickups.size).toBe(0);
   });
 
   it("grabbing a drop applies its rolled rarity + affix to the held weapon (the reveal)", () => {
@@ -1572,13 +1567,13 @@ describe("GameRoom — §10/§13 loot spine (v0.104: rarity, affix, mystery drop
     for (let i = 0; i < 12; i++) {
       const b = new EnemyState();
       b.id = `b${i}`;
-      b.kind = "old-rust"; // archetype boss — dropLoot(…,1) path
+      b.kind = "old-rust"; // archetype boss body
       b.hp = 0.0001;
       h.state().enemies.set(b.id, b);
       h.room.damageEnemy(b, b.id, 1, []);
       const r = new EnemyState();
       r.id = `r${i}`;
-      r.kind = "ronin"; // wieldsWeapon — maybeDropWeapon path
+      r.kind = "ronin"; // weapon-wielding enemy body
       r.hp = 0.0001;
       h.state().enemies.set(r.id, r);
       h.room.damageEnemy(r, r.id, 1, []);
@@ -1809,20 +1804,16 @@ describe("GameRoom — §29 belt arsenal (3 slots + bag)", () => {
     expect(p.slots[2].weapon).toBe("");
   });
 
-  it("belt loot drops land ON the deck band, nudged clear of pits", () => {
+  it("belt floor-weapon placement lands ON the deck band, nudged clear of pits", () => {
     const h = makeRoom({ belt: true });
     h.join("p1");
     const level = beltLevelFor("sky-carrier");
-    const before = new Set<string>(h.state().pickups.keys());
-    // Drop at a PIT x (1600 ∈ the 1560–1670 gap) with a y ABOVE the band — placePickupPos must nudge it
-    // onto solid deck and clamp it into the depth band (not scatter it via the procgen-map spawn).
-    h.room.dropLoot(1600, BELT_Y0 - 500, 1);
-    const id = [...h.state().pickups.keys()].find((k) => !before.has(k));
-    const pk = h.state().pickups.get(id);
-    expect(pk).toBeTruthy();
-    expect(beltPitAtX(level, pk.x)).toBe(false); // off the pit
-    expect(pk.y).toBeGreaterThanOrEqual(BELT_Y0); // inside the depth band
-    expect(pk.y).toBeLessThanOrEqual(BELT_Y0 + DEPTH_MAX);
+    // Place at a PIT x (1600 ∈ the 1560–1670 gap) with a y ABOVE the band. The shared floor-placement
+    // path used by bag swaps must nudge it onto solid deck and clamp it into the depth band.
+    const pos = h.room.placePickupPos(1600, BELT_Y0 - 500);
+    expect(beltPitAtX(level, pos.x)).toBe(false); // off the pit
+    expect(pos.y).toBeGreaterThanOrEqual(BELT_Y0); // inside the depth band
+    expect(pos.y).toBeLessThanOrEqual(BELT_Y0 + DEPTH_MAX);
   });
 
   it("belt join RESTORES persisted scrip (clamped to uint16); arena ignores it", () => {
@@ -2335,7 +2326,7 @@ describe("improve2 integrity regressions", () => {
     expect(combat.bulwarkShield).toBeGreaterThan(0);
   });
 
-  it("G-03 suppresses known weapon drops during a boss and uses 2%/6% ordinary rates", () => {
+  it("G-03 retires ordinary, tough, and wielding enemy weapon pickups in favor of chests", () => {
     const h = makeRoom();
     h.join("drop-law");
     const row = Object.entries(ENEMY_KINDS).find(
@@ -2343,22 +2334,19 @@ describe("improve2 integrity regressions", () => {
         !!kind.wieldsWeapon && !!kind.dropWeapon && !kind.shifter && kind.archetype !== "boss",
     );
     if (!row) throw new Error("expected a weapon-wielding enemy fixture");
-    const enemy = new EnemyState();
-    enemy.id = "drop-law-enemy";
-    enemy.kind = row[0];
-    enemy.x = h.room.map.spawnX;
-    enemy.y = h.room.map.spawnY;
-    const rng = vi.spyOn(Math, "random").mockReturnValue(0.03);
-
-    h.room.bossId = "alive-boss";
-    h.room.maybeDropWeapon(enemy);
+    const rng = vi.spyOn(Math, "random").mockReturnValue(0);
+    for (const tough of [false, true]) {
+      const enemy = new EnemyState();
+      enemy.id = `drop-law-${tough ? "tough" : "trash"}`;
+      enemy.kind = row[0];
+      enemy.hp = 1;
+      enemy.tough = tough;
+      enemy.x = h.room.map.spawnX;
+      enemy.y = h.room.map.spawnY;
+      h.state().enemies.set(enemy.id, enemy);
+      h.room.damageEnemy(enemy, enemy.id, 1, []);
+    }
     expect(h.state().pickups.size).toBe(0);
-    h.room.bossId = null;
-    h.room.maybeDropWeapon(enemy);
-    expect(h.state().pickups.size).toBe(0); // 3% misses trash's 2%
-    enemy.tough = true;
-    h.room.maybeDropWeapon(enemy);
-    expect(h.state().pickups.size).toBe(1); // but lands inside tough's 6%
     rng.mockRestore();
   });
 
@@ -2568,36 +2556,38 @@ describe("GameRoom — §44 one effective-cooldown swing clock", () => {
   });
 });
 
-// Audit findings #15/#14 — appended only: hidden loot identity and transition-only Brand sync.
+// Audit findings #15/#14 — appended only: private chest contents and transition-only Brand sync.
 describe("GameRoom — audit sync privacy and churn regressions", () => {
-  it("keeps a mystery pickup's weapon and affix off synced state until it is grabbed", () => {
+  it("keeps unopened chest contents off synchronized state and rolls only for its opener", () => {
     const h = makeRoom();
     h.join("loot-player");
     const player = h.state().players.get("loot-player");
+    const receipts: unknown[] = [];
+    h.room.clients[0].send = (type: string, payload: unknown) => {
+      if (type === "chestOpened") receipts.push(payload);
+    };
+    const chest = new enemyComboShared.ChestState();
+    chest.id = "chest:15:320";
+    chest.x = player.x;
+    chest.y = player.y;
+    chest.zone = enemyComboShared.MAP_ZONE_SCAR;
+    chest.kind = enemyComboShared.CHEST_KIND_WEAPON_CACHE;
+    chest.spawnTick = 320;
+    chest.openedBy.set(player.id, false);
+    h.state().chests.set(chest.id, chest);
+    const syncedChest = chest as unknown as Record<string, unknown>;
 
-    h.room.dropLoot(player.x, player.y, 1);
-    const pickup = [...h.state().pickups.values()][0] as PickupState | undefined;
-    expect(pickup).toBeDefined();
-    expect(pickup?.known).toBe(false);
-    expect(pickup?.weaponPublic).toBe("");
-    expect(pickup?.affixPublic).toBe("");
+    expect(Object.hasOwn(syncedChest, "weapon")).toBe(false);
+    expect(Object.hasOwn(syncedChest, "relics")).toBe(false);
+    expect(Object.hasOwn(syncedChest, "money")).toBe(false);
 
-    const hidden = h.room.hiddenPickupIdentities.get(pickup?.id ?? "") as
-      | { weapon: string; rarity: number; affix: string }
-      | undefined;
-    expect(hidden?.weapon).toBeTruthy();
-    expect(pickup?.weapon).toBe(hidden?.weapon); // available only on the non-serialized server object
-    expect(pickup?.rarity).toBe(hidden?.rarity); // rarity remains the intentional public glow
+    h.room.openChestForPlayer(player.id, chest.id);
 
-    if (!pickup || !hidden) throw new Error("expected a server-only mystery identity");
-    player.x = pickup.x;
-    player.y = pickup.y;
-    h.send("loot-player", "grabWeapon");
-
-    expect(h.state().pickups.has(pickup.id)).toBe(false);
-    expect(player.weapon).toBe(hidden.weapon);
-    expect(player.weaponRarity).toBe(hidden.rarity);
-    expect(player.weaponAffix).toBe(hidden.affix);
+    expect(receipts).toHaveLength(1);
+    expect(chest.openedBy.get(player.id)).toBe(true);
+    expect(Object.hasOwn(syncedChest, "weapon")).toBe(false);
+    expect(Object.hasOwn(syncedChest, "relics")).toBe(false);
+    expect(Object.hasOwn(syncedChest, "money")).toBe(false);
   });
 
   it("keeps the synced branded flag stable between apply and precise expiry", () => {
@@ -2719,34 +2709,24 @@ describe("GameRoom — melee parry telegraph commitment", () => {
   });
 });
 
-// B20 L1: the former XP packet rail is now a money-only collectible with no progression state.
+// B20 L2: chests reuse L1's bounded money collectible rail; kills no longer produce it.
 const MONEY_PANEL = await import("@dd/shared");
 
 describe("GameRoom — server-authoritative money drops", () => {
-  it("a paid death outside reach drops exact tough money and grants nothing before collection", () => {
+  it("a chest payout outside reach grants nothing before collection", () => {
     const h = makeRoom();
     h.join("p1");
     const player = h.state().players.get("p1");
     player.x = h.room.map.spawnX;
     player.y = h.room.map.spawnY;
-    const enemy = new EnemyState();
-    enemy.id = "money-far";
-    enemy.kind = "critter";
-    enemy.tough = true;
-    enemy.hp = 1;
-    enemy.x = player.x + MONEY_PANEL.BASE_MONEY_DROP_REACH + 90;
-    enemy.y = player.y;
-    const kills: string[] = [];
+    const payout = 9;
+    h.room.dropMoney(player.x + MONEY_PANEL.BASE_MONEY_DROP_REACH + 90, player.y, payout, player.id);
 
-    h.room.damageEnemy(enemy, enemy.id, 999, kills);
-
-    expect(kills).toEqual([enemy.id]);
     expect(player.scrip).toBe(0);
     expect(h.state().moneyDrops.size).toBe(1);
     const drop = [...h.state().moneyDrops.values()][0];
-    expect(drop?.value).toBe(
-      (ENEMY_KINDS.critter?.moneyValue ?? 0) * MONEY_PANEL.TOUGH_MONEY_MULT,
-    );
+    expect(drop?.value).toBe(payout);
+    expect(drop?.ownerId).toBe(player.id);
     h.tick(30);
     expect(player.scrip).toBe(0);
     expect(h.state().moneyDrops.size).toBe(1);
@@ -3201,9 +3181,7 @@ describe("GameRoom - Serraketh authoritative integration", () => {
     expect(runtime.localHp[3]).toBe(neighborHp);
     expect(root.hp).toBe(rootHp - 80);
     expect(h.state().enemies.has(root.id)).toBe(true);
-    expect([...h.state().moneyDrops.values()].map((drop: { value: number }) => drop.value)).toEqual([
-      3,
-    ]);
+    expect(h.state().moneyDrops.size).toBe(0);
   });
 
   it("holds twelve live parts in twelve fixed wire rows without spending twelve enemy rows", () => {
@@ -3222,21 +3200,16 @@ describe("GameRoom - Serraketh authoritative integration", () => {
     );
   });
 
-  it("conserves exactly 110 money across anatomy and terminal core drops", () => {
+  it("retires anatomy and terminal-core money while preserving the terminal portal", () => {
     const { h, runtime, root } = makeSerrakethRoom();
     h.room.detonate(runtime.x[2], runtime.y[2], 0, 80, 0);
-    expect([...h.state().moneyDrops.values()].reduce((sum, drop) => sum + drop.value, 0)).toBe(3);
+    expect(h.state().moneyDrops.size).toBe(0);
 
     const kills: string[] = [];
     h.room.damageWormSlots([0], root.hp * 4, "test:finale", kills, 0, false);
     for (const id of kills) h.state().enemies.delete(id);
 
-    expect(
-      [...h.state().moneyDrops.values()].reduce(
-        (sum: number, drop: { value: number }) => sum + drop.value,
-        0,
-      ),
-    ).toBe(wormRoomShared.WORM_TOTAL_MONEY);
+    expect(h.state().moneyDrops.size).toBe(0);
     expect(h.state().wormBoss.active).toBe(false);
     expect(h.state().portalOpen).toBe(true);
   });
@@ -4327,7 +4300,7 @@ describe("GameRoom — V7 fixed tumble roll", () => {
 // MAP QOL wave — appended only. These lock the intentional post-schema-23 ordering and the new objective /
 // director postconditions without weakening any historical deterministic fixture above.
 describe("GameRoom — MAP QOL extraction intent and tick-order fairness", () => {
-  it("creates the guaranteed boss drop before arming gates, then denies corpse-position carryover until a fresh hold", () => {
+  it("opens gates with no boss weapon drop, then denies corpse-position carryover until a fresh hold", () => {
     const h = makeRoom();
     h.join("qol-extract");
     h.room.map.tiles.fill(TILE_GROUND);
@@ -4343,25 +4316,8 @@ describe("GameRoom — MAP QOL extraction intent and tick-order fairness", () =>
     boss.x = player.x;
     boss.y = player.y;
     h.state().enemies.set(boss.id, boss);
-    const order: string[] = [];
-    const realDrop = h.room.dropLoot.bind(h.room);
-    const realOpen = h.room.openPortal.bind(h.room);
-    const dropSpy = vi.spyOn(h.room, "dropLoot").mockImplementation((...args: unknown[]) => {
-      order.push("drop");
-      return realDrop(...args);
-    });
-    const openSpy = vi.spyOn(h.room, "openPortal").mockImplementation((...args: unknown[]) => {
-      order.push("gate");
-      return realOpen(...args);
-    });
-    try {
-      h.room.damageEnemy(boss, boss.id, 1, []);
-    } finally {
-      dropSpy.mockRestore();
-      openSpy.mockRestore();
-    }
-    expect(order.slice(0, 2)).toEqual(["drop", "gate"]);
-    expect(h.state().pickups.size).toBeGreaterThan(0);
+    h.room.damageEnemy(boss, boss.id, 1, []);
+    expect(h.state().pickups.size).toBe(0);
     expect([h.state().portalX, h.state().portalY]).toEqual([player.x, player.y]);
 
     // More than arm+hold time while pre-held on the corpse must never bank the run.
@@ -4810,7 +4766,7 @@ describe("ULT U1 lifecycle, co-op, and schema 25", () => {
     expect(player.ultCharge).toBe(50);
   });
 
-  it("ships schema 34 with the stat-free interim ultimate selected and nine nested wire fields", () => {
+  it("ships schema 35 with the stat-free interim ultimate selected and the nested relic wire row", () => {
     const h = makeRoom();
     h.join("ult-schema");
     const player = h.state().players.get("ult-schema");
@@ -7294,5 +7250,121 @@ describe("GameRoom - NW melee and thrown mechanics", () => {
     expect(definition.performance).toMatchObject({ continuous: true, action: "default-swing" });
     expect(active?.swingArc).toBeCloseTo(Math.PI * 2);
     expect(active?.swing.style).toBe("spin");
+  });
+});
+
+describe("GameRoom - B20 L2 authoritative chests", () => {
+  it("spawns the first chest on valid map ground from the isolated cadence stream", () => {
+    const h = makeRoom();
+    h.join("chest-runner");
+    h.state().tick = h.room.chestCadence.nextSpawnTick;
+    h.room.stepChestDirector();
+
+    expect(h.state().chests.size).toBe(1);
+    const chest = [...h.state().chests.values()][0];
+    expect(chest).toBeDefined();
+    expect(
+      enemyComboShared.isArenaDiscSafe(
+        h.room.map,
+        chest.x,
+        chest.y,
+        enemyComboShared.CHEST_PLACEMENT_RADIUS,
+      ),
+    ).toBe(true);
+    expect(enemyComboShared.isInsidePoi(h.room.map, chest.x, chest.y)).toBe(false);
+    expect(enemyComboShared.isPitAtPx(h.room.map, chest.x, chest.y)).toBe(false);
+  });
+
+  it("consumes one shared chest independently for each co-op player", () => {
+    const h = makeRoom();
+    h.join("chest-a");
+    h.join("chest-b");
+    const receipts = new Map<string, unknown>();
+    for (const client of h.room.clients) {
+      client.send = (type: string, payload: unknown) => {
+        if (type === "chestOpened") receipts.set(client.sessionId, payload);
+      };
+    }
+    const a = h.state().players.get("chest-a");
+    const b = h.state().players.get("chest-b");
+    const chest = new enemyComboShared.ChestState();
+    chest.id = "chest:77:500";
+    chest.x = a.x;
+    chest.y = a.y;
+    chest.zone = enemyComboShared.MAP_ZONE_SCAR;
+    chest.kind = enemyComboShared.CHEST_KIND_WEAPON_CACHE;
+    chest.spawnTick = 500;
+    chest.openedBy.set(a.id, false);
+    chest.openedBy.set(b.id, false);
+    h.state().chests.set(chest.id, chest);
+    b.x = chest.x;
+    b.y = chest.y;
+    h.room.chestRoomSeed = 0x5eed20;
+    h.room.chestRunStartTick = 0;
+
+    h.room.openChestForPlayer(a.id, chest.id);
+    expect(chest.openedBy.get(a.id)).toBe(true);
+    expect(chest.openedBy.get(b.id)).toBe(false);
+    expect(chest.opened).toBe(false);
+    expect(receipts.has(a.id)).toBe(true);
+
+    const firstReceipt = receipts.get(a.id);
+    h.room.openChestForPlayer(a.id, chest.id);
+    expect(receipts.get(a.id)).toBe(firstReceipt);
+
+    h.room.openChestForPlayer(b.id, chest.id);
+    expect(chest.openedBy.get(b.id)).toBe(true);
+    expect(chest.opened).toBe(true);
+    expect(receipts.has(b.id)).toBe(true);
+  });
+
+  it("applies dodge overrides through authoritative movement while preserving the shared roll window", () => {
+    const fixture = makeRollRoom("relic-dodge");
+    fixture.player.relics.activeDodge = "dodge-bloodhound-step";
+
+    beginRoll(fixture);
+
+    expect(Math.hypot(fixture.combat.momentumX, fixture.combat.momentumY)).toBeCloseTo(
+      enemyComboShared.relicRollSpeedAtTick(
+        fixture.player.relics,
+        fixture.combat.slidePhaseTick,
+      ),
+      6,
+    );
+    for (let i = 0; i < enemyComboShared.ROLL_DURATION_TICKS + 4; i++) fixture.h.tick(1);
+    expect(fixture.combat.stance).toBe(enemyComboShared.STANCE_NONE);
+    expect(fixture.combat.rollCd).toBeGreaterThan(
+      enemyComboShared.relicDodgeCooldown(enemyComboShared.EMPTY_RELIC_STACKS),
+    );
+    expect(fixture.combat.rollCd).toBeLessThanOrEqual(
+      enemyComboShared.relicDodgeCooldown(fixture.player.relics),
+    );
+  });
+
+  it("feeds common crit/regen and rare survival edges into server authority", () => {
+    const h = makeRoom();
+    h.join("relic-survivor");
+    const player = h.state().players.get("relic-survivor");
+    player.relics.crit = 2;
+    player.relics.hpRegen = 2;
+    player.hp = 50;
+    expect(h.room.flatCritChance(player)).toBeCloseTo(
+      enemyComboShared.CRIT_BASE + enemyComboShared.RELIC_CRIT_PER_STACK * 2,
+    );
+    h.tick(1);
+    expect(player.hp).toBeGreaterThan(50);
+
+    player.relics.ownedRare = "one-shot-protection,revive";
+    player.relics.reviveAvailable = true;
+    player.hp = player.maxHp;
+    h.room.damagePlayer(player, player.maxHp * 2, "enemy");
+    expect(player.hp).toBe(1);
+    expect(player.relics.deathWardReadyTick).toBeGreaterThan(h.state().tick);
+
+    player.hp = 0;
+    h.tick(1);
+    expect(player.alive).toBe(true);
+    expect(player.hp).toBe(Math.round(player.maxHp * REVIVE_HP_FRAC));
+    expect(player.relics.reviveAvailable).toBe(false);
   });
 });
