@@ -55,7 +55,7 @@ Generated from sprite alpha for all 156 active projectile, beam, and authored me
 | `x2-fish-launcher` (Fish Launcher) | part-1 (764, 143.1) | part-1 (767, 109) | Yes - The cone originates at the visible centre of the trout's open mouth. |
 | `x2-fool-s-gold-revolver` (Fool's Gold Revolver) | part-1 (255, 33.8) | part-1 (255, 33.8) | No |
 | `x2-frostbite-volley-gun` (Frostbite Volley-Gun) | part-1 (255, 33.5) | part-1 (255, 33.5) | No |
-| `x2-frostbore-scattergun` (Frostbore Scattergun) | part-1 (784, 170)<br>part-2 (1806, 118.4) | part-2 (1794, 118)<br>part-2 (1794, 203) | Yes - The surgically registered break-action barrel layer carries two stacked recessed bores; each accepted shell alternates one exact bore centre while the receiver layer remains muzzle-inert. |
+| `x2-frostbore-scattergun` (Frostbore Scattergun) | part-1 (1806, 121.1) | part-1 (1806, 121.1) | No |
 | `x2-frostfang-speargun` (Frostfang Speargun) | part-1 (255, 21) | part-1 (255, 21) | No |
 | `x2-frostquill-compendium` (Frostquill Compendium) | part-1 (253, 92.7) | part-1 (253, 92.7) | No |
 | `x2-galvanic-coachgun` (Galvanic Coachgun) | part-1 (255, 20.9) | part-1 (255, 20.9) | No |

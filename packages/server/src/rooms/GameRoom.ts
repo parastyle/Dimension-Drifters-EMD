@@ -8,8 +8,6 @@ import {
   type ArenaMap,
   ArenaState,
   ArsenalSlot,
-  advanceChestCadence,
-  appendRareRelic,
   ATTACK_BUFFER_SECONDS,
   ATTACK_HELD_WINDOW,
   type Attr,
@@ -26,8 +24,10 @@ import {
   AUG_PROJECTILE_SPEED,
   AUG_PROJECTILE_SPREAD,
   addImpulse,
-  advanceParryGuardCycle,
   admittedPrismaticBeamRayCount,
+  advanceChestCadence,
+  advanceParryGuardCycle,
+  appendRareRelic,
   BAG_CAP,
   BASE_MONEY_DROP_REACH,
   BEAM_COOL_PER_SECOND,
@@ -64,15 +64,12 @@ import {
   CAST_VOLLEY_PROJECTILE_CAP,
   type CarrySelectionV1,
   CHAIN_MAX_RANGE,
+  CHEST_OPEN_RADIUS,
   type ChainCandidate,
   type ChestCadenceState,
   type ChestKind,
-  chestCadenceInitial,
-  CHEST_OPEN_RADIUS,
   ChestState,
   COMBAT_RECEIPT_CAP,
-  COMMON_RELIC_DEFS,
-  type CommonRelicId,
   COMBO_DAMAGE_CAP_FRAC,
   COMBO_FLAG_AIRBORNE,
   COMBO_FLAG_EMPOWERED,
@@ -84,26 +81,30 @@ import {
   COMBO_LEAP_SETTLE_TICKS,
   COMBO_MAX_ACTIVE,
   COMBO_STEP_MAX,
+  COMMON_RELIC_DEFS,
   CONFLAG_DELAY,
   CombatDelivery,
   CombatReceiptState,
+  type CommonRelicId,
   CRIT_CHANCE_CAP,
   CRIT_MULT,
   characterScale,
-  classifyParryIncidence,
+  chestCadenceInitial,
   clamp,
-  clampParrySlideToNavigation,
   clampBeltFloorY,
+  clampParrySlideToNavigation,
   clampQuakeEpicenter,
+  classifyParryIncidence,
   clipPoiRayLength,
   comboStepForChain,
+  committedMeleeEvaded,
   coneAngles,
   coneStreamHitsCircle,
   countAugment,
   countWeaponCopies,
   critChanceFor,
-  DEBUG_SPAWN_MAX,
   DEATH_WARD_COOLDOWN_SECONDS,
+  DEBUG_SPAWN_MAX,
   DEFAULT_CHARACTER,
   DEFAULT_DIMENSION,
   DEFAULT_WEAPON,
@@ -146,6 +147,8 @@ import {
   EMBERGUARD_HALF_ARC,
   EMBERGUARD_RANGE,
   ENEMY_KINDS,
+  ENEMY_MELEE_COMMIT_SECONDS,
+  ENEMY_MELEE_COMMIT_TICKS,
   ENEMY_RADIUS,
   type EnemyKind,
   EnemyState,
@@ -186,7 +189,6 @@ import {
   isWholeArtCharacter,
   JUGGLE_LANDING_MERCY,
   JUGGLE_MAX_AIR_HITS,
-  type MapZoneId,
   JUGGLE_MAX_CONTROL_SECONDS,
   JUMP_BUFFER_SECONDS,
   type KatanaBeatEffect,
@@ -194,25 +196,27 @@ import {
   LANDING_TIER_SOFT,
   type LandingThumpTier,
   landingThumpTier,
+  lockedLungePointAt,
   lootCooldownMult,
   lootDamageMult,
   MAX_ENEMIES,
   MAX_MONEY_DROPS,
   MAX_PLAYERS,
+  type MapZoneId,
   MELEE_BLADE_HALFWIDTH,
   MELEE_SAMPLE_STEP,
   META_ACCOUNT_REVISION_MAX,
   META_ACCOUNT_SCRIP_MAX,
   META_JOIN_MAX_BYTES,
+  type MeleeComboFamily,
+  type MeleeComboStep,
+  type MetaAccountV5,
   MONEY_DROP_ARM_TICKS,
   MONEY_DROP_FLIGHT_TICKS,
   MONEY_DROP_REACH_MAX,
   MONEY_DROP_REACH_MIN,
-  MoneyDropState,
-  type MeleeComboFamily,
-  type MeleeComboStep,
-  type MetaAccountV5,
   type MoneyBankReceipt,
+  MoneyDropState,
   type MoveStance,
   meleeComboGraceMs,
   meleeComboSelectionFor,
@@ -231,6 +235,7 @@ import {
   PARRY_CHAIN_RIPOSTE_AT,
   PARRY_CHAIN_WINDOW,
   PARRY_COOLDOWN,
+  PARRY_ENEMY_STAGGER_SECONDS,
   PARRY_IFRAMES,
   PARRY_KNOCKBACK,
   PARRY_LAUNCH,
@@ -240,9 +245,8 @@ import {
   PARRY_REFLECT_MIN_DAMAGE,
   PARRY_REFLECT_PIERCE,
   PARRY_REFLECT_SPEED,
-  packParryPresentation,
-  ParryReaction,
   type ParryGuardCycleState,
+  ParryReaction,
   PET_CATALOG_VERSION,
   type PetId,
   type PetMods,
@@ -253,8 +257,9 @@ import {
   PIT_FALL_GRACE,
   PickupState,
   PLAYER_MAX_HP,
-  PLAYER_REGEN,
   PLAYER_RADIUS,
+  PLAYER_REGEN,
+  PlayerAttackMoveMode,
   PlayerState,
   POUND_GATHER_SECONDS,
   POUND_JUMP_COOLDOWN,
@@ -270,15 +275,17 @@ import {
   type ProjectileDamageEnvelope,
   ProjectileState,
   type ProjectileWaveformDef,
+  packParryPresentation,
+  parryGuardSubtypeKey,
+  parrySlideDistance,
   petLevelForXp,
   petModsForLevel,
   petStageBandForLevel,
-  parryGuardSubtypeKey,
-  parrySlideDistance,
   pickEnemyKind,
   pickToughCombo,
   placeArenaGatePair,
   placeChestOnArena,
+  playerAttackInputSpeedMultiplier,
   poiCollisionAt,
   pointInAnnulusGap,
   pointInOrientedRect,
@@ -292,15 +299,16 @@ import {
   type QuirkDef,
   type QuirkEffect,
   quirkForCharacter,
+  RARE_RELIC_DEFS,
   RARITIES,
   RARITY_COMMON,
-  RARE_RELIC_DEFS,
   type RareRelicId,
+  RELIC_COMMON_STACK_CAP,
   RESPAWN_CLEAR_RADIUS,
-  RETURN_DASH_TICKS,
   RETURN_STAGGER_TICKS,
   RETURN_STEP_MAX,
   REVIVE_HP_FRAC,
+  RelicState,
   RIFT_CHANNEL_SECONDS,
   ROLL_ATTACK_CANCEL_SECONDS,
   ROLL_DURATION_TICKS,
@@ -316,14 +324,12 @@ import {
   relicMoveSpeed,
   relicParryRadius,
   relicRollSpeedAtTick,
-  RelicState,
-  RELIC_COMMON_STACK_CAP,
   resolveBeltObstacles,
   resolveBodyCollisions,
-  resolvePoiCollisionInto,
-  rollChestReward,
   resolveOneShotProtection,
+  resolvePoiCollisionInto,
   resolveRelicRevive,
+  rollChestReward,
   runtimeModsForQuirk,
   SECOND_WIND_BASE,
   SHIFTER_FIRST_SECONDS,
@@ -359,7 +365,6 @@ import {
   stepSteeredMovement,
   stepVertical,
   swingDescriptorFor,
-  unlockedWeaponDropPool,
   swingEdgeProgress,
   TelegraphState,
   TgShape,
@@ -430,6 +435,7 @@ import {
   ultimateCodeFor,
   ultimateFamilyForCode,
   ultimateVariantForCode,
+  unlockedWeaponDropPool,
   VASTAGHAR_ENCOUNTER,
   type VastagharArenaMutationKind,
   VastagharMode,
@@ -445,16 +451,16 @@ import {
   type WeaponBankCuratorInputV1,
   type WeaponBankEntryV1,
   type WeaponDef,
-  type WeaponInstanceV1,
   type WeaponDisassemblyReceipt,
+  type WeaponInstanceV1,
   type WeaponProvenance,
   WORM_MAX_SEGMENTS,
   weaponAttackCooldown,
+  weaponDisassemblyValue,
   weaponEffectCueSeconds,
   weaponEffectEmitterPoint,
   weaponEntryInstances,
   weaponEntryPhysicalSize,
-  weaponDisassemblyValue,
   weaponMuzzleWorldPoint,
   weaponMuzzleWorldPointsForShot,
   weaponRarityId,
@@ -477,6 +483,7 @@ import {
   VastagharEncounterRuntime,
   type VastagharTarget,
 } from "./BossController.js";
+import { MeleeAttackTokens } from "./MeleeAttackTokens.js";
 import {
   bankPetBondXp,
   commitWeaponCarry,
@@ -486,9 +493,6 @@ import {
 } from "./progression.js";
 import { SpatialGrid } from "./SpatialGrid.js";
 
-/** Horde-melee rows reuse the existing telegraph schema; the id carries cosmetic ownership client-side. */
-const MELEE_TELEGRAPH_PREFIX = "melee:";
-const MELEE_LOCK_PHASE = 0.65;
 /** §51 duel-token courtesy distance: a combo tough whose victim is already CLAIMED holds a visible
  *  ring-out orbit here instead of stacking a second unreadable choreography (G12 crossfire law). */
 const COMBO_RINGOUT_ORBIT = 260;
@@ -1014,7 +1018,7 @@ interface CombatState {
  *  anchors survive catch-up sub-steps exactly where accumulating floats drift. The full combo brain is
  *  this entry; only the three appended presentation edges (comboSeq/comboFlags/juggledSeq) sync. */
 interface DuelistComboState {
-  phase: "idle" | "leapwind" | "leap" | "settle" | "windup" | "return" | "recover";
+  phase: "idle" | "leapwind" | "leap" | "settle" | "windup" | "commit" | "return" | "recover";
   t: number;
   hits: number;
   wind: number;
@@ -1023,13 +1027,19 @@ interface DuelistComboState {
   ly?: number;
   tg?: string;
   leapCd?: number;
-  /** Fixed post-lunge sector captured at Lock. The advertised row and damage consume these same values. */
+  /** Fixed lunge vector captured at the white pop. Walking never changes this committed target. */
   strike?: {
-    x: number;
-    y: number;
+    startX: number;
+    startY: number;
+    endX: number;
+    endY: number;
     aimX: number;
     aimY: number;
-    tg: string;
+    targetId: string;
+    targetX: number;
+    targetY: number;
+    range: number;
+    authoredEscape: boolean;
   };
   // ── §51 TOUGH-COMBO machine (all optional so legacy entries stay shape-compatible) ──
   /** Keys shared TOUGH_COMBOS; "" / undefined = the legacy derived path (unchanged). */
@@ -1273,6 +1283,12 @@ export class GameRoom extends Room<ArenaState> {
    *  now telegraphs (no standalone "swing" phase). §51 widened with the tick-anchored TOUGH-COMBO fields
    *  (see DuelistComboState). Pruned with the enemy. */
   private readonly comboState = new Map<string, DuelistComboState>();
+  /** B33 ordinary melee slots: at most three non-elite attack performances may pressure one player. */
+  private readonly meleeAttackTokens = new MeleeAttackTokens();
+  /** Training-only live-gate fixture: consume one real player defense on the next white-pop tick. */
+  private readonly debugCommitDefense = new Map<string, "roll" | "parry">();
+  /** Training-only live-gate receipt: sample one real unauthored attack-movement integration tick. */
+  private readonly debugAttackMoveCapture = new Set<string>();
   /** §51 DUEL TOKENS (G12): victim player id → the ONE enemy id running the combo language against them.
    *  A second combo-capable tough holds a ring-out orbit until the token frees; map size doubles as the
    *  ≤COMBO_MAX_ACTIVE arena-wide performance count. Freed at recover entry / enemy death / transients. */
@@ -2154,9 +2170,28 @@ export class GameRoom extends Room<ArenaState> {
       this.spawnBoss(kindId, false);
     });
 
+    // B33 private live-gate fixture. It is unreachable in production and does not invent a defense:
+    // the next ordinary white-pop tick calls the same roll/parry machinery as accepted player input.
+    this.onMessage("debugArmCommitDefense", (client, message: { kind?: "roll" | "parry" }) => {
+      if (
+        !this.devToolsEnabled() ||
+        this.state.mode !== "training" ||
+        !this.takeAction(client) ||
+        (message?.kind !== "roll" && message?.kind !== "parry")
+      )
+        return;
+      this.debugCommitDefense.set(client.sessionId, message.kind);
+    });
+
     // §21 Dev summon (Tab menu): spawn N of a chosen enemy kind on a ring around the requester, optionally
     // TOUGH. Training-mode ONLY — it's a sandbox affordance (so any client may summon; both players test),
     // and gating to training keeps it out of a live survival run. All fields validated (untrusted client).
+    this.onMessage("debugArmAttackMoveCapture", (client) => {
+      if (!this.devToolsEnabled() || this.state.mode !== "training" || !this.takeAction(client))
+        return;
+      this.debugAttackMoveCapture.add(client.sessionId);
+    });
+
     this.onMessage(
       "debugSpawn",
       (
@@ -2219,6 +2254,7 @@ export class GameRoom extends Room<ArenaState> {
     this.groundZoneInputWasHeld.clear();
     this.enemyZoneSlow.clear();
     this.comboState.clear();
+    this.meleeAttackTokens.clear();
     this.duelTokens.clear(); // §51 no duel claim may ghost-carry into the fresh run
     this.dodgeState.clear(); // §15 v0.113
     this.poundEnemyEffects.clear();
@@ -2271,6 +2307,7 @@ export class GameRoom extends Room<ArenaState> {
       const player = this.state.players.get(id);
       if (player) {
         player.ultPhase = UltimatePhase.Idle;
+        player.dualWield.attackMoveMode = PlayerAttackMoveMode.Normal;
         this.cancelMoveStance(player, c, true);
       }
     }
@@ -4429,6 +4466,8 @@ export class GameRoom extends Room<ArenaState> {
     this.refreshAllChestOpened();
     this.inputs.delete(client.sessionId);
     this.combat.delete(client.sessionId);
+    this.debugCommitDefense.delete(client.sessionId);
+    this.debugAttackMoveCapture.delete(client.sessionId);
     // Transport loss is not a terminal weapon result. Account, pet accrual, exact escrow, and the private
     // body/debt snapshot remain reserved; accepted extraction/wipe settles them even while disconnected.
     // Host left → hand off to whoever's still here (or null if the room's now empty).
@@ -4695,6 +4734,31 @@ export class GameRoom extends Room<ArenaState> {
         c.parryChainT = 0;
       }
     }
+  }
+
+  /** Training gate only: execute one already-armed real defense on the authoritative white-pop tick. */
+  private consumeDebugCommitDefense(player: PlayerState, attacker: EnemyState): void {
+    const defense = this.debugCommitDefense.get(player.id);
+    if (!defense) return;
+    this.debugCommitDefense.delete(player.id);
+    const combat = this.combat.get(player.id);
+    if (!combat) return;
+    if (defense === "parry") {
+      this.executeParry(player, combat);
+      return;
+    }
+    const input = this.inputs.get(player.id);
+    if (!input) return;
+    const dx = player.x - attacker.x;
+    const dy = player.y - attacker.y;
+    const length = Math.hypot(dx, dy) || 1;
+    this.consumeMoveStanceInput(player, input, combat, {
+      ...input.held,
+      dx: dx / length,
+      dy: dy / length,
+      slide: true,
+      slideHeld: true,
+    });
   }
 
   /** Consume the two jump-feel command bits on their exact acknowledged input tick. */
@@ -5341,6 +5405,7 @@ export class GameRoom extends Room<ArenaState> {
       const input = this.inputs.get(id);
       if (!input) return;
       if (!player.alive) {
+        player.dualWield.attackMoveMode = PlayerAttackMoveMode.Normal;
         const frozenCombat = this.combat.get(id);
         if (frozenCombat) this.cancelMoveStance(player, frozenCombat, true);
         // §7 a freeze/down is an INTENTIONAL stop — zero the steering velocity so the player doesn't
@@ -5353,6 +5418,7 @@ export class GameRoom extends Room<ArenaState> {
         return;
       }
       if (this.ultimateOwnsMovement(player)) {
+        player.dualWield.attackMoveMode = PlayerAttackMoveMode.Normal;
         input.mvx = 0;
         input.mvy = 0;
         player.mvx = 0;
@@ -5384,6 +5450,14 @@ export class GameRoom extends Room<ArenaState> {
         ultimateFamilyForCode(player.ultArchetype) === UltimateFamily.SunspiteComet
           ? channelSpeed * 0.55
           : channelSpeed;
+      const attackMoveMode = this.playerAttackMoveMode(id, dt);
+      player.dualWield.attackMoveMode = attackMoveMode;
+      const inputMoveSpeed = beamSpeed * playerAttackInputSpeedMultiplier(attackMoveMode);
+      const captureAttackMove =
+        attackMoveMode === PlayerAttackMoveMode.InputSlow && this.debugAttackMoveCapture.delete(id);
+      const movementStartX = player.x;
+      const movementStartY = player.y;
+      let normalSpeedProjection: { x: number; y: number } | undefined;
       let nextX: number;
       let nextY: number;
       const activeRoll =
@@ -5435,13 +5509,32 @@ export class GameRoom extends Room<ArenaState> {
           beamRuntime?.stance === STANCE_CROUCH ||
           beamRuntime?.stance === STANCE_POUND ||
           (beamRuntime?.recoveryT ?? 0) > 0;
+        if (captureAttackMove) {
+          normalSpeedProjection = this.belt
+            ? stepSteeredMovement(
+                player,
+                { vx: input.mvx, vy: input.mvy },
+                rooted ? ZERO_MOVE_INPUT : input.held,
+                dt,
+                beamSpeed,
+                BELT_Y0,
+                BELT_Y0 + DEPTH_MAX,
+              )
+            : stepSteeredMovement(
+                player,
+                { vx: input.mvx, vy: input.mvy },
+                rooted ? ZERO_MOVE_INPUT : input.held,
+                dt,
+                beamSpeed,
+              );
+        }
         const next = this.belt
           ? stepSteeredMovement(
               player,
               { vx: input.mvx, vy: input.mvy },
               rooted ? ZERO_MOVE_INPUT : input.held,
               dt,
-              beamSpeed,
+              inputMoveSpeed,
               BELT_Y0,
               BELT_Y0 + DEPTH_MAX,
             )
@@ -5450,7 +5543,7 @@ export class GameRoom extends Room<ArenaState> {
               { vx: input.mvx, vy: input.mvy },
               rooted ? ZERO_MOVE_INPUT : input.held,
               dt,
-              beamSpeed,
+              inputMoveSpeed,
             );
         input.mvx = next.vx;
         input.mvy = next.vy;
@@ -5464,6 +5557,23 @@ export class GameRoom extends Room<ArenaState> {
       player.mvy = input.mvy;
       // §20 momentum layer (Stage A): integrate the impulse shove (recoil / knockback) on top of WASD,
       // then decay it. The authoritative position is the input base PLUS the shove.
+      if (captureAttackMove && normalSpeedProjection) {
+        const actualDistance = Math.hypot(nextX - movementStartX, nextY - movementStartY);
+        const normalDistance = Math.hypot(
+          normalSpeedProjection.x - movementStartX,
+          normalSpeedProjection.y - movementStartY,
+        );
+        this.sendOwnerMessage(id, "b33AttackMoveCapture", {
+          tick: this.state.tick,
+          mode: attackMoveMode,
+          inputSpeed: inputMoveSpeed,
+          normalInputSpeed: beamSpeed,
+          configuredRatio: playerAttackInputSpeedMultiplier(attackMoveMode),
+          actualDistance,
+          normalDistance,
+          displacementRatio: normalDistance > 1e-9 ? actualDistance / normalDistance : 0,
+        });
+      }
       player.x = nextX;
       player.y = nextY;
       const imp = stepImpulse(player, player, dt);
@@ -6126,8 +6236,8 @@ export class GameRoom extends Room<ArenaState> {
       // §51 pit cheese stays legal, but the dead choreography cannot leave a marker/token on the wire for
       // one extra patch. Terrain death cleans the same rows the next-tick reaper would have removed.
       const combo = this.comboState.get(eid);
-      if (combo?.strike) this.removeTelegraphRow(combo.strike.tg);
       if (combo?.tg) this.removeTelegraphRow(combo.tg);
+      this.meleeAttackTokens.releaseHolder(eid);
       if (combo?.targetId && this.duelTokens.get(combo.targetId) === eid)
         this.duelTokens.delete(combo.targetId);
       this.comboState.delete(eid);
@@ -6144,6 +6254,7 @@ export class GameRoom extends Room<ArenaState> {
         return;
       const kind = ENEMY_KINDS[enemy.kind];
       if (!kind) return;
+      if (effectiveMelee(kind)) return; // B33 melee damage is delivered only by committed attacks.
       this.state.players.forEach((player) => {
         if (!player.alive) return;
         const pcc = this.combat.get(player.id);
@@ -6211,6 +6322,7 @@ export class GameRoom extends Room<ArenaState> {
           return;
         }
         player.alive = false; // DOWNED
+        this.meleeAttackTokens.releaseTarget(player.id);
         if (this.vastagharEncounter) this.vastagharDownTicks.set(player.id, this.state.tick);
         return;
       }
@@ -7832,6 +7944,23 @@ export class GameRoom extends Room<ArenaState> {
 
   /** Resolve an accepted lunge across its authored active window. Cursor intent is captured at acceptance;
    * the endpoint and complete travel segment are navigation-validated before authoritative movement. */
+  private playerAttackMoveMode(playerId: string, dt: number): number {
+    const lunge = this.pendingWeaponLunges.get(playerId);
+    if (lunge && (lunge.elapsedSeconds !== undefined || lunge.t <= dt + 1e-9)) {
+      // Authored combo travel owns displacement; input never stacks on top.
+      return PlayerAttackMoveMode.RootMotion;
+    }
+    for (const swing of this.meleeSwings.values()) {
+      if (swing.playerId !== playerId || swing.waitForWeaponLunge) continue;
+      const activeStart = swing.swing.activeStartSeconds;
+      const activeEnd = swing.swing.activeEndSeconds;
+      if (swing.elapsed < activeEnd && swing.elapsed + dt + 1e-9 >= activeStart) {
+        return PlayerAttackMoveMode.InputSlow;
+      }
+    }
+    return PlayerAttackMoveMode.Normal;
+  }
+
   private stepPendingWeaponLunges(dt: number): void {
     for (const [playerId, lunge] of this.pendingWeaponLunges) {
       const player = this.state.players.get(playerId);
@@ -9192,6 +9321,7 @@ export class GameRoom extends Room<ArenaState> {
     this.enemyFireCd.clear();
     this.zonerDropCd.clear();
     this.comboState.clear();
+    this.meleeAttackTokens.clear();
     this.duelTokens.clear();
     this.dodgeState.clear();
     this.poundEnemyEffects.clear();
@@ -9490,10 +9620,8 @@ export class GameRoom extends Room<ArenaState> {
     this.state.bossPhase = 0;
     this.state.bossKind = "";
     this.state.bossSlamT = 0; // §16 deprecated slam scalars stay at 0
-    // Boss disposal owns its rows. Preserve any independently winding horde sectors through a boss death.
-    for (const id of [...this.state.telegraphs.keys()]) {
-      if (!id.startsWith(MELEE_TELEGRAPH_PREFIX)) this.state.telegraphs.delete(id);
-    }
+    // Boss disposal owns every remaining row; horde melee no longer publishes floor geometry.
+    this.state.telegraphs.clear();
   }
 
   /** §16 v0.109 the emit surface handed to the BossController — turns a boss def's abstract "casts" into real
@@ -9649,38 +9777,6 @@ export class GameRoom extends Room<ArenaState> {
     t.kindTag = kindTag;
     this.state.telegraphs.set(t.id, t);
     return t.id;
-  }
-
-  /** Publish one fixed horde-melee sector without adding a second timing field to the wire contract.
-   *  §51 optional style overrides: `danger` 1 = a RED dodge/jump-only combo step (H1's low sweep);
-   *  `kindTag` 7 = the deterministic gold/double-glint bait vocabulary (bait step AND empowered return;
-   *  still white/parryable — art differs, shape does not). */
-  private addMeleeTelegraphRow(
-    enemyId: string,
-    x: number,
-    y: number,
-    range: number,
-    halfArc: number,
-    rot: number,
-    phase: number,
-    danger = 0,
-    kindTag = 6,
-  ): string {
-    const id = `${MELEE_TELEGRAPH_PREFIX}${enemyId}`;
-    const t = new TelegraphState();
-    t.id = id;
-    t.shape = TgShape.Cone;
-    t.x = x;
-    t.y = y;
-    t.a = range;
-    t.b = halfArc;
-    t.rot = rot;
-    // Creation-only snapshot; clients bind this row to its owner's existing windup scalar via the id.
-    t.t = phase;
-    t.danger = danger;
-    t.kindTag = kindTag;
-    this.state.telegraphs.set(id, t);
-    return id;
   }
 
   /** Set a telegraph row's fill progress 0→1. */
@@ -10101,8 +10197,8 @@ export class GameRoom extends Room<ArenaState> {
       )
         continue;
       const combo = this.comboState.get(id);
-      if (combo?.strike) this.removeTelegraphRow(combo.strike.tg);
       if (combo?.tg) this.removeTelegraphRow(combo.tg);
+      this.meleeAttackTokens.releaseHolder(id);
       if (combo?.targetId && this.duelTokens.get(combo.targetId) === id)
         this.duelTokens.delete(combo.targetId);
       this.state.enemies.delete(id);
@@ -11057,8 +11153,8 @@ export class GameRoom extends Room<ArenaState> {
     }
     this.ultimateStunUntil.delete(eid);
     this.ultimateBrands.delete(eid);
-    if (combo?.strike) this.removeTelegraphRow(combo.strike.tg);
     if (combo?.tg) this.removeTelegraphRow(combo.tg);
+    this.meleeAttackTokens.releaseHolder(eid);
     if (combo?.targetId && this.duelTokens.get(combo.targetId) === eid)
       this.duelTokens.delete(combo.targetId);
     if (combo) combo.strike = undefined;
@@ -11389,8 +11485,7 @@ export class GameRoom extends Room<ArenaState> {
     }
   }
 
-  /** §15 duelists (ronin): close to `melee.approach`, telegraph `windup`, then swing `hits` times (each
-   *  an arc hit toward the nearest player), then `recover`. Movement + the combo state machine. */
+  /** §15/B33 duelists and derived contact melee: chase, acquire one target slot, ramp on-body, then commit. */
   private enemyGroundZoneSlow(enemyId: string): number {
     const slow = this.enemyZoneSlow.get(enemyId);
     if (!slow) return 1;
@@ -11416,11 +11511,11 @@ export class GameRoom extends Room<ArenaState> {
     if (status?.kind === "slow") this.applyEnemySlow(enemyId, status.multiplier, status.seconds);
   }
 
-  private stepDuelists(dt: number, bodies: Vec2[]): void {
+  private stepDuelists(dt: number, _bodies: Vec2[]): void {
     for (const [id, dead] of this.comboState) {
       if (!this.state.enemies.has(id)) {
         if (dead?.tg) this.removeTelegraphRow(dead.tg); // §15 v0.113 a leaper killed mid-leap: clear its marker
-        if (dead?.strike) this.removeTelegraphRow(dead.strike.tg);
+        this.meleeAttackTokens.releaseHolder(id);
         // §51 a combo tough killed mid-performance frees its victim's duel token (G12 co-op rescue).
         if (dead?.targetId && this.duelTokens.get(dead.targetId) === id)
           this.duelTokens.delete(dead.targetId);
@@ -11448,27 +11543,30 @@ export class GameRoom extends Room<ArenaState> {
         this.updateEnemyGrid(id, enemy);
         return;
       }
-      const target = this.nearestDoorDecoy(enemy) ?? nearestPoint(enemy, bodies);
+      let target = st.targetId ? this.state.players.get(st.targetId) : undefined;
+      if (!target?.alive) {
+        if (st.targetId) this.meleeAttackTokens.releaseHolder(id);
+        st.targetId = "";
+        st.strike = undefined;
+        if (st.phase !== "recover") st.phase = "idle";
+        target = this.nearestLivingPlayer(enemy);
+      }
       const dist = target
         ? Math.hypot(target.x - enemy.x, target.y - enemy.y)
         : Number.POSITIVE_INFINITY;
-      // Move toward the target only while idle + out of reach; the combo advances via LUNGES (below).
-      if (st.phase === "idle" && target && dist > m.approach) {
-        const next = stepEnemyChase({ x: enemy.x, y: enemy.y }, target, moveSpeed, dt);
-        enemy.x = next.x;
-        enemy.y = next.y;
-      }
-      // §20 Sekiro lean-in: creep slowly forward DURING a windup so the wind-up reads as "stepping into it".
-      if (st.phase === "windup" && !st.strike && target && dist > m.range * 0.45) {
-        const next = stepEnemyChase({ x: enemy.x, y: enemy.y }, target, moveSpeed * 0.28, dt);
-        enemy.x = next.x;
-        enemy.y = next.y;
-      }
-      st.t -= dt;
       const leap = kind.leap;
       if (st.phase === "idle") {
+        enemy.windup = 0;
         st.leapCd = Math.max(0, (st.leapCd ?? 0) - dt);
-        if (leap && target && (st.leapCd ?? 0) <= 0 && dist > m.approach && dist <= leap.range) {
+        if (!target) return;
+        if (dist > m.approach && !(leap && (st.leapCd ?? 0) <= 0 && dist <= leap.range)) {
+          const next = stepEnemyChase({ x: enemy.x, y: enemy.y }, target, moveSpeed, dt);
+          enemy.x = next.x;
+          enemy.y = next.y;
+        } else if (!this.meleeAttackTokens.acquire(target.id, id)) {
+          this.postureMeleeEnemy(enemy, id, target, moveSpeed, m.approach, dt);
+        } else if (leap && (st.leapCd ?? 0) <= 0 && dist > m.approach && dist <= leap.range) {
+          st.targetId = target.id;
           // §15 v0.113 LEAP: commit — telegraph a red landing marker ON the target (announcing the combo),
           // then vault there and flurry on landing. Clear the marker or eat it.
           st.lx = target.x;
@@ -11476,7 +11574,8 @@ export class GameRoom extends Room<ArenaState> {
           st.tg = this.addTelegraphRow(0, st.lx, st.ly, m.range, 1, 2); // circle · dodge-red · light-poof land
           st.phase = "leapwind";
           st.t = leap.windup;
-        } else if (target && dist <= m.approach) {
+        } else if (dist <= m.approach) {
+          st.targetId = target.id;
           st.phase = "windup"; // begin the first telegraphed strike
           st.hits = m.hits;
           st.wind = m.windup;
@@ -11484,6 +11583,7 @@ export class GameRoom extends Room<ArenaState> {
           st.strike = undefined;
         }
       } else if (st.phase === "leapwind") {
+        st.t -= dt;
         // Winding up the leap in place — fill the landing marker so the dodge window reads.
         if (st.tg && leap)
           this.setTelegraphRowProgress(st.tg, Math.max(0, Math.min(1, 1 - st.t / leap.windup)));
@@ -11492,6 +11592,7 @@ export class GameRoom extends Room<ArenaState> {
           st.t = leap?.airTime ?? 0.28;
         }
       } else if (st.phase === "leap") {
+        st.t -= dt;
         // Airborne: cover the remaining distance to the landing spot over the remaining air time.
         if (st.lx !== undefined && st.ly !== undefined) {
           const dx = st.lx - enemy.x;
@@ -11516,66 +11617,111 @@ export class GameRoom extends Room<ArenaState> {
           st.strike = undefined;
         }
       } else if (st.phase === "windup") {
+        st.t -= dt;
         const phase = st.wind > 0 ? Math.max(0, Math.min(1, 1 - st.t / st.wind)) : 0;
-        if (!st.strike && target && st.t > 0 && phase >= MELEE_LOCK_PHASE) {
-          const strike = this.planDuelistStrike(enemy, target, m);
-          const rot = Math.atan2(strike.aimY, strike.aimX);
-          const tg = this.addMeleeTelegraphRow(
-            id,
-            strike.x,
-            strike.y,
-            m.range,
-            m.halfArc,
-            rot,
-            phase,
-          );
-          st.strike = { ...strike, tg };
+        enemy.windup = phase;
+        // Modest tracking belongs only to the ramp. The white-pop edge below freezes the vector.
+        if (target && dist > m.range * 0.45) {
+          const next = stepEnemyChase({ x: enemy.x, y: enemy.y }, target, moveSpeed * 0.28, dt);
+          enemy.x = next.x;
+          enemy.y = next.y;
         }
         if (st.t <= 0) {
-          // Strike from the exact advertised Lock geometry. The fallback only covers a timer that somehow
-          // skipped the lock sample; normal 20 Hz authored windups always commit several ticks beforehand.
-          const strike = st.strike;
-          if (strike) {
-            enemy.x = strike.x;
-            enemy.y = strike.y;
-            this.removeTelegraphRow(strike.tg);
-            this.duelistSwing(enemy, id, target, m, strike);
-          } else {
-            this.duelistLunge(enemy, target, m, dist);
-            this.duelistSwing(enemy, id, target, m);
+          if (!target?.alive) {
+            this.enterOrdinaryMeleeRecover(enemy, id, st, m.recover);
+            return;
           }
+          st.strike = this.planDuelistStrike(enemy, target, m, target.id);
+          st.phase = "commit";
+          st.t = ENEMY_MELEE_COMMIT_SECONDS;
+          enemy.windup = 0;
+          enemy.commitSeq = (enemy.commitSeq + 1) & 0xff;
+          this.consumeDebugCommitDefense(target, enemy);
+        }
+      } else if (st.phase === "commit") {
+        st.t = Math.max(0, st.t - dt);
+        if (st.t <= 1e-9) st.t = 0;
+        enemy.windup = 0;
+        const strike = st.strike;
+        if (!strike) {
+          this.enterOrdinaryMeleeRecover(enemy, id, st, m.recover);
+          return;
+        }
+        const committed = this.state.players.get(strike.targetId);
+        if (committed?.alive)
+          this.captureAuthoredMeleeEscape(strike, committed, this.combat.get(committed.id));
+        const point = lockedLungePointAt(
+          { x: strike.startX, y: strike.startY },
+          { x: strike.endX, y: strike.endY },
+          ENEMY_MELEE_COMMIT_SECONDS - st.t,
+        );
+        enemy.x = point.x;
+        enemy.y = point.y;
+        if (st.t <= 0) {
+          enemy.x = strike.endX;
+          enemy.y = strike.endY;
+          this.duelistSwing(enemy, id, committed, m, strike);
           st.strike = undefined;
-          // A riposte may have changed the combo to its one-second stagger inside `duelistSwing`.
-          const staggered = this.comboState.get(id)?.phase === "recover" && st.t === 1;
-          if (!staggered) {
+          // A parry enters recover inside resolveParry and owns the token release/stagger.
+          if (st.phase === "commit") {
             st.hits -= 1;
             if (st.hits > 0) {
               st.phase = "windup";
               st.wind = m.swingGap;
               st.t = m.swingGap;
             } else {
+              this.meleeAttackTokens.releaseHolder(id);
+              st.targetId = "";
               st.phase = "recover";
               st.t = m.recover;
             }
           }
         }
-      } else if (st.t <= 0) {
-        st.phase = "idle"; // recover done
+      } else if (st.phase === "recover") {
+        st.t -= dt;
+        enemy.windup = 0;
+        if (st.t <= 0) st.phase = "idle";
       }
-      // §8 white-tell TELEGRAPH (Stage C): every windup (the first AND each follow-up) ramps `windup` 0→1
-      // so the client fills a white rhythm ring + whitens the enemy before EACH hit — a parryable beat.
-      enemy.windup =
-        st.phase === "windup" && st.wind > 0 ? Math.max(0, Math.min(1, 1 - st.t / st.wind)) : 0;
       this.updateEnemyGrid(id, enemy);
     });
   }
 
-  /** Capture the exact capped-lunge origin and target-relative aim that both telegraph and hit will consume. */
+  /** Non-holder movement stays legible: close normally, then take a deterministic ring-out posture. */
+  private postureMeleeEnemy(
+    enemy: EnemyState,
+    id: string,
+    target: PlayerState,
+    speed: number,
+    approach: number,
+    dt: number,
+  ): void {
+    const dx = target.x - enemy.x;
+    const dy = target.y - enemy.y;
+    const distance = Math.hypot(dx, dy);
+    if (distance > approach + 24) {
+      const next = stepEnemyChase(enemy, target, speed, dt);
+      enemy.x = next.x;
+      enemy.y = next.y;
+      return;
+    }
+    if (distance <= 0.001) return;
+    const sign = (id.charCodeAt(id.length - 1) & 1) === 0 ? 1 : -1;
+    const tangentX = (-dy / distance) * sign;
+    const tangentY = (dx / distance) * sign;
+    const radius = ENEMY_KINDS[enemy.kind]?.radius ?? ENEMY_RADIUS;
+    const maxX =
+      this.belt && this.beltLevel ? this.beltLevel.length - radius : ARENA_WIDTH - radius;
+    enemy.x = clamp(enemy.x + tangentX * speed * 0.22 * dt, radius, maxX);
+    enemy.y = clamp(enemy.y + tangentY * speed * 0.22 * dt, radius, ARENA_HEIGHT - radius);
+  }
+
+  /** Capture one nav-valid endpoint and immutable target/vector at the white pop. */
   private planDuelistStrike(
     enemy: EnemyState,
-    target: Vec2,
+    target: PlayerState,
     m: { range: number; step: number },
-  ): { x: number; y: number; aimX: number; aimY: number } {
+    targetId: string,
+  ): NonNullable<DuelistComboState["strike"]> {
     const dx = target.x - enemy.x;
     const dy = target.y - enemy.y;
     const dist = Math.hypot(dx, dy);
@@ -11584,91 +11730,140 @@ export class GameRoom extends Room<ArenaState> {
     const floor = m.range * 0.45;
     const move = Math.max(0, Math.min(m.step, dist - floor));
     const r = ENEMY_KINDS[enemy.kind]?.radius ?? ENEMY_RADIUS;
-    const x = clamp(enemy.x + nx * move, r, ARENA_WIDTH - r);
-    const y = clamp(enemy.y + ny * move, r, ARENA_HEIGHT - r);
-    const aimX = target.x - x;
-    const aimY = target.y - y;
+    const maxX = this.belt && this.beltLevel ? this.beltLevel.length - r : ARENA_WIDTH - r;
+    const rawX = clamp(enemy.x + nx * move, r, maxX);
+    const rawY = clamp(enemy.y + ny * move, r, ARENA_HEIGHT - r);
+    const end = this.navValidEnemyLungeDest(enemy, rawX, rawY);
     return {
-      x,
-      y,
-      aimX: Math.abs(aimX) + Math.abs(aimY) > 0.001 ? aimX : nx,
-      aimY: Math.abs(aimX) + Math.abs(aimY) > 0.001 ? aimY : ny,
+      startX: enemy.x,
+      startY: enemy.y,
+      endX: end.x,
+      endY: end.y,
+      aimX: nx,
+      aimY: ny,
+      targetId,
+      targetX: target.x,
+      targetY: target.y,
+      range: m.range,
+      authoredEscape: false,
     };
   }
 
-  /** §20 one duelist LUNGE: dash the enemy `m.step` px toward the target, but never inside `range×0.45`
-   *  (it stays at sword's length so the advance reads as pressure, not a body-block stack). */
-  private duelistLunge(
-    enemy: EnemyState,
-    target: Vec2 | null,
-    m: { range: number; step: number },
-    dist: number,
-  ): void {
-    if (!target || dist < 0.001) return;
-    const floor = m.range * 0.45;
-    const move = Math.max(0, Math.min(m.step, dist - floor));
-    if (move <= 0) return;
-    const dx = (target.x - enemy.x) / dist;
-    const dy = (target.y - enemy.y) / dist;
+  /** Sample the complete accepted enemy segment so the fixed lunge cannot cross a pit or landmark. */
+  private navValidEnemyLungeDest(enemy: EnemyState, targetX: number, targetY: number): Vec2 {
     const r = ENEMY_KINDS[enemy.kind]?.radius ?? ENEMY_RADIUS;
-    enemy.x = clamp(enemy.x + dx * move, r, ARENA_WIDTH - r);
-    enemy.y = clamp(enemy.y + dy * move, r, ARENA_HEIGHT - r);
+    const maxX = this.belt && this.beltLevel ? this.beltLevel.length - r : ARENA_WIDTH - r;
+    const endX = clamp(targetX, r, maxX);
+    const endY = clamp(targetY, r, ARENA_HEIGHT - r);
+    const dx = endX - enemy.x;
+    const dy = endY - enemy.y;
+    const samples = Math.max(1, Math.ceil(Math.hypot(dx, dy) / 2));
+    let safeX = enemy.x;
+    let safeY = enemy.y;
+    for (let sample = 1; sample <= samples; sample++) {
+      const t = sample / samples;
+      const x = enemy.x + dx * t;
+      const y = enemy.y + dy * t;
+      if (this.belt && this.beltLevel) {
+        if (beltPitAtX(this.beltLevel, x)) break;
+        const resolved = resolveBeltObstacles(this.beltLevel, x, y, r);
+        if (Math.hypot(resolved.x - x, resolved.y - y) > 1e-6) break;
+        safeX = x;
+        safeY = clampBeltFloorY(this.beltLevel, x, y, r);
+      } else {
+        if (isPitAtPx(this.map, x, y)) break;
+        if (this.map.pois.length > 0) {
+          const resolved = resolvePoiCollisionInto(this.map, x, y, r, this.poiResolveScratch);
+          if (Math.hypot(resolved.x - x, resolved.y - y) > 1e-6) break;
+        }
+        safeX = x;
+        safeY = y;
+      }
+    }
+    return { x: safeX, y: safeY };
   }
 
-  /** One duelist swing: bump `atkSeq` (client animates) + arc-damage players in front. A player whose parry
-   *  i-frames are up has PARRIED the telegraphed attack (§8) — it's negated, the attacker is knocked back,
-   *  and `parriedSeq` ticks the client's white parry flash. (The parry's augment offense already fired.) */
+  private captureAuthoredMeleeEscape(
+    strike: NonNullable<DuelistComboState["strike"]>,
+    target: PlayerState,
+    combat: CombatState | undefined,
+  ): void {
+    if (strike.authoredEscape) return;
+    const beyond =
+      Math.hypot(target.x - strike.endX, target.y - strike.endY) > strike.range + PLAYER_RADIUS;
+    if (!beyond) return;
+    const authoredMotion =
+      target.height > GROUND_EPSILON ||
+      combat?.stance === STANCE_DASH ||
+      combat?.stance === STANCE_SLIDE ||
+      this.pendingWeaponLunges.has(target.id) ||
+      this.ultimateOwnsMovement(target);
+    if (authoredMotion) strike.authoredEscape = true;
+  }
+
+  private enterOrdinaryMeleeRecover(
+    enemy: EnemyState,
+    id: string,
+    st: DuelistComboState,
+    seconds: number,
+  ): void {
+    this.meleeAttackTokens.releaseHolder(id);
+    st.targetId = "";
+    st.strike = undefined;
+    st.phase = "recover";
+    st.t = Math.max(seconds, PARRY_ENEMY_STAGGER_SECONDS);
+    enemy.windup = 0;
+  }
+
+  /** Resolve against the committed player identity. Walking/strafing is deliberately not an answer. */
   private duelistSwing(
     enemy: EnemyState,
     enemyId: string,
-    target: Vec2 | null,
-    m: { range: number; halfArc: number; damage: number },
-    committed?: { aimX: number; aimY: number },
+    target: PlayerState | undefined,
+    m: { damage: number },
+    committed: NonNullable<DuelistComboState["strike"]>,
   ): void {
     enemy.atkSeq = (enemy.atkSeq + 1) % 100000;
-    const aimX = committed?.aimX ?? (target ? target.x - enemy.x : 1);
-    const aimY = committed?.aimY ?? (target ? target.y - enemy.y : 0);
+    if (!target?.alive) return;
     const dmgMul = enemy.tough ? TOUGH_DAMAGE_MULT : 1;
-    this.state.players.forEach((player) => {
-      if (!player.alive) return;
-      if (!inMeleeArc(enemy, aimX, aimY, player, m.range, m.halfArc)) return;
-      const pc = this.combat.get(player.id);
-      if (pc && pc.invuln > 0) {
-        // §8 PARRIED — negate + punish + FLOW + the v0.114 chain reward (shared with the boss meleeCombo).
+    const pc = this.combat.get(target.id);
+    const parrying = (pc?.invuln ?? 0) > 0;
+    const rolling = !!pc && this.slideInvulnerable(pc);
+    const airborne = target.height > GROUND_EPSILON;
+    if (
+      committedMeleeEvaded({
+        parrying,
+        rollInvulnerable: rolling,
+        airborne,
+        authoredDisplacementBeyondReach: committed.authoredEscape,
+      })
+    ) {
+      if (parrying && pc)
         this.resolveParry(
-          player,
+          target,
           pc,
           enemy,
           enemyId,
           m.damage * dmgMul * depthDamageScale(this.state.depth),
         );
-        return;
-      }
-      if (pc && this.slideInvulnerable(pc)) {
-        this.noteSlideDodge(player);
-        return;
-      }
-      if (pc && pc.juggleMercy > 0) return; // §51 G10 touchdown mercy covers ALL melee, legacy included
-      // §20 a clean (un-parried) hit lands with UMPH — damage + a knockback shove along the strike, so a
-      // duelist combo visibly drives you back (and makes parrying the alternative feel earned).
-      this.damagePlayer(player, m.damage * dmgMul * depthDamageScale(this.state.depth), "enemy");
-      const hx = player.x - enemy.x;
-      const hy = player.y - enemy.y;
-      const hd = Math.hypot(hx, hy) || 1;
-      const k = addImpulse(
-        player,
-        (hx / hd) * HIT_KNOCKBACK_IMPULSE,
-        (hy / hd) * HIT_KNOCKBACK_IMPULSE,
-      );
-      player.vx = k.vx;
-      player.vy = k.vy;
-    });
+      else if (rolling) this.noteSlideDodge(target);
+      return;
+    }
+    if (pc && pc.juggleMercy > 0) return;
+    this.damagePlayer(target, m.damage * dmgMul * depthDamageScale(this.state.depth), "enemy");
+    const impulse = addImpulse(
+      target,
+      committed.aimX * HIT_KNOCKBACK_IMPULSE,
+      committed.aimY * HIT_KNOCKBACK_IMPULSE,
+    );
+    target.vx = impulse.vx;
+    target.vy = impulse.vy;
   }
 
   /** §51 one TOUGH combo-speaking elite, one tick — the authored, tick-anchored machine (worm action
    *  model): idle → [leapwind → leap → settle] → windup … → (return) → recover. The laws enforced here:
-   *  the negotiated landing NEVER moves once its marker exists (G3/G5); per-step aim re-samples only
-   *  until that step's Lock (MELEE_LOCK_PHASE) then freezes (G5); every displacement is bounded-velocity
+   *  the negotiated landing NEVER moves once its marker exists (G3/G5); each ramp tracks until the
+   *  universal white pop, then four fixed commit ticks own a frozen vector; every displacement is bounded
    *  motion or a ≤COMBO_STEP_MAX commit-write (G2); juggle strings obey every G9 cap at the resolve
    *  tick; the parried bait stands a visible ≥0.4s stagger at its DISPLACED spot before returning (G8). */
   private stepComboEnemy(
@@ -11795,10 +11990,8 @@ export class GameRoom extends Room<ArenaState> {
       }
       const dur = Math.max(1, ((st.stepEndTick ?? tick) - (st.stepStartTick ?? tick)) | 0);
       const phase01 = Math.max(0, Math.min(1, (dur - Math.max(0, left)) / dur));
-      // Pre-Lock tracking (G5's honest half): strikes lean in (the Sekiro creep); air-keeps dash under
-      // the falling victim's ground shadow at 1.6× — VISIBLE compensation, not magic tracking. Both
-      // freeze the moment Lock samples.
-      if (!st.strike && live && !knockbackMoving) {
+      // Ramp-only tracking: the white pop below is the immutable vector boundary.
+      if (live && !knockbackMoving) {
         const dist = Math.hypot(live.x - enemy.x, live.y - enemy.y);
         if (step.kind === "airkeep") {
           this.moveComboEnemyToward(enemy, live, kind.speed * 1.6, dt);
@@ -11806,54 +11999,61 @@ export class GameRoom extends Room<ArenaState> {
           this.moveComboEnemyToward(enemy, live, kind.speed * 0.28, dt);
         }
       }
-      if (!st.strike && live && left > 0 && phase01 >= MELEE_LOCK_PHASE) {
-        // LOCK — the advertised sector IS the damage sector from here (G5). Air-keeps lead the live
-        // authoritative velocity ONCE (fall compensation is authored rhythm, never re-timed — G11).
-        const lead = step.kind === "airkeep" ? (left * TICK_MS) / 1000 : 0;
-        const strike = this.planComboStrike(
+      enemy.windup = phase01;
+      if (left <= 0) {
+        if (!live) {
+          this.enterComboRecover(enemy, id, st, def.recoverTicks);
+          return;
+        }
+        st.strike = this.planComboStrike(
           enemy,
           live,
           step.range,
           Math.min(step.step, COMBO_STEP_MAX),
-          lead,
+          0,
         );
-        const rot = Math.atan2(strike.aimY, strike.aimX);
-        const tg = this.addMeleeTelegraphRow(
-          id,
-          strike.x,
-          strike.y,
-          step.range,
-          step.halfArc,
-          rot,
-          phase01,
-          step.unparryable ? 1 : 0,
-          step.returnCapable ? 7 : 6,
-        );
-        st.strike = { ...strike, tg };
-        this.bumpComboSeq(enemy); // documented edge: each strike LOCK
-      }
-      enemy.windup = phase01;
-      if (left <= 0) {
-        const strike = st.strike;
-        st.strike = undefined;
+        st.phase = "commit";
+        st.stepStartTick = tick;
+        st.stepEndTick = (tick + ENEMY_MELEE_COMMIT_SECONDS / (TICK_MS / 1000)) >>> 0;
         enemy.windup = 0;
-        if (!strike) {
-          // The Lock never sampled (victim died/left pre-Lock) — drop the performance, no re-aim.
+        enemy.commitSeq = (enemy.commitSeq + 1) & 0xff;
+        this.bumpComboSeq(enemy);
+      }
+    } else if (st.phase === "commit" && def) {
+      const returning = st.empowered === true && def.return !== undefined;
+      const step = returning ? undefined : def.steps[st.stepIndex ?? 0];
+      const geo = returning ? def.return : step;
+      const strike = st.strike;
+      if (!strike || !geo) {
+        this.enterComboRecover(enemy, id, st, def.recoverTicks);
+        return;
+      }
+      const target = this.state.players.get(strike.targetId);
+      if (target?.alive)
+        this.captureAuthoredMeleeEscape(strike, target, this.combat.get(target.id));
+      const commitTicks = Math.max(1, Math.round(ENEMY_MELEE_COMMIT_SECONDS / (TICK_MS / 1000)));
+      const elapsedTicks = Math.max(0, commitTicks - Math.max(0, left));
+      const point = lockedLungePointAt(
+        { x: strike.startX, y: strike.startY },
+        { x: strike.endX, y: strike.endY },
+        elapsedTicks * (TICK_MS / 1000),
+      );
+      enemy.x = point.x;
+      enemy.y = point.y;
+      enemy.windup = 0;
+      if (left <= 0) {
+        enemy.x = strike.endX;
+        enemy.y = strike.endY;
+        st.strike = undefined;
+        if (step?.kind === "airkeep" && !this.airkeepValid(st, step, target)) {
           this.enterComboRecover(enemy, id, st, def.recoverTicks);
           return;
         }
-        this.removeTelegraphRow(strike.tg);
-        if (step.kind === "airkeep" && !this.airkeepValid(st, step, live)) {
-          // G9: the victim fell out / a cap tripped — the swing whiffs, the string ends. Escape won.
-          this.enterComboRecover(enemy, id, st, def.recoverTicks);
-          return;
-        }
-        enemy.x = strike.x; // ≤COMBO_STEP_MAX commit-write — the same Lock-honest advance as legacy (G2)
-        enemy.y = strike.y;
-        this.comboSwing(enemy, id, st, step, step, strike);
-        // A parry inside the swing may have CONVERTED (bait → return), BROKEN (juggle, G11) or
-        // STAGGERED (riposte, G14) the machine — only an untouched windup advances to the next beat.
-        if (st.phase === "windup") {
+        this.comboSwing(enemy, id, st, step, geo, strike);
+        // A parry may convert/break/recover inside comboSwing. Only an untouched commit advances.
+        if (st.phase === "commit" && returning) {
+          this.enterComboRecover(enemy, id, st, def.return?.recoverTicks ?? def.recoverTicks);
+        } else if (st.phase === "commit") {
           const next = (st.stepIndex ?? 0) + 1;
           if (next < Math.min(def.steps.length, st.stepLimit ?? def.steps.length))
             this.beginComboStep(st, def, next);
@@ -11864,11 +12064,10 @@ export class GameRoom extends Room<ArenaState> {
       const ret = def.return;
       const start = st.stepStartTick ?? tick;
       const staggerEnd = (start + RETURN_STAGGER_TICKS) >>> 0;
-      const windEnd = (staggerEnd + ret.windupTicks) >>> 0;
-      const dashEnd = (windEnd + RETURN_DASH_TICKS) >>> 0;
+      const rampTicks = Math.max(1, ret.windupTicks - ENEMY_MELEE_COMMIT_TICKS);
+      const windEnd = (staggerEnd + rampTicks) >>> 0;
       const staggerLeft = (staggerEnd - tick) | 0;
       const windLeft = (windEnd - tick) | 0;
-      const dashLeft = (dashEnd - tick) | 0;
       if (staggerLeft > 0) {
         // G8: ≥0.4s of VISIBLE stagger at the DISPLACED position — proof the parry had mass. The
         // return path-plans from here, not from where the swing was thrown.
@@ -11880,57 +12079,20 @@ export class GameRoom extends Room<ArenaState> {
           st.displacedY = enemy.y;
         }
       } else if (windLeft > 0) {
-        const phase01 = Math.max(0, Math.min(1, (ret.windupTicks - windLeft) / ret.windupTicks));
+        const phase01 = Math.max(0, Math.min(1, (rampTicks - windLeft) / rampTicks));
         enemy.windup = phase01;
-        if (!st.strike && live && phase01 >= MELEE_LOCK_PHASE) {
-          // LOCK the comeback: travel computed from the ACTUAL displacement (Iron Stance moves it),
-          // capped at RETURN_STEP_MAX (outrunning it = an honest whiff), advertised as the gold
-          // kindTag-7 wedge at the dash-END origin. Still WHITE — parry it again and the chain math
-          // ends the loop.
-          const strike = this.planComboStrike(enemy, live, ret.range, RETURN_STEP_MAX, 0);
-          const rot = Math.atan2(strike.aimY, strike.aimX);
-          const tg = this.addMeleeTelegraphRow(
-            id,
-            strike.x,
-            strike.y,
-            ret.range,
-            ret.halfArc,
-            rot,
-            phase01,
-            0,
-            7,
-          );
-          st.strike = { ...strike, tg };
-        }
       } else {
-        const strike = st.strike;
-        if (!strike) {
-          // The Lock never sampled (victim died mid-stagger) — the comeback dissolves, no re-aim.
+        if (!live) {
           this.enterComboRecover(enemy, id, st, ret.recoverTicks);
           return;
         }
-        if (dashLeft >= RETURN_DASH_TICKS) {
-          // Windup resolves on this anchor; travel starts on the NEXT interval so exactly six 50ms
-          // displacement slices span the authored 0.30s dash (not seven inclusive tick samples).
-          enemy.windup = 1;
-          return;
-        }
-        // Bounded-velocity CLOSE (≤50px/tick over RETURN_DASH_TICKS — G2: recovery from real force,
-        // never a position warp), then the empowered swing from the advertised geometry.
-        const remain = Math.max(1, dashLeft + 1);
-        enemy.x += (strike.x - enemy.x) / remain;
-        enemy.y += (strike.y - enemy.y) / remain;
-        enemy.windup = 1;
-        if (dashLeft <= 0) {
-          enemy.x = strike.x;
-          enemy.y = strike.y;
-          st.strike = undefined;
-          this.removeTelegraphRow(strike.tg);
-          this.comboSwing(enemy, id, st, undefined, ret, strike);
-          // A PARRIED return already ended the combo inside resolveParry (the authored long punish
-          // recover); a LANDED return exits through the standard recover.
-          if (st.phase === "return") this.enterComboRecover(enemy, id, st, ret.recoverTicks);
-        }
+        st.strike = this.planComboStrike(enemy, live, ret.range, RETURN_STEP_MAX, 0);
+        st.phase = "commit";
+        st.stepStartTick = tick;
+        st.stepEndTick = (tick + ENEMY_MELEE_COMMIT_SECONDS / (TICK_MS / 1000)) >>> 0;
+        enemy.windup = 0;
+        enemy.commitSeq = (enemy.commitSeq + 1) & 0xff;
+        this.bumpComboSeq(enemy);
       }
     } else if (st.phase === "recover") {
       enemy.windup = 0;
@@ -12148,7 +12310,10 @@ export class GameRoom extends Room<ArenaState> {
     st.phase = "windup";
     st.strike = undefined;
     st.stepStartTick = this.state.tick;
-    st.stepEndTick = (this.state.tick + Math.max(1, step?.windupTicks ?? 1)) >>> 0;
+    // Existing combo cadence names impact-to-impact timing. Reserve its final four ticks for B33's
+    // universal pop-to-impact window so adding the channel does not slow or invalidate authored strings.
+    const rampTicks = Math.max(1, (step?.windupTicks ?? 1) - ENEMY_MELEE_COMMIT_TICKS);
+    st.stepEndTick = (this.state.tick + rampTicks) >>> 0;
   }
 
   /** §51 end a combo performance: clear rows + presentation flags, FREE the duel token (G12 — the
@@ -12159,10 +12324,7 @@ export class GameRoom extends Room<ArenaState> {
     st: DuelistComboState,
     ticks: number,
   ): void {
-    if (st.strike) {
-      this.removeTelegraphRow(st.strike.tg);
-      st.strike = undefined;
-    }
+    st.strike = undefined;
     if (st.tg) {
       this.removeTelegraphRow(st.tg);
       st.tg = undefined;
@@ -12213,7 +12375,7 @@ export class GameRoom extends Room<ArenaState> {
     range: number,
     travelCap: number,
     leadSeconds: number,
-  ): { x: number; y: number; aimX: number; aimY: number } {
+  ): NonNullable<DuelistComboState["strike"]> {
     const tx = target.x + (target.mvx + target.vx) * leadSeconds;
     const ty = target.y + (target.mvy + target.vy) * leadSeconds;
     const dx = tx - enemy.x;
@@ -12224,15 +12386,22 @@ export class GameRoom extends Room<ArenaState> {
     const floor = range * 0.45;
     const move = Math.max(0, Math.min(travelCap, dist - floor));
     const r = ENEMY_KINDS[enemy.kind]?.radius ?? ENEMY_RADIUS;
-    const x = clamp(enemy.x + nx * move, r, ARENA_WIDTH - r);
-    const y = clamp(enemy.y + ny * move, r, ARENA_HEIGHT - r);
-    const aimX = tx - x;
-    const aimY = ty - y;
+    const maxX = this.belt && this.beltLevel ? this.beltLevel.length - r : ARENA_WIDTH - r;
+    const rawX = clamp(enemy.x + nx * move, r, maxX);
+    const rawY = clamp(enemy.y + ny * move, r, ARENA_HEIGHT - r);
+    const end = this.navValidEnemyLungeDest(enemy, rawX, rawY);
     return {
-      x,
-      y,
-      aimX: Math.abs(aimX) + Math.abs(aimY) > 0.001 ? aimX : nx,
-      aimY: Math.abs(aimX) + Math.abs(aimY) > 0.001 ? aimY : ny,
+      startX: enemy.x,
+      startY: enemy.y,
+      endX: end.x,
+      endY: end.y,
+      aimX: nx,
+      aimY: ny,
+      targetId: target.id,
+      targetX: tx,
+      targetY: ty,
+      range,
+      authoredEscape: false,
     };
   }
 
@@ -12324,7 +12493,7 @@ export class GameRoom extends Room<ArenaState> {
     st: DuelistComboState,
     step: ToughComboStep | undefined,
     geo: { range: number; halfArc: number; damageMult: number; knockbackMult?: number },
-    strike: { x: number; y: number; aimX: number; aimY: number },
+    strike: NonNullable<DuelistComboState["strike"]>,
   ): void {
     enemy.atkSeq = (enemy.atkSeq + 1) % 100000;
     const m = effectiveMelee(ENEMY_KINDS[enemy.kind]);
@@ -12333,13 +12502,21 @@ export class GameRoom extends Room<ArenaState> {
       geo.damageMult *
       (enemy.tough ? TOUGH_DAMAGE_MULT : 1) *
       depthDamageScale(this.state.depth);
-    this.state.players.forEach((player) => {
-      if (!player.alive) return;
-      if (!inMeleeArc(strike, strike.aimX, strike.aimY, player, geo.range, geo.halfArc)) return;
-      const pc = this.combat.get(player.id);
-      if (step?.unparryable) {
-        if (player.height > GROUND_EPSILON) return; // RED = feet — the jump clears it (quake language)
-      } else if (pc && pc.invuln > 0) {
+    const player = this.state.players.get(strike.targetId);
+    if (!player?.alive) return;
+    const pc = this.combat.get(player.id);
+    const parrying = !step?.unparryable && (pc?.invuln ?? 0) > 0;
+    const rolling = !step?.airkeep && !!pc && this.slideInvulnerable(pc);
+    const airborne = !step?.airkeep && player.height > GROUND_EPSILON;
+    if (
+      committedMeleeEvaded({
+        parrying,
+        rollInvulnerable: rolling,
+        airborne,
+        authoredDisplacementBeyondReach: strike.authoredEscape,
+      })
+    ) {
+      if (parrying && pc) {
         const preventedDamage =
           player.id === st.targetId && st.juggleCombo
             ? Math.min(
@@ -12347,72 +12524,60 @@ export class GameRoom extends Room<ArenaState> {
                 Math.max(0, player.maxHp * COMBO_DAMAGE_CAP_FRAC - (st.comboDamage ?? 0)),
               )
             : base;
-        this.resolveParry(player, pc, enemy, enemyId, preventedDamage); // §8 negate + reward; §51 branches live inside
-        return;
-      }
-      if (pc && !step?.airkeep && this.slideInvulnerable(pc)) {
+        this.resolveParry(player, pc, enemy, enemyId, preventedDamage);
+      } else if (rolling) {
         this.noteSlideDodge(player);
-        return;
       }
-      if (pc && pc.juggleMercy > 0) return; // §51 G10 touchdown mercy — no landing-gank
-      let dmg = base;
-      if (player.id === st.targetId && st.juggleCombo) {
-        // G9: one performance may never take more than 40% of the committed victim's max HP — the
-        // budget clamps every hit (bystanders splashed by the honest hitbox are not the victim).
-        const budget = Math.max(0, player.maxHp * COMBO_DAMAGE_CAP_FRAC - (st.comboDamage ?? 0));
-        dmg = Math.min(dmg, budget);
-        st.comboDamage = (st.comboDamage ?? 0) + dmg;
-      }
-      if (dmg > 0) this.damagePlayer(player, dmg, "enemy");
-      const hx = player.x - enemy.x;
-      const hy = player.y - enemy.y;
-      const hd = Math.hypot(hx, hy) || 1;
-      const displacementHit = !!(step?.launch || step?.airkeep);
-      if (
-        displacementHit &&
-        pc &&
-        (pc.stance === STANCE_CROUCH || pc.stance === STANCE_DASH || pc.stance === STANCE_SLIDE)
-      ) {
-        this.cancelMoveStance(player, pc, true);
-      }
-      const poundOwnsVertical = pc?.stance === STANCE_POUND;
-      if (step?.launch && pc && player.id === st.targetId && !poundOwnsVertical) {
-        // LAUNCHER: SET the victim's vh (deterministic apex; the parry-launch cap is the law, G9) + a
-        // front-loaded pop along the strike. Arms the G10 touchdown mercy for this enemy-made flight.
-        pc.vh = Math.min(step.launch.vh, PARRY_LAUNCH_MAX);
+      return;
+    }
+    if (pc && pc.juggleMercy > 0) return;
+    let dmg = base;
+    if (player.id === st.targetId && st.juggleCombo) {
+      const budget = Math.max(0, player.maxHp * COMBO_DAMAGE_CAP_FRAC - (st.comboDamage ?? 0));
+      dmg = Math.min(dmg, budget);
+      st.comboDamage = (st.comboDamage ?? 0) + dmg;
+    }
+    if (dmg > 0) this.damagePlayer(player, dmg, "enemy");
+    const hx = player.x - enemy.x;
+    const hy = player.y - enemy.y;
+    const hd = Math.hypot(hx, hy) || 1;
+    const displacementHit = !!(step?.launch || step?.airkeep);
+    if (
+      displacementHit &&
+      pc &&
+      (pc.stance === STANCE_CROUCH || pc.stance === STANCE_DASH || pc.stance === STANCE_SLIDE)
+    ) {
+      this.cancelMoveStance(player, pc, true);
+    }
+    const poundOwnsVertical = pc?.stance === STANCE_POUND;
+    if (step?.launch && pc && player.id === st.targetId && !poundOwnsVertical) {
+      pc.vh = Math.min(step.launch.vh, PARRY_LAUNCH_MAX);
+      player.vh = pc.vh;
+      pc.juggleArmed = true;
+      const k = addImpulse(player, (hx / hd) * step.launch.push, (hy / hd) * step.launch.push);
+      player.vx = k.vx;
+      player.vy = k.vy;
+      player.juggledSeq = (player.juggledSeq + 1) & 0xff;
+      st.launchTick = this.state.tick;
+      enemy.comboFlags |= COMBO_FLAG_JUGGLE;
+    } else if (step?.airkeep && pc && player.id === st.targetId && !poundOwnsVertical) {
+      if (step.airkeep.vh > 0) {
+        pc.vh = Math.min(step.airkeep.vh, PARRY_LAUNCH_MAX);
         player.vh = pc.vh;
-        pc.juggleArmed = true;
-        const k = addImpulse(player, (hx / hd) * step.launch.push, (hy / hd) * step.launch.push);
-        player.vx = k.vx;
-        player.vy = k.vy;
-        player.juggledSeq = (player.juggledSeq + 1) & 0xff;
-        st.launchTick = this.state.tick;
-        enemy.comboFlags |= COMBO_FLAG_JUGGLE;
-      } else if (step?.airkeep && pc && player.id === st.targetId && !poundOwnsVertical) {
-        // AIR-KEEP: REFRESH vh by assignment (never additive — no co-op moon-launch; authored vh 0 =
-        // the finisher lets you fall) + count toward the G9 air-hit cap.
-        if (step.airkeep.vh > 0) {
-          pc.vh = Math.min(step.airkeep.vh, PARRY_LAUNCH_MAX);
-          player.vh = pc.vh;
-        }
-        if (step.airkeep.push > 0) {
-          const k = addImpulse(
-            player,
-            (hx / hd) * step.airkeep.push,
-            (hy / hd) * step.airkeep.push,
-          );
-          player.vx = k.vx;
-          player.vy = k.vy;
-        }
-        player.juggledSeq = (player.juggledSeq + 1) & 0xff;
-        st.juggleHits = (st.juggleHits ?? 0) + 1;
-      } else {
-        const push = HIT_KNOCKBACK_IMPULSE * (geo.knockbackMult ?? 1);
-        const k = addImpulse(player, (hx / hd) * push, (hy / hd) * push);
+      }
+      if (step.airkeep.push > 0) {
+        const k = addImpulse(player, (hx / hd) * step.airkeep.push, (hy / hd) * step.airkeep.push);
         player.vx = k.vx;
         player.vy = k.vy;
       }
-    });
+      player.juggledSeq = (player.juggledSeq + 1) & 0xff;
+      st.juggleHits = (st.juggleHits ?? 0) + 1;
+    } else {
+      const push = HIT_KNOCKBACK_IMPULSE * (geo.knockbackMult ?? 1);
+      const k = addImpulse(player, (hx / hd) * push, (hy / hd) * push);
+      player.vx = k.vx;
+      player.vy = k.vy;
+    }
   }
 
   /** §51 nearest LIVING player WITH identity (the anonymous `bodies` scratch drops ids — a combo
@@ -12618,7 +12783,7 @@ export class GameRoom extends Room<ArenaState> {
           est,
           COMBO_RIPOSTE_STAGGER_TICKS + knockbackTicks,
         );
-      } else if (est.phase === "return") {
+      } else if (est.empowered) {
         // The empowered comeback always loses to the second parry. maxReturns is already spent; even when
         // the global chain entered at 0, the authored 1.4–1.6s punish window ends the branch permanently.
         this.enterComboRecover(
@@ -12641,18 +12806,26 @@ export class GameRoom extends Room<ArenaState> {
         est.stepEndTick =
           (est.stepStartTick +
             RETURN_STAGGER_TICKS +
-            def.return.windupTicks +
-            RETURN_DASH_TICKS) >>>
+            Math.max(1, def.return.windupTicks - ENEMY_MELEE_COMMIT_TICKS)) >>>
           0;
         attacker.comboFlags = (attacker.comboFlags & ~COMBO_FLAG_JUGGLE) | COMBO_FLAG_EMPOWERED;
         this.bumpComboSeq(attacker); // documented edge: empowered return STEP START
+      } else {
+        // B33: every successfully parried committed lunge pays a readable stagger.
+        this.enterComboRecover(
+          attacker,
+          attackerId,
+          est,
+          ticksFromSeconds(PARRY_ENEMY_STAGGER_SECONDS) + knockbackTicks,
+        );
       }
-    } else if (riposte && est) {
-      if (est.strike) this.removeTelegraphRow(est.strike.tg);
-      est.strike = undefined;
-      est.phase = "recover";
-      est.t = 1; // legacy interrupt: a full second of stagger before it can attack again
-      attacker.windup = 0;
+    } else if (est) {
+      this.enterOrdinaryMeleeRecover(
+        attacker,
+        attackerId,
+        est,
+        riposte ? 1 : PARRY_ENEMY_STAGGER_SECONDS,
+      );
     }
     // G-02: augments belong to this success receipt, never to the button press that opened the window.
     this.applyParryAugments(player, pc);
@@ -13766,8 +13939,8 @@ export class GameRoom extends Room<ArenaState> {
       if (this.shifterTimer <= 0) {
         this.state.enemies.delete(this.shifterId);
         const combo = this.comboState.get(this.shifterId);
-        if (combo?.strike) this.removeTelegraphRow(combo.strike.tg);
         if (combo?.tg) this.removeTelegraphRow(combo.tg);
+        this.meleeAttackTokens.releaseHolder(this.shifterId);
         if (combo?.targetId && this.duelTokens.get(combo.targetId) === this.shifterId)
           this.duelTokens.delete(combo.targetId);
         this.comboState.delete(this.shifterId);

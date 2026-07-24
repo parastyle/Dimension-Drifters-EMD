@@ -896,6 +896,17 @@ function smoothstep01(value: number): number {
   return p * p * (3 - 2 * p);
 }
 
+function mixRgb(from: number, to: number, t: number): number {
+  const p = clamp01(t);
+  const fromR = (from >>> 16) & 0xff;
+  const fromG = (from >>> 8) & 0xff;
+  const fromB = from & 0xff;
+  const r = Math.round(fromR + (((to >>> 16) & 0xff) - fromR) * p);
+  const g = Math.round(fromG + (((to >>> 8) & 0xff) - fromG) * p);
+  const b = Math.round(fromB + ((to & 0xff) - fromB) * p);
+  return (r << 16) | (g << 8) | b;
+}
+
 function smootherstep01(value: number): number {
   const p = clamp01(value);
   return p * p * p * (p * (p * 6 - 15) + 10);
@@ -2670,7 +2681,7 @@ export class SpriteRig {
   private parryGuardPose: ParryGuardPose = 0;
   private parryReaction: ParryReactionValue = ParryReaction.None;
   /** Enemy-only parry performance. Synced windup supplies phase; resolve/cancel never start a fresh swing. */
-  private meleeTellMode: "none" | "windup" | "resolve" | "cancel" = "none";
+  private meleeTellMode: "none" | "windup" | "commit" | "resolve" | "cancel" = "none";
   private meleeTellPhase = 0;
   private meleeTellRemainingMs = Number.POSITIVE_INFINITY;
   private meleeTellDurationMs = 1;
@@ -2688,6 +2699,11 @@ export class SpriteRig {
   private meleeTellReleaseAtMs = -1e9;
   private meleeTellCancelPhase = 0;
   private meleeTellReleasePose = false;
+  /** B33 enemy-body telegraph. Accent is a multiply ramp; commit is a one-frame white fill. */
+  private enemyMeleeTintPhase = 0;
+  private enemyMeleeAccent = 0xffffff;
+  private enemyMeleePopUntilMs = -1e9;
+  private enemyMeleeTintKey = -1;
   /** §51 combo-only presentation channels. ArenaScene samples them exclusively from synced flags/rows and
    *  feeds zeroes every inactive frame, so no private server phase leaks into this rig. */
   private enemyComboOwnsHop = false;
@@ -6072,6 +6088,37 @@ export class SpriteRig {
     if (!full) this.clearMeleeTellTint();
   }
 
+  /** B33 full-body wind-up channel. All rigs use their palette accent; no world/floor geometry participates. */
+  setEnemyMeleeTelegraph(phase: number, accent: number): void {
+    this.enemyMeleeTintPhase = clamp01(phase);
+    this.enemyMeleeAccent = accent & 0xffffff;
+    const popping = this.presentationClockNow() < this.enemyMeleePopUntilMs;
+    const key =
+      (popping ? 1 << 30 : 0) |
+      ((Math.round(this.enemyMeleeTintPhase * 32) & 0x3f) << 24) |
+      this.enemyMeleeAccent;
+    if (key === this.enemyMeleeTintKey) return;
+    this.enemyMeleeTintKey = key;
+    this.restTint();
+  }
+
+  /** The universal commit edge: one crisp white body frame and a tiny hue-independent squash. */
+  commitMeleeTell(timeMs: number, aimWorld: number): void {
+    timeMs = this.presentationEpochForWallEpoch(timeMs);
+    this.meleeTellReleasePose = true;
+    this.meleeTellAimWorld = aimWorld;
+    this.meleeTellMode = "commit";
+    this.meleeTellPhase = 1;
+    this.meleeTellRemainingMs = 200;
+    this.meleeTellReleaseAtMs = timeMs;
+    this.meleeTellFull = true;
+    this.enemyMeleeTintPhase = 0;
+    this.enemyMeleePopUntilMs = timeMs + 50;
+    this.enemyMeleeTintKey = -1;
+    this.clearMeleeTellTint();
+    this.restTint();
+  }
+
   /** Contact confirmation: keep the loaded vocabulary and run only its short follow-through. */
   resolveMeleeTell(timeMs: number, aimWorld: number): void {
     timeMs = this.presentationEpochForWallEpoch(timeMs);
@@ -6186,10 +6233,16 @@ export class SpriteRig {
     this.restTint();
   }
 
-  /** Re-apply the resting tint (downed grey > phase-walk ink > Brand ember-orange > none). */
+  /** Re-apply the resting tint. B33's enemy-body tell overrides ordinary live-state tints. */
   private restTint(): void {
+    const meleeWhitePop = this.presentationClockNow() < this.enemyMeleePopUntilMs;
+    const meleeRamp = smoothstep01(this.enemyMeleeTintPhase);
+    const meleeTint = mixRgb(0xffffff, this.enemyMeleeAccent, meleeRamp);
     const apply = (part: Phaser.GameObjects.Image): void => {
       if (this.downed) part.setTint(0x556070).setTintMode(Phaser.TintModes.MULTIPLY);
+      else if (meleeWhitePop) part.setTint(0xffffff).setTintMode(Phaser.TintModes.FILL);
+      else if (meleeRamp > 0)
+        part.setTint(meleeTint).setTintMode(Phaser.TintModes.MULTIPLY);
       else if (
         this.ultimatePhase === UltimatePhase.Active &&
         this.ultimateFamily === UltimateFamily.EventHorizon
@@ -9124,7 +9177,8 @@ export class SpriteRig {
     // AIM even remotely, so the barrel + body read as pointing where they shoot). Mirror the whole
     // container; per-part offsets/aim are computed in local space so the flip stays coherent.
     const tellFacesAim =
-      (this.meleeTellMode === "windup" && this.meleeTellFull) ||
+      ((this.meleeTellMode === "windup" || this.meleeTellMode === "commit") &&
+        this.meleeTellFull) ||
       ((this.meleeTellMode === "resolve" || this.meleeTellMode === "cancel") &&
         this.meleeTellReleasePose);
     const comboFacesAim = this.enemyComboOfferPhase > 0 || this.enemyComboEmpowered;
@@ -9322,13 +9376,16 @@ export class SpriteRig {
     this.closeBladeBackFootDx = 0;
     this.closeBladeBackFootDy = 0;
     this.signatureMotion = undefined;
-    if (this.meleeTellMode === "resolve" && sceneNow - this.meleeTellReleaseAtMs > 180) {
+    if (this.meleeTellMode === "commit" && sceneNow - this.meleeTellReleaseAtMs > 260) {
+      this.clearMeleeTellState();
+    } else if (this.meleeTellMode === "resolve" && sceneNow - this.meleeTellReleaseAtMs > 180) {
       this.clearMeleeTellState();
     } else if (this.meleeTellMode === "cancel" && sceneNow - this.meleeTellReleaseAtMs > 90) {
       this.clearMeleeTellState();
     }
     const meleePoseActive =
-      (this.meleeTellMode === "windup" && this.meleeTellFull) ||
+      ((this.meleeTellMode === "windup" || this.meleeTellMode === "commit") &&
+        this.meleeTellFull) ||
       ((this.meleeTellMode === "resolve" || this.meleeTellMode === "cancel") &&
         this.meleeTellReleasePose);
     const heldAimWorld = anim.isSelf ? Math.atan2(anim.aimY, anim.aimX) : anim.aimDir;
@@ -9364,7 +9421,7 @@ export class SpriteRig {
               0.28
             : 0.28 + ((90 - this.meleeTellRemainingMs) / 90) * 0.67;
       }
-      if (this.meleeTellMode === "resolve") incoming = 1;
+      if (this.meleeTellMode === "commit" || this.meleeTellMode === "resolve") incoming = 1;
       incoming = clamp01(incoming);
       const direction = this.meleeTellStep % 3 === 1 ? -1 : 1;
       const finalStep = this.meleeTellStep % 3 === 2;
@@ -9422,6 +9479,12 @@ export class SpriteRig {
         cancelBlend;
       this.body.y += (3 * load + 4 * incoming - 2 * resolveT) * s * cancelBlend;
       this.body.scaleY *= 1 - (0.035 * load + 0.07 * incoming) * cancelBlend;
+      if (this.meleeTellMode === "commit") {
+        const pop = 1 - smoothstep01((sceneNow - this.meleeTellReleaseAtMs) / 50);
+        this.body.y += 3 * pop * s;
+        this.body.scaleX *= 1 + 0.05 * pop;
+        this.body.scaleY *= 1 - 0.08 * pop;
+      }
       if (finalStep) this.body.scaleY *= 1 + 0.055 * load * cancelBlend;
       if (this.meleeTellGold) {
         // Escalation is heavier, not hurried: a deeper load and committed forward lean ride the SAME

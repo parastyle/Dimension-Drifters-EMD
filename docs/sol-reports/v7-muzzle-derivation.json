@@ -1148,30 +1148,20 @@
     "derived": [
       {
         "part": 0,
-        "x": 784,
-        "y": 170
-      },
-      {
-        "part": 1,
         "x": 1806,
-        "y": 118.4
+        "y": 121.1
       }
     ],
     "points": [
       {
-        "part": 1,
-        "x": 1794,
-        "y": 118
-      },
-      {
-        "part": 1,
-        "x": 1794,
-        "y": 203
+        "part": 0,
+        "x": 1806,
+        "y": 121.1
       }
     ],
-    "override": "The surgically registered break-action barrel layer carries two stacked recessed bores; each accepted shell alternates one exact bore centre while the receiver layer remains muzzle-inert.",
+    "override": null,
     "salvoMode": "parallel",
-    "barrelMode": "cycle"
+    "barrelMode": "parallel"
   },
   {
     "id": "x2-frostfang-speargun",

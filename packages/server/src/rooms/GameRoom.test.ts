@@ -479,7 +479,8 @@ describe("GameRoom — §20 universal lunge", () => {
     e.x = h.room.map.spawnX + 30; // inside the derived approach (64) → winds up immediately
     e.y = h.room.map.spawnY;
     h.state().enemies.set("lunger2", e);
-    h.tick(14); // windup (~0.46s ≈ 9 ticks) → the jab connects ~tick 11; a few regen ticks can't refill 6.4
+    for (let i = 0; i < 24 && e.atkSeq === 0; i++) h.tick(1);
+    h.tick(2); // the landed chunk remains visible above passive regen
     expect(p.hp).toBeLessThan(96); // a real, regen-proof chunk of HP gone
   });
 
@@ -1636,7 +1637,7 @@ describe("GameRoom — §M14 golden tick snapshot (the hand-numbered phase order
         "elapsed": 3,
         "mode": "arena",
         "outcome": "active",
-        "plantedAlive": 1,
+        "plantedAlive": 0,
         "players": [
           {
             "alive": true,
@@ -1647,10 +1648,10 @@ describe("GameRoom — §M14 golden tick snapshot (the hand-numbered phase order
           },
           {
             "alive": true,
-            "hp": 90,
+            "hp": 99,
             "id": "p2",
-            "x": 2405,
-            "y": 2333,
+            "x": 2364,
+            "y": 2380,
           },
         ],
         "portalOpen": false,
@@ -2343,7 +2344,7 @@ describe("improve2 integrity regressions", () => {
     expect(receipt?.delivery).toBe(CombatDelivery.Gun);
     expect(h.state().combatReceipts.length).toBe(COMBAT_RECEIPT_CAP);
     expect([...h.state().combatReceipts]).toEqual(rows);
-    expect(h.state().schemaVersion).toBe(37);
+    expect(h.state().schemaVersion).toBe(38);
   });
 });
 
@@ -2611,7 +2612,7 @@ describe("GameRoom — §50 spin re-hits per revolution", () => {
 });
 
 describe("GameRoom — melee parry telegraph commitment", () => {
-  it("advertises and resolves the same fixed post-lunge sector", () => {
+  it("locks one identity-targeted lunge for four ticks and never emits a floor cone", () => {
     const h = makeRoom();
     h.join("p1");
     h.room.map.tiles.fill(TILE_GROUND);
@@ -2627,37 +2628,96 @@ describe("GameRoom — melee parry telegraph commitment", () => {
     enemy.y = p1.y;
     h.state().enemies.set(enemy.id, enemy);
 
-    let row: AnyRoom;
-    for (let i = 0; i < 16 && !row; i++) {
-      h.tick(1);
-      row = h.state().telegraphs.get(`melee:${enemy.id}`);
-    }
-    expect(row).toBeDefined();
-    expect(row.shape).toBe(2); // the authoritative player-center sector
-    const committed = {
-      x: row.x,
-      y: row.y,
-      range: row.a,
-      halfArc: row.b,
-      rot: row.rot,
-    };
+    const commitBefore = enemy.commitSeq;
+    for (let i = 0; i < 24 && enemy.commitSeq === commitBefore; i++) h.tick(1);
+    expect(enemy.commitSeq).toBe(commitBefore + 1);
+    expect(h.state().telegraphs.size).toBe(0);
+    const st = h.room.comboState.get(enemy.id);
+    expect(st.phase).toBe("commit");
+    const committed = { ...st.strike };
 
-    // Move the original target away after Lock and place another player inside the advertised fixed sector.
-    p1.x = committed.x - Math.cos(committed.rot) * (committed.range + 80);
-    p1.y = committed.y - Math.sin(committed.rot) * (committed.range + 80);
+    // Plain displacement models walking after the pop: it cannot exchange the committed victim or evade.
+    p1.x -= 240;
+    p1.y += 120;
     h.join("p2");
     const p2 = h.state().players.get("p2");
-    p2.x = committed.x + Math.cos(committed.rot) * committed.range * 0.55;
-    p2.y = committed.y + Math.sin(committed.rot) * committed.range * 0.55;
+    p2.x = committed.endX;
+    p2.y = committed.endY;
     p2.hp = p2.maxHp;
+    const p1Hp = p1.hp;
 
     const attackBefore = enemy.atkSeq;
-    for (let i = 0; i < 8 && enemy.atkSeq === attackBefore; i++) h.tick(1);
+    h.tick(3);
+    expect(enemy.atkSeq).toBe(attackBefore);
+    expect(st.strike).toEqual(committed);
+    h.tick(1);
     expect(enemy.atkSeq).toBe(attackBefore + 1);
-    expect(enemy.x).toBeCloseTo(committed.x, 6);
-    expect(enemy.y).toBeCloseTo(committed.y, 6);
-    expect(p2.hp).toBeLessThan(p2.maxHp);
-    expect(h.state().telegraphs.has(`melee:${enemy.id}`)).toBe(false);
+    expect(p1.hp).toBeLessThan(p1Hp);
+    expect(p2.hp).toBe(p2.maxHp);
+    expect(h.state().telegraphs.size).toBe(0);
+  });
+
+  it("admits only three of six ordinary attackers and death-releases the next posture", () => {
+    const h = makeRoom();
+    h.join("token-player");
+    h.room.map.tiles.fill(TILE_GROUND);
+    h.room.map.pois.length = 0;
+    h.room.spawnAccum = -1_000_000;
+    const player = h.state().players.get("token-player");
+    player.x = h.room.map.spawnX;
+    player.y = h.room.map.spawnY;
+    for (let i = 0; i < 6; i++) {
+      const enemy = new EnemyState();
+      enemy.id = `token-critter-${i}`;
+      enemy.kind = "critter";
+      enemy.hp = 999;
+      const angle = (i / 6) * Math.PI * 2;
+      enemy.x = player.x + Math.cos(angle) * 42;
+      enemy.y = player.y + Math.sin(angle) * 42;
+      h.state().enemies.set(enemy.id, enemy);
+    }
+
+    h.tick(1);
+    expect(h.room.meleeAttackTokens.count(player.id)).toBe(3);
+    const phases = [...h.room.comboState.values()].map((state: AnyRoom) => state.phase);
+    expect(phases.filter((phase: string) => phase === "windup")).toHaveLength(3);
+    expect(phases.filter((phase: string) => phase === "idle")).toHaveLength(3);
+
+    h.state().enemies.delete("token-critter-0");
+    h.tick(1);
+    expect(h.room.meleeAttackTokens.count(player.id)).toBe(3);
+    expect(h.room.comboState.get("token-critter-3")?.phase).toBe("windup");
+  });
+
+  it("lets a roll opened at the white pop evade the committed impact", () => {
+    const h = makeRoom();
+    h.join("roll-player");
+    h.room.map.tiles.fill(TILE_GROUND);
+    const player = h.state().players.get("roll-player");
+    player.x = h.room.map.spawnX;
+    player.y = h.room.map.spawnY;
+    const enemy = new EnemyState();
+    enemy.id = "roll-critter";
+    enemy.kind = "critter";
+    enemy.hp = 999;
+    enemy.x = player.x + 40;
+    enemy.y = player.y;
+    h.state().enemies.set(enemy.id, enemy);
+    for (let i = 0; i < 24 && enemy.commitSeq === 0; i++) h.tick(1);
+    expect(enemy.commitSeq).toBe(1);
+
+    const combat = h.room.combat.get(player.id);
+    combat.stance = enemyComboShared.STANCE_SLIDE;
+    combat.slidePhase = enemyComboShared.SLIDE_PHASE_GROUND;
+    combat.slidePhaseTick = 0;
+    combat.momentumX = 1;
+    combat.momentumY = 0;
+    const hp = player.hp;
+    const dodged = player.dodgedSeq;
+    h.tick(enemyComboShared.ENEMY_MELEE_COMMIT_TICKS);
+    expect(enemy.atkSeq).toBe(1);
+    expect(player.hp).toBe(hp);
+    expect(player.dodgedSeq).toBe(dodged + 1);
   });
 });
 
@@ -3272,31 +3332,34 @@ describe("GameRoom — §51 tough-enemy melee combos (Wave 1 authority)", () => 
     expect(enemy.comboSeq).toBe(1); // no strike Lock has happened yet
   });
 
-  it("commits each cone at Lock=0.65 and resolves only the frozen advertised sector", () => {
+  it("gives every tough-combo beat the same four-tick locked commit window", () => {
     const { h, player } = makeEnemyComboRoom(1);
     const enemy = addComboEnemy(h, player, "combo-lock", "ronin", 140);
     h.tick(1); // grounded K1 begins
 
-    let row: AnyRoom;
-    for (let i = 0; i < 10 && !row; i++) {
-      h.tick(1);
-      row = h.state().telegraphs.get(`melee:${enemy.id}`);
-    }
-    expect(row).toBeDefined();
-    expect(enemy.comboSeq).toBe(1); // first strike Lock, exactly once
-    const frozen = { x: row.x, y: row.y, rot: row.rot, a: row.a, b: row.b };
+    const commitBefore = enemy.commitSeq;
+    for (let i = 0; i < 16 && enemy.commitSeq === commitBefore; i++) h.tick(1);
+    expect(enemy.commitSeq).toBe(commitBefore + 1);
+    expect(enemy.comboSeq).toBe(1);
+    const st = h.room.comboState.get(enemy.id);
+    expect(st.phase).toBe("commit");
+    const frozen = { ...st.strike };
     const hp = player.hp;
-    player.x = row.x - Math.cos(row.rot) * (row.a + 100);
-    player.y = row.y - Math.sin(row.rot) * (row.a + 100);
+    player.x -= 260;
+    player.y += 110;
 
     h.tick(1);
-    const still = h.state().telegraphs.get(`melee:${enemy.id}`);
-    expect({ x: still.x, y: still.y, rot: still.rot, a: still.a, b: still.b }).toEqual(frozen);
+    expect(st.strike).toEqual(frozen);
+    expect(h.state().telegraphs.size).toBe(0);
     const attack = enemy.atkSeq;
-    for (let i = 0; i < 4 && enemy.atkSeq === attack; i++) h.tick(1);
+    h.tick(2);
+    expect(enemy.atkSeq).toBe(attack);
+    h.tick(1);
     expect(enemy.atkSeq).toBe(attack + 1);
-    expect(player.hp).toBe(hp); // leaving after Lock beats the committed wedge; it never homes
-    expect(enemy.comboSeq).toBe(1); // step two has begun, but has not reached its own Lock
+    expect(player.hp).toBeLessThan(hp);
+    expect(enemy.x).toBeCloseTo(frozen.endX, 6);
+    expect(enemy.y).toBeCloseTo(frozen.endY, 6);
+    expect(enemy.comboSeq).toBe(1);
   });
 
   it("holds a parried bait at its displaced point for 8 ticks, returns bounded, and loses to parry two", () => {
@@ -3311,10 +3374,10 @@ describe("GameRoom — §51 tough-enemy melee combos (Wave 1 authority)", () => 
     const st = h.room.comboState.get(enemy.id);
     expect(st.comboId).toBe("k3-gale-cross");
     combat.invuln = 1;
-    h.tick(9); // bait resolves into the first parry
+    for (let i = 0; i < 20 && st.phase !== "return"; i++) h.tick(1);
     expect(st.phase).toBe("return");
     expect(st.returnsLeft).toBe(0);
-    expect(enemy.comboSeq).toBe(2); // bait Lock + return-start edge (return Lock does not double-bump)
+    expect(enemy.comboSeq).toBe(2); // bait pop + directional return-start reaction
     expect(enemy.comboFlags & enemyComboShared.COMBO_FLAG_EMPOWERED).toBeTruthy();
 
     const recoil0 = enemy.x;
@@ -3330,34 +3393,28 @@ describe("GameRoom — §51 tough-enemy melee combos (Wave 1 authority)", () => 
 
     h.tick(7);
     expect(enemy.x).toBeCloseTo(displaced, 6);
-    expect(h.state().telegraphs.has(`melee:${enemy.id}`)).toBe(false);
+    expect(h.state().telegraphs.size).toBe(0);
     h.tick(1);
     expect((h.state().tick - returnStart) >>> 0).toBeGreaterThanOrEqual(8);
     expect(enemy.x).toBeCloseTo(displaced, 6);
 
-    let row: AnyRoom;
-    for (let i = 0; i < 24 && !row; i++) {
-      h.tick(1);
-      row = h.state().telegraphs.get(`melee:${enemy.id}`);
-    }
-    expect(row).toBeDefined();
+    const returnCommit = enemy.commitSeq;
+    for (let i = 0; i < 24 && enemy.commitSeq === returnCommit; i++) h.tick(1);
+    expect(enemy.commitSeq).toBe(returnCommit + 1);
+    expect(st.phase).toBe("commit");
     expect(enemy.x).toBeCloseTo(displaced, 6); // path-plan origin is the post-knockback position
-    player.x = row.x + Math.cos(row.rot) * row.a * 0.5;
-    player.y = row.y + Math.sin(row.rot) * row.a * 0.5;
     player.vx = 0;
     player.vy = 0;
     combat.invuln = 1;
     const attack = enemy.atkSeq;
     for (let i = 0; i < 20 && enemy.atkSeq === attack; i++) {
-      player.x = row.x + Math.cos(row.rot) * row.a * 0.5;
-      player.y = row.y + Math.sin(row.rot) * row.a * 0.5;
       h.tick(1);
     }
     expect(enemy.atkSeq).toBe(attack + 1);
     expect(player.parriedSeq).toBe(2);
     expect(st.phase).toBe("recover");
     expect(enemy.comboFlags).toBe(0);
-    expect(enemy.comboSeq).toBe(2);
+    expect(enemy.comboSeq).toBe(3); // bait pop, return-start reaction, and return pop
   });
 
   it("launches and air-keeps at most twice, caps damage/control, and grants touchdown mercy", () => {
@@ -3436,7 +3493,7 @@ describe("GameRoom — §51 tough-enemy melee combos (Wave 1 authority)", () => 
   });
 
   it("ships schema 19, named depth decks, and guardrail-safe authored literals", () => {
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(37);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(38);
     expect(new EnemyState().comboSeq).toBe(0);
     expect(new EnemyState().comboFlags).toBe(0);
     expect(herePlayerJuggledDefault()).toBe(0);
@@ -3799,7 +3856,7 @@ describe("GameRoom — jump-feel J1 authoritative stance/physics", () => {
 
   it("ships schema 21 with the three appended uint8 stance/VFX defaults", () => {
     const player = new enemyComboShared.PlayerState();
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(37);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(38);
     expect([player.moveStance, player.poundSeq, player.stanceSeq]).toEqual([0, 0, 0]);
   });
 });
@@ -3977,7 +4034,7 @@ describe("GameRoom — flavor-only character identity", () => {
 
   it("retains schema 21 while defaulting character identity to the shared default", () => {
     const player = new enemyComboShared.PlayerState();
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(37);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(38);
     expect([player.character, player.runCharacter]).toEqual([
       enemyComboShared.DEFAULT_CHARACTER,
       enemyComboShared.DEFAULT_CHARACTER,
@@ -4739,8 +4796,8 @@ describe("ULT U1 lifecycle, co-op, and schema 25", () => {
     const h = makeRoom();
     h.join("ult-schema");
     const player = h.state().players.get("ult-schema");
-    expect(h.state().schemaVersion).toBe(37);
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(37);
+    expect(h.state().schemaVersion).toBe(38);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(38);
     expect([
       player.ultimate.archetype,
       player.ultimate.charge,
@@ -4800,7 +4857,7 @@ describe("pet v1 join snapshot, lock, and schema 25", () => {
     h.room.clients.push(client);
     h.room.onJoin(client, { metaAccount: account, selectedPetId: "brass-crab" });
     const player = h.state().players.get("pet-lock");
-    expect([h.state().schemaVersion, enemyComboShared.SCHEMA_VERSION]).toEqual([37, 37]);
+    expect([h.state().schemaVersion, enemyComboShared.SCHEMA_VERSION]).toEqual([38, 38]);
     expect({ petId: player.petId, petLevelBand: player.petLevelBand }).toEqual({
       petId: "hearth-newt",
       petLevelBand: 3,
@@ -5176,10 +5233,10 @@ describe("GameRoom — independent weapon slots and compatibility row", () => {
     ]);
   });
 
-  it("keeps schema 37 and the unrelated compatibility-container tenants intact", () => {
+  it("keeps schema 38 and the unrelated compatibility-container tenants intact", () => {
     const fresh = new enemyComboShared.PlayerState();
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(37);
-    expect(new enemyComboShared.ArenaState().schemaVersion).toBe(37);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(38);
+    expect(new enemyComboShared.ArenaState().schemaVersion).toBe(38);
     expect(fresh.dualWield).toMatchObject({
       retiredByte0: 255,
       retiredUint32: 0,
@@ -5217,7 +5274,7 @@ describe("server-tuning wave — momentum, melee pressure, and enemy separation"
     expect(retention).toBeGreaterThanOrEqual(0.958);
   });
 
-  it("pins the faster melee roster and 1.30x authoritative swing sectors", () => {
+  it("pins the faster melee roster and preserves legacy reach metadata without floor sectors", () => {
     expect(ENEMY_KINDS.critter?.speed).toBe(210); // 168 → 210
     expect(ENEMY_KINDS["mote-swarm"]?.speed).toBe(281.25); // 225 → 281.25
     expect(ENEMY_KINDS.pricklepulp?.speed).toBe(77.5); // 62 → 77.5
@@ -5229,7 +5286,7 @@ describe("server-tuning wave — momentum, melee pressure, and enemy separation"
     const critterMelee = enemyComboShared.effectiveMelee(ENEMY_KINDS.critter);
     if (!critterMelee) throw new Error("critter must retain its derived melee definition");
     expect(critterMelee.range).toBeCloseTo(62.4, 10); // (18 + 30) × 1.30
-    expect(critterMelee.halfArc).toBeCloseTo(1.235, 10); // 0.95 × 1.30
+    expect(critterMelee.halfArc).toBeCloseTo(1.235, 10); // compatibility data; B33 does not hit-test it
     expect(ENEMY_KINDS.ronin?.melee?.range).toBeCloseTo(179.4, 10);
     expect(ENEMY_KINDS.ronin?.melee?.halfArc).toBeCloseTo(1.17, 10);
     expect(ENEMY_KINDS["vault-ronin"]?.melee?.range).toBeCloseTo(182, 10);
@@ -5771,8 +5828,8 @@ describe("GameRoom — schema-31 Drive authority", () => {
     );
     const cost = enemyComboShared.driveCostForProfile(profile, interval);
 
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(37);
-    expect(h.state().schemaVersion).toBe(37);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(38);
+    expect(h.state().schemaVersion).toBe(38);
     expect(player.weaponResource).toBe(player.dualWield.weaponResource);
     expect(player.weaponResource).toMatchObject({
       valueQ: 10_000,
@@ -6069,13 +6126,15 @@ describe("GameRoom — schema-31 public prestige ceremony", () => {
       "weaponResource",
       "prestige",
       "relics",
+      "attackMoveMode",
     ]);
     expect(metadata[0]).toMatchObject({ name: "retiredByte0", type: "uint8" });
     expect(metadata[1]).toMatchObject({ name: "retiredUint32", type: "uint32" });
     expect(metadata[2]).toMatchObject({ name: "retiredByte1", type: "uint8" });
     expect(metadata[3]).toMatchObject({ name: "retiredByte2", type: "uint8" });
     expect(metadata[7]).toMatchObject({ name: "prestige", type: "uint8" });
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(37);
+    expect(metadata[9]).toMatchObject({ name: "attackMoveMode", type: "uint8" });
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(38);
   });
 });
 

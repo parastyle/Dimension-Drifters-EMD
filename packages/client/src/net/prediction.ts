@@ -26,6 +26,8 @@ import {
   relicRollSpeedAtTick,
   type MoveStance,
   PLAYER_RADIUS,
+  PlayerAttackMoveMode,
+  playerAttackInputSpeedMultiplier,
   POUND_GATHER_SECONDS,
   POUND_JUMP_COOLDOWN,
   POUND_MIN_HEIGHT,
@@ -112,6 +114,7 @@ export interface ServerView {
   momentumY?: number;
   slidePhase?: number;
   slidePhaseTick?: number;
+  attackMoveMode?: number;
   alive: boolean;
 }
 
@@ -453,6 +456,7 @@ function stepHorizontal(
   dy: number,
   relics: Readonly<RelicStacks>,
   dt: number,
+  attackMoveMode: number,
   map?: ArenaMap,
   belt?: BeltLevel,
 ): PredState {
@@ -461,7 +465,7 @@ function stepHorizontal(
     { vx: s.mvx, vy: s.mvy },
     { dx, dy },
     dt,
-    relicMoveSpeed(relics),
+    relicMoveSpeed(relics) * playerAttackInputSpeedMultiplier(attackMoveMode),
   );
   const imp = stepImpulse(moved, { vx: s.vx, vy: s.vy }, dt);
   let x = imp.x;
@@ -495,6 +499,7 @@ function stepStanceHorizontal(
   cmd: PredCmd,
   relics: Readonly<RelicStacks>,
   dt: number,
+  attackMoveMode: number,
   map?: ArenaMap,
   belt?: BeltLevel,
   deferDashDisplacement = false,
@@ -502,7 +507,16 @@ function stepStanceHorizontal(
   const activeSlide = s.stance === STANCE_SLIDE && s.slidePhase === SLIDE_PHASE_GROUND;
   if (s.stance !== STANCE_DASH && !activeSlide) {
     const rooted = s.stance === STANCE_CROUCH || s.stance === STANCE_POUND || s.recoveryT > 0;
-    return stepHorizontal(p, rooted ? 0 : cmd.dx, rooted ? 0 : cmd.dy, relics, dt, map, belt);
+    return stepHorizontal(
+      p,
+      rooted ? 0 : cmd.dx,
+      rooted ? 0 : cmd.dy,
+      relics,
+      dt,
+      attackMoveMode,
+      map,
+      belt,
+    );
   }
   let mvx: number;
   let mvy: number;
@@ -514,7 +528,7 @@ function stepStanceHorizontal(
     const directionLength = Math.hypot(p.momentumX, p.momentumY);
     if (directionLength <= 1e-4) {
       clearSlide(p, s, relics);
-      return stepHorizontal(p, cmd.dx, cmd.dy, relics, dt, map, belt);
+      return stepHorizontal(p, cmd.dx, cmd.dy, relics, dt, attackMoveMode, map, belt);
     }
     const slideSpeed = relicRollSpeedAtTick(relics, s.slidePhaseTick);
     p.momentumX = (p.momentumX / directionLength) * slideSpeed;
@@ -685,6 +699,7 @@ function stepPredictionTick(
   cmd: PredCmd,
   relics: Readonly<RelicStacks>,
   dt: number,
+  attackMoveMode: number,
   indicator: DistanceJumpIndicator,
   map?: ArenaMap,
   belt?: BeltLevel,
@@ -714,7 +729,17 @@ function stepPredictionTick(
     launchedDistanceJump = stanceAfterLaunch === STANCE_DASH;
   }
 
-  const next = stepStanceHorizontal(p, s, cmd, relics, dt, map, belt, launchedDistanceJump);
+  const next = stepStanceHorizontal(
+    p,
+    s,
+    cmd,
+    relics,
+    dt,
+    attackMoveMode,
+    map,
+    belt,
+    launchedDistanceJump,
+  );
 
   s.recoveryT = Math.max(0, s.recoveryT - dt);
   s.rollCd = Math.max(0, s.rollCd - dt);
@@ -791,6 +816,7 @@ export class SelfPredictor {
   private belt?: BeltLevel;
   private lastTeleportSeq: number;
   private lastStanceSeq: number;
+  private attackMoveMode: number;
   /** Visual error offset — reconciliation corrections land here and decay (glide, don't pop). */
   private errX = 0;
   private errY = 0;
@@ -879,6 +905,7 @@ export class SelfPredictor {
     this.height = server.height;
     this.vh = server.vh;
     this.lastTeleportSeq = server.teleportSeq;
+    this.attackMoveMode = server.attackMoveMode ?? PlayerAttackMoveMode.Normal;
     const serverStance = server.moveStance ?? STANCE_NONE;
     this.lastStanceSeq = server.stanceSeq ?? 0;
     const speed = Math.hypot(server.mvx, server.mvy);
@@ -1044,6 +1071,7 @@ export class SelfPredictor {
       pending,
       this.relics,
       DT,
+      this.attackMoveMode,
       this.indicatorScratch,
       this.map,
       this.belt,
@@ -1186,6 +1214,7 @@ export class SelfPredictor {
 
   /** Reconcile against a fresh patch (call from room.onStateChange — data only, never touch rigs here). */
   reconcile(server: ServerView): void {
+    this.attackMoveMode = server.attackMoveMode ?? PlayerAttackMoveMode.Normal;
     const teleported = server.teleportSeq !== this.lastTeleportSeq;
     if (teleported) this.presentationSnapPending = true;
     this.lastTeleportSeq = server.teleportSeq;
@@ -1301,6 +1330,7 @@ export class SelfPredictor {
         cmd,
         this.relics,
         DT,
+        this.attackMoveMode,
         this.indicatorScratch,
         this.map,
         this.belt,
@@ -1441,6 +1471,7 @@ export class SelfPredictor {
         this.previewCmd,
         this.relics,
         frac,
+        this.attackMoveMode,
         this.map,
         this.belt,
       );
