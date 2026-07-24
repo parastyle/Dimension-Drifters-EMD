@@ -58,7 +58,7 @@ Current bindings (`ArenaScene.ts:1674-1704`, handlers ~3006-3104):
 | Input | Today | + in-flight panel claims |
 |---|---|---|
 | WASD | move | — |
-| Mouse aim + LMB/RMB | aim, parry (LMB via `"parry"`), fire/cast | dual-wield split-hand claims (`docs/dualwield-panel/`) |
+| Mouse aim + LMB/RMB | aim, parry (LMB via `"parry"`), fire/cast | authored dual weapons use the same input contract |
 | SPACE | jump (tap, buffered) | **triple-booked**: tap = jump, hold ≥150ms = crouch→distance-dash, air-press = pound (`docs/jumpfeel-panel/tech.md` §1.1-1.3) |
 | Q / E | cycle weapon | belt slot interactions |
 | R | grab (tap) / salvage (hold 0.6s) | — |
@@ -281,14 +281,13 @@ The beam wave already generalized the gate machinery: `augmentGateForWeapon` →
 snapshot at earn-time (`progression.ts:51-56`, the G-09 anti-swap rule) → `augmentDeliveriesForGate`
 at draft-open. Character-class merge should touch **none of this** — and that's exactly the risk:
 someone "cleaning up classes" greps `class` and hits `classPool`, `classCount` (weapon set bonuses,
-`weapons.ts:338-360`), `augmentGateForWeapon`'s classPool reads, and the dual-wield panel's law
-that "the code's class concept IS classPool" (`dualwield-panel/designer.md:73-75`). **Guardrail:
+`weapons.ts:338-360`) and `augmentGateForWeapon`'s classPool reads. **Guardrail:
 the deletion is `CharClassId`/`CHAR_CLASSES`/`classForCharacter` and their call sites
 (progression.ts:45, GameRoom.ts:4334, level-up-model.ts:380, ArenaScene.ts:7808) — nothing named
 `classPool`/`classCount` may change in this wave.** Edge cases that DO need answers: the parry-lane
 augments are "universal" today because parry is universal (`augments.ts:263-265`) — if dodge gets
 its own augment lane later, the gate enum grows; reserve the string now or don't, but decide.
-Weapon-class SET bonuses and dual-wield build identity survive untouched — they never read
+Weapon-class SET bonuses and authored-dual build identity survive untouched — they never read
 character class. They become the *only* build-identity system, which raises their balance stakes.
 
 ## 7. Dodge-roll netcode honesty — the parry precedent laws applied

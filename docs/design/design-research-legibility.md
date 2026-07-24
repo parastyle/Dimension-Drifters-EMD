@@ -241,7 +241,7 @@ If a later option deletes grades or merges STR/DEX/INT, assume **all 326 active 
 - **Do not reduce five attributes merely to hit a fashionable count.** Five is already below every stat-forward comparable, and CON has an admirably clear contract. Fix cross-stat and per-source explanation before removing labels.
 - **Do not remove behavioural augments.** Three-card drafts every fifth level are closer to the memorable Overclock/rune/boon pattern than the numerical attribute loop. If anything receives more authoring budget, it should be these milestones.
 - **Do not flatten the weapon catalog into cosmetic skins.** The owner has paid for 326 durable identities; Diablo IV’s Unique reversion and Destiny’s fixed-roll retreat show the identity risk. Archive weak or redundant entries deliberately, but preserve IDs and collector receipts.
-- **Do not remove the three-slot limit, class thresholds or valid dual-wield pairing merely for UI convenience.** These are useful compression rules. Explain compatibility and the 2/3 payoff at the weapon decision.
+- **Do not remove the three-slot limit or class thresholds merely for UI convenience.** These are useful compression rules. Pre-made duals remain one authored weapon and one slot; explain that at the weapon decision.
 - **Do not put the full sheet on the combat HUD.** The comparison set is remarkably consistent here: decisions can pause and explain; combat needs silhouettes, cooldowns, health and threats.
 - **Do not make ballast quieter than it is now.** If it remains mandatory, show the exact destination. “Automatic but disclosed” is defensible; “spent without asking or telling” is not.
 

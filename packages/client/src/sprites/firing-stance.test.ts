@@ -93,13 +93,11 @@ describe("weapon firing-stance table", () => {
     expect(off.y).toBeLessThan(FIRING_FACE_LINE_Y);
   });
 
-  it("resolves heterogeneous dual-wield hands independently", () => {
-    const pistol = weapon("x-gun-ricochet-pistol");
-    const fistGun = weapon("x2-hellmouth-palmcaster");
-    expect(firingStanceFamilyFor(pistol)).toBe("pistol");
-    expect(firingStanceFamilyFor(fistGun)).toBe("fist-gun");
-    expect(firingHandTarget(pistol, "lead", 0)).toEqual({ x: 0.245, y: -0.08 });
-    expect(firingHandTarget(fistGun, "off", 0)).toEqual({ x: 0.238, y: -0.035 });
+  it("resolves both hands of an authored dual weapon from one definition", () => {
+    const weaponDef = weapon("x2-coyote-stinger");
+    expect(firingStanceFamilyFor(weaponDef)).toBe("rapid-gun");
+    expect(firingHandTarget(weaponDef, "lead", 0)).toEqual({ x: 0.222, y: -0.085 });
+    expect(firingHandTarget(weaponDef, "off", 0)).toEqual({ x: 0.158, y: -0.07 });
   });
 
   it("leaves thrown wind-up to the throw animation instead of the retained aim envelope", () => {

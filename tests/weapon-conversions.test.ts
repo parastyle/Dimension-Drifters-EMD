@@ -1,6 +1,5 @@
 import {
   bladeAngleAt,
-  pairEligible,
   swingDescriptorFor,
   thrownProjectileKindFor,
   thrownProjectileSpriteId,
@@ -35,10 +34,9 @@ describe("W-CONVERT weapon contracts", () => {
   it.each([
     "x2-coyote-trickster-s-sparkmitt",
     "x2-sparkknuckle-hex-mitt",
-  ] as const)("makes %s an unbindable held-combo glove pair without a player aura", (weaponId) => {
+  ] as const)("makes %s a single-slot held-combo glove pair without a player aura", (weaponId) => {
     const weapon = WEAPONS[weaponId];
-    const other = WEAPONS["x2-cinderpalm-brand-glove"];
-    if (!weapon || !other) throw new Error(`Missing glove fixture: ${weaponId}`);
+    if (!weapon) throw new Error(`Missing glove fixture: ${weaponId}`);
 
     expect(weapon.tags).toMatchObject({ grip: "2H", delivery: "glove-pair", fireMode: "hold" });
     expect(weapon.glovePair).toEqual({});
@@ -46,7 +44,6 @@ describe("W-CONVERT weapon contracts", () => {
     expect(weapon.performance?.continuous).toBe(true);
     expect(weapon.gun).toBeUndefined();
     expect(weapon.chainLightning).toBeUndefined();
-    expect(pairEligible(weapon, other)).toBe(false);
   });
 
   it("rotates Permafrost Bardiche's authoritative arc through two full revolutions", () => {

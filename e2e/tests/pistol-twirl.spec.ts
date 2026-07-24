@@ -162,56 +162,15 @@ test("a fired one-handed pistol visibly twirls after 0.5s quiet", async ({ page 
   });
 });
 
-test("a dual pistol fixture twirls both hands with a slight stagger", async ({ page }) => {
+test("an authored dual pistol twirls both hands with a slight stagger", async ({ page }) => {
   await runArenaSpec(page, async (baseURL) => {
-    const weaponId = "x-gun-ricochet-pistol";
+    const weaponId = "x2-coyote-stinger";
     await bootArena(page, baseURL, `weapon:${weaponId}`);
     await waitForDevWeapon(page, weaponId);
-    await page.evaluate(() => {
-      const arena = (
-        globalThis as unknown as { ddGame: { scene: { getScene(key: string): unknown } } }
-      ).ddGame.scene.getScene("arena") as {
-        room: { sessionId: string };
-        blobs: {
-          get(id: string):
-            | {
-                weapons: Array<{
-                  spriteId: string;
-                  def: unknown;
-                  img: { width: number; height: number };
-                }>;
-                equipLoadout(lead: unknown, off: unknown): void;
-              }
-            | undefined;
-        };
-      };
-      const rig = arena.blobs.get(arena.room.sessionId);
-      const current = rig?.weapons[0];
-      if (!rig || !current) throw new Error("dual pistol live fixture is unavailable");
-      const manifest = {
-        parts: [
-          {
-            role: "part-1",
-            file: "part-1.png",
-            w: current.img.width,
-            h: current.img.height,
-            ox: 0,
-            oy: 0,
-          },
-        ],
-      };
-      const piece = {
-        spriteId: current.spriteId,
-        def: current.def,
-        manifest,
-        partIndex: 0,
-      };
-      rig.equipLoadout(piece, piece);
-    });
     const frames = await captureAcceptedShot(page);
     const lead = summarize(frames, 0);
     const off = summarize(frames, 1);
-    console.log(`[pistol-twirl] dual ${JSON.stringify({ lead, off })}`);
+    console.log(`[pistol-twirl] authored-dual ${JSON.stringify({ lead, off })}`);
     assertVisibleTwirl(lead, "lead pistol");
     assertVisibleTwirl(off, "off pistol");
     expect(Math.abs((off.onsetMs ?? 0) - (lead.onsetMs ?? 0))).toBeGreaterThanOrEqual(35);

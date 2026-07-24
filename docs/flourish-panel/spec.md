@@ -307,8 +307,8 @@ Use accepted/predicted descriptor truth already present in `triggerSwing()`:
   `meleeComboSequenceFor()` result;
 - the implementation must consume sequence length, not hard-code `2` or `5`; this covers three-step base
   families, a six-beat Driftblade branch bar, and future authored bars;
-- paired melee arms only when `pairStep === DUAL_MELEE_PAIR_BAR.length - 1`, after Crossfall's action
-  ownership releases;
+- authored-dual melee arms only when
+  `authoredDualStep === AUTHORED_DUAL_MELEE_BAR.length - 1`, after Crossfall's action ownership releases;
 - thrown arms on each accepted throw because its release/catch is its one-beat sequence;
 - close-blade finishers do not start a flourish until `sampleCloseBladePose()` has released all committed
   hand/body/foot ownership.
@@ -395,19 +395,17 @@ Keep the existing attack and family order; add the smallest new seams:
 Weapon sprite mounting remains hand-first for the incoming held item. Flourish weapon rotation is semantic
 rotation before `applyWeaponArtGeometry()`, so painted corrective angles still apply exactly once.
 
-## Dual parity details
+## Authored-dual parity details
 
-- Reuse `DUAL_MELEE_PAIR_BAR`, `dualHandForSeq`, `routeSwingChannels()`, and `poseSupportHandFor()`; do not
-  create a screen-left/right parity path.
-- Default order is next semantic lead, then off at `+55 ms` for draw/after; stow is off, then lead at
-  `+45 ms`.
-- Each hand samples its own `weaponFlourishSpecFor(def)`. The shared body sample uses the stronger body
-  weight but clamps to the global body bounds.
-- A mixed blade+pistol pair may show a lead blade circle followed by an off pistol twirl only if both earned
-  their own thresholds. One hand's eligibility never fabricates the other's.
+- Reuse `AUTHORED_DUAL_MELEE_BAR`, `authoredDualHandForSeq`, `routeSwingChannels()`, and
+  `poseSupportHandFor()`; do not create a screen-left/right parity path.
+- A `grip: "dual"` weapon is one definition and one arsenal slot. Its authored lead/off render parts use
+  the same definition, combo bar, and eligibility thresholds.
+- Default order is next semantic lead, then authored off at `+55 ms` for draw/after; stow is off, then lead
+  at `+45 ms`.
 - Crossfall owns both hands during combat and remains unchanged. Its after beat alternates once ownership is
   zero; no simultaneous flourish rotation.
-- Hard 2H geometry is not a dual pair. Both hands are one implement and sample one 2H beat.
+- Hard 2H geometry is not an authored dual. Both hands are one implement and sample one 2H beat.
 
 ## Reset and lifecycle law
 

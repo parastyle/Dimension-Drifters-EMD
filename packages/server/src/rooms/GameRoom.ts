@@ -135,18 +135,13 @@ import {
   DROP_GRACE_SECONDS,
   DriveRegenMode,
   type DriveRegenModeValue,
-  DUAL_MELEE_PAIR_BAR,
-  DUAL_MELEE_SEQUENCE_LENGTH,
   DUMMY_HP,
   DUMMY_RADIUS,
-  type DualWieldHand,
   depthDamageScale,
   depthHpScale,
   driveCostForProfile,
   driveRegenModeFor,
   driveRegenPerSecond,
-  dualHandForSeq,
-  dualOffhandDamageMultiplier,
   EMBERGUARD_BASE_DMG,
   EMBERGUARD_HALF_ARC,
   EMBERGUARD_RANGE,
@@ -228,7 +223,6 @@ import {
   nearestPoint,
   nextWeapon,
   nextWholeArtCharacter,
-  PAIR_TEMPO,
   PARRY_BUFFER_SECONDS,
   PARRY_CHAIN_CD,
   PARRY_CHAIN_HEAL,
@@ -248,7 +242,6 @@ import {
   packParryPresentation,
   ParryReaction,
   type ParryGuardCycleState,
-  type PairedWeaponEntryV1,
   PET_CATALOG_VERSION,
   type PetId,
   type PetMods,
@@ -276,8 +269,6 @@ import {
   type ProjectileDamageEnvelope,
   ProjectileState,
   type ProjectileWaveformDef,
-  pairDamagePerUse,
-  pairEligible,
   petLevelForXp,
   petModsForLevel,
   petStageBandForLevel,
@@ -339,7 +330,6 @@ import {
   SHIFTER_INTERVAL,
   SHIFTER_KIND_IDS,
   SHIFTER_TIER_SECONDS,
-  type SingleWeaponEntryV1,
   SLIDE_PHASE_GROUND,
   SLIDE_PHASE_OFF,
   type SlidePhase,
@@ -845,6 +835,8 @@ interface UltimateRuntime {
 }
 
 /** Per-player combat/aux state, kept server-side (not all of it needs to sync). */
+type WeaponHand = 0 | 1;
+
 interface CombatState {
   /** Server-private identity lock. `player.character` may change cosmetically between snapshot edges. */
   identityCharacter: string;
@@ -874,7 +866,7 @@ interface CombatState {
   gunBurstRemaining: number;
   gunBurstT: number;
   gunBurstWeaponId: string;
-  gunBurstHand: DualWieldHand;
+  gunBurstHand: WeaponHand;
   /** Remaining respawn countdown while dead, sec. */
   respawn: number;
   /** Remaining parry i-frames (negate contact damage), sec. */
@@ -887,17 +879,6 @@ interface CombatState {
   lastWeapon: string;
   /** G-01 shared responsive draw gate. Per-weapon debt is restored underneath this short lock. */
   drawLock: number;
-  /** One dual-wield attack stream gate. It survives bind/unbind so topology cannot mint a beat. */
-  handGate: number;
-  /** Identity currently owned by the paired-off live slot ledger; defense against direct slot rewrites. */
-  offLastWeapon: string;
-  /** Server copy of the six-beat melee chain snapshot used by comboStepForChain. */
-  pairComboSeq: number | undefined;
-  pairComboAcceptedAtMs: number;
-  pairComboId: string;
-  pairComboFamily: MeleeComboFamily;
-  pairComboStep: number;
-  pairComboExpiresAtMs: number;
   /** Server copy of the solo accepted-combo chain used by Driftblade-line mechanical hooks. */
   soloComboSeq: number | undefined;
   soloComboAcceptedAtMs: number;
@@ -1697,7 +1678,6 @@ export class GameRoom extends Room<ArenaState> {
       const player = this.state.players.get(client.sessionId);
       if (!player) return;
       const c = this.combat.get(client.sessionId);
-      if (this.belt && c) this.dissolvePair(player, c);
       if (this.belt) this.syncActiveSlot(player, c);
       else if (c) this.saveWeaponResource(player, c);
       if (c && (c.beamPhase !== 0 || c.beamDescriptor)) {
@@ -1737,7 +1717,6 @@ export class GameRoom extends Room<ArenaState> {
         WEAPONS[message.weapon]?.archived !== true
       ) {
         const c = this.combat.get(client.sessionId);
-        if (c) this.dissolvePair(player, c);
         if (this.belt) this.syncActiveSlot(player, c);
         else if (c) this.saveWeaponResource(player, c);
         if (c && (c.beamPhase !== 0 || c.beamDescriptor)) {
@@ -1762,7 +1741,7 @@ export class GameRoom extends Room<ArenaState> {
     });
 
     // §29 v0.118 ARSENAL swap: switch which of the 3 slots is in hand (1/2/3 keys). Stows the current held
-    // weapon back into its slot first, so the two off-hand weapons are remembered exactly.
+    // weapon back into its slot first, so the other two stored weapons are remembered exactly.
     this.onMessage("swapSlot", (client, message: { slot?: number }) => {
       if (!this.takeAction(client)) return; // §44 action budget
       const player = this.state.players.get(client.sessionId);
@@ -1770,7 +1749,6 @@ export class GameRoom extends Room<ArenaState> {
       const i = Math.floor(message?.slot ?? -1);
       if (i < 0 || i >= ARSENAL_SLOTS || i === player.activeSlot) return;
       const c = this.combat.get(client.sessionId);
-      if (c) this.dissolvePair(player, c);
       this.syncActiveSlot(player, c);
       this.loadSlot(player, c, i);
     });
@@ -1781,7 +1759,6 @@ export class GameRoom extends Room<ArenaState> {
       const player = this.state.players.get(client.sessionId);
       if (!player?.alive) return;
       const c = this.combat.get(client.sessionId);
-      if (c) this.dissolvePair(player, c);
       this.syncActiveSlot(player, c);
       const dir = (message?.dir ?? 1) < 0 ? -1 : 1;
       for (let step = 1; step < ARSENAL_SLOTS; step++) {
@@ -1802,7 +1779,6 @@ export class GameRoom extends Room<ArenaState> {
       const i = Math.floor(message?.slot ?? -1);
       if (i < 0 || i >= ARSENAL_SLOTS) return;
       const c = this.combat.get(client.sessionId);
-      if (c && this.slotTouchesPair(player, i)) this.dissolvePair(player, c);
       if (i === player.activeSlot) this.syncActiveSlot(player, c); // capture the live held weapon first
       const s = player.slots[i]!;
       if (!s.weapon || player.bag.length >= this.bagCapacity(player)) return;
@@ -1824,7 +1800,6 @@ export class GameRoom extends Room<ArenaState> {
       const si = Math.floor(message?.slot ?? player.activeSlot);
       if (bi < 0 || bi >= player.bag.length || si < 0 || si >= ARSENAL_SLOTS) return;
       const c = this.combat.get(client.sessionId);
-      if (c && this.slotTouchesPair(player, si)) this.dissolvePair(player, c);
       if (si === player.activeSlot) this.syncActiveSlot(player, c);
       const bagItem = player.bag[bi]!;
       const slot = player.slots[si]!;
@@ -2046,7 +2021,6 @@ export class GameRoom extends Room<ArenaState> {
         // overflow to the bag, only drop when everything is full.
         if (!this.grabIntoArsenal(player, c, grabbed, bankEntry)) return;
       } else {
-        if (bankEntry?.kind === "pair") return;
         // §13 v0.106 (A11 de-clunk): grabbing is a SWAP, not a replace. If we're already holding a weapon,
         // DROP it on the floor first (as a grabbable pickup carrying its loot identity + earned provenance +
         // a re-grab grace) — otherwise grabbing a Common off the ground while holding a Legendary silently
@@ -2348,8 +2322,6 @@ export class GameRoom extends Room<ArenaState> {
     const bankEntry = bankEntryId
       ? this.weaponRuns.get(player.id)?.entries.get(bankEntryId)?.entry
       : undefined;
-    const pairedOffIndex = bankEntry?.kind === "pair" ? player.offhandSlot : 255;
-    if (c) this.dissolvePair(player, c);
     if (c) this.saveWeaponResource(player, c);
     const ax = c?.aimX ?? 1;
     const ay = c?.aimY ?? 0;
@@ -2380,8 +2352,7 @@ export class GameRoom extends Room<ArenaState> {
     this.pickupGrace.set(pk.id, DROP_GRACE_SECONDS);
     if (bankEntry) {
       this.pickupWeaponBankMeta.set(pk.id, {
-        provenance:
-          bankEntry.kind === "pair" ? bankEntry.lead.provenance : bankEntry.weapon.provenance,
+        provenance: bankEntry.weapon.provenance,
         entry: bankEntry,
         ownerId: player.id,
         ownerLockUntil: Number.POSITIVE_INFINITY,
@@ -2399,9 +2370,6 @@ export class GameRoom extends Room<ArenaState> {
     player.weaponRarity = RARITY_COMMON;
     player.weaponAffix = "";
     if (this.belt || bankEntry) this.copySlot(player.slots[player.activeSlot]!, null);
-    if (pairedOffIndex !== 255 && player.slots[pairedOffIndex]?.bankEntryId === bankEntryId) {
-      this.copySlot(player.slots[pairedOffIndex]!, null);
-    }
     if (c) this.restoreWeaponResource(player, c);
     this.syncWeaponRunFromArsenal(player);
     this.sendWeaponManifest(player);
@@ -2499,52 +2467,6 @@ export class GameRoom extends Room<ArenaState> {
     slot.resourceCharges = 0;
   }
 
-  /** Return the authoritative paired-off row only while the slot link and eligibility still agree. */
-  private pairedOffSlot(player: PlayerState, c: CombatState): ArsenalSlot | undefined {
-    const index = player.offhandSlot;
-    if (index === 255 || index === player.activeSlot || index >= player.slots.length)
-      return undefined;
-    const slot = player.slots[index];
-    if (!slot || slot.weapon !== c.offLastWeapon) return undefined;
-    if (!pairEligible(WEAPONS[player.weapon], WEAPONS[slot.weapon])) return undefined;
-    return slot;
-  }
-
-  /** Clear only relationship/presentation state. The off slot's cooldown/reload/ammo row is never written. */
-  private dissolvePair(player: PlayerState, c: CombatState, armDrawLock = true): void {
-    if (player.offhandSlot === 255) return;
-    player.offhandSlot = 255;
-    player.offCharges = 0;
-    player.offMaxCharges = 0;
-    c.offLastWeapon = "";
-    c.pairComboSeq = undefined;
-    c.pairComboAcceptedAtMs = 0;
-    c.pairComboId = "";
-    c.pairComboStep = 0;
-    c.pairComboExpiresAtMs = 0;
-    this.meleeSwings.delete(`${player.id}:0`);
-    this.meleeSwings.delete(`${player.id}:1`);
-    if (armDrawLock) {
-      const quirkMult = c.mods.drawLockMult;
-      c.drawLock = Math.max(c.drawLock, WEAPON_DRAW_LOCK_SECONDS * quirkMult);
-    }
-  }
-
-  private slotTouchesPair(player: PlayerState, slot: number): boolean {
-    return (
-      player.offhandSlot !== 255 && (slot === player.activeSlot || slot === player.offhandSlot)
-    );
-  }
-
-  /** Paired off-hand debt ages live exactly once. The stowed loop excludes this same row. */
-  private stepPairedOffWeaponResources(player: PlayerState, slot: ArsenalSlot, dt: number): void {
-    slot.cooldown = Math.max(-dt, slot.cooldown - dt);
-    slot.reload = 0;
-    slot.resourceCharges = 0;
-    player.offMaxCharges = 0;
-    player.offCharges = 0;
-  }
-
   private copySlot(dst: ArsenalSlot, src: ArsenalSlot | null): void {
     dst.weapon = src?.weapon ?? "";
     dst.rarity = src?.rarity ?? 0;
@@ -2557,14 +2479,12 @@ export class GameRoom extends Room<ArenaState> {
     dst.resourceCharges = 0;
     dst.instanceId = src?.instanceId ?? "";
     dst.bankEntryId = src?.bankEntryId ?? "";
-    dst.bankEntryKind = src?.bankEntryKind ?? "";
-    dst.bankPairRole = src?.bankPairRole ?? "";
     dst.bankProvenance = src?.bankProvenance ?? "";
     dst.sourceWorldTier = src?.sourceWorldTier ?? 0;
     dst.homeIssue = src?.homeIssue ?? false;
   }
 
-  private mintWeaponOpaqueId(prefix: "wi" | "wp"): string {
+  private mintWeaponOpaqueId(prefix: "wi"): string {
     return `${prefix}_${randomBytes(16).toString("base64url")}`;
   }
 
@@ -2588,7 +2508,6 @@ export class GameRoom extends Room<ArenaState> {
     slot: ArsenalSlot,
     entry: WeaponBankEntryV1,
     member: WeaponInstanceV1,
-    role: "" | "lead" | "offhand" = "",
   ): void {
     this.copySlot(slot, null);
     slot.weapon = member.weaponId;
@@ -2597,8 +2516,6 @@ export class GameRoom extends Room<ArenaState> {
     slot.earned = true;
     slot.instanceId = member.instanceId;
     slot.bankEntryId = entry.entryId;
-    slot.bankEntryKind = entry.kind;
-    slot.bankPairRole = role;
     slot.bankProvenance = member.provenance;
     slot.sourceWorldTier = member.sourceWorldTier;
     slot.resourceWeapon = member.weaponId;
@@ -2635,15 +2552,8 @@ export class GameRoom extends Room<ArenaState> {
       for (const row of expedition.entries) {
         if (row.location === "field") continue;
         const target = row.location === "active" ? player.slots : player.bag;
-        if (row.entry.kind === "single") {
-          const slot = target[row.start];
-          if (slot) this.installWeaponMember(slot, row.entry, row.entry.weapon);
-        } else {
-          const lead = target[row.start];
-          const offhand = target[row.start + 1];
-          if (lead) this.installWeaponMember(lead, row.entry, row.entry.lead, "lead");
-          if (offhand) this.installWeaponMember(offhand, row.entry, row.entry.offhand, "offhand");
-        }
+        const slot = target[row.start];
+        if (slot) this.installWeaponMember(slot, row.entry, row.entry.weapon);
       }
     }
     // The reusable floor is not an instance, never enters escrow, and consumes the first genuinely empty
@@ -2657,9 +2567,7 @@ export class GameRoom extends Room<ArenaState> {
     }
     let activeSlot = firstStarterSlot >= 0 ? firstStarterSlot : 0;
     if (activeEntryId) {
-      const requested = player.slots.findIndex(
-        (slot) => slot.bankEntryId === activeEntryId && slot.bankPairRole !== "offhand",
-      );
+      const requested = player.slots.findIndex((slot) => slot.bankEntryId === activeEntryId);
       if (requested >= 0) activeSlot = requested;
       else activeEntryId = "";
     }
@@ -2713,7 +2621,7 @@ export class GameRoom extends Room<ArenaState> {
     }
     for (let index = 0; index < player.slots.length; index++) {
       const slot = player.slots[index];
-      if (!slot?.bankEntryId || slot.bankPairRole === "offhand") continue;
+      if (!slot?.bankEntryId) continue;
       const row = run.entries.get(slot.bankEntryId);
       if (row) {
         row.location = "active";
@@ -2722,7 +2630,7 @@ export class GameRoom extends Room<ArenaState> {
     }
     for (let index = 0; index < player.bag.length; index++) {
       const slot = player.bag[index];
-      if (!slot?.bankEntryId || slot.bankPairRole === "offhand") continue;
+      if (!slot?.bankEntryId) continue;
       const row = run.entries.get(slot.bankEntryId);
       if (row) {
         row.location = "pack";
@@ -2770,143 +2678,13 @@ export class GameRoom extends Room<ArenaState> {
     }
   }
 
-  private bindRunWeaponPair(
-    player: PlayerState,
-    leadSlot: ArsenalSlot,
-    offSlot: ArsenalSlot,
-  ): PairedWeaponEntryV1 | undefined {
-    const run = this.weaponRuns.get(player.id);
-    const account = this.metaAccounts.get(player.id);
-    const expedition = account?.weaponBank.expedition;
-    const leadRow = run?.entries.get(leadSlot.bankEntryId);
-    const offRow = run?.entries.get(offSlot.bankEntryId);
-    if (
-      !run ||
-      !expedition ||
-      !leadRow ||
-      !offRow ||
-      leadRow === offRow ||
-      leadRow.entry.kind !== "single" ||
-      offRow.entry.kind !== "single"
-    )
-      return undefined;
-    const pair: PairedWeaponEntryV1 = {
-      kind: "pair",
-      entryId: this.mintWeaponOpaqueId("wp"),
-      lead: leadRow.entry.weapon,
-      offhand: offRow.entry.weapon,
-    };
-    const row: ExpeditionEntryV1 = {
-      entry: pair,
-      stakeOrigin:
-        leadRow.stakeOrigin === "found" || offRow.stakeOrigin === "found" ? "found" : "committed",
-      location: "active",
-      start: player.activeSlot,
-    };
-    const leadIndex = expedition.entries.indexOf(leadRow);
-    const offIndex = expedition.entries.indexOf(offRow);
-    if (leadIndex >= 0) expedition.entries.splice(leadIndex, 1);
-    const adjustedOffIndex = expedition.entries.indexOf(offRow);
-    if (adjustedOffIndex >= 0) expedition.entries.splice(adjustedOffIndex, 1);
-    expedition.entries.push(row);
-    run.entries.delete(leadRow.entry.entryId);
-    run.entries.delete(offRow.entry.entryId);
-    run.entries.set(pair.entryId, row);
-    run.byInstanceId.set(pair.lead.instanceId, pair.entryId);
-    run.byInstanceId.set(pair.offhand.instanceId, pair.entryId);
-    leadSlot.bankEntryId = pair.entryId;
-    leadSlot.bankEntryKind = "pair";
-    leadSlot.bankPairRole = "lead";
-    offSlot.bankEntryId = pair.entryId;
-    offSlot.bankEntryKind = "pair";
-    offSlot.bankPairRole = "offhand";
-    this.syncWeaponRunFromArsenal(player);
-    return pair;
-  }
-
-  private unbindRunWeaponPair(player: PlayerState): boolean {
-    const leadSlot = player.slots[player.activeSlot];
-    const run = this.weaponRuns.get(player.id);
-    const account = this.metaAccounts.get(player.id);
-    const expedition = account?.weaponBank.expedition;
-    const pairRow = leadSlot?.bankEntryId ? run?.entries.get(leadSlot.bankEntryId) : undefined;
-    if (!leadSlot || !run || !expedition || pairRow?.entry.kind !== "pair") return false;
-    const offIndex = player.offhandSlot;
-    const offSlot = offIndex === 255 ? undefined : player.slots[offIndex];
-    if (!offSlot || offSlot.bankEntryId !== pairRow.entry.entryId) return false;
-    const lead: SingleWeaponEntryV1 = {
-      kind: "single",
-      entryId: pairRow.entry.lead.instanceId,
-      weapon: pairRow.entry.lead,
-    };
-    const offhand: SingleWeaponEntryV1 = {
-      kind: "single",
-      entryId: pairRow.entry.offhand.instanceId,
-      weapon: pairRow.entry.offhand,
-    };
-    const index = expedition.entries.indexOf(pairRow);
-    if (index >= 0) expedition.entries.splice(index, 1);
-    const leadRow: ExpeditionEntryV1 = {
-      entry: lead,
-      stakeOrigin: pairRow.stakeOrigin,
-      location: "active",
-      start: player.activeSlot,
-    };
-    const offRow: ExpeditionEntryV1 = {
-      entry: offhand,
-      stakeOrigin: pairRow.stakeOrigin,
-      location: "active",
-      start: offIndex,
-    };
-    expedition.entries.push(leadRow, offRow);
-    run.entries.delete(pairRow.entry.entryId);
-    run.entries.set(lead.entryId, leadRow);
-    run.entries.set(offhand.entryId, offRow);
-    run.byInstanceId.set(lead.weapon.instanceId, lead.entryId);
-    run.byInstanceId.set(offhand.weapon.instanceId, offhand.entryId);
-    leadSlot.bankEntryId = lead.entryId;
-    leadSlot.bankEntryKind = "single";
-    leadSlot.bankPairRole = "";
-    offSlot.bankEntryId = offhand.entryId;
-    offSlot.bankEntryKind = "single";
-    offSlot.bankPairRole = "";
-    return true;
-  }
-
-  private activateMaterializedPair(player: PlayerState, c: CombatState): void {
-    const leadSlot = player.slots[player.activeSlot];
-    if (!leadSlot || leadSlot.bankEntryKind !== "pair" || leadSlot.bankPairRole !== "lead") return;
-    let offIndex = -1;
-    for (let index = 0; index < player.slots.length; index++) {
-      const slot = player.slots[index];
-      if (slot?.bankEntryId === leadSlot.bankEntryId && slot.bankPairRole === "offhand") {
-        offIndex = index;
-        break;
-      }
-    }
-    if (
-      offIndex < 0 ||
-      !pairEligible(WEAPONS[leadSlot.weapon], WEAPONS[player.slots[offIndex]!.weapon])
-    )
-      return;
-    const off = player.slots[offIndex]!;
-    this.initializeStoredWeaponResource(player, off);
-    player.offhandSlot = offIndex;
-    player.pairBaseSeq = player.attackSeq;
-    player.offMaxCharges = 0;
-    player.offCharges = 0;
-    c.offLastWeapon = off.weapon;
-    c.pairComboId = `${leadSlot.weapon}|${off.weapon}`;
-    c.pairComboFamily = meleeComboSelectionFor(WEAPONS[leadSlot.weapon]!)?.family ?? "arc";
-  }
-
   private sendWeaponManifest(player: PlayerState): void {
     const run = this.weaponRuns.get(player.id);
     if (!run) return;
     this.syncWeaponRunFromArsenal(player);
     const entries = [] as Array<{
       entryId: string;
-      kind: "single" | "pair";
+      kind: "single";
       origin: "committed" | "found";
       location: "active" | "pack" | "field";
       start: number;
@@ -3289,7 +3067,6 @@ export class GameRoom extends Room<ArenaState> {
     genuinelyNewPickup = false,
     applyDrawLock = true,
   ): void {
-    if (player.offhandSlot !== 255) this.dissolvePair(player, c);
     this.saveWeaponResource(player, c);
     if (c.beamPhase !== 0 || c.beamDescriptor) {
       this.cancelBeam(player, player.id, c, true, true);
@@ -3316,8 +3093,7 @@ export class GameRoom extends Room<ArenaState> {
   private stepStowedWeaponResources(player: PlayerState, c: CombatState, dt: number): void {
     if (this.belt) {
       for (let i = 0; i < player.slots.length; i++) {
-        // P0 dual-wield law: the paired-off row is stepped by the live hand path below, never here too.
-        if (i === player.activeSlot || i === player.offhandSlot) continue;
+        if (i === player.activeSlot) continue;
         const slot = player.slots[i];
         if (slot?.resourceReady) this.stepStoredSlot(player, slot, dt);
       }
@@ -3348,8 +3124,6 @@ export class GameRoom extends Room<ArenaState> {
       if (s.weapon !== player.weapon) {
         s.instanceId = "";
         s.bankEntryId = "";
-        s.bankEntryKind = "";
-        s.bankPairRole = "";
         s.bankProvenance = "";
         s.sourceWorldTier = 0;
         s.homeIssue = false;
@@ -3394,26 +3168,8 @@ export class GameRoom extends Room<ArenaState> {
     grabbed: PickupState,
     bankEntry?: WeaponBankEntryV1,
   ): boolean {
-    if (c) this.dissolvePair(player, c);
     this.syncActiveSlot(player, c);
     const earned = this.earnedPickups.has(grabbed.id);
-    if (bankEntry?.kind === "pair") {
-      let start = -1;
-      for (let index = 0; index < ARSENAL_SLOTS - 1; index++) {
-        if (!player.slots[index]?.weapon && !player.slots[index + 1]?.weapon) {
-          start = index;
-          break;
-        }
-      }
-      if (start < 0) return false;
-      this.installWeaponMember(player.slots[start]!, bankEntry, bankEntry.lead, "lead");
-      this.installWeaponMember(player.slots[start + 1]!, bankEntry, bankEntry.offhand, "offhand");
-      this.loadSlot(player, c, start);
-      this.registerFoundWeaponEntry(player, bankEntry);
-      this.syncWeaponRunFromArsenal(player);
-      if (c) this.activateMaterializedPair(player, c);
-      return true;
-    }
     let target = -1;
     for (let i = 0; i < ARSENAL_SLOTS; i++) {
       if (!player.slots[i]?.weapon) {
@@ -3433,7 +3189,7 @@ export class GameRoom extends Room<ArenaState> {
       target = player.activeSlot;
     }
     const s = player.slots[target]!;
-    if (bankEntry?.kind === "single") this.installWeaponMember(s, bankEntry, bankEntry.weapon);
+    if (bankEntry) this.installWeaponMember(s, bankEntry, bankEntry.weapon);
     else {
       this.copySlot(s, null);
       s.weapon = grabbed.weapon;
@@ -3450,25 +3206,21 @@ export class GameRoom extends Room<ArenaState> {
   }
 
   /** Stat-free held damage multiplier. Authored source damage is modified only by the held weapon's
-   *  non-stat factors: loot identity, pair throughput, weapon-set bonus, and runtime effects. */
+   * non-stat factors: loot identity, weapon-set bonus, and runtime effects. */
   private heldDamageMult(
     weapon: WeaponDef,
     player: PlayerState,
-    hand: DualWieldHand = 0,
+    _hand: WeaponHand = 0,
   ): number {
     const c = this.combat.get(player.id);
-    const offSlot = c ? this.pairedOffSlot(player, c) : undefined;
-    const rarity = hand === 1 && offSlot ? offSlot.rarity : player.weaponRarity;
-    const affix = hand === 1 && offSlot ? offSlot.affix : player.weaponAffix;
     return (
-      (hand === 1 && offSlot ? this.pairOffhandDamageMultiplier(player, offSlot) : 1) *
-      lootDamageMult(rarity, affix) *
+      lootDamageMult(player.weaponRarity, player.weaponAffix) *
       weaponSetBonus(this.loadoutIds(player), weapon.id) * // §30 class set-bonus (2/3-of-a-class)
       (c?.mods.outgoingWeaponDamageMult ?? 1)
     );
   }
 
-  /** One audited recovery seam for held, paired, cast, gun, thrown, beam, and stored cooldown debt. */
+  /** One audited recovery seam for held, cast, gun, thrown, beam, and stored cooldown debt. */
   private weaponRecoveryMult(player: PlayerState, weapon: WeaponDef): number {
     const mods = this.combat.get(player.id)?.mods;
     if (!mods) return 1;
@@ -3481,22 +3233,10 @@ export class GameRoom extends Room<ArenaState> {
     return mult;
   }
 
-  /** Compute the off-hand trim from both live loot identities, then enforce the shared throughput cap. */
-  private pairOffhandDamageMultiplier(player: PlayerState, offSlot: ArsenalSlot): number {
-    const lead = WEAPONS[player.weapon];
-    const off = WEAPONS[offSlot.weapon];
-    if (!lead || !off) return 0;
-    const leadDamage =
-      pairDamagePerUse(lead) * lootDamageMult(player.weaponRarity, player.weaponAffix);
-    const offDamage =
-      pairDamagePerUse(off) * lootDamageMult(offSlot.rarity, offSlot.affix);
-    return dualOffhandDamageMultiplier(lead, off, leadDamage, offDamage);
-  }
-
   private heldCastDamageMult(
     weapon: WeaponDef,
     player: PlayerState,
-    hand: DualWieldHand = 0,
+    hand: WeaponHand = 0,
   ): number {
     return this.heldDamageMult(weapon, player, hand);
   }
@@ -3626,8 +3366,6 @@ export class GameRoom extends Room<ArenaState> {
   private loadoutIds(player: PlayerState): string[] {
     const out: string[] = [];
     for (let i = 0; i < player.slots.length; i++) {
-      // Pair is one build choice toward set thresholds even though its identities keep two slot ledgers.
-      if (player.offhandSlot !== 255 && i === player.offhandSlot) continue;
       out.push(i === player.activeSlot ? player.weapon : (player.slots[i]?.weapon ?? ""));
     }
     return out;
@@ -3869,13 +3607,6 @@ export class GameRoom extends Room<ArenaState> {
   private toggleTraining(abandoningPlayerId = this.hostId ?? ""): void {
     if (this.state.mode === "arena") this.forfeitWeaponRunForWorkshop(abandoningPlayerId);
     // Entering/leaving the workshop aborts the expedition; pending run rewards are explicitly forfeited.
-    this.state.players.forEach((player, id) => {
-      const c = this.combat.get(id);
-      if (!c) return;
-      this.dissolvePair(player, c, false);
-      player.pairBaseSeq = 0;
-      c.handGate = 0;
-    });
     this.state.enemies.clear();
     this.state.pickups.clear();
     this.state.projectiles.clear();
@@ -4075,8 +3806,6 @@ export class GameRoom extends Room<ArenaState> {
     this.petDimensionEpoch = 0;
     this.state.players.forEach((player, id) => {
       const c = this.combat.get(id);
-      if (c) this.dissolvePair(player, c, false);
-      player.pairBaseSeq = 0;
       this.snapshotPetRun(player, this.metaAccounts.get(id)?.selectedPetId ?? "");
       const account = this.metaAccounts.get(id);
       if (account && !account.weaponBank.expedition) {
@@ -4141,8 +3870,6 @@ export class GameRoom extends Room<ArenaState> {
         c.reloadCd = 0;
         c.lastWeapon = player.weapon;
         c.drawLock = 0;
-        c.handGate = 0;
-        c.offLastWeapon = "";
         c.weaponLedger.clear();
         player.maxCharges = 0;
         player.charges = 0;
@@ -4473,13 +4200,11 @@ export class GameRoom extends Room<ArenaState> {
     };
     if (archiveSalvage.salvagedInstances > 0 && Array.isArray(carry.placements)) {
       const available = new Set(account.weaponBank.stash.map((entry) => entry.entryId));
-      const migratedId = (entryId: string): string =>
-        archiveSalvage.entryIdRemap[entryId] ?? entryId;
       const placements = carry.placements.flatMap((placement) => {
-        const entryId = migratedId(placement.entryId);
+        const entryId = placement.entryId;
         return available.has(entryId) ? [{ ...placement, entryId }] : [];
       });
-      const activeEntryId = migratedId(carry.activeEntryId);
+      const activeEntryId = carry.activeEntryId;
       carry = {
         ...carry,
         placements,
@@ -4562,14 +4287,6 @@ export class GameRoom extends Room<ArenaState> {
       reloadCd: 0,
       lastWeapon: player.weapon,
       drawLock: 0,
-      handGate: 0,
-      offLastWeapon: "",
-      pairComboSeq: undefined,
-      pairComboAcceptedAtMs: 0,
-      pairComboId: "",
-      pairComboFamily: "arc",
-      pairComboStep: 0,
-      pairComboExpiresAtMs: 0,
       soloComboSeq: undefined,
       soloComboAcceptedAtMs: 0,
       soloComboId: "",
@@ -4673,8 +4390,6 @@ export class GameRoom extends Room<ArenaState> {
       ultCritCharges: 0,
       ultCritEndTick: 0,
     });
-    const joinedCombat = this.combat.get(client.sessionId);
-    if (joinedCombat) this.activateMaterializedPair(player, joinedCombat);
     this.sendWeaponManifest(player);
     this.publishPetPickupEligibility();
     if (typeof client.send === "function") client.send("metaAccount", account);
@@ -4836,9 +4551,9 @@ export class GameRoom extends Room<ArenaState> {
     weapon: WeaponDef,
     _weaponInstanceId: string,
     _delivery: number,
-    _hand: DualWieldHand,
+    _hand: WeaponHand,
     effectiveInterval: number,
-    pairContribution: number,
+    costMultiplier: number,
     continuousDt: number,
     reason: WeaponSpendReason,
   ): WeaponSpendResult {
@@ -4851,7 +4566,7 @@ export class GameRoom extends Room<ArenaState> {
 
     let requested = 0;
     if (reason === "tap") {
-      requested = driveCostForProfile(profile, effectiveInterval) * Math.max(0, pairContribution);
+      requested = driveCostForProfile(profile, effectiveInterval) * Math.max(0, costMultiplier);
     } else if (reason === "beam-ignite") {
       requested = DRIVE_BEAM_IGNITION_COST;
     } else if (reason === "beam-active") {
@@ -5918,7 +5633,6 @@ export class GameRoom extends Room<ArenaState> {
       c.cd = Math.max(-dt, c.cd - dt);
       c.gunBurstT = Math.max(-dt, c.gunBurstT - dt);
       c.drawLock = Math.max(0, c.drawLock - dt);
-      c.handGate = Math.max(-dt, c.handGate - dt);
       this.stepStowedWeaponResources(player, c, dt);
       c.invuln = Math.max(0, c.invuln - dt);
       c.juggleMercy = Math.max(0, c.juggleMercy - dt); // §51 G10 touchdown mercy ages out
@@ -5995,13 +5709,7 @@ export class GameRoom extends Room<ArenaState> {
         this.transitionWeapon(player, c, false, false);
       }
 
-      let offSlot = this.pairedOffSlot(player, c);
-      if (player.offhandSlot !== 255 && !offSlot) {
-        this.dissolvePair(player, c);
-        offSlot = undefined;
-      }
-      if (offSlot) this.stepPairedOffWeaponResources(player, offSlot, dt);
-      this.stepGunBurst(player, c, weapon, offSlot, acting);
+      this.stepGunBurst(player, c, weapon, acting);
 
       if (weapon?.performance?.aura) {
         c.attackBuffer = 0;
@@ -6035,32 +5743,6 @@ export class GameRoom extends Room<ArenaState> {
       // §7 v0.105 de-clunk: a BUFFERED attack is live while its window hasn't decayed; the tick fires it the
       // instant the cooldown drains (a press one tick early is honoured, not eaten), and consuming it zeroes
       // the buffer so it can't double-fire. A held trigger re-arms the buffer each client cooldown.
-      if (offSlot) {
-        const leadWeapon = weapon!;
-        const offWeapon = WEAPONS[offSlot.weapon]!;
-
-        let pairStep = -1;
-        let hand: DualWieldHand;
-        if (!leadWeapon.gun && !leadWeapon.cast) {
-          pairStep = this.nextPairMeleeStep(player, c);
-          hand = this.pairMeleeServerHand(pairStep);
-        } else {
-          hand = dualHandForSeq((player.attackSeq + 1) >>> 0, player.pairBaseSeq);
-        }
-
-        const pairCanAct =
-          acting &&
-          c.stance !== STANCE_SLIDE &&
-          c.attackBuffer > 0 &&
-          c.drawLock <= 0 &&
-          c.handGate <= 0 &&
-          this.handCooldown(c, offSlot, hand) <= 0;
-        if (pairCanAct) {
-          this.resolveHandAttack(player, c, hand, offSlot, pairStep, false);
-        }
-        return;
-      }
-
       const canAct =
         acting && c.stance !== STANCE_SLIDE && c.attackBuffer > 0 && c.cd <= 0 && c.drawLock <= 0;
       // §10 v0.104: the single Terraria affix can speed up / slow down the held weapon (Swift/Heavy…).
@@ -6170,7 +5852,7 @@ export class GameRoom extends Room<ArenaState> {
         }
       } else if (weapon && canAct) {
         if (weapon.hybridProjectile || weapon.glovePair?.wrapsFeet === true) {
-          this.resolveHandAttack(player, c, 0);
+          this.resolveSingleWeaponAttack(player, c);
           return;
         }
         c.attackBuffer = 0;
@@ -7454,95 +7136,21 @@ export class GameRoom extends Room<ArenaState> {
    *  it across `swingArc` and damages each enemy the blade actually crosses — #2/#5/#6); the secondary
    *  LAYERS (chain / quake / scatter) fire here at the swing moment, each an independent position-based
    *  source ("layered like the Wyrmtooth"). Each layer uses its authored flat damage. */
-  /** Prospective six-beat melee step. It mutates nothing until the attack is actually accepted. */
-  private nextPairMeleeStep(player: PlayerState, c: CombatState): number {
-    const acceptedAtMs = this.state.tick * TICK_MS;
-    return comboStepForChain(
-      (player.attackSeq + 1) >>> 0,
-      acceptedAtMs,
-      c.pairComboId,
-      c.pairComboFamily,
-      DUAL_MELEE_SEQUENCE_LENGTH,
-      c.pairComboSeq,
-      c.pairComboAcceptedAtMs,
-      c.pairComboId,
-      c.pairComboSeq === undefined ? undefined : c.pairComboFamily,
-      c.pairComboStep,
-      c.pairComboExpiresAtMs,
-    );
-  }
-
-  /** Crossfall's `both` is presentation; the shipped authoritative event is one lead sweep. */
-  private pairMeleeServerHand(step: number): DualWieldHand {
-    return DUAL_MELEE_PAIR_BAR[step] === "off" ? 1 : 0;
-  }
-
-  /** The `both` gather is timed by the off weapon, matching the six-beat bar's heavy incoming note. */
-  private pairMeleeCadenceHand(step: number): DualWieldHand {
-    return DUAL_MELEE_PAIR_BAR[step] === "lead" ? 0 : 1;
-  }
-
-  private handCooldown(c: CombatState, offSlot: ArsenalSlot, hand: DualWieldHand): number {
-    return hand === 0 ? c.cd : offSlot.cooldown;
-  }
-
-  private setHandCooldown(
-    c: CombatState,
-    offSlot: ArsenalSlot | undefined,
-    hand: DualWieldHand,
-    cooldown: number,
-    accumulate: boolean,
-  ): void {
-    if (hand === 0) c.cd = accumulate ? c.cd + cooldown : cooldown;
-    else if (offSlot) offSlot.cooldown = accumulate ? offSlot.cooldown + cooldown : cooldown;
-  }
-
-  private recordPairMeleeBeat(
-    player: PlayerState,
-    c: CombatState,
-    offSlot: ArsenalSlot,
-    step: number,
-    cadenceMult: number,
-  ): void {
-    const acceptedAtMs = this.state.tick * TICK_MS;
-    const nextStep = (step + 1) % DUAL_MELEE_SEQUENCE_LENGTH;
-    const incomingHand = this.pairMeleeCadenceHand(nextStep);
-    const incoming = incomingHand === 0 ? WEAPONS[player.weapon] : WEAPONS[offSlot.weapon];
-    const gap = incoming ? PAIR_TEMPO * weaponAttackCooldown(incoming) * cadenceMult : 0;
-    const graceMs = Math.min(300, Math.max(120, gap * 350));
-    c.pairComboSeq = player.attackSeq;
-    c.pairComboAcceptedAtMs = acceptedAtMs;
-    c.pairComboStep = step;
-    c.pairComboExpiresAtMs = acceptedAtMs + gap * 1000 + graceMs;
-  }
-
-  /** Resolve one accepted attack from one hand. Identity, loot, damage, receipt, and resource writes all
-   * come from that hand; the lead's cooldown affix alone owns pair cadence. */
-  private resolveHandAttack(
-    player: PlayerState,
-    c: CombatState,
-    hand: DualWieldHand,
-    offSlot?: ArsenalSlot,
-    pairStep = -1,
-    _soloCover = false,
-  ): boolean {
-    const paired = !!offSlot;
-    const weapon = hand === 0 ? WEAPONS[player.weapon] : WEAPONS[offSlot?.weapon ?? ""];
+  /** Resolve one accepted attack for the single weapon equipped in the active slot. */
+  private resolveSingleWeaponAttack(player: PlayerState, c: CombatState): boolean {
+    const weapon = WEAPONS[player.weapon];
     if (!weapon) return false;
     const cadenceMult =
       lootCooldownMult(player.weaponAffix) * this.weaponRecoveryMult(player, weapon);
     const soloCooldown = weaponAttackCooldown(weapon) * cadenceMult;
     const melee = !weapon.gun && !weapon.thrown && !weapon.cast;
-    const soloBeat =
-      melee && !paired ? this.nextSoloMeleeBeat(player, c, weapon, soloCooldown) : undefined;
+    const soloBeat = melee ? this.nextSoloMeleeBeat(player, c, weapon, soloCooldown) : undefined;
     const authoritativeComboStep =
       weaponUsesAuthoritativeEnvelopeCombo(weapon) && soloBeat
         ? meleeComboSelectionFor(weapon)?.sequence[soloBeat.step]
         : undefined;
-    const pairSelection = melee && paired ? meleeComboSelectionFor(weapon) : undefined;
-    const pairLength = Math.max(1, pairSelection?.sequence.length ?? 1);
-    const katanaEffect = melee
-      ? soloBeat
+    const katanaEffect =
+      melee && soloBeat
         ? katanaBeatEffectFor(
             weapon,
             soloBeat.step,
@@ -7550,17 +7158,9 @@ export class GameRoom extends Room<ArenaState> {
             soloBeat.continued,
             soloBeat.gapRatio,
           )
-        : katanaBeatEffectFor(
-            weapon,
-            pairStep >= 0 ? Math.min(pairLength - 1, Math.floor(pairStep / 2)) : 0,
-            pairLength,
-            pairStep > 0,
-          )
-      : undefined;
+        : undefined;
     c.attackBuffer = 0;
     const interval = effectiveAcceptedWeaponInterval(weapon, soloCooldown);
-    const pairContribution =
-      hand === 1 && offSlot ? this.pairOffhandDamageMultiplier(player, offSlot) : 1;
     const delivery = weapon.gun
       ? CombatDelivery.Gun
       : weapon.thrown
@@ -7568,10 +7168,7 @@ export class GameRoom extends Room<ArenaState> {
         : weapon.cast
           ? CombatDelivery.Cast
           : CombatDelivery.Melee;
-    const instanceId =
-      hand === 1
-        ? offSlot?.instanceId || weapon.id
-        : player.slots[player.activeSlot]?.instanceId || weapon.id;
+    const instanceId = player.slots[player.activeSlot]?.instanceId || weapon.id;
     if (
       !this.trySpendWeaponResource(
         player,
@@ -7579,9 +7176,9 @@ export class GameRoom extends Room<ArenaState> {
         weapon,
         instanceId,
         delivery,
-        hand,
+        0,
         interval,
-        pairContribution,
+        1,
         0,
         "tap",
       ).accepted
@@ -7590,29 +7187,28 @@ export class GameRoom extends Room<ArenaState> {
     this.stampAttackBeat(player);
 
     if (weapon.gun) {
-      this.fireGun(player, c, weapon, hand);
-      this.armGunBurst(c, weapon, hand);
-      this.setHandCooldown(c, offSlot, hand, soloCooldown, true);
+      this.fireGun(player, c, weapon, 0);
+      this.armGunBurst(c, weapon, 0);
+      c.cd += soloCooldown;
     } else if (weapon.thrown) {
-      this.throwWeapon(player, c, weapon, hand);
-      this.setHandCooldown(c, offSlot, hand, soloCooldown, false);
+      this.throwWeapon(player, c, weapon, 0);
+      c.cd = soloCooldown;
     } else if (weapon.cast) {
-      this.fireCast(player, c, weapon, hand);
-      this.setHandCooldown(c, offSlot, hand, soloCooldown, false);
+      this.fireCast(player, c, weapon, 0);
+      c.cd = soloCooldown;
     } else {
-      const descriptorCooldown = paired ? PAIR_TEMPO * soloCooldown : soloCooldown;
-      const swing = swingDescriptorFor(weapon, descriptorCooldown);
+      const swing = swingDescriptorFor(weapon, soloCooldown);
       this.resolveSwing(
         player,
         c,
         weapon,
         swing,
-        hand,
+        0,
         katanaEffect,
         authoritativeComboStep,
         soloBeat ? { step: soloBeat.step, length: soloBeat.length } : undefined,
       );
-      this.setHandCooldown(c, offSlot, hand, soloCooldown, false);
+      c.cd = soloCooldown;
       if (soloBeat)
         this.recordSoloMeleeBeat(
           player,
@@ -7620,25 +7216,9 @@ export class GameRoom extends Room<ArenaState> {
           weapon,
           soloBeat.family,
           soloBeat.step,
-          descriptorCooldown,
+          soloCooldown,
         );
     }
-
-    if (!offSlot) return true;
-    if (pairStep >= 0) this.recordPairMeleeBeat(player, c, offSlot, pairStep, cadenceMult);
-    let gap: number;
-    if (pairStep >= 0) {
-      const nextStep = (pairStep + 1) % DUAL_MELEE_SEQUENCE_LENGTH;
-      const incomingHand = this.pairMeleeCadenceHand(nextStep);
-      const incoming = incomingHand === 0 ? WEAPONS[player.weapon] : WEAPONS[offSlot.weapon];
-      gap = PAIR_TEMPO * weaponAttackCooldown(incoming!) * cadenceMult;
-    } else {
-      const incoming = hand === 0 ? WEAPONS[offSlot.weapon] : WEAPONS[player.weapon];
-      gap = PAIR_TEMPO * weaponAttackCooldown(incoming!) * cadenceMult;
-    }
-    c.handGate += gap;
-    player.offCharges = 0;
-    player.offMaxCharges = 0;
     return true;
   }
 
@@ -7647,7 +7227,7 @@ export class GameRoom extends Room<ArenaState> {
     c: CombatState,
     weapon: WeaponDef,
     swing: SwingDescriptor,
-    hand: DualWieldHand = 0,
+    hand: WeaponHand = 0,
     katanaEffect?: KatanaBeatEffect,
     comboStep?: Readonly<MeleeComboStep>,
     hybridBeat?: Readonly<{ step: number; length: number }>,
@@ -7690,7 +7270,7 @@ export class GameRoom extends Room<ArenaState> {
     // Register the swept edge on the accepted descriptor. Slow active seconds can exceed the old 180ms cap,
     // but BALANCE/DPS does not multiply: cooldown + edgeDamage + arc coverage are unchanged and `hit` still
     // admits each enemy exactly once per accepted swing. Replaces any in-flight swing; pose ≤ cooldown.
-    const swingKey = player.offhandSlot !== 255 ? `${player.id}:${hand}` : player.id;
+    const swingKey = player.id;
     const rangeMultiplier =
       (comboStep?.path.rangeMultiplier ?? 1) * (katanaEffect?.reachMultiplier ?? 1);
     const reach = envelope.maxReach * rangeMultiplier;
@@ -10697,7 +10277,7 @@ export class GameRoom extends Room<ArenaState> {
     return l > 1e-3 ? { x: dx / l, y: dy / l } : { x: c.aimX, y: c.aimY };
   }
 
-  private armGunBurst(c: CombatState, weapon: WeaponDef, hand: DualWieldHand): void {
+  private armGunBurst(c: CombatState, weapon: WeaponDef, hand: WeaponHand): void {
     const burst = weapon.gun?.burst;
     if (!burst || burst.count <= 1) return;
     c.gunBurstWeaponId = weapon.id;
@@ -10717,12 +10297,10 @@ export class GameRoom extends Room<ArenaState> {
   private stepGunBurst(
     player: PlayerState,
     c: CombatState,
-    leadWeapon: WeaponDef | undefined,
-    offSlot: ArsenalSlot | undefined,
+    weapon: WeaponDef | undefined,
     acting: boolean,
   ): void {
     if (c.gunBurstRemaining <= 0) return;
-    const weapon = c.gunBurstHand === 0 ? leadWeapon : WEAPONS[offSlot?.weapon ?? ""];
     if (!acting || weapon?.id !== c.gunBurstWeaponId || !weapon.gun?.burst) {
       this.clearGunBurst(c);
       return;
@@ -10771,7 +10349,7 @@ export class GameRoom extends Room<ArenaState> {
     player: PlayerState,
     c: CombatState,
     weapon: WeaponDef,
-    hand: DualWieldHand = 0,
+    hand: WeaponHand = 0,
     recoilElapsedMs = 0,
   ): void {
     const g = weapon.gun;
@@ -10946,7 +10524,7 @@ export class GameRoom extends Room<ArenaState> {
     player: PlayerState,
     c: CombatState,
     weapon: WeaponDef,
-    hand: DualWieldHand = 0,
+    hand: WeaponHand = 0,
   ): void {
     const cast = weapon.cast;
     if (!cast) return;
@@ -11027,7 +10605,7 @@ export class GameRoom extends Room<ArenaState> {
     player: PlayerState,
     c: CombatState,
     weapon: WeaponDef,
-    hand: DualWieldHand = 0,
+    hand: WeaponHand = 0,
   ): void {
     const t = weapon.thrown;
     if (!t) return;
@@ -11183,7 +10761,7 @@ export class GameRoom extends Room<ArenaState> {
     player: PlayerState,
     c: CombatState,
     weapon: WeaponDef,
-    hand: DualWieldHand = 0,
+    hand: WeaponHand = 0,
     delaySeconds = 0,
     swing?: SwingDescriptor,
   ): void {

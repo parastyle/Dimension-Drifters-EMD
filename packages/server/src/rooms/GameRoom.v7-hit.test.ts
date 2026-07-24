@@ -65,7 +65,7 @@ describe("GameRoom — V7-HIT blade-extension authority", () => {
       player.weapon = weapon.id;
       combat.lastWeapon = weapon.id;
 
-      expect(room.resolveHandAttack(player, combat, 0), `${weaponId}/accepted`).toBe(true);
+      expect(room.resolveSingleWeaponAttack(player, combat), `${weaponId}/accepted`).toBe(true);
       const active = room.meleeSwings.get(player.id);
       expect(active, `${weaponId}/active-swing`).toBeDefined();
       if (!active) continue;

@@ -17,7 +17,7 @@ everyone parries AND dodge rolls; characters become base-stat spreads + one sign
 | Signature draft every 5th level; gate SNAPSHOT at level-earn (G-09): `sigGateQueue` accumulates `augmentGateForWeapon(held)` so a last-frame swap can't rewrite the draft | `progression.ts:51-56`, `GameRoom.ts:4315-4320` |
 | Gates are already weapon-derived, never character-derived: `parry / gun / cast / beam / cast+beam` from the held weapon's `classPool`+`delivery` | `augments.ts:288-315` |
 | Class-gated augments shipped: Hollow-Points + Ricochet Rounds (`gun`), Overcharge + Arc Split (`cast`), Vented Coils + Steady Lens (`beam`, non-enumerable lane); 10 parry augments are universal | `augments.ts:37-188` |
-| The "caster class mechanic" is ALREADY a weapon property: the `cast` block — RMB conjures a piercing INT-scaled arcane bolt on a flat cooldown, no ammo, no reload. Two shipped cast weapons (`x-staff-arcane-lance`, `x-staff-storm-rod`) + 57 1H casters in expansion | `weapons.ts:191-212, 1012-1084`, dualwield-panel census |
+| The "caster class mechanic" is ALREADY a weapon property: the `cast` block — RMB conjures a piercing INT-scaled arcane bolt on a flat cooldown, no ammo, no reload. Two shipped cast weapons (`x-staff-arcane-lance`, `x-staff-storm-rod`) + 57 1H casters in expansion | `weapons.ts:191-212, 1012-1084`, shared weapon catalog |
 | Weapon-class set bonus reads the ARSENAL's `classPool` counts: +8% at 2, +18% at 3 | `weapons.ts:338-360` |
 | Parry: 0.52s i-frames / 0.6s CD / 135px radius / 96px knockback; chain heal + riposte at 3; reflect ×2.2; it is explicitly THE only i-frame tool today | `constants.ts:608-681` |
 | Space hop: 0.45s airtime / 0.7s CD, ~144px, **deliberately NO i-frames** ("MOVEMENT, NOT a dodge") | `constants.ts:373-391` |
@@ -208,8 +208,8 @@ is all-melee/thrown) — the shipped `cast+beam` compound gate is the precedent,
 `augmentGateForWeapon(held)` is replaced by `augmentGateForArsenal(slots)` = union of the per-slot
 results, dropping `parry` from the union only when a weapon lane exists (parry augments are always
 eligible regardless — see table). Proc rules are untouched: a gun augment still only fires on gun
-shots. Dual-wield interaction: the dualwield doc's "gate reads the primary hand" rule is subsumed —
-a pair contributes its (single, shared) classPool's delivery to the union like any slot.
+shots. An authored dual contributes its single definition's `classPool` and delivery to the union
+like any other slot.
 
 Why arsenal, not held: with classes gone the arsenal IS the build (set bonuses already read it).
 Held-weapon gating made drafts a timing lottery — earn the level while your melee is out and your
@@ -245,7 +245,7 @@ auto-grown INT (dies with all auto-allocation, §2) and a HUD blurb (dies in §6
 
 **Which weapons carry it:** everything with a `cast` block — today `x-staff-arcane-lance` and
 `x-staff-storm-rod`; tomorrow the expansion's 57 one-handed casters (wands, orbs, gauntlets, foci,
-scepters, relics) as they're curated in, plus dual-cast alternation per the dualwield doc. Beam
+scepters, relics) as they're curated in, plus alternation authored directly on pre-made dual casts. Beam
 casters keep the separate heat economy; `cast+beam` hybrids keep their compound gate.
 
 **What changes for a non-caster character picking up a tome: nothing — the weapon does the work.**

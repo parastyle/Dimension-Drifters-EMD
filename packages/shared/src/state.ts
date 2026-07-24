@@ -24,8 +24,6 @@ export class ArsenalSlot extends Schema {
   // definitions remain distinct without broadcasting account ids or adding steady 20 Hz patch bytes.
   instanceId = "";
   bankEntryId = "";
-  bankEntryKind: "" | "single" | "pair" = "";
-  bankPairRole: "" | "lead" | "offhand" = "";
   bankProvenance = "";
   sourceWorldTier = 0;
   homeIssue = false;
@@ -79,10 +77,12 @@ const DECODE_WINDOW_RESOURCE = new WeaponResourceState();
 
 /** Player tail wire row. Nested because PlayerState is at Colyseus's 64-field ceiling. */
 export class DualWieldState extends Schema {
-  @type("uint8") offhandSlot = 255;
-  @type("uint32") pairBaseSeq = 0;
-  @type("uint8") offCharges = 0;
-  @type("uint8") offMaxCharges = 0;
+  /** Retired schema-v27 composed-pair bytes. Keep these four positions and widths forever so the unrelated
+   * live tenants below retain their exact wire indexes. They are never read or written by gameplay. */
+  @type("uint8") retiredByte0 = 255;
+  @type("uint32") retiredUint32 = 0;
+  @type("uint8") retiredByte1 = 0;
+  @type("uint8") retiredByte2 = 0;
   /** Schema v28 wire, current order: hat,glasses,facialHair,torso,cloak. */
   @type("string") gearUpper = "";
   /** Schema v28 wire, current order: gloves,head,boots. */
@@ -215,7 +215,7 @@ export class PlayerState extends Schema {
   @type("string") petId = "";
   /** 0 none Â· 1 Hatchling (L1-3) Â· 2 Awakened (L4-7) Â· 3 Ascendant (L8-10). */
   @type("uint8") petLevelBand = 0;
-  // Dual-wield schema v27. A pair is a link between two occupied arsenal rows, never a fourth row.
+  // Packed compatibility tail. The first four nested positions are inert schema-v27 tombstones.
   @type(DualWieldState) dualWield = new DualWieldState();
   /** B26 packed successful-parry direction + 0..2 guard pose. APPENDED at schema v35. `parriedSeq` is the
    * receipt edge; this byte is its server-selected deterministic presentation payload. */
@@ -251,30 +251,6 @@ export class PlayerState extends Schema {
   }
   get relics(): RelicState {
     return this.dualWield.relics;
-  }
-  get offhandSlot(): number {
-    return this.dualWield?.offhandSlot ?? 255;
-  }
-  set offhandSlot(value: number) {
-    this.dualWield.offhandSlot = value;
-  }
-  get pairBaseSeq(): number {
-    return this.dualWield?.pairBaseSeq ?? 0;
-  }
-  set pairBaseSeq(value: number) {
-    this.dualWield.pairBaseSeq = value;
-  }
-  get offCharges(): number {
-    return this.dualWield?.offCharges ?? 0;
-  }
-  set offCharges(value: number) {
-    this.dualWield.offCharges = value;
-  }
-  get offMaxCharges(): number {
-    return this.dualWield?.offMaxCharges ?? 0;
-  }
-  set offMaxCharges(value: number) {
-    this.dualWield.offMaxCharges = value;
   }
   /** Direct accessors preserve the panel/U2 contract while the nine fields serialize in `ultimate`. */
   get ultArchetype(): number {

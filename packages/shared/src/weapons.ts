@@ -5,10 +5,6 @@
  * the hardcoded "fists" placeholder; fists remain as the empty-handed fallback.
  */
 import {
-  DUAL_MATCHED_OFFHAND_BASE_MULT,
-  DUAL_MATCHED_THROUGHPUT_CAP,
-  DUAL_OFFHAND_BASE_MULT,
-  DUAL_THROUGHPUT_CAP,
   FISTS_COOLDOWN,
   FISTS_DAMAGE,
   FISTS_HALF_ARC,
@@ -17,7 +13,6 @@ import {
   GUN_RECOIL_IMPULSE,
   IMPULSE_MAX,
   MAX_PLAYERS,
-  PAIR_TEMPO,
   REZ_RADIUS,
 } from "./constants.js";
 import { makeRng } from "./rng.js";
@@ -109,7 +104,7 @@ export const WEAPON_MUZZLE_COUNT_CAP = 7;
  * combo beat; the Drive/loot estimators price the same authored multipliers and finisher burst. */
 export interface KatanaHookDef {
   kind:
-    | "pair-half"
+    | "short-flurry"
     | "draw-opener"
     | "perfect-tempo"
     | "storm-tempo"
@@ -852,7 +847,7 @@ export interface WeaponMuzzlePose {
   aimY: number;
   /** Complete rig/root scale. */
   renderScale?: number;
-  /** Optional selected held-copy index for independently paired weapons. */
+  /** Optional selected held-copy index for an authored multi-part weapon. */
   salvoIndex?: number;
   /** Physical hand whose final held-sprite pose is being transformed. */
   hand?: 0 | 1;
@@ -1158,7 +1153,7 @@ export function meleeReach(weapon: WeaponDef, renderScale = 1): number {
   return renderScale * Math.max(weapon.range, spriteTip);
 }
 
-/** One attack-beat cooldown before loot speed. Pair cadence applies the lead affix to both hands. */
+/** One attack-beat cooldown before loot speed. An authored dual uses this one definition and affix. */
 export function weaponAttackCooldown(weapon: WeaponDef): number {
   const base = weapon.gun?.fireRate ?? weapon.cast?.cooldown ?? weapon.cooldown;
   return Math.max(0.001, base * (weapon.katanaHook?.recoveryMultiplier ?? 1));
@@ -1179,79 +1174,6 @@ export function holdScaledSwingCount(heldSeconds: number, cadenceSeconds: number
   const cadence = Math.max(0.001, cadenceSeconds);
   const completedCadences = Math.floor((held + cadence * 1e-9) / cadence);
   return 1 + completedCadences;
-}
-
-/** Compatible live delivery lane for runtime pairing. Beams, thrown weapons, authored duals, and fists
- * deliberately produce no lane. Delivery is behavioral (gun/cast blocks), not a brittle tag string. */
-export function pairDelivery(weapon: WeaponDef): "melee" | "gun" | "cast" | "" {
-  if (
-    weapon.id === "fists" ||
-    weapon.tags.grip !== "1H" ||
-    weapon.dual === true ||
-    weapon.beam ||
-    weapon.groundZone ||
-    weapon.thrown
-  )
-    return "";
-  if (weapon.tags.classPool === "ranged") return weapon.gun ? "gun" : "";
-  if (weapon.tags.classPool === "caster") return weapon.cast ? "cast" : "";
-  return !weapon.gun && !weapon.cast ? "melee" : "";
-}
-
-/** Shared bind census: two different, genuine one-handers of one class and one compatible live delivery. */
-export function pairEligible(lead: WeaponDef | undefined, off: WeaponDef | undefined): boolean {
-  if (!lead || !off || lead.id === off.id) return false;
-  if (lead.tags.grip !== "1H" || off.tags.grip !== "1H") return false;
-  if (lead.tags.classPool !== off.tags.classPool) return false;
-  const delivery = pairDelivery(lead);
-  return delivery !== "" && delivery === pairDelivery(off);
-}
-
-/** Approximate single-target damage authored into one accepted beat. Used only by the pair ceiling; each
- * actual source still resolves its own flat value, rarity/affix, and receipt independently. */
-export function pairDamagePerUse(weapon: WeaponDef): number {
-  if (weapon.gun) {
-    // A random-pellet gun authors one trigger damage pool. The server divides that pool by the
-    // server-seeded roll, so count variance changes coverage, never total admitted trigger damage.
-    const pelletCount = weapon.gun.randomPellets ? 1 : Math.max(1, weapon.gun.pellets ?? 1);
-    return Math.max(
-      0,
-      (weapon.gun.damage * pelletCount + (weapon.gun.explode?.damage ?? 0)) *
-        Math.max(1, weapon.gun.burst?.count ?? 1),
-    );
-  }
-  if (weapon.cast) return Math.max(0, weapon.cast.damage);
-  let damage = Math.max(0, weapon.damage);
-  if (weapon.quake) damage += Math.max(0, weapon.quake.damage);
-  if (weapon.chainLightning) {
-    damage +=
-      Math.max(0, weapon.chainLightning.damage) * Math.max(0, weapon.chainLightning.jumps) * 0.6;
-  }
-  if (weapon.scatter) {
-    damage += Math.max(0, weapon.scatter.damage) * Math.max(0, weapon.scatter.count) * 0.7;
-    damage += Math.max(0, weapon.scatter.explode?.damage ?? 0);
-  }
-  damage += hybridProjectileDamagePerAcceptedBeat(weapon);
-  return damage;
-}
-
-/** Off-hand tuning multiplier after enforcing the 1.37x/1.45x pair ceiling. Inputs may include the live
- * hands' rarity/affix/grade scaling; omitted inputs fall back to authored per-use damage. Weak off hands
- * are never inflated to hit the ceiling, while outliers are trimmed instead of becoming mandatory. */
-export function dualOffhandDamageMultiplier(
-  lead: WeaponDef,
-  off: WeaponDef,
-  leadDamage = pairDamagePerUse(lead),
-  offDamage = pairDamagePerUse(off),
-): number {
-  if (leadDamage <= 0 || offDamage <= 0) return 0;
-  const matched = lead.tags.family === off.tags.family;
-  const cap = matched ? DUAL_MATCHED_THROUGHPUT_CAP : DUAL_THROUGHPUT_CAP;
-  const raw = matched ? DUAL_MATCHED_OFFHAND_BASE_MULT : DUAL_OFFHAND_BASE_MULT;
-  const leadCd = weaponAttackCooldown(lead);
-  const cycle = PAIR_TEMPO * (leadCd + weaponAttackCooldown(off));
-  const allowed = ((cap * leadDamage * cycle) / leadCd - leadDamage) / offDamage;
-  return Math.max(0, Math.min(raw, allowed));
 }
 
 /** §30 v0.118 WEAPON CLASS SET-BONUS (Brotato parity #2): carrying multiple weapons of the same class

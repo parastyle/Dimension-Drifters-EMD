@@ -15,7 +15,7 @@ Implementation ledger for `owner-notes-audit-2026-07-21-v6.md` section V6M.
 | Hangman's Gavel | Uses the thrown-melee grenade arc with a 132 px apex. | Damage unchanged. |
 | Snakebite Morningstar | Converted to a spinning thrown weapon (620 px/s, 480 px range, 3 charges, 1.2 s refill). | Per-hit burst remains 9 / 0.5 = 18 DPS; the new thrown resource/range gate can change sustained uptime. |
 | Dustdevil Glaive | Carries upright and angled forward; authored two-step combo is overhead chop then impale. | Damage unchanged. |
-| Kagewake | Archived through the standard archive flag, together with its Hushglass partner, Hushglass Wakizashi. | Removed from active pools and katana assignments. |
+| Kagewake | Archived through the standard archive flag alongside the independent Hushglass Wakizashi entry. | Removed from active pools and katana assignments. |
 | Cinderfang Wakizashi Pair | Swing and source VFX are offset 38 px forward, away from the body. | Damage unchanged. |
 | Stormthread Tachi | Display length doubled from 136 px to 272 px. | Presentation only. |
 | Saintspar Lochaber | Authoritative two-step combo is overhead down, then `rising-chop` with direction -1 and a reversed mechanical arc. | Damage unchanged; live probe verifies the accepted second-step upward frame. |

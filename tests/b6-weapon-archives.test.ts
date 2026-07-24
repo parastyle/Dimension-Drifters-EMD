@@ -105,11 +105,7 @@ describe("B6 weapon catalog archives", () => {
     const sanitized = sanitizeWeaponBankV1(fixture);
     expect(sanitized).toMatchObject({ ok: true, errors: [] });
 
-    const loadedIds = sanitized.bank.stash.flatMap((entry) =>
-      entry.kind === "pair"
-        ? [entry.lead.weaponId, entry.offhand.weaponId]
-        : [entry.weapon.weaponId],
-    );
+    const loadedIds = sanitized.bank.stash.map((entry) => entry.weapon.weaponId);
     expect(loadedIds).toEqual(B6_ARCHIVE_IDS);
 
     for (const id of loadedIds) {

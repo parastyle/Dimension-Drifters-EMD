@@ -12382,14 +12382,14 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       ]
     },
     "archived": true,
-    "description": "The first short blade cut from the Driftblade's discarded shadow. It asks for a second sword and leaves no room between question and answer.",
+    "description": "The first short blade cut from the Driftblade's discarded shadow. It leaves no room between question and answer.",
     "sprite": "driftblade",
     "sizeClass": "short",
     "comboFamily": "chop",
     "comboVariant": "katana-kagewake",
     "katanaHook": {
-      "kind": "pair-half",
-      "summary": "A one-handed pair-half that joins the six-beat dual-melee cadence."
+      "kind": "short-flurry",
+      "summary": "A compact one-handed wakizashi with its own four-beat cadence."
     },
     "bespokeVfxSheet": false,
     "durability": 75

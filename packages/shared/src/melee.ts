@@ -176,12 +176,11 @@ export type KatanaChoreographyPrimitive =
 export interface KatanaChoreography {
   readonly primitive: KatanaChoreographyPrimitive;
   readonly intensity: number;
-  /** Presentation-hand routing for paired blades; omitted preserves the underlying combo step. */
+  /** Presentation-hand routing for authored dual blades; omitted preserves the underlying combo step. */
   readonly hand?: MeleeComboHand;
 }
-/** Dual-wield's six-beat presentation bar. Crossfall stays presentation-only server-side: its accepted
- * damage event remains one lead-hand sweep, while clients render the authored `both` pose. */
-export const DUAL_MELEE_PAIR_BAR = Object.freeze([
+/** Six-beat presentation bar for one authored pre-made dual melee weapon. */
+export const AUTHORED_DUAL_MELEE_BAR = Object.freeze([
   "lead",
   "off",
   "lead",
@@ -189,7 +188,7 @@ export const DUAL_MELEE_PAIR_BAR = Object.freeze([
   "lead",
   "both",
 ] as const satisfies readonly MeleeComboHand[]);
-export const DUAL_MELEE_SEQUENCE_LENGTH = DUAL_MELEE_PAIR_BAR.length;
+export const AUTHORED_DUAL_MELEE_SEQUENCE_LENGTH = AUTHORED_DUAL_MELEE_BAR.length;
 export type MeleeComboPath = "sweep" | "fan" | "dual-sweep" | "capsule";
 export type MeleeComboRibbonProfile =
   | "massed-wedge"

@@ -2016,8 +2016,14 @@ export class AudioBus {
         if (this.sampleFirst(event, { volume: 0.42, priority: "low", minIntervalMs: 70 })) return;
         this.tone(520, 0.07, { type: "triangle", gain: 0.09, sweepTo: 330 });
         break;
-      case "pair":
-        if (this.sampleFirst("pair", { volume: 0.48 + 0.32 * amt, pan: this.panOf(x) })) return;
+      case "weapon:authored-dual":
+        if (
+          this.sampleFirst("weapon:authored-dual", {
+            volume: 0.48 + 0.32 * amt,
+            pan: this.panOf(x),
+          })
+        )
+          return;
         this.noise(0.045, { gain: 0.055 + 0.04 * amt, type: "highpass", freq: 2_700, x });
         this.tone(740, 0.09, { type: "triangle", gain: 0.13 + 0.06 * amt, sweepTo: 980, x });
         this.tone(1_320, 0.11, {

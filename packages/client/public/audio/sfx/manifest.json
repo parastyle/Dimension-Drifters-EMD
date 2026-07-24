@@ -866,13 +866,13 @@
    "replaces": "melee:crossfall"
   },
   {
-   "id": "pairing-x-lock",
+   "id": "authored-dual-equip",
    "category": "ui",
    "priority": 4,
    "durationSeconds": 0.75,
    "loop": false,
    "variations": 2,
-   "replaces": "pair"
+   "replaces": "weapon:authored-dual"
   },
   {
    "id": "player-pound-tuck",

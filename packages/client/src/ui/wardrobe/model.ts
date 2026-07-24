@@ -94,7 +94,6 @@ export interface PrestigeAtStakeSummary {
   intakeEntries: number;
   totalEntries: number;
   physicalWeapons: number;
-  pairEntries: number;
   distinctWeaponIds: number;
   lastCarryReferences: number;
 }
@@ -167,10 +166,8 @@ export function prestigeAtStakeSummary(account: MetaAccountV5): PrestigeAtStakeS
   const entries = [...account.weaponBank.stash, ...account.weaponBank.intake];
   const weaponIds = new Set<string>();
   let physicalWeapons = 0;
-  let pairEntries = 0;
   for (const entry of entries) {
     physicalWeapons += weaponEntryPhysicalSize(entry);
-    if (entry.kind === "pair") pairEntries++;
     for (const weapon of weaponEntryInstances(entry)) weaponIds.add(weapon.weaponId);
   }
   return {
@@ -178,7 +175,6 @@ export function prestigeAtStakeSummary(account: MetaAccountV5): PrestigeAtStakeS
     intakeEntries: account.weaponBank.intake.length,
     totalEntries: entries.length,
     physicalWeapons,
-    pairEntries,
     distinctWeaponIds: weaponIds.size,
     lastCarryReferences: account.weaponBank.lastCarry.placements.length,
   };
@@ -219,7 +215,7 @@ export function prestigeCeremonyView(
     costCopy: [
       "ENTIRE WEAPON BANK WIPED",
       `${atStake.totalEntries} entries · ${atStake.physicalWeapons} weapons`,
-      `Stash ${atStake.stashEntries} · Intake ${atStake.intakeEntries} · Pairs ${atStake.pairEntries}`,
+      `Stash ${atStake.stashEntries} · Intake ${atStake.intakeEntries}`,
       `Distinct bases ${atStake.distinctWeaponIds} · Last Carry refs ${atStake.lastCarryReferences}`,
       "MONEY PAID · 0",
     ].join("\n"),

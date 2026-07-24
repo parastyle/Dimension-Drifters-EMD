@@ -2927,7 +2927,7 @@ export class MenuScene extends Phaser.Scene {
     (search.getData("text") as Phaser.GameObjects.Text).setVisible(false);
     root.add(search);
     this.armoryToolbarRows.push(search);
-    for (let index = 0; index < 5; index++) {
+    for (let index = 0; index < 4; index++) {
       const chip = this.makeMenuChip("", 120, () => this.cycleArmoryFilter(index), 44);
       root.add(chip);
       this.armoryToolbarRows.push(chip);
@@ -2994,12 +2994,6 @@ export class MenuScene extends Phaser.Scene {
         "all",
         ...new Set(all.map((row) => row.rarity)),
       ]);
-    else if (index === 3)
-      this.armoryFilters.composition = next(this.armoryFilters.composition, [
-        "all",
-        "single",
-        "pair",
-      ] as const);
     else
       this.armoryFilters.sort = next(this.armoryFilters.sort, [
         "recommended",
@@ -3063,8 +3057,8 @@ export class MenuScene extends Phaser.Scene {
     search?.setPosition(layout.library.x + 16 + searchW / 2, layout.library.y + 40);
     (search?.getData("bg") as Phaser.GameObjects.Rectangle | undefined)?.setSize(searchW, 48);
     this.armorySearchText?.setPosition(layout.library.x + 30, layout.library.y + 30);
-    const filterW = (layout.library.width - 32 - 4 * 8) / 5;
-    for (let index = 0; index < 5; index++) {
+    const filterW = (layout.library.width - 32 - 3 * 8) / 4;
+    for (let index = 0; index < 4; index++) {
       const chip = this.armoryToolbarRows[index + 1];
       chip?.setPosition(
         layout.library.x + 16 + index * (filterW + 8) + filterW / 2,
@@ -3149,7 +3143,7 @@ export class MenuScene extends Phaser.Scene {
         .setWordWrapWidth(cardW * 0.58 - 16);
       card.meta
         .setText(
-          `${view.rarity.toUpperCase()}  Â·  ${view.family}\n${view.paired ? "PAIR" : "SINGLE"}  Â·  ${view.physical} ${view.physical === 1 ? "CELL" : "CELLS"}`,
+          `${view.rarity.toUpperCase()}  Â·  ${view.family}\n${view.physical} ${view.physical === 1 ? "CELL" : "CELLS"}`,
         )
         .setPosition(cardW * 0.4 + 8, 48)
         .setWordWrapWidth(cardW * 0.58 - 16);
@@ -3190,7 +3184,6 @@ export class MenuScene extends Phaser.Scene {
       `ZONE ${this.armoryFilters.zone}`,
       `CLASS ${this.armoryFilters.weaponClass}`,
       `RAR ${this.armoryFilters.rarity}`,
-      `TYPE ${this.armoryFilters.composition}`,
       `SORT ${this.armoryFilters.sort}`,
     ];
     labels.forEach((label, index) =>

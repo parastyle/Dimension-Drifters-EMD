@@ -186,14 +186,14 @@ AFTER 1920:
 | 1016 LIBRARY / 4 art cards across | 432 SELECTED DETAIL | 400 CARRY PLAN |
 | filters + sort + 72 count         | full art + stats    | ACTIVE 0/3     |
 | [card][card][card][card]          | rarity/affix/source | PACK 0/cap     |
-| [card][card][card][card]          | pair composition    | at risk value  |
+| [card][card][card][card]          | instance identity   | at risk value  |
 | virtual rows                      | stage/remove action | safe vault     |
 + FOOTER 64: arrows | Enter stage | Q/E zone | destination actions          +
 ```
 
 Exact wide column widths are 1016 / 432 / 400 with 12 px gutters and 24 px margins. At 1280 they are 640 / 304 / 288 with 8 px gutters and 16 px margins. The library uses four approximately 237 x 150 cards wide and two approximately 298 x 136 cards at the floor.
 
-Filters: carry zone (`All`, `Safe`, `Staged`, `Active`, `Pack`, `Intake`), weapon class, family, delivery, actual instance rarity, provenance, and pair/single. Sort: Recommended, Name, Rarity, Value, Size, Newest. The detail panel always describes the focused item/pair and its comparison against the active item.
+Filters: carry zone (`All`, `Safe`, `Staged`, `Active`, `Pack`, `Intake`), weapon class, family, delivery, actual instance rarity, and provenance. Sort: Recommended, Name, Rarity, Value, Size, Newest. The detail panel always describes the focused weapon instance and its comparison against the active item.
 
 Staging/removing is reversible and one click/Enter. Active and Pack are visual drop zones but keyboard-complete: `Q/E` moves the selected staged item between valid zones; `1–3` selects an active slot. Show physical size as occupied cells, not a prose number. The carry column must continuously show at-risk entries, physical cells, value, required World Tier, and intake blocker. Entering a destination remains the commit boundary. Intake errors are inline in that column and never a modal.
 

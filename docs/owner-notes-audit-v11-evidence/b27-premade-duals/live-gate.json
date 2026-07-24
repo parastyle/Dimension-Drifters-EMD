@@ -1,0 +1,288 @@
+{
+  "generatedAt": "2026-07-24T15:32:28.119Z",
+  "ports": {
+    "client": 59920,
+    "game": 59918
+  },
+  "forbiddenPorts": [
+    5180,
+    2567
+  ],
+  "characterId": "proto-cowboy-hidden-face",
+  "authoredDual": {
+    "weaponId": "x2-knucklebone-talons",
+    "idle": {
+      "weapon": "x2-knucklebone-talons",
+      "attackSeq": 0,
+      "attackBeatSeq": 0,
+      "swingHand": 0,
+      "authoredDualBarStep": -1,
+      "authoredDualBarExpiresAtMs": -1000000000,
+      "swingStart": -1000000000,
+      "pieces": [
+        {
+          "defId": "x2-knucklebone-talons",
+          "spriteId": "x2-knucklebone-talons",
+          "partIndex": 0,
+          "visible": true,
+          "active": true,
+          "alpha": 1,
+          "displayWidth": 84.54878568385172,
+          "displayHeight": 36.32955634853003,
+          "textureKey": "x2-knucklebone-talons:part-1"
+        },
+        {
+          "defId": "x2-knucklebone-talons",
+          "spriteId": "x2-knucklebone-talons",
+          "partIndex": 1,
+          "visible": true,
+          "active": true,
+          "alpha": 1,
+          "displayWidth": 84.54878568385172,
+          "displayHeight": 35.99928765445249,
+          "textureKey": "x2-knucklebone-talons:part-2"
+        }
+      ]
+    },
+    "combo": [
+      {
+        "attackSeq": 1,
+        "attackBeatSeq": 1,
+        "swingHand": 0,
+        "pieceCount": 2
+      },
+      {
+        "attackSeq": 2,
+        "attackBeatSeq": 2,
+        "swingHand": 1,
+        "pieceCount": 2
+      },
+      {
+        "attackSeq": 3,
+        "attackBeatSeq": 3,
+        "swingHand": 0,
+        "pieceCount": 2
+      },
+      {
+        "attackSeq": 4,
+        "attackBeatSeq": 4,
+        "swingHand": 1,
+        "pieceCount": 2
+      },
+      {
+        "attackSeq": 5,
+        "attackBeatSeq": 5,
+        "swingHand": 0,
+        "pieceCount": 2
+      },
+      {
+        "attackSeq": 6,
+        "attackBeatSeq": 6,
+        "swingHand": "both",
+        "pieceCount": 2
+      }
+    ],
+    "expectedHands": [
+      0,
+      1,
+      0,
+      1,
+      0,
+      "both"
+    ],
+    "screenshot": "docs/owner-notes-audit-v11-evidence/b27-premade-duals/authored-dual-two-sprites.png"
+  },
+  "independentSlots": {
+    "leadWeaponId": "rattler-sabre",
+    "secondWeaponId": "x2-sandsong-saber",
+    "state": {
+      "activeSlot": 0,
+      "weapon": "rattler-sabre",
+      "slots": [
+        "rattler-sabre",
+        "x2-sandsong-saber"
+      ],
+      "oldPairPropertiesPresent": []
+    },
+    "samples": [
+      {
+        "weapon": "rattler-sabre",
+        "attackSeq": 7,
+        "attackBeatSeq": 7,
+        "swingHand": 0,
+        "authoredDualBarStep": -1,
+        "authoredDualBarExpiresAtMs": -1000000000,
+        "swingStart": -1000000000,
+        "pieces": [
+          {
+            "defId": "rattler-sabre",
+            "spriteId": "rattler-sabre",
+            "partIndex": 0,
+            "visible": true,
+            "active": true,
+            "alpha": 1,
+            "displayWidth": 150.9799744354495,
+            "displayHeight": 40.10405570941627,
+            "textureKey": "dd-sprites"
+          }
+        ]
+      },
+      {
+        "weapon": "x2-sandsong-saber",
+        "attackSeq": 7,
+        "attackBeatSeq": 7,
+        "swingHand": 0,
+        "authoredDualBarStep": -1,
+        "authoredDualBarExpiresAtMs": -1000000000,
+        "swingStart": -1000000000,
+        "pieces": [
+          {
+            "defId": "x2-sandsong-saber",
+            "spriteId": "x2-sandsong-saber",
+            "partIndex": 0,
+            "visible": true,
+            "active": true,
+            "alpha": 1,
+            "displayWidth": 144.9407754580315,
+            "displayHeight": 38.49989348103962,
+            "textureKey": "x2-sandsong-saber:part-1"
+          }
+        ]
+      },
+      {
+        "weapon": "rattler-sabre",
+        "attackSeq": 7,
+        "attackBeatSeq": 7,
+        "swingHand": 0,
+        "authoredDualBarStep": -1,
+        "authoredDualBarExpiresAtMs": -1000000000,
+        "swingStart": -1000000000,
+        "pieces": [
+          {
+            "defId": "rattler-sabre",
+            "spriteId": "rattler-sabre",
+            "partIndex": 0,
+            "visible": true,
+            "active": true,
+            "alpha": 1,
+            "displayWidth": 150.9799744354495,
+            "displayHeight": 40.10405570941627,
+            "textureKey": "dd-sprites"
+          }
+        ]
+      }
+    ],
+    "screenshot": "docs/owner-notes-audit-v11-evidence/b27-premade-duals/independent-one-hand-slots.png"
+  },
+  "compatibilityContainer": {
+    "before": {
+      "tombstones": [
+        255,
+        0,
+        0,
+        0
+      ],
+      "unrelated": {
+        "gearUpper": "",
+        "gearLower": "",
+        "weaponResource": {
+          "valueQ": 10000,
+          "regenMode": 1,
+          "beamLockEndTick": 0
+        },
+        "prestige": 0
+      },
+      "relics": {
+        "energyPool": 0,
+        "energyRegen": 0,
+        "parryReach": 0,
+        "dodgeRecovery": 0,
+        "moveSpeed": 0,
+        "hpRegen": 0,
+        "luck": 0,
+        "crit": 0,
+        "jumpCount": 0,
+        "ownedRare": "",
+        "activeDodge": "",
+        "reviveAvailable": false,
+        "deathWardReadyTick": 0,
+        "airJumpsRemaining": 0
+      },
+      "oldPairPropertiesPresent": []
+    },
+    "after": {
+      "tombstones": [
+        255,
+        0,
+        0,
+        0
+      ],
+      "unrelated": {
+        "gearUpper": "",
+        "gearLower": "",
+        "weaponResource": {
+          "valueQ": 10000,
+          "regenMode": 2,
+          "beamLockEndTick": 0
+        },
+        "prestige": 0
+      },
+      "relics": {
+        "energyPool": 0,
+        "energyRegen": 0,
+        "parryReach": 0,
+        "dodgeRecovery": 0,
+        "moveSpeed": 0,
+        "hpRegen": 0,
+        "luck": 0,
+        "crit": 1,
+        "jumpCount": 0,
+        "ownedRare": "",
+        "activeDodge": "",
+        "reviveAvailable": false,
+        "deathWardReadyTick": 0,
+        "airJumpsRemaining": 0
+      },
+      "oldPairPropertiesPresent": []
+    },
+    "relicReceipt": {
+      "chestId": "chest:27:520",
+      "zone": 2,
+      "kind": 0,
+      "weapon": {
+        "id": "gravediggers-spade",
+        "tier": 1,
+        "name": "Gravewarden Buster"
+      },
+      "relics": [
+        {
+          "id": "crit",
+          "rarity": "common",
+          "label": "Keen Edge",
+          "stacks": 1
+        }
+      ],
+      "money": 11
+    },
+    "deterministicChest": {
+      "chestId": "chest:27:520",
+      "roomSeed": 2,
+      "expectedRelics": [
+        {
+          "id": "crit",
+          "rarity": "common"
+        }
+      ]
+    },
+    "relicOwnershipBefore": 0,
+    "relicOwnershipAfter": 1,
+    "screenshot": "docs/owner-notes-audit-v11-evidence/b27-premade-duals/relic-pickup-compat-container.png"
+  },
+  "assertions": {
+    "authoredDualBothSpritesVisible": true,
+    "authoredDualComboHands": true,
+    "independentSlotsNeverCompose": true,
+    "relicPickupApplied": true,
+    "unrelatedCompatTenantsPreserved": true
+  }
+}

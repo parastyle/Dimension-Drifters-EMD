@@ -48,9 +48,11 @@ describe("flourish implementation ownership panel", () => {
     expect(rigSource).toContain('this.cancelFlourish("stronger-owner")');
   });
 
-  it("keeps terminal eligibility tied to live sequence lengths and dual bar length", () => {
+  it("keeps terminal eligibility tied to live sequence lengths and authored-dual bar length", () => {
     expect(rigSource).toContain("isTerminalFlourishStep(step, sequence.length)");
-    expect(rigSource).toContain("isTerminalFlourishStep(pairStep, DUAL_MELEE_PAIR_BAR.length)");
+    expect(rigSource).toContain(
+      "isTerminalFlourishStep(authoredDualStep, AUTHORED_DUAL_MELEE_BAR.length)",
+    );
     expect(rigSource).not.toMatch(/terminalFlourishHand[^\n]*(?:===|==)\s*(?:2|5)/);
   });
 

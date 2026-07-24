@@ -2,7 +2,6 @@ import {
   createMetaAccountV5,
   GEAR_CATALOG,
   GEAR_SLOTS,
-  type PairedWeaponEntryV1,
   type SingleWeaponEntryV1,
   STARTER_GEAR_LOADOUT,
   type WeaponInstanceV1,
@@ -145,18 +144,22 @@ describe("wardrobe prestige ceremony model", () => {
       entryId: prestigeWeapon(1, "rusty-cleaver").instanceId,
       weapon: prestigeWeapon(1, "rusty-cleaver"),
     };
-    const pair: PairedWeaponEntryV1 = {
-      kind: "pair",
-      entryId: `wp_${"2".padStart(22, "0")}`,
-      lead: prestigeWeapon(2, "rattler-sabre"),
-      offhand: prestigeWeapon(3, "gravediggers-spade"),
+    const second: SingleWeaponEntryV1 = {
+      kind: "single",
+      entryId: prestigeWeapon(2, "rattler-sabre").instanceId,
+      weapon: prestigeWeapon(2, "rattler-sabre"),
+    };
+    const third: SingleWeaponEntryV1 = {
+      kind: "single",
+      entryId: prestigeWeapon(3, "gravediggers-spade").instanceId,
+      weapon: prestigeWeapon(3, "gravediggers-spade"),
     };
     const intake: SingleWeaponEntryV1 = {
       kind: "single",
       entryId: prestigeWeapon(4, "rusty-cleaver").instanceId,
       weapon: prestigeWeapon(4, "rusty-cleaver"),
     };
-    account.weaponBank.stash.push(single, pair);
+    account.weaponBank.stash.push(single, second, third);
     account.weaponBank.intake.push(intake);
     account.weaponBank.lastCarry.placements.push({
       entryId: single.entryId,
@@ -175,11 +178,10 @@ describe("wardrobe prestige ceremony model", () => {
       eligible: true,
       nextWorldTier: 5,
       atStake: {
-        stashEntries: 2,
+        stashEntries: 3,
         intakeEntries: 1,
-        totalEntries: 3,
+        totalEntries: 4,
         physicalWeapons: 4,
-        pairEntries: 1,
         distinctWeaponIds: 3,
         lastCarryReferences: 1,
       },

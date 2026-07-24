@@ -116,8 +116,6 @@ interface BrowserPlayer extends Point {
   ackSeq: number;
   attackSeq: number;
   character?: string;
-  dualWield?: { offhandSlot?: number };
-  offhandSlot?: number;
   weapon?: string;
 }
 
@@ -287,7 +285,6 @@ interface RigAudit {
 
 interface Capture {
   weaponId: string;
-  offhandSlot?: number;
   facing: Facing;
   target: Target;
   attackSeqBefore: number;
@@ -929,7 +926,6 @@ test("B25 theatrical kung-fu v3 is live on all four wraps and both facings", asy
             );
             return {
               weaponId,
-              offhandSlot: self.offhandSlot ?? self.dualWield?.offhandSlot,
               facing,
               target,
               attackSeqBefore,
