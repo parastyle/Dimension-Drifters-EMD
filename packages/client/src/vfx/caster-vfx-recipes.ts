@@ -133,6 +133,10 @@ export interface CasterVfxProjectileRecipe {
   readonly trailWidth: number;
   readonly bodySizePx: number;
   readonly particleShape: CasterParticleShape;
+  /** Particle-pack-only in-flight identity; no procedural shell or character-centered aura. */
+  readonly particleTreatment?: "stream";
+  readonly particlePack?: string;
+  readonly particleCount?: number;
 }
 
 /** A bounded crop from the weapon's own installed part texture, used as its projectile identity. */
@@ -279,6 +283,21 @@ export const CASTER_PAINTED_IMPACTS: Readonly<
     frames: Object.freeze([1, 2, 3]),
     displayLength: 180,
     durationMs: 360,
+  }),
+});
+
+export const CASTER_PARTICLE_PROJECTILES: Readonly<
+  Partial<
+    Record<
+      string,
+      Readonly<{ treatment: "stream"; pack: string; count: number }>
+    >
+  >
+> = Object.freeze({
+  "x2-reliquary-lantern-wand": Object.freeze({
+    treatment: "stream",
+    pack: "holy-spark",
+    count: 4,
   }),
 });
 
@@ -990,6 +1009,7 @@ export function resolveCasterVfxRecipe(def: WeaponDef | undefined): CasterVfxRec
   const damageTier = damageTierFor(def);
   const spriteProjectile = CASTER_SPRITE_PROJECTILES[def.id];
   const textureProjectile = CASTER_TEXTURE_PROJECTILES[def.id];
+  const particleProjectile = CASTER_PARTICLE_PROJECTILES[def.id];
   const paintedImpact = CASTER_PAINTED_IMPACTS[def.id];
   const gradeIndex = grade === "pinnacle" ? 2 : grade === "master" ? 1 : 0;
   const damageIndex = damageTier === "nova" ? 2 : damageTier === "burst" ? 1 : 0;
@@ -1008,6 +1028,13 @@ export function resolveCasterVfxRecipe(def: WeaponDef | undefined): CasterVfxRec
     ...projectileBase,
     coreRadius: 3.5 + gradeIndex * 1.1,
     bodySizePx: (3.5 + gradeIndex * 1.1) * 5.5,
+    ...(particleProjectile
+      ? {
+          particleTreatment: particleProjectile.treatment,
+          particlePack: particleProjectile.pack,
+          particleCount: particleProjectile.count,
+        }
+      : {}),
   });
   const impact = Object.freeze({
     ...impactBase,

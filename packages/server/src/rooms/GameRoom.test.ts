@@ -6786,7 +6786,7 @@ describe("GameRoom — W4A archived weapon retirement", () => {
     h.join("archive-gallery");
     h.send("archive-gallery", "toggleTraining");
     const roster = h.room.constructor.GALLERY_ROSTER as string[];
-    expect(roster).toHaveLength(346);
+    expect(roster).toHaveLength(344);
     for (const id of enemyComboShared.ARCHIVED_WEAPON_IDS) expect(roster).not.toContain(id);
     const before = h.state().players.get("archive-gallery").weapon;
     h.send("archive-gallery", "devEquip", { weapon: "x2-mistral-kusarigama" });

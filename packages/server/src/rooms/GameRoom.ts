@@ -714,6 +714,30 @@ interface PendingWeaponThrow {
   returning?: boolean;
 }
 
+interface ActiveMeleeSwing {
+  playerId: string;
+  swing: SwingDescriptor;
+  aim0: number;
+  range: number;
+  swingArc: number;
+  halfWidth: number;
+  rangeMultiplier: number;
+  timedWeaponEnvelope: boolean;
+  edgeDamage: number;
+  toughDamageMultiplier: number;
+  weaponId: string;
+  crit: number;
+  hitStatus?: WeaponDef["hitStatus"];
+  elapsed: number;
+  hit: Set<string>;
+  /** Intra-attack authoritative contacts expressed on the immutable accepted pose clock. */
+  rapidImpactSeconds?: readonly number[];
+  rapidHitIndex?: number;
+  waitForWeaponLunge?: boolean;
+  originX?: number;
+  originY?: number;
+}
+
 /** One server-private Drive authority. The result row is reused so the 20 Hz seam allocates nothing. */
 interface DriveRuntime {
   valueF: number;
@@ -1297,33 +1321,7 @@ export class GameRoom extends Room<ArenaState> {
   /** §20/§44 in-flight swept blades. `swing` is the immutable descriptor captured at the accepted `canAct`
    *  epoch; `elapsed` advances that one server clock through wind-up + active frames. The blade origin stays
    *  live, while `hit` preserves once-per-enemy-per-accepted-swing semantics regardless of active length. */
-  private readonly meleeSwings = new Map<
-    string,
-    {
-      playerId: string;
-      swing: SwingDescriptor;
-      aim0: number;
-      range: number;
-      swingArc: number;
-      halfWidth: number;
-      /** Multiplies the canonical timed envelope for combo/katana reach modifiers. */
-      rangeMultiplier: number;
-      /** False only for special pre-throw twirls whose authored draw radius is not the weapon edge. */
-      timedWeaponEnvelope: boolean;
-      edgeDamage: number;
-      toughDamageMultiplier: number;
-      weaponId: string;
-      crit: number;
-      hitStatus?: WeaponDef["hitStatus"];
-      elapsed: number;
-      hit: Set<string>;
-      /** Destination-bound attacks cannot advance collision until their server dash has arrived. */
-      waitForWeaponLunge?: boolean;
-      /** Immutable legal endpoint used by destination-bound impact collision. */
-      originX?: number;
-      originY?: number;
-    }
-  >();
+  private readonly meleeSwings = new Map<string, ActiveMeleeSwing>();
   /** §40.2 quakes awaiting their blade-LANDING moment (damage/epicenter captured at swing time; detonated
    *  when `t` drains — the same shared clock the chop animation + the client's eruption VFX run on). */
   private readonly pendingQuakes: {
@@ -7462,7 +7460,7 @@ export class GameRoom extends Room<ArenaState> {
     const edgePower = this.heldDamageMult(weapon, weapon.scalingGrades, player, hand); // §10 edge grades × §11 req penalty
     const aim0 = Math.atan2(c.aimY, c.aimX);
     const envelope = meleeDamageEnvelopeFor(weapon);
-    const authoritativeSwing = comboStep
+    const comboSwing = comboStep
       ? {
           ...swing,
           activeStartSeconds: comboStep.timing.activeStart * swing.poseSeconds,
@@ -7472,6 +7470,23 @@ export class GameRoom extends Room<ArenaState> {
           motion: comboStep.motion,
         }
       : swing;
+    const rapidImpactSeconds = weapon.rapidThrust?.impacts.map(
+      (fraction) => fraction * comboSwing.poseSeconds,
+    );
+    const rapidFirstImpact = rapidImpactSeconds?.[0];
+    const rapidLastImpact = rapidImpactSeconds?.[rapidImpactSeconds.length - 1];
+    const authoritativeSwing =
+      rapidFirstImpact !== undefined && rapidLastImpact !== undefined
+        ? {
+            ...comboSwing,
+            activeStartSeconds: rapidFirstImpact,
+            activeEndSeconds: Math.min(
+              comboSwing.poseSeconds,
+              rapidLastImpact + Math.max(0.04, comboSwing.poseSeconds * 0.08),
+            ),
+            impactSeconds: rapidLastImpact,
+          }
+        : comboSwing;
     const authoritativeArc = comboStep
       ? (comboStep.path.deltaAngle ?? weapon.swingArc * comboStep.path.arcMultiplier)
       : weapon.swingArc;
@@ -7497,13 +7512,20 @@ export class GameRoom extends Room<ArenaState> {
         weapon.damage *
         edgePower *
         (katanaEffect?.damageMultiplier ?? 1) *
-        (comboStep?.rootMotion ? comboStep.path.damageMultiplier : 1),
+        (comboStep?.rootMotion ? comboStep.path.damageMultiplier : 1) *
+        (weapon.rapidThrust?.damageMultiplier ?? 1),
       toughDamageMultiplier: katanaEffect?.toughDamageMultiplier ?? 1,
       weaponId: weapon.id,
       crit: attackCrit,
       hitStatus: weapon.hitStatus,
       elapsed: 0,
       hit: new Set<string>(),
+      ...(rapidImpactSeconds
+        ? {
+            rapidImpactSeconds,
+            rapidHitIndex: 0,
+          }
+        : {}),
       waitForWeaponLunge: impactAtDestination,
     });
 
@@ -8939,6 +8961,166 @@ export class GameRoom extends Room<ArenaState> {
     }
   }
 
+  /** Resolve one authored rapid-thrust pulse at its exact shared pose epoch. Each pulse starts with a fresh
+   * hit ledger, so a target held on the visible pike line receives one distinct authoritative contact. */
+  private applyRapidThrustHit(
+    player: PlayerState,
+    sw: ActiveMeleeSwing,
+    impactElapsed: number,
+    rapidHitIndex: number,
+    kills: string[],
+  ): void {
+    sw.hit.clear();
+    const impactX = sw.originX ?? player.x;
+    const impactY = sw.originY ?? player.y;
+    const envelopeWeapon = sw.timedWeaponEnvelope ? WEAPONS[sw.weaponId] : undefined;
+    const collisionRange = envelopeWeapon
+      ? meleeDamageReachAt(envelopeWeapon, sw.swing, impactElapsed) * sw.rangeMultiplier
+      : sw.range;
+    const collisionHalfWidth = envelopeWeapon
+      ? meleeDamageHalfWidthAt(envelopeWeapon, sw.swing, impactElapsed)
+      : sw.halfWidth;
+    const applyEnemy = (enemy: EnemyState, enemyId: string): void => {
+      sw.hit.add(enemyId);
+      this.damageEnemy(
+        enemy,
+        enemyId,
+        sw.edgeDamage * (enemy.tough ? sw.toughDamageMultiplier : 1),
+        kills,
+        sw.crit,
+        player.id,
+        sw.weaponId,
+        CombatDelivery.Melee,
+        impactX,
+        impactY,
+      );
+      this.applyEnemyHitStatus(enemyId, sw.hitStatus);
+    };
+
+    if (this.belt) {
+      const facing = Math.cos(sw.aim0) >= 0 ? 1 : -1;
+      const forwardPad = MAX_ENEMY_RADIUS + collisionHalfWidth;
+      this.enemyGrid.queryAabb(
+        impactX - (facing > 0 ? MAX_ENEMY_RADIUS * 0.5 : collisionRange + forwardPad),
+        impactY - DEPTH_TOL_PLAYER - MAX_ENEMY_RADIUS,
+        impactX + (facing > 0 ? collisionRange + forwardPad : MAX_ENEMY_RADIUS * 0.5),
+        impactY + DEPTH_TOL_PLAYER + MAX_ENEMY_RADIUS,
+        this.enemyCandidates,
+      );
+      for (const enemyId of this.enemyCandidates) {
+        const enemy = this.state.enemies.get(enemyId);
+        if (!enemy || enemy.hp <= 0) continue;
+        const radius = ENEMY_KINDS[enemy.kind]?.radius ?? ENEMY_RADIUS;
+        const forward = (enemy.x - impactX) * facing;
+        if (
+          forward < -radius * 0.5 ||
+          forward > collisionRange + radius + collisionHalfWidth
+        )
+          continue;
+        const rolling = (this.dodgeState.get(enemyId)?.t ?? 0) > 0;
+        const depthWindow = DEPTH_TOL_PLAYER + radius * (rolling ? DEPTH_DODGE_MULT : 1);
+        if (Math.abs(enemy.y - impactY) > depthWindow) continue;
+        applyEnemy(enemy, enemyId);
+      }
+
+      const runtime = this.bossController?.wormRuntime;
+      if (!runtime) return;
+      this.wormHitSlots.length = 0;
+      this.wormSegmentGrid.queryAabb(
+        impactX - (facing > 0 ? 26 : collisionRange + collisionHalfWidth + 52),
+        impactY - DEPTH_TOL_PLAYER - 52,
+        impactX + (facing > 0 ? collisionRange + collisionHalfWidth + 52 : 26),
+        impactY + DEPTH_TOL_PLAYER + 52,
+        this.wormSegmentCandidates,
+      );
+      for (const slot of this.wormSegmentCandidates) {
+        const radius = runtime.segmentRadius(slot);
+        const forward = (runtime.x[slot]! - impactX) * facing;
+        if (
+          forward < -radius * 0.5 ||
+          forward > collisionRange + radius + collisionHalfWidth ||
+          Math.abs(runtime.y[slot]! - impactY) > DEPTH_TOL_PLAYER + radius
+        )
+          continue;
+        this.wormHitSlots.push(slot);
+      }
+      this.damageWormSlots(
+        this.wormHitSlots,
+        sw.edgeDamage,
+        `melee:${player.id}:${player.attackSeq}:rapid:${rapidHitIndex}`,
+        kills,
+        sw.crit,
+        false,
+        player.id,
+        sw.weaponId,
+        CombatDelivery.Melee,
+        impactX,
+        impactY,
+      );
+      return;
+    }
+
+    const wielder = { x: impactX, y: impactY };
+    this.enemyGrid.queryRadius(
+      impactX,
+      impactY,
+      collisionRange + collisionHalfWidth + MAX_ENEMY_RADIUS,
+      this.enemyCandidates,
+    );
+    for (const enemyId of this.enemyCandidates) {
+      const enemy = this.state.enemies.get(enemyId);
+      if (!enemy || enemy.hp <= 0) continue;
+      const radius = ENEMY_KINDS[enemy.kind]?.radius ?? ENEMY_RADIUS;
+      if (
+        bladeHitsCircle(
+          wielder,
+          sw.aim0,
+          collisionRange,
+          enemy,
+          radius,
+          collisionHalfWidth,
+        )
+      )
+        applyEnemy(enemy, enemyId);
+    }
+
+    const runtime = this.bossController?.wormRuntime;
+    if (!runtime) return;
+    this.wormHitSlots.length = 0;
+    this.wormSegmentGrid.queryRadius(
+      impactX,
+      impactY,
+      collisionRange + collisionHalfWidth + 52,
+      this.wormSegmentCandidates,
+    );
+    for (const slot of this.wormSegmentCandidates) {
+      if (
+        bladeHitsCircle(
+          wielder,
+          sw.aim0,
+          collisionRange,
+          { x: runtime.x[slot]!, y: runtime.y[slot]! },
+          runtime.segmentRadius(slot),
+          collisionHalfWidth,
+        )
+      )
+        this.wormHitSlots.push(slot);
+    }
+    this.damageWormSlots(
+      this.wormHitSlots,
+      sw.edgeDamage,
+      `melee:${player.id}:${player.attackSeq}:rapid:${rapidHitIndex}`,
+      kills,
+      sw.crit,
+      false,
+      player.id,
+      sw.weaponId,
+      CombatDelivery.Melee,
+      impactX,
+      impactY,
+    );
+  }
+
   private stepMeleeSwings(dt: number): void {
     if (this.meleeSwings.size === 0) return;
     const kills: string[] = [];
@@ -8950,6 +9132,26 @@ export class GameRoom extends Room<ArenaState> {
         continue;
       }
       if (sw.waitForWeaponLunge) continue;
+      if (sw.rapidImpactSeconds) {
+        sw.elapsed += dt;
+        let rapidHitIndex = sw.rapidHitIndex ?? 0;
+        while (
+          rapidHitIndex < sw.rapidImpactSeconds.length &&
+          sw.rapidImpactSeconds[rapidHitIndex]! <= sw.elapsed + 1e-9
+        ) {
+          this.applyRapidThrustHit(
+            player,
+            sw,
+            sw.rapidImpactSeconds[rapidHitIndex]!,
+            rapidHitIndex,
+            kills,
+          );
+          rapidHitIndex++;
+        }
+        sw.rapidHitIndex = rapidHitIndex;
+        if (sw.elapsed >= sw.swing.activeEndSeconds) this.meleeSwings.delete(pid);
+        continue;
+      }
       const impactX = sw.originX ?? player.x;
       const impactY = sw.originY ?? player.y;
       const p0 = swingEdgeProgress(sw.swing, sw.elapsed);

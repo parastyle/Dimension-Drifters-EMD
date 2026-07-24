@@ -2201,6 +2201,10 @@
       "effectRecipe": "cinderbrand-magma-impact",
       "effectEmitter": "tip",
       "effectTiming": "impact",
+      "rapidThrust": {
+        "impacts": [0.22, 0.42, 0.62],
+        "damageMultiplier": 0.3333333333333333
+      },
       "id": "x2-cinderbrand-pike"
     },
     {
@@ -2488,6 +2492,10 @@
       "comboFamily": "thrust",
       "comboVariant": "nullspike-three-thrust",
       "authoritativeCombo": true,
+      "rapidThrust": {
+        "impacts": [0.22, 0.42, 0.62],
+        "damageMultiplier": 0.3333333333333333
+      },
       "comboBar": [
         {
           "name": "wrapped-line setup",
@@ -3168,6 +3176,7 @@
         "str": "C",
         "dex": "C"
       },
+      "archived": true,
       "id": "x2-tumbleweed-flail"
     },
     {
@@ -8107,7 +8116,6 @@
       "element": "physical",
       "finish": "battle-worn",
       "grip": "2H",
-      "handlingTags": ["pump"],
       "gripPoints": { "primary": { "x": 0.3, "y": 0.74 }, "secondary": { "x": 0.8, "y": 0.78, "role": "vertical-foregrip" } },
       "size": "L",
       "rangeBand": "close",
@@ -11806,6 +11814,7 @@
         "int": "B",
         "luk": "B"
       },
+      "archived": true,
       "id": "x2-glimmerdust-prospector-wand"
     },
     {

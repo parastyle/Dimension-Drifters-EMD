@@ -81,7 +81,7 @@ const TOP_KEYS = new Set([
   "sprite", "firingFrame", "sizeClass", "stance", "authoritativeCombo", "comboFamily", "comboVariant", "comboBar", "comboChoreography", "katanaHook",
   "bespokeVfxSheet", "performance", "swingStyle", "effectRecipe", "effectEmitter", "effectTiming",
   "renderAboveHands", "suppressVfx", "hitStatus", "gripPoints", "handlingTags", "poseLanguage",
-  "impactMuzzle",
+  "impactMuzzle", "rapidThrust",
 ]);
 // The sibling-block bug (§43): mechanic stats authored NEXT TO `behavior` instead of inside it were
 // silently ignored, shipping 11 weapons with default kits. Now an instant failure.
@@ -982,6 +982,34 @@ function mapWeapon(w) {
   if (w.authoritativeCombo !== undefined) {
     if (typeof w.authoritativeCombo !== "boolean") fail("authoritativeCombo is not a boolean");
     else def.authoritativeCombo = w.authoritativeCombo;
+  }
+  if (w.rapidThrust !== undefined) {
+    const rapid = w.rapidThrust;
+    if (!rapid || typeof rapid !== "object" || Array.isArray(rapid)) {
+      fail("rapidThrust is not an object");
+    } else {
+      checkKeys(rapid, new Set(["impacts", "damageMultiplier"]), "rapidThrust");
+      const impacts = rapid.impacts;
+      if (
+        !Array.isArray(impacts) ||
+        impacts.length < 2 ||
+        impacts.length > 8 ||
+        impacts.some((impact) => typeof impact !== "number" || impact <= 0 || impact >= 1)
+      ) {
+        fail("rapidThrust.impacts requires 2..8 normalized fractions inside (0, 1)");
+      } else if (impacts.some((impact, index) => index > 0 && impact <= impacts[index - 1])) {
+        fail("rapidThrust.impacts must be strictly increasing");
+      } else {
+        const damageMultiplier = num(
+          rapid.damageMultiplier,
+          0.01,
+          1,
+          1 / impacts.length,
+          "rapidThrust.damageMultiplier",
+        );
+        def.rapidThrust = { impacts, damageMultiplier };
+      }
+    }
   }
   if (w.impactMuzzle !== undefined) {
     if (w.impactMuzzle !== true) fail("impactMuzzle must be true when authored");

@@ -60,28 +60,29 @@ function enemyAt(room: AnyRoom, id: string, x: number, y: number) {
 }
 
 function finishSwing(room: AnyRoom, seconds: number): void {
-  for (let elapsed = 0; elapsed < seconds + 0.1; elapsed += 0.025)
-    room.stepMeleeSwings(0.025);
+  for (let elapsed = 0; elapsed < seconds + 0.1; elapsed += 0.025) room.stepMeleeSwings(0.025);
 }
 
 describe("GameRoom B8 pose/combo authority", () => {
-  it("applies exactly one Nullspike hit for each of its exactly three authoritative thrusts", () => {
-    const { room, player, combat } = makeRoom("nullspike-three");
-    const weapon = WEAPONS["x2-nullspike-pike"];
-    if (!weapon) throw new Error("Missing Nullspike B8 fixture");
+  it.each([
+    "x2-nullspike-pike",
+    "x2-cinderbrand-pike",
+  ] as const)("applies exactly three authoritative contacts in one accepted %s attack", (weaponId) => {
+    const { room, player, combat } = makeRoom(`rapid-three-${weaponId}`);
+    const weapon = WEAPONS[weaponId];
+    if (!weapon) throw new Error(`Missing rapid-thrust fixture: ${weaponId}`);
     const selection = meleeComboSelectionFor(weapon);
-    if (!selection) throw new Error("Missing Nullspike B8 combo");
-    const target = enemyAt(room, "nullspike-axis", player.x + 180, player.y);
+    if (!selection) throw new Error(`Missing rapid-thrust combo: ${weaponId}`);
+    const target = enemyAt(room, `${weaponId}-axis`, player.x + 180, player.y);
     room.rebuildEnemyGrid();
     const damageEnemy = vi.spyOn(room, "damageEnemy");
+    const step = selection.sequence[0];
+    if (!step) throw new Error(`Missing rapid-thrust opening step: ${weaponId}`);
 
-    expect(weapon.authoritativeCombo).toBe(true);
-    expect(selection.sequence).toHaveLength(3);
-    for (const step of selection.sequence) {
-      const swing = swingDescriptorFor(weapon, weapon.cooldown);
-      room.resolveSwing(player, combat, weapon, swing, 0, undefined, step);
-      finishSwing(room, swing.poseSeconds);
-    }
+    expect(weapon.rapidThrust?.impacts).toHaveLength(3);
+    const swing = swingDescriptorFor(weapon, weapon.cooldown);
+    room.resolveSwing(player, combat, weapon, swing, 0, undefined, step);
+    finishSwing(room, swing.poseSeconds);
 
     expect(damageEnemy.mock.calls.filter((call) => call[1] === target.id)).toHaveLength(3);
     expect(target.hp).toBeLessThan(10_000);

@@ -1,0 +1,111 @@
+{
+  "verdict": {
+    "archivedWeaponsRejectedByActivePool": true,
+    "riotgunForegripPlantedBothFacings": true,
+    "pikeVisibleThrustsPerAttack": {
+      "x2-nullspike-pike": 3,
+      "x2-cinderbrand-pike": 3
+    },
+    "lanternParticleProjectile": true
+  },
+  "character": "proto-cowboy-hidden-face",
+  "privateEphemeralPorts": {
+    "client": 63830,
+    "game": 63828
+  },
+  "riotgun": {
+    "left": {
+      "attackSeq": 2,
+      "frames": 41,
+      "maxSecondaryGripDeltaPx": 0.00006423242007072453,
+      "mechanisms": [
+        null
+      ],
+      "maxHandlingOffsetPx": 0,
+      "screenshot": "docs/owner-notes-audit-v11-evidence/notes-quickfix/x2-dustdevil-riotgun-left-fire.png"
+    },
+    "right": {
+      "attackSeq": 1,
+      "frames": 40,
+      "maxSecondaryGripDeltaPx": 0.00006426412339461067,
+      "mechanisms": [
+        null
+      ],
+      "maxHandlingOffsetPx": 0,
+      "screenshot": "docs/owner-notes-audit-v11-evidence/notes-quickfix/x2-dustdevil-riotgun-right-fire.png"
+    }
+  },
+  "archived": [
+    {
+      "id": "x2-glimmerdust-prospector-wand",
+      "before": "x2-dustdevil-riotgun",
+      "after": "x2-dustdevil-riotgun"
+    },
+    {
+      "id": "x2-tumbleweed-flail",
+      "before": "x2-dustdevil-riotgun",
+      "after": "x2-dustdevil-riotgun"
+    }
+  ],
+  "pikes": [
+    {
+      "id": "x2-nullspike-pike",
+      "attackSeq": 3,
+      "peaks": [
+        {
+          "timeMs": 34258.86000000001,
+          "extension": 0.9965926699849756,
+          "poseProgress": 0.21250000000000213
+        },
+        {
+          "timeMs": 34345.90000000001,
+          "extension": 0.9914449999999856,
+          "poseProgress": 0.42500000000000426
+        },
+        {
+          "timeMs": 34427.82000000001,
+          "extension": 0.999485165476017,
+          "poseProgress": 0.625
+        }
+      ],
+      "peakSpanMs": 168.95999999999913,
+      "screenshot": "docs/owner-notes-audit-v11-evidence/notes-quickfix/x2-nullspike-pike-fast-triple.png"
+    },
+    {
+      "id": "x2-cinderbrand-pike",
+      "attackSeq": 4,
+      "peaks": [
+        {
+          "timeMs": 48075.10000000009,
+          "extension": 0.9965926699849803,
+          "poseProgress": 0.21250000000000732
+        },
+        {
+          "timeMs": 48167.58000000009,
+          "extension": 0.9914450000000069,
+          "poseProgress": 0.42499999999999793
+        },
+        {
+          "timeMs": 48254.62000000009,
+          "extension": 0.999485165476017,
+          "poseProgress": 0.6249999999999999
+        }
+      ],
+      "peakSpanMs": 179.5199999999968,
+      "screenshot": "docs/owner-notes-audit-v11-evidence/notes-quickfix/x2-cinderbrand-pike-fast-triple.png"
+    }
+  ],
+  "lantern": {
+    "attackSeq": 5,
+    "weaponId": "x2-reliquary-lantern-wand",
+    "treatment": "particle-stream",
+    "pack": "holy-spark",
+    "particleCount": 4,
+    "authoritativeX": 2439.124267578125,
+    "authoritativeY": 2402.8828125,
+    "viewX": 2439.124267578125,
+    "viewY": 2402.8828125,
+    "angle": -0.4124194150994029,
+    "screenshot": "docs/owner-notes-audit-v11-evidence/notes-quickfix/x2-reliquary-lantern-wand-particle-projectile.png"
+  }
+}

@@ -33,19 +33,21 @@ const ARCHIVE_IDS = [
   "x2-mistral-kusarigama",
   "x2-nine-tail-razorlash",
   "x2-coffin-nail-carbine",
+  "x2-glimmerdust-prospector-wand",
   "x2-psalter-of-the-burning-halo",
   "x2-quicksilver-chainblade",
   "x2-snakebite-lash",
+  "x2-tumbleweed-flail",
 ] as const;
 const CURATED_ARCHIVE_IDS = new Set(["drift-wakizashi-hushglass", "drift-wakizashi-kagewake"]);
 
 describe("W4A weapon archive contracts", () => {
-  it("keeps eleven durable catalog rows while excluding them from every active acquisition census", () => {
+  it("keeps thirteen durable catalog rows while excluding them from every active acquisition census", () => {
     expect([...ARCHIVED_WEAPON_IDS].sort()).toEqual([...ARCHIVE_IDS].sort());
     expect(WEAPON_CATALOG_IDS).toHaveLength(357);
-    expect(ACTIVE_WEAPON_CATALOG_IDS).toHaveLength(346);
-    expect(ARCHIVED_WEAPON_IDS).toHaveLength(11);
-    expect(ACTIVE_EXPANSION_WEAPON_IDS).toHaveLength(317);
+    expect(ACTIVE_WEAPON_CATALOG_IDS).toHaveLength(344);
+    expect(ARCHIVED_WEAPON_IDS).toHaveLength(13);
+    expect(ACTIVE_EXPANSION_WEAPON_IDS).toHaveLength(315);
     expect(WEAPON_RESOURCE_IDS).toHaveLength(357);
 
     const provenances: WeaponProvenance[] = [
@@ -77,13 +79,13 @@ describe("W4A weapon archive contracts", () => {
     for (const id of ARCHIVE_IDS) expect(wielded, id).not.toContain(id);
   });
 
-  it("regenerates the portal and default Weaponsmith listing with 346 active rows", () => {
+  it("regenerates the portal and default Weaponsmith listing with 344 active rows", () => {
     const portal = readFileSync("tools/portal/index.html", "utf8");
     const smith = readFileSync("tools/weaponsmith/public/index.html", "utf8");
     const smithServer = readFileSync("tools/weaponsmith/server.mjs", "utf8");
-    expect(portal).toContain('"count":346');
-    expect(smith).toContain("Search 346 active weapons");
-    expect(smith).toContain('aria-setsize="346"');
+    expect(portal).toContain('"count":344');
+    expect(smith).toContain("Search 344 active weapons");
+    expect(smith).toContain('aria-setsize="344"');
     expect(smithServer).toContain("definition.archived === true");
     for (const id of ARCHIVE_IDS) {
       expect(portal, id).not.toContain(`/?dev=weapon:${id}`);

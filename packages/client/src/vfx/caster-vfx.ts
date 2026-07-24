@@ -386,6 +386,67 @@ export function makeCasterProjectile(
   visualScale = 1,
 ): Phaser.GameObjects.Container {
   const angle = Math.atan2(projectile.vy, projectile.vx);
+  const particlePackId = recipe.projectile.particlePack;
+  const particlePack = particlePackId ? PARTICLE_PACKS[particlePackId] : undefined;
+  if (
+    recipe.projectile.particleTreatment === "stream" &&
+    particlePackId &&
+    particlePack &&
+    scene.textures.exists(`ptcl:${particlePackId}`)
+  ) {
+    const count = Math.max(3, Math.min(6, recipe.projectile.particleCount ?? 4));
+    const cosine = Math.cos(angle);
+    const sine = Math.sin(angle);
+    const audit = globalThis as unknown as {
+      __ddOwnerQuickfixParticleProjectileAudit?: Array<Record<string, number | string>>;
+    };
+    audit.__ddOwnerQuickfixParticleProjectileAudit?.push({
+      weaponId: recipe.weaponId,
+      treatment: "particle-stream",
+      pack: particlePackId,
+      particleCount: count,
+      authoritativeX: projectile.x,
+      authoritativeY: projectile.y,
+      viewX: projectile.x,
+      viewY: projectile.y,
+      angle,
+    });
+    const particles: Phaser.GameObjects.GameObject[] = [];
+    for (let index = 0; index < count; index++) {
+      const distance = index * 10;
+      const cross = (index % 2 === 0 ? -1 : 1) * Math.min(2.4, index * 0.8);
+      const image = scene.add
+        .image(
+          -cosine * distance - sine * cross,
+          -sine * distance + cosine * cross,
+          `ptcl:${particlePackId}`,
+          index % particlePack.count,
+        )
+        .setName(`particle-projectile:${recipe.weaponId}:${particlePackId}:${index}`)
+        .setScale(
+          paintedParticleScale(
+            particlePackId,
+            paintedParticlePixels(Math.max(13.5, 18 - index * 1.25)),
+          ),
+        )
+        .setRotation(angle)
+        .setAlpha(1 - index * 0.12)
+        .setBlendMode(Phaser.BlendModes.ADD);
+      particles.push(image);
+    }
+    const payload = scene.add.container(0, 0, particles);
+    return scene.add
+      .container(projectile.x, projectile.y, [payload])
+      .setName(`particle-projectile:${recipe.weaponId}:${particlePackId}`)
+      .setDepth(99000)
+      .setScale(visualScale)
+      .setData("casterRecipe", recipe)
+      .setData("ang", angle)
+      .setData("arcPayload", payload)
+      .setData("projectileTreatment", "particle-stream")
+      .setData("particleProjectilePack", particlePackId)
+      .setData("particleProjectileCount", count);
+  }
   const trailLength = recipe.projectile.trailLength * (reducedMotion ? 0.76 : 1);
   const trail = scene.add
     .ellipse(

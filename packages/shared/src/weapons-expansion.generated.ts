@@ -1870,6 +1870,14 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "DEX"
       ]
     },
+    "rapidThrust": {
+      "impacts": [
+        0.22,
+        0.42,
+        0.62
+      ],
+      "damageMultiplier": 0.3333333333333333
+    },
     "effectRecipe": "cinderbrand-magma-impact",
     "effectEmitter": "tip",
     "effectTiming": "impact",
@@ -2140,6 +2148,14 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       }
     },
     "authoritativeCombo": true,
+    "rapidThrust": {
+      "impacts": [
+        0.22,
+        0.42,
+        0.62
+      ],
+      "damageMultiplier": 0.3333333333333333
+    },
     "comboFamily": "thrust",
     "comboVariant": "nullspike-three-thrust",
     "effectRecipe": "nullspike-impact-circle",
@@ -2715,6 +2731,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "DEX"
       ]
     },
+    "archived": true,
     "requirements": {
       "str": 5,
       "dex": 4
@@ -7645,9 +7662,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "scaling": [
         "DEX",
         "STR"
-      ],
-      "handling": [
-        "pump"
       ]
     },
     "gripPoints": {
@@ -11354,6 +11368,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "LUK"
       ]
     },
+    "archived": true,
     "description": "A bent gold-panning trowel re-forged into a wand, its scoop full of glittering fool's-gold flakes that fling out in a lucky scatter of bursting arcane sparks.",
     "requirements": {
       "int": 5,

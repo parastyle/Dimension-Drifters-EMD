@@ -28,15 +28,15 @@ describe("V3G catalog gun-handling laws", () => {
     }
   });
 
-  it("tags every shotgun/pump catalog member and authors its moving fore-hand", () => {
+  it("tags every pump-operated shotgun/pump catalog member and authors its moving fore-hand", () => {
     const candidates = catalog.filter(
       (weapon) =>
         !!weapon.gun &&
-        (weapon.tags.family === "shotgun" ||
+        ((weapon.tags.family === "shotgun" && weapon.id !== "x2-dustdevil-riotgun") ||
           /\bpump-rifle\b/i.test(weapon.name) ||
           /\bbuckshot avalanche\b/i.test(weapon.name)),
     );
-    expect(candidates).toHaveLength(17);
+    expect(candidates).toHaveLength(16);
     expect(
       tagged("pump")
         .map((weapon) => weapon.id)

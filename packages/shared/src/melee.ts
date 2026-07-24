@@ -2170,6 +2170,41 @@ export function swingEdgeActive(swing: SwingDescriptor, elapsedSeconds: number):
   return elapsedSeconds >= swing.activeStartSeconds && elapsedSeconds < swing.activeEndSeconds;
 }
 
+/**
+ * Shared repeated-thrust pose envelope. Every authored impact reaches full extension, while the midpoints
+ * between impacts retract behind the ready point so several contacts read as separate jabs.
+ */
+export function rapidThrustExtensionAt(
+  rapidThrust: WeaponDef["rapidThrust"],
+  poseProgress: number,
+): number | undefined {
+  const impacts = rapidThrust?.impacts;
+  if (!impacts || impacts.length === 0) return undefined;
+  const t = clamp(poseProgress, 0, 1);
+  const ease = (value: number): number => {
+    const p = clamp(value, 0, 1);
+    return p * p * (3 - 2 * p);
+  };
+  for (let index = 0; index < impacts.length; index++) {
+    const impact = impacts[index];
+    if (impact === undefined) continue;
+    const previous = impacts[index - 1];
+    const next = impacts[index + 1];
+    const segmentStart = previous === undefined ? 0 : (previous + impact) * 0.5;
+    const segmentEnd = next === undefined ? 1 : (impact + next) * 0.5;
+    if (t > segmentEnd && index < impacts.length - 1) continue;
+    if (t <= impact) {
+      const approach = ease((t - segmentStart) / Math.max(1e-6, impact - segmentStart));
+      const retracted = index === 0 ? 0 : -0.18;
+      return retracted + (1 - retracted) * approach;
+    }
+    const release = ease((t - impact) / Math.max(1e-6, segmentEnd - impact));
+    const retracted = next === undefined ? 0 : -0.18;
+    return 1 + (retracted - 1) * release;
+  }
+  return 0;
+}
+
 /** The blade's aim angle at sweep progress `p` ∈ [0,1]: from `aim − swingArc/2` to `aim + swingArc/2`. */
 export function bladeAngleAt(aimAngle: number, swingArc: number, p: number): number {
   return aimAngle - swingArc / 2 + swingArc * clamp(p, 0, 1);

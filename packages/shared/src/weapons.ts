@@ -490,6 +490,16 @@ export interface HybridProjectileDef {
   scalingGrades?: Partial<Record<Attr, Grade>>;
 }
 
+/**
+ * Multiple authoritative forward contacts inside one accepted melee attack. Fractions are normalized
+ * against the shared swing pose, and each pulse deals `damageMultiplier` of the weapon's headline edge
+ * damage. The client consumes the same impact list for its repeated extension/retraction pose.
+ */
+export interface RapidThrustDef {
+  readonly impacts: readonly number[];
+  readonly damageMultiplier: number;
+}
+
 export interface WeaponDef {
   /** Matches the installed sprite id (texture key base = `${id}:part-1`). */
   id: string;
@@ -504,6 +514,8 @@ export interface WeaponDef {
   poseLanguage?: WeaponPoseLanguageDef;
   /** Promote this authored combo's signed arc/range/timing path into server hit geometry. */
   authoritativeCombo?: boolean;
+  /** Fast repeated forward contacts owned by one accepted attack rather than successive combo inputs. */
+  rapidThrust?: RapidThrustDef;
   /** Server-consumed accepted-beat identity hook for the katana line. */
   katanaHook?: KatanaHookDef;
   /** Authored held/attack performance and its optional continuous mechanic. */

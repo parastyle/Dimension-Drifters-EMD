@@ -67,6 +67,7 @@ import {
   meleeReach,
   PLAYER_RADIUS,
   PROCEDURAL_JIGGLE,
+  rapidThrustExtensionAt,
   ROLL_DURATION,
   ROLL_IFRAME_TICKS,
   ROLL_TICK_SECONDS,
@@ -9822,7 +9823,25 @@ export class SpriteRig {
           const lunge = TARGET_BODY_H * 0.55 * (impale ? 1.2 : 1);
           let env: number;
           let lateral = 0;
-          if (tt < a) {
+          const rapidThrustEnv = rapidThrustExtensionAt(def.rapidThrust, tt);
+          if (rapidThrustEnv !== undefined) {
+            env = rapidThrustEnv;
+            const audit = globalThis as unknown as {
+              __ddOwnerQuickfixRapidThrustAudit?: Array<Record<string, number | string>>;
+            };
+            const samples = audit.__ddOwnerQuickfixRapidThrustAudit;
+            if (samples) {
+              samples.push({
+                weaponId: def.id,
+                timeMs: sceneNow,
+                poseProgress: tt,
+                extension: rapidThrustEnv,
+                facing: this.facing,
+                attackBeatSeq: this.attackBeatSeq,
+              });
+              if (samples.length > 600) samples.shift();
+            }
+          } else if (tt < a) {
             const p = tt / a;
             env = -(impale ? 0.28 : 0.18) * p;
             // A compact ellipse around the imagined guard; bounded well inside the blade half-width.

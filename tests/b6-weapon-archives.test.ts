@@ -32,6 +32,10 @@ const PRE_B6_ARCHIVE_IDS = [
 ] as const;
 
 const B6_ARCHIVE_IDS = ["x2-coffin-nail-carbine", "x2-psalter-of-the-burning-halo"] as const;
+const OWNER_NOTES_QUICKFIX_ARCHIVE_IDS = [
+  "x2-glimmerdust-prospector-wand",
+  "x2-tumbleweed-flail",
+] as const;
 
 const B6_NAMES = {
   "x2-coffin-nail-carbine": "Coffin-Nail Carbine",
@@ -46,13 +50,17 @@ const PROVENANCES: WeaponProvenance[] = [
 ];
 
 describe("B6 weapon catalog archives", () => {
-  it("reports exactly the two ordered archive state changes", () => {
-    const expected = [...PRE_B6_ARCHIVE_IDS, ...B6_ARCHIVE_IDS].sort();
+  it("reports the B6 and subsequent ordered archive state changes", () => {
+    const expected = [
+      ...PRE_B6_ARCHIVE_IDS,
+      ...B6_ARCHIVE_IDS,
+      ...OWNER_NOTES_QUICKFIX_ARCHIVE_IDS,
+    ].sort();
     expect([...ARCHIVED_WEAPON_IDS].sort()).toEqual(expected);
     expect(WEAPON_CATALOG_IDS).toHaveLength(357);
-    expect(ACTIVE_WEAPON_CATALOG_IDS).toHaveLength(346);
-    expect(ARCHIVED_WEAPON_IDS).toHaveLength(11);
-    expect(ACTIVE_EXPANSION_WEAPON_IDS).toHaveLength(317);
+    expect(ACTIVE_WEAPON_CATALOG_IDS).toHaveLength(344);
+    expect(ARCHIVED_WEAPON_IDS).toHaveLength(13);
+    expect(ACTIVE_EXPANSION_WEAPON_IDS).toHaveLength(315);
     expect(WEAPON_RESOURCE_IDS).toHaveLength(357);
 
     const concepts = JSON.parse(readFileSync("data/weapon-concepts-300.json", "utf8")) as {
