@@ -1,3 +1,5 @@
+import { mkdir, writeFile } from "node:fs/promises";
+import path from "node:path";
 import { expect, type Page, test } from "@playwright/test";
 import { bootArena, runArenaSpec, waitForDevWeapon } from "../helpers/arena-harness.js";
 
@@ -12,6 +14,14 @@ interface TwirlSummary {
 }
 
 test.use({ viewport: { width: 640, height: 360 } });
+
+async function writeTwirlEvidence(name: string, payload: unknown): Promise<void> {
+  const root = process.env.DD_E2E_EVIDENCE_DIR;
+  if (!root) return;
+  const evidenceRoot = path.resolve(root, "pistol-twirl");
+  await mkdir(evidenceRoot, { recursive: true });
+  await writeFile(path.join(evidenceRoot, `${name}.json`), `${JSON.stringify(payload, null, 2)}\n`);
+}
 
 async function prepareShot(page: Page): Promise<number> {
   await page.locator("#game-root canvas").click({ position: { x: 320, y: 180 } });
@@ -159,6 +169,7 @@ test("a fired one-handed pistol visibly twirls after 0.5s quiet", async ({ page 
     const lead = summarize(await captureAcceptedShot(page), 0);
     console.log(`[pistol-twirl] one-hand ${JSON.stringify(lead)}`);
     assertVisibleTwirl(lead, "lead pistol");
+    await writeTwirlEvidence("one-hand", { weaponId, lead });
   });
 });
 
@@ -175,5 +186,6 @@ test("an authored dual pistol twirls both hands with a slight stagger", async ({
     assertVisibleTwirl(off, "off pistol");
     expect(Math.abs((off.onsetMs ?? 0) - (lead.onsetMs ?? 0))).toBeGreaterThanOrEqual(35);
     expect(Math.abs((off.onsetMs ?? 0) - (lead.onsetMs ?? 0))).toBeLessThanOrEqual(200);
+    await writeTwirlEvidence("authored-dual", { weaponId, lead, off });
   });
 });

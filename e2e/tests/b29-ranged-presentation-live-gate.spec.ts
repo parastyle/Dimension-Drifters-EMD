@@ -11,10 +11,12 @@ const THROW_FIXTURES = [
   { id: "x2-iron-throwing-star", displayLength: 76, collisionLength: 56 },
   { id: "x2-iron-chakram", displayLength: 104, collisionLength: 76 },
 ] as const;
-const EVIDENCE_DIR = path.resolve(
-  import.meta.dirname,
-  "../../docs/owner-notes-audit-v11-evidence/b29-ranged-presentation",
-);
+const EVIDENCE_DIR = process.env.DD_E2E_EVIDENCE_DIR
+  ? path.resolve(process.env.DD_E2E_EVIDENCE_DIR, "b29-ranged-presentation")
+  : path.resolve(
+      import.meta.dirname,
+      "../../docs/owner-notes-audit-v11-evidence/b29-ranged-presentation",
+    );
 
 type Facing = (typeof FACINGS)[number];
 type MotionKind =

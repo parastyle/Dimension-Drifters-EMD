@@ -1,0 +1,3038 @@
+{
+  "verdict": "pass",
+  "capturedAt": "2026-07-24T23:22:16.687Z",
+  "character": "proto-cowboy-hidden-face",
+  "privatePorts": {
+    "client": 59899,
+    "game": 59898,
+    "forbiddenDefaultPortsAvoided": true
+  },
+  "facings": [
+    "right",
+    "left"
+  ],
+  "representativeFixtures": {
+    "shuriken": "x2-iron-throwing-star",
+    "chakram": "x2-iron-chakram",
+    "kunai": "x2-kunai",
+    "authoredDualGun": "x2-coyote-stinger",
+    "oneHandedRevolver": "x-gun-revolver-cannon",
+    "pairedFanHammer": "x2-twin-maw-greenerbore"
+  },
+  "twinMawHands": {
+    "right": [
+      0,
+      1
+    ],
+    "left": [
+      0,
+      1
+    ]
+  },
+  "captures": [
+    {
+      "label": "x2-iron-throwing-star-right-ready-idle",
+      "weaponId": "x2-iron-throwing-star",
+      "facing": "right",
+      "screenshot": "docs/owner-notes-audit-v11-evidence/b40-flourish-regression/run-2/b29-ranged-presentation/x2-iron-throwing-star-right-ready-idle.png",
+      "snapshot": {
+        "character": "proto-cowboy-hidden-face",
+        "authorityWeapon": "x2-iron-throwing-star",
+        "attackSeq": 0,
+        "facingValue": 1,
+        "facingBlend": 0.999996648467384,
+        "displayLength": 76,
+        "collisionLength": 56,
+        "recoilHand": 0,
+        "recoilElapsedMs": 1000005681.32,
+        "performance": {
+          "phase": "idle",
+          "phaseT": 0,
+          "active": true,
+          "weaponAngle": -0.4800001803040829,
+          "backHandBlend": 0.94,
+          "bodyForward": 0.018,
+          "bodyLateral": -0.018,
+          "bodyTurn": -0.065,
+          "frontFootForward": 0.075,
+          "backFootForward": -0.095,
+          "footBlend": 0.72
+        },
+        "flourish": {
+          "active": false,
+          "moment": "draw",
+          "rotationRad": 0,
+          "ownership": 0,
+          "arm": {
+            "armed": false,
+            "earliestStartMs": -1000000000,
+            "weaponId": ""
+          },
+          "streak": {
+            "count": 0,
+            "lastAcceptedMs": -1000000000,
+            "weaponId": ""
+          },
+          "cancelEdge": 0
+        },
+        "hammer": {
+          "active": false,
+          "weaponRotationRad": 0,
+          "weaponForward": 0,
+          "weaponLateral": 0,
+          "handForward": 0,
+          "handLateral": 0
+        },
+        "weaponRows": [
+          {
+            "hand": 0,
+            "x": 19.940405516944217,
+            "y": -16.885743635242235,
+            "rotation": -0.4800001803040832,
+            "semanticRotation": -0.4800001803040832,
+            "originX": 0.5,
+            "originY": 0.5,
+            "scaleX": 0.44822179910524074,
+            "scaleY": 0.44822179910524074,
+            "renderedLengthPx": 75.99980228449623,
+            "renderedHeightPx": 75.99995069350878,
+            "center": {
+              "x": 2413.207275390625,
+              "y": 2408.81591796875
+            },
+            "handPosition": {
+              "x": 19.940405516944217,
+              "y": -16.885743635242235
+            },
+            "handToWeaponDistance": 0,
+            "corners": [
+              {
+                "x": 2361.9540271759033,
+                "y": 2392.657726287842
+              },
+              {
+                "x": 2429.365411758423,
+                "y": 2357.5624961853027
+              },
+              {
+                "x": 2464.4605236053467,
+                "y": 2424.974109649658
+              },
+              {
+                "x": 2397.049139022827,
+                "y": 2460.0693397521973
+              }
+            ]
+          }
+        ],
+        "weaponVerticalGap": null,
+        "muzzleRows": [
+          {
+            "hand": 0,
+            "visible": false,
+            "x": 0,
+            "y": 0
+          },
+          {
+            "hand": 1,
+            "visible": false,
+            "x": 0,
+            "y": 0
+          }
+        ],
+        "muzzleVerticalGap": null,
+        "shotMuzzle": {
+          "visible": false,
+          "x": 0,
+          "y": 0
+        },
+        "muzzleAnchorError": null,
+        "projectile": null
+      }
+    },
+    {
+      "label": "x2-iron-throwing-star-right-engaged-release",
+      "weaponId": "x2-iron-throwing-star",
+      "facing": "right",
+      "screenshot": "docs/owner-notes-audit-v11-evidence/b40-flourish-regression/run-2/b29-ranged-presentation/x2-iron-throwing-star-right-engaged-release.png",
+      "snapshot": {
+        "character": "proto-cowboy-hidden-face",
+        "authorityWeapon": "x2-iron-throwing-star",
+        "attackSeq": 1,
+        "facingValue": 1,
+        "facingBlend": 0.9999999999980554,
+        "displayLength": 76,
+        "collisionLength": 56,
+        "recoilHand": 0,
+        "recoilElapsedMs": 1000006877.98,
+        "performance": {
+          "phase": "recovery",
+          "phaseT": 0.4583750000000011,
+          "active": true,
+          "weaponAngle": -1.8030408295749558e-7,
+          "backHandBlend": 1,
+          "bodyForward": 0.06691951341711314,
+          "bodyLateral": -0.019124586515335933,
+          "bodyTurn": 0.06713891555197228,
+          "frontFootForward": 0.13966372463181623,
+          "backFootForward": -0.12592612917173818,
+          "footBlend": 0.8774421121470308
+        },
+        "flourish": {
+          "active": false,
+          "moment": "draw",
+          "rotationRad": 0,
+          "ownership": 0,
+          "arm": {
+            "armed": false,
+            "earliestStartMs": -1000000000,
+            "weaponId": ""
+          },
+          "streak": {
+            "count": 0,
+            "lastAcceptedMs": -1000000000,
+            "weaponId": ""
+          },
+          "cancelEdge": 1
+        },
+        "hammer": {
+          "active": false,
+          "weaponRotationRad": 0,
+          "weaponForward": 0,
+          "weaponLateral": 0,
+          "handForward": 0,
+          "handLateral": 0
+        },
+        "weaponRows": [
+          {
+            "hand": 0,
+            "x": 40.46840634555903,
+            "y": -9.028354868530837,
+            "rotation": -1.8030408277525112e-7,
+            "semanticRotation": -1.8030408277525112e-7,
+            "originX": 0.5,
+            "originY": 0.5,
+            "scaleX": 0.44822179910524074,
+            "scaleY": 0.44822179910524074,
+            "renderedLengthPx": 76.00000000000124,
+            "renderedHeightPx": 76.00000000000124,
+            "center": {
+              "x": 2426.8037109375,
+              "y": 2414.020263671875
+            },
+            "handPosition": {
+              "x": 40.46840634555903,
+              "y": -9.028354868530837
+            },
+            "handToWeaponDistance": 0,
+            "corners": [
+              {
+                "x": 2388.8037040859444,
+                "y": 2376.0202705234306
+              },
+              {
+                "x": 2464.8037040859444,
+                "y": 2376.0202568203194
+              },
+              {
+                "x": 2464.8037177890556,
+                "y": 2452.0202568203194
+              },
+              {
+                "x": 2388.8037177890556,
+                "y": 2452.0202705234306
+              }
+            ]
+          }
+        ],
+        "weaponVerticalGap": null,
+        "muzzleRows": [
+          {
+            "hand": 0,
+            "visible": false,
+            "x": 0,
+            "y": 0
+          },
+          {
+            "hand": 1,
+            "visible": false,
+            "x": 0,
+            "y": 0
+          }
+        ],
+        "muzzleVerticalGap": null,
+        "shotMuzzle": {
+          "visible": false,
+          "x": 0,
+          "y": 0
+        },
+        "muzzleAnchorError": null,
+        "projectile": null,
+        "authorityAcceptedAtCapture": true,
+        "authorityAttackSeqAfter": 1
+      }
+    },
+    {
+      "label": "x2-iron-throwing-star-right-resized-projectile",
+      "weaponId": "x2-iron-throwing-star",
+      "facing": "right",
+      "screenshot": "docs/owner-notes-audit-v11-evidence/b40-flourish-regression/run-2/b29-ranged-presentation/x2-iron-throwing-star-right-resized-projectile.png",
+      "snapshot": {
+        "character": "proto-cowboy-hidden-face",
+        "authorityWeapon": "x2-iron-throwing-star",
+        "attackSeq": 2,
+        "facingValue": 1,
+        "facingBlend": 0.9999999999999999,
+        "displayLength": 76,
+        "collisionLength": 56,
+        "recoilHand": 0,
+        "recoilElapsedMs": 1000007704.61,
+        "performance": {
+          "phase": "idle",
+          "phaseT": 0,
+          "active": true,
+          "weaponAngle": -0.4800001803040829,
+          "backHandBlend": 0.94,
+          "bodyForward": 0.018,
+          "bodyLateral": -0.018,
+          "bodyTurn": -0.065,
+          "frontFootForward": 0.075,
+          "backFootForward": -0.095,
+          "footBlend": 0.72
+        },
+        "flourish": {
+          "active": false,
+          "moment": "draw",
+          "rotationRad": 0,
+          "ownership": 0,
+          "arm": {
+            "armed": false,
+            "earliestStartMs": -1000000000,
+            "weaponId": ""
+          },
+          "streak": {
+            "count": 0,
+            "lastAcceptedMs": -1000000000,
+            "weaponId": ""
+          },
+          "cancelEdge": 2
+        },
+        "hammer": {
+          "active": false,
+          "weaponRotationRad": 0,
+          "weaponForward": 0,
+          "weaponLateral": 0,
+          "handForward": 0,
+          "handLateral": 0
+        },
+        "weaponRows": [
+          {
+            "hand": 0,
+            "x": 22.40477796907528,
+            "y": -21.57575963026129,
+            "rotation": -0.4800001803040832,
+            "semanticRotation": -0.4800001803040832,
+            "originX": 0.5,
+            "originY": 0.5,
+            "scaleX": 0.44822179910524074,
+            "scaleY": 0.44822179910524074,
+            "renderedLengthPx": 76.00000530143295,
+            "renderedHeightPx": 76.00000530143295,
+            "center": {
+              "x": 2414.839599609375,
+              "y": 2405.70947265625
+            },
+            "handPosition": {
+              "x": 22.40477796907528,
+              "y": -21.57575963026129
+            },
+            "handToWeaponDistance": 0,
+            "corners": [
+              {
+                "x": 2363.5861778259277,
+                "y": 2389.551280975342
+              },
+              {
+                "x": 2430.997791290283,
+                "y": 2354.4560508728027
+              },
+              {
+                "x": 2466.0930213928223,
+                "y": 2421.867664337158
+              },
+              {
+                "x": 2398.681407928467,
+                "y": 2456.9628944396973
+              }
+            ]
+          }
+        ],
+        "weaponVerticalGap": null,
+        "muzzleRows": [
+          {
+            "hand": 0,
+            "visible": false,
+            "x": 0,
+            "y": 0
+          },
+          {
+            "hand": 1,
+            "visible": false,
+            "x": 0,
+            "y": 0
+          }
+        ],
+        "muzzleVerticalGap": null,
+        "shotMuzzle": {
+          "visible": false,
+          "x": 0,
+          "y": 0
+        },
+        "muzzleAnchorError": null,
+        "projectile": {
+          "x": 2426.808316250426,
+          "y": 2412.4690310458423,
+          "spriteId": "x2-iron-throwing-star",
+          "spawnAnchorKind": "throw",
+          "spawnThrowX": 2426.808316250426,
+          "spawnThrowY": 2412.4690310458423,
+          "displayWidth": 76,
+          "displayHeight": 76
+        },
+        "authorityAcceptedAtCapture": true,
+        "authorityAttackSeqAfter": 2
+      }
+    },
+    {
+      "label": "x2-iron-throwing-star-left-ready-idle",
+      "weaponId": "x2-iron-throwing-star",
+      "facing": "left",
+      "screenshot": "docs/owner-notes-audit-v11-evidence/b40-flourish-regression/run-2/b29-ranged-presentation/x2-iron-throwing-star-left-ready-idle.png",
+      "snapshot": {
+        "character": "proto-cowboy-hidden-face",
+        "authorityWeapon": "x2-iron-throwing-star",
+        "attackSeq": 2,
+        "facingValue": -1,
+        "facingBlend": -0.9999946904996301,
+        "displayLength": 76,
+        "collisionLength": 56,
+        "recoilHand": 0,
+        "recoilElapsedMs": 1000010379.5,
+        "performance": {
+          "phase": "idle",
+          "phaseT": 0,
+          "active": true,
+          "weaponAngle": -0.4800001803040185,
+          "backHandBlend": 0.94,
+          "bodyForward": 0.018,
+          "bodyLateral": -0.018,
+          "bodyTurn": -0.065,
+          "frontFootForward": 0.075,
+          "backFootForward": -0.095,
+          "footBlend": 0.72
+        },
+        "flourish": {
+          "active": false,
+          "moment": "draw",
+          "rotationRad": 0,
+          "ownership": 0,
+          "arm": {
+            "armed": false,
+            "earliestStartMs": -1000000000,
+            "weaponId": ""
+          },
+          "streak": {
+            "count": 0,
+            "lastAcceptedMs": -1000000000,
+            "weaponId": ""
+          },
+          "cancelEdge": 2
+        },
+        "hammer": {
+          "active": false,
+          "weaponRotationRad": 0,
+          "weaponForward": 0,
+          "weaponLateral": 0,
+          "handForward": 0,
+          "handLateral": 0
+        },
+        "weaponRows": [
+          {
+            "hand": 0,
+            "x": 19.960922207710837,
+            "y": -21.86034330551821,
+            "rotation": -0.4800001803040175,
+            "semanticRotation": -0.4800001803040175,
+            "originX": 0.5,
+            "originY": 0.5,
+            "scaleX": 0.44822179910524074,
+            "scaleY": 0.44822179910524074,
+            "renderedLengthPx": 75.99968724163064,
+            "renderedHeightPx": 75.99991898574827,
+            "center": {
+              "x": 2386.779052734375,
+              "y": 2405.52099609375
+            },
+            "handPosition": {
+              "x": 19.960922207710837,
+              "y": -21.86034330551821
+            },
+            "handToWeaponDistance": 0,
+            "corners": [
+              {
+                "x": 2438.032201766968,
+                "y": 2389.362804412842
+              },
+              {
+                "x": 2370.6209468841553,
+                "y": 2354.2675743103027
+              },
+              {
+                "x": 2335.525903701782,
+                "y": 2421.679187774658
+              },
+              {
+                "x": 2402.9371585845947,
+                "y": 2456.7744178771973
+              }
+            ]
+          }
+        ],
+        "weaponVerticalGap": null,
+        "muzzleRows": [
+          {
+            "hand": 0,
+            "visible": false,
+            "x": 0,
+            "y": 0
+          },
+          {
+            "hand": 1,
+            "visible": false,
+            "x": 0,
+            "y": 0
+          }
+        ],
+        "muzzleVerticalGap": null,
+        "shotMuzzle": {
+          "visible": false,
+          "x": 0,
+          "y": 0
+        },
+        "muzzleAnchorError": null,
+        "projectile": null
+      }
+    },
+    {
+      "label": "x2-iron-throwing-star-left-engaged-release",
+      "weaponId": "x2-iron-throwing-star",
+      "facing": "left",
+      "screenshot": "docs/owner-notes-audit-v11-evidence/b40-flourish-regression/run-2/b29-ranged-presentation/x2-iron-throwing-star-left-engaged-release.png",
+      "snapshot": {
+        "character": "proto-cowboy-hidden-face",
+        "authorityWeapon": "x2-iron-throwing-star",
+        "attackSeq": 3,
+        "facingValue": -1,
+        "facingBlend": -0.9999999999875046,
+        "displayLength": 76,
+        "collisionLength": 56,
+        "recoilHand": 0,
+        "recoilElapsedMs": 1000011459.47,
+        "performance": {
+          "phase": "recovery",
+          "phaseT": 0.45824999999999827,
+          "active": true,
+          "weaponAngle": -1.8030401850478035e-7,
+          "backHandBlend": 1,
+          "bodyForward": 0.06693571252246897,
+          "bodyLateral": -0.019124958908562504,
+          "bodyTurn": 0.06718267175609435,
+          "frontFootForward": 0.13968513724234405,
+          "backFootForward": -0.1259363699854689,
+          "footBlend": 0.8774942471987507
+        },
+        "flourish": {
+          "active": false,
+          "moment": "draw",
+          "rotationRad": 0,
+          "ownership": 0,
+          "arm": {
+            "armed": false,
+            "earliestStartMs": -1000000000,
+            "weaponId": ""
+          },
+          "streak": {
+            "count": 0,
+            "lastAcceptedMs": -1000000000,
+            "weaponId": ""
+          },
+          "cancelEdge": 3
+        },
+        "hammer": {
+          "active": false,
+          "weaponRotationRad": 0,
+          "weaponForward": 0,
+          "weaponLateral": 0,
+          "handForward": 0,
+          "handLateral": 0
+        },
+        "weaponRows": [
+          {
+            "hand": 0,
+            "x": 40.47518818526153,
+            "y": -6.233676068912693,
+            "rotation": -1.803040188264049e-7,
+            "semanticRotation": -1.803040188264049e-7,
+            "originX": 0.5,
+            "originY": 0.5,
+            "scaleX": 0.44822179910524074,
+            "scaleY": 0.44822179910524074,
+            "renderedLengthPx": 76.00000000000124,
+            "renderedHeightPx": 76.00000000000124,
+            "center": {
+              "x": 2373.191650390625,
+              "y": 2415.87109375
+            },
+            "handPosition": {
+              "x": 40.47518818526153,
+              "y": -6.233676068912693
+            },
+            "handToWeaponDistance": 0,
+            "corners": [
+              {
+                "x": 2411.191657242178,
+                "y": 2377.871100601553
+              },
+              {
+                "x": 2335.191657242178,
+                "y": 2377.871086898447
+              },
+              {
+                "x": 2335.191643539072,
+                "y": 2453.871086898447
+              },
+              {
+                "x": 2411.191643539072,
+                "y": 2453.871100601553
+              }
+            ]
+          }
+        ],
+        "weaponVerticalGap": null,
+        "muzzleRows": [
+          {
+            "hand": 0,
+            "visible": false,
+            "x": 0,
+            "y": 0
+          },
+          {
+            "hand": 1,
+            "visible": false,
+            "x": 0,
+            "y": 0
+          }
+        ],
+        "muzzleVerticalGap": null,
+        "shotMuzzle": {
+          "visible": false,
+          "x": 0,
+          "y": 0
+        },
+        "muzzleAnchorError": null,
+        "projectile": {
+          "x": 2414.8694582129287,
+          "y": 2432.6252967698333,
+          "spriteId": "x2-iron-throwing-star",
+          "spawnAnchorKind": "throw",
+          "spawnThrowX": 2414.8694582129287,
+          "spawnThrowY": 2432.6252967698333,
+          "displayWidth": 76,
+          "displayHeight": 76
+        },
+        "authorityAcceptedAtCapture": true,
+        "authorityAttackSeqAfter": 3
+      }
+    },
+    {
+      "label": "x2-iron-throwing-star-left-resized-projectile",
+      "weaponId": "x2-iron-throwing-star",
+      "facing": "left",
+      "screenshot": "docs/owner-notes-audit-v11-evidence/b40-flourish-regression/run-2/b29-ranged-presentation/x2-iron-throwing-star-left-resized-projectile.png",
+      "snapshot": {
+        "character": "proto-cowboy-hidden-face",
+        "authorityWeapon": "x2-iron-throwing-star",
+        "attackSeq": 4,
+        "facingValue": -1,
+        "facingBlend": -0.9999999999999982,
+        "displayLength": 76,
+        "collisionLength": 56,
+        "recoilHand": 0,
+        "recoilElapsedMs": 1000012196.11,
+        "performance": {
+          "phase": "idle",
+          "phaseT": 0,
+          "active": true,
+          "weaponAngle": -0.4800001803040185,
+          "backHandBlend": 0.94,
+          "bodyForward": 0.018,
+          "bodyLateral": -0.018,
+          "bodyTurn": -0.065,
+          "frontFootForward": 0.075,
+          "backFootForward": -0.095,
+          "footBlend": 0.72
+        },
+        "flourish": {
+          "active": false,
+          "moment": "draw",
+          "rotationRad": 0,
+          "ownership": 0,
+          "arm": {
+            "armed": false,
+            "earliestStartMs": -1000000000,
+            "weaponId": ""
+          },
+          "streak": {
+            "count": 0,
+            "lastAcceptedMs": -1000000000,
+            "weaponId": ""
+          },
+          "cancelEdge": 4
+        },
+        "hammer": {
+          "active": false,
+          "weaponRotationRad": 0,
+          "weaponForward": 0,
+          "weaponLateral": 0,
+          "handForward": 0,
+          "handLateral": 0
+        },
+        "weaponRows": [
+          {
+            "hand": 0,
+            "x": 22.55277119840101,
+            "y": -16.873918249362994,
+            "rotation": -0.4800001803040175,
+            "semanticRotation": -0.4800001803040175,
+            "originX": 0.5,
+            "originY": 0.5,
+            "scaleX": 0.44822179910524074,
+            "scaleY": 0.44822179910524074,
+            "renderedLengthPx": 76.00000530143295,
+            "renderedHeightPx": 76.00000530143295,
+            "center": {
+              "x": 2385.0625,
+              "y": 2408.82373046875
+            },
+            "handPosition": {
+              "x": 22.55277119840101,
+              "y": -16.873918249362994
+            },
+            "handToWeaponDistance": 0,
+            "corners": [
+              {
+                "x": 2436.3159217834473,
+                "y": 2392.665538787842
+              },
+              {
+                "x": 2368.904308319092,
+                "y": 2357.5703086853027
+              },
+              {
+                "x": 2333.8090782165527,
+                "y": 2424.981922149658
+              },
+              {
+                "x": 2401.220691680908,
+                "y": 2460.0771522521973
+              }
+            ]
+          }
+        ],
+        "weaponVerticalGap": null,
+        "muzzleRows": [
+          {
+            "hand": 0,
+            "visible": false,
+            "x": 0,
+            "y": 0
+          },
+          {
+            "hand": 1,
+            "visible": false,
+            "x": 0,
+            "y": 0
+          }
+        ],
+        "muzzleVerticalGap": null,
+        "shotMuzzle": {
+          "visible": false,
+          "x": 0,
+          "y": 0
+        },
+        "muzzleAnchorError": null,
+        "projectile": {
+          "x": 2371.7098693808916,
+          "y": 2416.4743459226684,
+          "spriteId": "x2-iron-throwing-star",
+          "spawnAnchorKind": "throw",
+          "spawnThrowX": 2371.7098693808916,
+          "spawnThrowY": 2416.4743459226684,
+          "displayWidth": 76,
+          "displayHeight": 76
+        },
+        "authorityAcceptedAtCapture": true,
+        "authorityAttackSeqAfter": 4
+      }
+    },
+    {
+      "label": "x2-iron-chakram-right-ready-idle",
+      "weaponId": "x2-iron-chakram",
+      "facing": "right",
+      "screenshot": "docs/owner-notes-audit-v11-evidence/b40-flourish-regression/run-2/b29-ranged-presentation/x2-iron-chakram-right-ready-idle.png",
+      "snapshot": {
+        "character": "proto-cowboy-hidden-face",
+        "authorityWeapon": "x2-iron-chakram",
+        "attackSeq": 4,
+        "facingValue": 1,
+        "facingBlend": 0.9999949021558303,
+        "displayLength": 104,
+        "collisionLength": 76,
+        "recoilHand": 0,
+        "recoilElapsedMs": 1000016037.62,
+        "performance": {
+          "phase": "idle",
+          "phaseT": 0,
+          "active": true,
+          "weaponAngle": -0.4800001803040829,
+          "backHandBlend": 0.94,
+          "bodyForward": 0.018,
+          "bodyLateral": -0.018,
+          "bodyTurn": -0.065,
+          "frontFootForward": 0.075,
+          "backFootForward": -0.095,
+          "footBlend": 0.72
+        },
+        "flourish": {
+          "active": false,
+          "moment": "draw",
+          "rotationRad": 0,
+          "ownership": 0,
+          "arm": {
+            "armed": false,
+            "earliestStartMs": -1000000000,
+            "weaponId": ""
+          },
+          "streak": {
+            "count": 0,
+            "lastAcceptedMs": -1000000000,
+            "weaponId": ""
+          },
+          "cancelEdge": 5
+        },
+        "hammer": {
+          "active": false,
+          "weaponRotationRad": 0,
+          "weaponForward": 0,
+          "weaponLateral": 0,
+          "handForward": 0,
+          "handLateral": 0
+        },
+        "weaponRows": [
+          {
+            "hand": 0,
+            "x": 19.91759234730878,
+            "y": -21.620695851250087,
+            "rotation": -0.4800001803040832,
+            "semanticRotation": -0.4800001803040832,
+            "originX": 0.5,
+            "originY": 0.5,
+            "scaleX": 0.6133561461440136,
+            "scaleY": 0.6133561461440136,
+            "renderedLengthPx": 103.99957707926953,
+            "renderedHeightPx": 103.18738481560719,
+            "center": {
+              "x": 2413.192138671875,
+              "y": 2405.6796875
+            },
+            "handPosition": {
+              "x": 19.91759234730878,
+              "y": -21.620695851250087
+            },
+            "handToWeaponDistance": 0,
+            "corners": [
+              {
+                "x": 2343.243838891387,
+                "y": 2383.928824990988
+              },
+              {
+                "x": 2435.490825280547,
+                "y": 2335.9037738740444
+              },
+              {
+                "x": 2483.140438452363,
+                "y": 2427.430550009012
+              },
+              {
+                "x": 2390.893452063203,
+                "y": 2475.4556011259556
+              }
+            ]
+          }
+        ],
+        "weaponVerticalGap": null,
+        "muzzleRows": [
+          {
+            "hand": 0,
+            "visible": false,
+            "x": 0,
+            "y": 0
+          },
+          {
+            "hand": 1,
+            "visible": false,
+            "x": 0,
+            "y": 0
+          }
+        ],
+        "muzzleVerticalGap": null,
+        "shotMuzzle": {
+          "visible": false,
+          "x": 0,
+          "y": 0
+        },
+        "muzzleAnchorError": null,
+        "projectile": null
+      }
+    },
+    {
+      "label": "x2-iron-chakram-right-engaged-release",
+      "weaponId": "x2-iron-chakram",
+      "facing": "right",
+      "screenshot": "docs/owner-notes-audit-v11-evidence/b40-flourish-regression/run-2/b29-ranged-presentation/x2-iron-chakram-right-engaged-release.png",
+      "snapshot": {
+        "character": "proto-cowboy-hidden-face",
+        "authorityWeapon": "x2-iron-chakram",
+        "attackSeq": 5,
+        "facingValue": 1,
+        "facingBlend": 0.9999999999960051,
+        "displayLength": 104,
+        "collisionLength": 76,
+        "recoilHand": 0,
+        "recoilElapsedMs": 1000017209.23,
+        "performance": {
+          "phase": "recovery",
+          "phaseT": 0.15553333333334507,
+          "active": true,
+          "weaponAngle": -1.8030408295749558e-7,
+          "backHandBlend": 1,
+          "bodyForward": 0.09934091461079564,
+          "bodyLateral": -0.019869906083006796,
+          "bodyTurn": 0.15471396475329857,
+          "frontFootForward": 0.18251959977289078,
+          "backFootForward": -0.1464224172826869,
+          "footBlend": 0.9817868516209515
+        },
+        "flourish": {
+          "active": false,
+          "moment": "draw",
+          "rotationRad": 0,
+          "ownership": 0,
+          "arm": {
+            "armed": false,
+            "earliestStartMs": -1000000000,
+            "weaponId": ""
+          },
+          "streak": {
+            "count": 0,
+            "lastAcceptedMs": -1000000000,
+            "weaponId": ""
+          },
+          "cancelEdge": 6
+        },
+        "hammer": {
+          "active": false,
+          "weaponRotationRad": 0,
+          "weaponForward": 0,
+          "weaponLateral": 0,
+          "handForward": 0,
+          "handLateral": 0
+        },
+        "weaponRows": [
+          {
+            "hand": 0,
+            "x": 54.04179456576712,
+            "y": -1.0123406968236348,
+            "rotation": -1.8030408277525112e-7,
+            "semanticRotation": -1.8030408277525112e-7,
+            "originX": 0.5,
+            "originY": 0.5,
+            "scaleX": 0.6133561461440136,
+            "scaleY": 0.6133561461440136,
+            "renderedLengthPx": 104.00000762939622,
+            "renderedHeightPx": 103.18750756979156,
+            "center": {
+              "x": 2435.7939453125,
+              "y": 2419.32958984375
+            },
+            "handPosition": {
+              "x": 54.04179456576712,
+              "y": -1.0123406968236348
+            },
+            "handToWeaponDistance": 0,
+            "corners": [
+              {
+                "x": 2383.7939321952385,
+                "y": 2367.7358454346677
+              },
+              {
+                "x": 2487.793939824633,
+                "y": 2367.7358266830424
+              },
+              {
+                "x": 2487.7939584297615,
+                "y": 2470.9233342528323
+              },
+              {
+                "x": 2383.793950800367,
+                "y": 2470.9233530044576
+              }
+            ]
+          }
+        ],
+        "weaponVerticalGap": null,
+        "muzzleRows": [
+          {
+            "hand": 0,
+            "visible": false,
+            "x": 0,
+            "y": 0
+          },
+          {
+            "hand": 1,
+            "visible": false,
+            "x": 0,
+            "y": 0
+          }
+        ],
+        "muzzleVerticalGap": null,
+        "shotMuzzle": {
+          "visible": false,
+          "x": 0,
+          "y": 0
+        },
+        "muzzleAnchorError": null,
+        "projectile": null,
+        "authorityAcceptedAtCapture": true,
+        "authorityAttackSeqAfter": 5
+      }
+    },
+    {
+      "label": "x2-iron-chakram-right-resized-projectile",
+      "weaponId": "x2-iron-chakram",
+      "facing": "right",
+      "screenshot": "docs/owner-notes-audit-v11-evidence/b40-flourish-regression/run-2/b29-ranged-presentation/x2-iron-chakram-right-resized-projectile.png",
+      "snapshot": {
+        "character": "proto-cowboy-hidden-face",
+        "authorityWeapon": "x2-iron-chakram",
+        "attackSeq": 6,
+        "facingValue": 1,
+        "facingBlend": 0.9999999999999992,
+        "displayLength": 104,
+        "collisionLength": 76,
+        "recoilHand": 0,
+        "recoilElapsedMs": 1000017915.87,
+        "performance": {
+          "phase": "recovery",
+          "phaseT": 0.6999333333333683,
+          "active": true,
+          "weaponAngle": -1.8030408295749558e-7,
+          "backHandBlend": 1,
+          "bodyForward": 0.03679930846394461,
+          "bodyLateral": -0.01843216801066539,
+          "bodyTurn": -0.014220258746816289,
+          "frontFootForward": 0.09984966061326012,
+          "backFootForward": -0.10688462029329832,
+          "footBlend": 0.780503521493155
+        },
+        "flourish": {
+          "active": false,
+          "moment": "draw",
+          "rotationRad": 0,
+          "ownership": 0,
+          "arm": {
+            "armed": false,
+            "earliestStartMs": -1000000000,
+            "weaponId": ""
+          },
+          "streak": {
+            "count": 0,
+            "lastAcceptedMs": -1000000000,
+            "weaponId": ""
+          },
+          "cancelEdge": 7
+        },
+        "hammer": {
+          "active": false,
+          "weaponRotationRad": 0,
+          "weaponForward": 0,
+          "weaponLateral": 0,
+          "handForward": 0,
+          "handLateral": 0
+        },
+        "weaponRows": [
+          {
+            "hand": 0,
+            "x": 27.858425899024393,
+            "y": -11.342999419559138,
+            "rotation": -1.8030408277525112e-7,
+            "semanticRotation": -1.8030408277525112e-7,
+            "originX": 0.5,
+            "originY": 0.5,
+            "scaleX": 0.6133561461440136,
+            "scaleY": 0.6133561461440136,
+            "renderedLengthPx": 104.00000762939622,
+            "renderedHeightPx": 103.18750756979156,
+            "center": {
+              "x": 2418.45166015625,
+              "y": 2412.487060546875
+            },
+            "handPosition": {
+              "x": 27.858425899024393,
+              "y": -11.342999419559138
+            },
+            "handToWeaponDistance": 0,
+            "corners": [
+              {
+                "x": 2366.4516470389885,
+                "y": 2360.8933161377927
+              },
+              {
+                "x": 2470.451654668383,
+                "y": 2360.8932973861674
+              },
+              {
+                "x": 2470.4516732735115,
+                "y": 2464.0808049559573
+              },
+              {
+                "x": 2366.451665644117,
+                "y": 2464.0808237075826
+              }
+            ]
+          }
+        ],
+        "weaponVerticalGap": null,
+        "muzzleRows": [
+          {
+            "hand": 0,
+            "visible": false,
+            "x": 0,
+            "y": 0
+          },
+          {
+            "hand": 1,
+            "visible": false,
+            "x": 0,
+            "y": 0
+          }
+        ],
+        "muzzleVerticalGap": null,
+        "shotMuzzle": {
+          "visible": false,
+          "x": 0,
+          "y": 0
+        },
+        "muzzleAnchorError": null,
+        "projectile": {
+          "x": 2436.6877510593013,
+          "y": 2419.5779709308786,
+          "spriteId": "x2-iron-chakram",
+          "spawnAnchorKind": "throw",
+          "spawnThrowX": 2436.6877510593013,
+          "spawnThrowY": 2419.5779709308786,
+          "displayWidth": 104,
+          "displayHeight": 103.1875
+        },
+        "authorityAcceptedAtCapture": true,
+        "authorityAttackSeqAfter": 6
+      }
+    },
+    {
+      "label": "x2-iron-chakram-left-ready-idle",
+      "weaponId": "x2-iron-chakram",
+      "facing": "left",
+      "screenshot": "docs/owner-notes-audit-v11-evidence/b40-flourish-regression/run-2/b29-ranged-presentation/x2-iron-chakram-left-ready-idle.png",
+      "snapshot": {
+        "character": "proto-cowboy-hidden-face",
+        "authorityWeapon": "x2-iron-chakram",
+        "attackSeq": 6,
+        "facingValue": -1,
+        "facingBlend": -0.9999948997082778,
+        "displayLength": 104,
+        "collisionLength": 76,
+        "recoilHand": 0,
+        "recoilElapsedMs": 1000020444.1,
+        "performance": {
+          "phase": "idle",
+          "phaseT": 0,
+          "active": true,
+          "weaponAngle": -0.4800001803040185,
+          "backHandBlend": 0.94,
+          "bodyForward": 0.018,
+          "bodyLateral": -0.018,
+          "bodyTurn": -0.065,
+          "frontFootForward": 0.075,
+          "backFootForward": -0.095,
+          "footBlend": 0.72
+        },
+        "flourish": {
+          "active": false,
+          "moment": "draw",
+          "rotationRad": 0,
+          "ownership": 0,
+          "arm": {
+            "armed": false,
+            "earliestStartMs": -1000000000,
+            "weaponId": ""
+          },
+          "streak": {
+            "count": 0,
+            "lastAcceptedMs": -1000000000,
+            "weaponId": ""
+          },
+          "cancelEdge": 7
+        },
+        "hammer": {
+          "active": false,
+          "weaponRotationRad": 0,
+          "weaponForward": 0,
+          "weaponLateral": 0,
+          "handForward": 0,
+          "handLateral": 0
+        },
+        "weaponRows": [
+          {
+            "hand": 0,
+            "x": 20.057186709000533,
+            "y": -15.714282959956078,
+            "rotation": -0.4800001803040175,
+            "semanticRotation": -0.4800001803040175,
+            "originX": 0.5,
+            "originY": 0.5,
+            "scaleX": 0.6133561461440136,
+            "scaleY": 0.6133561461440136,
+            "renderedLengthPx": 103.99957707926953,
+            "renderedHeightPx": 103.18738481560719,
+            "center": {
+              "x": 2386.71533203125,
+              "y": 2409.591796875
+            },
+            "handPosition": {
+              "x": 20.057186709000533,
+              "y": -15.714282959956078
+            },
+            "handToWeaponDistance": 0,
+            "corners": [
+              {
+                "x": 2456.663631811738,
+                "y": 2387.840934365988
+              },
+              {
+                "x": 2364.416645422578,
+                "y": 2339.8158832490444
+              },
+              {
+                "x": 2316.767032250762,
+                "y": 2431.342659384012
+              },
+              {
+                "x": 2409.014018639922,
+                "y": 2479.3677105009556
+              }
+            ]
+          }
+        ],
+        "weaponVerticalGap": null,
+        "muzzleRows": [
+          {
+            "hand": 0,
+            "visible": false,
+            "x": 0,
+            "y": 0
+          },
+          {
+            "hand": 1,
+            "visible": false,
+            "x": 0,
+            "y": 0
+          }
+        ],
+        "muzzleVerticalGap": null,
+        "shotMuzzle": {
+          "visible": false,
+          "x": 0,
+          "y": 0
+        },
+        "muzzleAnchorError": null,
+        "projectile": null
+      }
+    },
+    {
+      "label": "x2-iron-chakram-left-engaged-release",
+      "weaponId": "x2-iron-chakram",
+      "facing": "left",
+      "screenshot": "docs/owner-notes-audit-v11-evidence/b40-flourish-regression/run-2/b29-ranged-presentation/x2-iron-chakram-left-engaged-release.png",
+      "snapshot": {
+        "character": "proto-cowboy-hidden-face",
+        "authorityWeapon": "x2-iron-chakram",
+        "attackSeq": 7,
+        "facingValue": -1,
+        "facingBlend": -0.9999999999875044,
+        "displayLength": 104,
+        "collisionLength": 76,
+        "recoilHand": 0,
+        "recoilElapsedMs": 1000021520.72,
+        "performance": {
+          "phase": "recovery",
+          "phaseT": 0.13333333333333344,
+          "active": true,
+          "weaponAngle": -1.8030401850478035e-7,
+          "backHandBlend": 1,
+          "bodyForward": 0.10077244444444444,
+          "bodyLateral": -0.019902814814814814,
+          "bodyTurn": 0.15858074074074074,
+          "frontFootForward": 0.18441185185185185,
+          "backFootForward": -0.1473274074074074,
+          "footBlend": 0.9863940740740741
+        },
+        "flourish": {
+          "active": false,
+          "moment": "draw",
+          "rotationRad": 0,
+          "ownership": 0,
+          "arm": {
+            "armed": false,
+            "earliestStartMs": -1000000000,
+            "weaponId": ""
+          },
+          "streak": {
+            "count": 0,
+            "lastAcceptedMs": -1000000000,
+            "weaponId": ""
+          },
+          "cancelEdge": 8
+        },
+        "hammer": {
+          "active": false,
+          "weaponRotationRad": 0,
+          "weaponForward": 0,
+          "weaponLateral": 0,
+          "handForward": 0,
+          "handLateral": 0
+        },
+        "weaponRows": [
+          {
+            "hand": 0,
+            "x": 54.6411119754265,
+            "y": -5.667987021158169,
+            "rotation": -1.803040188264049e-7,
+            "semanticRotation": -1.803040188264049e-7,
+            "originX": 0.5,
+            "originY": 0.5,
+            "scaleX": 0.6133561461440136,
+            "scaleY": 0.6133561461440136,
+            "renderedLengthPx": 104.00000762939622,
+            "renderedHeightPx": 103.18750756979156,
+            "center": {
+              "x": 2363.80908203125,
+              "y": 2416.245849609375
+            },
+            "handPosition": {
+              "x": 54.6411119754265,
+              "y": -5.667987021158169
+            },
+            "handToWeaponDistance": 0,
+            "corners": [
+              {
+                "x": 2415.809095148508,
+                "y": 2364.652105200289
+              },
+              {
+                "x": 2311.8090875191133,
+                "y": 2364.652086448671
+              },
+              {
+                "x": 2311.809068913992,
+                "y": 2467.839594018461
+              },
+              {
+                "x": 2415.8090765433867,
+                "y": 2467.839612770079
+              }
+            ]
+          }
+        ],
+        "weaponVerticalGap": null,
+        "muzzleRows": [
+          {
+            "hand": 0,
+            "visible": false,
+            "x": 0,
+            "y": 0
+          },
+          {
+            "hand": 1,
+            "visible": false,
+            "x": 0,
+            "y": 0
+          }
+        ],
+        "muzzleVerticalGap": null,
+        "shotMuzzle": {
+          "visible": false,
+          "x": 0,
+          "y": 0
+        },
+        "muzzleAnchorError": null,
+        "projectile": {
+          "x": 2416.217371489816,
+          "y": 2429.96512515982,
+          "spriteId": "x2-iron-chakram",
+          "spawnAnchorKind": "throw",
+          "spawnThrowX": 2416.217371489816,
+          "spawnThrowY": 2429.96512515982,
+          "displayWidth": 104,
+          "displayHeight": 103.1875
+        },
+        "authorityAcceptedAtCapture": true,
+        "authorityAttackSeqAfter": 7
+      }
+    },
+    {
+      "label": "x2-iron-chakram-left-resized-projectile",
+      "weaponId": "x2-iron-chakram",
+      "facing": "left",
+      "screenshot": "docs/owner-notes-audit-v11-evidence/b40-flourish-regression/run-2/b29-ranged-presentation/x2-iron-chakram-left-resized-projectile.png",
+      "snapshot": {
+        "character": "proto-cowboy-hidden-face",
+        "authorityWeapon": "x2-iron-chakram",
+        "attackSeq": 8,
+        "facingValue": -1,
+        "facingBlend": -0.9999999999999973,
+        "displayLength": 104,
+        "collisionLength": 76,
+        "recoilHand": 0,
+        "recoilElapsedMs": 1000022224.03,
+        "performance": {
+          "phase": "recovery",
+          "phaseT": 0.6887999999999982,
+          "active": true,
+          "weaponAngle": -1.8030401850478035e-7,
+          "backHandBlend": 1,
+          "bodyForward": 0.038032595478528206,
+          "bodyLateral": -0.018460519436288004,
+          "bodyTurn": -0.010888966236159453,
+          "frontFootForward": 0.10147986758656027,
+          "backFootForward": -0.10766428449792012,
+          "footBlend": 0.7844727210803206
+        },
+        "flourish": {
+          "active": false,
+          "moment": "draw",
+          "rotationRad": 0,
+          "ownership": 0,
+          "arm": {
+            "armed": false,
+            "earliestStartMs": -1000000000,
+            "weaponId": ""
+          },
+          "streak": {
+            "count": 0,
+            "lastAcceptedMs": -1000000000,
+            "weaponId": ""
+          },
+          "cancelEdge": 9
+        },
+        "hammer": {
+          "active": false,
+          "weaponRotationRad": 0,
+          "weaponForward": 0,
+          "weaponLateral": 0,
+          "handForward": 0,
+          "handLateral": 0
+        },
+        "weaponRows": [
+          {
+            "hand": 0,
+            "x": 28.374747921502784,
+            "y": -14.684411412744407,
+            "rotation": -1.803040188264049e-7,
+            "semanticRotation": -1.803040188264049e-7,
+            "originX": 0.5,
+            "originY": 0.5,
+            "scaleX": 0.6133561461440136,
+            "scaleY": 0.6133561461440136,
+            "renderedLengthPx": 104.00000762939622,
+            "renderedHeightPx": 103.18750756979156,
+            "center": {
+              "x": 2381.206298828125,
+              "y": 2410.27392578125
+            },
+            "handPosition": {
+              "x": 28.374747921502784,
+              "y": -14.684411412744407
+            },
+            "handToWeaponDistance": 0,
+            "corners": [
+              {
+                "x": 2433.206311945383,
+                "y": 2358.680181372164
+              },
+              {
+                "x": 2329.2063043159883,
+                "y": 2358.680162620546
+              },
+              {
+                "x": 2329.206285710867,
+                "y": 2461.867670190336
+              },
+              {
+                "x": 2433.2062933402617,
+                "y": 2461.867688941954
+              }
+            ]
+          }
+        ],
+        "weaponVerticalGap": null,
+        "muzzleRows": [
+          {
+            "hand": 0,
+            "visible": false,
+            "x": 0,
+            "y": 0
+          },
+          {
+            "hand": 1,
+            "visible": false,
+            "x": 0,
+            "y": 0
+          }
+        ],
+        "muzzleVerticalGap": null,
+        "shotMuzzle": {
+          "visible": false,
+          "x": 0,
+          "y": 0
+        },
+        "muzzleAnchorError": null,
+        "projectile": {
+          "x": 2363.3113807198715,
+          "y": 2416.661523543957,
+          "spriteId": "x2-iron-chakram",
+          "spawnAnchorKind": "throw",
+          "spawnThrowX": 2363.3113807198715,
+          "spawnThrowY": 2416.661523543957,
+          "displayWidth": 104,
+          "displayHeight": 103.1875
+        },
+        "authorityAcceptedAtCapture": true,
+        "authorityAttackSeqAfter": 8
+      }
+    },
+    {
+      "label": "x2-kunai-right-end-hook-twirl",
+      "weaponId": "x2-kunai",
+      "facing": "right",
+      "screenshot": "docs/owner-notes-audit-v11-evidence/b40-flourish-regression/run-2/b29-ranged-presentation/x2-kunai-right-end-hook-twirl.png",
+      "snapshot": {
+        "character": "proto-cowboy-hidden-face",
+        "authorityWeapon": "x2-kunai",
+        "attackSeq": 9,
+        "facingValue": 1,
+        "facingBlend": 0.9999999695034666,
+        "displayLength": 72,
+        "collisionLength": null,
+        "recoilHand": 0,
+        "recoilElapsedMs": 1000026453.84,
+        "performance": {
+          "phase": "idle",
+          "phaseT": 0,
+          "active": true,
+          "weaponAngle": -0.12000018030408295,
+          "backHandBlend": 0,
+          "bodyForward": 0,
+          "bodyLateral": 0,
+          "bodyTurn": 0,
+          "frontFootForward": 0,
+          "backFootForward": 0,
+          "footBlend": 0
+        },
+        "flourish": {
+          "active": true,
+          "moment": "after-attack",
+          "rotationRad": 1.4236098969015796,
+          "ownership": 1,
+          "arm": {
+            "armed": false,
+            "earliestStartMs": 26265.550000000003,
+            "weaponId": "x2-kunai"
+          },
+          "streak": {
+            "count": 0,
+            "lastAcceptedMs": -1000000000,
+            "weaponId": ""
+          },
+          "cancelEdge": 9
+        },
+        "hammer": {
+          "active": false,
+          "weaponRotationRad": 0,
+          "weaponForward": 0,
+          "weaponLateral": 0,
+          "handForward": 0,
+          "handLateral": 0
+        },
+        "weaponRows": [
+          {
+            "hand": 0,
+            "x": 17.813988779573005,
+            "y": -0.6451932000102243,
+            "rotation": 1.3036097165974958,
+            "semanticRotation": 1.3036097165974958,
+            "originX": 0.073,
+            "originY": 0.5,
+            "scaleX": 0.42463117809970174,
+            "scaleY": 0.42463117809970174,
+            "renderedLengthPx": 71.99999879478207,
+            "renderedHeightPx": 13.781248457203175,
+            "center": {
+              "x": 2419.9158253860473,
+              "y": 2449.2258795394896
+            },
+            "handPosition": {
+              "x": 17.813988779573005,
+              "y": -0.6451932000102243
+            },
+            "handToWeaponDistance": 0,
+            "corners": [
+              {
+                "x": 2417.057272334099,
+                "y": 2412.683994532317
+              },
+              {
+                "x": 2436.0666336011886,
+                "y": 2482.129253626555
+              },
+              {
+                "x": 2422.774378437996,
+                "y": 2485.7677645466624
+              },
+              {
+                "x": 2403.765017170906,
+                "y": 2416.322505452424
+              }
+            ]
+          }
+        ],
+        "weaponVerticalGap": null,
+        "muzzleRows": [
+          {
+            "hand": 0,
+            "visible": false,
+            "x": 0,
+            "y": 0
+          },
+          {
+            "hand": 1,
+            "visible": false,
+            "x": 0,
+            "y": 0
+          }
+        ],
+        "muzzleVerticalGap": null,
+        "shotMuzzle": {
+          "visible": false,
+          "x": 0,
+          "y": 0
+        },
+        "muzzleAnchorError": null,
+        "projectile": {
+          "x": 2592.974842591744,
+          "y": 2424.122845005861,
+          "spriteId": "x2-kunai",
+          "spawnAnchorKind": "throw",
+          "spawnThrowX": 2412.8238425917434,
+          "spawnThrowY": 2424.1228774878327,
+          "displayWidth": 72,
+          "displayHeight": 13.78125
+        },
+        "authorityAcceptedAtCapture": true,
+        "authorityAttackSeqAfter": 9
+      }
+    },
+    {
+      "label": "x2-kunai-left-end-hook-twirl",
+      "weaponId": "x2-kunai",
+      "facing": "left",
+      "screenshot": "docs/owner-notes-audit-v11-evidence/b40-flourish-regression/run-2/b29-ranged-presentation/x2-kunai-left-end-hook-twirl.png",
+      "snapshot": {
+        "character": "proto-cowboy-hidden-face",
+        "authorityWeapon": "x2-kunai",
+        "attackSeq": 10,
+        "facingValue": -1,
+        "facingBlend": -0.9999999656358793,
+        "displayLength": 72,
+        "collisionLength": null,
+        "recoilHand": 0,
+        "recoilElapsedMs": 1000029447.04,
+        "performance": {
+          "phase": "idle",
+          "phaseT": 0,
+          "active": true,
+          "weaponAngle": -0.1200001803040185,
+          "backHandBlend": 0,
+          "bodyForward": 0,
+          "bodyLateral": 0,
+          "bodyTurn": 0,
+          "frontFootForward": 0,
+          "backFootForward": 0,
+          "footBlend": 0
+        },
+        "flourish": {
+          "active": true,
+          "moment": "after-attack",
+          "rotationRad": 1.4236098969015796,
+          "ownership": 1,
+          "arm": {
+            "armed": false,
+            "earliestStartMs": 29282.070000000007,
+            "weaponId": "x2-kunai"
+          },
+          "streak": {
+            "count": 0,
+            "lastAcceptedMs": -1000000000,
+            "weaponId": ""
+          },
+          "cancelEdge": 9
+        },
+        "hammer": {
+          "active": false,
+          "weaponRotationRad": 0,
+          "weaponForward": 0,
+          "weaponLateral": 0,
+          "handForward": 0,
+          "handLateral": 0
+        },
+        "weaponRows": [
+          {
+            "hand": 0,
+            "x": 17.81398877957298,
+            "y": -1.3985094849368087,
+            "rotation": 1.3036097165975615,
+            "semanticRotation": 1.3036097165975615,
+            "originX": 0.073,
+            "originY": 0.5,
+            "scaleX": 0.42463117809970174,
+            "scaleY": 0.42463117809970174,
+            "renderedLengthPx": 71.99999879478207,
+            "renderedHeightPx": 13.781248457203175,
+            "center": {
+              "x": 2380.0841746139527,
+              "y": 2448.7268561019896
+            },
+            "handPosition": {
+              "x": 17.81398877957298,
+              "y": -1.3985094849368087
+            },
+            "handToWeaponDistance": 0,
+            "corners": [
+              {
+                "x": 2382.942727665901,
+                "y": 2412.184971094817
+              },
+              {
+                "x": 2363.9333663988114,
+                "y": 2481.630230189055
+              },
+              {
+                "x": 2377.225621562004,
+                "y": 2485.2687411091624
+              },
+              {
+                "x": 2396.234982829094,
+                "y": 2415.823482014924
+              }
+            ]
+          }
+        ],
+        "weaponVerticalGap": null,
+        "muzzleRows": [
+          {
+            "hand": 0,
+            "visible": false,
+            "x": 0,
+            "y": 0
+          },
+          {
+            "hand": 1,
+            "visible": false,
+            "x": 0,
+            "y": 0
+          }
+        ],
+        "muzzleVerticalGap": null,
+        "shotMuzzle": {
+          "visible": false,
+          "x": 0,
+          "y": 0
+        },
+        "muzzleAnchorError": null,
+        "projectile": {
+          "x": 2209.163948036534,
+          "y": 2423.5606564375526,
+          "spriteId": "x2-kunai",
+          "spawnAnchorKind": "throw",
+          "spawnThrowX": 2384.6243480365342,
+          "spawnThrowY": 2423.5606880737896,
+          "displayWidth": 72,
+          "displayHeight": 13.78125
+        },
+        "authorityAcceptedAtCapture": true,
+        "authorityAttackSeqAfter": 10
+      }
+    },
+    {
+      "label": "x2-coyote-stinger-right-vertical-fire",
+      "weaponId": "x2-coyote-stinger",
+      "facing": "right",
+      "screenshot": "docs/owner-notes-audit-v11-evidence/b40-flourish-regression/run-2/b29-ranged-presentation/x2-coyote-stinger-right-vertical-fire.png",
+      "snapshot": {
+        "character": "proto-cowboy-hidden-face",
+        "authorityWeapon": "x2-coyote-stinger",
+        "attackSeq": 11,
+        "facingValue": 1,
+        "facingBlend": 0.9999886513619796,
+        "displayLength": 52,
+        "collisionLength": null,
+        "recoilHand": 0,
+        "recoilElapsedMs": 80,
+        "performance": {
+          "phase": "idle",
+          "phaseT": 0,
+          "active": true,
+          "weaponAngle": -0.1200001803040185,
+          "backHandBlend": 0,
+          "bodyForward": 0,
+          "bodyLateral": 0,
+          "bodyTurn": 0,
+          "frontFootForward": 0,
+          "backFootForward": 0,
+          "footBlend": 0
+        },
+        "flourish": {
+          "active": false,
+          "moment": "draw",
+          "rotationRad": 0.3862571397665861,
+          "ownership": 1,
+          "arm": {
+            "armed": false,
+            "earliestStartMs": -1000000000,
+            "weaponId": ""
+          },
+          "streak": {
+            "count": 1,
+            "lastAcceptedMs": 33603.52000000002,
+            "weaponId": "x2-coyote-stinger"
+          },
+          "cancelEdge": 9
+        },
+        "hammer": {
+          "active": false,
+          "weaponRotationRad": 0,
+          "weaponForward": 0,
+          "weaponLateral": 0,
+          "handForward": 0,
+          "handLateral": 0
+        },
+        "weaponRows": [
+          {
+            "hand": 0,
+            "x": 23.8051493080675,
+            "y": -12.920001522373362,
+            "rotation": -1.769142290442005e-7,
+            "semanticRotation": -1.769142290442005e-7,
+            "originX": 0.16,
+            "originY": 0.5,
+            "scaleX": 0.3066780730720068,
+            "scaleY": 0.3066780730720068,
+            "renderedLengthPx": 52.000003814698076,
+            "renderedHeightPx": 31.68750232458164,
+            "center": {
+              "x": 2425.299874343872,
+              "y": 2411.4426238252813
+            },
+            "handPosition": {
+              "x": 23.8051493080675,
+              "y": -12.920001522373362
+            },
+            "handToWeaponDistance": 0,
+            "corners": [
+              {
+                "x": 2399.2998696335385,
+                "y": 2395.5988772627607
+              },
+              {
+                "x": 2451.2998734482358,
+                "y": 2395.598868063221
+              },
+              {
+                "x": 2451.2998790542056,
+                "y": 2427.286370387802
+              },
+              {
+                "x": 2399.2998752395083,
+                "y": 2427.286379587342
+              }
+            ]
+          },
+          {
+            "hand": 1,
+            "x": 12.00799999999998,
+            "y": 1.1399997579813341,
+            "rotation": -1.769142290442005e-7,
+            "semanticRotation": -1.769142290442005e-7,
+            "originX": 0.16,
+            "originY": 0.5,
+            "scaleX": 0.3066780730720068,
+            "scaleY": 0.3066780730720068,
+            "renderedLengthPx": 52.000003814698076,
+            "renderedHeightPx": 31.68750232458164,
+            "center": {
+              "x": 2417.486153640747,
+              "y": 2420.7551238252813
+            },
+            "handPosition": {
+              "x": 12.00799999999998,
+              "y": 1.1399997579813341
+            },
+            "handToWeaponDistance": 0,
+            "corners": [
+              {
+                "x": 2391.4861489304135,
+                "y": 2404.9113772627607
+              },
+              {
+                "x": 2443.4861527451108,
+                "y": 2404.911368063221
+              },
+              {
+                "x": 2443.4861583510806,
+                "y": 2436.598870387802
+              },
+              {
+                "x": 2391.4861545363833,
+                "y": 2436.598879587342
+              }
+            ]
+          }
+        ],
+        "weaponVerticalGap": 14.060001280354696,
+        "muzzleRows": [
+          {
+            "hand": 0,
+            "visible": true,
+            "x": 2451.096748456568,
+            "y": 2402.748814670131
+          },
+          {
+            "hand": 1,
+            "visible": true,
+            "x": 2443.283030381767,
+            "y": 2412.0613090081415
+          }
+        ],
+        "muzzleVerticalGap": 9.31249433801031,
+        "shotMuzzle": {
+          "visible": true,
+          "x": 2451.096748456568,
+          "y": 2402.748814670131
+        },
+        "muzzleAnchorError": 6.359169822283093,
+        "projectile": {
+          "x": 2457.455918278851,
+          "y": 2402.748814570711,
+          "spawnAnchorKind": "muzzle",
+          "spawnMuzzleX": 2457.455918278851,
+          "spawnMuzzleY": 2402.748814570711,
+          "displayWidth": null,
+          "displayHeight": null
+        },
+        "authorityAcceptedAtCapture": true,
+        "authorityAttackSeqAfter": 11
+      }
+    },
+    {
+      "label": "x2-coyote-stinger-left-vertical-fire",
+      "weaponId": "x2-coyote-stinger",
+      "facing": "left",
+      "screenshot": "docs/owner-notes-audit-v11-evidence/b40-flourish-regression/run-2/b29-ranged-presentation/x2-coyote-stinger-left-vertical-fire.png",
+      "snapshot": {
+        "character": "proto-cowboy-hidden-face",
+        "authorityWeapon": "x2-coyote-stinger",
+        "attackSeq": 12,
+        "facingValue": -1,
+        "facingBlend": -0.9999566573240012,
+        "displayLength": 52,
+        "collisionLength": null,
+        "recoilHand": 1,
+        "recoilElapsedMs": 73.33000000000175,
+        "performance": {
+          "phase": "idle",
+          "phaseT": 0,
+          "active": true,
+          "weaponAngle": -0.1200001803040185,
+          "backHandBlend": 0,
+          "bodyForward": 0,
+          "bodyLateral": 0,
+          "bodyTurn": 0,
+          "frontFootForward": 0,
+          "backFootForward": 0,
+          "footBlend": 0
+        },
+        "flourish": {
+          "active": false,
+          "moment": "idle-settle",
+          "rotationRad": 0,
+          "ownership": 0,
+          "arm": {
+            "armed": false,
+            "earliestStartMs": -1000000000,
+            "weaponId": ""
+          },
+          "streak": {
+            "count": 1,
+            "lastAcceptedMs": 33603.52000000002,
+            "weaponId": "x2-coyote-stinger"
+          },
+          "cancelEdge": 9
+        },
+        "hammer": {
+          "active": false,
+          "weaponRotationRad": 0,
+          "weaponForward": 0,
+          "weaponLateral": 0,
+          "handForward": 0,
+          "handLateral": 0
+        },
+        "weaponRows": [
+          {
+            "hand": 0,
+            "x": 24.471999999999856,
+            "y": -12.920001637046777,
+            "rotation": -1.765581068013944e-7,
+            "semanticRotation": -1.765581068013944e-7,
+            "originX": 0.16,
+            "originY": 0.5,
+            "scaleX": 0.3066780730720068,
+            "scaleY": 0.3066780730720068,
+            "renderedLengthPx": 52.000003814698076,
+            "renderedHeightPx": 31.68750232458164,
+            "center": {
+              "x": 2362.851004562378,
+              "y": 2411.4426238315777
+            },
+            "handPosition": {
+              "x": 24.471999999999856,
+              "y": -12.920001637046777
+            },
+            "handToWeaponDistance": 0,
+            "corners": [
+              {
+                "x": 2388.851009267069,
+                "y": 2395.598877259798
+              },
+              {
+                "x": 2336.8510054523717,
+                "y": 2395.5988680787764
+              },
+              {
+                "x": 2336.850999857687,
+                "y": 2427.2863704033575
+              },
+              {
+                "x": 2388.851003672384,
+                "y": 2427.286379584379
+              }
+            ]
+          },
+          {
+            "hand": 1,
+            "x": 11.32590878121443,
+            "y": 1.1399998788972434,
+            "rotation": -1.765581068013944e-7,
+            "semanticRotation": -1.765581068013944e-7,
+            "originX": 0.16,
+            "originY": 0.5,
+            "scaleX": 0.3066780730720068,
+            "scaleY": 0.3066780730720068,
+            "renderedLengthPx": 52.000003814698076,
+            "renderedHeightPx": 31.68750232458164,
+            "center": {
+              "x": 2371.558035812378,
+              "y": 2420.7551238315777
+            },
+            "handPosition": {
+              "x": 11.32590878121443,
+              "y": 1.1399998788972434
+            },
+            "handToWeaponDistance": 0,
+            "corners": [
+              {
+                "x": 2397.558040517069,
+                "y": 2404.911377259798
+              },
+              {
+                "x": 2345.5580367023717,
+                "y": 2404.9113680787764
+              },
+              {
+                "x": 2345.558031107687,
+                "y": 2436.5988704033575
+              },
+              {
+                "x": 2397.558034922384,
+                "y": 2436.598879584379
+              }
+            ]
+          }
+        ],
+        "weaponVerticalGap": 14.06000151594402,
+        "muzzleRows": [
+          {
+            "hand": 0,
+            "visible": true,
+            "x": 2337.0540992776514,
+            "y": 2402.7488146096616
+          },
+          {
+            "hand": 1,
+            "visible": true,
+            "x": 2345.761274874638,
+            "y": 2412.0613091037117
+          }
+        ],
+        "muzzleVerticalGap": 9.312494494050043,
+        "shotMuzzle": {
+          "visible": true,
+          "x": 2345.761274874638,
+          "y": 2412.0613091037117
+        },
+        "muzzleAnchorError": 6.732053089987858,
+        "projectile": {
+          "x": 2339.02922178465,
+          "y": 2412.0613089991393,
+          "spawnAnchorKind": "muzzle",
+          "spawnMuzzleX": 2339.02922178465,
+          "spawnMuzzleY": 2412.0613089991393,
+          "displayWidth": null,
+          "displayHeight": null
+        },
+        "authorityAcceptedAtCapture": true,
+        "authorityAttackSeqAfter": 12
+      }
+    },
+    {
+      "label": "x-gun-revolver-cannon-right-hammer-pull",
+      "weaponId": "x-gun-revolver-cannon",
+      "facing": "right",
+      "screenshot": "docs/owner-notes-audit-v11-evidence/b40-flourish-regression/run-2/b29-ranged-presentation/x-gun-revolver-cannon-right-hammer-pull.png",
+      "snapshot": {
+        "character": "proto-cowboy-hidden-face",
+        "authorityWeapon": "x-gun-revolver-cannon",
+        "attackSeq": 12,
+        "facingValue": 1,
+        "facingBlend": 0.9999073362139708,
+        "displayLength": 94,
+        "collisionLength": null,
+        "recoilHand": 0,
+        "recoilElapsedMs": 74.98999999999796,
+        "performance": {
+          "phase": "idle",
+          "phaseT": 0,
+          "active": true,
+          "weaponAngle": -0.1200001803040185,
+          "backHandBlend": 0,
+          "bodyForward": 0,
+          "bodyLateral": 0,
+          "bodyTurn": 0,
+          "frontFootForward": 0,
+          "backFootForward": 0,
+          "footBlend": 0
+        },
+        "flourish": {
+          "active": false,
+          "moment": "idle-settle",
+          "rotationRad": 0,
+          "ownership": 0,
+          "arm": {
+            "armed": false,
+            "earliestStartMs": -1000000000,
+            "weaponId": ""
+          },
+          "streak": {
+            "count": 1,
+            "lastAcceptedMs": 39099.99000000003,
+            "weaponId": "x-gun-revolver-cannon"
+          },
+          "cancelEdge": 10
+        },
+        "hammer": {
+          "active": true,
+          "weaponRotationRad": -0.1385931450315867,
+          "weaponForward": -3.5123753793160106,
+          "weaponLateral": -2.528910273107527,
+          "handForward": -9.272671001394267,
+          "handLateral": -6.9545032510457
+        },
+        "weaponRows": [
+          {
+            "hand": 0,
+            "x": 22.821418401019237,
+            "y": -6.080001059484989,
+            "rotation": -0.1385933186772732,
+            "semanticRotation": -0.1385933186772732,
+            "originX": 0.16,
+            "originY": 0.5,
+            "scaleX": 0.5543795936301662,
+            "scaleY": 0.5543795936301662,
+            "renderedLengthPx": 94.00000032331764,
+            "renderedHeightPx": 49.93750017176249,
+            "center": {
+              "x": 2437.6799127197264,
+              "y": 2411.5576243782043
+            },
+            "handPosition": {
+              "x": 12.676895142925986,
+              "y": -11.68679968569839
+            },
+            "handToWeaponDistance": 11.590838751742835,
+            "corners": [
+              {
+                "x": 2387.6811466699837,
+                "y": 2393.3213448905944
+              },
+              {
+                "x": 2480.779810000062,
+                "y": 2380.33523897171
+              },
+              {
+                "x": 2487.678678769469,
+                "y": 2429.793903865814
+              },
+              {
+                "x": 2394.580015439391,
+                "y": 2442.7800097846984
+              }
+            ]
+          }
+        ],
+        "weaponVerticalGap": null,
+        "muzzleRows": [
+          {
+            "hand": 0,
+            "visible": true,
+            "x": 2481.628568015809,
+            "y": 2389.0776734921637
+          },
+          {
+            "hand": 1,
+            "visible": true,
+            "x": 2481.628568015809,
+            "y": 2389.0776734921637
+          }
+        ],
+        "muzzleVerticalGap": 0,
+        "shotMuzzle": {
+          "visible": true,
+          "x": 2481.628568015809,
+          "y": 2389.0776734921637
+        },
+        "muzzleAnchorError": null,
+        "projectile": null,
+        "authorityAcceptedAtCapture": true,
+        "authorityAttackSeqAfter": 13
+      }
+    },
+    {
+      "label": "x-gun-revolver-cannon-left-hammer-pull",
+      "weaponId": "x-gun-revolver-cannon",
+      "facing": "left",
+      "screenshot": "docs/owner-notes-audit-v11-evidence/b40-flourish-regression/run-2/b29-ranged-presentation/x-gun-revolver-cannon-left-hammer-pull.png",
+      "snapshot": {
+        "character": "proto-cowboy-hidden-face",
+        "authorityWeapon": "x-gun-revolver-cannon",
+        "attackSeq": 13,
+        "facingValue": -1,
+        "facingBlend": -0.9999109980981585,
+        "displayLength": 94,
+        "collisionLength": null,
+        "recoilHand": 0,
+        "recoilElapsedMs": 76.66999999999825,
+        "performance": {
+          "phase": "idle",
+          "phaseT": 0,
+          "active": true,
+          "weaponAngle": -0.1200001803040185,
+          "backHandBlend": 0,
+          "bodyForward": 0,
+          "bodyLateral": 0,
+          "bodyTurn": 0,
+          "frontFootForward": 0,
+          "backFootForward": 0,
+          "footBlend": 0
+        },
+        "flourish": {
+          "active": false,
+          "moment": "idle-settle",
+          "rotationRad": 0,
+          "ownership": 0,
+          "arm": {
+            "armed": false,
+            "earliestStartMs": -1000000000,
+            "weaponId": ""
+          },
+          "streak": {
+            "count": 1,
+            "lastAcceptedMs": 41178.26000000004,
+            "weaponId": "x-gun-revolver-cannon"
+          },
+          "cancelEdge": 10
+        },
+        "hammer": {
+          "active": true,
+          "weaponRotationRad": -0.13780755589848623,
+          "weaponForward": -3.4924661411734497,
+          "weaponLateral": -2.5145756216448834,
+          "handForward": -9.220110612697907,
+          "handLateral": -6.9150829595234296
+        },
+        "weaponRows": [
+          {
+            "hand": 0,
+            "x": 22.83823671107773,
+            "y": -6.080001063188851,
+            "rotation": -0.13780772967222177,
+            "semanticRotation": -0.13780772967222177,
+            "originX": 0.16,
+            "originY": 0.5,
+            "scaleX": 0.5543795936301662,
+            "scaleY": 0.5543795936301662,
+            "renderedLengthPx": 94.0000049047805,
+            "renderedHeightPx": 49.93750260566463,
+            "center": {
+              "x": 2301.12424407959,
+              "y": 2411.582492351532
+            },
+            "handPosition": {
+              "x": 12.755598556588183,
+              "y": -11.662941139269508
+            },
+            "handToWeaponDistance": 11.525138265872382,
+            "corners": [
+              {
+                "x": 2351.108670831323,
+                "y": 2393.3069388866425
+              },
+              {
+                "x": 2257.99982988894,
+                "y": 2380.3939740657806
+              },
+              {
+                "x": 2251.139817327857,
+                "y": 2429.8580458164215
+              },
+              {
+                "x": 2344.24865827024,
+                "y": 2442.7710106372833
+              }
+            ]
+          }
+        ],
+        "weaponVerticalGap": null,
+        "muzzleRows": [
+          {
+            "hand": 0,
+            "visible": true,
+            "x": 2257.1580348871125,
+            "y": 2389.137074002422
+          },
+          {
+            "hand": 1,
+            "visible": true,
+            "x": 2257.1580348871125,
+            "y": 2389.137074002422
+          }
+        ],
+        "muzzleVerticalGap": 0,
+        "shotMuzzle": {
+          "visible": true,
+          "x": 2257.1580348871125,
+          "y": 2389.137074002422
+        },
+        "muzzleAnchorError": null,
+        "projectile": null,
+        "authorityAcceptedAtCapture": true,
+        "authorityAttackSeqAfter": 14
+      }
+    },
+    {
+      "label": "x2-twin-maw-greenerbore-right-hand-0-fan",
+      "weaponId": "x2-twin-maw-greenerbore",
+      "facing": "right",
+      "screenshot": "docs/owner-notes-audit-v11-evidence/b40-flourish-regression/run-2/b29-ranged-presentation/x2-twin-maw-greenerbore-right-hand-0-fan.png",
+      "snapshot": {
+        "character": "proto-cowboy-hidden-face",
+        "authorityWeapon": "x2-twin-maw-greenerbore",
+        "attackSeq": 14,
+        "facingValue": 1,
+        "facingBlend": 0.9998749469886096,
+        "displayLength": 58,
+        "collisionLength": null,
+        "recoilHand": 0,
+        "recoilElapsedMs": 75,
+        "performance": {
+          "phase": "idle",
+          "phaseT": 0,
+          "active": true,
+          "weaponAngle": -0.1200001803040185,
+          "backHandBlend": 0,
+          "bodyForward": 0,
+          "bodyLateral": 0,
+          "bodyTurn": 0,
+          "frontFootForward": 0,
+          "backFootForward": 0,
+          "footBlend": 0
+        },
+        "flourish": {
+          "active": false,
+          "moment": "idle-settle",
+          "rotationRad": 0,
+          "ownership": 0,
+          "arm": {
+            "armed": true,
+            "earliestStartMs": 44569.810000000034,
+            "weaponId": "x2-twin-maw-greenerbore"
+          },
+          "streak": {
+            "count": 1,
+            "lastAcceptedMs": 44339.810000000034,
+            "weaponId": "x2-twin-maw-greenerbore"
+          },
+          "cancelEdge": 10
+        },
+        "hammer": {
+          "active": true,
+          "weaponRotationRad": -0.13858895987726844,
+          "weaponForward": -2.167144896285215,
+          "weaponLateral": -1.5603443253253546,
+          "handForward": -10.40229550216903,
+          "handLateral": -7.801721626626773
+        },
+        "weaponRows": [
+          {
+            "hand": 0,
+            "x": 17.989052969515477,
+            "y": -12.920001156981971,
+            "rotation": -0.13858913546880913,
+            "semanticRotation": -0.13858913546880913,
+            "originX": 0.25,
+            "originY": 0.67,
+            "scaleX": 0.3420640045803153,
+            "scaleY": 0.3420640045803153,
+            "renderedLengthPx": 58.00000023181546,
+            "renderedHeightPx": 24.015625095986092,
+            "center": {
+              "x": 2419.350192742273,
+              "y": 2405.395999768078
+            },
+            "handPosition": {
+              "x": 6.608719874246091,
+              "y": -19.209884358961023
+            },
+            "handToWeaponDistance": 13.002869377711287,
+            "corners": [
+              {
+                "x": 2388.969417584911,
+                "y": 2397.5095512804387
+              },
+              {
+                "x": 2446.4133072028308,
+                "y": 2389.4970877107976
+              },
+              {
+                "x": 2449.7309678996353,
+                "y": 2413.2824482557176
+              },
+              {
+                "x": 2392.2870782817154,
+                "y": 2421.2949118253587
+              }
+            ]
+          },
+          {
+            "hand": 1,
+            "x": 8.663999999999984,
+            "y": 1.5199998131705996,
+            "rotation": -1.755915413070852e-7,
+            "semanticRotation": -1.755915413070852e-7,
+            "originX": 0.25,
+            "originY": 0.67,
+            "scaleX": 0.3420640045803153,
+            "scaleY": 0.3420640045803153,
+            "renderedLengthPx": 58.00000000000089,
+            "renderedHeightPx": 24.01562500000037,
+            "center": {
+              "x": 2413.87695240812,
+              "y": 2416.9241771414227
+            },
+            "handPosition": {
+              "x": 8.663999999999984,
+              "y": 1.5199998131705996
+            },
+            "handToWeaponDistance": 0,
+            "corners": [
+              {
+                "x": 2384.8769502996497,
+                "y": 2404.9163697335775
+              },
+              {
+                "x": 2442.8769502996497,
+                "y": 2404.916359549268
+              },
+              {
+                "x": 2442.8769545165906,
+                "y": 2428.931984549268
+              },
+              {
+                "x": 2384.8769545165906,
+                "y": 2428.9319947335775
+              }
+            ]
+          }
+        ],
+        "weaponVerticalGap": 14.440000970152571,
+        "muzzleRows": [
+          {
+            "hand": 0,
+            "visible": true,
+            "x": 2446.811827256746,
+            "y": 2393.9936971041648
+          },
+          {
+            "hand": 1,
+            "visible": true,
+            "x": 2442.6503735966467,
+            "y": 2409.4248730914983
+          }
+        ],
+        "muzzleVerticalGap": 15.431175987333518,
+        "shotMuzzle": {
+          "visible": true,
+          "x": 2442.6503735966467,
+          "y": 2409.4248730914983
+        },
+        "muzzleAnchorError": null,
+        "projectile": null,
+        "authorityAcceptedAtCapture": true,
+        "authorityAttackSeqAfter": 15
+      }
+    },
+    {
+      "label": "x2-twin-maw-greenerbore-right-hand-1-fan",
+      "weaponId": "x2-twin-maw-greenerbore",
+      "facing": "right",
+      "screenshot": "docs/owner-notes-audit-v11-evidence/b40-flourish-regression/run-2/b29-ranged-presentation/x2-twin-maw-greenerbore-right-hand-1-fan.png",
+      "snapshot": {
+        "character": "proto-cowboy-hidden-face",
+        "authorityWeapon": "x2-twin-maw-greenerbore",
+        "attackSeq": 15,
+        "facingValue": 1,
+        "facingBlend": 0.9999999916973643,
+        "displayLength": 58,
+        "collisionLength": null,
+        "recoilHand": 1,
+        "recoilElapsedMs": 70.01000000000204,
+        "performance": {
+          "phase": "idle",
+          "phaseT": 0,
+          "active": true,
+          "weaponAngle": -0.1200001803040185,
+          "backHandBlend": 0,
+          "bodyForward": 0,
+          "bodyLateral": 0,
+          "bodyTurn": 0,
+          "frontFootForward": 0,
+          "backFootForward": 0,
+          "footBlend": 0
+        },
+        "flourish": {
+          "active": false,
+          "moment": "idle-settle",
+          "rotationRad": 0,
+          "ownership": 1,
+          "arm": {
+            "armed": false,
+            "earliestStartMs": -1000000000,
+            "weaponId": ""
+          },
+          "streak": {
+            "count": 0,
+            "lastAcceptedMs": 44339.810000000034,
+            "weaponId": "x2-twin-maw-greenerbore"
+          },
+          "cancelEdge": 11
+        },
+        "hammer": {
+          "active": true,
+          "weaponRotationRad": -0.1399134283826557,
+          "weaponForward": -2.1878558906117647,
+          "weaponLateral": -1.5752562412404703,
+          "handForward": -10.501708274936469,
+          "handLateral": -7.876281206202352
+        },
+        "weaponRows": [
+          {
+            "hand": 0,
+            "x": 20.367999999999864,
+            "y": -12.920001570543263,
+            "rotation": -1.751274822936466e-7,
+            "semanticRotation": -1.751274822936466e-7,
+            "originX": 0.25,
+            "originY": 0.67,
+            "scaleX": 0.3420640045803153,
+            "scaleY": 0.3420640045803153,
+            "renderedLengthPx": 58.00000000000089,
+            "renderedHeightPx": 24.01562500000037,
+            "center": {
+              "x": 2378.53637623814,
+              "y": 2407.3599681637766
+            },
+            "handPosition": {
+              "x": 20.367999999999864,
+              "y": -12.920001570543263
+            },
+            "handToWeaponDistance": 0,
+            "corners": [
+              {
+                "x": 2349.5363741352417,
+                "y": 2395.3521607424736
+              },
+              {
+                "x": 2407.5363741352417,
+                "y": 2395.3521505850795
+              },
+              {
+                "x": 2407.5363783410376,
+                "y": 2419.3677755850795
+              },
+              {
+                "x": 2349.5363783410376,
+                "y": 2419.3677857424736
+              }
+            ]
+          },
+          {
+            "hand": 1,
+            "x": 6.2700000602751045,
+            "y": 1.5200002329195428,
+            "rotation": -0.13991360351013782,
+            "semanticRotation": -0.13991360351013782,
+            "originX": 0.25,
+            "originY": 0.67,
+            "scaleX": 0.3420640045803153,
+            "scaleY": 0.3420640045803153,
+            "renderedLengthPx": 58.000000648957084,
+            "renderedHeightPx": 24.015625268708792,
+            "center": {
+              "x": 2368.487680096403,
+              "y": 2414.941940612793
+            },
+            "handPosition": {
+              "x": -5.227493013305822,
+              "y": -4.814771693046229
+            },
+            "handToWeaponDistance": 13.127135343670586,
+            "corners": [
+              {
+                "x": 2338.0964861588927,
+                "y": 2407.095736808777
+              },
+              {
+                "x": 2395.5297136979552,
+                "y": 2399.007198638916
+              },
+              {
+                "x": 2398.8788740339132,
+                "y": 2422.7881444168092
+              },
+              {
+                "x": 2341.4456464948507,
+                "y": 2430.87668258667
+              }
+            ]
+          }
+        ],
+        "weaponVerticalGap": 14.440001803462806,
+        "muzzleRows": [
+          {
+            "hand": 0,
+            "visible": true,
+            "x": 2407.309865913022,
+            "y": 2399.8606896918677
+          },
+          {
+            "hand": 1,
+            "visible": true,
+            "x": 2395.934159555868,
+            "y": 2403.503250232131
+          }
+        ],
+        "muzzleVerticalGap": 3.6425605402632755,
+        "shotMuzzle": {
+          "visible": true,
+          "x": 2407.309865913022,
+          "y": 2399.8606896918677
+        },
+        "muzzleAnchorError": null,
+        "projectile": null,
+        "authorityAcceptedAtCapture": true,
+        "authorityAttackSeqAfter": 16
+      }
+    },
+    {
+      "label": "x2-twin-maw-greenerbore-left-hand-0-fan",
+      "weaponId": "x2-twin-maw-greenerbore",
+      "facing": "left",
+      "screenshot": "docs/owner-notes-audit-v11-evidence/b40-flourish-regression/run-2/b29-ranged-presentation/x2-twin-maw-greenerbore-left-hand-0-fan.png",
+      "snapshot": {
+        "character": "proto-cowboy-hidden-face",
+        "authorityWeapon": "x2-twin-maw-greenerbore",
+        "attackSeq": 16,
+        "facingValue": -1,
+        "facingBlend": -0.9999548902802629,
+        "displayLength": 58,
+        "collisionLength": null,
+        "recoilHand": 0,
+        "recoilElapsedMs": 80,
+        "performance": {
+          "phase": "idle",
+          "phaseT": 0,
+          "active": true,
+          "weaponAngle": -0.1200001803040185,
+          "backHandBlend": 0,
+          "bodyForward": 0,
+          "bodyLateral": 0,
+          "bodyTurn": 0,
+          "frontFootForward": 0,
+          "backFootForward": 0,
+          "footBlend": 0
+        },
+        "flourish": {
+          "active": false,
+          "moment": "idle-settle",
+          "rotationRad": 0,
+          "ownership": 0,
+          "arm": {
+            "armed": true,
+            "earliestStartMs": 47586.37000000002,
+            "weaponId": "x2-twin-maw-greenerbore"
+          },
+          "streak": {
+            "count": 1,
+            "lastAcceptedMs": 47356.37000000002,
+            "weaponId": "x2-twin-maw-greenerbore"
+          },
+          "cancelEdge": 11
+        },
+        "hammer": {
+          "active": true,
+          "weaponRotationRad": -0.13577672968963156,
+          "weaponForward": -2.123169457666485,
+          "weaponLateral": -1.528682009519869,
+          "handForward": -10.191213396799128,
+          "handLateral": -7.643410047599345
+        },
+        "weaponRows": [
+          {
+            "hand": 0,
+            "x": 18.034022578236613,
+            "y": -12.920001166654075,
+            "rotation": -0.13577690554885713,
+            "semanticRotation": -0.13577690554885713,
+            "originX": 0.25,
+            "originY": 0.67,
+            "scaleX": 0.3420640045803153,
+            "scaleY": 0.3420640045803153,
+            "renderedLengthPx": 57.99999902423857,
+            "renderedHeightPx": 24.015624595973783,
+            "center": {
+              "x": 2294.832808774039,
+              "y": 2405.4348240441086
+            },
+            "handPosition": {
+              "x": 6.90199153560614,
+              "y": -19.11358111049529
+            },
+            "handToWeaponDistance": 12.739016745998908,
+            "corners": [
+              {
+                "x": 2325.19128466405,
+                "y": 2397.46296920836
+              },
+              {
+                "x": 2267.725090511218,
+                "y": 2389.6120828634503
+              },
+              {
+                "x": 2264.4743328840286,
+                "y": 2413.4066788798573
+              },
+              {
+                "x": 2321.9405270368607,
+                "y": 2421.257565224767
+              }
+            ]
+          },
+          {
+            "hand": 1,
+            "x": 8.663999999999984,
+            "y": 1.519999812885784,
+            "rotation": -1.7585922584828495e-7,
+            "semanticRotation": -1.7585922584828495e-7,
+            "originX": 0.25,
+            "originY": 0.67,
+            "scaleX": 0.3420640045803153,
+            "scaleY": 0.3420640045803153,
+            "renderedLengthPx": 58.00000000000089,
+            "renderedHeightPx": 24.01562500000037,
+            "center": {
+              "x": 2300.352783921098,
+              "y": 2416.9241771375414
+            },
+            "handPosition": {
+              "x": 8.663999999999984,
+              "y": 1.519999812885784
+            },
+            "handToWeaponDistance": 0,
+            "corners": [
+              {
+                "x": 2329.352786032782,
+                "y": 2404.916369737459
+              },
+              {
+                "x": 2271.352786032782,
+                "y": 2404.916359537624
+              },
+              {
+                "x": 2271.352781809413,
+                "y": 2428.931984537624
+              },
+              {
+                "x": 2329.352781809413,
+                "y": 2428.931994737459
+              }
+            ]
+          }
+        ],
+        "weaponVerticalGap": 14.440000979539859,
+        "muzzleRows": [
+          {
+            "hand": 0,
+            "visible": true,
+            "x": 2267.3392168865644,
+            "y": 2394.109794441072
+          },
+          {
+            "hand": 1,
+            "visible": true,
+            "x": 2271.579362734579,
+            "y": 2409.4248730797262
+          }
+        ],
+        "muzzleVerticalGap": 15.315078638654086,
+        "shotMuzzle": {
+          "visible": true,
+          "x": 2271.579362734579,
+          "y": 2409.4248730797262
+        },
+        "muzzleAnchorError": null,
+        "projectile": null,
+        "authorityAcceptedAtCapture": true,
+        "authorityAttackSeqAfter": 17
+      }
+    },
+    {
+      "label": "x2-twin-maw-greenerbore-left-hand-1-fan",
+      "weaponId": "x2-twin-maw-greenerbore",
+      "facing": "left",
+      "screenshot": "docs/owner-notes-audit-v11-evidence/b40-flourish-regression/run-2/b29-ranged-presentation/x2-twin-maw-greenerbore-left-hand-1-fan.png",
+      "snapshot": {
+        "character": "proto-cowboy-hidden-face",
+        "authorityWeapon": "x2-twin-maw-greenerbore",
+        "attackSeq": 17,
+        "facingValue": -1,
+        "facingBlend": -0.9999999984822134,
+        "displayLength": 58,
+        "collisionLength": null,
+        "recoilHand": 1,
+        "recoilElapsedMs": 76.66999999999825,
+        "performance": {
+          "phase": "idle",
+          "phaseT": 0,
+          "active": true,
+          "weaponAngle": -0.1200001803040185,
+          "backHandBlend": 0,
+          "bodyForward": 0,
+          "bodyLateral": 0,
+          "bodyTurn": 0,
+          "frontFootForward": 0,
+          "backFootForward": 0,
+          "footBlend": 0
+        },
+        "flourish": {
+          "active": false,
+          "moment": "idle-settle",
+          "rotationRad": 0,
+          "ownership": 1,
+          "arm": {
+            "armed": false,
+            "earliestStartMs": -1000000000,
+            "weaponId": ""
+          },
+          "streak": {
+            "count": 0,
+            "lastAcceptedMs": 47356.37000000002,
+            "weaponId": "x2-twin-maw-greenerbore"
+          },
+          "cancelEdge": 12
+        },
+        "hammer": {
+          "active": true,
+          "weaponRotationRad": -0.13780755589848623,
+          "weaponForward": -2.1549259168942556,
+          "weaponLateral": -1.551546660163864,
+          "handForward": -10.343644401092428,
+          "handLateral": -7.7577333008193206
+        },
+        "weaponRows": [
+          {
+            "hand": 0,
+            "x": 20.367999999999864,
+            "y": -12.920001574402116,
+            "rotation": -1.755577727635682e-7,
+            "semanticRotation": -1.755577727635682e-7,
+            "originX": 0.25,
+            "originY": 0.67,
+            "scaleX": 0.3420640045803153,
+            "scaleY": 0.3420640045803153,
+            "renderedLengthPx": 58.00000000000089,
+            "renderedHeightPx": 24.01562500000037,
+            "center": {
+              "x": 2335.544922591742,
+              "y": 2407.3599681575374
+            },
+            "handPosition": {
+              "x": 20.367999999999864,
+              "y": -12.920001574402116
+            },
+            "handToWeaponDistance": 0,
+            "corners": [
+              {
+                "x": 2364.544924699807,
+                "y": 2395.352160748713
+              },
+              {
+                "x": 2306.544924699807,
+                "y": 2395.352150566362
+              },
+              {
+                "x": 2306.5449204836773,
+                "y": 2419.367775566362
+              },
+              {
+                "x": 2364.5449204836773,
+                "y": 2419.367785748713
+              }
+            ]
+          },
+          {
+            "hand": 1,
+            "x": 6.296765697754497,
+            "y": 1.520000228792913,
+            "rotation": -0.13780773145625957,
+            "semanticRotation": -0.13780773145625957,
+            "originX": 0.25,
+            "originY": 0.67,
+            "scaleX": 0.3420640045803153,
+            "scaleY": 0.3420640045803153,
+            "renderedLengthPx": 58.00000142961753,
+            "renderedHeightPx": 24.015625591951007,
+            "center": {
+              "x": 2345.5630550464243,
+              "y": 2414.970991549492
+            },
+            "handPosition": {
+              "x": -5.014511159848674,
+              "y": -4.743259410847034
+            },
+            "handToWeaponDistance": 12.929555501365536,
+            "corners": [
+              {
+                "x": 2375.937659014538,
+                "y": 2407.0608054971694
+              },
+              {
+                "x": 2318.4875247371942,
+                "y": 2399.0932313776016
+              },
+              {
+                "x": 2315.1884510783107,
+                "y": 2422.881177601814
+              },
+              {
+                "x": 2372.6385853556544,
+                "y": 2430.848751721382
+              }
+            ]
+          }
+        ],
+        "weaponVerticalGap": 14.44000180319503,
+        "muzzleRows": [
+          {
+            "hand": 0,
+            "visible": true,
+            "x": 2306.7714329200867,
+            "y": 2399.860689670692
+          },
+          {
+            "hand": 1,
+            "visible": true,
+            "x": 2318.0926426494534,
+            "y": 2403.5901254369765
+          }
+        ],
+        "muzzleVerticalGap": 3.729435766284496,
+        "shotMuzzle": {
+          "visible": true,
+          "x": 2306.7714329200867,
+          "y": 2399.860689670692
+        },
+        "muzzleAnchorError": null,
+        "projectile": null,
+        "authorityAcceptedAtCapture": true,
+        "authorityAttackSeqAfter": 18
+      }
+    }
+  ]
+}
