@@ -1,11 +1,4 @@
-import {
-  bladeAngleAt,
-  meleeComboSelectionFor,
-  meleeDamageEnvelopeFor,
-  projectileDamageEnvelopeFor,
-  type SwingDescriptor,
-  type WeaponDef,
-} from "@dd/shared";
+import { meleeDamageEnvelopeFor, projectileDamageEnvelopeFor, type WeaponDef } from "@dd/shared";
 import {
   WEAPON_VFX,
   type WeaponVfxGeneratedImageFanTornado,
@@ -28,9 +21,7 @@ export const FAN_TORNADO_WEAPON_VFX_IDS = Object.freeze([
 
 export type B11GeneratedImageWeaponVfxId = (typeof GENERATED_IMAGE_WEAPON_VFX_IDS)[number];
 export type FanTornadoWeaponVfxId = (typeof FAN_TORNADO_WEAPON_VFX_IDS)[number];
-export type GeneratedImageWeaponVfxId =
-  | B11GeneratedImageWeaponVfxId
-  | FanTornadoWeaponVfxId;
+export type GeneratedImageWeaponVfxId = B11GeneratedImageWeaponVfxId | FanTornadoWeaponVfxId;
 
 export type B11GeneratedImageWeaponVfxRecipe = Readonly<
   WeaponVfxGeneratedImageReplacement & {
@@ -53,6 +44,14 @@ export interface GeneratedImageProjectileGeometry {
   readonly displayWidth: number;
   readonly displayHeight: number;
   readonly tipExtent: number;
+}
+
+export interface FanTornadoProjectileGeometry {
+  readonly displayWidth: number;
+  readonly displayHeight: number;
+  readonly damageWidth: number;
+  readonly damageHeight: number;
+  readonly orientation: "upright";
 }
 
 const EXPECTED_KIND: Readonly<Record<GeneratedImageWeaponVfxId, WeaponVfxGeneratedImageKind>> =
@@ -86,7 +85,7 @@ export const GENERATED_IMAGE_WEAPON_VFX_RECIPES: Readonly<
   "x-staff-arcane-lance": requiredRecipe("x-staff-arcane-lance"),
 });
 
-/** B18 supplements the existing fan ribbons/hybrid projectiles; these rows never suppress them. */
+/** B22 replaces every other fan effect with one generated-image authoritative projectile. */
 export const FAN_TORNADO_WEAPON_VFX_RECIPES: Readonly<
   Record<FanTornadoWeaponVfxId, FanTornadoWeaponVfxRecipe>
 > = Object.freeze({
@@ -110,94 +109,30 @@ export function resolveGeneratedImageWeaponVfxRecipe(
 }
 
 export function generatedImageVfxReplacesProceduralRecipe(weaponId: string | undefined): boolean {
-  return (
-    !!weaponId &&
-    Object.hasOwn(
-      GENERATED_IMAGE_WEAPON_VFX_RECIPES,
-      weaponId as B11GeneratedImageWeaponVfxId,
-    )
-  );
+  return !!weaponId && Object.hasOwn(ALL_GENERATED_IMAGE_WEAPON_VFX_RECIPES, weaponId);
 }
 
 export function generatedImageWeaponAudioCue(weaponId: string | undefined): string | undefined {
   return resolveGeneratedImageWeaponVfxRecipe(weaponId)?.audioCue;
 }
 
-export interface FanTornadoReleasePlan {
-  readonly damageMode: "presentation-only";
-  readonly releaseLane: "center" | "lead" | "off";
-  readonly releaseProgress: number;
-  readonly delayMs: number;
-  readonly startX: number;
-  readonly startY: number;
-  readonly endX: number;
-  readonly endY: number;
-  readonly travelPx: number;
-  readonly meleeEnvelopeReach: number;
-  readonly maxVisualRadius: number;
-  readonly overlapsMeleeAtSpawn: boolean;
-}
-
-function sweepArcFor(weapon: WeaponDef, swing: SwingDescriptor): number {
-  const sequence = meleeComboSelectionFor(weapon)?.sequence;
-  const indexed =
-    swing.comboStep === undefined ? undefined : sequence?.[swing.comboStep % sequence.length];
-  const step = indexed ?? sequence?.find((candidate) => candidate.motion === swing.motion);
-  return step?.path.deltaAngle ?? weapon.swingArc * (step?.path.arcMultiplier ?? 1);
-}
-
-/** Pure B18 presentation contract. The vortex overlaps the melee edge at birth but owns no damage source. */
-export function fanTornadoReleasePlanFor(
+/** Shared B22 WYSIWYG geometry. Client size and server damage both consume the hybrid envelope. */
+export function fanTornadoProjectileGeometryFor(
   weapon: WeaponDef,
-  recipe: FanTornadoWeaponVfxRecipe,
-  actorX: number,
-  actorY: number,
-  aimAngle: number,
-  swing: SwingDescriptor,
-): FanTornadoReleasePlan {
-  const releaseProgress = Math.max(0.55, Math.min(0.9, recipe.releaseProgress));
-  const releaseAngle = bladeAngleAt(
-    aimAngle,
-    sweepArcFor(weapon, swing),
-    releaseProgress,
-  );
-  const envelopeReach =
-    meleeDamageEnvelopeFor(weapon).maxReach *
-    Math.max(0, swing.comboPath?.rangeMultiplier ?? 1);
-  const startRadius = Math.max(0, envelopeReach - recipe.displayWidth * 0.34);
-  const laneParity = (swing.comboStep ?? 0) & 1;
-  const laneSign = recipe.alternatesLane ? (laneParity === 0 ? -1 : 1) : 0;
-  const laneOffset = laneSign * Math.min(18, recipe.displayWidth * 0.34);
-  const radialX = Math.cos(releaseAngle);
-  const radialY = Math.sin(releaseAngle);
-  const normalX = -radialY;
-  const normalY = radialX;
-  const startX = actorX + radialX * startRadius + normalX * laneOffset;
-  const startY = actorY + radialY * startRadius + normalY * laneOffset;
-  const endX = startX + radialX * recipe.travelPx;
-  const endY = startY + radialY * recipe.travelPx;
-  const timing = swing.comboTiming;
-  const releaseSeconds = timing
-    ? (timing.activeStart +
-        (timing.activeEnd - timing.activeStart) * releaseProgress) *
-      swing.poseSeconds
-    : swing.activeStartSeconds +
-      (swing.activeEndSeconds - swing.activeStartSeconds) * releaseProgress;
+): FanTornadoProjectileGeometry | undefined {
+  const recipe = resolveGeneratedImageWeaponVfxRecipe(weapon.id);
+  if (recipe?.kind !== "fan-tornado" || weapon.hybridProjectile?.style !== "tornado")
+    return undefined;
+  const envelope = projectileDamageEnvelopeFor(weapon, "hybrid");
+  if (envelope.orientation !== "upright") return undefined;
+  const displayWidth = envelope.radius * 2;
+  const displayHeight = (envelope.radius + envelope.halfLength) * 2;
   return Object.freeze({
-    damageMode: "presentation-only",
-    releaseLane: laneSign < 0 ? "lead" : laneSign > 0 ? "off" : "center",
-    releaseProgress,
-    delayMs: Math.max(0, Math.round(releaseSeconds * 1000)),
-    startX,
-    startY,
-    endX,
-    endY,
-    travelPx: recipe.travelPx,
-    meleeEnvelopeReach: envelopeReach,
-    maxVisualRadius:
-      Math.hypot(endX - actorX, endY - actorY) +
-      Math.max(recipe.displayWidth, recipe.displayHeight) / 2,
-    overlapsMeleeAtSpawn: startRadius - recipe.displayWidth / 2 <= envelopeReach,
+    displayWidth,
+    displayHeight,
+    damageWidth: displayWidth,
+    damageHeight: displayHeight,
+    orientation: "upright",
   });
 }
 
@@ -205,7 +140,8 @@ export function generatedImageMeleeGeometryFor(
   weapon: WeaponDef,
 ): GeneratedImageMeleeGeometry | undefined {
   const recipe = resolveGeneratedImageWeaponVfxRecipe(weapon.id);
-  if (!recipe || recipe.kind === "arcane-lance-projectile") return undefined;
+  if (!recipe || recipe.kind === "arcane-lance-projectile" || recipe.kind === "fan-tornado")
+    return undefined;
   const envelope = meleeDamageEnvelopeFor(weapon);
   return Object.freeze({
     forwardExtent: envelope.maxReach,

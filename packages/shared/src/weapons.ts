@@ -473,11 +473,11 @@ export interface WeaponPerformanceDef {
   };
 }
 
-/** B3 fan contract: an accepted melee beat keeps its normal swept-edge authority and schedules this
+/** Fan hybrid contract: an accepted melee beat keeps its normal swept-edge authority and schedules this
  * additional server-owned projectile at that beat's authored impact epoch. `damage` is the complete
- * launch payload, split evenly across `count`; a returning arc can deal it once per outbound/return leg. */
+ * launch payload, split evenly across `count`. */
 export interface HybridProjectileDef {
-  style: "cutting-gust" | "cinder-blade-cone" | "returning-arc";
+  style: "cutting-gust" | "cinder-blade-cone" | "returning-arc" | "tornado";
   trigger: "each-swing" | "combo-finisher";
   /** Authored combo length used to price a finisher-only payload without presentation inference. */
   comboLength: number;

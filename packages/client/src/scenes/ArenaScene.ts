@@ -275,7 +275,6 @@ import {
   meleeTellUsesDoublePulse,
   parryDoublePulseStrength,
 } from "../vfx/colorblind-assist.js";
-import { makeFanHybridProjectile, spawnFanHybridImpact } from "../vfx/fan-hybrid-vfx.js";
 import { playFxPack } from "../vfx/fx-composer.js";
 import {
   generatedImageWeaponAudioCue,
@@ -6911,17 +6910,13 @@ export class ArenaScene extends Phaser.Scene {
           )
         : null;
       const wackyIdentity = sourceWeapon ? makeWackyProjectile(this, pr, sourceWeapon.id) : null;
-      const fanHybridIdentity = sourceWeapon?.hybridProjectile
-        ? makeFanHybridProjectile(this, pr, sourceWeapon.id)
-        : null;
       const generatedImageIdentity = sourceWeapon
         ? makeGeneratedImageWeaponProjectile(this, pr, sourceWeapon.id)
         : null;
       const container =
-        fanHybridIdentity ??
+        generatedImageIdentity ??
         wackyIdentity ??
         gunIdentity ??
-        generatedImageIdentity ??
         (weaponEffectRecipe?.projectile === "electric-bolt"
           ? makeBullet(this, pr, sourceWeapon?.gun?.projectileVisualScale ?? 1, weaponEffectRecipe)
           : weaponEffectRecipe?.projectile === "crystal-shard-orb"
@@ -7084,14 +7079,6 @@ export class ArenaScene extends Phaser.Scene {
             c.y,
             impactAngle,
           );
-          const fanHybridImpact = spawnFanHybridImpact(
-            this,
-            sourceWeaponId,
-            c.x,
-            c.y,
-            impactAngle,
-            prefersReducedPaperMotion() || this.feedbackSettings.flashes === "reduced",
-          );
           const wackyImpact = spawnWackyWeaponImpact(
             this,
             sourceWeaponId,
@@ -7153,7 +7140,7 @@ export class ArenaScene extends Phaser.Scene {
                 prefersReducedPaperMotion() || this.feedbackSettings.flashes === "reduced",
               );
             }
-          } else if (generatedImageImpact || fanHybridImpact || wackyImpact) {
+          } else if (generatedImageImpact || wackyImpact) {
             // The B2 recipe supplied its complete impact punctuation.
           } else if (weaponEffectRecipe?.projectile) {
             // The authored projectile recipe already supplied its complete impact punctuation above.
@@ -7355,13 +7342,22 @@ export class ArenaScene extends Phaser.Scene {
       }
       const thrown = isThrownProjectileKind(pr.kind);
       const payload = c.getData("arcPayload") as Phaser.GameObjects.Container | undefined;
-      const fanHybridPayload = c.getData("fanHybridPayload") as
-        | Phaser.GameObjects.Container
-        | undefined;
-      if (fanHybridPayload) {
-        const angle = Math.atan2(pr.vy, pr.vx);
-        fanHybridPayload.rotation = angle;
-        c.setData("ang", angle);
+      const fanTornadoImage = c.getData("fanTornadoImage") as Phaser.GameObjects.Image | undefined;
+      if (fanTornadoImage) {
+        const pulseSeconds =
+          ((c.getData("fanTornadoPulseSeconds") as number | undefined) ?? 0) + dtSec;
+        const pulseAmount = (c.getData("fanTornadoPulse") as number | undefined) ?? 0;
+        const pulse = 1 + (0.5 - Math.cos(pulseSeconds * Math.PI * 4) * 0.5) * pulseAmount;
+        fanTornadoImage
+          .setScale(
+            ((c.getData("fanTornadoBaseScaleX") as number | undefined) ?? 1) * pulse,
+            ((c.getData("fanTornadoBaseScaleY") as number | undefined) ?? 1) * pulse,
+          )
+          .setRotation(0)
+          .setFlipX(c.getData("fanTornadoFacing") === -1)
+          .setFlipY(false);
+        c.setData("fanTornadoPulseSeconds", pulseSeconds);
+        c.setRotation(0);
       }
       if (thrown) {
         const rotating = payload ?? c;
