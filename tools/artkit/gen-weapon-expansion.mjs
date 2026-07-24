@@ -164,7 +164,7 @@ const COMBO_MOTIONS = new Set([
   "gourd-haymaker", "iron-knuckle", "iron-palm",
   "teep-kick", "spinning-back-elbow", "oblique-kick", "double-palm", "weave-backfist",
   "sweeping-leg", "falling-haymaker", "crushing-palm", "stomp-kick", "windup-palm",
-  "quake-double-palm", "backflip-head-kick",
+  "quake-double-palm", "backflip-head-kick", "frontflip-heel-drop", "mantis-double-hook",
   "spin-release", "pommel-bash", "true-charged-slam", "falling-gate", "backswing-wheel",
   "runaway-cleave", "highland-gate", "rising-ward", "bind-break-cast-off", "long-reap",
   "shaft-switch", "compass-rose", "headsmans-drop", "hook-and-haul", "gallows-turn", "draw-cut",
@@ -180,7 +180,7 @@ const RIBBON_PROFILES = new Set([
 ]);
 const RIBBON_ENDS = new Set(["clean", "squared", "torn", "hooked", "open"]);
 const COMBO_STEP_KEYS = new Set([
-  "name", "motion", "limb", "direction", "hand", "timing", "path", "rootMotion", "ribbon",
+  "name", "motion", "limb", "direction", "hand", "timing", "path", "rootMotion", "theatrics", "ribbon",
 ]);
 const COMBO_TIMING_KEYS = new Set([
   "activeStart", "activeEnd", "impact", "followEnd", "secondaryActiveStart", "secondaryActiveEnd",
@@ -189,6 +189,13 @@ const COMBO_PATH_KEYS = new Set([
   "kind", "arcMultiplier", "deltaAngle", "rangeMultiplier", "damageMultiplier", "knockback",
 ]);
 const COMBO_ROOT_MOTION_KEYS = new Set(["forwardPx", "lateralPx", "durationSeconds"]);
+const COMBO_THEATRICS_KEYS = new Set([
+  "paperTurns", "flip", "limbStretch", "holdPose", "holdStart",
+]);
+const COMBO_FLIPS = new Set(["front", "back"]);
+const COMBO_HOLD_POSES = new Set([
+  "clinch-guard", "champion-guard", "crane-one-leg", "praying-mantis",
+]);
 const COMBO_RIBBON_KEYS = new Set([
   "profile", "radialStart", "radialEnd", "widthMultiplier", "end", "setupEcho",
   "fanOutStartScale", "fanOutEndScale",
@@ -416,8 +423,8 @@ function comboBarOf(w, choreography) {
       } else {
         checkKeys(rootMotion, COMBO_ROOT_MOTION_KEYS, `${path}.rootMotion`);
         mapped.rootMotion = {
-          forwardPx: num(rootMotion.forwardPx, -64, 64, 0, `${path}.rootMotion.forwardPx`),
-          lateralPx: num(rootMotion.lateralPx, -64, 64, 0, `${path}.rootMotion.lateralPx`),
+          forwardPx: num(rootMotion.forwardPx, -480, 480, 0, `${path}.rootMotion.forwardPx`),
+          lateralPx: num(rootMotion.lateralPx, -480, 480, 0, `${path}.rootMotion.lateralPx`),
           durationSeconds: num(
             rootMotion.durationSeconds,
             0.05,
@@ -426,6 +433,48 @@ function comboBarOf(w, choreography) {
             `${path}.rootMotion.durationSeconds`,
           ),
         };
+      }
+    }
+    if (step.theatrics !== undefined) {
+      const theatrics = step.theatrics;
+      if (!theatrics || typeof theatrics !== "object" || Array.isArray(theatrics)) {
+        fail(`${path}.theatrics is not an object`);
+      } else {
+        checkKeys(theatrics, COMBO_THEATRICS_KEYS, `${path}.theatrics`);
+        const presentation = {};
+        if (theatrics.paperTurns !== undefined)
+          presentation.paperTurns = num(
+            theatrics.paperTurns,
+            -2,
+            2,
+            0,
+            `${path}.theatrics.paperTurns`,
+          );
+        if (theatrics.flip !== undefined)
+          presentation.flip = enumOf(theatrics.flip, COMBO_FLIPS, `${path}.theatrics.flip`);
+        if (theatrics.limbStretch !== undefined)
+          presentation.limbStretch = num(
+            theatrics.limbStretch,
+            1,
+            2.5,
+            1,
+            `${path}.theatrics.limbStretch`,
+          );
+        if (theatrics.holdPose !== undefined)
+          presentation.holdPose = enumOf(
+            theatrics.holdPose,
+            COMBO_HOLD_POSES,
+            `${path}.theatrics.holdPose`,
+          );
+        if (theatrics.holdStart !== undefined)
+          presentation.holdStart = num(
+            theatrics.holdStart,
+            activeEnd,
+            0.95,
+            followEnd,
+            `${path}.theatrics.holdStart`,
+          );
+        mapped.theatrics = presentation;
       }
     }
     const choreo = choreography?.[i];

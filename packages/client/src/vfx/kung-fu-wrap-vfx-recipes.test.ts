@@ -33,5 +33,8 @@ describe("B23 kung-fu wrap beat accents", () => {
     expect(kungFuWrapBeatAudioCue("x2-iron-palm-wraps", "hand", "quake-double-palm")).toBe(
       "kungfu:iron-palm",
     );
+    expect(kungFuWrapBeatAudioCue("x2-iron-palm-wraps", "hand", "mantis-double-hook")).toBe(
+      "kungfu:iron-palm",
+    );
   });
 });

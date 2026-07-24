@@ -14,7 +14,7 @@ const { PNG } = require("../tools/artkit/node_modules/pngjs") as {
   };
 };
 
-const B23_WRAPS = [
+const B25_WRAPS = [
   "x2-muay-thai-wraps",
   "x2-wing-chun-wraps",
   "x2-drunken-fist-wraps",
@@ -22,7 +22,7 @@ const B23_WRAPS = [
 ] as const;
 
 const NATIVE_PARTS: Readonly<
-  Record<(typeof B23_WRAPS)[number], readonly (readonly [number, number])[]>
+  Record<(typeof B25_WRAPS)[number], readonly (readonly [number, number])[]>
 > = {
   "x2-muay-thai-wraps": [
     [380, 512],
@@ -102,16 +102,16 @@ function significantAlphaComponents(data: Buffer, width: number, height: number)
   return components;
 }
 
-function comboSteps(id: (typeof B23_WRAPS)[number]) {
+function comboSteps(id: (typeof B25_WRAPS)[number]) {
   return meleeComboSelectionFor(WEAPONS[id]!)?.sequence;
 }
 
-describe("B23 kung-fu corrections", () => {
+describe("B25 theatrical kung-fu v3", () => {
   it("publishes four active four-limb wrap sets with distinct combo, root, and VFX signatures", () => {
-    expect(new Set(B23_WRAPS).size).toBe(4);
+    expect(new Set(B25_WRAPS).size).toBe(4);
     const comboSignatures = new Set<string>();
     const vfxSignatures = new Set<string>();
-    for (const id of B23_WRAPS) {
+    for (const id of B25_WRAPS) {
       const weapon = WEAPONS[id];
       expect(weapon, id).toBeDefined();
       expect(weapon?.expansion, id).toBe(true);
@@ -127,7 +127,7 @@ describe("B23 kung-fu corrections", () => {
       expect(weapon?.glovePair, id).toBeDefined();
       expect(weapon?.glovePair?.wrapsFeet, id).toBe(true);
       expect(weapon?.poseLanguage?.idle, id).toBe(
-        id === "x2-wing-chun-wraps"
+        id === "x2-wing-chun-wraps" || id === "x2-iron-palm-wraps"
           ? "praying-mantis"
           : id === "x2-drunken-fist-wraps"
             ? "crane-guard"
@@ -150,13 +150,25 @@ describe("B23 kung-fu corrections", () => {
     expect(vfxSignatures.size).toBe(4);
   });
 
-  it("pins the longer punch/kick beat charts and authored displacement", () => {
+  it("pins the rebuilt punch/kick beat charts and theatrical authoritative displacement", () => {
     expect(comboSteps("x2-muay-thai-wraps")?.map((step) => [step.motion, step.limb])).toEqual([
       ["teep-kick", "foot"],
       ["elbow", "hand"],
-      ["elbow", "hand"],
+      ["spinning-back-elbow", "hand"],
       ["knee-strike", "foot"],
       ["roundhouse-kick", "foot"],
+    ]);
+    expect(
+      comboSteps("x2-muay-thai-wraps")?.map((step) => [
+        step.rootMotion?.forwardPx,
+        step.rootMotion?.lateralPx,
+      ]),
+    ).toEqual([
+      [288, 0],
+      [28, 0],
+      [32, 0],
+      [44, 0],
+      [36, 0],
     ]);
     expect(
       comboSteps("x2-wing-chun-wraps")?.map((step) => [step.motion, step.hand, step.limb]),
@@ -167,12 +179,15 @@ describe("B23 kung-fu corrections", () => {
       ["oblique-kick", "off", "foot"],
       ["double-palm", "both", "hand"],
     ]);
+    expect(comboSteps("x2-wing-chun-wraps")?.every((step) => step.rootMotion === undefined)).toBe(
+      true,
+    );
     expect(comboSteps("x2-drunken-fist-wraps")?.map((step) => [step.motion, step.limb])).toEqual([
       ["sway-jab", "hand"],
       ["weave-cross", "hand"],
       ["weave-backfist", "hand"],
       ["sweeping-leg", "foot"],
-      ["backflip-head-kick", "foot"],
+      ["frontflip-heel-drop", "foot"],
     ]);
     expect(
       comboSteps("x2-drunken-fist-wraps")?.map((step) => [
@@ -180,25 +195,83 @@ describe("B23 kung-fu corrections", () => {
         step.rootMotion?.lateralPx,
       ]),
     ).toEqual([
-      [3, 7],
-      [-3, -9],
-      [5, 8],
-      [-2, -11],
-      [12, 4],
+      [18, 88],
+      [-12, -112],
+      [24, 104],
+      [10, -128],
+      [156, 40],
     ]);
     expect(comboSteps("x2-iron-palm-wraps")?.map((step) => [step.motion, step.limb])).toEqual([
       ["crushing-palm", "hand"],
       ["stomp-kick", "foot"],
-      ["windup-palm", "hand"],
-      ["quake-double-palm", "hand"],
+      ["roundhouse-kick", "foot"],
+      ["mantis-double-hook", "hand"],
+    ]);
+    expect(
+      comboSteps("x2-iron-palm-wraps")?.map((step) => [
+        step.rootMotion?.forwardPx,
+        step.rootMotion?.lateralPx,
+      ]),
+    ).toEqual([
+      [52, 0],
+      [112, 0],
+      [72, 0],
+      [96, 0],
     ]);
     expect(comboSteps("x2-iron-palm-wraps")?.at(-1)?.path.knockback).toBe(48);
   });
 
+  it("authors the dragon rocket, whole-paper turns, front flip, stretch, and held finishers", () => {
+    const muay = comboSteps("x2-muay-thai-wraps")!;
+    const drunken = comboSteps("x2-drunken-fist-wraps")!;
+    const iron = comboSteps("x2-iron-palm-wraps")!;
+
+    expect(muay[0]?.name).toContain("Dragon-Rocket");
+    expect(muay[0]?.rootMotion?.forwardPx).toBe(288);
+    expect(muay[0]?.theatrics?.limbStretch).toBe(2.15);
+    expect(muay[2]?.theatrics?.paperTurns).toBe(1);
+    expect(muay[4]?.theatrics).toMatchObject({
+      paperTurns: 1,
+      limbStretch: 2,
+      holdPose: "champion-guard",
+    });
+    expect(drunken[4]?.theatrics).toMatchObject({
+      flip: "front",
+      limbStretch: 2.2,
+      holdPose: "crane-one-leg",
+    });
+    expect(iron[2]?.theatrics).toMatchObject({ paperTurns: 1, limbStretch: 1.9 });
+    expect(iron[3]?.theatrics).toMatchObject({
+      limbStretch: 2.1,
+      holdPose: "praying-mantis",
+    });
+  });
+
+  it("makes displacement felt by hundreds of pixels while Wing Chun remains exactly planted", () => {
+    const pathLength = (id: (typeof B25_WRAPS)[number]) =>
+      (comboSteps(id) ?? []).reduce(
+        (sum, step) =>
+          sum + Math.hypot(step.rootMotion?.forwardPx ?? 0, step.rootMotion?.lateralPx ?? 0),
+        0,
+      );
+    const netForward = (id: (typeof B25_WRAPS)[number]) =>
+      (comboSteps(id) ?? []).reduce((sum, step) => sum + (step.rootMotion?.forwardPx ?? 0), 0);
+    const netLateral = (id: (typeof B25_WRAPS)[number]) =>
+      (comboSteps(id) ?? []).reduce((sum, step) => sum + (step.rootMotion?.lateralPx ?? 0), 0);
+
+    expect(pathLength("x2-wing-chun-wraps")).toBe(0);
+    expect(netForward("x2-muay-thai-wraps")).toBe(428);
+    expect(pathLength("x2-muay-thai-wraps")).toBe(428);
+    expect(pathLength("x2-drunken-fist-wraps")).toBeGreaterThan(590);
+    expect(netForward("x2-drunken-fist-wraps")).toBe(196);
+    expect(netLateral("x2-drunken-fist-wraps")).toBe(-8);
+    expect(netForward("x2-iron-palm-wraps")).toBe(332);
+  });
+
   it("keeps every redistributed combo inside ±10% of shipped DPS with requested cadence ordering", () => {
-    const weapons = B23_WRAPS.map((id) => WEAPONS[id]!);
+    const weapons = B25_WRAPS.map((id) => WEAPONS[id]!);
     for (const weapon of weapons) {
-      const steps = comboSteps(weapon.id as (typeof B23_WRAPS)[number]) ?? [];
+      const steps = comboSteps(weapon.id as (typeof B25_WRAPS)[number]) ?? [];
       const averageDamage =
         steps.reduce((sum, step) => sum + step.path.damageMultiplier, 0) /
         Math.max(1, steps.length);
@@ -221,13 +294,16 @@ describe("B23 kung-fu corrections", () => {
     expect(iron.damage).toBeGreaterThan(muay.damage);
     expect(wing.range).toBeLessThan(muay.range);
     expect([wing.cooldown, drunken.cooldown, muay.cooldown, iron.cooldown]).toEqual([
-      0.12, 0.3, 0.4, 0.55,
+      0.12, 0.16, 0.18, 0.24,
     ]);
-    expect([wing.damage, drunken.damage, muay.damage, iron.damage]).toEqual([2.4, 6, 8, 11]);
+    expect([wing.damage, drunken.damage, muay.damage, iron.damage]).toEqual([2.4, 3.2, 3.6, 4.8]);
+    expect(drunken.cooldown).toBeLessThan(0.3 * 0.55);
+    expect(muay.cooldown).toBeLessThan(0.4 * 0.5);
+    expect(iron.cooldown).toBeLessThan(0.55 * 0.5);
   });
 
   it("moves every authored hit envelope beyond the old close-body reach", () => {
-    for (const id of B23_WRAPS) {
+    for (const id of B25_WRAPS) {
       const weapon = WEAPONS[id]!;
       for (const step of comboSteps(id) ?? []) {
         expect(step.path.rangeMultiplier, `${id}:${step.name}`).toBeGreaterThanOrEqual(1.18);
@@ -258,7 +334,7 @@ describe("B23 kung-fu corrections", () => {
   });
 
   it("ships every authored part at its native dimensions with broad visible alpha bounds", () => {
-    for (const id of B23_WRAPS) {
+    for (const id of B25_WRAPS) {
       const parts = NATIVE_PARTS[id];
       const expectedCanvas = {
         w: Math.max(...parts.map(([width]) => width)),
@@ -294,7 +370,7 @@ describe("B23 kung-fu corrections", () => {
     const source = JSON.parse(readFileSync("data/weapon-concepts-300.json", "utf8")) as {
       weapons: Array<{ id: string; theme?: string; artPrompt?: string }>;
     };
-    for (const id of B23_WRAPS) {
+    for (const id of B25_WRAPS) {
       const weapon = WEAPONS[id]!;
       for (const [index, point] of (weapon.muzzle?.points ?? []).entries()) {
         const path = `packages/client/public/sprites/${id}/part-${index + 1}.png`;

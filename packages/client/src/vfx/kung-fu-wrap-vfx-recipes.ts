@@ -22,7 +22,7 @@ export interface KungFuWrapVfxRecipe {
 export const KUNG_FU_WRAP_VFX_RECIPES: Readonly<Record<string, KungFuWrapVfxRecipe>> =
   Object.freeze({
     "x2-muay-thai-wraps": Object.freeze({
-      signature: "teep-elbow-clinch-roundhouse-with-crimson-strike-arc-and-heavy-dust",
+      signature: "dragon-rocket-teep-paper-turn-back-elbow-clinch-roundhouse-champion-finish",
       swing: "crimson-roundhouse-arc",
       impact: "heavy-dust-cloud",
       primaryColor: 0xd74737,
@@ -36,14 +36,14 @@ export const KUNG_FU_WRAP_VFX_RECIPES: Readonly<Record<string, KungFuWrapVfxReci
       accentColor: 0xc9d4d8,
     }),
     "x2-drunken-fist-wraps": Object.freeze({
-      signature: "alternating-mist-purple-weaves-foot-sweep-backflip-head-kick-and-crane",
+      signature: "violent-mist-purple-side-weaves-frontflip-heel-drop-and-held-crane",
       swing: "mist-purple-sway-sweep",
       impact: "misty-purple-wide-sweep",
       primaryColor: 0x8d63b7,
       accentColor: 0xd1afd9,
     }),
     "x2-iron-palm-wraps": Object.freeze({
-      signature: "crushing-palm-stomp-windup-double-palm-iron-quake",
+      signature: "stomp-advance-paper-turn-roundhouse-stretched-mantis-double-hook",
       swing: "black-iron-drive",
       impact: "iron-sparks-shockwave",
       primaryColor: 0xd9c38b,

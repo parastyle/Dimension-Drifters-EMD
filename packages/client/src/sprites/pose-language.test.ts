@@ -193,20 +193,20 @@ describe("B17 semantic hand-role and five-pose laws", () => {
   it("holds recognizable praying-mantis hooks and a two-level crane guard", () => {
     const common = { bodyX: 0, bodyY: 0, bodyHeight: 76, aimLocal: 0 };
     const mantis = weapon("x2-wing-chun-wraps");
-    const mantisLead = resolveIdleHandTarget(
-      mantis,
-      { ...common, hand: 0 },
-      { x: 0, y: 0 },
-    );
-    const mantisOff = resolveIdleHandTarget(
-      mantis,
-      { ...common, hand: 1 },
-      { x: 0, y: 0 },
-    );
+    const mantisLead = resolveIdleHandTarget(mantis, { ...common, hand: 0 }, { x: 0, y: 0 });
+    const mantisOff = resolveIdleHandTarget(mantis, { ...common, hand: 1 }, { x: 0, y: 0 });
     expect(mantisLead.y).toBeLessThan(mantisOff.y - 10);
     expect(mantisLead.x).toBeGreaterThan(mantisOff.x + 10);
     expect(martialIdleHandAngleFor(mantis, 0)).toBeGreaterThan(0.9);
     expect(martialIdleHandAngleFor(mantis, 1)).toBeLessThan(-0.6);
+    const ironMantis = weapon("x2-iron-palm-wraps");
+    expect(idleHandPoseFor(ironMantis)).toBe("praying-mantis");
+    expect(resolveIdleHandTarget(ironMantis, { ...common, hand: 0 }, { x: 0, y: 0 })).toEqual(
+      mantisLead,
+    );
+    expect(resolveIdleHandTarget(ironMantis, { ...common, hand: 1 }, { x: 0, y: 0 })).toEqual(
+      mantisOff,
+    );
 
     const crane = weapon("x2-drunken-fist-wraps");
     const craneLead = resolveIdleHandTarget(crane, { ...common, hand: 0 }, { x: 0, y: 0 });

@@ -106,6 +106,8 @@ export type MeleeComboMotion =
   | "windup-palm"
   | "quake-double-palm"
   | "backflip-head-kick"
+  | "frontflip-heel-drop"
+  | "mantis-double-hook"
   | "lunge"
   | "disengage"
   | "impale"
@@ -138,6 +140,27 @@ export type MeleeComboMotion =
   | "waist-orbit";
 export type MeleeComboHand = "lead" | "off" | "both";
 export type MeleeComboLimb = "hand" | "foot";
+export type MeleeComboHoldPose =
+  | "clinch-guard"
+  | "champion-guard"
+  | "crane-one-leg"
+  | "praying-mantis";
+export type MeleeComboFlip = "front" | "back";
+
+/** B25 martial-arts presentation authored on the accepted combo beat. These channels never alter
+ * authority: root travel remains `rootMotion`, hit geometry remains `path`, and damage remains server-side. */
+export interface MeleeComboTheatrics {
+  /** Complete paper-card mirror turns made between active start and follow end. */
+  readonly paperTurns?: number;
+  /** Full-card somersault direction, rendered through the movement kit's tumble helper. */
+  readonly flip?: MeleeComboFlip;
+  /** Peak scale of the striking worn hand/foot along its attack axis; identity is exactly 1. */
+  readonly limbStretch?: number;
+  /** Readable silhouette held after the strike before the next accepted beat. */
+  readonly holdPose?: MeleeComboHoldPose;
+  /** Normalized accepted-beat time where the silhouette hold takes ownership. */
+  readonly holdStart?: number;
+}
 export type KatanaChoreographyPrimitive =
   | "side-cut"
   | "wave-cut"
@@ -248,6 +271,8 @@ export interface MeleeComboStep {
     readonly lateralPx: number;
     readonly durationSeconds: number;
   };
+  /** B25 theatrical martial-arts presentation. Inert for all authority/economy consumers. */
+  readonly theatrics?: Readonly<MeleeComboTheatrics>;
   /** Cosmetic business-edge variation. Geometry/damage consumers must continue to use `path`/descriptor. */
   readonly ribbon?: Readonly<MeleeComboRibbon>;
   /** V7 owner-ordered katana body motion. It is inert for authority and absent from rest-pose resolution. */
@@ -2071,6 +2096,20 @@ export function comboStepForAttackSeq(attackSeq: number, sequenceLength: number)
   if (length === 0) return 0;
   const ordinal = (attackSeq >>> 0) - 1;
   return ((ordinal % length) + length) % length;
+}
+
+/** Grace after the accepted cadence edge. Theatrical root/pose combos retain their scroll through one
+ * visibly held silhouette pause; ordinary combo families keep the legacy 120–300ms law unchanged. */
+export function meleeComboGraceMs(
+  effectiveCooldownSeconds: number,
+  sequence?: readonly Readonly<MeleeComboStep>[],
+): number {
+  const legacyMs =
+    Math.min(0.3, Math.max(0.12, Math.max(0, effectiveCooldownSeconds) * 0.35)) * 1000;
+  const theatrical = sequence?.some(
+    (step) => step.rootMotion !== undefined || step.theatrics !== undefined,
+  );
+  return theatrical ? Math.max(450, legacyMs) : legacyMs;
 }
 
 /** Resolve one accepted visual combo beat from the current `(weapon, family)` chain rather than from the

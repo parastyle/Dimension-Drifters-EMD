@@ -25,7 +25,7 @@ describe("SpriteRig glove-pair rendering", () => {
   ] as const)("mounts %s as two independent hands and two independent feet", (weaponId) => {
     const weapon = WEAPONS[weaponId];
     const manifest = SPRITES[weaponId];
-    if (!weapon || !manifest) throw new Error(`Missing B23 wrap fixture: ${weaponId}`);
+    if (!weapon || !manifest) throw new Error(`Missing B25 wrap fixture: ${weaponId}`);
     const mounts = wrapRigMountPlan(weapon, manifest);
 
     expect(weapon.glovePair?.wrapsFeet).toBe(true);

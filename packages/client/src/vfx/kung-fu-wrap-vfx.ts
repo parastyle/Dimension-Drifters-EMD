@@ -16,6 +16,9 @@ export interface KungFuWrapVfxAuditEvent {
   readonly style: string;
   readonly x: number;
   readonly y: number;
+  readonly sourceX?: number;
+  readonly sourceY?: number;
+  readonly authorityReach?: number;
   readonly timeMs: number;
   readonly comboStep?: number;
   readonly motion?: string;
@@ -119,6 +122,7 @@ export function spawnKungFuWrapSwing(
   comboStep: number | undefined,
   motion: string | undefined,
   limb: "hand" | "foot" | undefined,
+  authorityReach: number | undefined,
   reducedMotion = false,
 ): boolean {
   const recipe = resolveKungFuWrapVfxRecipe(weaponId);
@@ -136,6 +140,9 @@ export function spawnKungFuWrapSwing(
     style: recipe.swing,
     x: impactX,
     y: impactY,
+    sourceX,
+    sourceY,
+    authorityReach,
     timeMs: scene.time.now,
     comboStep,
     motion,
