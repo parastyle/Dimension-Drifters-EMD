@@ -6,7 +6,7 @@ import { bootArena, runArenaSpec } from "../helpers/arena-harness.js";
 
 const EVIDENCE_DIR = path.resolve(
   import.meta.dirname,
-  "../../docs/owner-notes-audit-v11-evidence/b22-fan-tornado-v2",
+  "../../docs/owner-notes-audit-v11-evidence/b22-l1-reconcile",
 );
 const CHARACTER_ID = "proto-cowboy-hidden-face";
 const FORBIDDEN_PORTS = new Set([5180, 2567]);
@@ -138,6 +138,7 @@ interface BrowserArena {
   combatFeedback: {
     subscribeContact(listener: (event: Contact) => void): () => void;
   };
+  currentBeamAim(): { aimX: number; aimY: number; targetX: number; targetY: number };
   game: { hasFocus: boolean };
   input: { activePointer: { rightButtonDown(): boolean } };
   localAtkCd: number;
@@ -204,6 +205,7 @@ interface BrowserGlobal {
   __ddB22FanProjectileSamples?: ProjectileSample[];
   __ddB22FanProjectileTimer?: number;
   __ddB22FanAttackTimer?: number;
+  __ddB22OriginalCurrentBeamAim?: BrowserArena["currentBeamAim"];
 }
 
 interface LiveCapture {
@@ -245,7 +247,7 @@ function relativeEvidencePath(file: string): string {
 
 async function prepare(page: Page): Promise<void> {
   await page.locator("#game-root canvas").click({ position: { x: 640, y: 360 } });
-  await page.evaluate(() => {
+  await page.evaluate((hybridDelivery) => {
     const holder = globalThis as unknown as BrowserGlobal;
     const arena = holder.ddGame.scene.getScene("arena");
     if (arena.verbs?.isLegendOpen?.()) arena.verbs.toggleLegend?.(arena.time.now);
@@ -263,6 +265,14 @@ async function prepare(page: Page): Promise<void> {
     holder.__ddB22FanProjectileSamples = [];
     holder.__ddB22FanContactUnsubscribe?.();
     holder.__ddB22FanContactUnsubscribe = arena.combatFeedback.subscribeContact((event) => {
+      if (
+        event.delivery === hybridDelivery &&
+        !(holder.__ddB22FanProjectileSamples ?? []).some(
+          (sample) =>
+            sample.weaponId === event.weaponId && Math.abs(sample.tick - event.tick) <= 2,
+        )
+      )
+        return;
       holder.__ddB22FanContacts?.push({ ...event });
     });
     if (holder.__ddB22FanProjectileTimer)
@@ -311,7 +321,7 @@ async function prepare(page: Page): Promise<void> {
       holder.__ddB22FanProjectileTimer = window.requestAnimationFrame(sampleProjectiles);
     };
     holder.__ddB22FanProjectileTimer = window.requestAnimationFrame(sampleProjectiles);
-  });
+  }, CombatDelivery.HybridProjectile);
 }
 
 async function equip(page: Page, weaponId: string): Promise<void> {
@@ -473,7 +483,7 @@ async function waitForTravelFrame(page: Page, weaponId: string): Promise<void> {
           }, weaponId),
         {
           message: `${weaponId} should visibly follow its moving server tornado`,
-          timeout: 12_000,
+          timeout: 4_000,
           intervals: [5, 8, 12],
         },
       )
@@ -518,7 +528,27 @@ async function waitForTravelFrame(page: Page, weaponId: string): Promise<void> {
   }
 }
 
-async function nearestDummy(page: Page): Promise<Target> {
+async function captureTravelAttack(
+  page: Page,
+  weaponId: string,
+  facing: Facing,
+): Promise<number> {
+  let lastError: unknown;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const attackSeqBefore = await fireSingleAttack(page, weaponId, facing);
+    await waitForAccepted(page, attackSeqBefore, weaponId);
+    try {
+      await waitForTravelFrame(page, weaponId);
+      return attackSeqBefore;
+    } catch (error) {
+      lastError = error;
+      await page.waitForTimeout(600);
+    }
+  }
+  throw lastError;
+}
+
+async function damageDummy(page: Page): Promise<Target> {
   return await page.evaluate(() => {
     const arena = (globalThis as unknown as BrowserGlobal).ddGame.scene.getScene("arena");
     const self = arena.room.state.players.get(arena.room.sessionId);
@@ -533,78 +563,16 @@ async function nearestDummy(page: Page): Promise<Target> {
         distance: Math.hypot(enemy.x - self.x, enemy.y - self.y),
       });
     });
-    const target = rows.sort((left, right) => left.distance - right.distance)[0];
+    const target = rows.sort(
+      (left, right) =>
+        Math.abs(left.distance - 250) - Math.abs(right.distance - 250) ||
+        left.id.localeCompare(right.id),
+    )[0];
     if (!target) throw new Error("B22 live gate did not receive a training dummy");
+    if (target.distance < 200 || target.distance > 300)
+      throw new Error(`B22 live gate has no pinned mid-range dummy (${target.distance.toFixed(1)} px)`);
     return target;
   });
-}
-
-async function moveIntoCloseRange(page: Page, targetId: string): Promise<Target> {
-  return await page.evaluate((id) => {
-    const arena = (globalThis as unknown as BrowserGlobal).ddGame.scene.getScene("arena");
-    const initial = arena.room.state.players.get(arena.room.sessionId);
-    if (!initial) throw new Error("B22 close-range approach lost its player");
-    let seq = initial.ackSeq >>> 0;
-    const deadline = performance.now() + 8_000;
-    return new Promise<Target>((resolve, reject) => {
-      const timer = window.setInterval(() => {
-        const self = arena.room.state.players.get(arena.room.sessionId);
-        let target: BrowserEnemy | undefined;
-        arena.room.state.enemies.forEach((enemy, enemyId) => {
-          if (enemyId === id) target = enemy;
-        });
-        if (!self || !target) {
-          window.clearInterval(timer);
-          reject(new Error("B22 close-range approach lost its player or dummy"));
-          return;
-        }
-        const fromTargetX = self.x - target.x;
-        const fromTargetY = self.y - target.y;
-        const fromTargetLength = Math.hypot(fromTargetX, fromTargetY) || 1;
-        const desiredX = target.x + (fromTargetX / fromTargetLength) * 150;
-        const desiredY = target.y + (fromTargetY / fromTargetLength) * 150;
-        const dx = desiredX - self.x;
-        const dy = desiredY - self.y;
-        const remaining = Math.hypot(dx, dy);
-        const targetDistance = Math.hypot(target.x - self.x, target.y - self.y);
-        if (remaining <= 6 || targetDistance <= 175) {
-          seq = (seq + 1) >>> 0;
-          arena.room.send("input", { seq, dx: 0, dy: 0, fireHeld: false });
-          window.clearInterval(timer);
-          resolve({ id, x: target.x, y: target.y, distance: targetDistance });
-          return;
-        }
-        if (performance.now() >= deadline) {
-          window.clearInterval(timer);
-          reject(new Error(`B22 approach timed out with ${remaining.toFixed(1)} px remaining`));
-          return;
-        }
-        const length = remaining || 1;
-        seq = (seq + 1) >>> 0;
-        arena.room.send("input", {
-          seq,
-          dx: dx / length,
-          dy: dy / length,
-          fireHeld: false,
-        });
-      }, 55);
-    });
-  }, targetId);
-}
-
-async function aimAtTarget(page: Page, target: Target): Promise<void> {
-  const canvas = page.locator("#game-root canvas");
-  const box = await canvas.boundingBox();
-  if (!box) throw new Error("B22 live gate cannot locate the Phaser canvas");
-  const normalized = await page.evaluate(({ x, y }) => {
-    const arena = (globalThis as unknown as BrowserGlobal).ddGame.scene.getScene("arena");
-    const view = arena.cameras.main.worldView;
-    return { x: (x - view.x) / view.width, y: (y - view.y) / view.height };
-  }, target);
-  await page.mouse.move(
-    box.x + box.width * Math.max(0.03, Math.min(0.97, normalized.x)),
-    box.y + box.height * Math.max(0.03, Math.min(0.97, normalized.y)),
-  );
 }
 
 async function beginAttacks(page: Page, targetId: string, weaponId: string): Promise<void> {
@@ -615,21 +583,36 @@ async function beginAttacks(page: Page, targetId: string, weaponId: string): Pro
       holder.__ddB22FanContacts = [];
       holder.__ddB22FanProjectileSamples = [];
       holder.__ddB22FanTornadoAudit = [];
-      const send = () => {
+      const originalAim = arena.currentBeamAim;
+      holder.__ddB22OriginalCurrentBeamAim = originalAim;
+      const targetAim = () => {
         const player = arena.room.state.players.get(arena.room.sessionId);
         let target: BrowserEnemy | undefined;
         arena.room.state.enemies.forEach((enemy, enemyId) => {
           if (enemyId === targetId) target = enemy;
         });
-        if (!player || !target || player.weapon !== weaponId) return;
+        if (!player || !target || player.weapon !== weaponId) return originalAim.call(arena);
         const dx = target.x - player.x;
         const dy = target.y - player.y;
         const length = Math.hypot(dx, dy) || 1;
-        arena.room.send("attack", {
+        return {
           aimX: dx / length,
           aimY: dy / length,
-          tx: target.x,
-          ty: target.y,
+          targetX: target.x,
+          targetY: target.y,
+        };
+      };
+      // The production input heartbeat updates the same authoritative aim as discrete attack messages.
+      // Lock both paths to this live dummy for one isolated epoch so camera settling cannot overwrite the
+      // buffered attack with a stale pointer direction.
+      arena.currentBeamAim = targetAim;
+      const send = () => {
+        const nextAim = targetAim();
+        arena.room.send("attack", {
+          aimX: nextAim.aimX,
+          aimY: nextAim.aimY,
+          tx: nextAim.targetX,
+          ty: nextAim.targetY,
         });
       };
       if (holder.__ddB22FanAttackTimer) window.clearInterval(holder.__ddB22FanAttackTimer);
@@ -643,9 +626,31 @@ async function beginAttacks(page: Page, targetId: string, weaponId: string): Pro
 async function stopAttacks(page: Page): Promise<void> {
   await page.evaluate(() => {
     const holder = globalThis as unknown as BrowserGlobal;
+    const arena = holder.ddGame.scene.getScene("arena");
     if (holder.__ddB22FanAttackTimer) window.clearInterval(holder.__ddB22FanAttackTimer);
     holder.__ddB22FanAttackTimer = undefined;
+    if (holder.__ddB22OriginalCurrentBeamAim) {
+      arena.currentBeamAim = holder.__ddB22OriginalCurrentBeamAim;
+      holder.__ddB22OriginalCurrentBeamAim = undefined;
+    }
   });
+}
+
+async function waitForFanDrain(page: Page): Promise<void> {
+  await expect
+    .poll(
+      () =>
+        page.evaluate(() => {
+          const arena = (globalThis as unknown as BrowserGlobal).ddGame.scene.getScene("arena");
+          let fanRows = 0;
+          arena.room.state.projectiles.forEach((projectile) => {
+            if (projectile.kind === "fan:tornado") fanRows++;
+          });
+          return fanRows;
+        }),
+      { message: "B22 damage proof should start from a drained fan projectile epoch", timeout: 5_000 },
+    )
+    .toBe(0);
 }
 
 test("B22 fan tornadoes are player-height upright traveling sole VFX with moving damage", async ({
@@ -667,9 +672,7 @@ test("B22 fan tornadoes are player-height upright traveling sole VFX with moving
       await equip(page, fixture.id);
       for (const facing of FACINGS) {
         await commitFacing(page, facing);
-        const attackSeqBefore = await fireSingleAttack(page, fixture.id, facing);
-        await waitForAccepted(page, attackSeqBefore, fixture.id);
-        await waitForTravelFrame(page, fixture.id);
+        const attackSeqBefore = await captureTravelAttack(page, fixture.id, facing);
         await stopAttack(page);
         const screenshotFile = path.join(EVIDENCE_DIR, `${fixture.id}-${facing}.png`);
         await page.locator("#game-root canvas").screenshot({ path: screenshotFile });
@@ -789,8 +792,7 @@ test("B22 fan tornadoes are player-height upright traveling sole VFX with moving
       }
     }
 
-    const nearest = await nearestDummy(page);
-    const target = await moveIntoCloseRange(page, nearest.id);
+    const target = await damageDummy(page);
     const damageProofs: Array<{
       weaponId: string;
       contact: Contact;
@@ -802,7 +804,7 @@ test("B22 fan tornadoes are player-height upright traveling sole VFX with moving
     }> = [];
     for (const fixture of FIXTURES) {
       await equip(page, fixture.id);
-      await aimAtTarget(page, target);
+      await waitForFanDrain(page);
       await beginAttacks(page, target.id, fixture.id);
       await expect
         .poll(
