@@ -38,8 +38,8 @@ export interface PetMods {
   healingReceivedMultiplier: number;
   weaponChargeCapacityAdd: number;
   descentHealMaxHpFraction: number;
-  xpMoteReachAdd: number;
-  boundaryEchoReach: number;
+  moneyDropReachAdd: number;
+  boundaryMoneyReach: number;
   earnedPickupRadius: number;
   bagCapacityAdd: number;
   saleBonusRate: number;
@@ -73,10 +73,10 @@ export const PET_CATALOG = {
   "lodestar-moth": {
     id: "lodestar-moth",
     name: "Lodestar Moth",
-    budgetKey: "economy.xp-collection",
+    budgetKey: "economy.money-collection",
     maxLevel: PET_MAX_LEVEL,
-    bonus: { kind: "xp-reach", base: 180, perLevel: 18 },
-    capstone: { kind: "boundary-echo-sweep", radius: 600 },
+    bonus: { kind: "money-reach", base: 180, perLevel: 18 },
+    capstone: { kind: "boundary-money-sweep", radius: 600 },
   },
   "copper-snail": {
     id: "copper-snail",
@@ -160,8 +160,8 @@ export function petModsForLevel(id: PetId, value: number): Readonly<PetMods> {
     healingReceivedMultiplier: 1,
     weaponChargeCapacityAdd: 0,
     descentHealMaxHpFraction: 0,
-    xpMoteReachAdd: 0,
-    boundaryEchoReach: 0,
+    moneyDropReachAdd: 0,
+    boundaryMoneyReach: 0,
     earnedPickupRadius: 0,
     bagCapacityAdd: 0,
     saleBonusRate: 0,
@@ -189,10 +189,10 @@ export function petModsForLevel(id: PetId, value: number): Readonly<PetMods> {
         mods.descentHealMaxHpFraction = def.capstone.maxHpFraction;
       }
       break;
-    case "xp-reach":
-      mods.xpMoteReachAdd = def.bonus.perLevel * level;
-      if (capstone && def.capstone.kind === "boundary-echo-sweep") {
-        mods.boundaryEchoReach = def.capstone.radius;
+    case "money-reach":
+      mods.moneyDropReachAdd = def.bonus.perLevel * level;
+      if (capstone && def.capstone.kind === "boundary-money-sweep") {
+        mods.boundaryMoneyReach = def.capstone.radius;
       }
       break;
     case "earned-pickup-reach":

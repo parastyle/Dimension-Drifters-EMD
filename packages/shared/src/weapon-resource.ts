@@ -141,7 +141,7 @@ function meleeDamageBudget(weapon: WeaponDef): number {
   );
 }
 
-/** Repaired review power used only by formula v1; rarity, stats, requirements, and affixes never enter. */
+/** Repaired review power used only by formula v1; rarity and affixes never enter. */
 export function resourceEffectivePower(
   weapon: WeaponDef,
   neutralAcceptedInterval = effectiveAcceptedWeaponInterval(weapon, weaponAttackCooldown(weapon)),

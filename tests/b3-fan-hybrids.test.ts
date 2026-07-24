@@ -90,7 +90,6 @@ describe("B3 fan projectile-hybrid catalog", () => {
       count: 1,
       spread: 0,
       pierce: 1,
-      scalingGrades: { str: "B", dex: "C" },
     });
     expect(WEAPONS["x2-ember-fan"]?.hybridProjectile).toMatchObject({
       style: "cinder-blade-cone",

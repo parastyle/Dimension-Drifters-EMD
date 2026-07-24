@@ -795,25 +795,26 @@ describe("Vastaghar flagship — authored 20 Hz authority", () => {
     expect(h.addCounts).toEqual([3]);
   });
 
-  it("conserves field XP into the reserved crown and exposes the ordered death receipt", () => {
-    expect(vastServer.conserveVastagharVictoryXp(37, vastShared.VASTAGHAR_ENCOUNTER.bossXp)).toBe(147);
+  it("conserves field money into the reserved crown and exposes the ordered death receipt", () => {
+    expect(
+      vastServer.conserveVastagharVictoryMoney(37, vastShared.VASTAGHAR_ENCOUNTER.bossMoney),
+    ).toBe(147);
     const h = makeVastagharHarness("miss");
     h.runtime.beginVictory(100, h.sink);
     expect(h.state.mode).toBe(vastShared.VastagharMode.Victory);
     expect(h.state.victoryStage).toBe(vastShared.VastagharVictoryStage.ThreatEnded);
     expect(h.runtime.advanceVictory(109)).toBe(false);
     expect(h.runtime.advanceVictory(110)).toBe(true);
-    h.runtime.setVictoryEcho("vastaghar-core:1", 147);
-    expect([h.state.victoryStage, h.state.victoryEchoId, h.state.victoryXp]).toEqual([
-      vastShared.VastagharVictoryStage.XpCrown,
-      "vastaghar-core:1",
+    h.runtime.setVictoryMoney(147);
+    expect([h.state.victoryStage, h.state.victoryMoney]).toEqual([
+      vastShared.VastagharVictoryStage.MoneyCrown,
       147,
     ]);
   });
 
   it("retains the v26 nested flagship state under schema 31", () => {
-    expect(vastShared.SCHEMA_VERSION).toBe(33);
-    expect(new vastShared.ArenaState().schemaVersion).toBe(33);
+    expect(vastShared.SCHEMA_VERSION).toBe(34);
+    expect(new vastShared.ArenaState().schemaVersion).toBe(34);
     expect(new vastShared.ArenaState().vastaghar).toBeInstanceOf(vastShared.VastagharBossState);
   });
 });

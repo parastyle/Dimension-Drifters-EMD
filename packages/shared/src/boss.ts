@@ -208,7 +208,7 @@ export enum VastagharVictoryStage {
   None = 0,
   ThreatEnded = 1,
   Collapse = 2,
-  XpCrown = 3,
+  MoneyCrown = 3,
   ReceiptHeld = 4,
   RewardsOpen = 5,
 }
@@ -243,7 +243,7 @@ export interface VastagharEncounterDef {
   addCap: number;
   addLifetimeTicks: number;
   maxDestroyedPois: number;
-  bossXp: number;
+  bossMoney: number;
   actions: Readonly<Partial<Record<VastagharActionKind, VastagharActionDef>>>;
   phaseOneDeck: readonly VastagharActionKind[];
   phaseTwoDeck: readonly VastagharActionKind[];

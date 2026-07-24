@@ -122,13 +122,12 @@ describe("weapon-data cross-references (codegen SoT)", () => {
 /**
  * §43 FIELD-LEVEL codegen guard (Sol audit data P0s #1/#2). The bijection test above only proves the id
  * SETS match — it passed for months while 11 weapons shipped with their entire mechanic block dropped
- * (stats authored as SIBLINGS of `behavior`) and 200+ supported fields (muzzleColor, bounces, per-source
- * scalingGrades…) silently vanished in the mapper. This test re-derives the authored→emitted mapping
+ * (stats authored as SIBLINGS of `behavior`) and 200+ supported fields (muzzleColor, bounces, etc.)
+ * silently vanished in the mapper. This test re-derives the authored→emitted mapping
  * INDEPENDENTLY (the clamp bands are duplicated here on purpose — two encodings must agree) and compares
  * every gameplay-bearing field. A generator that drops or mis-clamps a field now fails the BUILD.
  */
 describe("§43 expansion codegen: every authored gameplay field survives into the WeaponDef", () => {
-  type Grades = Record<string, string> | undefined;
   type Behavior = Record<string, unknown> & { kind?: string };
   type Concept = {
     id: string;
@@ -162,8 +161,6 @@ describe("§43 expansion codegen: every authored gameplay field survives into th
     hitStatus?: Behavior;
     behavior?: Behavior;
     stats?: Record<string, number>;
-    scalingGrades?: Grades;
-    requirements?: Record<string, number>;
   };
   const concepts = (readJson("../data/weapon-concepts-300.json") as { weapons: Concept[] }).weapons;
   const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
@@ -174,17 +171,13 @@ describe("§43 expansion codegen: every authored gameplay field survives into th
     "x2-saintskull-monstrance",
   ]);
 
-  const upGrades = (g: Grades) =>
-    g && Object.fromEntries(Object.entries(g).map(([a, v]) => [a, v.toUpperCase()]));
-
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const checkFields = (id: string, got: any, authored: Behavior, spec: Record<string, unknown>) => {
     for (const [field, rule] of Object.entries(spec) as [string, any][]) {
       const a = authored[field];
       if (a === undefined) continue; // defaults are the generator's business; DROPS are the bug
       const path = `${id}.${field}`;
-      if (rule.grades) expect(got?.[field], path).toEqual(upGrades(a as Grades));
-      else if (rule.eq) expect(got?.[field], path).toBe(a);
+      if (rule.eq) expect(got?.[field], path).toBe(a);
       else if (rule.int)
         expect(got?.[field] ?? rule.absentAs, path).toBe(
           iclamp(a as number, rule.int[0], rule.int[1]),
@@ -222,6 +215,16 @@ describe("§43 expansion codegen: every authored gameplay field survives into th
           (w as Record<string, unknown>)[k],
           `${w.id}.${k} must live INSIDE behavior`,
         ).toBeUndefined();
+  });
+
+  it("no concept row retains deleted scaling or requirement keys", () => {
+    const visit = (value: unknown): void => {
+      if (!value || typeof value !== "object") return;
+      expect(value).not.toHaveProperty("scalingGrades");
+      expect(value).not.toHaveProperty("requirements");
+      for (const child of Object.values(value as Record<string, unknown>)) visit(child);
+    };
+    for (const concept of concepts) visit(concept);
   });
 
   for (const w of concepts.filter((w) => !w.banned)) {
@@ -309,14 +312,6 @@ describe("§43 expansion codegen: every authored gameplay field survives into th
         },
         gripFrac: { num: [0.04, 0.5] },
       });
-      if (w.scalingGrades)
-        expect(def.scalingGrades, `${w.id}.scalingGrades`).toEqual(upGrades(w.scalingGrades));
-      if (w.requirements)
-        for (const [a, v] of Object.entries(w.requirements))
-          expect(def.requirements?.[a as never], `${w.id}.requirements.${a}`).toBe(
-            iclamp(v, 2, 20),
-          );
-
       // Mechanic block
       const isBeam = kind === "beam" || BEAM_GUN_IDS.has(w.id);
       if (isBeam) {
@@ -361,10 +356,6 @@ describe("§43 expansion codegen: every authored gameplay field survives into th
           chargeMul: 0.55,
           channelMul: 0.35,
         });
-        if (b.scalingGrades)
-          expect(def.beam?.scalingGrades, `${w.id}.beam.scalingGrades`).toEqual(
-            upGrades(b.scalingGrades as Grades),
-          );
       } else if (kind === "groundZone") {
         const zone = b.zone as Behavior | undefined;
         expect(def.groundZone, `${w.id}.groundZone`).toBeDefined();
@@ -382,7 +373,6 @@ describe("§43 expansion codegen: every authored gameplay field survives into th
             slowMultiplier: { num: [0.1, 1] },
             slowSeconds: { num: [0.05, 4] },
             grenadeArcHeight: { num: [24, 240] },
-            scalingGrades: { grades: true },
           });
         }
       } else if (kind === "cast") {
@@ -394,7 +384,6 @@ describe("§43 expansion codegen: every authored gameplay field survives into th
           cooldown: { num: [0.2, 2.5] },
           pierce: { int: [1, 99] },
           bulletKind: { eq: true },
-          scalingGrades: { grades: true },
         });
         if (b.volley)
           checkFields(w.id, def.cast?.volley, b.volley as Behavior, {
@@ -416,7 +405,6 @@ describe("§43 expansion codegen: every authored gameplay field survives into th
           checkFields(w.id, def.cast?.explode, b.explode as Behavior, {
             radius: { num: [30, 100] },
             damage: { num: [1, 30] },
-            scalingGrades: { grades: true },
           });
       } else if (kind === "gun" || ranged) {
         expect(def.gun, `${w.id}.gun`).toBeDefined();
@@ -449,13 +437,11 @@ describe("§43 expansion codegen: every authored gameplay field survives into th
           pellets: { int: [1, 12], absentAs: 1 },
           pierce: { int: [1, 6], absentAs: 1 },
           bounces: { int: [0, 6], absentAs: 0 },
-          scalingGrades: { grades: true },
         });
         if (b.explode)
           checkFields(w.id, def.gun?.explode, b.explode as Behavior, {
             radius: { num: [30, calamityHowitzer || ownerExpandedBlast ? 220 : 140] },
             damage: { num: [1, calamityHowitzer ? 60 : 30] },
-            scalingGrades: { grades: true },
           });
       } else if (kind === "thrown") {
         checkFields(w.id, def.thrown, b, {
@@ -470,7 +456,6 @@ describe("§43 expansion codegen: every authored gameplay field survives into th
           ricochetHops: { int: [0, 4] },
           ricochetRange: { num: [80, 900] },
           returning: { eq: true },
-          scalingGrades: { grades: true },
         });
       } else if (kind === "glovePair") {
         checkFields(w.id, def.glovePair, b, {
@@ -485,7 +470,6 @@ describe("§43 expansion codegen: every authored gameplay field survives into th
         checkFields(w.id, def.quake, b, {
           radius: { num: [70, 220] },
           damage: { num: [1, 30] },
-          scalingGrades: { grades: true },
         });
       } else if (kind === "chainLightning") {
         checkFields(w.id, def.chainLightning, b, {
@@ -493,7 +477,6 @@ describe("§43 expansion codegen: every authored gameplay field survives into th
           range: { num: [100, 240] },
           damage: { num: [1, 24] },
           falloff: { num: [0.5, 1] },
-          scalingGrades: { grades: true },
         });
         if (b.vfx)
           checkFields(w.id, def.chainLightning?.vfx, b.vfx as Behavior, {
@@ -509,13 +492,11 @@ describe("§43 expansion codegen: every authored gameplay field survives into th
           range: { num: [150, 700] },
           damage: { num: [1, 24] },
           pierce: { int: [1, 5], absentAs: 1 },
-          scalingGrades: { grades: true },
         });
         if (b.explode)
           checkFields(w.id, def.scatter?.explode, b.explode as Behavior, {
             radius: { num: [30, 80] },
             damage: { num: [1, 30] },
-            scalingGrades: { grades: true },
           });
       }
     });

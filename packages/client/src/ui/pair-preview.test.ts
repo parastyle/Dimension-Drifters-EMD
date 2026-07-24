@@ -8,14 +8,11 @@ import {
 import { describe, expect, it } from "vitest";
 import { pairPreview } from "./pair-preview.js";
 
-const attrs = { str: 7, dex: 8, int: 1, con: 2, luk: 3 };
-
 describe("pairPreview", () => {
   it("shows a deterministic eligible gun pair, better-half fee, and separate magazines", () => {
     const preview = pairPreview({
       lead: { weaponId: "x-gun-nailgun", rarity: 1, affix: "swift", earned: true },
       off: { weaponId: "x-gun-ricochet-pistol", rarity: 3, affix: "keen", earned: true },
-      attrs,
       loadoutIds: ["x-gun-nailgun", "x-gun-ricochet-pistol", "rusty-cleaver"],
     });
     expect(preview.eligible).toBe(true);
@@ -30,7 +27,6 @@ describe("pairPreview", () => {
     const preview = pairPreview({
       lead: { weaponId: "x-gun-nailgun", rarity: 0, affix: "swift", earned: false },
       off: { weaponId: "x-gun-ricochet-pistol", rarity: 0, affix: "keen", earned: false },
-      attrs,
       loadoutIds: ["x-gun-nailgun", "x-gun-ricochet-pistol"],
     });
     const lead = WEAPONS["x-gun-nailgun"];
@@ -47,7 +43,6 @@ describe("pairPreview", () => {
     const preview = pairPreview({
       lead: { weaponId: "x-gun-nailgun", rarity: 4, affix: "", earned: false },
       off: { weaponId: "x-gun-ricochet-pistol", rarity: 4, affix: "", earned: false },
-      attrs: { str: 1, dex: 1, int: 1, con: 1, luk: 1 },
       loadoutIds: ["x-gun-nailgun", "x-gun-ricochet-pistol"],
     });
     const lead = WEAPONS["x-gun-nailgun"];
@@ -63,7 +58,6 @@ describe("pairPreview", () => {
     const preview = pairPreview({
       lead: { weaponId: "x-gun-nailgun", rarity: 2, affix: "", earned: true },
       off: { weaponId: "x-gun-nailgun", rarity: 2, affix: "", earned: true },
-      attrs,
       loadoutIds: ["x-gun-nailgun"],
     });
     expect(preview.eligible).toBe(false);

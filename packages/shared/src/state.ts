@@ -101,36 +101,9 @@ export class PlayerState extends Schema {
    *  held GUN barrel + render their shots along their real aim. The local player uses its own live cursor;
    *  this drives remote players' gun pose. Updated server-side from the aim each shot. */
   @type("number") aimDir = 0;
-  /** §12 leveling (synced for the HUD). XP is squad-shared, so all players level in lockstep. */
-  @type("number") level = 1;
-  /** Current XP toward the next level. */
-  @type("number") xp = 0;
-  /** XP needed to reach the next level (xpToNextLevel(level)). */
-  @type("number") xpToNext = 6;
-  /** The five attributes (§11). Schema defaults are safe placeholders; run snapshots seed the sum-10 spread. */
-  @type("number") str = 1;
-  @type("number") dex = 1;
-  @type("number") int = 1;
-  @type("number") con = 1;
-  @type("number") luk = 1;
-  /** Unresolved level-up decisions (§classmerge). Each resolves +2 chosen and +1 ballast. While > 0 the
-   *  player is frozen, untargeted, and invincible inside the choice window. */
-  @type("number") flexPending = 0;
-  /** Reserved wire slot for the old per-tick float. Kept fixed so later PlayerState field offsets do not
-   *  move; the client reads the appended integer-decisecond `flexTimerDs` instead. */
-  @type("number") flexTimerLegacy = 0;
-  /** Precise seconds left in the level-up window. Server-only (not decorated / not serialized). */
-  flexTimer = 0;
-  /** Server-private: true after an authored run boundary has installed a sum-10 identity spread. */
-  spreadSeeded = false;
   /** §8 owned parry augments — CSV of augment ids (repeats = stacks). Drives the parry handler's offense
    *  (server) + the owned-augment HUD (client). */
   @type("string") augments = "";
-  /** §8/§12 signature picks owed (one per 5th level). While > 0 the level-up window stays open offering
-   *  an augment draft; the player is frozen + immune just like the flex-point pick. */
-  @type("number") sigPending = 0;
-  /** §8 the current 3-of-9 augment DRAFT offered for the open signature pick — CSV of augment ids. */
-  @type("string") sigOffer = "";
   /** Thrown-weapon charges remaining + max (§9/§10 charge readout). 0/0 = not a thrown weapon. */
   @type("number") charges = 0;
   @type("number") maxCharges = 0;
@@ -194,8 +167,6 @@ export class PlayerState extends Schema {
   @type("uint8") upVitality = 0;
   @type("uint8") upFortune = 0;
   @type("uint8") upPower = 0;
-  /** Level-window time remaining in integer deciseconds. Appended wire replacement for the legacy float. */
-  @type("uint16") flexTimerDs = 0;
   // ── SYNCED ATTACK BEAT — APPENDED for wire safety. Weapon identity + `aimDir` already describe the pose;
   // these fields expose only the authoritative acceptance edge so remote clients can start its animation.
   /** Monotonic uint32 counter bumped exactly once when the server accepts and fires an attack. */
@@ -204,9 +175,6 @@ export class PlayerState extends Schema {
   @type("uint32") attackTick = 0;
   /** True while the last accepted attack remains inside `ATTACK_HELD_WINDOW`; cleared by the server. */
   @type("boolean") attackHeld = false;
-  /** G-09 signature delivery identities captured when each signature level is earned. Semicolon-separated
-   * queue entries (for example `cast+beam`); APPENDED at schema v18 so a swap cannot reroll an owed draft. */
-  @type("string") sigGateQueue = "";
   /** §51 JUGGLED edge (APPENDED at schema v19, after every v18 field): bumped exactly once each time this
    *  player is LAUNCHED or air-kept by a tough-combo juggle hit — the client edge-fires the hit-reaction /
    *  tumble pose off changes. The arc itself rides the existing synced `height`/`vh` channels. */
@@ -347,18 +315,11 @@ export class PlayerState extends Schema {
     this.ultimate.targetY = value;
   }
 
-  /** Server-only §ULT allocation truth. Base spreads/meta bonuses never enter this tally. */
-  allocRun: Record<Attr, number> = { str: 0, dex: 0, int: 0, con: 0, luk: 0 };
   /** Server-only identity guard: true only when a validated v3 loadout, not a character fallback, seeded. */
   gearSeeded = false;
-  /** Frozen allocation routing rule; gear application never mutates allocRun itself. */
-  identityBallastFollowsChoice = false;
-  /** Frozen authored max-HP addition, reused when CON allocations re-derive max HP. */
-  gearMaxHpAdd = 0;
   /** Locked family/variant state is private; ultArchetype is its packed read-only presentation. */
   ultFamily = 0;
   ultVariant: Attr | "" = "";
-  ultTempered = false;
 }
 
 /** One authoritative enemy (§15). Full Tier-1 sync for the POC (modest counts). */
@@ -480,12 +441,11 @@ export class PickupState extends Schema {
 }
 
 /**
- * One bounded, server-authoritative kill-XP packet. Resting rows keep `collectorId` empty and never mutate
- * their position per tick. A latch writes one collector plus immutable launch/arrival ticks; clients sample
- * the curved flight locally from that descriptor. `delivered` remains true for one complete patch so the
- * visible catch, squad XP mutation, and HUD pulse share an observable authoritative edge.
+ * One bounded, server-authoritative money drop. The server owns collection and scrip credit; clients render
+ * the resting/flight descriptor. `delivered` remains true for one patch so the pickup presentation has an
+ * authoritative receipt edge.
  */
-export class XpEchoState extends Schema {
+export class MoneyDropState extends Schema {
   @type("string") id = "";
   @type("number") x = 0;
   @type("number") y = 0;
@@ -665,8 +625,7 @@ export class VastagharBossState extends Schema {
   @type("uint32") cueTick = 0;
   @type("uint8") victoryStage = 0;
   @type("uint32") victoryTick = 0;
-  @type("uint32") victoryXp = 0;
-  @type("string") victoryEchoId = "";
+  @type("uint32") victoryMoney = 0;
 }
 
 export class ArenaState extends Schema {
@@ -749,8 +708,8 @@ export class ArenaState extends Schema {
   @type("number") beltShopX = 0;
   /** Whole elapsed run seconds for the HUD. Appended wire replacement for the legacy per-tick float. */
   @type("uint32") elapsedSeconds = 0;
-  /** Authoritative kill-XP packets. APPENDED for wire safety; weapon pickups keep their separate contract. */
-  @type({ map: XpEchoState }) xpEchoes = new MapSchema<XpEchoState>();
+  /** Collectible enemy money rewards introduced with schema v34. */
+  @type({ map: MoneyDropState }) moneyDrops = new MapSchema<MoneyDropState>();
   /** Friendly player beams. APPENDED for Colyseus field-order safety; keyed by owner/player id. */
   @type({ map: BeamState }) beams = new MapSchema<BeamState>();
   /** Serraketh owner + fixed-cap segment table. APPENDED at schema v17; never inserted into older rows. */

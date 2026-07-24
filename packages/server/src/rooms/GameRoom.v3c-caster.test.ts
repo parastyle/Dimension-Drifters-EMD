@@ -71,7 +71,7 @@ describe("GameRoom — V3C caster authority", () => {
     const damages = projectiles.map((row) => room.projectileMeta.get(row.id)?.damage ?? 0);
     const expectedTotal =
       definition.cast.damage *
-      room.heldCastDamageMult(definition, definition.cast.scalingGrades, player, 0);
+      room.heldCastDamageMult(definition, player, 0);
     expect(projectiles).toHaveLength(3);
     expect(new Set(damages.map((damage) => damage.toFixed(8))).size).toBe(1);
     expect(damages.reduce((sum, damage) => sum + damage, 0)).toBeCloseTo(expectedTotal, 8);

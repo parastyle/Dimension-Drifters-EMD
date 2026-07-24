@@ -140,16 +140,6 @@ function bossSize(kind) {
   return "large";
 }
 
-function topStats(spread) {
-  const pairs = Object.entries(spread ?? {}).sort((a, b) => Number(b[1]) - Number(a[1]));
-  if (!pairs.length) return "no spread";
-  const peak = Number(pairs[0][1]);
-  return pairs
-    .filter(([, value]) => Number(value) === peak)
-    .map(([key]) => key.toUpperCase())
-    .join("/");
-}
-
 const weaponIds = [...ACTIVE_WEAPON_CATALOG_IDS];
 const weapons = weaponIds.map((id) => {
   const weapon = WEAPONS[id];
@@ -441,11 +431,7 @@ const augments = augmentIds.map((id) => {
 });
 
 const characters = PLAYABLE_CHARACTERS.map((id) => {
-  const kit = CHARACTER_KITS[id] ?? { spread: {}, quirk: "unwritten" };
-  const spreadTotal = Object.values(kit.spread ?? {}).reduce(
-    (sum, value) => sum + Number(value),
-    0,
-  );
+  const kit = CHARACTER_KITS[id] ?? { quirk: "unwritten" };
   const quirk = kit.quirk ?? "unwritten";
   return {
     key: id,
@@ -454,10 +440,9 @@ const characters = PLAYABLE_CHARACTERS.map((id) => {
     name: characterName(id),
     thumb: rigThumbnail(id),
     glyph: "C",
-    facts: [prettyId(quirk), `spread ${spreadTotal}`, `peak ${topStats(kit.spread)}`],
-    keywords: [quirk, ...Object.entries(kit.spread ?? {}).map(([key, value]) => `${key} ${value}`)],
+    facts: [prettyId(quirk), "identity only"],
+    keywords: [quirk],
     quirk,
-    peak: topStats(kit.spread),
     action: "launch",
     path: `/?dev=char:${encodeURIComponent(id)}`,
     actionLabel: "Wear in Testing Grounds",

@@ -45,10 +45,9 @@ describe("ultimateInputAffordance", () => {
 });
 
 describe("ultimate reveal release latch", () => {
-  it("waits for both the level window and its release latch", () => {
-    expect(canReleaseUltimateReveal(true, true, true, true)).toBe(false);
-    expect(canReleaseUltimateReveal(true, false, true, true)).toBe(false);
-    expect(canReleaseUltimateReveal(true, false, false, true)).toBe(true);
-    expect(canReleaseUltimateReveal(true, false, false, false)).toBe(false);
+  it("waits for the modal release latch without a level-window gate", () => {
+    expect(canReleaseUltimateReveal(true, true, true)).toBe(false);
+    expect(canReleaseUltimateReveal(true, false, true)).toBe(true);
+    expect(canReleaseUltimateReveal(true, false, false)).toBe(false);
   });
 });

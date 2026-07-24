@@ -37,7 +37,6 @@ import {
   DEFAULT_WEAPON,
   DEFLECT_TTL,
   DEPTH_MAX,
-  damageMultFromGrades,
   depthHpScale,
   EMBERGUARD_HALF_ARC,
   EMBERGUARD_RANGE,
@@ -64,7 +63,6 @@ import {
   isPitAtPx,
   isThrownProjectileKind,
   isWholeArtCharacter,
-  LEVELUP_WINDOW_SECONDS,
   landingThumpTier,
   lootCooldownMult,
   lootDamageMult,
@@ -85,7 +83,6 @@ import {
   type PlayerState,
   POUND_RADIUS,
   pairEligible,
-  pairRequirementPenalty,
   petLevelForXp,
   petModsForLevel,
   QUAKE_REACH,
@@ -96,7 +93,6 @@ import {
   ROLL_SPEED_CURVE,
   ROLL_TICK_SECONDS,
   ROOM_NAME,
-  requirementPenalty,
   SALVAGE_HOLD_SECONDS,
   SCHEMA_VERSION,
   SHOP_RADIUS,
@@ -209,14 +205,6 @@ import {
 } from "../ui/armory-ui/tokens.js";
 import { DamageNumberRenderer } from "../ui/damage-numbers.js";
 import { driveCostView, driveHudView } from "../ui/drive-hud.js";
-import { spawnLevelConfirmEffect } from "../ui/level-up-effects.js";
-import { type LevelUpMode, levelUpLayout, levelUpLayoutKey } from "../ui/level-up-layout.js";
-import {
-  attributeChoiceViews,
-  augmentChoiceViews,
-  type LevelChoiceView,
-  levelBuildContext,
-} from "../ui/level-up-model.js";
 import {
   type ObjectiveHudRect,
   objectiveHudCopy,
@@ -300,6 +288,7 @@ import {
   spawnKungFuWrapSwing,
 } from "../vfx/kung-fu-wrap-vfx.js";
 import { pageProjectileArtFor, preloadPageProjectileArt } from "../vfx/page-projectile-art.js";
+import { MoneyDropRenderer } from "../vfx/money-drops.js";
 import {
   elementPack,
   paintedParticlePixels,
@@ -334,7 +323,6 @@ import {
   spawnWeaponRadialIdentity,
   spawnWeaponSwingIdentity,
 } from "../vfx/weapon-effect-vfx.js";
-import { type XpMotePoint, type XpMoteReceipt, XpMoteRenderer } from "../vfx/xp-motes.js";
 import { localAttackCooldownSeconds } from "./arena/attack-cadence.js";
 import {
   bakeCardArt,
@@ -637,17 +625,6 @@ function poundRingColor(id: string): number {
     default:
       return 0x78e3a4;
   }
-}
-
-interface LevelChoiceControl {
-  root: Phaser.GameObjects.Container;
-  face: Phaser.GameObjects.Rectangle;
-  focusRing: Phaser.GameObjects.Graphics;
-  zone: Phaser.GameObjects.Rectangle;
-  restY: number;
-  side: number;
-  view: LevelChoiceView;
-  send: () => void;
 }
 
 type CarouselDockState = "dormant" | "peek" | "focused" | "fading";
@@ -1259,6 +1236,7 @@ export class ArenaScene extends Phaser.Scene {
   private paperPeakObjects = 0;
   /** Plays each weapon's authored VFX suite (§14 CODE-8) on its swing via the shared renderer. */
   private vfxPlayer!: VfxPlayer;
+  private moneyDropRenderer!: MoneyDropRenderer;
   private beamRenderer!: BeamRenderer;
   private ultimateVfx!: UltimateVfx;
   /** One fixed-pool flagship director; semantic epochs never compete with player VFX surfaces. */
@@ -1269,9 +1247,7 @@ export class ArenaScene extends Phaser.Scene {
   private ultimateCastPendingUntil = -1e9;
   private ultimateHudPulseUntil = -1e9;
   private queuedUltimateReveal?: UltimateRevealDescriptor;
-  private queuedUltimateTemper = false;
   private ultimateRevealBusyUntil = -1e9;
-  private lastUltimateSelfLevel = -1;
   private beamPredictionStartSeq = -1;
   private beamPredictionHeld = false;
   private beamPredictionAccepted = false;
@@ -1311,9 +1287,6 @@ export class ArenaScene extends Phaser.Scene {
     return true;
   };
   private readonly beamAimCommand = { aimX: 1, aimY: 0, targetX: 0, targetY: 0 };
-  /** Bounded painted renderer for the server-authoritative kill-XP Echo map. */
-  private xpMotes!: XpMoteRenderer;
-  private vastagharCrownCaught = false;
   /** §19 v0.108 procedural audio — the whole game's SFX play through this (see AudioBus). Shared across
    *  scene re-entries via the registry so the volume/mute setting + context survive a menu round-trip. */
   private audio!: AudioBus;
@@ -1551,19 +1524,8 @@ export class ArenaScene extends Phaser.Scene {
   private ownerNoteKeyboardPaused = false;
   private jugglePulseUntil = -1e9;
   private hurtFlash = 0;
-  /** §19 v0.108 polish — smoothed bar fills (lerp toward the true ratio), so hits/heals/XP read as
-   *  motion, not a per-patch jump. -1 = uninitialised (snap on the first frame). */
+  /** Smoothed HP fill; -1 means uninitialised. */
   private hpShown = -1;
-  private xpShown = -1;
-  /** 0..1 receipt punch; changes XP-bar height/brightness, never its authoritative width. */
-  private xpPulse = 0;
-  private xpAudioStreak = 0;
-  private xpAudioLastAt = -9999;
-  private xpReceiptLastAt = -9999;
-  private readonly xpReceiptBatches = new Map<
-    string,
-    { value: number; x: number; y: number; lastAt: number }
-  >();
   private bossShown = -1;
   private selfAim = { x: 1, y: 0 };
   /** §7 v0.105 de-clunk — spectate camera easing: which teammate we're trailing while downed, plus a
@@ -1718,15 +1680,11 @@ export class ArenaScene extends Phaser.Scene {
   private hpBarBg!: Phaser.GameObjects.Rectangle;
   private hpBarFill!: Phaser.GameObjects.Rectangle;
   private hpText!: Phaser.GameObjects.Text;
-  private xpBarBg!: Phaser.GameObjects.Rectangle;
-  private xpBarFill!: Phaser.GameObjects.Rectangle;
   private driveHudGfx?: Phaser.GameObjects.Graphics;
   private driveHudText?: Phaser.GameObjects.Text;
   private driveLocked = false;
   private ultimateHudGfx?: Phaser.GameObjects.Graphics;
   private ultimateHudText?: Phaser.GameObjects.Text;
-  private levelText!: Phaser.GameObjects.Text;
-  private prevLevel = -1;
   // §16 boss/extraction run loop.
   private bossBarBg!: Phaser.GameObjects.Rectangle;
   private bossBarFill!: Phaser.GameObjects.Rectangle;
@@ -1750,27 +1708,6 @@ export class ArenaScene extends Phaser.Scene {
    *  a 1× baseline and `applyHudScale` grows every element on big viewports so it stays proportionate; we
    *  only re-apply when `uiScale()` actually changes (a resize), not every frame. */
   private hudScale = -1;
-  // §12 level-up window (attribute allocation).
-  private levelWinObjects: Phaser.GameObjects.GameObject[] = [];
-  private levelWinKey = "";
-  private levelWinMode: LevelUpMode | "" = "";
-  private levelWinTimerBar?: Phaser.GameObjects.Rectangle;
-  private levelWinTimerText?: Phaser.GameObjects.Text;
-  private levelWinStatusText?: Phaser.GameObjects.Text;
-  private levelWinTimerWidth = 0;
-  private levelWinTimerSampleDs = -1;
-  private levelWinTimerSampleAt = 0;
-  private levelWinAutoLabel = "";
-  private levelWinDim?: Phaser.GameObjects.Rectangle;
-  private levelWinLower?: Phaser.GameObjects.Container;
-  private levelWinUpper?: Phaser.GameObjects.Container;
-  private levelWinChoices: LevelChoiceControl[] = [];
-  private levelWinFocus = 0;
-  private levelWinAwaitingRelease = true;
-  /** Counter tweens target plain values, so the modal must explicitly remove them at every offer edge. */
-  private levelWinPaperCounters: Phaser.Tweens.Tween[] = [];
-  private levelWinSelectionSent = false;
-  private levelWinInputReleaseLatch = false;
   private deathText!: Phaser.GameObjects.Text;
   private restartBtn!: Phaser.GameObjects.Text;
   // §21 Testing-Grounds Tab summon menu (dev): pick a monster kind + a multiplier to conjure it.
@@ -2056,8 +1993,8 @@ export class ArenaScene extends Phaser.Scene {
    */
   private resetSceneState(): void {
     // Defensive as well as shutdown-driven: a direct create cannot inherit global listeners or a room.
-    this.xpMotes?.destroy();
     this.beamRenderer?.destroy();
+    this.moneyDropRenderer?.destroy();
     this.ultimateVfx?.destroy();
     this.vastagharVfx?.destroy();
     this.damageNumberRenderer?.destroy();
@@ -2073,7 +2010,6 @@ export class ArenaScene extends Phaser.Scene {
     this.removeSceneListeners();
     this.leaveCurrentRoom();
     this.destroyPaperPagePool();
-    this.clearLevelPaperCounters();
 
     // Entity, reconciliation, and event-history collections.
     this.blobs.clear();
@@ -2105,7 +2041,6 @@ export class ArenaScene extends Phaser.Scene {
     this.enemyBufs.clear();
     this.snapFell.clear();
     this.enemyHp.clear();
-    this.vastagharCrownCaught = false;
     this.enemyCrit.clear();
     this.enemyFlinches.clear();
     this.predictedMeleeContacts.length = 0;
@@ -2119,7 +2054,6 @@ export class ArenaScene extends Phaser.Scene {
     this.pickups.clear();
     this.projectiles.clear();
     this.zones.clear();
-    this.xpReceiptBatches.clear();
     this.lastFell.clear();
     this.jugglePresentation.clear();
     this.pendingArt.clear();
@@ -2130,8 +2064,6 @@ export class ArenaScene extends Phaser.Scene {
     this.poiSprites = [];
     this.dust.length = 0;
     this.floorObjs = [];
-    this.levelWinObjects = [];
-    this.levelWinChoices = [];
     this.summonObjects = [];
     this.carouselDock = undefined;
     this.arsenalTexts = [];
@@ -2163,7 +2095,6 @@ export class ArenaScene extends Phaser.Scene {
     this.beamRenderer = undefined!;
     this.ultimateVfx = undefined as unknown as UltimateVfx;
     this.vastagharVfx = undefined as unknown as VastagharVfx;
-    this.xpMotes = undefined!;
     this.damageNumberRenderer = undefined!;
     this.hitEffectRenderer = undefined!;
     this.combatFeedback = undefined!;
@@ -2200,13 +2131,10 @@ export class ArenaScene extends Phaser.Scene {
     this.hpBarBg = undefined!;
     this.hpBarFill = undefined!;
     this.hpText = undefined!;
-    this.xpBarBg = undefined!;
-    this.xpBarFill = undefined!;
     this.driveHudGfx = undefined;
     this.driveHudText = undefined;
     this.ultimateHudGfx = undefined;
     this.ultimateHudText = undefined;
-    this.levelText = undefined!;
     this.bossBarBg = undefined!;
     this.bossBarFill = undefined!;
     this.bossBarSegments = undefined!;
@@ -2214,12 +2142,6 @@ export class ArenaScene extends Phaser.Scene {
     this.victoryText = undefined!;
     this.portal = undefined;
     this.rift = undefined;
-    this.levelWinTimerBar = undefined;
-    this.levelWinTimerText = undefined;
-    this.levelWinStatusText = undefined;
-    this.levelWinDim = undefined;
-    this.levelWinLower = undefined;
-    this.levelWinUpper = undefined;
     this.deathText = undefined!;
     this.restartBtn = undefined!;
     this.grabGfx = undefined!;
@@ -2280,11 +2202,6 @@ export class ArenaScene extends Phaser.Scene {
     this.hurtFlash = 0;
     this.jugglePulseUntil = -1e9;
     this.hpShown = -1;
-    this.xpShown = -1;
-    this.xpPulse = 0;
-    this.xpAudioStreak = 0;
-    this.xpAudioLastAt = -9999;
-    this.xpReceiptLastAt = -9999;
     this.bossShown = -1;
     this.selfAim.x = 1;
     this.selfAim.y = 0;
@@ -2332,20 +2249,12 @@ export class ArenaScene extends Phaser.Scene {
     this.paperWorldFoldSeq = 0;
     this.paperPeakObjects = 0;
     this.prevHeldLoot = "";
-    this.prevLevel = -1;
     this.bannerShownFor = "";
     this.bannerSlot = 0;
     this.lastBannerAt = -9999;
     this.prevBossPresent = false;
     this.prevWon = false;
     this.hudScale = -1;
-    this.levelWinKey = "";
-    this.levelWinMode = "";
-    this.levelWinSelectionSent = false;
-    this.levelWinInputReleaseLatch = false;
-    this.levelWinFocus = 0;
-    this.levelWinAwaitingRelease = true;
-    this.levelWinTimerSampleDs = -1;
     this.summonOpen = false;
     this.summonCount = 1;
     this.summonTough = false;
@@ -2370,18 +2279,16 @@ export class ArenaScene extends Phaser.Scene {
     this.ultimateCastPendingUntil = -1e9;
     this.ultimateHudPulseUntil = -1e9;
     this.queuedUltimateReveal = undefined;
-    this.queuedUltimateTemper = false;
     this.ultimateRevealBusyUntil = -1e9;
-    this.lastUltimateSelfLevel = -1;
   }
 
   /** §4 the single shutdown path for globals and network ownership. */
   private shutdownScene(): void {
     this.connectionGeneration++;
-    this.xpMotes?.destroy();
-    this.xpMotes = undefined!;
     this.beamRenderer?.destroy();
     this.beamRenderer = undefined!;
+    this.moneyDropRenderer?.destroy();
+    this.moneyDropRenderer = undefined!;
     this.ultimateVfx?.destroy();
     this.ultimateVfx = undefined as unknown as UltimateVfx;
     this.vastagharVfx?.destroy();
@@ -2403,7 +2310,6 @@ export class ArenaScene extends Phaser.Scene {
     this.petOwnerHp.clear();
     this.petPickupEligibility.clear();
     this.destroyPaperPagePool();
-    this.clearLevelPaperCounters();
     this.removeSceneListeners();
     this.leaveCurrentRoom();
   }
@@ -2419,6 +2325,20 @@ export class ArenaScene extends Phaser.Scene {
     // The themed floor (bed/grid/rail + pits/rim) is drawn in `maybeBuildFloor` once the server's seeds +
     // `dimensionId` sync — so it uses the ACTIVE §17 dimension's palette, not a guessed default.
     this.vfxPlayer = new VfxPlayer(this);
+    this.moneyDropRenderer = new MoneyDropRenderer(this, {
+      target: (playerId, out) => {
+        const rig = this.blobs.get(playerId);
+        if (!rig) return false;
+        out.x = rig.root.x;
+        out.y = rig.root.y - 20;
+        return true;
+      },
+      project: (x, y, out) => {
+        out.x = x;
+        out.y = this.belt ? this.beltY(y) : y;
+      },
+      receipt: (value) => this.flashBanner(`+$${value} MONEY`, "#ffd45c"),
+    });
     this.beamRenderer = new BeamRenderer(this);
     this.ultimateVfx = new UltimateVfx(this, {
       actor: (ownerId, out) => {
@@ -2449,7 +2369,7 @@ export class ArenaScene extends Phaser.Scene {
     // §TELEGRAPH the exact, quality-invariant footprint sits with ground gameplay markings, not over actors.
     this.telegraphGroundGfx = this.add.graphics().setDepth(3);
     this.telegraphForeshadows = new TelegraphForeshadowPool(this);
-    // Thin response boundaries and compact source cues stay above beams/XP, below HUD.
+    // Thin response boundaries and compact source cues stay above beams, below HUD.
     this.telegraphGfx = this.add.graphics().setDepth(99997);
     // H10: the local player's parry-state ring. Just under the white-tell layer + above the bodies, so the
     // "ready vs recovering vs i-frames-up" read sits right on your own drifter.
@@ -2475,7 +2395,6 @@ export class ArenaScene extends Phaser.Scene {
     this.juggleVignette = this.add.graphics().setScrollFactor(0).setDepth(99998).setAlpha(0);
     this.hurtFlash = 0;
     this.hpShown = -1;
-    this.xpShown = -1;
     this.bossShown = -1;
 
     // §19 v0.108 audio — ONE AudioBus shared across scene re-entries via the game registry (so the
@@ -2530,12 +2449,6 @@ export class ArenaScene extends Phaser.Scene {
       this.audio.setConfirmVolume(settings.feedback.confirmVolume ?? 1, false);
       this.damageNumberRenderer.applySettings(settings.feedback);
     });
-    this.xpMotes = new XpMoteRenderer(this, {
-      target: (collectorId, out) => this.xpCatchPoint(collectorId, out),
-      project: (x, y, out) => this.projectXpPoint(x, y, out),
-      receipt: (event) => this.onXpReceipt(event),
-    });
-
     const keyboard = this.input.keyboard;
     if (!keyboard) throw new Error("Keyboard input unavailable");
     this.keys = keyboard.addKeys(
@@ -2711,12 +2624,9 @@ export class ArenaScene extends Phaser.Scene {
   private applyHudScale(s: number): void {
     this.hpBarBg.setSize(240 * s, 18 * s);
     this.hpBarFill.setSize(236 * s, 12 * s);
-    this.xpBarBg.setSize(240 * s, 8 * s);
-    this.xpBarFill.setSize(236 * s, 4 * s);
     this.bossBarBg.setSize(520 * s, 16 * s);
     this.bossBarFill.setSize(516 * s, 12 * s);
     this.hpText.setFontSize(12 * s);
-    this.levelText.setFontSize(13 * s);
     this.weaponText.setFontSize(13 * s);
     this.augmentText.setFontSize(12 * s);
     this.objectiveText.setFontSize(Math.max(15, 16 * s));
@@ -2750,18 +2660,6 @@ export class ArenaScene extends Phaser.Scene {
       .setOrigin(0, 0.5)
       .setDepth(100002);
 
-    // XP bar (thin, sits above the HP bar) + level badge (§12).
-    this.xpBarBg = this.add
-      .rectangle(0, 0, 240, 8, 0x1c2230, 0.85)
-      .setScrollFactor(0)
-      .setOrigin(0, 0.5)
-      .setStrokeStyle(2, 0x000000)
-      .setDepth(100000);
-    this.xpBarFill = this.add
-      .rectangle(0, 0, 236, 4, 0x6fd6ff)
-      .setScrollFactor(0)
-      .setOrigin(0, 0.5)
-      .setDepth(100001);
     this.driveHudGfx = this.add.graphics().setScrollFactor(0).setDepth(100005);
     this.driveHudText = this.add
       .text(0, 0, "", {
@@ -2787,20 +2685,6 @@ export class ArenaScene extends Phaser.Scene {
       .setOrigin(1, 1)
       .setDepth(100006)
       .setVisible(false);
-    this.levelText = this.add
-      .text(0, 0, "", {
-        fontFamily: "monospace",
-        fontSize: "13px",
-        color: "#ffd479",
-        fontStyle: "bold",
-        backgroundColor: "#0a0805",
-        padding: { x: 4, y: 2 },
-      })
-      .setScrollFactor(0)
-      .setOrigin(0, 1)
-      .setShadow(0, 1, "#000000", 2, true, true)
-      .setResolution(Math.max(2, Math.ceil(RENDER_DPR)))
-      .setDepth(100002);
     this.deathText = this.add
       .text(0, 0, "DOWNED — respawning…\n(click Restart Run, top-right)", {
         fontSize: "26px",
@@ -3547,18 +3431,6 @@ export class ArenaScene extends Phaser.Scene {
       }
       this.lastUltimateArchetype.set(id, code);
 
-      if (id === selfId) {
-        if (
-          this.lastUltimateSelfLevel >= 0 &&
-          this.lastUltimateSelfLevel < 11 &&
-          player.level >= 11 &&
-          code !== 0
-        ) {
-          this.queuedUltimateTemper = true;
-        }
-        this.lastUltimateSelfLevel = player.level;
-      }
-
       const seq = row.seq & 0xffff;
       const previous = this.lastUltimateSeq.get(id);
       const edge = ultimateSeqEdge(previous, seq, row.charge, row.phase);
@@ -3617,12 +3489,11 @@ export class ArenaScene extends Phaser.Scene {
   }
 
   private maybePlayUltimateReveal(self: PlayerState | undefined): void {
-    const pending = !!this.queuedUltimateReveal || this.queuedUltimateTemper;
+    const pending = !!this.queuedUltimateReveal;
     if (
       !canReleaseUltimateReveal(
         pending,
-        this.inLevelWindow(self),
-        this.levelWinInputReleaseLatch || this.verbs.isModalBlocking(),
+        this.verbs.isModalBlocking(),
         !!self?.alive,
       ) ||
       this.time.now < this.ultimateRevealBusyUntil
@@ -3636,16 +3507,6 @@ export class ArenaScene extends Phaser.Scene {
       this.ultimateRevealBusyUntil = this.time.now + 1_900;
       return;
     }
-    this.queuedUltimateTemper = false;
-    const family = ultimateFamilyForCode(self?.ultimate.archetype ?? 0);
-    playUltimateStamp(
-      this,
-      this.screenW(),
-      this.screenH(),
-      `10TH ATTUNEMENT · ${family === UltimateFamily.Locked ? "TEMPERED" : "VARIANT TEMPERED"}`,
-    );
-    this.audio.play("ult:temper");
-    this.ultimateRevealBusyUntil = this.time.now + 1_050;
   }
 
   private updateUltimateVfx(): void {
@@ -4560,14 +4421,8 @@ export class ArenaScene extends Phaser.Scene {
   }
 
   override update(_time: number, deltaMs: number): void {
-    const preSelf = this.room?.state.players?.get(this.room.sessionId);
-    const competingLevelModal = this.inLevelWindow(preSelf) || this.levelWinInputReleaseLatch;
     const ownerNoteModalOpen = !!this.ownerNoteUi?.isOpen();
-    if (competingLevelModal) {
-      if (ownerNoteModalOpen) this.ownerNoteUi?.close();
-      this.verbs.closeForCompetingModal(this.time.now);
-      this.verbs.retireHint();
-    } else if (!ownerNoteModalOpen && Phaser.Input.Keyboard.JustDown(this.keys.H)) {
+    if (!ownerNoteModalOpen && Phaser.Input.Keyboard.JustDown(this.keys.H)) {
       if (!this.verbs.isLegendOpen()) {
         this.bagOpen = false;
         this.shopOpen = false;
@@ -4600,11 +4455,6 @@ export class ArenaScene extends Phaser.Scene {
     const beltShopX = this.belt ? (this.room.state.beltShopX ?? 0) : 0;
     const nearBeltShop =
       this.belt && !!selfP && beltShopX > 0 && Math.abs(selfP.x - beltShopX) <= SHOP_RADIUS;
-    const levelWindowOpen = this.inLevelWindow(selfP);
-    if (!levelWindowOpen && this.levelWinInputReleaseLatch && this.levelWindowInputsReleased()) {
-      this.levelWinInputReleaseLatch = false;
-    }
-    if (levelWindowOpen) this.handleLevelWindowInput();
     if (this.summonOpen && this.room.state.mode !== "training") this.closeSummonMenu();
     const summonClosePressed =
       this.summonOpen &&
@@ -4622,8 +4472,6 @@ export class ArenaScene extends Phaser.Scene {
     if (this.shopOpen && !nearBeltShop) this.closeBackpackModal();
     const armoryModalOpen = this.bagOpen || this.shopOpen;
     const higherModalOpen =
-      levelWindowOpen ||
-      this.levelWinInputReleaseLatch ||
       this.verbs.isModalBlocking() ||
       this.summonOpen ||
       summonClosePressed ||
@@ -4666,8 +4514,6 @@ export class ArenaScene extends Phaser.Scene {
       if (armoryInput.close || (this.shopOpen && ultimatePressed)) this.closeBackpackModal();
     }
     const competingModalOpen =
-      levelWindowOpen ||
-      this.levelWinInputReleaseLatch ||
       this.verbs.isModalBlocking() ||
       this.summonOpen ||
       summonClosePressed ||
@@ -4680,7 +4526,7 @@ export class ArenaScene extends Phaser.Scene {
     });
     if (ownerNoteInput.openNote && selfP) this.openOwnerNote(ownerNoteInput.openNote, selfP);
     if (ownerNoteInput.toggleTraining) this.room.send("toggleTraining");
-    const levelWindowInputBlocked =
+    const gameplayInputBlocked =
       competingModalOpen || !ownerNoteInput.gameplayEnabled || !!this.ownerNoteUi?.isOpen();
     this.pointerOverInteractiveUi = this.input.hitTestPointer(this.input.activePointer).length > 0;
     const predictedAirborne = this.predictor
@@ -4694,7 +4540,7 @@ export class ArenaScene extends Phaser.Scene {
       spacePressed,
       spaceReleased,
       predictedAirborne,
-      alive && !levelWindowInputBlocked,
+      alive && !gameplayInputBlocked,
       this.predictor?.isGroundSliding ?? false,
     );
     if (space.jump) this.jumpQueued = true;
@@ -4705,17 +4551,17 @@ export class ArenaScene extends Phaser.Scene {
     const rawFlourishIntent = this.rawFlourishIntent;
     rawFlourishIntent.attack =
       alive &&
-      !levelWindowInputBlocked &&
+      !gameplayInputBlocked &&
       !this.pointerOverInteractiveUi &&
       this.input.activePointer.rightButtonDown();
     rawFlourishIntent.parryOrBrace =
       alive &&
-      !levelWindowInputBlocked &&
+      !gameplayInputBlocked &&
       !this.pointerOverInteractiveUi &&
       this.input.activePointer.leftButtonDown();
     rawFlourishIntent.jumpOrDodge =
       alive &&
-      !levelWindowInputBlocked &&
+      !gameplayInputBlocked &&
       (this.keys.SPACE.isDown ||
         space.jump ||
         space.pound ||
@@ -4726,7 +4572,7 @@ export class ArenaScene extends Phaser.Scene {
     if (
       slidePressedFromBindings(shiftSlidePressed, ctrlSlidePressed) &&
       alive &&
-      !levelWindowInputBlocked
+      !gameplayInputBlocked
     ) {
       const parryWindowOpen = (this.time.now - this.lastParryPress) / 1000 < PARRY_IFRAMES;
       if (!parryWindowOpen) {
@@ -4763,7 +4609,7 @@ export class ArenaScene extends Phaser.Scene {
     let canSalvage = false;
     this.grabTarget = null;
     this.grabRadius = PICKUP_RADIUS;
-    if (!levelWindowInputBlocked) {
+    if (!gameplayInputBlocked) {
       const holdingWeapon = !!selfP && selfP.weapon !== FISTS_WEAPON;
       // The nearest grabbable pickup within arm's reach drives one visible E prompt and one exact target id.
       let nearPickup = false;
@@ -4816,7 +4662,7 @@ export class ArenaScene extends Phaser.Scene {
       const nextPagePressed = Phaser.Input.Keyboard.JustDown(this.keys.X);
       const weaponInput = routeWeaponInput({
         mode: weaponInputMode,
-        modalOpen: levelWindowInputBlocked,
+        modalOpen: gameplayInputBlocked,
         alive,
         pickupPromptVisible: nearPickup,
         interactPressed,
@@ -4893,10 +4739,10 @@ export class ArenaScene extends Phaser.Scene {
     this.updateDropBar(canSalvage);
     this.renderGrabHighlight();
 
-    rawFlourishIntent.desiredMoveX = levelWindowInputBlocked
+    rawFlourishIntent.desiredMoveX = gameplayInputBlocked
       ? 0
       : (this.keys.D.isDown ? 1 : 0) - (this.keys.A.isDown ? 1 : 0);
-    rawFlourishIntent.desiredMoveY = levelWindowInputBlocked
+    rawFlourishIntent.desiredMoveY = gameplayInputBlocked
       ? 0
       : (this.keys.S.isDown ? 1 : 0) - (this.keys.W.isDown ? 1 : 0);
     const cancelFlourishThisFrame = rawFlourishIntentCancels(
@@ -4908,8 +4754,8 @@ export class ArenaScene extends Phaser.Scene {
     this.maybeBuildFloor(); // §17 bake the procgen floor once the seeds arrive
     this.stepNetInput(
       deltaMs,
-      levelWindowInputBlocked,
-      ultimatePressed && !nearBeltShop && !levelWindowInputBlocked,
+      gameplayInputBlocked,
+      ultimatePressed && !nearBeltShop && !gameplayInputBlocked,
       rawFlourishIntent.desiredMoveX,
       rawFlourishIntent.desiredMoveY,
     ); // §4 v0.107 mint/send/predict this frame's input commands
@@ -4965,11 +4811,12 @@ export class ArenaScene extends Phaser.Scene {
     } else {
       this.wasFrozen = true;
     }
-    // XP motion is server-timed and continues through local hit-stop; a frozen rig is a stable catch target.
     this.updateUltimateVfx();
+    const moneyRenderTick = this.timeline.ready
+      ? (this.timeline.renderTime(this.time.now) + INTERP_DELAY_MS) / TICK_MS
+      : this.room.state.tick;
+    this.moneyDropRenderer.update(this.room.state.moneyDrops, moneyRenderTick);
     this.updateBeams();
-    this.updateXpMotes(deltaMs);
-    this.updateXpReceiptLabels();
     this.followSelf();
     this.sendAttack();
     this.sendParry();
@@ -4991,108 +4838,8 @@ export class ArenaScene extends Phaser.Scene {
     this.damageNumberRenderer.update(deltaMs, this.time.now, prefersReducedPaperMotion());
     this.updateHud();
     this.updateRunState();
-    this.updateLevelWindow();
     this.updateCarousel();
     this.updateDebug();
-  }
-
-  private projectXpPoint(x: number, y: number, out: XpMotePoint): void {
-    out.x = x;
-    out.y = this.belt ? this.beltY(y) : y;
-  }
-
-  /** Stable reward socket derived from the rendered rig root; avoids targeting stale server coordinates. */
-  private xpCatchPoint(collectorId: string, out: XpMotePoint): boolean {
-    const rig = this.blobs.get(collectorId);
-    if (!rig) return false;
-    out.x = rig.root.x;
-    out.y = rig.root.y - 25 * Math.max(0.7, Math.abs(rig.root.scaleY));
-    return true;
-  }
-
-  private updateXpMotes(deltaMs: number): void {
-    if (!this.room || !this.xpMotes || !this.room.state.xpEchoes) return;
-    const timelineMs = this.timeline.ready
-      ? this.timeline.renderTime(this.time.now)
-      : this.room.state.tick * TICK_MS - INTERP_DELAY_MS;
-    this.xpMotes.update(
-      this.room.state.xpEchoes,
-      XpMoteRenderer.renderTick(timelineMs),
-      deltaMs,
-      prefersReducedPaperMotion(),
-    );
-  }
-
-  /** One delivered patch owns the catch ring, squad HUD pulse, pitch bucket, and optional +N label. */
-  private onXpReceipt(event: XpMoteReceipt): void {
-    const now = this.time.now;
-    const vastaghar = this.room?.state.vastaghar;
-    if (
-      !this.vastagharCrownCaught &&
-      vastaghar?.active &&
-      vastaghar.victoryXp > 0 &&
-      event.value >= vastaghar.victoryXp
-    ) {
-      this.vastagharCrownCaught = true;
-      this.audio.duckBossScore(5, 0.34);
-    }
-    this.xpPulse = Math.min(1, Math.max(this.xpPulse, 0.56 + Math.log2(1 + event.value) * 0.1));
-    let batch = this.xpReceiptBatches.get(event.collectorId);
-    if (!batch || now - batch.lastAt > 200) {
-      batch = { value: 0, x: event.x, y: event.y, lastAt: now };
-      this.xpReceiptBatches.set(event.collectorId, batch);
-    }
-    batch.value += event.value;
-    batch.x = event.x;
-    batch.y = event.y;
-    batch.lastAt = now;
-
-    if (now - this.xpReceiptLastAt > 320) this.xpAudioStreak = 0;
-    this.xpReceiptLastAt = now;
-    const self = this.room?.state.players.get(this.room.sessionId);
-    const levelEdge = !!self && this.prevLevel >= 0 && self.level > this.prevLevel;
-    if (!levelEdge && now - this.xpAudioLastAt >= 70) {
-      // A single low-priority receipt note rises across the catch streak; loot keeps its own rare arpeggio.
-      this.audio.play("xpTick", {
-        x: event.x,
-        amt: Math.min(1, this.xpAudioStreak * 0.06 + Math.log2(1 + event.value) * 0.12),
-      });
-      this.xpAudioStreak = Math.min(16, this.xpAudioStreak + 1);
-      this.xpAudioLastAt = now;
-    }
-  }
-
-  private updateXpReceiptLabels(): void {
-    const now = this.time.now;
-    for (const [collectorId, batch] of this.xpReceiptBatches) {
-      if (now - batch.lastAt < 200) continue;
-      this.xpReceiptBatches.delete(collectorId);
-      if (batch.value < 5) continue;
-      if (batch.value >= 12)
-        this.audio.play("xpCadence", {
-          x: batch.x,
-          amt: Math.min(1, Math.log2(1 + batch.value) / 6),
-        });
-      const txt = this.add
-        .text(batch.x, batch.y - 34, `+${batch.value} XP`, {
-          fontFamily: "monospace",
-          fontSize: "14px",
-          color: "#c9f8ff",
-          fontStyle: "bold",
-          stroke: "#07131d",
-          strokeThickness: 4,
-        })
-        .setOrigin(0.5)
-        .setDepth(99996);
-      this.tweens.add({
-        targets: txt,
-        y: batch.y - 60,
-        alpha: 0,
-        duration: 520,
-        ease: "Cubic.easeOut",
-        onComplete: () => txt.destroy(),
-      });
-    }
   }
 
   /** Reconcile the always-allocated worm state to exactly one batch rig and suppress its compatibility root. */
@@ -6670,7 +6417,7 @@ export class ArenaScene extends Phaser.Scene {
     this.drawTelegraphCadence(g, geometry, t, danger, hash, line, alpha, zoom);
   }
 
-  /** Protected response channel: exact outer boundary only, above beams/XP and below screen-space HUD. */
+  /** Protected response channel: exact outer boundary only, above beams and below screen-space HUD. */
   private drawProtectedTelegraphEdge(
     g: Phaser.GameObjects.Graphics,
     geometry: TelegraphGeometry,
@@ -8059,54 +7806,7 @@ export class ArenaScene extends Phaser.Scene {
     // approach, loot reveal, depth) fought the gun/hit shakes for the same channel and read as noise.
   }
 
-  private clearLevelPaperCounters(): void {
-    for (const tween of this.levelWinPaperCounters.splice(0)) {
-      tween.stop();
-      tween.remove();
-    }
-  }
-
-  /** P3 shell backing only; title, countdown, choice copy, and hit geometry stay face-on and literal. */
-  private animateLevelFolio(
-    dim: Phaser.GameObjects.Rectangle,
-    lower: Phaser.GameObjects.Container,
-    upper: Phaser.GameObjects.Container,
-  ): void {
-    if (prefersReducedPaperMotion()) return;
-    dim.setAlpha(0);
-    this.tweens.add({ targets: dim, alpha: 1, duration: 100 });
-    lower.setScale(0.82, -0.04).setRotation(0.045);
-    upper.setScale(1, -0.92).setRotation(-0.05);
-    let depthSwapped = false;
-    const counter = this.tweens.addCounter({
-      from: 0,
-      to: 320,
-      duration: 320,
-      onUpdate: (tw) => {
-        const elapsed = tw.getValue() ?? 0;
-        lower.scaleX = paperPopScaleX(elapsed, 210);
-        lower.scaleY = paperPopScaleY(elapsed, 210);
-        lower.rotation = paperPopRotation(elapsed, 210);
-        const u = paperSmoothstep((elapsed - 70) / 250);
-        upper.scaleY = -0.92 + 1.92 * u;
-        upper.rotation = 0.05 * Math.sin(Math.PI * u);
-        if (!depthSwapped && u >= 0.479) {
-          depthSwapped = true;
-          upper.setDepth(100010.7);
-        }
-      },
-      onComplete: () => {
-        lower.setScale(1).setRotation(0);
-        upper.setScale(1).setRotation(0);
-      },
-    });
-    this.levelWinPaperCounters.push(counter);
-  }
-
-  private inLevelWindow(self: PlayerState | undefined): boolean {
-    return !!self && (self.flexPending > 0 || self.sigPending > 0);
-  }
-
+  /** §21 Testing-Grounds Tab menu — the summonable roster (boss + dummy excluded; tough is a toggle). */
   private get verbs(): VerbLegendManager {
     if (!this.verbUi) throw new Error("Verb UI unavailable");
     return this.verbUi;
@@ -8251,8 +7951,6 @@ export class ArenaScene extends Phaser.Scene {
 
   private inputModalBlocked(self: PlayerState | undefined): boolean {
     return (
-      this.inLevelWindow(self) ||
-      this.levelWinInputReleaseLatch ||
       this.verbs.isModalBlocking() ||
       this.summonOpen ||
       this.bagOpen ||
@@ -8263,7 +7961,12 @@ export class ArenaScene extends Phaser.Scene {
 
   private legendInputsReleased(): boolean {
     return (
-      this.levelWindowInputsReleased() &&
+      !this.keys.W.isDown &&
+      !this.keys.A.isDown &&
+      !this.keys.S.isDown &&
+      !this.keys.D.isDown &&
+      !this.keys.SPACE.isDown &&
+      !this.keys.SHIFT.isDown &&
       !this.keys.H.isDown &&
       !this.keys.R.isDown &&
       !this.keys.Q.isDown &&
@@ -8286,640 +7989,6 @@ export class ArenaScene extends Phaser.Scene {
     this.verbs.offerHint(id, this.time.now);
   }
 
-  private retireLevelWindow(animateClose: boolean): void {
-    this.clearLevelPaperCounters();
-    const objects = this.levelWinObjects.splice(0);
-    const choices = this.levelWinChoices.splice(0);
-    const zones = new Set<Phaser.GameObjects.GameObject>(choices.map((choice) => choice.zone));
-    const dim = this.levelWinDim;
-    const lower = this.levelWinLower;
-    const upper = this.levelWinUpper;
-    for (const choice of choices) {
-      choice.zone.disableInteractive();
-      choice.zone.destroy();
-    }
-    this.levelWinTimerBar = undefined;
-    this.levelWinTimerText = undefined;
-    this.levelWinStatusText = undefined;
-    this.levelWinDim = undefined;
-    this.levelWinLower = undefined;
-    this.levelWinUpper = undefined;
-
-    const remaining = objects.filter((object) => !zones.has(object));
-    if (!animateClose || prefersReducedPaperMotion() || remaining.length === 0) {
-      for (const object of remaining) object.destroy();
-      return;
-    }
-
-    const paper = new Set<Phaser.GameObjects.GameObject>(
-      [dim, lower, upper].filter(Boolean) as Phaser.GameObjects.GameObject[],
-    );
-    const fadeTargets = remaining.filter((object) => !paper.has(object));
-    this.tweens.add({ targets: fadeTargets, alpha: 0, duration: 110, ease: "Sine.easeIn" });
-    if (dim) this.tweens.add({ targets: dim, alpha: 0, duration: 140 });
-    if (lower)
-      this.tweens.add({
-        targets: lower,
-        scaleY: -0.04,
-        duration: 180,
-        ease: "Cubic.easeIn",
-      });
-    if (upper)
-      this.tweens.add({
-        targets: upper,
-        scaleY: -0.04,
-        duration: 180,
-        ease: "Cubic.easeIn",
-      });
-    this.time.delayedCall(185, () => {
-      for (const object of remaining) object.destroy();
-    });
-  }
-
-  /** Show FLEX before Signature; resize/offer edges rebuild without replaying the full folio. */
-  private updateLevelWindow(): void {
-    if (!this.room) return;
-    const self = this.room.state.players.get(this.room.sessionId);
-    const flex = !!self && self.flexPending > 0;
-    const sig = !!self && self.sigPending > 0 && !flex;
-    const open = flex || sig;
-    const mode: LevelUpMode | "" = flex ? "flex" : sig ? "signature" : "";
-    const key =
-      open && self
-        ? `${self.level}:${mode}:${self.flexPending}:${self.sigPending}:${self.sigOffer}:${levelUpLayoutKey(this.screenW(), this.screenH())}`
-        : "";
-    if (key !== this.levelWinKey) {
-      const wasOpen = this.levelWinMode !== "";
-      this.retireLevelWindow(!open && wasOpen);
-      this.levelWinKey = key;
-      this.levelWinMode = mode;
-      this.levelWinSelectionSent = false;
-      this.levelWinAwaitingRelease = true;
-      if (self && mode === "flex") this.buildLevelWindow(self, !wasOpen);
-      else if (self && mode === "signature") this.buildAugmentWindow(self, !wasOpen);
-    }
-    if (!open || !self || !this.levelWinTimerBar || !this.levelWinTimerText) return;
-
-    if (self.flexTimerDs !== this.levelWinTimerSampleDs) {
-      this.levelWinTimerSampleDs = self.flexTimerDs;
-      this.levelWinTimerSampleAt = this.time.now;
-    }
-    const authoritativeSeconds = self.flexTimerDs / 10;
-    const seconds = Math.max(
-      0,
-      Math.min(
-        authoritativeSeconds,
-        authoritativeSeconds - (this.time.now - this.levelWinTimerSampleAt) / 1000,
-      ),
-    );
-    const ratio = Math.max(0, Math.min(1, seconds / LEVELUP_WINDOW_SECONDS));
-    const color = seconds <= 1.5 ? 0xf05b3b : seconds <= 3 ? 0xffa62b : 0xffd479;
-    this.levelWinTimerBar.width = this.levelWinTimerWidth * ratio;
-    this.levelWinTimerBar.setFillStyle(color);
-    this.levelWinTimerText.setText(
-      seconds > 0 ? `AUTO: ${this.levelWinAutoLabel} IN ${seconds.toFixed(1)}s` : "AUTO-SELECTING…",
-    );
-  }
-
-  private levelWindowText(
-    x: number,
-    y: number,
-    text: string,
-    style: Phaser.Types.GameObjects.Text.TextStyle,
-  ): Phaser.GameObjects.Text {
-    return this.add
-      .text(x, y, text, style)
-      .setScrollFactor(0)
-      .setResolution(Math.max(2, Math.ceil(RENDER_DPR)));
-  }
-
-  /** The shared paper shell. Only cardstock folds; copy and hit geometry stay face-on. */
-  private buildLevelShell(
-    self: PlayerState,
-    mode: LevelUpMode,
-    choiceCount: number,
-    fullEntrance: boolean,
-  ): ReturnType<typeof levelUpLayout> {
-    const layout = levelUpLayout(this.screenW(), this.screenH(), mode, choiceCount);
-    const cx = this.screenW() / 2;
-    const cy = this.screenH() / 2;
-    const context = levelBuildContext(self);
-    const dim = this.add
-      .rectangle(cx, cy, this.screenW(), this.screenH(), 0x05040a, 0.48)
-      .setScrollFactor(0)
-      .setDepth(100010)
-      .setInteractive();
-
-    const pg = this.add.graphics();
-    pg.fillStyle(0x0a0812, 0.95).fillRoundedRect(
-      layout.panelX,
-      layout.panelY,
-      layout.panelWidth,
-      layout.panelHeight,
-      14,
-    );
-    this.drawPanelFrame(pg, layout.panelX, layout.panelY, layout.panelWidth, layout.panelHeight, 1);
-    const lowerHingeY = layout.panelY + layout.panelHeight;
-    pg.setPosition(-cx, -lowerHingeY);
-    const lower = this.add.container(cx, lowerHingeY, [pg]).setScrollFactor(0).setDepth(100010.5);
-    const seamY = layout.timerY + 19;
-    const upperG = this.add.graphics();
-    upperG
-      .fillStyle(0x0a0812, 0.98)
-      .fillRoundedRect(layout.panelX, layout.panelY, layout.panelWidth, seamY - layout.panelY, 14);
-    this.drawPanelFrame(
-      upperG,
-      layout.panelX,
-      layout.panelY,
-      layout.panelWidth,
-      seamY - layout.panelY,
-      1,
-    );
-    upperG.setPosition(-cx, -seamY);
-    const upper = this.add.container(cx, seamY, [upperG]).setScrollFactor(0).setDepth(100010.4);
-
-    const hasFollowup = mode === "flex" && self.sigPending > 0;
-    const step = hasFollowup
-      ? "1/2 · GROWTH"
-      : mode === "signature" && self.level % 5 === 0
-        ? "2/2 · SIGNATURE"
-        : mode === "flex"
-          ? "GROWTH"
-          : "SIGNATURE";
-    const burden =
-      mode === "flex" && self.flexPending > 1 ? ` · ${self.flexPending} MARKS LEFT` : "";
-    const title = this.levelWindowText(
-      cx,
-      layout.titleY,
-      `LEVEL ${self.level} · ${step} · CHOOSE 1${burden}`,
-      {
-        fontSize: layout.tier === "wide" ? "27px" : "20px",
-        color: "#f7e4aa",
-        fontStyle: "bold",
-        align: "center",
-      },
-    )
-      .setOrigin(0.5)
-      .setDepth(100011);
-    const contextCopy =
-      mode === "flex"
-        ? `${context.allocationLaw}${hasFollowup ? " • SIGNATURE FOLLOWS" : ""}`
-        : `SIGNATURE • ${layout.tier === "wide" ? context.rail : context.compactRail}`;
-    const contextText = this.levelWindowText(cx, layout.contextY, contextCopy, {
-      fontSize: "14px",
-      color: "#cfc8b6",
-      fontStyle: "bold",
-      align: "center",
-      wordWrap: { width: layout.panelWidth - 32 },
-      maxLines: 1,
-    })
-      .setOrigin(0.5)
-      .setDepth(100011);
-    const timerBg = this.add
-      .rectangle(layout.timerLeft, layout.timerY, layout.timerWidth, 12, 0x2a2620, 0.96)
-      .setScrollFactor(0)
-      .setOrigin(0, 0.5)
-      .setDepth(100011);
-    this.levelWinTimerBar = this.add
-      .rectangle(layout.timerLeft, layout.timerY, layout.timerWidth, 12, 0xffd479)
-      .setScrollFactor(0)
-      .setOrigin(0, 0.5)
-      .setDepth(100012);
-    this.levelWinTimerText = this.levelWindowText(cx, layout.timerY, "", {
-      fontFamily: "monospace",
-      fontSize: "14px",
-      color: "#171108",
-      backgroundColor: "#f7e4aa",
-      padding: { x: 7, y: 2 },
-      fontStyle: "bold",
-    })
-      .setOrigin(0.5)
-      .setDepth(100012.5);
-    const numberShortcut = choiceCount > 1 ? `1–${choiceCount}` : "1";
-    const shortcutCopy =
-      layout.tier === "compact"
-        ? `WORLD LIVE • ${numberShortcut} PICK • ←/→ FOCUS • ENTER`
-        : layout.tier === "medium"
-          ? `${context.compactRail} • ${numberShortcut} • ←/→ • ENTER`
-          : `${context.rail} • ${numberShortcut} PICK • ←/→ • ENTER/SPACE`;
-    const footer = this.levelWindowText(cx, layout.footerY, shortcutCopy, {
-      fontSize: "14px",
-      color: "#9fb0c2",
-      align: "center",
-      wordWrap: { width: layout.panelWidth - 28 },
-      maxLines: 1,
-    })
-      .setOrigin(0.5)
-      .setDepth(100011);
-    this.levelWinStatusText = this.levelWindowText(cx, layout.timerY + 17, "", {
-      fontSize: "14px",
-      color: "#ffb24a",
-      fontStyle: "bold",
-      align: "center",
-    })
-      .setOrigin(0.5)
-      .setDepth(100012);
-
-    this.levelWinDim = dim;
-    this.levelWinLower = lower;
-    this.levelWinUpper = upper;
-    this.levelWinTimerWidth = layout.timerWidth;
-    this.levelWinTimerSampleDs = self.flexTimerDs;
-    this.levelWinTimerSampleAt = this.time.now;
-    if (fullEntrance) this.animateLevelFolio(dim, lower, upper);
-    this.levelWinObjects.push(
-      dim,
-      lower,
-      upper,
-      title,
-      contextText,
-      timerBg,
-      this.levelWinTimerBar,
-      this.levelWinTimerText,
-      footer,
-      this.levelWinStatusText,
-    );
-    return layout;
-  }
-
-  /** Choice copy stays face-on; the backing turns and the scene-level rectangle owns input. */
-  private prepareLevelCard(control: LevelChoiceControl, index: number): void {
-    const { root, face, zone, restY, side } = control;
-    const focused = index === this.levelWinFocus;
-    const horizontal = !!root.getData("horizontal");
-    const focusY = focused && !horizontal ? restY - 6 : restY;
-    if (prefersReducedPaperMotion()) {
-      root.setY(focusY);
-    } else {
-      root.setY(restY + 12).setAlpha(0);
-      face.setScale(-0.06, 0.94).setRotation(side * 0.035);
-      this.tweens.add({
-        targets: root,
-        y: focusY,
-        alpha: 1,
-        duration: 180,
-        delay: 90 + index * 42,
-        ease: "Back.easeOut",
-      });
-      this.tweens.add({
-        targets: face,
-        scaleX: 1,
-        scaleY: 1,
-        rotation: 0,
-        duration: 180,
-        delay: 90 + index * 42,
-        ease: "Back.easeOut",
-      });
-    }
-    zone.on("pointerover", () => this.setLevelWindowFocus(index));
-    zone.on("pointerdown", () => this.activateLevelChoice(index));
-  }
-
-  private setLevelWindowFocus(index: number): void {
-    if (index < 0 || index >= this.levelWinChoices.length || index === this.levelWinFocus) return;
-    this.levelWinFocus = index;
-    const reduced = prefersReducedPaperMotion();
-    for (let i = 0; i < this.levelWinChoices.length; i++) {
-      const control = this.levelWinChoices[i];
-      if (!control) continue;
-      const selected = i === index;
-      const horizontal = !!control.root.getData("horizontal");
-      control.focusRing.setAlpha(selected ? 1 : 0);
-      this.tweens.killTweensOf(control.root);
-      const y = selected && !horizontal ? control.restY - 6 : control.restY;
-      const scale = selected && !horizontal ? 1.035 : 1;
-      const rotation = selected && !horizontal ? control.side * 0.012 : 0;
-      if (reduced) control.root.setY(y).setScale(scale).setRotation(0);
-      else
-        this.tweens.add({
-          targets: control.root,
-          y,
-          scale,
-          rotation,
-          duration: 90,
-          ease: "Sine.easeOut",
-        });
-    }
-  }
-
-  private activateLevelChoice(index: number): void {
-    if (this.levelWinSelectionSent) return;
-    const selected = this.levelWinChoices[index];
-    if (!selected) return;
-    this.levelWinSelectionSent = true;
-    this.levelWinInputReleaseLatch = true;
-    for (const choice of this.levelWinChoices) choice.zone.disableInteractive();
-    this.levelWinStatusText?.setText("APPLYING CHOICE…");
-    selected.send();
-    this.audio.play("grab");
-    const reduced = prefersReducedPaperMotion();
-    spawnLevelConfirmEffect(
-      this,
-      selected.root.x,
-      selected.root.y,
-      selected.zone.width,
-      selected.zone.height,
-      selected.view.accent,
-      selected.view.particlePack,
-      reduced,
-    );
-    if (!reduced) {
-      this.tweens.add({
-        targets: selected.root,
-        scaleY: 0.94,
-        duration: 45,
-        yoyo: true,
-        ease: "Quad.easeOut",
-      });
-      this.tweens.add({
-        targets: selected.face,
-        scaleX: 0.02,
-        duration: 130,
-        delay: 45,
-        ease: "Cubic.easeIn",
-      });
-      for (const choice of this.levelWinChoices) {
-        if (choice === selected) continue;
-        this.tweens.add({
-          targets: choice.root,
-          alpha: 0.28,
-          duration: 90,
-          ease: "Cubic.easeIn",
-        });
-      }
-    }
-  }
-
-  private levelWindowModalKeys(): Phaser.Input.Keyboard.Key[] {
-    return [
-      this.keys.W,
-      this.keys.A,
-      this.keys.S,
-      this.keys.D,
-      this.keys.SPACE,
-      this.keys.SHIFT,
-      this.keys.ONE,
-      this.keys.TWO,
-      this.keys.THREE,
-      this.keys.FOUR,
-      this.keys.FIVE,
-      this.keys.LEFT,
-      this.keys.RIGHT,
-      this.keys.UP,
-      this.keys.DOWN,
-      this.keys.ENTER,
-    ];
-  }
-
-  private levelWindowInputsReleased(): boolean {
-    return (
-      this.levelWindowModalKeys().every((key) => !key.isDown) &&
-      !this.keys.F.isDown &&
-      !this.input.activePointer.leftButtonDown() &&
-      !this.input.activePointer.rightButtonDown()
-    );
-  }
-
-  private handleLevelWindowInput(): void {
-    if (this.levelWinChoices.length === 0) return;
-    if (this.levelWinAwaitingRelease) {
-      if (this.levelWindowInputsReleased()) this.levelWinAwaitingRelease = false;
-      return;
-    }
-    if (this.levelWinSelectionSent) return;
-    const numberKeys = [
-      this.keys.ONE,
-      this.keys.TWO,
-      this.keys.THREE,
-      this.keys.FOUR,
-      this.keys.FIVE,
-    ];
-    for (let i = 0; i < numberKeys.length; i++) {
-      const key = numberKeys[i];
-      if (key && Phaser.Input.Keyboard.JustDown(key) && i < this.levelWinChoices.length) {
-        this.setLevelWindowFocus(i);
-        this.activateLevelChoice(i);
-        return;
-      }
-    }
-    const previous =
-      Phaser.Input.Keyboard.JustDown(this.keys.LEFT) ||
-      Phaser.Input.Keyboard.JustDown(this.keys.UP) ||
-      Phaser.Input.Keyboard.JustDown(this.keys.A) ||
-      Phaser.Input.Keyboard.JustDown(this.keys.W);
-    const next =
-      Phaser.Input.Keyboard.JustDown(this.keys.RIGHT) ||
-      Phaser.Input.Keyboard.JustDown(this.keys.DOWN) ||
-      Phaser.Input.Keyboard.JustDown(this.keys.D) ||
-      Phaser.Input.Keyboard.JustDown(this.keys.S);
-    if (previous) {
-      this.setLevelWindowFocus(
-        (this.levelWinFocus - 1 + this.levelWinChoices.length) % this.levelWinChoices.length,
-      );
-    } else if (next) {
-      this.setLevelWindowFocus((this.levelWinFocus + 1) % this.levelWinChoices.length);
-    } else if (
-      Phaser.Input.Keyboard.JustDown(this.keys.ENTER) ||
-      Phaser.Input.Keyboard.JustDown(this.keys.SPACE)
-    ) {
-      this.activateLevelChoice(this.levelWinFocus);
-    }
-  }
-
-  private createLevelChoiceCard(
-    view: LevelChoiceView,
-    slot: ReturnType<typeof levelUpLayout>["cards"][number],
-    index: number,
-    send: () => void,
-  ): void {
-    const width = slot.width;
-    const height = slot.height;
-    const accentHex = `#${view.accent.toString(16).padStart(6, "0")}`;
-    const shadow = this.add.graphics();
-    shadow
-      .fillStyle(0x000000, 0.5)
-      .fillRoundedRect(-width / 2 + 5, -height / 2 + 7, width, height, 12);
-    const face = this.add
-      .rectangle(0, 0, width, height, 0x17130f, 0.99)
-      .setStrokeStyle(3, view.accent, 0.95);
-    const dressing = this.add.graphics();
-    dressing
-      .lineStyle(1, 0xfff2c0, 0.28)
-      .strokeRoundedRect(-width / 2 + 6, -height / 2 + 6, width - 12, height - 12, 8);
-    dressing.fillStyle(view.accent, 0.8).fillRect(-width / 2 + 12, -height / 2 + 10, 30, 3);
-    dressing
-      .fillStyle(view.accent, 0.2)
-      .fillRoundedRect(-width / 2 + 10, height / 2 - 37, width - 20, 25, 6);
-    const focusRing = this.add.graphics().setAlpha(index === this.levelWinFocus ? 1 : 0);
-    focusRing
-      .lineStyle(2, 0xfff2c0, 1)
-      .strokeRoundedRect(-width / 2 + 3, -height / 2 + 3, width - 6, height - 6, 10);
-    const icon = this.add.graphics();
-    const input = this.levelWindowText(-width / 2 + 12, -height / 2 + 10, String(index + 1), {
-      fontFamily: "monospace",
-      fontSize: "14px",
-      color: "#fff3c4",
-      fontStyle: "bold",
-    }).setOrigin(0, 0);
-
-    let category: Phaser.GameObjects.Text;
-    let name: Phaser.GameObjects.Text;
-    let outcome: Phaser.GameObjects.Text;
-    let context: Phaser.GameObjects.Text;
-    if (slot.horizontal) {
-      const iconX = -width / 2 + 43;
-      const copyX = -width / 2 + 76;
-      const copyWidth = width - 90;
-      drawIcon(icon, view.icon, iconX, 2, Math.min(15, height * 0.16), view.accent);
-      category = this.levelWindowText(copyX, -height / 2 + 10, view.category, {
-        fontSize: "12px",
-        color: accentHex,
-        fontStyle: "bold",
-      }).setOrigin(0, 0);
-      name = this.levelWindowText(copyX, -height / 2 + 27, view.name, {
-        fontSize: "16px",
-        color: "#f0ead8",
-        fontStyle: "bold",
-        wordWrap: { width: copyWidth },
-        maxLines: 1,
-      }).setOrigin(0, 0);
-      const outcomeCopy = view.outcome.replace(/\s+\(\+[^)]*\)$/, "");
-      outcome = this.levelWindowText(copyX, 7, outcomeCopy, {
-        fontFamily: "monospace",
-        fontSize: "14px",
-        color: "#b8ff6a",
-        fontStyle: "bold",
-        wordWrap: { width: copyWidth },
-        maxLines: 1,
-      }).setOrigin(0, 0.5);
-      context = this.levelWindowText(0, height / 2 - 24, view.context, {
-        fontSize: "14px",
-        color: "#d2c9b5",
-        fontStyle: "bold",
-        align: "center",
-        wordWrap: { width: width - 28 },
-        maxLines: 1,
-      }).setOrigin(0.5);
-    } else {
-      drawIcon(icon, view.icon, 0, -height * 0.25, Math.min(22, width * 0.12), view.accent);
-      category = this.levelWindowText(0, -height / 2 + 17, view.category, {
-        fontSize: "13px",
-        color: accentHex,
-        fontStyle: "bold",
-      }).setOrigin(0.5);
-      name = this.levelWindowText(0, -height * 0.07, view.name, {
-        fontSize: width < 190 ? "18px" : "20px",
-        color: "#f0ead8",
-        fontStyle: "bold",
-        align: "center",
-        wordWrap: { width: width - 28 },
-        maxLines: 2,
-      }).setOrigin(0.5);
-      outcome = this.levelWindowText(0, height * 0.2, view.outcome, {
-        fontFamily: "monospace",
-        fontSize: width < 190 ? "14px" : "16px",
-        color: "#b8ff6a",
-        fontStyle: "bold",
-        align: "center",
-        wordWrap: { width: width - 24 },
-        maxLines: 2,
-      }).setOrigin(0.5);
-      context = this.levelWindowText(0, height / 2 - 24, view.context, {
-        fontSize: "14px",
-        color: "#d2c9b5",
-        fontStyle: "bold",
-        align: "center",
-        wordWrap: { width: width - 28 },
-        maxLines: 1,
-      }).setOrigin(0.5);
-    }
-    const root = this.add
-      .container(slot.x, slot.y, [
-        shadow,
-        face,
-        dressing,
-        focusRing,
-        icon,
-        input,
-        category,
-        name,
-        outcome,
-        context,
-      ])
-      .setScrollFactor(0)
-      .setDepth(100011)
-      .setData("horizontal", slot.horizontal);
-    // P0: deliberately SCENE-LEVEL + fixed-screen. A Zone inside this container hit-tests in world space
-    // once the camera scrolls, even though the visible card remains in screen space. Wide-card bounds also
-    // include the complete focused lift/scale so no animated edge becomes a dead click strip.
-    const focusScale = slot.horizontal ? 1 : 1.035;
-    const hitY = slot.horizontal ? slot.y : slot.y - 6;
-    const zone = this.add
-      .rectangle(
-        slot.x,
-        hitY,
-        width * focusScale,
-        Math.max(44, height * focusScale),
-        0xffffff,
-        0.001,
-      )
-      .setScrollFactor(0)
-      .setDepth(100013)
-      .setInteractive({ useHandCursor: true });
-    const control: LevelChoiceControl = {
-      root,
-      face,
-      focusRing,
-      zone,
-      restY: slot.y,
-      side: slot.x < this.screenW() / 2 ? -1 : 1,
-      view,
-      send,
-    };
-    this.levelWinChoices.push(control);
-    this.prepareLevelCard(control, index);
-    this.levelWinObjects.push(root, zone);
-  }
-
-  /** Build the authoritative Signature spread; tag color is category, never fictional rarity. */
-  private buildAugmentWindow(self: PlayerState, fullEntrance: boolean): void {
-    const choices = augmentChoiceViews(self);
-    this.levelWinFocus = 0;
-    const layout = this.buildLevelShell(self, "signature", choices.length, fullEntrance);
-    this.levelWinAutoLabel = choices[0]?.name.toUpperCase() ?? "SERVER PICK";
-    choices.forEach((view, index) => {
-      const slot = layout.cards[index];
-      if (!slot) return;
-      this.createLevelChoiceCard(view, slot, index, () =>
-        this.room?.send("chooseAugment", { id: view.id }),
-      );
-    });
-  }
-
-  /** Build the five exact-outcome FLEX choices from synced state and shared tuning functions. */
-  private buildLevelWindow(self: PlayerState, fullEntrance: boolean): void {
-    let squadBestLuk = self.luk;
-    this.room?.state.players.forEach((player) => {
-      squadBestLuk = Math.max(squadBestLuk, player.luk);
-    });
-    const choices = attributeChoiceViews(self, squadBestLuk);
-    const context = levelBuildContext(self);
-    this.levelWinFocus = Math.max(
-      0,
-      choices.findIndex((choice) => choice.id === context.defaultAttribute),
-    );
-    const layout = this.buildLevelShell(self, "flex", choices.length, fullEntrance);
-    this.levelWinAutoLabel = context.timeoutAllocation;
-    choices.forEach((view, index) => {
-      const slot = layout.cards[index];
-      if (!slot) return;
-      this.createLevelChoiceCard(view, slot, index, () =>
-        this.room?.send("chooseAttribute", { attr: view.id }),
-      );
-    });
-  }
-
-  /** §21 Testing-Grounds Tab menu — the summonable roster (boss + dummy excluded; tough is a toggle). */
   private static readonly SUMMON_KINDS: { id: string; label: string }[] = [
     { id: "critter", label: "Critter (rusher)" },
     { id: "mote-swarm", label: "Mote (swarm)" },
@@ -10814,7 +9883,7 @@ export class ArenaScene extends Phaser.Scene {
 
   /** LMB → the melee Parry signature (§7/§8). Server grants i-frames + knockback. NO VFX yet — the
    *  parry reads purely as a BLOCK/BRACE stance (weapon raised, hands guarding, slight crouch) until
-   *  level-up augments add on-parry effects. Mirrors the server cooldown so the brace fires in sync. */
+   *  owned augments add on-parry effects. Mirrors the server cooldown so the brace fires in sync. */
   private sendParry(): void {
     if (!this.room) return;
     this.localParryCd = Math.max(0, this.localParryCd - this.deltaSec);
@@ -12099,14 +11168,6 @@ export class ArenaScene extends Phaser.Scene {
       this.prevSelfHp = self.hp;
       this.observedSelfFellSeq = self.fellSeq;
 
-      // Level-up celebration (§12): gold burst on the drifter + a screen toast.
-      if (this.prevLevel >= 0 && self.level > this.prevLevel) {
-        const rig = this.blobs.get(selfId);
-        if (rig) this.spawnLevelUp(rig.x, rig.y);
-        this.audio.play("levelup");
-      }
-      this.prevLevel = self.level;
-
       // §10 v0.104 the mystery-grab REVEAL: when the held loot identity changes to something with a
       // tier OR an affix, banner it in the tier's color — "RARE KEEN NEON KATANA" is the dopamine beat.
       // (An affixed Common still reveals — ~a third of drops are Common with a real affix.)
@@ -12324,58 +11385,12 @@ export class ArenaScene extends Phaser.Scene {
     });
   }
 
-  /** Level-up VFX: an expanding gold ring on the player + a brief "LEVEL N" toast. */
-  private spawnLevelUp(x: number, y: number): void {
-    const ring = this.add.circle(x, y, 24).setStrokeStyle(5, 0xffd479, 0.95).setDepth(99997);
-    this.tweens.add({
-      targets: ring,
-      scale: 4,
-      alpha: 0,
-      duration: 520,
-      ease: "Cubic.easeOut",
-      onComplete: () => ring.destroy(),
-    });
-    for (let i = 0; i < 8; i++) {
-      const a = (i / 8) * Math.PI * 2;
-      const spark = this.add.circle(x, y, 4, 0xffe9a8).setDepth(99999);
-      this.tweens.add({
-        targets: spark,
-        x: x + Math.cos(a) * 70,
-        y: y + Math.sin(a) * 70 - 20,
-        alpha: 0,
-        duration: 480,
-        ease: "Quad.easeOut",
-        onComplete: () => spark.destroy(),
-      });
-    }
-    // §7 v0.105 de-clunk: render ABOVE the level-up modal dim (depth 100010) — the toast used to spawn the
-    // same frame the 0.66-alpha dim opens at depth 100003, so ~66% of the celebration was greyed out. No
-    // camera shake either: a level-up is a UI beat, not an impact (it fought the combat shake channel).
-    const toast = this.add
-      .text(this.screenW() / 2, this.screenH() / 2 - 120, "LEVEL UP!", {
-        fontSize: "30px",
-        color: "#ffd479",
-        fontStyle: "bold",
-      })
-      .setScrollFactor(0)
-      .setOrigin(0.5)
-      .setDepth(100013);
-    this.tweens.add({
-      targets: toast,
-      y: this.screenH() / 2 - 150,
-      alpha: 0,
-      duration: 900,
-      ease: "Cubic.easeOut",
-      onComplete: () => toast.destroy(),
-    });
-  }
-
   /** One authoritative horizontal Drive bar. Ammo rows, reload copy, and the beam heat arc retire here. */
   private renderDriveHud(
     self: PlayerState | undefined,
     weapon: WeaponDef | undefined,
     barX: number,
-    xpY: number,
+    hudRailY: number,
     scale: number,
   ): void {
     const g = this.driveHudGfx;
@@ -12402,7 +11417,7 @@ export class ArenaScene extends Phaser.Scene {
     });
     let width = 240 * scale;
     let x = barX;
-    let y = xpY - 58 * scale;
+    let y = hudRailY - 58 * scale;
     const layout = !this.belt ? this.carouselDock?.layout : undefined;
     if (layout) {
       const dockScale = this.carouselDock?.body.scaleX ?? 1;
@@ -12454,7 +11469,7 @@ export class ArenaScene extends Phaser.Scene {
   private renderUltimateHud(
     self: PlayerState | undefined,
     barX: number,
-    xpY: number,
+    hudRailY: number,
     scale: number,
   ): void {
     const g = this.ultimateHudGfx;
@@ -12468,7 +11483,7 @@ export class ArenaScene extends Phaser.Scene {
       screenWidth: this.screenW(),
       screenHeight: this.screenH(),
       barX,
-      xpY,
+      xpY: hudRailY,
       uiScale: scale,
       belt: this.belt,
       dock: !this.belt ? this.carouselDock?.layout : undefined,
@@ -12743,7 +11758,7 @@ export class ArenaScene extends Phaser.Scene {
 
     const barX = 20 * s;
     const barY = this.screenH() - 24 * s;
-    const xpY = barY - 15 * s;
+    const hudRailY = barY - 15 * s;
     this.hpBarBg.setPosition(barX, barY);
     this.hpBarFill.setPosition(barX + 2 * s, barY);
     this.hpText.setPosition(barX + 8 * s, barY);
@@ -12778,23 +11793,6 @@ export class ArenaScene extends Phaser.Scene {
       Phaser.Math.Linear(this.juggleVignette.alpha, juggleFade * juggleBeat * 0.24, 0.24),
     );
 
-    // XP bar + level badge (§12).
-    this.xpBarBg.setPosition(barX, xpY);
-    this.xpBarFill.setPosition(barX + 2 * s, xpY);
-    const xpRatio = self && self.xpToNext > 0 ? Math.min(1, self.xp / self.xpToNext) : 0;
-    // §19 v0.108 A8: XP fill eases up on a kill (satisfying), but SNAPS on a level reset (ratio drops).
-    if (this.xpShown < 0 || xpRatio < this.xpShown - 0.05) this.xpShown = xpRatio;
-    else this.xpShown = Phaser.Math.Linear(this.xpShown, xpRatio, 0.25);
-    this.xpPulse = Math.max(0, this.xpPulse - (this.deltaSec || 0.016) / 0.12);
-    this.xpBarFill.width = 236 * s * this.xpShown;
-    // Receipt pulse changes thickness/brightness only; the authoritative XP ratio remains the sole width.
-    this.xpBarFill.height = (4 + this.xpPulse * 3) * s;
-    this.xpBarFill.fillColor = this.xpPulse > 0.05 ? 0xd9fbff : 0x6fd6ff;
-    this.xpBarFill.setAlpha(0.92 + this.xpPulse * 0.08);
-    this.levelText
-      .setPosition(barX, xpY - 9 * s)
-      .setText(self ? `Level ${self.level} · XP ${self.xp}/${self.xpToNext}` : "");
-
     this.restartBtn
       .setPosition(this.screenW() - 14 * s, 14 * s)
       .setText(this.room?.state.outcome === "active" ? "⟳ Restart Run" : "⌂ Wardrobe");
@@ -12807,7 +11805,7 @@ export class ArenaScene extends Phaser.Scene {
     const heldManifest = self ? this.manifestEntryAt("active", self.activeSlot) : undefined;
     const atRisk = heldManifest?.origin === "found" ? " · FOUND · AT RISK" : "";
     this.weaponText
-      .setPosition(barX, xpY - 24 * s)
+      .setPosition(barX, hudRailY - 24 * s)
       .setText(
         self
           ? `⚔ ${lootPrefix ? `${lootPrefix} ` : ""}${heldWeapon?.name ?? "Unknown weapon"}${driveCost ? ` · DRIVE ${driveCost.pipText} ${driveCost.copy}` : ""}${atRisk}`
@@ -12820,8 +11818,8 @@ export class ArenaScene extends Phaser.Scene {
     } else {
       this.weaponText.setColor("#9cff3b");
     }
-    this.renderDriveHud(self, heldWeapon, barX, xpY, s);
-    this.renderUltimateHud(self, barX, xpY, s);
+    this.renderDriveHud(self, heldWeapon, barX, hudRailY, s);
+    this.renderUltimateHud(self, barX, hudRailY, s);
 
     // §8 owned parry augments — a compact "name ×count" summary above the weapon readout.
     if (self?.augments) {
@@ -12833,7 +11831,7 @@ export class ArenaScene extends Phaser.Scene {
         return n > 1 ? `${name} ×${n}` : name;
       });
       this.augmentText
-        .setPosition(barX, xpY - 42 * s)
+        .setPosition(barX, hudRailY - 42 * s)
         .setText(`✦ ${parts.join(" · ")}`)
         .setVisible(true);
     } else {
@@ -13404,38 +12402,19 @@ export class ArenaScene extends Phaser.Scene {
     }
   }
 
-  /** Preserve the original WYSIWYG equations; only the one visible inspector is ever refreshed. */
+  /** Refresh the visible card from flat authored damage plus non-stat loot modifiers. */
   private refreshCarouselDockCard(card: Card, def: WeaponDef | undefined, self: PlayerState): void {
     const entry = loadoutEntryView(self);
-    const attrs: Record<Attr, number> = {
-      str: self.str,
-      dex: self.dex,
-      int: self.int,
-      con: self.con,
-      luk: self.luk,
-    };
     const fmt = (value: number) => (Number.isInteger(value) ? String(value) : value.toFixed(1));
     const offDef = entry.offId ? WEAPONS[entry.offId] : undefined;
     const activePairCard = card.id === entry.leadId && !!def && !!offDef;
-    const penalty = def
-      ? activePairCard
-        ? pairRequirementPenalty(def, offDef, attrs)
-        : requirementPenalty(def, attrs)
-      : 1;
     const loot = card.id === entry.leadId ? lootDamageMult(entry.rarity, entry.affix) : 1;
     for (const source of card.sources) {
-      const mult = damageMultFromGrades(source.src.grades, attrs) * penalty * loot;
-      const total = source.src.base * mult;
+      const total = source.src.base * loot;
       source.text.setText(
         `${fmt(source.src.base)} + ${fmt(total - source.src.base)} = ${fmt(total)}`,
       );
-      source.text.setColor(penalty < 1 ? "#ffb24a" : loot > 1 ? "#b8ff6a" : "#ffd479");
-    }
-    for (const token of card.reqTokens) {
-      // dockux-panel §4: met/unmet was green-vs-red only — prefix ✓/✗ so the verdict survives colourblindness.
-      const met = (attrs[token.attr] ?? 1) >= token.need;
-      token.text.setText(`${met ? "✓" : "✗"} ${token.need}`);
-      token.text.setColor(met ? "#9cff3b" : "#ff5a4a");
+      source.text.setColor(loot > 1 ? "#b8ff6a" : "#ffd479");
     }
     const cost = driveCostView(card.id);
     card.resource.setText(`DRIVE ${cost.pipText} · ${cost.copy}`);
@@ -13459,14 +12438,10 @@ export class ArenaScene extends Phaser.Scene {
           affix: entry.offAffix ?? "",
           earned: entry.offEarned ?? false,
         },
-        attrs,
         loadoutIds: [0, 1, 2].map((slot) => this.slotView(self, slot, entry).wid),
       });
       const rarity = RARITIES[entry.offRarity ?? 0];
       const color = rarity?.color ?? WEAPON_ACCENT[entry.offId] ?? 0xcfc6ae;
-      const grades = Object.entries(offDef.scalingGrades ?? { str: "B" })
-        .map(([attr, grade]) => `${attr.toUpperCase()} ${grade}`)
-        .join(" · ");
       card.offSummaryPaper
         .clear()
         .fillStyle(0x070503, 0.97)
@@ -13477,7 +12452,7 @@ export class ArenaScene extends Phaser.Scene {
       card.offStats.setText(
         `Damage ${fmt(preview.offDamage)} · Cadence ${preview.offGapSeconds.toFixed(2)}s`,
       );
-      card.offGrades.setText(`Grades ${grades} · Pair ${fmt(preview.combinedDps)}/s`);
+      card.offGrades.setText(`Flat power | Pair ${fmt(preview.combinedDps)}/s`);
       card.offSummary.setVisible(true);
     } else {
       card.offSummary.setVisible(false);
@@ -13559,7 +12534,6 @@ export class ArenaScene extends Phaser.Scene {
     const dockScale = Math.max(0.78, Math.min(1.25, Math.min(width / 1600, height / 900)));
     const hudRight = Math.max(
       20 * this.uiScale() + 240 * this.uiScale(),
-      this.levelText.x + this.levelText.displayWidth,
       this.weaponText.x + this.weaponText.displayWidth,
       this.augmentText.visible ? this.augmentText.x + this.augmentText.displayWidth : 0,
     );
@@ -13622,11 +12596,6 @@ export class ArenaScene extends Phaser.Scene {
     if (dock.state === "focused" && dock.currentDetailId) {
       const liveSig = [
         dock.currentDetailId,
-        self.str,
-        self.dex,
-        self.int,
-        self.con,
-        self.luk,
         entry.pairKey,
         entry.rarity,
         entry.affix,
@@ -14910,7 +13879,6 @@ export class ArenaScene extends Phaser.Scene {
     const preview = pairPreview({
       lead,
       off: candidate,
-      attrs: { str: self.str, dex: self.dex, int: self.int, con: self.con, luk: self.luk },
       loadoutIds: [0, 1, 2].map((slot) => this.slotView(self, slot, entry).wid),
     });
     if (!preview.eligible) {
@@ -14963,7 +13931,6 @@ export class ArenaScene extends Phaser.Scene {
       ? pairPreview({
           lead,
           off: candidate,
-          attrs: { str: self.str, dex: self.dex, int: self.int, con: self.con, luk: self.luk },
           loadoutIds: [0, 1, 2].map((slot) => this.slotView(self, slot, entry).wid),
         })
       : undefined;
@@ -15651,7 +14618,7 @@ export class ArenaScene extends Phaser.Scene {
     }
   }
 
-  /** The predictor's slice of the synced self row (frozen = the §12 level-window movement pause). */
+  /** The predictor's slice of the synced self row. */
   private static serverView(p: PlayerState): ServerView {
     return {
       x: p.x,
@@ -15671,7 +14638,6 @@ export class ArenaScene extends Phaser.Scene {
       slidePhase: p.slidePhase,
       slidePhaseTick: p.slidePhaseTick,
       alive: p.alive,
-      frozen: p.flexPending > 0 || p.sigPending > 0,
     };
   }
 
@@ -15986,12 +14952,12 @@ export class ArenaScene extends Phaser.Scene {
 
   private stepNetInput(
     deltaMs: number,
-    levelWindowOpen: boolean,
+    inputBlocked: boolean,
     ultimatePressed: boolean,
     nextDx: number,
     nextDy: number,
   ): void {
-    if (levelWindowOpen) {
+    if (inputBlocked) {
       this.jumpQueued = false;
       this.poundQueued = false;
       this.slideQueued = false;
@@ -16014,8 +14980,7 @@ export class ArenaScene extends Phaser.Scene {
     const weapon = self ? WEAPONS[self.weapon] : undefined;
     const fireHeld =
       !!self?.alive &&
-      !levelWindowOpen &&
-      !this.levelWinInputReleaseLatch &&
+      !inputBlocked &&
       !this.pointerOverInteractiveUi &&
       !!(
         weapon?.beam ||
@@ -16026,8 +14991,7 @@ export class ArenaScene extends Phaser.Scene {
       this.input.activePointer.rightButtonDown();
     const aim = this.currentBeamAim();
     const slideHeld =
-      !levelWindowOpen &&
-      !this.levelWinInputReleaseLatch &&
+      !inputBlocked &&
       slideHeldFromBindings(this.keys.SHIFT.isDown, this.keys.CTRL.isDown);
     this.inputAccMs = Math.min(this.inputAccMs + elapsedForInput, TICK_MS * 3);
 

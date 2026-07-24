@@ -29,7 +29,7 @@ import {
   WormBossMode,
   WormChain,
   type WormEncounterDef,
-  WORM_ANATOMY_XP_CAP,
+  WORM_ANATOMY_MONEY_CAP,
   WORM_BASE_SPEED,
   WORM_CONTACT_EPOCH_TICKS,
   WORM_DIVE_TICKS,
@@ -319,7 +319,7 @@ export class WormBossRuntime {
   private pendingRewardValue = 0;
   private pendingRewardX = 0;
   private pendingRewardY = 0;
-  private anatomyXpPaid = 0;
+  private anatomyMoneyPaid = 0;
   private topologyCommitTick = -1;
 
   constructor(
@@ -363,7 +363,7 @@ export class WormBossRuntime {
         this.mainOrder[this.mainCountValue++] = slot;
         this.setSlotMode(slot, WormSegmentMode.Surface, tick);
       } else {
-        // Dormant regrowth-only slots never mint first-break XP.
+        // Dormant regrowth-only slots never mint first-break money.
         this.rewardPaid[slot] = 1;
         this.setSlotMode(slot, WormSegmentMode.Dormant, tick);
       }
@@ -1110,7 +1110,7 @@ export class WormBossRuntime {
     this.armGraceEndTick = tick + WORM_SPLIT_PUNISH_TICKS;
     this.armorBand[0] = WormArmorBand.Exposed;
     this.headExposedUntilTick = this.armGraceEndTick;
-    const remaining = Math.max(0, WORM_ANATOMY_XP_CAP - this.anatomyXpPaid);
+    const remaining = Math.max(0, WORM_ANATOMY_MONEY_CAP - this.anatomyMoneyPaid);
     if (remaining > 0) this.addReward(remaining, this.x[0]!, this.y[0]!);
     this.clearAction(tick);
   }
@@ -1210,15 +1210,15 @@ export class WormBossRuntime {
     this.rewardPaid[slot] = 1;
     const role = this.role[slot]!;
     const value = role === WormSegmentRole.Body ? 3 : role === WormSegmentRole.Spinner || role === WormSegmentRole.Tail ? 5 : 0;
-    if (value > 0) this.addReward(Math.min(value, WORM_ANATOMY_XP_CAP - this.anatomyXpPaid), this.x[slot]!, this.y[slot]!);
+    if (value > 0) this.addReward(Math.min(value, WORM_ANATOMY_MONEY_CAP - this.anatomyMoneyPaid), this.x[slot]!, this.y[slot]!);
     const row = this.state.segments[slot];
     if (row) row.changeTick = tick;
   }
 
   private addReward(value: number, x: number, y: number): void {
-    const amount = Math.max(0, Math.min(value, WORM_ANATOMY_XP_CAP - this.anatomyXpPaid));
+    const amount = Math.max(0, Math.min(value, WORM_ANATOMY_MONEY_CAP - this.anatomyMoneyPaid));
     if (amount <= 0) return;
-    this.anatomyXpPaid += amount;
+    this.anatomyMoneyPaid += amount;
     this.pendingRewardValue += amount;
     this.pendingRewardX = x;
     this.pendingRewardY = y;
@@ -2254,7 +2254,7 @@ const VASTAGHAR_ANTI_KITE_DISTANCE = 900;
 const VASTAGHAR_ANTI_KITE_TICKS = 40;
 const VASTAGHAR_OPTIONAL_ADD_DELAY_TICKS = 400;
 const VASTAGHAR_DEATH_TICKS = 18;
-const VASTAGHAR_XP_CROWN_TICK = 10;
+const VASTAGHAR_MONEY_CROWN_TICK = 10;
 
 function vastagharTickReached(now: number, target: number): boolean {
   return ((now - target) | 0) >= 0;
@@ -2266,8 +2266,8 @@ function bumpUint16(value: number): number {
 }
 
 /** Exact conservation helper used by the reserved victory core and its deterministic regression. */
-export function conserveVastagharVictoryXp(fieldXp: number, bossXp: number): number {
-  return Math.min(0xffffffff, Math.max(0, Math.floor(fieldXp)) + Math.max(0, Math.floor(bossXp)));
+export function conserveVastagharVictoryMoney(fieldMoney: number, bossMoney: number): number {
+  return Math.min(0xffffffff, Math.max(0, Math.floor(fieldMoney)) + Math.max(0, Math.floor(bossMoney)));
 }
 
 export class VastagharEncounterRuntime {
@@ -2298,7 +2298,7 @@ export class VastagharEncounterRuntime {
   private authoredWaveSpawned = false;
   private optionalWaveSpawned = false;
   private finalTreadStarted = false;
-  private victoryXpRequested = false;
+  private victoryMoneyRequested = false;
   private victoryDeathTick = 0;
   private deferredSourcePlayerId = "";
   private deferredSourceWeaponId = "";
@@ -2382,8 +2382,7 @@ export class VastagharEncounterRuntime {
     state.destroyedPoiMask = 0;
     state.arenaMutationPoiIndex = VASTAGHAR_POI_NONE;
     state.victoryStage = VastagharVictoryStage.None;
-    state.victoryXp = 0;
-    state.victoryEchoId = "";
+    state.victoryMoney = 0;
     this.nextActionTick = (spawnTick + def.entranceDelayTicks) >>> 0;
     this.emitCue(VastagharActionKind.None, spawnTick);
   }
@@ -2544,19 +2543,19 @@ export class VastagharEncounterRuntime {
     this.state.victoryStage = VastagharVictoryStage.ThreatEnded;
     this.state.victoryTick = tick >>> 0;
     this.victoryDeathTick = tick >>> 0;
-    this.victoryXpRequested = false;
+    this.victoryMoneyRequested = false;
     this.emitCue(VastagharActionKind.Death, tick);
   }
 
-  /** Returns true exactly once when the collapse has committed and the reserved XP crown may be minted. */
+  /** Returns true exactly once when the collapse has committed and the reserved money crown may be minted. */
   advanceVictory(tick: number): boolean {
     if (this.state.mode !== VastagharMode.Victory) return false;
     const age = (tick - this.victoryDeathTick) >>> 0;
     if (age >= 2 && this.state.victoryStage < VastagharVictoryStage.Collapse)
       this.state.victoryStage = VastagharVictoryStage.Collapse;
-    if (age >= VASTAGHAR_XP_CROWN_TICK && !this.victoryXpRequested) {
-      this.victoryXpRequested = true;
-      this.state.victoryStage = VastagharVictoryStage.XpCrown;
+    if (age >= VASTAGHAR_MONEY_CROWN_TICK && !this.victoryMoneyRequested) {
+      this.victoryMoneyRequested = true;
+      this.state.victoryStage = VastagharVictoryStage.MoneyCrown;
       return true;
     }
     if (age >= VASTAGHAR_DEATH_TICKS && this.state.victoryStage < VastagharVictoryStage.ReceiptHeld)
@@ -2564,9 +2563,8 @@ export class VastagharEncounterRuntime {
     return false;
   }
 
-  setVictoryEcho(id: string, value: number): void {
-    this.state.victoryEchoId = id;
-    this.state.victoryXp = Math.max(0, Math.floor(value));
+  setVictoryMoney(value: number): void {
+    this.state.victoryMoney = Math.max(0, Math.floor(value));
   }
 
   markRewardsOpen(tick: number): void {

@@ -151,7 +151,7 @@ export const DIMENSION_ENEMY_KINDS: Record<string, EnemyKind> = {
     "radius": 18,
     "contactDamage": 4,
     "weight": 5,
-    "xpValue": 1
+    "moneyValue": 1
   },
   "shriek-wraith": {
     "sprite": "shriek-wraith",
@@ -161,7 +161,7 @@ export const DIMENSION_ENEMY_KINDS: Record<string, EnemyKind> = {
     "radius": 12,
     "contactDamage": 2.5,
     "weight": 4,
-    "xpValue": 1
+    "moneyValue": 1
   },
   "hoarfrost-bloom": {
     "sprite": "hoarfrost-bloom",
@@ -171,7 +171,7 @@ export const DIMENSION_ENEMY_KINDS: Record<string, EnemyKind> = {
     "radius": 26,
     "contactDamage": 6,
     "weight": 2,
-    "xpValue": 3
+    "moneyValue": 3
   },
   "rimebound-archer": {
     "sprite": "rimebound-archer",
@@ -181,7 +181,7 @@ export const DIMENSION_ENEMY_KINDS: Record<string, EnemyKind> = {
     "radius": 20,
     "contactDamage": 3.5,
     "weight": 2,
-    "xpValue": 3,
+    "moneyValue": 3,
     "ranged": {
       "range": 580,
       "preferredRange": 360,
@@ -199,7 +199,7 @@ export const DIMENSION_ENEMY_KINDS: Record<string, EnemyKind> = {
     "radius": 23,
     "contactDamage": 0,
     "weight": 0.7,
-    "xpValue": 10,
+    "moneyValue": 10,
     "melee": {
       "approach": 152,
       "range": 144,
@@ -223,7 +223,7 @@ export const DIMENSION_ENEMY_KINDS: Record<string, EnemyKind> = {
     "radius": 64,
     "contactDamage": 14,
     "weight": 0,
-    "xpValue": 40,
+    "moneyValue": 40,
     "ranged": {
       "range": 780,
       "preferredRange": 380,
@@ -242,7 +242,7 @@ export const DIMENSION_ENEMY_KINDS: Record<string, EnemyKind> = {
     "radius": 18,
     "contactDamage": 4,
     "weight": 5,
-    "xpValue": 1
+    "moneyValue": 1
   },
   "venom-spore": {
     "sprite": "venom-spore",
@@ -252,7 +252,7 @@ export const DIMENSION_ENEMY_KINDS: Record<string, EnemyKind> = {
     "radius": 12,
     "contactDamage": 2.5,
     "weight": 4,
-    "xpValue": 1
+    "moneyValue": 1
   },
   "fungal-bloomer": {
     "sprite": "fungal-bloomer",
@@ -262,7 +262,7 @@ export const DIMENSION_ENEMY_KINDS: Record<string, EnemyKind> = {
     "radius": 26,
     "contactDamage": 6,
     "weight": 2,
-    "xpValue": 3
+    "moneyValue": 3
   },
   "blowdart-sentinel": {
     "sprite": "blowdart-sentinel",
@@ -272,7 +272,7 @@ export const DIMENSION_ENEMY_KINDS: Record<string, EnemyKind> = {
     "radius": 20,
     "contactDamage": 3.5,
     "weight": 2,
-    "xpValue": 3,
+    "moneyValue": 3,
     "ranged": {
       "range": 560,
       "preferredRange": 350,
@@ -290,7 +290,7 @@ export const DIMENSION_ENEMY_KINDS: Record<string, EnemyKind> = {
     "radius": 22,
     "contactDamage": 0,
     "weight": 0.7,
-    "xpValue": 9,
+    "moneyValue": 9,
     "melee": {
       "approach": 150,
       "range": 140,
@@ -314,7 +314,7 @@ export const DIMENSION_ENEMY_KINDS: Record<string, EnemyKind> = {
     "radius": 66,
     "contactDamage": 14,
     "weight": 0,
-    "xpValue": 42,
+    "moneyValue": 42,
     "ranged": {
       "range": 720,
       "preferredRange": 340,
@@ -337,7 +337,7 @@ export const DIMENSION_ENEMY_KINDS: Record<string, EnemyKind> = {
     "radius": 18,
     "contactDamage": 4,
     "weight": 5,
-    "xpValue": 1
+    "moneyValue": 1
   },
   "ember-mote": {
     "sprite": "ember-mote",
@@ -347,7 +347,7 @@ export const DIMENSION_ENEMY_KINDS: Record<string, EnemyKind> = {
     "radius": 12,
     "contactDamage": 2.5,
     "weight": 4,
-    "xpValue": 1
+    "moneyValue": 1
   },
   "slag-crawler": {
     "sprite": "slag-crawler",
@@ -357,7 +357,7 @@ export const DIMENSION_ENEMY_KINDS: Record<string, EnemyKind> = {
     "radius": 26,
     "contactDamage": 6,
     "weight": 2,
-    "xpValue": 3
+    "moneyValue": 3
   },
   "ember-spitter": {
     "sprite": "ember-spitter",
@@ -367,7 +367,7 @@ export const DIMENSION_ENEMY_KINDS: Record<string, EnemyKind> = {
     "radius": 20,
     "contactDamage": 3.5,
     "weight": 2,
-    "xpValue": 3,
+    "moneyValue": 3,
     "ranged": {
       "range": 560,
       "preferredRange": 340,
@@ -385,7 +385,7 @@ export const DIMENSION_ENEMY_KINDS: Record<string, EnemyKind> = {
     "radius": 22,
     "contactDamage": 0,
     "weight": 0.7,
-    "xpValue": 10,
+    "moneyValue": 10,
     "melee": {
       "approach": 150,
       "range": 140,
@@ -409,7 +409,7 @@ export const DIMENSION_ENEMY_KINDS: Record<string, EnemyKind> = {
     "radius": 66,
     "contactDamage": 15,
     "weight": 0,
-    "xpValue": 42,
+    "moneyValue": 42,
     "ranged": {
       "range": 780,
       "preferredRange": 360,
@@ -428,7 +428,7 @@ export const DIMENSION_ENEMY_KINDS: Record<string, EnemyKind> = {
     "radius": 18,
     "contactDamage": 4,
     "weight": 5,
-    "xpValue": 1
+    "moneyValue": 1
   },
   "dronemite": {
     "sprite": "dronemite",
@@ -438,7 +438,7 @@ export const DIMENSION_ENEMY_KINDS: Record<string, EnemyKind> = {
     "radius": 12,
     "contactDamage": 2.5,
     "weight": 4,
-    "xpValue": 1
+    "moneyValue": 1
   },
   "turret-node": {
     "sprite": "turret-node",
@@ -448,7 +448,7 @@ export const DIMENSION_ENEMY_KINDS: Record<string, EnemyKind> = {
     "radius": 26,
     "contactDamage": 6,
     "weight": 2,
-    "xpValue": 3
+    "moneyValue": 3
   },
   "laser-spire": {
     "sprite": "laser-spire",
@@ -458,7 +458,7 @@ export const DIMENSION_ENEMY_KINDS: Record<string, EnemyKind> = {
     "radius": 20,
     "contactDamage": 3.5,
     "weight": 2,
-    "xpValue": 3,
+    "moneyValue": 3,
     "ranged": {
       "range": 580,
       "preferredRange": 360,
@@ -476,7 +476,7 @@ export const DIMENSION_ENEMY_KINDS: Record<string, EnemyKind> = {
     "radius": 22,
     "contactDamage": 0,
     "weight": 0.7,
-    "xpValue": 9,
+    "moneyValue": 9,
     "melee": {
       "approach": 150,
       "range": 138,
@@ -500,7 +500,7 @@ export const DIMENSION_ENEMY_KINDS: Record<string, EnemyKind> = {
     "radius": 64,
     "contactDamage": 14,
     "weight": 0,
-    "xpValue": 40,
+    "moneyValue": 40,
     "ranged": {
       "range": 760,
       "preferredRange": 360,
@@ -520,7 +520,7 @@ export const DIMENSION_ENEMY_KINDS: Record<string, EnemyKind> = {
     "radius": 26,
     "contactDamage": 0,
     "weight": 0,
-    "xpValue": 25,
+    "moneyValue": 25,
     "ranged": {
       "range": 640,
       "preferredRange": 380,
@@ -544,7 +544,7 @@ export const DIMENSION_ENEMY_KINDS: Record<string, EnemyKind> = {
     "radius": 27,
     "contactDamage": 0,
     "weight": 0,
-    "xpValue": 35,
+    "moneyValue": 35,
     "melee": {
       "approach": 162,
       "range": 144,
@@ -572,7 +572,7 @@ export const DIMENSION_ENEMY_KINDS: Record<string, EnemyKind> = {
     "radius": 30,
     "contactDamage": 0,
     "weight": 0,
-    "xpValue": 50,
+    "moneyValue": 50,
     "melee": {
       "approach": 150,
       "range": 152,

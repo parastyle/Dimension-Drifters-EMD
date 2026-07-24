@@ -10,18 +10,15 @@
  *  decodes new patches with corrupted offsets (HP reads as aim, etc.). The server stamps it on
  *  `ArenaState.schemaVersion`; the client compares on join and tells the player to hard-reload on a
  *  mismatch instead of rendering silently-corrupt state. */
-export const SCHEMA_VERSION = 33 as const; // authoritative projectile source player + weapon identity
+export const SCHEMA_VERSION = 34 as const; // B20 L1 stat/level/XP wire teardown
 
-/** §ULT authoritative allocation, meter, action, and five-family tuning (20Hz tick epochs). */
-export const ULT_UNLOCK_ALLOCS = 15 as const;
-export const ULT_TEMPER_ALLOCS = 30 as const;
+/** §ULT stat-free damage/activity meter and action tuning (20Hz tick epochs). */
 export const ULT_CHARGE_MAX = 100 as const;
 /** Precise charge is normalized 0..1: 30 applied damage pays one displayed charge point. */
 export const ULT_CHARGE_PER_DAMAGE = 0.0003333333333333333 as const;
 export const ULT_CHARGE_KILL_BONUS = 0.003 as const;
 export const ULT_CHARGE_PARRY_BONUS = 0.04 as const;
 export const ULT_CHARGE_TICK_CAP = 0.04 as const;
-export const ULT_TEMPER_CHARGE_MULT = 1.1 as const;
 export const ULT_BUFFER_SECONDS = 0.2 as const;
 export const ULT_RECOVERY_TICKS = 8 as const;
 
@@ -104,20 +101,6 @@ export const DRIVE_BEAM_RESTART_THRESHOLD = 68 as const;
 
 /** Flat player move speed in px/sec. §7 [LOCKED]: flat move speed, no sprint layer. (tuning) */
 export const MOVE_SPEED = 320;
-
-/**
- * Class-dissolution caster safety lever. INT-forward character spreads are the shipped mitigation; this
- * C-grade-like multiplier floor remains flag-OFF until telemetry proves it necessary. Keep the application
- * pure so the flag can be pinned without mutating shared module state in tests.
- */
-export const CAST_GRADE_FLOOR_ENABLED = false as const;
-export const CAST_GRADE_FLOOR = 1.4 as const;
-export function applyCastGradeFloor(
-  multiplier: number,
-  enabled: boolean = CAST_GRADE_FLOOR_ENABLED,
-): number {
-  return enabled ? Math.max(multiplier, CAST_GRADE_FLOOR) : multiplier;
-}
 
 /**
  * §7 v0.111 PIVOT movement ("pull the reins"). Superseded the v0.105 continuous velocity-steer (which
@@ -406,45 +389,17 @@ export const DUMMY_RADIUS = 30;
 export const PICKUP_RADIUS = 46;
 
 /**
- * XP ECHOES — authoritative kill rewards. One synced Echo carries an aggregate XP value; its position is
- * static while resting and its launch/arrival epochs describe the client-rendered flight. No per-tick flight
- * coordinates are serialized. All values in this block are game-feel tuning shared by server and client.
+ * MONEY DROPS — authoritative kill rewards. A bounded synced row rests at the death point, then flies to
+ * the first eligible player in reach. Collection credits the existing scrip balance; no XP or level state
+ * participates in this rail.
  */
-export const BASE_XP_MOTE_REACH = 180;
-export const XP_MOTE_REACH_MIN = 120;
-export const XP_MOTE_REACH_MAX = 600;
-/** Reserved first stat hook: each future Mote-Reach stack grows the authoritative radius by 18%. */
-export const XP_MOTE_REACH_PER_STACK = 0.18;
-/** Hard synchronized-entity ceiling. Overflow always merges value; XP is never discarded. */
-export const MAX_XP_ECHOES = 48;
-/** Below this count only close, simultaneous deaths merge; above it the field coalesces aggressively. */
-export const XP_ECHO_DENSE_AT = 32;
-export const XP_ECHO_RECENT_MERGE_RADIUS = 64;
-export const XP_ECHO_DENSE_MERGE_RADIUS = 80;
-export const XP_ECHO_RECENT_MERGE_MS = 200;
-/** Every drop gets a readable pop/settle before Reach may latch it. Higher tiers linger 40ms longer. */
-export const XP_ECHO_ARM_MS = 260;
-export const XP_ECHO_ARM_TIER_MS = 40;
-export const XP_ECHO_ARM_MAX_MS = 380;
-/** Distance-sensitive, tick-quantized magnet flight: clamp(0.22 + distance/1500, 0.24, 0.52). */
-export const XP_ECHO_FLIGHT_BASE_SECONDS = 0.22;
-export const XP_ECHO_FLIGHT_DISTANCE_DIVISOR = 1500;
-export const XP_ECHO_FLIGHT_MIN_SECONDS = 0.24;
-export const XP_ECHO_FLIGHT_MAX_SECONDS = 0.52;
-/** Legacy tick-compatibility lane: a corpse already overlapping the two body radii catches in one tick. */
-export const XP_ECHO_POINT_BLANK_REACH = 48;
-export const XP_ECHO_POINT_BLANK_FLIGHT_TICKS = 1;
-export const XP_ECHO_RETARGET_MIN_SECONDS = 0.16;
-export const XP_ECHO_RETARGET_MAX_SECONDS = 0.26;
-/** Stream admission keeps a large pile braided and readable instead of arriving as one opaque flash. */
-export const XP_ECHO_LAUNCHES_PER_COLLECTOR_TICK = 2;
-export const XP_ECHO_LAUNCHES_PER_ROOM_TICK = 3;
-export const XP_ECHO_RECEIPTS_PER_COLLECTOR_TICK = 2;
-/** Closed-beat cleanup admits faster streams and folds any tail after the 650ms presentation budget. */
-export const XP_ECHO_CLEANUP_LAUNCHES_PER_TICK = 6;
-export const XP_ECHO_CLEANUP_FLIGHT_MIN_SECONDS = 0.22;
-export const XP_ECHO_CLEANUP_FLIGHT_MAX_SECONDS = 0.36;
-export const XP_ECHO_CLEANUP_MAX_MS = 650;
+export const BASE_MONEY_DROP_REACH = 180;
+export const MONEY_DROP_REACH_MIN = 120;
+export const MONEY_DROP_REACH_MAX = 600;
+export const MAX_MONEY_DROPS = 48;
+export const MONEY_DROP_ARM_TICKS = 6;
+export const MONEY_DROP_FLIGHT_TICKS = 6;
+
 /** §29 v0.118 ARSENAL: a fixed 3-slot loadout (the belt "carry 3 weapons, swap instantly") plus a bag for
  *  overflow you haul to a shopkeeper. */
 export const ARSENAL_SLOTS = 3;
@@ -467,10 +422,6 @@ export const BAG_CAP = 12;
  *  (unearned/conjured weapons sell for nothing — same anti-launder rule as salvage). Indexed by rarity. */
 export const SHOP_RADIUS = 90;
 export const SCRIP_BY_RARITY = [4, 9, 18, 34, 60] as const;
-/** §30 v0.118 HARVEST (Brotato parity #3): extracting banks a BONUS on the carried salvage, scaled by the
- *  squad's best LUK — rewarding the luck/greed axis without a new stat. +4%/LUK over 1, capped. */
-export const HARVEST_PER_LUK = 0.04;
-export const HARVEST_CAP = 0.5;
 /** §9/§13 drop & salvage: after a player DROPS a weapon it can't be re-grabbed for this long (sec), so a
  *  drop at your feet doesn't snap straight back. */
 export const DROP_GRACE_SECONDS = 0.7;
@@ -640,7 +591,7 @@ export const ZONER_DROP_INTERVAL = 2.4;
 
 /**
  * Tough tier (§15 — "bigger/glowier size-parity of its kin," NOT bespoke art). Spawn chance ramps
- * with run time; a tough enemy scales up, hits harder, tanks more, and is worth more XP. (tuning)
+ * with run time; a tough enemy scales up, hits harder, tanks more, and pays more money. (tuning)
  */
 export const TOUGH_CHANCE_MAX = 0.28;
 export const TOUGH_RAMP_SECONDS = 200;
@@ -653,7 +604,7 @@ export const ENEMY_HP_PER_PLAYER = 0.6; // +60% enemy HP per extra player
 export const TOUGH_CHANCE_PER_PLAYER = 0.08; // +8 percentage-points tough chance per extra player
 export const TOUGH_HP_MULT = 4;
 export const TOUGH_DAMAGE_MULT = 1.7;
-export const TOUGH_XP_MULT = 4;
+export const TOUGH_MONEY_MULT = 4;
 export const TOUGH_SCALE = 1.7;
 
 /**
@@ -705,12 +656,12 @@ export const DROP_CHANCE_TRASH = 0.012;
 export const DROP_CHANCE_TOUGH = 0.055;
 /** §11 LUK: each point above 1 multiplies every rarity tier above Common by (1 + this)^tier — the
  *  dormant attribute finally reads into something (rarity odds), per "LUK = rarity/luck effects". */
-export const LUK_RARITY_PER = 0.06;
-/** §13 "tier affects drop rate AND rarity": the killer's tier rolls the rarity table as bonus LUK — a
- *  TOUGH rolls like +2 LUK, a BOSS like +8, so the guaranteed capstone drop rarely lands Common-plain.
+export const LUCK_RARITY_PER = 0.06;
+/** §13 "tier affects drop rate AND rarity": the killer's tier applies a flat rarity bonus, so a
+ *  TOUGH rolls at +2 and a BOSS at +8 and the guaranteed capstone drop rarely lands Common-plain.
  *  (This also gives depth an organic rarity gradient — tough-share ramps with depth.) */
-export const LOOT_TIER_LUK_TOUGH = 2;
-export const LOOT_TIER_LUK_BOSS = 8;
+export const LOOT_TIER_RARITY_TOUGH = 2;
+export const LOOT_TIER_RARITY_BOSS = 8;
 /** Extra tough-spawn chance per depth beyond 1 (additive percentage points). */
 export const DEPTH_TOUGH_PER = 0.06;
 /** Spawn-interval multiplier per depth beyond 1 (0.92 → each depth spawns ~8% faster, floored). */
@@ -769,9 +720,9 @@ export const WORM_SPLIT_TICKS = 160;
 export const WORM_SPLIT_PUNISH_TICKS = 24;
 export const WORM_REGROW_TICKS = 110;
 export const WORM_LOCAL_PROJECTILE_CAP = 16;
-export const WORM_TOTAL_XP = 110;
-export const WORM_ANATOMY_XP_CAP = 35;
-export const WORM_CORE_XP_MIN = 75;
+export const WORM_TOTAL_MONEY = 110;
+export const WORM_ANATOMY_MONEY_CAP = 35;
+export const WORM_CORE_MONEY_MIN = 75;
 /** §16 v0.109 telegraph danger channels: 0 = parryable (WHITE, §8), 1 = unparryable (RED, dodge). */
 export const TELEGRAPH_PARRYABLE = 0;
 export const TELEGRAPH_DODGE = 1;
@@ -852,7 +803,7 @@ export const PARRY_CHAIN_CD = 0.12;
  *  turns defense into offense (the parry's whole fantasy). All server-authoritative + tuning. */
 /** §8 v0.117 BASE parry deflect (no augment) — the bullet GLANCES OFF to the side and fades, like a round
  *  pinging off Superman: pure defense, zero enemy damage. The offensive bounce-BACK is gated behind the
- *  `deflector` level-up augment (see below). */
+ *  `deflector` augment (see below). */
 export const DEFLECT_SPEED = 640; // px/s the glanced spark sprays sideways
 export const DEFLECT_TTL = 0.4; // sec — it fades out fast (a brief spark, not a live shot)
 /** §8 `deflector` augment — parried bullets RICOCHET BACK at the nearest enemy. Reflected-bullet speed

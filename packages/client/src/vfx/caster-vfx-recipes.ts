@@ -1,4 +1,4 @@
-import type { Grade, WeaponDef } from "@dd/shared";
+import type { WeaponDef } from "@dd/shared";
 import { generatedImageVfxReplacesProceduralRecipe } from "./generated-image-weapon-vfx-recipes.js";
 
 export const CASTER_VFX_ELEMENTS = [
@@ -951,12 +951,6 @@ export function casterVfxFormFor(def: WeaponDef): CasterVfxForm {
   return "focus";
 }
 
-function casterGrade(grade: Grade | undefined): CasterVfxGrade {
-  if (grade === "S") return "pinnacle";
-  if (grade === "A") return "master";
-  return "adept";
-}
-
 function authoredDamage(def: WeaponDef): number {
   return Math.max(
     def.damage,
@@ -985,9 +979,10 @@ export function resolveCasterVfxRecipe(def: WeaponDef | undefined): CasterVfxRec
   const element = CASTER_VFX_ELEMENTS.includes(def.tags.element as CasterVfxElement)
     ? (def.tags.element as CasterVfxElement)
     : "arcane";
-  const form = casterVfxFormFor(def);
-  const grade = casterGrade(def.scalingGrades?.int);
   const damageTier = damageTierFor(def);
+  const form = casterVfxFormFor(def);
+  const grade: CasterVfxGrade =
+    damageTier === "nova" ? "pinnacle" : damageTier === "burst" ? "master" : "adept";
   const spriteProjectile = CASTER_SPRITE_PROJECTILES[def.id];
   const textureProjectile = CASTER_TEXTURE_PROJECTILES[def.id];
   const paintedImpact = CASTER_PAINTED_IMPACTS[def.id];

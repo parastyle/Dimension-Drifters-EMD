@@ -70,7 +70,7 @@ const PHASE_GROUPS = {
   projectiles: ["stepProjectiles"],
   "zones: world tick": ["stepZoners", "stepZones"],
   "collision/grid": ["rebuildEnemyGrid", "resolveEnemyCollisions"],
-  "XP/receipts": ["stepXpEchoes"],
+  "money/receipts": ["stepMoneyDrops"],
   ultimates: ["stepUltimates"],
 };
 
@@ -119,7 +119,7 @@ function snapshotEntities(room) {
     beams: room.state.beams.size,
     zones: room.state.zones.size,
     telegraphs: room.state.telegraphs.size,
-    xpEchoes: room.state.xpEchoes.size,
+    moneyDrops: room.state.moneyDrops.size,
     wormActiveSegments: room.state.wormBoss?.active
       ? Number(room.state.wormBoss.activeMask ?? 0)
           .toString(2)

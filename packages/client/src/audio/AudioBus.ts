@@ -78,7 +78,6 @@ export class AudioBus {
     "descent",
     "fall",
     "pitdeath",
-    "levelup",
   ]);
 
   constructor() {
@@ -1358,9 +1357,6 @@ export class AudioBus {
           priority: "critical",
         });
         break;
-      case "levelup":
-        this.blip([523, 659, 784, 1046], 0.07, "triangle", 0.26);
-        break;
       case "pet:bond-progress":
         if (this.throttled("petBondProgress", 500)) return;
         if (this.sampleFirst("pet-bond-progress", { volume: 0.46, priority: "normal" })) return;
@@ -1954,7 +1950,7 @@ export class AudioBus {
     }
   }
 
-  /** An ascending arpeggio of notes (level-up / loot / extract stings). */
+  /** An ascending arpeggio of notes (loot / extract stings). */
   private blip(freqs: number[], step: number, type: OscillatorType, gain: number): void {
     for (let i = 0; i < freqs.length; i++) {
       this.tone(freqs[i] ?? 440, step * 1.6, { type, gain, delay: i * step });

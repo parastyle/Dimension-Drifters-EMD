@@ -9,7 +9,6 @@ import {
   PLAYABLE_CHARACTERS,
   type PlayableCharacter,
 } from "./characters.js";
-import type { Attr } from "./leveling.js";
 
 /** §39 untrusted-id guard → a real playable character id (dev-portal deep-links, network messages). */
 export function isPlayableCharacter(id: string): boolean {
@@ -17,7 +16,6 @@ export function isPlayableCharacter(id: string): boolean {
 }
 
 export type CharacterLineage = "bruiser" | "duelist" | "caster" | "warden" | "scoundrel";
-export type CharacterSpread = Readonly<Record<Attr, number>>;
 export type LegacyQuirkId = (typeof CHARACTER_KITS)[PlayableCharacter]["quirk"];
 export type QuirkId = LegacyQuirkId | "none";
 export type QuirkAvailability = "active" | "partial" | "inert";
@@ -38,12 +36,9 @@ export type QuirkEffect =
   | { kind: "reload-held-gun" };
 
 export interface QuirkMods {
-  /** Unwritten: the ballast point follows the chosen attribute instead of the current lowest. */
-  ballastFollowsChoice: boolean;
   rollCooldownMult: number;
   parryIFrameMult: number;
   parryKnockbackMult: number;
-  critChanceAdd: number;
   regenMult: number;
   harvestMult: number;
   drawLockMult: number;
@@ -174,9 +169,8 @@ export const QUIRKS = {
   unwritten: {
     id: "unwritten",
     name: "Unwritten",
-    blurb: "Ballast follows the chosen attribute instead of the current lowest.",
+    blurb: "A blank page with no numeric identity effects.",
     availability: "active",
-    mods: { ballastFollowsChoice: true },
   },
   "mend-the-broken": {
     id: "mend-the-broken",
@@ -192,7 +186,7 @@ export const QUIRKS = {
   "the-pack-finds-you": {
     id: "the-pack-finds-you",
     name: "The Pack Finds You",
-    blurb: "Nearby XP motes and weapon drops crawl toward her.",
+    blurb: "Nearby money and weapon drops crawl toward her.",
     availability: "inert",
     inert: inert("pickup-attraction", "Per-owner pickup magnet steering is not shipped."),
   },
@@ -473,11 +467,6 @@ function characterKit(id: string): (typeof CHARACTER_KITS)[PlayableCharacter] {
 /** Non-gating fantasy bucket for card grouping and migration provenance. */
 export function lineageForCharacter(id: string): CharacterLineage {
   return CHARACTER_LINEAGE[isPlayableCharacter(id) ? (id as PlayableCharacter) : DEFAULT_CHARACTER];
-}
-
-/** Sum-10 starting spread for a character; unknown ids resolve safely to the flat Drifter. */
-export function spreadForCharacter(id: string): CharacterSpread {
-  return characterKit(id).spread;
 }
 
 /** Signature quirk for a character; unknown ids resolve safely to the Drifter's Unwritten rule. */

@@ -1856,7 +1856,7 @@ export class MenuScene extends Phaser.Scene {
     });
     const preview = wardrobePreview(this.metaAccount);
     this.wardrobeStats?.setText(
-      `STR ${preview.baseStats.str}  Â·  DEX ${preview.baseStats.dex}  Â·  INT ${preview.baseStats.int}  Â·  CON ${preview.baseStats.con}  Â·  LUK ${preview.baseStats.luk}\n${preview.quirk.name}`,
+      `IDENTITY · ${preview.quirk.name}\nWardrobe pieces are cosmetic flavor`,
     );
     this.refreshWardrobeDetail(inspected);
     this.prestigeRoot?.setVisible(this.prestigeDrawerOpen);
@@ -1882,9 +1882,7 @@ export class MenuScene extends Phaser.Scene {
     const rarity = rarityToken(item.def.rarity);
     const equipped = this.metaAccount.equippedGear[item.def.slot];
     const equippedDef = GEAR_CATALOG[equipped];
-    const statLines = Object.entries(item.def.stats)
-      .map(([attr, value]) => `${attr.toUpperCase()}  ${Number(value) >= 0 ? "+" : ""}${value}`)
-      .join("  Â·  ") || "Flat signature profile";
+    const statLines = "Cosmetic identity profile";
     this.wardrobeInspector
       .setText(
         `${item.def.name}\n${rarityMark(item.def.rarity)}\n${state.label}\n\nCompared with ${equippedDef.name}\n${statLines}\n${item.def.effectText}\n\n${item.owned ? "Owned" : item.lockedCopy}  Â·  ${item.def.gearClass}`,
@@ -2220,7 +2218,7 @@ export class MenuScene extends Phaser.Scene {
     const preview = wardrobePreview(this.metaAccount);
     this.setBoundedWardrobeText(
       this.wardrobeStats,
-      `STR ${preview.baseStats.str} · DEX ${preview.baseStats.dex} · INT ${preview.baseStats.int} · CON ${preview.baseStats.con} · LUK ${preview.baseStats.luk}\nSIGNATURE · ${preview.quirk.name}`,
+      `SIGNATURE · ${preview.quirk.name}\nWARDROBE · COSMETIC FLAVOR`,
       WARDROBE_LAYOUT.stats,
     );
     const sets = wardrobeSetViews(this.metaAccount);

@@ -98,9 +98,9 @@ describe("wardrobe model", () => {
     expect("pants" in (state.presets[0]?.loadout ?? {})).toBe(false);
   });
 
-  it("previews the flat Drifter and reports all twelve legacy collections", () => {
+  it("keeps archived gear previews stat-free and reports all twelve legacy collections", () => {
     const account = createMetaAccountV4();
-    expect(wardrobePreview(account).baseStats).toEqual({ str: 2, dex: 2, int: 2, con: 2, luk: 2 });
+    expect(wardrobePreview(account).quirk.name).toBe("No signature");
     const sets = wardrobeSetViews(account);
     expect(sets).toHaveLength(12);
     expect(sets.every((row) => row.total === GEAR_SLOTS.length)).toBe(true);

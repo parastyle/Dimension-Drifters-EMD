@@ -96,7 +96,6 @@ class MockServer {
       ackSeq: this.ackSeq,
       teleportSeq: this.teleportSeq,
       alive: true,
-      frozen: false,
     };
   }
 }
@@ -230,41 +229,6 @@ describe("SelfPredictor — §4 v0.107 prediction + reconciliation", () => {
     expect(pred.stats.errPx).toBe(0);
     run(pred, server, hold(0, 0, 5), 2);
     expect(pred.renderPos(0, 0, 0).x).toBeCloseTo(server.x, 1);
-  });
-
-  it("FREEZE (level window) pauses prediction and resumes cleanly from server truth", () => {
-    const server = new MockServer();
-    const pred = new SelfPredictor(server.view());
-    run(pred, server, hold(1, 0, 10), 0);
-    pred.reconcile({ ...server.view(), frozen: true });
-    expect(pred.isPaused).toBe(true);
-    const frozenAt = pred.renderPos(1, 0, 0);
-    pred.tick(pred.mintCmd(1, 0, false)); // ticks while frozen are no-ops
-    expect(pred.renderPos(1, 0, 0).x).toBeCloseTo(frozenAt.x, 6);
-    pred.reconcile({ ...server.view(), frozen: false }); // window closed
-    expect(pred.isPaused).toBe(false);
-    run(pred, server, hold(1, 0, 5), 0);
-    expect(pred.renderPos(1, 0, 0).x).toBeCloseTo(server.x, 4);
-  });
-
-  it("FREEZE ENTRY while moving under latency GLIDES (folds the lead into the offset — no backward pop)", () => {
-    const server = new MockServer();
-    const pred = new SelfPredictor(server.view());
-    // Sprint under 3-tick latency: the render leads the delayed server truth by ~3 ticks of motion.
-    run(pred, server, hold(1, 0, 15), 3);
-    const before = pred.renderPos(1, 0, 0);
-    expect(before.x).toBeGreaterThan(server.x + 20); // a real lead exists at the freeze edge
-    // The level-up window opens: the patch arrives frozen, with the server's (behind) position.
-    pred.reconcile({ ...server.view(), frozen: true });
-    const atFreeze = pred.renderPos(0, 0, 0);
-    // Amendment #14: the rig must NOT snap backward to server truth — the lead folds into the offset.
-    expect(Math.abs(atFreeze.x - before.x)).toBeLessThan(2);
-    // …and mid-window reconciles must not re-zero the fold.
-    pred.reconcile({ ...server.view(), frozen: true });
-    expect(Math.abs(pred.renderPos(0, 0, 0).x - before.x)).toBeLessThan(2);
-    // The offset then DECAYS to server truth under the window (glide, ~⅓s).
-    for (let i = 0; i < 40; i++) pred.decayError(0.016);
-    expect(pred.renderPos(0, 0, 0).x).toBeCloseTo(server.x, 0);
   });
 
   it("a connection STALL freezes prediction (no dead-reckoning into the dark) and recovers on the next patch", () => {
@@ -473,7 +437,6 @@ function rollInitial(): ServerView {
     moveStance: rollPredictionShared.STANCE_NONE,
     stanceSeq: 0,
     alive: true,
-    frozen: false,
   };
 }
 

@@ -10,10 +10,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-sandsong-saber",
     "name": "Sandsong Saber",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "B",
-      "str": "D"
-    },
     "damage": 6,
     "range": 134,
     "halfArc": 0.66,
@@ -35,19 +31,12 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "STR"
       ]
     },
-    "requirements": {
-      "dex": 5
-    },
     "durability": 75
   },
   "x2-coyote-s-grin": {
     "id": "x2-coyote-s-grin",
     "name": "Coyote's Grin",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "B",
-      "luk": "C"
-    },
     "damage": 4,
     "range": 96,
     "halfArc": 0.7,
@@ -69,9 +58,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "LUK"
       ]
     },
-    "requirements": {
-      "dex": 6
-    },
     "dual": true,
     "durability": 75,
     "thrown": {
@@ -87,10 +73,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-brimstone-falcata",
     "name": "Brimstone Falcata",
     "expansion": true,
-    "scalingGrades": {
-      "str": "B",
-      "dex": "D"
-    },
     "damage": 9,
     "range": 138,
     "halfArc": 0.8,
@@ -112,18 +94,12 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "DEX"
       ]
     },
-    "requirements": {
-      "str": 7
-    },
     "durability": 75
   },
   "x2-hailwidow-katana": {
     "id": "x2-hailwidow-katana",
     "name": "Hailwidow Katana",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "A"
-    },
     "damage": 7,
     "range": 140,
     "halfArc": 0.6,
@@ -152,9 +128,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "finisherDamageMultiplier": 1.3,
       "nonFinisherDamageMultiplier": 0.85
     },
-    "requirements": {
-      "dex": 11
-    },
     "twoHanded": true,
     "durability": 90
   },
@@ -162,10 +135,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-gravechill-nodachi",
     "name": "Gravechill Nodachi",
     "expansion": true,
-    "scalingGrades": {
-      "str": "B",
-      "dex": "C"
-    },
     "damage": 9,
     "range": 300,
     "halfArc": 1,
@@ -187,10 +156,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "DEX"
       ]
     },
-    "requirements": {
-      "str": 9,
-      "dex": 7
-    },
     "twoHanded": true,
     "durability": 90,
     "quake": {
@@ -202,10 +167,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-voltfang-tachi",
     "name": "Voltfang Tachi",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "B",
-      "int": "C"
-    },
     "damage": 6,
     "range": 142,
     "halfArc": 0.64,
@@ -241,10 +202,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "stance": "low-close-hilt",
     "comboFamily": "chop",
     "comboVariant": "voltfang-rise",
-    "requirements": {
-      "dex": 9,
-      "int": 4
-    },
     "twoHanded": true,
     "durability": 90,
     "chainLightning": {
@@ -277,10 +234,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-reverent-broadsword",
     "name": "Reverent Broadsword",
     "expansion": true,
-    "scalingGrades": {
-      "str": "B",
-      "dex": "C"
-    },
     "damage": 8,
     "range": 144,
     "halfArc": 0.82,
@@ -307,19 +260,12 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "action": "default-swing",
       "comboForwardPx": 34
     },
-    "requirements": {
-      "str": 6
-    },
     "durability": 75
   },
   "x2-tombwarden-claymore": {
     "id": "x2-tombwarden-claymore",
     "name": "Tombwarden Claymore",
     "expansion": true,
-    "scalingGrades": {
-      "str": "A",
-      "con": "D"
-    },
     "damage": 14,
     "range": 178,
     "halfArc": 1.05,
@@ -344,10 +290,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "effectRecipe": "tombwarden-dark-slash",
     "effectEmitter": "blade",
     "effectTiming": "impact",
-    "requirements": {
-      "str": 12,
-      "con": 6
-    },
     "twoHanded": true,
     "durability": 90,
     "quake": {
@@ -359,10 +301,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-hexbloom-rapier",
     "name": "Hexbloom Rapier",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "A",
-      "luk": "D"
-    },
     "damage": 6,
     "range": 158,
     "halfArc": 0.5,
@@ -387,19 +325,12 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "effectRecipe": "hexbloom-toxic-impact",
     "effectEmitter": "tip",
     "effectTiming": "impact",
-    "requirements": {
-      "dex": 10
-    },
     "durability": 75
   },
   "x2-phantom-estoc": {
     "id": "x2-phantom-estoc",
     "name": "Phantom Estoc",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "B",
-      "int": "C"
-    },
     "damage": 7,
     "range": 168,
     "halfArc": 0.5,
@@ -421,10 +352,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "INT"
       ]
     },
-    "requirements": {
-      "dex": 9,
-      "int": 5
-    },
     "durability": 75,
     "scatter": {
       "count": 4,
@@ -432,19 +359,13 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "speed": 620,
       "range": 300,
       "damage": 5,
-      "pierce": 2,
-      "scalingGrades": {
-        "int": "B"
-      }
+      "pierce": 2
     }
   },
   "x2-mirage-hardlight-saber": {
     "id": "x2-mirage-hardlight-saber",
     "name": "Mirage Hardlight Saber",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "A"
-    },
     "damage": 7,
     "range": 136,
     "halfArc": 0.62,
@@ -476,19 +397,12 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "action": "default-swing",
       "edgeLeadFlip": true
     },
-    "requirements": {
-      "dex": 12
-    },
     "durability": 75
   },
   "x2-riftcleaver-greatblade": {
     "id": "x2-riftcleaver-greatblade",
     "name": "Riftcleaver Greatblade",
     "expansion": true,
-    "scalingGrades": {
-      "str": "C",
-      "int": "B"
-    },
     "damage": 10,
     "range": 156,
     "halfArc": 1,
@@ -515,10 +429,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "effectRecipe": "riftcleaver-crystal-shards",
     "effectEmitter": "blade",
     "effectTiming": "swing-midpoint",
-    "requirements": {
-      "str": 8,
-      "int": 7
-    },
     "twoHanded": true,
     "durability": 90,
     "scatter": {
@@ -527,9 +437,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "speed": 380,
       "range": 240,
       "damage": 5,
-      "scalingGrades": {
-        "int": "B"
-      },
       "explode": {
         "radius": 52,
         "damage": 6
@@ -540,10 +447,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-saltbrand-cutlass",
     "name": "Saltbrand Cutlass",
     "expansion": true,
-    "scalingGrades": {
-      "str": "B",
-      "dex": "C"
-    },
     "damage": 8,
     "range": 130,
     "halfArc": 0.86,
@@ -565,20 +468,12 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "DEX"
       ]
     },
-    "requirements": {
-      "str": 5,
-      "dex": 4
-    },
     "durability": 75
   },
   "x2-cinderfang-wakizashi-pair": {
     "id": "x2-cinderfang-wakizashi-pair",
     "name": "Cinderfang Wakizashi Pair",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "A",
-      "str": "E"
-    },
     "damage": 4,
     "range": 100,
     "halfArc": 0.68,
@@ -606,9 +501,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "comboForwardPx": 38,
       "vfxForwardPx": 38
     },
-    "requirements": {
-      "dex": 8
-    },
     "dual": true,
     "durability": 75,
     "comboChoreography": [
@@ -633,9 +525,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-dustreaper-zweihander",
     "name": "Dustreaper Zweihander",
     "expansion": true,
-    "scalingGrades": {
-      "str": "A"
-    },
     "damage": 13,
     "range": 218,
     "halfArc": 1.05,
@@ -656,9 +545,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "STR"
       ]
     },
-    "requirements": {
-      "str": 13
-    },
     "twoHanded": true,
     "durability": 90
   },
@@ -666,10 +552,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-verdict-longsword",
     "name": "Verdict Longsword",
     "expansion": true,
-    "scalingGrades": {
-      "str": "B",
-      "int": "C"
-    },
     "damage": 8,
     "range": 140,
     "halfArc": 0.78,
@@ -695,10 +577,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "comboVariant": "verdict-procession",
     "effectRecipe": "verdict-tip-procession",
     "effectEmitter": "tip",
-    "requirements": {
-      "str": 6,
-      "int": 5
-    },
     "durability": 75,
     "chainLightning": {
       "jumps": 3,
@@ -716,10 +594,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-bonewhisper-jian",
     "name": "Bonewhisper Jian",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "B",
-      "int": "B"
-    },
     "damage": 6,
     "range": 150,
     "halfArc": 0.54,
@@ -741,10 +615,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "INT"
       ]
     },
-    "requirements": {
-      "dex": 8,
-      "int": 6
-    },
     "durability": 75,
     "scatter": {
       "count": 5,
@@ -752,20 +622,13 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "speed": 560,
       "range": 260,
       "damage": 4,
-      "pierce": 2,
-      "scalingGrades": {
-        "int": "B"
-      }
+      "pierce": 2
     }
   },
   "x2-stormpetal-odachi": {
     "id": "x2-stormpetal-odachi",
     "name": "Stormpetal Odachi",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "A",
-      "str": "D"
-    },
     "damage": 9,
     "range": 300,
     "halfArc": 1,
@@ -787,10 +650,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "STR"
       ]
     },
-    "requirements": {
-      "dex": 12,
-      "str": 6
-    },
     "twoHanded": true,
     "durability": 90,
     "chainLightning": {
@@ -809,10 +668,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-toxinwell-khopesh",
     "name": "Toxinwell Khopesh",
     "expansion": true,
-    "scalingGrades": {
-      "str": "C",
-      "dex": "B"
-    },
     "damage": 7,
     "range": 132,
     "halfArc": 0.84,
@@ -834,20 +689,12 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "DEX"
       ]
     },
-    "requirements": {
-      "str": 6,
-      "dex": 6
-    },
     "durability": 75
   },
   "x2-boothill-hatchet": {
     "id": "x2-boothill-hatchet",
     "name": "Boothill Hatchet",
     "expansion": true,
-    "scalingGrades": {
-      "str": "B",
-      "dex": "D"
-    },
     "damage": 7,
     "range": 116,
     "halfArc": 0.78,
@@ -874,9 +721,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "hold": "upright",
       "action": "default-swing"
     },
-    "requirements": {
-      "str": 4
-    },
     "durability": 75,
     "thrown": {
       "speed": 720,
@@ -892,9 +736,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-gallows-splitter",
     "name": "Gallows Splitter",
     "expansion": true,
-    "scalingGrades": {
-      "str": "A"
-    },
     "damage": 11,
     "range": 138,
     "halfArc": 0.82,
@@ -916,9 +757,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "description": "A grim executioner's hand-axe with a wide blood-darkened bit and a noose-knot wound round the haft butt, balanced for one clean ugly chop.",
-    "requirements": {
-      "str": 8
-    },
     "durability": 75,
     "thrown": {
       "speed": 620,
@@ -934,10 +772,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-cinderbrand-cleaver",
     "name": "Cinderbrand Cleaver",
     "expansion": true,
-    "scalingGrades": {
-      "str": "B",
-      "int": "C"
-    },
     "damage": 5.555555555555555,
     "range": 158,
     "halfArc": 1,
@@ -976,10 +810,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "durationSeconds": 0.3333333333333333
       }
     },
-    "requirements": {
-      "str": 9,
-      "int": 4
-    },
     "twoHanded": true,
     "durability": 90,
     "scatter": {
@@ -988,9 +818,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "speed": 360,
       "range": 210,
       "damage": 2.314814814814815,
-      "scalingGrades": {
-        "int": "B"
-      },
       "explode": {
         "radius": 54,
         "damage": 2.7777777777777777
@@ -1001,10 +828,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-permafrost-bardiche",
     "name": "Permafrost Bardiche",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "B",
-      "str": "C"
-    },
     "damage": 9,
     "range": 250,
     "halfArc": 1,
@@ -1033,10 +856,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "action": "default-swing",
       "continuous": true
     },
-    "requirements": {
-      "dex": 9,
-      "str": 6
-    },
     "twoHanded": true,
     "durability": 90
   },
@@ -1044,10 +863,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-thunderhoof-splittingaxe",
     "name": "Thunderhoof Splittingaxe",
     "expansion": true,
-    "scalingGrades": {
-      "str": "B",
-      "dex": "C"
-    },
     "damage": 10,
     "range": 150,
     "halfArc": 0.95,
@@ -1081,10 +896,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "direction": "forward"
       }
     },
-    "requirements": {
-      "str": 7,
-      "dex": 5
-    },
     "twoHanded": true,
     "durability": 90,
     "chainLightning": {
@@ -1098,9 +909,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-sanctified-headsman",
     "name": "Sanctified Headsman",
     "expansion": true,
-    "scalingGrades": {
-      "str": "A"
-    },
     "damage": 13,
     "range": 160,
     "halfArc": 0.9,
@@ -1123,9 +931,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     },
     "description": "A flawless white-gold execution cleaver chased with a vigil-cross, its mirror bit humming with a sanctified warmth that judges in one heavy stroke.",
     "suppressVfx": true,
-    "requirements": {
-      "str": 10
-    },
     "twoHanded": true,
     "durability": 90
   },
@@ -1133,10 +938,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-bogwater-twinbits",
     "name": "Bogwater Twinbits",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "B",
-      "luk": "C"
-    },
     "damage": 5,
     "range": 110,
     "halfArc": 0.72,
@@ -1165,9 +966,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "suppressSwing": true,
       "carryAngleRad": -1.2217304763960306
     },
-    "requirements": {
-      "dex": 6
-    },
     "dual": true,
     "durability": 75,
     "thrown": {
@@ -1183,10 +981,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-hollowmoon-reaver",
     "name": "Hollowmoon Reaver",
     "expansion": true,
-    "scalingGrades": {
-      "str": "C",
-      "int": "B"
-    },
     "damage": 10,
     "range": 152,
     "halfArc": 1,
@@ -1211,10 +1005,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "description": "A jagged shadow-iron battleaxe whose crescent bit fades to smoky nothing at the horns, drinking the light from whatever its wide arc crosses.",
     "comboFamily": "chop",
     "comboVariant": "hollowmoon-eclipse",
-    "requirements": {
-      "str": 6,
-      "int": 7
-    },
     "twoHanded": true,
     "durability": 90
   },
@@ -1222,10 +1012,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-sluicebox-maul-axe",
     "name": "Sluicebox Maul-Axe",
     "expansion": true,
-    "scalingGrades": {
-      "str": "A",
-      "con": "C"
-    },
     "damage": 12,
     "range": 168,
     "halfArc": 1.05,
@@ -1248,10 +1034,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "description": "A heavy miner's poll-axe with a broad bit on one cheek and a blunt iron poll on the other, its earth-cracking slam quaking the ground all around.",
-    "requirements": {
-      "str": 11,
-      "con": 5
-    },
     "twoHanded": true,
     "durability": 90,
     "quake": {
@@ -1263,9 +1045,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-saloon-tomahawk",
     "name": "Saloon Tomahawk",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "A"
-    },
     "damage": 6,
     "range": 112,
     "halfArc": 0.75,
@@ -1287,9 +1066,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "description": "A light belt tomahawk with a slim spike-poll and a feather-charm on the haft, quick as a card-flick and thrown faster than a man can draw.",
-    "requirements": {
-      "dex": 7
-    },
     "durability": 75,
     "thrown": {
       "speed": 760,
@@ -1304,10 +1080,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-brimstone-doubleheader",
     "name": "Brimstone Doubleheader",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "B",
-      "str": "C"
-    },
     "damage": 5,
     "range": 100,
     "halfArc": 0.7,
@@ -1330,10 +1102,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "description": "A paired set of blackened infernal hatchets seamed with molten orange, their twin bits crossing in a furious dual flurry that smears the air with embers.",
-    "requirements": {
-      "dex": 6,
-      "str": 4
-    },
     "dual": true,
     "durability": 75
   },
@@ -1341,10 +1109,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-glacier-headtaker",
     "name": "Glacier Headtaker",
     "expansion": true,
-    "scalingGrades": {
-      "str": "A",
-      "int": "D"
-    },
     "damage": 13,
     "range": 156,
     "halfArc": 0.92,
@@ -1375,10 +1139,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "multiplier": 0.1,
       "seconds": 0.8
     },
-    "requirements": {
-      "str": 10,
-      "int": 3
-    },
     "twoHanded": true,
     "durability": 90
   },
@@ -1386,10 +1146,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-dustdevil-whirlbits",
     "name": "Dustdevil Whirlbits",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "B",
-      "str": "C"
-    },
     "damage": 6,
     "range": 104,
     "halfArc": 0.85,
@@ -1412,10 +1168,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "description": "A pair of weathered war-hatchets balanced for an unbroken spinning whirl, the drifter at the eye of a dust-devil of cutting steel.",
-    "requirements": {
-      "dex": 5,
-      "str": 5
-    },
     "dual": true,
     "durability": 75
   },
@@ -1423,9 +1175,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-choir-iron-greataxe",
     "name": "Choir-Iron Greataxe",
     "expansion": true,
-    "scalingGrades": {
-      "str": "A"
-    },
     "damage": 12,
     "range": 172,
     "halfArc": 1.05,
@@ -1449,9 +1198,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "description": "A towering ceremonial greataxe chased in brass and stained-glass enamel, its broad bit ringing like a struck bell to call down a circle of holy light.",
     "effectRecipe": "choir-iron-flame-slash",
     "effectEmitter": "blade",
-    "requirements": {
-      "str": 12
-    },
     "twoHanded": true,
     "durability": 90,
     "quake": {
@@ -1463,9 +1209,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-quicksilver-skinning-cleaver",
     "name": "Quicksilver Skinning Cleaver",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "A"
-    },
     "damage": 6,
     "range": 130,
     "halfArc": 0.62,
@@ -1487,9 +1230,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "description": "A slim mirror-polished skinning cleaver light as a razor, flicked through close-work in tight precise cuts a trapper makes without looking.",
-    "requirements": {
-      "dex": 9
-    },
     "durability": 75,
     "thrown": {
       "speed": 900,
@@ -1505,10 +1245,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-witchwood-splitter",
     "name": "Witchwood Splitter",
     "expansion": true,
-    "scalingGrades": {
-      "str": "C",
-      "int": "B"
-    },
     "damage": 10,
     "range": 150,
     "halfArc": 0.95,
@@ -1531,10 +1267,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "description": "A felling axe grown rather than forged, its bit a living amber-veined wedge of hardwood that weeps a green sap-rot, flinging gobbets of it as it bites.",
-    "requirements": {
-      "str": 6,
-      "int": 6
-    },
     "twoHanded": true,
     "durability": 90,
     "scatter": {
@@ -1543,9 +1275,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "speed": 340,
       "range": 200,
       "damage": 4,
-      "scalingGrades": {
-        "int": "B"
-      },
       "explode": {
         "radius": 50,
         "damage": 5
@@ -1556,10 +1285,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-hangman-s-greatcleaver",
     "name": "Hangman's Greatcleaver",
     "expansion": true,
-    "scalingGrades": {
-      "str": "A",
-      "con": "C"
-    },
     "damage": 14,
     "range": 174,
     "halfArc": 1.05,
@@ -1585,10 +1310,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "effectRecipe": "hangman-blood-spatter",
     "effectEmitter": "blade",
     "effectTiming": "impact",
-    "requirements": {
-      "str": 13,
-      "con": 6
-    },
     "twoHanded": true,
     "durability": 90,
     "quake": {
@@ -1600,10 +1321,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-stormcrow-twin-hatchets",
     "name": "Stormcrow Twin-Hatchets",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "B",
-      "int": "C"
-    },
     "damage": 5,
     "range": 102,
     "halfArc": 0.7,
@@ -1632,10 +1349,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "suppressSwing": true,
       "carryAngleRad": -1.2217304763960306
     },
-    "requirements": {
-      "dex": 6,
-      "int": 5
-    },
     "dual": true,
     "durability": 75,
     "thrown": {
@@ -1651,10 +1364,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-reliquary-broadaxe",
     "name": "Reliquary Broadaxe",
     "expansion": true,
-    "scalingGrades": {
-      "str": "C",
-      "int": "B"
-    },
     "damage": 9,
     "range": 144,
     "halfArc": 0.9,
@@ -1677,10 +1386,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "description": "A broadaxe with a violet relic-shard fused into its bit, each swing planting a humming glyph that blooms a silent arcane blast.",
-    "requirements": {
-      "str": 5,
-      "int": 8
-    },
     "twoHanded": true,
     "durability": 90,
     "scatter": {
@@ -1689,9 +1394,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "speed": 380,
       "range": 220,
       "damage": 5,
-      "scalingGrades": {
-        "int": "A"
-      },
       "explode": {
         "radius": 58,
         "damage": 6
@@ -1702,10 +1404,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-iron-vow-bearded-axe",
     "name": "Iron Vow Bearded Axe",
     "expansion": true,
-    "scalingGrades": {
-      "str": "B",
-      "dex": "C"
-    },
     "damage": 11,
     "range": 154,
     "halfArc": 0.95,
@@ -1736,10 +1434,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "carryForwardPx": 10,
       "carryAngleRad": -1.34
     },
-    "requirements": {
-      "str": 8,
-      "dex": 5
-    },
     "twoHanded": true,
     "durability": 90
   },
@@ -1747,10 +1441,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-boothook-harpoon",
     "name": "Boothook Harpoon",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "B",
-      "str": "C"
-    },
     "damage": 12,
     "range": 150,
     "halfArc": 0.7,
@@ -1780,10 +1470,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "preThrowRevolutions": 0,
       "throwHeightPx": 28
     },
-    "requirements": {
-      "dex": 7,
-      "str": 5
-    },
     "durability": 75,
     "thrown": {
       "speed": 760,
@@ -1799,10 +1485,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-dustdevil-glaive",
     "name": "Dustdevil Glaive",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "B",
-      "str": "C"
-    },
     "damage": 10,
     "range": 190,
     "halfArc": 1.05,
@@ -1834,10 +1516,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "carryForwardPx": 14,
       "carryAngleRad": -1.25
     },
-    "requirements": {
-      "dex": 7,
-      "str": 6
-    },
     "twoHanded": true,
     "durability": 90
   },
@@ -1845,10 +1523,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-cinderbrand-pike",
     "name": "Cinderbrand Pike",
     "expansion": true,
-    "scalingGrades": {
-      "str": "B",
-      "dex": "C"
-    },
     "damage": 13,
     "range": 290,
     "halfArc": 0.85,
@@ -1873,10 +1547,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "effectRecipe": "cinderbrand-magma-impact",
     "effectEmitter": "tip",
     "effectTiming": "impact",
-    "requirements": {
-      "str": 9,
-      "dex": 6
-    },
     "twoHanded": true,
     "durability": 90
   },
@@ -1884,10 +1554,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-rimethorn-naginata",
     "name": "Rimethorn Naginata",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "B",
-      "str": "C"
-    },
     "damage": 9,
     "range": 200,
     "halfArc": 1,
@@ -1910,10 +1576,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "swingStyle": "arc",
-    "requirements": {
-      "dex": 8,
-      "str": 5
-    },
     "twoHanded": true,
     "durability": 90
   },
@@ -1921,10 +1583,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-galvanic-lancepole",
     "name": "Galvanic Lancepole",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "B",
-      "int": "C"
-    },
     "damage": 8,
     "range": 205,
     "halfArc": 0.8,
@@ -1946,10 +1604,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "INT"
       ]
     },
-    "requirements": {
-      "dex": 8,
-      "int": 5
-    },
     "twoHanded": true,
     "durability": 90,
     "chainLightning": {
@@ -1963,10 +1617,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-reliquary-halberd",
     "name": "Reliquary Halberd",
     "expansion": true,
-    "scalingGrades": {
-      "str": "B",
-      "dex": "C"
-    },
     "damage": 14,
     "range": 270,
     "halfArc": 1,
@@ -1998,10 +1648,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "carryForwardPx": 14,
       "carryAngleRad": -1.32
     },
-    "requirements": {
-      "str": 9,
-      "dex": 6
-    },
     "twoHanded": true,
     "durability": 90
   },
@@ -2009,10 +1655,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-venomtongue-trident",
     "name": "Venomtongue Trident",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "B",
-      "str": "D"
-    },
     "damage": 9,
     "range": 195,
     "halfArc": 0.9,
@@ -2034,10 +1676,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "STR"
       ]
     },
-    "requirements": {
-      "dex": 7,
-      "str": 4
-    },
     "twoHanded": true,
     "durability": 90,
     "chainLightning": {
@@ -2056,10 +1694,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-hexglyph-partisan",
     "name": "Hexglyph Partisan",
     "expansion": true,
-    "scalingGrades": {
-      "int": "B",
-      "dex": "C"
-    },
     "damage": 9,
     "range": 190,
     "halfArc": 0.85,
@@ -2081,10 +1715,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "DEX"
       ]
     },
-    "requirements": {
-      "int": 7,
-      "dex": 5
-    },
     "twoHanded": true,
     "durability": 90,
     "scatter": {
@@ -2103,10 +1733,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-nullspike-pike",
     "name": "Nullspike Pike",
     "expansion": true,
-    "scalingGrades": {
-      "int": "B",
-      "dex": "C"
-    },
     "damage": 11,
     "range": 295,
     "halfArc": 0.8,
@@ -2145,10 +1771,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "effectRecipe": "nullspike-impact-circle",
     "effectEmitter": "tip",
     "effectTiming": "impact",
-    "requirements": {
-      "int": 8,
-      "dex": 6
-    },
     "twoHanded": true,
     "durability": 90
   },
@@ -2156,10 +1778,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-buckhorn-boarspear",
     "name": "Buckhorn Boarspear",
     "expansion": true,
-    "scalingGrades": {
-      "str": "B",
-      "dex": "C"
-    },
     "damage": 11,
     "range": 200,
     "halfArc": 0.85,
@@ -2184,10 +1802,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "effectRecipe": "hangman-blood-spatter",
     "effectEmitter": "blade",
     "effectTiming": "impact",
-    "requirements": {
-      "str": 7,
-      "dex": 5
-    },
     "twoHanded": true,
     "durability": 90
   },
@@ -2195,10 +1809,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-quarry-splitter-bardiche",
     "name": "Quarry-Splitter Bardiche",
     "expansion": true,
-    "scalingGrades": {
-      "str": "A",
-      "con": "C"
-    },
     "damage": 15,
     "range": 240,
     "halfArc": 1.1,
@@ -2223,10 +1833,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "effectRecipe": "quarry-quad-spatter",
     "effectEmitter": "blade",
     "effectTiming": "swing-midpoint",
-    "requirements": {
-      "str": 11,
-      "con": 6
-    },
     "twoHanded": true,
     "durability": 90,
     "quake": {
@@ -2238,10 +1844,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-wickfire-fauchard",
     "name": "Wickfire Fauchard",
     "expansion": true,
-    "scalingGrades": {
-      "str": "C",
-      "int": "B"
-    },
     "damage": 10,
     "range": 195,
     "halfArc": 1,
@@ -2269,10 +1871,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "carryForwardPx": 18,
       "carryAngleRad": -1.05
     },
-    "requirements": {
-      "str": 6,
-      "int": 5
-    },
     "twoHanded": true,
     "durability": 90,
     "scatter": {
@@ -2291,10 +1889,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-sidewinder-spontoon",
     "name": "Sidewinder Spontoon",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "B",
-      "luk": "D"
-    },
     "damage": 7,
     "range": 175,
     "halfArc": 0.65,
@@ -2322,9 +1916,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "suppressSwing": true,
       "carryAngleRad": -1.2217304763960306
     },
-    "requirements": {
-      "dex": 7
-    },
     "durability": 75,
     "thrown": {
       "speed": 720,
@@ -2339,10 +1930,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-saintspar-lochaber",
     "name": "Saintspar Lochaber",
     "expansion": true,
-    "scalingGrades": {
-      "str": "B",
-      "dex": "C"
-    },
     "damage": 12,
     "range": 195,
     "halfArc": 1,
@@ -2368,10 +1955,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "comboFamily": "chop",
     "comboVariant": "saintspar-down-swing",
     "suppressVfx": true,
-    "requirements": {
-      "str": 8,
-      "dex": 6
-    },
     "twoHanded": true,
     "durability": 90
   },
@@ -2379,10 +1962,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-frostgig-harpoon",
     "name": "Frostgig Harpoon",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "B",
-      "int": "C"
-    },
     "damage": 10,
     "range": 140,
     "halfArc": 0.7,
@@ -2410,10 +1989,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "preThrowRevolutions": 0,
       "throwHeightPx": 28
     },
-    "requirements": {
-      "dex": 6,
-      "int": 4
-    },
     "durability": 75,
     "thrown": {
       "speed": 720,
@@ -2429,10 +2004,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-thunderhead-voulge",
     "name": "Thunderhead Voulge",
     "expansion": true,
-    "scalingGrades": {
-      "str": "A",
-      "dex": "C"
-    },
     "damage": 13,
     "range": 230,
     "halfArc": 1.1,
@@ -2461,10 +2032,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "hold": "upright",
       "action": "default-swing"
     },
-    "requirements": {
-      "str": 10,
-      "dex": 6
-    },
     "twoHanded": true,
     "durability": 90,
     "chainLightning": {
@@ -2478,10 +2045,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-marrowpike-ranseur",
     "name": "Marrowpike Ranseur",
     "expansion": true,
-    "scalingGrades": {
-      "str": "B",
-      "dex": "C"
-    },
     "damage": 11,
     "range": 195,
     "halfArc": 0.9,
@@ -2506,10 +2069,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "authoritativeCombo": true,
     "comboFamily": "thrust",
     "comboVariant": "marrowpike-triple-stab",
-    "requirements": {
-      "str": 7,
-      "dex": 5
-    },
     "twoHanded": true,
     "durability": 90
   },
@@ -2517,10 +2076,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-sunlance-javelin-pike",
     "name": "Sunlance Javelin-Pike",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "B",
-      "int": "C"
-    },
     "damage": 8,
     "range": 170,
     "halfArc": 0.7,
@@ -2548,10 +2103,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "preThrowRevolutions": 0,
       "throwHeightPx": 28
     },
-    "requirements": {
-      "dex": 7,
-      "int": 5
-    },
     "durability": 75,
     "thrown": {
       "speed": 820,
@@ -2567,10 +2118,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-blightfork-glaive",
     "name": "Blightfork Glaive",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "C",
-      "int": "B"
-    },
     "damage": 9,
     "range": 195,
     "halfArc": 1,
@@ -2595,10 +2142,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "authoritativeCombo": true,
     "comboFamily": "thrust",
     "comboVariant": "blightfork-jab",
-    "requirements": {
-      "dex": 6,
-      "int": 5
-    },
     "twoHanded": true,
     "durability": 90,
     "scatter": {
@@ -2617,10 +2160,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-riftcaller-naginata",
     "name": "Riftcaller Naginata",
     "expansion": true,
-    "scalingGrades": {
-      "int": "B",
-      "dex": "C"
-    },
     "damage": 11,
     "range": 300,
     "halfArc": 1,
@@ -2642,10 +2181,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "DEX"
       ]
     },
-    "requirements": {
-      "int": 9,
-      "dex": 6
-    },
     "twoHanded": true,
     "durability": 90
   },
@@ -2653,9 +2188,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-boomtown-maul",
     "name": "Boomtown Maul",
     "expansion": true,
-    "scalingGrades": {
-      "str": "A"
-    },
     "damage": 15,
     "range": 168,
     "halfArc": 1.05,
@@ -2676,9 +2208,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "STR"
       ]
     },
-    "requirements": {
-      "str": 12
-    },
     "twoHanded": true,
     "durability": 90,
     "quake": {
@@ -2690,10 +2219,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-tumbleweed-flail",
     "name": "Tumbleweed Flail",
     "expansion": true,
-    "scalingGrades": {
-      "str": "C",
-      "dex": "C"
-    },
     "damage": 8,
     "range": 150,
     "halfArc": 1,
@@ -2715,20 +2240,12 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "DEX"
       ]
     },
-    "requirements": {
-      "str": 5,
-      "dex": 4
-    },
     "durability": 75
   },
   "x2-hangman-s-gavel": {
     "id": "x2-hangman-s-gavel",
     "name": "Hangman's Gavel",
     "expansion": true,
-    "scalingGrades": {
-      "str": "B",
-      "con": "C"
-    },
     "damage": 11,
     "range": 124,
     "halfArc": 0.8,
@@ -2756,10 +2273,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "suppressSwing": true,
       "preThrowRevolutions": 0.5
     },
-    "requirements": {
-      "str": 7,
-      "con": 5
-    },
     "durability": 75,
     "thrown": {
       "speed": 720,
@@ -2776,10 +2289,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-quicksilver-censer",
     "name": "Quicksilver Censer",
     "expansion": true,
-    "scalingGrades": {
-      "str": "C",
-      "int": "C"
-    },
     "damage": 7,
     "range": 144,
     "halfArc": 0.95,
@@ -2807,10 +2316,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "hold": "hanging-chain",
       "action": "default-swing"
     },
-    "requirements": {
-      "str": 5,
-      "int": 5
-    },
     "durability": 75,
     "scatter": {
       "count": 5,
@@ -2828,10 +2333,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-thunderhead-sledge",
     "name": "Thunderhead Sledge",
     "expansion": true,
-    "scalingGrades": {
-      "str": "B",
-      "dex": "C"
-    },
     "damage": 10,
     "range": 152,
     "halfArc": 0.95,
@@ -2853,10 +2354,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "DEX"
       ]
     },
-    "requirements": {
-      "str": 8,
-      "dex": 6
-    },
     "twoHanded": true,
     "durability": 90,
     "chainLightning": {
@@ -2870,10 +2367,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-frostbite-headstone",
     "name": "Frostbite Headstone",
     "expansion": true,
-    "scalingGrades": {
-      "str": "A",
-      "int": "D"
-    },
     "damage": 14,
     "range": 170,
     "halfArc": 1,
@@ -2895,10 +2388,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "INT"
       ]
     },
-    "requirements": {
-      "str": 11,
-      "int": 5
-    },
     "twoHanded": true,
     "durability": 90,
     "quake": {
@@ -2910,10 +2399,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-snakebite-morningstar",
     "name": "Snakebite Morningstar",
     "expansion": true,
-    "scalingGrades": {
-      "str": "B",
-      "dex": "D"
-    },
     "damage": 9,
     "range": 122,
     "halfArc": 0.78,
@@ -2941,10 +2426,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "suppressSwing": true,
       "preThrowRevolutions": 0.5
     },
-    "requirements": {
-      "str": 6,
-      "dex": 4
-    },
     "durability": 75,
     "thrown": {
       "speed": 620,
@@ -2960,9 +2441,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-pendulum-of-the-pyre",
     "name": "Pendulum of the Pyre",
     "expansion": true,
-    "scalingGrades": {
-      "str": "A"
-    },
     "damage": 12,
     "range": 158,
     "halfArc": 1.05,
@@ -2983,9 +2461,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "STR"
       ]
     },
-    "requirements": {
-      "str": 9
-    },
     "twoHanded": true,
     "durability": 90,
     "scatter": {
@@ -3004,10 +2479,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-anvil-drop",
     "name": "Anvil-Drop",
     "expansion": true,
-    "scalingGrades": {
-      "str": "S",
-      "con": "D"
-    },
     "damage": 16,
     "range": 172,
     "halfArc": 1,
@@ -3029,10 +2500,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "CON"
       ]
     },
-    "requirements": {
-      "str": 13,
-      "con": 7
-    },
     "twoHanded": true,
     "durability": 90,
     "quake": {
@@ -3044,10 +2511,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-revenant-knuckle",
     "name": "Revenant Knuckle",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "B",
-      "str": "D"
-    },
     "damage": 6,
     "range": 110,
     "halfArc": 0.7,
@@ -3069,10 +2532,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "STR"
       ]
     },
-    "requirements": {
-      "dex": 6,
-      "str": 4
-    },
     "dual": true,
     "durability": 75
   },
@@ -3080,10 +2539,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-sermon-bell",
     "name": "Sermon Bell",
     "expansion": true,
-    "scalingGrades": {
-      "str": "B",
-      "int": "C"
-    },
     "damage": 11,
     "range": 150,
     "halfArc": 0.95,
@@ -3108,10 +2563,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "effectRecipe": "sermon-musical-notes",
     "effectEmitter": "body",
     "effectTiming": "impact",
-    "requirements": {
-      "str": 8,
-      "int": 5
-    },
     "twoHanded": true,
     "durability": 90,
     "quake": {
@@ -3123,10 +2574,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-hailshot-hand-maul",
     "name": "Hailshot Hand-Maul",
     "expansion": true,
-    "scalingGrades": {
-      "str": "C",
-      "dex": "C"
-    },
     "damage": 6,
     "range": 90,
     "halfArc": 0.55,
@@ -3148,10 +2595,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "DEX"
       ]
     },
-    "requirements": {
-      "str": 7,
-      "dex": 5
-    },
     "gun": {
       "damage": 24,
       "projectileSpeed": 720,
@@ -3171,10 +2614,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-gravelthroat-repeater",
     "name": "Gravelthroat Repeater",
     "expansion": true,
-    "scalingGrades": {
-      "str": "C",
-      "dex": "C"
-    },
     "damage": 6,
     "range": 86,
     "halfArc": 0.6,
@@ -3195,10 +2634,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "STR",
         "DEX"
       ]
-    },
-    "requirements": {
-      "str": 7,
-      "dex": 5
     },
     "twoHanded": true,
     "gun": {
@@ -3223,10 +2658,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-dustdevil-warmaul",
     "name": "Dustdevil Warmaul",
     "expansion": true,
-    "scalingGrades": {
-      "str": "A",
-      "con": "D"
-    },
     "damage": 12,
     "range": 154,
     "halfArc": 1,
@@ -3248,10 +2679,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "CON"
       ]
     },
-    "requirements": {
-      "str": 9,
-      "con": 6
-    },
     "twoHanded": true,
     "durability": 90,
     "quake": {
@@ -3263,10 +2690,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-locust-flail",
     "name": "Locust Flail",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "B",
-      "str": "D"
-    },
     "damage": 7,
     "range": 146,
     "halfArc": 1.05,
@@ -3289,20 +2712,12 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "archived": true,
-    "requirements": {
-      "dex": 6,
-      "str": 4
-    },
     "durability": 75
   },
   "x2-saint-calamity": {
     "id": "x2-saint-calamity",
     "name": "Saint Calamity",
     "expansion": true,
-    "scalingGrades": {
-      "str": "A",
-      "int": "C"
-    },
     "damage": 14,
     "range": 166,
     "halfArc": 1,
@@ -3324,10 +2739,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "INT"
       ]
     },
-    "requirements": {
-      "str": 11,
-      "int": 6
-    },
     "twoHanded": true,
     "durability": 90,
     "quake": {
@@ -3339,10 +2750,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-carrion-cudgel",
     "name": "Carrion Cudgel",
     "expansion": true,
-    "scalingGrades": {
-      "str": "C",
-      "dex": "D"
-    },
     "damage": 6,
     "range": 112,
     "halfArc": 0.75,
@@ -3364,10 +2771,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "DEX"
       ]
     },
-    "requirements": {
-      "str": 4,
-      "dex": 3
-    },
     "durability": 75,
     "thrown": {
       "speed": 640,
@@ -3385,10 +2788,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-hoarfrost-piledriver",
     "name": "Hoarfrost Piledriver",
     "expansion": true,
-    "scalingGrades": {
-      "str": "A",
-      "int": "D"
-    },
     "damage": 13,
     "range": 156,
     "halfArc": 0.95,
@@ -3410,10 +2809,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "INT"
       ]
     },
-    "requirements": {
-      "str": 9,
-      "int": 6
-    },
     "twoHanded": true,
     "durability": 90,
     "quake": {
@@ -3425,10 +2820,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-static-tomahawk",
     "name": "Static Tomahawk",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "B",
-      "str": "C"
-    },
     "damage": 6,
     "range": 116,
     "halfArc": 0.8,
@@ -3450,10 +2841,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "STR"
       ]
     },
-    "requirements": {
-      "dex": 6,
-      "str": 4
-    },
     "durability": 75,
     "thrown": {
       "speed": 700,
@@ -3468,10 +2855,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-widowmaker-wrecking-ball",
     "name": "Widowmaker Wrecking-Ball",
     "expansion": true,
-    "scalingGrades": {
-      "str": "S",
-      "con": "C"
-    },
     "damage": 15,
     "range": 175,
     "halfArc": 1.1,
@@ -3494,10 +2877,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "description": "A massive pitted demolition sphere permanently socketed to a riveted solid-steel neck and two-handed braced haft: the Widowmaker's old wrecking-ball identity rebuilt as one rigid crushing implement.",
-    "requirements": {
-      "str": 12,
-      "con": 8
-    },
     "twoHanded": true,
     "durability": 90,
     "quake": {
@@ -3509,10 +2888,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-snakebite-lash",
     "name": "Snakebite Lash",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "B",
-      "str": "D"
-    },
     "damage": 7,
     "range": 230,
     "halfArc": 0.95,
@@ -3536,19 +2911,12 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     },
     "archived": true,
     "description": "A long braided rawhide whip studded with rattler-fang barbs along its length, the cracking tip slick with dull-teal venom that lingers where it bites.",
-    "requirements": {
-      "dex": 6
-    },
     "durability": 75
   },
   "x2-bramblecoil": {
     "id": "x2-bramblecoil",
     "name": "Bramblecoil",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "B",
-      "int": "D"
-    },
     "damage": 6,
     "range": 215,
     "halfArc": 1,
@@ -3571,19 +2939,12 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "description": "A whip grown rather than forged — a length of living olive-green bramble-vine bristling with hooked thorns that flex and lash, weeping a faint amber sap that poisons every welt.",
-    "requirements": {
-      "dex": 5
-    },
     "durability": 75
   },
   "x2-nine-tail-razorlash": {
     "id": "x2-nine-tail-razorlash",
     "name": "Nine-Tail Razorlash",
     "expansion": true,
-    "scalingGrades": {
-      "str": "C",
-      "dex": "C"
-    },
     "damage": 6,
     "range": 210,
     "halfArc": 1.05,
@@ -3607,10 +2968,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     },
     "archived": true,
     "description": "A brutal cat-o-nine-tails whose nine leather thongs each end in a glinting razor-shard, fanning into a wide flogging spray that shreds everything in a forward cone.",
-    "requirements": {
-      "str": 6,
-      "dex": 6
-    },
     "durability": 75,
     "scatter": {
       "count": 6,
@@ -3628,10 +2985,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-reaper-s-tithe",
     "name": "Reaper's Tithe",
     "expansion": true,
-    "scalingGrades": {
-      "str": "B",
-      "dex": "C"
-    },
     "damage": 12,
     "range": 200,
     "halfArc": 1.1,
@@ -3665,10 +3018,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "phaseOffset": 0
       }
     },
-    "requirements": {
-      "str": 8,
-      "dex": 5
-    },
     "twoHanded": true,
     "durability": 90
   },
@@ -3676,10 +3025,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-gravechain-scythe",
     "name": "Gravechain Scythe",
     "expansion": true,
-    "scalingGrades": {
-      "str": "B",
-      "int": "C"
-    },
     "damage": 13,
     "range": 205,
     "halfArc": 1.05,
@@ -3715,10 +3060,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "direction": "forward"
       }
     },
-    "requirements": {
-      "str": 9,
-      "int": 5
-    },
     "twoHanded": true,
     "durability": 90
   },
@@ -3726,9 +3067,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-hailspur-sickle",
     "name": "Hailspur Sickle",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "A"
-    },
     "damage": 7,
     "range": 110,
     "halfArc": 0.7,
@@ -3756,9 +3094,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "suppressSwing": true,
       "preThrowRevolutions": 1
     },
-    "requirements": {
-      "dex": 8
-    },
     "durability": 75,
     "thrown": {
       "speed": 680,
@@ -3775,10 +3110,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-mournveil-scythe",
     "name": "Mournveil Scythe",
     "expansion": true,
-    "scalingGrades": {
-      "str": "B",
-      "dex": "B"
-    },
     "damage": 14,
     "range": 250,
     "halfArc": 1.1,
@@ -3816,10 +3147,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "visualRevolutions": 2
       }
     },
-    "requirements": {
-      "str": 9,
-      "dex": 9
-    },
     "twoHanded": true,
     "durability": 90
   },
@@ -3827,10 +3154,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-plaguethresh",
     "name": "Plaguethresh",
     "expansion": true,
-    "scalingGrades": {
-      "str": "C",
-      "int": "C"
-    },
     "damage": 11,
     "range": 195,
     "halfArc": 1.1,
@@ -3853,10 +3176,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "description": "A grim threshing scythe sprouting clusters of fungal spore-pods along its rusted blade, each wide cut bursting a hissing cloud of corrosive green rot.",
-    "requirements": {
-      "str": 7,
-      "int": 5
-    },
     "twoHanded": true,
     "durability": 90,
     "quake": {
@@ -3868,9 +3187,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-hollow-harvest",
     "name": "Hollow Harvest",
     "expansion": true,
-    "scalingGrades": {
-      "str": "A"
-    },
     "damage": 12,
     "range": 190,
     "halfArc": 1.05,
@@ -3909,9 +3225,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "cadence": "weapon-cooldown"
       }
     },
-    "requirements": {
-      "str": 9
-    },
     "twoHanded": true,
     "durability": 90
   },
@@ -3919,10 +3232,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-wendigo-claws",
     "name": "Wendigo Claws",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "B",
-      "str": "C"
-    },
     "damage": 6,
     "range": 105,
     "halfArc": 0.75,
@@ -3945,10 +3254,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "description": "A pair of strapped-on beast gauntlets ending in four curved antler-bone talons each, frost-rimed and brutal, raking in a blizzard of paired slashes.",
-    "requirements": {
-      "dex": 6,
-      "str": 4
-    },
     "dual": true,
     "durability": 75
   },
@@ -3956,10 +3261,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-knucklebone-talons",
     "name": "Knucklebone Talons",
     "expansion": true,
-    "scalingGrades": {
-      "str": "C",
-      "dex": "C"
-    },
     "damage": 7,
     "range": 110,
     "halfArc": 0.7,
@@ -3982,10 +3283,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "description": "Brass-knuckle frames fitted with three hooked railroad-spike talons apiece, scavenged and welded, hammering out fast brutal raking jabs.",
-    "requirements": {
-      "str": 5,
-      "dex": 5
-    },
     "dual": true,
     "durability": 75
   },
@@ -3993,9 +3290,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-rendclaw-vambrace",
     "name": "Rendclaw Vambrace",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "A"
-    },
     "damage": 8,
     "range": 120,
     "halfArc": 0.8,
@@ -4017,19 +3311,12 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "description": "A single heavy forearm vambrace mounting three forward-jutting steel rend-blades wired with a sparking coil, snapping out a crackling triple-rake of blue current.",
-    "requirements": {
-      "dex": 9
-    },
     "durability": 75
   },
   "x2-frostfang-rakes": {
     "id": "x2-frostfang-rakes",
     "name": "Frostfang Rakes",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "B",
-      "int": "C"
-    },
     "damage": 6,
     "range": 108,
     "halfArc": 0.72,
@@ -4063,10 +3350,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "durationSeconds": 0.18
       }
     },
-    "requirements": {
-      "dex": 6,
-      "int": 5
-    },
     "dual": true,
     "durability": 75
   },
@@ -4074,10 +3357,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-ferrous-serpent",
     "name": "Ferrous Serpent",
     "expansion": true,
-    "scalingGrades": {
-      "str": "B",
-      "dex": "C"
-    },
     "damage": 10,
     "range": 200,
     "halfArc": 1.1,
@@ -4101,10 +3380,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     },
     "archived": true,
     "description": "A meat-cleaver blade welded to a long whirring length of heavy chain, swung in roaring helicopter circles so the steel serpent gnaws a wide ring of anything near.",
-    "requirements": {
-      "str": 7,
-      "dex": 5
-    },
     "durability": 75,
     "quake": {
       "radius": 140,
@@ -4115,10 +3390,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-cinder-briar",
     "name": "Cinder Briar",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "B",
-      "str": "D"
-    },
     "damage": 7,
     "range": 220,
     "halfArc": 1,
@@ -4141,10 +3412,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "description": "A segmented chain-whip of blackened links each set with a glowing ember-coal, its hooked blade-tip dragging a smear of fire that scatters burning motes on every wide lash.",
-    "requirements": {
-      "dex": 7,
-      "str": 4
-    },
     "durability": 75,
     "scatter": {
       "count": 5,
@@ -4162,9 +3429,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-quicksilver-chainblade",
     "name": "Quicksilver Chainblade",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "A"
-    },
     "damage": 8,
     "range": 195,
     "halfArc": 0.9,
@@ -4187,19 +3451,12 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     },
     "archived": true,
     "description": "A mirror-bright sabre whose blade dissolves into a flowing chain of silver links mid-length, snapping fluidly between a rigid cut and a long whipping reach with each pristine strike.",
-    "requirements": {
-      "dex": 10
-    },
     "durability": 75
   },
   "x2-coilshot-meteor": {
     "id": "x2-coilshot-meteor",
     "name": "Coilshot Meteor",
     "expansion": true,
-    "scalingGrades": {
-      "str": "B",
-      "luk": "D"
-    },
     "damage": 9,
     "range": 175,
     "halfArc": 0.85,
@@ -4233,9 +3490,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "range": 150
       }
     },
-    "requirements": {
-      "str": 7
-    },
     "durability": 75,
     "thrown": {
       "speed": 700,
@@ -4251,10 +3505,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-mistral-kusarigama",
     "name": "Mistral Kusarigama",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "B",
-      "str": "C"
-    },
     "damage": 8,
     "range": 210,
     "halfArc": 0.95,
@@ -4278,20 +3528,12 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     },
     "archived": true,
     "description": "A weathered hand-sickle joined by a long weighted chain to an iron counterweight, whirled and snapped to reap close then fling the weight wide in fast wind-cutting passes.",
-    "requirements": {
-      "dex": 7,
-      "str": 5
-    },
     "durability": 75
   },
   "x2-dust-devil-flail": {
     "id": "x2-dust-devil-flail",
     "name": "Dust-Devil Flail",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "B",
-      "str": "C"
-    },
     "damage": 10,
     "range": 235,
     "halfArc": 1,
@@ -4315,10 +3557,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     },
     "archived": true,
     "description": "A storm-charged kusarigama whose sickle and dual chained weights crackle with arena dust and blue static, lashed in roaring whirlwind passes that shock everything they graze.",
-    "requirements": {
-      "dex": 8,
-      "str": 6
-    },
     "durability": 75,
     "chainLightning": {
       "jumps": 3,
@@ -4331,10 +3569,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-ashfall-peacemaker",
     "name": "Ashfall Peacemaker",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "B",
-      "str": "D"
-    },
     "damage": 6,
     "range": 80,
     "halfArc": 0.5,
@@ -4359,9 +3593,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "pistol"
       ]
     },
-    "requirements": {
-      "dex": 6
-    },
     "gun": {
       "damage": 9,
       "projectileSpeed": 920,
@@ -4380,10 +3611,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-grit-snubnose",
     "name": "Grit Snubnose",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "B",
-      "luk": "D"
-    },
     "damage": 5,
     "range": 80,
     "halfArc": 0.5,
@@ -4408,9 +3635,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "pistol"
       ]
     },
-    "requirements": {
-      "dex": 4
-    },
     "gun": {
       "damage": 7,
       "projectileSpeed": 820,
@@ -4429,10 +3653,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-mesa-hand-cannon",
     "name": "Mesa Hand-Cannon",
     "expansion": true,
-    "scalingGrades": {
-      "str": "B",
-      "dex": "C"
-    },
     "damage": 7,
     "range": 80,
     "halfArc": 0.5,
@@ -4456,10 +3676,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "handling": [
         "pistol"
       ]
-    },
-    "requirements": {
-      "str": 9,
-      "dex": 5
     },
     "gun": {
       "damage": 16,
@@ -4486,10 +3702,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-cinderfang-derringer",
     "name": "Cinderfang Derringer",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "C",
-      "int": "C"
-    },
     "damage": 6,
     "range": 80,
     "halfArc": 0.5,
@@ -4514,10 +3726,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "pistol"
       ]
     },
-    "requirements": {
-      "dex": 5,
-      "int": 4
-    },
     "gun": {
       "damage": 8,
       "projectileSpeed": 760,
@@ -4541,10 +3749,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-hailspitter-pepperbox",
     "name": "Hailspitter Pepperbox",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "B",
-      "int": "D"
-    },
     "damage": 5,
     "range": 80,
     "halfArc": 0.5,
@@ -4569,9 +3773,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "pistol"
       ]
     },
-    "requirements": {
-      "dex": 7
-    },
     "gun": {
       "damage": 6,
       "projectileSpeed": 740,
@@ -4590,9 +3791,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-voltcaster-machine-pistol",
     "name": "Voltcaster Machine Pistol",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "A"
-    },
     "damage": 6,
     "range": 80,
     "halfArc": 0.5,
@@ -4615,9 +3813,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "handling": [
         "pistol"
       ]
-    },
-    "requirements": {
-      "dex": 10
     },
     "beam": {
       "damagePerSecond": 75,
@@ -4644,10 +3839,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-sidewinder-spitfire",
     "name": "Sidewinder Spitfire",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "B",
-      "luk": "C"
-    },
     "damage": 5,
     "range": 80,
     "halfArc": 0.5,
@@ -4672,9 +3863,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "pistol"
       ]
     },
-    "requirements": {
-      "dex": 8
-    },
     "gun": {
       "damage": 5,
       "projectileSpeed": 780,
@@ -4693,10 +3881,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-sunbrand-hogleg",
     "name": "Sunbrand Hogleg",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "B",
-      "int": "C"
-    },
     "damage": 6,
     "range": 80,
     "halfArc": 0.5,
@@ -4721,10 +3905,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "pistol"
       ]
     },
-    "requirements": {
-      "dex": 8,
-      "int": 5
-    },
     "gun": {
       "damage": 11,
       "projectileSpeed": 1000,
@@ -4744,10 +3924,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-gravewind-rimfire",
     "name": "Gravewind Rimfire",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "B",
-      "luk": "C"
-    },
     "damage": 7,
     "range": 80,
     "halfArc": 0.5,
@@ -4773,10 +3949,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "collisionLength": 54,
-    "requirements": {
-      "dex": 7,
-      "luk": 4
-    },
     "gun": {
       "damage": 12,
       "projectileSpeed": 960,
@@ -4796,10 +3968,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-fool-s-gold-revolver",
     "name": "Fool's Gold Revolver",
     "expansion": true,
-    "scalingGrades": {
-      "luk": "A",
-      "dex": "C"
-    },
     "damage": 6,
     "range": 80,
     "halfArc": 0.5,
@@ -4830,10 +3998,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "y": 0.72
       }
     },
-    "requirements": {
-      "luk": 9,
-      "dex": 5
-    },
     "gun": {
       "damage": 10,
       "projectileSpeed": 900,
@@ -4852,9 +4016,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-quicksilver-fanner",
     "name": "Quicksilver Fanner",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "A"
-    },
     "damage": 5,
     "range": 80,
     "halfArc": 0.5,
@@ -4878,9 +4039,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "pistol"
       ]
     },
-    "requirements": {
-      "dex": 11
-    },
     "gun": {
       "damage": 1,
       "projectileSpeed": 880,
@@ -4900,10 +4058,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-brimstone-bull",
     "name": "Brimstone Bull",
     "expansion": true,
-    "scalingGrades": {
-      "str": "B",
-      "int": "C"
-    },
     "damage": 7,
     "range": 80,
     "halfArc": 0.5,
@@ -4928,10 +4082,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "pistol"
       ]
     },
-    "requirements": {
-      "str": 10,
-      "int": 5
-    },
     "gun": {
       "damage": 13,
       "projectileSpeed": 980,
@@ -4954,10 +4104,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-scattershot-saint",
     "name": "Scattershot Saint",
     "expansion": true,
-    "scalingGrades": {
-      "str": "C",
-      "dex": "C"
-    },
     "damage": 6,
     "range": 80,
     "halfArc": 0.5,
@@ -4982,10 +4128,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "pistol"
       ]
     },
-    "requirements": {
-      "str": 6,
-      "dex": 5
-    },
     "gun": {
       "damage": 5,
       "projectileSpeed": 680,
@@ -5005,10 +4147,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-tumbleweed-skipper",
     "name": "Tumbleweed Skipper",
     "expansion": true,
-    "scalingGrades": {
-      "luk": "B",
-      "dex": "C"
-    },
     "damage": 6,
     "range": 80,
     "halfArc": 0.5,
@@ -5033,10 +4171,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "pistol"
       ]
     },
-    "requirements": {
-      "dex": 6,
-      "luk": 6
-    },
     "gun": {
       "damage": 8,
       "projectileSpeed": 860,
@@ -5058,9 +4192,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-coyote-stinger",
     "name": "Coyote Stinger",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "A"
-    },
     "damage": 5,
     "range": 80,
     "halfArc": 0.5,
@@ -5084,9 +4215,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "pistol"
       ]
     },
-    "requirements": {
-      "dex": 10
-    },
     "dual": true,
     "gun": {
       "damage": 5,
@@ -5106,10 +4234,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-hollowpoint-hex",
     "name": "Hollowpoint Hex",
     "expansion": true,
-    "scalingGrades": {
-      "int": "B",
-      "dex": "C"
-    },
     "damage": 6,
     "range": 80,
     "halfArc": 0.5,
@@ -5134,10 +4258,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "pistol"
       ]
     },
-    "requirements": {
-      "int": 8,
-      "dex": 5
-    },
     "gun": {
       "damage": 8,
       "projectileSpeed": 820,
@@ -5160,10 +4280,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-frostbite-volley-gun",
     "name": "Frostbite Volley-Gun",
     "expansion": true,
-    "scalingGrades": {
-      "int": "B",
-      "dex": "D"
-    },
     "damage": 6,
     "range": 80,
     "halfArc": 0.5,
@@ -5188,10 +4304,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "pistol"
       ]
     },
-    "requirements": {
-      "int": 7,
-      "dex": 4
-    },
     "gun": {
       "damage": 6,
       "projectileSpeed": 700,
@@ -5211,10 +4323,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-iron-marshal",
     "name": "Iron Marshal",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "B",
-      "str": "C"
-    },
     "damage": 6,
     "range": 80,
     "halfArc": 0.5,
@@ -5239,10 +4347,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "pistol"
       ]
     },
-    "requirements": {
-      "dex": 8,
-      "str": 6
-    },
     "gun": {
       "damage": 10,
       "projectileSpeed": 940,
@@ -5262,9 +4366,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-buzzard-s-burnout",
     "name": "Buzzard's Burnout",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "A"
-    },
     "damage": 4,
     "range": 80,
     "halfArc": 0.5,
@@ -5288,9 +4389,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "pistol"
       ]
     },
-    "requirements": {
-      "dex": 12
-    },
     "gun": {
       "damage": 4,
       "projectileSpeed": 760,
@@ -5309,10 +4407,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-reliquary-repeater",
     "name": "Reliquary Repeater",
     "expansion": true,
-    "scalingGrades": {
-      "int": "B",
-      "dex": "C"
-    },
     "damage": 5,
     "range": 80,
     "halfArc": 0.5,
@@ -5337,10 +4431,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "pistol"
       ]
     },
-    "requirements": {
-      "int": 7,
-      "dex": 7
-    },
     "gun": {
       "damage": 5,
       "projectileSpeed": 880,
@@ -5359,10 +4449,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-dustline-lever-action",
     "name": "Dustline Lever-Action",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "B",
-      "str": "C"
-    },
     "damage": 13,
     "range": 320,
     "halfArc": 0.5,
@@ -5398,10 +4484,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "role": "lever"
       }
     },
-    "requirements": {
-      "dex": 6,
-      "str": 4
-    },
     "twoHanded": true,
     "gun": {
       "damage": 13,
@@ -5420,9 +4502,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-coffin-nail-carbine",
     "name": "Coffin-Nail Carbine",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "B"
-    },
     "damage": 7,
     "range": 320,
     "halfArc": 0.5,
@@ -5458,9 +4537,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "role": "lever"
       }
     },
-    "requirements": {
-      "dex": 7
-    },
     "twoHanded": true,
     "gun": {
       "damage": 7,
@@ -5478,9 +4554,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-buzzard-s-eye-marksman",
     "name": "Buzzard's Eye Marksman",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "S"
-    },
     "damage": 16,
     "range": 320,
     "halfArc": 0.5,
@@ -5515,9 +4588,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "role": "bolt"
       }
     },
-    "requirements": {
-      "dex": 12
-    },
     "twoHanded": true,
     "gun": {
       "damage": 16,
@@ -5541,10 +4611,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-sunbreaker-railgun",
     "name": "Sunbreaker Railgun",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "A",
-      "int": "C"
-    },
     "damage": 16,
     "range": 320,
     "halfArc": 0.5,
@@ -5577,10 +4643,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "role": "horizontal-foregrip"
       }
     },
-    "requirements": {
-      "dex": 11,
-      "int": 5
-    },
     "twoHanded": true,
     "gun": {
       "damage": 16,
@@ -5601,10 +4663,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-hollowpoint-repeater",
     "name": "Hollowpoint Repeater",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "B",
-      "int": "C"
-    },
     "damage": 12,
     "range": 320,
     "halfArc": 0.5,
@@ -5640,10 +4698,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "role": "lever"
       }
     },
-    "requirements": {
-      "dex": 8,
-      "int": 5
-    },
     "twoHanded": true,
     "gun": {
       "damage": 12,
@@ -5663,9 +4717,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-quicksilver-slugthrower",
     "name": "Quicksilver Slugthrower",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "A"
-    },
     "damage": 14,
     "range": 320,
     "halfArc": 0.5,
@@ -5686,9 +4737,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "DEX"
       ]
     },
-    "requirements": {
-      "dex": 10
-    },
     "twoHanded": true,
     "gun": {
       "damage": 14,
@@ -5708,10 +4756,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-thunderhead-lever-gun",
     "name": "Thunderhead Lever-Gun",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "B",
-      "int": "C"
-    },
     "damage": 10,
     "range": 320,
     "halfArc": 0.5,
@@ -5747,10 +4791,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "role": "lever"
       }
     },
-    "requirements": {
-      "dex": 8,
-      "int": 4
-    },
     "twoHanded": true,
     "gun": {
       "damage": 10,
@@ -5771,10 +4811,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-cinderbore-longrifle",
     "name": "Cinderbore Longrifle",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "B",
-      "str": "C"
-    },
     "damage": 15,
     "range": 320,
     "halfArc": 0.5,
@@ -5795,10 +4831,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "DEX",
         "STR"
       ]
-    },
-    "requirements": {
-      "dex": 8,
-      "str": 6
     },
     "twoHanded": true,
     "gun": {
@@ -5823,9 +4855,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-venomspine-repeater",
     "name": "Venomspine Repeater",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "B"
-    },
     "damage": 8,
     "range": 320,
     "halfArc": 0.5,
@@ -5860,9 +4889,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "role": "lever"
       }
     },
-    "requirements": {
-      "dex": 7
-    },
     "twoHanded": true,
     "gun": {
       "damage": 7,
@@ -5882,9 +4908,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-tracer-saint-carbine",
     "name": "Tracer-Saint Carbine",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "A"
-    },
     "damage": 9,
     "range": 320,
     "halfArc": 0.5,
@@ -5919,9 +4942,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "role": "bolt"
       }
     },
-    "requirements": {
-      "dex": 9
-    },
     "twoHanded": true,
     "gun": {
       "damage": 8,
@@ -5941,10 +4961,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-ironhide-buffalo-gun",
     "name": "Ironhide Buffalo Gun",
     "expansion": true,
-    "scalingGrades": {
-      "str": "B",
-      "dex": "B"
-    },
     "damage": 16,
     "range": 320,
     "halfArc": 0.5,
@@ -5966,10 +4982,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "DEX"
       ]
     },
-    "requirements": {
-      "str": 9,
-      "dex": 7
-    },
     "twoHanded": true,
     "gun": {
       "damage": 16,
@@ -5990,10 +5002,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-mirage-coilrifle",
     "name": "Mirage Coilrifle",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "B",
-      "int": "B"
-    },
     "damage": 15,
     "range": 320,
     "halfArc": 0.5,
@@ -6014,10 +5022,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "DEX",
         "INT"
       ]
-    },
-    "requirements": {
-      "dex": 9,
-      "int": 7
     },
     "twoHanded": true,
     "beam": {
@@ -6045,10 +5049,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-rustwidow-pump-rifle",
     "name": "Rustwidow Pump-Rifle",
     "expansion": true,
-    "scalingGrades": {
-      "str": "B",
-      "dex": "C"
-    },
     "damage": 12,
     "range": 320,
     "halfArc": 0.5,
@@ -6084,10 +5084,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "role": "pump"
       }
     },
-    "requirements": {
-      "str": 6,
-      "dex": 5
-    },
     "twoHanded": true,
     "gun": {
       "damage": 11,
@@ -6106,10 +5102,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-ghostwind-spectre-rail",
     "name": "Ghostwind Spectre-Rail",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "A",
-      "int": "B"
-    },
     "damage": 15,
     "range": 320,
     "halfArc": 0.5,
@@ -6131,10 +5123,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "INT"
       ]
     },
-    "requirements": {
-      "dex": 11,
-      "int": 7
-    },
     "twoHanded": true,
     "gun": {
       "damage": 15,
@@ -6154,9 +5142,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-sidewinder-twin-rifles",
     "name": "Sidewinder Twin-Rifles",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "A"
-    },
     "damage": 8,
     "range": 320,
     "halfArc": 0.5,
@@ -6191,9 +5176,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "role": "lever"
       }
     },
-    "requirements": {
-      "dex": 9
-    },
     "dual": true,
     "gun": {
       "damage": 6,
@@ -6212,9 +5194,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-gravelung-punt-rifle",
     "name": "Gravelung Punt-Rifle",
     "expansion": true,
-    "scalingGrades": {
-      "str": "A"
-    },
     "damage": 16,
     "range": 320,
     "halfArc": 0.5,
@@ -6234,9 +5213,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "scaling": [
         "STR"
       ]
-    },
-    "requirements": {
-      "str": 11
     },
     "twoHanded": true,
     "gun": {
@@ -6261,9 +5237,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-pale-horse-longgun",
     "name": "Pale-Horse Longgun",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "A"
-    },
     "damage": 14,
     "range": 320,
     "halfArc": 0.5,
@@ -6298,9 +5271,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "role": "bolt"
       }
     },
-    "requirements": {
-      "dex": 10
-    },
     "twoHanded": true,
     "gun": {
       "damage": 14,
@@ -6320,10 +5290,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-brasswork-volley-rifle",
     "name": "Brasswork Volley Rifle",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "B",
-      "str": "C"
-    },
     "damage": 9,
     "range": 320,
     "halfArc": 0.5,
@@ -6359,10 +5325,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "role": "lever"
       }
     },
-    "requirements": {
-      "dex": 7,
-      "str": 4
-    },
     "twoHanded": true,
     "gun": {
       "damage": 5,
@@ -6383,10 +5345,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-hexbore-witchrifle",
     "name": "Hexbore Witchrifle",
     "expansion": true,
-    "scalingGrades": {
-      "int": "A",
-      "dex": "C"
-    },
     "damage": 15,
     "range": 320,
     "halfArc": 0.5,
@@ -6408,10 +5366,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "DEX"
       ]
     },
-    "requirements": {
-      "int": 10,
-      "dex": 5
-    },
     "twoHanded": true,
     "gun": {
       "damage": 13,
@@ -6431,10 +5385,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-boneash-scattergun-rifle",
     "name": "Boneash Scattergun-Rifle",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "B",
-      "str": "C"
-    },
     "damage": 11,
     "range": 320,
     "halfArc": 0.5,
@@ -6470,10 +5420,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "role": "lever"
       }
     },
-    "requirements": {
-      "dex": 7,
-      "str": 5
-    },
     "twoHanded": true,
     "gun": {
       "damage": 9,
@@ -6497,10 +5443,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-buckshot-briar",
     "name": "Buckshot Briar",
     "expansion": true,
-    "scalingGrades": {
-      "str": "C",
-      "dex": "C"
-    },
     "damage": 6,
     "range": 320,
     "halfArc": 0.6,
@@ -6536,10 +5478,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "role": "pump"
       }
     },
-    "requirements": {
-      "str": 6,
-      "dex": 4
-    },
     "twoHanded": true,
     "gun": {
       "damage": 5,
@@ -6559,10 +5497,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-bonepicker-coachgun",
     "name": "Bonepicker Coachgun",
     "expansion": true,
-    "scalingGrades": {
-      "str": "B",
-      "dex": "D"
-    },
     "damage": 6,
     "range": 320,
     "halfArc": 0.62,
@@ -6598,9 +5532,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "role": "pump"
       }
     },
-    "requirements": {
-      "str": 7
-    },
     "twoHanded": true,
     "gun": {
       "damage": 6,
@@ -6620,10 +5551,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-cinderchoke-blunderbuss",
     "name": "Cinderchoke Blunderbuss",
     "expansion": true,
-    "scalingGrades": {
-      "str": "C",
-      "int": "C"
-    },
     "damage": 7,
     "range": 320,
     "halfArc": 0.66,
@@ -6644,10 +5571,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "STR",
         "INT"
       ]
-    },
-    "requirements": {
-      "str": 6,
-      "int": 4
     },
     "twoHanded": true,
     "gun": {
@@ -6673,10 +5596,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-frostbore-scattergun",
     "name": "Frostbore Scattergun",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "C",
-      "int": "C"
-    },
     "damage": 6,
     "range": 320,
     "halfArc": 0.58,
@@ -6712,10 +5631,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "role": "pump"
       }
     },
-    "requirements": {
-      "dex": 6,
-      "int": 5
-    },
     "twoHanded": true,
     "gun": {
       "damage": 5,
@@ -6736,10 +5651,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-galvanic-coachgun",
     "name": "Galvanic Coachgun",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "C",
-      "int": "C"
-    },
     "damage": 6,
     "range": 320,
     "halfArc": 0.6,
@@ -6775,10 +5686,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "role": "pump"
       }
     },
-    "requirements": {
-      "dex": 7,
-      "int": 5
-    },
     "twoHanded": true,
     "gun": {
       "damage": 5,
@@ -6801,10 +5708,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-spore-spitter-blunderbuss",
     "name": "Spore-Spitter Blunderbuss",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "C",
-      "int": "C"
-    },
     "damage": 5,
     "range": 320,
     "halfArc": 0.68,
@@ -6825,10 +5728,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "DEX",
         "INT"
       ]
-    },
-    "requirements": {
-      "dex": 5,
-      "int": 5
     },
     "twoHanded": true,
     "gun": {
@@ -6858,9 +5757,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-quicksilver-streetsweeper",
     "name": "Quicksilver Streetsweeper",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "B"
-    },
     "damage": 6,
     "range": 320,
     "halfArc": 0.58,
@@ -6895,10 +5791,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "role": "pump"
       }
     },
-    "requirements": {
-      "dex": 10,
-      "str": 5
-    },
     "twoHanded": true,
     "gun": {
       "damage": 4,
@@ -6918,10 +5810,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-hallowbore-coachgun",
     "name": "Hallowbore Coachgun",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "C",
-      "int": "C"
-    },
     "damage": 7,
     "range": 320,
     "halfArc": 0.6,
@@ -6957,10 +5845,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "role": "pump"
       }
     },
-    "requirements": {
-      "dex": 6,
-      "int": 6
-    },
     "twoHanded": true,
     "gun": {
       "damage": 40,
@@ -6979,10 +5863,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-hollowpoint-voidgun",
     "name": "Hollowpoint Voidgun",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "C",
-      "int": "C"
-    },
     "damage": 7,
     "range": 320,
     "halfArc": 0.64,
@@ -7003,10 +5883,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "DEX",
         "INT"
       ]
-    },
-    "requirements": {
-      "dex": 6,
-      "int": 7
     },
     "twoHanded": true,
     "gun": {
@@ -7029,10 +5905,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-twin-maw-greenerbore",
     "name": "Twin-Maw Greenerbore",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "C",
-      "luk": "C"
-    },
     "damage": 5,
     "range": 320,
     "halfArc": 0.66,
@@ -7068,9 +5940,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "role": "pump"
       }
     },
-    "requirements": {
-      "dex": 8
-    },
     "dual": true,
     "gun": {
       "damage": 4,
@@ -7090,9 +5959,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-slughammer-breachgun",
     "name": "Slughammer Breachgun",
     "expansion": true,
-    "scalingGrades": {
-      "str": "A"
-    },
     "damage": 8,
     "range": 320,
     "halfArc": 0.5,
@@ -7127,9 +5993,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "role": "pump"
       }
     },
-    "requirements": {
-      "str": 11
-    },
     "twoHanded": true,
     "gun": {
       "damage": 19,
@@ -7149,10 +6012,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-wyrmgut-blunderbuss",
     "name": "Wyrmgut Blunderbuss",
     "expansion": true,
-    "scalingGrades": {
-      "str": "C",
-      "dex": "C"
-    },
     "damage": 6,
     "range": 320,
     "halfArc": 0.66,
@@ -7174,10 +6033,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "DEX"
       ]
     },
-    "requirements": {
-      "str": 7,
-      "dex": 4
-    },
     "twoHanded": true,
     "gun": {
       "damage": 5,
@@ -7198,10 +6053,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-caustic-drum-sweeper",
     "name": "Caustic Drum Sweeper",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "C",
-      "int": "C"
-    },
     "damage": 5,
     "range": 320,
     "halfArc": 0.6,
@@ -7237,10 +6088,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "role": "pump"
       }
     },
-    "requirements": {
-      "dex": 8,
-      "int": 4
-    },
     "twoHanded": true,
     "gun": {
       "damage": 4,
@@ -7265,10 +6112,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-emberfan-pumpgun",
     "name": "Emberfan Pumpgun",
     "expansion": true,
-    "scalingGrades": {
-      "str": "C",
-      "dex": "C"
-    },
     "damage": 6,
     "range": 320,
     "halfArc": 0.62,
@@ -7304,10 +6147,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "role": "pump"
       }
     },
-    "requirements": {
-      "str": 5,
-      "dex": 5
-    },
     "twoHanded": true,
     "gun": {
       "damage": 5,
@@ -7332,10 +6171,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-carom-coachgun",
     "name": "Carom Coachgun",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "C",
-      "luk": "C"
-    },
     "damage": 6,
     "range": 320,
     "halfArc": 0.58,
@@ -7371,10 +6206,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "role": "pump"
       }
     },
-    "requirements": {
-      "dex": 8,
-      "luk": 4
-    },
     "twoHanded": true,
     "gun": {
       "damage": 5,
@@ -7396,10 +6227,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-boomstick-saddlegun",
     "name": "Boomstick Saddlegun",
     "expansion": true,
-    "scalingGrades": {
-      "str": "C",
-      "dex": "C"
-    },
     "damage": 6,
     "range": 320,
     "halfArc": 0.58,
@@ -7435,10 +6262,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "role": "pump"
       }
     },
-    "requirements": {
-      "str": 5,
-      "dex": 5
-    },
     "twoHanded": true,
     "gun": {
       "damage": 5,
@@ -7458,10 +6281,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-tesla-drumbore",
     "name": "Tesla Drumbore",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "C",
-      "int": "C"
-    },
     "damage": 5,
     "range": 320,
     "halfArc": 0.6,
@@ -7497,10 +6316,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "role": "pump"
       }
     },
-    "requirements": {
-      "dex": 8,
-      "int": 6
-    },
     "twoHanded": true,
     "gun": {
       "damage": 4,
@@ -7523,10 +6338,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-glasswidow-punchgun",
     "name": "Glasswidow Punchgun",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "C",
-      "luk": "C"
-    },
     "damage": 5,
     "range": 320,
     "halfArc": 0.64,
@@ -7551,9 +6362,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "pistol"
       ]
     },
-    "requirements": {
-      "dex": 7
-    },
     "gun": {
       "damage": 4,
       "projectileSpeed": 820,
@@ -7573,10 +6381,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-pearlbreech-volleygun",
     "name": "Pearlbreech Volleygun",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "C",
-      "str": "C"
-    },
     "damage": 7,
     "range": 320,
     "halfArc": 0.66,
@@ -7598,10 +6402,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "STR"
       ]
     },
-    "requirements": {
-      "dex": 7,
-      "str": 6
-    },
     "twoHanded": true,
     "gun": {
       "damage": 6,
@@ -7622,10 +6422,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-dustdevil-riotgun",
     "name": "Dustdevil Riotgun",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "B",
-      "str": "D"
-    },
     "damage": 6,
     "range": 320,
     "halfArc": 0.6,
@@ -7661,10 +6457,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "role": "vertical-foregrip"
       }
     },
-    "requirements": {
-      "dex": 9,
-      "str": 5
-    },
     "twoHanded": true,
     "gun": {
       "damage": 4,
@@ -7684,10 +6476,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-hellbore-gatling",
     "name": "Hellbore Gatling",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "B",
-      "str": "D"
-    },
     "damage": 4,
     "range": 80,
     "halfArc": 0.5,
@@ -7720,10 +6508,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "role": "vertical-foregrip"
       }
     },
-    "requirements": {
-      "dex": 11,
-      "str": 8
-    },
     "twoHanded": true,
     "gun": {
       "damage": 3,
@@ -7742,9 +6526,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-widowmaker-cannon",
     "name": "Widowmaker Cannon",
     "expansion": true,
-    "scalingGrades": {
-      "str": "A"
-    },
     "damage": 7,
     "range": 84,
     "halfArc": 0.55,
@@ -7764,9 +6545,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "scaling": [
         "STR"
       ]
-    },
-    "requirements": {
-      "str": 14
     },
     "twoHanded": true,
     "gun": {
@@ -7792,10 +6570,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-powderkeg-mortar",
     "name": "Powderkeg Mortar",
     "expansion": true,
-    "scalingGrades": {
-      "str": "B",
-      "int": "C"
-    },
     "damage": 6,
     "range": 80,
     "halfArc": 0.6,
@@ -7816,9 +6590,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "STR",
         "INT"
       ]
-    },
-    "requirements": {
-      "str": 9
     },
     "twoHanded": true,
     "gun": {
@@ -7841,10 +6612,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-thunderhead-repeater-cannon",
     "name": "Thunderhead Repeater Cannon",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "B",
-      "int": "C"
-    },
     "damage": 5,
     "range": 80,
     "halfArc": 0.55,
@@ -7880,10 +6647,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "role": "lever"
       }
     },
-    "requirements": {
-      "dex": 10,
-      "int": 5
-    },
     "twoHanded": true,
     "gun": {
       "damage": 13.5,
@@ -7909,10 +6672,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-brimstone-rocket-tube",
     "name": "Brimstone Rocket Tube",
     "expansion": true,
-    "scalingGrades": {
-      "str": "B",
-      "int": "B"
-    },
     "damage": 6,
     "range": 82,
     "halfArc": 0.55,
@@ -7945,10 +6704,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "role": "shoulder-RPG"
       }
     },
-    "requirements": {
-      "str": 11,
-      "int": 6
-    },
     "twoHanded": true,
     "gun": {
       "damage": 14,
@@ -7972,10 +6727,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-buckshot-avalanche",
     "name": "Buckshot Avalanche",
     "expansion": true,
-    "scalingGrades": {
-      "str": "C",
-      "dex": "C"
-    },
     "damage": 6,
     "range": 80,
     "halfArc": 0.6,
@@ -8011,9 +6762,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "role": "pump"
       }
     },
-    "requirements": {
-      "str": 8
-    },
     "twoHanded": true,
     "gun": {
       "damage": 9,
@@ -8038,10 +6786,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-ironhail-pepperbox",
     "name": "Ironhail Pepperbox",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "C",
-      "str": "C"
-    },
     "damage": 5,
     "range": 80,
     "halfArc": 0.5,
@@ -8072,10 +6816,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "y": 0.7
       }
     },
-    "requirements": {
-      "dex": 7,
-      "str": 5
-    },
     "gun": {
       "damage": 6,
       "projectileSpeed": 880,
@@ -8093,10 +6833,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-graveshot-grenade-gun",
     "name": "Graveshot Grenade Gun",
     "expansion": true,
-    "scalingGrades": {
-      "str": "B",
-      "luk": "D"
-    },
     "damage": 6,
     "range": 80,
     "halfArc": 0.6,
@@ -8117,9 +6853,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "STR",
         "LUK"
       ]
-    },
-    "requirements": {
-      "str": 9
     },
     "twoHanded": true,
     "gun": {
@@ -8144,10 +6877,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-hailstorm-coilgun",
     "name": "Hailstorm Coilgun",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "B",
-      "int": "C"
-    },
     "damage": 4,
     "range": 80,
     "halfArc": 0.5,
@@ -8180,10 +6909,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "role": "under-barrel"
       }
     },
-    "requirements": {
-      "dex": 12,
-      "int": 6
-    },
     "twoHanded": true,
     "gun": {
       "damage": 4,
@@ -8203,10 +6928,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-doomsday-drum-cannon",
     "name": "Doomsday Drum Cannon",
     "expansion": true,
-    "scalingGrades": {
-      "str": "B",
-      "dex": "C"
-    },
     "damage": 6,
     "range": 80,
     "halfArc": 0.55,
@@ -8227,10 +6948,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "STR",
         "DEX"
       ]
-    },
-    "requirements": {
-      "str": 12,
-      "dex": 7
     },
     "twoHanded": true,
     "beam": {
@@ -8262,9 +6979,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-mauler-slug-thrower",
     "name": "Mauler Slug-Thrower",
     "expansion": true,
-    "scalingGrades": {
-      "str": "A"
-    },
     "damage": 7,
     "range": 84,
     "halfArc": 0.5,
@@ -8299,9 +7013,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "role": "bolt"
       }
     },
-    "requirements": {
-      "str": 13
-    },
     "twoHanded": true,
     "gun": {
       "damage": 16,
@@ -8322,10 +7033,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-plaguespitter-flak-gun",
     "name": "Plaguespitter Flak Gun",
     "expansion": true,
-    "scalingGrades": {
-      "int": "B",
-      "dex": "D"
-    },
     "damage": 5,
     "range": 80,
     "halfArc": 0.55,
@@ -8346,10 +7053,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "INT",
         "DEX"
       ]
-    },
-    "requirements": {
-      "int": 8,
-      "dex": 5
     },
     "twoHanded": true,
     "gun": {
@@ -8379,10 +7082,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-sanctus-siege-bombard",
     "name": "Sanctus Siege Bombard",
     "expansion": true,
-    "scalingGrades": {
-      "str": "B",
-      "int": "B"
-    },
     "damage": 7,
     "range": 84,
     "halfArc": 0.55,
@@ -8403,10 +7102,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "STR",
         "INT"
       ]
-    },
-    "requirements": {
-      "str": 12,
-      "int": 8
     },
     "gun": {
       "damage": 15,
@@ -8431,9 +7126,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-hexbore-voidmaw",
     "name": "Hexbore Voidmaw",
     "expansion": true,
-    "scalingGrades": {
-      "int": "A"
-    },
     "damage": 6,
     "range": 80,
     "halfArc": 0.55,
@@ -8463,9 +7155,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "y": 0.68
       }
     },
-    "requirements": {
-      "int": 12
-    },
     "gun": {
       "damage": 12,
       "projectileSpeed": 560,
@@ -8490,10 +7179,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-scattershell-duster",
     "name": "Scattershell Duster",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "C",
-      "str": "C"
-    },
     "damage": 5,
     "range": 80,
     "halfArc": 0.6,
@@ -8518,10 +7203,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "pistol"
       ]
     },
-    "requirements": {
-      "dex": 6,
-      "str": 6
-    },
     "dual": true,
     "gun": {
       "damage": 24,
@@ -8543,10 +7224,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-stormcaller-tesla-gatling",
     "name": "Stormcaller Tesla Gatling",
     "expansion": true,
-    "scalingGrades": {
-      "int": "B",
-      "dex": "C"
-    },
     "damage": 4,
     "range": 80,
     "halfArc": 0.5,
@@ -8567,10 +7244,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "INT",
         "DEX"
       ]
-    },
-    "requirements": {
-      "int": 10,
-      "dex": 8
     },
     "twoHanded": true,
     "beam": {
@@ -8598,10 +7271,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-calamity-howitzer",
     "name": "Calamity Howitzer",
     "expansion": true,
-    "scalingGrades": {
-      "str": "A",
-      "con": "D"
-    },
     "damage": 8,
     "range": 84,
     "halfArc": 0.55,
@@ -8622,10 +7291,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "STR",
         "CON"
       ]
-    },
-    "requirements": {
-      "str": 14,
-      "con": 8
     },
     "gun": {
       "damage": 22,
@@ -8650,10 +7315,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-cinderfan-dragoon",
     "name": "Cinderfan Dragoon",
     "expansion": true,
-    "scalingGrades": {
-      "str": "C",
-      "int": "C"
-    },
     "damage": 6,
     "range": 80,
     "halfArc": 0.6,
@@ -8674,10 +7335,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "STR",
         "INT"
       ]
-    },
-    "requirements": {
-      "str": 7,
-      "int": 5
     },
     "twoHanded": true,
     "gun": {
@@ -8702,10 +7359,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-permafrost-siege-lobber",
     "name": "Permafrost Siege Lobber",
     "expansion": true,
-    "scalingGrades": {
-      "int": "B",
-      "str": "D"
-    },
     "damage": 6,
     "range": 80,
     "halfArc": 0.55,
@@ -8726,10 +7379,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "INT",
         "STR"
       ]
-    },
-    "requirements": {
-      "int": 9,
-      "str": 6
     },
     "twoHanded": true,
     "beam": {
@@ -8761,10 +7410,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-boneyard-ricochet-mortar",
     "name": "Boneyard Ricochet Mortar",
     "expansion": true,
-    "scalingGrades": {
-      "luk": "B",
-      "str": "C"
-    },
     "damage": 6,
     "range": 80,
     "halfArc": 0.55,
@@ -8797,10 +7442,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "role": "two-hand-rifle"
       }
     },
-    "requirements": {
-      "str": 8,
-      "luk": 5
-    },
     "twoHanded": true,
     "gun": {
       "damage": 9,
@@ -8825,10 +7466,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-coffinnail-driver",
     "name": "Coffinnail Driver",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "B",
-      "str": "D"
-    },
     "damage": 5,
     "range": 80,
     "halfArc": 0.5,
@@ -8850,10 +7487,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "STR"
       ]
     },
-    "requirements": {
-      "dex": 5,
-      "str": 4
-    },
     "gun": {
       "damage": 6,
       "projectileSpeed": 1050,
@@ -8865,21 +7498,13 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "muzzle": "punch",
       "recoil": 0.0013,
       "pierce": 3,
-      "muzzleColor": 13754086,
-      "scalingGrades": {
-        "dex": "B",
-        "str": "D"
-      }
+      "muzzleColor": 13754086
     }
   },
   "x2-carom-king": {
     "id": "x2-carom-king",
     "name": "Carom King",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "B",
-      "luk": "C"
-    },
     "damage": 5,
     "range": 80,
     "halfArc": 0.5,
@@ -8904,10 +7529,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "pistol"
       ]
     },
-    "requirements": {
-      "dex": 8,
-      "luk": 4
-    },
     "gun": {
       "damage": 11,
       "projectileSpeed": 880,
@@ -8920,21 +7541,13 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "recoil": 0.0022,
       "pierce": 2,
       "bounces": 4,
-      "muzzleColor": 3397375,
-      "scalingGrades": {
-        "dex": "B",
-        "luk": "C"
-      }
+      "muzzleColor": 3397375
     }
   },
   "x2-widowmaker-arbalest": {
     "id": "x2-widowmaker-arbalest",
     "name": "Widowmaker Arbalest",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "A",
-      "str": "C"
-    },
     "damage": 6,
     "range": 82,
     "halfArc": 0.55,
@@ -8967,10 +7580,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "role": "crank"
       }
     },
-    "requirements": {
-      "dex": 11,
-      "str": 8
-    },
     "twoHanded": true,
     "gun": {
       "damage": 22,
@@ -8985,20 +7594,13 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "projectileArt": "generated",
       "projectileVisualScale": 3,
       "pierce": 5,
-      "muzzleColor": 14803168,
-      "scalingGrades": {
-        "dex": "A",
-        "str": "C"
-      }
+      "muzzleColor": 14803168
     }
   },
   "x2-quill-storm-repeater": {
     "id": "x2-quill-storm-repeater",
     "name": "Quill Storm Repeater",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "B"
-    },
     "damage": 4,
     "range": 80,
     "halfArc": 0.5,
@@ -9019,9 +7621,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "DEX"
       ]
     },
-    "requirements": {
-      "dex": 7
-    },
     "twoHanded": true,
     "gun": {
       "damage": 4,
@@ -9034,20 +7633,13 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "muzzle": "rapid",
       "recoil": 0.0008,
       "projectileArt": "generated",
-      "muzzleColor": 13013344,
-      "scalingGrades": {
-        "dex": "B"
-      }
+      "muzzleColor": 13013344
     }
   },
   "x2-leviathan-harpoon-gun": {
     "id": "x2-leviathan-harpoon-gun",
     "name": "Leviathan Harpoon Gun",
     "expansion": true,
-    "scalingGrades": {
-      "str": "B",
-      "dex": "C"
-    },
     "damage": 6,
     "range": 84,
     "halfArc": 0.55,
@@ -9069,10 +7661,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "DEX"
       ]
     },
-    "requirements": {
-      "str": 9,
-      "dex": 6
-    },
     "twoHanded": true,
     "gun": {
       "damage": 19,
@@ -9086,21 +7674,13 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "recoil": 0.0034,
       "projectileArt": "generated",
       "pierce": 4,
-      "muzzleColor": 3960426,
-      "scalingGrades": {
-        "str": "B",
-        "dex": "C"
-      }
+      "muzzleColor": 3960426
     }
   },
   "x2-hornet-s-nest-bolter": {
     "id": "x2-hornet-s-nest-bolter",
     "name": "Hornet's Nest Bolter",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "C",
-      "luk": "C"
-    },
     "damage": 5,
     "range": 80,
     "halfArc": 0.6,
@@ -9122,9 +7702,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "LUK"
       ]
     },
-    "requirements": {
-      "dex": 6
-    },
     "twoHanded": true,
     "gun": {
       "damage": 4,
@@ -9138,21 +7715,13 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "recoil": 0.0028,
       "pellets": 8,
       "spread": 0.42,
-      "muzzleColor": 10288955,
-      "scalingGrades": {
-        "dex": "C",
-        "luk": "C"
-      }
+      "muzzleColor": 10288955
     }
   },
   "x2-embernail-repeater": {
     "id": "x2-embernail-repeater",
     "name": "Embernail Repeater",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "B",
-      "str": "C"
-    },
     "damage": 5,
     "range": 80,
     "halfArc": 0.5,
@@ -9185,10 +7754,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "role": "under-barrel"
       }
     },
-    "requirements": {
-      "dex": 6,
-      "str": 5
-    },
     "twoHanded": true,
     "gun": {
       "damage": 6,
@@ -9202,10 +7767,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "recoil": 0.0016,
       "pierce": 2,
       "muzzleColor": 16746027,
-      "scalingGrades": {
-        "dex": "B",
-        "str": "C"
-      },
       "explode": {
         "radius": 44,
         "damage": 4
@@ -9216,10 +7777,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-ghostbolt-crossbow",
     "name": "Ghostbolt Crossbow",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "B",
-      "int": "C"
-    },
     "damage": 6,
     "range": 82,
     "halfArc": 0.55,
@@ -9241,10 +7798,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "INT"
       ]
     },
-    "requirements": {
-      "dex": 9,
-      "int": 5
-    },
     "twoHanded": true,
     "gun": {
       "damage": 15,
@@ -9259,21 +7812,13 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "projectileArt": "generated",
       "projectileVisualScale": 3,
       "pierce": 6,
-      "muzzleColor": 11627775,
-      "scalingGrades": {
-        "dex": "B",
-        "int": "C"
-      }
+      "muzzleColor": 11627775
     }
   },
   "x2-snakebite-dart-slinger": {
     "id": "x2-snakebite-dart-slinger",
     "name": "Snakebite Dart-Slinger",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "B",
-      "luk": "C"
-    },
     "damage": 5,
     "range": 80,
     "halfArc": 0.5,
@@ -9295,10 +7840,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "LUK"
       ]
     },
-    "requirements": {
-      "dex": 6,
-      "luk": 3
-    },
     "gun": {
       "damage": 7,
       "projectileSpeed": 1000,
@@ -9310,21 +7851,13 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "muzzle": "rapid",
       "recoil": 0.0009,
       "pierce": 2,
-      "muzzleColor": 3960426,
-      "scalingGrades": {
-        "dex": "B",
-        "luk": "C"
-      }
+      "muzzleColor": 3960426
     }
   },
   "x2-pinwheel-caromer": {
     "id": "x2-pinwheel-caromer",
     "name": "Pinwheel Caromer",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "B",
-      "luk": "B"
-    },
     "damage": 5,
     "range": 80,
     "halfArc": 0.5,
@@ -9349,10 +7882,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "pistol"
       ]
     },
-    "requirements": {
-      "dex": 9,
-      "luk": 5
-    },
     "dual": true,
     "gun": {
       "damage": 6,
@@ -9365,21 +7894,13 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "muzzle": "spark",
       "recoil": 0.0012,
       "bounces": 3,
-      "muzzleColor": 3397375,
-      "scalingGrades": {
-        "dex": "B",
-        "luk": "B"
-      }
+      "muzzleColor": 3397375
     }
   },
   "x2-frostfang-speargun": {
     "id": "x2-frostfang-speargun",
     "name": "Frostfang Speargun",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "A",
-      "int": "C"
-    },
     "damage": 6,
     "range": 82,
     "halfArc": 0.55,
@@ -9401,10 +7922,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "INT"
       ]
     },
-    "requirements": {
-      "dex": 10,
-      "int": 6
-    },
     "twoHanded": true,
     "gun": {
       "damage": 17,
@@ -9418,21 +7935,13 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "recoil": 0.0026,
       "projectileArt": "generated",
       "pierce": 4,
-      "muzzleColor": 3397375,
-      "scalingGrades": {
-        "dex": "A",
-        "int": "C"
-      }
+      "muzzleColor": 3397375
     }
   },
   "x2-reliquary-nailcaster": {
     "id": "x2-reliquary-nailcaster",
     "name": "Reliquary Nailcaster",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "B",
-      "int": "C"
-    },
     "damage": 5,
     "range": 80,
     "halfArc": 0.5,
@@ -9454,10 +7963,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "INT"
       ]
     },
-    "requirements": {
-      "dex": 7,
-      "int": 5
-    },
     "gun": {
       "damage": 7,
       "projectileSpeed": 1080,
@@ -9469,21 +7974,13 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "muzzle": "spark",
       "recoil": 0.0011,
       "pierce": 3,
-      "muzzleColor": 15239408,
-      "scalingGrades": {
-        "dex": "B",
-        "int": "C"
-      }
+      "muzzleColor": 15239408
     }
   },
   "x2-buckshot-bramble-bow": {
     "id": "x2-buckshot-bramble-bow",
     "name": "Buckshot Bramble Bow",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "B",
-      "str": "C"
-    },
     "damage": 5,
     "range": 80,
     "halfArc": 0.6,
@@ -9505,10 +8002,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "STR"
       ]
     },
-    "requirements": {
-      "dex": 6,
-      "str": 5
-    },
     "twoHanded": true,
     "gun": {
       "damage": 4,
@@ -9524,21 +8017,13 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "pellets": 6,
       "spread": 0.38,
       "pierce": 2,
-      "muzzleColor": 12884058,
-      "scalingGrades": {
-        "dex": "B",
-        "str": "C"
-      }
+      "muzzleColor": 12884058
     }
   },
   "x2-thunderhead-spikecaster": {
     "id": "x2-thunderhead-spikecaster",
     "name": "Thunderhead Spikecaster",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "B",
-      "int": "B"
-    },
     "damage": 6,
     "range": 82,
     "halfArc": 0.55,
@@ -9571,10 +8056,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "role": "under-barrel"
       }
     },
-    "requirements": {
-      "dex": 9,
-      "int": 7
-    },
     "twoHanded": true,
     "gun": {
       "damage": 18,
@@ -9587,21 +8068,13 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "muzzle": "heavy",
       "recoil": 0.003,
       "pierce": 5,
-      "muzzleColor": 3397375,
-      "scalingGrades": {
-        "dex": "B",
-        "int": "B"
-      }
+      "muzzleColor": 3397375
     }
   },
   "x2-magpie-scattergun": {
     "id": "x2-magpie-scattergun",
     "name": "Magpie Scattergun",
     "expansion": true,
-    "scalingGrades": {
-      "luk": "B",
-      "dex": "C"
-    },
     "damage": 5,
     "range": 80,
     "halfArc": 0.6,
@@ -9626,10 +8099,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "pistol"
       ]
     },
-    "requirements": {
-      "luk": 7,
-      "dex": 4
-    },
     "gun": {
       "damage": 4,
       "projectileSpeed": 680,
@@ -9642,20 +8111,13 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "recoil": 0.003,
       "pellets": 7,
       "spread": 0.5,
-      "muzzleColor": 11028526,
-      "scalingGrades": {
-        "luk": "B",
-        "dex": "C"
-      }
+      "muzzleColor": 11028526
     }
   },
   "x2-whisperbarb-hand-crossbow": {
     "id": "x2-whisperbarb-hand-crossbow",
     "name": "Whisperbarb Hand-Crossbow",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "A"
-    },
     "damage": 5,
     "range": 80,
     "halfArc": 0.5,
@@ -9676,9 +8138,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "DEX"
       ]
     },
-    "requirements": {
-      "dex": 10
-    },
     "dual": true,
     "gun": {
       "damage": 6,
@@ -9692,20 +8151,13 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "recoil": 0.0007,
       "projectileArt": "arrow",
       "pierce": 2,
-      "muzzleColor": 13619126,
-      "scalingGrades": {
-        "dex": "A"
-      }
+      "muzzleColor": 13619126
     }
   },
   "x2-grave-anchor-harpoon": {
     "id": "x2-grave-anchor-harpoon",
     "name": "Grave-Anchor Harpoon",
     "expansion": true,
-    "scalingGrades": {
-      "str": "B",
-      "int": "B"
-    },
     "damage": 7,
     "range": 96,
     "halfArc": 0.6,
@@ -9727,10 +8179,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "INT"
       ]
     },
-    "requirements": {
-      "str": 10,
-      "int": 7
-    },
     "twoHanded": true,
     "gun": {
       "damage": 26,
@@ -9745,10 +8193,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "projectileArt": "weapon-crop",
       "pierce": 6,
       "muzzleColor": 11627775,
-      "scalingGrades": {
-        "str": "B",
-        "int": "B"
-      },
       "explode": {
         "radius": 60,
         "damage": 8
@@ -9759,10 +8203,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-cinderquill-dart-caster",
     "name": "Cinderquill Dart-Caster",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "B",
-      "int": "D"
-    },
     "damage": 4,
     "range": 80,
     "halfArc": 0.5,
@@ -9795,10 +8235,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "role": "two-hand-rifle"
       }
     },
-    "requirements": {
-      "dex": 6,
-      "int": 4
-    },
     "twoHanded": true,
     "gun": {
       "damage": 5,
@@ -9810,21 +8246,13 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "bulletKind": "nail",
       "muzzle": "rapid",
       "recoil": 0.0008,
-      "muzzleColor": 16746027,
-      "scalingGrades": {
-        "dex": "B",
-        "int": "D"
-      }
+      "muzzleColor": 16746027
     }
   },
   "x2-ricochet-roulette": {
     "id": "x2-ricochet-roulette",
     "name": "Ricochet Roulette",
     "expansion": true,
-    "scalingGrades": {
-      "luk": "A",
-      "dex": "C"
-    },
     "damage": 6,
     "range": 80,
     "halfArc": 0.5,
@@ -9849,10 +8277,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "pistol"
       ]
     },
-    "requirements": {
-      "luk": 9,
-      "dex": 6
-    },
     "gun": {
       "damage": 13,
       "projectileSpeed": 860,
@@ -9865,21 +8289,13 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "recoil": 0.0024,
       "pierce": 2,
       "bounces": 5,
-      "muzzleColor": 11627775,
-      "scalingGrades": {
-        "luk": "A",
-        "dex": "C"
-      }
+      "muzzleColor": 11627775
     }
   },
   "x2-tidehook-bombarpoon": {
     "id": "x2-tidehook-bombarpoon",
     "name": "Tidehook Bombarpoon",
     "expansion": true,
-    "scalingGrades": {
-      "str": "A",
-      "dex": "C"
-    },
     "damage": 7,
     "range": 94,
     "halfArc": 0.6,
@@ -9901,10 +8317,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "DEX"
       ]
     },
-    "requirements": {
-      "str": 11,
-      "dex": 7
-    },
     "twoHanded": true,
     "gun": {
       "damage": 16,
@@ -9920,10 +8332,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "projectileVisualScale": 1.75,
       "pierce": 3,
       "muzzleColor": 3397375,
-      "scalingGrades": {
-        "str": "A",
-        "dex": "C"
-      },
       "explode": {
         "radius": 220,
         "damage": 10
@@ -9934,9 +8342,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-codex-of-forked-tongues",
     "name": "Codex of Forked Tongues",
     "expansion": true,
-    "scalingGrades": {
-      "int": "A"
-    },
     "damage": 8,
     "range": 150,
     "halfArc": 0.85,
@@ -9957,9 +8362,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "INT"
       ]
     },
-    "requirements": {
-      "int": 8
-    },
     "chainLightning": {
       "jumps": 4,
       "range": 200,
@@ -9971,10 +8373,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-hexbloom-scattergrimoire",
     "name": "Hexbloom Scattergrimoire",
     "expansion": true,
-    "scalingGrades": {
-      "int": "A",
-      "luk": "D"
-    },
     "damage": 7,
     "range": 150,
     "halfArc": 0.9,
@@ -10006,9 +8404,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "frequencyHz": 12
       }
     },
-    "requirements": {
-      "int": 9
-    },
     "scatter": {
       "count": 6,
       "spread": 0.5,
@@ -10025,9 +8420,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-null-grimoire-of-the-hollow-page",
     "name": "Null Grimoire of the Hollow Page",
     "expansion": true,
-    "scalingGrades": {
-      "int": "S"
-    },
     "damage": 9,
     "range": 150,
     "halfArc": 0.6,
@@ -10047,9 +8439,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "scaling": [
         "INT"
       ]
-    },
-    "requirements": {
-      "int": 12
     },
     "beam": {
       "damagePerSecond": 40,
@@ -10076,9 +8465,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-pyroglyph-spellbook",
     "name": "Pyroglyph Spellbook",
     "expansion": true,
-    "scalingGrades": {
-      "int": "A"
-    },
     "damage": 8,
     "range": 150,
     "halfArc": 0.95,
@@ -10099,9 +8485,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "INT"
       ]
     },
-    "requirements": {
-      "int": 9
-    },
     "scatter": {
       "count": 5,
       "spread": 0.55,
@@ -10118,10 +8501,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-rimebound-folio",
     "name": "Rimebound Folio",
     "expansion": true,
-    "scalingGrades": {
-      "int": "B",
-      "dex": "D"
-    },
     "damage": 6,
     "range": 140,
     "halfArc": 0.85,
@@ -10142,9 +8521,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "INT"
       ]
     },
-    "requirements": {
-      "int": 6
-    },
     "scatter": {
       "count": 7,
       "spread": 0.45,
@@ -10161,9 +8537,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-galvanic-liber-of-storms",
     "name": "Galvanic Liber of Storms",
     "expansion": true,
-    "scalingGrades": {
-      "int": "S"
-    },
     "damage": 10,
     "range": 160,
     "halfArc": 1,
@@ -10202,9 +8575,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "color": 3401471
       }
     },
-    "requirements": {
-      "int": 12
-    },
     "twoHanded": true,
     "chainLightning": {
       "jumps": 5,
@@ -10217,9 +8587,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-witherleaf-bestiary",
     "name": "Witherleaf Bestiary",
     "expansion": true,
-    "scalingGrades": {
-      "int": "A"
-    },
     "damage": 7,
     "range": 150,
     "halfArc": 1,
@@ -10255,9 +8622,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       },
       "emitter": "spout"
     },
-    "requirements": {
-      "int": 8
-    },
     "scatter": {
       "count": 6,
       "spread": 0.6,
@@ -10274,9 +8638,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-psalter-of-the-burning-halo",
     "name": "Psalter of the Burning Halo",
     "expansion": true,
-    "scalingGrades": {
-      "int": "S"
-    },
     "damage": 11,
     "range": 160,
     "halfArc": 0.55,
@@ -10298,9 +8659,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "archived": true,
-    "requirements": {
-      "int": 13
-    },
     "twoHanded": true,
     "beam": {
       "damagePerSecond": 50,
@@ -10327,10 +8685,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-pocket-hexicon",
     "name": "Pocket Hexicon",
     "expansion": true,
-    "scalingGrades": {
-      "int": "B",
-      "luk": "D"
-    },
     "damage": 6,
     "range": 140,
     "halfArc": 0.7,
@@ -10351,9 +8705,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "INT"
       ]
     },
-    "requirements": {
-      "int": 5
-    },
     "scatter": {
       "count": 4,
       "spread": 0.4,
@@ -10366,10 +8717,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-maledict-tome-of-salt-lines",
     "name": "Maledict Tome of Salt-Lines",
     "expansion": true,
-    "scalingGrades": {
-      "int": "A",
-      "con": "D"
-    },
     "damage": 10,
     "range": 150,
     "halfArc": 1,
@@ -10390,9 +8737,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "INT"
       ]
     },
-    "requirements": {
-      "int": 10
-    },
     "twoHanded": true,
     "quake": {
       "radius": 160,
@@ -10403,9 +8747,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-cinderquill-almanac",
     "name": "Cinderquill Almanac",
     "expansion": true,
-    "scalingGrades": {
-      "int": "A"
-    },
     "damage": 11,
     "range": 150,
     "halfArc": 1.05,
@@ -10426,9 +8767,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "INT"
       ]
     },
-    "requirements": {
-      "int": 10
-    },
     "twoHanded": true,
     "quake": {
       "radius": 150,
@@ -10439,10 +8777,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-twin-whispervolumes",
     "name": "Twin Whispervolumes",
     "expansion": true,
-    "scalingGrades": {
-      "int": "B",
-      "dex": "D"
-    },
     "damage": 6,
     "range": 145,
     "halfArc": 0.7,
@@ -10465,9 +8799,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     },
     "effectRecipe": "whispervolume-page-scatter",
     "effectEmitter": "tip",
-    "requirements": {
-      "int": 7
-    },
     "dual": true,
     "chainLightning": {
       "jumps": 3,
@@ -10480,10 +8811,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-abyssal-apocrypha",
     "name": "Abyssal Apocrypha",
     "expansion": true,
-    "scalingGrades": {
-      "int": "S",
-      "luk": "D"
-    },
     "damage": 10,
     "range": 240,
     "halfArc": 1.4,
@@ -10522,9 +8849,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "cadence": "weapon-cooldown"
       }
     },
-    "requirements": {
-      "int": 13
-    },
     "twoHanded": true,
     "durability": 90
   },
@@ -10532,9 +8856,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-glyphward-manuscript",
     "name": "Glyphward Manuscript",
     "expansion": true,
-    "scalingGrades": {
-      "int": "A"
-    },
     "damage": 8,
     "range": 150,
     "halfArc": 0.8,
@@ -10555,9 +8876,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "INT"
       ]
     },
-    "requirements": {
-      "int": 9
-    },
     "scatter": {
       "count": 10,
       "spread": 0.56,
@@ -10570,9 +8888,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-frostquill-compendium",
     "name": "Frostquill Compendium",
     "expansion": true,
-    "scalingGrades": {
-      "int": "S"
-    },
     "damage": 10,
     "range": 160,
     "halfArc": 0.55,
@@ -10592,9 +8907,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "scaling": [
         "INT"
       ]
-    },
-    "requirements": {
-      "int": 12
     },
     "twoHanded": true,
     "beam": {
@@ -10635,9 +8947,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-emberleaf-chapbook",
     "name": "Emberleaf Chapbook",
     "expansion": true,
-    "scalingGrades": {
-      "int": "B"
-    },
     "damage": 6,
     "range": 140,
     "halfArc": 0.7,
@@ -10664,9 +8973,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "continuous": true,
       "suppressSwing": true
     },
-    "requirements": {
-      "int": 5
-    },
     "scatter": {
       "count": 4,
       "spread": 0.42,
@@ -10683,10 +8989,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-ledger-of-spent-souls",
     "name": "Ledger of Spent Souls",
     "expansion": true,
-    "scalingGrades": {
-      "int": "S",
-      "con": "D"
-    },
     "damage": 12,
     "range": 160,
     "halfArc": 1.05,
@@ -10707,9 +9009,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "INT"
       ]
     },
-    "requirements": {
-      "int": 14
-    },
     "twoHanded": true,
     "quake": {
       "radius": 170,
@@ -10720,10 +9019,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-voltscript-codicil",
     "name": "Voltscript Codicil",
     "expansion": true,
-    "scalingGrades": {
-      "int": "A",
-      "dex": "D"
-    },
     "damage": 7,
     "range": 150,
     "halfArc": 0.85,
@@ -10744,9 +9039,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "INT"
       ]
     },
-    "requirements": {
-      "int": 8
-    },
     "scatter": {
       "count": 6,
       "spread": 0.48,
@@ -10763,9 +9055,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-verdigris-grand-grimoire",
     "name": "Verdigris Grand Grimoire",
     "expansion": true,
-    "scalingGrades": {
-      "int": "S"
-    },
     "damage": 13,
     "range": 400,
     "halfArc": 1,
@@ -10792,9 +9081,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "continuous": true,
       "suppressSwing": true
     },
-    "requirements": {
-      "int": 14
-    },
     "twoHanded": true,
     "durability": 90
   },
@@ -10802,9 +9088,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-tallowtongue-pyre-stave",
     "name": "Tallowtongue Pyre-Stave",
     "expansion": true,
-    "scalingGrades": {
-      "int": "A"
-    },
     "damage": 4,
     "range": 150,
     "halfArc": 0.7,
@@ -10848,9 +9131,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "frequencyHz": 10
       }
     },
-    "requirements": {
-      "int": 9
-    },
     "twoHanded": true,
     "scatter": {
       "count": 6,
@@ -10858,9 +9138,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "speed": 360,
       "range": 240,
       "damage": 5,
-      "scalingGrades": {
-        "int": "B"
-      },
       "explode": {
         "radius": 52,
         "damage": 5
@@ -10871,10 +9148,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-brinequill-tidescepter",
     "name": "Brinequill Tidescepter",
     "expansion": true,
-    "scalingGrades": {
-      "int": "A",
-      "dex": "D"
-    },
     "damage": 4,
     "range": 90,
     "halfArc": 0.5,
@@ -10897,9 +9170,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "description": "A weathered brass scepter wound in barnacle-crusted rope, its head a fluted conch lacquered in pale rime that breathes a continuous lance of freezing brine.",
-    "requirements": {
-      "int": 7
-    },
     "beam": {
       "damagePerSecond": 33.333333333333336,
       "tickRate": 0.1,
@@ -10925,10 +9195,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-gravesinger-s-hex-wand",
     "name": "Gravesinger's Hex-Wand",
     "expansion": true,
-    "scalingGrades": {
-      "int": "A",
-      "luk": "C"
-    },
     "damage": 5,
     "range": 130,
     "halfArc": 0.6,
@@ -10967,10 +9233,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "action": "recoil",
       "suppressSwing": true
     },
-    "requirements": {
-      "int": 6,
-      "luk": 4
-    },
     "twoHanded": true,
     "gun": {
       "damage": 5,
@@ -10983,10 +9245,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "muzzle": "boom",
       "recoil": 0.004,
       "projectileVisualScale": 2.6,
-      "scalingGrades": {
-        "int": "A",
-        "luk": "C"
-      },
       "explode": {
         "radius": 110,
         "damage": 5
@@ -10997,9 +9255,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-cogwright-s-tesla-rod",
     "name": "Cogwright's Tesla-Rod",
     "expansion": true,
-    "scalingGrades": {
-      "int": "S"
-    },
     "damage": 4,
     "range": 120,
     "halfArc": 0.6,
@@ -11026,9 +9281,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "action": "hold",
       "suppressSwing": true
     },
-    "requirements": {
-      "int": 8
-    },
     "warp": {
       "burstRadius": 48
     }
@@ -11037,9 +9289,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-sunmote-reliquary-staff",
     "name": "Sunmote Reliquary Staff",
     "expansion": true,
-    "scalingGrades": {
-      "int": "S"
-    },
     "damage": 6,
     "range": 95,
     "halfArc": 0.5,
@@ -11072,9 +9321,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       }
     },
     "description": "A tall white-gold staff topped with a fan of radiant sun-rays around a clear focusing lens, pouring out a steady searing ray of holy light.",
-    "requirements": {
-      "int": 11
-    },
     "twoHanded": true,
     "beam": {
       "damagePerSecond": 60,
@@ -11101,9 +9347,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-marshlight-bog-censer-wand",
     "name": "Marshlight Bog-Censer Wand",
     "expansion": true,
-    "scalingGrades": {
-      "int": "A"
-    },
     "damage": 4,
     "range": 140,
     "halfArc": 0.7,
@@ -11137,18 +9380,12 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       },
       "emitter": "spout"
     },
-    "requirements": {
-      "int": 7
-    },
     "scatter": {
       "count": 7,
       "spread": 0.6,
       "speed": 320,
       "range": 220,
       "damage": 4,
-      "scalingGrades": {
-        "int": "B"
-      },
       "explode": {
         "radius": 60,
         "damage": 4
@@ -11159,10 +9396,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-anvil-heart-quake-maul-staff",
     "name": "Anvil-Heart Quake Maul-Staff",
     "expansion": true,
-    "scalingGrades": {
-      "int": "A",
-      "str": "C"
-    },
     "damage": 5,
     "range": 130,
     "halfArc": 1,
@@ -11196,10 +9429,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       }
     },
     "description": "A massive iron-shod stave capped with a forge-anvil head veined in cooling magma, slammed butt-first to crack the earth in a ring of fire.",
-    "requirements": {
-      "int": 10,
-      "str": 6
-    },
     "twoHanded": true,
     "quake": {
       "radius": 160,
@@ -11210,10 +9439,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-hollowbarrel-spell-scattergun-staff",
     "name": "Hollowbarrel Spell-Scattergun Staff",
     "expansion": true,
-    "scalingGrades": {
-      "int": "A",
-      "dex": "D"
-    },
     "damage": 5,
     "range": 150,
     "halfArc": 0.7,
@@ -11253,10 +9478,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "suppressSwing": true,
       "emitter": "spout"
     },
-    "requirements": {
-      "int": 8,
-      "dex": 4
-    },
     "twoHanded": true,
     "scatter": {
       "count": 8,
@@ -11264,9 +9485,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "speed": 420,
       "range": 230,
       "damage": 4,
-      "scalingGrades": {
-        "int": "B"
-      },
       "explode": {
         "radius": 48,
         "damage": 3
@@ -11277,9 +9495,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-carrion-roost-necro-scepter",
     "name": "Carrion Roost Necro-Scepter",
     "expansion": true,
-    "scalingGrades": {
-      "int": "S"
-    },
     "damage": 7,
     "range": 95,
     "halfArc": 0.5,
@@ -11301,9 +9516,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "description": "A black-iron scepter crowned with a fanged vulture skull whose beak gapes open, draining a thin ribbon of devouring void-shadow from its hollow eyes.",
-    "requirements": {
-      "int": 12
-    },
     "beam": {
       "damagePerSecond": 49.99999999999999,
       "tickRate": 0.15,
@@ -11329,10 +9541,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-glimmerdust-prospector-wand",
     "name": "Glimmerdust Prospector Wand",
     "expansion": true,
-    "scalingGrades": {
-      "int": "B",
-      "luk": "B"
-    },
     "damage": 4,
     "range": 135,
     "halfArc": 0.65,
@@ -11355,20 +9563,12 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "description": "A bent gold-panning trowel re-forged into a wand, its scoop full of glittering fool's-gold flakes that fling out in a lucky scatter of bursting arcane sparks.",
-    "requirements": {
-      "int": 5,
-      "luk": 6
-    },
     "scatter": {
       "count": 6,
       "spread": 0.45,
       "speed": 380,
       "range": 250,
       "damage": 5,
-      "scalingGrades": {
-        "int": "B",
-        "luk": "C"
-      },
       "explode": {
         "radius": 50,
         "damage": 4
@@ -11379,9 +9579,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-throne-of-ash-coal-scepter",
     "name": "Throne-of-Ash Coal-Scepter",
     "expansion": true,
-    "scalingGrades": {
-      "int": "A"
-    },
     "damage": 5,
     "range": 120,
     "halfArc": 0.9,
@@ -11403,9 +9600,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "description": "A heavy blackened-gold scepter shaped like a tiny burning throne, its coal-cushion seat raked across the ground to split the earth in a creeping fissure of cinders.",
-    "requirements": {
-      "int": 9
-    },
     "quake": {
       "radius": 130,
       "damage": 8
@@ -11415,9 +9609,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-auroral-filament-wand",
     "name": "Auroral Filament Wand",
     "expansion": true,
-    "scalingGrades": {
-      "int": "S"
-    },
     "damage": 5,
     "range": 95,
     "halfArc": 0.5,
@@ -11439,9 +9630,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "description": "A slim glass wand encasing a single curled tungsten filament that hums with caged current, drawing a thin unbroken thread of crackling shock down the line.",
-    "requirements": {
-      "int": 8
-    },
     "beam": {
       "damagePerSecond": 50,
       "tickRate": 0.1,
@@ -11467,9 +9655,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-saint-bough-frost-crozier",
     "name": "Saint-Bough Frost Crozier",
     "expansion": true,
-    "scalingGrades": {
-      "int": "A"
-    },
     "damage": 5,
     "range": 135,
     "halfArc": 1,
@@ -11509,9 +9694,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "phaseOffset": 0.35
       }
     },
-    "requirements": {
-      "int": 10
-    },
     "quake": {
       "radius": 150,
       "damage": 7
@@ -11521,10 +9703,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-snakeoil-tincture-scepter",
     "name": "Snakeoil Tincture Scepter",
     "expansion": true,
-    "scalingGrades": {
-      "int": "A",
-      "luk": "C"
-    },
     "damage": 5,
     "range": 125,
     "halfArc": 0.6,
@@ -11557,10 +9735,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "suppressSwing": true,
       "emitter": "spout"
     },
-    "requirements": {
-      "int": 6,
-      "luk": 5
-    },
     "groundZone": {
       "trigger": "channel",
       "style": "poison",
@@ -11570,20 +9744,13 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "lingerSeconds": 2.4,
       "damagePerSecond": 11.9047619,
       "tickRate": 0.1,
-      "placementRange": 125,
-      "scalingGrades": {
-        "int": "A",
-        "luk": "C"
-      }
+      "placementRange": 125
     }
   },
   "x2-mesa-spine-thunder-stave": {
     "id": "x2-mesa-spine-thunder-stave",
     "name": "Mesa-Spine Thunder Stave",
     "expansion": true,
-    "scalingGrades": {
-      "int": "S"
-    },
     "damage": 5,
     "range": 95,
     "halfArc": 0.5,
@@ -11616,9 +9783,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       }
     },
     "description": "A sun-bleached cactus-rib stave fitted with a copper lightning-rod tip and a coil of bare wire, channeling a steady forked lance of caught storm.",
-    "requirements": {
-      "int": 9
-    },
     "twoHanded": true,
     "beam": {
       "damagePerSecond": 45.45454545454545,
@@ -11645,9 +9809,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-reliquary-lantern-wand",
     "name": "Reliquary Lantern Wand",
     "expansion": true,
-    "scalingGrades": {
-      "int": "A"
-    },
     "damage": 5,
     "range": 130,
     "halfArc": 0.6,
@@ -11669,18 +9830,12 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "description": "A short brass wand topped with a tiny stained-glass votive lantern, swung to fling a scattering of blessed sun-sparks that burst into pools of light.",
-    "requirements": {
-      "int": 7
-    },
     "scatter": {
       "count": 5,
       "spread": 0.4,
       "speed": 400,
       "range": 250,
       "damage": 6,
-      "scalingGrades": {
-        "int": "B"
-      },
       "explode": {
         "radius": 54,
         "damage": 5
@@ -11691,9 +9846,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-obsidian-maw-void-staff",
     "name": "Obsidian Maw Void-Staff",
     "expansion": true,
-    "scalingGrades": {
-      "int": "S"
-    },
     "damage": 6,
     "range": 130,
     "halfArc": 1,
@@ -11726,9 +9878,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       }
     },
     "description": "A jagged obsidian staff crowned with a ring of black teeth around a starless pit, butted into the earth to collapse a hungry crater of devouring dark.",
-    "requirements": {
-      "int": 13
-    },
     "twoHanded": true,
     "quake": {
       "radius": 170,
@@ -11739,10 +9888,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-gilded-hourglass-frost-scepter",
     "name": "Gilded Hourglass Frost Scepter",
     "expansion": true,
-    "scalingGrades": {
-      "int": "A",
-      "dex": "D"
-    },
     "damage": 5,
     "range": 95,
     "halfArc": 0.5,
@@ -11765,9 +9910,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "description": "A jeweled scepter cradling a small hourglass of blue glacial sand, pouring a slow continuous beam of creeping numbing cold from its narrowing throat.",
-    "requirements": {
-      "int": 9
-    },
     "groundZone": {
       "trigger": "channel",
       "style": "ice",
@@ -11786,9 +9928,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-wormwood-hex-stave",
     "name": "Wormwood Hex-Stave",
     "expansion": true,
-    "scalingGrades": {
-      "int": "A"
-    },
     "damage": 5,
     "range": 150,
     "halfArc": 0.7,
@@ -11821,9 +9960,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       }
     },
     "description": "A twisted wormwood stave hung with shriveled gourds of distilled blight, shaken to scatter a burst of splitting venom-pods that rupture into corrosive pools.",
-    "requirements": {
-      "int": 8
-    },
     "twoHanded": true,
     "scatter": {
       "count": 6,
@@ -11831,9 +9967,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "speed": 340,
       "range": 230,
       "damage": 5,
-      "scalingGrades": {
-        "int": "B"
-      },
       "explode": {
         "radius": 64,
         "damage": 5
@@ -11844,10 +9977,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-vagrant-s-wishing-marble",
     "name": "Vagrant's Wishing Marble",
     "expansion": true,
-    "scalingGrades": {
-      "int": "B",
-      "luk": "C"
-    },
     "damage": 7,
     "range": 360,
     "halfArc": 0.9,
@@ -11871,9 +10000,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     },
     "effectRecipe": "void-caster-explosion",
     "effectEmitter": "body",
-    "requirements": {
-      "int": 6
-    },
     "quake": {
       "radius": 110,
       "damage": 8
@@ -11883,9 +10009,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-saint-s-knucklebone-censer-orb",
     "name": "Saint's Knucklebone Censer-Orb",
     "expansion": true,
-    "scalingGrades": {
-      "int": "A"
-    },
     "damage": 9,
     "range": 300,
     "halfArc": 1,
@@ -11906,9 +10029,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "INT"
       ]
     },
-    "requirements": {
-      "int": 9
-    },
     "quake": {
       "radius": 150,
       "damage": 11
@@ -11918,9 +10038,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-riftglass-prism-lantern",
     "name": "Riftglass Prism-Lantern",
     "expansion": true,
-    "scalingGrades": {
-      "int": "S"
-    },
     "damage": 6,
     "range": 720,
     "halfArc": 0.5,
@@ -11943,9 +10060,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     },
     "effectRecipe": "riftglass-rainbow-volley",
     "effectEmitter": "tip",
-    "requirements": {
-      "int": 12
-    },
     "beam": {
       "damagePerSecond": 41.66666666666667,
       "tickRate": 0.1,
@@ -11975,9 +10089,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-cinderchoke-brazier-orb",
     "name": "Cinderchoke Brazier-Orb",
     "expansion": true,
-    "scalingGrades": {
-      "int": "B"
-    },
     "damage": 8,
     "range": 320,
     "halfArc": 0.8,
@@ -12013,9 +10124,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       },
       "vfxAt": "impact"
     },
-    "requirements": {
-      "int": 7
-    },
     "scatter": {
       "count": 6,
       "spread": 0.5,
@@ -12032,9 +10140,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-hailshard-resonator",
     "name": "Hailshard Resonator",
     "expansion": true,
-    "scalingGrades": {
-      "int": "A"
-    },
     "damage": 7,
     "range": 300,
     "halfArc": 0.6,
@@ -12061,9 +10166,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "continuous": true,
       "suppressSwing": true
     },
-    "requirements": {
-      "int": 8
-    },
     "scatter": {
       "count": 5,
       "spread": 0.4,
@@ -12081,10 +10183,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-fulgurite-storm-sphere",
     "name": "Fulgurite Storm-Sphere",
     "expansion": true,
-    "scalingGrades": {
-      "int": "B",
-      "luk": "C"
-    },
     "damage": 7,
     "range": 320,
     "halfArc": 0.7,
@@ -12124,9 +10222,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "color": 3401471
       }
     },
-    "requirements": {
-      "int": 7
-    },
     "chainLightning": {
       "jumps": 4,
       "range": 200,
@@ -12143,10 +10238,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-coffin-nail-rosary-orb",
     "name": "Coffin-Nail Rosary Orb",
     "expansion": true,
-    "scalingGrades": {
-      "int": "A",
-      "luk": "D"
-    },
     "damage": 8,
     "range": 340,
     "halfArc": 0.95,
@@ -12172,9 +10263,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "hold": "hanging-chain",
       "action": "default-swing"
     },
-    "requirements": {
-      "int": 9
-    },
     "quake": {
       "radius": 130,
       "damage": 10
@@ -12184,9 +10272,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-sporebound-witchglobe",
     "name": "Sporebound Witchglobe",
     "expansion": true,
-    "scalingGrades": {
-      "int": "B"
-    },
     "damage": 7,
     "range": 320,
     "halfArc": 0.6,
@@ -12226,9 +10311,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "damageType": "bio"
       }
     },
-    "requirements": {
-      "int": 6
-    },
     "scatter": {
       "count": 7,
       "spread": 0.6,
@@ -12245,9 +10327,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-gravewax-seance-globe",
     "name": "Gravewax Seance-Globe",
     "expansion": true,
-    "scalingGrades": {
-      "int": "S"
-    },
     "damage": 6,
     "range": 760,
     "halfArc": 0.45,
@@ -12268,9 +10347,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "INT"
       ]
     },
-    "requirements": {
-      "int": 11
-    },
     "groundZone": {
       "trigger": "channel",
       "style": "nether",
@@ -12280,20 +10356,13 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "lingerSeconds": 2,
       "damagePerSecond": 60,
       "tickRate": 0.1,
-      "placementRange": 240,
-      "scalingGrades": {
-        "int": "S"
-      }
+      "placementRange": 240
     }
   },
   "x2-mesa-heart-geodes": {
     "id": "x2-mesa-heart-geodes",
     "name": "Mesa-Heart Geodes",
     "expansion": true,
-    "scalingGrades": {
-      "int": "B",
-      "dex": "D"
-    },
     "damage": 6,
     "range": 360,
     "halfArc": 0.7,
@@ -12315,10 +10384,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "DEX"
       ]
     },
-    "requirements": {
-      "int": 7,
-      "dex": 4
-    },
     "dual": true,
     "chainLightning": {
       "jumps": 3,
@@ -12331,9 +10396,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-reckoning-s-sun-orb",
     "name": "Reckoning's Sun-Orb",
     "expansion": true,
-    "scalingGrades": {
-      "int": "S"
-    },
     "damage": 11,
     "range": 300,
     "halfArc": 1.1,
@@ -12354,9 +10416,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "INT"
       ]
     },
-    "requirements": {
-      "int": 13
-    },
     "twoHanded": true,
     "quake": {
       "radius": 170,
@@ -12367,10 +10426,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-tumbleweed-static-bauble",
     "name": "Tumbleweed Static-Bauble",
     "expansion": true,
-    "scalingGrades": {
-      "int": "B",
-      "dex": "C"
-    },
     "damage": 6,
     "range": 320,
     "halfArc": 0.65,
@@ -12392,10 +10447,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "DEX"
       ]
     },
-    "requirements": {
-      "int": 6,
-      "dex": 4
-    },
     "scatter": {
       "count": 6,
       "spread": 0.55,
@@ -12412,9 +10463,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-quartzlight-wayfinder",
     "name": "Quartzlight Wayfinder",
     "expansion": true,
-    "scalingGrades": {
-      "int": "A"
-    },
     "damage": 6,
     "range": 740,
     "halfArc": 0.5,
@@ -12434,9 +10482,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "scaling": [
         "INT"
       ]
-    },
-    "requirements": {
-      "int": 10
     },
     "beam": {
       "damagePerSecond": 45.45454545454545,
@@ -12463,10 +10508,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-pyre-marble-bandolier",
     "name": "Pyre-Marble Bandolier",
     "expansion": true,
-    "scalingGrades": {
-      "int": "B",
-      "luk": "D"
-    },
     "damage": 6,
     "range": 320,
     "halfArc": 0.7,
@@ -12488,9 +10529,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "LUK"
       ]
     },
-    "requirements": {
-      "int": 6
-    },
     "dual": true,
     "scatter": {
       "count": 4,
@@ -12508,9 +10546,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-dust-devil-cyclone-orb",
     "name": "Dust-Devil Cyclone Orb",
     "expansion": true,
-    "scalingGrades": {
-      "int": "A"
-    },
     "damage": 10,
     "range": 300,
     "halfArc": 1,
@@ -12531,9 +10566,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "INT"
       ]
     },
-    "requirements": {
-      "int": 11
-    },
     "twoHanded": true,
     "quake": {
       "radius": 160,
@@ -12544,9 +10576,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-locust-glass-plague-orb",
     "name": "Locust-Glass Plague-Orb",
     "expansion": true,
-    "scalingGrades": {
-      "int": "B"
-    },
     "damage": 7,
     "range": 320,
     "halfArc": 0.7,
@@ -12573,9 +10602,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "suppressSwing": true,
       "emitter": "spout"
     },
-    "requirements": {
-      "int": 7
-    },
     "scatter": {
       "count": 3,
       "spread": 0.2,
@@ -12592,9 +10618,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-pearl-of-penance-censer",
     "name": "Pearl-of-Penance Censer",
     "expansion": true,
-    "scalingGrades": {
-      "int": "S"
-    },
     "damage": 7,
     "range": 780,
     "halfArc": 0.5,
@@ -12614,9 +10637,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "scaling": [
         "INT"
       ]
-    },
-    "requirements": {
-      "int": 13
     },
     "twoHanded": true,
     "beam": {
@@ -12644,9 +10664,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-frostbite-snowglobe",
     "name": "Frostbite Snowglobe",
     "expansion": true,
-    "scalingGrades": {
-      "int": "A"
-    },
     "damage": 9,
     "range": 300,
     "halfArc": 0.95,
@@ -12666,9 +10683,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "scaling": [
         "INT"
       ]
-    },
-    "requirements": {
-      "int": 9
     },
     "quake": {
       "radius": 140,
@@ -12692,10 +10706,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-hexbinder-s-iron-orrery",
     "name": "Hexbinder's Iron Orrery",
     "expansion": true,
-    "scalingGrades": {
-      "int": "A",
-      "luk": "D"
-    },
     "damage": 8,
     "range": 320,
     "halfArc": 0.7,
@@ -12717,9 +10727,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "LUK"
       ]
     },
-    "requirements": {
-      "int": 11
-    },
     "twoHanded": true,
     "scatter": {
       "count": 8,
@@ -12737,9 +10744,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-smoldering-eye-of-perdition",
     "name": "Smoldering Eye of Perdition",
     "expansion": true,
-    "scalingGrades": {
-      "int": "S"
-    },
     "damage": 6,
     "range": 800,
     "halfArc": 0.45,
@@ -12759,9 +10763,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "scaling": [
         "INT"
       ]
-    },
-    "requirements": {
-      "int": 12
     },
     "beam": {
       "damagePerSecond": 60,
@@ -12788,9 +10789,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-censer-of-the-weeping-saint",
     "name": "Censer of the Weeping Saint",
     "expansion": true,
-    "scalingGrades": {
-      "int": "A"
-    },
     "damage": 5,
     "range": 210,
     "halfArc": 0.9,
@@ -12811,18 +10809,12 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "INT"
       ]
     },
-    "requirements": {
-      "int": 8
-    },
     "scatter": {
       "count": 6,
       "spread": 0.6,
       "speed": 380,
       "range": 210,
       "damage": 5,
-      "scalingGrades": {
-        "int": "A"
-      },
       "explode": {
         "radius": 50,
         "damage": 5
@@ -12833,10 +10825,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-rotgrove-totem",
     "name": "Rotgrove Totem",
     "expansion": true,
-    "scalingGrades": {
-      "int": "B",
-      "con": "C"
-    },
     "damage": 9,
     "range": 160,
     "halfArc": 1,
@@ -12862,10 +10850,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "hold": "upright",
       "action": "default-swing"
     },
-    "requirements": {
-      "int": 9,
-      "con": 5
-    },
     "twoHanded": true,
     "quake": {
       "radius": 160,
@@ -12876,9 +10860,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-nullsaint-reliquary",
     "name": "Nullsaint Reliquary",
     "expansion": true,
-    "scalingGrades": {
-      "int": "S"
-    },
     "damage": 7,
     "range": 720,
     "halfArc": 0.6,
@@ -12898,9 +10879,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "scaling": [
         "INT"
       ]
-    },
-    "requirements": {
-      "int": 12
     },
     "beam": {
       "damagePerSecond": 58.333333333333336,
@@ -12927,9 +10905,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-idol-of-the-pale-verdict",
     "name": "Idol of the Pale Verdict",
     "expansion": true,
-    "scalingGrades": {
-      "int": "A"
-    },
     "damage": 11,
     "range": 140,
     "halfArc": 1,
@@ -12962,9 +10937,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "role": "handle"
       }
     },
-    "requirements": {
-      "int": 11
-    },
     "twoHanded": true,
     "quake": {
       "radius": 140,
@@ -12975,10 +10947,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-carrion-effigy",
     "name": "Carrion Effigy",
     "expansion": true,
-    "scalingGrades": {
-      "int": "B",
-      "dex": "C"
-    },
     "damage": 4,
     "range": 240,
     "halfArc": 0.85,
@@ -13000,20 +10968,13 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "DEX"
       ]
     },
-    "requirements": {
-      "int": 7,
-      "dex": 4
-    },
     "thrown": {
       "speed": 420,
       "range": 240,
       "damage": 4,
       "charges": 3,
       "refillSeconds": 1.5,
-      "pierce": 1,
-      "scalingGrades": {
-        "int": "B"
-      }
+      "pierce": 1
     },
     "groundZone": {
       "trigger": "landing",
@@ -13025,9 +10986,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "damagePerSecond": 11.1111111,
       "tickRate": 0.1,
       "placementRange": 240,
-      "scalingGrades": {
-        "int": "B"
-      },
       "grenadeArcHeight": 120
     }
   },
@@ -13035,10 +10993,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-thunderpost-fetish",
     "name": "Thunderpost Fetish",
     "expansion": true,
-    "scalingGrades": {
-      "int": "A",
-      "luk": "D"
-    },
     "damage": 6,
     "range": 150,
     "halfArc": 1,
@@ -13068,9 +11022,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "continuous": true,
       "suppressSwing": true
     },
-    "requirements": {
-      "int": 9
-    },
     "twoHanded": true,
     "chainLightning": {
       "jumps": 4,
@@ -13083,9 +11034,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-saintskull-monstrance",
     "name": "Saintskull Monstrance",
     "expansion": true,
-    "scalingGrades": {
-      "int": "S"
-    },
     "damage": 9,
     "range": 760,
     "halfArc": 0.55,
@@ -13111,9 +11059,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "action": "recoil",
       "suppressSwing": true
     },
-    "requirements": {
-      "int": 13
-    },
     "gun": {
       "damage": 90,
       "projectileSpeed": 560,
@@ -13131,9 +11076,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-gravewax-twin-idols",
     "name": "Gravewax Twin Idols",
     "expansion": true,
-    "scalingGrades": {
-      "int": "B"
-    },
     "damage": 6,
     "range": 440,
     "halfArc": 0.6,
@@ -13155,9 +11097,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "renderAboveHands": true,
-    "requirements": {
-      "int": 6
-    },
     "dual": true,
     "gun": {
       "damage": 6,
@@ -13170,20 +11109,13 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "muzzle": "rapid",
       "recoil": 0.001,
       "projectileVisualScale": 1.35,
-      "muzzleColor": 16746027,
-      "scalingGrades": {
-        "int": "B"
-      }
+      "muzzleColor": 16746027
     }
   },
   "x2-cairn-of-hollow-names": {
     "id": "x2-cairn-of-hollow-names",
     "name": "Cairn of Hollow Names",
     "expansion": true,
-    "scalingGrades": {
-      "int": "A",
-      "con": "D"
-    },
     "damage": 13,
     "range": 175,
     "halfArc": 1.05,
@@ -13213,10 +11145,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "carryForwardPx": 24,
       "carryAngleRad": -1.2217304763960306
     },
-    "requirements": {
-      "int": 11,
-      "con": 7
-    },
     "twoHanded": true,
     "quake": {
       "radius": 175,
@@ -13227,10 +11155,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-hexpost-charm-pole",
     "name": "Hexpost Charm-Pole",
     "expansion": true,
-    "scalingGrades": {
-      "int": "B",
-      "luk": "C"
-    },
     "damage": 6,
     "range": 230,
     "halfArc": 0.8,
@@ -13268,10 +11192,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "action": "jab",
       "suppressSwing": true
     },
-    "requirements": {
-      "int": 8,
-      "luk": 4
-    },
     "twoHanded": true,
     "scatter": {
       "count": 5,
@@ -13279,16 +11199,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "speed": 400,
       "range": 230,
       "damage": 6,
-      "scalingGrades": {
-        "int": "B"
-      },
       "explode": {
         "radius": 58,
-        "damage": 7,
-        "scalingGrades": {
-          "luk": "C",
-          "int": "C"
-        }
+        "damage": 7
       }
     }
   },
@@ -13296,9 +11209,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-miasma-bell-censer",
     "name": "Miasma Bell-Censer",
     "expansion": true,
-    "scalingGrades": {
-      "int": "A"
-    },
     "damage": 8,
     "range": 120,
     "halfArc": 1,
@@ -13319,9 +11229,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "INT"
       ]
     },
-    "requirements": {
-      "int": 9
-    },
     "quake": {
       "radius": 120,
       "damage": 8
@@ -13331,9 +11238,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-frostsaint-ossuary",
     "name": "Frostsaint Ossuary",
     "expansion": true,
-    "scalingGrades": {
-      "int": "A"
-    },
     "damage": 4,
     "range": 200,
     "halfArc": 0.95,
@@ -13354,9 +11258,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "INT"
       ]
     },
-    "requirements": {
-      "int": 10
-    },
     "twoHanded": true,
     "scatter": {
       "count": 8,
@@ -13364,9 +11265,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "speed": 340,
       "range": 200,
       "damage": 4,
-      "scalingGrades": {
-        "int": "A"
-      },
       "explode": {
         "radius": 48,
         "damage": 4
@@ -13377,10 +11275,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-godsbone-pillar",
     "name": "Godsbone Pillar",
     "expansion": true,
-    "scalingGrades": {
-      "int": "A",
-      "str": "D"
-    },
     "damage": 14,
     "range": 178,
     "halfArc": 1.05,
@@ -13406,10 +11300,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "hold": "drag-at-feet",
       "action": "default-swing"
     },
-    "requirements": {
-      "int": 12,
-      "str": 6
-    },
     "twoHanded": true,
     "quake": {
       "radius": 178,
@@ -13420,9 +11310,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-wyrmskull-reliquary",
     "name": "Wyrmskull Reliquary",
     "expansion": true,
-    "scalingGrades": {
-      "int": "A"
-    },
     "damage": 5,
     "range": 235,
     "halfArc": 0.9,
@@ -13448,9 +11335,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "comboFamily": "thrust",
     "comboVariant": "wyrmskull-spear-jabs",
     "effectEmitter": "tip",
-    "requirements": {
-      "int": 10
-    },
     "twoHanded": true,
     "scatter": {
       "count": 6,
@@ -13458,9 +11342,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "speed": 380,
       "range": 235,
       "damage": 5,
-      "scalingGrades": {
-        "int": "A"
-      },
       "explode": {
         "radius": 60,
         "damage": 6
@@ -13471,9 +11352,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-voidwell-idol",
     "name": "Voidwell Idol",
     "expansion": true,
-    "scalingGrades": {
-      "int": "S"
-    },
     "damage": 10,
     "range": 800,
     "halfArc": 0.5,
@@ -13499,9 +11377,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "action": "recoil",
       "suppressSwing": true
     },
-    "requirements": {
-      "int": 13
-    },
     "gun": {
       "damage": 18,
       "projectileSpeed": 520,
@@ -13525,9 +11400,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-spitfire-censer-wand",
     "name": "Spitfire Censer-Wand",
     "expansion": true,
-    "scalingGrades": {
-      "int": "B"
-    },
     "damage": 4,
     "range": 460,
     "halfArc": 0.55,
@@ -13548,9 +11420,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "INT"
       ]
     },
-    "requirements": {
-      "int": 6
-    },
     "gun": {
       "damage": 4,
       "projectileSpeed": 820,
@@ -13562,20 +11431,13 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "muzzle": "rapid",
       "recoil": 0.0007,
       "spread": 0.1,
-      "muzzleColor": 16746027,
-      "scalingGrades": {
-        "int": "B"
-      }
+      "muzzleColor": 16746027
     }
   },
   "x2-mawstone-cairn-idol": {
     "id": "x2-mawstone-cairn-idol",
     "name": "Mawstone Cairn-Idol",
     "expansion": true,
-    "scalingGrades": {
-      "int": "B",
-      "con": "C"
-    },
     "damage": 10,
     "range": 150,
     "halfArc": 1,
@@ -13597,10 +11459,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "CON"
       ]
     },
-    "requirements": {
-      "int": 8,
-      "con": 6
-    },
     "twoHanded": true,
     "quake": {
       "radius": 150,
@@ -13611,9 +11469,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-sanctum-brazier-staff",
     "name": "Sanctum Brazier-Staff",
     "expansion": true,
-    "scalingGrades": {
-      "int": "A"
-    },
     "damage": 8,
     "range": 740,
     "halfArc": 0.6,
@@ -13645,9 +11500,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "role": "shaft"
       }
     },
-    "requirements": {
-      "int": 11
-    },
     "twoHanded": true,
     "beam": {
       "damagePerSecond": 72.72727272727273,
@@ -13674,10 +11526,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-hollowmother-spore-totem",
     "name": "Hollowmother Spore-Totem",
     "expansion": true,
-    "scalingGrades": {
-      "int": "A",
-      "luk": "E"
-    },
     "damage": 4,
     "range": 220,
     "halfArc": 0.9,
@@ -13699,25 +11547,15 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "LUK"
       ]
     },
-    "requirements": {
-      "int": 9,
-      "luk": 3
-    },
     "scatter": {
       "count": 8,
       "spread": 0.65,
       "speed": 360,
       "range": 220,
       "damage": 4,
-      "scalingGrades": {
-        "int": "A"
-      },
       "explode": {
         "radius": 52,
-        "damage": 5,
-        "scalingGrades": {
-          "int": "A"
-        }
+        "damage": 5
       }
     }
   },
@@ -13725,10 +11563,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-sparkknuckle-hex-mitt",
     "name": "Sparkknuckle Hex-Mitt",
     "expansion": true,
-    "scalingGrades": {
-      "int": "B",
-      "dex": "D"
-    },
     "damage": 4,
     "range": 150,
     "halfArc": 0.9,
@@ -13758,9 +11592,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "action": "default-swing",
       "continuous": true
     },
-    "requirements": {
-      "int": 5
-    },
     "twoHanded": true,
     "glovePair": {
       "auraColor": 3401471,
@@ -13771,9 +11602,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-cinderpalm-brand-glove",
     "name": "Cinderpalm Brand-Glove",
     "expansion": true,
-    "scalingGrades": {
-      "int": "B"
-    },
     "damage": 5,
     "range": 170,
     "halfArc": 0.7,
@@ -13794,9 +11622,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "INT"
       ]
     },
-    "requirements": {
-      "int": 6
-    },
     "scatter": {
       "count": 5,
       "spread": 0.45,
@@ -13813,10 +11638,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-voltvein-conductors",
     "name": "Voltvein Conductors",
     "expansion": true,
-    "scalingGrades": {
-      "int": "B",
-      "dex": "C"
-    },
     "damage": 3,
     "range": 430,
     "halfArc": 0.5,
@@ -13838,10 +11659,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "DEX"
       ]
     },
-    "requirements": {
-      "int": 5,
-      "dex": 4
-    },
     "dual": true,
     "gun": {
       "damage": 4,
@@ -13859,10 +11676,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-pyreclap-mauler",
     "name": "Pyreclap Mauler",
     "expansion": true,
-    "scalingGrades": {
-      "int": "A",
-      "str": "C"
-    },
     "damage": 3.8823529411764706,
     "range": 200,
     "halfArc": 1.05,
@@ -13884,10 +11697,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "STR"
       ]
     },
-    "requirements": {
-      "int": 9,
-      "str": 6
-    },
     "twoHanded": true,
     "quake": {
       "radius": 170,
@@ -13898,9 +11707,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-frostknuckle-rimewrap",
     "name": "Frostknuckle Rimewrap",
     "expansion": true,
-    "scalingGrades": {
-      "int": "B"
-    },
     "damage": 5,
     "range": 185,
     "halfArc": 0.65,
@@ -13922,9 +11728,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "effectEmitter": "tip",
-    "requirements": {
-      "int": 6
-    },
     "scatter": {
       "count": 6,
       "spread": 0.28,
@@ -13941,9 +11744,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-tesla-faradayer",
     "name": "Tesla Faradayer",
     "expansion": true,
-    "scalingGrades": {
-      "int": "A"
-    },
     "damage": 4,
     "range": 165,
     "halfArc": 0.85,
@@ -13963,9 +11763,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "scaling": [
         "INT"
       ]
-    },
-    "requirements": {
-      "int": 8
     },
     "gun": {
       "damage": 4,
@@ -13988,9 +11785,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-hellmouth-palmcaster",
     "name": "Hellmouth Palmcaster",
     "expansion": true,
-    "scalingGrades": {
-      "int": "B"
-    },
     "damage": 4,
     "range": 420,
     "halfArc": 0.5,
@@ -14011,9 +11805,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "INT"
       ]
     },
-    "requirements": {
-      "int": 6
-    },
     "gun": {
       "damage": 4,
       "projectileSpeed": 700,
@@ -14032,10 +11823,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-hexbolt-spitter-mitt",
     "name": "Hexbolt Spitter-Mitt",
     "expansion": true,
-    "scalingGrades": {
-      "int": "B",
-      "luk": "D"
-    },
     "damage": 3,
     "range": 460,
     "halfArc": 0.5,
@@ -14057,9 +11844,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "LUK"
       ]
     },
-    "requirements": {
-      "int": 6
-    },
     "gun": {
       "damage": 5,
       "projectileSpeed": 1000,
@@ -14078,10 +11862,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-stormcradle-faradaygloves",
     "name": "Stormcradle Faradaygloves",
     "expansion": true,
-    "scalingGrades": {
-      "int": "B",
-      "dex": "C"
-    },
     "damage": 4,
     "range": 175,
     "halfArc": 0.6,
@@ -14103,10 +11883,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "DEX"
       ]
     },
-    "requirements": {
-      "int": 5,
-      "dex": 4
-    },
     "dual": true,
     "scatter": {
       "count": 7,
@@ -14124,9 +11900,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-seraph-s-knuckle-reliquary",
     "name": "Seraph's Knuckle-Reliquary",
     "expansion": true,
-    "scalingGrades": {
-      "int": "A"
-    },
     "damage": 5,
     "range": 440,
     "halfArc": 0.4,
@@ -14146,9 +11919,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "scaling": [
         "INT"
       ]
-    },
-    "requirements": {
-      "int": 8
     },
     "beam": {
       "damagePerSecond": 25,
@@ -14175,9 +11945,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-blightgrip-spore-mitt",
     "name": "Blightgrip Spore-Mitt",
     "expansion": true,
-    "scalingGrades": {
-      "int": "B"
-    },
     "damage": 4,
     "range": 160,
     "halfArc": 0.75,
@@ -14198,9 +11965,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "INT"
       ]
     },
-    "requirements": {
-      "int": 6
-    },
     "scatter": {
       "count": 6,
       "spread": 0.55,
@@ -14217,9 +11981,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-voidgrasp-null-gauntlet",
     "name": "Voidgrasp Null-Gauntlet",
     "expansion": true,
-    "scalingGrades": {
-      "int": "A"
-    },
     "damage": 6,
     "range": 460,
     "halfArc": 0.35,
@@ -14239,9 +12000,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "scaling": [
         "INT"
       ]
-    },
-    "requirements": {
-      "int": 9
     },
     "beam": {
       "damagePerSecond": 40,
@@ -14268,10 +12026,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-ironbrand-heatfist",
     "name": "Ironbrand Heatfist",
     "expansion": true,
-    "scalingGrades": {
-      "int": "B",
-      "str": "C"
-    },
     "damage": 6,
     "range": 145,
     "halfArc": 0.8,
@@ -14296,10 +12050,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "poseLanguage": {
       "idle": "mirror-guard"
     },
-    "requirements": {
-      "int": 6,
-      "str": 5
-    },
     "quake": {
       "radius": 120,
       "damage": 7
@@ -14309,9 +12059,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-galvanic-overcasters",
     "name": "Galvanic Overcasters",
     "expansion": true,
-    "scalingGrades": {
-      "int": "A"
-    },
     "damage": 4,
     "range": 720,
     "halfArc": 0.4,
@@ -14334,9 +12081,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     },
     "effectRecipe": "galvanic-blue-burst",
     "effectEmitter": "tip",
-    "requirements": {
-      "int": 10
-    },
     "twoHanded": true,
     "gun": {
       "damage": 16,
@@ -14360,10 +12104,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-wyrmscale-hex-talon",
     "name": "Wyrmscale Hex-Talon",
     "expansion": true,
-    "scalingGrades": {
-      "int": "B",
-      "dex": "D"
-    },
     "damage": 5,
     "range": 195,
     "halfArc": 0.55,
@@ -14385,10 +12125,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "DEX"
       ]
     },
-    "requirements": {
-      "int": 7,
-      "dex": 4
-    },
     "scatter": {
       "count": 5,
       "spread": 0.4,
@@ -14405,10 +12141,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-glasswidow-hexweave",
     "name": "Glasswidow Hexweave",
     "expansion": true,
-    "scalingGrades": {
-      "int": "B",
-      "luk": "C"
-    },
     "damage": 5,
     "range": 400,
     "halfArc": 0.35,
@@ -14429,9 +12161,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "INT",
         "LUK"
       ]
-    },
-    "requirements": {
-      "int": 7
     },
     "beam": {
       "damagePerSecond": 23.076923076923077,
@@ -14458,10 +12187,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-thunderhead-stormfists",
     "name": "Thunderhead Stormfists",
     "expansion": true,
-    "scalingGrades": {
-      "int": "A",
-      "str": "C"
-    },
     "damage": 6,
     "range": 200,
     "halfArc": 1,
@@ -14498,10 +12223,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "impactAtDestination": true
       }
     },
-    "requirements": {
-      "int": 9,
-      "str": 6
-    },
     "twoHanded": true,
     "quake": {
       "radius": 180,
@@ -14512,9 +12233,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-prismhex-diffraction-gauntlet",
     "name": "Prismhex Diffraction Gauntlet",
     "expansion": true,
-    "scalingGrades": {
-      "int": "A"
-    },
     "damage": 4,
     "range": 200,
     "halfArc": 0.6,
@@ -14535,9 +12253,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "INT"
       ]
     },
-    "requirements": {
-      "int": 8
-    },
     "scatter": {
       "count": 8,
       "spread": 0.65,
@@ -14554,10 +12269,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-coyote-trickster-s-sparkmitt",
     "name": "Coyote Trickster's Sparkmitt",
     "expansion": true,
-    "scalingGrades": {
-      "int": "B",
-      "luk": "C"
-    },
     "damage": 1.0588235294117647,
     "range": 150,
     "halfArc": 0.5,
@@ -14592,10 +12303,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "durationSeconds": 0.12
       }
     },
-    "requirements": {
-      "int": 6,
-      "luk": 4
-    },
     "twoHanded": true,
     "glovePair": {
       "auraColor": 3401471,
@@ -14606,9 +12313,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-permafrost-cryo-bracer",
     "name": "Permafrost Cryo-Bracer",
     "expansion": true,
-    "scalingGrades": {
-      "int": "A"
-    },
     "damage": 4,
     "range": 640,
     "halfArc": 0.45,
@@ -14629,9 +12333,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "INT"
       ]
     },
-    "requirements": {
-      "int": 9
-    },
     "gun": {
       "damage": 13,
       "projectileSpeed": 1200,
@@ -14649,10 +12350,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "drift-wakizashi-kagewake",
     "name": "Kagewake",
     "expansion": false,
-    "scalingGrades": {
-      "dex": "A",
-      "luk": "D"
-    },
     "damage": 3.6,
     "range": 92,
     "halfArc": 0.72,
@@ -14685,19 +12382,12 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "summary": "A one-handed pair-half that joins the six-beat dual-melee cadence."
     },
     "bespokeVfxSheet": false,
-    "requirements": {
-      "dex": 6
-    },
     "durability": 75
   },
   "drift-wakizashi-hushglass": {
     "id": "drift-wakizashi-hushglass",
     "name": "Hushglass Wakizashi",
     "expansion": false,
-    "scalingGrades": {
-      "dex": "A",
-      "luk": "C"
-    },
     "damage": 3.2,
     "range": 96,
     "halfArc": 0.68,
@@ -14731,20 +12421,12 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "openerDamageMultiplier": 1.38
     },
     "bespokeVfxSheet": false,
-    "requirements": {
-      "dex": 7,
-      "luk": 3
-    },
     "durability": 75
   },
   "drift-katana-stillwater-edict": {
     "id": "drift-katana-stillwater-edict",
     "name": "Stillwater Edict",
     "expansion": false,
-    "scalingGrades": {
-      "dex": "B",
-      "int": "C"
-    },
     "damage": 6.2,
     "range": 142,
     "halfArc": 0.82,
@@ -14779,10 +12461,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "perfectDamageMultiplier": 1.24
     },
     "bespokeVfxSheet": false,
-    "requirements": {
-      "dex": 8,
-      "int": 3
-    },
     "twoHanded": true,
     "durability": 90,
     "comboChoreography": [
@@ -14816,10 +12494,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "drift-katana-stormthread",
     "name": "Stormthread Tachi",
     "expansion": false,
-    "scalingGrades": {
-      "dex": "B",
-      "int": "B"
-    },
     "damage": 5.4,
     "range": 146,
     "halfArc": 0.86,
@@ -14853,10 +12527,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "maxStacks": 6
     },
     "bespokeVfxSheet": false,
-    "requirements": {
-      "dex": 7,
-      "int": 6
-    },
     "twoHanded": true,
     "durability": 90,
     "comboChoreography": [
@@ -14894,10 +12564,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "drift-katana-riftstep",
     "name": "Riftstep Katana",
     "expansion": false,
-    "scalingGrades": {
-      "dex": "B",
-      "int": "C"
-    },
     "damage": 6.5,
     "range": 150,
     "halfArc": 0.8,
@@ -14932,10 +12598,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "finisherDashImpulse": 260
     },
     "bespokeVfxSheet": true,
-    "requirements": {
-      "dex": 8,
-      "int": 5
-    },
     "twoHanded": true,
     "durability": 90,
     "comboChoreography": [
@@ -14961,10 +12623,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "drift-nodachi-pale-horizon",
     "name": "Pale Horizon Nodachi",
     "expansion": false,
-    "scalingGrades": {
-      "dex": "B",
-      "str": "C"
-    },
     "damage": 8,
     "range": 220,
     "halfArc": 0.88,
@@ -14998,10 +12656,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "reachPerBeat": 0.06
     },
     "bespokeVfxSheet": false,
-    "requirements": {
-      "dex": 9,
-      "str": 5
-    },
     "twoHanded": true,
     "durability": 90,
     "comboChoreography": [
@@ -15031,10 +12685,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "drift-nodachi-gatebreaker",
     "name": "Gatebreaker Odachi",
     "expansion": false,
-    "scalingGrades": {
-      "str": "B",
-      "dex": "C"
-    },
     "damage": 7.2,
     "range": 250,
     "halfArc": 0.92,
@@ -15069,10 +12719,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "toughFinisherMultiplier": 1.8
     },
     "bespokeVfxSheet": false,
-    "requirements": {
-      "str": 9,
-      "dex": 6
-    },
     "twoHanded": true,
     "durability": 90,
     "comboChoreography": [
@@ -15110,11 +12756,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "drift-greatkatana-moonwake",
     "name": "Moonwake Great Katana",
     "expansion": false,
-    "scalingGrades": {
-      "dex": "B",
-      "str": "C",
-      "int": "D"
-    },
     "damage": 9.5,
     "range": 310,
     "halfArc": 1,
@@ -15152,11 +12793,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       }
     },
     "bespokeVfxSheet": true,
-    "requirements": {
-      "dex": 10,
-      "str": 7,
-      "int": 4
-    },
     "twoHanded": true,
     "durability": 90,
     "comboChoreography": [
@@ -15190,11 +12826,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "drift-greatkatana-tempest-regent",
     "name": "Tempest Regent",
     "expansion": false,
-    "scalingGrades": {
-      "dex": "B",
-      "con": "C",
-      "int": "D"
-    },
     "damage": 10,
     "range": 330,
     "halfArc": 1.02,
@@ -15230,11 +12861,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "perfectInvulnerabilitySeconds": 0.08
     },
     "bespokeVfxSheet": true,
-    "requirements": {
-      "dex": 10,
-      "con": 7,
-      "int": 4
-    },
     "twoHanded": true,
     "durability": 90,
     "comboChoreography": [
@@ -15264,11 +12890,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "drift-colossal-world-seam",
     "name": "World-Seam Odachi",
     "expansion": false,
-    "scalingGrades": {
-      "str": "B",
-      "dex": "C",
-      "int": "D"
-    },
     "damage": 13,
     "range": 420,
     "halfArc": 1.08,
@@ -15303,11 +12924,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "reachPerBeat": 0.04
     },
     "bespokeVfxSheet": true,
-    "requirements": {
-      "str": 13,
-      "dex": 9,
-      "int": 5
-    },
     "twoHanded": true,
     "durability": 90,
     "comboChoreography": [
@@ -15333,10 +12949,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-gravedog-auto-rifle",
     "name": "Gravedog Auto-Rifle",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "B",
-      "str": "D"
-    },
     "damage": 5,
     "range": 236,
     "halfArc": 0.52,
@@ -15370,10 +12982,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       }
     },
     "description": "A dustland company gun whose dogged action keeps cycling after finer rifles have swallowed the trail.",
-    "requirements": {
-      "dex": 8,
-      "str": 5
-    },
     "twoHanded": true,
     "gun": {
       "damage": 5,
@@ -15393,10 +13001,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-stormspur-coil-carbine",
     "name": "Stormspur Coil Carbine",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "A",
-      "int": "C"
-    },
     "damage": 4,
     "range": 260,
     "halfArc": 0.48,
@@ -15430,10 +13034,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       }
     },
     "description": "Copper windings kick each shot from the saddle with the dry blue snap of a storm finding ground.",
-    "requirements": {
-      "dex": 10,
-      "int": 5
-    },
     "twoHanded": true,
     "gun": {
       "damage": 4,
@@ -15453,10 +13053,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-brimstone-gallows-rifle",
     "name": "Brimstone Gallows-Rifle",
     "expansion": true,
-    "scalingGrades": {
-      "str": "B",
-      "dex": "C"
-    },
     "damage": 8,
     "range": 224,
     "halfArc": 0.56,
@@ -15490,10 +13086,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       }
     },
     "description": "A furnace-jacketed heavy rifle built to make every burst sound like the trapdoor opening.",
-    "requirements": {
-      "str": 10,
-      "dex": 7
-    },
     "twoHanded": true,
     "gun": {
       "damage": 8,
@@ -15514,10 +13106,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-rimewrit-grave-slab",
     "name": "Rimewrit Grave-Slab",
     "expansion": true,
-    "scalingGrades": {
-      "str": "A",
-      "int": "D"
-    },
     "damage": 14,
     "range": 186,
     "halfArc": 1.02,
@@ -15548,10 +13136,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "multiplier": 0.1,
       "seconds": 0.8
     },
-    "requirements": {
-      "str": 12,
-      "int": 4
-    },
     "twoHanded": true,
     "durability": 90
   },
@@ -15559,9 +13143,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-pyre-gallows-brand",
     "name": "Pyre-Gallows Brand",
     "expansion": true,
-    "scalingGrades": {
-      "str": "A"
-    },
     "damage": 13,
     "range": 180,
     "halfArc": 1.08,
@@ -15586,9 +13167,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "sizeClass": "great",
     "stance": "two-hands-on-hilt",
     "swingStyle": "chop",
-    "requirements": {
-      "str": 13
-    },
     "twoHanded": true,
     "durability": 90
   },
@@ -15596,10 +13174,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-stormrail-colossus",
     "name": "Stormrail Colossus",
     "expansion": true,
-    "scalingGrades": {
-      "str": "B",
-      "dex": "C"
-    },
     "damage": 11.5,
     "range": 176,
     "halfArc": 0.96,
@@ -15625,10 +13199,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "sizeClass": "great",
     "stance": "two-hands-on-hilt",
     "swingStyle": "chop",
-    "requirements": {
-      "str": 10,
-      "dex": 7
-    },
     "twoHanded": true,
     "durability": 90
   },
@@ -15636,10 +13206,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-nullwake-ordinance",
     "name": "Nullwake Ordinance",
     "expansion": true,
-    "scalingGrades": {
-      "str": "B",
-      "int": "B"
-    },
     "damage": 15,
     "range": 190,
     "halfArc": 1,
@@ -15665,10 +13231,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "sizeClass": "great",
     "stance": "two-hands-on-hilt",
     "swingStyle": "chop",
-    "requirements": {
-      "str": 11,
-      "int": 7
-    },
     "twoHanded": true,
     "durability": 90
   },
@@ -15676,10 +13238,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-dawnwall-testament",
     "name": "Dawnwall Testament",
     "expansion": true,
-    "scalingGrades": {
-      "str": "B",
-      "int": "C"
-    },
     "damage": 12.5,
     "range": 182,
     "halfArc": 1.04,
@@ -15705,10 +13263,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "sizeClass": "great",
     "stance": "two-hands-on-hilt",
     "swingStyle": "chop",
-    "requirements": {
-      "str": 10,
-      "int": 6
-    },
     "twoHanded": true,
     "durability": 90
   },
@@ -15716,10 +13270,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-cairnfall-monolith",
     "name": "Cairnfall Monolith",
     "expansion": true,
-    "scalingGrades": {
-      "str": "A",
-      "con": "D"
-    },
     "damage": 16,
     "range": 194,
     "halfArc": 1.12,
@@ -15745,10 +13295,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "sizeClass": "great",
     "stance": "two-hands-on-hilt",
     "swingStyle": "chop",
-    "requirements": {
-      "str": 14,
-      "con": 5
-    },
     "twoHanded": true,
     "durability": 90
   },
@@ -15756,10 +13302,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-barrett-50-cal-sniper",
     "name": "Barrett .50-Cal Sniper",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "A",
-      "str": "B"
-    },
     "damage": 34,
     "range": 320,
     "halfArc": 0.5,
@@ -15796,10 +13338,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       }
     },
     "description": "A deliberate anti-materiel bolt rifle whose huge brake, long barrel, and slab receiver turn one accepted shot into a verdict against armor.",
-    "requirements": {
-      "dex": 12,
-      "str": 13
-    },
     "twoHanded": true,
     "gun": {
       "damage": 34,
@@ -15823,10 +13361,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-iron-throwing-star",
     "name": "Iron Throwing Star",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "B",
-      "luk": "D"
-    },
     "damage": 8,
     "range": 90,
     "halfArc": 0.6,
@@ -15856,9 +13390,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "windupSeconds": 0.18,
       "preThrowRevolutions": 0.5
     },
-    "requirements": {
-      "dex": 5
-    },
     "durability": 75,
     "thrown": {
       "speed": 860,
@@ -15874,10 +13405,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-fire-throwing-star",
     "name": "Fire Throwing Star",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "B",
-      "int": "C"
-    },
     "damage": 10,
     "range": 90,
     "halfArc": 0.6,
@@ -15907,10 +13434,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "windupSeconds": 0.2,
       "preThrowRevolutions": 0.5
     },
-    "requirements": {
-      "dex": 6,
-      "int": 4
-    },
     "durability": 75,
     "thrown": {
       "speed": 820,
@@ -15926,10 +13449,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-ice-throwing-star",
     "name": "Ice Throwing Star",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "B",
-      "int": "C"
-    },
     "damage": 8,
     "range": 90,
     "halfArc": 0.6,
@@ -15959,10 +13478,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "windupSeconds": 0.19,
       "preThrowRevolutions": 0.5
     },
-    "requirements": {
-      "dex": 6,
-      "int": 5
-    },
     "durability": 75,
     "thrown": {
       "speed": 800,
@@ -15978,10 +13493,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-void-throwing-star",
     "name": "Void Throwing Star",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "B",
-      "int": "B"
-    },
     "damage": 12,
     "range": 90,
     "halfArc": 0.6,
@@ -16011,10 +13522,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "windupSeconds": 0.22,
       "preThrowRevolutions": 0.5
     },
-    "requirements": {
-      "dex": 8,
-      "int": 8
-    },
     "durability": 75,
     "thrown": {
       "speed": 760,
@@ -16030,10 +13537,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-kunai",
     "name": "Kunai",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "A",
-      "luk": "D"
-    },
     "damage": 9,
     "range": 100,
     "halfArc": 0.58,
@@ -16063,9 +13566,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "windupSeconds": 0.16,
       "preThrowRevolutions": 0.5
     },
-    "requirements": {
-      "dex": 7
-    },
     "durability": 75,
     "thrown": {
       "speed": 940,
@@ -16081,10 +13581,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-iron-chakram",
     "name": "Iron Chakram",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "B",
-      "luk": "C"
-    },
     "damage": 8,
     "range": 104,
     "halfArc": 0.62,
@@ -16114,9 +13610,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "windupSeconds": 0.19,
       "preThrowRevolutions": 0.5
     },
-    "requirements": {
-      "dex": 7
-    },
     "durability": 75,
     "thrown": {
       "speed": 920,
@@ -16134,10 +13627,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-m50-anti-materiel-rifle",
     "name": "M-50 Anti-Materiel Rifle",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "A",
-      "str": "B"
-    },
     "damage": 32,
     "range": 320,
     "halfArc": 0.5,
@@ -16174,10 +13663,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       }
     },
     "description": "A clean modern .50-caliber bolt rifle with a rigid chassis, long free-float barrel, and practical field optics for defeating hard targets at range.",
-    "requirements": {
-      "dex": 12,
-      "str": 12
-    },
     "twoHanded": true,
     "gun": {
       "damage": 32,
@@ -16201,10 +13686,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-unicorn-rainbow-beam",
     "name": "Unicorn Rainbow Beam",
     "expansion": true,
-    "scalingGrades": {
-      "int": "B",
-      "luk": "C"
-    },
     "damage": 8,
     "range": 120,
     "halfArc": 0.5,
@@ -16233,10 +13714,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       }
     },
     "description": "A pearl-and-gold unicorn-horn emitter that sustains a broad five-strand rainbow ribbon from its painted horn tip.",
-    "requirements": {
-      "int": 7,
-      "luk": 4
-    },
     "beam": {
       "damagePerSecond": 20,
       "tickRate": 0.1,
@@ -16255,10 +13732,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "movement": {
         "chargeMul": 0.55,
         "channelMul": 0.35
-      },
-      "scalingGrades": {
-        "int": "B",
-        "luk": "C"
       }
     }
   },
@@ -16266,10 +13739,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-fish-launcher",
     "name": "Fish Launcher",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "B",
-      "str": "C"
-    },
     "damage": 5,
     "range": 120,
     "halfArc": 0.58,
@@ -16307,10 +13776,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "feet": "combat-plant"
     },
     "description": "A trout-mouthed blunderbuss that launches a close cone of tumbling fish with a wet slap on contact.",
-    "requirements": {
-      "dex": 6,
-      "str": 5
-    },
     "twoHanded": true,
     "gun": {
       "damage": 5,
@@ -16324,21 +13789,13 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "recoil": 0.0032,
       "pellets": 4,
       "spread": 0.36,
-      "muzzleColor": 7259865,
-      "scalingGrades": {
-        "dex": "B",
-        "str": "C"
-      }
+      "muzzleColor": 7259865
     }
   },
   "x2-squeaky-mallet": {
     "id": "x2-squeaky-mallet",
     "name": "Squeaky Mallet",
     "expansion": true,
-    "scalingGrades": {
-      "str": "B",
-      "con": "C"
-    },
     "damage": 15,
     "range": 82,
     "halfArc": 1.05,
@@ -16383,29 +13840,17 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "action": "overhead-downswing",
       "windupSeconds": 0.48
     },
-    "requirements": {
-      "str": 8,
-      "con": 5
-    },
     "twoHanded": true,
     "durability": 90,
     "quake": {
       "radius": 90,
-      "damage": 7.5,
-      "scalingGrades": {
-        "str": "B",
-        "con": "C"
-      }
+      "damage": 7.5
     }
   },
   "x2-exploding-present-lobber": {
     "id": "x2-exploding-present-lobber",
     "name": "Exploding Present Lobber",
     "expansion": true,
-    "scalingGrades": {
-      "str": "B",
-      "luk": "C"
-    },
     "damage": 8,
     "range": 110,
     "halfArc": 0.55,
@@ -16443,10 +13888,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "feet": "wide-plant"
     },
     "description": "A wrapped-box grenade launcher that arcs a dubious gift into a confetti-shrapnel detonation.",
-    "requirements": {
-      "str": 7,
-      "luk": 5
-    },
     "twoHanded": true,
     "gun": {
       "damage": 8,
@@ -16460,17 +13901,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "recoil": 0.0035,
       "arcHeight": 120,
       "muzzleColor": 16755285,
-      "scalingGrades": {
-        "str": "B",
-        "luk": "C"
-      },
       "explode": {
         "radius": 58,
-        "damage": 11,
-        "scalingGrades": {
-          "str": "B",
-          "luk": "C"
-        }
+        "damage": 11
       }
     }
   },
@@ -16478,10 +13911,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-bubble-wand-swarm-caster",
     "name": "Bubble Wand Swarm Caster",
     "expansion": true,
-    "scalingGrades": {
-      "int": "B",
-      "luk": "C"
-    },
     "damage": 16,
     "range": 100,
     "halfArc": 0.52,
@@ -16510,10 +13939,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       }
     },
     "description": "A residue-coated ring wand that releases a drifting five-bubble fan, each pop carrying a small arcane splash.",
-    "requirements": {
-      "int": 7,
-      "luk": 5
-    },
     "cast": {
       "damage": 16,
       "speed": 520,
@@ -16521,10 +13946,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "cooldown": 0.9,
       "pierce": 1,
       "bulletKind": "orb",
-      "scalingGrades": {
-        "int": "B",
-        "luk": "C"
-      },
       "volley": {
         "count": 5,
         "spread": 0.2
@@ -16535,11 +13956,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       },
       "explode": {
         "radius": 36,
-        "damage": 4,
-        "scalingGrades": {
-          "int": "B",
-          "luk": "C"
-        }
+        "damage": 4
       }
     }
   },
@@ -16547,10 +13964,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-boomerang-boot",
     "name": "Boomerang Boot",
     "expansion": true,
-    "scalingGrades": {
-      "str": "B",
-      "dex": "C"
-    },
     "damage": 10,
     "range": 88,
     "halfArc": 0.62,
@@ -16586,10 +13999,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "windupSeconds": 0.22,
       "preThrowRevolutions": 0.5
     },
-    "requirements": {
-      "str": 6,
-      "dex": 5
-    },
     "durability": 75,
     "thrown": {
       "speed": 680,
@@ -16600,21 +14009,13 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "pierce": 2,
       "arcHeight": 56,
       "rotation": "spin",
-      "returning": true,
-      "scalingGrades": {
-        "str": "B",
-        "dex": "C"
-      }
+      "returning": true
     }
   },
   "x2-confetti-cannon": {
     "id": "x2-confetti-cannon",
     "name": "Confetti Cannon",
     "expansion": true,
-    "scalingGrades": {
-      "str": "B",
-      "dex": "C"
-    },
     "damage": 3,
     "range": 90,
     "halfArc": 0.65,
@@ -16652,10 +14053,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "feet": "wide-plant"
     },
     "description": "An immense striped party cannon whose loud recoil throws a mechanically honest shotgun cone of confetti shrapnel.",
-    "requirements": {
-      "str": 10,
-      "dex": 5
-    },
     "twoHanded": true,
     "gun": {
       "damage": 3,
@@ -16670,21 +14067,13 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "userKnockbackMultiplier": 2.2,
       "pellets": 7,
       "spread": 0.55,
-      "muzzleColor": 16733855,
-      "scalingGrades": {
-        "str": "B",
-        "dex": "C"
-      }
+      "muzzleColor": 16733855
     }
   },
   "x2-iron-war-fan": {
     "id": "x2-iron-war-fan",
     "name": "Iron War Fan",
     "expansion": true,
-    "scalingGrades": {
-      "str": "B",
-      "dex": "C"
-    },
     "damage": 12,
     "range": 90,
     "halfArc": 0.82,
@@ -16730,10 +14119,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "action": "default-swing",
       "comboForwardPx": 8
     },
-    "requirements": {
-      "str": 7,
-      "dex": 5
-    },
     "twoHanded": true,
     "durability": 90,
     "hybridProjectile": {
@@ -16745,11 +14130,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "damage": 12,
       "count": 1,
       "spread": 0,
-      "pierce": 1,
-      "scalingGrades": {
-        "str": "B",
-        "dex": "C"
-      }
+      "pierce": 1
     },
     "comboChoreography": [
       {
@@ -16770,10 +14151,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-ember-fan",
     "name": "Ember Fan",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "B",
-      "int": "C"
-    },
     "damage": 12,
     "range": 88,
     "halfArc": 0.92,
@@ -16819,10 +14196,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "action": "default-swing",
       "comboForwardPx": 6
     },
-    "requirements": {
-      "dex": 7,
-      "int": 5
-    },
     "twoHanded": true,
     "durability": 90,
     "hybridProjectile": {
@@ -16834,11 +14207,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "damage": 4,
       "count": 3,
       "spread": 0.34,
-      "pierce": 1,
-      "scalingGrades": {
-        "dex": "B",
-        "int": "C"
-      }
+      "pierce": 1
     },
     "comboChoreography": [
       {
@@ -16859,10 +14228,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-storm-fan",
     "name": "Storm Fan",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "B",
-      "int": "C"
-    },
     "damage": 12,
     "range": 92,
     "halfArc": 0.88,
@@ -16908,10 +14273,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "action": "default-swing",
       "comboForwardPx": 6
     },
-    "requirements": {
-      "dex": 8,
-      "int": 5
-    },
     "twoHanded": true,
     "durability": 90,
     "hybridProjectile": {
@@ -16924,11 +14285,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "count": 1,
       "spread": 0,
       "pierce": 1,
-      "returnAfterSeconds": 0.3,
-      "scalingGrades": {
-        "dex": "B",
-        "int": "C"
-      }
+      "returnAfterSeconds": 0.3
     },
     "comboChoreography": [
       {
@@ -16949,10 +14306,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-muay-thai-wraps",
     "name": "Muay Thai Wraps",
     "expansion": true,
-    "scalingGrades": {
-      "str": "B",
-      "dex": "D"
-    },
     "damage": 15,
     "range": 72,
     "halfArc": 0.72,
@@ -16991,10 +14344,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "continuous": true,
       "comboForwardPx": 6
     },
-    "requirements": {
-      "str": 7,
-      "dex": 4
-    },
     "twoHanded": true,
     "durability": 90,
     "glovePair": {
@@ -17007,10 +14356,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-wing-chun-wraps",
     "name": "Wing Chun Wraps",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "B",
-      "str": "D"
-    },
     "damage": 4,
     "range": 62,
     "halfArc": 0.34,
@@ -17049,10 +14394,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "continuous": true,
       "comboForwardPx": 3
     },
-    "requirements": {
-      "dex": 8,
-      "str": 3
-    },
     "twoHanded": true,
     "durability": 90,
     "glovePair": {
@@ -17065,10 +14406,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-drunken-fist-wraps",
     "name": "Drunken Fist Wraps",
     "expansion": true,
-    "scalingGrades": {
-      "dex": "B",
-      "luk": "C"
-    },
     "damage": 10,
     "range": 86,
     "halfArc": 0.82,
@@ -17107,10 +14444,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "continuous": true,
       "comboForwardPx": 8
     },
-    "requirements": {
-      "dex": 6,
-      "luk": 6
-    },
     "twoHanded": true,
     "durability": 90,
     "glovePair": {
@@ -17123,10 +14456,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-iron-palm-wraps",
     "name": "Iron Palm Wraps",
     "expansion": true,
-    "scalingGrades": {
-      "str": "B",
-      "con": "C"
-    },
     "damage": 18,
     "range": 78,
     "halfArc": 0.68,
@@ -17164,10 +14493,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "action": "default-swing",
       "continuous": true,
       "comboForwardPx": 4
-    },
-    "requirements": {
-      "str": 9,
-      "con": 6
     },
     "twoHanded": true,
     "durability": 90,

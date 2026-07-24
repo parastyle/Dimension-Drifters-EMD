@@ -67,7 +67,7 @@ export type VastagharPresentationState = Pick<
   | "arenaMutationTick"
   | "victoryStage"
   | "victoryTick"
-  | "victoryXp"
+  | "victoryMoney"
 >;
 
 export interface VastagharPresentationFrame {
@@ -456,7 +456,7 @@ export class VastagharVfx {
     this.seeded = true;
     this.deathQuakeFired = state.victoryStage > VastagharVictoryStage.ThreatEnded;
     this.deathVoidFired = state.victoryStage > VastagharVictoryStage.Collapse;
-    this.deathNukeFired = state.victoryStage > VastagharVictoryStage.XpCrown;
+    this.deathNukeFired = state.victoryStage > VastagharVictoryStage.MoneyCrown;
     this.resolvedKeys.fill("");
     this.resolvedCursor = 0;
   }
@@ -820,7 +820,7 @@ export class VastagharVfx {
     const state = input.state;
     if (state.mode !== VastagharMode.Victory) return;
     const stage = state.victoryStage;
-    if (stage === VastagharVictoryStage.XpCrown) {
+    if (stage === VastagharVictoryStage.MoneyCrown) {
       const pulse = 0.5 + Math.sin(input.renderTick * 0.35) * 0.5;
       this.air.lineStyle(3, 0xffdd78, 0.55 + pulse * 0.35);
       this.air.strokeCircle(input.bossX, input.bossY - 24, 22 + pulse * 5);
@@ -834,7 +834,7 @@ export class VastagharVfx {
       .setPosition(this.scene.scale.width / 2, 112)
       .setText(
         held
-          ? `THE LAST CROSSING CLEARED  •  +${state.victoryXp || VASTAGHAR_ENCOUNTER.bossXp} XP`
+          ? `THE LAST CROSSING CLEARED  •  +${state.victoryMoney || VASTAGHAR_ENCOUNTER.bossMoney} MONEY`
           : "THE WORLD-TREAD FALLS",
       )
       .setColor(held ? "#ffe092" : "#e8d8bc")
