@@ -1,8 +1,8 @@
 {
-  "capturedAt": "2026-07-24T05:03:46.054Z",
-  "baseURL": "http://127.0.0.1:51412",
-  "clientPort": 51412,
-  "gamePort": 51409,
+  "capturedAt": "2026-07-24T05:35:20.484Z",
+  "baseURL": "http://127.0.0.1:53313",
+  "clientPort": 53313,
+  "gamePort": 53312,
   "protectedPorts": [
     5180,
     2567
@@ -15,10 +15,10 @@
     "x2-iron-palm-wraps": 550
   },
   "observedCadenceMs": {
-    "x2-muay-thai-wraps": 470.8125,
-    "x2-wing-chun-wraps": 229.16249999999854,
-    "x2-drunken-fist-wraps": 379.1499999999978,
-    "x2-iron-palm-wraps": 611.0833333333334
+    "x2-muay-thai-wraps": 460.4250000000002,
+    "x2-wing-chun-wraps": 166.64999999999964,
+    "x2-drunken-fist-wraps": 337.5,
+    "x2-iron-palm-wraps": 586.0833333333334
   },
   "assertions": {
     "eightFacingCaptures": true,
@@ -51,7 +51,7 @@
         "distance": 92
       },
       "attackSeqBefore": 0,
-      "attackSeqAfter": 32,
+      "attackSeqAfter": 14,
       "steps": [
         0,
         1,
@@ -76,17 +76,17 @@
       "swingStyle": "crimson-roundhouse-arc",
       "impactStyle": "",
       "intervalsMs": [
-        449.90000000000146,
-        450,
-        450,
-        466.6999999999971
+        483.3000000000011,
+        466.7999999999993,
+        483.2000000000007,
+        400.10000000000036
       ],
       "reachPx": [
-        119.60000000000014,
-        107.68282137494873,
-        111.57165202107822,
-        117.06246920748231,
-        135.51427070241292
+        119.60000000000008,
+        108.56,
+        111.67940431403635,
+        117.75999999999995,
+        135.60965774199033
       ],
       "travel": {
         "start": {
@@ -104,85 +104,109 @@
             "attackSeq": 0,
             "x": 2400,
             "y": 2420,
-            "timeMs": 26794.9
+            "timeMs": 10585.8
           },
           {
             "attackSeq": 1,
             "x": 2400,
             "y": 2420,
-            "timeMs": 26945
+            "timeMs": 10752.5
           },
           {
             "attackSeq": 1,
             "x": 2410,
             "y": 2420,
-            "timeMs": 27245
+            "timeMs": 10902.5
           },
           {
             "attackSeq": 1,
             "x": 2410,
             "y": 2420,
-            "timeMs": 27494.9
+            "timeMs": 11069.1
+          },
+          {
+            "attackSeq": 2,
+            "x": 2410,
+            "y": 2420,
+            "timeMs": 11219.2
+          },
+          {
+            "attackSeq": 2,
+            "x": 2418.85595703125,
+            "y": 2420,
+            "timeMs": 11369.1
           },
           {
             "attackSeq": 2,
             "x": 2420,
             "y": 2420,
-            "timeMs": 27728.3
+            "timeMs": 11535.9
           },
           {
             "attackSeq": 2,
             "x": 2420,
             "y": 2420,
-            "timeMs": 27978.2
+            "timeMs": 11685.8
           },
           {
             "attackSeq": 3,
             "x": 2430,
             "y": 2420,
-            "timeMs": 28211.6
+            "timeMs": 11852.5
           },
           {
             "attackSeq": 3,
             "x": 2430,
             "y": 2420,
-            "timeMs": 28428.2
+            "timeMs": 12019.1
           },
           {
-            "attackSeq": 3,
+            "attackSeq": 4,
             "x": 2430,
             "y": 2420,
-            "timeMs": 28728.2
-          },
-          {
-            "attackSeq": 3,
-            "x": 2430,
-            "y": 2420,
-            "timeMs": 29011.5
+            "timeMs": 12185.8
           },
           {
             "attackSeq": 4,
             "x": 2440,
             "y": 2420,
-            "timeMs": 29244.9
+            "timeMs": 12335.8
           },
           {
             "attackSeq": 4,
             "x": 2440,
             "y": 2420,
-            "timeMs": 29461.5
+            "timeMs": 12502.4
+          },
+          {
+            "attackSeq": 5,
+            "x": 2443.85595703125,
+            "y": 2420,
+            "timeMs": 12652.4
           },
           {
             "attackSeq": 5,
             "x": 2450,
             "y": 2420,
-            "timeMs": 29761.5
+            "timeMs": 12819.1
           },
           {
             "attackSeq": 5,
             "x": 2450,
             "y": 2420,
-            "timeMs": 29994.8
+            "timeMs": 12985.8
+          },
+          {
+            "attackSeq": 5,
+            "x": 2450,
+            "y": 2420,
+            "timeMs": 13152.4
+          },
+          {
+            "attackSeq": 5,
+            "x": 2450,
+            "y": 2420,
+            "timeMs": 13319
           }
         ]
       },
@@ -194,7 +218,7 @@
           "style": "crimson-roundhouse-arc",
           "x": 2519.5999999999985,
           "y": 2419.999980831673,
-          "timeMs": 26794.9,
+          "timeMs": 10585.8,
           "comboStep": 0,
           "motion": "teep-kick",
           "limb": "foot"
@@ -203,20 +227,9 @@
           "kind": "swing",
           "weaponId": "x2-muay-thai-wraps",
           "style": "crimson-roundhouse-arc",
-          "x": 2529.5999999999985,
-          "y": 2419.9999803320375,
-          "timeMs": 27344.9,
-          "comboStep": 0,
-          "motion": "teep-kick",
-          "limb": "foot"
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-muay-thai-wraps",
-          "style": "crimson-roundhouse-arc",
-          "x": 2528.5599999999986,
-          "y": 2419.9999821332317,
-          "timeMs": 27844.9,
+          "x": 2518.5599999999986,
+          "y": 2419.99998232604,
+          "timeMs": 11069.1,
           "comboStep": 1,
           "motion": "elbow",
           "limb": "hand"
@@ -225,9 +238,9 @@
           "kind": "swing",
           "weaponId": "x2-muay-thai-wraps",
           "style": "crimson-roundhouse-arc",
-          "x": 2541.7319903863136,
-          "y": 2419.9999815637016,
-          "timeMs": 28311.6,
+          "x": 2531.679404314035,
+          "y": 2419.99998165783,
+          "timeMs": 11535.9,
           "comboStep": 2,
           "motion": "elbow",
           "limb": "hand"
@@ -236,240 +249,9 @@
           "kind": "swing",
           "weaponId": "x2-muay-thai-wraps",
           "style": "crimson-roundhouse-arc",
-          "x": 2542.2399999999984,
-          "y": 2419.999981997564,
-          "timeMs": 28894.9,
-          "comboStep": 2,
-          "motion": "elbow",
-          "limb": "hand"
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-muay-thai-wraps",
-          "style": "crimson-roundhouse-arc",
-          "x": 2559.5999999999985,
-          "y": 2419.9999803117616,
-          "timeMs": 29361.5,
-          "comboStep": 0,
-          "motion": "teep-kick",
-          "limb": "foot"
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-muay-thai-wraps",
-          "style": "crimson-roundhouse-arc",
-          "x": 2558.5599999999986,
-          "y": 2419.9999822480304,
-          "timeMs": 29878.2,
-          "comboStep": 1,
-          "motion": "elbow",
-          "limb": "hand"
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-muay-thai-wraps",
-          "style": "crimson-roundhouse-arc",
-          "x": 2571.7218315554233,
-          "y": 2419.999981553752,
-          "timeMs": 30378.2,
-          "comboStep": 2,
-          "motion": "elbow",
-          "limb": "hand"
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-muay-thai-wraps",
-          "style": "crimson-roundhouse-arc",
-          "x": 2589.5999999999985,
-          "y": 2419.9999804454783,
-          "timeMs": 31044.8,
-          "comboStep": 0,
-          "motion": "teep-kick",
-          "limb": "foot"
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-muay-thai-wraps",
-          "style": "crimson-roundhouse-arc",
-          "x": 2586.6962602396043,
-          "y": 2419.999981826456,
-          "timeMs": 31428.1,
-          "comboStep": 1,
-          "motion": "elbow",
-          "limb": "hand"
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-muay-thai-wraps",
-          "style": "crimson-roundhouse-arc",
-          "x": 2588.5599999999986,
-          "y": 2419.999982550361,
-          "timeMs": 31811.4,
-          "comboStep": 1,
-          "motion": "elbow",
-          "limb": "hand"
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-muay-thai-wraps",
-          "style": "crimson-roundhouse-arc",
-          "x": 2609.5999999999985,
-          "y": 2419.9999806726564,
-          "timeMs": 32194.7,
-          "comboStep": 0,
-          "motion": "teep-kick",
-          "limb": "foot"
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-muay-thai-wraps",
-          "style": "crimson-roundhouse-arc",
-          "x": 2608.0520513438096,
-          "y": 2419.999982161841,
-          "timeMs": 32678.1,
-          "comboStep": 1,
-          "motion": "elbow",
-          "limb": "hand"
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-muay-thai-wraps",
-          "style": "crimson-roundhouse-arc",
-          "x": 2622.2399999999984,
-          "y": 2419.999981610794,
-          "timeMs": 33178.1,
-          "comboStep": 2,
-          "motion": "elbow",
-          "limb": "hand"
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-muay-thai-wraps",
-          "style": "crimson-roundhouse-arc",
-          "x": 2639.5999999999985,
-          "y": 2419.999980576337,
-          "timeMs": 33744.7,
-          "comboStep": 0,
-          "motion": "teep-kick",
-          "limb": "foot"
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-muay-thai-wraps",
-          "style": "crimson-roundhouse-arc",
-          "x": 2636.6200443868483,
-          "y": 2419.99998183808,
-          "timeMs": 34161.3,
-          "comboStep": 1,
-          "motion": "elbow",
-          "limb": "hand"
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-muay-thai-wraps",
-          "style": "crimson-roundhouse-arc",
-          "x": 2638.5599999999986,
-          "y": 2419.9999825485093,
-          "timeMs": 34544.6,
-          "comboStep": 1,
-          "motion": "elbow",
-          "limb": "hand"
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-muay-thai-wraps",
-          "style": "crimson-roundhouse-arc",
-          "x": 2659.5999999999985,
-          "y": 2419.9999805736666,
-          "timeMs": 35028,
-          "comboStep": 0,
-          "motion": "teep-kick",
-          "limb": "foot"
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-muay-thai-wraps",
-          "style": "crimson-roundhouse-arc",
-          "x": 2669.5999999999985,
-          "y": 2419.9999806412306,
-          "timeMs": 35594.6,
-          "comboStep": 0,
-          "motion": "teep-kick",
-          "limb": "foot"
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-muay-thai-wraps",
-          "style": "crimson-roundhouse-arc",
-          "x": 2668.5599999999986,
-          "y": 2419.9999823704047,
-          "timeMs": 36061.2,
-          "comboStep": 1,
-          "motion": "elbow",
-          "limb": "hand"
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-muay-thai-wraps",
-          "style": "crimson-roundhouse-arc",
-          "x": 2681.4966369438653,
-          "y": 2419.999981519791,
-          "timeMs": 36511.2,
-          "comboStep": 2,
-          "motion": "elbow",
-          "limb": "hand"
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-muay-thai-wraps",
-          "style": "crimson-roundhouse-arc",
-          "x": 2682.2399999999984,
-          "y": 2419.9999819934333,
-          "timeMs": 36977.8,
-          "comboStep": 2,
-          "motion": "elbow",
-          "limb": "hand"
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-muay-thai-wraps",
-          "style": "crimson-roundhouse-arc",
-          "x": 2699.5999999999985,
-          "y": 2419.9999803648147,
-          "timeMs": 37427.9,
-          "comboStep": 0,
-          "motion": "teep-kick",
-          "limb": "foot"
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-muay-thai-wraps",
-          "style": "crimson-roundhouse-arc",
-          "x": 2697.6828213749473,
-          "y": 2419.999982101533,
-          "timeMs": 37877.8,
-          "comboStep": 1,
-          "motion": "elbow",
-          "limb": "hand"
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-muay-thai-wraps",
-          "style": "crimson-roundhouse-arc",
-          "x": 2711.5716520210767,
-          "y": 2419.999981578336,
-          "timeMs": 38327.8,
-          "comboStep": 2,
-          "motion": "elbow",
-          "limb": "hand"
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-muay-thai-wraps",
-          "style": "crimson-roundhouse-arc",
-          "x": 2727.0624692074807,
-          "y": 2419.999980669441,
-          "timeMs": 38777.8,
+          "x": 2547.7599999999984,
+          "y": 2419.9999808191424,
+          "timeMs": 12019.1,
           "comboStep": 3,
           "motion": "knee-strike",
           "limb": "foot"
@@ -478,9 +260,9 @@
           "kind": "swing",
           "weaponId": "x2-muay-thai-wraps",
           "style": "crimson-roundhouse-arc",
-          "x": 2755.514270702411,
-          "y": 2419.9999775753267,
-          "timeMs": 39244.5,
+          "x": 2575.6096577419885,
+          "y": 2419.999977703504,
+          "timeMs": 12419.2,
           "comboStep": 4,
           "motion": "roundhouse-kick",
           "limb": "foot"
@@ -489,9 +271,9 @@
           "kind": "swing",
           "weaponId": "x2-muay-thai-wraps",
           "style": "crimson-roundhouse-arc",
-          "x": 2749.0024116943946,
-          "y": 2419.9999803935575,
-          "timeMs": 39744.4,
+          "x": 2568.482761315757,
+          "y": 2419.999980298477,
+          "timeMs": 12819.1,
           "comboStep": 0,
           "motion": "teep-kick",
           "limb": "foot"
@@ -500,9 +282,31 @@
           "kind": "swing",
           "weaponId": "x2-muay-thai-wraps",
           "style": "crimson-roundhouse-arc",
-          "x": 2747.988764244888,
-          "y": 2419.9999822155505,
-          "timeMs": 40211.1,
+          "x": 2569.5999999999985,
+          "y": 2419.999980799576,
+          "timeMs": 13235.8,
+          "comboStep": 0,
+          "motion": "teep-kick",
+          "limb": "foot"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-muay-thai-wraps",
+          "style": "crimson-roundhouse-arc",
+          "x": 2579.071279269934,
+          "y": 2419.999980437242,
+          "timeMs": 13635.7,
+          "comboStep": 0,
+          "motion": "teep-kick",
+          "limb": "foot"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-muay-thai-wraps",
+          "style": "crimson-roundhouse-arc",
+          "x": 2578.5599999999986,
+          "y": 2419.9999822286754,
+          "timeMs": 14069,
           "comboStep": 1,
           "motion": "elbow",
           "limb": "hand"
@@ -511,9 +315,9 @@
           "kind": "swing",
           "weaponId": "x2-muay-thai-wraps",
           "style": "crimson-roundhouse-arc",
-          "x": 2761.678517632058,
-          "y": 2419.9999815397487,
-          "timeMs": 40711,
+          "x": 2592.2399999999984,
+          "y": 2419.9999816167583,
+          "timeMs": 14535.7,
           "comboStep": 2,
           "motion": "elbow",
           "limb": "hand"
@@ -522,53 +326,9 @@
           "kind": "swing",
           "weaponId": "x2-muay-thai-wraps",
           "style": "crimson-roundhouse-arc",
-          "x": 2778.0868942892384,
-          "y": 2419.9999801303225,
-          "timeMs": 41277.7,
-          "comboStep": 0,
-          "motion": "teep-kick",
-          "limb": "foot"
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-muay-thai-wraps",
-          "style": "crimson-roundhouse-arc",
-          "x": 2789.5999999999985,
-          "y": 2419.9999805780717,
-          "timeMs": 41861,
-          "comboStep": 0,
-          "motion": "teep-kick",
-          "limb": "foot"
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-muay-thai-wraps",
-          "style": "crimson-roundhouse-arc",
-          "x": 2788.5599999999986,
-          "y": 2419.9999821143488,
-          "timeMs": 42394.3,
-          "comboStep": 1,
-          "motion": "elbow",
-          "limb": "hand"
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-muay-thai-wraps",
-          "style": "crimson-roundhouse-arc",
-          "x": 2800.519207237629,
-          "y": 2419.999981192589,
-          "timeMs": 42861,
-          "comboStep": 2,
-          "motion": "elbow",
-          "limb": "hand"
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-muay-thai-wraps",
-          "style": "crimson-roundhouse-arc",
-          "x": 2815.209082860208,
-          "y": 2419.999980324919,
-          "timeMs": 43327.6,
+          "x": 2607.7599999999984,
+          "y": 2419.9999808208345,
+          "timeMs": 15035.7,
           "comboStep": 3,
           "motion": "knee-strike",
           "limb": "foot"
@@ -577,9 +337,9 @@
           "kind": "swing",
           "weaponId": "x2-muay-thai-wraps",
           "style": "crimson-roundhouse-arc",
-          "x": 2843.4922132151546,
-          "y": 2419.999977259684,
-          "timeMs": 43711,
+          "x": 2636.159999999998,
+          "y": 2419.9999778845354,
+          "timeMs": 15468.9,
           "comboStep": 4,
           "motion": "roundhouse-kick",
           "limb": "foot"
@@ -588,56 +348,37 @@
           "kind": "swing",
           "weaponId": "x2-muay-thai-wraps",
           "style": "crimson-roundhouse-arc",
-          "x": 2846.159999999998,
-          "y": 2419.999978085543,
-          "timeMs": 44144.3,
-          "comboStep": 4,
-          "motion": "roundhouse-kick",
-          "limb": "foot"
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-muay-thai-wraps",
-          "style": "crimson-roundhouse-arc",
-          "x": 2829.5999999999985,
-          "y": 2419.999980828942,
-          "timeMs": 44560.9,
+          "x": 2629.5999999999985,
+          "y": 2419.9999804107024,
+          "timeMs": 15935.6,
           "comboStep": 0,
           "motion": "teep-kick",
           "limb": "foot"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-muay-thai-wraps",
+          "style": "crimson-roundhouse-arc",
+          "x": 2628.5599999999986,
+          "y": 2419.999982216012,
+          "timeMs": 16402.3,
+          "comboStep": 1,
+          "motion": "elbow",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-muay-thai-wraps",
+          "style": "crimson-roundhouse-arc",
+          "x": 2642.2399999999984,
+          "y": 2419.999981719253,
+          "timeMs": 16885.6,
+          "comboStep": 2,
+          "motion": "elbow",
+          "limb": "hand"
         }
       ],
       "auraSamples": [
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
         false,
         false,
         false,
@@ -744,7 +485,7 @@
           "x2-muay-thai-wraps:part-2:__BASE"
         ],
         "facing": 1,
-        "rootScaleX": 0.6623394948346626,
+        "rootScaleX": 0.6623394896716363,
         "rootScaleY": 0.6623394948497249,
         "handScaleRatios": [
           1.1466666666666665,
@@ -758,29 +499,29 @@
         "handPose": [
           {
             "front": false,
-            "x": 17.63199999999977,
-            "y": -2.3683188094943035,
-            "rotation": -0.12000016027029403
+            "x": 17.630815305724813,
+            "y": -5.613100523685004,
+            "rotation": -0.12000016027018567
           },
           {
             "front": true,
-            "x": -79.23452380952381,
-            "y": 6.790238095238095,
-            "rotation": 0.19999983972970625
+            "x": -78.7417450242396,
+            "y": 7.679635765169209,
+            "rotation": 0.1999998397298146
           }
         ],
         "footPose": [
           {
             "front": false,
-            "x": 51.091904761904765,
-            "y": 70.70261904761905,
-            "rotation": 0
+            "x": 51.26115837415268,
+            "y": 70.99421060738122,
+            "rotation": -0.0033856051171632373
           },
           {
             "front": true,
-            "x": -51.05119047619048,
-            "y": 57.841428571428565,
-            "rotation": 0
+            "x": -51.08946171662019,
+            "y": 57.68207422794866,
+            "rotation": 0.0007648869021767979
           }
         ]
       },
@@ -794,12 +535,12 @@
       "facing": "left",
       "target": {
         "id": "open-lane:left",
-        "x": 2618,
+        "x": 2448,
         "y": 2420,
         "distance": 92
       },
-      "attackSeqBefore": 32,
-      "attackSeqAfter": 53,
+      "attackSeqBefore": 14,
+      "attackSeqAfter": 27,
       "steps": [
         0,
         1,
@@ -824,89 +565,125 @@
       "swingStyle": "crimson-roundhouse-arc",
       "impactStyle": "",
       "intervalsMs": [
-        500,
-        533.2000000000044,
-        483.40000000000146,
-        433.29999999999563
+        466.7000000000007,
+        466.59999999999854,
+        466.7000000000007,
+        450
       ],
       "reachPx": [
-        117.7689410497122,
-        106.14305319450858,
-        111.70044734909439,
-        117.75999999999995,
+        119.60000000000008,
+        108.56,
+        112.23999999999991,
+        117.75999999999996,
         136.15999999999983
       ],
       "travel": {
         "start": {
-          "x": 2710,
+          "x": 2540,
           "y": 2420
         },
         "end": {
-          "x": 2660,
+          "x": 2490,
           "y": 2420
         },
         "distancePx": 50,
         "expectedPx": 39,
         "positionSamples": [
           {
-            "attackSeq": 32,
-            "x": 2710,
+            "attackSeq": 14,
+            "x": 2540,
             "y": 2420,
-            "timeMs": 54260.6
+            "timeMs": 23535.3
           },
           {
-            "attackSeq": 33,
-            "x": 2700,
+            "attackSeq": 15,
+            "x": 2531.14404296875,
             "y": 2420,
-            "timeMs": 54477.2
+            "timeMs": 23701.9
           },
           {
-            "attackSeq": 33,
-            "x": 2700,
+            "attackSeq": 15,
+            "x": 2530,
             "y": 2420,
-            "timeMs": 54710.5
+            "timeMs": 23868.7
           },
           {
-            "attackSeq": 34,
-            "x": 2690,
+            "attackSeq": 15,
+            "x": 2530,
             "y": 2420,
-            "timeMs": 54977.2
+            "timeMs": 24002
           },
           {
-            "attackSeq": 34,
-            "x": 2690,
+            "attackSeq": 16,
+            "x": 2526.14404296875,
             "y": 2420,
-            "timeMs": 55260.5
+            "timeMs": 24168.6
           },
           {
-            "attackSeq": 35,
-            "x": 2680,
+            "attackSeq": 16,
+            "x": 2520,
             "y": 2420,
-            "timeMs": 55510.4
+            "timeMs": 24335.3
           },
           {
-            "attackSeq": 36,
-            "x": 2671.14404296875,
+            "attackSeq": 16,
+            "x": 2520,
             "y": 2420,
-            "timeMs": 55777.2
+            "timeMs": 24501.9
           },
           {
-            "attackSeq": 36,
-            "x": 2670,
+            "attackSeq": 17,
+            "x": 2511.14404296875,
             "y": 2420,
-            "timeMs": 55993.8
+            "timeMs": 24652
           },
           {
-            "attackSeq": 37,
-            "x": 2661.14404296875,
+            "attackSeq": 17,
+            "x": 2510,
             "y": 2420,
-            "timeMs": 56210.4
+            "timeMs": 24802
           },
           {
-            "attackSeq": 37,
-            "x": 2660,
+            "attackSeq": 17,
+            "x": 2510,
             "y": 2420,
-            "timeMs": 56427.1
+            "timeMs": 24951.9
+          },
+          {
+            "attackSeq": 18,
+            "x": 2501.14404296875,
+            "y": 2420,
+            "timeMs": 25102
+          },
+          {
+            "attackSeq": 18,
+            "x": 2500,
+            "y": 2420,
+            "timeMs": 25251.9
+          },
+          {
+            "attackSeq": 18,
+            "x": 2500,
+            "y": 2420,
+            "timeMs": 25418.6
+          },
+          {
+            "attackSeq": 19,
+            "x": 2491.14404296875,
+            "y": 2420,
+            "timeMs": 25585.3
+          },
+          {
+            "attackSeq": 19,
+            "x": 2490,
+            "y": 2420,
+            "timeMs": 25735.2
+          },
+          {
+            "attackSeq": 19,
+            "x": 2490,
+            "y": 2420,
+            "timeMs": 25868.5
           }
         ]
       },
@@ -916,9 +693,9 @@
           "kind": "swing",
           "weaponId": "x2-muay-thai-wraps",
           "style": "crimson-roundhouse-arc",
-          "x": 2590.4000000000015,
+          "x": 2420.4000000000015,
           "y": 2419.9999808316793,
-          "timeMs": 54027.2,
+          "timeMs": 23485.3,
           "comboStep": 0,
           "motion": "teep-kick",
           "limb": "foot"
@@ -927,20 +704,9 @@
           "kind": "swing",
           "weaponId": "x2-muay-thai-wraps",
           "style": "crimson-roundhouse-arc",
-          "x": 2582.2310589502895,
-          "y": 2419.9999801691033,
-          "timeMs": 54477.2,
-          "comboStep": 0,
-          "motion": "teep-kick",
-          "limb": "foot"
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-muay-thai-wraps",
-          "style": "crimson-roundhouse-arc",
-          "x": 2583.856946805493,
-          "y": 2419.9999818641036,
-          "timeMs": 54977.2,
+          "x": 2421.4400000000014,
+          "y": 2419.999982367527,
+          "timeMs": 23952,
           "comboStep": 1,
           "motion": "elbow",
           "limb": "hand"
@@ -949,9 +715,9 @@
           "kind": "swing",
           "weaponId": "x2-muay-thai-wraps",
           "style": "crimson-roundhouse-arc",
-          "x": 2568.299552650907,
-          "y": 2419.9999815031433,
-          "timeMs": 55510.4,
+          "x": 2407.7600000000016,
+          "y": 2419.9999816303866,
+          "timeMs": 24418.6,
           "comboStep": 2,
           "motion": "elbow",
           "limb": "hand"
@@ -960,9 +726,9 @@
           "kind": "swing",
           "weaponId": "x2-muay-thai-wraps",
           "style": "crimson-roundhouse-arc",
-          "x": 2552.2400000000016,
-          "y": 2419.9999808728294,
-          "timeMs": 55993.8,
+          "x": 2392.2400000000016,
+          "y": 2419.999980817536,
+          "timeMs": 24885.3,
           "comboStep": 3,
           "motion": "knee-strike",
           "limb": "foot"
@@ -971,9 +737,9 @@
           "kind": "swing",
           "weaponId": "x2-muay-thai-wraps",
           "style": "crimson-roundhouse-arc",
-          "x": 2523.840000000002,
-          "y": 2419.999977865497,
-          "timeMs": 56427.1,
+          "x": 2363.840000000002,
+          "y": 2419.9999778605015,
+          "timeMs": 25335.3,
           "comboStep": 4,
           "motion": "roundhouse-kick",
           "limb": "foot"
@@ -982,9 +748,9 @@
           "kind": "swing",
           "weaponId": "x2-muay-thai-wraps",
           "style": "crimson-roundhouse-arc",
-          "x": 2530.9421271365773,
-          "y": 2419.999980395057,
-          "timeMs": 56860.4,
+          "x": 2370.4000000000015,
+          "y": 2419.999980516897,
+          "timeMs": 25801.9,
           "comboStep": 0,
           "motion": "teep-kick",
           "limb": "foot"
@@ -993,9 +759,9 @@
           "kind": "swing",
           "weaponId": "x2-muay-thai-wraps",
           "style": "crimson-roundhouse-arc",
-          "x": 2531.4400000000014,
-          "y": 2419.999982154241,
-          "timeMs": 57343.8,
+          "x": 2371.4400000000014,
+          "y": 2419.999982307532,
+          "timeMs": 26268.5,
           "comboStep": 1,
           "motion": "elbow",
           "limb": "hand"
@@ -1004,9 +770,9 @@
           "kind": "swing",
           "weaponId": "x2-muay-thai-wraps",
           "style": "crimson-roundhouse-arc",
-          "x": 2518.2782928199276,
-          "y": 2419.999981548317,
-          "timeMs": 57860.4,
+          "x": 2358.345531124529,
+          "y": 2419.999981646032,
+          "timeMs": 26718.5,
           "comboStep": 2,
           "motion": "elbow",
           "limb": "hand"
@@ -1015,9 +781,9 @@
           "kind": "swing",
           "weaponId": "x2-muay-thai-wraps",
           "style": "crimson-roundhouse-arc",
-          "x": 2503.862870129165,
-          "y": 2419.9999804600243,
-          "timeMs": 58327,
+          "x": 2342.7903868914873,
+          "y": 2419.9999807441204,
+          "timeMs": 27151.9,
           "comboStep": 3,
           "motion": "knee-strike",
           "limb": "foot"
@@ -1026,9 +792,9 @@
           "kind": "swing",
           "weaponId": "x2-muay-thai-wraps",
           "style": "crimson-roundhouse-arc",
-          "x": 2475.410748795163,
-          "y": 2419.999977377535,
-          "timeMs": 58827,
+          "x": 2314.544994253331,
+          "y": 2419.9999777044363,
+          "timeMs": 27585.1,
           "comboStep": 4,
           "motion": "roundhouse-kick",
           "limb": "foot"
@@ -1037,9 +803,20 @@
           "kind": "swing",
           "weaponId": "x2-muay-thai-wraps",
           "style": "crimson-roundhouse-arc",
-          "x": 2481.1530317898687,
-          "y": 2419.9999802803013,
-          "timeMs": 59293.7,
+          "x": 2313.840000000002,
+          "y": 2419.999978158748,
+          "timeMs": 28051.8,
+          "comboStep": 4,
+          "motion": "roundhouse-kick",
+          "limb": "foot"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-muay-thai-wraps",
+          "style": "crimson-roundhouse-arc",
+          "x": 2320.4000000000015,
+          "y": 2419.9999805099915,
+          "timeMs": 28485.2,
           "comboStep": 0,
           "motion": "teep-kick",
           "limb": "foot"
@@ -1048,9 +825,9 @@
           "kind": "swing",
           "weaponId": "x2-muay-thai-wraps",
           "style": "crimson-roundhouse-arc",
-          "x": 2482.036059427091,
-          "y": 2419.9999821364813,
-          "timeMs": 59743.7,
+          "x": 2321.4400000000014,
+          "y": 2419.999982285213,
+          "timeMs": 28951.8,
           "comboStep": 1,
           "motion": "elbow",
           "limb": "hand"
@@ -1059,93 +836,15 @@
           "kind": "swing",
           "weaponId": "x2-muay-thai-wraps",
           "style": "crimson-roundhouse-arc",
-          "x": 2468.3214149941,
-          "y": 2419.9999815351484,
-          "timeMs": 60260.3,
+          "x": 2307.7600000000016,
+          "y": 2419.999981699281,
+          "timeMs": 29401.8,
           "comboStep": 2,
           "motion": "elbow",
           "limb": "hand"
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-muay-thai-wraps",
-          "style": "crimson-roundhouse-arc",
-          "x": 2452.2400000000016,
-          "y": 2419.9999806790083,
-          "timeMs": 60710.3,
-          "comboStep": 3,
-          "motion": "knee-strike",
-          "limb": "foot"
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-muay-thai-wraps",
-          "style": "crimson-roundhouse-arc",
-          "x": 2424.5780026715133,
-          "y": 2419.999977566599,
-          "timeMs": 61210.3,
-          "comboStep": 4,
-          "motion": "roundhouse-kick",
-          "limb": "foot"
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-muay-thai-wraps",
-          "style": "crimson-roundhouse-arc",
-          "x": 2430.4000000000015,
-          "y": 2419.9999805208713,
-          "timeMs": 61660.3,
-          "comboStep": 0,
-          "motion": "teep-kick",
-          "limb": "foot"
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-muay-thai-wraps",
-          "style": "crimson-roundhouse-arc",
-          "x": 2431.4400000000014,
-          "y": 2419.9999821866795,
-          "timeMs": 62093.5,
-          "comboStep": 1,
-          "motion": "elbow",
-          "limb": "hand"
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-muay-thai-wraps",
-          "style": "crimson-roundhouse-arc",
-          "x": 2417.7600000000016,
-          "y": 2419.9999817120247,
-          "timeMs": 62576.8,
-          "comboStep": 2,
-          "motion": "elbow",
-          "limb": "hand"
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-muay-thai-wraps",
-          "style": "crimson-roundhouse-arc",
-          "x": 2402.8243735226642,
-          "y": 2419.999980624073,
-          "timeMs": 63043.5,
-          "comboStep": 3,
-          "motion": "knee-strike",
-          "limb": "foot"
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-muay-thai-wraps",
-          "style": "crimson-roundhouse-arc",
-          "x": 2373.840000000002,
-          "y": 2419.999977655015,
-          "timeMs": 63526.9,
-          "comboStep": 4,
-          "motion": "roundhouse-kick",
-          "limb": "foot"
         }
       ],
       "auraSamples": [
-        false,
         false,
         false,
         false,
@@ -1253,7 +952,7 @@
           "x2-muay-thai-wraps:part-2:__BASE"
         ],
         "facing": -1,
-        "rootScaleX": -0.6623394948346626,
+        "rootScaleX": -0.6623394948435959,
         "rootScaleY": 0.6623394948497249,
         "handScaleRatios": [
           1.1466666666666665,
@@ -1267,29 +966,29 @@
         "handPose": [
           {
             "front": false,
-            "x": 17.63199999999977,
-            "y": -5.929490526584259,
-            "rotation": -0.12000016027023896
+            "x": 17.697778907740876,
+            "y": -0.4304325540667031,
+            "rotation": -0.12000016027024074
           },
           {
             "front": true,
-            "x": -79.23452380952381,
-            "y": 6.790238095238095,
+            "x": -79.75937462379396,
+            "y": 5.961135345018742,
             "rotation": 0.19999983972975954
           }
         ],
         "footPose": [
           {
             "front": false,
-            "x": 51.091904761904765,
-            "y": 70.70261904761905,
-            "rotation": 0
+            "x": 50.9426527231643,
+            "y": 70.46232900002673,
+            "rotation": 0.0029850407747957775
           },
           {
             "front": true,
-            "x": -51.05119047619048,
-            "y": 57.841428571428565,
-            "rotation": 0
+            "x": -50.91564944544519,
+            "y": 57.84142857142857,
+            "rotation": -0.002710820614918674
           }
         ]
       },
@@ -1303,12 +1002,12 @@
       "facing": "right",
       "target": {
         "id": "open-lane:right",
-        "x": 2592,
+        "x": 2502,
         "y": 2420,
         "distance": 92
       },
-      "attackSeqBefore": 53,
-      "attackSeqAfter": 83,
+      "attackSeqBefore": 27,
+      "attackSeqAfter": 55,
       "steps": [
         0,
         1,
@@ -1333,65 +1032,65 @@
       "swingStyle": "white-centerline-flash",
       "impactStyle": "",
       "intervalsMs": [
-        233.3000000000029,
-        233.39999999999418,
-        233.3000000000029,
-        216.6999999999971
+        200,
+        166.6999999999971,
+        150,
+        166.59999999999854
       ],
       "reachPx": [
-        111.10323543687502,
-        114.13404296874994,
-        117.57404296875004,
-        120.39999999999988,
-        128.2602386992188
+        111.7999999999998,
+        114.15821517948068,
+        117.5982151794808,
+        121.59731923997944,
+        130.67907015925934
       ],
       "travel": {
         "start": {
-          "x": 2500,
+          "x": 2410,
           "y": 2420
         },
         "end": {
-          "x": 2515,
+          "x": 2425,
           "y": 2420
         },
         "distancePx": 15,
         "expectedPx": 26,
         "positionSamples": [
           {
-            "attackSeq": 53,
-            "x": 2500,
+            "attackSeq": 27,
+            "x": 2410,
             "y": 2420,
-            "timeMs": 74276.4
+            "timeMs": 37034.8
           },
           {
-            "attackSeq": 54,
-            "x": 2503,
+            "attackSeq": 28,
+            "x": 2413,
             "y": 2420,
-            "timeMs": 74509.7
+            "timeMs": 37218.1
           },
           {
-            "attackSeq": 55,
-            "x": 2506,
+            "attackSeq": 29,
+            "x": 2416,
             "y": 2420,
-            "timeMs": 74743
+            "timeMs": 37384.7
           },
           {
-            "attackSeq": 56,
-            "x": 2509,
+            "attackSeq": 30,
+            "x": 2419,
             "y": 2420,
-            "timeMs": 74876.4
+            "timeMs": 37534.8
           },
           {
-            "attackSeq": 57,
-            "x": 2512,
+            "attackSeq": 31,
+            "x": 2422,
             "y": 2420,
-            "timeMs": 75109.7
+            "timeMs": 37701.4
           },
           {
-            "attackSeq": 58,
-            "x": 2515,
+            "attackSeq": 32,
+            "x": 2425,
             "y": 2420,
-            "timeMs": 75326.4
+            "timeMs": 37851.4
           }
         ]
       },
@@ -1401,9 +1100,9 @@
           "kind": "swing",
           "weaponId": "x2-wing-chun-wraps",
           "style": "white-centerline-flash",
-          "x": 2611.7999999999984,
+          "x": 2521.7999999999984,
           "y": 2419.999982081781,
-          "timeMs": 74159.7,
+          "timeMs": 36934.8,
           "comboStep": 0,
           "motion": "chain-punch",
           "limb": "hand"
@@ -1412,20 +1111,9 @@
           "kind": "swing",
           "weaponId": "x2-wing-chun-wraps",
           "style": "white-centerline-flash",
-          "x": 2614.1032354368735,
-          "y": 2419.9999818671595,
-          "timeMs": 74409.7,
-          "comboStep": 0,
-          "motion": "chain-punch",
-          "limb": "hand"
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-wing-chun-wraps",
-          "style": "white-centerline-flash",
-          "x": 2620.1340429687484,
-          "y": 2419.9999812879582,
-          "timeMs": 74643,
+          "x": 2527.158215179479,
+          "y": 2419.999981346575,
+          "timeMs": 37134.8,
           "comboStep": 1,
           "motion": "chain-punch",
           "limb": "hand"
@@ -1434,9 +1122,9 @@
           "kind": "swing",
           "weaponId": "x2-wing-chun-wraps",
           "style": "white-centerline-flash",
-          "x": 2626.5740429687485,
-          "y": 2419.9999807038976,
-          "timeMs": 74876.4,
+          "x": 2533.598215179479,
+          "y": 2419.9999806813385,
+          "timeMs": 37301.5,
           "comboStep": 2,
           "motion": "chain-punch",
           "limb": "hand"
@@ -1445,9 +1133,9 @@
           "kind": "swing",
           "weaponId": "x2-wing-chun-wraps",
           "style": "white-centerline-flash",
-          "x": 2632.3999999999983,
-          "y": 2419.9999803745663,
-          "timeMs": 75109.7,
+          "x": 2537.597319239978,
+          "y": 2419.9999804450767,
+          "timeMs": 37451.5,
           "comboStep": 3,
           "motion": "oblique-kick",
           "limb": "foot"
@@ -1456,9 +1144,9 @@
           "kind": "swing",
           "weaponId": "x2-wing-chun-wraps",
           "style": "white-centerline-flash",
-          "x": 2643.260238699217,
-          "y": 2419.9999790245834,
-          "timeMs": 75326.4,
+          "x": 2549.6790701592577,
+          "y": 2419.9999789292738,
+          "timeMs": 37618.1,
           "comboStep": 4,
           "motion": "double-palm",
           "limb": "hand"
@@ -1467,9 +1155,9 @@
           "kind": "swing",
           "weaponId": "x2-wing-chun-wraps",
           "style": "white-centerline-flash",
-          "x": 2628.6940429687484,
-          "y": 2419.999981833556,
-          "timeMs": 75559.7,
+          "x": 2535.718215179479,
+          "y": 2419.9999817446223,
+          "timeMs": 37784.8,
           "comboStep": 0,
           "motion": "chain-punch",
           "limb": "hand"
@@ -1478,9 +1166,9 @@
           "kind": "swing",
           "weaponId": "x2-wing-chun-wraps",
           "style": "white-centerline-flash",
-          "x": 2635.4699868692287,
-          "y": 2419.999981228687,
-          "timeMs": 75776.3,
+          "x": 2541.4231307501723,
+          "y": 2419.999981264953,
+          "timeMs": 37951.4,
           "comboStep": 1,
           "motion": "chain-punch",
           "limb": "hand"
@@ -1489,9 +1177,9 @@
           "kind": "swing",
           "weaponId": "x2-wing-chun-wraps",
           "style": "white-centerline-flash",
-          "x": 2641.9099868692288,
-          "y": 2419.999980672415,
-          "timeMs": 76009.7,
+          "x": 2547.5623573606185,
+          "y": 2419.9999806833785,
+          "timeMs": 38084.8,
           "comboStep": 2,
           "motion": "chain-punch",
           "limb": "hand"
@@ -1500,42 +1188,9 @@
           "kind": "swing",
           "weaponId": "x2-wing-chun-wraps",
           "style": "white-centerline-flash",
-          "x": 2637.6940429687484,
-          "y": 2419.999981825403,
-          "timeMs": 76259.6,
-          "comboStep": 0,
-          "motion": "chain-punch",
-          "limb": "hand"
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-wing-chun-wraps",
-          "style": "white-centerline-flash",
-          "x": 2644.4851737671056,
-          "y": 2419.9999812257693,
-          "timeMs": 76476.3,
-          "comboStep": 1,
-          "motion": "chain-punch",
-          "limb": "hand"
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-wing-chun-wraps",
-          "style": "white-centerline-flash",
-          "x": 2650.925264340819,
-          "y": 2419.9999806716937,
-          "timeMs": 76709.7,
-          "comboStep": 2,
-          "motion": "chain-punch",
-          "limb": "hand"
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-wing-chun-wraps",
-          "style": "white-centerline-flash",
-          "x": 2655.6451737671055,
-          "y": 2419.99998039268,
-          "timeMs": 76926.2,
+          "x": 2552.2519948040435,
+          "y": 2419.9999803728138,
+          "timeMs": 38251.4,
           "comboStep": 3,
           "motion": "oblique-kick",
           "limb": "foot"
@@ -1544,130 +1199,9 @@
           "kind": "swing",
           "weaponId": "x2-wing-chun-wraps",
           "style": "white-centerline-flash",
-          "x": 2649.6940429687484,
-          "y": 2419.9999818256633,
-          "timeMs": 77192.9,
-          "comboStep": 0,
-          "motion": "chain-punch",
-          "limb": "hand"
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-wing-chun-wraps",
-          "style": "white-centerline-flash",
-          "x": 2656.1340429687484,
-          "y": 2419.9999812613382,
-          "timeMs": 77426.3,
-          "comboStep": 1,
-          "motion": "chain-punch",
-          "limb": "hand"
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-wing-chun-wraps",
-          "style": "white-centerline-flash",
-          "x": 2655.6940429687484,
-          "y": 2419.9999818193155,
-          "timeMs": 77676.3,
-          "comboStep": 0,
-          "motion": "chain-punch",
-          "limb": "hand"
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-wing-chun-wraps",
-          "style": "white-centerline-flash",
-          "x": 2662.1340429687484,
-          "y": 2419.999981261962,
-          "timeMs": 77892.9,
-          "comboStep": 1,
-          "motion": "chain-punch",
-          "limb": "hand"
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-wing-chun-wraps",
-          "style": "white-centerline-flash",
-          "x": 2668.969302012828,
-          "y": 2419.9999806625187,
-          "timeMs": 78126.3,
-          "comboStep": 2,
-          "motion": "chain-punch",
-          "limb": "hand"
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-wing-chun-wraps",
-          "style": "white-centerline-flash",
-          "x": 2673.2940429687483,
-          "y": 2419.999980435093,
-          "timeMs": 78359.6,
-          "comboStep": 3,
-          "motion": "oblique-kick",
-          "limb": "foot"
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-wing-chun-wraps",
-          "style": "white-centerline-flash",
-          "x": 2668.0747419172967,
-          "y": 2419.999981787308,
-          "timeMs": 78609.5,
-          "comboStep": 0,
-          "motion": "chain-punch",
-          "limb": "hand"
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-wing-chun-wraps",
-          "style": "white-centerline-flash",
-          "x": 2670.6940429687484,
-          "y": 2419.9999818753377,
-          "timeMs": 78976.2,
-          "comboStep": 0,
-          "motion": "chain-punch",
-          "limb": "hand"
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-wing-chun-wraps",
-          "style": "white-centerline-flash",
-          "x": 2677.1340429687484,
-          "y": 2419.9999812712144,
-          "timeMs": 79192.9,
-          "comboStep": 1,
-          "motion": "chain-punch",
-          "limb": "hand"
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-wing-chun-wraps",
-          "style": "white-centerline-flash",
-          "x": 2683.9548289430454,
-          "y": 2419.999980665527,
-          "timeMs": 79426.2,
-          "comboStep": 2,
-          "motion": "chain-punch",
-          "limb": "hand"
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-wing-chun-wraps",
-          "style": "white-centerline-flash",
-          "x": 2689.3999999999983,
-          "y": 2419.999980398723,
-          "timeMs": 79659.5,
-          "comboStep": 3,
-          "motion": "oblique-kick",
-          "limb": "foot"
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-wing-chun-wraps",
-          "style": "white-centerline-flash",
-          "x": 2700.2451737671054,
-          "y": 2419.999979029012,
-          "timeMs": 79892.8,
+          "x": 2564.5363710338843,
+          "y": 2419.9999788875894,
+          "timeMs": 38418.1,
           "comboStep": 4,
           "motion": "double-palm",
           "limb": "hand"
@@ -1676,9 +1210,9 @@
           "kind": "swing",
           "weaponId": "x2-wing-chun-wraps",
           "style": "white-centerline-flash",
-          "x": 2685.6940429687484,
-          "y": 2419.9999818321166,
-          "timeMs": 80109.5,
+          "x": 2550.4636305347235,
+          "y": 2419.999981716276,
+          "timeMs": 38601.4,
           "comboStep": 0,
           "motion": "chain-punch",
           "limb": "hand"
@@ -1687,9 +1221,9 @@
           "kind": "swing",
           "weaponId": "x2-wing-chun-wraps",
           "style": "white-centerline-flash",
-          "x": 2692.4851737671056,
-          "y": 2419.9999812252413,
-          "timeMs": 80342.8,
+          "x": 2556.408827390283,
+          "y": 2419.9999812445726,
+          "timeMs": 38751.4,
           "comboStep": 1,
           "motion": "chain-punch",
           "limb": "hand"
@@ -1698,9 +1232,9 @@
           "kind": "swing",
           "weaponId": "x2-wing-chun-wraps",
           "style": "white-centerline-flash",
-          "x": 2698.9251737671057,
-          "y": 2419.999980670493,
-          "timeMs": 80576.1,
+          "x": 2562.6242930593544,
+          "y": 2419.9999806715,
+          "timeMs": 38918,
           "comboStep": 2,
           "motion": "chain-punch",
           "limb": "hand"
@@ -1709,9 +1243,9 @@
           "kind": "swing",
           "weaponId": "x2-wing-chun-wraps",
           "style": "white-centerline-flash",
-          "x": 2703.6299868692286,
-          "y": 2419.9999803928995,
-          "timeMs": 80792.8,
+          "x": 2567.343759734311,
+          "y": 2419.999980379075,
+          "timeMs": 39101.4,
           "comboStep": 3,
           "motion": "oblique-kick",
           "limb": "foot"
@@ -1720,17 +1254,158 @@
           "kind": "swing",
           "weaponId": "x2-wing-chun-wraps",
           "style": "white-centerline-flash",
-          "x": 2715.214494415109,
-          "y": 2419.999978991909,
-          "timeMs": 81009.5,
+          "x": 2579.65068300015,
+          "y": 2419.9999788972173,
+          "timeMs": 39268,
           "comboStep": 4,
           "motion": "double-palm",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "white-centerline-flash",
+          "x": 2564.9972356281137,
+          "y": 2419.9999818044175,
+          "timeMs": 39434.7,
+          "comboStep": 0,
+          "motion": "chain-punch",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "white-centerline-flash",
+          "x": 2571.919059067244,
+          "y": 2419.999981165994,
+          "timeMs": 39601.4,
+          "comboStep": 1,
+          "motion": "chain-punch",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "white-centerline-flash",
+          "x": 2577.891060657747,
+          "y": 2419.999980689725,
+          "timeMs": 39768,
+          "comboStep": 2,
+          "motion": "chain-punch",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "white-centerline-flash",
+          "x": 2582.355080589372,
+          "y": 2419.9999804004997,
+          "timeMs": 39934.7,
+          "comboStep": 3,
+          "motion": "oblique-kick",
+          "limb": "foot"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "white-centerline-flash",
+          "x": 2593.880771749196,
+          "y": 2419.999978985109,
+          "timeMs": 40068,
+          "comboStep": 4,
+          "motion": "double-palm",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "white-centerline-flash",
+          "x": 2579.6846076645083,
+          "y": 2419.999981773225,
+          "timeMs": 40251.3,
+          "comboStep": 0,
+          "motion": "chain-punch",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "white-centerline-flash",
+          "x": 2586.815822991113,
+          "y": 2419.999981141597,
+          "timeMs": 40417.9,
+          "comboStep": 1,
+          "motion": "chain-punch",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "white-centerline-flash",
+          "x": 2593.3534963908382,
+          "y": 2419.999980597725,
+          "timeMs": 40584.7,
+          "comboStep": 2,
+          "motion": "chain-punch",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "white-centerline-flash",
+          "x": 2597.5687403591915,
+          "y": 2419.999980404832,
+          "timeMs": 40734.6,
+          "comboStep": 3,
+          "motion": "oblique-kick",
+          "limb": "foot"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "white-centerline-flash",
+          "x": 2608.939276968673,
+          "y": 2419.9999789885364,
+          "timeMs": 40901.3,
+          "comboStep": 4,
+          "motion": "double-palm",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "white-centerline-flash",
+          "x": 2595.383864768414,
+          "y": 2419.999981713396,
+          "timeMs": 41068,
+          "comboStep": 0,
+          "motion": "chain-punch",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "white-centerline-flash",
+          "x": 2601.2237335028462,
+          "y": 2419.9999812311503,
+          "timeMs": 41234.6,
+          "comboStep": 1,
+          "motion": "chain-punch",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "white-centerline-flash",
+          "x": 2607.579111274676,
+          "y": 2419.9999806599626,
+          "timeMs": 41401.3,
+          "comboStep": 2,
+          "motion": "chain-punch",
           "limb": "hand"
         }
       ],
       "auraSamples": [
-        false,
-        false,
         false,
         false,
         false,
@@ -1825,43 +1500,43 @@
           "x2-wing-chun-wraps:part-2:__BASE"
         ],
         "facing": 1,
-        "rootScaleX": 0.6623394948493133,
+        "rootScaleX": 0.6623394948494374,
         "rootScaleY": 0.6623394948497249,
         "handScaleRatios": [
-          0.9199999999994283,
-          0.9306976744180262
+          0.9199999999996007,
+          0.9306976744182006
         ],
         "footScaleRatios": [
-          0.9986813186813188,
-          1.0089770023790645
+          0.9986813186813187,
+          1.0089770023790643
         ],
         "playerAuraVisible": false,
         "handPose": [
           {
             "front": false,
-            "x": 45.75199999999989,
-            "y": -24.291739423550155,
+            "x": 45.74348825024299,
+            "y": -20.092837663388497,
             "rotation": 1.0199999999999996
           },
           {
             "front": true,
-            "x": 19.91199999999999,
-            "y": -8.76533809611401,
+            "x": 20.437472447164392,
+            "y": -4.582875094136176,
             "rotation": -0.7199999999999989
           }
         ],
         "footPose": [
           {
             "front": false,
-            "x": 48.81190476190476,
-            "y": 69.56261904761905,
-            "rotation": 0
+            "x": 48.83709368564939,
+            "y": 69.85195055194717,
+            "rotation": -0.0005037784748935792
           },
           {
             "front": true,
-            "x": -48.39119047619048,
-            "y": 59.36142857142857,
-            "rotation": 0
+            "x": -48.264399239758006,
+            "y": 59.21130808392806,
+            "rotation": -0.0025358247286497715
           }
         ]
       },
@@ -1874,12 +1549,12 @@
       "facing": "left",
       "target": {
         "id": "open-lane:left",
-        "x": 2498,
-        "y": 2419.999899594551,
+        "x": 2402,
+        "y": 2420,
         "distance": 92
       },
-      "attackSeqBefore": 83,
-      "attackSeqAfter": 112,
+      "attackSeqBefore": 55,
+      "attackSeqAfter": 82,
       "steps": [
         0,
         1,
@@ -1904,71 +1579,65 @@
       "swingStyle": "white-centerline-flash",
       "impactStyle": "",
       "intervalsMs": [
-        233.3000000000029,
-        216.6999999999971,
-        233.39999999999418,
-        233.1999999999971
+        166.59999999999854,
+        166.59999999999854,
+        150,
+        166.70000000000437
       ],
       "reachPx": [
-        110.6940429687591,
-        114.51482894304688,
-        120.94014992253659,
-        119.6452643408204,
-        128.26006113519986
+        111.7999999999998,
+        114.52917308577176,
+        117.29287670916324,
+        119.4713980848685,
+        127.97634528812648
       ],
       "travel": {
         "start": {
-          "x": 2590,
-          "y": 2419.999899594551
-        },
-        "end": {
-          "x": 2575,
+          "x": 2494,
           "y": 2420
         },
-        "distancePx": 15.00000000033604,
+        "end": {
+          "x": 2480.10595703125,
+          "y": 2420
+        },
+        "distancePx": 13.89404296875,
         "expectedPx": 26,
         "positionSamples": [
           {
-            "attackSeq": 83,
-            "x": 2590,
-            "y": 2419.999899594551,
-            "timeMs": 90875.7
+            "attackSeq": 55,
+            "x": 2494,
+            "y": 2420,
+            "timeMs": 48284.4
           },
           {
-            "attackSeq": 84,
-            "x": 2588.10595703125,
+            "attackSeq": 56,
+            "x": 2492.10595703125,
             "y": 2420,
-            "timeMs": 90992.3
+            "timeMs": 48451
           },
           {
-            "attackSeq": 84,
-            "x": 2587,
+            "attackSeq": 57,
+            "x": 2488,
             "y": 2420,
-            "timeMs": 91209
+            "timeMs": 48617.6
           },
           {
-            "attackSeq": 85,
-            "x": 2584,
+            "attackSeq": 58,
+            "x": 2486.10595703125,
             "y": 2420,
-            "timeMs": 91442.4
+            "timeMs": 48767.6
           },
           {
-            "attackSeq": 86,
-            "x": 2581,
+            "attackSeq": 59,
+            "x": 2483.10595703125,
             "y": 2420,
-            "timeMs": 91659
+            "timeMs": 48934.3
           },
           {
-            "attackSeq": 87,
-            "x": 2578,
+            "attackSeq": 60,
+            "x": 2480.10595703125,
             "y": 2420,
-            "timeMs": 91892.3
-          },
-          {
-            "attackSeq": 88,
-            "x": 2575,
-            "y": 2420,
-            "timeMs": 92159
+            "timeMs": 49101
           }
         ]
       },
@@ -1978,9 +1647,9 @@
           "kind": "swing",
           "weaponId": "x2-wing-chun-wraps",
           "style": "white-centerline-flash",
-          "x": 2478.200000000007,
-          "y": 2419.9999393620483,
-          "timeMs": 90875.7,
+          "x": 2382.2000000000016,
+          "y": 2419.999982081792,
+          "timeMs": 48284.4,
           "comboStep": 0,
           "motion": "chain-punch",
           "limb": "hand"
@@ -1989,9 +1658,9 @@
           "kind": "swing",
           "weaponId": "x2-wing-chun-wraps",
           "style": "white-centerline-flash",
-          "x": 2472.8659570312516,
-          "y": 2419.999981348921,
-          "timeMs": 91109,
+          "x": 2377.5767839454797,
+          "y": 2419.999981417473,
+          "timeMs": 48451,
           "comboStep": 1,
           "motion": "chain-punch",
           "limb": "hand"
@@ -2000,9 +1669,9 @@
           "kind": "swing",
           "weaponId": "x2-wing-chun-wraps",
           "style": "white-centerline-flash",
-          "x": 2466.4259570312515,
-          "y": 2419.9999807159616,
-          "timeMs": 91325.7,
+          "x": 2370.7071232908384,
+          "y": 2419.9999806554843,
+          "timeMs": 48617.6,
           "comboStep": 2,
           "motion": "chain-punch",
           "limb": "hand"
@@ -2011,9 +1680,9 @@
           "kind": "swing",
           "weaponId": "x2-wing-chun-wraps",
           "style": "white-centerline-flash",
-          "x": 2461.3700131307714,
-          "y": 2419.9999803899877,
-          "timeMs": 91542.3,
+          "x": 2366.634558946383,
+          "y": 2419.999980411731,
+          "timeMs": 48767.6,
           "comboStep": 3,
           "motion": "oblique-kick",
           "limb": "foot"
@@ -2022,97 +1691,9 @@
           "kind": "swing",
           "weaponId": "x2-wing-chun-wraps",
           "style": "white-centerline-flash",
-          "x": 2466.9548262328944,
-          "y": 2419.999981790654,
-          "timeMs": 91792.3,
-          "comboStep": 0,
-          "motion": "chain-punch",
-          "limb": "hand"
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-wing-chun-wraps",
-          "style": "white-centerline-flash",
-          "x": 2460.8659570312516,
-          "y": 2419.9999812660008,
-          "timeMs": 92025.7,
-          "comboStep": 1,
-          "motion": "chain-punch",
-          "limb": "hand"
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-wing-chun-wraps",
-          "style": "white-centerline-flash",
-          "x": 2461.305957031257,
-          "y": 2419.9999400983274,
-          "timeMs": 92275.7,
-          "comboStep": 0,
-          "motion": "chain-punch",
-          "limb": "hand"
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-wing-chun-wraps",
-          "style": "white-centerline-flash",
-          "x": 2454.8659570312575,
-          "y": 2419.999941140041,
-          "timeMs": 92492.4,
-          "comboStep": 1,
-          "motion": "chain-punch",
-          "limb": "hand"
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-wing-chun-wraps",
-          "style": "white-centerline-flash",
-          "x": 2455.305957031257,
-          "y": 2419.999940110203,
-          "timeMs": 92742.3,
-          "comboStep": 0,
-          "motion": "chain-punch",
-          "limb": "hand"
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-wing-chun-wraps",
-          "style": "white-centerline-flash",
-          "x": 2448.4851710569546,
-          "y": 2419.9999812253886,
-          "timeMs": 92975.6,
-          "comboStep": 1,
-          "motion": "chain-punch",
-          "limb": "hand"
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-wing-chun-wraps",
-          "style": "white-centerline-flash",
-          "x": 2442.059850077465,
-          "y": 2419.9999806748433,
-          "timeMs": 93192.3,
-          "comboStep": 2,
-          "motion": "chain-punch",
-          "limb": "hand"
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-wing-chun-wraps",
-          "style": "white-centerline-flash",
-          "x": 2437.354735659181,
-          "y": 2419.999980394525,
-          "timeMs": 93425.7,
-          "comboStep": 3,
-          "motion": "oblique-kick",
-          "limb": "foot"
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-wing-chun-wraps",
-          "style": "white-centerline-flash",
-          "x": 2425.739938864802,
-          "y": 2419.999978991052,
-          "timeMs": 93658.9,
+          "x": 2355.129611743125,
+          "y": 2419.9999789822627,
+          "timeMs": 48934.3,
           "comboStep": 4,
           "motion": "double-palm",
           "limb": "hand"
@@ -2121,9 +1702,9 @@
           "kind": "swing",
           "weaponId": "x2-wing-chun-wraps",
           "style": "white-centerline-flash",
-          "x": 2439.925171056956,
-          "y": 2419.999950077475,
-          "timeMs": 93925.6,
+          "x": 2369.316890996778,
+          "y": 2419.9999817719454,
+          "timeMs": 49101,
           "comboStep": 0,
           "motion": "chain-punch",
           "limb": "hand"
@@ -2132,9 +1713,9 @@
           "kind": "swing",
           "weaponId": "x2-wing-chun-wraps",
           "style": "white-centerline-flash",
-          "x": 2433.8659570312575,
-          "y": 2419.999941307285,
-          "timeMs": 94158.9,
+          "x": 2362.895402544624,
+          "y": 2419.999981211205,
+          "timeMs": 49251,
           "comboStep": 1,
           "motion": "chain-punch",
           "limb": "hand"
@@ -2143,9 +1724,9 @@
           "kind": "swing",
           "weaponId": "x2-wing-chun-wraps",
           "style": "white-centerline-flash",
-          "x": 2427.0451710569546,
-          "y": 2419.9999806655283,
-          "timeMs": 94375.6,
+          "x": 2356.4580629399893,
+          "y": 2419.999980648094,
+          "timeMs": 49417.6,
           "comboStep": 2,
           "motion": "chain-punch",
           "limb": "hand"
@@ -2154,42 +1735,9 @@
           "kind": "swing",
           "weaponId": "x2-wing-chun-wraps",
           "style": "white-centerline-flash",
-          "x": 2431.3059570312516,
-          "y": 2419.999981829964,
-          "timeMs": 94625.6,
-          "comboStep": 0,
-          "motion": "chain-punch",
-          "limb": "hand"
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-wing-chun-wraps",
-          "style": "white-centerline-flash",
-          "x": 2424.4707832760478,
-          "y": 2419.9999812272076,
-          "timeMs": 94858.9,
-          "comboStep": 1,
-          "motion": "chain-punch",
-          "limb": "hand"
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-wing-chun-wraps",
-          "style": "white-centerline-flash",
-          "x": 2418.0747356591824,
-          "y": 2419.999952157083,
-          "timeMs": 95075.6,
-          "comboStep": 2,
-          "motion": "chain-punch",
-          "limb": "hand"
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-wing-chun-wraps",
-          "style": "white-centerline-flash",
-          "x": 2413.7059570312576,
-          "y": 2419.999943006269,
-          "timeMs": 95292.2,
+          "x": 2351.0270283375116,
+          "y": 2419.999980293546,
+          "timeMs": 49584.3,
           "comboStep": 3,
           "motion": "oblique-kick",
           "limb": "foot"
@@ -2198,9 +1746,9 @@
           "kind": "swing",
           "weaponId": "x2-wing-chun-wraps",
           "style": "white-centerline-flash",
-          "x": 2401.7547356591795,
-          "y": 2419.9999707257643,
-          "timeMs": 95525.6,
+          "x": 2339.3270403735733,
+          "y": 2419.9999789093354,
+          "timeMs": 49750.9,
           "comboStep": 4,
           "motion": "double-palm",
           "limb": "hand"
@@ -2209,9 +1757,9 @@
           "kind": "swing",
           "weaponId": "x2-wing-chun-wraps",
           "style": "white-centerline-flash",
-          "x": 2415.9700131307713,
-          "y": 2419.999981793383,
-          "timeMs": 95758.9,
+          "x": 2354.016869249828,
+          "y": 2419.9999818028105,
+          "timeMs": 49917.6,
           "comboStep": 0,
           "motion": "chain-punch",
           "limb": "hand"
@@ -2220,9 +1768,9 @@
           "kind": "swing",
           "weaponId": "x2-wing-chun-wraps",
           "style": "white-centerline-flash",
-          "x": 2409.5455055848906,
-          "y": 2419.9999812327474,
-          "timeMs": 95975.6,
+          "x": 2347.1147288835177,
+          "y": 2419.999981164378,
+          "timeMs": 50084.2,
           "comboStep": 1,
           "motion": "chain-punch",
           "limb": "hand"
@@ -2231,9 +1779,9 @@
           "kind": "swing",
           "weaponId": "x2-wing-chun-wraps",
           "style": "white-centerline-flash",
-          "x": 2403.9421646054984,
-          "y": 2419.999980754029,
-          "timeMs": 96158.9,
+          "x": 2341.122764371886,
+          "y": 2419.999980685292,
+          "timeMs": 50250.9,
           "comboStep": 2,
           "motion": "chain-punch",
           "limb": "hand"
@@ -2242,9 +1790,9 @@
           "kind": "swing",
           "weaponId": "x2-wing-chun-wraps",
           "style": "white-centerline-flash",
-          "x": 2398.417628083573,
-          "y": 2419.9999803688006,
-          "timeMs": 96375.5,
+          "x": 2336.6467615177553,
+          "y": 2419.9999803974056,
+          "timeMs": 50417.6,
           "comboStep": 3,
           "motion": "oblique-kick",
           "limb": "foot"
@@ -2253,9 +1801,9 @@
           "kind": "swing",
           "weaponId": "x2-wing-chun-wraps",
           "style": "white-centerline-flash",
-          "x": 2386.88586765659,
-          "y": 2419.999955893998,
-          "timeMs": 96542.1,
+          "x": 2325.1195223373757,
+          "y": 2419.9999789840526,
+          "timeMs": 50550.9,
           "comboStep": 4,
           "motion": "double-palm",
           "limb": "hand"
@@ -2264,9 +1812,9 @@
           "kind": "swing",
           "weaponId": "x2-wing-chun-wraps",
           "style": "white-centerline-flash",
-          "x": 2401.050962079507,
-          "y": 2419.9999398664713,
-          "timeMs": 96808.9,
+          "x": 2339.369335359149,
+          "y": 2419.9999817726675,
+          "timeMs": 50700.9,
           "comboStep": 0,
           "motion": "chain-punch",
           "limb": "hand"
@@ -2275,9 +1823,53 @@
           "kind": "swing",
           "weaponId": "x2-wing-chun-wraps",
           "style": "white-centerline-flash",
-          "x": 2398.822164605504,
-          "y": 2419.9999397331803,
-          "timeMs": 97158.8,
+          "x": 2331.9555093019267,
+          "y": 2419.9999812210885,
+          "timeMs": 50934.3,
+          "comboStep": 1,
+          "motion": "chain-punch",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "white-centerline-flash",
+          "x": 2325.515652771651,
+          "y": 2419.999980635532,
+          "timeMs": 51100.9,
+          "comboStep": 2,
+          "motion": "chain-punch",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "white-centerline-flash",
+          "x": 2321.491605113975,
+          "y": 2419.9999804184004,
+          "timeMs": 51234.2,
+          "comboStep": 3,
+          "motion": "oblique-kick",
+          "limb": "foot"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "white-centerline-flash",
+          "x": 2310.1885677378045,
+          "y": 2419.999978988676,
+          "timeMs": 51367.6,
+          "comboStep": 4,
+          "motion": "double-palm",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "white-centerline-flash",
+          "x": 2324.4377852504467,
+          "y": 2419.999981766563,
+          "timeMs": 51534.2,
           "comboStep": 0,
           "motion": "chain-punch",
           "limb": "hand"
@@ -2286,19 +1878,70 @@
           "kind": "swing",
           "weaponId": "x2-wing-chun-wraps",
           "style": "white-centerline-flash",
-          "x": 2394.9855998512166,
-          "y": 2419.999981834622,
-          "timeMs": 97492.1,
+          "x": 2320.395652771651,
+          "y": 2419.999981769989,
+          "timeMs": 51784.2,
+          "comboStep": 0,
+          "motion": "chain-punch",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "white-centerline-flash",
+          "x": 2314.620829606321,
+          "y": 2419.9999812583287,
+          "timeMs": 51950.9,
+          "comboStep": 1,
+          "motion": "chain-punch",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "white-centerline-flash",
+          "x": 2308.4096798254523,
+          "y": 2419.9999806696414,
+          "timeMs": 52117.5,
+          "comboStep": 2,
+          "motion": "chain-punch",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "white-centerline-flash",
+          "x": 2302.9865464481218,
+          "y": 2419.999980303251,
+          "timeMs": 52284.2,
+          "comboStep": 3,
+          "motion": "oblique-kick",
+          "limb": "foot"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "white-centerline-flash",
+          "x": 2291.2406124793865,
+          "y": 2419.9999789102294,
+          "timeMs": 52467.5,
+          "comboStep": 4,
+          "motion": "double-palm",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "white-centerline-flash",
+          "x": 2306.002680760022,
+          "y": 2419.999981814054,
+          "timeMs": 52617.6,
           "comboStep": 0,
           "motion": "chain-punch",
           "limb": "hand"
         }
       ],
       "auraSamples": [
-        false,
-        false,
-        false,
-        false,
         false,
         false,
         false,
@@ -2393,43 +2036,43 @@
           "x2-wing-chun-wraps:part-2:__BASE"
         ],
         "facing": -1,
-        "rootScaleX": -0.6623394948497137,
+        "rootScaleX": -0.6623394948494647,
         "rootScaleY": 0.6623394948497249,
         "handScaleRatios": [
-          0.9199999999999843,
-          0.9306976744185887
+          0.9199999999996386,
+          0.930697674418239
         ],
         "footScaleRatios": [
           0.9986813186813188,
-          1.0089770023790643
+          1.0089770023790645
         ],
         "playerAuraVisible": false,
         "handPose": [
           {
             "front": false,
-            "x": 45.75199999999946,
-            "y": -20.534337616926685,
+            "x": 45.74535494823929,
+            "y": -20.300909202747505,
             "rotation": 1.0199999999999996
           },
           {
             "front": true,
-            "x": 19.911999999999942,
-            "y": -5.3548737079414614,
+            "x": 19.460063644009832,
+            "y": -4.903712305086505,
             "rotation": -0.7199999999999989
           }
         ],
         "footPose": [
           {
             "front": false,
-            "x": 48.81190476190476,
+            "x": 48.68472475687671,
             "y": 69.56261904761905,
-            "rotation": 0
+            "rotation": 0.002543600100560539
           },
           {
             "front": true,
-            "x": -48.39119047619048,
-            "y": 59.36142857142857,
-            "rotation": 0
+            "x": -48.402271872747306,
+            "y": 59.30442105732493,
+            "rotation": 0.0002216279311362257
           }
         ]
       },
@@ -2442,12 +2085,527 @@
       "facing": "right",
       "target": {
         "id": "open-lane:right",
-        "x": 2595,
+        "x": 2505,
         "y": 2420,
         "distance": 92
       },
-      "attackSeqBefore": 112,
-      "attackSeqAfter": 134,
+      "attackSeqBefore": 82,
+      "attackSeqAfter": 97,
+      "steps": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "motions": [
+        "sway-jab",
+        "weave-cross",
+        "weave-backfist",
+        "sweeping-leg",
+        "backflip-head-kick"
+      ],
+      "limbs": [
+        "hand",
+        "hand",
+        "hand",
+        "foot",
+        "foot"
+      ],
+      "swingStyle": "mist-purple-sway-sweep",
+      "impactStyle": "",
+      "intervalsMs": [
+        350,
+        333.3000000000029,
+        300,
+        333.3999999999942
+      ],
+      "reachPx": [
+        113.27999999999984,
+        116.75919525751289,
+        119.62760511917467,
+        133.1434127978959,
+        142.92640733416567
+      ],
+      "travel": {
+        "start": {
+          "x": 2413,
+          "y": 2420
+        },
+        "end": {
+          "x": 2428.542724609375,
+          "y": 2454.760498046875
+        },
+        "distancePx": 38.077138977996654,
+        "expectedPx": 50.36603774659812,
+        "positionSamples": [
+          {
+            "attackSeq": 82,
+            "x": 2413,
+            "y": 2420,
+            "timeMs": 60133.8
+          },
+          {
+            "attackSeq": 83,
+            "x": 2416,
+            "y": 2427,
+            "timeMs": 60300.6
+          },
+          {
+            "attackSeq": 83,
+            "x": 2416,
+            "y": 2427,
+            "timeMs": 60483.9
+          },
+          {
+            "attackSeq": 84,
+            "x": 2419.158935546875,
+            "y": 2433.9296875,
+            "timeMs": 60650.5
+          },
+          {
+            "attackSeq": 84,
+            "x": 2419.158935546875,
+            "y": 2433.9296875,
+            "timeMs": 60800.5
+          },
+          {
+            "attackSeq": 85,
+            "x": 2420.85888671875,
+            "y": 2437.667724609375,
+            "timeMs": 60967.2
+          },
+          {
+            "attackSeq": 85,
+            "x": 2422.311893165071,
+            "y": 2440.862060546875,
+            "timeMs": 61117.1
+          },
+          {
+            "attackSeq": 86,
+            "x": 2422.435791015625,
+            "y": 2441.1337890625,
+            "timeMs": 61283.8
+          },
+          {
+            "attackSeq": 86,
+            "x": 2425.473529151263,
+            "y": 2447.79052734375,
+            "timeMs": 61450.4
+          },
+          {
+            "attackSeq": 86,
+            "x": 2425.473529151263,
+            "y": 2447.79052734375,
+            "timeMs": 61633.8
+          },
+          {
+            "attackSeq": 86,
+            "x": 2425.473529151263,
+            "y": 2447.79052734375,
+            "timeMs": 61800.5
+          },
+          {
+            "attackSeq": 87,
+            "x": 2427.12841796875,
+            "y": 2451.548828125,
+            "timeMs": 61967.1
+          },
+          {
+            "attackSeq": 87,
+            "x": 2428.542724609375,
+            "y": 2454.760498046875,
+            "timeMs": 62133.8
+          }
+        ]
+      },
+      "contacts": [],
+      "vfx": [
+        {
+          "kind": "swing",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "mist-purple-sway-sweep",
+          "x": 2526.2799999999984,
+          "y": 2419.9999818445835,
+          "timeMs": 60050.5,
+          "comboStep": 0,
+          "motion": "sway-jab",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "mist-purple-sway-sweep",
+          "x": 2532.713734490595,
+          "y": 2423.742108282814,
+          "timeMs": 60400.5,
+          "comboStep": 1,
+          "motion": "weave-cross",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "mist-purple-sway-sweep",
+          "x": 2538.735276740432,
+          "y": 2430.427897484697,
+          "timeMs": 60733.8,
+          "comboStep": 2,
+          "motion": "weave-backfist",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "mist-purple-sway-sweep",
+          "x": 2553.993188438141,
+          "y": 2436.110137641939,
+          "timeMs": 61033.8,
+          "comboStep": 3,
+          "motion": "sweeping-leg",
+          "limb": "foot"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "mist-purple-sway-sweep",
+          "x": 2568.2622699754625,
+          "y": 2441.5188922067678,
+          "timeMs": 61367.2,
+          "comboStep": 4,
+          "motion": "backflip-head-kick",
+          "limb": "foot"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "mist-purple-sway-sweep",
+          "x": 2569.471574049194,
+          "y": 2447.0401503895055,
+          "timeMs": 61717.2,
+          "comboStep": 4,
+          "motion": "backflip-head-kick",
+          "limb": "foot"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "mist-purple-sway-sweep",
+          "x": 2541.0867386467567,
+          "y": 2450.701730046301,
+          "timeMs": 62050.5,
+          "comboStep": 0,
+          "motion": "sway-jab",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "mist-purple-sway-sweep",
+          "x": 2548.38026335439,
+          "y": 2458.0940104926926,
+          "timeMs": 62400.4,
+          "comboStep": 1,
+          "motion": "weave-cross",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "mist-purple-sway-sweep",
+          "x": 2554.1242298363795,
+          "y": 2464.1981466437383,
+          "timeMs": 62733.8,
+          "comboStep": 2,
+          "motion": "weave-backfist",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "mist-purple-sway-sweep",
+          "x": 2554.8972536599294,
+          "y": 2468.1942080777226,
+          "timeMs": 63033.7,
+          "comboStep": 2,
+          "motion": "weave-backfist",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "mist-purple-sway-sweep",
+          "x": 2550.4166400768827,
+          "y": 2471.390331851222,
+          "timeMs": 63350.4,
+          "comboStep": 0,
+          "motion": "sway-jab",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "mist-purple-sway-sweep",
+          "x": 2557.389738244099,
+          "y": 2477.8425527435647,
+          "timeMs": 63700.4,
+          "comboStep": 1,
+          "motion": "weave-cross",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "mist-purple-sway-sweep",
+          "x": 2563.427279636074,
+          "y": 2484.717763836222,
+          "timeMs": 64000.3,
+          "comboStep": 2,
+          "motion": "weave-backfist",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "mist-purple-sway-sweep",
+          "x": 2564.2648889699694,
+          "y": 2488.9861923411304,
+          "timeMs": 64350.4,
+          "comboStep": 2,
+          "motion": "weave-backfist",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "mist-purple-sway-sweep",
+          "x": 2560.4086315899194,
+          "y": 2494.3609013800624,
+          "timeMs": 64650.4,
+          "comboStep": 0,
+          "motion": "sway-jab",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "mist-purple-sway-sweep",
+          "x": 2567.053104826097,
+          "y": 2499.6710857626404,
+          "timeMs": 64917,
+          "comboStep": 1,
+          "motion": "weave-cross",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "mist-purple-sway-sweep",
+          "x": 2567.580931768578,
+          "y": 2503.112806656873,
+          "timeMs": 65333.7,
+          "comboStep": 1,
+          "motion": "weave-cross",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "mist-purple-sway-sweep",
+          "x": 2565.999918161695,
+          "y": 2506.2073958243377,
+          "timeMs": 65667,
+          "comboStep": 0,
+          "motion": "sway-jab",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "mist-purple-sway-sweep",
+          "x": 2572.9246797366445,
+          "y": 2512.7739555636126,
+          "timeMs": 66000.3,
+          "comboStep": 1,
+          "motion": "weave-cross",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "mist-purple-sway-sweep",
+          "x": 2578.936416054425,
+          "y": 2519.539097032464,
+          "timeMs": 66333.6,
+          "comboStep": 2,
+          "motion": "weave-backfist",
+          "limb": "hand"
+        }
+      ],
+      "auraSamples": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "expectedReachPx": [
+        113.28,
+        117.12,
+        120,
+        132.48,
+        144
+      ],
+      "rig": {
+        "handOverlayCount": 2,
+        "footOverlayCount": 2,
+        "handPartIndices": [
+          0,
+          0
+        ],
+        "footPartIndices": [
+          1,
+          1
+        ],
+        "baseHandsVisible": [
+          false,
+          false
+        ],
+        "baseFeetVisible": [
+          false,
+          false
+        ],
+        "handOverlayVisible": [
+          true,
+          true
+        ],
+        "footOverlayVisible": [
+          true,
+          true
+        ],
+        "handFrames": [
+          "x2-drunken-fist-wraps:part-1:__BASE",
+          "x2-drunken-fist-wraps:part-1:__BASE"
+        ],
+        "footFrames": [
+          "x2-drunken-fist-wraps:part-2:__BASE",
+          "x2-drunken-fist-wraps:part-2:__BASE"
+        ],
+        "facing": 1,
+        "rootScaleX": 0.6623394948491798,
+        "rootScaleY": 0.6623394948497249,
+        "handScaleRatios": [
+          1.1466666666666665,
+          1.173488372093023
+        ],
+        "footScaleRatios": [
+          1.0386285714285715,
+          1.049336082474227
+        ],
+        "playerAuraVisible": false,
+        "handPose": [
+          {
+            "front": false,
+            "x": 45.06300465186271,
+            "y": -15.682986414223688,
+            "rotation": 0.5800000000000001
+          },
+          {
+            "front": true,
+            "x": 22.69952464252623,
+            "y": -9.413183886414224,
+            "rotation": -0.4800000000000004
+          }
+        ],
+        "footPose": [
+          {
+            "front": false,
+            "x": 53.82640482579327,
+            "y": 28.660533457728356,
+            "rotation": -0.0014900012777694371
+          },
+          {
+            "front": true,
+            "x": -48.67694886938964,
+            "y": 66.00865061978848,
+            "rotation": -0.0018848321360174225
+          }
+        ]
+      },
+      "handScreenshot": "docs/owner-notes-audit-v11-evidence/b23-kungfu-v2/x2-drunken-fist-wraps-right-hand.png",
+      "footScreenshot": "docs/owner-notes-audit-v11-evidence/b23-kungfu-v2/x2-drunken-fist-wraps-right-foot.png",
+      "stanceScreenshot": "docs/owner-notes-audit-v11-evidence/b23-kungfu-v2/x2-drunken-fist-wraps-right-stance.png",
+      "showcaseScreenshot": "docs/owner-notes-audit-v11-evidence/b23-kungfu-v2/x2-drunken-fist-wraps-right-backflip-head-kick.png"
+    },
+    {
+      "weaponId": "x2-drunken-fist-wraps",
+      "facing": "left",
+      "target": {
+        "id": "open-lane:left",
+        "x": 2367.743408203125,
+        "y": 2524.230712890625,
+        "distance": 92
+      },
+      "attackSeqBefore": 97,
+      "attackSeqAfter": 114,
       "steps": [
         0,
         1,
@@ -2472,396 +2630,360 @@
       "swingStyle": "mist-purple-sway-sweep",
       "impactStyle": "misty-purple-wide-sweep",
       "intervalsMs": [
-        383.29999999998836,
-        416.70000000001164,
-        399.8999999999942,
-        283.3999999999942
+        383.3000000000029,
+        350,
+        316.59999999999127,
+        333.40000000000873
       ],
       "reachPx": [
-        113.06070831525017,
-        116.83947399610192,
-        119.72479408970977,
-        132.20508772869206,
-        144.48328163881237
+        112.80527026483361,
+        116.62384455029466,
+        119.62910895286802,
+        131.98661953107398,
+        143.4880690208981
       ],
       "travel": {
         "start": {
-          "x": 2503,
-          "y": 2420
+          "x": 2459.743408203125,
+          "y": 2524.230712890625
         },
         "end": {
-          "x": 2518.368772211292,
-          "y": 2454.837646484375
+          "x": 2444.086181640625,
+          "y": 2489.521484375
         },
-        "distancePx": 38.07703733029739,
+        "distancePx": 38.077280467219964,
         "expectedPx": 50.36603774659812,
         "positionSamples": [
           {
-            "attackSeq": 112,
-            "x": 2503,
-            "y": 2420,
-            "timeMs": 109058.3
+            "attackSeq": 97,
+            "x": 2459.743408203125,
+            "y": 2524.230712890625,
+            "timeMs": 73316.6
           },
           {
-            "attackSeq": 113,
-            "x": 2506,
-            "y": 2427,
-            "timeMs": 109275
+            "attackSeq": 98,
+            "x": 2458.125732421875,
+            "y": 2520.456298828125,
+            "timeMs": 73450
           },
           {
-            "attackSeq": 113,
-            "x": 2506,
-            "y": 2427,
-            "timeMs": 109541.6
+            "attackSeq": 98,
+            "x": 2456.743408203125,
+            "y": 2517.230612187199,
+            "timeMs": 73600
           },
           {
-            "attackSeq": 114,
-            "x": 2509.1044921875,
-            "y": 2433.9541015625,
-            "timeMs": 109808.3
+            "attackSeq": 98,
+            "x": 2456.743408203125,
+            "y": 2517.230612187199,
+            "timeMs": 73733.4
           },
           {
-            "attackSeq": 115,
-            "x": 2512.140869140625,
-            "y": 2440.9384765625,
-            "timeMs": 110008.3
+            "attackSeq": 99,
+            "x": 2453.596923828125,
+            "y": 2510.295166015625,
+            "timeMs": 73900
           },
           {
-            "attackSeq": 115,
-            "x": 2512.140869140625,
-            "y": 2440.9384765625,
-            "timeMs": 110191.6
+            "attackSeq": 99,
+            "x": 2453.596923828125,
+            "y": 2510.295166015625,
+            "timeMs": 74033.3
           },
           {
-            "attackSeq": 115,
-            "x": 2512.140869140625,
-            "y": 2440.9384765625,
-            "timeMs": 110391.6
+            "attackSeq": 100,
+            "x": 2451.888427734375,
+            "y": 2506.56103515625,
+            "timeMs": 74166.7
           },
           {
-            "attackSeq": 116,
-            "x": 2515.1806640625,
-            "y": 2447.9212613933287,
-            "timeMs": 110591.6
+            "attackSeq": 100,
+            "x": 2450.42822265625,
+            "y": 2503.369873046875,
+            "timeMs": 74333.3
           },
           {
-            "attackSeq": 117,
-            "x": 2515.3056640625,
-            "y": 2448.1923828125,
-            "timeMs": 110791.6
+            "attackSeq": 101,
+            "x": 2450.3036035312625,
+            "y": 2503.0986328125,
+            "timeMs": 74483.3
           },
           {
-            "attackSeq": 117,
-            "x": 2518.368772211292,
-            "y": 2454.837646484375,
-            "timeMs": 110974.9
+            "attackSeq": 101,
+            "x": 2447.25,
+            "y": 2496.448974609375,
+            "timeMs": 74649.9
+          },
+          {
+            "attackSeq": 101,
+            "x": 2447.25,
+            "y": 2496.448974609375,
+            "timeMs": 74766.6
+          },
+          {
+            "attackSeq": 102,
+            "x": 2444.086181640625,
+            "y": 2489.521484375,
+            "timeMs": 74899.9
+          },
+          {
+            "attackSeq": 102,
+            "x": 2444.086181640625,
+            "y": 2489.521484375,
+            "timeMs": 75066.6
           }
         ]
       },
       "contacts": [
         {
           "layer": "full",
-          "targetId": "dummy2",
-          "sourcePlayerId": "yFAri6IGM",
+          "targetId": "dummy1",
+          "sourcePlayerId": "3ZOUAmSpZ",
           "selfHit": true,
           "matchedPrediction": false,
           "weaponId": "x2-drunken-fist-wraps",
           "delivery": 1,
           "element": "arcane",
-          "dirX": 0.5786078572273254,
-          "dirY": 0.815605878829956,
-          "damage": 3.315000057220459,
+          "dirX": -0.7938233613967896,
+          "dirY": 0.6081483960151672,
+          "damage": 6,
+          "crit": false,
+          "finalBlow": false,
+          "tick": 1431,
+          "x": 0,
+          "y": 0
+        },
+        {
+          "layer": "upgrade",
+          "targetId": "dummy1",
+          "sourcePlayerId": "3ZOUAmSpZ",
+          "selfHit": true,
+          "matchedPrediction": true,
+          "weaponId": "x2-drunken-fist-wraps",
+          "delivery": 1,
+          "element": "arcane",
+          "dirX": -0.7322839498519897,
+          "dirY": 0.6809994578361511,
+          "damage": 12,
           "crit": true,
           "finalBlow": false,
-          "tick": 1915,
+          "tick": 1438,
           "x": 0,
           "y": 0
         },
         {
           "layer": "full",
-          "targetId": "dummy2",
-          "sourcePlayerId": "yFAri6IGM",
+          "targetId": "dummy1",
+          "sourcePlayerId": "3ZOUAmSpZ",
           "selfHit": true,
           "matchedPrediction": false,
           "weaponId": "x2-drunken-fist-wraps",
           "delivery": 1,
           "element": "arcane",
-          "dirX": 0.587144672870636,
-          "dirY": 0.8094820380210876,
-          "damage": 1.6575000286102295,
+          "dirX": -0.6680178642272949,
+          "dirY": 0.7441452145576477,
+          "damage": 6,
           "crit": false,
           "finalBlow": false,
-          "tick": 1923,
+          "tick": 1445,
           "x": 0,
           "y": 0
         },
         {
           "layer": "full",
-          "targetId": "dummy2",
-          "sourcePlayerId": "yFAri6IGM",
+          "targetId": "dummy1",
+          "sourcePlayerId": "3ZOUAmSpZ",
           "selfHit": true,
           "matchedPrediction": false,
           "weaponId": "x2-drunken-fist-wraps",
           "delivery": 1,
           "element": "arcane",
-          "dirX": 0.5966137051582336,
-          "dirY": 0.8025285601615906,
-          "damage": 1.6575000286102295,
+          "dirX": -0.603484034538269,
+          "dirY": 0.7973750829696655,
+          "damage": 6,
           "crit": false,
           "finalBlow": false,
-          "tick": 1931,
+          "tick": 1452,
           "x": 0,
           "y": 0
         },
         {
           "layer": "full",
-          "targetId": "dummy2",
-          "sourcePlayerId": "yFAri6IGM",
+          "targetId": "dummy1",
+          "sourcePlayerId": "3ZOUAmSpZ",
           "selfHit": true,
           "matchedPrediction": false,
           "weaponId": "x2-drunken-fist-wraps",
           "delivery": 1,
           "element": "arcane",
-          "dirX": 0.6071677803993225,
-          "dirY": 0.7945736646652222,
-          "damage": 1.6575000286102295,
+          "dirX": -0.5404918193817139,
+          "dirY": 0.8413492441177368,
+          "damage": 6,
           "crit": false,
           "finalBlow": false,
-          "tick": 1938,
+          "tick": 1459,
           "x": 0,
           "y": 0
         },
         {
           "layer": "full",
-          "targetId": "dummy2",
-          "sourcePlayerId": "yFAri6IGM",
+          "targetId": "dummy1",
+          "sourcePlayerId": "3ZOUAmSpZ",
           "selfHit": true,
           "matchedPrediction": false,
           "weaponId": "x2-drunken-fist-wraps",
           "delivery": 1,
           "element": "arcane",
-          "dirX": 0.6197667717933655,
-          "dirY": 0.7847860455513,
-          "damage": 1.6575000286102295,
+          "dirX": -0.480437695980072,
+          "dirY": 0.8770288825035095,
+          "damage": 6,
           "crit": false,
           "finalBlow": false,
-          "tick": 1945,
+          "tick": 1466,
           "x": 0,
           "y": 0
         },
         {
           "layer": "full",
-          "targetId": "dummy2",
-          "sourcePlayerId": "yFAri6IGM",
+          "targetId": "dummy1",
+          "sourcePlayerId": "3ZOUAmSpZ",
           "selfHit": true,
           "matchedPrediction": false,
           "weaponId": "x2-drunken-fist-wraps",
           "delivery": 1,
           "element": "arcane",
-          "dirX": 0.6338524222373962,
-          "dirY": 0.7734540104866028,
-          "damage": 1.6575000286102295,
+          "dirX": -0.4240450859069824,
+          "dirY": 0.9056410789489746,
+          "damage": 6,
           "crit": false,
           "finalBlow": false,
-          "tick": 1953,
+          "tick": 1473,
           "x": 0,
           "y": 0
         },
         {
           "layer": "full",
-          "targetId": "dummy2",
-          "sourcePlayerId": "yFAri6IGM",
+          "targetId": "dummy1",
+          "sourcePlayerId": "3ZOUAmSpZ",
           "selfHit": true,
           "matchedPrediction": false,
           "weaponId": "x2-drunken-fist-wraps",
           "delivery": 1,
           "element": "arcane",
-          "dirX": 0.6488502621650696,
-          "dirY": 0.7609161138534546,
-          "damage": 1.6575000286102295,
+          "dirX": -0.37156713008880615,
+          "dirY": 0.9284060597419739,
+          "damage": 6,
           "crit": false,
           "finalBlow": false,
-          "tick": 1961,
+          "tick": 1480,
           "x": 0,
           "y": 0
         },
         {
           "layer": "full",
-          "targetId": "dummy2",
-          "sourcePlayerId": "yFAri6IGM",
+          "targetId": "dummy1",
+          "sourcePlayerId": "3ZOUAmSpZ",
           "selfHit": true,
           "matchedPrediction": false,
           "weaponId": "x2-drunken-fist-wraps",
           "delivery": 1,
           "element": "arcane",
-          "dirX": 0.6662707328796387,
-          "dirY": 0.7457099556922913,
-          "damage": 1.6575000286102295,
+          "dirX": -0.32318347692489624,
+          "dirY": 0.9463363289833069,
+          "damage": 6,
           "crit": false,
           "finalBlow": false,
-          "tick": 1969,
+          "tick": 1487,
           "x": 0,
           "y": 0
         },
         {
           "layer": "full",
-          "targetId": "dummy2",
-          "sourcePlayerId": "yFAri6IGM",
+          "targetId": "dummy1",
+          "sourcePlayerId": "3ZOUAmSpZ",
           "selfHit": true,
           "matchedPrediction": false,
           "weaponId": "x2-drunken-fist-wraps",
           "delivery": 1,
           "element": "arcane",
-          "dirX": 0.6875545382499695,
-          "dirY": 0.7261327505111694,
-          "damage": 1.6575000286102295,
+          "dirX": -0.27879661321640015,
+          "dirY": 0.9603501558303833,
+          "damage": 6,
           "crit": false,
           "finalBlow": false,
-          "tick": 1976,
-          "x": 0,
-          "y": 0
-        },
-        {
-          "layer": "upgrade",
-          "targetId": "dummy2",
-          "sourcePlayerId": "yFAri6IGM",
-          "selfHit": true,
-          "matchedPrediction": true,
-          "weaponId": "x2-drunken-fist-wraps",
-          "delivery": 1,
-          "element": "arcane",
-          "dirX": 0.7109204530715942,
-          "dirY": 0.7032724618911743,
-          "damage": 1.6575000286102295,
-          "crit": false,
-          "finalBlow": false,
-          "tick": 1985,
-          "x": 0,
-          "y": 0
-        },
-        {
-          "layer": "upgrade",
-          "targetId": "dummy2",
-          "sourcePlayerId": "yFAri6IGM",
-          "selfHit": true,
-          "matchedPrediction": true,
-          "weaponId": "x2-drunken-fist-wraps",
-          "delivery": 1,
-          "element": "arcane",
-          "dirX": 0.7382194995880127,
-          "dirY": 0.6745606064796448,
-          "damage": 1.6575000286102295,
-          "crit": false,
-          "finalBlow": false,
-          "tick": 1992,
+          "tick": 1498,
           "x": 0,
           "y": 0
         },
         {
           "layer": "full",
-          "targetId": "dummy2",
-          "sourcePlayerId": "yFAri6IGM",
+          "targetId": "dummy1",
+          "sourcePlayerId": "3ZOUAmSpZ",
           "selfHit": true,
           "matchedPrediction": false,
           "weaponId": "x2-drunken-fist-wraps",
           "delivery": 1,
           "element": "arcane",
-          "dirX": 0.7712116241455078,
-          "dirY": 0.6365788578987122,
-          "damage": 3.315000057220459,
-          "crit": true,
+          "dirX": -0.2389293611049652,
+          "dirY": 0.971036970615387,
+          "damage": 6,
+          "crit": false,
           "finalBlow": false,
-          "tick": 1999,
+          "tick": 1505,
           "x": 0,
           "y": 0
         },
         {
           "layer": "full",
-          "targetId": "dummy2",
-          "sourcePlayerId": "yFAri6IGM",
+          "targetId": "dummy1",
+          "sourcePlayerId": "3ZOUAmSpZ",
           "selfHit": true,
           "matchedPrediction": false,
           "weaponId": "x2-drunken-fist-wraps",
           "delivery": 1,
           "element": "arcane",
-          "dirX": 0.8096194267272949,
-          "dirY": 0.586955189704895,
-          "damage": 1.6575000286102295,
+          "dirX": -0.20192952454090118,
+          "dirY": 0.9794000387191772,
+          "damage": 6,
           "crit": false,
           "finalBlow": false,
-          "tick": 2007,
+          "tick": 1512,
           "x": 0,
           "y": 0
         },
         {
           "layer": "full",
-          "targetId": "dummy2",
-          "sourcePlayerId": "yFAri6IGM",
+          "targetId": "dummy1",
+          "sourcePlayerId": "3ZOUAmSpZ",
           "selfHit": true,
           "matchedPrediction": false,
           "weaponId": "x2-drunken-fist-wraps",
           "delivery": 1,
           "element": "arcane",
-          "dirX": 0.8519525527954102,
-          "dirY": 0.5236189365386963,
-          "damage": 1.6575000286102295,
+          "dirX": -0.16795489192008972,
+          "dirY": 0.9857946634292603,
+          "damage": 6,
           "crit": false,
           "finalBlow": false,
-          "tick": 2014,
+          "tick": 1519,
           "x": 0,
           "y": 0
         },
         {
           "layer": "full",
-          "targetId": "dummy2",
-          "sourcePlayerId": "yFAri6IGM",
+          "targetId": "dummy1",
+          "sourcePlayerId": "3ZOUAmSpZ",
           "selfHit": true,
           "matchedPrediction": false,
           "weaponId": "x2-drunken-fist-wraps",
           "delivery": 1,
           "element": "arcane",
-          "dirX": 0.8934115767478943,
-          "dirY": 0.4492391347885132,
-          "damage": 1.6575000286102295,
+          "dirX": -0.1370784193277359,
+          "dirY": 0.9905601739883423,
+          "damage": 6,
           "crit": false,
           "finalBlow": false,
-          "tick": 2022,
-          "x": 0,
-          "y": 0
-        },
-        {
-          "layer": "upgrade",
-          "targetId": "dummy2",
-          "sourcePlayerId": "yFAri6IGM",
-          "selfHit": true,
-          "matchedPrediction": true,
-          "weaponId": "x2-drunken-fist-wraps",
-          "delivery": 1,
-          "element": "arcane",
-          "dirX": 0.9320799112319946,
-          "dirY": 0.362252801656723,
-          "damage": 3.315000057220459,
-          "crit": true,
-          "finalBlow": false,
-          "tick": 2031,
-          "x": 0,
-          "y": 0
-        },
-        {
-          "layer": "upgrade",
-          "targetId": "dummy2",
-          "sourcePlayerId": "yFAri6IGM",
-          "selfHit": true,
-          "matchedPrediction": true,
-          "weaponId": "x2-drunken-fist-wraps",
-          "delivery": 1,
-          "element": "arcane",
-          "dirX": 0.9650341868400574,
-          "dirY": 0.2621240019798279,
-          "damage": 1.6575000286102295,
-          "crit": false,
-          "finalBlow": false,
-          "tick": 2038,
+          "tick": 1526,
           "x": 0,
           "y": 0
         }
@@ -2871,94 +2993,9 @@
           "kind": "swing",
           "weaponId": "x2-drunken-fist-wraps",
           "style": "mist-purple-sway-sweep",
-          "x": 2616.2799999999984,
-          "y": 2419.999981844596,
-          "timeMs": 108891.7,
-          "comboStep": 0,
-          "motion": "sway-jab",
-          "limb": "hand"
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-drunken-fist-wraps",
-          "style": "mist-purple-sway-sweep",
-          "x": 2622.6905986158586,
-          "y": 2423.451004657719,
-          "timeMs": 109275,
-          "comboStep": 1,
-          "motion": "weave-cross",
-          "limb": "hand"
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-drunken-fist-wraps",
-          "style": "mist-purple-sway-sweep",
-          "x": 2621.691480566935,
-          "y": 2429.0377839392854,
-          "timeMs": 109725,
-          "comboStep": 0,
-          "motion": "sway-jab",
-          "limb": "hand"
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-drunken-fist-wraps",
-          "style": "mist-purple-sway-sweep",
-          "x": 2628.817600604171,
-          "y": 2437.131199291866,
-          "timeMs": 110008.3,
-          "comboStep": 1,
-          "motion": "weave-cross",
-          "limb": "hand"
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-drunken-fist-wraps",
-          "style": "mist-purple-sway-sweep",
-          "x": 2629.260536331708,
-          "y": 2440.6592686651074,
-          "timeMs": 110291.6,
-          "comboStep": 1,
-          "motion": "weave-cross",
-          "limb": "hand"
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-drunken-fist-wraps",
-          "style": "mist-purple-sway-sweep",
-          "x": 2628.210966430802,
-          "y": 2445.299332470504,
-          "timeMs": 110591.6,
-          "comboStep": 0,
-          "motion": "sway-jab",
-          "limb": "hand"
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-drunken-fist-wraps",
-          "style": "mist-purple-sway-sweep",
-          "x": 2635.1703716257225,
-          "y": 2451.862909871389,
-          "timeMs": 110974.9,
-          "comboStep": 1,
-          "motion": "weave-cross",
-          "limb": "hand"
-        },
-        {
-          "kind": "impact",
-          "weaponId": "x2-drunken-fist-wraps",
-          "style": "misty-purple-wide-sweep",
-          "x": 2600,
-          "y": 2570,
-          "timeMs": 111174.9
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-drunken-fist-wraps",
-          "style": "mist-purple-sway-sweep",
-          "x": 2641.2448030947166,
-          "y": 2458.772804577991,
-          "timeMs": 111391.6,
+          "x": 2339.7434082031473,
+          "y": 2524.230639932701,
+          "timeMs": 73316.6,
           "comboStep": 2,
           "motion": "weave-backfist",
           "limb": "hand"
@@ -2967,17 +3004,74 @@
           "kind": "impact",
           "weaponId": "x2-drunken-fist-wraps",
           "style": "misty-purple-wide-sweep",
-          "x": 2600,
+          "x": 2400,
           "y": 2570,
-          "timeMs": 111591.5
+          "timeMs": 73450
         },
         {
           "kind": "swing",
           "weaponId": "x2-drunken-fist-wraps",
           "style": "mist-purple-sway-sweep",
-          "x": 2656.9088895819996,
-          "y": 2465.3358423100212,
-          "timeMs": 111791.5,
+          "x": 2343.9943554037204,
+          "y": 2520.791523918656,
+          "timeMs": 73600,
+          "comboStep": 0,
+          "motion": "sway-jab",
+          "limb": "hand"
+        },
+        {
+          "kind": "impact",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "misty-purple-wide-sweep",
+          "x": 2400,
+          "y": 2570,
+          "timeMs": 73816.7
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "mist-purple-sway-sweep",
+          "x": 2337.0419373821373,
+          "y": 2514.3021913795237,
+          "timeMs": 73983.3,
+          "comboStep": 1,
+          "motion": "weave-cross",
+          "limb": "hand"
+        },
+        {
+          "kind": "impact",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "misty-purple-wide-sweep",
+          "x": 2399.9393466596393,
+          "y": 2570.05640556769,
+          "timeMs": 74100
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "mist-purple-sway-sweep",
+          "x": 2330.8461284913815,
+          "y": 2506.7234478561923,
+          "timeMs": 74333.3,
+          "comboStep": 2,
+          "motion": "weave-backfist",
+          "limb": "hand"
+        },
+        {
+          "kind": "impact",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "misty-purple-wide-sweep",
+          "x": 2400,
+          "y": 2570,
+          "timeMs": 74483.3
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "mist-purple-sway-sweep",
+          "x": 2315.332071564595,
+          "y": 2500.706660900291,
+          "timeMs": 74649.9,
           "comboStep": 3,
           "motion": "sweeping-leg",
           "limb": "foot"
@@ -2986,17 +3080,17 @@
           "kind": "impact",
           "weaponId": "x2-drunken-fist-wraps",
           "style": "misty-purple-wide-sweep",
-          "x": 2600,
+          "x": 2400,
           "y": 2570,
-          "timeMs": 111991.6
+          "timeMs": 74849.9
         },
         {
           "kind": "swing",
           "weaponId": "x2-drunken-fist-wraps",
           "style": "mist-purple-sway-sweep",
-          "x": 2670.922074981139,
-          "y": 2469.4919634190146,
-          "timeMs": 112074.9,
+          "x": 2300.6683767715613,
+          "y": 2494.011383915656,
+          "timeMs": 74983.3,
           "comboStep": 4,
           "motion": "backflip-head-kick",
           "limb": "foot"
@@ -3005,17 +3099,17 @@
           "kind": "impact",
           "weaponId": "x2-drunken-fist-wraps",
           "style": "misty-purple-wide-sweep",
-          "x": 2600,
+          "x": 2400,
           "y": 2570,
-          "timeMs": 112374.8
+          "timeMs": 75233.3
         },
         {
           "kind": "swing",
           "weaponId": "x2-drunken-fist-wraps",
           "style": "mist-purple-sway-sweep",
-          "x": 2643.3545249964386,
-          "y": 2477.4074475298726,
-          "timeMs": 112474.9,
+          "x": 2328.2199903307733,
+          "y": 2486.3776316743215,
+          "timeMs": 75383.2,
           "comboStep": 0,
           "motion": "sway-jab",
           "limb": "hand"
@@ -3024,17 +3118,17 @@
           "kind": "impact",
           "weaponId": "x2-drunken-fist-wraps",
           "style": "misty-purple-wide-sweep",
-          "x": 2600.038390061808,
-          "y": 2570.0502393787715,
-          "timeMs": 112674.8
+          "x": 2400,
+          "y": 2570,
+          "timeMs": 75549.9
         },
         {
           "kind": "swing",
           "weaponId": "x2-drunken-fist-wraps",
           "style": "mist-purple-sway-sweep",
-          "x": 2650.8897011769977,
-          "y": 2486.0539488780264,
-          "timeMs": 112858.2,
+          "x": 2321.166713961336,
+          "y": 2479.6800563441543,
+          "timeMs": 75716.6,
           "comboStep": 1,
           "motion": "weave-cross",
           "limb": "hand"
@@ -3043,17 +3137,17 @@
           "kind": "impact",
           "weaponId": "x2-drunken-fist-wraps",
           "style": "misty-purple-wide-sweep",
-          "x": 2600,
+          "x": 2400,
           "y": 2570,
-          "timeMs": 113058.2
+          "timeMs": 75866.5
         },
         {
           "kind": "swing",
           "weaponId": "x2-drunken-fist-wraps",
           "style": "mist-purple-sway-sweep",
-          "x": 2657.017736735667,
-          "y": 2493.2538669502355,
-          "timeMs": 113258.2,
+          "x": 2315.4553609866807,
+          "y": 2473.5883974746403,
+          "timeMs": 76033.3,
           "comboStep": 2,
           "motion": "weave-backfist",
           "limb": "hand"
@@ -3062,524 +3156,17 @@
           "kind": "impact",
           "weaponId": "x2-drunken-fist-wraps",
           "style": "misty-purple-wide-sweep",
-          "x": 2600,
+          "x": 2400,
           "y": 2570,
-          "timeMs": 113541.5
+          "timeMs": 76266.6
         },
         {
           "kind": "swing",
           "weaponId": "x2-drunken-fist-wraps",
           "style": "mist-purple-sway-sweep",
-          "x": 2671.9999963204955,
-          "y": 2497.8538806556003,
-          "timeMs": 113624.8,
-          "comboStep": 3,
-          "motion": "sweeping-leg",
-          "limb": "foot"
-        },
-        {
-          "kind": "impact",
-          "weaponId": "x2-drunken-fist-wraps",
-          "style": "misty-purple-wide-sweep",
-          "x": 2600,
-          "y": 2570,
-          "timeMs": 113924.8
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-drunken-fist-wraps",
-          "style": "mist-purple-sway-sweep",
-          "x": 2686.6062477844225,
-          "y": 2504.2666530494816,
-          "timeMs": 114008.1,
-          "comboStep": 4,
-          "motion": "backflip-head-kick",
-          "limb": "foot"
-        },
-        {
-          "kind": "impact",
-          "weaponId": "x2-drunken-fist-wraps",
-          "style": "misty-purple-wide-sweep",
-          "x": 2600,
-          "y": 2570,
-          "timeMs": 114308.1
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-drunken-fist-wraps",
-          "style": "mist-purple-sway-sweep",
-          "x": 2659.0623738741447,
-          "y": 2512.0472826303508,
-          "timeMs": 114408.1,
-          "comboStep": 0,
-          "motion": "sway-jab",
-          "limb": "hand"
-        },
-        {
-          "kind": "impact",
-          "weaponId": "x2-drunken-fist-wraps",
-          "style": "misty-purple-wide-sweep",
-          "x": 2600,
-          "y": 2570,
-          "timeMs": 114691.4
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-drunken-fist-wraps",
-          "style": "mist-purple-sway-sweep",
-          "x": 2666.0490305477997,
-          "y": 2518.7225688504095,
-          "timeMs": 114791.4,
-          "comboStep": 1,
-          "motion": "weave-cross",
-          "limb": "hand"
-        },
-        {
-          "kind": "impact",
-          "weaponId": "x2-drunken-fist-wraps",
-          "style": "misty-purple-wide-sweep",
-          "x": 2600,
-          "y": 2570,
-          "timeMs": 115091.5
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-drunken-fist-wraps",
-          "style": "mist-purple-sway-sweep",
-          "x": 2672.1067803567976,
-          "y": 2525.7470925476323,
-          "timeMs": 115191.4,
-          "comboStep": 2,
-          "motion": "weave-backfist",
-          "limb": "hand"
-        },
-        {
-          "kind": "impact",
-          "weaponId": "x2-drunken-fist-wraps",
-          "style": "misty-purple-wide-sweep",
-          "x": 2600.0484517271566,
-          "y": 2570.0442735886463,
-          "timeMs": 115374.7
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-drunken-fist-wraps",
-          "style": "mist-purple-sway-sweep",
-          "x": 2688.279704359511,
-          "y": 2534.265946193782,
-          "timeMs": 115574.7,
-          "comboStep": 3,
-          "motion": "sweeping-leg",
-          "limb": "foot"
-        },
-        {
-          "kind": "impact",
-          "weaponId": "x2-drunken-fist-wraps",
-          "style": "misty-purple-wide-sweep",
-          "x": 2600,
-          "y": 2570,
-          "timeMs": 115758
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-drunken-fist-wraps",
-          "style": "mist-purple-sway-sweep",
-          "x": 2702.984230284919,
-          "y": 2541.255768834781,
-          "timeMs": 115958.1,
-          "comboStep": 4,
-          "motion": "backflip-head-kick",
-          "limb": "foot"
-        },
-        {
-          "kind": "impact",
-          "weaponId": "x2-drunken-fist-wraps",
-          "style": "misty-purple-wide-sweep",
-          "x": 2605.245361328125,
-          "y": 2573.38623046875,
-          "timeMs": 116141.3
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-drunken-fist-wraps",
-          "style": "mist-purple-sway-sweep",
-          "x": 2675.4633875820127,
-          "y": 2548.834491164785,
-          "timeMs": 116341.3,
-          "comboStep": 0,
-          "motion": "sway-jab",
-          "limb": "hand"
-        },
-        {
-          "kind": "impact",
-          "weaponId": "x2-drunken-fist-wraps",
-          "style": "misty-purple-wide-sweep",
-          "x": 2610.682743008993,
-          "y": 2576.307861328125,
-          "timeMs": 116558.1
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-drunken-fist-wraps",
-          "style": "mist-purple-sway-sweep",
-          "x": 2682.5152757936426,
-          "y": 2555.726644190051,
-          "timeMs": 116758,
-          "comboStep": 1,
-          "motion": "weave-cross",
-          "limb": "hand"
-        },
-        {
-          "kind": "impact",
-          "weaponId": "x2-drunken-fist-wraps",
-          "style": "misty-purple-wide-sweep",
-          "x": 2616.36062109375,
-          "y": 2578.7019794921875,
-          "timeMs": 117058
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-drunken-fist-wraps",
-          "style": "mist-purple-sway-sweep",
-          "x": 2685.8380627914535,
-          "y": 2558.1852715152513,
-          "timeMs": 117058,
-          "comboStep": 2,
-          "motion": "weave-backfist",
-          "limb": "hand"
-        },
-        {
-          "kind": "impact",
-          "weaponId": "x2-drunken-fist-wraps",
-          "style": "misty-purple-wide-sweep",
-          "x": 2621.0809339495304,
-          "y": 2580.1361408550088,
-          "timeMs": 117341.3
-        }
-      ],
-      "auraSamples": [
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false
-      ],
-      "expectedReachPx": [
-        113.28,
-        117.12,
-        120,
-        132.48,
-        144
-      ],
-      "rig": {
-        "handOverlayCount": 2,
-        "footOverlayCount": 2,
-        "handPartIndices": [
-          0,
-          0
-        ],
-        "footPartIndices": [
-          1,
-          1
-        ],
-        "baseHandsVisible": [
-          false,
-          false
-        ],
-        "baseFeetVisible": [
-          false,
-          false
-        ],
-        "handOverlayVisible": [
-          true,
-          true
-        ],
-        "footOverlayVisible": [
-          true,
-          true
-        ],
-        "handFrames": [
-          "x2-drunken-fist-wraps:part-1:__BASE",
-          "x2-drunken-fist-wraps:part-1:__BASE"
-        ],
-        "footFrames": [
-          "x2-drunken-fist-wraps:part-2:__BASE",
-          "x2-drunken-fist-wraps:part-2:__BASE"
-        ],
-        "facing": 1,
-        "rootScaleX": 0.6623394948496876,
-        "rootScaleY": 0.6623394948497249,
-        "handScaleRatios": [
-          1.1466666666666665,
-          1.173488372093023
-        ],
-        "footScaleRatios": [
-          1.0386285714285715,
-          1.049336082474227
-        ],
-        "playerAuraVisible": false,
-        "handPose": [
-          {
-            "front": false,
-            "x": 44.991999999999884,
-            "y": -21.203368139075863,
-            "rotation": 0.5800000000000001
-          },
-          {
-            "front": true,
-            "x": 22.951999999999988,
-            "y": -15.632638045670445,
-            "rotation": -0.4800000000000004
-          }
-        ],
-        "footPose": [
-          {
-            "front": false,
-            "x": 53.75190476190476,
-            "y": 28.522619047619052,
-            "rotation": 0
-          },
-          {
-            "front": true,
-            "x": -48.771190476190476,
-            "y": 66.20142857142856,
-            "rotation": 0
-          }
-        ]
-      },
-      "handScreenshot": "docs/owner-notes-audit-v11-evidence/b23-kungfu-v2/x2-drunken-fist-wraps-right-hand.png",
-      "footScreenshot": "docs/owner-notes-audit-v11-evidence/b23-kungfu-v2/x2-drunken-fist-wraps-right-foot.png",
-      "stanceScreenshot": "docs/owner-notes-audit-v11-evidence/b23-kungfu-v2/x2-drunken-fist-wraps-right-stance.png",
-      "showcaseScreenshot": "docs/owner-notes-audit-v11-evidence/b23-kungfu-v2/x2-drunken-fist-wraps-right-backflip-head-kick.png"
-    },
-    {
-      "weaponId": "x2-drunken-fist-wraps",
-      "facing": "left",
-      "target": {
-        "id": "open-lane:left",
-        "x": 2479.961567597962,
-        "y": 2572.688232421875,
-        "distance": 92
-      },
-      "attackSeqBefore": 134,
-      "attackSeqAfter": 155,
-      "steps": [
-        0,
-        1,
-        2,
-        3,
-        4
-      ],
-      "motions": [
-        "sway-jab",
-        "weave-cross",
-        "weave-backfist",
-        "sweeping-leg",
-        "backflip-head-kick"
-      ],
-      "limbs": [
-        "hand",
-        "hand",
-        "hand",
-        "foot",
-        "foot"
-      ],
-      "swingStyle": "mist-purple-sway-sweep",
-      "impactStyle": "",
-      "intervalsMs": [
-        399.8999999999942,
-        383.3000000000029,
-        383.3999999999942,
-        383.3000000000029
-      ],
-      "reachPx": [
-        113.28000000000006,
-        116.85137136319388,
-        120.00000000000001,
-        132.2933039850513,
-        143.99999999999977
-      ],
-      "travel": {
-        "start": {
-          "x": 2571.961567597962,
-          "y": 2572.688232421875
-        },
-        "end": {
-          "x": 2556.322021484375,
-          "y": 2537.970947265625
-        },
-        "distancePx": 38.07735929997503,
-        "expectedPx": 50.36603774659812,
-        "positionSamples": [
-          {
-            "attackSeq": 134,
-            "x": 2571.961567597962,
-            "y": 2572.688232421875,
-            "timeMs": 125141.1
-          },
-          {
-            "attackSeq": 135,
-            "x": 2568.961669921875,
-            "y": 2565.688232421875,
-            "timeMs": 125341
-          },
-          {
-            "attackSeq": 135,
-            "x": 2568.961669921875,
-            "y": 2565.688232421875,
-            "timeMs": 125541
-          },
-          {
-            "attackSeq": 136,
-            "x": 2565.789794921875,
-            "y": 2558.76416015625,
-            "timeMs": 125724.4
-          },
-          {
-            "attackSeq": 136,
-            "x": 2565.789794921875,
-            "y": 2558.76416015625,
-            "timeMs": 125924.3
-          },
-          {
-            "attackSeq": 137,
-            "x": 2562.63623046875,
-            "y": 2551.832156378943,
-            "timeMs": 126107.6
-          },
-          {
-            "attackSeq": 137,
-            "x": 2562.63623046875,
-            "y": 2551.832156378943,
-            "timeMs": 126307.6
-          },
-          {
-            "attackSeq": 138,
-            "x": 2559.47412109375,
-            "y": 2544.90380859375,
-            "timeMs": 126491
-          },
-          {
-            "attackSeq": 138,
-            "x": 2559.47412109375,
-            "y": 2544.90380859375,
-            "timeMs": 126690.9
-          },
-          {
-            "attackSeq": 139,
-            "x": 2556.322021484375,
-            "y": 2537.970947265625,
-            "timeMs": 126891
-          },
-          {
-            "attackSeq": 139,
-            "x": 2556.322021484375,
-            "y": 2537.970947265625,
-            "timeMs": 127074.3
-          }
-        ]
-      },
-      "contacts": [],
-      "vfx": [
-        {
-          "kind": "swing",
-          "weaponId": "x2-drunken-fist-wraps",
-          "style": "mist-purple-sway-sweep",
-          "x": 2458.6815675979715,
-          "y": 2572.688186232942,
-          "timeMs": 125041.1,
-          "comboStep": 0,
-          "motion": "sway-jab",
-          "limb": "hand"
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-drunken-fist-wraps",
-          "style": "mist-purple-sway-sweep",
-          "x": 2452.1465153248632,
-          "y": 2568.597295146412,
-          "timeMs": 125441,
-          "comboStep": 1,
-          "motion": "weave-cross",
-          "limb": "hand"
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-drunken-fist-wraps",
-          "style": "mist-purple-sway-sweep",
-          "x": 2445.801391520103,
-          "y": 2560.432407468152,
-          "timeMs": 125824.3,
-          "comboStep": 2,
-          "motion": "weave-backfist",
-          "limb": "hand"
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-drunken-fist-wraps",
-          "style": "mist-purple-sway-sweep",
-          "x": 2430.367099704148,
-          "y": 2554.361054569429,
-          "timeMs": 126207.7,
+          "x": 2300.1859330570933,
+          "y": 2467.964159737479,
+          "timeMs": 76349.9,
           "comboStep": 3,
           "motion": "sweeping-leg",
           "limb": "foot"
@@ -3588,119 +3175,104 @@
           "kind": "swing",
           "weaponId": "x2-drunken-fist-wraps",
           "style": "mist-purple-sway-sweep",
-          "x": 2415.4885258288414,
-          "y": 2546.940559980115,
-          "timeMs": 126591,
-          "comboStep": 4,
-          "motion": "backflip-head-kick",
-          "limb": "foot"
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-drunken-fist-wraps",
-          "style": "mist-purple-sway-sweep",
-          "x": 2443.251581865192,
-          "y": 2540.2095913778035,
-          "timeMs": 126990.9,
-          "comboStep": 0,
-          "motion": "sway-jab",
-          "limb": "hand"
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-drunken-fist-wraps",
-          "style": "mist-purple-sway-sweep",
-          "x": 2436.735786252582,
-          "y": 2535.0868273103965,
-          "timeMs": 127357.6,
-          "comboStep": 1,
-          "motion": "weave-cross",
-          "limb": "hand"
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-drunken-fist-wraps",
-          "style": "mist-purple-sway-sweep",
-          "x": 2430.7213028325477,
-          "y": 2528.3612215538583,
-          "timeMs": 127740.9,
-          "comboStep": 2,
-          "motion": "weave-backfist",
-          "limb": "hand"
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-drunken-fist-wraps",
-          "style": "mist-purple-sway-sweep",
-          "x": 2414.7707800281964,
-          "y": 2520.6383490365847,
-          "timeMs": 128140.9,
+          "x": 2298.9263599157025,
+          "y": 2462.563067339466,
+          "timeMs": 76666.6,
           "comboStep": 3,
           "motion": "sweeping-leg",
           "limb": "foot"
         },
         {
-          "kind": "swing",
+          "kind": "impact",
           "weaponId": "x2-drunken-fist-wraps",
-          "style": "mist-purple-sway-sweep",
-          "x": 2400.1163968363726,
-          "y": 2513.866977840468,
-          "timeMs": 128507.5,
-          "comboStep": 4,
-          "motion": "backflip-head-kick",
-          "limb": "foot"
+          "style": "misty-purple-wide-sweep",
+          "x": 2400,
+          "y": 2570,
+          "timeMs": 76833.2
         },
         {
           "kind": "swing",
           "weaponId": "x2-drunken-fist-wraps",
           "style": "mist-purple-sway-sweep",
-          "x": 2427.528545813402,
-          "y": 2505.6594091361653,
-          "timeMs": 128890.9,
+          "x": 2315.5097061376578,
+          "y": 2458.214244450951,
+          "timeMs": 76999.9,
           "comboStep": 0,
           "motion": "sway-jab",
           "limb": "hand"
         },
         {
+          "kind": "impact",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "misty-purple-wide-sweep",
+          "x": 2400,
+          "y": 2570,
+          "timeMs": 77149.8
+        },
+        {
           "kind": "swing",
           "weaponId": "x2-drunken-fist-wraps",
           "style": "mist-purple-sway-sweep",
-          "x": 2420.6412637072176,
-          "y": 2499.478891121487,
-          "timeMs": 129257.5,
+          "x": 2308.570009115665,
+          "y": 2451.7951444036144,
+          "timeMs": 77316.6,
           "comboStep": 1,
           "motion": "weave-cross",
           "limb": "hand"
         },
         {
+          "kind": "impact",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "misty-purple-wide-sweep",
+          "x": 2400,
+          "y": 2570,
+          "timeMs": 77483.2
+        },
+        {
           "kind": "swing",
           "weaponId": "x2-drunken-fist-wraps",
           "style": "mist-purple-sway-sweep",
-          "x": 2414.5864502255736,
-          "y": 2492.7023732568723,
-          "timeMs": 129624.2,
+          "x": 2302.4870523964664,
+          "y": 2444.938875519135,
+          "timeMs": 77649.8,
           "comboStep": 2,
           "motion": "weave-backfist",
           "limb": "hand"
         },
         {
-          "kind": "swing",
+          "kind": "impact",
           "weaponId": "x2-drunken-fist-wraps",
-          "style": "mist-purple-sway-sweep",
-          "x": 2398.7969180337973,
-          "y": 2485.3057187872682,
-          "timeMs": 130007.4,
-          "comboStep": 3,
-          "motion": "sweeping-leg",
-          "limb": "foot"
+          "style": "misty-purple-wide-sweep",
+          "x": 2400,
+          "y": 2570,
+          "timeMs": 77916.4
         },
         {
           "kind": "swing",
           "weaponId": "x2-drunken-fist-wraps",
           "style": "mist-purple-sway-sweep",
-          "x": 2383.8792295189696,
-          "y": 2477.726731790054,
-          "timeMs": 130357.5,
+          "x": 2287.514998988828,
+          "y": 2440.0218754020884,
+          "timeMs": 77999.9,
+          "comboStep": 3,
+          "motion": "sweeping-leg",
+          "limb": "foot"
+        },
+        {
+          "kind": "impact",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "misty-purple-wide-sweep",
+          "x": 2400,
+          "y": 2570,
+          "timeMs": 78233.1
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "mist-purple-sway-sweep",
+          "x": 2272.8507419397206,
+          "y": 2433.6134708968816,
+          "timeMs": 78316.4,
           "comboStep": 4,
           "motion": "backflip-head-kick",
           "limb": "foot"
@@ -3709,9 +3281,20 @@
           "kind": "swing",
           "weaponId": "x2-drunken-fist-wraps",
           "style": "mist-purple-sway-sweep",
-          "x": 2411.7874407689505,
-          "y": 2471.7181951694597,
-          "timeMs": 130724.2,
+          "x": 2271.629724363273,
+          "y": 2427.9339980370055,
+          "timeMs": 78583.1,
+          "comboStep": 4,
+          "motion": "backflip-head-kick",
+          "limb": "foot"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "mist-purple-sway-sweep",
+          "x": 2299.291705420654,
+          "y": 2421.855331619641,
+          "timeMs": 78949.8,
           "comboStep": 0,
           "motion": "sway-jab",
           "limb": "hand"
@@ -3720,55 +3303,11 @@
           "kind": "swing",
           "weaponId": "x2-drunken-fist-wraps",
           "style": "mist-purple-sway-sweep",
-          "x": 2404.7814888933794,
-          "y": 2464.974369574511,
-          "timeMs": 131090.7,
+          "x": 2292.521826689402,
+          "y": 2415.52924804047,
+          "timeMs": 79366.5,
           "comboStep": 1,
           "motion": "weave-cross",
-          "limb": "hand"
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-drunken-fist-wraps",
-          "style": "mist-purple-sway-sweep",
-          "x": 2398.356607995806,
-          "y": 2456.773006221642,
-          "timeMs": 131440.8,
-          "comboStep": 2,
-          "motion": "weave-backfist",
-          "limb": "hand"
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-drunken-fist-wraps",
-          "style": "mist-purple-sway-sweep",
-          "x": 2383.076560007507,
-          "y": 2451.4055098645977,
-          "timeMs": 131807.5,
-          "comboStep": 3,
-          "motion": "sweeping-leg",
-          "limb": "foot"
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-drunken-fist-wraps",
-          "style": "mist-purple-sway-sweep",
-          "x": 2368.371575431903,
-          "y": 2444.8190400728845,
-          "timeMs": 132190.8,
-          "comboStep": 4,
-          "motion": "backflip-head-kick",
-          "limb": "foot"
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-drunken-fist-wraps",
-          "style": "mist-purple-sway-sweep",
-          "x": 2395.769466575218,
-          "y": 2436.535303527462,
-          "timeMs": 132557.4,
-          "comboStep": 0,
-          "motion": "sway-jab",
           "limb": "hand"
         }
       ],
@@ -3880,43 +3419,43 @@
           "x2-drunken-fist-wraps:part-2:__BASE"
         ],
         "facing": -1,
-        "rootScaleX": -0.6623394948496937,
+        "rootScaleX": -0.662339494849313,
         "rootScaleY": 0.6623394948497249,
         "handScaleRatios": [
           1.1466666666666665,
           1.173488372093023
         ],
         "footScaleRatios": [
-          1.0386285714285715,
+          1.0386285714285717,
           1.049336082474227
         ],
         "playerAuraVisible": false,
         "handPose": [
           {
             "front": false,
-            "x": 45.02436171538004,
-            "y": -15.928102257194853,
+            "x": 44.919513329065815,
+            "y": -21.377922961864627,
             "rotation": 0.5800000000000001
           },
           {
             "front": true,
-            "x": 23.228243354979444,
-            "y": -10.147699369711866,
+            "x": 23.29348644844606,
+            "y": -14.772782393887535,
             "rotation": -0.4800000000000004
           }
         ],
         "footPose": [
           {
             "front": false,
-            "x": 53.72025866554583,
-            "y": 28.522619047619052,
-            "rotation": 0.0006329219271776765
+            "x": 53.82600872382921,
+            "y": 28.77665167510763,
+            "rotation": -0.0014820792384888648
           },
           {
             "front": true,
-            "x": -48.89850517015253,
-            "y": 65.99874827077848,
-            "rotation": 0.0025462938792415457
+            "x": -48.92840174847871,
+            "y": 65.99621194505414,
+            "rotation": 0.003144225445764093
           }
         ]
       },
@@ -3930,12 +3469,12 @@
       "facing": "right",
       "target": {
         "id": "open-lane:right",
-        "x": 2597.6376953125,
-        "y": 2427.16064453125,
+        "x": 2498.280517578125,
+        "y": 2406.320068359375,
         "distance": 92
       },
-      "attackSeqBefore": 155,
-      "attackSeqAfter": 164,
+      "attackSeqBefore": 114,
+      "attackSeqAfter": 122,
       "steps": [
         0,
         1,
@@ -3957,117 +3496,129 @@
       "swingStyle": "black-iron-drive",
       "impactStyle": "",
       "intervalsMs": [
-        633.3000000000175,
-        633.2999999999884,
-        633.2999999999884
+        566.6999999999971,
+        533.3000000000029,
+        616.5999999999913
       ],
       "reachPx": [
-        115.2000000000001,
-        126.71999999999979,
-        119.03999999999989,
-        142.08
+        115.20000000000013,
+        126.72000000000017,
+        119.04000000000009,
+        142.07999999999993
       ],
       "travel": {
         "start": {
-          "x": 2505.6376953125,
-          "y": 2427.16064453125
+          "x": 2406.280517578125,
+          "y": 2406.320068359375
         },
         "end": {
-          "x": 2525.6376953125,
-          "y": 2427.16064453125
+          "x": 2426.280517578125,
+          "y": 2406.320068359375
         },
         "distancePx": 20,
         "expectedPx": 36,
         "positionSamples": [
           {
-            "attackSeq": 155,
-            "x": 2505.6376953125,
-            "y": 2427.16064453125,
-            "timeMs": 140690.4
+            "attackSeq": 114,
+            "x": 2406.280517578125,
+            "y": 2406.320068359375,
+            "timeMs": 86832.8
           },
           {
-            "attackSeq": 156,
-            "x": 2510.451171875,
-            "y": 2427.16064453125,
-            "timeMs": 140857.1
+            "attackSeq": 115,
+            "x": 2406.92724609375,
+            "y": 2406.320068359375,
+            "timeMs": 86999.4
           },
           {
-            "attackSeq": 156,
-            "x": 2510.6376953125,
-            "y": 2427.16064453125,
-            "timeMs": 141040.4
+            "attackSeq": 115,
+            "x": 2411.280517578125,
+            "y": 2406.320068359375,
+            "timeMs": 87166.1
           },
           {
-            "attackSeq": 156,
-            "x": 2510.6376953125,
-            "y": 2427.16064453125,
-            "timeMs": 141223.7
+            "attackSeq": 115,
+            "x": 2411.280517578125,
+            "y": 2406.320068359375,
+            "timeMs": 87316.1
           },
           {
-            "attackSeq": 157,
-            "x": 2510.6376953125,
-            "y": 2427.16064453125,
-            "timeMs": 141390.4
+            "attackSeq": 115,
+            "x": 2411.280517578125,
+            "y": 2406.320068359375,
+            "timeMs": 87482.7
           },
           {
-            "attackSeq": 157,
-            "x": 2515.6376953125,
-            "y": 2427.16064453125,
-            "timeMs": 141573.7
+            "attackSeq": 116,
+            "x": 2414.010498046875,
+            "y": 2406.320068359375,
+            "timeMs": 87632.7
           },
           {
-            "attackSeq": 157,
-            "x": 2515.6376953125,
-            "y": 2427.16064453125,
-            "timeMs": 141757
+            "attackSeq": 116,
+            "x": 2416.280517578125,
+            "y": 2406.320068359375,
+            "timeMs": 87799.5
           },
           {
-            "attackSeq": 157,
-            "x": 2515.6376953125,
-            "y": 2427.16064453125,
-            "timeMs": 141940.4
+            "attackSeq": 116,
+            "x": 2416.280517578125,
+            "y": 2406.320068359375,
+            "timeMs": 87882.8
           },
           {
-            "attackSeq": 158,
-            "x": 2520.451171875,
-            "y": 2427.16064453125,
-            "timeMs": 142123.7
+            "attackSeq": 116,
+            "x": 2416.280517578125,
+            "y": 2406.320068359375,
+            "timeMs": 87999.4
           },
           {
-            "attackSeq": 158,
-            "x": 2520.6376953125,
-            "y": 2427.16064453125,
-            "timeMs": 142307
+            "attackSeq": 117,
+            "x": 2419.010498046875,
+            "y": 2406.320068359375,
+            "timeMs": 88166.1
           },
           {
-            "attackSeq": 158,
-            "x": 2520.6376953125,
-            "y": 2427.16064453125,
-            "timeMs": 142490.3
+            "attackSeq": 117,
+            "x": 2421.280517578125,
+            "y": 2406.320068359375,
+            "timeMs": 88332.7
           },
           {
-            "attackSeq": 159,
-            "x": 2520.6376953125,
-            "y": 2427.16064453125,
-            "timeMs": 142657
+            "attackSeq": 117,
+            "x": 2421.280517578125,
+            "y": 2406.320068359375,
+            "timeMs": 88466.1
           },
           {
-            "attackSeq": 159,
-            "x": 2525.6376953125,
-            "y": 2427.16064453125,
-            "timeMs": 142840.3
+            "attackSeq": 117,
+            "x": 2421.280517578125,
+            "y": 2406.320068359375,
+            "timeMs": 88616.1
           },
           {
-            "attackSeq": 159,
-            "x": 2525.6376953125,
-            "y": 2427.16064453125,
-            "timeMs": 143023.6
+            "attackSeq": 118,
+            "x": 2421.92724609375,
+            "y": 2406.320068359375,
+            "timeMs": 88799.4
           },
           {
-            "attackSeq": 159,
-            "x": 2525.6376953125,
-            "y": 2427.16064453125,
-            "timeMs": 143206.9
+            "attackSeq": 118,
+            "x": 2426.280517578125,
+            "y": 2406.320068359375,
+            "timeMs": 88966
+          },
+          {
+            "attackSeq": 118,
+            "x": 2426.280517578125,
+            "y": 2406.320068359375,
+            "timeMs": 89082.7
+          },
+          {
+            "attackSeq": 118,
+            "x": 2426.280517578125,
+            "y": 2406.320068359375,
+            "timeMs": 89249.4
           }
         ]
       },
@@ -4077,9 +3628,9 @@
           "kind": "swing",
           "weaponId": "x2-iron-palm-wraps",
           "style": "black-iron-drive",
-          "x": 2620.8376953124857,
-          "y": 2427.1605869509663,
-          "timeMs": 140590.4,
+          "x": 2521.4805175781075,
+          "y": 2406.320132031881,
+          "timeMs": 86832.8,
           "comboStep": 0,
           "motion": "crushing-palm",
           "limb": "hand"
@@ -4088,9 +3639,9 @@
           "kind": "swing",
           "weaponId": "x2-iron-palm-wraps",
           "style": "black-iron-drive",
-          "x": 2637.357695312484,
-          "y": 2427.1605810365436,
-          "timeMs": 141223.7,
+          "x": 2538.0005175781057,
+          "y": 2406.320138595231,
+          "timeMs": 87399.5,
           "comboStep": 1,
           "motion": "stomp-kick",
           "limb": "foot"
@@ -4099,9 +3650,9 @@
           "kind": "swing",
           "weaponId": "x2-iron-palm-wraps",
           "style": "black-iron-drive",
-          "x": 2634.677695312485,
-          "y": 2427.160584873757,
-          "timeMs": 141857,
+          "x": 2535.320517578107,
+          "y": 2406.3201344272056,
+          "timeMs": 87932.8,
           "comboStep": 2,
           "motion": "windup-palm",
           "limb": "hand"
@@ -4110,9 +3661,9 @@
           "kind": "swing",
           "weaponId": "x2-iron-palm-wraps",
           "style": "black-iron-drive",
-          "x": 2662.717695312482,
-          "y": 2427.160573347475,
-          "timeMs": 142490.3,
+          "x": 2563.360517578103,
+          "y": 2406.3201471319717,
+          "timeMs": 88549.4,
           "comboStep": 3,
           "motion": "quake-double-palm",
           "limb": "hand"
@@ -4121,9 +3672,9 @@
           "kind": "swing",
           "weaponId": "x2-iron-palm-wraps",
           "style": "black-iron-drive",
-          "x": 2640.8376953124857,
-          "y": 2427.1605868000765,
-          "timeMs": 143123.6,
+          "x": 2541.480517578107,
+          "y": 2406.320132251345,
+          "timeMs": 89166.1,
           "comboStep": 0,
           "motion": "crushing-palm",
           "limb": "hand"
@@ -4132,9 +3683,9 @@
           "kind": "swing",
           "weaponId": "x2-iron-palm-wraps",
           "style": "black-iron-drive",
-          "x": 2657.357695312484,
-          "y": 2427.1605810011274,
-          "timeMs": 143756.9,
+          "x": 2558.0005175781057,
+          "y": 2406.3201386616397,
+          "timeMs": 89799.4,
           "comboStep": 1,
           "motion": "stomp-kick",
           "limb": "foot"
@@ -4143,9 +3694,9 @@
           "kind": "swing",
           "weaponId": "x2-iron-palm-wraps",
           "style": "black-iron-drive",
-          "x": 2654.677695312485,
-          "y": 2427.1605848335707,
-          "timeMs": 144390.2,
+          "x": 2555.320517578107,
+          "y": 2406.3201344148356,
+          "timeMs": 90332.6,
           "comboStep": 2,
           "motion": "windup-palm",
           "limb": "hand"
@@ -4154,22 +3705,11 @@
           "kind": "swing",
           "weaponId": "x2-iron-palm-wraps",
           "style": "black-iron-drive",
-          "x": 2682.717695312482,
-          "y": 2427.160573345055,
-          "timeMs": 145023.5,
+          "x": 2583.360517578103,
+          "y": 2406.3201474154966,
+          "timeMs": 90932.6,
           "comboStep": 3,
           "motion": "quake-double-palm",
-          "limb": "hand"
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-iron-palm-wraps",
-          "style": "black-iron-drive",
-          "x": 2660.8376953124853,
-          "y": 2427.160586603137,
-          "timeMs": 145590.2,
-          "comboStep": 0,
-          "motion": "crushing-palm",
           "limb": "hand"
         }
       ],
@@ -4267,43 +3807,43 @@
           "x2-iron-palm-wraps:part-2:__BASE"
         ],
         "facing": 1,
-        "rootScaleX": 0.6623394948482724,
+        "rootScaleX": 0.6623394948420843,
         "rootScaleY": 0.6623394948497249,
         "handScaleRatios": [
           1.1466666666666665,
           1.173488372093023
         ],
         "footScaleRatios": [
-          1.0182633053221288,
-          1.0287608651708107
+          1.018263305322129,
+          1.028760865170811
         ],
         "playerAuraVisible": false,
         "handPose": [
           {
             "front": false,
-            "x": 17.65495307594433,
-            "y": -5.921560153785096,
-            "rotation": -0.12000049982884953
+            "x": 17.56284797614742,
+            "y": -0.844182473937942,
+            "rotation": -0.11999944728727563
           },
           {
             "front": true,
-            "x": -78.88577610092756,
-            "y": 7.836283838603126,
-            "rotation": 0.19999950017114898
+            "x": -78.75487591039837,
+            "y": 7.790161185041457,
+            "rotation": 0.20000055271272288
           }
         ],
         "footPose": [
           {
             "front": false,
-            "x": 51.124278361888344,
-            "y": 70.61287373935647,
-            "rotation": -0.0006474719996720779
+            "x": 51.18910945110447,
+            "y": 70.70261904761905,
+            "rotation": -0.00194409378399385
           },
           {
             "front": true,
-            "x": -50.92542548504028,
-            "y": 57.923905710481066,
-            "rotation": -0.0025152998230044687
+            "x": -51.224948834328096,
+            "y": 57.576546079442714,
+            "rotation": 0.003475167162752868
           }
         ]
       },
@@ -4316,12 +3856,12 @@
       "facing": "left",
       "target": {
         "id": "open-lane:left",
-        "x": 2458.6376953125,
-        "y": 2427.16064453125,
+        "x": 2354.280517578125,
+        "y": 2406.320068359375,
         "distance": 92
       },
-      "attackSeqBefore": 164,
-      "attackSeqAfter": 171,
+      "attackSeqBefore": 122,
+      "attackSeqAfter": 130,
       "steps": [
         0,
         1,
@@ -4343,141 +3883,117 @@
       "swingStyle": "black-iron-drive",
       "impactStyle": "",
       "intervalsMs": [
-        633.3999999999942,
-        566.6000000000058,
-        566.6000000000058
+        616.6000000000058,
+        600,
+        583.3000000000029
       ],
       "reachPx": [
-        115.2000000000001,
-        126.71999999999983,
-        119.03999999999999,
-        142.07999999999996
+        115.20000000000013,
+        126.72000000000017,
+        119.04000000000005,
+        142.08
       ],
       "travel": {
         "start": {
-          "x": 2550.6376953125,
-          "y": 2427.16064453125
+          "x": 2446.280517578125,
+          "y": 2406.320068359375
         },
         "end": {
-          "x": 2530.6376953125,
-          "y": 2427.160542776479
+          "x": 2426.280517578125,
+          "y": 2406.3201689817756
         },
-        "distancePx": 20.00000000025885,
+        "distancePx": 20.000000000253124,
         "expectedPx": 36,
         "positionSamples": [
           {
-            "attackSeq": 164,
-            "x": 2550.6376953125,
-            "y": 2427.16064453125,
-            "timeMs": 152739.9
+            "attackSeq": 122,
+            "x": 2446.280517578125,
+            "y": 2406.320068359375,
+            "timeMs": 98099.1
           },
           {
-            "attackSeq": 165,
-            "x": 2549.991106723033,
-            "y": 2427.16064453125,
-            "timeMs": 152923.3
+            "attackSeq": 123,
+            "x": 2441.46728515625,
+            "y": 2406.320068359375,
+            "timeMs": 98282.3
           },
           {
-            "attackSeq": 165,
-            "x": 2545.6376953125,
-            "y": 2427.160542410587,
-            "timeMs": 153106.6
+            "attackSeq": 123,
+            "x": 2441.280517578125,
+            "y": 2406.320068359375,
+            "timeMs": 98449
           },
           {
-            "attackSeq": 165,
-            "x": 2545.6376953125,
-            "y": 2427.160542410587,
-            "timeMs": 153289.9
+            "attackSeq": 123,
+            "x": 2441.280517578125,
+            "y": 2406.320068359375,
+            "timeMs": 98632.3
           },
           {
-            "attackSeq": 165,
-            "x": 2545.6376953125,
-            "y": 2427.160542410587,
-            "timeMs": 153456.6
+            "attackSeq": 124,
+            "x": 2440.6337890625,
+            "y": 2406.320068359375,
+            "timeMs": 98799
           },
           {
-            "attackSeq": 166,
-            "x": 2542.90771484375,
-            "y": 2427.1605424790678,
-            "timeMs": 153623.2
+            "attackSeq": 124,
+            "x": 2436.280517578125,
+            "y": 2406.3201686091893,
+            "timeMs": 98965.7
           },
           {
-            "attackSeq": 166,
-            "x": 2540.6376953125,
-            "y": 2427.1605425360094,
-            "timeMs": 153806.5
+            "attackSeq": 124,
+            "x": 2436.280517578125,
+            "y": 2406.3201686091893,
+            "timeMs": 99148.9
           },
           {
-            "attackSeq": 166,
-            "x": 2540.6376953125,
-            "y": 2427.1605425360094,
-            "timeMs": 153939.9
+            "attackSeq": 124,
+            "x": 2436.280517578125,
+            "y": 2406.3201686091893,
+            "timeMs": 99315.6
           },
           {
-            "attackSeq": 167,
-            "x": 2540.6376953125,
-            "y": 2427.1605425360094,
-            "timeMs": 154089.8
+            "attackSeq": 125,
+            "x": 2431.46728515625,
+            "y": 2406.320168790807,
+            "timeMs": 99482.3
           },
           {
-            "attackSeq": 167,
-            "x": 2535.824462890625,
-            "y": 2427.160542653476,
-            "timeMs": 154239.8
+            "attackSeq": 125,
+            "x": 2431.280517578125,
+            "y": 2406.3201687978503,
+            "timeMs": 99648.9
           },
           {
-            "attackSeq": 167,
-            "x": 2535.6376953125,
-            "y": 2427.1605426580318,
-            "timeMs": 154406.5
+            "attackSeq": 125,
+            "x": 2431.280517578125,
+            "y": 2406.3201687978503,
+            "timeMs": 99815.6
           },
           {
-            "attackSeq": 167,
-            "x": 2535.6376953125,
-            "y": 2427.1605426580318,
-            "timeMs": 154589.9
+            "attackSeq": 126,
+            "x": 2430.6337890625,
+            "y": 2406.320168821638,
+            "timeMs": 99948.9
           },
           {
-            "attackSeq": 167,
-            "x": 2535.6376953125,
-            "y": 2427.1605426580318,
-            "timeMs": 154756.5
+            "attackSeq": 126,
+            "x": 2426.46728515625,
+            "y": 2406.320168974909,
+            "timeMs": 100082.2
           },
           {
-            "attackSeq": 167,
-            "x": 2535.6376953125,
-            "y": 2427.1605426580318,
-            "timeMs": 154923.1
+            "attackSeq": 126,
+            "x": 2426.280517578125,
+            "y": 2406.3201689817756,
+            "timeMs": 100265.6
           },
           {
-            "attackSeq": 167,
-            "x": 2535.6376953125,
-            "y": 2427.1605426580318,
-            "timeMs": 155106.5
-          },
-          {
-            "attackSeq": 168,
-            "x": 2535.6376953125,
-            "y": 2427.1605426580318,
-            "timeMs": 155273.1
-          },
-          {
-            "attackSeq": 168,
-            "x": 2530.6376953125,
-            "y": 2427.160542776479,
-            "timeMs": 155439.8
-          },
-          {
-            "attackSeq": 168,
-            "x": 2530.6376953125,
-            "y": 2427.160542776479,
-            "timeMs": 155623.1
-          },
-          {
-            "attackSeq": 168,
-            "x": 2530.6376953125,
-            "y": 2427.160542776479,
-            "timeMs": 155789.8
+            "attackSeq": 126,
+            "x": 2426.280517578125,
+            "y": 2406.3201689817756,
+            "timeMs": 100432.3
           }
         ]
       },
@@ -4487,9 +4003,9 @@
           "kind": "swing",
           "weaponId": "x2-iron-palm-wraps",
           "style": "black-iron-drive",
-          "x": 2435.4376953125143,
-          "y": 2427.1605869510013,
-          "timeMs": 152739.9,
+          "x": 2331.0805175781425,
+          "y": 2406.3201320318385,
+          "timeMs": 98015.7,
           "comboStep": 0,
           "motion": "crushing-palm",
           "limb": "hand"
@@ -4498,9 +4014,9 @@
           "kind": "swing",
           "weaponId": "x2-iron-palm-wraps",
           "style": "black-iron-drive",
-          "x": 2418.9176953125,
-          "y": 2427.1605455812687,
-          "timeMs": 153373.3,
+          "x": 2314.5605175781443,
+          "y": 2406.3201386105206,
+          "timeMs": 98632.3,
           "comboStep": 1,
           "motion": "stomp-kick",
           "limb": "foot"
@@ -4509,9 +4025,9 @@
           "kind": "swing",
           "weaponId": "x2-iron-palm-wraps",
           "style": "black-iron-drive",
-          "x": 2421.5976953125,
-          "y": 2427.1605454411133,
-          "timeMs": 153939.9,
+          "x": 2317.240517578125,
+          "y": 2406.320173089661,
+          "timeMs": 99232.3,
           "comboStep": 2,
           "motion": "windup-palm",
           "limb": "hand"
@@ -4520,9 +4036,9 @@
           "kind": "swing",
           "weaponId": "x2-iron-palm-wraps",
           "style": "black-iron-drive",
-          "x": 2393.5576953125,
-          "y": 2427.160546041202,
-          "timeMs": 154506.5,
+          "x": 2289.200517578125,
+          "y": 2406.320174009789,
+          "timeMs": 99815.6,
           "comboStep": 3,
           "motion": "quake-double-palm",
           "limb": "hand"
@@ -4531,20 +4047,9 @@
           "kind": "swing",
           "weaponId": "x2-iron-palm-wraps",
           "style": "black-iron-drive",
-          "x": 2393.5576953125,
-          "y": 2427.160546023626,
-          "timeMs": 155106.5,
-          "comboStep": 3,
-          "motion": "quake-double-palm",
-          "limb": "hand"
-        },
-        {
-          "kind": "swing",
-          "weaponId": "x2-iron-palm-wraps",
-          "style": "black-iron-drive",
-          "x": 2415.4376953125,
-          "y": 2427.1605454450305,
-          "timeMs": 155706.4,
+          "x": 2311.080517578125,
+          "y": 2406.3201730972514,
+          "timeMs": 100432.3,
           "comboStep": 0,
           "motion": "crushing-palm",
           "limb": "hand"
@@ -4553,9 +4058,9 @@
           "kind": "swing",
           "weaponId": "x2-iron-palm-wraps",
           "style": "black-iron-drive",
-          "x": 2398.9176953125,
-          "y": 2427.1605457560245,
-          "timeMs": 156306.4,
+          "x": 2294.560517578125,
+          "y": 2406.3201735725916,
+          "timeMs": 100998.9,
           "comboStep": 1,
           "motion": "stomp-kick",
           "limb": "foot"
@@ -4564,11 +4069,22 @@
           "kind": "swing",
           "weaponId": "x2-iron-palm-wraps",
           "style": "black-iron-drive",
-          "x": 2401.5976953125,
-          "y": 2427.1605456231077,
-          "timeMs": 156873.1,
+          "x": 2297.240517578125,
+          "y": 2406.3201733759133,
+          "timeMs": 101565.6,
           "comboStep": 2,
           "motion": "windup-palm",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-iron-palm-wraps",
+          "style": "black-iron-drive",
+          "x": 2269.200517578125,
+          "y": 2406.320174218865,
+          "timeMs": 102148.8,
+          "comboStep": 3,
+          "motion": "quake-double-palm",
           "limb": "hand"
         }
       ],
@@ -4666,7 +4182,7 @@
           "x2-iron-palm-wraps:part-2:__BASE"
         ],
         "facing": -1,
-        "rootScaleX": -0.6623394948484622,
+        "rootScaleX": -0.6623394948400141,
         "rootScaleY": 0.6623394948497249,
         "handScaleRatios": [
           1.1466666666666665,
@@ -4680,29 +4196,29 @@
         "handPose": [
           {
             "front": false,
-            "x": 17.676669485666817,
-            "y": -2.7305901799529417,
-            "rotation": -0.12000049982854755
+            "x": 17.678239162074632,
+            "y": -2.6730089508434878,
+            "rotation": -0.11999944728764156
           },
           {
             "front": true,
-            "x": -79.07159957613094,
-            "y": 7.850538961333195,
-            "rotation": 0.19999950017145274
+            "x": -79.08742000284168,
+            "y": 5.759010426429484,
+            "rotation": 0.20000055271235873
           }
         ],
         "footPose": [
           {
             "front": false,
-            "x": 51.089762155952094,
-            "y": 70.56510646670402,
-            "rotation": 0.00004285211905319386
+            "x": 51.25291050106036,
+            "y": 70.98188788900022,
+            "rotation": -0.003220114783113459
           },
           {
             "front": true,
-            "x": -50.90221496986106,
-            "y": 57.99656732206271,
-            "rotation": -0.0029795101265897017
+            "x": -51.17398955736293,
+            "y": 57.719376830255094,
+            "rotation": 0.002455981623448622
           }
         ]
       },

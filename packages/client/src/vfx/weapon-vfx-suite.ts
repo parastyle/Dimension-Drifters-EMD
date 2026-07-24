@@ -1,9 +1,4 @@
-import {
-  meleeDamageEnvelopeFor,
-  type SwingDescriptor,
-  WEAPONS,
-  type WeaponDef,
-} from "@dd/shared";
+import { meleeDamageEnvelopeFor, type SwingDescriptor, WEAPONS, type WeaponDef } from "@dd/shared";
 import "./vfx-layers.js";
 import {
   WEAPON_VFX,
@@ -56,17 +51,6 @@ export const ELEMENT_PAINT: Readonly<Record<string, number>> = Object.freeze({
   arcane: 7,
 });
 
-const ELEMENT_COLOR: Readonly<Record<string, number>> = Object.freeze({
-  physical: 0xd6dde6,
-  fire: 0xff6a2a,
-  frost: 0x6fd6ff,
-  shock: 0xffe24a,
-  holy: 0xffe6a0,
-  toxic: 0x9cff3b,
-  void: 0xb14bff,
-  arcane: 0x8f6aff,
-});
-
 function paintedImpact(element: string, count = 6, size = 0.72): WeaponVfxLayer {
   return {
     on: true,
@@ -105,42 +89,14 @@ function explicitFallbackImpactSuite(weaponId: string): WeaponVfxSuite {
 }
 
 export function buildWeaponFallbackSuite(
-  element: string,
-  style: SwingDescriptor["style"],
-  tags?: WeaponDef["tags"],
+  _element: string,
+  _style: SwingDescriptor["style"],
+  _tags?: WeaponDef["tags"],
 ): WeaponVfxSuite {
-  const hue = ELEMENT_HUE[element] ?? 0.55;
-  const heavy =
-    style === "chop" || (tags?.grip === "2H" && (tags?.size === "L" || tags?.size === "XL"));
-  const reachy = style === "thrust";
-  const dual =
-    tags?.grip === "dual" || (tags?.family ?? "").toLowerCase() === "paired-war-fan";
-  const energy = /energy|plasma|laser|beam|photon|volt|light|neon/.test(
-    (tags?.family ?? "").toLowerCase(),
-  );
-  const blunt = /mace|maul|warhammer|hammer|gauntlet|fist|knuckle/.test(
-    (tags?.family ?? "").toLowerCase(),
-  );
-  const perParams = {
-    reach: 1,
-    paint: ELEMENT_PAINT[element] ?? 0,
-    history: 1,
-    bodyAlpha: energy ? 0.52 : heavy || blunt ? 0.78 : 0.72,
-    lipAlpha: energy ? 0.72 : heavy || blunt ? 0.36 : reachy ? 0.58 : 0.54,
-    lipColor: ELEMENT_COLOR[element] ?? 0xd6dde6,
-    color: hue,
-  };
-  let base: WeaponVfxSuite;
-  if (dual) base = { "twin-slash": { on: true, params: perParams } };
-  else if (reachy) base = { "thrust-streak": { on: true, params: perParams } };
-  else if (heavy)
-    base = {
-      "blade-trail": { on: true, params: perParams },
-    };
-  else base = { "blade-trail": { on: true, params: perParams } };
-  // Owner correction (V6.3): "ONLY relocate effects that were already character-centered."
-  // A synthesized fallback may describe weapon motion, but it may never manufacture a hit/cursor cue.
-  return base;
+  // B24 owner correction: no un-authored weapon may manufacture a painted particle ribbon. The shared
+  // PER fallback was the source of the tiny radial/ant particles across the catalog. Explicit named impact
+  // exceptions are merged separately below, and every authored suite/effect recipe remains untouched.
+  return {};
 }
 
 const FALLBACK_CACHE = new Map<string, WeaponVfxSuite>();
@@ -172,7 +128,9 @@ export function weaponVfxSuiteFor(
   return { suite, authored, vfx };
 }
 
-export function weaponPaintedAuraFor(weaponId: string | undefined): WeaponVfxPaintedAura | undefined {
+export function weaponPaintedAuraFor(
+  weaponId: string | undefined,
+): WeaponVfxPaintedAura | undefined {
   return weaponId ? WEAPON_VFX[weaponId]?.paintedAura : undefined;
 }
 

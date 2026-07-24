@@ -1,0 +1,88 @@
+{
+  "capturedAt": "2026-07-24",
+  "branch": "sol/b24-radial-hunt",
+  "cohortCommit": {
+    "fallbackInjection": "ee27031673171daaef035a95f25c7dcf9553e0a4",
+    "radialRopePrimitive": "4507ffa53ae9aae3bf4d6950a7a79e45533598c7"
+  },
+  "preChangeFallbackCensus": {
+    "total": 322,
+    "active": 311,
+    "alreadyArchived": 11,
+    "byResolvedLayer": {
+      "blade-trail": 290,
+      "twin-slash": 22,
+      "thrust-streak": 10
+    },
+    "idsLoggedIn": "docs/sol-reports/impl-b24-radial-hunt.md"
+  },
+  "markedResolverProof": {
+    "x2-thunderpost-fetish": "blade-trail",
+    "x2-thunderhoof-splittingaxe": "blade-trail",
+    "x2-reaper-s-tithe": "blade-trail",
+    "x2-hollow-harvest": "blade-trail",
+    "x2-gravechain-scythe": "blade-trail",
+    "x2-twin-whispervolumes": "twin-slash"
+  },
+  "bespokeRecipeBaseline": {
+    "x2-hollow-harvest": {
+      "id": "hollow-harvest-circle",
+      "weaponId": "x2-hollow-harvest",
+      "emitter": "blade",
+      "classification": "weapon-motion",
+      "swingPack": "fire-splat",
+      "swingCount": 24,
+      "swingParticleDominance": 0.56,
+      "radialDistribution": "full-circle",
+      "additive": true
+    },
+    "x2-gravechain-scythe": {
+      "id": "gravechain-dominant-spin",
+      "weaponId": "x2-gravechain-scythe",
+      "emitter": "blade",
+      "classification": "weapon-motion",
+      "swingPack": "void-wisp",
+      "swingCount": 24,
+      "swingParticleDominance": 0.52,
+      "radialDistribution": "full-circle",
+      "additive": true
+    },
+    "x2-twin-whispervolumes": {
+      "id": "whispervolume-page-scatter",
+      "weaponId": "x2-twin-whispervolumes",
+      "emitter": "tip",
+      "classification": "chain-path",
+      "chain": "scattered-pages"
+    }
+  },
+  "preservationHashes": {
+    "packages/client/src/vfx/weapon-effect-recipes.ts": "182DCE6D43D1040260B181F74014D5649CDD6FD26B1C41B268F750EC23CC5073",
+    "packages/client/src/vfx/weapon-effect-vfx.ts": "813C0739A4D53BAB740C934A2D0FCEEEB256970F1D20224665D64A6D58FEBD54",
+    "packages/client/public/projectiles/twin-whisper-page.png": "F3457ED4128DA7A1662CFD82947DFFEF61FC1DBDC2044A7F8626C4FB58633A6E"
+  },
+  "sideOrderBaseline": {
+    "x2-mournveil-scythe": {
+      "displayLength": 364,
+      "damage": 14,
+      "cooldown": 0.82,
+      "range": 250,
+      "vfxSuite": ["painted-impact"],
+      "vfxAnchor": "target"
+    },
+    "x2-pocket-hexicon": {
+      "archived": false
+    },
+    "x2-spitfire-censer-wand": {
+      "displayLength": 90
+    },
+    "x2-twin-whispervolumes": {
+      "pageDisplayWidth": 30,
+      "pageDisplayHeight": 22,
+      "range": 145,
+      "chainRange": 180,
+      "damage": 6,
+      "cooldown": 0.32,
+      "nominalDps": 18.75
+    }
+  }
+}

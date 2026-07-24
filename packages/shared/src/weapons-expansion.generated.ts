@@ -8719,6 +8719,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "INT"
       ]
     },
+    "archived": true,
     "scatter": {
       "count": 4,
       "spread": 0.4,
@@ -8792,7 +8793,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "name": "Twin Whispervolumes",
     "expansion": true,
     "damage": 6,
-    "range": 145,
+    "range": 220,
     "halfArc": 0.7,
     "cooldown": 0.32,
     "displayLength": 58,
@@ -8816,7 +8817,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "dual": true,
     "chainLightning": {
       "jumps": 3,
-      "range": 180,
+      "range": 240,
       "damage": 5,
       "falloff": 0.8
     }
@@ -11419,7 +11420,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "range": 460,
     "halfArc": 0.55,
     "cooldown": 0.3,
-    "displayLength": 90,
+    "displayLength": 126,
     "swingArc": 1.8,
     "gripFrac": 0.12,
     "tags": {

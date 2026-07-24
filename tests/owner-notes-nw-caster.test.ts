@@ -201,10 +201,10 @@ describe("owner-notes NW-CASTER contracts", () => {
     expect(rigSource).toContain("piece?.worn || piece?.def.renderAboveHands");
   });
 
-  it("increases only Spitfire's display scale by fifty percent", () => {
+  it("keeps the earlier Spitfire scale order and applies B24's further forty-percent increase", () => {
     const spitfire = weapon("x2-spitfire-censer-wand");
-    expect(spitfire.displayLength).toBe(90);
-    expect(spitfire.displayLength / 60).toBe(1.5);
+    expect(spitfire.displayLength).toBe(126);
+    expect(spitfire.displayLength / 90).toBe(1.4);
     expect(spitfire.gun).toMatchObject({ damage: 4, fireRate: 0.1, range: 460 });
   });
 });
