@@ -76,9 +76,10 @@ describe("V6G1 whole-catalog impact-anchor law", () => {
       "x2-voltfang-tachi",
       "x2-sanctified-headsman",
       "x2-gravechain-scythe",
+      "x2-mournveil-scythe",
     ])
       expect(targetlessWeapons, id).toContain(id);
-    for (const id of ["x-sword-buzzsaw", "x2-mournveil-scythe", "drift-colossal-world-seam"])
+    for (const id of ["x-sword-buzzsaw", "drift-colossal-world-seam"])
       expect(targetlessWeapons, id).not.toContain(id);
     expect(closeCombatFamilies).toContain("x2-wendigo-claws");
     expect(closeCombatFamilies).toContain("x2-revenant-knuckle");

@@ -13,9 +13,9 @@ export const PAGE_PROJECTILE_ART: Readonly<Partial<Record<string, PageProjectile
     "x2-twin-whispervolumes": Object.freeze({
       textureKey: "page-projectile:twin-whispervolumes",
       url: "projectiles/twin-whisper-page.png",
-      displayWidth: 30,
-      displayHeight: 22,
-      scaleMultiplier: 1,
+      displayWidth: 45,
+      displayHeight: 33,
+      scaleMultiplier: 1.5,
     }),
     "x2-verdigris-grand-grimoire": Object.freeze({
       textureKey: "page-projectile:verdigris-grand-grimoire",

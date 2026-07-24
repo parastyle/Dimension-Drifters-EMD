@@ -76,7 +76,6 @@ describe("V6.1 generic cursor-circle regression", () => {
 
     for (const id of [
       "x2-revenant-knuckle",
-      "x2-mournveil-scythe",
       "drift-colossal-world-seam",
     ]) {
       const definition = WEAPONS[id];
@@ -88,7 +87,7 @@ describe("V6.1 generic cursor-circle regression", () => {
       ).toMatchObject({ on: true });
     }
 
-    for (const id of ["x2-voltfang-tachi", "x2-sanctified-headsman"]) {
+    for (const id of ["x2-voltfang-tachi", "x2-sanctified-headsman", "x2-mournveil-scythe"]) {
       const definition = WEAPONS[id];
       if (!definition) throw new Error(`missing V6.3 targetless fixture ${id}`);
       const swing = swingDescriptorFor(definition, definition.cooldown);

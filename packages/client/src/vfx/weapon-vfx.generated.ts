@@ -797,22 +797,9 @@ export const WEAPON_VFX: Record<string, WeaponVfx> = {
     "vfxRadius": 296
   },
   "x2-mournveil-scythe": {
-    "suite": {
-      "painted-impact": {
-        "on": true,
-        "params": {
-          "paint": 4,
-          "count": 8,
-          "size": 0.9
-        }
-      }
-    },
+    "suite": {},
     "rot": 0,
-    "vfxRadius": 250,
-    "vfxOrigin": {
-      "x": -150,
-      "y": 0
-    }
+    "suppressFallback": true
   },
   "x2-fulgurite-storm-sphere": {
     "suite": {},

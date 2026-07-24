@@ -10432,6 +10432,7 @@
         "swingArc": 2.4,
         "gripFrac": 0.15
       },
+      "archived": true,
       "id": "x2-pocket-hexicon"
     },
     {
@@ -10520,13 +10521,13 @@
       "behavior": {
         "kind": "chainLightning",
         "jumps": 3,
-        "range": 180,
+        "range": 240,
         "damage": 5,
         "falloff": 0.8
       },
       "stats": {
         "damage": 6,
-        "range": 145,
+        "range": 220,
         "halfArc": 0.7,
         "cooldown": 0.32,
         "displayLength": 58,
@@ -13384,7 +13385,7 @@
         "range": 460,
         "halfArc": 0.55,
         "cooldown": 0.3,
-        "displayLength": 90,
+        "displayLength": 126,
         "swingArc": 1.3,
         "gripFrac": 0.12
       },

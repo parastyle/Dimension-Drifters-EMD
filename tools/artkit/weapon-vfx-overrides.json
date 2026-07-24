@@ -18,21 +18,7 @@
     "vfxRadius": 296
   },
   "x2-mournveil-scythe": {
-    "vfxRadius": 250,
-    "vfxOrigin": {
-      "x": -150,
-      "y": 0
-    },
-    "suite": {
-      "painted-impact": {
-        "on": true,
-        "params": {
-          "paint": 4,
-          "count": 8,
-          "size": 0.9
-        }
-      }
-    }
+    "suppressFallback": true
   },
   "x2-fulgurite-storm-sphere": {
     "paintedAura": {

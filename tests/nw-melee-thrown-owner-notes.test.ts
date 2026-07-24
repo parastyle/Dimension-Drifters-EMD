@@ -1,4 +1,4 @@
-import { meleeComboSelectionFor, meleeReach, WEAPONS } from "@dd/shared";
+import { meleeComboSelectionFor, WEAPONS } from "@dd/shared";
 import { describe, expect, it } from "vitest";
 import {
   resolveWeaponEffectRecipe,
@@ -101,14 +101,15 @@ describe("NW-MELEE owner-note catalog contracts", () => {
     }
   });
 
-  it("uses the real Mournveil damage radius for its full held fan-spin VFX", () => {
+  it("keeps Mournveil's full held fan-spin motion without a cursor VFX", () => {
     const mournveil = weapon("x2-mournveil-scythe");
     expect(mournveil).toMatchObject({
       swingStyle: "spin",
       swingArc: Math.PI * 2,
       performance: { continuous: true },
     });
-    expect(WEAPON_VFX[mournveil.id]?.vfxRadius).toBe(meleeReach(mournveil));
+    expect(WEAPON_VFX[mournveil.id]).toMatchObject({ suite: {}, suppressFallback: true });
+    expect(WEAPON_VFX[mournveil.id]?.vfxRadius).toBeUndefined();
     const selection = meleeComboSelectionFor(mournveil);
     expect(selection?.sequence.every((step) => step.path.kind === "fan")).toBe(true);
     expect(selection?.sequence.map((step) => step.path.deltaAngle)).toEqual([
