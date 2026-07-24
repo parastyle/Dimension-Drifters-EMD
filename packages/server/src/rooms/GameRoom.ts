@@ -3156,7 +3156,10 @@ export class GameRoom extends Room<ArenaState> {
       roomSeed: this.chestRoomSeed,
       chestSequence: Number(chest.id.split(":")[1]) || 0,
       spawnTick: chest.spawnTick,
-      elapsedSeconds: Math.max(0, ((chest.spawnTick - this.chestRunStartTick) * TICK_MS) / 1_000),
+      elapsedSeconds: Math.max(
+        0,
+        ((this.state.tick - this.chestRunStartTick) * TICK_MS) / 1_000,
+      ),
       zone: chest.zone as MapZoneId,
       kind: chest.kind as ChestKind,
       playerKey: playerId,

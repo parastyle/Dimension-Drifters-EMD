@@ -30,12 +30,15 @@ import {
   weaponSpriteTransform,
 } from "./weapon-muzzle.js";
 import { WEAPON_ART_MUZZLES } from "./weapon-muzzles.generated.js";
+import { GENERATED_WEAPON_TIERS } from "./weapon-tiers.generated.js";
 import { GENERATED_WEAPONS } from "./weapons-expansion.generated.js";
 
 /** Driftblade-line silhouette lane consumed by the stance-by-size flourish wave. This is intentionally
  * more expressive than the legacy S/M/L/XL packing tag: two XL blades can now distinguish a great katana
  * from the deliberately absurd colossal outlier without teaching the rig weapon ids. */
 export type WeaponSizeClass = "short" | "standard" | "long" | "great" | "colossal";
+/** B20's authored, descriptive power band. It never mutates a weapon's combat stats. */
+export type WeaponTier = 1 | 2 | 3 | 4 | 5;
 
 /** V3G catalog laws. Authored tags are the only membership source used by presentation code. */
 export type GunHandlingTag = "bolt" | "lever" | "pump" | "pistol";
@@ -502,6 +505,8 @@ export interface WeaponDef {
   /** Matches the installed sprite id (texture key base = `${id}:part-1`). */
   id: string;
   name: string;
+  /** Authored B20 power band consumed by run-clock sampling, pack rarity, and disassembly. */
+  tier: WeaponTier;
   /** Optional authored catalog lore; generated concepts retain it instead of marooning it in JSON. */
   description?: string;
   /** Driftblade-line silhouette class for stance-by-size consumers. */
@@ -830,6 +835,9 @@ export interface WeaponDef {
    */
   archived?: boolean;
 }
+
+/** Generator/base authoring shape before the one catalog tier registry is joined. */
+export type WeaponDefSource = Omit<WeaponDef, "tier">;
 
 /** Damage-scaling letter grade (§10). */
 export function weaponHasHandlingTag(weapon: WeaponDef | undefined, tag: GunHandlingTag): boolean {
@@ -1366,7 +1374,7 @@ export function weaponDamageSources(def: WeaponDef): DamageSource[] {
  */
 export const VFX_RADIUS_DEFAULT = 74;
 
-const BASE_WEAPONS: Record<string, WeaponDef> = {
+const BASE_WEAPONS: Record<string, WeaponDefSource> = {
   // §9 unarmed fallback — what you hold after DROPPING/SALVAGING a weapon, or when everything's broken.
   // No sprite (empty hands), weak short arc. Excluded from WEAPON_IDS (never in the
   // Q-cycle or the Testing-Grounds gallery).
@@ -2128,7 +2136,19 @@ const BASE_WEAPONS: Record<string, WeaponDef> = {
 /** Every weapon: the hand-authored BASE roster + the codegen'd §13 EXPANSION batch (the +300, art-backed
  *  but held out of the active roster via `expansion`). Both are `WeaponDef`s, so anything keyed by id
  *  (held sprite, card art, VFX) resolves for either. */
-export const WEAPONS: Record<string, WeaponDef> = { ...BASE_WEAPONS, ...GENERATED_WEAPONS };
+const WEAPON_SOURCES: Record<string, WeaponDefSource> = { ...BASE_WEAPONS, ...GENERATED_WEAPONS };
+export const WEAPONS: Record<string, WeaponDef> = Object.fromEntries(
+  Object.entries(WEAPON_SOURCES).map(([id, weapon]) => {
+    const tier = (GENERATED_WEAPON_TIERS as Readonly<Record<string, WeaponTier>>)[id];
+    if (!tier) throw new Error(`Weapon ${id} has no authored tier in data/weapon-tiers.json`);
+    return [id, { ...weapon, tier }];
+  }),
+);
+for (const id of Object.keys(GENERATED_WEAPON_TIERS)) {
+  if (!WEAPON_SOURCES[id]) {
+    throw new Error(`Authored weapon tier references unknown catalog id ${id}`);
+  }
+}
 
 // Muzzle authoring is generated from installed PNG alpha and merged into the weapon definitions once.
 // Consumers receive one data object; no client/server registry join or parallel offset table exists.

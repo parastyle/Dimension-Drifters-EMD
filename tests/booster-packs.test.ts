@@ -19,33 +19,29 @@ import {
   STARTER_UNLOCKED_WEAPON_IDS,
   unlockedWeaponDropPool,
   WEAPON_IDS,
+  WEAPON_PACK_RARITY_BY_TIER,
   WEAPONS,
-  weaponPackRarityForBudget,
+  weaponPackRarity,
   WHOLE_ART_CHARACTERS,
 } from "@dd/shared";
 import { describe, expect, it } from "vitest";
 
 describe("B20 L4 booster pack rarity and pricing", () => {
-  it("maps flat weapon budgets into the documented four rarity bands", () => {
-    expect([
-      weaponPackRarityForBudget(0),
-      weaponPackRarityForBudget(23.999),
-      weaponPackRarityForBudget(24),
-      weaponPackRarityForBudget(47.999),
-      weaponPackRarityForBudget(48),
-      weaponPackRarityForBudget(71.999),
-      weaponPackRarityForBudget(72),
-      weaponPackRarityForBudget(999),
-    ]).toEqual([
-      "common",
-      "common",
-      "uncommon",
-      "uncommon",
-      "rare",
-      "rare",
-      "legendary",
-      "legendary",
-    ]);
+  it("maps the authored weapon tier field into the documented four rarity bands", () => {
+    expect(WEAPON_PACK_RARITY_BY_TIER).toEqual({
+      1: "common",
+      2: "common",
+      3: "uncommon",
+      4: "rare",
+      5: "legendary",
+    });
+    const baseline = WEAPONS["rusty-cleaver"];
+    expect(baseline).toBeDefined();
+    expect(
+      ([1, 2, 3, 4, 5] as const).map((tier) =>
+        weaponPackRarity({ ...(baseline as NonNullable<typeof baseline>), tier }),
+      ),
+    ).toEqual(["common", "common", "uncommon", "rare", "legendary"]);
     expect(PET_IDS.map((id) => [id, petPackRarity(id)])).toEqual([
       ["verdant-wing", "common"],
       ["hearth-newt", "common"],

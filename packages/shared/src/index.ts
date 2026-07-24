@@ -29,4 +29,5 @@ export * from "./rng.js";
 export * from "./state.js";
 export * from "./weapon-muzzle.js";
 export * from "./weapon-resource.js";
+export * from "./weapon-tiers.js";
 export * from "./weapons.js";

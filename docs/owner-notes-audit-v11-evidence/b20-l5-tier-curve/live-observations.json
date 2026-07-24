@@ -1,0 +1,130 @@
+{
+  "verdict": "pass",
+  "privatePorts": {
+    "client": 61312,
+    "game": 61314,
+    "protectedPorts": [
+      5180,
+      2567
+    ],
+    "protectedPortsUsed": []
+  },
+  "clientSurface": {
+    "status": 200,
+    "contentType": "text/html",
+    "hasHtmlShell": true
+  },
+  "transport": {
+    "endpoint": "ws://127.0.0.1:61314",
+    "roomId": "L6GNdE8c0",
+    "sessionId": "VBA_vjV1C",
+    "schemaVersion": 37,
+    "elapsedMs": 1912
+  },
+  "authoredCatalog": {
+    "activeWeapons": 343,
+    "tierCensus": {
+      "1": 69,
+      "2": 72,
+      "3": 66,
+      "4": 68,
+      "5": 68
+    }
+  },
+  "tierGate": {
+    "schemaVersion": 37,
+    "runStartTick": 0,
+    "points": [
+      {
+        "minute": 0,
+        "zone": 0,
+        "samples": 2000,
+        "elapsedSecondsObserved": 0,
+        "expectedWeights": [
+          64,
+          28,
+          8,
+          0,
+          0
+        ],
+        "counts": {
+          "1": 1267,
+          "2": 582,
+          "3": 151,
+          "4": 0,
+          "5": 0
+        },
+        "shares": {
+          "1": 0.6335,
+          "2": 0.291,
+          "3": 0.0755,
+          "4": 0,
+          "5": 0
+        },
+        "lowShare": 0.9245,
+        "highShare": 0,
+        "authoredTierMismatches": 0
+      },
+      {
+        "minute": 15,
+        "zone": 0,
+        "samples": 2000,
+        "elapsedSecondsObserved": 900,
+        "expectedWeights": [
+          14,
+          18,
+          25,
+          25,
+          18
+        ],
+        "counts": {
+          "1": 287,
+          "2": 356,
+          "3": 504,
+          "4": 495,
+          "5": 358
+        },
+        "shares": {
+          "1": 0.1435,
+          "2": 0.178,
+          "3": 0.252,
+          "4": 0.2475,
+          "5": 0.179
+        },
+        "lowShare": 0.3215,
+        "highShare": 0.4265,
+        "authoredTierMismatches": 0
+      },
+      {
+        "minute": 15,
+        "zone": 2,
+        "samples": 2000,
+        "elapsedSecondsObserved": 900,
+        "expectedWeights": [
+          8.1667,
+          10.5,
+          33.3333,
+          62.5,
+          45
+        ],
+        "counts": {
+          "1": 98,
+          "2": 146,
+          "3": 414,
+          "4": 777,
+          "5": 565
+        },
+        "shares": {
+          "1": 0.049,
+          "2": 0.073,
+          "3": 0.207,
+          "4": 0.3885,
+          "5": 0.2825
+        },
+        "lowShare": 0.122,
+        "highShare": 0.671,
+        "authoredTierMismatches": 0
+      }
+    ]
+  }
+}

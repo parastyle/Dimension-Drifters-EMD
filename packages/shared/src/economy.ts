@@ -1,27 +1,23 @@
-import { placeholderWeaponBudget } from "./chests.js";
 import { TICK_RATE } from "./constants.js";
-import { WEAPONS, type WeaponDef } from "./weapons.js";
+import { WEAPONS, type WeaponDef, type WeaponTier } from "./weapons.js";
 
 export const DISASSEMBLY_HOLD_SECONDS = 0.4 as const;
 export const DISASSEMBLY_HOLD_TICKS = Math.ceil(DISASSEMBLY_HOLD_SECONDS * TICK_RATE);
 export const DISASSEMBLY_VALUE_MIN = 4 as const;
 export const DISASSEMBLY_VALUE_MAX = 60 as const;
-export const DISASSEMBLY_BUDGET_DIVISOR = 4 as const;
+export const DISASSEMBLY_VALUE_BY_TIER = {
+  1: 4,
+  2: 8,
+  3: 16,
+  4: 32,
+  5: 60,
+} as const satisfies Readonly<Record<WeaponTier, number>>;
 
-/**
- * B20 L3 placeholder economy curve. L5 may replace the underlying tier/budget
- * model, but floor and bag actions must continue to call this one shared seam.
- */
+/** B20's authored tier is the single value source for floor and bag disassembly. */
 export function weaponDisassemblyValue(weapon: Readonly<WeaponDef> | string): number {
   const definition = typeof weapon === "string" ? WEAPONS[weapon] : weapon;
   if (!definition) return 0;
-  return Math.max(
-    DISASSEMBLY_VALUE_MIN,
-    Math.min(
-      DISASSEMBLY_VALUE_MAX,
-      Math.round(placeholderWeaponBudget(definition) / DISASSEMBLY_BUDGET_DIVISOR),
-    ),
-  );
+  return DISASSEMBLY_VALUE_BY_TIER[definition.tier];
 }
 
 export interface WeaponDisassemblyReceipt {

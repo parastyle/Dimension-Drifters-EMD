@@ -3,9 +3,9 @@
 // explicit `expansion:false` rows are curated live. Generated combo bars feed shared melee presentation.
 // Re-run the generator after editing concepts; never hand-edit the emitted TypeScript.
 
-import type { WeaponDef } from "./weapons.js";
+import type { WeaponDefSource } from "./weapons.js";
 
-export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
+export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
   "x2-sandsong-saber": {
     "id": "x2-sandsong-saber",
     "name": "Sandsong Saber",

@@ -1,8 +1,12 @@
-import { placeholderWeaponBudget } from "./chests.js";
 import { characterName, WHOLE_ART_CHARACTERS, type WholeArtCharacter } from "./characters.js";
 import { PET_CATALOG, PET_IDS, type PetId } from "./pets.js";
 import { makeRng, mixSeeds } from "./rng.js";
-import { ACTIVE_WEAPON_CATALOG_IDS, WEAPONS, type WeaponDef } from "./weapons.js";
+import {
+  ACTIVE_WEAPON_CATALOG_IDS,
+  WEAPONS,
+  type WeaponDef,
+  type WeaponTier,
+} from "./weapons.js";
 import type { MetaAccountV5 } from "./meta.js";
 
 export const PACK_TYPES = ["weapon", "pet", "character"] as const;
@@ -183,15 +187,16 @@ export type OpenPackResult =
       readonly reason: "insufficient-funds" | "sold-out";
     };
 
-export function weaponPackRarityForBudget(budget: number): PackRarity {
-  if (budget < 24) return "common";
-  if (budget < 48) return "uncommon";
-  if (budget < 72) return "rare";
-  return "legendary";
-}
+export const WEAPON_PACK_RARITY_BY_TIER = {
+  1: "common",
+  2: "common",
+  3: "uncommon",
+  4: "rare",
+  5: "legendary",
+} as const satisfies Readonly<Record<WeaponTier, PackRarity>>;
 
 export function weaponPackRarity(weapon: Readonly<WeaponDef>): PackRarity {
-  return weaponPackRarityForBudget(placeholderWeaponBudget(weapon));
+  return WEAPON_PACK_RARITY_BY_TIER[weapon.tier];
 }
 
 export function petPackRarity(id: PetId): PackRarity {

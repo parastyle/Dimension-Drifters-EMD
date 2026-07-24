@@ -1,4 +1,5 @@
 import {
+  ACTIVE_WEAPON_CATALOG_IDS,
   advanceChestCadence,
   CHEST_FIRST_TICKS,
   CHEST_KIND_STANDARD,
@@ -6,6 +7,7 @@ import {
   CHEST_WEAPON_GUARANTEE_TICKS,
   COMMONS_CHEST_WEIGHTS,
   chestCadenceInitial,
+  chestWeaponTierWeights,
   generateArena,
   isArenaDiscSafe,
   isInsidePoi,
@@ -15,8 +17,11 @@ import {
   placeChestOnArena,
   rollChestReward,
   SCAR_CHEST_WEIGHTS,
+  SCAR_WEAPON_TIER_MULTIPLIERS,
   TICK_RATE,
-  WEAPON_IDS,
+  WEAPONS,
+  WEAPON_TIER_CURVE_ANCHORS,
+  type WeaponTier,
 } from "@dd/shared";
 import { describe, expect, it } from "vitest";
 
@@ -56,14 +61,16 @@ describe("B20 L2 zone risk and deterministic instancing", () => {
     expect(SCAR_CHEST_WEIGHTS.rareRelicChance).toBeGreaterThan(
       COMMONS_CHEST_WEIGHTS.rareRelicChance,
     );
-    expect(SCAR_CHEST_WEIGHTS.tierWeights[2]).toBeGreaterThan(COMMONS_CHEST_WEIGHTS.tierWeights[2]);
+    expect(SCAR_WEAPON_TIER_MULTIPLIERS[0]).toBeLessThan(1);
+    expect(SCAR_WEAPON_TIER_MULTIPLIERS[4]).toBeGreaterThan(1);
 
     const sample = (
       zone: typeof MAP_ZONE_COMMONS | typeof MAP_ZONE_SCAR,
       elapsedSeconds: number,
     ) => {
       let rare = 0;
-      let high = 0;
+      let tierTotal = 0;
+      let weaponCount = 0;
       for (let index = 0; index < 2_000; index++) {
         const reward = rollChestReward({
           roomSeed: 0x7a0e20,
@@ -71,21 +78,81 @@ describe("B20 L2 zone risk and deterministic instancing", () => {
           spawnTick: index * 1_100,
           elapsedSeconds,
           zone,
-          kind: CHEST_KIND_STANDARD,
+          kind: CHEST_KIND_WEAPON_CACHE,
           playerKey: `weight-${index}`,
-          weaponIds: WEAPON_IDS,
+          weaponIds: ACTIVE_WEAPON_CATALOG_IDS,
         });
         if (reward.relics.some((relic) => relic.rarity === "rare")) rare++;
-        if (reward.weapon?.tier === "high") high++;
+        if (reward.weapon) {
+          tierTotal += reward.weapon.tier;
+          weaponCount++;
+          expect(reward.weapon.tier).toBe(WEAPONS[reward.weapon.id]?.tier);
+        }
       }
-      return { rare, high };
+      return { rare, averageTier: tierTotal / weaponCount };
     };
     const commons = sample(MAP_ZONE_COMMONS, 0);
     const scar = sample(MAP_ZONE_SCAR, 0);
-    const lateCommons = sample(MAP_ZONE_COMMONS, 1_200);
+    const lateCommons = sample(MAP_ZONE_COMMONS, 15 * 60);
     expect(scar.rare).toBeGreaterThan(commons.rare);
-    expect(scar.high).toBeGreaterThan(commons.high);
-    expect(lateCommons.high).toBeGreaterThan(commons.high);
+    expect(scar.averageTier).toBeGreaterThan(commons.averageTier);
+    expect(lateCommons.averageTier).toBeGreaterThan(commons.averageTier);
+  });
+
+  it("simulates the authored minute 0/5/10/15 tier distributions", () => {
+    const sample = (minute: number): number[] => {
+      const counts = [0, 0, 0, 0, 0];
+      const samples = 5_000;
+      for (let index = 0; index < samples; index++) {
+        const reward = rollChestReward({
+          roomSeed: 0xb205c0de,
+          chestSequence: index,
+          spawnTick: index * 997,
+          elapsedSeconds: minute * 60,
+          zone: MAP_ZONE_COMMONS,
+          kind: CHEST_KIND_WEAPON_CACHE,
+          playerKey: `clock-${minute}-${index}`,
+          weaponIds: ACTIVE_WEAPON_CATALOG_IDS,
+        });
+        expect(reward.weapon).toBeDefined();
+        counts[(reward.weapon?.tier ?? 1) - 1]++;
+      }
+      return counts.map((count) => count / samples);
+    };
+
+    for (const anchor of WEAPON_TIER_CURVE_ANCHORS) {
+      expect(chestWeaponTierWeights(anchor.minute * 60, MAP_ZONE_COMMONS)).toEqual(
+        anchor.weights,
+      );
+      const observed = sample(anchor.minute);
+      for (let index = 0; index < anchor.weights.length; index++) {
+        expect(observed[index]).toBeCloseTo((anchor.weights[index] ?? 0) / 100, 1);
+      }
+    }
+
+    const late = sample(15);
+    expect(late[0]).toBeGreaterThan(0);
+    expect(late[1]).toBeGreaterThan(0);
+    expect(late[3] + late[4]).toBeGreaterThan(0.35);
+  });
+
+  it("renormalizes against available authored tiers without mislabeling the reward", () => {
+    const onlyTier: WeaponTier = 5;
+    const weaponIds = ACTIVE_WEAPON_CATALOG_IDS.filter(
+      (id) => WEAPONS[id]?.tier === onlyTier,
+    );
+    const reward = rollChestReward({
+      roomSeed: 5,
+      chestSequence: 0,
+      spawnTick: 0,
+      elapsedSeconds: 0,
+      zone: MAP_ZONE_COMMONS,
+      kind: CHEST_KIND_WEAPON_CACHE,
+      playerKey: "tier-five-only",
+      weaponIds,
+    });
+    expect(reward.weapon?.tier).toBe(onlyTier);
+    expect(WEAPONS[reward.weapon?.id ?? ""]?.tier).toBe(onlyTier);
   });
 
   it("produces reproducible per-player rolls without sharing one co-op receipt", () => {
@@ -96,7 +163,7 @@ describe("B20 L2 zone risk and deterministic instancing", () => {
       elapsedSeconds: 330,
       zone: MAP_ZONE_SCAR,
       kind: CHEST_KIND_WEAPON_CACHE,
-      weaponIds: WEAPON_IDS,
+      weaponIds: ACTIVE_WEAPON_CATALOG_IDS,
     } as const;
     const openerA = rollChestReward({ ...input, playerKey: "player-a" });
     expect(rollChestReward({ ...input, playerKey: "player-a" })).toEqual(openerA);

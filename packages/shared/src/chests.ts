@@ -13,7 +13,7 @@ import {
   type RareRelicId,
 } from "./relics.js";
 import { makeRng, mixSeeds, type Rng } from "./rng.js";
-import { WEAPONS, type WeaponDef, weaponAttackCooldown, weaponDamageSources } from "./weapons.js";
+import { WEAPONS, type WeaponTier } from "./weapons.js";
 
 export const CHEST_FIRST_SECONDS = 25 as const;
 export const CHEST_INTERVAL_SECONDS = 55 as const;
@@ -29,8 +29,6 @@ export const CHEST_WEAPON_GUARANTEE_TICKS = CHEST_WEAPON_GUARANTEE_SECONDS * TIC
 export const CHEST_KIND_STANDARD = 0 as const;
 export const CHEST_KIND_WEAPON_CACHE = 1 as const;
 export type ChestKind = typeof CHEST_KIND_STANDARD | typeof CHEST_KIND_WEAPON_CACHE;
-
-export type PlaceholderWeaponTier = "low" | "mid" | "high";
 
 export interface ChestCadenceState {
   nextSpawnTick: number;
@@ -132,7 +130,6 @@ export interface ChestZoneWeights {
   weaponChance: number;
   relicChance: number;
   moneyChance: number;
-  tierWeights: readonly [low: number, mid: number, high: number];
   rareRelicChance: number;
 }
 
@@ -140,7 +137,6 @@ export const COMMONS_CHEST_WEIGHTS: ChestZoneWeights = {
   weaponChance: 0.5,
   relicChance: 0.7,
   moneyChance: 0.8,
-  tierWeights: [60, 30, 10],
   rareRelicChance: 0.08,
 };
 
@@ -148,7 +144,6 @@ export const SCAR_CHEST_WEIGHTS: ChestZoneWeights = {
   weaponChance: 0.7,
   relicChance: 0.85,
   moneyChance: 0.9,
-  tierWeights: [35, 40, 25],
   rareRelicChance: 0.2,
 };
 
@@ -156,39 +151,67 @@ export function chestWeightsForZone(zone: MapZoneId): ChestZoneWeights {
   return zone === MAP_ZONE_SCAR ? SCAR_CHEST_WEIGHTS : COMMONS_CHEST_WEIGHTS;
 }
 
-/** L2 placeholder only. L5 replaces these damage-budget bands with the catalog-owned tier curve. */
-export function placeholderWeaponBudget(weapon: Readonly<WeaponDef>): number {
-  const payload = weaponDamageSources(weapon).reduce(
-    (total, source) => total + Math.max(0, source.base) * Math.max(1, source.count),
-    0,
-  );
-  const cadence = Math.max(0.2, weaponAttackCooldown(weapon));
-  return payload + Math.sqrt(payload / cadence) * 2;
+export type WeaponTierWeights = readonly [number, number, number, number, number];
+
+export const WEAPON_TIER_CURVE_ANCHORS = [
+  { minute: 0, weights: [64, 28, 8, 0, 0] },
+  { minute: 5, weights: [44, 30, 18, 7, 1] },
+  { minute: 10, weights: [26, 26, 24, 17, 7] },
+  { minute: 15, weights: [14, 18, 25, 25, 18] },
+] as const satisfies readonly Readonly<{ minute: number; weights: WeaponTierWeights }>[];
+
+/** L2's Scar low/mid/high ratios (35/60, 40/30, 25/10), expanded over five tiers. */
+export const SCAR_WEAPON_TIER_MULTIPLIERS: WeaponTierWeights = [
+  7 / 12,
+  7 / 12,
+  4 / 3,
+  5 / 2,
+  5 / 2,
+];
+
+function interpolatedTierWeights(elapsedSeconds: number): WeaponTierWeights {
+  const minute = Number.isFinite(elapsedSeconds) ? Math.max(0, elapsedSeconds / 60) : 0;
+  const last = WEAPON_TIER_CURVE_ANCHORS.at(-1);
+  if (!last || minute >= last.minute) return last?.weights ?? [1, 0, 0, 0, 0];
+  for (let index = 1; index < WEAPON_TIER_CURVE_ANCHORS.length; index++) {
+    const right = WEAPON_TIER_CURVE_ANCHORS[index];
+    const left = WEAPON_TIER_CURVE_ANCHORS[index - 1];
+    if (!left || !right || minute > right.minute) continue;
+    const progress = (minute - left.minute) / (right.minute - left.minute);
+    return left.weights.map(
+      (weight, tierIndex) =>
+        weight + ((right.weights[tierIndex] ?? weight) - weight) * progress,
+    ) as unknown as WeaponTierWeights;
+  }
+  return last.weights;
 }
 
-/** L2 placeholder only. Thresholds intentionally live beside the sampler for surgical L5 replacement. */
-export function placeholderWeaponTier(weapon: Readonly<WeaponDef>): PlaceholderWeaponTier {
-  const budget = placeholderWeaponBudget(weapon);
-  if (budget < 24) return "low";
-  if (budget < 48) return "mid";
-  return "high";
-}
-
-function pickWeightedTier(
-  rng: Rng,
-  base: readonly [number, number, number],
+/** Time, zone, and L2 luck compose as multipliers before candidate availability and normalization. */
+export function chestWeaponTierWeights(
   elapsedSeconds: number,
-  luckMultiplier: number,
-): PlaceholderWeaponTier {
-  const progress = Math.max(0, Math.min(1, elapsedSeconds / 1_200));
-  const low = base[0] * (1 - 0.45 * progress);
-  const mid = base[1] * (1 + 0.15 * progress);
-  const high = base[2] * (1 + 1.5 * progress) * luckMultiplier;
-  const total = low + mid + high;
+  zone: MapZoneId,
+  luckStacks = 0,
+): WeaponTierWeights {
+  const timeWeights = interpolatedTierWeights(elapsedSeconds);
+  const zoneMultipliers =
+    zone === MAP_ZONE_SCAR ? SCAR_WEAPON_TIER_MULTIPLIERS : ([1, 1, 1, 1, 1] as const);
+  const highTierLuck = 1 + Math.max(0, Math.min(20, luckStacks)) * 0.05;
+  return timeWeights.map(
+    (weight, index) =>
+      weight * (zoneMultipliers[index] ?? 1) * (index >= 3 ? highTierLuck : 1),
+  ) as unknown as WeaponTierWeights;
+}
+
+function pickWeightedTier(rng: Rng, weights: WeaponTierWeights): WeaponTier {
+  const total = weights.reduce((sum, weight) => sum + Math.max(0, weight), 0);
+  if (total <= 0) return 1;
   const draw = rng.range(0, total);
-  if (draw < low) return "low";
-  if (draw < low + mid) return "mid";
-  return "high";
+  let cursor = 0;
+  for (let index = 0; index < weights.length; index++) {
+    cursor += Math.max(0, weights[index] ?? 0);
+    if (draw < cursor) return (index + 1) as WeaponTier;
+  }
+  return 5;
 }
 
 function stringSeed(value: string): number {
@@ -215,7 +238,7 @@ export interface ChestRollInput {
 
 export interface ChestWeaponReward {
   id: string;
-  tier: PlaceholderWeaponTier;
+  tier: WeaponTier;
 }
 
 export interface ChestRelicReward {
@@ -256,17 +279,28 @@ export function rollChestReward(input: Readonly<ChestRollInput>): ChestReward {
 
   let weapon: ChestWeaponReward | undefined;
   if (hasWeapon && input.weaponIds.length > 0) {
-    const tier = pickWeightedTier(
-      weaponRng,
-      weights.tierWeights,
-      input.elapsedSeconds,
-      luckMultiplier,
-    );
-    const inTier = input.weaponIds.filter((id) => {
+    const candidatesByTier = new Map<WeaponTier, string[]>();
+    for (const id of input.weaponIds) {
       const weaponDef = WEAPONS[id];
-      return weaponDef ? placeholderWeaponTier(weaponDef) === tier : false;
-    });
-    const candidates = inTier.length > 0 ? inTier : input.weaponIds.filter((id) => !!WEAPONS[id]);
+      if (!weaponDef) continue;
+      const candidates = candidatesByTier.get(weaponDef.tier) ?? [];
+      candidates.push(id);
+      candidatesByTier.set(weaponDef.tier, candidates);
+    }
+    let tierWeights = chestWeaponTierWeights(
+      input.elapsedSeconds,
+      input.zone,
+      input.luckStacks,
+    ).map((weight, index) =>
+      (candidatesByTier.get((index + 1) as WeaponTier)?.length ?? 0) > 0 ? weight : 0,
+    ) as unknown as WeaponTierWeights;
+    if (tierWeights.every((weight) => weight <= 0)) {
+      tierWeights = tierWeights.map((_weight, index) =>
+        (candidatesByTier.get((index + 1) as WeaponTier)?.length ?? 0) > 0 ? 1 : 0,
+      ) as unknown as WeaponTierWeights;
+    }
+    const tier = pickWeightedTier(weaponRng, tierWeights);
+    const candidates = candidatesByTier.get(tier) ?? [];
     if (candidates.length > 0) weapon = { id: weaponRng.pick(candidates), tier };
     else hasWeapon = false;
   }
