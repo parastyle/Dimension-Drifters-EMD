@@ -1,4 +1,11 @@
-import { CombatDelivery, EnemyState, TILE_GROUND, WEAPONS, ZoneStyle } from "@dd/shared";
+import {
+  CombatDelivery,
+  EnemyState,
+  swingDescriptorFor,
+  TILE_GROUND,
+  WEAPONS,
+  ZoneStyle,
+} from "@dd/shared";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("colyseus", () => {
@@ -77,23 +84,25 @@ describe("GameRoom — V3C caster authority", () => {
     expect(damages.reduce((sum, damage) => sum + damage, 0)).toBeCloseTo(expectedTotal, 8);
   });
 
-  it("samples every Hailshard heading on the server across the full 360-degree circle", () => {
-    const { room, player, combat } = makeRoom("hail-radial");
+  it("keeps Hailshard projectiles inside its aimed ice cone with no inherited melee swing", () => {
+    const { room, player, combat } = makeRoom("hail-cone");
     const definition = equip(room, player, combat, "x2-hailshard-resonator");
     if (!definition.scatter) throw new Error("Hailshard scatter fixture is required");
-    const values = [0, 0.5, 0.25, 0.5, 0.5, 0.5, 0.75, 0.5, 0.99, 0.5];
-    let index = 0;
-    const random = vi.spyOn(Math, "random").mockImplementation(() => values[index++] ?? 0.5);
-
-    room.fireScatter(player, combat, definition);
+    const random = vi.spyOn(Math, "random").mockReturnValue(0.5);
+    room.resolveSwing(
+      player,
+      combat,
+      definition,
+      swingDescriptorFor(definition, definition.cooldown),
+    );
 
     const headings = [...room.state.projectiles.values()].map((row) =>
       Math.atan2(row.vy, row.vx),
     );
     expect(headings).toHaveLength(definition.scatter.count);
-    expect(headings.some((angle) => angle > Math.PI / 3)).toBe(true);
-    expect(headings.some((angle) => angle < -Math.PI / 3)).toBe(true);
-    expect(headings.some((angle) => Math.abs(angle) > Math.PI * 0.9)).toBe(true);
+    expect(Math.max(...headings)).toBeLessThanOrEqual(definition.scatter.spread + 1e-8);
+    expect(Math.min(...headings)).toBeGreaterThanOrEqual(-definition.scatter.spread - 1e-8);
+    expect(room.meleeSwings.has(player.id)).toBe(false);
     random.mockRestore();
   });
 

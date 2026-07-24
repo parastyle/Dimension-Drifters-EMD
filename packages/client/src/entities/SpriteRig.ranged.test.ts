@@ -414,11 +414,14 @@ describe("SpriteRig V3G grip and mechanism laws", () => {
     expect(secondaryGripHandRendersAbove("bolt")).toBe(true);
   });
 
-  it("leaves Dustdevil's vertical-foregrip hand planted because its mechanism resolves to none", async () => {
+  it("leaves Dustdevil and Streetsweeper foregrip hands planted because neither cycles", async () => {
     const { gunHandlingMechanismFor, sampleGunHandlingHandOffset } = await import("./SpriteRig.js");
     const riotgun = WEAPONS["x2-dustdevil-riotgun"];
+    const streetsweeper = WEAPONS["x2-quicksilver-streetsweeper"];
     expect(riotgun?.gripPoints?.secondary?.role).toBe("vertical-foregrip");
+    expect(streetsweeper?.gripPoints?.secondary?.role).toBe("horizontal-foregrip");
     expect(gunHandlingMechanismFor(riotgun)).toBeUndefined();
+    expect(gunHandlingMechanismFor(streetsweeper)).toBeUndefined();
     const out = { forward: Number.NaN, lateral: Number.NaN };
     sampleGunHandlingHandOffset(undefined, 120, 240, 130, false, out);
     expect(out).toEqual({ forward: 0, lateral: 0 });
@@ -429,7 +432,7 @@ describe("SpriteRig V3G grip and mechanism laws", () => {
     const mechanisms = Object.values(WEAPONS).filter(
       (weapon) => gunHandlingMechanismFor(weapon) !== undefined,
     );
-    expect(mechanisms).toHaveLength(31);
+    expect(mechanisms).toHaveLength(30);
     for (const weapon of mechanisms) {
       const rig = Object.create(SpriteRig.prototype) as {
         weapons: Array<{ def: typeof weapon }>;

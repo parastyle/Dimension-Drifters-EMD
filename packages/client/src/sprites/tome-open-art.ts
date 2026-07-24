@@ -1,6 +1,8 @@
 export interface TomeOpenArt {
   readonly textureKey: string;
-  readonly url: string;
+  readonly url?: string;
+  /** No companion frame exists: retain two mirrored/splayed leaves made from the equipped closed sprite. */
+  readonly proceduralSplay?: true;
   /** Painted direction of the open fore-edge in texture-local radians (+X = 0). */
   readonly openingDirectionRad?: number;
   /** Multiplier for detached page-turn quads; the held book scale remains unchanged. */
@@ -8,8 +10,8 @@ export interface TomeOpenArt {
 }
 
 /**
- * The seven expansion books with a painted open-state companion. These stay loose instead of entering the
- * main atlas: expansion weapon art is loaded only when an equipped/pickup identity makes it necessary.
+ * Expansion books with a painted open-state companion, plus explicit procedural fallbacks where the owner
+ * ordered an open state without new art. Painted companions stay loose and load only when equipped.
  */
 const TOME_OPEN_ART: Readonly<Record<string, TomeOpenArt>> = {
   "x2-pyroglyph-spellbook": {
@@ -41,6 +43,10 @@ const TOME_OPEN_ART: Readonly<Record<string, TomeOpenArt>> = {
     textureKey: "tome-open:x2-verdigris-grand-grimoire",
     url: "sprites/x2-verdigris-grand-grimoire/open.png",
     pageScale: 7,
+  },
+  "x2-rimebound-folio": {
+    textureKey: "procedural-open:x2-rimebound-folio",
+    proceduralSplay: true,
   },
 };
 

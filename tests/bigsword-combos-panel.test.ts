@@ -30,7 +30,7 @@ const PANEL_ROSTER = {
   ],
   "claymore-breach": ["x2-tombwarden-claymore", "x2-dustreaper-zweihander"],
   "glaive-compass": ["x2-thunderhead-voulge", "x2-wickfire-fauchard"],
-  "bardiche-hookbreak": ["x2-permafrost-bardiche", "x2-quarry-splitter-bardiche"],
+  "bardiche-hookbreak": ["x2-permafrost-bardiche"],
 } as const;
 
 function weapon(id: string) {
@@ -88,6 +88,10 @@ describe("big-sword visual combo panel", () => {
     expect(meleeComboSelectionFor(weapon("x2-stormpetal-odachi"))).toMatchObject({
       family: "chop",
       variant: "nodachi-petalfall",
+    });
+    expect(meleeComboSelectionFor(weapon("x2-quarry-splitter-bardiche"))).toMatchObject({
+      family: "chop",
+      variant: "quarry-frontflip-slam",
     });
   });
 

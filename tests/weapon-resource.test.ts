@@ -101,7 +101,7 @@ describe("Drive formula v1", () => {
       arcaneLance: WEAPON_RESOURCE_PROFILES["x-staff-arcane-lance"]?.neutralCost,
     }).toEqual({
       bowie: 4,
-      tombstone: 20.75,
+      tombstone: 16,
       wyrmtooth: 33.5,
       rustyThrown: 15,
       railspike: 22.5,

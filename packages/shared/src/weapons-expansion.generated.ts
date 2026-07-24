@@ -78,13 +78,13 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
     "halfArc": 0.8,
     "cooldown": 0.42,
     "displayLength": 102,
-    "swingArc": 2.7,
+    "swingArc": 6.283185307179586,
     "gripFrac": 0.12,
     "tags": {
-      "grip": "1H",
+      "grip": "dual",
       "size": "M",
       "delivery": "melee-arc",
-      "fireMode": "tap-charge",
+      "fireMode": "hold",
       "element": "fire",
       "classPool": "melee",
       "family": "saber",
@@ -94,6 +94,23 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "DEX"
       ]
     },
+    "swingStyle": "spin",
+    "performance": {
+      "hold": "steady",
+      "action": "spin",
+      "continuous": true,
+      "suppressSwing": true,
+      "twirl": {
+        "plane": "ground-whirlwind",
+        "pivot": "grip",
+        "direction": "forward",
+        "visualRevolutions": 1
+      },
+      "holdScaling": {
+        "cadence": "weapon-cooldown"
+      }
+    },
+    "dual": true,
     "durability": 75
   },
   "x2-hailwidow-katana": {
@@ -930,6 +947,10 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       ]
     },
     "description": "A flawless white-gold execution cleaver chased with a vigil-cross, its mirror bit humming with a sanctified warmth that judges in one heavy stroke.",
+    "authoritativeCombo": true,
+    "swingStyle": "chop",
+    "comboFamily": "chop",
+    "comboVariant": "sanctified-overhead-then-slash",
     "suppressVfx": true,
     "twoHanded": true,
     "durability": 90
@@ -1185,7 +1206,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
     "tags": {
       "grip": "2H",
       "size": "XL",
-      "delivery": "melee-slam",
+      "delivery": "melee-arc",
       "fireMode": "tap-charge",
       "element": "holy",
       "classPool": "melee",
@@ -1195,15 +1216,11 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "STR"
       ]
     },
-    "description": "A towering ceremonial greataxe chased in brass and stained-glass enamel, its broad bit ringing like a struck bell to call down a circle of holy light.",
+    "description": "A towering ceremonial greataxe chased in brass and stained-glass enamel, its broad bit carrying a blade-hugging tongue of flame through each cut.",
     "effectRecipe": "choir-iron-flame-slash",
     "effectEmitter": "blade",
     "twoHanded": true,
-    "durability": 90,
-    "quake": {
-      "radius": 170,
-      "damage": 9
-    }
+    "durability": 90
   },
   "x2-quicksilver-skinning-cleaver": {
     "id": "x2-quicksilver-skinning-cleaver",
@@ -1838,13 +1855,13 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
     "range": 240,
     "halfArc": 1.1,
     "cooldown": 0.88,
-    "displayLength": 320,
+    "displayLength": 256,
     "swingArc": 3.1,
     "gripFrac": 0.08,
     "tags": {
       "grip": "2H",
       "size": "XL",
-      "delivery": "melee-slam",
+      "delivery": "melee-arc",
       "fireMode": "tap-charge",
       "element": "physical",
       "classPool": "melee",
@@ -1855,15 +1872,15 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "CON"
       ]
     },
+    "authoritativeCombo": true,
+    "swingStyle": "chop",
+    "comboFamily": "chop",
+    "comboVariant": "quarry-frontflip-slam",
     "effectRecipe": "quarry-quad-spatter",
     "effectEmitter": "blade",
     "effectTiming": "swing-midpoint",
     "twoHanded": true,
-    "durability": 90,
-    "quake": {
-      "radius": 170,
-      "damage": 8
-    }
+    "durability": 90
   },
   "x2-wickfire-fauchard": {
     "id": "x2-wickfire-fauchard",
@@ -2010,7 +2027,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       ]
     },
     "performance": {
-      "hold": "steady",
+      "hold": "overhead",
       "action": "throw-release",
       "preThrowRevolutions": 0,
       "throwHeightPx": 28
@@ -3731,7 +3748,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
     "range": 80,
     "halfArc": 0.5,
     "cooldown": 0.4,
-    "displayLength": 46,
+    "displayLength": 55.2,
     "swingArc": 1.8,
     "gripFrac": 0.18,
     "tags": {
@@ -4019,8 +4036,8 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
     },
     "gripPoints": {
       "primary": {
-        "x": 0.53,
-        "y": 0.72
+        "x": 0.38,
+        "y": 0.64
       }
     },
     "gun": {
@@ -4659,11 +4676,11 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
     },
     "gripPoints": {
       "primary": {
-        "x": 0.43,
+        "x": 0.36,
         "y": 0.67
       },
       "secondary": {
-        "x": 0.55,
+        "x": 0.5,
         "y": 0.64,
         "role": "horizontal-foregrip"
       }
@@ -5472,7 +5489,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
     "range": 320,
     "halfArc": 0.6,
     "cooldown": 0.55,
-    "displayLength": 96,
+    "displayLength": 120,
     "swingArc": 1.8,
     "gripFrac": 0.14,
     "tags": {
@@ -5546,6 +5563,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "pump"
       ]
     },
+    "archived": true,
     "gripPoints": {
       "primary": {
         "x": 0.38,
@@ -5793,16 +5811,13 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "grip": "2H",
       "size": "L",
       "delivery": "projectile",
-      "fireMode": "auto",
+      "fireMode": "semi-auto",
       "element": "physical",
       "classPool": "ranged",
-      "family": "shotgun",
+      "family": "grenade-launcher",
       "rangeBand": "close",
       "scaling": [
         "DEX"
-      ],
-      "handling": [
-        "pump"
       ]
     },
     "gripPoints": {
@@ -5812,23 +5827,27 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       },
       "secondary": {
         "x": 0.63,
-        "y": 0.76,
-        "role": "pump"
+        "y": 0.7,
+        "role": "horizontal-foregrip"
       }
     },
     "twoHanded": true,
     "gun": {
-      "damage": 4,
-      "projectileSpeed": 720,
-      "range": 360,
+      "damage": 11,
+      "projectileSpeed": 580,
+      "range": 600,
       "fireRate": 0.3,
       "magazine": 12,
       "reloadSeconds": 2,
-      "bulletKind": "pellet",
-      "muzzle": "rapid",
+      "bulletKind": "grenade",
+      "muzzle": "boom",
       "recoil": 0.0018,
-      "pellets": 5,
-      "spread": 0.3
+      "projectileVisualScale": 1.35,
+      "arcHeight": 112,
+      "explode": {
+        "radius": 62,
+        "damage": 9
+      }
     }
   },
   "x2-hallowbore-coachgun": {
@@ -8384,6 +8403,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "INT"
       ]
     },
+    "archived": true,
     "chainLightning": {
       "jumps": 4,
       "range": 200,
@@ -8533,7 +8553,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
     "tags": {
       "grip": "1H",
       "size": "S",
-      "delivery": "melee-arc",
+      "delivery": "projectile",
       "fireMode": "tap-charge",
       "element": "frost",
       "classPool": "caster",
@@ -8542,6 +8562,13 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "INT"
       ]
+    },
+    "suppressMeleeHitbox": true,
+    "performance": {
+      "hold": "steady",
+      "action": "page-flip",
+      "continuous": true,
+      "suppressSwing": true
     },
     "scatter": {
       "count": 7,
@@ -9062,6 +9089,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "INT"
       ]
     },
+    "archived": true,
     "scatter": {
       "count": 6,
       "spread": 0.48,
@@ -10174,7 +10202,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
     "tags": {
       "grip": "1H",
       "size": "S",
-      "delivery": "melee-arc",
+      "delivery": "projectile",
       "fireMode": "tap-charge",
       "element": "frost",
       "classPool": "caster",
@@ -10184,10 +10212,11 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "INT"
       ]
     },
+    "suppressVfx": true,
+    "suppressMeleeHitbox": true,
     "performance": {
       "hold": "steady",
-      "action": "spin",
-      "continuous": true,
+      "action": "hold",
       "suppressSwing": true
     },
     "scatter": {
@@ -10196,7 +10225,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "speed": 420,
       "range": 260,
       "damage": 6,
-      "aim": "radial-random",
+      "aim": "cone",
       "explode": {
         "radius": 48,
         "damage": 5
@@ -11571,6 +11600,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "LUK"
       ]
     },
+    "archived": true,
     "scatter": {
       "count": 8,
       "spread": 0.65,
@@ -12315,6 +12345,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
     "swingStyle": "punch",
     "comboFamily": "punch",
     "comboVariant": "coyote-voltage-boxing",
+    "suppressVfx": true,
     "performance": {
       "hold": "steady",
       "action": "default-swing",
@@ -14797,6 +14828,46 @@ export const GENERATED_MELEE_COMBO_BARS = {
       }
     }
   ],
+  "sanctified-overhead-then-slash": [
+    {
+      "name": "sanctified overhead chop",
+      "motion": "overhead",
+      "direction": 1,
+      "hand": "both",
+      "timing": {
+        "activeStart": 0.14,
+        "activeEnd": 0.45,
+        "impact": 0.39,
+        "followEnd": 0.62
+      },
+      "path": {
+        "kind": "sweep",
+        "arcMultiplier": 1,
+        "rangeMultiplier": 1,
+        "damageMultiplier": 1,
+        "knockback": 8
+      }
+    },
+    {
+      "name": "existing sanctified slash",
+      "motion": "slash",
+      "direction": 1,
+      "hand": "both",
+      "timing": {
+        "activeStart": 0.13,
+        "activeEnd": 0.44,
+        "impact": 0.37,
+        "followEnd": 0.61
+      },
+      "path": {
+        "kind": "sweep",
+        "arcMultiplier": 1,
+        "rangeMultiplier": 1,
+        "damageMultiplier": 1,
+        "knockback": 0
+      }
+    }
+  ],
   "hollowmoon-eclipse": [
     {
       "name": "hollow draw",
@@ -15124,6 +15195,36 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "rangeMultiplier": 1.12,
         "damageMultiplier": 1,
         "knockback": 88
+      }
+    }
+  ],
+  "quarry-frontflip-slam": [
+    {
+      "name": "quarry front-flip slam",
+      "motion": "execution-slam",
+      "direction": 1,
+      "hand": "both",
+      "timing": {
+        "activeStart": 0.16,
+        "activeEnd": 0.7,
+        "impact": 0.68,
+        "followEnd": 0.9
+      },
+      "path": {
+        "kind": "fan",
+        "arcMultiplier": 1,
+        "rangeMultiplier": 1,
+        "damageMultiplier": 1,
+        "knockback": 24,
+        "deltaAngle": 6.283185307179586
+      },
+      "rootMotion": {
+        "forwardPx": 96,
+        "lateralPx": 0,
+        "durationSeconds": 0.22
+      },
+      "theatrics": {
+        "flip": "front"
       }
     }
   ],

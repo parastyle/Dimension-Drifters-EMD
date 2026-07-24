@@ -198,7 +198,7 @@ describe("V7-HIT standing VFX-collision law", () => {
     }
   });
 
-  it("keeps Sanctified Headsman on its ordinary blade envelope with no ignition hook", () => {
+  it("keeps Sanctified Headsman's ordered combo on its ordinary blade reach", () => {
     const headsman = WEAPONS["x2-sanctified-headsman"];
     if (!headsman) throw new Error("Missing Sanctified Headsman fixture");
     const envelope = meleeDamageEnvelopeFor(headsman);
@@ -209,7 +209,7 @@ describe("V7-HIT standing VFX-collision law", () => {
     expect(bladeExtensionReveal(headsman, swing, 0.05)).toBe(0);
     expect(envelope.maxReach).toBe(envelope.baseReach);
     expect(meleeDamageReachAt(headsman, swing, swing.activeEndSeconds)).toBe(envelope.baseReach);
-    expect(weaponUsesAuthoritativeEnvelopeCombo(headsman)).toBe(false);
+    expect(weaponUsesAuthoritativeEnvelopeCombo(headsman)).toBe(true);
   });
 
   it("normalizes beam geometry once and preserves the legacy shared projectile radius until authored", () => {

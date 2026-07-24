@@ -7143,7 +7143,8 @@ export class GameRoom extends Room<ArenaState> {
     const cadenceMult =
       lootCooldownMult(player.weaponAffix) * this.weaponRecoveryMult(player, weapon);
     const soloCooldown = weaponAttackCooldown(weapon) * cadenceMult;
-    const melee = !weapon.gun && !weapon.thrown && !weapon.cast;
+    const melee =
+      weapon.suppressMeleeHitbox !== true && !weapon.gun && !weapon.thrown && !weapon.cast;
     const soloBeat = melee ? this.nextSoloMeleeBeat(player, c, weapon, soloCooldown) : undefined;
     const authoritativeComboStep =
       weaponUsesAuthoritativeEnvelopeCombo(weapon) && soloBeat
@@ -7276,37 +7277,38 @@ export class GameRoom extends Room<ArenaState> {
     const reach = envelope.maxReach * rangeMultiplier;
     const authoredLunge = weapon.performance?.lunge;
     const impactAtDestination = hand === 0 && authoredLunge?.impactAtDestination === true;
-    this.meleeSwings.set(swingKey, {
-      playerId: player.id,
-      swing: authoritativeSwing,
-      aim0,
-      range: reach,
-      swingArc: authoritativeArc,
-      halfWidth: envelope.maxHalfWidth,
-      rangeMultiplier,
-      timedWeaponEnvelope: true,
-      edgeDamage:
-        weapon.damage *
-        edgePower *
-        (katanaEffect?.damageMultiplier ?? 1) *
-        (comboStep && (comboStep.rootMotion || weapon.glovePair?.wrapsFeet === true)
-          ? comboStep.path.damageMultiplier
-          : 1) *
-        (weapon.rapidThrust?.damageMultiplier ?? 1),
-      toughDamageMultiplier: katanaEffect?.toughDamageMultiplier ?? 1,
-      weaponId: weapon.id,
-      crit: attackCrit,
-      hitStatus: weapon.hitStatus,
-      elapsed: 0,
-      hit: new Set<string>(),
-      ...(rapidImpactSeconds
-        ? {
-            rapidImpactSeconds,
-            rapidHitIndex: 0,
-          }
-        : {}),
-      waitForWeaponLunge: impactAtDestination,
-    });
+    if (weapon.suppressMeleeHitbox !== true)
+      this.meleeSwings.set(swingKey, {
+        playerId: player.id,
+        swing: authoritativeSwing,
+        aim0,
+        range: reach,
+        swingArc: authoritativeArc,
+        halfWidth: envelope.maxHalfWidth,
+        rangeMultiplier,
+        timedWeaponEnvelope: true,
+        edgeDamage:
+          weapon.damage *
+          edgePower *
+          (katanaEffect?.damageMultiplier ?? 1) *
+          (comboStep && (comboStep.rootMotion || weapon.glovePair?.wrapsFeet === true)
+            ? comboStep.path.damageMultiplier
+            : 1) *
+          (weapon.rapidThrust?.damageMultiplier ?? 1),
+        toughDamageMultiplier: katanaEffect?.toughDamageMultiplier ?? 1,
+        weaponId: weapon.id,
+        crit: attackCrit,
+        hitStatus: weapon.hitStatus,
+        elapsed: 0,
+        hit: new Set<string>(),
+        ...(rapidImpactSeconds
+          ? {
+              rapidImpactSeconds,
+              rapidHitIndex: 0,
+            }
+          : {}),
+        waitForWeaponLunge: impactAtDestination,
+      });
 
     if (authoredLunge && hand === 0) {
       this.pendingWeaponLunges.set(player.id, {

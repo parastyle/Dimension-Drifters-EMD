@@ -29,6 +29,10 @@ const MARKED_RADIAL_WEAPON_IDS = [
 ] as const;
 
 const SYNTHETIC_PER_LAYER_IDS = ["blade-trail", "twin-slash", "thrust-streak"] as const;
+const B30_REMOVED_AFTER_B24_IDS = new Set([
+  "x2-hailshard-resonator",
+  "x2-coyote-trickster-s-sparkmitt",
+]);
 
 function weapon(id: string): WeaponDef {
   const definition = WEAPONS[id];
@@ -43,7 +47,11 @@ function sha256(path: string): string {
 function wasSyntheticFallbackCandidate(definition: WeaponDef): boolean {
   const vfx = WEAPON_VFX[definition.id];
   const authored = !!(vfx?.suite && Object.keys(vfx.suite).length > 0);
-  return definition.suppressVfx !== true && !authored && vfx?.suppressFallback !== true;
+  return (
+    (definition.suppressVfx !== true || B30_REMOVED_AFTER_B24_IDS.has(definition.id)) &&
+    !authored &&
+    vfx?.suppressFallback !== true
+  );
 }
 
 function formerSyntheticLayer(definition: WeaponDef): (typeof SYNTHETIC_PER_LAYER_IDS)[number] {
@@ -67,12 +75,12 @@ describe("B24 shared radial fallback removal", () => {
 
     expect(candidates).toHaveLength(322);
     expect(byFormerLayer).toEqual({
-      "blade-trail": 290,
-      "twin-slash": 22,
+      "blade-trail": 289,
+      "twin-slash": 23,
       "thrust-streak": 10,
     });
-    expect(candidates.filter((definition) => !definition.archived)).toHaveLength(309);
-    expect(candidates.filter((definition) => definition.archived)).toHaveLength(13);
+    expect(candidates.filter((definition) => !definition.archived)).toHaveLength(305);
+    expect(candidates.filter((definition) => definition.archived)).toHaveLength(17);
     for (const id of MARKED_RADIAL_WEAPON_IDS)
       expect(
         candidates.map((definition) => definition.id),
@@ -131,7 +139,7 @@ describe("B24 shared radial fallback removal", () => {
     });
 
     expect(sha256("packages/client/src/vfx/weapon-effect-recipes.ts")).toBe(
-      "2D9FF071F64A038924DD66AABF056B90696053954C21C0664AB2761AD22C1698",
+      "C3B613499A44F9B1877A8BA3965DAE61216747EAEE8D48F0734FC773CB6DB94A",
     );
     expect(sha256("packages/client/src/vfx/weapon-effect-vfx.ts")).toBe(
       "813C0739A4D53BAB740C934A2D0FCEEEB256970F1D20224665D64A6D58FEBD54",
@@ -165,8 +173,8 @@ describe("B24 shared radial fallback removal", () => {
     expect(weapon("x2-pocket-hexicon").archived).toBe(true);
     expect(ARCHIVED_WEAPON_IDS).toContain("x2-pocket-hexicon");
     expect(ACTIVE_WEAPON_CATALOG_IDS).not.toContain("x2-pocket-hexicon");
-    expect(ACTIVE_WEAPON_CATALOG_IDS).toHaveLength(342);
-    expect(ARCHIVED_WEAPON_IDS).toHaveLength(15);
+    expect(ACTIVE_WEAPON_CATALOG_IDS).toHaveLength(338);
+    expect(ARCHIVED_WEAPON_IDS).toHaveLength(19);
   });
 
   it("renders Spitfire Censer Wand exactly forty percent larger without stat or art edits", () => {

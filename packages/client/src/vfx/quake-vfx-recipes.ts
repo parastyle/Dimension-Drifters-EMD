@@ -47,14 +47,13 @@ export interface QuakeVfxRecipe {
 }
 
 /**
- * Honest inventory: these are the 32 catalog weapons whose quake reaches the same
+ * Honest inventory: these are the 31 catalog weapons whose quake reaches the same
  * `quake-burst` component pack plus the same procedural gold ellipse/dust/debris fallback as
  * Anvil-Heart. Grave-call semantics, Tombstone's hero quake, and explicitly suppressed/replaced
  * quake recipes are intentionally outside this family.
  */
 export const LEGACY_ANVIL_QUAKE_CLUSTER_IDS = Object.freeze([
   "x2-sluicebox-maul-axe",
-  "x2-choir-iron-greataxe",
   "x2-boomtown-maul",
   "x2-frostbite-headstone",
   "x2-anvil-drop",
@@ -90,7 +89,6 @@ export const LEGACY_ANVIL_QUAKE_CLUSTER_IDS = Object.freeze([
 /** Explicit distribution keeps visual authorship reviewable instead of hiding it behind an id hash. */
 export const ANVIL_QUAKE_VARIANT_ASSIGNMENTS = Object.freeze({
   "x2-sluicebox-maul-axe": "faultline-crack",
-  "x2-choir-iron-greataxe": "faultline-crack",
   "x2-boomtown-maul": "hammer-slam",
   "x2-frostbite-headstone": "faultline-crack",
   "x2-anvil-drop": "hammer-slam",

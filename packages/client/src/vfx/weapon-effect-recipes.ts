@@ -138,6 +138,7 @@ export const WEAPON_EFFECT_RECIPES = Object.freeze({
     swingPack: "fire-bolt",
     swingCount: 9,
     additive: true,
+    suppressQuakeVfx: true,
   }),
   "hangman-blood-spatter": Object.freeze({
     id: "hangman-blood-spatter",

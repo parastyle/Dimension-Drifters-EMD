@@ -481,6 +481,19 @@ export interface WeaponDamageEnvelope {
   readonly katanaFinisherBurst?: RadialDamageEnvelope;
 }
 
+/** Some caster scatter definitions intentionally use the melee dispatcher only as an accepted-beat clock.
+ * They must not inherit an invisible swept edge beside their visible projectile attack. */
+export function weaponHasPrimaryMeleeEnvelope(weapon: WeaponDef): boolean {
+  return (
+    weapon.suppressMeleeHitbox !== true &&
+    !weapon.gun &&
+    !weapon.cast &&
+    !weapon.thrown &&
+    !weapon.beam &&
+    weapon.groundZone?.trigger !== "channel"
+  );
+}
+
 /** The complete canonical collision contract for one weapon. Consumers may select a source from this
  * object, but must not substitute recipe-local dimensions. */
 export function weaponDamageEnvelopeFor(weapon: WeaponDef): WeaponDamageEnvelope {
@@ -490,15 +503,9 @@ export function weaponDamageEnvelopeFor(weapon: WeaponDef): WeaponDamageEnvelope
   if (weapon.thrown) projectiles.thrown = projectileDamageEnvelopeFor(weapon, "thrown");
   if (weapon.scatter) projectiles.scatter = projectileDamageEnvelopeFor(weapon, "scatter");
   if (weapon.hybridProjectile) projectiles.hybrid = projectileDamageEnvelopeFor(weapon, "hybrid");
-  const hasPrimaryMelee =
-    !weapon.gun &&
-    !weapon.cast &&
-    !weapon.thrown &&
-    !weapon.beam &&
-    weapon.groundZone?.trigger !== "channel";
   return Object.freeze({
     weaponId: weapon.id,
-    melee: hasPrimaryMelee ? meleeDamageEnvelopeFor(weapon) : undefined,
+    melee: weaponHasPrimaryMeleeEnvelope(weapon) ? meleeDamageEnvelopeFor(weapon) : undefined,
     projectiles: Object.freeze(projectiles),
     beam: beamDamageEnvelopeFor(weapon),
     groundZone: weapon.groundZone

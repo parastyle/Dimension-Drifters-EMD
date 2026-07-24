@@ -44,7 +44,7 @@ describe("V6A generated-art owner orders", () => {
       range: 160,
       suppressVfx: true,
     });
-    expect(swingDescriptorFor(headsman, headsman.cooldown).style).toBe("orbit");
+    expect(swingDescriptorFor(headsman, headsman.cooldown).style).toBe("chop");
     const playerSource = readFileSync("packages/client/src/vfx/VfxPlayer.ts", "utf8");
     expect(playerSource).not.toContain("headsman-proto");
     expect(playerSource).not.toContain("headsmanExtensionReveal");
@@ -59,13 +59,18 @@ describe("V6A generated-art owner orders", () => {
       range: 210,
       cooldown: 0.6,
       swingArc: Math.PI * 2,
-      timingSwingArc: 2.7,
       performance: {
         hold: "steady",
         action: "spin",
         continuous: true,
         suppressSwing: true,
-        twirl: { plane: "continuous-frontflip", direction: "forward", visualRevolutions: 1 },
+        lunge: { distancePx: 144, durationSeconds: 0.2 },
+        twirl: {
+          plane: "continuous-frontflip",
+          direction: "forward",
+          visualRevolutions: 6,
+          cadenceSeconds: 0.2,
+        },
       },
     });
   });

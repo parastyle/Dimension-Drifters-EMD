@@ -47,7 +47,7 @@ describe("B15 and adjacent B10 weapon VFX removals", () => {
     });
   });
 
-  it("suppresses Tombstone's swing and quake treatments without changing quake authority", () => {
+  it("keeps Tombstone's removed treatment from leaving an invisible quake authority", () => {
     const tombstone = weapon("tombstone-greatsword");
     const swing = swingDescriptorFor(tombstone, tombstone.cooldown);
     expect(tombstone).toMatchObject({
@@ -56,9 +56,8 @@ describe("B15 and adjacent B10 weapon VFX removals", () => {
       range: 156,
       displayLength: 124,
       suppressVfx: true,
-      quake: { radius: 270, damage: 8 },
     });
-    expect(tombstone.quake?.vfx).toBeUndefined();
+    expect(tombstone.quake).toBeUndefined();
     expect(resolveWeaponEffectRecipe(tombstone)).toBeUndefined();
     expect(shouldSpawnLegacyQuakeVfx(tombstone)).toBe(false);
     expect(weaponVfxSuiteFor(tombstone.id, tombstone.tags.element, swing.style)).toMatchObject({

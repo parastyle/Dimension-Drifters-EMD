@@ -83,8 +83,8 @@ const TOP_KEYS = new Set([
   "paletteAccent", "cardartAction", "behavior", "stats", "description", "banned", "expansion", "archived",
   "sprite", "firingFrame", "sizeClass", "stance", "authoritativeCombo", "comboFamily", "comboVariant", "comboBar", "comboChoreography", "katanaHook",
   "bespokeVfxSheet", "performance", "swingStyle", "effectRecipe", "effectEmitter", "effectTiming",
-  "renderAboveHands", "suppressVfx", "hitStatus", "gripPoints", "handlingTags", "poseLanguage",
-  "impactMuzzle", "rapidThrust",
+  "renderAboveHands", "suppressVfx", "suppressMeleeHitbox", "hitStatus", "gripPoints",
+  "handlingTags", "poseLanguage", "impactMuzzle", "rapidThrust", "fireMode",
 ]);
 // The sibling-block bug (§43): mechanic stats authored NEXT TO `behavior` instead of inside it were
 // silently ignored, shipping 11 weapons with default kits. Now an instant failure.
@@ -416,6 +416,14 @@ function comboBarOf(w, choreography) {
         knockback: num(movePath.knockback, 0, 160, 0, `${path}.path.knockback`),
       },
     };
+    if (movePath.deltaAngle !== undefined)
+      mapped.path.deltaAngle = num(
+        movePath.deltaAngle,
+        -Math.PI * 2,
+        Math.PI * 2,
+        0,
+        `${path}.path.deltaAngle`,
+      );
     if (step.limb !== undefined)
       mapped.limb = enumOf(step.limb, COMBO_LIMBS, `${path}.limb`);
     if (step.rootMotion !== undefined) {
@@ -926,7 +934,9 @@ function mapWeapon(w) {
     tags: {
       grip,
       size,
-      delivery: isGroundZone
+      delivery: w.suppressMeleeHitbox === true && kind === "scatter"
+        ? "projectile"
+        : isGroundZone
         ? "ground-zone"
         : isBeam
           ? "beam"
@@ -945,12 +955,14 @@ function mapWeapon(w) {
                 : kind === "hybrid"
                   ? "melee-hybrid"
                     : "melee-arc",
-      fireMode: isGroundZone || isBeam || kind === "glovePair" ||
-        (type === "melee" && w.performance?.continuous === true)
-        ? "hold"
-        : (isGun && !isSingleShotGun) || isCast
-          ? "auto"
-          : "tap-charge",
+      fireMode: w.fireMode !== undefined
+        ? enumOf(w.fireMode, new Set(["auto", "semi-auto", "tap-charge", "hold"]), "fireMode")
+        : isGroundZone || isBeam || kind === "glovePair" ||
+            (type === "melee" && w.performance?.continuous === true)
+          ? "hold"
+          : (isGun && !isSingleShotGun) || isCast
+            ? "auto"
+            : "tap-charge",
       element: typeof w.element === "string" ? w.element : "physical",
       classPool: type,
       family: typeof w.family === "string" ? w.family : "exotic",
@@ -1044,6 +1056,11 @@ function mapWeapon(w) {
   if (w.suppressVfx !== undefined) {
     if (typeof w.suppressVfx !== "boolean") fail("suppressVfx is not a boolean");
     else def.suppressVfx = w.suppressVfx;
+  }
+  if (w.suppressMeleeHitbox !== undefined) {
+    if (typeof w.suppressMeleeHitbox !== "boolean")
+      fail("suppressMeleeHitbox is not a boolean");
+    else def.suppressMeleeHitbox = w.suppressMeleeHitbox;
   }
   const hitStatus = hitStatusOf(w.hitStatus);
   if (hitStatus) def.hitStatus = hitStatus;

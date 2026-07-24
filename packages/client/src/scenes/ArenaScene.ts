@@ -1585,6 +1585,8 @@ export class ArenaScene extends Phaser.Scene {
   private recentResolvedDangerKind = "";
   private recentResolvedDangerAt = -9999;
   private localAtkCd = 0;
+  /** Semi-auto identities accept one predicted/server attack per physical pointer press. */
+  private semiAutoAttackLatched = false;
   /** Highest attack sequence for which the owning client has already played prediction. Confirmations at or
    *  below this contiguous high-water mark must not restart the local rig/tome page. */
   private localPredictedAttackSeq = 0;
@@ -3221,6 +3223,8 @@ export class ArenaScene extends Phaser.Scene {
     const art = tomeOpenArtFor(spriteId);
     if (
       !art ||
+      art.proceduralSplay ||
+      !art.url ||
       this.textures.exists(art.textureKey) ||
       this.failedTomeArt.has(spriteId) ||
       this.pendingTomeArt.has(spriteId)
@@ -9622,13 +9626,16 @@ export class ArenaScene extends Phaser.Scene {
     const self = this.room.state.players.get(selfId);
     if (!self?.alive || this.inputModalBlocked(self)) return;
     if (this.predictor?.slideAttackLocked) return;
+    const pointerDown = this.input.activePointer.rightButtonDown();
+    if (!pointerDown) this.semiAutoAttackLatched = false;
     if (
       this.pointerOverInteractiveUi ||
-      !this.input.activePointer.rightButtonDown() ||
+      !pointerDown ||
       this.localAtkCd > 0
     )
       return;
     const weapon = WEAPONS[self.weapon] ?? WEAPONS[DEFAULT_WEAPON];
+    if (weapon?.tags.fireMode === "semi-auto" && this.semiAutoAttackLatched) return;
     if (weapon?.beam || weapon?.groundZone?.trigger === "channel" || weapon?.performance?.aura)
       return;
     if (!weapon?.warp) {
@@ -9658,6 +9665,7 @@ export class ArenaScene extends Phaser.Scene {
     // its real rate. Matching it here makes the local swing cadence WYSIWYG with the damage the server deals.
     const cdMul = lootCooldownMult(self.weaponAffix);
     this.localAtkCd = localAttackCooldownSeconds(weapon, cdMul);
+    if (weapon?.tags.fireMode === "semi-auto") this.semiAutoAttackLatched = true;
     // §44 one PREDICTED descriptor/epoch for every local swing consumer. The server constructs the identical
     // effective-cooldown descriptor only on acceptance; buffering/network delay remains until swing-seq sync.
     const swing = weapon ? swingDescriptorFor(weapon, weapon.cooldown * cdMul) : undefined;
@@ -9678,6 +9686,7 @@ export class ArenaScene extends Phaser.Scene {
       weapon &&
       swing &&
       !weapon.gun &&
+      weapon.suppressMeleeHitbox !== true &&
       !weapon.warp &&
       !weapon.quake &&
       !weapon.cast &&

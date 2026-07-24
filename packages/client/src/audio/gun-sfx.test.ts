@@ -58,7 +58,7 @@ describe("active gun sound-family census", () => {
     const activeGunIds = ACTIVE_WEAPON_CATALOG_IDS.filter((id) => WEAPONS[id]?.gun).sort();
     const mappedIds = Object.keys(ACTIVE_GUN_FIRE_FAMILY_BY_ID).sort();
 
-    expect(activeGunIds).toHaveLength(121);
+    expect(activeGunIds).toHaveLength(120);
     expect(mappedIds).toEqual(activeGunIds);
     for (const weaponId of activeGunIds) {
       const family = gunFireFamilyFor(weaponId);

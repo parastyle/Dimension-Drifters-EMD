@@ -115,9 +115,8 @@ describe("B10 weapon VFX cleanup/reuse", () => {
     expect(WEAPON_VFX[weapon.id]).toBeUndefined();
     expect(weapon).toMatchObject({
       suppressVfx: true,
-      quake: { radius: 270, damage: 8 },
     });
-    expect(weapon.quake?.vfx).toBeUndefined();
+    expect(weapon.quake).toBeUndefined();
     expect(weaponVfxSuiteFor(weapon.id, weapon.tags.element, "chop")).toMatchObject({
       authored: true,
       suite: {},
@@ -179,8 +178,8 @@ describe("B10 weapon VFX cleanup/reuse", () => {
     expect(WEAPONS["tombstone-greatsword"]).toMatchObject({
       damage: 11,
       cooldown: 0.78,
-      quake: { damage: 8 },
     });
+    expect(WEAPONS["tombstone-greatsword"]?.quake).toBeUndefined();
     expect(WEAPONS["x2-thunderhead-voulge"]).toMatchObject({
       damage: 13,
       cooldown: 0.82,

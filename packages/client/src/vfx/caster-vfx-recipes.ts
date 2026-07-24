@@ -299,6 +299,11 @@ export const CASTER_PARTICLE_PROJECTILES: Readonly<
     pack: "holy-spark",
     count: 4,
   }),
+  "x2-rimebound-folio": Object.freeze({
+    treatment: "stream",
+    pack: "frost-shard",
+    count: 5,
+  }),
 });
 
 const FORM_SOURCE: Readonly<

@@ -105,7 +105,7 @@ describe("W4G3 low-stock shotgun stance", () => {
         (definition.tags.family === "shotgun" ||
           /pump-rifle|buckshot avalanche/i.test(definition.name)),
     );
-    expect(shotguns).toHaveLength(17);
+    expect(shotguns).toHaveLength(16);
     for (const definition of shotguns) {
       const primary = definition.gripPoints?.primary;
       const secondary = definition.gripPoints?.secondary;
