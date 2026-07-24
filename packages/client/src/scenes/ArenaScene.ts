@@ -16,8 +16,13 @@ import {
   beltCameraBounds,
   beltBounds,
   beltLevelFor,
+  CORPORATE_ELEVATOR_ARRIVAL_TICKS,
+  CORPORATE_ELEVATOR_PHASE,
+  CORPORATE_ELEVATOR_INTERACT_X,
+  corporateGridBeltLevelForDepth,
   corporateGridFloorForBelt,
   corporateGridTilesetFor,
+  corporateGridVariantFromCode,
   bossSpawnAt,
   CAM_FOLLOW_TAU,
   CAM_SNAP_DIST,
@@ -1473,6 +1478,14 @@ export class ArenaScene extends Phaser.Scene {
    *  slower than the camera + drifts on its own, so the sky feels alive ("clouds passing by"). */
   private beltClouds: Phaser.GameObjects.TileSprite | null = null;
   private beltCloudDrift = 0;
+  /** Three atlas-native two-leaf doors. Left/mid stay dormant; right follows server elevator phase. */
+  private corporateDoors: Array<{
+    x: number;
+    left: Phaser.GameObjects.Image;
+    right: Phaser.GameObjects.Image;
+    light: Phaser.GameObjects.Rectangle;
+  }> = [];
+  private lastElevatorPhase = -1;
   // ── §4 v0.107 online netcode (docs/NETCODE_DESIGN.md) ──
   /** Client-side prediction for the LOCAL player: created on the first patch that carries our player,
    *  ticked once per 50ms input command, reconciled on every patch. The self rig renders THIS. */
@@ -1698,6 +1711,7 @@ export class ArenaScene extends Phaser.Scene {
   private hpBarBg!: Phaser.GameObjects.Rectangle;
   private hpBarFill!: Phaser.GameObjects.Rectangle;
   private hpText!: Phaser.GameObjects.Text;
+  private floorText!: Phaser.GameObjects.Text;
   private driveHudGfx?: Phaser.GameObjects.Graphics;
   private driveHudText?: Phaser.GameObjects.Text;
   private driveLocked = false;
@@ -2091,6 +2105,7 @@ export class ArenaScene extends Phaser.Scene {
     this.dust.length = 0;
     this.floorObjs = [];
     this.beltTilemaps = [];
+    this.corporateDoors = [];
     this.summonObjects = [];
     this.carouselDock = undefined;
     this.arsenalTexts = [];
@@ -2132,6 +2147,7 @@ export class ArenaScene extends Phaser.Scene {
     this.beltGate = null;
     this.beltBackdrop = null;
     this.beltClouds = null;
+    this.corporateDoors = [];
     this.dangerVignette = undefined!;
     this.juggleVignette = undefined!;
     this.verbUi = undefined;
@@ -2151,6 +2167,7 @@ export class ArenaScene extends Phaser.Scene {
     this.hpBarBg = undefined!;
     this.hpBarFill = undefined!;
     this.hpText = undefined!;
+    this.floorText = undefined!;
     this.driveHudGfx = undefined;
     this.driveHudText = undefined;
     this.ultimateHudGfx = undefined;
@@ -2180,6 +2197,7 @@ export class ArenaScene extends Phaser.Scene {
     this.beltLevel = null;
     this.lastBeltRoom = "";
     this.beltCloudDrift = 0;
+    this.lastElevatorPhase = -1;
     this.predictor = null;
     this.timeline.reset();
     this.inputAccMs = 0;
@@ -2647,6 +2665,7 @@ export class ArenaScene extends Phaser.Scene {
     this.bossBarBg.setSize(520 * s, 16 * s);
     this.bossBarFill.setSize(516 * s, 12 * s);
     this.hpText.setFontSize(12 * s);
+    this.floorText.setFontSize(13 * s);
     this.weaponText.setFontSize(13 * s);
     this.augmentText.setFontSize(12 * s);
     this.relicText.setFontSize(11 * s);
@@ -2680,6 +2699,20 @@ export class ArenaScene extends Phaser.Scene {
       .setScrollFactor(0)
       .setOrigin(0, 0.5)
       .setDepth(100002);
+    this.floorText = this.add
+      .text(0, 0, "", {
+        fontFamily: "monospace",
+        fontSize: "13px",
+        color: "#ffe29a",
+        fontStyle: "bold",
+        backgroundColor: "#0a0805",
+        padding: { x: 8, y: 4 },
+      })
+      .setScrollFactor(0)
+      .setOrigin(0, 0)
+      .setStroke("#5f4b24", 1)
+      .setDepth(100003)
+      .setVisible(false);
 
     this.driveHudGfx = this.add.graphics().setScrollFactor(0).setDepth(100005);
     this.driveHudText = this.add
@@ -4148,14 +4181,18 @@ export class ArenaScene extends Phaser.Scene {
       }
       return;
     }
-    const seedKey = `${s.seedTerrain}:${s.seedHazard}:${s.seedTheme}:${s.seedDecor}:${s.dimensionId}`;
+    const corporateDepth = s.corporateFloorDepth ?? 0;
+    const corporateVariant = s.corporateVariant ?? 1;
+    const seedKey = `${s.seedTerrain}:${s.seedHazard}:${s.seedTheme}:${s.seedDecor}:${s.dimensionId}:${s.corporateFloorId ?? ""}:${corporateDepth}:${corporateVariant}`;
     if (seedKey === this.lastSeedKey) return; // current floor is the right one
     const descending = this.lastSeedKey !== ""; // not the first build → a rift descent / restart
-    const riftDescent = descending && s.depth > 1;
+    const corporateTransition = this.belt && corporateDepth > 0;
+    const riftDescent = descending && s.depth > 1 && !corporateTransition;
     const worldFold = riftDescent ? this.capturePaperWorldFold() : undefined;
     for (const o of this.floorObjs) o.destroy();
     this.floorObjs = [];
     this.beltTilemaps = [];
+    this.corporateDoors = [];
     this.poiSprites = [];
     this.arenaMap = generateArena({
       seedTerrain: s.seedTerrain,
@@ -4168,7 +4205,13 @@ export class ArenaScene extends Phaser.Scene {
     if (this.belt) {
       // §29 belt: build the authored DECK from the level's floor profile + obstacles (WYSIWYG collision), and
       // hand the level to the predictor (no POI map) so local collision matches the server exactly.
-      this.beltLevel = beltLevelFor(this.selectedBeltLevel);
+      this.beltLevel =
+        corporateDepth > 0
+          ? corporateGridBeltLevelForDepth(
+              corporateDepth,
+              corporateGridVariantFromCode(corporateVariant),
+            )
+          : beltLevelFor(this.selectedBeltLevel);
       // §37 never let a floor-build failure (e.g. a themed-level texture/canvas issue on some GPUs) throw out
       // of create() and black the whole scene — log it so it's diagnosable, and keep the level playable.
       try {
@@ -4197,7 +4240,7 @@ export class ArenaScene extends Phaser.Scene {
     this.playerBufs.clear();
     this.enemyBufs.clear();
     if (descending) {
-      if (!worldFold) {
+      if (!worldFold && !corporateTransition) {
         if (riftDescent) this.cameras.main.flash(260, 96, 48, 160);
         else this.cameras.main.flash(220, 28, 22, 18);
       }
@@ -4694,6 +4737,7 @@ export class ArenaScene extends Phaser.Scene {
       let nearPickup = false;
       let grabPickupId = "";
       let grabChestId = "";
+      let enterElevator = false;
       if (selfP && alive) {
         let bestD = Number.POSITIVE_INFINITY;
         this.room.state.pickups.forEach((pk, id) => {
@@ -4729,6 +4773,24 @@ export class ArenaScene extends Phaser.Scene {
           this.grabTargetDisassemblable = false;
           this.grabRadius = CHEST_OPEN_RADIUS;
         });
+        if (this.room.state.elevatorPhase === CORPORATE_ELEVATOR_PHASE.ready) {
+          const floor = this.beltLevel ? corporateGridFloorForBelt(this.beltLevel) : undefined;
+          const exit = floor?.elevatorMarkers[2];
+          if (exit) {
+            const dx = exit.x - selfP.x;
+            const d = dx * dx;
+            if (Math.abs(dx) <= CORPORATE_ELEVATOR_INTERACT_X && d <= bestD) {
+              nearPickup = true;
+              enterElevator = true;
+              grabPickupId = "";
+              grabChestId = "";
+              this.grabTargetId = "elevator:right";
+              this.grabTarget = { x: exit.x, y: this.beltY(BELT_Y0 + exit.y) };
+              this.grabTargetDisassemblable = false;
+              this.grabRadius = 72;
+            }
+          }
+        }
       }
       if (Phaser.Input.Keyboard.JustDown(this.keys.R) && alive && holdingWeapon)
         this.room.send("dropWeapon");
@@ -4737,7 +4799,9 @@ export class ArenaScene extends Phaser.Scene {
       const interactPressed = Phaser.Input.Keyboard.JustDown(this.keys.E);
       const interactReleased = Phaser.Input.Keyboard.JustUp(this.keys.E);
       if (interactPressed) {
-        if (grabChestId) {
+        if (enterElevator) {
+          this.room.send("useElevator");
+        } else if (grabChestId) {
           this.room.send("openChest", { chestId: grabChestId });
           this.audio.play("weapon:pickup", { x: selfP?.x, amt: 0.7 });
         } else if (grabPickupId) {
@@ -4860,6 +4924,7 @@ export class ArenaScene extends Phaser.Scene {
     );
 
     this.maybeBuildFloor(); // §17 bake the procgen floor once the seeds arrive
+    this.updateCorporateElevators();
     this.stepNetInput(
       deltaMs,
       gameplayInputBlocked,
@@ -8610,6 +8675,115 @@ export class ArenaScene extends Phaser.Scene {
       this.beltTilemaps.push(map);
       this.floorObjs.push(layer);
     }
+    this.buildCorporateElevatorDoors(floor);
+  }
+
+  /** Reuse the material atlas's authored 180×300 left door as two exact sliding leaves. */
+  private buildCorporateElevatorDoors(floor: CorporateGridFloor): void {
+    const materialLayer = floor.renderLayers.find((layer) => layer.id === "office-material-tiles");
+    const tilesetModel = materialLayer ? corporateGridTilesetFor(materialLayer.tilesetId) : undefined;
+    const sourceDoor = floor.elevatorMarkers[0];
+    if (!tilesetModel || !sourceDoor) return;
+    const textureKey = `corporate-grid:${tilesetModel.id}`;
+    const texture = this.textures.get(textureKey);
+    const halfWidth = sourceDoor.width / 2;
+    const sourceX = sourceDoor.bounds.minX;
+    const sourceY = floor.floorIndex * floor.height + sourceDoor.bounds.minY;
+    const leftFrame = `elevator-door:${floor.floorIndex}:left`;
+    const rightFrame = `elevator-door:${floor.floorIndex}:right`;
+    if (!texture.has(leftFrame))
+      texture.add(leftFrame, 0, sourceX, sourceY, halfWidth, sourceDoor.height);
+    if (!texture.has(rightFrame))
+      texture.add(
+        rightFrame,
+        0,
+        sourceX + halfWidth,
+        sourceY,
+        halfWidth,
+        sourceDoor.height,
+      );
+
+    const projectedHeight = sourceDoor.height / BELT_FORESHORTEN;
+    for (const marker of floor.elevatorMarkers) {
+      const bottom = this.beltY(BELT_Y0 + marker.y);
+      const cavity = this.add
+        .rectangle(
+          marker.x,
+          bottom - projectedHeight / 2,
+          marker.width,
+          projectedHeight,
+          0x050608,
+          1,
+        )
+        .setDepth(-19);
+      const left = this.add
+        .image(marker.x, bottom, textureKey, leftFrame)
+        .setOrigin(1, 1)
+        .setDisplaySize(halfWidth, projectedHeight)
+        .setDepth(-18);
+      const right = this.add
+        .image(marker.x, bottom, textureKey, rightFrame)
+        .setOrigin(0, 1)
+        .setDisplaySize(halfWidth, projectedHeight)
+        .setDepth(-18);
+      const light = this.add
+        .rectangle(marker.x, bottom - projectedHeight + 7, 72, 7, 0xffd66e, 0.18)
+        .setDepth(-17);
+      this.corporateDoors.push({ x: marker.x, left, right, light });
+      this.floorObjs.push(cavity, left, right, light);
+    }
+  }
+
+  private updateCorporateElevators(): void {
+    const state = this.room?.state;
+    if (!state || this.corporateDoors.length !== 3) return;
+    const phase = state.elevatorPhase ?? CORPORATE_ELEVATOR_PHASE.sealed;
+    let exitOffset = 0;
+    if (phase === CORPORATE_ELEVATOR_PHASE.ready || phase === CORPORATE_ELEVATOR_PHASE.countdown)
+      exitOffset = 10;
+    else if (phase === CORPORATE_ELEVATOR_PHASE.departing) exitOffset = 78;
+    let arrivalOffset = 0;
+    if (phase === CORPORATE_ELEVATOR_PHASE.arriving) {
+      const remaining = Math.max(0, (state.elevatorDeadlineTick ?? 0) - (state.tick ?? 0));
+      arrivalOffset =
+        78 * Math.min(1, remaining / Math.max(1, CORPORATE_ELEVATOR_ARRIVAL_TICKS));
+    }
+
+    for (let index = 0; index < this.corporateDoors.length; index++) {
+      const door = this.corporateDoors[index]!;
+      const offset = index === 2 ? exitOffset : index === 0 ? arrivalOffset : 0;
+      door.left.x = door.x - offset;
+      door.right.x = door.x + offset;
+      const active =
+        (index === 2 &&
+          (phase === CORPORATE_ELEVATOR_PHASE.ready ||
+            phase === CORPORATE_ELEVATOR_PHASE.countdown ||
+            phase === CORPORATE_ELEVATOR_PHASE.departing)) ||
+        (index === 0 && phase === CORPORATE_ELEVATOR_PHASE.arriving);
+      door.light.setAlpha(active ? 0.65 + 0.2 * Math.sin(this.time.now * 0.008) : 0.18);
+    }
+
+    if (phase === this.lastElevatorPhase) return;
+    const prior = this.lastElevatorPhase;
+    this.lastElevatorPhase = phase;
+    if (phase === CORPORATE_ELEVATOR_PHASE.ready) {
+      this.flashBanner("ELEVATOR READY · RIGHT DOOR · [E]", "#ffe29a");
+    } else if (phase === CORPORATE_ELEVATOR_PHASE.countdown) {
+      this.flashBanner("ELEVATOR DEPARTING IN 3", "#ffe29a");
+    } else if (phase === CORPORATE_ELEVATOR_PHASE.departing) {
+      this.audio.play("elevator:ding", { amt: 0.8 });
+      this.audio.play("elevator:slide", { amt: 0.8 });
+      this.cameras.main.fadeOut(360, 0, 0, 0);
+    } else if (phase === CORPORATE_ELEVATOR_PHASE.arriving) {
+      this.audio.play("elevator:slide", { amt: 0.65 });
+      this.cameras.main.fadeIn(480, 0, 0, 0);
+      this.flashBanner(`F${state.corporateFloorDepth} · ARRIVING`, "#ffe29a");
+    } else if (
+      phase === CORPORATE_ELEVATOR_PHASE.sealed &&
+      prior === CORPORATE_ELEVATOR_PHASE.arriving
+    ) {
+      this.audio.play("elevator:close", { amt: 0.7 });
+    }
   }
 
   /** §37 one-time CANVAS BAKE of the level's Codex deck texture, clipped to the deck trapezoid: per ≤2048px
@@ -8731,7 +8905,7 @@ export class ArenaScene extends Phaser.Scene {
     const bounds = beltCameraBounds(level);
     // §29 a closed room gate (beltLockX>0) caps the camera's right reach so the barrier sits at the edge.
     const lock = this.room?.state.beltLockX ?? 0;
-    const rightLimit = Math.min(bounds.maxX, lock > 0 ? lock : level.length);
+    const rightLimit = lock > 0 ? Math.min(bounds.maxX, lock) : bounds.maxX;
     const minX = bounds.minX;
     const maxX = Math.max(minX, rightLimit - viewW);
     const wantX = Math.min(maxX, Math.max(minX, self.x - viewW * 0.42));
@@ -10057,7 +10231,13 @@ export class ArenaScene extends Phaser.Scene {
     }
     const pulse = 0.5 + 0.5 * Math.sin(this.time.now * 0.008);
     g.lineStyle(2.5 + pulse, 0xffd479, 0.55 + 0.35 * pulse);
-    g.strokeCircle(t.x, t.y, this.grabRadius * (0.7 + 0.06 * pulse));
+    if (this.grabTargetId === "elevator:right") {
+      const width = this.grabRadius * 1.7;
+      const height = this.grabRadius * 1.15;
+      g.strokeRect(t.x - width / 2, t.y - height, width, height);
+    } else {
+      g.strokeCircle(t.x, t.y, this.grabRadius * (0.7 + 0.06 * pulse));
+    }
     const holdingForDisassembly =
       this.grabTargetDisassemblable &&
       this.eHoldPickupId === this.grabTargetId &&
@@ -10067,6 +10247,8 @@ export class ArenaScene extends Phaser.Scene {
       .setText(
         this.grabTargetId.startsWith("chest:")
           ? "[E] OPEN CHEST"
+          : this.grabTargetId === "elevator:right"
+            ? "[E] ENTER ELEVATOR"
           : holdingForDisassembly
             ? `[E] DISASSEMBLING ${holdPercent}%`
             : this.grabTargetDisassemblable
@@ -11896,6 +12078,11 @@ export class ArenaScene extends Phaser.Scene {
     this.hpBarBg.setPosition(barX, barY);
     this.hpBarFill.setPosition(barX + 2 * s, barY);
     this.hpText.setPosition(barX + 8 * s, barY);
+    const corporateDepth = this.room?.state.corporateFloorDepth ?? 0;
+    this.floorText
+      .setPosition(18 * s, 88 * s)
+      .setText(corporateDepth > 0 ? `F${corporateDepth}` : "")
+      .setVisible(this.belt && corporateDepth > 0);
 
     const hp = self ? Math.max(0, self.hp) : 0;
     const maxHp = self ? self.maxHp : 100;

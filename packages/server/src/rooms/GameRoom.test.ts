@@ -5,6 +5,11 @@ import {
   BELT_Y0,
   beltLevelFor,
   beltPitAtX,
+  ChestState,
+  CORPORATE_ELEVATOR_COUNTDOWN_TICKS,
+  CORPORATE_ELEVATOR_DEPART_TICKS,
+  CORPORATE_ELEVATOR_PHASE,
+  corporateGridFloorForBelt,
   CRIT_MULT,
   clampBeltFloorY,
   critChanceFor,
@@ -20,6 +25,7 @@ import {
   isPitAtPx,
   MAX_ENEMIES,
   META_VITALITY_HP,
+  MoneyDropState,
   makeRng,
   PARRY_CHAIN_RIPOSTE_AT,
   PARRY_GUARD_RESET_TICKS,
@@ -2017,7 +2023,7 @@ describe("GameRoom — B34 corporate-grid LDtk belt consumption", () => {
     player.x = 5140;
     player.y = BELT_Y0 + 1000;
     h.tick();
-    expect(player.x).toBe(5016);
+    expect(player.x).toBe(4056);
     expect(player.y).toBe(BELT_Y0 + 906);
   });
 
@@ -2048,6 +2054,89 @@ describe("GameRoom — B34 corporate-grid LDtk belt consumption", () => {
     expect(h.state().projectiles.size).toBe(1);
     h.room.stepProjectiles(0.5);
     expect(h.state().projectiles.size).toBe(0);
+  });
+
+  it("arms only after the final required room wave clears", () => {
+    const h = makeRoom({ belt: true, beltLevel: "corporate-grid" });
+    h.join("corporate-clear-player");
+    h.room.beltRoomIdx = h.room.beltLevel.rooms.length - 1;
+    h.room.beltPhase = "fight";
+    h.state().beltLockX = h.room.beltLevel.rooms.at(-1).gateX;
+    h.state().enemies.clear();
+    h.tick();
+    expect(h.state().elevatorPhase).toBe(CORPORATE_ELEVATOR_PHASE.ready);
+    expect(h.state().beltLockX).toBe(0);
+    expect(h.state().outcome).toBe("active");
+  });
+
+  it("runs the shipped chest cadence on safe authored corporate-floor anchors", () => {
+    const h = makeRoom({ belt: true, beltLevel: "corporate-grid" });
+    h.join("corporate-chest-runner");
+    h.state().tick = h.room.chestCadence.nextSpawnTick;
+    h.room.stepChestDirector();
+
+    expect(h.state().chests.size).toBe(1);
+    const chest = [...h.state().chests.values()][0];
+    const floor = corporateGridFloorForBelt(h.room.beltLevel);
+    if (!floor) throw new Error("corporate floor fixture is required");
+    expect(chest.x).toBeGreaterThanOrEqual(floor.playableBounds.minX);
+    expect(chest.x).toBeLessThanOrEqual(floor.playableBounds.maxX);
+    expect(chest.y).toBeGreaterThanOrEqual(BELT_Y0);
+    expect(chest.y).toBeLessThanOrEqual(BELT_Y0 + DEPTH_MAX);
+  });
+
+  it("moves the entire co-op party, teleports a straggler, and preserves B20 run state", () => {
+    const h = makeRoom({ belt: true, beltLevel: "corporate-grid" });
+    h.join("elevator-trigger");
+    h.join("elevator-straggler");
+    const trigger = h.state().players.get("elevator-trigger");
+    const straggler = h.state().players.get("elevator-straggler");
+    const exitX = h.room.beltLevel.corporateGridFloorId
+      ? h.room.beltLevel.length
+      : Number.NaN;
+    trigger.x = exitX - 24;
+    straggler.x = 420;
+    trigger.scrip = 77;
+    trigger.dualWield.relics.moveSpeed = 2;
+    const money = new MoneyDropState();
+    money.id = "elevator-money";
+    money.x = exitX - 30;
+    money.y = trigger.y;
+    money.value = 19;
+    money.bornTick = 1_000;
+    h.state().moneyDrops.set(money.id, money);
+    const chest = new ChestState();
+    chest.id = "elevator-chest";
+    chest.x = exitX - 60;
+    chest.y = trigger.y;
+    h.state().chests.set(chest.id, chest);
+    h.state().elevatorPhase = CORPORATE_ELEVATOR_PHASE.ready;
+    const triggerTeleportBefore = trigger.teleportSeq;
+    const stragglerTeleportBefore = straggler.teleportSeq;
+
+    h.send("elevator-trigger", "useElevator");
+    expect(h.state().elevatorPhase).toBe(CORPORATE_ELEVATOR_PHASE.countdown);
+    h.tick(CORPORATE_ELEVATOR_COUNTDOWN_TICKS + CORPORATE_ELEVATOR_DEPART_TICKS);
+
+    expect(h.state().corporateFloorDepth).toBe(2);
+    expect(h.state().corporateFloorId).toBe("office-random-dude-portrait-hall");
+    expect(h.state().corporateVariant).toBe(0);
+    expect(h.state().elevatorPhase).toBe(CORPORATE_ELEVATOR_PHASE.arriving);
+    expect(trigger.x).toBeLessThan(600);
+    expect(straggler.x).toBeLessThan(600);
+    expect(trigger.teleportSeq).toBeGreaterThan(triggerTeleportBefore);
+    expect(straggler.teleportSeq).toBeGreaterThan(stragglerTeleportBefore);
+    expect(trigger.scrip).toBe(77);
+    expect(trigger.dualWield.relics.moveSpeed).toBe(2);
+    expect(h.state().moneyDrops.get(money.id)?.value).toBe(19);
+    const nextFloor = corporateGridFloorForBelt(h.room.beltLevel);
+    if (!nextFloor) throw new Error("next corporate floor fixture is required");
+    expect(h.state().moneyDrops.get(money.id)?.x).toBeLessThanOrEqual(
+      nextFloor.playableBounds.maxX,
+    );
+    expect(h.state().chests.has(chest.id)).toBe(true);
+    expect(h.state().chests.get(chest.id)?.x).toBeLessThanOrEqual(nextFloor.playableBounds.maxX);
+    expect(h.state().elapsed).toBeGreaterThan(0);
   });
 });
 
@@ -2117,7 +2206,7 @@ describe("GameRoom — §36 dimension finale bosses run in belt mode", () => {
 // dimensionId silently falls back to wild-west; an unregistered boss kind spawns nothing). ──
 describe("GameRoom — §36 belt levels are well-formed", () => {
   for (const id of BELT_LEVEL_IDS) {
-    it(`${id}: real dimension + a registered boss finale`, () => {
+    it(`${id}: real dimension + a valid authored progression`, () => {
       const level = beltLevelFor(id);
       expect(level.id).toBe(id);
       const dim = getDimension(level.dimensionId);
@@ -2126,7 +2215,11 @@ describe("GameRoom — §36 belt levels are well-formed", () => {
         `${id} dimensionId "${level.dimensionId}" resolves (not the wild-west fallback)`,
       ).toBe(level.dimensionId);
       expect(ENEMY_KINDS[dim.boss]?.archetype, `${dim.boss} is a registered boss`).toBe("boss");
-      expect(level.rooms.some((r) => r.boss)).toBe(true); // has a boss finale room
+      if (level.corporateGridFloorId) {
+        expect(level.rooms.every((room) => !room.boss)).toBe(true); // elevator, never a boss finale
+      } else {
+        expect(level.rooms.some((room) => room.boss)).toBe(true);
+      }
       expect(level.rooms.length).toBeGreaterThanOrEqual(2);
     });
   }
@@ -2400,7 +2493,7 @@ describe("improve2 integrity regressions", () => {
     expect(receipt?.delivery).toBe(CombatDelivery.Gun);
     expect(h.state().combatReceipts.length).toBe(COMBAT_RECEIPT_CAP);
     expect([...h.state().combatReceipts]).toEqual(rows);
-    expect(h.state().schemaVersion).toBe(39);
+    expect(h.state().schemaVersion).toBe(40);
   });
 });
 
@@ -3549,7 +3642,7 @@ describe("GameRoom — §51 tough-enemy melee combos (Wave 1 authority)", () => 
   });
 
   it("ships schema 19, named depth decks, and guardrail-safe authored literals", () => {
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(39);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(40);
     expect(new EnemyState().comboSeq).toBe(0);
     expect(new EnemyState().comboFlags).toBe(0);
     expect(herePlayerJuggledDefault()).toBe(0);
@@ -3912,7 +4005,7 @@ describe("GameRoom — jump-feel J1 authoritative stance/physics", () => {
 
   it("ships schema 21 with the three appended uint8 stance/VFX defaults", () => {
     const player = new enemyComboShared.PlayerState();
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(39);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(40);
     expect([player.moveStance, player.poundSeq, player.stanceSeq]).toEqual([0, 0, 0]);
   });
 });
@@ -4090,7 +4183,7 @@ describe("GameRoom — flavor-only character identity", () => {
 
   it("retains schema 21 while defaulting character identity to the shared default", () => {
     const player = new enemyComboShared.PlayerState();
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(39);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(40);
     expect([player.character, player.runCharacter]).toEqual([
       enemyComboShared.DEFAULT_CHARACTER,
       enemyComboShared.DEFAULT_CHARACTER,
@@ -4852,8 +4945,8 @@ describe("ULT U1 lifecycle, co-op, and schema 25", () => {
     const h = makeRoom();
     h.join("ult-schema");
     const player = h.state().players.get("ult-schema");
-    expect(h.state().schemaVersion).toBe(39);
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(39);
+    expect(h.state().schemaVersion).toBe(40);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(40);
     expect([
       player.ultimate.archetype,
       player.ultimate.charge,
@@ -4913,7 +5006,7 @@ describe("pet v1 join snapshot, lock, and schema 25", () => {
     h.room.clients.push(client);
     h.room.onJoin(client, { metaAccount: account, selectedPetId: "brass-crab" });
     const player = h.state().players.get("pet-lock");
-    expect([h.state().schemaVersion, enemyComboShared.SCHEMA_VERSION]).toEqual([39, 39]);
+    expect([h.state().schemaVersion, enemyComboShared.SCHEMA_VERSION]).toEqual([40, 40]);
     expect({ petId: player.petId, petLevelBand: player.petLevelBand }).toEqual({
       petId: "hearth-newt",
       petLevelBand: 3,
@@ -5291,8 +5384,8 @@ describe("GameRoom — independent weapon slots and compatibility row", () => {
 
   it("keeps schema 38 and the unrelated compatibility-container tenants intact", () => {
     const fresh = new enemyComboShared.PlayerState();
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(39);
-    expect(new enemyComboShared.ArenaState().schemaVersion).toBe(39);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(40);
+    expect(new enemyComboShared.ArenaState().schemaVersion).toBe(40);
     expect(fresh.dualWield).toMatchObject({
       retiredByte0: 255,
       retiredUint32: 0,
@@ -5884,8 +5977,8 @@ describe("GameRoom — schema-31 Drive authority", () => {
     );
     const cost = enemyComboShared.driveCostForProfile(profile, interval);
 
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(39);
-    expect(h.state().schemaVersion).toBe(39);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(40);
+    expect(h.state().schemaVersion).toBe(40);
     expect(player.weaponResource).toBe(player.dualWield.weaponResource);
     expect(player.weaponResource).toMatchObject({
       valueQ: 10_000,
@@ -6190,7 +6283,7 @@ describe("GameRoom — schema-31 public prestige ceremony", () => {
     expect(metadata[3]).toMatchObject({ name: "retiredByte2", type: "uint8" });
     expect(metadata[7]).toMatchObject({ name: "prestige", type: "uint8" });
     expect(metadata[9]).toMatchObject({ name: "attackMoveMode", type: "uint8" });
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(39);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(40);
   });
 });
 

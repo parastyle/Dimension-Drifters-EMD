@@ -57,7 +57,15 @@ import {
   beltPitAtX,
   beltProjectileBlocked,
   beltSafeX,
+  CORPORATE_ELEVATOR_ARRIVAL_TICKS,
+  CORPORATE_ELEVATOR_COUNTDOWN_TICKS,
+  CORPORATE_ELEVATOR_DEPART_TICKS,
+  CORPORATE_ELEVATOR_INTERACT_X,
+  CORPORATE_ELEVATOR_PHASE,
+  corporateGridBeltLevelForDepth,
   corporateGridFloorForBelt,
+  corporateGridVariantCode,
+  corporateGridVariantForDepth,
   bladeAngleAt,
   bladeExtensionPoseAt,
   bladeHitsCircle,
@@ -68,6 +76,7 @@ import {
   type CarrySelectionV1,
   CHAIN_MAX_RANGE,
   CHEST_OPEN_RADIUS,
+  CHEST_PLACEMENT_RADIUS,
   type ChainCandidate,
   type ChestCadenceState,
   type ChestKind,
@@ -1445,6 +1454,8 @@ export class GameRoom extends Room<ArenaState> {
   /** §29 belt ROOM progression: current room index + phase (walk in → lock+fight the wave → clear → advance). */
   private beltRoomIdx = 0;
   private beltPhase: "enter" | "fight" | "cleared" = "enter";
+  /** Direct material links restart there; the canonical corporate-grid link starts on F1. */
+  private corporateHomeDepth = 0;
   private bossId: string | null = null;
   /** Debug-spawned bosses never qualify the run-structure Bond receipt. */
   private bossPetAwardEligible = false;
@@ -1481,6 +1492,26 @@ export class GameRoom extends Room<ArenaState> {
     return true;
   }
 
+  private installCorporateFloor(depth: number, elevatorPhase: number): void {
+    const floorDepth = Math.max(1, Math.floor(Number.isFinite(depth) ? depth : 1));
+    const variant = corporateGridVariantForDepth(floorDepth);
+    this.beltLevel = corporateGridBeltLevelForDepth(floorDepth, variant);
+    this.state.corporateFloorDepth = floorDepth >>> 0;
+    this.state.depth = Math.min(255, floorDepth);
+    this.state.corporateFloorId = this.beltLevel.corporateGridFloorId ?? "";
+    this.state.corporateVariant = corporateGridVariantCode(variant);
+    this.state.elevatorPhase = elevatorPhase;
+    this.state.elevatorDeadlineTick = 0;
+    this.state.beltLockX = 0;
+    this.state.beltRoomName = "";
+    this.beltRoomIdx = 0;
+    this.beltPhase = "enter";
+  }
+
+  private isCorporateLoop(): boolean {
+    return this.belt && this.state.corporateFloorId !== "" && !!this.beltLevel;
+  }
+
   override onCreate(options?: {
     dimensionId?: string;
     bossRush?: boolean;
@@ -1495,6 +1526,10 @@ export class GameRoom extends Room<ArenaState> {
     // §36 the SELECTED belt level (menu level-select). Each level scopes its own dimension (roster/palette),
     // so no two selections are the same run. Unknown id → Sky Carrier.
     this.beltLevel = this.belt ? beltLevelFor(options?.beltLevel ?? "sky-carrier") : null;
+    if (this.beltLevel?.corporateGridFloorId) {
+      this.corporateHomeDepth = (this.beltLevel.corporateDepth ?? 0) + 1;
+      this.installCorporateFloor(this.corporateHomeDepth, CORPORATE_ELEVATOR_PHASE.sealed);
+    }
 
     // §17 the run's DIMENSION — a belt level fixes its own; else the menu pick. `getDimension` resolves an
     // unknown/missing id back to Wild West, so a stale client can't desync the roster/boss/palette. The id
@@ -2077,6 +2112,20 @@ export class GameRoom extends Room<ArenaState> {
     // `airborne` to let a hopping player clear a gap.
     // B20 L2 chest OPEN is a budgeted, distance-validated interaction. Contents are rolled only here,
     // from a chest/player-specific seed, and the consumed bit is written only after delivery.
+    this.onMessage("useElevator", (client) => {
+      if (!this.takeAction(client) || !this.isCorporateLoop()) return;
+      if (this.state.elevatorPhase !== CORPORATE_ELEVATOR_PHASE.ready) return;
+      const player = this.state.players.get(client.sessionId);
+      const floor = this.beltLevel ? corporateGridFloorForBelt(this.beltLevel) : undefined;
+      const exit = floor?.elevatorMarkers[2];
+      if (!player?.alive || !exit) return;
+      if (Math.abs(player.x - exit.x) > CORPORATE_ELEVATOR_INTERACT_X) return;
+      this.state.elevatorPhase = CORPORATE_ELEVATOR_PHASE.countdown;
+      this.state.elevatorDeadlineTick =
+        (this.state.tick + CORPORATE_ELEVATOR_COUNTDOWN_TICKS) >>> 0;
+      this.state.beltRoomName = "Elevator departing in 3";
+    });
+
     this.onMessage("openChest", (client, message?: { chestId?: unknown }) => {
       if (!this.takeAction(client)) return;
       const chestId =
@@ -2757,8 +2806,9 @@ export class GameRoom extends Room<ArenaState> {
   }
 
   private stepChestDirector(): void {
+    const corporateFloor = this.isCorporateLoop();
     if (
-      this.belt ||
+      (this.belt && !corporateFloor) ||
       this.state.mode !== "arena" ||
       this.state.outcome !== "active" ||
       this.state.portalOpen
@@ -2771,13 +2821,29 @@ export class GameRoom extends Room<ArenaState> {
         x: chest.x,
         y: chest.y,
       }));
-      const placement = placeChestOnArena(
-        this.map,
-        this.chestRoomSeed,
-        directive.sequence,
-        directive.spawnTick,
-        existing,
-      );
+      const floor =
+        corporateFloor && this.beltLevel
+          ? corporateGridFloorForBelt(this.beltLevel)
+          : undefined;
+      const anchor = floor?.waveAnchors[directive.sequence % floor.waveAnchors.length];
+      const beltPlacement =
+        this.beltLevel && anchor
+          ? resolveBeltNavigation(
+              this.beltLevel,
+              anchor.x,
+              BELT_Y0 + anchor.y,
+              CHEST_PLACEMENT_RADIUS,
+            )
+          : undefined;
+      const placement = beltPlacement
+        ? { ...beltPlacement, zone: 0 as MapZoneId }
+        : placeChestOnArena(
+            this.map,
+            this.chestRoomSeed,
+            directive.sequence,
+            directive.spawnTick,
+            existing,
+          );
       const chest = new ChestState();
       chest.id = `chest:${directive.sequence}:${directive.spawnTick}`;
       chest.x = placement.x;
@@ -3863,7 +3929,11 @@ export class GameRoom extends Room<ArenaState> {
     // Persistent meta-account money survives; run money is minted fresh.
     this.state.riftOpen = false;
     this.state.riftCharge = 0;
-    this.state.depth = 1;
+    if (this.corporateHomeDepth > 0) {
+      this.installCorporateFloor(this.corporateHomeDepth, CORPORATE_ELEVATOR_PHASE.sealed);
+    } else {
+      this.state.depth = 1;
+    }
     this.visitedDims.clear();
     this.state.dimensionId = this.homeDimension;
     this.mintMap();
@@ -3919,8 +3989,24 @@ export class GameRoom extends Room<ArenaState> {
       player.height = 0; // §5/§20 back to the ground
       player.alive = true;
       player.hp = player.maxHp;
-      player.x = this.map.spawnX + (Math.random() * 200 - 100);
-      player.y = this.map.spawnY + (Math.random() * 200 - 100);
+      const corporateFloor =
+        this.corporateHomeDepth > 0 && this.beltLevel
+          ? corporateGridFloorForBelt(this.beltLevel)
+          : undefined;
+      const corporateSpawn = corporateFloor?.playerSpawns[0];
+      if (corporateSpawn && this.beltLevel) {
+        const placed = resolveBeltNavigation(
+          this.beltLevel,
+          corporateSpawn.x,
+          BELT_Y0 + corporateSpawn.y,
+          PLAYER_RADIUS,
+        );
+        player.x = placed.x;
+        player.y = placed.y;
+      } else {
+        player.x = this.map.spawnX + (Math.random() * 200 - 100);
+        player.y = this.map.spawnY + (Math.random() * 200 - 100);
+      }
       for (const slot of player.slots) slot.resourceReady = false;
       for (const slot of player.bag) slot.resourceReady = false;
       if (c) {
@@ -5767,7 +5853,13 @@ export class GameRoom extends Room<ArenaState> {
         if (this.belt) {
           // §29 belt: room-gated progression REPLACES the continuous director + boss clock + shifters —
           // walk into a room, the gate locks, clear the wave, the gate opens, advance; the last room = boss.
-          this.stepBeltRooms(dt, bodies);
+          if (this.isCorporateLoop()) {
+            this.stepCorporateElevator();
+            if (this.state.elevatorPhase === CORPORATE_ELEVATOR_PHASE.sealed)
+              this.stepBeltRooms(dt, bodies);
+          } else {
+            this.stepBeltRooms(dt, bodies);
+          }
         } else {
           // Boss director (§16): the dimension boss arrives at the depth-scaled mark (§6 chain — deeper
           // dimensions bring the capstone sooner), once per dimension.
@@ -13684,6 +13776,96 @@ export class GameRoom extends Room<ArenaState> {
   /** §29 belt ROOM state machine — walk into a room → the gate locks + its wave spawns → clear it → the gate
    *  opens → advance; the last room drops the boss, and clearing it wins the run. Server-authoritative + the
    *  lock x syncs so every client's camera + the gate render agree. */
+  private positionCorporateParty(atExit: boolean): void {
+    const level = this.beltLevel;
+    const floor = level ? corporateGridFloorForBelt(level) : undefined;
+    if (!level || !floor) return;
+    const marker = floor.elevatorMarkers[atExit ? 2 : 0];
+    const spawn = floor.playerSpawns[0];
+    if (!marker || !spawn) return;
+    let ordinal = 0;
+    this.state.players.forEach((player, id) => {
+      const scatter = atExit ? 0 : (Math.ceil(ordinal / 2) * (ordinal % 2 ? 1 : -1)) * 36;
+      const targetX = atExit ? marker.x - 90 : spawn.x + scatter;
+      const resolved = resolveBeltNavigation(level, targetX, BELT_Y0 + spawn.y, PLAYER_RADIUS);
+      player.x = resolved.x;
+      player.y = resolved.y;
+      player.vx = 0;
+      player.vy = 0;
+      player.height = 0;
+      const combat = this.combat.get(id);
+      if (combat) {
+        combat.lastGroundX = player.x;
+        combat.lastGroundY = player.y;
+        combat.pitGrace = 0;
+      }
+      this.zeroMoveVel(id);
+      ordinal++;
+    });
+  }
+
+  private transitionCorporateFloor(): void {
+    const nextDepth = Math.max(1, (this.state.corporateFloorDepth + 1) >>> 0);
+    this.state.enemies.clear();
+    this.state.projectiles.clear();
+    this.state.zones.clear();
+    this.state.pickups.clear();
+    this.clearTransients();
+    this.installCorporateFloor(nextDepth, CORPORATE_ELEVATOR_PHASE.arriving);
+    this.state.elevatorDeadlineTick =
+      (this.state.tick + CORPORATE_ELEVATOR_ARRIVAL_TICKS) >>> 0;
+    this.state.beltRoomName = `Floor ${nextDepth}`;
+    this.positionCorporateParty(false);
+
+    // B20 state stays run-scoped. Existing money/chest rows are retained but moved inside the new crop;
+    // player scrip, relic rows, arsenal, HP, and the run clock are deliberately untouched.
+    const level = this.beltLevel;
+    if (level) {
+      this.state.moneyDrops.forEach((drop) => {
+        const placed = resolveBeltNavigation(level, drop.x, drop.y, 0);
+        drop.x = placed.x;
+        drop.y = placed.y;
+      });
+      this.state.chests.forEach((chest) => {
+        const placed = resolveBeltNavigation(level, chest.x, chest.y, 0);
+        chest.x = placed.x;
+        chest.y = placed.y;
+      });
+    }
+  }
+
+  /** Owner-locked B34 transition: one player commits, the whole room rides, and no body stays behind. */
+  private stepCorporateElevator(): void {
+    if (!this.isCorporateLoop()) return;
+    const phase = this.state.elevatorPhase;
+    if (phase === CORPORATE_ELEVATOR_PHASE.countdown) {
+      const ticksLeft = (this.state.elevatorDeadlineTick - this.state.tick) >>> 0;
+      this.state.beltRoomName = `Elevator departing in ${Math.max(1, Math.ceil(ticksLeft / 20))}`;
+      if (this.state.tick < this.state.elevatorDeadlineTick) return;
+      this.state.elevatorPhase = CORPORATE_ELEVATOR_PHASE.departing;
+      this.state.elevatorDeadlineTick =
+        (this.state.tick + CORPORATE_ELEVATOR_DEPART_TICKS) >>> 0;
+      this.state.beltRoomName = "Elevator departing";
+      this.positionCorporateParty(true);
+      return;
+    }
+    if (phase === CORPORATE_ELEVATOR_PHASE.departing) {
+      // Re-assert the car position through the short fade so a queued movement command cannot peel a
+      // straggler back out after the server has committed the party transition.
+      this.positionCorporateParty(true);
+      if (this.state.tick >= this.state.elevatorDeadlineTick) this.transitionCorporateFloor();
+      return;
+    }
+    if (
+      phase === CORPORATE_ELEVATOR_PHASE.arriving &&
+      this.state.tick >= this.state.elevatorDeadlineTick
+    ) {
+      this.state.elevatorPhase = CORPORATE_ELEVATOR_PHASE.sealed;
+      this.state.elevatorDeadlineTick = 0;
+      this.state.beltRoomName = "";
+    }
+  }
+
   private stepBeltRooms(_dt: number, bodies: Vec2[]): void {
     const level = this.beltLevel;
     if (!level) return;
@@ -13709,6 +13891,11 @@ export class GameRoom extends Room<ArenaState> {
         this.beltPhase = "cleared";
         this.state.beltLockX = 0; // gate opens
         if (room.boss) this.completeRewardBoundary("belt-victory");
+        else if (this.isCorporateLoop() && this.beltRoomIdx === level.rooms.length - 1) {
+          this.state.elevatorPhase = CORPORATE_ELEVATOR_PHASE.ready;
+          this.state.elevatorDeadlineTick = 0;
+          this.state.beltRoomName = "Elevator ready";
+        }
       }
     } else {
       // cleared → advance when a player crosses the (now-open) gate.

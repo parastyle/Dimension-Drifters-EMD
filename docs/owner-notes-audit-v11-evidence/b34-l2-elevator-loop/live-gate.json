@@ -1,0 +1,47 @@
+{
+  "verdict": "loop-live",
+  "ports": {
+    "client": 49655,
+    "game": 49654
+  },
+  "character": "proto-cowboy-hidden-face",
+  "ready": {
+    "active": true,
+    "roomId": "s7g2cxrc7",
+    "sessionId": "Vgs7LuOt2",
+    "character": "proto-cowboy-hidden-face",
+    "x": 4056,
+    "corporateFloorId": "office-red-carpet-gallery",
+    "corporateFloorDepth": 1,
+    "corporateVariant": 1,
+    "elevatorPhase": 1,
+    "elevatorDeadlineTick": 0,
+    "tick": 309,
+    "enemies": 0
+  },
+  "arrival": {
+    "active": true,
+    "roomId": "s7g2cxrc7",
+    "sessionId": "Vgs7LuOt2",
+    "character": "proto-cowboy-hidden-face",
+    "x": 420,
+    "corporateFloorId": "office-random-dude-portrait-hall",
+    "corporateFloorDepth": 2,
+    "corporateVariant": 0,
+    "elevatorPhase": 4,
+    "elevatorDeadlineTick": 533,
+    "tick": 489,
+    "enemies": 0
+  },
+  "expectedF2PlayableBand": {
+    "minX": 120,
+    "maxX": 3120,
+    "variant": "short"
+  },
+  "captures": [
+    "f1-right-elevator-ready.png",
+    "f1-elevator-departing-fade.png",
+    "f2-left-elevator-arrival.png",
+    "f2-short-full-hall.png"
+  ]
+}

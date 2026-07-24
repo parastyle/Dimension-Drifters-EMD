@@ -13,8 +13,11 @@ import {
   type CorporateGridBounds,
   type CorporateGridFloor,
   type CorporateGridFloorId,
+  type CorporateGridVariant,
   type CorporateGridWaveAnchor,
+  corporateGridFloorInstanceForDepth,
   corporateGridFloorFor,
+  corporateGridVariantForDepth,
 } from "./corporate-grid-map.js";
 
 /** A solid obstacle on the deck — a circle bodies route around. `depth` band-relative (0..DEPTH_MAX). */
@@ -77,13 +80,22 @@ export interface BeltLevel {
   corporateGridFloorId?: CorporateGridFloorId;
   /** Zero-based authored floor depth. Lane 2 may drive a later run-depth independently. */
   corporateDepth?: number;
+  /** Deterministic runtime crop. Present only on generated Corporate Grid floor instances. */
+  corporateVariant?: CorporateGridVariant;
 }
 
 /** The generated LDtk floor behind a corporate belt level, if this is one. */
 export function corporateGridFloorForBelt(level: BeltLevel): CorporateGridFloor | undefined {
-  return level.corporateGridFloorId
-    ? corporateGridFloorFor(level.corporateGridFloorId)
-    : undefined;
+  if (!level.corporateGridFloorId) return undefined;
+  if (level.corporateVariant && level.corporateDepth !== undefined) {
+    const floor = corporateGridFloorInstanceForDepth(level.corporateDepth + 1, level.corporateVariant);
+    if (floor.id !== level.corporateGridFloorId)
+      throw new Error(
+        `corporate-grid belt floor mismatch: ${level.corporateGridFloorId} != ${floor.id}`,
+      );
+    return floor;
+  }
+  return corporateGridFloorFor(level.corporateGridFloorId);
 }
 
 /** Playable horizontal center bounds. Legacy levels retain their exact [0,length] behavior. */
@@ -549,39 +561,105 @@ export const ASHLAND_FORGE: BeltLevel = {
   ],
 };
 
+export interface CorporateGridWavePressure {
+  roomCount: number;
+  waves: readonly number[];
+  depthBonus: number;
+}
+
+/** Existing belt depth drives count; existing toughChance(elapsed, players, depth) drives tier pressure. */
+export function corporateGridWavePressure(
+  depth: number,
+  variant = corporateGridVariantForDepth(depth),
+): CorporateGridWavePressure {
+  const normalizedDepth = Math.max(1, Math.floor(Number.isFinite(depth) ? depth : 1));
+  const roomCount = variant === "short" ? 2 : variant === "long" ? 4 : 3;
+  const depthBonus = Math.min(5, Math.floor((normalizedDepth - 1) / 2));
+  return {
+    roomCount,
+    waves: Array.from({ length: roomCount }, (_, index) => 4 + index + depthBonus),
+    depthBonus,
+  };
+}
+
+function corporateGridRooms(
+  floor: CorporateGridFloor,
+  depth: number,
+  variant: CorporateGridVariant,
+): BeltRoom[] {
+  const pressure = corporateGridWavePressure(depth, variant);
+  const span = floor.playableBounds.maxX - floor.playableBounds.minX;
+  const traversable = span - 360;
+  const names = ["Reception Wing", "Portrait Run", "Executive Hall", "Terminus Approach"];
+  return pressure.waves.map((wave, index) => ({
+    gateX:
+      floor.playableBounds.minX +
+      Math.round(((traversable * (index + 1)) / pressure.roomCount) / floor.gridSize) *
+        floor.gridSize,
+    wave,
+    name: names[index] ?? `Corporate Wave ${index + 1}`,
+  }));
+}
+
 function corporateGridBeltLevel(
   id: string,
   floorId: CorporateGridFloorId,
   name: string,
   depth: number,
 ): BeltLevel {
-  const floor = corporateGridFloorFor(floorId);
-  if (!floor) throw new Error(`generated corporate-grid floor is missing: ${floorId}`);
+  const floorDepth = depth + 1;
+  const variant = corporateGridVariantForDepth(floorDepth);
+  const floor = corporateGridFloorInstanceForDepth(floorDepth, variant);
+  if (floor.id !== floorId)
+    throw new Error(`corporate-grid loop mismatch: expected ${floorId}, received ${floor.id}`);
   return {
     id,
     name,
     dimensionId: "wild-west",
-    blurb: `Fight through Corporate Grid floor ${depth + 1}.`,
-    length: floor.width,
+    blurb: `Fight through Corporate Grid floor ${floorDepth}.`,
+    length: floor.playableBounds.maxX,
     floor: [
       { x: floor.playableBounds.minX, yMin: floor.laneBounds.minY, yMax: floor.laneBounds.maxY },
       { x: floor.playableBounds.maxX, yMin: floor.laneBounds.minY, yMax: floor.laneBounds.maxY },
     ],
     pits: [],
     obstacles: [],
-    rooms: [
-      { gateX: 1440, wave: 4, name: "Reception Wing" },
-      { gateX: 2700, wave: 5, name: "Portrait Run" },
-      { gateX: 3960, wave: 6, name: "Executive Hall" },
-      {
-        gateX: floor.playableBounds.maxX,
-        wave: 0,
-        boss: true,
-        name: "Corporate Terminus",
-      },
-    ],
+    rooms: corporateGridRooms(floor, floorDepth, variant),
     corporateGridFloorId: floor.id,
     corporateDepth: depth,
+    corporateVariant: variant,
+  };
+}
+
+/** Build the next endless-tower floor from depth alone; server and clients call this same constructor. */
+export function corporateGridBeltLevelForDepth(
+  depth: number,
+  variant = corporateGridVariantForDepth(depth),
+): BeltLevel {
+  const normalizedDepth = Math.max(1, Math.floor(Number.isFinite(depth) ? depth : 1));
+  const floor = corporateGridFloorInstanceForDepth(normalizedDepth, variant);
+  const materialName =
+    floor.id === "office-red-carpet-gallery"
+      ? "Red Carpet Gallery"
+      : floor.id === "office-random-dude-portrait-hall"
+        ? "Portrait Hall"
+        : "Marble Gallery";
+  return {
+    id: "corporate-grid",
+    name: `Corporate Grid: ${materialName}`,
+    dimensionId: "wild-west",
+    blurb: `Endless tower floor ${normalizedDepth} · ${variant}.`,
+    length: floor.playableBounds.maxX,
+    floor: [
+      { x: floor.playableBounds.minX, yMin: floor.laneBounds.minY, yMax: floor.laneBounds.maxY },
+      { x: floor.playableBounds.maxX, yMin: floor.laneBounds.minY, yMax: floor.laneBounds.maxY },
+    ],
+    pits: [],
+    obstacles: [],
+    rooms: corporateGridRooms(floor, normalizedDepth, variant),
+    corporateGridFloorId: floor.id,
+    corporateDepth: normalizedDepth - 1,
+    corporateVariant: variant,
   };
 }
 

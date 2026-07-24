@@ -189,6 +189,7 @@ export class AudioBus {
           "kungfu-iron-palm-whoosh",
           "ui-dock-open",
           "ui-dock-close",
+          "ui-dock-tick",
           ...GUN_FIRE_SAMPLE_IDS,
         ]);
       } catch {
@@ -603,6 +604,42 @@ export class AudioBus {
       return;
     }
     switch (event) {
+      case "elevator:ding":
+        if (this.throttled("elevatorDing", 350)) return;
+        if (
+          sampleBank.playSample("ui-dock-tick", {
+            volume: 0.6 + 0.3 * amt,
+            priority: "normal",
+          })
+        )
+          return;
+        this.tone(880, 0.13, { type: "sine", gain: 0.18, sweepTo: 1_320 });
+        this.tone(1_320, 0.18, { type: "sine", gain: 0.13, delay: 0.08 });
+        break;
+      case "elevator:slide":
+        if (this.throttled("elevatorSlide", 300)) return;
+        if (
+          sampleBank.playSample("ui-dock-open", {
+            volume: 0.45 + 0.35 * amt,
+            priority: "normal",
+          })
+        )
+          return;
+        this.noise(0.34, { gain: 0.12, type: "bandpass", freq: 680, q: 1.4 });
+        this.tone(170, 0.32, { type: "triangle", gain: 0.1, sweepTo: 110 });
+        break;
+      case "elevator:close":
+        if (this.throttled("elevatorClose", 300)) return;
+        if (
+          sampleBank.playSample("ui-dock-close", {
+            volume: 0.45 + 0.35 * amt,
+            priority: "normal",
+          })
+        )
+          return;
+        this.noise(0.28, { gain: 0.11, type: "bandpass", freq: 620, q: 1.5 });
+        this.tone(120, 0.26, { type: "triangle", gain: 0.11, sweepTo: 190 });
+        break;
       case "gun:break-open":
         if (this.throttled("gunBreakOpen", 180)) return;
         if (

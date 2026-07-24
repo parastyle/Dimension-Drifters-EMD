@@ -733,4 +733,14 @@ export class ArenaState extends Schema {
   @type(VastagharBossState) vastaghar = new VastagharBossState();
   /** B20 L2 server-authored, non-colliding chest rows. */
   @type({ map: ChestState }) chests = new MapSchema<ChestState>();
+  /** B34 belt-only endless-tower floor identity. Empty on arena/training and every legacy belt. */
+  @type("string") corporateFloorId = "";
+  /** B34 endless floor counter. Kept separate from the uint8 combat depth, which saturates for scaling. */
+  @type("uint32") corporateFloorDepth = 0;
+  /** B34 0 short · 1 standard · 2 long. Seeded from depth by the shared floor constructor. */
+  @type("uint8") corporateVariant = 1;
+  /** B34 0 sealed · 1 ready · 2 countdown · 3 departing · 4 arriving. Server authoritative. */
+  @type("uint8") elevatorPhase = 0;
+  /** Absolute 20 Hz tick ending the current timed elevator phase; zero outside a timed phase. */
+  @type("uint32") elevatorDeadlineTick = 0;
 }
