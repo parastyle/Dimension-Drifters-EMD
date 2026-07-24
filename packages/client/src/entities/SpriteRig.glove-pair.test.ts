@@ -4,16 +4,13 @@ import { SPRITES, type SpriteManifest, spriteImageFacingX } from "../sprites/man
 
 vi.mock("phaser", () => ({ default: {} }));
 
-const { SpriteRig, wrapRigFacingSign, wrapRigMountPlan, wrapRigReceiverRelativeScale } =
-  await import("./SpriteRig.js");
+const {
+  authoredWeaponRenderPlan,
+  wrapRigFacingSign,
+  wrapRigMountPlan,
+  wrapRigReceiverRelativeScale,
+} = await import("./SpriteRig.js");
 const { twoHandedPoseFor } = await import("../sprites/pose-language.js");
-
-interface CapturedPiece {
-  spriteId: string;
-  def: (typeof WEAPONS)[string];
-  manifest: SpriteManifest;
-  partIndex?: number;
-}
 
 // W-CONVERT — append-only rig proof: one authored glove is intentionally mounted on each hand.
 describe("SpriteRig glove-pair rendering", () => {
@@ -68,21 +65,11 @@ describe("SpriteRig glove-pair rendering", () => {
         },
       ],
     };
-    let lead: CapturedPiece | undefined;
-    let off: CapturedPiece | undefined;
-    const rig = Object.create(SpriteRig.prototype) as InstanceType<typeof SpriteRig>;
-    (
-      rig as unknown as { equipLoadout: (a: CapturedPiece, b?: CapturedPiece) => void }
-    ).equipLoadout = (a, b) => {
-      lead = a;
-      off = b;
-    };
-
-    rig.equipWeapon(weaponId, weapon, manifest);
+    const [lead, off] = authoredWeaponRenderPlan(weaponId, weapon, manifest);
 
     expect(lead).toMatchObject({ spriteId: weaponId, partIndex: 0 });
     expect(off).toMatchObject({ spriteId: weaponId, partIndex: 0 });
-    expect(lead?.def).toBe(weapon);
+    expect(lead.def).toBe(weapon);
     expect(off?.def).toBe(weapon);
     expect(twoHandedPoseFor(weapon)).toBe(false);
   });

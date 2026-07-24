@@ -314,7 +314,7 @@ describe("SpriteRig retained lazy-art draw transition", () => {
       flourishLeadSpec: spec,
       flourishOffSpec: undefined,
       weapons: [{ def }],
-      pairCeremonyStartMs: 0,
+      authoredDualCeremonyStartMs: 0,
       presentationClockNow: () => 500,
     });
     const internals = SpriteRig.prototype as unknown as {

@@ -1,7 +1,7 @@
 import { ENEMY_KINDS } from "./enemies.js";
 import { weaponDisassemblyValue } from "./economy.js";
 import { AFFIXES, CURSED_AFFIXES, DROP_POOL, RARITIES } from "./loot.js";
-import { isActiveWeaponId, pairEligible, WEAPONS } from "./weapons.js";
+import { isActiveWeaponId, WEAPONS } from "./weapons.js";
 
 export const WEAPON_BANK_VERSION = 1 as const;
 export const WEAPON_STASH_BASE_CAPACITY = 72 as const;
@@ -19,11 +19,10 @@ export const WEAPON_ID_MAX_LENGTH = 64 as const;
 export const WEAPON_RUN_ID_MAX_LENGTH = 64 as const;
 
 export const WEAPON_INSTANCE_ID_RE = /^wi_[A-Za-z0-9_-]{22}$/;
-export const WEAPON_PAIR_ENTRY_ID_RE = /^wp_[A-Za-z0-9_-]{22}$/;
+const LEGACY_WEAPON_PAIR_ENTRY_ID_RE = /^wp_[A-Za-z0-9_-]{22}$/;
 const BOUNDED_ASCII_RE = /^[\x21-\x7e]+$/;
 
 export type WeaponInstanceId = string;
-export type WeaponPairEntryId = string;
 export type WeaponRarityId =
   | "common"
   | "uncommon"
@@ -67,14 +66,7 @@ export interface SingleWeaponEntryV1 {
   weapon: WeaponInstanceV1;
 }
 
-export interface PairedWeaponEntryV1 {
-  kind: "pair";
-  entryId: WeaponPairEntryId;
-  lead: WeaponInstanceV1;
-  offhand: WeaponInstanceV1;
-}
-
-export type WeaponBankEntryV1 = SingleWeaponEntryV1 | PairedWeaponEntryV1;
+export type WeaponBankEntryV1 = SingleWeaponEntryV1;
 
 export interface CarryPlacementV1 {
   entryId: string;
@@ -170,18 +162,16 @@ export function encodedJsonByteLength(value: unknown): number {
   }
 }
 
-export function weaponEntryPhysicalSize(entry: WeaponBankEntryV1): 1 | 2 {
-  return entry.kind === "pair" ? 2 : 1;
+export function weaponEntryPhysicalSize(_entry: WeaponBankEntryV1): 1 {
+  return 1;
 }
 
 export function weaponEntryInstances(entry: WeaponBankEntryV1): readonly WeaponInstanceV1[] {
-  return entry.kind === "pair" ? [entry.lead, entry.offhand] : [entry.weapon];
+  return [entry.weapon];
 }
 
 export function weaponEntryMinimumWorldTier(entry: WeaponBankEntryV1): number {
-  return entry.kind === "pair"
-    ? Math.max(entry.lead.sourceWorldTier, entry.offhand.sourceWorldTier)
-    : entry.weapon.sourceWorldTier;
+  return entry.weapon.sourceWorldTier;
 }
 
 export function weaponRarityIndex(rarity: WeaponRarityId): number {
@@ -289,7 +279,14 @@ function parseInstance(value: unknown, errors: string[], path: string): WeaponIn
   };
 }
 
-function parseEntry(value: unknown, errors: string[], path: string): WeaponBankEntryV1 | null {
+type LegacyPairMembers = readonly [leadId: string, formerOffhandId: string];
+
+function parseEntries(
+  value: unknown,
+  errors: string[],
+  path: string,
+  legacyPairs: Map<string, LegacyPairMembers>,
+): WeaponBankEntryV1[] | null {
   if (!isRecord(value)) {
     errors.push(`${path}:record`);
     return null;
@@ -301,22 +298,28 @@ function parseEntry(value: unknown, errors: string[], path: string): WeaponBankE
     }
     if (weapon && value.entryId !== weapon.instanceId) errors.push(`${path}:single-entry-alias`);
     if (!weapon || errors.some((error) => error.startsWith(`${path}:`))) return null;
-    return { kind: "single", entryId: value.entryId as string, weapon };
+    return [{ kind: "single", entryId: value.entryId as string, weapon }];
   }
+  // Bank v1 briefly persisted player-composed atomic pairs. Accept them only at the trust boundary and
+  // immediately normalize both exact instances into independent singles; no live pair type escapes.
   if (value.kind === "pair") {
     const lead = parseInstance(value.lead, errors, `${path}.lead`);
     const offhand = parseInstance(value.offhand, errors, `${path}.offhand`);
-    if (typeof value.entryId !== "string" || !WEAPON_PAIR_ENTRY_ID_RE.test(value.entryId)) {
+    if (typeof value.entryId !== "string" || !LEGACY_WEAPON_PAIR_ENTRY_ID_RE.test(value.entryId)) {
       errors.push(`${path}:entryId`);
     }
-    if (lead && offhand) {
-      if (lead.instanceId === offhand.instanceId) errors.push(`${path}:pair-self`);
-      if (!pairEligible(WEAPONS[lead.weaponId], WEAPONS[offhand.weaponId])) {
-        errors.push(`${path}:pair-ineligible`);
-      }
-    }
+    if (lead && offhand && lead.instanceId === offhand.instanceId) errors.push(`${path}:pair-self`);
     if (!lead || !offhand || errors.some((error) => error.startsWith(`${path}:`))) return null;
-    return { kind: "pair", entryId: value.entryId as string, lead, offhand };
+    const legacyId = value.entryId as string;
+    if (legacyPairs.has(legacyId)) {
+      errors.push(`${path}:duplicate-entry`);
+      return null;
+    }
+    legacyPairs.set(legacyId, [lead.instanceId, offhand.instanceId]);
+    return [
+      { kind: "single", entryId: lead.instanceId, weapon: lead },
+      { kind: "single", entryId: offhand.instanceId, weapon: offhand },
+    ];
   }
   errors.push(`${path}:kind`);
   return null;
@@ -406,18 +409,19 @@ export function sanitizeWeaponBankV1(input: unknown): WeaponBankSanitizeResult {
   if (!Array.isArray(input.intake) || input.intake.length > WEAPON_CARRY_MAX_PHYSICAL) {
     errors.push("bank:intake-cardinality");
   }
+  const legacyPairs = new Map<string, LegacyPairMembers>();
   const stash: WeaponBankEntryV1[] = [];
   const intake: WeaponBankEntryV1[] = [];
   if (Array.isArray(input.stash) && input.stash.length <= WEAPON_STASH_MAX_CAPACITY) {
     for (let index = 0; index < input.stash.length; index++) {
-      const entry = parseEntry(input.stash[index], errors, `stash[${index}]`);
-      if (entry) stash.push(entry);
+      const entries = parseEntries(input.stash[index], errors, `stash[${index}]`, legacyPairs);
+      if (entries) stash.push(...entries);
     }
   }
   if (Array.isArray(input.intake) && input.intake.length <= WEAPON_CARRY_MAX_PHYSICAL) {
     for (let index = 0; index < input.intake.length; index++) {
-      const entry = parseEntry(input.intake[index], errors, `intake[${index}]`);
-      if (entry) intake.push(entry);
+      const entries = parseEntries(input.intake[index], errors, `intake[${index}]`, legacyPairs);
+      if (entries) intake.push(...entries);
     }
   }
   const shelfUpgrades = Number.isInteger(input.shelfUpgrades)
@@ -425,7 +429,11 @@ export function sanitizeWeaponBankV1(input: unknown): WeaponBankSanitizeResult {
     : 0;
   const stashCapacity = WEAPON_STASH_BASE_CAPACITY +
     WEAPON_STASH_SHELF_SIZE * Math.max(0, Math.min(WEAPON_STASH_MAX_SHELVES, shelfUpgrades));
-  if (stash.length > stashCapacity) errors.push("bank:stash-capacity");
+  // Legacy pairs occupied one stash card but contained two exact instances. Preserve both even when
+  // normalization leaves a temporarily over-capacity stash; normal add flows remain blocked until room exists.
+  if (Array.isArray(input.stash) && input.stash.length > stashCapacity) {
+    errors.push("bank:stash-capacity");
+  }
   let intakePhysical = 0;
   for (const entry of intake) intakePhysical += weaponEntryPhysicalSize(entry);
   if (intakePhysical > WEAPON_CARRY_MAX_PHYSICAL) errors.push("bank:intake-physical-capacity");
@@ -473,7 +481,12 @@ export function sanitizeWeaponBankV1(input: unknown): WeaponBankSanitizeResult {
             errors.push(`expedition.entries[${index}]:record`);
             continue;
           }
-          const entry = parseEntry(row.entry, errors, `expedition.entries[${index}].entry`);
+          const parsedEntries = parseEntries(
+            row.entry,
+            errors,
+            `expedition.entries[${index}].entry`,
+            legacyPairs,
+          );
           if (row.stakeOrigin !== "committed" && row.stakeOrigin !== "found") {
             errors.push(`expedition.entries[${index}]:stakeOrigin`);
           }
@@ -481,15 +494,17 @@ export function sanitizeWeaponBankV1(input: unknown): WeaponBankSanitizeResult {
             errors.push(`expedition.entries[${index}]:location`);
           }
           if (!Number.isInteger(row.start)) errors.push(`expedition.entries[${index}]:start`);
-          if (entry && (row.stakeOrigin === "committed" || row.stakeOrigin === "found") &&
+          if (parsedEntries && (row.stakeOrigin === "committed" || row.stakeOrigin === "found") &&
             (row.location === "active" || row.location === "pack" || row.location === "field") &&
             Number.isInteger(row.start)) {
-            entries.push({
-              entry,
-              stakeOrigin: row.stakeOrigin,
-              location: row.location,
-              start: row.start as number,
-            });
+            for (let member = 0; member < parsedEntries.length; member++) {
+              entries.push({
+                entry: parsedEntries[member]!,
+                stakeOrigin: row.stakeOrigin,
+                location: row.location,
+                start: row.location === "field" ? 255 : (row.start as number) + member,
+              });
+            }
           }
         }
       }
@@ -513,6 +528,42 @@ export function sanitizeWeaponBankV1(input: unknown): WeaponBankSanitizeResult {
     validateUniqueEntries(expedition.entries.map((row) => row.entry), entryIds, instanceIds, errors, "expedition");
   }
   if (instanceIds.size > WEAPON_BANK_MAX_COMPONENTS) errors.push("bank:component-capacity");
+  if (legacyPairs.size > 0) {
+    const expandedPlacements: CarryPlacementV1[] = [];
+    for (const placement of lastCarry.placements) {
+      const members = legacyPairs.get(placement.entryId);
+      if (!members) {
+        expandedPlacements.push(placement);
+        continue;
+      }
+      expandedPlacements.push(
+        { ...placement, entryId: members[0] },
+        { ...placement, entryId: members[1], start: placement.start + 1 },
+      );
+    }
+    lastCarry.placements = expandedPlacements;
+    const activeMembers = legacyPairs.get(lastCarry.activeEntryId);
+    if (activeMembers) lastCarry.activeEntryId = activeMembers[0];
+
+    if (expandedPlacements.length > WEAPON_CARRY_MAX_PHYSICAL) {
+      errors.push("bank:lastCarry-cardinality");
+    }
+    const canonicalEntries = new Set<string>();
+    const canonicalCells = new Set<string>();
+    for (const [index, placement] of expandedPlacements.entries()) {
+      if (canonicalEntries.has(placement.entryId)) {
+        errors.push(`lastCarry.placements[${index}]:duplicate-entry`);
+      }
+      canonicalEntries.add(placement.entryId);
+      const max = placement.zone === "active" ? WEAPON_ACTIVE_CAPACITY : WEAPON_PACK_MAX_CAPACITY;
+      if (placement.start < 0 || placement.start >= max) {
+        errors.push(`lastCarry.placements[${index}]:bounds`);
+      }
+      const cell = `${placement.zone}:${placement.start}`;
+      if (canonicalCells.has(cell)) errors.push(`lastCarry.placements[${index}]:overlap`);
+      canonicalCells.add(cell);
+    }
+  }
   if (errors.length > 0) return { ok: false, bank: fallback, errors };
   return {
     ok: true,
@@ -534,9 +585,7 @@ export interface ArchivedWeaponBankSalvageResult {
   salvagedInstances: number;
   affectedEntries: number;
   salvagedWeaponIds: string[];
-  /** A mixed pair becomes a single entry whose canonical id is the surviving instance id. */
-  entryIdRemap: Record<string, string>;
-  /** Fully retired singles/pairs disappear; callers use this to repair an in-flight carry request. */
+  /** Fully retired singles disappear; callers use this to repair an in-flight carry request. */
   removedEntryIds: string[];
 }
 
@@ -553,30 +602,18 @@ export function salvageArchivedWeaponBank(
     salvagedInstances: 0,
     affectedEntries: 0,
     salvagedWeaponIds: [],
-    entryIdRemap: {},
     removedEntryIds: [],
   };
 
   const migrateEntry = (entry: WeaponBankEntryV1): WeaponBankEntryV1 | null => {
-    const instances = weaponEntryInstances(entry);
-    const archived = instances.filter((instance) => WEAPONS[instance.weaponId]?.archived === true);
-    if (archived.length === 0) return entry;
+    const instance = entry.weapon;
+    if (WEAPONS[instance.weaponId]?.archived !== true) return entry;
     result.affectedEntries++;
-    for (const instance of archived) {
-      result.payout += weaponDisassemblyValue(instance.weaponId);
-      result.salvagedInstances++;
-      result.salvagedWeaponIds.push(instance.weaponId);
-    }
-    const survivors = instances.filter((instance) => WEAPONS[instance.weaponId]?.archived !== true);
-    if (survivors.length === 0) {
-      result.removedEntryIds.push(entry.entryId);
-      return null;
-    }
-    if (entry.kind === "single") return entry;
-    const weapon = survivors[0];
-    if (!weapon) return null;
-    result.entryIdRemap[entry.entryId] = weapon.instanceId;
-    return { kind: "single", entryId: weapon.instanceId, weapon };
+    result.payout += weaponDisassemblyValue(instance.weaponId);
+    result.salvagedInstances++;
+    result.salvagedWeaponIds.push(instance.weaponId);
+    result.removedEntryIds.push(entry.entryId);
+    return null;
   };
 
   const migrateEntries = (entries: readonly WeaponBankEntryV1[]): WeaponBankEntryV1[] => {
@@ -598,12 +635,10 @@ export function salvageArchivedWeaponBank(
   }
 
   const removed = new Set(result.removedEntryIds);
-  const migratedId = (entryId: string): string => result.entryIdRemap[entryId] ?? entryId;
-  bank.lastCarry.placements = bank.lastCarry.placements
-    .filter((placement) => !removed.has(placement.entryId))
-    .map((placement) => ({ ...placement, entryId: migratedId(placement.entryId) }));
+  bank.lastCarry.placements = bank.lastCarry.placements.filter(
+    (placement) => !removed.has(placement.entryId),
+  );
   if (removed.has(bank.lastCarry.activeEntryId)) bank.lastCarry.activeEntryId = "";
-  else bank.lastCarry.activeEntryId = migratedId(bank.lastCarry.activeEntryId);
 
   return result;
 }

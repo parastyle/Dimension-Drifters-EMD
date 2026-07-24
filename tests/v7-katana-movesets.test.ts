@@ -222,7 +222,7 @@ describe("V7 bespoke katana move catalog", () => {
     }
   });
 
-  it("does not fund unreachable choreography for the archived wakizashi pair", () => {
+  it("does not fund unreachable choreography for the two archived wakizashi entries", () => {
     for (const id of ["drift-wakizashi-kagewake", "drift-wakizashi-hushglass"] as const) {
       const definition = WEAPONS[id];
       expect(definition?.archived, id).toBe(true);

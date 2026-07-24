@@ -129,13 +129,16 @@ export function driveRegenPerSecond(mode: DriveRegenModeValue, engagedMultiplier
   );
 }
 
-export type DualWieldHand = 0 | 1;
+export type AuthoredDualHand = 0 | 1;
 
-/** Firing hand for an already-accepted paired gun/caster beat. The first seq after the bind epoch is lead;
- * uint32 subtraction keeps the answer deterministic through wrap. Hand identity is derived, never synced. */
-export function dualHandForSeq(attackSeq: number, pairBaseSeq: number): DualWieldHand {
-  const delta = ((attackSeq >>> 0) - (pairBaseSeq >>> 0)) >>> 0;
-  return (((delta - 1) >>> 0) & 1) as DualWieldHand;
+/** Alternating presentation hand for one authored pre-made dual weapon. The first accepted sequence after
+ * its local equip epoch is lead; uint32 subtraction keeps the answer deterministic through wrap. */
+export function authoredDualHandForSeq(
+  attackSeq: number,
+  equipBaseSeq: number,
+): AuthoredDualHand {
+  const delta = ((attackSeq >>> 0) - (equipBaseSeq >>> 0)) >>> 0;
+  return (((delta - 1) >>> 0) & 1) as AuthoredDualHand;
 }
 
 /** Stable shipped ultimate-family ids. */

@@ -386,7 +386,7 @@ describe("gear G1/G2 shared catalog, account, and allocation laws", () => {
     );
   });
 
-  it("pins schema 35 without run stats or level fields and keeps the nested gear envelope", () => {
+  it("pins schema 37 without run stats or level fields and keeps the compatibility envelope", () => {
     expect(petShared.SCHEMA_VERSION).toBe(37);
     const playerSymbols = Object.getOwnPropertySymbols(petShared.PlayerState);
     const playerMetadata = (
@@ -405,7 +405,17 @@ describe("gear G1/G2 shared catalog, account, and allocation laws", () => {
       petShared.DualWieldState as unknown as Record<symbol, Record<number, { name: string }>>
     )[tailSymbols[0]!];
     if (!tailMetadata) throw new Error("DualWieldState schema metadata is required");
-    expect([tailMetadata[4]?.name, tailMetadata[5]?.name]).toEqual(["gearUpper", "gearLower"]);
+    expect(Object.values(tailMetadata).map(({ name }) => name)).toEqual([
+      "retiredByte0",
+      "retiredUint32",
+      "retiredByte1",
+      "retiredByte2",
+      "gearUpper",
+      "gearLower",
+      "weaponResource",
+      "prestige",
+      "relics",
+    ]);
     const player = new petShared.PlayerState();
     expect([player.character, player.runCharacter]).toEqual([
       petShared.DEFAULT_CHARACTER,
@@ -447,7 +457,9 @@ const bankSingle = (
   const weapon = bankWeapon(n, weaponId, rarity, affix, tier);
   return { kind: "single", entryId: weapon.instanceId, weapon };
 };
-const bankWith = (...entries: import("@dd/shared").WeaponBankEntryV1[]) => ({
+const bankWith = (
+  ...entries: import("@dd/shared").WeaponBankEntryV1[]
+): import("@dd/shared").WeaponBankV1 => ({
   version: 1 as const,
   shelfUpgrades: 0,
   stash: entries,
@@ -505,7 +517,7 @@ describe("weapon bank B1 — strict forged-payload boundary", () => {
     ).toEqual(["affix", "instanceId", "provenance", "rarity", "sourceWorldTier", "weaponId"]);
   });
 
-  it("rejects aliases, self/ineligible pairs, future versions, and encoded/cardinality abuse as a unit", () => {
+  it("normalizes legacy pairs while rejecting self-pairs, future versions, and cardinality abuse", () => {
     const duplicate = bankSingle(2);
     expect(petShared.sanitizeWeaponBankV1(bankWith(duplicate, duplicate)).ok).toBe(false);
     const self = bankWeapon(3, "rattler-sabre");
@@ -516,16 +528,41 @@ describe("weapon bank B1 — strict forged-payload boundary", () => {
           entryId: bankPairId(1),
           lead: self,
           offhand: self,
-        }),
+        } as never),
       ).ok,
     ).toBe(false);
-    const ineligible = {
+    const legacyPair = {
       kind: "pair" as const,
       entryId: bankPairId(2),
       lead: bankWeapon(4, "rusty-cleaver"),
       offhand: bankWeapon(5, "rusty-cleaver"),
     };
-    expect(petShared.sanitizeWeaponBankV1(bankWith(ineligible)).ok).toBe(false);
+    const legacyBank = bankWith(legacyPair as never);
+    legacyBank.lastCarry = {
+      placements: [{ entryId: legacyPair.entryId, zone: "active", start: 0 }],
+      activeEntryId: legacyPair.entryId,
+    };
+    const normalized = petShared.sanitizeWeaponBankV1(legacyBank);
+    expect(normalized.ok).toBe(true);
+    expect(normalized.bank.stash).toEqual([
+      { kind: "single", entryId: legacyPair.lead.instanceId, weapon: legacyPair.lead },
+      { kind: "single", entryId: legacyPair.offhand.instanceId, weapon: legacyPair.offhand },
+    ]);
+    expect(normalized.bank.lastCarry).toEqual({
+      placements: [
+        { entryId: legacyPair.lead.instanceId, zone: "active", start: 0 },
+        { entryId: legacyPair.offhand.instanceId, zone: "active", start: 1 },
+      ],
+      activeEntryId: legacyPair.lead.instanceId,
+    });
+    const outOfBoundsLegacy = bankWith(legacyPair as never);
+    outOfBoundsLegacy.lastCarry = {
+      placements: [{ entryId: legacyPair.entryId, zone: "active", start: 2 }],
+      activeEntryId: legacyPair.entryId,
+    };
+    expect(petShared.sanitizeWeaponBankV1(outOfBoundsLegacy).errors).toContain(
+      "lastCarry.placements[1]:bounds",
+    );
     expect(petShared.sanitizeWeaponBankV1({ ...bankWith(), version: 2 }).ok).toBe(false);
     expect(
       petShared.sanitizeWeaponBankV1({ ...bankWith(), padding: "x".repeat(193 * 1024) }).errors,
@@ -536,41 +573,31 @@ describe("weapon bank B1 — strict forged-payload boundary", () => {
   });
 });
 
-describe("weapon bank B2 — carry, settlement, pair, sale, and prestige conservation", () => {
-  it("moves only selected entries into exact placements and enforces pair span + source-tier promotion", () => {
+describe("weapon bank B2 — carry, settlement, sale, and prestige conservation", () => {
+  it("moves only selected single entries into exact placements and enforces source-tier promotion", () => {
     const account = petShared.createMetaAccountV5();
     const single = bankSingle(10, "rusty-cleaver", "rare", "keen", 2);
-    const pairCandidates = petShared.DROP_POOL.flatMap((lead) =>
-      petShared.DROP_POOL.map((offhand) => [lead, offhand] as const),
-    ).find(([lead, offhand]) =>
-      petShared.pairEligible(petShared.WEAPONS[lead], petShared.WEAPONS[offhand]),
-    );
-    expect(pairCandidates).toBeDefined();
-    if (!pairCandidates) return;
-    const pair: import("@dd/shared").PairedWeaponEntryV1 = {
-      kind: "pair",
-      entryId: bankPairId(10),
-      lead: bankWeapon(11, pairCandidates[0], "legendary", "brutal", 4),
-      offhand: bankWeapon(12, pairCandidates[1], "rare", "swift", 3),
-    };
+    const second = bankSingle(11, "rattler-sabre", "legendary", "brutal", 4);
+    const third = bankSingle(12, "x2-sandsong-saber", "rare", "swift", 3);
     const safe = bankSingle(13);
-    account.weaponBank.stash.push(single, pair, safe);
+    account.weaponBank.stash.push(single, second, third, safe);
     const result = ultimateProgression.commitWeaponCarry(
       account,
       {
         requestId: "carry-1",
         expectedRevision: account.revision,
         placements: [
-          { entryId: pair.entryId, zone: "active", start: 0 },
+          { entryId: second.entryId, zone: "active", start: 0 },
+          { entryId: third.entryId, zone: "active", start: 1 },
           { entryId: single.entryId, zone: "pack", start: 4 },
         ],
-        activeEntryId: pair.entryId,
+        activeEntryId: second.entryId,
         requestedWorldTier: 4,
       },
       "run-carry",
       12,
     );
-    expect(result).toMatchObject({ ok: true, runTier: 4, movedEntries: 2, movedPhysical: 3 });
+    expect(result).toMatchObject({ ok: true, runTier: 4, movedEntries: 3, movedPhysical: 3 });
     expect(account.weaponBank.stash).toEqual([safe]);
     expect(
       account.weaponBank.expedition?.entries.map((row) => [
@@ -579,10 +606,11 @@ describe("weapon bank B2 — carry, settlement, pair, sale, and prestige conserv
         row.start,
       ]),
     ).toEqual([
-      [pair.entryId, "active", 0],
+      [second.entryId, "active", 0],
+      [third.entryId, "active", 1],
       [single.entryId, "pack", 4],
     ]);
-    expect(account.weaponBank.expedition?.entries[0]?.entry).toEqual(pair);
+    expect(account.weaponBank.expedition?.entries[0]?.entry).toEqual(second);
 
     const lowTier = petShared.createMetaAccountV5();
     lowTier.weaponBank.stash.push(bankSingle(14, "rusty-cleaver", "common", "", 5));
@@ -676,7 +704,7 @@ describe("weapon bank B2 — carry, settlement, pair, sale, and prestige conserv
     expect(defeat.weaponBank.stash).toEqual([safeDefeat]);
   });
 
-  it("prestige clears stash/intake/pairs/last-carry for zero Scrip while preserving permanent state", () => {
+  it("prestige clears stash/intake/last-carry for zero Scrip while preserving permanent state", () => {
     const account = petShared.createMetaAccountV5();
     account.scrip = 444;
     account.weaponBank.shelfUpgrades = 3;

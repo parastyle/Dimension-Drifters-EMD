@@ -201,7 +201,7 @@ describe("GameRoom B25 theatrical kung-fu displacement authority", () => {
 
     for (let index = 0; index < 5; index++) {
       room.state.tick = index * 10;
-      expect(room.resolveHandAttack(player, combat, 0), `accepted beat ${index}`).toBe(true);
+      expect(room.resolveSingleWeaponAttack(player, combat), `accepted beat ${index}`).toBe(true);
       distances.push(room.pendingWeaponLunges.get(player.id)?.distancePx ?? 0);
       room.stepPendingWeaponLunges(1);
     }

@@ -11,7 +11,7 @@ executeParry 5369-5388, resolveParry 5725-5783, applyParryAugments 5393+), `move
 `damagePlayer` call sites (grep-verified exhaustive), `augments.ts` gate machinery (286-315),
 `docs/jumpfeel-panel/tech.md` (stance machine, stanceSeq), `docs/enemycombo-panel/tech-implementer.md`
 (v19 claims, juggle channels), `docs/ultimate-panel/tech-server.md` (allocFlex law),
-`docs/dualwield-panel/tech-server.md` (schema ledger), `docs/classmerge-panel/devils-advocate.md`
+`packages/shared/src/state.ts` (current schema ledger), `docs/classmerge-panel/devils-advocate.md`
 (premise corrections + guardrails — incorporated throughout, marked [DA]).
 
 ---
@@ -378,9 +378,9 @@ displacement (rolling into a wall just ends early spatially; the stance still ti
   **19 = enemy-combo** (implementing NOW — owns GameRoom/state/constants/enemies/combat);
   **20 = jump** (claimed, `moveStance/poundSeq/stanceSeq`); **21 = classmerge-21a**
   (`runCharacter`); **22 = classmerge-21b** (`dodgedSeq`); ultimates take next-available after 22
-  (its doc already says "claim the next free"); dual-wield's provisional 21 **renumbers behind
-  all of these** (its own §14 already commits to yielding: "takes next-available at merge time").
-  One wave = one bump; whoever merges later rebases appends after the earlier wave's fields.
+  (its doc already says "claim the next free"). One wave = one bump; whoever merges later rebases
+  appends after the earlier wave's fields. B27 later retired player-authored weapon composition
+  without changing field widths, so schema 37 remains current.
 
 ---
 
@@ -564,9 +564,8 @@ denominator; §2.4 amendments land with 21a).
 | 3∥ | **classmerge-21a** (economy + dissolution + ultimate doc amendments) | 21 | character-kit, leveling, progression, level-up-model + small GameRoom/ArenaScene touches | after combo merges — runs PARALLEL with J2/J3 (file overlap is only GameRoom line 63/4334 + one ArenaScene HUD line vs J3's input/pose regions; 21a rebases those two touches last, or serializes behind J2 if the seat count forces it) |
 | 4 | **classmerge-21b** (dodge roll) | 22 | GameRoom, movement, prediction, ArenaScene | after J2 AND 21a merge (hard gate 1) |
 | 5 | **ultimates** | 23 (next-avail) | progression, GameRoom, state, constants, new ult modules | implementation only after 21a (hard gate 2) + after 21b's GameRoom lock frees (the ult must spec against the FINAL kit: roll i-frames vs ult invuln is one written law, and its shared/design waves can proceed in parallel from 21a's merge) |
-| 6 | **dual-wield** | 24 (its doc already yields/renumbers) | GameRoom attack pipeline, PlayerState appends, client | after ultimates' server wave (both append PlayerState + rework the tick's player loop; dual-wield's own plan puts its schema wave "rebases last") |
 
-Parallelizable at any time: jump J3 ∥ 21a; ultimate design/shared prep ∥ 21b; dual-wield curation/
-design ∥ everything. Golden phase-order fixtures re-record at most twice (jump J4, 21b if the
+Parallelizable at any time: jump J3 ∥ 21a; ultimate design/shared prep ∥ 21b.
+Golden phase-order fixtures re-record at most twice (jump J4, 21b if the
 stance step shifts internals — expected no-op both times). CI is the arbiter (`pnpm lint` CRLF
 false-negative locally, per project memory).

@@ -81,7 +81,7 @@ describe("owner-notes NR REDO iteration contracts", () => {
       "utf8",
     );
     expect(rigSource).toContain('poseVariant === "sparkknuckle-voltage-boxing"');
-    expect(rigSource).toContain("pairGlintAlpha");
+    expect(rigSource).toContain("authoredDualGlintAlpha");
     expect(rigSource).toContain("paintedAuraParticles");
     expect(rigSource).not.toContain("gloveAura");
   });

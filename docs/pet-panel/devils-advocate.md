@@ -339,7 +339,7 @@ Any resource pet must preserve these invariants:
 1. One accepted authoritative attack spends exactly one charge before any bounded refund. Rejected/buffered
    attacks do not advance the pet counter.
 2. The active weapon mirrors its slot row; stow, Q/E, 1/2/3 swap, Backpack equip, drop/grab, shop sell,
-   future pair/unpair, and direct server identity changes preserve `{cooldown, reload, charges, petCounter}`.
+   and direct server identity changes preserve `{cooldown, reload, charges, petCounter}`.
 3. Only a genuinely new pickup initializes a fresh row. Pet selection, pet level, character change, revive,
    reconnect, and returning to a weapon never initialize or top up.
 4. Stowed cooldown/reload continues to age exactly once. A pet cannot create a second reload-complete edge.

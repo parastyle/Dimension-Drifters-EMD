@@ -14603,10 +14603,10 @@
     {
       "id": "drift-wakizashi-kagewake",
       "name": "Kagewake",
-      "description": "The first short blade cut from the Driftblade's discarded shadow. It asks for a second sword and leaves no room between question and answer.",
+      "description": "The first short blade cut from the Driftblade's discarded shadow. It leaves no room between question and answer.",
       "type": "melee",
       "family": "katana",
-      "theme": "Driftblade-line blackglass wakizashi pair-half",
+      "theme": "Driftblade-line blackglass wakizashi",
       "element": "physical",
       "finish": "arcane",
       "grip": "1H",
@@ -14623,14 +14623,14 @@
       "comboFamily": "chop",
       "comboVariant": "katana-kagewake",
       "katanaHook": {
-        "kind": "pair-half",
-        "summary": "A one-handed pair-half that joins the six-beat dual-melee cadence."
+        "kind": "short-flurry",
+        "summary": "A compact one-handed wakizashi with its own four-beat cadence."
       },
       "bespokeVfxSheet": false,
-      "artPrompt": "Weapon-only sprite: a wakizashi descended from Driftblade, blackglass mune, narrow white edge, clipped square guard and short indigo wrap; compact pair-half proportions, clean iaijutsu silhouette, tip right.",
+      "artPrompt": "Weapon-only sprite: a wakizashi descended from Driftblade, blackglass mune, narrow white edge, clipped square guard and short indigo wrap; compact proportions, clean iaijutsu silhouette, tip right.",
       "palettePrimary": "#171B2C",
       "paletteAccent": "#B9F7FF",
-      "cardartAction": "two short horizon-lines crossing before either scabbard has stopped moving",
+      "cardartAction": "one short horizon-line crossing before the scabbard has stopped moving",
       "stats": {
         "damage": 3.6,
         "range": 92,

@@ -6,10 +6,10 @@ import {
   comboStepForChain,
   composeWeaponTransform,
   createKatanaChoreographySample,
-  DUAL_MELEE_PAIR_BAR,
-  DUAL_MELEE_SEQUENCE_LENGTH,
+  AUTHORED_DUAL_MELEE_BAR,
+  AUTHORED_DUAL_MELEE_SEQUENCE_LENGTH,
   decodeGearCosmetics,
-  dualHandForSeq,
+  authoredDualHandForSeq,
   type GearId,
   type GearSlot,
   GRAVITY_APEX_BAND,
@@ -319,8 +319,25 @@ export interface RigLoadoutPiece {
   readonly spriteId: string;
   readonly def: WeaponDef;
   readonly manifest: SpriteManifest;
-  /** Authored twin sprites are the only loadout allowed to select part 1. Arbitrary pairs use part 0. */
+  /** Authored twin sprites select part 1 for their second hand. */
   readonly partIndex?: 0 | 1;
+}
+
+/** Resolve the one catalog weapon into its complete authored held render. Independent weapons are never
+ * accepted here, so a second piece can only come from the same pre-made definition. */
+export function authoredWeaponRenderPlan(
+  spriteId: string,
+  def: WeaponDef,
+  manifest: SpriteManifest,
+): readonly [RigLoadoutPiece] | readonly [RigLoadoutPiece, RigLoadoutPiece] {
+  const lead: RigLoadoutPiece = { spriteId, def, manifest, partIndex: 0 };
+  if (def.glovePair && manifest.parts.length >= 1) {
+    return [lead, { spriteId, def, manifest, partIndex: 0 }];
+  }
+  if (def.dual && manifest.parts.length >= 2) {
+    return [lead, { spriteId, def, manifest, partIndex: 1 }];
+  }
+  return [lead];
 }
 
 export type WrapRigReceiver = "hand-r" | "hand-l" | "foot-r" | "foot-l";
@@ -384,7 +401,7 @@ export function wrapRigReceiverRelativeScale(input: Readonly<WrapRigScaleInput>)
 /** Optional rig-only routing metadata. Shared combat truth remains the immutable SwingDescriptor payload. */
 export interface RigSwingDescriptor extends SwingDescriptor {
   readonly hand?: RigSwingHand;
-  readonly pairStep?: number;
+  readonly authoredDualStep?: number;
 }
 
 /** Final held-blade affine sampled after every rig pose writer. Extension renderers consume this value
@@ -642,13 +659,12 @@ export function idleFlourishEligibleEpoch(
   );
 }
 
-/** SpriteRig layout offset in body-height units. Only a real pistol+pistol pair gets the raised lead hand. */
-export function dualPistolHandYOffset(
-  lead: WeaponDef | undefined,
-  off: WeaponDef | undefined,
+/** Layout offset for one authored dual-pistol definition. */
+export function authoredDualPistolHandYOffset(
+  weapon: WeaponDef | undefined,
   hand: 0 | 1,
 ): number {
-  if (!weaponHasHandlingTag(lead, "pistol") || !weaponHasHandlingTag(off, "pistol")) return 0;
+  if (!weapon?.dual || !weaponHasHandlingTag(weapon, "pistol")) return 0;
   return hand === 0 ? -DUAL_PISTOL_HAND_RISE_BODY_FRAC : 0;
 }
 
@@ -966,7 +982,7 @@ function signedClamp(value: number, floor: number): number {
   return (value < 0 ? -1 : 1) * Math.max(Math.abs(value), floor);
 }
 
-export interface PairCeremonySample {
+export interface AuthoredDualCeremonySample {
   readonly active: boolean;
   /** 0 at the ordinary ready pose, 1 at the held chest-height X. */
   readonly crossBlend: number;
@@ -976,8 +992,8 @@ export interface PairCeremonySample {
   readonly ruffle: number;
 }
 
-/** The accepted bind's 460 ms paper flip, expressed without Phaser so its timing remains testable. */
-export function samplePairCeremony(elapsedMs: number): PairCeremonySample {
+/** A pre-made dual's 460 ms paper flip, expressed without Phaser so its timing remains testable. */
+export function sampleAuthoredDualCeremony(elapsedMs: number): AuthoredDualCeremonySample {
   if (elapsedMs < 0 || elapsedMs >= 460) {
     return {
       active: false,
@@ -2192,7 +2208,7 @@ export class SpriteRig {
   /** §8 parry brace envelope duration (ms) ≈ PARRY_IFRAMES. Hoisted so `triggerBrace` can plateau a chain. */
   private static readonly BRACE_DUR = 450;
   private static readonly PARRY_SUCCESS_DUR = PARRY_ABOVE_BRACE_SECONDS * 1000;
-  /** Held weapon piece(s) — one per hand (dual-wield = two). Live INSIDE the container so the
+  /** Held weapon piece(s) — one per hand for an authored pre-made dual. Live INSIDE the container so the
    *  hand renders over the hilt and the facing-flip applies automatically. */
   private weapons: {
     img: Phaser.GameObjects.Image;
@@ -2377,15 +2393,15 @@ export class SpriteRig {
   };
   private poseRecoilConsumedAtMs = -1e9;
   private loadoutKey = "";
-  private pairBaseSeq = 0;
-  private pairBaseSeqReady = false;
-  private pairBarStep = -1;
-  private pairBarExpiresAtMs = -1e9;
-  private pairCeremonyStartMs = -1e9;
-  private pairWeaponScaleX: [number, number] = [1, 1];
+  private authoredDualBaseSeq = 0;
+  private authoredDualBaseSeqReady = false;
+  private authoredDualBarStep = -1;
+  private authoredDualBarExpiresAtMs = -1e9;
+  private authoredDualCeremonyStartMs = -1e9;
+  private authoredDualWeaponScaleX: [number, number] = [1, 1];
   /** B25 signature kicks stretch the independently-mounted worn feet, then snap to identity. */
-  private pairFootWeaponScaleX: [number, number] = [1, 1];
-  private pairGlintAlpha = 0;
+  private authoredDualFootWeaponScaleX: [number, number] = [1, 1];
+  private authoredDualGlintAlpha = 0;
   /** Optional retained open-book treatment. Shapes are allocated once per equip and reused for every beat. */
   private tome?: TomeVisualState;
   private swingStart = -1e9;
@@ -2606,7 +2622,7 @@ export class SpriteRig {
   private readonly auraRing: Phaser.GameObjects.Ellipse;
   private readonly paintedAuraFill: readonly Phaser.GameObjects.Image[];
   private readonly paintedAuraParticles: readonly Phaser.GameObjects.Image[];
-  private readonly pairGlint: Phaser.GameObjects.Rectangle;
+  private readonly authoredDualGlint: Phaser.GameObjects.Rectangle;
 
   constructor(
     scene: Phaser.Scene,
@@ -2774,12 +2790,12 @@ export class SpriteRig {
       .ellipse(0, 0, 11, 7, 0xffffff, 0.88)
       .setBlendMode(Phaser.BlendModes.ADD)
       .setVisible(false);
-    this.pairGlint = scene.add
+    this.authoredDualGlint = scene.add
       .rectangle(0, 0, 2, 28, 0xffffff, 1)
       .setOrigin(0.5)
       .setBlendMode(Phaser.BlendModes.ADD)
       .setVisible(false);
-    order.push(this.observedSourceRing, this.observedSourceFlash, this.pairGlint);
+    order.push(this.observedSourceRing, this.observedSourceFlash, this.authoredDualGlint);
     if (this.label) order.push(this.label);
 
     this.root = scene.add.container(x, y, order).setScale(this.baseScale);
@@ -3383,19 +3399,13 @@ export class SpriteRig {
       for (const page of this.tome.pages) stack.push(page.quad);
       for (const scrap of this.tome.scraps) stack.push(scrap.piece);
     }
-    stack.push(this.observedSourceRing, this.observedSourceFlash, this.pairGlint);
+    stack.push(this.observedSourceRing, this.observedSourceFlash, this.authoredDualGlint);
     if (this.label) stack.push(this.label);
     for (const object of stack) if (object.active) this.root.bringToTop(object);
   }
 
   setPosition(x: number, y: number): void {
     this.root.setPosition(x, y);
-  }
-
-  /** Keep parity derivation synced when gun starvation causes the server to rebase the pair epoch. */
-  setDualWieldBaseSeq(pairBaseSeq: number): void {
-    this.pairBaseSeq = pairBaseSeq >>> 0;
-    this.pairBaseSeqReady = true;
   }
 
   heldWeaponDef(hand: 0 | 1): WeaponDef | undefined {
@@ -3781,7 +3791,7 @@ export class SpriteRig {
         this.flourishOffSpec,
       );
     }
-    this.pairCeremonyStartMs = -1e9;
+    this.authoredDualCeremonyStartMs = -1e9;
     this.idleFlourishEligibleAtMs = idleFlourishEligibleEpoch(
       this.idleFlourishClockDef(),
       this.idleFlourishTimerNow(epochMs),
@@ -3930,8 +3940,8 @@ export class SpriteRig {
     if (!leadReady && !offReady) return;
     const both = leadReady && offReady;
     const nextLead: 0 | 1 =
-      both && this.pairBaseSeqReady
-        ? dualHandForSeq((this.attackBeatSeq + 1) >>> 0, this.pairBaseSeq)
+      both && this.authoredDualBaseSeqReady
+        ? authoredDualHandForSeq((this.attackBeatSeq + 1) >>> 0, this.authoredDualBaseSeq)
         : 0;
     const first: 0 | 1 = both ? nextLead : leadReady ? 0 : 1;
     const second: 0 | 1 = first === 0 ? 1 : 0;
@@ -4857,8 +4867,8 @@ export class SpriteRig {
       (this.weaponDef.gun || this.weaponDef.cast || this.weaponDef.beam)
     ) {
       const hand: 0 | 1 =
-        this.weapons.length > 1 && this.pairBaseSeqReady
-          ? dualHandForSeq(beat, this.pairBaseSeq)
+        this.weapons.length > 1 && this.authoredDualBaseSeqReady
+          ? authoredDualHandForSeq(beat, this.authoredDualBaseSeq)
           : 0;
       if (this.weaponDef.gun) this.triggerGunRecoil(acceptedWallEpochMs, hand);
       this.cancelForAcceptedRangedBeat(hand);
@@ -5134,7 +5144,7 @@ export class SpriteRig {
           fixedScale *
             wrapped.imageFacingX *
             (foot.scaleX / sourceScale) *
-            this.pairFootWeaponScaleX[wrapped.foot.front ? 0 : 1],
+            this.authoredDualFootWeaponScaleX[wrapped.foot.front ? 0 : 1],
           fixedScale * (foot.scaleY / sourceScale),
         )
         .setAlpha(foot.alpha)
@@ -5142,18 +5152,12 @@ export class SpriteRig {
     }
   }
 
-  /** Equip (or swap) a weapon — one piece per hand (dual-wield uses both hands + both sprite
-   *  parts). Each piece points along semantic +X in its hand, pivoting at the grip, and is inserted just
+  /** Equip (or swap) one weapon. Authored pre-made duals use both hands and both sprite parts. Each piece
+   * points along semantic +X in its hand, pivoting at the grip, and is inserted just
    *  BELOW that hand in the container so the hand overlays the hilt. */
   equipWeapon(spriteId: string, def: WeaponDef, manifest: SpriteManifest): void {
-    const lead: RigLoadoutPiece = { spriteId, def, manifest, partIndex: 0 };
-    const off: RigLoadoutPiece | undefined =
-      def.glovePair && manifest.parts.length >= 1
-        ? { spriteId, def, manifest, partIndex: 0 }
-        : def.dual && manifest.parts.length >= 2
-          ? { spriteId, def, manifest, partIndex: 1 }
-          : undefined;
-    this.equipLoadout(lead, off);
+    const plan = authoredWeaponRenderPlan(spriteId, def, manifest);
+    this.equipAuthoredWeapon(plan[0], plan[1]);
   }
 
   private destroyWrapFootWeapons(): void {
@@ -5161,8 +5165,8 @@ export class SpriteRig {
     this.wrapFootWeapons.length = 0;
   }
 
-  /** Equip one independently-authored part per hand through the final art-geometry correction seam. */
-  equipLoadout(lead: RigLoadoutPiece, off?: RigLoadoutPiece, pairBaseSeq?: number): void {
+  /** Equip the complete render plan for one authored weapon. */
+  private equipAuthoredWeapon(lead: RigLoadoutPiece, off?: RigLoadoutPiece): void {
     const spriteId = lead.spriteId;
     const def = lead.def;
     const manifest = lead.manifest;
@@ -5200,23 +5204,22 @@ export class SpriteRig {
     this.resetSwingCombo();
     this.resetSecondaryMotion();
     this.clearMeleeTellState();
-    this.pairBarStep = -1;
-    this.pairBarExpiresAtMs = -1e9;
+    this.authoredDualBarStep = -1;
+    this.authoredDualBarExpiresAtMs = -1e9;
     this.gunRecoilAtMs = -1e9;
     this.gunRecoveryWallUntilMs = -1e9;
     this.rangedAimRaiseAtMs = -1e9;
     this.rangedAimActiveUntilMs = -1e9;
     if (off) {
-      if (pairBaseSeq !== undefined) this.setDualWieldBaseSeq(pairBaseSeq);
-      else if (!previousPaired) {
-        this.pairBaseSeq = this.hasAttackBeatSeq ? this.attackBeatSeq : 0;
-        this.pairBaseSeqReady = true;
+      if (!previousPaired) {
+        this.authoredDualBaseSeq = this.hasAttackBeatSeq ? this.attackBeatSeq : 0;
+        this.authoredDualBaseSeqReady = true;
       }
     } else {
-      this.pairBaseSeq = 0;
-      this.pairBaseSeqReady = false;
-      this.pairCeremonyStartMs = -1e9;
-      this.pairGlint.setVisible(false);
+      this.authoredDualBaseSeq = 0;
+      this.authoredDualBaseSeqReady = false;
+      this.authoredDualCeremonyStartMs = -1e9;
+      this.authoredDualGlint.setVisible(false);
     }
 
     const frontHand = this.hands.find((h) => h.front);
@@ -5382,7 +5385,7 @@ export class SpriteRig {
       // §42 worn single: the glove covers the hand (hand under, weapon on top); held: hand grips the hilt.
       pushHandMount(frontPiece, frontHand);
     }
-    stack.push(this.observedSourceRing, this.observedSourceFlash, this.pairGlint);
+    stack.push(this.observedSourceRing, this.observedSourceFlash, this.authoredDualGlint);
     if (this.label) stack.push(this.label);
     for (const obj of stack) this.root.bringToTop(obj);
     this.rebuildRenderStack();
@@ -5397,12 +5400,12 @@ export class SpriteRig {
       previousKey !== this.loadoutKey &&
       !flourishSwapPending
     ) {
-      this.pairCeremonyStartMs = this.presentationClockNow();
+      this.authoredDualCeremonyStartMs = this.presentationClockNow();
       this.flash(90);
       const audio = this.scene.game.registry.get("audio") as
         | { play?: (event: string, opts?: { x?: number; amt?: number }) => void }
         | undefined;
-      audio?.play?.("pair", { x: this.root.x, amt: this.isSelf ? 1 : 0.65 });
+      audio?.play?.("weapon:authored-dual", { x: this.root.x, amt: this.isSelf ? 1 : 0.65 });
     }
     if (flourishSwapPending) this.completePendingWeaponSwap();
     else
@@ -5420,7 +5423,7 @@ export class SpriteRig {
     aimWorld?: number,
     swing?: RigSwingDescriptor,
     handOverride?: RigSwingHand,
-    pairStepOverride?: number,
+    authoredDualStepOverride?: number,
   ): void {
     this.cancelFlourish("attack-input");
     for (const streak of this.flourishStreaks) streak.count = 0;
@@ -5452,37 +5455,42 @@ export class SpriteRig {
       }
     }
     const paired = this.weapons.length > 1;
-    const pairedMelee =
+    const authoredDualMelee =
       paired &&
       !!this.weaponDef &&
       !this.weaponDef.glovePair &&
       !this.weaponDef.gun &&
       !this.weaponDef.cast &&
       !this.weaponDef.beam;
-    const priorPairStep = this.pairBarStep;
-    const pairStageContinues =
-      pairedMelee && priorPairStep >= 0 && timeMs <= this.pairBarExpiresAtMs;
+    const priorAuthoredDualStep = this.authoredDualBarStep;
+    const authoredDualStageContinues =
+      authoredDualMelee &&
+      priorAuthoredDualStep >= 0 &&
+      timeMs <= this.authoredDualBarExpiresAtMs;
     let comboStageAdvances = false;
-    const explicitPairStep = pairStepOverride ?? swing?.pairStep;
-    let pairStep = -1;
-    if (pairedMelee) {
-      if (explicitPairStep !== undefined) {
-        pairStep =
-          ((Math.trunc(explicitPairStep) % DUAL_MELEE_SEQUENCE_LENGTH) +
-            DUAL_MELEE_SEQUENCE_LENGTH) %
-          DUAL_MELEE_SEQUENCE_LENGTH;
+    const explicitAuthoredDualStep =
+      authoredDualStepOverride ?? swing?.authoredDualStep;
+    let authoredDualStep = -1;
+    if (authoredDualMelee) {
+      if (explicitAuthoredDualStep !== undefined) {
+        authoredDualStep =
+          ((Math.trunc(explicitAuthoredDualStep) % AUTHORED_DUAL_MELEE_SEQUENCE_LENGTH) +
+            AUTHORED_DUAL_MELEE_SEQUENCE_LENGTH) %
+          AUTHORED_DUAL_MELEE_SEQUENCE_LENGTH;
       } else {
-        pairStep =
-          timeMs <= this.pairBarExpiresAtMs
-            ? (this.pairBarStep + 1) % DUAL_MELEE_SEQUENCE_LENGTH
+        authoredDualStep =
+          timeMs <= this.authoredDualBarExpiresAtMs
+            ? (this.authoredDualBarStep + 1) % AUTHORED_DUAL_MELEE_SEQUENCE_LENGTH
             : 0;
       }
-      comboStageAdvances = pairStageContinues && pairStep !== priorPairStep;
-      this.pairBarStep = pairStep;
+      comboStageAdvances =
+        authoredDualStageContinues && authoredDualStep !== priorAuthoredDualStep;
+      this.authoredDualBarStep = authoredDualStep;
       const cadence = requestedSwing?.effectiveCooldown ?? this.weaponDef?.cooldown ?? 0.3;
-      this.pairBarExpiresAtMs = timeMs + cadence * 1000 + comboGraceMs(cadence);
+      this.authoredDualBarExpiresAtMs = timeMs + cadence * 1000 + comboGraceMs(cadence);
     }
-    const barHand = pairStep >= 0 ? DUAL_MELEE_PAIR_BAR[pairStep] : undefined;
+    const barHand =
+      authoredDualStep >= 0 ? AUTHORED_DUAL_MELEE_BAR[authoredDualStep] : undefined;
     let swingHand: RigSwingHand = handOverride ?? swing?.hand ?? 0;
     if (barHand === "both") swingHand = "both";
     else if (barHand === "off") swingHand = 1;
@@ -5495,21 +5503,22 @@ export class SpriteRig {
       this.hasAttackBeatSeq
     ) {
       // The matched mitt occupies one slot, not a bind: accepted beats alternate its mirrored hand parts.
-      swingHand = dualHandForSeq(this.attackBeatSeq, 0);
+      swingHand = authoredDualHandForSeq(this.attackBeatSeq, 0);
     } else if (
       paired &&
       handOverride === undefined &&
       swing?.hand === undefined &&
       this.hasAttackBeatSeq &&
-      this.pairBaseSeqReady
+      this.authoredDualBaseSeqReady
     ) {
-      swingHand = dualHandForSeq(this.attackBeatSeq, this.pairBaseSeq);
+      swingHand = authoredDualHandForSeq(this.attackBeatSeq, this.authoredDualBaseSeq);
     }
     const handIndex: 0 | 1 = swingHand === 1 ? 1 : 0;
     const activeDef = this.weapons[handIndex]?.def ?? this.weaponDef;
     let terminalFlourishHand: 0 | 1 | undefined;
-    const terminalPairBar =
-      pairedMelee && isTerminalFlourishStep(pairStep, DUAL_MELEE_PAIR_BAR.length);
+    const terminalAuthoredDualBar =
+      authoredDualMelee &&
+      isTerminalFlourishStep(authoredDualStep, AUTHORED_DUAL_MELEE_BAR.length);
     let nextSwing: RigSwingDescriptor | undefined;
     if (activeDef) {
       const effectiveCooldown = requestedSwing?.effectiveCooldown ?? activeDef.cooldown;
@@ -5517,7 +5526,7 @@ export class SpriteRig {
         ...requestedSwing,
         ...swingDescriptorFor(activeDef, effectiveCooldown),
         hand: swingHand,
-        ...(pairStep >= 0 ? { pairStep } : {}),
+        ...(authoredDualStep >= 0 ? { authoredDualStep } : {}),
       };
     }
     this.swingHand = swingHand;
@@ -5547,7 +5556,7 @@ export class SpriteRig {
       };
       this.comboFamily = "rake";
       this.comboStep = 2;
-      this.comboExpiresAtMs = this.pairBarExpiresAtMs;
+      this.comboExpiresAtMs = this.authoredDualBarExpiresAtMs;
       this.swingStep = 2;
       this.swingDirection = 0;
       this.swingFamily = "rake";
@@ -5557,7 +5566,7 @@ export class SpriteRig {
         variant: "default",
         step: 2,
         direction: 0,
-        expiresAtMs: this.pairBarExpiresAtMs,
+        expiresAtMs: this.authoredDualBarExpiresAtMs,
       };
     }
     const selection =
@@ -5575,8 +5584,8 @@ export class SpriteRig {
         chain.family === family && chain.weaponId === activeDef.id && timeMs <= chain.expiresAtMs;
       const previousStep = chain.step;
       const step =
-        pairStep >= 0
-          ? Math.min(sequence.length - 1, Math.floor(pairStep / 2))
+        authoredDualStep >= 0
+          ? Math.min(sequence.length - 1, Math.floor(authoredDualStep / 2))
           : nextSwing.comboStep !== undefined
             ? ((Math.trunc(nextSwing.comboStep) % sequence.length) + sequence.length) %
               sequence.length
@@ -5693,7 +5702,7 @@ export class SpriteRig {
     }
     if (nextSwing && activeDef) {
       const earliestStartMs = timeMs + nextSwing.poseSeconds * 1000 + 90;
-      if (terminalPairBar) {
+      if (terminalAuthoredDualBar) {
         const leadDef = this.weapons[0]?.def;
         const offDef = this.weapons[1]?.def;
         if (leadDef) this.armAfterAttack(0, earliestStartMs, leadDef);
@@ -6150,12 +6159,12 @@ export class SpriteRig {
     this.weaponDef = def;
     this.refreshPoseLanguageSelection(false, true);
     this.loadoutKey = def.id;
-    this.pairBaseSeq = 0;
-    this.pairBaseSeqReady = false;
-    this.pairBarStep = -1;
-    this.pairBarExpiresAtMs = -1e9;
-    this.pairCeremonyStartMs = -1e9;
-    this.pairGlint.setVisible(false);
+    this.authoredDualBaseSeq = 0;
+    this.authoredDualBaseSeqReady = false;
+    this.authoredDualBarStep = -1;
+    this.authoredDualBarExpiresAtMs = -1e9;
+    this.authoredDualCeremonyStartMs = -1e9;
+    this.authoredDualGlint.setVisible(false);
     this.resetSwingCombo();
     this.resetSecondaryMotion();
     this.clearMeleeTellState();
@@ -8956,11 +8965,11 @@ export class SpriteRig {
     this.swingOffY = 0;
     this.swingBackOffX = 0;
     this.swingBackOffY = 0;
-    this.pairWeaponScaleX[0] = 1;
-    this.pairWeaponScaleX[1] = 1;
-    this.pairFootWeaponScaleX[0] = 1;
-    this.pairFootWeaponScaleX[1] = 1;
-    this.pairGlintAlpha = 0;
+    this.authoredDualWeaponScaleX[0] = 1;
+    this.authoredDualWeaponScaleX[1] = 1;
+    this.authoredDualFootWeaponScaleX[0] = 1;
+    this.authoredDualFootWeaponScaleX[1] = 1;
+    this.authoredDualGlintAlpha = 0;
     this.attackArtOffX = 0;
     this.attackArtOffY = 0;
     this.attackLiftPx = 0;
@@ -9829,19 +9838,21 @@ export class SpriteRig {
             this.attackBackFootBlend = sampled.footBlend;
             ownFeet = sampled.footBlend;
             const impactHand = pose.hand === "off" ? 1 : 0;
-            this.pairWeaponScaleX[impactHand] = 1 + sampled.impactSnap * 0.24;
-            if (pose.hand === "both") this.pairWeaponScaleX[1] = 1 + sampled.impactSnap * 0.18;
+            this.authoredDualWeaponScaleX[impactHand] = 1 + sampled.impactSnap * 0.24;
+            if (pose.hand === "both")
+              this.authoredDualWeaponScaleX[1] = 1 + sampled.impactSnap * 0.18;
             if (pose.theatrics?.limbStretch !== undefined) {
               if (pose.limb === "foot") {
-                this.pairFootWeaponScaleX[0] = sampled.frontFootStretch;
-                this.pairFootWeaponScaleX[1] = sampled.backFootStretch;
+                this.authoredDualFootWeaponScaleX[0] = sampled.frontFootStretch;
+                this.authoredDualFootWeaponScaleX[1] = sampled.backFootStretch;
               } else {
-                this.pairWeaponScaleX[impactHand] *= sampled.handStretch;
-                if (pose.hand === "both") this.pairWeaponScaleX[1] *= sampled.rearHandStretch;
+                this.authoredDualWeaponScaleX[impactHand] *= sampled.handStretch;
+                if (pose.hand === "both")
+                  this.authoredDualWeaponScaleX[1] *= sampled.rearHandStretch;
               }
             }
-            this.pairGlintAlpha = Math.max(
-              this.pairGlintAlpha,
+            this.authoredDualGlintAlpha = Math.max(
+              this.authoredDualGlintAlpha,
               sampled.impactSnap * (pose.motion === "chain-punch" ? 0.72 : 0.9),
             );
           } else {
@@ -9982,8 +9993,8 @@ export class SpriteRig {
             ) {
               const impactFrame = Math.max(0, 1 - Math.abs(tt - pose.timing.impact) / 0.055);
               const snap = impactFrame * impactFrame;
-              this.pairWeaponScaleX[pose.hand === "off" ? 1 : 0] = 1 + snap * 0.28;
-              this.pairGlintAlpha = Math.max(this.pairGlintAlpha, snap * 0.82);
+              this.authoredDualWeaponScaleX[pose.hand === "off" ? 1 : 0] = 1 + snap * 0.28;
+              this.authoredDualGlintAlpha = Math.max(this.authoredDualGlintAlpha, snap * 0.82);
               this.body.rotation += direction * snap * 0.09 * Math.cos(aimLocal);
               this.body.scaleY *= 1 - snap * 0.08;
             }
@@ -10660,7 +10671,9 @@ export class SpriteRig {
         backWeaponAngle = rearBase + (rearGuard - rearBase) * guardBlend;
       }
     }
-    const ceremony = samplePairCeremony(sceneNow - this.pairCeremonyStartMs);
+    const ceremony = sampleAuthoredDualCeremony(
+      sceneNow - this.authoredDualCeremonyStartMs,
+    );
     if (ceremony.active && this.weapons.length > 1 && !outsidePaperView) {
       const frontHand = this.hands.find((hand) => hand.front);
       const backHand = this.hands.find((hand) => !hand.front);
@@ -10680,9 +10693,9 @@ export class SpriteRig {
         this.swingBackOffX += (-TARGET_BODY_H * 0.09 - backHand.ox) * ceremony.crossBlend;
         this.swingBackOffY += (-TARGET_BODY_H * 0.03 - backHand.oy) * ceremony.crossBlend;
       }
-      this.pairWeaponScaleX[0] = ceremony.leadScaleX;
-      this.pairWeaponScaleX[1] = ceremony.offScaleX;
-      this.pairGlintAlpha = ceremony.glintAlpha;
+      this.authoredDualWeaponScaleX[0] = ceremony.leadScaleX;
+      this.authoredDualWeaponScaleX[1] = ceremony.offScaleX;
+      this.authoredDualGlintAlpha = ceremony.glintAlpha;
       ownFront = 1;
       ownBack = 1;
       this.body.rotation += Math.sin(ceremony.ruffle * Math.PI * 2) * 0.025;
@@ -11053,17 +11066,17 @@ export class SpriteRig {
       }
     }
 
-    // V3G1: a true pistol pair uses a deliberately asymmetric silhouette; unrelated dual loadouts are
-    // untouched. The weapon pass below follows these hand anchors, so the guns separate with the hands.
+    // Authored dual pistols use a deliberately asymmetric silhouette. The weapon pass below follows these
+    // hand anchors, so the guns separate with the hands.
     if (this.weapons.length > 1 && !hasAimedFiringWeapon) {
       const front = this.hands.find((hand) => hand.front);
       const back = this.hands.find((hand) => !hand.front);
       if (front)
         front.img.y +=
-          dualPistolHandYOffset(this.weapons[0]?.def, this.weapons[1]?.def, 0) * TARGET_BODY_H;
+          authoredDualPistolHandYOffset(this.weaponDef, 0) * TARGET_BODY_H;
       if (back)
         back.img.y +=
-          dualPistolHandYOffset(this.weapons[0]?.def, this.weapons[1]?.def, 1) * TARGET_BODY_H;
+          authoredDualPistolHandYOffset(this.weaponDef, 1) * TARGET_BODY_H;
     }
 
     // Feet: alternating walk (lift + a small forward/back stride + a toe pivot) BLENDED by gait with a
@@ -11425,7 +11438,7 @@ export class SpriteRig {
       const lengthScale = ownsSwingScale ? this.weaponLengthScale : 1;
       const thicknessScale = ownsSwingScale ? this.attackScaleY : 1;
       w.img.setScale(
-        base * lengthScale * (this.pairWeaponScaleX[i] ?? 1),
+        base * lengthScale * (this.authoredDualWeaponScaleX[i] ?? 1),
         base * thicknessScale * (i === 0 && ownsSwingScale ? weaponThicknessSign : 1),
       );
       if (i === 0 && this.attackWeaponDepth !== 0) {
@@ -11556,21 +11569,25 @@ export class SpriteRig {
     this.syncWrapFootWeapons();
     const leadWeapon = this.weapons[0];
     const offWeapon = this.weapons[1];
-    if (this.pairGlintAlpha > 0 && leadWeapon && offWeapon && !outsidePaperView) {
-      this.pairGlint
+    if (this.authoredDualGlintAlpha > 0 && leadWeapon && offWeapon && !outsidePaperView) {
+      this.authoredDualGlint
         .setPosition(
           (leadWeapon.img.x + offWeapon.img.x) * 0.5,
           (leadWeapon.img.y + offWeapon.img.y) * 0.5,
         )
         .setRotation((leadWeapon.semanticRotation + offWeapon.semanticRotation) * 0.5 + Math.PI / 2)
         .setScale(
-          screenTrueScaleX(this.root.scaleX, this.root.scaleY, 0.72 + this.pairGlintAlpha * 0.5),
-          0.7 + this.pairGlintAlpha * 0.3,
+          screenTrueScaleX(
+            this.root.scaleX,
+            this.root.scaleY,
+            0.72 + this.authoredDualGlintAlpha * 0.5,
+          ),
+          0.7 + this.authoredDualGlintAlpha * 0.3,
         )
-        .setAlpha(this.pairGlintAlpha)
+        .setAlpha(this.authoredDualGlintAlpha)
         .setVisible(true);
     } else {
-      this.pairGlint.setVisible(false);
+      this.authoredDualGlint.setVisible(false);
     }
     this.syncTomeVisual(sceneNow, outsidePaperView);
     this.syncObservedSourceFlash(sceneNow, outsidePaperView);

@@ -137,7 +137,7 @@ describe("V6M melee owner orders", () => {
     ]);
   });
 
-  it("archives Kagewake and its Hushglass partner through the catalog archive system", () => {
+  it("archives Kagewake and Hushglass as independent catalog entries", () => {
     for (const id of ["drift-wakizashi-kagewake", "drift-wakizashi-hushglass"]) {
       expect(weapon(id).archived).toBe(true);
       expect(ARCHIVED_WEAPON_IDS).toContain(id);

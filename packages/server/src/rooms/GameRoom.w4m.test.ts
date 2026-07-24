@@ -193,7 +193,7 @@ describe("GameRoom — W4M server authority", () => {
   it("registers Thunderhoof's full arc, Verdigris's doubled range, and Wyrmskull's stab opener", () => {
     const thunder = makeRoom("thunder-whirl");
     const thunderWeapon = equip(thunder.player, thunder.combat, "x2-thunderhoof-splittingaxe");
-    thunder.room.resolveHandAttack(thunder.player, thunder.combat, 0);
+    thunder.room.resolveSingleWeaponAttack(thunder.player, thunder.combat);
     expect(thunderWeapon.swingArc).toBeCloseTo(Math.PI * 2);
     expect(thunder.room.meleeSwings.get(thunder.player.id)?.swingArc).toBeCloseTo(Math.PI * 2);
 
@@ -203,13 +203,13 @@ describe("GameRoom — W4M server authority", () => {
       verdigris.combat,
       "x2-verdigris-grand-grimoire",
     );
-    verdigris.room.resolveHandAttack(verdigris.player, verdigris.combat, 0);
+    verdigris.room.resolveSingleWeaponAttack(verdigris.player, verdigris.combat);
     expect(verdigrisWeapon.range).toBe(400);
     expect(verdigris.room.meleeSwings.get(verdigris.player.id)?.range).toBe(400);
 
     const wyrmskull = makeRoom("wyrmskull-stab");
     const wyrmskullWeapon = equip(wyrmskull.player, wyrmskull.combat, "x2-wyrmskull-reliquary");
-    wyrmskull.room.resolveHandAttack(wyrmskull.player, wyrmskull.combat, 0);
+    wyrmskull.room.resolveSingleWeaponAttack(wyrmskull.player, wyrmskull.combat);
     expect(wyrmskullWeapon.authoritativeCombo).toBe(true);
     expect(wyrmskull.room.meleeSwings.get(wyrmskull.player.id)?.swingArc).toBe(0);
   });

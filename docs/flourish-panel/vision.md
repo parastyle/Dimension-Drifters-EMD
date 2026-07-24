@@ -212,7 +212,7 @@ The feature ships only if every bar passes.
 6. **Swap overlap:** on an authoritative weapon identity change the new draw begins on the same frame as the
    old stow (or within `16.7 ms` at 60 fps). The old stow may overlap; it may never enqueue the draw.
 7. **Combat truth unchanged:** existing swing descriptors, active/impact timing, close-blade reach, two-hand
-   grip geometry, `DUAL_MELEE_PAIR_BAR`, Crossfall, muzzle direction, face-line/chest caps, root position,
+   grip geometry, `AUTHORED_DUAL_MELEE_BAR`, Crossfall, muzzle direction, face-line/chest caps, root position,
    collision, and server state are byte-for-byte behaviorally unchanged.
 8. **Clean spring handoff:** authored targets retract to within `0.03H`/`0.18 rad` before ownership fades;
    release inherits only the existing bounded handoff velocity. No pop, buzz, continuous impulse, or stale
@@ -220,8 +220,9 @@ The feature ships only if every bar passes.
 9. **Earned, not spammed:** melee triggers only on the terminal step of the live sequence; pistol twirl
    requires three consecutive accepted shots per hand; immediate re-engagement discards the armed flourish.
    Idle-settle never loops and cannot occur during charge, aim hold, channel, combo grace, or movement.
-10. **Dual clarity:** dual flourishes alternate by `45-60 ms`, preserve semantic lead/off routing, and resolve
-    mixed families per hand. Crossfall remains the only deliberate simultaneous two-hand combat convergence.
+10. **Authored-dual clarity:** pre-made dual flourishes alternate by `45-60 ms` and preserve semantic
+    lead/off routing from their one weapon definition. Crossfall remains the only deliberate simultaneous
+    two-hand combat convergence.
 11. **Size truth:** short blades retain the quick raised carry; standard blades hold forward mid guard;
     Driftblade resolves to `great` and visibly tip-drags behind; colossal blades look hauled. Attack input
     overrides rear carry in the same frame.

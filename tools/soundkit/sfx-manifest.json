@@ -1105,15 +1105,15 @@
       "notes": "sampleForCue resolves the combined Crossfall swing through replaces."
     },
     {
-      "id": "pairing-x-lock",
+      "id": "authored-dual-equip",
       "category": "ui",
       "priority": 4,
-      "prompt": "Weapon-pairing ceremony lock: two real steel weapons slide across rough wood, cross into an X, then their guards seat with a compact two-stage metal shing over leather and paper friction, layered transients, analog texture, tape saturation, and a short intimate room-tone tail. No melody, no music, no chiptune, no synthesized bleeps, dense and gritty.",
+      "prompt": "Pre-made dual-weapon equip flourish: two authored steel weapons slide across rough wood, cross into an X, then their guards seat with a compact two-stage metal shing over leather and paper friction, layered transients, analog texture, tape saturation, and a short intimate room-tone tail. No melody, no music, no chiptune, no synthesized bleeps, dense and gritty.",
       "durationSeconds": 0.75,
       "loop": false,
       "variations": 2,
-      "replaces": "pair",
-      "notes": "sampleForCue resolves the pairing ceremony through replaces."
+      "replaces": "weapon:authored-dual",
+      "notes": "sampleForCue resolves the authored dual equip flourish through replaces."
     },
     {
       "id": "player-pound-tuck",

@@ -5,6 +5,8 @@ import { startSpecStack } from "./spec-stack.js";
  * receives a fresh page/context, while the stack itself is released only after the suite has finished.
  */
 export default async function startGlobalStack(): Promise<() => Promise<void>> {
+  if (process.env.DD_E2E_PER_TEST_STACK === "1") return async () => undefined;
+
   const externalBaseURL = process.env.DD_E2E_BASE_URL;
   if (externalBaseURL) return async () => undefined;
 

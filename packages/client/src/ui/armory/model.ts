@@ -46,7 +46,6 @@ export interface ArmoryEntryView {
   family: string;
   delivery: string;
   provenance: string;
-  paired: boolean;
 }
 
 export type ArmoryZoneFilter = "all" | "safe" | "staged" | "active" | "pack" | "intake";
@@ -60,7 +59,6 @@ export interface ArmoryCatalogFilters {
   delivery: string | "all";
   rarity: string | "all";
   provenance: string | "all";
-  composition: "all" | "single" | "pair";
   sort: ArmoryCatalogSort;
 }
 
@@ -72,7 +70,6 @@ export const DEFAULT_ARMORY_FILTERS: ArmoryCatalogFilters = {
   delivery: "all",
   rarity: "all",
   provenance: "all",
-  composition: "all",
   sort: "recommended",
 };
 
@@ -300,7 +297,6 @@ export function armoryEntryViews(account: MetaAccountV5, draft: ArmoryDraft): Ar
       family: definitions.map((def) => def?.tags.family ?? "unknown").join(" / "),
       delivery: definitions.map((def) => def?.tags.delivery ?? "unknown").join(" / "),
       provenance: [...new Set(instances.map((instance) => instance.provenance))].join(" / "),
-      paired: entry.kind === "pair",
     };
   });
 }
@@ -321,7 +317,6 @@ export function armoryCatalogEntries(
     if (filters.delivery !== "all" && !row.delivery.split(" / ").includes(filters.delivery)) return false;
     if (filters.rarity !== "all" && row.rarity !== filters.rarity) return false;
     if (filters.provenance !== "all" && !row.provenance.split(" / ").includes(filters.provenance)) return false;
-    if (filters.composition !== "all" && (row.paired ? "pair" : "single") !== filters.composition) return false;
     return !query || [row.name, row.detail, row.weaponClass, row.family, row.delivery, row.provenance]
       .join(" ")
       .toLocaleLowerCase()

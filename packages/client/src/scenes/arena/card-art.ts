@@ -24,12 +24,6 @@ export type Card = {
   sources: { text: Phaser.GameObjects.Text; src: DamageSource }[];
   /** Charges (thrown, live) or durability (melee, static for now) readout. */
   resource: Phaser.GameObjects.Text;
-  /** Paired entries keep the lead card full-size and add one compact, truthful off-hand strip. */
-  offSummary: Phaser.GameObjects.Container;
-  offSummaryPaper: Phaser.GameObjects.Graphics;
-  offName: Phaser.GameObjects.Text;
-  offStats: Phaser.GameObjects.Text;
-  offGrades: Phaser.GameObjects.Text;
 };
 
 /** Lightweight, stat-free roster entry used by the mirrored-L dock. Neighbour chips carry art + a key
@@ -40,7 +34,6 @@ export type DockChip = {
   art: Phaser.GameObjects.Image;
   paper: Phaser.GameObjects.Graphics;
   order: Phaser.GameObjects.Text;
-  pairGlyph: Phaser.GameObjects.Text;
 };
 
 /** The authoritative active-weapon core at the dock's bottom-right elbow. `loot` (tier · affix) lives in
@@ -174,19 +167,8 @@ export function buildDockChip(scene: Phaser.Scene, id: string): DockChip {
     .setOrigin(0.5, 0.5)
     .setShadow(0, 1, "#000000", 2, true, true)
     .setResolution(dockTextResolution());
-  const pairGlyph = scene.add
-    .text(0, 0, "⚯", {
-      fontFamily: "sans-serif",
-      fontSize: "13px",
-      color: "#f1e8cf",
-      fontStyle: "bold",
-    })
-    .setOrigin(0.5)
-    .setShadow(0, 1, "#000000", 2, true, true)
-    .setResolution(dockTextResolution())
-    .setVisible(false);
-  const container = scene.add.container(0, 0, [art, paper, order, pairGlyph]);
-  return { id, container, art, paper, order, pairGlyph };
+  const container = scene.add.container(0, 0, [art, paper, order]);
+  return { id, container, art, paper, order };
 }
 
 /** Rebind one of the four retained neighbour chips without allocating a display object. */
@@ -204,7 +186,6 @@ export function layoutDockChip(
   height: number,
   order: string,
   scale: number,
-  paired = false,
 ): void {
   const accent = WEAPON_ACCENT[chip.id] ?? 0xb9975b;
   chip.art.setCrop(0, 0, 212, 212).setDisplaySize(width, height);
@@ -231,10 +212,6 @@ export function layoutDockChip(
     .setText(order)
     .setFontSize(Math.max(14, 14 * scale))
     .setPosition(width / 2 - plateW / 2, -height / 2 + plateH / 2);
-  chip.pairGlyph
-    .setVisible(paired)
-    .setFontSize(Math.max(11, 13 * scale))
-    .setPosition(-width / 2 + 9 * scale, -height / 2 + 8 * scale);
 }
 
 /** Build the fixed active core. Its truth layer (name + ammo badge) remains opaque while art/chrome —
@@ -315,52 +292,13 @@ export function buildDockJunction(scene: Phaser.Scene): DockJunction {
   };
 }
 
-export function bakeSplitDockArt(scene: Phaser.Scene, leadId: string, offId: string): string {
-  const key = `dockpair-${leadId}-${offId}`;
-  if (scene.textures.exists(key)) return key;
-  const size = 212;
-  const canvas = document.createElement("canvas");
-  canvas.width = size;
-  canvas.height = size;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return key;
-  const drawHalf = (id: string, upperLeft: boolean) => {
-    const artKey = bakeCardArt(scene, id, 212, 296, 14);
-    const src = scene.textures.get(artKey).getSourceImage() as CanvasImageSource;
-    ctx.save();
-    ctx.beginPath();
-    if (upperLeft) {
-      ctx.moveTo(0, 0);
-      ctx.lineTo(size, 0);
-      ctx.lineTo(0, size);
-    } else {
-      ctx.moveTo(size, 0);
-      ctx.lineTo(size, size);
-      ctx.lineTo(0, size);
-    }
-    ctx.closePath();
-    ctx.clip();
-    ctx.drawImage(src, 0, 0, size, size, 0, 0, size, size);
-    ctx.restore();
-  };
-  drawHalf(leadId, true);
-  drawHalf(offId, false);
-  scene.textures.addCanvas(key, canvas);
-  return key;
-}
-
-/** Swap only authoritative junction art; paired entries bake both card faces into one atomic square. */
+/** Swap only authoritative junction art. */
 export function setDockJunctionLoadout(
   scene: Phaser.Scene,
   junction: DockJunction,
   leadId: string,
-  offId?: string,
 ): void {
-  junction.art
-    .setTexture(
-      offId ? bakeSplitDockArt(scene, leadId, offId) : bakeCardArt(scene, leadId, 212, 296, 14),
-    )
-    .setCrop(0, 0, 212, 212);
+  junction.art.setTexture(bakeCardArt(scene, leadId, 212, 296, 14)).setCrop(0, 0, 212, 212);
 }
 
 /** Colourblind-safe tier pips (dockux-panel §4): 0–6 small diamonds, Common 0 … Ultimate 5; Cursed's 6
@@ -678,28 +616,9 @@ export function buildCard(scene: Phaser.Scene, id: string): Card {
   const resource = mk(padL + 17, resY, 12, accentHex, "", 0, true);
   o.push(resource);
 
-  // Pair-only summary strip. It stays hidden for ordinary cards and intentionally overlays the quiet
-  // bottom resource row when shown: one compact strip is clearer than shrinking the lead's full card.
-  const offSummaryPaper = scene.add.graphics();
-  offSummaryPaper
-    .fillStyle(0x070503, 0.97)
-    .fillRect(L + 3, H / 2 - 68, W - 6, 64)
-    .lineStyle(1, 0xcfc6ae, 0.5)
-    .lineBetween(L + 4, H / 2 - 68, -L - 4, H / 2 - 68);
-  const offName = mk(padL, H / 2 - 64, 12, "#f1e8cf", "", 0, true);
-  const offStats = mk(padL, H / 2 - 46, 10, "#d8cfb8", "");
-  const offGrades = mk(padL, H / 2 - 30, 10, "#9fb0c2", "");
-  const offSummary = scene.add
-    .container(0, 0, [offSummaryPaper, offName, offStats, offGrades])
-    .setVisible(false);
-  o.push(offSummary);
-
   // Crisp text — Phaser Text defaults to resolution 1, which blurs on high-DPI + when scaled.
   const res = Math.max(2, Math.ceil(window.devicePixelRatio || 1));
   for (const obj of o) if (obj instanceof Phaser.GameObjects.Text) obj.setResolution(res);
-  for (const text of [offName, offStats, offGrades]) {
-    text.setResolution(res).setShadow(0, 1, "#000000", 2, true, true);
-  }
 
   const content = scene.add.container(0, 0, o).setScale(360 / W, 520 / H);
   const container = scene.add.container(0, 0, [content]).setScrollFactor(0).setDepth(100000);
@@ -708,10 +627,5 @@ export function buildCard(scene: Phaser.Scene, id: string): Card {
     container,
     sources,
     resource,
-    offSummary,
-    offSummaryPaper,
-    offName,
-    offStats,
-    offGrades,
   };
 }

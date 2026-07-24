@@ -4,7 +4,6 @@ import {
   DROP_POOL,
   katanaBeatEffectFor,
   MELEE_COMBO_VARIANT_SEQUENCES,
-  pairEligible,
   WEAPON_IDS,
   WEAPONS,
   weaponAttackCooldown,
@@ -13,7 +12,7 @@ import { describe, expect, it } from "vitest";
 import { WEAPON_VFX } from "../packages/client/src/vfx/weapon-vfx.generated";
 
 const LINE = [
-  ["drift-wakizashi-kagewake", "short", "pair-half", 4],
+  ["drift-wakizashi-kagewake", "short", "short-flurry", 4],
   ["drift-wakizashi-hushglass", "short", "draw-opener", 5],
   ["drift-katana-stillwater-edict", "standard", "perfect-tempo", 6],
   ["drift-katana-stormthread", "standard", "storm-tempo", 7],
@@ -39,7 +38,7 @@ const sequence = (id: (typeof LINE)[number][0]) => {
 };
 
 describe("Driftblade katana line", () => {
-  it("keeps ten durable katana definitions, with the archived pair excluded from active loot", () => {
+  it("keeps ten durable katana definitions, with both archived entries excluded from active loot", () => {
     const sizes: Record<string, number> = {};
     for (const [id, sizeClass, hook] of LINE) {
       const def = weapon(id);
@@ -84,10 +83,11 @@ describe("Driftblade katana line", () => {
     expect(rhythms).toHaveLength(10);
   });
 
-  it("makes Kagewake a genuine one-handed pair-half", () => {
-    expect(
-      pairEligible(weapon("drift-wakizashi-kagewake"), weapon("drift-wakizashi-hushglass")),
-    ).toBe(true);
+  it("keeps both retired wakizashi halves as independent archived one-handed definitions", () => {
+    for (const id of ["drift-wakizashi-kagewake", "drift-wakizashi-hushglass"] as const) {
+      expect(weapon(id).archived).toBe(true);
+      expect(weapon(id).tags.grip).toBe("1H");
+    }
   });
 
   it("resolves every mechanical hook at the authored beat", () => {

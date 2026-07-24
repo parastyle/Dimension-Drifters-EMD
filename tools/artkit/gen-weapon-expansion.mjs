@@ -207,7 +207,7 @@ const KATANA_CHOREOGRAPHY_PRIMITIVES = new Set([
 ]);
 const KATANA_CHOREOGRAPHY_KEYS = new Set(["primitive", "intensity", "hand"]);
 const KATANA_HOOK_KINDS = new Set([
-  "pair-half", "draw-opener", "perfect-tempo", "storm-tempo", "finisher-dash",
+  "short-flurry", "draw-opener", "perfect-tempo", "storm-tempo", "finisher-dash",
   "reach-crescendo", "haste-break", "finisher-burst", "perfect-guard", "colossal-release",
 ]);
 const KATANA_HOOK_KEYS = new Set([

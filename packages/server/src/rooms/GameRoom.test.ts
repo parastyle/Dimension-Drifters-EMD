@@ -5154,318 +5154,52 @@ describe("GameRoom — immediate input arrivals between 20Hz steps", () => {
   });
 });
 
-// Dual-wield server core — append-only coverage for schema 27 and the reconciled panel laws.
-function makeDualWieldFixture(
-  leadId: string,
-  offId: string,
-  options: {
-    leadRarity?: number;
-    offRarity?: number;
-    leadAffix?: string;
-    offAffix?: string;
-    leadEarned?: boolean;
-    offEarned?: boolean;
-    leadCharges?: number;
-    offCharges?: number;
-    leadCooldown?: number;
-    offCooldown?: number;
-    leadReload?: number;
-    offReload?: number;
-  } = {},
-) {
-  const h = makeRoom({ belt: true });
-  h.join(`dual-${leadId}-${offId}`);
-  h.state().mode = "training";
-  const player = h.state().players.values().next().value;
-  const combat = h.room.combat.get(player.id);
-  player.x = h.room.map.spawnX;
-  player.y = BELT_Y0 + DEPTH_MAX * 0.5;
-  player.activeSlot = 0;
-  player.weapon = leadId;
-  player.weaponRarity = options.leadRarity ?? 0;
-  player.weaponAffix = options.leadAffix ?? "";
-  combat.lastWeapon = leadId;
-  combat.heldEarned = options.leadEarned ?? false;
+describe("GameRoom — independent weapon slots and compatibility row", () => {
+  it("keeps same-class weapons in separate slots and equips only the selected slot", () => {
+    const h = makeRoom({ belt: true });
+    h.join("independent-same-class-slots");
+    const player = h.state().players.get("independent-same-class-slots");
+    expect(player).toBeDefined();
+    if (!player) return;
 
-  const lead = player.slots[0];
-  lead.weapon = leadId;
-  lead.rarity = player.weaponRarity;
-  lead.affix = player.weaponAffix;
-  lead.earned = combat.heldEarned;
-  lead.resourceWeapon = leadId;
-  lead.resourceReady = true;
-  player.maxCharges = 0;
-  player.charges = 0;
-  combat.cd = options.leadCooldown ?? 0;
-  combat.reloadCd = 0;
-  lead.cooldown = combat.cd;
-  lead.reload = 0;
-  lead.resourceCharges = 0;
+    player.activeSlot = 0;
+    player.weapon = "rattler-sabre";
+    player.slots[0]!.weapon = "rattler-sabre";
+    player.slots[1]!.weapon = "x2-sandsong-saber";
+    h.send(player.id, "swapSlot", { slot: 1 });
 
-  const off = player.slots[1];
-  off.weapon = offId;
-  off.rarity = options.offRarity ?? 0;
-  off.affix = options.offAffix ?? "";
-  off.earned = options.offEarned ?? false;
-  off.resourceWeapon = offId;
-  off.resourceReady = true;
-  off.cooldown = options.offCooldown ?? 0;
-  off.reload = 0;
-  off.resourceCharges = 0;
-
-  const pairId = "wp_dual_fixture_pair_0000";
-  lead.bankEntryId = pairId;
-  lead.bankEntryKind = "pair";
-  lead.bankPairRole = "lead";
-  off.bankEntryId = pairId;
-  off.bankEntryKind = "pair";
-  off.bankPairRole = "offhand";
-  h.room.activateMaterializedPair(player, combat);
-  return { h, player, combat, lead, off };
-}
-
-describe("GameRoom — dual-wield schema 27 server core", () => {
-  it("shares one eligibility census across class, grip, delivery, authored-dual, beam, and thrown exclusions", () => {
-    const sabre = WEAPONS["rattler-sabre"]!;
-    const katana = WEAPONS["x-sword-neon-katana"]!;
-    const revolver = WEAPONS["x-gun-revolver-cannon"]!;
-    const nailgun = WEAPONS["x-gun-nailgun"]!;
-    expect(enemyComboShared.pairEligible(sabre, katana)).toBe(true);
-    expect(enemyComboShared.pairEligible(revolver, nailgun)).toBe(true);
-    expect(enemyComboShared.pairEligible(sabre, revolver)).toBe(false);
-    expect(
-      enemyComboShared.pairEligible(sabre, {
-        ...katana,
-        id: "two-hand",
-        tags: { ...katana.tags, grip: "2H" },
-      }),
-    ).toBe(false);
-    expect(enemyComboShared.pairEligible(sabre, WEAPONS["twin-bowie-fangs"])).toBe(false);
-    expect(enemyComboShared.pairEligible(sabre, WEAPONS["rusty-cleaver"])).toBe(false);
-    expect(enemyComboShared.pairEligible(sabre, sabre)).toBe(false);
-
-    const cast = {
-      ...sabre,
-      id: "test-wand-a",
-      cast: { damage: 4, speed: 500, range: 500, cooldown: 0.4, bulletKind: "orb" },
-      tags: { ...sabre.tags, classPool: "caster", delivery: "projectile" },
-    };
-    const castOff = { ...cast, id: "test-wand-b", tags: { ...cast.tags, family: "orb" } };
-    expect(enemyComboShared.pairEligible(cast as never, castOff as never)).toBe(true);
-    expect(
-      enemyComboShared.pairEligible(
-        cast as never,
-        { ...castOff, beam: WEAPONS["x2-voltcaster-machine-pistol"]!.beam } as never,
-      ),
-    ).toBe(false);
-  });
-
-  it("moves zero cooldown, reload, or ammo state across bind and unbind", () => {
-    const f = makeDualWieldFixture("x-gun-revolver-cannon", "x-gun-nailgun", {
-      leadCharges: 2,
-      offCharges: 7,
-      leadCooldown: 0.31,
-      offCooldown: 0.47,
-      leadReload: 0.83,
-      offReload: 1.07,
-    });
-    const paired = {
-      lead: [f.combat.cd, f.combat.reloadCd, f.player.charges],
-      off: [f.off.cooldown, f.off.reload, f.off.resourceCharges],
-    };
-    f.h.room.dissolvePair(f.player, f.combat);
-    expect({
-      lead: [f.combat.cd, f.combat.reloadCd, f.player.charges],
-      off: [f.off.cooldown, f.off.reload, f.off.resourceCharges],
-    }).toEqual(paired);
-  });
-
-  it("THE DRAIN-RATE TEST: the paired-off cooldown advances exactly once per 20Hz tick", () => {
-    const f = makeDualWieldFixture("rattler-sabre", "x2-sandsong-saber", { offCooldown: 1 });
-    f.h.tick(10);
-    expect(f.off.cooldown).toBeCloseTo(0.5, 8);
-    f.h.room.dissolvePair(f.player, f.combat);
-    f.h.tick(10);
-    expect(f.off.cooldown).toBeCloseTo(0, 8);
-  });
-
-  it("loads 0.72x the incoming weapon cooldown and builds per-hand SwingDescriptors", () => {
-    const f = makeDualWieldFixture("rattler-sabre", "x2-sandsong-saber", { offAffix: "swift" });
-    const leadCooldown = enemyComboShared.weaponAttackCooldown(WEAPONS["rattler-sabre"]!);
-    const offCooldown = enemyComboShared.weaponAttackCooldown(WEAPONS["x2-sandsong-saber"]!);
-    f.combat.drawLock = 0;
-    f.combat.handGate = 0;
-    f.combat.cd = 0;
-    f.off.cooldown = 0;
-    f.h.room.resolveHandAttack(f.player, f.combat, 0, f.off, 0, false);
-    expect(f.combat.handGate).toBeCloseTo(enemyComboShared.PAIR_TEMPO * offCooldown, 8);
-    expect(f.h.room.meleeSwings.get(`${f.player.id}:0`).swing.effectiveCooldown).toBeCloseTo(
-      enemyComboShared.PAIR_TEMPO * leadCooldown,
-      8,
-    );
-
-    f.combat.handGate = 0;
-    f.off.cooldown = 0;
-    f.h.room.resolveHandAttack(f.player, f.combat, 1, f.off, 1, false);
-    expect(f.combat.handGate).toBeCloseTo(enemyComboShared.PAIR_TEMPO * leadCooldown, 8);
-    expect(f.h.room.meleeSwings.get(`${f.player.id}:1`).swing.effectiveCooldown).toBeCloseTo(
-      enemyComboShared.PAIR_TEMPO * offCooldown,
-      8,
-    );
-  });
-
-  it("bills one Drive debit per accepted gun hand using the post-cap contribution", () => {
-    const f = makeDualWieldFixture("x-gun-revolver-cannon", "x-gun-nailgun");
-    f.combat.drawLock = 0;
-    f.combat.handGate = 0;
-    f.combat.cd = 0;
-    f.off.cooldown = 0;
-    const full = f.combat.drive.valueF;
-    f.h.room.resolveHandAttack(f.player, f.combat, 0, f.off);
-    const afterLead = f.combat.drive.valueF;
-    expect(full - afterLead).toBe(10);
-    expect([f.player.charges, f.off.resourceCharges, f.combat.reloadCd]).toEqual([0, 0, 0]);
-
-    f.combat.handGate = 0;
-    f.off.cooldown = 0;
-    const offWeapon = WEAPONS["x-gun-nailgun"]!;
-    const offProfile = enemyComboShared.weaponResourceProfile(offWeapon.id)!;
-    const offInterval = enemyComboShared.effectiveAcceptedWeaponInterval(
-      offWeapon,
-      enemyComboShared.weaponAttackCooldown(offWeapon),
-    );
-    const contribution = f.h.room.pairOffhandDamageMultiplier(f.player, f.off);
-    f.h.room.resolveHandAttack(f.player, f.combat, 1, f.off);
-    expect(afterLead - f.combat.drive.valueF).toBeCloseTo(
-      enemyComboShared.driveCostForProfile(offProfile, offInterval) * contribution,
-      8,
-    );
-    expect(f.player.attackSeq).toBe(2);
-
-    const dryHand = enemyComboShared.dualHandForSeq(
-      (f.player.attackSeq + 1) >>> 0,
-      f.player.pairBaseSeq,
-    );
-    f.combat.drive.valueF = 0;
-    f.combat.handGate = 0;
-    f.combat.cd = 0;
-    f.off.cooldown = 0;
-    f.combat.attackBuffer = 1;
-    f.h.room.stepSim(0.05);
-    expect(f.player.attackSeq).toBe(2);
-    expect(
-      enemyComboShared.dualHandForSeq((f.player.attackSeq + 1) >>> 0, f.player.pairBaseSeq),
-    ).toBe(dryHand);
-  });
-
-  it("counts a linked pair as one set entry and keeps held damage independent of legacy stat fields", () => {
-    const f = makeDualWieldFixture("rattler-sabre", "x-sword-neon-katana");
-    expect(enemyComboShared.classCount(f.h.room.loadoutIds(f.player), "melee")).toBe(1);
-    const weapon = WEAPONS["rattler-sabre"]!;
-    expect("requirements" in weapon).toBe(false);
-    expect("scalingGrades" in weapon).toBe(false);
-    const pairedLead = f.h.room.heldDamageMult(weapon, f.player, 0);
-    (f.player as unknown as { dex: number }).dex = 999;
-    expect(f.h.room.heldDamageMult(weapon, f.player, 0)).toBe(pairedLead);
-    f.h.room.dissolvePair(f.player, f.combat);
-    expect(enemyComboShared.classCount(f.h.room.loadoutIds(f.player), "melee")).toBe(2);
-  });
-
-  it("enforces the 1.37x throughput cap and the 1.45x matched-family cap", () => {
-    const assertCap = (leadId: string, offId: string, cap: number) => {
-      const lead = WEAPONS[leadId]!;
-      const off = WEAPONS[offId]!;
-      const leadDamage = enemyComboShared.pairDamagePerUse(lead);
-      const offDamage = enemyComboShared.pairDamagePerUse(off);
-      const mult = enemyComboShared.dualOffhandDamageMultiplier(lead, off);
-      const ratio =
-        (lead.cooldown * (leadDamage + offDamage * mult)) /
-        (leadDamage * enemyComboShared.PAIR_TEMPO * (lead.cooldown + off.cooldown));
-      expect(ratio).toBeLessThanOrEqual(cap + 1e-9);
-    };
-    assertCap("rattler-sabre", "x2-sandsong-saber", enemyComboShared.DUAL_THROUGHPUT_CAP);
-    assertCap("rattler-sabre", "x-sword-neon-katana", enemyComboShared.DUAL_MATCHED_THROUGHPUT_CAP);
-  });
-
-  it("derives gun/caster parity through uint32 wrap and advances melee through the six-beat chain", () => {
-    expect([1, 2, 3, 4].map((seq) => enemyComboShared.dualHandForSeq(seq, 0))).toEqual([
-      0, 1, 0, 1,
+    expect(player.activeSlot).toBe(1);
+    expect(player.weapon).toBe("x2-sandsong-saber");
+    expect([player.slots[0]!.weapon, player.slots[1]!.weapon]).toEqual([
+      "rattler-sabre",
+      "x2-sandsong-saber",
     ]);
-    expect(enemyComboShared.dualHandForSeq(0, 0xffffffff)).toBe(0);
-    expect(enemyComboShared.dualHandForSeq(1, 0xffffffff)).toBe(1);
-    expect(enemyComboShared.DUAL_MELEE_PAIR_BAR).toEqual([
-      "lead",
-      "off",
-      "lead",
-      "off",
-      "lead",
-      "both",
-    ]);
-
-    let previousSeq: number | undefined;
-    let previousAt = 0;
-    let previousStep = 0;
-    let expires = 0;
-    const steps: number[] = [];
-    for (let seq = 1; seq <= 6; seq++) {
-      const at = seq * 100;
-      const step = enemyComboShared.comboStepForChain(
-        seq,
-        at,
-        "pair",
-        "arc",
-        6,
-        previousSeq,
-        previousAt,
-        "pair",
-        previousSeq === undefined ? undefined : "arc",
-        previousStep,
-        expires,
-      );
-      steps.push(step);
-      previousSeq = seq;
-      previousAt = at;
-      previousStep = step;
-      expires = at + 200;
-    }
-    expect(steps).toEqual([0, 1, 2, 3, 4, 5]);
   });
 
-  it("attributes overlapping paired melee receipts to each firing hand's weapon id and ships schema 27", () => {
-    const f = makeDualWieldFixture("rattler-sabre", "x2-sandsong-saber");
-    const enemy = new EnemyState();
-    enemy.id = "dual-receipt-target";
-    enemy.kind = "critter";
-    enemy.hp = 1000;
-    enemy.x = f.player.x + 60;
-    enemy.y = f.player.y;
-    f.h.state().enemies.set(enemy.id, enemy);
-    f.h.room.insertEnemyGrid(enemy.id, enemy);
-    f.combat.drawLock = 0;
-    f.combat.cd = 0;
-    f.off.cooldown = 0;
-    f.h.room.resolveHandAttack(f.player, f.combat, 0, f.off, 0, false);
-    f.combat.handGate = 0;
-    f.off.cooldown = 0;
-    f.h.room.resolveHandAttack(f.player, f.combat, 1, f.off, 1, false);
-    for (let i = 0; i < 10; i++) f.h.room.stepMeleeSwings(0.05);
-    const weaponIds = [...f.h.state().combatReceipts]
-      .filter((receipt) => receipt.seq > 0 && receipt.sourcePlayerId === f.player.id)
-      .map((receipt) => receipt.weaponId);
-    expect(new Set(weaponIds)).toEqual(new Set(["rattler-sabre", "x2-sandsong-saber"]));
-
+  it("keeps schema 37 and the unrelated compatibility-container tenants intact", () => {
     const fresh = new enemyComboShared.PlayerState();
     expect(enemyComboShared.SCHEMA_VERSION).toBe(37);
     expect(new enemyComboShared.ArenaState().schemaVersion).toBe(37);
     expect(fresh.dualWield).toMatchObject({
-      offhandSlot: 255,
-      pairBaseSeq: 0,
-      offCharges: 0,
-      offMaxCharges: 0,
+      retiredByte0: 255,
+      retiredUint32: 0,
+      retiredByte1: 0,
+      retiredByte2: 0,
+      gearUpper: "",
+      gearLower: "",
+      prestige: 0,
+      weaponResource: {
+        valueQ: 10000,
+        regenMode: 1,
+        beamLockEndTick: 0,
+      },
     });
-    expect([fresh.offhandSlot, fresh.pairBaseSeq, fresh.offCharges, fresh.offMaxCharges]).toEqual([
-      255, 0, 0, 0,
-    ]);
+    expect(fresh.dualWield.relics).toMatchObject({
+      energyPool: 0,
+      ownedRare: "",
+      activeDodge: "",
+      reviveAvailable: false,
+    });
   });
 });
 
@@ -5724,7 +5458,6 @@ describe("gear G2 archived account compatibility and inert runtime", () => {
 
 // METAGAME WAVE 2 — append-only server escrow/materialization/outcome coverage.
 const roomBankId = (n: number) => `wi_${n.toString(36).padStart(22, "0")}`;
-const roomPairId = (n: number) => `wp_${n.toString(36).padStart(22, "0")}`;
 const roomBankInstance = (
   n: number,
   weaponId: string,
@@ -5778,22 +5511,31 @@ function joinWeaponAccount(
   };
 }
 
-describe("GameRoom — weapon bank carry and exact pair projection", () => {
-  it("materializes exact ids into Active/Pack, keeps one zero-value starter floor, and projects a pair once", () => {
+describe("GameRoom — weapon bank carry projection", () => {
+  it("materializes two same-class entries independently and keeps one zero-value starter floor", () => {
     const h = makeRoom({ belt: true });
-    const pair: import("@dd/shared").PairedWeaponEntryV1 = {
-      kind: "pair",
-      entryId: roomPairId(1),
-      lead: roomBankInstance(1, "rattler-sabre", "legendary", "brutal"),
-      offhand: roomBankInstance(2, "x2-sandsong-saber", "rare", "keen"),
+    const leadWeapon = roomBankInstance(1, "rattler-sabre", "legendary", "brutal");
+    const lead: import("@dd/shared").SingleWeaponEntryV1 = {
+      kind: "single",
+      entryId: leadWeapon.instanceId,
+      weapon: leadWeapon,
+    };
+    const secondWeapon = roomBankInstance(2, "x2-sandsong-saber", "rare", "keen");
+    const second: import("@dd/shared").SingleWeaponEntryV1 = {
+      kind: "single",
+      entryId: secondWeapon.instanceId,
+      weapon: secondWeapon,
     };
     const safe = roomBankSingle(3);
     const joined = joinWeaponAccount(
       h,
-      "bank-pair-carry",
-      [pair, safe],
-      [{ entryId: pair.entryId, zone: "active", start: 1 }],
-      pair.entryId,
+      "bank-independent-carry",
+      [lead, second, safe],
+      [
+        { entryId: lead.entryId, zone: "active", start: 1 },
+        { entryId: second.entryId, zone: "active", start: 2 },
+      ],
+      lead.entryId,
     );
     expect(joined.player.slots[0]).toMatchObject({
       weapon: DEFAULT_WEAPON,
@@ -5806,30 +5548,27 @@ describe("GameRoom — weapon bank carry and exact pair projection", () => {
         weapon: slot.weapon,
         instanceId: slot.instanceId,
         entryId: slot.bankEntryId,
-        role: slot.bankPairRole,
       })),
     ).toEqual([
       {
-        weapon: pair.lead.weaponId,
-        instanceId: pair.lead.instanceId,
-        entryId: pair.entryId,
-        role: "lead",
+        weapon: lead.weapon.weaponId,
+        instanceId: lead.weapon.instanceId,
+        entryId: lead.entryId,
       },
       {
-        weapon: pair.offhand.weaponId,
-        instanceId: pair.offhand.instanceId,
-        entryId: pair.entryId,
-        role: "offhand",
+        weapon: second.weapon.weaponId,
+        instanceId: second.weapon.instanceId,
+        entryId: second.entryId,
       },
     ]);
-    expect([joined.player.activeSlot, joined.player.offhandSlot]).toEqual([1, 2]);
+    expect(joined.player.activeSlot).toBe(1);
     expect(joined.account.weaponBank.stash).toEqual([safe]);
-    expect(joined.account.weaponBank.expedition?.entries).toHaveLength(1);
+    expect(joined.account.weaponBank.expedition?.entries).toHaveLength(2);
     expect(joined.messages.some((message) => message.type === "weaponManifest")).toBe(true);
 
     h.room.completeExtraction();
     expect(joined.account.weaponBank.expedition).toBeNull();
-    expect(joined.account.weaponBank.stash).toEqual([safe, pair]);
+    expect(joined.account.weaponBank.stash).toEqual([safe, lead, second]);
   });
 
   it("mints a found instance only on accepted grab and settles carried+found through extraction", () => {
@@ -6311,7 +6050,7 @@ describe("GameRoom — schema-31 public prestige ceremony", () => {
     expect(messages.some((message) => message.type === "prestigeReceipt")).toBe(false);
   });
 
-  it("appends one uint8 public count to the existing nested cosmetic and Drive tail row", () => {
+  it("keeps the compatibility row indexes stable through relics", () => {
     const tailSymbols = Object.getOwnPropertySymbols(enemyComboShared.DualWieldState);
     const metadata = (
       enemyComboShared.DualWieldState as unknown as Record<
@@ -6320,6 +6059,21 @@ describe("GameRoom — schema-31 public prestige ceremony", () => {
       >
     )[tailSymbols[0]!];
     if (!metadata) throw new Error("DualWieldState schema metadata is required");
+    expect(Object.values(metadata).map(({ name }) => name)).toEqual([
+      "retiredByte0",
+      "retiredUint32",
+      "retiredByte1",
+      "retiredByte2",
+      "gearUpper",
+      "gearLower",
+      "weaponResource",
+      "prestige",
+      "relics",
+    ]);
+    expect(metadata[0]).toMatchObject({ name: "retiredByte0", type: "uint8" });
+    expect(metadata[1]).toMatchObject({ name: "retiredUint32", type: "uint32" });
+    expect(metadata[2]).toMatchObject({ name: "retiredByte1", type: "uint8" });
+    expect(metadata[3]).toMatchObject({ name: "retiredByte2", type: "uint8" });
     expect(metadata[7]).toMatchObject({ name: "prestige", type: "uint8" });
     expect(enemyComboShared.SCHEMA_VERSION).toBe(37);
   });
@@ -6465,15 +6219,19 @@ describe("GameRoom — bank §2.3 stale-expedition abandonment at join", () => {
 
 // W4A — append-only archive migration and Testing-Grounds exclusion coverage.
 describe("GameRoom — W4A archived weapon retirement", () => {
-  it("auto-salvages archived instances across every bank location and repairs a mixed-pair carry", () => {
+  it("auto-salvages archived single entries across every bank location", () => {
     const h = makeRoom({ belt: true });
     const archivedLead = roomBankInstance(91, "x2-mistral-kusarigama", "rare", "keen");
     const survivingOffhand = roomBankInstance(92, "rattler-sabre", "rare", "swift");
-    const mixedPair: import("@dd/shared").PairedWeaponEntryV1 = {
-      kind: "pair",
-      entryId: roomPairId(91),
-      lead: archivedLead,
-      offhand: survivingOffhand,
+    const archivedEntry: import("@dd/shared").SingleWeaponEntryV1 = {
+      kind: "single",
+      entryId: archivedLead.instanceId,
+      weapon: archivedLead,
+    };
+    const survivingEntry: import("@dd/shared").SingleWeaponEntryV1 = {
+      kind: "single",
+      entryId: survivingOffhand.instanceId,
+      weapon: survivingOffhand,
     };
     const intakeWeapon = roomBankInstance(93, "x2-ferrous-serpent", "legendary", "brutal");
     const intake: import("@dd/shared").SingleWeaponEntryV1 = {
@@ -6489,11 +6247,11 @@ describe("GameRoom — W4A archived weapon retirement", () => {
     };
     const account = enemyComboShared.createMetaAccountV4();
     account.scrip = 7;
-    account.weaponBank.stash.push(mixedPair);
+    account.weaponBank.stash.push(archivedEntry, survivingEntry);
     account.weaponBank.intake.push(intake);
     account.weaponBank.lastCarry = {
-      placements: [{ entryId: mixedPair.entryId, zone: "active", start: 0 }],
-      activeEntryId: mixedPair.entryId,
+      placements: [{ entryId: survivingEntry.entryId, zone: "active", start: 0 }],
+      activeEntryId: survivingEntry.entryId,
     };
     account.weaponBank.expedition = {
       runId: "run_archive-old",
@@ -6512,8 +6270,8 @@ describe("GameRoom — W4A archived weapon retirement", () => {
       carry: {
         requestId: "carry-after-archive",
         expectedRevision: account.revision,
-        placements: [{ entryId: mixedPair.entryId, zone: "active", start: 0 }],
-        activeEntryId: mixedPair.entryId,
+        placements: [{ entryId: survivingEntry.entryId, zone: "active", start: 0 }],
+        activeEntryId: survivingEntry.entryId,
         requestedWorldTier: 0,
       },
     });

@@ -8,7 +8,7 @@ Replace STR, DEX, INT, CON, and LUK with **Power, Vitality, and Fortune**. Power
 
 ## Mandate and scope
 
-This proposal will make the strongest concrete case that five attributes are too many for Dimension Drifters at its combat speed, while preserving attributes as a meaningful build layer. It will consolidate the current five-stat model to roughly three attributes, give every survivor exclusive mechanical ownership, and restructure weapon identity so melee, ranged, caster, dual-wield, and class-set builds remain equally supported. It will specify the exact level-up copy, catalog-retagging workload, save and economy migration, dependency audit for augments and ultimates, a rollback-safe phased rollout, research-backed comparisons, and an honest comparison with both conservative and radical alternatives.
+This proposal will make the strongest concrete case that five attributes are too many for Dimension Drifters at its combat speed, while preserving attributes as a meaningful build layer. It will consolidate the current five-stat model to roughly three attributes, give every survivor exclusive mechanical ownership, and restructure weapon identity so melee, ranged, caster, authored-dual, and class-set builds remain equally supported. It will specify the exact level-up copy, catalog-retagging workload, save and economy migration, dependency audit for augments and ultimates, a rollback-safe phased rollout, research-backed comparisons, and an honest comparison with both conservative and radical alternatives.
 
 The requested branch contains both generated expansion weapons and hand-authored curated/archived definitions, so this report distinguishes active, archived, generated, and curated content rather than treating every durable ID as currently acquirable. This is design and investigation only: no product code, catalog, generated file, test, asset, or live-game process was changed.
 
@@ -20,7 +20,7 @@ The requested branch contains both generated expansion weapons and hand-authored
 - STR/DEX/INT are not globally distinct verbs in derived stats. Per-source weapon scaling grades choose which attributes multiply damage, and the timeout choice selects whichever graded attribute is best (`leveling.ts:69-95`; `packages/shared/src/weapons.ts:730-760`). By contrast, CON exclusively owns max HP and regeneration at +8 HP and +0.7 HP/s per point over baseline (`leveling.ts:98-100,117-134`).
 - Crit has overlapping ownership: 5% base, +2 percentage points per LUK, +0.8 points per DEX, capped at 75%, with a 2× multiplier (`leveling.ts:102-114`).
 - A weapon definition already carries orthogonal identity tags for grip (`1H`, `2H`, `dual`, `mounted`), delivery, fire mode, element, class pool (`melee`, `ranged`, `caster`), family, range band, and free-form scaling labels (`packages/shared/src/weapons.ts:741-754`). Letter-grade attributes and minimum attribute requirements are separate mechanical fields (`weapons.ts:755-770`).
-- The equipped class bonus counts the three class pools and gives a held weapon +8% damage at two matching slots or +18% at three (`weapons.ts:1166-1191`). Dual-wield throughput is independently ceilinged, with matched-family and unmatched pairs using different caps and off-hand multipliers (`weapons.ts:1147-1164`). Attribute consolidation therefore must not alter those two identity systems by accident.
+- The equipped class bonus counts the three class pools and gives a held weapon +8% damage at two matching slots or +18% at three (`weapons.ts:1166-1191`). Authored duals remain single definitions with pre-made render/combo behavior. Attribute consolidation therefore must not alter either identity system by accident.
 - The canonical persistent roster is 335 IDs: **326 active and 9 archived** (`packages/shared/src/weapon-resource.ts:283-320`). Fists are runtime fallback rather than a catalog row, and archived definitions remain addressable while active catalog, curated roster, and expansion roster are exposed separately (`packages/shared/src/weapons.ts:2220-2238`).
 - The 40-character roster is not stat-neutral: every character has a hand-authored sum-10 five-stat starting spread (`packages/shared/src/characters.ts:51-97`), and one active Drifter quirk is nothing but “ballast follows the chosen attribute” (`packages/shared/src/character-classes.ts:137-143`). Consolidation must replace all 40 spreads and that quirk; merely aliasing field names would erase identity silently.
 - All five attributes are serialized directly on `PlayerState`; pending picks and the augment CSV are also wire state (`packages/shared/src/state.ts:103-132`). A server-private five-key `allocRun` ledger drives ultimate identity, while gear seeding and ballast routing carry additional migration state (`state.ts:349-360`).
@@ -68,7 +68,7 @@ Starting profiles become fixed sum-6 three-stat spreads, minimum 1 in each. Gene
 
 Attack speed remains where it is: authored weapon cooldown, affix, augment, or explicit gear modifier. The code already says an attack-speed attribute source is open (`packages/shared/src/leveling.ts:124-128`). This option closes that question with **none**; putting speed into Power or Fortune would immediately recreate overlap and favor rapid-proc deliveries.
 
-### Why melee, ranged, caster, and dual-wield scale equally
+### Why melee, ranged, caster, and authored duals scale equally
 
 For any damaging source `s`:
 
@@ -88,7 +88,7 @@ The read-only catalog census found 118 melee, 112 ranged, and 96 caster active w
 
 The class-set math stays exactly +8% for two and +18% for three. A three-melee, three-ranged, or three-caster loadout receives the same multiplier after universal Power. Mixed loadouts trade the set multiplier for coverage and utility as today.
 
-Dual-wield keeps its same-class 1H eligibility, matched-family distinction, pair tempo, and throughput ceilings. Both hands receive the same Power factor. Because multiplying lead and off-hand damage by the same factor cancels out of the off-hand ceiling ratio, Power cannot silently make pairs weaker or stronger relative to one another. Remove the union-of-two attribute requirement penalty (`packages/shared/src/weapons.ts:1266-1279`); that penalty is the one current pair rule that would become nonsensical.
+An authored dual keeps its one definition, class, requirements, cadence, and combo. Both rendered pieces receive the same Power factor because there is only one gameplay definition; there is no player-selected second weapon or union-of-two requirement penalty.
 
 ## Restructure weapon identity around what the weapon does
 
@@ -96,7 +96,7 @@ A weapon stops saying “STR B / DEX C / needs 8 DEX” and leads with informati
 
 1. **Class:** melee, ranged, caster—drives the 2/3-slot set bonus.
 2. **Delivery and family:** thrown, gun, cast, beam, aura, quake, chain, scatter, etc.—drives handling and augment eligibility.
-3. **Grip:** 1H, 2H, dual, mounted—drives pairing and physical commitment.
+3. **Grip:** 1H, 2H, dual, mounted—declares physical commitment; `dual` is pre-made by the definition.
 4. **Output:** real source damage, cadence/cooldown, reach, charges/magazine/Drive, pierce, area.
 5. **Loot identity:** rarity and affix.
 6. **Bespoke rule:** the sentence that changes play—combo, overheat, detonation, status, warp, recall, and so on.
@@ -329,7 +329,7 @@ The weapon catalog itself is a weekend. The complete safe option is two to three
 - **Do not change weapon IDs, art, rarity, affix, provenance, resource profiles, scrip values, bank entries, expedition stakes, or archive semantics.** They are valuable identity and economy, not attribute clutter.
 - **Do not remove the three equipped slots or bag.** Three slots create a comprehensible loadout problem and make the 2/3 class thresholds meaningful.
 - **Do not remove class set bonuses.** They are the cleanest existing statement of melee/ranged/caster build identity and are symmetric today.
-- **Do not simplify dual-wield into a damage affix.** Pair topology, alternating hands, matched-family tuning, and the throughput ceiling create visible weapon behavior. Only remove the obsolete attribute requirement union.
+- **Do not simplify authored duals into a damage affix.** Their pre-made two-piece rendering and alternating/both-hand combos create visible weapon behavior.
 - **Do not make attack speed, area, range, cooldown, projectile count, Drive, or crit multiplier attribute effects.** Keep them as authored weapon identity or explicit affix/augment/gear hooks.
 - **Do not change level cap 30, squad-shared XP, the five-second safe window, the +2 visible package, or signature cadence in the same release.** Choice-count milestone rewiring preserves their current timing.
 - **Do not remove rarity/affix WYSIWYG math, the class-median drop gate, or exact damage previews.** A simpler stat model should be more truthful, not less inspectable.
@@ -349,6 +349,6 @@ The middle path earns its cost if three results appear together: ordinary pick t
 - Read the reporting regime first after initializing this required report; maintained the report incrementally throughout investigation.
 - Verified branch `feat/v0.118-metagame` and observed unrelated dirty/untracked work; wrote only `docs/design/design-option-b-consolidate.md`.
 - Performed read-only runtime censuses from the canonical shared registries: 326 active + 9 archived weapons; active class split 118/112/96; active grip split 116/183/23/4; 383 active scaling blocks; 320 active requirement-bearing IDs; 113 gear rows with 18 direct five-stat dependencies.
-- Inspected the shared/server/client attribute, damage, requirement, class-set, dual-wield, persistence, scrip, augment, gear, ultimate, progression, and level-up UI paths cited above.
+- Inspected the shared/server/client attribute, damage, requirement, class-set, authored-dual, persistence, scrip, augment, gear, ultimate, progression, and level-up UI paths cited above.
 - Used named shipped-game documentation, patch notes, and developer posts; marked cross-game applications as DD judgment.
 - Did not edit product code, tests, assets, catalogs, generated files, other reports, or the live game stack; did not bind, stop, or inspect ports 5180/2567.

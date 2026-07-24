@@ -14,7 +14,7 @@ The governing rule is: **pose language proposes an equilibrium; the current acti
 | Aimed gun placement | `firingStanceFamilyFor()`, `firingHandTarget()`, `usesAimedFiringStance()` | Existing muzzle-forward targets, face-line cap, raise/linger/settle timing, and family bands remain authoritative. |
 | Melee action clocks | `SpriteRig.triggerSwing()`, combo timing, `actionOwnershipAt()` | Derive anticipation, active, and recovery from these clocks; do not invent a parallel attack state machine. |
 | Dagger/claw lunges | `sampleCloseBladePose()` | Keep its hand targets, body drive, foot plant/kick, reach truth, and release timing unchanged. |
-| Dual-wield routing | `routeSwingChannels()` and `DUAL_MELEE_PAIR_BAR` | Preserve lead/off parity and the Crossfall both-hands beat. |
+| Authored-dual routing | `routeSwingChannels()` and `AUTHORED_DUAL_MELEE_BAR` | Preserve lead/off parity and the Crossfall both-hands beat for one pre-made weapon definition. |
 | Two-handed hand truth | late rear-hand geometric constraint using `attackHandSpacing` | The descriptor can suggest a rear support point, but the late constraint remains the final authority. |
 | Tome page motion | `prepareTomeVisual()`, `startTomePage()`, `syncTomeVisual()` | Synchronize the off-hand beat to the existing page event; do not add an unrelated page timer. |
 | Visibility LOD | `JIGGLE_LOD_MARGIN_PX` and the existing rebase/suppress path | Retain the readable static pose outside full simulation and suppress only micro-motion. |
@@ -91,7 +91,7 @@ The implementation should use frozen record entries and return references to the
 2. Use `meleeComboSelectionFor(def)`, `swingStyleFor(def)`, and `isWornWeapon(def)` for close blades, fists, two-handed weapons, and polearms.
 3. Treat `delivery === "thrown"` as `thrown`, even if a secondary tag resembles a melee family.
 4. Resolve tome/book families to `tome`; compact wand, focus, orb, rod, scepter, and one-hand staff casting to `focus` unless the weapon is already a two-hand staff/polearm.
-5. Keep `beam` and `dual-wield` as overlays, not base families. A beam still needs its pistol, fist-gun, long-gun, focus, or tome chassis; a dual pair still needs each hand's concrete family.
+5. Keep `beam` and authored-dual handling as overlays, not base families. A beam still needs its pistol, fist-gun, long-gun, focus, or tome chassis; a pre-made dual still needs concrete lead/off presentation from its one definition.
 
 The family/tag mapping in `pose-language.md` is the exhaustive design source. Unknown future data should fall back conservatively: one-handed ranged to `pistol`, two-handed ranged to `long-gun`, worn melee to `fists`, two-handed thrust/orbit melee to `polearm`, and other melee to `one-hand-blade`. Tests must make this fallback visible rather than silently returning an unposed hand.
 
@@ -200,7 +200,7 @@ Scale normalized descriptor values by `TARGET_BODY_H` once when sampling or appl
 | Idle/move → gun aim | existing 90 ms ranged raise | Firing hand follows the existing stance; free hand anticipates or braces over the same envelope. |
 | Gun shot → recovery | recoil plus 250 ms linger and 180 ms settle | Apply one counter-impulse, hold the family job through linger, then spring home. |
 | Idle/move → melee attack | current combo/swing time and `actionOwnershipAt()` | Use early unowned time for anticipation; fade the family target wherever attack ownership rises. |
-| Melee attack → combo | current combo beat selection | The prior recovery becomes the next anticipation; dual-wield parity selects the new support hand. |
+| Melee attack → combo | current combo beat selection | The prior recovery becomes the next anticipation; authored-dual parity selects the new support hand. |
 | Melee attack → idle | current 120 ms combo hold/release behavior | Restore the family equilibrium underneath the ownership fade, so release has no pop. |
 | Tome beat → page/cast | existing page scheduling state | Align the trace/tap/cast hand beat with the visible page event. |
 | Beam phase change | optional client `beamPhase` field | Charge narrows, active braces, overheat breaks the free hand away, cooling settles. |
@@ -248,7 +248,7 @@ Append-only integration assertions:
 
 - `packages/client/src/sprites/firing-stance.test.ts`
 - `packages/client/src/entities/SpriteRig.ranged.test.ts`
-- `packages/client/src/entities/SpriteRig.dualwield.test.ts`
+- `packages/client/src/entities/SpriteRig.premade-duals.test.ts`
 - `packages/client/src/sprites/close-blade-pose.test.ts`
 
 Optional only for the full beam overheat beat:
@@ -290,7 +290,7 @@ Keep all current tests and assertions. Add new `describe`/`it` blocks; do not re
 - Append assertions that generic family blends go to zero as `sampleCloseBladePose()` takes ownership.
 - Re-run the current reach, body advance, foot plant/kick, and release-identity expectations with a nonzero idle pose underneath; results must be unchanged during committed action.
 
-### `SpriteRig.dualwield.test.ts`
+### `SpriteRig.premade-duals.test.ts`
 
 - Append lead/off/lead/off samples proving the non-striking hand receives the guard/counterweight role.
 - Assert per-hand family parity for mixed compatible pairs.
@@ -313,7 +313,7 @@ Before implementation is accepted, capture the same character aiming in eight co
 - weapon-forward law and existing gun face-line limits;
 - a distinct, visible job for every non-owned hand;
 - no snap when attack ownership rises or falls;
-- unchanged close-blade reach and dual-wield Crossfall geometry;
+- unchanged close-blade reach and authored-dual Crossfall geometry;
 - stable two-handed spacing;
 - no hand/foot buzzing at rest;
 - static silhouette retention under reduced motion and outside full jiggle LOD.

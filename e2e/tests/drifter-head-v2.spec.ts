@@ -105,7 +105,7 @@ test("Drifter v2 has a taller concealed head that overlaps the body through both
       const arena = (globalThis as unknown as BrowserGlobal).ddGame.scene.getScene("arena");
       const id = arena.room.sessionId;
       const player = arena.room.state.players.get(id);
-      if (!player?.dualWield) throw new Error("private Drifter row has no dual-wield schema tail");
+      if (!player?.dualWield) throw new Error("private Drifter row has no compatibility schema tail");
       player.dualWield.gearUpper = "";
       player.dualWield.gearLower = "";
       arena.removeBlob(id);

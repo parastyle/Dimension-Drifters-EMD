@@ -66,7 +66,7 @@ function makeRoom(id: string, weaponId: string) {
     enemy,
     acceptBeat() {
       combat.drive.valueF = DRIVE_CAPACITY;
-      expect(room.resolveHandAttack(player, combat, 0)).toBe(true);
+      expect(room.resolveSingleWeaponAttack(player, combat)).toBe(true);
     },
     tick(times: number) {
       for (let index = 0; index < times; index++) room.update(TICK_MS);
