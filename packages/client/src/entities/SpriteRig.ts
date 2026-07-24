@@ -61,6 +61,10 @@ import {
   type MeleeComboVariant,
   MOVE_HITCH_MIN_ANGLE,
   MOVE_SPEED,
+  PARRY_ABOVE_BRACE_SECONDS,
+  type ParryGuardPose,
+  ParryReaction,
+  type ParryReactionValue,
   type MoveStance,
   meleeComboSelectionFor,
   meleeComboSequenceFor,
@@ -270,6 +274,9 @@ export const MELEE_FORWARD_READY_CANT = -Math.PI / 15;
 export function forwardMeleeReadyAngle(aimLocal: number): number {
   return aimLocal + MELEE_FORWARD_READY_CANT;
 }
+const PARRY_GUARD_ANGLE_OFFSETS = [-0.62, 0, 0.58] as const;
+const PARRY_GUARD_HAND_FORWARD = [0.1, 0.16, 0.12] as const;
+const PARRY_GUARD_HAND_LIFT = [0.21, 0.08, -0.03] as const;
 /** §45 rollback switch for Stage-1 presentation, including empty-hand fist dispatch. No gameplay reads it. */
 const CLIENT_VISUAL_COMBOS = true;
 /** The authored guard eases to neutral only after accepted-cadence grace lapses. */
@@ -2183,6 +2190,7 @@ export class SpriteRig {
   private prevAnimMs = -1;
   /** §8 parry brace envelope duration (ms) ≈ PARRY_IFRAMES. Hoisted so `triggerBrace` can plateau a chain. */
   private static readonly BRACE_DUR = 450;
+  private static readonly PARRY_SUCCESS_DUR = PARRY_ABOVE_BRACE_SECONDS * 1000;
   /** Held weapon piece(s) — one per hand (dual-wield = two). Live INSIDE the container so the
    *  hand renders over the hilt and the facing-flip applies automatically. */
   private weapons: {
@@ -2525,6 +2533,12 @@ export class SpriteRig {
   /** §20 world-space aim (radians) captured at swing-start, so the blade sweeps the server's swept arc. */
   private swingAimWorld = Number.NaN;
   private braceStart = -1e9;
+  /** B26 authoritative successful-block payload; the receipt edge arms one shared remote/local pose clock. */
+  private parrySuccessStart = -1e9;
+  /** Priority hitstop skips animation ticks; retain the success until one frame can actually pose it. */
+  private parrySuccessPending = false;
+  private parryGuardPose: ParryGuardPose = 0;
+  private parryReaction: ParryReactionValue = ParryReaction.None;
   /** Enemy-only parry performance. Synced windup supplies phase; resolve/cancel never start a fresh swing. */
   private meleeTellMode: "none" | "windup" | "resolve" | "cancel" = "none";
   private meleeTellPhase = 0;
@@ -5792,6 +5806,21 @@ export class SpriteRig {
       timeMs - this.braceStart < SpriteRig.BRACE_DUR ? timeMs - 0.18 * SpriteRig.BRACE_DUR : timeMs;
   }
 
+  /** Snap the held implement and hands to the server-selected high/mid/low guard on a success receipt. */
+  triggerParrySuccess(
+    timeMs: number,
+    guardPose: ParryGuardPose,
+    reaction: ParryReactionValue,
+  ): void {
+    this.triggerBrace(timeMs);
+    this.parrySuccessStart = timeMs;
+    this.parrySuccessPending = true;
+    this.parryGuardPose = guardPose;
+    this.parryReaction = reaction;
+    for (const weapon of this.weapons)
+      weapon.img.setTint(0xffffff).setTintMode(Phaser.TintModes.FILL);
+  }
+
   /** §8 Brand augment: a persistent ember-orange tint marking a Marked enemy (takes more damage). */
   private branded = false;
   /** §6 DOWNED state — fades + grey-tints the rig (it's a body on the ground until a rez revives it). */
@@ -8865,9 +8894,27 @@ export class SpriteRig {
         brace = tt < 0.18 ? tt / 0.18 : tt > 0.7 ? 1 - (tt - 0.7) / 0.3 : 1;
       }
     }
-    if (brace > 0) {
-      this.body.y += brace * s * 7; // dip into the brace
-      this.body.scaleY *= 1 - brace * 0.05; // slight squash
+    if (this.parrySuccessPending) {
+      this.parrySuccessStart = timeMs;
+      this.parrySuccessPending = false;
+    }
+    const parrySuccessElapsed = timeMs - this.parrySuccessStart;
+    const parrySuccess =
+      parrySuccessElapsed >= 0 && parrySuccessElapsed < SpriteRig.PARRY_SUCCESS_DUR
+        ? parrySuccessElapsed < SpriteRig.PARRY_SUCCESS_DUR * 0.72
+          ? 1
+          : 1 -
+            (parrySuccessElapsed - SpriteRig.PARRY_SUCCESS_DUR * 0.72) /
+              (SpriteRig.PARRY_SUCCESS_DUR * 0.28)
+        : 0;
+    const guardBlend = Math.max(brace, parrySuccess);
+    if (guardBlend > 0) {
+      this.body.y += guardBlend * s * 7; // dip into the guard
+      this.body.scaleY *= 1 - guardBlend * 0.05; // slight squash
+    }
+    if (parrySuccess > 0 && this.parryReaction === ParryReaction.FromAbove) {
+      this.body.y += parrySuccess * s * 9;
+      this.body.scaleY *= 1 - parrySuccess * 0.13;
     }
 
     // Weapon angle — guns and melee both honor semantic +X/aim. Swing choreography may travel through
@@ -10511,8 +10558,8 @@ export class SpriteRig {
       }
     }
 
-    // Brace overrides the swing with the same aim-relative forward guard used by neutral/held poses.
-    if (brace > 0) {
+    // Successful guards snap to three server-selected contact heights; an open brace keeps the mid guard.
+    if (guardBlend > 0) {
       ownFront = 1;
       ownBack = 1;
       ownFeet = 1;
@@ -10522,8 +10569,16 @@ export class SpriteRig {
             Math.cos(this.meleeTellAimWorld) * this.facing,
           )
         : heldAimLocal;
-      const guard = forwardMeleeReadyAngle(guardAim);
-      weaponAngle += (guard - weaponAngle) * brace;
+      const poseOffset = parrySuccess > 0 ? PARRY_GUARD_ANGLE_OFFSETS[this.parryGuardPose] : 0;
+      const guard = forwardMeleeReadyAngle(guardAim) + poseOffset;
+      weaponAngle += (guard - weaponAngle) * guardBlend;
+      if (this.weapons.length > 1) {
+        const rearGuard = guard + (this.parryGuardPose === 1 ? -0.24 : -poseOffset * 0.45);
+        const rearBase = Number.isNaN(backWeaponAngle)
+          ? weaponAngle - this.offWeaponLean()
+          : backWeaponAngle;
+        backWeaponAngle = rearBase + (rearGuard - rearBase) * guardBlend;
+      }
     }
     const ceremony = samplePairCeremony(sceneNow - this.pairCeremonyStartMs);
     if (ceremony.active && this.weapons.length > 1 && !outsidePaperView) {
@@ -10581,7 +10636,7 @@ export class SpriteRig {
     this.handRoleFrame.dualEquipped = this.weapons.length > 1;
     this.handRoleFrame.pairedAimed = pairedAimed;
     this.handRoleFrame.bothHandsOwned =
-      this.crossfallActive || this.swingHand === "both" || brace > 0;
+      this.crossfallActive || this.swingHand === "both" || guardBlend > 0;
     const semanticActionPhase = posePhase === "anticipation" || posePhase === "active";
     this.handRoleFrame.actionOwnedHands[0] =
       semanticActionPhase && (ownFront > 0.01 || performancePoseActive);
@@ -10744,12 +10799,15 @@ export class SpriteRig {
         hx += this.turnDirX * this.facing * commit * s * 13;
         hy += this.turnDirY * commit * s * 13;
       }
-      // Brace: draw both hands forward + up into a guard in front of the body.
-      if (brace > 0) {
-        const bx = TARGET_BODY_H * 0.16;
-        const by = hnd.oy - TARGET_BODY_H * 0.08;
-        hx += (bx - hx) * brace;
-        hy += (by - hy) * brace;
+      // Brace: draw both hands to the selected high/mid/low weapon contact.
+      if (guardBlend > 0) {
+        const pose = parrySuccess > 0 ? this.parryGuardPose : 1;
+        const handSide = hnd.front ? 1 : -1;
+        const bx =
+          TARGET_BODY_H * (PARRY_GUARD_HAND_FORWARD[pose] + handSide * (pose === 1 ? 0.015 : 0.035));
+        const by = hnd.oy - TARGET_BODY_H * PARRY_GUARD_HAND_LIFT[pose];
+        hx += (bx - hx) * guardBlend;
+        hy += (by - hy) * guardBlend;
       }
       const gripBlend = hnd.front
         ? clamp01(this.attackFrontGripBlend)
@@ -11444,6 +11502,10 @@ export class SpriteRig {
         this.slideRenderT <= ROLL_IFRAME_TICKS * ROLL_TICK_SECONDS,
     );
     this.updateJuggleFlash(sceneNow);
+    if (parrySuccessElapsed >= 0 && parrySuccessElapsed < 90) {
+      for (const weapon of this.weapons)
+        weapon.img.setTint(0xffffff).setTintMode(Phaser.TintModes.FILL);
+    }
     this.updateSlideAfterimages(sceneNow, anim.reducedMotion === true || outsidePaperView);
     // §5/§20 the grounded shadow shrinks + fades as the rig rises, so height reads as altitude (the gap
     // between the lifted art and the planted shadow). The shadow itself never lifts.

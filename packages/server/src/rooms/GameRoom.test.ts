@@ -23,7 +23,10 @@ import {
   META_VITALITY_HP,
   makeRng,
   PARRY_CHAIN_RIPOSTE_AT,
+  PARRY_GUARD_RESET_TICKS,
   PARRY_IFRAMES,
+  PARRY_LAUNCH,
+  ParryReaction,
   PIT_FALL_DAMAGE_FRAC,
   PickupState,
   PLAYER_MAX_HP,
@@ -37,6 +40,8 @@ import {
   swingDescriptorFor,
   TILE_GROUND,
   TILE_PIT,
+  unpackParryGuardPose,
+  unpackParryReaction,
   WEAPON_IDS,
   WEAPONS,
   weaponEffectEmitterPoint,
@@ -2020,6 +2025,62 @@ describe("GameRoom — §33 footfall quake", () => {
   });
 });
 
+describe("GameRoom — B26 directional parry reactions", () => {
+  it("routes below/side/above and publishes the deterministic three-pose cycle", () => {
+    const h = makeRoom();
+    h.join("parry-directions");
+    h.room.map.pois.length = 0;
+    h.room.map.tiles.fill(TILE_GROUND);
+    const player = h.state().players.get("parry-directions");
+    const combat = h.room.combat.get(player.id);
+    const attacker = new EnemyState();
+    attacker.id = "parry-source";
+    attacker.kind = "ronin";
+    attacker.hp = 100_000;
+    h.state().enemies.set(attacker.id, attacker);
+    player.x = h.room.map.spawnX;
+    player.y = h.room.map.spawnY;
+
+    attacker.x = player.x;
+    attacker.y = player.y + 100;
+    h.room.resolveParry(player, combat, attacker, attacker.id, 10);
+    expect(player.vh).toBe(PARRY_LAUNCH);
+    expect(unpackParryReaction(player.parryPresentation)).toBe(ParryReaction.FromBelow);
+    expect(unpackParryGuardPose(player.parryPresentation)).toBe(0);
+
+    combat.vh = 0;
+    player.vh = 0;
+    player.vx = 0;
+    player.vy = 0;
+    const sideStartX = player.x;
+    const sideStartY = player.y;
+    attacker.x = player.x - 100;
+    attacker.y = player.y;
+    h.room.resolveParry(player, combat, attacker, attacker.id, 20);
+    expect(player.x).toBeCloseTo(sideStartX + 80);
+    expect(player.y).toBeCloseTo(sideStartY);
+    expect(player.vh).toBe(0);
+    expect(unpackParryReaction(player.parryPresentation)).toBe(ParryReaction.FromLeft);
+    expect(unpackParryGuardPose(player.parryPresentation)).toBe(1);
+
+    const aboveStart = { x: player.x, y: player.y };
+    attacker.x = player.x;
+    attacker.y = player.y - 100;
+    h.room.resolveParry(player, combat, attacker, attacker.id, 40);
+    expect({ x: player.x, y: player.y }).toEqual(aboveStart);
+    expect(player.vh).toBe(0);
+    expect(unpackParryReaction(player.parryPresentation)).toBe(ParryReaction.FromAbove);
+    expect(unpackParryGuardPose(player.parryPresentation)).toBe(2);
+
+    h.state().tick += PARRY_GUARD_RESET_TICKS + 1;
+    attacker.x = player.x + 100;
+    attacker.y = player.y;
+    h.room.resolveParry(player, combat, attacker, attacker.id, 1);
+    expect(unpackParryReaction(player.parryPresentation)).toBe(ParryReaction.FromRight);
+    expect(unpackParryGuardPose(player.parryPresentation)).toBe(0);
+  });
+});
+
 // ── §36 belt bosses (bespoke arena fights now run belt finales) must stay ON the deck when they reposition. ──
 describe("GameRoom — §36 belt boss stays on the deck", () => {
   it("moveBoss clamps a repositioning boss to the level length + floor band", () => {
@@ -2342,7 +2403,7 @@ describe("improve2 integrity regressions", () => {
     expect(receipt?.delivery).toBe(CombatDelivery.Gun);
     expect(h.state().combatReceipts.length).toBe(COMBAT_RECEIPT_CAP);
     expect([...h.state().combatReceipts]).toEqual(rows);
-    expect(h.state().schemaVersion).toBe(34);
+    expect(h.state().schemaVersion).toBe(35);
   });
 });
 
@@ -3244,6 +3305,15 @@ function pinVictimInFront(player: AnyRoom, enemy: AnyRoom) {
   player.mvy = 0;
 }
 
+function pinVictimAbove(player: AnyRoom, enemy: AnyRoom) {
+  player.x = enemy.x;
+  player.y = enemy.y - 60;
+  player.vx = 0;
+  player.vy = 0;
+  player.mvx = 0;
+  player.mvy = 0;
+}
+
 describe("GameRoom — §51 tough-enemy melee combos (Wave 1 authority)", () => {
   it("negotiates 143px ahead of the slow facing anchor, then never moves the marker or landing", () => {
     const { h, player } = makeEnemyComboRoom(1);
@@ -3405,15 +3475,17 @@ describe("GameRoom — §51 tough-enemy melee combos (Wave 1 authority)", () => 
   it("lets an airborne parry ride upward and immediately breaks the remaining juggle string", () => {
     const { h, player, combat } = makeEnemyComboRoom(5);
     const enemy = addComboEnemy(h, player, "combo-air-parry", "vault-ronin", 120);
+    enemy.x = player.x;
+    enemy.y = player.y + 120;
     const st = forceComboStart(h, enemy, player, 0.9);
     for (let i = 0; i < 20 && player.juggledSeq === 0; i++) {
-      pinVictimInFront(player, enemy);
+      pinVictimAbove(player, enemy);
       h.tick(1);
     }
     expect(player.height).toBeGreaterThanOrEqual(0);
     combat.invuln = 1;
     for (let i = 0; i < 20 && st.phase !== "recover"; i++) {
-      pinVictimInFront(player, enemy);
+      pinVictimAbove(player, enemy);
       h.tick(1);
     }
     expect(player.parriedSeq).toBe(1);
@@ -3439,7 +3511,7 @@ describe("GameRoom — §51 tough-enemy melee combos (Wave 1 authority)", () => 
   });
 
   it("ships schema 19, named depth decks, and guardrail-safe authored literals", () => {
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(34);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(35);
     expect(new EnemyState().comboSeq).toBe(0);
     expect(new EnemyState().comboFlags).toBe(0);
     expect(herePlayerJuggledDefault()).toBe(0);
@@ -3802,7 +3874,7 @@ describe("GameRoom — jump-feel J1 authoritative stance/physics", () => {
 
   it("ships schema 21 with the three appended uint8 stance/VFX defaults", () => {
     const player = new enemyComboShared.PlayerState();
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(34);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(35);
     expect([player.moveStance, player.poundSeq, player.stanceSeq]).toEqual([0, 0, 0]);
   });
 });
@@ -3963,7 +4035,7 @@ describe("GameRoom — flavor-only character identity", () => {
 
   it("retains schema 21 while defaulting character identity to the shared default", () => {
     const player = new enemyComboShared.PlayerState();
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(34);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(35);
     expect([player.character, player.runCharacter]).toEqual([
       enemyComboShared.DEFAULT_CHARACTER,
       enemyComboShared.DEFAULT_CHARACTER,
@@ -4742,8 +4814,8 @@ describe("ULT U1 lifecycle, co-op, and schema 25", () => {
     const h = makeRoom();
     h.join("ult-schema");
     const player = h.state().players.get("ult-schema");
-    expect(h.state().schemaVersion).toBe(34);
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(34);
+    expect(h.state().schemaVersion).toBe(35);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(35);
     expect([
       player.ultimate.archetype,
       player.ultimate.charge,
@@ -4803,7 +4875,7 @@ describe("pet v1 join snapshot, lock, and schema 25", () => {
     h.room.clients.push(client);
     h.room.onJoin(client, { metaAccount: account, selectedPetId: "brass-crab" });
     const player = h.state().players.get("pet-lock");
-    expect([h.state().schemaVersion, enemyComboShared.SCHEMA_VERSION]).toEqual([34, 34]);
+    expect([h.state().schemaVersion, enemyComboShared.SCHEMA_VERSION]).toEqual([35, 35]);
     expect({ petId: player.petId, petLevelBand: player.petLevelBand }).toEqual({
       petId: "hearth-newt",
       petLevelBand: 3,
@@ -5502,8 +5574,8 @@ describe("GameRoom — dual-wield schema 27 server core", () => {
     expect(new Set(weaponIds)).toEqual(new Set(["rattler-sabre", "x2-sandsong-saber"]));
 
     const fresh = new enemyComboShared.PlayerState();
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(34);
-    expect(new enemyComboShared.ArenaState().schemaVersion).toBe(34);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(35);
+    expect(new enemyComboShared.ArenaState().schemaVersion).toBe(35);
     expect(fresh.dualWield).toMatchObject({
       offhandSlot: 255,
       pairBaseSeq: 0,
@@ -6112,8 +6184,8 @@ describe("GameRoom — schema-31 Drive authority", () => {
     );
     const cost = enemyComboShared.driveCostForProfile(profile, interval);
 
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(34);
-    expect(h.state().schemaVersion).toBe(34);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(35);
+    expect(h.state().schemaVersion).toBe(35);
     expect(player.weaponResource).toBe(player.dualWield.weaponResource);
     expect(player.weaponResource).toMatchObject({
       valueQ: 10_000,
@@ -6401,7 +6473,7 @@ describe("GameRoom — schema-31 public prestige ceremony", () => {
     )[tailSymbols[0]!];
     if (!metadata) throw new Error("DualWieldState schema metadata is required");
     expect(metadata[7]).toMatchObject({ name: "prestige", type: "uint8" });
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(34);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(35);
   });
 });
 

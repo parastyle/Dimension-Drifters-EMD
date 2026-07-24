@@ -206,6 +206,9 @@ export class PlayerState extends Schema {
   @type("uint8") petLevelBand = 0;
   // Dual-wield schema v27. A pair is a link between two occupied arsenal rows, never a fourth row.
   @type(DualWieldState) dualWield = new DualWieldState();
+  /** B26 packed successful-parry direction + 0..2 guard pose. APPENDED at schema v35. `parriedSeq` is the
+   * receipt edge; this byte is its server-selected deterministic presentation payload. */
+  @type("uint8") parryPresentation = 0;
   /** Direct accessor keeps the resource contract independent of the packed tail envelope.
    *  REFLECTION LAW (client): the room joins WITHOUT a root-schema constructor, so decoded client
    *  rows carry only wire fields — these compatibility getters exist ONLY on server-constructed

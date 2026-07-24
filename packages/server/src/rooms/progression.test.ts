@@ -386,8 +386,8 @@ describe("gear G1/G2 shared catalog, account, and allocation laws", () => {
     );
   });
 
-  it("pins schema 34 without run stats or level fields and keeps the nested gear envelope", () => {
-    expect(petShared.SCHEMA_VERSION).toBe(34);
+  it("pins schema 35 without run stats or level fields and keeps the nested gear envelope", () => {
+    expect(petShared.SCHEMA_VERSION).toBe(35);
     const playerSymbols = Object.getOwnPropertySymbols(petShared.PlayerState);
     const playerMetadata = (
       petShared.PlayerState as unknown as Record<symbol, Record<number, { name: string }>>
