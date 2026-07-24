@@ -662,13 +662,34 @@
     const ribbon = meta.swing ? meta.swing.comboRibbon : undefined;
     frame.ribbonEnd = ribbon ? ribbon.end : undefined;
     if (ribbon) {
-      const widthMul = Math.max(0, finite(ribbon.widthMultiplier, 1));
+      const widthMul = Math.max(
+        0,
+        typeof meta.ribbonWidthMultiplierAt === "function"
+          ? finite(meta.ribbonWidthMultiplierAt(frame.q), ribbon.widthMultiplier)
+          : finite(ribbon.widthMultiplier, 1),
+      );
       if (widthMul <= 0) {
         hidePer(S);
         return;
       }
       const band = frame.reach * (1 - bounded(ribbon.radialStart, 0, 0, 0.95));
       frame.bodyWidth = Math.max(2, Math.min(96, frame.bodyWidth * widthMul, band));
+      const fanAudit = globalThis.__ddB18FanOutAudit;
+      if (
+        Array.isArray(fanAudit) &&
+        ribbon.fanOutStartScale !== undefined &&
+        ribbon.fanOutEndScale !== undefined
+      ) {
+        fanAudit.push({
+          weaponId: meta.weaponId,
+          progress: frame.q,
+          widthMultiplier: widthMul,
+          bodyWidth: frame.bodyWidth,
+          fanOutStartScale: ribbon.fanOutStartScale,
+          fanOutEndScale: ribbon.fanOutEndScale,
+        });
+        if (fanAudit.length > 2_048) fanAudit.splice(0, fanAudit.length - 2_048);
+      }
     }
     frame.lipWidth = Math.min(18, Math.max(size.lip, frame.bodyWidth * 0.24), frame.bodyWidth);
     const historyMul = bounded(params.history, 1, 0, 1);

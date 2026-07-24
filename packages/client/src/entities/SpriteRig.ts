@@ -2,6 +2,7 @@ import {
   ATTACK_HELD_WINDOW,
   BLADE_EXTENSION_OVERLAP_FRACTION,
   CHOP_IMPACT_FRAC,
+  comboRibbonFanOutScaleAt,
   comboStepForChain,
   composeWeaponTransform,
   createKatanaChoreographySample,
@@ -5106,6 +5107,28 @@ export class SpriteRig {
     const requestedSwing =
       swing ??
       (this.weaponDef ? swingDescriptorFor(this.weaponDef, this.weaponDef.cooldown) : undefined);
+    const openingRibbon = requestedSwing?.comboRibbon;
+    if (
+      this.weaponDef &&
+      openingRibbon?.fanOutStartScale !== undefined &&
+      openingRibbon.fanOutEndScale !== undefined
+    ) {
+      const audit = globalThis as unknown as {
+        __ddB18FanMotionAudit?: Array<Record<string, number | string>>;
+      };
+      const frames = audit.__ddB18FanMotionAudit;
+      if (frames) {
+        const foldedScale = comboRibbonFanOutScaleAt(openingRibbon, 0);
+        frames.push({
+          weaponId: this.weaponDef.id,
+          comboStep: requestedSwing?.comboStep ?? this.comboStep,
+          poseProgress: 0,
+          fanOutProgress: 0,
+          fanOutScale: foldedScale,
+          weaponLengthScale: foldedScale,
+        });
+      }
+    }
     const paired = this.weapons.length > 1;
     const pairedMelee =
       paired &&
@@ -8953,6 +8976,56 @@ export class SpriteRig {
           this.root.rotation += sampled.paperRotation;
           this.attackHandSpacing = TARGET_BODY_H * sampled.handSpacing;
           this.weaponLengthScale = sampled.weaponLengthScale;
+          if (
+            comboPose.ribbon?.fanOutStartScale !== undefined &&
+            comboPose.ribbon.fanOutEndScale !== undefined
+          ) {
+            const fanOutProgress = Phaser.Math.Clamp(
+              (tt - comboPose.timing.activeStart) /
+                Math.max(
+                  0.01,
+                  comboPose.timing.activeEnd - comboPose.timing.activeStart,
+                ),
+              0,
+              1,
+            );
+            const audit = globalThis as unknown as {
+              __ddB18FanMotionAudit?: Array<Record<string, number | string>>;
+            };
+            const frames = audit.__ddB18FanMotionAudit;
+            if (frames) {
+              if (
+                !frames.some(
+                  (frame) =>
+                    frame.weaponId === def.id &&
+                    frame.comboStep === this.comboStep &&
+                    frame.fanOutProgress === 0,
+                )
+              ) {
+                const foldedScale = comboRibbonFanOutScaleAt(comboPose.ribbon, 0);
+                frames.push({
+                  weaponId: def.id,
+                  comboStep: this.comboStep,
+                  poseProgress: 0,
+                  fanOutProgress: 0,
+                  fanOutScale: foldedScale,
+                  weaponLengthScale: foldedScale,
+                });
+              }
+              frames.push({
+                weaponId: def.id,
+                comboStep: this.comboStep,
+                poseProgress: tt,
+                fanOutProgress,
+                fanOutScale: comboRibbonFanOutScaleAt(
+                  comboPose.ribbon,
+                  fanOutProgress,
+                ),
+                weaponLengthScale: this.weaponLengthScale,
+              });
+              if (frames.length > 2_048) frames.splice(0, frames.length - 2_048);
+            }
+          }
           this.attackWeaponDepth = sampled.weaponDepth;
           this.attackFrontFootX =
             TARGET_BODY_H * (fx * sampled.frontFootForward + nx * sampled.frontFootLateral);

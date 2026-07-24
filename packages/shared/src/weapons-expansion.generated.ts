@@ -20153,7 +20153,7 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "followEnd": 0.72
       },
       "path": {
-        "kind": "sweep",
+        "kind": "fan",
         "arcMultiplier": 0.86,
         "rangeMultiplier": 0.96,
         "damageMultiplier": 1,
@@ -20168,7 +20168,9 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "radialStart": 0.26,
         "radialEnd": 0.94,
         "widthMultiplier": 0.72,
-        "end": "clean"
+        "end": "clean",
+        "fanOutStartScale": 0.24,
+        "fanOutEndScale": 1.04
       }
     },
     {
@@ -20183,7 +20185,7 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "followEnd": 0.73
       },
       "path": {
-        "kind": "sweep",
+        "kind": "fan",
         "arcMultiplier": 0.96,
         "rangeMultiplier": 1,
         "damageMultiplier": 1,
@@ -20198,7 +20200,9 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "radialStart": 0.22,
         "radialEnd": 0.98,
         "widthMultiplier": 0.76,
-        "end": "squared"
+        "end": "squared",
+        "fanOutStartScale": 0.2,
+        "fanOutEndScale": 1.08
       }
     },
     {
@@ -20213,7 +20217,7 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "followEnd": 0.76
       },
       "path": {
-        "kind": "capsule",
+        "kind": "fan",
         "arcMultiplier": 1.08,
         "rangeMultiplier": 1.04,
         "damageMultiplier": 1,
@@ -20228,7 +20232,9 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "radialStart": 0.18,
         "radialEnd": 1,
         "widthMultiplier": 0.82,
-        "end": "clean"
+        "end": "clean",
+        "fanOutStartScale": 0.16,
+        "fanOutEndScale": 1.12
       }
     }
   ],
@@ -20260,7 +20266,9 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "radialStart": 0.2,
         "radialEnd": 0.96,
         "widthMultiplier": 0.82,
-        "end": "torn"
+        "end": "torn",
+        "fanOutStartScale": 0.2,
+        "fanOutEndScale": 1.08
       }
     },
     {
@@ -20290,7 +20298,9 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "radialStart": 0.18,
         "radialEnd": 0.98,
         "widthMultiplier": 0.86,
-        "end": "torn"
+        "end": "torn",
+        "fanOutStartScale": 0.16,
+        "fanOutEndScale": 1.12
       }
     },
     {
@@ -20320,7 +20330,9 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "radialStart": 0.14,
         "radialEnd": 1,
         "widthMultiplier": 0.92,
-        "end": "torn"
+        "end": "torn",
+        "fanOutStartScale": 0.12,
+        "fanOutEndScale": 1.18
       }
     }
   ],
@@ -20352,7 +20364,9 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "radialStart": 0.18,
         "radialEnd": 0.96,
         "widthMultiplier": 0.8,
-        "end": "clean"
+        "end": "clean",
+        "fanOutStartScale": 0.22,
+        "fanOutEndScale": 1.06
       }
     },
     {
@@ -20382,7 +20396,9 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "radialStart": 0.16,
         "radialEnd": 0.98,
         "widthMultiplier": 0.84,
-        "end": "hooked"
+        "end": "hooked",
+        "fanOutStartScale": 0.16,
+        "fanOutEndScale": 1.1
       }
     },
     {
@@ -20412,7 +20428,9 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "radialStart": 0.12,
         "radialEnd": 1,
         "widthMultiplier": 0.94,
-        "end": "open"
+        "end": "open",
+        "fanOutStartScale": 0.12,
+        "fanOutEndScale": 1.16
       }
     }
   ],

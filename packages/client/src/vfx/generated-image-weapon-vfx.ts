@@ -9,13 +9,17 @@ import {
 } from "@dd/shared";
 import Phaser from "phaser";
 import {
+  type FanTornadoWeaponVfxRecipe,
   type GeneratedImageWeaponVfxRecipe,
+  fanTornadoReleasePlanFor,
   generatedImageMeleeGeometryFor,
   generatedImageProjectileGeometryFor,
   resolveGeneratedImageWeaponVfxRecipe,
 } from "./generated-image-weapon-vfx-recipes.js";
 
 export {
+  FAN_TORNADO_WEAPON_VFX_IDS,
+  FAN_TORNADO_WEAPON_VFX_RECIPES,
   GENERATED_IMAGE_WEAPON_VFX_IDS,
   GENERATED_IMAGE_WEAPON_VFX_RECIPES,
   generatedImageMeleeGeometryFor,
@@ -26,7 +30,12 @@ export {
 } from "./generated-image-weapon-vfx-recipes.js";
 
 interface GeneratedImageVfxAuditEvent {
-  readonly kind: "swing" | "chain-burst" | "projectile" | "projectile-impact";
+  readonly kind:
+    | "swing"
+    | "chain-burst"
+    | "projectile"
+    | "projectile-impact"
+    | "fan-tornado";
   readonly weaponId: string;
   readonly recipeKind: string;
   readonly subject: string;
@@ -42,15 +51,37 @@ interface GeneratedImageVfxAuditEvent {
   readonly projectileTipExtent?: number;
   readonly projectileDamageTipExtent?: number;
   readonly poolSize?: number;
+  readonly damageMode?: "presentation-only";
+  readonly releaseLane?: "center" | "lead" | "off";
+  readonly releaseProgress?: number;
+  readonly startX?: number;
+  readonly startY?: number;
+  readonly endX?: number;
+  readonly endY?: number;
+  readonly travelPx?: number;
+  readonly meleeEnvelopeReach?: number;
+  readonly maxVisualRadius?: number;
+  readonly overlapsMeleeAtSpawn?: boolean;
+  readonly fanOutStartScale?: number;
+  readonly fanOutEndScale?: number;
 }
 
 function auditGeneratedImageVfx(event: GeneratedImageVfxAuditEvent): void {
   const audit = globalThis as unknown as {
     __ddB11GeneratedImageVfxAudit?: GeneratedImageVfxAuditEvent[];
+    __ddB18FanTornadoAudit?: GeneratedImageVfxAuditEvent[];
   };
-  if (!audit.__ddB11GeneratedImageVfxAudit) return;
-  audit.__ddB11GeneratedImageVfxAudit.push(Object.freeze(event));
-  if (audit.__ddB11GeneratedImageVfxAudit.length > 256) audit.__ddB11GeneratedImageVfxAudit.shift();
+  const frozen = Object.freeze(event);
+  if (audit.__ddB11GeneratedImageVfxAudit) {
+    audit.__ddB11GeneratedImageVfxAudit.push(frozen);
+    if (audit.__ddB11GeneratedImageVfxAudit.length > 256)
+      audit.__ddB11GeneratedImageVfxAudit.shift();
+  }
+  if (event.kind === "fan-tornado" && audit.__ddB18FanTornadoAudit) {
+    audit.__ddB18FanTornadoAudit.push(frozen);
+    if (audit.__ddB18FanTornadoAudit.length > 256)
+      audit.__ddB18FanTornadoAudit.shift();
+  }
 }
 
 function authoritativeSweepArc(weapon: WeaponDef, swing: SwingDescriptor): number {
@@ -69,6 +100,82 @@ function activeTiming(swing: SwingDescriptor): {
     delayMs: Math.max(0, Math.round(swing.activeStartSeconds * 1000)),
     durationMs: Math.max(1, Math.round((swing.activeEndSeconds - swing.activeStartSeconds) * 1000)),
   });
+}
+
+function spawnFanTornado(
+  scene: Phaser.Scene,
+  weapon: WeaponDef,
+  recipe: FanTornadoWeaponVfxRecipe,
+  actorX: number,
+  actorY: number,
+  aimAngle: number,
+  swing: SwingDescriptor,
+): boolean {
+  if (!scene.textures.exists(recipe.textureKey)) return false;
+  const plan = fanTornadoReleasePlanFor(weapon, recipe, actorX, actorY, aimAngle, swing);
+  const ribbon = swing.comboRibbon;
+  const image = scene.add
+    .image(plan.startX, plan.startY, recipe.textureKey)
+    .setName(`generated-image-vfx:${weapon.id}:fan-tornado`)
+    .setDisplaySize(recipe.displayWidth, recipe.displayHeight)
+    .setDepth(100160)
+    .setVisible(false)
+    .setAlpha(0);
+  const baseScaleX = image.scaleX;
+  const baseScaleY = image.scaleY;
+  image
+    .setData("generatedImageWeaponId", weapon.id)
+    .setData("fanTornadoDamageMode", plan.damageMode)
+    .setData("fanTornadoReleaseLane", plan.releaseLane);
+  auditGeneratedImageVfx({
+    kind: "fan-tornado",
+    weaponId: weapon.id,
+    recipeKind: recipe.kind,
+    subject: recipe.subject,
+    textureKey: recipe.textureKey,
+    proceduralLayers: Object.freeze(["fan-out-ribbon", "hybrid-projectile"]),
+    x: plan.startX,
+    y: plan.startY,
+    poolSize: recipe.poolSize,
+    damageMode: plan.damageMode,
+    releaseLane: plan.releaseLane,
+    releaseProgress: plan.releaseProgress,
+    startX: plan.startX,
+    startY: plan.startY,
+    endX: plan.endX,
+    endY: plan.endY,
+    travelPx: plan.travelPx,
+    meleeEnvelopeReach: plan.meleeEnvelopeReach,
+    maxVisualRadius: plan.maxVisualRadius,
+    overlapsMeleeAtSpawn: plan.overlapsMeleeAtSpawn,
+    fanOutStartScale: ribbon?.fanOutStartScale,
+    fanOutEndScale: ribbon?.fanOutEndScale,
+  });
+  scene.tweens.addCounter({
+    from: 0,
+    to: 1,
+    delay: plan.delayMs,
+    duration: Math.max(240, recipe.lifeMs),
+    ease: "Cubic.out",
+    onStart: () => image.setVisible(true).setAlpha(0.96),
+    onUpdate: (tween) => {
+      const progress = tween.getValue() ?? 0;
+      const travelEase = 1 - (1 - progress) * (1 - progress);
+      const pulse = 1 + Math.sin(progress * Math.PI * 3) * recipe.scalePulse;
+      image
+        .setPosition(
+          Phaser.Math.Linear(plan.startX, plan.endX, travelEase),
+          Phaser.Math.Linear(plan.startY, plan.endY, travelEase),
+        )
+        .setRotation(progress * recipe.spinTurns * Math.PI * 2)
+        .setScale(baseScaleX * pulse, baseScaleY * pulse)
+        .setFlipX((Math.floor(progress * 8) & 1) === 1)
+        .setFlipY((Math.floor(progress * 6) & 1) === 1)
+        .setAlpha(progress < 0.62 ? 0.96 : 0.96 * (1 - (progress - 0.62) / 0.38));
+    },
+    onComplete: () => image.destroy(),
+  });
+  return true;
 }
 
 function tweenSweep(
@@ -221,7 +328,7 @@ function spawnPurpleCrystalSweep(
   return true;
 }
 
-/** Spawn a complete image-owned melee treatment. A true result means no procedural recipe may follow. */
+/** Spawn a generated-image melee treatment. B11 replaces; B18 supplements the retained fan ribbon. */
 export function spawnGeneratedImageWeaponSwing(
   scene: Phaser.Scene,
   weapon: WeaponDef,
@@ -237,6 +344,8 @@ export function spawnGeneratedImageWeaponSwing(
     return spawnFireDragonSweep(scene, weapon, recipe, actorX, actorY, aimAngle, swing);
   if (recipe.kind === "purple-crystal-burst")
     return spawnPurpleCrystalSweep(scene, weapon, recipe, actorX, actorY, aimAngle, swing, target);
+  if (recipe.kind === "fan-tornado")
+    return spawnFanTornado(scene, weapon, recipe, actorX, actorY, aimAngle, swing);
   return false;
 }
 

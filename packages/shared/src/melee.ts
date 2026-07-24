@@ -179,6 +179,37 @@ export interface MeleeComboRibbon {
   readonly widthMultiplier: number;
   readonly end: MeleeComboRibbonEnd;
   readonly setupEcho?: "neutral-dim";
+  /** Presentation-only folded-to-open scale. The held fan and its retained ribbon consume one curve. */
+  readonly fanOutStartScale?: number;
+  readonly fanOutEndScale?: number;
+}
+
+/** One allocation-free fan-opening curve shared by held-paper motion, retained ribbon width, and tests. */
+export function comboRibbonFanOutScaleAt(
+  ribbon: Readonly<MeleeComboRibbon> | undefined,
+  progress: number,
+): number {
+  if (
+    ribbon?.fanOutStartScale === undefined ||
+    ribbon.fanOutEndScale === undefined
+  )
+    return 1;
+  const p = clamp(progress, 0, 1);
+  const eased = p * p * (3 - 2 * p);
+  return (
+    ribbon.fanOutStartScale +
+    (ribbon.fanOutEndScale - ribbon.fanOutStartScale) * eased
+  );
+}
+
+export function comboRibbonWidthMultiplierAt(
+  ribbon: Readonly<MeleeComboRibbon>,
+  progress: number,
+): number {
+  return Math.max(
+    0,
+    ribbon.widthMultiplier * comboRibbonFanOutScaleAt(ribbon, progress),
+  );
 }
 
 export interface MeleeComboStep {
@@ -493,6 +524,20 @@ export function sampleKatanaChoreography(
       out.shadowScaleX = 1 + 0.16 * own;
       out.shadowScaleY = 1 - 0.12 * own;
       break;
+  }
+  if (
+    step.ribbon?.fanOutStartScale !== undefined &&
+    step.ribbon.fanOutEndScale !== undefined
+  ) {
+    const activeProgress = clamp(
+      (tt - step.timing.activeStart) /
+        Math.max(0.01, step.timing.activeEnd - step.timing.activeStart),
+      0,
+      1,
+    );
+    const opening = comboRibbonFanOutScaleAt(step.ribbon, activeProgress);
+    out.weaponLengthScale *= opening;
+    out.handSpacing += 0.08 * activeProgress;
   }
 }
 

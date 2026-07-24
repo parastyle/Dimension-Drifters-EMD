@@ -183,6 +183,7 @@ const COMBO_PATH_KEYS = new Set([
 ]);
 const COMBO_RIBBON_KEYS = new Set([
   "profile", "radialStart", "radialEnd", "widthMultiplier", "end", "setupEcho",
+  "fanOutStartScale", "fanOutEndScale",
 ]);
 const KATANA_CHOREOGRAPHY_PRIMITIVES = new Set([
   "side-cut", "wave-cut", "knee-stab", "lunge", "backflip", "rising-cut", "spin-cut", "guard-pivot",
@@ -470,6 +471,34 @@ function comboBarOf(w, choreography) {
         if (ribbon.setupEcho !== undefined) {
           if (ribbon.setupEcho !== "neutral-dim") fail(`${path}.ribbon.setupEcho must be neutral-dim`);
           mapped.ribbon.setupEcho = ribbon.setupEcho;
+        }
+        if (
+          ribbon.fanOutStartScale !== undefined ||
+          ribbon.fanOutEndScale !== undefined
+        ) {
+          if (
+            ribbon.fanOutStartScale === undefined ||
+            ribbon.fanOutEndScale === undefined
+          ) {
+            fail(`${path}.ribbon fan-out requires both start and end scales`);
+          } else {
+            mapped.ribbon.fanOutStartScale = num(
+              ribbon.fanOutStartScale,
+              0.1,
+              1,
+              0.25,
+              `${path}.ribbon.fanOutStartScale`,
+            );
+            mapped.ribbon.fanOutEndScale = num(
+              ribbon.fanOutEndScale,
+              1,
+              1.25,
+              1,
+              `${path}.ribbon.fanOutEndScale`,
+            );
+            if (mapped.ribbon.fanOutStartScale >= mapped.ribbon.fanOutEndScale)
+              fail(`${path}.ribbon fan-out start scale must be less than end scale`);
+          }
         }
       }
     }

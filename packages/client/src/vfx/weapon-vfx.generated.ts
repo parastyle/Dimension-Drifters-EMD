@@ -36,9 +36,9 @@ export interface WeaponVfxPaintedQuake {
 export type WeaponVfxGeneratedImageKind =
   | "fire-dragon-sweep"
   | "purple-crystal-burst"
-  | "arcane-lance-projectile";
-export interface WeaponVfxGeneratedImage {
-  kind: WeaponVfxGeneratedImageKind;
+  | "arcane-lance-projectile"
+  | "fan-tornado";
+export interface WeaponVfxGeneratedImageBase {
   textureKey: string;
   url: string;
   subject: string;
@@ -47,6 +47,23 @@ export interface WeaponVfxGeneratedImage {
   lifeMs: number;
   poolSize: number;
 }
+export interface WeaponVfxGeneratedImageReplacement extends WeaponVfxGeneratedImageBase {
+  kind: Exclude<WeaponVfxGeneratedImageKind, "fan-tornado">;
+}
+export interface WeaponVfxGeneratedImageFanTornado extends WeaponVfxGeneratedImageBase {
+  kind: "fan-tornado";
+  damageMode: "presentation-only";
+  displayWidth: number;
+  displayHeight: number;
+  releaseProgress: number;
+  travelPx: number;
+  spinTurns: number;
+  scalePulse: number;
+  alternatesLane: boolean;
+}
+export type WeaponVfxGeneratedImage =
+  | WeaponVfxGeneratedImageReplacement
+  | WeaponVfxGeneratedImageFanTornado;
 export interface WeaponVfx {
   suite: Record<string, WeaponVfxLayer>;
   rot: number;
@@ -882,6 +899,72 @@ export const WEAPON_VFX: Record<string, WeaponVfx> = {
       "audioCue": "b11:arcane-lance-cast",
       "lifeMs": 220,
       "poolSize": 1
+    }
+  },
+  "x2-iron-war-fan": {
+    "suite": {},
+    "rot": 0,
+    "generatedImage": {
+      "kind": "fan-tornado",
+      "textureKey": "b18:tornado:iron-gale",
+      "url": "sprites/vfx-tornado-iron-gale/part-1.png",
+      "subject": "vfx-tornado-iron-gale",
+      "signature": "iron-gale-tornado-released-from-opening-fan-edge",
+      "audioCue": "b18:iron-gale-whoosh",
+      "lifeMs": 420,
+      "poolSize": 1,
+      "damageMode": "presentation-only",
+      "displayWidth": 44,
+      "displayHeight": 72,
+      "releaseProgress": 0.76,
+      "travelPx": 42,
+      "spinTurns": 1.2,
+      "scalePulse": 0.1,
+      "alternatesLane": false
+    }
+  },
+  "x2-ember-fan": {
+    "suite": {},
+    "rot": 0,
+    "generatedImage": {
+      "kind": "fan-tornado",
+      "textureKey": "b18:tornado:ember-fire",
+      "url": "sprites/vfx-tornado-ember-fire/part-1.png",
+      "subject": "vfx-tornado-ember-fire",
+      "signature": "ember-fire-tornado-released-from-opening-fan-edge",
+      "audioCue": "b18:ember-fire-roar",
+      "lifeMs": 440,
+      "poolSize": 1,
+      "damageMode": "presentation-only",
+      "displayWidth": 46,
+      "displayHeight": 76,
+      "releaseProgress": 0.78,
+      "travelPx": 46,
+      "spinTurns": 1.35,
+      "scalePulse": 0.12,
+      "alternatesLane": false
+    }
+  },
+  "x2-storm-fan": {
+    "suite": {},
+    "rot": 0,
+    "generatedImage": {
+      "kind": "fan-tornado",
+      "textureKey": "b18:tornado:storm-shock",
+      "url": "sprites/vfx-tornado-storm-shock/part-1.png",
+      "subject": "vfx-tornado-storm-shock",
+      "signature": "alternating-paired-fan-storm-shock-tornado-release",
+      "audioCue": "b18:storm-thunder-crack",
+      "lifeMs": 400,
+      "poolSize": 1,
+      "damageMode": "presentation-only",
+      "displayWidth": 48,
+      "displayHeight": 76,
+      "releaseProgress": 0.74,
+      "travelPx": 48,
+      "spinTurns": 1.5,
+      "scalePulse": 0.11,
+      "alternatesLane": true
     }
   }
 };

@@ -18,9 +18,10 @@ const SPRITES_DIR = join(REPO, "packages", "client", "public", "sprites");
 const MANIFEST = join(REPO, "packages", "client", "src", "sprites", "manifest.ts");
 const ATLAS_NAME = "dd-sprites";
 
-/** Is this subject held out of the boot atlas? The §13 +300 expansion weapons (id `x2-…`) are gated — not
- *  boot-loaded — so they stay per-part and out of the atlas. */
-const isExpansion = (id) => id.startsWith("x2-");
+/** Is this subject held out of the boot atlas? Expansion weapons are gated, and generated-image weapon VFX
+ *  are direct-loaded by their recipe URLs, so both stay per-part and out of the atlas. */
+const isBootAtlasExcluded = (id, manifest) =>
+  id.startsWith("x2-") || manifest.kind === "weapon-vfx";
 
 // Parse the generated SPRITES object out of manifest.ts (unquoted keys + trailing commas → JSON).
 const txt = readFileSync(MANIFEST, "utf8");
@@ -33,7 +34,7 @@ const SPRITES = JSON.parse(
 const images = [];
 let subjects = 0;
 for (const [id, man] of Object.entries(SPRITES)) {
-  if (isExpansion(id)) continue;
+  if (isBootAtlasExcluded(id, man)) continue;
   let any = false;
   for (const part of man.parts) {
     const p = join(SPRITES_DIR, id, part.file);

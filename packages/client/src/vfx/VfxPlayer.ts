@@ -12,6 +12,7 @@ import {
   bladeExtensionDamageReachForReveal,
   bladeExtensionGeometryFor,
   bladeExtensionIgnitionReveal,
+  comboRibbonWidthMultiplierAt,
   meleeComboSelectionFor,
   meleeReach,
   type SwingDescriptor,
@@ -175,6 +176,7 @@ interface PerRuntimeSurface {
     paintedWidthPx: number;
     grip?: WeaponDef["tags"]["grip"];
     family?: string;
+    weaponId: string;
     paint: number;
     slashArt?: {
       readonly key: string;
@@ -192,6 +194,7 @@ interface PerRuntimeSurface {
     originY: number;
     edgeProgress(elapsedSeconds: number): number;
     angleAt(progress: number): number;
+    ribbonWidthMultiplierAt(progress: number): number;
   };
 }
 
@@ -705,8 +708,29 @@ export class VfxPlayer {
     const muzzleFlash = weapon?.gun
       ? muzzleFlashAssignmentFor(weaponId, weapon.gun.muzzle)
       : undefined;
+    const openingRibbon = swing.comboRibbon;
+    if (
+      openingRibbon?.fanOutStartScale !== undefined &&
+      openingRibbon.fanOutEndScale !== undefined
+    ) {
+      const audit = globalThis as unknown as {
+        __ddB18FanOutAudit?: Array<Record<string, number | string>>;
+      };
+      const frames = audit.__ddB18FanOutAudit;
+      if (frames) {
+        frames.push({
+          weaponId,
+          progress: 0,
+          widthMultiplier: comboRibbonWidthMultiplierAt(openingRibbon, 0),
+          bodyWidth: 0,
+          fanOutStartScale: openingRibbon.fanOutStartScale,
+          fanOutEndScale: openingRibbon.fanOutEndScale,
+        });
+      }
+    }
     perRuntime(S).per = {
       swing,
+      weaponId,
       reach: weapon ? meleeReach(weapon) : radius,
       swingArc,
       style: swing.style,
@@ -730,6 +754,10 @@ export class VfxPlayer {
       originY: -perAnchorX * Math.sin(perRot) + perAnchorY * Math.cos(perRot),
       edgeProgress: (elapsedSeconds) => swingEdgeProgress(swing, elapsedSeconds),
       angleAt: (progress) => bladeAngleAt(-perRot, swingArc, progress),
+      ribbonWidthMultiplierAt: (progress) =>
+        swing.comboRibbon
+          ? comboRibbonWidthMultiplierAt(swing.comboRibbon, progress)
+          : 1,
     };
     S.heroEnabled = true;
     S.wantHeroKey = vfx?.hero ? `vfxhero:${weaponId}` : null;

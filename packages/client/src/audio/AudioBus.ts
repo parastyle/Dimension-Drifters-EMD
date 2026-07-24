@@ -934,6 +934,79 @@ export class AudioBus {
           x,
         });
         break;
+      case "b18:iron-gale-whoosh":
+        if (this.throttled(amt >= 0.75 ? "b18IronGaleSelf" : "b18IronGale", 70)) return;
+        this.noise(0.2, {
+          gain: 0.13 + 0.15 * amt,
+          type: "bandpass",
+          freq: 2_100,
+          q: 1.4,
+          sweepTo: 620,
+          x,
+        });
+        this.tone(510, 0.11, {
+          type: "triangle",
+          gain: 0.055 + 0.065 * amt,
+          sweepTo: 270,
+          x,
+        });
+        this.tone(1_120, 0.055, {
+          type: "square",
+          gain: 0.035 + 0.04 * amt,
+          sweepTo: 760,
+          x,
+        });
+        break;
+      case "b18:ember-fire-roar":
+        if (this.throttled(amt >= 0.75 ? "b18EmberRoarSelf" : "b18EmberRoar", 75)) return;
+        this.noise(0.27, {
+          gain: 0.17 + 0.17 * amt,
+          type: "lowpass",
+          freq: 980,
+          q: 0.8,
+          sweepTo: 230,
+          x,
+        });
+        this.noise(0.13, {
+          gain: 0.08 + 0.09 * amt,
+          type: "bandpass",
+          freq: 2_400,
+          q: 1.7,
+          sweepTo: 1_050,
+          x,
+        });
+        this.tone(105, 0.28, {
+          type: "sawtooth",
+          gain: 0.065 + 0.085 * amt,
+          sweepTo: 54,
+          x,
+        });
+        break;
+      case "b18:storm-thunder-crack":
+        if (this.throttled(amt >= 0.75 ? "b18StormCrackSelf" : "b18StormCrack", 65)) return;
+        this.noise(0.055, {
+          gain: 0.2 + 0.2 * amt,
+          type: "highpass",
+          freq: 3_200,
+          q: 1.1,
+          sweepTo: 6_800,
+          x,
+        });
+        this.noise(0.18, {
+          gain: 0.11 + 0.12 * amt,
+          type: "bandpass",
+          freq: 1_450,
+          q: 2.4,
+          sweepTo: 420,
+          x,
+        });
+        this.tone(72, 0.22, {
+          type: "square",
+          gain: 0.09 + 0.11 * amt,
+          sweepTo: 38,
+          x,
+        });
+        break;
       case "melee:heavy":
         if (this.throttled(amt >= 0.75 ? "meleeHeavySelf" : "meleeHeavy", 55)) return;
         if (

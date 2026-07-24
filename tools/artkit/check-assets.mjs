@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Validate that every runtime asset manifest resolves to a file under packages/client/public and that the
-// packed sprite atlas agrees with the non-expansion sprite manifests. Expansion weapons use the `x2-` id
-// convention and load their loose part files on demand, so they are intentionally excluded from atlas checks.
+// packed sprite atlas agrees with boot-atlased sprite manifests. Expansion weapons use the `x2-` id
+// convention, while `weapon-vfx` subjects are direct-loaded by generated recipes; both stay loose.
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { dirname, isAbsolute, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -103,6 +103,10 @@ function parseSprites(source) {
     // §47 harvest-install emits JSON-quoted keys ("id":); earlier manifests used bare keys (id:) — accept both.
     const idLiteral = block.match(/^ {4}"?id"?:\s*("(?:\\.|[^"\\])*")/m)?.[1];
     const id = idLiteral ? parseString(idLiteral, `sprites/manifest.ts entry ${key}`) : null;
+    const kindLiteral = block.match(/^ {4}"?kind"?:\s*("(?:\\.|[^"\\])*")/m)?.[1];
+    const kind = kindLiteral
+      ? parseString(kindLiteral, `sprites/manifest.ts entry ${key} kind`)
+      : null;
     if (!id) parseFailures.push(`sprites/manifest.ts entry ${key}: missing id`);
     else if (id !== key) parseFailures.push(`sprites/manifest.ts entry ${key}: id is ${id}`);
 
@@ -113,7 +117,12 @@ function parseSprites(source) {
       }))
       .filter((part) => part.role != null && part.file != null);
     if (parts.length === 0) parseFailures.push(`sprites/manifest.ts entry ${key}: no parts found`);
-    return { id: id ?? key, parts, expansion: (id ?? key).startsWith("x2-") };
+    return {
+      id: id ?? key,
+      parts,
+      expansion: (id ?? key).startsWith("x2-"),
+      directLoadedWeaponVfx: kind === "weapon-vfx",
+    };
   });
 }
 
@@ -123,14 +132,16 @@ const declaredFrames = new Set();
 const requiredAtlasFrames = new Set();
 let spritePartCount = 0;
 let expansionPartCount = 0;
+let directLoadedWeaponVfxPartCount = 0;
 for (const sprite of sprites) {
   for (const part of sprite.parts) {
     spritePartCount++;
     if (sprite.expansion) expansionPartCount++;
+    if (sprite.directLoadedWeaponVfx) directLoadedWeaponVfxPartCount++;
     recordAsset(`sprites/${sprite.id}/${part.file}`, `sprites/manifest.ts ${sprite.id}/${part.role}`);
     const frame = `${sprite.id}/${part.role}`;
     declaredFrames.add(frame);
-    if (!sprite.expansion) requiredAtlasFrames.add(frame);
+    if (!sprite.expansion && !sprite.directLoadedWeaponVfx) requiredAtlasFrames.add(frame);
   }
 }
 
@@ -209,7 +220,8 @@ if (parseFailures.length > 0 || missingEntries.length > 0 || missingFrames.lengt
 } else {
   console.log(
     `✓ asset check passed — ${sprites.length} sprite entries / ${spritePartCount} parts ` +
-      `(${expansionPartCount} expansion parts checked loose), ${atlasFrames.length} atlas frames, ` +
+      `(${expansionPartCount} expansion + ${directLoadedWeaponVfxPartCount} weapon-VFX parts checked loose), ` +
+      `${atlasFrames.length} atlas frames, ` +
       `${cards.length} cards, ${pois.length} POIs, ${decals.length} decals, ` +
       `${projectileUrls.length} projectile URLs, ${particleUrls.length} particle URLs, ` +
       `${weaponVfxUrls.length} weapon-VFX URLs` +

@@ -8188,6 +8188,84 @@ export const SPRITES = {
       }
     ]
   },
+  "vfx-tornado-ember-fire": {
+    "id": "vfx-tornado-ember-fire",
+    "kind": "weapon-vfx",
+    "canvas": {
+      "w": 468,
+      "h": 768
+    },
+    "body": {
+      "cx": 234,
+      "cy": 384,
+      "w": 468,
+      "h": 768
+    },
+    "parts": [
+      {
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 468,
+        "h": 768,
+        "cx": 234,
+        "cy": 384,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
+  },
+  "vfx-tornado-iron-gale": {
+    "id": "vfx-tornado-iron-gale",
+    "kind": "weapon-vfx",
+    "canvas": {
+      "w": 839,
+      "h": 1380
+    },
+    "body": {
+      "cx": 419.5,
+      "cy": 690,
+      "w": 839,
+      "h": 1380
+    },
+    "parts": [
+      {
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 839,
+        "h": 1380,
+        "cx": 419.5,
+        "cy": 690,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
+  },
+  "vfx-tornado-storm-shock": {
+    "id": "vfx-tornado-storm-shock",
+    "kind": "weapon-vfx",
+    "canvas": {
+      "w": 901,
+      "h": 1444
+    },
+    "body": {
+      "cx": 450.5,
+      "cy": 722,
+      "w": 901,
+      "h": 1444
+    },
+    "parts": [
+      {
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 901,
+        "h": 1444,
+        "cx": 450.5,
+        "cy": 722,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
+  },
   "warden-mech": {
     "id": "warden-mech",
     "kind": "character",

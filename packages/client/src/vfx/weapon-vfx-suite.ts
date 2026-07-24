@@ -113,7 +113,8 @@ export function buildWeaponFallbackSuite(
   const heavy =
     style === "chop" || (tags?.grip === "2H" && (tags?.size === "L" || tags?.size === "XL"));
   const reachy = style === "thrust";
-  const dual = tags?.grip === "dual";
+  const dual =
+    tags?.grip === "dual" || (tags?.family ?? "").toLowerCase() === "paired-war-fan";
   const energy = /energy|plasma|laser|beam|photon|volt|light|neon/.test(
     (tags?.family ?? "").toLowerCase(),
   );

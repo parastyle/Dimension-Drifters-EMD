@@ -1,0 +1,346 @@
+{
+  "capturedAt": "2026-07-24T02:30:51.448Z",
+  "baseURL": "http://127.0.0.1:61753",
+  "clientPort": 61753,
+  "gamePort": 61752,
+  "protectedPorts": [
+    5180,
+    2567
+  ],
+  "characterId": "proto-cowboy-hidden-face",
+  "audioCues": {
+    "x2-iron-war-fan": "b18:iron-gale-whoosh",
+    "x2-ember-fan": "b18:ember-fire-roar",
+    "x2-storm-fan": "b18:storm-thunder-crack"
+  },
+  "assertions": {
+    "sixFacingCaptures": true,
+    "privatePorts": true,
+    "wholeArtCharacter": "proto-cowboy-hidden-face",
+    "allFanOutward": true,
+    "threeElementalSubjects": true,
+    "presentationOnly": true,
+    "bothFacingsTravelOutward": true,
+    "stormPairedReleaseLanes": true
+  },
+  "captures": [
+    {
+      "weaponId": "x2-iron-war-fan",
+      "facing": "right",
+      "attackSeqBefore": 0,
+      "attackSeqAfter": 2,
+      "event": {
+        "kind": "fan-tornado",
+        "weaponId": "x2-iron-war-fan",
+        "recipeKind": "fan-tornado",
+        "subject": "vfx-tornado-iron-gale",
+        "textureKey": "b18:tornado:iron-gale",
+        "proceduralLayers": [
+          "fan-out-ribbon",
+          "hybrid-projectile"
+        ],
+        "x": 2468.9875657214543,
+        "y": 2460.1315763616135,
+        "poolSize": 1,
+        "damageMode": "presentation-only",
+        "releaseLane": "center",
+        "releaseProgress": 0.76,
+        "startX": 2468.9875657214543,
+        "startY": 2460.1315763616135,
+        "endX": 2505.2917155187397,
+        "endY": 2481.2504945984997,
+        "travelPx": 42,
+        "meleeEnvelopeReach": 94.7712,
+        "maxVisualRadius": 157.8112000000002,
+        "overlapsMeleeAtSpawn": true,
+        "fanOutStartScale": 0.24,
+        "fanOutEndScale": 1.04
+      },
+      "motion": {
+        "minScale": 0.24,
+        "maxScale": 1.04,
+        "spreadRatio": 4.333333333333334,
+        "frames": 13
+      },
+      "ribbon": {
+        "minWidth": 0.17279999999999998,
+        "maxWidth": 0.7011342241399388,
+        "spreadRatio": 4.057489723032053,
+        "frames": 3
+      },
+      "visibleTornado": {
+        "x": 2469.0439537287557,
+        "y": 2460.034486370396,
+        "alpha": 0.96,
+        "displayWidth": 44,
+        "displayHeight": 72
+      },
+      "screenshot": "docs/owner-notes-audit-v10-evidence/b18-fan-tornado/x2-iron-war-fan-right.png"
+    },
+    {
+      "weaponId": "x2-iron-war-fan",
+      "facing": "left",
+      "attackSeqBefore": 2,
+      "attackSeqAfter": 4,
+      "event": {
+        "kind": "fan-tornado",
+        "weaponId": "x2-iron-war-fan",
+        "recipeKind": "fan-tornado",
+        "subject": "vfx-tornado-iron-gale",
+        "textureKey": "b18:tornado:iron-gale",
+        "proceduralLayers": [
+          "fan-out-ribbon",
+          "hybrid-projectile"
+        ],
+        "x": 2330.9558562246348,
+        "y": 2379.9658413880506,
+        "poolSize": 1,
+        "damageMode": "presentation-only",
+        "releaseLane": "center",
+        "releaseProgress": 0.76,
+        "startX": 2330.9558562246348,
+        "startY": 2379.9658413880506,
+        "endX": 2294.62193268301,
+        "endY": 2358.898188455857,
+        "travelPx": 42,
+        "meleeEnvelopeReach": 94.7712,
+        "maxVisualRadius": 157.8112000000001,
+        "overlapsMeleeAtSpawn": true,
+        "fanOutStartScale": 0.24,
+        "fanOutEndScale": 1.04
+      },
+      "motion": {
+        "minScale": 0.2,
+        "maxScale": 1.08,
+        "spreadRatio": 5.4,
+        "frames": 14
+      },
+      "ribbon": {
+        "minWidth": 0.15200000000000002,
+        "maxWidth": 0.698267015107515,
+        "spreadRatio": 4.593861941496808,
+        "frames": 5
+      },
+      "visibleTornado": {
+        "x": 2330.240502486856,
+        "y": 2373.638916031723,
+        "alpha": 0.96,
+        "displayWidth": 44,
+        "displayHeight": 72
+      },
+      "screenshot": "docs/owner-notes-audit-v10-evidence/b18-fan-tornado/x2-iron-war-fan-left.png"
+    },
+    {
+      "weaponId": "x2-ember-fan",
+      "facing": "right",
+      "attackSeqBefore": 4,
+      "attackSeqAfter": 7,
+      "event": {
+        "kind": "fan-tornado",
+        "weaponId": "x2-ember-fan",
+        "recipeKind": "fan-tornado",
+        "subject": "vfx-tornado-ember-fire",
+        "textureKey": "b18:tornado:ember-fire",
+        "proceduralLayers": [
+          "fan-out-ribbon",
+          "hybrid-projectile"
+        ],
+        "x": 2456.761890969371,
+        "y": 2463.77012014584,
+        "poolSize": 1,
+        "damageMode": "presentation-only",
+        "releaseLane": "center",
+        "releaseProgress": 0.78,
+        "startX": 2456.761890969371,
+        "startY": 2463.77012014584,
+        "endX": 2493.1893440873578,
+        "endY": 2491.859987702254,
+        "travelPx": 46,
+        "meleeEnvelopeReach": 87.318,
+        "maxVisualRadius": 155.67800000000017,
+        "overlapsMeleeAtSpawn": true,
+        "fanOutStartScale": 0.2,
+        "fanOutEndScale": 1.08
+      },
+      "motion": {
+        "minScale": 0.12,
+        "maxScale": 1.1800000000000002,
+        "spreadRatio": 9.833333333333336,
+        "frames": 15
+      },
+      "ribbon": {
+        "minWidth": 0.1104,
+        "maxWidth": 0.9168925786457691,
+        "spreadRatio": 8.305186400776895,
+        "frames": 5
+      },
+      "visibleTornado": {
+        "x": 2454.597286702883,
+        "y": 2473.0600600610587,
+        "alpha": 0.96,
+        "displayWidth": 46,
+        "displayHeight": 76
+      },
+      "screenshot": "docs/owner-notes-audit-v10-evidence/b18-fan-tornado/x2-ember-fan-right.png"
+    },
+    {
+      "weaponId": "x2-ember-fan",
+      "facing": "left",
+      "attackSeqBefore": 7,
+      "attackSeqAfter": 10,
+      "event": {
+        "kind": "fan-tornado",
+        "weaponId": "x2-ember-fan",
+        "recipeKind": "fan-tornado",
+        "subject": "vfx-tornado-ember-fire",
+        "textureKey": "b18:tornado:ember-fire",
+        "proceduralLayers": [
+          "fan-out-ribbon",
+          "hybrid-projectile"
+        ],
+        "x": 2343.2380870943016,
+        "y": 2376.229908301605,
+        "poolSize": 1,
+        "damageMode": "presentation-only",
+        "releaseLane": "center",
+        "releaseProgress": 0.78,
+        "startX": 2343.2380870943016,
+        "startY": 2376.229908301605,
+        "endX": 2306.8106198984797,
+        "endY": 2348.1400590015946,
+        "travelPx": 46,
+        "meleeEnvelopeReach": 87.318,
+        "maxVisualRadius": 155.6779999999997,
+        "overlapsMeleeAtSpawn": true,
+        "fanOutStartScale": 0.2,
+        "fanOutEndScale": 1.08
+      },
+      "motion": {
+        "minScale": 0.16,
+        "maxScale": 1.12,
+        "spreadRatio": 7.000000000000001,
+        "frames": 14
+      },
+      "ribbon": {
+        "minWidth": 0.1376,
+        "maxWidth": 0.30644872015339414,
+        "spreadRatio": 2.2270982569287363,
+        "frames": 6
+      },
+      "visibleTornado": {
+        "x": 2344.482704546138,
+        "y": 2371.893851687247,
+        "alpha": 0.96,
+        "displayWidth": 46,
+        "displayHeight": 76
+      },
+      "screenshot": "docs/owner-notes-audit-v10-evidence/b18-fan-tornado/x2-ember-fan-left.png"
+    },
+    {
+      "weaponId": "x2-storm-fan",
+      "facing": "right",
+      "attackSeqBefore": 10,
+      "attackSeqAfter": 13,
+      "event": {
+        "kind": "fan-tornado",
+        "weaponId": "x2-storm-fan",
+        "recipeKind": "fan-tornado",
+        "subject": "vfx-tornado-storm-shock",
+        "textureKey": "b18:tornado:storm-shock",
+        "proceduralLayers": [
+          "fan-out-ribbon",
+          "hybrid-projectile"
+        ],
+        "x": 2471.4132605988434,
+        "y": 2444.876378567663,
+        "poolSize": 1,
+        "damageMode": "presentation-only",
+        "releaseLane": "lead",
+        "releaseProgress": 0.74,
+        "startX": 2471.4132605988434,
+        "startY": 2444.876378567663,
+        "endX": 2512.266038000046,
+        "endY": 2470.0765884598004,
+        "travelPx": 48,
+        "meleeEnvelopeReach": 90.16,
+        "maxVisualRadius": 160.92814161126825,
+        "overlapsMeleeAtSpawn": true,
+        "fanOutStartScale": 0.22,
+        "fanOutEndScale": 1.06
+      },
+      "motion": {
+        "minScale": 0.22,
+        "maxScale": 1.06,
+        "spreadRatio": 4.818181818181818,
+        "frames": 13
+      },
+      "ribbon": {
+        "minWidth": 0.17600000000000002,
+        "maxWidth": 0.23984328269364089,
+        "spreadRatio": 1.3627459243956868,
+        "frames": 6
+      },
+      "visibleTornado": {
+        "x": 2471.4132605988434,
+        "y": 2444.876378567663,
+        "alpha": 0.96,
+        "displayWidth": 48,
+        "displayHeight": 76
+      },
+      "screenshot": "docs/owner-notes-audit-v10-evidence/b18-fan-tornado/x2-storm-fan-right.png"
+    },
+    {
+      "weaponId": "x2-storm-fan",
+      "facing": "left",
+      "attackSeqBefore": 13,
+      "attackSeqAfter": 16,
+      "event": {
+        "kind": "fan-tornado",
+        "weaponId": "x2-storm-fan",
+        "recipeKind": "fan-tornado",
+        "subject": "vfx-tornado-storm-shock",
+        "textureKey": "b18:tornado:storm-shock",
+        "proceduralLayers": [
+          "fan-out-ribbon",
+          "hybrid-projectile"
+        ],
+        "x": 2328.5867269338346,
+        "y": 2395.1236572226285,
+        "poolSize": 1,
+        "damageMode": "presentation-only",
+        "releaseLane": "lead",
+        "releaseProgress": 0.74,
+        "startX": 2328.5867269338346,
+        "startY": 2395.1236572226285,
+        "endX": 2287.733936903011,
+        "endY": 2369.92346780474,
+        "travelPx": 48,
+        "meleeEnvelopeReach": 90.16,
+        "maxVisualRadius": 160.92814161126825,
+        "overlapsMeleeAtSpawn": true,
+        "fanOutStartScale": 0.22,
+        "fanOutEndScale": 1.06
+      },
+      "motion": {
+        "minScale": 0.12,
+        "maxScale": 1.1600000000000001,
+        "spreadRatio": 9.666666666666668,
+        "frames": 15
+      },
+      "ribbon": {
+        "minWidth": 0.11279999999999998,
+        "maxWidth": 0.8480000000000001,
+        "spreadRatio": 7.517730496453902,
+        "frames": 6
+      },
+      "visibleTornado": {
+        "x": 2326.430202129004,
+        "y": 2386.0612781439722,
+        "alpha": 0.96,
+        "displayWidth": 48,
+        "displayHeight": 76
+      },
+      "screenshot": "docs/owner-notes-audit-v10-evidence/b18-fan-tornado/x2-storm-fan-left.png"
+    }
+  ]
+}

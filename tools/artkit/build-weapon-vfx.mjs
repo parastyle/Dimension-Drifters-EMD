@@ -175,9 +175,9 @@ const types =
   "export type WeaponVfxGeneratedImageKind =\n" +
   "  | \"fire-dragon-sweep\"\n" +
   "  | \"purple-crystal-burst\"\n" +
-  "  | \"arcane-lance-projectile\";\n" +
-  "export interface WeaponVfxGeneratedImage {\n" +
-  "  kind: WeaponVfxGeneratedImageKind;\n" +
+  "  | \"arcane-lance-projectile\"\n" +
+  "  | \"fan-tornado\";\n" +
+  "export interface WeaponVfxGeneratedImageBase {\n" +
   "  textureKey: string;\n" +
   "  url: string;\n" +
   "  subject: string;\n" +
@@ -186,6 +186,23 @@ const types =
   "  lifeMs: number;\n" +
   "  poolSize: number;\n" +
   "}\n" +
+  "export interface WeaponVfxGeneratedImageReplacement extends WeaponVfxGeneratedImageBase {\n" +
+  "  kind: Exclude<WeaponVfxGeneratedImageKind, \"fan-tornado\">;\n" +
+  "}\n" +
+  "export interface WeaponVfxGeneratedImageFanTornado extends WeaponVfxGeneratedImageBase {\n" +
+  "  kind: \"fan-tornado\";\n" +
+  "  damageMode: \"presentation-only\";\n" +
+  "  displayWidth: number;\n" +
+  "  displayHeight: number;\n" +
+  "  releaseProgress: number;\n" +
+  "  travelPx: number;\n" +
+  "  spinTurns: number;\n" +
+  "  scalePulse: number;\n" +
+  "  alternatesLane: boolean;\n" +
+  "}\n" +
+  "export type WeaponVfxGeneratedImage =\n" +
+  "  | WeaponVfxGeneratedImageReplacement\n" +
+  "  | WeaponVfxGeneratedImageFanTornado;\n" +
   "export interface WeaponVfx {\n" +
   "  suite: Record<string, WeaponVfxLayer>;\n" +
   "  rot: number;\n" +
