@@ -474,8 +474,7 @@ describe("§43 expansion codegen: every authored gameplay field survives into th
         });
       } else if (kind === "glovePair") {
         checkFields(w.id, def.glovePair, b, {
-          auraColor: { int: [0, 0xffffff] },
-          auraRadius: { num: [24, 90] },
+          wrapsFeet: { eq: true },
         });
       } else if (kind === "warp") {
         checkFields(w.id, def.warp, b, {

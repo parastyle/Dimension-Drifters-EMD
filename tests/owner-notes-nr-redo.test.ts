@@ -66,7 +66,7 @@ describe("owner-notes NR REDO iteration contracts", () => {
     expect(downswing.weaponAngle).toBeGreaterThan(0);
   });
 
-  it("authors Sparkknuckle as alternating hook/cross boxing with tiny painted sparks", () => {
+  it("authors Sparkknuckle as alternating hook/cross boxing without a player aura", () => {
     const definition = weapon("x2-sparkknuckle-hex-mitt");
     const combo = meleeComboSelectionFor(definition);
     const aura = resolveWeaponAuraVfxRecipe(definition);
@@ -74,12 +74,7 @@ describe("owner-notes NR REDO iteration contracts", () => {
     expect(combo?.variant).toBe("sparkknuckle-voltage-boxing");
     expect(combo?.sequence.map((step) => step.motion)).toEqual(["hook", "cross", "hook", "cross"]);
     expect(combo?.sequence.map((step) => step.hand)).toEqual(["lead", "off", "lead", "off"]);
-    expect(aura).toMatchObject({
-      packs: ["shock-spark"],
-      count: 4,
-      particleDominance: 0.3,
-      maxParticlePx: 28,
-    });
+    expect(aura).toBeUndefined();
 
     const rigSource = readFileSync(
       new URL("../packages/client/src/entities/SpriteRig.ts", import.meta.url),
@@ -88,6 +83,7 @@ describe("owner-notes NR REDO iteration contracts", () => {
     expect(rigSource).toContain('poseVariant === "sparkknuckle-voltage-boxing"');
     expect(rigSource).toContain("pairGlintAlpha");
     expect(rigSource).toContain("paintedAuraParticles");
+    expect(rigSource).not.toContain("gloveAura");
   });
 
   it("renders Fulgurite's active aura from installed spark and arc sheets", () => {

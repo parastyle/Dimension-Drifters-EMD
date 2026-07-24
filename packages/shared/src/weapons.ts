@@ -73,10 +73,12 @@ export type IdleHandPose =
   | "mirror-guard"
   | "low-guard"
   | "casting-gesture"
-  | "hip-rest";
+  | "hip-rest"
+  | "praying-mantis"
+  | "crane-guard";
 
 /** Planted lower-body profiles are independent from the facing-side hand rule. */
-export type IdleFootPose = "loose-plant" | "combat-plant" | "wide-plant";
+export type IdleFootPose = "loose-plant" | "combat-plant" | "wide-plant" | "crane-one-leg";
 
 export interface WeaponPoseLanguageDef {
   idle?: IdleHandPose;
@@ -533,11 +535,9 @@ export interface WeaponDef {
   hybridProjectile?: HybridProjectileDef;
   /** Non-worn props that intentionally sit in front of visible hands (for example, hand-held idols). */
   renderAboveHands?: boolean;
-  /** A single two-hand slot occupied by a matched worn glove on each hand. Cosmetic aura only; accepted
-   * melee beats remain the authoritative damage source. */
+  /** A single two-hand slot occupied by a matched worn glove on each hand. Weapon VFX may never add a
+   * character-wrapping aura; accepted melee beats remain the authoritative damage source. */
   glovePair?: {
-    auraColor: number;
-    auraRadius: number;
     /** Part 1 replaces both hands and part 2 replaces both feet. */
     wrapsFeet?: boolean;
   };

@@ -57,15 +57,17 @@ function drawSwing(
   limb: "hand" | "foot" | undefined,
   reducedMotion: boolean,
 ): void {
-  if (recipe.swing === "red-eight-limbs-aura") {
-    graphics.lineStyle(5, recipe.accentColor, 0.44);
-    graphics.strokeCircle(0, 0, 25);
+  if (recipe.swing === "crimson-roundhouse-arc") {
+    const length = Math.max(24, Math.hypot(dx, dy));
+    const midX = dx * 0.5;
+    const midY = dy * 0.5;
     graphics.lineStyle(2, recipe.primaryColor, 0.9);
     graphics
       .beginPath()
-      .arc(0, 0, 31, angle - 1.05, angle + 1.05)
+      .arc(midX, midY, length * 0.52, angle - 1.15, angle + 1.15)
       .strokePath();
-    graphics.fillStyle(recipe.primaryColor, 0.22).fillCircle(dx, dy, 14);
+    graphics.lineStyle(5, recipe.accentColor, 0.36).lineBetween(0, 0, dx, dy);
+    graphics.fillStyle(recipe.primaryColor, 0.24).fillCircle(dx, dy, 11);
   } else if (recipe.swing === "white-centerline-flash") {
     const length = Math.max(18, Math.hypot(dx, dy));
     graphics.lineStyle(6, recipe.accentColor, 0.28).lineBetween(0, 0, dx, dy);

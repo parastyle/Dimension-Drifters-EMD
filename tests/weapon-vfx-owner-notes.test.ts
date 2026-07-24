@@ -148,24 +148,17 @@ describe("owner-notes W-VFX weapon identities", () => {
     }
   });
 
-  it("uses retained Codex particle art for both revised shock auras and both Tesla warp beats", () => {
+  it("bans worn-weapon player auras while retaining explicit gameplay aura and Tesla warp art", () => {
     const sparkknuckle = resolveWeaponAuraVfxRecipe(weapon("x2-sparkknuckle-hex-mitt"));
     const fulgurite = resolveWeaponAuraVfxRecipe(weapon("x2-fulgurite-storm-sphere"));
-    expect(sparkknuckle).toMatchObject({
-      packs: ["shock-spark"],
-      count: 4,
-      particleDominance: 0.3,
-      extent: 0.58,
-    });
+    expect(sparkknuckle).toBeUndefined();
     expect(fulgurite).toMatchObject({
       packs: ["shock-spark", "shock-bolt"],
       count: 8,
       particleDominance: 0.44,
     });
-    for (const recipe of [sparkknuckle, fulgurite]) {
-      if (!recipe) throw new Error("Missing revised shock-aura recipe");
-      for (const pack of recipe.packs) expect(PARTICLE_PACKS[pack]).toBeDefined();
-    }
+    if (!fulgurite) throw new Error("Missing explicit Fulgurite gameplay-aura recipe");
+    for (const pack of fulgurite.packs) expect(PARTICLE_PACKS[pack]).toBeDefined();
     expect(TESLA_WARP_VFX_RECIPE.departurePacks).not.toEqual(TESLA_WARP_VFX_RECIPE.arrivalPacks);
     for (const pack of [
       ...TESLA_WARP_VFX_RECIPE.departurePacks,
@@ -178,6 +171,8 @@ describe("owner-notes W-VFX weapon identities", () => {
       "utf8",
     );
     expect(rigSource).toContain("auraActive && !paintedAuraActive");
+    expect(rigSource).toContain("this.performanceSpec?.aura");
+    expect(rigSource).not.toContain("gloveAura");
   });
 
   it("gives Sparkknuckle alternating hooks/crosses, body commitment, and impact snaps", () => {

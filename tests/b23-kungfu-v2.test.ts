@@ -14,7 +14,7 @@ const { PNG } = require("../tools/artkit/node_modules/pngjs") as {
   };
 };
 
-const B19_WRAPS = [
+const B23_WRAPS = [
   "x2-muay-thai-wraps",
   "x2-wing-chun-wraps",
   "x2-drunken-fist-wraps",
@@ -22,7 +22,7 @@ const B19_WRAPS = [
 ] as const;
 
 const NATIVE_PARTS: Readonly<
-  Record<(typeof B19_WRAPS)[number], readonly (readonly [number, number])[]>
+  Record<(typeof B23_WRAPS)[number], readonly (readonly [number, number])[]>
 > = {
   "x2-muay-thai-wraps": [
     [380, 512],
@@ -102,16 +102,16 @@ function significantAlphaComponents(data: Buffer, width: number, height: number)
   return components;
 }
 
-function comboSteps(id: (typeof B19_WRAPS)[number]) {
+function comboSteps(id: (typeof B23_WRAPS)[number]) {
   return meleeComboSelectionFor(WEAPONS[id]!)?.sequence;
 }
 
-describe("B19 kung-fu wrap rework", () => {
+describe("B23 kung-fu corrections", () => {
   it("publishes four active four-limb wrap sets with distinct combo, root, and VFX signatures", () => {
-    expect(new Set(B19_WRAPS).size).toBe(4);
+    expect(new Set(B23_WRAPS).size).toBe(4);
     const comboSignatures = new Set<string>();
     const vfxSignatures = new Set<string>();
-    for (const id of B19_WRAPS) {
+    for (const id of B23_WRAPS) {
       const weapon = WEAPONS[id];
       expect(weapon, id).toBeDefined();
       expect(weapon?.expansion, id).toBe(true);
@@ -126,7 +126,13 @@ describe("B19 kung-fu wrap rework", () => {
       expect(weapon?.twoHanded, id).toBe(true);
       expect(weapon?.glovePair, id).toBeDefined();
       expect(weapon?.glovePair?.wrapsFeet, id).toBe(true);
-      expect(weapon?.poseLanguage?.idle, id).toBe("mirror-guard");
+      expect(weapon?.poseLanguage?.idle, id).toBe(
+        id === "x2-wing-chun-wraps"
+          ? "praying-mantis"
+          : id === "x2-drunken-fist-wraps"
+            ? "crane-guard"
+            : "mirror-guard",
+      );
       expect(weapon?.authoritativeCombo, id).toBe(true);
       expect(weapon?.impactMuzzle, id).toBe(true);
       expect(weapon?.muzzle?.points.length, id).toBe(NATIVE_PARTS[id].length);
@@ -150,7 +156,7 @@ describe("B19 kung-fu wrap rework", () => {
       ["elbow", "hand"],
       ["elbow", "hand"],
       ["knee-strike", "foot"],
-      ["spinning-back-elbow", "hand"],
+      ["roundhouse-kick", "foot"],
     ]);
     expect(
       comboSteps("x2-wing-chun-wraps")?.map((step) => [step.motion, step.hand, step.limb]),
@@ -166,7 +172,7 @@ describe("B19 kung-fu wrap rework", () => {
       ["weave-cross", "hand"],
       ["weave-backfist", "hand"],
       ["sweeping-leg", "foot"],
-      ["falling-haymaker", "hand"],
+      ["backflip-head-kick", "foot"],
     ]);
     expect(
       comboSteps("x2-drunken-fist-wraps")?.map((step) => [
@@ -190,9 +196,9 @@ describe("B19 kung-fu wrap rework", () => {
   });
 
   it("keeps every redistributed combo inside ±10% of shipped DPS with requested cadence ordering", () => {
-    const weapons = B19_WRAPS.map((id) => WEAPONS[id]!);
+    const weapons = B23_WRAPS.map((id) => WEAPONS[id]!);
     for (const weapon of weapons) {
-      const steps = comboSteps(weapon.id as (typeof B19_WRAPS)[number]) ?? [];
+      const steps = comboSteps(weapon.id as (typeof B23_WRAPS)[number]) ?? [];
       const averageDamage =
         steps.reduce((sum, step) => sum + step.path.damageMultiplier, 0) /
         Math.max(1, steps.length);
@@ -214,10 +220,45 @@ describe("B19 kung-fu wrap rework", () => {
     expect(muay.damage).toBeGreaterThan(drunken.damage);
     expect(iron.damage).toBeGreaterThan(muay.damage);
     expect(wing.range).toBeLessThan(muay.range);
+    expect([wing.cooldown, drunken.cooldown, muay.cooldown, iron.cooldown]).toEqual([
+      0.12, 0.3, 0.4, 0.55,
+    ]);
+    expect([wing.damage, drunken.damage, muay.damage, iron.damage]).toEqual([2.4, 6, 8, 11]);
+  });
+
+  it("moves every authored hit envelope beyond the old close-body reach", () => {
+    for (const id of B23_WRAPS) {
+      const weapon = WEAPONS[id]!;
+      for (const step of comboSteps(id) ?? []) {
+        expect(step.path.rangeMultiplier, `${id}:${step.name}`).toBeGreaterThanOrEqual(1.18);
+        expect(
+          weapon.range * step.path.rangeMultiplier,
+          `${id}:${step.name} world reach`,
+        ).toBeGreaterThan(100);
+      }
+    }
+  });
+
+  it("permanently forbids player-wrapping aura metadata and aura-named wrap recipes", () => {
+    const source = JSON.parse(readFileSync("data/weapon-concepts-300.json", "utf8")) as {
+      weapons: Array<{
+        id: string;
+        behavior?: { glovePair?: Record<string, unknown> };
+      }>;
+    };
+    for (const row of source.weapons.filter((candidate) => candidate.behavior?.glovePair)) {
+      expect(row.behavior?.glovePair, row.id).not.toHaveProperty("auraColor");
+      expect(row.behavior?.glovePair, row.id).not.toHaveProperty("auraRadius");
+    }
+    for (const [id, recipe] of Object.entries(KUNG_FU_WRAP_VFX_RECIPES)) {
+      expect(`${recipe.swing} ${recipe.impact} ${recipe.signature}`, id).not.toMatch(
+        /\b(?:aura|glow|halo)\b/i,
+      );
+    }
   });
 
   it("ships every authored part at its native dimensions with broad visible alpha bounds", () => {
-    for (const id of B19_WRAPS) {
+    for (const id of B23_WRAPS) {
       const parts = NATIVE_PARTS[id];
       const expectedCanvas = {
         w: Math.max(...parts.map(([width]) => width)),
@@ -253,7 +294,7 @@ describe("B19 kung-fu wrap rework", () => {
     const source = JSON.parse(readFileSync("data/weapon-concepts-300.json", "utf8")) as {
       weapons: Array<{ id: string; theme?: string; artPrompt?: string }>;
     };
-    for (const id of B19_WRAPS) {
+    for (const id of B23_WRAPS) {
       const weapon = WEAPONS[id]!;
       for (const [index, point] of (weapon.muzzle?.points ?? []).entries()) {
         const path = `packages/client/public/sprites/${id}/part-${index + 1}.png`;

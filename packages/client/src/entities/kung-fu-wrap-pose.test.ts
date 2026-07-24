@@ -16,16 +16,23 @@ const MOTIONS: readonly KungFuWrapMotion[] = [
   "gourd-haymaker",
   "iron-knuckle",
   "iron-palm",
+  "backflip-head-kick",
 ];
 
 function impactSample(motion: KungFuWrapMotion) {
   const input = createKungFuWrapPoseInput();
   input.motion = motion;
+  input.limb =
+    motion === "knee-strike" ||
+    motion === "roundhouse-kick" ||
+    motion === "backflip-head-kick"
+      ? "foot"
+      : "hand";
   input.t = input.timing.impact ?? input.timing.activeEnd;
   return sampleKungFuWrapPose(input, createKungFuWrapPoseSample());
 }
 
-describe("B14 kung-fu wrap full-body pose sampler", () => {
+describe("B23 kung-fu wrap full-body pose sampler", () => {
   it("gives every authored motion a distinct impact-frame body/hand/foot signature", () => {
     const signatures = new Set(
       MOTIONS.map((motion) => {
@@ -50,6 +57,40 @@ describe("B14 kung-fu wrap full-body pose sampler", () => {
     const roundhouse = impactSample("roundhouse-kick");
     expect(roundhouse.frontFootLift).toBeGreaterThan(0.25);
     expect(roundhouse.frontFootForward).toBeGreaterThan(0.6);
+  });
+
+  it("sweeps the roundhouse across a big lateral arc instead of posing a static kick", () => {
+    const input = createKungFuWrapPoseInput();
+    input.motion = "roundhouse-kick";
+    input.limb = "foot";
+    input.t = input.timing.activeStart;
+    const opening = { ...sampleKungFuWrapPose(input, createKungFuWrapPoseSample()) };
+    input.t = input.timing.impact ?? input.timing.activeEnd;
+    const impact = sampleKungFuWrapPose(input, createKungFuWrapPoseSample());
+
+    expect(opening.frontFootLateral).toBeLessThan(-0.35);
+    expect(impact.frontFootLateral).toBeGreaterThan(0.35);
+    expect(impact.bodyRotation).toBeGreaterThan(0.4);
+  });
+
+  it("drives the backflip head kick through the shared full-card tumble channel", () => {
+    const flip = impactSample("backflip-head-kick");
+    expect(flip.flipProgress).toBeGreaterThan(0.45);
+    expect(flip.flipProgress).toBeLessThan(0.75);
+    expect(flip.wholeBodyLift).toBeGreaterThan(0.4);
+    expect(flip.frontFootLift).toBeGreaterThan(0.35);
+    expect(flip.frontFootForward).toBeGreaterThan(0.8);
+  });
+
+  it("extends visible limb travel with the exact authored hit-envelope reach", () => {
+    const input = createKungFuWrapPoseInput();
+    input.motion = "chain-punch";
+    input.t = input.timing.impact ?? input.timing.activeEnd;
+    input.strikeReachBodyHeights = 1.05;
+    const close = { ...sampleKungFuWrapPose(input, createKungFuWrapPoseSample()) };
+    input.strikeReachBodyHeights = 1.8;
+    const long = sampleKungFuWrapPose(input, createKungFuWrapPoseSample());
+    expect(long.handForward).toBeGreaterThan(close.handForward + 0.35);
   });
 
   it("keeps Wing Chun precise while Drunken Fist sways and weaves", () => {
@@ -86,6 +127,8 @@ describe("B14 kung-fu wrap full-body pose sampler", () => {
       expect(Math.abs(output.bodyLateral), motion).toBe(0);
       expect(output.frontFootLift, motion).toBe(0);
       expect(output.footBlend, motion).toBe(0);
+      expect(output.wholeBodyLift, motion).toBe(0);
+      expect(output.flipProgress, motion).toBe(-1);
     }
   });
 });

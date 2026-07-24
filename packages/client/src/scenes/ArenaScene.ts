@@ -15393,7 +15393,13 @@ export class ArenaScene extends Phaser.Scene {
               (swing.comboStep ?? 0) + 1,
             )
           : { x, y };
-      const impact = target ?? { x: sx, y: sy };
+      const authoredReach = meleeReach(weapon) * (swing.comboPath?.rangeMultiplier ?? 1);
+      // Wrap trails state the complete server envelope even when generic aim prediction supplies a
+      // base-range target. Confirmed-contact impact VFX still lands on the actual receipt separately.
+      const impact = {
+        x: x + Math.cos(ang) * authoredReach,
+        y: y + Math.sin(ang) * authoredReach,
+      };
       spawnKungFuWrapSwing(
         this,
         weapon.id,

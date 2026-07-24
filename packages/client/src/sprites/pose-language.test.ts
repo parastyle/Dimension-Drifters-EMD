@@ -14,6 +14,7 @@ import {
   idleFootPoseFor,
   idleHandPoseFor,
   idleHandPoseResolutionFor,
+  martialIdleHandAngleFor,
   NAMED_WEAPON_STANCES,
   nextPoseShowroomOption,
   type PoseActionPhase,
@@ -176,6 +177,8 @@ describe("B17 semantic hand-role and five-pose laws", () => {
       "low-guard",
       "casting-gesture",
       "hip-rest",
+      "praying-mantis",
+      "crane-guard",
     ]);
     for (const def of Object.values(WEAPONS)) {
       const resolution = idleHandPoseResolutionFor(def);
@@ -185,6 +188,32 @@ describe("B17 semantic hand-role and five-pose laws", () => {
     expect(idleHandPoseFor(weapon("x2-saint-bough-frost-crozier"))).toBe("hip-rest");
     expect(idleHandPoseFor(weapon("x2-hellmouth-palmcaster"))).toBe("casting-gesture");
     expect(idleHandPoseFor(weapon("x-sword-neon-katana"))).toBe("mirror-guard");
+  });
+
+  it("holds recognizable praying-mantis hooks and a two-level crane guard", () => {
+    const common = { bodyX: 0, bodyY: 0, bodyHeight: 76, aimLocal: 0 };
+    const mantis = weapon("x2-wing-chun-wraps");
+    const mantisLead = resolveIdleHandTarget(
+      mantis,
+      { ...common, hand: 0 },
+      { x: 0, y: 0 },
+    );
+    const mantisOff = resolveIdleHandTarget(
+      mantis,
+      { ...common, hand: 1 },
+      { x: 0, y: 0 },
+    );
+    expect(mantisLead.y).toBeLessThan(mantisOff.y - 10);
+    expect(mantisLead.x).toBeGreaterThan(mantisOff.x + 10);
+    expect(martialIdleHandAngleFor(mantis, 0)).toBeGreaterThan(0.9);
+    expect(martialIdleHandAngleFor(mantis, 1)).toBeLessThan(-0.6);
+
+    const crane = weapon("x2-drunken-fist-wraps");
+    const craneLead = resolveIdleHandTarget(crane, { ...common, hand: 0 }, { x: 0, y: 0 });
+    const craneOff = resolveIdleHandTarget(crane, { ...common, hand: 1 }, { x: 0, y: 0 });
+    expect(craneLead.y).toBeLessThan(craneOff.y);
+    expect(martialIdleHandAngleFor(crane, 0)).toBeGreaterThan(0.5);
+    expect(martialIdleHandAngleFor(crane, 1)).toBeLessThan(-0.4);
   });
 
   it("keeps idle and terminal recovery continuous, finite, bounded, and facing-side after one mirror", () => {
@@ -281,7 +310,11 @@ describe("B17 neutral foot-profile laws", () => {
           const backY = 52 + backBias.y - Math.max(0, Math.sin(phase + Math.PI)) * 10 * gait;
           expect(frontX, `${pose}:${gait}:${phase}:uncrossed`).toBeGreaterThan(backX);
           expect(frontX - backX, `${pose}:${gait}:${phase}:width`).toBeGreaterThan(20);
-          expect(frontY, `${pose}:${gait}:${phase}:front-ground`).toBeGreaterThan(35);
+          if (pose === "crane-one-leg") {
+            expect(frontY, `${pose}:${gait}:${phase}:raised-front`).toBeLessThan(50);
+          } else {
+            expect(frontY, `${pose}:${gait}:${phase}:front-ground`).toBeGreaterThan(35);
+          }
           expect(backY, `${pose}:${gait}:${phase}:back-ground`).toBeGreaterThan(35);
           for (const facing of [-1, 1] as const) {
             expect(frontX * facing, `${pose}:${facing}:front-mirror`).toBe(
@@ -294,6 +327,15 @@ describe("B17 neutral foot-profile laws", () => {
         }
       }
     }
+  });
+
+  it("raises exactly one Drunken Fist leg in the crane idle profile", () => {
+    const def = weapon("x2-drunken-fist-wraps");
+    expect(idleFootPoseFor(def)).toBe("crane-one-leg");
+    const front = resolveFootPoseOffset("crane-one-leg", true, 0, 76, { x: 0, y: 0 });
+    const back = resolveFootPoseOffset("crane-one-leg", false, 0, 76, { x: 0, y: 0 });
+    expect(front.y).toBeLessThan(-35);
+    expect(back.y).toBeGreaterThan(0);
   });
 
   it("replaces the family profile with a named stance and keeps terminal recovery identical", () => {

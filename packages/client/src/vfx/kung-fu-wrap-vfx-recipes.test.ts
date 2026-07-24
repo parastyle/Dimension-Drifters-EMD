@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { KUNG_FU_WRAP_VFX_RECIPES, kungFuWrapBeatAudioCue } from "./kung-fu-wrap-vfx-recipes.js";
 
-describe("B19 kung-fu wrap beat accents", () => {
+describe("B23 kung-fu wrap beat accents", () => {
   it("keeps four distinct shipped visual recipes", () => {
     expect(
       new Set(Object.values(KUNG_FU_WRAP_VFX_RECIPES).map((recipe) => recipe.swing)).size,
@@ -9,6 +9,17 @@ describe("B19 kung-fu wrap beat accents", () => {
     expect(
       new Set(Object.values(KUNG_FU_WRAP_VFX_RECIPES).map((recipe) => recipe.impact)).size,
     ).toBe(4);
+  });
+
+  it("contains strike-local accents only, never player aura vocabulary", () => {
+    for (const [weaponId, recipe] of Object.entries(KUNG_FU_WRAP_VFX_RECIPES)) {
+      expect(`${recipe.swing} ${recipe.impact} ${recipe.signature}`, weaponId).not.toMatch(
+        /\b(?:aura|glow|halo)\b/i,
+      );
+    }
+    expect(KUNG_FU_WRAP_VFX_RECIPES["x2-muay-thai-wraps"]?.swing).toBe(
+      "crimson-roundhouse-arc",
+    );
   });
 
   it("routes every kick through a foot-weighted cue and preserves style hand accents", () => {

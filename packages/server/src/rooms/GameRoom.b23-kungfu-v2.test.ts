@@ -13,7 +13,7 @@ vi.mock("colyseus", () => {
   class Room {
     state: unknown;
     clients: { sessionId: string }[] = [];
-    roomId = "b19-kungfu-test";
+    roomId = "b23-kungfu-test";
     setState(state: unknown): void {
       this.state = state;
     }
@@ -65,7 +65,7 @@ function fixture(id: string) {
   return { room, player, combat };
 }
 
-describe("GameRoom B19 kung-fu displacement authority", () => {
+describe("GameRoom B23 kung-fu displacement authority", () => {
   it("resolves every authored beat from the shared combo bar and retires B14 forward drift", () => {
     const expected = {
       "x2-muay-thai-wraps": [
@@ -123,7 +123,7 @@ describe("GameRoom B19 kung-fu displacement authority", () => {
       const { room, player, combat } = fixture(id);
       const weapon = WEAPONS[id]!;
       const combo = meleeComboSelectionFor(weapon);
-      if (!combo) throw new Error(`Missing B19 combo ${id}`);
+      if (!combo) throw new Error(`Missing B23 combo ${id}`);
       player.weapon = id;
       combat.lastWeapon = id;
       const start = { x: player.x, y: player.y };

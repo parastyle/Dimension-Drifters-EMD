@@ -5,7 +5,7 @@ import { bootArena, runArenaSpec } from "../helpers/arena-harness.js";
 
 const EVIDENCE_DIR = path.resolve(
   import.meta.dirname,
-  "../../docs/owner-notes-audit-v10-evidence/b19-kungfu-rework",
+  "../../docs/owner-notes-audit-v11-evidence/b23-kungfu-v2",
 );
 const CHARACTER_ID = "proto-cowboy-hidden-face";
 const FORBIDDEN_PORTS = new Set([5180, 2567]);
@@ -13,29 +13,45 @@ const FACINGS = ["right", "left"] as const;
 const FIXTURES = [
   {
     id: "x2-muay-thai-wraps",
-    cooldownMs: 750,
-    swingStyle: "red-eight-limbs-aura",
+    cooldownMs: 400,
+    b19CooldownMs: 750,
+    swingStyle: "crimson-roundhouse-arc",
     impactStyle: "heavy-dust-cloud",
-    motions: ["teep-kick", "elbow", "elbow", "knee-strike", "spinning-back-elbow"],
-    limbs: ["foot", "hand", "hand", "foot", "hand"],
+    motions: ["teep-kick", "elbow", "elbow", "knee-strike", "roundhouse-kick"],
+    limbs: ["foot", "hand", "hand", "foot", "foot"],
+    expectedReachPx: [119.6, 108.56, 112.24, 117.76, 136.16],
+    showcaseMotion: "roundhouse-kick",
     displacementPx: 39,
   },
   {
     id: "x2-wing-chun-wraps",
-    cooldownMs: 200,
+    cooldownMs: 120,
+    b19CooldownMs: 200,
     swingStyle: "white-centerline-flash",
     impactStyle: "precise-white-flash",
     motions: ["chain-punch", "chain-punch", "chain-punch", "oblique-kick", "double-palm"],
     limbs: ["hand", "hand", "hand", "foot", "hand"],
+    expectedReachPx: [111.8, 115.24, 118.68, 120.4, 129],
+    stance: "praying-mantis",
     displacementPx: 26,
   },
   {
     id: "x2-drunken-fist-wraps",
-    cooldownMs: 500,
+    cooldownMs: 300,
+    b19CooldownMs: 500,
     swingStyle: "mist-purple-sway-sweep",
     impactStyle: "misty-purple-wide-sweep",
-    motions: ["sway-jab", "weave-cross", "weave-backfist", "sweeping-leg", "falling-haymaker"],
-    limbs: ["hand", "hand", "hand", "foot", "hand"],
+    motions: [
+      "sway-jab",
+      "weave-cross",
+      "weave-backfist",
+      "sweeping-leg",
+      "backflip-head-kick",
+    ],
+    limbs: ["hand", "hand", "hand", "foot", "foot"],
+    expectedReachPx: [113.28, 117.12, 120, 132.48, 144],
+    showcaseMotion: "backflip-head-kick",
+    stance: "crane",
     displacementPx:
       Math.hypot(3, 7) +
       Math.hypot(-3, -9) +
@@ -45,11 +61,13 @@ const FIXTURES = [
   },
   {
     id: "x2-iron-palm-wraps",
-    cooldownMs: 900,
+    cooldownMs: 550,
+    b19CooldownMs: 900,
     swingStyle: "black-iron-drive",
     impactStyle: "iron-sparks-shockwave",
     motions: ["crushing-palm", "stomp-kick", "windup-palm", "quake-double-palm"],
     limbs: ["hand", "foot", "hand", "hand"],
+    expectedReachPx: [115.2, 126.72, 119.04, 142.08],
     displacementPx: 36,
   },
 ] as const;
@@ -97,18 +115,27 @@ interface BrowserPlayer extends Point {
 
 interface BrowserImage {
   visible: boolean;
+  displayWidth: number;
+  displayHeight: number;
+  x: number;
+  y: number;
+  rotation: number;
   texture: { key: string };
   frame: { name: string | number };
 }
 
 interface BrowserWrapRig {
   facing: number;
-  root: { scaleX: number };
+  root: { scaleX: number; scaleY: number };
   weaponDef?: { id: string };
   weapons: { img: BrowserImage; partIndex: number }[];
   wrapFootWeapons: { img: BrowserImage; partIndex: number; foot: { front: boolean } }[];
   hands: { img: BrowserImage; front: boolean }[];
   feet: { img: BrowserImage; front: boolean }[];
+  auraGlow: { visible: boolean };
+  auraRing: { visible: boolean };
+  paintedAuraFill: { visible: boolean }[];
+  paintedAuraParticles: { visible: boolean }[];
 }
 
 interface BrowserArena {
@@ -172,6 +199,7 @@ interface BrowserGlobal {
   __ddB14ContactUnsubscribe?: () => void;
   __ddB19PositionAudit?: PositionSample[];
   __ddB19PositionTimer?: number;
+  __ddB23AuraAudit?: boolean[];
 }
 
 interface PositionSample extends Point {
@@ -192,6 +220,12 @@ interface RigAudit {
   footFrames: string[];
   facing: number;
   rootScaleX: number;
+  rootScaleY: number;
+  handScaleRatios: number[];
+  footScaleRatios: number[];
+  playerAuraVisible: boolean;
+  handPose: Array<{ front: boolean; x: number; y: number; rotation: number }>;
+  footPose: Array<{ front: boolean; x: number; y: number; rotation: number }>;
 }
 
 interface Capture {
@@ -205,6 +239,8 @@ interface Capture {
   swingStyle: string;
   impactStyle: string;
   intervalsMs: number[];
+  reachPx: number[];
+  expectedReachPx: readonly number[];
   limbs: string[];
   travel: {
     start: Point;
@@ -214,10 +250,13 @@ interface Capture {
     positionSamples: PositionSample[];
   };
   rig: RigAudit;
+  auraSamples: boolean[];
   contacts: Contact[];
   vfx: VfxEvent[];
   handScreenshot: string;
   footScreenshot: string;
+  stanceScreenshot: string;
+  showcaseScreenshot?: string;
 }
 
 function relativeEvidencePath(file: string): string {
@@ -241,6 +280,7 @@ async function prepare(page: Page): Promise<void> {
       if (event.sourcePlayerId === arena.room.sessionId) holder.__ddB14Contacts?.push({ ...event });
     });
     holder.__ddB19PositionAudit = [];
+    holder.__ddB23AuraAudit = [];
     if (holder.__ddB19PositionTimer) window.clearInterval(holder.__ddB19PositionTimer);
     holder.__ddB19PositionTimer = window.setInterval(() => {
       const self = arena.room.state.players.get(arena.room.sessionId);
@@ -251,6 +291,15 @@ async function prepare(page: Page): Promise<void> {
         y: self.y,
         timeMs: arena.time.now,
       });
+      const rig = arena.blobs.get(arena.room.sessionId);
+      if (rig) {
+        holder.__ddB23AuraAudit?.push(
+          rig.auraGlow.visible ||
+            rig.auraRing.visible ||
+            rig.paintedAuraFill.some((node) => node.visible) ||
+            rig.paintedAuraParticles.some((node) => node.visible),
+        );
+      }
     }, 16);
   });
 }
@@ -336,6 +385,11 @@ async function captureRigAudit(page: Page): Promise<RigAudit> {
     if (!rig) throw new Error("B19 live gate lost the local SpriteRig");
     const handOverlays = rig.weapons.filter((weapon) => weapon.partIndex === 0);
     const footOverlays = rig.wrapFootWeapons.filter((weapon) => weapon.partIndex === 1);
+    const screenMax = (image: BrowserImage) =>
+      Math.max(
+        image.displayWidth * Math.abs(rig.root.scaleX),
+        image.displayHeight * Math.abs(rig.root.scaleY),
+      );
     return {
       handOverlayCount: handOverlays.length,
       footOverlayCount: footOverlays.length,
@@ -353,6 +407,30 @@ async function captureRigAudit(page: Page): Promise<RigAudit> {
       ),
       facing: rig.facing,
       rootScaleX: rig.root.scaleX,
+      rootScaleY: rig.root.scaleY,
+      handScaleRatios: handOverlays.map(
+        (weapon, index) => screenMax(weapon.img) / screenMax(rig.hands[index]!.img),
+      ),
+      footScaleRatios: footOverlays.map(
+        (weapon, index) => screenMax(weapon.img) / screenMax(rig.feet[index]!.img),
+      ),
+      playerAuraVisible:
+        rig.auraGlow.visible ||
+        rig.auraRing.visible ||
+        rig.paintedAuraFill.some((node) => node.visible) ||
+        rig.paintedAuraParticles.some((node) => node.visible),
+      handPose: handOverlays.map((weapon, index) => ({
+        front: rig.hands[index]!.front,
+        x: weapon.img.x,
+        y: weapon.img.y,
+        rotation: weapon.img.rotation,
+      })),
+      footPose: footOverlays.map((weapon, index) => ({
+        front: rig.feet[index]!.front,
+        x: weapon.img.x,
+        y: weapon.img.y,
+        rotation: weapon.img.rotation,
+      })),
     };
   });
 }
@@ -378,7 +456,48 @@ async function waitForSwingLimb(
     .toBe(true);
 }
 
-test("B19 kung-fu wraps render 2+2 limbs and full displaced combos on both facings", async ({
+async function waitForSwingMotion(page: Page, weaponId: string, motion: string): Promise<void> {
+  await expect
+    .poll(
+      () =>
+        page.evaluate(
+          ({ weaponId, motion }) =>
+            ((globalThis as unknown as BrowserGlobal).__ddB14KungFuVfxAudit ?? []).some(
+              (event) =>
+                event.weaponId === weaponId && event.kind === "swing" && event.motion === motion,
+            ),
+          { weaponId, motion },
+        ),
+      { message: `${weaponId} should render showcase motion ${motion}`, timeout: 12_000 },
+    )
+    .toBe(true);
+}
+
+async function waitForMartialStance(
+  page: Page,
+  stance: "praying-mantis" | "crane",
+): Promise<void> {
+  await expect
+    .poll(
+      () =>
+        page.evaluate((expectedStance) => {
+          const arena = (globalThis as unknown as BrowserGlobal).ddGame.scene.getScene("arena");
+          const rotations =
+            arena.blobs.get(arena.room.sessionId)?.weapons.map(
+              (weapon) => weapon.img.rotation,
+            ) ?? [];
+          return (
+            rotations.length === 2 &&
+            rotations[0]! > (expectedStance === "praying-mantis" ? 0.8 : 0.4) &&
+            rotations[1]! < (expectedStance === "praying-mantis" ? -0.5 : -0.3)
+          );
+        }, stance),
+      { message: `${stance} idle rotations should own both wrapped hands`, timeout: 8_000 },
+    )
+    .toBe(true);
+}
+
+test("B23 kung-fu corrections are live on all four wraps and both facings", async ({
   page,
 }) => {
   test.setTimeout(240_000);
@@ -412,14 +531,21 @@ test("B19 kung-fu wraps render 2+2 limbs and full displaced combos on both facin
         expect(target.distance, `${fixture.id}/${facing}:combo runway`).toBeLessThanOrEqual(105);
         await aimAtTarget(page, facing);
         await page.waitForTimeout(1_300);
+        if ("stance" in fixture) await waitForMartialStance(page, fixture.stance);
         await page.evaluate(() => {
           const holder = globalThis as unknown as BrowserGlobal;
           holder.__ddB14KungFuVfxAudit = [];
           holder.__ddB14Contacts = [];
           holder.__ddB19PositionAudit = [];
+          holder.__ddB23AuraAudit = [];
         });
 
         const rig = await captureRigAudit(page);
+        const stanceScreenshotFile = path.join(
+          EVIDENCE_DIR,
+          `${fixture.id}-${facing}-stance.png`,
+        );
+        await page.locator("#game-root canvas").screenshot({ path: stanceScreenshotFile });
         const start = await page.evaluate(() => {
           const arena = (globalThis as unknown as BrowserGlobal).ddGame.scene.getScene("arena");
           const self = arena.room.state.players.get(arena.room.sessionId);
@@ -428,6 +554,10 @@ test("B19 kung-fu wraps render 2+2 limbs and full displaced combos on both facin
         });
         const handScreenshotFile = path.join(EVIDENCE_DIR, `${fixture.id}-${facing}-hand.png`);
         const footScreenshotFile = path.join(EVIDENCE_DIR, `${fixture.id}-${facing}-foot.png`);
+        const showcaseScreenshotFile =
+          "showcaseMotion" in fixture
+            ? path.join(EVIDENCE_DIR, `${fixture.id}-${facing}-${fixture.showcaseMotion}.png`)
+            : undefined;
         const attackSeqBefore = await beginAttacks(page);
         try {
           const limbOrder: ("hand" | "foot")[] =
@@ -437,6 +567,12 @@ test("B19 kung-fu wraps render 2+2 limbs and full displaced combos on both facin
             await page.locator("#game-root canvas").screenshot({
               path: limb === "hand" ? handScreenshotFile : footScreenshotFile,
             });
+          }
+          if ("showcaseMotion" in fixture && showcaseScreenshotFile) {
+            await waitForSwingMotion(page, fixture.id, fixture.showcaseMotion);
+            await page
+              .locator("#game-root canvas")
+              .screenshot({ path: showcaseScreenshotFile });
           }
           await expect
             .poll(
@@ -457,7 +593,7 @@ test("B19 kung-fu wraps render 2+2 limbs and full displaced combos on both facin
                   { weaponId: fixture.id, comboLength: fixture.motions.length },
                 ),
               {
-                message: `${fixture.id}/${facing} should render its full canonical B19 combo`,
+                message: `${fixture.id}/${facing} should render its full canonical B23 combo`,
                 timeout: 16_000,
                 intervals: [10, 15, 25],
               },
@@ -519,6 +655,19 @@ test("B19 kung-fu wraps render 2+2 limbs and full displaced combos on both facin
             );
             const travelStart = comboSamples[0] ?? start;
             const travelEnd = comboSamples.at(-1) ?? { x: self.x, y: self.y };
+            const reachPx = swings.map((event) => {
+              const source =
+                samples.reduce<PositionSample | undefined>(
+                  (closest, sample) =>
+                    !closest ||
+                    Math.abs(sample.timeMs - event.timeMs) <
+                      Math.abs(closest.timeMs - event.timeMs)
+                      ? sample
+                      : closest,
+                  undefined,
+                ) ?? { x: self.x, y: self.y, attackSeq: self.attackSeq, timeMs: arena.time.now };
+              return Math.hypot(event.x - source.x, event.y - source.y);
+            });
             return {
               weaponId,
               facing,
@@ -533,6 +682,7 @@ test("B19 kung-fu wraps render 2+2 limbs and full displaced combos on both facin
               intervalsMs: swings
                 .slice(1)
                 .map((event, index) => event.timeMs - (swings[index]?.timeMs ?? event.timeMs)),
+              reachPx,
               travel: {
                 start: { x: travelStart.x, y: travelStart.y },
                 end: { x: travelEnd.x, y: travelEnd.y },
@@ -542,6 +692,7 @@ test("B19 kung-fu wraps render 2+2 limbs and full displaced combos on both facin
               },
               contacts,
               vfx,
+              auraSamples: [...(holder.__ddB23AuraAudit ?? [])],
             };
           },
           {
@@ -556,9 +707,14 @@ test("B19 kung-fu wraps render 2+2 limbs and full displaced combos on both facin
         const capture: Capture = {
           ...measured,
           travel: { ...measured.travel, expectedPx: fixture.displacementPx },
+          expectedReachPx: fixture.expectedReachPx,
           rig,
           handScreenshot: relativeEvidencePath(handScreenshotFile),
           footScreenshot: relativeEvidencePath(footScreenshotFile),
+          stanceScreenshot: relativeEvidencePath(stanceScreenshotFile),
+          showcaseScreenshot: showcaseScreenshotFile
+            ? relativeEvidencePath(showcaseScreenshotFile)
+            : undefined,
         };
         expect(capture.attackSeqAfter - capture.attackSeqBefore).toBeGreaterThanOrEqual(
           fixture.motions.length,
@@ -570,10 +726,23 @@ test("B19 kung-fu wraps render 2+2 limbs and full displaced combos on both facin
         if (capture.impactStyle) expect(capture.impactStyle).toBe(fixture.impactStyle);
         expect(capture.intervalsMs).toHaveLength(fixture.motions.length - 1);
         for (const interval of capture.intervalsMs) {
+          expect(interval, `${fixture.id}/${facing}: cooldown floor`).toBeGreaterThanOrEqual(
+            fixture.cooldownMs - 20,
+          );
+          expect(interval, `${fixture.id}/${facing}: observed cadence ${interval}ms`).toBeLessThan(
+            fixture.cooldownMs + 175,
+          );
+          expect(interval, `${fixture.id}/${facing}: faster than B19`).toBeLessThan(
+            fixture.b19CooldownMs + 133,
+          );
+        }
+        expect(capture.reachPx).toHaveLength(fixture.expectedReachPx.length);
+        for (const [index, reach] of capture.reachPx.entries()) {
+          expect(reach, `${fixture.id}/${facing}:step ${index} extended reach`).toBeGreaterThan(105);
           expect(
-            Math.abs(interval - fixture.cooldownMs),
-            `${fixture.id}/${facing}: observed cadence ${interval}ms`,
-          ).toBeLessThanOrEqual(175);
+            Math.abs(reach - fixture.expectedReachPx[index]!),
+            `${fixture.id}/${facing}:step ${index} visible/authority reach`,
+          ).toBeLessThanOrEqual(18);
         }
         expect(capture.rig.handOverlayCount).toBe(2);
         expect(capture.rig.footOverlayCount).toBe(2);
@@ -586,8 +755,27 @@ test("B19 kung-fu wraps render 2+2 limbs and full displaced combos on both facin
         expect(new Set(capture.rig.handFrames).size).toBe(1);
         expect(new Set(capture.rig.footFrames).size).toBe(1);
         expect(capture.rig.handFrames[0]).not.toBe(capture.rig.footFrames[0]);
+        expect(Math.max(...capture.rig.handScaleRatios)).toBeLessThanOrEqual(1.2);
+        expect(Math.max(...capture.rig.footScaleRatios)).toBeLessThanOrEqual(1.15);
+        expect(capture.rig.playerAuraVisible).toBe(false);
+        expect(capture.auraSamples.length).toBeGreaterThan(10);
+        expect(capture.auraSamples).not.toContain(true);
         expect(capture.rig.facing).toBe(facing === "right" ? 1 : -1);
         expect(Math.sign(capture.rig.rootScaleX)).toBe(facing === "right" ? 1 : -1);
+        if ("stance" in fixture && fixture.stance === "praying-mantis") {
+          expect(capture.rig.handPose[0]!.y).toBeLessThan(capture.rig.handPose[1]!.y - 5);
+          expect(capture.rig.handPose[0]!.rotation).toBeGreaterThan(0.8);
+          expect(capture.rig.handPose[1]!.rotation).toBeLessThan(-0.5);
+        }
+        if ("stance" in fixture && fixture.stance === "crane") {
+          expect(capture.rig.handPose[0]!.y).toBeLessThan(capture.rig.handPose[1]!.y);
+          expect(capture.rig.handPose[0]!.rotation).toBeGreaterThan(0.4);
+          expect(capture.rig.handPose[1]!.rotation).toBeLessThan(-0.3);
+          expect(
+            Math.max(...capture.rig.footPose.map((foot) => foot.y)) -
+              Math.min(...capture.rig.footPose.map((foot) => foot.y)),
+          ).toBeGreaterThan(20);
+        }
         expect(capture.travel.positionSamples.length).toBeGreaterThanOrEqual(5);
         expect(capture.travel.distancePx).toBeGreaterThan(
           Math.min(8, fixture.displacementPx * 0.3),
@@ -641,6 +829,55 @@ test("B19 kung-fu wraps render 2+2 limbs and full displaced combos on both facin
           capture.handScreenshot.endsWith("-hand.png") &&
           capture.footScreenshot.endsWith("-foot.png"),
       ),
+      zeroPlayerAuras: captures.every(
+        (capture) =>
+          !capture.rig.playerAuraVisible && !capture.auraSamples.some((visible) => visible),
+      ),
+      receiverScaleWraps: captures.every(
+        (capture) =>
+          Math.max(...capture.rig.handScaleRatios) <= 1.2 &&
+          Math.max(...capture.rig.footScaleRatios) <= 1.15,
+      ),
+      extendedVisibleAuthorityReach: captures.every(
+        (capture) =>
+          capture.reachPx.length === capture.expectedReachPx.length &&
+          capture.reachPx.every(
+            (reach, index) =>
+              reach > 105 && Math.abs(reach - capture.expectedReachPx[index]!) <= 18,
+          ),
+      ),
+      roundhouseShowcase: captures
+        .filter((capture) => capture.weaponId === "x2-muay-thai-wraps")
+        .every(
+          (capture) =>
+            capture.motions.includes("roundhouse-kick") &&
+            capture.showcaseScreenshot?.endsWith("-roundhouse-kick.png"),
+        ),
+      backflipHeadKickShowcase: captures
+        .filter((capture) => capture.weaponId === "x2-drunken-fist-wraps")
+        .every(
+          (capture) =>
+            capture.motions.includes("backflip-head-kick") &&
+            capture.showcaseScreenshot?.endsWith("-backflip-head-kick.png"),
+        ),
+      prayingMantisStance: captures
+        .filter((capture) => capture.weaponId === "x2-wing-chun-wraps")
+        .every(
+          (capture) =>
+            capture.stanceScreenshot.endsWith("-stance.png") &&
+            capture.rig.handPose[0]!.y < capture.rig.handPose[1]!.y - 5 &&
+            capture.rig.handPose[0]!.rotation > 0.8 &&
+            capture.rig.handPose[1]!.rotation < -0.5,
+        ),
+      craneStance: captures
+        .filter((capture) => capture.weaponId === "x2-drunken-fist-wraps")
+        .every(
+          (capture) =>
+            capture.stanceScreenshot.endsWith("-stance.png") &&
+            Math.max(...capture.rig.footPose.map((foot) => foot.y)) -
+              Math.min(...capture.rig.footPose.map((foot) => foot.y)) >
+              20,
+        ),
       everyCaptureHasAuthoritativeTravel: captures.every(
         (capture) =>
           capture.travel.distancePx >= Math.min(8, capture.travel.expectedPx * 0.3) &&
@@ -650,6 +887,11 @@ test("B19 kung-fu wraps render 2+2 limbs and full displaced combos on both facin
         observedCadenceMs["x2-wing-chun-wraps"] < observedCadenceMs["x2-drunken-fist-wraps"] &&
         observedCadenceMs["x2-drunken-fist-wraps"] < observedCadenceMs["x2-muay-thai-wraps"] &&
         observedCadenceMs["x2-muay-thai-wraps"] < observedCadenceMs["x2-iron-palm-wraps"],
+      fasterThanB19Cadence: FIXTURES.every(
+        (fixture) =>
+          (observedCadenceMs[fixture.id] ?? Number.POSITIVE_INFINITY) <
+          fixture.b19CooldownMs + 133,
+      ),
       privatePorts: !FORBIDDEN_PORTS.has(clientPort) && !FORBIDDEN_PORTS.has(gamePort),
       wholeArtCharacter: CHARACTER_ID,
     };
@@ -682,8 +924,16 @@ test("B19 kung-fu wraps render 2+2 limbs and full displaced combos on both facin
       exactComboSignatures: true,
       everyCaptureHasTwoWrappedHandsAndFeet: true,
       everyCaptureHasPunchKickEvidence: true,
+      zeroPlayerAuras: true,
+      receiverScaleWraps: true,
+      extendedVisibleAuthorityReach: true,
+      roundhouseShowcase: true,
+      backflipHeadKickShowcase: true,
+      prayingMantisStance: true,
+      craneStance: true,
       everyCaptureHasAuthoritativeTravel: true,
       cadenceOrder: true,
+      fasterThanB19Cadence: true,
       privatePorts: true,
       wholeArtCharacter: CHARACTER_ID,
     });

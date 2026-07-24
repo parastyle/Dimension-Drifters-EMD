@@ -33,15 +33,15 @@ describe("W-CONVERT weapon contracts", () => {
   });
 
   it.each([
-    ["x2-coyote-trickster-s-sparkmitt", 0x33e6ff],
-    ["x2-sparkknuckle-hex-mitt", 0x33e6ff],
-  ] as const)("makes %s an unbindable held-combo glove pair", (weaponId, auraColor) => {
+    "x2-coyote-trickster-s-sparkmitt",
+    "x2-sparkknuckle-hex-mitt",
+  ] as const)("makes %s an unbindable held-combo glove pair without a player aura", (weaponId) => {
     const weapon = WEAPONS[weaponId];
     const other = WEAPONS["x2-cinderpalm-brand-glove"];
     if (!weapon || !other) throw new Error(`Missing glove fixture: ${weaponId}`);
 
     expect(weapon.tags).toMatchObject({ grip: "2H", delivery: "glove-pair", fireMode: "hold" });
-    expect(weapon.glovePair).toEqual({ auraColor, auraRadius: 48 });
+    expect(weapon.glovePair).toEqual({});
     expect(weapon.swingStyle).toBe("punch");
     expect(weapon.performance?.continuous).toBe(true);
     expect(weapon.gun).toBeUndefined();

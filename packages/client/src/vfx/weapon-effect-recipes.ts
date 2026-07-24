@@ -386,18 +386,8 @@ export interface WeaponAuraVfxRecipe {
   readonly spinHz: number;
 }
 
-/** Retained painted-aura recipes. Gameplay radii stay in shared weapon data; these only place Codex art. */
+/** Retained gameplay-field recipes. Cosmetic glove recipes are permanently forbidden from this table. */
 export const WEAPON_AURA_VFX_RECIPES = Object.freeze({
-  "x2-sparkknuckle-hex-mitt": Object.freeze({
-    weaponId: "x2-sparkknuckle-hex-mitt",
-    packs: Object.freeze(["shock-spark"]),
-    count: 4,
-    particleDominance: 0.3,
-    minParticlePx: 14,
-    maxParticlePx: 28,
-    extent: 0.58,
-    spinHz: 1.7,
-  }),
   "x2-fulgurite-storm-sphere": Object.freeze({
     weaponId: "x2-fulgurite-storm-sphere",
     packs: Object.freeze(["shock-spark", "shock-bolt"]),
@@ -429,16 +419,6 @@ export const WEAPON_AURA_VFX_RECIPES = Object.freeze({
     maxParticlePx: 52,
     extent: 1,
     spinHz: 0.72,
-  }),
-  "x2-coyote-trickster-s-sparkmitt": Object.freeze({
-    weaponId: "x2-coyote-trickster-s-sparkmitt",
-    packs: Object.freeze(["shock-spark"]),
-    count: 4,
-    particleDominance: 0.3,
-    minParticlePx: 14,
-    maxParticlePx: 28,
-    extent: 0.58,
-    spinHz: 1.7,
   }),
 } as const satisfies Record<string, WeaponAuraVfxRecipe>);
 
