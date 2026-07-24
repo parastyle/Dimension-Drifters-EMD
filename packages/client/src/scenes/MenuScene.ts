@@ -569,13 +569,6 @@ export class MenuScene extends Phaser.Scene {
       );
       return;
     }
-    // §40 BELT is shelved from the menu (user ruling: top-down is the primary mode) but stays reachable for
-    // dev/testing via `?belt=<levelId>` — auto-launches that belt level directly (the Dev Portal links use it).
-    const beltParam = new URLSearchParams(location.search).get("belt");
-    if (beltParam && beltParam !== "1") {
-      this.launchBelt(beltParam);
-      return;
-    }
     this.cameras.main.setBackgroundColor("#0f0c14");
     this.cameras.main.fadeIn(360, 0, 0, 0);
     // §19 v0.108 one AudioBus shared with ArenaScene via the registry. Resume its context on the first
@@ -583,6 +576,14 @@ export class MenuScene extends Phaser.Scene {
     this.audio = (this.game.registry.get("audio") as AudioBus | undefined) ?? new AudioBus();
     this.game.registry.set("audio", this.audio);
     this.metaAccount = loadPetMetaAccount();
+    // §40 BELT is shelved from the menu (user ruling: top-down is the primary mode) but stays reachable for
+    // dev/testing via `?belt=<levelId>` — auto-launches that belt level directly (the Dev Portal links use it).
+    // MUST run after the AudioBus + meta-account init above: launch() plays cues and reads the account.
+    const beltParam = new URLSearchParams(location.search).get("belt");
+    if (beltParam && beltParam !== "1") {
+      this.launchBelt(beltParam);
+      return;
+    }
     if (!isCharacterUnlocked(this.metaAccount, this.selectedCharacterId)) {
       this.selectedCharacterId = saveCharacterSelection(DEFAULT_CHARACTER).selectedCharacterId;
     }

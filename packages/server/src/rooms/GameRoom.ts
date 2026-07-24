@@ -100,7 +100,6 @@ import {
   clampBeltFloorY,
   clampParrySlideToNavigation,
   clampQuakeEpicenter,
-  classifyParryIncidence,
   clipPoiRayLength,
   comboStepForChain,
   committedMeleeEvaded,
