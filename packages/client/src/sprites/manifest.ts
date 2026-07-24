@@ -11012,6 +11012,42 @@ export const SPRITES = {
       }
     ]
   },
+  "x2-emberfist-wraps": {
+    "id": "x2-emberfist-wraps",
+    "kind": "weapon",
+    "canvas": {
+      "w": 576,
+      "h": 896
+    },
+    "body": {
+      "cx": 287.5,
+      "cy": 447,
+      "w": 492,
+      "h": 843
+    },
+    "parts": [
+      {
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 576,
+        "h": 896,
+        "cx": 287.5,
+        "cy": 447,
+        "ox": 0,
+        "oy": 0
+      },
+      {
+        "role": "part-2",
+        "file": "part-2.png",
+        "w": 576,
+        "h": 896,
+        "cx": 287.5,
+        "cy": 447,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
+  },
   "x2-emberleaf-chapbook": {
     "id": "x2-emberleaf-chapbook",
     "kind": "weapon",
@@ -17706,6 +17742,16 @@ export const SPRITES = {
         "h": 155,
         "cx": 143.7,
         "cy": 144.39,
+        "ox": 0,
+        "oy": 0
+      },
+      {
+        "role": "part-2",
+        "file": "part-2.png",
+        "w": 512,
+        "h": 310,
+        "cx": 255.5,
+        "cy": 154.5,
         "ox": 0,
         "oy": 0
       }

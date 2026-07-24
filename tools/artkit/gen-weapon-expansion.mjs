@@ -50,7 +50,7 @@ const SIZES = new Set(["S", "M", "L", "XL"]);
 const BANDS = new Set(["close", "mid", "long"]);
 const KINDS = new Set([
   "edge", "thrown", "quake", "chainLightning", "scatter", "gun", "beam", "groundZone",
-  "glovePair", "warp", "cast", "hybrid",
+  "glovePair", "warp", "cast", "hybrid", "chargedProjectile",
 ]);
 const SWING_STYLES = new Set(["arc", "orbit", "chop", "pivot", "thrust", "spin", "punch"]);
 const BULLET_KINDS = new Set([
@@ -85,6 +85,7 @@ const TOP_KEYS = new Set([
   "bespokeVfxSheet", "performance", "swingStyle", "effectRecipe", "effectEmitter", "effectTiming",
   "renderAboveHands", "suppressVfx", "suppressMeleeHitbox", "hitStatus", "gripPoints",
   "handlingTags", "breakAction", "poseLanguage", "impactMuzzle", "rapidThrust", "fireMode",
+  "strikeOverlayPart",
 ]);
 // The sibling-block bug (§43): mechanic stats authored NEXT TO `behavior` instead of inside it were
 // silently ignored, shipping 11 weapons with default kits. Now an instant failure.
@@ -113,8 +114,13 @@ const BEHAVIOR_KEYS = {
     "volley", "projectileWaveform", "explode"]),
   hybrid: new Set(["kind", "projectile"]),
   groundZone: new Set(["kind", "zone"]),
-  glovePair: new Set(["kind", "wrapsFeet"]),
+  glovePair: new Set(["kind", "wrapsFeet", "sharedCombo"]),
   warp: new Set(["kind", "burstRadius"]),
+  chargedProjectile: new Set([
+    "kind", "chargeSeconds", "speed", "range", "directDamageMin", "directDamageMax",
+    "explosionDamageMin", "explosionDamageMax", "explosionRadiusMin", "explosionRadiusMax",
+    "visualScaleMin", "visualScaleMax", "scaleExponent", "baseRadius", "sprite",
+  ]),
 };
 const EXPLODE_KEYS = new Set(["radius", "damage"]);
 const CAST_VOLLEY_KEYS = new Set(["count", "spread"]);
@@ -150,7 +156,7 @@ const EFFECT_RECIPES = new Set([
   "quarry-quad-spatter", "witherleaf-tip-spores", "snakeoil-tip-sparks",
   "gravechain-dominant-spin", "void-caster-explosion", "hexbloom-toxic-impact",
   "cinderbrand-magma-impact", "cinderchoke-fire-impact", "hollow-harvest-circle",
-  "abyssal-whirlwind-vortex",
+  "abyssal-whirlwind-vortex", "wyrmscale-fire-slash",
 ]);
 const STANCES = new Set([
   "hasso-no-kamae", "tachi-no-tori", "blade-forward-high-hilt", "near-ear-blade-up",
@@ -975,6 +981,8 @@ function mapWeapon(w) {
             ? "projectile"
             : isCast
               ? "projectile"
+            : kind === "chargedProjectile"
+              ? "projectile"
             : kind === "thrown"
               ? "thrown"
               : kind === "quake"
@@ -988,7 +996,7 @@ function mapWeapon(w) {
                     : "melee-arc",
       fireMode: w.fireMode !== undefined
         ? enumOf(w.fireMode, new Set(["auto", "semi-auto", "tap-charge", "hold"]), "fireMode")
-        : isGroundZone || isBeam || kind === "glovePair" ||
+        : isGroundZone || isBeam || kind === "glovePair" || kind === "chargedProjectile" ||
             (type === "melee" && w.performance?.continuous === true)
           ? "hold"
           : (isGun && !isSingleShotGun) || isCast
@@ -1090,6 +1098,13 @@ function mapWeapon(w) {
   if (w.renderAboveHands !== undefined) {
     if (typeof w.renderAboveHands !== "boolean") fail("renderAboveHands is not a boolean");
     else def.renderAboveHands = w.renderAboveHands;
+  }
+  if (w.strikeOverlayPart !== undefined) {
+    if (!Number.isInteger(w.strikeOverlayPart) || w.strikeOverlayPart < 2)
+      fail("strikeOverlayPart must be an integer sprite part >= 2");
+    else if (kind !== "glovePair")
+      fail("strikeOverlayPart requires behavior(glovePair)");
+    else def.strikeOverlayPart = w.strikeOverlayPart;
   }
   if (w.suppressVfx !== undefined) {
     if (typeof w.suppressVfx !== "boolean") fail("suppressVfx is not a boolean");
@@ -1324,6 +1339,62 @@ function mapWeapon(w) {
       if (typeof b.wrapsFeet !== "boolean") fail("behavior.wrapsFeet is not a boolean");
       else def.glovePair.wrapsFeet = b.wrapsFeet;
     }
+    if (b.sharedCombo !== undefined) {
+      if (typeof b.sharedCombo !== "boolean") fail("behavior.sharedCombo is not a boolean");
+      else def.glovePair.sharedCombo = b.sharedCombo;
+    }
+  } else if (kind === "chargedProjectile") {
+    const directDamageMin = num(
+      b.directDamageMin, 0.1, 120, 4, "behavior.directDamageMin",
+    );
+    const directDamageMax = num(
+      b.directDamageMax, directDamageMin, 160, 18, "behavior.directDamageMax",
+    );
+    const explosionDamageMin = num(
+      b.explosionDamageMin, 0, 120, 2, "behavior.explosionDamageMin",
+    );
+    const explosionDamageMax = num(
+      b.explosionDamageMax,
+      explosionDamageMin,
+      160,
+      22,
+      "behavior.explosionDamageMax",
+    );
+    const explosionRadiusMin = num(
+      b.explosionRadiusMin, 16, 100, 34, "behavior.explosionRadiusMin",
+    );
+    const explosionRadiusMax = num(
+      b.explosionRadiusMax,
+      explosionRadiusMin,
+      180,
+      100,
+      "behavior.explosionRadiusMax",
+    );
+    const visualScaleMin = num(
+      b.visualScaleMin, 0.25, 1, 0.55, "behavior.visualScaleMin",
+    );
+    const visualScaleMax = num(
+      b.visualScaleMax, visualScaleMin, 3, 1.5, "behavior.visualScaleMax",
+    );
+    if (typeof b.sprite !== "string" || !b.sprite) {
+      fail("behavior.sprite must be a non-empty installed texture path");
+    }
+    def.chargedProjectile = {
+      chargeSeconds: num(b.chargeSeconds, 0.3, 2.5, 1.2, "behavior.chargeSeconds"),
+      speed: num(b.speed, 240, 1400, 520, "behavior.speed"),
+      range: num(b.range, 180, 900, 420, "behavior.range"),
+      directDamageMin,
+      directDamageMax,
+      explosionDamageMin,
+      explosionDamageMax,
+      explosionRadiusMin,
+      explosionRadiusMax,
+      visualScaleMin,
+      visualScaleMax,
+      scaleExponent: num(b.scaleExponent, 1, 4, 2, "behavior.scaleExponent"),
+      baseRadius: num(b.baseRadius, 8, 64, 28, "behavior.baseRadius"),
+      sprite: typeof b.sprite === "string" ? b.sprite : "",
+    };
   } else if (kind === "warp") {
     def.warp = {
       burstRadius: num(b.burstRadius, 24, 100, 48, "behavior.burstRadius"),

@@ -220,6 +220,10 @@ export class PlayerState extends Schema {
   /** B26 packed successful-parry direction + 0..2 guard pose. APPENDED at schema v35. `parriedSeq` is the
    * receipt edge; this byte is its server-selected deterministic presentation payload. */
   @type("uint8") parryPresentation = 0;
+  /** B31 authoritative hold-to-charge presentation. The immutable start tick plus weapon definition
+   * reconstructs muzzle growth without trusting a client wall clock. APPENDED at schema v38. */
+  @type("boolean") weaponChargeActive = false;
+  @type("uint32") weaponChargeStartTick = 0;
   /** Direct accessor keeps the resource contract independent of the packed tail envelope.
    *  REFLECTION LAW (client): the room joins WITHOUT a root-schema constructor, so decoded client
    *  rows carry only wire fields — these compatibility getters exist ONLY on server-constructed
@@ -500,6 +504,8 @@ export class ProjectileState extends Schema {
   @type("uint16") flightTicks = 0;
   /** Server-advanced flight age; clients use this for ballistic and waveform phases. */
   @type("uint16") flightAgeTicks = 0;
+  /** B31 immutable release scale for a charged projectile; server collision uses this exact scalar. */
+  @type("number") visualScale = 1;
 }
 
 /** One stable, friendly player-beam presentation row. Damage stays private to the server; this is the

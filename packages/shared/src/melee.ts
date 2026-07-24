@@ -2097,7 +2097,7 @@ export function comboStepForAttackSeq(attackSeq: number, sequenceLength: number)
   return ((ordinal % length) + length) % length;
 }
 
-/** Grace after the accepted cadence edge. Theatrical root/pose combos retain their scroll through one
+/** Grace after the accepted cadence edge. Theatrical root/pose, wide-arc, or long-form combos retain their scroll through one
  * visibly held silhouette pause; ordinary combo families keep the legacy 120–300ms law unchanged. */
 export function meleeComboGraceMs(
   effectiveCooldownSeconds: number,
@@ -2105,9 +2105,14 @@ export function meleeComboGraceMs(
 ): number {
   const legacyMs =
     Math.min(0.3, Math.max(0.12, Math.max(0, effectiveCooldownSeconds) * 0.35)) * 1000;
-  const theatrical = sequence?.some(
-    (step) => step.rootMotion !== undefined || step.theatrics !== undefined,
-  );
+  const theatrical =
+    (sequence?.length ?? 0) >= 8 ||
+    sequence?.some(
+      (step) =>
+        step.rootMotion !== undefined ||
+        step.theatrics !== undefined ||
+        Math.max(Math.abs(step.path.deltaAngle ?? 0), Math.abs(step.path.arcMultiplier)) >= 1.5,
+    );
   return theatrical ? Math.max(450, legacyMs) : legacyMs;
 }
 

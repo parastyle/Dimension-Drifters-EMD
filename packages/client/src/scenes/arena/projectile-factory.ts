@@ -185,6 +185,19 @@ export function makeMagma(
   return c;
 }
 
+/** B31 recovered Emberleaf art. The replicated scale is also the server collision scale; no procedural
+ * glow/trail layer is added over the recovered fireball. */
+export function makeEmberleafFireball(
+  scene: Phaser.Scene,
+  pr: { x: number; y: number; visualScale: number },
+): Phaser.GameObjects.Container {
+  const scale = Math.max(0.01, pr.visualScale || 1);
+  const image = scene.add
+    .image(0, 0, "recovered:emberleaf-fireball")
+    .setDisplaySize(56 * scale, 56 * scale);
+  return scene.add.container(pr.x, pr.y, [image]).setDepth(99000);
+}
+
 /** §8 Counterblade parry projectile — a cyan blade-streak (velocity-aligned hot capsule + white core)
  *  so the parry's riposte reads distinct from gun bullets / enemy spit. */
 export function makeCounter(

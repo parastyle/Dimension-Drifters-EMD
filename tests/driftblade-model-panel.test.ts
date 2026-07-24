@@ -235,6 +235,7 @@ describe("driftblade-model panel", () => {
       "chop/sanctified-overhead-then-slash": ["x2-sanctified-headsman"],
       "chop/voltfang-rise": ["x2-voltfang-tachi"],
       "punch/drunken-fist-swaying-cup": ["x2-drunken-fist-wraps"],
+      "punch/emberfist-voltage-boxing": ["x2-emberfist-wraps"],
       "punch/iron-palm-forge-gate": ["x2-iron-palm-wraps"],
       "punch/muay-thai-eight-limbs": ["x2-muay-thai-wraps"],
       "punch/sparkknuckle-voltage-boxing": ["x2-sparkknuckle-hex-mitt"],
@@ -259,6 +260,7 @@ describe("driftblade-model panel", () => {
       "arc/thunderpost-storm-cadence": ["x2-thunderpost-fetish"],
       "punch/coyote-voltage-boxing": ["x2-coyote-trickster-s-sparkmitt"],
       "rake/frostfang-forward-rend": ["x2-frostfang-rakes"],
+      "rake/wyrmscale-inferno-talons": ["x2-wyrmscale-hex-talon"],
       "thrust/blightfork-jab": ["x2-blightfork-glaive"],
       "thrust/marrowpike-triple-stab": ["x2-marrowpike-ranseur"],
       "thrust/nullspike-three-thrust": ["x2-nullspike-pike"],
@@ -309,7 +311,7 @@ describe("driftblade-model panel", () => {
       "arc/default": 124,
       "chop/default": 8,
       "rake/dagger": 1,
-      "rake/claw": 4,
+      "rake/claw": 3,
     });
   });
 

@@ -1045,6 +1045,29 @@ export const WEAPON_ART_MUZZLES = {
     "salvoMode": "parallel",
     "barrelMode": "parallel"
   },
+  "x2-emberleaf-chapbook": {
+    "sprite": "x2-emberleaf-chapbook",
+    "parts": [
+      {
+        "width": 251,
+        "height": 256
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 330,
+        "y": 201,
+        "derived": {
+          "x": 250,
+          "y": 211.9
+        },
+        "overrideReason": "The charged fireball grows at the open chapbook fore-edge; the authoritative projectile releases from that same painted page edge."
+      }
+    ],
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
   "x2-embernail-repeater": {
     "sprite": "x2-embernail-repeater",
     "parts": [

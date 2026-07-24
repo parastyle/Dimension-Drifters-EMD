@@ -157,6 +157,7 @@ const ranged = Object.values(WEAPONS)
       weapon.gun ||
       weapon.beam ||
       weapon.cast ||
+      weapon.chargedProjectile ||
       weapon.hybridProjectile ||
       weapon.impactMuzzle ||
       weapon.firingFrame,

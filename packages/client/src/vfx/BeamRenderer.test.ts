@@ -4,11 +4,12 @@ vi.mock("phaser", () => ({ default: {} }));
 
 import {
   beamPaintFor,
-  beamRibbonStrands,
   beamVisualWidth,
+  recoveredBeamTileGeometry,
   seraphBeamCursorPose,
 } from "./BeamRenderer.js";
 import { BEAM_STRUCTURE_ART, beamStructureWorldBounds } from "./beam-structure-art.js";
+import { BEAM_VFX_RECIPES } from "./caster-vfx-recipes.js";
 
 describe("BeamRenderer presentation laws", () => {
   it("breathes strictly within the authoritative swept-band width at every heat state", () => {
@@ -40,16 +41,33 @@ describe("BeamRenderer presentation laws", () => {
     expect(seraphBeamCursorPose({ x: 10, y: 20 }, { x: 1010, y: 20 }, 640).length).toBe(640);
   });
 
-  it("keeps the unicorn's five colored ribbon strands broad and inside its damage band", () => {
-    const width = 64;
-    const strands = beamRibbonStrands(width, [1, 2, 3, 4, 5]);
-    expect(strands).toHaveLength(5);
-    expect(new Set(strands.map((strand) => strand.color)).size).toBe(5);
-    const paintedMin = Math.min(...strands.map((strand) => strand.offset - strand.width / 2));
-    const paintedMax = Math.max(...strands.map((strand) => strand.offset + strand.width / 2));
-    expect(paintedMin).toBeGreaterThanOrEqual(-width / 2);
-    expect(paintedMax).toBeLessThanOrEqual(width / 2);
-    expect(paintedMax - paintedMin).toBeGreaterThan(width * 0.8);
+  it("uses only the recovered Unicorn cel-band tile for its active beam", () => {
+    const recipe = BEAM_VFX_RECIPES["x2-unicorn-rainbow-beam"]!;
+    expect(recipe.signature).toBe("unicorn-recovered-cel-band-tile");
+    expect(recipe.tileArt).toEqual({
+      textureKey: "recovered:unicorn-rainbow-beam",
+      url: "sprites/vfx-unicorn-rainbow-beam/part-1.png",
+      nativeWidth: 1158,
+      nativeHeight: 362,
+    });
+    expect(recipe.structure).toBeUndefined();
+    expect(recipe.strandPalette).toBeUndefined();
+  });
+
+  it("tiles Unicorn art inside the authoritative beam rectangle under belt projection", () => {
+    expect(recoveredBeamTileGeometry(20, 30, 0, 520, 64, 10, 0.4)).toEqual({
+      x: 20,
+      y: 18,
+      angle: 0,
+      length: 520,
+      width: 25.6,
+    });
+    const vertical = recoveredBeamTileGeometry(20, 30, Math.PI / 2, 520, 64, 10, 0.4);
+    expect(vertical.x).toBe(20);
+    expect(vertical.y).toBe(18);
+    expect(vertical.angle).toBeCloseTo(Math.PI / 2);
+    expect(vertical.length).toBeCloseTo(208);
+    expect(vertical.width).toBeCloseTo(64);
   });
 
   it("fits every generated structure alpha bound inside authoritative width and range", () => {

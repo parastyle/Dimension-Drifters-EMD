@@ -42,7 +42,12 @@ describe("dagger/claw full-body attack routing", () => {
       const definition = weapon(id);
       expect(meleeComboSelectionFor(definition), id).toMatchObject({
         family: "rake",
-        variant: id === "x2-frostfang-rakes" ? "frostfang-forward-rend" : "claw",
+        variant:
+          id === "x2-frostfang-rakes"
+            ? "frostfang-forward-rend"
+            : id === "x2-wyrmscale-hex-talon"
+              ? "wyrmscale-inferno-talons"
+              : "claw",
       });
     }
     expect(isWornWeapon(weapon("x2-frostfang-rakes"))).toBe(false);
@@ -63,6 +68,8 @@ describe("dagger/claw full-body attack routing", () => {
       const expectedHands =
         id === "x2-frostfang-rakes"
           ? ["lead", "off", "both", "lead", "both"]
+          : id === "x2-wyrmscale-hex-talon"
+            ? ["lead", "off", "lead", "off"]
           : ["lead", "off", "both"];
       expect(
         selection?.sequence.map((step) => step.hand),

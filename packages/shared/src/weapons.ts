@@ -282,7 +282,8 @@ export type WeaponEffectRecipeId =
   | "void-caster-explosion"
   | "hexbloom-toxic-impact"
   | "cinderbrand-magma-impact"
-  | "cinderchoke-fire-impact";
+  | "cinderchoke-fire-impact"
+  | "wyrmscale-fire-slash";
 
 /** Named, reusable neutral guards. These are authored as pose-language vocabulary rather than id checks. */
 export type WeaponStanceId =
@@ -508,6 +509,71 @@ export interface RapidThrustDef {
   readonly damageMultiplier: number;
 }
 
+/** One authoritative hold/release projectile. The server owns the charge clock and snapshots every
+ * gameplay-bearing scalar into the projectile at release; clients only interpolate the synced clock. */
+export interface ChargedProjectileDef {
+  /** Seconds required to reach the authored maximum. Further holding clamps at full charge. */
+  chargeSeconds: number;
+  speed: number;
+  range: number;
+  directDamageMin: number;
+  directDamageMax: number;
+  explosionDamageMin: number;
+  explosionDamageMax: number;
+  explosionRadiusMin: number;
+  explosionRadiusMax: number;
+  /** Display/collision scale relative to `baseRadius`; this is replicated on the projectile row. */
+  visualScaleMin: number;
+  visualScaleMax: number;
+  /** Shared quadratic-style response control for damage and explosion radius. */
+  scaleExponent: number;
+  /** World radius at scale 1. The same value drives server collision and recovered-art display size. */
+  baseRadius: number;
+  /** Installed recovered presentation texture, preloaded by the client. */
+  sprite: string;
+}
+
+export interface ChargedProjectileSnapshot {
+  readonly fraction: number;
+  readonly directDamage: number;
+  readonly explosionDamage: number;
+  readonly explosionRadius: number;
+  readonly visualScale: number;
+}
+
+export function chargedProjectileFraction(
+  heldSeconds: number,
+  definition: Readonly<ChargedProjectileDef>,
+): number {
+  return Math.max(0, Math.min(1, heldSeconds / Math.max(0.001, definition.chargeSeconds)));
+}
+
+/** Snapshot the documented response curve once at release so later weapon swaps cannot mutate the shot. */
+export function chargedProjectileSnapshot(
+  definition: Readonly<ChargedProjectileDef>,
+  fraction: number,
+): ChargedProjectileSnapshot {
+  const q = Math.max(0, Math.min(1, fraction));
+  const powered = q ** definition.scaleExponent;
+  const lerp = (min: number, max: number, amount: number): number =>
+    min + (max - min) * amount;
+  return {
+    fraction: q,
+    directDamage: lerp(definition.directDamageMin, definition.directDamageMax, powered),
+    explosionDamage: lerp(
+      definition.explosionDamageMin,
+      definition.explosionDamageMax,
+      powered,
+    ),
+    explosionRadius: lerp(
+      definition.explosionRadiusMin,
+      definition.explosionRadiusMax,
+      powered,
+    ),
+    visualScale: lerp(definition.visualScaleMin, definition.visualScaleMax, q),
+  };
+}
+
 export interface WeaponDef {
   /** Matches the installed sprite id (texture key base = `${id}:part-1`). */
   id: string;
@@ -551,7 +617,11 @@ export interface WeaponDef {
   glovePair?: {
     /** Part 1 replaces both hands and part 2 replaces both feet. */
     wrapsFeet?: boolean;
+    /** Both striking hands advance one authored combo chain instead of maintaining legacy per-hand clocks. */
+    sharedCombo?: boolean;
   };
+  /** Same-registration sprite part composited over only the combo-selected striking hand at impact. */
+  strikeOverlayPart?: number;
   /** Cursor warp replaces the ordinary attack. The server validates and originates the move, then applies
    * one arrival burst using the weapon's normal damage/scaling. */
   warp?: {
@@ -722,6 +792,8 @@ export interface WeaponDef {
       damage: number;
     };
   };
+  /** Hold-to-charge caster projectile with a server-owned clock and release snapshot. */
+  chargedProjectile?: ChargedProjectileDef;
   /**
    * §38 CASTER delivery — the caster-class signature mechanic. RMB conjures a piercing ARCANE BOLT down aim
    * on a flat COOLDOWN (no magazine/reload, unlike a gun; ranged, unlike melee). The bolt tears through the
@@ -1207,7 +1279,12 @@ export function meleeReach(weapon: WeaponDef, renderScale = 1): number {
 
 /** One attack-beat cooldown before loot speed. An authored dual uses this one definition and affix. */
 export function weaponAttackCooldown(weapon: WeaponDef): number {
-  const base = weapon.gun?.fireRate ?? weapon.cast?.cooldown ?? weapon.cooldown;
+  const base =
+    weapon.gun?.fireRate ??
+    weapon.cast?.cooldown ??
+    (weapon.chargedProjectile
+      ? weapon.chargedProjectile.chargeSeconds + weapon.cooldown
+      : weapon.cooldown);
   return Math.max(0.001, base * (weapon.katanaHook?.recoveryMultiplier ?? 1));
 }
 

@@ -52,6 +52,18 @@ export function weaponTierPowerBudget(weapon: Readonly<WeaponDef>): number {
       beamCyclePower(weapon, BeamPowerCycle.FullOverheat),
     );
   }
+  if (weapon.chargedProjectile) {
+    const charged = weapon.chargedProjectile;
+    const fullPayload =
+      charged.directDamageMax +
+      charged.explosionDamageMax *
+        expectedAoeTargets(charged.explosionRadiusMax) *
+        0.55;
+    return (
+      (fullPayload / Math.max(0.05, charged.chargeSeconds + weapon.cooldown)) *
+      WEAPON_TIER_RANGE_FACTORS[weapon.tags.rangeBand]
+    );
+  }
 
   const katana = katanaExpectedMechanic(weapon);
   let directDamage =

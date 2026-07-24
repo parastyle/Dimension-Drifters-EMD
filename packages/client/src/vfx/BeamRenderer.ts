@@ -172,6 +172,7 @@ interface BeamEntry {
   renderOriginY: number;
   body: Phaser.GameObjects.Rope;
   lip: Phaser.GameObjects.Rope;
+  tile: Phaser.GameObjects.TileSprite;
   structure?: BeamStructureRenderTelemetry;
 }
 
@@ -261,6 +262,38 @@ export function beamVisualWidth(
   return Math.min(width, width * fraction);
 }
 
+export interface RecoveredBeamTileGeometry {
+  readonly x: number;
+  readonly y: number;
+  readonly angle: number;
+  readonly length: number;
+  readonly width: number;
+}
+
+/** Project one world-space beam rectangle onto the belt plane without changing its authoritative bounds. */
+export function recoveredBeamTileGeometry(
+  originX: number,
+  originY: number,
+  angle: number,
+  length: number,
+  width: number,
+  beltY0: number,
+  beltYScale: number,
+): RecoveredBeamTileGeometry {
+  const c = Math.cos(angle);
+  const s = Math.sin(angle);
+  const dx = c * Math.max(0, length);
+  const dy = s * Math.max(0, length) * beltYScale;
+  const normalScale = Math.hypot(s, c * beltYScale);
+  return {
+    x: originX,
+    y: beltY0 + (originY - beltY0) * beltYScale,
+    angle: Math.atan2(dy, dx),
+    length: Math.hypot(dx, dy),
+    width: Math.max(0, width) * normalScale,
+  };
+}
+
 function hashKey(value: string): number {
   let hash = 2166136261;
   for (let i = 0; i < value.length; i++) hash = Math.imul(hash ^ value.charCodeAt(i), 16777619);
@@ -286,6 +319,11 @@ export class BeamRenderer {
     for (let i = 0; i < FRIENDLY_BEAM_ENTITY_CAP + 1; i++) {
       const body = globalThis.VFXRENDER.makePerRope(scene) as Phaser.GameObjects.Rope;
       const lip = globalThis.VFXRENDER.makePerRope(scene) as Phaser.GameObjects.Rope;
+      const tile = scene.add
+        .tileSprite(0, 0, 1, 1, "recovered:unicorn-rainbow-beam")
+        .setOrigin(0, 0.5)
+        .setDepth(9993)
+        .setVisible(false);
       body.setDepth(9991);
       lip.setDepth(9992);
       this.entries.push({
@@ -314,6 +352,7 @@ export class BeamRenderer {
         renderOriginY: 0,
         body,
         lip,
+        tile,
       });
     }
   }
@@ -328,6 +367,7 @@ export class BeamRenderer {
     for (const entry of this.entries) {
       entry.body.destroy();
       entry.lip.destroy();
+      entry.tile.destroy();
     }
     this.entries.length = 0;
   }
@@ -382,6 +422,7 @@ export class BeamRenderer {
         entry.seen = true;
         entry.body.setVisible(false);
         entry.lip.setVisible(false);
+        entry.tile.setVisible(false);
         let originX = predicted.originX;
         let originY = predicted.originY;
         if (
@@ -416,6 +457,7 @@ export class BeamRenderer {
       entry.key = "";
       entry.body.setVisible(false);
       entry.lip.setVisible(false);
+      entry.tile.setVisible(false);
       entry.lastPhase = BeamPhase.Idle;
       entry.poseReady = false;
       entry.structure = undefined;
@@ -477,11 +519,13 @@ export class BeamRenderer {
       localCursorTarget,
     );
     const oy = this.projectY(pose.originY, beltY0, beltYScale);
+    const tileArt = recipe?.beam?.tileArt;
 
     if (row.phase === BeamPhase.Charging) {
       entry.structure = undefined;
       entry.body.setVisible(false);
       entry.lip.setVisible(false);
+      entry.tile.setVisible(false);
       this.drawCharge(
         pose.originX,
         oy,
@@ -500,6 +544,22 @@ export class BeamRenderer {
 
     if (row.phase === BeamPhase.Active && row.effectiveLength > 0 && row.width > 0) {
       const visualWidth = beamVisualWidth(row.width, nowMs, entry.seed, row.heat);
+      if (tileArt) {
+        entry.body.setVisible(false);
+        entry.lip.setVisible(false);
+        entry.structure = undefined;
+        this.drawRecoveredTile(
+          entry.tile,
+          pose,
+          visualWidth,
+          beltY0,
+          beltYScale,
+          tileArt.nativeHeight,
+          1,
+        );
+        return;
+      }
+      entry.tile.setVisible(false);
       this.drawSustain(entry, row, pose, color, visualWidth, nowMs, beltY0, beltYScale, recipe);
       this.drawPaint(
         entry,
@@ -539,20 +599,33 @@ export class BeamRenderer {
 
     entry.body.setVisible(false);
     entry.lip.setVisible(false);
+    entry.tile.setVisible(false);
     entry.structure = undefined;
     if (entry.releaseT > 0 && row.effectiveLength > 0 && row.width > 0) {
       const q = entry.releaseT / 0.08;
-      this.drawCapsule(
-        pose.originX,
-        pose.originY,
-        pose.angle,
-        pose.length * q,
-        row.width * 0.42,
-        color,
-        0.14 * q,
-        beltY0,
-        beltYScale,
-      );
+      if (tileArt) {
+        this.drawRecoveredTile(
+          entry.tile,
+          { ...pose, length: pose.length * q },
+          row.width,
+          beltY0,
+          beltYScale,
+          tileArt.nativeHeight,
+          q,
+        );
+      } else {
+        this.drawCapsule(
+          pose.originX,
+          pose.originY,
+          pose.angle,
+          pose.length * q,
+          row.width * 0.42,
+          color,
+          0.14 * q,
+          beltY0,
+          beltYScale,
+        );
+      }
     }
     const heatPulse = 0.65 + 0.35 * Math.sin(nowMs * 0.028 + entry.seed * Math.PI * 2);
     if (row.phase === BeamPhase.Overheated) {
@@ -583,6 +656,35 @@ export class BeamRenderer {
         .lineStyle(2, color, 0.25 + row.heat * 0.35)
         .strokeCircle(pose.originX, oy, 8 + row.heat * 8);
     }
+  }
+
+  /** Tile the recovered cel-band source uniformly along the active authoritative beam rectangle. */
+  private drawRecoveredTile(
+    tile: Phaser.GameObjects.TileSprite,
+    pose: BeamDrawPose,
+    visualWidth: number,
+    beltY0: number,
+    beltYScale: number,
+    nativeHeight: number,
+    alpha: number,
+  ): void {
+    const geometry = recoveredBeamTileGeometry(
+      pose.originX,
+      pose.originY,
+      pose.angle,
+      pose.length,
+      visualWidth,
+      beltY0,
+      beltYScale,
+    );
+    const scale = geometry.width / Math.max(1, nativeHeight);
+    tile
+      .setPosition(geometry.x, geometry.y)
+      .setRotation(geometry.angle)
+      .setSize(Math.max(1, geometry.length), Math.max(1, geometry.width))
+      .setTileScale(scale, scale)
+      .setAlpha(Math.max(0, Math.min(1, alpha)))
+      .setVisible(geometry.length > 0 && geometry.width > 0);
   }
 
   /**

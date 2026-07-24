@@ -90,6 +90,8 @@ import {
   CRIT_CHANCE_CAP,
   CRIT_MULT,
   characterScale,
+  chargedProjectileFraction,
+  chargedProjectileSnapshot,
   classifyParryIncidence,
   clamp,
   clampParrySlideToNavigation,
@@ -870,6 +872,10 @@ interface CombatState {
   gunBurstT: number;
   gunBurstWeaponId: string;
   gunBurstHand: WeaponHand;
+  /** B31 server-owned hold/release projectile clock. Only the immutable start tick is replicated. */
+  chargedProjectileInputWasHeld: boolean;
+  chargedProjectileWeaponId: string;
+  chargedProjectileStartTick: number;
   /** Remaining respawn countdown while dead, sec. */
   respawn: number;
   /** Remaining parry i-frames (negate contact damage), sec. */
@@ -1574,6 +1580,7 @@ export class GameRoom extends Room<ArenaState> {
         if (
           held &&
           (WEAPONS[held.weapon]?.beam ||
+            WEAPONS[held.weapon]?.chargedProjectile ||
             WEAPONS[held.weapon]?.groundZone?.trigger === "channel" ||
             WEAPONS[held.weapon]?.performance?.aura)
         )
@@ -3065,6 +3072,11 @@ export class GameRoom extends Room<ArenaState> {
     c.auraInputWasHeld = false;
     c.auraRequireRelease = false;
     c.auraPulseT = 0;
+    c.chargedProjectileInputWasHeld = false;
+    c.chargedProjectileWeaponId = "";
+    c.chargedProjectileStartTick = 0;
+    player.weaponChargeActive = false;
+    player.weaponChargeStartTick = 0;
     if (this.belt) {
       const slot = player.slots[player.activeSlot];
       if (slot && slot.weapon !== player.weapon) {
@@ -4296,6 +4308,9 @@ export class GameRoom extends Room<ArenaState> {
       gunBurstT: 0,
       gunBurstWeaponId: "",
       gunBurstHand: 0,
+      chargedProjectileInputWasHeld: false,
+      chargedProjectileWeaponId: "",
+      chargedProjectileStartTick: 0,
       respawn: 0,
       invuln: 0,
       parryCd: 0,
@@ -5743,6 +5758,18 @@ export class GameRoom extends Room<ArenaState> {
         this.stepPlayerBeam(player, id, c, weapon, dt, acting && c.stance !== STANCE_SLIDE);
         return;
       }
+      if (weapon?.chargedProjectile) {
+        c.attackBuffer = 0;
+        this.clearBeamRows(id);
+        this.stepPlayerChargedProjectile(
+          player,
+          id,
+          c,
+          weapon,
+          acting && c.stance !== STANCE_SLIDE,
+        );
+        return;
+      }
       const nonBeamHeld = this.beamHeld(id);
       if (!nonBeamHeld) c.drive.beamRequireRelease = false;
       c.beamInputWasHeld = nonBeamHeld;
@@ -5878,7 +5905,12 @@ export class GameRoom extends Room<ArenaState> {
           }
         }
       } else if (weapon && canAct) {
-        if (weapon.hybridProjectile || weapon.glovePair?.wrapsFeet === true) {
+        if (
+          weapon.hybridProjectile ||
+          weapon.glovePair?.wrapsFeet === true ||
+          weapon.comboVariant === "wyrmscale-inferno-talons" ||
+          weapon.strikeOverlayPart !== undefined
+        ) {
           this.resolveSingleWeaponAttack(player, c);
           return;
         }
@@ -7641,6 +7673,144 @@ export class GameRoom extends Room<ArenaState> {
     const input = this.inputs.get(id);
     if (!input?.held.fireHeld) return false;
     return (this.state.tick - input.lastFreshFireTick) >>> 0 < BEAM_STALE_INPUT_TICKS;
+  }
+
+  /** Hold starts one immutable server clock; release snapshots the curve into one real projectile. */
+  private stepPlayerChargedProjectile(
+    player: PlayerState,
+    id: string,
+    c: CombatState,
+    weapon: WeaponDef,
+    acting: boolean,
+  ): void {
+    const definition = weapon.chargedProjectile;
+    if (!definition) return;
+    const held = this.beamHeld(id);
+    const active =
+      player.weaponChargeActive && c.chargedProjectileWeaponId === weapon.id;
+
+    if (!acting) {
+      c.chargedProjectileInputWasHeld = held;
+      c.chargedProjectileWeaponId = "";
+      c.chargedProjectileStartTick = 0;
+      player.weaponChargeActive = false;
+      player.weaponChargeStartTick = 0;
+      return;
+    }
+
+    if (!active && held && c.cd <= 0 && c.drawLock <= 0) {
+      c.chargedProjectileWeaponId = weapon.id;
+      c.chargedProjectileStartTick = this.state.tick;
+      player.weaponChargeActive = true;
+      player.weaponChargeStartTick = this.state.tick;
+      c.chargedProjectileInputWasHeld = true;
+      return;
+    }
+
+    if (active && held) {
+      c.chargedProjectileInputWasHeld = true;
+      return;
+    }
+
+    // A stale heartbeat is not a release edge. Keep the immutable charge clock alive while the last
+    // accepted command still says "held"; only an accepted false command may launch the projectile.
+    // This prevents a brief renderer/network stall from manufacturing a shot at an unintended size.
+    if (active && this.inputs.get(id)?.held.fireHeld === true) {
+      c.chargedProjectileInputWasHeld = true;
+      return;
+    }
+
+    if (active && !held) {
+      const heldSeconds =
+        (((this.state.tick - c.chargedProjectileStartTick) >>> 0) * TICK_MS) / 1000;
+      const fraction = chargedProjectileFraction(heldSeconds, definition);
+      const cooldown =
+        weapon.cooldown *
+        lootCooldownMult(player.weaponAffix) *
+        this.weaponRecoveryMult(player, weapon);
+      const interval = definition.chargeSeconds + cooldown;
+      const instanceId = player.slots[player.activeSlot]?.instanceId || weapon.id;
+      const spend = this.trySpendWeaponResource(
+        player,
+        c,
+        weapon,
+        instanceId,
+        CombatDelivery.Cast,
+        0,
+        interval,
+        1,
+        0,
+        "tap",
+      );
+      if (spend.accepted) {
+        this.stampAttackBeat(player);
+        this.fireChargedProjectile(player, c, weapon, fraction);
+        c.cd = cooldown;
+      }
+      c.chargedProjectileWeaponId = "";
+      c.chargedProjectileStartTick = 0;
+      player.weaponChargeActive = false;
+      player.weaponChargeStartTick = 0;
+    }
+    c.chargedProjectileInputWasHeld = held;
+  }
+
+  private fireChargedProjectile(
+    player: PlayerState,
+    c: CombatState,
+    weapon: WeaponDef,
+    fraction: number,
+  ): void {
+    const definition = weapon.chargedProjectile;
+    if (!definition) return;
+    const release = chargedProjectileSnapshot(definition, fraction);
+    const aim = this.aimDir(player, c);
+    const source = weapon.muzzle
+      ? weaponMuzzleWorldPoint(
+          weapon,
+          {
+            x: player.x,
+            y: player.y,
+            aimX: aim.x,
+            aimY: aim.y,
+            facing: aim.x < 0 ? -1 : 1,
+            renderScale: characterScale(player.character),
+          },
+          player.attackSeq,
+        )
+      : {
+          x: player.x + aim.x * weapon.displayLength * 0.5,
+          y: player.y + aim.y * weapon.displayLength * 0.5,
+        };
+    const damageMultiplier = this.heldDamageMult(weapon, player);
+    const radius = definition.baseRadius * release.visualScale;
+    this.fireProjectile(
+      source,
+      { x: source.x + aim.x, y: source.y + aim.y },
+      definition.speed,
+      release.directDamage * damageMultiplier,
+      false,
+      "emberleaf-fireball",
+      1,
+      definition.range / definition.speed,
+      {
+        radius: release.explosionRadius,
+        damage: release.explosionDamage * damageMultiplier,
+      },
+      0,
+      this.weaponCritChance(player, c),
+      player.id,
+      weapon.id,
+      CombatDelivery.Cast,
+      { x: player.x, y: player.y },
+      undefined,
+      undefined,
+      undefined,
+      0,
+      undefined,
+      { shape: "capsule", radius, halfLength: 0 },
+      release.visualScale,
+    );
   }
 
   /** Server-authoritative character-centered aura. Drive pays the authored net drain every fixed step;
@@ -10189,6 +10359,7 @@ export class GameRoom extends Room<ArenaState> {
     arcHeight = 0,
     returnAfterSeconds?: number,
     damageEnvelope?: ProjectileDamageEnvelope,
+    visualScale = 1,
   ): void {
     // §16 the documented budget is ARENA-wide: reject generic spitters here too. Friendly player fire is
     // and friendly rows each have an explicit ceiling; a reflected hostile shot changes sides and frees
@@ -10217,6 +10388,7 @@ export class GameRoom extends Room<ArenaState> {
     pr.explodeR = explode?.radius ?? 0; // §14 WYSIWYG: client renders a blast of exactly this radius
     pr.arcHeight = Math.max(0, arcHeight);
     pr.flightTicks = Math.min(0xffff, ticksFromSeconds(ttl));
+    pr.visualScale = Math.max(0.01, visualScale);
     this.state.projectiles.set(pr.id, pr);
     this.projectileMeta.set(pr.id, {
       ttl,

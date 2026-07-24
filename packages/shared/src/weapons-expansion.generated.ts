@@ -9030,8 +9030,8 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
     "tags": {
       "grip": "1H",
       "size": "S",
-      "delivery": "melee-arc",
-      "fireMode": "tap-charge",
+      "delivery": "projectile",
+      "fireMode": "hold",
       "element": "fire",
       "classPool": "caster",
       "family": "chapbook",
@@ -9046,16 +9046,21 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "continuous": true,
       "suppressSwing": true
     },
-    "scatter": {
-      "count": 4,
-      "spread": 0.42,
-      "speed": 440,
-      "range": 250,
-      "damage": 4,
-      "explode": {
-        "radius": 44,
-        "damage": 4
-      }
+    "chargedProjectile": {
+      "chargeSeconds": 1.2,
+      "speed": 520,
+      "range": 420,
+      "directDamageMin": 3,
+      "directDamageMax": 18,
+      "explosionDamageMin": 2,
+      "explosionDamageMax": 22,
+      "explosionRadiusMin": 34,
+      "explosionRadiusMax": 100,
+      "visualScaleMin": 0.55,
+      "visualScaleMax": 1.5,
+      "scaleExponent": 2,
+      "baseRadius": 28,
+      "sprite": "sprites/vfx-emberleaf-fireball/part-1.png"
     }
   },
   "x2-ledger-of-spent-souls": {
@@ -12178,38 +12183,42 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
     "id": "x2-wyrmscale-hex-talon",
     "name": "Wyrmscale Hex-Talon",
     "expansion": true,
-    "damage": 5,
+    "damage": 11,
     "range": 195,
-    "halfArc": 0.55,
+    "halfArc": 1.2,
     "cooldown": 0.46,
     "displayLength": 92,
-    "swingArc": 2.5,
+    "swingArc": 3.4,
     "gripFrac": 0.12,
     "tags": {
-      "grip": "1H",
+      "grip": "dual",
       "size": "M",
       "delivery": "melee-arc",
-      "fireMode": "tap-charge",
+      "fireMode": "hold",
       "element": "fire",
-      "classPool": "caster",
-      "family": "gauntlet",
+      "classPool": "melee",
+      "family": "fist-blade",
       "rangeBand": "mid",
       "scaling": [
         "INT",
         "DEX"
       ]
     },
-    "scatter": {
-      "count": 5,
-      "spread": 0.4,
-      "speed": 400,
-      "range": 220,
-      "damage": 5,
-      "explode": {
-        "radius": 56,
-        "damage": 6
-      }
-    }
+    "authoritativeCombo": true,
+    "swingStyle": "pivot",
+    "comboFamily": "rake",
+    "comboVariant": "wyrmscale-inferno-talons",
+    "effectRecipe": "wyrmscale-fire-slash",
+    "effectEmitter": "blade",
+    "effectTiming": "impact",
+    "performance": {
+      "hold": "steady",
+      "action": "default-swing",
+      "continuous": true,
+      "vfxAt": "impact"
+    },
+    "dual": true,
+    "durability": 75
   },
   "x2-glasswidow-hexweave": {
     "id": "x2-glasswidow-hexweave",
@@ -12380,6 +12389,53 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
     },
     "twoHanded": true,
     "glovePair": {}
+  },
+  "x2-emberfist-wraps": {
+    "id": "x2-emberfist-wraps",
+    "name": "Emberfist Wraps",
+    "expansion": true,
+    "damage": 2.4,
+    "range": 150,
+    "halfArc": 0.5,
+    "cooldown": 0.12,
+    "displayLength": 56,
+    "swingArc": 2.2,
+    "gripFrac": 0.15,
+    "tags": {
+      "grip": "2H",
+      "size": "S",
+      "delivery": "glove-pair",
+      "fireMode": "hold",
+      "element": "fire",
+      "classPool": "melee",
+      "family": "wraps",
+      "rangeBand": "close",
+      "scaling": [
+        "STR",
+        "DEX"
+      ]
+    },
+    "description": "A matched pair of black fighting wraps whose fitted flame sheaths flash over only the striking fist at each punch impact.",
+    "authoritativeCombo": true,
+    "swingStyle": "punch",
+    "comboFamily": "punch",
+    "comboVariant": "emberfist-voltage-boxing",
+    "strikeOverlayPart": 2,
+    "suppressVfx": true,
+    "performance": {
+      "hold": "steady",
+      "action": "default-swing",
+      "continuous": true,
+      "forwardDrift": {
+        "speedPxPerSecond": 48,
+        "durationSeconds": 0.12
+      }
+    },
+    "twoHanded": true,
+    "durability": 90,
+    "glovePair": {
+      "sharedCombo": true
+    }
   },
   "x2-permafrost-cryo-bracer": {
     "id": "x2-permafrost-cryo-bracer",
@@ -15881,6 +15937,112 @@ export const GENERATED_MELEE_COMBO_BARS = {
       }
     }
   ],
+  "wyrmscale-inferno-talons": [
+    {
+      "name": "lead inferno upsweep",
+      "motion": "rake",
+      "direction": 1,
+      "hand": "lead",
+      "timing": {
+        "activeStart": 0.1,
+        "activeEnd": 0.55,
+        "impact": 0.46,
+        "followEnd": 0.72
+      },
+      "path": {
+        "kind": "sweep",
+        "arcMultiplier": 1.55,
+        "rangeMultiplier": 1.15,
+        "damageMultiplier": 1,
+        "knockback": 6
+      },
+      "ribbon": {
+        "profile": "outer-crescent",
+        "radialStart": 0.3,
+        "radialEnd": 1,
+        "widthMultiplier": 1.35,
+        "end": "hooked"
+      }
+    },
+    {
+      "name": "off-hand dragon fall",
+      "motion": "rake",
+      "direction": -1,
+      "hand": "off",
+      "timing": {
+        "activeStart": 0.1,
+        "activeEnd": 0.56,
+        "impact": 0.47,
+        "followEnd": 0.73
+      },
+      "path": {
+        "kind": "sweep",
+        "arcMultiplier": -1.65,
+        "rangeMultiplier": 1.18,
+        "damageMultiplier": 1,
+        "knockback": 6
+      },
+      "ribbon": {
+        "profile": "reverse-hairpin",
+        "radialStart": 0.28,
+        "radialEnd": 1,
+        "widthMultiplier": 1.4,
+        "end": "hooked"
+      }
+    },
+    {
+      "name": "lead wyrmwing cross-rake",
+      "motion": "scissor",
+      "direction": -1,
+      "hand": "lead",
+      "timing": {
+        "activeStart": 0.09,
+        "activeEnd": 0.54,
+        "impact": 0.44,
+        "followEnd": 0.71
+      },
+      "path": {
+        "kind": "sweep",
+        "arcMultiplier": -1.6,
+        "rangeMultiplier": 1.2,
+        "damageMultiplier": 1,
+        "knockback": 7
+      },
+      "ribbon": {
+        "profile": "open-c",
+        "radialStart": 0.25,
+        "radialEnd": 1,
+        "widthMultiplier": 1.45,
+        "end": "torn"
+      }
+    },
+    {
+      "name": "off-hand furnace grand-swing",
+      "motion": "slash",
+      "direction": 1,
+      "hand": "off",
+      "timing": {
+        "activeStart": 0.11,
+        "activeEnd": 0.58,
+        "impact": 0.49,
+        "followEnd": 0.76
+      },
+      "path": {
+        "kind": "sweep",
+        "arcMultiplier": 1.72,
+        "rangeMultiplier": 1.22,
+        "damageMultiplier": 1,
+        "knockback": 8
+      },
+      "ribbon": {
+        "profile": "heavy-sickle",
+        "radialStart": 0.24,
+        "radialEnd": 1,
+        "widthMultiplier": 1.5,
+        "end": "torn"
+      }
+    }
+  ],
   "coyote-voltage-boxing": [
     {
       "name": "lead rising hook",
@@ -16017,6 +16179,160 @@ export const GENERATED_MELEE_COMBO_BARS = {
     },
     {
       "name": "monk flurry thunder finish",
+      "motion": "haymaker",
+      "direction": -1,
+      "hand": "off",
+      "timing": {
+        "activeStart": 0.1,
+        "activeEnd": 0.34,
+        "impact": 0.26,
+        "followEnd": 0.46
+      },
+      "path": {
+        "kind": "sweep",
+        "arcMultiplier": -1,
+        "rangeMultiplier": 1,
+        "damageMultiplier": 1,
+        "knockback": 8
+      }
+    }
+  ],
+  "emberfist-voltage-boxing": [
+    {
+      "name": "lead rising ember hook",
+      "motion": "hook",
+      "direction": 1,
+      "hand": "lead",
+      "timing": {
+        "activeStart": 0.16,
+        "activeEnd": 0.43,
+        "impact": 0.4,
+        "followEnd": 0.57
+      },
+      "path": {
+        "kind": "sweep",
+        "arcMultiplier": 1,
+        "rangeMultiplier": 1,
+        "damageMultiplier": 1,
+        "knockback": 0
+      }
+    },
+    {
+      "name": "rear ember cross",
+      "motion": "cross",
+      "direction": -1,
+      "hand": "off",
+      "timing": {
+        "activeStart": 0.13,
+        "activeEnd": 0.39,
+        "impact": 0.36,
+        "followEnd": 0.54
+      },
+      "path": {
+        "kind": "capsule",
+        "arcMultiplier": 0,
+        "rangeMultiplier": 1,
+        "damageMultiplier": 1,
+        "knockback": 0
+      }
+    },
+    {
+      "name": "off-side body ember hook",
+      "motion": "hook",
+      "direction": -1,
+      "hand": "lead",
+      "timing": {
+        "activeStart": 0.18,
+        "activeEnd": 0.46,
+        "impact": 0.43,
+        "followEnd": 0.59
+      },
+      "path": {
+        "kind": "sweep",
+        "arcMultiplier": -1,
+        "rangeMultiplier": 1,
+        "damageMultiplier": 1,
+        "knockback": 0
+      }
+    },
+    {
+      "name": "furnace cross finisher",
+      "motion": "cross",
+      "direction": 1,
+      "hand": "off",
+      "timing": {
+        "activeStart": 0.2,
+        "activeEnd": 0.5,
+        "impact": 0.46,
+        "followEnd": 0.68
+      },
+      "path": {
+        "kind": "capsule",
+        "arcMultiplier": 0,
+        "rangeMultiplier": 1,
+        "damageMultiplier": 1,
+        "knockback": 0
+      }
+    },
+    {
+      "name": "flash jab five",
+      "motion": "jab",
+      "direction": 1,
+      "hand": "lead",
+      "timing": {
+        "activeStart": 0.08,
+        "activeEnd": 0.3,
+        "impact": 0.22,
+        "followEnd": 0.42
+      },
+      "path": {
+        "kind": "capsule",
+        "arcMultiplier": 0,
+        "rangeMultiplier": 1,
+        "damageMultiplier": 1,
+        "knockback": 0
+      }
+    },
+    {
+      "name": "flash cross six",
+      "motion": "cross",
+      "direction": -1,
+      "hand": "off",
+      "timing": {
+        "activeStart": 0.08,
+        "activeEnd": 0.3,
+        "impact": 0.22,
+        "followEnd": 0.42
+      },
+      "path": {
+        "kind": "capsule",
+        "arcMultiplier": 0,
+        "rangeMultiplier": 1,
+        "damageMultiplier": 1,
+        "knockback": 0
+      }
+    },
+    {
+      "name": "wheel hook seven",
+      "motion": "hook",
+      "direction": 1,
+      "hand": "lead",
+      "timing": {
+        "activeStart": 0.09,
+        "activeEnd": 0.32,
+        "impact": 0.24,
+        "followEnd": 0.44
+      },
+      "path": {
+        "kind": "sweep",
+        "arcMultiplier": 1,
+        "rangeMultiplier": 1,
+        "damageMultiplier": 1,
+        "knockback": 0
+      }
+    },
+    {
+      "name": "emberfist flurry finish",
       "motion": "haymaker",
       "direction": -1,
       "hand": "off",

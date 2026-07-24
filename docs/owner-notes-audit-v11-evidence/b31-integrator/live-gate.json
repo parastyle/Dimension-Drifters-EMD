@@ -1,0 +1,683 @@
+{
+  "verdict": "pass",
+  "capturedAt": "2026-07-24T20:19:28.647Z",
+  "character": "proto-cowboy-hidden-face",
+  "privatePorts": {
+    "clientPort": 65530,
+    "gamePort": 65529,
+    "forbiddenDefaultPortsAvoided": true
+  },
+  "facings": [
+    "right",
+    "left"
+  ],
+  "emberleaf": [
+    {
+      "facing": "right",
+      "charge": "tap",
+      "chargeTicks": 4,
+      "muzzleDisplayWidth": 30.8,
+      "projectile": {
+        "id": "p0",
+        "visualScale": 0.7479166388511658,
+        "explodeR": 36.86458206176758,
+        "renderedWidth": 41.88333177566528,
+        "observedOnWire": true
+      },
+      "screenshots": {
+        "charge": "docs/owner-notes-audit-v11-evidence/b31-integrator/x2-emberleaf-chapbook-right-tap-charge.png",
+        "projectile": "docs/owner-notes-audit-v11-evidence/b31-integrator/x2-emberleaf-chapbook-right-tap-projectile.png",
+        "explosion": "docs/owner-notes-audit-v11-evidence/b31-integrator/x2-emberleaf-chapbook-right-tap-explosion.png"
+      }
+    },
+    {
+      "facing": "right",
+      "charge": "full",
+      "chargeTicks": 25,
+      "muzzleDisplayWidth": 84,
+      "projectile": {
+        "id": "",
+        "visualScale": 1.5,
+        "explodeR": 100,
+        "renderedWidth": 84,
+        "observedOnWire": false
+      },
+      "screenshots": {
+        "charge": "docs/owner-notes-audit-v11-evidence/b31-integrator/x2-emberleaf-chapbook-right-full-charge.png",
+        "projectile": "docs/owner-notes-audit-v11-evidence/b31-integrator/x2-emberleaf-chapbook-right-full-projectile.png",
+        "explosion": "docs/owner-notes-audit-v11-evidence/b31-integrator/x2-emberleaf-chapbook-right-full-explosion.png"
+      }
+    },
+    {
+      "facing": "left",
+      "charge": "tap",
+      "chargeTicks": 3,
+      "muzzleDisplayWidth": 30.8,
+      "projectile": {
+        "id": "p0",
+        "visualScale": 0.7083333134651184,
+        "explodeR": 35.83333206176758,
+        "renderedWidth": 39.66666555404663,
+        "observedOnWire": true
+      },
+      "screenshots": {
+        "charge": "docs/owner-notes-audit-v11-evidence/b31-integrator/x2-emberleaf-chapbook-left-tap-charge.png",
+        "projectile": "docs/owner-notes-audit-v11-evidence/b31-integrator/x2-emberleaf-chapbook-left-tap-projectile.png",
+        "explosion": "docs/owner-notes-audit-v11-evidence/b31-integrator/x2-emberleaf-chapbook-left-tap-explosion.png"
+      }
+    },
+    {
+      "facing": "left",
+      "charge": "full",
+      "chargeTicks": 27,
+      "muzzleDisplayWidth": 84,
+      "projectile": {
+        "id": "",
+        "visualScale": 1.5,
+        "explodeR": 100,
+        "renderedWidth": 84,
+        "observedOnWire": false
+      },
+      "screenshots": {
+        "charge": "docs/owner-notes-audit-v11-evidence/b31-integrator/x2-emberleaf-chapbook-left-full-charge.png",
+        "projectile": "docs/owner-notes-audit-v11-evidence/b31-integrator/x2-emberleaf-chapbook-left-full-projectile.png",
+        "explosion": "docs/owner-notes-audit-v11-evidence/b31-integrator/x2-emberleaf-chapbook-left-full-explosion.png"
+      }
+    }
+  ],
+  "wyrmscale": [
+    {
+      "facing": "right",
+      "steps": [
+        {
+          "index": 0,
+          "comboStep": 0,
+          "comboHand": "lead",
+          "motion": "rake",
+          "pieces": [
+            {
+              "partIndex": 0,
+              "x": 70.4007339589358,
+              "y": -16.841087476797526,
+              "rotation": -0.2888387388943041,
+              "visible": true
+            },
+            {
+              "partIndex": 1,
+              "x": -79.23452997100766,
+              "y": 6.790225840978582,
+              "rotation": -0.9800608074306894,
+              "visible": true
+            }
+          ],
+          "event": {
+            "kind": "weapon-effect-recipe",
+            "weaponId": "x2-wyrmscale-hex-talon",
+            "recipeId": "wyrmscale-fire-slash",
+            "anchor": "blade",
+            "x": 2551.9496469905007,
+            "y": 2413.2387294491236,
+            "targetX": 2500,
+            "targetY": 2228,
+            "pack": "fire-bolt",
+            "count": 11
+          },
+          "screenshot": "docs/owner-notes-audit-v11-evidence/b31-integrator/x2-wyrmscale-hex-talon-right-slash-1.png"
+        },
+        {
+          "index": 1,
+          "comboStep": 1,
+          "comboHand": "off",
+          "motion": "rake",
+          "pieces": [
+            {
+              "partIndex": 0,
+              "x": 83.71331908737925,
+              "y": 0.3754023193556959,
+              "rotation": -1.3000608074306896,
+              "visible": true
+            },
+            {
+              "partIndex": 1,
+              "x": -79.2345253313188,
+              "y": 6.790235073310455,
+              "rotation": -1.3000608074306896,
+              "visible": true
+            }
+          ],
+          "event": {
+            "kind": "weapon-effect-recipe",
+            "weaponId": "x2-wyrmscale-hex-talon",
+            "recipeId": "wyrmscale-fire-slash",
+            "anchor": "blade",
+            "x": 2551.949646990501,
+            "y": 2413.238729449124,
+            "targetX": 2480,
+            "targetY": 2266.4,
+            "pack": "fire-bolt",
+            "count": 11
+          },
+          "screenshot": "docs/owner-notes-audit-v11-evidence/b31-integrator/x2-wyrmscale-hex-talon-right-slash-2.png"
+        },
+        {
+          "index": 2,
+          "comboStep": 2,
+          "comboHand": "lead",
+          "motion": "scissor",
+          "pieces": [
+            {
+              "partIndex": 0,
+              "x": 83.71331986486038,
+              "y": 0.37540384062472487,
+              "rotation": -1.3000608074306896,
+              "visible": true
+            },
+            {
+              "partIndex": 1,
+              "x": -79.23452456573534,
+              "y": 6.790236594579484,
+              "rotation": -1.1050843703005153,
+              "visible": true
+            }
+          ],
+          "event": {
+            "kind": "weapon-effect-recipe",
+            "weaponId": "x2-wyrmscale-hex-talon",
+            "recipeId": "wyrmscale-fire-slash",
+            "anchor": "blade",
+            "x": 2551.949646990501,
+            "y": 2413.238729449124,
+            "targetX": 2480,
+            "targetY": 2266.4,
+            "pack": "fire-bolt",
+            "count": 11
+          },
+          "screenshot": "docs/owner-notes-audit-v11-evidence/b31-integrator/x2-wyrmscale-hex-talon-right-slash-3.png"
+        },
+        {
+          "index": 3,
+          "comboStep": 3,
+          "comboHand": "off",
+          "motion": "slash",
+          "pieces": [
+            {
+              "partIndex": 0,
+              "x": 70.40074003877717,
+              "y": -16.841075592601726,
+              "rotation": -0.8647834470268787,
+              "visible": true
+            },
+            {
+              "partIndex": 1,
+              "x": -57.49625979328759,
+              "y": 7.829405393790043,
+              "rotation": -1.3084281582634816,
+              "visible": true
+            }
+          ],
+          "event": {
+            "kind": "weapon-effect-recipe",
+            "weaponId": "x2-wyrmscale-hex-talon",
+            "recipeId": "wyrmscale-fire-slash",
+            "anchor": "blade",
+            "x": 2551.949646990501,
+            "y": 2413.238729449124,
+            "targetX": 2480,
+            "targetY": 2266.4,
+            "pack": "fire-bolt",
+            "count": 11
+          },
+          "screenshot": "docs/owner-notes-audit-v11-evidence/b31-integrator/x2-wyrmscale-hex-talon-right-slash-4.png"
+        }
+      ]
+    },
+    {
+      "facing": "left",
+      "steps": [
+        {
+          "index": 0,
+          "comboStep": 0,
+          "comboHand": "lead",
+          "motion": "rake",
+          "pieces": [
+            {
+              "partIndex": 0,
+              "x": 72.76505255307234,
+              "y": -17.834798037187337,
+              "rotation": 0.25037433371435647,
+              "visible": true
+            },
+            {
+              "partIndex": 1,
+              "x": -78.70270539003565,
+              "y": 7.261772668325515,
+              "rotation": -0.9800608074306894,
+              "visible": true
+            }
+          ],
+          "event": {
+            "kind": "weapon-effect-recipe",
+            "weaponId": "x2-wyrmscale-hex-talon",
+            "recipeId": "wyrmscale-fire-slash",
+            "anchor": "blade",
+            "x": 2481.5624472430686,
+            "y": 2291.6178470358063,
+            "targetX": 2300,
+            "targetY": 2228,
+            "pack": "fire-bolt",
+            "count": 11
+          },
+          "screenshot": "docs/owner-notes-audit-v11-evidence/b31-integrator/x2-wyrmscale-hex-talon-left-slash-1.png"
+        },
+        {
+          "index": 1,
+          "comboStep": 1,
+          "comboHand": "off",
+          "motion": "rake",
+          "pieces": [
+            {
+              "partIndex": 0,
+              "x": 84.8586925842423,
+              "y": 0.6557480096418524,
+              "rotation": -1.3000608074306879,
+              "visible": true
+            },
+            {
+              "partIndex": 1,
+              "x": -79.23482482435475,
+              "y": 6.70945237990405,
+              "rotation": -1.3000608074306879,
+              "visible": true
+            }
+          ],
+          "event": {
+            "kind": "weapon-effect-recipe",
+            "weaponId": "x2-wyrmscale-hex-talon",
+            "recipeId": "wyrmscale-fire-slash",
+            "anchor": "blade",
+            "x": 2481.5624472430686,
+            "y": 2291.6178470358063,
+            "targetX": 2320,
+            "targetY": 2266.4,
+            "pack": "fire-bolt",
+            "count": 11
+          },
+          "screenshot": "docs/owner-notes-audit-v11-evidence/b31-integrator/x2-wyrmscale-hex-talon-left-slash-2.png"
+        },
+        {
+          "index": 2,
+          "comboStep": 2,
+          "comboHand": "lead",
+          "motion": "scissor",
+          "pieces": [
+            {
+              "partIndex": 0,
+              "x": 8.408924762697687,
+              "y": -20.997977622137125,
+              "rotation": -1.21062129719137,
+              "visible": true
+            },
+            {
+              "partIndex": 1,
+              "x": -79.55926928471412,
+              "y": 6.501342279009008,
+              "rotation": -0.9800608074306894,
+              "visible": true
+            }
+          ],
+          "event": {
+            "kind": "weapon-effect-recipe",
+            "weaponId": "x2-wyrmscale-hex-talon",
+            "recipeId": "wyrmscale-fire-slash",
+            "anchor": "blade",
+            "x": 2481.5624472430686,
+            "y": 2291.6178470358063,
+            "targetX": 2320,
+            "targetY": 2266.4,
+            "pack": "fire-bolt",
+            "count": 11
+          },
+          "screenshot": "docs/owner-notes-audit-v11-evidence/b31-integrator/x2-wyrmscale-hex-talon-left-slash-3.png"
+        },
+        {
+          "index": 3,
+          "comboStep": 3,
+          "comboHand": "off",
+          "motion": "slash",
+          "pieces": [
+            {
+              "partIndex": 0,
+              "x": -4.957110635423257,
+              "y": -39.25324800051524,
+              "rotation": -1.21062129719137,
+              "visible": true
+            },
+            {
+              "partIndex": 1,
+              "x": -57.49625960659114,
+              "y": 7.829405763853757,
+              "rotation": -0.9800608074306894,
+              "visible": true
+            }
+          ],
+          "event": {
+            "kind": "weapon-effect-recipe",
+            "weaponId": "x2-wyrmscale-hex-talon",
+            "recipeId": "wyrmscale-fire-slash",
+            "anchor": "blade",
+            "x": 2481.5624472430686,
+            "y": 2291.6178470358063,
+            "targetX": 2320,
+            "targetY": 2266.4,
+            "pack": "fire-bolt",
+            "count": 11
+          },
+          "screenshot": "docs/owner-notes-audit-v11-evidence/b31-integrator/x2-wyrmscale-hex-talon-left-slash-4.png"
+        }
+      ]
+    }
+  ],
+  "unicorn": [
+    {
+      "facing": "right",
+      "tileTexture": "recovered:unicorn-rainbow-beam",
+      "tileVisible": true,
+      "tileDisplayWidth": 520,
+      "tileDisplayHeight": 60.17061571272405,
+      "bodyVisible": false,
+      "lipVisible": false,
+      "structure": null,
+      "screenshot": "docs/owner-notes-audit-v11-evidence/b31-integrator/x2-unicorn-rainbow-beam-right-active.png"
+    },
+    {
+      "facing": "left",
+      "tileTexture": "recovered:unicorn-rainbow-beam",
+      "tileVisible": true,
+      "tileDisplayWidth": 520,
+      "tileDisplayHeight": 61.971642496856994,
+      "bodyVisible": false,
+      "lipVisible": false,
+      "structure": null,
+      "screenshot": "docs/owner-notes-audit-v11-evidence/b31-integrator/x2-unicorn-rainbow-beam-left-active.png"
+    }
+  ],
+  "emberfist": [
+    {
+      "facing": "right",
+      "before": 0,
+      "overlayScreenshots": [
+        {
+          "hand": 0,
+          "screenshot": "docs/owner-notes-audit-v11-evidence/b31-integrator/x2-emberfist-wraps-right-hand-0.png"
+        },
+        {
+          "hand": 1,
+          "screenshot": "docs/owner-notes-audit-v11-evidence/b31-integrator/x2-emberfist-wraps-right-hand-1.png"
+        }
+      ],
+      "samples": [
+        {
+          "attackSeq": 1,
+          "comboStep": 0,
+          "comboHand": "lead",
+          "motion": "hook",
+          "visible": [
+            {
+              "hand": 0,
+              "texture": "x2-emberfist-wraps:part-2",
+              "x": 91.43618867306428,
+              "y": -26.13532933678226,
+              "rotation": -1.2846113382454263
+            }
+          ]
+        },
+        {
+          "attackSeq": 2,
+          "comboStep": 0,
+          "comboHand": "lead",
+          "motion": "hook",
+          "visible": [
+            {
+              "hand": 1,
+              "texture": "x2-emberfist-wraps:part-2",
+              "x": -71.46397128726285,
+              "y": -19.371206324133112,
+              "rotation": -1.2845403359329257
+            }
+          ]
+        },
+        {
+          "attackSeq": 3,
+          "comboStep": 0,
+          "comboHand": "lead",
+          "motion": "hook",
+          "visible": [
+            {
+              "hand": 0,
+              "texture": "x2-emberfist-wraps:part-2",
+              "x": 110.05294945553618,
+              "y": -31.030810138120074,
+              "rotation": -0.8674238432423707
+            }
+          ]
+        },
+        {
+          "attackSeq": 4,
+          "comboStep": 1,
+          "comboHand": "off",
+          "motion": "cross",
+          "visible": [
+            {
+              "hand": 1,
+              "texture": "x2-emberfist-wraps:part-2",
+              "x": -74.83223611825645,
+              "y": -6.493232155779726,
+              "rotation": -0.8746170273251046
+            }
+          ]
+        },
+        {
+          "attackSeq": 5,
+          "comboStep": 2,
+          "comboHand": "lead",
+          "motion": "hook",
+          "visible": [
+            {
+              "hand": 0,
+              "texture": "x2-emberfist-wraps:part-2",
+              "x": 10.487291568033331,
+              "y": -25.763207530129122,
+              "rotation": -1.2106237385009173
+            }
+          ]
+        },
+        {
+          "attackSeq": 6,
+          "comboStep": 3,
+          "comboHand": "off",
+          "motion": "cross",
+          "visible": [
+            {
+              "hand": 1,
+              "texture": "x2-emberfist-wraps:part-2",
+              "x": -94.43401235020727,
+              "y": 14.090049801496216,
+              "rotation": -0.9800624162514673
+            }
+          ]
+        },
+        {
+          "attackSeq": 7,
+          "comboStep": 4,
+          "comboHand": "lead",
+          "motion": "jab",
+          "visible": [
+            {
+              "hand": 0,
+              "texture": "x2-emberfist-wraps:part-2",
+              "x": 5.827768681511188,
+              "y": -16.526926843024505,
+              "rotation": -1.2106209350227495
+            }
+          ]
+        }
+      ],
+      "authoritativeAttackSeq": 10,
+      "heldParts": [
+        0,
+        0
+      ],
+      "overlayTextures": [
+        "x2-emberfist-wraps:part-2",
+        "x2-emberfist-wraps:part-2"
+      ],
+      "genericWeaponEvents": []
+    },
+    {
+      "facing": "left",
+      "before": 0,
+      "overlayScreenshots": [
+        {
+          "hand": 0,
+          "screenshot": "docs/owner-notes-audit-v11-evidence/b31-integrator/x2-emberfist-wraps-left-hand-0.png"
+        },
+        {
+          "hand": 1,
+          "screenshot": "docs/owner-notes-audit-v11-evidence/b31-integrator/x2-emberfist-wraps-left-hand-1.png"
+        }
+      ],
+      "samples": [
+        {
+          "attackSeq": 1,
+          "comboStep": 0,
+          "comboHand": "lead",
+          "motion": "hook",
+          "visible": [
+            {
+              "hand": 0,
+              "texture": "x2-emberfist-wraps:part-2",
+              "x": 91.50940884263555,
+              "y": -26.15360960213053,
+              "rotation": -1.2849093093792359
+            }
+          ]
+        },
+        {
+          "attackSeq": 2,
+          "comboStep": 0,
+          "comboHand": "lead",
+          "motion": "hook",
+          "visible": [
+            {
+              "hand": 1,
+              "texture": "x2-emberfist-wraps:part-2",
+              "x": -71.76292404172364,
+              "y": -19.64940235296094,
+              "rotation": -1.2846257322377745
+            }
+          ]
+        },
+        {
+          "attackSeq": 3,
+          "comboStep": 0,
+          "comboHand": "lead",
+          "motion": "hook",
+          "visible": [
+            {
+              "hand": 0,
+              "texture": "x2-emberfist-wraps:part-2",
+              "x": 93.20287780585225,
+              "y": -8.13050863940904,
+              "rotation": -1.055955601953702
+            }
+          ]
+        },
+        {
+          "attackSeq": 4,
+          "comboStep": 1,
+          "comboHand": "off",
+          "motion": "cross",
+          "visible": [
+            {
+              "hand": 1,
+              "texture": "x2-emberfist-wraps:part-2",
+              "x": -98.05418819222258,
+              "y": 17.714080653037815,
+              "rotation": -0.9800839941932935
+            }
+          ]
+        },
+        {
+          "attackSeq": 5,
+          "comboStep": 2,
+          "comboHand": "lead",
+          "motion": "hook",
+          "visible": [
+            {
+              "hand": 0,
+              "texture": "x2-emberfist-wraps:part-2",
+              "x": 10.36745851572631,
+              "y": -27.291014711485605,
+              "rotation": -1.2106248366937429
+            }
+          ]
+        },
+        {
+          "attackSeq": 7,
+          "comboStep": 4,
+          "comboHand": "lead",
+          "motion": "jab",
+          "visible": [
+            {
+              "hand": 0,
+              "texture": "x2-emberfist-wraps:part-2",
+              "x": 5.827754858478865,
+              "y": -15.530171814509213,
+              "rotation": -1.210621916094647
+            }
+          ]
+        },
+        {
+          "attackSeq": 8,
+          "comboStep": 5,
+          "comboHand": "off",
+          "motion": "cross",
+          "visible": [
+            {
+              "hand": 1,
+              "texture": "x2-emberfist-wraps:part-2",
+              "x": -92.9222994462901,
+              "y": 12.96790481159304,
+              "rotation": -0.980060271954958
+            }
+          ]
+        },
+        {
+          "attackSeq": 9,
+          "comboStep": 6,
+          "comboHand": "lead",
+          "motion": "hook",
+          "visible": [
+            {
+              "hand": 0,
+              "texture": "x2-emberfist-wraps:part-2",
+              "x": 12.012120835396594,
+              "y": -22.818133108808997,
+              "rotation": -1.210621479150042
+            }
+          ]
+        }
+      ],
+      "authoritativeAttackSeq": 9,
+      "heldParts": [
+        0,
+        0
+      ],
+      "overlayTextures": [
+        "x2-emberfist-wraps:part-2",
+        "x2-emberfist-wraps:part-2"
+      ],
+      "genericWeaponEvents": []
+    }
+  ]
+}

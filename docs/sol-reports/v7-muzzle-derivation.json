@@ -1032,6 +1032,28 @@
     "barrelMode": "parallel"
   },
   {
+    "id": "x2-emberleaf-chapbook",
+    "name": "Emberleaf Chapbook",
+    "sprite": "x2-emberleaf-chapbook",
+    "derived": [
+      {
+        "part": 0,
+        "x": 250,
+        "y": 211.9
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 330,
+        "y": 201
+      }
+    ],
+    "override": "The charged fireball grows at the open chapbook fore-edge; the authoritative projectile releases from that same painted page edge.",
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
     "id": "x2-embernail-repeater",
     "name": "Embernail Repeater",
     "sprite": "x2-embernail-repeater",

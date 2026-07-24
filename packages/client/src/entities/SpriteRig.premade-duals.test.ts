@@ -19,9 +19,9 @@ describe("authored pre-made dual rig presentation", () => {
     const catalogDuals = Object.values(WEAPONS).filter((weapon) => weapon.tags.grip === "dual");
     const expansionDuals = catalogDuals.filter((weapon) => weapon.id.startsWith("x2-"));
 
-    // B30 promotes the Falcata into the expansion dual census. The legacy twin-bowie-fangs
-    // is also catalog-authored and remains covered, bringing the live total to 24.
-    expect(expansionDuals).toHaveLength(23);
+    // B31 promotes Wyrmscale after B30's Falcata. The legacy twin-bowie-fangs
+    // is also catalog-authored and remains covered, bringing the live total to 25.
+    expect(expansionDuals).toHaveLength(24);
     expect(catalogDuals.map((weapon) => weapon.id)).toContain("twin-bowie-fangs");
 
     for (const weapon of catalogDuals) {

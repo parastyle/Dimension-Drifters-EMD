@@ -82,6 +82,7 @@ export function weaponDeliveryFor(weapon: WeaponDef): WeaponDelivery {
   if (weapon.beam) return "beam";
   if (weapon.thrown) return "thrown";
   if (weapon.gun) return "gun";
+  if (weapon.chargedProjectile) return "cast";
   if (weapon.cast) return "cast";
   return "melee";
 }

@@ -6,6 +6,7 @@ vi.mock("phaser", () => ({ default: {} }));
 
 const {
   authoredWeaponRenderPlan,
+  strikeOverlayImpactVisible,
   wrapRigFacingSign,
   wrapRigMountPlan,
   wrapRigReceiverRelativeScale,
@@ -44,6 +45,7 @@ describe("SpriteRig glove-pair rendering", () => {
   it.each([
     "x2-coyote-trickster-s-sparkmitt",
     "x2-sparkknuckle-hex-mitt",
+    "x2-emberfist-wraps",
   ] as const)("duplicates %s part-1 into lead and off-hand mounts", (weaponId) => {
     const weapon = WEAPONS[weaponId];
     if (!weapon?.glovePair) throw new Error(`Missing glove-pair fixture: ${weaponId}`);
@@ -72,6 +74,23 @@ describe("SpriteRig glove-pair rendering", () => {
     expect(lead.def).toBe(weapon);
     expect(off?.def).toBe(weapon);
     expect(twoHandedPoseFor(weapon)).toBe(false);
+  });
+
+  it("uses Wyrmscale's back and palm art as one pre-made dual set", () => {
+    const weapon = WEAPONS["x2-wyrmscale-hex-talon"];
+    const manifest = SPRITES["x2-wyrmscale-hex-talon"];
+    if (!weapon || !manifest) throw new Error("Missing Wyrmscale fixture");
+    expect(authoredWeaponRenderPlan(weapon.id, weapon, manifest)).toMatchObject([
+      { partIndex: 0 },
+      { partIndex: 1 },
+    ]);
+  });
+
+  it("shows Emberfist's flame sheath only on the striking fist's impact frames", () => {
+    expect(strikeOverlayImpactVisible(0.4, 0.4, 0, 0)).toBe(true);
+    expect(strikeOverlayImpactVisible(0.4, 0.4, 0, 1)).toBe(false);
+    expect(strikeOverlayImpactVisible(0.4, 0.4, 1, 1)).toBe(true);
+    expect(strikeOverlayImpactVisible(0.3, 0.4, 1, 1)).toBe(false);
   });
 
   it("routes every close worn punch weapon into the systemic monk lane", () => {

@@ -19,8 +19,8 @@ const BEAMS = Object.values(WEAPONS).filter((weapon) => weapon.beam);
 
 describe("caster VFX recipe resolver", () => {
   it("resolves every non-replaced caster id to a complete non-default recipe", () => {
-    expect(CASTERS).toHaveLength(98);
-    expect(PROCEDURAL_CASTERS).toHaveLength(96);
+    expect(CASTERS).toHaveLength(97);
+    expect(PROCEDURAL_CASTERS).toHaveLength(95);
     const resolved = PROCEDURAL_CASTERS.map(
       (weapon) => [weapon, resolveCasterVfxRecipe(weapon)] as const,
     );
@@ -133,12 +133,15 @@ describe("caster VFX recipe resolver", () => {
     expect(visualSignatures.size).toBe(BEAMS.length);
   });
 
-  it("distributes all 23 beams across five data-owned structure families", () => {
+  it("distributes the 22 procedural beams across five data-owned structure families", () => {
+    const structuredBeams = BEAMS.filter(
+      (weapon) => weapon.id !== "x2-unicorn-rainbow-beam",
+    );
     expect(Object.keys(BEAM_STRUCTURE_FAMILY_BY_WEAPON).sort()).toEqual(
-      BEAMS.map((weapon) => weapon.id).sort(),
+      structuredBeams.map((weapon) => weapon.id).sort(),
     );
     const counts = new Map<string, number>();
-    for (const weapon of BEAMS) {
+    for (const weapon of structuredBeams) {
       const structure = resolveCasterVfxRecipe(weapon)?.beam?.structure;
       expect(structure, weapon.id).toBeDefined();
       expect(structure?.artWidth, weapon.id).toBeGreaterThan(0);
