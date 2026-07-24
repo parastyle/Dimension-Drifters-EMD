@@ -1,6 +1,11 @@
 import { existsSync, readFileSync } from "node:fs";
 import { createRequire } from "node:module";
-import { ACTIVE_WEAPON_CATALOG_IDS, meleeComboSelectionFor, WEAPONS } from "@dd/shared";
+import {
+  ACTIVE_WEAPON_CATALOG_IDS,
+  meleeComboGraceMs,
+  meleeComboSelectionFor,
+  WEAPONS,
+} from "@dd/shared";
 import { describe, expect, it } from "vitest";
 import { SPRITES } from "../packages/client/src/sprites/manifest.js";
 import { KUNG_FU_WRAP_VFX_RECIPES } from "../packages/client/src/vfx/kung-fu-wrap-vfx-recipes.js";
@@ -107,7 +112,7 @@ function comboSteps(id: (typeof B25_WRAPS)[number]) {
 }
 
 describe("B25 theatrical kung-fu v3", () => {
-  it("publishes four active four-limb wrap sets with distinct combo, root, and VFX signatures", () => {
+  it("publishes four active four-limb wrap sets with distinct combo, pose, and VFX signatures", () => {
     expect(new Set(B25_WRAPS).size).toBe(4);
     const comboSignatures = new Set<string>();
     const vfxSignatures = new Set<string>();
@@ -134,6 +139,7 @@ describe("B25 theatrical kung-fu v3", () => {
             : "mirror-guard",
       );
       expect(weapon?.authoritativeCombo, id).toBe(true);
+      expect(weapon?.performance?.forwardDrift, id).toBeUndefined();
       expect(weapon?.impactMuzzle, id).toBe(true);
       expect(weapon?.muzzle?.points.length, id).toBe(NATIVE_PARTS[id].length);
       comboSignatures.add(
@@ -150,7 +156,7 @@ describe("B25 theatrical kung-fu v3", () => {
     expect(vfxSignatures.size).toBe(4);
   });
 
-  it("pins the rebuilt punch/kick beat charts and theatrical authoritative displacement", () => {
+  it("pins the rebuilt punch/kick beat charts with every authoritative displacement removed", () => {
     expect(comboSteps("x2-muay-thai-wraps")?.map((step) => [step.motion, step.limb])).toEqual([
       ["teep-kick", "foot"],
       ["elbow", "hand"],
@@ -158,18 +164,9 @@ describe("B25 theatrical kung-fu v3", () => {
       ["knee-strike", "foot"],
       ["roundhouse-kick", "foot"],
     ]);
-    expect(
-      comboSteps("x2-muay-thai-wraps")?.map((step) => [
-        step.rootMotion?.forwardPx,
-        step.rootMotion?.lateralPx,
-      ]),
-    ).toEqual([
-      [288, 0],
-      [28, 0],
-      [32, 0],
-      [44, 0],
-      [36, 0],
-    ]);
+    expect(comboSteps("x2-muay-thai-wraps")?.every((step) => step.rootMotion === undefined)).toBe(
+      true,
+    );
     expect(
       comboSteps("x2-wing-chun-wraps")?.map((step) => [step.motion, step.hand, step.limb]),
     ).toEqual([
@@ -182,6 +179,10 @@ describe("B25 theatrical kung-fu v3", () => {
     expect(comboSteps("x2-wing-chun-wraps")?.every((step) => step.rootMotion === undefined)).toBe(
       true,
     );
+    const wing = WEAPONS["x2-wing-chun-wraps"]!;
+    expect(meleeComboGraceMs(wing.cooldown, comboSteps("x2-wing-chun-wraps"))).toBeGreaterThanOrEqual(
+      450,
+    );
     expect(comboSteps("x2-drunken-fist-wraps")?.map((step) => [step.motion, step.limb])).toEqual([
       ["sway-jab", "hand"],
       ["weave-cross", "hand"],
@@ -189,35 +190,18 @@ describe("B25 theatrical kung-fu v3", () => {
       ["sweeping-leg", "foot"],
       ["frontflip-heel-drop", "foot"],
     ]);
-    expect(
-      comboSteps("x2-drunken-fist-wraps")?.map((step) => [
-        step.rootMotion?.forwardPx,
-        step.rootMotion?.lateralPx,
-      ]),
-    ).toEqual([
-      [18, 88],
-      [-12, -112],
-      [24, 104],
-      [10, -128],
-      [156, 40],
-    ]);
+    expect(comboSteps("x2-drunken-fist-wraps")?.every((step) => step.rootMotion === undefined)).toBe(
+      true,
+    );
     expect(comboSteps("x2-iron-palm-wraps")?.map((step) => [step.motion, step.limb])).toEqual([
       ["crushing-palm", "hand"],
       ["stomp-kick", "foot"],
       ["roundhouse-kick", "foot"],
       ["mantis-double-hook", "hand"],
     ]);
-    expect(
-      comboSteps("x2-iron-palm-wraps")?.map((step) => [
-        step.rootMotion?.forwardPx,
-        step.rootMotion?.lateralPx,
-      ]),
-    ).toEqual([
-      [52, 0],
-      [112, 0],
-      [72, 0],
-      [96, 0],
-    ]);
+    expect(comboSteps("x2-iron-palm-wraps")?.every((step) => step.rootMotion === undefined)).toBe(
+      true,
+    );
     expect(comboSteps("x2-iron-palm-wraps")?.at(-1)?.path.knockback).toBe(48);
   });
 
@@ -227,7 +211,7 @@ describe("B25 theatrical kung-fu v3", () => {
     const iron = comboSteps("x2-iron-palm-wraps")!;
 
     expect(muay[0]?.name).toContain("Dragon-Rocket");
-    expect(muay[0]?.rootMotion?.forwardPx).toBe(288);
+    expect(muay[0]?.rootMotion).toBeUndefined();
     expect(muay[0]?.theatrics?.limbStretch).toBe(2.15);
     expect(muay[2]?.theatrics?.paperTurns).toBe(1);
     expect(muay[4]?.theatrics).toMatchObject({
@@ -247,7 +231,7 @@ describe("B25 theatrical kung-fu v3", () => {
     });
   });
 
-  it("makes displacement felt by hundreds of pixels while Wing Chun remains exactly planted", () => {
+  it("keeps every wrap planted while retaining the non-displacement theatrics", () => {
     const pathLength = (id: (typeof B25_WRAPS)[number]) =>
       (comboSteps(id) ?? []).reduce(
         (sum, step) =>
@@ -259,13 +243,11 @@ describe("B25 theatrical kung-fu v3", () => {
     const netLateral = (id: (typeof B25_WRAPS)[number]) =>
       (comboSteps(id) ?? []).reduce((sum, step) => sum + (step.rootMotion?.lateralPx ?? 0), 0);
 
-    expect(pathLength("x2-wing-chun-wraps")).toBe(0);
-    expect(netForward("x2-muay-thai-wraps")).toBe(428);
-    expect(pathLength("x2-muay-thai-wraps")).toBe(428);
-    expect(pathLength("x2-drunken-fist-wraps")).toBeGreaterThan(590);
-    expect(netForward("x2-drunken-fist-wraps")).toBe(196);
-    expect(netLateral("x2-drunken-fist-wraps")).toBe(-8);
-    expect(netForward("x2-iron-palm-wraps")).toBe(332);
+    for (const id of B25_WRAPS) {
+      expect(pathLength(id), id).toBe(0);
+      expect(netForward(id), id).toBe(0);
+      expect(netLateral(id), id).toBe(0);
+    }
   });
 
   it("keeps every redistributed combo inside ±10% of shipped DPS with requested cadence ordering", () => {

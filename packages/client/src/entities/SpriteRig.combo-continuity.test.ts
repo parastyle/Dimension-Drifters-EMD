@@ -41,6 +41,7 @@ const REPRESENTATIVES: ReadonlyArray<{
   { id: "drift-nodachi-pale-horizon", sizeClass: "long" },
   { id: "drift-greatkatana-moonwake", sizeClass: "great" },
   { id: "drift-colossal-world-seam", sizeClass: "colossal" },
+  { id: "x2-reverent-broadsword" },
 ];
 
 const ACTIVE_KATANAS = [

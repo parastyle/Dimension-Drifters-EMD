@@ -272,6 +272,10 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "DEX"
       ]
     },
+    "authoritativeCombo": true,
+    "swingStyle": "thrust",
+    "comboFamily": "thrust",
+    "comboVariant": "reverent-two-stab-flip",
     "performance": {
       "hold": "steady",
       "action": "default-swing",
@@ -12398,6 +12402,10 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "LUK"
       ]
     },
+    "poseLanguage": {
+      "idle": "boxer-guard",
+      "feet": "combat-plant"
+    },
     "authoritativeCombo": true,
     "swingStyle": "punch",
     "comboFamily": "punch",
@@ -12440,6 +12448,10 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "DEX"
       ]
     },
+    "poseLanguage": {
+      "idle": "boxer-guard",
+      "feet": "combat-plant"
+    },
     "description": "A matched pair of black fighting wraps whose fitted flame sheaths flash over only the striking fist at each punch impact.",
     "authoritativeCombo": true,
     "swingStyle": "punch",
@@ -12450,11 +12462,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
     "performance": {
       "hold": "steady",
       "action": "default-swing",
-      "continuous": true,
-      "forwardDrift": {
-        "speedPxPerSecond": 48,
-        "durationSeconds": 0.12
-      }
+      "continuous": true
     },
     "twoHanded": true,
     "durability": 90,
@@ -14732,6 +14740,51 @@ export const GENERATED_MELEE_COMBO_BARS = {
       "choreography": {
         "primitive": "backflip",
         "intensity": 1.08
+      }
+    }
+  ],
+  "reverent-two-stab-flip": [
+    {
+      "name": "reverent one-hand salute",
+      "motion": "jab",
+      "direction": 1,
+      "hand": "lead",
+      "timing": {
+        "activeStart": 0.14,
+        "activeEnd": 0.42,
+        "impact": 0.38,
+        "followEnd": 0.56
+      },
+      "path": {
+        "kind": "capsule",
+        "arcMultiplier": 0,
+        "rangeMultiplier": 1,
+        "damageMultiplier": 1,
+        "knockback": 8,
+        "deltaAngle": 0
+      }
+    },
+    {
+      "name": "reverent paper-flip impalement",
+      "motion": "impale",
+      "direction": -1,
+      "hand": "lead",
+      "timing": {
+        "activeStart": 0.12,
+        "activeEnd": 0.5,
+        "impact": 0.46,
+        "followEnd": 0.68
+      },
+      "path": {
+        "kind": "capsule",
+        "arcMultiplier": 0,
+        "rangeMultiplier": 1,
+        "damageMultiplier": 1,
+        "knockback": 12,
+        "deltaAngle": 0
+      },
+      "theatrics": {
+        "flip": "front"
       }
     }
   ],
@@ -18266,11 +18319,6 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "deltaAngle": 0
       },
       "limb": "foot",
-      "rootMotion": {
-        "forwardPx": 288,
-        "lateralPx": 0,
-        "durationSeconds": 0.14
-      },
       "theatrics": {
         "limbStretch": 2.15
       }
@@ -18293,12 +18341,7 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "damageMultiplier": 0.9,
         "knockback": 16
       },
-      "limb": "hand",
-      "rootMotion": {
-        "forwardPx": 28,
-        "lateralPx": 0,
-        "durationSeconds": 0.08
-      }
+      "limb": "hand"
     },
     {
       "name": "Eight-Limbs Back Elbow",
@@ -18319,11 +18362,6 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "knockback": 18
       },
       "limb": "hand",
-      "rootMotion": {
-        "forwardPx": 32,
-        "lateralPx": 0,
-        "durationSeconds": 0.09
-      },
       "theatrics": {
         "paperTurns": 1
       }
@@ -18348,11 +18386,6 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "deltaAngle": 0
       },
       "limb": "foot",
-      "rootMotion": {
-        "forwardPx": 44,
-        "lateralPx": 0,
-        "durationSeconds": 0.1
-      },
       "theatrics": {
         "holdPose": "clinch-guard",
         "holdStart": 0.58
@@ -18377,11 +18410,6 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "knockback": 34
       },
       "limb": "foot",
-      "rootMotion": {
-        "forwardPx": 36,
-        "lateralPx": 0,
-        "durationSeconds": 0.1
-      },
       "theatrics": {
         "paperTurns": 1,
         "limbStretch": 2,
@@ -18517,11 +18545,6 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "deltaAngle": 0.08
       },
       "limb": "hand",
-      "rootMotion": {
-        "forwardPx": 18,
-        "lateralPx": 88,
-        "durationSeconds": 0.12
-      },
       "theatrics": {
         "limbStretch": 1.65
       }
@@ -18545,12 +18568,7 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "knockback": 9,
         "deltaAngle": -0.14
       },
-      "limb": "hand",
-      "rootMotion": {
-        "forwardPx": -12,
-        "lateralPx": -112,
-        "durationSeconds": 0.12
-      }
+      "limb": "hand"
     },
     {
       "name": "Moon-Sway Backfist",
@@ -18571,11 +18589,6 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "knockback": 11
       },
       "limb": "hand",
-      "rootMotion": {
-        "forwardPx": 24,
-        "lateralPx": 104,
-        "durationSeconds": 0.12
-      },
       "theatrics": {
         "limbStretch": 1.9
       }
@@ -18599,11 +18612,6 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "knockback": 16
       },
       "limb": "foot",
-      "rootMotion": {
-        "forwardPx": 10,
-        "lateralPx": -128,
-        "durationSeconds": 0.12
-      },
       "theatrics": {
         "holdPose": "crane-one-leg",
         "holdStart": 0.58
@@ -18628,11 +18636,6 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "knockback": 24
       },
       "limb": "foot",
-      "rootMotion": {
-        "forwardPx": 156,
-        "lateralPx": 40,
-        "durationSeconds": 0.13
-      },
       "theatrics": {
         "flip": "front",
         "limbStretch": 2.2,
@@ -18662,11 +18665,6 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "deltaAngle": 0
       },
       "limb": "hand",
-      "rootMotion": {
-        "forwardPx": 52,
-        "lateralPx": 0,
-        "durationSeconds": 0.14
-      },
       "theatrics": {
         "limbStretch": 1.55
       }
@@ -18690,12 +18688,7 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "knockback": 30,
         "deltaAngle": -0.08
       },
-      "limb": "foot",
-      "rootMotion": {
-        "forwardPx": 112,
-        "lateralPx": 0,
-        "durationSeconds": 0.18
-      }
+      "limb": "foot"
     },
     {
       "name": "Iron Wheel Roundhouse",
@@ -18716,11 +18709,6 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "knockback": 34
       },
       "limb": "foot",
-      "rootMotion": {
-        "forwardPx": 72,
-        "lateralPx": 0,
-        "durationSeconds": 0.18
-      },
       "theatrics": {
         "paperTurns": 1,
         "limbStretch": 1.9
@@ -18745,11 +18733,6 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "knockback": 48
       },
       "limb": "hand",
-      "rootMotion": {
-        "forwardPx": 96,
-        "lateralPx": 0,
-        "durationSeconds": 0.18
-      },
       "theatrics": {
         "limbStretch": 2.1,
         "holdPose": "praying-mantis",

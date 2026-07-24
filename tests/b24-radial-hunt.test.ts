@@ -75,9 +75,9 @@ describe("B24 shared radial fallback removal", () => {
 
     expect(candidates).toHaveLength(322);
     expect(byFormerLayer).toEqual({
-      "blade-trail": 288,
+      "blade-trail": 287,
       "twin-slash": 24,
-      "thrust-streak": 10,
+      "thrust-streak": 11,
     });
     expect(candidates.filter((definition) => !definition.archived)).toHaveLength(305);
     expect(candidates.filter((definition) => definition.archived)).toHaveLength(17);

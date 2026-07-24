@@ -7,7 +7,7 @@ import { FIRING_FRAME_RELEASE_WINDOW_MS } from "../sprites/firing-frame.js";
 import { SpriteRig } from "./SpriteRig.js";
 
 describe("SpriteRig authoritative firing-frame swap", () => {
-  it("ignores prediction, opens on confirmation, and restores the closed texture at the exact end", () => {
+  it("ignores prediction, stays open while held, and restores the closed texture on release", () => {
     const weapon = WEAPONS["x2-wyrmskull-reliquary"];
     if (!weapon) throw new Error("missing Wyrmskull fixture");
     const img = {
@@ -30,6 +30,7 @@ describe("SpriteRig authoritative firing-frame swap", () => {
       authoritativeFiringBeatSeq: number;
       authoritativeFiringAttackTick: number;
       authoritativeFiringClockTick: number;
+      authoritativeFiringInputHeld: boolean | undefined;
       authoritativeFiringWeaponId: string;
       hasAttackBeatSeq: boolean;
       hasAuthoritativeFiringBeat: boolean;
@@ -67,6 +68,7 @@ describe("SpriteRig authoritative firing-frame swap", () => {
       authoritativeFiringBeatSeq: 0,
       authoritativeFiringAttackTick: 0,
       authoritativeFiringClockTick: 0,
+      authoritativeFiringInputHeld: undefined,
       authoritativeFiringWeaponId: "",
       hasAttackBeatSeq: false,
       hasAuthoritativeFiringBeat: false,
@@ -102,12 +104,14 @@ describe("SpriteRig authoritative firing-frame swap", () => {
       prepareFiringFrames(this: typeof rig): void;
     };
 
-    SpriteRig.prototype.setAuthoritativeAttackClock.call(rig, 100, 100);
+    SpriteRig.prototype.setAuthoritativeAttackClock.call(rig, 100, 100, 0, 0, false);
     SpriteRig.prototype.setAttackBeat.call(rig, 1, true, 1_000, false);
     internals.prepareFiringFrames.call(rig);
     expect(img.setTexture).not.toHaveBeenCalled();
 
-    SpriteRig.prototype.setAttackBeat.call(rig, 1, true, 1_000);
+    SpriteRig.prototype.setAuthoritativeAttackClock.call(rig, 100, 100, 0, 0, true);
+    // A delayed patch may carry the accepted sequence after the short legacy attackHeld latch falls.
+    SpriteRig.prototype.setAttackBeat.call(rig, 1, false, 1_000);
     internals.prepareFiringFrames.call(rig);
     expect(img.setTexture).toHaveBeenLastCalledWith(
       "x2-wyrmskull-reliquary-open:part-1",
@@ -117,12 +121,12 @@ describe("SpriteRig authoritative firing-frame swap", () => {
     expect(img.scaleX).toBeCloseTo(0.75 / 3, 10);
     expect(img.scaleY).toBeCloseTo(0.6 / 3, 10);
 
-    SpriteRig.prototype.setAuthoritativeAttackClock.call(rig, 100, 102);
+    SpriteRig.prototype.setAuthoritativeAttackClock.call(rig, 100, 602, 0, 0, true);
     internals.prepareFiringFrames.call(rig);
     expect(img.setTexture).toHaveBeenCalledTimes(1);
 
     expect(FIRING_FRAME_RELEASE_WINDOW_MS).toBe(150);
-    SpriteRig.prototype.setAuthoritativeAttackClock.call(rig, 100, 103);
+    SpriteRig.prototype.setAuthoritativeAttackClock.call(rig, 100, 603, 0, 0, false);
     internals.prepareFiringFrames.call(rig);
     expect(img.setTexture).toHaveBeenLastCalledWith("x2-wyrmskull-reliquary:part-1", undefined);
     expect(rig.weapons[0]?.baseScale).toBe(0.5);

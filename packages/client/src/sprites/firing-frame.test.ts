@@ -11,7 +11,7 @@ const WYRM_ID = "x2-wyrmskull-reliquary";
 const OPEN_ID = "x2-wyrmskull-reliquary-open";
 
 describe("weapon firing-frame attack clock", () => {
-  it("is closed at idle, open exactly inside the authoritative release window, then closed", () => {
+  it("keeps the legacy confirmation window for callers without held-input authority", () => {
     const weapon = WEAPONS[WYRM_ID];
     expect(weapon?.firingFrame).toBe(OPEN_ID);
     const acceptedTick = 1_000;
@@ -24,6 +24,14 @@ describe("weapon firing-frame attack clock", () => {
     expect(firingFrameSpriteAt(weapon, acceptedTick, acceptedTick + 2)).toBe(OPEN_ID);
     expect(firingFrameSpriteAt(weapon, acceptedTick, acceptedTick + 3)).toBeUndefined();
     expect(firingFrameSpriteAt(weapon, acceptedTick, acceptedTick + 500)).toBeUndefined();
+  });
+
+  it("holds Wyrmskull open for authoritative held fire and closes on release", () => {
+    const weapon = WEAPONS[WYRM_ID];
+    const acceptedTick = 1_000;
+
+    expect(firingFrameSpriteAt(weapon, acceptedTick, acceptedTick + 500, true)).toBe(OPEN_ID);
+    expect(firingFrameSpriteAt(weapon, acceptedTick, acceptedTick + 501, false)).toBeUndefined();
   });
 
   it("never swaps a weapon without registered firing-frame metadata", () => {

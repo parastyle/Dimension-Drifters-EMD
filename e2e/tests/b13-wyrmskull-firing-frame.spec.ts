@@ -22,6 +22,7 @@ interface BrowserPlayer {
   attackHeld: boolean;
   attackSeq: number;
   character?: string;
+  dualWield: { fireInputHeld: boolean };
   weapon?: string;
   x: number;
   y: number;
@@ -123,6 +124,7 @@ interface BrowserGlobal {
     matched: boolean;
     samples: Array<Record<string, unknown>>;
   };
+  __ddB13HeldInputTimer?: number;
 }
 
 interface FrameState {
@@ -136,6 +138,7 @@ interface FrameState {
   facing: number;
   firingFrameId: string | null;
   firingFrameVisible: boolean;
+  fireInputHeld: boolean;
   gripWorld: { x: number; y: number };
   image: {
     active: boolean;
@@ -357,6 +360,7 @@ async function frameState(page: Page, sourceId: string): Promise<FrameState> {
       facing: rig.facing,
       firingFrameId: held.firingFrame?.spriteId ?? null,
       firingFrameVisible: held.firingFrameVisible,
+      fireInputHeld: player.dualWield.fireInputHeld,
       gripWorld,
       image: {
         active: held.img.active,
@@ -568,9 +572,32 @@ async function commitRemoteFacing(room: RawRoom, page: Page, facing: Facing): Pr
 
 async function fireLocal(page: Page, facing: Facing): Promise<number> {
   return await page.evaluate((direction) => {
-    const arena = (globalThis as unknown as BrowserGlobal).ddGame.scene.getScene("arena");
+    const holder = globalThis as unknown as BrowserGlobal;
+    const arena = holder.ddGame.scene.getScene("arena");
     const self = arena.room.state.players.get(arena.room.sessionId);
     if (!self) throw new Error("B13 local fire lost its player");
+    let seq = self.ackSeq;
+    const sendHeld = (fireHeld: boolean) => {
+      seq = (seq + 1) >>> 0;
+      arena.room.send("input", {
+        seq,
+        dx: direction,
+        dy: 0,
+        fireHeld,
+        aimX: direction,
+        aimY: 0,
+        targetX: self.x + direction * 300,
+        targetY: self.y,
+      });
+    };
+    sendHeld(true);
+    if (holder.__ddB13HeldInputTimer) window.clearInterval(holder.__ddB13HeldInputTimer);
+    holder.__ddB13HeldInputTimer = window.setInterval(() => sendHeld(true), 45);
+    window.setTimeout(() => {
+      if (holder.__ddB13HeldInputTimer) window.clearInterval(holder.__ddB13HeldInputTimer);
+      holder.__ddB13HeldInputTimer = undefined;
+      sendHeld(false);
+    }, 720);
     arena.room.send("attack", {
       aimX: direction,
       aimY: 0,
@@ -585,6 +612,26 @@ function fireRemote(room: RawRoom, facing: Facing): number {
   const player = room.state.players.get(room.sessionId);
   if (!player) throw new Error("B13 remote fire lost its player");
   const direction = expectedFacing(facing);
+  let seq = player.ackSeq;
+  const sendHeld = (fireHeld: boolean): void => {
+    seq = (seq + 1) >>> 0;
+    room.send("input", {
+      seq,
+      dx: direction,
+      dy: 0,
+      fireHeld,
+      aimX: direction,
+      aimY: 0,
+      targetX: player.x + direction * 300,
+      targetY: player.y,
+    });
+  };
+  sendHeld(true);
+  const timer = setInterval(() => sendHeld(true), 45);
+  setTimeout(() => {
+    clearInterval(timer);
+    sendHeld(false);
+  }, 720);
   room.send("attack", {
     aimX: direction,
     aimY: 0,
@@ -619,7 +666,20 @@ async function captureTriplet(
   const attackSeqBefore = await fire();
   expect(attackSeqBefore).toBe(idle.attackSeq);
   await waitForFrameWatch(page, sourceId, true);
-  await page.waitForTimeout(100);
+  await resume(page);
+  await page.waitForTimeout(260);
+  await expect
+    .poll(
+      async () => {
+        const held = await frameState(page, sourceId);
+        return { frame: held.firingFrameVisible, input: held.fireInputHeld };
+      },
+      { message: "Wyrmskull should remain open beyond the legacy 150ms window", timeout: 5_000 },
+    )
+    .toEqual({ frame: true, input: true });
+  await page.evaluate(() => {
+    (globalThis as unknown as BrowserGlobal).ddGame.scene.getScene("arena").scene.pause();
+  });
   const release = await frameState(page, sourceId);
   await page.locator("#game-root canvas").screenshot({ path: releaseFile });
   await installFrameWatch(page, sourceId, false, attackSeqBefore, facing);
@@ -656,6 +716,7 @@ async function captureTriplet(
   expect(release.attackSeq).toBeGreaterThan(attackSeqBefore);
   expect(release.firingFrameId).toBe(OPEN_FRAME_ID);
   expect(release.firingFrameVisible).toBe(true);
+  expect(release.fireInputHeld).toBe(true);
   expect(release.textureKey).not.toBe(release.closedTextureKey);
   expect(release.sourceScale).toBe(3);
   expect(release.image.originX).toBeCloseTo(0.1, 10);
@@ -670,6 +731,7 @@ async function captureTriplet(
 
   expect(after.attackSeq).toBe(release.attackSeq);
   expect(after.firingFrameVisible).toBe(false);
+  expect(after.fireInputHeld).toBe(false);
   expect(after.textureKey).toBe(after.closedTextureKey);
   expect(after.baseScale).toBeCloseTo(after.closedBaseScale, 10);
   expect(Math.abs(after.image.scaleX) * after.image.width).toBeCloseTo(
@@ -684,7 +746,7 @@ async function captureTriplet(
   return capture;
 }
 
-test("B13 Wyrmskull uses its authoritative open-mouth release frame locally and remotely", async ({
+test("B13 Wyrmskull holds its authoritative mouth frame open until release locally and remotely", async ({
   page,
 }) => {
   test.setTimeout(180_000);
@@ -762,12 +824,14 @@ test("B13 Wyrmskull uses its authoritative open-mouth release frame locally and 
       allReleasesOpen: captures.every(
         (capture) =>
           capture.release.firingFrameVisible &&
+          capture.release.fireInputHeld &&
           capture.release.firingFrameId === OPEN_FRAME_ID &&
           capture.release.textureKey !== capture.release.closedTextureKey,
       ),
       allReturnsClosed: captures.every(
         (capture) =>
           !capture.after.firingFrameVisible &&
+          !capture.after.fireInputHeld &&
           capture.after.textureKey === capture.after.closedTextureKey,
       ),
       authoritativeSeqAdvanced: captures.every(
@@ -806,7 +870,7 @@ test("B13 Wyrmskull uses its authoritative open-mouth release frame locally and 
           characterId: CHARACTER_ID,
           weaponId: WEAPON_ID,
           firingFrameId: OPEN_FRAME_ID,
-          releaseWindowMs: 150,
+          minimumHeldOpenMs: 260,
           registration,
           assertions,
           captures,

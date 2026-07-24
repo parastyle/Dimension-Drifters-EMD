@@ -386,8 +386,8 @@ describe("gear G1/G2 shared catalog, account, and allocation laws", () => {
     );
   });
 
-  it("pins schema 38 without run stats or level fields and keeps the compatibility envelope", () => {
-    expect(petShared.SCHEMA_VERSION).toBe(41);
+  it("pins schema 40 without run stats or level fields and keeps the compatibility envelope", () => {
+    expect(petShared.SCHEMA_VERSION).toBe(42);
     const playerSymbols = Object.getOwnPropertySymbols(petShared.PlayerState);
     const playerMetadata = (
       petShared.PlayerState as unknown as Record<symbol, Record<number, { name: string }>>
@@ -416,6 +416,7 @@ describe("gear G1/G2 shared catalog, account, and allocation laws", () => {
       "prestige",
       "relics",
       "attackMoveMode",
+      "fireInputHeld",
     ]);
     const player = new petShared.PlayerState();
     expect([player.character, player.runCharacter]).toEqual([

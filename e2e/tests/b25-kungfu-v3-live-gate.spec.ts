@@ -22,8 +22,8 @@ const FIXTURES = [
     expectedReachPx: [138, 108.56, 112.24, 117.76, 136.16],
     showcaseMotion: "roundhouse-kick",
     finisherPose: "champion-guard",
-    displacementPx: 428,
-    pathPx: 428,
+    displacementPx: 0,
+    pathPx: 0,
   },
   {
     id: "x2-wing-chun-wraps",
@@ -50,13 +50,8 @@ const FIXTURES = [
     showcaseMotion: "frontflip-heel-drop",
     finisherPose: "crane-one-leg",
     stance: "crane",
-    displacementPx: Math.hypot(196, -8),
-    pathPx:
-      Math.hypot(18, 88) +
-      Math.hypot(-12, -112) +
-      Math.hypot(24, 104) +
-      Math.hypot(10, -128) +
-      Math.hypot(156, 40),
+    displacementPx: 0,
+    pathPx: 0,
   },
   {
     id: "x2-iron-palm-wraps",
@@ -70,8 +65,8 @@ const FIXTURES = [
     showcaseMotion: "mantis-double-hook",
     finisherPose: "praying-mantis",
     stance: "praying-mantis",
-    displacementPx: 332,
-    pathPx: 332,
+    displacementPx: 0,
+    pathPx: 0,
   },
 ] as const;
 
@@ -1077,15 +1072,12 @@ test("B25 theatrical kung-fu v3 is live on all four wraps and both facings", asy
         }
         expect(capture.travel.positionSamples.length).toBeGreaterThanOrEqual(5);
         expect(capture.theatricalSamples.length).toBeGreaterThanOrEqual(5);
+        expect(capture.travel.distancePx, `${fixture.id}/${facing}: zero net drift`).toBeLessThan(1);
+        expect(capture.travel.pathDistancePx, `${fixture.id}/${facing}: zero path drift`).toBeLessThan(
+          1,
+        );
+        expect(capture.travel.stepTravel.every((step) => step.distancePx < 1)).toBe(true);
         if (fixture.id === "x2-wing-chun-wraps") {
-          expect(capture.travel.distancePx, `${fixture.id}/${facing}: zero net drift`).toBeLessThan(
-            1,
-          );
-          expect(
-            capture.travel.pathDistancePx,
-            `${fixture.id}/${facing}: zero path drift`,
-          ).toBeLessThan(1);
-          expect(capture.travel.stepTravel.every((step) => step.distancePx < 1)).toBe(true);
           expect(
             capture.theatricalSamples.every(
               (sample) =>
@@ -1101,39 +1093,21 @@ test("B25 theatrical kung-fu v3 is live on all four wraps and both facings", asy
           expect(capture.renderEvidence.maxFrontFootStretch).toBe(1);
           expect(capture.renderEvidence.holdPoses).toEqual([]);
         } else {
-          expect(capture.travel.distancePx).toBeGreaterThan(fixture.displacementPx * 0.3);
-          expect(capture.travel.distancePx).toBeLessThanOrEqual(
-            (fixture.id === "x2-drunken-fist-wraps" ? fixture.pathPx : fixture.displacementPx) + 18,
-          );
-          expect(capture.travel.pathDistancePx).toBeGreaterThan(fixture.pathPx * 0.3);
-          expect(capture.travel.pathDistancePx).toBeLessThanOrEqual(fixture.pathPx + 24);
-          expect(Math.sign(capture.travel.end.x - capture.travel.start.x)).toBe(
-            facing === "right" ? 1 : -1,
-          );
           expect(capture.finisherScreenshot?.endsWith("-finisher.png")).toBe(true);
           expect(capture.renderEvidence.maxHoldStrength).toBeGreaterThan(0.6);
         }
         if (fixture.id === "x2-muay-thai-wraps") {
-          const rocketWindowPx =
-            (capture.travel.stepTravel[0]?.distancePx ?? 0) +
-            (capture.travel.stepTravel[1]?.distancePx ?? 0);
-          expect(rocketWindowPx).toBeGreaterThan(270);
-          expect(rocketWindowPx).toBeLessThanOrEqual(330);
           expect(capture.renderEvidence.minPaperTurnScaleX).toBeLessThan(-0.1);
           expect(capture.renderEvidence.maxFrontFootStretch).toBeGreaterThan(1.7);
           expect(capture.renderEvidence.holdPoses).toContain("champion-guard");
         }
         if (fixture.id === "x2-drunken-fist-wraps") {
-          expect(
-            Math.max(...capture.travel.stepTravel.map((step) => Math.abs(step.y))),
-          ).toBeGreaterThan(80);
           expect(capture.renderEvidence.maxFlipAbsRotation).toBeGreaterThan(1);
           expect(capture.renderEvidence.maxFlipProgress).toBeGreaterThan(0.2);
           expect(capture.renderEvidence.maxFrontFootStretch).toBeGreaterThan(1.8);
           expect(capture.renderEvidence.holdPoses).toContain("crane-one-leg");
         }
         if (fixture.id === "x2-iron-palm-wraps") {
-          expect(capture.travel.stepTravel[1]?.distancePx).toBeGreaterThan(90);
           expect(capture.renderEvidence.minPaperTurnScaleX).toBeLessThan(-0.1);
           expect(capture.renderEvidence.maxHandStretch).toBeGreaterThan(1.7);
           expect(capture.renderEvidence.holdPoses).toContain("praying-mantis");
@@ -1240,30 +1214,27 @@ test("B25 theatrical kung-fu v3 is live on all four wraps and both facings", asy
               Math.min(...capture.rig.footPose.map((foot) => foot.y)) >
               20,
         ),
-      wingChunZeroDisplacement: captures
-        .filter((capture) => capture.weaponId === "x2-wing-chun-wraps")
+      allWrapsZeroDisplacement: captures
         .every(
           (capture) =>
             capture.travel.distancePx < 1 &&
             capture.travel.pathDistancePx < 1 &&
             capture.travel.stepTravel.every((step) => step.distancePx < 1),
         ),
-      theatricalAuthoritativeTravel: captures
-        .filter((capture) => capture.weaponId !== "x2-wing-chun-wraps")
+      theatricsStayPresentationOnly: captures
         .every(
           (capture) =>
-            capture.travel.distancePx >= capture.travel.expectedPx * 0.3 &&
-            capture.travel.pathDistancePx >= capture.travel.expectedPathPx * 0.3 &&
+            capture.travel.expectedPx === 0 &&
+            capture.travel.expectedPathPx === 0 &&
             capture.travel.positionSamples.length >= 5,
         ),
-      dragonRocket: captures
+      dragonRocketTheatrics: captures
         .filter((capture) => capture.weaponId === "x2-muay-thai-wraps")
-        .every((capture) => {
-          const rocketWindowPx =
-            (capture.travel.stepTravel[0]?.distancePx ?? 0) +
-            (capture.travel.stepTravel[1]?.distancePx ?? 0);
-          return rocketWindowPx > 270 && rocketWindowPx <= 330;
-        }),
+        .every(
+          (capture) =>
+            capture.renderEvidence.minPaperTurnScaleX < -0.1 &&
+            capture.renderEvidence.maxFrontFootStretch > 1.7,
+        ),
       fullBodyPaperRotate: captures
         .filter(
           (capture) =>
@@ -1353,9 +1324,9 @@ test("B25 theatrical kung-fu v3 is live on all four wraps and both facings", asy
       mantisHookShowcase: true,
       prayingMantisStance: true,
       craneStance: true,
-      wingChunZeroDisplacement: true,
-      theatricalAuthoritativeTravel: true,
-      dragonRocket: true,
+      allWrapsZeroDisplacement: true,
+      theatricsStayPresentationOnly: true,
+      dragonRocketTheatrics: true,
       fullBodyPaperRotate: true,
       forwardFlip: true,
       wildStretchAttacks: true,

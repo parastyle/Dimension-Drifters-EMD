@@ -174,6 +174,7 @@ describe("B17 semantic hand-role and five-pose laws", () => {
     expect(vocabulary).toEqual([
       "secondary-grip",
       "mirror-guard",
+      "boxer-guard",
       "low-guard",
       "casting-gesture",
       "hip-rest",
@@ -214,6 +215,29 @@ describe("B17 semantic hand-role and five-pose laws", () => {
     expect(craneLead.y).toBeLessThan(craneOff.y);
     expect(martialIdleHandAngleFor(crane, 0)).toBeGreaterThan(0.5);
     expect(martialIdleHandAngleFor(crane, 1)).toBeLessThan(-0.4);
+  });
+
+  it.each([
+    "x2-coyote-trickster-s-sparkmitt",
+    "x2-emberfist-wraps",
+  ] as const)("holds both %s fists in a compact chin-height boxer guard", (weaponId) => {
+    const def = weapon(weaponId);
+    const common = { bodyX: 0, bodyY: 0, bodyHeight: 76, aimLocal: 0 };
+    const lead = resolveIdleHandTarget(def, { ...common, hand: 0 }, { x: 0, y: 0 });
+    const off = resolveIdleHandTarget(def, { ...common, hand: 1 }, { x: 0, y: 0 });
+
+    expect(idleHandPoseFor(def)).toBe("boxer-guard");
+    expect(lead.x).toBeGreaterThan(0);
+    expect(off.x).toBeGreaterThan(0);
+    expect(lead.y).toBeLessThan(-12);
+    expect(off.y).toBeLessThan(-12);
+    expect(Math.abs(lead.y - off.y)).toBeLessThan(5);
+    expect(Math.abs(martialIdleHandAngleFor(def, 0) ?? Number.POSITIVE_INFINITY)).toBeLessThan(
+      0.25,
+    );
+    expect(Math.abs(martialIdleHandAngleFor(def, 1) ?? Number.POSITIVE_INFINITY)).toBeLessThan(
+      0.25,
+    );
   });
 
   it("keeps idle and terminal recovery continuous, finite, bounded, and facing-side after one mirror", () => {

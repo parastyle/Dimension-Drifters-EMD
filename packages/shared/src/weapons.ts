@@ -75,6 +75,7 @@ export interface WeaponBreakActionDef {
 export type IdleHandPose =
   | "secondary-grip"
   | "mirror-guard"
+  | "boxer-guard"
   | "low-guard"
   | "casting-gesture"
   | "hip-rest"
