@@ -4957,7 +4957,8 @@
       "element": "physical",
       "grip": "1H",
       "handlingTags": [
-        "pistol"
+        "pistol",
+        "revolver"
       ],
       "size": "S",
       "rangeBand": "long",
@@ -5005,7 +5006,8 @@
       "element": "physical",
       "grip": "1H",
       "handlingTags": [
-        "pistol"
+        "pistol",
+        "revolver"
       ],
       "size": "S",
       "rangeBand": "mid",
@@ -5053,7 +5055,8 @@
       "element": "physical",
       "grip": "1H",
       "handlingTags": [
-        "pistol"
+        "pistol",
+        "revolver"
       ],
       "size": "M",
       "rangeBand": "long",
@@ -5159,7 +5162,8 @@
       "element": "frost",
       "grip": "1H",
       "handlingTags": [
-        "pistol"
+        "pistol",
+        "revolver"
       ],
       "size": "M",
       "rangeBand": "mid",
@@ -5303,7 +5307,8 @@
       "element": "holy",
       "grip": "1H",
       "handlingTags": [
-        "pistol"
+        "pistol",
+        "revolver"
       ],
       "size": "M",
       "rangeBand": "long",
@@ -5351,7 +5356,8 @@
       "element": "void",
       "grip": "1H",
       "handlingTags": [
-        "pistol"
+        "pistol",
+        "revolver"
       ],
       "size": "S",
       "rangeBand": "long",
@@ -5400,7 +5406,8 @@
       "element": "physical",
       "grip": "1H",
       "handlingTags": [
-        "pistol"
+        "pistol",
+        "revolver"
       ],
       "size": "S",
       "rangeBand": "long",
@@ -5454,7 +5461,8 @@
       "element": "physical",
       "grip": "1H",
       "handlingTags": [
-        "pistol"
+        "pistol",
+        "revolver"
       ],
       "size": "S",
       "rangeBand": "mid",
@@ -5501,7 +5509,8 @@
       "element": "fire",
       "grip": "1H",
       "handlingTags": [
-        "pistol"
+        "pistol",
+        "revolver"
       ],
       "size": "M",
       "rangeBand": "long",
@@ -5601,7 +5610,8 @@
       "element": "shock",
       "grip": "1H",
       "handlingTags": [
-        "pistol"
+        "pistol",
+        "revolver"
       ],
       "size": "S",
       "rangeBand": "long",
@@ -5698,7 +5708,8 @@
       "element": "arcane",
       "grip": "1H",
       "handlingTags": [
-        "pistol"
+        "pistol",
+        "revolver"
       ],
       "size": "S",
       "rangeBand": "mid",
@@ -5798,7 +5809,8 @@
       "element": "physical",
       "grip": "1H",
       "handlingTags": [
-        "pistol"
+        "pistol",
+        "revolver"
       ],
       "size": "M",
       "rangeBand": "long",
@@ -7473,7 +7485,8 @@
       "finish": "worn",
       "grip": "dual",
       "handlingTags": [
-        "pump"
+        "pistol",
+        "revolver"
       ],
       "gripPoints": {
         "primary": {
@@ -8417,7 +8430,8 @@
       "finish": "battle-worn",
       "grip": "1H",
       "handlingTags": [
-        "pistol"
+        "pistol",
+        "revolver"
       ],
       "gripPoints": {
         "primary": {
@@ -9168,7 +9182,8 @@
       "element": "shock",
       "grip": "1H",
       "handlingTags": [
-        "pistol"
+        "pistol",
+        "revolver"
       ],
       "size": "S",
       "rangeBand": "long",
@@ -9976,7 +9991,8 @@
       "element": "arcane",
       "grip": "1H",
       "handlingTags": [
-        "pistol"
+        "pistol",
+        "revolver"
       ],
       "size": "M",
       "rangeBand": "long",
@@ -17126,7 +17142,8 @@
         "range": 90,
         "halfArc": 0.6,
         "cooldown": 0.32,
-        "displayLength": 56,
+        "displayLength": 76,
+        "collisionLength": 56,
         "swingArc": 2.2,
         "gripFrac": 0.5
       },
@@ -17135,7 +17152,8 @@
         "action": "throw-release",
         "suppressSwing": true,
         "windupSeconds": 0.18,
-        "preThrowRevolutions": 0.5
+        "preThrowRevolutions": 0.5,
+        "throwStyle": "engaged"
       },
       "behavior": {
         "kind": "thrown",
@@ -17173,7 +17191,8 @@
         "range": 90,
         "halfArc": 0.6,
         "cooldown": 0.42,
-        "displayLength": 58,
+        "displayLength": 78,
+        "collisionLength": 58,
         "swingArc": 2.2,
         "gripFrac": 0.5
       },
@@ -17182,7 +17201,8 @@
         "action": "throw-release",
         "suppressSwing": true,
         "windupSeconds": 0.2,
-        "preThrowRevolutions": 0.5
+        "preThrowRevolutions": 0.5,
+        "throwStyle": "engaged"
       },
       "behavior": {
         "kind": "thrown",
@@ -17220,7 +17240,8 @@
         "range": 90,
         "halfArc": 0.6,
         "cooldown": 0.36,
-        "displayLength": 58,
+        "displayLength": 78,
+        "collisionLength": 58,
         "swingArc": 2.2,
         "gripFrac": 0.5
       },
@@ -17229,7 +17250,8 @@
         "action": "throw-release",
         "suppressSwing": true,
         "windupSeconds": 0.19,
-        "preThrowRevolutions": 0.5
+        "preThrowRevolutions": 0.5,
+        "throwStyle": "engaged"
       },
       "behavior": {
         "kind": "thrown",
@@ -17267,7 +17289,8 @@
         "range": 90,
         "halfArc": 0.6,
         "cooldown": 0.5,
-        "displayLength": 60,
+        "displayLength": 82,
+        "collisionLength": 60,
         "swingArc": 2.2,
         "gripFrac": 0.5
       },
@@ -17276,7 +17299,8 @@
         "action": "throw-release",
         "suppressSwing": true,
         "windupSeconds": 0.22,
-        "preThrowRevolutions": 0.5
+        "preThrowRevolutions": 0.5,
+        "throwStyle": "engaged"
       },
       "behavior": {
         "kind": "thrown",
@@ -17323,7 +17347,8 @@
         "action": "throw-release",
         "suppressSwing": true,
         "windupSeconds": 0.16,
-        "preThrowRevolutions": 0.5
+        "preThrowRevolutions": 0.5,
+        "flourishStyle": "pistol-end-hook"
       },
       "behavior": {
         "kind": "thrown",
@@ -17361,7 +17386,8 @@
         "range": 104,
         "halfArc": 0.62,
         "cooldown": 0.4,
-        "displayLength": 76,
+        "displayLength": 104,
+        "collisionLength": 76,
         "swingArc": 2.4,
         "gripFrac": 0.5
       },
@@ -17370,7 +17396,8 @@
         "action": "throw-release",
         "suppressSwing": true,
         "windupSeconds": 0.19,
-        "preThrowRevolutions": 0.5
+        "preThrowRevolutions": 0.5,
+        "throwStyle": "engaged"
       },
       "behavior": {
         "kind": "thrown",

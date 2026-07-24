@@ -34,7 +34,7 @@ const fail = (msg) => errors.push(`${CUR}: ${msg}`);
 
 const TYPES = new Set(["melee", "ranged", "caster"]);
 const GRIPS = new Set(["1H", "2H", "dual", "mounted"]);
-const HANDLING_TAGS = new Set(["bolt", "lever", "pump", "pistol"]);
+const HANDLING_TAGS = new Set(["bolt", "lever", "pump", "pistol", "revolver"]);
 const IDLE_HAND_POSES = new Set([
   "secondary-grip", "mirror-guard", "low-guard", "casting-gesture", "hip-rest",
   "praying-mantis", "crane-guard",
@@ -221,7 +221,7 @@ const PERFORMANCE_KEYS = new Set([
   "hold", "action", "continuous", "suppressSwing", "windupSeconds", "carryForwardPx", "shake",
   "carryAngleRad", "preThrowRevolutions", "lunge", "twirl", "holdScaling", "strideTap",
   "emitter", "vfxAt", "aura", "comboForwardPx", "edgeLeadFlip", "throwHeightPx", "frontflip",
-  "vfxForwardPx", "preThrowDamage", "forwardDrift",
+  "vfxForwardPx", "preThrowDamage", "forwardDrift", "throwStyle", "flourishStyle",
 ]);
 const PERFORMANCE_HOLDS = new Set([
   "upright", "hanging-chain", "drag-at-feet", "steady", "aim-forward", "overhead", "shoulder-launcher",
@@ -618,6 +618,14 @@ function performanceOf(p) {
   if (p.preThrowRevolutions !== undefined)
     out.preThrowRevolutions = num(
       p.preThrowRevolutions, 0, 3, 0, "performance.preThrowRevolutions",
+    );
+  if (p.throwStyle !== undefined)
+    out.throwStyle = enumOf(p.throwStyle, new Set(["engaged"]), "performance.throwStyle");
+  if (p.flourishStyle !== undefined)
+    out.flourishStyle = enumOf(
+      p.flourishStyle,
+      new Set(["pistol-end-hook"]),
+      "performance.flourishStyle",
     );
   if (p.preThrowDamage !== undefined) {
     if (!p.preThrowDamage || typeof p.preThrowDamage !== "object" || Array.isArray(p.preThrowDamage)) {

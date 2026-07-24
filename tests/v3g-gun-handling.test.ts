@@ -32,11 +32,13 @@ describe("V3G catalog gun-handling laws", () => {
     const candidates = catalog.filter(
       (weapon) =>
         !!weapon.gun &&
-        ((weapon.tags.family === "shotgun" && weapon.id !== "x2-dustdevil-riotgun") ||
+        ((weapon.tags.family === "shotgun" &&
+          weapon.id !== "x2-dustdevil-riotgun" &&
+          weapon.id !== "x2-twin-maw-greenerbore") ||
           /\bpump-rifle\b/i.test(weapon.name) ||
           /\bbuckshot avalanche\b/i.test(weapon.name)),
     );
-    expect(candidates).toHaveLength(16);
+    expect(candidates).toHaveLength(15);
     expect(
       tagged("pump")
         .map((weapon) => weapon.id)
@@ -72,7 +74,7 @@ describe("V3G catalog gun-handling laws", () => {
 
   it("enumerates every authored pistol without a client weapon-id list", () => {
     const pistols = tagged("pistol");
-    expect(pistols).toHaveLength(30);
+    expect(pistols).toHaveLength(31);
     expect(pistols.every((weapon) => !!(weapon.gun || weapon.beam))).toBe(true);
   });
 });
