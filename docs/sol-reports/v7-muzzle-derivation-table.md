@@ -91,7 +91,7 @@ Generated from sprite alpha for all 157 active projectile, beam, and authored me
 | `x2-iron-palm-wraps` (Iron Palm Wraps) | part-1 (363, 240.8)<br>part-2 (511, 322.6) | part-1 (184, 256.9)<br>part-2 (254.6, 221) | Yes - The authored points are the alpha-weighted iron-knuckle striking-hand centroids at impact, not projectile bores. |
 | `x2-iron-war-fan` (Iron War Fan) | part-1 (246, 166.6) | part-1 (246, 172) | Yes - The finisher gust leaves from the midpoint of the rigid fan's visible leading steel edge. |
 | `x2-ironhail-pepperbox` (Ironhail Pepperbox) | part-1 (255, 74.2) | part-1 (255, 74.2) | No |
-| `x2-ironhide-buffalo-gun` (Ironhide Buffalo Gun) | part-1 (255, 34.9) | part-1 (255, 34.9) | No |
+| `x2-ironhide-buffalo-gun` (Ironhide Buffalo Gun) | part-1 (767, 92.9) | part-1 (767, 92.9) | No |
 | `x2-leviathan-harpoon-gun` (Leviathan Harpoon Gun) | part-1 (253, 22.5) | part-1 (253, 22.5) | No |
 | `x2-m50-anti-materiel-rifle` (M-50 Anti-Materiel Rifle) | part-1 (255, 20.1) | part-1 (255, 20.1) | No |
 | `x2-magpie-scattergun` (Magpie Scattergun) | part-1 (255, 18) | part-1 (255, 18) | No |

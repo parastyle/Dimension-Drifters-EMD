@@ -2070,18 +2070,18 @@ export const WEAPON_ART_MUZZLES = {
     "sprite": "x2-ironhide-buffalo-gun",
     "parts": [
       {
-        "width": 256,
-        "height": 84
+        "width": 768,
+        "height": 252
       }
     ],
     "points": [
       {
         "part": 0,
-        "x": 255,
-        "y": 34.9,
+        "x": 767,
+        "y": 92.9,
         "derived": {
-          "x": 255,
-          "y": 34.9
+          "x": 767,
+          "y": 92.9
         }
       }
     ],
