@@ -228,37 +228,48 @@ describe("V5M melee owner orders", () => {
     expect(point).toMatchObject({ x: 80, y: 25 });
   });
 
-  it("performs a fixed-rate seamless Gravewarden frontflip without moving active damage timing", () => {
+  it("performs the six-turn forward-jump Gravewarden frontflip at triple cadence", () => {
     const spade = weapon("gravediggers-spade");
     const descriptor = swingDescriptorFor(spade, spade.cooldown);
-    const legacy = swingDescriptorFor(
-      { ...spade, swingArc: 2.7, timingSwingArc: undefined },
-      spade.cooldown,
-    );
+    expect(spade.cooldown).toBe(0.6);
     expect(spade.swingArc).toBeCloseTo(Math.PI * 2, 10);
-    expect(descriptor.activeStartSeconds).toBeCloseTo(legacy.activeStartSeconds, 10);
-    expect(descriptor.activeEndSeconds).toBeCloseTo(legacy.activeEndSeconds, 10);
+    expect(descriptor.poseSeconds).toBeLessThanOrEqual(spade.cooldown);
     expect(spade.performance).toMatchObject({
       action: "spin",
       continuous: true,
       suppressSwing: true,
-      twirl: { plane: "continuous-frontflip", direction: "forward", visualRevolutions: 1 },
+      lunge: { distancePx: 144, durationSeconds: 0.2 },
+      twirl: {
+        plane: "continuous-frontflip",
+        direction: "forward",
+        visualRevolutions: 6,
+        cadenceSeconds: 0.2,
+      },
       holdScaling: { cadence: "weapon-cooldown" },
     });
-    expect(continuousWhirlPhase(spade.performance, true, false, 0, spade.cooldown)).toBe(0);
-    const start = continuousFrontflipAngle(0, 1, 1, 1);
-    const end = continuousFrontflipAngle(1, 1, 1, 1);
+    expect(
+      continuousWhirlPhase(
+        spade.performance,
+        true,
+        false,
+        0,
+        spade.performance?.twirl?.cadenceSeconds ?? spade.cooldown,
+      ),
+    ).toBe(0);
+    const start = continuousFrontflipAngle(0, 6, 1, 1);
+    const end = continuousFrontflipAngle(1, 6, 1, 1);
     expect(Math.cos(end)).toBeCloseTo(Math.cos(start), 12);
     expect(Math.sin(end)).toBeCloseTo(Math.sin(start), 12);
     const epsilon = 1e-5;
     const speedBefore =
-      (continuousFrontflipAngle(1, 1, 1, 1) -
-        continuousFrontflipAngle(1 - epsilon, 1, 1, 1)) /
+      (continuousFrontflipAngle(1, 6, 1, 1) -
+        continuousFrontflipAngle(1 - epsilon, 6, 1, 1)) /
       epsilon;
     const speedAfter =
-      (continuousFrontflipAngle(epsilon, 1, 1, 1) -
-        continuousFrontflipAngle(0, 1, 1, 1)) /
+      (continuousFrontflipAngle(epsilon, 6, 1, 1) -
+        continuousFrontflipAngle(0, 6, 1, 1)) /
       epsilon;
+    expect(speedAfter).toBeGreaterThan(0);
     expect(speedBefore).toBeCloseTo(speedAfter, 8);
   });
 

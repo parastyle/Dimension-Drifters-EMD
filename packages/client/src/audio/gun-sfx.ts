@@ -176,6 +176,7 @@ export function gunFireFamilyForWeapon(weapon: WeaponDef): GunFireFamily | undef
     case "railgun":
       return "coil-rail";
     case "heavy-ordnance":
+    case "grenade-launcher":
       if (weapon.id === "x2-hailstorm-coilgun") return "coil-rail";
       if (ROTARY_HEAVY.has(weapon.id)) return "rotary-auto";
       if (HEAVY_SCATTER.has(weapon.id)) return "heavy-scatter";

@@ -127,13 +127,16 @@ describe("owner-notes V3C caster orders", () => {
     });
   });
 
-  it("twirls Hailshard as a held channel while retaining its bounded five-shard payload", () => {
+  it("removes Hailshard's rogue swing while retaining its bounded forward five-shard payload", () => {
     const definition = weapon("x2-hailshard-resonator");
-    const a = sample(definition, { fireHeld: true, timeS: 0.1 });
-    const b = sample(definition, { fireHeld: true, timeS: 0.2 });
-    expect(definition.performance).toMatchObject({ action: "spin", continuous: true });
-    expect(a.weaponAngle).not.toBeCloseTo(b.weaponAngle, 4);
-    expect(definition.scatter).toMatchObject({ count: 5, aim: "radial-random" });
+    expect(definition.performance).toMatchObject({
+      action: "hold",
+      suppressSwing: true,
+    });
+    expect(definition.performance?.continuous).not.toBe(true);
+    expect(definition.suppressVfx).toBe(true);
+    expect(definition.suppressMeleeHitbox).toBe(true);
+    expect(definition.scatter).toMatchObject({ count: 5, aim: "cone" });
   });
 
   it("splits Arcanist's Lance into three capped bolts without multiplying DPS", () => {

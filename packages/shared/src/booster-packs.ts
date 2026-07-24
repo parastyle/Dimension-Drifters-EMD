@@ -88,7 +88,7 @@ export const STARTER_UNLOCKED_WEAPON_IDS = [
   "x2-cinderchoke-blunderbuss",
   "x2-cinderchoke-brazier-orb",
   "x2-cinderquill-almanac",
-  "x2-codex-of-forked-tongues",
+  "x2-rimebound-folio",
   "x2-coffin-nail-rosary-orb",
   "x2-confetti-cannon",
   "x2-dustdevil-warmaul",

@@ -333,6 +333,8 @@ export interface RigLoadoutPiece {
   readonly manifest: SpriteManifest;
   /** Authored twin sprites select part 1 for their second hand. */
   readonly partIndex?: 0 | 1;
+  /** A pre-made dual may mirror its sole authored sprite into the off hand. */
+  readonly mirrorX?: boolean;
 }
 
 /** Resolve the one catalog weapon into its complete authored held render. Independent weapons are never
@@ -349,7 +351,36 @@ export function authoredWeaponRenderPlan(
   if (def.dual && manifest.parts.length >= 2) {
     return [lead, { spriteId, def, manifest, partIndex: 1 }];
   }
+  if (def.dual && manifest.parts.length === 1) {
+    return [lead, { spriteId, def, manifest, partIndex: 0, mirrorX: true }];
+  }
   return [lead];
+}
+
+export interface OpposedWhirlwindPose {
+  readonly lead: Readonly<{ x: number; y: number }>;
+  readonly off: Readonly<{ x: number; y: number }>;
+  readonly rotation: number;
+  readonly projectedLength: number;
+}
+
+/** Two premade swords occupy exactly opposite radii of the same ground-plane revolution. */
+export function opposedWhirlwindPose(
+  angle: number,
+  squash: number,
+  waistY: number,
+  gripRadius: number,
+): OpposedWhirlwindPose {
+  const rx = Math.cos(angle);
+  const ry = Math.sin(angle) * squash;
+  const x = rx * gripRadius;
+  const y = ry * gripRadius;
+  return Object.freeze({
+    lead: Object.freeze({ x, y: waistY + y }),
+    off: Object.freeze({ x: -x, y: waistY - y }),
+    rotation: Math.atan2(ry, rx),
+    projectedLength: Math.hypot(rx, ry),
+  });
 }
 
 export type WrapRigReceiver = "hand-r" | "hand-l" | "foot-r" | "foot-l";
@@ -1686,6 +1717,11 @@ interface TomeVisualState {
   readonly displayLength: number;
   readonly openRotationOffsetRad: number;
   readonly openGeometry?: WeaponArtStateGeometry;
+  readonly proceduralSplay: boolean;
+  readonly proceduralLeaves?: readonly [
+    Phaser.GameObjects.Image,
+    Phaser.GameObjects.Image,
+  ];
   readonly pages: readonly [TomePageQuad, TomePageQuad];
   readonly scraps: readonly [TomeScrap, TomeScrap];
   openBaseScale: number;
@@ -4836,6 +4872,7 @@ export class SpriteRig {
     if (!tome) return;
     for (const page of tome.pages) page.quad.destroy();
     for (const scrap of tome.scraps) scrap.piece.destroy();
+    for (const leaf of tome.proceduralLeaves ?? []) leaf.destroy();
     this.tome = undefined;
   }
 
@@ -4847,6 +4884,18 @@ export class SpriteRig {
     const art = tomeOpenArtFor(spriteId);
     const heldWeapon = this.weapons[0];
     if (!art || !heldWeapon) return;
+    const makeProceduralLeaf = (): Phaser.GameObjects.Image => {
+      const leaf = this.scene.add
+        .image(0, 0, closedTexture.key, closedTexture.frame)
+        .setOrigin(heldWeapon.img.originX, heldWeapon.img.originY)
+        .setVisible(false);
+      this.root.add(leaf);
+      this.root.moveTo(leaf, this.root.getIndex(heldWeapon.img) + 1);
+      return leaf;
+    };
+    const proceduralLeaves = art.proceduralSplay
+      ? ([makeProceduralLeaf(), makeProceduralLeaf()] as const)
+      : undefined;
     const makePage = (color: number): TomePageQuad => {
       const quad = this.scene.add
         .rectangle(0, 0, 1, 1, color, 0.9)
@@ -4880,10 +4929,12 @@ export class SpriteRig {
       displayLength: def.displayLength,
       openRotationOffsetRad: tomeOpenRotationForAim(spriteId, 0),
       openGeometry: heldWeapon.artGeometry?.open,
+      proceduralSplay: art.proceduralSplay === true,
+      proceduralLeaves,
       pages: [makePage(0xf1d09a), makePage(0xe5bd80)],
       scraps: [makeScrap(0xe9c88f), makeScrap(0xdab276)],
-      openBaseScale: 0,
-      openTextureReady: false,
+      openBaseScale: art.proceduralSplay ? heldWeapon.baseScale : 0,
+      openTextureReady: art.proceduralSplay === true,
       openVisible: false,
       hasSeq: false,
       lastSeq: 0,
@@ -4995,8 +5046,9 @@ export class SpriteRig {
   private setTomeClosed(tome: TomeVisualState): void {
     const weapon = this.weapons[0];
     if (weapon && tome.openVisible) {
-      weapon.img.setTexture(tome.closedTextureKey, tome.closedFrame);
+      weapon.img.setTexture(tome.closedTextureKey, tome.closedFrame).setVisible(true);
     }
+    for (const leaf of tome.proceduralLeaves ?? []) leaf.setVisible(false);
     tome.openVisible = false;
     this.hideTomeShapes(tome);
   }
@@ -5158,7 +5210,12 @@ export class SpriteRig {
       return;
     }
     if (!tome.openVisible) {
-      weapon.img.setTexture(tome.openTextureKey);
+      if (tome.proceduralSplay) {
+        weapon.img.setVisible(false);
+        for (const leaf of tome.proceduralLeaves ?? []) leaf.setVisible(true);
+      } else {
+        weapon.img.setTexture(tome.openTextureKey);
+      }
       tome.openVisible = true;
     }
 
@@ -5191,6 +5248,24 @@ export class SpriteRig {
     const img = weapon.img;
     const rotation = img.rotation;
     const axisSign = img.scaleX < 0 ? -1 : 1;
+    if (tome.proceduralLeaves) {
+      const width = img.displayWidth;
+      const alongX = Math.cos(rotation) * width * 0.14 * axisSign;
+      const alongY = Math.sin(rotation) * width * 0.14 * axisSign;
+      const [upper, lower] = tome.proceduralLeaves;
+      upper
+        .setPosition(img.x - alongX, img.y - alongY)
+        .setRotation(rotation - 0.3 * axisSign)
+        .setScale(img.scaleX * 0.58, img.scaleY * 0.92)
+        .setAlpha(img.alpha)
+        .setVisible(true);
+      lower
+        .setPosition(img.x + alongX, img.y + alongY)
+        .setRotation(rotation + 0.3 * axisSign)
+        .setScale(img.scaleX * 0.58, img.scaleY * 0.92)
+        .setAlpha(img.alpha)
+        .setVisible(true);
+    }
     const pageScale = tomeOpenArtFor(weapon.spriteId)?.pageScale ?? 1;
     const pageWidth = img.displayWidth * 0.43 * pageScale;
     const pageHeight = img.displayHeight * 0.72 * pageScale;
@@ -5471,7 +5546,12 @@ export class SpriteRig {
       const pieceWorn = isWornWeapon(piece.def);
       const wornWrap = piece.def.glovePair?.wrapsFeet === true && partIndex === 0;
       const authoredPrimary = resolvedGunGripPoints(piece.def)?.primary;
-      const imageFacingX = spriteImageFacingX(piece.manifest.imageFacing);
+      const sourceFacingX = spriteImageFacingX(piece.manifest.imageFacing);
+      const imageFacingX: -1 | 1 = piece.mirrorX
+        ? sourceFacingX === 1
+          ? -1
+          : 1
+        : sourceFacingX;
       const originX =
         authoredPrimary?.x ??
         closed?.originX ??
@@ -9532,6 +9612,26 @@ export class SpriteRig {
         const bodyBaseScaleY = this.body.scaleY;
         let swingChannelsRouted = false;
         const poseStyle = comboPose ? comboPresentationStyleFor(family, comboPose.motion) : style;
+        // Generic authored melee flips share the movement kit's one-revolution paper tumble. Martial-wrap
+        // flips already own a richer limb sampler below; every other combo may opt in declaratively.
+        if (
+          comboPose?.theatrics?.flip &&
+          poseStyle !== "punch"
+        ) {
+          const flipStart = comboPose.timing.activeStart;
+          const flipEnd = Math.max(
+            flipStart + 0.001,
+            comboPose.timing.impact ?? comboPose.timing.activeEnd,
+          );
+          const flipProgress = clamp01((tt - flipStart) / (flipEnd - flipStart));
+          const flipDirection = comboPose.theatrics.flip === "front" ? 1 : -1;
+          this.root.rotation += rollTumbleRotation(
+            flipProgress,
+            flipDirection * this.facing,
+            anim.reducedMotion === true || outsidePaperView,
+          );
+          this.attackLiftPx += Math.sin(Math.PI * flipProgress) * TARGET_BODY_H * 0.28;
+        }
         // KNOWN STAGE-1 RESIDUAL: every signed reverse/dual/overhead comboPose below is presentation-only;
         // server damage still advances once through its untouched centered, positive single-sweep descriptor.
         if (comboPose?.choreography) {
@@ -10603,7 +10703,7 @@ export class SpriteRig {
         anim.fireHeld === true,
         anim.reducedMotion === true || outsidePaperView,
         t,
-        this.weaponDef?.cooldown ?? 0.4,
+        this.performanceSpec.twirl?.cadenceSeconds ?? this.weaponDef?.cooldown ?? 0.4,
       );
       if (whirlPhase >= 0) {
         const twirl = this.performanceSpec.twirl;
@@ -11476,9 +11576,11 @@ export class SpriteRig {
     );
 
     // Weapon(s): held in hand at the angle computed above (upright at rest → chop on swing).
+    let dualWhirlwindOwnsOffWeapon = false;
     for (let i = 0; i < this.weapons.length; i++) {
       const w = this.weapons[i];
       if (!w) continue;
+      if (i === 1 && dualWhirlwindOwnsOffWeapon) continue;
       const heldScale = i === 0 && this.tome?.openVisible ? this.tome.openBaseScale : w.baseScale;
       const base = heldScale / (this.baseScale || 1); // fixed on-screen weapon size (§29)
       if (i === 0 && this.signatureMotion && this.attackGripBlend > 0) {
@@ -11623,12 +11725,13 @@ export class SpriteRig {
         }
         const rx = Math.cos(th);
         const ry = Math.sin(th) * SQ;
-        const rlen = Math.hypot(rx, ry); // projected radial length: 1 sideways → SQ toward/away
-        const rot = Math.atan2(ry, rx);
         const waistY = TARGET_BODY_H * 0.06;
         const gripR = TARGET_BODY_H * 0.3;
-        const gx = rx * gripR;
-        const gy = waistY + ry * gripR;
+        const opposed = opposedWhirlwindPose(th, SQ, waistY, gripR);
+        const rlen = opposed.projectedLength; // projected radial length: 1 sideways → SQ toward/away
+        const rot = opposed.rotation;
+        const gx = opposed.lead.x;
+        const gy = opposed.lead.y;
         w.img.setPosition(gx, gy);
         w.img.rotation = rot;
         w.img.setScale(base * rlen, base); // foreshorten the LENGTH only — the paper-sword effect
@@ -11638,7 +11741,17 @@ export class SpriteRig {
         const front = this.hands.find((h) => h.front);
         const back = this.hands.find((h) => !h.front);
         if (front) front.img.setPosition(gx, gy);
-        if (back) {
+        const offWeapon = this.orbitSpin && def.dual ? this.weapons[1] : undefined;
+        if (offWeapon && back) {
+          const offBase = offWeapon.baseScale / (this.baseScale || 1);
+          offWeapon.img.setPosition(opposed.off.x, opposed.off.y);
+          // The off-side source image is mirrored, so this shared semantic rotation points it opposite.
+          offWeapon.img.rotation = rot;
+          offWeapon.img.setScale(offBase * rlen, offBase);
+          back.img.setPosition(opposed.off.x, opposed.off.y);
+          back.img.rotation = 0;
+          dualWhirlwindOwnsOffWeapon = true;
+        } else if (back) {
           const haft = TARGET_BODY_H * 0.42 * Math.max(rlen, 0.5);
           const ux = rlen > 1e-4 ? rx / rlen : 1;
           const uy = rlen > 1e-4 ? ry / rlen : 0;

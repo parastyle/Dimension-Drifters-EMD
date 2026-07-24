@@ -129,7 +129,8 @@ function reachCredit(range: number): number {
 function meleeDamageBudget(weapon: WeaponDef): number {
   const katana = katanaExpectedMechanic(weapon);
   return (
-    Math.max(0, weapon.damage) * katana.averageDamageMultiplier +
+    (weapon.suppressMeleeHitbox === true ? 0 : Math.max(0, weapon.damage)) *
+      katana.averageDamageMultiplier +
     katana.averageBurstDamage +
     Math.max(0, weapon.quake?.damage ?? 0) +
     0.6 *
@@ -283,7 +284,7 @@ export function deriveWeaponResourceProfile(weapon: WeaponDef): WeaponResourcePr
 }
 
 /**
- * Deterministic formula output for all 357 durable ids: 342 active + 15 archived. Archived profiles remain
+ * Deterministic formula output for all 357 durable ids: 338 active + 19 archived. Archived profiles remain
  * resolvable so old receipts/instances never dangle while the join migration converts owned copies.
  */
 export const WEAPON_RESOURCE_IDS = Object.freeze(
@@ -313,12 +314,12 @@ if (WEAPON_RESOURCE_IDS.length !== 357) {
   );
 }
 if (
-  ACTIVE_WEAPON_CATALOG_IDS.length !== 342 ||
-  ARCHIVED_WEAPON_IDS.length !== 15 ||
+  ACTIVE_WEAPON_CATALOG_IDS.length !== 338 ||
+  ARCHIVED_WEAPON_IDS.length !== 19 ||
   ACTIVE_WEAPON_CATALOG_IDS.length + ARCHIVED_WEAPON_IDS.length !== WEAPON_RESOURCE_IDS.length
 ) {
   throw new Error(
-    `Weapon archive census expected 342 active + 15 archived, received ${ACTIVE_WEAPON_CATALOG_IDS.length} + ${ARCHIVED_WEAPON_IDS.length}`,
+    `Weapon archive census expected 338 active + 19 archived, received ${ACTIVE_WEAPON_CATALOG_IDS.length} + ${ARCHIVED_WEAPON_IDS.length}`,
   );
 }
 if (Object.keys(WEAPON_RESOURCE_OVERRIDES).length > 15) {

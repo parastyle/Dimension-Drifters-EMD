@@ -609,7 +609,7 @@ const FAN_FAMILY = /^(?:paired-war-fan|war-fan)$/i;
 const BLADE_FAMILY = /^(?:broadsword|energy-blade|greatsword|katana|nodachi|rapier|saber|sword)$/i;
 const BLUNT_FAMILY = /^(?:axe|cleaver|flail|mace|maul|spade|warhammer)$/i;
 const RANGED_FAMILY =
-  /^(?:auto-rifle|blunderbuss|concussion-cannon|exotic-ranged|gun|hand-cannon|heavy-ordnance|lever-rifle|machine-pistol|marksman-rifle|nailgun|pistol|railgun|scrap-cannon|shotgun)$/i;
+  /^(?:auto-rifle|blunderbuss|concussion-cannon|exotic-ranged|grenade-launcher|gun|hand-cannon|heavy-ordnance|lever-rifle|machine-pistol|marksman-rifle|nailgun|pistol|railgun|scrap-cannon|shotgun)$/i;
 const CLAW_WORDS = /\b(?:claws?|talons?|rakes?|fangs?)\b/i;
 const BLADE_WORDS =
   /\b(?:blade|claymore|greatblade|katana|nodachi|sabre|saber|sword|zweihander)\b/i;
@@ -1949,7 +1949,7 @@ export function continuousFrontflipAngle(
   direction: -1 | 1,
   facing: -1 | 1,
 ): number {
-  return -direction * facing * Math.max(1, turns) * Math.PI * 2 * phase;
+  return direction * facing * Math.max(1, turns) * Math.PI * 2 * phase;
 }
 
 /** A reverse rising chop turns the painted axe head over before the upward return swipe. */

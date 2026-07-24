@@ -9,6 +9,7 @@ import {
   authoredDualPistolHandYOffset,
   authoredWeaponRenderPlan,
   DUAL_PISTOL_HAND_RISE_BODY_FRAC,
+  opposedWhirlwindPose,
   routeSwingChannels,
   sampleAuthoredDualCeremony,
 } from "./SpriteRig.js";
@@ -18,9 +19,9 @@ describe("authored pre-made dual rig presentation", () => {
     const catalogDuals = Object.values(WEAPONS).filter((weapon) => weapon.tags.grip === "dual");
     const expansionDuals = catalogDuals.filter((weapon) => weapon.id.startsWith("x2-"));
 
-    // The owner's 22-weapon census is the expansion catalog. The legacy twin-bowie-fangs
-    // is also catalog-authored and remains covered, bringing the live total to 23.
-    expect(expansionDuals).toHaveLength(22);
+    // B30 promotes the Falcata into the expansion dual census. The legacy twin-bowie-fangs
+    // is also catalog-authored and remains covered, bringing the live total to 24.
+    expect(expansionDuals).toHaveLength(23);
     expect(catalogDuals.map((weapon) => weapon.id)).toContain("twin-bowie-fangs");
 
     for (const weapon of catalogDuals) {
@@ -38,6 +39,30 @@ describe("authored pre-made dual rig presentation", () => {
       expect(manifest.parts[plan[0]?.partIndex ?? 0], `${weapon.id} lead part`).toBeDefined();
       expect(manifest.parts[plan[1]?.partIndex ?? 0], `${weapon.id} off part`).toBeDefined();
     }
+  });
+
+  it("mirrors the premade Falcata for its off side and keeps both blades opposed", () => {
+    const weapon = WEAPONS["x2-brimstone-falcata"];
+    if (!weapon) throw new Error("missing Brimstone Falcata fixture");
+    const spriteId = weaponDisplaySpriteId(weapon);
+    const manifest = (SPRITES as Record<string, SpriteManifest>)[spriteId];
+    if (!manifest) throw new Error("missing Brimstone Falcata manifest");
+
+    const plan = authoredWeaponRenderPlan(spriteId, weapon, manifest);
+    expect(plan).toHaveLength(2);
+    expect(plan.map((piece) => piece.partIndex)).toEqual([0, 0]);
+    expect(plan.map((piece) => piece.mirrorX ?? false)).toEqual([false, true]);
+
+    const lead = opposedWhirlwindPose(Math.PI / 3, 0.7, 40, 24);
+    const oneTurn = opposedWhirlwindPose(Math.PI / 3 + Math.PI * 2, 0.7, 40, 24);
+    expect(lead.off.x).toBeCloseTo(-lead.lead.x, 10);
+    expect(lead.off.y + lead.lead.y).toBeCloseTo(80, 10);
+    expect(oneTurn.lead.x).toBeCloseTo(lead.lead.x, 10);
+    expect(oneTurn.lead.y).toBeCloseTo(lead.lead.y, 10);
+    expect(oneTurn.off.x).toBeCloseTo(lead.off.x, 10);
+    expect(oneTurn.off.y).toBeCloseTo(lead.off.y, 10);
+    expect(oneTurn.rotation).toBeCloseTo(lead.rotation, 10);
+    expect(oneTurn.projectedLength).toBeCloseTo(lead.projectedLength, 10);
   });
 
   it("routes an authored off beat onto only the rear weapon and hand channels", () => {

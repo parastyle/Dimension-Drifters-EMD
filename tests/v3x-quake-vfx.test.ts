@@ -57,6 +57,7 @@ describe("V3X Anvil-Heart quake VFX family", () => {
       "x2-tombwarden-claymore",
       "x2-hangman-s-greatcleaver",
       "x2-quarry-splitter-bardiche",
+      "x2-choir-iron-greataxe",
       "x2-sermon-bell",
       "x2-vagrant-s-wishing-marble",
       "x2-cairn-of-hollow-names",

@@ -147,7 +147,8 @@ describe("owner ledger B8 pose, grip, and combo language", () => {
         plane: "continuous-frontflip",
         pivot: "grip",
         direction: "forward",
-        visualRevolutions: 1,
+        visualRevolutions: 6,
+        cadenceSeconds: 0.2,
       },
       holdScaling: { cadence: "weapon-cooldown" },
     });
@@ -158,17 +159,17 @@ describe("owner ledger B8 pose, grip, and combo language", () => {
         gravewarden.performance,
         true,
         false,
-        gravewarden.cooldown,
-        gravewarden.cooldown,
+        gravewarden.performance?.twirl?.cadenceSeconds ?? gravewarden.cooldown,
+        gravewarden.performance?.twirl?.cadenceSeconds ?? gravewarden.cooldown,
       ),
     ).toBe(0);
     const epsilon = 1e-6;
-    const start = continuousFrontflipAngle(0, 1, 1, 1);
-    const end = continuousFrontflipAngle(1, 1, 1, 1);
+    const start = continuousFrontflipAngle(0, 6, 1, 1);
+    const end = continuousFrontflipAngle(1, 6, 1, 1);
     expect(Math.cos(end)).toBeCloseTo(Math.cos(start), 12);
     expect(Math.sin(end)).toBeCloseTo(Math.sin(start), 12);
-    expect((end - continuousFrontflipAngle(1 - epsilon, 1, 1, 1)) / epsilon).toBeCloseTo(
-      (continuousFrontflipAngle(epsilon, 1, 1, 1) - start) / epsilon,
+    expect((end - continuousFrontflipAngle(1 - epsilon, 6, 1, 1)) / epsilon).toBeCloseTo(
+      (continuousFrontflipAngle(epsilon, 6, 1, 1) - start) / epsilon,
       8,
     );
   });
@@ -250,13 +251,13 @@ describe("owner ledger B8 pose, grip, and combo language", () => {
   it("pins Sunbreaker, Fool's Gold, and Hollowbarrel to their painted contact points", () => {
     const sunbreaker = b8Weapon("x2-sunbreaker-railgun");
     expect(sunbreaker.gripPoints).toEqual({
-      primary: { x: 0.43, y: 0.67 },
-      secondary: { x: 0.55, y: 0.64, role: "horizontal-foregrip" },
+      primary: { x: 0.36, y: 0.67 },
+      secondary: { x: 0.5, y: 0.64, role: "horizontal-foregrip" },
     });
     expect(secondaryGripHandRendersAbove("horizontal-foregrip")).toBe(true);
 
     expect(b8Weapon("x2-fool-s-gold-revolver").gripPoints).toEqual({
-      primary: { x: 0.53, y: 0.72 },
+      primary: { x: 0.38, y: 0.64 },
     });
 
     const hollowbarrel = b8Weapon("x2-hollowbarrel-spell-scattergun-staff");

@@ -452,6 +452,8 @@ export interface WeaponPerformanceDef {
     direction: "forward" | "alternate";
     /** Presentation turns per accepted beat; authoritative damage remains the authored swing arc. */
     visualRevolutions?: number;
+    /** Presentation-only loop duration; omitted keeps the accepted weapon cadence. */
+    cadenceSeconds?: number;
   };
   /** Hold cadence remains server-owned; total accepted swings are `1 + floor(held/cadence)`. */
   holdScaling?: {
@@ -535,6 +537,9 @@ export interface WeaponDef {
   effectTiming?: WeaponEffectTiming;
   /** Explicitly suppress every swing/quake visual while retaining authoritative damage. */
   suppressVfx?: boolean;
+  /** Projectile-only hybrids may still enter the melee attack dispatcher to emit their secondary layer.
+   * This flag removes the inherited swept edge from both the collision law and the server registry. */
+  suppressMeleeHitbox?: boolean;
   /** Status applied by each authoritative direct melee hit. */
   hitStatus?: EnemyHitStatusDef;
   /** A real projectile layered onto the accepted melee combo; never a replacement for the swept edge. */
@@ -1371,8 +1376,8 @@ const BASE_WEAPONS: Record<string, WeaponDefSource> = {
     },
   },
   // §6/§15 #10 GRAVEWARDEN BUSTER — the stable M0 rez-carrier id presents an original heroic
-  // greatblade. B8's amended action is one fixed-rate held frontflip around the pitch axis. The attack
-  // still resolves the same complete-circle damage, active timing, base damage, and cadence.
+  // greatblade. B30's recovered order makes each accepted attack a fast forward jump through six complete
+  // pitch-axis spins; its authoritative swept edge covers the same six visible revolutions.
   "gravediggers-spade": {
     id: "gravediggers-spade",
     name: "Gravewarden Buster",
@@ -1380,10 +1385,9 @@ const BASE_WEAPONS: Record<string, WeaponDefSource> = {
     damage: 8,
     range: 210,
     halfArc: 0.95,
-    cooldown: 0.6, // a heavy, deliberate dig
+    cooldown: 0.6,
     displayLength: 164,
     swingArc: Math.PI * 2,
-    timingSwingArc: 2.7,
     gripFrac: 0.1,
     twoHanded: true,
     performance: {
@@ -1395,8 +1399,10 @@ const BASE_WEAPONS: Record<string, WeaponDefSource> = {
         plane: "continuous-frontflip",
         pivot: "grip",
         direction: "forward",
-        visualRevolutions: 1,
+        visualRevolutions: 6,
+        cadenceSeconds: 0.2,
       },
+      lunge: { distancePx: 144, durationSeconds: 0.2 },
       holdScaling: { cadence: "weapon-cooldown" },
     },
     durability: 90,
@@ -1459,15 +1465,10 @@ const BASE_WEAPONS: Record<string, WeaponDefSource> = {
     gripFrac: 0.1,
     twoHanded: true,
     suppressVfx: true,
-    // The authoritative quake remains even though the owner removed its bespoke presentation.
-    quake: {
-      radius: 270,
-      damage: 8,
-    },
     tags: {
       grip: "2H",
       size: "L",
-      delivery: "melee-slam",
+      delivery: "melee-arc",
       fireMode: "tap-charge",
       element: "physical",
       classPool: "melee",

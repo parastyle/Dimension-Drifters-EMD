@@ -26,7 +26,10 @@ describe("B20 L5 authored weapon tiers", () => {
       expect(weapon.tier, id).toBe(derivedWeaponTier(weapon));
     }
     expect(WEAPON_TIER_MANUAL_FLOORS).toEqual({
+      "tombstone-greatsword": 3,
       "x2-abyssal-apocrypha": 4,
+      "x2-choir-iron-greataxe": 3,
+      "x2-quarry-splitter-bardiche": 3,
     });
   });
 
@@ -48,7 +51,7 @@ describe("B20 L5 authored weapon tiers", () => {
       (tier) =>
         ACTIVE_WEAPON_CATALOG_IDS.filter((id) => WEAPONS[id]?.tier === tier).length,
     );
-    expect(counts).toEqual([69, 72, 65, 68, 68]);
+    expect(counts).toEqual([69, 72, 65, 67, 65]);
     expect(counts.every((count) => count > 0)).toBe(true);
     expect(Math.max(...counts)).toBeLessThanOrEqual(ACTIVE_WEAPON_CATALOG_IDS.length / 2);
   });

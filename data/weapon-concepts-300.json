@@ -85,7 +85,7 @@
       "theme": "ember-forged forward-curving cleaving saber",
       "element": "fire",
       "finish": "battle-worn",
-      "grip": "1H",
+      "grip": "dual",
       "size": "M",
       "rangeBand": "close",
       "scaling": [
@@ -99,13 +99,29 @@
       "behavior": {
         "kind": "edge"
       },
+      "swingStyle": "spin",
+      "performance": {
+        "hold": "steady",
+        "action": "spin",
+        "continuous": true,
+        "suppressSwing": true,
+        "twirl": {
+          "plane": "ground-whirlwind",
+          "pivot": "grip",
+          "direction": "forward",
+          "visualRevolutions": 1
+        },
+        "holdScaling": {
+          "cadence": "weapon-cooldown"
+        }
+      },
       "stats": {
         "damage": 9,
         "range": 138,
         "halfArc": 0.8,
         "cooldown": 0.42,
         "displayLength": 102,
-        "swingArc": 2.7,
+        "swingArc": 6.283185307179586,
         "gripFrac": 0.12
       },
       "id": "x2-brimstone-falcata"
@@ -1293,6 +1309,50 @@
       "behavior": {
         "kind": "edge"
       },
+      "swingStyle": "chop",
+      "comboFamily": "chop",
+      "comboVariant": "sanctified-overhead-then-slash",
+      "authoritativeCombo": true,
+      "comboBar": [
+        {
+          "name": "sanctified overhead chop",
+          "motion": "overhead",
+          "direction": 1,
+          "hand": "both",
+          "timing": {
+            "activeStart": 0.14,
+            "activeEnd": 0.45,
+            "impact": 0.39,
+            "followEnd": 0.62
+          },
+          "path": {
+            "kind": "sweep",
+            "arcMultiplier": 1,
+            "rangeMultiplier": 1,
+            "damageMultiplier": 1,
+            "knockback": 8
+          }
+        },
+        {
+          "name": "existing sanctified slash",
+          "motion": "slash",
+          "direction": 1,
+          "hand": "both",
+          "timing": {
+            "activeStart": 0.13,
+            "activeEnd": 0.44,
+            "impact": 0.37,
+            "followEnd": 0.61
+          },
+          "path": {
+            "kind": "sweep",
+            "arcMultiplier": 1,
+            "rangeMultiplier": 1,
+            "damageMultiplier": 1,
+            "knockback": 0
+          }
+        }
+      ],
       "id": "x2-sanctified-headsman"
     },
     {
@@ -1759,7 +1819,7 @@
       "family": "axe",
       "theme": "cathedral-guard greataxe",
       "finish": "ornate",
-      "description": "A towering ceremonial greataxe chased in brass and stained-glass enamel, its broad bit ringing like a struck bell to call down a circle of holy light.",
+      "description": "A towering ceremonial greataxe chased in brass and stained-glass enamel, its broad bit carrying a blade-hugging tongue of flame through each cut.",
       "element": "holy",
       "grip": "2H",
       "size": "XL",
@@ -1770,7 +1830,7 @@
       "artPrompt": "Weapon-only in-world sprite (no character, no background scene): a towering ceremonial holy greataxe — a huge broad double-bitted steel head chased with brass filigree and small stained-glass enamel panes, a long banded haft with a brass cross-pommel. Grand, heavy, altar-grim XL. Flat orthographic full side-profile, ~4-6 colours. Faces RIGHT: broad double bit/edge to the RIGHT, brass-capped haft on the LEFT.",
       "palettePrimary": "#C49A5A",
       "paletteAccent": "#FF8A2B",
-      "cardartAction": "slammed down in a wide ground-cleaving arc, a blooming ring of warm golden holy light erupting from the impact",
+      "cardartAction": "slammed down in a wide ground-cleaving arc, a blade-hugging sheet of ember-orange flame following the steel",
       "finishNote": "ornate",
       "stats": {
         "damage": 12,
@@ -1782,9 +1842,7 @@
         "gripFrac": 0.09
       },
       "behavior": {
-        "kind": "quake",
-        "radius": 170,
-        "damage": 9
+        "kind": "edge"
       },
       "effectRecipe": "choir-iron-flame-slash",
       "effectEmitter": "blade",
@@ -2627,19 +2685,51 @@
       "artPrompt": "Weapon-only in-world sprite (no character, no background): a colossal frontier bardiche — an enormous long crescent cleaving blade of pitted grey iron streaked with rust, mounted on a thick dust-caked timber haft bound with wire, an iron foot-spike at the butt. Crude, brutal, quarry-forged. MEDIUM detail (large size class), ~5 colours. Flat orthographic full side-profile, faces RIGHT: huge crescent blade EDGE to the RIGHT, wire-bound haft/grip on the LEFT.",
       "cardartAction": "heaved in a slow ground-cleaving arc, a shockwave of grey rock-chips and dust erupting along the strike",
       "behavior": {
-        "kind": "quake",
-        "radius": 170,
-        "damage": 8
+        "kind": "edge"
       },
       "effectRecipe": "quarry-quad-spatter",
       "effectEmitter": "blade",
       "effectTiming": "swing-midpoint",
+      "swingStyle": "chop",
+      "comboFamily": "chop",
+      "comboVariant": "quarry-frontflip-slam",
+      "authoritativeCombo": true,
+      "comboBar": [
+        {
+          "name": "quarry front-flip slam",
+          "motion": "execution-slam",
+          "direction": 1,
+          "hand": "both",
+          "timing": {
+            "activeStart": 0.16,
+            "activeEnd": 0.7,
+            "impact": 0.68,
+            "followEnd": 0.9
+          },
+          "path": {
+            "kind": "fan",
+            "arcMultiplier": 1,
+            "deltaAngle": 6.283185307179586,
+            "rangeMultiplier": 1,
+            "damageMultiplier": 1,
+            "knockback": 24
+          },
+          "rootMotion": {
+            "forwardPx": 96,
+            "lateralPx": 0,
+            "durationSeconds": 0.22
+          },
+          "theatrics": {
+            "flip": "front"
+          }
+        }
+      ],
       "stats": {
         "damage": 15,
         "range": 240,
         "halfArc": 1.1,
         "cooldown": 0.88,
-        "displayLength": 320,
+        "displayLength": 256,
         "swingArc": 3.1,
         "gripFrac": 0.08
       },
@@ -2851,7 +2941,7 @@
         "gripFrac": 0.14
       },
       "performance": {
-        "hold": "steady",
+        "hold": "overhead",
         "action": "throw-release",
         "preThrowRevolutions": 0,
         "throwHeightPx": 28
@@ -5147,7 +5237,7 @@
         "range": 58,
         "halfArc": 0.5,
         "cooldown": 0.4,
-        "displayLength": 46,
+        "displayLength": 55.2,
         "swingArc": 1.1,
         "gripFrac": 0.18
       },
@@ -5446,8 +5536,8 @@
       },
       "gripPoints": {
         "primary": {
-          "x": 0.53,
-          "y": 0.72
+          "x": 0.38,
+          "y": 0.64
         }
       },
       "id": "x2-fool-s-gold-revolver"
@@ -6160,11 +6250,11 @@
       },
       "gripPoints": {
         "primary": {
-          "x": 0.43,
+          "x": 0.36,
           "y": 0.67
         },
         "secondary": {
-          "x": 0.55,
+          "x": 0.5,
           "y": 0.64,
           "role": "horizontal-foregrip"
         }
@@ -7042,7 +7132,7 @@
         "range": 360,
         "halfArc": 0.6,
         "cooldown": 0.55,
-        "displayLength": 96,
+        "displayLength": 120,
         "swingArc": 1.2,
         "gripFrac": 0.14
       },
@@ -7104,6 +7194,7 @@
         "swingArc": 1.2,
         "gripFrac": 0.15
       },
+      "archived": true,
       "id": "x2-bonepicker-coachgun"
     },
     {
@@ -7327,14 +7418,12 @@
     {
       "name": "Quicksilver Streetsweeper",
       "type": "ranged",
-      "family": "shotgun",
-      "theme": "drum-fed auto shotgun",
+      "family": "grenade-launcher",
+      "theme": "drum-fed semi-auto grenade launcher",
       "element": "physical",
       "finish": "battle-worn",
       "grip": "2H",
-      "handlingTags": [
-        "pump"
-      ],
+      "fireMode": "semi-auto",
       "gripPoints": {
         "primary": {
           "x": 0.34,
@@ -7342,8 +7431,8 @@
         },
         "secondary": {
           "x": 0.63,
-          "y": 0.76,
-          "role": "pump"
+          "y": 0.7,
+          "role": "horizontal-foregrip"
         }
       },
       "size": "L",
@@ -7354,25 +7443,29 @@
       "paletteAccent": "#C49A5A",
       "palettePrimary": "#3A4049",
       "artPrompt": "Weapon-only in-world sprite (no character, no background): a scuffed drum-fed automatic street-sweeper shotgun — a fat spring-wound rotary ammo drum slung under a short ventilated barrel, a tan canvas-wrapped fore-grip and a folding wire stock of dust-pitted gunmetal. Rapid, rattling, hungry. Flat orthographic side-profile, ~4-6 colours. Faces RIGHT: ventilated barrel MUZZLE to the RIGHT, folding wire stock on the LEFT.",
-      "cardartAction": "spitting a rapid stutter of shot, the drum spinning and a low staccato fan of pellets pouring from the short barrel",
+      "cardartAction": "lobbing a measured succession of fat grenades, each shell tracing a visible arc before bursting against the street",
       "behavior": {
         "kind": "gun",
-        "damage": 4,
-        "projectileSpeed": 720,
-        "range": 360,
+        "damage": 11,
+        "projectileSpeed": 580,
+        "range": 600,
         "fireRate": 0.3,
-        "pellets": 5,
-        "spread": 0.3,
         "pierce": 1,
         "magazine": 12,
         "reloadSeconds": 2,
-        "bulletKind": "pellet",
-        "muzzle": "rapid",
-        "recoil": 0.0018
+        "bulletKind": "grenade",
+        "projectileVisualScale": 1.35,
+        "arcHeight": 112,
+        "muzzle": "boom",
+        "recoil": 0.0018,
+        "explode": {
+          "radius": 62,
+          "damage": 9
+        }
       },
       "stats": {
         "damage": 6,
-        "range": 360,
+        "range": 600,
         "halfArc": 0.58,
         "cooldown": 0.3,
         "displayLength": 138,
@@ -10119,6 +10212,7 @@
         "swingArc": 2.6,
         "gripFrac": 0.12
       },
+      "archived": true,
       "id": "x2-codex-of-forked-tongues"
     },
     {
@@ -10284,6 +10378,13 @@
         "swingArc": 2.5,
         "gripFrac": 0.14
       },
+      "performance": {
+        "hold": "steady",
+        "action": "page-flip",
+        "continuous": true,
+        "suppressSwing": true
+      },
+      "suppressMeleeHitbox": true,
       "id": "x2-rimebound-folio"
     },
     {
@@ -10818,6 +10919,7 @@
         "swingArc": 2.6,
         "gripFrac": 0.12
       },
+      "archived": true,
       "id": "x2-voltscript-codicil"
     },
     {
@@ -11938,7 +12040,7 @@
         "kind": "scatter",
         "count": 5,
         "spread": 0.4,
-        "aim": "radial-random",
+        "aim": "cone",
         "speed": 420,
         "range": 260,
         "damage": 6,
@@ -11949,10 +12051,11 @@
       },
       "performance": {
         "hold": "steady",
-        "action": "spin",
-        "continuous": true,
+        "action": "hold",
         "suppressSwing": true
       },
+      "suppressVfx": true,
+      "suppressMeleeHitbox": true,
       "id": "x2-hailshard-resonator"
     },
     {
@@ -13578,6 +13681,7 @@
         "swingArc": 2.6,
         "gripFrac": 0.14
       },
+      "archived": true,
       "id": "x2-hollowmother-spore-totem"
     },
     {
@@ -14580,6 +14684,7 @@
           "durationSeconds": 0.12
         }
       },
+      "suppressVfx": true,
       "id": "x2-coyote-trickster-s-sparkmitt"
     },
     {

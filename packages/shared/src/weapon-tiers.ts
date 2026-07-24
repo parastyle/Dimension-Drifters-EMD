@@ -17,7 +17,10 @@ export const WEAPON_TIER_RANGE_FACTORS = {
 /** Closed manual-review table. Consumers still read `weapon.tier`, never this derivation seam. */
 export const WEAPON_TIER_MANUAL_FLOORS: Readonly<Partial<Record<string, WeaponTier>>> =
   Object.freeze({
+    "tombstone-greatsword": 3,
     "x2-abyssal-apocrypha": 4,
+    "x2-choir-iron-greataxe": 3,
+    "x2-quarry-splitter-bardiche": 3,
   });
 
 function expectedPierceTargets(pierce: number | undefined): number {
