@@ -16,38 +16,40 @@ import {
   petLevelForXp,
   petModsForLevel,
   STARTER_GEAR_LOADOUT,
-  type WholeArtCharacter,
   WHOLE_ART_CHARACTERS,
+  type WholeArtCharacter,
   weaponEntryInstances,
 } from "@dd/shared";
 import type { Room } from "colyseus.js";
 import Phaser from "phaser";
 import { AudioBus } from "../audio/AudioBus.js";
 import { SPRITE_ATLAS } from "../entities/SpriteRig.js";
+import { routeArmoryUiInput } from "../input-routing.js";
 // Type-only: erased at build time so the menu/boot chunk stays net-free (the module itself is imported
 // lazily inside launch(), alongside the lazy ArenaScene import).
 import type { LaunchIntent } from "../net/matchmaking.js";
 import { RENDER_DPR } from "../render-dpr.js";
 import {
+  GEAR_PARTS_MANIFEST,
   gearClickVisibility,
   gearClickVisibilityNotice,
   gearManifestItem,
   gearTextureKey,
-  GEAR_PARTS_MANIFEST,
 } from "../sprites/gear-parts.js";
 import {
+  type ArmoryCatalogFilters,
   type ArmoryDraft,
-  armoryCatalogEntries,
   armoryCarrySelection,
+  armoryCatalogEntries,
   armoryEntryViews,
   armorySummary,
   createArmoryDraft,
   DEFAULT_ARMORY_FILTERS,
-  type ArmoryCatalogFilters,
   moveArmoryEntryZone,
   selectArmoryActiveCell,
   toggleArmoryEntry,
 } from "../ui/armory/model.js";
+import { artStatusIcon, drawArmoryIcon } from "../ui/armory-ui/icons.js";
 import {
   ARMORY_ART_STATUS,
   ARMORY_COLORS,
@@ -58,22 +60,14 @@ import {
   rarityMark,
   rarityToken,
 } from "../ui/armory-ui/tokens.js";
-import { artStatusIcon, drawArmoryIcon } from "../ui/armory-ui/icons.js";
-import {
-  VirtualGridFocusController,
-  virtualGridWindow,
-} from "../ui/armory-ui/virtual-grid.js";
-import { routeArmoryUiInput } from "../input-routing.js";
+import { VirtualGridFocusController, virtualGridWindow } from "../ui/armory-ui/virtual-grid.js";
 import {
   characterSelectionOptions,
   loadCharacterSelection,
   routeCharacterSelectionKey,
   saveCharacterSelection,
 } from "../ui/character-select.js";
-import {
-  buildCharacterPortrait,
-  queueCharacterPreviewTextures,
-} from "../ui/characters/preview.js";
+import { buildCharacterPortrait, queueCharacterPreviewTextures } from "../ui/characters/preview.js";
 import {
   loadPetMetaAccount,
   petSelectionView,
@@ -104,10 +98,10 @@ import {
   receivePrestigeAccount,
   receivePrestigeReceipt,
   saveWardrobePresetState,
-  type WardrobePresetState,
-  type WardrobeCatalogFilters,
-  type WardrobeSlotItemView,
   unequipWardrobeSlot,
+  type WardrobeCatalogFilters,
+  type WardrobePresetState,
+  type WardrobeSlotItemView,
   wardrobeCatalogItems,
   wardrobePresetViews,
   wardrobePreview,
@@ -529,10 +523,7 @@ export class MenuScene extends Phaser.Scene {
     this.audio = (this.game.registry.get("audio") as AudioBus | undefined) ?? new AudioBus();
     this.game.registry.set("audio", this.audio);
     this.metaAccount = loadPetMetaAccount();
-    this.characterFocusIndex = Math.max(
-      0,
-      WHOLE_ART_CHARACTERS.indexOf(this.selectedCharacterId),
-    );
+    this.characterFocusIndex = Math.max(0, WHOLE_ART_CHARACTERS.indexOf(this.selectedCharacterId));
     // DEV CLOSET — `?closet=1`, dev builds only: own the ENTIRE gear catalog locally so any outfit
     // can be dressed without farming. Purely a local-trust cosmetic grant (the server sanitizes the
     // account at join either way); it persists, so one visit unlocks the wardrobe from then on.
@@ -649,6 +640,7 @@ export class MenuScene extends Phaser.Scene {
       if (this.prestigeDrawerOpen && e.key === "Escape") {
         this.prestigeDrawerOpen = false;
         this.prestigeRoot?.setVisible(false);
+        this.audio.play("ui:cancel");
         e.preventDefault();
         return;
       }
@@ -836,7 +828,9 @@ export class MenuScene extends Phaser.Scene {
     this.prestigeButtonText = this.add
       .text(0, 310, "", armoryTextStyle("secondary", "action", true))
       .setOrigin(0.5);
-    const holdTrack = this.add.rectangle(-180, 344, 360, 6, ARMORY_COLORS.surface3, 1).setOrigin(0, 0.5);
+    const holdTrack = this.add
+      .rectangle(-180, 344, 360, 6, ARMORY_COLORS.surface3, 1)
+      .setOrigin(0, 0.5);
     this.prestigeHoldFill = this.add
       .rectangle(-180, 344, 360, 6, ARMORY_COLORS.warning, 1)
       .setOrigin(0, 0.5)
@@ -1024,15 +1018,16 @@ export class MenuScene extends Phaser.Scene {
       this.prestigeSurvivorText.setText(view.survivorCopy);
       const pending =
         this.prestigeFlow?.status === "pending" || this.prestigeFlow?.status === "awaiting-account";
-      const label = this.prestigeFlow?.status === "revealed"
-        ? `WORLD TIER ${this.prestigeFlow.expectedPrestige} REVEALED`
-        : pending
-          ? "FAREWELL SENT  Â·  AWAITING ACCOUNT"
-          : !view.eligible
-            ? eligibilityCopy
-            : this.prestigeArmed
-              ? `HOLD 2.0s  Â·  WORLD TIER ${view.worldTier} â†’ ${view.nextWorldTier}`
-              : DESTINATION_PRESTIGE_COPY.review;
+      const label =
+        this.prestigeFlow?.status === "revealed"
+          ? `WORLD TIER ${this.prestigeFlow.expectedPrestige} REVEALED`
+          : pending
+            ? "FAREWELL SENT  Â·  AWAITING ACCOUNT"
+            : !view.eligible
+              ? eligibilityCopy
+              : this.prestigeArmed
+                ? `HOLD 2.0s  Â·  WORLD TIER ${view.worldTier} â†’ ${view.nextWorldTier}`
+                : DESTINATION_PRESTIGE_COPY.review;
       this.prestigeButtonText.setText(label).setFontSize(14);
       this.prestigeButtonBg
         .setFillStyle(view.eligible && !pending ? 0x342b1a : ARMORY_COLORS.surface2, 1)
@@ -1147,6 +1142,7 @@ export class MenuScene extends Phaser.Scene {
   }
 
   private setMenuTab(tab: MenuTab): void {
+    if (tab !== this.menuTab) this.audio.play(tab === "run" ? "ui:cancel" : "ui:confirm");
     this.menuTab = tab;
     const visibility = menuTabVisibility(tab);
     if (tab !== "run") this.prestigeDrawerOpen = false;
@@ -1252,10 +1248,7 @@ export class MenuScene extends Phaser.Scene {
   private selectCharacter(id: WholeArtCharacter): void {
     const selection = saveCharacterSelection(id);
     this.selectedCharacterId = selection.selectedCharacterId;
-    this.characterFocusIndex = Math.max(
-      0,
-      WHOLE_ART_CHARACTERS.indexOf(this.selectedCharacterId),
-    );
+    this.characterFocusIndex = Math.max(0, WHOLE_ART_CHARACTERS.indexOf(this.selectedCharacterId));
     this.audio.play("armory:stage");
     this.refreshCharacterWorkspace();
   }
@@ -1268,11 +1261,7 @@ export class MenuScene extends Phaser.Scene {
         .setFillStyle(selected ? 0x14232a : ARMORY_COLORS.surface1, 1)
         .setStrokeStyle(
           selected ? 3 : focused ? 2.5 : 1.5,
-          selected
-            ? ARMORY_COLORS.success
-            : focused
-              ? ARMORY_COLORS.accent
-              : ARMORY_COLORS.border,
+          selected ? ARMORY_COLORS.success : focused ? ARMORY_COLORS.accent : ARMORY_COLORS.border,
           1,
         );
       card.name.setColor(selected ? TITLE_COLOR : ARMORY_CSS_COLORS.textPrimary);
@@ -1314,10 +1303,7 @@ export class MenuScene extends Phaser.Scene {
     const gridWidth = columns * cardWidth * scale + (columns - 1) * gap * scale;
     const gridHeight = rows * cardHeight * scale + (rows - 1) * gap * scale;
     const startX = (w - gridWidth) / 2 + (cardWidth * scale) / 2;
-    const startY =
-      150 +
-      Math.max(0, (availableHeight - gridHeight) / 2) +
-      (cardHeight * scale) / 2;
+    const startY = 150 + Math.max(0, (availableHeight - gridHeight) / 2) + (cardHeight * scale) / 2;
     this.characterCards.forEach((card, index) => {
       card.root
         .setPosition(
@@ -1339,10 +1325,7 @@ export class MenuScene extends Phaser.Scene {
     if (!this.prestigeRoot || !this.prestigePanel) return;
     const drawerWidth = Math.min(404, Math.max(300, w - 40));
     const drawerHeight = Math.min(640, Math.max(420, h - 140));
-    this.prestigeRoot.setPosition(
-      w - drawerWidth / 2 - 20,
-      Math.max(drawerHeight / 2 + 70, h / 2),
-    );
+    this.prestigeRoot.setPosition(w - drawerWidth / 2 - 20, Math.max(drawerHeight / 2 + 70, h / 2));
     this.prestigePanel.setSize(drawerWidth, drawerHeight);
     this.prestigeTierText
       ?.setPosition(-drawerWidth / 2 + 22, -drawerHeight / 2 + 24)
@@ -1353,9 +1336,7 @@ export class MenuScene extends Phaser.Scene {
     this.prestigeSurvivorText
       ?.setPosition(-drawerWidth / 2 + 22, 32)
       .setWordWrapWidth(drawerWidth - 44);
-    this.prestigeButtonBg
-      ?.setPosition(0, drawerHeight / 2 - 54)
-      .setSize(drawerWidth - 44, 52);
+    this.prestigeButtonBg?.setPosition(0, drawerHeight / 2 - 54).setSize(drawerWidth - 44, 52);
     this.prestigeButtonText?.setPosition(0, drawerHeight / 2 - 54);
     const holdTrack = this.prestigeRoot.list[6] as Phaser.GameObjects.Rectangle | undefined;
     holdTrack
@@ -1387,10 +1368,15 @@ export class MenuScene extends Phaser.Scene {
       })
       .setOrigin(0, 0);
     this.wardrobeFooter = this.add
-      .text(0, 0, "Arrows navigate Â· Enter equip Â· Q/E slot Â· Z/X page Â· R starter Â· 1â€“6 preset", {
-        ...armoryTextStyle("secondary", "textSecondary", true),
-        align: "center",
-      })
+      .text(
+        0,
+        0,
+        "Arrows navigate Â· Enter equip Â· Q/E slot Â· Z/X page Â· R starter Â· 1â€“6 preset",
+        {
+          ...armoryTextStyle("secondary", "textSecondary", true),
+          align: "center",
+        },
+      )
       .setOrigin(0.5);
     this.wardrobeSearchText = this.add.text(0, 0, "", armoryTextStyle("body", "textSecondary"));
     this.wardrobeResultText = this.add
@@ -1416,14 +1402,18 @@ export class MenuScene extends Phaser.Scene {
     ]);
 
     for (const [index, slot] of GEAR_SLOTS.entries()) {
-      const chip = this.makeMenuChip(slot === "facialHair" ? "FACE" : slot.toUpperCase(), 100, () => {
-        this.selectedGearSlot = slot;
-        this.wardrobeFilters.slot = slot;
-        this.wardrobeFocus.focus(0);
-        this.wardrobeKeyboardFocus = false;
-        this.wardrobeHoveredGearId = undefined;
-        this.refreshWardrobeWorkspace();
-      });
+      const chip = this.makeMenuChip(
+        slot === "facialHair" ? "FACE" : slot.toUpperCase(),
+        100,
+        () => {
+          this.selectedGearSlot = slot;
+          this.wardrobeFilters.slot = slot;
+          this.wardrobeFocus.focus(0);
+          this.wardrobeKeyboardFocus = false;
+          this.wardrobeHoveredGearId = undefined;
+          this.refreshWardrobeWorkspace();
+        },
+      );
       chip.setData("slot", slot).setData("slotIndex", index);
       root.add(chip);
       this.wardrobeSlotRows.push(chip);
@@ -1434,10 +1424,15 @@ export class MenuScene extends Phaser.Scene {
       this.wardrobePresetRows.push(chip);
     }
 
-    const search = this.makeMenuChip("", 300, () => {
-      this.wardrobeSearchFocused = true;
-      this.refreshWardrobeWorkspace();
-    }, 48);
+    const search = this.makeMenuChip(
+      "",
+      300,
+      () => {
+        this.wardrobeSearchFocused = true;
+        this.refreshWardrobeWorkspace();
+      },
+      48,
+    );
     (search.getData("text") as Phaser.GameObjects.Text).setVisible(false);
     search.setData("search", true);
     root.add(search);
@@ -1449,11 +1444,16 @@ export class MenuScene extends Phaser.Scene {
       this.wardrobeToolbarRows.push(chip);
     }
 
-    this.wardrobeWorldTier = this.makeMenuChip("", 156, () => {
-      this.prestigeDrawerOpen = !this.prestigeDrawerOpen;
-      this.refreshPrestigeSurface();
-      this.refreshWardrobeWorkspace();
-    }, 48);
+    this.wardrobeWorldTier = this.makeMenuChip(
+      "",
+      156,
+      () => {
+        this.prestigeDrawerOpen = !this.prestigeDrawerOpen;
+        this.refreshPrestigeSurface();
+        this.refreshWardrobeWorkspace();
+      },
+      48,
+    );
     root.add(this.wardrobeWorldTier);
 
     this.wardrobePrimary = this.makeMenuChip("", 260, () => this.activateWardrobeFocus(), 52);
@@ -1478,7 +1478,9 @@ export class MenuScene extends Phaser.Scene {
     const name = this.add.text(0, 0, "", armoryTextStyle("body"));
     const rarity = this.add.text(0, 0, "", armoryTextStyle("secondary", "textSecondary", true));
     const status = this.add.text(0, 0, "", armoryTextStyle("secondary", "textMuted", true));
-    const zone = this.add.rectangle(0, 0, 1, 1, 0xffffff, 0.001).setInteractive({ useHandCursor: true });
+    const zone = this.add
+      .rectangle(0, 0, 1, 1, 0xffffff, 0.001)
+      .setInteractive({ useHandCursor: true });
     const root = this.add.container(0, 0, [paper, art, icon, name, rarity, status, zone]);
     const tile: WardrobeTileControl = { root, paper, art, icon, name, rarity, status, zone };
     zone
@@ -1514,21 +1516,52 @@ export class MenuScene extends Phaser.Scene {
   }
 
   private cycleWardrobeFilter(index: number): void {
-    const next = <T,>(current: T, values: readonly T[]): T =>
+    const next = <T>(current: T, values: readonly T[]): T =>
       values[(Math.max(0, values.indexOf(current)) + 1) % values.length] ?? values[0] ?? current;
     if (index === 0)
-      this.wardrobeFilters.ownership = next(this.wardrobeFilters.ownership, ["all", "owned", "locked"] as const);
+      this.wardrobeFilters.ownership = next(this.wardrobeFilters.ownership, [
+        "all",
+        "owned",
+        "locked",
+      ] as const);
     else if (index === 1)
-      this.wardrobeFilters.rarity = next(this.wardrobeFilters.rarity, ["all", "Common", "Uncommon", "Rare", "Really Rare", "Ultimate"] as const);
+      this.wardrobeFilters.rarity = next(this.wardrobeFilters.rarity, [
+        "all",
+        "Common",
+        "Uncommon",
+        "Rare",
+        "Really Rare",
+        "Ultimate",
+      ] as const);
     else if (index === 2) {
       const sets = ["all", ...wardrobeSetViews(this.metaAccount).map((set) => set.id)];
       this.wardrobeFilters.setId = next(this.wardrobeFilters.setId, sets);
     } else if (index === 3)
-      this.wardrobeFilters.gearClass = next(this.wardrobeFilters.gearClass, ["all", "bruiser", "duelist", "caster", "warden", "scoundrel"] as const);
+      this.wardrobeFilters.gearClass = next(this.wardrobeFilters.gearClass, [
+        "all",
+        "bruiser",
+        "duelist",
+        "caster",
+        "warden",
+        "scoundrel",
+      ] as const);
     else if (index === 4)
-      this.wardrobeFilters.artStatus = next(this.wardrobeFilters.artStatus, ["all", "ready", "rendering", "unavailable", "artless"] as const);
+      this.wardrobeFilters.artStatus = next(this.wardrobeFilters.artStatus, [
+        "all",
+        "ready",
+        "rendering",
+        "unavailable",
+        "artless",
+      ] as const);
     else
-      this.wardrobeFilters.sort = next(this.wardrobeFilters.sort, ["recommended", "name", "rarity", "set", "owned", "newest"] as const);
+      this.wardrobeFilters.sort = next(this.wardrobeFilters.sort, [
+        "recommended",
+        "name",
+        "rarity",
+        "set",
+        "owned",
+        "newest",
+      ] as const);
     this.wardrobeFocus.focus(0);
     this.refreshWardrobeWorkspace();
   }
@@ -1536,7 +1569,8 @@ export class MenuScene extends Phaser.Scene {
   // biome-ignore lint/correctness/noUnusedPrivateClassMembers: retained as dormant Wardrobe key grammar.
   private moveWardrobeSlot(direction: -1 | 1): void {
     const index = GEAR_SLOTS.indexOf(this.selectedGearSlot);
-    this.selectedGearSlot = GEAR_SLOTS[(index + direction + GEAR_SLOTS.length) % GEAR_SLOTS.length] ?? "hat";
+    this.selectedGearSlot =
+      GEAR_SLOTS[(index + direction + GEAR_SLOTS.length) % GEAR_SLOTS.length] ?? "hat";
     this.wardrobeFilters.slot = this.selectedGearSlot;
     this.wardrobeFocus.focus(0);
     this.wardrobeHoveredGearId = undefined;
@@ -1547,7 +1581,9 @@ export class MenuScene extends Phaser.Scene {
     const rows = wardrobeCatalogItems(this.metaAccount, this.wardrobeFilters, (gearId) =>
       armoryArtStatusFromNotice(gearClickVisibilityNotice(GEAR_PARTS_MANIFEST, gearId)),
     );
-    const item = rows[this.wardrobeFocus.focusedIndex] ?? rows.find((row) => row.id === this.wardrobeFocusedGearId);
+    const item =
+      rows[this.wardrobeFocus.focusedIndex] ??
+      rows.find((row) => row.id === this.wardrobeFocusedGearId);
     if (item) this.activateWardrobeItem(item);
   }
 
@@ -1560,8 +1596,15 @@ export class MenuScene extends Phaser.Scene {
       const next = unequipWardrobeSlot(this.metaAccount, item.def.slot);
       this.metaAccount = savePetMetaAccount(next);
       const selected = Math.max(1, this.wardrobePresetState.selected);
-      this.wardrobePresetState = overwriteWardrobePreset(this.wardrobePresetState, this.metaAccount, selected);
-      this.wardrobePresetState = saveWardrobePresetState(this.wardrobePresetState, this.metaAccount);
+      this.wardrobePresetState = overwriteWardrobePreset(
+        this.wardrobePresetState,
+        this.metaAccount,
+        selected,
+      );
+      this.wardrobePresetState = saveWardrobePresetState(
+        this.wardrobePresetState,
+        this.metaAccount,
+      );
       this.audio.play("wardrobe:equip");
       this.refreshWardrobeWorkspace();
       return;
@@ -1586,7 +1629,9 @@ export class MenuScene extends Phaser.Scene {
     ])
       drawArmoryPanel(g, rect.x, rect.y, rect.width, rect.height, { major: true });
 
-    this.wardrobeTitle?.setPosition(layout.headerRect.x + 16, layout.headerRect.y + 14).setFontSize(24);
+    this.wardrobeTitle
+      ?.setPosition(layout.headerRect.x + 16, layout.headerRect.y + 14)
+      .setFontSize(24);
     this.wardrobeFooter?.setPosition(
       layout.footerRect.x + layout.footerRect.width / 2,
       layout.footerRect.y + layout.footerRect.height / 2,
@@ -1611,7 +1656,14 @@ export class MenuScene extends Phaser.Scene {
       const icon = chip?.getData("icon") as Phaser.GameObjects.Graphics | undefined;
       if (!icon && chip) {
         const graphics = this.add.graphics();
-        drawArmoryIcon(graphics, GEAR_SLOTS[index] ?? "hat", 0, 0, ARMORY_COLORS.textSecondary, 0.86);
+        drawArmoryIcon(
+          graphics,
+          GEAR_SLOTS[index] ?? "hat",
+          0,
+          0,
+          ARMORY_COLORS.textSecondary,
+          0.86,
+        );
         chip.add(graphics);
         chip.setData("icon", graphics);
       }
@@ -1634,17 +1686,27 @@ export class MenuScene extends Phaser.Scene {
       layout.companionShelfRect.x + layout.companionShelfRect.width / 2,
       layout.companionShelfRect.y + layout.companionShelfRect.height / 2,
     );
-    const companionPanel = this.companionRow?.getData("panel") as Phaser.GameObjects.Rectangle | undefined;
-    const companionHeading = this.companionRow?.getData("heading") as Phaser.GameObjects.Text | undefined;
+    const companionPanel = this.companionRow?.getData("panel") as
+      | Phaser.GameObjects.Rectangle
+      | undefined;
+    const companionHeading = this.companionRow?.getData("heading") as
+      | Phaser.GameObjects.Text
+      | undefined;
     companionPanel?.setSize(layout.companionShelfRect.width, layout.companionShelfRect.height);
     const compactCompanions = layout.mode !== "wide";
     companionHeading?.setVisible(!compactCompanions);
     this.companionDetail?.setVisible(!compactCompanions);
     this.companionName
-      ?.setPosition(compactCompanions ? -layout.companionShelfRect.width / 2 + 10 : -274, compactCompanions ? -44 : -20)
+      ?.setPosition(
+        compactCompanions ? -layout.companionShelfRect.width / 2 + 10 : -274,
+        compactCompanions ? -44 : -20,
+      )
       .setFontSize(compactCompanions ? 14 : 18);
     this.companionChips.forEach((chip, index) =>
-      chip.root.setPosition(compactCompanions ? -154 + index * 44 : 12 + index * 52, compactCompanions ? 20 : 0),
+      chip.root.setPosition(
+        compactCompanions ? -154 + index * 44 : 12 + index * 52,
+        compactCompanions ? 20 : 0,
+      ),
     );
 
     const toolbar = layout.catalogToolbarRect;
@@ -1748,7 +1810,9 @@ export class MenuScene extends Phaser.Scene {
       `WORLD TIER ${this.metaAccount.prestige}`,
     );
     const allOwned = this.metaAccount.ownedGear.length;
-    this.wardrobeResultText?.setText(`${rows.length} results  Â·  ${allOwned}/${GEAR_IDS.length} owned`);
+    this.wardrobeResultText?.setText(
+      `${rows.length} results  Â·  ${allOwned}/${GEAR_IDS.length} owned`,
+    );
     this.wardrobeSearchText
       ?.setText(
         this.wardrobeFilters.query
@@ -1757,7 +1821,9 @@ export class MenuScene extends Phaser.Scene {
             ? "| Search closet"
             : "/  Search closet",
       )
-      .setColor(this.wardrobeSearchFocused ? ARMORY_CSS_COLORS.accent : ARMORY_CSS_COLORS.textSecondary);
+      .setColor(
+        this.wardrobeSearchFocused ? ARMORY_CSS_COLORS.accent : ARMORY_CSS_COLORS.textSecondary,
+      );
     const filterLabels = [
       `OWN ${this.wardrobeFilters.ownership}`,
       `RAR ${this.wardrobeFilters.rarity}`,
@@ -1767,7 +1833,9 @@ export class MenuScene extends Phaser.Scene {
       `SORT ${this.wardrobeFilters.sort}`,
     ];
     filterLabels.forEach((label, index) => {
-      const text = this.wardrobeToolbarRows[index + 1]?.getData("text") as Phaser.GameObjects.Text | undefined;
+      const text = this.wardrobeToolbarRows[index + 1]?.getData("text") as
+        | Phaser.GameObjects.Text
+        | undefined;
       text?.setText(label.length > 17 ? `${label.slice(0, 16)}â€¦` : label).setFontSize(14);
     });
     const presets = wardrobePresetViews(this.wardrobePresetState);
@@ -1777,7 +1845,10 @@ export class MenuScene extends Phaser.Scene {
         .setFontSize(14);
       (chip.getData("bg") as Phaser.GameObjects.Rectangle)
         .setFillStyle(presets[index]?.selected ? ARMORY_COLORS.surface3 : ARMORY_COLORS.surface2, 1)
-        .setStrokeStyle(presets[index]?.selected ? 2 : 1, presets[index]?.selected ? ARMORY_COLORS.action : ARMORY_COLORS.border);
+        .setStrokeStyle(
+          presets[index]?.selected ? 2 : 1,
+          presets[index]?.selected ? ARMORY_COLORS.action : ARMORY_COLORS.border,
+        );
     });
     this.wardrobeSlotRows.forEach((chip, index) => {
       const selected = GEAR_SLOTS[index] === this.selectedGearSlot;
@@ -1802,9 +1873,14 @@ export class MenuScene extends Phaser.Scene {
       if (!item) return;
       const col = rowIndex % layout.gridColumns;
       const logicalRow = Math.floor(rowIndex / layout.gridColumns);
-      const x = layout.catalogViewportRect.x + col * ((layout.catalogViewportRect.width + layout.gridGap) / layout.gridColumns);
-      const y = layout.catalogViewportRect.y + logicalRow * layout.gridRowHeight - window.scrollOffset;
-      const width = (layout.catalogViewportRect.width - layout.gridGap * (layout.gridColumns - 1)) / layout.gridColumns;
+      const x =
+        layout.catalogViewportRect.x +
+        col * ((layout.catalogViewportRect.width + layout.gridGap) / layout.gridColumns);
+      const y =
+        layout.catalogViewportRect.y + logicalRow * layout.gridRowHeight - window.scrollOffset;
+      const width =
+        (layout.catalogViewportRect.width - layout.gridGap * (layout.gridColumns - 1)) /
+        layout.gridColumns;
       const height = layout.gridRowHeight - layout.gridGap;
       tile.root.setPosition(x, y);
       tile.paper.clear();
@@ -1849,7 +1925,9 @@ export class MenuScene extends Phaser.Scene {
         .setColor(`#${rarity.color.toString(16).padStart(6, "0")}`);
       const artState = ARMORY_ART_STATUS[item.artStatus ?? "rendering"];
       tile.status
-        .setText(`${artState.label}${item.equipped ? "  Â·  EQUIPPED" : item.owned ? "  Â·  OWNED" : "  Â·  LOCKED"}`)
+        .setText(
+          `${artState.label}${item.equipped ? "  Â·  EQUIPPED" : item.owned ? "  Â·  OWNED" : "  Â·  LOCKED"}`,
+        )
         .setPosition(10, height - 23)
         .setColor(`#${artState.color.toString(16).padStart(6, "0")}`);
       tile.zone.setPosition(width / 2, height / 2).setSize(width, height);
@@ -1865,7 +1943,13 @@ export class MenuScene extends Phaser.Scene {
 
   private refreshWardrobeDetail(item: WardrobeSlotItemView | undefined): void {
     const layout = this.wardrobeLayout;
-    if (!layout || !this.wardrobeInspector || !this.wardrobeCollections || !this.wardrobeDetailPaper) return;
+    if (
+      !layout ||
+      !this.wardrobeInspector ||
+      !this.wardrobeCollections ||
+      !this.wardrobeDetailPaper
+    )
+      return;
     this.wardrobeDetailPaper.clear();
     this.wardrobeSetPaper?.clear();
     if (!item) {
@@ -1919,7 +2003,12 @@ export class MenuScene extends Phaser.Scene {
     const selectedSet = sets.find((set) => set.id === item.def.legacySetId);
     const collectionCopy =
       layout.mode === "wide"
-        ? sets.map((set) => `${set.name}  ${set.owned}/${set.total}${set.equipped ? `  worn ${set.equipped}` : ""}`).join("\n")
+        ? sets
+            .map(
+              (set) =>
+                `${set.name}  ${set.owned}/${set.total}${set.equipped ? `  worn ${set.equipped}` : ""}`,
+            )
+            .join("\n")
         : selectedSet
           ? `${selectedSet.name}\nOwned ${selectedSet.owned}/${selectedSet.total}  Â·  Equipped ${selectedSet.equipped}/${selectedSet.total}\nMissing: ${selectedSet.missingSlots.join(", ") || "none"}\n\n12 player-completable collections`
           : "No player-completable set\n12 collections tracked";
@@ -1933,7 +2022,15 @@ export class MenuScene extends Phaser.Scene {
       selectedSet.slots.forEach((slot, index) => {
         const x = layout.detailRect.x + 16 + index * stitchW;
         this.wardrobeSetPaper
-          ?.lineStyle(2, slot.equipped ? ARMORY_COLORS.accent : slot.owned ? ARMORY_COLORS.success : ARMORY_COLORS.stitch, 1)
+          ?.lineStyle(
+            2,
+            slot.equipped
+              ? ARMORY_COLORS.accent
+              : slot.owned
+                ? ARMORY_COLORS.success
+                : ARMORY_COLORS.stitch,
+            1,
+          )
           .strokeRoundedRect(x, stitchY, stitchW - 4, 10, 3);
       });
     }
@@ -2343,16 +2440,27 @@ export class MenuScene extends Phaser.Scene {
     this.armoryChrome = this.add.graphics();
     this.armoryTitle = this.add.text(0, 0, "ARMORY", armoryTextStyle("pageTitle"));
     this.armorySummaryText = this.add
-      .text(0, 0, "", { ...armoryTextStyle("secondary", "textSecondary", true), wordWrap: { width: 380 } })
+      .text(0, 0, "", {
+        ...armoryTextStyle("secondary", "textSecondary", true),
+        wordWrap: { width: 380 },
+      })
       .setOrigin(0, 0);
     this.armoryCarryText = this.add
-      .text(0, 0, "", { ...armoryTextStyle("secondary", "textSecondary", true), wordWrap: { width: 360 } })
+      .text(0, 0, "", {
+        ...armoryTextStyle("secondary", "textSecondary", true),
+        wordWrap: { width: 360 },
+      })
       .setOrigin(0, 0);
     this.armoryFooter = this.add
-      .text(0, 0, "Arrows navigate Â· Enter stage/remove Â· Q/E zone Â· 1â€“3 active Â· destination commits", {
-        ...armoryTextStyle("secondary", "textSecondary", true),
-        align: "center",
-      })
+      .text(
+        0,
+        0,
+        "Arrows navigate Â· Enter stage/remove Â· Q/E zone Â· 1â€“3 active Â· destination commits",
+        {
+          ...armoryTextStyle("secondary", "textSecondary", true),
+          align: "center",
+        },
+      )
       .setOrigin(0.5);
     this.armorySearchText = this.add.text(0, 0, "", armoryTextStyle("body", "textSecondary"));
     this.armoryDetailPaper = this.add.graphics();
@@ -2369,10 +2477,15 @@ export class MenuScene extends Phaser.Scene {
       this.armoryFooter,
       this.armorySearchText,
     ]);
-    const search = this.makeMenuChip("", 400, () => {
-      this.armorySearchFocused = true;
-      this.refreshArmoryWorkspace();
-    }, 48);
+    const search = this.makeMenuChip(
+      "",
+      400,
+      () => {
+        this.armorySearchFocused = true;
+        this.refreshArmoryWorkspace();
+      },
+      48,
+    );
     (search.getData("text") as Phaser.GameObjects.Text).setVisible(false);
     root.add(search);
     this.armoryToolbarRows.push(search);
@@ -2398,7 +2511,9 @@ export class MenuScene extends Phaser.Scene {
     const name = this.add.text(0, 0, "", armoryTextStyle("body"));
     const meta = this.add.text(0, 0, "", armoryTextStyle("secondary", "textSecondary", true));
     const status = this.add.text(0, 0, "", armoryTextStyle("secondary", "textMuted", true));
-    const zone = this.add.rectangle(0, 0, 1, 1, 0xffffff, 0.001).setInteractive({ useHandCursor: true });
+    const zone = this.add
+      .rectangle(0, 0, 1, 1, 0xffffff, 0.001)
+      .setInteractive({ useHandCursor: true });
     const root = this.add.container(0, 0, [paper, art, name, meta, status, zone]);
     const card: ArmoryCardControl = { root, paper, art, name, meta, status, zone };
     zone
@@ -2419,26 +2534,52 @@ export class MenuScene extends Phaser.Scene {
   }
 
   private cycleArmoryFilter(index: number): void {
-    const next = <T,>(current: T, values: readonly T[]): T =>
+    const next = <T>(current: T, values: readonly T[]): T =>
       values[(Math.max(0, values.indexOf(current)) + 1) % values.length] ?? values[0] ?? current;
     const all = armoryEntryViews(this.metaAccount, this.armoryDraft);
     if (index === 0)
-      this.armoryFilters.zone = next(this.armoryFilters.zone, ["all", "safe", "staged", "active", "pack", "intake"] as const);
+      this.armoryFilters.zone = next(this.armoryFilters.zone, [
+        "all",
+        "safe",
+        "staged",
+        "active",
+        "pack",
+        "intake",
+      ] as const);
     else if (index === 1)
-      this.armoryFilters.weaponClass = next(this.armoryFilters.weaponClass, ["all", ...new Set(all.flatMap((row) => row.weaponClass.split(" / ")))]);
+      this.armoryFilters.weaponClass = next(this.armoryFilters.weaponClass, [
+        "all",
+        ...new Set(all.flatMap((row) => row.weaponClass.split(" / "))),
+      ]);
     else if (index === 2)
-      this.armoryFilters.rarity = next(this.armoryFilters.rarity, ["all", ...new Set(all.map((row) => row.rarity))]);
+      this.armoryFilters.rarity = next(this.armoryFilters.rarity, [
+        "all",
+        ...new Set(all.map((row) => row.rarity)),
+      ]);
     else if (index === 3)
-      this.armoryFilters.composition = next(this.armoryFilters.composition, ["all", "single", "pair"] as const);
+      this.armoryFilters.composition = next(this.armoryFilters.composition, [
+        "all",
+        "single",
+        "pair",
+      ] as const);
     else
-      this.armoryFilters.sort = next(this.armoryFilters.sort, ["recommended", "name", "rarity", "value", "size", "newest"] as const);
+      this.armoryFilters.sort = next(this.armoryFilters.sort, [
+        "recommended",
+        "name",
+        "rarity",
+        "value",
+        "size",
+        "newest",
+      ] as const);
     this.armoryFocus.focus(0);
     this.refreshArmoryWorkspace();
   }
 
   private activateArmoryFocus(): void {
     const rows = armoryCatalogEntries(this.metaAccount, this.armoryDraft, this.armoryFilters);
-    const item = rows[this.armoryFocus.focusedIndex] ?? rows.find((row) => row.entry.entryId === this.armoryFocusedEntryId);
+    const item =
+      rows[this.armoryFocus.focusedIndex] ??
+      rows.find((row) => row.entry.entryId === this.armoryFocusedEntryId);
     if (!item || item.source === "intake") {
       this.audio.play("drive:empty");
       return;
@@ -2451,9 +2592,16 @@ export class MenuScene extends Phaser.Scene {
 
   private moveArmoryFocusedZone(direction: -1 | 1): void {
     const rows = armoryCatalogEntries(this.metaAccount, this.armoryDraft, this.armoryFilters);
-    const item = rows[this.armoryFocus.focusedIndex] ?? rows.find((row) => row.entry.entryId === this.armoryFocusedEntryId);
+    const item =
+      rows[this.armoryFocus.focusedIndex] ??
+      rows.find((row) => row.entry.entryId === this.armoryFocusedEntryId);
     if (!item || item.source === "intake") return;
-    const result = moveArmoryEntryZone(this.metaAccount, this.armoryDraft, item.entry.entryId, direction);
+    const result = moveArmoryEntryZone(
+      this.metaAccount,
+      this.armoryDraft,
+      item.entry.entryId,
+      direction,
+    );
     this.armoryDraft = result.draft;
     this.audio.play(result.error ? "drive:empty" : "armory:stage");
     this.refreshArmoryWorkspace();
@@ -2489,7 +2637,10 @@ export class MenuScene extends Phaser.Scene {
     this.armorySummaryText
       ?.setPosition(layout.detail.x + 16, layout.detail.y + 16)
       .setWordWrapWidth(layout.detail.width - 32);
-    this.armoryDetailArt?.setPosition(layout.detail.x + layout.detail.width / 2, layout.detail.y + 250);
+    this.armoryDetailArt?.setPosition(
+      layout.detail.x + layout.detail.width / 2,
+      layout.detail.y + 250,
+    );
     this.armoryCarryText
       ?.setPosition(layout.carry.x + 16, layout.carry.y + 16)
       .setWordWrapWidth(layout.carry.width - 32);
@@ -2508,7 +2659,12 @@ export class MenuScene extends Phaser.Scene {
     if (!this.armoryRoot || !this.armoryChrome) return;
     const layout = this.armoryWorkspaceLayout();
     const rows = armoryCatalogEntries(this.metaAccount, this.armoryDraft, this.armoryFilters);
-    this.armoryFocus.configure(layout.columns, rows.length, layout.rowHeight, layout.viewport.height);
+    this.armoryFocus.configure(
+      layout.columns,
+      rows.length,
+      layout.rowHeight,
+      layout.viewport.height,
+    );
     const item = rows[this.armoryFocus.focusedIndex];
     if (item) this.armoryFocusedEntryId = item.entry.entryId;
     const window = virtualGridWindow({
@@ -2549,15 +2705,32 @@ export class MenuScene extends Phaser.Scene {
         .setDisplaySize(cardW * 0.38, cardH - 16)
         .setPosition(cardW * 0.19 + 8, cardH / 2)
         .setVisible(!!lead);
-      card.name.setText(view.name).setPosition(cardW * 0.4 + 8, 12).setWordWrapWidth(cardW * 0.58 - 16);
+      card.name
+        .setText(view.name)
+        .setPosition(cardW * 0.4 + 8, 12)
+        .setWordWrapWidth(cardW * 0.58 - 16);
       card.meta
-        .setText(`${view.rarity.toUpperCase()}  Â·  ${view.family}\n${view.paired ? "PAIR" : "SINGLE"}  Â·  ${view.physical} ${view.physical === 1 ? "CELL" : "CELLS"}`)
+        .setText(
+          `${view.rarity.toUpperCase()}  Â·  ${view.family}\n${view.paired ? "PAIR" : "SINGLE"}  Â·  ${view.physical} ${view.physical === 1 ? "CELL" : "CELLS"}`,
+        )
         .setPosition(cardW * 0.4 + 8, 48)
         .setWordWrapWidth(cardW * 0.58 - 16);
       card.status
-        .setText(view.zone === "safe" ? "VAULT  Â·  SAFE" : view.zone === "intake" ? "INTAKE  Â·  BLOCKED" : `${view.zone.toUpperCase()}  Â·  AT RISK`)
+        .setText(
+          view.zone === "safe"
+            ? "VAULT  Â·  SAFE"
+            : view.zone === "intake"
+              ? "INTAKE  Â·  BLOCKED"
+              : `${view.zone.toUpperCase()}  Â·  AT RISK`,
+        )
         .setPosition(cardW * 0.4 + 8, cardH - 28)
-        .setColor(view.zone === "safe" ? ARMORY_CSS_COLORS.success : view.zone === "intake" ? ARMORY_CSS_COLORS.danger : ARMORY_CSS_COLORS.warning);
+        .setColor(
+          view.zone === "safe"
+            ? ARMORY_CSS_COLORS.success
+            : view.zone === "intake"
+              ? ARMORY_CSS_COLORS.danger
+              : ARMORY_CSS_COLORS.warning,
+        );
       card.zone.setPosition(cardW / 2, cardH / 2).setSize(cardW, cardH);
     });
     const summary = armorySummary(this.metaAccount, this.armoryDraft);
@@ -2572,7 +2745,9 @@ export class MenuScene extends Phaser.Scene {
             ? "| Search stash"
             : "/  Search stash",
       )
-      .setColor(this.armorySearchFocused ? ARMORY_CSS_COLORS.accent : ARMORY_CSS_COLORS.textSecondary);
+      .setColor(
+        this.armorySearchFocused ? ARMORY_CSS_COLORS.accent : ARMORY_CSS_COLORS.textSecondary,
+      );
     const labels = [
       `ZONE ${this.armoryFilters.zone}`,
       `CLASS ${this.armoryFilters.weaponClass}`,
@@ -2599,7 +2774,11 @@ export class MenuScene extends Phaser.Scene {
       this.armoryPrimary?.setVisible(true);
       const disabled = focused.source === "intake";
       this.armoryPrimaryText?.setText(
-        disabled ? "Clear intake before staging" : focused.placement ? "Remove from carry" : "Stage in carry",
+        disabled
+          ? "Clear intake before staging"
+          : focused.placement
+            ? "Remove from carry"
+            : "Stage in carry",
       );
       (this.armoryPrimary?.getData("bg") as Phaser.GameObjects.Rectangle | undefined)
         ?.setFillStyle(disabled ? ARMORY_COLORS.surface2 : 0x342b1a, 1)
@@ -2619,11 +2798,23 @@ export class MenuScene extends Phaser.Scene {
     const cellW = (layout.carry.width - 48) / 3;
     for (let index = 0; index < 3; index++) {
       this.armoryCarryPaper
-        ?.lineStyle(2, index < summary.activePhysical ? ARMORY_COLORS.warning : ARMORY_COLORS.stitch, 1)
+        ?.lineStyle(
+          2,
+          index < summary.activePhysical ? ARMORY_COLORS.warning : ARMORY_COLORS.stitch,
+          1,
+        )
         .strokeRoundedRect(layout.carry.x + 16 + index * (cellW + 8), cellY, cellW, 58, 6);
     }
-    if (summary.intakeBlocked) this.armoryFooter?.setText("INTAKE BLOCKED  Â·  Make Stash room before entering a destination").setColor(ARMORY_CSS_COLORS.danger);
-    else this.armoryFooter?.setText("Arrows navigate Â· Enter stage/remove Â· Q/E zone Â· 1â€“3 active Â· destination commits").setColor(ARMORY_CSS_COLORS.textSecondary);
+    if (summary.intakeBlocked)
+      this.armoryFooter
+        ?.setText("INTAKE BLOCKED  Â·  Make Stash room before entering a destination")
+        .setColor(ARMORY_CSS_COLORS.danger);
+    else
+      this.armoryFooter
+        ?.setText(
+          "Arrows navigate Â· Enter stage/remove Â· Q/E zone Â· 1â€“3 active Â· destination commits",
+        )
+        .setColor(ARMORY_CSS_COLORS.textSecondary);
   }
 
   override update(): void {
@@ -2859,16 +3050,16 @@ export class MenuScene extends Phaser.Scene {
         lineSpacing: 4,
       })
       .setOrigin(0, 0);
-    this.companionRow = this.add.container(0, 0, [
-      panel,
-      heading,
-      this.companionName,
-      this.companionDetail,
-    ]).setDepth(20).setData({ panel, heading });
+    this.companionRow = this.add
+      .container(0, 0, [panel, heading, this.companionName, this.companionDetail])
+      .setDepth(20)
+      .setData({ panel, heading });
 
     for (const [i, id] of PET_IDS.entries()) {
       const x = 12 + i * 52;
-      const frame = this.add.rectangle(0, 0, 44, 64, ARMORY_COLORS.surface2, 1).setStrokeStyle(1.5, ARMORY_COLORS.border, 1);
+      const frame = this.add
+        .rectangle(0, 0, 44, 64, ARMORY_COLORS.surface2, 1)
+        .setStrokeStyle(1.5, ARMORY_COLORS.border, 1);
       const portrait = this.add
         .image(0, -2, `pet-select:${id}`)
         .setDisplaySize(124, 124)
@@ -3161,6 +3352,7 @@ export class MenuScene extends Phaser.Scene {
     const requestId = `menu_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
     const carry = armoryCarrySelection(account, draft, requestId);
     this.launching = true;
+    this.audio.play("ui:confirm");
     const intent = this.launchIntent;
     const ready = Promise.all([
       ensureArenaScene(this.scene),

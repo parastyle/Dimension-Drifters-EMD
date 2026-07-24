@@ -129,6 +129,7 @@ import {
   WEAPONS,
   type WeaponDef,
   type WholeArtCharacter,
+  WormBossMode,
   weaponArtMuzzlePointsForShot,
   weaponDisplaySpriteId,
   weaponEffectCueSeconds,
@@ -141,6 +142,7 @@ import {
 import { Client, type Room } from "colyseus.js";
 import Phaser from "phaser";
 import { AudioBus } from "../audio/AudioBus.js";
+import { gunFireAudioCue } from "../audio/gun-sfx.js";
 import { budgetedCameraShakeIntensity, type CameraShakeSource } from "../camera-shake.js";
 import {
   CombatFeedback,
@@ -286,8 +288,8 @@ import {
   spawnKungFuWrapImpact,
   spawnKungFuWrapSwing,
 } from "../vfx/kung-fu-wrap-vfx.js";
-import { pageProjectileArtFor, preloadPageProjectileArt } from "../vfx/page-projectile-art.js";
 import { MoneyDropRenderer } from "../vfx/money-drops.js";
+import { pageProjectileArtFor, preloadPageProjectileArt } from "../vfx/page-projectile-art.js";
 import {
   elementPack,
   paintedParticlePixels,
@@ -306,7 +308,6 @@ import {
   makeWackyProjectile,
   resolveWackyWeaponVfxRecipe,
   spawnWackyWeaponImpact,
-  wackyWeaponShotAudioCue,
 } from "../vfx/wacky-weapon-vfx.js";
 import {
   resolveWeaponEffectRecipe,
@@ -1221,8 +1222,15 @@ export class ArenaScene extends Phaser.Scene {
   private readonly enemies = new Map<string, SpriteRig>();
   /** Serraketh is one owner, one batch timeline, and one pooled renderer—not twelve ordinary enemy rigs. */
   private wormRig: WormRig | null = null;
+  private wormAudioOwnerId = "";
+  private wormAudioMode = WormBossMode.Inactive;
+  private wormAudioTopologySeq = 0;
   /** Horde paper effects stay scalar/live or bounded/detached; priority 2=boss, 1=tough, 0=ordinary. */
   private readonly enemyPaperPriority = new Map<string, 0 | 1 | 2>();
+  private readonly enemyDeathCue = new Map<
+    string,
+    "death:small" | "death:medium" | "death:tough" | "death:boss"
+  >();
   private readonly paperDeaths: PaperDeathEntry[] = [];
   private readonly closingPickups = new Set<Phaser.GameObjects.Container>();
   private paperWorldFold?: PaperWorldFold;
@@ -2004,6 +2012,9 @@ export class ArenaScene extends Phaser.Scene {
     this.removeFeedbackSettingsListener = undefined;
     this.wormRig?.destroy();
     this.wormRig = null;
+    this.wormAudioOwnerId = "";
+    this.wormAudioMode = WormBossMode.Inactive;
+    this.wormAudioTopologySeq = 0;
     this.vastagharShakeBudget.reset();
     for (const rig of this.petRigs.values()) rig.destroy();
     this.removeSceneListeners();
@@ -2017,6 +2028,7 @@ export class ArenaScene extends Phaser.Scene {
     this.petPickupEligibility.clear();
     this.enemies.clear();
     this.enemyPaperPriority.clear();
+    this.enemyDeathCue.clear();
     this.paperDeaths.length = 0;
     this.closingPickups.clear();
     this.lastParried.clear();
@@ -2336,7 +2348,10 @@ export class ArenaScene extends Phaser.Scene {
         out.x = x;
         out.y = this.belt ? this.beltY(y) : y;
       },
-      receipt: (value) => this.flashBanner(`+$${value} MONEY`, "#ffd45c"),
+      receipt: (value) => {
+        this.flashBanner(`+$${value} MONEY`, "#ffd45c");
+        this.audio.play("money:pickup", { amt: Math.min(1, value / 40) });
+      },
     });
     this.beamRenderer = new BeamRenderer(this);
     this.ultimateVfx = new UltimateVfx(this, {
@@ -3284,6 +3299,10 @@ export class ArenaScene extends Phaser.Scene {
             ? `${player.weapon}|${offhandWeaponId}`
             : player.weapon;
           rig.beginWeaponSwap(previousLoadoutId, nextLoadoutId, this.animClock);
+          this.audio?.play("weapon:swap", {
+            x: rig.x,
+            amt: id === this.room?.sessionId ? 1 : 0.35,
+          });
         }
         // Identity truth advances before lazy-art retries. A -> B(lazy) -> A must replace B's pending
         // transition instead of comparing A with A forever while the rig remains empty-handed.
@@ -3490,11 +3509,7 @@ export class ArenaScene extends Phaser.Scene {
   private maybePlayUltimateReveal(self: PlayerState | undefined): void {
     const pending = !!this.queuedUltimateReveal;
     if (
-      !canReleaseUltimateReveal(
-        pending,
-        this.verbs.isModalBlocking(),
-        !!self?.alive,
-      ) ||
+      !canReleaseUltimateReveal(pending, this.verbs.isModalBlocking(), !!self?.alive) ||
       this.time.now < this.ultimateRevealBusyUntil
     )
       return;
@@ -4513,10 +4528,7 @@ export class ArenaScene extends Phaser.Scene {
       if (armoryInput.close || (this.shopOpen && ultimatePressed)) this.closeBackpackModal();
     }
     const competingModalOpen =
-      this.verbs.isModalBlocking() ||
-      this.summonOpen ||
-      summonClosePressed ||
-      armoryModalOpen;
+      this.verbs.isModalBlocking() || this.summonOpen || summonClosePressed || armoryModalOpen;
     const ownerNoteInput = routeOwnerNoteInput({
       mode: weaponInputMode,
       modalOpen: competingModalOpen || !!this.ownerNoteUi?.isOpen(),
@@ -4637,6 +4649,7 @@ export class ArenaScene extends Phaser.Scene {
         this.rHold += this.deltaSec;
         if (this.rHold >= SALVAGE_HOLD_SECONDS && !this.rSalvaged) {
           this.room.send("salvageWeapon");
+          this.audio.play("weapon:salvage");
           this.rSalvaged = true;
         }
       }
@@ -4672,7 +4685,7 @@ export class ArenaScene extends Phaser.Scene {
       if (weaponInput.pickup && grabPickupId) {
         this.room.send("grabWeapon", { pickupId: grabPickupId });
         this.wakeCarouselDock();
-        this.audio.play("grab");
+        this.audio.play("weapon:pickup", { x: selfP?.x, amt: 1 });
       }
       rawFlourishIntent.interaction = weaponInput.pickup;
       rawFlourishIntent.weaponSelection = !!selfP && weaponInput.cycle;
@@ -4841,9 +4854,60 @@ export class ArenaScene extends Phaser.Scene {
     this.updateDebug();
   }
 
+  /** Edge-fire Serraketh's installed sound set from the compact boss state without replaying epochs to
+   * late joiners. The underground loop is keepalive-fed; AudioBus reaps any missed stop edge. */
+  private syncWormAudio(state: ArenaState["wormBoss"]): void {
+    if (!state.active || !state.ownerId) {
+      if (this.wormAudioOwnerId) this.audio.play("boss:rumble:stop");
+      this.wormAudioOwnerId = "";
+      this.wormAudioMode = WormBossMode.Inactive;
+      this.wormAudioTopologySeq = 0;
+      return;
+    }
+
+    const head = state.segments[0];
+    const x = head?.x ?? this.lastBossX;
+    const isNewEncounter = state.ownerId !== this.wormAudioOwnerId;
+    if (isNewEncounter) {
+      this.wormAudioOwnerId = state.ownerId;
+      this.wormAudioMode = state.mode as WormBossMode;
+      this.wormAudioTopologySeq = state.topologySeq;
+    } else {
+      const mode = state.mode as WormBossMode;
+      if (
+        (mode === WormBossMode.DiveWindup || mode === WormBossMode.Submerging) &&
+        this.wormAudioMode !== WormBossMode.DiveWindup &&
+        this.wormAudioMode !== WormBossMode.Submerging
+      ) {
+        this.audio.play("boss:serraketh:dive", { x, amt: 1 });
+      }
+      if (mode === WormBossMode.EruptionClaim && this.wormAudioMode !== mode)
+        this.audio.play("boss:serraketh:erupt", { x, amt: 1 });
+      if (mode === WormBossMode.Regrow && this.wormAudioMode !== mode)
+        this.audio.play("boss:serraketh:regrow", { x, amt: 1 });
+      if (mode === WormBossMode.Dead && this.wormAudioMode !== mode)
+        this.audio.play("boss:serraketh:death", { x, amt: 1 });
+      if (
+        state.topologySeq !== this.wormAudioTopologySeq &&
+        state.changedMask !== 0 &&
+        mode !== WormBossMode.Regrow &&
+        this.wormAudioMode !== WormBossMode.Regrow
+      ) {
+        this.audio.play("boss:serraketh:sever", { x, amt: 1 });
+      }
+      this.wormAudioMode = mode;
+      this.wormAudioTopologySeq = state.topologySeq;
+    }
+
+    if (state.mode === WormBossMode.Underground)
+      this.audio.play("boss:rumble:start", { x, amt: 0.85 });
+    else this.audio.play("boss:rumble:stop");
+  }
+
   /** Reconcile the always-allocated worm state to exactly one batch rig and suppress its compatibility root. */
   private syncWormRig(): void {
     const state = this.room?.state.wormBoss;
+    if (state) this.syncWormAudio(state);
     if (!this.room || !state?.active || !state.ownerId) {
       this.wormRig?.destroy();
       this.wormRig = null;
@@ -4859,6 +4923,7 @@ export class ArenaScene extends Phaser.Scene {
       duplicateRoot.destroy();
       this.enemies.delete(state.ownerId);
       this.enemyPaperPriority.delete(state.ownerId);
+      this.enemyDeathCue.delete(state.ownerId);
       this.enemyAtk.delete(state.ownerId);
       this.enemyWindup.delete(state.ownerId);
       this.meleeFullTells.delete(state.ownerId);
@@ -4907,6 +4972,16 @@ export class ArenaScene extends Phaser.Scene {
         }
         const paperPriority: 0 | 1 | 2 = kind?.archetype === "boss" ? 2 : enemy.tough ? 1 : 0;
         this.enemyPaperPriority.set(id, paperPriority);
+        this.enemyDeathCue.set(
+          id,
+          kind?.archetype === "boss"
+            ? "death:boss"
+            : enemy.tough
+              ? "death:tough"
+              : (kind?.radius ?? ENEMY_RADIUS) <= 18
+                ? "death:small"
+                : "death:medium",
+        );
         if (!reducedMotion && id !== vastagharOwner)
           rig.playSpawnUnfold(this.animClock, paperPriority > 0 ? 280 : 220);
         this.enemies.set(id, rig);
@@ -4956,6 +5031,7 @@ export class ArenaScene extends Phaser.Scene {
         // FIRST, then either fall into the void (§17 pit) or get the §20 DEATH-POP (launch + tumble).
         const rig = this.enemies.get(id);
         const paperPriority = this.enemyPaperPriority.get(id) ?? 0;
+        const deathCue = this.enemyDeathCue.get(id) ?? "death:medium";
         if (rig && paperPriority === 2) {
           this.lastBossX = rig.x;
           this.lastBossY = rig.y;
@@ -4986,6 +5062,7 @@ export class ArenaScene extends Phaser.Scene {
         this.enemyFlinches.delete(id);
         this.enemies.delete(id);
         this.enemyPaperPriority.delete(id);
+        this.enemyDeathCue.delete(id);
         this.enemyHp.delete(id);
         this.enemyCrit.delete(id);
         this.enemyAtk.delete(id);
@@ -5020,7 +5097,7 @@ export class ArenaScene extends Phaser.Scene {
               continue; // the epoch director owns the one death sound, pack stack, shake, and crown order
             }
             spawnPoof(this, rig.x, rig.y); // dust at the kill point
-            this.audio.play("death", { x: rig.x }); // §19 kill crunch (throttled for horde clears)
+            this.audio.play(deathCue, { x: rig.x }); // §19 tiered kill crunch (throttled for clears)
             // §20 death-pop: fling the corpse AWAY from the nearest living player (≈ the killer) + up.
             const deathSeed = telegraphHash01(id);
             let ax = finalPresentation?.dirX ?? Math.cos(deathSeed * Math.PI * 2);
@@ -6796,11 +6873,11 @@ export class ArenaScene extends Phaser.Scene {
             }
             // §19 a REMOTE shooter's gun sound (self already played its predicted shot at click time —
             // `suppressed` gates this the same way it gates the flash, so self never double-fires).
-            if (!comet && !generatedImageRecipe)
-              this.audio.play(
-                wackyWeaponShotAudioCue(sourceWeaponId, `shot:${baseKind(pr.kind)}`),
-                { x: p.x },
-              );
+            if (!comet)
+              this.audio.play(gunFireAudioCue(sourceWeaponId) ?? `shot:${baseKind(pr.kind)}`, {
+                x: p.x,
+                amt: 0.42,
+              });
           }
           if (isSelf && comet) this.audio.play("ult:fire:launch", { x: p?.x, amt: 1 });
         }
@@ -9654,8 +9731,9 @@ export class ArenaScene extends Phaser.Scene {
               spawnSonicBoomRing(this, muzzle.x, muzzle.y, ang, fx.color);
           }
         }
-        this.audio.play(wackyWeaponShotAudioCue(weapon.id, `shot:${weapon.gun.bulletKind}`), {
+        this.audio.play(gunFireAudioCue(weapon.id) ?? `shot:${weapon.gun.bulletKind}`, {
           x: rig.x,
+          amt: 1,
         }); // §19 predicted shot sound
         this.lastSelfMuzzleAt = this.time.now;
       }
@@ -9818,10 +9896,10 @@ export class ArenaScene extends Phaser.Scene {
         if (weapon.gun.sonicBoomRing) spawnSonicBoomRing(this, muzzle.x, muzzle.y, angle, fx.color);
       }
     }
-    this.audio.play(
-      wackyWeaponShotAudioCue(weapon.id, `shot:${weapon.gun?.bulletKind ?? "slug"}`),
-      { x: rig.x },
-    );
+    this.audio.play(gunFireAudioCue(weapon.id) ?? `shot:${weapon.gun?.bulletKind ?? "slug"}`, {
+      x: rig.x,
+      amt: 1,
+    });
     this.lastSelfMuzzleAt = this.time.now;
   }
 
@@ -9897,6 +9975,7 @@ export class ArenaScene extends Phaser.Scene {
     this.lastParryPress = this.time.now; // H10: open the i-frame-window flash on the parry ring
     this.room.send("parry");
     const rig = this.blobs.get(selfId);
+    this.audio.play("parry:brace", { x: rig?.x ?? self.x, amt: 1 });
     rig?.triggerBrace(this.animClock);
     // §8 local-player parry-augment VFX (server owns the damage; this reads the owned set + live aim).
     if (rig && self.augments) this.spawnParryFx(rig.x, rig.y, self.augments);
@@ -14993,8 +15072,7 @@ export class ArenaScene extends Phaser.Scene {
       this.input.activePointer.rightButtonDown();
     const aim = this.currentBeamAim();
     const slideHeld =
-      !inputBlocked &&
-      slideHeldFromBindings(this.keys.SHIFT.isDown, this.keys.CTRL.isDown);
+      !inputBlocked && slideHeldFromBindings(this.keys.SHIFT.isDown, this.keys.CTRL.isDown);
     this.inputAccMs = Math.min(this.inputAccMs + elapsedForInput, TICK_MS * 3);
 
     // Catch-up remains a fixed-timestep simulation: each elapsed 50ms heartbeat advances prediction once.

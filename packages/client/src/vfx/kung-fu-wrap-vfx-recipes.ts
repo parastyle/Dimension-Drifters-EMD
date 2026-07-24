@@ -58,17 +58,15 @@ export function resolveKungFuWrapVfxRecipe(
   return weaponId ? KUNG_FU_WRAP_VFX_RECIPES[weaponId] : undefined;
 }
 
-/** Reuse B14's sample-backed melee palette while making hand, foot, speed, and weight audible per beat. */
+/** Every martial art owns a sample-backed source whoosh; contact remains a separate impact layer. */
 export function kungFuWrapBeatAudioCue(
   weaponId: string | undefined,
-  limb: "hand" | "foot" | undefined,
-  motion: string | undefined,
+  _limb: "hand" | "foot" | undefined,
+  _motion: string | undefined,
 ): string | undefined {
   if (!weaponId || !KUNG_FU_WRAP_VFX_RECIPES[weaponId]) return undefined;
-  if (limb === "foot") return "melee:blunt";
-  if (weaponId === "x2-wing-chun-wraps") return "melee:light";
-  if (weaponId === "x2-drunken-fist-wraps") return "melee:arcane";
-  if (weaponId === "x2-iron-palm-wraps")
-    return motion === "quake-double-palm" ? "melee:heavy" : "melee:blunt";
-  return "melee:heavy";
+  if (weaponId === "x2-muay-thai-wraps") return "kungfu:muay-thai";
+  if (weaponId === "x2-wing-chun-wraps") return "kungfu:wing-chun";
+  if (weaponId === "x2-drunken-fist-wraps") return "kungfu:drunken-fist";
+  return "kungfu:iron-palm";
 }

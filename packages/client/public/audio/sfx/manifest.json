@@ -170,7 +170,7 @@
    "durationSeconds": 0.65,
    "loop": false,
    "variations": 3,
-   "replaces": "shot:slug"
+   "replaces": null
   },
   {
    "id": "gun-fire-frost",
@@ -179,7 +179,7 @@
    "durationSeconds": 0.5,
    "loop": false,
    "variations": 3,
-   "replaces": "shot:slug"
+   "replaces": null
   },
   {
    "id": "gun-fire-shock",
@@ -188,7 +188,7 @@
    "durationSeconds": 0.5,
    "loop": false,
    "variations": 3,
-   "replaces": "shot:slug"
+   "replaces": null
   },
   {
    "id": "gun-fire-void",
@@ -197,7 +197,7 @@
    "durationSeconds": 0.6,
    "loop": false,
    "variations": 3,
-   "replaces": "shot:slug"
+   "replaces": null
   },
   {
    "id": "gun-fire-toxic",
@@ -206,7 +206,7 @@
    "durationSeconds": 0.5,
    "loop": false,
    "variations": 2,
-   "replaces": "shot:slug"
+   "replaces": null
   },
   {
    "id": "gun-fire-arcane",
@@ -215,7 +215,7 @@
    "durationSeconds": 0.5,
    "loop": false,
    "variations": 2,
-   "replaces": "shot:slug"
+   "replaces": null
   },
   {
    "id": "gun-fire-holy",
@@ -224,7 +224,7 @@
    "durationSeconds": 0.55,
    "loop": false,
    "variations": 2,
-   "replaces": "shot:slug"
+   "replaces": null
   },
   {
    "id": "beam-charge",
@@ -404,7 +404,7 @@
    "durationSeconds": 0.5,
    "loop": false,
    "variations": 3,
-   "replaces": "death"
+   "replaces": "death:small"
   },
   {
    "id": "kill-confirm-medium",
@@ -413,7 +413,7 @@
    "durationSeconds": 0.55,
    "loop": false,
    "variations": 2,
-   "replaces": "death"
+   "replaces": "death:medium"
   },
   {
    "id": "kill-confirm-large",
@@ -422,7 +422,7 @@
    "durationSeconds": 0.8,
    "loop": false,
    "variations": 2,
-   "replaces": "death"
+   "replaces": "death:tough"
   },
   {
    "id": "kill-confirm-colossus",
@@ -431,7 +431,7 @@
    "durationSeconds": 1.8,
    "loop": false,
    "variations": 1,
-   "replaces": "death"
+   "replaces": "death:boss"
   },
   {
    "id": "player-hurt",
@@ -476,7 +476,7 @@
    "durationSeconds": 1.2,
    "loop": false,
    "variations": 2,
-   "replaces": "descent"
+   "replaces": "boss:serraketh:dive"
   },
   {
    "id": "serraketh-rumble-loop",
@@ -494,7 +494,7 @@
    "durationSeconds": 1.5,
    "loop": false,
    "variations": 2,
-   "replaces": "bossslam"
+   "replaces": "boss:serraketh:erupt"
   },
   {
    "id": "serraketh-sever",
@@ -503,7 +503,7 @@
    "durationSeconds": 1,
    "loop": false,
    "variations": 2,
-   "replaces": "bighit"
+   "replaces": "boss:serraketh:sever"
   },
   {
    "id": "serraketh-regrow",
@@ -512,7 +512,7 @@
    "durationSeconds": 1.4,
    "loop": false,
    "variations": 1,
-   "replaces": null
+   "replaces": "boss:serraketh:regrow"
   },
   {
    "id": "serraketh-death",
@@ -521,7 +521,7 @@
    "durationSeconds": 3,
    "loop": false,
    "variations": 1,
-   "replaces": null
+   "replaces": "boss:serraketh:death"
   },
   {
    "id": "boss-slam-generic",
@@ -557,7 +557,7 @@
    "durationSeconds": 0.5,
    "loop": false,
    "variations": 1,
-   "replaces": null
+   "replaces": "ui:cancel"
   },
   {
    "id": "ui-card-hover",
@@ -575,7 +575,7 @@
    "durationSeconds": 0.5,
    "loop": false,
    "variations": 1,
-   "replaces": "grab"
+   "replaces": "ui:confirm"
   },
   {
    "id": "levelup-fanfare",
@@ -1170,6 +1170,231 @@
    "loop": false,
    "variations": 2,
    "replaces": "enemy-combo:airkeep-hit"
+  },
+  {
+   "id": "gun-family-revolver",
+   "category": "weapon-fire",
+   "priority": 5,
+   "durationSeconds": 0.55,
+   "loop": false,
+   "variations": 3,
+   "replaces": "gun:fire:revolver"
+  },
+  {
+   "id": "gun-family-scatter-sidearm",
+   "category": "weapon-fire",
+   "priority": 5,
+   "durationSeconds": 0.6,
+   "loop": false,
+   "variations": 3,
+   "replaces": "gun:fire:scatter-sidearm"
+  },
+  {
+   "id": "gun-family-hand-cannon",
+   "category": "weapon-fire",
+   "priority": 5,
+   "durationSeconds": 0.7,
+   "loop": false,
+   "variations": 2,
+   "replaces": "gun:fire:hand-cannon"
+  },
+  {
+   "id": "gun-family-shotgun",
+   "category": "weapon-fire",
+   "priority": 5,
+   "durationSeconds": 0.75,
+   "loop": false,
+   "variations": 3,
+   "replaces": "gun:fire:shotgun"
+  },
+  {
+   "id": "gun-family-blunderbuss",
+   "category": "weapon-fire",
+   "priority": 5,
+   "durationSeconds": 0.85,
+   "loop": false,
+   "variations": 2,
+   "replaces": "gun:fire:blunderbuss"
+  },
+  {
+   "id": "gun-family-rotary-auto",
+   "category": "weapon-fire",
+   "priority": 5,
+   "durationSeconds": 0.5,
+   "loop": false,
+   "variations": 3,
+   "replaces": "gun:fire:rotary-auto"
+  },
+  {
+   "id": "gun-family-industrial-repeater",
+   "category": "weapon-fire",
+   "priority": 5,
+   "durationSeconds": 0.5,
+   "loop": false,
+   "variations": 3,
+   "replaces": "gun:fire:industrial-repeater"
+  },
+  {
+   "id": "gun-family-lever-rifle",
+   "category": "weapon-fire",
+   "priority": 5,
+   "durationSeconds": 0.65,
+   "loop": false,
+   "variations": 2,
+   "replaces": "gun:fire:lever-rifle"
+  },
+  {
+   "id": "gun-family-long-rifle",
+   "category": "weapon-fire",
+   "priority": 5,
+   "durationSeconds": 0.8,
+   "loop": false,
+   "variations": 2,
+   "replaces": "gun:fire:long-rifle"
+  },
+  {
+   "id": "gun-family-coil-rail",
+   "category": "weapon-fire",
+   "priority": 5,
+   "durationSeconds": 0.65,
+   "loop": false,
+   "variations": 2,
+   "replaces": "gun:fire:coil-rail"
+  },
+  {
+   "id": "gun-family-siege-ordnance",
+   "category": "weapon-fire",
+   "priority": 5,
+   "durationSeconds": 0.95,
+   "loop": false,
+   "variations": 2,
+   "replaces": "gun:fire:siege-ordnance"
+  },
+  {
+   "id": "gun-family-heavy-scatter",
+   "category": "weapon-fire",
+   "priority": 5,
+   "durationSeconds": 0.8,
+   "loop": false,
+   "variations": 2,
+   "replaces": "gun:fire:heavy-scatter"
+  },
+  {
+   "id": "gun-family-bolt-launcher",
+   "category": "weapon-fire",
+   "priority": 5,
+   "durationSeconds": 0.6,
+   "loop": false,
+   "variations": 2,
+   "replaces": "gun:fire:bolt-launcher"
+  },
+  {
+   "id": "gun-family-occult-relic",
+   "category": "weapon-fire",
+   "priority": 5,
+   "durationSeconds": 0.65,
+   "loop": false,
+   "variations": 2,
+   "replaces": "gun:fire:occult-relic"
+  },
+  {
+   "id": "gun-family-gauntlet-discharge",
+   "category": "weapon-fire",
+   "priority": 5,
+   "durationSeconds": 0.55,
+   "loop": false,
+   "variations": 2,
+   "replaces": "gun:fire:gauntlet-discharge"
+  },
+  {
+   "id": "gun-family-novelty-launcher",
+   "category": "weapon-fire",
+   "priority": 5,
+   "durationSeconds": 0.7,
+   "loop": false,
+   "variations": 2,
+   "replaces": "gun:fire:novelty-launcher"
+  },
+  {
+   "id": "weapon-pickup-clack",
+   "category": "ui",
+   "priority": 5,
+   "durationSeconds": 0.55,
+   "loop": false,
+   "variations": 2,
+   "replaces": "weapon:pickup"
+  },
+  {
+   "id": "money-pickup-jingle",
+   "category": "ui",
+   "priority": 5,
+   "durationSeconds": 0.5,
+   "loop": false,
+   "variations": 3,
+   "replaces": "money:pickup"
+  },
+  {
+   "id": "parry-brace-whoosh",
+   "category": "parry",
+   "priority": 5,
+   "durationSeconds": 0.55,
+   "loop": false,
+   "variations": 2,
+   "replaces": "parry:brace"
+  },
+  {
+   "id": "weapon-swap-leather",
+   "category": "ui",
+   "priority": 5,
+   "durationSeconds": 0.6,
+   "loop": false,
+   "variations": 2,
+   "replaces": "weapon:swap"
+  },
+  {
+   "id": "weapon-salvage-break",
+   "category": "ui",
+   "priority": 5,
+   "durationSeconds": 0.75,
+   "loop": false,
+   "variations": 2,
+   "replaces": "weapon:salvage"
+  },
+  {
+   "id": "kungfu-muay-thai-whoosh",
+   "category": "weapon-swing",
+   "priority": 5,
+   "durationSeconds": 0.55,
+   "loop": false,
+   "variations": 3,
+   "replaces": "kungfu:muay-thai"
+  },
+  {
+   "id": "kungfu-wing-chun-whoosh",
+   "category": "weapon-swing",
+   "priority": 5,
+   "durationSeconds": 0.5,
+   "loop": false,
+   "variations": 3,
+   "replaces": "kungfu:wing-chun"
+  },
+  {
+   "id": "kungfu-drunken-fist-whoosh",
+   "category": "weapon-swing",
+   "priority": 5,
+   "durationSeconds": 0.65,
+   "loop": false,
+   "variations": 3,
+   "replaces": "kungfu:drunken-fist"
+  },
+  {
+   "id": "kungfu-iron-palm-whoosh",
+   "category": "weapon-swing",
+   "priority": 5,
+   "durationSeconds": 0.65,
+   "loop": false,
+   "variations": 3,
+   "replaces": "kungfu:iron-palm"
   }
  ]
 }

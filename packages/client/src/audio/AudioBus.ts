@@ -14,6 +14,7 @@
  */
 
 import { loadSettings, updateSettings } from "../settings.js";
+import { GUN_FIRE_FAMILY_PROFILES, GUN_FIRE_SAMPLE_IDS, gunFireFamilyForCue } from "./gun-sfx.js";
 import { type PlaySampleOpts, type SampleLoopHandle, sampleBank } from "./sample-bank.js";
 
 const LS_VOL = "dd.audio.vol";
@@ -177,6 +178,16 @@ export class AudioBus {
           "player-roll-whoosh",
           "boss-slam-generic",
           "ultimate-ready-chime",
+          "weapon-pickup-clack",
+          "money-pickup-jingle",
+          "parry-brace-whoosh",
+          "weapon-swap-leather",
+          "weapon-salvage-break",
+          "kungfu-muay-thai-whoosh",
+          "kungfu-wing-chun-whoosh",
+          "kungfu-drunken-fist-whoosh",
+          "kungfu-iron-palm-whoosh",
+          ...GUN_FIRE_SAMPLE_IDS,
         ]);
       } catch {
         this.failed = true;
@@ -463,6 +474,51 @@ export class AudioBus {
     return sid !== null && sampleBank.playSample(sid, opts);
   }
 
+  /** Family-authored gun report. Samples own the shipped sound; these compact recipes only cover the
+   * first decode / missing-asset path and deliberately preserve each mechanism's broad weight. */
+  private playGunFire(cue: string, amt: number, x?: number): void {
+    const family = gunFireFamilyForCue(cue);
+    if (!family) return;
+    const profile = GUN_FIRE_FAMILY_PROFILES[family];
+    const strength = 0.55 + 0.45 * amt;
+    if (this.throttled(`gunFire:${family}`, profile.minIntervalMs)) return;
+    if (
+      this.sampleFirst(cue, {
+        volume: profile.volume * strength,
+        pan: this.panOf(x),
+        rate: 0.96 + Math.random() * 0.08,
+        minIntervalMs: profile.minIntervalMs,
+      })
+    )
+      return;
+
+    switch (profile.fallback) {
+      case "powder":
+        this.noise(0.075, { gain: 0.28 * strength, type: "bandpass", freq: 760, q: 1.1, x });
+        this.tone(155, 0.09, { type: "sine", gain: 0.22 * strength, sweepTo: 70, x });
+        break;
+      case "scatter":
+        this.noise(0.12, { gain: 0.36 * strength, type: "lowpass", freq: 1_300, q: 0.8, x });
+        break;
+      case "heavy":
+        this.noise(0.14, { gain: 0.38 * strength, type: "lowpass", freq: 900, q: 0.75, x });
+        this.tone(95, 0.16, { type: "sine", gain: 0.3 * strength, sweepTo: 42, x });
+        break;
+      case "auto":
+        this.noise(0.045, { gain: 0.18 * strength, type: "bandpass", freq: 1_550, q: 1.6, x });
+        this.tone(210, 0.045, { type: "triangle", gain: 0.1 * strength, sweepTo: 105, x });
+        break;
+      case "mechanical":
+        this.noise(0.05, { gain: 0.2 * strength, type: "highpass", freq: 1_900, q: 1.1, x });
+        this.tone(520, 0.045, { type: "triangle", gain: 0.08 * strength, sweepTo: 260, x });
+        break;
+      case "energy":
+        this.noise(0.06, { gain: 0.16 * strength, type: "highpass", freq: 2_300, q: 2, x });
+        this.tone(1_350, 0.075, { type: "square", gain: 0.11 * strength, sweepTo: 620, x });
+        break;
+    }
+  }
+
   /** Doc §4.1 — start the per-owner beam sustain loop (idempotent per key, bounded like
    *  `beamSustainAt`). Returns false ⇒ keep the existing pulsed-synth sustain. */
   private startBeamLoop(ownerId: string | undefined, amt: number, x?: number): boolean {
@@ -540,6 +596,10 @@ export class AudioBus {
       this.sampleFirst(event, { volume: 0.4 + 0.5 * amt, pan: this.panOf(x) })
     )
       return;
+    if (gunFireFamilyForCue(event)) {
+      this.playGunFire(event, amt, x);
+      return;
+    }
     switch (event) {
       // Owner-only UI-space hit markers. No world x is passed to either path, keeping them center-mono.
       // The cue ids are manifest-ready; absent samples fall through to these synthesis defaults.
@@ -829,6 +889,32 @@ export class AudioBus {
           x,
         });
         break;
+      case "kungfu:muay-thai":
+      case "kungfu:wing-chun":
+      case "kungfu:drunken-fist":
+      case "kungfu:iron-palm": {
+        const wingChun = event === "kungfu:wing-chun";
+        const ironPalm = event === "kungfu:iron-palm";
+        const minIntervalMs = wingChun ? 30 : 44;
+        if (this.throttled(`${event}:${amt >= 0.75 ? "self" : "world"}`, minIntervalMs)) return;
+        if (
+          this.sampleFirst(event, {
+            volume: 0.3 + 0.38 * amt,
+            pan: this.panOf(x),
+            rate: 0.96 + Math.random() * 0.08,
+            minIntervalMs,
+          })
+        )
+          return;
+        this.noise(ironPalm ? 0.14 : wingChun ? 0.055 : 0.1, {
+          gain: 0.1 + 0.14 * amt,
+          type: ironPalm ? "lowpass" : "bandpass",
+          freq: ironPalm ? 650 : wingChun ? 2_100 : 1_250,
+          q: wingChun ? 1.8 : 1,
+          x,
+        });
+        break;
+      }
       case "kungfu:iron-clang":
         if (this.throttled("kungFuIronClang", 110)) return;
         if (
@@ -1341,6 +1427,25 @@ export class AudioBus {
         });
         break;
       // Reward / skill stingers.
+      case "parry:brace":
+        if (this.throttled("parryBrace", 90)) return;
+        if (
+          this.sampleFirst(event, {
+            volume: 0.52,
+            pan: this.panOf(x),
+            priority: "normal",
+            minIntervalMs: 90,
+          })
+        )
+          return;
+        this.noise(0.1, {
+          gain: 0.14,
+          type: "bandpass",
+          freq: 1_650,
+          sweepTo: 720,
+          x,
+        });
+        break;
       case "parry": // the crispest sound in the game — this IS the skill beat
         // Layer (doc §3): sample metal clang OVER the sine pair — result deliberately unused. The
         // 1400/2100 Hz sines are the skill-beat's pitch identity and are never removed.
@@ -1539,19 +1644,43 @@ export class AudioBus {
         });
         break;
       case "death":
-        if (this.throttled("death", 30)) return;
+      case "death:small":
+      case "death:medium":
+      case "death:tough":
+      case "death:boss": {
+        if (this.throttled("death", event === "death:boss" ? 120 : 30)) return;
+        const weight =
+          event === "death:boss"
+            ? 1
+            : event === "death:tough"
+              ? 0.82
+              : event === "death:medium"
+                ? 0.6
+                : 0.4;
         if (
-          this.sampleFirst("death", {
-            volume: 0.4 + 0.2 * amt,
+          this.sampleFirst(event === "death" ? "death:small" : event, {
+            volume: 0.45 + 0.4 * weight,
             pan: this.panOf(x),
-            rate: 0.96 + Math.random() * 0.08,
+            rate: 1.05 - 0.13 * weight + Math.random() * 0.05,
+            priority: event === "death:boss" ? "critical" : "normal",
             minIntervalMs: 30,
           })
         )
           return;
-        this.noise(0.05, { gain: 0.22, type: "lowpass", freq: 500, x });
-        this.tone(220, 0.09, { type: "triangle", gain: 0.14, sweepTo: 70, x });
+        this.noise(0.05 + 0.13 * weight, {
+          gain: 0.12 + 0.2 * weight,
+          type: "lowpass",
+          freq: 650 - 310 * weight,
+          x,
+        });
+        this.tone(250 - 130 * weight, 0.07 + 0.14 * weight, {
+          type: "triangle",
+          gain: 0.09 + 0.17 * weight,
+          sweepTo: 80 - 30 * weight,
+          x,
+        });
         break;
+      }
       case "pitdeath":
         this.tone(300, 0.32, { type: "sine", gain: 0.2, sweepTo: 80, x });
         break;
@@ -1735,10 +1864,26 @@ export class AudioBus {
         });
         break;
       case "pound:tuck":
+        if (
+          this.sampleFirst(event, {
+            volume: 0.28 + 0.38 * amt,
+            pan: this.panOf(x),
+            rate: 0.96 + 0.06 * amt,
+          })
+        )
+          return;
         this.noise(0.06, { gain: 0.08 + 0.06 * amt, type: "highpass", freq: 1800, x });
         this.tone(500, 0.06, { type: "triangle", gain: 0.07, sweepTo: 700, x });
         break;
       case "pound:drop":
+        if (
+          this.sampleFirst(event, {
+            volume: 0.3 + 0.42 * amt,
+            pan: this.panOf(x),
+            rate: 0.96,
+          })
+        )
+          return;
         this.tone(600, 0.18, { type: "sine", gain: 0.08 + 0.08 * amt, sweepTo: 180, x });
         break;
       case "pound:hit":
@@ -1809,6 +1954,67 @@ export class AudioBus {
       case "grab":
         this.tone(880, 0.06, { type: "sine", gain: 0.2 });
         this.tone(1320, 0.07, { type: "sine", gain: 0.2, delay: 0.06 });
+        break;
+      case "weapon:pickup":
+        if (this.throttled("weaponPickup", 90)) return;
+        if (
+          this.sampleFirst(event, {
+            volume: 0.62,
+            pan: this.panOf(x),
+            priority: "normal",
+            minIntervalMs: 90,
+          })
+        )
+          return;
+        this.noise(0.06, { gain: 0.14, type: "bandpass", freq: 1_300, q: 2.2, x });
+        this.tone(420, 0.08, { type: "triangle", gain: 0.12, sweepTo: 260, x });
+        break;
+      case "money:pickup":
+        if (this.throttled("moneyPickup", 45)) return;
+        if (
+          this.sampleFirst(event, {
+            volume: 0.32 + 0.32 * amt,
+            rate: 0.96 + 0.25 * amt,
+            priority: "low",
+            minIntervalMs: 45,
+          })
+        )
+          return;
+        this.tone(1_050 + 380 * amt, 0.055, {
+          type: "triangle",
+          gain: 0.1 + 0.06 * amt,
+          sweepTo: 1_320 + 460 * amt,
+          priority: "low",
+        });
+        break;
+      case "weapon:swap":
+        if (this.throttled("weaponSwap", 80)) return;
+        if (
+          this.sampleFirst(event, {
+            volume: 0.32 + 0.36 * amt,
+            pan: this.panOf(x),
+            priority: "normal",
+            minIntervalMs: 80,
+          })
+        )
+          return;
+        this.noise(0.075, { gain: 0.09 + 0.08 * amt, type: "bandpass", freq: 1_150, x });
+        this.tone(360, 0.08, { type: "triangle", gain: 0.09, sweepTo: 230, x });
+        break;
+      case "weapon:salvage":
+        if (this.sampleFirst(event, { volume: 0.72, priority: "normal" })) return;
+        this.noise(0.16, { gain: 0.2, type: "bandpass", freq: 950, q: 1.2 });
+        this.tone(520, 0.11, { type: "square", gain: 0.12, sweepTo: 170 });
+        break;
+      case "ui:confirm":
+        if (this.throttled("uiConfirm", 70)) return;
+        if (this.sampleFirst(event, { volume: 0.48, priority: "low", minIntervalMs: 70 })) return;
+        this.tone(880, 0.06, { type: "triangle", gain: 0.1, sweepTo: 1_120 });
+        break;
+      case "ui:cancel":
+        if (this.throttled("uiCancel", 70)) return;
+        if (this.sampleFirst(event, { volume: 0.42, priority: "low", minIntervalMs: 70 })) return;
+        this.tone(520, 0.07, { type: "triangle", gain: 0.09, sweepTo: 330 });
         break;
       case "pair":
         if (this.sampleFirst("pair", { volume: 0.48 + 0.32 * amt, pan: this.panOf(x) })) return;
@@ -1921,6 +2127,40 @@ export class AudioBus {
       // the worm is burrowed (idempotent — first call starts the loop welling up over 0.4s, repeats
       // are the keepalive + gain retarget from proximity/phase amt) and "boss:rumble:stop" on
       // surfacing/eruption/boss death; a missed stop is reaped by the keepalive watchdog.
+      case "boss:serraketh:dive":
+      case "boss:serraketh:erupt":
+      case "boss:serraketh:sever":
+      case "boss:serraketh:regrow":
+      case "boss:serraketh:death": {
+        const critical = event === "boss:serraketh:erupt" || event === "boss:serraketh:death";
+        if (
+          this.sampleFirst(event, {
+            volume: critical ? 0.9 : 0.72,
+            pan: this.panOf(x),
+            priority: critical ? "critical" : "normal",
+          })
+        )
+          return;
+        if (event === "boss:serraketh:regrow") {
+          this.noise(0.3, { gain: 0.18, type: "bandpass", freq: 430, sweepTo: 1_100, x });
+        } else {
+          this.noise(critical ? 0.42 : 0.22, {
+            gain: critical ? 0.32 : 0.22,
+            type: "lowpass",
+            freq: critical ? 260 : 520,
+            x,
+            priority: critical ? "critical" : "normal",
+          });
+          this.tone(critical ? 52 : 95, critical ? 0.46 : 0.24, {
+            type: "sine",
+            gain: critical ? 0.34 : 0.22,
+            sweepTo: critical ? 28 : 48,
+            x,
+            priority: critical ? "critical" : "normal",
+          });
+        }
+        break;
+      }
       case "boss:rumble:start": {
         if (this.bossRumble?.handle.alive) {
           this.bossRumble.lastFedMs = Date.now();
