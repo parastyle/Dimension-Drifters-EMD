@@ -1,0 +1,956 @@
+{
+  "generatedAt": "2026-07-24T19:45:30.029Z",
+  "characterId": "proto-cowboy-hidden-face",
+  "wolfKind": "critter",
+  "ports": {
+    "client": 58136,
+    "game": 58134
+  },
+  "forbiddenPorts": [
+    5180,
+    2567
+  ],
+  "walking": {
+    "before": {
+      "tick": 306,
+      "player": {
+        "x": 2400,
+        "y": 2420,
+        "hp": 100,
+        "maxHp": 100,
+        "attackSeq": 0,
+        "parriedSeq": 0,
+        "dodgedSeq": 0,
+        "parryPresentation": 0,
+        "moveStance": 0,
+        "slidePhase": 0,
+        "attackMoveMode": 0
+      },
+      "enemies": [],
+      "meleeFloorRows": 0
+    },
+    "ramp": {
+      "tick": 376,
+      "enemyId": "e0",
+      "enemyX": 2464.239990234375,
+      "enemyY": 2420,
+      "windup": 0.43478259444236755,
+      "tint": 16757935,
+      "tintMode": 0,
+      "tintPhase": 0.43478259444236755,
+      "accent": 16729144,
+      "bodyScaleX": 0.45791576957001034,
+      "bodyScaleY": 0.4276197669361489
+    },
+    "pop": {
+      "tick": 385,
+      "enemyId": "e0",
+      "commitSeq": 1,
+      "tint": 16736085,
+      "tintMode": 0,
+      "bodyScaleX": 0.4597768988755097,
+      "bodyScaleY": 0.4181032053574416,
+      "popUntilMs": -1000000000,
+      "animClock": 14485.179999999978
+    },
+    "whitePresentation": {
+      "tint": 16777215,
+      "tintMode": 1,
+      "bodyScaleX": 0.4437976279067069,
+      "bodyScaleY": 0.4621845480405225
+    },
+    "whitePopCaptureHoldMs": 5000,
+    "walkCommand": {
+      "seq": 241,
+      "dx": 1,
+      "dy": 0
+    },
+    "walkingAuthority": {
+      "ackSeq": 241,
+      "commandSeq": 241
+    },
+    "impact": {
+      "tick": 389,
+      "enemyId": "e0",
+      "enemyX": 2442,
+      "enemyY": 2420,
+      "atkSeq": 1,
+      "playerX": 2369.337032829564,
+      "playerY": 2420,
+      "hp": 94.86000061035156,
+      "parriedSeq": 0,
+      "dodgedSeq": 0,
+      "parryPresentation": 0,
+      "moveStance": 0,
+      "slidePhase": 0,
+      "ackSeq": 240
+    },
+    "presentation": {
+      "tick": 757,
+      "player": {
+        "x": 4238.576171875,
+        "y": 2439.588623046875,
+        "hp": 0,
+        "maxHp": 100,
+        "attackSeq": 0,
+        "parriedSeq": 0,
+        "dodgedSeq": 0,
+        "parryPresentation": 0,
+        "moveStance": 0,
+        "slidePhase": 0,
+        "attackMoveMode": 0
+      },
+      "enemies": [
+        {
+          "id": "e0",
+          "kind": "critter",
+          "x": 4196.576761259657,
+          "y": 2439.354736328125,
+          "hp": 3,
+          "atkSeq": 8,
+          "windup": 0,
+          "commitSeq": 8,
+          "tint": 16777215,
+          "tintMode": 0,
+          "bodyScaleX": 0.44994772421082835,
+          "bodyScaleY": 0.4560307946361384,
+          "tintPhase": 0,
+          "accent": 16729144,
+          "tellMode": "none"
+        }
+      ],
+      "meleeFloorRows": 0
+    },
+    "lungeTravelPx": 22.239990234375,
+    "screenshots": [
+      "docs/owner-notes-audit-v11-evidence/b33-commit-melee/a-wolf-accent-ramp.png",
+      "docs/owner-notes-audit-v11-evidence/b33-commit-melee/a-wolf-white-pop.png",
+      "docs/owner-notes-audit-v11-evidence/b33-commit-melee/a-wolf-landed-lunge.png"
+    ]
+  },
+  "roll": {
+    "before": {
+      "tick": 963,
+      "player": {
+        "x": 2400,
+        "y": 2420,
+        "hp": 100,
+        "maxHp": 100,
+        "attackSeq": 0,
+        "parriedSeq": 0,
+        "dodgedSeq": 0,
+        "parryPresentation": 0,
+        "moveStance": 0,
+        "slidePhase": 0,
+        "attackMoveMode": 0
+      },
+      "enemies": [],
+      "meleeFloorRows": 0
+    },
+    "pop": {
+      "tick": 1028,
+      "enemyId": "e1",
+      "commitSeq": 1,
+      "tint": 16731457,
+      "tintMode": 0,
+      "bodyScaleX": 0.4603685374174158,
+      "bodyScaleY": 0.4094688484630566,
+      "popUntilMs": -1000000000,
+      "animClock": 34864.350000000006
+    },
+    "impact": {
+      "tick": 1030,
+      "enemyId": "e1",
+      "enemyX": 2428.080078125,
+      "enemyY": 2420,
+      "atkSeq": 1,
+      "playerX": 2280,
+      "playerY": 2420,
+      "hp": 100,
+      "parriedSeq": 0,
+      "dodgedSeq": 1,
+      "parryPresentation": 0,
+      "moveStance": 4,
+      "slidePhase": 1,
+      "ackSeq": 598
+    },
+    "presentation": {
+      "tick": 1079,
+      "player": {
+        "x": 2159.8798828125,
+        "y": 2420,
+        "hp": 96.12000274658203,
+        "maxHp": 100,
+        "attackSeq": 0,
+        "parriedSeq": 0,
+        "dodgedSeq": 1,
+        "parryPresentation": 0,
+        "moveStance": 0,
+        "slidePhase": 0,
+        "attackMoveMode": 0
+      },
+      "enemies": [
+        {
+          "id": "e1",
+          "kind": "critter",
+          "x": 2241.5,
+          "y": 2420,
+          "hp": 3,
+          "atkSeq": 2,
+          "windup": 0,
+          "commitSeq": 2,
+          "tint": 16777215,
+          "tintMode": 0,
+          "bodyScaleX": 0.45067302080869215,
+          "bodyScaleY": 0.45494284973934257,
+          "tintPhase": 0,
+          "accent": 16729144,
+          "tellMode": "none"
+        }
+      ],
+      "meleeFloorRows": 0
+    },
+    "screenshot": "docs/owner-notes-audit-v11-evidence/b33-commit-melee/b-wolf-roll-evade.png"
+  },
+  "parry": {
+    "before": {
+      "tick": 1276,
+      "player": {
+        "x": 2400,
+        "y": 2420,
+        "hp": 100,
+        "maxHp": 100,
+        "attackSeq": 0,
+        "parriedSeq": 0,
+        "dodgedSeq": 1,
+        "parryPresentation": 0,
+        "moveStance": 0,
+        "slidePhase": 0,
+        "attackMoveMode": 0
+      },
+      "enemies": [],
+      "meleeFloorRows": 0
+    },
+    "pop": {
+      "tick": 1340,
+      "enemyId": "e2",
+      "commitSeq": 1,
+      "tint": 16777215,
+      "tintMode": 0,
+      "bodyScaleX": 0.4468373781550965,
+      "bodyScaleY": 0.41232320077916396,
+      "popUntilMs": 44630.60000000001,
+      "animClock": 44752.26000000001
+    },
+    "impactReceipt": {
+      "tick": 1347,
+      "enemyId": "e2",
+      "enemyX": 2581.679931640625,
+      "enemyY": 2420,
+      "atkSeq": 1,
+      "playerX": 2374.39990234375,
+      "playerY": 2420,
+      "hp": 100,
+      "parriedSeq": 1,
+      "dodgedSeq": 1,
+      "parryPresentation": 3,
+      "moveStance": 0,
+      "slidePhase": 0,
+      "ackSeq": 778
+    },
+    "impact": {
+      "tick": 1394,
+      "player": {
+        "x": 2333.4658203125,
+        "y": 2420,
+        "hp": 98.63999938964844,
+        "maxHp": 100,
+        "attackSeq": 0,
+        "parriedSeq": 1,
+        "dodgedSeq": 1,
+        "parryPresentation": 3,
+        "moveStance": 0,
+        "slidePhase": 0,
+        "attackMoveMode": 0
+      },
+      "enemies": [
+        {
+          "id": "e2",
+          "kind": "critter",
+          "x": 2413.4599609375,
+          "y": 2420,
+          "hp": 3,
+          "atkSeq": 2,
+          "windup": 0.10869564861059189,
+          "commitSeq": 2,
+          "tint": 16777215,
+          "tintMode": 0,
+          "bodyScaleX": 0.45124000156307936,
+          "bodyScaleY": 0.4495514548216843,
+          "tintPhase": 0,
+          "accent": 16729144,
+          "tellMode": "none"
+        }
+      ],
+      "meleeFloorRows": 0
+    },
+    "reaction": {
+      "packed": 3,
+      "reaction": 3,
+      "bodyScaleY": 0.4258035489101473,
+      "rootScaleX": 0.6261443338034173,
+      "rootScaleY": 0.6623394948497249
+    },
+    "stagger": {
+      "configuredSeconds": 0.4,
+      "receiptTick": 1347,
+      "attackerAtCapture": {
+        "x": 2413.4599609375,
+        "y": 2420
+      },
+      "noFollowupWindowUnitPinned": true
+    },
+    "screenshot": "docs/owner-notes-audit-v11-evidence/b33-commit-melee/c-wolf-parried-directional-stagger.png"
+  },
+  "tokens": {
+    "authority": {
+      "tick": 1646,
+      "total": 6,
+      "active": 3,
+      "ramping": 3,
+      "committed": 0,
+      "posturing": 3,
+      "enemies": [
+        {
+          "id": "e3",
+          "windup": 0.10869564861059189,
+          "commitSeq": 0
+        },
+        {
+          "id": "e4",
+          "windup": 0.10869564861059189,
+          "commitSeq": 0
+        },
+        {
+          "id": "e5",
+          "windup": 0.10869564861059189,
+          "commitSeq": 0
+        },
+        {
+          "id": "e6",
+          "windup": 0,
+          "commitSeq": 0
+        },
+        {
+          "id": "e7",
+          "windup": 0,
+          "commitSeq": 0
+        },
+        {
+          "id": "e8",
+          "windup": 0,
+          "commitSeq": 0
+        }
+      ]
+    },
+    "screenshot": "docs/owner-notes-audit-v11-evidence/b33-commit-melee/d-six-wolves-three-commit.png"
+  },
+  "attackSlow": {
+    "attackStart": {
+      "tick": 1928,
+      "player": {
+        "x": 3011.5,
+        "y": 2420,
+        "hp": 100,
+        "maxHp": 100,
+        "attackSeq": 0,
+        "parriedSeq": 1,
+        "dodgedSeq": 1,
+        "parryPresentation": 3,
+        "moveStance": 0,
+        "slidePhase": 0,
+        "attackMoveMode": 0
+      },
+      "enemies": [],
+      "meleeFloorRows": 0
+    },
+    "ratio": 0.75,
+    "expectedRatio": 0.75,
+    "receipt": {
+      "tick": 1959,
+      "mode": 1,
+      "inputSpeed": 240,
+      "normalInputSpeed": 320,
+      "configuredRatio": 0.75,
+      "actualDistance": 12,
+      "normalDistance": 16,
+      "displacementRatio": 0.75
+    },
+    "frames": [
+      {
+        "tick": 1901,
+        "x": 2579.5,
+        "y": 2420,
+        "attackSeq": 0,
+        "attackMoveMode": 0
+      },
+      {
+        "tick": 1905,
+        "x": 2643.5,
+        "y": 2420,
+        "attackSeq": 0,
+        "attackMoveMode": 0
+      },
+      {
+        "tick": 1909,
+        "x": 2707.5,
+        "y": 2420,
+        "attackSeq": 0,
+        "attackMoveMode": 0
+      },
+      {
+        "tick": 1911,
+        "x": 2739.5,
+        "y": 2420,
+        "attackSeq": 0,
+        "attackMoveMode": 0
+      },
+      {
+        "tick": 1916,
+        "x": 2819.5,
+        "y": 2420,
+        "attackSeq": 0,
+        "attackMoveMode": 0
+      },
+      {
+        "tick": 1921,
+        "x": 2899.5,
+        "y": 2420,
+        "attackSeq": 0,
+        "attackMoveMode": 0
+      },
+      {
+        "tick": 1924,
+        "x": 2947.5,
+        "y": 2420,
+        "attackSeq": 0,
+        "attackMoveMode": 0
+      },
+      {
+        "tick": 1928,
+        "x": 3011.5,
+        "y": 2420,
+        "attackSeq": 0,
+        "attackMoveMode": 0
+      },
+      {
+        "tick": 1932,
+        "x": 3075.5,
+        "y": 2420,
+        "attackSeq": 0,
+        "attackMoveMode": 0
+      },
+      {
+        "tick": 1937,
+        "x": 3155.5,
+        "y": 2420,
+        "attackSeq": 0,
+        "attackMoveMode": 0
+      },
+      {
+        "tick": 1940,
+        "x": 3203.5,
+        "y": 2420,
+        "attackSeq": 0,
+        "attackMoveMode": 0
+      },
+      {
+        "tick": 1945,
+        "x": 3280.28759765625,
+        "y": 2428.877685546875,
+        "attackSeq": 0,
+        "attackMoveMode": 0
+      },
+      {
+        "tick": 1949,
+        "x": 3341.6732266439194,
+        "y": 2439.3033324359494,
+        "attackSeq": 0,
+        "attackMoveMode": 0
+      },
+      {
+        "tick": 1953,
+        "x": 3405.6732266439194,
+        "y": 2439.3033324359494,
+        "attackSeq": 0,
+        "attackMoveMode": 0
+      },
+      {
+        "tick": 1955,
+        "x": 3437.6732266439194,
+        "y": 2439.3033324359494,
+        "attackSeq": 0,
+        "attackMoveMode": 0
+      },
+      {
+        "tick": 1960,
+        "x": 3509.6732266439194,
+        "y": 2439.3033324359494,
+        "attackSeq": 1,
+        "attackMoveMode": 1
+      },
+      {
+        "tick": 1965,
+        "x": 3589.6732266439194,
+        "y": 2439.3033324359494,
+        "attackSeq": 1,
+        "attackMoveMode": 0
+      },
+      {
+        "tick": 1970,
+        "x": 3602.1732266439194,
+        "y": 2439.3033324359494,
+        "attackSeq": 1,
+        "attackMoveMode": 0
+      },
+      {
+        "tick": 1974,
+        "x": 3602.1732266439194,
+        "y": 2439.3033324359494,
+        "attackSeq": 1,
+        "attackMoveMode": 0
+      },
+      {
+        "tick": 1977,
+        "x": 3602.1732266439194,
+        "y": 2439.3033324359494,
+        "attackSeq": 1,
+        "attackMoveMode": 0
+      },
+      {
+        "tick": 1982,
+        "x": 3669.6732266439194,
+        "y": 2439.3033324359494,
+        "attackSeq": 1,
+        "attackMoveMode": 0
+      },
+      {
+        "tick": 1986,
+        "x": 3733.6732266439194,
+        "y": 2439.3033324359494,
+        "attackSeq": 1,
+        "attackMoveMode": 0
+      },
+      {
+        "tick": 1990,
+        "x": 3797.6732266439194,
+        "y": 2439.3033324359494,
+        "attackSeq": 1,
+        "attackMoveMode": 0
+      },
+      {
+        "tick": 1992,
+        "x": 3829.6732266439194,
+        "y": 2439.3033324359494,
+        "attackSeq": 1,
+        "attackMoveMode": 0
+      },
+      {
+        "tick": 1996,
+        "x": 3893.6732266439194,
+        "y": 2439.3033324359494,
+        "attackSeq": 1,
+        "attackMoveMode": 0
+      },
+      {
+        "tick": 1999,
+        "x": 3941.6732266439194,
+        "y": 2439.3033324359494,
+        "attackSeq": 1,
+        "attackMoveMode": 0
+      },
+      {
+        "tick": 2003,
+        "x": 4005.6732266439194,
+        "y": 2439.3033324359494,
+        "attackSeq": 1,
+        "attackMoveMode": 0
+      },
+      {
+        "tick": 2007,
+        "x": 4069.6732266439194,
+        "y": 2439.3033324359494,
+        "attackSeq": 1,
+        "attackMoveMode": 0
+      },
+      {
+        "tick": 2010,
+        "x": 4117.673226643919,
+        "y": 2439.3033324359494,
+        "attackSeq": 1,
+        "attackMoveMode": 0
+      },
+      {
+        "tick": 2014,
+        "x": 4181.673226643919,
+        "y": 2439.3033324359494,
+        "attackSeq": 1,
+        "attackMoveMode": 0
+      },
+      {
+        "tick": 2017,
+        "x": 4229.673226643919,
+        "y": 2439.3033324359494,
+        "attackSeq": 1,
+        "attackMoveMode": 0
+      },
+      {
+        "tick": 2020,
+        "x": 4229.673226643919,
+        "y": 2439.3033324359494,
+        "attackSeq": 1,
+        "attackMoveMode": 0
+      },
+      {
+        "tick": 2024,
+        "x": 4281.173226643919,
+        "y": 2439.3033324359494,
+        "attackSeq": 1,
+        "attackMoveMode": 0
+      },
+      {
+        "tick": 2084,
+        "x": 4236.173226643919,
+        "y": 2439.3033324359494,
+        "attackSeq": 1,
+        "attackMoveMode": 0
+      },
+      {
+        "tick": 2087,
+        "x": 4236.173226643919,
+        "y": 2439.3033324359494,
+        "attackSeq": 1,
+        "attackMoveMode": 0
+      },
+      {
+        "tick": 2092,
+        "x": 4236.173226643919,
+        "y": 2439.3033324359494,
+        "attackSeq": 1,
+        "attackMoveMode": 0
+      },
+      {
+        "tick": 2097,
+        "x": 4236.173226643919,
+        "y": 2439.3033324359494,
+        "attackSeq": 1,
+        "attackMoveMode": 0
+      },
+      {
+        "tick": 2101,
+        "x": 4236.173226643919,
+        "y": 2439.3033324359494,
+        "attackSeq": 1,
+        "attackMoveMode": 0
+      },
+      {
+        "tick": 2106,
+        "x": 4236.173226643919,
+        "y": 2439.3033324359494,
+        "attackSeq": 1,
+        "attackMoveMode": 0
+      },
+      {
+        "tick": 2110,
+        "x": 4236.173226643919,
+        "y": 2439.3033324359494,
+        "attackSeq": 1,
+        "attackMoveMode": 0
+      },
+      {
+        "tick": 2114,
+        "x": 4236.173226643919,
+        "y": 2439.3033324359494,
+        "attackSeq": 1,
+        "attackMoveMode": 0
+      },
+      {
+        "tick": 2118,
+        "x": 4236.173226643919,
+        "y": 2439.3033324359494,
+        "attackSeq": 1,
+        "attackMoveMode": 0
+      },
+      {
+        "tick": 2123,
+        "x": 4236.173226643919,
+        "y": 2439.3033324359494,
+        "attackSeq": 1,
+        "attackMoveMode": 0
+      },
+      {
+        "tick": 2126,
+        "x": 4236.173226643919,
+        "y": 2439.3033324359494,
+        "attackSeq": 1,
+        "attackMoveMode": 0
+      },
+      {
+        "tick": 2130,
+        "x": 4236.173226643919,
+        "y": 2439.3033324359494,
+        "attackSeq": 1,
+        "attackMoveMode": 0
+      },
+      {
+        "tick": 2137,
+        "x": 4236.173226643919,
+        "y": 2439.3033324359494,
+        "attackSeq": 1,
+        "attackMoveMode": 0
+      },
+      {
+        "tick": 2141,
+        "x": 4236.173226643919,
+        "y": 2439.3033324359494,
+        "attackSeq": 1,
+        "attackMoveMode": 0
+      },
+      {
+        "tick": 2145,
+        "x": 4236.173226643919,
+        "y": 2439.3033324359494,
+        "attackSeq": 1,
+        "attackMoveMode": 0
+      },
+      {
+        "tick": 2149,
+        "x": 4236.173226643919,
+        "y": 2439.3033324359494,
+        "attackSeq": 1,
+        "attackMoveMode": 0
+      },
+      {
+        "tick": 2152,
+        "x": 4236.173226643919,
+        "y": 2439.3033324359494,
+        "attackSeq": 1,
+        "attackMoveMode": 0
+      },
+      {
+        "tick": 2158,
+        "x": 4236.173226643919,
+        "y": 2439.3033324359494,
+        "attackSeq": 1,
+        "attackMoveMode": 0
+      },
+      {
+        "tick": 2162,
+        "x": 4236.173226643919,
+        "y": 2439.3033324359494,
+        "attackSeq": 1,
+        "attackMoveMode": 0
+      },
+      {
+        "tick": 2167,
+        "x": 4236.173226643919,
+        "y": 2439.3033324359494,
+        "attackSeq": 1,
+        "attackMoveMode": 0
+      },
+      {
+        "tick": 2171,
+        "x": 4236.173226643919,
+        "y": 2439.3033324359494,
+        "attackSeq": 1,
+        "attackMoveMode": 0
+      },
+      {
+        "tick": 2177,
+        "x": 4236.173226643919,
+        "y": 2439.3033324359494,
+        "attackSeq": 1,
+        "attackMoveMode": 0
+      },
+      {
+        "tick": 2181,
+        "x": 4236.173226643919,
+        "y": 2439.3033324359494,
+        "attackSeq": 1,
+        "attackMoveMode": 0
+      },
+      {
+        "tick": 2186,
+        "x": 4236.173226643919,
+        "y": 2439.3033324359494,
+        "attackSeq": 1,
+        "attackMoveMode": 0
+      },
+      {
+        "tick": 2189,
+        "x": 4236.173226643919,
+        "y": 2439.3033324359494,
+        "attackSeq": 1,
+        "attackMoveMode": 0
+      },
+      {
+        "tick": 2195,
+        "x": 4236.173226643919,
+        "y": 2439.3033324359494,
+        "attackSeq": 1,
+        "attackMoveMode": 0
+      },
+      {
+        "tick": 2198,
+        "x": 4236.173226643919,
+        "y": 2439.3033324359494,
+        "attackSeq": 1,
+        "attackMoveMode": 0
+      },
+      {
+        "tick": 2203,
+        "x": 4236.173226643919,
+        "y": 2439.3033324359494,
+        "attackSeq": 1,
+        "attackMoveMode": 0
+      },
+      {
+        "tick": 2208,
+        "x": 4236.173226643919,
+        "y": 2439.3033324359494,
+        "attackSeq": 1,
+        "attackMoveMode": 0
+      },
+      {
+        "tick": 2213,
+        "x": 4236.173226643919,
+        "y": 2439.3033324359494,
+        "attackSeq": 1,
+        "attackMoveMode": 0
+      },
+      {
+        "tick": 2217,
+        "x": 4236.173226643919,
+        "y": 2439.3033324359494,
+        "attackSeq": 1,
+        "attackMoveMode": 0
+      },
+      {
+        "tick": 2221,
+        "x": 4236.173226643919,
+        "y": 2439.3033324359494,
+        "attackSeq": 1,
+        "attackMoveMode": 0
+      },
+      {
+        "tick": 2226,
+        "x": 4236.173226643919,
+        "y": 2439.3033324359494,
+        "attackSeq": 1,
+        "attackMoveMode": 0
+      },
+      {
+        "tick": 2230,
+        "x": 4236.173226643919,
+        "y": 2439.3033324359494,
+        "attackSeq": 1,
+        "attackMoveMode": 0
+      },
+      {
+        "tick": 2235,
+        "x": 4236.173226643919,
+        "y": 2439.3033324359494,
+        "attackSeq": 1,
+        "attackMoveMode": 0
+      },
+      {
+        "tick": 2239,
+        "x": 4236.173226643919,
+        "y": 2439.3033324359494,
+        "attackSeq": 1,
+        "attackMoveMode": 0
+      },
+      {
+        "tick": 2244,
+        "x": 4236.173226643919,
+        "y": 2439.3033324359494,
+        "attackSeq": 1,
+        "attackMoveMode": 0
+      },
+      {
+        "tick": 2247,
+        "x": 4236.173226643919,
+        "y": 2439.3033324359494,
+        "attackSeq": 1,
+        "attackMoveMode": 0
+      },
+      {
+        "tick": 2253,
+        "x": 4236.173226643919,
+        "y": 2439.3033324359494,
+        "attackSeq": 1,
+        "attackMoveMode": 0
+      },
+      {
+        "tick": 2258,
+        "x": 4236.173226643919,
+        "y": 2439.3033324359494,
+        "attackSeq": 1,
+        "attackMoveMode": 0
+      },
+      {
+        "tick": 2262,
+        "x": 4236.173226643919,
+        "y": 2439.3033324359494,
+        "attackSeq": 1,
+        "attackMoveMode": 0
+      },
+      {
+        "tick": 2266,
+        "x": 4236.173226643919,
+        "y": 2439.3033324359494,
+        "attackSeq": 1,
+        "attackMoveMode": 0
+      },
+      {
+        "tick": 2271,
+        "x": 4236.173226643919,
+        "y": 2439.3033324359494,
+        "attackSeq": 1,
+        "attackMoveMode": 0
+      },
+      {
+        "tick": 2274,
+        "x": 4236.173226643919,
+        "y": 2439.3033324359494,
+        "attackSeq": 1,
+        "attackMoveMode": 0
+      },
+      {
+        "tick": 2284,
+        "x": 4236.173226643919,
+        "y": 2439.3033324359494,
+        "attackSeq": 1,
+        "attackMoveMode": 0
+      },
+      {
+        "tick": 2289,
+        "x": 4236.173226643919,
+        "y": 2439.3033324359494,
+        "attackSeq": 1,
+        "attackMoveMode": 0
+      }
+    ],
+    "screenshot": "docs/owner-notes-audit-v11-evidence/b33-commit-melee/e-player-attack-input-slow.png"
+  },
+  "assertions": {
+    "walkerWasHit": true,
+    "rollEvaded": true,
+    "parryPreventedDamageAndStaggered": true,
+    "simultaneousCommitCap": 3,
+    "fixedPopToImpactTicks": 4,
+    "fixedPopToImpactMs": 200,
+    "attackInputSpeedRatio": 0.75,
+    "ordinaryMeleeFloorTelegraphs": 0
+  }
+}

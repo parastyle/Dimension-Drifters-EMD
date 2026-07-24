@@ -1,6 +1,7 @@
 import {
   EnemyState,
   meleeComboSelectionFor,
+  PlayerAttackMoveMode,
   swingDescriptorFor,
   TILE_GROUND,
   WEAPONS,
@@ -69,7 +70,7 @@ function addEnemy(room: AnyRoom, id: string, x: number, y: number): EnemyState {
 }
 
 describe("GameRoom — B5 attack-authored root movement", () => {
-  it("keeps a stationary full Sparkknuckle combo at its authoritative start position", () => {
+  it("keeps stationary attacks rooted, then applies the 25% active-frame input slow", () => {
     const { room, player, combat } = fixture("sparkknuckle");
     const weapon = equip(player, combat, "x2-sparkknuckle-hex-mitt");
     const combo = meleeComboSelectionFor(weapon);
@@ -91,16 +92,16 @@ describe("GameRoom — B5 attack-authored root movement", () => {
     const controlInput = control.room.inputs.get(control.player.id);
     movingInput.held.dx = 1;
     controlInput.held.dx = 1;
-    for (let tick = 0; tick < 4; tick++) {
+    room.stepSim(0.05);
+    control.room.stepSim(0.05);
+    expect(player.dualWield.attackMoveMode).toBe(PlayerAttackMoveMode.InputSlow);
+    for (let tick = 1; tick < 4; tick++) {
       room.stepSim(0.05);
       control.room.stepSim(0.05);
     }
-    expect({ x: player.x, y: player.y, mvx: player.mvx, mvy: player.mvy }).toEqual({
-      x: control.player.x,
-      y: control.player.y,
-      mvx: control.player.mvx,
-      mvy: control.player.mvy,
-    });
+    expect(player.x).toBeGreaterThan(start.x);
+    expect(player.x).toBeLessThan(control.player.x);
+    expect(player.y).toBe(control.player.y);
   });
 
   it("dashes Stormfists at 2x speed, protects transit, and releases one endpoint impact", () => {
@@ -139,6 +140,7 @@ describe("GameRoom — B5 attack-authored root movement", () => {
 
     room.stepPendingWeaponLunges(swing.activeStartSeconds);
     expect(player.x).toBe(startX);
+    expect(room.playerAttackMoveMode(player.id, 0.05)).toBe(PlayerAttackMoveMode.RootMotion);
     expect(room.weaponLungeInvulnerable(combat)).toBe(true);
     expect(combat.weaponLungeIFrameUntilTick - room.state.tick).toBe(1);
 

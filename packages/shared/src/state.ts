@@ -93,6 +93,8 @@ export class DualWieldState extends Schema {
   @type("uint8") prestige = 0;
   /** Schema v35. Run-scoped common stacks, rare ownership, and survival cooldown state. */
   @type(RelicState) relics = new RelicState();
+  /** Schema v38. 0 normal · 1 active unauthored attack (75% input) · 2 root motion (input replaced). */
+  @type("uint8") attackMoveMode = 0;
 }
 
 /**
@@ -330,23 +332,25 @@ export class EnemyState extends Schema {
   /** §8 Brand augment: transition-only Marked flag — takes ×BRAND_DAMAGE_MULT from all sources while the
    *  server-private timer is active. Synced for the client tint; 0 = not branded, 1 = branded. */
   @type("number") branded = 0;
-  /** §8 white-tell TELEGRAPH (Stage C): windup progress 0→1 of a parryable attack (0 = not telegraphing).
-   *  Synced so the client ramps the enemy WHITE + shrinks the rhythm ring; the swing lands (and is
-   *  parryable) as it peaks at 1. The §8 universal cue: white = parryable. */
+  /** §8/B33 body TELEGRAPH: windup progress 0→1 of a parryable attack (0 = not telegraphing).
+   *  Synced so the client ramps the enemy from its base look toward its palette accent. The separate
+   *  `commitSeq` edge triggers the universal white pop and fixed commit-to-impact window. */
   @type("number") windup = 0;
   /** §30 v0.118 CRIT flash: a counter bumped each time this enemy takes a CRITICAL hit. Synced ONLY as a
    *  client VFX trigger — on a change (alongside an hp drop) the client styles that damage number gold +
    *  adds extra hit-stop/ring. Appended (field-order stable). */
   @type("uint8") critFlash = 0;
   /** §51 combo STEP-COMMIT edge (APPENDED at schema v19): bumped exactly once per documented commit —
-   *  leap LIFTOFF (offer→arc), each strike LOCK (geometry freeze at MELEE_LOCK_PHASE), and a parry-bait
-   *  RETURN start. Wraps 1..255 (0 is reserved = "no combo has ever run"); the client edge-triggers step
+   *  leap LIFTOFF (offer→arc), each strike POP (B33 lunge-vector lock), and a parry-bait RETURN start.
+   *  Wraps 1..255 (0 is reserved = "no combo has ever run"); the client edge-triggers step
    *  presentation (arc hop, empowered flash) off changes. The full combo brain stays server-private. */
   @type("uint8") comboSeq = 0;
   /** §51 combo presentation bit flags (APPENDED at schema v19): COMBO_FLAG_AIRBORNE (leap in flight —
    *  ballistic hop + shadow) · COMBO_FLAG_EMPOWERED (gold bait-return windup) · COMBO_FLAG_JUGGLE
    *  (air-keep posture while a juggle string is live). 0 = no combo state to render. */
   @type("uint8") comboFlags = 0;
+  /** B33 white-pop/commit edge. Each increment locks one lunge vector for the shared 200ms clock. */
+  @type("uint8") commitSeq = 0;
 }
 
 /** A lingering corrosive puddle dropped by a zoner (§15) — DoTs players standing inside. */

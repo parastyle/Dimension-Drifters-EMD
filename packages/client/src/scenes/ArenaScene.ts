@@ -53,6 +53,8 @@ import {
   type EnemyKind,
   EXTRACT_RADIUS,
   effectiveMelee,
+  enemyMeleeAccent,
+  enemyMeleeCommitCue,
   enemyHpScale,
   FISTS_WEAPON,
   GEAR_CATALOG,
@@ -546,9 +548,7 @@ const TelegraphKindTag = {
   TitanLandmark: 11,
 } as const;
 
-const MELEE_TELEGRAPH_PREFIX = "melee:";
 const MELEE_FULL_TELL_COUNT = 6;
-const MELEE_GLINT_CREST_MS = 60;
 const ENEMY_COMBO_LEAP_PEAK = 48;
 const ENEMY_COMBO_LEAP_MS = COMBO_LEAP_AIR_TICKS * TICK_MS;
 /** A live muzzle admission is presentation truth for the opening flight. The authoritative row can already
@@ -835,12 +835,6 @@ function damageDeliveryKind(delivery: string | number | undefined): string {
     default:
       return "";
   }
-}
-
-function meleeTelegraphOwner(id: string): string | undefined {
-  return id.startsWith(MELEE_TELEGRAPH_PREFIX)
-    ? id.slice(MELEE_TELEGRAPH_PREFIX.length)
-    : undefined;
 }
 
 interface TelegraphEdgePath {
@@ -1422,7 +1416,6 @@ export class ArenaScene extends Phaser.Scene {
   private meleeFullTells = new Set<string>();
   private meleeFullTellNext = new Set<string>();
   private readonly meleeTellCandidates: MeleeTellCandidate[] = [];
-  private readonly meleeTellAnchor = { x: 0, y: 0 };
   private keys!: Record<
     | "W"
     | "A"
@@ -1640,6 +1633,8 @@ export class ArenaScene extends Phaser.Scene {
   private lastCameraPunchAt = -9999;
   /** Last-seen duelist `atkSeq` per enemy — trigger a swing animation when it increments. */
   private readonly enemyAtk = new Map<string, number>();
+  /** Last-seen B33 white-pop edge. Separate from contact so the 200 ms parry window is visible. */
+  private readonly enemyCommit = new Map<string, number>();
   private readonly equipped = new Map<string, string>();
   /** §7 last-rendered character skin per player — recreate the rig when it changes (C-key swap). */
   private readonly charOf = new Map<string, string>();
@@ -2046,6 +2041,7 @@ export class ArenaScene extends Phaser.Scene {
     this.finalDeltaTargets.clear();
     this.feedbackStopAt.clear();
     this.enemyAtk.clear();
+    this.enemyCommit.clear();
     this.equipped.clear();
     this.charOf.clear();
     this.pickups.clear();
@@ -4990,6 +4986,7 @@ export class ArenaScene extends Phaser.Scene {
       this.enemyPaperPriority.delete(state.ownerId);
       this.enemyDeathCue.delete(state.ownerId);
       this.enemyAtk.delete(state.ownerId);
+      this.enemyCommit.delete(state.ownerId);
       this.enemyWindup.delete(state.ownerId);
       this.meleeFullTells.delete(state.ownerId);
       this.enemyBufs.delete(state.ownerId);
@@ -5051,6 +5048,7 @@ export class ArenaScene extends Phaser.Scene {
           rig.playSpawnUnfold(this.animClock, paperPriority > 0 ? 280 : 220);
         this.enemies.set(id, rig);
         this.enemyAtk.set(id, enemy.atkSeq);
+        this.enemyCommit.set(id, enemy.commitSeq);
         if (vastagharOwner && enemy.kind === "mote-swarm")
           this.vastagharVfx.emitAddEntrance(
             enemy.x,
@@ -5058,6 +5056,35 @@ export class ArenaScene extends Phaser.Scene {
             (room.state.tick ^ (telegraphHash01(id) * 0xffff_ffff)) >>> 0,
             reducedMotion,
           );
+      }
+      if (enemy.commitSeq !== this.enemyCommit.get(id)) {
+        this.enemyCommit.set(id, enemy.commitSeq);
+        const sample = this.enemyWindup.get(id);
+        let aimWorld = sample?.aimWorld ?? 0;
+        if (!sample) {
+          let bestD = Number.POSITIVE_INFINITY;
+          room.state.players.forEach((player) => {
+            if (!player.alive) return;
+            const d = (player.x - enemy.x) ** 2 + (player.y - enemy.y) ** 2;
+            if (d < bestD) {
+              bestD = d;
+              aimWorld = Math.atan2(player.y - enemy.y, player.x - enemy.x);
+            }
+          });
+        }
+        if (sample) {
+          sample.active = false;
+          sample.shownT = 1;
+          sample.remainingMs = 0;
+          sample.locked = true;
+        }
+        const rig = this.enemies.get(id);
+        rig?.commitMeleeTell(this.time.now, aimWorld);
+        const visible = !!rig && this.cameras.main.worldView.contains(rig.x, rig.y);
+        this.audio.play(enemyMeleeCommitCue(enemy.kind), {
+          x: enemy.x,
+          amt: visible ? 0.72 : 0.22,
+        });
       }
       // `atkSeq` is the authoritative contact edge. Continue from the sampled loaded pose; never replay a
       // complete swing from idle after the damage patch has already landed.
@@ -5076,7 +5103,7 @@ export class ArenaScene extends Phaser.Scene {
             }
           });
         }
-        if (sample?.active) this.enemies.get(id)?.resolveMeleeTell(this.time.now, aimWorld);
+        this.enemies.get(id)?.resolveMeleeTell(this.time.now, aimWorld);
         if (sample) {
           const melee = effectiveMelee(ENEMY_KINDS[enemy.kind]);
           sample.step = melee ? (sample.step + 1) % melee.hits : 0;
@@ -5131,6 +5158,7 @@ export class ArenaScene extends Phaser.Scene {
         this.enemyHp.delete(id);
         this.enemyCrit.delete(id);
         this.enemyAtk.delete(id);
+        this.enemyCommit.delete(id);
         this.enemyWindup.delete(id);
         this.enemyComboPresentation.delete(id);
         this.meleeFullTells.delete(id);
@@ -5708,38 +5736,16 @@ export class ArenaScene extends Phaser.Scene {
         if (!melee) return;
         const sample = this.sampleEnemyWindup(id, enemy, melee, tick, now);
         if (!sample?.active || kind?.archetype === "boss") return;
-        const row = state.telegraphs.get(`${MELEE_TELEGRAPH_PREFIX}${id}`);
-        const cx = row?.x ?? enemy.x;
-        const cy = row?.y ?? enemy.y;
+        const cx = enemy.x;
+        const cy = enemy.y;
         let containsSelf = false;
         let distance = Number.POSITIVE_INFINITY;
         if (self?.alive) {
           const dx = self.x - cx;
           const dy = self.y - cy;
           const radial = Math.hypot(dx, dy);
-          if (row) {
-            containsSelf = inMeleeArc(
-              { x: cx, y: cy },
-              Math.cos(row.rot),
-              Math.sin(row.rot),
-              self,
-              melee.range,
-              melee.halfArc,
-            );
-            const angular = Math.abs(
-              Math.atan2(
-                Math.sin(Math.atan2(dy, dx) - row.rot),
-                Math.cos(Math.atan2(dy, dx) - row.rot),
-              ),
-            );
-            distance = Math.hypot(
-              Math.max(0, radial - melee.range),
-              Math.max(0, angular - melee.halfArc) * Math.min(radial, melee.range),
-            );
-          } else {
-            containsSelf = radial <= melee.range + melee.step;
-            distance = Math.max(0, radial - (melee.range + melee.step));
-          }
+          containsSelf = radial <= melee.range + melee.step;
+          distance = Math.max(0, radial - (melee.range + melee.step));
         }
         this.meleeTellCandidates.push({
           id,
@@ -5809,36 +5815,11 @@ export class ArenaScene extends Phaser.Scene {
       // §8 Brand tint — and §16 OLD RUST glows the same heat-orange at P3 ENRAGE (overheating).
       const enraged = es?.kind === "old-rust" && (this.room?.state.bossPhase ?? 0) >= 3;
       rig.setBranded((es?.branded ?? 0) > 0 || enraged);
-      if (es && windup?.active) {
-        const melee = effectiveMelee(ENEMY_KINDS[es.kind]);
-        if (melee) {
-          const row = state?.telegraphs.get(`${MELEE_TELEGRAPH_PREFIX}${id}`);
-          const full = ENEMY_KINDS[es.kind]?.archetype === "boss" || this.meleeFullTells.has(id);
-          const pulse =
-            (now - windup.glintAtMs >= 0 && now - windup.glintAtMs <= MELEE_GLINT_CREST_MS) ||
-            (now - windup.firstGlintAtMs >= 0 &&
-              now - windup.firstGlintAtMs <= MELEE_GLINT_CREST_MS);
-          const comboFlags =
-            this.enemyComboPresentation.get(id)?.presentedFlags ?? es.comboFlags ?? 0;
-          const gold = (comboFlags & COMBO_FLAG_EMPOWERED) !== 0;
-          // A synced row already supplies the exact footprint below. The fallback ruler exists only before
-          // that row arrives, so no selected windup draws both full ground geometries.
-          if (full && !row)
-            this.drawMeleeRangeRing(
-              es.x,
-              es.y,
-              melee.range,
-              melee.halfArc,
-              windup.aimWorld,
-              windup.shownT,
-              windup.remainingMs,
-              windup.remainingMs <= PARRY_IFRAMES * 1000,
-              pulse,
-              false,
-            );
-          this.drawMeleeImplementBracket(rig, windup.aimWorld, windup.shownT, pulse && full, gold);
-        }
-      }
+      if (es)
+        rig.setEnemyMeleeTelegraph(
+          effectiveMelee(ENEMY_KINDS[es.kind]) ? es.windup : 0,
+          enemyMeleeAccent(es.kind),
+        );
       rig.setDepth(rig.y);
     }
     this.renderTelegraphs();
@@ -5929,7 +5910,6 @@ export class ArenaScene extends Phaser.Scene {
     );
     const priorRemaining = sample.remainingMs;
     sample.remainingMs = Math.max(0, (1 - sample.shownT) * durationMs);
-    const row = this.room?.state.telegraphs.get(`${MELEE_TELEGRAPH_PREFIX}${id}`);
     const gold = ((enemy.comboFlags ?? 0) & COMBO_FLAG_EMPOWERED) !== 0;
     const goldEpoch = gold && !sample.gold;
     if (goldEpoch) {
@@ -5956,21 +5936,17 @@ export class ArenaScene extends Phaser.Scene {
       sample.glintAtMs = now;
     }
 
-    if (row) {
-      sample.aimWorld = row.rot;
-      sample.locked = true;
-    } else {
-      let best = Number.POSITIVE_INFINITY;
-      this.room?.state.players.forEach((player) => {
-        if (!player.alive) return;
-        const d = (player.x - enemy.x) ** 2 + (player.y - enemy.y) ** 2;
-        if (d < best) {
-          best = d;
-          sample!.aimWorld = Math.atan2(player.y - enemy.y, player.x - enemy.x);
-        }
-      });
-      sample.locked = false;
-    }
+    let best = Number.POSITIVE_INFINITY;
+    this.room?.state.players.forEach((player) => {
+      if (!player.alive) return;
+      const d = (player.x - enemy.x) ** 2 + (player.y - enemy.y) ** 2;
+      if (d < best) {
+        best = d;
+        sample!.aimWorld = Math.atan2(player.y - enemy.y, player.x - enemy.x);
+      }
+    });
+    // Modest aim tracking is presentation-authoritative only during wind-up. commitSeq captures the lock.
+    sample.locked = false;
     return sample;
   }
 
@@ -6033,228 +6009,6 @@ export class ArenaScene extends Phaser.Scene {
     this.meleeFullTells = next;
   }
 
-  /** Stable real-reach ruler plus a separate inward beat; the full circle is visibly broken/approximate. */
-  private drawMeleeRangeRing(
-    x: number,
-    y: number,
-    range: number,
-    halfArc: number,
-    rot: number,
-    t: number,
-    remainingMs: number,
-    armed: boolean,
-    pulse: boolean,
-    locked: boolean,
-  ): void {
-    const g = this.telegraphGroundGfx;
-    const zoom = Math.max(0.01, this.cameras.main.zoom);
-    const projectionYScale = this.belt ? BELT_FORESHORTEN : 1;
-    const gap = 0.18;
-    const segment = (Math.PI * 2) / 8;
-    for (let pass = 0; pass < 2; pass++) {
-      g.lineStyle(
-        (pass === 0 ? 3.6 : pulse ? 2.7 : 1.35) / zoom,
-        pass === 0 ? 0x17120f : 0xffffff,
-        pass === 0 ? 0.3 : 0.13 + t * 0.16 + (armed ? 0.09 : 0) + (pulse ? 0.42 : 0),
-      );
-      for (let i = 0; i < 8; i++) {
-        const start = rot + i * segment + gap;
-        this.traceProjectedArc(
-          g,
-          x,
-          y,
-          range,
-          start,
-          rot + (i + 1) * segment - gap,
-          projectionYScale,
-          zoom,
-        );
-      }
-    }
-    // The weapon-facing interval is solid, while the rear/side envelope stays broken and secondary.
-    g.lineStyle(3.8 / zoom, 0x17120f, 0.34);
-    this.traceProjectedArc(g, x, y, range, rot - halfArc, rot + halfArc, projectionYScale, zoom);
-    g.lineStyle((pulse ? 3 : 1.8) / zoom, 0xffffff, 0.22 + t * 0.22 + (pulse ? 0.42 : 0));
-    this.traceProjectedArc(g, x, y, range, rot - halfArc, rot + halfArc, projectionYScale, zoom);
-    // Bright completion travels symmetrically from the sector ends toward the forward notch.
-    g.lineStyle((pulse ? 3.4 : 2.2) / zoom, 0xffffff, 0.32 + t * 0.42);
-    this.traceProjectedArc(
-      g,
-      x,
-      y,
-      range,
-      rot - halfArc,
-      rot - halfArc + halfArc * t,
-      projectionYScale,
-      zoom,
-    );
-    this.traceProjectedArc(
-      g,
-      x,
-      y,
-      range,
-      rot + halfArc - halfArc * t,
-      rot + halfArc,
-      projectionYScale,
-      zoom,
-    );
-
-    // The final three server ticks pull a second ring inward; the fixed notched reach ruler remains behind.
-    if (remainingMs <= 150) {
-      const beat = Math.max(0, Math.min(1, remainingMs / 150));
-      const beatRange = range * (0.18 + beat * 0.82);
-      g.lineStyle((pulse ? 3 : 1.8) / zoom, 0xffffff, 0.24 + (1 - beat) * 0.34);
-      this.traceProjectedArc(
-        g,
-        x,
-        y,
-        beatRange,
-        rot - halfArc,
-        rot + halfArc,
-        projectionYScale,
-        zoom,
-      );
-    }
-    this.drawMeleeRangeNotches(g, x, y, range, rot, projectionYScale, zoom, t, armed, locked);
-  }
-
-  private traceProjectedArc(
-    g: Phaser.GameObjects.Graphics,
-    x: number,
-    y: number,
-    range: number,
-    start: number,
-    end: number,
-    projectionYScale: number,
-    zoom: number,
-  ): void {
-    const span = Math.abs(end - start);
-    const samples = Math.max(2, Math.min(24, Math.ceil((span * Math.max(1, range * zoom)) / 12)));
-    g.beginPath();
-    g.moveTo(
-      x + Math.cos(start) * range,
-      projectTelegraphY(y + Math.sin(start) * range, projectionYScale),
-    );
-    for (let i = 0; i <= samples; i++) {
-      const angle = start + ((end - start) * i) / samples;
-      g.lineTo(
-        x + Math.cos(angle) * range,
-        projectTelegraphY(y + Math.sin(angle) * range, projectionYScale),
-      );
-    }
-    g.strokePath();
-  }
-
-  private drawMeleeRangeNotches(
-    g: Phaser.GameObjects.Graphics,
-    x: number,
-    y: number,
-    range: number,
-    rot: number,
-    projectionYScale: number,
-    zoom: number,
-    t: number,
-    armed: boolean,
-    locked: boolean,
-  ): void {
-    const len = (locked ? 9 : 7) / zoom;
-    for (let pass = 0; pass < 2; pass++) {
-      g.lineStyle(
-        (pass === 0 ? 4 : armed ? 2.2 : 1.8) / zoom,
-        pass === 0 ? 0x17120f : 0xffffff,
-        pass === 0 ? 0.35 : 0.3 + t * 0.4 + (armed ? 0.12 : 0),
-      );
-      g.beginPath();
-      for (let i = 0; i < 4; i++) {
-        const angle = rot + i * (Math.PI / 2);
-        const outerX = x + Math.cos(angle) * range;
-        const outerY = projectTelegraphY(y + Math.sin(angle) * range, projectionYScale);
-        const innerX = x + Math.cos(angle) * (range - len);
-        const innerY = projectTelegraphY(y + Math.sin(angle) * (range - len), projectionYScale);
-        g.moveTo(outerX, outerY);
-        g.lineTo(innerX, innerY);
-      }
-      g.strokePath();
-    }
-  }
-
-  private drawMeleeTravelStem(fromX: number, fromY: number, toX: number, toY: number): void {
-    const g = this.telegraphGroundGfx;
-    const zoom = Math.max(0.01, this.cameras.main.zoom);
-    const sy = this.belt ? this.beltY(fromY) : fromY;
-    const ty = this.belt ? this.beltY(toY) : toY;
-    const dx = toX - fromX;
-    const dy = ty - sy;
-    for (let i = 0; i < 4; i++) {
-      const a = i / 4;
-      const b = Math.min(1, a + 0.13);
-      g.lineStyle(1.2 / zoom, 0xffffff, 0.13);
-      g.beginPath();
-      g.moveTo(fromX + dx * a, sy + dy * a);
-      g.lineTo(fromX + dx * b, sy + dy * b);
-      g.strokePath();
-    }
-  }
-
-  private drawMeleeImplementBracket(
-    rig: SpriteRig,
-    aimWorld: number,
-    phase: number,
-    pulse: boolean,
-    gold = false,
-  ): void {
-    rig.getMeleeTellAnchor(this.meleeTellAnchor);
-    const x = this.meleeTellAnchor.x;
-    const y = this.belt
-      ? this.beltY(rig.y) + (this.meleeTellAnchor.y - rig.y)
-      : this.meleeTellAnchor.y;
-    const zoom = Math.max(0.01, this.cameras.main.zoom);
-    const nx = -Math.sin(aimWorld);
-    const ny = Math.cos(aimWorld);
-    const radius = (pulse ? 14 : 11 + phase * 2) / zoom;
-    const g = this.telegraphGfx;
-    const accent = gold ? 0xffd66e : 0xffffff;
-    for (let pass = 0; pass < 2; pass++) {
-      g.lineStyle(
-        (pass === 0 ? 5 : pulse ? 3 : 1.8) / zoom,
-        pass === 0 ? 0x17120f : accent,
-        pass === 0 ? 0.72 : pulse ? 0.98 : 0.42 + phase * 0.28,
-      );
-      g.beginPath();
-      g.moveTo(x + nx * radius, y + ny * radius);
-      g.lineTo(x + nx * radius * 0.34, y + ny * radius * 0.34);
-      g.moveTo(x - nx * radius, y - ny * radius);
-      g.lineTo(x - nx * radius * 0.34, y - ny * radius * 0.34);
-      g.strokePath();
-    }
-    if (pulse) {
-      g.fillStyle(accent, 0.95);
-      g.fillCircle(x, y, 3.2 / zoom);
-    }
-    if (!colorblindShapesEnabled(this.feedbackSettings.colorblindAssist)) return;
-    if (gold) {
-      const ux = Math.cos(aimWorld);
-      const uy = Math.sin(aimWorld);
-      this.strokeAssistChevrons(g, x + ux * radius, y + uy * radius, ux, uy, zoom, accent);
-      return;
-    }
-    // Two hollow diamonds remain beside the source between crests: the parry tell promises two pulses even
-    // when flash intensity or white/gold hue is unavailable.
-    g.lineStyle((pulse ? 2.4 : 1.5) / zoom, accent, pulse ? 0.98 : 0.7);
-    for (const side of [-1, 1]) {
-      const cx = x + nx * side * (radius + 5 / zoom);
-      const cy = y + ny * side * (radius + 5 / zoom);
-      const r = (pulse ? 3.8 : 3.2) / zoom;
-      g.beginPath();
-      g.moveTo(cx, cy - r);
-      g.lineTo(cx + r, cy);
-      g.lineTo(cx, cy + r);
-      g.lineTo(cx - r, cy);
-      g.closePath();
-      g.strokePath();
-    }
-  }
-
   private strokeAssistChevrons(
     g: Phaser.GameObjects.Graphics,
     x: number,
@@ -6300,25 +6054,7 @@ export class ArenaScene extends Phaser.Scene {
     const zoom = Math.max(0.01, this.cameras.main.zoom);
     const frame = ++this.telegraphFrame;
     st.telegraphs.forEach((row, id) => {
-      const meleeOwner = meleeTelegraphOwner(id);
-      const meleeEnemy = meleeOwner ? st.enemies.get(meleeOwner) : undefined;
-      const bossMelee = !!meleeEnemy && ENEMY_KINDS[meleeEnemy.kind]?.archetype === "boss";
-      const meleeSample = meleeOwner ? this.enemyWindup.get(meleeOwner) : undefined;
-      const effectiveT = meleeOwner
-        ? (meleeSample?.shownT ?? st.enemies.get(meleeOwner)?.windup ?? row.t)
-        : row.t;
-      const meleePulse =
-        !!meleeOwner &&
-        !!meleeSample &&
-        ((this.time.now - meleeSample.glintAtMs >= 0 &&
-          this.time.now - meleeSample.glintAtMs <= MELEE_GLINT_CREST_MS) ||
-          (this.time.now - meleeSample.firstGlintAtMs >= 0 &&
-            this.time.now - meleeSample.firstGlintAtMs <= MELEE_GLINT_CREST_MS));
-      const goldMelee =
-        !!meleeOwner &&
-        ((this.enemyComboPresentation.get(meleeOwner)?.presentedFlags ?? 0) &
-          COMBO_FLAG_EMPOWERED) !==
-          0;
+      const effectiveT = row.t;
       const vastagharOwned = st.vastaghar.active && row.ownerId === st.vastaghar.ownerId;
       const vastagharSweep =
         vastagharOwned && row.kindTag === TelegraphKindTag.TitanSweep
@@ -6385,41 +6121,37 @@ export class ArenaScene extends Phaser.Scene {
       } else if (geometryChanged) {
         cached.geometry = buildCurrentGeometry();
       }
-      if (!meleeOwner || bossMelee || this.meleeFullTells.has(meleeOwner))
-        this.drawTelegraph(
-          g,
-          cached.geometry,
-          effectiveT,
-          row.danger,
-          row.kindTag,
-          cached.hash,
-          meleePulse,
-          !!meleeOwner,
-          goldMelee,
-        );
-      if (!meleeOwner || bossMelee)
-        this.drawProtectedTelegraphEdge(
-          this.telegraphGfx,
-          cached.geometry,
-          effectiveT,
-          row.danger,
-          zoom,
-          cached.hash,
-        );
-      // Horde source charm is nearest-N rig-owned. Boss melee and every other row keep the shared paint pool.
-      if (!meleeOwner)
-        this.telegraphForeshadows.update(
-          id,
-          row.shape,
-          row.kindTag,
-          row.x,
-          projectTelegraphY(row.y, projectionYScale),
-          row.a,
-          row.b,
-          row.rot,
-          effectiveT,
-          projectionYScale,
-        );
+      this.drawTelegraph(
+        g,
+        cached.geometry,
+        effectiveT,
+        row.danger,
+        row.kindTag,
+        cached.hash,
+        false,
+        false,
+        false,
+      );
+      this.drawProtectedTelegraphEdge(
+        this.telegraphGfx,
+        cached.geometry,
+        effectiveT,
+        row.danger,
+        zoom,
+        cached.hash,
+      );
+      this.telegraphForeshadows.update(
+        id,
+        row.shape,
+        row.kindTag,
+        row.x,
+        projectTelegraphY(row.y, projectionYScale),
+        row.a,
+        row.b,
+        row.rot,
+        effectiveT,
+        projectionYScale,
+      );
       // `sawFull` sticks once the server pins the row to full fill (t=1) on the resolve tick — the server
       // LINGERS a resolved row one tick at t=1 so we observe it, while a CANCEL (phase-change/boss death)
       // removes the row without ever reaching t=1. So `sawFull` cleanly separates "it fired" from "cancelled".
@@ -6459,7 +6191,7 @@ export class ArenaScene extends Phaser.Scene {
           reducedMotion: prefersReducedPaperMotion() || this.feedbackSettings.flashes === "reduced",
         });
       }
-      cached.sawFull ||= !meleeOwner && effectiveT >= 0.999;
+      cached.sawFull ||= effectiveT >= 0.999;
       cached.seenFrame = frame;
       cached.projectionYScale = projectionYScale;
       cached.zoom = zoom;
@@ -13828,19 +13560,10 @@ export class ArenaScene extends Phaser.Scene {
       (presentation.observedFlags & COMBO_FLAG_EMPOWERED) !== 0 &&
       (enemy.comboFlags & COMBO_FLAG_EMPOWERED) === 0
     ) {
-      const cached = this.telegraphCache.get(`${MELEE_TELEGRAPH_PREFIX}${id}`);
       state.players.forEach((player, playerId) => {
         const previous = this.lastParried.get(playerId);
         if (previous === undefined || previous === player.parriedSeq) return;
-        const projectedY = projectTelegraphY(
-          player.y,
-          cached?.projectionYScale ?? (this.belt ? BELT_FORESHORTEN : 1),
-        );
-        if (
-          cached
-            ? telegraphGeometryContains(cached.geometry, player.x, projectedY)
-            : Math.hypot(player.x - enemy.x, player.y - enemy.y) <= 420
-        )
+        if (Math.hypot(player.x - enemy.x, player.y - enemy.y) <= 420)
           parriedReturn = true;
       });
     }
@@ -13931,6 +13654,7 @@ export class ArenaScene extends Phaser.Scene {
       momentumY: p.momentumY,
       slidePhase: p.slidePhase,
       slidePhaseTick: p.slidePhaseTick,
+      attackMoveMode: p.dualWield.attackMoveMode,
       alive: p.alive,
     };
   }

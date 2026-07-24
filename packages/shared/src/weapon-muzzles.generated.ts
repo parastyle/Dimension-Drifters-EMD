@@ -1161,18 +1161,18 @@ export const WEAPON_ART_MUZZLES = {
     "sprite": "x2-frostbore-scattergun",
     "parts": [
       {
-        "width": 256,
-        "height": 70
+        "width": 1808,
+        "height": 459
       }
     ],
     "points": [
       {
         "part": 0,
-        "x": 255,
-        "y": 13.6,
+        "x": 1806,
+        "y": 121.1,
         "derived": {
-          "x": 255,
-          "y": 13.6
+          "x": 1806,
+          "y": 121.1
         }
       }
     ],

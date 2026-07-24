@@ -10,7 +10,7 @@
  *  decodes new patches with corrupted offsets (HP reads as aim, etc.). The server stamps it on
  *  `ArenaState.schemaVersion`; the client compares on join and tells the player to hard-reload on a
  *  mismatch instead of rendering silently-corrupt state. */
-export const SCHEMA_VERSION = 37 as const; // B20 L3 floor disassembly + shop teardown
+export const SCHEMA_VERSION = 38 as const; // B33 committed melee edge + attack movement mode
 
 /** §ULT stat-free damage/activity meter and action tuning (20Hz tick epochs). */
 export const ULT_CHARGE_MAX = 100 as const;
@@ -806,11 +806,20 @@ export const PARRY_REFLECT_PIERCE = 2;
 export const LUNGE_REACH_PAD = 30; // lunge range = enemy radius + this (a touch beyond body contact)
 export const LUNGE_DAMAGE_MULT = 1.6; // discrete lunge hit = contactDamage × this …
 export const LUNGE_MIN_DAMAGE = 5; // … floored here so even a weak swarm lunge stings
-export const LUNGE_WINDUP = 0.46; // telegraph (white-tell ramp) before the jump — time to read + parry
+export const LUNGE_WINDUP = 0.46; // body-accent wind-up before the universal white-pop commit
 export const LUNGE_WINDUP_SWARM = 0.32; // swarm lunges faster so the cloud still feels frantic
 export const LUNGE_RECOVER = 0.6; // post-jump vulnerable window before it can wind up again
 export const LUNGE_RECOVER_SWARM = 0.42;
 export const LUNGE_STEP_FRAC = 0.34; // forward dash distance = enemy speed × this (min 48px)
+/** B33 ordinary melee pressure budget. Slots are per target player and server-owned. */
+export const MELEE_ATTACK_TOKEN_CAP = 3 as const;
+/** B33 one universal white-pop-to-impact clock. At 20 Hz this is exactly four simulation ticks. */
+export const ENEMY_MELEE_COMMIT_SECONDS = 0.2 as const;
+export const ENEMY_MELEE_COMMIT_TICKS = 4 as const;
+/** Every successfully parried committed lunge gives its attacker this minimum punish pause. */
+export const PARRY_ENEMY_STAGGER_SECONDS = 0.4 as const;
+/** Active unauthored attacks retain 75% input speed. Authored root motion replaces input entirely. */
+export const PLAYER_ATTACK_INPUT_SPEED_MULT = 0.75 as const;
 
 /** §8/§20 parry-LAUNCH (Stage D) — a successful parry of an attack lofts the PARRIER: it adds an upward kick
  *  to the height-axis velocity (`vh`, §5 Stage B) + shoves them along the attack vector. Chaining parries

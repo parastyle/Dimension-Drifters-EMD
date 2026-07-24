@@ -97,9 +97,9 @@ export interface EnemyKind {
   };
   /**
    * §15 melee DUELIST combo (Sekiro-style §20): the enemy closes to `approach`, then strings `hits`
-   * advancing strikes. EACH strike telegraphs (a white rhythm ring + lean-in) for its own windup —
+   * advancing strikes. EACH strike telegraphs (accent body ramp + universal white pop) for its own windup —
    * `windup` sec for the first, `swingGap` sec for each follow-up — then LUNGES `step` px forward and
-   * swings (arc-damaging players within `range`/`halfArc`), so it walks INTO you instead of flailing in
+   * resolves against its committed target, so it walks INTO you instead of flailing in
    * place. After the last hit it `recover`s before it can start another.
    */
   melee?: {
@@ -169,10 +169,10 @@ export interface ToughComboStep {
   /** "strike" = an arc hit · "launcher" = strike that SETS the victim's vh (the juggle door) ·
    *  "airkeep" = strike valid only against an AIRBORNE victim inside its height window. */
   kind: "strike" | "launcher" | "airkeep";
-  /** Authored wind-up in 50ms ticks (≥6, G6). The white ramp + Lock commit run over exactly this. */
+  /** Authored wind-up in 50ms ticks (≥6, G6). The accent ramp + locked commit run over exactly this. */
   windupTicks: number;
   range: number;
-  /** Cone half-arc, radians. */
+  /** Retained authored arc metadata for compatibility; B33 target-identity resolution does not use it. */
   halfArc: number;
   /** × the kind's `melee.damage` (before TOUGH_DAMAGE_MULT and depthDamageScale). */
   damageMult: number;
@@ -193,7 +193,7 @@ export interface ToughComboStep {
 }
 export interface ToughComboReturn {
   /** The empowered comeback's wind-up (ticks) — authored SLOWER than the bait (escalation buys the
-   *  player MORE read time), then a RETURN_DASH_TICKS bounded-velocity close (≤RETURN_STEP_MAX px). */
+   *  player MORE read time), then the same shared four-tick locked commit used by every B33 lunge. */
   windupTicks: number;
   range: number;
   halfArc: number;
@@ -221,8 +221,8 @@ export interface ToughComboDef {
  * +20% rail so their fixed offer/arc choreography keeps its authored displacement assumptions. */
 export const MELEE_ENEMY_SPEED_MULT = 1.25;
 export const LEAP_MELEE_ENEMY_SPEED_MULT = 1.2;
-/** Authoritative melee sectors are 30% larger in both reach and half-arc. Telegraphs consume these same
- * values, so the enlarged danger remains WYSIWYG without touching any windup or juggle law. */
+/** Legacy reach/arc catalog scaling is retained for content compatibility. B33 ordinary/tough melee uses
+ * identity-targeted locked lunges and does not consume halfArc for hit testing or floor telegraphs. */
 export const MELEE_ENEMY_RANGE_MULT = 1.3;
 export const MELEE_ENEMY_ARC_MULT = 1.3;
 
@@ -236,8 +236,22 @@ export const TOUGH_COMBOS: Record<string, ToughComboDef> = {
     id: "k1-sanren",
     frontOffset: 110,
     steps: [
-      { kind: "strike" as const, windupTicks: 8, range: 138, halfArc: 0.9, damageMult: 1.0, step: 66 },
-      { kind: "strike" as const, windupTicks: 6, range: 138, halfArc: 0.9, damageMult: 1.0, step: 66 },
+      {
+        kind: "strike" as const,
+        windupTicks: 8,
+        range: 138,
+        halfArc: 0.9,
+        damageMult: 1.0,
+        step: 66,
+      },
+      {
+        kind: "strike" as const,
+        windupTicks: 6,
+        range: 138,
+        halfArc: 0.9,
+        damageMult: 1.0,
+        step: 66,
+      },
       {
         kind: "strike" as const,
         windupTicks: 15,
@@ -256,7 +270,14 @@ export const TOUGH_COMBOS: Record<string, ToughComboDef> = {
     id: "k2-drawn-moon",
     frontOffset: 110,
     steps: [
-      { kind: "strike" as const, windupTicks: 19, range: 138, halfArc: 1.4, damageMult: 1.5, step: 84 },
+      {
+        kind: "strike" as const,
+        windupTicks: 19,
+        range: 138,
+        halfArc: 1.4,
+        damageMult: 1.5,
+        step: 84,
+      },
     ],
     recoverTicks: 26,
     maxReturns: 0,
@@ -276,7 +297,14 @@ export const TOUGH_COMBOS: Record<string, ToughComboDef> = {
         step: 66,
         returnCapable: true,
       },
-      { kind: "strike" as const, windupTicks: 7, range: 138, halfArc: 0.9, damageMult: 1.0, step: 66 },
+      {
+        kind: "strike" as const,
+        windupTicks: 7,
+        range: 138,
+        halfArc: 0.9,
+        damageMult: 1.0,
+        step: 66,
+      },
     ],
     recoverTicks: 22,
     return: {
@@ -361,7 +389,14 @@ export const TOUGH_COMBOS: Record<string, ToughComboDef> = {
     id: "h2-anchor-drag",
     frontOffset: 120,
     steps: [
-      { kind: "strike" as const, windupTicks: 18, range: 150, halfArc: 1.0, damageMult: 1.3, step: 90 },
+      {
+        kind: "strike" as const,
+        windupTicks: 18,
+        range: 150,
+        halfArc: 1.0,
+        damageMult: 1.3,
+        step: 90,
+      },
     ],
     recoverTicks: 24,
     maxReturns: 0,
@@ -380,7 +415,14 @@ export const TOUGH_COMBOS: Record<string, ToughComboDef> = {
         step: 70,
         returnCapable: true,
       },
-      { kind: "strike" as const, windupTicks: 10, range: 150, halfArc: 1.0, damageMult: 1.0, step: 60 },
+      {
+        kind: "strike" as const,
+        windupTicks: 10,
+        range: 150,
+        halfArc: 1.0,
+        damageMult: 1.0,
+        step: 60,
+      },
     ],
     recoverTicks: 25,
     return: {
@@ -429,9 +471,30 @@ export const TOUGH_COMBOS: Record<string, ToughComboDef> = {
     id: "t1-rail",
     frontOffset: 116,
     steps: [
-      { kind: "strike" as const, windupTicks: 7, range: 145, halfArc: 0.35, damageMult: 0.85, step: 50 },
-      { kind: "strike" as const, windupTicks: 6, range: 145, halfArc: 0.35, damageMult: 0.85, step: 50 },
-      { kind: "strike" as const, windupTicks: 12, range: 145, halfArc: 0.35, damageMult: 1.3, step: 96 },
+      {
+        kind: "strike" as const,
+        windupTicks: 7,
+        range: 145,
+        halfArc: 0.35,
+        damageMult: 0.85,
+        step: 50,
+      },
+      {
+        kind: "strike" as const,
+        windupTicks: 6,
+        range: 145,
+        halfArc: 0.35,
+        damageMult: 0.85,
+        step: 50,
+      },
+      {
+        kind: "strike" as const,
+        windupTicks: 12,
+        range: 145,
+        halfArc: 0.35,
+        damageMult: 1.3,
+        step: 96,
+      },
     ],
     recoverTicks: 20,
     maxReturns: 0,
@@ -469,10 +532,38 @@ export const TOUGH_COMBOS: Record<string, ToughComboDef> = {
     id: "d1-fang-flurry",
     frontOffset: 112,
     steps: [
-      { kind: "strike" as const, windupTicks: 7, range: 140, halfArc: 0.8, damageMult: 0.7, step: 40 },
-      { kind: "strike" as const, windupTicks: 6, range: 140, halfArc: 0.8, damageMult: 0.7, step: 40 },
-      { kind: "strike" as const, windupTicks: 6, range: 140, halfArc: 0.8, damageMult: 0.7, step: 40 },
-      { kind: "strike" as const, windupTicks: 11, range: 140, halfArc: 0.8, damageMult: 0.7, step: 40 },
+      {
+        kind: "strike" as const,
+        windupTicks: 7,
+        range: 140,
+        halfArc: 0.8,
+        damageMult: 0.7,
+        step: 40,
+      },
+      {
+        kind: "strike" as const,
+        windupTicks: 6,
+        range: 140,
+        halfArc: 0.8,
+        damageMult: 0.7,
+        step: 40,
+      },
+      {
+        kind: "strike" as const,
+        windupTicks: 6,
+        range: 140,
+        halfArc: 0.8,
+        damageMult: 0.7,
+        step: 40,
+      },
+      {
+        kind: "strike" as const,
+        windupTicks: 11,
+        range: 140,
+        halfArc: 0.8,
+        damageMult: 0.7,
+        step: 40,
+      },
     ],
     recoverTicks: 23,
     maxReturns: 0,
@@ -819,7 +910,7 @@ export const ENEMY_KINDS: Record<string, EnemyKind> = {
     renderScale: 13,
   },
   // §15 melee DUELIST — a sword-wielding ronin (a tough-tier threat). Closes in, telegraphs, then
-  // strings a 3-hit combo with a real arc hitbox (no passive contact DPS — it ATTACKS). Wields one of
+  // strings a 3-hit locked-lunge combo (no passive contact DPS — it ATTACKS). Wields one of
   // our example swords (Voltedge) and has a chance to drop it on death (§13). POC art = boothill rig
   // (humanoid w/ hands); bespoke ronin art lands via CODE-21.
   ronin: {
@@ -840,7 +931,7 @@ export const ENEMY_KINDS: Record<string, EnemyKind> = {
       halfArc: 0.9,
       damage: 13,
       hits: 3,
-      windup: 0.52, // a clear first telegraph (white ring fills) — time to read + parry
+      windup: 0.52, // a clear first body-tint ramp — time to read + parry
       swingGap: 0.34, // each follow-up also telegraphs over this — a parryable rhythm, not a flurry
       recover: 0.95,
       step: 72, // lunges forward on each strike (Sekiro step-in) — advances rather than standing still
@@ -1092,9 +1183,10 @@ for (const kind of Object.values(ENEMY_KINDS)) {
     kind.archetype === "duelist" ||
     kind.archetype === "leaper";
   if (!meleeMover) continue;
-  kind.speed *= kind.archetype === "leaper" || kind.shifter
-    ? LEAP_MELEE_ENEMY_SPEED_MULT
-    : MELEE_ENEMY_SPEED_MULT;
+  kind.speed *=
+    kind.archetype === "leaper" || kind.shifter
+      ? LEAP_MELEE_ENEMY_SPEED_MULT
+      : MELEE_ENEMY_SPEED_MULT;
   if (!kind.melee) continue;
   kind.melee.approach *= MELEE_ENEMY_RANGE_MULT;
   kind.melee.range *= MELEE_ENEMY_RANGE_MULT;
@@ -1146,7 +1238,7 @@ export function effectiveMelee(kind: EnemyKind | undefined): EnemyKind["melee"] 
     derived = {
       approach: reach + 16 * MELEE_ENEMY_RANGE_MULT, // preserve the pre-contact windup margin
       range: reach,
-      halfArc: 0.95 * MELEE_ENEMY_ARC_MULT, // forgiving cone — readable, not a sniper jab
+      halfArc: 0.95 * MELEE_ENEMY_ARC_MULT, // compatibility metadata; B33 does not hit-test a cone
       damage: Math.max(LUNGE_MIN_DAMAGE, kind.contactDamage * LUNGE_DAMAGE_MULT),
       hits: 1, // a single jab (duelists override with a real multi-hit combo)
       windup: swarm ? LUNGE_WINDUP_SWARM : LUNGE_WINDUP,
@@ -1157,6 +1249,63 @@ export function effectiveMelee(kind: EnemyKind | undefined): EnemyKind["melee"] 
   }
   meleeCache.set(kind, derived);
   return derived ?? undefined;
+}
+
+/** B33 enemy-body telegraph accents. Values are picked from each installed kind/dimension palette. */
+const MELEE_ACCENT_BY_KIND: Readonly<Record<string, number>> = Object.freeze({
+  critter: 0xff4438,
+  "mote-swarm": 0x33e6ff,
+  pricklepulp: 0xff8a2b,
+  ronin: 0xff4438,
+  "vault-ronin": 0xff6a4a,
+  "frostbitten-revenant": 0x33e6ff,
+  "shriek-wraith": 0xbfefff,
+  "hoarfrost-bloom": 0x9fd8e8,
+  "frozen-knight": 0x6fd6ff,
+  "vine-lasher": 0x9cff3b,
+  "venom-spore": 0xe4ff9c,
+  "fungal-bloomer": 0xc4b24a,
+  "thornblade-warden": 0x79d84b,
+  "cinder-imp": 0xff6a2a,
+  "ember-mote": 0xffd36b,
+  "slag-crawler": 0xff8a2b,
+  "magma-duelist": 0xff4d2e,
+  synthrunner: 0xff3bd4,
+  dronemite: 0x33e6ff,
+  "turret-node": 0xb14bff,
+  "riot-enforcer": 0xff3bd4,
+  "shifter-voltaic-ronin": 0xb14bff,
+  "shifter-grave-warden": 0x8f6aff,
+});
+
+/** Full-rig multiply tint target for one kind's wind-up ramp. */
+export function enemyMeleeAccent(kindId: string, kind = ENEMY_KINDS[kindId]): number {
+  const explicit = MELEE_ACCENT_BY_KIND[kindId];
+  if (explicit !== undefined) return explicit;
+  if (kind?.archetype === "swarm") return 0x33e6ff;
+  if (kind?.archetype === "zoner") return 0xff8a2b;
+  if (kind?.archetype === "duelist" || kind?.archetype === "leaper") return 0xff4438;
+  return 0xff5d3b;
+}
+
+export type EnemyMeleeCommitCue =
+  | "melee:light"
+  | "melee:claw"
+  | "melee:blunt"
+  | "melee:heavy"
+  | "melee:arcane";
+
+/** Per-kind commit cue, routed through shipped sample-backed melee families. */
+export function enemyMeleeCommitCue(
+  kindId: string,
+  kind = ENEMY_KINDS[kindId],
+): EnemyMeleeCommitCue {
+  if (kindId === "shifter-grave-warden" || kindId === "shifter-voltaic-ronin")
+    return "melee:arcane";
+  if (kind?.archetype === "swarm" || kind?.archetype === "rusher") return "melee:claw";
+  if (kind?.archetype === "zoner") return "melee:blunt";
+  if ((kind?.renderScale ?? 1) >= 1.45) return "melee:heavy";
+  return "melee:light";
 }
 
 /** Nearest target to `pos` (the squad). Returns null if there are none. */
