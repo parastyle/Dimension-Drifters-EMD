@@ -42,11 +42,10 @@ export function ultimateInputAffordance(gate: UltimateInputGate): "send" | "dry"
 
 export function canReleaseUltimateReveal(
   pending: boolean,
-  levelWindowOpen: boolean,
   releaseLatch: boolean,
   alive: boolean,
 ): boolean {
-  return pending && !levelWindowOpen && !releaseLatch && alive;
+  return pending && !releaseLatch && alive;
 }
 
 export const ULTIMATE_FAMILY_NAME: Readonly<Record<number, string>> = {

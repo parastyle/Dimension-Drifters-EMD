@@ -5,12 +5,9 @@ import {
   beamCyclePower,
   draftAugments,
   effectivePower,
-  PlayerState,
   WEAPONS,
-  xpToNextLevel,
 } from "@dd/shared";
 import { describe, expect, it } from "vitest";
-import { levelUpPlayer } from "../packages/server/src/rooms/progression.js";
 
 describe("improve2 shared systems integrity", () => {
   it("G-04 evaluates every authored beam through both early-vent and full-overheat cycles", () => {
@@ -31,7 +28,7 @@ describe("improve2 shared systems integrity", () => {
     expect(effectivePower(sluggish)).toBeLessThan(effectivePower(sample));
   });
 
-  it("G-09 derives beam lanes from class plus delivery and snapshots that lane at signature earn", () => {
+  it("G-09 derives beam augment lanes from class plus delivery without a level gate", () => {
     const casterBeam = Object.values(WEAPONS).find(
       (weapon) => weapon?.beam && weapon.tags.classPool === "caster",
     );
@@ -50,13 +47,5 @@ describe("improve2 shared systems integrity", () => {
     expect(rangedDraft.every((id) => AUGMENTS[id]?.weapon !== "gun" && AUGMENTS[id]?.weapon !== "cast"))
       .toBe(true);
 
-    const player = new PlayerState();
-    player.level = 4;
-    player.xpToNext = xpToNextLevel(4);
-    player.weapon = casterBeam.id;
-    levelUpPlayer(player, player.xpToNext);
-    expect(player.sigGateQueue).toBe("cast+beam");
-    player.weapon = "rusty-cleaver";
-    expect(player.sigGateQueue).toBe("cast+beam");
   });
 });

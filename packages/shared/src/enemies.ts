@@ -68,8 +68,8 @@ export interface EnemyKind {
   contactDamage: number;
   /** Relative spawn frequency. */
   weight: number;
-  /** XP granted to the killer (§12). Tougher kin are worth more; dummies grant none. */
-  xpValue: number;
+  /** Money paid on an authoritative kill. Tougher kin are worth more; dummies grant none. */
+  moneyValue: number;
   /**
    * Ranged attack (§15 spitter): fires a projectile at the nearest player on a cooldown, and
    * KITES — holds at `preferredRange` instead of rushing into melee. Absent = pure melee.
@@ -600,7 +600,7 @@ export const ENEMY_KINDS: Record<string, EnemyKind> = {
     radius: 18,
     contactDamage: 4,
     weight: 5,
-    xpValue: 1,
+    moneyValue: 1,
   },
   "mote-swarm": {
     sprite: "mote-swarm",
@@ -610,7 +610,7 @@ export const ENEMY_KINDS: Record<string, EnemyKind> = {
     radius: 12,
     contactDamage: 2.5,
     weight: 4,
-    xpValue: 1,
+    moneyValue: 1,
   },
   pricklepulp: {
     sprite: "pricklepulp",
@@ -620,7 +620,7 @@ export const ENEMY_KINDS: Record<string, EnemyKind> = {
     radius: 26,
     contactDamage: 6,
     weight: 2,
-    xpValue: 3,
+    moneyValue: 3,
   },
   boothill: {
     sprite: "boothill",
@@ -630,7 +630,7 @@ export const ENEMY_KINDS: Record<string, EnemyKind> = {
     radius: 20,
     contactDamage: 3.5,
     weight: 2,
-    xpValue: 3,
+    moneyValue: 3,
     // Skeleton gunslinger — keeps its distance and spits at you (§15). The first real ranged threat.
     ranged: {
       range: 560,
@@ -651,7 +651,7 @@ export const ENEMY_KINDS: Record<string, EnemyKind> = {
     radius: 64,
     contactDamage: 14,
     weight: 0,
-    xpValue: 40,
+    moneyValue: 40,
     renderScale: 2.7,
     ranged: {
       range: 760,
@@ -674,7 +674,7 @@ export const ENEMY_KINDS: Record<string, EnemyKind> = {
     radius: 72,
     contactDamage: 12,
     weight: 0,
-    xpValue: 42,
+    moneyValue: 42,
     renderScale: 2.9,
   },
   // The Choirmath — LARGE bullet-hell spiral god (stationary).
@@ -686,7 +686,7 @@ export const ENEMY_KINDS: Record<string, EnemyKind> = {
     radius: 66,
     contactDamage: 8,
     weight: 0,
-    xpValue: 40,
+    moneyValue: 40,
     renderScale: 2.7,
   },
   // Cor-Vane the Hive-Mind — CHARACTER-SIZED fragile summoner (kites).
@@ -698,7 +698,7 @@ export const ENEMY_KINDS: Record<string, EnemyKind> = {
     radius: 26,
     contactDamage: 6,
     weight: 0,
-    xpValue: 38,
+    moneyValue: 38,
     renderScale: 1.25,
   },
   // Nul the Sightline — LARGE stationary beam-sweeper (one enormous eye).
@@ -710,7 +710,7 @@ export const ENEMY_KINDS: Record<string, EnemyKind> = {
     radius: 66,
     contactDamage: 8,
     weight: 0,
-    xpValue: 40,
+    moneyValue: 40,
     renderScale: 2.7,
   },
   // The Metronome — LARGE stationary expanding-ring rhythm boss.
@@ -722,7 +722,7 @@ export const ENEMY_KINDS: Record<string, EnemyKind> = {
     radius: 64,
     contactDamage: 8,
     weight: 0,
-    xpValue: 40,
+    moneyValue: 40,
     renderScale: 2.7,
   },
   // Grull the Unchained — LARGE chain-dash berserker (lumbers between charges).
@@ -734,7 +734,7 @@ export const ENEMY_KINDS: Record<string, EnemyKind> = {
     radius: 70,
     contactDamage: 12,
     weight: 0,
-    xpValue: 42,
+    moneyValue: 42,
     renderScale: 2.6,
   },
   // Quickdraw Vane — CHARACTER-SIZED strafing gunslinger. `ranged` supplies the controller's strafe orbit
@@ -747,7 +747,7 @@ export const ENEMY_KINDS: Record<string, EnemyKind> = {
     radius: 26,
     contactDamage: 6,
     weight: 0,
-    xpValue: 38,
+    moneyValue: 38,
     renderScale: 1.3,
     ranged: { range: 700, preferredRange: 340, cooldown: 2, damage: 6, projectileSpeed: 320 },
   },
@@ -761,7 +761,7 @@ export const ENEMY_KINDS: Record<string, EnemyKind> = {
     radius: 26,
     contactDamage: 6,
     weight: 0,
-    xpValue: 40,
+    moneyValue: 40,
     renderScale: 1.32,
   },
   // §16 Slice 3 — Nihil the Blink Assassin (CHARACTER). Teleports beside you and slams; peppers parryable
@@ -774,7 +774,7 @@ export const ENEMY_KINDS: Record<string, EnemyKind> = {
     radius: 26,
     contactDamage: 6,
     weight: 0,
-    xpValue: 40,
+    moneyValue: 40,
     renderScale: 1.28,
   },
   // §16 Slice 3 — Castor & Pollux the Blade Twins (CHARACTER). A twin-blade duelist that strikes with BOTH
@@ -787,7 +787,7 @@ export const ENEMY_KINDS: Record<string, EnemyKind> = {
     radius: 30,
     contactDamage: 8,
     weight: 0,
-    xpValue: 44,
+    moneyValue: 44,
     renderScale: 1.4,
   },
   // §16 v0.117 GOROGOTH, THE DIMENSION-ENDER — the COLOSSUS: a boss so vast it barely fits on screen. The
@@ -802,7 +802,7 @@ export const ENEMY_KINDS: Record<string, EnemyKind> = {
     radius: 170,
     contactDamage: 16,
     weight: 0,
-    xpValue: 90,
+    moneyValue: 90,
     renderScale: 6.4,
   },
   // §33 v0.118 VASTAGHAR — a boss so vast only his LOWER BODY fits on screen (renderScale 13). You fight at
@@ -815,7 +815,7 @@ export const ENEMY_KINDS: Record<string, EnemyKind> = {
     radius: 230,
     contactDamage: 18,
     weight: 0,
-    xpValue: 110,
+    moneyValue: 110,
     renderScale: 13,
   },
   // §15 melee DUELIST — a sword-wielding ronin (a tough-tier threat). Closes in, telegraphs, then
@@ -831,7 +831,7 @@ export const ENEMY_KINDS: Record<string, EnemyKind> = {
     radius: 22,
     contactDamage: 0, // attacks via the combo, not by touch
     weight: 0.7, // rare — a special threat, not horde filler
-    xpValue: 9,
+    moneyValue: 9,
     wieldsWeapon: "x-sword-neon-katana",
     dropWeapon: 0.35,
     melee: {
@@ -867,7 +867,7 @@ export const ENEMY_KINDS: Record<string, EnemyKind> = {
     radius: 28,
     contactDamage: 5,
     weight: 0.6, // rare special threat, like the ronin
-    xpValue: 11,
+    moneyValue: 11,
     ranged: {
       range: 460,
       preferredRange: 300,
@@ -888,7 +888,7 @@ export const ENEMY_KINDS: Record<string, EnemyKind> = {
     radius: 22,
     contactDamage: 0, // attacks via the combo, not touch
     weight: 0.55,
-    xpValue: 13,
+    moneyValue: 13,
     wieldsWeapon: "x-sword-neon-katana",
     dropWeapon: 0.3,
     melee: {
@@ -922,7 +922,7 @@ export const ENEMY_KINDS: Record<string, EnemyKind> = {
     radius: 22,
     contactDamage: 4,
     weight: 0.55,
-    xpValue: 12,
+    moneyValue: 12,
     ranged: {
       range: 640,
       preferredRange: 380,
@@ -942,7 +942,7 @@ export const ENEMY_KINDS: Record<string, EnemyKind> = {
     radius: DUMMY_RADIUS,
     contactDamage: 0,
     weight: 0,
-    xpValue: 0,
+    moneyValue: 0,
   },
   // §17 the themed-dimension rosters (Frostfell / Verdant Ruins / Ashlands / Neon-Cyber) + the 3 roaming
   // SHIFTERS, codegen'd into dimensions.generated.ts from the design data. Each dimension scopes its own

@@ -2126,18 +2126,15 @@ export const GEAR_CLASS_BONUSES = {
 export interface GearRunRuntime {
   readonly catalogVersion: number;
   readonly idsBySlot: Readonly<Record<GearSlot, GearId>>;
-  readonly baseStats: Readonly<Record<Attr, number>>;
   readonly classCounts: Readonly<Record<GearClassId, number>>;
   readonly mods: RuntimeMods;
   readonly quirk: QuirkDef;
 }
 
 const DEFAULT_RUNTIME_MODS: RuntimeMods = Object.freeze({
-  ballastFollowsChoice: false,
   rollCooldownMult: 1,
   parryIFrameMult: 1,
   parryKnockbackMult: 1,
-  critChanceAdd: 0,
   regenMult: 1,
   harvestMult: 1,
   drawLockMult: 1,
@@ -2191,8 +2188,6 @@ function composeMods(
     if (typeof value === "number" && Number.isFinite(value))
       target[key] = Number(target[key]) * value;
   }
-  if (typeof source.critChanceAdd === "number" && Number.isFinite(source.critChanceAdd))
-    target.critChanceAdd = Number(target.critChanceAdd) + source.critChanceAdd;
   if (typeof source.maxHpAdd === "number" && Number.isFinite(source.maxHpAdd))
     target.maxHpAdd = Number(target.maxHpAdd) + source.maxHpAdd;
   if (
@@ -2203,8 +2198,6 @@ function composeMods(
       Number(target.incomingDamageCapFrac),
       source.incomingDamageCapFrac,
     );
-  target.ballastFollowsChoice =
-    Boolean(target.ballastFollowsChoice) || source.ballastFollowsChoice === true;
   target.parryChainNeverExpires =
     Boolean(target.parryChainNeverExpires) || source.parryChainNeverExpires === true;
 }
@@ -2265,14 +2258,6 @@ export function sanitizeEquippedGear(
 }
 
 export function resolveGearLoadout(idsBySlot: Readonly<Record<GearSlot, GearId>>): GearRunRuntime {
-  const stats: Record<Attr, number> = { str: 2, dex: 2, int: 2, con: 2, luk: 2 };
-  const torso: GearDef = GEAR_CATALOG[idsBySlot.torso];
-  for (const move of torso.spreadMoves ?? []) {
-    if (stats[move.from] > 1 && stats[move.to] < 4) {
-      stats[move.from]--;
-      stats[move.to]++;
-    }
-  }
   const classCounts: Record<GearClassId, number> = {
     bruiser: 0,
     duelist: 0,
@@ -2291,13 +2276,11 @@ export function resolveGearLoadout(idsBySlot: Readonly<Record<GearSlot, GearId>>
   for (const slot of GEAR_SLOTS) {
     const item: GearDef = GEAR_CATALOG[idsBySlot[slot]];
     classCounts[item.gearClass]++;
-    for (const attr of ATTRS) stats[attr] += item.stats[attr] ?? 0;
     composeMods(mods, item.mods);
   }
   return Object.freeze({
     catalogVersion: GEAR_CATALOG_VERSION,
     idsBySlot: Object.freeze({ ...idsBySlot }),
-    baseStats: Object.freeze(stats),
     classCounts: Object.freeze(classCounts),
     mods: Object.freeze(mods) as unknown as RuntimeMods,
     quirk,

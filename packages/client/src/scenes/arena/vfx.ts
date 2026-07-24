@@ -23,7 +23,7 @@ import { weaponPaintedQuakeFor } from "../../vfx/weapon-vfx-suite.js";
  * Transient combat VFX factories, extracted from ArenaScene. Each is a pure spawner: it takes the scene
  * (GameObject factory + tween manager + camera) and world coords, draws a short-lived effect, and tweens
  * it out (self-destructing). No scene private state — the scene's sync/combat loops just call these. The
- * level-up celebration stays in the scene (it reads screen-space HUD dimensions).
+ * screen-space HUD celebration stays in the scene.
  */
 
 const IMPACT_ELEMENTS = [

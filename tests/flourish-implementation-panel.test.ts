@@ -139,8 +139,8 @@ describe("flourish raw Arena cancellation panel", () => {
 
   it("derives cancellation movement from desired WASD axes and shares those exact axes with net input", () => {
     const update = arenaSource.slice(arenaSource.indexOf("override update("));
-    expect(update).toContain("rawFlourishIntent.desiredMoveX = levelWindowInputBlocked");
-    expect(update).toContain("rawFlourishIntent.desiredMoveY = levelWindowInputBlocked");
+    expect(update).toContain("rawFlourishIntent.desiredMoveX = gameplayInputBlocked");
+    expect(update).toContain("rawFlourishIntent.desiredMoveY = gameplayInputBlocked");
     expect(update).toContain("rawFlourishIntentCancels(");
     expect(update).toContain(
       "rawFlourishIntent.desiredMoveX,\n      rawFlourishIntent.desiredMoveY,",

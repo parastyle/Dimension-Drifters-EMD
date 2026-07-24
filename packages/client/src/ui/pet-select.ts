@@ -98,8 +98,8 @@ function petBonusCopy(id: PetId, level: number): readonly [string, string] {
       ];
     case "lodestar-moth":
       return [
-        `XP Echo reach ${180 + mods.xpMoteReachAdd}px${nextCopy(`${180 + next.xpMoteReachAdd}px`)}`,
-        "Level 10: sweep nearby Echoes at run boundaries",
+        `Money-drop reach ${180 + mods.moneyDropReachAdd}px${nextCopy(`${180 + next.moneyDropReachAdd}px`)}`,
+        "Level 10: sweep nearby money at run boundaries",
       ];
     case "copper-snail":
       return [

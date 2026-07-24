@@ -104,7 +104,7 @@ describe("GameRoom — W4R ranged authority", () => {
       firstRows.reduce((sum, row) => sum + (first.room.projectileMeta.get(row.id)?.damage ?? 0), 0),
     ).toBeCloseTo(
       weapon.gun.damage *
-        first.room.heldDamageMult(weapon, weapon.gun.scalingGrades, first.player, 0),
+        first.room.heldDamageMult(weapon, first.player, 0),
       8,
     );
   });
@@ -124,7 +124,7 @@ describe("GameRoom — W4R ranged authority", () => {
     expect(rows.length).toBeGreaterThanOrEqual(3);
     expect(rows.length).toBeLessThanOrEqual(7);
     expect(rows.every((row) => Math.abs(Math.atan2(row.vy, row.vx)) <= halfAngle)).toBe(true);
-    const multiplier = room.heldDamageMult(weapon, weapon.gun.scalingGrades, player, 0);
+    const multiplier = room.heldDamageMult(weapon, player, 0);
     expect(
       rows.reduce((sum, row) => sum + (room.projectileMeta.get(row.id)?.damage ?? 0), 0),
     ).toBeCloseTo(weapon.gun.damage * multiplier, 8);
@@ -150,7 +150,7 @@ describe("GameRoom — W4R ranged authority", () => {
     expect(
       rows.reduce((sum, row) => sum + (room.projectileMeta.get(row.id)?.damage ?? 0), 0),
     ).toBeCloseTo(
-      weapon.gun.damage * room.heldDamageMult(weapon, weapon.gun.scalingGrades, player, 0),
+      weapon.gun.damage * room.heldDamageMult(weapon, player, 0),
       8,
     );
   });
@@ -185,7 +185,7 @@ describe("GameRoom — W4R ranged authority", () => {
     const admitted = [...room.state.projectiles.values()].find((row) => row.id.startsWith("p"));
     expect(admitted).toBeDefined();
     expect(room.projectileMeta.get(admitted?.id)?.damage).toBeCloseTo(
-      (weapon.gun.damage * room.heldDamageMult(weapon, weapon.gun.scalingGrades, player, 0)) /
+      (weapon.gun.damage * room.heldDamageMult(weapon, player, 0)) /
         requested,
       8,
     );

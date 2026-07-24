@@ -130,7 +130,7 @@ describe("GameRoom B23 kung-fu displacement authority", () => {
       let expectedX = start.x;
       let expectedY = start.y;
       const validate = vi.spyOn(room, "navValidDest");
-      const edgePower = room.heldDamageMult(weapon, weapon.scalingGrades, player, 0);
+      const edgePower = room.heldDamageMult(weapon, player, 0);
 
       for (const step of combo.sequence) {
         const swing = swingDescriptorFor(weapon, weapon.cooldown);

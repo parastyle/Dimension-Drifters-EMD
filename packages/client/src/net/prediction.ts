@@ -71,8 +71,7 @@ import {
  *   command stream (buffer/cooldown mirrored from the shared constants), so reconciliation rebases at
  *   the server's acked height/vh and replays every pending jump step. Only a residual beyond the height
  *   threshold hard-snaps (a denied jump / parry-launch we didn't predict).
- * - Prediction PAUSES (and hard-resyncs) while dead or frozen in the level-up window — the server
- *   doesn't move us then, and it zeroes our steering velocity on the freeze edge.
+ * - Prediction PAUSES (and hard-resyncs) while dead.
  */
 
 /** One minted input command — the client-side twin of the server's InputCmd. */
@@ -111,8 +110,6 @@ export interface ServerView {
   slidePhase?: number;
   slidePhaseTick?: number;
   alive: boolean;
-  /** §12 level-window freeze (flexPending>0 || sigPending>0) — movement is server-paused. */
-  frozen: boolean;
 }
 
 interface PredState {
@@ -783,7 +780,7 @@ export class SelfPredictor {
   private smoothResync = false;
   /** One-shot bypass so an authored teleport remains a cut instead of being folded into presentation. */
   private presentationSnapPending = false;
-  /** True while dead/frozen — prediction pauses and renders server truth directly. */
+  /** True while dead — prediction pauses and renders server truth directly. */
   private paused = false;
   /** True while the connection has STALLED (pending overflowed with no ack) — the predictor FREEZES
    *  (stops advancing; dead-reckoning seconds into the dark is worse than holding still) and the scene
@@ -891,7 +888,7 @@ export class SelfPredictor {
       aimX: speed > 1e-4 ? dirX : 1,
       aimY: speed > 1e-4 ? dirY : 0,
     };
-    this.paused = !server.alive || server.frozen;
+    this.paused = !server.alive;
   }
 
   /** Predict deterministic owner-authored impulses (currently gun recoil) at their local round edge.
@@ -968,7 +965,7 @@ export class SelfPredictor {
 
   /** Advance one exact 50ms predicted tick with `cmd` (the scene sends the same cmd to the server). */
   tick(cmd: PredCmd): void {
-    if (this.paused || this.stalled) return; // dead/frozen/stalled — don't advance into the dark
+    if (this.paused || this.stalled) return; // dead/stalled — don't advance into the dark
     const physicalCrouchHeld = cmd.crouchHeld === true;
     if (this.suppressCrouchUntilRelease && !physicalCrouchHeld)
       this.suppressCrouchUntilRelease = false;
@@ -1169,7 +1166,7 @@ export class SelfPredictor {
     const stanceSeq = server.stanceSeq ?? 0;
     const stanceChanged = stanceSeq !== this.lastStanceSeq;
     this.lastStanceSeq = stanceSeq;
-    const pauseNow = !server.alive || server.frozen;
+    const pauseNow = !server.alive;
 
     // Trim everything the server has consumed — WRAP-AWARE (uint32 delta space, matching the server's
     // monotonic gate): `seq ≤ ack` ⇔ the uint32 forward distance from seq to ack is < 2³¹.
@@ -1224,8 +1221,8 @@ export class SelfPredictor {
     if (teleported || this.needResync || pauseNow || this.paused) {
       // HARD RESYNC family — but the error-offset treatment differs by CAUSE (amendment #14):
       // - a TELEPORT / stall recovery SNAPS (a rift/pit/restart is a cut, not a glide): err = 0;
-      // - ENTERING a freeze (level window / down) FOLDS the visual lead into the offset so the rig
-      //   GLIDES back under the level-up UI (~⅓s decay) instead of popping backward by ~RTT×speed;
+      // - ENTERING a downed pause FOLDS the visual lead into the offset so the rig
+      //   GLIDES back instead of popping backward by ~RTT×speed;
       // - mid-freeze reconciles PRESERVE the decaying offset (re-zeroing would undo the fold).
       const enteringPause = pauseNow && !this.paused;
       if (teleported || (this.needResync && !this.smoothResync)) {
@@ -1381,8 +1378,8 @@ export class SelfPredictor {
     slideTick: number;
   } {
     if (this.paused || this.stalled) {
-      // Frozen (level window / down) or stalled: hold at server truth PLUS the decaying offset — the
-      // pause-entry fold (amendment #14) glides the pre-freeze visual lead out under the level-up UI
+      // Downed or stalled: hold at server truth PLUS the decaying offset — the
+      // pause-entry fold (amendment #14) glides the pre-pause visual lead out
       // instead of snapping the rig backward by ~RTT×speed.
       return {
         x: this.pred.x + this.errX,

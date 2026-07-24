@@ -5781,7 +5781,7 @@ export class SpriteRig {
 
   /** Start a parry BRACE pose (§8) — raise the weapon to a horizontal block, draw the hands up into
    *  a guard, and dip into a brace, held ~the i-frame window. Purely a STANCE (no VFX yet; on-parry
-   *  effects arrive with the level-up parry augments). */
+   *  effects arrive with owned parry augments). */
   triggerBrace(timeMs: number): void {
     this.cancelFlourish("brace");
     this.comboStageTransition = undefined; // parry acquisition is an information-bearing sharp takeover

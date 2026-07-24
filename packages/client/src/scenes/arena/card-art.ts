@@ -1,5 +1,4 @@
 import {
-  type Attr,
   type DamageSource,
   RARITIES,
   RARITY_CURSED,
@@ -23,8 +22,6 @@ export type Card = {
   container: Phaser.GameObjects.Container;
   /** One live "base + bonus = total" line per damage source (blade / magma / quake / …). */
   sources: { text: Phaser.GameObjects.Text; src: DamageSource }[];
-  /** Min-requirement tokens, recoloured green/red vs the player's live attributes. */
-  reqTokens: { text: Phaser.GameObjects.Text; attr: Attr; need: number }[];
   /** Charges (thrown, live) or durability (melee, static for now) readout. */
   resource: Phaser.GameObjects.Text;
   /** Paired entries keep the lead card full-size and add one compact, truthful off-hand strip. */
@@ -78,16 +75,6 @@ export const WEAPON_ACCENT: Record<string, number> = {
   "x-gun-gatling": 0xfff0a0,
   "x-gun-nailgun": 0xd6dde6,
   "x-gun-ricochet-pistol": 0x5dd6ff,
-};
-
-/** Grade → chip colour (§10 S/A/B/C/D/E). */
-export const GRADE_COL: Record<string, number> = {
-  S: 0xffd479,
-  A: 0xff8a2b,
-  B: 0x9cff3b,
-  C: 0x6fd6ff,
-  D: 0x6f8bff,
-  E: 0x9a9484,
 };
 
 /** Bake the FULL-BLEED card art (cover-fit + rounded clip) into a per-card texture so it transforms
@@ -599,33 +586,7 @@ export function drawIcon(
       g.lineTo(x + Math.cos(a) * s, y + Math.sin(a) * s);
       g.strokePath();
     }
-  } else if (kind === "str") {
-    g.beginPath();
-    g.moveTo(x - s * 0.75, y + s * 0.15);
-    g.lineTo(x, y - s * 0.75);
-    g.lineTo(x + s * 0.75, y + s * 0.15);
-    g.strokePath();
-    g.beginPath();
-    g.moveTo(x - s * 0.75, y + s * 0.75);
-    g.lineTo(x, y - s * 0.15);
-    g.lineTo(x + s * 0.75, y + s * 0.75);
-    g.strokePath(); // double up-chevron (power)
-  } else if (kind === "dex") {
-    g.beginPath();
-    g.moveTo(x - s * 0.85, y + s * 0.85);
-    g.lineTo(x + s * 0.85, y - s * 0.85);
-    g.strokePath();
-    g.beginPath();
-    g.moveTo(x + s * 0.15, y - s * 0.85);
-    g.lineTo(x + s * 0.85, y - s * 0.85);
-    g.lineTo(x + s * 0.85, y - s * 0.15);
-    g.strokePath(); // slim arrow (finesse)
-  } else if (kind === "int") {
-    g.fillTriangle(x, y - s, x - s * 0.32, y, x + s * 0.32, y);
-    g.fillTriangle(x, y + s, x - s * 0.32, y, x + s * 0.32, y);
-    g.fillTriangle(x - s, y, x, y - s * 0.32, x, y + s * 0.32);
-    g.fillTriangle(x + s, y, x, y - s * 0.32, x, y + s * 0.32); // 4-point sparkle (arcane)
-  } else if (kind === "con" || kind === "durability") {
+  } else if (kind === "durability") {
     g.beginPath();
     g.moveTo(x, y - s);
     g.lineTo(x + s * 0.82, y - s * 0.45);
@@ -635,31 +596,14 @@ export function drawIcon(
     g.lineTo(x - s * 0.82, y - s * 0.45);
     g.closePath();
     g.strokePath(); // shield
-  } else if (kind === "luk") {
-    const p: number[] = [];
-    for (let i = 0; i < 10; i++) {
-      const a = -Math.PI / 2 + (i * Math.PI) / 5;
-      const r = i % 2 ? s * 0.42 : s;
-      p.push(x + Math.cos(a) * r, y + Math.sin(a) * r);
-    }
-    g.beginPath();
-    g.moveTo(p[0] as number, p[1] as number);
-    for (let i = 2; i < p.length; i += 2) g.lineTo(p[i] as number, p[i + 1] as number);
-    g.closePath();
-    g.strokePath(); // star (luck)
-  } else if (kind === "req") {
-    g.strokeRoundedRect(x - s * 0.75, y - s * 0.05, s * 1.5, s, 2);
-    g.beginPath();
-    g.arc(x, y - s * 0.05, s * 0.48, Math.PI, 0);
-    g.strokePath(); // padlock
   } else if (kind === "charges") {
     g.fillTriangle(x, y - s, x + s * 0.7, y, x - s * 0.7, y);
     g.fillTriangle(x, y + s, x + s * 0.7, y, x - s * 0.7, y); // diamond pip
   }
 }
 
-/** Build one card: full-bleed art + a §5 tooltip slab — name + tag subtitle are the ONLY text; the
- *  damage sources, scaling, requirements and charges/durability are ICON-driven (§9). */
+/** Build one card: full-bleed art + a §5 tooltip slab — name + tag subtitle are the ONLY labels; the
+ *  flat damage sources and charges/durability remain icon-driven (§9). */
 export function buildCard(scene: Phaser.Scene, id: string): Card {
   const def = WEAPONS[id];
   const W = 212;
@@ -714,7 +658,7 @@ export function buildCard(scene: Phaser.Scene, id: string): Card {
   o.push(div);
   y += 9;
 
-  // ICON-DRIVEN (§9): one damage-type ICON per §14 source + its live "base + bonus = total" — no words.
+  // ICON-DRIVEN (§9): one damage-type icon per authored flat §14 source.
   const icons = scene.add.graphics();
   o.push(icons);
   const sources: { text: Phaser.GameObjects.Text; src: DamageSource }[] = [];
@@ -727,46 +671,6 @@ export function buildCard(scene: Phaser.Scene, id: string): Card {
     y += 18;
   }
   y += 6;
-
-  // Scaling: an ATTRIBUTE ICON + its grade letter (colour = grade) per scaling attribute.
-  const grades = def?.scalingGrades ?? { str: "B" };
-  let cx = padL;
-  for (const [attr, g] of Object.entries(grades) as [Attr, string][]) {
-    const col = GRADE_COL[g] ?? 0x9a9484;
-    const cw = 40;
-    const chip = scene.add.graphics();
-    chip.fillStyle(0x000000, 0.4).fillRoundedRect(cx, y, cw, 18, 5);
-    chip.lineStyle(1, col, 0.7).strokeRoundedRect(cx, y, cw, 18, 5);
-    o.push(chip);
-    drawIcon(icons, attr, cx + 11, y + 9, 6, 0xcfc6ae);
-    o.push(
-      scene.add
-        .text(cx + cw - 7, y + 9, g, {
-          fontSize: "13px",
-          color: `#${col.toString(16).padStart(6, "0")}`,
-          fontStyle: "bold",
-        })
-        .setOrigin(1, 0.5),
-    );
-    cx += cw + 6;
-  }
-  y += 25;
-
-  // Minimum requirements: a PADLOCK + (attribute icon · number) per requirement. The NUMBER recolours
-  // green/red met/unmet vs the player's live attributes (updateCarousel).
-  const reqTokens: { text: Phaser.GameObjects.Text; attr: Attr; need: number }[] = [];
-  const reqEntries = Object.entries(def?.requirements ?? {}) as [Attr, number][];
-  if (reqEntries.length > 0) {
-    drawIcon(icons, "req", padL + 6, y + 6, 6, 0x8f897a);
-    let rx = padL + 22;
-    for (const [attr, need] of reqEntries) {
-      drawIcon(icons, attr, rx + 5, y + 6, 6, 0xb9b3a3);
-      const tk = mk(rx + 14, y, 12, "#cfc6ae", String(need), 0, true);
-      reqTokens.push({ text: tk, attr, need });
-      o.push(tk);
-      rx += 44;
-    }
-  }
 
   // Charges (thrown, live) or durability (melee) — an ICON + a live number, anchored at the card bottom.
   const resY = H / 2 - 22;
@@ -803,7 +707,6 @@ export function buildCard(scene: Phaser.Scene, id: string): Card {
     id,
     container,
     sources,
-    reqTokens,
     resource,
     offSummary,
     offSummaryPaper,

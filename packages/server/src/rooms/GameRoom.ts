@@ -10,7 +10,6 @@ import {
   ArsenalSlot,
   ATTACK_BUFFER_SECONDS,
   ATTACK_HELD_WINDOW,
-  ATTRS,
   type Attr,
   AUG_BEAM_COOL_PER,
   AUG_BEAM_FOCUS_PER,
@@ -26,11 +25,8 @@ import {
   AUG_PROJECTILE_SPREAD,
   addImpulse,
   admittedPrismaticBeamRayCount,
-  applyCastGradeFloor,
-  augmentDeliveriesForGate,
-  augmentGateForWeapon,
   BAG_CAP,
-  BASE_XP_MOTE_REACH,
+  BASE_MONEY_DROP_REACH,
   BEAM_COOL_PER_SECOND,
   BEAM_CRIT_QUANTUM_SECONDS,
   BEAM_OVERHEAT_LOCK_SECONDS,
@@ -133,12 +129,8 @@ import {
   DUMMY_HP,
   DUMMY_RADIUS,
   type DualWieldHand,
-  damageMultFromGrades,
-  defaultFlexAttr,
   depthDamageScale,
   depthHpScale,
-  deriveStats,
-  draftAugments,
   driveCostForProfile,
   driveRegenModeFor,
   driveRegenPerSecond,
@@ -146,7 +138,6 @@ import {
   dualOffhandDamageMultiplier,
   EMBERGUARD_BASE_DMG,
   EMBERGUARD_HALF_ARC,
-  EMBERGUARD_PER_INT,
   EMBERGUARD_RANGE,
   ENEMY_KINDS,
   ENEMY_RADIUS,
@@ -155,7 +146,6 @@ import {
   EXTRACT_RADIUS,
   type ExpeditionEntryV1,
   effectiveAcceptedWeaponInterval,
-  type effectiveDamageMult,
   effectiveMelee,
   encodedJsonByteLength,
   encodeGearCosmetics,
@@ -170,8 +160,6 @@ import {
   gunLocomotionRecoilFor,
   HAIRTRIGGER_MAX,
   HAIRTRIGGER_WINDOW,
-  HARVEST_CAP,
-  HARVEST_PER_LUK,
   HIT_KNOCKBACK_IMPULSE,
   hasAugment,
   IMPULSE_FRICTION,
@@ -180,7 +168,6 @@ import {
   IRON_STANCE_IFRAME_PER,
   IRON_STANCE_KNOCKBACK_PER,
   inMeleeArc,
-  isAttr,
   isAugment,
   isInsidePoi,
   isPetId,
@@ -195,24 +182,25 @@ import {
   katanaBeatEffectFor,
   LANDING_TIER_SOFT,
   type LandingThumpTier,
-  LEVEL_CAP,
-  LEVELUP_WINDOW_SECONDS,
-  LOOT_TIER_LUK_BOSS,
-  LOOT_TIER_LUK_TOUGH,
+  LOOT_TIER_RARITY_BOSS,
+  LOOT_TIER_RARITY_TOUGH,
   landingThumpTier,
   lootCooldownMult,
   lootDamageMult,
   MAX_ENEMIES,
+  MAX_MONEY_DROPS,
   MAX_PLAYERS,
-  MAX_XP_ECHOES,
   MELEE_BLADE_HALFWIDTH,
   MELEE_SAMPLE_STEP,
   META_ACCOUNT_REVISION_MAX,
   META_ACCOUNT_SCRIP_MAX,
-  META_FORTUNE_LUK,
   META_JOIN_MAX_BYTES,
-  META_POWER_STR,
   META_VITALITY_HP,
+  MONEY_DROP_ARM_TICKS,
+  MONEY_DROP_FLIGHT_TICKS,
+  MONEY_DROP_REACH_MAX,
+  MONEY_DROP_REACH_MIN,
+  MoneyDropState,
   type MeleeComboFamily,
   type MeleeComboStep,
   type MetaAccountV4,
@@ -256,6 +244,7 @@ import {
   PIT_FALL_GRACE,
   PickupState,
   PLAYER_MAX_HP,
+  PLAYER_REGEN,
   PLAYER_RADIUS,
   PlayerState,
   POUND_GATHER_SECONDS,
@@ -274,7 +263,6 @@ import {
   type ProjectileWaveformDef,
   pairDamagePerUse,
   pairEligible,
-  pairRequirementPenalty,
   petLevelForXp,
   petModsForLevel,
   petStageBandForLevel,
@@ -308,7 +296,6 @@ import {
   ROLL_PARRY_LOCK_SECONDS,
   type RuntimeMods,
   randomSeed,
-  requirementPenalty,
   resolveBeltObstacles,
   resolveBodyCollisions,
   resolvePoiCollisionInto,
@@ -319,7 +306,6 @@ import {
   rollSpeedAtTick,
   runtimeModsForQuirk,
   SECOND_WIND_BASE,
-  SECOND_WIND_PER_CON,
   SHIFTER_FIRST_SECONDS,
   SHIFTER_HP_PER_WAVE,
   SHIFTER_INTERVAL,
@@ -350,10 +336,7 @@ import {
   serverSeededGunPelletVolley,
   shortestAngleDelta,
   slideContactInvulnerable,
-  sourceDamageMult,
   spawnInterval,
-  spreadAdjustedCon,
-  spreadForCharacter,
   stepBeamAngle,
   stepEnemyChase,
   stepEnemyKite,
@@ -368,7 +351,7 @@ import {
   TOUGH_COMBOS,
   TOUGH_DAMAGE_MULT,
   TOUGH_HP_MULT,
-  TOUGH_XP_MULT,
+  TOUGH_MONEY_MULT,
   type ToughComboDef,
   type ToughComboReturn,
   type ToughComboStep,
@@ -426,12 +409,10 @@ import {
   ULT_SEISMARCH_STUN_SECONDS,
   ULT_SEISMARCH_WINDUP_TICKS,
   ULT_STUN_ICD_TICKS,
-  ULT_TEMPER_CHARGE_MULT,
   UltimateFamily,
   type UltimateFamilyValue,
   UltimatePhase,
-  ultimateDamageScale,
-  ultimateFamilyAttr,
+  ultimateCodeFor,
   ultimateFamilyForCode,
   ultimateVariantForCode,
   VASTAGHAR_ENCOUNTER,
@@ -452,7 +433,7 @@ import {
   type WeaponInstanceV1,
   type WeaponProvenance,
   WORM_MAX_SEGMENTS,
-  WORM_TOTAL_XP,
+  WORM_TOTAL_MONEY,
   weaponAttackCooldown,
   weaponEffectCueSeconds,
   weaponEffectEmitterPoint,
@@ -464,33 +445,6 @@ import {
   weaponResourceProfile,
   weaponSetBonus,
   weaponUsesAuthoritativeEnvelopeCombo,
-  XP_ECHO_ARM_MAX_MS,
-  XP_ECHO_ARM_MS,
-  XP_ECHO_ARM_TIER_MS,
-  XP_ECHO_CLEANUP_FLIGHT_MAX_SECONDS,
-  XP_ECHO_CLEANUP_FLIGHT_MIN_SECONDS,
-  XP_ECHO_CLEANUP_LAUNCHES_PER_TICK,
-  XP_ECHO_CLEANUP_MAX_MS,
-  XP_ECHO_DENSE_AT,
-  XP_ECHO_DENSE_MERGE_RADIUS,
-  XP_ECHO_FLIGHT_BASE_SECONDS,
-  XP_ECHO_FLIGHT_DISTANCE_DIVISOR,
-  XP_ECHO_FLIGHT_MAX_SECONDS,
-  XP_ECHO_FLIGHT_MIN_SECONDS,
-  XP_ECHO_LAUNCHES_PER_COLLECTOR_TICK,
-  XP_ECHO_LAUNCHES_PER_ROOM_TICK,
-  XP_ECHO_POINT_BLANK_FLIGHT_TICKS,
-  XP_ECHO_POINT_BLANK_REACH,
-  XP_ECHO_RECEIPTS_PER_COLLECTOR_TICK,
-  XP_ECHO_RECENT_MERGE_MS,
-  XP_ECHO_RECENT_MERGE_RADIUS,
-  XP_ECHO_RETARGET_MAX_SECONDS,
-  XP_ECHO_RETARGET_MIN_SECONDS,
-  XP_MOTE_REACH_MAX,
-  XP_MOTE_REACH_MIN,
-  XP_MOTE_REACH_PER_STACK,
-  XpEchoState,
-  xpToNextLevel,
   ZONE_DPS,
   ZONE_RADIUS,
   ZONE_TTL,
@@ -503,17 +457,14 @@ import { type Client, Room } from "colyseus";
 import { appendOwnerNote, sanitizeOwnerNote } from "../owner-notes.js";
 import {
   BossController,
-  conserveVastagharVictoryXp,
+  conserveVastagharVictoryMoney,
   type VastagharEmitSink,
   VastagharEncounterRuntime,
   type VastagharTarget,
 } from "./BossController.js";
 import {
-  applyAllocationChoice,
   bankPetBondXp,
   commitWeaponCarry,
-  consumeFlex,
-  levelUpPlayer,
   type StashSaleResult,
   sellWeaponBankEntry,
   settleWeaponExpedition,
@@ -1119,16 +1070,12 @@ interface DuelistComboState {
   juggleInterruptHp?: number;
 }
 
-/** Server-private launch geometry. The wire keeps only immutable epochs; this cache lets disconnect
- * retargeting resume from the packet's current curved-flight point instead of snapping back to its corpse. */
-interface XpFlightMeta {
-  targetX: number;
-  targetY: number;
-  c1x: number;
-  c1y: number;
-}
-
-type XpBoundary = "extract" | "descent" | "belt-victory" | "bossrush-victory" | "boss-clear";
+type RewardBoundary =
+  | "extract"
+  | "descent"
+  | "belt-victory"
+  | "bossrush-victory"
+  | "boss-clear";
 
 export interface WeaponComboForwardDrift {
   readonly distancePx: number;
@@ -1247,9 +1194,8 @@ export class GameRoom extends Room<ArenaState> {
   private vastagharVictoryX = 0;
   private vastagharVictoryY = 0;
   private vastagharVictoryReadyTick = 0;
-  private vastagharCoreArmTick = 0;
   private vastagharVictoryMode: "" | "arena" | "bossrush" = "";
-  private vastagharCoreId = "";
+  private vastagharMoneyAwarded = false;
   /** Number of tick-locked patches that have completed. Catch-up substeps share this value so a boss
    *  telegraph settled during the batch cannot be removed before its t=1 state is broadcast. */
   private broadcastGeneration = 0;
@@ -1261,8 +1207,8 @@ export class GameRoom extends Room<ArenaState> {
   private readonly bossAddExpireTick = new Map<string, number>();
   /** §16 v0.109 the injected boss emit-surface, built lazily (see `bossSink`). */
   private _bossSink: VastagharEmitSink | null = null;
-  /** Segment trophies are real Echo rows, but cannot merge/latch/collect before terminal core death. */
-  private readonly lockedWormEchoIds = new Set<string>();
+  /** Anatomy money is paid immediately; this counter conserves the fixed encounter total at core death. */
+  private wormMoneyPaid = 0;
   /** Server-side projectile metadata not worth syncing. Keyed by projectile id. `explode` (baked at
    *  spawn with this source's scaling) detonates an AoE on the projectile's death (§14 scatter shot). */
   private readonly projectileMeta = new Map<
@@ -1401,8 +1347,6 @@ export class GameRoom extends Room<ArenaState> {
   /** §9/§13 per-DROPPED-pickup grace timer (sec): while > 0 the pickup can't be re-grabbed, so a weapon
    *  dropped at your feet doesn't snap straight back. Keyed by pickup id; only set for player drops. */
   private readonly pickupGrace = new Map<string, number>();
-  /** Cached launch control points/last authoritative target positions for guaranteed-flight retargeting. */
-  private readonly xpFlights = new Map<string, XpFlightMeta>();
   /** §13 v0.103 salvage provenance: pickup ids whose weapon came off an ENEMY (earned → salvageable).
    *  Gallery/conjured pickups are never in here. Pruned with the pickup; cleared with the transients. */
   private readonly earnedPickups = new Set<string>();
@@ -1437,13 +1381,10 @@ export class GameRoom extends Room<ArenaState> {
   private projectileSeq = 0;
   private zoneSeq = 0;
   private pickupSeq = 0;
-  private xpEchoSeq = 0;
+  private moneyDropSeq = 0;
   /** polish #7 fixed preallocated authoritative combat receipt ring (v18). */
   private combatReceiptSeq = 0;
   private combatReceiptCursor = 0;
-  /** Closed-beat cleanup holds teardown until every authoritative Echo has caught or folded into a core. */
-  private xpBoundary: XpBoundary | null = null;
-  private xpBoundaryStartedTick = 0;
   /** §17 the procedurally generated arena for this room — minted once at create from the seeds synced on
    *  ArenaState, so the server holds the authoritative tile grid (pit collision/fall handling, §17 Phase 1).
    *  Clients reproduce the identical map from the same seeds. */
@@ -1712,14 +1653,6 @@ export class GameRoom extends Room<ArenaState> {
       if (!player?.alive || !c) return;
       if (c.recoveryT > 0) return; // pound recovery is explicitly a no-parry window
       if (c.slideParryLockT > 0) {
-        c.parryBuffer = PARRY_BUFFER_SECONDS;
-        return;
-      }
-      // §44 (Sol audit): NO parry inside the level-up window — the tick path already defines acting as
-      // alive AND not in the window, but this immediate path skipped that gate, so a frozen-invincible
-      // player could scan/knock the whole horde risk-free every cooldown. Queue it instead: the tick
-      // consumes the buffer under the common `acting` gate the moment the window closes.
-      if (this.inLevelWindow(player)) {
         c.parryBuffer = PARRY_BUFFER_SECONDS;
         return;
       }
@@ -2012,7 +1945,7 @@ export class GameRoom extends Room<ArenaState> {
       if (!this.takeAction(client)) return;
       const player = this.state.players.get(client.sessionId);
       const c = this.combat.get(client.sessionId);
-      if (!player?.alive || !c || !this.belt || this.inLevelWindow(player)) return;
+      if (!player?.alive || !c || !this.belt) return;
       if (c.stance === STANCE_SLIDE) return;
       const shopX = this.state.beltShopX;
       if (shopX <= 0 || Math.abs(player.x - shopX) > SHOP_RADIUS) return;
@@ -2374,36 +2307,6 @@ export class GameRoom extends Room<ArenaState> {
       },
     );
 
-    // §classmerge level-up: one validated choice resolves +2 chosen and +1 deterministic ballast.
-    this.onMessage("chooseAttribute", (client, message: { attr?: string }) => {
-      if (!this.takeAction(client)) return; // §44 action budget
-      const player = this.state.players.get(client.sessionId);
-      if (!player || player.flexPending <= 0) return;
-      const attr = message?.attr;
-      if (!isAttr(attr)) return; // validate the untrusted field, then it narrows to Attr
-      applyAllocationChoice(player, attr);
-      consumeFlex(player);
-      this.syncFlexTimer(player);
-    });
-
-    // §8 signature pick: the player chooses one augment from the offered 3-of-9 draft.
-    this.onMessage("chooseAugment", (client, message: { id?: string }) => {
-      if (!this.takeAction(client)) return; // §44 action budget
-      const player = this.state.players.get(client.sessionId);
-      if (!player || player.sigPending <= 0) return;
-      const id = message?.id;
-      if (!isAugment(id)) return; // valid augment id…
-      if (!player.sigOffer.split(",").includes(id)) return; // …AND one actually offered this pick
-      player.augments = player.augments ? `${player.augments},${id}` : id;
-      player.sigPending = Math.max(0, player.sigPending - 1);
-      player.sigOffer = ""; // re-rolled next tick by tickLevelWindows if more picks remain
-      this.consumeSignatureGate(player);
-      // Keep the window open + timer alive if anything's still owed (flex or another sig pick).
-      player.flexTimer =
-        player.flexPending > 0 || player.sigPending > 0 ? LEVELUP_WINDOW_SECONDS : 0;
-      this.syncFlexTimer(player);
-    });
-
     this.setSimulationInterval((deltaMs) => this.update(deltaMs), TICK_MS);
     // §7 v0.105 de-clunk: DISABLE the independent patch timer and broadcast at the END of each tick
     // instead (`this.broadcastPatch()` in `update`). Colyseus's default patch interval is a SECOND 50ms
@@ -2486,13 +2389,6 @@ export class GameRoom extends Room<ArenaState> {
     this.wormSegmentGrid.clear();
   }
 
-  private clearXpEchoes(): void {
-    this.state.xpEchoes.clear();
-    this.lockedWormEchoIds.clear();
-    this.xpFlights.clear();
-    this.xpBoundary = null;
-  }
-
   /** §6 terminal combat teardown shared by wipes and every victory route. Pickups/player state remain for the
    *  result screen; all damage-producing bodies and their non-synced machines are retired together. */
   private clearCombatEntities(): void {
@@ -2506,9 +2402,7 @@ export class GameRoom extends Room<ArenaState> {
   /** §6 enter a terminal result exactly once through the full combat teardown path. */
   private enterTerminalOutcome(outcome: "defeat" | "victory"): void {
     this.settleMetaAccounts(outcome);
-    // A wipe has no eligible collector and explicitly forfeits unclaimed field XP with the failed run.
-    // Victory routes reach here only after `beginXpBoundary` has visibly caught every paid packet.
-    if (outcome === "defeat") this.clearXpEchoes();
+    if (outcome === "defeat") this.state.moneyDrops.clear();
     this.state.outcome = outcome;
     this.clearCombatEntities();
   }
@@ -3283,12 +3177,10 @@ export class GameRoom extends Room<ArenaState> {
     return true;
   }
 
-  /** §10 v0.104 per-source damage multiplier INCLUDING the held weapon's loot identity: attribute grades ×
-   *  §11 requirement penalty × (rarity × affix). Every damage source of the held weapon flows through this
-   *  so a Legendary Keen blade hits harder on its edge AND its chain AND its quake — WYSIWYG with the card. */
+  /** Stat-free held damage multiplier. Authored source damage is modified only by the held weapon's
+   *  non-stat factors: loot identity, pair throughput, weapon-set bonus, and runtime effects. */
   private heldDamageMult(
     weapon: WeaponDef,
-    grades: Parameters<typeof effectiveDamageMult>[1],
     player: PlayerState,
     hand: DualWieldHand = 0,
   ): number {
@@ -3296,15 +3188,8 @@ export class GameRoom extends Room<ArenaState> {
     const offSlot = c ? this.pairedOffSlot(player, c) : undefined;
     const rarity = hand === 1 && offSlot ? offSlot.rarity : player.weaponRarity;
     const affix = hand === 1 && offSlot ? offSlot.affix : player.weaponAffix;
-    const baseRequirement = offSlot
-      ? pairRequirementPenalty(WEAPONS[player.weapon]!, WEAPONS[offSlot.weapon]!, player)
-      : requirementPenalty(weapon, player);
-    const requirement =
-      baseRequirement *
-      (hand === 1 && offSlot ? this.pairOffhandDamageMultiplier(player, offSlot) : 1);
     return (
-      sourceDamageMult(weapon, grades, player) *
-      requirement *
+      (hand === 1 && offSlot ? this.pairOffhandDamageMultiplier(player, offSlot) : 1) *
       lootDamageMult(rarity, affix) *
       weaponSetBonus(this.loadoutIds(player), weapon.id) * // §30 class set-bonus (2/3-of-a-class)
       (c?.mods.outgoingWeaponDamageMult ?? 1)
@@ -3324,106 +3209,60 @@ export class GameRoom extends Room<ArenaState> {
     return mult;
   }
 
-  /** Cast-only grade floor lever. Flag-off is byte-identical to heldDamageMult. */
   /** Compute the off-hand trim from both live loot identities, then enforce the shared throughput cap. */
   private pairOffhandDamageMultiplier(player: PlayerState, offSlot: ArsenalSlot): number {
     const lead = WEAPONS[player.weapon];
     const off = WEAPONS[offSlot.weapon];
     if (!lead || !off) return 0;
-    const leadGrades = lead.gun?.scalingGrades ?? lead.cast?.scalingGrades ?? lead.scalingGrades;
-    const offGrades = off.gun?.scalingGrades ?? off.cast?.scalingGrades ?? off.scalingGrades;
     const leadDamage =
-      pairDamagePerUse(lead) *
-      sourceDamageMult(lead, leadGrades, player) *
-      lootDamageMult(player.weaponRarity, player.weaponAffix);
+      pairDamagePerUse(lead) * lootDamageMult(player.weaponRarity, player.weaponAffix);
     const offDamage =
-      pairDamagePerUse(off) *
-      sourceDamageMult(off, offGrades, player) *
-      lootDamageMult(offSlot.rarity, offSlot.affix);
+      pairDamagePerUse(off) * lootDamageMult(offSlot.rarity, offSlot.affix);
     return dualOffhandDamageMultiplier(lead, off, leadDamage, offDamage);
   }
 
   private heldCastDamageMult(
     weapon: WeaponDef,
-    grades: Parameters<typeof effectiveDamageMult>[1],
     player: PlayerState,
     hand: DualWieldHand = 0,
   ): number {
-    const gradeMult = applyCastGradeFloor(
-      damageMultFromGrades(grades ?? weapon.scalingGrades, player),
-    );
-    const c = this.combat.get(player.id);
-    const offSlot = c ? this.pairedOffSlot(player, c) : undefined;
-    const rarity = hand === 1 && offSlot ? offSlot.rarity : player.weaponRarity;
-    const affix = hand === 1 && offSlot ? offSlot.affix : player.weaponAffix;
-    const requirement =
-      (offSlot
-        ? pairRequirementPenalty(WEAPONS[player.weapon]!, WEAPONS[offSlot.weapon]!, player)
-        : requirementPenalty(weapon, player)) *
-      (hand === 1 && offSlot ? this.pairOffhandDamageMultiplier(player, offSlot) : 1);
-    return (
-      gradeMult *
-      requirement *
-      lootDamageMult(rarity, affix) *
-      weaponSetBonus(this.loadoutIds(player), weapon.id) *
-      (c?.mods.outgoingWeaponDamageMult ?? 1)
-    );
+    return this.heldDamageMult(weapon, player, hand);
   }
 
-  /**
-   * Capture the cosmetic character as the run identity. Fresh edges seed the sum-10 spread; re-snapshot
-   * edges apply only the old→new spread delta so earned allocations and permanent upgrades survive.
-   */
+  /** Capture the cosmetic character as flavor-only run identity. */
   private snapshotRunCharacter(
     player: PlayerState,
     combat: CombatState | undefined,
-    rebase: boolean,
+    _rebase: boolean,
     topUpMaxHp = true,
   ): void {
     const identity = isPlayableCharacter(player.character) ? player.character : DEFAULT_CHARACTER;
-    const nextSpread = spreadForCharacter(identity);
-    if (rebase) {
-      const previousSpread = spreadForCharacter(player.runCharacter);
-      for (const attr of ATTRS) player[attr] += nextSpread[attr] - previousSpread[attr];
-    } else {
-      for (const attr of ATTRS) player[attr] = nextSpread[attr];
-      if (player.upPower > 0) player.str = 1 + META_POWER_STR * player.upPower;
-      if (player.upFortune > 0) player.luk = 1 + META_FORTUNE_LUK * player.upFortune;
-    }
     player.runCharacter = identity;
-    player.spreadSeeded = true;
     player.gearSeeded = false;
-    player.gearMaxHpAdd = 0;
     player.gearUpper = "";
     player.gearLower = "";
     const quirk = quirkForCharacter(identity);
-    player.identityBallastFollowsChoice = quirk.mods?.ballastFollowsChoice === true;
     if (combat) {
       combat.identityCharacter = identity;
       combat.quirk = quirk;
       combat.mods = runtimeModsForQuirk(quirk);
     }
     const previousMax = player.maxHp;
-    const derivedCon = spreadAdjustedCon(player.con);
-    player.maxHp = deriveStats({ con: derivedCon }).maxHp + META_VITALITY_HP * player.upVitality;
+    player.maxHp = PLAYER_MAX_HP + META_VITALITY_HP * player.upVitality;
     if (topUpMaxHp && player.maxHp > previousMax) player.hp += player.maxHp - previousMax;
     player.hp = Math.min(player.hp, player.maxHp);
   }
 
-  /** Install one validated, catalog-derived wardrobe snapshot. No allocation counter is touched here. */
+  /** Install one validated, catalog-derived wardrobe snapshot without applying numeric stats. */
   private snapshotGearRun(
     player: PlayerState,
     combat: CombatState | undefined,
     runtime: GearRunRuntime,
     topUpMaxHp = true,
   ): void {
-    for (const attr of ATTRS) player[attr] = runtime.baseStats[attr];
     player.character = "drifter";
     player.runCharacter = "drifter";
-    player.spreadSeeded = true;
     player.gearSeeded = true;
-    player.gearMaxHpAdd = runtime.mods.maxHpAdd;
-    player.identityBallastFollowsChoice = runtime.mods.ballastFollowsChoice;
     player.upVitality = 0;
     player.upFortune = 0;
     player.upPower = 0;
@@ -3436,8 +3275,7 @@ export class GameRoom extends Room<ArenaState> {
       combat.mods = runtime.mods;
     }
     const previousMax = player.maxHp;
-    player.maxHp =
-      deriveStats({ con: spreadAdjustedCon(player.con) }).maxHp + runtime.mods.maxHpAdd;
+    player.maxHp = PLAYER_MAX_HP + runtime.mods.maxHpAdd;
     if (topUpMaxHp && player.maxHp > previousMax) player.hp += player.maxHp - previousMax;
     player.hp = Math.min(player.hp, player.maxHp);
   }
@@ -3574,7 +3412,7 @@ export class GameRoom extends Room<ArenaState> {
     this.sendOwnerMessage(player.id, "metaAccount", account);
   }
 
-  /** New run/ready boundary: exact XP becomes a private immutable level/mod snapshot; only id/band sync. */
+  /** New run/ready boundary: only the pet identity and presentation band enter public run state. */
   private snapshotPetRun(player: PlayerState, selectedPetId: PetId | ""): void {
     const account = this.metaAccounts.get(player.id);
     const persisted = selectedPetId ? account?.pets[selectedPetId] : undefined;
@@ -3758,7 +3596,7 @@ export class GameRoom extends Room<ArenaState> {
   /** Switch between survival ("arena") and Testing Grounds ("training", §21). */
   private toggleTraining(abandoningPlayerId = this.hostId ?? ""): void {
     if (this.state.mode === "arena") this.forfeitWeaponRunForWorkshop(abandoningPlayerId);
-    // Entering/leaving the workshop aborts the expedition; unclaimed run XP is explicitly forfeited.
+    // Entering/leaving the workshop aborts the expedition; pending run rewards are explicitly forfeited.
     this.state.players.forEach((player, id) => {
       const c = this.combat.get(id);
       if (!c) return;
@@ -3766,7 +3604,6 @@ export class GameRoom extends Room<ArenaState> {
       player.pairBaseSeq = 0;
       c.handGate = 0;
     });
-    this.clearXpEchoes();
     this.state.enemies.clear();
     this.state.pickups.clear();
     this.state.projectiles.clear();
@@ -3937,7 +3774,6 @@ export class GameRoom extends Room<ArenaState> {
   private restartRun(): void {
     if (this.state.outcome === "active") this.settleMetaAccounts("defeat");
     // A restart is a fresh expedition (progression resets below), so no old field packet crosses it.
-    this.clearXpEchoes();
     this.state.enemies.clear();
     this.state.projectiles.clear();
     this.state.zones.clear();
@@ -3988,29 +3824,17 @@ export class GameRoom extends Room<ArenaState> {
           this.createWeaponRun(id, account);
         }
       }
-      // Fresh run → reset progression and snapshot the worn character's sum-10 spread; carried salvage
-      // starts empty too (§6 bank-or-lose — a restart is a NEW expedition, not a continue), and the
-      // held weapon sheds its rolled loot identity (drops are per-run).
+      // Fresh run: reset run-scoped combat, snapshot flavor identity, and clear carried salvage.
       player.salvaged = 0;
       player.weaponRarity = RARITY_COMMON;
       player.weaponAffix = "";
-      player.level = 1;
-      player.xp = 0;
-      player.xpToNext = xpToNextLevel(1);
       this.snapshotRunIdentity(player, c, false);
-      player.flexPending = 0;
-      player.flexTimer = 0;
-      player.flexTimerDs = 0;
-      // §8 augments are PER-RUN — clear the parry build on a fresh run.
+      // Augments remain an empty hook until a non-level acquisition lane owns them.
       player.augments = "";
-      player.sigPending = 0;
-      player.sigOffer = "";
-      player.sigGateQueue = "";
-      for (const attr of ATTRS) player.allocRun[attr] = 0;
-      player.ultFamily = UltimateFamily.Locked;
-      player.ultVariant = "";
-      player.ultTempered = false;
-      player.ultArchetype = 0;
+      // B20 interim: every identity uses the same flat, damage-meter Sunspite ultimate.
+      player.ultFamily = UltimateFamily.SunspiteComet;
+      player.ultVariant = "str";
+      player.ultArchetype = ultimateCodeFor(UltimateFamily.SunspiteComet, "str");
       player.ultCharge = 0;
       player.ultPhase = UltimatePhase.Idle;
       player.ultStartTick = 0;
@@ -4356,6 +4180,9 @@ export class GameRoom extends Room<ArenaState> {
     // Persisted gear remains sanitized in the canonical account but is archived runtime-inert state.
     // Every ordinary join snapshots the selected/default whole-art kit and creates no gear run.
     this.snapshotRunCharacter(player, undefined, false, false);
+    player.ultFamily = UltimateFamily.SunspiteComet;
+    player.ultVariant = "str";
+    player.ultArchetype = ultimateCodeFor(UltimateFamily.SunspiteComet, "str");
     player.hp = player.maxHp;
     this.snapshotPetRun(player, account.selectedPetId);
     for (let i = 0; i < ARSENAL_SLOTS; i++) player.slots.push(new ArsenalSlot());
@@ -4601,12 +4428,6 @@ export class GameRoom extends Room<ArenaState> {
     console.log(`[room ${this.roomId}] -leave ${client.sessionId} (${this.clients.length} online)`);
   }
 
-  /** §12/§8 is the player in the invincible level-up window? True while EITHER a flex stat point OR a
-   *  signature augment pick is owed — both freeze + immune the player so they choose safely. */
-  private inLevelWindow(player: PlayerState): boolean {
-    return player.flexPending > 0 || player.sigPending > 0;
-  }
-
   /** Explicit encounter/modal hook. Auto remains the default; callers never write Drive or regenMode. */
   setWeaponResourceRegenOverride(playerId: string, mode: "auto" | "paused" | "forceEngaged"): void {
     const drive = this.combat.get(playerId)?.drive;
@@ -4667,7 +4488,7 @@ export class GameRoom extends Room<ArenaState> {
     const pressure = drive.forceEngaged || recentReceipt || this.hostileWithinDriveThreat(player);
     drive.regenMode = driveRegenModeFor(
       player.alive,
-      drive.simulationPaused || this.inLevelWindow(player),
+      drive.simulationPaused,
       debtLive,
       pressure,
       player.ultPhase !== UltimatePhase.Idle,
@@ -4849,7 +4670,6 @@ export class GameRoom extends Room<ArenaState> {
     if (cmd.pound) {
       if (
         player.alive &&
-        !this.inLevelWindow(player) &&
         player.height > POUND_MIN_HEIGHT &&
         !c.poundUsed &&
         (c.stance === STANCE_NONE || c.stance === STANCE_DASH)
@@ -4876,7 +4696,6 @@ export class GameRoom extends Room<ArenaState> {
     if (
       cmd.slide &&
       player.alive &&
-      !this.inLevelWindow(player) &&
       player.height <= GROUND_EPSILON &&
       c.stance === STANCE_NONE &&
       c.recoveryT <= 0 &&
@@ -5049,7 +4868,7 @@ export class GameRoom extends Room<ArenaState> {
       c.jumpCd = Math.max(0, c.jumpCd - dt);
       c.jumpBuffer = Math.max(0, c.jumpBuffer - dt);
       c.distJumpCd = Math.max(0, c.distJumpCd - dt);
-      const acting = this.state.outcome === "active" && player.alive && !this.inLevelWindow(player);
+      const acting = this.state.outcome === "active" && player.alive;
       if (!acting) return;
 
       if (
@@ -5328,13 +5147,6 @@ export class GameRoom extends Room<ArenaState> {
     row.finalBlow = finalBlow;
   }
 
-  /** Mirror the precise, non-serialized timer as integer deciseconds. Ceil keeps the bar visible until the
-   *  authoritative timeout and limits patches to 10Hz instead of every 20Hz simulation step. */
-  private syncFlexTimer(player: PlayerState): void {
-    const deciseconds = Math.max(0, Math.min(0xffff, Math.ceil(player.flexTimer * 10 - 1e-9)));
-    if (player.flexTimerDs !== deciseconds) player.flexTimerDs = deciseconds;
-  }
-
   /** Advance the precise, non-serialized run clock and patch only when its whole-second projection changes. */
   private advanceElapsed(dt: number): void {
     this.state.elapsed += dt;
@@ -5475,12 +5287,11 @@ export class GameRoom extends Room<ArenaState> {
     // horizontal travel so the authored 12 flight samples still total exactly 372 px.
     this.stepTraversalLaunches(dt);
 
-    // 1. Integrate each LIVING player's authoritative movement from their held input command.
-    //    A player in the §12 level-up window (flexPending) is frozen so they can pick safely.
+    // 1. Integrate each living player's authoritative movement from held input.
     this.state.players.forEach((player, id) => {
       const input = this.inputs.get(id);
       if (!input) return;
-      if (!player.alive || this.inLevelWindow(player)) {
+      if (!player.alive) {
         const frozenCombat = this.combat.get(id);
         if (frozenCombat) this.cancelMoveStance(player, frozenCombat, true);
         // §7 a freeze/down is an INTENTIONAL stop — zero the steering velocity so the player doesn't
@@ -5669,7 +5480,7 @@ export class GameRoom extends Room<ArenaState> {
     // last solid tile + a brief grace (i-frames, no re-fall). An AIRBORNE player (mid-jump, §5) clears the
     // gap and is immune. We also remember the last grounded spot here so the snap-back has somewhere to go.
     this.state.players.forEach((player, id) => {
-      if (!player.alive || this.inLevelWindow(player)) return;
+      if (!player.alive) return;
       const c = this.combat.get(id);
       if (!c) return;
       if (c.augmentSnapshot !== player.augments) {
@@ -5717,11 +5528,10 @@ export class GameRoom extends Room<ArenaState> {
       player.fellSeq++;
     });
 
-    // 2.7 XP Echoes: movement establishes Reach first; arrival grants before level-window ticking. Fresh
-    // kills later in this sub-step begin their mandatory pop/read window and are considered next tick.
+    // 2.7 MONEY drops: movement establishes pickup reach first; collection credits the existing scrip rail.
+    // Fresh kills later in this sub-step keep their short readable settle before they can launch.
+    this.stepMoneyDrops();
     this.stepVastagharVictory();
-    this.stepXpEchoes();
-    if (this.xpBoundary) return; // committed cleanup freezes new pressure until the visible squad receipt
 
     // 3. Run clock + spawn director (§6) — survival mode only. `bodies` = living players.
     if (this.state.mode === "arena") {
@@ -5805,7 +5615,6 @@ export class GameRoom extends Room<ArenaState> {
       const acting =
         this.state.outcome === "active" &&
         player.alive &&
-        !this.inLevelWindow(player) &&
         player.ultPhase === UltimatePhase.Idle;
       // BUFFERED PARRY — a press that arrived on cooldown fires the instant the cd drains.
       if (
@@ -6268,7 +6077,7 @@ export class GameRoom extends Room<ArenaState> {
 
     // 5.6 §17 PITFALL — a non-boss enemy whose body ends the tick over a pit falls in and DIES. Kite the
     // horde into a pit (they can't jump) or knock one in with a parry = an instant kill. Boss is pit-immune.
-    // No XP — terrain kills are free crowd control. §29 belt uses the level's authored pit x-ranges.
+    // Terrain kills are free crowd control. §29 belt uses the authored pit x-ranges.
     const fellIn: string[] = [];
     this.state.enemies.forEach((enemy, eid) => {
       if (eid === this.bossId) return;
@@ -6302,7 +6111,7 @@ export class GameRoom extends Room<ArenaState> {
       const kind = ENEMY_KINDS[enemy.kind];
       if (!kind) return;
       this.state.players.forEach((player) => {
-        if (!player.alive || this.inLevelWindow(player)) return; // invincible in the §12 level window
+        if (!player.alive) return;
         const pcc = this.combat.get(player.id);
         if ((pcc?.invuln ?? 0) > 0) return; // parry i-frames
         if (pcc && this.weaponLungeInvulnerable(pcc)) return;
@@ -6356,13 +6165,12 @@ export class GameRoom extends Room<ArenaState> {
         return;
       }
       anyAlive = true;
-      const derivedCon = player.spreadSeeded ? spreadAdjustedCon(player.con) : player.con;
       const combat = this.combat.get(player.id);
       const pet = this.petRuns.get(player.id);
       const pitRegenMultiplier =
         pet && pet.tortoisePitRegenSeconds > 0 ? pet.mods.pitRegenMultiplier : 1;
       const regen =
-        deriveStats({ con: derivedCon }).regen *
+        PLAYER_REGEN *
         (combat?.mods.regenMult ?? 1) *
         (pet?.mods.passiveRegenMultiplier ?? 1) *
         pitRegenMultiplier;
@@ -6418,8 +6226,6 @@ export class GameRoom extends Room<ArenaState> {
       }
     }
 
-    // 8. Tick the §12 level-up windows (auto-resolve a flex point + signature pick if the 5s timer runs out).
-    this.tickLevelWindows(dt);
   }
 
   private ultimateOwnsMovement(player: PlayerState): boolean {
@@ -6569,7 +6375,6 @@ export class GameRoom extends Room<ArenaState> {
     if (
       this.state.outcome !== "active" ||
       !player.alive ||
-      this.inLevelWindow(player) ||
       c.juggleArmed ||
       c.recoveryT > 0 ||
       player.ultPhase !== UltimatePhase.Idle ||
@@ -6686,7 +6491,6 @@ export class GameRoom extends Room<ArenaState> {
       tickReached(this.state.tick, ticket.returnEndTick) ||
       ultimateFamilyForCode(player.ultArchetype) !== UltimateFamily.DimensionDoor ||
       !player.alive ||
-      this.inLevelWindow(player) ||
       c.juggleArmed ||
       player.ultPhase !== UltimatePhase.Idle
     )
@@ -6758,7 +6562,7 @@ export class GameRoom extends Room<ArenaState> {
           player.y,
           140,
           28 * this.ultimateScale(player, ult),
-          critChanceFor(player.luk, player.dex),
+          this.flatCritChance(player, c),
           player.id,
           "ult:dimension-door",
           CombatDelivery.Ultimate,
@@ -6783,8 +6587,20 @@ export class GameRoom extends Room<ArenaState> {
     c.invuln = Math.max(c.invuln, (activeTicks * TICK_MS) / 1000 + TICK_MS / 1000);
   }
 
-  private ultimateScale(player: PlayerState, ult: UltimateRuntime): number {
-    return ultimateDamageScale(player, ultimateFamilyAttr(ult.family), ult.variant);
+  private ultimateScale(_player: PlayerState, _ult: UltimateRuntime): number {
+    return 1;
+  }
+
+  /** Empty B20 additive seam for relic and other future crit modifiers. */
+  private critAdditiveModifiers(
+    _player: PlayerState,
+    _combat: CombatState | undefined,
+  ): readonly number[] {
+    return [];
+  }
+
+  private flatCritChance(player: PlayerState, combat?: CombatState): number {
+    return critChanceFor(this.critAdditiveModifiers(player, combat));
   }
 
   private weaponCritChance(player: PlayerState, c: CombatState): number {
@@ -6794,10 +6610,7 @@ export class GameRoom extends Room<ArenaState> {
       c.ultCritCharges--;
       return 1;
     }
-    return Math.max(
-      0,
-      Math.min(CRIT_CHANCE_CAP, critChanceFor(player.luk, player.dex) + c.mods.critChanceAdd),
-    );
+    return this.flatCritChance(player, c);
   }
 
   private launchSunspiteComet(player: PlayerState, c: CombatState, ult: UltimateRuntime): void {
@@ -6829,7 +6642,7 @@ export class GameRoom extends Room<ArenaState> {
       ULT_FIREBALL_RANGE / speed,
       { radius: ULT_NUKE_RADIUS, damage: blast },
       0,
-      critChanceFor(player.luk, player.dex),
+      this.flatCritChance(player, c),
       player.id,
       "ult:sunspite-comet",
       CombatDelivery.Ultimate,
@@ -6855,10 +6668,7 @@ export class GameRoom extends Room<ArenaState> {
     const mid = ULT_SEISMARCH_MID_RADIUS * shrink;
     const outer = ULT_SEISMARCH_OUTER_RADIUS * shrink;
     const scale = this.ultimateScale(player, ult);
-    const crit = Math.min(
-      1,
-      critChanceFor(player.luk, player.dex) * (ult.variant === "luk" ? 1.5 : 1),
-    );
+    const crit = this.flatCritChance(player, c);
     this.ultimateKills.length = 0;
     this.enemyGrid.queryRadius(player.x, player.y, outer, this.enemyCandidates);
     for (const id of this.enemyCandidates) {
@@ -6993,7 +6803,7 @@ export class GameRoom extends Room<ArenaState> {
         id,
         ULT_PHASE_DAMAGE * (ult.variant === "str" ? 1.5 : 1) * scale,
         this.ultimateKills,
-        critChanceFor(player.luk, player.dex),
+        this.flatCritChance(player, this.combat.get(player.id)),
         player.id,
         "ult:event-horizon",
         CombatDelivery.Ultimate,
@@ -7030,7 +6840,7 @@ export class GameRoom extends Room<ArenaState> {
         ULT_PHASE_DAMAGE * scale,
         ult.sourceKey,
         this.ultimateKills,
-        critChanceFor(player.luk, player.dex),
+        this.flatCritChance(player, this.combat.get(player.id)),
         true,
         player.id,
         "ult:event-horizon",
@@ -7077,7 +6887,7 @@ export class GameRoom extends Room<ArenaState> {
             base * scale,
             `${ult.sourceKey}:${target.id}`,
             this.ultimateKills,
-            critChanceFor(player.luk, player.dex),
+            this.flatCritChance(player, c),
             false,
             player.id,
             "ult:alpha-strike",
@@ -7100,7 +6910,7 @@ export class GameRoom extends Room<ArenaState> {
               target.id,
               base * scale,
               this.ultimateKills,
-              critChanceFor(player.luk, player.dex),
+              this.flatCritChance(player, c),
               player.id,
               "ult:alpha-strike",
               CombatDelivery.Ultimate,
@@ -7310,7 +7120,7 @@ export class GameRoom extends Room<ArenaState> {
   /** Fire one weapon swing (§20 WYSIWYG). The EDGE is registered as a SWEPT BLADE (`stepMeleeSwings` sweeps
    *  it across `swingArc` and damages each enemy the blade actually crosses — #2/#5/#6); the secondary
    *  LAYERS (chain / quake / scatter) fire here at the swing moment, each an independent position-based
-   *  source ("layered like the Wyrmtooth"). Damage scales per-source (§14); kills grant XP. */
+   *  source ("layered like the Wyrmtooth"). Each layer uses its authored flat damage. */
   /** Prospective six-beat melee step. It mutates nothing until the attack is actually accepted. */
   private nextPairMeleeStep(player: PlayerState, c: CombatState): number {
     const acceptedAtMs = this.state.tick * TICK_MS;
@@ -7510,9 +7320,8 @@ export class GameRoom extends Room<ArenaState> {
     hybridBeat?: Readonly<{ step: number; length: number }>,
   ): void {
     const attackCrit = this.weaponCritChance(player, c);
-    // §14 WYSIWYG: each damage SOURCE scales independently. The EDGE uses the weapon's own grades; the
-    // layers below carry their own and may scale off DIFFERENT attributes (e.g. INT magma on a STR blade).
-    const edgePower = this.heldDamageMult(weapon, weapon.scalingGrades, player, hand); // §10 edge grades × §11 req penalty
+    // Every authored damage source keeps its own flat damage and shares only non-stat held modifiers.
+    const edgePower = this.heldDamageMult(weapon, player, hand);
     const aim0 = Math.atan2(c.aimY, c.aimX);
     const envelope = meleeDamageEnvelopeFor(weapon);
     const comboSwing = comboStep
@@ -7713,7 +7522,7 @@ export class GameRoom extends Room<ArenaState> {
       }
       if (seedFound) {
         const cl = weapon.chainLightning;
-        const clPower = this.heldDamageMult(weapon, cl.scalingGrades, player, hand);
+        const clPower = this.heldDamageMult(weapon, player, hand);
         const candidates: ChainCandidate[] = [];
         this.state.enemies.forEach((enemy, eid) => {
           if (eid === this.bossId && this.bossController?.wormRuntime) return;
@@ -7777,16 +7586,16 @@ export class GameRoom extends Room<ArenaState> {
     }
 
     // Earthquake: erupts at the CURSOR, clamped to QUAKE_REACH from the player (§9 aim-at-cursor); AoE via
-    // the shared `detonate` (same kill/XP/portal bookkeeping). The client matches the epicentre via the
+    // the shared `detonate` (same kill/money/portal bookkeeping). The client matches the epicentre via the
     // SAME shared clampQuakeEpicenter. §44 the descriptor's 52% impact is relative to this accepted epoch;
     // the client predicts the identical effective-cooldown descriptor at send. A later accepted-swing seq is
     // still required to remove the residual network/buffer epoch offset — no protocol expansion in this P0.
     if (weapon.quake) {
-      const qPower = this.heldDamageMult(weapon, weapon.quake.scalingGrades, player, hand);
+      const qPower = this.heldDamageMult(weapon, player, hand);
       const zoneDamagePerSecond =
         weapon.groundZone?.trigger === "impact"
           ? weapon.groundZone.damagePerSecond *
-            this.heldDamageMult(weapon, weapon.groundZone.scalingGrades, player, hand)
+            this.heldDamageMult(weapon, player, hand)
           : undefined;
       if (impactAtDestination) {
         const lunge = this.pendingWeaponLunges.get(player.id);
@@ -7813,7 +7622,7 @@ export class GameRoom extends Room<ArenaState> {
       }
     }
 
-    // Scatter shot (§14 WYSIWYG): fling real magma projectiles that each deal an INT-scaled hit + explode.
+    // Scatter shot (§14 WYSIWYG): fling real magma projectiles with flat authored hit/blast damage.
     // Fired as live projectiles (server-authoritative) — they advance + detonate ON CONTACT in
     // stepProjectiles, so the secondary VFX damage where it actually touches an enemy (#6).
     if (weapon.scatter)
@@ -7845,7 +7654,7 @@ export class GameRoom extends Room<ArenaState> {
         weaponId: weapon.id,
         aimX: Math.cos(aim0),
         aimY: Math.sin(aim0),
-        damage: hybrid.damage * this.heldDamageMult(weapon, hybrid.scalingGrades, player, hand),
+        damage: hybrid.damage * this.heldDamageMult(weapon, player, hand),
         crit: attackCrit,
       });
     }
@@ -7962,8 +7771,7 @@ export class GameRoom extends Room<ArenaState> {
       dt,
       spend.debit / Math.max(1e-9, aura.resourcePerSecond + regenPerSecond),
     );
-    const damagePerSecond =
-      aura.damagePerSecond * this.heldDamageMult(weapon, weapon.scalingGrades, player);
+    const damagePerSecond = aura.damagePerSecond * this.heldDamageMult(weapon, player);
     c.auraPulseT += fundedDt;
     while (c.auraPulseT + 1e-9 >= aura.tickRate) {
       c.auraPulseT -= aura.tickRate;
@@ -8203,7 +8011,7 @@ export class GameRoom extends Room<ArenaState> {
           weapon,
           target.x,
           target.y,
-          def.damagePerSecond * this.heldDamageMult(weapon, def.scalingGrades, player),
+          def.damagePerSecond * this.heldDamageMult(weapon, player),
           this.weaponCritChance(player, c),
         );
         zoneId = zone?.id;
@@ -8296,7 +8104,7 @@ export class GameRoom extends Room<ArenaState> {
         weapon,
         this.state.tick,
         input.held.fireStartSeq || input.held.seq,
-        this.heldDamageMult(weapon, weapon.beam.scalingGrades, player) * classDamage,
+        this.heldDamageMult(weapon, player) * classDamage,
         lootCooldownMult(player.weaponAffix) * this.weaponRecoveryMult(player, weapon),
         1 + AUG_BEAM_FOCUS_PER * c.beamFocusStacks,
       );
@@ -8465,8 +8273,7 @@ export class GameRoom extends Room<ArenaState> {
                 weapon,
                 target.x,
                 target.y,
-                weapon.groundZone.damagePerSecond *
-                  this.heldDamageMult(weapon, weapon.groundZone.scalingGrades, player),
+                weapon.groundZone.damagePerSecond * this.heldDamageMult(weapon, player),
                 c.beamCrit,
               );
             }
@@ -9432,7 +9239,7 @@ export class GameRoom extends Room<ArenaState> {
     for (const eid of kills) this.state.enemies.delete(eid);
   }
 
-  /** §12: XP is SQUAD-SHARED — every kill levels the whole squad in lockstep (not just the killer). */
+  /** Enemy rewards are squad-shared through the existing per-player scrip balance. */
   /** End every threat before the first celebration patch; player clocks/position remain untouched. */
   private beginVastagharClear(x: number, y: number): void {
     const encounter = this.vastagharEncounter;
@@ -9441,9 +9248,8 @@ export class GameRoom extends Room<ArenaState> {
     this.vastagharVictoryX = x;
     this.vastagharVictoryY = y;
     this.vastagharVictoryReadyTick = (this.state.tick + 40) >>> 0;
-    this.vastagharCoreArmTick = 0;
     this.vastagharVictoryMode = this.state.mode === "bossrush" ? "bossrush" : "arena";
-    this.vastagharCoreId = "";
+    this.vastagharMoneyAwarded = false;
     this.bossController?.dispose(this.bossSink, this.state.tick);
     this.bossController = null;
     this.bossId = null;
@@ -9473,43 +9279,32 @@ export class GameRoom extends Room<ArenaState> {
     this.state.telegraphs.clear();
   }
 
-  /** Advances the authoritative 0.9s collapse, then respects the crown's arm/read before cleanup flight. */
+  /** Advance the authoritative collapse, award its money once, then open the ordinary reward route. */
   private stepVastagharVictory(): void {
     const encounter = this.vastagharEncounter;
     if (!encounter || encounter.state.mode !== VastagharMode.Victory) return;
-    if (encounter.advanceVictory(this.state.tick)) this.mintVastagharVictoryCore();
+    if (encounter.advanceVictory(this.state.tick)) this.awardVastagharVictoryMoney();
     if (
-      this.vastagharCoreId &&
-      !this.xpBoundary &&
-      ((this.state.tick - this.vastagharCoreArmTick) | 0) >= 0
+      this.vastagharMoneyAwarded &&
+      ((this.state.tick - this.vastagharVictoryReadyTick) | 0) >= 0
     )
-      this.beginXpBoundary("boss-clear");
+      this.completeRewardBoundary("boss-clear");
   }
 
-  /** Fold every unpaid field packet into one reserved, unmergeable crown; exact value is conserved. */
-  private mintVastagharVictoryCore(): void {
+  /** The flagship death mints one flat money crown exactly once. */
+  private awardVastagharVictoryMoney(): void {
     const encounter = this.vastagharEncounter;
-    if (!encounter || this.vastagharCoreId) return;
-    let fieldValue = 0;
-    this.state.xpEchoes.forEach((echo) => {
-      if (!echo.delivered) fieldValue += echo.value;
-    });
-    this.state.xpEchoes.clear();
-    this.xpFlights.clear();
-    this.lockedWormEchoIds.clear();
-    const bossXp = bossDefFor("world-titan").vastaghar?.bossXp ?? 110;
-    const total = conserveVastagharVictoryXp(fieldValue, bossXp);
-    const core = new XpEchoState();
-    core.id = `vastaghar-core:${this.xpEchoSeq++}`;
-    core.x = this.vastagharVictoryX;
-    core.y = this.vastagharVictoryY;
-    core.value = total;
-    core.seed = (Math.imul(this.xpEchoSeq, 40503) + Math.imul(this.state.tick, 7919)) & 0xffff;
-    core.bornTick = this.state.tick;
-    this.state.xpEchoes.set(core.id, core);
-    this.vastagharCoreId = core.id;
-    this.vastagharCoreArmTick = (this.state.tick + this.xpEchoArmTicks(core.value)) >>> 0;
-    encounter.setVictoryEcho(core.id, core.value);
+    if (!encounter || this.vastagharMoneyAwarded) return;
+    const bossMoney = bossDefFor("world-titan").vastaghar?.bossMoney ?? 110;
+    const total = conserveVastagharVictoryMoney(0, bossMoney);
+    this.dropMoney(this.vastagharVictoryX, this.vastagharVictoryY, total);
+    this.vastagharMoneyAwarded = true;
+    this.vastagharVictoryReadyTick = (
+      this.state.tick +
+      MONEY_DROP_ARM_TICKS +
+      MONEY_DROP_FLIGHT_TICKS
+    ) >>> 0;
+    encounter.setVictoryMoney(total);
   }
 
   private completeVastagharClear(): void {
@@ -9531,7 +9326,7 @@ export class GameRoom extends Room<ArenaState> {
       this.openPortal(this.vastagharVictoryX, this.vastagharVictoryY);
       if (this.state.mode === "arena") {
         const loot = this.vastagharLootPoint();
-        this.dropLoot(loot.x, loot.y, 1, LOOT_TIER_LUK_BOSS);
+        this.dropLoot(loot.x, loot.y, 1, LOOT_TIER_RARITY_BOSS);
       }
     }
     this.vastagharVictoryMode = "";
@@ -9562,199 +9357,33 @@ export class GameRoom extends Room<ArenaState> {
     );
   }
 
-  private grantXp(amount: number): void {
+  /** Credit a collected drop through the existing per-player scrip currency. */
+  private awardMoney(amount: number): void {
+    const payout = Math.max(0, Math.floor(amount));
+    if (payout <= 0) return;
     this.state.players.forEach((player) => {
-      levelUpPlayer(player, amount);
+      player.scrip = Math.min(META_ACCOUNT_SCRIP_MAX, player.scrip + payout);
     });
   }
 
-  /** Coarse value tier shared by arm timing and the painted client silhouette. */
-  private xpEchoTier(value: number): number {
-    if (value <= 1) return 0;
-    if (value <= 4) return 1;
-    if (value <= 15) return 2;
-    if (value <= 35) return 3;
-    return 4;
-  }
-
-  private xpEchoArmTicks(value: number): number {
-    const ms = Math.min(
-      XP_ECHO_ARM_MAX_MS,
-      XP_ECHO_ARM_MS + this.xpEchoTier(value) * XP_ECHO_ARM_TIER_MS,
-    );
-    return Math.ceil(ms / TICK_MS);
-  }
-
-  /** First Mote-Reach build hook. The id is reserved until its authored card lands; baseline is 180px. */
-  private xpMoteReach(player: PlayerState): number {
-    let stacks = 0;
-    for (const id of player.augments.split(",")) {
-      if (id === "mote-reach") stacks++;
-    }
+  private moneyDropReach(player: PlayerState): number {
     return clamp(
-      BASE_XP_MOTE_REACH * (1 + stacks * XP_MOTE_REACH_PER_STACK) +
-        (this.petRuns.get(player.id)?.mods.xpMoteReachAdd ?? 0),
-      XP_MOTE_REACH_MIN,
-      XP_MOTE_REACH_MAX,
+      BASE_MONEY_DROP_REACH + (this.petRuns.get(player.id)?.mods.moneyDropReachAdd ?? 0),
+      MONEY_DROP_REACH_MIN,
+      MONEY_DROP_REACH_MAX,
     );
   }
 
-  /** A capped squad has no progression receipt, so paid deaths do not leave misleading collectibles. */
-  private hasXpRecipient(): boolean {
-    let has = false;
-    this.state.players.forEach((player) => {
-      if (player.level < LEVEL_CAP) has = true;
-    });
-    return has;
-  }
-
-  /**
-   * Convert one paid death into a bounded authoritative Echo. Spatial/temporal merges preserve exact value;
-   * at the hard cap a new kill feeds a resting packet, or the earliest guaranteed flight when all are latched.
-   */
-  private dropXp(x: number, y: number, value: number): void {
-    const amount = Math.max(0, Math.floor(value));
-    if (amount <= 0 || !this.hasXpRecipient()) return;
-    const count = this.state.xpEchoes.size;
-    const recentTicks = Math.ceil(XP_ECHO_RECENT_MERGE_MS / TICK_MS);
-    const mergeRadius =
-      count < XP_ECHO_DENSE_AT ? XP_ECHO_RECENT_MERGE_RADIUS : XP_ECHO_DENSE_MERGE_RADIUS;
-    const mergeR2 = mergeRadius * mergeRadius;
-    let merge: XpEchoState | null = null;
-    let mergeD2 = Number.POSITIVE_INFINITY;
-    let earliestFlight: XpEchoState | null = null;
-    this.state.xpEchoes.forEach((echo) => {
-      if (this.lockedWormEchoIds.has(echo.id)) return;
-      if (echo.delivered) return;
-      if (echo.collectorId) {
-        if (!earliestFlight || echo.collectTick < earliestFlight.collectTick) earliestFlight = echo;
-        return;
-      }
-      const dx = echo.x - x;
-      const dy = echo.y - y;
-      const d2 = dx * dx + dy * dy;
-      const recent = (this.state.tick - echo.bornTick) >>> 0 <= recentTicks;
-      const localMerge = count < XP_ECHO_DENSE_AT ? recent && d2 <= mergeR2 : d2 <= mergeR2;
-      if (localMerge && d2 < mergeD2) {
-        merge = echo;
-        mergeD2 = d2;
-      }
-    });
-
-    if (!merge && count >= MAX_XP_ECHOES) {
-      // At cap, distance no longer creates rows: use the nearest resting Echo anywhere on the field.
-      this.state.xpEchoes.forEach((echo) => {
-        if (this.lockedWormEchoIds.has(echo.id)) return;
-        if (echo.delivered || echo.collectorId) return;
-        const dx = echo.x - x;
-        const dy = echo.y - y;
-        const d2 = dx * dx + dy * dy;
-        if (d2 < mergeD2) {
-          merge = echo;
-          mergeD2 = d2;
-        }
-      });
-      merge ??= earliestFlight;
-    }
-    const mergeTarget = merge as XpEchoState | null;
-    if (mergeTarget) {
-      mergeTarget.value = Math.min(0xffffffff, mergeTarget.value + amount);
-      return;
-    }
-
-    const echo = new XpEchoState();
-    echo.id = `xp${this.xpEchoSeq++}`;
-    echo.x = x;
-    echo.y = y;
-    echo.value = amount;
-    // Stable variety without consuming the combat RNG stream (golden-tick determinism stays intact).
-    echo.seed = (Math.imul(this.xpEchoSeq, 40503) + Math.imul(this.state.tick, 7919)) & 0xffff;
-    echo.bornTick = this.state.tick;
-    const pointBlankCollector = this.nearestXpCollector(echo.x, echo.y, true);
-    if (
-      pointBlankCollector &&
-      Math.hypot(pointBlankCollector.x - echo.x, pointBlankCollector.y - echo.y) <=
-        XP_ECHO_POINT_BLANK_REACH
-    ) {
-      // An overlapping corpse is already at the catch point. Pre-arm it so legacy same-sim-window
-      // kill assertions still observe the authoritative arrival, while ordinary drops keep the full settle.
-      echo.bornTick = (this.state.tick - this.xpEchoArmTicks(echo.value)) >>> 0;
-    }
-    this.state.xpEchoes.set(echo.id, echo);
-  }
-
-  private dropLockedWormXp(x: number, y: number, value: number): void {
-    const amount = Math.max(0, Math.floor(value));
-    if (amount <= 0 || !this.hasXpRecipient()) return;
-    // A topology transaction may be reached through more than one damage source in the same fixed tick.
-    // Keep its visible receipt atomic: one locked Echo row, with all of that tick's escrow folded into it.
-    for (const id of this.lockedWormEchoIds) {
-      const sameTick = this.state.xpEchoes.get(id);
-      if (sameTick?.bornTick !== this.state.tick) continue;
-      sameTick.value = Math.min(0xffffffff, sameTick.value + amount);
-      return;
-    }
-    if (this.state.xpEchoes.size >= MAX_XP_ECHOES) {
-      const existingId = this.lockedWormEchoIds.values().next().value as string | undefined;
-      const existing = existingId ? this.state.xpEchoes.get(existingId) : undefined;
-      if (existing) existing.value = Math.min(0xffffffff, existing.value + amount);
-      // With no locked row available the value remains terminal escrow and is folded into the core below.
-      return;
-    }
-    const echo = new XpEchoState();
-    echo.id = `worm-xp:${this.state.wormBoss.ownerId}:${this.xpEchoSeq++}`;
-    echo.x = x;
-    echo.y = y;
-    echo.value = amount;
-    echo.seed = (Math.imul(this.xpEchoSeq, 40503) + Math.imul(this.state.tick, 7919)) & 0xffff;
-    echo.bornTick = this.state.tick;
-    this.state.xpEchoes.set(echo.id, echo);
-    this.lockedWormEchoIds.add(echo.id);
-  }
-
-  /** Unlock anatomy trophies first, then mint the one terminal core so the encounter always totals 110 XP. */
-  private releaseWormXp(x: number, y: number): void {
-    let represented = 0;
-    for (const id of this.lockedWormEchoIds) {
-      const echo = this.state.xpEchoes.get(id);
-      if (!echo) continue;
-      represented += echo.value;
-      echo.bornTick = (this.state.tick - this.xpEchoArmTicks(echo.value)) >>> 0;
-    }
-    this.lockedWormEchoIds.clear();
-    const coreValue = Math.max(0, WORM_TOTAL_XP - represented);
-    if (coreValue <= 0 || !this.hasXpRecipient()) return;
-    const core = new XpEchoState();
-    core.id = `worm-core:${this.xpEchoSeq++}`;
-    core.x = x;
-    core.y = y;
-    core.value = coreValue;
-    core.seed = (Math.imul(this.xpEchoSeq, 40503) + Math.imul(this.state.tick, 7919)) & 0xffff;
-    core.bornTick = this.state.tick;
-    if (this.state.xpEchoes.size < MAX_XP_ECHOES) {
-      this.state.xpEchoes.set(core.id, core);
-      return;
-    }
-    // Cap pressure cannot discard the finale: fold into the strongest now-unlocked packet.
-    let target: XpEchoState | null = null;
-    this.state.xpEchoes.forEach((echo) => {
-      if (!target || echo.value > target.value) target = echo;
-    });
-    const cappedTarget = target as XpEchoState | null;
-    if (cappedTarget) cappedTarget.value = Math.min(0xffffffff, cappedTarget.value + coreValue);
-  }
-
-  /** Nearest absolute-distance winner; exact ties resolve by stable session id. */
-  private nearestXpCollector(x: number, y: number, requireReach: boolean): PlayerState | null {
+  private nearestMoneyCollector(x: number, y: number, requireReach: boolean): PlayerState | null {
     let best: PlayerState | null = null;
     let bestId = "";
     let bestD2 = Number.POSITIVE_INFINITY;
     this.state.players.forEach((player, id) => {
-      if (!player.alive || this.inLevelWindow(player)) return;
+      if (!player.alive) return;
       const dx = player.x - x;
       const dy = player.y - y;
       const d2 = dx * dx + dy * dy;
-      const reach = this.xpMoteReach(player);
+      const reach = this.moneyDropReach(player);
       if (requireReach && d2 > reach * reach) return;
       if (d2 < bestD2 || (d2 === bestD2 && (bestId === "" || id.localeCompare(bestId) < 0))) {
         best = player;
@@ -9765,175 +9394,85 @@ export class GameRoom extends Room<ArenaState> {
     return best;
   }
 
-  /** No collector may receive more than two authoritative catch packets on one tick. */
-  private reserveXpCollectTick(collectorId: string, firstTick: number): number {
-    let tick = firstTick >>> 0;
-    for (;;) {
-      let n = 0;
-      this.state.xpEchoes.forEach((echo) => {
-        if (!echo.delivered && echo.collectorId === collectorId && echo.collectTick === tick) n++;
-      });
-      if (n < XP_ECHO_RECEIPTS_PER_COLLECTOR_TICK) return tick;
-      tick = (tick + 1) >>> 0;
-    }
-  }
-
-  private latchXpEcho(
-    echo: XpEchoState,
-    collector: PlayerState,
-    retarget = false,
-    cleanup = false,
-  ): void {
-    const dx = collector.x - echo.x;
-    const dy = collector.y - echo.y;
-    const distance = Math.hypot(dx, dy);
-    const rawSeconds = XP_ECHO_FLIGHT_BASE_SECONDS + distance / XP_ECHO_FLIGHT_DISTANCE_DIVISOR;
-    const seconds = cleanup
-      ? clamp(rawSeconds, XP_ECHO_CLEANUP_FLIGHT_MIN_SECONDS, XP_ECHO_CLEANUP_FLIGHT_MAX_SECONDS)
-      : retarget
-        ? clamp(rawSeconds, XP_ECHO_RETARGET_MIN_SECONDS, XP_ECHO_RETARGET_MAX_SECONDS)
-        : clamp(rawSeconds, XP_ECHO_FLIGHT_MIN_SECONDS, XP_ECHO_FLIGHT_MAX_SECONDS);
-    const flightTicks =
-      !retarget && !cleanup && distance <= XP_ECHO_POINT_BLANK_REACH
-        ? XP_ECHO_POINT_BLANK_FLIGHT_TICKS
-        : Math.max(1, Math.ceil(seconds * (1000 / TICK_MS)));
-    echo.collectorId = collector.id;
-    echo.launchTick = this.state.tick;
-    echo.collectTick = this.reserveXpCollectTick(
-      collector.id,
-      (this.state.tick + flightTicks) >>> 0,
-    );
-    echo.delivered = false;
-
-    const inv = distance > 1e-6 ? 1 / distance : 0;
-    const fx = dx * inv;
-    const fy = dy * inv;
-    const nx = -fy;
-    const ny = fx;
-    const sign = (echo.seed & 1) === 0 ? -1 : 1;
-    const back = Math.min(16, distance * 0.06);
-    const lateral = Math.min(72, distance * 0.24) * sign;
-    this.xpFlights.set(echo.id, {
-      targetX: collector.x,
-      targetY: collector.y,
-      c1x: echo.x - fx * back + nx * lateral,
-      c1y: echo.y - fy * back + ny * lateral,
-    });
-  }
-
-  /** Analytic current point used only when a collector disconnects mid-flight. */
-  private sampleXpFlight(echo: XpEchoState, meta: XpFlightMeta): { x: number; y: number } {
-    const span = Math.max(1, (echo.collectTick - echo.launchTick) >>> 0);
-    const t = clamp(((this.state.tick - echo.launchTick) >>> 0) / span, 0, 1);
-    const q = t ** 2.2;
-    const dx = meta.targetX - echo.x;
-    const dy = meta.targetY - echo.y;
-    const distance = Math.hypot(dx, dy);
-    const inv = distance > 1e-6 ? 1 / distance : 0;
-    const fx = dx * inv;
-    const fy = dy * inv;
-    const nx = -fy;
-    const ny = fx;
-    const sign = (echo.seed & 1) === 0 ? -1 : 1;
-    const c2x =
-      meta.targetX - fx * Math.min(84, distance * 0.3) - nx * sign * Math.min(28, distance * 0.08);
-    const c2y =
-      meta.targetY - fy * Math.min(84, distance * 0.3) - ny * sign * Math.min(28, distance * 0.08);
-    const a = 1 - q;
-    const bx =
-      a ** 3 * echo.x + 3 * a * a * q * meta.c1x + 3 * a * q * q * c2x + q ** 3 * meta.targetX;
-    const by =
-      a ** 3 * echo.y + 3 * a * a * q * meta.c1y + 3 * a * q * q * c2y + q ** 3 * meta.targetY;
-    const sw = clamp((t - 0.68) / 0.32, 0, 1);
-    const w = sw * sw * (3 - 2 * sw);
-    const angle = sign * Math.PI * 0.7 * w;
-    const rx = bx - meta.targetX;
-    const ry = by - meta.targetY;
-    const c = Math.cos(angle);
-    const s = Math.sin(angle);
-    return { x: meta.targetX + rx * c - ry * s, y: meta.targetY + rx * s + ry * c };
-  }
-
-  /** A guaranteed packet never becomes unpaid because its collector left. Retarget globally or return armed. */
-  private retargetXpEcho(echo: XpEchoState): void {
-    const meta = this.xpFlights.get(echo.id);
-    if (meta) {
-      const point = this.sampleXpFlight(echo, meta);
-      echo.x = point.x;
-      echo.y = point.y;
-    }
-    this.xpFlights.delete(echo.id);
-    echo.collectorId = "";
-    echo.launchTick = 0;
-    echo.collectTick = 0;
-    const next = this.nearestXpCollector(echo.x, echo.y, false);
-    if (next) {
-      this.latchXpEcho(echo, next, true);
-    } else {
-      // Already-read value rests indefinitely and can latch as soon as a future eligible player exists.
-      echo.bornTick = (this.state.tick - this.xpEchoArmTicks(echo.value)) >>> 0;
-    }
-  }
-
-  private nearestLivingXpCollector(x: number, y: number): PlayerState | null {
-    let best: PlayerState | null = null;
-    let bestId = "";
-    let bestD2 = Number.POSITIVE_INFINITY;
-    this.state.players.forEach((player, id) => {
-      if (!player.alive) return;
-      const dx = player.x - x;
-      const dy = player.y - y;
-      const d2 = dx * dx + dy * dy;
-      if (d2 < bestD2 || (d2 === bestD2 && (bestId === "" || id.localeCompare(bestId) < 0))) {
-        best = player;
-        bestId = id;
-        bestD2 = d2;
-      }
-    });
-    return best;
-  }
-
-  /** Level-10 Lodestar owners claim nearby live rows before the ordinary bounded boundary cleanup. */
-  private sweepLodestarEchoes(): void {
-    this.state.xpEchoes.forEach((echo) => {
-      if (echo.delivered || echo.collectorId || this.lockedWormEchoIds.has(echo.id)) return;
-      let best: PlayerState | null = null;
-      let bestId = "";
-      let bestD2 = Number.POSITIVE_INFINITY;
-      this.state.players.forEach((player, playerId) => {
-        if (!player.alive || this.inLevelWindow(player)) return;
-        const reach = this.petRuns.get(playerId)?.mods.boundaryEchoReach ?? 0;
-        if (reach <= 0) return;
-        const dx = player.x - echo.x;
-        const dy = player.y - echo.y;
+  /** Convert one paid enemy death into a bounded collectible money row. Overflow merges; value is conserved. */
+  private dropMoney(x: number, y: number, value: number): void {
+    const amount = Math.max(0, Math.floor(value));
+    if (amount <= 0 || this.state.players.size === 0) return;
+    let target: MoneyDropState | undefined;
+    let nearestD2 = Number.POSITIVE_INFINITY;
+    if (this.state.moneyDrops.size >= MAX_MONEY_DROPS) {
+      this.state.moneyDrops.forEach((drop) => {
+        if (drop.delivered) return;
+        const dx = drop.x - x;
+        const dy = drop.y - y;
         const d2 = dx * dx + dy * dy;
-        if (
-          d2 <= reach * reach &&
-          (d2 < bestD2 || (d2 === bestD2 && (bestId === "" || playerId.localeCompare(bestId) < 0)))
-        ) {
-          best = player;
-          bestId = playerId;
-          bestD2 = d2;
+        if (d2 < nearestD2) {
+          target = drop;
+          nearestD2 = d2;
         }
       });
-      if (best) this.latchXpEcho(echo, best, false, true);
-    });
-  }
-
-  /** Hold a committed teardown while the bounded field performs its six-per-tick cleanup vacuum. */
-  private beginXpBoundary(kind: XpBoundary): void {
-    if (this.xpBoundary) return;
-    this.sweepLodestarEchoes();
-    if (this.state.xpEchoes.size === 0) {
-      this.completeXpBoundary(kind);
+    }
+    if (target) {
+      target.value = Math.min(0xffffffff, target.value + amount);
       return;
     }
-    this.xpBoundary = kind;
-    this.xpBoundaryStartedTick = this.state.tick;
+    if (this.state.moneyDrops.size >= MAX_MONEY_DROPS) {
+      this.awardMoney(amount);
+      return;
+    }
+    const drop = new MoneyDropState();
+    drop.id = `money${this.moneyDropSeq++}`;
+    drop.x = x;
+    drop.y = y;
+    drop.value = amount;
+    drop.seed = (Math.imul(this.moneyDropSeq, 40503) + Math.imul(this.state.tick, 7919)) & 0xffff;
+    drop.bornTick = this.state.tick;
+    this.state.moneyDrops.set(drop.id, drop);
   }
 
-  private completeXpBoundary(kind: XpBoundary): void {
-    this.xpBoundary = null;
+  private stepMoneyDrops(): void {
+    const remove: string[] = [];
+    this.state.moneyDrops.forEach((drop, id) => {
+      if (drop.delivered) {
+        if (tickReached(this.state.tick, (drop.collectTick + 1) >>> 0)) remove.push(id);
+        return;
+      }
+      if (drop.collectorId) {
+        const collector = this.state.players.get(drop.collectorId);
+        if (!collector?.alive) {
+          drop.collectorId = "";
+          drop.launchTick = 0;
+          drop.collectTick = 0;
+          return;
+        }
+        if (tickReached(this.state.tick, drop.collectTick)) {
+          this.awardMoney(drop.value);
+          drop.delivered = true;
+        }
+        return;
+      }
+      if (!tickReached(this.state.tick, (drop.bornTick + MONEY_DROP_ARM_TICKS) >>> 0)) return;
+      const collector = this.nearestMoneyCollector(drop.x, drop.y, true);
+      if (!collector) return;
+      drop.collectorId = collector.id;
+      drop.launchTick = this.state.tick;
+      drop.collectTick = (this.state.tick + MONEY_DROP_FLIGHT_TICKS) >>> 0;
+    });
+    for (const id of remove) this.state.moneyDrops.delete(id);
+  }
+
+  private drainMoneyDrops(): void {
+    let unpaid = 0;
+    this.state.moneyDrops.forEach((drop) => {
+      if (!drop.delivered) unpaid += drop.value;
+    });
+    this.state.moneyDrops.clear();
+    this.awardMoney(unpaid);
+  }
+
+  /** Committed transitions conserve every uncollected money row before teardown. */
+  private completeRewardBoundary(kind: RewardBoundary): void {
+    this.drainMoneyDrops();
     switch (kind) {
       case "extract":
         this.completeExtraction();
@@ -9952,25 +9491,17 @@ export class GameRoom extends Room<ArenaState> {
         break;
     }
   }
-
   private completeExtraction(): void {
     let banked = 0;
     this.state.players.forEach((player) => {
       banked += player.salvaged;
       player.salvaged = 0;
     });
-    const harvest = Math.round(
-      banked *
-        Math.min(
-          HARVEST_CAP,
-          HARVEST_PER_LUK * (this.bestLuk() - 1) * this.bestHarvestMultiplier(),
-        ),
-    );
-    this.state.bankedSalvage += banked + harvest;
+    this.state.bankedSalvage += banked;
     this.state.riftOpen = false;
     this.enterTerminalOutcome("victory");
     console.log(
-      `[room ${this.roomId}] run extracted at depth ${this.state.depth} — VICTORY (+${banked}+${harvest} harvest banked, ${this.state.bankedSalvage} total)`,
+      `[room ${this.roomId}] run extracted at depth ${this.state.depth} — VICTORY (+${banked} banked, ${this.state.bankedSalvage} total)`,
     );
   }
 
@@ -9985,181 +9516,6 @@ export class GameRoom extends Room<ArenaState> {
     console.log(
       `[room ${this.roomId}] BOSS RUSH cleared all ${BOSS_DEF_IDS.length} bosses — VICTORY (+${banked} banked)`,
     );
-  }
-
-  /** At 650ms, conserve the cleanup tail in one final delivered crown before teardown. */
-  private foldXpCleanupTail(): void {
-    let value = 0;
-    let x = 0;
-    let y = 0;
-    let strongest = -1;
-    const unpaid: string[] = [];
-    this.state.xpEchoes.forEach((echo, id) => {
-      if (echo.delivered) return;
-      unpaid.push(id);
-      value += echo.value;
-      if (echo.value > strongest) {
-        strongest = echo.value;
-        x = echo.x;
-        y = echo.y;
-      }
-    });
-    if (value <= 0) return;
-    const collector = this.nearestLivingXpCollector(x, y);
-    if (!collector) return;
-    for (const id of unpaid) {
-      this.state.xpEchoes.delete(id);
-      this.xpFlights.delete(id);
-    }
-    this.grantXp(value);
-    const core = new XpEchoState();
-    core.id = `xp${this.xpEchoSeq++}`;
-    core.x = collector.x;
-    core.y = collector.y;
-    core.value = Math.min(0xffffffff, value);
-    core.seed = (Math.imul(this.xpEchoSeq, 40503) + Math.imul(this.state.tick, 7919)) & 0xffff;
-    core.bornTick = this.state.tick;
-    core.collectorId = collector.id;
-    core.launchTick = this.state.tick;
-    core.collectTick = this.state.tick;
-    core.delivered = true;
-    this.state.xpEchoes.set(core.id, core);
-  }
-
-  /**
-   * Server-authoritative Reach/magnet rail. Grants happen only at `collectTick`; delivered rows survive one
-   * full patch and are deleted on the following simulation tick. Downing never cancels a guaranteed flight.
-   */
-  private stepXpEchoes(): void {
-    if (this.vastagharEncounter?.state.mode === VastagharMode.Victory && !this.vastagharCoreId)
-      return;
-    // Retire the previous patch's receipts first.
-    for (const [id, echo] of this.state.xpEchoes) {
-      if (this.lockedWormEchoIds.has(id)) continue;
-      if (!echo.delivered) continue;
-      this.state.xpEchoes.delete(id);
-      this.xpFlights.delete(id);
-    }
-
-    if (
-      this.xpBoundary === "boss-clear" &&
-      this.state.xpEchoes.size === 0 &&
-      ((this.state.tick - this.vastagharVictoryReadyTick) | 0) < 0
-    )
-      return;
-    if (this.xpBoundary && this.state.xpEchoes.size === 0) {
-      this.completeXpBoundary(this.xpBoundary);
-      return;
-    }
-
-    // Advance guaranteed flights against their collector's latest authoritative chest/body position.
-    this.state.xpEchoes.forEach((echo) => {
-      if (this.lockedWormEchoIds.has(echo.id)) return;
-      if (!echo.collectorId || echo.delivered) return;
-      const collector = this.state.players.get(echo.collectorId);
-      if (!collector) {
-        this.retargetXpEcho(echo);
-        return;
-      }
-      const meta = this.xpFlights.get(echo.id);
-      if (meta) {
-        meta.targetX = collector.x;
-        meta.targetY = collector.y;
-      }
-      if (this.state.tick < echo.collectTick) return;
-      // The flagship never converts add XP into a modal/invulnerability exploit mid-attack. Flights may
-      // arrive, but their unpaid values remain authoritative and fold into the reserved death crown.
-      if (this.vastagharEncounter && this.vastagharEncounter.state.mode !== VastagharMode.Victory)
-        return;
-      this.grantXp(echo.value);
-      echo.delivered = true;
-      this.xpFlights.delete(echo.id);
-    });
-
-    if (this.xpBoundary) {
-      const cleanupAgeMs = ((this.state.tick - this.xpBoundaryStartedTick) >>> 0) * TICK_MS;
-      if (cleanupAgeMs >= XP_ECHO_CLEANUP_MAX_MS) {
-        this.foldXpCleanupTail();
-        return;
-      }
-      const resting = [...this.state.xpEchoes.values()]
-        .filter((echo) => !echo.delivered && !echo.collectorId)
-        .sort((a, b) => b.value - a.value || a.id.localeCompare(b.id));
-      let launched = 0;
-      for (const echo of resting) {
-        if (launched >= XP_ECHO_CLEANUP_LAUNCHES_PER_TICK) break;
-        const collector = this.nearestXpCollector(echo.x, echo.y, false);
-        if (!collector) break;
-        this.latchXpEcho(echo, collector, false, true);
-        launched++;
-      }
-      return;
-    }
-
-    // New latches happen after movement. Admission limits form a stream under dense clears.
-    let roomLaunches = 0;
-    const perCollector = new Map<string, number>();
-    this.state.xpEchoes.forEach((echo) => {
-      if (this.lockedWormEchoIds.has(echo.id)) return;
-      if (roomLaunches >= XP_ECHO_LAUNCHES_PER_ROOM_TICK || echo.collectorId || echo.delivered)
-        return;
-      if ((this.state.tick - echo.bornTick) >>> 0 < this.xpEchoArmTicks(echo.value)) return;
-      const collector = this.nearestXpCollector(echo.x, echo.y, true);
-      if (!collector) return;
-      const launched = perCollector.get(collector.id) ?? 0;
-      if (launched >= XP_ECHO_LAUNCHES_PER_COLLECTOR_TICK) return;
-      this.latchXpEcho(echo, collector);
-      perCollector.set(collector.id, launched + 1);
-      roomLaunches++;
-    });
-  }
-
-  /** §classmerge/§8 window: on timeout drain every owed allocation decision through the held weapon's
-   *  deterministic default (+2 pick +1 ballast), then resolve one signature offer. */
-  private tickLevelWindows(dt: number): void {
-    this.state.players.forEach((player) => {
-      // Open the augment draft for any signature pick that doesn't have one yet (server-authoritative roll).
-      if (player.sigPending > 0 && !player.sigOffer) {
-        // G-09 reads the lane captured at the signature level edge; swapping during the window cannot
-        // rewrite it. Legacy/manual pending picks snapshot once here as a compatibility fallback.
-        if (!player.sigGateQueue) {
-          player.sigGateQueue = augmentGateForWeapon(WEAPONS[player.weapon]);
-        }
-        const sep = player.sigGateQueue.indexOf(";");
-        const gate = sep < 0 ? player.sigGateQueue : player.sigGateQueue.slice(0, sep);
-        player.sigOffer = draftAugments(Math.random, augmentDeliveriesForGate(gate)).join(",");
-      }
-      if (!this.inLevelWindow(player)) {
-        if (player.flexTimer !== 0) player.flexTimer = 0;
-        this.syncFlexTimer(player);
-        return;
-      }
-      player.flexTimer -= dt;
-      if (player.flexTimer > 0) {
-        this.syncFlexTimer(player);
-        return;
-      }
-      // One pass drains stacked level debts; AFK invulnerability never stretches to N×5 seconds.
-      const timeoutAttr = defaultFlexAttr(WEAPONS[player.weapon]);
-      while (player.flexPending > 0) {
-        applyAllocationChoice(player, timeoutAttr);
-        player.flexPending--;
-      }
-      if (player.sigPending > 0) {
-        const first = player.sigOffer.split(",").filter(Boolean)[0];
-        if (first) player.augments = player.augments ? `${player.augments},${first}` : first;
-        player.sigPending = Math.max(0, player.sigPending - 1);
-        player.sigOffer = "";
-        this.consumeSignatureGate(player);
-      }
-      player.flexTimer = this.inLevelWindow(player) ? LEVELUP_WINDOW_SECONDS : 0;
-      this.syncFlexTimer(player);
-    });
-  }
-
-  private consumeSignatureGate(player: PlayerState): void {
-    const sep = player.sigGateQueue.indexOf(";");
-    player.sigGateQueue = sep < 0 ? "" : player.sigGateQueue.slice(sep + 1);
   }
 
   /** §16 v0.109 run the active boss's data-driven controller (replaces the hardcoded OLD RUST machine). It
@@ -10221,7 +9577,8 @@ export class GameRoom extends Room<ArenaState> {
     for (;;) {
       const reward = this.bossController.drainWormReward();
       if (!reward) break;
-      this.dropLockedWormXp(reward.x, reward.y, reward.value);
+      this.wormMoneyPaid += reward.value;
+      this.dropMoney(reward.x, reward.y, reward.value);
     }
   }
 
@@ -10234,12 +9591,11 @@ export class GameRoom extends Room<ArenaState> {
     this.vastagharDownTicks.clear();
     this.vastagharSweepEpoch.clear();
     this.vastagharVictoryMode = "";
-    this.vastagharCoreId = "";
+    this.vastagharMoneyAwarded = false;
     this.bossController?.dispose(this.bossSink, this.state.tick);
     this.bossController = null;
     this.wormSegmentGrid.clear();
-    for (const id of this.lockedWormEchoIds) this.state.xpEchoes.delete(id);
-    this.lockedWormEchoIds.clear();
+    this.wormMoneyPaid = 0;
     this.bossId = null;
     this.bossPetAwardEligible = false;
     this.bossAddIds.clear();
@@ -10462,7 +9818,7 @@ export class GameRoom extends Room<ArenaState> {
   ): void {
     const r2 = radius * radius;
     this.state.players.forEach((p) => {
-      if (!p.alive || this.inLevelWindow(p)) return;
+      if (!p.alive) return;
       const dx = p.x - x;
       const dy = p.y - y;
       if (dx * dx + dy * dy > r2) return;
@@ -10488,7 +9844,7 @@ export class GameRoom extends Room<ArenaState> {
   ): void {
     const r2 = radius * radius;
     this.state.players.forEach((p) => {
-      if (!p.alive || this.inLevelWindow(p)) return;
+      if (!p.alive) return;
       const dx = p.x - x;
       const dy = p.y - y;
       if (dx * dx + dy * dy > r2) return;
@@ -10528,7 +9884,7 @@ export class GameRoom extends Room<ArenaState> {
     out.lastParrierId = "";
     const r2 = radius * radius;
     this.state.players.forEach((player) => {
-      if (!player.alive || this.inLevelWindow(player)) return;
+      if (!player.alive) return;
       const dx = player.x - x;
       const dy = player.y - y;
       if (dx * dx + dy * dy > r2) return;
@@ -10583,7 +9939,7 @@ export class GameRoom extends Room<ArenaState> {
     out.lastParrierId = "";
     const epoch = (actionSeq << 2) + revolution + 1;
     this.state.players.forEach((player) => {
-      if (!player.alive || this.inLevelWindow(player)) return;
+      if (!player.alive) return;
       if (this.vastagharSweepEpoch.get(player.id) === epoch) return;
       if (
         !pointInSweptAnnularArc(
@@ -10700,7 +10056,7 @@ export class GameRoom extends Room<ArenaState> {
     const nx = -Math.sin(rot); // lane-perpendicular unit
     const ny = Math.cos(rot);
     this.state.players.forEach((p) => {
-      if (!p.alive || this.inLevelWindow(p)) return;
+      if (!p.alive) return;
       if (!pointInOrientedRect(p.x, p.y, x, y, len, halfW, rot)) return;
       this.damagePlayer(p, damage, "enemy");
       if (knockback > 0) {
@@ -10724,7 +10080,7 @@ export class GameRoom extends Room<ArenaState> {
     damage: number,
   ): void {
     this.state.players.forEach((p) => {
-      if (!p.alive || this.inLevelWindow(p)) return;
+      if (!p.alive) return;
       if (!pointInAnnulusGap(p.x, p.y, cx, cy, bandR, bandHalf, gapCenter, gapHalf)) return;
       this.damagePlayer(p, damage, "enemy");
     });
@@ -11095,7 +10451,7 @@ export class GameRoom extends Room<ArenaState> {
       c.targetY,
       Number.POSITIVE_INFINITY,
     );
-    const damage = weapon.damage * this.heldDamageMult(weapon, weapon.scalingGrades, player, 0);
+    const damage = weapon.damage * this.heldDamageMult(weapon, player, 0);
     const crit = this.weaponCritChance(player, c);
     player.x = destination.x;
     player.y = destination.y;
@@ -11192,20 +10548,12 @@ export class GameRoom extends Room<ArenaState> {
     // arena-cap truncation can only remove damage and never concentrate it into surviving entities.
     const randomPelletDivisor = seededVolley?.requestedCount ?? 1;
     const projectileDivisor = parallelDivisor * randomPelletDivisor;
-    const dmg =
-      (g.damage * this.heldDamageMult(weapon, g.scalingGrades, player, hand)) / projectileDivisor;
+    const dmg = (g.damage * this.heldDamageMult(weapon, player, hand)) / projectileDivisor;
     const explode = g.explode
       ? {
           radius: g.explode.radius,
           damage:
-            (g.explode.damage *
-              this.heldDamageMult(
-                weapon,
-                g.explode.scalingGrades ?? g.scalingGrades,
-                player,
-                hand,
-              )) /
-            projectileDivisor,
+            (g.explode.damage * this.heldDamageMult(weapon, player, hand)) / projectileDivisor,
         }
       : undefined;
     for (const muzzle of muzzles) {
@@ -11247,7 +10595,7 @@ export class GameRoom extends Room<ArenaState> {
     player.vy = r.vy;
   }
 
-  /** §38 CASTER fire — conjure one piercing arcane BOLT down aim (INT-scaled, no ammo). Distinct from a gun
+  /** §38 CASTER fire — conjure one piercing arcane BOLT down aim (no ammo). Distinct from a gun
    *  (no magazine/spread; pierces the whole line) and from melee (ranged). Spawns from the same muzzle reach. */
   /** Gun-contact version of the existing Venomtongue chain idiom. The projectile hit is the seed and is
    * excluded from the extra links; every hop is selected and damaged on the server. */
@@ -11278,7 +10626,7 @@ export class GameRoom extends Room<ArenaState> {
       Math.min(chain.range, CHAIN_MAX_RANGE),
       meta.hit,
     );
-    const power = this.heldDamageMult(weapon, chain.scalingGrades, player, 0);
+    const power = this.heldDamageMult(weapon, player, 0);
     for (let index = 0; index < links.length; index++) {
       const link = links[index]!;
       const enemy = this.state.enemies.get(link.id);
@@ -11308,22 +10656,14 @@ export class GameRoom extends Room<ArenaState> {
     if (!cast) return;
     // §38 CASTER signature augments: Overcharge boosts bolt damage, Arc Split adds forked bolts (per stack).
     const dmgMul = 1 + AUG_CAST_DMG_PER * countAugment(player.augments, "overcharge");
-    const totalDamage =
-      cast.damage * this.heldCastDamageMult(weapon, cast.scalingGrades, player, hand) * dmgMul;
+    const totalDamage = cast.damage * this.heldCastDamageMult(weapon, player, hand) * dmgMul;
     const volleyCount = Math.max(
       1,
       Math.min(CAST_VOLLEY_PROJECTILE_CAP, Math.trunc(cast.volley?.count ?? 1)),
     );
     const projectileDamage = totalDamage / volleyCount;
     const totalExplosionDamage = cast.explode
-      ? cast.explode.damage *
-        this.heldCastDamageMult(
-          weapon,
-          cast.explode.scalingGrades ?? cast.scalingGrades,
-          player,
-          hand,
-        ) *
-        dmgMul
+      ? cast.explode.damage * this.heldCastDamageMult(weapon, player, hand) * dmgMul
       : 0;
     const projectileExplosion = cast.explode
       ? { radius: cast.explode.radius, damage: totalExplosionDamage / volleyCount }
@@ -11386,7 +10726,7 @@ export class GameRoom extends Room<ArenaState> {
     }
   }
 
-  /** Hurl a thrown weapon at the player's aim — a friendly, STR-scaled, piercing projectile (§10). */
+  /** Hurl a thrown weapon at the player's aim — a friendly, piercing projectile (§10). */
   private throwWeapon(
     player: PlayerState,
     c: CombatState,
@@ -11395,8 +10735,8 @@ export class GameRoom extends Room<ArenaState> {
   ): void {
     const t = weapon.thrown;
     if (!t) return;
-    const damageMultiplier = this.heldDamageMult(weapon, t.scalingGrades, player, hand);
-    const dmg = t.damage * damageMultiplier; // §14 source grades × §11 req penalty
+    const damageMultiplier = this.heldDamageMult(weapon, player, hand);
+    const dmg = t.damage * damageMultiplier;
     const outboundSeconds = t.range / t.speed;
     const ttl = outboundSeconds * (t.returning ? 2 : 1);
     const aim = this.aimDir(player, c); // §37 aim at the cursor POINT, not the rig-derived vector
@@ -11444,7 +10784,7 @@ export class GameRoom extends Room<ArenaState> {
         landingDamagePerSecond:
           weapon.groundZone?.trigger === "landing"
             ? weapon.groundZone.damagePerSecond *
-              this.heldDamageMult(weapon, weapon.groundZone.scalingGrades, player, hand)
+              this.heldDamageMult(weapon, player, hand)
             : undefined,
         ricochet: t.ricochetHops
           ? { hops: t.ricochetHops, range: t.ricochetRange ?? Math.min(t.range, 320) }
@@ -11472,7 +10812,7 @@ export class GameRoom extends Room<ArenaState> {
       undefined,
       weapon.groundZone?.trigger === "landing"
         ? weapon.groundZone.damagePerSecond *
-            this.heldDamageMult(weapon, weapon.groundZone.scalingGrades, player, hand)
+            this.heldDamageMult(weapon, player, hand)
         : undefined,
       t.ricochetHops
         ? { hops: t.ricochetHops, range: t.ricochetRange ?? Math.min(t.range, 320) }
@@ -11484,8 +10824,7 @@ export class GameRoom extends Room<ArenaState> {
   }
 
   /** §14 scatter shot — fling `count` REAL magma projectiles in a cone toward aim. Each is a WYSIWYG
-   *  damage source: an INT-scaled direct hit plus, on death, an INT-scaled explosion (both baked here
-   *  from the player's attributes at swing time). Cone/speed/range/blast radius are FIXED (§14). */
+   *  damage source with flat authored direct-hit and explosion damage. */
   /** Redirect one spent thrown impact toward the nearest fresh enemy. Selection is server-owned and uses
    * the same greedy nearest-target primitive as chain lightning. */
   private emitWeaponThrow(pending: PendingWeaponThrow, originX: number, originY: number): void {
@@ -11554,15 +10893,12 @@ export class GameRoom extends Room<ArenaState> {
   ): void {
     const sc = weapon.scatter;
     if (!sc) return;
-    const ballDmg = sc.damage * this.heldDamageMult(weapon, sc.scalingGrades, player, hand);
+    const ballDmg = sc.damage * this.heldDamageMult(weapon, player, hand);
     const pierce = sc.pierce ?? 1;
-    // The blast inherits the scatter's grades unless it overrides them; bake its damage once here.
     const explode = sc.explode
       ? {
           radius: sc.explode.radius,
-          damage:
-            sc.explode.damage *
-            this.heldDamageMult(weapon, sc.explode.scalingGrades ?? sc.scalingGrades, player, hand),
+          damage: sc.explode.damage * this.heldDamageMult(weapon, player, hand),
         }
       : undefined;
     const aim = this.aimDir(player, c); // §37 aim the cone at the cursor POINT
@@ -11740,7 +11076,8 @@ export class GameRoom extends Room<ArenaState> {
     for (;;) {
       const reward = controller.drainWormReward();
       if (!reward) break;
-      this.dropLockedWormXp(reward.x, reward.y, reward.value);
+      this.wormMoneyPaid += reward.value;
+      this.dropMoney(reward.x, reward.y, reward.value);
     }
     this.rebuildWormSegmentGrid();
     if (result.terminal) this.damageEnemy(boss, boss.id, 0, kills, 0);
@@ -11760,10 +11097,7 @@ export class GameRoom extends Room<ArenaState> {
     return this.wormHitSlots;
   }
 
-  /** Apply `raw` damage to one enemy, folding in the §8 Brand multiplier, then do the shared kill/XP/portal
-   *  bookkeeping (dummy reset · boss portal · ronin drop). Pushes the id to `kills` on death (the caller
-   *  deletes after iterating) and drops one authoritative XP Echo at the exact corpse position. The single
-   *  primitive keeps Brand + drops + XP consistent across every source (swing / blast / projectile / wave). */
+  /** Apply `raw` damage, then perform shared kill, money, and portal bookkeeping. */
   private damageEnemy(
     enemy: EnemyState,
     eid: string,
@@ -11857,9 +11191,13 @@ export class GameRoom extends Room<ArenaState> {
       this.duelTokens.delete(combo.targetId);
     if (combo) combo.strike = undefined;
     const kind = ENEMY_KINDS[enemy.kind];
-    if (wormRoot) this.releaseWormXp(enemy.x, enemy.y);
+    if (wormRoot) this.dropMoney(enemy.x, enemy.y, Math.max(0, WORM_TOTAL_MONEY - this.wormMoneyPaid));
     else if (!flagship) {
-      this.dropXp(enemy.x, enemy.y, (kind?.xpValue ?? 0) * (enemy.tough ? TOUGH_XP_MULT : 1));
+      this.dropMoney(
+        enemy.x,
+        enemy.y,
+        (kind?.moneyValue ?? 0) * (enemy.tough ? TOUGH_MONEY_MULT : 1),
+      );
     }
     if (kind?.archetype === "boss" && flagship) {
       if (this.bossPetAwardEligible) this.awardPetDimensionClear();
@@ -11880,7 +11218,8 @@ export class GameRoom extends Room<ArenaState> {
         // a debug-summoned Testing-Grounds boss must never mint carryable loot (adversarial-verify — the
         // training reroll-laundering exploit). QOL-01: reserve/create the reward BEFORE the gate lifecycle
         // begins, so extraction can never outrun the capstone drop.
-        if (this.state.mode === "arena") this.dropLoot(enemy.x, enemy.y, 1, LOOT_TIER_LUK_BOSS);
+        if (this.state.mode === "arena")
+          this.dropLoot(enemy.x, enemy.y, 1, LOOT_TIER_RARITY_BOSS);
         this.openPortal(enemy.x, enemy.y);
       }
     }
@@ -11899,7 +11238,7 @@ export class GameRoom extends Room<ArenaState> {
         enemy.x,
         enemy.y,
         enemy.tough ? DROP_CHANCE_TOUGH : DROP_CHANCE_TRASH,
-        enemy.tough ? LOOT_TIER_LUK_TOUGH : 0,
+        enemy.tough ? LOOT_TIER_RARITY_TOUGH : 0,
       );
     }
     this.maybeDropWeapon(enemy); // §13 wielding enemies drop the SPECIFIC weapon they carry
@@ -11951,21 +11290,11 @@ export class GameRoom extends Room<ArenaState> {
     }
   }
 
-  /** §11/§13 the squad's best LUK — loot is squad-shared, so the luckiest living drifter carries the
-   *  rarity table for every roll. */
-  private bestLuk(): number {
-    let best = 1;
-    this.state.players.forEach((p) => {
-      if (p.alive && p.luk > best) best = p.luk;
-    });
-    return best;
-  }
-
   /** §13 v0.104 roll an in-run MYSTERY loot drop at (x,y) with the given chance: identity from the
-   *  power-banded DROP_POOL; rarity from squad-best LUK (§11) plus the killer's TIER bonus (§13 "tier
+   *  power-banded DROP_POOL; rarity from the flat base plus the killer's TIER bonus (§13 "tier
    *  affects drop rate AND rarity"); the single §10 affix rolled here-and-now. The pickup telegraphs
    *  type + rarity but hides WHICH weapon until grabbed (mystery dopamine); cursed reads ghostly purple. */
-  private dropLoot(x: number, y: number, chance: number, tierLukBonus = 0): void {
+  private dropLoot(x: number, y: number, chance: number, tierRarityBonus = 0): void {
     if (chance < 1 && Math.random() > chance) return;
     const pk = new PickupState();
     pk.id = `drop${this.pickupSeq++}`;
@@ -11974,7 +11303,7 @@ export class GameRoom extends Room<ArenaState> {
     if (curator) {
       curator.runIssuedByWeaponId.set(weapon, (curator.runIssuedByWeaponId.get(weapon) ?? 0) + 1);
     }
-    const rarity = rollRarity(Math.random(), this.bestLuk() + tierLukBonus);
+    const rarity = rollRarity(Math.random(), 1 + tierRarityBonus);
     const affix = rollAffix(Math.random(), rarity).id;
     this.hiddenPickupIdentities.set(pk.id, { weapon, rarity, affix });
     // Only the intended public tells enter Schema: rarity glow/name + coarse class glyph. Exact weapon and
@@ -11992,7 +11321,7 @@ export class GameRoom extends Room<ArenaState> {
     this.state.pickups.set(pk.id, pk);
     this.earnedPickups.add(pk.id); // a loot drop is EARNED — it carries §13 salvage value
     this.pickupWeaponBankMeta.set(pk.id, {
-      provenance: tierLukBonus >= LOOT_TIER_LUK_BOSS ? "boss-drop" : "enemy-drop",
+      provenance: tierRarityBonus >= LOOT_TIER_RARITY_BOSS ? "boss-drop" : "enemy-drop",
       ownerId: curator?.accountId ?? "",
       ownerLockUntil: curator ? this.state.elapsed + 2 : 0,
     });
@@ -12010,7 +11339,7 @@ export class GameRoom extends Room<ArenaState> {
     return safeSpawnPos(this.map, x, y, PICKUP_RADIUS);
   }
 
-  /** Apply an AoE blast at (x,y): damage every enemy within `radius`, with the same kill/XP/portal
+  /** Apply an AoE blast at (x,y): damage every enemy within `radius`, with the same kill/money/portal
    *  bookkeeping as a swing hit. Used by the scatter-shot magma explosions (§14). */
   private detonate(
     x: number,
@@ -12167,10 +11496,10 @@ export class GameRoom extends Room<ArenaState> {
       c.invuln = Math.max(c.invuln, PARRY_IFRAMES * (1 + IRON_STANCE_IFRAME_PER * iron));
     }
 
-    // Aegis — Second Wind (stacks): heal a CON-scaled sliver. Bulwark: a brief absorb shield.
+    // Aegis — Second Wind (stacks): flat heal. Bulwark: a brief absorb shield.
     const sw = countAugment(owned, "second-wind");
     if (sw > 0) {
-      const heal = sw * (SECOND_WIND_BASE + SECOND_WIND_PER_CON * Math.max(0, player.con - 1));
+      const heal = sw * SECOND_WIND_BASE;
       this.applyHeal(player, heal);
     }
     if (hasAugment(owned, "bulwark")) {
@@ -12225,14 +11554,14 @@ export class GameRoom extends Room<ArenaState> {
       }
     }
     if (hasAugment(owned, "emberguard")) {
-      const dmg = EMBERGUARD_BASE_DMG + EMBERGUARD_PER_INT * Math.max(0, player.int - 1);
+      const dmg = EMBERGUARD_BASE_DMG;
       this.emberguardWave(
         player.x,
         player.y,
         c.aimX,
         c.aimY,
         dmg,
-        critChanceFor(player.luk, player.dex),
+        this.flatCritChance(player, c),
         player.id,
         player.weapon,
       );
@@ -12492,7 +11821,7 @@ export class GameRoom extends Room<ArenaState> {
     const aimY = committed?.aimY ?? (target ? target.y - enemy.y : 0);
     const dmgMul = enemy.tough ? TOUGH_DAMAGE_MULT : 1;
     this.state.players.forEach((player) => {
-      if (!player.alive || this.inLevelWindow(player)) return;
+      if (!player.alive) return;
       if (!inMeleeArc(enemy, aimX, aimY, player, m.range, m.halfArc)) return;
       const pc = this.combat.get(player.id);
       if (pc && pc.invuln > 0) {
@@ -13190,7 +12519,7 @@ export class GameRoom extends Room<ArenaState> {
       (enemy.tough ? TOUGH_DAMAGE_MULT : 1) *
       depthDamageScale(this.state.depth);
     this.state.players.forEach((player) => {
-      if (!player.alive || this.inLevelWindow(player)) return;
+      if (!player.alive) return;
       if (!inMeleeArc(strike, strike.aimX, strike.aimY, player, geo.range, geo.halfArc)) return;
       const pc = this.combat.get(player.id);
       if (step?.unparryable) {
@@ -13430,7 +12759,7 @@ export class GameRoom extends Room<ArenaState> {
     const origin = { x, y };
     const boss = this.bossId ? this.state.enemies.get(this.bossId) : undefined;
     this.state.players.forEach((player) => {
-      if (!player.alive || this.inLevelWindow(player)) return;
+      if (!player.alive) return;
       if (!inMeleeArc(origin, aimX, aimY, player, range, halfArc)) return;
       const pc = this.combat.get(player.id);
       if (pc && pc.invuln > 0) {
@@ -13473,7 +12802,7 @@ export class GameRoom extends Room<ArenaState> {
     pk.weaponPublic = kind.wieldsWeapon;
     // §13 the wielder's drop is identity-KNOWN (you saw the sword it swung) but its rarity/affix still
     // roll on drop (v0.104) — same squad-LUK table as the mystery channel (one rarity economy).
-    pk.rarity = rollRarity(Math.random(), this.bestLuk());
+    pk.rarity = rollRarity(Math.random());
     pk.affix = rollAffix(Math.random(), pk.rarity).id;
     pk.affixPublic = pk.affix;
     const sp = this.placePickupPos(enemy.x, enemy.y);
@@ -13623,8 +12952,6 @@ export class GameRoom extends Room<ArenaState> {
           const dx = pr.x - player.x;
           const dy = pr.y - player.y;
           if (dx * dx + dy * dy > reach * reach) return; // no overlap with this player
-          // §12 level-up invincibility: the bullet phases harmlessly through (not a parry — no reflect).
-          if (this.inLevelWindow(player)) return;
           const pc = this.combat.get(player.id);
           if (pc && this.weaponLungeInvulnerable(pc)) return;
           // §8 v0.117 PROJECTILE PARRY: a bullet caught inside the parry i-frame window is DEFLECTED into a
@@ -13705,7 +13032,7 @@ export class GameRoom extends Room<ArenaState> {
           if (collided) {
             meta.hit.add(eid);
             meta.pierce -= 1;
-            // Route through the ONE damage primitive (Brand · dummy-reset · boss portal · drop · XP) so the
+            // Route through the ONE damage primitive (Brand · dummy-reset · boss portal · money drop) so the
             // projectile path can't drift from the swing/blast path (was a hand-duplicated copy).
             this.damageEnemy(
               enemy,
@@ -13901,22 +13228,6 @@ export class GameRoom extends Room<ArenaState> {
     this.recordPetAcceptedAction(player.id);
   }
 
-  private bestHarvestMultiplier(): number {
-    let bestLuk = 1;
-    let multiplier = 1;
-    this.state.players.forEach((player) => {
-      if (!player.alive) return;
-      const candidate = this.combat.get(player.id)?.mods.harvestMult ?? 1;
-      if (player.luk > bestLuk) {
-        bestLuk = player.luk;
-        multiplier = candidate;
-      } else if (player.luk === bestLuk) {
-        multiplier = Math.max(multiplier, candidate);
-      }
-    });
-    return multiplier;
-  }
-
   /** Zoners drop a corrosive puddle under themselves on a cooldown (§15 area denial). */
   private stepZoners(dt: number): void {
     for (const id of [...this.zonerDropCd.keys()]) {
@@ -13995,9 +13306,8 @@ export class GameRoom extends Room<ArenaState> {
       const r2 = zone.radius * zone.radius;
       if (meta.hostile)
         this.state.players.forEach((player) => {
-          // §8/§15: zoner puddles are UNPARRYABLE — only the §12 level-up invincibility skips them,
-          // NOT parry i-frames. You must walk out of the puddle.
-          if (!player.alive || this.inLevelWindow(player)) return;
+          // Zoner puddles are unparryable; you must walk out of them.
+          if (!player.alive) return;
           const dx = player.x - zone.x;
           const dy = player.y - zone.y;
           if (dx * dx + dy * dy <= r2) {
@@ -14076,7 +13386,7 @@ export class GameRoom extends Room<ArenaState> {
       if (!bossAlive && trashAlive === 0) {
         this.beltPhase = "cleared";
         this.state.beltLockX = 0; // gate opens
-        if (room.boss) this.beginXpBoundary("belt-victory"); // catch the finale XP before the win teardown
+        if (room.boss) this.completeRewardBoundary("belt-victory");
       }
     } else {
       // cleared → advance when a player crosses the (now-open) gate.
@@ -14215,14 +13525,9 @@ export class GameRoom extends Room<ArenaState> {
       c.ultAccrualThisTick >= ULT_CHARGE_TICK_CAP
     )
       return;
-    const family = ultimateFamilyForCode(player.ultArchetype);
-    let gain = Math.max(0, applied) * ULT_CHARGE_PER_DAMAGE;
-    if (family === UltimateFamily.SunspiteComet) gain *= 1.25;
-    let killGain = finalBlow ? ULT_CHARGE_KILL_BONUS : 0;
-    if (family === UltimateFamily.AlphaStrike) killGain *= 1.5;
-    gain += killGain;
-    if (family === UltimateFamily.Seismarch && player.ultVariant === "dex") gain *= 1.15;
-    if (player.ultTempered) gain *= ULT_TEMPER_CHARGE_MULT;
+    const gain =
+      Math.max(0, applied) * ULT_CHARGE_PER_DAMAGE +
+      (finalBlow ? ULT_CHARGE_KILL_BONUS : 0);
     const admitted = Math.min(gain, ULT_CHARGE_TICK_CAP - c.ultAccrualThisTick, 1 - c.ultChargeF);
     if (admitted <= 0) return;
     c.ultAccrualThisTick += admitted;
@@ -14240,8 +13545,7 @@ export class GameRoom extends Room<ArenaState> {
       c.ultAccrualThisTick >= ULT_CHARGE_TICK_CAP
     )
       return;
-    const scaled = amount * (player.ultTempered ? ULT_TEMPER_CHARGE_MULT : 1);
-    const admitted = Math.min(scaled, ULT_CHARGE_TICK_CAP - c.ultAccrualThisTick, 1 - c.ultChargeF);
+    const admitted = Math.min(amount, ULT_CHARGE_TICK_CAP - c.ultAccrualThisTick, 1 - c.ultChargeF);
     if (admitted <= 0) return;
     c.ultAccrualThisTick += admitted;
     c.ultChargeF += admitted;
@@ -14371,11 +13675,11 @@ export class GameRoom extends Room<ArenaState> {
       p.salvaged += wage;
       this.applyHeal(p, p.maxHp * BOSSRUSH_HEAL_FRAC);
     });
-    this.dropLoot(x, y, 1, LOOT_TIER_LUK_BOSS); // the reward for the clear (boss-tier rarity)
+    this.dropLoot(x, y, 1, LOOT_TIER_RARITY_BOSS); // the reward for the clear (boss-tier rarity)
     this.bossRushIndex++;
     if (this.bossRushIndex >= BOSS_DEF_IDS.length) {
       // GAUNTLET CLEARED: the boss core catches before progression presentation is torn down and banked.
-      this.beginXpBoundary("bossrush-victory");
+      this.completeRewardBoundary("bossrush-victory");
       return;
     }
     this.beginNextPetDimension();
@@ -14690,7 +13994,6 @@ export class GameRoom extends Room<ArenaState> {
   private transitionDimension(): void {
     // Normal descent reaches this only after the cleanup vacuum; defensive cleanup prevents stale rows if a
     // server operator invokes the transition directly during recovery/testing.
-    this.clearXpEchoes();
     this.beginNextPetDimension();
     this.state.depth = Math.min(250, this.state.depth + 1);
     // Next dimension: prefer one the chain hasn't visited; once all are seen, any OTHER dimension.
@@ -14759,7 +14062,7 @@ export class GameRoom extends Room<ArenaState> {
         const dy = player.y - this.state.portalY;
         if (dx * dx + dy * dy <= r2) reached = true;
       });
-      if (reached) this.beginXpBoundary("extract");
+      if (reached) this.completeRewardBoundary("extract");
       return;
     }
 
@@ -14790,7 +14093,8 @@ export class GameRoom extends Room<ArenaState> {
       if (!this.extractBlocked.has(id)) holding = true;
     });
     this.extractHoldTimer = holding ? this.extractHoldTimer + dt : 0;
-    if (this.extractHoldTimer + 1e-9 >= EXTRACT_HOLD_SECONDS) this.beginXpBoundary("extract");
+    if (this.extractHoldTimer + 1e-9 >= EXTRACT_HOLD_SECONDS)
+      this.completeRewardBoundary("extract");
   }
 
   /** §6 the other half of the greed decision (v0.103): the DEEPER rift is a CHANNEL — a living player
@@ -14815,7 +14119,7 @@ export class GameRoom extends Room<ArenaState> {
       this.state.riftCharge = Math.min(1, this.state.riftCharge + dt / RIFT_CHANNEL_SECONDS);
       if (this.state.riftCharge >= 1) {
         this.state.riftCharge = 0;
-        this.beginXpBoundary("descent");
+        this.completeRewardBoundary("descent");
       }
     } else if (this.state.riftCharge > 0) {
       this.state.riftCharge = Math.max(0, this.state.riftCharge - (dt / RIFT_CHANNEL_SECONDS) * 2);

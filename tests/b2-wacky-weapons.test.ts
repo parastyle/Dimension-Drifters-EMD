@@ -80,7 +80,8 @@ describe("B2 wacky expansion catalog", () => {
       expect(weapon?.tags.grip, id).toMatch(/^(?:1H|2H)$/);
       expect(weapon?.tags.size, id).toMatch(/^(?:M|L|XL)$/);
       expect(weapon?.tags.rangeBand, id).toMatch(/^(?:close|mid|long)$/);
-      expect(weapon?.scalingGrades, id).toBeDefined();
+      expect(weapon, id).not.toHaveProperty("scalingGrades");
+      expect(weapon, id).not.toHaveProperty("requirements");
       expect(WACKY_WEAPON_VFX_RECIPES[id], id).toBeDefined();
     }
     expect(new Set(B2.map(mechanicalSignature)).size).toBe(7);

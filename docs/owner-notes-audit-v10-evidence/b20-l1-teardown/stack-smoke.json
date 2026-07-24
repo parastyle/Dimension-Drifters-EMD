@@ -1,0 +1,20 @@
+{
+  "clientHttpStatus": 200,
+  "clientPort": 64045,
+  "gamePort": 64046,
+  "privatePorts": true,
+  "listeners": [
+    {
+      "address": "::",
+      "port": 64046,
+      "pid": 39808
+    },
+    {
+      "address": "127.0.0.1",
+      "port": 64045,
+      "pid": 19664
+    }
+  ],
+  "browserSurfaceAvailable": false,
+  "visualGate": "blocked-no-connected-browser"
+}

@@ -18,7 +18,7 @@ import {
   BEAM_MAX_RANGE,
   BEAM_MAX_WIDTH,
   BEAM_RECOVERY_SECONDS,
-  LUK_RARITY_PER,
+  LUCK_RARITY_PER,
   SCRIP_BY_RARITY,
 } from "./constants.js";
 import { clamp } from "./math.js";
@@ -98,8 +98,8 @@ function weightedPick<T extends { weight: number }>(defs: readonly T[], roll: nu
  *  no pity, pure chance). CURSED's exponent is CAPPED at 3: without the cap a max-LUK build turns the
  *  troll-gamble tier into ~43% of all drops and farms its favorable Blessed EV (adversarial-verify) —
  *  capped, luck builds chase Legendary/Ultimate while cursed stays a rare knowing gamble. PURE. */
-export function rollRarity(roll: number, luk = 1): number {
-  const boost = 1 + LUK_RARITY_PER * (Math.max(1, luk) - 1);
+export function rollRarity(roll: number, luck = 1): number {
+  const boost = 1 + LUCK_RARITY_PER * (Math.max(1, luck) - 1);
   const boosted = RARITIES.map((r, i) => ({
     weight: r.weight * boost ** (i === RARITY_CURSED ? 3 : i),
     idx: i,

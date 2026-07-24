@@ -6,8 +6,8 @@
  * synergize rather than gate each other.
  *
  * `[RULED v0.81]` Offer model: each signature pick is a **3-of-9 random draft** (roguelike) — Pool>picks
- * implies a constrained offer, and the draft forces build variety + reuses the level-up pick UI. The owned
- * set is a CSV on `PlayerState.augments` (repeats = stacks); the offer is a CSV on `sigOffer`.
+ * implies a constrained offer. The owned set is a CSV on `PlayerState.augments` (repeats = stacks);
+ * acquisition is intentionally external to this mechanics catalog.
  */
 
 import type { WeaponDef } from "./weapons.js";

@@ -1,0 +1,8 @@
+{
+  "clientPort": 64045,
+  "gamePort": 64046,
+  "forbiddenPorts": [5180, 2567],
+  "serverPid": 39808,
+  "clientPid": 49444,
+  "startedAt": "2026-07-24T01:14:49.2020784-04:00"
+}

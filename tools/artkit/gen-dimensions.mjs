@@ -60,7 +60,7 @@ function mapKind(e, { boss = false, shifter = false } = {}) {
   k.radius = num(e.radius, shifter ? Math.round(22 * num(e.renderScale, 1)) : 20);
   k.contactDamage = num(e.contactDamage, 0);
   k.weight = num(e.weight, boss ? 0 : 1);
-  k.xpValue = num(e.xpValue, boss ? 40 : 1);
+  k.moneyValue = num(e.moneyValue, boss ? 40 : 1);
   if (e.ranged) {
     const r = e.ranged;
     k.ranged = {

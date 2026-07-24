@@ -5,7 +5,7 @@
 //
 // §43 STRICT MODE (Sol audit P0s): this generator FAILS — with every error listed — instead of repairing
 // bad authoring. Unknown keys, sibling mechanic blocks (the bug that silently erased 11 weapons' kits),
-// invalid enums, malformed grades/requirements, and duplicate ids all abort the run with exit 1. The ONE
+// invalid enums and duplicate ids all abort the run with exit 1. The ONE
 // permitted repair is numeric CLAMPING to the design-law bands (§14 fixed bounds) — clamps are counted
 // and reported, and tests/data-consistency.test.ts re-derives them independently so a drift fails CI.
 //
@@ -30,8 +30,6 @@ const clampSamples = [];
 let CUR = "?";
 const fail = (msg) => errors.push(`${CUR}: ${msg}`);
 
-const GRADES = new Set(["S", "A", "B", "C", "D", "E"]);
-const ATTRS = new Set(["str", "dex", "int", "con", "luk"]);
 const TYPES = new Set(["melee", "ranged", "caster"]);
 const GRIPS = new Set(["1H", "2H", "dual", "mounted"]);
 const HANDLING_TAGS = new Set(["bolt", "lever", "pump", "pistol"]);
@@ -79,7 +77,7 @@ const SINGLE_SHOT_GUN_IDS = new Set([
 // Key whitelists — an authored key outside these is a FAILURE, never a silent drop.
 const TOP_KEYS = new Set([
   "id", "name", "type", "family", "theme", "element", "finish", "finishNote", "grip", "size",
-  "rangeBand", "scaling", "scalingGrades", "requirements", "artPrompt", "palettePrimary",
+  "rangeBand", "scaling", "artPrompt", "palettePrimary",
   "paletteAccent", "cardartAction", "behavior", "stats", "description", "banned", "expansion", "archived",
   "sprite", "firingFrame", "sizeClass", "stance", "authoritativeCombo", "comboFamily", "comboVariant", "comboBar", "comboChoreography", "katanaHook",
   "bespokeVfxSheet", "performance", "swingStyle", "effectRecipe", "effectEmitter", "effectTiming",
@@ -97,31 +95,31 @@ const STATS_KEYS = new Set([
 ]);
 const BEHAVIOR_KEYS = {
   edge: new Set(["kind"]),
-  thrown: new Set(["kind", "speed", "range", "damage", "charges", "refillSeconds", "pierce", "arcHeight", "rotation", "ricochetHops", "ricochetRange", "returning", "scalingGrades", "zone"]),
-  quake: new Set(["kind", "radius", "damage", "scalingGrades", "zone"]),
-  chainLightning: new Set(["kind", "jumps", "range", "damage", "falloff", "scalingGrades", "vfx"]),
-  scatter: new Set(["kind", "count", "spread", "aim", "speed", "range", "damage", "pierce", "scalingGrades", "explode"]),
+  thrown: new Set(["kind", "speed", "range", "damage", "charges", "refillSeconds", "pierce", "arcHeight", "rotation", "ricochetHops", "ricochetRange", "returning", "zone"]),
+  quake: new Set(["kind", "radius", "damage", "zone"]),
+  chainLightning: new Set(["kind", "jumps", "range", "damage", "falloff", "vfx"]),
+  scatter: new Set(["kind", "count", "spread", "aim", "speed", "range", "damage", "pierce", "explode"]),
   gun: new Set(["kind", "damage", "projectileSpeed", "range", "fireRate", "pellets", "spread", "pierce",
     "bounces", "magazine", "reloadSeconds", "bulletKind", "muzzle", "muzzleColor", "recoil",
-    "projectileArt", "projectileVisualScale", "projectileColor", "arcHeight", "scalingGrades", "explode", "burst",
+    "projectileArt", "projectileVisualScale", "projectileColor", "arcHeight", "explode", "burst",
     "userKnockbackMultiplier",
     "randomPellets",
     "sonicBoomRing", "width"]),
   beam: new Set(["kind", "damage", "range", "tickRate", "width", "chargeSeconds", "sweepLagSeconds",
-    "randomRays", "coneStream", "scalingGrades", "zone"]),
+    "randomRays", "coneStream", "zone"]),
   cast: new Set(["kind", "damage", "speed", "range", "cooldown", "pierce", "bulletKind",
-    "scalingGrades", "volley", "projectileWaveform", "explode"]),
+    "volley", "projectileWaveform", "explode"]),
   hybrid: new Set(["kind", "projectile"]),
   groundZone: new Set(["kind", "zone"]),
   glovePair: new Set(["kind", "wrapsFeet"]),
   warp: new Set(["kind", "burstRadius"]),
 };
-const EXPLODE_KEYS = new Set(["radius", "damage", "scalingGrades"]);
+const EXPLODE_KEYS = new Set(["radius", "damage"]);
 const CAST_VOLLEY_KEYS = new Set(["count", "spread"]);
 const PROJECTILE_WAVEFORM_KEYS = new Set(["amplitudePx", "frequencyHz", "phaseRad"]);
 const HYBRID_PROJECTILE_KEYS = new Set([
   "style", "trigger", "comboLength", "speed", "range", "damage", "count", "spread", "pierce",
-  "returnAfterSeconds", "scalingGrades",
+  "returnAfterSeconds",
 ]);
 const HYBRID_PROJECTILE_STYLES = new Set([
   "cutting-gust", "cinder-blade-cone", "returning-arc", "tornado",
@@ -132,7 +130,7 @@ const GRIP_POINTS_KEYS = new Set(["primary", "secondary"]);
 const GRIP_ANCHOR_KEYS = new Set(["x", "y"]);
 const SECONDARY_GRIP_KEYS = new Set(["x", "y", "role"]);
 const ZONE_KEYS = new Set(["trigger", "style", "initialRadius", "maxRadius", "growthPerSecond",
-  "lingerSeconds", "damagePerSecond", "tickRate", "placementRange", "scalingGrades",
+  "lingerSeconds", "damagePerSecond", "tickRate", "placementRange",
   "slowMultiplier", "slowSeconds", "grenadeArcHeight"]);
 const ZONE_TRIGGERS = new Set(["channel", "attack", "landing", "impact"]);
 const ZONE_STYLES = new Set(["nether", "poison", "poison-smoke", "ice"]);
@@ -278,47 +276,7 @@ const beamTick = (v, path) => {
   return tick;
 };
 
-/** STRICT scaling grades: `{attr: GRADE}` — malformed entries FAIL (they used to vanish). */
-function grades(g, path, fallback) {
-  if (g === undefined) return fallback;
-  if (!g || typeof g !== "object") {
-    fail(`${path} is not an object`);
-    return fallback;
-  }
-  const out = {};
-  for (const [a, v] of Object.entries(g)) {
-    if (!ATTRS.has(a)) {
-      fail(`${path}.${a} is not an attribute (str/dex/int/con/luk)`);
-      continue;
-    }
-    const grade = typeof v === "string" ? v.toUpperCase() : v;
-    if (!GRADES.has(grade)) {
-      fail(`${path}.${a} = ${JSON.stringify(v)} is not a grade (S–E)`);
-      continue;
-    }
-    out[a] = grade;
-  }
-  return Object.keys(out).length ? out : fallback;
-}
-/** STRICT requirements: `{attr: n}`, n numeric (clamped 2..20) — malformed entries FAIL. */
-function reqs(r, path) {
-  if (r === undefined) return undefined;
-  if (!r || typeof r !== "object") {
-    fail(`${path} is not an object`);
-    return undefined;
-  }
-  const out = {};
-  for (const [a, v] of Object.entries(r)) {
-    if (!ATTRS.has(a)) {
-      fail(`${path}.${a} is not an attribute`);
-      continue;
-    }
-    const n = int(v, 2, 20, 0, `${path}.${a}`);
-    if (n > 1) out[a] = n;
-  }
-  return Object.keys(out).length ? out : undefined;
-}
-/** Nested explode block (scatter/gun) — validated + fully emitted (scalingGrades included). */
+/** Nested explode block (scatter/gun) — validated + fully emitted. */
 function explodeOf(e, path, rMax, damageMax = 30) {
   if (e === undefined) return undefined;
   checkKeys(e, EXPLODE_KEYS, path);
@@ -326,8 +284,6 @@ function explodeOf(e, path, rMax, damageMax = 30) {
     radius: num(e.radius, 30, rMax, 56, `${path}.radius`),
     damage: num(e.damage, 1, damageMax, 6, `${path}.damage`),
   };
-  const g = grades(e.scalingGrades, `${path}.scalingGrades`, undefined);
-  if (g) out.scalingGrades = g;
   return out;
 }
 
@@ -366,8 +322,6 @@ function groundZoneOf(z, path = "behavior.zone") {
     placementRange: num(z.placementRange, 40, 900, 240, `${path}.placementRange`),
   };
   if (out.maxRadius < out.initialRadius) fail(`${path}.maxRadius must be >= initialRadius`);
-  const g = grades(z.scalingGrades, `${path}.scalingGrades`, undefined);
-  if (g) out.scalingGrades = g;
   if (z.slowMultiplier !== undefined)
     out.slowMultiplier = num(z.slowMultiplier, 0.1, 1, 1, `${path}.slowMultiplier`);
   if (z.slowSeconds !== undefined)
@@ -903,7 +857,6 @@ function mapWeapon(w) {
     id: w.id,
     name: w.name,
     expansion: w.expansion !== false,
-    scalingGrades: grades(w.scalingGrades, "scalingGrades", { str: "B" }),
     damage,
     range: type === "ranged"
       ? num(s.range, 80, 320, 140, "stats.range")
@@ -1051,8 +1004,6 @@ function mapWeapon(w) {
     if (typeof w.bespokeVfxSheet !== "boolean") fail("bespokeVfxSheet is not a boolean");
     else def.bespokeVfxSheet = w.bespokeVfxSheet;
   }
-  const rq = reqs(w.requirements, "requirements");
-  if (rq) def.requirements = rq;
   if (grip === "2H") def.twoHanded = true;
   if (grip === "dual") def.dual = true;
   if (type === "melee") def.durability = grip === "2H" ? 90 : 75;
@@ -1081,8 +1032,6 @@ function mapWeapon(w) {
       },
       movement: { chargeMul: 0.55, channelMul: 0.35 },
     };
-    const bg = grades(b.scalingGrades, "behavior.scalingGrades", undefined);
-    if (bg) def.beam.scalingGrades = bg;
     if (b.randomRays !== undefined) {
       if (!b.randomRays || typeof b.randomRays !== "object" || Array.isArray(b.randomRays)) {
         fail("behavior.randomRays is not an object");
@@ -1230,8 +1179,6 @@ function mapWeapon(w) {
     if (bounces > 0) def.gun.bounces = bounces;
     const mc = b.muzzleColor === undefined ? undefined : int(b.muzzleColor, 0, 0xffffff, 0, "behavior.muzzleColor");
     if (mc !== undefined) def.gun.muzzleColor = mc;
-    const gg = grades(b.scalingGrades, "behavior.scalingGrades", undefined);
-    if (gg) def.gun.scalingGrades = gg;
     const ex = explodeOf(
       b.explode,
       "behavior.explode",
@@ -1250,8 +1197,6 @@ function mapWeapon(w) {
         ? "orb"
         : enumOf(b.bulletKind, BULLET_KINDS, "behavior.bulletKind"),
     };
-    const g = grades(b.scalingGrades, "behavior.scalingGrades", undefined);
-    if (g) def.cast.scalingGrades = g;
     if (b.volley !== undefined) {
       if (!b.volley || typeof b.volley !== "object" || Array.isArray(b.volley)) {
         fail("behavior.volley is not an object");
@@ -1336,8 +1281,6 @@ function mapWeapon(w) {
       } else if (projectile.returnAfterSeconds !== undefined) {
         fail("behavior.projectile.returnAfterSeconds is reserved for returning-arc");
       }
-      const g = grades(projectile.scalingGrades, "behavior.projectile.scalingGrades", undefined);
-      if (g) def.hybridProjectile.scalingGrades = g;
     }
   } else if (kind === "thrown") {
     def.thrown = {
@@ -1360,15 +1303,11 @@ function mapWeapon(w) {
       if (b.returning !== true) fail("behavior.returning must be true when authored");
       else def.thrown.returning = true;
     }
-    const g = grades(b.scalingGrades, "behavior.scalingGrades", undefined);
-    if (g) def.thrown.scalingGrades = g;
   } else if (kind === "quake") {
     def.quake = {
       radius: num(b.radius, 70, 220, 130, "behavior.radius"),
       damage: num(b.damage, 1, 30, 7, "behavior.damage"),
     };
-    const g = grades(b.scalingGrades, "behavior.scalingGrades", undefined);
-    if (g) def.quake.scalingGrades = g;
   } else if (kind === "chainLightning") {
     def.chainLightning = {
       jumps: int(b.jumps, 1, 6, 3, "behavior.jumps"),
@@ -1376,8 +1315,6 @@ function mapWeapon(w) {
       damage: num(b.damage, 1, 24, 5, "behavior.damage"),
       falloff: num(b.falloff, 0.5, 1, 0.8, "behavior.falloff"),
     };
-    const g = grades(b.scalingGrades, "behavior.scalingGrades", undefined);
-    if (g) def.chainLightning.scalingGrades = g;
     if (b.vfx !== undefined) {
       checkKeys(b.vfx, new Set(["color", "jag", "life"]), "behavior.vfx");
       def.chainLightning.vfx = {
@@ -1397,8 +1334,6 @@ function mapWeapon(w) {
     if (b.aim !== undefined) def.scatter.aim = enumOf(b.aim, SCATTER_AIMS, "behavior.aim");
     const pierce = int(b.pierce, 1, 5, 1, "behavior.pierce");
     if (pierce > 1) def.scatter.pierce = pierce;
-    const g = grades(b.scalingGrades, "behavior.scalingGrades", undefined);
-    if (g) def.scatter.scalingGrades = g;
     const ex = explodeOf(b.explode, "behavior.explode", 80);
     if (ex) def.scatter.explode = ex;
   }

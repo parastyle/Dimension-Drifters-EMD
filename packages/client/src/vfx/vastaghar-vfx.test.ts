@@ -53,7 +53,7 @@ function presentationState(
     arenaMutationTick: 0,
     victoryStage: VastagharVictoryStage.None,
     victoryTick: 0,
-    victoryXp: 0,
+    victoryMoney: 0,
     ...overrides,
   };
 }

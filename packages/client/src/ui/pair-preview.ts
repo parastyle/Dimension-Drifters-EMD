@@ -1,14 +1,11 @@
 import {
-  type Attr,
   dualOffhandDamageMultiplier,
   lootCooldownMult,
   lootDamageMult,
   PAIR_TEMPO,
   pairDamagePerUse,
   pairEligible,
-  pairRequirementPenalty,
   scripValue,
-  sourceDamageMult,
   WEAPONS,
   weaponAttackCooldown,
   weaponDamageSources,
@@ -41,7 +38,6 @@ export type PairPreview = {
 export type PairPreviewInput = {
   lead: PairPreviewItem;
   off: PairPreviewItem;
-  attrs: Record<Attr, number>;
   loadoutIds: readonly string[];
 };
 
@@ -70,35 +66,21 @@ export function pairPreview(input: PairPreviewInput): PairPreview {
   );
   if (!lead || !off || !pairEligible(lead, off)) return { ...EMPTY_PREVIEW, fee };
 
-  const leadGrades = lead.gun?.scalingGrades ?? lead.cast?.scalingGrades ?? lead.scalingGrades;
-  const offGrades = off.gun?.scalingGrades ?? off.cast?.scalingGrades ?? off.scalingGrades;
   const leadRaw =
-    pairDamagePerUse(lead) *
-    sourceDamageMult(lead, leadGrades, input.attrs) *
-    lootDamageMult(input.lead.rarity, input.lead.affix);
+    pairDamagePerUse(lead) * lootDamageMult(input.lead.rarity, input.lead.affix);
   const offRaw =
-    pairDamagePerUse(off) *
-    sourceDamageMult(off, offGrades, input.attrs) *
-    lootDamageMult(input.off.rarity, input.off.affix);
-  const requirement = pairRequirementPenalty(lead, off, input.attrs);
+    pairDamagePerUse(off) * lootDamageMult(input.off.rarity, input.off.affix);
   const offhandMultiplier = dualOffhandDamageMultiplier(lead, off, leadRaw, offRaw);
   const sourceTotal = (weapon: typeof lead, item: PairPreviewItem) =>
     weaponDamageSources(weapon).reduce(
       (total, source) =>
-        total +
-        source.base *
-          source.count *
-          sourceDamageMult(weapon, source.grades, input.attrs) *
-          lootDamageMult(item.rarity, item.affix),
+        total + source.base * source.count * lootDamageMult(item.rarity, item.affix),
       0,
     );
   const leadDamage =
-    sourceTotal(lead, input.lead) *
-    requirement *
-    weaponSetBonus(input.loadoutIds, input.lead.weaponId);
+    sourceTotal(lead, input.lead) * weaponSetBonus(input.loadoutIds, input.lead.weaponId);
   const offDamage =
     sourceTotal(off, input.off) *
-    requirement *
     weaponSetBonus(input.loadoutIds, input.off.weaponId) *
     offhandMultiplier;
   // The lead affix owns cadence for both hands. Each gap is based on the incoming hand's authored

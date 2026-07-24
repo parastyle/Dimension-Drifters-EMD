@@ -100,7 +100,7 @@ describe("GameRoom — V3R ranged authority", () => {
     const projectiles = [...room.state.projectiles.values()];
     const meta = projectiles.map((projectile) => room.projectileMeta.get(projectile.id));
     const expectedDamage =
-      weapon.gun.damage * room.heldDamageMult(weapon, weapon.gun.scalingGrades, player, 0);
+      weapon.gun.damage * room.heldDamageMult(weapon, player, 0);
     expect(projectiles).toHaveLength(count);
     expect(new Set(projectiles.map((projectile) => projectile.vy.toFixed(8)))).toEqual(
       new Set(["0.00000000"]),
@@ -109,12 +109,7 @@ describe("GameRoom — V3R ranged authority", () => {
     if (weapon.gun.explode) {
       const expectedExplosion =
         weapon.gun.explode.damage *
-        room.heldDamageMult(
-          weapon,
-          weapon.gun.explode.scalingGrades ?? weapon.gun.scalingGrades,
-          player,
-          0,
-        );
+        room.heldDamageMult(weapon, player, 0);
       expect(meta.reduce((sum, row) => sum + (row?.explode?.damage ?? 0), 0)).toBeCloseTo(
         expectedExplosion,
         8,

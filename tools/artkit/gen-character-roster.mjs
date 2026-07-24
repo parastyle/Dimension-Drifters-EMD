@@ -103,53 +103,50 @@ const scaleOf = (id) => {
   if (a >= median) return 1;
   return Math.min(1.25, Math.max(1, Math.sqrt(median / a))); // gentle, capped at +25%
 };
-// Â§classmerge identity data. This lived in the generated output during the metagame migration, but the
-// roster generator did not own it and erased it on `pnpm gen`. Keep the documented legacy migration table
-// here and assign every visual-only owner prototype the same neutral kit, so characters.ts remains a pure
-// generated file and full generation is safe.
+// Character flavor metadata. Keep legacy signature names, but generate no numeric spread or class bias.
 const kits = {
-  drifter: [[2, 2, 2, 2, 2], "unwritten"],
-  "cc-asha-the-ash-walker": [[2, 2, 2, 3, 1], "mend-the-broken"],
-  "cc-bastion-vance": [[3, 1, 1, 4, 1], "planted"],
-  "cc-brother-cassian-the-ashen-crusader": [[3, 1, 1, 4, 1], "habit-and-prayer"],
-  "cc-brother-tendo-of-the-still-bell": [[3, 2, 1, 3, 1], "one-perfect-strike"],
-  "cc-bryda-houndcall": [[3, 3, 1, 2, 1], "the-pack-finds-you"],
-  "cc-buzzard-jeptha-hale": [[3, 2, 1, 2, 2], "overstuffed-bandoliers"],
-  "cc-cinderpyre": [[2, 1, 4, 2, 1], "molten-core"],
-  "cc-cogwarden": [[3, 1, 1, 4, 1], "does-not-stop"],
-  "cc-cordell-coldsnap-vane": [[1, 3, 1, 2, 3], "coldsnap"],
-  "cc-corvane-the-crimson-draught": [[1, 1, 4, 3, 1], "the-crimson-draught"],
-  "cc-crowmantle-sel": [[1, 3, 1, 1, 4], "a-better-owner"],
-  "cc-dame-veyra-of-the-thornwatch": [[2, 4, 1, 2, 1], "insufferably-graceful"],
-  "cc-deepfall-korr": [[3, 1, 2, 3, 1], "mag-boots"],
-  "cc-doctor-phineas-quill-esq": [[1, 2, 3, 1, 3], "snake-oil"],
-  "cc-dunkel-the-coinblade": [[2, 2, 1, 2, 3], "hazard-rates"],
-  "cc-elias-parson-thorne": [[2, 2, 2, 1, 3], "graveside-manner"],
-  "cc-gravewake": [[2, 1, 2, 3, 2], "already-dead"],
-  "cc-grix-boltcaster": [[3, 1, 1, 3, 2], "braced"],
-  "cc-halcyon-7": [[1, 3, 2, 2, 2], "half-projection"],
-  "cc-hollowmaw": [[2, 1, 4, 2, 1], "whispered-rites"],
-  "cc-iridia-of-the-nine-veils": [[1, 2, 4, 1, 2], "sees-every-future"],
-  "cc-kuro-oni-the-demon-mask": [[3, 2, 1, 3, 1], "temple-wall"],
-  "cc-magdalene-the-ledger-crowe": [[2, 3, 1, 2, 2], "posted"],
-  "cc-mawkin-sourgrin-the-hex-witch": [[1, 1, 4, 2, 2], "bottled-spite"],
-  "cc-mei-ling-of-the-jade-ribbon": [[1, 4, 2, 1, 2], "ribbon-step"],
-  "cc-mirelurk-caine": [[3, 2, 1, 3, 1], "bog-patience"],
-  "cc-neon-mirage": [[1, 4, 1, 2, 2], "package-deal"],
-  "cc-pyra-cinderhowl-the-flame-caster": [[2, 2, 4, 1, 1], "let-it-out"],
-  "cc-quickfinger-odette-lacroix": [[1, 2, 1, 2, 4], "the-house"],
-  "cc-raijin-k-the-storm-fist": [[4, 2, 1, 2, 1], "thunder-behind"],
-  "cc-s-jiro-the-wayward-blade": [[3, 4, 1, 1, 1], "iai"],
-  "cc-sable-cipher": [[1, 4, 2, 1, 2], "ice-breaker"],
-  "cc-sir-galloway-the-unbending": [[2, 1, 1, 4, 2], "the-unbending"],
-  "cc-sir-mordrane-the-hollow-oath": [[3, 1, 2, 3, 1], "hollow-oath"],
-  "cc-the-bandida-la-sombra": [[2, 3, 1, 1, 3], "a-shape-in-the-dust"],
-  "cc-the-hollow-mask": [[1, 4, 1, 1, 3], "porcelain"],
-  "cc-thornroot": [[2, 1, 2, 4, 1], "regrow"],
-  "cc-tinker-magnus-brasswick": [[1, 2, 4, 2, 1], "pressurized"],
-  "cc-yuki-the-hollow-smile": [[2, 4, 1, 1, 2], "fox-dance"],
+  drifter: "unwritten",
+  "cc-asha-the-ash-walker": "mend-the-broken",
+  "cc-bastion-vance": "planted",
+  "cc-brother-cassian-the-ashen-crusader": "habit-and-prayer",
+  "cc-brother-tendo-of-the-still-bell": "one-perfect-strike",
+  "cc-bryda-houndcall": "the-pack-finds-you",
+  "cc-buzzard-jeptha-hale": "overstuffed-bandoliers",
+  "cc-cinderpyre": "molten-core",
+  "cc-cogwarden": "does-not-stop",
+  "cc-cordell-coldsnap-vane": "coldsnap",
+  "cc-corvane-the-crimson-draught": "the-crimson-draught",
+  "cc-crowmantle-sel": "a-better-owner",
+  "cc-dame-veyra-of-the-thornwatch": "insufferably-graceful",
+  "cc-deepfall-korr": "mag-boots",
+  "cc-doctor-phineas-quill-esq": "snake-oil",
+  "cc-dunkel-the-coinblade": "hazard-rates",
+  "cc-elias-parson-thorne": "graveside-manner",
+  "cc-gravewake": "already-dead",
+  "cc-grix-boltcaster": "braced",
+  "cc-halcyon-7": "half-projection",
+  "cc-hollowmaw": "whispered-rites",
+  "cc-iridia-of-the-nine-veils": "sees-every-future",
+  "cc-kuro-oni-the-demon-mask": "temple-wall",
+  "cc-magdalene-the-ledger-crowe": "posted",
+  "cc-mawkin-sourgrin-the-hex-witch": "bottled-spite",
+  "cc-mei-ling-of-the-jade-ribbon": "ribbon-step",
+  "cc-mirelurk-caine": "bog-patience",
+  "cc-neon-mirage": "package-deal",
+  "cc-pyra-cinderhowl-the-flame-caster": "let-it-out",
+  "cc-quickfinger-odette-lacroix": "the-house",
+  "cc-raijin-k-the-storm-fist": "thunder-behind",
+  "cc-s-jiro-the-wayward-blade": "iai",
+  "cc-sable-cipher": "ice-breaker",
+  "cc-sir-galloway-the-unbending": "the-unbending",
+  "cc-sir-mordrane-the-hollow-oath": "hollow-oath",
+  "cc-the-bandida-la-sombra": "a-shape-in-the-dust",
+  "cc-the-hollow-mask": "porcelain",
+  "cc-thornroot": "regrow",
+  "cc-tinker-magnus-brasswick": "pressurized",
+  "cc-yuki-the-hollow-smile": "fox-dance",
   ...Object.fromEntries(
-    prototypes.map((id) => [id, [[2, 2, 2, 2, 2], "unwritten"]]),
+    prototypes.map((id) => [id, "unwritten"]),
   ),
 };
 for (const id of roster) {
@@ -158,10 +155,9 @@ for (const id of roster) {
 for (const id of Object.keys(kits)) {
   if (!roster.includes(id)) throw new Error(`Character kit targets non-playable id ${id}`);
 }
-const kitRows = Object.entries(kits).map(([id, [spread, quirk]]) => {
-  const [str, dex, int, con, luk] = spread;
-  return `  ${JSON.stringify(id)}: { spread: { str: ${str}, dex: ${dex}, int: ${int}, con: ${con}, luk: ${luk} }, quirk: ${JSON.stringify(quirk)} },`;
-});
+const kitRows = Object.entries(kits).map(
+  ([id, quirk]) => `  ${JSON.stringify(id)}: { quirk: ${JSON.stringify(quirk)} },`,
+);
 
 const scales = {};
 for (const id of roster) {
@@ -171,8 +167,8 @@ for (const id of roster) {
 
 const body = `// AUTO-GENERATED by tools/artkit/gen-character-roster.mjs — re-run after promoting characters.
 // §7 playable character roster. Each id keys an INSTALLED sprite
-// manifest (public/sprites/<id>/). Purely visual for M0 (stats live on §11 attributes); per-character
-// class/variant passives are a follow-on. Legacy ids remain available for compatibility and dev inspection;
+// manifest (public/sprites/<id>/). Character identity is visual/flavor metadata only; no numeric stats
+// or class bias are generated. Legacy ids remain available for compatibility and dev inspection;
 // ordinary selection and cycling use the whole-art subset.
 
 export const PLAYABLE_CHARACTERS = [
@@ -188,12 +184,10 @@ ${prototypes.map((id) => `  ${JSON.stringify(id)},`).join("\n")}
 
 export type WholeArtCharacter = (typeof WHOLE_ART_CHARACTERS)[number];
 
-/** Â§classmerge sum-10 starting identity and signature quirk; legacy characters retain their authored
- * kits while visual-only owner prototypes receive the neutral Unwritten kit. */
+/** Character identity metadata only; no generated numeric stats or class bias. */
 export const CHARACTER_KITS = {
 ${kitRows.join("\n")}
 } as const satisfies Record<PlayableCharacter, {
-  readonly spread: Readonly<Record<"str" | "dex" | "int" | "con" | "luk", number>>;
   readonly quirk: string;
 }>;
 

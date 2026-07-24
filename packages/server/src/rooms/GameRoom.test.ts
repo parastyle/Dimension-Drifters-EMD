@@ -20,8 +20,6 @@ import {
   getDimension,
   isPitAtPx,
   MAX_ENEMIES,
-  META_FORTUNE_LUK,
-  META_POWER_STR,
   META_VITALITY_HP,
   makeRng,
   PARRY_CHAIN_RIPOSTE_AT,
@@ -29,6 +27,7 @@ import {
   PIT_FALL_DAMAGE_FRAC,
   PickupState,
   PLAYER_MAX_HP,
+  PLAYER_REGEN,
   REVIVE_HP_FRAC,
   SET_BONUS_2,
   SET_BONUS_3,
@@ -543,7 +542,7 @@ describe("GameRoom — §8 v0.117 PROJECTILE PARRY (deflect, don't phase through
     p.x = h.room.map.spawnX;
     p.y = h.room.map.spawnY;
     p.hp = 100;
-    p.augments = "deflector"; // §8 the level-up upgrade that turns the glance into offense
+    p.augments = "deflector"; // §8 the owned augment that turns the glance into offense
     h.room.combat.get("p1").invuln = 1;
     h.room.fireProjectile({ x: p.x, y: p.y }, { x: p.x + 100, y: p.y }, 300, 8);
     h.tick(1);
@@ -635,7 +634,7 @@ describe("GameRoom — §13 damageEnemy (the one damage primitive, both paths)",
     expect(after.hp).toBe(DUMMY_HP); // reset, not killed
   });
 
-  it("a kill grants XP (the squad's xp/level advances)", () => {
+  it("a kill creates a collectible money drop and credits scrip on collection", () => {
     const h = makeRoom();
     h.join("p1");
     const p = h.state().players.get("p1");
@@ -643,7 +642,7 @@ describe("GameRoom — §13 damageEnemy (the one damage primitive, both paths)",
     p.y = h.room.map.spawnY;
     p.weapon = "gravediggers-spade";
     h.tick(1);
-    const before = p.xp + (p.level - 1) * 1e6;
+    const before = p.scrip;
     const e = new EnemyState();
     e.id = "v";
     e.kind = "critter";
@@ -652,23 +651,20 @@ describe("GameRoom — §13 damageEnemy (the one damage primitive, both paths)",
     e.y = h.room.map.spawnY;
     h.state().enemies.set("v", e);
     h.send("p1", "attack", { aimX: 1, aimY: 0 });
-    // The XP Echo now has an authored 260ms settle plus its bounded magnet flight before payout.
     h.tick(16);
     expect(h.state().enemies.has("v")).toBe(false); // killed
-    expect(p.xp + (p.level - 1) * 1e6).toBeGreaterThan(before); // §12 xp granted
+    expect(p.scrip).toBeGreaterThan(before);
   });
 });
 
 describe("GameRoom — §16 v0.116 BOSS RUSH gauntlet", () => {
-  /** Pin an invincible attacker on the spawn disc + keep it swing-ready (no level-up window stalls). */
+  /** Pin an invincible attacker on the spawn disc + keep it swing-ready. */
   function pinAttacker(h: ReturnType<typeof makeRoom>) {
     const p = h.state().players.get("p1");
     p.x = h.room.map.spawnX;
     p.y = h.room.map.spawnY;
     p.maxHp = 1e9;
     p.hp = 1e9;
-    p.flexPending = 0; // never let a level-up window block the test's attacks
-    p.sigPending = 0;
     return p;
   }
 
@@ -757,16 +753,6 @@ describe("GameRoom — §4 untrusted-input handlers (anti-cheat surface)", () =>
     expect(Math.hypot(c.aimX, c.aimY)).toBeCloseTo(1, 6);
   });
 
-  it("chooseAugment ignores an id that wasn't in the offered draft", () => {
-    const h = makeRoom();
-    h.join("p1");
-    const p = h.state().players.get("p1");
-    p.sigPending = 1;
-    p.sigOffer = ""; // nothing offered this pick
-    h.send("p1", "chooseAugment", { id: "brand" });
-    expect(p.augments).toBe(""); // rejected
-    expect(p.sigPending).toBe(1); // unspent
-  });
 });
 
 describe("GameRoom — §6/§15 run-ending + rule-defining transitions", () => {
@@ -868,15 +854,14 @@ describe("GameRoom — §17 pitfall + terrain-death + §9 gun cadence", () => {
     expect(p.hp).toBe(PLAYER_MAX_HP); // no chip
   });
 
-  it("a non-boss enemy that ends a tick over a pit DIES with NO xp (terrain kill, §17)", () => {
+  it("a non-boss enemy that ends a tick over a pit dies with no money reward", () => {
     const h = training();
     const p = h.state().players.get("p1");
     const sx = h.room.map.spawnX;
     const sy = h.room.map.spawnY;
     p.x = sx;
     p.y = sy;
-    const xpBefore = p.xp;
-    const levelBefore = p.level;
+    const moneyBefore = p.scrip;
     // A 3x3 pit block 3 tiles east; plant a critter dead-centre so one tick of chase can't walk it off.
     const pitX = sx + 3 * h.room.map.tileSize;
     forcePit(h, pitX, sy, 1);
@@ -889,8 +874,8 @@ describe("GameRoom — §17 pitfall + terrain-death + §9 gun cadence", () => {
     h.state().enemies.set("doomed", e);
     h.tick(1);
     expect(h.state().enemies.has("doomed")).toBe(false); // fell in → despawned
-    expect(p.xp).toBe(xpBefore); // terrain kills are free CC, not score
-    expect(p.level).toBe(levelBefore);
+    expect(p.scrip).toBe(moneyBefore);
+    expect(h.state().moneyDrops.size).toBe(0);
   });
 
   it("a gun fires past its authored magazine through Drive with reload fields retired", () => {
@@ -1131,20 +1116,6 @@ describe("GameRoom — §4 v0.107 seq'd input protocol (queue / ack / fixed time
     expect(p.ackSeq).toBe(1);
   });
 
-  it("consumes + acks even while FROZEN in the level window (queues must never pin), but does not move", () => {
-    const h = makeRoom();
-    h.join("p1");
-    const p = h.state().players.get("p1");
-    p.flexPending = 1; // freeze (level-up window)
-    p.flexTimer = 999;
-    const x0 = p.x;
-    h.send("p1", "input", { seq: 1, dx: 1, dy: 0 });
-    h.tick(1);
-    expect(p.ackSeq).toBe(1); // acked through the freeze
-    expect(p.x).toBe(x0); // but no movement
-    expect(p.mvx).toBe(0); // and the steering velocity is held at zero (no glide on unfreeze)
-  });
-
   it("a teleport bumps teleportSeq and drops queued/held intent (the client's hard-resync signal)", () => {
     const h = makeRoom();
     h.join("p1");
@@ -1292,7 +1263,6 @@ describe("GameRoom — §6 dimension chain (v0.103: extract-vs-descend, bank-or-
     const h = makeRoom({ dimensionId: "wild-west" });
     h.join("p1");
     const p = h.state().players.get("p1");
-    p.level = 7; // mid-run progression that must SURVIVE the descent
     p.salvaged = 5;
     p.weapon = "gravediggers-spade";
     p.hp = 61;
@@ -1321,8 +1291,7 @@ describe("GameRoom — §6 dimension chain (v0.103: extract-vs-descend, bank-or-
     expect(st.outcome).toBe("active"); // the run continues
     expect(st.portalOpen).toBe(false);
     expect(st.riftOpen).toBe(false);
-    // The squad carried through intact — that's the greed (levels, arsenal, carried salvage, chip damage).
-    expect(p.level).toBe(7);
+    // The squad carried through intact — arsenal, carried salvage, and chip damage survive.
     expect(p.salvaged).toBe(5);
     expect(p.weapon).toBe("gravediggers-spade");
     expect(p.hp).toBeGreaterThanOrEqual(61); // chip damage carried (+ ~2s of always-on regen while channeling)…
@@ -1664,7 +1633,6 @@ describe("GameRoom — §M14 golden tick snapshot (the hand-numbered phase order
           hp: Math.round(p.hp),
           x: Math.round(p.x),
           y: Math.round(p.y),
-          level: p.level,
         }))
         .sort((a, b) => a.id.localeCompare(b.id));
       return {
@@ -1700,7 +1668,6 @@ describe("GameRoom — §M14 golden tick snapshot (the hand-numbered phase order
             "alive": true,
             "hp": 100,
             "id": "p1",
-            "level": 1,
             "x": 2536,
             "y": 2342,
           },
@@ -1708,7 +1675,6 @@ describe("GameRoom — §M14 golden tick snapshot (the hand-numbered phase order
             "alive": true,
             "hp": 90,
             "id": "p2",
-            "level": 1,
             "x": 2405,
             "y": 2333,
           },
@@ -1884,13 +1850,12 @@ describe("GameRoom — §29 belt arsenal (3 slots + bag)", () => {
   });
 });
 
-// ── §30 v0.118 CRIT (Brotato parity): LUK/DEX crit chance, rolled per damage source in damageEnemy. ──
+// ── B20 L1 flat crit: 5% base plus additive modifier hooks, rolled per damage source. ──
 describe("GameRoom — §30 crit", () => {
-  it("critChanceFor scales with LUK/DEX off a 5% base and caps", () => {
-    expect(critChanceFor(1, 1)).toBeCloseTo(0.05, 5); // baseline
-    expect(critChanceFor(6, 1)).toBeCloseTo(0.15, 5); // +2%/LUK × 5
-    expect(critChanceFor(1, 6)).toBeCloseTo(0.09, 5); // +0.8%/DEX × 5
-    expect(critChanceFor(99, 99)).toBe(0.75); // clamped
+  it("critChanceFor starts at 5%, sums additive hooks, and caps", () => {
+    expect(critChanceFor()).toBeCloseTo(0.05, 5);
+    expect(critChanceFor([0.1, 0.04])).toBeCloseTo(0.19, 5);
+    expect(critChanceFor([1])).toBe(0.75);
   });
 
   it("a landed crit DOUBLES damage and bumps critFlash; a miss does neither", () => {
@@ -1954,41 +1919,27 @@ describe("GameRoom — §30 weapon set-bonus", () => {
   });
 });
 
-// ── §30 v0.118 HARVEST (Brotato parity #3): extraction banks a LUK-scaled premium on carried salvage. ──
-describe("GameRoom — §30 harvest bonus", () => {
-  it("banks a LUK-scaled premium at extraction (capped)", () => {
+// B20 L1: extraction has no character-stat premium.
+describe("GameRoom — stat-free extraction", () => {
+  it("banks exactly the carried salvage", () => {
     const h = makeRoom();
     h.join("p1");
     const p = h.state().players.get("p1");
-    p.luk = 6; // +4%/LUK over 1 → +20%
     p.salvaged = 100;
     h.state().portalOpen = true;
     h.state().portalX = p.x;
     h.state().portalY = p.y;
     h.room.checkExtraction([{ x: p.x, y: p.y }]);
     expect(h.state().outcome).toBe("victory");
-    expect(h.state().bankedSalvage).toBe(120); // 100 carried + 20% harvest
+    expect(h.state().bankedSalvage).toBe(100);
     expect(p.salvaged).toBe(0); // banked out
-  });
-
-  it("no LUK investment → no harvest premium (just the carried salvage)", () => {
-    const h = makeRoom();
-    h.join("p1");
-    const p = h.state().players.get("p1");
-    p.luk = 1;
-    p.salvaged = 50;
-    h.state().portalOpen = true;
-    h.state().portalX = p.x;
-    h.state().portalY = p.y;
-    h.room.checkExtraction([{ x: p.x, y: p.y }]);
-    expect(h.state().bankedSalvage).toBe(50);
   });
 });
 
 // ── §31 v0.118 META-PROGRESSION: permanent upgrades bought with scrip, seeded from the persisted account
-// on a belt join and applied to the starting stats. ──
+// on a belt join. L1 removes their retired character-stat projection without changing the meta rail. ──
 describe("GameRoom — §31 meta upgrades", () => {
-  it("seeds + applies persisted upgrade levels on a belt join (clamped)", () => {
+  it("seeds persisted upgrade levels while character stats remain absent", () => {
     const h = makeRoom({ belt: true });
     h.room.clients.push({ sessionId: "pU" });
     h.room.onJoin({ sessionId: "pU" }, { up: { vitality: 2, fortune: 1, power: 3 } });
@@ -1998,8 +1949,8 @@ describe("GameRoom — §31 meta upgrades", () => {
     expect(p.upPower).toBe(3);
     expect(p.maxHp).toBe(PLAYER_MAX_HP + 2 * META_VITALITY_HP);
     expect(p.hp).toBe(p.maxHp);
-    expect(p.luk).toBe(1 + META_FORTUNE_LUK);
-    expect(p.str).toBe(1 + 3 * META_POWER_STR);
+    expect("luk" in p).toBe(false);
+    expect("str" in p).toBe(false);
     // over-max / garbage clamps.
     h.room.clients.push({ sessionId: "pV" });
     h.room.onJoin({ sessionId: "pV" }, { up: { vitality: 99, fortune: -5, power: "x" } });
@@ -2188,7 +2139,7 @@ describe("GameRoom — §38 weapon-gated signature draft", () => {
 beforeEach(() => {});
 
 // ── §44 SERVER SAFETY (Sol audit Wave 2) — dev-gated debug RPCs, entity caps, the action-message budget,
-// and the parry/level-window gate. These are the "one hostile client DoSes the shared node process /
+// and the parry action gate. These are the "one hostile client DoSes the shared node process /
 // farms risk-free damage" holes; each test drives the real handler + tick paths. ──────────────────────
 describe("GameRoom — §44 safety gates", () => {
   const asProd = (fn: () => void) => {
@@ -2228,22 +2179,6 @@ describe("GameRoom — §44 safety gates", () => {
       h.tick(1);
     }
     expect(h.state().enemies.size).toBeLessThanOrEqual(MAX_ENEMIES);
-  });
-
-  it("parry during the level-up window is DEFERRED, not executed — no risk-free invulnerable horde-scan", () => {
-    const h = makeRoom();
-    h.join("p1");
-    const p = h.state().players.get("p1");
-    const c = h.room.combat.get("p1");
-    p.flexPending = 1; // the frozen-invincible level window is open
-    h.send("p1", "parry");
-    expect(c.invuln).toBe(0); // executeParry did NOT run…
-    expect(c.parryBuffer).toBeGreaterThan(0); // …the press was queued instead
-    // The window closes → the tick consumes the buffer under the common `acting` gate.
-    p.flexPending = 0;
-    p.flexTimer = 0;
-    h.tick(1);
-    expect(c.invuln).toBeGreaterThan(0);
   });
 
   it("in PRODUCTION the debug RPCs are unreachable — training/summon/boss-picker/dev-equip all no-op", () => {
@@ -2407,7 +2342,7 @@ describe("improve2 integrity regressions", () => {
     expect(receipt?.delivery).toBe(CombatDelivery.Gun);
     expect(h.state().combatReceipts.length).toBe(COMBAT_RECEIPT_CAP);
     expect([...h.state().combatReceipts]).toEqual(rows);
-    expect(h.state().schemaVersion).toBe(33);
+    expect(h.state().schemaVersion).toBe(34);
   });
 });
 
@@ -2723,39 +2658,40 @@ describe("GameRoom — melee parry telegraph commitment", () => {
   });
 });
 
-// ── XP PANEL: authoritative Echo field → Reach latch → arrival grant. APPENDED regression coverage;
-// existing XP/leveling assertions above remain untouched as the historical compatibility net. ──────────────
-const XP_PANEL = await import("@dd/shared");
+// B20 L1: the former XP packet rail is now a money-only collectible with no progression state.
+const MONEY_PANEL = await import("@dd/shared");
 
-describe("GameRoom — server-authoritative XP Echoes", () => {
-  it("a paid death outside Reach drops exact tough XP and grants nothing before collection", () => {
+describe("GameRoom — server-authoritative money drops", () => {
+  it("a paid death outside reach drops exact tough money and grants nothing before collection", () => {
     const h = makeRoom();
     h.join("p1");
     const player = h.state().players.get("p1");
     player.x = h.room.map.spawnX;
     player.y = h.room.map.spawnY;
     const enemy = new EnemyState();
-    enemy.id = "xp-far";
+    enemy.id = "money-far";
     enemy.kind = "critter";
     enemy.tough = true;
     enemy.hp = 1;
-    enemy.x = player.x + XP_PANEL.BASE_XP_MOTE_REACH + 90;
+    enemy.x = player.x + MONEY_PANEL.BASE_MONEY_DROP_REACH + 90;
     enemy.y = player.y;
     const kills: string[] = [];
 
     h.room.damageEnemy(enemy, enemy.id, 999, kills);
 
     expect(kills).toEqual([enemy.id]);
-    expect(player.xp).toBe(0);
-    expect(h.state().xpEchoes.size).toBe(1);
-    const echo = [...h.state().xpEchoes.values()][0];
-    expect(echo?.value).toBe((ENEMY_KINDS.critter?.xpValue ?? 0) * XP_PANEL.TOUGH_XP_MULT);
+    expect(player.scrip).toBe(0);
+    expect(h.state().moneyDrops.size).toBe(1);
+    const drop = [...h.state().moneyDrops.values()][0];
+    expect(drop?.value).toBe(
+      (ENEMY_KINDS.critter?.moneyValue ?? 0) * MONEY_PANEL.TOUGH_MONEY_MULT,
+    );
     h.tick(30);
-    expect(player.xp).toBe(0); // no combat TTL or whole-screen vacuum
-    expect(h.state().xpEchoes.size).toBe(1);
+    expect(player.scrip).toBe(0);
+    expect(h.state().moneyDrops.size).toBe(1);
   });
 
-  it("latches one collector, changes no progression before collectTick, then grants the full squad", () => {
+  it("latches one collector, then credits the existing squad scrip rail on arrival", () => {
     const h = makeRoom();
     h.join("p1");
     h.join("p2");
@@ -2765,24 +2701,19 @@ describe("GameRoom — server-authoritative XP Echoes", () => {
     p1.y = h.room.map.spawnY;
     p2.x = p1.x + 500;
     p2.y = p1.y;
-    p2.alive = false; // downed squadmates receive XP but cannot attract a new Echo
-    h.room.dropXp(p1.x + 100, p1.y, 5);
-    const echo = [...h.state().xpEchoes.values()][0];
-    expect(echo).toBeDefined();
+    p2.alive = false;
+    h.room.dropMoney(p1.x + 100, p1.y, 5);
+    const drop = [...h.state().moneyDrops.values()][0];
+    expect(drop).toBeDefined();
 
-    for (let i = 0; i < 12 && !echo.collectorId; i++) h.tick(1);
-    expect(echo.collectorId).toBe("p1");
-    expect(p1.xp).toBe(0);
-    expect(p2.xp).toBe(0);
-    while (h.state().tick + 1 < echo.collectTick) h.tick(1);
-    expect(p1.xp).toBe(0);
-    expect(p1.flexPending).toBe(0);
+    for (let i = 0; i < 12 && !drop.collectorId; i++) h.tick(1);
+    expect(drop.collectorId).toBe("p1");
+    expect([p1.scrip, p2.scrip]).toEqual([0, 0]);
+    while (h.state().tick < drop.collectTick) h.tick(1);
+    expect(drop.delivered).toBe(true);
+    expect([p1.scrip, p2.scrip]).toEqual([5, 5]);
     h.tick(1);
-    expect(echo.delivered).toBe(true); // one-patch receipt latch
-    expect(p1.xp).toBe(5);
-    expect(p2.xp).toBe(5); // full value, never split by party size or alive state
-    h.tick(1);
-    expect(h.state().xpEchoes.has(echo.id)).toBe(false);
+    expect(h.state().moneyDrops.has(drop.id)).toBe(false);
   });
 
   it("chooses the nearest eligible player with a stable session-id tie break", () => {
@@ -2797,29 +2728,29 @@ describe("GameRoom — server-authoritative XP Echoes", () => {
     p1.y = y;
     p2.x = x + 60;
     p2.y = y;
-    h.room.dropXp(x, y, 1);
-    const echo = [...h.state().xpEchoes.values()][0];
+    h.room.dropMoney(x, y, 1);
+    const drop = [...h.state().moneyDrops.values()][0];
 
-    for (let i = 0; i < 10 && !echo.collectorId; i++) h.tick(1);
+    for (let i = 0; i < 10 && !drop.collectorId; i++) h.tick(1);
 
-    expect(echo.collectorId).toBe("p1");
+    expect(drop.collectorId).toBe("p1");
   });
 
-  it("caps 200 paid sources at 48 synchronized rows while conserving their exact summed value", () => {
+  it("caps 200 paid sources at 48 synchronized rows while conserving their exact value", () => {
     const h = makeRoom();
     h.join("p1");
     const player = h.state().players.get("p1");
     player.x = 100;
     player.y = 100;
     for (let i = 0; i < 200; i++) {
-      h.room.dropXp(600 + (i % 10) * 100, 600 + Math.floor(i / 10) * 100, 1);
+      h.room.dropMoney(600 + (i % 10) * 100, 600 + Math.floor(i / 10) * 100, 1);
     }
 
-    expect(h.state().xpEchoes.size).toBe(XP_PANEL.MAX_XP_ECHOES);
-    expect([...h.state().xpEchoes.values()].reduce((sum, echo) => sum + echo.value, 0)).toBe(200);
+    expect(h.state().moneyDrops.size).toBe(MONEY_PANEL.MAX_MONEY_DROPS);
+    expect([...h.state().moneyDrops.values()].reduce((sum, drop) => sum + drop.value, 0)).toBe(200);
   });
 
-  it("retargets a guaranteed flight when its collector disconnects without losing or duplicating value", () => {
+  it("retargets a flight when its collector disconnects without duplicating money", () => {
     const h = makeRoom();
     h.join("p1");
     h.join("p2");
@@ -2827,33 +2758,20 @@ describe("GameRoom — server-authoritative XP Echoes", () => {
     const p2 = h.state().players.get("p2");
     p1.x = h.room.map.spawnX;
     p1.y = h.room.map.spawnY;
-    p2.x = p1.x + 700;
+    p2.x = p1.x + 160;
     p2.y = p1.y;
-    h.room.dropXp(p1.x + 90, p1.y, 2);
-    const echo = [...h.state().xpEchoes.values()][0];
-    for (let i = 0; i < 10 && !echo.collectorId; i++) h.tick(1);
-    expect(echo.collectorId).toBe("p1");
+    h.room.dropMoney(p1.x + 60, p1.y, 2);
+    const drop = [...h.state().moneyDrops.values()][0];
+    for (let i = 0; i < 10 && !drop.collectorId; i++) h.tick(1);
+    expect(drop.collectorId).toBe("p1");
 
     h.room.clients = h.room.clients.filter(
       (client: { sessionId: string }) => client.sessionId !== "p1",
     );
     h.room.onLeave({ sessionId: "p1" });
-    h.tick(1);
+    for (let i = 0; i < 16 && p2.scrip === 0; i++) h.tick(1);
 
-    expect(echo.collectorId).toBe("p2");
-    expect(echo.value).toBe(2);
-    for (let i = 0; i < 12 && p2.xp === 0; i++) h.tick(1);
-    expect(p2.xp).toBe(2);
-  });
-
-  it("does not create a receipt when every current player is already at the level cap", () => {
-    const h = makeRoom();
-    h.join("p1");
-    h.state().players.get("p1").level = XP_PANEL.LEVEL_CAP;
-
-    h.room.dropXp(1000, 1000, 20);
-
-    expect(h.state().xpEchoes.size).toBe(0);
+    expect(p2.scrip).toBe(2);
   });
 });
 
@@ -3222,7 +3140,7 @@ describe("GameRoom - Serraketh authoritative integration", () => {
     expect(runtime.localHp[3]).toBe(neighborHp);
     expect(root.hp).toBe(rootHp - 80);
     expect(h.state().enemies.has(root.id)).toBe(true);
-    expect([...h.state().xpEchoes.values()].map((echo: { value: number }) => echo.value)).toEqual([
+    expect([...h.state().moneyDrops.values()].map((drop: { value: number }) => drop.value)).toEqual([
       3,
     ]);
   });
@@ -3243,23 +3161,21 @@ describe("GameRoom - Serraketh authoritative integration", () => {
     );
   });
 
-  it("locks anatomy Echoes until the one terminal core release and conserves exactly 110 XP", () => {
+  it("conserves exactly 110 money across anatomy and terminal core drops", () => {
     const { h, runtime, root } = makeSerrakethRoom();
     h.room.detonate(runtime.x[2], runtime.y[2], 0, 80, 0);
-    expect(h.room.lockedWormEchoIds.size).toBe(1);
-    expect(h.state().xpEchoes.get([...h.room.lockedWormEchoIds][0]).collectorId).toBe("");
+    expect([...h.state().moneyDrops.values()].reduce((sum, drop) => sum + drop.value, 0)).toBe(3);
 
     const kills: string[] = [];
     h.room.damageWormSlots([0], root.hp * 4, "test:finale", kills, 0, false);
     for (const id of kills) h.state().enemies.delete(id);
 
-    expect(h.room.lockedWormEchoIds.size).toBe(0);
     expect(
-      [...h.state().xpEchoes.values()].reduce(
-        (sum: number, echo: { value: number }) => sum + echo.value,
+      [...h.state().moneyDrops.values()].reduce(
+        (sum: number, drop: { value: number }) => sum + drop.value,
         0,
       ),
-    ).toBe(wormRoomShared.WORM_TOTAL_XP);
+    ).toBe(wormRoomShared.WORM_TOTAL_MONEY);
     expect(h.state().wormBoss.active).toBe(false);
     expect(h.state().portalOpen).toBe(true);
   });
@@ -3523,7 +3439,7 @@ describe("GameRoom — §51 tough-enemy melee combos (Wave 1 authority)", () => 
   });
 
   it("ships schema 19, named depth decks, and guardrail-safe authored literals", () => {
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(33);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(34);
     expect(new EnemyState().comboSeq).toBe(0);
     expect(new EnemyState().comboFlags).toBe(0);
     expect(herePlayerJuggledDefault()).toBe(0);
@@ -3886,7 +3802,7 @@ describe("GameRoom — jump-feel J1 authoritative stance/physics", () => {
 
   it("ships schema 21 with the three appended uint8 stance/VFX defaults", () => {
     const player = new enemyComboShared.PlayerState();
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(33);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(34);
     expect([player.moveStance, player.poundSeq, player.stanceSeq]).toEqual([0, 0, 0]);
   });
 });
@@ -3955,72 +3871,42 @@ describe("GameRoom — whole-art join selection authority", () => {
   });
 });
 
-// Wave 21a — appended class-dissolution economy, identity-snapshot, quirk-seam, and schema fixtures.
-describe("GameRoom — classmerge 21a", () => {
-  const attrTotal = (player: { str: number; dex: number; int: number; con: number; luk: number }) =>
-    player.str + player.dex + player.int + player.con + player.luk;
-
-  it("drains every timed-out decision in one pass through weapon default + normal ballast", () => {
-    const h = makeRoom();
-    h.join("timeout");
-    h.send("timeout", "toggleTraining");
-    h.send("timeout", "devEquip", { character: "cc-asha-the-ash-walker" });
-    const player = h.state().players.get("timeout");
-    player.weapon = "x-staff-arcane-lance";
-    player.flexPending = 2;
-    player.flexTimer = 0.01;
-    const beforeTotal = attrTotal(player);
-    const beforeInt = player.int;
-
-    h.tick(1);
-
-    expect(player.flexPending).toBe(0);
-    expect(player.flexTimer).toBe(0);
-    expect(player.int - beforeInt).toBe(4);
-    expect(attrTotal(player) - beforeTotal).toBe(6);
-  });
-
+// B20 L1 — character identity remains flavor-only; quirks keep their non-stat behavior.
+describe("GameRoom — flavor-only character identity", () => {
   it("keeps C cosmetic mid-run, then snapshots the worn identity on restart and rift descent", () => {
     const h = makeRoom();
     h.join("identity");
     const player = h.state().players.get("identity");
     const combat = h.room.combat.get("identity");
     expect(player.runCharacter).toBe("proto-cowboy-hidden-face");
-    expect([player.str, player.dex, player.int, player.con, player.luk]).toEqual([2, 2, 2, 2, 2]);
+    expect(["str", "dex", "int", "con", "luk"].some((key) => key in player)).toBe(false);
 
     h.send("identity", "cycleCharacter");
     expect(player.character).toBe("proto-cyberpunk-hacker");
     expect(player.runCharacter).toBe("proto-cowboy-hidden-face");
     expect(combat.identityCharacter).toBe("proto-cowboy-hidden-face");
-    expect([player.str, player.dex, player.int, player.con, player.luk]).toEqual([2, 2, 2, 2, 2]);
 
     h.room.restartRun();
     expect(player.runCharacter).toBe("proto-cyberpunk-hacker");
     expect(combat.identityCharacter).toBe(player.runCharacter);
-    expect([player.str, player.dex, player.int, player.con, player.luk]).toEqual([2, 2, 2, 2, 2]);
 
-    player.str += 5; // earned allocation survives the next boundary's spread-delta rebase
     h.tick(1); // refill the action budget
     h.send("identity", "cycleCharacter");
     expect(player.character).toBe("proto-desert-nomad");
     h.room.transitionDimension();
     expect(player.runCharacter).toBe("proto-desert-nomad");
-    expect([player.str, player.dex, player.int, player.con, player.luk]).toEqual([7, 2, 2, 2, 2]);
   });
 
-  it("re-snapshots every training cycle by spread delta and preserves allocated points", () => {
+  it("re-snapshots every training cycle without installing numeric stats", () => {
     const h = makeRoom();
     h.join("training-kit");
     const player = h.state().players.get("training-kit");
     h.send("training-kit", "toggleTraining");
-    player.dex += 4;
-    const allocatedTotal = attrTotal(player) - 10;
     h.send("training-kit", "cycleCharacter");
 
     expect(player.character).toBe("proto-cyberpunk-hacker");
     expect(player.runCharacter).toBe(player.character);
-    expect([player.str, player.dex, player.int, player.con, player.luk]).toEqual([2, 6, 2, 2, 2]);
-    expect(attrTotal(player) - 10).toBe(allocatedTotal);
+    expect(["str", "dex", "int", "con", "luk"].some((key) => key in player)).toBe(false);
     expect(player.maxHp).toBe(PLAYER_MAX_HP);
     expect(player.hp).toBe(player.maxHp);
   });
@@ -4077,7 +3963,7 @@ describe("GameRoom — classmerge 21a", () => {
 
   it("retains schema 21 while defaulting character identity to the shared default", () => {
     const player = new enemyComboShared.PlayerState();
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(33);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(34);
     expect([player.character, player.runCharacter]).toEqual([
       enemyComboShared.DEFAULT_CHARACTER,
       enemyComboShared.DEFAULT_CHARACTER,
@@ -4576,22 +4462,7 @@ function addUltimateEnemy(
   return enemy;
 }
 
-describe("ULT U1 unlock timeout, charge truth, and validation", () => {
-  it("drains AFK decisions through +2 pick/+1 ballast and attunes on the fifth decision", () => {
-    const h = makeRoom();
-    h.join("ult-afk");
-    const player = h.state().players.get("ult-afk");
-    player.weapon = "x-staff-arcane-lance"; // deterministic INT timeout default
-    player.flexPending = 5;
-    player.flexTimer = 0.01;
-    h.tick();
-    expect(enemyComboShared.ATTRS.reduce((n, attr) => n + player.allocRun[attr], 0)).toBe(15);
-    expect(player.allocRun.int).toBe(15);
-    expect(enemyComboShared.ultimateFamilyForCode(player.ultArchetype)).toBe(
-      enemyComboShared.UltimateFamily.SunspiteComet,
-    );
-  });
-
+describe("ULT U1 flat activity charge truth and validation", () => {
   it("credits applied personal damage once, emits the ready edge, and enforces every anti-farm gate", () => {
     const { h, id, player, combat } = makeUltimateRoom(
       enemyComboShared.UltimateFamily.Seismarch,
@@ -4615,7 +4486,7 @@ describe("ULT U1 unlock timeout, charge truth, and validation", () => {
       "rusty-cleaver",
       enemyComboShared.CombatDelivery.Melee,
     );
-    expect(player.ultCharge).toBe(1); // DEX Seismarch's +15% still quantizes one displayed point.
+    expect(player.ultCharge).toBe(1); // Flat 30-damage activity quantum, independent of character data.
 
     reset();
     const dummy = addUltimateEnemy(h, "charge-dummy", 1100, 1000, DUMMY_HP, "dummy");
@@ -4655,7 +4526,7 @@ describe("ULT U1 unlock timeout, charge truth, and validation", () => {
     expect(player.ultSeq).toBe((seq + 1) & 0xffff);
   });
 
-  it("rejects uncharged, downed, juggled, and level-window activations before spending", () => {
+  it("rejects uncharged, downed, and juggled activations before spending", () => {
     const { h, id, player, combat } = makeUltimateRoom(
       enemyComboShared.UltimateFamily.DimensionDoor,
       "int",
@@ -4677,15 +4548,6 @@ describe("ULT U1 unlock timeout, charge truth, and validation", () => {
     combat.ultBuffer = 0;
 
     combat.juggleArmed = false;
-    player.flexPending = 1;
-    player.flexTimer = 5;
-    h.send(id, "ultimate", { tx: 1200, ty: 1000 });
-    h.tick();
-    expect(player.ultPhase).toBe(enemyComboShared.UltimatePhase.Idle);
-    combat.ultBuffer = 0;
-    player.flexPending = 0;
-    player.flexTimer = 0;
-
     player.alive = false;
     h.send(id, "ultimate", { tx: 1200, ty: 1000 });
     expect(combat.ultBuffer).toBe(0);
@@ -4876,12 +4738,12 @@ describe("ULT U1 lifecycle, co-op, and schema 25", () => {
     expect(player.ultCharge).toBe(50);
   });
 
-  it("ships schema 25 with nine nested wire fields and direct PlayerState accessors for U2", () => {
+  it("ships schema 34 with the stat-free interim ultimate selected and nine nested wire fields", () => {
     const h = makeRoom();
     h.join("ult-schema");
     const player = h.state().players.get("ult-schema");
-    expect(h.state().schemaVersion).toBe(33);
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(33);
+    expect(h.state().schemaVersion).toBe(34);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(34);
     expect([
       player.ultimate.archetype,
       player.ultimate.charge,
@@ -4892,7 +4754,17 @@ describe("ULT U1 lifecycle, co-op, and schema 25", () => {
       player.ultimate.endTick,
       player.ultimate.targetX,
       player.ultimate.targetY,
-    ]).toEqual([0, 0, 0, 0, 0, 0, 0, 0, 0]);
+    ]).toEqual([
+      enemyComboShared.ultimateCodeFor(enemyComboShared.UltimateFamily.SunspiteComet, "str"),
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+    ]);
     player.ultCharge = 42;
     expect(player.ultimate.charge).toBe(42);
   });
@@ -4931,7 +4803,7 @@ describe("pet v1 join snapshot, lock, and schema 25", () => {
     h.room.clients.push(client);
     h.room.onJoin(client, { metaAccount: account, selectedPetId: "brass-crab" });
     const player = h.state().players.get("pet-lock");
-    expect([h.state().schemaVersion, enemyComboShared.SCHEMA_VERSION]).toEqual([33, 33]);
+    expect([h.state().schemaVersion, enemyComboShared.SCHEMA_VERSION]).toEqual([34, 34]);
     expect({ petId: player.petId, petLevelBand: player.petLevelBand }).toEqual({
       petId: "hearth-newt",
       petLevelBand: 3,
@@ -4950,10 +4822,8 @@ describe("pet v1 approved roster bonus enforcement", () => {
     const { player, combat } = joinPet(h, "verdant-max", "verdant-wing", 3600);
     h.state().mode = "training";
     player.hp = 50;
-    const derivedCon = enemyComboShared.spreadAdjustedCon(player.con);
-    const baseRegen = enemyComboShared.deriveStats({ con: derivedCon }).regen;
     h.room.stepSim(0.05);
-    expect(player.hp).toBeCloseTo(50 + baseRegen * 1.5 * 0.05, 6);
+    expect(player.hp).toBeCloseTo(50 + PLAYER_REGEN * 1.5 * 0.05, 6);
 
     player.weapon = "x-gun-coffin-shotgun";
     h.room.restoreWeaponResource(player, combat, true, false);
@@ -5001,18 +4871,14 @@ describe("pet v1 approved roster bonus enforcement", () => {
     expect(player.hp).toBe(65);
   });
 
-  it("Lodestar Moth extends owner-centred reach and latches its 600px boundary sweep", () => {
+  it("Lodestar Moth extends owner-centred money-drop reach", () => {
     const h = makeRoom();
     const { player } = joinPet(h, "moth-max", "lodestar-moth", 3600);
-    expect(h.room.xpMoteReach(player)).toBe(360);
-    const echo = new enemyComboShared.XpEchoState();
-    echo.id = "pet-moth-echo";
-    echo.x = player.x + 500;
-    echo.y = player.y;
-    echo.value = 10;
-    h.state().xpEchoes.set(echo.id, echo);
-    h.room.beginXpBoundary("descent");
-    expect(echo.collectorId).toBe(player.id);
+    expect(h.room.moneyDropReach(player)).toBe(360);
+    h.room.dropMoney(player.x + 350, player.y, 10);
+    const drop = [...h.state().moneyDrops.values()][0];
+    h.tick(enemyComboShared.MONEY_DROP_ARM_TICKS);
+    expect(drop.collectorId).toBe(player.id);
   });
 
   it("Copper Snail expands only earned pickup reach and raises only the capstone bag admission", () => {
@@ -5104,11 +4970,8 @@ describe("pet v1 approved roster bonus enforcement", () => {
     h.room.damagePitFall(player);
     expect(pet.tortoisePitRegenSeconds).toBe(3);
     player.hp = 50;
-    const baseRegen = enemyComboShared.deriveStats({
-      con: enemyComboShared.spreadAdjustedCon(player.con),
-    }).regen;
     h.room.stepSim(0.05);
-    expect(player.hp).toBeCloseTo(50 + baseRegen * 1.5 * 0.05, 6);
+    expect(player.hp).toBeCloseTo(50 + PLAYER_REGEN * 1.5 * 0.05, 6);
     expect(pet.tortoisePitRegenSeconds).toBeCloseTo(2.95, 8);
   });
 });
@@ -5542,31 +5405,17 @@ describe("GameRoom — dual-wield schema 27 server core", () => {
     ).toBe(dryHand);
   });
 
-  it("counts a linked pair as one set entry and applies the union of requirements to both hands", () => {
+  it("counts a linked pair as one set entry and keeps held damage independent of legacy stat fields", () => {
     const f = makeDualWieldFixture("rattler-sabre", "x-sword-neon-katana");
     expect(enemyComboShared.classCount(f.h.room.loadoutIds(f.player), "melee")).toBe(1);
-    f.player.dex = 1;
-    const union = enemyComboShared.pairRequirementPenalty(
-      WEAPONS["rattler-sabre"]!,
-      WEAPONS["x-sword-neon-katana"]!,
-      f.player,
-    );
-    const pairedLead = f.h.room.heldDamageMult(
-      WEAPONS["rattler-sabre"],
-      WEAPONS["rattler-sabre"]!.scalingGrades,
-      f.player,
-      0,
-    );
-    expect(union).toBe(enemyComboShared.REQ_PENALTY_FLOOR);
+    const weapon = WEAPONS["rattler-sabre"]!;
+    expect("requirements" in weapon).toBe(false);
+    expect("scalingGrades" in weapon).toBe(false);
+    const pairedLead = f.h.room.heldDamageMult(weapon, f.player, 0);
+    (f.player as unknown as { dex: number }).dex = 999;
+    expect(f.h.room.heldDamageMult(weapon, f.player, 0)).toBe(pairedLead);
     f.h.send(f.player.id, "unbindPair");
     expect(enemyComboShared.classCount(f.h.room.loadoutIds(f.player), "melee")).toBe(2);
-    const soloLead = f.h.room.heldDamageMult(
-      WEAPONS["rattler-sabre"],
-      WEAPONS["rattler-sabre"]!.scalingGrades,
-      f.player,
-      0,
-    );
-    expect(pairedLead).toBeLessThan(soloLead * 0.3);
   });
 
   it("enforces the 1.37x throughput cap and the 1.45x matched-family cap", () => {
@@ -5653,8 +5502,8 @@ describe("GameRoom — dual-wield schema 27 server core", () => {
     expect(new Set(weaponIds)).toEqual(new Set(["rattler-sabre", "x2-sandsong-saber"]));
 
     const fresh = new enemyComboShared.PlayerState();
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(33);
-    expect(new enemyComboShared.ArenaState().schemaVersion).toBe(33);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(34);
+    expect(new enemyComboShared.ArenaState().schemaVersion).toBe(34);
     expect(fresh.dualWield).toMatchObject({
       offhandSlot: 255,
       pairBaseSeq: 0,
@@ -5834,9 +5683,7 @@ describe("gear G2 archived account compatibility and inert runtime", () => {
     if (!sanitizedEquipped) throw new Error("sanitized gear fixture was not captured");
     const archivedRuntime = enemyComboShared.resolveGearLoadout(sanitizedEquipped);
 
-    expect(enemyComboShared.ATTRS.map((attr) => archivedRuntime.baseStats[attr])).toEqual([
-      1, 4, 1, 2, 2,
-    ]);
+    expect("baseStats" in archivedRuntime).toBe(false);
     expect(archivedRuntime.quirk.id).toBe("package-deal");
     expect(archivedRuntime.mods.drawLockMult).toBe(0);
     expect(geared.account.ownedGear).toEqual(enemyComboShared.GEAR_IDS);
@@ -5845,19 +5692,15 @@ describe("gear G2 archived account compatibility and inert runtime", () => {
     expect(geared.gear).toBeUndefined();
     expect(h.room.gearRuns.has("gear-neon")).toBe(false);
     expect(geared.player.gearSeeded).toBe(false);
-    expect(geared.player.gearMaxHpAdd).toBe(0);
     expect([geared.player.gearUpper, geared.player.gearLower]).toEqual(["", ""]);
     expect([geared.player.character, geared.player.runCharacter]).toEqual([
       "proto-wizard",
       "proto-wizard",
     ]);
-    expect(enemyComboShared.ATTRS.map((attr) => geared.player[attr])).toEqual([2, 2, 2, 2, 2]);
+    expect(["str", "dex", "int", "con", "luk"].some((key) => key in geared.player)).toBe(false);
     expect(geared.combat.identityCharacter).toBe("proto-wizard");
     expect(geared.combat.quirk.id).toBe("unwritten");
     expect(geared.combat.mods.drawLockMult).toBe(1);
-    expect(enemyComboShared.ATTRS.map((attr) => geared.player.allocRun[attr])).toEqual([
-      0, 0, 0, 0, 0,
-    ]);
 
     h.room.publishAccountMutation(geared.player);
     const accountResponse = [...geared.messages]
@@ -5919,13 +5762,12 @@ describe("gear G2 archived account compatibility and inert runtime", () => {
       "proto-cowboy-hidden-face",
       "proto-cowboy-hidden-face",
     ]);
-    expect([player.str, player.dex, player.int, player.con, player.luk]).toEqual([2, 2, 2, 2, 2]);
+    expect(["str", "dex", "int", "con", "luk"].some((key) => key in player)).toBe(false);
     expect(player.maxHp).toBe(PLAYER_MAX_HP);
     expect(player.hp).toBe(player.maxHp);
     expect([player.upVitality, player.upFortune, player.upPower]).toEqual([0, 0, 0]);
     expect([player.gearSeeded, player.gearUpper, player.gearLower]).toEqual([false, "", ""]);
     expect(player.petId).toBe(old.selectedPetId);
-    expect(enemyComboShared.ATTRS.map((attr) => player.allocRun[attr])).toEqual([0, 0, 0, 0, 0]);
   });
 });
 
@@ -6270,8 +6112,8 @@ describe("GameRoom — schema-31 Drive authority", () => {
     );
     const cost = enemyComboShared.driveCostForProfile(profile, interval);
 
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(33);
-    expect(h.state().schemaVersion).toBe(33);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(34);
+    expect(h.state().schemaVersion).toBe(34);
     expect(player.weaponResource).toBe(player.dualWield.weaponResource);
     expect(player.weaponResource).toMatchObject({
       valueQ: 10_000,
@@ -6559,7 +6401,7 @@ describe("GameRoom — schema-31 public prestige ceremony", () => {
     )[tailSymbols[0]!];
     if (!metadata) throw new Error("DualWieldState schema metadata is required");
     expect(metadata[7]).toMatchObject({ name: "prestige", type: "uint8" });
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(33);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(34);
   });
 });
 

@@ -878,7 +878,7 @@ export const VASTAGHAR_ENCOUNTER = {
   addCap: 4,
   addLifetimeTicks: 140,
   maxDestroyedPois: 2,
-  bossXp: 110,
+  bossMoney: 110,
   actions: {
     [VastagharActionKind.Crownstep]: {
       kind: VastagharActionKind.Crownstep,

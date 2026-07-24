@@ -163,7 +163,7 @@ describe("GameRoom — V5R ranged/caster authority", () => {
     expect(projectile.flightTicks).toBe(Math.round(600 / 580 / 0.05));
     expect(room.projectileMeta.get(projectile.id)?.explode).toEqual({
       radius: 62,
-      damage: 9 * room.heldDamageMult(weapon, weapon.gun?.explode?.scalingGrades, player, 0),
+      damage: 9 * room.heldDamageMult(weapon, player, 0),
     });
     room.stepProjectiles(0.05);
     expect(projectile.flightAgeTicks).toBe(1);
