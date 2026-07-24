@@ -1,0 +1,508 @@
+{
+  "generatedAt": "2026-07-24T07:19:57.212Z",
+  "characterId": "proto-cowboy-hidden-face",
+  "weaponId": "x-sword-neon-katana",
+  "subtype": "melee:sword",
+  "shooterKind": "boothill",
+  "burstShooterKind": "dust-ranger",
+  "preventedDamage": 8,
+  "slideCurve": {
+    "pxPerDamage": 4,
+    "expectedDistancePx": 32
+  },
+  "ports": {
+    "client": 49307,
+    "game": 49306
+  },
+  "forbiddenPorts": [
+    5180,
+    2567
+  ],
+  "directional": [
+    {
+      "label": "from-below-air-lift",
+      "before": {
+        "x": 2400,
+        "y": 2420,
+        "hp": 100,
+        "height": 0,
+        "vh": 0,
+        "parriedSeq": 0
+      },
+      "impact": {
+        "x": 2400,
+        "y": 2403.953125,
+        "hp": 100,
+        "height": 65.9375,
+        "vh": 107.5,
+        "parriedSeq": 1
+      },
+      "after": {
+        "x": 2400,
+        "y": 2402.552734375,
+        "hp": 100,
+        "height": 67.98217010498047,
+        "vh": -80.4888916015625,
+        "parriedSeq": 1
+      },
+      "tick": 261,
+      "presentation": 1,
+      "pose": 0,
+      "reaction": 1,
+      "rigPose": 0,
+      "rigReaction": 1,
+      "bodyY": -0.5045468683030787,
+      "bodyScaleY": 0.4117739700335697,
+      "rootScaleX": -0.6623394948497249,
+      "rootScaleY": 0.6623394948497249,
+      "weaponId": "x-sword-neon-katana",
+      "weaponRotation": 0.7413568165555766,
+      "parrySuccessElapsedMs": 171.65999999999985,
+      "weaponTexture": "dd-sprites",
+      "weaponFrame": "x-sword-neon-katana/part-1",
+      "hands": [
+        {
+          "front": false,
+          "x": 4.94,
+          "y": -12.981870997136097,
+          "rotation": 0
+        },
+        {
+          "front": true,
+          "x": 10.260000000000005,
+          "y": -12.65615671142181,
+          "rotation": 0
+        }
+      ],
+      "shooter": {
+        "id": "e0",
+        "attempt": 1,
+        "incomingX": 0,
+        "incomingY": -348,
+        "distance": 348
+      },
+      "screenshot": "docs/owner-notes-audit-v11-evidence/b26-parry/from-below-air-lift.png",
+      "impactDisplacementPx": 16.046875,
+      "displacementPx": 17.447265625,
+      "heightGainPx": 67.98217010498047
+    },
+    {
+      "label": "from-left-slide",
+      "before": {
+        "x": 2440.93408203125,
+        "y": 2420,
+        "hp": 100,
+        "height": 0,
+        "vh": 0,
+        "parriedSeq": 1
+      },
+      "impact": {
+        "x": 2472.93408203125,
+        "y": 2420,
+        "hp": 100,
+        "height": 0,
+        "vh": 0,
+        "parriedSeq": 2
+      },
+      "after": {
+        "x": 2472.93408203125,
+        "y": 2420,
+        "hp": 100,
+        "height": 0,
+        "vh": 0,
+        "parriedSeq": 2
+      },
+      "tick": 515,
+      "presentation": 2,
+      "pose": 0,
+      "reaction": 2,
+      "rigPose": 0,
+      "rigReaction": 2,
+      "bodyY": 0.5989093783301582,
+      "bodyScaleY": 0.4419048981704828,
+      "rootScaleX": -0.6623370433972001,
+      "rootScaleY": 0.6623394948497249,
+      "weaponId": "x-sword-neon-katana",
+      "weaponRotation": -0.8294395102393199,
+      "parrySuccessElapsedMs": 194.97999999999956,
+      "weaponTexture": "dd-sprites",
+      "weaponFrame": "x-sword-neon-katana/part-1",
+      "hands": [
+        {
+          "front": false,
+          "x": 4.940000000000001,
+          "y": -9.169761904761904,
+          "rotation": 0
+        },
+        {
+          "front": true,
+          "x": 10.260000000000005,
+          "y": -8.844047619047618,
+          "rotation": 0
+        }
+      ],
+      "shooter": {
+        "id": "e1",
+        "attempt": 1,
+        "incomingX": 336,
+        "incomingY": 0,
+        "distance": 336
+      },
+      "screenshot": "docs/owner-notes-audit-v11-evidence/b26-parry/from-left-slide.png",
+      "impactDisplacementPx": 32,
+      "displacementPx": 32,
+      "heightGainPx": 0
+    },
+    {
+      "label": "from-right-slide",
+      "before": {
+        "x": 2318.1318359375,
+        "y": 2420,
+        "hp": 100,
+        "height": 0,
+        "vh": 0,
+        "parriedSeq": 2
+      },
+      "impact": {
+        "x": 2286.1318359375,
+        "y": 2420,
+        "hp": 100,
+        "height": 0,
+        "vh": 0,
+        "parriedSeq": 3
+      },
+      "after": {
+        "x": 2286.1318359375,
+        "y": 2420,
+        "hp": 100,
+        "height": 0,
+        "vh": 0,
+        "parriedSeq": 3
+      },
+      "tick": 870,
+      "presentation": 3,
+      "pose": 0,
+      "reaction": 3,
+      "rigPose": 0,
+      "rigReaction": 3,
+      "bodyY": 0.599449223597738,
+      "bodyScaleY": 0.4418536724019038,
+      "rootScaleX": 0.6623394948497249,
+      "rootScaleY": 0.6623394948497249,
+      "weaponId": "x-sword-neon-katana",
+      "weaponRotation": -0.8294395102393199,
+      "parrySuccessElapsedMs": 198.3100000000013,
+      "weaponTexture": "dd-sprites",
+      "weaponFrame": "x-sword-neon-katana/part-1",
+      "hands": [
+        {
+          "front": false,
+          "x": 4.940000000000001,
+          "y": -9.169761904761904,
+          "rotation": 0
+        },
+        {
+          "front": true,
+          "x": 10.260000000000005,
+          "y": -8.844047619047618,
+          "rotation": 0
+        }
+      ],
+      "shooter": {
+        "id": "e2",
+        "attempt": 1,
+        "incomingX": -336,
+        "incomingY": 0,
+        "distance": 336
+      },
+      "screenshot": "docs/owner-notes-audit-v11-evidence/b26-parry/from-right-slide.png",
+      "impactDisplacementPx": 32,
+      "displacementPx": 32,
+      "heightGainPx": 0
+    },
+    {
+      "label": "from-above-brace",
+      "before": {
+        "x": 2388.069091796875,
+        "y": 2458.784912109375,
+        "hp": 100,
+        "height": 0,
+        "vh": 0,
+        "parriedSeq": 3
+      },
+      "impact": {
+        "x": 2388.069091796875,
+        "y": 2458.784912109375,
+        "hp": 100,
+        "height": 0,
+        "vh": 0,
+        "parriedSeq": 4
+      },
+      "after": {
+        "x": 2388.069091796875,
+        "y": 2458.784912109375,
+        "hp": 100,
+        "height": 0,
+        "vh": 0,
+        "parriedSeq": 4
+      },
+      "tick": 1164,
+      "presentation": 4,
+      "pose": 0,
+      "reaction": 4,
+      "rigPose": 0,
+      "rigReaction": 4,
+      "bodyY": 9.075719389378985,
+      "bodyScaleY": 0.3662989862189219,
+      "rootScaleX": 0.6623387564864137,
+      "rootScaleY": 0.6623394948497249,
+      "weaponId": "x-sword-neon-katana",
+      "weaponRotation": -0.8294395102393199,
+      "parrySuccessElapsedMs": 194.9499999999971,
+      "weaponTexture": "dd-sprites",
+      "weaponFrame": "x-sword-neon-katana/part-1",
+      "hands": [
+        {
+          "front": false,
+          "x": 4.940000000000001,
+          "y": -9.169761904761904,
+          "rotation": 0
+        },
+        {
+          "front": true,
+          "x": 10.260000000000005,
+          "y": -8.844047619047618,
+          "rotation": 0
+        }
+      ],
+      "shooter": {
+        "id": "e3",
+        "attempt": 1,
+        "incomingX": -101.93212890625,
+        "incomingY": 322.78504009195285,
+        "distance": 338.49718021059493
+      },
+      "screenshot": "docs/owner-notes-audit-v11-evidence/b26-parry/from-above-brace.png",
+      "impactDisplacementPx": 0,
+      "displacementPx": 0,
+      "heightGainPx": 0
+    }
+  ],
+  "burst": [
+    {
+      "label": "burst-1-high",
+      "before": {
+        "x": 2440.93408203125,
+        "y": 2420,
+        "hp": 97.93000030517578,
+        "height": 0,
+        "vh": 0,
+        "parriedSeq": 4
+      },
+      "impact": {
+        "x": 2476.93408203125,
+        "y": 2420,
+        "hp": 100,
+        "height": 0,
+        "vh": 0,
+        "parriedSeq": 5
+      },
+      "after": {
+        "x": 2476.93408203125,
+        "y": 2420,
+        "hp": 100,
+        "height": 0,
+        "vh": 0,
+        "parriedSeq": 5
+      },
+      "tick": 1445,
+      "presentation": 2,
+      "pose": 0,
+      "reaction": 2,
+      "rigPose": 0,
+      "rigReaction": 2,
+      "bodyY": 4.758521935363017,
+      "bodyScaleY": 0.4224146322827027,
+      "rootScaleX": -0.6623394948497249,
+      "rootScaleY": 0.6623394948497249,
+      "weaponId": "x-sword-neon-katana",
+      "weaponRotation": -0.8294395102393199,
+      "parrySuccessElapsedMs": 188.3199999999997,
+      "weaponTexture": "dd-sprites",
+      "weaponFrame": "x-sword-neon-katana/part-1",
+      "hands": [
+        {
+          "front": false,
+          "x": 4.940000000000001,
+          "y": -9.169761904761904,
+          "rotation": 0
+        },
+        {
+          "front": true,
+          "x": 10.260000000000005,
+          "y": -8.844047619047618,
+          "rotation": 0
+        }
+      ],
+      "shooter": {
+        "id": "e4",
+        "attempt": 1,
+        "incomingX": 372.5999755859375,
+        "incomingY": 0,
+        "distance": 372.5999755859375
+      },
+      "screenshot": "docs/owner-notes-audit-v11-evidence/b26-parry/burst-1-high.png",
+      "impactDisplacementPx": 36,
+      "displacementPx": 36,
+      "heightGainPx": 0
+    },
+    {
+      "label": "burst-2-mid",
+      "before": {
+        "x": 2476.93408203125,
+        "y": 2420,
+        "hp": 100,
+        "height": 0,
+        "vh": 0,
+        "parriedSeq": 5
+      },
+      "impact": {
+        "x": 2512.93408203125,
+        "y": 2420,
+        "hp": 100,
+        "height": 0,
+        "vh": 0,
+        "parriedSeq": 6
+      },
+      "after": {
+        "x": 2512.93408203125,
+        "y": 2420,
+        "hp": 100,
+        "height": 0,
+        "vh": 0,
+        "parriedSeq": 6
+      },
+      "tick": 1476,
+      "presentation": 10,
+      "pose": 1,
+      "reaction": 2,
+      "rigPose": 1,
+      "rigReaction": 2,
+      "bodyY": 1.8719759493730619,
+      "bodyScaleY": 0.4362526414814649,
+      "rootScaleX": -0.6623394948497249,
+      "rootScaleY": 0.6623394948497249,
+      "weaponId": "x-sword-neon-katana",
+      "weaponRotation": -0.20943951023931895,
+      "parrySuccessElapsedMs": 189.98999999999796,
+      "weaponTexture": "dd-sprites",
+      "weaponFrame": "x-sword-neon-katana/part-1",
+      "hands": [
+        {
+          "front": false,
+          "x": 11.020000000000003,
+          "y": 0.7102380952380951,
+          "rotation": 0
+        },
+        {
+          "front": true,
+          "x": 13.299999999999997,
+          "y": 1.0359523809523807,
+          "rotation": 0
+        }
+      ],
+      "shooter": {
+        "id": "e4",
+        "attempt": 1,
+        "incomingX": 372.5999755859375,
+        "incomingY": 0,
+        "distance": 372.5999755859375
+      },
+      "screenshot": "docs/owner-notes-audit-v11-evidence/b26-parry/burst-2-mid.png",
+      "impactDisplacementPx": 36,
+      "displacementPx": 36,
+      "heightGainPx": 0
+    },
+    {
+      "label": "burst-3-low",
+      "before": {
+        "x": 2553.8681640625,
+        "y": 2420,
+        "hp": 98.55999755859375,
+        "height": 0,
+        "vh": 0,
+        "parriedSeq": 6
+      },
+      "impact": {
+        "x": 2589.8681640625,
+        "y": 2420,
+        "hp": 100,
+        "height": 0,
+        "vh": 0,
+        "parriedSeq": 7
+      },
+      "after": {
+        "x": 2589.8681640625,
+        "y": 2420,
+        "hp": 100,
+        "height": 0,
+        "vh": 0,
+        "parriedSeq": 7
+      },
+      "tick": 1526,
+      "presentation": 18,
+      "pose": 2,
+      "reaction": 2,
+      "rigPose": 2,
+      "rigReaction": 2,
+      "bodyY": 5.887411358008459,
+      "bodyScaleY": 0.41678518069728177,
+      "rootScaleX": -0.6623394948497249,
+      "rootScaleY": 0.6623394948497249,
+      "weaponId": "x-sword-neon-katana",
+      "weaponRotation": 0.3705604897606811,
+      "parrySuccessElapsedMs": 199.97999999999593,
+      "weaponTexture": "dd-sprites",
+      "weaponFrame": "x-sword-neon-katana/part-1",
+      "hands": [
+        {
+          "front": false,
+          "x": 6.460000000000001,
+          "y": 9.070238095238096,
+          "rotation": 0
+        },
+        {
+          "front": true,
+          "x": 11.780000000000001,
+          "y": 9.39595238095238,
+          "rotation": 0
+        }
+      ],
+      "shooter": {
+        "id": "e4",
+        "attempt": 1,
+        "incomingX": 372.5999755859375,
+        "incomingY": 0,
+        "distance": 372.5999755859375
+      },
+      "screenshot": "docs/owner-notes-audit-v11-evidence/b26-parry/burst-3-low.png",
+      "impactDisplacementPx": 36,
+      "displacementPx": 36,
+      "heightGainPx": 0
+    }
+  ],
+  "assertions": {
+    "belowRoutedToLegacyLift": true,
+    "leftSlidePx": 32,
+    "rightSlidePx": 32,
+    "aboveNoDisplacementPx": 0,
+    "aboveCompressed": true,
+    "poses": [
+      0,
+      1,
+      2
+    ],
+    "uniqueWeaponRotations": 3,
+    "allGuardPlateauFrames": true
+  }
+}

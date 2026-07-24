@@ -24,6 +24,7 @@ import {
   AUG_PROJECTILE_SPEED,
   AUG_PROJECTILE_SPREAD,
   addImpulse,
+  advanceParryGuardCycle,
   admittedPrismaticBeamRayCount,
   BAG_CAP,
   BASE_MONEY_DROP_REACH,
@@ -81,7 +82,9 @@ import {
   CRIT_CHANCE_CAP,
   CRIT_MULT,
   characterScale,
+  classifyParryIncidence,
   clamp,
+  clampParrySlideToNavigation,
   clampBeltFloorY,
   clampQuakeEpicenter,
   clipPoiRayLength,
@@ -233,6 +236,9 @@ import {
   PARRY_REFLECT_MIN_DAMAGE,
   PARRY_REFLECT_PIERCE,
   PARRY_REFLECT_SPEED,
+  packParryPresentation,
+  ParryReaction,
+  type ParryGuardCycleState,
   type PairedWeaponEntryV1,
   PET_CATALOG_VERSION,
   type PetId,
@@ -266,6 +272,8 @@ import {
   petLevelForXp,
   petModsForLevel,
   petStageBandForLevel,
+  parryGuardSubtypeKey,
+  parrySlideDistance,
   pickEnemyKind,
   pickToughCombo,
   placeArenaGatePair,
@@ -935,6 +943,8 @@ interface CombatState {
    *  attacker. `parryChainT` = seconds left before the chain lapses. */
   parryChain: number;
   parryChainT: number;
+  /** B26 successful-guard cycles are independent per catalog subtype and advance on receipts only. */
+  parryGuardCycles: Map<string, ParryGuardCycleState>;
   /** Exact accepted parry epoch; boss counters never mistake slide/ultimate i-frames for a white answer. */
   parryOpenedTick: number;
   /** Exclusive tick bound for weapon-lunge i-frames. Kept separate so they never count as a parry. */
@@ -2294,7 +2304,17 @@ export class GameRoom extends Room<ArenaState> {
     // and gating to training keeps it out of a live survival run. All fields validated (untrusted client).
     this.onMessage(
       "debugSpawn",
-      (client, message: { kind?: string; count?: number; tough?: boolean }) => {
+      (
+        client,
+        message: {
+          kind?: string;
+          count?: number;
+          tough?: boolean;
+          angle?: number;
+          distance?: number;
+          attackReady?: boolean;
+        },
+      ) => {
         if (!this.devToolsEnabled() || !this.takeAction(client)) return; // §44 dev-gated + budgeted
         if (this.state.mode !== "training") return;
         const player = this.state.players.get(client.sessionId);
@@ -2303,7 +2323,31 @@ export class GameRoom extends Room<ArenaState> {
         if (typeof kindId !== "string" || !ENEMY_KINDS[kindId] || kindId === "dummy") return;
         const count = clamp(Math.floor(message?.count ?? 1), 1, DEBUG_SPAWN_MAX);
         const tough = message?.tough === true;
-        for (let i = 0; i < count; i++) this.debugSpawnOne(kindId, tough, player);
+        const rawAngle = message?.angle;
+        const suppliedAngle =
+          typeof rawAngle === "number" && Number.isFinite(rawAngle)
+            ? Math.atan2(Math.sin(rawAngle), Math.cos(rawAngle))
+            : undefined;
+        const rawDistance = message?.distance;
+        const suppliedDistance =
+          typeof rawDistance === "number" && Number.isFinite(rawDistance)
+            ? clamp(rawDistance, 160, SPAWN_RING)
+            : undefined;
+        const attackReady = message?.attackReady === true;
+        for (let i = 0; i < count; i++) {
+          const angle =
+            suppliedAngle === undefined
+              ? undefined
+              : suppliedAngle + (i - (count - 1) / 2) * 0.22;
+          this.debugSpawnOne(
+            kindId,
+            tough,
+            player,
+            angle,
+            suppliedDistance,
+            attackReady,
+          );
+        }
       },
     );
 
@@ -3632,6 +3676,7 @@ export class GameRoom extends Room<ArenaState> {
     this.combat.forEach((c) => {
       c.lastParryAt = -999;
       c.hairStreak = 0;
+      c.parryGuardCycles.clear();
       c.heldEarned = false;
       c.ultChargeF = 0;
       c.ultAccrualThisTick = 0;
@@ -3896,6 +3941,7 @@ export class GameRoom extends Room<ArenaState> {
         c.bulwarkShield = 0;
         c.hairStreak = 0;
         c.lastParryAt = -999;
+        c.parryGuardCycles.clear();
         c.killHealWindowStart = -999;
         c.killHealWindowAmount = 0;
         c.vh = 0;
@@ -4346,6 +4392,7 @@ export class GameRoom extends Room<ArenaState> {
       lastParryAt: -999,
       parryChain: 0,
       parryChainT: 0,
+      parryGuardCycles: new Map<string, ParryGuardCycleState>(),
       parryOpenedTick: 0xffffffff,
       weaponLungeIFrameUntilTick: 0,
       killHealWindowStart: -999,
@@ -9854,6 +9901,7 @@ export class GameRoom extends Room<ArenaState> {
       if (c && c.invuln > 0) {
         p.parriedSeq += 1; // PARRIED (i-frame window) — negate + trigger the white parry flash
         c.parryCd = Math.min(c.parryCd, PARRY_CHAIN_CD);
+        this.applyDirectionalParryReaction(p, c, dx, dy, damage);
         this.applyParryAugments(p, c);
         this.bossController?.acceptWormParry(p.id, this.state.tick);
         return;
@@ -9899,7 +9947,7 @@ export class GameRoom extends Room<ArenaState> {
         out.parried++;
         out.answered++;
         out.lastParrierId = player.id;
-        this.resolveVastagharParry(player, combat, x, y, false);
+        this.resolveVastagharParry(player, combat, x, y, damage);
         return;
       }
       if (combat && (combat.pitGrace > 0 || this.slideInvulnerable(combat) || combat.invuln > 0)) {
@@ -9968,7 +10016,7 @@ export class GameRoom extends Room<ArenaState> {
         out.parried++;
         out.answered++;
         out.lastParrierId = player.id;
-        this.resolveVastagharParry(player, combat, x, y, true);
+        this.resolveVastagharParry(player, combat, x, y, damage);
         return;
       }
       if (combat && (this.slideInvulnerable(combat) || combat.invuln > 0)) {
@@ -10002,7 +10050,7 @@ export class GameRoom extends Room<ArenaState> {
     combat: CombatState,
     sourceX: number,
     sourceY: number,
-    launch: boolean,
+    preventedDamage: number,
   ): void {
     this.recordPetAcceptedAction(player.id);
     player.parriedSeq = (player.parriedSeq + 1) % 100000;
@@ -10012,22 +10060,13 @@ export class GameRoom extends Room<ArenaState> {
     const heal = PARRY_CHAIN_HEAL * Math.min(combat.parryChain, PARRY_CHAIN_HEAL_MAX_STACKS);
     this.applyHeal(player, heal);
     this.addUltimateFlatCharge(player, combat, ULT_CHARGE_PARRY_BONUS);
-    if (launch) {
-      const dx = sourceX - player.x;
-      const dy = sourceY - player.y;
-      const distance = Math.hypot(dx, dy) || 1;
-      if (combat.stance !== STANCE_POUND) {
-        combat.vh = Math.min(combat.vh + PARRY_LAUNCH, PARRY_LAUNCH_MAX);
-        player.vh = combat.vh;
-      }
-      const impulse = addImpulse(
-        player,
-        (-dx / distance) * PARRY_PUSH,
-        (-dy / distance) * PARRY_PUSH,
-      );
-      player.vx = impulse.vx;
-      player.vy = impulse.vy;
-    }
+    this.applyDirectionalParryReaction(
+      player,
+      combat,
+      player.x - sourceX,
+      player.y - sourceY,
+      preventedDamage,
+    );
     this.applyParryAugments(player, combat);
     this.applyParryQuirk(player, combat, heal);
   }
@@ -11826,7 +11865,13 @@ export class GameRoom extends Room<ArenaState> {
       const pc = this.combat.get(player.id);
       if (pc && pc.invuln > 0) {
         // §8 PARRIED — negate + punish + FLOW + the v0.114 chain reward (shared with the boss meleeCombo).
-        this.resolveParry(player, pc, enemy, enemyId);
+        this.resolveParry(
+          player,
+          pc,
+          enemy,
+          enemyId,
+          m.damage * dmgMul * depthDamageScale(this.state.depth),
+        );
         return;
       }
       if (pc && this.slideInvulnerable(pc)) {
@@ -12525,7 +12570,14 @@ export class GameRoom extends Room<ArenaState> {
       if (step?.unparryable) {
         if (player.height > GROUND_EPSILON) return; // RED = feet — the jump clears it (quake language)
       } else if (pc && pc.invuln > 0) {
-        this.resolveParry(player, pc, enemy, enemyId); // §8 negate + reward; §51 branches live inside
+        const preventedDamage =
+          player.id === st.targetId && st.juggleCombo
+            ? Math.min(
+                base,
+                Math.max(0, player.maxHp * COMBO_DAMAGE_CAP_FRAC - (st.comboDamage ?? 0)),
+              )
+            : base;
+        this.resolveParry(player, pc, enemy, enemyId, preventedDamage); // §8 negate + reward; §51 branches live inside
         return;
       }
       if (pc && !step?.airkeep && this.slideInvulnerable(pc)) {
@@ -12614,6 +12666,106 @@ export class GameRoom extends Room<ArenaState> {
     enemy.comboSeq = (enemy.comboSeq % 255) + 1;
   }
 
+  /** Publish one deterministic success pose, then route the server-owned displacement/state by incidence. */
+  private applyDirectionalParryReaction(
+    player: PlayerState,
+    pc: CombatState,
+    incomingX: number,
+    incomingY: number,
+    preventedDamage: number,
+  ): void {
+    const reaction = classifyParryIncidence(incomingX, incomingY);
+    const weapon = WEAPONS[player.weapon] ?? WEAPONS[FISTS_WEAPON];
+    const subtype = weapon ? parryGuardSubtypeKey(weapon) : "melee:fist";
+    const cycle = advanceParryGuardCycle(pc.parryGuardCycles.get(subtype), this.state.tick);
+    pc.parryGuardCycles.set(subtype, cycle.state);
+    player.parryPresentation = packParryPresentation(reaction, cycle.pose);
+
+    if (reaction === ParryReaction.FromBelow) {
+      this.applyLegacyParryLift(player, pc, incomingX, incomingY);
+      return;
+    }
+    if (reaction === ParryReaction.FromLeft || reaction === ParryReaction.FromRight) {
+      this.applySideParrySlide(player, pc, incomingX, incomingY, preventedDamage);
+    }
+  }
+
+  /** The pre-B26 parry lift, extracted byte-for-byte in behavior and reached only by below incidence. */
+  private applyLegacyParryLift(
+    player: PlayerState,
+    pc: CombatState,
+    incomingX: number,
+    incomingY: number,
+  ): void {
+    if (pc.stance !== STANCE_POUND) {
+      pc.vh = Math.min(pc.vh + PARRY_LAUNCH, PARRY_LAUNCH_MAX);
+      player.vh = pc.vh;
+    }
+    const distance = Math.hypot(incomingX, incomingY) || 1;
+    const impulse = addImpulse(
+      player,
+      (incomingX / distance) * PARRY_PUSH,
+      (incomingY / distance) * PARRY_PUSH,
+    );
+    player.vx = impulse.vx;
+    player.vy = impulse.vy;
+  }
+
+  /** Move immediately to a swept-valid endpoint; snapshot interpolation presents the authored slide beat. */
+  private applySideParrySlide(
+    player: PlayerState,
+    pc: CombatState,
+    incomingX: number,
+    incomingY: number,
+    preventedDamage: number,
+  ): void {
+    const distance = parrySlideDistance(preventedDamage);
+    let destination: Vec2;
+    if (this.belt && this.beltLevel) {
+      const length = Math.hypot(incomingX, incomingY) || 1;
+      destination = this.navValidLungeDest(
+        player,
+        pc,
+        player.x + (incomingX / length) * distance,
+        player.y + (incomingY / length) * distance,
+        distance,
+      );
+    } else {
+      destination = clampParrySlideToNavigation(
+        player.x,
+        player.y,
+        incomingX,
+        incomingY,
+        distance,
+        (x, y) => {
+          if (
+            x < PLAYER_RADIUS ||
+            x > ARENA_WIDTH - PLAYER_RADIUS ||
+            y < PLAYER_RADIUS ||
+            y > ARENA_HEIGHT - PLAYER_RADIUS ||
+            isPitAtPx(this.map, x, y)
+          )
+            return false;
+          if (this.map.pois.length === 0) return true;
+          const resolved = resolvePoiCollisionInto(
+            this.map,
+            x,
+            y,
+            PLAYER_RADIUS,
+            this.poiResolveScratch,
+          );
+          return Math.hypot(resolved.x - x, resolved.y - y) <= 1e-6;
+        },
+      );
+    }
+    player.x = destination.x;
+    player.y = destination.y;
+    if (player.height <= GROUND_EPSILON && pc.vh <= 0) {
+      pc.lastGroundX = player.x;
+      pc.lastGroundY = player.y;
+    }
+  }
+
   /** §8 apply a SUCCESSFUL parry of a telegraphed melee strike: negate + punish + FLOW + the v0.114 chain
    *  reward. `attacker` is bump-knocked back; `attackerId` looks up its `comboState` for the high-chain
    *  STAGGER (a boss has no comboState entry → no stagger, which is correct — bosses aren't stunlockable).
@@ -12623,6 +12775,7 @@ export class GameRoom extends Room<ArenaState> {
     pc: CombatState,
     attacker: EnemyState,
     attackerId: string,
+    preventedDamage: number,
   ): void {
     this.recordPetAcceptedAction(player.id);
     player.parriedSeq = (player.parriedSeq + 1) % 100000;
@@ -12632,16 +12785,9 @@ export class GameRoom extends Room<ArenaState> {
     const ironKnockback =
       (1 + IRON_STANCE_KNOCKBACK_PER * countAugment(player.augments, "iron-stance")) *
       pc.mods.parryKnockbackMult;
-    // §8 flow: refresh the cooldown so the next swing can be parried immediately (chain), and §20 Stage D
-    // LAUNCH the parrier (upward kick + a shove along the attack vector — chain to ride the flurry UP).
+    // §8 flow: refresh the cooldown so the next swing can be parried immediately (chain).
     pc.parryCd = Math.min(pc.parryCd, PARRY_CHAIN_CD);
-    if (pc.stance !== STANCE_POUND) {
-      pc.vh = Math.min(pc.vh + PARRY_LAUNCH, PARRY_LAUNCH_MAX);
-      player.vh = pc.vh;
-    }
-    const k = addImpulse(player, (-dx / d) * PARRY_PUSH, (-dy / d) * PARRY_PUSH);
-    player.vx = k.vx;
-    player.vy = k.vy;
+    this.applyDirectionalParryReaction(player, pc, -dx, -dy, preventedDamage);
     // §8 v0.114 PARRY COMBO: build the chain → heal a chain-scaled sliver, and at RIPOSTE_AT stagger the
     // parried attacker (if it runs the combo machine) + an extra shove.
     pc.parryChain = pc.parryChainT > 0 ? pc.parryChain + 1 : 1;
@@ -12763,9 +12909,10 @@ export class GameRoom extends Room<ArenaState> {
       if (!inMeleeArc(origin, aimX, aimY, player, range, halfArc)) return;
       const pc = this.combat.get(player.id);
       if (pc && pc.invuln > 0) {
-        if (boss && this.bossId) this.resolveParry(player, pc, boss, this.bossId);
+        if (boss && this.bossId) this.resolveParry(player, pc, boss, this.bossId, damage);
         else {
           player.parriedSeq = (player.parriedSeq + 1) % 100000;
+          this.applyDirectionalParryReaction(player, pc, player.x - x, player.y - y, damage);
           this.applyParryAugments(player, pc);
         }
         this.bossController?.acceptWormParry(player.id, this.state.tick);
@@ -13166,6 +13313,9 @@ export class GameRoom extends Room<ArenaState> {
     player: PlayerState,
     pc: CombatState,
   ): void {
+    const preventedDamage = meta.damage;
+    const incomingX = pr.vx;
+    const incomingY = pr.vy;
     if (meta.hostile) this.hostileProjectileCount = Math.max(0, this.hostileProjectileCount - 1);
     pr.hostile = false;
     meta.hostile = false;
@@ -13219,6 +13369,13 @@ export class GameRoom extends Room<ArenaState> {
     // §8 parry reward (ranged): flash + FLOW cd + chain build + a flat sliver heal. Kept a flat heal (not the
     // melee chain-scaled one) so parrying INTO a bullet-wall can't fully heal you — it's UMPH, not a fountain.
     player.parriedSeq = (player.parriedSeq + 1) % 100000;
+    this.applyDirectionalParryReaction(
+      player,
+      pc,
+      incomingX,
+      incomingY,
+      preventedDamage,
+    );
     pc.parryCd = Math.min(pc.parryCd, PARRY_CHAIN_CD);
     pc.parryChain = pc.parryChainT > 0 ? pc.parryChain + 1 : 1;
     pc.parryChainT = PARRY_CHAIN_WINDOW;
@@ -13633,14 +13790,22 @@ export class GameRoom extends Room<ArenaState> {
   /** §21 Dev summon: place ONE enemy of `kindId` on the spawn ring around `anchor`, optionally tough.
    *  Mirrors spawnEnemy's placement (ring offset + pit/POI safe-spawn) but with a CHOSEN kind/tier so the
    *  Testing-Grounds Tab menu can conjure exactly what the playtester wants to fight. */
-  private debugSpawnOne(kindId: string, tough: boolean, anchor: PlayerState): void {
+  private debugSpawnOne(
+    kindId: string,
+    tough: boolean,
+    anchor: PlayerState,
+    angleOverride?: number,
+    distanceOverride?: number,
+    attackReady = false,
+  ): void {
     // §44 HARD entity cap (Sol audit P0 #1): the spawn director respects MAX_ENEMIES but this path
     // didn't — a summon flood could push the room into the quadratic collision loop unbounded.
     if (this.effectiveEnemyBodies() >= MAX_ENEMIES) return;
     const kind = ENEMY_KINDS[kindId];
     if (!kind) return;
     const players = this.state.players.size;
-    const angle = Math.random() * Math.PI * 2;
+    const angle = angleOverride ?? Math.random() * Math.PI * 2;
+    const distance = distanceOverride ?? SPAWN_RING;
     const m = kind.radius + 4;
     const enemy = new EnemyState();
     enemy.id = `e${this.enemySeq++}`;
@@ -13648,13 +13813,14 @@ export class GameRoom extends Room<ArenaState> {
     // Swarm trash can't be tough (matches the director rule); the boss ignores the flag (it's already a tier).
     enemy.tough = tough && kind.archetype !== "swarm" && kind.archetype !== "boss";
     enemy.hp = kind.hp * (enemy.tough ? TOUGH_HP_MULT : 1) * enemyHpScale(players);
-    const ex = clamp(anchor.x + Math.cos(angle) * SPAWN_RING, m, ARENA_WIDTH - m);
-    const ey = clamp(anchor.y + Math.sin(angle) * SPAWN_RING, m, ARENA_HEIGHT - m);
+    const ex = clamp(anchor.x + Math.cos(angle) * distance, m, ARENA_WIDTH - m);
+    const ey = clamp(anchor.y + Math.sin(angle) * distance, m, ARENA_HEIGHT - m);
     const sp = safeSpawnPos(this.map, ex, ey, kind.radius);
     enemy.x = sp.x;
     enemy.y = sp.y;
     this.state.enemies.set(enemy.id, enemy);
     this.insertEnemyGrid(enemy.id, enemy);
+    if (attackReady) this.enemyFireCd.set(enemy.id, 0);
   }
 
   /** §16 v0.116 BOSS RUSH — drop the boss at `bossRushIndex` in the gauntlet order (`BOSS_DEF_IDS`). Reuses
@@ -14037,6 +14203,7 @@ export class GameRoom extends Room<ArenaState> {
         // first parry in the new dimension inherits the old dimension's streak (verify finding).
         c.lastParryAt = -999;
         c.hairStreak = 0;
+        c.parryGuardCycles.clear();
       }
       const descentHeal = this.petRuns.get(id)?.mods.descentHealMaxHpFraction ?? 0;
       if (descentHeal > 0) this.applyHeal(player, player.maxHp * descentHeal, false);

@@ -118,6 +118,8 @@ import {
   UltimateFamily,
   UltimatePhase,
   type UltimatePhaseValue,
+  unpackParryGuardPose,
+  unpackParryReaction,
   ultimateFamilyForCode,
   VASTAGHAR_ENCOUNTER,
   type VastagharActionDef,
@@ -11101,7 +11103,13 @@ export class ArenaScene extends Phaser.Scene {
       const prev = this.lastParried.get(id);
       this.lastParried.set(id, p.parriedSeq);
       if (prev !== undefined && prev !== p.parriedSeq) {
-        this.spawnParrySpark(p.x, p.y);
+        const rig = this.blobs.get(id);
+        rig?.triggerParrySuccess(
+          this.animClock,
+          unpackParryGuardPose(p.parryPresentation),
+          unpackParryReaction(p.parryPresentation),
+        );
+        this.spawnParrySpark(rig?.x ?? p.x, rig?.y ?? p.y);
         const isSelf = id === this.room?.sessionId;
         // §19 the parry ding is the crispest sound in the game — full for your own, quieter for a mate's.
         this.audio.play("parry", { x: p.x, amt: isSelf ? 1 : 0.4 });
