@@ -33,6 +33,7 @@ import {
   VERTICAL_PHASE_RISING,
   type VerticalPhase,
 } from "./constants.js";
+import { playerAttackInputSpeedMultiplier } from "./enemy-melee.js";
 import { clamp } from "./math.js";
 
 export interface Vec2 {
@@ -170,6 +171,36 @@ export function stepSteeredMovement(
     vx: v.vx,
     vy: v.vy,
   };
+}
+
+/**
+ * One ordinary locomotion step while a player attack owns part (or all) of horizontal movement.
+ * Keep the attack multiplier at this shared seam so authority and owner prediction cannot compose it
+ * on different sides of belt bounds or steering integration.
+ */
+export function stepPlayerAttackMovement(
+  pos: Vec2,
+  vel: Impulse,
+  input: MoveInput,
+  dtSeconds: number,
+  baseSpeed: number,
+  attackMoveMode: number,
+  yMin: number = PLAYER_RADIUS,
+  yMax: number = ARENA_HEIGHT - PLAYER_RADIUS,
+  xMin: number = PLAYER_RADIUS,
+  xMax: number = ARENA_WIDTH - PLAYER_RADIUS,
+): { x: number; y: number; vx: number; vy: number } {
+  return stepSteeredMovement(
+    pos,
+    vel,
+    input,
+    dtSeconds,
+    baseSpeed * playerAttackInputSpeedMultiplier(attackMoveMode),
+    yMin,
+    yMax,
+    xMin,
+    xMax,
+  );
 }
 
 /**

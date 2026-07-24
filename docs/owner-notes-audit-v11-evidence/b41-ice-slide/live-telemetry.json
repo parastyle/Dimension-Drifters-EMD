@@ -1,0 +1,2122 @@
+[
+  {
+    "mode": "arena",
+    "weapon": "x2-sparkknuckle-hex-mitt",
+    "attackMode": 1,
+    "releaseTick": 14,
+    "stoppedTick": 16,
+    "stopTicks": 2,
+    "maxPostPatchDeltaPx": 9.218165736660922,
+    "maxReconciliationErrorPx": 9.218165736661092,
+    "maxRecoveryDeltaPx": 0,
+    "postStopTravelPx": 0,
+    "frames": [
+      {
+        "scenario": "arena:slow",
+        "step": 0,
+        "serverTick": 3,
+        "commandSeq": 1,
+        "inputX": 1,
+        "attackMoveMode": 0,
+        "authority": {
+          "x": 2406.5,
+          "y": 2420,
+          "mvx": 130,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 2406.5,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 2406.5,
+          "y": 2420
+        },
+        "predictionErrorPx": 0,
+        "authorityPredictionDeltaPx": 0
+      },
+      {
+        "scenario": "arena:slow",
+        "step": 1,
+        "serverTick": 5,
+        "commandSeq": 2,
+        "inputX": 1,
+        "attackMoveMode": 0,
+        "authority": {
+          "x": 2435.5,
+          "y": 2420,
+          "mvx": 320,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 2419.5,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 2426.7190138224955,
+          "y": 2420
+        },
+        "predictionErrorPx": 8.780986177504422,
+        "authorityPredictionDeltaPx": 8.780986177504474
+      },
+      {
+        "scenario": "arena:slow",
+        "step": 2,
+        "serverTick": 6,
+        "commandSeq": 3,
+        "inputX": 1,
+        "attackMoveMode": 0,
+        "authority": {
+          "x": 2451.5,
+          "y": 2420,
+          "mvx": 320,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 2442.7190138224955,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 2446.680892609405,
+          "y": 2420
+        },
+        "predictionErrorPx": 4.819107390595262,
+        "authorityPredictionDeltaPx": 4.819107390595036
+      },
+      {
+        "scenario": "arena:slow",
+        "step": 3,
+        "serverTick": 7,
+        "commandSeq": 4,
+        "inputX": 1,
+        "attackMoveMode": 0,
+        "authority": {
+          "x": 2467.5,
+          "y": 2420,
+          "mvx": 320,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 2462.680892609405,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 2464.855217788455,
+          "y": 2420
+        },
+        "predictionErrorPx": 2.644782211545276,
+        "authorityPredictionDeltaPx": 2.6447822115451345
+      },
+      {
+        "scenario": "arena:slow",
+        "step": 4,
+        "serverTick": 8,
+        "commandSeq": 5,
+        "inputX": 1,
+        "attackMoveMode": 0,
+        "authority": {
+          "x": 2483.5,
+          "y": 2420,
+          "mvx": 320,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 2480.855217788455,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 2482.0485127473694,
+          "y": 2420
+        },
+        "predictionErrorPx": 1.4514872526304627,
+        "authorityPredictionDeltaPx": 1.4514872526306135
+      },
+      {
+        "scenario": "arena:slow",
+        "step": 5,
+        "serverTick": 9,
+        "commandSeq": 6,
+        "inputX": 1,
+        "attackMoveMode": 0,
+        "authority": {
+          "x": 2499.5,
+          "y": 2420,
+          "mvx": 320,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 2498.0485127473694,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 2498.703406906114,
+          "y": 2420
+        },
+        "predictionErrorPx": 0.7965930938858304,
+        "authorityPredictionDeltaPx": 0.7965930938858037
+      },
+      {
+        "scenario": "arena:slow",
+        "step": 6,
+        "serverTick": 11,
+        "commandSeq": 7,
+        "inputX": 1,
+        "attackMoveMode": 0,
+        "authority": {
+          "x": 2531.5,
+          "y": 2420,
+          "mvx": 320,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 2514.703406906114,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 2522.281834263339,
+          "y": 2420
+        },
+        "predictionErrorPx": 9.218165736661092,
+        "authorityPredictionDeltaPx": 9.218165736660922
+      },
+      {
+        "scenario": "arena:slow",
+        "step": 7,
+        "serverTick": 12,
+        "commandSeq": 8,
+        "inputX": 1,
+        "attackMoveMode": 0,
+        "authority": {
+          "x": 2547.5,
+          "y": 2420,
+          "mvx": 320,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 2538.281834263339,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 2542.440963380277,
+          "y": 2420
+        },
+        "predictionErrorPx": 5.059036619722776,
+        "authorityPredictionDeltaPx": 5.059036619722974
+      },
+      {
+        "scenario": "arena:slow",
+        "step": 8,
+        "serverTick": 13,
+        "commandSeq": 9,
+        "inputX": 1,
+        "attackMoveMode": 0,
+        "authority": {
+          "x": 2563.5,
+          "y": 2420,
+          "mvx": 320,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 2558.440963380277,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 2560.7235418356704,
+          "y": 2420
+        },
+        "predictionErrorPx": 2.776458164329758,
+        "authorityPredictionDeltaPx": 2.776458164329597
+      },
+      {
+        "scenario": "arena:slow",
+        "step": 9,
+        "serverTick": 14,
+        "commandSeq": 10,
+        "inputX": 1,
+        "attackMoveMode": 1,
+        "authority": {
+          "x": 2575.5,
+          "y": 2420,
+          "mvx": 240,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 2576.7235418356704,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 2576.1714939966637,
+          "y": 2420
+        },
+        "predictionErrorPx": 0.6714939966637623,
+        "authorityPredictionDeltaPx": 0.6714939966636848
+      },
+      {
+        "scenario": "arena:slow",
+        "step": 10,
+        "serverTick": 16,
+        "commandSeq": 11,
+        "inputX": 0,
+        "attackMoveMode": 0,
+        "authority": {
+          "x": 2581,
+          "y": 2420,
+          "mvx": 0,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 2581.6714939966637,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 2581,
+          "y": 2420
+        },
+        "predictionErrorPx": 0,
+        "authorityPredictionDeltaPx": 0
+      },
+      {
+        "scenario": "arena:slow",
+        "step": 11,
+        "serverTick": 17,
+        "commandSeq": 12,
+        "inputX": 0,
+        "attackMoveMode": 0,
+        "authority": {
+          "x": 2581,
+          "y": 2420,
+          "mvx": 0,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 2581,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 2581,
+          "y": 2420
+        },
+        "predictionErrorPx": 0,
+        "authorityPredictionDeltaPx": 0
+      },
+      {
+        "scenario": "arena:slow",
+        "step": 12,
+        "serverTick": 18,
+        "commandSeq": 13,
+        "inputX": 0,
+        "attackMoveMode": 0,
+        "authority": {
+          "x": 2581,
+          "y": 2420,
+          "mvx": 0,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 2581,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 2581,
+          "y": 2420
+        },
+        "predictionErrorPx": 0,
+        "authorityPredictionDeltaPx": 0
+      },
+      {
+        "scenario": "arena:slow",
+        "step": 13,
+        "serverTick": 19,
+        "commandSeq": 14,
+        "inputX": 0,
+        "attackMoveMode": 0,
+        "authority": {
+          "x": 2581,
+          "y": 2420,
+          "mvx": 0,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 2581,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 2581,
+          "y": 2420
+        },
+        "predictionErrorPx": 0,
+        "authorityPredictionDeltaPx": 0
+      },
+      {
+        "scenario": "arena:slow",
+        "step": 14,
+        "serverTick": 21,
+        "commandSeq": 15,
+        "inputX": 0,
+        "attackMoveMode": 0,
+        "authority": {
+          "x": 2581,
+          "y": 2420,
+          "mvx": 0,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 2581,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 2581,
+          "y": 2420
+        },
+        "predictionErrorPx": 0,
+        "authorityPredictionDeltaPx": 0
+      },
+      {
+        "scenario": "arena:slow",
+        "step": 15,
+        "serverTick": 22,
+        "commandSeq": 16,
+        "inputX": 0,
+        "attackMoveMode": 0,
+        "authority": {
+          "x": 2581,
+          "y": 2420,
+          "mvx": 0,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 2581,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 2581,
+          "y": 2420
+        },
+        "predictionErrorPx": 0,
+        "authorityPredictionDeltaPx": 0
+      },
+      {
+        "scenario": "arena:slow",
+        "step": 16,
+        "serverTick": 23,
+        "commandSeq": 17,
+        "inputX": 0,
+        "attackMoveMode": 0,
+        "authority": {
+          "x": 2581,
+          "y": 2420,
+          "mvx": 0,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 2581,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 2581,
+          "y": 2420
+        },
+        "predictionErrorPx": 0,
+        "authorityPredictionDeltaPx": 0
+      },
+      {
+        "scenario": "arena:slow",
+        "step": 17,
+        "serverTick": 24,
+        "commandSeq": 18,
+        "inputX": 0,
+        "attackMoveMode": 0,
+        "authority": {
+          "x": 2581,
+          "y": 2420,
+          "mvx": 0,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 2581,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 2581,
+          "y": 2420
+        },
+        "predictionErrorPx": 0,
+        "authorityPredictionDeltaPx": 0
+      },
+      {
+        "scenario": "arena:slow",
+        "step": 18,
+        "serverTick": 26,
+        "commandSeq": 19,
+        "inputX": 0,
+        "attackMoveMode": 0,
+        "authority": {
+          "x": 2581,
+          "y": 2420,
+          "mvx": 0,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 2581,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 2581,
+          "y": 2420
+        },
+        "predictionErrorPx": 0,
+        "authorityPredictionDeltaPx": 0
+      },
+      {
+        "scenario": "arena:slow",
+        "step": 19,
+        "serverTick": 27,
+        "commandSeq": 20,
+        "inputX": 0,
+        "attackMoveMode": 0,
+        "authority": {
+          "x": 2581,
+          "y": 2420,
+          "mvx": 0,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 2581,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 2581,
+          "y": 2420
+        },
+        "predictionErrorPx": 0,
+        "authorityPredictionDeltaPx": 0
+      }
+    ]
+  },
+  {
+    "mode": "arena",
+    "weapon": "x2-thunderhead-stormfists",
+    "attackMode": 2,
+    "releaseTick": 44,
+    "stoppedTick": 45,
+    "stopTicks": 1,
+    "maxPostPatchDeltaPx": 9.649844566471984,
+    "maxReconciliationErrorPx": 9.649844566472133,
+    "maxRecoveryDeltaPx": 0,
+    "postStopTravelPx": 0,
+    "frames": [
+      {
+        "scenario": "arena:root",
+        "step": 0,
+        "serverTick": 29,
+        "commandSeq": 21,
+        "inputX": 1,
+        "attackMoveMode": 0,
+        "authority": {
+          "x": 2587.5,
+          "y": 2420,
+          "mvx": 130,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 2587.5,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 2587.5,
+          "y": 2420
+        },
+        "predictionErrorPx": 0,
+        "authorityPredictionDeltaPx": 0
+      },
+      {
+        "scenario": "arena:root",
+        "step": 1,
+        "serverTick": 31,
+        "commandSeq": 22,
+        "inputX": 1,
+        "attackMoveMode": 0,
+        "authority": {
+          "x": 2616.5,
+          "y": 2420,
+          "mvx": 320,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 2600.5,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 2607.7190138224955,
+          "y": 2420
+        },
+        "predictionErrorPx": 8.780986177504422,
+        "authorityPredictionDeltaPx": 8.780986177504474
+      },
+      {
+        "scenario": "arena:root",
+        "step": 2,
+        "serverTick": 32,
+        "commandSeq": 23,
+        "inputX": 1,
+        "attackMoveMode": 0,
+        "authority": {
+          "x": 2632.5,
+          "y": 2420,
+          "mvx": 320,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 2623.7190138224955,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 2627.680892609405,
+          "y": 2420
+        },
+        "predictionErrorPx": 4.819107390595262,
+        "authorityPredictionDeltaPx": 4.819107390595036
+      },
+      {
+        "scenario": "arena:root",
+        "step": 3,
+        "serverTick": 33,
+        "commandSeq": 24,
+        "inputX": 1,
+        "attackMoveMode": 0,
+        "authority": {
+          "x": 2648.5,
+          "y": 2420,
+          "mvx": 320,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 2643.680892609405,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 2645.855217788455,
+          "y": 2420
+        },
+        "predictionErrorPx": 2.644782211545276,
+        "authorityPredictionDeltaPx": 2.6447822115451345
+      },
+      {
+        "scenario": "arena:root",
+        "step": 4,
+        "serverTick": 34,
+        "commandSeq": 25,
+        "inputX": 1,
+        "attackMoveMode": 0,
+        "authority": {
+          "x": 2664.5,
+          "y": 2420,
+          "mvx": 320,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 2661.855217788455,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 2663.0485127473694,
+          "y": 2420
+        },
+        "predictionErrorPx": 1.4514872526304627,
+        "authorityPredictionDeltaPx": 1.4514872526306135
+      },
+      {
+        "scenario": "arena:root",
+        "step": 5,
+        "serverTick": 36,
+        "commandSeq": 26,
+        "inputX": 1,
+        "attackMoveMode": 0,
+        "authority": {
+          "x": 2696.5,
+          "y": 2420,
+          "mvx": 320,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 2679.0485127473694,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 2686.9224207286097,
+          "y": 2420
+        },
+        "predictionErrorPx": 9.577579271390253,
+        "authorityPredictionDeltaPx": 9.577579271390277
+      },
+      {
+        "scenario": "arena:root",
+        "step": 6,
+        "serverTick": 37,
+        "commandSeq": 27,
+        "inputX": 1,
+        "attackMoveMode": 0,
+        "authority": {
+          "x": 2712.5,
+          "y": 2420,
+          "mvx": 320,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 2702.9224207286097,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 2707.243713050248,
+          "y": 2420
+        },
+        "predictionErrorPx": 5.256286949751932,
+        "authorityPredictionDeltaPx": 5.256286949751939
+      },
+      {
+        "scenario": "arena:root",
+        "step": 7,
+        "serverTick": 38,
+        "commandSeq": 28,
+        "inputX": 1,
+        "attackMoveMode": 0,
+        "authority": {
+          "x": 2728.5,
+          "y": 2420,
+          "mvx": 320,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 2723.243713050248,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 2725.615288559327,
+          "y": 2420
+        },
+        "predictionErrorPx": 2.884711440673041,
+        "authorityPredictionDeltaPx": 2.8847114406730725
+      },
+      {
+        "scenario": "arena:root",
+        "step": 8,
+        "serverTick": 39,
+        "commandSeq": 29,
+        "inputX": 1,
+        "attackMoveMode": 0,
+        "authority": {
+          "x": 2744.5,
+          "y": 2420,
+          "mvx": 320,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 2741.615288559327,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 2742.916836794585,
+          "y": 2420
+        },
+        "predictionErrorPx": 1.583163205414945,
+        "authorityPredictionDeltaPx": 1.583163205415076
+      },
+      {
+        "scenario": "arena:root",
+        "step": 9,
+        "serverTick": 41,
+        "commandSeq": 30,
+        "inputX": 1,
+        "attackMoveMode": 0,
+        "authority": {
+          "x": 2776.5,
+          "y": 2420,
+          "mvx": 320,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 2758.916836794585,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 2766.850155433528,
+          "y": 2420
+        },
+        "predictionErrorPx": 9.649844566472133,
+        "authorityPredictionDeltaPx": 9.649844566471984
+      },
+      {
+        "scenario": "arena:root",
+        "step": 10,
+        "serverTick": 42,
+        "commandSeq": 31,
+        "inputX": 1,
+        "attackMoveMode": 0,
+        "authority": {
+          "x": 2792.5,
+          "y": 2420,
+          "mvx": 320,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 2782.850155433528,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 2787.2040530154213,
+          "y": 2420
+        },
+        "predictionErrorPx": 5.29594698457854,
+        "authorityPredictionDeltaPx": 5.295946984578677
+      },
+      {
+        "scenario": "arena:root",
+        "step": 11,
+        "serverTick": 43,
+        "commandSeq": 32,
+        "inputX": 1,
+        "attackMoveMode": 0,
+        "authority": {
+          "x": 2808.5,
+          "y": 2420,
+          "mvx": 320,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 2803.2040530154213,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 2805.593522670726,
+          "y": 2420
+        },
+        "predictionErrorPx": 2.9064773292738493,
+        "authorityPredictionDeltaPx": 2.906477329273912
+      },
+      {
+        "scenario": "arena:root",
+        "step": 12,
+        "serverTick": 44,
+        "commandSeq": 33,
+        "inputX": 1,
+        "attackMoveMode": 2,
+        "authority": {
+          "x": 2808.5,
+          "y": 2420,
+          "mvx": 0,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 2821.593522670726,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 2808.5,
+          "y": 2420
+        },
+        "predictionErrorPx": 0,
+        "authorityPredictionDeltaPx": 0
+      },
+      {
+        "scenario": "arena:root",
+        "step": 13,
+        "serverTick": 45,
+        "commandSeq": 34,
+        "inputX": 0,
+        "attackMoveMode": 2,
+        "authority": {
+          "x": 3288.5,
+          "y": 2420,
+          "mvx": 0,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 2808.5,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 3288.5,
+          "y": 2420
+        },
+        "predictionErrorPx": 0,
+        "authorityPredictionDeltaPx": 0
+      },
+      {
+        "scenario": "arena:root",
+        "step": 14,
+        "serverTick": 47,
+        "commandSeq": 35,
+        "inputX": 0,
+        "attackMoveMode": 1,
+        "authority": {
+          "x": 3288.5,
+          "y": 2420,
+          "mvx": 0,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 3288.5,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 3288.5,
+          "y": 2420
+        },
+        "predictionErrorPx": 0,
+        "authorityPredictionDeltaPx": 0
+      },
+      {
+        "scenario": "arena:root",
+        "step": 15,
+        "serverTick": 48,
+        "commandSeq": 36,
+        "inputX": 0,
+        "attackMoveMode": 0,
+        "authority": {
+          "x": 3288.5,
+          "y": 2420,
+          "mvx": 0,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 3288.5,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 3288.5,
+          "y": 2420
+        },
+        "predictionErrorPx": 0,
+        "authorityPredictionDeltaPx": 0
+      },
+      {
+        "scenario": "arena:root",
+        "step": 16,
+        "serverTick": 49,
+        "commandSeq": 37,
+        "inputX": 0,
+        "attackMoveMode": 0,
+        "authority": {
+          "x": 3288.5,
+          "y": 2420,
+          "mvx": 0,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 3288.5,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 3288.5,
+          "y": 2420
+        },
+        "predictionErrorPx": 0,
+        "authorityPredictionDeltaPx": 0
+      },
+      {
+        "scenario": "arena:root",
+        "step": 17,
+        "serverTick": 50,
+        "commandSeq": 38,
+        "inputX": 0,
+        "attackMoveMode": 0,
+        "authority": {
+          "x": 3288.5,
+          "y": 2420,
+          "mvx": 0,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 3288.5,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 3288.5,
+          "y": 2420
+        },
+        "predictionErrorPx": 0,
+        "authorityPredictionDeltaPx": 0
+      },
+      {
+        "scenario": "arena:root",
+        "step": 18,
+        "serverTick": 52,
+        "commandSeq": 39,
+        "inputX": 0,
+        "attackMoveMode": 0,
+        "authority": {
+          "x": 3288.5,
+          "y": 2420,
+          "mvx": 0,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 3288.5,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 3288.5,
+          "y": 2420
+        },
+        "predictionErrorPx": 0,
+        "authorityPredictionDeltaPx": 0
+      },
+      {
+        "scenario": "arena:root",
+        "step": 19,
+        "serverTick": 53,
+        "commandSeq": 40,
+        "inputX": 0,
+        "attackMoveMode": 0,
+        "authority": {
+          "x": 3288.5,
+          "y": 2420,
+          "mvx": 0,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 3288.5,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 3288.5,
+          "y": 2420
+        },
+        "predictionErrorPx": 0,
+        "authorityPredictionDeltaPx": 0
+      },
+      {
+        "scenario": "arena:root",
+        "step": 20,
+        "serverTick": 54,
+        "commandSeq": 41,
+        "inputX": 0,
+        "attackMoveMode": 0,
+        "authority": {
+          "x": 3288.5,
+          "y": 2420,
+          "mvx": 0,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 3288.5,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 3288.5,
+          "y": 2420
+        },
+        "predictionErrorPx": 0,
+        "authorityPredictionDeltaPx": 0
+      },
+      {
+        "scenario": "arena:root",
+        "step": 21,
+        "serverTick": 55,
+        "commandSeq": 42,
+        "inputX": 0,
+        "attackMoveMode": 0,
+        "authority": {
+          "x": 3288.5,
+          "y": 2420,
+          "mvx": 0,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 3288.5,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 3288.5,
+          "y": 2420
+        },
+        "predictionErrorPx": 0,
+        "authorityPredictionDeltaPx": 0
+      },
+      {
+        "scenario": "arena:root",
+        "step": 22,
+        "serverTick": 57,
+        "commandSeq": 43,
+        "inputX": 0,
+        "attackMoveMode": 0,
+        "authority": {
+          "x": 3288.5,
+          "y": 2420,
+          "mvx": 0,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 3288.5,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 3288.5,
+          "y": 2420
+        },
+        "predictionErrorPx": 0,
+        "authorityPredictionDeltaPx": 0
+      }
+    ]
+  },
+  {
+    "mode": "belt",
+    "weapon": "x2-sparkknuckle-hex-mitt",
+    "attackMode": 1,
+    "releaseTick": 14,
+    "stoppedTick": 16,
+    "stopTicks": 2,
+    "maxPostPatchDeltaPx": 9.577579271390277,
+    "maxReconciliationErrorPx": 9.577579271390253,
+    "maxRecoveryDeltaPx": 0,
+    "postStopTravelPx": 0,
+    "frames": [
+      {
+        "scenario": "belt:slow",
+        "step": 0,
+        "serverTick": 3,
+        "commandSeq": 1,
+        "inputX": 1,
+        "attackMoveMode": 0,
+        "authority": {
+          "x": 2406.5,
+          "y": 2420,
+          "mvx": 130,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 2406.5,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 2406.5,
+          "y": 2420
+        },
+        "predictionErrorPx": 0,
+        "authorityPredictionDeltaPx": 0
+      },
+      {
+        "scenario": "belt:slow",
+        "step": 1,
+        "serverTick": 4,
+        "commandSeq": 2,
+        "inputX": 1,
+        "attackMoveMode": 0,
+        "authority": {
+          "x": 2419.5,
+          "y": 2420,
+          "mvx": 260,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 2419.5,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 2419.5,
+          "y": 2420
+        },
+        "predictionErrorPx": 0,
+        "authorityPredictionDeltaPx": 0
+      },
+      {
+        "scenario": "belt:slow",
+        "step": 2,
+        "serverTick": 6,
+        "commandSeq": 3,
+        "inputX": 1,
+        "attackMoveMode": 0,
+        "authority": {
+          "x": 2451.5,
+          "y": 2420,
+          "mvx": 320,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 2435.5,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 2442.7190138224955,
+          "y": 2420
+        },
+        "predictionErrorPx": 8.780986177504422,
+        "authorityPredictionDeltaPx": 8.780986177504474
+      },
+      {
+        "scenario": "belt:slow",
+        "step": 3,
+        "serverTick": 7,
+        "commandSeq": 4,
+        "inputX": 1,
+        "attackMoveMode": 0,
+        "authority": {
+          "x": 2467.5,
+          "y": 2420,
+          "mvx": 320,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 2458.7190138224955,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 2462.680892609405,
+          "y": 2420
+        },
+        "predictionErrorPx": 4.819107390595262,
+        "authorityPredictionDeltaPx": 4.819107390595036
+      },
+      {
+        "scenario": "belt:slow",
+        "step": 4,
+        "serverTick": 8,
+        "commandSeq": 5,
+        "inputX": 1,
+        "attackMoveMode": 0,
+        "authority": {
+          "x": 2483.5,
+          "y": 2420,
+          "mvx": 320,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 2478.680892609405,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 2480.855217788455,
+          "y": 2420
+        },
+        "predictionErrorPx": 2.644782211545276,
+        "authorityPredictionDeltaPx": 2.6447822115451345
+      },
+      {
+        "scenario": "belt:slow",
+        "step": 5,
+        "serverTick": 9,
+        "commandSeq": 6,
+        "inputX": 1,
+        "attackMoveMode": 0,
+        "authority": {
+          "x": 2499.5,
+          "y": 2420,
+          "mvx": 320,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 2496.855217788455,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 2498.0485127473694,
+          "y": 2420
+        },
+        "predictionErrorPx": 1.4514872526304627,
+        "authorityPredictionDeltaPx": 1.4514872526306135
+      },
+      {
+        "scenario": "belt:slow",
+        "step": 6,
+        "serverTick": 11,
+        "commandSeq": 7,
+        "inputX": 1,
+        "attackMoveMode": 0,
+        "authority": {
+          "x": 2531.5,
+          "y": 2420,
+          "mvx": 320,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 2514.0485127473694,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 2521.9224207286097,
+          "y": 2420
+        },
+        "predictionErrorPx": 9.577579271390253,
+        "authorityPredictionDeltaPx": 9.577579271390277
+      },
+      {
+        "scenario": "belt:slow",
+        "step": 7,
+        "serverTick": 12,
+        "commandSeq": 8,
+        "inputX": 1,
+        "attackMoveMode": 0,
+        "authority": {
+          "x": 2547.5,
+          "y": 2420,
+          "mvx": 320,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 2537.9224207286097,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 2542.243713050248,
+          "y": 2420
+        },
+        "predictionErrorPx": 5.256286949751932,
+        "authorityPredictionDeltaPx": 5.256286949751939
+      },
+      {
+        "scenario": "belt:slow",
+        "step": 8,
+        "serverTick": 13,
+        "commandSeq": 9,
+        "inputX": 1,
+        "attackMoveMode": 0,
+        "authority": {
+          "x": 2563.5,
+          "y": 2420,
+          "mvx": 320,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 2558.243713050248,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 2560.615288559327,
+          "y": 2420
+        },
+        "predictionErrorPx": 2.884711440673041,
+        "authorityPredictionDeltaPx": 2.8847114406730725
+      },
+      {
+        "scenario": "belt:slow",
+        "step": 9,
+        "serverTick": 14,
+        "commandSeq": 10,
+        "inputX": 1,
+        "attackMoveMode": 1,
+        "authority": {
+          "x": 2575.5,
+          "y": 2420,
+          "mvx": 240,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 2576.615288559327,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 2576.1120833389614,
+          "y": 2420
+        },
+        "predictionErrorPx": 0.6120833389611607,
+        "authorityPredictionDeltaPx": 0.6120833389613836
+      },
+      {
+        "scenario": "belt:slow",
+        "step": 10,
+        "serverTick": 16,
+        "commandSeq": 11,
+        "inputX": 0,
+        "attackMoveMode": 0,
+        "authority": {
+          "x": 2581,
+          "y": 2420,
+          "mvx": 0,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 2581.6120833389614,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 2581,
+          "y": 2420
+        },
+        "predictionErrorPx": 0,
+        "authorityPredictionDeltaPx": 0
+      },
+      {
+        "scenario": "belt:slow",
+        "step": 11,
+        "serverTick": 17,
+        "commandSeq": 12,
+        "inputX": 0,
+        "attackMoveMode": 0,
+        "authority": {
+          "x": 2581,
+          "y": 2420,
+          "mvx": 0,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 2581,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 2581,
+          "y": 2420
+        },
+        "predictionErrorPx": 0,
+        "authorityPredictionDeltaPx": 0
+      },
+      {
+        "scenario": "belt:slow",
+        "step": 12,
+        "serverTick": 18,
+        "commandSeq": 13,
+        "inputX": 0,
+        "attackMoveMode": 0,
+        "authority": {
+          "x": 2581,
+          "y": 2420,
+          "mvx": 0,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 2581,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 2581,
+          "y": 2420
+        },
+        "predictionErrorPx": 0,
+        "authorityPredictionDeltaPx": 0
+      },
+      {
+        "scenario": "belt:slow",
+        "step": 13,
+        "serverTick": 19,
+        "commandSeq": 14,
+        "inputX": 0,
+        "attackMoveMode": 0,
+        "authority": {
+          "x": 2581,
+          "y": 2420,
+          "mvx": 0,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 2581,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 2581,
+          "y": 2420
+        },
+        "predictionErrorPx": 0,
+        "authorityPredictionDeltaPx": 0
+      },
+      {
+        "scenario": "belt:slow",
+        "step": 14,
+        "serverTick": 21,
+        "commandSeq": 15,
+        "inputX": 0,
+        "attackMoveMode": 0,
+        "authority": {
+          "x": 2581,
+          "y": 2420,
+          "mvx": 0,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 2581,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 2581,
+          "y": 2420
+        },
+        "predictionErrorPx": 0,
+        "authorityPredictionDeltaPx": 0
+      },
+      {
+        "scenario": "belt:slow",
+        "step": 15,
+        "serverTick": 22,
+        "commandSeq": 16,
+        "inputX": 0,
+        "attackMoveMode": 0,
+        "authority": {
+          "x": 2581,
+          "y": 2420,
+          "mvx": 0,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 2581,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 2581,
+          "y": 2420
+        },
+        "predictionErrorPx": 0,
+        "authorityPredictionDeltaPx": 0
+      },
+      {
+        "scenario": "belt:slow",
+        "step": 16,
+        "serverTick": 23,
+        "commandSeq": 17,
+        "inputX": 0,
+        "attackMoveMode": 0,
+        "authority": {
+          "x": 2581,
+          "y": 2420,
+          "mvx": 0,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 2581,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 2581,
+          "y": 2420
+        },
+        "predictionErrorPx": 0,
+        "authorityPredictionDeltaPx": 0
+      },
+      {
+        "scenario": "belt:slow",
+        "step": 17,
+        "serverTick": 24,
+        "commandSeq": 18,
+        "inputX": 0,
+        "attackMoveMode": 0,
+        "authority": {
+          "x": 2581,
+          "y": 2420,
+          "mvx": 0,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 2581,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 2581,
+          "y": 2420
+        },
+        "predictionErrorPx": 0,
+        "authorityPredictionDeltaPx": 0
+      },
+      {
+        "scenario": "belt:slow",
+        "step": 18,
+        "serverTick": 26,
+        "commandSeq": 19,
+        "inputX": 0,
+        "attackMoveMode": 0,
+        "authority": {
+          "x": 2581,
+          "y": 2420,
+          "mvx": 0,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 2581,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 2581,
+          "y": 2420
+        },
+        "predictionErrorPx": 0,
+        "authorityPredictionDeltaPx": 0
+      },
+      {
+        "scenario": "belt:slow",
+        "step": 19,
+        "serverTick": 27,
+        "commandSeq": 20,
+        "inputX": 0,
+        "attackMoveMode": 0,
+        "authority": {
+          "x": 2581,
+          "y": 2420,
+          "mvx": 0,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 2581,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 2581,
+          "y": 2420
+        },
+        "predictionErrorPx": 0,
+        "authorityPredictionDeltaPx": 0
+      }
+    ]
+  },
+  {
+    "mode": "belt",
+    "weapon": "x2-thunderhead-stormfists",
+    "attackMode": 2,
+    "releaseTick": 44,
+    "stoppedTick": 45,
+    "stopTicks": 1,
+    "maxPostPatchDeltaPx": 9.649844566471984,
+    "maxReconciliationErrorPx": 9.649844566472133,
+    "maxRecoveryDeltaPx": 0,
+    "postStopTravelPx": 0,
+    "frames": [
+      {
+        "scenario": "belt:root",
+        "step": 0,
+        "serverTick": 29,
+        "commandSeq": 21,
+        "inputX": 1,
+        "attackMoveMode": 0,
+        "authority": {
+          "x": 2587.5,
+          "y": 2420,
+          "mvx": 130,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 2587.5,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 2587.5,
+          "y": 2420
+        },
+        "predictionErrorPx": 0,
+        "authorityPredictionDeltaPx": 0
+      },
+      {
+        "scenario": "belt:root",
+        "step": 1,
+        "serverTick": 31,
+        "commandSeq": 22,
+        "inputX": 1,
+        "attackMoveMode": 0,
+        "authority": {
+          "x": 2616.5,
+          "y": 2420,
+          "mvx": 320,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 2600.5,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 2607.7190138224955,
+          "y": 2420
+        },
+        "predictionErrorPx": 8.780986177504422,
+        "authorityPredictionDeltaPx": 8.780986177504474
+      },
+      {
+        "scenario": "belt:root",
+        "step": 2,
+        "serverTick": 32,
+        "commandSeq": 23,
+        "inputX": 1,
+        "attackMoveMode": 0,
+        "authority": {
+          "x": 2632.5,
+          "y": 2420,
+          "mvx": 320,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 2623.7190138224955,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 2627.680892609405,
+          "y": 2420
+        },
+        "predictionErrorPx": 4.819107390595262,
+        "authorityPredictionDeltaPx": 4.819107390595036
+      },
+      {
+        "scenario": "belt:root",
+        "step": 3,
+        "serverTick": 33,
+        "commandSeq": 24,
+        "inputX": 1,
+        "attackMoveMode": 0,
+        "authority": {
+          "x": 2648.5,
+          "y": 2420,
+          "mvx": 320,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 2643.680892609405,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 2645.855217788455,
+          "y": 2420
+        },
+        "predictionErrorPx": 2.644782211545276,
+        "authorityPredictionDeltaPx": 2.6447822115451345
+      },
+      {
+        "scenario": "belt:root",
+        "step": 4,
+        "serverTick": 34,
+        "commandSeq": 25,
+        "inputX": 1,
+        "attackMoveMode": 0,
+        "authority": {
+          "x": 2664.5,
+          "y": 2420,
+          "mvx": 320,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 2661.855217788455,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 2663.0485127473694,
+          "y": 2420
+        },
+        "predictionErrorPx": 1.4514872526304627,
+        "authorityPredictionDeltaPx": 1.4514872526306135
+      },
+      {
+        "scenario": "belt:root",
+        "step": 5,
+        "serverTick": 36,
+        "commandSeq": 26,
+        "inputX": 1,
+        "attackMoveMode": 0,
+        "authority": {
+          "x": 2696.5,
+          "y": 2420,
+          "mvx": 320,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 2679.0485127473694,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 2686.9224207286097,
+          "y": 2420
+        },
+        "predictionErrorPx": 9.577579271390253,
+        "authorityPredictionDeltaPx": 9.577579271390277
+      },
+      {
+        "scenario": "belt:root",
+        "step": 6,
+        "serverTick": 37,
+        "commandSeq": 27,
+        "inputX": 1,
+        "attackMoveMode": 0,
+        "authority": {
+          "x": 2712.5,
+          "y": 2420,
+          "mvx": 320,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 2702.9224207286097,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 2707.243713050248,
+          "y": 2420
+        },
+        "predictionErrorPx": 5.256286949751932,
+        "authorityPredictionDeltaPx": 5.256286949751939
+      },
+      {
+        "scenario": "belt:root",
+        "step": 7,
+        "serverTick": 38,
+        "commandSeq": 28,
+        "inputX": 1,
+        "attackMoveMode": 0,
+        "authority": {
+          "x": 2728.5,
+          "y": 2420,
+          "mvx": 320,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 2723.243713050248,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 2725.615288559327,
+          "y": 2420
+        },
+        "predictionErrorPx": 2.884711440673041,
+        "authorityPredictionDeltaPx": 2.8847114406730725
+      },
+      {
+        "scenario": "belt:root",
+        "step": 8,
+        "serverTick": 39,
+        "commandSeq": 29,
+        "inputX": 1,
+        "attackMoveMode": 0,
+        "authority": {
+          "x": 2744.5,
+          "y": 2420,
+          "mvx": 320,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 2741.615288559327,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 2742.916836794585,
+          "y": 2420
+        },
+        "predictionErrorPx": 1.583163205414945,
+        "authorityPredictionDeltaPx": 1.583163205415076
+      },
+      {
+        "scenario": "belt:root",
+        "step": 9,
+        "serverTick": 41,
+        "commandSeq": 30,
+        "inputX": 1,
+        "attackMoveMode": 0,
+        "authority": {
+          "x": 2776.5,
+          "y": 2420,
+          "mvx": 320,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 2758.916836794585,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 2766.850155433528,
+          "y": 2420
+        },
+        "predictionErrorPx": 9.649844566472133,
+        "authorityPredictionDeltaPx": 9.649844566471984
+      },
+      {
+        "scenario": "belt:root",
+        "step": 10,
+        "serverTick": 42,
+        "commandSeq": 31,
+        "inputX": 1,
+        "attackMoveMode": 0,
+        "authority": {
+          "x": 2792.5,
+          "y": 2420,
+          "mvx": 320,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 2782.850155433528,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 2787.2040530154213,
+          "y": 2420
+        },
+        "predictionErrorPx": 5.29594698457854,
+        "authorityPredictionDeltaPx": 5.295946984578677
+      },
+      {
+        "scenario": "belt:root",
+        "step": 11,
+        "serverTick": 43,
+        "commandSeq": 32,
+        "inputX": 1,
+        "attackMoveMode": 0,
+        "authority": {
+          "x": 2808.5,
+          "y": 2420,
+          "mvx": 320,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 2803.2040530154213,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 2805.593522670726,
+          "y": 2420
+        },
+        "predictionErrorPx": 2.9064773292738493,
+        "authorityPredictionDeltaPx": 2.906477329273912
+      },
+      {
+        "scenario": "belt:root",
+        "step": 12,
+        "serverTick": 44,
+        "commandSeq": 33,
+        "inputX": 1,
+        "attackMoveMode": 2,
+        "authority": {
+          "x": 2808.5,
+          "y": 2420,
+          "mvx": 0,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 2821.593522670726,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 2808.5,
+          "y": 2420
+        },
+        "predictionErrorPx": 0,
+        "authorityPredictionDeltaPx": 0
+      },
+      {
+        "scenario": "belt:root",
+        "step": 13,
+        "serverTick": 45,
+        "commandSeq": 34,
+        "inputX": 0,
+        "attackMoveMode": 2,
+        "authority": {
+          "x": 3288.5,
+          "y": 2420,
+          "mvx": 0,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 2808.5,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 3288.5,
+          "y": 2420
+        },
+        "predictionErrorPx": 0,
+        "authorityPredictionDeltaPx": 0
+      },
+      {
+        "scenario": "belt:root",
+        "step": 14,
+        "serverTick": 46,
+        "commandSeq": 35,
+        "inputX": 0,
+        "attackMoveMode": 1,
+        "authority": {
+          "x": 3288.5,
+          "y": 2420,
+          "mvx": 0,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 3288.5,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 3288.5,
+          "y": 2420
+        },
+        "predictionErrorPx": 0,
+        "authorityPredictionDeltaPx": 0
+      },
+      {
+        "scenario": "belt:root",
+        "step": 15,
+        "serverTick": 48,
+        "commandSeq": 36,
+        "inputX": 0,
+        "attackMoveMode": 0,
+        "authority": {
+          "x": 3288.5,
+          "y": 2420,
+          "mvx": 0,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 3288.5,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 3288.5,
+          "y": 2420
+        },
+        "predictionErrorPx": 0,
+        "authorityPredictionDeltaPx": 0
+      },
+      {
+        "scenario": "belt:root",
+        "step": 16,
+        "serverTick": 49,
+        "commandSeq": 37,
+        "inputX": 0,
+        "attackMoveMode": 0,
+        "authority": {
+          "x": 3288.5,
+          "y": 2420,
+          "mvx": 0,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 3288.5,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 3288.5,
+          "y": 2420
+        },
+        "predictionErrorPx": 0,
+        "authorityPredictionDeltaPx": 0
+      },
+      {
+        "scenario": "belt:root",
+        "step": 17,
+        "serverTick": 50,
+        "commandSeq": 38,
+        "inputX": 0,
+        "attackMoveMode": 0,
+        "authority": {
+          "x": 3288.5,
+          "y": 2420,
+          "mvx": 0,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 3288.5,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 3288.5,
+          "y": 2420
+        },
+        "predictionErrorPx": 0,
+        "authorityPredictionDeltaPx": 0
+      },
+      {
+        "scenario": "belt:root",
+        "step": 18,
+        "serverTick": 51,
+        "commandSeq": 39,
+        "inputX": 0,
+        "attackMoveMode": 0,
+        "authority": {
+          "x": 3288.5,
+          "y": 2420,
+          "mvx": 0,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 3288.5,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 3288.5,
+          "y": 2420
+        },
+        "predictionErrorPx": 0,
+        "authorityPredictionDeltaPx": 0
+      },
+      {
+        "scenario": "belt:root",
+        "step": 19,
+        "serverTick": 53,
+        "commandSeq": 40,
+        "inputX": 0,
+        "attackMoveMode": 0,
+        "authority": {
+          "x": 3288.5,
+          "y": 2420,
+          "mvx": 0,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 3288.5,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 3288.5,
+          "y": 2420
+        },
+        "predictionErrorPx": 0,
+        "authorityPredictionDeltaPx": 0
+      },
+      {
+        "scenario": "belt:root",
+        "step": 20,
+        "serverTick": 54,
+        "commandSeq": 41,
+        "inputX": 0,
+        "attackMoveMode": 0,
+        "authority": {
+          "x": 3288.5,
+          "y": 2420,
+          "mvx": 0,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 3288.5,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 3288.5,
+          "y": 2420
+        },
+        "predictionErrorPx": 0,
+        "authorityPredictionDeltaPx": 0
+      },
+      {
+        "scenario": "belt:root",
+        "step": 21,
+        "serverTick": 55,
+        "commandSeq": 42,
+        "inputX": 0,
+        "attackMoveMode": 0,
+        "authority": {
+          "x": 3288.5,
+          "y": 2420,
+          "mvx": 0,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 3288.5,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 3288.5,
+          "y": 2420
+        },
+        "predictionErrorPx": 0,
+        "authorityPredictionDeltaPx": 0
+      },
+      {
+        "scenario": "belt:root",
+        "step": 22,
+        "serverTick": 56,
+        "commandSeq": 43,
+        "inputX": 0,
+        "attackMoveMode": 0,
+        "authority": {
+          "x": 3288.5,
+          "y": 2420,
+          "mvx": 0,
+          "mvy": 0
+        },
+        "predictedBeforePatch": {
+          "x": 3288.5,
+          "y": 2420
+        },
+        "predictedAfterPatch": {
+          "x": 3288.5,
+          "y": 2420
+        },
+        "predictionErrorPx": 0,
+        "authorityPredictionDeltaPx": 0
+      }
+    ]
+  }
+]

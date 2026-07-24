@@ -1,0 +1,24 @@
+{
+  "scenario": "360px authoritative Stormfists root travel followed by zero input",
+  "tickSeconds": 0.05,
+  "stopWithinTicksContract": 3,
+  "beforeFix": {
+    "rootTravelWasFoldedIntoPredictionErrorPx": 360,
+    "zeroInputVisualTailTicks": 28,
+    "zeroInputVisualTailSeconds": 1.4,
+    "cause": "generic reconciliation decay was capped to ordinary movement budget"
+  },
+  "afterFix": {
+    "rootTravelPredictionErrorPx": 0,
+    "inputSlowAuthorityClientParity": "bit-identical per fixed tick",
+    "inputSlowStopTicks": 2,
+    "liveRootStopTicks": {
+      "arena": 1,
+      "belt": 1
+    },
+    "liveInputSlowStopTicks": {
+      "arena": 2,
+      "belt": 2
+    }
+  }
+}
