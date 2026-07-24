@@ -111,32 +111,34 @@
     "reason": "The returning slash arc launches from the far-right leading edge of the crossed fan pair."
   },
   "x2-muay-thai-wraps": {
+    "salvoMode": "cycle",
     "points": [
-      { "part": 0, "x": 196, "y": 161.3 }
+      { "part": 0, "x": 189.4, "y": 257.7 },
+      { "part": 1, "x": 257.8, "y": 191.5 }
     ],
     "reason": "For melee impact punctuation, muzzle means the alpha-weighted striking-hand centroid at the authored elbow, knee, or kick impact frame."
   },
   "x2-wing-chun-wraps": {
     "salvoMode": "cycle",
     "points": [
-      { "part": 0, "x": 264.5, "y": 106.5 },
-      { "part": 1, "x": 264.2, "y": 106.7 }
+      { "part": 0, "x": 263.3, "y": 208.5 },
+      { "part": 1, "x": 255.1, "y": 224 }
     ],
     "reason": "Each centerline beat alternates the alpha-weighted centroid of the authored striking hand at impact."
   },
   "x2-drunken-fist-wraps": {
     "salvoMode": "cycle",
     "points": [
-      { "part": 0, "x": 249, "y": 123.2 },
-      { "part": 1, "x": 246.4, "y": 120 }
+      { "part": 0, "x": 182.3, "y": 256.4 },
+      { "part": 1, "x": 255.6, "y": 216.9 }
     ],
     "reason": "The sway sequence alternates alpha-weighted striking-hand centroids, including the rigid gourd-wrist haymaker."
   },
   "x2-iron-palm-wraps": {
     "salvoMode": "cycle",
     "points": [
-      { "part": 0, "x": 250.2, "y": 130.2 },
-      { "part": 1, "x": 249.4, "y": 134.3 }
+      { "part": 0, "x": 184, "y": 256.9 },
+      { "part": 1, "x": 254.6, "y": 221 }
     ],
     "reason": "The authored points are the alpha-weighted iron-knuckle striking-hand centroids at impact, not projectile bores."
   }

@@ -24,18 +24,21 @@ const B14_WRAPS = [
 const NATIVE_PARTS: Readonly<
   Record<(typeof B14_WRAPS)[number], readonly (readonly [number, number])[]>
 > = {
-  "x2-muay-thai-wraps": [[384, 323]],
+  "x2-muay-thai-wraps": [
+    [380, 512],
+    [512, 368],
+  ],
   "x2-wing-chun-wraps": [
-    [512, 208],
-    [511, 208],
+    [512, 417],
+    [512, 416],
   ],
   "x2-drunken-fist-wraps": [
-    [512, 235],
-    [468, 228],
+    [364, 512],
+    [512, 400],
   ],
   "x2-iron-palm-wraps": [
-    [512, 264],
-    [511, 267],
+    [368, 512],
+    [512, 408],
   ],
 };
 

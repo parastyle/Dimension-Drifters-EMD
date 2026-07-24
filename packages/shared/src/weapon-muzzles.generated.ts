@@ -923,32 +923,32 @@ export const WEAPON_ART_MUZZLES = {
     "sprite": "x2-drunken-fist-wraps",
     "parts": [
       {
-        "width": 512,
-        "height": 235
+        "width": 364,
+        "height": 512
       },
       {
-        "width": 468,
-        "height": 228
+        "width": 512,
+        "height": 400
       }
     ],
     "points": [
       {
         "part": 0,
-        "x": 249,
-        "y": 123.2,
+        "x": 182.3,
+        "y": 256.4,
         "derived": {
-          "x": 510,
-          "y": 94
+          "x": 362,
+          "y": 276.4
         },
         "overrideReason": "The sway sequence alternates alpha-weighted striking-hand centroids, including the rigid gourd-wrist haymaker."
       },
       {
         "part": 1,
-        "x": 246.4,
-        "y": 120,
+        "x": 255.6,
+        "y": 216.9,
         "derived": {
-          "x": 467,
-          "y": 95
+          "x": 509,
+          "y": 286.3
         },
         "overrideReason": "The sway sequence alternates alpha-weighted striking-hand centroids, including the rigid gourd-wrist haymaker."
       }
@@ -1950,32 +1950,32 @@ export const WEAPON_ART_MUZZLES = {
     "sprite": "x2-iron-palm-wraps",
     "parts": [
       {
-        "width": 512,
-        "height": 264
+        "width": 368,
+        "height": 512
       },
       {
-        "width": 511,
-        "height": 267
+        "width": 512,
+        "height": 408
       }
     ],
     "points": [
       {
         "part": 0,
-        "x": 250.2,
-        "y": 130.2,
+        "x": 184,
+        "y": 256.9,
         "derived": {
-          "x": 507,
-          "y": 113
+          "x": 363,
+          "y": 240.8
         },
         "overrideReason": "The authored points are the alpha-weighted iron-knuckle striking-hand centroids at impact, not projectile bores."
       },
       {
         "part": 1,
-        "x": 249.4,
-        "y": 134.3,
+        "x": 254.6,
+        "y": 221,
         "derived": {
-          "x": 506,
-          "y": 116.5
+          "x": 511,
+          "y": 322.6
         },
         "overrideReason": "The authored points are the alpha-weighted iron-knuckle striking-hand centroids at impact, not projectile bores."
       }
@@ -2208,23 +2208,37 @@ export const WEAPON_ART_MUZZLES = {
     "sprite": "x2-muay-thai-wraps",
     "parts": [
       {
-        "width": 384,
-        "height": 323
+        "width": 380,
+        "height": 512
+      },
+      {
+        "width": 512,
+        "height": 368
       }
     ],
     "points": [
       {
         "part": 0,
-        "x": 196,
-        "y": 161.3,
+        "x": 189.4,
+        "y": 257.7,
         "derived": {
-          "x": 383,
-          "y": 56.6
+          "x": 378,
+          "y": 249.5
+        },
+        "overrideReason": "For melee impact punctuation, muzzle means the alpha-weighted striking-hand centroid at the authored elbow, knee, or kick impact frame."
+      },
+      {
+        "part": 1,
+        "x": 257.8,
+        "y": 191.5,
+        "derived": {
+          "x": 430,
+          "y": 231.8
         },
         "overrideReason": "For melee impact punctuation, muzzle means the alpha-weighted striking-hand centroid at the authored elbow, knee, or kick impact frame."
       }
     ],
-    "salvoMode": "parallel",
+    "salvoMode": "cycle",
     "barrelMode": "parallel"
   },
   "x2-null-grimoire-of-the-hollow-page": {
@@ -3693,31 +3707,31 @@ export const WEAPON_ART_MUZZLES = {
     "parts": [
       {
         "width": 512,
-        "height": 208
+        "height": 417
       },
       {
-        "width": 511,
-        "height": 208
+        "width": 512,
+        "height": 416
       }
     ],
     "points": [
       {
         "part": 0,
-        "x": 264.5,
-        "y": 106.5,
+        "x": 263.3,
+        "y": 208.5,
         "derived": {
           "x": 511,
-          "y": 110.3
+          "y": 205.1
         },
         "overrideReason": "Each centerline beat alternates the alpha-weighted centroid of the authored striking hand at impact."
       },
       {
         "part": 1,
-        "x": 264.2,
-        "y": 106.7,
+        "x": 255.1,
+        "y": 224,
         "derived": {
-          "x": 510,
-          "y": 67.9
+          "x": 446,
+          "y": 275.7
         },
         "overrideReason": "Each centerline beat alternates the alpha-weighted centroid of the authored striking hand at impact."
       }

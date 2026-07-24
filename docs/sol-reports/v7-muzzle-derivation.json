@@ -918,25 +918,25 @@
     "derived": [
       {
         "part": 0,
-        "x": 510,
-        "y": 94
+        "x": 362,
+        "y": 276.4
       },
       {
         "part": 1,
-        "x": 467,
-        "y": 95
+        "x": 509,
+        "y": 286.3
       }
     ],
     "points": [
       {
         "part": 0,
-        "x": 249,
-        "y": 123.2
+        "x": 182.3,
+        "y": 256.4
       },
       {
         "part": 1,
-        "x": 246.4,
-        "y": 120
+        "x": 255.6,
+        "y": 216.9
       }
     ],
     "override": "The sway sequence alternates alpha-weighted striking-hand centroids, including the rigid gourd-wrist haymaker.",
@@ -1897,25 +1897,25 @@
     "derived": [
       {
         "part": 0,
-        "x": 507,
-        "y": 113
+        "x": 363,
+        "y": 240.8
       },
       {
         "part": 1,
-        "x": 506,
-        "y": 116.5
+        "x": 511,
+        "y": 322.6
       }
     ],
     "points": [
       {
         "part": 0,
-        "x": 250.2,
-        "y": 130.2
+        "x": 184,
+        "y": 256.9
       },
       {
         "part": 1,
-        "x": 249.4,
-        "y": 134.3
+        "x": 254.6,
+        "y": 221
       }
     ],
     "override": "The authored points are the alpha-weighted iron-knuckle striking-hand centroids at impact, not projectile bores.",
@@ -2149,19 +2149,29 @@
     "derived": [
       {
         "part": 0,
-        "x": 383,
-        "y": 56.6
+        "x": 378,
+        "y": 249.5
+      },
+      {
+        "part": 1,
+        "x": 430,
+        "y": 231.8
       }
     ],
     "points": [
       {
         "part": 0,
-        "x": 196,
-        "y": 161.3
+        "x": 189.4,
+        "y": 257.7
+      },
+      {
+        "part": 1,
+        "x": 257.8,
+        "y": 191.5
       }
     ],
     "override": "For melee impact punctuation, muzzle means the alpha-weighted striking-hand centroid at the authored elbow, knee, or kick impact frame.",
-    "salvoMode": "parallel",
+    "salvoMode": "cycle",
     "barrelMode": "parallel"
   },
   {
@@ -3558,24 +3568,24 @@
       {
         "part": 0,
         "x": 511,
-        "y": 110.3
+        "y": 205.1
       },
       {
         "part": 1,
-        "x": 510,
-        "y": 67.9
+        "x": 446,
+        "y": 275.7
       }
     ],
     "points": [
       {
         "part": 0,
-        "x": 264.5,
-        "y": 106.5
+        "x": 263.3,
+        "y": 208.5
       },
       {
         "part": 1,
-        "x": 264.2,
-        "y": 106.7
+        "x": 255.1,
+        "y": 224
       }
     ],
     "override": "Each centerline beat alternates the alpha-weighted centroid of the authored striking hand at impact.",
