@@ -1,4 +1,9 @@
-import { DEFAULT_CHARACTER, WHOLE_ART_CHARACTERS, type WholeArtCharacter } from "@dd/shared";
+import {
+  DEFAULT_CHARACTER,
+  STARTER_UNLOCKED_CHARACTER_IDS,
+  WHOLE_ART_CHARACTERS,
+  type WholeArtCharacter,
+} from "@dd/shared";
 import { describe, expect, it } from "vitest";
 import {
   CHARACTER_SELECTION_STORAGE_KEY,
@@ -69,6 +74,22 @@ describe("character selection behavior", () => {
     expect(options.filter((option) => option.selected).map((option) => option.id)).toEqual([
       "proto-wizard",
     ]);
+    expect(options.every((option) => !option.locked)).toBe(true);
+  });
+
+  it("keeps locked characters visible and repairs a locked selection to the starter", () => {
+    const options = characterSelectionOptions(
+      "proto-blue-spectral-demon-hunter",
+      STARTER_UNLOCKED_CHARACTER_IDS,
+    );
+    expect(options).toHaveLength(WHOLE_ART_CHARACTERS.length);
+    expect(options.find((option) => option.id === DEFAULT_CHARACTER)).toMatchObject({
+      selected: true,
+      locked: false,
+    });
+    expect(
+      options.find((option) => option.id === "proto-blue-spectral-demon-hunter"),
+    ).toMatchObject({ selected: false, locked: true });
   });
 
   it("routes bounded arrows plus Home/End and activates with Enter or Space", () => {

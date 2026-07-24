@@ -1,4 +1,4 @@
-import { createMetaAccountV4, GEAR_CATALOG, GEAR_IDS, STARTER_GEAR_LOADOUT } from "@dd/shared";
+import { createMetaAccountV5, GEAR_CATALOG, GEAR_IDS, STARTER_GEAR_LOADOUT } from "@dd/shared";
 import { describe, expect, it, vi } from "vitest";
 
 // MenuScene extends Phaser classes, but this file exercises only the pure dev-account projection.
@@ -21,7 +21,7 @@ const { devInspectionAccount } = await import("./MenuScene.js");
 
 describe("MenuScene dev inspection links", () => {
   it("grants the complete closet and equips a requested gear id in its canonical slot", () => {
-    const account = createMetaAccountV4();
+    const account = createMetaAccountV5();
     const gearId = "ash-walker-shirt";
     const slot = GEAR_CATALOG[gearId].slot;
 
@@ -34,7 +34,7 @@ describe("MenuScene dev inspection links", () => {
   });
 
   it("owns and selects a requested pet without erasing the rest of the account", () => {
-    const account = createMetaAccountV4();
+    const account = createMetaAccountV5();
     const inspected = devInspectionAccount(account, "pet:gilded-gecko");
 
     expect(inspected.selectedPetId).toBe("gilded-gecko");

@@ -10,11 +10,19 @@ import {
   type GearId,
   type GearSlot,
   getDimension,
-  type MetaAccountV4,
+  isCharacterUnlocked,
+  lockedPackCandidates,
+  type MetaAccountV5,
+  openBoosterPack,
+  type PackOpenReceipt,
+  PACK_PRICES,
+  type PackRarity,
+  type PackType,
   PET_IDS,
   type PetId,
   petLevelForXp,
   petModsForLevel,
+  randomSeed,
   STARTER_GEAR_LOADOUT,
   WHOLE_ART_CHARACTERS,
   type WholeArtCharacter,
@@ -145,7 +153,7 @@ async function ensureArenaScene(scene: Phaser.Scenes.ScenePlugin): Promise<void>
  * piece in its canonical slot; pet inspections own and select the requested companion. The projected
  * account is sent through the normal join sanitizer, so the Testing-Grounds player uses the same
  * wardrobe/pet path as an ordinary menu launch. */
-export function devInspectionAccount(account: MetaAccountV4, spec: string): MetaAccountV4 {
+export function devInspectionAccount(account: MetaAccountV5, spec: string): MetaAccountV5 {
   const separator = spec.indexOf(":");
   const kind = separator < 0 ? spec : spec.slice(0, separator);
   const arg = separator < 0 ? "" : spec.slice(separator + 1);
@@ -172,6 +180,17 @@ export function devInspectionAccount(account: MetaAccountV4, spec: string): Meta
 }
 const TITLE_COLOR = "#f0e6d2";
 const ACCENT = "#33e6ff";
+const PACK_LABELS: Readonly<Record<PackType, string>> = {
+  weapon: "WEAPON PACK",
+  pet: "PET PACK",
+  character: "CHARACTER PACK",
+};
+const PACK_RARITY_COLORS: Readonly<Record<PackRarity, number>> = {
+  common: 0x9aa5b1,
+  uncommon: 0x59c96b,
+  rare: 0x4aa3ff,
+  legendary: 0xffa53a,
+};
 
 /** One rendered dimension card — its container is repositioned by `layout()` on every resize. */
 interface MenuCard {
@@ -219,18 +238,37 @@ interface ArmoryCardControl {
   entryId?: string;
 }
 
+interface PackCardControl {
+  type: PackType;
+  root: Phaser.GameObjects.Container;
+  frame: Phaser.GameObjects.Rectangle;
+  title: Phaser.GameObjects.Text;
+  detail: Phaser.GameObjects.Text;
+  action: Phaser.GameObjects.Text;
+}
+
+interface PackRevealCardControl {
+  root: Phaser.GameObjects.Container;
+  frame: Phaser.GameObjects.Rectangle;
+  rarity: Phaser.GameObjects.Text;
+  name: Phaser.GameObjects.Text;
+  status: Phaser.GameObjects.Text;
+  revealed: boolean;
+}
+
 interface MenuSceneData {
   prestigeRoom?: Room<ArenaState>;
   prestigeGameCleared?: boolean;
 }
 
-export type MenuTab = "characters" | "armory" | "run";
+export type MenuTab = "characters" | "armory" | "packs" | "run";
 
 export const INITIAL_MENU_TAB: MenuTab = "characters";
 
 export const MENU_TAB_DESCRIPTORS = [
   { tab: "characters", label: "CHARACTERS", width: 142 },
   { tab: "armory", label: "ARMORY / CARRY", width: 176 },
+  { tab: "packs", label: "PACKS", width: 142 },
   { tab: "run", label: "DESTINATIONS", width: 142 },
 ] as const satisfies ReadonlyArray<{ tab: MenuTab; label: string; width: number }>;
 
@@ -238,6 +276,7 @@ export function menuTabVisibility(tab: MenuTab): {
   characters: boolean;
   companions: boolean;
   armory: boolean;
+  packs: boolean;
   destinations: boolean;
   prestige: boolean;
   fullScreen: boolean;
@@ -246,9 +285,10 @@ export function menuTabVisibility(tab: MenuTab): {
     characters: tab === "characters",
     companions: tab === "characters",
     armory: tab === "armory",
+    packs: tab === "packs",
     destinations: tab === "run",
     prestige: tab === "run",
-    fullScreen: tab === "characters" || tab === "armory",
+    fullScreen: tab === "characters" || tab === "armory" || tab === "packs",
   };
 }
 
@@ -290,7 +330,7 @@ export class MenuScene extends Phaser.Scene {
   private launchIntent: LaunchIntent = "quick";
   private intentRow?: Phaser.GameObjects.Container;
   private intentCaption?: Phaser.GameObjects.Text;
-  private metaAccount!: MetaAccountV4;
+  private metaAccount!: MetaAccountV5;
   private companionRow?: Phaser.GameObjects.Container;
   private companionName?: Phaser.GameObjects.Text;
   private companionDetail?: Phaser.GameObjects.Text;
@@ -307,6 +347,16 @@ export class MenuScene extends Phaser.Scene {
   private selectedCharacterId: WholeArtCharacter = DEFAULT_CHARACTER;
   private characterFocusIndex = 0;
   private characterCardScale = 1;
+  private packsRoot?: Phaser.GameObjects.Container;
+  private packsChrome?: Phaser.GameObjects.Graphics;
+  private packsTitle?: Phaser.GameObjects.Text;
+  private packsBalance?: Phaser.GameObjects.Text;
+  private packsHint?: Phaser.GameObjects.Text;
+  private packCards: PackCardControl[] = [];
+  private packFocusIndex = 0;
+  private packCeremonyRoot?: Phaser.GameObjects.Container;
+  private packCeremonyReceipt?: PackOpenReceipt;
+  private packRevealCards: PackRevealCardControl[] = [];
   private wardrobeRoot?: Phaser.GameObjects.Container;
   private wardrobeChrome?: Phaser.GameObjects.Graphics;
   private wardrobePresetState!: WardrobePresetState;
@@ -452,6 +502,16 @@ export class MenuScene extends Phaser.Scene {
     this.characterCards = [];
     this.characterFocusIndex = 0;
     this.characterCardScale = 1;
+    this.packsRoot = undefined;
+    this.packsChrome = undefined;
+    this.packsTitle = undefined;
+    this.packsBalance = undefined;
+    this.packsHint = undefined;
+    this.packCards = [];
+    this.packFocusIndex = 0;
+    this.packCeremonyRoot = undefined;
+    this.packCeremonyReceipt = undefined;
+    this.packRevealCards = [];
     this.wardrobeRoot = undefined;
     this.wardrobeChrome = undefined;
     this.wardrobePreviewSurface = undefined;
@@ -523,6 +583,9 @@ export class MenuScene extends Phaser.Scene {
     this.audio = (this.game.registry.get("audio") as AudioBus | undefined) ?? new AudioBus();
     this.game.registry.set("audio", this.audio);
     this.metaAccount = loadPetMetaAccount();
+    if (!isCharacterUnlocked(this.metaAccount, this.selectedCharacterId)) {
+      this.selectedCharacterId = saveCharacterSelection(DEFAULT_CHARACTER).selectedCharacterId;
+    }
     this.characterFocusIndex = Math.max(0, WHOLE_ART_CHARACTERS.indexOf(this.selectedCharacterId));
     // DEV CLOSET — `?closet=1`, dev builds only: own the ENTIRE gear catalog locally so any outfit
     // can be dressed without farming. Purely a local-trust cosmetic grant (the server sanitizes the
@@ -636,6 +699,31 @@ export class MenuScene extends Phaser.Scene {
         e.preventDefault();
         return;
       }
+      if (this.menuTab === "packs") {
+        if (this.packCeremonyRoot) {
+          if (["Enter", " ", "Escape", "Tab", "Shift"].includes(e.key)) {
+            this.advancePackCeremony();
+            e.preventDefault();
+          }
+          return;
+        }
+        if (e.key === "Escape" || e.key === "Tab") {
+          this.setMenuTab("run");
+          e.preventDefault();
+          return;
+        }
+        const route = routeCharacterSelectionKey(e.key, this.packFocusIndex, this.packCards.length);
+        if (!route.handled) return;
+        this.packFocusIndex = route.focusIndex;
+        if (route.activate) {
+          const packType = this.packCards[this.packFocusIndex]?.type;
+          if (packType) this.buyPack(packType);
+        } else {
+          this.refreshPacksWorkspace();
+        }
+        e.preventDefault();
+        return;
+      }
       if (this.menuTab !== "run") return;
       if (this.prestigeDrawerOpen && e.key === "Escape") {
         this.prestigeDrawerOpen = false;
@@ -672,6 +760,7 @@ export class MenuScene extends Phaser.Scene {
     this.buildIntentRow();
     this.buildCharacterWorkspace();
     this.buildArmoryWorkspace();
+    this.buildPacksWorkspace();
     this.buildCompanionRow();
     this.buildDestinationsPrestige();
     this.buildAudioRow();
@@ -1135,7 +1224,9 @@ export class MenuScene extends Phaser.Scene {
     this.tabRow = this.add.container(0, 0).setDepth(60);
     MENU_TAB_DESCRIPTORS.forEach(({ tab, label, width }, index) => {
       const chip = this.makeMenuChip(label, width, () => this.setMenuTab(tab));
-      chip.setPosition((index - 1) * 166, 0).setData("tab", tab);
+      chip
+        .setPosition((index - (MENU_TAB_DESCRIPTORS.length - 1) / 2) * 166, 0)
+        .setData("tab", tab);
       this.tabRow?.add(chip);
       this.tabButtons.set(tab, chip);
     });
@@ -1158,6 +1249,7 @@ export class MenuScene extends Phaser.Scene {
     this.characterRoot?.setVisible(visibility.characters);
     this.companionRow?.setVisible(visibility.companions);
     this.armoryRoot?.setVisible(visibility.armory);
+    this.packsRoot?.setVisible(visibility.packs);
     this.intentRow?.setVisible(visibility.destinations);
     this.destinationsWorldTier?.setVisible(visibility.prestige);
     this.destinationsPrestigeLayer?.setVisible(visibility.prestige);
@@ -1166,6 +1258,7 @@ export class MenuScene extends Phaser.Scene {
     for (const card of this.cards) card.root.setVisible(visibility.destinations);
     if (tab === "characters") this.refreshCharacterWorkspace();
     if (tab === "armory") this.refreshArmoryWorkspace();
+    if (tab === "packs") this.refreshPacksWorkspace();
     if (tab === "run") this.refreshPrestigeSurface();
     this.layout();
   }
@@ -1195,7 +1288,10 @@ export class MenuScene extends Phaser.Scene {
       this.characterHint,
     ]);
 
-    for (const option of characterSelectionOptions(this.selectedCharacterId)) {
+    for (const option of characterSelectionOptions(
+      this.selectedCharacterId,
+      this.metaAccount.unlockedCharacters,
+    )) {
       const frame = this.add
         .rectangle(0, 0, 260, 390, ARMORY_COLORS.surface1, 1)
         .setStrokeStyle(2, ARMORY_COLORS.border, 1);
@@ -1246,6 +1342,11 @@ export class MenuScene extends Phaser.Scene {
   }
 
   private selectCharacter(id: WholeArtCharacter): void {
+    if (!isCharacterUnlocked(this.metaAccount, id)) {
+      this.audio.play("ui:cancel");
+      this.refreshCharacterWorkspace();
+      return;
+    }
     const selection = saveCharacterSelection(id);
     this.selectedCharacterId = selection.selectedCharacterId;
     this.characterFocusIndex = Math.max(0, WHOLE_ART_CHARACTERS.indexOf(this.selectedCharacterId));
@@ -1257,17 +1358,42 @@ export class MenuScene extends Phaser.Scene {
     for (const [index, card] of this.characterCards.entries()) {
       const selected = card.id === this.selectedCharacterId;
       const focused = index === this.characterFocusIndex;
+      const locked = !isCharacterUnlocked(this.metaAccount, card.id);
       card.frame
-        .setFillStyle(selected ? 0x14232a : ARMORY_COLORS.surface1, 1)
+        .setFillStyle(
+          selected ? 0x14232a : locked ? ARMORY_COLORS.surface0 : ARMORY_COLORS.surface1,
+          1,
+        )
         .setStrokeStyle(
           selected ? 3 : focused ? 2.5 : 1.5,
-          selected ? ARMORY_COLORS.success : focused ? ARMORY_COLORS.accent : ARMORY_COLORS.border,
+          selected
+            ? ARMORY_COLORS.success
+            : focused
+              ? locked
+                ? ARMORY_COLORS.textSecondary
+                : ARMORY_COLORS.accent
+              : ARMORY_COLORS.border,
           1,
         );
-      card.name.setColor(selected ? TITLE_COLOR : ARMORY_CSS_COLORS.textPrimary);
+      card.name.setColor(
+        selected
+          ? TITLE_COLOR
+          : locked
+            ? ARMORY_CSS_COLORS.textMuted
+            : ARMORY_CSS_COLORS.textPrimary,
+      );
       card.status
-        .setText(selected ? "SELECTED · READY" : focused ? "ENTER TO SELECT" : "AVAILABLE")
+        .setText(
+          selected
+            ? "SELECTED · READY"
+            : locked
+              ? "🔒 LOCKED · CHARACTER PACK"
+              : focused
+                ? "ENTER TO SELECT"
+                : "AVAILABLE",
+        )
         .setColor(selected ? ARMORY_CSS_COLORS.success : ARMORY_CSS_COLORS.textMuted);
+      card.root.setAlpha(locked ? 0.58 : 1);
       card.root.setScale((focused ? 1.025 : 1) * this.characterCardScale);
     }
   }
@@ -1316,6 +1442,318 @@ export class MenuScene extends Phaser.Scene {
     this.characterHint?.setPosition(w / 2, h - 142);
     const companionScale = Math.min(1, (w - 40) / 580);
     this.companionRow?.setPosition(w / 2, h - 72).setScale(companionScale);
+  }
+
+  private buildPacksWorkspace(): void {
+    const root = this.add.container(0, 0).setDepth(10);
+    this.packsChrome = this.add.graphics();
+    this.packsTitle = this.add
+      .text(0, 0, "BOOSTER PACKS", armoryTextStyle("pageTitle"))
+      .setOrigin(0.5);
+    this.packsBalance = this.add
+      .text(0, 0, "", armoryTextStyle("section", "action", true))
+      .setOrigin(0.5);
+    this.packsHint = this.add
+      .text(
+        0,
+        0,
+        "Arrows move · Enter / Space buys · cards flip left-to-right · any ceremony key skips",
+        { ...armoryTextStyle("secondary", "textMuted", true), align: "center" },
+      )
+      .setOrigin(0.5);
+    root.add([this.packsChrome, this.packsTitle, this.packsBalance, this.packsHint]);
+
+    (["weapon", "pet", "character"] as const).forEach((type) => {
+      const frame = this.add
+        .rectangle(0, 0, 330, 330, ARMORY_COLORS.surface1, 1)
+        .setStrokeStyle(2, ARMORY_COLORS.border, 1);
+      const crest = this.add
+        .text(0, -100, type === "weapon" ? "⚔" : type === "pet" ? "◆" : "★", {
+          fontSize: "58px",
+          color: ARMORY_CSS_COLORS.action,
+          fontStyle: "bold",
+        })
+        .setOrigin(0.5);
+      const title = this.add
+        .text(0, -42, PACK_LABELS[type], armoryTextStyle("section"))
+        .setOrigin(0.5);
+      const detail = this.add
+        .text(0, 16, "", {
+          ...armoryTextStyle("secondary", "textSecondary", true),
+          align: "center",
+          wordWrap: { width: 288 },
+        })
+        .setOrigin(0.5);
+      const action = this.add
+        .text(0, 126, "", armoryTextStyle("body", "action", true))
+        .setOrigin(0.5);
+      const cardRoot = this.add.container(0, 0, [frame, crest, title, detail, action]);
+      const card: PackCardControl = { type, root: cardRoot, frame, title, detail, action };
+      frame
+        .setInteractive({ useHandCursor: true })
+        .on("pointerover", () => {
+          this.packFocusIndex = this.packCards.indexOf(card);
+          this.refreshPacksWorkspace();
+        })
+        .on("pointerdown", () => {
+          this.audio.resume();
+          this.buyPack(type);
+        });
+      root.add(cardRoot);
+      this.packCards.push(card);
+    });
+    this.packsRoot = root;
+    this.refreshPacksWorkspace();
+  }
+
+  private refreshPacksWorkspace(): void {
+    if (!this.packsBalance) return;
+    this.packsBalance.setText(`BANK  ◈${this.metaAccount.scrip.toLocaleString()} MONEY`);
+    for (const [index, card] of this.packCards.entries()) {
+      const remaining = lockedPackCandidates(this.metaAccount, card.type).length;
+      const price = PACK_PRICES[card.type];
+      const focused = index === this.packFocusIndex;
+      const soldOut = remaining === 0;
+      const affordable = this.metaAccount.scrip >= price;
+      card.frame
+        .setFillStyle(focused ? ARMORY_COLORS.surface3 : ARMORY_COLORS.surface1, 1)
+        .setStrokeStyle(
+          focused ? 3 : 1.5,
+          soldOut
+            ? ARMORY_COLORS.textMuted
+            : affordable
+              ? focused
+                ? ARMORY_COLORS.action
+                : ARMORY_COLORS.accent
+              : ARMORY_COLORS.danger,
+          1,
+        );
+      card.detail.setText(
+        `3 SEEDED PULLS  ·  ${remaining} LOCKED\nCOMMON 55  ·  UNCOMMON 28\nRARE 13  ·  LEGENDARY 4`,
+      );
+      card.action
+        .setText(
+          soldOut
+            ? "COLLECTION COMPLETE"
+            : affordable
+              ? `BUY  ·  ◈${price}`
+              : `NEED ◈${price - this.metaAccount.scrip} MORE`,
+        )
+        .setColor(
+          soldOut
+            ? ARMORY_CSS_COLORS.textMuted
+            : affordable
+              ? ARMORY_CSS_COLORS.action
+              : ARMORY_CSS_COLORS.danger,
+        );
+      card.root.setAlpha(soldOut ? 0.58 : 1).setScale(focused ? 1.025 : 1);
+    }
+  }
+
+  private buyPack(packType: PackType): void {
+    if (this.packCeremonyRoot) return;
+    const requestedSeed = Number.parseInt(
+      new URLSearchParams(location.search).get("packSeed") ?? "",
+      10,
+    );
+    const seed = Number.isFinite(requestedSeed) ? requestedSeed >>> 0 : randomSeed();
+    const opened = openBoosterPack(this.metaAccount, packType, seed);
+    if (!opened.ok) {
+      this.audio.play("ui:cancel");
+      this.packsHint?.setText(
+        opened.reason === "sold-out"
+          ? "That collection is complete."
+          : `Not enough banked money for ${PACK_LABELS[packType]}.`,
+      );
+      this.refreshPacksWorkspace();
+      return;
+    }
+    this.metaAccount = savePetMetaAccount(opened.account);
+    this.audio.play("ui:confirm");
+    this.refreshPacksWorkspace();
+    this.refreshCharacterWorkspace();
+    this.refreshCompanionRow();
+    this.showPackCeremony(opened.receipt);
+  }
+
+  private showPackCeremony(receipt: PackOpenReceipt): void {
+    this.closePackCeremony();
+    this.packCeremonyReceipt = receipt;
+    const overlay = this.add
+      .rectangle(0, 0, this.screenW(), this.screenH(), 0x050608, 0.94)
+      .setInteractive({ useHandCursor: true });
+    const panel = this.add
+      .rectangle(0, 0, 850, 590, ARMORY_COLORS.surface0, 0.99)
+      .setStrokeStyle(3, ARMORY_COLORS.action, 1);
+    const title = this.add
+      .text(0, -250, `${PACK_LABELS[receipt.packType]}  ·  OPEN`, armoryTextStyle("pageTitle"))
+      .setOrigin(0.5);
+    const seed = this.add
+      .text(0, -216, `SEED ${receipt.seed}  ·  THREE PULLS`, {
+        ...armoryTextStyle("secondary", "textMuted", true),
+        align: "center",
+      })
+      .setOrigin(0.5);
+    const footer = this.add
+      .text(0, 238, "", armoryTextStyle("body", "action", true))
+      .setOrigin(0.5);
+    const continueText = this.add
+      .text(0, 272, "Enter / Space / click to reveal all", {
+        ...armoryTextStyle("secondary", "textMuted", true),
+        align: "center",
+      })
+      .setOrigin(0.5);
+    const root = this.add
+      .container(this.screenW() / 2, this.screenH() / 2, [
+        overlay,
+        panel,
+        title,
+        seed,
+        footer,
+        continueText,
+      ])
+      .setDepth(900)
+      .setData({ overlay, panel, footer, continueText });
+    overlay.on("pointerdown", () => this.advancePackCeremony());
+
+    this.packRevealCards = receipt.pulls.map((_pull, index) => {
+      const frame = this.add
+        .rectangle(0, 0, 230, 350, ARMORY_COLORS.surface2, 1)
+        .setStrokeStyle(3, ARMORY_COLORS.stitch, 1);
+      const back = this.add
+        .text(0, -8, "DD\nBOOSTER", {
+          ...armoryTextStyle("pageTitle", "action", true),
+          align: "center",
+          lineSpacing: 10,
+        })
+        .setOrigin(0.5);
+      const rarity = this.add
+        .text(0, -126, "", armoryTextStyle("secondary", "textMuted", true))
+        .setOrigin(0.5);
+      const name = this.add
+        .text(0, -12, "", {
+          ...armoryTextStyle("section"),
+          align: "center",
+          wordWrap: { width: 196 },
+        })
+        .setOrigin(0.5);
+      const status = this.add
+        .text(0, 128, "", {
+          ...armoryTextStyle("secondary", "success", true),
+          align: "center",
+          wordWrap: { width: 204 },
+        })
+        .setOrigin(0.5);
+      const cardRoot = this.add.container((index - 1) * 250, 18, [
+        frame,
+        back,
+        rarity,
+        name,
+        status,
+      ]);
+      root.add(cardRoot);
+      return { root: cardRoot, frame, rarity, name, status, revealed: false };
+    });
+    this.packCeremonyRoot = root;
+    receipt.pulls.forEach((_pull, index) => {
+      this.time.delayedCall(220 + index * 280, () => this.revealPackCard(index));
+    });
+  }
+
+  private revealPackCard(index: number, immediate = false): void {
+    const card = this.packRevealCards[index];
+    const pull = this.packCeremonyReceipt?.pulls[index];
+    if (!card || !pull || card.revealed) return;
+    card.revealed = true;
+    const applyFront = (): void => {
+      card.frame
+        .setFillStyle(ARMORY_COLORS.surface1, 1)
+        .setStrokeStyle(4, PACK_RARITY_COLORS[pull.rarity], 1);
+      card.rarity
+        .setText(`${pull.rarity.toUpperCase()}  ◆`)
+        .setColor(`#${PACK_RARITY_COLORS[pull.rarity].toString(16).padStart(6, "0")}`);
+      card.name.setText(pull.name);
+      card.status
+        .setText(pull.duplicate ? `duplicate -> +${pull.refund} money` : "NEW UNLOCK")
+        .setColor(
+          pull.duplicate ? ARMORY_CSS_COLORS.warning : ARMORY_CSS_COLORS.success,
+        );
+      const back = card.root.list[1] as Phaser.GameObjects.Text | undefined;
+      back?.setVisible(false);
+    };
+    if (immediate) {
+      applyFront();
+    } else {
+      this.audio.play("armory:stage");
+      this.tweens.add({
+        targets: card.root,
+        scaleX: 0.04,
+        duration: 90,
+        ease: "Quad.In",
+        onComplete: () => {
+          applyFront();
+          this.tweens.add({
+            targets: card.root,
+            scaleX: 1,
+            duration: 130,
+            ease: "Back.Out",
+          });
+        },
+      });
+    }
+    if (this.packRevealCards.every((candidate) => candidate.revealed)) {
+      const footer = this.packCeremonyRoot?.getData("footer") as
+        | Phaser.GameObjects.Text
+        | undefined;
+      const continueText = this.packCeremonyRoot?.getData("continueText") as
+        | Phaser.GameObjects.Text
+        | undefined;
+      footer?.setText(
+        `REFUNDS +◈${this.packCeremonyReceipt?.refundTotal ?? 0}  ·  BANK ◈${
+          this.packCeremonyReceipt?.balance ?? this.metaAccount.scrip
+        }`,
+      );
+      continueText?.setText("Enter / Space / click to continue");
+    }
+  }
+
+  private advancePackCeremony(): void {
+    if (this.packRevealCards.some((card) => !card.revealed)) {
+      this.packRevealCards.forEach((_card, index) => this.revealPackCard(index, true));
+      return;
+    }
+    this.closePackCeremony();
+  }
+
+  private closePackCeremony(): void {
+    this.packCeremonyRoot?.destroy(true);
+    this.packCeremonyRoot = undefined;
+    this.packCeremonyReceipt = undefined;
+    this.packRevealCards = [];
+  }
+
+  private layoutPacksWorkspace(): void {
+    if (!this.packsRoot || !this.packsChrome) return;
+    const w = this.screenW();
+    const h = this.screenH();
+    this.packsChrome.clear().fillStyle(ARMORY_COLORS.bg, 0.99).fillRect(0, 0, w, h);
+    this.packsTitle?.setPosition(w / 2, 100);
+    this.packsBalance?.setPosition(w / 2, 136);
+    const scale = Math.max(0.72, Math.min(1, (w - 80) / (330 * 3 + 28 * 2)));
+    const pitch = (330 + 28) * scale;
+    this.packCards.forEach((card, index) => {
+      card.root
+        .setPosition(w / 2 + (index - 1) * pitch, Math.max(330, h / 2 + 12))
+        .setScale((index === this.packFocusIndex ? 1.025 : 1) * scale);
+    });
+    this.packsHint?.setPosition(w / 2, h - 54);
+    if (this.packCeremonyRoot) {
+      this.packCeremonyRoot.setPosition(w / 2, h / 2);
+      const overlay = this.packCeremonyRoot.getData("overlay") as
+        | Phaser.GameObjects.Rectangle
+        | undefined;
+      overlay?.setSize(w, h);
+    }
   }
 
   private layoutDestinationsPrestige(): void {
@@ -3106,9 +3544,7 @@ export class MenuScene extends Phaser.Scene {
       `${selected.name} · Lv ${selected.level}/10${selected.owned ? "" : " · LOCKED"}`,
     );
     const progress = !selected.owned
-      ? selected.id === "slate-tortoise"
-        ? "Wild egg · Verdant Ruins terminal victories"
-        : "◈ 160 Money egg · Companion shop"
+      ? "Locked · Open Pet Packs from the Packs tab"
       : selected.nextBondXp === null
         ? "Maxed Bond"
         : `${selected.bondXp.toLocaleString()} / ${selected.nextBondXp.toLocaleString()} Bond XP`;
@@ -3314,6 +3750,7 @@ export class MenuScene extends Phaser.Scene {
     this.tabRow?.setPosition(w / 2, fullScreenWorkspace ? 44 : titleY + 76);
     this.layoutCharacterWorkspace();
     this.layoutArmoryWorkspace();
+    this.layoutPacksWorkspace();
     this.layoutDestinationsPrestige();
     // §50 finding #1 — the launch-intent selector sits between the subtitle and the card grid.
     this.intentRow?.setPosition(w / 2, titleY + 126);

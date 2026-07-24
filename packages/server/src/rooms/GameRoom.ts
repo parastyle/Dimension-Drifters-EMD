@@ -181,6 +181,7 @@ import {
   IRON_STANCE_KNOCKBACK_PER,
   inMeleeArc,
   isAugment,
+  isCharacterUnlocked,
   isInsidePoi,
   isPetId,
   isPitAtPx,
@@ -214,7 +215,7 @@ import {
   MoneyDropState,
   type MeleeComboFamily,
   type MeleeComboStep,
-  type MetaAccountV4,
+  type MetaAccountV5,
   type MoneyBankReceipt,
   type MoveStance,
   meleeComboGraceMs,
@@ -353,7 +354,7 @@ import {
   salvageArchivedWeaponBank,
   sanitizeMetaAccountV2,
   sanitizeMetaAccountV3,
-  sanitizeMetaAccountV4WithDiagnostics,
+  sanitizeMetaAccountV5WithDiagnostics,
   sanitizeMetaLevels,
   selectChainTargets,
   serverSeededGunPelletVolley,
@@ -367,6 +368,7 @@ import {
   stepSteeredMovement,
   stepVertical,
   swingDescriptorFor,
+  unlockedWeaponDropPool,
   swingEdgeProgress,
   TelegraphState,
   TgShape,
@@ -1182,7 +1184,7 @@ export class GameRoom extends Room<ArenaState> {
   private readonly inputs = new Map<string, InputState>();
   private readonly combat = new Map<string, CombatState>();
   /** Local/offline account truth: validated client claim in, canonical room mutations/receipts out. */
-  private readonly metaAccounts = new Map<string, MetaAccountV4>();
+  private readonly metaAccounts = new Map<string, MetaAccountV5>();
   /** Account-private move-not-copy escrow. Nothing here is synchronized at 20 Hz. */
   private readonly weaponRuns = new Map<string, RunWeaponLedger>();
   private worldTier = 0;
@@ -2615,7 +2617,7 @@ export class GameRoom extends Room<ArenaState> {
   }
 
   /** Project account-private escrow into the existing three slots + dense Pack rows at a join/rejoin edge. */
-  private materializeWeaponRun(player: PlayerState, account: MetaAccountV4): void {
+  private materializeWeaponRun(player: PlayerState, account: MetaAccountV5): void {
     while (player.slots.length < ARSENAL_SLOTS) player.slots.push(new ArsenalSlot());
     for (const slot of player.slots) this.copySlot(slot, null);
     player.bag.splice(0, player.bag.length);
@@ -2679,7 +2681,7 @@ export class GameRoom extends Room<ArenaState> {
     }
   }
 
-  private createWeaponRun(playerId: string, account: MetaAccountV4): RunWeaponLedger | undefined {
+  private createWeaponRun(playerId: string, account: MetaAccountV5): RunWeaponLedger | undefined {
     const expedition = account.weaponBank.expedition;
     if (!expedition) return undefined;
     const entries = new Map<string, ExpeditionEntryV1>();
@@ -3041,33 +3043,42 @@ export class GameRoom extends Room<ArenaState> {
   }
 
   private maybeDropEnemyWeapon(enemy: EnemyState, kind: EnemyKind): void {
+    const weaponId = kind.wieldsWeapon;
     if (
       this.state.mode !== "arena" ||
       kind.archetype === "boss" ||
       kind.archetype === "dummy" ||
-      !kind.wieldsWeapon ||
-      !WEAPONS[kind.wieldsWeapon] ||
-      Math.random() >= (kind.dropWeapon ?? 0)
+      !weaponId ||
+      !WEAPONS[weaponId]
     )
       return;
-    const pickup = new PickupState();
-    pickup.id = `dropEnemy${this.pickupSeq++}`;
-    pickup.weapon = kind.wieldsWeapon;
-    pickup.weaponPublic = kind.wieldsWeapon;
-    pickup.rarity = RARITY_COMMON;
-    pickup.affix = "";
-    pickup.affixPublic = "";
-    pickup.known = true;
-    pickup.disassemblable = true;
-    const placed = this.placePickupPos(enemy.x, enemy.y);
-    pickup.x = placed.x;
-    pickup.y = placed.y;
-    this.state.pickups.set(pickup.id, pickup);
-    this.earnedPickups.add(pickup.id);
-    this.pickupWeaponBankMeta.set(pickup.id, {
-      provenance: "enemy-drop",
-      ownerId: "",
-      ownerLockUntil: 0,
+    this.state.players.forEach((_player, playerId) => {
+      const account = this.metaAccounts.get(playerId);
+      if (
+        !account?.unlockedWeapons.includes(weaponId) ||
+        Math.random() >= (kind.dropWeapon ?? 0)
+      )
+        return;
+      const pickup = new PickupState();
+      pickup.id = `dropEnemy${this.pickupSeq++}`;
+      pickup.weapon = weaponId;
+      pickup.weaponPublic = weaponId;
+      pickup.rarity = RARITY_COMMON;
+      pickup.affix = "";
+      pickup.affixPublic = "";
+      pickup.known = true;
+      pickup.disassemblable = true;
+      pickup.ownerId = playerId;
+      const placed = this.placePickupPos(enemy.x, enemy.y);
+      pickup.x = placed.x;
+      pickup.y = placed.y;
+      this.state.pickups.set(pickup.id, pickup);
+      this.earnedPickups.add(pickup.id);
+      this.pickupWeaponBankMeta.set(pickup.id, {
+        provenance: "enemy-drop",
+        ownerId: playerId,
+        ownerLockUntil: Number.POSITIVE_INFINITY,
+      });
     });
     this.publishPetPickupEligibility();
   }
@@ -3140,6 +3151,7 @@ export class GameRoom extends Room<ArenaState> {
     const ownedRareIds = player.relics.ownedRare
       .split(",")
       .filter(isRareRelicId) as RareRelicId[];
+    const account = this.metaAccounts.get(playerId);
     const reward = rollChestReward({
       roomSeed: this.chestRoomSeed,
       chestSequence: Number(chest.id.split(":")[1]) || 0,
@@ -3150,7 +3162,7 @@ export class GameRoom extends Room<ArenaState> {
       playerKey: playerId,
       luckStacks: player.relics.luck,
       ownedRareIds,
-      weaponIds: WEAPON_IDS,
+      weaponIds: account ? unlockedWeaponDropPool(account) : [],
     });
     if (reward.weapon) {
       if (this.chestWeaponBagSlot(player)) {
@@ -3650,7 +3662,7 @@ export class GameRoom extends Room<ArenaState> {
     });
   }
 
-  private bumpAccountRevision(account: MetaAccountV4): void {
+  private bumpAccountRevision(account: MetaAccountV5): void {
     account.revision = Math.min(META_ACCOUNT_REVISION_MAX, account.revision + 1);
   }
 
@@ -3756,7 +3768,7 @@ export class GameRoom extends Room<ArenaState> {
     });
   }
 
-  private rollSlateTortoise(account: MetaAccountV4, outcome: "defeat" | "victory"): boolean {
+  private rollSlateTortoise(account: MetaAccountV5, outcome: "defeat" | "victory"): boolean {
     if (outcome !== "victory" || account.pets["slate-tortoise"]) return false;
     const misses = Math.max(0, Math.min(7, Math.floor(account.slateTortoisePityMisses)));
     const success = misses >= 7 || Math.random() < 0.08 * (misses + 1);
@@ -4396,14 +4408,17 @@ export class GameRoom extends Room<ArenaState> {
     // deploy any client could join claiming 65,535 legacy money + max upgrades. INTERIM until an authenticated
     // account store owns progression; production joins start at the defaults.
     const trustLegacyMeta = this.belt && this.devToolsEnabled();
-    const suppliedGearAccount =
+    const suppliedCurrentAccount =
       typeof options?.metaAccount === "object" &&
       options.metaAccount !== null &&
       !Array.isArray(options.metaAccount) &&
       ((options.metaAccount as { version?: unknown }).version === 3 ||
-        (options.metaAccount as { version?: unknown }).version === 4);
-    const suppliedV4 =
-      suppliedGearAccount && (options?.metaAccount as { version?: unknown }).version === 4;
+        (options.metaAccount as { version?: unknown }).version === 4 ||
+        (options.metaAccount as { version?: unknown }).version === 5);
+    const suppliedBankAccount =
+      suppliedCurrentAccount &&
+      ((options?.metaAccount as { version?: unknown }).version === 4 ||
+        (options?.metaAccount as { version?: unknown }).version === 5);
     const legacyAccount = sanitizeMetaAccountV2(options?.metaAccount);
     // Legacy local keys remain a bounded migration input only when no v2 blob was supplied.
     if (options?.metaAccount === undefined && trustLegacyMeta) {
@@ -4412,10 +4427,10 @@ export class GameRoom extends Room<ArenaState> {
       }
       legacyAccount.upgrades = sanitizeMetaLevels(options?.up);
     }
-    const accountResult = sanitizeMetaAccountV4WithDiagnostics(
-      suppliedGearAccount ? options?.metaAccount : legacyAccount,
+    const accountResult = sanitizeMetaAccountV5WithDiagnostics(
+      suppliedCurrentAccount ? options?.metaAccount : legacyAccount,
     );
-    if (suppliedV4 && !accountResult.ok) {
+    if (suppliedBankAccount && !accountResult.ok) {
       throw new Error(`invalid weapon bank: ${accountResult.bank.errors.join(",")}`);
     }
     const account = accountResult.account;
@@ -4432,6 +4447,7 @@ export class GameRoom extends Room<ArenaState> {
       account.selectedPetId = requestedPetId;
     }
     this.metaAccounts.set(client.sessionId, account);
+    if (!isCharacterUnlocked(account, player.character)) player.character = DEFAULT_CHARACTER;
     player.scrip = 0;
     player.prestige = account.prestige;
     // Persisted gear remains sanitized in the canonical account but is archived runtime-inert state.

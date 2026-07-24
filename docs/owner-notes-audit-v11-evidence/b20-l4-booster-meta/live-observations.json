@@ -1,0 +1,114 @@
+{
+  "verdict": "pass",
+  "privatePorts": {
+    "client": 52249,
+    "game": 52248,
+    "protectedPorts": [
+      5180,
+      2567
+    ],
+    "protectedPortsUsed": false
+  },
+  "browserSurface": {
+    "available": false,
+    "discovery": [],
+    "screenshotCaptured": false,
+    "reason": "Browser runtime discovery returned no connected browser surfaces."
+  },
+  "transport": {
+    "endpoint": "ws://127.0.0.1:52248",
+    "roomId": "I_8YHH2Gy",
+    "schemaVersion": 37,
+    "accountVersion": 5,
+    "elapsedMs": 38870,
+    "playerIds": [
+      "0CulyOtda",
+      "HzM8Y9s-M"
+    ],
+    "outcome": "active"
+  },
+  "unlockPool": {
+    "starterUnlockedCount": 74,
+    "lockedTarget": "x2-sandsong-saber",
+    "lockedTargetObserved": false,
+    "allWeaponRewardsUnlocked": true
+  },
+  "chestSpawns": [
+    {
+      "id": "chest:40720:500",
+      "tick": 500,
+      "kind": 0,
+      "zone": 2,
+      "x": 3160,
+      "y": 520,
+      "validGround": true
+    }
+  ],
+  "receipts": [
+    {
+      "playerId": "0CulyOtda",
+      "atMs": 33580,
+      "payload": {
+        "chestId": "chest:40720:500",
+        "zone": 2,
+        "kind": 0,
+        "weapon": {
+          "id": "x2-gravechill-nodachi",
+          "tier": "mid",
+          "name": "Gravechill Nodachi"
+        },
+        "relics": [
+          {
+            "id": "hp-regen",
+            "rarity": "common",
+            "label": "Mending Thread",
+            "stacks": 1
+          }
+        ],
+        "money": 14
+      }
+    },
+    {
+      "playerId": "HzM8Y9s-M",
+      "atMs": 38840,
+      "payload": {
+        "chestId": "chest:40720:500",
+        "zone": 2,
+        "kind": 0,
+        "weapon": {
+          "id": "x-sword-bone",
+          "tier": "high",
+          "name": "Wyrmtooth"
+        },
+        "relics": [
+          {
+            "id": "energy-pool",
+            "rarity": "common",
+            "label": "Capacitor",
+            "stacks": 1
+          },
+          {
+            "id": "hp-regen",
+            "rarity": "common",
+            "label": "Mending Thread",
+            "stacks": 1
+          }
+        ],
+        "money": 14
+      }
+    }
+  ],
+  "pickupWeapons": [
+    {
+      "id": "dropEnemy0",
+      "ownerId": "0CulyOtda",
+      "weaponPublic": "twin-bowie-fangs"
+    },
+    {
+      "id": "dropEnemy1",
+      "ownerId": "HzM8Y9s-M",
+      "weaponPublic": "x-sword-buzzsaw"
+    }
+  ],
+  "denials": []
+}

@@ -2273,6 +2273,35 @@ describe("improve2 integrity regressions", () => {
     rng.mockRestore();
   });
 
+  it("instances authored enemy drops only for accounts that unlocked that exact weapon", () => {
+    const h = makeRoom();
+    h.join("drop-unlocked");
+    h.join("drop-locked");
+    const row = Object.entries(ENEMY_KINDS).find(
+      ([, kind]) =>
+        !!kind.wieldsWeapon && !!kind.dropWeapon && !kind.shifter && kind.archetype !== "boss",
+    );
+    if (!row?.[1].wieldsWeapon) throw new Error("expected a weapon-wielding enemy fixture");
+    const weaponId = row[1].wieldsWeapon;
+    h.room.metaAccounts.get("drop-unlocked").unlockedWeapons = [weaponId];
+    h.room.metaAccounts.get("drop-locked").unlockedWeapons = [];
+    const enemy = new EnemyState();
+    enemy.id = "drop-account-filter";
+    enemy.kind = row[0];
+    enemy.x = h.room.map.spawnX;
+    enemy.y = h.room.map.spawnY;
+    const rng = vi.spyOn(Math, "random").mockReturnValue(0);
+
+    h.room.maybeDropEnemyWeapon(enemy, row[1]);
+
+    expect([...h.state().pickups.values()]).toHaveLength(1);
+    expect([...h.state().pickups.values()][0]).toMatchObject({
+      weapon: weaponId,
+      ownerId: "drop-unlocked",
+    });
+    rng.mockRestore();
+  });
+
   it("polish #7 writes fixed-ring hit/final-blow ownership from the accepted source, not proximity", async () => {
     const { CombatDelivery, COMBAT_RECEIPT_CAP } = await import("@dd/shared");
     const h = makeRoom();
@@ -3793,13 +3822,30 @@ describe("GameRoom — whole-art join selection authority", () => {
   )("accepts the installed whole-art selection %s", (selectedCharacterId) => {
     const h = makeRoom();
     const client = { sessionId: `selected-${selectedCharacterId}` };
+    const metaAccount = enemyComboShared.createMetaAccountV5();
+    metaAccount.unlockedCharacters = [...enemyComboShared.WHOLE_ART_CHARACTERS];
     h.room.clients.push(client);
-    h.room.onJoin(client, { selectedCharacterId });
+    h.room.onJoin(client, { selectedCharacterId, metaAccount });
     const player = h.state().players.get(client.sessionId);
 
     expect([player.character, player.runCharacter]).toEqual([
       selectedCharacterId,
       selectedCharacterId,
+    ]);
+  });
+
+  it("repairs a valid but account-locked character selection to the starter", () => {
+    const h = makeRoom();
+    const client = { sessionId: "locked-character" };
+    h.room.clients.push(client);
+    h.room.onJoin(client, {
+      selectedCharacterId: "proto-blue-spectral-demon-hunter",
+      metaAccount: enemyComboShared.createMetaAccountV5(),
+    });
+    const player = h.state().players.get(client.sessionId);
+    expect([player.character, player.runCharacter]).toEqual([
+      enemyComboShared.DEFAULT_CHARACTER,
+      enemyComboShared.DEFAULT_CHARACTER,
     ]);
   });
 
@@ -7165,6 +7211,44 @@ describe("GameRoom - B20 L2 authoritative chests", () => {
     expect(chest.openedBy.get(b.id)).toBe(true);
     expect(chest.opened).toBe(true);
     expect(receipts.has(b.id)).toBe(true);
+  });
+
+  it("rolls each co-op chest weapon from only that opener's unlocked pool", () => {
+    const h = makeRoom();
+    h.join("pool-a");
+    h.join("pool-b");
+    const weaponA = "rusty-cleaver";
+    const weaponB = "x-gun-gatling";
+    h.room.metaAccounts.get("pool-a").unlockedWeapons = [weaponA];
+    h.room.metaAccounts.get("pool-b").unlockedWeapons = [weaponB];
+    const receipts = new Map<string, { weapon?: { id: string } }>();
+    for (const client of h.room.clients) {
+      client.send = (type: string, payload: unknown) => {
+        if (type === "chestOpened") {
+          receipts.set(client.sessionId, payload as { weapon?: { id: string } });
+        }
+      };
+    }
+    const a = h.state().players.get("pool-a");
+    const b = h.state().players.get("pool-b");
+    const chest = new enemyComboShared.ChestState();
+    chest.id = "chest:177:500";
+    chest.x = a.x;
+    chest.y = a.y;
+    chest.zone = enemyComboShared.MAP_ZONE_SCAR;
+    chest.kind = enemyComboShared.CHEST_KIND_WEAPON_CACHE;
+    chest.spawnTick = 500;
+    chest.openedBy.set(a.id, false);
+    chest.openedBy.set(b.id, false);
+    h.state().chests.set(chest.id, chest);
+    b.x = chest.x;
+    b.y = chest.y;
+
+    h.room.openChestForPlayer(a.id, chest.id);
+    h.room.openChestForPlayer(b.id, chest.id);
+
+    expect(receipts.get(a.id)?.weapon?.id).toBe(weaponA);
+    expect(receipts.get(b.id)?.weapon?.id).toBe(weaponB);
   });
 
   it("applies dodge overrides through authoritative movement while preserving the shared roll window", () => {

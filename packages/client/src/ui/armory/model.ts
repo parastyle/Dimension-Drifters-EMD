@@ -1,7 +1,7 @@
 import {
   type CarryPlacementV1,
   type CarrySelectionV1,
-  type MetaAccountV4,
+  type MetaAccountV5,
   weaponDisassemblyValue,
   WEAPON_ACTIVE_CAPACITY,
   WEAPON_PACK_BASE_CAPACITY,
@@ -131,7 +131,7 @@ function validPlacement(
 }
 
 export function createArmoryDraft(
-  account: MetaAccountV4,
+  account: MetaAccountV5,
   packCapacity: number = WEAPON_PACK_BASE_CAPACITY,
 ): ArmoryDraft {
   const capacity = Math.max(0, Math.min(13, Math.floor(packCapacity)));
@@ -151,7 +151,7 @@ export function createArmoryDraft(
 }
 
 export function toggleArmoryEntry(
-  account: MetaAccountV4,
+  account: MetaAccountV5,
   draft: ArmoryDraft,
   entryId: string,
 ): { draft: ArmoryDraft; error?: "carry-full" | "missing-entry" } {
@@ -199,7 +199,7 @@ export function selectArmoryActiveEntry(draft: ArmoryDraft, entryId: string): Ar
 }
 
 export function selectArmoryActiveCell(
-  account: MetaAccountV4,
+  account: MetaAccountV5,
   draft: ArmoryDraft,
   cell: number,
 ): ArmoryDraft {
@@ -221,7 +221,7 @@ export function selectArmoryActiveCell(
 
 /** Q/E movement between Active and Pack is reversible and uses the same physical-cell authority. */
 export function moveArmoryEntryZone(
-  account: MetaAccountV4,
+  account: MetaAccountV5,
   draft: ArmoryDraft,
   entryId: string,
   direction: -1 | 1,
@@ -269,7 +269,7 @@ export function armoryEntryName(entry: WeaponBankEntryV1): string {
   return names.join(" × ");
 }
 
-export function armoryEntryViews(account: MetaAccountV4, draft: ArmoryDraft): ArmoryEntryView[] {
+export function armoryEntryViews(account: MetaAccountV5, draft: ArmoryDraft): ArmoryEntryView[] {
   const placements = new Map(draft.placements.map((placement) => [placement.entryId, placement]));
   const rows = [
     ...account.weaponBank.stash.map((entry) => ({ entry, source: "stash" as const })),
@@ -306,7 +306,7 @@ export function armoryEntryViews(account: MetaAccountV4, draft: ArmoryDraft): Ar
 }
 
 export function armoryCatalogEntries(
-  account: MetaAccountV4,
+  account: MetaAccountV5,
   draft: ArmoryDraft,
   filters: ArmoryCatalogFilters,
 ): ArmoryEntryView[] {
@@ -343,7 +343,7 @@ export function armoryCatalogEntries(
   return rows;
 }
 
-export function armorySummary(account: MetaAccountV4, draft: ArmoryDraft): ArmorySummary {
+export function armorySummary(account: MetaAccountV5, draft: ArmoryDraft): ArmorySummary {
   const selected = new Set(draft.placements.map((row) => row.entryId));
   let atRiskPhysical = 0;
   let atRiskValue = 0;
@@ -373,7 +373,7 @@ export function armorySummary(account: MetaAccountV4, draft: ArmoryDraft): Armor
 }
 
 export function armoryCarrySelection(
-  account: MetaAccountV4,
+  account: MetaAccountV5,
   draft: ArmoryDraft,
   requestId: string,
 ): CarrySelectionV1 {

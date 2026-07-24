@@ -538,7 +538,7 @@ describe("weapon bank B1 — strict forged-payload boundary", () => {
 
 describe("weapon bank B2 — carry, settlement, pair, sale, and prestige conservation", () => {
   it("moves only selected entries into exact placements and enforces pair span + source-tier promotion", () => {
-    const account = petShared.createMetaAccountV4();
+    const account = petShared.createMetaAccountV5();
     const single = bankSingle(10, "rusty-cleaver", "rare", "keen", 2);
     const pairCandidates = petShared.DROP_POOL.flatMap((lead) =>
       petShared.DROP_POOL.map((offhand) => [lead, offhand] as const),
@@ -584,7 +584,7 @@ describe("weapon bank B2 — carry, settlement, pair, sale, and prestige conserv
     ]);
     expect(account.weaponBank.expedition?.entries[0]?.entry).toEqual(pair);
 
-    const lowTier = petShared.createMetaAccountV4();
+    const lowTier = petShared.createMetaAccountV5();
     lowTier.weaponBank.stash.push(bankSingle(14, "rusty-cleaver", "common", "", 5));
     expect(
       ultimateProgression.commitWeaponCarry(
@@ -603,7 +603,7 @@ describe("weapon bank B2 — carry, settlement, pair, sale, and prestige conserv
   });
 
   it("settles carried+found once, excludes field stakes on victory, and deletes every origin on defeat", () => {
-    const victory = petShared.createMetaAccountV4();
+    const victory = petShared.createMetaAccountV5();
     const safe = bankSingle(20);
     const carried = bankSingle(21, "rusty-cleaver", "rare", "keen");
     victory.weaponBank.stash.push(safe, carried);
@@ -645,7 +645,7 @@ describe("weapon bank B2 — carry, settlement, pair, sale, and prestige conserv
       error: "no-expedition",
     });
 
-    const defeat = petShared.createMetaAccountV4();
+    const defeat = petShared.createMetaAccountV5();
     const safeDefeat = bankSingle(24);
     const doomed = bankSingle(25);
     defeat.weaponBank.stash.push(safeDefeat, doomed);
@@ -677,7 +677,7 @@ describe("weapon bank B2 — carry, settlement, pair, sale, and prestige conserv
   });
 
   it("prestige clears stash/intake/pairs/last-carry for zero Scrip while preserving permanent state", () => {
-    const account = petShared.createMetaAccountV4();
+    const account = petShared.createMetaAccountV5();
     account.scrip = 444;
     account.weaponBank.shelfUpgrades = 3;
     const a = bankSingle(40);
@@ -730,7 +730,7 @@ describe("weapon bank B3 - account migration, carry bounds, intake, and curator 
   });
 
   it("accepts exactly three Active plus thirteen Pack cells and rejects a fourteenth Pack cell", () => {
-    const account = petShared.createMetaAccountV4();
+    const account = petShared.createMetaAccountV5();
     const entries = Array.from({ length: 16 }, (_, index) => bankSingle(100 + index));
     account.weaponBank.stash.push(...entries);
     const placements: import("@dd/shared").CarryPlacementV1[] = entries.map((entry, index) => ({
@@ -753,7 +753,7 @@ describe("weapon bank B3 - account migration, carry bounds, intake, and curator 
       ),
     ).toMatchObject({ ok: true, movedPhysical: 16 });
 
-    const overflow = petShared.createMetaAccountV4();
+    const overflow = petShared.createMetaAccountV5();
     const overflowEntries = Array.from({ length: 14 }, (_, index) => bankSingle(130 + index));
     overflow.weaponBank.stash.push(...overflowEntries);
     expect(
@@ -777,7 +777,7 @@ describe("weapon bank B3 - account migration, carry bounds, intake, and curator 
   });
 
   it("routes victory overflow to Intake without losing or duplicating an instance", () => {
-    const account = petShared.createMetaAccountV4();
+    const account = petShared.createMetaAccountV5();
     const carried = bankSingle(160);
     const safe = Array.from({ length: 71 }, (_, index) => bankSingle(161 + index));
     account.weaponBank.stash.push(carried, ...safe);

@@ -5,10 +5,10 @@ import {
   type GearDef,
   type GearId,
   type GearSlot,
-  type MetaAccountV4,
+  type MetaAccountV5,
   resolveGearLoadout,
   STARTER_GEAR_LOADOUT,
-  sanitizeMetaAccountV4,
+  sanitizeMetaAccountV5,
   weaponEntryInstances,
   weaponEntryPhysicalSize,
 } from "@dd/shared";
@@ -131,7 +131,7 @@ export interface PrestigeReceiptFlow {
   expectedPrestige: number;
   status: "pending" | "awaiting-account" | "revealed";
   receipt?: PrestigeReceiptView;
-  refreshedAccount?: MetaAccountV4;
+  refreshedAccount?: MetaAccountV5;
 }
 
 interface StorageLike {
@@ -163,7 +163,7 @@ export function prestigeHatSlots(prestige: number): number {
   return Math.min(PRESTIGE_CAP, bounded + 1);
 }
 
-export function prestigeAtStakeSummary(account: MetaAccountV4): PrestigeAtStakeSummary {
+export function prestigeAtStakeSummary(account: MetaAccountV5): PrestigeAtStakeSummary {
   const entries = [...account.weaponBank.stash, ...account.weaponBank.intake];
   const weaponIds = new Set<string>();
   let physicalWeapons = 0;
@@ -186,7 +186,7 @@ export function prestigeAtStakeSummary(account: MetaAccountV4): PrestigeAtStakeS
 
 /** Binding prestige law: a terminal game clear, no live expedition, and the World Tier 30 cap. */
 export function prestigeCeremonyView(
-  account: MetaAccountV4,
+  account: MetaAccountV5,
   gameCleared: boolean,
 ): PrestigeCeremonyView {
   const worldTier = Math.min(PRESTIGE_CAP, Math.max(0, Math.floor(account.prestige)));
@@ -238,7 +238,7 @@ export function prestigeHoldProgress(startedAtMs: number, nowMs: number): number
 }
 
 export function beginPrestigeReceiptFlow(
-  account: MetaAccountV4,
+  account: MetaAccountV5,
   gameCleared: boolean,
   requestId: string,
 ): PrestigeReceiptFlow | null {
@@ -304,13 +304,13 @@ export function receivePrestigeReceipt(
 
 export function receivePrestigeAccount(
   flow: PrestigeReceiptFlow,
-  account: MetaAccountV4,
+  account: MetaAccountV5,
 ): PrestigeReceiptFlow {
   if (account.revision < flow.request.expectedRevision) return flow;
   return settlePrestigeReceiptFlow({ ...flow, refreshedAccount: account });
 }
 
-function canonicalPresetLoadout(value: unknown, account: MetaAccountV4): Record<GearSlot, GearId> {
+function canonicalPresetLoadout(value: unknown, account: MetaAccountV5): Record<GearSlot, GearId> {
   const source =
     typeof value === "object" && value !== null && !Array.isArray(value)
       ? (value as Record<string, unknown>)
@@ -333,7 +333,7 @@ function canonicalPresetLoadout(value: unknown, account: MetaAccountV4): Record<
   return output;
 }
 
-function defaultPresetState(account: MetaAccountV4): WardrobePresetState {
+function defaultPresetState(account: MetaAccountV5): WardrobePresetState {
   return {
     version: 1,
     selected: 1,
@@ -346,7 +346,7 @@ function defaultPresetState(account: MetaAccountV4): WardrobePresetState {
 
 export function sanitizeWardrobePresetState(
   input: unknown,
-  account: MetaAccountV4,
+  account: MetaAccountV5,
 ): WardrobePresetState {
   const fallback = defaultPresetState(account);
   if (!input || typeof input !== "object" || Array.isArray(input)) return fallback;
@@ -375,7 +375,7 @@ export function sanitizeWardrobePresetState(
 }
 
 export function loadWardrobePresetState(
-  account: MetaAccountV4,
+  account: MetaAccountV5,
   storage: StorageLike | undefined = typeof localStorage === "undefined" ? undefined : localStorage,
 ): WardrobePresetState {
   if (!storage) return defaultPresetState(account);
@@ -389,7 +389,7 @@ export function loadWardrobePresetState(
 
 export function saveWardrobePresetState(
   state: WardrobePresetState,
-  account: MetaAccountV4,
+  account: MetaAccountV5,
   storage: StorageLike | undefined = typeof localStorage === "undefined" ? undefined : localStorage,
 ): WardrobePresetState {
   const clean = sanitizeWardrobePresetState(state, account);
@@ -420,38 +420,38 @@ export function wardrobePresetViews(state: WardrobePresetState): WardrobePresetV
   ];
 }
 
-export function equipWardrobeItem(account: MetaAccountV4, id: GearId): MetaAccountV4 {
-  if (!account.ownedGear.includes(id)) return sanitizeMetaAccountV4(account);
-  const next = sanitizeMetaAccountV4(account);
+export function equipWardrobeItem(account: MetaAccountV5, id: GearId): MetaAccountV5 {
+  if (!account.ownedGear.includes(id)) return sanitizeMetaAccountV5(account);
+  const next = sanitizeMetaAccountV5(account);
   const slot = GEAR_CATALOG[id].slot;
   next.equippedGear[slot] = id;
-  return sanitizeMetaAccountV4(next);
+  return sanitizeMetaAccountV5(next);
 }
 
 /** Every slot has an explicit artless starter, so reversible unequip never invents nullable equipment. */
-export function unequipWardrobeSlot(account: MetaAccountV4, slot: GearSlot): MetaAccountV4 {
+export function unequipWardrobeSlot(account: MetaAccountV5, slot: GearSlot): MetaAccountV5 {
   return equipWardrobeItem(account, STARTER_GEAR_LOADOUT[slot]);
 }
 
 export function applyWardrobePreset(
-  account: MetaAccountV4,
+  account: MetaAccountV5,
   state: WardrobePresetState,
   index: number,
-): { account: MetaAccountV4; state: WardrobePresetState } {
+): { account: MetaAccountV5; state: WardrobePresetState } {
   const views = wardrobePresetViews(state);
   const preset = views.find((row) => row.index === index);
-  if (!preset) return { account: sanitizeMetaAccountV4(account), state };
-  const next = sanitizeMetaAccountV4(account);
+  if (!preset) return { account: sanitizeMetaAccountV5(account), state };
+  const next = sanitizeMetaAccountV5(account);
   next.equippedGear = canonicalPresetLoadout(preset.loadout, next);
   return {
-    account: sanitizeMetaAccountV4(next),
+    account: sanitizeMetaAccountV5(next),
     state: { ...state, selected: index },
   };
 }
 
 export function overwriteWardrobePreset(
   state: WardrobePresetState,
-  account: MetaAccountV4,
+  account: MetaAccountV5,
   index: number,
 ): WardrobePresetState {
   if (index < 1 || index > WARDROBE_WRITABLE_PRESETS) return state;
@@ -461,7 +461,7 @@ export function overwriteWardrobePreset(
   return { version: 1, selected: index, presets };
 }
 
-export function wardrobeSlotItems(account: MetaAccountV4, slot: GearSlot): WardrobeSlotItemView[] {
+export function wardrobeSlotItems(account: MetaAccountV5, slot: GearSlot): WardrobeSlotItemView[] {
   const owned = new Set(account.ownedGear);
   return GEAR_IDS.filter((id) => GEAR_CATALOG[id].slot === slot)
     .map((id) => {
@@ -492,7 +492,7 @@ const GEAR_RARITY_ORDER: Readonly<Record<GearDef["rarity"], number>> = {
 
 /** Search/filter/sort is pure; explicit art state is injected from the manifest-owned visibility seam. */
 export function wardrobeCatalogItems(
-  account: MetaAccountV4,
+  account: MetaAccountV5,
   filters: WardrobeCatalogFilters,
   artStatusFor: (id: GearId) => ArmoryArtStatus = () => "ready",
 ): WardrobeSlotItemView[] {
@@ -543,7 +543,7 @@ export function wardrobeCatalogItems(
   return rows;
 }
 
-export function wardrobeSetViews(account: MetaAccountV4): WardrobeSetView[] {
+export function wardrobeSetViews(account: MetaAccountV5): WardrobeSetView[] {
   const owned = new Set(account.ownedGear);
   const equipped = new Set(Object.values(account.equippedGear));
   return Object.entries(SET_NAMES).map(([id, name]) => {
@@ -572,7 +572,7 @@ export function wardrobeSetViews(account: MetaAccountV4): WardrobeSetView[] {
   });
 }
 
-export function wardrobePreview(account: MetaAccountV4) {
+export function wardrobePreview(account: MetaAccountV5) {
   return resolveGearLoadout(account.equippedGear);
 }
 

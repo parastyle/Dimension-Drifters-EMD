@@ -66,9 +66,18 @@ export * from "./pets.js";
 import {
   createWeaponBankV1,
   sanitizeWeaponBankV1,
+  weaponEntryInstances,
   type WeaponBankSanitizeResult,
   type WeaponBankV1,
 } from "./bank.js";
+import {
+  STARTER_UNLOCKED_CHARACTER_IDS,
+  STARTER_UNLOCKED_WEAPON_IDS,
+} from "./booster-packs.js";
+import {
+  WHOLE_ART_CHARACTERS,
+  type WholeArtCharacter,
+} from "./characters.js";
 import {
   GEAR_CATALOG,
   GEAR_IDS,
@@ -82,6 +91,7 @@ import {
   torsoForLegacyPants,
 } from "./gear.js";
 import { isPetId, PET_IDS, type PetId, type PetStageBand, sanitizeBondXp } from "./pets.js";
+import { ACTIVE_WEAPON_CATALOG_IDS } from "./weapons.js";
 
 export interface PersistedPet {
   /** Lifetime total. Presence of the canonical id in `pets` is the ownership bit. */
@@ -124,7 +134,28 @@ export interface MetaAccountV4 {
   weaponBank: WeaponBankV1;
 }
 
-export type MetaAccount = MetaAccountV2 | MetaAccountV3 | MetaAccountV4;
+export interface MetaAccountV5 {
+  version: 5;
+  revision: number;
+  scrip: number;
+  pets: Partial<Record<PetId, PersistedPet>>;
+  selectedPetId: PetId | "";
+  slateTortoisePityMisses: number;
+  ownedGear: GearId[];
+  equippedGear: Record<GearSlot, GearId>;
+  prestige: number;
+  weaponBank: WeaponBankV1;
+  /** Permanent per-account pool admitted to chest and authored enemy weapon rewards. */
+  unlockedWeapons: string[];
+  /** Permanent playable roster ownership; locked characters remain visible in the menu. */
+  unlockedCharacters: WholeArtCharacter[];
+}
+
+export type MetaAccount =
+  | MetaAccountV2
+  | MetaAccountV3
+  | MetaAccountV4
+  | MetaAccountV5;
 
 export type PetTerminalOutcome = "victory" | "defeat";
 
@@ -145,7 +176,8 @@ export interface PetProgressReceipt {
 
 export const META_ACCOUNT_V2_VERSION = 2 as const;
 export const META_ACCOUNT_V3_VERSION = 3 as const;
-export const META_ACCOUNT_VERSION = 4 as const;
+export const META_ACCOUNT_V4_VERSION = 4 as const;
+export const META_ACCOUNT_VERSION = 5 as const;
 export const META_ACCOUNT_SCRIP_MAX = 0xffff_ffff as const;
 export const META_ACCOUNT_REVISION_MAX = 0xffffffff as const;
 export const STARTER_PET_ID: PetId = "verdant-wing";
@@ -179,9 +211,19 @@ export function createMetaAccountV4(): MetaAccountV4 {
   const gear = createMetaAccountV3();
   return {
     ...gear,
-    version: META_ACCOUNT_VERSION,
+    version: META_ACCOUNT_V4_VERSION,
     prestige: 0,
     weaponBank: createWeaponBankV1(),
+  };
+}
+
+export function createMetaAccountV5(): MetaAccountV5 {
+  const account = createMetaAccountV4();
+  return {
+    ...account,
+    version: META_ACCOUNT_VERSION,
+    unlockedWeapons: [...STARTER_UNLOCKED_WEAPON_IDS],
+    unlockedCharacters: [...STARTER_UNLOCKED_CHARACTER_IDS],
   };
 }
 
@@ -316,7 +358,7 @@ export function migrateMetaAccountV3(input: MetaAccountV3): MetaAccountV4 {
   const source = sanitizeMetaAccountV3(input);
   return {
     ...source,
-    version: META_ACCOUNT_VERSION,
+    version: META_ACCOUNT_V4_VERSION,
     prestige: 0,
     weaponBank: createWeaponBankV1(),
   };
@@ -345,7 +387,7 @@ export function sanitizeMetaAccountV4WithDiagnostics(input: unknown): MetaAccoun
     const account = migrateMetaAccountV3(sanitizeMetaAccountV3(input));
     return { ok: true, account, bank: { ok: true, bank: account.weaponBank, errors: [] } };
   }
-  if (input.version !== META_ACCOUNT_VERSION) {
+  if (input.version !== META_ACCOUNT_V4_VERSION) {
     const account = createMetaAccountV4();
     return { ok: false, account, bank: { ok: true, bank: account.weaponBank, errors: [] } };
   }
@@ -354,7 +396,7 @@ export function sanitizeMetaAccountV4WithDiagnostics(input: unknown): MetaAccoun
   const bank = sanitizeWeaponBankV1(input.weaponBank);
   const account: MetaAccountV4 = {
     ...gear,
-    version: META_ACCOUNT_VERSION,
+    version: META_ACCOUNT_V4_VERSION,
     prestige: sanitizedInt(input.prestige, 30),
     weaponBank: bank.bank,
   };
@@ -363,4 +405,116 @@ export function sanitizeMetaAccountV4WithDiagnostics(input: unknown): MetaAccoun
 
 export function sanitizeMetaAccountV4(input: unknown): MetaAccountV4 {
   return sanitizeMetaAccountV4WithDiagnostics(input).account;
+}
+
+function weaponIdsInBank(bank: WeaponBankV1): string[] {
+  const bankWeaponIds: string[] = [];
+  for (const entry of bank.stash) {
+    bankWeaponIds.push(...weaponEntryInstances(entry).map((instance) => instance.weaponId));
+  }
+  for (const entry of bank.intake) {
+    bankWeaponIds.push(...weaponEntryInstances(entry).map((instance) => instance.weaponId));
+  }
+  if (bank.expedition) {
+    for (const row of bank.expedition.entries) {
+      bankWeaponIds.push(...weaponEntryInstances(row.entry).map((instance) => instance.weaponId));
+    }
+  }
+  return bankWeaponIds;
+}
+
+export function migrateMetaAccountV4(input: MetaAccountV4): MetaAccountV5 {
+  const source = sanitizeMetaAccountV4(input);
+  return {
+    ...source,
+    version: META_ACCOUNT_VERSION,
+    unlockedWeapons: sanitizeUnlockedWeapons(weaponIdsInBank(source.weaponBank)),
+    unlockedCharacters: [...STARTER_UNLOCKED_CHARACTER_IDS],
+  };
+}
+
+export interface MetaAccountV5SanitizeResult {
+  ok: boolean;
+  account: MetaAccountV5;
+  bank: WeaponBankSanitizeResult;
+}
+
+function sanitizeUnlockedWeapons(input: unknown): string[] {
+  const requested = new Set<string>(STARTER_UNLOCKED_WEAPON_IDS);
+  if (Array.isArray(input)) {
+    for (const value of input) {
+      if (typeof value === "string") requested.add(value);
+    }
+  }
+  return ACTIVE_WEAPON_CATALOG_IDS.filter((id) => requested.has(id));
+}
+
+function sanitizeUnlockedCharacters(input: unknown): WholeArtCharacter[] {
+  const requested = new Set<WholeArtCharacter>(STARTER_UNLOCKED_CHARACTER_IDS);
+  if (Array.isArray(input)) {
+    for (const value of input) {
+      if (
+        typeof value === "string" &&
+        (WHOLE_ART_CHARACTERS as readonly string[]).includes(value)
+      ) {
+        requested.add(value as WholeArtCharacter);
+      }
+    }
+  }
+  return WHOLE_ART_CHARACTERS.filter((id) => requested.has(id));
+}
+
+/** Canonical current account boundary. V2–V4 records migrate forward with all starter unlocks. */
+export function sanitizeMetaAccountV5WithDiagnostics(input: unknown): MetaAccountV5SanitizeResult {
+  if (!isRecord(input)) {
+    const account = createMetaAccountV5();
+    return { ok: false, account, bank: { ok: true, bank: account.weaponBank, errors: [] } };
+  }
+  if (input.version === META_ACCOUNT_V2_VERSION) {
+    const account = migrateMetaAccountV4(
+      migrateMetaAccountV3(migrateMetaAccountV2(sanitizeMetaAccountV2(input))),
+    );
+    return { ok: true, account, bank: { ok: true, bank: account.weaponBank, errors: [] } };
+  }
+  if (input.version === META_ACCOUNT_V3_VERSION) {
+    const account = migrateMetaAccountV4(migrateMetaAccountV3(sanitizeMetaAccountV3(input)));
+    return { ok: true, account, bank: { ok: true, bank: account.weaponBank, errors: [] } };
+  }
+  if (input.version === META_ACCOUNT_V4_VERSION) {
+    const legacy = sanitizeMetaAccountV4WithDiagnostics(input);
+    return {
+      ok: legacy.ok,
+      account: migrateMetaAccountV4(legacy.account),
+      bank: legacy.bank,
+    };
+  }
+  if (input.version !== META_ACCOUNT_VERSION) {
+    const account = createMetaAccountV5();
+    return { ok: false, account, bank: { ok: true, bank: account.weaponBank, errors: [] } };
+  }
+
+  const gear = sanitizeMetaAccountV3({ ...input, version: META_ACCOUNT_V3_VERSION });
+  const bank = sanitizeWeaponBankV1(input.weaponBank);
+  const pets: Partial<Record<PetId, PersistedPet>> = { ...gear.pets };
+  pets[STARTER_PET_ID] ??= { bondXp: 0 };
+  let selectedPetId = gear.selectedPetId;
+  if (selectedPetId && !pets[selectedPetId]) selectedPetId = STARTER_PET_ID;
+  const account: MetaAccountV5 = {
+    ...gear,
+    version: META_ACCOUNT_VERSION,
+    pets,
+    selectedPetId,
+    prestige: sanitizedInt(input.prestige, 30),
+    weaponBank: bank.bank,
+    unlockedWeapons: sanitizeUnlockedWeapons([
+      ...(Array.isArray(input.unlockedWeapons) ? input.unlockedWeapons : []),
+      ...weaponIdsInBank(bank.bank),
+    ]),
+    unlockedCharacters: sanitizeUnlockedCharacters(input.unlockedCharacters),
+  };
+  return { ok: bank.ok, account, bank };
+}
+
+export function sanitizeMetaAccountV5(input: unknown): MetaAccountV5 {
+  return sanitizeMetaAccountV5WithDiagnostics(input).account;
 }

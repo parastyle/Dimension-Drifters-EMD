@@ -17,6 +17,7 @@ export interface CharacterSelectionOption {
   readonly id: WholeArtCharacter;
   readonly name: string;
   readonly selected: boolean;
+  readonly locked: boolean;
 }
 
 export interface CharacterSelectionStorage {
@@ -73,14 +74,18 @@ export function saveCharacterSelection(
 
 export function characterSelectionOptions(
   selectedCharacterId: unknown,
+  unlockedCharacterIds: readonly WholeArtCharacter[] = WHOLE_ART_CHARACTERS,
 ): CharacterSelectionOption[] {
-  const selected = isWholeArtCharacter(selectedCharacterId)
-    ? selectedCharacterId
-    : DEFAULT_CHARACTER;
+  const unlocked = new Set(unlockedCharacterIds);
+  const selected =
+    isWholeArtCharacter(selectedCharacterId) && unlocked.has(selectedCharacterId)
+      ? selectedCharacterId
+      : DEFAULT_CHARACTER;
   return WHOLE_ART_CHARACTERS.map((id) => ({
     id,
     name: characterName(id),
     selected: id === selected,
+    locked: !unlocked.has(id),
   }));
 }
 

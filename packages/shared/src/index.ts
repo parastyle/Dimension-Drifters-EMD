@@ -4,6 +4,7 @@ export * from "./belt-map.js";
 export * from "./boss.js";
 export * from "./boss-primitives.js";
 export * from "./bosses.js";
+export * from "./booster-packs.js";
 export * from "./character-classes.js";
 export * from "./characters.js";
 export * from "./chests.js";

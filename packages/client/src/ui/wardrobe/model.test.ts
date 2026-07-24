@@ -1,5 +1,5 @@
 import {
-  createMetaAccountV4,
+  createMetaAccountV5,
   GEAR_CATALOG,
   GEAR_SLOTS,
   type PairedWeaponEntryV1,
@@ -27,7 +27,7 @@ import {
 
 describe("wardrobe model", () => {
   it("lists owned items first, keeps locked catalog rows readable, and rejects an unowned equip", () => {
-    const account = createMetaAccountV4();
+    const account = createMetaAccountV5();
     const hats = wardrobeSlotItems(account, "hat");
     expect(hats[0]).toMatchObject({ id: "blank-drifter-hat", owned: true, equipped: true });
     expect(hats.find((row) => row.id === "molten-core-hat")).toMatchObject({
@@ -40,7 +40,7 @@ describe("wardrobe model", () => {
   });
 
   it("provides immutable Starter plus five writable presets and applies only owned slot-correct ids", () => {
-    const account = createMetaAccountV4();
+    const account = createMetaAccountV5();
     account.ownedGear.push("molten-core-hat", "ash-walker-shirt");
     const state = sanitizeWardrobePresetState(
       {
@@ -70,7 +70,7 @@ describe("wardrobe model", () => {
   });
 
   it("preserves legacy preset shirt choices as torsos and drops pants without inventing a head", () => {
-    const account = createMetaAccountV4();
+    const account = createMetaAccountV5();
     account.ownedGear.push("ash-walker-shirt");
     const state = sanitizeWardrobePresetState(
       {
@@ -99,7 +99,7 @@ describe("wardrobe model", () => {
   });
 
   it("keeps archived gear previews stat-free and reports all twelve legacy collections", () => {
-    const account = createMetaAccountV4();
+    const account = createMetaAccountV5();
     expect(wardrobePreview(account).quirk.name).toBe("No signature");
     const sets = wardrobeSetViews(account);
     expect(sets).toHaveLength(12);
@@ -108,7 +108,7 @@ describe("wardrobe model", () => {
   });
 
   it("derives exact missing slots and completion for each eight-piece set", () => {
-    const account = createMetaAccountV4();
+    const account = createMetaAccountV5();
     const ashPieces = Object.entries(GEAR_CATALOG).filter(
       ([, def]) => def.legacySetId === "ash-walker",
     );
@@ -137,7 +137,7 @@ const prestigeWeapon = (n: number, weaponId: string): WeaponInstanceV1 => ({
 
 describe("wardrobe prestige ceremony model", () => {
   it("uses the game-clear + cap law and names the complete at-stake and survivor ledgers", () => {
-    const account = createMetaAccountV4();
+    const account = createMetaAccountV5();
     account.prestige = 4;
     account.scrip = 321;
     const single: SingleWeaponEntryV1 = {
@@ -201,7 +201,7 @@ describe("wardrobe prestige ceremony model", () => {
   });
 
   it("requires the deliberate two-second hold and reveals only after receipt + canonical refresh agree", () => {
-    const account = createMetaAccountV4();
+    const account = createMetaAccountV5();
     account.prestige = 2;
     account.revision = 7;
     expect(prestigeHoldProgress(1_000, 1_000 + PRESTIGE_CONFIRM_HOLD_MS - 1)).toBeLessThan(1);
@@ -219,7 +219,7 @@ describe("wardrobe prestige ceremony model", () => {
       revision: 8,
     });
     expect(withReceipt.status).toBe("awaiting-account");
-    const refreshed = createMetaAccountV4();
+    const refreshed = createMetaAccountV5();
     refreshed.prestige = 3;
     refreshed.revision = 8;
     expect(receivePrestigeAccount(withReceipt, refreshed).status).toBe("revealed");

@@ -1,6 +1,6 @@
 import {
   type MetaAccount,
-  type MetaAccountV4,
+  type MetaAccountV5,
   PET_MAX_BOND_XP,
   type PetId,
   petLevelForXp,
@@ -100,7 +100,7 @@ export interface WeaponSettlementResult {
   lostPhysical: number;
 }
 
-function bumpMetaRevision(account: MetaAccountV4): void {
+function bumpMetaRevision(account: MetaAccountV5): void {
   account.revision = Math.min(META_ACCOUNT_REVISION_MAX, account.revision + 1);
 }
 
@@ -108,7 +108,7 @@ function isBoundedRequestId(value: unknown): value is string {
   return typeof value === "string" && value.length > 0 && value.length <= 64 && /^[\x21-\x7e]+$/.test(value);
 }
 
-export function weaponBankStashCapacity(account: Pick<MetaAccountV4, "weaponBank">): number {
+export function weaponBankStashCapacity(account: Pick<MetaAccountV5, "weaponBank">): number {
   const shelves = Math.max(
     0,
     Math.min(WEAPON_STASH_MAX_SHELVES, Math.floor(account.weaponBank.shelfUpgrades)),
@@ -118,7 +118,7 @@ export function weaponBankStashCapacity(account: Pick<MetaAccountV4, "weaponBank
 
 /** Atomic Stash -> expedition move. No selected instance remains safe after this succeeds. */
 export function commitWeaponCarry(
-  account: MetaAccountV4,
+  account: MetaAccountV5,
   selection: CarrySelectionV1,
   runId: string,
   packCapacity: number,
@@ -206,7 +206,7 @@ export function commitWeaponCarry(
 
 /** Close escrow once. Victory returns carried entries; defeat destroys the full active/pack/field stake. */
 export function settleWeaponExpedition(
-  account: MetaAccountV4,
+  account: MetaAccountV5,
   outcome: "victory" | "defeat",
   advanceRevision = true,
 ): WeaponSettlementResult {
@@ -260,7 +260,7 @@ export function settleWeaponExpedition(
 
 /** Prestige hook for the later hat-tower wave: all weapon power goes, permanent journey state stays. */
 export function wipeWeaponBankForPrestige(
-  account: MetaAccountV4,
+  account: MetaAccountV5,
   advanceRevision = true,
 ): { ok: boolean; error?: WeaponBankTransactionError; removedEntries: number; removedPhysical: number } {
   if (account.weaponBank.expedition) {

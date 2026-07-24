@@ -1,4 +1,4 @@
-import { createMetaAccountV4, DEFAULT_CHARACTER, WHOLE_ART_CHARACTERS } from "@dd/shared";
+import { createMetaAccountV5, DEFAULT_CHARACTER, WHOLE_ART_CHARACTERS } from "@dd/shared";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { CHARACTER_SELECTION_STORAGE_KEY } from "../ui/character-select.js";
 import { PET_META_STORAGE_KEY, selectPet } from "../ui/pet-select.js";
@@ -46,11 +46,12 @@ describe("MenuScene Characters tab contract", () => {
     );
   });
 
-  it("starts on Characters and keeps Armory / Carry plus Destinations reachable", () => {
+  it("starts on Characters and keeps Armory / Carry, Packs, and Destinations reachable", () => {
     expect(INITIAL_MENU_TAB).toBe("characters");
     expect(MENU_TAB_DESCRIPTORS).toEqual([
       { tab: "characters", label: "CHARACTERS", width: 142 },
       { tab: "armory", label: "ARMORY / CARRY", width: 176 },
+      { tab: "packs", label: "PACKS", width: 142 },
       { tab: "run", label: "DESTINATIONS", width: 142 },
     ]);
     expect(MENU_TAB_DESCRIPTORS.some((row) => String(row.tab) === "wardrobe")).toBe(false);
@@ -58,12 +59,20 @@ describe("MenuScene Characters tab contract", () => {
       characters: true,
       companions: true,
       armory: false,
+      packs: false,
       prestige: false,
     });
     expect(menuTabVisibility("armory")).toMatchObject({
       characters: false,
       companions: false,
       armory: true,
+      packs: false,
+    });
+    expect(menuTabVisibility("packs")).toMatchObject({
+      characters: false,
+      companions: false,
+      armory: false,
+      packs: true,
     });
     expect(menuTabVisibility("run")).toMatchObject({
       destinations: true,
@@ -83,6 +92,7 @@ describe("MenuScene Characters tab contract", () => {
     const sceneState = {
       selectedCharacterId: DEFAULT_CHARACTER,
       characterFocusIndex: 0,
+      metaAccount: createMetaAccountV5(),
       audio: { play },
       refreshCharacterWorkspace,
     };
@@ -116,7 +126,7 @@ describe("MenuScene Characters tab contract", () => {
       getItem: (key: string) => writes.get(key) ?? null,
       setItem: (key: string, value: string) => writes.set(key, value),
     });
-    const account = createMetaAccountV4();
+    const account = createMetaAccountV5();
     account.pets["gilded-gecko"] = { bondXp: 250 };
 
     const selected = selectPet(account, "gilded-gecko");
@@ -127,7 +137,7 @@ describe("MenuScene Characters tab contract", () => {
   });
 
   it("keeps eligible prestige reachable from Destinations with neutral reward copy", () => {
-    const view = prestigeCeremonyView(createMetaAccountV4(), true);
+    const view = prestigeCeremonyView(createMetaAccountV5(), true);
     expect(view.eligible).toBe(true);
     expect(menuTabVisibility("run").prestige).toBe(true);
     expect(destinationPrestigeEligibilityCopy(view)).toBe(view.eligibilityCopy);

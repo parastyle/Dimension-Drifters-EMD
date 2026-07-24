@@ -1,0 +1,42 @@
+{
+  "verdict": "pass",
+  "seed": 77,
+  "packType": "pet",
+  "price": 120,
+  "pulls": [
+    {
+      "id": "pale-firefly",
+      "name": "Pale Firefly",
+      "rarity": "rare",
+      "duplicate": false,
+      "refund": 0
+    },
+    {
+      "id": "pale-firefly",
+      "name": "Pale Firefly",
+      "rarity": "rare",
+      "duplicate": true,
+      "refund": 50
+    },
+    {
+      "id": "pale-firefly",
+      "name": "Pale Firefly",
+      "rarity": "rare",
+      "duplicate": true,
+      "refund": 50
+    }
+  ],
+  "duplicateLines": [
+    "duplicate -> +50 money",
+    "duplicate -> +50 money"
+  ],
+  "refundTotal": 100,
+  "endingBalance": 480,
+  "persisted": {
+    "version": 5,
+    "balance": 480,
+    "unlockedPet": true,
+    "valid": true,
+    "bankErrors": []
+  }
+}

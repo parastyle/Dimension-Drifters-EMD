@@ -1,4 +1,4 @@
-import { createMetaAccountV4, type SingleWeaponEntryV1 } from "@dd/shared";
+import { createMetaAccountV5, type SingleWeaponEntryV1 } from "@dd/shared";
 import { describe, expect, it } from "vitest";
 import {
   armoryCatalogEntries,
@@ -32,7 +32,7 @@ function entry(
 
 describe("armory carry model", () => {
   it("restores exact Last Carry ids without silently substituting a missing weapon", () => {
-    const account = createMetaAccountV4();
+    const account = createMetaAccountV5();
     const kept = entry(1);
     account.weaponBank.stash.push(kept);
     account.weaponBank.lastCarry = {
@@ -48,7 +48,7 @@ describe("armory carry model", () => {
   });
 
   it("stages Active before Pack, makes the exact stake legible, and emits the join contract", () => {
-    const account = createMetaAccountV4();
+    const account = createMetaAccountV5();
     account.revision = 7;
     account.weaponBank.stash.push(entry(1, "rare"), entry(2), entry(3), entry(4));
     let draft = createArmoryDraft(account);
@@ -75,14 +75,14 @@ describe("armory carry model", () => {
   });
 
   it("keeps the starter floor outside the at-risk count when the Stash is empty", () => {
-    const account = createMetaAccountV4();
+    const account = createMetaAccountV5();
     const summary = armorySummary(account, createArmoryDraft(account));
     expect(summary.atRiskPhysical).toBe(0);
     expect(summary.safeEntries).toBe(0);
   });
 
   it("moves a staged entry between Active and Pack reversibly and filters the resulting zone", () => {
-    const account = createMetaAccountV4();
+    const account = createMetaAccountV5();
     const kept = entry(7, "rare");
     account.weaponBank.stash.push(kept);
     let draft = toggleArmoryEntry(account, createArmoryDraft(account), kept.entryId).draft;

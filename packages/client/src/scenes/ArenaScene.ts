@@ -74,7 +74,7 @@ import {
   lootCooldownMult,
   lootDamageMult,
   MAP_ZONE_SCAR,
-  type MetaAccountV4,
+  type MetaAccountV5,
   type MoneyBankReceipt,
   type MoveStance,
   meleeReach,
@@ -1208,8 +1208,8 @@ export class ArenaScene extends Phaser.Scene {
   private readonly petRigs = new Map<string, PetRig>();
   private readonly petOwnerHp = new Map<string, number>();
   private petManifest: PetPartsManifest | null | undefined;
-  private petMetaAccount!: MetaAccountV4;
-  private selectedPetId: MetaAccountV4["selectedPetId"] = "verdant-wing";
+  private petMetaAccount!: MetaAccountV5;
+  private selectedPetId: MetaAccountV5["selectedPetId"] = "verdant-wing";
   private selectedCharacterId?: WholeArtCharacter;
   private pendingCarry?: CarrySelectionV1;
   private readonly petPickupEligibility = new Set<string>();
@@ -1798,7 +1798,7 @@ export class ArenaScene extends Phaser.Scene {
     belt?: boolean;
     beltLevel?: string;
     dev?: string;
-    selectedPetId?: MetaAccountV4["selectedPetId"];
+    selectedPetId?: MetaAccountV5["selectedPetId"];
     selectedCharacterId?: WholeArtCharacter;
     carry?: CarrySelectionV1;
   }): void {
