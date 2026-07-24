@@ -231,8 +231,7 @@
     "name": "Choir-Iron Greataxe — signature VFX",
     "kind": "vfx",
     "styleRef": "out/x2-choir-iron-greataxe/identity-ref.png",
-    "prompt": "The ground-slam SHOCKWAVE the weapon in Image 1 (a Choir-Iron Greataxe, a holy axe) makes when hammered straight DOWN — a rough RING of a FEW (6–10) big, bold, chunky angular slabs tilting UP and erupting outward around a central impact point, with a little flung debris and dust. Thin dark radiating crack-lines are fine (cracks in whatever floor is underneath) but do NOT fill them with any colour. Frozen at its peak, golden-white light. Render on a perfectly flat fully-opaque #00ff00 chroma field with NOTHING else behind or beneath it — NO ground, NO floor disc, NO dirt, NO background, NO terrain (it composites ON TOP of the live arena floor at runtime, so any baked ground would show as a wrong solid blob). SIMPLE flat-cel CHUNKY shapes, thick black outlines, MINIMAL interior detail to match the game's bold character art; do NOT draw the weapon itself — only the effect.",
-    "vfxOrientation": "ground"
+    "prompt": "The CUT the weapon in Image 1 (a Choir-Iron Greataxe, a holy axe) makes the instant it strikes — one bold, sharp slash-arc sweeping to the RIGHT, violent and clean, with a few sparks/flecks flung off the edge. Frozen at its peak, golden-white light. Render on a perfectly flat fully-opaque #00ff00 chroma field with NOTHING else behind or beneath it — NO ground, NO floor disc, NO dirt, NO background, NO terrain (it composites ON TOP of the live arena floor at runtime, so any baked ground would show as a wrong solid blob). SIMPLE flat-cel CHUNKY shapes, thick black outlines, MINIMAL interior detail to match the game's bold character art; do NOT draw the weapon itself — only the effect."
   },
   {
     "id": "vfx-x2-quicksilver-skinning-cleaver",
@@ -352,8 +351,7 @@
     "name": "Quarry-Splitter Bardiche — signature VFX",
     "kind": "vfx",
     "styleRef": "out/x2-quarry-splitter-bardiche/identity-ref.png",
-    "prompt": "The ground-slam SHOCKWAVE the weapon in Image 1 (a Quarry-Splitter Bardiche, a physical glaive) makes when hammered straight DOWN — a rough RING of a FEW (6–10) big, bold, chunky angular slabs tilting UP and erupting outward around a central impact point, with a little flung debris and dust. Thin dark radiating crack-lines are fine (cracks in whatever floor is underneath) but do NOT fill them with any colour. Frozen at its peak, to match the weapon's own colours. Render on a perfectly flat fully-opaque #00ff00 chroma field with NOTHING else behind or beneath it — NO ground, NO floor disc, NO dirt, NO background, NO terrain (it composites ON TOP of the live arena floor at runtime, so any baked ground would show as a wrong solid blob). SIMPLE flat-cel CHUNKY shapes, thick black outlines, MINIMAL interior detail to match the game's bold character art; do NOT draw the weapon itself — only the effect.",
-    "vfxOrientation": "ground"
+    "prompt": "The CUT the weapon in Image 1 (a Quarry-Splitter Bardiche, a physical glaive) makes the instant it strikes — one bold, sharp slash-arc sweeping to the RIGHT, violent and clean, with a few sparks/flecks flung off the edge. Frozen at its peak, to match the weapon's own colours. Render on a perfectly flat fully-opaque #00ff00 chroma field with NOTHING else behind or beneath it — NO ground, NO floor disc, NO dirt, NO background, NO terrain (it composites ON TOP of the live arena floor at runtime, so any baked ground would show as a wrong solid blob). SIMPLE flat-cel CHUNKY shapes, thick black outlines, MINIMAL interior detail to match the game's bold character art; do NOT draw the weapon itself — only the effect."
   },
   {
     "id": "vfx-x2-wickfire-fauchard",
@@ -1035,7 +1033,7 @@
     "name": "Quicksilver Streetsweeper — signature VFX",
     "kind": "vfx",
     "styleRef": "out/x2-quicksilver-streetsweeper/identity-ref.png",
-    "prompt": "The MUZZLE BLAST the weapon in Image 1 (a Quicksilver Streetsweeper, a physical shotgun) makes when it FIRES — a single sharp muzzle flash with a short bright bullet/tracer streak shooting to the RIGHT and a small puff of smoke. Frozen at its peak, to match the weapon's own colours. Render on a perfectly flat fully-opaque #00ff00 chroma field with NOTHING else behind or beneath it — NO ground, NO floor disc, NO dirt, NO background, NO terrain (it composites ON TOP of the live arena floor at runtime, so any baked ground would show as a wrong solid blob). SIMPLE flat-cel CHUNKY shapes, thick black outlines, MINIMAL interior detail to match the game's bold character art; do NOT draw the weapon itself — only the effect."
+    "prompt": "The MUZZLE BLAST the weapon in Image 1 (a Quicksilver Streetsweeper, a physical grenade-launcher) makes when it FIRES — a single sharp muzzle flash with a short bright bullet/tracer streak shooting to the RIGHT and a small puff of smoke. Frozen at its peak, to match the weapon's own colours. Render on a perfectly flat fully-opaque #00ff00 chroma field with NOTHING else behind or beneath it — NO ground, NO floor disc, NO dirt, NO background, NO terrain (it composites ON TOP of the live arena floor at runtime, so any baked ground would show as a wrong solid blob). SIMPLE flat-cel CHUNKY shapes, thick black outlines, MINIMAL interior detail to match the game's bold character art; do NOT draw the weapon itself — only the effect."
   },
   {
     "id": "vfx-x2-hallowbore-coachgun",

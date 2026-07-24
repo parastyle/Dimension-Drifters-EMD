@@ -39,7 +39,7 @@ describe("V3G catalog gun-handling laws", () => {
           /\bpump-rifle\b/i.test(weapon.name) ||
           /\bbuckshot avalanche\b/i.test(weapon.name)),
     );
-    expect(candidates).toHaveLength(14);
+    expect(candidates).toHaveLength(13);
     expect(
       tagged("pump")
         .map((weapon) => weapon.id)
