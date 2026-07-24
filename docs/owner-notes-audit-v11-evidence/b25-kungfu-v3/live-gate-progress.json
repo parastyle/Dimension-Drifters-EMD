@@ -1,0 +1,5876 @@
+{
+  "captures": [
+    {
+      "weaponId": "x2-muay-thai-wraps",
+      "offhandSlot": 255,
+      "facing": "right",
+      "target": {
+        "id": "open-lane:right",
+        "x": 2492,
+        "y": 2420,
+        "distance": 92
+      },
+      "attackSeqBefore": 0,
+      "attackSeqAfter": 6,
+      "steps": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "motions": [
+        "teep-kick",
+        "elbow",
+        "spinning-back-elbow",
+        "knee-strike",
+        "roundhouse-kick"
+      ],
+      "limbs": [
+        "foot",
+        "hand",
+        "hand",
+        "foot",
+        "foot"
+      ],
+      "swingStyle": "crimson-roundhouse-arc",
+      "impactStyle": "",
+      "intervalsMs": [
+        250,
+        266.6999999999989,
+        249.89999999999964,
+        266.7000000000007
+      ],
+      "reachPx": [
+        114.44003095827901,
+        96.4757393918759,
+        159.4699397463878,
+        96.09780678846515,
+        102.6397584664775
+      ],
+      "authorityReachPx": [
+        138,
+        108.55999999999999,
+        112.24,
+        117.76,
+        136.16
+      ],
+      "travel": {
+        "start": {
+          "x": 2400,
+          "y": 2420
+        },
+        "end": {
+          "x": 2824.6822399999933,
+          "y": 2420
+        },
+        "distancePx": 424.68223999999327,
+        "pathDistancePx": 424.68223999999327,
+        "expectedPx": 428,
+        "expectedPathPx": 428,
+        "positionSamples": [
+          {
+            "attackSeq": 0,
+            "x": 2400,
+            "y": 2420,
+            "timeMs": 11743.5
+          },
+          {
+            "attackSeq": 1,
+            "x": 2688,
+            "y": 2420,
+            "timeMs": 11910.2
+          },
+          {
+            "attackSeq": 2,
+            "x": 2703.4839999999963,
+            "y": 2420,
+            "timeMs": 12093.5
+          },
+          {
+            "attackSeq": 2,
+            "x": 2716,
+            "y": 2420,
+            "timeMs": 12260.1
+          },
+          {
+            "attackSeq": 3,
+            "x": 2748,
+            "y": 2420,
+            "timeMs": 12426.8
+          },
+          {
+            "attackSeq": 4,
+            "x": 2788.451904296875,
+            "y": 2420,
+            "timeMs": 12610.1
+          },
+          {
+            "attackSeq": 4,
+            "x": 2792,
+            "y": 2420,
+            "timeMs": 12776.8
+          },
+          {
+            "attackSeq": 5,
+            "x": 2824.6822399999933,
+            "y": 2420,
+            "timeMs": 12960.1
+          }
+        ],
+        "stepTravel": [
+          {
+            "x": 288,
+            "y": 0,
+            "distancePx": 288
+          },
+          {
+            "x": 28,
+            "y": 0,
+            "distancePx": 28
+          },
+          {
+            "x": 32,
+            "y": 0,
+            "distancePx": 32
+          },
+          {
+            "x": 44,
+            "y": 0,
+            "distancePx": 44
+          },
+          {
+            "x": 32.68223999999327,
+            "y": 0,
+            "distancePx": 32.68223999999327
+          }
+        ]
+      },
+      "theatricalSamples": [
+        {
+          "attackSeq": 1,
+          "timeMs": 11910.2,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdStrength": 0
+        },
+        {
+          "attackSeq": 2,
+          "timeMs": 12093.5,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdStrength": 0
+        },
+        {
+          "attackSeq": 2,
+          "timeMs": 12260.1,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": -1,
+          "paperTurnProgress": 0.5882499999999982,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdStrength": 0
+        },
+        {
+          "attackSeq": 3,
+          "timeMs": 12426.8,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdStrength": 0
+        },
+        {
+          "attackSeq": 4,
+          "timeMs": 12610.1,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdPose": "clinch-guard",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 4,
+          "timeMs": 12776.8,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": -1,
+          "paperTurnProgress": 0.5621666666666655,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1.9755200311786298,
+          "backFootStretch": 1,
+          "holdStrength": 0
+        },
+        {
+          "attackSeq": 5,
+          "timeMs": 12960.1,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 2,
+          "backFootStretch": 1,
+          "holdPose": "champion-guard",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 35,
+          "timeMs": 25509.6,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdStrength": 0
+        },
+        {
+          "attackSeq": 35,
+          "timeMs": 25676.2,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdStrength": 0
+        },
+        {
+          "attackSeq": 36,
+          "timeMs": 25859.6,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdStrength": 0
+        },
+        {
+          "attackSeq": 36,
+          "timeMs": 26026.2,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdStrength": 0
+        },
+        {
+          "attackSeq": 37,
+          "timeMs": 26193,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdStrength": 0
+        },
+        {
+          "attackSeq": 38,
+          "timeMs": 26359.6,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": -1,
+          "paperTurnProgress": 1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdStrength": 0
+        },
+        {
+          "attackSeq": 38,
+          "timeMs": 26526.2,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdStrength": 0
+        },
+        {
+          "attackSeq": 39,
+          "timeMs": 26709.6,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdPose": "clinch-guard",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 40,
+          "timeMs": 26876.2,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": -1,
+          "paperTurnProgress": 1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 2,
+          "backFootStretch": 1,
+          "holdPose": "champion-guard",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 40,
+          "timeMs": 26876.2,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": -1,
+          "paperTurnProgress": 1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 2,
+          "backFootStretch": 1,
+          "holdPose": "champion-guard",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 40,
+          "timeMs": 26876.2,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": -1,
+          "paperTurnProgress": 1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 2,
+          "backFootStretch": 1,
+          "holdPose": "champion-guard",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 40,
+          "timeMs": 26876.2,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": -1,
+          "paperTurnProgress": 1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 2,
+          "backFootStretch": 1,
+          "holdPose": "champion-guard",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 40,
+          "timeMs": 26876.2,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": -1,
+          "paperTurnProgress": 1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 2,
+          "backFootStretch": 1,
+          "holdPose": "champion-guard",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 40,
+          "timeMs": 26876.2,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": -1,
+          "paperTurnProgress": 1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 2,
+          "backFootStretch": 1,
+          "holdPose": "champion-guard",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 40,
+          "timeMs": 26876.2,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": -1,
+          "paperTurnProgress": 1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 2,
+          "backFootStretch": 1,
+          "holdPose": "champion-guard",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 40,
+          "timeMs": 26876.2,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": -1,
+          "paperTurnProgress": 1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 2,
+          "backFootStretch": 1,
+          "holdPose": "champion-guard",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 40,
+          "timeMs": 26876.2,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": -1,
+          "paperTurnProgress": 1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 2,
+          "backFootStretch": 1,
+          "holdPose": "champion-guard",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 40,
+          "timeMs": 26876.2,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": -1,
+          "paperTurnProgress": 1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 2,
+          "backFootStretch": 1,
+          "holdPose": "champion-guard",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 40,
+          "timeMs": 26876.2,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": -1,
+          "paperTurnProgress": 1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 2,
+          "backFootStretch": 1,
+          "holdPose": "champion-guard",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 40,
+          "timeMs": 26876.2,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": -1,
+          "paperTurnProgress": 1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 2,
+          "backFootStretch": 1,
+          "holdPose": "champion-guard",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 40,
+          "timeMs": 26876.2,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": -1,
+          "paperTurnProgress": 1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 2,
+          "backFootStretch": 1,
+          "holdPose": "champion-guard",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 40,
+          "timeMs": 29109.4,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 2,
+          "backFootStretch": 1,
+          "holdPose": "champion-guard",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 40,
+          "timeMs": 29276.2,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 2,
+          "backFootStretch": 1,
+          "holdPose": "champion-guard",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 40,
+          "timeMs": 29459.4,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 2,
+          "backFootStretch": 1,
+          "holdPose": "champion-guard",
+          "holdStrength": 1
+        }
+      ],
+      "contacts": [],
+      "vfx": [
+        {
+          "kind": "swing",
+          "weaponId": "x2-muay-thai-wraps",
+          "style": "crimson-roundhouse-arc",
+          "x": 2537.999999999998,
+          "y": 2419.9999778826996,
+          "sourceX": 2433.876870553713,
+          "sourceY": 2467.4857083713846,
+          "authorityReach": 138,
+          "timeMs": 11660.2,
+          "comboStep": 0,
+          "motion": "teep-kick",
+          "limb": "foot"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-muay-thai-wraps",
+          "style": "crimson-roundhouse-arc",
+          "x": 2560.8223999999973,
+          "y": 2419.999978088728,
+          "sourceX": 2464.3472702118247,
+          "sourceY": 2419.6570151688447,
+          "authorityReach": 108.55999999999999,
+          "timeMs": 11910.2,
+          "comboStep": 1,
+          "motion": "elbow",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-muay-thai-wraps",
+          "style": "crimson-roundhouse-arc",
+          "x": 2644.4991999999966,
+          "y": 2419.999975093607,
+          "sourceX": 2485.1046247806166,
+          "sourceY": 2424.9021249638163,
+          "authorityReach": 112.24,
+          "timeMs": 12176.9,
+          "comboStep": 2,
+          "motion": "spinning-back-elbow",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-muay-thai-wraps",
+          "style": "crimson-roundhouse-arc",
+          "x": 2731.6127999999967,
+          "y": 2419.9999734244398,
+          "sourceX": 2646.8778829317134,
+          "sourceY": 2465.3296800083604,
+          "authorityReach": 117.76,
+          "timeMs": 12426.8,
+          "comboStep": 3,
+          "motion": "knee-strike",
+          "limb": "foot"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-muay-thai-wraps",
+          "style": "crimson-roundhouse-arc",
+          "x": 2832.6751999999965,
+          "y": 2419.999969122261,
+          "sourceX": 2735.2977120720657,
+          "sourceY": 2452.442916936887,
+          "authorityReach": 136.16,
+          "timeMs": 12693.5,
+          "comboStep": 4,
+          "motion": "roundhouse-kick",
+          "limb": "foot"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-muay-thai-wraps",
+          "style": "crimson-roundhouse-arc",
+          "x": 2917.7119999999964,
+          "y": 2419.9999687195796,
+          "sourceX": 2818.5004173714083,
+          "sourceY": 2456.5086279042243,
+          "authorityReach": 138,
+          "timeMs": 12960.1,
+          "comboStep": 0,
+          "motion": "teep-kick",
+          "limb": "foot"
+        }
+      ],
+      "auraSamples": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "renderEvidence": {
+        "renderedSamples": 144,
+        "minPaperTurnScaleX": -1,
+        "maxFlipProgress": -1,
+        "maxFlipAbsRotation": 0,
+        "maxHandStretch": 1,
+        "maxRearHandStretch": 1,
+        "maxFrontFootStretch": 2.0451665225747204,
+        "maxBackFootStretch": 1,
+        "maxHoldStrength": 1,
+        "holdPoses": [
+          "clinch-guard",
+          "champion-guard"
+        ]
+      },
+      "expectedReachPx": [
+        138,
+        108.56,
+        112.24,
+        117.76,
+        136.16
+      ],
+      "rig": {
+        "handOverlayCount": 2,
+        "footOverlayCount": 2,
+        "handPartIndices": [
+          0,
+          0
+        ],
+        "footPartIndices": [
+          1,
+          1
+        ],
+        "baseHandsVisible": [
+          false,
+          false
+        ],
+        "baseFeetVisible": [
+          false,
+          false
+        ],
+        "handOverlayVisible": [
+          true,
+          true
+        ],
+        "footOverlayVisible": [
+          true,
+          true
+        ],
+        "handFrames": [
+          "x2-muay-thai-wraps:part-1:__BASE",
+          "x2-muay-thai-wraps:part-1:__BASE"
+        ],
+        "footFrames": [
+          "x2-muay-thai-wraps:part-2:__BASE",
+          "x2-muay-thai-wraps:part-2:__BASE"
+        ],
+        "facing": 1,
+        "rootScaleX": 0.6623383243383614,
+        "rootScaleY": 0.6623394948497249,
+        "handScaleRatios": [
+          1.1466666666666665,
+          1.173488372093023
+        ],
+        "footScaleRatios": [
+          1.1085714285714285,
+          1.1315463917525777
+        ],
+        "playerAuraVisible": false,
+        "handPose": [
+          {
+            "front": false,
+            "x": 17.565856254129244,
+            "y": -5.822888499420562,
+            "rotation": -0.11999880393327089
+          },
+          {
+            "front": true,
+            "x": -78.71432455074003,
+            "y": 6.93024382077514,
+            "rotation": 0.2000011960667294
+          }
+        ],
+        "footPose": [
+          {
+            "front": false,
+            "x": 51.18217882828394,
+            "y": 70.57806574950972,
+            "rotation": -0.0018051752882382033
+          },
+          {
+            "front": true,
+            "x": -51.20857697042956,
+            "y": 57.77461755269912,
+            "rotation": 0.003148054106670628
+          }
+        ]
+      },
+      "handScreenshot": "docs/owner-notes-audit-v11-evidence/b25-kungfu-v3/x2-muay-thai-wraps-right-hand.png",
+      "footScreenshot": "docs/owner-notes-audit-v11-evidence/b25-kungfu-v3/x2-muay-thai-wraps-right-foot.png",
+      "stanceScreenshot": "docs/owner-notes-audit-v11-evidence/b25-kungfu-v3/x2-muay-thai-wraps-right-stance.png",
+      "showcaseScreenshot": "docs/owner-notes-audit-v11-evidence/b25-kungfu-v3/x2-muay-thai-wraps-right-roundhouse-kick.png",
+      "finisherScreenshot": "docs/owner-notes-audit-v11-evidence/b25-kungfu-v3/x2-muay-thai-wraps-right-champion-guard-finisher.png"
+    },
+    {
+      "weaponId": "x2-muay-thai-wraps",
+      "offhandSlot": 255,
+      "facing": "left",
+      "target": {
+        "id": "open-lane:left",
+        "x": 4430.310546875,
+        "y": 2413.708984375,
+        "distance": 92
+      },
+      "attackSeqBefore": 40,
+      "attackSeqAfter": 46,
+      "steps": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "motions": [
+        "teep-kick",
+        "elbow",
+        "spinning-back-elbow",
+        "knee-strike",
+        "roundhouse-kick"
+      ],
+      "limbs": [
+        "foot",
+        "hand",
+        "hand",
+        "foot",
+        "foot"
+      ],
+      "swingStyle": "crimson-roundhouse-arc",
+      "impactStyle": "",
+      "intervalsMs": [
+        266.6999999999971,
+        250,
+        249.90000000000146,
+        233.40000000000146
+      ],
+      "reachPx": [
+        114.2556613279934,
+        95.4479877366333,
+        161.02253414454646,
+        96.2187497957494,
+        102.6471629246642
+      ],
+      "authorityReachPx": [
+        138,
+        108.55999999999999,
+        112.24,
+        117.76,
+        136.16
+      ],
+      "travel": {
+        "start": {
+          "x": 4522.310546875,
+          "y": 2413.708984375
+        },
+        "end": {
+          "x": 4094.310546875,
+          "y": 2413.709084447005
+        },
+        "distancePx": 428.0000000000117,
+        "pathDistancePx": 428.0000000002796,
+        "expectedPx": 428,
+        "expectedPathPx": 428,
+        "positionSamples": [
+          {
+            "attackSeq": 40,
+            "x": 4522.310546875,
+            "y": 2413.708984375,
+            "timeMs": 35742.5
+          },
+          {
+            "attackSeq": 41,
+            "x": 4328.4453125,
+            "y": 2413.7091010072213,
+            "timeMs": 35925.8
+          },
+          {
+            "attackSeq": 41,
+            "x": 4234.310546875,
+            "y": 2413.709228515625,
+            "timeMs": 36092.5
+          },
+          {
+            "attackSeq": 42,
+            "x": 4206.310546875,
+            "y": 2413.709228515625,
+            "timeMs": 36259.2
+          },
+          {
+            "attackSeq": 43,
+            "x": 4174.310546875,
+            "y": 2413.709228515625,
+            "timeMs": 36425.8
+          },
+          {
+            "attackSeq": 43,
+            "x": 4174.310546875,
+            "y": 2413.709228515625,
+            "timeMs": 36592.5
+          },
+          {
+            "attackSeq": 44,
+            "x": 4130.310546875,
+            "y": 2413.709115682303,
+            "timeMs": 36742.5
+          },
+          {
+            "attackSeq": 45,
+            "x": 4097.628232979044,
+            "y": 2413.7090873256498,
+            "timeMs": 36909.1
+          },
+          {
+            "attackSeq": 45,
+            "x": 4094.310546875,
+            "y": 2413.709084447005,
+            "timeMs": 37092.5
+          }
+        ],
+        "stepTravel": [
+          {
+            "x": -288,
+            "y": 0.000244140625,
+            "distancePx": 288.0000000001214
+          },
+          {
+            "x": -28,
+            "y": 0,
+            "distancePx": 28
+          },
+          {
+            "x": -32,
+            "y": 0,
+            "distancePx": 32
+          },
+          {
+            "x": -44,
+            "y": -0.00011283332196398987,
+            "distancePx": 44.000000000144674
+          },
+          {
+            "x": -36,
+            "y": -0.00003123529813819914,
+            "distancePx": 36.00000000001355
+          }
+        ]
+      },
+      "theatricalSamples": [
+        {
+          "attackSeq": 41,
+          "timeMs": 35925.8,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdStrength": 0
+        },
+        {
+          "attackSeq": 41,
+          "timeMs": 36092.5,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdStrength": 0
+        },
+        {
+          "attackSeq": 42,
+          "timeMs": 36259.2,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdStrength": 0
+        },
+        {
+          "attackSeq": 43,
+          "timeMs": 36425.8,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": -1,
+          "paperTurnProgress": 1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdStrength": 0
+        },
+        {
+          "attackSeq": 43,
+          "timeMs": 36592.5,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdStrength": 0
+        },
+        {
+          "attackSeq": 44,
+          "timeMs": 36742.5,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdPose": "clinch-guard",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 45,
+          "timeMs": 36909.1,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": -1,
+          "paperTurnProgress": 1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 2,
+          "backFootStretch": 1,
+          "holdPose": "champion-guard",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 45,
+          "timeMs": 37092.5,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 2.0169930586760936,
+          "backFootStretch": 1,
+          "holdStrength": 0
+        },
+        {
+          "attackSeq": 75,
+          "timeMs": 49758.6,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdStrength": 0
+        },
+        {
+          "attackSeq": 75,
+          "timeMs": 49942,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdStrength": 0
+        },
+        {
+          "attackSeq": 76,
+          "timeMs": 50108.7,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdStrength": 0
+        },
+        {
+          "attackSeq": 76,
+          "timeMs": 50275.3,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdStrength": 0
+        },
+        {
+          "attackSeq": 77,
+          "timeMs": 50425.3,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdStrength": 0
+        },
+        {
+          "attackSeq": 78,
+          "timeMs": 50592,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": -1,
+          "paperTurnProgress": 1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdStrength": 0
+        },
+        {
+          "attackSeq": 78,
+          "timeMs": 50758.6,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdStrength": 0
+        },
+        {
+          "attackSeq": 79,
+          "timeMs": 50908.6,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdPose": "clinch-guard",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 80,
+          "timeMs": 51075.2,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": -1,
+          "paperTurnProgress": 1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 2,
+          "backFootStretch": 1,
+          "holdPose": "champion-guard",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 80,
+          "timeMs": 51075.2,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": -1,
+          "paperTurnProgress": 1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 2,
+          "backFootStretch": 1,
+          "holdPose": "champion-guard",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 80,
+          "timeMs": 51075.2,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": -1,
+          "paperTurnProgress": 1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 2,
+          "backFootStretch": 1,
+          "holdPose": "champion-guard",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 80,
+          "timeMs": 51075.2,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": -1,
+          "paperTurnProgress": 1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 2,
+          "backFootStretch": 1,
+          "holdPose": "champion-guard",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 80,
+          "timeMs": 51075.2,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": -1,
+          "paperTurnProgress": 1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 2,
+          "backFootStretch": 1,
+          "holdPose": "champion-guard",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 80,
+          "timeMs": 51075.2,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": -1,
+          "paperTurnProgress": 1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 2,
+          "backFootStretch": 1,
+          "holdPose": "champion-guard",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 80,
+          "timeMs": 51075.2,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": -1,
+          "paperTurnProgress": 1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 2,
+          "backFootStretch": 1,
+          "holdPose": "champion-guard",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 80,
+          "timeMs": 51075.2,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": -1,
+          "paperTurnProgress": 1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 2,
+          "backFootStretch": 1,
+          "holdPose": "champion-guard",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 80,
+          "timeMs": 51075.2,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": -1,
+          "paperTurnProgress": 1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 2,
+          "backFootStretch": 1,
+          "holdPose": "champion-guard",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 80,
+          "timeMs": 51075.2,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": -1,
+          "paperTurnProgress": 1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 2,
+          "backFootStretch": 1,
+          "holdPose": "champion-guard",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 80,
+          "timeMs": 51075.2,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": -1,
+          "paperTurnProgress": 1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 2,
+          "backFootStretch": 1,
+          "holdPose": "champion-guard",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 80,
+          "timeMs": 51075.2,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": -1,
+          "paperTurnProgress": 1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 2,
+          "backFootStretch": 1,
+          "holdPose": "champion-guard",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 80,
+          "timeMs": 51075.2,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": -1,
+          "paperTurnProgress": 1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 2,
+          "backFootStretch": 1,
+          "holdPose": "champion-guard",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 80,
+          "timeMs": 53308.5,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 2,
+          "backFootStretch": 1,
+          "holdPose": "champion-guard",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 80,
+          "timeMs": 53475.1,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 2,
+          "backFootStretch": 1,
+          "holdPose": "champion-guard",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 80,
+          "timeMs": 53658.5,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 2,
+          "backFootStretch": 1,
+          "holdPose": "champion-guard",
+          "holdStrength": 1
+        }
+      ],
+      "contacts": [],
+      "vfx": [
+        {
+          "kind": "swing",
+          "weaponId": "x2-muay-thai-wraps",
+          "style": "crimson-roundhouse-arc",
+          "x": 4384.31054687501,
+          "y": 2413.709037184961,
+          "sourceX": 4488.390343623102,
+          "sourceY": 2460.844502117143,
+          "authorityReach": 138,
+          "timeMs": 35742.5,
+          "comboStep": 0,
+          "motion": "teep-kick",
+          "limb": "foot"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-muay-thai-wraps",
+          "style": "crimson-roundhouse-arc",
+          "x": 4357.756946875018,
+          "y": 2413.709049267051,
+          "sourceX": 4453.204755735228,
+          "sourceY": 2413.893837679347,
+          "authorityReach": 108.55999999999999,
+          "timeMs": 36009.2,
+          "comboStep": 1,
+          "motion": "elbow",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-muay-thai-wraps",
+          "style": "crimson-roundhouse-arc",
+          "x": 4271.414546875046,
+          "y": 2413.7090654712233,
+          "sourceX": 4432.354766667151,
+          "sourceY": 2418.8570899078827,
+          "authorityReach": 112.24,
+          "timeMs": 36259.2,
+          "comboStep": 2,
+          "motion": "spinning-back-elbow",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-muay-thai-wraps",
+          "style": "crimson-roundhouse-arc",
+          "x": 4184.304146875086,
+          "y": 2413.709071980235,
+          "sourceX": 4269.177580325624,
+          "sourceY": 2459.0361952793605,
+          "authorityReach": 117.76,
+          "timeMs": 36509.1,
+          "comboStep": 3,
+          "motion": "knee-strike",
+          "limb": "foot"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-muay-thai-wraps",
+          "style": "crimson-roundhouse-arc",
+          "x": 4085.9073468751144,
+          "y": 2413.7090609614784,
+          "sourceX": 4183.291808445536,
+          "sourceY": 2446.154502877434,
+          "authorityReach": 136.16,
+          "timeMs": 36742.5,
+          "comboStep": 4,
+          "motion": "roundhouse-kick",
+          "limb": "foot"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-muay-thai-wraps",
+          "style": "crimson-roundhouse-arc",
+          "x": 4005.139346875102,
+          "y": 2413.7090588808346,
+          "sourceX": 4104.342717021344,
+          "sourceY": 2450.215151727136,
+          "authorityReach": 138,
+          "timeMs": 37009.1,
+          "comboStep": 0,
+          "motion": "teep-kick",
+          "limb": "foot"
+        }
+      ],
+      "auraSamples": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "renderEvidence": {
+        "renderedSamples": 142,
+        "minPaperTurnScaleX": -1,
+        "maxFlipProgress": -1,
+        "maxFlipAbsRotation": 0,
+        "maxHandStretch": 1,
+        "maxRearHandStretch": 1,
+        "maxFrontFootStretch": 2.0169930586760936,
+        "maxBackFootStretch": 1,
+        "maxHoldStrength": 1,
+        "holdPoses": [
+          "clinch-guard",
+          "champion-guard"
+        ]
+      },
+      "expectedReachPx": [
+        138,
+        108.56,
+        112.24,
+        117.76,
+        136.16
+      ],
+      "rig": {
+        "handOverlayCount": 2,
+        "footOverlayCount": 2,
+        "handPartIndices": [
+          0,
+          0
+        ],
+        "footPartIndices": [
+          1,
+          1
+        ],
+        "baseHandsVisible": [
+          false,
+          false
+        ],
+        "baseFeetVisible": [
+          false,
+          false
+        ],
+        "handOverlayVisible": [
+          true,
+          true
+        ],
+        "footOverlayVisible": [
+          true,
+          true
+        ],
+        "handFrames": [
+          "x2-muay-thai-wraps:part-1:__BASE",
+          "x2-muay-thai-wraps:part-1:__BASE"
+        ],
+        "footFrames": [
+          "x2-muay-thai-wraps:part-2:__BASE",
+          "x2-muay-thai-wraps:part-2:__BASE"
+        ],
+        "facing": -1,
+        "rootScaleX": -0.662339494847182,
+        "rootScaleY": 0.6623394948497249,
+        "handScaleRatios": [
+          1.1466666666666665,
+          1.173488372093023
+        ],
+        "footScaleRatios": [
+          1.1085714285714288,
+          1.1315463917525777
+        ],
+        "playerAuraVisible": false,
+        "handPose": [
+          {
+            "front": false,
+            "x": 17.70165234538552,
+            "y": -5.913451384097162,
+            "rotation": -0.11999961731912379
+          },
+          {
+            "front": true,
+            "x": -79.44419334615107,
+            "y": 6.190214333691772,
+            "rotation": 0.20000038268087472
+          }
+        ],
+        "footPose": [
+          {
+            "front": false,
+            "x": 50.937668814278105,
+            "y": 70.97659392460376,
+            "rotation": 0.0030847189525324836
+          },
+          {
+            "front": true,
+            "x": -50.91908501002889,
+            "y": 57.72959611767995,
+            "rotation": -0.0026421093232311677
+          }
+        ]
+      },
+      "handScreenshot": "docs/owner-notes-audit-v11-evidence/b25-kungfu-v3/x2-muay-thai-wraps-left-hand.png",
+      "footScreenshot": "docs/owner-notes-audit-v11-evidence/b25-kungfu-v3/x2-muay-thai-wraps-left-foot.png",
+      "stanceScreenshot": "docs/owner-notes-audit-v11-evidence/b25-kungfu-v3/x2-muay-thai-wraps-left-stance.png",
+      "showcaseScreenshot": "docs/owner-notes-audit-v11-evidence/b25-kungfu-v3/x2-muay-thai-wraps-left-roundhouse-kick.png",
+      "finisherScreenshot": "docs/owner-notes-audit-v11-evidence/b25-kungfu-v3/x2-muay-thai-wraps-left-champion-guard-finisher.png"
+    },
+    {
+      "weaponId": "x2-wing-chun-wraps",
+      "offhandSlot": 255,
+      "facing": "right",
+      "target": {
+        "id": "open-lane:right",
+        "x": 847.55029296875,
+        "y": 2408.122802734375,
+        "distance": 92
+      },
+      "attackSeqBefore": 80,
+      "attackSeqAfter": 86,
+      "steps": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "motions": [
+        "chain-punch",
+        "chain-punch",
+        "chain-punch",
+        "oblique-kick",
+        "double-palm"
+      ],
+      "limbs": [
+        "hand",
+        "hand",
+        "hand",
+        "foot",
+        "hand"
+      ],
+      "swingStyle": "white-centerline-flash",
+      "impactStyle": "",
+      "intervalsMs": [
+        183.39999999999418,
+        200,
+        183.3000000000029,
+        183.3000000000029
+      ],
+      "reachPx": [
+        82.4859845405124,
+        101.29347509041008,
+        88.73229722988629,
+        157.70268095781802,
+        95.48433588480334
+      ],
+      "authorityReachPx": [
+        111.8,
+        115.24000000000001,
+        118.67999999999999,
+        120.39999999999999,
+        129
+      ],
+      "travel": {
+        "start": {
+          "x": 755.55029296875,
+          "y": 2408.122802734375
+        },
+        "end": {
+          "x": 755.55029296875,
+          "y": 2408.122802734375
+        },
+        "distancePx": 0,
+        "pathDistancePx": 0,
+        "expectedPx": 0,
+        "expectedPathPx": 0,
+        "positionSamples": [
+          {
+            "attackSeq": 80,
+            "x": 755.55029296875,
+            "y": 2408.122802734375,
+            "timeMs": 60874.8
+          },
+          {
+            "attackSeq": 81,
+            "x": 755.55029296875,
+            "y": 2408.122802734375,
+            "timeMs": 61058.2
+          },
+          {
+            "attackSeq": 82,
+            "x": 755.55029296875,
+            "y": 2408.122802734375,
+            "timeMs": 61258.2
+          },
+          {
+            "attackSeq": 83,
+            "x": 755.55029296875,
+            "y": 2408.122802734375,
+            "timeMs": 61441.5
+          },
+          {
+            "attackSeq": 84,
+            "x": 755.55029296875,
+            "y": 2408.122802734375,
+            "timeMs": 61624.8
+          },
+          {
+            "attackSeq": 85,
+            "x": 755.55029296875,
+            "y": 2408.122802734375,
+            "timeMs": 61824.8
+          }
+        ],
+        "stepTravel": [
+          {
+            "x": 0,
+            "y": 0,
+            "distancePx": 0
+          },
+          {
+            "x": 0,
+            "y": 0,
+            "distancePx": 0
+          },
+          {
+            "x": 0,
+            "y": 0,
+            "distancePx": 0
+          },
+          {
+            "x": 0,
+            "y": 0,
+            "distancePx": 0
+          },
+          {
+            "x": 0,
+            "y": 0,
+            "distancePx": 0
+          }
+        ]
+      },
+      "theatricalSamples": [
+        {
+          "attackSeq": 81,
+          "timeMs": 61058.2,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdStrength": 0
+        },
+        {
+          "attackSeq": 82,
+          "timeMs": 61258.2,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdStrength": 0
+        },
+        {
+          "attackSeq": 83,
+          "timeMs": 61441.5,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdStrength": 0
+        },
+        {
+          "attackSeq": 84,
+          "timeMs": 61624.8,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdStrength": 0
+        },
+        {
+          "attackSeq": 85,
+          "timeMs": 61824.8,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdStrength": 0
+        }
+      ],
+      "contacts": [],
+      "vfx": [
+        {
+          "kind": "swing",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "white-centerline-flash",
+          "x": 867.3502929687456,
+          "y": 2408.1228341865976,
+          "sourceX": 786.0056299767539,
+          "sourceY": 2394.448645057551,
+          "authorityReach": 111.8,
+          "timeMs": 60874.8,
+          "comboStep": 0,
+          "motion": "chain-punch",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "white-centerline-flash",
+          "x": 870.7902929687455,
+          "y": 2408.1228351543587,
+          "sourceX": 769.5369734034583,
+          "sourceY": 2405.270928265737,
+          "authorityReach": 115.24000000000001,
+          "timeMs": 61058.2,
+          "comboStep": 1,
+          "motion": "chain-punch",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "white-centerline-flash",
+          "x": 874.2302929687453,
+          "y": 2408.122836122119,
+          "sourceX": 786.3645918253469,
+          "sourceY": 2395.7519374372264,
+          "authorityReach": 118.67999999999999,
+          "timeMs": 61258.2,
+          "comboStep": 2,
+          "motion": "chain-punch",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "white-centerline-flash",
+          "x": 875.9502929687452,
+          "y": 2408.1228366059995,
+          "sourceX": 723.4937599309618,
+          "sourceY": 2448.4606738730445,
+          "authorityReach": 120.39999999999999,
+          "timeMs": 61441.5,
+          "comboStep": 3,
+          "motion": "oblique-kick",
+          "limb": "foot"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "white-centerline-flash",
+          "x": 884.5502929687449,
+          "y": 2408.1228390254014,
+          "sourceX": 789.3617297718167,
+          "sourceY": 2400.6131229278144,
+          "authorityReach": 129,
+          "timeMs": 61624.8,
+          "comboStep": 4,
+          "motion": "double-palm",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "white-centerline-flash",
+          "x": 867.3502929687456,
+          "y": 2408.1228341865976,
+          "sourceX": 806.0225961066379,
+          "sourceY": 2398.2544681206136,
+          "authorityReach": 111.8,
+          "timeMs": 61824.8,
+          "comboStep": 0,
+          "motion": "chain-punch",
+          "limb": "hand"
+        }
+      ],
+      "auraSamples": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "renderEvidence": {
+        "renderedSamples": 76,
+        "minPaperTurnScaleX": 1,
+        "maxFlipProgress": -1,
+        "maxFlipAbsRotation": 0,
+        "maxHandStretch": 1,
+        "maxRearHandStretch": 1,
+        "maxFrontFootStretch": 1,
+        "maxBackFootStretch": 1,
+        "maxHoldStrength": 0,
+        "holdPoses": []
+      },
+      "expectedReachPx": [
+        111.8,
+        115.24,
+        118.68,
+        120.4,
+        129
+      ],
+      "rig": {
+        "handOverlayCount": 2,
+        "footOverlayCount": 2,
+        "handPartIndices": [
+          0,
+          0
+        ],
+        "footPartIndices": [
+          1,
+          1
+        ],
+        "baseHandsVisible": [
+          false,
+          false
+        ],
+        "baseFeetVisible": [
+          false,
+          false
+        ],
+        "handOverlayVisible": [
+          true,
+          true
+        ],
+        "footOverlayVisible": [
+          true,
+          true
+        ],
+        "handFrames": [
+          "x2-wing-chun-wraps:part-1:__BASE",
+          "x2-wing-chun-wraps:part-1:__BASE"
+        ],
+        "footFrames": [
+          "x2-wing-chun-wraps:part-2:__BASE",
+          "x2-wing-chun-wraps:part-2:__BASE"
+        ],
+        "facing": 1,
+        "rootScaleX": 0.662339494849585,
+        "rootScaleY": 0.6623394948497249,
+        "handScaleRatios": [
+          0.9199999999998056,
+          0.930697674418408
+        ],
+        "footScaleRatios": [
+          0.9986813186813188,
+          1.0089770023790645
+        ],
+        "playerAuraVisible": false,
+        "handPose": [
+          {
+            "front": false,
+            "x": 45.795391595291825,
+            "y": -19.83502066599183,
+            "rotation": 1.0199999999999996
+          },
+          {
+            "front": true,
+            "x": 20.088008284257185,
+            "y": -3.4472585437525183,
+            "rotation": -0.7199999999999989
+          }
+        ],
+        "footPose": [
+          {
+            "front": false,
+            "x": 48.72892209843327,
+            "y": 69.48281810527715,
+            "rotation": 0.0016596532694297395
+          },
+          {
+            "front": true,
+            "x": -48.468377146523444,
+            "y": 59.42845046879054,
+            "rotation": 0.0015437334066596975
+          }
+        ]
+      },
+      "handScreenshot": "docs/owner-notes-audit-v11-evidence/b25-kungfu-v3/x2-wing-chun-wraps-right-hand.png",
+      "footScreenshot": "docs/owner-notes-audit-v11-evidence/b25-kungfu-v3/x2-wing-chun-wraps-right-foot.png",
+      "stanceScreenshot": "docs/owner-notes-audit-v11-evidence/b25-kungfu-v3/x2-wing-chun-wraps-right-stance.png"
+    },
+    {
+      "weaponId": "x2-wing-chun-wraps",
+      "offhandSlot": 255,
+      "facing": "left",
+      "target": {
+        "id": "open-lane:left",
+        "x": 663.55029296875,
+        "y": 2408.122802734375,
+        "distance": 92
+      },
+      "attackSeqBefore": 116,
+      "attackSeqAfter": 122,
+      "steps": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "motions": [
+        "chain-punch",
+        "chain-punch",
+        "chain-punch",
+        "oblique-kick",
+        "double-palm"
+      ],
+      "limbs": [
+        "hand",
+        "hand",
+        "hand",
+        "foot",
+        "hand"
+      ],
+      "swingStyle": "white-centerline-flash",
+      "impactStyle": "",
+      "intervalsMs": [
+        183.39999999999418,
+        200,
+        183.3000000000029,
+        200
+      ],
+      "reachPx": [
+        82.90101008346035,
+        101.217734762934,
+        89.13078390963598,
+        157.80537849742427,
+        95.64176547742026
+      ],
+      "authorityReachPx": [
+        111.8,
+        115.24000000000001,
+        118.67999999999999,
+        120.39999999999999,
+        129
+      ],
+      "travel": {
+        "start": {
+          "x": 755.55029296875,
+          "y": 2408.122802734375
+        },
+        "end": {
+          "x": 755.55029296875,
+          "y": 2408.122802734375
+        },
+        "distancePx": 0,
+        "pathDistancePx": 0,
+        "expectedPx": 0,
+        "expectedPathPx": 0,
+        "positionSamples": [
+          {
+            "attackSeq": 116,
+            "x": 755.55029296875,
+            "y": 2408.122802734375,
+            "timeMs": 77224.2
+          },
+          {
+            "attackSeq": 117,
+            "x": 755.55029296875,
+            "y": 2408.122802734375,
+            "timeMs": 77424.2
+          },
+          {
+            "attackSeq": 118,
+            "x": 755.55029296875,
+            "y": 2408.122802734375,
+            "timeMs": 77624.2
+          },
+          {
+            "attackSeq": 119,
+            "x": 755.55029296875,
+            "y": 2408.122802734375,
+            "timeMs": 77807.5
+          },
+          {
+            "attackSeq": 120,
+            "x": 755.55029296875,
+            "y": 2408.122802734375,
+            "timeMs": 78007.6
+          },
+          {
+            "attackSeq": 121,
+            "x": 755.55029296875,
+            "y": 2408.122802734375,
+            "timeMs": 78190.9
+          }
+        ],
+        "stepTravel": [
+          {
+            "x": 0,
+            "y": 0,
+            "distancePx": 0
+          },
+          {
+            "x": 0,
+            "y": 0,
+            "distancePx": 0
+          },
+          {
+            "x": 0,
+            "y": 0,
+            "distancePx": 0
+          },
+          {
+            "x": 0,
+            "y": 0,
+            "distancePx": 0
+          },
+          {
+            "x": 0,
+            "y": 0,
+            "distancePx": 0
+          }
+        ]
+      },
+      "theatricalSamples": [
+        {
+          "attackSeq": 117,
+          "timeMs": 77424.2,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdStrength": 0
+        },
+        {
+          "attackSeq": 118,
+          "timeMs": 77624.2,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdStrength": 0
+        },
+        {
+          "attackSeq": 119,
+          "timeMs": 77807.5,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdStrength": 0
+        },
+        {
+          "attackSeq": 120,
+          "timeMs": 78007.6,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdStrength": 0
+        },
+        {
+          "attackSeq": 121,
+          "timeMs": 78190.9,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdStrength": 0
+        }
+      ],
+      "contacts": [],
+      "vfx": [
+        {
+          "kind": "swing",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "white-centerline-flash",
+          "x": 643.7502929687544,
+          "y": 2408.122834186599,
+          "sourceX": 725.1026629261767,
+          "sourceY": 2392.1738726163685,
+          "authorityReach": 111.8,
+          "timeMs": 77140.8,
+          "comboStep": 0,
+          "motion": "chain-punch",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "white-centerline-flash",
+          "x": 640.3102929687545,
+          "y": 2408.1228351543596,
+          "sourceX": 741.29362150369,
+          "sourceY": 2401.23827354559,
+          "authorityReach": 115.24000000000001,
+          "timeMs": 77324.2,
+          "comboStep": 1,
+          "motion": "chain-punch",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "white-centerline-flash",
+          "x": 636.8702929687547,
+          "y": 2408.1228361221206,
+          "sourceX": 724.6440136498309,
+          "sourceY": 2392.6286243594445,
+          "authorityReach": 118.67999999999999,
+          "timeMs": 77524.2,
+          "comboStep": 2,
+          "motion": "chain-punch",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "white-centerline-flash",
+          "x": 635.1502929687548,
+          "y": 2408.122836606001,
+          "sourceX": 787.6420167588461,
+          "sourceY": 2448.728398518648,
+          "authorityReach": 120.39999999999999,
+          "timeMs": 77707.5,
+          "comboStep": 3,
+          "motion": "oblique-kick",
+          "limb": "foot"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "white-centerline-flash",
+          "x": 626.5502929687551,
+          "y": 2408.1228390254028,
+          "sourceX": 721.7026727646166,
+          "sourceY": 2398.4599242052263,
+          "authorityReach": 129,
+          "timeMs": 77907.5,
+          "comboStep": 4,
+          "motion": "double-palm",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-wing-chun-wraps",
+          "style": "white-centerline-flash",
+          "x": 643.7502929687544,
+          "y": 2408.122834186599,
+          "sourceX": 706.1781529112615,
+          "sourceY": 2397.4748548628754,
+          "authorityReach": 111.8,
+          "timeMs": 78090.8,
+          "comboStep": 0,
+          "motion": "chain-punch",
+          "limb": "hand"
+        }
+      ],
+      "auraSamples": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "renderEvidence": {
+        "renderedSamples": 75,
+        "minPaperTurnScaleX": 1,
+        "maxFlipProgress": -1,
+        "maxFlipAbsRotation": 0,
+        "maxHandStretch": 1,
+        "maxRearHandStretch": 1,
+        "maxFrontFootStretch": 1,
+        "maxBackFootStretch": 1,
+        "maxHoldStrength": 0,
+        "holdPoses": []
+      },
+      "expectedReachPx": [
+        111.8,
+        115.24,
+        118.68,
+        120.4,
+        129
+      ],
+      "rig": {
+        "handOverlayCount": 2,
+        "footOverlayCount": 2,
+        "handPartIndices": [
+          0,
+          0
+        ],
+        "footPartIndices": [
+          1,
+          1
+        ],
+        "baseHandsVisible": [
+          false,
+          false
+        ],
+        "baseFeetVisible": [
+          false,
+          false
+        ],
+        "handOverlayVisible": [
+          true,
+          true
+        ],
+        "footOverlayVisible": [
+          true,
+          true
+        ],
+        "handFrames": [
+          "x2-wing-chun-wraps:part-1:__BASE",
+          "x2-wing-chun-wraps:part-1:__BASE"
+        ],
+        "footFrames": [
+          "x2-wing-chun-wraps:part-2:__BASE",
+          "x2-wing-chun-wraps:part-2:__BASE"
+        ],
+        "facing": -1,
+        "rootScaleX": -0.6623394948496882,
+        "rootScaleY": 0.6623394948497249,
+        "handScaleRatios": [
+          0.919999999999949,
+          0.930697674418553
+        ],
+        "footScaleRatios": [
+          0.9986813186813187,
+          1.0089770023790643
+        ],
+        "playerAuraVisible": false,
+        "handPose": [
+          {
+            "front": false,
+            "x": 45.82238466027011,
+            "y": -24.598581234419004,
+            "rotation": 1.0199999999999996
+          },
+          {
+            "front": true,
+            "x": 19.459009002050266,
+            "y": -8.251674923760309,
+            "rotation": -0.7199999999999989
+          }
+        ],
+        "footPose": [
+          {
+            "front": false,
+            "x": 48.67295853285435,
+            "y": 69.56261904761905,
+            "rotation": 0.0027789245810083685
+          },
+          {
+            "front": true,
+            "x": -48.240133549956624,
+            "y": 59.300031047884445,
+            "rotation": -0.0030211385246765587
+          }
+        ]
+      },
+      "handScreenshot": "docs/owner-notes-audit-v11-evidence/b25-kungfu-v3/x2-wing-chun-wraps-left-hand.png",
+      "footScreenshot": "docs/owner-notes-audit-v11-evidence/b25-kungfu-v3/x2-wing-chun-wraps-left-foot.png",
+      "stanceScreenshot": "docs/owner-notes-audit-v11-evidence/b25-kungfu-v3/x2-wing-chun-wraps-left-stance.png"
+    },
+    {
+      "weaponId": "x2-drunken-fist-wraps",
+      "offhandSlot": 255,
+      "facing": "right",
+      "target": {
+        "id": "open-lane:right",
+        "x": 847.55029296875,
+        "y": 2408.122802734375,
+        "distance": 92
+      },
+      "attackSeqBefore": 152,
+      "attackSeqAfter": 158,
+      "steps": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "motions": [
+        "sway-jab",
+        "weave-cross",
+        "weave-backfist",
+        "sweeping-leg",
+        "frontflip-heel-drop"
+      ],
+      "limbs": [
+        "hand",
+        "hand",
+        "hand",
+        "foot",
+        "foot"
+      ],
+      "swingStyle": "mist-purple-sway-sweep",
+      "impactStyle": "",
+      "intervalsMs": [
+        183.39999999999418,
+        200,
+        183.3000000000029,
+        233.3000000000029
+      ],
+      "reachPx": [
+        84.12705680316768,
+        100.82827888836056,
+        91.41485229739342,
+        98.57259654573163,
+        103.17299934705049
+      ],
+      "authorityReachPx": [
+        113.28,
+        117.12,
+        120,
+        132.48,
+        144
+      ],
+      "travel": {
+        "start": {
+          "x": 755.55029296875,
+          "y": 2408.122802734375
+        },
+        "end": {
+          "x": 942.1657104492188,
+          "y": 2293.96044921875
+        },
+        "distancePx": 218.76552973820208,
+        "pathDistancePx": 463.30572145642657,
+        "expectedPx": 196.16319736382766,
+        "expectedPathPx": 598.6329894063945,
+        "positionSamples": [
+          {
+            "attackSeq": 152,
+            "x": 755.55029296875,
+            "y": 2408.122802734375,
+            "timeMs": 93223.5
+          },
+          {
+            "attackSeq": 153,
+            "x": 755.55029296875,
+            "y": 2408.122802734375,
+            "timeMs": 93406.9
+          },
+          {
+            "attackSeq": 154,
+            "x": 745.9599609375,
+            "y": 2318.612548828125,
+            "timeMs": 93606.9
+          },
+          {
+            "attackSeq": 155,
+            "x": 747.0721435546875,
+            "y": 2336.69287109375,
+            "timeMs": 93790.2
+          },
+          {
+            "attackSeq": 155,
+            "x": 752.7567749023438,
+            "y": 2402.1787109375,
+            "timeMs": 93940.2
+          },
+          {
+            "attackSeq": 156,
+            "x": 781.99755859375,
+            "y": 2277.162841796875,
+            "timeMs": 94123.5
+          },
+          {
+            "attackSeq": 157,
+            "x": 942.1657104492188,
+            "y": 2293.96044921875,
+            "timeMs": 94290.2
+          }
+        ],
+        "stepTravel": [
+          {
+            "x": 0,
+            "y": 0,
+            "distancePx": 0
+          },
+          {
+            "x": -9.59033203125,
+            "y": -89.51025390625,
+            "distancePx": 90.02255285666455
+          },
+          {
+            "x": 6.79681396484375,
+            "y": 83.566162109375,
+            "distancePx": 83.84660681153876
+          },
+          {
+            "x": 29.24078369140625,
+            "y": -125.015869140625,
+            "distancePx": 128.3899955910642
+          },
+          {
+            "x": 160.16815185546875,
+            "y": 16.797607421875,
+            "distancePx": 161.04656619715905
+          }
+        ]
+      },
+      "theatricalSamples": [
+        {
+          "attackSeq": 153,
+          "timeMs": 93406.9,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdStrength": 0
+        },
+        {
+          "attackSeq": 154,
+          "timeMs": 93606.9,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdStrength": 0
+        },
+        {
+          "attackSeq": 155,
+          "timeMs": 93790.2,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdStrength": 0
+        },
+        {
+          "attackSeq": 155,
+          "timeMs": 93940.2,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdPose": "crane-one-leg",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 156,
+          "timeMs": 94123.5,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": -2.356194490192345,
+          "flipProgress": 0.625,
+          "flipDirection": 1,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 2.183442644032922,
+          "backFootStretch": 1,
+          "holdStrength": 0
+        },
+        {
+          "attackSeq": 157,
+          "timeMs": 94290.2,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1.332343194501132,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdStrength": 0
+        },
+        {
+          "attackSeq": 197,
+          "timeMs": 107589.7,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 2.2,
+          "backFootStretch": 1,
+          "holdPose": "crane-one-leg",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 197,
+          "timeMs": 107723,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 2.2,
+          "backFootStretch": 1,
+          "holdPose": "crane-one-leg",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 197,
+          "timeMs": 107839.6,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1.5832975622052454,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdStrength": 0
+        },
+        {
+          "attackSeq": 198,
+          "timeMs": 107989.6,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdStrength": 0
+        },
+        {
+          "attackSeq": 199,
+          "timeMs": 108139.6,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdStrength": 0
+        },
+        {
+          "attackSeq": 199,
+          "timeMs": 108289.6,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1.8632928019075599,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdStrength": 0
+        },
+        {
+          "attackSeq": 200,
+          "timeMs": 108406.3,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdStrength": 0
+        },
+        {
+          "attackSeq": 200,
+          "timeMs": 108523,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdStrength": 0
+        },
+        {
+          "attackSeq": 201,
+          "timeMs": 108606.3,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdPose": "crane-one-leg",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 202,
+          "timeMs": 108606.3,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdPose": "crane-one-leg",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 202,
+          "timeMs": 108606.3,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdPose": "crane-one-leg",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 202,
+          "timeMs": 108606.3,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdPose": "crane-one-leg",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 202,
+          "timeMs": 108606.3,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdPose": "crane-one-leg",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 202,
+          "timeMs": 108606.3,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdPose": "crane-one-leg",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 202,
+          "timeMs": 108606.3,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdPose": "crane-one-leg",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 202,
+          "timeMs": 108606.3,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdPose": "crane-one-leg",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 202,
+          "timeMs": 108606.3,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdPose": "crane-one-leg",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 202,
+          "timeMs": 108606.3,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdPose": "crane-one-leg",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 202,
+          "timeMs": 108606.3,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdPose": "crane-one-leg",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 202,
+          "timeMs": 108606.3,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdPose": "crane-one-leg",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 202,
+          "timeMs": 110706.2,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": -2.574360646691636,
+          "flipProgress": 0.5902777777777778,
+          "flipDirection": 1,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 2.14660014550945,
+          "backFootStretch": 1,
+          "holdStrength": 0
+        },
+        {
+          "attackSeq": 202,
+          "timeMs": 110839.6,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 2.2,
+          "backFootStretch": 1,
+          "holdPose": "crane-one-leg",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 202,
+          "timeMs": 110989.5,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 2.2,
+          "backFootStretch": 1,
+          "holdPose": "crane-one-leg",
+          "holdStrength": 1
+        }
+      ],
+      "contacts": [],
+      "vfx": [
+        {
+          "kind": "swing",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "mist-purple-sway-sweep",
+          "x": 868.8302929687455,
+          "y": 2408.1228346029598,
+          "sourceX": 785.3663271095224,
+          "sourceY": 2397.5811037482167,
+          "authorityReach": 113.28,
+          "timeMs": 93223.5,
+          "comboStep": 0,
+          "motion": "sway-jab",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "mist-purple-sway-sweep",
+          "x": 872.6702929687453,
+          "y": 2408.122835683251,
+          "sourceX": 771.9607396942594,
+          "sourceY": 2403.2312405607495,
+          "authorityReach": 117.12,
+          "timeMs": 93406.9,
+          "comboStep": 1,
+          "motion": "weave-cross",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "mist-purple-sway-sweep",
+          "x": 871.1404353104037,
+          "y": 2396.468154838498,
+          "sourceX": 783.5201137312226,
+          "sourceY": 2370.403725688502,
+          "authorityReach": 120,
+          "timeMs": 93606.9,
+          "comboStep": 2,
+          "motion": "weave-backfist",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "mist-purple-sway-sweep",
+          "x": 878.7556861574665,
+          "y": 2360.998903815973,
+          "sourceX": 781.718768973862,
+          "sourceY": 2378.3307673415684,
+          "authorityReach": 132.48,
+          "timeMs": 93790.2,
+          "comboStep": 3,
+          "motion": "sweeping-leg",
+          "limb": "foot"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "mist-purple-sway-sweep",
+          "x": 902.9664026288084,
+          "y": 2373.9383919518077,
+          "sourceX": 799.8141960309295,
+          "sourceY": 2376.0096399463714,
+          "authorityReach": 144,
+          "timeMs": 94023.5,
+          "comboStep": 4,
+          "motion": "frontflip-heel-drop",
+          "limb": "foot"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "mist-purple-sway-sweep",
+          "x": 900.3523286215888,
+          "y": 2341.9915290836116,
+          "sourceX": 841.8718960680925,
+          "sourceY": 2304.6761476178835,
+          "authorityReach": 113.28,
+          "timeMs": 94206.9,
+          "comboStep": 0,
+          "motion": "sway-jab",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "mist-purple-sway-sweep",
+          "x": 961.7689731320972,
+          "y": 2324.1382591202723,
+          "sourceX": 888.102384088476,
+          "sourceY": 2324.0127464511443,
+          "authorityReach": 117.12,
+          "timeMs": 94373.5,
+          "comboStep": 1,
+          "motion": "weave-cross",
+          "limb": "hand"
+        }
+      ],
+      "auraSamples": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "renderEvidence": {
+        "renderedSamples": 152,
+        "minPaperTurnScaleX": 1,
+        "maxFlipProgress": 1,
+        "maxFlipAbsRotation": 6.283185307179586,
+        "maxHandStretch": 1.8632928019075599,
+        "maxRearHandStretch": 1,
+        "maxFrontFootStretch": 2.2,
+        "maxBackFootStretch": 1,
+        "maxHoldStrength": 1,
+        "holdPoses": [
+          "crane-one-leg"
+        ]
+      },
+      "expectedReachPx": [
+        113.28,
+        117.12,
+        120,
+        132.48,
+        144
+      ],
+      "rig": {
+        "handOverlayCount": 2,
+        "footOverlayCount": 2,
+        "handPartIndices": [
+          0,
+          0
+        ],
+        "footPartIndices": [
+          1,
+          1
+        ],
+        "baseHandsVisible": [
+          false,
+          false
+        ],
+        "baseFeetVisible": [
+          false,
+          false
+        ],
+        "handOverlayVisible": [
+          true,
+          true
+        ],
+        "footOverlayVisible": [
+          true,
+          true
+        ],
+        "handFrames": [
+          "x2-drunken-fist-wraps:part-1:__BASE",
+          "x2-drunken-fist-wraps:part-1:__BASE"
+        ],
+        "footFrames": [
+          "x2-drunken-fist-wraps:part-2:__BASE",
+          "x2-drunken-fist-wraps:part-2:__BASE"
+        ],
+        "facing": 1,
+        "rootScaleX": 0.6623394948495982,
+        "rootScaleY": 0.6623394948497249,
+        "handScaleRatios": [
+          1.1466666666666665,
+          1.173488372093023
+        ],
+        "footScaleRatios": [
+          1.0386285714285717,
+          1.049336082474227
+        ],
+        "playerAuraVisible": false,
+        "handPose": [
+          {
+            "front": false,
+            "x": 44.95578975292989,
+            "y": -17.194592924370866,
+            "rotation": 0.5800000000000001
+          },
+          {
+            "front": true,
+            "x": 22.708480074537782,
+            "y": -12.798397604080957,
+            "rotation": -0.4800000000000004
+          }
+        ],
+        "footPose": [
+          {
+            "front": false,
+            "x": 53.675381127994456,
+            "y": 28.522619047619052,
+            "rotation": 0.001530472678206607
+          },
+          {
+            "front": true,
+            "x": -48.59673177765313,
+            "y": 66.00599974386479,
+            "rotation": -0.003489173970747217
+          }
+        ]
+      },
+      "handScreenshot": "docs/owner-notes-audit-v11-evidence/b25-kungfu-v3/x2-drunken-fist-wraps-right-hand.png",
+      "footScreenshot": "docs/owner-notes-audit-v11-evidence/b25-kungfu-v3/x2-drunken-fist-wraps-right-foot.png",
+      "stanceScreenshot": "docs/owner-notes-audit-v11-evidence/b25-kungfu-v3/x2-drunken-fist-wraps-right-stance.png",
+      "showcaseScreenshot": "docs/owner-notes-audit-v11-evidence/b25-kungfu-v3/x2-drunken-fist-wraps-right-frontflip-heel-drop.png",
+      "finisherScreenshot": "docs/owner-notes-audit-v11-evidence/b25-kungfu-v3/x2-drunken-fist-wraps-right-crane-one-leg-finisher.png"
+    },
+    {
+      "weaponId": "x2-drunken-fist-wraps",
+      "offhandSlot": 255,
+      "facing": "left",
+      "target": {
+        "id": "open-lane:left",
+        "x": 2581.88427734375,
+        "y": 2154.28857421875,
+        "distance": 92
+      },
+      "attackSeqBefore": 202,
+      "attackSeqAfter": 208,
+      "steps": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "motions": [
+        "sway-jab",
+        "weave-cross",
+        "weave-backfist",
+        "sweeping-leg",
+        "frontflip-heel-drop"
+      ],
+      "limbs": [
+        "hand",
+        "hand",
+        "hand",
+        "foot",
+        "foot"
+      ],
+      "swingStyle": "mist-purple-sway-sweep",
+      "impactStyle": "",
+      "intervalsMs": [
+        233.40000000000873,
+        200,
+        200,
+        233.3000000000029
+      ],
+      "reachPx": [
+        84.01469261983391,
+        104.17305911826544,
+        91.59728695942329,
+        105.58705954155553,
+        110.54934287061161
+      ],
+      "authorityReachPx": [
+        113.28,
+        117.12,
+        120,
+        132.48,
+        144
+      ],
+      "travel": {
+        "start": {
+          "x": 2673.88427734375,
+          "y": 2154.28857421875
+        },
+        "end": {
+          "x": 2465.211669921875,
+          "y": 2157.335693359375
+        },
+        "distancePx": 208.69485384958853,
+        "pathDistancePx": 530.825653195675,
+        "expectedPx": 196.16319736382766,
+        "expectedPathPx": 598.6329894063945,
+        "positionSamples": [
+          {
+            "attackSeq": 202,
+            "x": 2673.88427734375,
+            "y": 2154.28857421875,
+            "timeMs": 116605.9
+          },
+          {
+            "attackSeq": 203,
+            "x": 2666.998779296875,
+            "y": 2120.625732421875,
+            "timeMs": 116772.6
+          },
+          {
+            "attackSeq": 203,
+            "x": 2655.8843907621144,
+            "y": 2066.28857421875,
+            "timeMs": 116905.9
+          },
+          {
+            "attackSeq": 204,
+            "x": 2681.8623046875,
+            "y": 2152.481689453125,
+            "timeMs": 117039.3
+          },
+          {
+            "attackSeq": 205,
+            "x": 2671.825927734375,
+            "y": 2136.8193359375,
+            "timeMs": 117189.3
+          },
+          {
+            "attackSeq": 205,
+            "x": 2645.090087890625,
+            "y": 2076.5816448801293,
+            "timeMs": 117305.9
+          },
+          {
+            "attackSeq": 206,
+            "x": 2625.100341796875,
+            "y": 2176.107666015625,
+            "timeMs": 117472.6
+          },
+          {
+            "attackSeq": 207,
+            "x": 2565.21875,
+            "y": 2186.52490234375,
+            "timeMs": 117589.3
+          },
+          {
+            "attackSeq": 207,
+            "x": 2465.211669921875,
+            "y": 2157.335693359375,
+            "timeMs": 117722.6
+          }
+        ],
+        "stepTravel": [
+          {
+            "x": -17.999886581635565,
+            "y": -88,
+            "distancePx": 89.82202356303377
+          },
+          {
+            "x": 25.977913925385565,
+            "y": 86.193115234375,
+            "distancePx": 90.02280336515292
+          },
+          {
+            "x": -36.772216796875,
+            "y": -75.90004457299574,
+            "distancePx": 84.5064606523732
+          },
+          {
+            "x": -19.98974609375,
+            "y": 99.52602113549574,
+            "distancePx": 101.51363864996534
+          },
+          {
+            "x": -159.888671875,
+            "y": -18.77197265625,
+            "distancePx": 164.96072696514972
+          }
+        ]
+      },
+      "theatricalSamples": [
+        {
+          "attackSeq": 203,
+          "timeMs": 116772.6,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdStrength": 0
+        },
+        {
+          "attackSeq": 203,
+          "timeMs": 116905.9,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdStrength": 0
+        },
+        {
+          "attackSeq": 204,
+          "timeMs": 117039.3,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdStrength": 0
+        },
+        {
+          "attackSeq": 205,
+          "timeMs": 117189.3,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdStrength": 0
+        },
+        {
+          "attackSeq": 205,
+          "timeMs": 117305.9,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdStrength": 0
+        },
+        {
+          "attackSeq": 206,
+          "timeMs": 117472.6,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdPose": "crane-one-leg",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 207,
+          "timeMs": 117589.3,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0.24696408915734835,
+          "flipProgress": 0.9606944444444203,
+          "flipDirection": 1,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1.0461206967014431,
+          "backFootStretch": 1,
+          "holdStrength": 0
+        },
+        {
+          "attackSeq": 207,
+          "timeMs": 117722.6,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1.598951102624226,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdStrength": 0
+        },
+        {
+          "attackSeq": 241,
+          "timeMs": 129072.1,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 2.2,
+          "backFootStretch": 1,
+          "holdPose": "crane-one-leg",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 241,
+          "timeMs": 129205.5,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 2.2,
+          "backFootStretch": 1,
+          "holdPose": "crane-one-leg",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 242,
+          "timeMs": 129322.1,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdStrength": 0
+        },
+        {
+          "attackSeq": 242,
+          "timeMs": 129438.8,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdStrength": 0
+        },
+        {
+          "attackSeq": 243,
+          "timeMs": 129588.8,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdStrength": 0
+        },
+        {
+          "attackSeq": 244,
+          "timeMs": 129722.1,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdStrength": 0
+        },
+        {
+          "attackSeq": 244,
+          "timeMs": 129905.4,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdStrength": 0
+        },
+        {
+          "attackSeq": 245,
+          "timeMs": 130055.5,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdPose": "crane-one-leg",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 246,
+          "timeMs": 130055.5,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdPose": "crane-one-leg",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 246,
+          "timeMs": 130055.5,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdPose": "crane-one-leg",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 246,
+          "timeMs": 130055.5,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdPose": "crane-one-leg",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 246,
+          "timeMs": 130055.5,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdPose": "crane-one-leg",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 246,
+          "timeMs": 130055.5,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdPose": "crane-one-leg",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 246,
+          "timeMs": 130055.5,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdPose": "crane-one-leg",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 246,
+          "timeMs": 130055.5,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdPose": "crane-one-leg",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 246,
+          "timeMs": 130055.5,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdPose": "crane-one-leg",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 246,
+          "timeMs": 130055.5,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdPose": "crane-one-leg",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 246,
+          "timeMs": 130055.5,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdPose": "crane-one-leg",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 246,
+          "timeMs": 130055.5,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdPose": "crane-one-leg",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 246,
+          "timeMs": 131938.7,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 3.0106929596902177,
+          "flipProgress": 0.5208333333333334,
+          "flipDirection": 1,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 2.0217873906893007,
+          "backFootStretch": 1,
+          "holdStrength": 0
+        },
+        {
+          "attackSeq": 246,
+          "timeMs": 132055.3,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": 1,
+          "flipDirection": 1,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 2.2,
+          "backFootStretch": 1,
+          "holdPose": "crane-one-leg",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 246,
+          "timeMs": 132188.7,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 2.2,
+          "backFootStretch": 1,
+          "holdPose": "crane-one-leg",
+          "holdStrength": 1
+        }
+      ],
+      "contacts": [],
+      "vfx": [
+        {
+          "kind": "swing",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "mist-purple-sway-sweep",
+          "x": 2560.6042773437525,
+          "y": 2154.2885503744687,
+          "sourceX": 2644.0349401161757,
+          "sourceY": 2144.399511727594,
+          "authorityReach": 113.28,
+          "timeMs": 116605.9,
+          "comboStep": 0,
+          "motion": "sway-jab",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "mist-purple-sway-sweep",
+          "x": 2549.7271131559346,
+          "y": 2131.667128225534,
+          "sourceX": 2650.9685136879666,
+          "sourceY": 2107.1272613886845,
+          "authorityReach": 117.12,
+          "timeMs": 116839.3,
+          "comboStep": 1,
+          "motion": "weave-cross",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "mist-purple-sway-sweep",
+          "x": 2544.391659260665,
+          "y": 2095.44218820398,
+          "sourceX": 2635.852670332926,
+          "sourceY": 2090.447547879925,
+          "authorityReach": 120,
+          "timeMs": 117039.3,
+          "comboStep": 2,
+          "motion": "weave-backfist",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "mist-purple-sway-sweep",
+          "x": 2528.9507685981066,
+          "y": 2113.3207108986576,
+          "sourceX": 2628.9997162239956,
+          "sourceY": 2147.0673436430384,
+          "authorityReach": 132.48,
+          "timeMs": 117239.3,
+          "comboStep": 3,
+          "motion": "sweeping-leg",
+          "limb": "foot"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "mist-purple-sway-sweep",
+          "x": 2494.402587830177,
+          "y": 2111.2538820211807,
+          "sourceX": 2600.5234076699408,
+          "sourceY": 2142.230143991606,
+          "authorityReach": 144,
+          "timeMs": 117472.6,
+          "comboStep": 4,
+          "motion": "frontflip-heel-drop",
+          "limb": "foot"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-drunken-fist-wraps",
+          "style": "mist-purple-sway-sweep",
+          "x": 2478.5228471751766,
+          "y": 2150.0360357426316,
+          "sourceX": 2540.1191912655227,
+          "sourceY": 2144.536810732038,
+          "authorityReach": 113.28,
+          "timeMs": 117655.9,
+          "comboStep": 0,
+          "motion": "sway-jab",
+          "limb": "hand"
+        }
+      ],
+      "auraSamples": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "renderEvidence": {
+        "renderedSamples": 161,
+        "minPaperTurnScaleX": 1,
+        "maxFlipProgress": 1,
+        "maxFlipAbsRotation": 6.283185307179586,
+        "maxHandStretch": 1.8954427083333334,
+        "maxRearHandStretch": 1,
+        "maxFrontFootStretch": 2.2,
+        "maxBackFootStretch": 1,
+        "maxHoldStrength": 1,
+        "holdPoses": [
+          "crane-one-leg"
+        ]
+      },
+      "expectedReachPx": [
+        113.28,
+        117.12,
+        120,
+        132.48,
+        144
+      ],
+      "rig": {
+        "handOverlayCount": 2,
+        "footOverlayCount": 2,
+        "handPartIndices": [
+          0,
+          0
+        ],
+        "footPartIndices": [
+          1,
+          1
+        ],
+        "baseHandsVisible": [
+          false,
+          false
+        ],
+        "baseFeetVisible": [
+          false,
+          false
+        ],
+        "handOverlayVisible": [
+          true,
+          true
+        ],
+        "footOverlayVisible": [
+          true,
+          true
+        ],
+        "handFrames": [
+          "x2-drunken-fist-wraps:part-1:__BASE",
+          "x2-drunken-fist-wraps:part-1:__BASE"
+        ],
+        "footFrames": [
+          "x2-drunken-fist-wraps:part-2:__BASE",
+          "x2-drunken-fist-wraps:part-2:__BASE"
+        ],
+        "facing": -1,
+        "rootScaleX": -0.6623394948439515,
+        "rootScaleY": 0.6623394948497249,
+        "handScaleRatios": [
+          1.1466666666666665,
+          1.173488372093023
+        ],
+        "footScaleRatios": [
+          1.0386285714285715,
+          1.049336082474227
+        ],
+        "playerAuraVisible": false,
+        "handPose": [
+          {
+            "front": false,
+            "x": 44.99973722731852,
+            "y": -17.86987737502677,
+            "rotation": 0.5800000000000001
+          },
+          {
+            "front": true,
+            "x": 23.398758442514886,
+            "y": -12.640677468493964,
+            "rotation": -0.4800000000000004
+          }
+        ],
+        "footPose": [
+          {
+            "front": false,
+            "x": 53.907370409051644,
+            "y": 28.34788633296722,
+            "rotation": -0.003109312963674782
+          },
+          {
+            "front": true,
+            "x": -48.887633620551185,
+            "y": 66.42426682307685,
+            "rotation": 0.002328862865033088
+          }
+        ]
+      },
+      "handScreenshot": "docs/owner-notes-audit-v11-evidence/b25-kungfu-v3/x2-drunken-fist-wraps-left-hand.png",
+      "footScreenshot": "docs/owner-notes-audit-v11-evidence/b25-kungfu-v3/x2-drunken-fist-wraps-left-foot.png",
+      "stanceScreenshot": "docs/owner-notes-audit-v11-evidence/b25-kungfu-v3/x2-drunken-fist-wraps-left-stance.png",
+      "showcaseScreenshot": "docs/owner-notes-audit-v11-evidence/b25-kungfu-v3/x2-drunken-fist-wraps-left-frontflip-heel-drop.png",
+      "finisherScreenshot": "docs/owner-notes-audit-v11-evidence/b25-kungfu-v3/x2-drunken-fist-wraps-left-crane-one-leg-finisher.png"
+    },
+    {
+      "weaponId": "x2-iron-palm-wraps",
+      "offhandSlot": 255,
+      "facing": "right",
+      "target": {
+        "id": "open-lane:right",
+        "x": 1453.7545166015625,
+        "y": 2085.89111328125,
+        "distance": 92
+      },
+      "attackSeqBefore": 246,
+      "attackSeqAfter": 251,
+      "steps": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "motions": [
+        "crushing-palm",
+        "stomp-kick",
+        "roundhouse-kick",
+        "mantis-double-hook"
+      ],
+      "limbs": [
+        "hand",
+        "foot",
+        "foot",
+        "hand"
+      ],
+      "swingStyle": "black-iron-drive",
+      "impactStyle": "",
+      "intervalsMs": [
+        249.89999999999418,
+        266.70000000001164,
+        233.39999999999418
+      ],
+      "reachPx": [
+        86.29862615608242,
+        166.51638237177195,
+        179.20795938414238,
+        114.39231279402536
+      ],
+      "authorityReachPx": [
+        115.19999999999999,
+        126.72,
+        144,
+        144
+      ],
+      "travel": {
+        "start": {
+          "x": 1361.7545166015625,
+          "y": 2085.89111328125
+        },
+        "end": {
+          "x": 1671.200927734375,
+          "y": 2085.89111328125
+        },
+        "distancePx": 309.4464111328125,
+        "pathDistancePx": 309.4464111328125,
+        "expectedPx": 332,
+        "expectedPathPx": 332,
+        "positionSamples": [
+          {
+            "attackSeq": 246,
+            "x": 1361.7545166015625,
+            "y": 2085.89111328125,
+            "timeMs": 139005.1
+          },
+          {
+            "attackSeq": 247,
+            "x": 1376.332275390625,
+            "y": 2085.89111328125,
+            "timeMs": 139171.7
+          },
+          {
+            "attackSeq": 247,
+            "x": 1413.7545166015625,
+            "y": 2085.89111328125,
+            "timeMs": 139338.4
+          },
+          {
+            "attackSeq": 248,
+            "x": 1525.7545166015625,
+            "y": 2085.89111328125,
+            "timeMs": 139521.7
+          },
+          {
+            "attackSeq": 249,
+            "x": 1540.8392333984375,
+            "y": 2085.89111328125,
+            "timeMs": 139671.7
+          },
+          {
+            "attackSeq": 249,
+            "x": 1597.7545166015625,
+            "y": 2085.89111328125,
+            "timeMs": 139838.4
+          },
+          {
+            "attackSeq": 250,
+            "x": 1671.200927734375,
+            "y": 2085.89111328125,
+            "timeMs": 139988.4
+          }
+        ],
+        "stepTravel": [
+          {
+            "x": 52,
+            "y": 0,
+            "distancePx": 52
+          },
+          {
+            "x": 112,
+            "y": 0,
+            "distancePx": 112
+          },
+          {
+            "x": 72,
+            "y": 0,
+            "distancePx": 72
+          },
+          {
+            "x": 73.4464111328125,
+            "y": 0,
+            "distancePx": 73.4464111328125
+          }
+        ]
+      },
+      "theatricalSamples": [
+        {
+          "attackSeq": 247,
+          "timeMs": 139171.7,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdStrength": 0
+        },
+        {
+          "attackSeq": 247,
+          "timeMs": 139338.4,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdStrength": 0
+        },
+        {
+          "attackSeq": 248,
+          "timeMs": 139521.7,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdStrength": 0
+        },
+        {
+          "attackSeq": 249,
+          "timeMs": 139671.7,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": -1,
+          "paperTurnProgress": 1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdStrength": 0
+        },
+        {
+          "attackSeq": 249,
+          "timeMs": 139838.4,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 2.0429070078807117,
+          "rearHandStretch": 2.0429070078807117,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdStrength": 0
+        },
+        {
+          "attackSeq": 250,
+          "timeMs": 139988.4,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 2.1,
+          "rearHandStretch": 2.1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdPose": "praying-mantis",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 275,
+          "timeMs": 151171.2,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 2.1,
+          "rearHandStretch": 2.1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdPose": "praying-mantis",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 275,
+          "timeMs": 151337.9,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 2.1,
+          "rearHandStretch": 2.1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdPose": "praying-mantis",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 276,
+          "timeMs": 151521.3,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdStrength": 0
+        },
+        {
+          "attackSeq": 276,
+          "timeMs": 151704.6,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdStrength": 0
+        },
+        {
+          "attackSeq": 277,
+          "timeMs": 151871.2,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdStrength": 0
+        },
+        {
+          "attackSeq": 277,
+          "timeMs": 152054.6,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": -1,
+          "paperTurnProgress": 0.5540064102563822,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1.8871405663273415,
+          "backFootStretch": 1,
+          "holdStrength": 0
+        },
+        {
+          "attackSeq": 278,
+          "timeMs": 152221.2,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdStrength": 0
+        },
+        {
+          "attackSeq": 279,
+          "timeMs": 152371.2,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 2.1,
+          "rearHandStretch": 2.1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdPose": "praying-mantis",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 279,
+          "timeMs": 152371.2,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 2.1,
+          "rearHandStretch": 2.1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdPose": "praying-mantis",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 279,
+          "timeMs": 152371.2,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 2.1,
+          "rearHandStretch": 2.1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdPose": "praying-mantis",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 279,
+          "timeMs": 152371.2,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 2.1,
+          "rearHandStretch": 2.1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdPose": "praying-mantis",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 279,
+          "timeMs": 152371.2,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 2.1,
+          "rearHandStretch": 2.1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdPose": "praying-mantis",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 279,
+          "timeMs": 152371.2,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 2.1,
+          "rearHandStretch": 2.1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdPose": "praying-mantis",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 279,
+          "timeMs": 152371.2,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 2.1,
+          "rearHandStretch": 2.1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdPose": "praying-mantis",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 279,
+          "timeMs": 152371.2,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 2.1,
+          "rearHandStretch": 2.1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdPose": "praying-mantis",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 279,
+          "timeMs": 152371.2,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 2.1,
+          "rearHandStretch": 2.1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdPose": "praying-mantis",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 279,
+          "timeMs": 152371.2,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 2.1,
+          "rearHandStretch": 2.1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdPose": "praying-mantis",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 279,
+          "timeMs": 152371.2,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 2.1,
+          "rearHandStretch": 2.1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdPose": "praying-mantis",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 279,
+          "timeMs": 152371.2,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 2.1,
+          "rearHandStretch": 2.1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdPose": "praying-mantis",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 279,
+          "timeMs": 152371.2,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 2.1,
+          "rearHandStretch": 2.1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdPose": "praying-mantis",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 279,
+          "timeMs": 154287.8,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 2.1,
+          "rearHandStretch": 2.1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdPose": "praying-mantis",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 279,
+          "timeMs": 154454.5,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 2.1,
+          "rearHandStretch": 2.1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdPose": "praying-mantis",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 279,
+          "timeMs": 154621.1,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 2.1,
+          "rearHandStretch": 2.1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdPose": "praying-mantis",
+          "holdStrength": 1
+        }
+      ],
+      "contacts": [],
+      "vfx": [
+        {
+          "kind": "swing",
+          "weaponId": "x2-iron-palm-wraps",
+          "style": "black-iron-drive",
+          "x": 1476.95451660156,
+          "y": 2085.8911364296664,
+          "sourceX": 1392.0318043857958,
+          "sourceY": 2070.5423310577244,
+          "authorityReach": 115.19999999999999,
+          "timeMs": 139005.1,
+          "comboStep": 0,
+          "motion": "crushing-palm",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-iron-palm-wraps",
+          "style": "black-iron-drive",
+          "x": 1523.7118430076262,
+          "y": 2085.8911435677505,
+          "sourceX": 1362.1997212340132,
+          "sourceY": 2126.4070678243656,
+          "authorityReach": 126.72,
+          "timeMs": 139255,
+          "comboStep": 1,
+          "motion": "stomp-kick",
+          "limb": "foot"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-iron-palm-wraps",
+          "style": "black-iron-drive",
+          "x": 1598.9567635181434,
+          "y": 2085.891150951438,
+          "sourceX": 1423.6630510532502,
+          "sourceY": 2123.141749294334,
+          "authorityReach": 144,
+          "timeMs": 139521.7,
+          "comboStep": 2,
+          "motion": "roundhouse-kick",
+          "limb": "foot"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-iron-palm-wraps",
+          "style": "black-iron-drive",
+          "x": 1681.087963518143,
+          "y": 2085.891153621687,
+          "sourceX": 1567.3797097245986,
+          "sourceY": 2073.399786779382,
+          "authorityReach": 144,
+          "timeMs": 139755.1,
+          "comboStep": 3,
+          "motion": "mantis-double-hook",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-iron-palm-wraps",
+          "style": "black-iron-drive",
+          "x": 1731.7535635181437,
+          "y": 2085.891145670504,
+          "sourceX": 1648.0989824043309,
+          "sourceY": 2071.5875668793797,
+          "authorityReach": 115.19999999999999,
+          "timeMs": 139988.4,
+          "comboStep": 0,
+          "motion": "crushing-palm",
+          "limb": "hand"
+        }
+      ],
+      "auraSamples": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "renderEvidence": {
+        "renderedSamples": 145,
+        "minPaperTurnScaleX": -1,
+        "maxFlipProgress": -1,
+        "maxFlipAbsRotation": 0,
+        "maxHandStretch": 2.1,
+        "maxRearHandStretch": 2.1,
+        "maxFrontFootStretch": 1.8871405663273415,
+        "maxBackFootStretch": 1,
+        "maxHoldStrength": 1,
+        "holdPoses": [
+          "praying-mantis"
+        ]
+      },
+      "expectedReachPx": [
+        115.2,
+        126.72,
+        144,
+        144
+      ],
+      "rig": {
+        "handOverlayCount": 2,
+        "footOverlayCount": 2,
+        "handPartIndices": [
+          0,
+          0
+        ],
+        "footPartIndices": [
+          1,
+          1
+        ],
+        "baseHandsVisible": [
+          false,
+          false
+        ],
+        "baseFeetVisible": [
+          false,
+          false
+        ],
+        "handOverlayVisible": [
+          true,
+          true
+        ],
+        "footOverlayVisible": [
+          true,
+          true
+        ],
+        "handFrames": [
+          "x2-iron-palm-wraps:part-1:__BASE",
+          "x2-iron-palm-wraps:part-1:__BASE"
+        ],
+        "footFrames": [
+          "x2-iron-palm-wraps:part-2:__BASE",
+          "x2-iron-palm-wraps:part-2:__BASE"
+        ],
+        "facing": 1,
+        "rootScaleX": 0.6623394948496126,
+        "rootScaleY": 0.6623394948497249,
+        "handScaleRatios": [
+          1.1466666666666665,
+          1.173488372093023
+        ],
+        "footScaleRatios": [
+          1.018263305322129,
+          1.0287608651708107
+        ],
+        "playerAuraVisible": false,
+        "handPose": [
+          {
+            "front": false,
+            "x": 45.68336545306752,
+            "y": -19.281467714205856,
+            "rotation": 1.0199999999999996
+          },
+          {
+            "front": true,
+            "x": 20.398742996999044,
+            "y": -5.331674074432713,
+            "rotation": -0.7199999999999989
+          }
+        ],
+        "footPose": [
+          {
+            "front": false,
+            "x": 51.125475634787826,
+            "y": 70.4942339680978,
+            "rotation": -0.0006714174576618603
+          },
+          {
+            "front": true,
+            "x": -51.215135879836865,
+            "y": 58.12601888096248,
+            "rotation": 0.003278908072926967
+          }
+        ]
+      },
+      "handScreenshot": "docs/owner-notes-audit-v11-evidence/b25-kungfu-v3/x2-iron-palm-wraps-right-hand.png",
+      "footScreenshot": "docs/owner-notes-audit-v11-evidence/b25-kungfu-v3/x2-iron-palm-wraps-right-foot.png",
+      "stanceScreenshot": "docs/owner-notes-audit-v11-evidence/b25-kungfu-v3/x2-iron-palm-wraps-right-stance.png",
+      "showcaseScreenshot": "docs/owner-notes-audit-v11-evidence/b25-kungfu-v3/x2-iron-palm-wraps-right-mantis-double-hook.png",
+      "finisherScreenshot": "docs/owner-notes-audit-v11-evidence/b25-kungfu-v3/x2-iron-palm-wraps-right-praying-mantis-finisher.png"
+    },
+    {
+      "weaponId": "x2-iron-palm-wraps",
+      "offhandSlot": 255,
+      "facing": "left",
+      "target": {
+        "id": "open-lane:left",
+        "x": 3369.540283203125,
+        "y": 2084.599853515625,
+        "distance": 92
+      },
+      "attackSeqBefore": 279,
+      "attackSeqAfter": 284,
+      "steps": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "motions": [
+        "crushing-palm",
+        "stomp-kick",
+        "roundhouse-kick",
+        "mantis-double-hook"
+      ],
+      "limbs": [
+        "hand",
+        "foot",
+        "foot",
+        "hand"
+      ],
+      "swingStyle": "black-iron-drive",
+      "impactStyle": "",
+      "intervalsMs": [
+        283.29999999998836,
+        299.8999999999942,
+        316.70000000001164
+      ],
+      "reachPx": [
+        85.80593679593777,
+        167.38012425783845,
+        178.64135647949666,
+        115.06483501981987
+      ],
+      "authorityReachPx": [
+        115.19999999999999,
+        126.72,
+        144,
+        144
+      ],
+      "travel": {
+        "start": {
+          "x": 3461.540283203125,
+          "y": 2084.599853515625
+        },
+        "end": {
+          "x": 3129.540283203125,
+          "y": 2084.599853515625
+        },
+        "distancePx": 332,
+        "pathDistancePx": 332,
+        "expectedPx": 332,
+        "expectedPathPx": 332,
+        "positionSamples": [
+          {
+            "attackSeq": 279,
+            "x": 3461.540283203125,
+            "y": 2084.599853515625,
+            "timeMs": 160387.6
+          },
+          {
+            "attackSeq": 280,
+            "x": 3446.96240234375,
+            "y": 2084.599853515625,
+            "timeMs": 160537.5
+          },
+          {
+            "attackSeq": 280,
+            "x": 3409.819580078125,
+            "y": 2084.599853515625,
+            "timeMs": 160670.9
+          },
+          {
+            "attackSeq": 281,
+            "x": 3384.16357421875,
+            "y": 2084.599853515625,
+            "timeMs": 160854.2
+          },
+          {
+            "attackSeq": 281,
+            "x": 3297.540283203125,
+            "y": 2084.599853515625,
+            "timeMs": 160970.8
+          },
+          {
+            "attackSeq": 282,
+            "x": 3282.45556640625,
+            "y": 2084.599853515625,
+            "timeMs": 161137.5
+          },
+          {
+            "attackSeq": 282,
+            "x": 3225.540283203125,
+            "y": 2084.599853515625,
+            "timeMs": 161287.5
+          },
+          {
+            "attackSeq": 283,
+            "x": 3178.760498046875,
+            "y": 2084.599853515625,
+            "timeMs": 161437.5
+          },
+          {
+            "attackSeq": 283,
+            "x": 3129.540283203125,
+            "y": 2084.599853515625,
+            "timeMs": 161570.8
+          }
+        ],
+        "stepTravel": [
+          {
+            "x": -51.720703125,
+            "y": 0,
+            "distancePx": 51.720703125
+          },
+          {
+            "x": -112.279296875,
+            "y": 0,
+            "distancePx": 112.279296875
+          },
+          {
+            "x": -72,
+            "y": 0,
+            "distancePx": 72
+          },
+          {
+            "x": -96,
+            "y": 0,
+            "distancePx": 96
+          }
+        ]
+      },
+      "theatricalSamples": [
+        {
+          "attackSeq": 280,
+          "timeMs": 160537.5,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdStrength": 0
+        },
+        {
+          "attackSeq": 280,
+          "timeMs": 160670.9,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdStrength": 0
+        },
+        {
+          "attackSeq": 281,
+          "timeMs": 160854.2,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdStrength": 0
+        },
+        {
+          "attackSeq": 281,
+          "timeMs": 160970.8,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdStrength": 0
+        },
+        {
+          "attackSeq": 282,
+          "timeMs": 161137.5,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": -1,
+          "paperTurnProgress": 1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdStrength": 0
+        },
+        {
+          "attackSeq": 282,
+          "timeMs": 161287.5,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdStrength": 0
+        },
+        {
+          "attackSeq": 283,
+          "timeMs": 161437.5,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 2.1,
+          "rearHandStretch": 2.1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdPose": "praying-mantis",
+          "holdStrength": 0.9165747016619926
+        },
+        {
+          "attackSeq": 283,
+          "timeMs": 161570.8,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 2.1,
+          "rearHandStretch": 2.1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdPose": "praying-mantis",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 308,
+          "timeMs": 173470.4,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 2.1,
+          "rearHandStretch": 2.1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdPose": "praying-mantis",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 308,
+          "timeMs": 173653.7,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 2.1,
+          "rearHandStretch": 2.1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdPose": "praying-mantis",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 309,
+          "timeMs": 173837,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdStrength": 0
+        },
+        {
+          "attackSeq": 309,
+          "timeMs": 174020.4,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdStrength": 0
+        },
+        {
+          "attackSeq": 310,
+          "timeMs": 174203.7,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdStrength": 0
+        },
+        {
+          "attackSeq": 311,
+          "timeMs": 174387,
+          "rootScaleX": 0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": -1,
+          "paperTurnProgress": 1,
+          "handStretch": 1,
+          "rearHandStretch": 1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdStrength": 0
+        },
+        {
+          "attackSeq": 311,
+          "timeMs": 174553.7,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 2.092522909603572,
+          "rearHandStretch": 2.092522909603572,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdStrength": 0
+        },
+        {
+          "attackSeq": 312,
+          "timeMs": 174653.6,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 2.1,
+          "rearHandStretch": 2.1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdPose": "praying-mantis",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 312,
+          "timeMs": 174653.6,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 2.1,
+          "rearHandStretch": 2.1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdPose": "praying-mantis",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 312,
+          "timeMs": 174653.6,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 2.1,
+          "rearHandStretch": 2.1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdPose": "praying-mantis",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 312,
+          "timeMs": 174653.6,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 2.1,
+          "rearHandStretch": 2.1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdPose": "praying-mantis",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 312,
+          "timeMs": 174653.6,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 2.1,
+          "rearHandStretch": 2.1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdPose": "praying-mantis",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 312,
+          "timeMs": 174653.6,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 2.1,
+          "rearHandStretch": 2.1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdPose": "praying-mantis",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 312,
+          "timeMs": 174653.6,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 2.1,
+          "rearHandStretch": 2.1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdPose": "praying-mantis",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 312,
+          "timeMs": 174653.6,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 2.1,
+          "rearHandStretch": 2.1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdPose": "praying-mantis",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 312,
+          "timeMs": 174653.6,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 2.1,
+          "rearHandStretch": 2.1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdPose": "praying-mantis",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 312,
+          "timeMs": 174653.6,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 2.1,
+          "rearHandStretch": 2.1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdPose": "praying-mantis",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 312,
+          "timeMs": 174653.6,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 2.1,
+          "rearHandStretch": 2.1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdPose": "praying-mantis",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 312,
+          "timeMs": 174653.6,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 2.1,
+          "rearHandStretch": 2.1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdPose": "praying-mantis",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 312,
+          "timeMs": 176886.9,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 2.1,
+          "rearHandStretch": 2.1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdPose": "praying-mantis",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 312,
+          "timeMs": 177070.2,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 2.1,
+          "rearHandStretch": 2.1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdPose": "praying-mantis",
+          "holdStrength": 1
+        },
+        {
+          "attackSeq": 312,
+          "timeMs": 177236.9,
+          "rootScaleX": -0.6623394948497249,
+          "rootRotation": 0,
+          "flipProgress": -1,
+          "flipDirection": 0,
+          "paperTurnScaleX": 1,
+          "paperTurnProgress": -1,
+          "handStretch": 2.1,
+          "rearHandStretch": 2.1,
+          "frontFootStretch": 1,
+          "backFootStretch": 1,
+          "holdPose": "praying-mantis",
+          "holdStrength": 1
+        }
+      ],
+      "contacts": [],
+      "vfx": [
+        {
+          "kind": "swing",
+          "weaponId": "x2-iron-palm-wraps",
+          "style": "black-iron-drive",
+          "x": 3346.340283203125,
+          "y": 2084.59984933014,
+          "sourceX": 3431.2356603749686,
+          "sourceY": 2072.132543114324,
+          "authorityReach": 115.19999999999999,
+          "timeMs": 160387.6,
+          "comboStep": 0,
+          "motion": "crushing-palm",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-iron-palm-wraps",
+          "style": "black-iron-drive",
+          "x": 3294.0221297227654,
+          "y": 2084.5998481467645,
+          "sourceX": 3456.438373059693,
+          "sourceY": 2125.060568566567,
+          "authorityReach": 126.72,
+          "timeMs": 160670.9,
+          "comboStep": 1,
+          "motion": "stomp-kick",
+          "limb": "foot"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-iron-palm-wraps",
+          "style": "black-iron-drive",
+          "x": 3203.2211313755406,
+          "y": 2084.5998466312817,
+          "sourceX": 3377.422524659145,
+          "sourceY": 2124.180256215893,
+          "authorityReach": 144,
+          "timeMs": 160970.8,
+          "comboStep": 2,
+          "motion": "roundhouse-kick",
+          "limb": "foot"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-iron-palm-wraps",
+          "style": "black-iron-drive",
+          "x": 3107.7587313755403,
+          "y": 2084.599846272668,
+          "sourceX": 3222.0736508996715,
+          "sourceY": 2071.4843808852042,
+          "authorityReach": 144,
+          "timeMs": 161287.5,
+          "comboStep": 3,
+          "motion": "mantis-double-hook",
+          "limb": "hand"
+        },
+        {
+          "kind": "swing",
+          "weaponId": "x2-iron-palm-wraps",
+          "style": "black-iron-drive",
+          "x": 3049.657548533595,
+          "y": 2084.5998478030997,
+          "sourceX": 3109.9655219251727,
+          "sourceY": 2075.6282247544536,
+          "authorityReach": 115.19999999999999,
+          "timeMs": 161570.8,
+          "comboStep": 0,
+          "motion": "crushing-palm",
+          "limb": "hand"
+        }
+      ],
+      "auraSamples": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "renderEvidence": {
+        "renderedSamples": 144,
+        "minPaperTurnScaleX": -1,
+        "maxFlipProgress": -1,
+        "maxFlipAbsRotation": 0,
+        "maxHandStretch": 2.1,
+        "maxRearHandStretch": 2.1,
+        "maxFrontFootStretch": 1.8938823805847402,
+        "maxBackFootStretch": 1,
+        "maxHoldStrength": 1,
+        "holdPoses": [
+          "praying-mantis"
+        ]
+      },
+      "expectedReachPx": [
+        115.2,
+        126.72,
+        144,
+        144
+      ],
+      "rig": {
+        "handOverlayCount": 2,
+        "footOverlayCount": 2,
+        "handPartIndices": [
+          0,
+          0
+        ],
+        "footPartIndices": [
+          1,
+          1
+        ],
+        "baseHandsVisible": [
+          false,
+          false
+        ],
+        "baseFeetVisible": [
+          false,
+          false
+        ],
+        "handOverlayVisible": [
+          true,
+          true
+        ],
+        "footOverlayVisible": [
+          true,
+          true
+        ],
+        "handFrames": [
+          "x2-iron-palm-wraps:part-1:__BASE",
+          "x2-iron-palm-wraps:part-1:__BASE"
+        ],
+        "footFrames": [
+          "x2-iron-palm-wraps:part-2:__BASE",
+          "x2-iron-palm-wraps:part-2:__BASE"
+        ],
+        "facing": -1,
+        "rootScaleX": -0.6623394948484363,
+        "rootScaleY": 0.6623394948497249,
+        "handScaleRatios": [
+          1.1466666666666665,
+          1.173488372093023
+        ],
+        "footScaleRatios": [
+          1.018263305322129,
+          1.028760865170811
+        ],
+        "playerAuraVisible": false,
+        "handPose": [
+          {
+            "front": false,
+            "x": 45.797129311512165,
+            "y": -19.931272853661632,
+            "rotation": 1.0199999999999996
+          },
+          {
+            "front": true,
+            "x": 20.07000738384412,
+            "y": -3.7135642983423818,
+            "rotation": -0.7199999999999989
+          }
+        ],
+        "footPose": [
+          {
+            "front": false,
+            "x": 51.24870834521553,
+            "y": 70.64552187147511,
+            "rotation": -0.0031360716662156563
+          },
+          {
+            "front": true,
+            "x": -51.15835757744238,
+            "y": 57.93642075480836,
+            "rotation": 0.002143342025037853
+          }
+        ]
+      },
+      "handScreenshot": "docs/owner-notes-audit-v11-evidence/b25-kungfu-v3/x2-iron-palm-wraps-left-hand.png",
+      "footScreenshot": "docs/owner-notes-audit-v11-evidence/b25-kungfu-v3/x2-iron-palm-wraps-left-foot.png",
+      "stanceScreenshot": "docs/owner-notes-audit-v11-evidence/b25-kungfu-v3/x2-iron-palm-wraps-left-stance.png",
+      "showcaseScreenshot": "docs/owner-notes-audit-v11-evidence/b25-kungfu-v3/x2-iron-palm-wraps-left-mantis-double-hook.png",
+      "finisherScreenshot": "docs/owner-notes-audit-v11-evidence/b25-kungfu-v3/x2-iron-palm-wraps-left-praying-mantis-finisher.png"
+    }
+  ]
+}

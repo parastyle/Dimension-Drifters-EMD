@@ -14374,6 +14374,7 @@ export class ArenaScene extends Phaser.Scene {
         swing.comboStep,
         swing.motion,
         swing.comboLimb,
+        authoredReach,
         prefersReducedPaperMotion() || this.feedbackSettings.flashes === "reduced",
       );
       return;

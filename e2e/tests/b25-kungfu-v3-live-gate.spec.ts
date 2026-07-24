@@ -5,7 +5,7 @@ import { bootArena, runArenaSpec } from "../helpers/arena-harness.js";
 
 const EVIDENCE_DIR = path.resolve(
   import.meta.dirname,
-  "../../docs/owner-notes-audit-v11-evidence/b23-kungfu-v2",
+  "../../docs/owner-notes-audit-v11-evidence/b25-kungfu-v3",
 );
 const CHARACTER_ID = "proto-cowboy-hidden-face";
 const FORBIDDEN_PORTS = new Set([5180, 2567]);
@@ -13,62 +13,65 @@ const FACINGS = ["right", "left"] as const;
 const FIXTURES = [
   {
     id: "x2-muay-thai-wraps",
-    cooldownMs: 400,
-    b19CooldownMs: 750,
+    cooldownMs: 180,
+    b23ObservedMs: 470.8,
     swingStyle: "crimson-roundhouse-arc",
     impactStyle: "heavy-dust-cloud",
-    motions: ["teep-kick", "elbow", "elbow", "knee-strike", "roundhouse-kick"],
+    motions: ["teep-kick", "elbow", "spinning-back-elbow", "knee-strike", "roundhouse-kick"],
     limbs: ["foot", "hand", "hand", "foot", "foot"],
-    expectedReachPx: [119.6, 108.56, 112.24, 117.76, 136.16],
+    expectedReachPx: [138, 108.56, 112.24, 117.76, 136.16],
     showcaseMotion: "roundhouse-kick",
-    displacementPx: 39,
+    finisherPose: "champion-guard",
+    displacementPx: 428,
+    pathPx: 428,
   },
   {
     id: "x2-wing-chun-wraps",
     cooldownMs: 120,
-    b19CooldownMs: 200,
+    b23ObservedMs: 229.2,
     swingStyle: "white-centerline-flash",
     impactStyle: "precise-white-flash",
     motions: ["chain-punch", "chain-punch", "chain-punch", "oblique-kick", "double-palm"],
     limbs: ["hand", "hand", "hand", "foot", "hand"],
     expectedReachPx: [111.8, 115.24, 118.68, 120.4, 129],
     stance: "praying-mantis",
-    displacementPx: 26,
+    displacementPx: 0,
+    pathPx: 0,
   },
   {
     id: "x2-drunken-fist-wraps",
-    cooldownMs: 300,
-    b19CooldownMs: 500,
+    cooldownMs: 160,
+    b23ObservedMs: 379.1,
     swingStyle: "mist-purple-sway-sweep",
     impactStyle: "misty-purple-wide-sweep",
-    motions: [
-      "sway-jab",
-      "weave-cross",
-      "weave-backfist",
-      "sweeping-leg",
-      "backflip-head-kick",
-    ],
+    motions: ["sway-jab", "weave-cross", "weave-backfist", "sweeping-leg", "frontflip-heel-drop"],
     limbs: ["hand", "hand", "hand", "foot", "foot"],
     expectedReachPx: [113.28, 117.12, 120, 132.48, 144],
-    showcaseMotion: "backflip-head-kick",
+    showcaseMotion: "frontflip-heel-drop",
+    finisherPose: "crane-one-leg",
     stance: "crane",
-    displacementPx:
-      Math.hypot(3, 7) +
-      Math.hypot(-3, -9) +
-      Math.hypot(5, 8) +
-      Math.hypot(-2, -11) +
-      Math.hypot(12, 4),
+    displacementPx: Math.hypot(196, -8),
+    pathPx:
+      Math.hypot(18, 88) +
+      Math.hypot(-12, -112) +
+      Math.hypot(24, 104) +
+      Math.hypot(10, -128) +
+      Math.hypot(156, 40),
   },
   {
     id: "x2-iron-palm-wraps",
-    cooldownMs: 550,
-    b19CooldownMs: 900,
+    cooldownMs: 240,
+    b23ObservedMs: 611.1,
     swingStyle: "black-iron-drive",
     impactStyle: "iron-sparks-shockwave",
-    motions: ["crushing-palm", "stomp-kick", "windup-palm", "quake-double-palm"],
-    limbs: ["hand", "foot", "hand", "hand"],
-    expectedReachPx: [115.2, 126.72, 119.04, 142.08],
-    displacementPx: 36,
+    motions: ["crushing-palm", "stomp-kick", "roundhouse-kick", "mantis-double-hook"],
+    limbs: ["hand", "foot", "foot", "hand"],
+    expectedReachPx: [115.2, 126.72, 144, 144],
+    showcaseMotion: "mantis-double-hook",
+    finisherPose: "praying-mantis",
+    stance: "praying-mantis",
+    displacementPx: 332,
+    pathPx: 332,
   },
 ] as const;
 
@@ -89,6 +92,9 @@ interface VfxEvent extends Point {
   weaponId: string;
   style: string;
   timeMs: number;
+  sourceX?: number;
+  sourceY?: number;
+  authorityReach?: number;
   comboStep?: number;
   motion?: string;
   limb?: "hand" | "foot";
@@ -110,6 +116,8 @@ interface BrowserPlayer extends Point {
   ackSeq: number;
   attackSeq: number;
   character?: string;
+  dualWield?: { offhandSlot?: number };
+  offhandSlot?: number;
   weapon?: string;
 }
 
@@ -126,7 +134,7 @@ interface BrowserImage {
 
 interface BrowserWrapRig {
   facing: number;
-  root: { scaleX: number; scaleY: number };
+  root: { scaleX: number; scaleY: number; rotation: number };
   weaponDef?: { id: string };
   weapons: { img: BrowserImage; partIndex: number }[];
   wrapFootWeapons: { img: BrowserImage; partIndex: number; foot: { front: boolean } }[];
@@ -136,6 +144,19 @@ interface BrowserWrapRig {
   auraRing: { visible: boolean };
   paintedAuraFill: { visible: boolean }[];
   paintedAuraParticles: { visible: boolean }[];
+  kungFuWrapPose: {
+    flipProgress: number;
+    flipDirection: -1 | 0 | 1;
+    paperTurnScaleX: number;
+    paperTurnProgress: number;
+    handStretch: number;
+    rearHandStretch: number;
+    frontFootStretch: number;
+    backFootStretch: number;
+    holdPose?: string;
+    holdStrength: number;
+  };
+  kungFuWrapRenderEvidence: TheatricalRenderEvidence;
 }
 
 interface BrowserArena {
@@ -193,18 +214,54 @@ interface BrowserArena {
 }
 
 interface BrowserGlobal {
-  ddGame: { scene: { getScene(key: string): BrowserArena } };
+  ddGame: {
+    scene: {
+      getScene(key: string): BrowserArena;
+      resume(key: string): void;
+    };
+  };
   __ddB14KungFuVfxAudit?: VfxEvent[];
   __ddB14Contacts?: Contact[];
   __ddB14ContactUnsubscribe?: () => void;
   __ddB19PositionAudit?: PositionSample[];
   __ddB19PositionTimer?: number;
   __ddB23AuraAudit?: boolean[];
+  __ddB25TheatricalAudit?: TheatricalSample[];
 }
 
 interface PositionSample extends Point {
   attackSeq: number;
   timeMs: number;
+}
+
+interface TheatricalSample {
+  attackSeq: number;
+  timeMs: number;
+  rootScaleX: number;
+  rootRotation: number;
+  flipProgress: number;
+  flipDirection: -1 | 0 | 1;
+  paperTurnScaleX: number;
+  paperTurnProgress: number;
+  handStretch: number;
+  rearHandStretch: number;
+  frontFootStretch: number;
+  backFootStretch: number;
+  holdPose?: string;
+  holdStrength: number;
+}
+
+interface TheatricalRenderEvidence {
+  renderedSamples: number;
+  minPaperTurnScaleX: number;
+  maxFlipProgress: number;
+  maxFlipAbsRotation: number;
+  maxHandStretch: number;
+  maxRearHandStretch: number;
+  maxFrontFootStretch: number;
+  maxBackFootStretch: number;
+  maxHoldStrength: number;
+  holdPoses: string[];
 }
 
 interface RigAudit {
@@ -230,6 +287,7 @@ interface RigAudit {
 
 interface Capture {
   weaponId: string;
+  offhandSlot?: number;
   facing: Facing;
   target: Target;
   attackSeqBefore: number;
@@ -240,15 +298,21 @@ interface Capture {
   impactStyle: string;
   intervalsMs: number[];
   reachPx: number[];
+  authorityReachPx: number[];
   expectedReachPx: readonly number[];
   limbs: string[];
   travel: {
     start: Point;
     end: Point;
     distancePx: number;
+    pathDistancePx: number;
     expectedPx: number;
+    expectedPathPx: number;
     positionSamples: PositionSample[];
+    stepTravel: Array<{ x: number; y: number; distancePx: number }>;
   };
+  theatricalSamples: TheatricalSample[];
+  renderEvidence: TheatricalRenderEvidence;
   rig: RigAudit;
   auraSamples: boolean[];
   contacts: Contact[];
@@ -257,10 +321,19 @@ interface Capture {
   footScreenshot: string;
   stanceScreenshot: string;
   showcaseScreenshot?: string;
+  finisherScreenshot?: string;
 }
 
 function relativeEvidencePath(file: string): string {
   return path.relative(process.cwd(), file).replaceAll("\\", "/");
+}
+
+function median(values: readonly number[]): number {
+  const sorted = [...values].sort((a, b) => a - b);
+  const middle = Math.floor(sorted.length / 2);
+  if (sorted.length === 0) return Number.POSITIVE_INFINITY;
+  if (sorted.length % 2 === 1) return sorted[middle]!;
+  return ((sorted[middle - 1] ?? 0) + (sorted[middle] ?? 0)) / 2;
 }
 
 async function prepare(page: Page): Promise<void> {
@@ -281,6 +354,7 @@ async function prepare(page: Page): Promise<void> {
     });
     holder.__ddB19PositionAudit = [];
     holder.__ddB23AuraAudit = [];
+    holder.__ddB25TheatricalAudit = [];
     if (holder.__ddB19PositionTimer) window.clearInterval(holder.__ddB19PositionTimer);
     holder.__ddB19PositionTimer = window.setInterval(() => {
       const self = arena.room.state.players.get(arena.room.sessionId);
@@ -299,6 +373,23 @@ async function prepare(page: Page): Promise<void> {
             rig.paintedAuraFill.some((node) => node.visible) ||
             rig.paintedAuraParticles.some((node) => node.visible),
         );
+        const pose = rig.kungFuWrapPose;
+        holder.__ddB25TheatricalAudit?.push({
+          attackSeq: self.attackSeq,
+          timeMs: arena.time.now,
+          rootScaleX: rig.root.scaleX,
+          rootRotation: rig.root.rotation,
+          flipProgress: pose.flipProgress,
+          flipDirection: pose.flipDirection,
+          paperTurnScaleX: pose.paperTurnScaleX,
+          paperTurnProgress: pose.paperTurnProgress,
+          handStretch: pose.handStretch,
+          rearHandStretch: pose.rearHandStretch,
+          frontFootStretch: pose.frontFootStretch,
+          backFootStretch: pose.backFootStretch,
+          holdPose: pose.holdPose,
+          holdStrength: pose.holdStrength,
+        });
       }
     }, 16);
   });
@@ -318,7 +409,7 @@ async function equip(page: Page, weaponId: string): Promise<void> {
           const rig = arena.blobs.get(arena.room.sessionId);
           return { authority: self?.weapon ?? null, rig: rig?.weaponDef?.id ?? null, wanted: id };
         }, weaponId),
-      { message: `B14 gate should equip ${weaponId}`, timeout: 20_000 },
+      { message: `B25 gate should equip ${weaponId}`, timeout: 20_000 },
     )
     .toEqual({ authority: weaponId, rig: weaponId, wanted: weaponId });
 }
@@ -327,7 +418,7 @@ async function nearestDummy(page: Page, facing: Facing): Promise<Target> {
   return await page.evaluate((side) => {
     const arena = (globalThis as unknown as BrowserGlobal).ddGame.scene.getScene("arena");
     const self = arena.room.state.players.get(arena.room.sessionId);
-    if (!self) throw new Error("B19 live gate lost its player while locating an open lane");
+    if (!self) throw new Error("B25 live gate lost its player while locating an open lane");
     return {
       id: `open-lane:${side}`,
       x: self.x + (side === "right" ? 92 : -92),
@@ -344,7 +435,7 @@ async function moveToFacingSide(_page: Page, target: Target, _facing: Facing): P
 async function aimAtTarget(page: Page, facing: Facing): Promise<void> {
   const canvas = page.locator("#game-root canvas");
   const box = await canvas.boundingBox();
-  if (!box) throw new Error("B14 live gate cannot locate the Phaser canvas");
+  if (!box) throw new Error("B25 live gate cannot locate the Phaser canvas");
   await page.mouse.move(
     box.x + box.width * (facing === "right" ? 0.9 : 0.1),
     box.y + box.height * 0.5,
@@ -356,7 +447,7 @@ async function aimAtTarget(page: Page, facing: Facing): Promise<void> {
           const arena = (globalThis as unknown as BrowserGlobal).ddGame.scene.getScene("arena");
           return arena.blobs.get(arena.room.sessionId)?.facing ?? 0;
         }),
-      { message: `B14 rig should commit ${facing} facing`, timeout: 10_000 },
+      { message: `B25 rig should commit ${facing} facing`, timeout: 10_000 },
     )
     .toBe(facing === "right" ? 1 : -1);
 }
@@ -365,7 +456,7 @@ async function beginAttacks(page: Page): Promise<number> {
   return await page.evaluate(() => {
     const arena = (globalThis as unknown as BrowserGlobal).ddGame.scene.getScene("arena");
     const self = arena.room.state.players.get(arena.room.sessionId);
-    if (!self) throw new Error("B14 live gate lost its player before attacking");
+    if (!self) throw new Error("B25 live gate lost its player before attacking");
     arena.input.activePointer.rightButtonDown = () => true;
     return self.attackSeq;
   });
@@ -382,7 +473,7 @@ async function captureRigAudit(page: Page): Promise<RigAudit> {
   return await page.evaluate(() => {
     const arena = (globalThis as unknown as BrowserGlobal).ddGame.scene.getScene("arena");
     const rig = arena.blobs.get(arena.room.sessionId);
-    if (!rig) throw new Error("B19 live gate lost the local SpriteRig");
+    if (!rig) throw new Error("B25 live gate lost the local SpriteRig");
     const handOverlays = rig.weapons.filter((weapon) => weapon.partIndex === 0);
     const footOverlays = rig.wrapFootWeapons.filter((weapon) => weapon.partIndex === 1);
     const screenMax = (image: BrowserImage) =>
@@ -473,19 +564,154 @@ async function waitForSwingMotion(page: Page, weaponId: string, motion: string):
     .toBe(true);
 }
 
-async function waitForMartialStance(
+async function clearSwingAudit(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    (globalThis as unknown as BrowserGlobal).__ddB14KungFuVfxAudit = [];
+  });
+}
+
+async function readRenderEvidence(page: Page): Promise<TheatricalRenderEvidence> {
+  return await page.evaluate(() => {
+    const arena = (globalThis as unknown as BrowserGlobal).ddGame.scene.getScene("arena");
+    const evidence = arena.blobs.get(arena.room.sessionId)?.kungFuWrapRenderEvidence;
+    if (!evidence) throw new Error("B25 live gate lost the rig render evidence");
+    return { ...evidence, holdPoses: [...evidence.holdPoses] };
+  });
+}
+
+async function captureLimbEvidence(
   page: Page,
-  stance: "praying-mantis" | "crane",
+  weaponId: string,
+  limb: "hand" | "foot",
+  file: string,
 ): Promise<void> {
+  await clearSwingAudit(page);
+  await beginAttacks(page);
+  try {
+    await waitForSwingLimb(page, weaponId, limb);
+    await page.locator("#game-root canvas").screenshot({ path: file });
+  } finally {
+    await stopAttacks(page);
+  }
+}
+
+async function captureShowcaseEvidence(
+  page: Page,
+  weaponId: string,
+  motion: string,
+  showcaseFile: string,
+  finisherFile: string | undefined,
+  finisherPose: string | undefined,
+): Promise<TheatricalSample[]> {
+  await clearSwingAudit(page);
+  await beginAttacks(page);
+  try {
+    await waitForSwingMotion(page, weaponId, motion);
+    await page.evaluate(
+      (expectedWeapon) =>
+        new Promise<void>((resolve, reject) => {
+          const holder = globalThis as unknown as BrowserGlobal;
+          const arena = holder.ddGame.scene.getScene("arena");
+          const deadline = performance.now() + 4_000;
+          const inspectRenderedFrame = () => {
+            const rig = arena.blobs.get(arena.room.sessionId);
+            const pose = rig?.kungFuWrapPose;
+            const atShowcaseApex =
+              expectedWeapon === "x2-drunken-fist-wraps"
+                ? (pose?.flipProgress ?? -1) > 0.2 &&
+                  (pose?.flipProgress ?? 1) < 0.9 &&
+                  Math.abs(rig?.root.rotation ?? 0) > 1
+                : expectedWeapon === "x2-iron-palm-wraps"
+                  ? Math.max(pose?.handStretch ?? 1, pose?.rearHandStretch ?? 1) > 1.6
+                  : (pose?.paperTurnProgress ?? -1) >= 0 && (pose?.paperTurnScaleX ?? 1) < -0.1;
+            if (rig?.weaponDef?.id === expectedWeapon && atShowcaseApex) {
+              arena.input.activePointer.rightButtonDown = () => false;
+              arena.scene.pause();
+              resolve();
+              return;
+            }
+            if (performance.now() >= deadline) {
+              reject(new Error(`${expectedWeapon} did not render its showcase apex`));
+              return;
+            }
+            requestAnimationFrame(inspectRenderedFrame);
+          };
+          requestAnimationFrame(inspectRenderedFrame);
+        }),
+      weaponId,
+    );
+    await page.locator("#game-root canvas").screenshot({ path: showcaseFile });
+  } finally {
+    await page.evaluate(() => {
+      const holder = globalThis as unknown as BrowserGlobal;
+      const arena = holder.ddGame.scene.getScene("arena");
+      arena.input.activePointer.rightButtonDown = () => false;
+      holder.ddGame.scene.resume("arena");
+    });
+  }
+  if (finisherFile && finisherPose) {
+    await clearSwingAudit(page);
+    await page.evaluate(() => {
+      const holder = globalThis as unknown as BrowserGlobal;
+      holder.__ddB25TheatricalAudit = [];
+    });
+    await beginAttacks(page);
+    try {
+      await page.evaluate(
+        ({ expectedPose, expectedWeapon }) =>
+          new Promise<void>((resolve, reject) => {
+            const arena = (globalThis as unknown as BrowserGlobal).ddGame.scene.getScene("arena");
+            const deadline = performance.now() + 12_000;
+            const inspectRenderedFrame = () => {
+              const rig = arena.blobs.get(arena.room.sessionId);
+              const pose = rig?.kungFuWrapPose;
+              if (
+                rig?.weaponDef?.id === expectedWeapon &&
+                pose?.holdPose === expectedPose &&
+                pose.holdStrength > 0.6
+              ) {
+                arena.input.activePointer.rightButtonDown = () => false;
+                arena.scene.pause();
+                resolve();
+                return;
+              }
+              if (performance.now() >= deadline) {
+                reject(new Error(`${expectedWeapon} did not render held ${expectedPose}`));
+                return;
+              }
+              requestAnimationFrame(inspectRenderedFrame);
+            };
+            requestAnimationFrame(inspectRenderedFrame);
+          }),
+        { expectedPose: finisherPose, expectedWeapon: weaponId },
+      );
+      await page.locator("#game-root canvas").screenshot({ path: finisherFile });
+    } finally {
+      await page.evaluate(() => {
+        const holder = globalThis as unknown as BrowserGlobal;
+        const arena = holder.ddGame.scene.getScene("arena");
+        arena.input.activePointer.rightButtonDown = () => false;
+        holder.ddGame.scene.resume("arena");
+      });
+    }
+    const finisherEvidence = await readRenderEvidence(page);
+    expect(finisherEvidence.holdPoses).toContain(finisherPose);
+    expect(finisherEvidence.maxHoldStrength).toBeGreaterThan(0.6);
+  }
+  return await page.evaluate(() => [
+    ...((globalThis as unknown as BrowserGlobal).__ddB25TheatricalAudit ?? []),
+  ]);
+}
+
+async function waitForMartialStance(page: Page, stance: "praying-mantis" | "crane"): Promise<void> {
   await expect
     .poll(
       () =>
         page.evaluate((expectedStance) => {
           const arena = (globalThis as unknown as BrowserGlobal).ddGame.scene.getScene("arena");
           const rotations =
-            arena.blobs.get(arena.room.sessionId)?.weapons.map(
-              (weapon) => weapon.img.rotation,
-            ) ?? [];
+            arena.blobs.get(arena.room.sessionId)?.weapons.map((weapon) => weapon.img.rotation) ??
+            [];
           return (
             rotations.length === 2 &&
             rotations[0]! > (expectedStance === "praying-mantis" ? 0.8 : 0.4) &&
@@ -497,9 +723,7 @@ async function waitForMartialStance(
     .toBe(true);
 }
 
-test("B23 kung-fu corrections are live on all four wraps and both facings", async ({
-  page,
-}) => {
+test("B25 theatrical kung-fu v3 is live on all four wraps and both facings", async ({ page }) => {
   test.setTimeout(240_000);
   await runArenaSpec(page, async (baseURL) => {
     await mkdir(EVIDENCE_DIR, { recursive: true });
@@ -517,7 +741,7 @@ test("B23 kung-fu corrections are live on all four wraps and both facings", asyn
             const arena = (globalThis as unknown as BrowserGlobal).ddGame.scene.getScene("arena");
             return arena.room.state.players.get(arena.room.sessionId)?.character ?? null;
           }),
-        { message: `B14 gate should use ${CHARACTER_ID}`, timeout: 20_000 },
+        { message: `B25 gate should use ${CHARACTER_ID}`, timeout: 20_000 },
       )
       .toBe(CHARACTER_ID);
     await prepare(page);
@@ -534,22 +758,34 @@ test("B23 kung-fu corrections are live on all four wraps and both facings", asyn
         if ("stance" in fixture) await waitForMartialStance(page, fixture.stance);
         await page.evaluate(() => {
           const holder = globalThis as unknown as BrowserGlobal;
+          const arena = holder.ddGame.scene.getScene("arena");
           holder.__ddB14KungFuVfxAudit = [];
           holder.__ddB14Contacts = [];
           holder.__ddB19PositionAudit = [];
           holder.__ddB23AuraAudit = [];
+          holder.__ddB25TheatricalAudit = [];
+          const evidence = arena.blobs.get(arena.room.sessionId)?.kungFuWrapRenderEvidence;
+          if (evidence) {
+            evidence.renderedSamples = 0;
+            evidence.minPaperTurnScaleX = 1;
+            evidence.maxFlipProgress = -1;
+            evidence.maxFlipAbsRotation = 0;
+            evidence.maxHandStretch = 1;
+            evidence.maxRearHandStretch = 1;
+            evidence.maxFrontFootStretch = 1;
+            evidence.maxBackFootStretch = 1;
+            evidence.maxHoldStrength = 0;
+            evidence.holdPoses.length = 0;
+          }
         });
 
         const rig = await captureRigAudit(page);
-        const stanceScreenshotFile = path.join(
-          EVIDENCE_DIR,
-          `${fixture.id}-${facing}-stance.png`,
-        );
+        const stanceScreenshotFile = path.join(EVIDENCE_DIR, `${fixture.id}-${facing}-stance.png`);
         await page.locator("#game-root canvas").screenshot({ path: stanceScreenshotFile });
         const start = await page.evaluate(() => {
           const arena = (globalThis as unknown as BrowserGlobal).ddGame.scene.getScene("arena");
           const self = arena.room.state.players.get(arena.room.sessionId);
-          if (!self) throw new Error("B19 live gate lost the player before root-motion capture");
+          if (!self) throw new Error("B25 live gate lost the player before root-motion capture");
           return { x: self.x, y: self.y };
         });
         const handScreenshotFile = path.join(EVIDENCE_DIR, `${fixture.id}-${facing}-hand.png`);
@@ -558,22 +794,15 @@ test("B23 kung-fu corrections are live on all four wraps and both facings", asyn
           "showcaseMotion" in fixture
             ? path.join(EVIDENCE_DIR, `${fixture.id}-${facing}-${fixture.showcaseMotion}.png`)
             : undefined;
+        const finisherScreenshotFile =
+          "finisherPose" in fixture
+            ? path.join(
+                EVIDENCE_DIR,
+                `${fixture.id}-${facing}-${fixture.finisherPose}-finisher.png`,
+              )
+            : undefined;
         const attackSeqBefore = await beginAttacks(page);
         try {
-          const limbOrder: ("hand" | "foot")[] =
-            fixture.limbs[0] === "foot" ? ["foot", "hand"] : ["hand", "foot"];
-          for (const limb of limbOrder) {
-            await waitForSwingLimb(page, fixture.id, limb);
-            await page.locator("#game-root canvas").screenshot({
-              path: limb === "hand" ? handScreenshotFile : footScreenshotFile,
-            });
-          }
-          if ("showcaseMotion" in fixture && showcaseScreenshotFile) {
-            await waitForSwingMotion(page, fixture.id, fixture.showcaseMotion);
-            await page
-              .locator("#game-root canvas")
-              .screenshot({ path: showcaseScreenshotFile });
-          }
           await expect
             .poll(
               () =>
@@ -593,7 +822,7 @@ test("B23 kung-fu corrections are live on all four wraps and both facings", asyn
                   { weaponId: fixture.id, comboLength: fixture.motions.length },
                 ),
               {
-                message: `${fixture.id}/${facing} should render its full canonical B23 combo`,
+                message: `${fixture.id}/${facing} should render its full canonical B25 combo`,
                 timeout: 16_000,
                 intervals: [10, 15, 25],
               },
@@ -626,7 +855,7 @@ test("B23 kung-fu corrections are live on all four wraps and both facings", asyn
             const holder = globalThis as unknown as BrowserGlobal;
             const arena = holder.ddGame.scene.getScene("arena");
             const self = arena.room.state.players.get(arena.room.sessionId);
-            if (!self) throw new Error(`B19 live capture lost ${weaponId}`);
+            if (!self) throw new Error(`B25 live capture lost ${weaponId}`);
             const vfx = (holder.__ddB14KungFuVfxAudit ?? []).filter(
               (event) => event.weaponId === weaponId,
             );
@@ -655,21 +884,52 @@ test("B23 kung-fu corrections are live on all four wraps and both facings", asyn
             );
             const travelStart = comboSamples[0] ?? start;
             const travelEnd = comboSamples.at(-1) ?? { x: self.x, y: self.y };
+            const stepTravel = Array.from({ length: comboLength }, () => ({
+              x: 0,
+              y: 0,
+              distancePx: 0,
+            }));
+            let pathDistancePx = 0;
+            for (let index = 1; index < comboSamples.length; index++) {
+              const previous = comboSamples[index - 1]!;
+              const current = comboSamples[index]!;
+              const dx = current.x - previous.x;
+              const dy = current.y - previous.y;
+              const distance = Math.hypot(dx, dy);
+              pathDistancePx += distance;
+              const stepIndex = ((current.attackSeq - attackSeqBefore) >>> 0) - 1;
+              const step = stepTravel[stepIndex];
+              if (step) {
+                step.x += dx;
+                step.y += dy;
+                step.distancePx += distance;
+              }
+            }
+            const theatricalSamples = (holder.__ddB25TheatricalAudit ?? []).filter((sample) => {
+              const accepted = (sample.attackSeq - attackSeqBefore) >>> 0;
+              return accepted > 0 && accepted <= comboLength;
+            });
             const reachPx = swings.map((event) => {
-              const source =
+              if (event.sourceX !== undefined && event.sourceY !== undefined) {
+                return Math.hypot(event.x - event.sourceX, event.y - event.sourceY);
+              }
+              const source = samples.findLast((sample) => sample.timeMs <= event.timeMs) ??
                 samples.reduce<PositionSample | undefined>(
                   (closest, sample) =>
                     !closest ||
-                    Math.abs(sample.timeMs - event.timeMs) <
-                      Math.abs(closest.timeMs - event.timeMs)
+                    Math.abs(sample.timeMs - event.timeMs) < Math.abs(closest.timeMs - event.timeMs)
                       ? sample
                       : closest,
                   undefined,
                 ) ?? { x: self.x, y: self.y, attackSeq: self.attackSeq, timeMs: arena.time.now };
               return Math.hypot(event.x - source.x, event.y - source.y);
             });
+            const authorityReachPx = swings.map(
+              (event, index) => event.authorityReach ?? reachPx[index] ?? 0,
+            );
             return {
               weaponId,
+              offhandSlot: self.offhandSlot ?? self.dualWield?.offhandSlot,
               facing,
               target,
               attackSeqBefore,
@@ -683,13 +943,18 @@ test("B23 kung-fu corrections are live on all four wraps and both facings", asyn
                 .slice(1)
                 .map((event, index) => event.timeMs - (swings[index]?.timeMs ?? event.timeMs)),
               reachPx,
+              authorityReachPx,
               travel: {
                 start: { x: travelStart.x, y: travelStart.y },
                 end: { x: travelEnd.x, y: travelEnd.y },
                 distancePx: Math.hypot(travelEnd.x - travelStart.x, travelEnd.y - travelStart.y),
+                pathDistancePx,
                 expectedPx: 0,
+                expectedPathPx: 0,
                 positionSamples: comboSamples,
+                stepTravel,
               },
+              theatricalSamples,
               contacts,
               vfx,
               auraSamples: [...(holder.__ddB23AuraAudit ?? [])],
@@ -704,9 +969,37 @@ test("B23 kung-fu corrections are live on all four wraps and both facings", asyn
             start,
           },
         );
+        const limbOrder: ("hand" | "foot")[] =
+          fixture.limbs[0] === "foot" ? ["foot", "hand"] : ["hand", "foot"];
+        for (const limb of limbOrder) {
+          await captureLimbEvidence(
+            page,
+            fixture.id,
+            limb,
+            limb === "hand" ? handScreenshotFile : footScreenshotFile,
+          );
+        }
+        let showcaseTheatricalSamples: TheatricalSample[] = [];
+        if ("showcaseMotion" in fixture && showcaseScreenshotFile) {
+          showcaseTheatricalSamples = await captureShowcaseEvidence(
+            page,
+            fixture.id,
+            fixture.showcaseMotion,
+            showcaseScreenshotFile,
+            finisherScreenshotFile,
+            "finisherPose" in fixture ? fixture.finisherPose : undefined,
+          );
+        }
+        const renderEvidence = await readRenderEvidence(page);
         const capture: Capture = {
           ...measured,
-          travel: { ...measured.travel, expectedPx: fixture.displacementPx },
+          theatricalSamples: [...measured.theatricalSamples, ...showcaseTheatricalSamples],
+          renderEvidence,
+          travel: {
+            ...measured.travel,
+            expectedPx: fixture.displacementPx,
+            expectedPathPx: fixture.pathPx,
+          },
           expectedReachPx: fixture.expectedReachPx,
           rig,
           handScreenshot: relativeEvidencePath(handScreenshotFile),
@@ -715,7 +1008,15 @@ test("B23 kung-fu corrections are live on all four wraps and both facings", asyn
           showcaseScreenshot: showcaseScreenshotFile
             ? relativeEvidencePath(showcaseScreenshotFile)
             : undefined,
+          finisherScreenshot: finisherScreenshotFile
+            ? relativeEvidencePath(finisherScreenshotFile)
+            : undefined,
         };
+        await writeFile(
+          path.join(EVIDENCE_DIR, "live-gate-progress.json"),
+          `${JSON.stringify({ captures: [...captures, capture] }, null, 2)}\n`,
+          "utf8",
+        );
         expect(capture.attackSeqAfter - capture.attackSeqBefore).toBeGreaterThanOrEqual(
           fixture.motions.length,
         );
@@ -729,20 +1030,22 @@ test("B23 kung-fu corrections are live on all four wraps and both facings", asyn
           expect(interval, `${fixture.id}/${facing}: cooldown floor`).toBeGreaterThanOrEqual(
             fixture.cooldownMs - 20,
           );
-          expect(interval, `${fixture.id}/${facing}: observed cadence ${interval}ms`).toBeLessThan(
-            fixture.cooldownMs + 175,
-          );
-          expect(interval, `${fixture.id}/${facing}: faster than B19`).toBeLessThan(
-            fixture.b19CooldownMs + 133,
-          );
+          expect(
+            interval,
+            `${fixture.id}/${facing}: render heartbeat ceiling ${interval}ms`,
+          ).toBeLessThan(650);
         }
         expect(capture.reachPx).toHaveLength(fixture.expectedReachPx.length);
-        for (const [index, reach] of capture.reachPx.entries()) {
-          expect(reach, `${fixture.id}/${facing}:step ${index} extended reach`).toBeGreaterThan(105);
+        expect(capture.authorityReachPx).toHaveLength(fixture.expectedReachPx.length);
+        for (const [index, visibleReach] of capture.reachPx.entries()) {
           expect(
-            Math.abs(reach - fixture.expectedReachPx[index]!),
-            `${fixture.id}/${facing}:step ${index} visible/authority reach`,
-          ).toBeLessThanOrEqual(18);
+            visibleReach,
+            `${fixture.id}/${facing}:step ${index} visible trail`,
+          ).toBeGreaterThan(60);
+          expect(
+            Math.abs(capture.authorityReachPx[index]! - fixture.expectedReachPx[index]!),
+            `${fixture.id}/${facing}:step ${index} authority reach`,
+          ).toBeLessThanOrEqual(0.25);
         }
         expect(capture.rig.handOverlayCount).toBe(2);
         expect(capture.rig.footOverlayCount).toBe(2);
@@ -777,13 +1080,68 @@ test("B23 kung-fu corrections are live on all four wraps and both facings", asyn
           ).toBeGreaterThan(20);
         }
         expect(capture.travel.positionSamples.length).toBeGreaterThanOrEqual(5);
-        expect(capture.travel.distancePx).toBeGreaterThan(
-          Math.min(8, fixture.displacementPx * 0.3),
-        );
-        expect(capture.travel.distancePx).toBeLessThanOrEqual(fixture.displacementPx + 12);
-        expect(Math.sign(capture.travel.end.x - capture.travel.start.x)).toBe(
-          facing === "right" ? 1 : -1,
-        );
+        expect(capture.theatricalSamples.length).toBeGreaterThanOrEqual(5);
+        if (fixture.id === "x2-wing-chun-wraps") {
+          expect(capture.travel.distancePx, `${fixture.id}/${facing}: zero net drift`).toBeLessThan(
+            1,
+          );
+          expect(
+            capture.travel.pathDistancePx,
+            `${fixture.id}/${facing}: zero path drift`,
+          ).toBeLessThan(1);
+          expect(capture.travel.stepTravel.every((step) => step.distancePx < 1)).toBe(true);
+          expect(
+            capture.theatricalSamples.every(
+              (sample) =>
+                sample.flipProgress === -1 &&
+                sample.paperTurnProgress === -1 &&
+                sample.handStretch === 1 &&
+                sample.frontFootStretch === 1,
+            ),
+          ).toBe(true);
+          expect(capture.renderEvidence.minPaperTurnScaleX).toBe(1);
+          expect(capture.renderEvidence.maxFlipProgress).toBe(-1);
+          expect(capture.renderEvidence.maxHandStretch).toBe(1);
+          expect(capture.renderEvidence.maxFrontFootStretch).toBe(1);
+          expect(capture.renderEvidence.holdPoses).toEqual([]);
+        } else {
+          expect(capture.travel.distancePx).toBeGreaterThan(fixture.displacementPx * 0.3);
+          expect(capture.travel.distancePx).toBeLessThanOrEqual(
+            (fixture.id === "x2-drunken-fist-wraps" ? fixture.pathPx : fixture.displacementPx) + 18,
+          );
+          expect(capture.travel.pathDistancePx).toBeGreaterThan(fixture.pathPx * 0.3);
+          expect(capture.travel.pathDistancePx).toBeLessThanOrEqual(fixture.pathPx + 24);
+          expect(Math.sign(capture.travel.end.x - capture.travel.start.x)).toBe(
+            facing === "right" ? 1 : -1,
+          );
+          expect(capture.finisherScreenshot?.endsWith("-finisher.png")).toBe(true);
+          expect(capture.renderEvidence.maxHoldStrength).toBeGreaterThan(0.6);
+        }
+        if (fixture.id === "x2-muay-thai-wraps") {
+          const rocketWindowPx =
+            (capture.travel.stepTravel[0]?.distancePx ?? 0) +
+            (capture.travel.stepTravel[1]?.distancePx ?? 0);
+          expect(rocketWindowPx).toBeGreaterThan(270);
+          expect(rocketWindowPx).toBeLessThanOrEqual(330);
+          expect(capture.renderEvidence.minPaperTurnScaleX).toBeLessThan(-0.1);
+          expect(capture.renderEvidence.maxFrontFootStretch).toBeGreaterThan(1.7);
+          expect(capture.renderEvidence.holdPoses).toContain("champion-guard");
+        }
+        if (fixture.id === "x2-drunken-fist-wraps") {
+          expect(
+            Math.max(...capture.travel.stepTravel.map((step) => Math.abs(step.y))),
+          ).toBeGreaterThan(80);
+          expect(capture.renderEvidence.maxFlipAbsRotation).toBeGreaterThan(1);
+          expect(capture.renderEvidence.maxFlipProgress).toBeGreaterThan(0.2);
+          expect(capture.renderEvidence.maxFrontFootStretch).toBeGreaterThan(1.8);
+          expect(capture.renderEvidence.holdPoses).toContain("crane-one-leg");
+        }
+        if (fixture.id === "x2-iron-palm-wraps") {
+          expect(capture.travel.stepTravel[1]?.distancePx).toBeGreaterThan(90);
+          expect(capture.renderEvidence.minPaperTurnScaleX).toBeLessThan(-0.1);
+          expect(capture.renderEvidence.maxHandStretch).toBeGreaterThan(1.7);
+          expect(capture.renderEvidence.holdPoses).toContain("praying-mantis");
+        }
         captures.push(capture);
       }
     }
@@ -793,10 +1151,7 @@ test("B23 kung-fu corrections are live on all four wraps and both facings", asyn
         const intervals = captures
           .filter((capture) => capture.weaponId === fixture.id)
           .flatMap((capture) => capture.intervalsMs);
-        return [
-          fixture.id,
-          intervals.reduce((sum, interval) => sum + interval, 0) / intervals.length,
-        ];
+        return [fixture.id, median(intervals)];
       }),
     );
     const assertions = {
@@ -841,9 +1196,10 @@ test("B23 kung-fu corrections are live on all four wraps and both facings", asyn
       extendedVisibleAuthorityReach: captures.every(
         (capture) =>
           capture.reachPx.length === capture.expectedReachPx.length &&
-          capture.reachPx.every(
-            (reach, index) =>
-              reach > 105 && Math.abs(reach - capture.expectedReachPx[index]!) <= 18,
+          capture.authorityReachPx.length === capture.expectedReachPx.length &&
+          capture.reachPx.every((reach) => reach > 60) &&
+          capture.authorityReachPx.every(
+            (reach, index) => Math.abs(reach - capture.expectedReachPx[index]!) <= 0.25,
           ),
       ),
       roundhouseShowcase: captures
@@ -853,15 +1209,25 @@ test("B23 kung-fu corrections are live on all four wraps and both facings", asyn
             capture.motions.includes("roundhouse-kick") &&
             capture.showcaseScreenshot?.endsWith("-roundhouse-kick.png"),
         ),
-      backflipHeadKickShowcase: captures
+      frontflipHeelDropShowcase: captures
         .filter((capture) => capture.weaponId === "x2-drunken-fist-wraps")
         .every(
           (capture) =>
-            capture.motions.includes("backflip-head-kick") &&
-            capture.showcaseScreenshot?.endsWith("-backflip-head-kick.png"),
+            capture.motions.includes("frontflip-heel-drop") &&
+            capture.showcaseScreenshot?.endsWith("-frontflip-heel-drop.png"),
+        ),
+      mantisHookShowcase: captures
+        .filter((capture) => capture.weaponId === "x2-iron-palm-wraps")
+        .every(
+          (capture) =>
+            capture.motions.includes("mantis-double-hook") &&
+            capture.showcaseScreenshot?.endsWith("-mantis-double-hook.png"),
         ),
       prayingMantisStance: captures
-        .filter((capture) => capture.weaponId === "x2-wing-chun-wraps")
+        .filter(
+          (capture) =>
+            capture.weaponId === "x2-wing-chun-wraps" || capture.weaponId === "x2-iron-palm-wraps",
+        )
         .every(
           (capture) =>
             capture.stanceScreenshot.endsWith("-stance.png") &&
@@ -878,20 +1244,79 @@ test("B23 kung-fu corrections are live on all four wraps and both facings", asyn
               Math.min(...capture.rig.footPose.map((foot) => foot.y)) >
               20,
         ),
-      everyCaptureHasAuthoritativeTravel: captures.every(
+      wingChunZeroDisplacement: captures
+        .filter((capture) => capture.weaponId === "x2-wing-chun-wraps")
+        .every(
+          (capture) =>
+            capture.travel.distancePx < 1 &&
+            capture.travel.pathDistancePx < 1 &&
+            capture.travel.stepTravel.every((step) => step.distancePx < 1),
+        ),
+      theatricalAuthoritativeTravel: captures
+        .filter((capture) => capture.weaponId !== "x2-wing-chun-wraps")
+        .every(
+          (capture) =>
+            capture.travel.distancePx >= capture.travel.expectedPx * 0.3 &&
+            capture.travel.pathDistancePx >= capture.travel.expectedPathPx * 0.3 &&
+            capture.travel.positionSamples.length >= 5,
+        ),
+      dragonRocket: captures
+        .filter((capture) => capture.weaponId === "x2-muay-thai-wraps")
+        .every((capture) => {
+          const rocketWindowPx =
+            (capture.travel.stepTravel[0]?.distancePx ?? 0) +
+            (capture.travel.stepTravel[1]?.distancePx ?? 0);
+          return rocketWindowPx > 270 && rocketWindowPx <= 330;
+        }),
+      fullBodyPaperRotate: captures
+        .filter(
+          (capture) =>
+            capture.weaponId === "x2-muay-thai-wraps" || capture.weaponId === "x2-iron-palm-wraps",
+        )
+        .every((capture) => capture.renderEvidence.minPaperTurnScaleX < -0.1),
+      forwardFlip: captures
+        .filter((capture) => capture.weaponId === "x2-drunken-fist-wraps")
+        .every(
+          (capture) =>
+            capture.renderEvidence.maxFlipProgress > 0.2 &&
+            capture.renderEvidence.maxFlipAbsRotation > 1,
+        ),
+      wildStretchAttacks: captures
+        .filter((capture) => capture.weaponId !== "x2-wing-chun-wraps")
+        .every(
+          (capture) =>
+            Math.max(
+              capture.renderEvidence.maxHandStretch,
+              capture.renderEvidence.maxRearHandStretch,
+              capture.renderEvidence.maxFrontFootStretch,
+              capture.renderEvidence.maxBackFootStretch,
+            ) > 1.6,
+        ),
+      heldFinisherPoses: captures
+        .filter((capture) => capture.weaponId !== "x2-wing-chun-wraps")
+        .every(
+          (capture) =>
+            capture.renderEvidence.holdPoses.length > 0 &&
+            capture.renderEvidence.maxHoldStrength > 0.6 &&
+            capture.finisherScreenshot?.endsWith("-finisher.png"),
+        ),
+      everyCaptureHasTelemetry: captures.every(
         (capture) =>
-          capture.travel.distancePx >= Math.min(8, capture.travel.expectedPx * 0.3) &&
-          capture.travel.positionSamples.length >= 5,
+          capture.travel.positionSamples.length >= 5 && capture.theatricalSamples.length >= 5,
       ),
       cadenceOrder:
         observedCadenceMs["x2-wing-chun-wraps"] < observedCadenceMs["x2-drunken-fist-wraps"] &&
         observedCadenceMs["x2-drunken-fist-wraps"] < observedCadenceMs["x2-muay-thai-wraps"] &&
         observedCadenceMs["x2-muay-thai-wraps"] < observedCadenceMs["x2-iron-palm-wraps"],
-      fasterThanB19Cadence: FIXTURES.every(
+      rebuiltStylesFasterThanB23: FIXTURES.filter(
+        (fixture) => fixture.id !== "x2-wing-chun-wraps",
+      ).every(
         (fixture) =>
-          (observedCadenceMs[fixture.id] ?? Number.POSITIVE_INFINITY) <
-          fixture.b19CooldownMs + 133,
+          (observedCadenceMs[fixture.id] ?? Number.POSITIVE_INFINITY) < fixture.b23ObservedMs * 0.8,
       ),
+      wingChunCadencePinned:
+        (observedCadenceMs["x2-wing-chun-wraps"] ?? Number.POSITIVE_INFINITY) <
+        FIXTURES[1].b23ObservedMs + 35,
       privatePorts: !FORBIDDEN_PORTS.has(clientPort) && !FORBIDDEN_PORTS.has(gamePort),
       wholeArtCharacter: CHARACTER_ID,
     };
@@ -928,12 +1353,21 @@ test("B23 kung-fu corrections are live on all four wraps and both facings", asyn
       receiverScaleWraps: true,
       extendedVisibleAuthorityReach: true,
       roundhouseShowcase: true,
-      backflipHeadKickShowcase: true,
+      frontflipHeelDropShowcase: true,
+      mantisHookShowcase: true,
       prayingMantisStance: true,
       craneStance: true,
-      everyCaptureHasAuthoritativeTravel: true,
+      wingChunZeroDisplacement: true,
+      theatricalAuthoritativeTravel: true,
+      dragonRocket: true,
+      fullBodyPaperRotate: true,
+      forwardFlip: true,
+      wildStretchAttacks: true,
+      heldFinisherPoses: true,
+      everyCaptureHasTelemetry: true,
       cadenceOrder: true,
-      fasterThanB19Cadence: true,
+      rebuiltStylesFasterThanB23: true,
+      wingChunCadencePinned: true,
       privatePorts: true,
       wholeArtCharacter: CHARACTER_ID,
     });

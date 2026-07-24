@@ -18343,7 +18343,7 @@
     {
       "id": "x2-muay-thai-wraps",
       "name": "Muay Thai Wraps",
-      "description": "Crimson wraps for a fast five-beat advance: long teep, paired elbows, clinch knee, and a full sweeping roundhouse finish.",
+      "description": "Crimson wraps for a five-beat action-movie blitz: a dragon-rocket teep, paper-turn back elbow, clinch knee, and full-body roundhouse.",
       "type": "melee",
       "family": "gauntlet",
       "theme": "scarred crimson Muay Thai fighting wraps",
@@ -18363,7 +18363,7 @@
       "palettePrimary": "#7D1F24",
       "paletteAccent": "#D74737",
       "artPrompt": "Weapon-only in-world sprite: one clenched hand wrapped in thick scarred crimson Muay Thai cloth, compact knuckle profile facing RIGHT, rigid short bindings with no loose standing elements. Gritty dark-comic cel, flat transparent cutout. No character or impact effect.",
-      "cardartAction": "driving a long teep, paired elbows and a clinch knee before one complete sweeping roundhouse finish",
+      "cardartAction": "shooting bodily forward behind a dragon teep, paper-turning through a back elbow, then sweeping a full-body roundhouse",
       "impactMuzzle": true,
       "authoritativeCombo": true,
       "swingStyle": "punch",
@@ -18371,42 +18371,45 @@
       "comboVariant": "muay-thai-eight-limbs",
       "comboBar": [
         {
-          "name": "Rope-Ridge Teep",
+          "name": "Dragon-Rocket Teep",
           "motion": "teep-kick",
           "limb": "foot",
           "direction": 1,
           "hand": "lead",
           "timing": {
-            "activeStart": 0.12,
-            "activeEnd": 0.42,
-            "impact": 0.34,
-            "followEnd": 0.58
+            "activeStart": 0.05,
+            "activeEnd": 0.4,
+            "impact": 0.29,
+            "followEnd": 0.56
           },
           "path": {
             "kind": "capsule",
             "deltaAngle": 0,
             "arcMultiplier": 0,
-            "rangeMultiplier": 1.3,
+            "rangeMultiplier": 1.5,
             "damageMultiplier": 0.8,
             "knockback": 14
           },
           "rootMotion": {
-            "forwardPx": 10,
+            "forwardPx": 288,
             "lateralPx": 0,
-            "durationSeconds": 0.1
+            "durationSeconds": 0.14
+          },
+          "theatrics": {
+            "limbStretch": 2.15
           }
         },
         {
-          "name": "Scar Lead Elbow",
+          "name": "Crossing Spear Elbow",
           "motion": "elbow",
           "limb": "hand",
           "direction": 1,
           "hand": "lead",
           "timing": {
-            "activeStart": 0.12,
-            "activeEnd": 0.42,
-            "impact": 0.34,
-            "followEnd": 0.58
+            "activeStart": 0.05,
+            "activeEnd": 0.36,
+            "impact": 0.27,
+            "followEnd": 0.52
           },
           "path": {
             "kind": "sweep",
@@ -18416,22 +18419,22 @@
             "knockback": 16
           },
           "rootMotion": {
-            "forwardPx": 4,
+            "forwardPx": 28,
             "lateralPx": 0,
             "durationSeconds": 0.08
           }
         },
         {
-          "name": "Scar Rear Elbow",
-          "motion": "elbow",
+          "name": "Eight-Limbs Back Elbow",
+          "motion": "spinning-back-elbow",
           "limb": "hand",
           "direction": -1,
           "hand": "off",
           "timing": {
-            "activeStart": 0.13,
-            "activeEnd": 0.43,
-            "impact": 0.35,
-            "followEnd": 0.59
+            "activeStart": 0.06,
+            "activeEnd": 0.4,
+            "impact": 0.3,
+            "followEnd": 0.56
           },
           "path": {
             "kind": "sweep",
@@ -18441,22 +18444,25 @@
             "knockback": 18
           },
           "rootMotion": {
-            "forwardPx": 5,
+            "forwardPx": 32,
             "lateralPx": 0,
-            "durationSeconds": 0.08
+            "durationSeconds": 0.09
+          },
+          "theatrics": {
+            "paperTurns": 1
           }
         },
         {
-          "name": "Rising Clinch Knee",
+          "name": "Clinch Comet Knee",
           "motion": "knee-strike",
           "limb": "foot",
           "direction": 1,
           "hand": "both",
           "timing": {
-            "activeStart": 0.16,
-            "activeEnd": 0.48,
-            "impact": 0.4,
-            "followEnd": 0.66
+            "activeStart": 0.07,
+            "activeEnd": 0.44,
+            "impact": 0.34,
+            "followEnd": 0.58
           },
           "path": {
             "kind": "capsule",
@@ -18467,9 +18473,13 @@
             "knockback": 24
           },
           "rootMotion": {
-            "forwardPx": 12,
+            "forwardPx": 44,
             "lateralPx": 0,
             "durationSeconds": 0.1
+          },
+          "theatrics": {
+            "holdPose": "clinch-guard",
+            "holdStart": 0.58
           }
         },
         {
@@ -18479,10 +18489,10 @@
           "direction": -1,
           "hand": "both",
           "timing": {
-            "activeStart": 0.22,
-            "activeEnd": 0.62,
-            "impact": 0.52,
-            "followEnd": 0.78
+            "activeStart": 0.08,
+            "activeEnd": 0.5,
+            "impact": 0.39,
+            "followEnd": 0.58
           },
           "path": {
             "kind": "sweep",
@@ -18492,9 +18502,15 @@
             "knockback": 34
           },
           "rootMotion": {
-            "forwardPx": 8,
+            "forwardPx": 36,
             "lateralPx": 0,
-            "durationSeconds": 0.12
+            "durationSeconds": 0.1
+          },
+          "theatrics": {
+            "paperTurns": 1,
+            "limbStretch": 2,
+            "holdPose": "champion-guard",
+            "holdStart": 0.58
           }
         }
       ],
@@ -18505,10 +18521,10 @@
         "comboForwardPx": 6
       },
       "stats": {
-        "damage": 8,
+        "damage": 3.6,
         "range": 92,
         "halfArc": 0.72,
-        "cooldown": 0.4,
+        "cooldown": 0.18,
         "displayLength": 62,
         "collisionLength": 84,
         "swingArc": 2.4,
@@ -18568,11 +18584,6 @@
             "rangeMultiplier": 1.3,
             "damageMultiplier": 0.8,
             "knockback": 2
-          },
-          "rootMotion": {
-            "forwardPx": 3,
-            "lateralPx": 0,
-            "durationSeconds": 0.05
           }
         },
         {
@@ -18594,11 +18605,6 @@
             "rangeMultiplier": 1.34,
             "damageMultiplier": 0.8,
             "knockback": 2
-          },
-          "rootMotion": {
-            "forwardPx": 3,
-            "lateralPx": 0,
-            "durationSeconds": 0.05
           }
         },
         {
@@ -18620,11 +18626,6 @@
             "rangeMultiplier": 1.38,
             "damageMultiplier": 0.8,
             "knockback": 3
-          },
-          "rootMotion": {
-            "forwardPx": 4,
-            "lateralPx": 0,
-            "durationSeconds": 0.05
           }
         },
         {
@@ -18646,11 +18647,6 @@
             "rangeMultiplier": 1.4,
             "damageMultiplier": 1.1,
             "knockback": 8
-          },
-          "rootMotion": {
-            "forwardPx": 7,
-            "lateralPx": 0,
-            "durationSeconds": 0.07
           }
         },
         {
@@ -18671,11 +18667,6 @@
             "rangeMultiplier": 1.5,
             "damageMultiplier": 1.5,
             "knockback": 18
-          },
-          "rootMotion": {
-            "forwardPx": 9,
-            "lateralPx": 0,
-            "durationSeconds": 0.08
           }
         }
       ],
@@ -18703,7 +18694,7 @@
     {
       "id": "x2-drunken-fist-wraps",
       "name": "Drunken Fist Wraps",
-      "description": "Wine-stained wraps for fast directional feints, a crane one-leg guard, and an overhead backflip head kick.",
+      "description": "Wine-stained wraps for violent sideways staggers, a full front-flip heel drop, and a held one-leg crane finish.",
       "type": "melee",
       "family": "gauntlet",
       "theme": "weathered amber Drunken Fist gourd wraps",
@@ -18723,7 +18714,7 @@
       "palettePrimary": "#9A6A37",
       "paletteAccent": "#8C65B8",
       "artPrompt": "Weapon-only in-world sprite: a matched pair of worn tan Drunken Fist wraps, one with a small clay wine gourd rigidly bound at the wrist, loose crooked hands facing RIGHT. Gritty dark-comic cel, flat transparent cutouts. No character or impact effect.",
-      "cardartAction": "staggering through crooked hand feints and a low leg sweep before a full backflip drives the wrapped foot overhead",
+      "cardartAction": "hurling sideways through crooked hand feints and a low sweep before a full forward somersault drives the heel down",
       "impactMuzzle": true,
       "authoritativeCombo": true,
       "swingStyle": "punch",
@@ -18731,15 +18722,15 @@
       "comboVariant": "drunken-fist-swaying-cup",
       "comboBar": [
         {
-          "name": "Crooked Cup Jab",
+          "name": "Corkscrew Cup Jab",
           "motion": "sway-jab",
           "limb": "hand",
           "direction": 1,
           "hand": "lead",
           "timing": {
-            "activeStart": 0.08,
+            "activeStart": 0.04,
             "activeEnd": 0.34,
-            "impact": 0.27,
+            "impact": 0.24,
             "followEnd": 0.5
           },
           "path": {
@@ -18751,22 +18742,25 @@
             "knockback": 7
           },
           "rootMotion": {
-            "forwardPx": 3,
-            "lateralPx": 7,
-            "durationSeconds": 0.1
+            "forwardPx": 18,
+            "lateralPx": 88,
+            "durationSeconds": 0.12
+          },
+          "theatrics": {
+            "limbStretch": 1.65
           }
         },
         {
-          "name": "Wrong-Way Cup Cross",
+          "name": "Falling-Gourd Cross",
           "motion": "weave-cross",
           "limb": "hand",
           "direction": -1,
           "hand": "off",
           "timing": {
-            "activeStart": 0.1,
-            "activeEnd": 0.38,
-            "impact": 0.3,
-            "followEnd": 0.54
+            "activeStart": 0.04,
+            "activeEnd": 0.36,
+            "impact": 0.26,
+            "followEnd": 0.52
           },
           "path": {
             "kind": "capsule",
@@ -18777,22 +18771,22 @@
             "knockback": 9
           },
           "rootMotion": {
-            "forwardPx": -3,
-            "lateralPx": -9,
-            "durationSeconds": 0.1
+            "forwardPx": -12,
+            "lateralPx": -112,
+            "durationSeconds": 0.12
           }
         },
         {
-          "name": "Lantern-Weave Backfist",
+          "name": "Moon-Sway Backfist",
           "motion": "weave-backfist",
           "limb": "hand",
           "direction": 1,
           "hand": "lead",
           "timing": {
-            "activeStart": 0.09,
-            "activeEnd": 0.37,
-            "impact": 0.29,
-            "followEnd": 0.53
+            "activeStart": 0.04,
+            "activeEnd": 0.36,
+            "impact": 0.26,
+            "followEnd": 0.52
           },
           "path": {
             "kind": "sweep",
@@ -18802,22 +18796,25 @@
             "knockback": 11
           },
           "rootMotion": {
-            "forwardPx": 5,
-            "lateralPx": 8,
-            "durationSeconds": 0.1
+            "forwardPx": 24,
+            "lateralPx": 104,
+            "durationSeconds": 0.12
+          },
+          "theatrics": {
+            "limbStretch": 1.9
           }
         },
         {
-          "name": "Spilled-Wine Leg Sweep",
+          "name": "Tavern-Floor Sweep",
           "motion": "sweeping-leg",
           "limb": "foot",
           "direction": -1,
           "hand": "both",
           "timing": {
-            "activeStart": 0.13,
-            "activeEnd": 0.48,
-            "impact": 0.39,
-            "followEnd": 0.64
+            "activeStart": 0.05,
+            "activeEnd": 0.42,
+            "impact": 0.31,
+            "followEnd": 0.58
           },
           "path": {
             "kind": "sweep",
@@ -18827,22 +18824,26 @@
             "knockback": 16
           },
           "rootMotion": {
-            "forwardPx": -2,
-            "lateralPx": -11,
-            "durationSeconds": 0.1
+            "forwardPx": 10,
+            "lateralPx": -128,
+            "durationSeconds": 0.12
+          },
+          "theatrics": {
+            "holdPose": "crane-one-leg",
+            "holdStart": 0.58
           }
         },
         {
-          "name": "Upside-Down Gourd Head Kick",
-          "motion": "backflip-head-kick",
+          "name": "Heaven-Spilling Front-Flip Heel",
+          "motion": "frontflip-heel-drop",
           "limb": "foot",
           "direction": -1,
           "hand": "both",
           "timing": {
-            "activeStart": 0.16,
-            "activeEnd": 0.58,
-            "impact": 0.42,
-            "followEnd": 0.82
+            "activeStart": 0.04,
+            "activeEnd": 0.52,
+            "impact": 0.4,
+            "followEnd": 0.6
           },
           "path": {
             "kind": "sweep",
@@ -18852,9 +18853,15 @@
             "knockback": 24
           },
           "rootMotion": {
-            "forwardPx": 12,
-            "lateralPx": 4,
-            "durationSeconds": 0.12
+            "forwardPx": 156,
+            "lateralPx": 40,
+            "durationSeconds": 0.13
+          },
+          "theatrics": {
+            "flip": "front",
+            "limbStretch": 2.2,
+            "holdPose": "crane-one-leg",
+            "holdStart": 0.6
           }
         }
       ],
@@ -18865,10 +18872,10 @@
         "comboForwardPx": 8
       },
       "stats": {
-        "damage": 6,
+        "damage": 3.2,
         "range": 96,
         "halfArc": 0.82,
-        "cooldown": 0.3,
+        "cooldown": 0.16,
         "displayLength": 66,
         "collisionLength": 86,
         "swingArc": 2.55,
@@ -18882,7 +18889,7 @@
     {
       "id": "x2-iron-palm-wraps",
       "name": "Iron Palm Wraps",
-      "description": "Grey iron-plated wraps for a crushing palm, plated stomp, coiled wind-up, and double-palm quake finish.",
+      "description": "Grey iron-plated wraps for a crushing advance, mountain stomp, full-body iron roundhouse, and stretched mantis-hook finish.",
       "type": "melee",
       "family": "gauntlet",
       "theme": "black iron-plated palm wraps with rigid knuckle spikes",
@@ -18890,7 +18897,7 @@
       "finish": "blackened",
       "grip": "2H",
       "poseLanguage": {
-        "idle": "mirror-guard",
+        "idle": "praying-mantis",
         "feet": "wide-plant"
       },
       "size": "M",
@@ -18902,7 +18909,7 @@
       "palettePrimary": "#25282B",
       "paletteAccent": "#C9B178",
       "artPrompt": "Weapon-only in-world sprite: a matched pair of blackened iron palm wraps with riveted plates and rigid knuckle spikes, clenched striking ends facing RIGHT. Gritty dark-comic cel, flat transparent cutouts. No character or impact effect.",
-      "cardartAction": "planting through a crushing palm and plated stomp before both iron palms crash out behind a metallic quake",
+      "cardartAction": "advancing through a crushing palm and plated stomp, paper-turning a full roundhouse, then stretching both hands into mantis hooks",
       "impactMuzzle": true,
       "authoritativeCombo": true,
       "swingStyle": "punch",
@@ -18910,16 +18917,16 @@
       "comboVariant": "iron-palm-forge-gate",
       "comboBar": [
         {
-          "name": "Crushing Gate Palm",
+          "name": "Mountain-Gate Crushing Palm",
           "motion": "crushing-palm",
           "limb": "hand",
           "direction": 1,
           "hand": "lead",
           "timing": {
-            "activeStart": 0.2,
-            "activeEnd": 0.54,
-            "impact": 0.46,
-            "followEnd": 0.7
+            "activeStart": 0.07,
+            "activeEnd": 0.42,
+            "impact": 0.32,
+            "followEnd": 0.56
           },
           "path": {
             "kind": "capsule",
@@ -18930,22 +18937,25 @@
             "knockback": 24
           },
           "rootMotion": {
-            "forwardPx": 5,
+            "forwardPx": 52,
             "lateralPx": 0,
-            "durationSeconds": 0.12
+            "durationSeconds": 0.14
+          },
+          "theatrics": {
+            "limbStretch": 1.55
           }
         },
         {
-          "name": "Iron Mountain Stomp",
+          "name": "Furnace Stomp Advance",
           "motion": "stomp-kick",
           "limb": "foot",
           "direction": -1,
           "hand": "off",
           "timing": {
-            "activeStart": 0.22,
-            "activeEnd": 0.58,
-            "impact": 0.49,
-            "followEnd": 0.74
+            "activeStart": 0.06,
+            "activeEnd": 0.44,
+            "impact": 0.34,
+            "followEnd": 0.58
           },
           "path": {
             "kind": "capsule",
@@ -18956,59 +18966,68 @@
             "knockback": 30
           },
           "rootMotion": {
-            "forwardPx": 12,
+            "forwardPx": 112,
             "lateralPx": 0,
-            "durationSeconds": 0.12
+            "durationSeconds": 0.18
           }
         },
         {
-          "name": "Anvil-Coil Wind-Up",
-          "motion": "windup-palm",
-          "limb": "hand",
+          "name": "Iron Wheel Roundhouse",
+          "motion": "roundhouse-kick",
+          "limb": "foot",
           "direction": -1,
           "hand": "off",
           "timing": {
-            "activeStart": 0.24,
-            "activeEnd": 0.6,
-            "impact": 0.51,
-            "followEnd": 0.76
+            "activeStart": 0.08,
+            "activeEnd": 0.5,
+            "impact": 0.39,
+            "followEnd": 0.6
           },
           "path": {
             "kind": "sweep",
-            "arcMultiplier": -0.48,
-            "rangeMultiplier": 1.24,
+            "arcMultiplier": -1.5,
+            "rangeMultiplier": 1.5,
             "damageMultiplier": 1,
-            "knockback": 26
+            "knockback": 34
           },
           "rootMotion": {
-            "forwardPx": -3,
+            "forwardPx": 72,
             "lateralPx": 0,
-            "durationSeconds": 0.14
+            "durationSeconds": 0.18
+          },
+          "theatrics": {
+            "paperTurns": 1,
+            "limbStretch": 1.9
           }
         },
         {
-          "name": "Forge-Gate Quake Palm",
-          "motion": "quake-double-palm",
+          "name": "Mantis Double-Hook Breaker",
+          "motion": "mantis-double-hook",
           "limb": "hand",
           "direction": 0,
           "hand": "both",
           "timing": {
-            "activeStart": 0.28,
-            "activeEnd": 0.68,
-            "impact": 0.58,
-            "followEnd": 0.84
+            "activeStart": 0.08,
+            "activeEnd": 0.5,
+            "impact": 0.39,
+            "followEnd": 0.58
           },
           "path": {
             "kind": "fan",
-            "arcMultiplier": 0.5,
-            "rangeMultiplier": 1.48,
+            "arcMultiplier": 0.72,
+            "rangeMultiplier": 1.5,
             "damageMultiplier": 1.1,
             "knockback": 48
           },
           "rootMotion": {
-            "forwardPx": 16,
+            "forwardPx": 96,
             "lateralPx": 0,
-            "durationSeconds": 0.16
+            "durationSeconds": 0.18
+          },
+          "theatrics": {
+            "limbStretch": 2.1,
+            "holdPose": "praying-mantis",
+            "holdStart": 0.58
           }
         }
       ],
@@ -19019,10 +19038,10 @@
         "comboForwardPx": 4
       },
       "stats": {
-        "damage": 11,
+        "damage": 4.8,
         "range": 96,
         "halfArc": 0.68,
-        "cooldown": 0.55,
+        "cooldown": 0.24,
         "displayLength": 72,
         "collisionLength": 88,
         "swingArc": 2.2,

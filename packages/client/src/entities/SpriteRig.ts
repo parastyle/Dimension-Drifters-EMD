@@ -53,6 +53,7 @@ import {
   JUMP_VELOCITY,
   landingThumpTier,
   MELEE_COMBO_SEQUENCES,
+  meleeComboGraceMs,
   type MeleeComboFamily,
   type MeleeComboHand,
   type MeleeComboLimb,
@@ -2374,6 +2375,8 @@ export class SpriteRig {
   private pairBarExpiresAtMs = -1e9;
   private pairCeremonyStartMs = -1e9;
   private pairWeaponScaleX: [number, number] = [1, 1];
+  /** B25 signature kicks stretch the independently-mounted worn feet, then snap to identity. */
+  private pairFootWeaponScaleX: [number, number] = [1, 1];
   private pairGlintAlpha = 0;
   /** Optional retained open-book treatment. Shapes are allocated once per equip and reused for every beat. */
   private tome?: TomeVisualState;
@@ -2485,6 +2488,23 @@ export class SpriteRig {
   private readonly closeBladePose = createCloseBladePoseSample();
   private readonly kungFuWrapPoseInput = createKungFuWrapPoseInput();
   private readonly kungFuWrapPose = createKungFuWrapPoseSample();
+  /**
+   * Retained high-water marks from frames the rig actually rendered. The live gate resets this
+   * record between captures so sub-frame theatrical beats remain auditable at throttled browser
+   * polling rates without changing their authored timing.
+   */
+  private readonly kungFuWrapRenderEvidence = {
+    renderedSamples: 0,
+    minPaperTurnScaleX: 1,
+    maxFlipProgress: -1,
+    maxFlipAbsRotation: 0,
+    maxHandStretch: 1,
+    maxRearHandStretch: 1,
+    maxFrontFootStretch: 1,
+    maxBackFootStretch: 1,
+    maxHoldStrength: 0,
+    holdPoses: [] as string[],
+  };
   private readonly katanaChoreographyPose = createKatanaChoreographySample();
   private closeBladePoseActive = false;
   private closeBladeBodyX = 0;
@@ -5097,7 +5117,10 @@ export class SpriteRig {
         .setPosition(foot.x, foot.y)
         .setRotation(foot.rotation)
         .setScale(
-          fixedScale * wrapped.imageFacingX * (foot.scaleX / sourceScale),
+          fixedScale *
+            wrapped.imageFacingX *
+            (foot.scaleX / sourceScale) *
+            this.pairFootWeaponScaleX[wrapped.foot.front ? 0 : 1],
           fixedScale * (foot.scaleY / sourceScale),
         )
         .setAlpha(foot.alpha)
@@ -5569,12 +5592,9 @@ export class SpriteRig {
         // Continuity is based on the accepted/predicted START: readyAt=start+effective CD, then the authored
         // grace. Early buffered requests only reach this method when locally fired; Stage 2 will reconcile
         // this same `(weapon,family,step)` snapshot from authoritative swingSeq/comboStep.
-        const expiresAtMs =
-          timeMs + nextSwing.effectiveCooldown * 1000 + comboGraceMs(nextSwing.effectiveCooldown);
-        const chainExpiresAtMs =
-          acceptedAtMs +
-          nextSwing.effectiveCooldown * 1000 +
-          comboGraceMs(nextSwing.effectiveCooldown);
+        const sharedGraceMs = meleeComboGraceMs(nextSwing.effectiveCooldown, sequence);
+        const expiresAtMs = timeMs + nextSwing.effectiveCooldown * 1000 + sharedGraceMs;
+        const chainExpiresAtMs = acceptedAtMs + nextSwing.effectiveCooldown * 1000 + sharedGraceMs;
         this.comboFamily = family;
         this.comboStep = step;
         this.comboExpiresAtMs = expiresAtMs;
@@ -8891,6 +8911,8 @@ export class SpriteRig {
     this.swingBackOffY = 0;
     this.pairWeaponScaleX[0] = 1;
     this.pairWeaponScaleX[1] = 1;
+    this.pairFootWeaponScaleX[0] = 1;
+    this.pairFootWeaponScaleX[1] = 1;
     this.pairGlintAlpha = 0;
     this.attackArtOffX = 0;
     this.attackArtOffY = 0;
@@ -9643,17 +9665,66 @@ export class SpriteRig {
             input.limb = pose.limb ?? "hand";
             input.direction = poseDirection;
             input.timing = pose.timing;
+            input.theatrics = pose.theatrics;
             input.strikeReachBodyHeights =
               (meleeReach(def) * pose.path.rangeMultiplier) / TARGET_BODY_H;
             input.t = tt;
             const sampled = sampleKungFuWrapPose(input, this.kungFuWrapPose);
+            const renderEvidence = this.kungFuWrapRenderEvidence;
+            renderEvidence.renderedSamples += 1;
+            renderEvidence.minPaperTurnScaleX = Math.min(
+              renderEvidence.minPaperTurnScaleX,
+              sampled.paperTurnScaleX,
+            );
+            renderEvidence.maxFlipProgress = Math.max(
+              renderEvidence.maxFlipProgress,
+              sampled.flipProgress,
+            );
+            renderEvidence.maxHandStretch = Math.max(
+              renderEvidence.maxHandStretch,
+              sampled.handStretch,
+            );
+            renderEvidence.maxRearHandStretch = Math.max(
+              renderEvidence.maxRearHandStretch,
+              sampled.rearHandStretch,
+            );
+            renderEvidence.maxFrontFootStretch = Math.max(
+              renderEvidence.maxFrontFootStretch,
+              sampled.frontFootStretch,
+            );
+            renderEvidence.maxBackFootStretch = Math.max(
+              renderEvidence.maxBackFootStretch,
+              sampled.backFootStretch,
+            );
+            renderEvidence.maxHoldStrength = Math.max(
+              renderEvidence.maxHoldStrength,
+              sampled.holdStrength,
+            );
+            if (
+              sampled.holdPose !== undefined &&
+              !renderEvidence.holdPoses.includes(sampled.holdPose)
+            ) {
+              renderEvidence.holdPoses.push(sampled.holdPose);
+            }
             if (sampled.flipProgress >= 0) {
-              this.root.rotation += rollTumbleRotation(
+              const flipRotation = rollTumbleRotation(
                 sampled.flipProgress,
-                -this.facing,
+                sampled.flipDirection * this.facing,
                 anim.reducedMotion === true || outsidePaperView,
               );
+              this.root.rotation += flipRotation;
+              renderEvidence.maxFlipAbsRotation = Math.max(
+                renderEvidence.maxFlipAbsRotation,
+                Math.abs(flipRotation),
+              );
               this.attackLiftPx += sampled.wholeBodyLift * TARGET_BODY_H;
+            }
+            if (sampled.paperTurnProgress >= 0) {
+              this.root.scaleX *= sampled.paperTurnScaleX;
+              if (this.label) {
+                const inv = 1 / (this.baseScale || 1);
+                this.label.scaleX = screenTrueScaleX(this.root.scaleX, this.root.scaleY, inv);
+              }
             }
             aimRelativePoint(sampled.handForward, sampled.handLateral, aimLocal, this.posePoint);
             const leadX = this.posePoint.x * TARGET_BODY_H;
@@ -9713,6 +9784,15 @@ export class SpriteRig {
             const impactHand = pose.hand === "off" ? 1 : 0;
             this.pairWeaponScaleX[impactHand] = 1 + sampled.impactSnap * 0.24;
             if (pose.hand === "both") this.pairWeaponScaleX[1] = 1 + sampled.impactSnap * 0.18;
+            if (pose.theatrics?.limbStretch !== undefined) {
+              if (pose.limb === "foot") {
+                this.pairFootWeaponScaleX[0] = sampled.frontFootStretch;
+                this.pairFootWeaponScaleX[1] = sampled.backFootStretch;
+              } else {
+                this.pairWeaponScaleX[impactHand] *= sampled.handStretch;
+                if (pose.hand === "both") this.pairWeaponScaleX[1] *= sampled.rearHandStretch;
+              }
+            }
             this.pairGlintAlpha = Math.max(
               this.pairGlintAlpha,
               sampled.impactSnap * (pose.motion === "chain-punch" ? 0.72 : 0.9),

@@ -14317,10 +14317,10 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-muay-thai-wraps",
     "name": "Muay Thai Wraps",
     "expansion": true,
-    "damage": 8,
+    "damage": 3.6,
     "range": 92,
     "halfArc": 0.72,
-    "cooldown": 0.4,
+    "cooldown": 0.18,
     "displayLength": 62,
     "swingArc": 2.4,
     "gripFrac": 0.18,
@@ -14343,7 +14343,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "idle": "mirror-guard",
       "feet": "wide-plant"
     },
-    "description": "Crimson wraps for a fast five-beat advance: long teep, paired elbows, clinch knee, and a full sweeping roundhouse finish.",
+    "description": "Crimson wraps for a five-beat action-movie blitz: a dragon-rocket teep, paper-turn back elbow, clinch knee, and full-body roundhouse.",
     "authoritativeCombo": true,
     "impactMuzzle": true,
     "swingStyle": "punch",
@@ -14413,10 +14413,10 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-drunken-fist-wraps",
     "name": "Drunken Fist Wraps",
     "expansion": true,
-    "damage": 6,
+    "damage": 3.2,
     "range": 96,
     "halfArc": 0.82,
-    "cooldown": 0.3,
+    "cooldown": 0.16,
     "displayLength": 66,
     "swingArc": 2.55,
     "gripFrac": 0.18,
@@ -14439,7 +14439,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "idle": "crane-guard",
       "feet": "crane-one-leg"
     },
-    "description": "Wine-stained wraps for fast directional feints, a crane one-leg guard, and an overhead backflip head kick.",
+    "description": "Wine-stained wraps for violent sideways staggers, a full front-flip heel drop, and a held one-leg crane finish.",
     "authoritativeCombo": true,
     "impactMuzzle": true,
     "swingStyle": "punch",
@@ -14461,10 +14461,10 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "id": "x2-iron-palm-wraps",
     "name": "Iron Palm Wraps",
     "expansion": true,
-    "damage": 11,
+    "damage": 4.8,
     "range": 96,
     "halfArc": 0.68,
-    "cooldown": 0.55,
+    "cooldown": 0.24,
     "displayLength": 72,
     "swingArc": 2.2,
     "gripFrac": 0.18,
@@ -14484,10 +14484,10 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     },
     "collisionLength": 88,
     "poseLanguage": {
-      "idle": "mirror-guard",
+      "idle": "praying-mantis",
       "feet": "wide-plant"
     },
-    "description": "Grey iron-plated wraps for a crushing palm, plated stomp, coiled wind-up, and double-palm quake finish.",
+    "description": "Grey iron-plated wraps for a crushing advance, mountain stomp, full-body iron roundhouse, and stretched mantis-hook finish.",
     "authoritativeCombo": true,
     "impactMuzzle": true,
     "swingStyle": "punch",
@@ -17761,41 +17761,44 @@ export const GENERATED_MELEE_COMBO_BARS = {
   ],
   "muay-thai-eight-limbs": [
     {
-      "name": "Rope-Ridge Teep",
+      "name": "Dragon-Rocket Teep",
       "motion": "teep-kick",
       "direction": 1,
       "hand": "lead",
       "timing": {
-        "activeStart": 0.12,
-        "activeEnd": 0.42,
-        "impact": 0.34,
-        "followEnd": 0.58
+        "activeStart": 0.05,
+        "activeEnd": 0.4,
+        "impact": 0.29,
+        "followEnd": 0.56
       },
       "path": {
         "kind": "capsule",
         "arcMultiplier": 0,
-        "rangeMultiplier": 1.3,
+        "rangeMultiplier": 1.5,
         "damageMultiplier": 0.8,
         "knockback": 14,
         "deltaAngle": 0
       },
       "limb": "foot",
       "rootMotion": {
-        "forwardPx": 10,
+        "forwardPx": 288,
         "lateralPx": 0,
-        "durationSeconds": 0.1
+        "durationSeconds": 0.14
+      },
+      "theatrics": {
+        "limbStretch": 2.15
       }
     },
     {
-      "name": "Scar Lead Elbow",
+      "name": "Crossing Spear Elbow",
       "motion": "elbow",
       "direction": 1,
       "hand": "lead",
       "timing": {
-        "activeStart": 0.12,
-        "activeEnd": 0.42,
-        "impact": 0.34,
-        "followEnd": 0.58
+        "activeStart": 0.05,
+        "activeEnd": 0.36,
+        "impact": 0.27,
+        "followEnd": 0.52
       },
       "path": {
         "kind": "sweep",
@@ -17806,21 +17809,21 @@ export const GENERATED_MELEE_COMBO_BARS = {
       },
       "limb": "hand",
       "rootMotion": {
-        "forwardPx": 4,
+        "forwardPx": 28,
         "lateralPx": 0,
         "durationSeconds": 0.08
       }
     },
     {
-      "name": "Scar Rear Elbow",
-      "motion": "elbow",
+      "name": "Eight-Limbs Back Elbow",
+      "motion": "spinning-back-elbow",
       "direction": -1,
       "hand": "off",
       "timing": {
-        "activeStart": 0.13,
-        "activeEnd": 0.43,
-        "impact": 0.35,
-        "followEnd": 0.59
+        "activeStart": 0.06,
+        "activeEnd": 0.4,
+        "impact": 0.3,
+        "followEnd": 0.56
       },
       "path": {
         "kind": "sweep",
@@ -17831,21 +17834,24 @@ export const GENERATED_MELEE_COMBO_BARS = {
       },
       "limb": "hand",
       "rootMotion": {
-        "forwardPx": 5,
+        "forwardPx": 32,
         "lateralPx": 0,
-        "durationSeconds": 0.08
+        "durationSeconds": 0.09
+      },
+      "theatrics": {
+        "paperTurns": 1
       }
     },
     {
-      "name": "Rising Clinch Knee",
+      "name": "Clinch Comet Knee",
       "motion": "knee-strike",
       "direction": 1,
       "hand": "both",
       "timing": {
-        "activeStart": 0.16,
-        "activeEnd": 0.48,
-        "impact": 0.4,
-        "followEnd": 0.66
+        "activeStart": 0.07,
+        "activeEnd": 0.44,
+        "impact": 0.34,
+        "followEnd": 0.58
       },
       "path": {
         "kind": "capsule",
@@ -17857,9 +17863,13 @@ export const GENERATED_MELEE_COMBO_BARS = {
       },
       "limb": "foot",
       "rootMotion": {
-        "forwardPx": 12,
+        "forwardPx": 44,
         "lateralPx": 0,
         "durationSeconds": 0.1
+      },
+      "theatrics": {
+        "holdPose": "clinch-guard",
+        "holdStart": 0.58
       }
     },
     {
@@ -17868,10 +17878,10 @@ export const GENERATED_MELEE_COMBO_BARS = {
       "direction": -1,
       "hand": "both",
       "timing": {
-        "activeStart": 0.22,
-        "activeEnd": 0.62,
-        "impact": 0.52,
-        "followEnd": 0.78
+        "activeStart": 0.08,
+        "activeEnd": 0.5,
+        "impact": 0.39,
+        "followEnd": 0.58
       },
       "path": {
         "kind": "sweep",
@@ -17882,9 +17892,15 @@ export const GENERATED_MELEE_COMBO_BARS = {
       },
       "limb": "foot",
       "rootMotion": {
-        "forwardPx": 8,
+        "forwardPx": 36,
         "lateralPx": 0,
-        "durationSeconds": 0.12
+        "durationSeconds": 0.1
+      },
+      "theatrics": {
+        "paperTurns": 1,
+        "limbStretch": 2,
+        "holdPose": "champion-guard",
+        "holdStart": 0.58
       }
     }
   ],
@@ -17908,12 +17924,7 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "knockback": 2,
         "deltaAngle": 0
       },
-      "limb": "hand",
-      "rootMotion": {
-        "forwardPx": 3,
-        "lateralPx": 0,
-        "durationSeconds": 0.05
-      }
+      "limb": "hand"
     },
     {
       "name": "Centerline Two",
@@ -17934,12 +17945,7 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "knockback": 2,
         "deltaAngle": 0
       },
-      "limb": "hand",
-      "rootMotion": {
-        "forwardPx": 3,
-        "lateralPx": 0,
-        "durationSeconds": 0.05
-      }
+      "limb": "hand"
     },
     {
       "name": "Centerline Three",
@@ -17960,12 +17966,7 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "knockback": 3,
         "deltaAngle": 0
       },
-      "limb": "hand",
-      "rootMotion": {
-        "forwardPx": 4,
-        "lateralPx": 0,
-        "durationSeconds": 0.05
-      }
+      "limb": "hand"
     },
     {
       "name": "Knee-Gate Oblique",
@@ -17986,12 +17987,7 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "knockback": 8,
         "deltaAngle": -0.08
       },
-      "limb": "foot",
-      "rootMotion": {
-        "forwardPx": 7,
-        "lateralPx": 0,
-        "durationSeconds": 0.07
-      }
+      "limb": "foot"
     },
     {
       "name": "Endless-Knot Double Palm",
@@ -18011,24 +18007,19 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "damageMultiplier": 1.5,
         "knockback": 18
       },
-      "limb": "hand",
-      "rootMotion": {
-        "forwardPx": 9,
-        "lateralPx": 0,
-        "durationSeconds": 0.08
-      }
+      "limb": "hand"
     }
   ],
   "drunken-fist-swaying-cup": [
     {
-      "name": "Crooked Cup Jab",
+      "name": "Corkscrew Cup Jab",
       "motion": "sway-jab",
       "direction": 1,
       "hand": "lead",
       "timing": {
-        "activeStart": 0.08,
+        "activeStart": 0.04,
         "activeEnd": 0.34,
-        "impact": 0.27,
+        "impact": 0.24,
         "followEnd": 0.5
       },
       "path": {
@@ -18041,21 +18032,24 @@ export const GENERATED_MELEE_COMBO_BARS = {
       },
       "limb": "hand",
       "rootMotion": {
-        "forwardPx": 3,
-        "lateralPx": 7,
-        "durationSeconds": 0.1
+        "forwardPx": 18,
+        "lateralPx": 88,
+        "durationSeconds": 0.12
+      },
+      "theatrics": {
+        "limbStretch": 1.65
       }
     },
     {
-      "name": "Wrong-Way Cup Cross",
+      "name": "Falling-Gourd Cross",
       "motion": "weave-cross",
       "direction": -1,
       "hand": "off",
       "timing": {
-        "activeStart": 0.1,
-        "activeEnd": 0.38,
-        "impact": 0.3,
-        "followEnd": 0.54
+        "activeStart": 0.04,
+        "activeEnd": 0.36,
+        "impact": 0.26,
+        "followEnd": 0.52
       },
       "path": {
         "kind": "capsule",
@@ -18067,21 +18061,21 @@ export const GENERATED_MELEE_COMBO_BARS = {
       },
       "limb": "hand",
       "rootMotion": {
-        "forwardPx": -3,
-        "lateralPx": -9,
-        "durationSeconds": 0.1
+        "forwardPx": -12,
+        "lateralPx": -112,
+        "durationSeconds": 0.12
       }
     },
     {
-      "name": "Lantern-Weave Backfist",
+      "name": "Moon-Sway Backfist",
       "motion": "weave-backfist",
       "direction": 1,
       "hand": "lead",
       "timing": {
-        "activeStart": 0.09,
-        "activeEnd": 0.37,
-        "impact": 0.29,
-        "followEnd": 0.53
+        "activeStart": 0.04,
+        "activeEnd": 0.36,
+        "impact": 0.26,
+        "followEnd": 0.52
       },
       "path": {
         "kind": "sweep",
@@ -18092,21 +18086,24 @@ export const GENERATED_MELEE_COMBO_BARS = {
       },
       "limb": "hand",
       "rootMotion": {
-        "forwardPx": 5,
-        "lateralPx": 8,
-        "durationSeconds": 0.1
+        "forwardPx": 24,
+        "lateralPx": 104,
+        "durationSeconds": 0.12
+      },
+      "theatrics": {
+        "limbStretch": 1.9
       }
     },
     {
-      "name": "Spilled-Wine Leg Sweep",
+      "name": "Tavern-Floor Sweep",
       "motion": "sweeping-leg",
       "direction": -1,
       "hand": "both",
       "timing": {
-        "activeStart": 0.13,
-        "activeEnd": 0.48,
-        "impact": 0.39,
-        "followEnd": 0.64
+        "activeStart": 0.05,
+        "activeEnd": 0.42,
+        "impact": 0.31,
+        "followEnd": 0.58
       },
       "path": {
         "kind": "sweep",
@@ -18117,21 +18114,25 @@ export const GENERATED_MELEE_COMBO_BARS = {
       },
       "limb": "foot",
       "rootMotion": {
-        "forwardPx": -2,
-        "lateralPx": -11,
-        "durationSeconds": 0.1
+        "forwardPx": 10,
+        "lateralPx": -128,
+        "durationSeconds": 0.12
+      },
+      "theatrics": {
+        "holdPose": "crane-one-leg",
+        "holdStart": 0.58
       }
     },
     {
-      "name": "Upside-Down Gourd Head Kick",
-      "motion": "backflip-head-kick",
+      "name": "Heaven-Spilling Front-Flip Heel",
+      "motion": "frontflip-heel-drop",
       "direction": -1,
       "hand": "both",
       "timing": {
-        "activeStart": 0.16,
-        "activeEnd": 0.58,
-        "impact": 0.42,
-        "followEnd": 0.82
+        "activeStart": 0.04,
+        "activeEnd": 0.52,
+        "impact": 0.4,
+        "followEnd": 0.6
       },
       "path": {
         "kind": "sweep",
@@ -18142,23 +18143,29 @@ export const GENERATED_MELEE_COMBO_BARS = {
       },
       "limb": "foot",
       "rootMotion": {
-        "forwardPx": 12,
-        "lateralPx": 4,
-        "durationSeconds": 0.12
+        "forwardPx": 156,
+        "lateralPx": 40,
+        "durationSeconds": 0.13
+      },
+      "theatrics": {
+        "flip": "front",
+        "limbStretch": 2.2,
+        "holdPose": "crane-one-leg",
+        "holdStart": 0.6
       }
     }
   ],
   "iron-palm-forge-gate": [
     {
-      "name": "Crushing Gate Palm",
+      "name": "Mountain-Gate Crushing Palm",
       "motion": "crushing-palm",
       "direction": 1,
       "hand": "lead",
       "timing": {
-        "activeStart": 0.2,
-        "activeEnd": 0.54,
-        "impact": 0.46,
-        "followEnd": 0.7
+        "activeStart": 0.07,
+        "activeEnd": 0.42,
+        "impact": 0.32,
+        "followEnd": 0.56
       },
       "path": {
         "kind": "capsule",
@@ -18170,21 +18177,24 @@ export const GENERATED_MELEE_COMBO_BARS = {
       },
       "limb": "hand",
       "rootMotion": {
-        "forwardPx": 5,
+        "forwardPx": 52,
         "lateralPx": 0,
-        "durationSeconds": 0.12
+        "durationSeconds": 0.14
+      },
+      "theatrics": {
+        "limbStretch": 1.55
       }
     },
     {
-      "name": "Iron Mountain Stomp",
+      "name": "Furnace Stomp Advance",
       "motion": "stomp-kick",
       "direction": -1,
       "hand": "off",
       "timing": {
-        "activeStart": 0.22,
-        "activeEnd": 0.58,
-        "impact": 0.49,
-        "followEnd": 0.74
+        "activeStart": 0.06,
+        "activeEnd": 0.44,
+        "impact": 0.34,
+        "followEnd": 0.58
       },
       "path": {
         "kind": "capsule",
@@ -18196,59 +18206,68 @@ export const GENERATED_MELEE_COMBO_BARS = {
       },
       "limb": "foot",
       "rootMotion": {
-        "forwardPx": 12,
+        "forwardPx": 112,
         "lateralPx": 0,
-        "durationSeconds": 0.12
+        "durationSeconds": 0.18
       }
     },
     {
-      "name": "Anvil-Coil Wind-Up",
-      "motion": "windup-palm",
+      "name": "Iron Wheel Roundhouse",
+      "motion": "roundhouse-kick",
       "direction": -1,
       "hand": "off",
       "timing": {
-        "activeStart": 0.24,
-        "activeEnd": 0.6,
-        "impact": 0.51,
-        "followEnd": 0.76
+        "activeStart": 0.08,
+        "activeEnd": 0.5,
+        "impact": 0.39,
+        "followEnd": 0.6
       },
       "path": {
         "kind": "sweep",
-        "arcMultiplier": -0.48,
-        "rangeMultiplier": 1.24,
+        "arcMultiplier": -1.5,
+        "rangeMultiplier": 1.5,
         "damageMultiplier": 1,
-        "knockback": 26
+        "knockback": 34
       },
-      "limb": "hand",
+      "limb": "foot",
       "rootMotion": {
-        "forwardPx": -3,
+        "forwardPx": 72,
         "lateralPx": 0,
-        "durationSeconds": 0.14
+        "durationSeconds": 0.18
+      },
+      "theatrics": {
+        "paperTurns": 1,
+        "limbStretch": 1.9
       }
     },
     {
-      "name": "Forge-Gate Quake Palm",
-      "motion": "quake-double-palm",
+      "name": "Mantis Double-Hook Breaker",
+      "motion": "mantis-double-hook",
       "direction": 0,
       "hand": "both",
       "timing": {
-        "activeStart": 0.28,
-        "activeEnd": 0.68,
-        "impact": 0.58,
-        "followEnd": 0.84
+        "activeStart": 0.08,
+        "activeEnd": 0.5,
+        "impact": 0.39,
+        "followEnd": 0.58
       },
       "path": {
         "kind": "fan",
-        "arcMultiplier": 0.5,
-        "rangeMultiplier": 1.48,
+        "arcMultiplier": 0.72,
+        "rangeMultiplier": 1.5,
         "damageMultiplier": 1.1,
         "knockback": 48
       },
       "limb": "hand",
       "rootMotion": {
-        "forwardPx": 16,
+        "forwardPx": 96,
         "lateralPx": 0,
-        "durationSeconds": 0.16
+        "durationSeconds": 0.18
+      },
+      "theatrics": {
+        "limbStretch": 2.1,
+        "holdPose": "praying-mantis",
+        "holdStart": 0.58
       }
     }
   ]

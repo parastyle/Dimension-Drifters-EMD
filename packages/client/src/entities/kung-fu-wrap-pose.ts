@@ -1,5 +1,6 @@
 import type {
   MeleeComboHand,
+  MeleeComboHoldPose,
   MeleeComboLimb,
   MeleeComboMotion,
   MeleeComboStep,
@@ -28,6 +29,8 @@ export type KungFuWrapMotion = Extract<
   | "windup-palm"
   | "quake-double-palm"
   | "backflip-head-kick"
+  | "frontflip-heel-drop"
+  | "mantis-double-hook"
 >;
 
 export interface KungFuWrapPoseInput {
@@ -36,6 +39,7 @@ export interface KungFuWrapPoseInput {
   limb: MeleeComboLimb;
   direction: -1 | 0 | 1;
   timing: Readonly<MeleeComboStep["timing"]>;
+  theatrics: Readonly<NonNullable<MeleeComboStep["theatrics"]>> | undefined;
   /** Exact authoritative center-to-envelope reach normalized by the shared 76px body height. */
   strikeReachBodyHeights: number;
   t: number;
@@ -67,6 +71,18 @@ export interface KungFuWrapPoseSample {
   wholeBodyLift: number;
   /** Full-card tumble progress consumed by the same roll rotation helper as the movement kit. */
   flipProgress: number;
+  /** Signed movement-kit heading: +1 somersaults forward, -1 flips backward. */
+  flipDirection: -1 | 0 | 1;
+  /** Whole-rig paper mirror turn. Kept away from zero so the affine remains invertible. */
+  paperTurnScaleX: number;
+  paperTurnProgress: number;
+  /** Axis stretch for the visible worn-limb sprites; all channels snap back to exactly 1. */
+  handStretch: number;
+  rearHandStretch: number;
+  frontFootStretch: number;
+  backFootStretch: number;
+  holdPose: MeleeComboHoldPose | undefined;
+  holdStrength: number;
 }
 
 export function createKungFuWrapPoseSample(): KungFuWrapPoseSample {
@@ -94,6 +110,15 @@ export function createKungFuWrapPoseSample(): KungFuWrapPoseSample {
     impactSnap: 0,
     wholeBodyLift: 0,
     flipProgress: -1,
+    flipDirection: 0,
+    paperTurnScaleX: 1,
+    paperTurnProgress: -1,
+    handStretch: 1,
+    rearHandStretch: 1,
+    frontFootStretch: 1,
+    backFootStretch: 1,
+    holdPose: undefined,
+    holdStrength: 0,
   };
 }
 
@@ -104,6 +129,7 @@ export function createKungFuWrapPoseInput(): KungFuWrapPoseInput {
     limb: "hand",
     direction: 1,
     timing: { activeStart: 0.1, activeEnd: 0.4, impact: 0.32, followEnd: 0.55 },
+    theatrics: undefined,
     strikeReachBodyHeights: 1.35,
     t: 0,
   };
@@ -133,6 +159,15 @@ function resetKungFuWrapPoseSample(out: KungFuWrapPoseSample): void {
   out.impactSnap = 0;
   out.wholeBodyLift = 0;
   out.flipProgress = -1;
+  out.flipDirection = 0;
+  out.paperTurnScaleX = 1;
+  out.paperTurnProgress = -1;
+  out.handStretch = 1;
+  out.rearHandStretch = 1;
+  out.frontFootStretch = 1;
+  out.backFootStretch = 1;
+  out.holdPose = undefined;
+  out.holdStrength = 0;
 }
 
 export function isKungFuWrapMotion(
@@ -159,7 +194,9 @@ export function isKungFuWrapMotion(
     motion === "stomp-kick" ||
     motion === "windup-palm" ||
     motion === "quake-double-palm" ||
-    motion === "backflip-head-kick"
+    motion === "backflip-head-kick" ||
+    motion === "frontflip-heel-drop" ||
+    motion === "mantis-double-hook"
   );
 }
 
@@ -170,6 +207,118 @@ function clamp01(value: number): number {
 function smooth(value: number): number {
   const t = clamp01(value);
   return t * t * (3 - 2 * t);
+}
+
+function signedPaperScale(value: number): number {
+  if (Math.abs(value) >= 0.12) return value;
+  return value < 0 ? -0.12 : 0.12;
+}
+
+function applyPeakLimbStretch(
+  input: Readonly<KungFuWrapPoseInput>,
+  peakStretch: number,
+  out: KungFuWrapPoseSample,
+): void {
+  if (peakStretch <= 1) return;
+  if (input.limb === "foot") {
+    out.frontFootStretch = peakStretch;
+  } else {
+    out.handStretch = peakStretch;
+    if (input.hand === "both") out.rearHandStretch = peakStretch;
+  }
+}
+
+function strikeStretchEnvelope(input: Readonly<KungFuWrapPoseInput>, impact: number): number {
+  if (input.t < input.timing.activeStart) return 0;
+  if (input.t <= impact)
+    return smooth(
+      (input.t - input.timing.activeStart) / Math.max(0.001, impact - input.timing.activeStart),
+    );
+  const snapEnd = Math.min(
+    input.theatrics?.holdStart ?? input.timing.followEnd,
+    input.timing.followEnd,
+  );
+  return 1 - smooth((input.t - impact) / Math.max(0.001, snapEnd - impact));
+}
+
+function blend(current: number, target: number, amount: number): number {
+  return current + (target - current) * amount;
+}
+
+function applyHeldPose(
+  pose: MeleeComboHoldPose,
+  amount: number,
+  direction: number,
+  out: KungFuWrapPoseSample,
+): void {
+  out.holdPose = pose;
+  out.holdStrength = amount;
+  out.active = true;
+  out.footBlend = Math.max(out.footBlend, amount);
+  switch (pose) {
+    case "clinch-guard":
+      out.handForward = blend(out.handForward, 0.3, amount);
+      out.handLateral = blend(out.handLateral, direction * 0.12, amount);
+      out.rearHandForward = blend(out.rearHandForward, 0.28, amount);
+      out.rearHandLateral = blend(out.rearHandLateral, -direction * 0.12, amount);
+      out.handAngleOffset = blend(out.handAngleOffset, direction * 0.52, amount);
+      out.rearHandAngleOffset = blend(out.rearHandAngleOffset, -direction * 0.46, amount);
+      out.bodyForward = blend(out.bodyForward, 0.08, amount);
+      out.bodyScaleY = blend(out.bodyScaleY, 0.92, amount);
+      out.frontFootForward = blend(out.frontFootForward, 0.18, amount);
+      out.frontFootLift = blend(out.frontFootLift, 0.22, amount);
+      out.backFootForward = blend(out.backFootForward, -0.16, amount);
+      break;
+    case "champion-guard":
+      out.handForward = blend(out.handForward, 0.42, amount);
+      out.handLateral = blend(out.handLateral, direction * 0.22, amount);
+      out.rearHandForward = blend(out.rearHandForward, 0.4, amount);
+      out.rearHandLateral = blend(out.rearHandLateral, -direction * 0.22, amount);
+      out.handAngleOffset = blend(out.handAngleOffset, direction * 0.72, amount);
+      out.rearHandAngleOffset = blend(out.rearHandAngleOffset, -direction * 0.72, amount);
+      out.bodyForward = blend(out.bodyForward, 0.04, amount);
+      out.bodyLift = blend(out.bodyLift, 0.02, amount);
+      out.frontFootForward = blend(out.frontFootForward, 0.18, amount);
+      out.frontFootLateral = blend(out.frontFootLateral, direction * 0.14, amount);
+      out.frontFootLift = blend(out.frontFootLift, 0, amount);
+      out.backFootForward = blend(out.backFootForward, -0.18, amount);
+      out.backFootLateral = blend(out.backFootLateral, -direction * 0.14, amount);
+      out.backFootLift = blend(out.backFootLift, 0, amount);
+      break;
+    case "crane-one-leg":
+      out.handForward = blend(out.handForward, 0.42, amount);
+      out.handLateral = blend(out.handLateral, direction * 0.16, amount);
+      out.rearHandForward = blend(out.rearHandForward, 0.24, amount);
+      out.rearHandLateral = blend(out.rearHandLateral, -direction * 0.13, amount);
+      out.handAngleOffset = blend(out.handAngleOffset, direction * 0.58, amount);
+      out.rearHandAngleOffset = blend(out.rearHandAngleOffset, -direction * 0.48, amount);
+      out.bodyForward = blend(out.bodyForward, 0.02, amount);
+      out.bodyLateral = blend(out.bodyLateral, -direction * 0.04, amount);
+      out.bodyRotation = blend(out.bodyRotation, direction * 0.08, amount);
+      out.frontFootForward = blend(out.frontFootForward, 0.12, amount);
+      out.frontFootLateral = blend(out.frontFootLateral, direction * 0.08, amount);
+      out.frontFootLift = blend(out.frontFootLift, 0.58, amount);
+      out.backFootForward = blend(out.backFootForward, -0.12, amount);
+      out.backFootLateral = blend(out.backFootLateral, -direction * 0.08, amount);
+      out.backFootLift = blend(out.backFootLift, 0, amount);
+      break;
+    case "praying-mantis":
+      out.handForward = blend(out.handForward, 0.5, amount);
+      out.handLateral = blend(out.handLateral, direction * 0.14, amount);
+      out.rearHandForward = blend(out.rearHandForward, 0.3, amount);
+      out.rearHandLateral = blend(out.rearHandLateral, -direction * 0.1, amount);
+      out.handAngleOffset = blend(out.handAngleOffset, direction * 1.02, amount);
+      out.rearHandAngleOffset = blend(out.rearHandAngleOffset, -direction * 0.72, amount);
+      out.bodyForward = blend(out.bodyForward, 0.03, amount);
+      out.bodyRotation = blend(out.bodyRotation, direction * 0.06, amount);
+      out.frontFootForward = blend(out.frontFootForward, 0.14, amount);
+      out.frontFootLateral = blend(out.frontFootLateral, direction * 0.13, amount);
+      out.frontFootLift = blend(out.frontFootLift, 0, amount);
+      out.backFootForward = blend(out.backFootForward, -0.16, amount);
+      out.backFootLateral = blend(out.backFootLateral, -direction * 0.13, amount);
+      out.backFootLift = blend(out.backFootLift, 0, amount);
+      break;
+  }
 }
 
 function strikeEnvelope(input: Readonly<KungFuWrapPoseInput>): number {
@@ -207,10 +356,20 @@ export function sampleKungFuWrapPose(
   const ownership = actionOwnership(input);
   const impact = input.timing.impact ?? input.timing.activeEnd;
   const snap = clamp01(1 - Math.abs(input.t - impact) / 0.07) ** 2;
+  const holdPose = input.theatrics?.holdPose;
+  const holdStart = input.theatrics?.holdStart ?? input.timing.followEnd;
+  const peakStretch = input.theatrics?.limbStretch ?? 1;
   out.active = ownership > 0;
   out.footBlend = ownership;
   out.impactSnap = snap;
-  if (ownership <= 0) return out;
+  if (ownership <= 0) {
+    if (holdPose && input.t >= holdStart && input.t <= 1) {
+      out.active = true;
+      applyHeldPose(holdPose, 1, direction, out);
+      applyPeakLimbStretch(input, peakStretch, out);
+    }
+    return out;
+  }
 
   switch (input.motion) {
     case "elbow":
@@ -243,8 +402,7 @@ export function sampleKungFuWrapPose(
       break;
     case "roundhouse-kick": {
       const arcProgress = smooth(
-        (input.t - input.timing.activeStart) /
-          Math.max(0.001, impact - input.timing.activeStart),
+        (input.t - input.timing.activeStart) / Math.max(0.001, impact - input.timing.activeStart),
       );
       out.handForward = 0.08 * ownership;
       out.handLateral = direction * 0.12;
@@ -506,11 +664,29 @@ export function sampleKungFuWrapPose(
       out.backFootForward = -0.22;
       out.backFootLateral = -0.15;
       break;
+    case "mantis-double-hook":
+      out.handForward = 0.94 * extension;
+      out.handLateral = direction * (0.2 - 0.12 * clamp01(extension));
+      out.handAngleOffset = direction * (0.16 + 0.86 * clamp01(extension));
+      out.rearHandForward = 0.9 * extension;
+      out.rearHandLateral = -direction * (0.18 - 0.1 * clamp01(extension));
+      out.rearHandAngleOffset = -direction * (0.12 + 0.76 * clamp01(extension));
+      out.bodyForward = 0.22 * ownership;
+      out.bodyLift = -0.07 * ownership;
+      out.bodyRotation = direction * 0.12 * ownership;
+      out.bodyScaleX = 1 - 0.19 * ownership;
+      out.bodyScaleY = 1 - 0.16 * ownership;
+      out.frontFootForward = 0.28;
+      out.frontFootLateral = direction * 0.16;
+      out.backFootForward = -0.24;
+      out.backFootLateral = -direction * 0.16;
+      break;
     case "backflip-head-kick": {
       const flipProgress = clamp01(input.t / Math.max(0.001, input.timing.followEnd));
       const apex = Math.sin(Math.PI * flipProgress);
       const overhead = Math.sin(Math.PI * clamp01(flipProgress * 1.2));
       out.flipProgress = flipProgress;
+      out.flipDirection = -1;
       out.wholeBodyLift = 0.48 * apex;
       out.handForward = -0.08 * apex;
       out.handLateral = direction * 0.18 * apex;
@@ -528,6 +704,30 @@ export function sampleKungFuWrapPose(
       out.backFootLift = 0.24 * apex;
       break;
     }
+    case "frontflip-heel-drop": {
+      const flipEnd = input.theatrics?.holdStart ?? input.timing.followEnd;
+      const flipProgress = clamp01(input.t / Math.max(0.001, flipEnd));
+      const apex = Math.sin(Math.PI * flipProgress);
+      const heelDrop = Math.sin(Math.PI * clamp01(flipProgress * 1.25));
+      out.flipProgress = flipProgress;
+      out.flipDirection = 1;
+      out.wholeBodyLift = 0.56 * apex;
+      out.handForward = -0.12 * apex;
+      out.handLateral = direction * 0.16 * Math.sin(Math.PI * 2 * flipProgress);
+      out.rearHandForward = -0.16 * apex;
+      out.rearHandLateral = -direction * 0.16 * Math.sin(Math.PI * 2 * flipProgress);
+      out.bodyForward = 0.12 * apex;
+      out.bodyLateral = direction * 0.08 * Math.sin(Math.PI * 2 * flipProgress);
+      out.bodyScaleX = 1 - 0.2 * apex;
+      out.bodyScaleY = 1 + 0.16 * apex;
+      out.frontFootForward = 1.08 * Math.max(clamp01(extension), heelDrop * 0.9);
+      out.frontFootLateral = direction * 0.18 * Math.sin(Math.PI * 2 * flipProgress);
+      out.frontFootLift = 0.58 * heelDrop;
+      out.backFootForward = -0.32 * apex;
+      out.backFootLateral = -direction * 0.2 * apex;
+      out.backFootLift = 0.3 * apex;
+      break;
+    }
   }
 
   // The visible striking receiver and the accepted hit envelope share this authored reach. Subtract the
@@ -541,6 +741,38 @@ export function sampleKungFuWrapPose(
       if (input.hand === "both")
         out.rearHandForward = Math.max(out.rearHandForward, limbTravel * 0.94);
     }
+  }
+
+  const paperTurns = input.theatrics?.paperTurns ?? 0;
+  if (Math.abs(paperTurns) > 1e-6) {
+    const paperTurnProgress = clamp01(
+      (input.t - input.timing.activeStart) /
+        Math.max(0.001, input.timing.followEnd - input.timing.activeStart),
+    );
+    out.paperTurnProgress = paperTurnProgress;
+    // Reach the mirrored paper face by mid-strike and HOLD it until this beat resolves. A full cosine
+    // cycle disappeared between frames at action-movie cadences; the held negative face is readable even
+    // under a 6fps remote render, then the next beat restores the ordinary facing in one clean snap.
+    const heldTurnProgress = Math.min(0.5, paperTurnProgress);
+    out.paperTurnScaleX = signedPaperScale(Math.cos(heldTurnProgress * Math.PI * 2 * paperTurns));
+  }
+
+  if (peakStretch > 1) {
+    const stretch = 1 + (peakStretch - 1) * strikeStretchEnvelope(input, impact);
+    if (input.limb === "foot") {
+      out.frontFootStretch = stretch;
+    } else {
+      out.handStretch = stretch;
+      if (input.hand === "both") out.rearHandStretch = stretch;
+    }
+  }
+
+  if (holdPose && input.t >= holdStart && input.t <= 1) {
+    const holdStrength = smooth(
+      (input.t - holdStart) / Math.max(0.001, Math.min(0.08, 1 - holdStart)),
+    );
+    applyHeldPose(holdPose, holdStrength, direction, out);
+    if (holdStrength > 0.6) applyPeakLimbStretch(input, peakStretch, out);
   }
   return out;
 }

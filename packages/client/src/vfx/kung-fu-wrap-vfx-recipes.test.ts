@@ -17,9 +17,7 @@ describe("B23 kung-fu wrap beat accents", () => {
         /\b(?:aura|glow|halo)\b/i,
       );
     }
-    expect(KUNG_FU_WRAP_VFX_RECIPES["x2-muay-thai-wraps"]?.swing).toBe(
-      "crimson-roundhouse-arc",
-    );
+    expect(KUNG_FU_WRAP_VFX_RECIPES["x2-muay-thai-wraps"]?.swing).toBe("crimson-roundhouse-arc");
   });
 
   it("routes every kick through a foot-weighted cue and preserves style hand accents", () => {
@@ -31,7 +29,7 @@ describe("B23 kung-fu wrap beat accents", () => {
       "melee:arcane",
     );
     expect(kungFuWrapBeatAudioCue("x2-muay-thai-wraps", "hand", "elbow")).toBe("melee:heavy");
-    expect(kungFuWrapBeatAudioCue("x2-iron-palm-wraps", "hand", "quake-double-palm")).toBe(
+    expect(kungFuWrapBeatAudioCue("x2-iron-palm-wraps", "hand", "mantis-double-hook")).toBe(
       "melee:heavy",
     );
   });

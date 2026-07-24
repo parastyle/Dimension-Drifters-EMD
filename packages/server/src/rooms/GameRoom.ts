@@ -206,6 +206,7 @@ import {
   type MetaAccountV4,
   MOVE_SPEED,
   type MoveStance,
+  meleeComboGraceMs,
   meleeComboSelectionFor,
   meleeDamageEnvelopeFor,
   meleeDamageHalfWidthAt,
@@ -5844,7 +5845,7 @@ export class GameRoom extends Room<ArenaState> {
           }
         }
       } else if (weapon && canAct) {
-        if (weapon.hybridProjectile) {
+        if (weapon.hybridProjectile || weapon.glovePair?.wrapsFeet === true) {
           this.resolveHandAttack(player, c, 0);
           return;
         }
@@ -7108,7 +7109,7 @@ export class GameRoom extends Room<ArenaState> {
     interval: number,
   ): void {
     const acceptedAtMs = this.state.tick * TICK_MS;
-    const graceMs = Math.min(300, Math.max(120, interval * 350));
+    const graceMs = meleeComboGraceMs(interval, meleeComboSelectionFor(weapon)?.sequence);
     c.soloComboSeq = player.attackSeq;
     c.soloComboAcceptedAtMs = acceptedAtMs;
     c.soloComboId = weapon.id;
@@ -7376,7 +7377,9 @@ export class GameRoom extends Room<ArenaState> {
         weapon.damage *
         edgePower *
         (katanaEffect?.damageMultiplier ?? 1) *
-        (comboStep?.rootMotion ? comboStep.path.damageMultiplier : 1) *
+        (comboStep && (comboStep.rootMotion || weapon.glovePair?.wrapsFeet === true)
+          ? comboStep.path.damageMultiplier
+          : 1) *
         (weapon.rapidThrust?.damageMultiplier ?? 1),
       toughDamageMultiplier: katanaEffect?.toughDamageMultiplier ?? 1,
       weaponId: weapon.id,
