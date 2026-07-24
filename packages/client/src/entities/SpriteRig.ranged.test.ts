@@ -558,6 +558,120 @@ describe("SpriteRig V3G grip and mechanism laws", () => {
     expect(triggerGunRecoil).toHaveBeenCalledWith(1_000, 0);
     expect(recordAcceptedRangedBeat).toHaveBeenCalledWith(0, 1_000);
   });
+
+  it("promotes the accepted hammer hand only for the active beat and follows Twin-Maw alternation", async () => {
+    const { SpriteRig } = await import("./SpriteRig.js");
+    const rebuildRenderStack = vi.fn();
+    type HammerLayerRig = {
+      revolverHammerBeat: { active: boolean };
+      revolverHammerLayerHand: 0 | 1 | undefined;
+      gunRecoilHand: 0 | 1;
+      rebuildRenderStack(): void;
+    };
+    const rig = Object.create(SpriteRig.prototype) as HammerLayerRig;
+    Object.assign(rig, {
+      revolverHammerBeat: { active: false },
+      revolverHammerLayerHand: undefined,
+      gunRecoilHand: 0,
+      rebuildRenderStack,
+    });
+    const internals = SpriteRig.prototype as unknown as {
+      syncRevolverHammerLayer(this: typeof rig): void;
+    };
+
+    internals.syncRevolverHammerLayer.call(rig);
+    expect(rebuildRenderStack).not.toHaveBeenCalled();
+
+    rig.revolverHammerBeat.active = true;
+    internals.syncRevolverHammerLayer.call(rig);
+    expect(rig.revolverHammerLayerHand).toBe(0);
+    expect(rebuildRenderStack).toHaveBeenCalledTimes(1);
+
+    rig.gunRecoilHand = 1;
+    internals.syncRevolverHammerLayer.call(rig);
+    expect(rig.revolverHammerLayerHand).toBe(1);
+    expect(rebuildRenderStack).toHaveBeenCalledTimes(2);
+
+    rig.revolverHammerBeat.active = false;
+    internals.syncRevolverHammerLayer.call(rig);
+    expect(rig.revolverHammerLayerHand).toBeUndefined();
+    expect(rebuildRenderStack).toHaveBeenCalledTimes(3);
+  });
+
+  it("stacks either active revolver hand above every gun layer, then restores paired rest order", async () => {
+    const { SpriteRig } = await import("./SpriteRig.js");
+    type DisplayNode = { active: boolean; name: string };
+    const node = (name: string): DisplayNode => ({ active: true, name });
+    const order: DisplayNode[] = [];
+    const root = {
+      bringToTop(item: DisplayNode) {
+        const prior = order.indexOf(item);
+        if (prior >= 0) order.splice(prior, 1);
+        order.push(item);
+      },
+    };
+    const frontHand = { front: true, img: node("front-hand") };
+    const backHand = { front: false, img: node("back-hand") };
+    const frontWeapon = { img: node("front-gun"), worn: false };
+    const backWeapon = { img: node("back-gun"), worn: false };
+    type RenderStackRig = {
+      root: typeof root;
+      hands: Array<typeof frontHand>;
+      weapons: Array<typeof frontWeapon>;
+      revolverHammerLayerHand: 0 | 1 | undefined;
+    };
+    const rig = Object.create(SpriteRig.prototype) as RenderStackRig;
+    Object.assign(rig, {
+      root,
+      shadowHalo: node("shadow-halo"),
+      shadow: node("shadow"),
+      auraGlow: node("aura-glow"),
+      auraRing: node("aura-ring"),
+      paintedAuraFill: [],
+      paintedAuraParticles: [],
+      slideAfterimageB: node("afterimage-b"),
+      slideAfterimageA: node("afterimage-a"),
+      gearAttachments: [],
+      hatOverflowLabel: undefined,
+      feet: [],
+      wrapFootWeapons: [],
+      hands: [frontHand, backHand],
+      weapons: [frontWeapon, backWeapon],
+      orbitBehind: false,
+      poseTwoHanded: false,
+      body: node("body"),
+      boilerplateHead: undefined,
+      breakActionAttachment: undefined,
+      tome: undefined,
+      strikeOverlays: [],
+      observedSourceRing: node("source-ring"),
+      observedSourceFlash: node("source-flash"),
+      authoredDualGlint: node("dual-glint"),
+      label: undefined,
+      revolverHammerLayerHand: undefined,
+    });
+    const internals = SpriteRig.prototype as unknown as {
+      rebuildRenderStack(this: typeof rig): void;
+    };
+    const layer = (item: DisplayNode) => order.indexOf(item);
+
+    internals.rebuildRenderStack.call(rig);
+    expect(layer(backHand.img)).toBeLessThan(layer(frontWeapon.img));
+
+    rig.revolverHammerLayerHand = 1;
+    internals.rebuildRenderStack.call(rig);
+    expect(layer(backHand.img)).toBeGreaterThan(layer(frontWeapon.img));
+    expect(layer(backHand.img)).toBeGreaterThan(layer(backWeapon.img));
+
+    rig.revolverHammerLayerHand = 0;
+    internals.rebuildRenderStack.call(rig);
+    expect(layer(frontHand.img)).toBeGreaterThan(layer(frontWeapon.img));
+    expect(layer(frontHand.img)).toBeGreaterThan(layer(backWeapon.img));
+
+    rig.revolverHammerLayerHand = undefined;
+    internals.rebuildRenderStack.call(rig);
+    expect(layer(backHand.img)).toBeLessThan(layer(frontWeapon.img));
+  });
 });
 
 describe("SpriteRig V3G pistol idle twirl", () => {

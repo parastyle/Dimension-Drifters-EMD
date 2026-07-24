@@ -2500,6 +2500,9 @@ export class SpriteRig {
   private readonly secondaryGripPoint = { x: 0, y: 0 };
   private readonly secondaryGripFlourish: GunHandlingHandOffset = { forward: 0, lateral: 0 };
   private readonly revolverHammerBeat = createRevolverHammerBeatSample();
+  /** Accepted revolver hammer motion temporarily shares the explicit above-art hand policy used by
+   *  pump/lever/crank grips. Undefined restores the ordinary retained hand/weapon stack. */
+  private revolverHammerLayerHand: 0 | 1 | undefined;
   private readonly gunHandlingCycles: [GunHandlingCycleState, GunHandlingCycleState] = [
     createGunHandlingCycleState(),
     createGunHandlingCycleState(),
@@ -3529,6 +3532,17 @@ export class SpriteRig {
         this.pushWeaponLayers(stack, frontWeapon);
       }
     }
+    const hammerLayerHand = this.revolverHammerLayerHand;
+    const hammerHand =
+      hammerLayerHand === 0 ? frontHand : hammerLayerHand === 1 ? backHand : undefined;
+    if (hammerHand && hammerLayerHand !== undefined && this.weapons[hammerLayerHand]) {
+      // Like a mechanism-owned support hand, the accepted hammer hand must finish after every gun layer.
+      // Re-pushing the retained node is deliberate: Twin-Maw's rear hand must also clear the lead gun.
+      stack.push(hammerHand.img);
+      const receiver = hammerLayerHand === 0 ? "hand-r" : "hand-l";
+      for (const attachment of this.gearAttachments)
+        if (attachment.spec.source.receiver === receiver) stack.push(attachment.image);
+    }
     if (this.tome) {
       for (const page of this.tome.pages) stack.push(page.quad);
       for (const scrap of this.tome.scraps) stack.push(scrap.piece);
@@ -3537,6 +3551,14 @@ export class SpriteRig {
     stack.push(this.observedSourceRing, this.observedSourceFlash, this.authoredDualGlint);
     if (this.label) stack.push(this.label);
     for (const object of stack) if (object.active) this.root.bringToTop(object);
+  }
+
+  /** Re-sort only on hammer ownership edges: start, alternating paired hand, and return to rest. */
+  private syncRevolverHammerLayer(): void {
+    const next = this.revolverHammerBeat.active ? this.gunRecoilHand : undefined;
+    if (next === this.revolverHammerLayerHand) return;
+    this.revolverHammerLayerHand = next;
+    this.rebuildRenderStack();
   }
 
   setPosition(x: number, y: number): void {
@@ -5603,6 +5625,7 @@ export class SpriteRig {
     this.authoredDualBarStep = -1;
     this.authoredDualBarExpiresAtMs = -1e9;
     this.gunRecoilAtMs = -1e9;
+    this.revolverHammerLayerHand = undefined;
     this.gunRecoveryWallUntilMs = -1e9;
     this.rangedAimRaiseAtMs = -1e9;
     this.rangedAimActiveUntilMs = -1e9;
@@ -6623,6 +6646,7 @@ export class SpriteRig {
     this.authoredDualGlint.setVisible(false);
     this.resetSwingCombo();
     this.resetSecondaryMotion();
+    this.revolverHammerLayerHand = undefined;
     this.clearMeleeTellState();
     this.rebuildRenderStack();
   }
@@ -11739,6 +11763,7 @@ export class SpriteRig {
       reducedMotion,
       this.revolverHammerBeat,
     );
+    this.syncRevolverHammerLayer();
 
     // Weapon(s): held in hand at the angle computed above (upright at rest → chop on swing).
     let dualWhirlwindOwnsOffWeapon = false;
