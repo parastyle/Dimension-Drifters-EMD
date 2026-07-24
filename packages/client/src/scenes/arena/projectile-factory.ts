@@ -112,8 +112,14 @@ export function makeThrownWeapon(
             .setScale((weapon?.displayLength ?? part.w) / part.w)
         : scene.add.rectangle(0, 0, 80, 30, 0xcfc6ae);
   // No blanket amber/yellow halo: thrown payload identity art must stand on its own.
-  const payload = scene.add.container(0, 0, [blade]);
-  if (thrownProjectileRotationPolicy(pr.kind) === "point-forward")
+  const payload = scene.add
+    .container(0, 0, [blade])
+    .setData("barrelRollBlade", blade)
+    .setData("barrelRollBaseScaleX", blade.scaleX)
+    .setData("barrelRollBaseScaleY", blade.scaleY)
+    .setData("barrelRollElapsedSeconds", 0);
+  const rotationPolicy = thrownProjectileRotationPolicy(pr.kind);
+  if (rotationPolicy === "point-forward" || rotationPolicy === "barrel-roll")
     payload.setRotation(Math.atan2(pr.vy, pr.vx));
   return scene.add
     .container(pr.x, pr.y, [payload])

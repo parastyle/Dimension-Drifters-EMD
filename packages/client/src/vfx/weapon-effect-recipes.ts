@@ -203,14 +203,6 @@ export const WEAPON_EFFECT_RECIPES = Object.freeze({
     swingCount: 8,
     additive: true,
   }),
-  "thunderhead-electric-codex": Object.freeze({
-    id: "thunderhead-electric-codex",
-    weaponId: "x2-thunderhead-voulge",
-    emitter: "blade",
-    classification: "weapon-motion",
-    paintedSwing: true,
-    additive: true,
-  }),
   "sermon-musical-notes": Object.freeze({
     id: "sermon-musical-notes",
     weaponId: "x2-sermon-bell",

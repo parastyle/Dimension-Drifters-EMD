@@ -8,9 +8,11 @@ import {
   type WeaponDef,
 } from "@dd/shared";
 import Phaser from "phaser";
+import type { WeaponBladeAttachmentPose } from "../entities/SpriteRig.js";
 import {
   fanTornadoProjectileGeometryFor,
   type GeneratedImageWeaponVfxRecipe,
+  generatedImageHeldBladeOverlayTransform,
   generatedImageMeleeGeometryFor,
   generatedImageProjectileGeometryFor,
   resolveGeneratedImageWeaponVfxRecipe,
@@ -22,6 +24,7 @@ export {
   fanTornadoProjectileGeometryFor,
   GENERATED_IMAGE_WEAPON_VFX_IDS,
   GENERATED_IMAGE_WEAPON_VFX_RECIPES,
+  generatedImageHeldBladeOverlayTransform,
   generatedImageMeleeGeometryFor,
   generatedImageProjectileGeometryFor,
   generatedImageVfxReplacesProceduralRecipe,
@@ -46,6 +49,8 @@ interface GeneratedImageVfxAuditEvent {
   readonly angle?: number;
   readonly visibleForwardExtent?: number;
   readonly damageForwardExtent?: number;
+  readonly heldBladeAttachmentError?: number;
+  readonly heldBladePhysicalLength?: number;
   readonly visibleHalfWidth?: number;
   readonly damageHalfWidth?: number;
   readonly projectileTipExtent?: number;
@@ -142,21 +147,43 @@ function spawnFireDragonSweep(
   scene: Phaser.Scene,
   weapon: WeaponDef,
   recipe: GeneratedImageWeaponVfxRecipe,
-  actorX: number,
-  actorY: number,
-  aimAngle: number,
-  swing: SwingDescriptor,
+  sourceBladePose: (() => WeaponBladeAttachmentPose | undefined) | undefined,
 ): boolean {
   const geometry = generatedImageMeleeGeometryFor(weapon);
-  if (!geometry || !scene.textures.exists(recipe.textureKey)) return false;
+  const initialPose = sourceBladePose?.();
+  const initialTransform =
+    initialPose?.weaponId === weapon.id
+      ? generatedImageHeldBladeOverlayTransform(initialPose, recipe)
+      : undefined;
+  if (
+    !geometry ||
+    !initialPose ||
+    !initialTransform ||
+    !scene.textures.exists(recipe.textureKey)
+  )
+    return false;
   const image = scene.add
-    .image(actorX, actorY, recipe.textureKey)
+    .image(initialTransform.rootX, initialTransform.rootY, recipe.textureKey)
     .setName(`generated-image-vfx:${weapon.id}:fire-dragon`)
     .setOrigin(0, 0.5)
-    .setDisplaySize(geometry.forwardExtent, geometry.halfWidth * 2)
-    .setDepth(100150);
-  const startAngle = bladeAngleAt(aimAngle, authoritativeSweepArc(weapon, swing), 0);
-  image.setRotation(startAngle);
+    .setDisplaySize(initialTransform.displayLength, initialTransform.displayWidth)
+    .setRotation(initialTransform.angle)
+    .setDepth(initialTransform.depth);
+  image.setScale(image.scaleX, image.scaleY * initialTransform.normalSign);
+  const syncToHeldBlade = (): void => {
+    const pose = sourceBladePose?.();
+    if (!pose || pose.weaponId !== weapon.id) return;
+    const transform = generatedImageHeldBladeOverlayTransform(pose, recipe);
+    if (!transform) return;
+    image
+      .setPosition(transform.rootX, transform.rootY)
+      .setRotation(transform.angle)
+      .setDepth(transform.depth)
+      .setDisplaySize(transform.displayLength, transform.displayWidth);
+    image.setScale(image.scaleX, Math.abs(image.scaleY) * transform.normalSign);
+  };
+  scene.events.on("postupdate", syncToHeldBlade);
+  image.once("destroy", () => scene.events.off("postupdate", syncToHeldBlade));
   auditGeneratedImageVfx({
     kind: "swing",
     weaponId: weapon.id,
@@ -164,16 +191,32 @@ function spawnFireDragonSweep(
     subject: recipe.subject,
     textureKey: recipe.textureKey,
     proceduralLayers: Object.freeze([]),
-    x: actorX,
-    y: actorY,
-    angle: startAngle,
-    visibleForwardExtent: geometry.forwardExtent,
+    x: initialTransform.rootX,
+    y: initialTransform.rootY,
+    angle: initialTransform.angle,
+    visibleForwardExtent: initialTransform.displayLength,
     damageForwardExtent: geometry.forwardExtent,
-    visibleHalfWidth: geometry.halfWidth,
+    heldBladeAttachmentError: Math.hypot(
+      initialTransform.tipX - initialPose.x,
+      initialTransform.tipY - initialPose.y,
+    ),
+    heldBladePhysicalLength: initialPose.physicalBladeLength,
+    visibleHalfWidth: initialTransform.displayWidth / 2,
     damageHalfWidth: geometry.halfWidth,
     poolSize: 1,
   });
-  tweenSweep(scene, image, weapon, swing, aimAngle, recipe);
+  scene.tweens.add({
+    targets: image,
+    alpha: 0,
+    delay: Math.max(0, recipe.lifeMs - 120),
+    duration: Math.min(120, recipe.lifeMs),
+    ease: "Cubic.in",
+    onComplete: () => image.destroy(),
+  });
+  const liveGate = globalThis as unknown as {
+    __ddB28PauseGeneratedImageWeaponId?: string;
+  };
+  if (liveGate.__ddB28PauseGeneratedImageWeaponId === weapon.id) scene.scene.pause();
   return true;
 }
 
@@ -262,11 +305,12 @@ export function spawnGeneratedImageWeaponSwing(
   aimAngle: number,
   swing: SwingDescriptor,
   target?: Readonly<{ x: number; y: number }>,
+  sourceBladePose?: () => WeaponBladeAttachmentPose | undefined,
 ): boolean {
   const recipe = resolveGeneratedImageWeaponVfxRecipe(weapon.id);
   if (!recipe) return false;
   if (recipe.kind === "fire-dragon-sweep")
-    return spawnFireDragonSweep(scene, weapon, recipe, actorX, actorY, aimAngle, swing);
+    return spawnFireDragonSweep(scene, weapon, recipe, sourceBladePose);
   if (recipe.kind === "purple-crystal-burst")
     return spawnPurpleCrystalSweep(scene, weapon, recipe, actorX, actorY, aimAngle, swing, target);
   if (recipe.kind === "fan-tornado") return true;

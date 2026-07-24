@@ -154,14 +154,17 @@ describe("V3M exact combo and VFX orders", () => {
     });
   });
 
-  it("replaces Sermon's quake look with notes and promotes Thunderhead to its painted sweep", () => {
+  it("replaces Sermon's quake look with notes and leaves Thunderhead electric-only", () => {
     expect(resolveWeaponEffectRecipe(weapon("x2-sermon-bell"))).toMatchObject({
       musicalNotes: true,
       suppressQuakeVfx: true,
     });
     const thunderhead = resolveWeaponEffectRecipe(weapon("x2-thunderhead-voulge"));
-    expect(thunderhead).toMatchObject({ paintedSwing: true });
-    expect(thunderhead?.swingPack).toBeUndefined();
+    expect(thunderhead).toBeUndefined();
+    expect(weapon("x2-thunderhead-voulge")).toMatchObject({
+      suppressVfx: true,
+      chainLightning: { jumps: 4, damage: 6, falloff: 0.8 },
+    });
   });
 
   it("applies the remaining exact size, carry, and VFX-suppression orders", () => {

@@ -1684,6 +1684,15 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "STR"
       ]
     },
+    "performance": {
+      "hold": "steady",
+      "action": "default-swing",
+      "lunge": {
+        "distancePx": 128,
+        "durationSeconds": 0.28,
+        "impactAtDestination": true
+      }
+    },
     "twoHanded": true,
     "durability": 90,
     "chainLightning": {
@@ -1939,7 +1948,8 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "damage": 14,
       "charges": 3,
       "refillSeconds": 1.92,
-      "pierce": 2
+      "pierce": 2,
+      "rotation": "barrel-roll"
     }
   },
   "x2-saintspar-lochaber": {
@@ -2041,9 +2051,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "DEX"
       ]
     },
-    "effectRecipe": "thunderhead-electric-codex",
-    "effectEmitter": "blade",
-    "effectTiming": "swing-midpoint",
+    "suppressVfx": true,
     "performance": {
       "hold": "upright",
       "action": "default-swing"
@@ -8018,7 +8026,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
     },
     "twoHanded": true,
     "gun": {
-      "damage": 4,
+      "damage": 8,
       "projectileSpeed": 740,
       "range": 400,
       "fireRate": 0.55,
@@ -8028,7 +8036,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "muzzle": "boom",
       "recoil": 0.0026,
       "projectileArt": "arrow",
-      "pellets": 6,
+      "pellets": 3,
       "spread": 0.38,
       "pierce": 2,
       "muzzleColor": 12884058
@@ -13810,7 +13818,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
     "range": 82,
     "halfArc": 1.05,
     "cooldown": 1.5,
-    "displayLength": 116,
+    "displayLength": 154.28,
     "swingArc": 3.1,
     "gripFrac": 0.16,
     "tags": {
@@ -13830,12 +13838,12 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
     "collisionLength": 90,
     "gripPoints": {
       "primary": {
-        "x": 0.16,
-        "y": 0.78
+        "x": 0.14,
+        "y": 0.55
       },
       "secondary": {
-        "x": 0.28,
-        "y": 0.71,
+        "x": 0.38,
+        "y": 0.55,
         "role": "handle"
       }
     },
@@ -13995,6 +14003,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "DEX"
       ]
     },
+    "archived": true,
     "gripPoints": {
       "primary": {
         "x": 0.35,

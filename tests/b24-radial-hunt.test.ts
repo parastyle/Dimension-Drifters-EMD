@@ -71,8 +71,8 @@ describe("B24 shared radial fallback removal", () => {
       "twin-slash": 22,
       "thrust-streak": 10,
     });
-    expect(candidates.filter((definition) => !definition.archived)).toHaveLength(310);
-    expect(candidates.filter((definition) => definition.archived)).toHaveLength(12);
+    expect(candidates.filter((definition) => !definition.archived)).toHaveLength(309);
+    expect(candidates.filter((definition) => definition.archived)).toHaveLength(13);
     for (const id of MARKED_RADIAL_WEAPON_IDS)
       expect(
         candidates.map((definition) => definition.id),
@@ -99,7 +99,7 @@ describe("B24 shared radial fallback removal", () => {
     }
   });
 
-  it("leaves all three marked bespoke effect recipes and their renderer byte-identical", () => {
+  it("leaves all three marked bespoke effect recipes intact while B28 removes Thunderhead's recipe", () => {
     expect(resolveWeaponEffectRecipe(weapon("x2-hollow-harvest"))).toEqual({
       id: "hollow-harvest-circle",
       weaponId: "x2-hollow-harvest",
@@ -131,7 +131,7 @@ describe("B24 shared radial fallback removal", () => {
     });
 
     expect(sha256("packages/client/src/vfx/weapon-effect-recipes.ts")).toBe(
-      "182DCE6D43D1040260B181F74014D5649CDD6FD26B1C41B268F750EC23CC5073",
+      "2D9FF071F64A038924DD66AABF056B90696053954C21C0664AB2761AD22C1698",
     );
     expect(sha256("packages/client/src/vfx/weapon-effect-vfx.ts")).toBe(
       "813C0739A4D53BAB740C934A2D0FCEEEB256970F1D20224665D64A6D58FEBD54",
@@ -165,8 +165,8 @@ describe("B24 shared radial fallback removal", () => {
     expect(weapon("x2-pocket-hexicon").archived).toBe(true);
     expect(ARCHIVED_WEAPON_IDS).toContain("x2-pocket-hexicon");
     expect(ACTIVE_WEAPON_CATALOG_IDS).not.toContain("x2-pocket-hexicon");
-    expect(ACTIVE_WEAPON_CATALOG_IDS).toHaveLength(343);
-    expect(ARCHIVED_WEAPON_IDS).toHaveLength(14);
+    expect(ACTIVE_WEAPON_CATALOG_IDS).toHaveLength(342);
+    expect(ARCHIVED_WEAPON_IDS).toHaveLength(15);
   });
 
   it("renders Spitfire Censer Wand exactly forty percent larger without stat or art edits", () => {

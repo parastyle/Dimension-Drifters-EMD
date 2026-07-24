@@ -69,14 +69,19 @@ function mechanicalSignature(id: (typeof B2)[number]): string {
 }
 
 describe("B2 wacky expansion catalog", () => {
-  it("publishes exactly seven active expansion rows with complete, non-shared signatures", () => {
+  it("keeps seven durable expansion rows while B28 archives the Boomerang Boot", () => {
     expect(new Set(B2).size).toBe(7);
     for (const id of B2) {
       const weapon = WEAPONS[id];
       expect(weapon, id).toBeDefined();
       expect(weapon?.expansion, id).toBe(true);
-      expect(weapon?.archived, id).not.toBe(true);
-      expect(ACTIVE_WEAPON_CATALOG_IDS, id).toContain(id);
+      if (id === "x2-boomerang-boot") {
+        expect(weapon?.archived, id).toBe(true);
+        expect(ACTIVE_WEAPON_CATALOG_IDS, id).not.toContain(id);
+      } else {
+        expect(weapon?.archived, id).not.toBe(true);
+        expect(ACTIVE_WEAPON_CATALOG_IDS, id).toContain(id);
+      }
       expect(weapon?.tags.grip, id).toMatch(/^(?:1H|2H)$/);
       expect(weapon?.tags.size, id).toMatch(/^(?:M|L|XL)$/);
       expect(weapon?.tags.rangeBand, id).toMatch(/^(?:close|mid|long)$/);

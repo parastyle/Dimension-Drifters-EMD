@@ -1,0 +1,760 @@
+{
+  "verdict": "pass",
+  "capturedAt": "2026-07-24T15:31:09.167Z",
+  "character": "proto-cowboy-hidden-face",
+  "privatePorts": {
+    "client": 64430,
+    "game": 64429,
+    "forbiddenDefaultPortsAvoided": true
+  },
+  "survivingWeaponIds": [
+    "drift-greatkatana-tempest-regent",
+    "drift-nodachi-gatebreaker",
+    "twin-bowie-fangs",
+    "x2-thunderhead-voulge",
+    "x2-sidewinder-spontoon",
+    "x2-venomtongue-trident",
+    "x2-squeaky-mallet",
+    "x2-dustreaper-zweihander",
+    "x2-buckshot-bramble-bow"
+  ],
+  "facings": [
+    "right",
+    "left"
+  ],
+  "captures": [
+    {
+      "weaponId": "drift-greatkatana-tempest-regent",
+      "facing": "right",
+      "attackSeqBefore": 0,
+      "startX": 2400,
+      "lungeDelta": 0,
+      "throwSamples": [],
+      "screenshot": "docs/owner-notes-audit-v11-evidence/b28-weapon-orders/drift-greatkatana-tempest-regent-right.png",
+      "attackSeqAfter": 1,
+      "endX": 2400,
+      "facingValue": 1,
+      "displayLength": 360,
+      "collisionLength": null,
+      "renderedLengthPx": 359.9997892382534,
+      "gripPoints": null,
+      "chainLightning": null,
+      "layerIds": [
+        "edge-trail"
+      ],
+      "generatedEvents": [],
+      "projectileCount": 0,
+      "projectileRows": [],
+      "throwScaleRatio": null,
+      "dustreaperAttachmentError": null,
+      "dustreaperPhysicalBladeLength": null,
+      "dustreaperOverlayLength": null
+    },
+    {
+      "weaponId": "drift-greatkatana-tempest-regent",
+      "facing": "left",
+      "attackSeqBefore": 1,
+      "startX": 2400,
+      "lungeDelta": 0,
+      "throwSamples": [],
+      "screenshot": "docs/owner-notes-audit-v11-evidence/b28-weapon-orders/drift-greatkatana-tempest-regent-left.png",
+      "attackSeqAfter": 2,
+      "endX": 2400,
+      "facingValue": -1,
+      "displayLength": 360,
+      "collisionLength": null,
+      "renderedLengthPx": 360.00001696998953,
+      "gripPoints": null,
+      "chainLightning": null,
+      "layerIds": [
+        "edge-trail"
+      ],
+      "generatedEvents": [],
+      "projectileCount": 0,
+      "projectileRows": [],
+      "throwScaleRatio": null,
+      "dustreaperAttachmentError": null,
+      "dustreaperPhysicalBladeLength": null,
+      "dustreaperOverlayLength": null
+    },
+    {
+      "weaponId": "drift-nodachi-gatebreaker",
+      "facing": "right",
+      "attackSeqBefore": 2,
+      "startX": 2400,
+      "lungeDelta": 0,
+      "throwSamples": [],
+      "screenshot": "docs/owner-notes-audit-v11-evidence/b28-weapon-orders/drift-nodachi-gatebreaker-right.png",
+      "attackSeqAfter": 3,
+      "endX": 2400,
+      "facingValue": 1,
+      "displayLength": 255,
+      "collisionLength": null,
+      "renderedLengthPx": 255.00001976596513,
+      "gripPoints": null,
+      "chainLightning": null,
+      "layerIds": [
+        "slash-arc"
+      ],
+      "generatedEvents": [],
+      "projectileCount": 0,
+      "projectileRows": [],
+      "throwScaleRatio": null,
+      "dustreaperAttachmentError": null,
+      "dustreaperPhysicalBladeLength": null,
+      "dustreaperOverlayLength": null
+    },
+    {
+      "weaponId": "drift-nodachi-gatebreaker",
+      "facing": "left",
+      "attackSeqBefore": 3,
+      "startX": 2400,
+      "lungeDelta": 0,
+      "throwSamples": [],
+      "screenshot": "docs/owner-notes-audit-v11-evidence/b28-weapon-orders/drift-nodachi-gatebreaker-left.png",
+      "attackSeqAfter": 4,
+      "endX": 2400,
+      "facingValue": -1,
+      "displayLength": 255,
+      "collisionLength": null,
+      "renderedLengthPx": 255.00001976596513,
+      "gripPoints": null,
+      "chainLightning": null,
+      "layerIds": [
+        "slash-arc"
+      ],
+      "generatedEvents": [],
+      "projectileCount": 0,
+      "projectileRows": [],
+      "throwScaleRatio": null,
+      "dustreaperAttachmentError": null,
+      "dustreaperPhysicalBladeLength": null,
+      "dustreaperOverlayLength": null
+    },
+    {
+      "weaponId": "twin-bowie-fangs",
+      "facing": "right",
+      "attackSeqBefore": 4,
+      "startX": 2400,
+      "lungeDelta": 0,
+      "throwSamples": [],
+      "screenshot": "docs/owner-notes-audit-v11-evidence/b28-weapon-orders/twin-bowie-fangs-right.png",
+      "attackSeqAfter": 5,
+      "endX": 2400,
+      "facingValue": 1,
+      "displayLength": 124,
+      "collisionLength": 62,
+      "renderedLengthPx": 124.00000353556942,
+      "gripPoints": null,
+      "chainLightning": null,
+      "layerIds": [],
+      "generatedEvents": [],
+      "projectileCount": 0,
+      "projectileRows": [],
+      "throwScaleRatio": null,
+      "dustreaperAttachmentError": null,
+      "dustreaperPhysicalBladeLength": null,
+      "dustreaperOverlayLength": null
+    },
+    {
+      "weaponId": "twin-bowie-fangs",
+      "facing": "left",
+      "attackSeqBefore": 5,
+      "startX": 2400,
+      "lungeDelta": 0,
+      "throwSamples": [],
+      "screenshot": "docs/owner-notes-audit-v11-evidence/b28-weapon-orders/twin-bowie-fangs-left.png",
+      "attackSeqAfter": 6,
+      "endX": 2400,
+      "facingValue": -1,
+      "displayLength": 124,
+      "collisionLength": 62,
+      "renderedLengthPx": 124.00000353556942,
+      "gripPoints": null,
+      "chainLightning": null,
+      "layerIds": [],
+      "generatedEvents": [],
+      "projectileCount": 0,
+      "projectileRows": [],
+      "throwScaleRatio": null,
+      "dustreaperAttachmentError": null,
+      "dustreaperPhysicalBladeLength": null,
+      "dustreaperOverlayLength": null
+    },
+    {
+      "weaponId": "x2-thunderhead-voulge",
+      "facing": "right",
+      "attackSeqBefore": 6,
+      "startX": 2400,
+      "lungeDelta": 0,
+      "throwSamples": [],
+      "screenshot": "docs/owner-notes-audit-v11-evidence/b28-weapon-orders/x2-thunderhead-voulge-right.png",
+      "attackSeqAfter": 7,
+      "endX": 2400,
+      "facingValue": 1,
+      "displayLength": 198,
+      "collisionLength": null,
+      "renderedLengthPx": 198,
+      "gripPoints": null,
+      "chainLightning": {
+        "jumps": 4,
+        "range": 200,
+        "damage": 6,
+        "falloff": 0.8
+      },
+      "layerIds": [],
+      "generatedEvents": [],
+      "projectileCount": 0,
+      "projectileRows": [],
+      "throwScaleRatio": null,
+      "dustreaperAttachmentError": null,
+      "dustreaperPhysicalBladeLength": null,
+      "dustreaperOverlayLength": null
+    },
+    {
+      "weaponId": "x2-thunderhead-voulge",
+      "facing": "left",
+      "attackSeqBefore": 7,
+      "startX": 2400,
+      "lungeDelta": 0,
+      "throwSamples": [],
+      "screenshot": "docs/owner-notes-audit-v11-evidence/b28-weapon-orders/x2-thunderhead-voulge-left.png",
+      "attackSeqAfter": 8,
+      "endX": 2400,
+      "facingValue": -1,
+      "displayLength": 198,
+      "collisionLength": null,
+      "renderedLengthPx": 198,
+      "gripPoints": null,
+      "chainLightning": {
+        "jumps": 4,
+        "range": 200,
+        "damage": 6,
+        "falloff": 0.8
+      },
+      "layerIds": [],
+      "generatedEvents": [],
+      "projectileCount": 0,
+      "projectileRows": [],
+      "throwScaleRatio": null,
+      "dustreaperAttachmentError": null,
+      "dustreaperPhysicalBladeLength": null,
+      "dustreaperOverlayLength": null
+    },
+    {
+      "weaponId": "x2-sidewinder-spontoon",
+      "facing": "right",
+      "attackSeqBefore": 8,
+      "startX": 2400,
+      "lungeDelta": 0,
+      "throwSamples": [
+        {
+          "heading": 0,
+          "rotation": 0,
+          "scaleRatio": -0.8584443796641439,
+          "elapsedSeconds": 0.0766699999999997
+        },
+        {
+          "heading": 0,
+          "rotation": 0,
+          "scaleRatio": 0.5432485947201856,
+          "elapsedSeconds": 0.15165999999999985
+        },
+        {
+          "heading": 0,
+          "rotation": 0,
+          "scaleRatio": -0.0362063723968087,
+          "elapsedSeconds": 0.2283199999999997
+        },
+        {
+          "heading": 0,
+          "rotation": 0,
+          "scaleRatio": -0.5497233808290403,
+          "elapsedSeconds": 0.30665
+        },
+        {
+          "heading": 0,
+          "rotation": 0,
+          "scaleRatio": 0.9001528941083432,
+          "elapsedSeconds": 0.3833099999999998
+        },
+        {
+          "heading": 0,
+          "rotation": 0,
+          "scaleRatio": -0.9961820533302806,
+          "elapsedSeconds": 0.45996999999999966
+        },
+        {
+          "heading": 0,
+          "rotation": 0,
+          "scaleRatio": 0.810952136336647,
+          "elapsedSeconds": 0.5366199999999997
+        },
+        {
+          "heading": 0,
+          "rotation": 0,
+          "scaleRatio": -0.39648990922349425,
+          "elapsedSeconds": 0.6132799999999995
+        },
+        {
+          "heading": 0,
+          "rotation": 0,
+          "scaleRatio": -0.20900476497487983,
+          "elapsedSeconds": 0.6916099999999998
+        },
+        {
+          "heading": 0,
+          "rotation": 0,
+          "scaleRatio": 0.6806463179217344,
+          "elapsedSeconds": 0.7682699999999997
+        }
+      ],
+      "screenshot": "docs/owner-notes-audit-v11-evidence/b28-weapon-orders/x2-sidewinder-spontoon-right.png",
+      "attackSeqAfter": 9,
+      "endX": 2400,
+      "facingValue": 1,
+      "displayLength": 110,
+      "collisionLength": null,
+      "renderedLengthPx": 110.00000091262977,
+      "gripPoints": null,
+      "chainLightning": null,
+      "layerIds": [],
+      "generatedEvents": [],
+      "projectileCount": 1,
+      "projectileRows": [
+        {
+          "id": "p0",
+          "bornTick": 934,
+          "vx": 720,
+          "vy": 0,
+          "kind": "thrown:x2-sidewinder-spontoon"
+        }
+      ],
+      "throwScaleRatio": 0.9001528941083432,
+      "dustreaperAttachmentError": null,
+      "dustreaperPhysicalBladeLength": null,
+      "dustreaperOverlayLength": null
+    },
+    {
+      "weaponId": "x2-sidewinder-spontoon",
+      "facing": "left",
+      "attackSeqBefore": 9,
+      "startX": 2400,
+      "lungeDelta": 0,
+      "throwSamples": [
+        {
+          "heading": 3.141592653589793,
+          "rotation": 3.141592653589793,
+          "scaleRatio": -0.8586904759611056,
+          "elapsedSeconds": 0.07665999999999985
+        },
+        {
+          "heading": 3.141592653589793,
+          "rotation": 3.141592653589793,
+          "scaleRatio": 0.5436515266313415,
+          "elapsedSeconds": 0.15165
+        },
+        {
+          "heading": 3.141592653589793,
+          "rotation": 3.141592653589793,
+          "scaleRatio": -0.11611178970334009,
+          "elapsedSeconds": 0.22665000000000002
+        },
+        {
+          "heading": 3.141592653589793,
+          "rotation": 3.141592653589793,
+          "scaleRatio": -0.33540307732716085,
+          "elapsedSeconds": 0.30165000000000003
+        },
+        {
+          "heading": 3.141592653589793,
+          "rotation": 3.141592653589793,
+          "scaleRatio": 0.7708155896586298,
+          "elapsedSeconds": 0.37830999999999987
+        },
+        {
+          "heading": 3.141592653589793,
+          "rotation": 3.141592653589793,
+          "scaleRatio": -0.9731467058558073,
+          "elapsedSeconds": 0.4533099999999999
+        },
+        {
+          "heading": 3.141592653589793,
+          "rotation": 3.141592653589793,
+          "scaleRatio": 0.9533112909747872,
+          "elapsedSeconds": 0.5299899999999994
+        },
+        {
+          "heading": 3.141592653589793,
+          "rotation": 3.141592653589793,
+          "scaleRatio": -0.7212534515554034,
+          "elapsedSeconds": 0.6049899999999994
+        },
+        {
+          "heading": 3.141592653589793,
+          "rotation": 3.141592653589793,
+          "scaleRatio": 0.264343227927973,
+          "elapsedSeconds": 0.6816499999999992
+        },
+        {
+          "heading": 3.141592653589793,
+          "rotation": 3.141592653589793,
+          "scaleRatio": 0.18972738774633696,
+          "elapsedSeconds": 0.7566499999999992
+        }
+      ],
+      "screenshot": "docs/owner-notes-audit-v11-evidence/b28-weapon-orders/x2-sidewinder-spontoon-left.png",
+      "attackSeqAfter": 10,
+      "endX": 2400,
+      "facingValue": -1,
+      "displayLength": 110,
+      "collisionLength": null,
+      "renderedLengthPx": 110.00000091262977,
+      "gripPoints": null,
+      "chainLightning": null,
+      "layerIds": [],
+      "generatedEvents": [],
+      "projectileCount": 1,
+      "projectileRows": [
+        {
+          "id": "p1",
+          "bornTick": 1037,
+          "vx": -720,
+          "vy": 0,
+          "kind": "thrown:x2-sidewinder-spontoon"
+        }
+      ],
+      "throwScaleRatio": 0.7708155896586298,
+      "dustreaperAttachmentError": null,
+      "dustreaperPhysicalBladeLength": null,
+      "dustreaperOverlayLength": null
+    },
+    {
+      "weaponId": "x2-venomtongue-trident",
+      "facing": "right",
+      "attackSeqBefore": 10,
+      "startX": 2400,
+      "lungeDelta": 128,
+      "throwSamples": [],
+      "screenshot": "docs/owner-notes-audit-v11-evidence/b28-weapon-orders/x2-venomtongue-trident-right.png",
+      "attackSeqAfter": 11,
+      "endX": 2528,
+      "facingValue": 1,
+      "displayLength": 140,
+      "collisionLength": null,
+      "renderedLengthPx": 140.0000009680351,
+      "gripPoints": null,
+      "chainLightning": {
+        "jumps": 3,
+        "range": 190,
+        "damage": 3,
+        "falloff": 0.75,
+        "vfx": {
+          "color": 0.32,
+          "jag": 0.3,
+          "life": 210
+        }
+      },
+      "layerIds": [],
+      "generatedEvents": [],
+      "projectileCount": 0,
+      "projectileRows": [],
+      "throwScaleRatio": null,
+      "dustreaperAttachmentError": null,
+      "dustreaperPhysicalBladeLength": null,
+      "dustreaperOverlayLength": null
+    },
+    {
+      "weaponId": "x2-venomtongue-trident",
+      "facing": "left",
+      "attackSeqBefore": 11,
+      "startX": 2528,
+      "lungeDelta": 128,
+      "throwSamples": [],
+      "screenshot": "docs/owner-notes-audit-v11-evidence/b28-weapon-orders/x2-venomtongue-trident-left.png",
+      "attackSeqAfter": 12,
+      "endX": 2400,
+      "facingValue": -1,
+      "displayLength": 140,
+      "collisionLength": null,
+      "renderedLengthPx": 140.0000009680351,
+      "gripPoints": null,
+      "chainLightning": {
+        "jumps": 3,
+        "range": 190,
+        "damage": 3,
+        "falloff": 0.75,
+        "vfx": {
+          "color": 0.32,
+          "jag": 0.3,
+          "life": 210
+        }
+      },
+      "layerIds": [],
+      "generatedEvents": [],
+      "projectileCount": 0,
+      "projectileRows": [],
+      "throwScaleRatio": null,
+      "dustreaperAttachmentError": null,
+      "dustreaperPhysicalBladeLength": null,
+      "dustreaperOverlayLength": null
+    },
+    {
+      "weaponId": "x2-squeaky-mallet",
+      "facing": "right",
+      "attackSeqBefore": 12,
+      "startX": 2400,
+      "lungeDelta": 0,
+      "throwSamples": [],
+      "screenshot": "docs/owner-notes-audit-v11-evidence/b28-weapon-orders/x2-squeaky-mallet-right.png",
+      "attackSeqAfter": 13,
+      "endX": 2400,
+      "facingValue": 1,
+      "displayLength": 154.28,
+      "collisionLength": 90,
+      "renderedLengthPx": 154.28000608560572,
+      "gripPoints": {
+        "primary": {
+          "x": 0.14,
+          "y": 0.55
+        },
+        "secondary": {
+          "x": 0.38,
+          "y": 0.55,
+          "role": "handle"
+        }
+      },
+      "chainLightning": null,
+      "layerIds": [],
+      "generatedEvents": [],
+      "projectileCount": 0,
+      "projectileRows": [],
+      "throwScaleRatio": null,
+      "dustreaperAttachmentError": null,
+      "dustreaperPhysicalBladeLength": null,
+      "dustreaperOverlayLength": null
+    },
+    {
+      "weaponId": "x2-squeaky-mallet",
+      "facing": "left",
+      "attackSeqBefore": 13,
+      "startX": 2400,
+      "lungeDelta": 0,
+      "throwSamples": [],
+      "screenshot": "docs/owner-notes-audit-v11-evidence/b28-weapon-orders/x2-squeaky-mallet-left.png",
+      "attackSeqAfter": 14,
+      "endX": 2400,
+      "facingValue": -1,
+      "displayLength": 154.28,
+      "collisionLength": 90,
+      "renderedLengthPx": 154.2800011741985,
+      "gripPoints": {
+        "primary": {
+          "x": 0.14,
+          "y": 0.55
+        },
+        "secondary": {
+          "x": 0.38,
+          "y": 0.55,
+          "role": "handle"
+        }
+      },
+      "chainLightning": null,
+      "layerIds": [],
+      "generatedEvents": [],
+      "projectileCount": 0,
+      "projectileRows": [],
+      "throwScaleRatio": null,
+      "dustreaperAttachmentError": null,
+      "dustreaperPhysicalBladeLength": null,
+      "dustreaperOverlayLength": null
+    },
+    {
+      "weaponId": "x2-dustreaper-zweihander",
+      "facing": "right",
+      "attackSeqBefore": 14,
+      "startX": 2400,
+      "lungeDelta": 0,
+      "throwSamples": [],
+      "screenshot": "docs/owner-notes-audit-v11-evidence/b28-weapon-orders/x2-dustreaper-zweihander-right.png",
+      "attackSeqAfter": 15,
+      "endX": 2400,
+      "facingValue": 1,
+      "displayLength": 230,
+      "collisionLength": null,
+      "renderedLengthPx": 229.9998985680171,
+      "gripPoints": null,
+      "chainLightning": null,
+      "layerIds": [],
+      "generatedEvents": [
+        {
+          "kind": "swing",
+          "weaponId": "x2-dustreaper-zweihander",
+          "recipeKind": "fire-dragon-sweep",
+          "subject": "vfx-fire-dragon",
+          "textureKey": "b11:fire-dragon",
+          "proceduralLayers": [],
+          "x": 2397.06689453125,
+          "y": 2422.52294921875,
+          "angle": 3.0199999424473134,
+          "visibleForwardExtent": 211.59990668257575,
+          "damageForwardExtent": 234.40000000000003,
+          "heldBladeAttachmentError": 0,
+          "heldBladePhysicalLength": 211.59990668257575,
+          "visibleHalfWidth": 11.679687650895527,
+          "damageHalfWidth": 21,
+          "poolSize": 1
+        }
+      ],
+      "projectileCount": 0,
+      "projectileRows": [],
+      "throwScaleRatio": null,
+      "dustreaperAttachmentError": 0,
+      "dustreaperPhysicalBladeLength": 211.59990668257575,
+      "dustreaperOverlayLength": 211.59990668257575
+    },
+    {
+      "weaponId": "x2-dustreaper-zweihander",
+      "facing": "left",
+      "attackSeqBefore": 15,
+      "startX": 2400,
+      "lungeDelta": 0,
+      "throwSamples": [],
+      "screenshot": "docs/owner-notes-audit-v11-evidence/b28-weapon-orders/x2-dustreaper-zweihander-left.png",
+      "attackSeqAfter": 16,
+      "endX": 2400,
+      "facingValue": -1,
+      "displayLength": 230,
+      "collisionLength": null,
+      "renderedLengthPx": 229.99991371414617,
+      "gripPoints": null,
+      "chainLightning": null,
+      "layerIds": [],
+      "generatedEvents": [
+        {
+          "kind": "swing",
+          "weaponId": "x2-dustreaper-zweihander",
+          "recipeKind": "fire-dragon-sweep",
+          "subject": "vfx-fire-dragon",
+          "textureKey": "b11:fire-dragon",
+          "proceduralLayers": [],
+          "x": 2402.284423828125,
+          "y": 2425.224365234375,
+          "angle": 0.12159270309556801,
+          "visibleForwardExtent": 211.59992061701448,
+          "damageForwardExtent": 234.40000000000003,
+          "heldBladeAttachmentError": 0,
+          "heldBladePhysicalLength": 211.59992061701448,
+          "visibleHalfWidth": 11.679687662643692,
+          "damageHalfWidth": 21,
+          "poolSize": 1
+        }
+      ],
+      "projectileCount": 0,
+      "projectileRows": [],
+      "throwScaleRatio": null,
+      "dustreaperAttachmentError": 0,
+      "dustreaperPhysicalBladeLength": 211.59992061701448,
+      "dustreaperOverlayLength": 211.59992061701448
+    },
+    {
+      "weaponId": "x2-buckshot-bramble-bow",
+      "facing": "right",
+      "attackSeqBefore": 16,
+      "startX": 2400,
+      "lungeDelta": -38.999755859375,
+      "throwSamples": [],
+      "screenshot": "docs/owner-notes-audit-v11-evidence/b28-weapon-orders/x2-buckshot-bramble-bow-right.png",
+      "attackSeqAfter": 17,
+      "endX": 2361.000244140625,
+      "facingValue": 1,
+      "displayLength": 174,
+      "collisionLength": null,
+      "renderedLengthPx": 174.00001525878906,
+      "gripPoints": null,
+      "chainLightning": null,
+      "layerIds": [],
+      "generatedEvents": [],
+      "projectileCount": 3,
+      "projectileRows": [
+        {
+          "id": "p2",
+          "bornTick": 1750,
+          "vx": 687.2118530273438,
+          "vy": -274.48114013671875,
+          "kind": "nail"
+        },
+        {
+          "id": "p3",
+          "bornTick": 1750,
+          "vx": 740,
+          "vy": 0,
+          "kind": "nail"
+        },
+        {
+          "id": "p4",
+          "bornTick": 1750,
+          "vx": 687.2118530273438,
+          "vy": 274.48114013671875,
+          "kind": "nail"
+        }
+      ],
+      "throwScaleRatio": null,
+      "dustreaperAttachmentError": null,
+      "dustreaperPhysicalBladeLength": null,
+      "dustreaperOverlayLength": null
+    },
+    {
+      "weaponId": "x2-buckshot-bramble-bow",
+      "facing": "left",
+      "attackSeqBefore": 17,
+      "startX": 2360.35009765625,
+      "lungeDelta": -38.999755859375,
+      "throwSamples": [],
+      "screenshot": "docs/owner-notes-audit-v11-evidence/b28-weapon-orders/x2-buckshot-bramble-bow-left.png",
+      "attackSeqAfter": 18,
+      "endX": 2399.349853515625,
+      "facingValue": -1,
+      "displayLength": 174,
+      "collisionLength": null,
+      "renderedLengthPx": 174.00001525878906,
+      "gripPoints": null,
+      "chainLightning": null,
+      "layerIds": [],
+      "generatedEvents": [],
+      "projectileCount": 3,
+      "projectileRows": [
+        {
+          "id": "p5",
+          "bornTick": 1843,
+          "vx": -687.2118530273438,
+          "vy": 274.48114013671875,
+          "kind": "nail"
+        },
+        {
+          "id": "p6",
+          "bornTick": 1843,
+          "vx": -740,
+          "vy": 0,
+          "kind": "nail"
+        },
+        {
+          "id": "p7",
+          "bornTick": 1843,
+          "vx": -687.2118530273438,
+          "vy": -274.48114013671875,
+          "kind": "nail"
+        }
+      ],
+      "throwScaleRatio": null,
+      "dustreaperAttachmentError": null,
+      "dustreaperPhysicalBladeLength": null,
+      "dustreaperOverlayLength": null
+    }
+  ],
+  "bootArchive": {
+    "before": "x2-buckshot-bramble-bow",
+    "after": "x2-buckshot-bramble-bow",
+    "rejected": true
+  }
+}

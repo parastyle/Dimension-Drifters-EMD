@@ -1,5 +1,5 @@
 import { existsSync, readFileSync } from "node:fs";
-import { swingDescriptorFor, WEAPONS } from "@dd/shared";
+import { meleeDamageEnvelopeFor, swingDescriptorFor, WEAPONS } from "@dd/shared";
 import { describe, expect, it } from "vitest";
 import {
   generatedImageMeleeGeometryFor,
@@ -146,10 +146,12 @@ describe("V6G1 whole-catalog impact-anchor law", () => {
       kind: "fire-dragon-sweep",
       subject: "vfx-fire-dragon",
       signature: "serpentine-fire-dragon-head-led-sweep",
+      bladeOverlay: { lengthMultiplier: 1, widthMultiplier: 1 },
     });
+    const envelope = meleeDamageEnvelopeFor(dustreaper);
     expect(generatedImageMeleeGeometryFor(dustreaper)).toEqual({
-      forwardExtent: 300,
-      halfWidth: 54,
+      forwardExtent: envelope.baseReach,
+      halfWidth: envelope.baseHalfWidth,
     });
   });
 });

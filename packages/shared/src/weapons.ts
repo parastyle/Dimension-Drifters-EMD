@@ -269,7 +269,6 @@ export type WeaponEffectRecipeId =
   | "hangman-blood-spatter"
   | "cinderbrand-fire-slash"
   | "stormfist-blue-lunge"
-  | "thunderhead-electric-codex"
   | "sermon-musical-notes"
   | "nullspike-impact-circle"
   | "quarry-quad-spatter"
@@ -624,7 +623,7 @@ export interface WeaponDef {
     /** Cosmetic ballistic lift of the own-sprite projectile; server travel remains authoritative. */
     arcHeight?: number;
     /** In-flight orientation policy for the own-sprite projectile. */
-    rotation?: "spin" | "point-forward";
+    rotation?: "spin" | "point-forward" | "barrel-roll";
     /** Enemy-to-enemy redirects remaining after the initial impact. */
     ricochetHops?: number;
     /** Maximum acquisition distance for each enemy ricochet. */
@@ -1579,7 +1578,9 @@ const BASE_WEAPONS: Record<string, WeaponDefSource> = {
     range: 100,
     halfArc: 0.7,
     cooldown: 0.18,
-    displayLength: 62,
+    // B28 owner order: double the painted pair without changing its collision/reach authority.
+    displayLength: 124,
+    collisionLength: 62,
     swingArc: 2.2,
     gripFrac: 0.16,
     dual: true,
@@ -2242,7 +2243,7 @@ export function thrownProjectileSpriteId(kind: string): string | undefined {
 /** Per-weapon in-flight orientation; legacy and unspecified throws retain their authored spin. */
 export function thrownProjectileRotationPolicy(
   source: string | Pick<WeaponDef, "thrown"> | undefined,
-): "spin" | "point-forward" | undefined {
+): "spin" | "point-forward" | "barrel-roll" | undefined {
   const weapon =
     typeof source === "string" ? WEAPONS[thrownProjectileWeaponId(source) ?? ""] : source;
   return weapon?.thrown ? (weapon.thrown.rotation ?? "spin") : undefined;

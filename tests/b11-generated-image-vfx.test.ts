@@ -3,8 +3,6 @@ import { createRequire } from "node:module";
 import {
   ARCANIST_LANCE_PROJECTILE_HALF_LENGTH,
   ARCANIST_LANCE_PROJECTILE_RADIUS,
-  DUSTREAPER_FIRE_DRAGON_HALF_WIDTH,
-  DUSTREAPER_FIRE_DRAGON_REACH,
   hitEnvelopeExtentsAgree,
   MESA_HEART_CRYSTAL_FRAGMENT_RADIUS,
   meleeDamageEnvelopeFor,
@@ -16,6 +14,7 @@ import { resolveCasterVfxRecipe } from "../packages/client/src/vfx/caster-vfx-re
 import {
   GENERATED_IMAGE_WEAPON_VFX_IDS,
   GENERATED_IMAGE_WEAPON_VFX_RECIPES,
+  generatedImageHeldBladeOverlayTransform,
   generatedImageMeleeGeometryFor,
   generatedImageProjectileGeometryFor,
   resolveGeneratedImageWeaponVfxRecipe,
@@ -120,17 +119,48 @@ describe("B11 generated-image weapon VFX", () => {
     expect(resolveCasterVfxRecipe(weapon("x-staff-arcane-lance"))).toBeUndefined();
   });
 
-  it("sizes the dragon sweep and crystal family from the shared melee envelope", () => {
+  it("overlays the dragon on the held blade while leaving the base sword envelope unchanged", () => {
     const dustreaper = weapon("x2-dustreaper-zweihander");
     const dragon = generatedImageMeleeGeometryFor(dustreaper);
     const dragonEnvelope = meleeDamageEnvelopeFor(dustreaper);
     expect(dragon).toEqual({
-      forwardExtent: DUSTREAPER_FIRE_DRAGON_REACH,
-      halfWidth: DUSTREAPER_FIRE_DRAGON_HALF_WIDTH,
+      forwardExtent: dragonEnvelope.baseReach,
+      halfWidth: dragonEnvelope.baseHalfWidth,
     });
-    expect(dragonEnvelope.baseReach).toBeLessThan(DUSTREAPER_FIRE_DRAGON_REACH);
+    expect(dragonEnvelope.maxReach).toBe(dragonEnvelope.baseReach);
+    expect(dragonEnvelope.maxHalfWidth).toBe(dragonEnvelope.baseHalfWidth);
     expect(hitEnvelopeExtentsAgree(dragon?.forwardExtent ?? 0, dragonEnvelope.maxReach)).toBe(true);
     expect(hitEnvelopeExtentsAgree(dragon?.halfWidth ?? 0, dragonEnvelope.maxHalfWidth)).toBe(true);
+    const recipe = resolveGeneratedImageWeaponVfxRecipe(dustreaper.id);
+    expect(recipe?.bladeOverlay).toEqual({ lengthMultiplier: 1, widthMultiplier: 1 });
+    const overlay = recipe
+      ? generatedImageHeldBladeOverlayTransform(
+          {
+            x: 320,
+            y: 140,
+            angle: Math.PI,
+            axisX: -1,
+            axisY: 0,
+            normalX: 0,
+            normalY: -1,
+            physicalBladeLength: 180,
+            bladeWidth: 30,
+            depth: 900,
+          },
+          recipe,
+        )
+      : undefined;
+    expect(overlay).toEqual({
+      rootX: 500,
+      rootY: 140,
+      tipX: 320,
+      tipY: 140,
+      angle: Math.PI,
+      displayLength: 180,
+      displayWidth: 30,
+      normalSign: 1,
+      depth: 901,
+    });
 
     const mesa = weapon("x2-mesa-heart-geodes");
     const crystals = generatedImageMeleeGeometryFor(mesa);

@@ -2,13 +2,10 @@
   "vfxSubject": "vfx-drift-greatkatana-tempest-regent",
   "image": null,
   "suite": {
-    "edge-trail": { "on": true, "params": { "reach": 1.46, "color": 0.15, "len": 1.22 } },
-    "arc-bolt": { "on": true, "params": { "color": 0.15, "jag": 0.34 } },
-    "aura-pulse": { "on": true, "params": { "color": 0.15, "rings": 2 } },
-    "painted-impact": { "on": true, "params": { "paint": 3, "count": 9, "size": 0.92 } }
+    "edge-trail": { "on": true, "params": { "reach": 1.46, "color": 0.15, "len": 1.22 } }
   },
   "rot": 0,
-  "notes": "Gold storm edge and a restrained eye-of-storm guard pulse. Shock packs reuse gold-white sparks. Flagged for a bespoke perfect-guard sheet.",
+  "notes": "B28 single-treatment pass: only the gold storm edge remains. Removed arc-bolt, wielder aura-pulse, and painted-impact patterns.",
   "vfxRadius": 210,
   "displayLength": 360
 }

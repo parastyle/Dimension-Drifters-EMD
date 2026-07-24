@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { WEAPONS } from "@dd/shared";
+import { meleeDamageEnvelopeFor, WEAPONS } from "@dd/shared";
 import { describe, expect, it } from "vitest";
 import { firingStanceFor } from "../packages/client/src/sprites/firing-stance.js";
 import { resolvedGunGripPoints } from "../packages/client/src/sprites/gun-grip-points.js";
@@ -56,10 +56,12 @@ describe("W4G2 painted 96-pack scale contract", () => {
     expect(dustRecipe).toMatchObject({
       kind: "fire-dragon-sweep",
       subject: "vfx-fire-dragon",
+      bladeOverlay: { lengthMultiplier: 1, widthMultiplier: 1 },
     });
+    const envelope = meleeDamageEnvelopeFor(dustreaper);
     expect(generatedImageMeleeGeometryFor(dustreaper)).toEqual({
-      forwardExtent: 300,
-      halfWidth: 54,
+      forwardExtent: envelope.baseReach,
+      halfWidth: envelope.baseHalfWidth,
     });
     expect(
       paintedParticleDisplaySize(

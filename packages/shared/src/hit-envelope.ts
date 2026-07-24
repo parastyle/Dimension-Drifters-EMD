@@ -84,9 +84,7 @@ export const BLADE_EXTENSION_IGNITION_SECONDS = 0.1;
 /** Presentation-only retraction after the accepted combo lifetime lapses. */
 export const BLADE_EXTENSION_RETRACTION_SECONDS = 0.09;
 
-/** B11 generated-image silhouettes. These values size both the client art and server collision contract. */
-export const DUSTREAPER_FIRE_DRAGON_REACH = 300;
-export const DUSTREAPER_FIRE_DRAGON_HALF_WIDTH = 54;
+/** B11 generated-image silhouettes. Damage-bearing treatments remain shared with server collision. */
 export const MESA_HEART_CRYSTAL_FRAGMENT_RADIUS = 58;
 export const ARCANIST_LANCE_PROJECTILE_RADIUS = 17;
 export const ARCANIST_LANCE_PROJECTILE_HALF_LENGTH = 55;
@@ -120,12 +118,6 @@ export const LEGACY_WEAPON_HIT_ENVELOPE_OVERRIDES: Readonly<
   "x2-dawnwall-testament": extensionAuthoring(),
   "x2-cairnfall-monolith": extensionAuthoring(),
   "x2-mirage-hardlight-saber": extensionAuthoring(),
-  "x2-dustreaper-zweihander": Object.freeze({
-    melee: Object.freeze({
-      reach: DUSTREAPER_FIRE_DRAGON_REACH,
-      halfWidth: DUSTREAPER_FIRE_DRAGON_HALF_WIDTH,
-    }),
-  }),
   "x2-mesa-heart-geodes": Object.freeze({
     melee: Object.freeze({
       halfWidth: MESA_HEART_CRYSTAL_FRAGMENT_RADIUS,

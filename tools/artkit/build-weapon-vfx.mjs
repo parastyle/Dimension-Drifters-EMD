@@ -185,6 +185,8 @@ const types =
   "  audioCue: string;\n" +
   "  lifeMs: number;\n" +
   "  poolSize: number;\n" +
+  "  /** Optional held-blade affine registration; length 1 overlays the physical blade without extending reach. */\n" +
+  "  bladeOverlay?: { lengthMultiplier: number; widthMultiplier: number };\n" +
   "}\n" +
   "export interface WeaponVfxGeneratedImageReplacement extends WeaponVfxGeneratedImageBase {\n" +
   "  kind: Exclude<WeaponVfxGeneratedImageKind, \"fan-tornado\">;\n" +

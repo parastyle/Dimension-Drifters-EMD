@@ -124,37 +124,21 @@ describe("B10 weapon VFX cleanup/reuse", () => {
     });
   });
 
-  it("sizes the Voulge's reused blue electrical art to its complete damage reach", () => {
+  it("removes the Voulge's large blue painted layer while preserving electricity", () => {
     const weapon = WEAPONS["x2-thunderhead-voulge"];
     if (!weapon) throw new Error("Missing Thunderhead Voulge fixture");
-    const treatment = weaponPaintedSwingFor(weapon.id);
-    const recipe = resolveWeaponEffectRecipe(weapon);
-    const geometry = weaponPaintedSwingGeometryFor(weapon, treatment);
-    expect(recipe).toMatchObject({
-      id: "thunderhead-electric-codex",
-      paintedSwing: true,
+    expect(weapon).toMatchObject({
+      suppressVfx: true,
+      chainLightning: { jumps: 4, damage: 6, falloff: 0.8 },
     });
-    expect(recipe?.swingPack).toBeUndefined();
-    expect(treatment).toMatchObject({
-      textureKey: "b10:thunderhead-voulge-blue",
-      url: "vfx/weapons/v7/thunderhead-voulge-blue-effect.png",
-      extentMultiplier: 1,
-      originX: 0.04,
-      tint: 0x33e6ff,
-      subjects: ["blue-electric-arc"],
+    expect(weapon.effectRecipe).toBeUndefined();
+    expect(resolveWeaponEffectRecipe(weapon)).toBeUndefined();
+    expect(weaponPaintedSwingFor(weapon.id)).toBeUndefined();
+    expect(WEAPON_VFX[weapon.id]).toBeUndefined();
+    expect(weaponVfxSuiteFor(weapon.id, weapon.tags.element, "chop")).toMatchObject({
+      authored: true,
+      suite: {},
     });
-    expect(geometry?.forwardExtent).toBe(meleeDamageEnvelopeFor(weapon).maxReach);
-    expect(geometry?.forwardExtent).toBe(230);
-    expect(geometry?.displayWidth).toBeGreaterThan(weapon.displayLength * 1.2);
-    expect(geometry?.forwardExtent).toBeGreaterThan(
-      weaponSwingIdentitySizePx(recipe, weapon.displayLength) * 4,
-    );
-    expect(weaponVfxSuiteFor(weapon.id, weapon.tags.element, "chop").suite).toEqual({});
-
-    const census = rasterCensus(`packages/client/public/${treatment?.url}`);
-    expect(census.visibleFraction).toBeGreaterThan(0.4);
-    expect(census.averageBlue).toBeGreaterThan(census.averageGreen * 1.5);
-    expect(census.averageGreen).toBeGreaterThan(census.averageRed * 3);
   });
 
   it("leaves Sanctified Headsman as an ordinary sword with zero special VFX or extension", () => {

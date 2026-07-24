@@ -46,6 +46,8 @@ export interface WeaponVfxGeneratedImageBase {
   audioCue: string;
   lifeMs: number;
   poolSize: number;
+  /** Optional held-blade affine registration; length 1 overlays the physical blade without extending reach. */
+  bladeOverlay?: { lengthMultiplier: number; widthMultiplier: number };
 }
 export interface WeaponVfxGeneratedImageReplacement extends WeaponVfxGeneratedImageBase {
   kind: Exclude<WeaponVfxGeneratedImageKind, "fan-tornado">;
@@ -277,28 +279,6 @@ export const WEAPON_VFX: Record<string, WeaponVfx> = {
           "color": 0.15,
           "len": 1.22
         }
-      },
-      "arc-bolt": {
-        "on": true,
-        "params": {
-          "color": 0.15,
-          "jag": 0.34
-        }
-      },
-      "aura-pulse": {
-        "on": true,
-        "params": {
-          "color": 0.15,
-          "rings": 2
-        }
-      },
-      "painted-impact": {
-        "on": true,
-        "params": {
-          "paint": 3,
-          "count": 9,
-          "size": 0.92
-        }
       }
     },
     "rot": 0,
@@ -400,27 +380,6 @@ export const WEAPON_VFX: Record<string, WeaponVfx> = {
         "params": {
           "reach": 1.16,
           "width": 8,
-          "color": 0.1
-        }
-      },
-      "edge-trail": {
-        "on": true,
-        "params": {
-          "reach": 1.28,
-          "color": 0.1,
-          "len": 0.62
-        }
-      },
-      "cleave-flash": {
-        "on": true,
-        "params": {
-          "intensity": 0.9
-        }
-      },
-      "hit-spark": {
-        "on": true,
-        "params": {
-          "count": 34,
           "color": 0.1
         }
       }
@@ -821,22 +780,6 @@ export const WEAPON_VFX: Record<string, WeaponVfx> = {
       ]
     }
   },
-  "x2-thunderhead-voulge": {
-    "suite": {},
-    "rot": 0,
-    "suppressFallback": true,
-    "paintedSwing": {
-      "textureKey": "b10:thunderhead-voulge-blue",
-      "url": "vfx/weapons/v7/thunderhead-voulge-blue-effect.png",
-      "extentMultiplier": 1,
-      "originX": 0.04,
-      "tint": 3401471,
-      "lifeMs": 840,
-      "subjects": [
-        "blue-electric-arc"
-      ]
-    }
-  },
   "x2-dustreaper-zweihander": {
     "suite": {},
     "rot": 0,
@@ -849,7 +792,11 @@ export const WEAPON_VFX: Record<string, WeaponVfx> = {
       "signature": "serpentine-fire-dragon-head-led-sweep",
       "audioCue": "b11:fire-dragon-sweep",
       "lifeMs": 520,
-      "poolSize": 1
+      "poolSize": 1,
+      "bladeOverlay": {
+        "lengthMultiplier": 1,
+        "widthMultiplier": 1
+      }
     }
   },
   "x2-mesa-heart-geodes": {

@@ -5,6 +5,27 @@ export interface ProjectileArtTransform {
   readonly scaleX: 1 | -1;
 }
 
+export interface BarrelRollArtTransform {
+  readonly rotation: number;
+  readonly scaleY: number;
+}
+
+export const BARREL_ROLL_RATE_RADIANS_PER_SECOND = 48;
+
+/** B28 paper-roll treatment: lock the long axis to velocity and mirror the painted normal through each turn. */
+export function barrelRollArtTransform(
+  vx: number,
+  vy: number,
+  elapsedSeconds: number,
+): BarrelRollArtTransform {
+  return Object.freeze({
+    rotation: Math.atan2(vy, vx),
+    scaleY: Math.cos(
+      Math.max(0, elapsedSeconds) * BARREL_ROLL_RATE_RADIANS_PER_SECOND,
+    ),
+  });
+}
+
 function normalizeAngle(angle: number): number {
   return Math.atan2(Math.sin(angle), Math.cos(angle));
 }

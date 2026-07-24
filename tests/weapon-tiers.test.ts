@@ -48,7 +48,7 @@ describe("B20 L5 authored weapon tiers", () => {
       (tier) =>
         ACTIVE_WEAPON_CATALOG_IDS.filter((id) => WEAPONS[id]?.tier === tier).length,
     );
-    expect(counts).toEqual([69, 72, 66, 68, 68]);
+    expect(counts).toEqual([69, 72, 65, 68, 68]);
     expect(counts.every((count) => count > 0)).toBe(true);
     expect(Math.max(...counts)).toBeLessThanOrEqual(ACTIVE_WEAPON_CATALOG_IDS.length / 2);
   });

@@ -378,6 +378,7 @@ import {
   makeSpit,
   makeThrownWeapon,
 } from "./arena/projectile-factory.js";
+import { barrelRollArtTransform } from "./arena/projectile-facing.js";
 import {
   stepAuthoritativeStraightFlight,
   usesAuthoritativeStraightFlight,
@@ -3698,6 +3699,7 @@ export class ArenaScene extends Phaser.Scene {
         aimAngle,
         swing,
         generatedTarget,
+        () => rig.leadWeaponTipPose(),
       )
     )
       return;
@@ -7323,9 +7325,48 @@ export class ArenaScene extends Phaser.Scene {
       }
       if (thrown) {
         const rotating = payload ?? c;
-        if (thrownProjectileRotationPolicy(pr.kind) === "point-forward")
+        const rotationPolicy = thrownProjectileRotationPolicy(pr.kind);
+        if (rotationPolicy === "point-forward") {
           rotating.rotation = Math.atan2(pr.vy, pr.vx);
-        else rotating.rotation += dtSec * 22;
+        } else if (rotationPolicy === "barrel-roll") {
+          const elapsedSeconds =
+            ((rotating.getData("barrelRollElapsedSeconds") as number | undefined) ?? 0) + dtSec;
+          const roll = barrelRollArtTransform(pr.vx, pr.vy, elapsedSeconds);
+          const blade = rotating.getData("barrelRollBlade") as
+            | Phaser.GameObjects.Image
+            | Phaser.GameObjects.Rectangle
+            | undefined;
+          rotating.rotation = roll.rotation;
+          if (blade)
+            blade.setScale(
+              (rotating.getData("barrelRollBaseScaleX") as number | undefined) ?? blade.scaleX,
+              ((rotating.getData("barrelRollBaseScaleY") as number | undefined) ?? 1) *
+                roll.scaleY,
+            );
+          rotating.setData("barrelRollElapsedSeconds", elapsedSeconds);
+          const audit = globalThis as unknown as {
+            __ddB28BarrelRollAudit?: Array<{
+              weaponId: string;
+              heading: number;
+              rotation: number;
+              scaleRatio: number;
+              elapsedSeconds: number;
+            }>;
+          };
+          if (audit.__ddB28BarrelRollAudit) {
+            audit.__ddB28BarrelRollAudit.push({
+              weaponId: pr.sourceWeaponId,
+              heading: Math.atan2(pr.vy, pr.vx),
+              rotation: roll.rotation,
+              scaleRatio: roll.scaleY,
+              elapsedSeconds,
+            });
+            if (audit.__ddB28BarrelRollAudit.length > 512)
+              audit.__ddB28BarrelRollAudit.shift();
+          }
+        } else {
+          rotating.rotation += dtSec * 22;
+        }
       }
       const arcHeight = pr.arcHeight ?? 0;
       if (payload && arcHeight > 0 && pr.flightTicks > 0) {

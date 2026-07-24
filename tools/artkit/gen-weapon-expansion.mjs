@@ -145,7 +145,7 @@ const EFFECT_RECIPES = new Set([
   "riftcleaver-crystal-shards", "verdict-tip-procession", "tombwarden-dark-slash",
   "choir-iron-flame-slash", "hangman-blood-spatter",
   "cinderbrand-fire-slash", "sanctified-holy-slash", "stormfist-blue-lunge",
-  "thunderhead-electric-codex", "sermon-musical-notes", "nullspike-impact-circle",
+  "sermon-musical-notes", "nullspike-impact-circle",
   "quarry-quad-spatter", "witherleaf-tip-spores", "snakeoil-tip-sparks",
   "gravechain-dominant-spin", "void-caster-explosion", "hexbloom-toxic-impact",
   "cinderbrand-magma-impact", "cinderchoke-fire-impact", "hollow-harvest-circle",
@@ -248,7 +248,7 @@ const PERFORMANCE_AURA_KEYS = new Set([
 const HIT_STATUS_KEYS = new Set(["kind", "multiplier", "seconds"]);
 const POSE_LANGUAGE_KEYS = new Set(["idle", "feet"]);
 const HIT_STATUS_KINDS = new Set(["slow"]);
-const THROWN_ROTATIONS = new Set(["spin", "point-forward"]);
+const THROWN_ROTATIONS = new Set(["spin", "point-forward", "barrel-roll"]);
 const SCATTER_AIMS = new Set(["cone", "radial-random"]);
 
 const checkKeys = (obj, allowed, path) => {

@@ -1,5 +1,10 @@
 import { readFileSync } from "node:fs";
-import { meleeComboSelectionFor, WEAPONS, type WeaponDef } from "@dd/shared";
+import {
+  meleeComboSelectionFor,
+  meleeDamageEnvelopeFor,
+  WEAPONS,
+  type WeaponDef,
+} from "@dd/shared";
 import { describe, expect, it } from "vitest";
 import { fistGunShotHandOffset } from "../packages/client/src/sprites/firing-stance.js";
 import {
@@ -154,10 +159,12 @@ describe("W4M melee/caster iteration orders", () => {
     expect(resolveGeneratedImageWeaponVfxRecipe(definition.id)).toMatchObject({
       kind: "fire-dragon-sweep",
       subject: "vfx-fire-dragon",
+      bladeOverlay: { lengthMultiplier: 1, widthMultiplier: 1 },
     });
+    const envelope = meleeDamageEnvelopeFor(definition);
     expect(generatedImageMeleeGeometryFor(definition)).toEqual({
-      forwardExtent: 300,
-      halfWidth: 54,
+      forwardExtent: envelope.baseReach,
+      halfWidth: envelope.baseHalfWidth,
     });
   });
 

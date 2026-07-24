@@ -1708,32 +1708,10 @@
           "color": 0.15,
           "len": 1.22
         }
-      },
-      "arc-bolt": {
-        "on": true,
-        "params": {
-          "color": 0.15,
-          "jag": 0.34
-        }
-      },
-      "aura-pulse": {
-        "on": true,
-        "params": {
-          "color": 0.15,
-          "rings": 2
-        }
-      },
-      "painted-impact": {
-        "on": true,
-        "params": {
-          "paint": 3,
-          "count": 9,
-          "size": 0.92
-        }
       }
     },
     "rot": 0,
-    "notes": "Gold storm edge and a restrained eye-of-storm guard pulse. Shock packs reuse gold-white sparks. Flagged for a bespoke perfect-guard sheet.",
+    "notes": "B28 single-treatment pass: only the gold storm edge remains. Removed arc-bolt, wielder aura-pulse, and painted-impact patterns.",
     "vfxRadius": 210,
     "displayLength": 360
   },
@@ -1849,31 +1827,10 @@
           "width": 8,
           "color": 0.1
         }
-      },
-      "edge-trail": {
-        "on": true,
-        "params": {
-          "reach": 1.28,
-          "color": 0.1,
-          "len": 0.62
-        }
-      },
-      "cleave-flash": {
-        "on": true,
-        "params": {
-          "intensity": 0.9
-        }
-      },
-      "hit-spark": {
-        "on": true,
-        "params": {
-          "count": 34,
-          "color": 0.1
-        }
       }
     },
     "rot": 0,
-    "notes": "Short-lived hot breaker arcs and dense sparks emphasize speed against guard. Physical spark pack is reused with an amber recolor.",
+    "notes": "B28 single-set pass: kept the stronger hot breaker slash-arc. Removed overlapping edge-trail, cleave-flash, and hit-spark set.",
     "vfxRadius": 170,
     "displayLength": 255
   },

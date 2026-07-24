@@ -1,4 +1,5 @@
 import { meleeDamageEnvelopeFor, projectileDamageEnvelopeFor, type WeaponDef } from "@dd/shared";
+import type { WeaponBladeAttachmentPose } from "../entities/SpriteRig.js";
 import {
   WEAPON_VFX,
   type WeaponVfxGeneratedImageFanTornado,
@@ -38,6 +39,18 @@ export type GeneratedImageWeaponVfxRecipe =
 export interface GeneratedImageMeleeGeometry {
   readonly forwardExtent: number;
   readonly halfWidth: number;
+}
+
+export interface GeneratedImageHeldBladeOverlayTransform {
+  readonly rootX: number;
+  readonly rootY: number;
+  readonly tipX: number;
+  readonly tipY: number;
+  readonly angle: number;
+  readonly displayLength: number;
+  readonly displayWidth: number;
+  readonly normalSign: -1 | 1;
+  readonly depth: number;
 }
 
 export interface GeneratedImageProjectileGeometry {
@@ -146,6 +159,44 @@ export function generatedImageMeleeGeometryFor(
   return Object.freeze({
     forwardExtent: envelope.maxReach,
     halfWidth: envelope.maxHalfWidth,
+  });
+}
+
+/**
+ * Register generated art in the exact final held-blade basis used by blade extensions. A multiplier of
+ * one starts at the physical blade root and ends at its tip, so the art cannot imply extra reach.
+ */
+export function generatedImageHeldBladeOverlayTransform(
+  pose: Pick<
+    WeaponBladeAttachmentPose,
+    | "x"
+    | "y"
+    | "angle"
+    | "axisX"
+    | "axisY"
+    | "normalX"
+    | "normalY"
+    | "physicalBladeLength"
+    | "bladeWidth"
+    | "depth"
+  >,
+  recipe: Pick<GeneratedImageWeaponVfxRecipe, "bladeOverlay">,
+): GeneratedImageHeldBladeOverlayTransform | undefined {
+  const overlay = recipe.bladeOverlay;
+  if (!overlay) return undefined;
+  const displayLength = Math.max(1, pose.physicalBladeLength * overlay.lengthMultiplier);
+  const displayWidth = Math.max(1, pose.bladeWidth * overlay.widthMultiplier);
+  const determinant = pose.axisX * pose.normalY - pose.axisY * pose.normalX;
+  return Object.freeze({
+    rootX: pose.x - pose.axisX * displayLength,
+    rootY: pose.y - pose.axisY * displayLength,
+    tipX: pose.x,
+    tipY: pose.y,
+    angle: pose.angle,
+    displayLength,
+    displayWidth,
+    normalSign: determinant < 0 ? -1 : 1,
+    depth: pose.depth + 1,
   });
 }
 

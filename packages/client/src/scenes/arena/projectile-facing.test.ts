@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { PROJECTILE_SPRITES } from "../../sprites/projectile-manifest.js";
-import { projectileArtTransform } from "./projectile-facing.js";
+import {
+  BARREL_ROLL_RATE_RADIANS_PER_SECOND,
+  barrelRollArtTransform,
+  projectileArtTransform,
+} from "./projectile-facing.js";
 
 function transformedForward(rotation: number, scaleX: number): { x: number; y: number } {
   return {
@@ -60,5 +64,26 @@ describe("projectile art facing", () => {
     const left = projectileArtTransform(-900, 0, "rotate");
     expect(Math.abs(left.rotation)).toBeCloseTo(Math.PI, 10);
     expect(left.scaleX).toBe(1);
+  });
+
+  it("keeps a barrel-rolling spear on its flight heading while paper-mirroring its normal axis", () => {
+    const rightFront = barrelRollArtTransform(8, 2, 0);
+    const rightBack = barrelRollArtTransform(
+      8,
+      2,
+      Math.PI / BARREL_ROLL_RATE_RADIANS_PER_SECOND,
+    );
+    const leftQuarter = barrelRollArtTransform(
+      -8,
+      -2,
+      Math.PI / (2 * BARREL_ROLL_RATE_RADIANS_PER_SECOND),
+    );
+
+    expect(rightFront.rotation).toBeCloseTo(Math.atan2(2, 8), 10);
+    expect(rightBack.rotation).toBeCloseTo(rightFront.rotation, 10);
+    expect(rightFront.scaleY).toBeCloseTo(1, 10);
+    expect(rightBack.scaleY).toBeCloseTo(-1, 10);
+    expect(leftQuarter.rotation).toBeCloseTo(Math.atan2(-2, -8), 10);
+    expect(Math.abs(leftQuarter.scaleY)).toBeLessThan(1e-10);
   });
 });

@@ -2405,6 +2405,15 @@
         "swingArc": 2.5,
         "gripFrac": 0.12
       },
+      "performance": {
+        "hold": "steady",
+        "action": "default-swing",
+        "lunge": {
+          "distancePx": 128,
+          "durationSeconds": 0.28,
+          "impactAtDestination": true
+        }
+      },
       "id": "x2-venomtongue-trident"
     },
     {
@@ -2708,7 +2717,8 @@
         "damage": 14,
         "charges": 3,
         "refillSeconds": 1.92,
-        "pierce": 2
+        "pierce": 2,
+        "rotation": "barrel-roll"
       },
       "performance": {
         "hold": "steady",
@@ -2886,9 +2896,7 @@
         "hold": "upright",
         "action": "default-swing"
       },
-      "effectRecipe": "thunderhead-electric-codex",
-      "effectEmitter": "blade",
-      "effectTiming": "swing-midpoint",
+      "suppressVfx": true,
       "id": "x2-thunderhead-voulge"
     },
     {
@@ -9686,11 +9694,11 @@
       "cardartAction": "loosing a wide spray of thorny wooden quills to the right, vine limbs whipping forward, splinters scattering in the volley",
       "behavior": {
         "kind": "gun",
-        "damage": 4,
+        "damage": 8,
         "projectileSpeed": 740,
         "range": 400,
         "fireRate": 0.55,
-        "pellets": 6,
+        "pellets": 3,
         "spread": 0.38,
         "pierce": 2,
         "magazine": 5,
@@ -17556,12 +17564,12 @@
       "grip": "2H",
       "gripPoints": {
         "primary": {
-          "x": 0.16,
-          "y": 0.78
+          "x": 0.14,
+          "y": 0.55
         },
         "secondary": {
-          "x": 0.28,
-          "y": 0.71,
+          "x": 0.38,
+          "y": 0.55,
           "role": "handle"
         }
       },
@@ -17590,7 +17598,7 @@
         "range": 82,
         "halfArc": 1.05,
         "cooldown": 1.5,
-        "displayLength": 116,
+        "displayLength": 154.28,
         "collisionLength": 90,
         "swingArc": 3.1,
         "gripFrac": 0.16
@@ -17731,6 +17739,7 @@
       "element": "physical",
       "finish": "battle-worn",
       "grip": "1H",
+      "archived": true,
       "gripPoints": {
         "primary": {
           "x": 0.35,
