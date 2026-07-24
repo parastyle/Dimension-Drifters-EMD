@@ -1163,21 +1163,36 @@ export const WEAPON_ART_MUZZLES = {
       {
         "width": 1808,
         "height": 459
+      },
+      {
+        "width": 1808,
+        "height": 459
       }
     ],
     "points": [
       {
-        "part": 0,
-        "x": 1806,
-        "y": 121.1,
+        "part": 1,
+        "x": 1794,
+        "y": 118,
         "derived": {
           "x": 1806,
-          "y": 121.1
-        }
+          "y": 118.4
+        },
+        "overrideReason": "The surgically registered break-action barrel layer carries two stacked recessed bores; each accepted shell alternates one exact bore centre while the receiver layer remains muzzle-inert."
+      },
+      {
+        "part": 1,
+        "x": 1794,
+        "y": 203,
+        "derived": {
+          "x": 1806,
+          "y": 118.4
+        },
+        "overrideReason": "The surgically registered break-action barrel layer carries two stacked recessed bores; each accepted shell alternates one exact bore centre while the receiver layer remains muzzle-inert."
       }
     ],
     "salvoMode": "parallel",
-    "barrelMode": "parallel"
+    "barrelMode": "cycle"
   },
   "x2-frostfang-speargun": {
     "sprite": "x2-frostfang-speargun",
