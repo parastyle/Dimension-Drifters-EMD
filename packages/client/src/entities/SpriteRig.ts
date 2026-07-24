@@ -441,6 +441,21 @@ export function wrapRigReceiverRelativeScale(input: Readonly<WrapRigScaleInput>)
   return Math.min(receiverWorldWidth / sourceWidth, receiverWorldHeight / sourceHeight);
 }
 
+/** Flame sheaths are an impact-frame composite, never an ambient particle lifetime. */
+export function strikeOverlayImpactVisible(
+  elapsedSeconds: number,
+  impactSeconds: number,
+  strikingHand: RigSwingHand,
+  overlayHand: 0 | 1,
+): boolean {
+  const ownsHand = strikingHand === "both" || strikingHand === overlayHand;
+  return (
+    ownsHand &&
+    elapsedSeconds >= impactSeconds - 0.035 &&
+    elapsedSeconds <= impactSeconds + 0.075
+  );
+}
+
 /** Optional rig-only routing metadata. Shared combat truth remains the immutable SwingDescriptor payload. */
 export interface RigSwingDescriptor extends SwingDescriptor {
   readonly hand?: RigSwingHand;
@@ -2357,6 +2372,11 @@ export class SpriteRig {
     imageFacingX: 1 | -1;
     partIndex: 1;
   }[] = [];
+  /** Same-registration recovered flame art, hidden except on the selected striking hand's impact frames. */
+  private strikeOverlays: {
+    img: Phaser.GameObjects.Image;
+    hand: 0 | 1;
+  }[] = [];
   private weaponDef?: WeaponDef;
   /** Session-local art-direction choices are read from Phaser's registry and cached as descriptor refs. */
   private readonly poseVariants = createPoseVariantSelection();
@@ -3512,6 +3532,7 @@ export class SpriteRig {
       for (const page of this.tome.pages) stack.push(page.quad);
       for (const scrap of this.tome.scraps) stack.push(scrap.piece);
     }
+    for (const overlay of this.strikeOverlays) stack.push(overlay.img);
     stack.push(this.observedSourceRing, this.observedSourceFlash, this.authoredDualGlint);
     if (this.label) stack.push(this.label);
     for (const object of stack) if (object.active) this.root.bringToTop(object);
@@ -5447,6 +5468,58 @@ export class SpriteRig {
     this.wrapFootWeapons.length = 0;
   }
 
+  private destroyStrikeOverlays(): void {
+    for (const overlay of this.strikeOverlays) overlay.img.destroy();
+    this.strikeOverlays.length = 0;
+  }
+
+  private setupStrikeOverlays(
+    spriteId: string,
+    def: WeaponDef,
+    manifest: SpriteManifest,
+  ): void {
+    if (!def.strikeOverlayPart) return;
+    const part = manifest.parts[def.strikeOverlayPart - 1];
+    if (!part) return;
+    const texture = partTexture(this.scene, spriteId, part.role);
+    for (let handIndex = 0; handIndex < this.weapons.length; handIndex++) {
+      const hand = handIndex as 0 | 1;
+      const weapon = this.weapons[hand];
+      if (!weapon) continue;
+      const img = this.scene.add
+        .image(weapon.img.x, weapon.img.y, texture.key, texture.frame)
+        .setOrigin(weapon.img.originX, weapon.img.originY)
+        .setScale(weapon.img.scaleX, weapon.img.scaleY)
+        .setVisible(false);
+      this.root.add(img);
+      this.strikeOverlays.push({ img, hand });
+    }
+  }
+
+  private syncStrikeOverlays(sceneNow: number, outsidePaperView: boolean): void {
+    const swing = this.swing;
+    const elapsed = (sceneNow - this.swingStart) / 1000;
+    for (const overlay of this.strikeOverlays) {
+      const weapon = this.weapons[overlay.hand];
+      const visible =
+        !outsidePaperView &&
+        !!swing &&
+        !!weapon &&
+        strikeOverlayImpactVisible(elapsed, swing.impactSeconds, this.swingHand, overlay.hand);
+      if (!visible || !weapon) {
+        overlay.img.setVisible(false);
+        continue;
+      }
+      overlay.img
+        .setOrigin(weapon.img.originX, weapon.img.originY)
+        .setPosition(weapon.img.x, weapon.img.y)
+        .setRotation(weapon.img.rotation)
+        .setScale(weapon.img.scaleX, weapon.img.scaleY)
+        .setAlpha(weapon.img.alpha)
+        .setVisible(weapon.img.visible);
+    }
+  }
+
   private destroyBreakActionAttachment(): void {
     const attachment = this.breakActionAttachment;
     if (!attachment) return;
@@ -5513,6 +5586,7 @@ export class SpriteRig {
     this.destroyMeleeTellLayers();
     this.destroyTomeVisual();
     this.destroyWrapFootWeapons();
+    this.destroyStrikeOverlays();
     this.destroyBreakActionAttachment();
     for (const w of this.weapons) w.img.destroy();
     this.weapons = [];
@@ -5634,6 +5708,7 @@ export class SpriteRig {
     };
     const frontWpn = attach(lead, frontHand);
     const backWpn = attach(off, backHand);
+    this.setupStrikeOverlays(spriteId, def, manifest);
     this.setupBreakActionAttachment(spriteId, def, manifest);
     const wrapMounts = wrapRigMountPlan(def, manifest);
     const footPart = manifest.parts[1];
@@ -5711,6 +5786,7 @@ export class SpriteRig {
       // §42 worn single: the glove covers the hand (hand under, weapon on top); held: hand grips the hilt.
       pushHandMount(frontPiece, frontHand);
     }
+    for (const overlay of this.strikeOverlays) stack.push(overlay.img);
     stack.push(this.observedSourceRing, this.observedSourceFlash, this.authoredDualGlint);
     if (this.label) stack.push(this.label);
     for (const obj of stack) this.root.bringToTop(obj);
@@ -5788,6 +5864,11 @@ export class SpriteRig {
       !this.weaponDef.gun &&
       !this.weaponDef.cast &&
       !this.weaponDef.beam;
+    const alternatingComboDual =
+      authoredDualMelee && this.weaponDef?.comboVariant === "wyrmscale-inferno-talons";
+    const authoredDualSequenceLength = alternatingComboDual
+      ? 4
+      : AUTHORED_DUAL_MELEE_SEQUENCE_LENGTH;
     const priorAuthoredDualStep = this.authoredDualBarStep;
     const authoredDualStageContinues =
       authoredDualMelee && priorAuthoredDualStep >= 0 && timeMs <= this.authoredDualBarExpiresAtMs;
@@ -5797,13 +5878,13 @@ export class SpriteRig {
     if (authoredDualMelee) {
       if (explicitAuthoredDualStep !== undefined) {
         authoredDualStep =
-          ((Math.trunc(explicitAuthoredDualStep) % AUTHORED_DUAL_MELEE_SEQUENCE_LENGTH) +
-            AUTHORED_DUAL_MELEE_SEQUENCE_LENGTH) %
-          AUTHORED_DUAL_MELEE_SEQUENCE_LENGTH;
+          ((Math.trunc(explicitAuthoredDualStep) % authoredDualSequenceLength) +
+            authoredDualSequenceLength) %
+          authoredDualSequenceLength;
       } else {
         authoredDualStep =
           timeMs <= this.authoredDualBarExpiresAtMs
-            ? (this.authoredDualBarStep + 1) % AUTHORED_DUAL_MELEE_SEQUENCE_LENGTH
+            ? (this.authoredDualBarStep + 1) % authoredDualSequenceLength
             : 0;
       }
       comboStageAdvances = authoredDualStageContinues && authoredDualStep !== priorAuthoredDualStep;
@@ -5811,7 +5892,14 @@ export class SpriteRig {
       const cadence = requestedSwing?.effectiveCooldown ?? this.weaponDef?.cooldown ?? 0.3;
       this.authoredDualBarExpiresAtMs = timeMs + cadence * 1000 + comboGraceMs(cadence);
     }
-    const barHand = authoredDualStep >= 0 ? AUTHORED_DUAL_MELEE_BAR[authoredDualStep] : undefined;
+    const barHand =
+      authoredDualStep < 0
+        ? undefined
+        : alternatingComboDual
+          ? authoredDualStep % 2 === 0
+            ? "lead"
+            : "off"
+          : AUTHORED_DUAL_MELEE_BAR[authoredDualStep];
     let swingHand: RigSwingHand = handOverride ?? swing?.hand ?? 0;
     if (barHand === "both") swingHand = "both";
     else if (barHand === "off") swingHand = 1;
@@ -5838,7 +5926,9 @@ export class SpriteRig {
     const activeDef = this.weapons[handIndex]?.def ?? this.weaponDef;
     let terminalFlourishHand: 0 | 1 | undefined;
     const terminalAuthoredDualBar =
-      authoredDualMelee && isTerminalFlourishStep(authoredDualStep, AUTHORED_DUAL_MELEE_BAR.length);
+      authoredDualMelee &&
+      !alternatingComboDual &&
+      isTerminalFlourishStep(authoredDualStep, AUTHORED_DUAL_MELEE_BAR.length);
     let nextSwing: RigSwingDescriptor | undefined;
     if (activeDef) {
       const effectiveCooldown = requestedSwing?.effectiveCooldown ?? activeDef.cooldown;
@@ -5898,14 +5988,19 @@ export class SpriteRig {
       // Authored kung-fu wraps are one two-hand scroll even though glovePair mirrors the same texture into
       // two worn slots. Their accepted cadence advances one shared three-beat bar; legacy mitts retain the
       // per-hand voltage-boxing chains they shipped with.
-      const comboChainHand = activeDef.glovePair && activeDef.impactMuzzle ? 0 : handIndex;
+      const comboChainHand =
+        activeDef.glovePair && (activeDef.impactMuzzle || activeDef.glovePair.sharedCombo)
+          ? 0
+          : handIndex;
       const chain = this.comboChains[comboChainHand];
       const continues =
         chain.family === family && chain.weaponId === activeDef.id && timeMs <= chain.expiresAtMs;
       const previousStep = chain.step;
       const step =
         authoredDualStep >= 0
-          ? Math.min(sequence.length - 1, Math.floor(authoredDualStep / 2))
+          ? alternatingComboDual
+            ? authoredDualStep % sequence.length
+            : Math.min(sequence.length - 1, Math.floor(authoredDualStep / 2))
           : nextSwing.comboStep !== undefined
             ? ((Math.trunc(nextSwing.comboStep) % sequence.length) + sequence.length) %
               sequence.length
@@ -6510,6 +6605,7 @@ export class SpriteRig {
     this.destroyMeleeTellLayers();
     this.destroyTomeVisual();
     this.destroyWrapFootWeapons();
+    this.destroyStrikeOverlays();
     this.destroyBreakActionAttachment();
     for (const w of this.weapons) w.img.destroy();
     this.weapons = [];
@@ -6538,6 +6634,7 @@ export class SpriteRig {
     this.destroyMeleeTellLayers();
     this.destroyTomeVisual();
     this.destroyWrapFootWeapons();
+    this.destroyStrikeOverlays();
     this.destroyBreakActionAttachment();
     for (const w of this.weapons) w.img.destroy();
     this.hatOverflowLabel?.destroy();
@@ -12066,6 +12163,7 @@ export class SpriteRig {
       this.authoredDualGlint.setVisible(false);
     }
     this.syncTomeVisual(sceneNow, outsidePaperView);
+    this.syncStrikeOverlays(sceneNow, outsidePaperView);
     this.syncObservedSourceFlash(sceneNow, outsidePaperView);
     this.flushCrossfallRibbon(sceneNow, outsidePaperView);
     this.updateMeleeTellWeaponVisuals(sceneNow);

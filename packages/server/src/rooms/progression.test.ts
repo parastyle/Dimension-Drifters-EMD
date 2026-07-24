@@ -387,7 +387,7 @@ describe("gear G1/G2 shared catalog, account, and allocation laws", () => {
   });
 
   it("pins schema 38 without run stats or level fields and keeps the compatibility envelope", () => {
-    expect(petShared.SCHEMA_VERSION).toBe(38);
+    expect(petShared.SCHEMA_VERSION).toBe(39);
     const playerSymbols = Object.getOwnPropertySymbols(petShared.PlayerState);
     const playerMetadata = (
       petShared.PlayerState as unknown as Record<symbol, Record<number, { name: string }>>

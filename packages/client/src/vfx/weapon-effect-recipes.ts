@@ -162,6 +162,18 @@ export const WEAPON_EFFECT_RECIPES = Object.freeze({
     swingCount: 8,
     additive: true,
   }),
+  "wyrmscale-fire-slash": Object.freeze({
+    id: "wyrmscale-fire-slash",
+    weaponId: "x2-wyrmscale-hex-talon",
+    emitter: "blade",
+    classification: "weapon-motion",
+    swingPack: "fire-bolt",
+    swingCount: 11,
+    swingScaleMode: "blade-length",
+    swingScaleMultiplier: 1.15,
+    swingParticleDominance: 0.38,
+    additive: true,
+  }),
   "gravechain-dominant-spin": Object.freeze({
     id: "gravechain-dominant-spin",
     weaponId: "x2-gravechain-scythe",

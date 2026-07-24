@@ -117,7 +117,8 @@ function effectiveRange(weapon: WeaponDef, delivery: WeaponDelivery): number {
   if (delivery === "zone") return weapon.groundZone?.placementRange ?? weapon.range;
   if (delivery === "beam") return weapon.beam?.range ?? weapon.range;
   if (delivery === "gun") return weapon.gun?.range ?? weapon.range;
-  if (delivery === "cast") return weapon.cast?.range ?? weapon.range;
+  if (delivery === "cast")
+    return weapon.chargedProjectile?.range ?? weapon.cast?.range ?? weapon.range;
   if (delivery === "thrown") return weapon.thrown?.range ?? weapon.range;
   return weapon.range * katanaExpectedMechanic(weapon).maxReachMultiplier;
 }
@@ -176,7 +177,13 @@ export function resourceEffectivePower(
       Math.max(1, gun.burst?.count ?? 1) *
       (1 + 0.5 * Math.max(0, gun.bounces ?? 0));
   } else if (delivery === "cast") {
-    budget = Math.max(0, weapon.cast!.damage) * pierceTargets(weapon.cast!.pierce);
+    budget = weapon.chargedProjectile
+      ? Math.max(
+          0,
+          weapon.chargedProjectile.directDamageMax +
+            weapon.chargedProjectile.explosionDamageMax,
+        )
+      : Math.max(0, weapon.cast!.damage) * pierceTargets(weapon.cast!.pierce);
   } else {
     budget = meleeDamageBudget(weapon);
   }
@@ -284,7 +291,7 @@ export function deriveWeaponResourceProfile(weapon: WeaponDef): WeaponResourcePr
 }
 
 /**
- * Deterministic formula output for all 357 durable ids: 338 active + 19 archived. Archived profiles remain
+ * Deterministic formula output for all 358 durable ids: 339 active + 19 archived. Archived profiles remain
  * resolvable so old receipts/instances never dangle while the join migration converts owned copies.
  */
 export const WEAPON_RESOURCE_IDS = Object.freeze(
@@ -308,18 +315,18 @@ export function weaponResourceProfile(weaponId: string): WeaponResourceProfile |
   return weaponId === "fists" ? FISTS_RESOURCE_PROFILE : WEAPON_RESOURCE_PROFILES[weaponId];
 }
 
-if (WEAPON_RESOURCE_IDS.length !== 357) {
+if (WEAPON_RESOURCE_IDS.length !== 358) {
   throw new Error(
-    `Drive formula expected 357 catalog weapons, received ${WEAPON_RESOURCE_IDS.length}`,
+    `Drive formula expected 358 catalog weapons, received ${WEAPON_RESOURCE_IDS.length}`,
   );
 }
 if (
-  ACTIVE_WEAPON_CATALOG_IDS.length !== 338 ||
+  ACTIVE_WEAPON_CATALOG_IDS.length !== 339 ||
   ARCHIVED_WEAPON_IDS.length !== 19 ||
   ACTIVE_WEAPON_CATALOG_IDS.length + ARCHIVED_WEAPON_IDS.length !== WEAPON_RESOURCE_IDS.length
 ) {
   throw new Error(
-    `Weapon archive census expected 338 active + 19 archived, received ${ACTIVE_WEAPON_CATALOG_IDS.length} + ${ARCHIVED_WEAPON_IDS.length}`,
+    `Weapon archive census expected 339 active + 19 archived, received ${ACTIVE_WEAPON_CATALOG_IDS.length} + ${ARCHIVED_WEAPON_IDS.length}`,
   );
 }
 if (Object.keys(WEAPON_RESOURCE_OVERRIDES).length > 15) {

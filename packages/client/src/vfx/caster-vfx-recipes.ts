@@ -103,7 +103,14 @@ export interface BeamVfxRecipe {
   readonly coreParticle: CasterParticleShape;
   readonly bodyFrame: number;
   readonly coreFrame: number;
-  readonly structure: BeamVfxStructureRecipe;
+  readonly structure?: BeamVfxStructureRecipe;
+  /** Recovered cel-band tile that replaces the active/release procedural stack in full. */
+  readonly tileArt?: {
+    readonly textureKey: string;
+    readonly url: string;
+    readonly nativeWidth: number;
+    readonly nativeHeight: number;
+  };
   readonly impact: {
     readonly points: number;
     readonly rings: number;
@@ -849,12 +856,11 @@ const BEAM_VFX_BASE_RECIPES: Readonly<Record<string, Omit<BeamVfxRecipe, "struct
     impact: Object.freeze({ points: 8, rings: 2, radiusScale: 0.78, spin: 3.1 }),
   }),
   "x2-unicorn-rainbow-beam": Object.freeze({
-    signature: "unicorn-five-strand-rainbow-ribbon",
+    signature: "unicorn-recovered-cel-band-tile",
     widthProfile: "ribbon",
     edgeColor: 0x261132,
     accentColor: 0xff6ca8,
     coreColor: 0xffffff,
-    strandPalette: Object.freeze([0xff3d5a, 0xff982e, 0xffe85a, 0x54d975, 0x5c83f2]),
     edgeWidth: 0.96,
     chromaWidth: 0.9,
     coreWidth: 0.08,
@@ -867,6 +873,12 @@ const BEAM_VFX_BASE_RECIPES: Readonly<Record<string, Omit<BeamVfxRecipe, "struct
     coreParticle: "spark",
     bodyFrame: 5,
     coreFrame: 3,
+    tileArt: Object.freeze({
+      textureKey: "recovered:unicorn-rainbow-beam",
+      url: "sprites/vfx-unicorn-rainbow-beam/part-1.png",
+      nativeWidth: 1158,
+      nativeHeight: 362,
+    }),
     impact: Object.freeze({ points: 10, rings: 2, radiusScale: 1.08, spin: 1.1 }),
   }),
   });
@@ -933,13 +945,13 @@ export const BEAM_STRUCTURE_FAMILY_BY_WEAPON: Readonly<
   "x2-seraph-s-knuckle-reliquary": "pulse-train",
   "x2-voidgrasp-null-gauntlet": "converging-strands",
   "x2-glasswidow-hexweave": "segmented-arcs",
-  "x2-unicorn-rainbow-beam": "converging-strands",
 });
 
 export const BEAM_VFX_RECIPES: Readonly<Record<string, BeamVfxRecipe>> = Object.freeze(
   Object.fromEntries(
     Object.entries(BEAM_VFX_BASE_RECIPES).map(([weaponId, recipe]) => {
       const family = BEAM_STRUCTURE_FAMILY_BY_WEAPON[weaponId];
+      if (recipe.tileArt) return [weaponId, Object.freeze(recipe)];
       if (!family) throw new Error(`Missing V7 beam structure family for ${weaponId}`);
       return [weaponId, Object.freeze({ ...recipe, structure: STRUCTURE_FAMILY_RECIPE[family] })];
     }),

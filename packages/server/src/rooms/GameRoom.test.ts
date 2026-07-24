@@ -2400,7 +2400,7 @@ describe("improve2 integrity regressions", () => {
     expect(receipt?.delivery).toBe(CombatDelivery.Gun);
     expect(h.state().combatReceipts.length).toBe(COMBAT_RECEIPT_CAP);
     expect([...h.state().combatReceipts]).toEqual(rows);
-    expect(h.state().schemaVersion).toBe(38);
+    expect(h.state().schemaVersion).toBe(39);
   });
 });
 
@@ -3549,7 +3549,7 @@ describe("GameRoom — §51 tough-enemy melee combos (Wave 1 authority)", () => 
   });
 
   it("ships schema 19, named depth decks, and guardrail-safe authored literals", () => {
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(38);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(39);
     expect(new EnemyState().comboSeq).toBe(0);
     expect(new EnemyState().comboFlags).toBe(0);
     expect(herePlayerJuggledDefault()).toBe(0);
@@ -3912,7 +3912,7 @@ describe("GameRoom — jump-feel J1 authoritative stance/physics", () => {
 
   it("ships schema 21 with the three appended uint8 stance/VFX defaults", () => {
     const player = new enemyComboShared.PlayerState();
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(38);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(39);
     expect([player.moveStance, player.poundSeq, player.stanceSeq]).toEqual([0, 0, 0]);
   });
 });
@@ -4090,7 +4090,7 @@ describe("GameRoom — flavor-only character identity", () => {
 
   it("retains schema 21 while defaulting character identity to the shared default", () => {
     const player = new enemyComboShared.PlayerState();
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(38);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(39);
     expect([player.character, player.runCharacter]).toEqual([
       enemyComboShared.DEFAULT_CHARACTER,
       enemyComboShared.DEFAULT_CHARACTER,
@@ -4852,8 +4852,8 @@ describe("ULT U1 lifecycle, co-op, and schema 25", () => {
     const h = makeRoom();
     h.join("ult-schema");
     const player = h.state().players.get("ult-schema");
-    expect(h.state().schemaVersion).toBe(38);
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(38);
+    expect(h.state().schemaVersion).toBe(39);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(39);
     expect([
       player.ultimate.archetype,
       player.ultimate.charge,
@@ -4913,7 +4913,7 @@ describe("pet v1 join snapshot, lock, and schema 25", () => {
     h.room.clients.push(client);
     h.room.onJoin(client, { metaAccount: account, selectedPetId: "brass-crab" });
     const player = h.state().players.get("pet-lock");
-    expect([h.state().schemaVersion, enemyComboShared.SCHEMA_VERSION]).toEqual([38, 38]);
+    expect([h.state().schemaVersion, enemyComboShared.SCHEMA_VERSION]).toEqual([39, 39]);
     expect({ petId: player.petId, petLevelBand: player.petLevelBand }).toEqual({
       petId: "hearth-newt",
       petLevelBand: 3,
@@ -5291,8 +5291,8 @@ describe("GameRoom — independent weapon slots and compatibility row", () => {
 
   it("keeps schema 38 and the unrelated compatibility-container tenants intact", () => {
     const fresh = new enemyComboShared.PlayerState();
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(38);
-    expect(new enemyComboShared.ArenaState().schemaVersion).toBe(38);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(39);
+    expect(new enemyComboShared.ArenaState().schemaVersion).toBe(39);
     expect(fresh.dualWield).toMatchObject({
       retiredByte0: 255,
       retiredUint32: 0,
@@ -5884,8 +5884,8 @@ describe("GameRoom — schema-31 Drive authority", () => {
     );
     const cost = enemyComboShared.driveCostForProfile(profile, interval);
 
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(38);
-    expect(h.state().schemaVersion).toBe(38);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(39);
+    expect(h.state().schemaVersion).toBe(39);
     expect(player.weaponResource).toBe(player.dualWield.weaponResource);
     expect(player.weaponResource).toMatchObject({
       valueQ: 10_000,
@@ -6190,7 +6190,7 @@ describe("GameRoom — schema-31 public prestige ceremony", () => {
     expect(metadata[3]).toMatchObject({ name: "retiredByte2", type: "uint8" });
     expect(metadata[7]).toMatchObject({ name: "prestige", type: "uint8" });
     expect(metadata[9]).toMatchObject({ name: "attackMoveMode", type: "uint8" });
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(38);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(39);
   });
 });
 
@@ -6424,7 +6424,7 @@ describe("GameRoom — W4A archived weapon retirement", () => {
     h.join("archive-gallery");
     h.send("archive-gallery", "toggleTraining");
     const roster = h.room.constructor.GALLERY_ROSTER as string[];
-    expect(roster).toHaveLength(338);
+    expect(roster).toHaveLength(339);
     for (const id of enemyComboShared.ARCHIVED_WEAPON_IDS) expect(roster).not.toContain(id);
     const before = h.state().players.get("archive-gallery").weapon;
     h.send("archive-gallery", "devEquip", { weapon: "x2-mistral-kusarigama" });
@@ -6608,6 +6608,96 @@ describe("GameRoom - hit registration regressions", () => {
 
 // Owner-ledger W-POSE authority coverage: append-only channel and shared spout-origin contracts.
 describe("GameRoom — authored weapon performances", () => {
+  it("releases Emberleaf tap/full charges as immutable server-scaled projectiles", () => {
+    const releaseAfterTicks = (heldTicks: number) => {
+      const h = makeRoom();
+      h.join(`emberleaf-${heldTicks}`);
+      const player = h.state().players.get(`emberleaf-${heldTicks}`);
+      const combat = h.room.combat.get(player.id);
+      const input = h.room.inputs.get(player.id);
+      const weapon = WEAPONS["x2-emberleaf-chapbook"];
+      if (!weapon?.chargedProjectile) throw new Error("Emberleaf charge fixture is required");
+      player.weapon = weapon.id;
+      combat.lastWeapon = weapon.id;
+      combat.cd = 0;
+      combat.drawLock = 0;
+      combat.aimX = 1;
+      combat.aimY = 0;
+      combat.targetX = player.x + weapon.chargedProjectile.range;
+      combat.targetY = player.y;
+
+      input.held.fireHeld = true;
+      input.lastFreshFireTick = h.state().tick;
+      h.room.stepPlayerChargedProjectile(player, player.id, combat, weapon, true);
+      expect(player.weaponChargeActive).toBe(true);
+      expect(player.weaponChargeStartTick).toBe(h.state().tick);
+      expect(h.state().projectiles.size).toBe(0);
+
+      h.state().tick = (h.state().tick + heldTicks) >>> 0;
+      input.held.fireHeld = false;
+      h.room.stepPlayerChargedProjectile(player, player.id, combat, weapon, true);
+      const projectile = [...h.state().projectiles.values()][0];
+      if (!projectile) throw new Error("Emberleaf release did not create a projectile");
+      const meta = h.room.projectileMeta.get(projectile.id);
+      expect(player.weaponChargeActive).toBe(false);
+      expect(projectile.kind).toBe("emberleaf-fireball");
+      expect(projectile.sourceWeaponId).toBe(weapon.id);
+      return { projectile, meta };
+    };
+
+    const tap = releaseAfterTicks(0);
+    expect(tap.projectile.visualScale).toBe(0.55);
+    expect(tap.projectile.explodeR).toBe(34);
+    expect(tap.meta?.damage).toBeCloseTo(3, 10);
+    expect(tap.meta?.explode?.damage).toBeCloseTo(2, 10);
+    expect(tap.meta?.damageEnvelope).toEqual({
+      shape: "capsule",
+      radius: 28 * 0.55,
+      halfLength: 0,
+    });
+
+    const full = releaseAfterTicks(24);
+    expect(full.projectile.visualScale).toBe(1.5);
+    expect(full.projectile.explodeR).toBe(100);
+    expect(full.meta?.damage).toBeCloseTo(18, 10);
+    expect(full.meta?.explode?.damage).toBeCloseTo(22, 10);
+    expect(full.meta?.damageEnvelope).toEqual({
+      shape: "capsule",
+      radius: 28 * 1.5,
+      halfLength: 0,
+    });
+  });
+
+  it("does not manufacture an Emberleaf release from a stale held heartbeat", () => {
+    const h = makeRoom();
+    h.join("emberleaf-stale");
+    const player = h.state().players.get("emberleaf-stale");
+    const combat = h.room.combat.get(player.id);
+    const input = h.room.inputs.get(player.id);
+    const weapon = WEAPONS["x2-emberleaf-chapbook"];
+    if (!weapon?.chargedProjectile) throw new Error("Emberleaf charge fixture is required");
+    player.weapon = weapon.id;
+    combat.lastWeapon = weapon.id;
+    combat.cd = 0;
+    combat.drawLock = 0;
+    input.held.fireHeld = true;
+    input.lastFreshFireTick = h.state().tick;
+
+    h.room.stepPlayerChargedProjectile(player, player.id, combat, weapon, true);
+    const startTick = player.weaponChargeStartTick;
+    h.state().tick = (h.state().tick + 6) >>> 0;
+    h.room.stepPlayerChargedProjectile(player, player.id, combat, weapon, true);
+
+    expect(player.weaponChargeActive).toBe(true);
+    expect(player.weaponChargeStartTick).toBe(startTick);
+    expect(h.state().projectiles.size).toBe(0);
+
+    input.held.fireHeld = false;
+    h.room.stepPlayerChargedProjectile(player, player.id, combat, weapon, true);
+    expect(player.weaponChargeActive).toBe(false);
+    expect(h.state().projectiles.size).toBe(1);
+  });
+
   it("drains Storm-Sphere Drive per second and stops damage at empty until release", async () => {
     const { CombatDelivery } = await import("@dd/shared");
     const h = makeRoom();

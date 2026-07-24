@@ -76,6 +76,12 @@
     ],
     "reason": "The beam must anchor at the painted unicorn-horn tip, not the broader pearl housing selected by alpha mass."
   },
+  "x2-emberleaf-chapbook": {
+    "points": [
+      { "part": 0, "x": 330, "y": 201 }
+    ],
+    "reason": "The charged fireball grows at the open chapbook fore-edge; the authoritative projectile releases from that same painted page edge."
+  },
   "x2-fish-launcher": {
     "points": [
       { "part": 0, "x": 767, "y": 109 }

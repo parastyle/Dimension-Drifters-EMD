@@ -33,6 +33,8 @@ import {
   COMBO_LEAP_RANGE,
   CombatDelivery,
   characterScale,
+  chargedProjectileFraction,
+  chargedProjectileSnapshot,
   type ChestOpenReceipt,
   CHEST_KIND_WEAPON_CACHE,
   CHEST_OPEN_RADIUS,
@@ -376,6 +378,7 @@ import {
   gunFx,
   makeBullet,
   makeCounter,
+  makeEmberleafFireball,
   makeGunIdentityProjectile,
   makeMagma,
   makeSpit,
@@ -1649,6 +1652,8 @@ export class ArenaScene extends Phaser.Scene {
   private readonly chests = new Map<string, Phaser.GameObjects.Container>();
   /** Rendered enemy projectiles (§15 spit), dead-reckoned from server (x,y,vx,vy). */
   private readonly projectiles = new Map<string, Phaser.GameObjects.Container>();
+  /** One recovered-art muzzle sprite per player while the replicated charge clock is active. */
+  private readonly chargedProjectileMuzzles = new Map<string, Phaser.GameObjects.Image>();
   /** Rendered zoner puddles (§15 area denial). */
   private readonly zones = new Map<string, Phaser.GameObjects.Container>();
   /** §17 the procgen arena, regenerated client-side from the synced seeds (identical to the server's), +
@@ -1832,6 +1837,14 @@ export class ArenaScene extends Phaser.Scene {
     preloadProjectileExplosionArt(this);
     preloadPageProjectileArt(this);
     preloadImpactFlipbooks(this); // optional per-element 6-frame hit blooms; missing strips stay silent
+    this.load.image(
+      "recovered:emberleaf-fireball",
+      "sprites/vfx-emberleaf-fireball/part-1.png",
+    );
+    this.load.image(
+      "recovered:unicorn-rainbow-beam",
+      "sprites/vfx-unicorn-rainbow-beam/part-1.png",
+    );
     if (this.belt) {
       const selectedLevel = beltLevelFor(this.selectedBeltLevel);
       const corporateFloor = corporateGridFloorForBelt(selectedLevel);
@@ -2065,6 +2078,7 @@ export class ArenaScene extends Phaser.Scene {
     this.pickups.clear();
     this.chests.clear();
     this.projectiles.clear();
+    this.chargedProjectileMuzzles.clear();
     this.zones.clear();
     this.lastFell.clear();
     this.jugglePresentation.clear();
@@ -4912,6 +4926,7 @@ export class ArenaScene extends Phaser.Scene {
       : this.room.state.tick;
     this.moneyDropRenderer.update(this.room.state.moneyDrops, moneyRenderTick);
     this.updateBeams();
+    this.updateChargedProjectileMuzzles();
     this.followSelf();
     this.sendAttack();
     this.sendParry();
@@ -6557,6 +6572,9 @@ export class ArenaScene extends Phaser.Scene {
         ? makeGeneratedImageWeaponProjectile(this, pr, sourceWeapon.id)
         : null;
       const container =
+        (pr.kind === "emberleaf-fireball"
+          ? makeEmberleafFireball(this, pr)
+          : null) ??
         generatedImageIdentity ??
         wackyIdentity ??
         gunIdentity ??
@@ -6584,6 +6602,8 @@ export class ArenaScene extends Phaser.Scene {
       const sourceRig = shooter ? this.blobs.get(shooter) : undefined;
       const spawnAnchorKind = sourceWeapon?.gun
         ? "muzzle"
+        : sourceWeapon?.chargedProjectile
+          ? "muzzle"
         : sourceWeapon?.hybridProjectile
           ? "muzzle"
           : sourceWeapon?.thrown && isThrownProjectileKind(pr.kind)
@@ -6887,6 +6907,43 @@ export class ArenaScene extends Phaser.Scene {
     const out = rig.throwWorldAnchor();
     if (this.belt) out.y = BELT_Y0 + (out.y - BELT_Y0) / BELT_FORESHORTEN;
     return out;
+  }
+
+  /** Present recovered charge art from the authoritative start tick, anchored to the final held sprite. */
+  private updateChargedProjectileMuzzles(): void {
+    if (!this.room) return;
+    const live = new Set<string>();
+    this.room.state.players.forEach((player, id) => {
+      const definition = WEAPONS[player.weapon]?.chargedProjectile;
+      const rig = this.blobs.get(id);
+      if (!player.alive || !player.weaponChargeActive || !definition || !rig) return;
+      live.add(id);
+      let image = this.chargedProjectileMuzzles.get(id);
+      if (!image) {
+        image = this.add.image(0, 0, "recovered:emberleaf-fireball").setDepth(99120);
+        this.chargedProjectileMuzzles.set(id, image);
+      }
+      const heldSeconds =
+        (((this.room?.state.tick ?? 0) - player.weaponChargeStartTick) >>> 0) *
+        (TICK_MS / 1000);
+      const fraction = chargedProjectileFraction(heldSeconds, definition);
+      const snapshot = chargedProjectileSnapshot(definition, fraction);
+      const muzzle = { x: rig.x, y: rig.y };
+      rig.writeWeaponMuzzleForShot((player.attackSeq + 1) >>> 0, 0, muzzle);
+      image
+        .setPosition(muzzle.x, muzzle.y)
+        .setDisplaySize(
+          definition.baseRadius * 2 * snapshot.visualScale,
+          definition.baseRadius * 2 * snapshot.visualScale,
+        )
+        .setRotation((this.time.now / 1000) * 0.7)
+        .setVisible(true);
+    });
+    for (const [id, image] of this.chargedProjectileMuzzles) {
+      if (live.has(id)) continue;
+      image.destroy();
+      this.chargedProjectileMuzzles.delete(id);
+    }
   }
 
   /** Dead-reckon each projectile along its velocity, gently corrected toward the server position
@@ -8994,7 +9051,12 @@ export class ArenaScene extends Phaser.Scene {
         isSelf &&
         !!pl?.alive &&
         !this.pointerOverInteractiveUi &&
-        !!(pl && (WEAPONS[pl.weapon]?.beam || WEAPONS[pl.weapon]?.performance?.continuous)) &&
+        !!(
+          pl &&
+          (WEAPONS[pl.weapon]?.beam ||
+            WEAPONS[pl.weapon]?.chargedProjectile ||
+            WEAPONS[pl.weapon]?.performance?.continuous)
+        ) &&
         (!WEAPONS[pl.weapon]?.performance?.aura ||
           Math.floor(Number(pl.dualWield?.weaponResource?.valueQ) || 0) > 0) &&
         pointer.rightButtonDown();
@@ -9440,7 +9502,12 @@ export class ArenaScene extends Phaser.Scene {
       return;
     const weapon = WEAPONS[self.weapon] ?? WEAPONS[DEFAULT_WEAPON];
     if (weapon?.tags.fireMode === "semi-auto" && this.semiAutoAttackLatched) return;
-    if (weapon?.beam || weapon?.groundZone?.trigger === "channel" || weapon?.performance?.aura)
+    if (
+      weapon?.beam ||
+      weapon?.chargedProjectile ||
+      weapon?.groundZone?.trigger === "channel" ||
+      weapon?.performance?.aura
+    )
       return;
     if (!weapon?.warp) {
       const leadGate = localAttackPredictionLeadGate({
@@ -13840,6 +13907,7 @@ export class ArenaScene extends Phaser.Scene {
       !this.pointerOverInteractiveUi &&
       !!(
         weapon?.beam ||
+        weapon?.chargedProjectile ||
         weapon?.performance?.aura ||
         weapon?.groundZone?.trigger === "channel" ||
         weapon?.performance?.continuous
@@ -14067,6 +14135,7 @@ export class ArenaScene extends Phaser.Scene {
       !this.pointerOverInteractiveUi &&
       !!(
         weapon?.beam ||
+        weapon?.chargedProjectile ||
         weapon?.groundZone?.trigger === "channel" ||
         weapon?.performance?.aura ||
         weapon?.performance?.continuous

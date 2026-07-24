@@ -75,8 +75,8 @@ describe("B24 shared radial fallback removal", () => {
 
     expect(candidates).toHaveLength(322);
     expect(byFormerLayer).toEqual({
-      "blade-trail": 289,
-      "twin-slash": 23,
+      "blade-trail": 288,
+      "twin-slash": 24,
       "thrust-streak": 10,
     });
     expect(candidates.filter((definition) => !definition.archived)).toHaveLength(305);
@@ -139,7 +139,7 @@ describe("B24 shared radial fallback removal", () => {
     });
 
     expect(sha256("packages/client/src/vfx/weapon-effect-recipes.ts")).toBe(
-      "C3B613499A44F9B1877A8BA3965DAE61216747EAEE8D48F0734FC773CB6DB94A",
+      "8EF269EB013F8B7621AFEE26B88976B2D2152C13461B040598810A8336E805AB",
     );
     expect(sha256("packages/client/src/vfx/weapon-effect-vfx.ts")).toBe(
       "813C0739A4D53BAB740C934A2D0FCEEEB256970F1D20224665D64A6D58FEBD54",
@@ -173,7 +173,7 @@ describe("B24 shared radial fallback removal", () => {
     expect(weapon("x2-pocket-hexicon").archived).toBe(true);
     expect(ARCHIVED_WEAPON_IDS).toContain("x2-pocket-hexicon");
     expect(ACTIVE_WEAPON_CATALOG_IDS).not.toContain("x2-pocket-hexicon");
-    expect(ACTIVE_WEAPON_CATALOG_IDS).toHaveLength(338);
+    expect(ACTIVE_WEAPON_CATALOG_IDS).toHaveLength(339);
     expect(ARCHIVED_WEAPON_IDS).toHaveLength(19);
   });
 
