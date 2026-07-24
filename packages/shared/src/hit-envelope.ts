@@ -24,12 +24,14 @@ import {
 /** Standing agreement tolerance for rendered damage bounds versus authoritative hit bounds. */
 export const HIT_ENVELOPE_TOLERANCE_PX = 1;
 
-export type ProjectileEnvelopeDelivery = "gun" | "cast" | "thrown" | "scatter";
+export type ProjectileEnvelopeDelivery = "gun" | "cast" | "thrown" | "scatter" | "hybrid";
 
-/** A projectile body is a velocity-aligned capsule. `halfLength=0` is the legacy swept circle. */
+/** A projectile body is normally velocity-aligned. `upright` keeps the capsule vertical in screen/world
+ * space while its centre travels, which is required for player-height tornado silhouettes. */
 export interface ProjectileBodyEnvelopeAuthoring {
   readonly radius: number;
   readonly halfLength?: number;
+  readonly orientation?: "velocity" | "upright";
 }
 
 export interface BladeExtensionEnvelopeAuthoring {
@@ -88,6 +90,12 @@ export const DUSTREAPER_FIRE_DRAGON_HALF_WIDTH = 54;
 export const MESA_HEART_CRYSTAL_FRAGMENT_RADIUS = 58;
 export const ARCANIST_LANCE_PROJECTILE_RADIUS = 17;
 export const ARCANIST_LANCE_PROJECTILE_HALF_LENGTH = 55;
+/** B22 fan tornadoes use one player-height 48x76 upright capsule for both art and damage. */
+export const FAN_TORNADO_PROJECTILE_WIDTH = 48;
+export const FAN_TORNADO_PROJECTILE_HEIGHT = 76;
+export const FAN_TORNADO_PROJECTILE_RADIUS = FAN_TORNADO_PROJECTILE_WIDTH / 2;
+export const FAN_TORNADO_PROJECTILE_HALF_LENGTH =
+  FAN_TORNADO_PROJECTILE_HEIGHT / 2 - FAN_TORNADO_PROJECTILE_RADIUS;
 
 function extensionAuthoring(): Readonly<WeaponHitEnvelopeAuthoring> {
   return Object.freeze({
@@ -128,6 +136,33 @@ export const LEGACY_WEAPON_HIT_ENVELOPE_OVERRIDES: Readonly<
       cast: Object.freeze({
         radius: ARCANIST_LANCE_PROJECTILE_RADIUS,
         halfLength: ARCANIST_LANCE_PROJECTILE_HALF_LENGTH,
+      }),
+    }),
+  }),
+  "x2-iron-war-fan": Object.freeze({
+    projectiles: Object.freeze({
+      hybrid: Object.freeze({
+        radius: FAN_TORNADO_PROJECTILE_RADIUS,
+        halfLength: FAN_TORNADO_PROJECTILE_HALF_LENGTH,
+        orientation: "upright",
+      }),
+    }),
+  }),
+  "x2-ember-fan": Object.freeze({
+    projectiles: Object.freeze({
+      hybrid: Object.freeze({
+        radius: FAN_TORNADO_PROJECTILE_RADIUS,
+        halfLength: FAN_TORNADO_PROJECTILE_HALF_LENGTH,
+        orientation: "upright",
+      }),
+    }),
+  }),
+  "x2-storm-fan": Object.freeze({
+    projectiles: Object.freeze({
+      hybrid: Object.freeze({
+        radius: FAN_TORNADO_PROJECTILE_RADIUS,
+        halfLength: FAN_TORNADO_PROJECTILE_HALF_LENGTH,
+        orientation: "upright",
       }),
     }),
   }),
@@ -392,6 +427,8 @@ export interface ProjectileDamageEnvelope {
   readonly shape: "capsule";
   readonly radius: number;
   readonly halfLength: number;
+  /** Omitted preserves the legacy velocity-aligned capsule. */
+  readonly orientation?: "velocity" | "upright";
 }
 
 export function projectileDamageEnvelopeFor(
@@ -399,10 +436,12 @@ export function projectileDamageEnvelopeFor(
   delivery: ProjectileEnvelopeDelivery,
 ): ProjectileDamageEnvelope {
   const authored = weaponHitEnvelopeAuthoringFor(weapon)?.projectiles?.[delivery];
+  const orientation = authored?.orientation;
   return Object.freeze({
     shape: "capsule",
     radius: Math.max(0, authored?.radius ?? PROJECTILE_RADIUS),
     halfLength: Math.max(0, authored?.halfLength ?? 0),
+    ...(orientation ? { orientation } : {}),
   });
 }
 
@@ -458,6 +497,7 @@ export function weaponDamageEnvelopeFor(weapon: WeaponDef): WeaponDamageEnvelope
   if (weapon.cast) projectiles.cast = projectileDamageEnvelopeFor(weapon, "cast");
   if (weapon.thrown) projectiles.thrown = projectileDamageEnvelopeFor(weapon, "thrown");
   if (weapon.scatter) projectiles.scatter = projectileDamageEnvelopeFor(weapon, "scatter");
+  if (weapon.hybridProjectile) projectiles.hybrid = projectileDamageEnvelopeFor(weapon, "hybrid");
   const hasPrimaryMelee =
     !weapon.gun &&
     !weapon.cast &&

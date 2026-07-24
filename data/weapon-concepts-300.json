@@ -16572,7 +16572,7 @@
     {
         "id": "x2-iron-war-fan",
         "name": "Iron War Fan",
-        "description": "A rigid riveted tessen worked through three close steel cuts; the accepted third cut releases a separate narrow cutting gust from its leading edge.",
+        "description": "A rigid riveted tessen whose opening steel cut drives one upright iron-gale tornado straight forward.",
         "type": "melee",
         "family": "war-fan",
         "theme": "rigid blackened-iron tessen with static painted ribbon guards",
@@ -16589,7 +16589,8 @@
         "palettePrimary": "#303337",
         "paletteAccent": "#848A8C",
         "artPrompt": "Weapon-only in-world sprite: a folding iron war fan (tessen) in OPEN configuration — steel ribs, blackened iron guards, riveted spine, subtle etched motif on the fan surface. Gritty dark-comic cel, ~4–8 colours. Flat orthographic side profile, faces RIGHT with the open fan blades to the RIGHT. Flat #00ff00 background. No character, no wind.",
-        "cardartAction": "closing two rigid steel cuts before the third drives a short knife-thin gust straight from the fan edge",
+        "cardartAction": "opening through a rigid steel cut as a player-high iron tornado drives straight from the fan edge",
+        "suppressVfx": true,
         "authoritativeCombo": true,
         "comboFamily": "arc",
         "comboVariant": "iron-war-fan-threefold",
@@ -16605,12 +16606,12 @@
         ],
         "performance": { "hold": "aim-forward", "action": "default-swing", "comboForwardPx": 8 },
         "stats": { "damage": 12, "range": 90, "halfArc": 0.82, "cooldown": 0.8, "displayLength": 104, "swingArc": 2.35, "gripFrac": 0.27 },
-        "behavior": { "kind": "hybrid", "projectile": { "style": "cutting-gust", "trigger": "combo-finisher", "comboLength": 3, "speed": 760, "range": 180, "damage": 12, "count": 1, "spread": 0, "pierce": 1, "scalingGrades": { "str": "B", "dex": "C" } } }
+        "behavior": { "kind": "hybrid", "projectile": { "style": "tornado", "trigger": "each-swing", "comboLength": 3, "speed": 520, "range": 260, "damage": 4, "count": 1, "spread": 0, "pierce": 1, "scalingGrades": { "str": "B", "dex": "C" } } }
     },
     {
         "id": "x2-ember-fan",
         "name": "Ember Fan",
-        "description": "An ember-steel war fan whose close sweeps retain their blade hit while releasing three small authoritative cinder shards in a short cone.",
+        "description": "An ember-steel war fan whose opening sweep drives one upright fire tornado straight forward.",
         "type": "melee",
         "family": "war-fan",
         "theme": "cooling ember-steel fan with static painted ribbon guards",
@@ -16627,7 +16628,8 @@
         "palettePrimary": "#342E2D",
         "paletteAccent": "#F05B22",
         "artPrompt": "Weapon-only in-world sprite: an open war fan whose blades are forged from cooling ember-steel — dark iron ribs with glowing red-orange fissures along the fan blades, small charred edges, wooden pivot. Gritty dark-comic cel, ~4–8 colours. Flat orthographic side profile, faces RIGHT with the open ember fan to the RIGHT. Flat #00ff00 background. No character, no flame VFX.",
-        "cardartAction": "sweeping close as three cinder-bright blade shards shear out in a short triangular cone",
+        "cardartAction": "sweeping open as a player-high ember tornado drives straight from the fan edge",
+        "suppressVfx": true,
         "authoritativeCombo": true,
         "comboFamily": "arc",
         "comboVariant": "ember-fan-cinder-sweeps",
@@ -16643,12 +16645,12 @@
         ],
         "performance": { "hold": "aim-forward", "action": "default-swing", "comboForwardPx": 6 },
         "stats": { "damage": 12, "range": 88, "halfArc": 0.92, "cooldown": 0.8, "displayLength": 102, "swingArc": 2.55, "gripFrac": 0.35 },
-        "behavior": { "kind": "hybrid", "projectile": { "style": "cinder-blade-cone", "trigger": "each-swing", "comboLength": 3, "speed": 620, "range": 150, "damage": 4, "count": 3, "spread": 0.34, "pierce": 1, "scalingGrades": { "dex": "B", "int": "C" } } }
+        "behavior": { "kind": "hybrid", "projectile": { "style": "tornado", "trigger": "each-swing", "comboLength": 3, "speed": 520, "range": 260, "damage": 4, "count": 1, "spread": 0, "pierce": 1, "scalingGrades": { "dex": "B", "int": "C" } } }
     },
     {
         "id": "x2-storm-fan",
         "name": "Storm Fan",
-        "description": "A paired crossed-fan set whose X-shaped melee strike launches a narrow authoritative storm arc that reverses after 300 ms and returns to its owner.",
+        "description": "A paired crossed-fan set whose opening X strike drives one upright storm tornado straight forward.",
         "type": "melee",
         "family": "paired-war-fan",
         "theme": "crossed ink-blue storm fans with static painted ribbon guards",
@@ -16665,7 +16667,8 @@
         "palettePrimary": "#1C3045",
         "paletteAccent": "#8DB7C9",
         "artPrompt": "Weapon-only in-world sprite: a pair of open war fans held crossed (X shape) — steel ribs, dark ink-blue lacquer, cloudy storm-motif ink on the surfaces, small silver electric etchings on the guards. Gritty dark-comic cel, ~4–8 colours. Flat orthographic side profile, faces RIGHT, crossed fans overlapping. Flat #00ff00 background. No character, no lightning.",
-        "cardartAction": "crossing both fans through one narrow X strike as a blue-white slash arc flies out and hooks home",
+        "cardartAction": "crossing both fans open as a player-high storm tornado drives straight forward",
+        "suppressVfx": true,
         "authoritativeCombo": true,
         "comboFamily": "arc",
         "comboVariant": "storm-fan-crossed-return",
@@ -16681,7 +16684,7 @@
         ],
         "performance": { "hold": "aim-forward", "action": "default-swing", "comboForwardPx": 6 },
         "stats": { "damage": 12, "range": 92, "halfArc": 0.88, "cooldown": 0.8, "displayLength": 126, "swingArc": 2.45, "gripFrac": 0.46 },
-        "behavior": { "kind": "hybrid", "projectile": { "style": "returning-arc", "trigger": "each-swing", "comboLength": 3, "speed": 700, "range": 210, "damage": 2, "count": 1, "spread": 0, "pierce": 1, "returnAfterSeconds": 0.3, "scalingGrades": { "dex": "B", "int": "C" } } }
+        "behavior": { "kind": "hybrid", "projectile": { "style": "tornado", "trigger": "each-swing", "comboLength": 3, "speed": 520, "range": 260, "damage": 4, "count": 1, "spread": 0, "pierce": 1, "scalingGrades": { "dex": "B", "int": "C" } } }
     },
     {
         "id": "x2-muay-thai-wraps",

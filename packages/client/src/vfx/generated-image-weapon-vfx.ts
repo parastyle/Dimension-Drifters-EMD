@@ -9,9 +9,8 @@ import {
 } from "@dd/shared";
 import Phaser from "phaser";
 import {
-  type FanTornadoWeaponVfxRecipe,
+  fanTornadoProjectileGeometryFor,
   type GeneratedImageWeaponVfxRecipe,
-  fanTornadoReleasePlanFor,
   generatedImageMeleeGeometryFor,
   generatedImageProjectileGeometryFor,
   resolveGeneratedImageWeaponVfxRecipe,
@@ -20,6 +19,7 @@ import {
 export {
   FAN_TORNADO_WEAPON_VFX_IDS,
   FAN_TORNADO_WEAPON_VFX_RECIPES,
+  fanTornadoProjectileGeometryFor,
   GENERATED_IMAGE_WEAPON_VFX_IDS,
   GENERATED_IMAGE_WEAPON_VFX_RECIPES,
   generatedImageMeleeGeometryFor,
@@ -35,7 +35,7 @@ interface GeneratedImageVfxAuditEvent {
     | "chain-burst"
     | "projectile"
     | "projectile-impact"
-    | "fan-tornado";
+    | "fan-tornado-projectile";
   readonly weaponId: string;
   readonly recipeKind: string;
   readonly subject: string;
@@ -51,25 +51,26 @@ interface GeneratedImageVfxAuditEvent {
   readonly projectileTipExtent?: number;
   readonly projectileDamageTipExtent?: number;
   readonly poolSize?: number;
-  readonly damageMode?: "presentation-only";
-  readonly releaseLane?: "center" | "lead" | "off";
-  readonly releaseProgress?: number;
-  readonly startX?: number;
-  readonly startY?: number;
-  readonly endX?: number;
-  readonly endY?: number;
-  readonly travelPx?: number;
-  readonly meleeEnvelopeReach?: number;
-  readonly maxVisualRadius?: number;
-  readonly overlapsMeleeAtSpawn?: boolean;
-  readonly fanOutStartScale?: number;
-  readonly fanOutEndScale?: number;
+  readonly damageMode?: "server-projectile";
+  readonly displayWidth?: number;
+  readonly displayHeight?: number;
+  readonly damageWidth?: number;
+  readonly damageHeight?: number;
+  readonly velocityX?: number;
+  readonly velocityY?: number;
+  readonly speed?: number;
+  readonly range?: number;
+  readonly upright?: boolean;
+  readonly rotation?: number;
+  readonly flipX?: boolean;
+  readonly scalePulseMin?: number;
+  readonly scalePulseMax?: number;
 }
 
 function auditGeneratedImageVfx(event: GeneratedImageVfxAuditEvent): void {
   const audit = globalThis as unknown as {
     __ddB11GeneratedImageVfxAudit?: GeneratedImageVfxAuditEvent[];
-    __ddB18FanTornadoAudit?: GeneratedImageVfxAuditEvent[];
+    __ddB22FanTornadoAudit?: GeneratedImageVfxAuditEvent[];
   };
   const frozen = Object.freeze(event);
   if (audit.__ddB11GeneratedImageVfxAudit) {
@@ -77,10 +78,9 @@ function auditGeneratedImageVfx(event: GeneratedImageVfxAuditEvent): void {
     if (audit.__ddB11GeneratedImageVfxAudit.length > 256)
       audit.__ddB11GeneratedImageVfxAudit.shift();
   }
-  if (event.kind === "fan-tornado" && audit.__ddB18FanTornadoAudit) {
-    audit.__ddB18FanTornadoAudit.push(frozen);
-    if (audit.__ddB18FanTornadoAudit.length > 256)
-      audit.__ddB18FanTornadoAudit.shift();
+  if (event.kind === "fan-tornado-projectile" && audit.__ddB22FanTornadoAudit) {
+    audit.__ddB22FanTornadoAudit.push(frozen);
+    if (audit.__ddB22FanTornadoAudit.length > 256) audit.__ddB22FanTornadoAudit.shift();
   }
 }
 
@@ -100,82 +100,6 @@ function activeTiming(swing: SwingDescriptor): {
     delayMs: Math.max(0, Math.round(swing.activeStartSeconds * 1000)),
     durationMs: Math.max(1, Math.round((swing.activeEndSeconds - swing.activeStartSeconds) * 1000)),
   });
-}
-
-function spawnFanTornado(
-  scene: Phaser.Scene,
-  weapon: WeaponDef,
-  recipe: FanTornadoWeaponVfxRecipe,
-  actorX: number,
-  actorY: number,
-  aimAngle: number,
-  swing: SwingDescriptor,
-): boolean {
-  if (!scene.textures.exists(recipe.textureKey)) return false;
-  const plan = fanTornadoReleasePlanFor(weapon, recipe, actorX, actorY, aimAngle, swing);
-  const ribbon = swing.comboRibbon;
-  const image = scene.add
-    .image(plan.startX, plan.startY, recipe.textureKey)
-    .setName(`generated-image-vfx:${weapon.id}:fan-tornado`)
-    .setDisplaySize(recipe.displayWidth, recipe.displayHeight)
-    .setDepth(100160)
-    .setVisible(false)
-    .setAlpha(0);
-  const baseScaleX = image.scaleX;
-  const baseScaleY = image.scaleY;
-  image
-    .setData("generatedImageWeaponId", weapon.id)
-    .setData("fanTornadoDamageMode", plan.damageMode)
-    .setData("fanTornadoReleaseLane", plan.releaseLane);
-  auditGeneratedImageVfx({
-    kind: "fan-tornado",
-    weaponId: weapon.id,
-    recipeKind: recipe.kind,
-    subject: recipe.subject,
-    textureKey: recipe.textureKey,
-    proceduralLayers: Object.freeze(["fan-out-ribbon", "hybrid-projectile"]),
-    x: plan.startX,
-    y: plan.startY,
-    poolSize: recipe.poolSize,
-    damageMode: plan.damageMode,
-    releaseLane: plan.releaseLane,
-    releaseProgress: plan.releaseProgress,
-    startX: plan.startX,
-    startY: plan.startY,
-    endX: plan.endX,
-    endY: plan.endY,
-    travelPx: plan.travelPx,
-    meleeEnvelopeReach: plan.meleeEnvelopeReach,
-    maxVisualRadius: plan.maxVisualRadius,
-    overlapsMeleeAtSpawn: plan.overlapsMeleeAtSpawn,
-    fanOutStartScale: ribbon?.fanOutStartScale,
-    fanOutEndScale: ribbon?.fanOutEndScale,
-  });
-  scene.tweens.addCounter({
-    from: 0,
-    to: 1,
-    delay: plan.delayMs,
-    duration: Math.max(240, recipe.lifeMs),
-    ease: "Cubic.out",
-    onStart: () => image.setVisible(true).setAlpha(0.96),
-    onUpdate: (tween) => {
-      const progress = tween.getValue() ?? 0;
-      const travelEase = 1 - (1 - progress) * (1 - progress);
-      const pulse = 1 + Math.sin(progress * Math.PI * 3) * recipe.scalePulse;
-      image
-        .setPosition(
-          Phaser.Math.Linear(plan.startX, plan.endX, travelEase),
-          Phaser.Math.Linear(plan.startY, plan.endY, travelEase),
-        )
-        .setRotation(progress * recipe.spinTurns * Math.PI * 2)
-        .setScale(baseScaleX * pulse, baseScaleY * pulse)
-        .setFlipX((Math.floor(progress * 8) & 1) === 1)
-        .setFlipY((Math.floor(progress * 6) & 1) === 1)
-        .setAlpha(progress < 0.62 ? 0.96 : 0.96 * (1 - (progress - 0.62) / 0.38));
-    },
-    onComplete: () => image.destroy(),
-  });
-  return true;
 }
 
 function tweenSweep(
@@ -328,7 +252,8 @@ function spawnPurpleCrystalSweep(
   return true;
 }
 
-/** Spawn a generated-image melee treatment. B11 replaces; B18 supplements the retained fan ribbon. */
+/** Spawn a generated-image melee treatment. B22 fan rows claim the swing without drawing: their sole
+ * visual is created from the replicated server projectile at the authored impact epoch. */
 export function spawnGeneratedImageWeaponSwing(
   scene: Phaser.Scene,
   weapon: WeaponDef,
@@ -344,8 +269,7 @@ export function spawnGeneratedImageWeaponSwing(
     return spawnFireDragonSweep(scene, weapon, recipe, actorX, actorY, aimAngle, swing);
   if (recipe.kind === "purple-crystal-burst")
     return spawnPurpleCrystalSweep(scene, weapon, recipe, actorX, actorY, aimAngle, swing, target);
-  if (recipe.kind === "fan-tornado")
-    return spawnFanTornado(scene, weapon, recipe, actorX, actorY, aimAngle, swing);
+  if (recipe.kind === "fan-tornado") return true;
   return false;
 }
 
@@ -400,7 +324,7 @@ export function spawnGeneratedImageCrystalChain(
   return true;
 }
 
-/** Replace the caster orb/trail with the complete runic lance image on the authoritative projectile row. */
+/** Replace the generic projectile with its complete generated-image payload on the authoritative row. */
 export function makeGeneratedImageWeaponProjectile(
   scene: Phaser.Scene,
   projectile: Readonly<{ x: number; y: number; vx: number; vy: number }>,
@@ -408,12 +332,62 @@ export function makeGeneratedImageWeaponProjectile(
 ): Phaser.GameObjects.Container | null {
   const weapon = WEAPONS[weaponId];
   const recipe = resolveGeneratedImageWeaponVfxRecipe(weaponId);
-  if (
-    !weapon ||
-    recipe?.kind !== "arcane-lance-projectile" ||
-    !scene.textures.exists(recipe.textureKey)
-  )
-    return null;
+  if (!weapon || !recipe || !scene.textures.exists(recipe.textureKey)) return null;
+  if (recipe.kind === "fan-tornado") {
+    const geometry = fanTornadoProjectileGeometryFor(weapon);
+    const hybrid = weapon.hybridProjectile;
+    if (!geometry || !hybrid) return null;
+    const flipX = projectile.vx < 0;
+    const image = scene.add
+      .image(0, 0, recipe.textureKey)
+      .setName(`generated-image-vfx:${weaponId}:fan-tornado-image`)
+      .setOrigin(0.5)
+      .setDisplaySize(geometry.displayWidth, geometry.displayHeight)
+      .setRotation(0)
+      .setFlipX(flipX)
+      .setFlipY(false);
+    const container = scene.add
+      .container(projectile.x, projectile.y, [image])
+      .setName(`generated-image-vfx:${weaponId}:fan-tornado-projectile`)
+      .setDepth(99100)
+      .setRotation(0)
+      .setData("fanTornadoImage", image)
+      .setData("fanTornadoBaseScaleX", image.scaleX)
+      .setData("fanTornadoBaseScaleY", image.scaleY)
+      .setData("fanTornadoPulse", recipe.scalePulse)
+      .setData("fanTornadoPulseSeconds", 0)
+      .setData("fanTornadoFacing", flipX ? -1 : 1)
+      .setData("generatedImageWeaponId", weaponId)
+      .setData("generatedImageRecipe", recipe)
+      .setData("ang", 0);
+    auditGeneratedImageVfx({
+      kind: "fan-tornado-projectile",
+      weaponId,
+      recipeKind: recipe.kind,
+      subject: recipe.subject,
+      textureKey: recipe.textureKey,
+      proceduralLayers: Object.freeze([]),
+      x: projectile.x,
+      y: projectile.y,
+      poolSize: recipe.poolSize,
+      damageMode: "server-projectile",
+      displayWidth: geometry.displayWidth,
+      displayHeight: geometry.displayHeight,
+      damageWidth: geometry.damageWidth,
+      damageHeight: geometry.damageHeight,
+      velocityX: projectile.vx,
+      velocityY: projectile.vy,
+      speed: hybrid.speed,
+      range: hybrid.range,
+      upright: true,
+      rotation: 0,
+      flipX,
+      scalePulseMin: 1,
+      scalePulseMax: 1 + recipe.scalePulse,
+    });
+    return container;
+  }
+  if (recipe.kind !== "arcane-lance-projectile") return null;
   const geometry = generatedImageProjectileGeometryFor(weapon);
   if (!geometry) return null;
   const angle = Math.atan2(projectile.vy, projectile.vx);
@@ -459,6 +433,7 @@ export function spawnGeneratedImageWeaponProjectileImpact(
 ): boolean {
   const weapon = weaponId ? WEAPONS[weaponId] : undefined;
   const recipe = resolveGeneratedImageWeaponVfxRecipe(weaponId);
+  if (weapon && recipe?.kind === "fan-tornado") return true;
   if (
     !weapon ||
     recipe?.kind !== "arcane-lance-projectile" ||

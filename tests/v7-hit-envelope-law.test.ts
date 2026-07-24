@@ -56,7 +56,7 @@ describe("V7-HIT standing VFX-collision law", () => {
         );
       }
 
-      for (const delivery of ["gun", "cast", "thrown", "scatter"] as const) {
+      for (const delivery of ["gun", "cast", "thrown", "scatter", "hybrid"] as const) {
         const projectile = envelope.projectiles[delivery];
         if (!projectile) continue;
         expect(projectileDamageEnvelopeFor(weapon, delivery), `${id}/${delivery}`).toEqual(
@@ -226,14 +226,15 @@ describe("V7-HIT standing VFX-collision law", () => {
           coneHalfAngle: descriptor.coneHalfAngle,
         });
       }
-      for (const delivery of ["gun", "cast", "thrown", "scatter"] as const) {
+      for (const delivery of ["gun", "cast", "thrown", "scatter", "hybrid"] as const) {
         const authored = weaponHitEnvelopeAuthoringFor(weapon)?.projectiles?.[delivery];
         if (authored) continue;
         const sourceExists =
           (delivery === "gun" && !!weapon.gun) ||
           (delivery === "cast" && !!weapon.cast) ||
           (delivery === "thrown" && !!weapon.thrown) ||
-          (delivery === "scatter" && !!weapon.scatter);
+          (delivery === "scatter" && !!weapon.scatter) ||
+          (delivery === "hybrid" && !!weapon.hybridProjectile);
         if (sourceExists)
           expect(projectileDamageEnvelopeFor(weapon, delivery).radius, `${id}/${delivery}`).toBe(
             PROJECTILE_RADIUS,
@@ -259,7 +260,7 @@ describe("V7-HIT standing VFX-collision law", () => {
         if (visualExtension)
           agree(id, "melee/extensionTip", visualExtension.fullTipReach, server.melee.maxReach);
       }
-      for (const delivery of ["gun", "cast", "thrown", "scatter"] as const) {
+      for (const delivery of ["gun", "cast", "thrown", "scatter", "hybrid"] as const) {
         const body = server.projectiles[delivery];
         if (!body) continue;
         const visualAuthoring = weaponHitEnvelopeAuthoringFor(weapon)?.projectiles?.[delivery];

@@ -121,7 +121,7 @@ const HYBRID_PROJECTILE_KEYS = new Set([
   "returnAfterSeconds", "scalingGrades",
 ]);
 const HYBRID_PROJECTILE_STYLES = new Set([
-  "cutting-gust", "cinder-blade-cone", "returning-arc",
+  "cutting-gust", "cinder-blade-cone", "returning-arc", "tornado",
 ]);
 const HYBRID_PROJECTILE_TRIGGERS = new Set(["each-swing", "combo-finisher"]);
 const GUN_BURST_KEYS = new Set(["count", "intervalSeconds"]);
@@ -1292,6 +1292,11 @@ function mapWeapon(w) {
         fail("cutting-gust must author exactly one narrow projectile");
       if (style === "cinder-blade-cone" && def.hybridProjectile.count < 2)
         fail("cinder-blade-cone must author at least two shards");
+      if (
+        style === "tornado" &&
+        (def.hybridProjectile.count !== 1 || def.hybridProjectile.spread !== 0)
+      )
+        fail("tornado must author exactly one straight projectile");
       if (style === "returning-arc") {
         def.hybridProjectile.returnAfterSeconds = num(
           projectile.returnAfterSeconds,

@@ -191,14 +191,8 @@ const types =
   "}\n" +
   "export interface WeaponVfxGeneratedImageFanTornado extends WeaponVfxGeneratedImageBase {\n" +
   "  kind: \"fan-tornado\";\n" +
-  "  damageMode: \"presentation-only\";\n" +
-  "  displayWidth: number;\n" +
-  "  displayHeight: number;\n" +
-  "  releaseProgress: number;\n" +
-  "  travelPx: number;\n" +
-  "  spinTurns: number;\n" +
+  "  /** Uniform growth above the shared damage envelope; never shrinks below it. */\n" +
   "  scalePulse: number;\n" +
-  "  alternatesLane: boolean;\n" +
   "}\n" +
   "export type WeaponVfxGeneratedImage =\n" +
   "  | WeaponVfxGeneratedImageReplacement\n" +

@@ -106,63 +106,45 @@
     }
   },
   "x2-iron-war-fan": {
+    "suppressFallback": true,
     "generatedImage": {
       "kind": "fan-tornado",
       "textureKey": "b18:tornado:iron-gale",
       "url": "sprites/vfx-tornado-iron-gale/part-1.png",
       "subject": "vfx-tornado-iron-gale",
-      "signature": "iron-gale-tornado-released-from-opening-fan-edge",
+      "signature": "player-height-upright-iron-gale-projectile",
       "audioCue": "b18:iron-gale-whoosh",
-      "lifeMs": 420,
+      "lifeMs": 500,
       "poolSize": 1,
-      "damageMode": "presentation-only",
-      "displayWidth": 44,
-      "displayHeight": 72,
-      "releaseProgress": 0.76,
-      "travelPx": 42,
-      "spinTurns": 1.2,
-      "scalePulse": 0.1,
-      "alternatesLane": false
+      "scalePulse": 0.06
     }
   },
   "x2-ember-fan": {
+    "suppressFallback": true,
     "generatedImage": {
       "kind": "fan-tornado",
       "textureKey": "b18:tornado:ember-fire",
       "url": "sprites/vfx-tornado-ember-fire/part-1.png",
       "subject": "vfx-tornado-ember-fire",
-      "signature": "ember-fire-tornado-released-from-opening-fan-edge",
+      "signature": "player-height-upright-ember-fire-projectile",
       "audioCue": "b18:ember-fire-roar",
-      "lifeMs": 440,
+      "lifeMs": 500,
       "poolSize": 1,
-      "damageMode": "presentation-only",
-      "displayWidth": 46,
-      "displayHeight": 76,
-      "releaseProgress": 0.78,
-      "travelPx": 46,
-      "spinTurns": 1.35,
-      "scalePulse": 0.12,
-      "alternatesLane": false
+      "scalePulse": 0.06
     }
   },
   "x2-storm-fan": {
+    "suppressFallback": true,
     "generatedImage": {
       "kind": "fan-tornado",
       "textureKey": "b18:tornado:storm-shock",
       "url": "sprites/vfx-tornado-storm-shock/part-1.png",
       "subject": "vfx-tornado-storm-shock",
-      "signature": "alternating-paired-fan-storm-shock-tornado-release",
+      "signature": "player-height-upright-storm-shock-projectile",
       "audioCue": "b18:storm-thunder-crack",
-      "lifeMs": 400,
+      "lifeMs": 500,
       "poolSize": 1,
-      "damageMode": "presentation-only",
-      "displayWidth": 48,
-      "displayHeight": 76,
-      "releaseProgress": 0.74,
-      "travelPx": 48,
-      "spinTurns": 1.5,
-      "scalePulse": 0.11,
-      "alternatesLane": true
+      "scalePulse": 0.06
     }
   }
 }

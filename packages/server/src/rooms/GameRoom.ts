@@ -269,6 +269,7 @@ import {
   PoiCollisionIndex,
   PROJECTILE_RADIUS,
   PROJECTILE_TTL,
+  type ProjectileDamageEnvelope,
   ProjectileState,
   type ProjectileWaveformDef,
   pairDamagePerUse,
@@ -287,6 +288,7 @@ import {
   poundDamage,
   prevWeapon,
   prismaticBeamRayOffsets,
+  projectileDamageEnvelopeFor,
   projectileWaveformPositionAt,
   QUAKE_REACH,
   type QuirkDef,
@@ -550,6 +552,57 @@ function pointSegmentDistanceSq(
   const dx = px - (ax + vx * t);
   const dy = py - (ay + vy * t);
   return dx * dx + dy * dy;
+}
+
+function pointInConvexQuadrilateral(
+  px: number,
+  py: number,
+  vertices: readonly Readonly<{ x: number; y: number }>[],
+): boolean {
+  let signedArea = 0;
+  let hasPositive = false;
+  let hasNegative = false;
+  for (let index = 0; index < vertices.length; index++) {
+    const a = vertices[index];
+    const b = vertices[(index + 1) % vertices.length];
+    if (!a || !b) continue;
+    signedArea += a.x * b.y - b.x * a.y;
+    const cross = (b.x - a.x) * (py - a.y) - (b.y - a.y) * (px - a.x);
+    hasPositive ||= cross > 1e-9;
+    hasNegative ||= cross < -1e-9;
+  }
+  return Math.abs(signedArea) > 1e-9 && !(hasPositive && hasNegative);
+}
+
+/** Squared distance from a point to the complete swept volume of an upright capsule centre. The
+ * centre's movement segment plus the fixed vertical stem forms a parallelogram; expanding that hull by
+ * the capsule radius produces the exact moving B22 tornado envelope. */
+function pointSweptUprightCapsuleDistanceSq(
+  px: number,
+  py: number,
+  fromX: number,
+  fromY: number,
+  toX: number,
+  toY: number,
+  halfLength: number,
+): number {
+  const stem = Math.max(0, halfLength);
+  if (stem <= 1e-9) return pointSegmentDistanceSq(px, py, fromX, fromY, toX, toY);
+  const vertices = [
+    { x: fromX, y: fromY - stem },
+    { x: toX, y: toY - stem },
+    { x: toX, y: toY + stem },
+    { x: fromX, y: fromY + stem },
+  ] as const;
+  if (pointInConvexQuadrilateral(px, py, vertices)) return 0;
+  let distanceSq = Number.POSITIVE_INFINITY;
+  for (let index = 0; index < vertices.length; index++) {
+    const a = vertices[index];
+    const b = vertices[(index + 1) % vertices.length];
+    if (!a || !b) continue;
+    distanceSq = Math.min(distanceSq, pointSegmentDistanceSq(px, py, a.x, a.y, b.x, b.y));
+  }
+  return distanceSq;
 }
 /** QOL-01: visible stabilisation beat, then an intentional spatial hold after a fresh entry. */
 const EXTRACT_ARM_SECONDS = 0.8;
@@ -1233,6 +1286,8 @@ export class GameRoom extends Room<ArenaState> {
         outboundSeconds: number;
         returning: boolean;
       };
+      /** Shared WYSIWYG body used by the B22 upright tornado rail. */
+      damageEnvelope?: ProjectileDamageEnvelope;
     }
   >();
   /** §16 arena-wide HOSTILE-projectile rail. Maintained on spawn/removal/reflection so both the generic
@@ -10696,6 +10751,7 @@ export class GameRoom extends Room<ArenaState> {
     projectileWaveform?: ProjectileWaveformDef,
     arcHeight = 0,
     returnAfterSeconds?: number,
+    damageEnvelope?: ProjectileDamageEnvelope,
   ): void {
     // §16 the documented budget is ARENA-wide: reject generic spitters here too. Friendly player fire is
     // and friendly rows each have an explicit ceiling; a reflected hostile shot changes sides and frees
@@ -10760,6 +10816,7 @@ export class GameRoom extends Room<ArenaState> {
         returnAfterSeconds !== undefined
           ? { outboundSeconds: returnAfterSeconds, returning: false }
           : undefined,
+      damageEnvelope,
     });
     if (hostile) this.hostileProjectileCount++;
   }
@@ -11390,6 +11447,7 @@ export class GameRoom extends Room<ArenaState> {
     const damagePerProjectile = pending.damage / Math.max(1, hybrid.count);
     const outboundSeconds = hybrid.returnAfterSeconds ?? hybrid.range / hybrid.speed;
     const ttl = hybrid.returnAfterSeconds === undefined ? outboundSeconds : outboundSeconds * 2;
+    const damageEnvelope = projectileDamageEnvelopeFor(weapon, "hybrid");
     for (let index = 0; index < hybrid.count; index++) {
       const offset = hybrid.count > 1 ? (index / (hybrid.count - 1) - 0.5) * 2 * hybrid.spread : 0;
       const angle = baseAngle + offset;
@@ -11414,6 +11472,7 @@ export class GameRoom extends Room<ArenaState> {
         undefined,
         0,
         hybrid.returnAfterSeconds,
+        damageEnvelope,
       );
     }
   }
@@ -13395,19 +13454,23 @@ export class GameRoom extends Room<ArenaState> {
         // Friendly projectile: damage each fresh enemy it touches until pierce runs out. Landing grenades
         // stay airborne for their complete server-owned flight and apply only their ground-zone payload.
         const kills: string[] = [];
+        const projectileRadius = meta.damageEnvelope?.radius ?? PROJECTILE_RADIUS;
+        const uprightHalfLength =
+          meta.damageEnvelope?.orientation === "upright" ? meta.damageEnvelope.halfLength : 0;
+        const projectileVerticalExtent = projectileRadius + uprightHalfLength;
         if (sweptFriendly) {
           this.enemyGrid.queryAabb(
-            Math.min(projectileFromX, pr.x) - PROJECTILE_RADIUS - MAX_ENEMY_RADIUS,
-            Math.min(projectileFromY, pr.y) - PROJECTILE_RADIUS - MAX_ENEMY_RADIUS,
-            Math.max(projectileFromX, pr.x) + PROJECTILE_RADIUS + MAX_ENEMY_RADIUS,
-            Math.max(projectileFromY, pr.y) + PROJECTILE_RADIUS + MAX_ENEMY_RADIUS,
+            Math.min(projectileFromX, pr.x) - projectileRadius - MAX_ENEMY_RADIUS,
+            Math.min(projectileFromY, pr.y) - projectileVerticalExtent - MAX_ENEMY_RADIUS,
+            Math.max(projectileFromX, pr.x) + projectileRadius + MAX_ENEMY_RADIUS,
+            Math.max(projectileFromY, pr.y) + projectileVerticalExtent + MAX_ENEMY_RADIUS,
             this.enemyCandidates,
           );
         } else {
           this.enemyGrid.queryRadius(
             pr.x,
             pr.y,
-            PROJECTILE_RADIUS + MAX_ENEMY_RADIUS,
+            projectileVerticalExtent + MAX_ENEMY_RADIUS,
             this.enemyCandidates,
           );
         }
@@ -13416,18 +13479,27 @@ export class GameRoom extends Room<ArenaState> {
           if (meta.pierce <= 0 || meta.hit.has(eid)) continue;
           const enemy = this.state.enemies.get(eid);
           if (!enemy) continue;
-          const reach = (ENEMY_KINDS[enemy.kind]?.radius ?? ENEMY_RADIUS) + PROJECTILE_RADIUS;
+          const reach = (ENEMY_KINDS[enemy.kind]?.radius ?? ENEMY_RADIUS) + projectileRadius;
           const collided = sweptFriendly
-            ? pointSegmentDistanceSq(
+            ? pointSweptUprightCapsuleDistanceSq(
                 enemy.x,
                 enemy.y,
                 projectileFromX,
                 projectileFromY,
                 pr.x,
                 pr.y,
+                uprightHalfLength,
               ) <=
               reach * reach
-            : (pr.x - enemy.x) ** 2 + (pr.y - enemy.y) ** 2 <= reach * reach;
+            : pointSegmentDistanceSq(
+                enemy.x,
+                enemy.y,
+                pr.x,
+                pr.y - uprightHalfLength,
+                pr.x,
+                pr.y + uprightHalfLength,
+              ) <=
+              reach * reach;
           if (collided) {
             meta.hit.add(eid);
             meta.pierce -= 1;
@@ -13457,10 +13529,10 @@ export class GameRoom extends Room<ArenaState> {
         if (!targetRicocheted && runtime && meta.pierce > 0) {
           this.wormHitSlots.length = 0;
           this.wormSegmentGrid.queryAabb(
-            Math.min(projectileFromX, pr.x) - PROJECTILE_RADIUS - 52,
-            Math.min(projectileFromY, pr.y) - PROJECTILE_RADIUS - 52,
-            Math.max(projectileFromX, pr.x) + PROJECTILE_RADIUS + 52,
-            Math.max(projectileFromY, pr.y) + PROJECTILE_RADIUS + 52,
+            Math.min(projectileFromX, pr.x) - projectileRadius - 52,
+            Math.min(projectileFromY, pr.y) - projectileVerticalExtent - 52,
+            Math.max(projectileFromX, pr.x) + projectileRadius + 52,
+            Math.max(projectileFromY, pr.y) + projectileVerticalExtent + 52,
             this.wormSegmentCandidates,
           );
           let wormContacts = 0;
@@ -13468,14 +13540,18 @@ export class GameRoom extends Room<ArenaState> {
             if (meta.pierce <= 0 || wormContacts >= 2) break;
             const hitKey = `worm:${slot}:${runtime.segmentGeneration(slot)}`;
             if (meta.hit.has(hitKey)) continue;
+            const verticalOffsets =
+              uprightHalfLength > 0 ? [-uprightHalfLength, 0, uprightHalfLength] : [0];
             if (
-              !runtime.segmentIntersectsSweptCapsule(
-                slot,
-                projectileFromX,
-                projectileFromY,
-                pr.x,
-                pr.y,
-                PROJECTILE_RADIUS,
+              !verticalOffsets.some((offsetY) =>
+                runtime.segmentIntersectsSweptCapsule(
+                  slot,
+                  projectileFromX,
+                  projectileFromY + offsetY,
+                  pr.x,
+                  pr.y + offsetY,
+                  projectileRadius,
+                ),
               )
             )
               continue;

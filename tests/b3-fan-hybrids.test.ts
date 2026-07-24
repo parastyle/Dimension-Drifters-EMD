@@ -7,7 +7,7 @@ import {
 } from "@dd/shared";
 import { describe, expect, it } from "vitest";
 import { SPRITES } from "../packages/client/src/sprites/manifest.js";
-import { FAN_HYBRID_VFX_RECIPES } from "../packages/client/src/vfx/fan-hybrid-vfx-recipes.js";
+import { FAN_TORNADO_WEAPON_VFX_RECIPES } from "../packages/client/src/vfx/generated-image-weapon-vfx-recipes.js";
 
 const require = createRequire(import.meta.url);
 const { PNG } = require("../tools/artkit/node_modules/pngjs") as {
@@ -19,9 +19,7 @@ const { PNG } = require("../tools/artkit/node_modules/pngjs") as {
 };
 
 const B3_FANS = ["x2-iron-war-fan", "x2-ember-fan", "x2-storm-fan"] as const;
-const NATIVE_DIMENSIONS: Readonly<
-  Record<(typeof B3_FANS)[number], readonly [number, number]>
-> = {
+const NATIVE_DIMENSIONS: Readonly<Record<(typeof B3_FANS)[number], readonly [number, number]>> = {
   "x2-iron-war-fan": [247, 256],
   "x2-ember-fan": [256, 215],
   "x2-storm-fan": [384, 224],
@@ -46,10 +44,9 @@ function visibleAlphaBounds(data: Buffer, width: number, height: number) {
   return { visible, minX, minY, maxX, maxY };
 }
 
-describe("B3 fan projectile-hybrid catalog", () => {
-  it("publishes three active 2H fan-forward rows with distinct authoritative signatures", () => {
+describe("B22 corrected fan tornado catalog", () => {
+  it("publishes three active 2H fan-forward rows with distinct authoritative tornado art", () => {
     expect(new Set(B3_FANS).size).toBe(3);
-    const mechanics = new Set<string>();
     const visuals = new Set<string>();
     for (const id of B3_FANS) {
       const weapon = WEAPONS[id];
@@ -72,49 +69,36 @@ describe("B3 fan projectile-hybrid catalog", () => {
       expect(weapon?.performance?.hold, id).toBe("aim-forward");
       expect(weapon?.authoritativeCombo, id).toBe(true);
       expect(weapon?.hybridProjectile, id).toBeDefined();
-      mechanics.add(JSON.stringify(weapon?.hybridProjectile));
-      visuals.add(FAN_HYBRID_VFX_RECIPES[id]?.signature ?? "");
+      expect(weapon?.suppressVfx, id).toBe(true);
+      visuals.add(FAN_TORNADO_WEAPON_VFX_RECIPES[id]?.signature ?? "");
     }
-    expect(mechanics.size).toBe(3);
     expect(visuals.size).toBe(3);
   });
 
-  it("pins finisher gust, cinder cone, and 300ms returning arc behavior", () => {
-    expect(WEAPONS["x2-iron-war-fan"]?.hybridProjectile).toEqual({
-      style: "cutting-gust",
-      trigger: "combo-finisher",
-      comboLength: 3,
-      speed: 760,
-      range: 180,
-      damage: 12,
-      count: 1,
-      spread: 0,
-      pierce: 1,
-      scalingGrades: { str: "B", dex: "C" },
-    });
-    expect(WEAPONS["x2-ember-fan"]?.hybridProjectile).toMatchObject({
-      style: "cinder-blade-cone",
-      trigger: "each-swing",
-      count: 3,
-      spread: 0.34,
-      damage: 4,
-    });
-    expect(WEAPONS["x2-storm-fan"]?.hybridProjectile).toMatchObject({
-      style: "returning-arc",
-      trigger: "each-swing",
-      count: 1,
-      range: 210,
-      damage: 2,
-      returnAfterSeconds: 0.3,
-    });
+  it("pins one slow, moderate-range, forward-only tornado to every accepted swing", () => {
+    for (const id of B3_FANS) {
+      expect(WEAPONS[id]?.hybridProjectile, id).toMatchObject({
+        style: "tornado",
+        trigger: "each-swing",
+        comboLength: 3,
+        speed: 520,
+        range: 260,
+        damage: 4,
+        count: 1,
+        spread: 0,
+        pierce: 1,
+      });
+      expect(WEAPONS[id]?.hybridProjectile?.returnAfterSeconds, id).toBeUndefined();
+    }
   });
 
   it("holds every fan at approximately 15 melee + 5 projectile = 20 sustained DPS", () => {
     for (const id of B3_FANS) {
-      const weapon = WEAPONS[id]!;
+      const weapon = WEAPONS[id];
+      expect(weapon, id).toBeDefined();
+      if (!weapon) continue;
       const meleeDps = weapon.damage / weapon.cooldown;
-      const projectileDps =
-        hybridProjectileDamagePerAcceptedBeat(weapon) / weapon.cooldown;
+      const projectileDps = hybridProjectileDamagePerAcceptedBeat(weapon) / weapon.cooldown;
       expect(meleeDps, `${id} melee`).toBeCloseTo(15, 8);
       expect(projectileDps, `${id} projectile`).toBeCloseTo(5, 8);
       expect(meleeDps + projectileDps, `${id} total`).toBeCloseTo(20, 8);
@@ -150,9 +134,9 @@ describe("B3 fan projectile-hybrid catalog", () => {
   });
 
   it("keeps every fan free of standing chain, tassel, or rope language", () => {
-    const source = JSON.parse(
-      readFileSync("data/weapon-concepts-300.json", "utf8"),
-    ) as { weapons: Array<{ id: string; theme?: string; description?: string }> };
+    const source = JSON.parse(readFileSync("data/weapon-concepts-300.json", "utf8")) as {
+      weapons: Array<{ id: string; theme?: string; description?: string }>;
+    };
     for (const id of B3_FANS) {
       const row = source.weapons.find((weapon) => weapon.id === id);
       expect(row, id).toBeDefined();

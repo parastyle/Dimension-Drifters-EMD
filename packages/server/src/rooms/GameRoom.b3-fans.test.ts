@@ -1,10 +1,10 @@
 import {
   CombatDelivery,
   DRIVE_CAPACITY,
+  ENEMY_KINDS,
   EnemyState,
   TICK_MS,
   TILE_GROUND,
-  WEAPONS,
 } from "@dd/shared";
 import { describe, expect, it, vi } from "vitest";
 
@@ -74,100 +74,96 @@ function makeRoom(id: string, weaponId: string) {
   };
 }
 
-function deliveriesFor(
-  calls: unknown[][],
-  enemyId: string,
-  weaponId: string,
-): number[] {
+function deliveriesFor(calls: unknown[][], enemyId: string, weaponId: string): number[] {
   return calls
     .filter((call) => call[1] === enemyId && call[6] === weaponId)
     .map((call) => call[7] as number);
 }
 
-describe("GameRoom B3 authoritative fan hybrids", () => {
-  it("lands Iron's first two melee cuts, then orders the third melee hit before its finisher gust", () => {
-    const h = makeRoom("iron-fan-owner", "x2-iron-war-fan");
-    const damage = vi.spyOn(h.room, "damageEnemy");
+const FAN_IDS = ["x2-iron-war-fan", "x2-ember-fan", "x2-storm-fan"] as const;
+
+function launchTornado(h: ReturnType<typeof makeRoom>) {
+  h.room.state.enemies.clear();
+  h.room.rebuildEnemyGrid();
+  h.acceptBeat();
+  for (let tick = 0; tick < 12; tick++) {
+    h.tick(1);
+    const row = [...h.room.state.projectiles.values()].find(
+      (projectile: { kind: string }) => projectile.kind === "fan:tornado",
+    );
+    if (row) return row;
+  }
+  throw new Error(`${h.player.weapon} did not launch its tornado`);
+}
+
+describe("GameRoom B22 authoritative fan tornadoes", () => {
+  it.each(
+    FAN_IDS,
+  )("%s launches one moderate-range upright server projectile on every accepted swing", (weaponId) => {
+    const h = makeRoom(`${weaponId}-owner`, weaponId);
     const fire = vi.spyOn(h.room, "fireProjectile");
-    for (let beat = 0; beat < 3; beat++) {
-      const damageStart = damage.mock.calls.length;
-      const fireStart = fire.mock.calls.length;
-      h.acceptBeat();
-      h.tick(16);
-      const deliveries = deliveriesFor(
-        damage.mock.calls.slice(damageStart),
-        h.enemy.id,
-        h.player.weapon,
-      );
-      expect(deliveries, `beat ${beat + 1} melee`).toContain(CombatDelivery.Melee);
-      if (beat < 2) {
-        expect(deliveries, `beat ${beat + 1} no projectile`).not.toContain(
-          CombatDelivery.HybridProjectile,
-        );
-        expect(fire.mock.calls.slice(fireStart)).toHaveLength(0);
-      } else {
-        expect(deliveries).toContain(CombatDelivery.HybridProjectile);
-        expect(deliveries.indexOf(CombatDelivery.Melee)).toBeLessThan(
-          deliveries.indexOf(CombatDelivery.HybridProjectile),
-        );
-        expect(fire.mock.calls.slice(fireStart)).toHaveLength(1);
-        expect(fire.mock.calls.at(-1)?.[5]).toBe("fan:cutting-gust");
-      }
-    }
+    const projectile = launchTornado(h) as {
+      id: string;
+      kind: string;
+      sourcePlayerId: string;
+      sourceWeaponId: string;
+      vx: number;
+      vy: number;
+    };
+    const calls = fire.mock.calls.filter((call) => call[5] === "fan:tornado");
+    expect(calls).toHaveLength(1);
+    expect(calls[0]?.[2]).toBe(520);
+    expect(calls[0]?.[7]).toBeCloseTo(0.5, 8);
+    expect(calls[0]?.[11]).toBe(h.player.id);
+    expect(calls[0]?.[12]).toBe(weaponId);
+    expect(calls[0]?.[13]).toBe(CombatDelivery.HybridProjectile);
+    expect(calls[0]?.[19]).toBeUndefined();
+    expect(calls[0]?.[20]).toEqual({
+      shape: "capsule",
+      radius: 24,
+      halfLength: 14,
+      orientation: "upright",
+    });
+    expect(projectile.sourcePlayerId).toBe(h.player.id);
+    expect(projectile.sourceWeaponId).toBe(weaponId);
+    expect(projectile.vx).toBeCloseTo(520, 8);
+    expect(projectile.vy).toBeCloseTo(0, 8);
+    expect(h.room.projectileMeta.get(projectile.id)?.damageEnvelope).toEqual(calls[0]?.[20]);
   });
 
-  it("lands Ember melee and three separately authoritative cone shards in one accepted sweep", () => {
-    const h = makeRoom("ember-fan-owner", "x2-ember-fan");
-    const damage = vi.spyOn(h.room, "damageEnemy");
-    const fire = vi.spyOn(h.room, "fireProjectile");
-    h.acceptBeat();
-    h.tick(16);
-    const deliveries = deliveriesFor(damage.mock.calls, h.enemy.id, h.player.weapon);
-    expect(deliveries).toContain(CombatDelivery.Melee);
-    expect(deliveries).toContain(CombatDelivery.HybridProjectile);
-    expect(deliveries.indexOf(CombatDelivery.Melee)).toBeLessThan(
-      deliveries.indexOf(CombatDelivery.HybridProjectile),
-    );
-    const shards = fire.mock.calls.filter((call) => call[5] === "fan:cinder-blade-cone");
-    expect(shards).toHaveLength(3);
-    expect(
-      new Set(
-        shards.map((call) =>
-          Number((call[1] as { y?: number } | undefined)?.y).toFixed(3),
-        ),
-      ).size,
-    ).toBe(3);
-    expect(shards.every((call) => call[11] === h.player.id)).toBe(true);
-    expect(shards.every((call) => call[13] === CombatDelivery.HybridProjectile)).toBe(true);
+  it.each(FAN_IDS)("%s freezes both facing directions into forward-only travel", (weaponId) => {
+    const right = makeRoom(`${weaponId}-right`, weaponId);
+    const rightProjectile = launchTornado(right) as { vx: number };
+    expect(rightProjectile.vx).toBeGreaterThan(0);
+
+    const left = makeRoom(`${weaponId}-left`, weaponId);
+    left.combat.aimX = -1;
+    left.combat.aimY = 0;
+    left.combat.targetX = left.player.x - 400;
+    left.combat.targetY = left.player.y;
+    const leftProjectile = launchTornado(left) as { vx: number };
+    expect(leftProjectile.vx).toBeLessThan(0);
   });
 
-  it("lands Storm melee, damages with the arc, reverses at 300ms, and re-arms toward its owner", () => {
-    const h = makeRoom("storm-fan-owner", "x2-storm-fan");
-    const damage = vi.spyOn(h.room, "damageEnemy");
-    const fire = vi.spyOn(h.room, "fireProjectile");
-    h.acceptBeat();
-    let projectile: { id: string; bornTick: number; vx: number } | undefined;
-    for (let tick = 0; tick < 12 && !projectile; tick++) {
-      h.tick(1);
-      projectile = [...h.room.state.projectiles.values()].find(
-        (row: { kind: string }) => row.kind === "fan:returning-arc",
-      );
-    }
-    expect(projectile, "storm projectile row").toBeDefined();
-    if (!projectile) throw new Error("Storm returning arc did not spawn");
-    expect(fire.mock.calls.at(-1)?.[19]).toBeCloseTo(0.3, 8);
-    for (let tick = 0; tick < 8 && projectile.vx >= 0; tick++) h.tick(1);
-    expect(projectile.vx).toBeLessThan(0);
-    const reversedAfterMs = (h.room.state.tick - projectile.bornTick) * TICK_MS;
-    expect(reversedAfterMs).toBeGreaterThanOrEqual(250);
-    expect(reversedAfterMs).toBeLessThanOrEqual(350);
-    h.tick(8);
-    const deliveries = deliveriesFor(damage.mock.calls, h.enemy.id, h.player.weapon);
-    expect(deliveries).toContain(CombatDelivery.Melee);
-    expect(deliveries).toContain(CombatDelivery.HybridProjectile);
-    expect(deliveries.indexOf(CombatDelivery.Melee)).toBeLessThan(
-      deliveries.indexOf(CombatDelivery.HybridProjectile),
-    );
-    expect(h.room.state.projectiles.size).toBe(0);
+  it("moves damage with the 48x76 funnel and rejects contact beyond its visible vertical bound", () => {
+    const run = (offsetFromVisibleBottom: number) => {
+      const h = makeRoom(`storm-envelope-${offsetFromVisibleBottom}`, "x2-storm-fan");
+      const damage = vi.spyOn(h.room, "damageEnemy");
+      const projectile = launchTornado(h) as { x: number; y: number };
+      const enemy = new EnemyState();
+      enemy.id = `edge-${offsetFromVisibleBottom}`;
+      enemy.kind = "dummy";
+      enemy.hp = 10_000;
+      enemy.x = projectile.x + 104;
+      const enemyRadius = ENEMY_KINDS[enemy.kind]?.radius ?? 0;
+      enemy.y = projectile.y + 38 + enemyRadius + offsetFromVisibleBottom;
+      h.room.state.enemies.set(enemy.id, enemy);
+      h.room.rebuildEnemyGrid();
+      h.tick(8);
+      return deliveriesFor(damage.mock.calls, enemy.id, h.player.weapon);
+    };
+
+    expect(run(-1)).toContain(CombatDelivery.HybridProjectile);
+    expect(run(2)).not.toContain(CombatDelivery.HybridProjectile);
   });
 });
