@@ -357,6 +357,55 @@
         "swingArc": 2.7,
         "gripFrac": 0.12
       },
+      "swingStyle": "thrust",
+      "comboFamily": "thrust",
+      "comboVariant": "reverent-two-stab-flip",
+      "authoritativeCombo": true,
+      "comboBar": [
+        {
+          "name": "reverent one-hand salute",
+          "motion": "jab",
+          "direction": 1,
+          "hand": "lead",
+          "timing": {
+            "activeStart": 0.14,
+            "activeEnd": 0.42,
+            "impact": 0.38,
+            "followEnd": 0.56
+          },
+          "path": {
+            "kind": "capsule",
+            "deltaAngle": 0,
+            "arcMultiplier": 0,
+            "rangeMultiplier": 1,
+            "damageMultiplier": 1,
+            "knockback": 8
+          }
+        },
+        {
+          "name": "reverent paper-flip impalement",
+          "motion": "impale",
+          "direction": -1,
+          "hand": "lead",
+          "timing": {
+            "activeStart": 0.12,
+            "activeEnd": 0.5,
+            "impact": 0.46,
+            "followEnd": 0.68
+          },
+          "path": {
+            "kind": "capsule",
+            "deltaAngle": 0,
+            "arcMultiplier": 0,
+            "rangeMultiplier": 1,
+            "damageMultiplier": 1,
+            "knockback": 12
+          },
+          "theatrics": {
+            "flip": "front"
+          }
+        }
+      ],
       "performance": {
         "hold": "steady",
         "action": "default-swing",
@@ -14610,6 +14659,10 @@
       "finish": "worn",
       "element": "shock",
       "grip": "2H",
+      "poseLanguage": {
+        "idle": "boxer-guard",
+        "feet": "combat-plant"
+      },
       "size": "S",
       "rangeBand": "close",
       "scaling": [
@@ -14811,6 +14864,10 @@
       "finish": "battle-worn",
       "element": "fire",
       "grip": "2H",
+      "poseLanguage": {
+        "idle": "boxer-guard",
+        "feet": "combat-plant"
+      },
       "size": "S",
       "rangeBand": "close",
       "scaling": [
@@ -14996,11 +15053,7 @@
       "performance": {
         "hold": "steady",
         "action": "default-swing",
-        "continuous": true,
-        "forwardDrift": {
-          "speedPxPerSecond": 48,
-          "durationSeconds": 0.12
-        }
+        "continuous": true
       },
       "suppressVfx": true,
       "id": "x2-emberfist-wraps"
@@ -18857,11 +18910,6 @@
             "damageMultiplier": 0.8,
             "knockback": 14
           },
-          "rootMotion": {
-            "forwardPx": 288,
-            "lateralPx": 0,
-            "durationSeconds": 0.14
-          },
           "theatrics": {
             "limbStretch": 2.15
           }
@@ -18884,11 +18932,6 @@
             "rangeMultiplier": 1.18,
             "damageMultiplier": 0.9,
             "knockback": 16
-          },
-          "rootMotion": {
-            "forwardPx": 28,
-            "lateralPx": 0,
-            "durationSeconds": 0.08
           }
         },
         {
@@ -18909,11 +18952,6 @@
             "rangeMultiplier": 1.22,
             "damageMultiplier": 0.9,
             "knockback": 18
-          },
-          "rootMotion": {
-            "forwardPx": 32,
-            "lateralPx": 0,
-            "durationSeconds": 0.09
           },
           "theatrics": {
             "paperTurns": 1
@@ -18939,11 +18977,6 @@
             "damageMultiplier": 1.1,
             "knockback": 24
           },
-          "rootMotion": {
-            "forwardPx": 44,
-            "lateralPx": 0,
-            "durationSeconds": 0.1
-          },
           "theatrics": {
             "holdPose": "clinch-guard",
             "holdStart": 0.58
@@ -18967,11 +19000,6 @@
             "rangeMultiplier": 1.48,
             "damageMultiplier": 1.3,
             "knockback": 34
-          },
-          "rootMotion": {
-            "forwardPx": 36,
-            "lateralPx": 0,
-            "durationSeconds": 0.1
           },
           "theatrics": {
             "paperTurns": 1,
@@ -19208,11 +19236,6 @@
             "damageMultiplier": 0.8,
             "knockback": 7
           },
-          "rootMotion": {
-            "forwardPx": 18,
-            "lateralPx": 88,
-            "durationSeconds": 0.12
-          },
           "theatrics": {
             "limbStretch": 1.65
           }
@@ -19236,11 +19259,6 @@
             "rangeMultiplier": 1.22,
             "damageMultiplier": 0.9,
             "knockback": 9
-          },
-          "rootMotion": {
-            "forwardPx": -12,
-            "lateralPx": -112,
-            "durationSeconds": 0.12
           }
         },
         {
@@ -19261,11 +19279,6 @@
             "rangeMultiplier": 1.25,
             "damageMultiplier": 0.9,
             "knockback": 11
-          },
-          "rootMotion": {
-            "forwardPx": 24,
-            "lateralPx": 104,
-            "durationSeconds": 0.12
           },
           "theatrics": {
             "limbStretch": 1.9
@@ -19290,11 +19303,6 @@
             "damageMultiplier": 1.1,
             "knockback": 16
           },
-          "rootMotion": {
-            "forwardPx": 10,
-            "lateralPx": -128,
-            "durationSeconds": 0.12
-          },
           "theatrics": {
             "holdPose": "crane-one-leg",
             "holdStart": 0.58
@@ -19318,11 +19326,6 @@
             "rangeMultiplier": 1.5,
             "damageMultiplier": 1.3,
             "knockback": 24
-          },
-          "rootMotion": {
-            "forwardPx": 156,
-            "lateralPx": 40,
-            "durationSeconds": 0.13
           },
           "theatrics": {
             "flip": "front",
@@ -19403,11 +19406,6 @@
             "damageMultiplier": 0.9,
             "knockback": 24
           },
-          "rootMotion": {
-            "forwardPx": 52,
-            "lateralPx": 0,
-            "durationSeconds": 0.14
-          },
           "theatrics": {
             "limbStretch": 1.55
           }
@@ -19431,11 +19429,6 @@
             "rangeMultiplier": 1.32,
             "damageMultiplier": 1,
             "knockback": 30
-          },
-          "rootMotion": {
-            "forwardPx": 112,
-            "lateralPx": 0,
-            "durationSeconds": 0.18
           }
         },
         {
@@ -19456,11 +19449,6 @@
             "rangeMultiplier": 1.5,
             "damageMultiplier": 1,
             "knockback": 34
-          },
-          "rootMotion": {
-            "forwardPx": 72,
-            "lateralPx": 0,
-            "durationSeconds": 0.18
           },
           "theatrics": {
             "paperTurns": 1,
@@ -19485,11 +19473,6 @@
             "rangeMultiplier": 1.5,
             "damageMultiplier": 1.1,
             "knockback": 48
-          },
-          "rootMotion": {
-            "forwardPx": 96,
-            "lateralPx": 0,
-            "durationSeconds": 0.18
           },
           "theatrics": {
             "limbStretch": 2.1,

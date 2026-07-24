@@ -3400,6 +3400,7 @@ export class ArenaScene extends Phaser.Scene {
         room.state.tick,
         player.charges,
         player.maxCharges,
+        player.dualWield?.fireInputHeld,
       );
       const seq = player.attackSeq >>> 0;
       const previous = this.lastAttackSeq.get(id);
@@ -14138,7 +14139,8 @@ export class ArenaScene extends Phaser.Scene {
         weapon?.chargedProjectile ||
         weapon?.groundZone?.trigger === "channel" ||
         weapon?.performance?.aura ||
-        weapon?.performance?.continuous
+        weapon?.performance?.continuous ||
+        weapon?.firingFrame
       ) &&
       this.input.activePointer.rightButtonDown();
     const aim = this.currentBeamAim();

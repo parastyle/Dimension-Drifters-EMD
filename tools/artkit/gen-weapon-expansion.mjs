@@ -36,7 +36,7 @@ const TYPES = new Set(["melee", "ranged", "caster"]);
 const GRIPS = new Set(["1H", "2H", "dual", "mounted"]);
 const HANDLING_TAGS = new Set(["bolt", "break", "lever", "pump", "pistol", "revolver"]);
 const IDLE_HAND_POSES = new Set([
-  "secondary-grip", "mirror-guard", "low-guard", "casting-gesture", "hip-rest",
+  "secondary-grip", "mirror-guard", "boxer-guard", "low-guard", "casting-gesture", "hip-rest",
   "praying-mantis", "crane-guard",
 ]);
 const IDLE_FOOT_POSES = new Set([

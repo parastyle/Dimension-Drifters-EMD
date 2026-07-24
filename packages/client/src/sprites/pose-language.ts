@@ -95,6 +95,18 @@ export const IDLE_HAND_POSE_SPECS: Readonly<Record<IdleHandPose, IdleHandPoseSpe
       aimBiasY: 0.018,
       movementScale: 0.42,
     }),
+    "boxer-guard": idleHandSpec({
+      pose: "boxer-guard",
+      facingX: 0.48,
+      screenY: -0.24,
+      offFacingX: 0.32,
+      offScreenY: -0.19,
+      leadAngleRad: 0.18,
+      offAngleRad: -0.14,
+      aimBiasX: 0.006,
+      aimBiasY: 0.008,
+      movementScale: 0.24,
+    }),
     "low-guard": idleHandSpec({
       pose: "low-guard",
       facingX: 0.52,
@@ -974,8 +986,8 @@ export function resolveIdleHandTarget(
 
 export function isMartialIdleHandPose(
   pose: IdleHandPose | undefined,
-): pose is "praying-mantis" | "crane-guard" {
-  return pose === "praying-mantis" || pose === "crane-guard";
+): pose is "boxer-guard" | "praying-mantis" | "crane-guard" {
+  return pose === "boxer-guard" || pose === "praying-mantis" || pose === "crane-guard";
 }
 
 export function martialIdleHandAngleFor(

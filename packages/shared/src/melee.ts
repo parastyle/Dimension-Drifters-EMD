@@ -2106,7 +2106,7 @@ export function meleeComboGraceMs(
   const legacyMs =
     Math.min(0.3, Math.max(0.12, Math.max(0, effectiveCooldownSeconds) * 0.35)) * 1000;
   const theatrical =
-    (sequence?.length ?? 0) >= 8 ||
+    (sequence?.length ?? 0) >= 5 ||
     sequence?.some(
       (step) =>
         step.rootMotion !== undefined ||

@@ -2574,6 +2574,7 @@ export class SpriteRig {
   private authoritativeFiringAttackTick = 0;
   private authoritativeFiringClockTick = 0;
   private authoritativeFiringWeaponId = "";
+  private authoritativeFiringInputHeld: boolean | undefined;
   /** Per-hand accepted snapshots prevent unrelated interleaved beats from advancing the other weapon. */
   private readonly comboChains: [ComboChainState, ComboChainState] = [
     createComboChainState(),
@@ -2653,6 +2654,16 @@ export class SpriteRig {
     maxBackFootStretch: 1,
     maxHoldStrength: 0,
     holdPoses: [] as string[],
+  };
+  /**
+   * Raw requested paper-turn telemetry complements Phaser's wrapped `rotation` property. Phaser
+   * normalizes every assigned angle to +/-PI, so a completed 2PI turn cannot be distinguished from
+   * rest by sampling the container alone.
+   */
+  private readonly authoredComboFlipRenderEvidence = {
+    renderedSamples: 0,
+    maxProgress: -1,
+    maxAbsRotation: 0,
   };
   private readonly katanaChoreographyPose = createKatanaChoreographySample();
   private closeBladePoseActive = false;
@@ -5000,7 +5011,7 @@ export class SpriteRig {
       ) {
         this.hasAuthoritativeFiringBeat = true;
         this.authoritativeFiringBeatSeq = beat;
-        this.authoritativeFiringWeaponId = held ? (this.weaponDef?.id ?? "") : "";
+        this.authoritativeFiringWeaponId = this.weaponDef?.id ?? "";
       }
       // Accepted beats are ingested even while Arena hit-stop skips animate(). Sample here so a
       // short server release window cannot disappear behind a client presentation freeze.
@@ -5129,7 +5140,12 @@ export class SpriteRig {
           : undefined;
       const wantsFiringFrame =
         !!frame &&
-        firingFrameSpriteAt(weapon.def, acceptedTick, this.authoritativeFiringClockTick) ===
+        firingFrameSpriteAt(
+          weapon.def,
+          acceptedTick,
+          this.authoritativeFiringClockTick,
+          this.authoritativeFiringInputHeld,
+        ) ===
           frame.spriteId &&
         this.scene.textures.exists(frame.textureKey);
       if (wantsFiringFrame === weapon.firingFrameVisible) continue;
@@ -5210,11 +5226,13 @@ export class SpriteRig {
     clockTick: number,
     charges = 0,
     maxCharges = 0,
+    fireInputHeld?: boolean,
   ): void {
     this.authoritativeFiringAttackTick = attackTick >>> 0;
     this.authoritativeFiringClockTick = clockTick >>> 0;
     this.authoritativeGunCharges = Math.max(0, charges);
     this.authoritativeGunMaxCharges = Math.max(0, maxCharges);
+    this.authoritativeFiringInputHeld = fireInputHeld;
     this.refreshBreakActionClock();
     // Clock ingestion continues through hit-stop. This also guarantees the closed-frame return is
     // applied at the authoritative boundary rather than waiting for animation to resume.
@@ -9785,10 +9803,18 @@ export class SpriteRig {
           );
           const flipProgress = clamp01((tt - flipStart) / (flipEnd - flipStart));
           const flipDirection = comboPose.theatrics.flip === "front" ? 1 : -1;
-          this.root.rotation += rollTumbleRotation(
+          const flipRotation = rollTumbleRotation(
             flipProgress,
             flipDirection * this.facing,
             anim.reducedMotion === true || outsidePaperView,
+          );
+          this.root.rotation += flipRotation;
+          const renderEvidence = this.authoredComboFlipRenderEvidence;
+          renderEvidence.renderedSamples += 1;
+          renderEvidence.maxProgress = Math.max(renderEvidence.maxProgress, flipProgress);
+          renderEvidence.maxAbsRotation = Math.max(
+            renderEvidence.maxAbsRotation,
+            Math.abs(flipRotation),
           );
           this.attackLiftPx += Math.sin(Math.PI * flipProgress) * TARGET_BODY_H * 0.28;
         }

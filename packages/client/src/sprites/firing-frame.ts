@@ -1,7 +1,7 @@
 import { ATTACK_HELD_WINDOW, TICK_MS, type WeaponDef } from "@dd/shared";
 import { SPRITES, type SpriteFrameVariant, type SpriteManifest } from "./manifest.js";
 
-/** The firing frame is owned by the same short server latch published with every accepted attack beat. */
+/** Compatibility clock for frame users that predate the replicated raw held-fire intent. */
 export const FIRING_FRAME_RELEASE_WINDOW_MS = ATTACK_HELD_WINDOW * TICK_MS;
 
 export interface ResolvedWeaponFiringFrame {
@@ -11,13 +11,14 @@ export interface ResolvedWeaponFiringFrame {
 }
 
 /**
- * Select only from the synced server tick domain. Callers deliberately omit speculative/local input clocks,
- * so owner and observer sample the same half-open release window: [acceptedTick, acceptedTick + latch).
+ * Select only from the synced server domain. The held-input bit owns modern open/close state for both owner
+ * and observers; the old half-open attack latch remains only as compatibility for callers without that bit.
  */
 export function firingFrameSpriteAt(
   weapon: Pick<WeaponDef, "firingFrame"> | undefined,
   authoritativeAcceptedTick: number | undefined,
   authoritativeClockTick: number | undefined,
+  authoritativeInputHeld?: boolean,
 ): string | undefined {
   if (
     !weapon?.firingFrame ||
@@ -25,6 +26,8 @@ export function firingFrameSpriteAt(
     authoritativeClockTick === undefined
   )
     return undefined;
+  if (authoritativeInputHeld !== undefined)
+    return authoritativeInputHeld ? weapon.firingFrame : undefined;
   const elapsedTicks = (authoritativeClockTick - authoritativeAcceptedTick) >>> 0;
   return elapsedTicks < ATTACK_HELD_WINDOW ? weapon.firingFrame : undefined;
 }

@@ -264,6 +264,7 @@ describe("driftblade-model panel", () => {
       "thrust/blightfork-jab": ["x2-blightfork-glaive"],
       "thrust/marrowpike-triple-stab": ["x2-marrowpike-ranseur"],
       "thrust/nullspike-three-thrust": ["x2-nullspike-pike"],
+      "thrust/reverent-two-stab-flip": ["x2-reverent-broadsword"],
       "thrust/stinger": [
         "x2-bonewhisper-jian",
         "x2-buckhorn-boarspear",
@@ -308,7 +309,7 @@ describe("driftblade-model panel", () => {
     });
     expect(defaultCounts).toEqual({
       "punch/default": 19,
-      "arc/default": 124,
+      "arc/default": 123,
       "chop/default": 8,
       "rake/dagger": 1,
       "rake/claw": 3,

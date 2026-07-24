@@ -1300,6 +1300,8 @@ export class GameRoom extends Room<ArenaState> {
   private readonly debugCommitDefense = new Map<string, "roll" | "parry">();
   /** Training-only live-gate receipt: sample one real unauthored attack-movement integration tick. */
   private readonly debugAttackMoveCapture = new Set<string>();
+  /** Training-only B36 held-frame heartbeat folded into the replicated authority bit. */
+  private readonly debugHeldFire = new Set<string>();
   /** §51 DUEL TOKENS (G12): victim player id → the ONE enemy id running the combo language against them.
    *  A second combo-capable tough holds a ring-out orbit until the token frees; map size doubles as the
    *  ≤COMBO_MAX_ACTIVE arena-wide performance count. Freed at recover entry / enemy death / transients. */
@@ -1367,6 +1369,8 @@ export class GameRoom extends Room<ArenaState> {
   private readonly pendingHybridProjectiles: PendingHybridProjectile[] = [];
   /** Accepted punch lunges waiting for active start; final displacement is validated by server navigation. */
   private readonly pendingWeaponLunges = new Map<string, PendingWeaponLunge>();
+  /** Non-displacing sub-tick melee still owes B33 one authoritative 0.75-input movement tick. */
+  private readonly minimumAttackInputSlowUntilTick = new Map<string, number>();
   /** Accepted authored draws waiting for their visible pre-throw revolution to complete. */
   private readonly pendingWeaponThrows: PendingWeaponThrow[] = [];
   /** §9/§13 per-DROPPED-pickup grace timer (sec): while > 0 the pickup can't be re-grabbed, so a weapon
@@ -2204,6 +2208,25 @@ export class GameRoom extends Room<ArenaState> {
       this.debugAttackMoveCapture.add(client.sessionId);
     });
 
+    // B36 private live-gate fixture. It drives the same retained held bit and watchdog timestamp as an
+    // accepted input heartbeat, without racing the scene's independent movement command producer.
+    this.onMessage("debugSetFireInputHeld", (client, message: { held?: boolean }) => {
+      if (!this.devToolsEnabled() || this.state.mode !== "training" || !this.takeAction(client))
+        return;
+      const input = this.inputs.get(client.sessionId);
+      const player = this.state.players.get(client.sessionId);
+      if (!input || !player) return;
+      input.held.fireHeld = message?.held === true;
+      input.lastFreshFireTick = this.state.tick;
+      player.dualWield.fireInputHeld = input.held.fireHeld;
+      if (input.held.fireHeld) this.debugHeldFire.add(client.sessionId);
+      else this.debugHeldFire.delete(client.sessionId);
+      client.send("b36FireHeldReceipt", {
+        held: input.held.fireHeld,
+        tick: this.state.tick,
+      });
+    });
+
     this.onMessage(
       "debugSpawn",
       (
@@ -2267,6 +2290,7 @@ export class GameRoom extends Room<ArenaState> {
     this.enemyZoneSlow.clear();
     this.comboState.clear();
     this.meleeAttackTokens.clear();
+    this.debugHeldFire.clear();
     this.duelTokens.clear(); // §51 no duel claim may ghost-carry into the fresh run
     this.dodgeState.clear(); // §15 v0.113
     this.poundEnemyEffects.clear();
@@ -2279,6 +2303,7 @@ export class GameRoom extends Room<ArenaState> {
     this.pendingScatterVolleys.length = 0;
     this.pendingHybridProjectiles.length = 0;
     this.pendingWeaponLunges.clear();
+    this.minimumAttackInputSlowUntilTick.clear();
     this.pendingWeaponThrows.length = 0;
     this.pickupGrace.clear();
     if (this.earnedPickups.size > 0) {
@@ -4503,6 +4528,8 @@ export class GameRoom extends Room<ArenaState> {
     this.combat.delete(client.sessionId);
     this.debugCommitDefense.delete(client.sessionId);
     this.debugAttackMoveCapture.delete(client.sessionId);
+    this.debugHeldFire.delete(client.sessionId);
+    this.minimumAttackInputSlowUntilTick.delete(client.sessionId);
     // Transport loss is not a terminal weapon result. Account, pet accrual, exact escrow, and the private
     // body/debt snapshot remain reserved; accepted extraction/wipe settles them even while disconnected.
     // Host left → hand off to whoever's still here (or null if the room's now empty).
@@ -5429,6 +5456,10 @@ export class GameRoom extends Room<ArenaState> {
         const stance = this.combat.get(id);
         if (stance) this.consumeMoveStanceInput(player, input, stance, cmd);
       }
+      player.dualWield.fireInputHeld =
+        this.debugHeldFire.has(id) ||
+        (input.held.fireHeld &&
+          ((this.state.tick - input.lastFreshFireTick) >>> 0) < BEAM_STALE_INPUT_TICKS);
     });
     // §6 TERMINAL HOLD: keep input acknowledgements/action budgets alive so the host can restart, but retire
     // any combat entity an out-of-band action tried to create and skip every movement/AI/damage machine.
@@ -7590,6 +7621,10 @@ export class GameRoom extends Room<ArenaState> {
             invulnerable: false,
             impactAtDestination: false,
           });
+        else
+          // Movement runs before attack acceptance, while a sub-tick active envelope can age out later in
+          // this same 20 Hz step. Preserve B33's modest attack-input slow for the following movement tick.
+          this.minimumAttackInputSlowUntilTick.set(player.id, (this.state.tick + 2) >>> 0);
       }
     }
 
@@ -8190,6 +8225,12 @@ export class GameRoom extends Room<ArenaState> {
     if (lunge && (lunge.elapsedSeconds !== undefined || lunge.t <= dt + 1e-9)) {
       // Authored combo travel owns displacement; input never stacks on top.
       return PlayerAttackMoveMode.RootMotion;
+    }
+    const minimumSlowUntilTick = this.minimumAttackInputSlowUntilTick.get(playerId);
+    if (minimumSlowUntilTick !== undefined) {
+      if (!tickReached(this.state.tick, minimumSlowUntilTick))
+        return PlayerAttackMoveMode.InputSlow;
+      this.minimumAttackInputSlowUntilTick.delete(playerId);
     }
     for (const swing of this.meleeSwings.values()) {
       if (swing.playerId !== playerId || swing.waitForWeaponLunge) continue;
@@ -11470,6 +11511,7 @@ export class GameRoom extends Room<ArenaState> {
       player.momentumY = 0;
       player.slidePhase = SLIDE_PHASE_OFF;
       player.slidePhaseTick = 0;
+      player.dualWield.fireInputHeld = false;
       player.teleportSeq = (player.teleportSeq + 1) >>> 0;
     }
   }

@@ -21,6 +21,7 @@ import type { StackStart } from "./real-stack.js";
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "../..");
 const CLIENT_ROOT = path.join(REPO_ROOT, "packages/client");
+const SERVER_ROOT = path.join(REPO_ROOT, "packages/server");
 const STARTUP_TIMEOUT_MS = 15_000;
 const SHUTDOWN_TIMEOUT_MS = 8_000;
 
@@ -114,6 +115,19 @@ export async function startSpecStack(): Promise<StackStart> {
 
   let gameServer: Awaited<ReturnType<typeof createGameServer>>;
   try {
+    const requireFromServer = createRequire(pathToFileURL(path.join(SERVER_ROOT, "package.json")));
+    const colyseusEntry = requireFromServer.resolve("colyseus");
+    const requireFromColyseus = createRequire(pathToFileURL(colyseusEntry));
+    const schemaCjsEntry = requireFromColyseus.resolve("@colyseus/schema");
+    const { Encoder } = requireFromColyseus("@colyseus/schema") as {
+      Encoder: { BUFFER_SIZE: number };
+    };
+    Encoder.BUFFER_SIZE = Math.max(Encoder.BUFFER_SIZE, 64 * 1_024);
+    const schemaEsmEntry = path.resolve(path.dirname(schemaCjsEntry), "../esm/index.mjs");
+    const { Encoder: EsmEncoder } = (await import(pathToFileURL(schemaEsmEntry).href)) as {
+      Encoder: { BUFFER_SIZE: number };
+    };
+    EsmEncoder.BUFFER_SIZE = Math.max(EsmEncoder.BUFFER_SIZE, 64 * 1_024);
     // Feature specs use ArenaScene's dev-only `?port=` escape hatch, so the owner's DEFAULT_PORT stack can
     // remain live while this suite owns an ephemeral game listener.
     gameServer = await withTimeout(createGameServer(0), STARTUP_TIMEOUT_MS, "Colyseus startup");

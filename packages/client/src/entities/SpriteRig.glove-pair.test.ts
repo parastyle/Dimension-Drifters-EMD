@@ -176,5 +176,6 @@ describe("SpriteRig glove-pair rendering", () => {
       speedPxPerSecond: 48,
       durationSeconds: 0.12,
     });
+    expect(WEAPONS["x2-emberfist-wraps"]?.performance?.forwardDrift).toBeUndefined();
   });
 });

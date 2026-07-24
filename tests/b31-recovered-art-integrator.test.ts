@@ -192,9 +192,9 @@ describe("B31 recovered-art integrator", () => {
       tags: { grip: "2H", delivery: "glove-pair", family: "wraps", element: "fire" },
       performance: {
         continuous: true,
-        forwardDrift: { speedPxPerSecond: 48, durationSeconds: 0.12 },
       },
     });
+    expect(emberfist.performance?.forwardDrift).toBeUndefined();
     expect(emberfist.damage / emberfist.cooldown).toBe(20);
     expect(
       emberCombo.sequence.map(({ name: _name, ...signature }) => signature),

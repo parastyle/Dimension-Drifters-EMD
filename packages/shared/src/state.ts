@@ -95,6 +95,8 @@ export class DualWieldState extends Schema {
   @type(RelicState) relics = new RelicState();
   /** Schema v38. 0 normal · 1 active unauthored attack (75% input) · 2 root motion (input replaced). */
   @type("uint8") attackMoveMode = 0;
+  /** Schema v40. Raw held-fire intent after the authoritative stale-input watchdog. */
+  @type("boolean") fireInputHeld = false;
 }
 
 /**
