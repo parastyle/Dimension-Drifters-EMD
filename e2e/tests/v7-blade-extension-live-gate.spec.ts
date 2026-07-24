@@ -1,23 +1,20 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { BLADE_EXTENSION_WEAPON_IDS, MIRAGE_HARDLIGHT_SABER_ID } from "@dd/shared";
 import { expect, type Page, test } from "@playwright/test";
 import { bootArena, runArenaSpec, waitForDevWeapon } from "../helpers/arena-harness.js";
 
-const WEAPON_IDS = [
-  "x2-rimewrit-grave-slab",
-  "x2-pyre-gallows-brand",
-  "x2-stormrail-colossus",
-  "x2-nullwake-ordinance",
-  "x2-dawnwall-testament",
-  "x2-cairnfall-monolith",
-] as const;
+const WEAPON_IDS = BLADE_EXTENSION_WEAPON_IDS;
+const CHARACTER_ID = "proto-cowboy-hidden-face";
+const FORBIDDEN_PORTS = new Set([5180, 2567]);
 const JOIN_TOLERANCE_PX = 0.25;
 const WIDTH_TOLERANCE_PX = 0.25;
 const ANGLE_TOLERANCE_RAD = 0.002;
 const REVEAL_REACH_TOLERANCE = 0.002;
+const TIP_EXTENT_TOLERANCE_PX = 0.25;
 const EVIDENCE_DIR = path.resolve(
   import.meta.dirname,
-  "../../docs/owner-notes-audit-v7-evidence/blade-extension",
+  "../../docs/owner-notes-audit-v10-evidence/b12-mirage-extension",
 );
 
 interface BladeFrame {
@@ -33,6 +30,8 @@ interface BladeFrame {
   reveal: number;
   bladeTipX: number;
   bladeTipY: number;
+  wielderX: number;
+  wielderY: number;
   bladeAngle: number;
   bladeAxisX: number;
   bladeAxisY: number;
@@ -45,6 +44,11 @@ interface BladeFrame {
   extensionLength: number;
   overlapLength: number;
   emergedLength: number;
+  rangeMultiplier: number;
+  visibleTipReach: number;
+  authoritativeTipReach: number;
+  reachExtentError: number;
+  authoritativeTipFit: boolean;
   axialError: number;
   lateralError: number;
   angleError: number;
@@ -73,6 +77,7 @@ interface BladeBrowserGlobal {
 
 interface RawBladePlayer {
   weapon?: string;
+  character?: string;
   x?: number;
   y?: number;
   ackSeq?: number;
@@ -88,6 +93,11 @@ interface RawBladeRoom {
 interface RawBladeControl {
   setAim(x: number, y: number): void;
   stop(): void;
+}
+
+interface RawBladeConnection {
+  readonly room: RawBladeRoom;
+  readonly gamePort: number;
 }
 
 function maxAbs(frames: readonly BladeFrame[], field: keyof BladeFrame): number {
@@ -149,7 +159,7 @@ async function waitUntil(
   throw new Error(`${label} timed out after ${timeoutMs} ms`);
 }
 
-async function connectRawBladePlayer(page: Page, weaponId: string): Promise<RawBladeRoom> {
+async function connectRawBladePlayer(page: Page, weaponId: string): Promise<RawBladeConnection> {
   const connection = await page.evaluate(() => {
     const arena = (globalThis as unknown as BladeBrowserGlobal).ddGame.scene.getScene("arena") as
       | BrowserArena
@@ -160,16 +170,20 @@ async function connectRawBladePlayer(page: Page, weaponId: string): Promise<RawB
   if (!connection.roomId) throw new Error("live arena room id missing");
   if (!Number.isFinite(gamePort) || gamePort <= 0)
     throw new Error("private game port missing from URL");
+  expect(FORBIDDEN_PORTS.has(gamePort), "game port must be private ephemeral").toBe(false);
   const { Client } = await import(
     "../../packages/client/node_modules/colyseus.js/build/esm/index.mjs"
   );
   const client = new Client(`ws://127.0.0.1:${gamePort}`);
   const room = (await client.joinById(connection.roomId)) as unknown as RawBladeRoom;
-  room.send("devEquip", { weapon: weaponId });
+  room.send("devEquip", { weapon: weaponId, character: CHARACTER_ID });
   await waitUntil(
-    () => room.state?.players?.get(room.sessionId)?.weapon === weaponId,
+    () => {
+      const player = room.state?.players?.get(room.sessionId);
+      return player?.weapon === weaponId && player.character === CHARACTER_ID;
+    },
     10_000,
-    `raw blade player equip ${weaponId}`,
+    `raw blade player equip ${weaponId} on ${CHARACTER_ID}`,
   );
   await expect
     .poll(
@@ -188,7 +202,51 @@ async function connectRawBladePlayer(page: Page, weaponId: string): Promise<RawB
       { message: `observer should render raw blade player ${weaponId}`, timeout: 10_000 },
     )
     .toBe(weaponId);
-  return room;
+  return { room, gamePort };
+}
+
+async function equipBladeFixture(page: Page, weaponId: string): Promise<void> {
+  await page.evaluate(
+    ({ characterId, wantedWeapon }) => {
+      const arena = (globalThis as unknown as BladeBrowserGlobal).ddGame.scene.getScene(
+        "arena",
+      ) as BrowserArena & {
+        room: {
+          sessionId: string;
+          state: {
+            players: {
+              get(id: string): { character?: string; weapon?: string } | undefined;
+            };
+          };
+          send(type: string, message?: unknown): void;
+        };
+      };
+      arena.room.send("devEquip", { weapon: wantedWeapon, character: characterId });
+    },
+    { characterId: CHARACTER_ID, wantedWeapon: weaponId },
+  );
+  await waitForDevWeapon(page, weaponId);
+  await expect
+    .poll(
+      () =>
+        page.evaluate(() => {
+          const arena = (globalThis as unknown as BladeBrowserGlobal).ddGame.scene.getScene(
+            "arena",
+          ) as BrowserArena & {
+            room: {
+              sessionId: string;
+              state: {
+                players: {
+                  get(id: string): { character?: string } | undefined;
+                };
+              };
+            };
+          };
+          return arena.room.state.players.get(arena.room.sessionId)?.character ?? null;
+        }),
+      { message: `blade gate should use ${CHARACTER_ID}`, timeout: 20_000 },
+    )
+    .toBe(CHARACTER_ID);
 }
 
 function startRawBladeAttack(
@@ -251,11 +309,14 @@ for (const weaponId of WEAPON_IDS) {
   test(`${weaponId} extension stays on the blade affine through a live combo`, async ({ page }) => {
     test.setTimeout(120_000);
     await runArenaSpec(page, async (baseURL) => {
+      const clientPort = Number(new URL(baseURL).port);
+      expect(Number.isFinite(clientPort) && clientPort > 0, "private client port").toBe(true);
+      expect(FORBIDDEN_PORTS.has(clientPort), "client port must be private ephemeral").toBe(false);
       const weaponEvidenceDir = path.join(EVIDENCE_DIR, weaponId);
       await mkdir(weaponEvidenceDir, { recursive: true });
       await page.setViewportSize({ width: 640, height: 360 });
       await bootArena(page, baseURL, `weapon:${weaponId}`);
-      await waitForDevWeapon(page, weaponId);
+      await equipBladeFixture(page, weaponId);
       const canvas = page.locator("#game-root canvas");
       await canvas.click({ position: { x: 320, y: 180 } });
       await page.waitForTimeout(1_200);
@@ -268,17 +329,19 @@ for (const weaponId of WEAPON_IDS) {
         holder.__ddV7BladeExtensionFrames = [];
         holder.__ddV7BladeExtensionCapture = true;
       });
+      await page.screenshot({ path: path.join(weaponEvidenceDir, "after-idle-retracted.png") });
 
       await beginHeldAttack(page, "right-up", 590, 65);
-      await page.waitForTimeout(180);
+      await page.waitForTimeout(60);
       await page.screenshot({ path: path.join(weaponEvidenceDir, "after-right-up-rise.png") });
-      await page.waitForTimeout(2_220);
+      await page.waitForTimeout(2_340);
       await page.screenshot({ path: path.join(weaponEvidenceDir, "after-right-up-combo.png") });
       await endHeldAttack(page);
 
       // The slowest blade has a 1.02 s cadence plus the bounded combo grace; 1.6 s proves the retained
       // surface retracts only after that real chain lifetime lapses.
       await page.waitForTimeout(1_600);
+      await page.screenshot({ path: path.join(weaponEvidenceDir, "after-combo-retracted.png") });
 
       await beginHeldAttack(page, "left-up", 50, 95);
       await page.waitForTimeout(1_250);
@@ -286,7 +349,7 @@ for (const weaponId of WEAPON_IDS) {
       await endHeldAttack(page);
       await page.waitForTimeout(250);
 
-      const rawRoom = await connectRawBladePlayer(page, weaponId);
+      const { room: rawRoom, gamePort } = await connectRawBladePlayer(page, weaponId);
       await page.evaluate(() => {
         (globalThis as unknown as BladeBrowserGlobal).__ddV7BladeExtensionPhase = "remote-right-up";
       });
@@ -360,6 +423,9 @@ for (const weaponId of WEAPON_IDS) {
       );
       const partialRise = firstCombo.filter((frame) => frame.reveal < 0.999);
       const fullRise = firstCombo.filter((frame) => frame.reveal >= 0.999);
+      const fullAuthoritativeTipFrames = weaponFrames.filter(
+        (frame) => frame.authoritativeTipFit && frame.comboActive && frame.reveal >= 0.999,
+      );
       const activeRemote = remoteFrames.filter((frame) => frame.comboActive);
       const remoteComboId = activeRemote[0]?.comboId;
       const firstRemoteCombo = activeRemote.filter((frame) => frame.comboId === remoteComboId);
@@ -395,11 +461,15 @@ for (const weaponId of WEAPON_IDS) {
       }
       const summary = {
         weaponId,
+        characterId: CHARACTER_ID,
+        privateClientPort: clientPort,
+        privateGamePort: gamePort,
         thresholds: {
           joinPx: JOIN_TOLERANCE_PX,
           widthPx: WIDTH_TOLERANCE_PX,
           angleRad: ANGLE_TOLERANCE_RAD,
           revealReach: REVEAL_REACH_TOLERANCE,
+          tipExtentPx: TIP_EXTENT_TOLERANCE_PX,
         },
         frames: weaponFrames.length,
         rightFrames: rightFrames.length,
@@ -425,6 +495,22 @@ for (const weaponId of WEAPON_IDS) {
         maxAngleErrorRad: maxAbs(weaponFrames, "angleError"),
         maxWidthErrorPx: widthError,
         maxRevealReachError: reachRevealError,
+        maxFullTipExtentErrorPx:
+          fullAuthoritativeTipFrames.length > 0
+            ? maxAbs(fullAuthoritativeTipFrames, "reachExtentError")
+            : undefined,
+        fullTipExtentByStep: [
+          ...new Set(fullAuthoritativeTipFrames.map((frame) => frame.comboStep)),
+        ].map((comboStep) => ({
+          comboStep,
+          rangeMultiplier:
+            fullAuthoritativeTipFrames.find((frame) => frame.comboStep === comboStep)
+              ?.rangeMultiplier ?? 1,
+          maxErrorPx: maxAbs(
+            fullAuthoritativeTipFrames.filter((frame) => frame.comboStep === comboStep),
+            "reachExtentError",
+          ),
+        })),
       };
       await writeFile(
         path.join(weaponEvidenceDir, "after-summary.json"),
@@ -480,6 +566,16 @@ for (const weaponId of WEAPON_IDS) {
       expect(reachRevealError, `${weaponId}/reveal-scaled reach`).toBeLessThanOrEqual(
         REVEAL_REACH_TOLERANCE,
       );
+      if (weaponId === MIRAGE_HARDLIGHT_SABER_ID) {
+        expect(
+          fullAuthoritativeTipFrames.length,
+          `${weaponId}/authoritative full-tip frames`,
+        ).toBeGreaterThan(45);
+        expect(
+          maxAbs(fullAuthoritativeTipFrames, "reachExtentError"),
+          `${weaponId}/visible tip equals authoritative damage extent`,
+        ).toBeLessThanOrEqual(TIP_EXTENT_TOLERANCE_PX);
+      }
       expect(partialRise.length, `${weaponId}/visible ignition`).toBeGreaterThan(1);
       expect(fullRise.length, `${weaponId}/full ignition`).toBeGreaterThan(1);
       expect(ignitionTransitions, `${weaponId}/one ignition`).toBe(1);

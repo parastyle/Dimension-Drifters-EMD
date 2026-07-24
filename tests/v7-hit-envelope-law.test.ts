@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import {
   BLADE_EXTENSION_WEAPON_IDS,
+  BRUTALIST_GREATSWORD_IDS,
   beamDamageEnvelopeFor,
   beamDescriptorFor,
   bladeExtensionGeometryFor,
@@ -9,6 +10,7 @@ import {
   bladeExtensionReveal,
   HIT_ENVELOPE_TOLERANCE_PX,
   hitEnvelopeExtentsAgree,
+  MIRAGE_HARDLIGHT_SABER_ID,
   meleeComboSelectionFor,
   meleeDamageEnvelopeFor,
   meleeDamageHalfWidthAt,
@@ -26,6 +28,15 @@ import {
 import { describe, expect, it } from "vitest";
 
 describe("V7-HIT standing VFX-collision law", () => {
+  it("keeps the six brutalist greatswords distinct while Mirage joins the extension census", () => {
+    expect(BLADE_EXTENSION_WEAPON_IDS).toEqual([
+      ...BRUTALIST_GREATSWORD_IDS,
+      MIRAGE_HARDLIGHT_SABER_ID,
+    ]);
+    expect(BRUTALIST_GREATSWORD_IDS).not.toContain(MIRAGE_HARDLIGHT_SABER_ID);
+    expect(BLADE_EXTENSION_WEAPON_IDS).not.toContain("x2-sanctified-headsman");
+  });
+
   it("resolves one finite canonical damage envelope for every catalog weapon", () => {
     for (const id of WEAPON_CATALOG_IDS) {
       const weapon = WEAPONS[id];
@@ -65,6 +76,7 @@ describe("V7-HIT standing VFX-collision law", () => {
       expect(weaponUsesAuthoritativeEnvelopeCombo(weapon), `${id}/combo-clock`).toBe(true);
       const swing = swingDescriptorFor(weapon, weapon.cooldown);
       const activeMidpoint = (swing.activeStartSeconds + swing.activeEndSeconds) / 2;
+      const fullyRevealedSample = Math.max(activeMidpoint, 0.1);
       const visual = bladeExtensionGeometryFor(weapon);
       const server = meleeDamageEnvelopeFor(weapon);
       expect(visual, id).toBeDefined();
@@ -73,7 +85,7 @@ describe("V7-HIT standing VFX-collision law", () => {
       expect(
         hitEnvelopeExtentsAgree(
           visual.extensionStart + visual.extensionLength,
-          meleeDamageReachAt(weapon, swing, activeMidpoint),
+          meleeDamageReachAt(weapon, swing, fullyRevealedSample),
         ),
         `${id}/reach`,
       ).toBe(true);
@@ -125,8 +137,36 @@ describe("V7-HIT standing VFX-collision law", () => {
     }
   });
 
+  it("extends Mirage's 1H combat silhouette to the shared 3x blade scale without balance edits", () => {
+    const mirage = WEAPONS[MIRAGE_HARDLIGHT_SABER_ID];
+    if (!mirage) throw new Error("Missing Mirage Hardlight Saber fixture");
+    expect(mirage).toMatchObject({
+      damage: 7,
+      range: 136,
+      cooldown: 0.28,
+      displayLength: 110,
+      gripFrac: 0.13,
+      tags: {
+        grip: "1H",
+        size: "M",
+        family: "energy-blade",
+      },
+    });
+    expect(mirage.twoHanded).not.toBe(true);
+    const geometry = bladeExtensionGeometryFor(mirage);
+    const envelope = meleeDamageEnvelopeFor(mirage);
+    if (!geometry) throw new Error("Missing Mirage blade-extension geometry");
+    expect(geometry.physicalBladeLength).toBeCloseTo(95.7, 8);
+    expect(geometry.totalBladeLength).toBeCloseTo(287.1, 8);
+    expect(geometry.fullTipReach).toBeCloseTo(287.1, 8);
+    expect(geometry.totalBladeLength / geometry.physicalBladeLength).toBeCloseTo(3, 8);
+    expect(envelope.maxReach).toBeCloseTo(geometry.fullTipReach, 8);
+    expect(envelope.maxReach / envelope.baseReach).toBeGreaterThan(2);
+    expect(envelope.maxReach / envelope.baseReach).toBeLessThan(2.2);
+  });
+
   it("shares the brutalist backswing/runaway angle and foreshortening with server reach", () => {
-    for (const id of BLADE_EXTENSION_WEAPON_IDS) {
+    for (const id of BRUTALIST_GREATSWORD_IDS) {
       const weapon = WEAPONS[id];
       const sequence = weapon && meleeComboSelectionFor(weapon)?.sequence;
       expect(sequence, `${id}/momentum-sequence`).toHaveLength(3);

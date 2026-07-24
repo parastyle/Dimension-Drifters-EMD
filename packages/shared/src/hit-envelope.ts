@@ -68,7 +68,12 @@ export const BRUTALIST_GREATSWORD_IDS = Object.freeze([
   "x2-cairnfall-monolith",
 ] as const);
 export type BrutalistGreatswordId = (typeof BRUTALIST_GREATSWORD_IDS)[number];
-export const BLADE_EXTENSION_WEAPON_IDS = BRUTALIST_GREATSWORD_IDS;
+export const MIRAGE_HARDLIGHT_SABER_ID = "x2-mirage-hardlight-saber" as const;
+export const BLADE_EXTENSION_WEAPON_IDS = Object.freeze([
+  ...BRUTALIST_GREATSWORD_IDS,
+  MIRAGE_HARDLIGHT_SABER_ID,
+] as const);
+export type BladeExtensionWeaponId = (typeof BLADE_EXTENSION_WEAPON_IDS)[number];
 
 export const BLADE_EXTENSION_LENGTH_MULTIPLIER = 3;
 export const BLADE_EXTENSION_OVERLAP_FRACTION = 0.3;
@@ -95,7 +100,7 @@ function extensionAuthoring(): Readonly<WeaponHitEnvelopeAuthoring> {
   });
 }
 
-/** Migration overrides for the six visual-only extensions named by the owner. New weapon definitions
+/** Migration overrides for the visual-only extensions named by the owner. New weapon definitions
  * should author `hitEnvelope` beside their other shared weapon geometry. */
 export const LEGACY_WEAPON_HIT_ENVELOPE_OVERRIDES: Readonly<
   Partial<Record<string, Readonly<WeaponHitEnvelopeAuthoring>>>
@@ -106,6 +111,7 @@ export const LEGACY_WEAPON_HIT_ENVELOPE_OVERRIDES: Readonly<
   "x2-nullwake-ordinance": extensionAuthoring(),
   "x2-dawnwall-testament": extensionAuthoring(),
   "x2-cairnfall-monolith": extensionAuthoring(),
+  "x2-mirage-hardlight-saber": extensionAuthoring(),
   "x2-dustreaper-zweihander": Object.freeze({
     melee: Object.freeze({
       reach: DUSTREAPER_FIRE_DRAGON_REACH,
@@ -338,6 +344,19 @@ export function meleeDamageReachAt(
   elapsedSeconds: number,
   renderScale = 1,
 ): number {
+  const reveal = bladeExtensionReveal(weapon, swing, elapsedSeconds);
+  const lengthScale = bladeExtensionPoseAt(weapon, swing, elapsedSeconds, 0)?.lengthScale ?? 1;
+  return bladeExtensionDamageReachForReveal(weapon, reveal, renderScale, lengthScale);
+}
+
+/** Resolve the exact authoritative radial reach from an already-sampled extension reveal. Presentation
+ * consumers that own a retained combo clock use this seam instead of repeating the server geometry law. */
+export function bladeExtensionDamageReachForReveal(
+  weapon: WeaponDef,
+  reveal: number,
+  renderScale = 1,
+  lengthScale = 1,
+): number {
   const envelope = meleeDamageEnvelopeFor(weapon, renderScale);
   const extension = envelope.bladeExtension;
   const imageReach =
@@ -345,13 +364,13 @@ export function meleeDamageReachAt(
     Math.max(0, renderScale);
   const staticReach = Math.max(envelope.baseReach, imageReach);
   if (!extension) return staticReach;
-  const reveal = bladeExtensionReveal(weapon, swing, elapsedSeconds);
-  const lengthScale = bladeExtensionPoseAt(weapon, swing, elapsedSeconds, 0)?.lengthScale ?? 1;
   const gripReach = extension.fullTipReach - extension.totalBladeLength;
   const emergedLength = extension.totalBladeLength - extension.physicalBladeLength;
   return Math.max(
     staticReach,
-    gripReach + (extension.physicalBladeLength + emergedLength * reveal) * lengthScale,
+    gripReach +
+      (extension.physicalBladeLength + emergedLength * Math.max(0, Math.min(1, reveal))) *
+        Math.max(0, lengthScale),
   );
 }
 
