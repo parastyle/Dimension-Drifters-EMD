@@ -6,12 +6,18 @@ import {
   beamPaintFor,
   beamVisualWidth,
   recoveredBeamTileGeometry,
+  rigidBeamRenderAngle,
   seraphBeamCursorPose,
 } from "./BeamRenderer.js";
 import { BEAM_STRUCTURE_ART, beamStructureWorldBounds } from "./beam-structure-art.js";
 import { BEAM_VFX_RECIPES } from "./caster-vfx-recipes.js";
 
 describe("BeamRenderer presentation laws", () => {
+  it("takes the current weapon angle directly without a remote interpolation frame", () => {
+    expect(rigidBeamRenderAngle(2.7)).toBe(2.7);
+    expect(rigidBeamRenderAngle(-2.4)).toBe(-2.4);
+  });
+
   it("breathes strictly within the authoritative swept-band width at every heat state", () => {
     for (const width of [1, 48, 64]) {
       for (const heat of [0, 0.68, 0.85, 1]) {

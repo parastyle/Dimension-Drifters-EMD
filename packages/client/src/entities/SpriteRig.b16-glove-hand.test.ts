@@ -61,6 +61,28 @@ describe("B16 single-glove occupancy and facing-side idle hand", () => {
     ]);
   });
 
+  it("releases Cinderpalm's unused hand without requiring an explicit idle override", () => {
+    const cinderpalm = weapon("x2-cinderpalm-brand-glove");
+    const idleFrame = { phase: "idle" as const, phaseT: 0 };
+
+    expect(cinderpalm.poseLanguage?.idle).toBeUndefined();
+    expect(cinderpalm.tags.grip).toBe("1H");
+    expect(
+      ([0, 1] as const).map((hand) => classifyHandRole(cinderpalm, idleFrame, hand)),
+    ).toEqual(["hard-constrained", "authored-idle"]);
+  });
+
+  it("activates Gatling's synthesized 2H support grip under the default art policy", () => {
+    const gatling = weapon("x-gun-gatling");
+    const idleFrame = { phase: "idle" as const, phaseT: 0 };
+
+    expect(gatling.tags.grip).toBe("2H");
+    expect(gatling.twoHanded).not.toBe(true);
+    expect(
+      ([0, 1] as const).map((hand) => classifyHandRole(gatling, idleFrame, hand)),
+    ).toEqual(["hard-constrained", "hard-constrained"]);
+  });
+
   it("resolves both unused hands to a positive world-facing margin on every shipped whole-art prototype", () => {
     for (const protoId of WHOLE_ART_PROTOS) {
       const rig = manifest(protoId);

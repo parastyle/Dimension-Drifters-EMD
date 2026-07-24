@@ -18,14 +18,14 @@ describe("Drive HUD model", () => {
   });
 
   it("uses the beam's 25 + 80/s card debit and exposes empty as LOCKED · RELEASE", () => {
-    const beam = driveCostView("x2-voltcaster-machine-pistol");
+    const beam = driveCostView("x2-stormcaller-tesla-gatling");
     expect(beam.copy).toBe("25 + 80/s");
     const view = driveHudView({
       valueQ: 0,
       regenMode: 1,
       beamLockEndTick: 130,
       tick: 100,
-      weaponId: "x2-voltcaster-machine-pistol",
+      weaponId: "x2-stormcaller-tesla-gatling",
     });
     expect(view).toMatchObject({ locked: true, affordable: false, overlay: "LOCKED · RELEASE" });
   });

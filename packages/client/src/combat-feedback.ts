@@ -1,6 +1,30 @@
-import { CombatDelivery } from "@dd/shared";
+import { CombatDelivery, type WeaponDef } from "@dd/shared";
 
 export const PREDICT_TTL_MS = 250;
+
+const VFX_HUE_STOPS = [
+  0xff4d3a,
+  0xff8a2b,
+  0xd6ff5a,
+  0x6fd6ff,
+  0x9cff3b,
+  0x6f8bff,
+  0xb07bd6,
+  0xff4d3a,
+] as const;
+
+/** Keep receipt-owned chain hops in the same authored hue family as the weapon's chain recipe. */
+export function chainLightningReceiptColor(weapon: Readonly<WeaponDef> | undefined): number {
+  const hue = weapon?.chainLightning?.vfx?.color;
+  if (Number.isFinite(hue)) {
+    const index = Math.min(
+      VFX_HUE_STOPS.length - 2,
+      Math.floor(Math.max(0, Math.min(1, hue ?? 0)) * (VFX_HUE_STOPS.length - 1)),
+    );
+    return VFX_HUE_STOPS[index] ?? 0x6fd6ff;
+  }
+  return weapon?.gun?.projectileColor ?? 0x5dd6ff;
+}
 
 export type DeliveryGroup = "melee" | "gun" | "cast" | "thrown" | "quake";
 export type ContactLayer = "instant" | "upgrade" | "full" | "ambient";

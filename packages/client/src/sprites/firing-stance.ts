@@ -2,7 +2,9 @@ import { isWornWeapon, type WeaponDef, weaponHasHandlingTag } from "@dd/shared";
 
 /** Hand-target coordinates are body-height ratios in rig-local space; negative Y is upward. */
 export const FIRING_FACE_LINE_Y = -0.22;
-export const FIST_GUN_CHEST_CAP_Y = -0.06;
+export const FIST_GUN_CHEST_CAP_Y = -0.17;
+/** Small local-space downward nod; the mirrored root reverses it for the opposite facing. */
+export const GUN_HEAD_NOD_RAD = 0.055;
 
 export type FiringStanceFamily =
   | "pistol"
@@ -39,15 +41,15 @@ export interface FiringStanceSpec {
 }
 
 /**
- * Presentation truth beside the painted-art geometry seam. Values are deliberately well below the
- * old global eye-line target (-0.27H): even the highest long-gun sample remains below -0.22H.
+ * Presentation truth beside the painted-art geometry seam. Guns sit on a shoulder-height lane just
+ * below the face line, leaving room for the head to meet the sights without intersecting the weapon.
  */
 export const FIRING_STANCES: Readonly<Record<FiringStanceFamily, FiringStanceSpec>> = {
   pistol: {
     family: "pistol",
-    yBand: [-0.12, -0.04],
-    lead: { x: 0.22, y: -0.08, aimReach: 0.025 },
-    off: { x: 0.15, y: -0.06, aimReach: 0.02 },
+    yBand: [-0.205, -0.135],
+    lead: { x: 0.22, y: -0.18, aimReach: 0.025 },
+    off: { x: 0.15, y: -0.16, aimReach: 0.02 },
     twoHandSpacing: 0.34,
     bodyAdvance: 0.012,
     bodyTurn: 0.025,
@@ -55,9 +57,9 @@ export const FIRING_STANCES: Readonly<Record<FiringStanceFamily, FiringStanceSpe
   },
   "long-gun": {
     family: "long-gun",
-    yBand: [-0.16, -0.08],
-    lead: { x: 0.15, y: -0.12, aimReach: 0.02 },
-    off: { x: 0.1, y: -0.105, aimReach: 0.015 },
+    yBand: [-0.21, -0.16],
+    lead: { x: 0.15, y: -0.19, aimReach: 0.02 },
+    off: { x: 0.1, y: -0.175, aimReach: 0.015 },
     twoHandSpacing: 0.34,
     bodyAdvance: 0.014,
     bodyTurn: 0.035,
@@ -65,9 +67,9 @@ export const FIRING_STANCES: Readonly<Record<FiringStanceFamily, FiringStanceSpe
   },
   scattergun: {
     family: "scattergun",
-    yBand: [-0.12, -0.04],
-    lead: { x: 0.15, y: -0.085, aimReach: 0.018 },
-    off: { x: 0.1, y: -0.065, aimReach: 0.014 },
+    yBand: [-0.205, -0.145],
+    lead: { x: 0.15, y: -0.18, aimReach: 0.018 },
+    off: { x: 0.1, y: -0.16, aimReach: 0.014 },
     twoHandSpacing: 0.34,
     bodyAdvance: 0.016,
     bodyTurn: 0.06,
@@ -75,9 +77,9 @@ export const FIRING_STANCES: Readonly<Record<FiringStanceFamily, FiringStanceSpe
   },
   "rapid-gun": {
     family: "rapid-gun",
-    yBand: [-0.13, -0.05],
-    lead: { x: 0.2, y: -0.085, aimReach: 0.022 },
-    off: { x: 0.14, y: -0.07, aimReach: 0.018 },
+    yBand: [-0.205, -0.14],
+    lead: { x: 0.2, y: -0.18, aimReach: 0.022 },
+    off: { x: 0.14, y: -0.16, aimReach: 0.018 },
     twoHandSpacing: 0.33,
     bodyAdvance: 0.012,
     bodyTurn: 0.025,
@@ -85,9 +87,9 @@ export const FIRING_STANCES: Readonly<Record<FiringStanceFamily, FiringStanceSpe
   },
   launcher: {
     family: "launcher",
-    yBand: [-0.16, -0.08],
-    lead: { x: 0.14, y: -0.12, aimReach: 0.015 },
-    off: { x: 0.09, y: -0.105, aimReach: 0.012 },
+    yBand: [-0.21, -0.155],
+    lead: { x: 0.14, y: -0.19, aimReach: 0.015 },
+    off: { x: 0.09, y: -0.17, aimReach: 0.012 },
     twoHandSpacing: 0.35,
     bodyAdvance: 0.008,
     bodyTurn: 0.03,
@@ -105,9 +107,9 @@ export const FIRING_STANCES: Readonly<Record<FiringStanceFamily, FiringStanceSpe
   },
   "fist-gun": {
     family: "fist-gun",
-    yBand: [FIST_GUN_CHEST_CAP_Y, 0.02],
-    lead: { x: 0.28, y: -0.04, aimReach: 0.02 },
-    off: { x: 0.22, y: -0.035, aimReach: 0.018 },
+    yBand: [FIST_GUN_CHEST_CAP_Y, -0.122],
+    lead: { x: 0.28, y: -0.15, aimReach: 0.02 },
+    off: { x: 0.22, y: -0.14, aimReach: 0.018 },
     twoHandSpacing: 0.42,
     bodyAdvance: 0.006,
     bodyTurn: 0,

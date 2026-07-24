@@ -115,7 +115,8 @@ describe("W4G3 low-stock shotgun stance", () => {
         secondary?.role,
       );
       expect(firingStanceFor(definition).family, definition.id).toBe("scattergun");
-      expect(firingStanceFor(definition).lead.y, definition.id).toBeGreaterThan(-0.1);
+      expect(firingStanceFor(definition).lead.y, definition.id).toBeGreaterThan(-0.22);
+      expect(firingStanceFor(definition).lead.y, definition.id).toBeLessThanOrEqual(-0.14);
     }
   });
 });
@@ -216,10 +217,7 @@ describe("W4G6 barrel alignment truth", () => {
       x: 255,
       y: 30.9,
     });
-    expect(BEAM_VFX_RECIPES["x2-voltcaster-machine-pistol"]).toMatchObject({
-      edgeColor: 0x5c0505,
-      accentColor: 0xff2a1f,
-      coreColor: 0xffe0d4,
-    });
+    expect(BEAM_VFX_RECIPES["x2-voltcaster-machine-pistol"]).toBeUndefined();
+    expect(weapon("x2-voltcaster-machine-pistol").gun?.bulletKind).toBe("laser");
   });
 });

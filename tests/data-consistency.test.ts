@@ -202,7 +202,6 @@ describe("§43 expansion codegen: every authored gameplay field survives into th
     "cast",
   ];
   const BEAM_GUN_IDS = new Set([
-    "x2-voltcaster-machine-pistol",
     "x2-mirage-coilrifle",
     "x2-stormcaller-tesla-gatling",
     "x2-permafrost-siege-lobber",

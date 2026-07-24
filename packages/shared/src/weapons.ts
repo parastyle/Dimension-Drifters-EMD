@@ -146,7 +146,7 @@ export interface BeamDef {
   width: number;
   range: number;
   chargeSeconds: number;
-  /** Exponential aim-follow time constant; live rotation also has a hard shared turn-rate ceiling. */
+  /** Legacy catalog datum retained for data compatibility; laser law ignores it for live aim. */
   sweepLagSeconds: number;
   overheat: {
     maxChannelSeconds: number;
@@ -283,6 +283,7 @@ export type WeaponEffectRecipeId =
   | "hexbloom-toxic-impact"
   | "cinderbrand-magma-impact"
   | "cinderchoke-fire-impact"
+  | "mauler-fire-impact"
   | "wyrmscale-fire-slash";
 
 /** Named, reusable neutral guards. These are authored as pose-language vocabulary rather than id checks. */

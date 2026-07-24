@@ -72,7 +72,7 @@ describe("SpriteRig ranged pose-language handoff", () => {
   });
 
   it("braces and releases a beam without changing its base weapon family", () => {
-    const beam = WEAPONS["x2-voltcaster-machine-pistol"];
+    const beam = WEAPONS["x2-voidgrasp-null-gauntlet"];
     if (!beam) throw new Error("missing beam pose fixture");
     const input = createPoseLanguageInput();
     input.spec = weaponPoseSpecFor(beam);
@@ -84,7 +84,7 @@ describe("SpriteRig ranged pose-language handoff", () => {
     input.phaseT = 0;
     input.beamPhase = "cooling";
     const released = samplePoseLanguage(input, createPoseLanguageSample());
-    expect(input.spec.family).toBe("pistol");
+    expect(input.spec.family).toBe("fist-gun");
     expect(braced.offOwn).toBeGreaterThan(0.8);
     expect(Math.abs(released.offLateral)).toBeGreaterThan(Math.abs(braced.offLateral));
   });

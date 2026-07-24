@@ -36,7 +36,7 @@ describe("owner ledger W-SIZE", () => {
     const upper = lengths[middle] ?? Number.NaN;
     const median = lengths.length % 2 === 1 ? upper : (lower + upper) / 2;
     expect(lengths).toHaveLength(97);
-    expect(median).toBe(92);
+    expect(median).toBe(90);
     expect(WEAPONS["x2-gravesinger-s-hex-wand"]?.displayLength).toBe(90 * 2);
   });
 });
@@ -256,8 +256,9 @@ describe("owner ledger B8 pose, grip, and combo language", () => {
     });
     expect(secondaryGripHandRendersAbove("horizontal-foregrip")).toBe(true);
 
+    // B35 supersedes the earlier trigger midpoint with the painted handle.
     expect(b8Weapon("x2-fool-s-gold-revolver").gripPoints).toEqual({
-      primary: { x: 0.38, y: 0.64 },
+      primary: { x: 0.22, y: 0.66 },
     });
 
     const hollowbarrel = b8Weapon("x2-hollowbarrel-spell-scattergun-staff");

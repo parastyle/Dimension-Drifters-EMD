@@ -410,26 +410,6 @@ export const CASTER_VFX_SIGNATURES: Readonly<Partial<Record<string, CasterVfxSig
  */
 const BEAM_VFX_BASE_RECIPES: Readonly<Record<string, Omit<BeamVfxRecipe, "structure">>> =
   Object.freeze({
-  "x2-voltcaster-machine-pistol": Object.freeze({
-    signature: "voltcaster-needle-burst",
-    widthProfile: "needle",
-    edgeColor: 0x5c0505,
-    accentColor: 0xff2a1f,
-    coreColor: 0xffe0d4,
-    edgeWidth: 0.92,
-    chromaWidth: 0.42,
-    coreWidth: 0.1,
-    ripple: "stutter",
-    rippleAmplitude: 0.1,
-    rippleFrequency: 8,
-    flickerHz: 19,
-    particleElement: "shock",
-    bodyParticle: "bolt",
-    coreParticle: "spark",
-    bodyFrame: 0,
-    coreFrame: 3,
-    impact: Object.freeze({ points: 3, rings: 0, radiusScale: 0.7, spin: 2.8 }),
-  }),
   "x2-stormcaller-tesla-gatling": Object.freeze({
     signature: "stormcaller-six-needle-barrage",
     widthProfile: "needle",
@@ -923,7 +903,6 @@ const STRUCTURE_FAMILY_RECIPE: Readonly<
 export const BEAM_STRUCTURE_FAMILY_BY_WEAPON: Readonly<
   Record<string, BeamVfxStructureFamily>
 > = Object.freeze({
-  "x2-voltcaster-machine-pistol": "segmented-arcs",
   "x2-stormcaller-tesla-gatling": "segmented-arcs",
   "x2-mirage-coilrifle": "converging-strands",
   "x2-permafrost-siege-lobber": "ice-particles",

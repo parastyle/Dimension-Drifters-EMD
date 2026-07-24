@@ -68,7 +68,8 @@ describe("V5R ranged/caster owner orders", () => {
 
     expect(weapon("x2-tesla-faradayer").gun).toMatchObject({
       projectileArt: "generated",
-      projectileVisualScale: 1,
+      projectileVisualScale: 3.5,
+      projectileColor: 0xb14bff,
     });
     expect(weapon("x2-tidehook-bombarpoon").gun?.projectileVisualScale).toBe(1.75);
     expect(1.75 / 1.25).toBe(1.4);

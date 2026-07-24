@@ -99,11 +99,11 @@ describe("V5A generated projectile identity art", () => {
     const mesa = WEAPONS["x2-mesa-hand-cannon"];
     expect(mesa?.muzzle?.points[0]).toMatchObject({ part: 0, x: 255, y: 28.4 });
     expect(WEAPONS["x2-hexbore-voidmaw"]).toMatchObject({
-      displayLength: 112,
+      displayLength: 97.44,
       tags: { grip: "1H", handling: ["pistol"] },
     });
     expect(WEAPONS["x2-hexbore-voidmaw"]?.gripPoints).toEqual({
-      primary: { x: 0.35, y: 0.68 },
+      primary: { x: 0.22, y: 0.62 },
     });
   });
 

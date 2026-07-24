@@ -510,6 +510,10 @@ export class ProjectileState extends Schema {
   @type("uint16") flightAgeTicks = 0;
   /** B31 immutable release scale for a charged projectile; server collision uses this exact scalar. */
   @type("number") visualScale = 1;
+  /** Immutable physical weapon part that emitted this round (0 lead/body, 1 off-hand art part). */
+  @type("uint8") sourceMuzzlePart = 0;
+  /** Immutable ordinal within one accepted trigger's sequential gun burst (0 is the trigger round). */
+  @type("uint8") sourceBurstIndex = 0;
 }
 
 /** One stable, friendly player-beam presentation row. Damage stays private to the server; this is the

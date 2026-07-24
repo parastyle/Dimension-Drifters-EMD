@@ -1,7 +1,8 @@
-import { CombatDelivery } from "@dd/shared";
+import { CombatDelivery, WEAPONS } from "@dd/shared";
 import { describe, expect, it } from "vitest";
 import {
   CombatFeedback,
+  chainLightningReceiptColor,
   type CombatReceiptLike,
   type CombatReceiptRows,
   MagnitudeCoalescer,
@@ -37,6 +38,10 @@ function receipt(seq: number, targetId: string, extra: Partial<CombatReceiptLike
 }
 
 describe("CombatFeedback receipt reader", () => {
+  it("colors Ghostwind receipt hops from its authored purple chain instead of the gun fallback", () => {
+    expect(chainLightningReceiptColor(WEAPONS["x2-ghostwind-spectre-rail"])).toBe(0xb07bd6);
+  });
+
   it("baselines on attach, deduplicates, and dispatches fresh rows in ascending order", () => {
     const bus = new CombatFeedback();
     const seen: number[] = [];

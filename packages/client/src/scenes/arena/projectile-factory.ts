@@ -39,6 +39,7 @@ export const GUN_FX: Record<string, GunFx> = {
   nail: { color: 0xd6dde6, size: 14, style: "punch", trail: 26, trailW: 3 }, // nailgun: metallic dart
   ricochet: { color: 0x5dd6ff, size: 16, style: "spark", trail: 20, trailW: 6 }, // pistol: cyan electric
   spark: { color: 0xb14bff, size: 18, style: "spark", trail: 32, trailW: 7 }, // Faradayer: crackling bolt
+  laser: { color: 0xb14bff, size: 18, style: "spark", trail: 76, trailW: 7 }, // discrete magazine-fed laser pulse
   orb: { color: 0x8f6aff, size: 22, style: "arcane", trail: 30, trailW: 11 }, // §38 caster: soft arcane sphere
   grenade: { color: 0xffb24a, size: 24, style: "boom", trail: 22, trailW: 8 }, // §41 mortar: fat lobbed shell
 };
@@ -252,6 +253,12 @@ export function makeBullet(
     // metallic dart — a thin steel rectangle aligned to flight + a white tip
     items.push(scene.add.rectangle(0, 0, 18, 2.6, 0xeef2f6).setRotation(ang));
     items.push(scene.add.circle(0, 0, 1.8, 0xffffff));
+  } else if (k === "laser") {
+    // A discrete semi-auto round whose presentation is a short, rigid beam segment—not a channel row.
+    items.push(
+      scene.add.rectangle(0, 0, 76, 7, fx.color, 0.82).setRotation(ang).setBlendMode(ADD),
+      scene.add.rectangle(5, 0, 68, 2.2, 0xffffff, 0.96).setRotation(ang).setBlendMode(ADD),
+    );
   } else if (k === "tracer") {
     // streak of light — a velocity-aligned hot capsule (reads opposite to the stubby pellet)
     items.push(scene.add.rectangle(0, 0, 15, 3, fx.color).setRotation(ang).setBlendMode(ADD));

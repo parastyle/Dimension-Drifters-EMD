@@ -201,6 +201,7 @@ export interface BeamDescriptor {
   readonly range: number;
   /** Positive only for the reusable cone-stream specialization; zero keeps ordinary ray geometry. */
   readonly coneHalfAngle: number;
+  /** Legacy tuning datums retained in accepted descriptors; laser law never applies them to aim. */
   readonly sweepLagSeconds: number;
   readonly maxTurnRate: number;
   readonly maxChannelSeconds: number;
@@ -256,19 +257,15 @@ export function shortestAngleDelta(current: number, target: number): number {
   return delta - Math.PI;
 }
 
-/** Deterministic first-order beam steering plus an absolute server turn budget. */
+/** Laser law: a beam is rigidly locked to its weapon's accepted aim with no steering lag. */
 export function stepBeamAngle(
-  current: number,
+  _current: number,
   target: number,
-  sweepLagSeconds: number,
-  dt: number,
-  maxTurnRate = BEAM_MAX_TURN_RATE,
+  _sweepLagSeconds: number,
+  _dt: number,
+  _maxTurnRate = BEAM_MAX_TURN_RATE,
 ): number {
-  const desired = shortestAngleDelta(current, target);
-  const alpha = 1 - Math.exp(-Math.max(0, dt) / Math.max(0.001, sweepLagSeconds));
-  const proposed = desired * alpha;
-  const budget = Math.max(0, maxTurnRate) * Math.max(0, dt);
-  return current + Math.max(-budget, Math.min(budget, proposed));
+  return target;
 }
 
 /** Number of interpolated capsules needed to cover origin and angular travel without 20Hz holes. */

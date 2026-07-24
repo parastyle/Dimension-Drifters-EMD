@@ -65,7 +65,7 @@ describe("weapon firing-stance table", () => {
     }
   });
 
-  it("hard-caps worn fist-guns at chest height and squares the body", () => {
+  it("hard-caps worn fist-guns on the shoulder lane and squares the body", () => {
     const fistGun = weapon("x2-hellmouth-palmcaster");
     const dualFistGun = weapon("x2-voltvein-conductors");
     for (const def of [fistGun, dualFistGun]) {
@@ -96,8 +96,8 @@ describe("weapon firing-stance table", () => {
   it("resolves both hands of an authored dual weapon from one definition", () => {
     const weaponDef = weapon("x2-coyote-stinger");
     expect(firingStanceFamilyFor(weaponDef)).toBe("rapid-gun");
-    expect(firingHandTarget(weaponDef, "lead", 0)).toEqual({ x: 0.222, y: -0.085 });
-    expect(firingHandTarget(weaponDef, "off", 0)).toEqual({ x: 0.158, y: -0.07 });
+    expect(firingHandTarget(weaponDef, "lead", 0)).toEqual({ x: 0.222, y: -0.18 });
+    expect(firingHandTarget(weaponDef, "off", 0)).toEqual({ x: 0.158, y: -0.16 });
   });
 
   it("leaves thrown wind-up to the throw animation instead of the retained aim envelope", () => {

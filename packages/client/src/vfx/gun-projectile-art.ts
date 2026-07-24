@@ -66,6 +66,11 @@ export const GUN_GENERATED_PROJECTILES: Readonly<
     url: PROJECTILE_SPRITES["mesa-hand-cannon-50cal"].url,
     displayLength: 42,
   }),
+  "x2-cinderbore-longrifle": Object.freeze({
+    spriteId: "barrett-50cal-round",
+    url: PROJECTILE_SPRITES["barrett-50cal-round"].url,
+    displayLength: 46,
+  }),
   "x-gun-hand-mortar": Object.freeze({
     spriteId: "hand-mortar-shell",
     url: PROJECTILE_SPRITES["hand-mortar-shell"].url,

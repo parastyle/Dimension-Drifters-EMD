@@ -120,6 +120,7 @@ import {
   firingHandTarget,
   firingStanceFor,
   fistGunShotHandOffset,
+  GUN_HEAD_NOD_RAD,
   usesAimedFiringStance,
 } from "../sprites/firing-stance.js";
 import {
@@ -3731,10 +3732,11 @@ export class SpriteRig {
     acceptedSeq: number,
     barrelIndex: number,
     out: { x: number; y: number },
+    salvoIndex?: number,
   ): boolean {
     const definition = this.weaponDef?.muzzle;
     if (!definition) return false;
-    const points = weaponArtMuzzlePointsForShot(definition, acceptedSeq);
+    const points = weaponArtMuzzlePointsForShot(definition, acceptedSeq, salvoIndex);
     const point = points[barrelIndex] ?? points[0];
     const hand = isBreakActionWeapon(this.weaponDef) ? 0 : point?.part === 1 ? 1 : 0;
     return point ? this.writeWeaponArtMuzzle(point, out, hand) : false;
@@ -9418,6 +9420,7 @@ export class SpriteRig {
     let activeNamedStance: NamedWeaponStance | undefined;
     const leadFiringStance = this.weaponDef ? firingStanceFor(this.weaponDef) : undefined;
     const hasAimedFiringWeapon = this.weapons.some((weapon) => usesAimedFiringStance(weapon.def));
+    const hasGunHeld = this.weapons.some((weapon) => weapon.def.gun !== undefined);
     this.orbitT = -1; // §40 re-armed below only while an orbit-style swing window is live
     this.orbitSpin = false;
     this.swingOffX = 0;
@@ -9602,7 +9605,9 @@ export class SpriteRig {
         for (const foot of this.feet) foot.img.y += TARGET_BODY_H * 0.045 * load * cancelBlend;
       }
     } else if (hasAimedFiringWeapon && this.weaponDef && leadFiringStance) {
-      if (anim.fireHeld) this.holdRangedAim(sceneNow, RANGED_AIM_LINGER_MS);
+      // Guns rise and remain at the shoulder while held; non-gun casting implements retain their
+      // attack-held envelope.
+      if (hasGunHeld || anim.fireHeld) this.holdRangedAim(sceneNow, RANGED_AIM_LINGER_MS);
       rangedAimBlend = sampleRangedAimBlend(
         sceneNow,
         this.rangedAimRaiseAtMs,
@@ -12126,6 +12131,11 @@ export class SpriteRig {
       landed,
       movementPose.headBobPx,
     );
+    if (hasGunHeld && this.boilerplateHead) {
+      const determinantSign =
+        this.boilerplateHead.scaleX * this.boilerplateHead.scaleY < 0 ? -1 : 1;
+      this.boilerplateHead.rotation += determinantSign * GUN_HEAD_NOD_RAD * rangedAimBlend;
+    }
     const dashLean =
       this.moveStance === STANCE_DASH
         ? -Math.sign(Math.abs(localMoveX) > 0.05 ? localMoveX : 1) * (0.72 + commit * 0.28)

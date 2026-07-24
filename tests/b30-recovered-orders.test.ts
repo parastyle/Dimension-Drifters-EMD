@@ -101,9 +101,10 @@ describe("B30 recovered skipped-window orders", () => {
 
   it("places Frostgig overhead and pins the revolver and Railgun grips to the painted handles", () => {
     expect(weapon("x2-frostgig-harpoon").performance?.hold).toBe("overhead");
+    // B35 supersedes the earlier trigger midpoint with the painted handle.
     expect(weapon("x2-fool-s-gold-revolver").gripPoints?.primary).toEqual({
-      x: 0.38,
-      y: 0.64,
+      x: 0.22,
+      y: 0.66,
     });
     expect(weapon("x2-sunbreaker-railgun").gripPoints).toEqual({
       primary: { x: 0.36, y: 0.67 },

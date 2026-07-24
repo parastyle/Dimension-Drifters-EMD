@@ -2400,7 +2400,7 @@ describe("improve2 integrity regressions", () => {
     expect(receipt?.delivery).toBe(CombatDelivery.Gun);
     expect(h.state().combatReceipts.length).toBe(COMBAT_RECEIPT_CAP);
     expect([...h.state().combatReceipts]).toEqual(rows);
-    expect(h.state().schemaVersion).toBe(39);
+    expect(h.state().schemaVersion).toBe(40);
   });
 });
 
@@ -3549,7 +3549,7 @@ describe("GameRoom — §51 tough-enemy melee combos (Wave 1 authority)", () => 
   });
 
   it("ships schema 19, named depth decks, and guardrail-safe authored literals", () => {
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(39);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(40);
     expect(new EnemyState().comboSeq).toBe(0);
     expect(new EnemyState().comboFlags).toBe(0);
     expect(herePlayerJuggledDefault()).toBe(0);
@@ -3912,7 +3912,7 @@ describe("GameRoom — jump-feel J1 authoritative stance/physics", () => {
 
   it("ships schema 21 with the three appended uint8 stance/VFX defaults", () => {
     const player = new enemyComboShared.PlayerState();
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(39);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(40);
     expect([player.moveStance, player.poundSeq, player.stanceSeq]).toEqual([0, 0, 0]);
   });
 });
@@ -4090,7 +4090,7 @@ describe("GameRoom — flavor-only character identity", () => {
 
   it("retains schema 21 while defaulting character identity to the shared default", () => {
     const player = new enemyComboShared.PlayerState();
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(39);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(40);
     expect([player.character, player.runCharacter]).toEqual([
       enemyComboShared.DEFAULT_CHARACTER,
       enemyComboShared.DEFAULT_CHARACTER,
@@ -4852,8 +4852,8 @@ describe("ULT U1 lifecycle, co-op, and schema 25", () => {
     const h = makeRoom();
     h.join("ult-schema");
     const player = h.state().players.get("ult-schema");
-    expect(h.state().schemaVersion).toBe(39);
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(39);
+    expect(h.state().schemaVersion).toBe(40);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(40);
     expect([
       player.ultimate.archetype,
       player.ultimate.charge,
@@ -4913,7 +4913,7 @@ describe("pet v1 join snapshot, lock, and schema 25", () => {
     h.room.clients.push(client);
     h.room.onJoin(client, { metaAccount: account, selectedPetId: "brass-crab" });
     const player = h.state().players.get("pet-lock");
-    expect([h.state().schemaVersion, enemyComboShared.SCHEMA_VERSION]).toEqual([39, 39]);
+    expect([h.state().schemaVersion, enemyComboShared.SCHEMA_VERSION]).toEqual([40, 40]);
     expect({ petId: player.petId, petLevelBand: player.petLevelBand }).toEqual({
       petId: "hearth-newt",
       petLevelBand: 3,
@@ -5291,8 +5291,8 @@ describe("GameRoom — independent weapon slots and compatibility row", () => {
 
   it("keeps schema 38 and the unrelated compatibility-container tenants intact", () => {
     const fresh = new enemyComboShared.PlayerState();
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(39);
-    expect(new enemyComboShared.ArenaState().schemaVersion).toBe(39);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(40);
+    expect(new enemyComboShared.ArenaState().schemaVersion).toBe(40);
     expect(fresh.dualWield).toMatchObject({
       retiredByte0: 255,
       retiredUint32: 0,
@@ -5884,8 +5884,8 @@ describe("GameRoom — schema-31 Drive authority", () => {
     );
     const cost = enemyComboShared.driveCostForProfile(profile, interval);
 
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(39);
-    expect(h.state().schemaVersion).toBe(39);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(40);
+    expect(h.state().schemaVersion).toBe(40);
     expect(player.weaponResource).toBe(player.dualWield.weaponResource);
     expect(player.weaponResource).toMatchObject({
       valueQ: 10_000,
@@ -6190,7 +6190,7 @@ describe("GameRoom — schema-31 public prestige ceremony", () => {
     expect(metadata[3]).toMatchObject({ name: "retiredByte2", type: "uint8" });
     expect(metadata[7]).toMatchObject({ name: "prestige", type: "uint8" });
     expect(metadata[9]).toMatchObject({ name: "attackMoveMode", type: "uint8" });
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(39);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(40);
   });
 });
 
@@ -6989,6 +6989,64 @@ describe("GameRoom - NB projectile contracts", () => {
     expect(rounds.every((row) => row.sourcePlayerId === player.id)).toBe(true);
     h.tick(6);
     expect(h.room.projectileSeq - firstProjectileSeq).toBe(4);
+  });
+
+  it("emits one Quicksilver press as six sequential rows for one resource spend", () => {
+    const weaponId = "x2-quicksilver-fanner";
+    const weapon = WEAPONS[weaponId];
+    if (!weapon?.gun?.burst) throw new Error("Fanner burst fixture is required");
+    const { h, player } = projectileRoom("fanner", weaponId);
+    const combat = h.room.combat.get(player.id);
+    h.room.setWeaponResourceRegenOverride(player.id, "paused");
+    combat.drive.valueF = 100;
+    player.weaponResource.valueQ = 10_000;
+
+    h.send(player.id, "attack", {
+      aimX: 1,
+      aimY: 0,
+      tx: player.x + weapon.gun.range,
+      ty: player.y,
+    });
+    h.tick(1);
+    const afterTriggerCost = combat.drive.valueF;
+    h.tick(5);
+
+    const rounds = [...h.state().projectiles.values()].filter(
+      (row) => row.sourceWeaponId === weaponId,
+    );
+    expect(weapon.gun).toMatchObject({
+      damage: 1,
+      burst: { count: 6, intervalSeconds: 0.05 },
+    });
+    expect(weapon.gun.pellets).toBeUndefined();
+    expect(rounds).toHaveLength(6);
+    expect(rounds.map((row) => row.sourceBurstIndex)).toEqual([0, 1, 2, 3, 4, 5]);
+    expect(new Set(rounds.map((row) => row.bornTick)).size).toBe(6);
+    expect(combat.drive.valueF).toBe(afterTriggerCost);
+  });
+
+  it("stamps Coyote rounds with the exact alternating barrel part", () => {
+    const weaponId = "x2-coyote-stinger";
+    const weapon = WEAPONS[weaponId];
+    if (!weapon?.gun || weapon.muzzle?.salvoMode !== "cycle")
+      throw new Error("Coyote alternating muzzle fixture is required");
+    const { h, player } = projectileRoom("coyote-muzzle", weaponId);
+    const combat = h.room.combat.get(player.id);
+    combat.aimX = 1;
+    combat.aimY = 0;
+    combat.targetX = player.x + weapon.gun.range;
+    combat.targetY = player.y;
+
+    player.attackSeq = 1;
+    h.room.fireGun(player, combat, weapon);
+    player.attackSeq = 2;
+    h.room.fireGun(player, combat, weapon);
+
+    const rounds = [...h.state().projectiles.values()].filter(
+      (row) => row.sourceWeaponId === weaponId,
+    );
+    expect(rounds.map((row) => row.sourceMuzzlePart)).toEqual([0, 1]);
+    expect(rounds.every((row) => Math.abs(row.x - player.x) > 20)).toBe(true);
   });
 
   it("makes every Arcanist held-fire cadence request an accepted projectile beat", () => {

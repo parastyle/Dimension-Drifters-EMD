@@ -160,6 +160,7 @@ import { AudioBus } from "../audio/AudioBus.js";
 import { gunFireAudioCue } from "../audio/gun-sfx.js";
 import { budgetedCameraShakeIntensity, type CameraShakeSource } from "../camera-shake.js";
 import {
+  chainLightningReceiptColor,
   CombatFeedback,
   type CombatReceiptRows,
   type DamageNumberEvent,
@@ -6661,13 +6662,14 @@ export class ArenaScene extends Phaser.Scene {
       if (shooter) container.setData("sourcePlayer", shooter);
       // Muzzle flash a freshly-fired gun bullet at the SHOOTER's barrel (nearest player), one per shot.
       if (fx) {
-        const flashKey = shooter ? `${shooter}:${pr.bornTick}` : "";
+        const flashKey = shooter ? `${shooter}:${pr.bornTick}:${pr.sourceBurstIndex}` : "";
         if (shooter && !flashedRounds.has(flashKey)) {
           flashedRounds.add(flashKey);
           // §4 v0.107: SELF already flashed at click time (predicted, sendAttack) — don't double-flash
           // when the authoritative projectile lands a round-trip later.
           const isSelf = shooter === room.sessionId;
-          const suppressed = isSelf && this.time.now - this.lastSelfMuzzleAt < 150;
+          const suppressed =
+            isSelf && pr.sourceBurstIndex === 0 && this.time.now - this.lastSelfMuzzleAt < 150;
           const p = room.state.players.get(shooter);
           if (p && !suppressed) {
             const ang = Math.atan2(pr.vy, pr.vx);
@@ -6677,7 +6679,15 @@ export class ArenaScene extends Phaser.Scene {
             const flashWeapon = sourceWeapon ?? WEAPONS[p.weapon] ?? WEAPONS[DEFAULT_WEAPON];
             const muzzles =
               flashWeapon && srig
-                ? this.writeLiveGunMuzzles(p, flashWeapon, srig, p.attackSeq, aimX, aimY)
+                ? this.writeLiveGunMuzzles(
+                    p,
+                    flashWeapon,
+                    srig,
+                    p.attackSeq,
+                    aimX,
+                    aimY,
+                    pr.sourceMuzzlePart,
+                  )
                 : flashWeapon?.muzzle
                   ? weaponMuzzleWorldPointsForShot(
                       flashWeapon,
@@ -6691,7 +6701,7 @@ export class ArenaScene extends Phaser.Scene {
                       p.attackSeq,
                     )
                   : [];
-            srig?.triggerGunRecoil(this.time.now, 0);
+            srig?.triggerGunRecoil(this.time.now, pr.sourceMuzzlePart === 1 ? 1 : 0);
             if (!casterRecipe && !generatedImageRecipe) {
               for (const muzzle of muzzles) {
                 spawnMuzzleFlash(
@@ -6836,9 +6846,10 @@ export class ArenaScene extends Phaser.Scene {
     acceptedSeq: number,
     aimX: number,
     aimY: number,
+    salvoIndex?: number,
   ): Array<{ x: number; y: number }> {
     if (!weapon.muzzle) return [];
-    const selected = weaponArtMuzzlePointsForShot(weapon.muzzle, acceptedSeq);
+    const selected = weaponArtMuzzlePointsForShot(weapon.muzzle, acceptedSeq, salvoIndex);
     const canonical = weaponMuzzleWorldPointsForShot(
       weapon,
       {
@@ -6847,12 +6858,13 @@ export class ArenaScene extends Phaser.Scene {
         aimX,
         aimY,
         renderScale: characterScale(player.character),
+        salvoIndex,
       },
       acceptedSeq,
     );
     return selected.map((_point, index) => {
       const out = { x: canonical[index]?.x ?? rig.x, y: canonical[index]?.y ?? rig.y };
-      rig.writeWeaponMuzzleForShot(acceptedSeq, index, out);
+      rig.writeWeaponMuzzleForShot(acceptedSeq, index, out, salvoIndex);
       if (this.belt) out.y = BELT_Y0 + (out.y - BELT_Y0) / BELT_FORESHORTEN;
       return out;
     });
@@ -6861,7 +6873,14 @@ export class ArenaScene extends Phaser.Scene {
   /** Resolve one newly observed authoritative gun row onto the shooter's final rendered implement tip.
    * Multi-barrel rows select the shared art point closest to the recovered authoritative fire origin. */
   private writeLiveGunRoundMuzzle(
-    projectile: { x: number; y: number; vx: number; vy: number; bornTick: number },
+    projectile: {
+      x: number;
+      y: number;
+      vx: number;
+      vy: number;
+      bornTick: number;
+      sourceMuzzlePart: number;
+    },
     player: PlayerState,
     weapon: WeaponDef,
     rig: SpriteRig,
@@ -6871,7 +6890,15 @@ export class ArenaScene extends Phaser.Scene {
     if (speed <= 1e-4) return undefined;
     const aimX = projectile.vx / speed;
     const aimY = projectile.vy / speed;
-    const liveMuzzles = this.writeLiveGunMuzzles(player, weapon, rig, player.attackSeq, aimX, aimY);
+    const liveMuzzles = this.writeLiveGunMuzzles(
+      player,
+      weapon,
+      rig,
+      player.attackSeq,
+      aimX,
+      aimY,
+      projectile.sourceMuzzlePart,
+    );
     if (liveMuzzles.length <= 1) return liveMuzzles[0];
 
     const currentTick = this.room?.state.tick ?? projectile.bornTick;
@@ -6887,6 +6914,7 @@ export class ArenaScene extends Phaser.Scene {
         aimX,
         aimY,
         renderScale: characterScale(player.character),
+        salvoIndex: projectile.sourceMuzzlePart,
       },
       player.attackSeq,
     );
@@ -10432,7 +10460,7 @@ export class ArenaScene extends Phaser.Scene {
   /** Receipt-owned lightning link. The server receipt's direction is measured from the projectile-contact
    * seed to this hop, so the arc remains authoritative without inventing a client-side target chain. */
   private spawnChainLightningReceipt(event: HitContactEvent, x: number, y: number): void {
-    const color = WEAPONS[event.weaponId]?.gun?.projectileColor ?? 0x5dd6ff;
+    const color = chainLightningReceiptColor(WEAPONS[event.weaponId]);
     const length = 90;
     const dirLength = Math.hypot(event.dirX, event.dirY) || 1;
     const dx = event.dirX / dirLength;
