@@ -20,6 +20,7 @@ import {
   JUMP_BUFFER_SECONDS,
   EMPTY_RELIC_STACKS,
   MOVE_SPEED,
+  MOVE_STOP_DECEL,
   type RelicStacks,
   relicDodgeCooldown,
   relicMoveSpeed,
@@ -52,6 +53,7 @@ import {
   shortestAngleDelta,
   slideContactInvulnerable,
   stepImpulse,
+  stepPlayerAttackMovement,
   stepSteeredMovement,
   stepVertical,
   TICK_MS,
@@ -467,12 +469,13 @@ function stepHorizontal(
   belt?: BeltLevel,
 ): PredState {
   const beltX = belt ? beltPlayableXBounds(belt) : undefined;
-  const moved = stepSteeredMovement(
+  const moved = stepPlayerAttackMovement(
     { x: s.x, y: s.y },
     { vx: s.mvx, vy: s.mvy },
     { dx, dy },
     dt,
-    relicMoveSpeed(relics) * playerAttackInputSpeedMultiplier(attackMoveMode),
+    relicMoveSpeed(relics),
+    attackMoveMode,
     undefined,
     undefined,
     (beltX?.minX ?? 0) + PLAYER_RADIUS,
@@ -1241,7 +1244,11 @@ export class SelfPredictor {
 
   /** Reconcile against a fresh patch (call from room.onStateChange — data only, never touch rigs here). */
   reconcile(server: ServerView): void {
+    const previousAttackMoveMode = this.attackMoveMode;
     this.attackMoveMode = server.attackMoveMode ?? PlayerAttackMoveMode.Normal;
+    const authoritativeAttackRoot =
+      this.attackMoveMode === PlayerAttackMoveMode.RootMotion ||
+      previousAttackMoveMode === PlayerAttackMoveMode.RootMotion;
     const teleported = server.teleportSeq !== this.lastTeleportSeq;
     if (teleported) this.presentationSnapPending = true;
     this.lastTeleportSeq = server.teleportSeq;
@@ -1258,6 +1265,13 @@ export class SelfPredictor {
       const consumed = this.pending.shift();
       if (consumed?.slide) acknowledgedSlideEdge = true;
     }
+    const newestPending = this.pending[this.pending.length - 1];
+    const releasedAttackInput =
+      previousAttackMoveMode === PlayerAttackMoveMode.InputSlow &&
+      this.attackMoveMode === PlayerAttackMoveMode.Normal &&
+      (newestPending
+        ? Math.hypot(newestPending.dx, newestPending.dy) < 1e-4
+        : Math.hypot(server.mvx, server.mvy) <= MOVE_STOP_DECEL * DT + 1);
 
     const slideDenied =
       acknowledgedSlideEdge &&
@@ -1319,6 +1333,11 @@ export class SelfPredictor {
           this.presentationSnapPending = true;
         }
       }
+      if (authoritativeAttackRoot) {
+        this.errX = 0;
+        this.errY = 0;
+        this.presentationSnapPending = true;
+      }
       // else: staying paused / resuming — keep the (already-decayed) offset as-is.
       this.pending.length = 0;
       this.needResync = false;
@@ -1367,7 +1386,23 @@ export class SelfPredictor {
     // Fold the correction into the error offset so it GLIDES out; teleport-sized error snaps.
     this.errX = visX - this.pred.x;
     this.errY = visY - this.pred.y;
-    if (Math.hypot(this.errX, this.errY) > PRED_HARD_SNAP_PX) {
+    const attackReleaseCorrectionBudget =
+      relicMoveSpeed(this.relics) *
+        (1 - playerAttackInputSpeedMultiplier(PlayerAttackMoveMode.InputSlow)) *
+        DT *
+        Math.max(1, this.pending.length + 1) +
+      1;
+    const correctionMagnitude = Math.hypot(this.errX, this.errY);
+    if (
+      authoritativeAttackRoot ||
+      (releasedAttackInput && correctionMagnitude <= attackReleaseCorrectionBudget)
+    ) {
+      // Authored root travel is not generic prediction error, and a bounded slow-mode edge on a released
+      // stick must not become post-input correction motion. Present the authoritative result directly.
+      this.errX = 0;
+      this.errY = 0;
+      this.presentationSnapPending = true;
+    } else if (correctionMagnitude > PRED_HARD_SNAP_PX) {
       this.errX = 0;
       this.errY = 0;
       this.presentationSnapPending = true;

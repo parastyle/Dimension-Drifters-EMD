@@ -1,0 +1,59 @@
+{
+  "capturedAt": "2026-07-24T23:27:32.253Z",
+  "privatePorts": {
+    "client": 53472,
+    "game": 53471,
+    "protectedDefaultsUntouched": true
+  },
+  "stopWithinTicks": 3,
+  "scenarios": [
+    {
+      "mode": "arena",
+      "weapon": "x2-sparkknuckle-hex-mitt",
+      "attackMode": 1,
+      "releaseTick": 14,
+      "stoppedTick": 16,
+      "stopTicks": 2,
+      "maxPostPatchDeltaPx": 9.218165736660922,
+      "maxReconciliationErrorPx": 9.218165736661092,
+      "maxRecoveryDeltaPx": 0,
+      "postStopTravelPx": 0
+    },
+    {
+      "mode": "arena",
+      "weapon": "x2-thunderhead-stormfists",
+      "attackMode": 2,
+      "releaseTick": 44,
+      "stoppedTick": 45,
+      "stopTicks": 1,
+      "maxPostPatchDeltaPx": 9.649844566471984,
+      "maxReconciliationErrorPx": 9.649844566472133,
+      "maxRecoveryDeltaPx": 0,
+      "postStopTravelPx": 0
+    },
+    {
+      "mode": "belt",
+      "weapon": "x2-sparkknuckle-hex-mitt",
+      "attackMode": 1,
+      "releaseTick": 14,
+      "stoppedTick": 16,
+      "stopTicks": 2,
+      "maxPostPatchDeltaPx": 9.577579271390277,
+      "maxReconciliationErrorPx": 9.577579271390253,
+      "maxRecoveryDeltaPx": 0,
+      "postStopTravelPx": 0
+    },
+    {
+      "mode": "belt",
+      "weapon": "x2-thunderhead-stormfists",
+      "attackMode": 2,
+      "releaseTick": 44,
+      "stoppedTick": 45,
+      "stopTicks": 1,
+      "maxPostPatchDeltaPx": 9.649844566471984,
+      "maxReconciliationErrorPx": 9.649844566472133,
+      "maxRecoveryDeltaPx": 0,
+      "postStopTravelPx": 0
+    }
+  ]
+}

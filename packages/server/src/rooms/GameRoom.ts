@@ -378,6 +378,7 @@ import {
   stepEnemyChase,
   stepEnemyKite,
   stepImpulse,
+  stepPlayerAttackMovement,
   stepSteeredMovement,
   stepVertical,
   swingDescriptorFor,
@@ -5691,23 +5692,25 @@ export class GameRoom extends Room<ArenaState> {
               );
         }
         const next = this.belt
-          ? stepSteeredMovement(
+          ? stepPlayerAttackMovement(
               player,
               { vx: input.mvx, vy: input.mvy },
               rooted ? ZERO_MOVE_INPUT : input.held,
               dt,
-              inputMoveSpeed,
+              beamSpeed,
+              attackMoveMode,
               BELT_Y0,
               BELT_Y0 + DEPTH_MAX,
               minBeltX,
               maxBeltX,
             )
-          : stepSteeredMovement(
+          : stepPlayerAttackMovement(
               player,
               { vx: input.mvx, vy: input.mvy },
               rooted ? ZERO_MOVE_INPUT : input.held,
               dt,
-              inputMoveSpeed,
+              beamSpeed,
+              attackMoveMode,
             );
         input.mvx = next.vx;
         input.mvy = next.vy;

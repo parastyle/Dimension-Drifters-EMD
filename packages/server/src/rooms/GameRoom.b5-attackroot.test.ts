@@ -102,6 +102,33 @@ describe("GameRoom — B5 attack-authored root movement", () => {
     expect(player.x).toBeGreaterThan(start.x);
     expect(player.x).toBeLessThan(control.player.x);
     expect(player.y).toBe(control.player.y);
+
+    movingInput.held.dx = 0;
+    movingInput.held.dy = 0;
+    let stopTicks = 0;
+    while (Math.hypot(player.mvx, player.mvy) > 0 && stopTicks < 4) {
+      room.stepSim(0.05);
+      stopTicks++;
+    }
+    expect(stopTicks).toBeLessThanOrEqual(3);
+    expect({ mvx: player.mvx, mvy: player.mvy }).toEqual({ mvx: 0, mvy: 0 });
+    const stopped = { x: player.x, y: player.y };
+
+    let recoveryTicks = 0;
+    while (
+      player.dualWield.attackMoveMode !== PlayerAttackMoveMode.Normal &&
+      recoveryTicks < 20
+    ) {
+      room.stepSim(0.05);
+      recoveryTicks++;
+    }
+    expect(player.dualWield.attackMoveMode).toBe(PlayerAttackMoveMode.Normal);
+    room.stepSim(0.05);
+    expect({ x: player.x, y: player.y, mvx: player.mvx, mvy: player.mvy }).toEqual({
+      ...stopped,
+      mvx: 0,
+      mvy: 0,
+    });
   });
 
   it("dashes Stormfists at 2x speed, protects transit, and releases one endpoint impact", () => {
