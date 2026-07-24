@@ -1,0 +1,548 @@
+{
+  "capturedAt": "2026-07-24T02:45:07.688Z",
+  "baseURL": "http://127.0.0.1:57213",
+  "clientPort": 57213,
+  "gamePort": 57212,
+  "protectedPorts": [
+    5180,
+    2567
+  ],
+  "characterId": "proto-cowboy-hidden-face",
+  "weaponId": "x2-wyrmskull-reliquary",
+  "firingFrameId": "x2-wyrmskull-reliquary-open",
+  "releaseWindowMs": 150,
+  "registration": {
+    "closedGripSource": {
+      "x": 25.6,
+      "y": 39.5
+    },
+    "openGripSourceNormalized": {
+      "x": 25.600000000000005,
+      "y": 39.5
+    },
+    "closedMuzzleSource": {
+      "x": 200,
+      "y": 56
+    },
+    "openMuzzleSourceNormalized": {
+      "x": 200,
+      "y": 56
+    }
+  },
+  "assertions": {
+    "fourAuthoritativeCycles": true,
+    "localBothFacings": true,
+    "remoteBothFacings": true,
+    "allIdleClosed": true,
+    "allReleasesOpen": true,
+    "allReturnsClosed": true,
+    "authoritativeSeqAdvanced": true,
+    "muzzleValidEveryPhase": true,
+    "registrationGripErrorPx": 3.552713678800501e-15,
+    "registrationMuzzleErrorPx": 0,
+    "privatePorts": true,
+    "wholeArtCharacter": "proto-cowboy-hidden-face"
+  },
+  "captures": [
+    {
+      "viewpoint": "local",
+      "sourceId": "xMK5eTIVO",
+      "facing": "right",
+      "attackSeqBefore": 0,
+      "idle": {
+        "acceptedTick": 0,
+        "attackSeq": 0,
+        "baseScale": 0.546875,
+        "character": "proto-cowboy-hidden-face",
+        "closedBaseScale": 0.546875,
+        "closedTextureKey": "x2-wyrmskull-reliquary:part-1",
+        "clockTick": 158,
+        "facing": 1,
+        "firingFrameId": "x2-wyrmskull-reliquary-open",
+        "firingFrameVisible": false,
+        "gripWorld": {
+          "x": 2457.6458138867874,
+          "y": 2425.4013377414776
+        },
+        "image": {
+          "active": true,
+          "height": 79,
+          "originX": 0.1,
+          "originY": 0.5,
+          "rotation": -0.20956607489853418,
+          "scaleX": 0.8256717351938645,
+          "scaleY": 0.8256717351938645,
+          "visible": true,
+          "width": 256,
+          "x": 88.78394254904094,
+          "y": 8.154938172776312
+        },
+        "muzzle": {
+          "ok": true,
+          "x": 2550.9352108193502,
+          "y": 2414.385969064345
+        },
+        "rootScaleX": 0.6492819588656277,
+        "sourceScale": 3,
+        "textureKey": "x2-wyrmskull-reliquary:part-1",
+        "weapon": "x2-wyrmskull-reliquary"
+      },
+      "release": {
+        "acceptedTick": 243,
+        "attackSeq": 1,
+        "baseScale": 0.18229166666666666,
+        "character": "proto-cowboy-hidden-face",
+        "closedBaseScale": 0.546875,
+        "closedTextureKey": "x2-wyrmskull-reliquary:part-1",
+        "clockTick": 245,
+        "facing": 1,
+        "firingFrameId": "x2-wyrmskull-reliquary-open",
+        "firingFrameVisible": true,
+        "gripWorld": {
+          "x": 2455.184775679246,
+          "y": 2424.7131820895947
+        },
+        "image": {
+          "active": true,
+          "height": 270,
+          "originX": 0.1,
+          "originY": 0.4388888888888889,
+          "rotation": -0.2028155425686986,
+          "scaleX": 0.27522391173128813,
+          "scaleY": 0.27522391173128813,
+          "visible": true,
+          "width": 768,
+          "x": 83.31795849145921,
+          "y": 7.115960966952445
+        },
+        "muzzle": {
+          "ok": true,
+          "x": 2550.4224805333233,
+          "y": 2414.3404773957245
+        },
+        "rootScaleX": 0.66233948757158,
+        "sourceScale": 3,
+        "textureKey": "x2-wyrmskull-reliquary-open:part-1",
+        "weapon": "x2-wyrmskull-reliquary"
+      },
+      "after": {
+        "acceptedTick": 243,
+        "attackSeq": 1,
+        "baseScale": 0.546875,
+        "character": "proto-cowboy-hidden-face",
+        "closedBaseScale": 0.546875,
+        "closedTextureKey": "x2-wyrmskull-reliquary:part-1",
+        "clockTick": 314,
+        "facing": 1,
+        "firingFrameId": "x2-wyrmskull-reliquary-open",
+        "firingFrameVisible": false,
+        "gripWorld": {
+          "x": 2455.184775679246,
+          "y": 2424.7131820895947
+        },
+        "image": {
+          "active": true,
+          "height": 79,
+          "originX": 0.1,
+          "originY": 0.5,
+          "rotation": -0.2028155425686986,
+          "scaleX": 0.8256717351938644,
+          "scaleY": 0.8256717351938644,
+          "visible": true,
+          "width": 256,
+          "x": 83.31795849145921,
+          "y": 7.115960966952445
+        },
+        "muzzle": {
+          "ok": true,
+          "x": 2550.4224805333233,
+          "y": 2414.3404773957245
+        },
+        "rootScaleX": 0.66233948757158,
+        "sourceScale": 3,
+        "textureKey": "x2-wyrmskull-reliquary:part-1",
+        "weapon": "x2-wyrmskull-reliquary"
+      },
+      "screenshots": {
+        "idle": "docs/owner-notes-audit-v10-evidence/b13-wyrmskull/local-right-closed-idle.png",
+        "release": "docs/owner-notes-audit-v10-evidence/b13-wyrmskull/local-right-open-release.png",
+        "after": "docs/owner-notes-audit-v10-evidence/b13-wyrmskull/local-right-closed-after.png"
+      }
+    },
+    {
+      "viewpoint": "local",
+      "sourceId": "xMK5eTIVO",
+      "facing": "left",
+      "attackSeqBefore": 1,
+      "idle": {
+        "acceptedTick": 243,
+        "attackSeq": 1,
+        "baseScale": 0.546875,
+        "character": "proto-cowboy-hidden-face",
+        "closedBaseScale": 0.546875,
+        "closedTextureKey": "x2-wyrmskull-reliquary:part-1",
+        "clockTick": 441,
+        "facing": -1,
+        "firingFrameId": "x2-wyrmskull-reliquary-open",
+        "firingFrameVisible": false,
+        "gripWorld": {
+          "x": 2341.847232435588,
+          "y": 2424.7131794281195
+        },
+        "image": {
+          "active": true,
+          "height": 79,
+          "originX": 0.1,
+          "originY": 0.5,
+          "rotation": -0.20943890922545805,
+          "scaleX": 0.8256717351938645,
+          "scaleY": 0.8256717351938645,
+          "visible": true,
+          "width": 256,
+          "x": 87.80261904761767,
+          "y": 7.115956948657732
+        },
+        "muzzle": {
+          "ok": true,
+          "x": 2246.684206423258,
+          "y": 2413.7099126266785
+        },
+        "rootScaleX": -0.6623124720561558,
+        "sourceScale": 3,
+        "textureKey": "x2-wyrmskull-reliquary:part-1",
+        "weapon": "x2-wyrmskull-reliquary"
+      },
+      "release": {
+        "acceptedTick": 527,
+        "attackSeq": 2,
+        "baseScale": 0.18229166666666666,
+        "character": "proto-cowboy-hidden-face",
+        "closedBaseScale": 0.546875,
+        "closedTextureKey": "x2-wyrmskull-reliquary:part-1",
+        "clockTick": 528,
+        "facing": -1,
+        "firingFrameId": "x2-wyrmskull-reliquary-open",
+        "firingFrameVisible": true,
+        "gripWorld": {
+          "x": 2343.5953843746306,
+          "y": 2424.71317832908
+        },
+        "image": {
+          "active": true,
+          "height": 270,
+          "originX": 0.1,
+          "originY": 0.4388888888888889,
+          "rotation": -0.18237041779525143,
+          "scaleX": 0.27522391173128813,
+          "scaleY": 0.27522391173128813,
+          "visible": true,
+          "width": 768,
+          "x": 85.15967249222057,
+          "y": 7.115955289328774
+        },
+        "muzzle": {
+          "ok": true,
+          "x": 2248.165527188819,
+          "y": 2416.289652580668
+        },
+        "rootScaleX": -0.662339494834659,
+        "sourceScale": 3,
+        "textureKey": "x2-wyrmskull-reliquary-open:part-1",
+        "weapon": "x2-wyrmskull-reliquary"
+      },
+      "after": {
+        "acceptedTick": 527,
+        "attackSeq": 2,
+        "baseScale": 0.546875,
+        "character": "proto-cowboy-hidden-face",
+        "closedBaseScale": 0.546875,
+        "closedTextureKey": "x2-wyrmskull-reliquary:part-1",
+        "clockTick": 601,
+        "facing": -1,
+        "firingFrameId": "x2-wyrmskull-reliquary-open",
+        "firingFrameVisible": false,
+        "gripWorld": {
+          "x": 2343.5953843746306,
+          "y": 2424.71317832908
+        },
+        "image": {
+          "active": true,
+          "height": 79,
+          "originX": 0.1,
+          "originY": 0.5,
+          "rotation": -0.18237041779525143,
+          "scaleX": 0.8256717351938644,
+          "scaleY": 0.8256717351938644,
+          "visible": true,
+          "width": 256,
+          "x": 85.15967249222057,
+          "y": 7.115955289328774
+        },
+        "muzzle": {
+          "ok": true,
+          "x": 2248.165527188819,
+          "y": 2416.289652580668
+        },
+        "rootScaleX": -0.662339494834659,
+        "sourceScale": 3,
+        "textureKey": "x2-wyrmskull-reliquary:part-1",
+        "weapon": "x2-wyrmskull-reliquary"
+      },
+      "screenshots": {
+        "idle": "docs/owner-notes-audit-v10-evidence/b13-wyrmskull/local-left-closed-idle.png",
+        "release": "docs/owner-notes-audit-v10-evidence/b13-wyrmskull/local-left-open-release.png",
+        "after": "docs/owner-notes-audit-v10-evidence/b13-wyrmskull/local-left-closed-after.png"
+      }
+    },
+    {
+      "viewpoint": "remote",
+      "sourceId": "rG40UhWeL",
+      "facing": "right",
+      "attackSeqBefore": 0,
+      "idle": {
+        "acceptedTick": 0,
+        "attackSeq": 0,
+        "baseScale": 0.546875,
+        "character": "proto-cowboy-hidden-face",
+        "closedBaseScale": 0.546875,
+        "closedTextureKey": "x2-wyrmskull-reliquary:part-1",
+        "clockTick": 734,
+        "facing": 1,
+        "firingFrameId": "x2-wyrmskull-reliquary-open",
+        "firingFrameVisible": false,
+        "gripWorld": {
+          "x": 2966.0740357553173,
+          "y": 2409.612723592973
+        },
+        "image": {
+          "active": true,
+          "height": 79,
+          "originX": 0.1,
+          "originY": 0.5,
+          "rotation": -0.20943951023931895,
+          "scaleX": 0.8256717351938645,
+          "scaleY": 0.8256717351938645,
+          "visible": true,
+          "width": 256,
+          "x": 77.49786094441136,
+          "y": 6.63733750132466
+        },
+        "muzzle": {
+          "ok": true,
+          "x": 3061.2409432890395,
+          "y": 2398.6093995949004
+        },
+        "rootScaleX": 0.6623394948497249,
+        "sourceScale": 3,
+        "textureKey": "x2-wyrmskull-reliquary:part-1",
+        "weapon": "x2-wyrmskull-reliquary"
+      },
+      "release": {
+        "acceptedTick": 818,
+        "attackSeq": 1,
+        "baseScale": 0.18229166666666666,
+        "character": "proto-cowboy-hidden-face",
+        "closedBaseScale": 0.546875,
+        "closedTextureKey": "x2-wyrmskull-reliquary:part-1",
+        "clockTick": 818,
+        "facing": 1,
+        "firingFrameId": "x2-wyrmskull-reliquary-open",
+        "firingFrameVisible": true,
+        "gripWorld": {
+          "x": 4334.96107269239,
+          "y": 2409.1401269864373
+        },
+        "image": {
+          "active": true,
+          "height": 270,
+          "originX": 0.1,
+          "originY": 0.4388888888888889,
+          "rotation": -0.0010369004698578266,
+          "scaleX": 0.27522391173128813,
+          "scaleY": 0.27522391173128813,
+          "visible": true,
+          "width": 768,
+          "x": 115.0723021734678,
+          "y": 5.923811280335531
+        },
+        "muzzle": {
+          "ok": true,
+          "x": 4430.3453797961,
+          "y": 2418.064665455394
+        },
+        "rootScaleX": 0.6623394948497249,
+        "sourceScale": 3,
+        "textureKey": "x2-wyrmskull-reliquary-open:part-1",
+        "weapon": "x2-wyrmskull-reliquary"
+      },
+      "after": {
+        "acceptedTick": 818,
+        "attackSeq": 1,
+        "baseScale": 0.546875,
+        "character": "proto-cowboy-hidden-face",
+        "closedBaseScale": 0.546875,
+        "closedTextureKey": "x2-wyrmskull-reliquary:part-1",
+        "clockTick": 893,
+        "facing": 1,
+        "firingFrameId": "x2-wyrmskull-reliquary-open",
+        "firingFrameVisible": false,
+        "gripWorld": {
+          "x": 4292.269847337737,
+          "y": 2409.5749380206908
+        },
+        "image": {
+          "active": true,
+          "height": 79,
+          "originX": 0.1,
+          "originY": 0.5,
+          "rotation": -0.18496684059788748,
+          "scaleX": 0.8256717351938645,
+          "scaleY": 0.8256717351938645,
+          "visible": true,
+          "width": 256,
+          "x": 79.60481454704254,
+          "y": 6.580288855130647
+        },
+        "muzzle": {
+          "ok": true,
+          "x": 4387.677511848009,
+          "y": 2400.9036646866325
+        },
+        "rootScaleX": 0.6623394948497249,
+        "sourceScale": 3,
+        "textureKey": "x2-wyrmskull-reliquary:part-1",
+        "weapon": "x2-wyrmskull-reliquary"
+      },
+      "screenshots": {
+        "idle": "docs/owner-notes-audit-v10-evidence/b13-wyrmskull/remote-right-closed-idle.png",
+        "release": "docs/owner-notes-audit-v10-evidence/b13-wyrmskull/remote-right-open-release.png",
+        "after": "docs/owner-notes-audit-v10-evidence/b13-wyrmskull/remote-right-closed-after.png"
+      }
+    },
+    {
+      "viewpoint": "remote",
+      "sourceId": "rG40UhWeL",
+      "facing": "left",
+      "attackSeqBefore": 1,
+      "idle": {
+        "acceptedTick": 818,
+        "attackSeq": 1,
+        "baseScale": 0.546875,
+        "character": "proto-cowboy-hidden-face",
+        "closedBaseScale": 0.546875,
+        "closedTextureKey": "x2-wyrmskull-reliquary:part-1",
+        "clockTick": 1000,
+        "facing": -1,
+        "firingFrameId": "x2-wyrmskull-reliquary-open",
+        "firingFrameVisible": false,
+        "gripWorld": {
+          "x": 3965.480276992014,
+          "y": 2409.3546669894977
+        },
+        "image": {
+          "active": true,
+          "height": 79,
+          "originX": 0.1,
+          "originY": 0.5,
+          "rotation": -0.20943959766209908,
+          "scaleX": 0.8256717351938645,
+          "scaleY": 0.8256717351938645,
+          "visible": true,
+          "width": 256,
+          "x": 80.04904354198172,
+          "y": 6.247723715417468
+        },
+        "muzzle": {
+          "ok": true,
+          "x": 3870.3561741533013,
+          "y": 2398.351334671669
+        },
+        "rootScaleX": -0.6620416178299152,
+        "sourceScale": 3,
+        "textureKey": "x2-wyrmskull-reliquary:part-1",
+        "weapon": "x2-wyrmskull-reliquary"
+      },
+      "release": {
+        "acceptedTick": 1084,
+        "attackSeq": 2,
+        "baseScale": 0.18229166666666666,
+        "character": "proto-cowboy-hidden-face",
+        "closedBaseScale": 0.546875,
+        "closedTextureKey": "x2-wyrmskull-reliquary:part-1",
+        "clockTick": 1086,
+        "facing": -1,
+        "firingFrameId": "x2-wyrmskull-reliquary-open",
+        "firingFrameVisible": true,
+        "gripWorld": {
+          "x": 2583.091207154729,
+          "y": 2409.609165665821
+        },
+        "image": {
+          "active": true,
+          "height": 270,
+          "originX": 0.1,
+          "originY": 0.4388888888888889,
+          "rotation": -0.01625701668557511,
+          "scaleX": 0.27522391173128813,
+          "scaleY": 0.27522391173128813,
+          "visible": true,
+          "width": 768,
+          "x": 105.74768984939044,
+          "y": 6.631965743930814
+        },
+        "muzzle": {
+          "ok": true,
+          "x": 2487.582120549108,
+          "y": 2417.080966272006
+        },
+        "rootScaleX": -0.6623394930195052,
+        "sourceScale": 3,
+        "textureKey": "x2-wyrmskull-reliquary-open:part-1",
+        "weapon": "x2-wyrmskull-reliquary"
+      },
+      "after": {
+        "acceptedTick": 1084,
+        "attackSeq": 2,
+        "baseScale": 0.546875,
+        "character": "proto-cowboy-hidden-face",
+        "closedBaseScale": 0.546875,
+        "closedTextureKey": "x2-wyrmskull-reliquary:part-1",
+        "clockTick": 1163,
+        "facing": -1,
+        "firingFrameId": "x2-wyrmskull-reliquary-open",
+        "firingFrameVisible": false,
+        "gripWorld": {
+          "x": 1378.353234096369,
+          "y": 2393.745035217278
+        },
+        "image": {
+          "active": true,
+          "height": 79,
+          "originX": 0.1,
+          "originY": 0.5,
+          "rotation": -0.2053073112161794,
+          "scaleX": 0.8256717351938645,
+          "scaleY": 0.8256717351938645,
+          "visible": true,
+          "width": 256,
+          "x": 58.72042834911922,
+          "y": 7.677148806262311
+        },
+        "muzzle": {
+          "ok": true,
+          "x": 1283.1416712569544,
+          "y": 2383.1350526435513
+        },
+        "rootScaleX": -0.6623394942984733,
+        "sourceScale": 3,
+        "textureKey": "x2-wyrmskull-reliquary:part-1",
+        "weapon": "x2-wyrmskull-reliquary"
+      },
+      "screenshots": {
+        "idle": "docs/owner-notes-audit-v10-evidence/b13-wyrmskull/remote-left-closed-idle.png",
+        "release": "docs/owner-notes-audit-v10-evidence/b13-wyrmskull/remote-left-open-release.png",
+        "after": "docs/owner-notes-audit-v10-evidence/b13-wyrmskull/remote-left-closed-after.png"
+      }
+    }
+  ]
+}

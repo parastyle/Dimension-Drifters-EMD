@@ -103,6 +103,7 @@ import {
   type WeaponArtStateGeometry,
   weaponArtGeometryFor,
 } from "../sprites/art-geometry.generated.js";
+import { firingFrameSpriteAt, resolveWeaponFiringFrame } from "../sprites/firing-frame.js";
 import {
   firingHandTarget,
   firingStanceFor,
@@ -2127,6 +2128,7 @@ export class SpriteRig {
     /** The weapon's own display scale (displayLength/part.w). Applied each frame ÷ baseScale so the weapon
      *  is a FIXED on-screen size regardless of which (larger/smaller) character holds it. */
     baseScale: number;
+    closedBaseScale: number;
     def: WeaponDef;
     worn: boolean;
     spriteId: string;
@@ -2139,6 +2141,17 @@ export class SpriteRig {
     bladeWidthSourcePixels: number;
     closedOriginX: number;
     closedOriginY: number;
+    closedTextureKey: string;
+    closedTextureFrame?: string;
+    firingFrame?: {
+      spriteId: string;
+      textureKey: string;
+      textureFrame?: string;
+      sourceScale: number;
+      originX: number;
+      originY: number;
+    };
+    firingFrameVisible: boolean;
     semanticRotation: number;
     /** Lazily-created full-tell separation/echo layers. Lite horde tells never allocate them. */
     tellRim?: Phaser.GameObjects.Image;
@@ -2330,6 +2343,12 @@ export class SpriteRig {
   private hasAttackBeatSeq = false;
   private attackBeatSeq = 0;
   private attackBeatWallEpochMs = -1e9;
+  /** The firing-frame clock excludes owner prediction and retains the accepted weapon identity. */
+  private hasAuthoritativeFiringBeat = false;
+  private authoritativeFiringBeatSeq = 0;
+  private authoritativeFiringAttackTick = 0;
+  private authoritativeFiringClockTick = 0;
+  private authoritativeFiringWeaponId = "";
   /** Per-hand accepted snapshots prevent unrelated interleaved beats from advancing the other weapon. */
   private readonly comboChains: [ComboChainState, ComboChainState] = [
     createComboChainState(),
@@ -3428,7 +3447,11 @@ export class SpriteRig {
       tx: matrix.tx,
       ty: matrix.ty,
     };
-    return !!transformWeaponArtPoint(point, composeWeaponTransform(parent, local), out);
+    const sourceScale =
+      weapon.firingFrameVisible && weapon.firingFrame ? weapon.firingFrame.sourceScale : 1;
+    const activeFramePoint =
+      sourceScale === 1 ? point : { x: point.x * sourceScale, y: point.y * sourceScale };
+    return !!transformWeaponArtPoint(activeFramePoint, composeWeaponTransform(parent, local), out);
   }
 
   /**
@@ -4647,12 +4670,27 @@ export class SpriteRig {
     };
   }
 
-  /** Feed either a predicted owner beat or an authoritative player beat into retained tome state. Uint32
-   *  ordering ignores an older confirmation when local prediction has already advanced the visible book. */
-  setAttackBeat(seq: number, held: boolean, epochMs: number): void {
+  /** Feed either a predicted owner beat or an authoritative player beat into retained presentation state.
+   *  Uint32 ordering ignores an older confirmation when local prediction already advanced ordinary poses;
+   *  firing-frame state is recorded separately and only from an authoritative accepted epoch. */
+  setAttackBeat(seq: number, held: boolean, epochMs: number, authoritative = true): void {
     const acceptedWallEpochMs = epochMs;
     epochMs = this.presentationEpochForWallEpoch(epochMs);
     const beat = seq >>> 0;
+    if (authoritative) {
+      const authorityAdvance = (beat - this.authoritativeFiringBeatSeq) >>> 0;
+      if (
+        !this.hasAuthoritativeFiringBeat ||
+        (authorityAdvance > 0 && authorityAdvance < 0x80000000)
+      ) {
+        this.hasAuthoritativeFiringBeat = true;
+        this.authoritativeFiringBeatSeq = beat;
+        this.authoritativeFiringWeaponId = held ? (this.weaponDef?.id ?? "") : "";
+      }
+      // Accepted beats are ingested even while Arena hit-stop skips animate(). Sample here so a
+      // short server release window cannot disappear behind a client presentation freeze.
+      this.prepareFiringFrames();
+    }
     let advanced = false;
     if (held) {
       this.holdRangedAim(epochMs, ATTACK_HELD_WINDOW * TICK_MS + RANGED_AIM_LINGER_MS);
@@ -4758,6 +4796,49 @@ export class SpriteRig {
     scrap.direction = page.direction;
     scrap.seed = seq;
     scrap.active = true;
+  }
+
+  /** Swap retained held textures from the synced server tick window; no local wall-time timer owns it. */
+  private prepareFiringFrames(): void {
+    for (const weapon of this.weapons) {
+      const frame = weapon.firingFrame;
+      const acceptedTick =
+        frame &&
+        this.hasAuthoritativeFiringBeat &&
+        this.authoritativeFiringWeaponId === weapon.def.id
+          ? this.authoritativeFiringAttackTick
+          : undefined;
+      const wantsFiringFrame =
+        !!frame &&
+        firingFrameSpriteAt(weapon.def, acceptedTick, this.authoritativeFiringClockTick) ===
+          frame.spriteId &&
+        this.scene.textures.exists(frame.textureKey);
+      if (wantsFiringFrame === weapon.firingFrameVisible) continue;
+      if (wantsFiringFrame && frame) {
+        weapon.img
+          .setTexture(frame.textureKey, frame.textureFrame)
+          .setOrigin(frame.originX, frame.originY)
+          .setScale(weapon.img.scaleX / frame.sourceScale, weapon.img.scaleY / frame.sourceScale);
+        weapon.baseScale = weapon.closedBaseScale / frame.sourceScale;
+      } else {
+        const sourceScale = frame?.sourceScale ?? 1;
+        weapon.img
+          .setTexture(weapon.closedTextureKey, weapon.closedTextureFrame)
+          .setOrigin(weapon.closedOriginX, weapon.closedOriginY)
+          .setScale(weapon.img.scaleX * sourceScale, weapon.img.scaleY * sourceScale);
+        weapon.baseScale = weapon.closedBaseScale;
+      }
+      weapon.firingFrameVisible = wantsFiringFrame;
+    }
+  }
+
+  /** Sample the replicated server attack clock; local prediction never writes this tick pair. */
+  setAuthoritativeAttackClock(attackTick: number, clockTick: number): void {
+    this.authoritativeFiringAttackTick = attackTick >>> 0;
+    this.authoritativeFiringClockTick = clockTick >>> 0;
+    // Clock ingestion continues through hit-stop. This also guarantees the closed-frame return is
+    // applied at the authoritative boundary rather than waiting for animation to resume.
+    this.prepareFiringFrames();
   }
 
   /** Choose the painted held texture and advance scalar page scheduling before weapon pose writes. */
@@ -4885,9 +4966,10 @@ export class SpriteRig {
       const state =
         i === 0 && this.tome?.openVisible ? weapon.artGeometry?.open : weapon.artGeometry?.closed;
       const authoredPrimary = resolvedGunGripPoints(weapon.def)?.primary;
+      const firingFrame = weapon.firingFrameVisible ? weapon.firingFrame : undefined;
       weapon.img.setOrigin(
-        authoredPrimary?.x ?? state?.originX ?? weapon.closedOriginX,
-        authoredPrimary?.y ?? state?.originY ?? weapon.closedOriginY,
+        firingFrame?.originX ?? authoredPrimary?.x ?? state?.originX ?? weapon.closedOriginX,
+        firingFrame?.originY ?? authoredPrimary?.y ?? state?.originY ?? weapon.closedOriginY,
       );
       weapon.semanticRotation = weapon.img.rotation;
       weapon.img.scaleY *= edgeLeadScaleY(weapon.def.performance?.edgeLeadFlip);
@@ -4991,6 +5073,12 @@ export class SpriteRig {
         authoredPrimary?.x ?? closed?.originX ?? (pieceWorn ? 0.4 : piece.def.gripFrac);
       const originY = authoredPrimary?.y ?? closed?.originY ?? 0.5;
       const wScale = (piece.def.displayLength * (closed?.displayLengthMul ?? 1)) / part.w;
+      const resolvedFiringFrame = resolveWeaponFiringFrame(piece.def, piece.spriteId);
+      const firingPart = resolvedFiringFrame?.manifest.parts[partIndex];
+      const firingTexture =
+        resolvedFiringFrame && firingPart
+          ? partTexture(this.scene, resolvedFiringFrame.spriteId, firingPart.role)
+          : undefined;
       img.setOrigin(originX, originY).setScale(wScale * imageFacingX, wScale);
       const getPixelAlpha = this.scene.textures?.getPixelAlpha;
       const bladeWidthSourcePixels = getPixelAlpha
@@ -5003,6 +5091,7 @@ export class SpriteRig {
         img,
         hand,
         baseScale: wScale,
+        closedBaseScale: wScale,
         def: piece.def,
         worn: pieceWorn,
         spriteId: piece.spriteId,
@@ -5012,6 +5101,20 @@ export class SpriteRig {
         bladeWidthSourcePixels,
         closedOriginX: originX,
         closedOriginY: originY,
+        closedTextureKey: tx.key,
+        closedTextureFrame: tx.frame,
+        firingFrame:
+          resolvedFiringFrame && firingTexture
+            ? {
+                spriteId: resolvedFiringFrame.spriteId,
+                textureKey: firingTexture.key,
+                textureFrame: firingTexture.frame,
+                sourceScale: resolvedFiringFrame.registration.sourceScale,
+                originX: resolvedFiringFrame.registration.originX,
+                originY: resolvedFiringFrame.registration.originY,
+              }
+            : undefined,
+        firingFrameVisible: false,
         semanticRotation: 0,
       });
       return img;
@@ -8307,6 +8410,7 @@ export class SpriteRig {
       this.armAfterAttack(0, sceneNow + 90, this.weaponDef);
     }
     this.flushObservedAttackSignature(sceneNow, outsidePaperView);
+    this.prepareFiringFrames();
     this.prepareTomeVisual(sceneNow, outsidePaperView);
 
     // Landing is measured before part integration so the one-shot compression enters this frame's springs;

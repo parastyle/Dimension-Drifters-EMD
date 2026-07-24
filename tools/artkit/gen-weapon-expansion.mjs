@@ -78,7 +78,7 @@ const TOP_KEYS = new Set([
   "id", "name", "type", "family", "theme", "element", "finish", "finishNote", "grip", "size",
   "rangeBand", "scaling", "scalingGrades", "requirements", "artPrompt", "palettePrimary",
   "paletteAccent", "cardartAction", "behavior", "stats", "description", "banned", "expansion", "archived",
-  "sprite", "sizeClass", "stance", "authoritativeCombo", "comboFamily", "comboVariant", "comboBar", "comboChoreography", "katanaHook",
+  "sprite", "firingFrame", "sizeClass", "stance", "authoritativeCombo", "comboFamily", "comboVariant", "comboBar", "comboChoreography", "katanaHook",
   "bespokeVfxSheet", "performance", "swingStyle", "effectRecipe", "effectEmitter", "effectTiming",
   "renderAboveHands", "suppressVfx", "hitStatus", "gripPoints", "handlingTags", "poseLanguage",
   "impactMuzzle",
@@ -914,6 +914,11 @@ function mapWeapon(w) {
   if (w.sprite !== undefined) {
     if (typeof w.sprite !== "string" || !w.sprite) fail("sprite is not a non-empty string");
     else def.sprite = w.sprite;
+  }
+  if (w.firingFrame !== undefined) {
+    if (typeof w.firingFrame !== "string" || !w.firingFrame)
+      fail("firingFrame is not a non-empty string");
+    else def.firingFrame = w.firingFrame;
   }
   if (w.sizeClass !== undefined) def.sizeClass = enumOf(w.sizeClass, SIZE_CLASSES, "sizeClass");
   if (w.stance !== undefined) def.stance = enumOf(w.stance, STANCES, "stance");

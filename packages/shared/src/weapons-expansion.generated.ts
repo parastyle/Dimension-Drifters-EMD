@@ -13443,9 +13443,11 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "INT"
       ]
     },
+    "firingFrame": "x2-wyrmskull-reliquary-open",
     "authoritativeCombo": true,
     "comboFamily": "thrust",
     "comboVariant": "wyrmskull-spear-jabs",
+    "effectEmitter": "tip",
     "requirements": {
       "int": 10
     },

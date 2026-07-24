@@ -3613,5 +3613,27 @@
     "override": null,
     "salvoMode": "parallel",
     "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-wyrmskull-reliquary",
+    "name": "Wyrmskull Reliquary",
+    "sprite": "x2-wyrmskull-reliquary",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 40.6
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 200,
+        "y": 56
+      }
+    ],
+    "override": "The release cone originates inside the registered open wyrm mouth; the closed silhouette cannot expose that aperture to alpha derivation.",
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
   }
 ]

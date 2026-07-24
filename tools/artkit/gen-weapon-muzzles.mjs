@@ -158,7 +158,8 @@ const ranged = Object.values(WEAPONS)
       weapon.beam ||
       weapon.cast ||
       weapon.hybridProjectile ||
-      weapon.impactMuzzle,
+      weapon.impactMuzzle ||
+      weapon.firingFrame,
   )
   .sort((left, right) => left.id.localeCompare(right.id));
 

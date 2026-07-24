@@ -190,7 +190,7 @@ import {
 } from "../settings.js";
 import { CARD_ART_IDS } from "../sprites/card-manifest.js";
 import { gearClickVisibilityNotice } from "../sprites/gear-parts.js";
-import { SPRITES } from "../sprites/manifest.js";
+import { SPRITES, type SpriteManifest } from "../sprites/manifest.js";
 import { loadPetPartsManifest, type PetPartsManifest } from "../sprites/pet-parts.js";
 import {
   nextPoseShowroomOption,
@@ -1925,7 +1925,8 @@ export class ArenaScene extends Phaser.Scene {
       // §13 the +300 EXPANSION weapons (id `x2-…`) are held OUT of the atlas + gated: not boot-loaded (they'd
       // bloat VRAM). Only a CURATED one (expansion flag cleared) boot-loads its loose parts — SpriteRig then
       // falls back to the per-part texture since it isn't in the atlas. Everything non-expansion is in the atlas.
-      if (!manifest.id.startsWith("x2-") || WEAPONS[manifest.id]?.expansion) continue;
+      const owningWeaponId = (manifest as SpriteManifest).frameVariant?.base ?? manifest.id;
+      if (!owningWeaponId.startsWith("x2-") || WEAPONS[owningWeaponId]?.expansion) continue;
       for (const part of manifest.parts) {
         this.load.image(`${manifest.id}:${part.role}`, `sprites/${manifest.id}/${part.file}`);
       }
@@ -3365,6 +3366,8 @@ export class ArenaScene extends Phaser.Scene {
         !!offhandDef &&
         !!offhandManifest &&
         !this.failedArt.has(offhandSpriteId);
+      const firingFrameSpriteId = def?.firingFrame ?? "";
+      const offhandFiringFrameSpriteId = offhandDef?.firingFrame ?? "";
       const identitiesStable =
         previousWeaponId === player.weapon && previousOffhandWeaponId === offhandWeaponId;
       const heldLeadMatches = rig.heldWeaponDef(0)?.id === player.weapon;
@@ -3381,6 +3384,8 @@ export class ArenaScene extends Phaser.Scene {
         (!heldLeadMatches || !heldOffMatches) &&
         (rig.weaponSwapPending ||
           this.pendingArt.has(spriteId) ||
+          (!!firingFrameSpriteId && this.pendingArt.has(firingFrameSpriteId)) ||
+          (!!offhandFiringFrameSpriteId && this.pendingArt.has(offhandFiringFrameSpriteId)) ||
           (!!offhandWeaponId && this.pendingArt.has(offhandSpriteId)));
       if (offhandWeaponId) {
         rig.setDualWieldBaseSeq(player.dualWield?.pairBaseSeq ?? 0);
@@ -3404,6 +3409,10 @@ export class ArenaScene extends Phaser.Scene {
       if (def && manifest && !this.failedArt.has(spriteId)) {
         // §13 v0.104 expansion art loads on demand for BOTH linked rows. The rig converges only once every
         // required hand is ready, so a lazy off-hand cannot accidentally complete the draw as a single stance.
+        const firingFrameArtReady =
+          !firingFrameSpriteId || this.ensureWeaponArt(firingFrameSpriteId);
+        const offhandFiringFrameArtReady =
+          !offhandFiringFrameSpriteId || this.ensureWeaponArt(offhandFiringFrameSpriteId);
         const offhandArtReady =
           !offhandWeaponId ||
           !offhandDef ||
@@ -3417,7 +3426,11 @@ export class ArenaScene extends Phaser.Scene {
           rig.unequip(def, true);
           return;
         }
-        if (!offhandArtReady) {
+        if (!firingFrameArtReady) {
+          rig.unequip(def, true);
+          return;
+        }
+        if (!offhandArtReady || !offhandFiringFrameArtReady) {
           rig.unequip(def, true);
           return;
         }
@@ -3472,6 +3485,7 @@ export class ArenaScene extends Phaser.Scene {
     room.state.players.forEach((player, id) => {
       const rig = this.blobs.get(id);
       if (!rig) return;
+      rig.setAuthoritativeAttackClock(player.attackTick, room.state.tick);
       const seq = player.attackSeq >>> 0;
       const previous = this.lastAttackSeq.get(id);
       const previousHeld = this.lastAttackHeld.get(id);
@@ -10354,7 +10368,7 @@ export class ArenaScene extends Phaser.Scene {
     if (!weapon?.warp) {
       this.localPredictedAttackSeq = (this.localPredictedAttackSeq + 1) >>> 0;
       this.localPredictedAttackAtMs = this.time.now;
-      rig?.setAttackBeat(this.localPredictedAttackSeq, true, this.time.now);
+      rig?.setAttackBeat(this.localPredictedAttackSeq, true, this.time.now, false);
     }
     // §20 WYSIWYG: freeze the aim at swing-start so the blade sweeps the SAME arc the server's swept hitbox
     // uses. Guns don't melee-swing — the shot is the muzzle flash.

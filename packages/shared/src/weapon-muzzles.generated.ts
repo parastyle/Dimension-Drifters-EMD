@@ -3760,5 +3760,28 @@ export const WEAPON_ART_MUZZLES = {
     ],
     "salvoMode": "parallel",
     "barrelMode": "parallel"
+  },
+  "x2-wyrmskull-reliquary": {
+    "sprite": "x2-wyrmskull-reliquary",
+    "parts": [
+      {
+        "width": 256,
+        "height": 79
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 200,
+        "y": 56,
+        "derived": {
+          "x": 255,
+          "y": 40.6
+        },
+        "overrideReason": "The release cone originates inside the registered open wyrm mouth; the closed silhouette cannot expose that aperture to alpha derivation."
+      }
+    ],
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
   }
 } as const satisfies Readonly<Record<string, WeaponArtMuzzleDefinition>>;
