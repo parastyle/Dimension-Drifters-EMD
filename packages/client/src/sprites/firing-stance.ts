@@ -3,8 +3,51 @@ import { isWornWeapon, type WeaponDef, weaponHasHandlingTag } from "@dd/shared";
 /** Hand-target coordinates are body-height ratios in rig-local space; negative Y is upward. */
 export const FIRING_FACE_LINE_Y = -0.22;
 export const FIST_GUN_CHEST_CAP_Y = -0.17;
-/** Small local-space downward nod; the mirrored root reverses it for the opposite facing. */
-export const GUN_HEAD_NOD_RAD = 0.055;
+/** Combat-scale cheek-weld tuning in rig-local pixels/radians. The full 18 px drop is about 20% of
+ * proto-cowboy-hidden-face's rendered head height; short guns retain half that shoulder dip. */
+export const GUN_HEAD_DROP_PX = {
+  short: 9,
+  sightedLong: 18,
+} as const;
+export const GUN_HEAD_NOD_RAD = {
+  short: 0.07,
+  sightedLong: 0.11,
+} as const;
+
+export type GunCheekWeldClass = keyof typeof GUN_HEAD_DROP_PX;
+
+export interface GunCheekWeldPose {
+  readonly weaponClass: GunCheekWeldClass;
+  readonly dropPx: number;
+  readonly nodRad: number;
+}
+
+const GUN_CHEEK_WELD_POSES: Readonly<Record<GunCheekWeldClass, GunCheekWeldPose>> = {
+  short: {
+    weaponClass: "short",
+    dropPx: GUN_HEAD_DROP_PX.short,
+    nodRad: GUN_HEAD_NOD_RAD.short,
+  },
+  sightedLong: {
+    weaponClass: "sightedLong",
+    dropPx: GUN_HEAD_DROP_PX.sightedLong,
+    nodRad: GUN_HEAD_NOD_RAD.sightedLong,
+  },
+};
+
+/**
+ * Catalog-to-aiming-fiction mapping for the visible cheek weld. Rifle-family and railgun art has a
+ * sighted long-barrel silhouette; `handling:bolt` also promotes sniper/anti-materiel definitions whose
+ * family is broader (for example heavy ordnance). All other guns use the compact/hip-fire half profile.
+ */
+export function gunCheekWeldPoseFor(def: WeaponDef | undefined): GunCheekWeldPose | undefined {
+  if (!def?.gun) return undefined;
+  const sightedLong =
+    /(?:^|-)rifle$/i.test(def.tags.family) ||
+    /^railgun$/i.test(def.tags.family) ||
+    weaponHasHandlingTag(def, "bolt");
+  return GUN_CHEEK_WELD_POSES[sightedLong ? "sightedLong" : "short"];
+}
 
 export type FiringStanceFamily =
   | "pistol"

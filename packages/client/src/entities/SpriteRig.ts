@@ -120,7 +120,7 @@ import {
   firingHandTarget,
   firingStanceFor,
   fistGunShotHandOffset,
-  GUN_HEAD_NOD_RAD,
+  gunCheekWeldPoseFor,
   usesAimedFiringStance,
 } from "../sprites/firing-stance.js";
 import {
@@ -9494,7 +9494,9 @@ export class SpriteRig {
     let activeNamedStance: NamedWeaponStance | undefined;
     const leadFiringStance = this.weaponDef ? firingStanceFor(this.weaponDef) : undefined;
     const hasAimedFiringWeapon = this.weapons.some((weapon) => usesAimedFiringStance(weapon.def));
-    const hasGunHeld = this.weapons.some((weapon) => weapon.def.gun !== undefined);
+    const heldGunDef = this.weapons.find((weapon) => weapon.def.gun !== undefined)?.def;
+    const hasGunHeld = heldGunDef !== undefined;
+    const gunCheekWeldPose = gunCheekWeldPoseFor(heldGunDef);
     this.orbitT = -1; // §40 re-armed below only while an orbit-style swing window is live
     this.orbitSpin = false;
     this.swingOffX = 0;
@@ -12222,10 +12224,14 @@ export class SpriteRig {
       landed,
       movementPose.headBobPx,
     );
-    if (hasGunHeld && this.boilerplateHead) {
+    if (hasGunHeld && gunCheekWeldPose && this.boilerplateHead) {
       const determinantSign =
         this.boilerplateHead.scaleX * this.boilerplateHead.scaleY < 0 ? -1 : 1;
-      this.boilerplateHead.rotation += determinantSign * GUN_HEAD_NOD_RAD * rangedAimBlend;
+      // Apply the catalog-scaled drop after the floating-head spring has resolved, then let the existing
+      // gear pass inherit the same final head transform. rangedAimBlend provides the authored smooth
+      // raise/lower envelope, and determinantSign keeps the nod visually downward through either facing.
+      this.boilerplateHead.y += gunCheekWeldPose.dropPx * rangedAimBlend;
+      this.boilerplateHead.rotation += determinantSign * gunCheekWeldPose.nodRad * rangedAimBlend;
     }
     const dashLean =
       this.moveStance === STANCE_DASH

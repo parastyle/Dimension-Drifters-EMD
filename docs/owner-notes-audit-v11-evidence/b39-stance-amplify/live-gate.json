@@ -1,0 +1,614 @@
+{
+  "verdict": "pass",
+  "capturedAt": "2026-07-24T23:44:44.070Z",
+  "character": "proto-cowboy-hidden-face",
+  "cameraZoom": 1.5,
+  "privatePorts": {
+    "client": 65494,
+    "game": 65493,
+    "forbiddenDefaultPortsAvoided": true
+  },
+  "mapping": {
+    "sightedLong": "catalog family ends in -rifle, family is railgun, or tags.handling contains bolt",
+    "short": "all other held guns"
+  },
+  "tuning": {
+    "sightedLong": {
+      "dropPx": 18,
+      "nodRad": 0.11
+    },
+    "short": {
+      "dropPx": 9,
+      "nodRad": 0.07
+    }
+  },
+  "facings": [
+    "right",
+    "left"
+  ],
+  "fixtures": [
+    {
+      "id": "x2-barrett-50-cal-sniper",
+      "label": "Bolt-action rifle",
+      "weaponClass": "sightedLong",
+      "dropPx": 18,
+      "nodRad": 0.11
+    },
+    {
+      "id": "x2-sunbreaker-railgun",
+      "label": "Railgun",
+      "weaponClass": "sightedLong",
+      "dropPx": 18,
+      "nodRad": 0.11
+    },
+    {
+      "id": "x-gun-revolver-cannon",
+      "label": "Pistol",
+      "weaponClass": "short",
+      "dropPx": 9,
+      "nodRad": 0.07
+    }
+  ],
+  "captures": [
+    {
+      "label": "unarmed-idle-right",
+      "weaponId": "fists",
+      "facing": "right",
+      "screenshot": "docs/owner-notes-audit-v11-evidence/b39-stance-amplify/unarmed-idle-right.png",
+      "snapshot": {
+        "character": "proto-cowboy-hidden-face",
+        "authorityWeapon": "fists",
+        "renderedWeapon": "fists",
+        "family": "fist",
+        "handling": [],
+        "facingValue": 1,
+        "facingBlend": 0.997902004301802,
+        "localDropPx": 0,
+        "screenDropPx": 0,
+        "localHeadHeightPx": 93.1975225796127,
+        "dropAsHeadHeight": 0,
+        "nodDeltaRad": 0,
+        "head": {
+          "x": 7.933125042154303,
+          "y": -95.31857792673114,
+          "springY": -95.31857792673114,
+          "rotation": 0.0029375900571082525,
+          "baseRotation": 0.0029375900571082525,
+          "visible": true,
+          "bounds": {
+            "left": 2361.3398932302953,
+            "right": 2449.1469231759547,
+            "top": 2325.8736568753084,
+            "bottom": 2387.8597415621916,
+            "width": 87.80702994565945,
+            "height": 61.98608468688326,
+            "centerX": 2405.243408203125,
+            "centerY": 2356.86669921875
+          }
+        },
+        "body": {
+          "x": 0.9119998202894687,
+          "y": -1.7978792987954002,
+          "rotation": 0.0029375900571082525,
+          "bounds": {
+            "left": 2372.2039550843183,
+            "right": 2429.0016113219317,
+            "top": 2393.0565790701658,
+            "bottom": 2444.5615849923342,
+            "width": 56.79765623761341,
+            "height": 51.50500592216849,
+            "centerX": 2400.602783203125,
+            "centerY": 2418.80908203125
+          }
+        },
+        "weapon": null,
+        "flourishActive": false,
+        "cameraZoom": 1.5
+      }
+    },
+    {
+      "label": "unarmed-idle-left",
+      "weaponId": "fists",
+      "facing": "left",
+      "screenshot": "docs/owner-notes-audit-v11-evidence/b39-stance-amplify/unarmed-idle-left.png",
+      "snapshot": {
+        "character": "proto-cowboy-hidden-face",
+        "authorityWeapon": "fists",
+        "renderedWeapon": "fists",
+        "family": "fist",
+        "handling": [],
+        "facingValue": -1,
+        "facingBlend": -0.9999035699631644,
+        "localDropPx": 0,
+        "screenDropPx": 0,
+        "localHeadHeightPx": 90.15422457265454,
+        "dropAsHeadHeight": 0,
+        "nodDeltaRad": 0,
+        "head": {
+          "x": 7.147972330955296,
+          "y": -88.95387173334632,
+          "springY": -88.95387173334632,
+          "rotation": -1.7431034393666778e-10,
+          "baseRotation": -1.7431034393666778e-10,
+          "visible": true,
+          "bounds": {
+            "left": 2350.377208898228,
+            "right": 2440.155017664272,
+            "top": 2331.225923172755,
+            "bottom": 2390.938627608495,
+            "width": 89.77780876604356,
+            "height": 59.71270443574031,
+            "centerX": 2395.26611328125,
+            "centerY": 2361.082275390625
+          }
+        },
+        "body": {
+          "x": 0.912,
+          "y": 1.2145819884144562,
+          "rotation": -1.7431034393666778e-10,
+          "bounds": {
+            "left": 2370.3769063906307,
+            "right": 2428.4150857968693,
+            "top": 2395.973417753883,
+            "bottom": 2445.635468964867,
+            "width": 58.03817940623867,
+            "height": 49.66205121098392,
+            "centerX": 2399.39599609375,
+            "centerY": 2420.804443359375
+          }
+        },
+        "weapon": null,
+        "flourishActive": false,
+        "cameraZoom": 1.5
+      }
+    },
+    {
+      "label": "x2-barrett-50-cal-sniper-right",
+      "weaponId": "x2-barrett-50-cal-sniper",
+      "facing": "right",
+      "screenshot": "docs/owner-notes-audit-v11-evidence/b39-stance-amplify/x2-barrett-50-cal-sniper-right.png",
+      "snapshot": {
+        "character": "proto-cowboy-hidden-face",
+        "authorityWeapon": "x2-barrett-50-cal-sniper",
+        "renderedWeapon": "x2-barrett-50-cal-sniper",
+        "family": "marksman-rifle",
+        "handling": [
+          "bolt"
+        ],
+        "facingValue": 1,
+        "facingBlend": 0.9998617342250349,
+        "localDropPx": 18,
+        "screenDropPx": 17.88316636094257,
+        "localHeadHeightPx": 88.40548637109141,
+        "dropAsHeadHeight": 0.20360727301972062,
+        "nodDeltaRad": 0.10999999999999943,
+        "head": {
+          "x": 14.70074166877153,
+          "y": -68.75771046239416,
+          "springY": -86.75771046239416,
+          "rotation": 0.17999999999999972,
+          "baseRotation": 0.07000000000000028,
+          "visible": true,
+          "bounds": {
+            "left": 2359.7689153142273,
+            "right": 2459.7047174982727,
+            "top": 2337.515927227214,
+            "bottom": 2411.402041522786,
+            "width": 99.93580218404531,
+            "height": 73.88611429557204,
+            "centerX": 2409.73681640625,
+            "centerY": 2374.458984375
+          }
+        },
+        "body": {
+          "x": 2.128,
+          "y": 2.9460059503573968,
+          "rotation": 0.07000000000000028,
+          "bounds": {
+            "left": 2370.389471448958,
+            "right": 2432.429376207292,
+            "top": 2395.6058897972107,
+            "bottom": 2448.2964539527893,
+            "width": 62.03990475833416,
+            "height": 52.69056415557861,
+            "centerX": 2401.409423828125,
+            "centerY": 2421.951171875
+          }
+        },
+        "weapon": {
+          "x": 20.520000000000003,
+          "y": -9.12,
+          "rotation": 0,
+          "bounds": {
+            "left": 2364.09130859375,
+            "right": 2562.09130859375,
+            "top": 2390.19947265625,
+            "bottom": 2427.32447265625,
+            "width": 198,
+            "height": 37.125,
+            "centerX": 2463.09130859375,
+            "centerY": 2408.76197265625
+          },
+          "headBottomClearancePx": -21.20256886653624,
+          "headCenterAboveWeaponCenterPx": 34.30298828124978
+        },
+        "flourishActive": false,
+        "cameraZoom": 1.5
+      },
+      "contrastScreenshot": "docs/owner-notes-audit-v11-evidence/b39-stance-amplify/x2-barrett-50-cal-sniper-right--vs-unarmed.png"
+    },
+    {
+      "label": "x2-barrett-50-cal-sniper-left",
+      "weaponId": "x2-barrett-50-cal-sniper",
+      "facing": "left",
+      "screenshot": "docs/owner-notes-audit-v11-evidence/b39-stance-amplify/x2-barrett-50-cal-sniper-left.png",
+      "snapshot": {
+        "character": "proto-cowboy-hidden-face",
+        "authorityWeapon": "x2-barrett-50-cal-sniper",
+        "renderedWeapon": "x2-barrett-50-cal-sniper",
+        "family": "marksman-rifle",
+        "handling": [
+          "bolt"
+        ],
+        "facingValue": -1,
+        "facingBlend": -0.9998821588255572,
+        "localDropPx": 18,
+        "screenDropPx": 17.88316636094257,
+        "localHeadHeightPx": 90.3493558707663,
+        "dropAsHeadHeight": 0.1992266555363914,
+        "nodDeltaRad": 0.10999999999999943,
+        "head": {
+          "x": 14.76834867312724,
+          "y": -74.17063642766212,
+          "springY": -92.17063642766212,
+          "rotation": 0.17999999999999972,
+          "baseRotation": 0.07000000000000028,
+          "visible": true,
+          "bounds": {
+            "left": 2340.7559175007045,
+            "right": 2439.6806059367955,
+            "top": 2333.4103432148695,
+            "bottom": 2408.3372153788805,
+            "width": 98.92468843609095,
+            "height": 74.926872164011,
+            "centerX": 2390.21826171875,
+            "centerY": 2370.873779296875
+          }
+        },
+        "body": {
+          "x": 2.128,
+          "y": 1.0213826833525583,
+          "rotation": 0.07000000000000028,
+          "bounds": {
+            "left": 2367.9400998950005,
+            "right": 2429.2410524487495,
+            "top": 2393.8256757855415,
+            "bottom": 2447.5273515582085,
+            "width": 61.300952553749084,
+            "height": 53.70167577266693,
+            "centerX": 2398.590576171875,
+            "centerY": 2420.676513671875
+          }
+        },
+        "weapon": {
+          "x": 20.520000000000003,
+          "y": -9.119999999999997,
+          "rotation": 0,
+          "bounds": {
+            "left": 2237.90869140625,
+            "right": 2435.90869140625,
+            "top": 2390.19947265625,
+            "bottom": 2427.32447265625,
+            "width": 198,
+            "height": 37.125,
+            "centerX": 2336.90869140625,
+            "centerY": 2408.76197265625
+          },
+          "headBottomClearancePx": -18.13774272263072,
+          "headCenterAboveWeaponCenterPx": 37.88819335937478
+        },
+        "flourishActive": false,
+        "cameraZoom": 1.5
+      },
+      "contrastScreenshot": "docs/owner-notes-audit-v11-evidence/b39-stance-amplify/x2-barrett-50-cal-sniper-left--vs-unarmed.png"
+    },
+    {
+      "label": "x2-sunbreaker-railgun-right",
+      "weaponId": "x2-sunbreaker-railgun",
+      "facing": "right",
+      "screenshot": "docs/owner-notes-audit-v11-evidence/b39-stance-amplify/x2-sunbreaker-railgun-right.png",
+      "snapshot": {
+        "character": "proto-cowboy-hidden-face",
+        "authorityWeapon": "x2-sunbreaker-railgun",
+        "renderedWeapon": "x2-sunbreaker-railgun",
+        "family": "railgun",
+        "handling": [],
+        "facingValue": 1,
+        "facingBlend": 0.9998560972479396,
+        "localDropPx": 18,
+        "screenDropPx": 17.88316636094257,
+        "localHeadHeightPx": 93.94037765914396,
+        "dropAsHeadHeight": 0.19161089670420245,
+        "nodDeltaRad": 0.10999999999999943,
+        "head": {
+          "x": 14.830622131187903,
+          "y": -80.76454725872689,
+          "springY": -98.76454725872689,
+          "rotation": 0.17999999999999972,
+          "baseRotation": 0.07000000000000028,
+          "visible": true,
+          "bounds": {
+            "left": 2361.294597815722,
+            "right": 2458.351398278028,
+            "top": 2328.081579450518,
+            "bottom": 2404.931115861982,
+            "width": 97.05680046230555,
+            "height": 76.84953641146421,
+            "centerX": 2409.822998046875,
+            "centerY": 2366.50634765625
+          }
+        },
+        "body": {
+          "x": 2.128,
+          "y": -2.5340844338530393,
+          "rotation": 0.07000000000000028,
+          "bounds": {
+            "left": 2371.441500119865,
+            "right": 2431.377347536385,
+            "top": 2390.5367571115494,
+            "bottom": 2446.1063092947006,
+            "width": 59.93584741652012,
+            "height": 55.569552183151245,
+            "centerX": 2401.409423828125,
+            "centerY": 2418.321533203125
+          }
+        },
+        "weapon": {
+          "x": 20.520000000000003,
+          "y": -9.12,
+          "rotation": 0,
+          "bounds": {
+            "left": 2334.39130859375,
+            "right": 2554.39130859375,
+            "top": 2386.89775390625,
+            "bottom": 2427.28837890625,
+            "width": 220,
+            "height": 40.390625,
+            "centerX": 2444.39130859375,
+            "centerY": 2407.09306640625
+          },
+          "headBottomClearancePx": -18.03336195573229,
+          "headCenterAboveWeaponCenterPx": 40.58671874999982
+        },
+        "flourishActive": false,
+        "cameraZoom": 1.5
+      },
+      "contrastScreenshot": "docs/owner-notes-audit-v11-evidence/b39-stance-amplify/x2-sunbreaker-railgun-right--vs-unarmed.png"
+    },
+    {
+      "label": "x2-sunbreaker-railgun-left",
+      "weaponId": "x2-sunbreaker-railgun",
+      "facing": "left",
+      "screenshot": "docs/owner-notes-audit-v11-evidence/b39-stance-amplify/x2-sunbreaker-railgun-left.png",
+      "snapshot": {
+        "character": "proto-cowboy-hidden-face",
+        "authorityWeapon": "x2-sunbreaker-railgun",
+        "renderedWeapon": "x2-sunbreaker-railgun",
+        "family": "railgun",
+        "handling": [],
+        "facingValue": -1,
+        "facingBlend": -0.999879831161846,
+        "localDropPx": 18,
+        "screenDropPx": 17.88316636094257,
+        "localHeadHeightPx": 93.83784064199143,
+        "dropAsHeadHeight": 0.19182027076553584,
+        "nodDeltaRad": 0.10999999999999943,
+        "head": {
+          "x": 14.825372356370268,
+          "y": -78.48357752412079,
+          "springY": -96.48357752412079,
+          "rotation": 0.17999999999999972,
+          "baseRotation": 0.07000000000000028,
+          "visible": true,
+          "bounds": {
+            "left": 2341.625598002225,
+            "right": 2438.735730122775,
+            "top": 2329.620015574619,
+            "bottom": 2406.414652394131,
+            "width": 97.11013212054968,
+            "height": 76.79463681951165,
+            "centerX": 2390.1806640625,
+            "centerY": 2368.017333984375
+          }
+        },
+        "body": {
+          "x": 2.128,
+          "y": -2.4325626346921427,
+          "rotation": 0.07000000000000028,
+          "bounds": {
+            "left": 2368.603164561093,
+            "right": 2428.577987782657,
+            "top": 2390.630808055401,
+            "bottom": 2446.147023975849,
+            "width": 59.97482322156429,
+            "height": 55.5162159204483,
+            "centerX": 2398.590576171875,
+            "centerY": 2418.388916015625
+          }
+        },
+        "weapon": {
+          "x": 20.520000000000003,
+          "y": -9.119999999999997,
+          "rotation": 0,
+          "bounds": {
+            "left": 2245.60869140625,
+            "right": 2465.60869140625,
+            "top": 2386.89775390625,
+            "bottom": 2427.28837890625,
+            "width": 220,
+            "height": 40.390625,
+            "centerX": 2355.60869140625,
+            "centerY": 2407.09306640625
+          },
+          "headBottomClearancePx": -19.516898487881008,
+          "headCenterAboveWeaponCenterPx": 39.07573242187482
+        },
+        "flourishActive": false,
+        "cameraZoom": 1.5
+      },
+      "contrastScreenshot": "docs/owner-notes-audit-v11-evidence/b39-stance-amplify/x2-sunbreaker-railgun-left--vs-unarmed.png"
+    },
+    {
+      "label": "x-gun-revolver-cannon-right",
+      "weaponId": "x-gun-revolver-cannon",
+      "facing": "right",
+      "screenshot": "docs/owner-notes-audit-v11-evidence/b39-stance-amplify/x-gun-revolver-cannon-right.png",
+      "snapshot": {
+        "character": "proto-cowboy-hidden-face",
+        "authorityWeapon": "x-gun-revolver-cannon",
+        "renderedWeapon": "x-gun-revolver-cannon",
+        "family": "pistol",
+        "handling": [
+          "pistol",
+          "revolver"
+        ],
+        "facingValue": 1,
+        "facingBlend": 0.9998671822698197,
+        "localDropPx": 9,
+        "screenDropPx": 8.941583180471286,
+        "localHeadHeightPx": 91.07264567677966,
+        "dropAsHeadHeight": 0.09882220872270855,
+        "nodDeltaRad": 0.07000000000000027,
+        "head": {
+          "x": 11.967813687797928,
+          "y": -81.44070327764491,
+          "springY": -90.44070327764491,
+          "rotation": 0.120000000000001,
+          "baseRotation": 0.05000000000000071,
+          "visible": true,
+          "bounds": {
+            "left": 2360.0417733713984,
+            "right": 2455.8117422536016,
+            "top": 2330.77640568465,
+            "bottom": 2401.34078181535,
+            "width": 95.7699688822031,
+            "height": 70.56437613070011,
+            "centerX": 2407.9267578125,
+            "centerY": 2366.05859375
+          }
+        },
+        "body": {
+          "x": 1.52,
+          "y": 0.3052541625472547,
+          "rotation": 0.05000000000000071,
+          "bounds": {
+            "left": 2370.960030261427,
+            "right": 2431.053641613573,
+            "top": 2393.708654999733,
+            "bottom": 2446.695641875267,
+            "width": 60.09361135214567,
+            "height": 52.98698687553406,
+            "centerX": 2401.0068359375,
+            "centerY": 2420.2021484375
+          }
+        },
+        "weapon": {
+          "x": 26.22,
+          "y": -6.08,
+          "rotation": 0,
+          "bounds": {
+            "left": 2402.326455078125,
+            "right": 2496.326455078125,
+            "top": 2391.004150390625,
+            "bottom": 2440.941650390625,
+            "width": 94,
+            "height": 49.9375,
+            "centerX": 2449.326455078125,
+            "centerY": 2415.972900390625
+          },
+          "headBottomClearancePx": -10.336631424725056,
+          "headCenterAboveWeaponCenterPx": 49.914306640625
+        },
+        "flourishActive": false,
+        "cameraZoom": 1.5
+      },
+      "contrastScreenshot": "docs/owner-notes-audit-v11-evidence/b39-stance-amplify/x-gun-revolver-cannon-right--vs-unarmed.png"
+    },
+    {
+      "label": "x-gun-revolver-cannon-left",
+      "weaponId": "x-gun-revolver-cannon",
+      "facing": "left",
+      "screenshot": "docs/owner-notes-audit-v11-evidence/b39-stance-amplify/x-gun-revolver-cannon-left.png",
+      "snapshot": {
+        "character": "proto-cowboy-hidden-face",
+        "authorityWeapon": "x-gun-revolver-cannon",
+        "renderedWeapon": "x-gun-revolver-cannon",
+        "family": "pistol",
+        "handling": [
+          "pistol",
+          "revolver"
+        ],
+        "facingValue": -1,
+        "facingBlend": -0.9998723850230137,
+        "localDropPx": 9,
+        "screenDropPx": 8.941583180471286,
+        "localHeadHeightPx": 88.60235245376818,
+        "dropAsHeadHeight": 0.10157743841729383,
+        "nodDeltaRad": 0.07000000000000027,
+        "head": {
+          "x": 12.292126104770892,
+          "y": -77.3288755499396,
+          "springY": -86.3288755499396,
+          "rotation": 0.120000000000001,
+          "baseRotation": 0.05000000000000071,
+          "visible": true,
+          "bounds": {
+            "left": 2343.2752288281918,
+            "right": 2440.4415680468082,
+            "top": 2334.216002445668,
+            "bottom": 2403.347962398082,
+            "width": 97.16633921861649,
+            "height": 69.13195995241404,
+            "centerX": 2391.8583984375,
+            "centerY": 2368.781982421875
+          }
+        },
+        "body": {
+          "x": 1.52,
+          "y": 2.7510890368160443,
+          "rotation": 0.05000000000000071,
+          "bounds": {
+            "left": 2368.462621487677,
+            "right": 2429.523706637323,
+            "top": 2395.982402473688,
+            "bottom": 2447.662128776312,
+            "width": 61.061085149645805,
+            "height": 51.67972630262375,
+            "centerX": 2398.9931640625,
+            "centerY": 2421.822265625
+          }
+        },
+        "weapon": {
+          "x": 26.22,
+          "y": -6.079999999999999,
+          "rotation": 0,
+          "bounds": {
+            "left": 2303.673544921875,
+            "right": 2397.673544921875,
+            "top": 2391.004150390625,
+            "bottom": 2440.941650390625,
+            "width": 94,
+            "height": 49.9375,
+            "centerX": 2350.673544921875,
+            "centerY": 2415.972900390625
+          },
+          "headBottomClearancePx": -12.343812007457018,
+          "headCenterAboveWeaponCenterPx": 47.19091796875
+        },
+        "flourishActive": false,
+        "cameraZoom": 1.5
+      },
+      "contrastScreenshot": "docs/owner-notes-audit-v11-evidence/b39-stance-amplify/x-gun-revolver-cannon-left--vs-unarmed.png"
+    }
+  ]
+}
