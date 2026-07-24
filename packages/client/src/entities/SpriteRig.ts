@@ -169,6 +169,7 @@ import {
   createPoseLanguageInput,
   createPoseLanguageSample,
   createPoseVariantSelection,
+  createRevolverHammerBeatSample,
   createWeaponPerformanceInput,
   createWeaponPerformanceSample,
   edgeLeadScaleY,
@@ -201,6 +202,7 @@ import {
   sampleFlourish,
   sampleMovementPosture,
   samplePoseLanguage,
+  sampleRevolverHammerBeat,
   sampleWeaponPerformance,
   shaftMidpointPivotTransform,
   twirlDirectionForBeat,
@@ -210,6 +212,7 @@ import {
   type WeaponFlourishSpec,
   type WeaponPerformanceSpec,
   type WeaponPoseSpec,
+  weaponFlourishPivotFor,
   weaponFlourishSpecFor,
   weaponPerformanceSpecFor,
   weaponPoseSpecFor,
@@ -236,6 +239,11 @@ import {
 } from "./kung-fu-wrap-pose.js";
 
 export { GEAR_PARTS_MANIFEST } from "../sprites/gear-parts.js";
+export {
+  createRevolverHammerBeatSample,
+  revolverHammerBeatDurationMs,
+  sampleRevolverHammerBeat,
+} from "../sprites/pose-language.js";
 
 /** §28 the packed sprite MULTIATLAS key (tools/artkit/pack-atlas.mjs → public/sprites/dd-sprites.json). When
  *  loaded, every non-expansion part lives here as the frame "<id>/<role>", so the WebGL batcher binds ONE
@@ -2374,6 +2382,7 @@ export class SpriteRig {
   };
   private readonly secondaryGripPoint = { x: 0, y: 0 };
   private readonly secondaryGripFlourish: GunHandlingHandOffset = { forward: 0, lateral: 0 };
+  private readonly revolverHammerBeat = createRevolverHammerBeatSample();
   private readonly gunHandlingCycles: [GunHandlingCycleState, GunHandlingCycleState] = [
     createGunHandlingCycleState(),
     createGunHandlingCycleState(),
@@ -4852,6 +4861,9 @@ export class SpriteRig {
       this.hasAttackBeatSeq = true;
       this.attackBeatSeq = beat;
       this.attackBeatWallEpochMs = acceptedWallEpochMs;
+      // A rig may attach after the neutral seq=0 snapshot. If its first observed row is already held,
+      // that row is the first accepted shot, not a baseline to discard: every revolver shot needs a beat.
+      advanced = held;
     } else {
       const advance = (beat - this.attackBeatSeq) >>> 0;
       if (advance > 0 && advance < 0x80000000) {
@@ -5120,9 +5132,21 @@ export class SpriteRig {
         i === 0 && this.tome?.openVisible ? weapon.artGeometry?.open : weapon.artGeometry?.closed;
       const authoredPrimary = resolvedGunGripPoints(weapon.def)?.primary;
       const firingFrame = weapon.firingFrameVisible ? weapon.firingFrame : undefined;
+      const flourish = this.flourishChannels[i as 0 | 1];
+      const flourishPivot = flourish
+        ? weaponFlourishPivotFor(weapon.def, flourish.moment, flourish.active)
+        : undefined;
       weapon.img.setOrigin(
-        firingFrame?.originX ?? authoredPrimary?.x ?? state?.originX ?? weapon.closedOriginX,
-        firingFrame?.originY ?? authoredPrimary?.y ?? state?.originY ?? weapon.closedOriginY,
+        flourishPivot?.x ??
+          firingFrame?.originX ??
+          authoredPrimary?.x ??
+          state?.originX ??
+          weapon.closedOriginX,
+        flourishPivot?.y ??
+          firingFrame?.originY ??
+          authoredPrimary?.y ??
+          state?.originY ??
+          weapon.closedOriginY,
       );
       weapon.semanticRotation = weapon.img.rotation;
       weapon.img.scaleY *= edgeLeadScaleY(weapon.def.performance?.edgeLeadFlip);
@@ -8657,12 +8681,14 @@ export class SpriteRig {
     }
     const flourishClockCut =
       outsidePaperView || rootCut || rawDtMs <= 0 || rawDtMs > JIGGLE_MAX_DT_S * 1000;
+    const preserveEndHookArmThroughAttackIntent =
+      this.weaponDef?.performance?.flourishStyle === "pistol-end-hook" && flourishArmed;
     if (flourishClockCut || this.downed || this.ultimatePhase !== UltimatePhase.Idle) {
       this.resetFlourishState(false, flourishClockCut);
       if (this.downed || this.ultimatePhase !== UltimatePhase.Idle)
         this.comboStageTransition = undefined;
     } else if (
-      flourishAttackIntent ||
+      (flourishAttackIntent && !preserveEndHookArmThroughAttackIntent) ||
       movementOnsetOrHardChange ||
       (flourishArmed && cancellationMoveActive) ||
       (anim.moveStance ?? STANCE_NONE) !== STANCE_NONE
@@ -10334,6 +10360,40 @@ export class SpriteRig {
         this.swingOffY += this.performanceSample.offsetY * TARGET_BODY_H;
         ownFront = Math.max(ownFront, this.performanceSample.ownership);
         if (this.poseTwoHanded) ownBack = Math.max(ownBack, this.performanceSample.ownership);
+        aimRelativePoint(
+          this.performanceSample.bodyForward,
+          this.performanceSample.bodyLateral,
+          heldAimLocal,
+          this.posePoint,
+        );
+        this.body.x += this.posePoint.x * TARGET_BODY_H;
+        this.body.y += this.posePoint.y * TARGET_BODY_H;
+        this.body.rotation += this.performanceSample.bodyTurn;
+        aimRelativePoint(
+          this.performanceSample.frontFootForward,
+          this.performanceSample.frontFootLateral,
+          heldAimLocal,
+          this.posePoint,
+        );
+        this.attackFrontFootX += this.posePoint.x * TARGET_BODY_H;
+        this.attackFrontFootY += this.posePoint.y * TARGET_BODY_H;
+        aimRelativePoint(
+          this.performanceSample.backFootForward,
+          this.performanceSample.backFootLateral,
+          heldAimLocal,
+          this.posePoint,
+        );
+        this.attackBackFootX += this.posePoint.x * TARGET_BODY_H;
+        this.attackBackFootY += this.posePoint.y * TARGET_BODY_H;
+        this.attackFrontFootBlend = Math.max(
+          this.attackFrontFootBlend,
+          this.performanceSample.footBlend,
+        );
+        this.attackBackFootBlend = Math.max(
+          this.attackBackFootBlend,
+          this.performanceSample.footBlend,
+        );
+        ownFeet = Math.max(ownFeet, this.performanceSample.footBlend);
       }
       const twirlAxis = continuousTwirlAxisFor(this.performanceSpec);
       const whirlPhase = continuousWhirlPhase(
@@ -10450,12 +10510,16 @@ export class SpriteRig {
     const idleLeadPistol = weaponHasHandlingTag(this.weapons[0]?.def ?? this.weaponDef, "pistol");
     const idleOffPistol = weaponHasHandlingTag(this.weapons[1]?.def, "pistol");
     const pistolIdleTwirl = idleLeadPistol || idleOffPistol;
+    const endHookFlourishCanOwnIdle =
+      this.weaponDef?.performance?.flourishStyle === "pistol-end-hook" && posePhase === "idle";
     const hardFlourishOwner =
       meleePoseActive ||
       this.closeBladePoseActive ||
       crossfallOwnsFlourish ||
       brace > 0 ||
-      (!hasAimedFiringWeapon && (ownFront > 0.01 || ownBack > 0.01 || ownFeet > 0.01));
+      (!hasAimedFiringWeapon &&
+        !endHookFlourishCanOwnIdle &&
+        (ownFront > 0.01 || ownBack > 0.01 || ownFeet > 0.01));
     const strongerFlourishOwner = hardFlourishOwner || posePhase !== "idle" || rangedAimBlend > 0;
     const activePistolIdleTwirl =
       pistolIdleTwirl &&
@@ -11196,6 +11260,15 @@ export class SpriteRig {
 
     this.applyUltimatePose(timeMs);
 
+    const hammerDef = this.weapons[this.gunRecoilHand]?.def;
+    sampleRevolverHammerBeat(
+      hammerDef,
+      sceneNow - this.gunRecoilAtMs,
+      (hammerDef?.displayLength ?? 0) / (this.baseScale || 1),
+      reducedMotion,
+      this.revolverHammerBeat,
+    );
+
     // Weapon(s): held in hand at the angle computed above (upright at rest → chop on swing).
     for (let i = 0; i < this.weapons.length; i++) {
       const w = this.weapons[i];
@@ -11441,6 +11514,17 @@ export class SpriteRig {
         base * lengthScale * (this.authoredDualWeaponScaleX[i] ?? 1),
         base * thicknessScale * (i === 0 && ownsSwingScale ? weaponThicknessSign : 1),
       );
+      if (i === this.gunRecoilHand && this.revolverHammerBeat.active) {
+        const c = Math.cos(w.img.rotation);
+        const s = Math.sin(w.img.rotation);
+        w.img.x +=
+          c * this.revolverHammerBeat.weaponForward -
+          s * this.revolverHammerBeat.weaponLateral;
+        w.img.y +=
+          s * this.revolverHammerBeat.weaponForward +
+          c * this.revolverHammerBeat.weaponLateral;
+        w.img.rotation += this.revolverHammerBeat.weaponRotationRad;
+      }
       if (i === 0 && this.attackWeaponDepth !== 0) {
         const behind = this.attackWeaponDepth < 0;
         if (behind !== this.orbitBehind) {
@@ -11504,6 +11588,15 @@ export class SpriteRig {
     // Copy the FINAL authored/jiggle/spawn transform. No tween or external caller competes for weapon state.
     this.applyWeaponArtGeometry();
     this.applyComboStageTransition(sceneNow);
+    const revolverWeapon = this.weapons[this.gunRecoilHand];
+    if (revolverWeapon && this.revolverHammerBeat.active) {
+      const c = Math.cos(revolverWeapon.semanticRotation);
+      const s = Math.sin(revolverWeapon.semanticRotation);
+      revolverWeapon.hand.img.x +=
+        c * this.revolverHammerBeat.handForward - s * this.revolverHammerBeat.handLateral;
+      revolverWeapon.hand.img.y +=
+        s * this.revolverHammerBeat.handForward + c * this.revolverHammerBeat.handLateral;
+    }
     // Dual mechanism hands are trigger hands and mechanism hands at once. Every late pose/lift pass has
     // already re-seated held art onto its canonical aimed hand, so displace only the rendered hand here:
     // each accepted alternating Sidewinder shot gets an independent lever cycle while both gun/muzzle

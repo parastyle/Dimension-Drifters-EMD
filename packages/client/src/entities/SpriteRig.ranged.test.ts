@@ -429,7 +429,7 @@ describe("SpriteRig V3G grip and mechanism laws", () => {
     const mechanisms = Object.values(WEAPONS).filter(
       (weapon) => gunHandlingMechanismFor(weapon) !== undefined,
     );
-    expect(mechanisms).toHaveLength(31);
+    expect(mechanisms).toHaveLength(30);
     for (const weapon of mechanisms) {
       const rig = Object.create(SpriteRig.prototype) as {
         weapons: Array<{ def: typeof weapon }>;
@@ -525,6 +525,35 @@ describe("SpriteRig V3G grip and mechanism laws", () => {
         fireRateMs,
       );
     }
+  });
+
+  it("presents the first observed held gun beat instead of discarding it as a baseline", async () => {
+    const { SpriteRig } = await import("./SpriteRig.js");
+    const revolver = WEAPONS["x-gun-revolver-cannon"];
+    if (!revolver) throw new Error("missing first-beat revolver fixture");
+    const triggerGunRecoil = vi.fn();
+    const recordAcceptedRangedBeat = vi.fn();
+    const rig = Object.create(SpriteRig.prototype) as any;
+    Object.assign(rig, {
+      scene: { time: { now: 1_000 }, animClock: 1_000 },
+      prevAnimMs: 1_000,
+      weapons: [{ def: revolver }],
+      weaponDef: revolver,
+      hasAttackBeatSeq: false,
+      attackBeatSeq: 0,
+      attackBeatWallEpochMs: -1e9,
+      authoredDualBaseSeqReady: false,
+      tome: undefined,
+      holdRangedAim: vi.fn(),
+      triggerGunRecoil,
+      cancelForAcceptedRangedBeat: vi.fn(),
+      recordAcceptedRangedBeat,
+    });
+
+    rig.setAttackBeat(1, true, 1_000, false);
+
+    expect(triggerGunRecoil).toHaveBeenCalledWith(1_000, 0);
+    expect(recordAcceptedRangedBeat).toHaveBeenCalledWith(0, 1_000);
   });
 });
 

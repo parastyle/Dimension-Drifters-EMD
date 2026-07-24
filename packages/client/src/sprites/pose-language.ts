@@ -1537,6 +1537,84 @@ export const WEAPON_FLOURISH_SPECS: Readonly<Record<WeaponPoseFamily, WeaponFlou
     ),
   });
 
+export const PISTOL_END_HOOK_PIVOT = Object.freeze({ x: 0.073, y: 0.5 });
+
+/** Kunai keeps its thrown pose family, but draw and post-throw reuse the shipped pistol-twirl beats. */
+export const PISTOL_END_HOOK_FLOURISH_SPEC: WeaponFlourishSpec = Object.freeze({
+  ...WEAPON_FLOURISH_SPECS.thrown,
+  draw: WEAPON_FLOURISH_SPECS.pistol.draw,
+  afterAttack: WEAPON_FLOURISH_SPECS.pistol.afterAttack,
+});
+
+export function weaponFlourishPivotFor(
+  def: WeaponDef | undefined,
+  moment: FlourishMoment,
+  active: boolean,
+): Readonly<{ x: number; y: number }> | undefined {
+  return active &&
+    def?.performance?.flourishStyle === "pistol-end-hook" &&
+    (moment === "draw" || moment === "after-attack")
+    ? PISTOL_END_HOOK_PIVOT
+    : undefined;
+}
+
+export interface RevolverHammerBeatSample {
+  active: boolean;
+  weaponRotationRad: number;
+  weaponForward: number;
+  weaponLateral: number;
+  handForward: number;
+  handLateral: number;
+}
+
+export function createRevolverHammerBeatSample(): RevolverHammerBeatSample {
+  return {
+    active: false,
+    weaponRotationRad: 0,
+    weaponForward: 0,
+    weaponLateral: 0,
+    handForward: 0,
+    handLateral: 0,
+  };
+}
+
+/** Preserve every authored cadence while fitting one pull/release silhouette inside each accepted shot. */
+export function revolverHammerBeatDurationMs(fireRateSeconds: number | undefined): number {
+  if (!fireRateSeconds || fireRateSeconds <= 0) return 180;
+  return Math.min(180, Math.max(92, fireRateSeconds * 1000 - 12));
+}
+
+/** Painted-space hammer pulse. The gun rotates around its grip so the rear hammer moves visibly; the
+ * rendered thumb/paired hand then reaches backward and upward without dragging the gun or muzzle with it. */
+export function sampleRevolverHammerBeat(
+  def: WeaponDef | undefined,
+  elapsedMs: number,
+  displayLength: number,
+  reducedMotion: boolean,
+  out: RevolverHammerBeatSample,
+): RevolverHammerBeatSample {
+  out.active = false;
+  out.weaponRotationRad = 0;
+  out.weaponForward = 0;
+  out.weaponLateral = 0;
+  out.handForward = 0;
+  out.handLateral = 0;
+  if (!def?.gun || !weaponHasHandlingTag(def, "revolver") || elapsedMs < 0) return out;
+  const durationMs = revolverHammerBeatDurationMs(def.gun.fireRate);
+  if (elapsedMs >= durationMs) return out;
+  const q = clamp01(elapsedMs / durationMs);
+  const cock = q <= 0.38 ? smoothstep01(q / 0.38) : 1 - smoothstep01((q - 0.38) / 0.62);
+  const motionScale = reducedMotion ? 0.38 : 1;
+  const pairedScale = def.dual ? 1 : 0.55;
+  out.active = true;
+  out.weaponRotationRad = -0.14 * cock * motionScale;
+  out.weaponForward = -displayLength * 0.025 * cock * motionScale;
+  out.weaponLateral = -displayLength * 0.018 * cock * motionScale;
+  out.handForward = -displayLength * 0.12 * pairedScale * cock * motionScale;
+  out.handLateral = -displayLength * 0.09 * pairedScale * cock * motionScale;
+  return out;
+}
+
 function retimeBeat(
   beat: FlourishBeatSpec,
   durationMs: number,
@@ -1918,6 +1996,8 @@ export function bladeSizeClassFor(def: WeaponDef): BladeSizeClass {
 }
 
 export function weaponFlourishSpecFor(def: WeaponDef): WeaponFlourishSpec {
+  if (def.performance?.flourishStyle === "pistol-end-hook")
+    return PISTOL_END_HOOK_FLOURISH_SPEC;
   const family = weaponPoseFamilyFor(def);
   let spec = WEAPON_FLOURISH_SPECS[family];
   if (family === "two-hand-sword") spec = SIZED_SWORD_FLOURISH_SPECS[bladeSizeClassFor(def)];
@@ -2247,6 +2327,14 @@ export interface WeaponPerformanceSample {
   ownership: number;
   wholeBodyRotation: number;
   wholeBodyLift: number;
+  bodyForward: number;
+  bodyLateral: number;
+  bodyTurn: number;
+  frontFootForward: number;
+  frontFootLateral: number;
+  backFootForward: number;
+  backFootLateral: number;
+  footBlend: number;
 }
 
 export function weaponPerformanceSpecFor(
@@ -2285,6 +2373,14 @@ export function createWeaponPerformanceSample(): WeaponPerformanceSample {
     ownership: 0,
     wholeBodyRotation: 0,
     wholeBodyLift: 0,
+    bodyForward: 0,
+    bodyLateral: 0,
+    bodyTurn: 0,
+    frontFootForward: 0,
+    frontFootLateral: 0,
+    backFootForward: 0,
+    backFootLateral: 0,
+    footBlend: 0,
   };
 }
 
@@ -2303,6 +2399,14 @@ function clearWeaponPerformanceSample(out: WeaponPerformanceSample): void {
   out.ownership = 0;
   out.wholeBodyRotation = 0;
   out.wholeBodyLift = 0;
+  out.bodyForward = 0;
+  out.bodyLateral = 0;
+  out.bodyTurn = 0;
+  out.frontFootForward = 0;
+  out.frontFootLateral = 0;
+  out.backFootForward = 0;
+  out.backFootLateral = 0;
+  out.footBlend = 0;
 }
 
 /**
@@ -2385,6 +2489,26 @@ export function sampleWeaponPerformance(
     default:
       break;
   }
+  if (spec.throwStyle === "engaged" && input.phase === "idle") {
+    const cosine = Math.cos(input.aimLocal);
+    const sine = Math.sin(input.aimLocal);
+    const readyForward = 0.13;
+    const readyLateral = -0.2;
+    angle = input.aimLocal - 0.48;
+    handX = cosine * readyForward - sine * readyLateral;
+    handY = sine * readyForward + cosine * readyLateral - 0.035;
+    out.backHandX = cosine * 0.07 - sine * 0.14;
+    out.backHandY = sine * 0.07 + cosine * 0.14 - 0.035;
+    out.backHandBlend = 0.94;
+    out.bodyForward = 0.018;
+    out.bodyLateral = -0.018;
+    out.bodyTurn = -0.065;
+    out.frontFootForward = 0.075;
+    out.frontFootLateral = 0.085;
+    out.backFootForward = -0.095;
+    out.backFootLateral = -0.09;
+    out.footBlend = 0.72;
+  }
   if (spec.carryAngleRad !== undefined && spec.hold !== "upright") angle = spec.carryAngleRad;
   const restAngle = angle;
   const restHandX = handX;
@@ -2427,18 +2551,79 @@ export function sampleWeaponPerformance(
       actionOwn = 1 - settle;
     }
   } else if (spec.action === "throw-release" && input.phase !== "idle") {
+    const engaged = spec.throwStyle === "engaged";
     const wind = input.phase === "anticipation";
     const release = input.phase === "active";
     const e = smoothstep01(phaseT);
-    const forward = wind ? mix(0.1, -0.3, e) : release ? mix(-0.3, 0.46, e) : mix(0.46, 0.12, e);
-    const lateral = wind ? mix(0.08, 0.15, e) : release ? mix(0.15, 0.035, e) : mix(0.035, 0.08, e);
+    const forward = engaged
+      ? wind
+        ? mix(0.13, -0.38, e)
+        : release
+          ? mix(-0.38, 0.52, e)
+          : mix(0.52, 0.13, e)
+      : wind
+        ? mix(0.1, -0.3, e)
+        : release
+          ? mix(-0.3, 0.46, e)
+          : mix(0.46, 0.12, e);
+    const lateral = engaged
+      ? wind
+        ? mix(-0.16, 0.23, e)
+        : release
+          ? mix(0.23, 0.02, e)
+          : mix(0.02, -0.16, e)
+      : wind
+        ? mix(0.08, 0.15, e)
+        : release
+          ? mix(0.15, 0.035, e)
+          : mix(0.035, 0.08, e);
     const cosine = Math.cos(input.aimLocal);
     const sine = Math.sin(input.aimLocal);
     handX = cosine * forward - sine * lateral;
     handY = sine * forward + cosine * lateral - 0.04;
-    out.backHandX = cosine * forward + sine * lateral;
-    out.backHandY = sine * forward - cosine * lateral - 0.04;
+    const supportForward = engaged
+      ? wind
+        ? mix(0.05, 0.18, e)
+        : release
+          ? mix(0.18, -0.14, e)
+          : mix(-0.14, 0.07, e)
+      : forward;
+    const supportLateral = engaged ? -0.14 : -lateral;
+    out.backHandX = cosine * supportForward - sine * supportLateral;
+    out.backHandY = sine * supportForward + cosine * supportLateral - 0.04;
     out.backHandBlend = 1;
+    if (engaged) {
+      out.bodyForward = wind
+        ? mix(0.018, -0.055, e)
+        : release
+          ? mix(-0.055, 0.105, e)
+          : mix(0.105, 0.018, e);
+      out.bodyLateral = wind
+        ? mix(-0.018, 0.035, e)
+        : release
+          ? mix(0.035, -0.02, e)
+          : mix(-0.02, -0.018, e);
+      out.bodyTurn = wind
+        ? mix(-0.065, -0.2, e)
+        : release
+          ? mix(-0.2, 0.17, e)
+          : mix(0.17, -0.065, e);
+      const stepForward = wind
+        ? mix(0.075, -0.12, e)
+        : release
+          ? mix(-0.12, 0.19, e)
+          : mix(0.19, 0.075, e);
+      const braceForward = wind
+        ? mix(-0.095, 0.055, e)
+        : release
+          ? mix(0.055, -0.15, e)
+          : mix(-0.15, -0.095, e);
+      out.frontFootForward = stepForward;
+      out.frontFootLateral = 0.09;
+      out.backFootForward = braceForward;
+      out.backFootLateral = -0.105;
+      out.footBlend = input.phase === "recovery" ? 1 - e * 0.28 : 0.96;
+    }
     const throwLift = (spec.throwHeightPx ?? 0) / 76;
     const heightEnvelope = wind ? e : release ? 1 : 1 - e;
     handY -= throwLift * heightEnvelope;

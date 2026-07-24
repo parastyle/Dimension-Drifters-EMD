@@ -36,7 +36,7 @@ export type WeaponSizeClass = "short" | "standard" | "long" | "great" | "colossa
 export type WeaponTier = 1 | 2 | 3 | 4 | 5;
 
 /** V3G catalog laws. Authored tags are the only membership source used by presentation code. */
-export type GunHandlingTag = "bolt" | "lever" | "pump" | "pistol";
+export type GunHandlingTag = "bolt" | "lever" | "pump" | "pistol" | "revolver";
 
 /** Normalized point in the weapon sprite's own unmirrored 0..1 bounds. */
 export interface WeaponGripAnchor {
@@ -406,6 +406,10 @@ export interface WeaponPerformanceDef {
   frontflip?: boolean;
   /** Full hand revolutions during a thrown weapon's anticipation/draw phase. */
   preThrowRevolutions?: number;
+  /** Presentation-only whole-art throwing treatment; authoritative delivery remains unchanged. */
+  throwStyle?: "engaged";
+  /** Reuse a shipped flourish vocabulary while retaining this weapon's ordinary pose family. */
+  flourishStyle?: "pistol-end-hook";
   /** Authoritative one-hit sweep performed during a thrown weapon's accepted draw twirl. */
   preThrowDamage?: {
     damage: number;
@@ -859,6 +863,8 @@ export interface WeaponMuzzlePose {
 }
 
 export const WEAPON_MUZZLE_RECOIL_MS = 140;
+export const AUTHORED_DUAL_GUN_VERTICAL_SPLIT_BODY_FRAC = 0.085;
+export const AUTHORED_DUAL_GUN_VERTICAL_SPLIT_MS = 220;
 const WEAPON_POSE_BODY_HEIGHT = 76;
 
 export interface WeaponMuzzleGripOffset {
@@ -971,6 +977,37 @@ function weaponMuzzleStance(weapon: WeaponDef): WeaponMuzzleStance {
   return grip === "1H" || grip === "dual" ? "pistol" : "long-gun";
 }
 
+/** B29 authored-pair scope. Gun-delivery crossbows, idols, and conductors intentionally lack a firearm
+ * handling tag and therefore never inherit the two-gun firing silhouette. */
+export function isAuthoredDualFirearm(weapon: WeaponDef | undefined): boolean {
+  return (
+    weapon?.dual === true &&
+    weapon.tags.grip === "dual" &&
+    !!weapon.gun &&
+    (weaponHasHandlingTag(weapon, "pistol") ||
+      weaponHasHandlingTag(weapon, "lever") ||
+      weaponHasHandlingTag(weapon, "pump") ||
+      weaponHasHandlingTag(weapon, "revolver"))
+  );
+}
+
+/** Screen-vertical firing split shared by canonical authority and the retained client mount. An omitted
+ * elapsed value is an authoritative shot-edge query; a client keeps the split through its short recovery. */
+export function authoredDualGunVerticalOffset(
+  weapon: WeaponDef | undefined,
+  hand: 0 | 1,
+  recoilElapsedMs: number | undefined,
+): number {
+  if (!isAuthoredDualFirearm(weapon)) return 0;
+  if (
+    recoilElapsedMs !== undefined &&
+    (recoilElapsedMs < 0 || recoilElapsedMs >= AUTHORED_DUAL_GUN_VERTICAL_SPLIT_MS)
+  )
+    return 0;
+  const direction = hand === 0 ? -1 : 1;
+  return direction * AUTHORED_DUAL_GUN_VERTICAL_SPLIT_BODY_FRAC * WEAPON_POSE_BODY_HEIGHT;
+}
+
 /**
  * Shared deterministic grip/recoil pose. Authority evaluates it at each round's fire tick; the rig uses
  * the same result to mount the actual PNG before its art point is transformed.
@@ -1015,7 +1052,8 @@ export function weaponMuzzleGripOffset(
     y:
       anchorY * WEAPON_POSE_BODY_HEIGHT +
       aimY * directAimReach * WEAPON_POSE_BODY_HEIGHT +
-      aimY * recoilForward,
+      aimY * recoilForward +
+      authoredDualGunVerticalOffset(weapon, hand, pose.recoilElapsedMs),
   };
 }
 
@@ -1760,7 +1798,7 @@ const BASE_WEAPONS: Record<string, WeaponDefSource> = {
       family: "pistol",
       rangeBand: "long",
       scaling: ["DEX", "STR"],
-      handling: ["pistol"],
+      handling: ["pistol", "revolver"],
     },
   },
   // ── CASTERS (§38) — the caster class's signature weapons. RMB conjures a piercing arcane BOLT on a flat
@@ -2051,7 +2089,7 @@ const BASE_WEAPONS: Record<string, WeaponDefSource> = {
       family: "pistol",
       rangeBand: "long",
       scaling: ["DEX", "LUK"],
-      handling: ["pistol"],
+      handling: ["pistol", "revolver"],
     },
   },
 };

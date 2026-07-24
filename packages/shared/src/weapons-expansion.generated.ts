@@ -3615,7 +3615,8 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "STR"
       ],
       "handling": [
-        "pistol"
+        "pistol",
+        "revolver"
       ]
     },
     "gun": {
@@ -3657,7 +3658,8 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "LUK"
       ],
       "handling": [
-        "pistol"
+        "pistol",
+        "revolver"
       ]
     },
     "gun": {
@@ -3699,7 +3701,8 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "DEX"
       ],
       "handling": [
-        "pistol"
+        "pistol",
+        "revolver"
       ]
     },
     "gun": {
@@ -3795,7 +3798,8 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "INT"
       ],
       "handling": [
-        "pistol"
+        "pistol",
+        "revolver"
       ]
     },
     "gun": {
@@ -3927,7 +3931,8 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "INT"
       ],
       "handling": [
-        "pistol"
+        "pistol",
+        "revolver"
       ]
     },
     "gun": {
@@ -3970,7 +3975,8 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "LUK"
       ],
       "handling": [
-        "pistol"
+        "pistol",
+        "revolver"
       ]
     },
     "collisionLength": 54,
@@ -4014,7 +4020,8 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "DEX"
       ],
       "handling": [
-        "pistol"
+        "pistol",
+        "revolver"
       ]
     },
     "gripPoints": {
@@ -4061,7 +4068,8 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "DEX"
       ],
       "handling": [
-        "pistol"
+        "pistol",
+        "revolver"
       ]
     },
     "gun": {
@@ -4104,7 +4112,8 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "INT"
       ],
       "handling": [
-        "pistol"
+        "pistol",
+        "revolver"
       ]
     },
     "gun": {
@@ -4193,7 +4202,8 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "DEX"
       ],
       "handling": [
-        "pistol"
+        "pistol",
+        "revolver"
       ]
     },
     "gun": {
@@ -4280,7 +4290,8 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "DEX"
       ],
       "handling": [
-        "pistol"
+        "pistol",
+        "revolver"
       ]
     },
     "gun": {
@@ -4369,7 +4380,8 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "STR"
       ],
       "handling": [
-        "pistol"
+        "pistol",
+        "revolver"
       ]
     },
     "gun": {
@@ -5951,7 +5963,8 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "LUK"
       ],
       "handling": [
-        "pump"
+        "pistol",
+        "revolver"
       ]
     },
     "gripPoints": {
@@ -6829,7 +6842,8 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "STR"
       ],
       "handling": [
-        "pistol"
+        "pistol",
+        "revolver"
       ]
     },
     "gripPoints": {
@@ -7548,7 +7562,8 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "LUK"
       ],
       "handling": [
-        "pistol"
+        "pistol",
+        "revolver"
       ]
     },
     "gun": {
@@ -8296,7 +8311,8 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "DEX"
       ],
       "handling": [
-        "pistol"
+        "pistol",
+        "revolver"
       ]
     },
     "gun": {
@@ -13383,7 +13399,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
     "range": 90,
     "halfArc": 0.6,
     "cooldown": 0.32,
-    "displayLength": 56,
+    "displayLength": 76,
     "swingArc": 2.2,
     "gripFrac": 0.5,
     "tags": {
@@ -13400,13 +13416,15 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "LUK"
       ]
     },
+    "collisionLength": 56,
     "description": "A plain forged-iron four-point star, balanced around a square finger-ring for repeatable close-range throws.",
     "performance": {
       "hold": "steady",
       "action": "throw-release",
       "suppressSwing": true,
       "windupSeconds": 0.18,
-      "preThrowRevolutions": 0.5
+      "preThrowRevolutions": 0.5,
+      "throwStyle": "engaged"
     },
     "durability": 75,
     "thrown": {
@@ -13427,7 +13445,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
     "range": 90,
     "halfArc": 0.6,
     "cooldown": 0.42,
-    "displayLength": 58,
+    "displayLength": 78,
     "swingArc": 2.2,
     "gripFrac": 0.5,
     "tags": {
@@ -13444,13 +13462,15 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "INT"
       ]
     },
+    "collisionLength": 58,
     "description": "A blackened four-point star with ember-red cutting edges that carries furnace heat into every throw.",
     "performance": {
       "hold": "steady",
       "action": "throw-release",
       "suppressSwing": true,
       "windupSeconds": 0.2,
-      "preThrowRevolutions": 0.5
+      "preThrowRevolutions": 0.5,
+      "throwStyle": "engaged"
     },
     "durability": 75,
     "thrown": {
@@ -13471,7 +13491,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
     "range": 90,
     "halfArc": 0.6,
     "cooldown": 0.36,
-    "displayLength": 58,
+    "displayLength": 78,
     "swingArc": 2.2,
     "gripFrac": 0.5,
     "tags": {
@@ -13488,13 +13508,15 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "INT"
       ]
     },
+    "collisionLength": 58,
     "description": "A pale frost-steel four-point star whose heavy rimed blades hold their edge in killing cold.",
     "performance": {
       "hold": "steady",
       "action": "throw-release",
       "suppressSwing": true,
       "windupSeconds": 0.19,
-      "preThrowRevolutions": 0.5
+      "preThrowRevolutions": 0.5,
+      "throwStyle": "engaged"
     },
     "durability": 75,
     "thrown": {
@@ -13515,7 +13537,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
     "range": 90,
     "halfArc": 0.6,
     "cooldown": 0.5,
-    "displayLength": 60,
+    "displayLength": 82,
     "swingArc": 2.2,
     "gripFrac": 0.5,
     "tags": {
@@ -13532,13 +13554,15 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "INT"
       ]
     },
+    "collisionLength": 60,
     "description": "A dense violet-black four-point star with missing-looking inner bevels that makes a throw feel briefly weightless.",
     "performance": {
       "hold": "steady",
       "action": "throw-release",
       "suppressSwing": true,
       "windupSeconds": 0.22,
-      "preThrowRevolutions": 0.5
+      "preThrowRevolutions": 0.5,
+      "throwStyle": "engaged"
     },
     "durability": 75,
     "thrown": {
@@ -13582,7 +13606,8 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "action": "throw-release",
       "suppressSwing": true,
       "windupSeconds": 0.16,
-      "preThrowRevolutions": 0.5
+      "preThrowRevolutions": 0.5,
+      "flourishStyle": "pistol-end-hook"
     },
     "durability": 75,
     "thrown": {
@@ -13603,7 +13628,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
     "range": 104,
     "halfArc": 0.62,
     "cooldown": 0.4,
-    "displayLength": 76,
+    "displayLength": 104,
     "swingArc": 2.4,
     "gripFrac": 0.5,
     "tags": {
@@ -13620,13 +13645,15 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "LUK"
       ]
     },
+    "collisionLength": 76,
     "description": "A broad battle-worn iron throwing ring that bites one target, then caroms through nearby enemies before its momentum fails.",
     "performance": {
       "hold": "steady",
       "action": "throw-release",
       "suppressSwing": true,
       "windupSeconds": 0.19,
-      "preThrowRevolutions": 0.5
+      "preThrowRevolutions": 0.5,
+      "throwStyle": "engaged"
     },
     "durability": 75,
     "thrown": {
