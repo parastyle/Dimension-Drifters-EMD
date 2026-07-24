@@ -34,11 +34,7 @@ const fail = (msg) => errors.push(`${CUR}: ${msg}`);
 
 const TYPES = new Set(["melee", "ranged", "caster"]);
 const GRIPS = new Set(["1H", "2H", "dual", "mounted"]);
-<<<<<<< HEAD
-const HANDLING_TAGS = new Set(["bolt", "lever", "pump", "pistol", "revolver"]);
-=======
-const HANDLING_TAGS = new Set(["bolt", "break", "lever", "pump", "pistol"]);
->>>>>>> sol/b32-frostbore-breakaction
+const HANDLING_TAGS = new Set(["bolt", "break", "lever", "pump", "pistol", "revolver"]);
 const IDLE_HAND_POSES = new Set([
   "secondary-grip", "mirror-guard", "low-guard", "casting-gesture", "hip-rest",
   "praying-mantis", "crane-guard",

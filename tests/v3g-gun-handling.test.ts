@@ -32,18 +32,14 @@ describe("V3G catalog gun-handling laws", () => {
     const candidates = catalog.filter(
       (weapon) =>
         !!weapon.gun &&
-<<<<<<< HEAD
+        !weapon.breakAction &&
         ((weapon.tags.family === "shotgun" &&
           weapon.id !== "x2-dustdevil-riotgun" &&
           weapon.id !== "x2-twin-maw-greenerbore") ||
-=======
-        !weapon.breakAction &&
-        ((weapon.tags.family === "shotgun" && weapon.id !== "x2-dustdevil-riotgun") ||
->>>>>>> sol/b32-frostbore-breakaction
           /\bpump-rifle\b/i.test(weapon.name) ||
           /\bbuckshot avalanche\b/i.test(weapon.name)),
     );
-    expect(candidates).toHaveLength(15);
+    expect(candidates).toHaveLength(14);
     expect(
       tagged("pump")
         .map((weapon) => weapon.id)

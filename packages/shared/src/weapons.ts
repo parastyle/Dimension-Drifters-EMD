@@ -36,11 +36,7 @@ export type WeaponSizeClass = "short" | "standard" | "long" | "great" | "colossa
 export type WeaponTier = 1 | 2 | 3 | 4 | 5;
 
 /** V3G catalog laws. Authored tags are the only membership source used by presentation code. */
-<<<<<<< HEAD
-export type GunHandlingTag = "bolt" | "lever" | "pump" | "pistol" | "revolver";
-=======
-export type GunHandlingTag = "bolt" | "break" | "lever" | "pump" | "pistol";
->>>>>>> sol/b32-frostbore-breakaction
+export type GunHandlingTag = "bolt" | "break" | "lever" | "pump" | "pistol" | "revolver";
 
 /** Normalized point in the weapon sprite's own unmirrored 0..1 bounds. */
 export interface WeaponGripAnchor {
