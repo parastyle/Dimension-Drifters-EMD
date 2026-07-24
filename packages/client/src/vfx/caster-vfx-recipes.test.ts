@@ -8,15 +8,22 @@ import {
   type CasterVfxRecipe,
   resolveCasterVfxRecipe,
 } from "./caster-vfx-recipes.js";
+import { generatedImageVfxReplacesProceduralRecipe } from "./generated-image-weapon-vfx-recipes.js";
 import { PARTICLE_PACKS } from "./particle-manifest.js";
 
 const CASTERS = Object.values(WEAPONS).filter((weapon) => weapon.tags.classPool === "caster");
+const PROCEDURAL_CASTERS = CASTERS.filter(
+  (weapon) => !generatedImageVfxReplacesProceduralRecipe(weapon.id),
+);
 const BEAMS = Object.values(WEAPONS).filter((weapon) => weapon.beam);
 
 describe("caster VFX recipe resolver", () => {
-  it("resolves every one of the 98 caster ids to a complete non-default recipe", () => {
+  it("resolves every non-replaced caster id to a complete non-default recipe", () => {
     expect(CASTERS).toHaveLength(98);
-    const resolved = CASTERS.map((weapon) => [weapon, resolveCasterVfxRecipe(weapon)] as const);
+    expect(PROCEDURAL_CASTERS).toHaveLength(96);
+    const resolved = PROCEDURAL_CASTERS.map(
+      (weapon) => [weapon, resolveCasterVfxRecipe(weapon)] as const,
+    );
     const missing = resolved.filter(([, recipe]) => !recipe).map(([weapon]) => weapon.id);
     expect(missing).toEqual([]);
 
@@ -37,15 +44,17 @@ describe("caster VFX recipe resolver", () => {
   });
 
   it("covers every caster element and each required family silhouette", () => {
-    const recipes = CASTERS.map((weapon) => resolveCasterVfxRecipe(weapon) as CasterVfxRecipe);
+    const recipes = PROCEDURAL_CASTERS.map(
+      (weapon) => resolveCasterVfxRecipe(weapon) as CasterVfxRecipe,
+    );
     expect(new Set(recipes.map((recipe) => recipe.element))).toEqual(new Set(CASTER_VFX_ELEMENTS));
     expect(new Set(recipes.map((recipe) => recipe.form))).toEqual(
-      new Set(["staff", "tome", "codex", "lance", "orb", "focus", "relic", "gauntlet"]),
+      new Set(["staff", "tome", "codex", "orb", "focus", "relic", "gauntlet"]),
     );
   });
 
   it("only uses checked-in painted element-shape packs", () => {
-    for (const weapon of CASTERS) {
+    for (const weapon of PROCEDURAL_CASTERS) {
       const recipe = resolveCasterVfxRecipe(weapon) as CasterVfxRecipe;
       for (const shape of [
         recipe.source.particleShape,
@@ -57,9 +66,8 @@ describe("caster VFX recipe resolver", () => {
     }
   });
 
-  it("keeps the six prominent signature passes explicit and recipe-driven", () => {
+  it("keeps the five retained prominent signature passes explicit and recipe-driven", () => {
     expect(CASTER_VFX_SIGNATURES).toEqual({
-      "x-staff-arcane-lance": "arcane-lance-line",
       "x2-codex-of-forked-tongues": "forked-page-flutter",
       "x2-null-grimoire-of-the-hollow-page": "hollow-page-aperture",
       "x2-sunmote-reliquary-staff": "sunmote-corona",

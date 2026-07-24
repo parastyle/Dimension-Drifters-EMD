@@ -264,7 +264,6 @@ export type WeaponEffectRecipeId =
   | "tombwarden-dark-slash"
   | "choir-iron-flame-slash"
   | "hangman-blood-spatter"
-  | "dustreaper-continuous-edge"
   | "cinderbrand-fire-slash"
   | "stormfist-blue-lunge"
   | "thunderhead-electric-codex"

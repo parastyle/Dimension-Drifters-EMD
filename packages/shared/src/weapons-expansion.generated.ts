@@ -656,9 +656,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "STR"
       ]
     },
-    "effectRecipe": "dustreaper-continuous-edge",
-    "effectEmitter": "blade",
-    "effectTiming": "impact",
     "requirements": {
       "str": 13
     },

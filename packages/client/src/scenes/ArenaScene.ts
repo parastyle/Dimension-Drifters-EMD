@@ -277,6 +277,14 @@ import {
 } from "../vfx/colorblind-assist.js";
 import { makeFanHybridProjectile, spawnFanHybridImpact } from "../vfx/fan-hybrid-vfx.js";
 import { playFxPack } from "../vfx/fx-composer.js";
+import {
+  generatedImageWeaponAudioCue,
+  makeGeneratedImageWeaponProjectile,
+  resolveGeneratedImageWeaponVfxRecipe,
+  spawnGeneratedImageCrystalChain,
+  spawnGeneratedImageWeaponProjectileImpact,
+  spawnGeneratedImageWeaponSwing,
+} from "../vfx/generated-image-weapon-vfx.js";
 import { preloadGeneratedGunProjectiles } from "../vfx/gun-projectile-art.js";
 import { HitEffectRenderer, IMPACT_RING_DEPTH, SPEED_LINE_DEPTH } from "../vfx/hit-effects.js";
 import {
@@ -3730,6 +3738,25 @@ export class ArenaScene extends Phaser.Scene {
     targetWorld?: Readonly<{ x: number; y: number }>,
     actorWorld?: Readonly<{ x: number; y: number }>,
   ): void {
+    const generatedActor = actorWorld ?? { x: rig.x, y: rig.y };
+    const generatedTarget = targetWorld
+      ? {
+          x: targetWorld.x,
+          y: this.belt ? this.beltY(targetWorld.y) : targetWorld.y,
+        }
+      : undefined;
+    if (
+      spawnGeneratedImageWeaponSwing(
+        this,
+        weapon,
+        generatedActor.x,
+        actorWorld && this.belt ? this.beltY(generatedActor.y) : generatedActor.y,
+        aimAngle,
+        swing,
+        generatedTarget,
+      )
+    )
+      return;
     const recipe = resolveWeaponEffectRecipe(weapon);
     if (!recipe?.swingPack && !recipe?.impactPack && !recipe?.musicalNotes && !recipe?.paintedSwing)
       return;
@@ -3893,40 +3920,43 @@ export class ArenaScene extends Phaser.Scene {
   private playWeaponSourceAudio(weapon: WeaponDef, x: number, local: boolean): void {
     if (weapon.gun || weapon.beam || weapon.thrown) return;
     const family = weapon.tags.family.toLowerCase();
-    let cue = "melee:light";
-    if (
-      weapon.cast ||
-      weapon.tags.classPool === "caster" ||
-      family.includes("staff") ||
-      family.includes("wand") ||
-      family.includes("tome") ||
-      family.includes("rod")
-    )
-      cue = "melee:arcane";
-    else if (
-      family.includes("claw") ||
-      family.includes("talon") ||
-      family.includes("fist") ||
-      family.includes("dagger") ||
-      family.includes("knife")
-    )
-      cue = "melee:claw";
-    else if (
-      family.includes("maul") ||
-      family.includes("mace") ||
-      family.includes("hammer") ||
-      family.includes("flail") ||
-      family.includes("spade") ||
-      family.includes("club")
-    )
-      cue = "melee:blunt";
-    else if (
-      weapon.twoHanded ||
-      weapon.tags.grip === "2H" ||
-      weapon.tags.size === "L" ||
-      weapon.tags.size === "XL"
-    )
-      cue = "melee:heavy";
+    const generatedCue = generatedImageWeaponAudioCue(weapon.id);
+    let cue = generatedCue ?? "melee:light";
+    if (!generatedCue) {
+      if (
+        weapon.cast ||
+        weapon.tags.classPool === "caster" ||
+        family.includes("staff") ||
+        family.includes("wand") ||
+        family.includes("tome") ||
+        family.includes("rod")
+      )
+        cue = "melee:arcane";
+      else if (
+        family.includes("claw") ||
+        family.includes("talon") ||
+        family.includes("fist") ||
+        family.includes("dagger") ||
+        family.includes("knife")
+      )
+        cue = "melee:claw";
+      else if (
+        family.includes("maul") ||
+        family.includes("mace") ||
+        family.includes("hammer") ||
+        family.includes("flail") ||
+        family.includes("spade") ||
+        family.includes("club")
+      )
+        cue = "melee:blunt";
+      else if (
+        weapon.twoHanded ||
+        weapon.tags.grip === "2H" ||
+        weapon.tags.size === "L" ||
+        weapon.tags.size === "XL"
+      )
+        cue = "melee:heavy";
+    }
     this.audio.play(cue, { x, amt: local ? 1 : 0.36 });
   }
 
@@ -6835,6 +6865,7 @@ export class ArenaScene extends Phaser.Scene {
         sourceWeapon?.gun?.arcHeight,
       );
       const weaponEffectRecipe = resolveWeaponEffectRecipe(sourceWeapon);
+      const generatedImageRecipe = resolveGeneratedImageWeaponVfxRecipe(sourceWeaponId);
       const projectileKind = baseKind(pr.kind);
       const comet = projectileKind === "fireball";
       const casterOwnsKind =
@@ -6857,10 +6888,14 @@ export class ArenaScene extends Phaser.Scene {
       const fanHybridIdentity = sourceWeapon?.hybridProjectile
         ? makeFanHybridProjectile(this, pr, sourceWeapon.id)
         : null;
+      const generatedImageIdentity = sourceWeapon
+        ? makeGeneratedImageWeaponProjectile(this, pr, sourceWeapon.id)
+        : null;
       const container =
         fanHybridIdentity ??
         wackyIdentity ??
         gunIdentity ??
+        generatedImageIdentity ??
         (weaponEffectRecipe?.projectile === "electric-bolt"
           ? makeBullet(this, pr, sourceWeapon?.gun?.projectileVisualScale ?? 1, weaponEffectRecipe)
           : weaponEffectRecipe?.projectile === "crystal-shard-orb"
@@ -6973,7 +7008,7 @@ export class ArenaScene extends Phaser.Scene {
                     )
                   : [];
             srig?.triggerGunRecoil(this.time.now, 0);
-            if (!casterRecipe) {
+            if (!casterRecipe && !generatedImageRecipe) {
               for (const muzzle of muzzles) {
                 spawnMuzzleFlash(
                   this,
@@ -6993,7 +7028,7 @@ export class ArenaScene extends Phaser.Scene {
             }
             // §19 a REMOTE shooter's gun sound (self already played its predicted shot at click time —
             // `suppressed` gates this the same way it gates the flash, so self never double-fires).
-            if (!comet)
+            if (!comet && !generatedImageRecipe)
               this.audio.play(
                 wackyWeaponShotAudioCue(sourceWeaponId, `shot:${baseKind(pr.kind)}`),
                 { x: p.x },
@@ -7016,6 +7051,13 @@ export class ArenaScene extends Phaser.Scene {
             | undefined;
           const impactAngle = (c.getData("ang") as number) ?? 0;
           const sourceWeaponId = c.getData("sourceWeapon") as string | undefined;
+          const generatedImageImpact = spawnGeneratedImageWeaponProjectileImpact(
+            this,
+            sourceWeaponId,
+            c.x,
+            c.y,
+            impactAngle,
+          );
           const fanHybridImpact = spawnFanHybridImpact(
             this,
             sourceWeaponId,
@@ -7085,7 +7127,7 @@ export class ArenaScene extends Phaser.Scene {
                 prefersReducedPaperMotion() || this.feedbackSettings.flashes === "reduced",
               );
             }
-          } else if (fanHybridImpact || wackyImpact) {
+          } else if (generatedImageImpact || fanHybridImpact || wackyImpact) {
             // The B2 recipe supplied its complete impact punctuation.
           } else if (weaponEffectRecipe?.projectile) {
             // The authored projectile recipe already supplied its complete impact punctuation above.
@@ -15225,6 +15267,7 @@ export class ArenaScene extends Phaser.Scene {
       spawnScatteredPages(this, nodes, vfx.life, weapon.id);
       return;
     }
+    if (spawnGeneratedImageCrystalChain(this, weapon.id, nodes, vfx.life)) return;
     const g = this.add.graphics();
     this.vfxPlayer.bloomRoot.add(g);
     const t0 = this.time.now;

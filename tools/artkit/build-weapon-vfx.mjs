@@ -172,6 +172,20 @@ const types =
   "  subjects: string[];\n" +
   "  removedSubjects: string[];\n" +
   "}\n" +
+  "export type WeaponVfxGeneratedImageKind =\n" +
+  "  | \"fire-dragon-sweep\"\n" +
+  "  | \"purple-crystal-burst\"\n" +
+  "  | \"arcane-lance-projectile\";\n" +
+  "export interface WeaponVfxGeneratedImage {\n" +
+  "  kind: WeaponVfxGeneratedImageKind;\n" +
+  "  textureKey: string;\n" +
+  "  url: string;\n" +
+  "  subject: string;\n" +
+  "  signature: string;\n" +
+  "  audioCue: string;\n" +
+  "  lifeMs: number;\n" +
+  "  poolSize: number;\n" +
+  "}\n" +
   "export interface WeaponVfx {\n" +
   "  suite: Record<string, WeaponVfxLayer>;\n" +
   "  rot: number;\n" +
@@ -189,6 +203,8 @@ const types =
   "  paintedAura?: WeaponVfxPaintedAura;\n" +
   "  paintedSwing?: WeaponVfxPaintedSwing;\n" +
   "  paintedQuake?: WeaponVfxPaintedQuake;\n" +
+  "  /** Generated-image subject that authoritatively replaces this weapon's procedural treatment. */\n" +
+  "  generatedImage?: WeaponVfxGeneratedImage;\n" +
   "}\n";
 emit(
   GEN_TS,

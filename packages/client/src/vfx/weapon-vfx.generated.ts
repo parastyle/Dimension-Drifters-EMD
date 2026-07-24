@@ -33,6 +33,20 @@ export interface WeaponVfxPaintedQuake {
   subjects: string[];
   removedSubjects: string[];
 }
+export type WeaponVfxGeneratedImageKind =
+  | "fire-dragon-sweep"
+  | "purple-crystal-burst"
+  | "arcane-lance-projectile";
+export interface WeaponVfxGeneratedImage {
+  kind: WeaponVfxGeneratedImageKind;
+  textureKey: string;
+  url: string;
+  subject: string;
+  signature: string;
+  audioCue: string;
+  lifeMs: number;
+  poolSize: number;
+}
 export interface WeaponVfx {
   suite: Record<string, WeaponVfxLayer>;
   rot: number;
@@ -50,6 +64,8 @@ export interface WeaponVfx {
   paintedAura?: WeaponVfxPaintedAura;
   paintedSwing?: WeaponVfxPaintedSwing;
   paintedQuake?: WeaponVfxPaintedQuake;
+  /** Generated-image subject that authoritatively replaces this weapon's procedural treatment. */
+  generatedImage?: WeaponVfxGeneratedImage;
 }
 
 export const WEAPON_VFX: Record<string, WeaponVfx> = {
@@ -821,6 +837,51 @@ export const WEAPON_VFX: Record<string, WeaponVfx> = {
       "subjects": [
         "blue-electric-arc"
       ]
+    }
+  },
+  "x2-dustreaper-zweihander": {
+    "suite": {},
+    "rot": 0,
+    "suppressFallback": true,
+    "generatedImage": {
+      "kind": "fire-dragon-sweep",
+      "textureKey": "b11:fire-dragon",
+      "url": "sprites/vfx-fire-dragon/part-1.png",
+      "subject": "vfx-fire-dragon",
+      "signature": "serpentine-fire-dragon-head-led-sweep",
+      "audioCue": "b11:fire-dragon-sweep",
+      "lifeMs": 520,
+      "poolSize": 1
+    }
+  },
+  "x2-mesa-heart-geodes": {
+    "suite": {},
+    "rot": 0,
+    "suppressFallback": true,
+    "generatedImage": {
+      "kind": "purple-crystal-burst",
+      "textureKey": "b11:purple-crystal-family",
+      "url": "sprites/vfx-purple-crystal-family/part-1.png",
+      "subject": "vfx-purple-crystal-family",
+      "signature": "dense-pooled-purple-geode-fragment-sweep",
+      "audioCue": "b11:crystal-crack-hum",
+      "lifeMs": 420,
+      "poolSize": 6
+    }
+  },
+  "x-staff-arcane-lance": {
+    "suite": {},
+    "rot": 0,
+    "suppressFallback": true,
+    "generatedImage": {
+      "kind": "arcane-lance-projectile",
+      "textureKey": "b11:arcanist-lance",
+      "url": "sprites/vfx-arcanist-lance/part-1.png",
+      "subject": "vfx-arcanist-lance",
+      "signature": "runic-arcane-blue-lance-projectile",
+      "audioCue": "b11:arcane-lance-cast",
+      "lifeMs": 220,
+      "poolSize": 1
     }
   }
 };

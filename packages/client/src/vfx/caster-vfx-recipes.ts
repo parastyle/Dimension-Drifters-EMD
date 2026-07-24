@@ -1,4 +1,5 @@
 import type { Grade, WeaponDef } from "@dd/shared";
+import { generatedImageVfxReplacesProceduralRecipe } from "./generated-image-weapon-vfx-recipes.js";
 
 export const CASTER_VFX_ELEMENTS = [
   "arcane",
@@ -365,7 +366,6 @@ const FORM_IMPACT: Readonly<
 
 export const CASTER_VFX_SIGNATURES: Readonly<Partial<Record<string, CasterVfxSignature>>> =
   Object.freeze({
-    "x-staff-arcane-lance": "arcane-lance-line",
     "x2-codex-of-forked-tongues": "forked-page-flutter",
     "x2-null-grimoire-of-the-hollow-page": "hollow-page-aperture",
     "x2-sunmote-reliquary-staff": "sunmote-corona",
@@ -979,6 +979,7 @@ function damageTierFor(def: WeaponDef): CasterVfxDamageTier {
 /** Resolve presentation only from weapon truth plus the authored caster and beam signatures. */
 export function resolveCasterVfxRecipe(def: WeaponDef | undefined): CasterVfxRecipe | undefined {
   if (!def || (def.tags.classPool !== "caster" && !def.beam)) return undefined;
+  if (generatedImageVfxReplacesProceduralRecipe(def.id)) return undefined;
   const cached = RECIPE_CACHE.get(def);
   if (cached) return cached;
   const element = CASTER_VFX_ELEMENTS.includes(def.tags.element as CasterVfxElement)

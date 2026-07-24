@@ -1,6 +1,11 @@
 import { existsSync, readFileSync } from "node:fs";
-import { meleeReach, swingDescriptorFor, WEAPONS } from "@dd/shared";
+import { swingDescriptorFor, WEAPONS } from "@dd/shared";
 import { describe, expect, it } from "vitest";
+import {
+  generatedImageMeleeGeometryFor,
+  generatedImageVfxReplacesProceduralRecipe,
+  resolveGeneratedImageWeaponVfxRecipe,
+} from "../packages/client/src/vfx/generated-image-weapon-vfx-recipes.js";
 import { KATANA_SLASH_ASSIGNMENTS } from "../packages/client/src/vfx/katana-slash.generated.js";
 import {
   MUZZLE_FLASH_ASSIGNMENTS,
@@ -10,7 +15,6 @@ import {
 import {
   resolveWeaponEffectRecipe,
   WEAPON_EFFECT_RECIPES,
-  weaponEffectCuePoint,
 } from "../packages/client/src/vfx/weapon-effect-recipes.js";
 import {
   CIRCLE_IMPACT_LAYER_IDS,
@@ -98,7 +102,6 @@ describe("V6G1 whole-catalog impact-anchor law", () => {
       "x2-tombwarden-claymore",
       "x2-hangman-s-greatcleaver",
       "x2-cinderbrand-pike",
-      "x2-dustreaper-zweihander",
       "x2-nullspike-pike",
     ]) {
       const definition = weapon(id);
@@ -110,6 +113,13 @@ describe("V6G1 whole-catalog impact-anchor law", () => {
         impactAnchor: "target",
       });
     }
+    const dustreaper = weapon("x2-dustreaper-zweihander");
+    expect(resolveWeaponEffectRecipe(dustreaper)).toBeUndefined();
+    expect(generatedImageVfxReplacesProceduralRecipe(dustreaper.id)).toBe(true);
+    expect(resolveGeneratedImageWeaponVfxRecipe(dustreaper.id)).toMatchObject({
+      kind: "fire-dragon-sweep",
+      subject: "vfx-fire-dragon",
+    });
 
     const circleSharers = Object.values(WEAPONS)
       .filter((definition) => !definition.archived && definition.tags.classPool === "melee")
@@ -121,7 +131,7 @@ describe("V6G1 whole-catalog impact-anchor law", () => {
     expect(circleSharers).toEqual([]);
   });
 
-  it("deletes Riftcaller's self aura and moves Dustreaper's 30x flame to the clamped target", () => {
+  it("deletes Riftcaller's self aura and replaces Dustreaper's wisp carpet with its dragon", () => {
     const rift = weapon("x2-riftcaller-naginata");
     const riftSwing = swingDescriptorFor(rift, rift.cooldown);
     const riftSuite = weaponVfxSuiteFor(rift.id, rift.tags.element, riftSwing.style).suite;
@@ -130,27 +140,16 @@ describe("V6G1 whole-catalog impact-anchor law", () => {
     expect(Object.keys(splitWeaponVfxSuite(riftSuite).target)).toEqual([]);
 
     const dustreaper = weapon("x2-dustreaper-zweihander");
-    const recipe = resolveWeaponEffectRecipe(dustreaper);
-    expect(recipe).toMatchObject({
-      classification: "impact",
-      impactAnchor: "target",
-      impactPack: "fire-wisp",
-      swingCount: 150,
+    expect(resolveWeaponEffectRecipe(dustreaper)).toBeUndefined();
+    expect(resolveGeneratedImageWeaponVfxRecipe(dustreaper.id)).toMatchObject({
+      kind: "fire-dragon-sweep",
+      subject: "vfx-fire-dragon",
+      signature: "serpentine-fire-dragon-head-led-sweep",
     });
-    if (!recipe) throw new Error("Missing Dustreaper recipe");
-    const swing = swingDescriptorFor(dustreaper, dustreaper.cooldown);
-    const reach = meleeReach(dustreaper);
-    const point = weaponEffectCuePoint(
-      recipe,
-      dustreaper,
-      { x: 0, y: 0 },
-      { x: reach * 3, y: 0 },
-      0,
-      swing,
-      swing.impactSeconds,
-    );
-    expect(point.x).toBeCloseTo(reach, 8);
-    expect(point.y).toBeCloseTo(0, 8);
+    expect(generatedImageMeleeGeometryFor(dustreaper)).toEqual({
+      forwardExtent: 300,
+      halfWidth: 54,
+    });
   });
 });
 

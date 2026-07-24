@@ -800,9 +800,6 @@
         "swingArc": 3.1,
         "gripFrac": 0.08
       },
-      "effectRecipe": "dustreaper-continuous-edge",
-      "effectEmitter": "blade",
-      "effectTiming": "impact",
       "id": "x2-dustreaper-zweihander"
     },
     {

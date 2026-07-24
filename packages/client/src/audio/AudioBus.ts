@@ -863,6 +863,77 @@ export class AudioBus {
           x,
         });
         break;
+      case "b11:fire-dragon-sweep":
+        if (this.throttled(amt >= 0.75 ? "b11DragonSelf" : "b11Dragon", 95)) return;
+        this.noise(0.28, {
+          gain: 0.18 + 0.18 * amt,
+          type: "lowpass",
+          freq: 760,
+          q: 0.7,
+          sweepTo: 170,
+          x,
+        });
+        this.noise(0.16, {
+          gain: 0.08 + 0.1 * amt,
+          type: "bandpass",
+          freq: 1_850,
+          q: 1.2,
+          sweepTo: 720,
+          x,
+        });
+        this.tone(86, 0.3, {
+          type: "sawtooth",
+          gain: 0.08 + 0.11 * amt,
+          sweepTo: 43,
+          x,
+        });
+        break;
+      case "b11:crystal-crack-hum":
+        if (this.throttled(amt >= 0.75 ? "b11CrystalSelf" : "b11Crystal", 65)) return;
+        this.noise(0.075, {
+          gain: 0.12 + 0.14 * amt,
+          type: "highpass",
+          freq: 3_400,
+          q: 2.2,
+          sweepTo: 6_200,
+          x,
+        });
+        this.tone(920, 0.18, {
+          type: "triangle",
+          gain: 0.07 + 0.08 * amt,
+          sweepTo: 610,
+          x,
+        });
+        this.tone(310, 0.26, {
+          type: "sine",
+          gain: 0.05 + 0.07 * amt,
+          sweepTo: 370,
+          x,
+        });
+        break;
+      case "b11:arcane-lance-cast":
+        if (this.throttled(amt >= 0.75 ? "b11LanceSelf" : "b11Lance", 45)) return;
+        this.tone(240, 0.17, {
+          type: "sawtooth",
+          gain: 0.07 + 0.09 * amt,
+          sweepTo: 1_080,
+          x,
+        });
+        this.tone(680, 0.2, {
+          type: "triangle",
+          gain: 0.055 + 0.075 * amt,
+          sweepTo: 1_360,
+          x,
+        });
+        this.noise(0.11, {
+          gain: 0.055 + 0.07 * amt,
+          type: "bandpass",
+          freq: 1_700,
+          q: 3.4,
+          sweepTo: 3_100,
+          x,
+        });
+        break;
       case "melee:heavy":
         if (this.throttled(amt >= 0.75 ? "meleeHeavySelf" : "meleeHeavy", 55)) return;
         if (

@@ -11,15 +11,15 @@ import {
 } from "../packages/client/src/sprites/pose-language.js";
 import { BEAM_VFX_RECIPES } from "../packages/client/src/vfx/caster-vfx-recipes.js";
 import {
+  generatedImageMeleeGeometryFor,
+  resolveGeneratedImageWeaponVfxRecipe,
+} from "../packages/client/src/vfx/generated-image-weapon-vfx-recipes.js";
+import {
   paintedParticleDisplaySize,
   paintedParticleDominance,
   paintedSwingDisplayWidth,
 } from "../packages/client/src/vfx/painted-particle-scale.js";
-import {
-  resolveWeaponAuraVfxRecipe,
-  resolveWeaponEffectRecipe,
-  weaponSwingIdentitySizePx,
-} from "../packages/client/src/vfx/weapon-effect-recipes.js";
+import { resolveWeaponAuraVfxRecipe } from "../packages/client/src/vfx/weapon-effect-recipes.js";
 
 function weapon(id: string) {
   const definition = WEAPONS[id];
@@ -45,15 +45,22 @@ describe("W4G1 pistol idle-twirl visibility", () => {
 });
 
 describe("W4G2 painted 96-pack scale contract", () => {
-  it("raises the four named visual-dominance failures in display units", () => {
+  it("keeps the remaining painted scale fixes and hands Dustreaper to B11 image geometry", () => {
     const dustreaper = weapon("x2-dustreaper-zweihander");
-    const dustRecipe = resolveWeaponEffectRecipe(dustreaper);
+    const dustRecipe = resolveGeneratedImageWeaponVfxRecipe(dustreaper.id);
     const fulgurite = weapon("x2-fulgurite-storm-sphere");
     const fulguriteAura = resolveWeaponAuraVfxRecipe(fulgurite);
     if (!dustreaper || !dustRecipe || !fulguriteAura)
       throw new Error("missing painted-particle fixture");
 
-    expect(weaponSwingIdentitySizePx(dustRecipe, dustreaper.displayLength)).toBeCloseTo(78.2, 5);
+    expect(dustRecipe).toMatchObject({
+      kind: "fire-dragon-sweep",
+      subject: "vfx-fire-dragon",
+    });
+    expect(generatedImageMeleeGeometryFor(dustreaper)).toEqual({
+      forwardExtent: 300,
+      halfWidth: 54,
+    });
     expect(
       paintedParticleDisplaySize(
         paintedParticleDominance(

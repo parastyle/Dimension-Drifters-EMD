@@ -140,7 +140,7 @@ const EFFECT_TIMINGS = new Set(["active-start", "swing-midpoint", "impact"]);
 const EFFECT_RECIPES = new Set([
   "galvanic-blue-burst", "riftglass-rainbow-volley", "whispervolume-page-scatter",
   "riftcleaver-crystal-shards", "verdict-tip-procession", "tombwarden-dark-slash",
-  "choir-iron-flame-slash", "hangman-blood-spatter", "dustreaper-continuous-edge",
+  "choir-iron-flame-slash", "hangman-blood-spatter",
   "cinderbrand-fire-slash", "sanctified-holy-slash", "stormfist-blue-lunge",
   "thunderhead-electric-codex", "sermon-musical-notes", "nullspike-impact-circle",
   "quarry-quad-spatter", "witherleaf-tip-spores", "snakeoil-tip-sparks",

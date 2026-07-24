@@ -15,6 +15,10 @@ import {
   CASTER_TEXTURE_PROJECTILES,
 } from "../packages/client/src/vfx/caster-vfx-recipes.js";
 import {
+  generatedImageMeleeGeometryFor,
+  resolveGeneratedImageWeaponVfxRecipe,
+} from "../packages/client/src/vfx/generated-image-weapon-vfx-recipes.js";
+import {
   paintedParticleDisplaySize,
   paintedParticleDominance,
   paintedSwingDisplayWidth,
@@ -144,11 +148,17 @@ describe("W4M melee/caster iteration orders", () => {
     expect(sampled.weaponAngle).toBeCloseTo(-1.2217304763960306);
   });
 
-  it("keeps Dustreaper legible after the W4G2 scale conversion", () => {
+  it("keeps Dustreaper legible after the B11 generated-dragon replacement", () => {
     const definition = weapon("x2-dustreaper-zweihander");
-    const recipe = resolveWeaponEffectRecipe(definition);
-    expect(weaponSwingIdentitySizePx(recipe, definition.displayLength)).toBeCloseTo(78.2, 5);
-    expect(recipe?.swingCount).toBe(150); // V6G: the ordered 30x flame density remains size-contract-safe.
+    expect(resolveWeaponEffectRecipe(definition)).toBeUndefined();
+    expect(resolveGeneratedImageWeaponVfxRecipe(definition.id)).toMatchObject({
+      kind: "fire-dragon-sweep",
+      subject: "vfx-fire-dragon",
+    });
+    expect(generatedImageMeleeGeometryFor(definition)).toEqual({
+      forwardExtent: 300,
+      halfWidth: 54,
+    });
   });
 
   it("gives Coilshot a visible in-hand orbit during its complete pre-throw turn", () => {

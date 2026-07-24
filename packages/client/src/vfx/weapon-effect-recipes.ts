@@ -161,17 +161,6 @@ export const WEAPON_EFFECT_RECIPES = Object.freeze({
     swingCount: 8,
     additive: true,
   }),
-  "dustreaper-continuous-edge": Object.freeze({
-    id: "dustreaper-continuous-edge",
-    weaponId: "x2-dustreaper-zweihander",
-    emitter: "blade",
-    classification: "impact",
-    impactPack: "fire-wisp",
-    impactAnchor: "target",
-    swingCount: 150,
-    swingParticleDominance: 0.34,
-    additive: true,
-  }),
   "gravechain-dominant-spin": Object.freeze({
     id: "gravechain-dominant-spin",
     weaponId: "x2-gravechain-scythe",

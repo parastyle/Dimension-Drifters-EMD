@@ -35,7 +35,6 @@ const EXPECTED = {
   "x2-tombwarden-claymore": ["tombwarden-dark-slash", "blade"],
   "x2-choir-iron-greataxe": ["choir-iron-flame-slash", "blade"],
   "x2-hangman-s-greatcleaver": ["hangman-blood-spatter", "blade"],
-  "x2-dustreaper-zweihander": ["dustreaper-continuous-edge", "blade"],
   "x2-thunderhead-stormfists": ["stormfist-blue-lunge", "body"],
 } as const;
 
@@ -78,8 +77,7 @@ describe("owner-notes W-VFX weapon identities", () => {
           : { x: 100 + meleeReach(definition), y: 200 };
         expect(point.x, weaponId).toBeCloseTo(expected.x, 8);
         expect(point.y, weaponId).toBeCloseTo(expected.y, 8);
-      }
-      else expect(distance, weaponId).toBeCloseTo(meleeReach(definition) * 0.78, 8);
+      } else expect(distance, weaponId).toBeCloseTo(meleeReach(definition) * 0.78, 8);
     }
   });
 
@@ -289,18 +287,13 @@ describe("owner-notes W-VFX weapon identities", () => {
     ).toBe(1);
   });
 
-  it("retains Dustreaper's smooth G3 three-beat sentence with a 30x target flame accent", () => {
+  it("retains Dustreaper's smooth G3 three-beat sentence after retiring its particle accent", () => {
     const { definition, selection } = combo("x2-dustreaper-zweihander");
     expect(selection.variant).toBe("claymore-breach");
     expect(selection.sequence).toHaveLength(3);
     expect(new Set(selection.sequence.map((step) => step.motion)).size).toBe(3);
-    expect(resolveWeaponEffectRecipe(definition)).toMatchObject({
-      id: "dustreaper-continuous-edge",
-      classification: "impact",
-      impactPack: "fire-wisp",
-      impactAnchor: "target",
-      swingCount: 150,
-      emitter: "blade",
-    });
+    expect(definition.effectRecipe).toBeUndefined();
+    expect(resolveWeaponEffectRecipe(definition)).toBeUndefined();
+    expect(WEAPON_EFFECT_RECIPES).not.toHaveProperty("dustreaper-continuous-edge");
   });
 });

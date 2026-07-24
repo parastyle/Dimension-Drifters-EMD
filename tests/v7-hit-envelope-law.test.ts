@@ -187,7 +187,7 @@ describe("V7-HIT standing VFX-collision law", () => {
         });
       }
       for (const delivery of ["gun", "cast", "thrown", "scatter"] as const) {
-        const authored = weapon.hitEnvelope?.projectiles?.[delivery];
+        const authored = weaponHitEnvelopeAuthoringFor(weapon)?.projectiles?.[delivery];
         if (authored) continue;
         const sourceExists =
           (delivery === "gun" && !!weapon.gun) ||
@@ -222,7 +222,7 @@ describe("V7-HIT standing VFX-collision law", () => {
       for (const delivery of ["gun", "cast", "thrown", "scatter"] as const) {
         const body = server.projectiles[delivery];
         if (!body) continue;
-        const visualAuthoring = weapon.hitEnvelope?.projectiles?.[delivery];
+        const visualAuthoring = weaponHitEnvelopeAuthoringFor(weapon)?.projectiles?.[delivery];
         agree(id, `${delivery}/radius`, visualAuthoring?.radius ?? PROJECTILE_RADIUS, body.radius);
         agree(id, `${delivery}/halfLength`, visualAuthoring?.halfLength ?? 0, body.halfLength);
       }

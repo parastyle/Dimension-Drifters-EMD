@@ -41,6 +41,8 @@ export interface BladeExtensionEnvelopeAuthoring {
 
 export interface WeaponHitEnvelopeAuthoring {
   readonly melee?: {
+    /** Static image-owned segment reach from the wielder root. Does not mutate WeaponDef.range. */
+    readonly reach?: number;
     readonly halfWidth?: number;
     readonly bladeExtension?: BladeExtensionEnvelopeAuthoring;
   };
@@ -75,6 +77,13 @@ export const BLADE_EXTENSION_IGNITION_SECONDS = 0.1;
 /** Presentation-only retraction after the accepted combo lifetime lapses. */
 export const BLADE_EXTENSION_RETRACTION_SECONDS = 0.09;
 
+/** B11 generated-image silhouettes. These values size both the client art and server collision contract. */
+export const DUSTREAPER_FIRE_DRAGON_REACH = 300;
+export const DUSTREAPER_FIRE_DRAGON_HALF_WIDTH = 54;
+export const MESA_HEART_CRYSTAL_FRAGMENT_RADIUS = 58;
+export const ARCANIST_LANCE_PROJECTILE_RADIUS = 17;
+export const ARCANIST_LANCE_PROJECTILE_HALF_LENGTH = 55;
+
 function extensionAuthoring(): Readonly<WeaponHitEnvelopeAuthoring> {
   return Object.freeze({
     melee: Object.freeze({
@@ -97,6 +106,25 @@ export const LEGACY_WEAPON_HIT_ENVELOPE_OVERRIDES: Readonly<
   "x2-nullwake-ordinance": extensionAuthoring(),
   "x2-dawnwall-testament": extensionAuthoring(),
   "x2-cairnfall-monolith": extensionAuthoring(),
+  "x2-dustreaper-zweihander": Object.freeze({
+    melee: Object.freeze({
+      reach: DUSTREAPER_FIRE_DRAGON_REACH,
+      halfWidth: DUSTREAPER_FIRE_DRAGON_HALF_WIDTH,
+    }),
+  }),
+  "x2-mesa-heart-geodes": Object.freeze({
+    melee: Object.freeze({
+      halfWidth: MESA_HEART_CRYSTAL_FRAGMENT_RADIUS,
+    }),
+  }),
+  "x-staff-arcane-lance": Object.freeze({
+    projectiles: Object.freeze({
+      cast: Object.freeze({
+        radius: ARCANIST_LANCE_PROJECTILE_RADIUS,
+        halfLength: ARCANIST_LANCE_PROJECTILE_HALF_LENGTH,
+      }),
+    }),
+  }),
 });
 
 export function weaponHitEnvelopeAuthoringFor(
@@ -282,14 +310,15 @@ export interface MeleeDamageEnvelope {
 }
 
 export function meleeDamageEnvelopeFor(weapon: WeaponDef, renderScale = 1): MeleeDamageEnvelope {
+  const authoring = weaponHitEnvelopeAuthoringFor(weapon)?.melee;
   const baseReach = meleeReach(weapon, renderScale);
   const baseHalfWidth =
-    Math.max(0, weaponHitEnvelopeAuthoringFor(weapon)?.melee?.halfWidth ?? MELEE_BLADE_HALFWIDTH) *
-    Math.max(0, renderScale);
+    Math.max(0, authoring?.halfWidth ?? MELEE_BLADE_HALFWIDTH) * Math.max(0, renderScale);
+  const imageReach = Math.max(0, authoring?.reach ?? 0) * Math.max(0, renderScale);
   const bladeExtension = bladeExtensionGeometryFor(weapon, renderScale);
   return Object.freeze({
     baseReach,
-    maxReach: Math.max(baseReach, bladeExtension?.fullTipReach ?? 0),
+    maxReach: Math.max(baseReach, imageReach, bladeExtension?.fullTipReach ?? 0),
     baseHalfWidth,
     // Extension presentation measures the held blade's alpha silhouette at its join. Shared combat has no
     // sprite pixels, so width remains the existing blade edge rather than reintroducing an authored ratio.
@@ -311,13 +340,17 @@ export function meleeDamageReachAt(
 ): number {
   const envelope = meleeDamageEnvelopeFor(weapon, renderScale);
   const extension = envelope.bladeExtension;
-  if (!extension) return envelope.baseReach;
+  const imageReach =
+    Math.max(0, weaponHitEnvelopeAuthoringFor(weapon)?.melee?.reach ?? 0) *
+    Math.max(0, renderScale);
+  const staticReach = Math.max(envelope.baseReach, imageReach);
+  if (!extension) return staticReach;
   const reveal = bladeExtensionReveal(weapon, swing, elapsedSeconds);
   const lengthScale = bladeExtensionPoseAt(weapon, swing, elapsedSeconds, 0)?.lengthScale ?? 1;
   const gripReach = extension.fullTipReach - extension.totalBladeLength;
   const emergedLength = extension.totalBladeLength - extension.physicalBladeLength;
   return Math.max(
-    envelope.baseReach,
+    staticReach,
     gripReach + (extension.physicalBladeLength + emergedLength * reveal) * lengthScale,
   );
 }
@@ -333,7 +366,7 @@ export function meleeDamageHalfWidthAt(
   renderScale = 1,
 ): number {
   const envelope = meleeDamageEnvelopeFor(weapon, renderScale);
-  return envelope.baseHalfWidth;
+  return envelope.maxHalfWidth;
 }
 
 export interface ProjectileDamageEnvelope {

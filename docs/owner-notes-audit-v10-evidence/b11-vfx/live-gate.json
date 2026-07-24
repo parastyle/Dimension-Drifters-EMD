@@ -1,0 +1,313 @@
+{
+  "capturedAt": "2026-07-24T00:28:53.649Z",
+  "baseURL": "http://127.0.0.1:58769",
+  "clientPort": 58769,
+  "gamePort": 58768,
+  "protectedPorts": [
+    5180,
+    2567
+  ],
+  "characterId": "proto-cowboy-hidden-face",
+  "assertions": {
+    "sixFacingCaptures": true,
+    "allSubjectsVisible": true,
+    "oldProceduralAbsent": true,
+    "envelopesAligned": true,
+    "privatePorts": true,
+    "wholeArtCharacter": "proto-cowboy-hidden-face"
+  },
+  "captures": [
+    {
+      "weaponId": "x2-dustreaper-zweihander",
+      "facing": "right",
+      "attackSeqBefore": 0,
+      "attackSeqAfter": 1,
+      "generatedEvents": [
+        {
+          "kind": "swing",
+          "weaponId": "x2-dustreaper-zweihander",
+          "recipeKind": "fire-dragon-sweep",
+          "subject": "vfx-fire-dragon",
+          "textureKey": "b11:fire-dragon",
+          "proceduralLayers": [],
+          "x": 2400,
+          "y": 2420,
+          "angle": -1.5498234513477656,
+          "visibleForwardExtent": 300,
+          "damageForwardExtent": 300,
+          "visibleHalfWidth": 54,
+          "damageHalfWidth": 54,
+          "poolSize": 1
+        }
+      ],
+      "oldProceduralEvents": [],
+      "visibleObjects": [
+        {
+          "name": "generated-image-vfx:x2-dustreaper-zweihander:fire-dragon",
+          "alpha": 0.98,
+          "displayWidth": 300,
+          "displayHeight": 108,
+          "textureKey": "b11:fire-dragon"
+        }
+      ],
+      "projectileRecipe": null,
+      "generatedProjectileWeaponId": null,
+      "screenshot": "docs/owner-notes-audit-v10-evidence/b11-vfx/x2-dustreaper-zweihander-right.png"
+    },
+    {
+      "weaponId": "x2-dustreaper-zweihander",
+      "facing": "left",
+      "attackSeqBefore": 1,
+      "attackSeqAfter": 2,
+      "generatedEvents": [
+        {
+          "kind": "swing",
+          "weaponId": "x2-dustreaper-zweihander",
+          "recipeKind": "fire-dragon-sweep",
+          "subject": "vfx-fire-dragon",
+          "textureKey": "b11:fire-dragon",
+          "proceduralLayers": [],
+          "x": 2400,
+          "y": 2420,
+          "angle": -4.691592502593994,
+          "visibleForwardExtent": 300,
+          "damageForwardExtent": 300,
+          "visibleHalfWidth": 54,
+          "damageHalfWidth": 54,
+          "poolSize": 1
+        }
+      ],
+      "oldProceduralEvents": [],
+      "visibleObjects": [
+        {
+          "name": "generated-image-vfx:x2-dustreaper-zweihander:fire-dragon",
+          "alpha": 0.98,
+          "displayWidth": 300,
+          "displayHeight": 108,
+          "textureKey": "b11:fire-dragon"
+        }
+      ],
+      "projectileRecipe": null,
+      "generatedProjectileWeaponId": null,
+      "screenshot": "docs/owner-notes-audit-v10-evidence/b11-vfx/x2-dustreaper-zweihander-left.png"
+    },
+    {
+      "weaponId": "x2-mesa-heart-geodes",
+      "facing": "right",
+      "attackSeqBefore": 2,
+      "attackSeqAfter": 3,
+      "generatedEvents": [
+        {
+          "kind": "swing",
+          "weaponId": "x2-mesa-heart-geodes",
+          "recipeKind": "purple-crystal-burst",
+          "subject": "vfx-purple-crystal-family",
+          "textureKey": "b11:purple-crystal-family",
+          "proceduralLayers": [],
+          "x": 2400,
+          "y": 2420,
+          "angle": -0.9000002374374901,
+          "visibleForwardExtent": 360,
+          "damageForwardExtent": 360,
+          "visibleHalfWidth": 58,
+          "damageHalfWidth": 58,
+          "poolSize": 6
+        },
+        {
+          "kind": "chain-burst",
+          "weaponId": "x2-mesa-heart-geodes",
+          "recipeKind": "purple-crystal-burst",
+          "subject": "vfx-purple-crystal-family",
+          "textureKey": "b11:purple-crystal-family",
+          "proceduralLayers": [],
+          "x": 2400,
+          "y": 2420,
+          "visibleHalfWidth": 41.76,
+          "poolSize": 2
+        },
+        {
+          "kind": "chain-burst",
+          "weaponId": "x2-mesa-heart-geodes",
+          "recipeKind": "purple-crystal-burst",
+          "subject": "vfx-purple-crystal-family",
+          "textureKey": "b11:purple-crystal-family",
+          "proceduralLayers": [],
+          "x": 2600,
+          "y": 2570,
+          "visibleHalfWidth": 48.72,
+          "poolSize": 2
+        }
+      ],
+      "oldProceduralEvents": [],
+      "visibleObjects": [
+        {
+          "name": "generated-image-vfx:x2-mesa-heart-geodes:crystal-pool",
+          "alpha": 0.74,
+          "displayWidth": 0,
+          "displayHeight": 0
+        }
+      ],
+      "projectileRecipe": null,
+      "generatedProjectileWeaponId": null,
+      "screenshot": "docs/owner-notes-audit-v10-evidence/b11-vfx/x2-mesa-heart-geodes-right.png"
+    },
+    {
+      "weaponId": "x2-mesa-heart-geodes",
+      "facing": "left",
+      "attackSeqBefore": 3,
+      "attackSeqAfter": 4,
+      "generatedEvents": [
+        {
+          "kind": "swing",
+          "weaponId": "x2-mesa-heart-geodes",
+          "recipeKind": "purple-crystal-burst",
+          "subject": "vfx-purple-crystal-family",
+          "textureKey": "b11:purple-crystal-family",
+          "proceduralLayers": [],
+          "x": 2400,
+          "y": 2420,
+          "angle": -4.0415925025939945,
+          "visibleForwardExtent": 360,
+          "damageForwardExtent": 360,
+          "visibleHalfWidth": 58,
+          "damageHalfWidth": 58,
+          "poolSize": 6
+        }
+      ],
+      "oldProceduralEvents": [],
+      "visibleObjects": [
+        {
+          "name": "generated-image-vfx:x2-mesa-heart-geodes:crystal-pool",
+          "alpha": 0.74,
+          "displayWidth": 0,
+          "displayHeight": 0
+        }
+      ],
+      "projectileRecipe": null,
+      "generatedProjectileWeaponId": null,
+      "screenshot": "docs/owner-notes-audit-v10-evidence/b11-vfx/x2-mesa-heart-geodes-left.png"
+    },
+    {
+      "weaponId": "x-staff-arcane-lance",
+      "facing": "right",
+      "attackSeqBefore": 4,
+      "attackSeqAfter": 5,
+      "generatedEvents": [
+        {
+          "kind": "projectile",
+          "weaponId": "x-staff-arcane-lance",
+          "recipeKind": "arcane-lance-projectile",
+          "subject": "vfx-arcanist-lance",
+          "textureKey": "b11:arcanist-lance",
+          "proceduralLayers": [],
+          "x": 2591.968017578125,
+          "y": 2409.622314453125,
+          "angle": -0.16000024572484087,
+          "projectileTipExtent": 72,
+          "projectileDamageTipExtent": 72,
+          "visibleHalfWidth": 17,
+          "damageHalfWidth": 17,
+          "poolSize": 1
+        },
+        {
+          "kind": "projectile",
+          "weaponId": "x-staff-arcane-lance",
+          "recipeKind": "arcane-lance-projectile",
+          "subject": "vfx-arcanist-lance",
+          "textureKey": "b11:arcanist-lance",
+          "proceduralLayers": [],
+          "x": 2592.760009765625,
+          "y": 2419.5,
+          "angle": -2.3743768613184204e-7,
+          "projectileTipExtent": 72,
+          "projectileDamageTipExtent": 72,
+          "visibleHalfWidth": 17,
+          "damageHalfWidth": 17,
+          "poolSize": 1
+        },
+        {
+          "kind": "projectile",
+          "weaponId": "x-staff-arcane-lance",
+          "recipeKind": "arcane-lance-projectile",
+          "subject": "vfx-arcanist-lance",
+          "textureKey": "b11:arcanist-lance",
+          "proceduralLayers": [],
+          "x": 2591.968017578125,
+          "y": 2429.377685546875,
+          "angle": 0.15999976840551414,
+          "projectileTipExtent": 72,
+          "projectileDamageTipExtent": 72,
+          "visibleHalfWidth": 17,
+          "damageHalfWidth": 17,
+          "poolSize": 1
+        }
+      ],
+      "oldProceduralEvents": [],
+      "visibleObjects": [],
+      "projectileRecipe": null,
+      "generatedProjectileWeaponId": "x-staff-arcane-lance",
+      "screenshot": "docs/owner-notes-audit-v10-evidence/b11-vfx/x-staff-arcane-lance-right.png"
+    },
+    {
+      "weaponId": "x-staff-arcane-lance",
+      "facing": "left",
+      "attackSeqBefore": 5,
+      "attackSeqAfter": 6,
+      "generatedEvents": [
+        {
+          "kind": "projectile",
+          "weaponId": "x-staff-arcane-lance",
+          "recipeKind": "arcane-lance-projectile",
+          "subject": "vfx-arcanist-lance",
+          "textureKey": "b11:arcanist-lance",
+          "proceduralLayers": [],
+          "x": 2208.031982421875,
+          "y": 2430.377685546875,
+          "angle": 2.9815928851842792,
+          "projectileTipExtent": 72,
+          "projectileDamageTipExtent": 72,
+          "visibleHalfWidth": 17,
+          "damageHalfWidth": 17,
+          "poolSize": 1
+        },
+        {
+          "kind": "projectile",
+          "weaponId": "x-staff-arcane-lance",
+          "recipeKind": "arcane-lance-projectile",
+          "subject": "vfx-arcanist-lance",
+          "textureKey": "b11:arcanist-lance",
+          "proceduralLayers": [],
+          "x": 2207.239990234375,
+          "y": 2420.5,
+          "angle": -3.141592416640042,
+          "projectileTipExtent": 72,
+          "projectileDamageTipExtent": 72,
+          "visibleHalfWidth": 17,
+          "damageHalfWidth": 17,
+          "poolSize": 1
+        },
+        {
+          "kind": "projectile",
+          "weaponId": "x-staff-arcane-lance",
+          "recipeKind": "arcane-lance-projectile",
+          "subject": "vfx-arcanist-lance",
+          "textureKey": "b11:arcanist-lance",
+          "proceduralLayers": [],
+          "x": 2208.031982421875,
+          "y": 2410.622314453125,
+          "angle": -2.9815924078649525,
+          "projectileTipExtent": 72,
+          "projectileDamageTipExtent": 72,
+          "visibleHalfWidth": 17,
+          "damageHalfWidth": 17,
+          "poolSize": 1
+        }
+      ],
+      "oldProceduralEvents": [],
+      "visibleObjects": [],
+      "projectileRecipe": null,
+      "generatedProjectileWeaponId": "x-staff-arcane-lance",
+      "screenshot": "docs/owner-notes-audit-v10-evidence/b11-vfx/x-staff-arcane-lance-left.png"
+    }
+  ]
+}

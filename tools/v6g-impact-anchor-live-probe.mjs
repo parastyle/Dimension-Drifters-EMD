@@ -53,6 +53,7 @@ for (const [label, weaponId] of cases) {
       arena.game.hasFocus = true;
       globalThis.__ddV6GAnchorCapture = true;
       globalThis.__ddV6GAnchorEvents = [];
+      globalThis.__ddB11GeneratedImageVfxAudit = [];
       const room = arena.room;
       const self = room.state.players.get(room.sessionId);
       const target = arena.currentBeamAim();
@@ -91,8 +92,11 @@ for (const [label, weaponId] of cases) {
             (event) => event.kind === "beam-cursor-endpoint" && event.weaponId === wanted,
           );
         if (probeLabel === "dustreaper")
-          return events.some(
-            (event) => event.kind === "weapon-effect-recipe" && event.weaponId === wanted,
+          return (globalThis.__ddB11GeneratedImageVfxAudit ?? []).some(
+            (event) =>
+              event.kind === "swing" &&
+              event.weaponId === wanted &&
+              event.subject === "vfx-fire-dragon",
           );
         return events.some(
           (event) => event.kind === "weapon-vfx-suite" && event.weaponId === wanted,
@@ -105,6 +109,13 @@ for (const [label, weaponId] of cases) {
     const events = await page.evaluate(
       (wanted) =>
         (globalThis.__ddV6GAnchorEvents ?? []).filter((event) => event.weaponId === wanted),
+      weaponId,
+    );
+    const generatedImageEvents = await page.evaluate(
+      (wanted) =>
+        (globalThis.__ddB11GeneratedImageVfxAudit ?? []).filter(
+          (event) => event.weaponId === wanted,
+        ),
       weaponId,
     );
     const screenshot = path.join(evidenceRoot, `v6g1-${label}.png`);
@@ -123,12 +134,25 @@ for (const [label, weaponId] of cases) {
       targetAnchor:
         label === "riftcaller"
           ? !layerIds.includes("shockwave-ring") && !layerIds.includes("sigil-ring")
-          : !!latestTarget,
-      cursorDeltaOk: label === "riftcaller" ? true : endpointDelta !== null && endpointDelta <= 3,
-      awayFromActor: label === "riftcaller" ? true : actorDelta !== null && actorDelta >= 30,
-      dustreaperFlame:
+          : label === "dustreaper"
+            ? generatedImageEvents.some((event) => event.kind === "swing")
+            : !!latestTarget,
+      cursorDeltaOk:
+        label === "riftcaller" || label === "dustreaper"
+          ? true
+          : endpointDelta !== null && endpointDelta <= 3,
+      awayFromActor:
+        label === "riftcaller" || label === "dustreaper"
+          ? true
+          : actorDelta !== null && actorDelta >= 30,
+      dustreaperDragon:
         label !== "dustreaper" ||
-        events.some((event) => event.pack === "fire-wisp" && event.count === 150),
+        generatedImageEvents.some(
+          (event) =>
+            event.subject === "vfx-fire-dragon" &&
+            event.visibleForwardExtent === event.damageForwardExtent &&
+            event.proceduralLayers?.length === 0,
+        ),
       riftcallerAuraDeleted:
         label !== "riftcaller" ||
         (!layerIds.includes("shockwave-ring") && !layerIds.includes("sigil-ring")),
@@ -145,6 +169,7 @@ for (const [label, weaponId] of cases) {
       endpointDelta,
       actorDelta,
       events,
+      generatedImageEvents,
       assertions,
       browserErrors,
       unexpectedBrowserErrors,
@@ -161,6 +186,7 @@ for (const [label, weaponId] of cases) {
     await page
       .evaluate(() => {
         globalThis.__ddV6GAnchorCapture = false;
+        globalThis.__ddB11GeneratedImageVfxAudit = undefined;
         const arena = globalThis.ddGame?.scene?.getScene("arena");
         if (arena?.input?.activePointer) arena.input.activePointer.rightButtonDown = () => false;
         if (globalThis.__ddV6GInputTimer) window.clearInterval(globalThis.__ddV6GInputTimer);

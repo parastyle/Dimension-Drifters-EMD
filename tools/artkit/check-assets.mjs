@@ -81,7 +81,10 @@ function extractArrayStrings(source, exportName, label) {
 
 function extractPropertyStrings(source, properties, label) {
   const names = properties.join("|");
-  const pattern = new RegExp(`\\b(?:${names})\\s*:\\s*("(?:\\\\.|[^"\\\\])*")`, "g");
+  const pattern = new RegExp(
+    `(?:"(?:${names})"|\\b(?:${names})\\b)\\s*:\\s*("(?:\\\\.|[^"\\\\])*")`,
+    "g",
+  );
   return [...source.matchAll(pattern)]
     .map((match) => parseString(match[1], label))
     .filter((item) => item != null);
