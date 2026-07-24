@@ -167,7 +167,9 @@ for (const weapon of ranged) {
   const spriteId = weapon.sprite ?? weapon.id;
   const installedPartFiles = await existingPartFiles(spriteId);
   const partFiles =
-    weapon.dual || weapon.impactMuzzle ? installedPartFiles : installedPartFiles.slice(0, 1);
+    weapon.dual || weapon.impactMuzzle || weapon.breakAction
+      ? installedPartFiles
+      : installedPartFiles.slice(0, 1);
   const derivedParts = [];
   for (let part = 0; part < partFiles.length; part++) {
     const { data, info } = await sharp(partFiles[part])

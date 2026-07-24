@@ -7159,22 +7159,29 @@
       "name": "Frostbore Scattergun",
       "type": "ranged",
       "family": "shotgun",
-      "theme": "rime-bored pump shotgun",
+      "theme": "rime-bored break-action double shotgun",
       "element": "frost",
       "finish": "pristine",
       "grip": "2H",
       "handlingTags": [
-        "pump"
+        "break"
       ],
+      "breakAction": {
+        "hinge": {
+          "x": 0.4341814159,
+          "y": 0.5294117647
+        },
+        "openAngleRad": 0.5235987756
+      },
       "gripPoints": {
         "primary": {
           "x": 0.36,
           "y": 0.62
         },
         "secondary": {
-          "x": 0.72,
-          "y": 0.79,
-          "role": "pump"
+          "x": 0.58,
+          "y": 0.68,
+          "role": "horizontal-foregrip"
         }
       },
       "size": "M",
@@ -7189,15 +7196,15 @@
       "cardartAction": "pumped and fired, a fan of glittering cyan ice-shards and a puff of freezing vapour spraying from the frosted bore",
       "behavior": {
         "kind": "gun",
-        "damage": 5,
+        "damage": 7,
         "projectileSpeed": 800,
         "range": 380,
         "fireRate": 0.5,
         "pellets": 6,
         "spread": 0.3,
         "pierce": 1,
-        "magazine": 6,
-        "reloadSeconds": 1.4,
+        "magazine": 2,
+        "reloadSeconds": 0.9,
         "bulletKind": "pellet",
         "muzzle": "punch",
         "muzzleColor": 3397375,

@@ -4,7 +4,7 @@ import { projectileColorSuffix } from "../packages/client/src/scenes/arena/proje
 
 const catalog = Object.values(WEAPONS);
 
-function tagged(tag: "bolt" | "lever" | "pump" | "pistol"): WeaponDef[] {
+function tagged(tag: "bolt" | "break" | "lever" | "pump" | "pistol"): WeaponDef[] {
   return catalog.filter((weapon) => weaponHasHandlingTag(weapon, tag));
 }
 
@@ -32,9 +32,14 @@ describe("V3G catalog gun-handling laws", () => {
     const candidates = catalog.filter(
       (weapon) =>
         !!weapon.gun &&
+<<<<<<< HEAD
         ((weapon.tags.family === "shotgun" &&
           weapon.id !== "x2-dustdevil-riotgun" &&
           weapon.id !== "x2-twin-maw-greenerbore") ||
+=======
+        !weapon.breakAction &&
+        ((weapon.tags.family === "shotgun" && weapon.id !== "x2-dustdevil-riotgun") ||
+>>>>>>> sol/b32-frostbore-breakaction
           /\bpump-rifle\b/i.test(weapon.name) ||
           /\bbuckshot avalanche\b/i.test(weapon.name)),
     );
@@ -100,12 +105,20 @@ describe("V3G named grip truth and Thunderhead redistribution", () => {
   it.each([
     ["x2-rustwidow-pump-rifle", 0.64, 0.78],
     ["x2-buckshot-briar", 0.67, 0.76],
-    ["x2-frostbore-scattergun", 0.72, 0.79],
     ["x2-galvanic-coachgun", 0.69, 0.68],
     ["x2-hallowbore-coachgun", 0.66, 0.58],
     ["x2-boomstick-saddlegun", 0.67, 0.49],
   ] as const)("places %s's support hand on the pictured pump/fore-end", (id, x, y) => {
     expect(WEAPONS[id]?.gripPoints?.secondary).toMatchObject({ role: "pump", x, y });
+  });
+
+  it("places Frostbore's support hand on its barrel-mounted fore-wrap", () => {
+    expect(WEAPONS["x2-frostbore-scattergun"]?.gripPoints?.secondary).toMatchObject({
+      role: "horizontal-foregrip",
+      x: 0.58,
+      y: 0.68,
+    });
+    expect(weaponHasHandlingTag(WEAPONS["x2-frostbore-scattergun"], "break")).toBe(true);
   });
 
   it("doubles Cinderquill's held size", () => {

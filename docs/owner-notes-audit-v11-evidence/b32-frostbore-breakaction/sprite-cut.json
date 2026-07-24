@@ -1,0 +1,25 @@
+{
+  "source": "tools/artkit/fixtures/x2-frostbore-scattergun-closed.png",
+  "outputs": [
+    "packages/client/public/sprites/x2-frostbore-scattergun/part-1.png",
+    "packages/client/public/sprites/x2-frostbore-scattergun/part-2.png"
+  ],
+  "canvas": {
+    "width": 1808,
+    "height": 459
+  },
+  "cutX": 785,
+  "hinge": {
+    "x": 785,
+    "y": 243
+  },
+  "opaqueCoverage": {
+    "receiverPixels": 180348,
+    "barrelPixels": 202287
+  },
+  "closedComposite": {
+    "changedBytes": 0,
+    "maxChannelDelta": 0
+  },
+  "palettePolicy": "source pixels only; no generated colours"
+}

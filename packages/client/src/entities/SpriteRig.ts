@@ -6,6 +6,8 @@ import {
   comboStepForChain,
   composeWeaponTransform,
   createKatanaChoreographySample,
+  type BreakActionClockSample,
+  type BreakActionPhase,
   AUTHORED_DUAL_MELEE_BAR,
   AUTHORED_DUAL_MELEE_SEQUENCE_LENGTH,
   decodeGearCosmetics,
@@ -16,6 +18,7 @@ import {
   GROUND_EPSILON,
   INTERP_SNAP_PLAYER,
   isMonkGloveWeapon,
+  isBreakActionWeapon,
   isWornWeapon,
   JIGGLE_FOOT_AIR_INERTIA,
   JIGGLE_FOOT_AIR_W,
@@ -85,6 +88,7 @@ import {
   STANCE_SLIDE,
   type SwingDescriptor,
   sampleKatanaChoreography,
+  sampleBreakActionClock,
   swingDescriptorFor,
   swingDescriptorWithComboStep,
   TICK_MS,
@@ -668,15 +672,12 @@ export function idleFlourishEligibleEpoch(
 }
 
 /** Layout offset for one authored dual-pistol definition. */
-export function authoredDualPistolHandYOffset(
-  weapon: WeaponDef | undefined,
-  hand: 0 | 1,
-): number {
+export function authoredDualPistolHandYOffset(weapon: WeaponDef | undefined, hand: 0 | 1): number {
   if (!weapon?.dual || !weaponHasHandlingTag(weapon, "pistol")) return 0;
   return hand === 0 ? -DUAL_PISTOL_HAND_RISE_BODY_FRAC : 0;
 }
 
-export type GunHandlingMechanism = "bolt" | "lever" | "pump";
+export type GunHandlingMechanism = "bolt" | "break" | "lever" | "pump";
 
 interface GunHandlingCycleState {
   active: boolean;
@@ -699,6 +700,7 @@ export function gunHandlingMechanismFor(
   def: WeaponDef | undefined,
 ): GunHandlingMechanism | undefined {
   if (!def?.gun) return undefined;
+  if (weaponHasHandlingTag(def, "break")) return "break";
   if (weaponHasHandlingTag(def, "bolt")) return "bolt";
   if (weaponHasHandlingTag(def, "lever")) return "lever";
   if (weaponHasHandlingTag(def, "pump")) return "pump";
@@ -717,6 +719,7 @@ export function gunHandlingCycleDurationMs(
   fireRateSeconds: number | undefined,
 ): number {
   if (!mechanism) return 0;
+  if (mechanism === "break") return 0;
   const authoredMs = mechanism === "bolt" ? 520 : mechanism === "pump" ? 240 : 220;
   if (!fireRateSeconds || fireRateSeconds <= 0) return authoredMs;
   return Math.min(authoredMs, Math.max(96, fireRateSeconds * 1000 - 24));
@@ -766,6 +769,7 @@ export function sampleGunHandlingHandOffset(
     out.forward = -displayLength * 0.1 * phasedStroke(0.42);
     return out;
   }
+  if (mechanism === "break") return out;
   const stroke = phasedStroke(0.4);
   out.forward = -displayLength * 0.035 * stroke;
   out.lateral = displayLength * 0.07 * stroke;
@@ -797,6 +801,30 @@ export function resolveSecondaryGripPosition(
   const localY =
     (input.secondary.y - input.primary.y) * input.spriteHeight * input.scaleY +
     input.flourishLateral;
+  const c = Math.cos(input.rotationRad);
+  const s = Math.sin(input.rotationRad);
+  out.x = input.primaryX + c * localX - s * localY;
+  out.y = input.primaryY + s * localX + c * localY;
+  return out;
+}
+
+/** Follow a secondary fore-wrap point on a rigid barrel that pivots around an authored source-space hinge. */
+export function resolveBreakActionSecondaryGripPosition(
+  input: Readonly<SecondaryGripTransformInput>,
+  hinge: Readonly<{ x: number; y: number }>,
+  angleRad: number,
+  out: { x: number; y: number },
+): { x: number; y: number } {
+  const hingeX = (hinge.x - input.primary.x) * input.spriteWidth * input.scaleX;
+  const hingeY = (hinge.y - input.primary.y) * input.spriteHeight * input.scaleY;
+  const secondaryX = (input.secondary.x - input.primary.x) * input.spriteWidth * input.scaleX;
+  const secondaryY = (input.secondary.y - input.primary.y) * input.spriteHeight * input.scaleY;
+  const breakC = Math.cos(angleRad);
+  const breakS = Math.sin(angleRad);
+  const relativeX = secondaryX - hingeX;
+  const relativeY = secondaryY - hingeY;
+  const localX = hingeX + breakC * relativeX - breakS * relativeY + input.flourishForward;
+  const localY = hingeY + breakS * relativeX + breakC * relativeY + input.flourishLateral;
   const c = Math.cos(input.rotationRad);
   const s = Math.sin(input.rotationRad);
   out.x = input.primaryX + c * localX - s * localY;
@@ -1688,6 +1716,11 @@ interface RigFoot extends JigglePartState {
   front: boolean;
 }
 
+interface BreakActionAttachment {
+  readonly barrel: Phaser.GameObjects.Image;
+  readonly shells: readonly [Phaser.GameObjects.Rectangle, Phaser.GameObjects.Rectangle];
+}
+
 interface FlourishChannelState {
   active: boolean;
   moment: FlourishMoment;
@@ -2253,6 +2286,22 @@ export class SpriteRig {
     tellRim?: Phaser.GameObjects.Image;
     tellEcho?: Phaser.GameObjects.Image;
   }[] = [];
+  /** Frostbore-only registered part-2 layer; it is not a second held weapon/hand. */
+  private breakActionAttachment?: BreakActionAttachment;
+  private breakActionSample: BreakActionClockSample = {
+    active: false,
+    angleRad: 0,
+    ejectStrength: 0,
+    elapsedTicks: 0,
+    muzzleAllowed: true,
+    phase: "closed",
+    progress: 1,
+    totalTicks: 0,
+  };
+  private breakActionAudioPhase: BreakActionPhase = "closed";
+  private breakActionAudioActive = false;
+  private authoritativeGunCharges = 0;
+  private authoritativeGunMaxCharges = 0;
   /** B19 worn foot sprites stay separate from held-hand weapon channels, which are intentionally 0/1 only. */
   private wrapFootWeapons: {
     img: Phaser.GameObjects.Image;
@@ -3285,6 +3334,9 @@ export class SpriteRig {
     if (!weapon) return;
     if (weapon.tellRim) stack.push(weapon.tellRim);
     stack.push(weapon.img);
+    if (weapon === this.weapons[0] && this.breakActionAttachment) {
+      stack.push(this.breakActionAttachment.barrel, ...this.breakActionAttachment.shells);
+    }
     if (weapon.tellEcho) stack.push(weapon.tellEcho);
   }
 
@@ -3546,13 +3598,26 @@ export class SpriteRig {
     out: { x: number; y: number },
     preferredHand?: 0 | 1,
   ): boolean {
+    const breakActionBarrel =
+      point.part === 1 && isBreakActionWeapon(this.weaponDef)
+        ? this.breakActionAttachment?.barrel
+        : undefined;
+    if (point.part === 1 && isBreakActionWeapon(this.weaponDef)) {
+      if (
+        !this.breakActionSample.muzzleAllowed ||
+        !breakActionBarrel?.active ||
+        !breakActionBarrel.visible
+      )
+        return false;
+    }
     const preferred = preferredHand === undefined ? undefined : this.weapons[preferredHand];
-    const weapon =
-      preferred?.partIndex === point.part
+    const weapon = breakActionBarrel
+      ? this.weapons[0]
+      : preferred?.partIndex === point.part
         ? preferred
         : this.weapons.find((candidate) => candidate.partIndex === point.part);
     if (!weapon?.img.active || !weapon.img.visible) return false;
-    const image = weapon.img;
+    const image = breakActionBarrel ?? weapon.img;
     const local = weaponSpriteTransform({
       x: image.x,
       y: image.y,
@@ -3598,7 +3663,7 @@ export class SpriteRig {
     if (!definition) return false;
     const points = weaponArtMuzzlePointsForShot(definition, acceptedSeq);
     const point = points[barrelIndex] ?? points[0];
-    const hand = point?.part === 1 ? 1 : 0;
+    const hand = isBreakActionWeapon(this.weaponDef) ? 0 : point?.part === 1 ? 1 : 0;
     return point ? this.writeWeaponArtMuzzle(point, out, hand) : false;
   }
 
@@ -4997,10 +5062,71 @@ export class SpriteRig {
     }
   }
 
-  /** Sample the replicated server attack clock; local prediction never writes this tick pair. */
-  setAuthoritativeAttackClock(attackTick: number, clockTick: number): void {
+  private refreshBreakActionClock(): void {
+    const priorPhase = this.breakActionAudioPhase;
+    const priorActive = this.breakActionAudioActive;
+    this.breakActionSample = sampleBreakActionClock(
+      this.weaponDef,
+      this.authoritativeFiringAttackTick,
+      this.authoritativeFiringClockTick,
+      this.authoritativeGunCharges,
+      this.authoritativeGunMaxCharges,
+    );
+    const sample = this.breakActionSample;
+    let cue: "gun:break-close" | "gun:break-open" | undefined;
+    if (
+      sample.active &&
+      (sample.phase === "opening" || sample.phase === "eject") &&
+      (!priorActive || priorPhase === "closed")
+    ) {
+      cue = "gun:break-open";
+    } else if (sample.active && sample.phase === "closing" && priorPhase !== "closing") {
+      cue = "gun:break-close";
+    }
+    if (cue) {
+      const audio = this.scene.game?.registry?.get("audio") as
+        | { play?: (event: string, opts?: { x?: number; amt?: number }) => void }
+        | undefined;
+      audio?.play?.(cue, { x: this.root.x, amt: this.isSelf ? 1 : 0.55 });
+    }
+    this.breakActionAudioPhase = sample.phase;
+    this.breakActionAudioActive = sample.active;
+  }
+
+  /** Read-only live-gate surface for the authoritative break pose and registered barrel layer. */
+  breakActionEvidence(): Readonly<{
+    active: boolean;
+    angleRad: number;
+    barrelRotationRad: number;
+    ejectStrength: number;
+    muzzleAllowed: boolean;
+    phase: BreakActionPhase;
+    shellCount: number;
+  }> {
+    const attachment = this.breakActionAttachment;
+    return {
+      active: this.breakActionSample.active,
+      angleRad: this.breakActionSample.angleRad,
+      barrelRotationRad: attachment?.barrel.rotation ?? 0,
+      ejectStrength: this.breakActionSample.ejectStrength,
+      muzzleAllowed: this.breakActionSample.muzzleAllowed,
+      phase: this.breakActionSample.phase,
+      shellCount: attachment?.shells.filter((shell) => shell.visible).length ?? 0,
+    };
+  }
+
+  /** Sample the replicated server attack/resource clock; local prediction never writes this tuple. */
+  setAuthoritativeAttackClock(
+    attackTick: number,
+    clockTick: number,
+    charges = 0,
+    maxCharges = 0,
+  ): void {
     this.authoritativeFiringAttackTick = attackTick >>> 0;
     this.authoritativeFiringClockTick = clockTick >>> 0;
+    this.authoritativeGunCharges = Math.max(0, charges);
+    this.authoritativeGunMaxCharges = Math.max(0, maxCharges);
+    this.refreshBreakActionClock();
     // Clock ingestion continues through hit-stop. This also guarantees the closed-frame return is
     // applied at the authoritative boundary rather than waiting for animation to resume.
     this.prepareFiringFrames();
@@ -5155,6 +5281,47 @@ export class SpriteRig {
     }
   }
 
+  /** Copy the receiver's final affine onto the registered barrel layer, then pivot only part 2. */
+  private applyBreakActionGeometry(): void {
+    const attachment = this.breakActionAttachment;
+    const receiver = this.weapons[0];
+    if (!attachment || !receiver || !isBreakActionWeapon(receiver.def)) return;
+    const image = receiver.img;
+    const hinge = receiver.def.breakAction.hinge;
+    const sourceHingeX = (hinge.x - image.originX) * image.width * image.scaleX;
+    const sourceHingeY = (hinge.y - image.originY) * image.height * image.scaleY;
+    const receiverC = Math.cos(image.rotation);
+    const receiverS = Math.sin(image.rotation);
+    const hingeX = image.x + receiverC * sourceHingeX - receiverS * sourceHingeY;
+    const hingeY = image.y + receiverS * sourceHingeX + receiverC * sourceHingeY;
+    const barrelRotation = image.rotation + this.breakActionSample.angleRad;
+    attachment.barrel
+      .setOrigin(hinge.x, hinge.y)
+      .setPosition(hingeX, hingeY)
+      .setRotation(barrelRotation)
+      .setScale(image.scaleX, image.scaleY)
+      .setAlpha(image.alpha)
+      .setVisible(image.visible);
+
+    const eject = this.breakActionSample.ejectStrength;
+    for (const [index, shell] of attachment.shells.entries()) {
+      if (eject <= 0.015 || !image.visible) {
+        shell.setVisible(false);
+        continue;
+      }
+      const localX = -4 - eject * 22;
+      const localY = (index === 0 ? -2.4 : 2.4) - eject * 11;
+      shell
+        .setPosition(
+          hingeX + receiverC * localX - receiverS * localY,
+          hingeY + receiverS * localX + receiverC * localY,
+        )
+        .setRotation(image.rotation + (index === 0 ? -0.5 : 0.35) * eject)
+        .setAlpha(Math.min(1, eject * 1.8))
+        .setVisible(true);
+    }
+  }
+
   /** Copy the final hidden foot receiver transforms onto the visible B19 worn overlays. */
   private syncWrapFootWeapons(): void {
     const sourceScale = this.scale || 1;
@@ -5189,6 +5356,43 @@ export class SpriteRig {
     this.wrapFootWeapons.length = 0;
   }
 
+  private destroyBreakActionAttachment(): void {
+    const attachment = this.breakActionAttachment;
+    if (!attachment) return;
+    attachment.barrel.destroy();
+    for (const shell of attachment.shells) shell.destroy();
+    this.breakActionAttachment = undefined;
+    this.breakActionSample = sampleBreakActionClock(undefined, 0, 0, 0, 0);
+    this.breakActionAudioPhase = "closed";
+    this.breakActionAudioActive = false;
+  }
+
+  private setupBreakActionAttachment(
+    spriteId: string,
+    def: WeaponDef,
+    manifest: SpriteManifest,
+  ): void {
+    if (!isBreakActionWeapon(def)) return;
+    const part = manifest.parts[1];
+    if (!part) return;
+    const texture = partTexture(this.scene, spriteId, part.role);
+    const barrel = this.scene.add
+      .image(0, 0, texture.key, texture.frame)
+      .setOrigin(def.breakAction.hinge.x, def.breakAction.hinge.y)
+      .setVisible(false);
+    const shellA = this.scene.add
+      .rectangle(0, 0, 5.2, 2.1, 0xd2a14a)
+      .setStrokeStyle(0.7, 0x704b24, 1)
+      .setVisible(false);
+    const shellB = this.scene.add
+      .rectangle(0, 0, 5.2, 2.1, 0xd2a14a)
+      .setStrokeStyle(0.7, 0x704b24, 1)
+      .setVisible(false);
+    this.root.add([barrel, shellA, shellB]);
+    this.breakActionAttachment = { barrel, shells: [shellA, shellB] };
+    this.refreshBreakActionClock();
+  }
+
   /** Equip the complete render plan for one authored weapon. */
   private equipAuthoredWeapon(lead: RigLoadoutPiece, off?: RigLoadoutPiece): void {
     const spriteId = lead.spriteId;
@@ -5218,6 +5422,7 @@ export class SpriteRig {
     this.destroyMeleeTellLayers();
     this.destroyTomeVisual();
     this.destroyWrapFootWeapons();
+    this.destroyBreakActionAttachment();
     for (const w of this.weapons) w.img.destroy();
     this.weapons = [];
     this.weaponDef = def;
@@ -5333,6 +5538,7 @@ export class SpriteRig {
     };
     const frontWpn = attach(lead, frontHand);
     const backWpn = attach(off, backHand);
+    this.setupBreakActionAttachment(spriteId, def, manifest);
     const wrapMounts = wrapRigMountPlan(def, manifest);
     const footPart = manifest.parts[1];
     if (footPart) {
@@ -5488,12 +5694,9 @@ export class SpriteRig {
       !this.weaponDef.beam;
     const priorAuthoredDualStep = this.authoredDualBarStep;
     const authoredDualStageContinues =
-      authoredDualMelee &&
-      priorAuthoredDualStep >= 0 &&
-      timeMs <= this.authoredDualBarExpiresAtMs;
+      authoredDualMelee && priorAuthoredDualStep >= 0 && timeMs <= this.authoredDualBarExpiresAtMs;
     let comboStageAdvances = false;
-    const explicitAuthoredDualStep =
-      authoredDualStepOverride ?? swing?.authoredDualStep;
+    const explicitAuthoredDualStep = authoredDualStepOverride ?? swing?.authoredDualStep;
     let authoredDualStep = -1;
     if (authoredDualMelee) {
       if (explicitAuthoredDualStep !== undefined) {
@@ -5507,14 +5710,12 @@ export class SpriteRig {
             ? (this.authoredDualBarStep + 1) % AUTHORED_DUAL_MELEE_SEQUENCE_LENGTH
             : 0;
       }
-      comboStageAdvances =
-        authoredDualStageContinues && authoredDualStep !== priorAuthoredDualStep;
+      comboStageAdvances = authoredDualStageContinues && authoredDualStep !== priorAuthoredDualStep;
       this.authoredDualBarStep = authoredDualStep;
       const cadence = requestedSwing?.effectiveCooldown ?? this.weaponDef?.cooldown ?? 0.3;
       this.authoredDualBarExpiresAtMs = timeMs + cadence * 1000 + comboGraceMs(cadence);
     }
-    const barHand =
-      authoredDualStep >= 0 ? AUTHORED_DUAL_MELEE_BAR[authoredDualStep] : undefined;
+    const barHand = authoredDualStep >= 0 ? AUTHORED_DUAL_MELEE_BAR[authoredDualStep] : undefined;
     let swingHand: RigSwingHand = handOverride ?? swing?.hand ?? 0;
     if (barHand === "both") swingHand = "both";
     else if (barHand === "off") swingHand = 1;
@@ -5541,8 +5742,7 @@ export class SpriteRig {
     const activeDef = this.weapons[handIndex]?.def ?? this.weaponDef;
     let terminalFlourishHand: 0 | 1 | undefined;
     const terminalAuthoredDualBar =
-      authoredDualMelee &&
-      isTerminalFlourishStep(authoredDualStep, AUTHORED_DUAL_MELEE_BAR.length);
+      authoredDualMelee && isTerminalFlourishStep(authoredDualStep, AUTHORED_DUAL_MELEE_BAR.length);
     let nextSwing: RigSwingDescriptor | undefined;
     if (activeDef) {
       const effectiveCooldown = requestedSwing?.effectiveCooldown ?? activeDef.cooldown;
@@ -6177,6 +6377,7 @@ export class SpriteRig {
     this.destroyMeleeTellLayers();
     this.destroyTomeVisual();
     this.destroyWrapFootWeapons();
+    this.destroyBreakActionAttachment();
     for (const w of this.weapons) w.img.destroy();
     this.weapons = [];
     this.syncWeaponHandReplacement();
@@ -6204,6 +6405,7 @@ export class SpriteRig {
     this.destroyMeleeTellLayers();
     this.destroyTomeVisual();
     this.destroyWrapFootWeapons();
+    this.destroyBreakActionAttachment();
     for (const w of this.weapons) w.img.destroy();
     this.hatOverflowLabel?.destroy();
     this.hatOverflowLabel = undefined;
@@ -10735,9 +10937,7 @@ export class SpriteRig {
         backWeaponAngle = rearBase + (rearGuard - rearBase) * guardBlend;
       }
     }
-    const ceremony = sampleAuthoredDualCeremony(
-      sceneNow - this.authoredDualCeremonyStartMs,
-    );
+    const ceremony = sampleAuthoredDualCeremony(sceneNow - this.authoredDualCeremonyStartMs);
     if (ceremony.active && this.weapons.length > 1 && !outsidePaperView) {
       const frontHand = this.hands.find((hand) => hand.front);
       const backHand = this.hands.find((hand) => !hand.front);
@@ -10961,7 +11161,8 @@ export class SpriteRig {
         const pose = parrySuccess > 0 ? this.parryGuardPose : 1;
         const handSide = hnd.front ? 1 : -1;
         const bx =
-          TARGET_BODY_H * (PARRY_GUARD_HAND_FORWARD[pose] + handSide * (pose === 1 ? 0.015 : 0.035));
+          TARGET_BODY_H *
+          (PARRY_GUARD_HAND_FORWARD[pose] + handSide * (pose === 1 ? 0.015 : 0.035));
         const by = hnd.oy - TARGET_BODY_H * PARRY_GUARD_HAND_LIFT[pose];
         hx += (bx - hx) * guardBlend;
         hy += (by - hy) * guardBlend;
@@ -11109,7 +11310,16 @@ export class SpriteRig {
           gripInput.secondary = grips.secondary;
           gripInput.flourishForward = this.secondaryGripFlourish.forward;
           gripInput.flourishLateral = this.secondaryGripFlourish.lateral;
-          resolveSecondaryGripPosition(gripInput, this.secondaryGripPoint);
+          if (isBreakActionWeapon(held.def)) {
+            resolveBreakActionSecondaryGripPosition(
+              gripInput,
+              held.def.breakAction.hinge,
+              this.breakActionSample.angleRad,
+              this.secondaryGripPoint,
+            );
+          } else {
+            resolveSecondaryGripPosition(gripInput, this.secondaryGripPoint);
+          }
           back.img.x = this.secondaryGripPoint.x;
           back.img.y = this.secondaryGripPoint.y;
         } else {
@@ -11135,12 +11345,8 @@ export class SpriteRig {
     if (this.weapons.length > 1 && !hasAimedFiringWeapon) {
       const front = this.hands.find((hand) => hand.front);
       const back = this.hands.find((hand) => !hand.front);
-      if (front)
-        front.img.y +=
-          authoredDualPistolHandYOffset(this.weaponDef, 0) * TARGET_BODY_H;
-      if (back)
-        back.img.y +=
-          authoredDualPistolHandYOffset(this.weaponDef, 1) * TARGET_BODY_H;
+      if (front) front.img.y += authoredDualPistolHandYOffset(this.weaponDef, 0) * TARGET_BODY_H;
+      if (back) back.img.y += authoredDualPistolHandYOffset(this.weaponDef, 1) * TARGET_BODY_H;
     }
 
     // Feet: alternating walk (lift + a small forward/back stride + a toe pivot) BLENDED by gait with a
@@ -11587,6 +11793,7 @@ export class SpriteRig {
     this.updateStowProxies(sceneNow, reducedMotion);
     // Copy the FINAL authored/jiggle/spawn transform. No tween or external caller competes for weapon state.
     this.applyWeaponArtGeometry();
+    this.applyBreakActionGeometry();
     this.applyComboStageTransition(sceneNow);
     const revolverWeapon = this.weapons[this.gunRecoilHand];
     if (revolverWeapon && this.revolverHammerBeat.active) {

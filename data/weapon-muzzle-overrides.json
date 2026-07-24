@@ -1,4 +1,12 @@
 {
+  "x2-frostbore-scattergun": {
+    "barrelMode": "cycle",
+    "points": [
+      { "part": 1, "x": 1794, "y": 118 },
+      { "part": 1, "x": 1794, "y": 203 }
+    ],
+    "reason": "The surgically registered break-action barrel layer carries two stacked recessed bores; each accepted shell alternates one exact bore centre while the receiver layer remains muzzle-inert."
+  },
   "x2-hallowbore-coachgun": {
     "barrelMode": "parallel",
     "points": [

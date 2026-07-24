@@ -1161,23 +1161,38 @@ export const WEAPON_ART_MUZZLES = {
     "sprite": "x2-frostbore-scattergun",
     "parts": [
       {
-        "width": 256,
-        "height": 70
+        "width": 1808,
+        "height": 459
+      },
+      {
+        "width": 1808,
+        "height": 459
       }
     ],
     "points": [
       {
-        "part": 0,
-        "x": 255,
-        "y": 13.6,
+        "part": 1,
+        "x": 1794,
+        "y": 118,
         "derived": {
-          "x": 255,
-          "y": 13.6
-        }
+          "x": 1806,
+          "y": 118.4
+        },
+        "overrideReason": "The surgically registered break-action barrel layer carries two stacked recessed bores; each accepted shell alternates one exact bore centre while the receiver layer remains muzzle-inert."
+      },
+      {
+        "part": 1,
+        "x": 1794,
+        "y": 203,
+        "derived": {
+          "x": 1806,
+          "y": 118.4
+        },
+        "overrideReason": "The surgically registered break-action barrel layer carries two stacked recessed bores; each accepted shell alternates one exact bore centre while the receiver layer remains muzzle-inert."
       }
     ],
     "salvoMode": "parallel",
-    "barrelMode": "parallel"
+    "barrelMode": "cycle"
   },
   "x2-frostfang-speargun": {
     "sprite": "x2-frostfang-speargun",

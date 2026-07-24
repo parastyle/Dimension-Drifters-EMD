@@ -11276,23 +11276,33 @@ export const SPRITES = {
     "id": "x2-frostbore-scattergun",
     "kind": "weapon",
     "canvas": {
-      "w": 265,
-      "h": 265
+      "w": 1808,
+      "h": 459
     },
     "body": {
-      "cx": 133.59,
-      "cy": 123.88,
-      "w": 256,
-      "h": 70
+      "cx": 904,
+      "cy": 229.5,
+      "w": 1808,
+      "h": 459
     },
     "parts": [
       {
         "role": "part-1",
         "file": "part-1.png",
-        "w": 256,
-        "h": 70,
-        "cx": 133.59,
-        "cy": 123.88,
+        "w": 1808,
+        "h": 459,
+        "cx": 904,
+        "cy": 229.5,
+        "ox": 0,
+        "oy": 0
+      },
+      {
+        "role": "part-2",
+        "file": "part-2.png",
+        "w": 1808,
+        "h": 459,
+        "cx": 904,
+        "cy": 229.5,
         "ox": 0,
         "oy": 0
       }

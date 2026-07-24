@@ -187,6 +187,8 @@ export class AudioBus {
           "kungfu-wing-chun-whoosh",
           "kungfu-drunken-fist-whoosh",
           "kungfu-iron-palm-whoosh",
+          "ui-dock-open",
+          "ui-dock-close",
           ...GUN_FIRE_SAMPLE_IDS,
         ]);
       } catch {
@@ -601,6 +603,39 @@ export class AudioBus {
       return;
     }
     switch (event) {
+      case "gun:break-open":
+        if (this.throttled("gunBreakOpen", 180)) return;
+        if (
+          sampleBank.playSample("ui-dock-open", {
+            volume: 0.28 + 0.42 * amt,
+            pan: this.panOf(x),
+            priority: "normal",
+            minIntervalMs: 180,
+          })
+        )
+          return;
+        this.noise(0.09, { gain: 0.08 + 0.1 * amt, type: "bandpass", freq: 980, x });
+        this.tone(420, 0.1, { type: "triangle", gain: 0.06 + 0.07 * amt, sweepTo: 230, x });
+        break;
+      case "gun:break-close":
+        if (this.throttled("gunBreakClose", 180)) return;
+        if (
+          sampleBank.playSample("ui-dock-close", {
+            volume: 0.32 + 0.48 * amt,
+            pan: this.panOf(x),
+            priority: "normal",
+            minIntervalMs: 180,
+          })
+        )
+          return;
+        this.noise(0.045, { gain: 0.1 + 0.12 * amt, type: "highpass", freq: 1700, x });
+        this.tone(680, 0.055, {
+          type: "triangle",
+          gain: 0.08 + 0.08 * amt,
+          sweepTo: 310,
+          x,
+        });
+        break;
       // Owner-only UI-space hit markers. No world x is passed to either path, keeping them center-mono.
       // The cue ids are manifest-ready; absent samples fall through to these synthesis defaults.
       case "confirm:hit":
