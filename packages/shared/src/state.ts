@@ -54,6 +54,24 @@ export class WeaponResourceState extends Schema {
   @type("uint32") beamLockEndTick = 0;
 }
 
+/** Run-scoped relic ownership. Counts are the only common-line truth; derived effects are computed. */
+export class RelicState extends Schema {
+  @type("uint8") energyPool = 0;
+  @type("uint8") energyRegen = 0;
+  @type("uint8") parryReach = 0;
+  @type("uint8") dodgeRecovery = 0;
+  @type("uint8") moveSpeed = 0;
+  @type("uint8") hpRegen = 0;
+  @type("uint8") luck = 0;
+  @type("uint8") crit = 0;
+  @type("uint8") jumpCount = 0;
+  @type("string") ownedRare = "";
+  @type("string") activeDodge = "";
+  @type("boolean") reviveAvailable = false;
+  @type("uint32") deathWardReadyTick = 0;
+  @type("uint8") airJumpsRemaining = 0;
+}
+
 /** Read-only stand-in returned by the decode-window accessor below while the nested tail row is
  *  still undecoded on a fresh client join. Holds initializer values (a full bar); never mutated —
  *  the server always constructs real rows, so no write path can reach this instance. */
@@ -73,6 +91,8 @@ export class DualWieldState extends Schema {
   @type(WeaponResourceState) weaponResource = new WeaponResourceState();
   /** Schema v31. Compact public hat-tower count; the full account remains owner-private. */
   @type("uint8") prestige = 0;
+  /** Schema v35. Run-scoped common stacks, rare ownership, and survival cooldown state. */
+  @type(RelicState) relics = new RelicState();
 }
 
 /**
@@ -234,6 +254,9 @@ export class PlayerState extends Schema {
   }
   set prestige(value: number) {
     this.dualWield.prestige = value;
+  }
+  get relics(): RelicState {
+    return this.dualWield.relics;
   }
   get offhandSlot(): number {
     return this.dualWield?.offhandSlot ?? 255;
@@ -415,11 +438,9 @@ export class TelegraphState extends Schema {
   @type("uint32") castSeq = 0;
 }
 
-/** A weapon lying on the ground — the Testing-Grounds gallery, a player drop, or (v0.104 §13) an in-run
- *  LOOT drop. Loot drops are MYSTERY: `known=false` hides the identity client-side (the pickup renders as
- *  a rarity-tinted bundle, cursed = the §10 ghostly-purple gamble cue) until it's grabbed; the gallery,
- *  player drops, and wielding-enemy drops stay identity-known. `rarity` indexes shared RARITIES; `affix`
- *  is the §10 single Terraria affix id rolled at drop time. */
+/** A weapon lying on the ground from the Testing-Grounds gallery or a player bag/hand drop. New run
+ *  weapons enter through opener-instanced chests and may later reach this row through an explicit swap.
+ *  `rarity` indexes shared RARITIES; `affix` is the retained loot-identity field. */
 export class PickupState extends Schema {
   @type("string") id = "";
   @type("number") x = 0;
@@ -456,6 +477,20 @@ export class MoneyDropState extends Schema {
   @type("uint32") launchTick = 0;
   @type("uint32") collectTick = 0;
   @type("boolean") delivered = false;
+  /** Empty keeps L1's squad-shared payout; a player id makes a chest payout owner-instanced. */
+  @type("string") ownerId = "";
+}
+
+/** One non-blocking arena chest. Contents remain private until each player opens it once. */
+export class ChestState extends Schema {
+  @type("string") id = "";
+  @type("number") x = 0;
+  @type("number") y = 0;
+  @type("uint8") zone = 0;
+  @type("uint8") kind = 0;
+  @type("uint32") spawnTick = 0;
+  @type("boolean") opened = false;
+  @type({ map: "boolean" }) openedBy = new MapSchema<boolean>();
 }
 
 /**
@@ -718,4 +753,6 @@ export class ArenaState extends Schema {
   @type([CombatReceiptState]) combatReceipts = new ArraySchema<CombatReceiptState>();
   /** Vastaghar action/mutation/reward surface. APPENDED at schema v26; never inserted into older rows. */
   @type(VastagharBossState) vastaghar = new VastagharBossState();
+  /** B20 L2 server-authored, non-colliding chest rows. */
+  @type({ map: ChestState }) chests = new MapSchema<ChestState>();
 }

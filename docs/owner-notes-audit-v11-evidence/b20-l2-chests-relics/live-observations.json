@@ -1,0 +1,389 @@
+{
+  "endpoint": "ws://127.0.0.1:55109",
+  "roomId": "Aeo-WsQNe",
+  "schemaVersion": 35,
+  "durationSeconds": 165.11,
+  "mapSeeds": {
+    "terrain": 1931796724,
+    "hazard": 3440338745,
+    "theme": 3313099510,
+    "decor": 807761008
+  },
+  "characterContract": [
+    {
+      "id": "iJ5qyCBLS",
+      "character": "proto-cowboy-hidden-face"
+    },
+    {
+      "id": "cejJ4YOth",
+      "character": "proto-cowboy-hidden-face"
+    }
+  ],
+  "chestSpawns": [
+    {
+      "id": "chest:20546:500",
+      "tick": 500,
+      "kind": 0,
+      "zone": 2,
+      "zoneName": "scar",
+      "x": 3800,
+      "y": 3320,
+      "validGround": true
+    },
+    {
+      "id": "chest:20547:1821",
+      "tick": 1821,
+      "kind": 0,
+      "zone": 1,
+      "zoneName": "cover",
+      "x": 680,
+      "y": 2200,
+      "validGround": true
+    },
+    {
+      "id": "chest:20548:2735",
+      "tick": 2735,
+      "kind": 0,
+      "zone": 2,
+      "zoneName": "scar",
+      "x": 3640,
+      "y": 3960,
+      "validGround": true
+    },
+    {
+      "id": "chest:20549:3000",
+      "tick": 3000,
+      "kind": 1,
+      "zone": 0,
+      "zoneName": "commons",
+      "x": 2520,
+      "y": 2840,
+      "validGround": true
+    }
+  ],
+  "receipts": [
+    {
+      "playerId": "iJ5qyCBLS",
+      "atMs": 32273,
+      "payload": {
+        "chestId": "chest:20546:500",
+        "zone": 2,
+        "kind": 0,
+        "weapon": {
+          "id": "x-gun-hand-mortar",
+          "tier": "mid",
+          "name": "Hand Mortar"
+        },
+        "relics": [
+          {
+            "id": "dodge-shuffle",
+            "rarity": "rare",
+            "label": "The Shuffle",
+            "stacks": 1
+          }
+        ],
+        "money": 12
+      }
+    },
+    {
+      "playerId": "cejJ4YOth",
+      "atMs": 32412,
+      "payload": {
+        "chestId": "chest:20546:500",
+        "zone": 2,
+        "kind": 0,
+        "weapon": {
+          "id": "x-gun-revolver-cannon",
+          "tier": "mid",
+          "name": "Revolver Cannon"
+        },
+        "relics": [
+          {
+            "id": "energy-regen",
+            "rarity": "common",
+            "label": "Kinetic Coil",
+            "stacks": 1
+          }
+        ],
+        "money": 13
+      }
+    },
+    {
+      "playerId": "iJ5qyCBLS",
+      "atMs": 105174,
+      "payload": {
+        "chestId": "chest:20547:1821",
+        "zone": 1,
+        "kind": 0,
+        "relics": [],
+        "money": 17
+      }
+    },
+    {
+      "playerId": "cejJ4YOth",
+      "atMs": 105313,
+      "payload": {
+        "chestId": "chest:20547:1821",
+        "zone": 1,
+        "kind": 0,
+        "relics": [
+          {
+            "id": "jump-count",
+            "rarity": "common",
+            "label": "Skyhook",
+            "stacks": 1
+          },
+          {
+            "id": "move-speed",
+            "rarity": "common",
+            "label": "Roadrunner Spur",
+            "stacks": 1
+          }
+        ],
+        "money": 9
+      }
+    },
+    {
+      "playerId": "iJ5qyCBLS",
+      "atMs": 150572,
+      "payload": {
+        "chestId": "chest:20548:2735",
+        "zone": 2,
+        "kind": 0,
+        "relics": [
+          {
+            "id": "energy-pool",
+            "rarity": "common",
+            "label": "Capacitor",
+            "stacks": 1
+          }
+        ],
+        "money": 11
+      }
+    },
+    {
+      "playerId": "cejJ4YOth",
+      "atMs": 150712,
+      "payload": {
+        "chestId": "chest:20548:2735",
+        "zone": 2,
+        "kind": 0,
+        "weapon": {
+          "id": "x-gun-coffin-shotgun",
+          "tier": "high",
+          "name": "Coffin Shotgun"
+        },
+        "relics": [],
+        "money": 11
+      }
+    },
+    {
+      "playerId": "iJ5qyCBLS",
+      "atMs": 158390,
+      "payload": {
+        "chestId": "chest:20549:3000",
+        "zone": 0,
+        "kind": 1,
+        "weapon": {
+          "id": "x-sword-bone",
+          "tier": "high",
+          "name": "Wyrmtooth"
+        },
+        "relics": [
+          {
+            "id": "crit",
+            "rarity": "common",
+            "label": "Keen Edge",
+            "stacks": 1
+          }
+        ],
+        "money": 15
+      }
+    },
+    {
+      "playerId": "cejJ4YOth",
+      "atMs": 158529,
+      "payload": {
+        "chestId": "chest:20549:3000",
+        "zone": 0,
+        "kind": 1,
+        "weapon": {
+          "id": "x-gun-coffin-shotgun",
+          "tier": "high",
+          "name": "Coffin Shotgun"
+        },
+        "relics": [
+          {
+            "id": "energy-pool",
+            "rarity": "common",
+            "label": "Capacitor",
+            "stacks": 1
+          },
+          {
+            "id": "parry-reach",
+            "rarity": "common",
+            "label": "Wide Guard",
+            "stacks": 1
+          }
+        ],
+        "money": 16
+      }
+    }
+  ],
+  "perPlayerInstancing": [
+    {
+      "chestId": "chest:20546:500",
+      "openerIds": [
+        "iJ5qyCBLS",
+        "cejJ4YOth"
+      ]
+    },
+    {
+      "chestId": "chest:20547:1821",
+      "openerIds": [
+        "iJ5qyCBLS",
+        "cejJ4YOth"
+      ]
+    },
+    {
+      "chestId": "chest:20548:2735",
+      "openerIds": [
+        "iJ5qyCBLS",
+        "cejJ4YOth"
+      ]
+    },
+    {
+      "chestId": "chest:20549:3000",
+      "openerIds": [
+        "iJ5qyCBLS",
+        "cejJ4YOth"
+      ]
+    }
+  ],
+  "categoriesObserved": {
+    "weapon": true,
+    "relic": true,
+    "money": true
+  },
+  "zonesObserved": [
+    "scar",
+    "cover",
+    "commons"
+  ],
+  "weaponCacheTicks": [
+    3000
+  ],
+  "finalPlayers": [
+    {
+      "id": "iJ5qyCBLS",
+      "character": "proto-cowboy-hidden-face",
+      "alive": true,
+      "activeDodge": "dodge-shuffle",
+      "ownedRare": "dodge-shuffle",
+      "hudRow": [
+        "EN×1",
+        "CR×1",
+        "SH"
+      ],
+      "scrip": 55
+    },
+    {
+      "id": "cejJ4YOth",
+      "character": "proto-cowboy-hidden-face",
+      "alive": true,
+      "activeDodge": "",
+      "ownedRare": "",
+      "hudRow": [
+        "EN×1",
+        "RG×1",
+        "PR×1",
+        "MV×1",
+        "JP×1"
+      ],
+      "scrip": 49
+    }
+  ],
+  "dodgeAction": {
+    "playerId": "iJ5qyCBLS",
+    "relicId": "dodge-shuffle",
+    "profile": {
+      "id": "dodge-shuffle",
+      "label": "The Shuffle",
+      "distanceMultiplier": 0.78,
+      "cooldownSeconds": 2.1,
+      "presentation": "shuffle"
+    },
+    "start": {
+      "x": 3868.245361328125,
+      "y": 3353.365478515625,
+      "ackSeq": 313
+    },
+    "end": {
+      "x": 4078.88525390625,
+      "y": 3353.365478515625,
+      "ackSeq": 323
+    },
+    "sharedRollTicks": 8
+  },
+  "openContinuity": [
+    {
+      "chestId": "chest:20546:500",
+      "playerId": "iJ5qyCBLS",
+      "ackBefore": 312,
+      "ackAfter": 313,
+      "outcome": "active"
+    },
+    {
+      "chestId": "chest:20546:500",
+      "playerId": "cejJ4YOth",
+      "ackBefore": 332,
+      "ackAfter": 333,
+      "outcome": "active"
+    },
+    {
+      "chestId": "chest:20547:1821",
+      "playerId": "iJ5qyCBLS",
+      "ackBefore": 1075,
+      "ackAfter": 1076,
+      "outcome": "active"
+    },
+    {
+      "chestId": "chest:20547:1821",
+      "playerId": "cejJ4YOth",
+      "ackBefore": 1088,
+      "ackAfter": 1089,
+      "outcome": "active"
+    },
+    {
+      "chestId": "chest:20548:2735",
+      "playerId": "iJ5qyCBLS",
+      "ackBefore": 1580,
+      "ackAfter": 1581,
+      "outcome": "active"
+    },
+    {
+      "chestId": "chest:20548:2735",
+      "playerId": "cejJ4YOth",
+      "ackBefore": 1597,
+      "ackAfter": 1598,
+      "outcome": "active"
+    },
+    {
+      "chestId": "chest:20549:3000",
+      "playerId": "iJ5qyCBLS",
+      "ackBefore": 1699,
+      "ackAfter": 1702,
+      "outcome": "active"
+    },
+    {
+      "chestId": "chest:20549:3000",
+      "playerId": "cejJ4YOth",
+      "ackBefore": 1716,
+      "ackAfter": 1717,
+      "outcome": "active"
+    }
+  ],
+  "rareTriggers": [],
+  "denials": [],
+  "errors": []
+}
