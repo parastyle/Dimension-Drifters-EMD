@@ -8,7 +8,7 @@ vi.mock("phaser", () => ({
   },
 }));
 
-import { bladeExtensionDrawTransform } from "./VfxPlayer.js";
+import { bladeExtensionDrawTransform, fitBladeExtensionDrawLengthToReach } from "./VfxPlayer.js";
 
 describe("VfxPlayer blade-extension one-transform composition", () => {
   const weapon = WEAPONS["x2-rimewrit-grave-slab"];
@@ -61,5 +61,62 @@ describe("VfxPlayer blade-extension one-transform composition", () => {
     expect(hidden.drawLength).toBeCloseTo(hidden.overlapLength, 8);
     expect(full.emergedLength).toBeCloseTo(360, 8);
     expect(full.drawLength - full.overlapLength).toBeCloseTo(360, 8);
+  });
+
+  it("keeps Mirage's narrow 1H hardlight sample blade-owned on both facings", () => {
+    const mirage = WEAPONS["x2-mirage-hardlight-saber"];
+    const mirageGeometry = mirage && bladeExtensionGeometryFor(mirage);
+    if (!mirage || !mirageGeometry) throw new Error("missing Mirage blade-extension fixture");
+    for (const facing of [1, -1] as const) {
+      const pose = {
+        x: facing > 0 ? 412 : 228,
+        y: 184,
+        axisX: facing,
+        axisY: 0,
+        normalX: 0,
+        normalY: facing,
+        physicalBladeLength: 95.7,
+        bladeWidth: 16,
+      };
+      const draw = bladeExtensionDrawTransform(pose, mirageGeometry, 1);
+      expect(draw.rootX + pose.axisX * draw.overlapLength).toBeCloseTo(pose.x, 10);
+      expect(draw.rootY + pose.axisY * draw.overlapLength).toBeCloseTo(pose.y, 10);
+      expect(draw.emergedLength).toBeCloseTo(191.4, 8);
+      expect(draw.drawLength).toBeCloseTo(220.11, 8);
+      expect(draw.bladeWidth).toBe(16);
+      expect(draw.normalSign).toBe(1);
+    }
+  });
+
+  it("fits only local-axis length to Mirage's authoritative radius without breaking ignition origin", () => {
+    const mirage = WEAPONS["x2-mirage-hardlight-saber"];
+    const mirageGeometry = mirage && bladeExtensionGeometryFor(mirage);
+    if (!mirage || !mirageGeometry) throw new Error("missing Mirage blade-extension fixture");
+    for (const facing of [1, -1] as const) {
+      const pose = {
+        wielderX: 320,
+        wielderY: 180,
+        x: 320 + facing * 128,
+        y: 162,
+        axisX: facing,
+        axisY: 0,
+        normalX: 0,
+        normalY: facing,
+        physicalBladeLength: 95.7,
+        bladeWidth: 16,
+      };
+      const hidden = bladeExtensionDrawTransform(pose, mirageGeometry, 0);
+      const hiddenFit = fitBladeExtensionDrawLengthToReach(pose, hidden, 136, 0);
+      expect(hiddenFit.drawLength).toBe(hidden.drawLength);
+
+      const full = bladeExtensionDrawTransform(pose, mirageGeometry, 1);
+      const fullFit = fitBladeExtensionDrawLengthToReach(pose, full, 287.1, 1);
+      const tipX = fullFit.rootX + pose.axisX * fullFit.drawLength;
+      const tipY = fullFit.rootY + pose.axisY * fullFit.drawLength;
+      expect(Math.hypot(tipX - pose.wielderX, tipY - pose.wielderY)).toBeCloseTo(287.1, 8);
+      expect(fullFit.rootX + pose.axisX * fullFit.overlapLength).toBeCloseTo(pose.x, 10);
+      expect(fullFit.rootY + pose.axisY * fullFit.overlapLength).toBeCloseTo(pose.y, 10);
+      expect(fullFit.bladeWidth).toBe(pose.bladeWidth);
+    }
   });
 });

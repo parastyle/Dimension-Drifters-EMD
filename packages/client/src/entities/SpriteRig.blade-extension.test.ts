@@ -8,8 +8,13 @@ vi.mock("phaser", () => ({
   },
 }));
 
+import {
+  ALL_BLADE_EXTENSION_TREATMENTS,
+  bladeExtensionTreatmentFor,
+  MIRAGE_HARDLIGHT_EXTENSION_TREATMENT,
+  weaponSupportsBladeExtension,
+} from "../vfx/blade-extension-treatments.js";
 import { measureBladeWidthAtExtensionJoin } from "./SpriteRig.js";
-import { weaponSupportsBladeExtension } from "../vfx/blade-extension-treatments.js";
 
 function alphaBlade(width: number, height: number, bladeTop: number, bladeBottom: number) {
   return (x: number, y: number): number =>
@@ -35,6 +40,32 @@ describe("SpriteRig blade-extension attachment", () => {
     const broad = measureBladeWidthAtExtensionJoin(120, 48, 0.08, alphaBlade(120, 48, 8, 38));
     expect(narrow).toBe(9);
     expect(broad).toBe(31);
+  });
+
+  it("routes Mirage's 1H blade sample through the bespoke hardlight treatment", () => {
+    const mirage = WEAPONS["x2-mirage-hardlight-saber"];
+    if (!mirage) throw new Error("Missing Mirage Hardlight Saber fixture");
+    const sourceWidth = 256;
+    const sourceHeight = 34;
+    const measuredWidth = measureBladeWidthAtExtensionJoin(
+      sourceWidth,
+      sourceHeight,
+      mirage.gripFrac,
+      alphaBlade(sourceWidth, sourceHeight, 9, 24),
+    );
+    const geometry = bladeExtensionGeometryFor(mirage);
+    expect(mirage.tags).toMatchObject({ grip: "1H", size: "M" });
+    expect(measuredWidth).toBe(16);
+    expect(geometry?.physicalBladeLength).toBeCloseTo(95.7, 8);
+    expect(geometry?.fullTipReach).toBeCloseTo(287.1, 8);
+    expect(weaponSupportsBladeExtension(mirage.id)).toBe(true);
+    expect(bladeExtensionTreatmentFor(mirage.id)).toBe(MIRAGE_HARDLIGHT_EXTENSION_TREATMENT);
+    expect(MIRAGE_HARDLIGHT_EXTENSION_TREATMENT).toMatchObject({
+      kind: "procedural-hardlight",
+      element: "hardlight",
+      textureKey: "blade-extension:mirage-hardlight",
+    });
+    expect(ALL_BLADE_EXTENSION_TREATMENTS).toHaveLength(7);
   });
 
   it("does not attach, measure, or extend Sanctified Headsman's ordinary blade", () => {

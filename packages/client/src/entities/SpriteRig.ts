@@ -327,6 +327,8 @@ export interface WeaponBladeAttachmentPose {
   readonly comboExpiresAtMs: number;
   readonly comboActive: boolean;
   readonly nowMs: number;
+  readonly wielderX: number;
+  readonly wielderY: number;
   readonly x: number;
   readonly y: number;
   readonly angle: number;
@@ -3303,6 +3305,8 @@ export class SpriteRig {
       comboExpiresAtMs: chain.expiresAtMs,
       comboActive,
       nowMs,
+      wielderX: this.root.x,
+      wielderY: this.root.y,
       x,
       y,
       angle: Math.atan2(matrix.b, matrix.a),

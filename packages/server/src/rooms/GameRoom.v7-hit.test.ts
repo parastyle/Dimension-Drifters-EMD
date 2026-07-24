@@ -128,7 +128,7 @@ describe("GameRoom — V7-HIT blade-extension authority", () => {
     }
   });
 
-  it("deals unchanged edge damage at the visible 3x tip for all six brutalist blades", () => {
+  it("deals unchanged edge damage at the visible 3x tip for every extension blade", () => {
     for (const weaponId of BLADE_EXTENSION_WEAPON_IDS) {
       const { room, player, combat } = makeRoom(`v7-hit-${weaponId}`);
       const weapon = WEAPONS[weaponId];
@@ -137,7 +137,11 @@ describe("GameRoom — V7-HIT blade-extension authority", () => {
       player.weapon = weapon.id;
       combat.lastWeapon = weapon.id;
       const envelope = meleeDamageEnvelopeFor(weapon);
-      expect(envelope.maxReach, `${weaponId}/extension`).toBeGreaterThan(envelope.baseReach * 2.7);
+      expect(envelope.bladeExtension, `${weaponId}/extension`).toBeDefined();
+      expect(envelope.maxReach, `${weaponId}/3x-blade`).toBeCloseTo(
+        envelope.bladeExtension?.fullTipReach ?? 0,
+        8,
+      );
 
       const enemy = new EnemyState();
       enemy.id = `${weaponId}-tip-target`;

@@ -9,8 +9,10 @@ import {
   BLADE_EXTENSION_RETRACTION_SECONDS,
   type BladeExtensionGeometry,
   bladeAngleAt,
+  bladeExtensionDamageReachForReveal,
   bladeExtensionGeometryFor,
   bladeExtensionIgnitionReveal,
+  meleeComboSelectionFor,
   meleeReach,
   type SwingDescriptor,
   swingEdgeProgress,
@@ -29,6 +31,7 @@ import "./vfx-layers.js"; // sets globalThis.VFXLAYERS
 import {
   ALL_BLADE_EXTENSION_TEXTURES,
   bladeExtensionTreatmentFor,
+  ensureProceduralBladeExtensionTextures,
   weaponSupportsBladeExtension,
 } from "./blade-extension-treatments.js";
 import { KATANA_SLASH_ASSIGNMENTS } from "./katana-slash.generated.js";
@@ -86,6 +89,7 @@ interface BladeExtensionState {
   comboId: string;
   treatmentKey: string;
   geometry: BladeExtensionGeometry;
+  fitAuthoritativeTipReach: boolean;
   reveal: number;
   retractStartedAtMs?: number;
   retractFromReveal: number;
@@ -128,6 +132,31 @@ export function bladeExtensionDrawTransform(
     drawLength: overlapLength + emergedLength,
     bladeWidth: Math.max(1, pose.bladeWidth),
     normalSign: determinant < 0 ? -1 : 1,
+  });
+}
+
+/** A 1H hilt can orbit ahead of or behind the authoritative player root while keeping the same final blade
+ * affine. Preserve that affine and solve only the local-axis length so the lit tip ends on the damage radius.
+ * Blending the correction by reveal keeps ignition continuous from the hidden overlap at reveal zero. */
+export function fitBladeExtensionDrawLengthToReach(
+  pose: Pick<WeaponBladeAttachmentPose, "wielderX" | "wielderY" | "axisX" | "axisY">,
+  draw: BladeExtensionDrawTransform,
+  authoritativeReach: number,
+  reveal: number,
+): BladeExtensionDrawTransform {
+  const dx = draw.rootX - pose.wielderX;
+  const dy = draw.rootY - pose.wielderY;
+  const along = dx * pose.axisX + dy * pose.axisY;
+  const radialSquared = dx * dx + dy * dy;
+  const reach = Math.max(0, authoritativeReach);
+  const discriminant = along * along + reach * reach - radialSquared;
+  if (!Number.isFinite(discriminant) || discriminant < 0) return draw;
+  const fittedLength = -along + Math.sqrt(discriminant);
+  if (!Number.isFinite(fittedLength) || fittedLength < draw.overlapLength) return draw;
+  const blend = Math.max(0, Math.min(1, reveal));
+  return Object.freeze({
+    ...draw,
+    drawLength: draw.drawLength + (fittedLength - draw.drawLength) * blend,
   });
 }
 
@@ -247,7 +276,15 @@ export class VfxPlayer {
         }
 
         if (state.reveal > 0) {
-          const draw = bladeExtensionDrawTransform(pose, state.geometry, state.reveal);
+          const baseDraw = bladeExtensionDrawTransform(pose, state.geometry, state.reveal);
+          const draw = state.fitAuthoritativeTipReach
+            ? fitBladeExtensionDrawLengthToReach(
+                pose,
+                baseDraw,
+                this.bladeExtensionAuthoritativeReach(state, pose),
+                state.reveal,
+              )
+            : baseDraw;
           state.image
             .setTexture(state.treatmentKey)
             .setPosition(draw.rootX, draw.rootY)
@@ -305,8 +342,16 @@ export class VfxPlayer {
     const imageAxisY = Math.sin(state.image.rotation);
     const joinX = state.image.x + imageAxisX * draw.overlapLength;
     const joinY = state.image.y + imageAxisY * draw.overlapLength;
+    const extensionTipX = state.image.x + imageAxisX * draw.drawLength;
+    const extensionTipY = state.image.y + imageAxisY * draw.drawLength;
     const errorX = joinX - pose.x;
     const errorY = joinY - pose.y;
+    const rangeMultiplier = this.bladeExtensionRangeMultiplier(state.weaponId, pose.comboStep);
+    const authoritativeTipReach = this.bladeExtensionAuthoritativeReach(state, pose);
+    const visibleTipReach = Math.hypot(
+      extensionTipX - pose.wielderX,
+      extensionTipY - pose.wielderY,
+    );
     audit.__ddV7BladeExtensionFrames ??= [];
     const frames = audit.__ddV7BladeExtensionFrames;
     frames.push({
@@ -322,6 +367,8 @@ export class VfxPlayer {
       reveal: state.reveal,
       bladeTipX: pose.x,
       bladeTipY: pose.y,
+      wielderX: pose.wielderX,
+      wielderY: pose.wielderY,
       bladeAngle: pose.angle,
       bladeAxisX: pose.axisX,
       bladeAxisY: pose.axisY,
@@ -334,6 +381,11 @@ export class VfxPlayer {
       extensionLength: state.image.displayWidth,
       overlapLength: draw.overlapLength,
       emergedLength: draw.emergedLength,
+      rangeMultiplier,
+      visibleTipReach,
+      authoritativeTipReach,
+      reachExtentError: visibleTipReach - authoritativeTipReach,
+      authoritativeTipFit: state.fitAuthoritativeTipReach,
       axialError: errorX * pose.axisX + errorY * pose.axisY,
       lateralError: errorX * pose.normalX + errorY * pose.normalY,
       angleError: Math.atan2(
@@ -344,11 +396,34 @@ export class VfxPlayer {
     if (frames.length > 12_000) frames.splice(0, frames.length - 12_000);
   }
 
+  private bladeExtensionRangeMultiplier(weaponId: string, comboStep: number): number {
+    const weapon = WEAPONS[weaponId];
+    return (
+      (weapon && meleeComboSelectionFor(weapon)?.sequence[comboStep]?.path.rangeMultiplier) || 1
+    );
+  }
+
+  private bladeExtensionAuthoritativeReach(
+    state: BladeExtensionState,
+    pose: WeaponBladeAttachmentPose,
+  ): number {
+    const weapon = WEAPONS[state.weaponId];
+    if (!weapon) return 0;
+    const lengthScale = state.fitAuthoritativeTipReach
+      ? 1
+      : pose.physicalBladeLength / Math.max(1, state.geometry.physicalBladeLength);
+    return (
+      bladeExtensionDamageReachForReveal(weapon, state.reveal, 1, lengthScale) *
+      this.bladeExtensionRangeMultiplier(state.weaponId, pose.comboStep)
+    );
+  }
+
   private retainBladeExtension(
     weaponId: string,
     treatmentKey: string,
     geometry: BladeExtensionGeometry,
     sourceBladePose: () => WeaponBladeAttachmentPose | undefined,
+    fitAuthoritativeTipReach: boolean,
   ): void {
     const pose = sourceBladePose();
     if (!pose || pose.weaponId !== weaponId) return;
@@ -363,6 +438,7 @@ export class VfxPlayer {
         comboId: pose.comboId,
         treatmentKey,
         geometry,
+        fitAuthoritativeTipReach,
         reveal: 0,
         retractFromReveal: 0,
         capturedIgnitionOrigin: false,
@@ -374,6 +450,7 @@ export class VfxPlayer {
       state.weaponId = weaponId;
       state.treatmentKey = treatmentKey;
       state.geometry = geometry;
+      state.fitAuthoritativeTipReach = fitAuthoritativeTipReach;
       if (state.comboId !== pose.comboId) {
         state.comboId = pose.comboId;
         state.reveal = 0;
@@ -439,6 +516,7 @@ export class VfxPlayer {
     });
     for (const treatment of ALL_BLADE_EXTENSION_TEXTURES)
       scene.load.image(treatment.textureKey, treatment.url);
+    ensureProceduralBladeExtensionTextures(scene);
   }
 
   /** Stop every owner of a surface before reassigning it. Generation checks are still required: Phaser can
@@ -611,6 +689,7 @@ export class VfxPlayer {
         bladeExtensionTreatment.textureKey,
         bladeExtensionGeometry,
         sourceBladePose,
+        bladeExtensionTreatment.kind === "procedural-hardlight",
       );
     // Authored suite wins; else a synthesized ELEMENT + ARCHETYPE fallback (§35/§36) so every un-authored
     // expansion weapon reads unique by both its element AND its physical shape (thrust / cleave / twin / fast).
