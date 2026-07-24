@@ -8,6 +8,9 @@ import {
   firingHandTarget,
   firingStanceFamilyFor,
   firingStanceFor,
+  GUN_HEAD_DROP_PX,
+  GUN_HEAD_NOD_RAD,
+  gunCheekWeldPoseFor,
   usesAimedFiringStance,
 } from "./firing-stance.js";
 import {
@@ -37,6 +40,37 @@ const FAMILY_FIXTURES = [
 ] as const;
 
 describe("weapon firing-stance table", () => {
+  it("maps rifle, railgun, and bolt catalog fiction to the full visible cheek weld", () => {
+    for (const id of [
+      "x2-cinderbore-longrifle",
+      "x2-sunbreaker-railgun",
+      "x2-barrett-50-cal-sniper",
+      "x2-mauler-slug-thrower",
+    ]) {
+      expect(gunCheekWeldPoseFor(weapon(id)), id).toEqual({
+        weaponClass: "sightedLong",
+        dropPx: GUN_HEAD_DROP_PX.sightedLong,
+        nodRad: GUN_HEAD_NOD_RAD.sightedLong,
+      });
+    }
+  });
+
+  it("gives pistols and other short-gun fiction the half cheek weld only", () => {
+    for (const id of [
+      "x-gun-revolver-cannon",
+      "x-gun-nailgun",
+      "x-gun-coffin-shotgun",
+      "x-gun-hand-mortar",
+    ]) {
+      expect(gunCheekWeldPoseFor(weapon(id)), id).toEqual({
+        weaponClass: "short",
+        dropPx: GUN_HEAD_DROP_PX.short,
+        nodRad: GUN_HEAD_NOD_RAD.short,
+      });
+    }
+    expect(gunCheekWeldPoseFor(weapon("x-staff-arcane-lance"))).toBeUndefined();
+  });
+
   it("classifies every real ranged/caster delivery family from mechanism and tags", () => {
     for (const [family, id] of FAMILY_FIXTURES) {
       expect(firingStanceFamilyFor(weapon(id)), id).toBe(family);

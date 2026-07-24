@@ -8,7 +8,9 @@ import { describe, expect, it } from "vitest";
 import {
   firingHandTarget,
   firingStanceFor,
+  GUN_HEAD_DROP_PX,
   GUN_HEAD_NOD_RAD,
+  gunCheekWeldPoseFor,
 } from "../packages/client/src/sprites/firing-stance.js";
 import { GUN_GENERATED_PROJECTILES } from "../packages/client/src/vfx/gun-projectile-art.js";
 import { resolveWeaponEffectRecipe } from "../packages/client/src/vfx/weapon-effect-recipes.js";
@@ -108,9 +110,19 @@ describe("B35 gun presentation corrections", () => {
     });
   });
 
-  it("keeps every gun family on the shoulder lane with a small mirrored-root head nod", () => {
-    expect(GUN_HEAD_NOD_RAD).toBeGreaterThan(0);
-    expect(GUN_HEAD_NOD_RAD).toBeLessThan(0.08);
+  it("keeps every gun family shouldered with catalog-scaled head drop and nod", () => {
+    expect(gunCheekWeldPoseFor(weapon("x2-sunbreaker-railgun"))).toEqual({
+      weaponClass: "sightedLong",
+      dropPx: GUN_HEAD_DROP_PX.sightedLong,
+      nodRad: GUN_HEAD_NOD_RAD.sightedLong,
+    });
+    expect(gunCheekWeldPoseFor(weapon("x-gun-revolver-cannon"))).toEqual({
+      weaponClass: "short",
+      dropPx: GUN_HEAD_DROP_PX.short,
+      nodRad: GUN_HEAD_NOD_RAD.short,
+    });
+    expect(GUN_HEAD_DROP_PX.sightedLong).toBe(GUN_HEAD_DROP_PX.short * 2);
+    expect(GUN_HEAD_NOD_RAD.sightedLong).toBeGreaterThan(0.08);
     for (const id of [
       "x-gun-revolver-cannon",
       "x2-sunbreaker-railgun",
