@@ -1,10 +1,10 @@
 {
   "verdict": "pass",
-  "capturedAt": "2026-07-24T16:25:57.224Z",
+  "capturedAt": "2026-07-24T23:30:32.519Z",
   "character": "proto-cowboy-hidden-face",
   "privatePorts": {
-    "client": 63858,
-    "game": 63857,
+    "client": 51789,
+    "game": 51788,
     "forbiddenDefaultPortsAvoided": true
   },
   "facings": [
@@ -40,16 +40,16 @@
         "authorityWeapon": "x2-iron-throwing-star",
         "attackSeq": 0,
         "facingValue": 1,
-        "facingBlend": 0.999824293016958,
+        "facingBlend": 0.999919396849364,
         "displayLength": 76,
         "collisionLength": 56,
         "recoilHand": 0,
-        "recoilElapsedMs": 1000001028.32,
+        "recoilElapsedMs": 1000001593.2333333,
         "performance": {
           "phase": "idle",
           "phaseT": 0,
           "active": true,
-          "weaponAngle": -0.48009856694894226,
+          "weaponAngle": -0.4799994173644915,
           "backHandBlend": 0.94,
           "bodyForward": 0.018,
           "bodyLateral": -0.018,
@@ -86,41 +86,41 @@
         "weaponRows": [
           {
             "hand": 0,
-            "x": 19.95476572991373,
-            "y": -20.332240809973033,
-            "rotation": -0.4800985669489428,
-            "semanticRotation": -0.4800985669489428,
+            "x": 20.053293690144365,
+            "y": -20.37666052626108,
+            "rotation": -0.4799994173644926,
+            "semanticRotation": -0.4799994173644926,
             "originX": 0.5,
             "originY": 0.5,
             "scaleX": 0.44822179910524074,
             "scaleY": 0.44822179910524074,
-            "renderedLengthPx": 75.98949290471376,
-            "renderedHeightPx": 75.99715291837853,
+            "renderedLengthPx": 75.99517594347107,
+            "renderedHeightPx": 75.99869567747751,
             "center": {
-              "x": 2413.214599609375,
-              "y": 2406.533203125
+              "x": 2413.281005859375,
+              "y": 2406.503662109375
             },
             "handPosition": {
-              "x": 19.95476572991373,
-              "y": -20.332240809973033
+              "x": 20.053293690144365,
+              "y": -20.37666052626108
             },
             "handToWeaponDistance": 0,
             "corners": [
               {
-                "x": 2361.968599319458,
-                "y": 2390.380054473877
+                "x": 2362.031732559204,
+                "y": 2390.345432281494
               },
               {
-                "x": 2429.364908218384,
-                "y": 2355.2781944274902
+                "x": 2429.4379291534424,
+                "y": 2355.250255584717
               },
               {
-                "x": 2464.460599899292,
-                "y": 2422.686351776123
+                "x": 2464.530279159546,
+                "y": 2422.661891937256
               },
               {
-                "x": 2397.064291000366,
-                "y": 2457.7882118225098
+                "x": 2397.1240825653076,
+                "y": 2457.757068634033
               }
             ]
           }
@@ -160,23 +160,23 @@
         "authorityWeapon": "x2-iron-throwing-star",
         "attackSeq": 1,
         "facingValue": 1,
-        "facingBlend": 0.9999999976446413,
+        "facingBlend": 0.999999999097392,
         "displayLength": 76,
         "collisionLength": 56,
         "recoilHand": 0,
-        "recoilElapsedMs": 1000001963.31,
+        "recoilElapsedMs": 1000002543.2133334,
         "performance": {
-          "phase": "active",
-          "phaseT": 0.6664999999999962,
+          "phase": "recovery",
+          "phaseT": 0.4581250000000012,
           "active": true,
-          "weaponAngle": -1.803039453964775e-7,
+          "weaponAngle": -1.8030408295749558e-7,
           "backHandBlend": 1,
-          "bodyForward": 0.06348295851999919,
-          "bodyLateral": -0.005728516991249717,
-          "bodyTurn": 0.07399184157749811,
-          "frontFootForward": 0.10956073213249842,
-          "backFootForward": -0.09680629060374896,
-          "footBlend": 0.96
+          "bodyForward": 0.06695191094677719,
+          "bodyLateral": -0.019125331286132807,
+          "bodyTurn": 0.06722642612060505,
+          "frontFootForward": 0.1397065489526365,
+          "backFootForward": -0.12594661036865223,
+          "footBlend": 0.8775463800585932
         },
         "flourish": {
           "active": false,
@@ -206,10 +206,10 @@
         "weaponRows": [
           {
             "hand": 0,
-            "x": 35.621170659853036,
-            "y": 1.3049036827105263,
-            "rotation": -1.8030394599577448e-7,
-            "semanticRotation": -1.8030394599577448e-7,
+            "x": 40.481969739839215,
+            "y": -9.708380029621784,
+            "rotation": -1.8030408277525112e-7,
+            "semanticRotation": -1.8030408277525112e-7,
             "originX": 0.5,
             "originY": 0.5,
             "scaleX": 0.44822179910524074,
@@ -217,30 +217,30 @@
             "renderedLengthPx": 76.00000000000124,
             "renderedHeightPx": 76.00000000000124,
             "center": {
-              "x": 2423.59326171875,
-              "y": 2420.8642578125
+              "x": 2426.812744140625,
+              "y": 2413.56982421875
             },
             "handPosition": {
-              "x": 35.621170659853036,
-              "y": 1.3049036827105263
+              "x": 40.481969739839215,
+              "y": -9.708380029621784
             },
             "handToWeaponDistance": 0,
             "corners": [
               {
-                "x": 2385.5932548672,
-                "y": 2382.86426466405
+                "x": 2388.8127372890694,
+                "y": 2375.5698310703056
               },
               {
-                "x": 2461.5932548672,
-                "y": 2382.86425096095
+                "x": 2464.8127372890694,
+                "y": 2375.5698173671944
               },
               {
-                "x": 2461.5932685703,
-                "y": 2458.86425096095
+                "x": 2464.8127509921806,
+                "y": 2451.5698173671944
               },
               {
-                "x": 2385.5932685703,
-                "y": 2458.86426466405
+                "x": 2388.8127509921806,
+                "y": 2451.5698310703056
               }
             ]
           }
@@ -267,7 +267,16 @@
           "y": 0
         },
         "muzzleAnchorError": null,
-        "projectile": null,
+        "projectile": {
+          "x": 2406.3095425857837,
+          "y": 2425.05478300467,
+          "spriteId": "x2-iron-throwing-star",
+          "spawnAnchorKind": "throw",
+          "spawnThrowX": 2406.3095425857837,
+          "spawnThrowY": 2425.05478300467,
+          "displayWidth": 76,
+          "displayHeight": 76
+        },
         "authorityAcceptedAtCapture": true,
         "authorityAttackSeqAfter": 1
       }
@@ -282,23 +291,23 @@
         "authorityWeapon": "x2-iron-throwing-star",
         "attackSeq": 2,
         "facingValue": 1,
-        "facingBlend": 0.9999999999968583,
+        "facingBlend": 0.9999999999987718,
         "displayLength": 76,
         "collisionLength": 56,
         "recoilHand": 0,
-        "recoilElapsedMs": 1000002514.95,
+        "recoilElapsedMs": 1000003093.1933334,
         "performance": {
           "phase": "recovery",
-          "phaseT": 0.5207499999999983,
+          "phaseT": 0.47899999999999654,
           "active": true,
           "weaponAngle": -1.8030408295749558e-7,
           "backHandBlend": 1,
-          "bodyForward": 0.05879367954590647,
-          "bodyLateral": -0.018937785736687505,
-          "bodyTurn": 0.045189824060781855,
-          "frontFootForward": 0.12892267985953154,
-          "backFootForward": -0.12078910775890639,
-          "footBlend": 0.8512900031362507
+          "bodyForward": 0.06423888858600045,
+          "bodyLateral": -0.01906296295600001,
+          "bodyTurn": 0.059898147330001233,
+          "frontFootForward": 0.1361203699700006,
+          "backFootForward": -0.12423148129000028,
+          "footBlend": 0.8688148138400015
         },
         "flourish": {
           "active": false,
@@ -328,8 +337,8 @@
         "weaponRows": [
           {
             "hand": 0,
-            "x": 37.06648373623344,
-            "y": -7.799396987203008,
+            "x": 39.34614881917821,
+            "y": -6.787594633121321,
             "rotation": -1.8030408277525112e-7,
             "semanticRotation": -1.8030408277525112e-7,
             "originX": 0.5,
@@ -339,30 +348,30 @@
             "renderedLengthPx": 76.00000000000124,
             "renderedHeightPx": 76.00000000000124,
             "center": {
-              "x": 2424.550537109375,
-              "y": 2414.834228515625
+              "x": 2426.060546875,
+              "y": 2415.50439453125
             },
             "handPosition": {
-              "x": 37.06648373623344,
-              "y": -7.799396987203008
+              "x": 39.34614881917821,
+              "y": -6.787594633121321
             },
             "handToWeaponDistance": 0,
             "corners": [
               {
-                "x": 2386.5505302578194,
-                "y": 2376.8342353671806
+                "x": 2388.0605400234444,
+                "y": 2377.5044013828056
               },
               {
-                "x": 2462.5505302578194,
-                "y": 2376.8342216640694
+                "x": 2464.0605400234444,
+                "y": 2377.5043876796944
               },
               {
-                "x": 2462.5505439609306,
-                "y": 2452.8342216640694
+                "x": 2464.0605537265556,
+                "y": 2453.5043876796944
               },
               {
-                "x": 2386.5505439609306,
-                "y": 2452.8342353671806
+                "x": 2388.0605537265556,
+                "y": 2453.5044013828056
               }
             ]
           }
@@ -390,12 +399,12 @@
         },
         "muzzleAnchorError": null,
         "projectile": {
-          "x": 2412.971806466228,
-          "y": 2425.517942515597,
+          "x": 2408.5210103465206,
+          "y": 2426.7509006508085,
           "spriteId": "x2-iron-throwing-star",
           "spawnAnchorKind": "throw",
-          "spawnThrowX": 2412.971806466228,
-          "spawnThrowY": 2425.517942515597,
+          "spawnThrowX": 2408.5210103465206,
+          "spawnThrowY": 2426.7509006508085,
           "displayWidth": 76,
           "displayHeight": 76
         },
@@ -413,11 +422,11 @@
         "authorityWeapon": "x2-iron-throwing-star",
         "attackSeq": 2,
         "facingValue": -1,
-        "facingBlend": -0.9999054604998165,
+        "facingBlend": -0.9999313447407754,
         "displayLength": 76,
         "collisionLength": 56,
         "recoilHand": 0,
-        "recoilElapsedMs": 1000004531.54,
+        "recoilElapsedMs": 1000005116.4233333,
         "performance": {
           "phase": "idle",
           "phaseT": 0,
@@ -459,41 +468,41 @@
         "weaponRows": [
           {
             "hand": 0,
-            "x": 19.920618565413783,
-            "y": -21.401347671919424,
+            "x": 20.05873156823115,
+            "y": -21.239220416925754,
             "rotation": -0.4800001803040175,
             "semanticRotation": -0.4800001803040175,
             "originX": 0.5,
             "originY": 0.5,
             "scaleX": 0.44822179910524074,
             "scaleY": 0.44822179910524074,
-            "renderedLengthPx": 75.99434795115698,
-            "renderedHeightPx": 75.99847281144486,
+            "renderedLengthPx": 75.99589762068166,
+            "renderedHeightPx": 75.9988920330082,
             "center": {
-              "x": 2386.80712890625,
-              "y": 2405.824951171875
+              "x": 2386.71533203125,
+              "y": 2405.932373046875
             },
             "handPosition": {
-              "x": 19.920618565413783,
-              "y": -21.401347671919424
+              "x": 20.05873156823115,
+              "y": -21.239220416925754
             },
             "handToWeaponDistance": 0,
             "corners": [
               {
-                "x": 2438.0557022094727,
-                "y": 2389.666759490967
+                "x": 2437.965232849121,
+                "y": 2389.774181365967
               },
               {
-                "x": 2370.6504669189453,
-                "y": 2354.5715293884277
+                "x": 2370.558250427246,
+                "y": 2354.6789512634277
               },
               {
-                "x": 2335.5585556030273,
-                "y": 2421.983142852783
+                "x": 2335.465431213379,
+                "y": 2422.090564727783
               },
               {
-                "x": 2402.9637908935547,
-                "y": 2457.0783729553223
+                "x": 2402.872413635254,
+                "y": 2457.1857948303223
               }
             ]
           }
@@ -533,11 +542,11 @@
         "authorityWeapon": "x2-iron-throwing-star",
         "attackSeq": 3,
         "facingValue": -1,
-        "facingBlend": -0.9999999991835479,
+        "facingBlend": -0.999999999290239,
         "displayLength": 76,
         "collisionLength": 56,
         "recoilHand": 0,
-        "recoilElapsedMs": 1000005503.17,
+        "recoilElapsedMs": 1000006073.0633334,
         "performance": {
           "phase": "recovery",
           "phaseT": 0.39562499999999545,
@@ -580,7 +589,7 @@
           {
             "hand": 0,
             "x": 43.8191437515121,
-            "y": -4.708495239980602,
+            "y": -4.623540322325411,
             "rotation": -1.803040188264049e-7,
             "semanticRotation": -1.803040188264049e-7,
             "originX": 0.5,
@@ -591,29 +600,29 @@
             "renderedHeightPx": 76.00000000000124,
             "center": {
               "x": 2370.976806640625,
-              "y": 2416.88134765625
+              "y": 2416.937744140625
             },
             "handPosition": {
               "x": 43.8191437515121,
-              "y": -4.708495239980602
+              "y": -4.623540322325411
             },
             "handToWeaponDistance": 0,
             "corners": [
               {
                 "x": 2408.976813492178,
-                "y": 2378.881354507803
+                "y": 2378.937750992178
               },
               {
                 "x": 2332.976813492178,
-                "y": 2378.881340804697
+                "y": 2378.937737289072
               },
               {
                 "x": 2332.976799789072,
-                "y": 2454.881340804697
+                "y": 2454.937737289072
               },
               {
                 "x": 2408.976799789072,
-                "y": 2454.881354507803
+                "y": 2454.937750992178
               }
             ]
           }
@@ -640,7 +649,16 @@
           "y": 0
         },
         "muzzleAnchorError": null,
-        "projectile": null,
+        "projectile": {
+          "x": 2398.0038237375356,
+          "y": 2428.7755077088177,
+          "spriteId": "x2-iron-throwing-star",
+          "spawnAnchorKind": "throw",
+          "spawnThrowX": 2398.0038237375356,
+          "spawnThrowY": 2428.7755077088177,
+          "displayWidth": 76,
+          "displayHeight": 76
+        },
         "authorityAcceptedAtCapture": true,
         "authorityAttackSeqAfter": 3
       }
@@ -655,23 +673,23 @@
         "authorityWeapon": "x2-iron-throwing-star",
         "attackSeq": 4,
         "facingValue": -1,
-        "facingBlend": -0.9999999999990721,
+        "facingBlend": -0.9999999999989745,
         "displayLength": 76,
         "collisionLength": 56,
         "recoilHand": 0,
-        "recoilElapsedMs": 1000006068.15,
+        "recoilElapsedMs": 1000006618.0433333,
         "performance": {
           "phase": "recovery",
-          "phaseT": 0.5417500000000017,
+          "phaseT": 0.4166249999999989,
           "active": true,
           "weaponAngle": -1.8030401850478035e-7,
           "backHandBlend": 1,
-          "bodyForward": 0.05606428747753102,
-          "bodyLateral": -0.018875041091437495,
-          "bodyTurn": 0.03781732824390563,
-          "frontFootForward": 0.12531486275765594,
-          "backFootForward": -0.1190636300145311,
-          "footBlend": 0.8425057528012492
+          "bodyForward": 0.0722795919383556,
+          "bodyLateral": -0.019247806711226566,
+          "bodyTurn": 0.08161728856912147,
+          "frontFootForward": 0.14674888589552754,
+          "backFootForward": -0.12931468455873055,
+          "footBlend": 0.8946929395717191
         },
         "flourish": {
           "active": false,
@@ -701,8 +719,8 @@
         "weaponRows": [
           {
             "hand": 0,
-            "x": 35.92380955235453,
-            "y": -7.821483642459592,
+            "x": 42.71243109405785,
+            "y": -5.307423712099858,
             "rotation": -1.803040188264049e-7,
             "semanticRotation": -1.803040188264049e-7,
             "originX": 0.5,
@@ -712,30 +730,30 @@
             "renderedLengthPx": 76.00000000000124,
             "renderedHeightPx": 76.00000000000124,
             "center": {
-              "x": 2376.206298828125,
-              "y": 2414.819580078125
+              "x": 2371.7099609375,
+              "y": 2416.484619140625
             },
             "handPosition": {
-              "x": 35.92380955235453,
-              "y": -7.821483642459592
+              "x": 42.71243109405785,
+              "y": -5.307423712099858
             },
             "handToWeaponDistance": 0,
             "corners": [
               {
-                "x": 2414.206305679678,
-                "y": 2376.819586929678
+                "x": 2409.709967789053,
+                "y": 2378.484625992178
               },
               {
-                "x": 2338.206305679678,
-                "y": 2376.819573226572
+                "x": 2333.709967789053,
+                "y": 2378.484612289072
               },
               {
-                "x": 2338.206291976572,
-                "y": 2452.819573226572
+                "x": 2333.709954085947,
+                "y": 2454.484612289072
               },
               {
-                "x": 2414.206291976572,
-                "y": 2452.819586929678
+                "x": 2409.709954085947,
+                "y": 2454.484625992178
               }
             ]
           }
@@ -763,12 +781,12 @@
         },
         "muzzleAnchorError": null,
         "projectile": {
-          "x": 2384.81647775584,
-          "y": 2425.6487392106555,
+          "x": 2395.848294939891,
+          "y": 2428.392427093018,
           "spriteId": "x2-iron-throwing-star",
           "spawnAnchorKind": "throw",
-          "spawnThrowX": 2384.81647775584,
-          "spawnThrowY": 2425.6487392106555,
+          "spawnThrowX": 2395.848294939891,
+          "spawnThrowY": 2428.392427093018,
           "displayWidth": 76,
           "displayHeight": 76
         },
@@ -786,11 +804,11 @@
         "authorityWeapon": "x2-iron-chakram",
         "attackSeq": 4,
         "facingValue": 1,
-        "facingBlend": 0.9999437988208203,
+        "facingBlend": 0.9999241454463808,
         "displayLength": 104,
         "collisionLength": 76,
         "recoilHand": 0,
-        "recoilElapsedMs": 1000009256.34,
+        "recoilElapsedMs": 1000009709.6033334,
         "performance": {
           "phase": "idle",
           "phaseT": 0,
@@ -832,41 +850,41 @@
         "weaponRows": [
           {
             "hand": 0,
-            "x": 20.027154964848208,
-            "y": -18.2298322469932,
+            "x": 19.921100298144164,
+            "y": -17.627568547093965,
             "rotation": -0.4800001803040832,
             "semanticRotation": -0.4800001803040832,
             "originX": 0.5,
             "originY": 0.5,
             "scaleX": 0.6133561461440136,
             "scaleY": 0.6133561461440136,
-            "renderedLengthPx": 103.99539495632544,
-            "renderedHeightPx": 103.18625926835853,
+            "renderedLengthPx": 103.99379114457133,
+            "renderedHeightPx": 103.18582758756666,
             "center": {
-              "x": 2413.263916015625,
-              "y": 2407.92578125
+              "x": 2413.193603515625,
+              "y": 2408.324462890625
             },
             "handPosition": {
-              "x": 20.027154964848208,
-              "y": -18.2298322469932
+              "x": 19.921100298144164,
+              "y": -17.627568547093965
             },
             "handToWeaponDistance": 0,
             "corners": [
               {
-                "x": 2343.319192454219,
-                "y": 2386.174918740988
+                "x": 2343.2502514719963,
+                "y": 2386.573600381613
               },
               {
-                "x": 2435.5614638775587,
-                "y": 2338.1498676240444
+                "x": 2435.4907147288322,
+                "y": 2338.5485492646694
               },
               {
-                "x": 2483.208639577031,
-                "y": 2429.676643759012
+                "x": 2483.1369555592537,
+                "y": 2430.075325399637
               },
               {
-                "x": 2390.9663681536913,
-                "y": 2477.7016948759556
+                "x": 2390.8964923024178,
+                "y": 2478.1003765165806
               }
             ]
           }
@@ -906,23 +924,23 @@
         "authorityWeapon": "x2-iron-chakram",
         "attackSeq": 5,
         "facingValue": 1,
-        "facingBlend": 0.9999999997056268,
+        "facingBlend": 0.9999999996026377,
         "displayLength": 104,
         "collisionLength": 76,
         "recoilHand": 0,
-        "recoilElapsedMs": 1000010269.64,
+        "recoilElapsedMs": 1000010722.8933333,
         "performance": {
           "phase": "recovery",
-          "phaseT": 0.15539999999999665,
+          "phaseT": 0.05553333333333299,
           "active": true,
           "weaponAngle": -1.8030408295749558e-7,
           "backHandBlend": 1,
-          "bodyForward": 0.09935005286673623,
-          "bodyLateral": -0.019870116157856006,
-          "bodyTurn": 0.15473864854808064,
-          "frontFootForward": 0.1825316790767203,
-          "backFootForward": -0.14642819434104015,
-          "footBlend": 0.9818162620998407
+          "bodyForward": 0.10422488836279645,
+          "bodyLateral": -0.019982181341673483,
+          "bodyTurn": 0.1679063076466341,
+          "frontFootForward": 0.1889754271462252,
+          "backFootForward": -0.14950998689602074,
+          "footBlend": 0.9975053878342874
         },
         "flourish": {
           "active": false,
@@ -952,8 +970,8 @@
         "weaponRows": [
           {
             "hand": 0,
-            "x": 54.045620344140985,
-            "y": -6.036256412781022,
+            "x": 56.086495576596064,
+            "y": -5.501330741287681,
             "rotation": -1.8030408277525112e-7,
             "semanticRotation": -1.8030408277525112e-7,
             "originX": 0.5,
@@ -963,30 +981,30 @@
             "renderedLengthPx": 104.00000762939622,
             "renderedHeightPx": 103.18750756979156,
             "center": {
-              "x": 2435.796630859375,
-              "y": 2416.001953125
+              "x": 2437.148193359375,
+              "y": 2416.356201171875
             },
             "handPosition": {
-              "x": 54.045620344140985,
-              "y": -6.036256412781022
+              "x": 56.086495576596064,
+              "y": -5.501330741287681
             },
             "handToWeaponDistance": 0,
             "corners": [
               {
-                "x": 2383.7966177421135,
-                "y": 2364.4082087159177
+                "x": 2385.1481802421135,
+                "y": 2364.7624567627927
               },
               {
-                "x": 2487.796625371508,
-                "y": 2364.4081899642924
+                "x": 2489.148187871508,
+                "y": 2364.7624380111674
               },
               {
-                "x": 2487.7966439766365,
-                "y": 2467.5956975340823
+                "x": 2489.1482064766365,
+                "y": 2467.9499455809573
               },
               {
-                "x": 2383.796636347242,
-                "y": 2467.5957162857076
+                "x": 2385.148198847242,
+                "y": 2467.9499643325826
               }
             ]
           }
@@ -1014,12 +1032,12 @@
         },
         "muzzleAnchorError": null,
         "projectile": {
-          "x": 2392.407868159417,
-          "y": 2427.755655655976,
+          "x": 2385.130541787072,
+          "y": 2429.4846997730688,
           "spriteId": "x2-iron-chakram",
           "spawnAnchorKind": "throw",
-          "spawnThrowX": 2392.407868159417,
-          "spawnThrowY": 2427.755655655976,
+          "spawnThrowX": 2385.130541787072,
+          "spawnThrowY": 2429.4846997730688,
           "displayWidth": 104,
           "displayHeight": 103.1875
         },
@@ -1037,23 +1055,23 @@
         "authorityWeapon": "x2-iron-chakram",
         "attackSeq": 6,
         "facingValue": 1,
-        "facingBlend": 0.9999999999992845,
+        "facingBlend": 0.9999999999997757,
         "displayLength": 104,
         "collisionLength": 76,
         "recoilHand": 0,
-        "recoilElapsedMs": 1000010771.27,
+        "recoilElapsedMs": 1000011346.1933334,
         "performance": {
-          "phase": "active",
-          "phaseT": 0.527499999999994,
+          "phase": "recovery",
+          "phaseT": 0.6665333333333304,
           "active": true,
           "weaponAngle": -1.8030408295749558e-7,
           "backHandBlend": 1,
-          "bodyForward": 0.03159334499999856,
-          "bodyLateral": 0.005233537656250495,
-          "bodyTurn": 0.00024711031249666227,
-          "frontFootForward": 0.047774605937497217,
-          "backFootForward": -0.05594772328124815,
-          "footBlend": 0.96
+          "bodyForward": 0.04057102376847678,
+          "bodyLateral": -0.018518874109620154,
+          "bodyTurn": -0.004032292119631686,
+          "frontFootForward": 0.10483526130315897,
+          "backFootForward": -0.10926903801455429,
+          "footBlend": 0.7926423753468218
         },
         "flourish": {
           "active": false,
@@ -1083,8 +1101,8 @@
         "weaponRows": [
           {
             "hand": 0,
-            "x": 19.564750976293308,
-            "y": 6.831121044519456,
+            "x": 29.43747412641844,
+            "y": -12.327295193729217,
             "rotation": -1.8030408277525112e-7,
             "semanticRotation": -1.8030408277525112e-7,
             "originX": 0.5,
@@ -1094,30 +1112,30 @@
             "renderedLengthPx": 104.00000762939622,
             "renderedHeightPx": 103.18750756979156,
             "center": {
-              "x": 2412.95849609375,
-              "y": 2424.5244140625
+              "x": 2419.49755859375,
+              "y": 2411.835205078125
             },
             "handPosition": {
-              "x": 19.564750976293308,
-              "y": 6.831121044519456
+              "x": 29.43747412641844,
+              "y": -12.327295193729217
             },
             "handToWeaponDistance": 0,
             "corners": [
               {
-                "x": 2360.9584829764885,
-                "y": 2372.9306696534177
+                "x": 2367.4975454764885,
+                "y": 2360.2414606690427
               },
               {
-                "x": 2464.958490605883,
-                "y": 2372.9306509017924
+                "x": 2471.497553105883,
+                "y": 2360.2414419174174
               },
               {
-                "x": 2464.9585092110115,
-                "y": 2476.1181584715823
+                "x": 2471.4975717110115,
+                "y": 2463.4289494872073
               },
               {
-                "x": 2360.958501581617,
-                "y": 2476.1181772232076
+                "x": 2367.497564081617,
+                "y": 2463.4289682388326
               }
             ]
           }
@@ -1145,12 +1163,12 @@
         },
         "muzzleAnchorError": null,
         "projectile": {
-          "x": 2383.8798868128383,
-          "y": 2429.9939795964287,
+          "x": 2435.108167748267,
+          "y": 2417.3510008669246,
           "spriteId": "x2-iron-chakram",
           "spawnAnchorKind": "throw",
-          "spawnThrowX": 2383.8798868128383,
-          "spawnThrowY": 2429.9939795964287,
+          "spawnThrowX": 2435.108167748267,
+          "spawnThrowY": 2417.3510008669246,
           "displayWidth": 104,
           "displayHeight": 103.1875
         },
@@ -1168,11 +1186,11 @@
         "authorityWeapon": "x2-iron-chakram",
         "attackSeq": 6,
         "facingValue": -1,
-        "facingBlend": -0.9999623166731305,
+        "facingBlend": -0.9999194451967488,
         "displayLength": 104,
         "collisionLength": 76,
         "recoilHand": 0,
-        "recoilElapsedMs": 1000012934.52,
+        "recoilElapsedMs": 1000013396.1233333,
         "performance": {
           "phase": "idle",
           "phaseT": 0,
@@ -1214,41 +1232,41 @@
         "weaponRows": [
           {
             "hand": 0,
-            "x": 19.98398958353619,
-            "y": -21.836504714691745,
+            "x": 19.949029655865473,
+            "y": -21.807824019876154,
             "rotation": -0.4800001803040175,
             "semanticRotation": -0.4800001803040175,
             "originX": 0.5,
             "originY": 0.5,
             "scaleX": 0.6133561461440136,
             "scaleY": 0.6133561461440136,
-            "renderedLengthPx": 103.99691080144594,
-            "renderedHeightPx": 103.18666648752132,
+            "renderedLengthPx": 103.99341218581127,
+            "renderedHeightPx": 103.18572447451737,
             "center": {
-              "x": 2386.764404296875,
-              "y": 2405.536865234375
+              "x": 2386.7880859375,
+              "y": 2405.555908203125
             },
             "handPosition": {
-              "x": 19.98398958353619,
-              "y": -21.836504714691745
+              "x": 19.949029655865473,
+              "y": -21.807824019876154
             },
             "handToWeaponDistance": 0,
             "corners": [
               {
-                "x": 2456.7104232907295,
-                "y": 2383.786002725363
+                "x": 2456.731112703681,
+                "y": 2383.805045694113
               },
               {
-                "x": 2364.4664428830147,
-                "y": 2335.7609516084194
+                "x": 2364.491076692939,
+                "y": 2335.7799945771694
               },
               {
-                "x": 2316.8183853030205,
-                "y": 2427.287727743387
+                "x": 2316.845059171319,
+                "y": 2427.306770712137
               },
               {
-                "x": 2409.0623657107353,
-                "y": 2475.3127788603306
+                "x": 2409.085095182061,
+                "y": 2475.3318218290806
               }
             ]
           }
@@ -1288,23 +1306,23 @@
         "authorityWeapon": "x2-iron-chakram",
         "attackSeq": 7,
         "facingValue": -1,
-        "facingBlend": -0.9999999998318783,
+        "facingBlend": -0.999999999514583,
         "displayLength": 104,
         "collisionLength": 76,
         "recoilHand": 0,
-        "recoilElapsedMs": 1000013961.19,
+        "recoilElapsedMs": 1000014397.7433333,
         "performance": {
           "phase": "recovery",
-          "phaseT": 0.2665999999999986,
+          "phaseT": 0.1109999999999977,
           "active": true,
           "weaponAngle": -1.8030401850478035e-7,
           "backHandBlend": 1,
-          "bodyForward": 0.08974636034750413,
-          "bodyLateral": -0.019649341617184003,
-          "bodyTurn": 0.1287976400191204,
-          "frontFootForward": 0.1698371429880802,
-          "backFootForward": -0.14035689447256008,
-          "footBlend": 0.9509078264057604
+          "bodyForward": 0.10202218679400012,
+          "bodyLateral": -0.019931544524000002,
+          "bodyTurn": 0.16195648157000034,
+          "frontFootForward": 0.18606381013000017,
+          "backFootForward": -0.14811747441000006,
+          "footBlend": 0.9904162333600004
         },
         "flourish": {
           "active": false,
@@ -1334,8 +1352,8 @@
         "weaponRows": [
           {
             "hand": 0,
-            "x": 50.024984526080104,
-            "y": -2.853179797948707,
+            "x": 55.16432310946779,
+            "y": -1.5064967758761687,
             "rotation": -1.803040188264049e-7,
             "semanticRotation": -1.803040188264049e-7,
             "originX": 0.5,
@@ -1345,30 +1363,30 @@
             "renderedLengthPx": 104.00000762939622,
             "renderedHeightPx": 103.18750756979156,
             "center": {
-              "x": 2366.866455078125,
-              "y": 2418.110107421875
+              "x": 2363.46240234375,
+              "y": 2419.002197265625
             },
             "handPosition": {
-              "x": 50.024984526080104,
-              "y": -2.853179797948707
+              "x": 55.16432310946779,
+              "y": -1.5064967758761687
             },
             "handToWeaponDistance": 0,
             "corners": [
               {
-                "x": 2418.866468195383,
-                "y": 2366.516363012789
+                "x": 2415.462415461008,
+                "y": 2367.408452856539
               },
               {
-                "x": 2314.8664605659883,
-                "y": 2366.516344261171
+                "x": 2311.4624078316133,
+                "y": 2367.408434104921
               },
               {
-                "x": 2314.866441960867,
-                "y": 2469.703851830961
+                "x": 2311.462389226492,
+                "y": 2470.595941674711
               },
               {
-                "x": 2418.8664495902617,
-                "y": 2469.703870582579
+                "x": 2415.4623968558867,
+                "y": 2470.595960426329
               }
             ]
           }
@@ -1396,12 +1414,12 @@
         },
         "muzzleAnchorError": null,
         "projectile": {
-          "x": 2391.4656917205944,
-          "y": 2426.7025579108586,
+          "x": 2411.966878103082,
+          "y": 2431.4303203408213,
           "spriteId": "x2-iron-chakram",
           "spawnAnchorKind": "throw",
-          "spawnThrowX": 2391.4656917205944,
-          "spawnThrowY": 2426.7025579108586,
+          "spawnThrowX": 2411.966878103082,
+          "spawnThrowY": 2431.4303203408213,
           "displayWidth": 104,
           "displayHeight": 103.1875
         },
@@ -1419,23 +1437,23 @@
         "authorityWeapon": "x2-iron-chakram",
         "attackSeq": 8,
         "facingValue": -1,
-        "facingBlend": -0.9999999999998436,
+        "facingBlend": -0.9999999999993125,
         "displayLength": 104,
         "collisionLength": 76,
         "recoilHand": 0,
-        "recoilElapsedMs": 1000014542.81,
+        "recoilElapsedMs": 1000014944.3933333,
         "performance": {
           "phase": "recovery",
-          "phaseT": 0.32206666666666334,
+          "phaseT": 0.1444666666666672,
           "active": true,
           "weaponAngle": -1.8030401850478035e-7,
           "backHandBlend": 1,
-          "bodyForward": 0.08374008534229194,
-          "bodyLateral": -0.01951126632970786,
-          "bodyTurn": 0.11257379374067364,
-          "frontFootForward": 0.161897813958202,
-          "backFootForward": -0.13655982406696615,
-          "footBlend": 0.9315772861591005
+          "bodyForward": 0.10007739765320352,
+          "bodyLateral": -0.01988683672765985,
+          "bodyTurn": 0.15670331550003253,
+          "frontFootForward": 0.18349311184044143,
+          "backFootForward": -0.1468880100106459,
+          "footBlend": 0.9841571418723791
         },
         "flourish": {
           "active": false,
@@ -1465,8 +1483,8 @@
         "weaponRows": [
           {
             "hand": 0,
-            "x": 47.51042625896359,
-            "y": -3.1678962653423213,
+            "x": 54.35012702161886,
+            "y": -0.33199292490607296,
             "rotation": -1.803040188264049e-7,
             "semanticRotation": -1.803040188264049e-7,
             "originX": 0.5,
@@ -1476,30 +1494,30 @@
             "renderedLengthPx": 104.00000762939622,
             "renderedHeightPx": 103.18750756979156,
             "center": {
-              "x": 2368.531982421875,
-              "y": 2417.90185546875
+              "x": 2364.001708984375,
+              "y": 2419.780029296875
             },
             "handPosition": {
-              "x": 47.51042625896359,
-              "y": -3.1678962653423213
+              "x": 54.35012702161886,
+              "y": -0.33199292490607296
             },
             "handToWeaponDistance": 0,
             "corners": [
               {
-                "x": 2420.531995539133,
-                "y": 2366.308111059664
+                "x": 2416.001722101633,
+                "y": 2368.186284887789
               },
               {
-                "x": 2316.5319879097383,
-                "y": 2366.308092308046
+                "x": 2312.0017144722383,
+                "y": 2368.186266136171
               },
               {
-                "x": 2316.531969304617,
-                "y": 2469.495599877836
+                "x": 2312.001695867117,
+                "y": 2471.373773705961
               },
               {
-                "x": 2420.5319769340117,
-                "y": 2469.495618629454
+                "x": 2416.0017034965117,
+                "y": 2471.373792457579
               }
             ]
           }
@@ -1527,12 +1545,12 @@
         },
         "muzzleAnchorError": null,
         "projectile": {
-          "x": 2384.829653409819,
-          "y": 2425.821002083505,
+          "x": 2407.582129426505,
+          "y": 2431.5967946220258,
           "spriteId": "x2-iron-chakram",
           "spawnAnchorKind": "throw",
-          "spawnThrowX": 2384.829653409819,
-          "spawnThrowY": 2425.821002083505,
+          "spawnThrowX": 2407.582129426505,
+          "spawnThrowY": 2431.5967946220258,
           "displayWidth": 104,
           "displayHeight": 103.1875
         },
@@ -1550,11 +1568,11 @@
         "authorityWeapon": "x2-kunai",
         "attackSeq": 9,
         "facingValue": 1,
-        "facingBlend": 0.9999997608590762,
+        "facingBlend": 0.9999990110408588,
         "displayLength": 72,
         "collisionLength": null,
         "recoilHand": 0,
-        "recoilElapsedMs": 1000018234.35,
+        "recoilElapsedMs": 1000018374.2733333,
         "performance": {
           "phase": "idle",
           "phaseT": 0,
@@ -1571,11 +1589,11 @@
         "flourish": {
           "active": true,
           "moment": "after-attack",
-          "rotationRad": 3.294377156426907,
+          "rotationRad": 2.898313320184194,
           "ownership": 1,
           "arm": {
             "armed": false,
-            "earliestStartMs": 18037.71999999999,
+            "earliestStartMs": 18229.303333333326,
             "weaponId": "x2-kunai"
           },
           "streak": {
@@ -1583,7 +1601,7 @@
             "lastAcceptedMs": -1000000000,
             "weaponId": ""
           },
-          "cancelEdge": 11
+          "cancelEdge": 12
         },
         "hammer": {
           "active": false,
@@ -1596,41 +1614,41 @@
         "weaponRows": [
           {
             "hand": 0,
-            "x": 21.004721794843938,
-            "y": -0.504660620148075,
-            "rotation": -3.1088083310567622,
-            "semanticRotation": -3.1088083310567622,
+            "x": 20.327806142409234,
+            "y": 1.0913166852918423,
+            "rotation": 2.7783131398801117,
+            "semanticRotation": 2.7783131398801117,
             "originX": 0.073,
             "originY": 0.5,
             "scaleX": 0.42463117809970174,
             "scaleY": 0.42463117809970174,
-            "renderedLengthPx": 71.99998585285402,
-            "renderedHeightPx": 13.7812502067185,
+            "renderedLengthPx": 71.99994019508635,
+            "renderedHeightPx": 13.781249151585031,
             "center": {
-              "x": 2383.184880088806,
-              "y": 2418.6580307610034
+              "x": 2384.726355407715,
+              "y": 2431.647523153305
             },
             "handPosition": {
-              "x": 21.004721794843938,
-              "y": -0.504660620148075
+              "x": 20.327806142409234,
+              "y": 1.0913166852918423
             },
             "handToWeaponDistance": 0,
             "corners": [
               {
-                "x": 2418.939664178319,
-                "y": 2426.724977401614
+                "x": 2420.825361062169,
+                "y": 2425.2961440120935
               },
               {
-                "x": 2346.978368096776,
-                "y": 2424.364928869128
+                "x": 2353.5243967067004,
+                "y": 2450.8807406460046
               },
               {
-                "x": 2347.430095999293,
-                "y": 2410.5910841203927
+                "x": 2348.6273497532607,
+                "y": 2437.9989022945165
               },
               {
-                "x": 2419.391392080836,
-                "y": 2412.9511326528786
+                "x": 2415.9283141087294,
+                "y": 2412.4143056606054
               }
             ]
           }
@@ -1658,12 +1676,12 @@
         },
         "muzzleAnchorError": null,
         "projectile": {
-          "x": 2618.970571623568,
-          "y": 2422.101739228837,
+          "x": 2671.41732791765,
+          "y": 2423.174413127448,
           "spriteId": "x2-kunai",
           "spawnAnchorKind": "throw",
-          "spawnThrowX": 2412.1705716235674,
-          "spawnThrowY": 2422.1017765157335,
+          "spawnThrowX": 2419.1965279176493,
+          "spawnThrowY": 2423.174458603903,
           "displayWidth": 72,
           "displayHeight": 13.78125
         },
@@ -1681,11 +1699,11 @@
         "authorityWeapon": "x2-kunai",
         "attackSeq": 10,
         "facingValue": -1,
-        "facingBlend": -0.9999998459906958,
+        "facingBlend": -0.9999998490463226,
         "displayLength": 72,
         "collisionLength": null,
         "recoilHand": 0,
-        "recoilElapsedMs": 1000020845.91,
+        "recoilElapsedMs": 1000020995.8333334,
         "performance": {
           "phase": "idle",
           "phaseT": 0,
@@ -1702,11 +1720,11 @@
         "flourish": {
           "active": true,
           "moment": "after-attack",
-          "rotationRad": 3.45825063952713,
+          "rotationRad": 3.3486856640387024,
           "ownership": 1,
           "arm": {
             "armed": false,
-            "earliestStartMs": 20625.950000000004,
+            "earliestStartMs": 20782.533333333326,
             "weaponId": "x2-kunai"
           },
           "streak": {
@@ -1714,7 +1732,7 @@
             "lastAcceptedMs": -1000000000,
             "weaponId": ""
           },
-          "cancelEdge": 11
+          "cancelEdge": 12
         },
         "hammer": {
           "active": false,
@@ -1727,41 +1745,41 @@
         "weaponRows": [
           {
             "hand": 0,
-            "x": 21.284986723656544,
-            "y": 1.2766251576620151,
-            "rotation": -2.9449348479564748,
-            "semanticRotation": -2.9449348479564748,
+            "x": 21.097591651514648,
+            "y": 3.476340235721323,
+            "rotation": -3.0544998234449023,
+            "semanticRotation": -3.0544998234449023,
             "originX": 0.073,
             "originY": 0.5,
             "scaleX": 0.42463117809970174,
             "scaleY": 0.42463117809970174,
-            "renderedLengthPx": 71.99999135921783,
-            "renderedHeightPx": 13.781249671266204,
+            "renderedLengthPx": 71.99998985739003,
+            "renderedHeightPx": 13.781249497542234,
             "center": {
-              "x": 2416.053508102417,
-              "y": 2414.838306995392
+              "x": 2416.6535932769775,
+              "y": 2419.6282918486595
             },
             "handPosition": {
-              "x": 21.284986723656544,
-              "y": 1.2766251576620151
+              "x": 21.097591651514648,
+              "y": 3.476340235721323
             },
             "handToWeaponDistance": 0,
             "corners": [
               {
-                "x": 2382.093786449626,
-                "y": 2428.6302515438797
+                "x": 2381.3894105799272,
+                "y": 2429.6241797093153
               },
               {
-                "x": 2452.7059843256025,
-                "y": 2414.561979906917
+                "x": 2453.1165071375444,
+                "y": 2423.361420023799
               },
               {
-                "x": 2450.0132297552077,
-                "y": 2401.0463624469044
+                "x": 2451.917775974028,
+                "y": 2409.6324039880037
               },
               {
-                "x": 2379.401031879231,
-                "y": 2415.1146340838673
+                "x": 2380.1906794164106,
+                "y": 2415.89516367352
               }
             ]
           }
@@ -1789,12 +1807,12 @@
         },
         "muzzleAnchorError": null,
         "projectile": {
-          "x": 2086.8321607461553,
-          "y": 2421.4023118122914,
+          "x": 2089.4819500524623,
+          "y": 2422.1353109271945,
           "spriteId": "x2-kunai",
           "spawnAnchorKind": "throw",
-          "spawnThrowX": 2371.934160746155,
-          "spawnThrowY": 2421.402363217363,
+          "spawnThrowX": 2371.4631500524624,
+          "spawnThrowY": 2422.1353617695736,
           "displayWidth": 72,
           "displayHeight": 13.78125
         },
@@ -1812,11 +1830,11 @@
         "authorityWeapon": "x2-coyote-stinger",
         "attackSeq": 11,
         "facingValue": 1,
-        "facingBlend": 0.999901594397489,
+        "facingBlend": 0.9999905162696232,
         "displayLength": 52,
         "collisionLength": null,
         "recoilHand": 0,
-        "recoilElapsedMs": 70,
+        "recoilElapsedMs": 76.65000000000146,
         "performance": {
           "phase": "idle",
           "phaseT": 0,
@@ -1842,10 +1860,10 @@
           },
           "streak": {
             "count": 1,
-            "lastAcceptedMs": 23815.780000000006,
+            "lastAcceptedMs": 24242.383333333328,
             "weaponId": "x2-coyote-stinger"
           },
-          "cancelEdge": 11
+          "cancelEdge": 12
         },
         "hammer": {
           "active": false,
@@ -1858,113 +1876,113 @@
         "weaponRows": [
           {
             "hand": 0,
-            "x": 23.78799996848936,
-            "y": -12.919264318838396,
-            "rotation": 0.0000856638521788966,
-            "semanticRotation": 0.0000856638521788966,
+            "x": 23.795601634858627,
+            "y": -12.920001519436592,
+            "rotation": -1.7676907937413944e-7,
+            "semanticRotation": -1.7676907937413944e-7,
             "originX": 0.16,
             "originY": 0.5,
             "scaleX": 0.3066780730720068,
             "scaleY": 0.3066780730720068,
-            "renderedLengthPx": 52.000004005492954,
-            "renderedHeightPx": 31.687502440847272,
+            "renderedLengthPx": 52.000003814698076,
+            "renderedHeightPx": 31.68750232458164,
             "center": {
-              "x": 2425.259835281372,
-              "y": 2411.4446297713557
+              "x": 2425.216622390747,
+              "y": 2411.442623827848
             },
             "handPosition": {
-              "x": 23.78799996848936,
-              "y": -12.919264318838396
+              "x": 23.795601634858627,
+              "y": -12.920001519436592
             },
             "handToWeaponDistance": 0,
             "corners": [
               {
-                "x": 2399.2611906107477,
-                "y": 2395.5986513487996
+                "x": 2399.2166176827136,
+                "y": 2395.5988772615533
               },
               {
-                "x": 2451.261194425445,
-                "y": 2395.6031058693306
+                "x": 2451.216621497411,
+                "y": 2395.5988680695614
               },
               {
-                "x": 2451.2584799519964,
-                "y": 2427.290608193912
+                "x": 2451.216627098781,
+                "y": 2427.2863703941425
               },
               {
-                "x": 2399.258476137299,
-                "y": 2427.286153673381
+                "x": 2399.2166232840837,
+                "y": 2427.2863795861344
               }
             ]
           },
           {
             "hand": 1,
-            "x": 12.007999994980606,
-            "y": 1.1401171881496373,
-            "rotation": 0.0000856638521788966,
-            "semanticRotation": 0.0000856638521788966,
+            "x": 12.00799999999998,
+            "y": 1.1399997581798988,
+            "rotation": -1.7676907937413944e-7,
+            "semanticRotation": -1.7676907937413944e-7,
             "originX": 0.16,
             "originY": 0.5,
             "scaleX": 0.3066780730720068,
             "scaleY": 0.3066780730720068,
-            "renderedLengthPx": 52.000004005492954,
-            "renderedHeightPx": 31.687502440847272,
+            "renderedLengthPx": 52.000003814698076,
+            "renderedHeightPx": 31.68750232458164,
             "center": {
-              "x": 2417.457589187622,
-              "y": 2420.7566414901057
+              "x": 2417.409249343872,
+              "y": 2420.755123827848
             },
             "handPosition": {
-              "x": 12.007999994980606,
-              "y": 1.1401171881496373
+              "x": 12.00799999999998,
+              "y": 1.1399997581798988
             },
             "handToWeaponDistance": 0,
             "corners": [
               {
-                "x": 2391.4589445169977,
-                "y": 2404.9106630675496
+                "x": 2391.4092446358386,
+                "y": 2404.9113772615533
               },
               {
-                "x": 2443.458948331695,
-                "y": 2404.9151175880806
+                "x": 2443.409248450536,
+                "y": 2404.9113680695614
               },
               {
-                "x": 2443.4562338582464,
-                "y": 2436.602619912662
+                "x": 2443.409254051906,
+                "y": 2436.5988703941425
               },
               {
-                "x": 2391.456230043549,
-                "y": 2436.598165392131
+                "x": 2391.4092502372087,
+                "y": 2436.5988795861344
               }
             ]
           }
         ],
-        "weaponVerticalGap": 14.059381506988032,
+        "weaponVerticalGap": 14.060001277616491,
         "muzzleRows": [
           {
             "hand": 0,
             "visible": true,
-            "x": 2451.0575714369506,
-            "y": 2402.7530350694005
+            "x": 2451.0135203597742,
+            "y": 2402.748814678387
           },
           {
             "hand": 1,
             "visible": true,
-            "x": 2443.2552120439723,
-            "y": 2412.0651189070236
+            "x": 2443.2061260861537,
+            "y": 2412.061309014584
           }
         ],
-        "muzzleVerticalGap": 9.31208383762305,
+        "muzzleVerticalGap": 9.312494336196778,
         "shotMuzzle": {
           "visible": true,
-          "x": 2451.0575714369506,
-          "y": 2402.7530350694005
+          "x": 2451.0135203597742,
+          "y": 2402.748814678387
         },
-        "muzzleAnchorError": 6.244860791739965,
+        "muzzleAnchorError": 7.989753376168668,
         "projectile": {
-          "x": 2457.3024308025133,
-          "y": 2402.7488145770817,
+          "x": 2459.003273735943,
+          "y": 2402.7488144197155,
           "spawnAnchorKind": "muzzle",
-          "spawnMuzzleX": 2457.3024308025133,
-          "spawnMuzzleY": 2402.7488145770817,
+          "spawnMuzzleX": 2459.003273735943,
+          "spawnMuzzleY": 2402.7488144197155,
           "displayWidth": null,
           "displayHeight": null
         },
@@ -1982,11 +2000,11 @@
         "authorityWeapon": "x2-coyote-stinger",
         "attackSeq": 12,
         "facingValue": -1,
-        "facingBlend": -0.9999178343165608,
+        "facingBlend": -0.999983074561303,
         "displayLength": 52,
         "collisionLength": null,
         "recoilHand": 1,
-        "recoilElapsedMs": 141.65999999999985,
+        "recoilElapsedMs": 81.65999999999985,
         "performance": {
           "phase": "idle",
           "phaseT": 0,
@@ -2012,10 +2030,10 @@
           },
           "streak": {
             "count": 1,
-            "lastAcceptedMs": 23815.780000000006,
+            "lastAcceptedMs": 24242.383333333328,
             "weaponId": "x2-coyote-stinger"
           },
-          "cancelEdge": 11
+          "cancelEdge": 12
         },
         "hammer": {
           "active": false,
@@ -2028,113 +2046,113 @@
         "weaponRows": [
           {
             "hand": 0,
-            "x": 24.471999999999852,
-            "y": -12.920001645110798,
-            "rotation": -1.7742782532081947e-7,
-            "semanticRotation": -1.7742782532081947e-7,
+            "x": 24.47199999999986,
+            "y": -12.920001620917184,
+            "rotation": -1.74818506337715e-7,
+            "semanticRotation": -1.74818506337715e-7,
             "originX": 0.16,
             "originY": 0.5,
             "scaleX": 0.3066780730720068,
             "scaleY": 0.3066780730720068,
-            "renderedLengthPx": 52.00000381469808,
-            "renderedHeightPx": 31.687502324581647,
+            "renderedLengthPx": 52.00000381469806,
+            "renderedHeightPx": 31.687502324581633,
             "center": {
-              "x": 2361.577567062378,
-              "y": 2411.442623816201
+              "x": 2362.523611984253,
+              "y": 2411.4426238623337
             },
             "handPosition": {
-              "x": 24.471999999999852,
-              "y": -12.920001645110798
+              "x": 24.47199999999986,
+              "y": -12.920001620917184
             },
             "handToWeaponDistance": 0,
             "corners": [
               {
-                "x": 2387.5775717808488,
-                "y": 2395.598877267034
+                "x": 2388.523616661382,
+                "y": 2395.5988772453243
               },
               {
-                "x": 2335.5775679661515,
-                "y": 2395.598868040787
+                "x": 2336.523612846685,
+                "y": 2395.598868154762
               },
               {
-                "x": 2335.577562343907,
-                "y": 2427.286370365368
+                "x": 2336.5236073071237,
+                "y": 2427.286370479343
               },
               {
-                "x": 2387.5775661586044,
-                "y": 2427.286379591615
+                "x": 2388.523611121821,
+                "y": 2427.2863795699054
               }
             ]
           },
           {
             "hand": 1,
-            "x": 12.00799999999998,
-            "y": 1.1399997572787353,
-            "rotation": -1.7742782532081947e-7,
-            "semanticRotation": -1.7742782532081947e-7,
+            "x": 11.347280258252335,
+            "y": 1.1399998763543229,
+            "rotation": -1.74818506337715e-7,
+            "semanticRotation": -1.74818506337715e-7,
             "originX": 0.16,
             "originY": 0.5,
             "scaleX": 0.3066780730720068,
             "scaleY": 0.3066780730720068,
-            "renderedLengthPx": 52.00000381469808,
-            "renderedHeightPx": 31.687502324581647,
+            "renderedLengthPx": 52.00000381469806,
+            "renderedHeightPx": 31.687502324581633,
             "center": {
-              "x": 2369.832938156128,
-              "y": 2420.755123816201
+              "x": 2371.216483078003,
+              "y": 2420.7551238623337
             },
             "handPosition": {
-              "x": 12.00799999999998,
-              "y": 1.1399997572787353
+              "x": 11.347280258252335,
+              "y": 1.1399998763543229
             },
             "handToWeaponDistance": 0,
             "corners": [
               {
-                "x": 2395.8329428745988,
-                "y": 2404.911377267034
+                "x": 2397.216487755132,
+                "y": 2404.9113772453243
               },
               {
-                "x": 2343.8329390599015,
-                "y": 2404.911368040787
+                "x": 2345.216483940435,
+                "y": 2404.911368154762
               },
               {
-                "x": 2343.832933437657,
-                "y": 2436.598870365368
+                "x": 2345.2164784008737,
+                "y": 2436.598870479343
               },
               {
-                "x": 2395.8329372523544,
-                "y": 2436.598879591615
+                "x": 2397.216482215571,
+                "y": 2436.5988795699054
               }
             ]
           }
         ],
-        "weaponVerticalGap": 14.060001402389533,
+        "weaponVerticalGap": 14.060001497271507,
         "muzzleRows": [
           {
             "hand": 0,
             "visible": true,
-            "x": 2335.7806617852125,
-            "y": 2402.748814566508
+            "x": 2336.7267066844024,
+            "y": 2402.748814695977
           },
           {
             "hand": 1,
             "visible": true,
-            "x": 2344.0360614195733,
-            "y": 2412.0613089853464
+            "x": 2345.419727107791,
+            "y": 2412.06130917766
           }
         ],
-        "muzzleVerticalGap": 9.312494418838469,
+        "muzzleVerticalGap": 9.312494481682734,
         "shotMuzzle": {
           "visible": true,
-          "x": 2344.0360614195733,
-          "y": 2412.0613089853464
+          "x": 2345.419727107791,
+          "y": 2412.06130917766
         },
-        "muzzleAnchorError": 4.9300865433192484,
+        "muzzleAnchorError": 6.542724572703267,
         "projectile": {
-          "x": 2339.105974876254,
-          "y": 2412.0613090020383,
+          "x": 2338.8770025350877,
+          "y": 2412.0613089922913,
           "spawnAnchorKind": "muzzle",
-          "spawnMuzzleX": 2339.105974876254,
-          "spawnMuzzleY": 2412.0613090020383,
+          "spawnMuzzleX": 2338.8770025350877,
+          "spawnMuzzleY": 2412.0613089922913,
           "displayWidth": null,
           "displayHeight": null
         },
@@ -2152,11 +2170,11 @@
         "authorityWeapon": "x-gun-revolver-cannon",
         "attackSeq": 12,
         "facingValue": 1,
-        "facingBlend": 0.9997480935625715,
+        "facingBlend": 0.9999415215834366,
         "displayLength": 94,
         "collisionLength": null,
         "recoilHand": 0,
-        "recoilElapsedMs": 68.32999999999811,
+        "recoilElapsedMs": 79.98999999999796,
         "performance": {
           "phase": "idle",
           "phaseT": 0,
@@ -2182,57 +2200,57 @@
           },
           "streak": {
             "count": 1,
-            "lastAcceptedMs": 28948.950000000004,
+            "lastAcceptedMs": 30492.143333333344,
             "weaponId": "x-gun-revolver-cannon"
           },
-          "cancelEdge": 12
+          "cancelEdge": 13
         },
         "hammer": {
           "active": true,
-          "weaponRotationRad": -0.13999956042117523,
-          "weaponForward": -3.5480182589573954,
-          "weaponLateral": -2.554573146449324,
-          "handForward": -9.366768203647522,
-          "handLateral": -7.025076152735642
+          "weaponRotationRad": -0.13578373744876945,
+          "weaponForward": -3.4411763743284114,
+          "weaponLateral": -2.4776469895164555,
+          "handForward": -9.084705628227006,
+          "handLateral": -6.813529221170254
         },
         "weaponRows": [
           {
             "hand": 0,
-            "x": 22.802401164427753,
-            "y": -6.080001052947565,
-            "rotation": -0.13999973353497275,
-            "semanticRotation": -0.13999973353497275,
+            "x": 22.885575851441462,
+            "y": -6.080001072933061,
+            "rotation": -0.13578391146869606,
+            "semanticRotation": -0.13578391146869606,
             "originX": 0.16,
             "originY": 0.5,
             "scaleX": 0.5543795936301662,
             "scaleY": 0.5543795936301662,
-            "renderedLengthPx": 93.99999990553755,
-            "renderedHeightPx": 49.937499949816825,
+            "renderedLengthPx": 94.00000199871977,
+            "renderedHeightPx": 49.93750106181987,
             "center": {
-              "x": 2436.9051168823244,
-              "y": 2411.5131107902525
+              "x": 2438.263970031738,
+              "y": 2411.646569519043
             },
             "handPosition": {
-              "x": 12.546977954728906,
-              "y": -11.72927855742258
+              "x": 12.962162875229112,
+              "y": -11.601045512422814
             },
-            "handToWeaponDistance": 11.708460254559403,
+            "handToWeaponDistance": 11.355882035283758,
             "corners": [
               {
-                "x": 2386.8807527536155,
-                "y": 2393.3471683597563
+                "x": 2388.31663359642,
+                "y": 2393.269894628525
               },
               {
-                "x": 2479.9610597604515,
-                "y": 2380.230140123367
+                "x": 2481.451414480209,
+                "y": 2380.5453920650484
               },
               {
-                "x": 2486.929481011033,
-                "y": 2429.6790532207488
+                "x": 2488.211306467056,
+                "y": 2430.0232444095614
               },
               {
-                "x": 2393.8491740041973,
-                "y": 2442.796081457138
+                "x": 2395.076525583267,
+                "y": 2442.747746973038
               }
             ]
           }
@@ -2242,21 +2260,21 @@
           {
             "hand": 0,
             "visible": true,
-            "x": 2480.821967923131,
-            "y": 2388.9713721407693
+            "x": 2482.2756203048093,
+            "y": 2389.2901765746306
           },
           {
             "hand": 1,
             "visible": true,
-            "x": 2480.821967923131,
-            "y": 2388.9713721407693
+            "x": 2482.2756203048093,
+            "y": 2389.2901765746306
           }
         ],
         "muzzleVerticalGap": 0,
         "shotMuzzle": {
           "visible": true,
-          "x": 2480.821967923131,
-          "y": 2388.9713721407693
+          "x": 2482.2756203048093,
+          "y": 2389.2901765746306
         },
         "muzzleAnchorError": null,
         "projectile": null,
@@ -2274,11 +2292,11 @@
         "authorityWeapon": "x-gun-revolver-cannon",
         "attackSeq": 13,
         "facingValue": -1,
-        "facingBlend": -0.9997430869403228,
+        "facingBlend": -0.9999460003406333,
         "displayLength": 94,
         "collisionLength": null,
         "recoilHand": 0,
-        "recoilElapsedMs": 68.34000000000015,
+        "recoilElapsedMs": 78.33999999999651,
         "performance": {
           "phase": "idle",
           "phaseT": 0,
@@ -2304,57 +2322,57 @@
           },
           "streak": {
             "count": 1,
-            "lastAcceptedMs": 30915.54,
+            "lastAcceptedMs": 32693.733333333344,
             "weaponId": "x-gun-revolver-cannon"
           },
-          "cancelEdge": 12
+          "cancelEdge": 13
         },
         "hammer": {
           "active": true,
-          "weaponRotationRad": -0.13999967701263008,
-          "weaponForward": -3.548021213742463,
-          "weaponLateral": -2.554575273894573,
-          "handForward": -9.366776004280103,
-          "handLateral": -7.025082003210077
+          "weaponRotationRad": -0.13686593165145836,
+          "weaponForward": -3.4686024946628384,
+          "weaponLateral": -2.497393796157243,
+          "handForward": -9.157110585909892,
+          "handLateral": -6.867832939432419
         },
         "weaponRows": [
           {
             "hand": 0,
-            "x": 22.802372497380013,
-            "y": -6.080001052947474,
-            "rotation": -0.1399998501272286,
-            "semanticRotation": -0.1399998501272286,
+            "x": 22.85971781724934,
+            "y": -6.080001067688933,
+            "rotation": -0.13686610555015655,
+            "semanticRotation": -0.13686610555015655,
             "originX": 0.16,
             "originY": 0.5,
             "scaleX": 0.5543795936301662,
             "scaleY": 0.5543795936301662,
-            "renderedLengthPx": 94.00000136940093,
-            "renderedHeightPx": 49.937500727494246,
+            "renderedLengthPx": 94.00000244145654,
+            "renderedHeightPx": 49.93750129702379,
             "center": {
-              "x": 2302.0941506958006,
-              "y": 2411.513107223511
+              "x": 2300.9292068481445,
+              "y": 2411.612303504944
             },
             "handPosition": {
-              "x": 12.546940088315345,
-              "y": -11.729282066429608
+              "x": 12.851198796638583,
+              "y": -11.634220236987948
             },
-            "handToWeaponDistance": 11.70847000535013,
+            "handToWeaponDistance": 11.446388232387365,
             "corners": [
               {
-                "x": 2352.1185176110266,
-                "y": 2393.3471700382233
+                "x": 2350.896401375532,
+                "y": 2393.289691934586
               },
               {
-                "x": 2259.0382106041907,
-                "y": 2380.2301313114167
+                "x": 2257.7754449546337,
+                "y": 2380.4644069767
               },
               {
-                "x": 2252.0697837805747,
-                "y": 2429.6790444087983
+                "x": 2250.962012320757,
+                "y": 2429.9349150753023
               },
               {
-                "x": 2345.1500907874106,
-                "y": 2442.796083135605
+                "x": 2344.0829687416553,
+                "y": 2442.760200033188
               }
             ]
           }
@@ -2364,21 +2382,21 @@
           {
             "hand": 0,
             "visible": true,
-            "x": 2258.1773217904906,
-            "y": 2388.971363330563
+            "x": 2256.9418134871507,
+            "y": 2389.208294569586
           },
           {
             "hand": 1,
             "visible": true,
-            "x": 2258.1773217904906,
-            "y": 2388.971363330563
+            "x": 2256.9418134871507,
+            "y": 2389.208294569586
           }
         ],
         "muzzleVerticalGap": 0,
         "shotMuzzle": {
           "visible": true,
-          "x": 2258.1773217904906,
-          "y": 2388.971363330563
+          "x": 2256.9418134871507,
+          "y": 2389.208294569586
         },
         "muzzleAnchorError": null,
         "projectile": null,
@@ -2396,11 +2414,11 @@
         "authorityWeapon": "x2-twin-maw-greenerbore",
         "attackSeq": 14,
         "facingValue": 1,
-        "facingBlend": 0.9998531843470054,
+        "facingBlend": 0.9999340261970306,
         "displayLength": 58,
         "collisionLength": null,
         "recoilHand": 0,
-        "recoilElapsedMs": 71.66999999999825,
+        "recoilElapsedMs": 78.33000000000175,
         "performance": {
           "phase": "idle",
           "phaseT": 0,
@@ -2421,71 +2439,71 @@
           "ownership": 0,
           "arm": {
             "armed": true,
-            "earliestStartMs": 34278.75000000001,
+            "earliestStartMs": 36246.93333333335,
             "weaponId": "x2-twin-maw-greenerbore"
           },
           "streak": {
             "count": 1,
-            "lastAcceptedMs": 34048.75000000001,
+            "lastAcceptedMs": 36016.93333333335,
             "weaponId": "x2-twin-maw-greenerbore"
           },
-          "cancelEdge": 12
+          "cancelEdge": 13
         },
         "hammer": {
           "active": true,
-          "weaponRotationRad": -0.13964645156239744,
-          "weaponForward": -2.183681117570957,
-          "weaponLateral": -1.572250404651089,
-          "handForward": -10.481669364340593,
-          "handLateral": -7.861252023255445
+          "weaponRotationRad": -0.13687203581323237,
+          "weaponForward": -2.1402969913295813,
+          "weaponLateral": -1.5410138337572985,
+          "handForward": -10.273425558381991,
+          "handLateral": -7.705069168786492
         },
         "weaponRows": [
           {
             "hand": 0,
-            "x": 17.975680815099384,
-            "y": -12.920001153404902,
-            "rotation": -0.13964662696703378,
-            "semanticRotation": -0.13964662696703378,
+            "x": 18.015702578323193,
+            "y": -12.920001162851978,
+            "rotation": -0.13687221158473228,
+            "semanticRotation": -0.13687221158473228,
             "originX": 0.25,
             "originY": 0.67,
             "scaleX": 0.3420640045803153,
             "scaleY": 0.3420640045803153,
-            "renderedLengthPx": 57.999998631055156,
-            "renderedHeightPx": 24.015624433171276,
+            "renderedLengthPx": 57.99999992975484,
+            "renderedHeightPx": 24.015624970914114,
             "center": {
-              "x": 2419.0754798748344,
-              "y": 2405.38141320914
+              "x": 2419.6276438164336,
+              "y": 2405.419697149098
             },
             "handPosition": {
-              "x": 6.501815183394978,
-              "y": -19.24574881688994
+              "x": 6.787037973162919,
+              "y": -19.15124941534693
             },
-            "handToWeaponDistance": 13.10208670542574,
+            "handToWeaponDistance": 12.841781947977488,
             "corners": [
               {
-                "x": 2388.68638273187,
-                "y": 2397.5270966020225
+                "x": 2389.260454079397,
+                "y": 2397.481098650396
               },
               {
-                "x": 2446.1217655748874,
-                "y": 2389.453891607821
+                "x": 2446.7180155723167,
+                "y": 2389.5672740921377
               },
               {
-                "x": 2449.464577017799,
-                "y": 2413.235729816258
+                "x": 2449.9948335534705,
+                "y": 2413.3582956478
               },
               {
-                "x": 2392.0291941747814,
-                "y": 2421.3089348104595
+                "x": 2392.5372720605505,
+                "y": 2421.272120206058
               }
             ]
           },
           {
             "hand": 1,
             "x": 8.663999999999984,
-            "y": 1.519999813369468,
-            "rotation": -1.754046365931572e-7,
-            "semanticRotation": -1.754046365931572e-7,
+            "y": 1.5199998129791235,
+            "rotation": -1.7577150046577117e-7,
+            "semanticRotation": -1.7577150046577117e-7,
             "originX": 0.25,
             "originY": 0.67,
             "scaleX": 0.3420640045803153,
@@ -2493,54 +2511,54 @@
             "renderedLengthPx": 58.00000000000089,
             "renderedHeightPx": 24.01562500000037,
             "center": {
-              "x": 2413.617430924508,
-              "y": 2416.9241771441325
+              "x": 2414.1262199855105,
+              "y": 2416.9241771388133
             },
             "handPosition": {
               "x": 8.663999999999984,
-              "y": 1.519999813369468
+              "y": 1.5199998129791235
             },
             "handToWeaponDistance": 0,
             "corners": [
               {
-                "x": 2384.617428818282,
-                "y": 2404.9163697308672
+                "x": 2385.1262178748793,
+                "y": 2404.916369736187
               },
               {
-                "x": 2442.617428818282,
-                "y": 2404.9163595573978
+                "x": 2443.1262178748793,
+                "y": 2404.9163595414398
               },
               {
-                "x": 2442.6174330307344,
-                "y": 2428.9319845573978
+                "x": 2443.1262220961416,
+                "y": 2428.9319845414398
               },
               {
-                "x": 2384.6174330307344,
-                "y": 2428.9319947308672
+                "x": 2385.1262220961416,
+                "y": 2428.931994736187
               }
             ]
           }
         ],
-        "weaponVerticalGap": 14.44000096677437,
+        "weaponVerticalGap": 14.4400009758311,
         "muzzleRows": [
           {
             "hand": 0,
             "visible": true,
-            "x": 2446.524973762473,
-            "y": 2393.950076316859
+            "x": 2447.1086434888407,
+            "y": 2394.0645605546715
           },
           {
             "hand": 1,
             "visible": true,
-            "x": 2442.390852114436,
-            "y": 2409.424873099718
+            "x": 2442.899641172687,
+            "y": 2409.4248730835843
           }
         ],
-        "muzzleVerticalGap": 15.474796782858903,
+        "muzzleVerticalGap": 15.3603125289128,
         "shotMuzzle": {
           "visible": true,
-          "x": 2442.390852114436,
-          "y": 2409.424873099718
+          "x": 2442.899641172687,
+          "y": 2409.4248730835843
         },
         "muzzleAnchorError": null,
         "projectile": null,
@@ -2558,11 +2576,11 @@
         "authorityWeapon": "x2-twin-maw-greenerbore",
         "attackSeq": 15,
         "facingValue": 1,
-        "facingBlend": 0.9999999854537531,
+        "facingBlend": 0.9999999972337489,
         "displayLength": 58,
         "collisionLength": null,
         "recoilHand": 1,
-        "recoilElapsedMs": 71.66999999999825,
+        "recoilElapsedMs": 78.33000000000175,
         "performance": {
           "phase": "idle",
           "phaseT": 0,
@@ -2578,7 +2596,7 @@
         },
         "flourish": {
           "active": false,
-          "moment": "after-attack",
+          "moment": "idle-settle",
           "rotationRad": 0,
           "ownership": 1,
           "arm": {
@@ -2588,26 +2606,26 @@
           },
           "streak": {
             "count": 0,
-            "lastAcceptedMs": 34048.75000000001,
+            "lastAcceptedMs": 36016.93333333335,
             "weaponId": "x2-twin-maw-greenerbore"
           },
-          "cancelEdge": 13
+          "cancelEdge": 14
         },
         "hammer": {
           "active": true,
-          "weaponRotationRad": -0.13964645156239744,
-          "weaponForward": -2.183681117570957,
-          "weaponLateral": -1.572250404651089,
-          "handForward": -10.481669364340593,
-          "handLateral": -7.861252023255445
+          "weaponRotationRad": -0.13687203581323237,
+          "weaponForward": -2.1402969913295813,
+          "weaponLateral": -1.5410138337572985,
+          "handForward": -10.273425558381991,
+          "handLateral": -7.705069168786492
         },
         "weaponRows": [
           {
             "hand": 0,
             "x": 20.367999999999864,
-            "y": -12.920001570808207,
-            "rotation": -1.751570266605995e-7,
-            "semanticRotation": -1.751570266605995e-7,
+            "y": -12.920001575015426,
+            "rotation": -1.7562616250188512e-7,
+            "semanticRotation": -1.7562616250188512e-7,
             "originX": 0.25,
             "originY": 0.67,
             "scaleX": 0.3420640045803153,
@@ -2615,94 +2633,94 @@
             "renderedLengthPx": 58.00000000000089,
             "renderedHeightPx": 24.01562500000037,
             "center": {
-              "x": 2378.669432878644,
-              "y": 2407.3599681633477
+              "x": 2379.178221939229,
+              "y": 2407.3599681565456
             },
             "handPosition": {
               "x": 20.367999999999864,
-              "y": -12.920001570808207
+              "y": -12.920001575015426
             },
             "handToWeaponDistance": 0,
             "corners": [
               {
-                "x": 2349.669430775391,
-                "y": 2395.352160742902
+                "x": 2350.1782198303426,
+                "y": 2395.352160749704
               },
               {
-                "x": 2407.669430775391,
-                "y": 2395.3521505837934
+                "x": 2408.1782198303426,
+                "y": 2395.352150563387
               },
               {
-                "x": 2407.6694349818968,
-                "y": 2419.3677755837934
+                "x": 2408.1782240481148,
+                "y": 2419.367775563387
               },
               {
-                "x": 2349.6694349818968,
-                "y": 2419.367785742902
+                "x": 2350.1782240481148,
+                "y": 2419.367785749704
               }
             ]
           },
           {
             "hand": 1,
-            "x": 6.271680815099504,
-            "y": 1.5200002326644375,
-            "rotation": -0.13964662671942385,
-            "semanticRotation": -0.13964662671942385,
+            "x": 6.311702578323312,
+            "y": 1.520000226258733,
+            "rotation": -0.13687221143939432,
+            "semanticRotation": -0.13687221143939432,
             "originX": 0.25,
             "originY": 0.67,
             "scaleX": 0.3420640045803153,
             "scaleY": 0.3420640045803153,
-            "renderedLengthPx": 57.999998631055156,
-            "renderedHeightPx": 24.015624433171276,
+            "renderedLengthPx": 57.99999992975484,
+            "renderedHeightPx": 24.015624970914114,
             "center": {
-              "x": 2368.6235755779594,
-              "y": 2414.945622193515
+              "x": 2369.1754953789336,
+              "y": 2414.983906133473
             },
             "handPosition": {
-              "x": -5.202184815038583,
-              "y": -4.805747433661644
+              "x": -4.916962025931324,
+              "y": -4.711248027868169
             },
-            "handToWeaponDistance": 13.102086705425743,
+            "handToWeaponDistance": 12.84178194797749,
             "corners": [
               {
-                "x": 2338.234478434995,
-                "y": 2407.0913055863975
+                "x": 2338.808305641897,
+                "y": 2407.045307634771
               },
               {
-                "x": 2395.6698612780124,
-                "y": 2399.018100592196
+                "x": 2396.2658671348167,
+                "y": 2399.1314830765127
               },
               {
-                "x": 2399.012672720924,
-                "y": 2422.799938800633
+                "x": 2399.5426851159705,
+                "y": 2422.922504632175
               },
               {
-                "x": 2341.5772898779064,
-                "y": 2430.8731437948345
+                "x": 2342.0851236230505,
+                "y": 2430.836329190433
               }
             ]
           }
         ],
-        "weaponVerticalGap": 14.440001803472644,
+        "weaponVerticalGap": 14.44000180127416,
         "muzzleRows": [
           {
             "hand": 0,
             "visible": true,
-            "x": 2407.442922553305,
-            "y": 2399.8606896904143
+            "x": 2407.951711610371,
+            "y": 2399.8606896673264
           },
           {
             "hand": 1,
             "visible": true,
-            "x": 2396.073000987054,
-            "y": 2403.5142597483423
+            "x": 2396.656670711616,
+            "y": 2403.6287439839584
           }
         ],
-        "muzzleVerticalGap": 3.6535700579279364,
+        "muzzleVerticalGap": 3.7680543166320604,
         "shotMuzzle": {
           "visible": true,
-          "x": 2407.442922553305,
-          "y": 2399.8606896904143
+          "x": 2407.951711610371,
+          "y": 2399.8606896673264
         },
         "muzzleAnchorError": null,
         "projectile": null,
@@ -2720,11 +2738,11 @@
         "authorityWeapon": "x2-twin-maw-greenerbore",
         "attackSeq": 16,
         "facingValue": -1,
-        "facingBlend": -0.9999109553669897,
+        "facingBlend": -0.9999270905880382,
         "displayLength": 58,
         "collisionLength": null,
         "recoilHand": 0,
-        "recoilElapsedMs": 74.98999999999796,
+        "recoilElapsedMs": 76.66000000000349,
         "performance": {
           "phase": "idle",
           "phaseT": 0,
@@ -2745,71 +2763,71 @@
           "ownership": 0,
           "arm": {
             "armed": true,
-            "earliestStartMs": 37070.31000000001,
+            "earliestStartMs": 39255.15333333338,
             "weaponId": "x2-twin-maw-greenerbore"
           },
           "streak": {
             "count": 1,
-            "lastAcceptedMs": 36840.31000000001,
+            "lastAcceptedMs": 39025.15333333338,
             "weaponId": "x2-twin-maw-greenerbore"
           },
-          "cancelEdge": 13
+          "cancelEdge": 14
         },
         "hammer": {
           "active": true,
-          "weaponRotationRad": -0.1385931450315867,
-          "weaponForward": -2.167210340429027,
-          "weaponLateral": -1.5603914451088994,
-          "handForward": -10.40260963405933,
-          "handLateral": -7.8019572255444976
+          "weaponRotationRad": -0.1378127174111772,
+          "weaponForward": -2.1550066285605767,
+          "weaponLateral": -1.551604772563615,
+          "handForward": -10.344031817090768,
+          "handLateral": -7.758023862818075
         },
         "weaponRows": [
           {
             "hand": 0,
-            "x": 17.988992880713432,
-            "y": -12.92000115696787,
-            "rotation": -0.13859332062259,
-            "semanticRotation": -0.13859332062259,
+            "x": 18.000685650276797,
+            "y": -12.920001159622425,
+            "rotation": -0.1378128930932938,
+            "semanticRotation": -0.1378128930932938,
             "originX": 0.25,
             "originY": 0.67,
             "scaleX": 0.3420640045803153,
             "scaleY": 0.3420640045803153,
-            "renderedLengthPx": 58.00000320739633,
-            "renderedHeightPx": 24.01562632806254,
+            "renderedLengthPx": 58.0000043230838,
+            "renderedHeightPx": 24.015626790026886,
             "center": {
-              "x": 2295.2509060225634,
-              "y": 2405.3959418347476
+              "x": 2295.112157692574,
+              "y": 2405.4067112213374
             },
             "handPosition": {
-              "x": 6.608289793633851,
-              "y": -19.21002667294054
+              "x": 6.688952804755255,
+              "y": -19.18343699952611
             },
-            "handToWeaponDistance": 13.00326204257416,
+            "handToWeaponDistance": 12.93003977136346,
             "corners": [
               {
-                "x": 2325.631715676114,
-                "y": 2397.5096198281644
+                "x": 2325.486803892441,
+                "y": 2397.496681124568
               },
               {
-                "x": 2268.187856575772,
-                "y": 2389.4969159325956
+                "x": 2268.03670776207,
+                "y": 2389.528810889125
               },
               {
-                "x": 2264.870096369013,
-                "y": 2413.282263841331
+                "x": 2264.7375114927067,
+                "y": 2413.316741318107
               },
               {
-                "x": 2322.313955469355,
-                "y": 2421.2949677368997
+                "x": 2322.187607623078,
+                "y": 2421.28461155355
               }
             ]
           },
           {
             "hand": 1,
             "x": 8.663999999999984,
-            "y": 1.5199998131711734,
-            "rotation": -1.7559100307096287e-7,
-            "semanticRotation": -1.7559100307096287e-7,
+            "y": 1.5199998130742296,
+            "rotation": -1.756821159659694e-7,
+            "semanticRotation": -1.756821159659694e-7,
             "originX": 0.25,
             "originY": 0.67,
             "scaleX": 0.3420640045803153,
@@ -2817,54 +2835,54 @@
             "renderedLengthPx": 58.00000000000089,
             "renderedHeightPx": 24.01562500000037,
             "center": {
-              "x": 2300.724121810628,
-              "y": 2416.9241771414304
+              "x": 2300.597901107875,
+              "y": 2416.9241771401094
             },
             "handPosition": {
               "x": 8.663999999999984,
-              "y": 1.5199998131711734
+              "y": 1.5199998130742296
             },
             "handToWeaponDistance": 0,
             "corners": [
               {
-                "x": 2329.7241239190917,
-                "y": 2404.91636973357
+                "x": 2329.5979032174328,
+                "y": 2404.916369734891
               },
               {
-                "x": 2271.7241239190917,
-                "y": 2404.916359549291
+                "x": 2271.5979032174328,
+                "y": 2404.916359545328
               },
               {
-                "x": 2271.724119702164,
-                "y": 2428.931984549291
+                "x": 2271.597898998317,
+                "y": 2428.931984545328
               },
               {
-                "x": 2329.724119702164,
-                "y": 2428.93199473357
+                "x": 2329.597898998317,
+                "y": 2428.931994734891
               }
             ]
           }
         ],
-        "weaponVerticalGap": 14.440000970139044,
+        "weaponVerticalGap": 14.440000972696655,
         "muzzleRows": [
           {
             "hand": 0,
             "visible": true,
-            "x": 2267.7893597877814,
-            "y": 2393.9935244309963
+            "x": 2267.6417893496855,
+            "y": 2394.0257289824676
           },
           {
             "hand": 1,
             "visible": true,
-            "x": 2271.9507006220974,
-            "y": 2409.424873091522
+            "x": 2271.8244799200274,
+            "y": 2409.424873087515
           }
         ],
-        "muzzleVerticalGap": 15.4313486605256,
+        "muzzleVerticalGap": 15.399144105047526,
         "shotMuzzle": {
           "visible": true,
-          "x": 2271.9507006220974,
-          "y": 2409.424873091522
+          "x": 2271.8244799200274,
+          "y": 2409.424873087515
         },
         "muzzleAnchorError": null,
         "projectile": null,
@@ -2882,11 +2900,11 @@
         "authorityWeapon": "x2-twin-maw-greenerbore",
         "attackSeq": 17,
         "facingValue": -1,
-        "facingBlend": -0.9999999915242171,
+        "facingBlend": -0.999999997062341,
         "displayLength": 58,
         "collisionLength": null,
         "recoilHand": 1,
-        "recoilElapsedMs": 70,
+        "recoilElapsedMs": 76.66000000000349,
         "performance": {
           "phase": "idle",
           "phaseT": 0,
@@ -2902,7 +2920,7 @@
         },
         "flourish": {
           "active": false,
-          "moment": "after-attack",
+          "moment": "idle-settle",
           "rotationRad": 0,
           "ownership": 1,
           "arm": {
@@ -2912,26 +2930,26 @@
           },
           "streak": {
             "count": 0,
-            "lastAcceptedMs": 36840.31000000001,
+            "lastAcceptedMs": 39025.15333333338,
             "weaponId": "x2-twin-maw-greenerbore"
           },
-          "cancelEdge": 14
+          "cancelEdge": 15
         },
         "hammer": {
           "active": true,
-          "weaponRotationRad": -0.13991449530955,
-          "weaponForward": -2.187872574373413,
-          "weaponLateral": -1.5752682535488571,
-          "handForward": -10.501788356992382,
-          "handLateral": -7.8763412677442854
+          "weaponRotationRad": -0.1378127174111772,
+          "weaponForward": -2.1550066285605767,
+          "weaponLateral": -1.551604772563615,
+          "handForward": -10.344031817090768,
+          "handLateral": -7.758023862818075
         },
         "weaponRows": [
           {
             "hand": 0,
             "x": 20.367999999999864,
-            "y": -12.920001570118998,
-            "rotation": -1.750801743582997e-7,
-            "semanticRotation": -1.750801743582997e-7,
+            "y": -12.920001574266298,
+            "rotation": -1.7554262932151232e-7,
+            "semanticRotation": -1.7554262932151232e-7,
             "originX": 0.25,
             "originY": 0.67,
             "scaleX": 0.3420640045803153,
@@ -2939,94 +2957,94 @@
             "renderedLengthPx": 58.00000000000089,
             "renderedHeightPx": 24.01562500000037,
             "center": {
-              "x": 2336.0644538397923,
-              "y": 2407.3599681644623
+              "x": 2335.5456550135555,
+              "y": 2407.3599681577566
             },
             "handPosition": {
               "x": 20.367999999999864,
-              "y": -12.920001570118998
+              "y": -12.920001574266298
             },
             "handToWeaponDistance": 0,
             "corners": [
               {
-                "x": 2365.064455942122,
-                "y": 2395.3521607417874
+                "x": 2364.545657121438,
+                "y": 2395.352160748493
               },
               {
-                "x": 2307.064455942122,
-                "y": 2395.352150587137
+                "x": 2306.545657121438,
+                "y": 2395.35215056702
               },
               {
-                "x": 2307.064451737462,
-                "y": 2419.367775587137
+                "x": 2306.5456529056723,
+                "y": 2419.36777556702
               },
               {
-                "x": 2365.064451737462,
-                "y": 2419.3677857417874
+                "x": 2364.5456529056723,
+                "y": 2419.367785748493
               }
             ]
           },
           {
             "hand": 1,
-            "x": 6.270000000000021,
-            "y": 1.5200002328566313,
-            "rotation": -0.13991467038972516,
-            "semanticRotation": -0.13991467038972516,
+            "x": 6.296685650276917,
+            "y": 1.5200002287872278,
+            "rotation": -0.13781289295380716,
+            "semanticRotation": -0.13781289295380716,
             "originX": 0.25,
             "originY": 0.67,
             "scaleX": 0.3420640045803153,
             "scaleY": 0.3420640045803153,
-            "renderedLengthPx": 58.00000173896087,
-            "renderedHeightPx": 24.015625720038486,
+            "renderedLengthPx": 58.0000043230838,
+            "renderedHeightPx": 24.015626790026886,
             "center": {
-              "x": 2346.1131562525034,
-              "y": 2414.941925652623
+              "x": 2345.563817848824,
+              "y": 2414.9709202057124
             },
             "handPosition": {
-              "x": -5.227587507598972,
-              "y": -4.814807733146439
+              "x": -5.015047194370959,
+              "y": -4.743435612694289
             },
-            "handToWeaponDistance": 13.127235446240476,
+            "handToWeaponDistance": 12.93003977136346,
             "corners": [
               {
-                "x": 2376.5043592089414,
-                "y": 2407.0957544225453
+                "x": 2375.938464048691,
+                "y": 2407.060890108943
               },
               {
-                "x": 2319.0711392992735,
-                "y": 2399.007154263854
+                "x": 2318.48836791832,
+                "y": 2399.0930198735
               },
               {
-                "x": 2315.7219532960653,
-                "y": 2422.7880968827008
+                "x": 2315.1891716489567,
+                "y": 2422.880950302482
               },
               {
-                "x": 2373.1551732057333,
-                "y": 2430.876697041392
+                "x": 2372.639267779328,
+                "y": 2430.848820537925
               }
             ]
           }
         ],
-        "weaponVerticalGap": 14.44000180297563,
+        "weaponVerticalGap": 14.440001803053526,
         "muzzleRows": [
           {
             "hand": 0,
             "visible": true,
-            "x": 2307.290964164555,
-            "y": 2399.8606896941965
+            "x": 2306.772165341786,
+            "y": 2399.8606896714373
           },
           {
             "hand": 1,
             "visible": true,
-            "x": 2318.666689236336,
-            "y": 2403.5032062389005
+            "x": 2318.0935179863814,
+            "y": 2403.5899124110465
           }
         ],
-        "muzzleVerticalGap": 3.6425165447039944,
+        "muzzleVerticalGap": 3.729222739609213,
         "shotMuzzle": {
           "visible": true,
-          "x": 2307.290964164555,
-          "y": 2399.8606896941965
+          "x": 2306.772165341786,
+          "y": 2399.8606896714373
         },
         "muzzleAnchorError": null,
         "projectile": null,

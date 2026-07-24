@@ -4,7 +4,7 @@ Verdict: PASS - 22 combat-scale captures across both facings.
 
 Character: `proto-cowboy-hidden-face`
 
-Private ephemeral ports: client `63858`, game `63857`; defaults 5180/2567 were not used.
+Private ephemeral ports: client `51789`, game `51788`; defaults 5180/2567 were not used.
 
 Captured: ready and engaged shuriken/chakram poses with own-sprite projectiles, kunai
 end-hook twirl, separated authored dual guns with live muzzle anchoring, one-handed
