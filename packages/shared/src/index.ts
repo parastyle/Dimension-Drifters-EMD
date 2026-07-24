@@ -12,6 +12,7 @@ export * from "./chests.js";
 export * from "./collision.js";
 export * from "./combat.js";
 export * from "./constants.js";
+export * from "./corporate-grid-map.js";
 export * from "./dimensions.js";
 export * from "./economy.js";
 export * from "./enemy-melee.js";

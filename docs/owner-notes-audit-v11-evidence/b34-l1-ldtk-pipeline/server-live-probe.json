@@ -1,0 +1,67 @@
+{
+  "date": "2026-07-24",
+  "ports": {
+    "colyseus": 56341,
+    "vite": 56342,
+    "forbiddenUntouched": [2567, 5180]
+  },
+  "http": [
+    { "path": "/", "status": 200, "contentType": "text/html" },
+    {
+      "path": "/src/scenes/ArenaScene.ts",
+      "status": 200,
+      "contentType": "text/javascript",
+      "bytes": 1665283
+    },
+    {
+      "path": "/maps/corporate-grid/v13_imagegen_material_variant_modules_60.png",
+      "status": 200,
+      "contentType": "image/png",
+      "bytes": 12424630
+    },
+    {
+      "path": "/maps/corporate-grid/v13_city_parallax_backdrop_60.png",
+      "status": 200,
+      "contentType": "image/png",
+      "bytes": 1848883
+    }
+  ],
+  "floorJoins": [
+    {
+      "beltLevel": "corporate-grid",
+      "mode": "arena",
+      "character": "proto-cowboy-hidden-face",
+      "beltRoom": "Reception Wing",
+      "beltLockX": 1440
+    },
+    {
+      "beltLevel": "corporate-grid-portrait-hall",
+      "mode": "arena",
+      "character": "proto-cowboy-hidden-face",
+      "beltRoom": "Reception Wing",
+      "beltLockX": 1440
+    },
+    {
+      "beltLevel": "corporate-grid-marble-gallery",
+      "mode": "arena",
+      "character": "proto-cowboy-hidden-face",
+      "beltRoom": "Reception Wing",
+      "beltLockX": 1440
+    }
+  ],
+  "earlyWaveSample": {
+    "beltLevel": "corporate-grid",
+    "sampleMs": 120,
+    "playerX": 420,
+    "enemyX": [1336.9583740234375, 1387.899658203125, 771.1224365234375, 1355.921630859375],
+    "allSpawnedRight": true
+  },
+  "topClampSample": {
+    "beltLevel": "corporate-grid",
+    "inputCommands": 46,
+    "ackSeq": 46,
+    "authoritativeY": 2224,
+    "formula": "BELT_Y0(1750) + lane.minY(450) + PLAYER_RADIUS(24)"
+  },
+  "browserAvailable": false
+}

@@ -39,6 +39,8 @@ export function resolveBodyCollisions(
   bodies: readonly Vec2[],
   radius: number = PLAYER_RADIUS,
   iterations = 2,
+  xMin: number = radius,
+  xMax: number = ARENA_WIDTH - radius,
 ): Vec2[] {
   const out: Vec2[] = bodies.map((b) => ({ x: b.x, y: b.y }));
   const minDist = radius * 2;
@@ -73,7 +75,7 @@ export function resolveBodyCollisions(
   }
 
   for (const b of out) {
-    b.x = clamp(b.x, radius, ARENA_WIDTH - radius);
+    b.x = clamp(b.x, xMin, xMax);
     b.y = clamp(b.y, radius, ARENA_HEIGHT - radius);
   }
   return out;

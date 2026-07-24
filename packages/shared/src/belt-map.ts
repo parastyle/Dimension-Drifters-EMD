@@ -9,6 +9,13 @@
  * NEAR/front edge); the collision helpers add `BELT_Y0` to return WORLD y for the sim.
  */
 import { ARENA_WIDTH, BELT_Y0, DEPTH_MAX } from "./constants.js";
+import {
+  type CorporateGridBounds,
+  type CorporateGridFloor,
+  type CorporateGridFloorId,
+  type CorporateGridWaveAnchor,
+  corporateGridFloorFor,
+} from "./corporate-grid-map.js";
 
 /** A solid obstacle on the deck — a circle bodies route around. `depth` band-relative (0..DEPTH_MAX). */
 export interface BeltObstacle {
@@ -66,6 +73,43 @@ export interface BeltLevel {
   obstacles: readonly BeltObstacle[];
   /** Ordered rooms (clear-to-advance gates), last is the boss. */
   rooms: readonly BeltRoom[];
+  /** B34 generated LDtk floor backing this belt. Omitted by every legacy authored belt. */
+  corporateGridFloorId?: CorporateGridFloorId;
+  /** Zero-based authored floor depth. Lane 2 may drive a later run-depth independently. */
+  corporateDepth?: number;
+}
+
+/** The generated LDtk floor behind a corporate belt level, if this is one. */
+export function corporateGridFloorForBelt(level: BeltLevel): CorporateGridFloor | undefined {
+  return level.corporateGridFloorId
+    ? corporateGridFloorFor(level.corporateGridFloorId)
+    : undefined;
+}
+
+/** Playable horizontal center bounds. Legacy levels retain their exact [0,length] behavior. */
+export function beltPlayableXBounds(level: BeltLevel): { minX: number; maxX: number } {
+  return corporateGridFloorForBelt(level)?.playableBounds ?? { minX: 0, maxX: level.length };
+}
+
+/** Camera scroll content bounds. Legacy levels retain their exact full-level extent. */
+export function beltCameraBounds(level: BeltLevel): CorporateGridBounds {
+  return (
+    corporateGridFloorForBelt(level)?.cameraBounds ?? {
+      minX: 0,
+      minY: 0,
+      maxX: level.length,
+      maxY: DEPTH_MAX,
+    }
+  );
+}
+
+/** Clamp a body center between the authored EndWall/IntGrid-3 end blockers. */
+export function clampBeltX(level: BeltLevel, x: number, bodyR = 0): number {
+  const bounds = beltPlayableXBounds(level);
+  const min = bounds.minX + bodyR;
+  const max = bounds.maxX - bodyR;
+  if (max < min) return (min + max) / 2;
+  return x < min ? min : x > max ? max : x;
 }
 
 /** Is belt position `x` over a pit gap? PURE. */
@@ -136,6 +180,216 @@ export function resolveBeltObstacles(
     }
   }
   return { x: px, y: py };
+}
+
+function resolveCircleRect(
+  x: number,
+  y: number,
+  radius: number,
+  minX: number,
+  minY: number,
+  maxX: number,
+  maxY: number,
+): { x: number; y: number } {
+  const closestX = Math.max(minX, Math.min(maxX, x));
+  const closestY = Math.max(minY, Math.min(maxY, y));
+  const dx = x - closestX;
+  const dy = y - closestY;
+  const distanceSq = dx * dx + dy * dy;
+  if (distanceSq >= radius * radius) return { x, y };
+  if (distanceSq > 1e-8) {
+    const distance = Math.sqrt(distanceSq);
+    const push = radius - distance;
+    return { x: x + (dx / distance) * push, y: y + (dy / distance) * push };
+  }
+  const left = Math.abs(x - minX);
+  const right = Math.abs(maxX - x);
+  const top = Math.abs(y - minY);
+  const bottom = Math.abs(maxY - y);
+  const nearest = Math.min(left, right, top, bottom);
+  if (nearest === left) return { x: minX - radius, y };
+  if (nearest === right) return { x: maxX + radius, y };
+  if (nearest === top) return { x, y: minY - radius };
+  return { x, y: maxY + radius };
+}
+
+/**
+ * Resolve a belt body against the LDtk solid value-1 cells and end blockers. Non-corporate belts return
+ * the input unchanged, preserving the old obstacle path byte-for-byte.
+ */
+export function resolveBeltMapCollision(
+  level: BeltLevel,
+  x: number,
+  worldY: number,
+  bodyR: number,
+): { x: number; y: number } {
+  const floor = corporateGridFloorForBelt(level);
+  if (!floor) return { x, y: worldY };
+  let px = clampBeltX(level, x, bodyR);
+  let py = worldY;
+  const tile = floor.gridSize;
+  for (let pass = 0; pass < 3; pass++) {
+    const localY = py - BELT_Y0;
+    const minCol = Math.max(0, Math.floor((px - bodyR) / tile));
+    const maxCol = Math.min(floor.cols - 1, Math.floor((px + bodyR) / tile));
+    const minRow = Math.max(0, Math.floor((localY - bodyR) / tile));
+    const maxRow = Math.min(floor.rows - 1, Math.floor((localY + bodyR) / tile));
+    let moved = false;
+    for (let row = minRow; row <= maxRow; row++) {
+      for (let col = minCol; col <= maxCol; col++) {
+        if (floor.collisionGrid[row * floor.cols + col] !== 1) continue;
+        const resolved = resolveCircleRect(
+          px,
+          py,
+          bodyR,
+          col * tile,
+          BELT_Y0 + row * tile,
+          (col + 1) * tile,
+          BELT_Y0 + (row + 1) * tile,
+        );
+        if (resolved.x !== px || resolved.y !== py) {
+          px = resolved.x;
+          py = resolved.y;
+          moved = true;
+        }
+      }
+    }
+    px = clampBeltX(level, px, bodyR);
+    if (!moved) break;
+  }
+  return { x: px, y: py };
+}
+
+/** One collision postcondition used by server and predictor for every belt body. */
+export function resolveBeltNavigation(
+  level: BeltLevel,
+  x: number,
+  worldY: number,
+  bodyR: number,
+): { x: number; y: number } {
+  const obstacle = resolveBeltObstacles(level, x, worldY, bodyR);
+  const map = resolveBeltMapCollision(level, obstacle.x, obstacle.y, bodyR);
+  return {
+    x: map.x,
+    y: clampBeltFloorY(level, map.x, map.y, bodyR),
+  };
+}
+
+function segmentIntersectsRect(
+  x0: number,
+  y0: number,
+  x1: number,
+  y1: number,
+  minX: number,
+  minY: number,
+  maxX: number,
+  maxY: number,
+): boolean {
+  const dx = x1 - x0;
+  const dy = y1 - y0;
+  let enter = 0;
+  let exit = 1;
+  const clip = (p: number, q: number): boolean => {
+    if (Math.abs(p) < 1e-9) return q >= 0;
+    const ratio = q / p;
+    if (p < 0) {
+      if (ratio > exit) return false;
+      if (ratio > enter) enter = ratio;
+    } else {
+      if (ratio < enter) return false;
+      if (ratio < exit) exit = ratio;
+    }
+    return true;
+  };
+  return (
+    clip(-dx, x0 - minX) &&
+    clip(dx, maxX - x0) &&
+    clip(-dy, y0 - minY) &&
+    clip(dy, maxY - y0)
+  );
+}
+
+/** True when a projectile sweep crosses an LDtk solid-1 cell or an authored end blocker. */
+export function beltProjectileBlocked(
+  level: BeltLevel,
+  fromX: number,
+  fromWorldY: number,
+  toX: number,
+  toWorldY: number,
+  radius = 0,
+): boolean {
+  const floor = corporateGridFloorForBelt(level);
+  if (!floor) return false;
+  const playable = floor.playableBounds;
+  if (toX - radius < playable.minX || toX + radius > playable.maxX) return true;
+  const tile = floor.gridSize;
+  const localFromY = fromWorldY - BELT_Y0;
+  const localToY = toWorldY - BELT_Y0;
+  const minCol = Math.max(0, Math.floor((Math.min(fromX, toX) - radius) / tile));
+  const maxCol = Math.min(
+    floor.cols - 1,
+    Math.floor((Math.max(fromX, toX) + radius) / tile),
+  );
+  const minRow = Math.max(
+    0,
+    Math.floor((Math.min(localFromY, localToY) - radius) / tile),
+  );
+  const maxRow = Math.min(
+    floor.rows - 1,
+    Math.floor((Math.max(localFromY, localToY) + radius) / tile),
+  );
+  for (let row = minRow; row <= maxRow; row++) {
+    for (let col = minCol; col <= maxCol; col++) {
+      if (floor.collisionGrid[row * floor.cols + col] !== 1) continue;
+      if (
+        segmentIntersectsRect(
+          fromX,
+          localFromY,
+          toX,
+          localToY,
+          col * tile - radius,
+          row * tile - radius,
+          (col + 1) * tile + radius,
+          (row + 1) * tile + radius,
+        )
+      )
+        return true;
+    }
+  }
+  return false;
+}
+
+/** Early floors are 85% right-biased; the bias eases to an even split by authored floor depth 2. */
+export function beltWaveSideForDepth(depth: number, roll: number): "left" | "right" {
+  const normalizedDepth = Math.max(0, Number.isFinite(depth) ? depth : 0);
+  const rightChance = Math.max(0.5, 0.85 - normalizedDepth * 0.175);
+  return roll < rightChance ? "right" : "left";
+}
+
+/**
+ * Select a generated wave anchor with an explicit depth parameter for Lane 2. The chosen side is relative
+ * to the squad's current x; x-range filtering keeps each legacy belt room's gate progression intact.
+ */
+export function selectCorporateWaveAnchor(
+  floor: CorporateGridFloor,
+  playerX: number,
+  depth: number,
+  sideRoll: number,
+  anchorRoll: number,
+  xMin = floor.playableBounds.minX,
+  xMax = floor.playableBounds.maxX,
+): CorporateGridWaveAnchor {
+  const inRoom = floor.waveAnchors.filter((anchor) => anchor.x >= xMin && anchor.x <= xMax);
+  const pool = inRoom.length > 0 ? inRoom : floor.waveAnchors;
+  const side = beltWaveSideForDepth(depth, sideRoll);
+  const sided = pool.filter((anchor) =>
+    side === "right" ? anchor.x >= playerX + 90 : anchor.x <= playerX - 90,
+  );
+  const candidates = sided.length > 0 ? sided : pool;
+  const clampedRoll = Math.max(0, Math.min(0.999999999, anchorRoll));
+  const fallback = floor.waveAnchors[0];
+  if (!fallback) throw new Error(`corporate-grid floor ${floor.id} has no wave anchors`);
+  return candidates[Math.floor(clampedRoll * candidates.length)] ?? fallback;
 }
 
 /**
@@ -295,12 +549,80 @@ export const ASHLAND_FORGE: BeltLevel = {
   ],
 };
 
+function corporateGridBeltLevel(
+  id: string,
+  floorId: CorporateGridFloorId,
+  name: string,
+  depth: number,
+): BeltLevel {
+  const floor = corporateGridFloorFor(floorId);
+  if (!floor) throw new Error(`generated corporate-grid floor is missing: ${floorId}`);
+  return {
+    id,
+    name,
+    dimensionId: "wild-west",
+    blurb: `Fight through Corporate Grid floor ${depth + 1}.`,
+    length: floor.width,
+    floor: [
+      { x: floor.playableBounds.minX, yMin: floor.laneBounds.minY, yMax: floor.laneBounds.maxY },
+      { x: floor.playableBounds.maxX, yMin: floor.laneBounds.minY, yMax: floor.laneBounds.maxY },
+    ],
+    pits: [],
+    obstacles: [],
+    rooms: [
+      { gateX: 1440, wave: 4, name: "Reception Wing" },
+      { gateX: 2700, wave: 5, name: "Portrait Run" },
+      { gateX: 3960, wave: 6, name: "Executive Hall" },
+      {
+        gateX: floor.playableBounds.maxX,
+        wave: 0,
+        boss: true,
+        name: "Corporate Terminus",
+      },
+    ],
+    corporateGridFloorId: floor.id,
+    corporateDepth: depth,
+  };
+}
+
+/** B34 floor 1 boot target. `beltLevel=corporate-grid` intentionally resolves here. */
+export const CORPORATE_GRID_RED_CARPET = corporateGridBeltLevel(
+  "corporate-grid",
+  "office-red-carpet-gallery",
+  "Corporate Grid: Red Carpet Gallery",
+  0,
+);
+
+export const CORPORATE_GRID_PORTRAIT_HALL = corporateGridBeltLevel(
+  "corporate-grid-portrait-hall",
+  "office-random-dude-portrait-hall",
+  "Corporate Grid: Portrait Hall",
+  1,
+);
+
+export const CORPORATE_GRID_MARBLE_GALLERY = corporateGridBeltLevel(
+  "corporate-grid-marble-gallery",
+  "office-marble-gallery",
+  "Corporate Grid: Marble Gallery",
+  2,
+);
+
 export const BELT_LEVELS: Record<string, BeltLevel> = {
   "sky-carrier": SKY_CARRIER,
   "frost-chasm": FROST_CHASM,
   "verdant-ruin": VERDANT_RUIN,
   "neon-undergrid": NEON_UNDERGRID,
   "ashland-forge": ASHLAND_FORGE,
+  "corporate-grid": CORPORATE_GRID_RED_CARPET,
+  "corporate-grid-portrait-hall": CORPORATE_GRID_PORTRAIT_HALL,
+  "corporate-grid-marble-gallery": CORPORATE_GRID_MARBLE_GALLERY,
+};
+
+const BELT_LEVEL_ALIASES: Readonly<Record<string, BeltLevel>> = {
+  "corporate-grid-red-carpet": CORPORATE_GRID_RED_CARPET,
+  "office-red-carpet-gallery": CORPORATE_GRID_RED_CARPET,
+  "office-random-dude-portrait-hall": CORPORATE_GRID_PORTRAIT_HALL,
+  "office-marble-gallery": CORPORATE_GRID_MARBLE_GALLERY,
 };
 
 /** §36 the belt level ids in menu order — drives the level-select. */
@@ -308,5 +630,5 @@ export const BELT_LEVEL_IDS: readonly string[] = Object.keys(BELT_LEVELS);
 
 /** The belt level for an id, defaulting to Sky Carrier. Never undefined. */
 export function beltLevelFor(id: string): BeltLevel {
-  return BELT_LEVELS[id] ?? SKY_CARRIER;
+  return BELT_LEVELS[id] ?? BELT_LEVEL_ALIASES[id] ?? SKY_CARRIER;
 }
