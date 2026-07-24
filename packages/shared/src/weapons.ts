@@ -579,6 +579,8 @@ export interface WeaponDef {
   /** Held-render sprite override — the manifest id whose sliced parts to draw in-hand, when it differs
    *  from this weapon's `id` (e.g. a not-yet-arted weapon borrowing an existing sprite as placeholder). */
   sprite?: string;
+  /** Optional same-registration held-sprite variant shown only during the authoritative firing latch. */
+  firingFrame?: string;
   /** Source-PNG muzzle truth. Every launch/beam/flash consumer transforms these exact art pixels. */
   muzzle?: WeaponArtMuzzleDefinition;
   /** Melee-only source point: `muzzle` is the striking-hand centroid at the authored impact frame. */
@@ -2323,7 +2325,12 @@ const derivingWeaponMuzzles = (
 for (const weapon of Object.values(WEAPONS)) {
   if (
     !derivingWeaponMuzzles &&
-    (weapon.gun || weapon.beam || weapon.cast || weapon.hybridProjectile || weapon.impactMuzzle) &&
+    (weapon.gun ||
+      weapon.beam ||
+      weapon.cast ||
+      weapon.hybridProjectile ||
+      weapon.impactMuzzle ||
+      weapon.firingFrame) &&
     !weapon.muzzle
   ) {
     throw new Error(`Projectile/beam weapon ${weapon.id} has no art-space muzzle`);

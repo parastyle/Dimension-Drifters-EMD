@@ -1,6 +1,6 @@
 # V7 Muzzle Derivation Table
 
-Generated from sprite alpha for all 155 active projectile, beam, and authored melee-impact definitions. Coordinates are source-PNG pixels.
+Generated from sprite alpha for all 156 active projectile, beam, and authored melee-impact definitions. Coordinates are source-PNG pixels.
 
 | Weapon | Derived barrel tip | Authored muzzle point(s) | Override |
 | --- | --- | --- | --- |
@@ -159,4 +159,5 @@ Generated from sprite alpha for all 155 active projectile, beam, and authored me
 | `x2-widowmaker-cannon` (Widowmaker Cannon) | part-1 (255, 40.4) | part-1 (255, 40.4) | No |
 | `x2-wing-chun-wraps` (Wing Chun Wraps) | part-1 (511, 205.1)<br>part-2 (446, 275.7) | part-1 (263.3, 208.5)<br>part-2 (255.1, 224) | Yes - Each centerline beat alternates the alpha-weighted centroid of the authored striking hand at impact. |
 | `x2-wyrmgut-blunderbuss` (Wyrmgut Blunderbuss) | part-1 (255, 80.4) | part-1 (255, 80.4) | No |
+| `x2-wyrmskull-reliquary` (Wyrmskull Reliquary) | part-1 (255, 40.6) | part-1 (200, 56) | Yes - The release cone originates inside the registered open wyrm mouth; the closed silhouette cannot expose that aperture to alpha derivation. |
 

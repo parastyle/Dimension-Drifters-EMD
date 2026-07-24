@@ -226,10 +226,20 @@ export interface SpritePart {
   oy: number;
 }
 export type SpriteImageFacing = "mirror-x";
+export interface SpriteFrameVariant {
+  /** Installed base sprite whose source-pixel coordinate system this frame preserves. */
+  base: string;
+  /** Variant source pixels per one base-frame source pixel. */
+  sourceScale: number;
+  /** Normalized variant pivot that registers the base held-weapon pivot without drift. */
+  originX: number;
+  originY: number;
+}
 export interface SpriteManifest {
   id: string;
   kind: string;
   imageFacing?: SpriteImageFacing;
+  frameVariant?: SpriteFrameVariant;
   canvas: { w: number; h: number };
   body: { cx: number; cy: number; w: number; h: number };
   parts: SpritePart[];

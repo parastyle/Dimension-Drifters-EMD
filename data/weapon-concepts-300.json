@@ -13954,6 +13954,8 @@
         "swingArc": 2.5,
         "gripFrac": 0.1
       },
+      "firingFrame": "x2-wyrmskull-reliquary-open",
+      "effectEmitter": "tip",
       "comboFamily": "thrust",
       "comboVariant": "wyrmskull-spear-jabs",
       "authoritativeCombo": true,

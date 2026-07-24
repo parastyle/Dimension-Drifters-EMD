@@ -14,10 +14,20 @@ export interface SpritePart {
   oy: number;
 }
 export type SpriteImageFacing = "mirror-x";
+export interface SpriteFrameVariant {
+  /** Installed base sprite whose source-pixel coordinate system this frame preserves. */
+  base: string;
+  /** Variant source pixels per one base-frame source pixel. */
+  sourceScale: number;
+  /** Normalized variant pivot that registers the base held-weapon pivot without drift. */
+  originX: number;
+  originY: number;
+}
 export interface SpriteManifest {
   id: string;
   kind: string;
   imageFacing?: SpriteImageFacing;
+  frameVariant?: SpriteFrameVariant;
   canvas: { w: number; h: number };
   body: { cx: number; cy: number; w: number; h: number };
   parts: SpritePart[];
@@ -17712,6 +17722,38 @@ export const SPRITES = {
         "h": 79,
         "cx": 152.96,
         "cy": 130.99,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
+  },
+  "x2-wyrmskull-reliquary-open": {
+    "id": "x2-wyrmskull-reliquary-open",
+    "kind": "weapon-frame",
+    "frameVariant": {
+      "base": "x2-wyrmskull-reliquary",
+      "sourceScale": 3,
+      "originX": 0.1,
+      "originY": 0.4388888888888889
+    },
+    "canvas": {
+      "w": 768,
+      "h": 270
+    },
+    "body": {
+      "cx": 450.74,
+      "cy": 129.47,
+      "w": 768,
+      "h": 270
+    },
+    "parts": [
+      {
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 768,
+        "h": 270,
+        "cx": 450.74,
+        "cy": 129.47,
         "ox": 0,
         "oy": 0
       }

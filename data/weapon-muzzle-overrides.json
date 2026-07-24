@@ -110,6 +110,12 @@
     ],
     "reason": "The returning slash arc launches from the far-right leading edge of the crossed fan pair."
   },
+  "x2-wyrmskull-reliquary": {
+    "points": [
+      { "part": 0, "x": 200, "y": 56 }
+    ],
+    "reason": "The release cone originates inside the registered open wyrm mouth; the closed silhouette cannot expose that aperture to alpha derivation."
+  },
   "x2-muay-thai-wraps": {
     "salvoMode": "cycle",
     "points": [
