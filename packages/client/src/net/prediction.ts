@@ -3,9 +3,11 @@ import {
   ARENA_WIDTH,
   type ArenaMap,
   addImpulse,
+  BELT_Y0,
   type BeltLevel,
   beltPlayableXBounds,
   beltSafeX,
+  DEPTH_MAX,
   DIST_JUMP_AIRTIME,
   DIST_JUMP_COOLDOWN,
   DIST_JUMP_LANDING_SPEED_MULT,
@@ -14,30 +16,30 @@ import {
   DIST_JUMP_SPEED,
   DIST_JUMP_STEER_RADIANS_PER_SECOND,
   DIST_JUMP_VERTICAL_VELOCITY,
+  EMPTY_RELIC_STACKS,
   GROUND_EPSILON,
   INPUT_MSGS_PER_TICK,
   JUMP_BUFFER_SECONDS,
-  EMPTY_RELIC_STACKS,
   MOVEMENT_CORRECTION_SMOOTH_MAX_MS,
   MovementCorrectionBand,
-  movementCorrectionBand,
-  type RelicStacks,
-  relicDodgeCooldown,
-  relicMoveSpeed,
-  relicRollSpeedAtTick,
   type MoveStance,
+  movementCorrectionBand,
   PLAYER_RADIUS,
   PlayerAttackMoveMode,
-  playerAttackInputSpeedMultiplier,
   POUND_GATHER_SECONDS,
   POUND_JUMP_COOLDOWN,
   POUND_MIN_HEIGHT,
   POUND_RECOVERY_SECONDS,
   POUND_SPEED,
   PRED_PENDING_MAX,
+  type RelicStacks,
   ROLL_ATTACK_CANCEL_SECONDS,
   ROLL_DURATION_TICKS,
   ROLL_PARRY_LOCK_SECONDS,
+  relicDodgeCooldown,
+  relicJumpCount,
+  relicMoveSpeed,
+  relicRollSpeedAtTick,
   resolveBeltNavigation,
   resolvePoiCollision,
   SLIDE_PHASE_GROUND,
@@ -53,7 +55,6 @@ import {
   slideContactInvulnerable,
   stepImpulse,
   stepPlayerAttackMovement,
-  stepSteeredMovement,
   stepVertical,
   TICK_MS,
 } from "@dd/shared";
@@ -120,6 +121,8 @@ export interface ServerView {
   movementCorrectionSeq?: number;
   serverMotionEpoch?: number;
   serverMotionActive?: boolean;
+  /** Runtime relic charge mirrored from the synced nested relic row. */
+  airJumpsRemaining?: number;
   alive: boolean;
 }
 
@@ -141,6 +144,11 @@ interface PredState {
 interface PendingPredCmd extends PredCmd {
   jumpCdBefore: number;
   jumpBufBefore: number;
+  airJumpsBefore: number;
+  moveSpeedMultiplierBefore: number;
+  continuousRecoilXBefore: number;
+  continuousRecoilYBefore: number;
+  beltLockXBefore: number;
   stanceBefore: MoveStance;
   crouchTBefore: number;
   crouchPrevHeldBefore: boolean;
@@ -172,6 +180,7 @@ interface PredVerticalState {
   vh: number;
   jumpCd: number;
   jumpBuf: number;
+  airJumpsRemaining: number;
 }
 
 interface PredStanceState {
@@ -416,11 +425,7 @@ function clearCommittedStance(s: PredStanceState): void {
   s.poundGatherT = 0;
 }
 
-function clearSlide(
-  p: PredState,
-  s: PredStanceState,
-  relics: Readonly<RelicStacks>,
-): void {
+function clearSlide(p: PredState, s: PredStanceState, relics: Readonly<RelicStacks>): void {
   p.mvx = 0;
   p.mvy = 0;
   p.momentumX = 0;
@@ -460,28 +465,34 @@ function stepHorizontal(
   relics: Readonly<RelicStacks>,
   dt: number,
   attackMoveMode: number,
+  moveSpeedMultiplier: number,
   map?: ArenaMap,
   belt?: BeltLevel,
+  beltLockX = 0,
 ): PredState {
   const beltX = belt ? beltPlayableXBounds(belt) : undefined;
+  const beltMaxX =
+    belt && beltLockX > 0
+      ? Math.min(beltX?.maxX ?? ARENA_WIDTH, beltLockX)
+      : (beltX?.maxX ?? ARENA_WIDTH);
   const moved = stepPlayerAttackMovement(
     { x: s.x, y: s.y },
     { vx: s.mvx, vy: s.mvy },
     { dx, dy },
     dt,
-    relicMoveSpeed(relics),
+    relicMoveSpeed(relics) * moveSpeedMultiplier,
     attackMoveMode,
-    undefined,
-    undefined,
+    belt ? BELT_Y0 : undefined,
+    belt ? BELT_Y0 + DEPTH_MAX : undefined,
     (beltX?.minX ?? 0) + PLAYER_RADIUS,
-    (beltX?.maxX ?? ARENA_WIDTH) - PLAYER_RADIUS,
+    beltMaxX - PLAYER_RADIUS,
   );
   const imp = stepImpulse(
     moved,
     { vx: s.vx, vy: s.vy },
     dt,
     (beltX?.minX ?? 0) + PLAYER_RADIUS,
-    (beltX?.maxX ?? ARENA_WIDTH) - PLAYER_RADIUS,
+    beltMaxX - PLAYER_RADIUS,
   );
   let x = imp.x;
   let y = imp.y;
@@ -489,7 +500,7 @@ function stepHorizontal(
     // §29 belt: route out of deck obstacles + clamp DEPTH to the authored floor profile (mirrors the
     // server's belt collision so local prediction lands where the server puts you — no edge rubber-band).
     const resolved = resolveBeltNavigation(belt, x, y, PLAYER_RADIUS);
-    x = resolved.x;
+    x = Math.min(resolved.x, beltMaxX - PLAYER_RADIUS);
     y = resolved.y;
   } else if (map) {
     const r = resolvePoiCollision(map, x, y, PLAYER_RADIUS);
@@ -515,8 +526,10 @@ function stepStanceHorizontal(
   relics: Readonly<RelicStacks>,
   dt: number,
   attackMoveMode: number,
+  moveSpeedMultiplier: number,
   map?: ArenaMap,
   belt?: BeltLevel,
+  beltLockX = 0,
   deferDashDisplacement = false,
 ): PredState {
   const activeSlide = s.stance === STANCE_SLIDE && s.slidePhase === SLIDE_PHASE_GROUND;
@@ -529,13 +542,19 @@ function stepStanceHorizontal(
       relics,
       dt,
       attackMoveMode,
+      moveSpeedMultiplier,
       map,
       belt,
+      beltLockX,
     );
   }
   let mvx: number;
   let mvy: number;
   const beltX = belt ? beltPlayableXBounds(belt) : undefined;
+  const beltMaxX =
+    belt && beltLockX > 0
+      ? Math.min(beltX?.maxX ?? ARENA_WIDTH, beltLockX)
+      : (beltX?.maxX ?? ARENA_WIDTH);
   if (s.stance === STANCE_DASH) {
     steerDistanceJump(s, cmd, dt);
     mvx = s.dashDirX * s.dashSpeed;
@@ -544,7 +563,18 @@ function stepStanceHorizontal(
     const directionLength = Math.hypot(p.momentumX, p.momentumY);
     if (directionLength <= 1e-4) {
       clearSlide(p, s, relics);
-      return stepHorizontal(p, cmd.dx, cmd.dy, relics, dt, attackMoveMode, map, belt);
+      return stepHorizontal(
+        p,
+        cmd.dx,
+        cmd.dy,
+        relics,
+        dt,
+        attackMoveMode,
+        moveSpeedMultiplier,
+        map,
+        belt,
+        beltLockX,
+      );
     }
     const slideSpeed = relicRollSpeedAtTick(relics, s.slidePhaseTick);
     p.momentumX = (p.momentumX / directionLength) * slideSpeed;
@@ -556,7 +586,7 @@ function stepStanceHorizontal(
     ? p.x
     : Math.max(
         (beltX?.minX ?? 0) + PLAYER_RADIUS,
-        Math.min((beltX?.maxX ?? ARENA_WIDTH) - PLAYER_RADIUS, p.x + mvx * dt),
+        Math.min(beltMaxX - PLAYER_RADIUS, p.x + mvx * dt),
       );
   let y = deferDashDisplacement
     ? p.y
@@ -566,13 +596,13 @@ function stepStanceHorizontal(
     { vx: p.vx, vy: p.vy },
     dt,
     (beltX?.minX ?? 0) + PLAYER_RADIUS,
-    (beltX?.maxX ?? ARENA_WIDTH) - PLAYER_RADIUS,
+    beltMaxX - PLAYER_RADIUS,
   );
   x = imp.x;
   y = imp.y;
   if (belt) {
     const resolved = resolveBeltNavigation(belt, x, y, PLAYER_RADIUS);
-    x = resolved.x;
+    x = Math.min(resolved.x, beltMaxX - PLAYER_RADIUS);
     y = resolved.y;
   } else if (map) {
     const r = resolvePoiCollision(map, x, y, PLAYER_RADIUS);
@@ -725,9 +755,13 @@ function stepPredictionTick(
   relics: Readonly<RelicStacks>,
   dt: number,
   attackMoveMode: number,
+  moveSpeedMultiplier: number,
+  continuousRecoilX: number,
+  continuousRecoilY: number,
   indicator: DistanceJumpIndicator,
   map?: ArenaMap,
   belt?: BeltLevel,
+  beltLockX = 0,
 ): PredState {
   if (cmd.jump) {
     const rollTail =
@@ -744,14 +778,16 @@ function stepPredictionTick(
     s.recoveryT <= 0 &&
     v.jumpBuf > 0 &&
     s.distJumpCd <= 0 &&
-    v.height <= GROUND_EPSILON
+    (v.height <= GROUND_EPSILON || v.airJumpsRemaining > 0)
   ) {
+    const airJump = v.height > GROUND_EPSILON;
     v.jumpBuf = 0;
     launchDistanceJump(p, v, s, cmd, indicator, map, belt);
     // launchDistanceJump mutates s.stance; read it widened so the STANCE_NONE narrowing above
     // doesn't make this (correct) comparison look impossible. Mirrors GameRoom's launch check.
     const stanceAfterLaunch: number = s.stance;
     launchedDistanceJump = stanceAfterLaunch === STANCE_DASH;
+    if (airJump && launchedDistanceJump) v.airJumpsRemaining--;
   }
 
   const next = stepStanceHorizontal(
@@ -761,10 +797,17 @@ function stepPredictionTick(
     relics,
     dt,
     attackMoveMode,
+    moveSpeedMultiplier,
     map,
     belt,
+    beltLockX,
     launchedDistanceJump,
   );
+  if (cmd.fireHeld && Math.hypot(continuousRecoilX, continuousRecoilY) > 1e-9) {
+    const recoil = addImpulse(next, continuousRecoilX * dt, continuousRecoilY * dt);
+    next.vx = recoil.vx;
+    next.vy = recoil.vy;
+  }
 
   s.recoveryT = Math.max(0, s.recoveryT - dt);
   s.rollCd = Math.max(0, s.rollCd - dt);
@@ -815,6 +858,7 @@ function stepPredictionTick(
     }
     if (landingStance !== STANCE_NONE) clearCommittedStance(s);
     s.poundUsed = false;
+    v.airJumpsRemaining = relicJumpCount(relics);
   }
   return next;
 }
@@ -844,6 +888,11 @@ export class SelfPredictor {
   private lastMovementCorrectionSeq: number;
   private lastServerMotionEpoch: number;
   private attackMoveMode: number;
+  /** Server phase context not represented by the generic attack input mode. */
+  private moveSpeedMultiplier = 1;
+  private continuousRecoilX = 0;
+  private continuousRecoilY = 0;
+  private beltLockX = 0;
   /** Visual error offset — reconciliation corrections land here and decay (glide, don't pop). */
   private errX = 0;
   private errY = 0;
@@ -881,6 +930,7 @@ export class SelfPredictor {
   private vh: number;
   private jumpCd = 0;
   private jumpBuf = 0;
+  private airJumpsRemaining: number;
   private stance: PredStanceState;
   private readonly indicatorScratch: DistanceJumpIndicator = {
     rawX: 0,
@@ -943,6 +993,7 @@ export class SelfPredictor {
     sanitizePredMomentum(this.pred, this.relics);
     this.height = server.height;
     this.vh = server.vh;
+    this.airJumpsRemaining = Math.max(0, Math.floor(server.airJumpsRemaining ?? 0));
     this.lastTeleportSeq = server.teleportSeq;
     this.lastMovementCorrectionSeq = server.movementCorrectionSeq ?? 0;
     this.lastServerMotionEpoch = server.serverMotionEpoch ?? 0;
@@ -999,9 +1050,44 @@ export class SelfPredictor {
     this.belt = level;
   }
 
+  /** Mirror the live belt gate that post-navigation authority applies after the shared movement step. */
+  setBeltLockX(lockX: number | undefined): void {
+    this.beltLockX = Number.isFinite(lockX) && (lockX ?? 0) > 0 ? (lockX as number) : 0;
+  }
+
+  /**
+   * Mirror server-only phase context using already-synced beam/ultimate rows. Continuous recoil is a
+   * px/s vector added after movement each fixed tick, matching the authoritative beam phase order.
+   */
+  setServerMovementContext(
+    moveSpeedMultiplier: number,
+    continuousRecoilX = 0,
+    continuousRecoilY = 0,
+  ): void {
+    this.moveSpeedMultiplier =
+      Number.isFinite(moveSpeedMultiplier) && moveSpeedMultiplier >= 0 ? moveSpeedMultiplier : 1;
+    this.continuousRecoilX = Number.isFinite(continuousRecoilX) ? continuousRecoilX : 0;
+    this.continuousRecoilY = Number.isFinite(continuousRecoilY) ? continuousRecoilY : 0;
+  }
+
   /** Keep client locomotion and dodge prediction aligned with server-owned relic effects. */
-  setRelics(relics: Readonly<RelicStacks> | undefined): void {
+  setRelics(relics: Readonly<RelicStacks> | undefined, airJumpsRemaining?: number): void {
+    const previousJumpCount = relicJumpCount(this.relics);
     this.relics = relics ?? EMPTY_RELIC_STACKS;
+    const jumpCount = relicJumpCount(this.relics);
+    if (Number.isFinite(airJumpsRemaining)) {
+      this.airJumpsRemaining = Math.max(
+        0,
+        Math.min(jumpCount, Math.floor(airJumpsRemaining as number)),
+      );
+    } else if (jumpCount > previousJumpCount) {
+      this.airJumpsRemaining = Math.min(
+        jumpCount,
+        this.airJumpsRemaining + jumpCount - previousJumpCount,
+      );
+    } else {
+      this.airJumpsRemaining = Math.min(this.airJumpsRemaining, jumpCount);
+    }
   }
 
   /** True when a held-state change or one-shot edge should mint before the next 20Hz heartbeat. */
@@ -1074,6 +1160,11 @@ export class SelfPredictor {
       slideHeld: predictedSlideHeld,
       jumpCdBefore: this.jumpCd,
       jumpBufBefore: this.jumpBuf,
+      airJumpsBefore: this.airJumpsRemaining,
+      moveSpeedMultiplierBefore: this.moveSpeedMultiplier,
+      continuousRecoilXBefore: this.continuousRecoilX,
+      continuousRecoilYBefore: this.continuousRecoilY,
+      beltLockXBefore: this.beltLockX,
       stanceBefore: this.stance.stance,
       crouchTBefore: this.stance.crouchT,
       crouchPrevHeldBefore: this.stance.crouchPrevHeld,
@@ -1104,6 +1195,7 @@ export class SelfPredictor {
       vh: this.vh,
       jumpCd: this.jumpCd,
       jumpBuf: this.jumpBuf,
+      airJumpsRemaining: this.airJumpsRemaining,
     };
     this.pred = stepPredictionTick(
       this.pred,
@@ -1113,14 +1205,19 @@ export class SelfPredictor {
       this.relics,
       DT,
       this.attackMoveMode,
+      pending.moveSpeedMultiplierBefore,
+      pending.continuousRecoilXBefore,
+      pending.continuousRecoilYBefore,
       this.indicatorScratch,
       this.map,
       this.belt,
+      pending.beltLockXBefore,
     );
     this.height = vert.height;
     this.vh = vert.vh;
     this.jumpCd = vert.jumpCd;
     this.jumpBuf = vert.jumpBuf;
+    this.airJumpsRemaining = vert.airJumpsRemaining;
     this.pending.push(pending);
     if (this.pending.length > PRED_PENDING_MAX) {
       this.pending.shift();
@@ -1305,16 +1402,11 @@ export class SelfPredictor {
       server.serverMotionEpoch !== undefined &&
       server.serverMotionEpoch !== this.lastServerMotionEpoch;
     const correctionRequested =
-      !relaxedAuthority ||
-      correctionChanged ||
-      server.serverMotionActive === true ||
-      serverMotionChanged ||
-      teleported;
+      !relaxedAuthority || (correctionChanged && !serverMotionChanged && !teleported);
     if (relaxedAuthority && (correctionChanged || serverMotionChanged || teleported))
       this.selfCorrectionCount++;
     this.lastTeleportSeq = server.teleportSeq;
-    this.lastMovementCorrectionSeq =
-      server.movementCorrectionSeq ?? this.lastMovementCorrectionSeq;
+    this.lastMovementCorrectionSeq = server.movementCorrectionSeq ?? this.lastMovementCorrectionSeq;
     this.lastServerMotionEpoch = server.serverMotionEpoch ?? this.lastServerMotionEpoch;
     const stanceSeq = server.stanceSeq ?? 0;
     const stanceChanged = stanceSeq !== this.lastStanceSeq;
@@ -1353,6 +1445,15 @@ export class SelfPredictor {
       this.stripPendingStanceBits(this.stance);
     }
 
+    if (serverMotionChanged || teleported) {
+      // Server-owned placements/motion are authoritative cuts, not client-error corrections. Retire any
+      // older smooth debt without routing the authored displacement through the correction bands.
+      this.errX = 0;
+      this.errY = 0;
+      this.correctionRemainingSec = 0;
+      this.presentationSnapPending = true;
+    }
+
     // Where the player is DRAWN right now (pred + offset) — corrections preserve this, then glide.
     const visX = this.pred.x + this.errX;
     const visY = this.pred.y + this.errY;
@@ -1377,12 +1478,13 @@ export class SelfPredictor {
       //   GLIDES back instead of popping backward by ~RTT×speed;
       // - mid-freeze reconciles PRESERVE the decaying offset (re-zeroing would undo the fold).
       const enteringPause = pauseNow && !this.paused;
-      if (correctionRequested || enteringPause || this.needResync) {
-        this.applyMovementCorrection(visX - server.x, visY - server.y);
-      } else {
+      if (teleported) {
         this.errX = 0;
         this.errY = 0;
         this.correctionRemainingSec = 0;
+        this.presentationSnapPending = true;
+      } else if (correctionRequested || enteringPause || this.needResync) {
+        this.applyMovementCorrection(visX - server.x, visY - server.y);
       }
       // else: staying paused / resuming — keep the (already-decayed) offset as-is.
       this.pending.length = 0;
@@ -1390,6 +1492,10 @@ export class SelfPredictor {
       this.stalled = false; // truth arrived — the stall (if any) is over
       this.height = server.height;
       this.vh = server.vh;
+      this.airJumpsRemaining = Math.max(
+        0,
+        Math.floor(server.airJumpsRemaining ?? this.airJumpsRemaining),
+      );
       this.jumpBuf = 0;
       this.stance = this.stanceFromServer(server);
       this.paused = pauseNow;
@@ -1404,6 +1510,8 @@ export class SelfPredictor {
       vh: server.vh,
       jumpCd: this.pending[0]?.jumpCdBefore ?? this.jumpCd,
       jumpBuf: this.pending[0]?.jumpBufBefore ?? this.jumpBuf,
+      airJumpsRemaining:
+        this.pending[0]?.airJumpsBefore ?? server.airJumpsRemaining ?? this.airJumpsRemaining,
     };
     let replayStance = this.stanceFromPending(this.pending[0]);
     if (
@@ -1422,9 +1530,13 @@ export class SelfPredictor {
         this.relics,
         DT,
         this.attackMoveMode,
+        cmd.moveSpeedMultiplierBefore,
+        cmd.continuousRecoilXBefore,
+        cmd.continuousRecoilYBefore,
         this.indicatorScratch,
         this.map,
         this.belt,
+        cmd.beltLockXBefore,
       );
     }
 
@@ -1433,10 +1545,6 @@ export class SelfPredictor {
     const correctionY = visY - this.pred.y;
     if (correctionRequested) {
       this.applyMovementCorrection(correctionX, correctionY);
-    } else {
-      this.errX = 0;
-      this.errY = 0;
-      this.correctionRemainingSec = 0;
     }
 
     // Vertical: only a residual AFTER authoritative rebase + pending replay is real divergence (a denied
@@ -1447,6 +1555,7 @@ export class SelfPredictor {
     }
     this.jumpCd = replayVert.jumpCd;
     this.jumpBuf = replayVert.jumpBuf;
+    this.airJumpsRemaining = replayVert.airJumpsRemaining;
     this.stance = replayStance;
   }
 
@@ -1460,10 +1569,7 @@ export class SelfPredictor {
   decayError(dtSec: number, _dx = 0, _dy = 0): void {
     const dt = Math.min(Math.max(dtSec, 0), 0.25);
     if (dt <= 0 || Math.abs(this.errX) + Math.abs(this.errY) <= 0) return;
-    if (
-      this.correctionRemainingSec <= 1e-9 ||
-      dt + 1e-9 >= this.correctionRemainingSec
-    ) {
+    if (this.correctionRemainingSec <= 1e-9 || dt + 1e-9 >= this.correctionRemainingSec) {
       this.errX = 0;
       this.errY = 0;
       this.correctionRemainingSec = 0;
@@ -1533,8 +1639,10 @@ export class SelfPredictor {
         this.relics,
         frac,
         this.attackMoveMode,
+        this.moveSpeedMultiplier,
         this.map,
         this.belt,
+        this.beltLockX,
       );
     }
     let height = this.height;
@@ -1577,6 +1685,7 @@ export class SelfPredictor {
     const out = this.authorityBoundRenderPos;
     out.x = candidateX;
     out.y = candidateY;
+    if (this.correctionRemainingSec > 0) return out;
     const dx = candidateX - authorityX;
     const dy = candidateY - authorityY;
     const distance = Math.hypot(dx, dy);

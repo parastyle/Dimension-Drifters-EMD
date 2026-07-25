@@ -13,39 +13,40 @@ import {
   type BeltLevel,
   BOSS_DEF_IDS,
   BOSSES,
-  beltCameraBounds,
+  beamDescriptorFor,
   beltBounds,
+  beltCameraBounds,
   beltLevelFor,
-  CORPORATE_ELEVATOR_ARRIVAL_TICKS,
-  CORPORATE_ELEVATOR_PHASE,
-  CORPORATE_ELEVATOR_INTERACT_X,
-  corporateGridBeltLevelForDepth,
-  corporateGridFloorForBelt,
-  corporateGridTilesetFor,
-  corporateGridVariantFromCode,
   bossSpawnAt,
   CAM_FOLLOW_TAU,
   CAM_SNAP_DIST,
   type CarrySelectionV1,
   CHAIN_MAX_RANGE,
+  CHEST_KIND_WEAPON_CACHE,
+  CHEST_OPEN_RADIUS,
   type ChainCandidate,
-  type CorporateGridFloor,
+  type ChestOpenReceipt,
   COMBO_FLAG_AIRBORNE,
   COMBO_FLAG_EMPOWERED,
   COMBO_FLAG_JUGGLE,
   COMBO_LEAP_AIR_TICKS,
   COMBO_LEAP_OFFER_TICKS,
   COMBO_LEAP_RANGE,
+  COMMON_RELIC_DEFS,
+  CORPORATE_ELEVATOR_ARRIVAL_TICKS,
+  CORPORATE_ELEVATOR_INTERACT_X,
+  CORPORATE_ELEVATOR_PHASE,
   CombatDelivery,
+  type CorporateGridFloor,
   characterScale,
   chargedProjectileFraction,
   chargedProjectileSnapshot,
-  type ChestOpenReceipt,
-  CHEST_KIND_WEAPON_CACHE,
-  CHEST_OPEN_RADIUS,
   clampQuakeEpicenter,
-  COMMON_RELIC_DEFS,
   commonRelicStacks,
+  corporateGridBeltLevelForDepth,
+  corporateGridFloorForBelt,
+  corporateGridTilesetFor,
+  corporateGridVariantFromCode,
   DEBUG_SPAWN_MAX,
   DEFAULT_CHARACTER,
   DEFAULT_DIMENSION,
@@ -64,9 +65,9 @@ import {
   type EnemyKind,
   EXTRACT_RADIUS,
   effectiveMelee,
+  enemyHpScale,
   enemyMeleeAccent,
   enemyMeleeCommitCue,
-  enemyHpScale,
   FISTS_WEAPON,
   GEAR_CATALOG,
   type GearId,
@@ -110,9 +111,9 @@ import {
   ROLL_COOLDOWN,
   ROLL_SPEED_CURVE,
   ROLL_TICK_SECONDS,
+  ROOM_NAME,
   relicEnergyCapacity,
   relicParryRadius,
-  ROOM_NAME,
   SCHEMA_VERSION,
   SLIDE_PHASE_GROUND,
   SLIDE_PHASE_OFF,
@@ -133,9 +134,9 @@ import {
   UltimateFamily,
   UltimatePhase,
   type UltimatePhaseValue,
+  ultimateFamilyForCode,
   unpackParryGuardPose,
   unpackParryReaction,
-  ultimateFamilyForCode,
   VASTAGHAR_ENCOUNTER,
   type VastagharActionDef,
   VastagharActionKind,
@@ -149,8 +150,8 @@ import {
   type WholeArtCharacter,
   WormBossMode,
   weaponArtMuzzlePointsForShot,
-  weaponDisplaySpriteId,
   weaponDisassemblyValue,
+  weaponDisplaySpriteId,
   weaponEffectCueSeconds,
   weaponEffectEmitterPoint,
   weaponMuzzleWorldPoint,
@@ -164,9 +165,9 @@ import { AudioBus } from "../audio/AudioBus.js";
 import { gunFireAudioCue } from "../audio/gun-sfx.js";
 import { budgetedCameraShakeIntensity, type CameraShakeSource } from "../camera-shake.js";
 import {
-  chainLightningReceiptColor,
   CombatFeedback,
   type CombatReceiptRows,
+  chainLightningReceiptColor,
   type DamageNumberEvent,
   type HitContactEvent,
 } from "../combat-feedback.js";
@@ -388,6 +389,7 @@ import {
   hasDriveForPredictedAttack,
   localAttackPredictionLeadGate,
 } from "./arena/local-attack-prediction.js";
+import { barrelRollArtTransform } from "./arena/projectile-facing.js";
 import {
   baseKind,
   GUN_FX,
@@ -400,7 +402,6 @@ import {
   makeSpit,
   makeThrownWeapon,
 } from "./arena/projectile-factory.js";
-import { barrelRollArtTransform } from "./arena/projectile-facing.js";
 import {
   stepAuthoritativeStraightFlight,
   usesAuthoritativeStraightFlight,
@@ -1863,10 +1864,7 @@ export class ArenaScene extends Phaser.Scene {
     preloadProjectileExplosionArt(this);
     preloadPageProjectileArt(this);
     preloadImpactFlipbooks(this); // optional per-element 6-frame hit blooms; missing strips stay silent
-    this.load.image(
-      "recovered:emberleaf-fireball",
-      "sprites/vfx-emberleaf-fireball/part-1.png",
-    );
+    this.load.image("recovered:emberleaf-fireball", "sprites/vfx-emberleaf-fireball/part-1.png");
     this.load.image(
       "recovered:unicorn-rainbow-beam",
       "sprites/vfx-unicorn-rainbow-beam/part-1.png",
@@ -3660,17 +3658,10 @@ export class ArenaScene extends Phaser.Scene {
     // this descriptor path, including the authoritative affix-adjusted cadence.
     if (weapon.gun || weapon.performance?.aura) return;
     rig.triggerSwing(epoch, player.aimDir, swing);
-    this.cueWeaponSwingIdentity(
-      rig,
-      weapon,
-      player.aimDir,
-      rig.activeSwing ?? swing,
-      undefined,
-      {
-        x: player.x,
-        y: player.y,
-      },
-    );
+    this.cueWeaponSwingIdentity(rig, weapon, player.aimDir, rig.activeSwing ?? swing, undefined, {
+      x: player.x,
+      y: player.y,
+    });
     if (weapon.chainLightning) {
       const aim = { x: Math.cos(player.aimDir), y: Math.sin(player.aimDir) };
       this.spawnChain(rig.x, rig.y, aim, weapon, rig.activeSwing ?? swing);
@@ -6617,9 +6608,7 @@ export class ArenaScene extends Phaser.Scene {
         ? makeGeneratedImageWeaponProjectile(this, pr, sourceWeapon.id)
         : null;
       const container =
-        (pr.kind === "emberleaf-fireball"
-          ? makeEmberleafFireball(this, pr)
-          : null) ??
+        (pr.kind === "emberleaf-fireball" ? makeEmberleafFireball(this, pr) : null) ??
         generatedImageIdentity ??
         wackyIdentity ??
         gunIdentity ??
@@ -6649,12 +6638,19 @@ export class ArenaScene extends Phaser.Scene {
         ? "muzzle"
         : sourceWeapon?.chargedProjectile
           ? "muzzle"
+<<<<<<< HEAD
         : sourceWeapon?.hybridProjectile
           ? "muzzle"
           : sourceWeapon?.thrown && isThrownProjectileKind(pr.kind)
             ? "throw"
             : sourceWeapon?.scatter && casterSourceUsesFist(sourceWeapon)
               ? "cast"
+=======
+          : sourceWeapon?.hybridProjectile
+            ? "muzzle"
+            : sourceWeapon?.thrown && isThrownProjectileKind(pr.kind)
+              ? "throw"
+>>>>>>> sol/b51-warp-fix
               : undefined;
       const spawnAnchor =
         sourcePlayer && sourceWeapon && sourceRig
@@ -7000,8 +6996,7 @@ export class ArenaScene extends Phaser.Scene {
         this.chargedProjectileMuzzles.set(id, image);
       }
       const heldSeconds =
-        (((this.room?.state.tick ?? 0) - player.weaponChargeStartTick) >>> 0) *
-        (TICK_MS / 1000);
+        (((this.room?.state.tick ?? 0) - player.weaponChargeStartTick) >>> 0) * (TICK_MS / 1000);
       const fraction = chargedProjectileFraction(heldSeconds, definition);
       const snapshot = chargedProjectileSnapshot(definition, fraction);
       const muzzle = { x: rig.x, y: rig.y };
@@ -8674,9 +8669,7 @@ export class ArenaScene extends Phaser.Scene {
         throw new Error(`corporate-grid texture was not loaded: ${tilesetModel.publicPath}`);
       const rows: number[][] = [];
       for (let row = 0; row < floor.rows; row++) {
-        rows.push(
-          sourceLayer.indices.slice(row * floor.cols, (row + 1) * floor.cols) as number[],
-        );
+        rows.push(sourceLayer.indices.slice(row * floor.cols, (row + 1) * floor.cols) as number[]);
       }
       const map = this.make.tilemap({
         data: rows,
@@ -8712,7 +8705,9 @@ export class ArenaScene extends Phaser.Scene {
   /** Reuse the material atlas's authored 180×300 left door as two exact sliding leaves. */
   private buildCorporateElevatorDoors(floor: CorporateGridFloor): void {
     const materialLayer = floor.renderLayers.find((layer) => layer.id === "office-material-tiles");
-    const tilesetModel = materialLayer ? corporateGridTilesetFor(materialLayer.tilesetId) : undefined;
+    const tilesetModel = materialLayer
+      ? corporateGridTilesetFor(materialLayer.tilesetId)
+      : undefined;
     const sourceDoor = floor.elevatorMarkers[0];
     if (!tilesetModel || !sourceDoor) return;
     const textureKey = `corporate-grid:${tilesetModel.id}`;
@@ -8725,14 +8720,7 @@ export class ArenaScene extends Phaser.Scene {
     if (!texture.has(leftFrame))
       texture.add(leftFrame, 0, sourceX, sourceY, halfWidth, sourceDoor.height);
     if (!texture.has(rightFrame))
-      texture.add(
-        rightFrame,
-        0,
-        sourceX + halfWidth,
-        sourceY,
-        halfWidth,
-        sourceDoor.height,
-      );
+      texture.add(rightFrame, 0, sourceX + halfWidth, sourceY, halfWidth, sourceDoor.height);
 
     const projectedHeight = sourceDoor.height / BELT_FORESHORTEN;
     for (const marker of floor.elevatorMarkers) {
@@ -8776,8 +8764,7 @@ export class ArenaScene extends Phaser.Scene {
     let arrivalOffset = 0;
     if (phase === CORPORATE_ELEVATOR_PHASE.arriving) {
       const remaining = Math.max(0, (state.elevatorDeadlineTick ?? 0) - (state.tick ?? 0));
-      arrivalOffset =
-        78 * Math.min(1, remaining / Math.max(1, CORPORATE_ELEVATOR_ARRIVAL_TICKS));
+      arrivalOffset = 78 * Math.min(1, remaining / Math.max(1, CORPORATE_ELEVATOR_ARRIVAL_TICKS));
     }
 
     for (let index = 0; index < this.corporateDoors.length; index++) {
@@ -9703,12 +9690,7 @@ export class ArenaScene extends Phaser.Scene {
     if (this.predictor?.slideAttackLocked) return;
     const pointerDown = this.input.activePointer.rightButtonDown();
     if (!pointerDown) this.semiAutoAttackLatched = false;
-    if (
-      this.pointerOverInteractiveUi ||
-      !pointerDown ||
-      this.localAtkCd > 0
-    )
-      return;
+    if (this.pointerOverInteractiveUi || !pointerDown || this.localAtkCd > 0) return;
     const weapon = WEAPONS[self.weapon] ?? WEAPONS[DEFAULT_WEAPON];
     if (weapon?.tags.fireMode === "semi-auto" && this.semiAutoAttackLatched) return;
     if (
@@ -10073,6 +10055,8 @@ export class ArenaScene extends Phaser.Scene {
           });
         }
       }
+      const recoil = weapon.recoil ?? 0;
+      if (recoil > 0) this.predictor?.addPredictedImpulse(-saX * recoil, -saY * recoil);
     }
     this.room.send("attack", { aimX: saX, aimY: saY, tx: cwx, ty: cwy });
   }
@@ -10087,6 +10071,8 @@ export class ArenaScene extends Phaser.Scene {
     predictedSeq: number,
   ): void {
     const angle = Math.atan2(aimY, aimX);
+    const recoil = weapon.recoil ?? 0;
+    if (recoil > 0) this.predictor?.addPredictedImpulse(-aimX * recoil, -aimY * recoil);
     rig.triggerGunRecoil(this.time.now, 0);
     if (weapon.tags.classPool === "caster") {
       this.spawnCasterSourceAtRig(weapon, rig, angle);
@@ -10272,11 +10258,11 @@ export class ArenaScene extends Phaser.Scene {
           ? "[E] OPEN CHEST"
           : this.grabTargetId === "elevator:right"
             ? "[E] ENTER ELEVATOR"
-          : holdingForDisassembly
-            ? `[E] DISASSEMBLING ${holdPercent}%`
-            : this.grabTargetDisassemblable
-              ? "[E] TAP PICK UP · HOLD DISASSEMBLE"
-              : "[E] PICK UP",
+            : holdingForDisassembly
+              ? `[E] DISASSEMBLING ${holdPercent}%`
+              : this.grabTargetDisassemblable
+                ? "[E] TAP PICK UP · HOLD DISASSEMBLE"
+                : "[E] PICK UP",
       )
       .setPosition(t.x, t.y - 45)
       .setVisible(true);
@@ -13781,10 +13767,8 @@ export class ArenaScene extends Phaser.Scene {
       const angle = aimAngle + lane.angleOffsetRad;
       const sideX = -Math.sin(aimAngle);
       const sideY = Math.cos(aimAngle);
-      const startX =
-        source.x + Math.cos(aimAngle) * lane.startForward + sideX * lane.startLateral;
-      const startY =
-        source.y + Math.sin(aimAngle) * lane.startForward + sideY * lane.startLateral;
+      const startX = source.x + Math.cos(aimAngle) * lane.startForward + sideX * lane.startLateral;
+      const startY = source.y + Math.sin(aimAngle) * lane.startForward + sideY * lane.startLateral;
       const travel = weapon.range * lane.distanceScale;
       const endX = startX + Math.cos(angle) * travel;
       const endY = startY + Math.sin(angle) * travel;
@@ -13944,8 +13928,7 @@ export class ArenaScene extends Phaser.Scene {
       state.players.forEach((player, playerId) => {
         const previous = this.lastParried.get(playerId);
         if (previous === undefined || previous === player.parriedSeq) return;
-        if (Math.hypot(player.x - enemy.x, player.y - enemy.y) <= 420)
-          parriedReturn = true;
+        if (Math.hypot(player.x - enemy.x, player.y - enemy.y) <= 420) parriedReturn = true;
       });
     }
     presentation.observedSeq = enemy.comboSeq;
@@ -13994,11 +13977,18 @@ export class ArenaScene extends Phaser.Scene {
         this.hydrateWeaponManifest(self);
         const view = ArenaScene.serverView(self);
         if (this.predictor) {
-          this.predictor.setRelics(self.dualWield?.relics);
+          this.syncPredictorMovementContext(state, self);
+          this.predictor.setRelics(
+            self.dualWield?.relics,
+            self.dualWield?.relics?.airJumpsRemaining,
+          );
           this.predictor.reconcile(view);
         } else {
           this.predictor = new SelfPredictor(view);
-          this.predictor.setRelics(self.dualWield?.relics);
+          this.predictor.setRelics(
+            self.dualWield?.relics,
+            self.dualWield?.relics?.airJumpsRemaining,
+          );
           this.selfPredHeight = view.height;
           this.selfPredVh = view.vh;
           this.selfPredStance = view.moveStance ?? STANCE_NONE;
@@ -14010,6 +14000,7 @@ export class ArenaScene extends Phaser.Scene {
           } else {
             this.predictor.setMap(this.arenaMap);
           }
+          this.syncPredictorMovementContext(state, self);
         }
         this.reconcileBeamPrediction(state, self);
       }
@@ -14039,8 +14030,40 @@ export class ArenaScene extends Phaser.Scene {
       movementCorrectionSeq: p.dualWield.movementCorrectionSeq,
       serverMotionEpoch: p.dualWield.serverMotionEpoch,
       serverMotionActive: p.dualWield.serverMotionActive,
+      airJumpsRemaining: p.dualWield.relics.airJumpsRemaining,
       alive: p.alive,
     };
+  }
+
+  /** Feed the predictor phase context already present in synced player/beam/arena rows. */
+  private syncPredictorMovementContext(state: ArenaState, self: PlayerState): void {
+    if (!this.predictor) return;
+    const weapon = WEAPONS[self.weapon];
+    const beam = state.beams.get(self.id);
+    let moveSpeedMultiplier = 1;
+    let recoilXPerSecond = 0;
+    let recoilYPerSecond = 0;
+    if (weapon?.beam && beam) {
+      const descriptor = beamDescriptorFor(weapon, 0, 0);
+      if (beam.phase === BeamPhase.Charging) moveSpeedMultiplier *= descriptor.chargeMoveMul;
+      else if (beam.phase === BeamPhase.Active) {
+        moveSpeedMultiplier *= descriptor.channelMoveMul;
+        const recoil = weapon.recoil ?? 0;
+        recoilXPerSecond = -Math.cos(beam.angle) * recoil;
+        recoilYPerSecond = -Math.sin(beam.angle) * recoil;
+      }
+    }
+    if (
+      self.ultimate.phase === UltimatePhase.Windup &&
+      ultimateFamilyForCode(self.ultimate.archetype) === UltimateFamily.SunspiteComet
+    )
+      moveSpeedMultiplier *= 0.55;
+    this.predictor.setServerMovementContext(
+      moveSpeedMultiplier,
+      recoilXPerSecond,
+      recoilYPerSecond,
+    );
+    this.predictor.setBeltLockX(this.belt ? state.beltLockX : 0);
   }
 
   /** §4 v0.107 the fixed 50ms INPUT-COMMAND loop: sample WASD once per frame, mint + send + predict one
