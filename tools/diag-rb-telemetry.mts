@@ -1719,7 +1719,7 @@ try {
     totalMagnitudePx: results.reduce((sum, result) => sum + result.summary.totalMagnitudePx, 0),
   };
   const acceptance = {
-    expectedScenarios: 41,
+    expectedScenarios: 43,
     allScenariosRan: results.length === 43,
     zeroNonzeroCorrections: totals.nonzeroCorrections === 0,
     zeroSnaps: totals.snapCorrections === 0,
