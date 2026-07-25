@@ -4,8 +4,14 @@ import {
   ARENA_HEIGHT,
   ARENA_WIDTH,
   type ArenaMap,
+  BELT_Y0,
+  beltBounds,
+  type BeltLevel,
+  beltPitAtX,
+  DEPTH_MAX,
   isPitAtPx,
   PLAYER_RADIUS,
+  resolveBeltNavigation,
   resolvePoiCollision,
 } from "@dd/shared";
 import { expect, type Page, test } from "@playwright/test";
@@ -15,6 +21,10 @@ import { bootArena, runArenaSpec } from "../helpers/arena-harness.js";
 const EVIDENCE_DIR = path.resolve(
   import.meta.dirname,
   "../../docs/owner-notes-audit-v12-evidence/b52-part-snap",
+);
+const B56_EVIDENCE_DIR = path.resolve(
+  import.meta.dirname,
+  "../../docs/owner-notes-audit-v12-evidence/b56-belt-parity",
 );
 const WALK_MS = 3_200;
 const WALK_WARMUP_MS = 450;
@@ -164,8 +174,11 @@ interface AuthorityPlayer {
 }
 
 interface LocalGameRoom {
+  beltLevel: BeltLevel | null;
   map: ArenaMap;
   state: {
+    beltLockX: number;
+    enemies: { clear(): void };
     players: {
       get(id: string): AuthorityPlayer | undefined;
     };
@@ -434,7 +447,35 @@ function findClearCorridor(map: ArenaMap): ClearCorridor {
   throw new Error("B52 probe could not find a 1,700px horizontal ground corridor");
 }
 
-async function resetToClearCorridor(page: Page): Promise<ClearCorridor> {
+function findClearBeltCorridor(level: BeltLevel): ClearCorridor {
+  const length = 1_700;
+  const edge = PLAYER_RADIUS + 48;
+  for (let y = BELT_Y0 + edge; y <= BELT_Y0 + DEPTH_MAX - edge; y += 48) {
+    for (let x = edge; x <= level.length - edge - length; x += 48) {
+      let clear = true;
+      for (let sampleX = x; sampleX <= x + length; sampleX += PLAYER_RADIUS) {
+        const bounds = beltBounds(level, sampleX);
+        const withinBand =
+          y >= BELT_Y0 + bounds.yMin + PLAYER_RADIUS &&
+          y <= BELT_Y0 + bounds.yMax - PLAYER_RADIUS;
+        const resolved = resolveBeltNavigation(level, sampleX, y, PLAYER_RADIUS);
+        if (
+          !withinBand ||
+          beltPitAtX(level, sampleX) ||
+          Math.abs(resolved.x - sampleX) > 0.01 ||
+          Math.abs(resolved.y - y) > 0.01
+        ) {
+          clear = false;
+          break;
+        }
+      }
+      if (clear) return { x, y, length };
+    }
+  }
+  throw new Error("B52 probe could not find a 1,700px horizontal belt corridor");
+}
+
+async function resetToClearCorridor(page: Page, belt: boolean): Promise<ClearCorridor> {
   const identity = await page.evaluate(() => {
     const holder = globalThis as unknown as BrowserProbeGlobal;
     const room = holder.ddGame?.scene.getScene("arena").room;
@@ -444,7 +485,10 @@ async function resetToClearCorridor(page: Page): Promise<ClearCorridor> {
   const room = matchMaker.getLocalRoomById(identity.roomId) as unknown as LocalGameRoom | undefined;
   const player = room?.state.players.get(identity.sessionId);
   if (!room || !player) throw new Error("B52 probe could not access its authority player");
-  const corridor = findClearCorridor(room.map);
+  const corridor =
+    belt && room.beltLevel ? findClearBeltCorridor(room.beltLevel) : findClearCorridor(room.map);
+  room.state.enemies.clear();
+  room.state.beltLockX = 0;
   player.x = corridor.x;
   player.y = corridor.y;
   room.zeroMoveVel(identity.sessionId, true, "teleport-placement");
@@ -460,7 +504,10 @@ async function resetToClearCorridor(page: Page): Promise<ClearCorridor> {
             const dy = (rig?.root.y ?? 0) - wantedY;
             return (dx * dx + dy * dy) ** 0.5;
           },
-          { wantedX: corridor.x, wantedY: corridor.y },
+          {
+            wantedX: corridor.x,
+            wantedY: belt ? BELT_Y0 + (corridor.y - BELT_Y0) * 0.5 : corridor.y,
+          },
         ),
       { message: "B52 rendered root should settle onto corridor start", timeout: 10_000 },
     )
@@ -533,14 +580,19 @@ async function runBaselineProbe(page: Page): Promise<ScenarioTrace[]> {
   return [await captureScenario(page, character, scenario.pose, scenario.attack)];
 }
 
-async function runSweep(page: Page, baseURL: string): Promise<ScenarioTrace[]> {
+async function runSweep(page: Page, baseURL: string, belt = false): Promise<ScenarioTrace[]> {
   const traces: ScenarioTrace[] = [];
-  await bootArena(page, baseURL, `char:${CHARACTERS[0]}`);
+  await bootArena(
+    page,
+    baseURL,
+    `char:${CHARACTERS[0]}`,
+    belt ? "corporate-grid" : undefined,
+  );
   await prepareProbe(page);
   for (const character of CHARACTERS) {
     for (const scenario of CASES) {
       await equip(page, character, scenario.weapon);
-      const corridor = await resetToClearCorridor(page);
+      const corridor = await resetToClearCorridor(page, belt);
       traces.push(await captureScenario(page, character, scenario.pose, scenario.attack));
       const distance = traces.at(-1)?.frames;
       const covered = distance ? (distance.at(-1)?.root.x ?? 0) - (distance[0]?.root.x ?? 0) : 0;
@@ -553,8 +605,40 @@ async function runSweep(page: Page, baseURL: string): Promise<ScenarioTrace[]> {
   return traces;
 }
 
-async function writeEvidence(label: string, traces: ScenarioTrace[]): Promise<void> {
-  await mkdir(EVIDENCE_DIR, { recursive: true });
+function assertSweep(traces: ScenarioTrace[], mode: "top-down" | "belt"): void {
+  expect(traces, `${mode} scenario count`).toHaveLength(CHARACTERS.length * CASES.length);
+  for (const trace of traces) {
+    const expectedParts: PartName[] =
+      trace.pose === "walking" ? [...PART_NAMES] : [...PART_NAMES, "weapon"];
+    expect(
+      trace.locomotionClock.discontinuityEvents,
+      `${mode}/${trace.scenario}/stride-clock: ${JSON.stringify(
+        trace.locomotionClock.discontinuityEvents,
+        null,
+        2,
+      )}`,
+    ).toHaveLength(0);
+    for (const name of expectedParts) {
+      const stats = trace.parts[name];
+      expect(stats, `${mode}/${trace.scenario}/${name} should be mounted`).toBeDefined();
+      if (!stats) continue;
+      expect(stats.samples, `${mode}/${trace.scenario}/${name} frame coverage`).toBeGreaterThan(
+        MIN_RENDERED_FRAMES,
+      );
+      expect(
+        stats.discontinuityEvents,
+        `${mode}/${trace.scenario}/${name}: ${JSON.stringify(stats.discontinuityEvents, null, 2)}`,
+      ).toHaveLength(0);
+    }
+  }
+}
+
+async function writeEvidence(
+  label: string,
+  traces: ScenarioTrace[],
+  evidenceDir = EVIDENCE_DIR,
+): Promise<void> {
+  await mkdir(evidenceDir, { recursive: true });
   const summary = traces.map((trace) => ({
     scenario: trace.scenario,
     durationMs: trace.durationMs,
@@ -575,7 +659,7 @@ async function writeEvidence(label: string, traces: ScenarioTrace[]): Promise<vo
     ),
   }));
   await writeFile(
-    path.join(EVIDENCE_DIR, `${label}-trace-chart.json`),
+    path.join(evidenceDir, `${label}-trace-chart.json`),
     `${JSON.stringify(
       {
         label,
@@ -631,31 +715,24 @@ test("B52 sweep: all parts stay continuous for 3 characters in walk/gun/attack p
       const traces = await runSweep(page, baseURL);
       const label = process.env.DD_B52_TRACE_LABEL;
       if (label) await writeEvidence(label, traces);
-      expect(traces).toHaveLength(CHARACTERS.length * CASES.length);
-      for (const trace of traces) {
-        const expectedParts: PartName[] =
-          trace.pose === "walking" ? [...PART_NAMES] : [...PART_NAMES, "weapon"];
-        expect(
-          trace.locomotionClock.discontinuityEvents,
-          `${trace.scenario}/stride-clock: ${JSON.stringify(
-            trace.locomotionClock.discontinuityEvents,
-            null,
-            2,
-          )}`,
-        ).toHaveLength(0);
-        for (const name of expectedParts) {
-          const stats = trace.parts[name];
-          expect(stats, `${trace.scenario}/${name} should be mounted`).toBeDefined();
-          if (!stats) continue;
-          expect(stats.samples, `${trace.scenario}/${name} frame coverage`).toBeGreaterThan(
-            MIN_RENDERED_FRAMES,
-          );
-          expect(
-            stats.discontinuityEvents,
-            `${trace.scenario}/${name}: ${JSON.stringify(stats.discontinuityEvents, null, 2)}`,
-          ).toHaveLength(0);
-        }
-      }
+      assertSweep(traces, "top-down");
+    });
+  } finally {
+    if (sharedStack) process.env.DD_E2E_BASE_URL = sharedStack;
+  }
+});
+
+test("B52 belt sweep: all parts stay continuous for 3 characters in walk/gun/attack poses", async ({
+  page,
+}) => {
+  test.setTimeout(300_000);
+  const sharedStack = process.env.DD_E2E_BASE_URL;
+  delete process.env.DD_E2E_BASE_URL;
+  try {
+    await runArenaSpec(page, async (baseURL) => {
+      const traces = await runSweep(page, baseURL, true);
+      await writeEvidence("belt-part-snap", traces, B56_EVIDENCE_DIR);
+      assertSweep(traces, "belt");
     });
   } finally {
     if (sharedStack) process.env.DD_E2E_BASE_URL = sharedStack;

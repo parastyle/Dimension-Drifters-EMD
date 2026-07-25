@@ -1621,6 +1621,13 @@ export class ArenaScene extends Phaser.Scene {
   /** Exact predictor candidate consumed by the owner rig this frame; diagnostics only, never fed back. */
   private selfPredictionCandidateX = Number.NaN;
   private selfPredictionCandidateY = Number.NaN;
+  /**
+   * B56 belt parity: the one retained SELF presentation position in simulation/world space.
+   * `projectBelt()` moves the Phaser root onto the screen plane, so the root itself must never feed B51's
+   * next-frame presentation gate. Top-down and belt now constrain from this same world-space source.
+   */
+  private selfPresentedWorldX = Number.NaN;
+  private selfPresentedWorldY = Number.NaN;
   private localParryCd = 0;
   /** §8 v0.114 PARRY COMBO — client-inferred chain counter for the local drifter (no synced field): each
    *  own-parry within `PARRY_CHAIN_WINDOW` of the last bumps `parryChain`; a lapse resets it. Drives the
@@ -2226,6 +2233,10 @@ export class ArenaScene extends Phaser.Scene {
     this.selfPredStance = STANCE_NONE;
     this.selfPredSlidePhase = SLIDE_PHASE_OFF;
     this.selfPredSlideTick = 0;
+    this.selfPredictionCandidateX = Number.NaN;
+    this.selfPredictionCandidateY = Number.NaN;
+    this.selfPresentedWorldX = Number.NaN;
+    this.selfPresentedWorldY = Number.NaN;
     this.jumpPresentation.clear();
     this.wasFrozen = false;
     this.lastSelfMuzzleAt = -9999;
@@ -4252,6 +4263,8 @@ export class ArenaScene extends Phaser.Scene {
         spawnFallStreak(this, player.x, player.y);
       }
       if (id === selfId) {
+        this.selfPresentedWorldX = player.x;
+        this.selfPresentedWorldY = player.y;
         this.cameras.main.flash(170, 90, 16, 16);
         this.shakeCam(150, 0.006, "world");
         this.audio.play("fall"); // §19 void whoosh + a thud on the snap-back landing
@@ -4683,7 +4696,7 @@ export class ArenaScene extends Phaser.Scene {
             if (rig)
               this.jumpEffectRenderer.spawnSlideDry(
                 rig.x,
-                (this.belt ? this.beltY(rig.y) : rig.y) + PLAYER_SHADOW_LOCAL_Y,
+                rig.y + PLAYER_SHADOW_LOCAL_Y,
                 this.belt ? BELT_FORESHORTEN : 1,
               );
             this.audio.play("slide:dry", { x: rig?.x, amt: 0.35 });
@@ -4724,7 +4737,7 @@ export class ArenaScene extends Phaser.Scene {
             nearPickup = true;
             grabPickupId = id;
             this.grabTargetId = id;
-            this.grabTarget = { x: pk.x, y: pk.y };
+            this.grabTarget = { x: pk.x, y: this.belt ? this.beltY(pk.y) : pk.y };
             this.grabTargetDisassemblable = pk.disassemblable;
             this.grabRadius = radius;
           }
@@ -4740,7 +4753,10 @@ export class ArenaScene extends Phaser.Scene {
           grabPickupId = "";
           grabChestId = id;
           this.grabTargetId = id;
-          this.grabTarget = { x: chest.x, y: chest.y };
+          this.grabTarget = {
+            x: chest.x,
+            y: this.belt ? this.beltY(chest.y) : chest.y,
+          };
           this.grabTargetDisassemblable = false;
           this.grabRadius = CHEST_OPEN_RADIUS;
         });
@@ -4935,7 +4951,14 @@ export class ArenaScene extends Phaser.Scene {
         const selfRig = this.room ? this.blobs.get(this.room.sessionId) : undefined;
         if (selfRig) {
           const r = this.predictor.renderPos(this.curDx, this.curDy, this.inputAccMs / 1000);
-          this.predictor.foldError(selfRig.x - r.x, selfRig.y - r.y);
+          const worldX = Number.isFinite(this.selfPresentedWorldX)
+            ? this.selfPresentedWorldX
+            : this.room?.state.players.get(this.room.sessionId)?.x;
+          const worldY = Number.isFinite(this.selfPresentedWorldY)
+            ? this.selfPresentedWorldY
+            : this.room?.state.players.get(this.room.sessionId)?.y;
+          if (worldX !== undefined && worldY !== undefined)
+            this.predictor.foldError(worldX - r.x, worldY - r.y);
         }
       }
       this.wasFrozen = false;
@@ -8427,15 +8450,23 @@ export class ArenaScene extends Phaser.Scene {
           : r;
         this.selfPredictionCandidateX = candidate.x;
         this.selfPredictionCandidateY = candidate.y;
+        const previousWorldX = Number.isFinite(this.selfPresentedWorldX)
+          ? this.selfPresentedWorldX
+          : player.x;
+        const previousWorldY = Number.isFinite(this.selfPresentedWorldY)
+          ? this.selfPresentedWorldY
+          : player.y;
         const presented = this.predictor.constrainRenderStep(
-          blob.x,
-          blob.y,
+          previousWorldX,
+          previousWorldY,
           candidate.x,
           candidate.y,
           this.curDx,
           this.curDy,
           r.stance === STANCE_NONE && !presentationOnlyGunRecoil,
         );
+        this.selfPresentedWorldX = presented.x;
+        this.selfPresentedWorldY = presented.y;
         blob.setPosition(presented.x, presented.y);
         this.selfPredHeight = r.height;
         this.selfPredVh = r.vh;
@@ -8450,6 +8481,10 @@ export class ArenaScene extends Phaser.Scene {
           : null;
       if (s) blob.setPosition(s.x, s.y);
       else blob.setPosition(player.x, player.y);
+      if (id === selfId) {
+        this.selfPresentedWorldX = s?.x ?? player.x;
+        this.selfPresentedWorldY = s?.y ?? player.y;
+      }
     });
   }
 
@@ -8894,6 +8929,9 @@ export class ArenaScene extends Phaser.Scene {
       projectTracked(c);
     });
     this.pickups.forEach((c) => {
+      projectTracked(c);
+    });
+    this.chests.forEach((c) => {
       projectTracked(c);
     });
     this.zones.forEach((c) => {

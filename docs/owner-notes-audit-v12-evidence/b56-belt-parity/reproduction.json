@@ -1,0 +1,52 @@
+{
+  "capturedBeforeRepair": "2026-07-25",
+  "boot": {
+    "ownerOrchestratorReproduction": {
+      "url": "?belt=corporate-grid",
+      "observationSeconds": 12,
+      "arenaSceneActive": false,
+      "domStatus": "connecting…",
+      "consoleErrors": []
+    },
+    "solReproduction": {
+      "command": "pnpm e2e --grep \"captures corporate-grid$\"",
+      "result": "live boot completed on this attempt",
+      "diagnosis": "intermittent cold-boot race: MenuScene armed launch behind camerafadeoutcomplete; a throttled render loop could prevent that event and leave the URL route stranded"
+    }
+  },
+  "missingUi": {
+    "hungBoot": [
+      "weapon dock",
+      "backpack affordance/panel",
+      "money",
+      "health",
+      "relic/trinket row",
+      "floor counter",
+      "interaction prompts"
+    ],
+    "livePreRepairArena": "all seven surfaces existed once ArenaScene became live; their reported absence was a boot-path failure, not seven deleted renderers"
+  },
+  "aim": {
+    "defaultMelee": {
+      "weapon": "rusty-cleaver",
+      "beltPaintedAxisErrorRadians": 0.209,
+      "note": "the authored melee pose carries an approximately 12-degree blade pose offset in both modes"
+    },
+    "gunControl": {
+      "weapon": "x2-barrett-50-cal-sniper",
+      "beltCursorAxisError": "approximately 1e-8 at four cursor points across both facings",
+      "topdownCursorAxisError": "approximately 1e-8 at the same four cursor points"
+    },
+    "diagnosis": "belt aim coordinates were already projected cursor/render coordinates; the mixed-space SELF root moved underneath the otherwise-correct axis, producing the owner's visible aim symptom"
+  },
+  "phasing": {
+    "samples": 17,
+    "maxRootStepPx": 502.50755190965606,
+    "maxProjectionErrorPx": 165.65337213717385,
+    "observedRootYValues": [
+      2151.222,
+      1985.57
+    ],
+    "rootCause": "projectBelt wrote the live rig root from world Y to projected Y, then the next B51 constrainRenderStep consumed blob.x/blob.y as if that projected root were still world-space. The fake Y delta entered the forward-cone presentation gate and was rotated into X, alternating SELF between two coordinates. The hit-stop foldError path had the same mixed-space feedback."
+  }
+}
