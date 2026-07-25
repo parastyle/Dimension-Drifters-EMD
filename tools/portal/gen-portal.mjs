@@ -883,6 +883,7 @@ const ARMORY_PORTAL_HTML = `<!doctype html>
         <a class="place-link" href="http://localhost:5180/?closet=1" target="_blank" rel="noopener">Game</a>
         <a class="place-link" href="http://localhost:5180/?dev=weapon:rusty-cleaver" target="_blank" rel="noopener">Testing Grounds</a>
         <a class="place-link" href="http://localhost:5050" target="_blank" rel="noopener">Weaponsmith</a>
+        <a class="place-link" href="http://localhost:5180/pose-studio.html" target="_blank" rel="noopener">Weapon Pose Studio</a>
         <a class="place-link" href="../artkit/out/character-concepts/index.html" target="_blank" rel="noopener">Character concepts</a>
         <a class="place-link" href="../artkit/out/gear/hat-contact-sheet.png" target="_blank" rel="noopener">Hat contact sheet</a>
       </nav>
@@ -906,7 +907,6 @@ const ARMORY_PORTAL_HTML = `<!doctype html>
   <script>const DATA=${embeddedData};${PORTAL_SCRIPT}</script>
 </body>
 </html>`;
-
 
 const html = ARMORY_PORTAL_HTML;
 
