@@ -117,19 +117,16 @@ describe("owner-notes NW-CASTER contracts", () => {
     expect(weapon("x2-marshlight-bog-censer-wand").performance?.emitter).toBe("spout");
   });
 
-  it("authors Stormfists as a blue, destination-impact lunge-punch at twice traversal speed", () => {
+  it("authors Stormfists as a planted blue lunge-punch with remote endpoint reach", () => {
     const stormfists = weapon("x2-thunderhead-stormfists");
     expect(stormfists.performance).toMatchObject({
       action: "lunge-punch",
       windupSeconds: 0.3,
       suppressSwing: true,
-      lunge: {
-        distancePx: 480,
-        durationSeconds: 0.025,
-        invulnerable: true,
-        impactAtDestination: true,
-      },
     });
+    expect("lunge" in (stormfists.performance ?? {})).toBe(false);
+    expect(stormfists.range).toBe(680);
+    expect(stormfists.quake?.placementRange).toBe(480);
     expect(CASTER_VFX_PALETTE_OVERRIDES[stormfists.id]).toEqual({
       core: 0xffffff,
       mid: 0x33e6ff,
@@ -195,7 +192,7 @@ describe("owner-notes NW-CASTER contracts", () => {
     expect(isWornWeapon(gravewax)).toBe(false);
 
     const rigSource = readFileSync(
-      new URL("../packages/client/src/entities/SpriteRig.ts", import.meta.url),
+      new URL("../packages/client/src/entities/rig/rig-gear.ts", import.meta.url),
       "utf8",
     );
     expect(rigSource).toContain("piece?.worn || piece?.def.renderAboveHands");

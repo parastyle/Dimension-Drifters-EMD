@@ -1,0 +1,189 @@
+{
+  "capturedAt": "2026-07-25T02:02:02.241Z",
+  "transport": {
+    "endpoint": "ws://127.0.0.1:54741",
+    "osAssignedEphemeralPort": 54741,
+    "protectedDefaultsUntouched": true,
+    "clients": 4,
+    "simultaneousClientsPerScenario": 2,
+    "liveStackBooted": true
+  },
+  "assertions": {
+    "normalSelfCorrectionsZero": true,
+    "normalCorrectionSeqZero": true,
+    "weaponRootMotionModeAbsent": true,
+    "weaponAttackCorrectionsZero": true,
+    "observerInterpolated": true,
+    "forcedViolationInstantSnap": true,
+    "correctionCapMs": 140,
+    "parryBothClients": true,
+    "elevatorBothClients": true
+  },
+  "normal": {
+    "frameCount": 64,
+    "selfCorrections": 0,
+    "movementCorrectionSeq": 0,
+    "observerMaxStep": 24.25,
+    "observerIntermediateSamples": 63,
+    "weapons": [
+      {
+        "weaponId": "x2-coyote-trickster-s-sparkmitt",
+        "frameCount": 28,
+        "acceptedAttacks": 7,
+        "attackMoveModes": [
+          0,
+          1
+        ],
+        "selfCorrections": 0,
+        "correctionSeqBefore": 0,
+        "correctionSeqAfter": 0
+      },
+      {
+        "weaponId": "x2-venomtongue-trident",
+        "frameCount": 18,
+        "acceptedAttacks": 1,
+        "attackMoveModes": [
+          0,
+          1
+        ],
+        "selfCorrections": 0,
+        "correctionSeqBefore": 0,
+        "correctionSeqAfter": 0
+      },
+      {
+        "weaponId": "x2-thunderhead-stormfists",
+        "frameCount": 18,
+        "acceptedAttacks": 1,
+        "attackMoveModes": [
+          0,
+          1
+        ],
+        "selfCorrections": 0,
+        "correctionSeqBefore": 0,
+        "correctionSeqAfter": 0
+      }
+    ]
+  },
+  "violation": {
+    "frame": {
+      "step": 64,
+      "tick": 87,
+      "seq": 65,
+      "inputX": 0,
+      "attackMoveMode": 0,
+      "authority": {
+        "x": 3359.859375,
+        "y": 2420
+      },
+      "predictedBeforePatch": {
+        "x": 3924.609375,
+        "y": 2420,
+        "height": 0,
+        "vh": 0,
+        "stance": 0,
+        "slidePhase": 0,
+        "slideTick": 0
+      },
+      "predictedAfterPatch": {
+        "x": 3359.859375,
+        "y": 2420,
+        "height": 0,
+        "vh": 0,
+        "stance": 0,
+        "slidePhase": 0,
+        "slideTick": 0
+      },
+      "observerAuthority": {
+        "x": 3359.859375,
+        "y": 2420
+      },
+      "observerRender": {
+        "x": 3357.484375,
+        "y": 2420
+      },
+      "correctionSeq": 1,
+      "selfCorrections": 1
+    },
+    "correctionSeqBefore": 0,
+    "correctionSeqAfter": 1,
+    "errorBeforePx": 555.25,
+    "errorAfterPx": 0,
+    "correctionRemainingMs": 0,
+    "selfCorrectionsAfter": 1
+  },
+  "parry": {
+    "before": {
+      "x": 3359.859375,
+      "y": 2420,
+      "parriedSeq": 0,
+      "epoch": 1
+    },
+    "after": {
+      "tick": 111,
+      "x": 3337.25927734375,
+      "y": 2420,
+      "parriedSeq": 1,
+      "epoch": 2,
+      "active": false
+    },
+    "distancePx": 22.60009765625,
+    "correctionStartMs": 140,
+    "ownerInitialErrorPx": 22.60009765625,
+    "ownerErrorPx": 0,
+    "observerErrorPx": 0
+  },
+  "elevator": {
+    "roomId": "8EohS1wBF",
+    "depthBefore": 1,
+    "depthAfter": 2,
+    "phaseAfter": 4,
+    "placements": [
+      {
+        "id": "4HwmilP-o",
+        "before": {
+          "id": "4HwmilP-o",
+          "x": 4040,
+          "y": 2530,
+          "teleportSeq": 0,
+          "epoch": 0
+        },
+        "rider": {
+          "x": 420,
+          "y": 2530,
+          "teleportSeq": 2,
+          "epoch": 1
+        },
+        "observer": {
+          "x": 420,
+          "y": 2530,
+          "teleportSeq": 2,
+          "epoch": 1
+        },
+        "crossClientErrorPx": 0
+      },
+      {
+        "id": "SuyUxu96I",
+        "before": {
+          "id": "SuyUxu96I",
+          "x": 4040,
+          "y": 2530,
+          "teleportSeq": 0,
+          "epoch": 0
+        },
+        "rider": {
+          "x": 456,
+          "y": 2530,
+          "teleportSeq": 2,
+          "epoch": 1
+        },
+        "observer": {
+          "x": 456,
+          "y": 2530,
+          "teleportSeq": 2,
+          "epoch": 1
+        },
+        "crossClientErrorPx": 0
+      }
+    ]
+  }
+}

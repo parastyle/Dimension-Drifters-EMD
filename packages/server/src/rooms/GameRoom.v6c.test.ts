@@ -1,7 +1,5 @@
 import {
   FRIENDLY_PROJECTILE_ENTITY_CAP,
-  GUN_RECOIL_BASELINE,
-  GUN_RECOIL_IMPULSE,
   TILE_GROUND,
   WEAPONS,
 } from "@dd/shared";
@@ -74,18 +72,16 @@ describe("GameRoom — V6C caster/ranged authority", () => {
     }
   });
 
-  it("doubles Calamity's server displacement without changing its camera-recoil field", () => {
+  it("keeps Calamity planted without changing its camera-recoil field", () => {
     const { room, player, combat } = fixture("calamity-recoil");
     const weapon = equip(player, combat, "x2-calamity-howitzer");
     if (!weapon.gun) throw new Error("Calamity gun fixture is required");
 
+    const before = { vx: player.vx, vy: player.vy };
     room.fireGun(player, combat, weapon);
 
-    const oldKick =
-      GUN_RECOIL_IMPULSE * (weapon.gun.recoil ?? GUN_RECOIL_BASELINE) / GUN_RECOIL_BASELINE;
     expect(weapon.gun.recoil).toBe(0.004);
-    expect(weapon.gun.userKnockbackMultiplier).toBe(2);
-    expect(player.vx).toBeCloseTo(-oldKick * 2, 8);
-    expect(player.vy).toBeCloseTo(0, 8);
+    expect("userKnockbackMultiplier" in weapon.gun).toBe(false);
+    expect({ vx: player.vx, vy: player.vy }).toEqual(before);
   });
 });

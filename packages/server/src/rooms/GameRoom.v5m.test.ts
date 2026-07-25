@@ -51,25 +51,26 @@ function equip(room: AnyRoom, player: AnyRoom, combat: AnyRoom, weaponId: string
 }
 
 describe("GameRoom — V5M melee authority", () => {
-  it("moves Frostfang only through its delayed server-validated authored lunge", () => {
+  it("keeps Frostfang planted while preserving its former lunge reach", () => {
     const { room, player, combat } = makeRoom("frostfang-lunge");
     const weapon = equip(room, player, combat, "x2-frostfang-rakes");
-    const distance = weapon.performance?.lunge?.distancePx;
-    if (!distance) throw new Error("Frostfang lunge fixture is required");
     const swing = swingDescriptorFor(weapon, weapon.cooldown);
-    const startX = player.x;
-    const startY = player.y;
-    const validate = vi.spyOn(room, "navValidDest");
+    const start = { x: player.x, y: player.y };
+    const target = new EnemyState();
+    target.id = "frostfang-reach";
+    target.kind = "critter";
+    target.x = player.x + 160;
+    target.y = player.y;
+    target.hp = 10_000;
+    room.state.enemies.set(target.id, target);
+    room.rebuildEnemyGrid();
 
     room.resolveSwing(player, combat, weapon, swing);
-    expect(player.x).toBe(startX);
-    expect(room.pendingWeaponLunges.get(player.id)?.distancePx).toBe(64);
+    room.stepMeleeSwings(swing.activeEndSeconds + 0.001);
 
-    room.stepPendingWeaponLunges(swing.activeStartSeconds + 0.01);
-
-    expect(validate).toHaveBeenCalled();
-    expect(Math.hypot(player.x - startX, player.y - startY)).toBeGreaterThan(0);
-    expect(Math.hypot(player.x - startX, player.y - startY)).toBeLessThanOrEqual(distance + 1e-8);
+    expect(weapon.range).toBe(172);
+    expect({ x: player.x, y: player.y }).toEqual(start);
+    expect(target.hp).toBeLessThan(10_000);
   });
 
   it("damages targets once across the Gravewarden frontflip's full-circle union", () => {

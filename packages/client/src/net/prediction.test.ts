@@ -1,8 +1,6 @@
 import {
   addImpulse,
   DIST_JUMP_VERTICAL_VELOCITY,
-  gunLocomotionRecoilFor,
-  gunUserRecoilFor,
   INTERP_SNAP_PLAYER,
   stepImpulse,
   stepSteeredMovement,
@@ -173,7 +171,7 @@ describe("SelfPredictor — §4 v0.107 prediction + reconciliation", () => {
     expect(pred.renderPos(0, 0, 0).x).toBeCloseTo(server.x, 1);
   });
 
-  it("owner-predicted sequential gun recoil stays exact across four moving rounds", () => {
+  it("the explicit impulse seam stays exact for classified hit knockback", () => {
     const server = new MockServer();
     const pred = new SelfPredictor(server.view());
     for (let round = 0; round < 4; round++) {
@@ -191,17 +189,14 @@ describe("SelfPredictor — §4 v0.107 prediction + reconciliation", () => {
     }
   });
 
-  it("keeps Overcasters presentation recoil out of predicted locomotion at low and induced latency", () => {
+  it("keeps weapon presentation recoil out of predicted locomotion at low and induced latency", () => {
     const weapon = WEAPONS["x2-galvanic-overcasters"];
-    expect(gunUserRecoilFor(weapon).impulse).toBeGreaterThan(0);
-    expect(gunLocomotionRecoilFor(weapon).impulse).toBe(0);
+    expect(weapon?.gun?.recoil).toBeGreaterThan(0);
 
     for (const latency of [0, 3]) {
       const server = new MockServer();
       const pred = new SelfPredictor(server.view());
       const before = pred.renderPos(0, 0, 0);
-      const recoil = gunLocomotionRecoilFor(weapon);
-      pred.addPredictedImpulse(-recoil.impulse, 0, recoil.maxImpulse);
       expect(pred.renderPos(0, 0, 0), `latency ${latency} recoil edge`).toMatchObject(before);
 
       run(pred, server, [...hold(1, 0, 24), ...hold(-1, 0, 24), ...hold(1, 0, 24)], latency);

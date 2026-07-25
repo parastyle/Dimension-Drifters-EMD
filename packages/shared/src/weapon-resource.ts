@@ -63,10 +63,6 @@ export const WEAPON_RESOURCE_OVERRIDES: Readonly<Record<string, WeaponResourceOv
       multiplier: 1.15,
       reason: "A successful swing can revive; that utility has no damage statistic.",
     }),
-    "drift-katana-riftstep": Object.freeze({
-      multiplier: 1.08,
-      reason: "The finisher dash adds mobility that the damage-and-reach formula cannot value.",
-    }),
     "drift-greatkatana-tempest-regent": Object.freeze({
       multiplier: 1.1,
       reason: "Perfect continuations grant brief invulnerability outside the damage formula.",

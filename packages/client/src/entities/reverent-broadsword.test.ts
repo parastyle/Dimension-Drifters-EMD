@@ -29,8 +29,8 @@ describe("Reverent Broadsword martial two-beat combo", () => {
       { motion: "jab", hand: "lead", theatrics: undefined },
       { motion: "impale", hand: "lead", theatrics: { flip: "front" } },
     ]);
-    expect(combo.sequence.every((step) => step.rootMotion === undefined)).toBe(true);
-    expect(weapon.performance?.forwardDrift).toBeUndefined();
+    expect(combo.sequence.every((step) => !("rootMotion" in step))).toBe(true);
+    expect("forwardDrift" in (weapon.performance ?? {})).toBe(false);
   });
 
   it("uses the opposite extended free hand and capsule stab envelopes on both beats", () => {
@@ -66,7 +66,7 @@ describe("Reverent Broadsword martial two-beat combo", () => {
       expect(rollTumbleRotation(0, facing)).toBeCloseTo(0);
       expect(Math.abs(rollTumbleRotation(0.5, facing))).toBeCloseTo(Math.PI);
       expect(Math.abs(rollTumbleRotation(1, facing))).toBeCloseTo(Math.PI * 2);
-      expect(combo.sequence[1]?.rootMotion).toBeUndefined();
+      expect("rootMotion" in (combo.sequence[1] ?? {})).toBe(false);
     },
   );
 });

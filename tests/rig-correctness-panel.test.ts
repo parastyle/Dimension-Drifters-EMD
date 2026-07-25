@@ -2,10 +2,11 @@ import { readFileSync } from "node:fs";
 import { comboStepForChain } from "@dd/shared";
 import { describe, expect, it } from "vitest";
 
-const RIG_SOURCE = readFileSync(
-  new URL("../packages/client/src/entities/SpriteRig.ts", import.meta.url),
-  "utf8",
-);
+const RIG_SOURCE = ["rig-core.ts", "rig-combat.ts", "rig-pose.ts"]
+  .map((file) =>
+    readFileSync(new URL(`../packages/client/src/entities/rig/${file}`, import.meta.url), "utf8"),
+  )
+  .join("\n");
 
 describe("rig correctness panel", () => {
   it("indexes a contiguous accepted combo chain instead of the global attack ordinal", () => {
@@ -57,12 +58,7 @@ describe("rig correctness panel", () => {
   });
 
   it("restarts on swap, family change, cadence expiry, missing beats, or clock reversal", () => {
-    const step = (
-      seq: number,
-      atMs: number,
-      weaponId: string,
-      family: "arc" | "chop",
-    ) =>
+    const step = (seq: number, atMs: number, weaponId: string, family: "arc" | "chop") =>
       comboStepForChain(
         seq,
         atMs,
@@ -118,7 +114,9 @@ describe("rig correctness panel", () => {
   });
 
   it("samples combo, tome, and source state from the freeze-aware rig clock", () => {
-    expect(RIG_SOURCE).toContain("private presentationEpochForWallEpoch(epochMs: number)");
+    expect(RIG_SOURCE).toContain(
+      "presentationEpochForWallEpoch(this: SpriteRigContext, epochMs: number)",
+    );
     expect(RIG_SOURCE).toContain("const sceneNow = timeMs;");
     expect(RIG_SOURCE).toContain("const el = sceneNow - this.swingStart;");
     expect(RIG_SOURCE).toContain("this.prepareTomeVisual(sceneNow, outsidePaperView)");
@@ -127,12 +125,12 @@ describe("rig correctness panel", () => {
   });
 
   it("routes an observed accepted beat through authored VFX with owner dedupe and camera LOD", () => {
-    expect(RIG_SOURCE).toContain("private flushObservedAttackSignature(");
+    expect(RIG_SOURCE).toContain("flushObservedAttackSignature(this: SpriteRigContext,");
     expect(RIG_SOURCE).toContain("if (!this.isSelf && nextSwing");
     expect(RIG_SOURCE).toContain("outsideSignatureView");
     expect(RIG_SOURCE).toContain("scene.spawnSlash?.(");
     expect(RIG_SOURCE).toContain("scene.spawnChain?.(");
-    expect(RIG_SOURCE).toContain("private readonly observedSignatureAim = { x: 1, y: 0 }");
-    expect(RIG_SOURCE).toContain("private syncObservedSourceFlash(");
+    expect(RIG_SOURCE).toContain("readonly observedSignatureAim: { x: number; y: number; }");
+    expect(RIG_SOURCE).toContain("syncObservedSourceFlash(this: SpriteRigContext,");
   });
 });

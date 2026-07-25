@@ -142,30 +142,19 @@ describe("GameRoom — NW-CASTER authority contracts", () => {
     expect(room.state.zones.size).toBe(0);
   });
 
-  it("moves Stormfists only through its delayed server-validated lunge", () => {
+  it("plants Stormfists and preserves its former dash endpoint as remote quake reach", () => {
     const { room, player, combat } = makeRoom("storm-lunge");
     const weapon = equip(room, player, combat, "x2-thunderhead-stormfists");
-    const distance = weapon.performance?.lunge?.distancePx;
-    if (!distance) throw new Error("Stormfist lunge fixture is required");
     const swing = swingDescriptorFor(weapon, weapon.cooldown);
-    const startX = player.x;
-    const startY = player.y;
-    const validate = vi.spyOn(room, "navValidDest");
+    const start = { x: player.x, y: player.y };
+    const epoch = player.dualWield.serverMotionEpoch;
 
     room.resolveSwing(player, combat, weapon, swing);
-    expect(player.x).toBe(startX);
-    expect(room.pendingWeaponLunges.size).toBe(1);
-    expect(room.pendingWeaponLunges.get(player.id)?.distancePx).toBe(480);
-
-    room.stepPendingWeaponLunges(swing.activeStartSeconds);
-    expect(player.x).toBe(startX);
-    room.stepPendingWeaponLunges(weapon.performance?.lunge?.durationSeconds ?? 0);
-
-    const displacement = Math.hypot(player.x - startX, player.y - startY);
-    expect(validate).toHaveBeenCalled();
-    expect(displacement).toBeGreaterThan(0);
-    expect(displacement).toBeLessThanOrEqual(distance + 1e-8);
-    expect(room.pendingWeaponLunges.size).toBe(0);
+    expect({ x: player.x, y: player.y }).toEqual(start);
+    expect(player.dualWield.serverMotionEpoch).toBe(epoch);
+    expect(weapon.range).toBe(680);
+    expect(weapon.quake?.placementRange).toBe(480);
+    expect(room.pendingQuakes[0]).toMatchObject({ x: start.x + 480, y: start.y });
   });
 
   it("records Sporebound aura damage as BIO while retaining toxic weapon/VFX identity", () => {

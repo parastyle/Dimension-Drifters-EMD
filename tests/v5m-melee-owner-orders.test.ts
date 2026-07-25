@@ -83,7 +83,8 @@ describe("V5M melee owner orders", () => {
       "scissor",
     ]);
     expect(combo?.sequence.every((step) => step.path.damageMultiplier === 1)).toBe(true);
-    expect(frostfang.performance?.lunge).toEqual({ distancePx: 64, durationSeconds: 0.18 });
+    expect("lunge" in (frostfang.performance ?? {})).toBe(false);
+    expect(frostfang.range).toBe(172);
   });
 
   it("distributes Gravechain smoke and Hollow Harvest organic fire over their complete spin radius", () => {
@@ -238,7 +239,6 @@ describe("V5M melee owner orders", () => {
       action: "spin",
       continuous: true,
       suppressSwing: true,
-      lunge: { distancePx: 144, durationSeconds: 0.2 },
       twirl: {
         plane: "continuous-frontflip",
         direction: "forward",

@@ -60,7 +60,7 @@ function equip(player: AnyRoom, combat: AnyRoom, id: string) {
 describe("GameRoom — V6M melee authority", () => {
   // Restore any per-test Math.random seed so it cannot leak into sibling tests.
   afterEach(() => vi.restoreAllMocks());
-  it("advances Cinderbrand's accepted held beat through server navigation at 72 px/s", () => {
+  it("keeps Cinderbrand planted while preserving its former drift reach", () => {
     const { room, player, combat } = makeRoom("cinderbrand-drift");
     // Seed Math.random: the lunge/nav accounting is otherwise sensitive to the global RNG stream
     // position, which full-suite ordering shifts (a catalog change flipped this px-window assertion).
@@ -68,21 +68,22 @@ describe("GameRoom — V6M melee authority", () => {
     vi.spyOn(Math, "random").mockImplementation(() => rng.next());
     const weapon = equip(player, combat, "x2-cinderbrand-cleaver");
     const swing = swingDescriptorFor(weapon, weapon.cooldown);
-    const startX = player.x;
-    const validate = vi.spyOn(room, "navValidDest");
+    const start = { x: player.x, y: player.y };
+    const enemy = new EnemyState();
+    enemy.id = "cinderbrand-former-drift-reach";
+    enemy.kind = "dummy";
+    enemy.x = player.x + 175;
+    enemy.y = player.y;
+    enemy.hp = 10_000;
+    room.state.enemies.set(enemy.id, enemy);
+    room.rebuildEnemyGrid();
 
     room.resolveSwing(player, combat, weapon, swing);
-    expect(room.pendingWeaponLunges.get(player.id)).toMatchObject({
-      t: 0,
-      distancePx: 24,
-      durationSeconds: 1 / 3,
-      invulnerable: false,
-    });
-    room.stepPendingWeaponLunges(1 / 3);
+    room.stepMeleeSwings(swing.activeEndSeconds + 0.001);
 
-    expect(validate).toHaveBeenCalled();
-    expect(player.x - startX).toBeGreaterThan(23);
-    expect(player.x - startX).toBeLessThanOrEqual(24);
+    expect(weapon.range).toBe(182);
+    expect({ x: player.x, y: player.y }).toEqual(start);
+    expect(enemy.hp).toBeLessThan(10_000);
   });
 
   it("damages once inside Coilshot's server draw arc before releasing its projectile", () => {

@@ -25,7 +25,7 @@ vi.mock("colyseus", () => {
   return { Room, Client: class {} };
 });
 
-const { GameRoom, weaponComboForwardDrift, weaponComboRootMotion } = await import("./GameRoom.js");
+const { GameRoom } = await import("./GameRoom.js");
 
 // biome-ignore lint/suspicious/noExplicitAny: authority tests deliberately reach private simulation seams.
 type AnyRoom = any;
@@ -79,19 +79,18 @@ describe("GameRoom B36 displacement-free martial combos", () => {
       const weapon = WEAPONS[id]!;
       const combo = meleeComboSelectionFor(weapon);
       expect(combo?.sequence, id).toHaveLength(expectedLengths[id]);
-      expect(weapon.performance?.forwardDrift, id).toBeUndefined();
-      expect(weaponComboForwardDrift(weapon, 0), id).toBeUndefined();
+      expect("forwardDrift" in (weapon.performance ?? {}), id).toBe(false);
       expect(
-        combo?.sequence.map((step, index) => ({
+        combo?.sequence.map((step) => ({
           motion: step.motion,
-          rootMotion: weaponComboRootMotion(weapon, index),
+          hasRootMotion: "rootMotion" in step,
           theatrics: step.theatrics,
         })),
         id,
       ).toEqual(
         combo?.sequence.map((step) => ({
           motion: step.motion,
-          rootMotion: undefined,
+          hasRootMotion: false,
           theatrics: step.theatrics,
         })),
       );
@@ -119,12 +118,9 @@ describe("GameRoom B36 displacement-free martial combos", () => {
             room.meleeSwings.get(player.id)?.edgeDamage,
             `${id}:${step.name}:damage`,
           ).toBeCloseTo(weapon.damage * edgePower * step.path.damageMultiplier, 8);
-          expect(room.pendingWeaponLunges.has(player.id), `${id}:${step.name}:root`).toBe(false);
-          room.stepPendingWeaponLunges(1);
           expect({ x: player.x, y: player.y }, `${id}:${step.name}:position`).toEqual(start);
         }
 
-        room.stepPendingWeaponLunges(1);
         expect({ x: player.x, y: player.y }, `${id}:post-combo`).toEqual(start);
       }
     }
@@ -145,8 +141,7 @@ describe("GameRoom B36 displacement-free martial combos", () => {
       for (let index = 0; index < combo.sequence.length; index++) {
         room.state.tick = index * 2;
         expect(room.resolveSingleWeaponAttack(player, combat), `${id}:beat:${index}`).toBe(true);
-        expect(room.pendingWeaponLunges.has(player.id), `${id}:beat:${index}:root`).toBe(false);
-        room.stepPendingWeaponLunges(1);
+        expect({ x: player.x, y: player.y }, `${id}:beat:${index}:root`).toEqual(start);
         combat.cd = 0;
       }
 
@@ -183,7 +178,6 @@ describe("GameRoom B36 displacement-free martial combos", () => {
         room.stepSim(0.05);
 
         expect(player.dualWield.attackMoveMode, id).toBe(PlayerAttackMoveMode.InputSlow);
-        expect(room.pendingWeaponLunges.has(player.id), id).toBe(false);
         expect((player.x - startX) * facing, id).toBeGreaterThan(0);
         expect(player.y, id).toBe(1_500);
       }

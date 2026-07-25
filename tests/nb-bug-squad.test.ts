@@ -1,5 +1,4 @@
 import { readFileSync } from "node:fs";
-import { createRequire } from "node:module";
 import {
   meleeReach,
   ProjectileState,
@@ -8,6 +7,7 @@ import {
   WEAPONS,
   weaponDisplaySpriteId,
 } from "@dd/shared";
+import sharp from "sharp";
 import { describe, expect, it } from "vitest";
 import { localAttackCooldownSeconds } from "../packages/client/src/scenes/arena/attack-cadence.js";
 import {
@@ -70,7 +70,8 @@ describe("NB bug squad weapon contracts", () => {
   it("sizes Tombwarden's replacement slash to the blade and suppresses its legacy quake explosion", () => {
     const tombwarden = WEAPONS["x2-tombwarden-claymore"];
     const recipe = resolveWeaponEffectRecipe(tombwarden);
-    if (!tombwarden || !recipe?.impactPack) throw new Error("Tombwarden recipe fixture is required");
+    if (!tombwarden || !recipe?.impactPack)
+      throw new Error("Tombwarden recipe fixture is required");
     const frameWidth = PARTICLE_PACKS[recipe.impactPack]?.frameWidth;
     if (!frameWidth) throw new Error("Tombwarden particle pack fixture is required");
 
@@ -89,7 +90,7 @@ describe("NB bug squad weapon contracts", () => {
     expect(WEAPON_VFX[bardiche.id]?.vfxRadius).toBe(bardiche.range);
   });
 
-  it("makes Quicksilver thrown and uses its own cleaned sprite as the projectile", () => {
+  it("makes Quicksilver thrown and uses its own cleaned sprite as the projectile", async () => {
     const cleaver = WEAPONS["x2-quicksilver-skinning-cleaver"];
     if (!cleaver?.thrown) throw new Error("Quicksilver thrown fixture is required");
     const kind = thrownProjectileKindFor(cleaver);
@@ -97,16 +98,17 @@ describe("NB bug squad weapon contracts", () => {
     expect(cleaver.tags.delivery).toBe("thrown");
     expect(thrownProjectileSpriteId(kind)).toBe(weaponDisplaySpriteId(cleaver));
 
-    const require = createRequire(import.meta.url);
-    const { PNG } = require("../tools/artkit/node_modules/pngjs");
-    const png = PNG.sync.read(
+    const png = await sharp(
       readFileSync(
         new URL(
           "../packages/client/public/sprites/x2-quicksilver-skinning-cleaver/part-1.png",
           import.meta.url,
         ),
       ),
-    );
+    )
+      .ensureAlpha()
+      .raw()
+      .toBuffer({ resolveWithObject: true });
     let transparent = 0;
     let keyedBlue = 0;
     for (let i = 0; i < png.data.length; i += 4) {

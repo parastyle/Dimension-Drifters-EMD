@@ -77,7 +77,7 @@ describe("owner-notes NR REDO iteration contracts", () => {
     expect(aura).toBeUndefined();
 
     const rigSource = readFileSync(
-      new URL("../packages/client/src/entities/SpriteRig.ts", import.meta.url),
+      new URL("../packages/client/src/entities/rig/rig-pose.ts", import.meta.url),
       "utf8",
     );
     expect(rigSource).toContain('poseVariant === "sparkknuckle-voltage-boxing"');
@@ -118,7 +118,9 @@ describe("owner-notes NR REDO iteration contracts", () => {
       "utf8",
     );
     expect(arenaSource).toContain("spawnTeslaWarpDeparture(this, rig.x, rig.y)");
-    expect(arenaSource).toContain("spawnTeslaWarpArrival(this, player.x, arrivalY)");
+    expect(arenaSource).toContain("spawnTeslaWarpArrival(this, impactX, impactY)");
+    expect(arenaSource).not.toContain("player.x = impactX");
+    expect(arenaSource).not.toContain("player.y = impactY");
   });
 
   it("releases Riftcleaver's real shards from the forward blade midpoint on its cooler fourth beat", () => {
@@ -140,7 +142,7 @@ describe("owner-notes NR REDO iteration contracts", () => {
     expect(origin.y).toBeCloseTo(20, 8);
 
     const serverSource = readFileSync(
-      new URL("../packages/server/src/rooms/GameRoom.ts", import.meta.url),
+      new URL("../packages/server/src/rooms/room/room-combat.ts", import.meta.url),
       "utf8",
     );
     expect(serverSource).toContain("weaponEffectCueSeconds(weapon, swing)");

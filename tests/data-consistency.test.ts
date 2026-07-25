@@ -432,7 +432,6 @@ describe("§43 expansion codegen: every authored gameplay field survives into th
           projectileVisualScale: { num: [0.5, faradayer ? 12 : 4] },
           sonicBoomRing: { eq: true },
           recoil: { num: [0.0004, 0.005] },
-          userKnockbackMultiplier: { num: [0.25, 5] },
           pellets: { int: [1, 12], absentAs: 1 },
           pierce: { int: [1, 6], absentAs: 1 },
           bounces: { int: [0, 6], absentAs: 0 },

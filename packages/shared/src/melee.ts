@@ -148,7 +148,7 @@ export type MeleeComboHoldPose =
 export type MeleeComboFlip = "front" | "back";
 
 /** B25 martial-arts presentation authored on the accepted combo beat. These channels never alter
- * authority: root travel remains `rootMotion`, hit geometry remains `path`, and damage remains server-side. */
+ * authority: the character stays planted, hit geometry remains `path`, and damage remains server-side. */
 export interface MeleeComboTheatrics {
   /** Complete paper-card mirror turns made between active start and follow end. */
   readonly paperTurns?: number;
@@ -263,12 +263,6 @@ export interface MeleeComboStep {
     readonly rangeMultiplier: number;
     readonly damageMultiplier: number;
     readonly knockback: number;
-  };
-  /** Server-owned character displacement authored on this exact accepted combo beat. */
-  readonly rootMotion?: {
-    readonly forwardPx: number;
-    readonly lateralPx: number;
-    readonly durationSeconds: number;
   };
   /** B25 theatrical martial-arts presentation. Inert for all authority/economy consumers. */
   readonly theatrics?: Readonly<MeleeComboTheatrics>;
@@ -1880,7 +1874,6 @@ export interface KatanaBeatEffect {
   readonly damageMultiplier: number;
   readonly reachMultiplier: number;
   readonly toughDamageMultiplier: number;
-  readonly dashImpulse: number;
   readonly burstRadius: number;
   readonly burstDamage: number;
   readonly invulnerabilitySeconds: number;
@@ -1906,7 +1899,6 @@ export function katanaBeatEffectFor(
       damageMultiplier: 1,
       reachMultiplier: 1,
       toughDamageMultiplier: 1,
-      dashImpulse: 0,
       burstRadius: 0,
       burstDamage: 0,
       invulnerabilitySeconds: 0,
@@ -1933,7 +1925,6 @@ export function katanaBeatEffectFor(
     damageMultiplier,
     reachMultiplier: 1 + (hook.reachPerBeat ?? 0) * step,
     toughDamageMultiplier: finisher ? (hook.toughFinisherMultiplier ?? 1) : 1,
-    dashImpulse: finisher ? (hook.finisherDashImpulse ?? 0) : 0,
     burstRadius: finisher ? (hook.finisherBurst?.radius ?? 0) : 0,
     burstDamage: finisher ? (hook.finisherBurst?.damage ?? 0) : 0,
     invulnerabilitySeconds: perfect ? (hook.perfectInvulnerabilitySeconds ?? 0) : 0,
@@ -2009,7 +2000,7 @@ export function swingStyleFor(def: WeaponDef): SwingStyle {
 
 /** Systemic monk-combo lane for empty fists and close-range worn fist weapons. Projectile/beam gauntlets
  * keep their firing stance, claws keep their rake, and an explicitly authored performance such as
- * Stormfists' lunge remains the stronger owner. Every other worn punch weapon shares one fast vocabulary. */
+ * Every worn punch weapon shares one planted, fast vocabulary. */
 export function isMonkGloveWeapon(def: WeaponDef): boolean {
   return (
     isWornWeapon(def) &&
@@ -2097,7 +2088,7 @@ export function comboStepForAttackSeq(attackSeq: number, sequenceLength: number)
   return ((ordinal % length) + length) % length;
 }
 
-/** Grace after the accepted cadence edge. Theatrical root/pose, wide-arc, or long-form combos retain their scroll through one
+/** Grace after the accepted cadence edge. Theatrical poses, wide-arc, or long-form combos retain their scroll through one
  * visibly held silhouette pause; ordinary combo families keep the legacy 120–300ms law unchanged. */
 export function meleeComboGraceMs(
   effectiveCooldownSeconds: number,
@@ -2109,7 +2100,6 @@ export function meleeComboGraceMs(
     (sequence?.length ?? 0) >= 5 ||
     sequence?.some(
       (step) =>
-        step.rootMotion !== undefined ||
         step.theatrics !== undefined ||
         Math.max(Math.abs(step.path.deltaAngle ?? 0), Math.abs(step.path.arcMultiplier)) >= 1.5,
     );

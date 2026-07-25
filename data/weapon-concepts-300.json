@@ -1204,11 +1204,7 @@
       "performance": {
         "hold": "steady",
         "action": "overhead-downswing",
-        "continuous": true,
-        "forwardDrift": {
-          "speedPxPerSecond": 72,
-          "durationSeconds": 0.3333333333333333
-        }
+        "continuous": true
       },
       "effectRecipe": "cinderbrand-fire-slash",
       "effectEmitter": "blade",
@@ -1216,7 +1212,7 @@
       "finishNote": "battle-worn",
       "stats": {
         "damage": 5.555555555555555,
-        "range": 158,
+        "range": 182,
         "halfArc": 1,
         "cooldown": 0.3333333333333333,
         "displayLength": 140,
@@ -2517,7 +2513,7 @@
       },
       "stats": {
         "damage": 9,
-        "range": 195,
+        "range": 323,
         "halfArc": 0.9,
         "cooldown": 0.46,
         "displayLength": 140,
@@ -2526,12 +2522,7 @@
       },
       "performance": {
         "hold": "steady",
-        "action": "default-swing",
-        "lunge": {
-          "distancePx": 128,
-          "durationSeconds": 0.28,
-          "impactAtDestination": true
-        }
+        "action": "default-swing"
       },
       "id": "x2-venomtongue-trident"
     },
@@ -2775,11 +2766,6 @@
             "damageMultiplier": 1,
             "knockback": 24
           },
-          "rootMotion": {
-            "forwardPx": 96,
-            "lateralPx": 0,
-            "durationSeconds": 0.22
-          },
           "theatrics": {
             "flip": "front"
           }
@@ -2787,7 +2773,7 @@
       ],
       "stats": {
         "damage": 15,
-        "range": 240,
+        "range": 336,
         "halfArc": 1.1,
         "cooldown": 0.88,
         "displayLength": 256,
@@ -4741,7 +4727,7 @@
       "cardartAction": "crossed mid-tear in an X, twin crystal talon-sets carving arc-violet edge-trails and a scatter of glittering shards",
       "stats": {
         "damage": 6,
-        "range": 108,
+        "range": 172,
         "halfArc": 0.72,
         "cooldown": 0.3,
         "displayLength": 57,
@@ -4858,11 +4844,7 @@
       ],
       "performance": {
         "hold": "steady",
-        "action": "default-swing",
-        "lunge": {
-          "distancePx": 64,
-          "durationSeconds": 0.18
-        }
+        "action": "default-swing"
       }
     },
     {
@@ -8952,7 +8934,6 @@
         "projectileVisualScale": 4,
         "muzzle": "boom",
         "recoil": 0.0038,
-        "userKnockbackMultiplier": 5,
         "explode": {
           "radius": 70,
           "damage": 12
@@ -9162,7 +9143,6 @@
         "projectileVisualScale": 1.35,
         "muzzle": "artillery",
         "recoil": 0.004,
-        "userKnockbackMultiplier": 2,
         "explode": {
           "radius": 150,
           "damage": 32
@@ -14635,7 +14615,7 @@
       "cardartAction": "both fists slammed to the ground, a wide ring of snapping cyber-cyan lightning erupting in a shock-quake",
       "stats": {
         "damage": 6,
-        "range": 200,
+        "range": 680,
         "halfArc": 1,
         "cooldown": 0.8,
         "displayLength": 145,
@@ -14645,19 +14625,14 @@
       "behavior": {
         "kind": "quake",
         "radius": 180,
-        "damage": 8
+        "damage": 8,
+        "placementRange": 480
       },
       "performance": {
         "hold": "steady",
         "action": "lunge-punch",
         "suppressSwing": true,
-        "windupSeconds": 0.3,
-        "lunge": {
-          "distancePx": 480,
-          "durationSeconds": 0.025,
-          "invulnerable": true,
-          "impactAtDestination": true
-        }
+        "windupSeconds": 0.3
       },
       "effectRecipe": "stormfist-blue-lunge",
       "effectEmitter": "body",
@@ -14728,7 +14703,7 @@
       "cardartAction": "a flick of the wrist sending a wild crackling spark-bolt that caroms off the walls hunting for foes",
       "stats": {
         "damage": 1.0588235294117647,
-        "range": 150,
+        "range": 156,
         "halfArc": 0.5,
         "cooldown": 0.12,
         "displayLength": 56,
@@ -14899,11 +14874,7 @@
       "performance": {
         "hold": "steady",
         "action": "default-swing",
-        "continuous": true,
-        "forwardDrift": {
-          "speedPxPerSecond": 48,
-          "durationSeconds": 0.12
-        }
+        "continuous": true
       },
       "suppressVfx": true,
       "id": "x2-coyote-trickster-s-sparkmitt"
@@ -15990,10 +15961,9 @@
       "comboFamily": "chop",
       "comboVariant": "katana-riftstep",
       "katanaHook": {
-        "kind": "finisher-dash",
+        "kind": "finisher-reach",
         "summary": "The final beat carries the wielder through a short rift and lands harder.",
-        "finisherDamageMultiplier": 1.14,
-        "finisherDashImpulse": 260
+        "finisherDamageMultiplier": 1.14
       },
       "bespokeVfxSheet": true,
       "artPrompt": "Weapon-only sprite: lean Driftblade-line katana interrupted by a small spatial gap near the foible, violet-lit severed blade sections, asymmetric ring guard and charcoal wrap, tip right.",
@@ -16107,7 +16077,7 @@
           "path": {
             "kind": "sweep",
             "arcMultiplier": 1.22,
-            "rangeMultiplier": 1.12,
+            "rangeMultiplier": 1.36,
             "damageMultiplier": 1.34,
             "knockback": 26
           },
@@ -17649,8 +17619,7 @@
         "sonicBoomRing": true,
         "muzzle": "heavy",
         "muzzleColor": 16757060,
-        "recoil": 0.005,
-        "userKnockbackMultiplier": 1.6
+        "recoil": 0.005
       }
     },
     {
@@ -18006,8 +17975,7 @@
         "sonicBoomRing": true,
         "muzzle": "heavy",
         "muzzleColor": 16766820,
-        "recoil": 0.0048,
-        "userKnockbackMultiplier": 1.5
+        "recoil": 0.0048
       }
     },
     {
@@ -18405,8 +18373,7 @@
         "bulletKind": "pellet",
         "muzzle": "boom",
         "muzzleColor": 16733855,
-        "recoil": 0.005,
-        "userKnockbackMultiplier": 2.2
+        "recoil": 0.005
       }
     },
     {

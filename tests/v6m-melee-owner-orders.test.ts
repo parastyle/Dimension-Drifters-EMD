@@ -77,10 +77,9 @@ describe("V6M melee owner orders", () => {
       6 / 0.72,
       10,
     );
-    expect(cinderbrand.performance).toMatchObject({
-      continuous: true,
-      forwardDrift: { speedPxPerSecond: 72, durationSeconds: 1 / 3 },
-    });
+    expect(cinderbrand.performance).toMatchObject({ continuous: true });
+    expect("forwardDrift" in (cinderbrand.performance ?? {})).toBe(false);
+    expect(cinderbrand.range).toBe(182);
     expect(meleeComboSelectionFor(cinderbrand)?.sequence.map((step) => step.motion)).toEqual([
       "shoulder-chop",
       "reverse-chop",

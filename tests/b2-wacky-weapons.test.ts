@@ -7,7 +7,7 @@ import { SPRITES } from "../packages/client/src/sprites/manifest.js";
 import { WACKY_WEAPON_VFX_RECIPES } from "../packages/client/src/vfx/wacky-weapon-vfx-recipes.js";
 
 const require = createRequire(import.meta.url);
-const { PNG } = require("../tools/artkit/node_modules/pngjs") as {
+const { PNG } = require("pngjs") as {
   PNG: {
     sync: {
       read(bytes: Buffer): { width: number; height: number; data: Buffer };
@@ -138,8 +138,8 @@ describe("B2 wacky expansion catalog", () => {
       pellets: 7,
       spread: 0.55,
       recoil: 0.005,
-      userKnockbackMultiplier: 2.2,
     });
+    expect("userKnockbackMultiplier" in (WEAPONS["x2-confetti-cannon"]?.gun ?? {})).toBe(false);
 
     const dps = {
       unicorn: WEAPONS["x2-unicorn-rainbow-beam"]!.beam!.damagePerSecond,

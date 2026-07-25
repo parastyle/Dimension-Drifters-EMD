@@ -72,12 +72,10 @@ describe("B28 owner weapon orders", () => {
     expect(barrelRollArtTransform(-90, 0, halfTurnSeconds / 2).scaleY).toBeCloseTo(0, 10);
   });
 
-  it("authors Venomtongue's two-times nav lunge and destination impact", () => {
-    expect(weapon("x2-venomtongue-trident").performance?.lunge).toEqual({
-      distancePx: 128,
-      durationSeconds: 0.28,
-      impactAtDestination: true,
-    });
+  it("plants Venomtongue and folds its former 128px lunge into reach", () => {
+    const trident = weapon("x2-venomtongue-trident");
+    expect("lunge" in (trident.performance ?? {})).toBe(false);
+    expect(trident.range).toBe(323);
   });
 
   it("scales the mallet by 33% while keeping both hands on its painted handle", () => {

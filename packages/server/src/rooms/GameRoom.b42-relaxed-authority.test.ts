@@ -1,4 +1,11 @@
-import { CORPORATE_ELEVATOR_PHASE, TILE_GROUND, TILE_PIT } from "@dd/shared";
+import {
+  CORPORATE_ELEVATOR_PHASE,
+  meleeComboSelectionFor,
+  swingDescriptorFor,
+  TILE_GROUND,
+  TILE_PIT,
+  WEAPONS,
+} from "@dd/shared";
 import { describe, expect, it, vi } from "vitest";
 
 const handlers = new Map<string, (client: { sessionId: string }, message: unknown) => void>();
@@ -135,7 +142,7 @@ describe("GameRoom B42 relaxed self-movement authority", () => {
 
   it("server-motion epochs ignore matching and stale client reports until the owner observes release", () => {
     const { room, client, player } = fixture();
-    room.beginServerMotion(player, 2);
+    room.beginServerMotion(player, 2, "teleport-placement");
     const epoch = player.dualWield.serverMotionEpoch;
     const startX = player.x;
     send(
@@ -182,6 +189,7 @@ describe("GameRoom B42 relaxed self-movement authority", () => {
     expect(player.x).toBeGreaterThan(before.x);
     expect(player.dualWield.serverMotionActive).toBe(true);
     expect(player.dualWield.serverMotionEpoch).toBe(before.epoch + 1);
+    expect(room.serverMotionSourceByPlayer.get(player.id)).toBe("parry-slide");
   });
 
   it("holds elevator departure and arrival inside one server-motion epoch", () => {
@@ -192,6 +200,7 @@ describe("GameRoom B42 relaxed self-movement authority", () => {
     const epoch = player.dualWield.serverMotionEpoch;
     const firstTeleport = player.teleportSeq;
     expect(player.dualWield.serverMotionActive).toBe(true);
+    expect(room.serverMotionSourceByPlayer.get(player.id)).toBe("elevator-boarding");
 
     room.state.tick++;
     room.positionCorporateParty(true, false);
@@ -202,5 +211,67 @@ describe("GameRoom B42 relaxed self-movement authority", () => {
     expect(player.dualWield.serverMotionEpoch).toBe(epoch);
     expect(player.teleportSeq).toBe(firstTeleport + 1);
     expect(player.dualWield.serverMotionActive).toBe(true);
+  });
+
+  it("classifies dodge-roll and distance-jump ownership without weapon sources", () => {
+    const roll = fixture();
+    const rollInput = roll.room.inputs.get(roll.player.id);
+    roll.room.consumeMoveStanceInput(roll.player, rollInput, roll.combat, {
+      ...rollInput.held,
+      seq: 1,
+      dx: 1,
+      slide: true,
+    });
+    expect(roll.room.serverMotionSourceByPlayer.get(roll.player.id)).toBe("dodge-roll");
+
+    const jump = fixture();
+    const jumpInput = jump.room.inputs.get(jump.player.id);
+    jumpInput.held.dx = 1;
+    jumpInput.held.dy = 0;
+    jump.room.launchDistanceJump(jump.player, jump.combat, jumpInput);
+    expect(jump.room.serverMotionSourceByPlayer.get(jump.player.id)).toBe("distance-jump");
+  });
+
+  it.each([
+    "x2-coyote-trickster-s-sparkmitt",
+    "x2-cinderbrand-cleaver",
+    "x2-venomtongue-trident",
+  ])("%s combos while moving with zero envelope rejections", (weaponId) => {
+    const { room, client, player, combat } = fixture();
+    const weapon = WEAPONS[weaponId];
+    if (!weapon) throw new Error(`Missing B44 movement fixture ${weaponId}`);
+    const combo = meleeComboSelectionFor(weapon)?.sequence ?? [undefined];
+    player.weapon = weapon.id;
+    combat.lastWeapon = weapon.id;
+    combat.aimX = 1;
+    combat.aimY = 0;
+    combat.targetX = player.x + weapon.range;
+    combat.targetY = player.y;
+
+    for (let tick = 0; tick < Math.max(8, combo.length); tick++) {
+      const step = combo[tick % combo.length];
+      room.resolveSwing(
+        player,
+        combat,
+        weapon,
+        swingDescriptorFor(weapon, weapon.cooldown),
+        0,
+        undefined,
+        step,
+      );
+      const acceptedX = player.x + 12;
+      send(
+        room,
+        client,
+        report(player, tick + 1, {
+          dx: 1,
+          clientX: acceptedX,
+          clientMvx: 240,
+        }),
+      );
+      expect(player.x, `${weaponId}:tick:${tick}`).toBeCloseTo(acceptedX, 8);
+      expect(player.dualWield.movementCorrectionSeq, `${weaponId}:tick:${tick}`).toBe(0);
+      expect(player.dualWield.serverMotionEpoch, `${weaponId}:tick:${tick}`).toBe(0);
+    }
   });
 });

@@ -4771,6 +4771,7 @@ describe("ULT U1 five authoritative family executions", () => {
     );
     const enemy = addUltimateEnemy(h, "seis-dummy", 1200, 1000, DUMMY_HP, "dummy");
     const teleportSeq = player.teleportSeq;
+    const start = { x: player.x, y: player.y };
     h.send(id, "ultimate", { tx: 1200, ty: 1000 });
     h.tick(
       1 + enemyComboShared.ULT_SEISMARCH_WINDUP_TICKS + enemyComboShared.ULT_SEISMARCH_AIR_TICKS,
@@ -7022,14 +7023,14 @@ describe("GameRoom — Cogwright Tesla-Rod warp", () => {
     h.state().enemies.set(enemy.id, enemy);
     h.room.enemyGrid.insert(enemy.id, enemy.x, enemy.y);
     const teleportSeq = player.teleportSeq;
+    const start = { x: player.x, y: player.y };
 
     combat.targetX = target.x;
     combat.targetY = target.y;
-    h.room.warpWeaponToCursor(player, combat, weapon);
+    h.room.detonateWarpAtCursor(player, combat, weapon);
 
-    expect(player.x).toBeCloseTo(expected.x, 6);
-    expect(player.y).toBeCloseTo(expected.y, 6);
-    expect(player.teleportSeq).toBe(teleportSeq + 1);
+    expect({ x: player.x, y: player.y }).toEqual(start);
+    expect(player.teleportSeq).toBe(teleportSeq);
     expect(enemy.hp).toBeLessThan(1_000);
     expect(h.room.meleeSwings.has(player.id)).toBe(false);
     expect(

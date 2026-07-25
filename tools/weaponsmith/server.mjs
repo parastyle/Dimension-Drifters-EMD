@@ -473,6 +473,14 @@ const server = createServer(async (req, res) => {
       const [, , subject, file] = p.split("/");
       return serveFile(res, join(ARTKIT_OUT, subject, "sheets", file));
     }
+    // Combined previews use tracked character cards so a clean checkout never depends on ignored Artkit output.
+    if (p.startsWith("/character-sprite/")) {
+      const [, , subject, file] = p.split("/");
+      if (!/^[a-z0-9-]+$/.test(subject ?? "") || !/^[a-z0-9.-]+$/.test(file ?? "")) {
+        return json(res, { error: "invalid character sprite path" }, 400);
+      }
+      return serveFile(res, join(CLIENT_PUBLIC, "sprites", subject, file));
+    }
     // scatter-shot spritesheet (CODE-14): /scatter/<vfxSubject>/sheet.png → out/<subject>/scatter/
     if (p.startsWith("/scatter/")) {
       const [, , subject, file] = p.split("/");

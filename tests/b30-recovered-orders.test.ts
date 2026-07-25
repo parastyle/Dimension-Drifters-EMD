@@ -176,9 +176,10 @@ describe("B30 recovered skipped-window orders", () => {
     expect(combo?.sequence[0]).toMatchObject({
       motion: "execution-slam",
       path: { kind: "fan", deltaAngle: Math.PI * 2 },
-      rootMotion: { forwardPx: 96, durationSeconds: 0.22 },
       theatrics: { flip: "front" },
     });
+    expect("rootMotion" in (combo?.sequence[0] ?? {})).toBe(false);
+    expect(bardiche.range).toBe(336);
   });
 
   it("uses blade-owned flame, not holy or radial authority, on Choir Iron", () => {
@@ -195,9 +196,9 @@ describe("B30 recovered skipped-window orders", () => {
     const spade = weapon("gravediggers-spade");
     expect(spade).toMatchObject({
       cooldown: 0.6,
+      range: 354,
       swingArc: Math.PI * 2,
       performance: {
-        lunge: { distancePx: 144, durationSeconds: 0.2 },
         twirl: {
           plane: "continuous-frontflip",
           direction: "forward",

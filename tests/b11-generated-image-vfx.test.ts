@@ -24,7 +24,7 @@ import { WEAPON_VFX } from "../packages/client/src/vfx/weapon-vfx.generated.js";
 import { weaponVfxSuiteFor } from "../packages/client/src/vfx/weapon-vfx-suite.js";
 
 const require = createRequire(import.meta.url);
-const { PNG } = require("../tools/artkit/node_modules/pngjs") as {
+const { PNG } = require("pngjs") as {
   PNG: {
     sync: {
       read(bytes: Buffer): { width: number; height: number; data: Buffer };

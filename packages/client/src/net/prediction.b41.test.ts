@@ -32,6 +32,8 @@ interface MovementRow {
   mvy: number;
   ackSeq: number;
   mode: number;
+  serverMotionEpoch?: number;
+  serverMotionActive?: boolean;
 }
 
 function view(row: MovementRow): ServerView {
@@ -47,6 +49,9 @@ function view(row: MovementRow): ServerView {
     ackSeq: row.ackSeq,
     teleportSeq: 0,
     attackMoveMode: row.mode,
+    movementCorrectionSeq: 0,
+    serverMotionEpoch: row.serverMotionEpoch ?? 0,
+    serverMotionActive: row.serverMotionActive ?? false,
     alive: true,
   };
 }
@@ -112,7 +117,7 @@ describe("B41 attack-move parity and crisp release", () => {
     expect(predictor.renderPos(0, 0, 0)).toMatchObject({ x: authority.x, y: authority.y });
   });
 
-  it("presents authoritative root travel directly instead of gliding it out after release", () => {
+  it("presents classified server travel directly instead of gliding it out after release", () => {
     const authority: MovementRow = {
       x: 1_000,
       y: 1_000,
@@ -123,10 +128,11 @@ describe("B41 attack-move parity and crisp release", () => {
     };
     const predictor = new SelfPredictor(view(authority));
 
-    // The server replaces input with an authored one-tick Stormfists lunge. Before B41, reconcile folded
-    // this 360 px delta into errX, which the zero-input decay presented as a long ice-slide.
+    // A classified placement such as elevator boarding must snap to server truth. Before B41, reconcile
+    // folded this 360 px delta into errX, which zero-input decay presented as a long ice-slide.
     expect(legacyZeroInputGlideTicks(-360)).toBe(28);
-    authority.mode = PlayerAttackMoveMode.RootMotion;
+    authority.serverMotionEpoch = 1;
+    authority.serverMotionActive = true;
     authority.mvx = 0;
     authority.x += 360;
     authority.ackSeq++;
@@ -134,7 +140,7 @@ describe("B41 attack-move parity and crisp release", () => {
     expect(predictor.renderPos(0, 0, 0).x).toBe(authority.x);
     expect(predictor.stats.errPx).toBe(0);
 
-    authority.mode = PlayerAttackMoveMode.Normal;
+    authority.serverMotionActive = false;
     authority.ackSeq++;
     predictor.reconcile(view(authority));
     const releasedX = predictor.renderPos(0, 0, 0).x;

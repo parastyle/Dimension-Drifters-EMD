@@ -155,7 +155,6 @@ export function weaponTierPowerBudget(weapon: Readonly<WeaponDef>): number {
   if (weapon.warp) utility += 2;
   if (weapon.rez) utility += 4;
   if (weapon.hitStatus) utility += 2;
-  if (weapon.performance?.lunge?.invulnerable) utility += 1.5;
 
   return ((directDamage + behaviorDamage) / cadence) * rangeFactor + utility;
 }

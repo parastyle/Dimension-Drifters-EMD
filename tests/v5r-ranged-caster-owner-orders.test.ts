@@ -188,16 +188,10 @@ describe("V5R ranged/caster owner orders", () => {
 
   it("keeps Stormfists damage cadence intact while redistributing its committed risk/reach window", () => {
     const stormfists = weapon("x2-thunderhead-stormfists");
-    expect(stormfists.performance).toMatchObject({
-      windupSeconds: 0.3,
-      lunge: {
-        distancePx: 480,
-        durationSeconds: 0.025,
-        invulnerable: true,
-        impactAtDestination: true,
-      },
-    });
-    expect(stormfists.performance?.lunge?.distancePx / 120).toBe(4);
+    expect(stormfists.performance).toMatchObject({ windupSeconds: 0.3 });
+    expect("lunge" in (stormfists.performance ?? {})).toBe(false);
+    expect(stormfists.range).toBe(680);
+    expect(stormfists.quake?.placementRange).toBe(480);
     expect((stormfists.damage + (stormfists.quake?.damage ?? 0)) / stormfists.cooldown).toBe(17.5);
   });
 });

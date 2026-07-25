@@ -4,6 +4,7 @@ import {
   DROP_POOL,
   katanaBeatEffectFor,
   MELEE_COMBO_VARIANT_SEQUENCES,
+  meleeComboSelectionFor,
   WEAPON_IDS,
   WEAPONS,
   weaponAttackCooldown,
@@ -16,7 +17,7 @@ const LINE = [
   ["drift-wakizashi-hushglass", "short", "draw-opener", 5],
   ["drift-katana-stillwater-edict", "standard", "perfect-tempo", 6],
   ["drift-katana-stormthread", "standard", "storm-tempo", 7],
-  ["drift-katana-riftstep", "standard", "finisher-dash", 4],
+  ["drift-katana-riftstep", "standard", "finisher-reach", 4],
   ["drift-nodachi-pale-horizon", "long", "reach-crescendo", 5],
   ["drift-nodachi-gatebreaker", "long", "haste-break", 7],
   ["drift-greatkatana-moonwake", "great", "finisher-burst", 6],
@@ -104,7 +105,11 @@ describe("Driftblade katana line", () => {
     expect(katanaBeatEffectFor(storm, 6, 7, true).damageMultiplier).toBeCloseTo(1.27);
 
     const rift = katanaBeatEffectFor(weapon("drift-katana-riftstep"), 3, 4, true);
-    expect(rift).toMatchObject({ finisher: true, damageMultiplier: 1.14, dashImpulse: 260 });
+    expect(rift).toMatchObject({ finisher: true, damageMultiplier: 1.14 });
+    expect("dashImpulse" in rift).toBe(false);
+    expect(
+      meleeComboSelectionFor(weapon("drift-katana-riftstep"))?.sequence[3]?.path.rangeMultiplier,
+    ).toBe(1.36);
 
     expect(
       katanaBeatEffectFor(weapon("drift-nodachi-pale-horizon"), 4, 5, true).reachMultiplier,

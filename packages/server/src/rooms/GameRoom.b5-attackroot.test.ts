@@ -78,11 +78,9 @@ describe("GameRoom — B5 attack-authored root movement", () => {
     const swing = swingDescriptorFor(weapon, weapon.cooldown);
     const start = { x: player.x, y: player.y };
 
-    expect(weapon.performance?.forwardDrift).toBeUndefined();
+    expect("forwardDrift" in (weapon.performance ?? {})).toBe(false);
     for (const step of combo.sequence) {
       room.resolveSwing(player, combat, weapon, swing, 0, undefined, step);
-      room.stepPendingWeaponLunges(weapon.cooldown);
-      expect(room.pendingWeaponLunges.has(player.id)).toBe(false);
       expect({ x: player.x, y: player.y }).toEqual(start);
     }
 
@@ -131,87 +129,37 @@ describe("GameRoom — B5 attack-authored root movement", () => {
     });
   });
 
-  it("dashes Stormfists at 2x speed, protects transit, and releases one endpoint impact", () => {
+  it("plants Stormfists while preserving its former endpoint reach and quake", () => {
     const { room, player, combat } = fixture("stormfists");
     const weapon = equip(player, combat, "x2-thunderhead-stormfists");
-    const lunge = weapon.performance?.lunge;
-    if (!lunge?.durationSeconds) throw new Error("Missing Stormfists lunge fixture");
     const swing = swingDescriptorFor(weapon, weapon.cooldown);
-    const startX = player.x;
-    const legalEndX = startX + 360;
-    const pathEnemy = addEnemy(room, "path", startX + 100, player.y);
-    const endpointEnemy = addEnemy(room, "endpoint", legalEndX + 90, player.y);
+    const start = { x: player.x, y: player.y };
+    const pathEnemy = addEnemy(room, "path", player.x + 100, player.y);
+    const endpointEnemy = addEnemy(room, "endpoint", player.x + 560, player.y);
     room.rebuildEnemyGrid();
     const pathHp = pathEnemy.hp;
     const endpointHp = endpointEnemy.hp;
-    const validate = vi.spyOn(room, "navValidDest").mockReturnValue({ x: legalEndX, y: player.y });
-    const detonate = vi.spyOn(room, "detonate").mockImplementation(() => {});
-
-    expect(lunge).toMatchObject({
-      distancePx: 480,
-      durationSeconds: 0.025,
-      invulnerable: true,
-      impactAtDestination: true,
-    });
-    expect(lunge.distancePx / lunge.durationSeconds).toBe((480 / 0.05) * 2);
+    const epoch = player.dualWield.serverMotionEpoch;
 
     room.resolveSwing(player, combat, weapon, swing);
-    expect(room.meleeSwings.get(player.id)).toMatchObject({ waitForWeaponLunge: true });
-    room.stepMeleeSwings(swing.activeEndSeconds);
-    expect(pathEnemy.hp).toBe(pathHp);
-    expect(endpointEnemy.hp).toBe(endpointHp);
-
-    room.damagePlayer(player, 7, "enemy");
-    expect(player.hp).toBe(player.maxHp - 7);
-    player.hp = player.maxHp;
-
-    room.stepPendingWeaponLunges(swing.activeStartSeconds);
-    expect(player.x).toBe(startX);
-    expect(room.playerAttackMoveMode(player.id, 0.05)).toBe(PlayerAttackMoveMode.RootMotion);
-    expect(room.weaponLungeInvulnerable(combat)).toBe(true);
-    expect(combat.weaponLungeIFrameUntilTick - room.state.tick).toBe(1);
-
-    room.stepPendingWeaponLunges(lunge.durationSeconds / 2);
-    expect(player.x).toBeCloseTo(startX + (legalEndX - startX) / 2, 8);
-    room.stepMeleeSwings(swing.activeEndSeconds);
-    expect(pathEnemy.hp).toBe(pathHp);
-    room.damagePlayer(player, 9, "enemy");
-    expect(player.hp).toBe(player.maxHp);
-
-    room.stepPendingWeaponLunges(lunge.durationSeconds / 2);
-    expect(validate).toHaveBeenCalledTimes(1);
-    expect(player.x).toBe(legalEndX);
-    expect(room.pendingWeaponLunges.size).toBe(0);
-    expect(detonate).toHaveBeenCalledTimes(1);
-    expect(detonate).toHaveBeenCalledWith(
-      legalEndX,
-      player.y,
-      weapon.quake?.radius,
-      expect.any(Number),
-      expect.any(Number),
-      player.id,
-      weapon.id,
-      expect.any(Number),
-    );
+    expect({ x: player.x, y: player.y }).toEqual(start);
+    expect(player.dualWield.serverMotionEpoch).toBe(epoch);
+    expect(weapon.range).toBe(680);
+    expect(weapon.quake?.placementRange).toBe(480);
+    expect(room.pendingQuakes[0]).toMatchObject({
+      x: start.x + 480,
+      y: start.y,
+      radius: weapon.quake?.radius,
+    });
     expect(room.meleeSwings.get(player.id)).toMatchObject({
-      waitForWeaponLunge: false,
-      originX: legalEndX,
-      originY: player.y,
+      range: expect.any(Number),
+      weaponId: weapon.id,
     });
 
-    // Even if ordinary locomotion resumes before the next collision step, this accepted punch stays locked
-    // to the legal dash endpoint. The along-path target is never sampled.
-    player.x = startX;
-    room.rebuildEnemyGrid();
-    room.stepMeleeSwings(swing.activeEndSeconds - swing.activeStartSeconds + 0.001);
-    const endpointHpAfterImpact = endpointEnemy.hp;
-    expect(pathEnemy.hp).toBe(pathHp);
-    expect(endpointHpAfterImpact).toBeLessThan(endpointHp);
-    room.stepMeleeSwings(swing.activeEndSeconds);
-    expect(endpointEnemy.hp).toBe(endpointHpAfterImpact);
-
-    room.state.tick++;
-    expect(room.weaponLungeInvulnerable(combat)).toBe(false);
+    room.stepMeleeSwings(swing.activeEndSeconds + 0.001);
+    expect(pathEnemy.hp).toBeLessThan(pathHp);
+    expect(endpointEnemy.hp).toBeLessThan(endpointHp);
+    expect({ x: player.x, y: player.y }).toEqual(start);
     room.damagePlayer(player, 9, "enemy");
     expect(player.hp).toBe(player.maxHp - 9);
   });

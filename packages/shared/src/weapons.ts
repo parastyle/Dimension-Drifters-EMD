@@ -9,9 +9,6 @@ import {
   FISTS_DAMAGE,
   FISTS_HALF_ARC,
   FISTS_RANGE,
-  GUN_RECOIL_BASELINE,
-  GUN_RECOIL_IMPULSE,
-  IMPULSE_MAX,
   MAX_PLAYERS,
   REZ_RADIUS,
 } from "./constants.js";
@@ -116,7 +113,7 @@ export interface KatanaHookDef {
     | "draw-opener"
     | "perfect-tempo"
     | "storm-tempo"
-    | "finisher-dash"
+    | "finisher-reach"
     | "reach-crescendo"
     | "haste-break"
     | "finisher-burst"
@@ -129,7 +126,6 @@ export interface KatanaHookDef {
   stackDamagePerBeat?: number;
   maxStacks?: number;
   finisherDamageMultiplier?: number;
-  finisherDashImpulse?: number;
   reachPerBeat?: number;
   recoveryMultiplier?: number;
   nonFinisherDamageMultiplier?: number;
@@ -460,28 +456,11 @@ export interface WeaponPerformanceDef {
     damage: number;
     range: number;
   };
-  /** Server-owned forward walking displacement advanced during each accepted held melee beat. */
-  forwardDrift?: {
-    speedPxPerSecond: number;
-    durationSeconds: number;
-    /** Optional authored multiplier per combo beat. Omitted keeps one identical displacement per swing. */
-    comboStepMultipliers?: readonly number[];
-  };
   /** Parameterized in-place motion; shared by every shake-capable hold state. */
   shake?: {
     amplitudePx: number;
     rotationRad: number;
     frequencyHz: number;
-  };
-  /** Authored forward displacement resolved from the accepted aim by the server at active start. */
-  lunge?: {
-    distancePx: number;
-    /** Server-owned travel time; the displacement is advanced over this exact fixed-step window. */
-    durationSeconds?: number;
-    /** Damage immunity is active only while the authored lunge clock is live; it never counts as a parry. */
-    invulnerable?: boolean;
-    /** Defer the accepted melee/secondary impact until the collision-clamped server dash has arrived. */
-    impactAtDestination?: boolean;
   };
   /** Full-circle attack geometry shared by overhead twirls, ground-plane yaw, and vertical frontflips. */
   twirl?: {
@@ -659,8 +638,8 @@ export interface WeaponDef {
   };
   /** Same-registration sprite part composited over only the combo-selected striking hand at impact. */
   strikeOverlayPart?: number;
-  /** Cursor warp replaces the ordinary attack. The server validates and originates the move, then applies
-   * one arrival burst using the weapon's normal damage/scaling. */
+  /** Cursor warp replaces the ordinary attack. The server validates a remote strike endpoint and applies
+   * one burst using the weapon's normal damage/scaling; the character remains planted. */
   warp?: {
     burstRadius: number;
   };
@@ -761,6 +740,8 @@ export interface WeaponDef {
   quake?: {
     radius: number;
     damage: number;
+    /** Cursor placement clamp for authored remote slams; the character remains planted. */
+    placementRange?: number;
     vfx?: {
       image: string;
       /** §14 WYSIWYG: the painted hero's on-screen size relative to the damage hitbox. **1.0 = the visual
@@ -915,8 +896,6 @@ export interface WeaponDef {
     projectileColor?: number;
     /** Recoil camera-kick intensity per shot (heavy slugs punch, the gatling barely buzzes). ~0.0006–0.004. */
     recoil?: number;
-    /** Server-only body displacement multiplier. Does not amplify camera or held-pose shake. */
-    userKnockbackMultiplier?: number;
     /** Presentation recipe: an expanding sonic ring at every authoritative launch origin. */
     sonicBoomRing?: boolean;
     /** AoE on bullet death (explosive rounds). Omitted → bullets don't blast. */
@@ -1245,44 +1224,6 @@ export function weaponMuzzleWorldPoint(
   return { x: point.x, y: point.y };
 }
 
-/** One accepted gun round's authored body-recoil magnitude. Most guns apply this to authoritative
- * locomotion and mirror it in owner prediction; presentation-only exceptions retain the same authored
- * magnitude for camera/weapon response without feeding it into the player root. */
-export function gunUserRecoilFor(
-  weapon: Pick<WeaponDef, "gun"> | undefined,
-): Readonly<{ impulse: number; maxImpulse: number }> {
-  const gun = weapon?.gun;
-  if (!gun) return { impulse: 0, maxImpulse: IMPULSE_MAX };
-  const displacementMultiplier = gun.userKnockbackMultiplier ?? 1;
-  return {
-    impulse:
-      GUN_RECOIL_IMPULSE *
-      ((gun.recoil ?? GUN_RECOIL_BASELINE) / GUN_RECOIL_BASELINE) *
-      displacementMultiplier,
-    maxImpulse: IMPULSE_MAX * Math.max(1, displacementMultiplier),
-  };
-}
-
-const NO_GUN_LOCOMOTION_RECOIL = Object.freeze({ impulse: 0, maxImpulse: IMPULSE_MAX });
-const PRESENTATION_ONLY_GUN_RECOIL_IDS = new Set(["x2-galvanic-overcasters"]);
-
-/**
- * Body-motion policy for gun recoil. Galvanic Overcasters already has a complete cosmetic recoil
- * sentence (rig kick, muzzle flash, sound, and camera response); feeding each of its four 50 ms rounds
- * into locomotion made the body and its later muzzle samples chase speculative/authoritative impulses.
- * Keep the weapon response, but leave local prediction and server/remote position channels locomotion-only.
- *
- * This is deliberately a shared code policy rather than a generated catalog datum: the authored recoil
- * magnitude is still correct, and no content value changes. Both authority and prediction consume this
- * helper so the exception cannot become a client-only divergence again.
- */
-export function gunLocomotionRecoilFor(
-  weapon: Pick<WeaponDef, "id" | "gun"> | undefined,
-): Readonly<{ impulse: number; maxImpulse: number }> {
-  if (weapon && PRESENTATION_ONLY_GUN_RECOIL_IDS.has(weapon.id)) return NO_GUN_LOCOMOTION_RECOIL;
-  return gunUserRecoilFor(weapon);
-}
-
 /** Two-hand orbit carries the grip this far from the authoritative player root before extending the blade.
  * SpriteRig uses `TARGET_BODY_H * 0.3` (76 * 0.3); sharing the world-space result prevents the rendered
  * business end from outrunning server reach. */
@@ -1497,7 +1438,7 @@ const BASE_WEAPONS: Record<string, WeaponDefSource> = {
     name: "Gravewarden Buster",
     sprite: "gravewarden-buster",
     damage: 8,
-    range: 210,
+    range: 354,
     halfArc: 0.95,
     cooldown: 0.6,
     displayLength: 164,
@@ -1516,7 +1457,6 @@ const BASE_WEAPONS: Record<string, WeaponDefSource> = {
         visualRevolutions: 6,
         cadenceSeconds: 0.2,
       },
-      lunge: { distancePx: 144, durationSeconds: 0.2 },
       holdScaling: { cadence: "weapon-cooldown" },
     },
     durability: 90,

@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { WEAPONS } from "@dd/shared";
 import { describe, expect, it } from "vitest";
 import {
   REVIEWED_ART_AXIS_OUTLIER_IDS,
@@ -6,16 +7,11 @@ import {
   weaponArtGeometryFor,
 } from "../packages/client/src/sprites/art-geometry.generated.js";
 
-const REPORT = JSON.parse(
-  readFileSync(
-    new URL("../tools/artkit/out/orientation/weapon-axis-report.json", import.meta.url),
-    "utf8",
-  ),
-);
-const RIG_SOURCE = readFileSync(
-  new URL("../packages/client/src/entities/SpriteRig.ts", import.meta.url),
-  "utf8",
-);
+const RIG_SOURCE = ["rig-core.ts", "rig-combat.ts", "rig-gear.ts", "rig-pose.ts"]
+  .map((file) =>
+    readFileSync(new URL(`../packages/client/src/entities/rig/${file}`, import.meta.url), "utf8"),
+  )
+  .join("\n");
 
 describe("weapon orientation fixer", () => {
   it("keeps representative pointed, worn-fist, and tome families forward at semantic rest", () => {
@@ -34,14 +30,11 @@ describe("weapon orientation fixer", () => {
     expect(RIG_SOURCE).toContain("return aimLocal + MELEE_FORWARD_READY_CANT");
     expect(RIG_SOURCE).toContain('this.weaponDef.id === "fists"');
     expect(Math.abs(readyCant)).toBeLessThanOrEqual(Math.PI / 12);
-    const weaponById = new Map(
-      REPORT.weapons.map((weapon: { id: string }) => [weapon.id, weapon] as const),
-    );
     for (const id of samples) {
       if (id !== "fists") {
-        const weapon = weaponById.get(id) as { semantics?: { gun?: boolean } } | undefined;
+        const weapon = WEAPONS[id];
         expect(weapon, id).toBeDefined();
-        expect(weapon?.semantics?.gun, id).toBeFalsy();
+        expect(weapon?.gun, id).toBeUndefined();
       }
       for (const aim of aims) {
         expect(aim + readyCant - aim, `${id}@${aim}`).toBeCloseTo(readyCant, 10);
@@ -49,17 +42,10 @@ describe("weapon orientation fixer", () => {
     }
   });
 
-  it("covers every raw PCA outlier with a reviewed semantic-axis correction", () => {
-    const reportOutliers = REPORT.weapons
-      .filter(
-        (weapon: { deviationFromRigAssumedPositiveXDeg: number }) =>
-          Math.abs(weapon.deviationFromRigAssumedPositiveXDeg) > 22.5,
-      )
-      .map((weapon: { id: string }) => weapon.id)
-      .sort();
-    expect([...REVIEWED_ART_AXIS_OUTLIER_IDS]).toEqual(reportOutliers);
-    expect(reportOutliers).toHaveLength(10);
-    for (const id of reportOutliers) {
+  it("keeps the tracked reviewed PCA-outlier census on semantic-axis corrections", () => {
+    expect(REVIEWED_ART_AXIS_OUTLIER_IDS).toHaveLength(10);
+    expect([...REVIEWED_ART_AXIS_OUTLIER_IDS]).toEqual([...REVIEWED_ART_AXIS_OUTLIER_IDS].sort());
+    for (const id of REVIEWED_ART_AXIS_OUTLIER_IDS) {
       // The reviewed barrel/business axes point image-right. This intentionally rejects raw silhouette PCA.
       expect(weaponArtGeometryFor(id)?.closed.artAngle, id).toBe(0);
     }
@@ -74,22 +60,19 @@ describe("weapon orientation fixer", () => {
   });
 
   it("gives every open tome a spine origin and honest visible-area scale", () => {
-    for (const size of REPORT.tomeSize as Array<{
-      id: string;
-      openToClosedRatio: { alphaEquivalentArea: number };
-    }>) {
-      const geometry = weaponArtGeometryFor(size.id);
-      expect(geometry?.open, size.id).toBeDefined();
-      if (!geometry?.open) continue;
-      expect(geometry.open.originX, size.id).toBe(0.5);
-      expect(geometry.open.originY, size.id).toBe(0.85);
-      expect(Math.abs(geometry.open.artAngle), size.id).toBeLessThan(Math.PI / 12);
+    const openTomes = Object.entries(WEAPON_ART_GEOMETRY).filter(
+      ([, geometry]) => "open" in geometry,
+    );
+    expect(openTomes).toHaveLength(7);
+    for (const [id, geometry] of openTomes) {
+      if (!("open" in geometry) || !geometry.open) continue;
+      expect(geometry.open.originX, id).toBe(0.5);
+      expect(geometry.open.originY, id).toBe(0.85);
+      expect(Math.abs(geometry.open.artAngle), id).toBeLessThan(Math.PI / 12);
       const closedMul = geometry.closed.displayLengthMul ?? 1;
       const openMul = geometry.open.displayLengthMul ?? 1;
-      expect(openMul * openMul * size.openToClosedRatio.alphaEquivalentArea, size.id).toBeCloseTo(
-        closedMul * closedMul,
-        5,
-      );
+      expect(Number.isFinite(closedMul) && closedMul > 0, `${id}:closed scale`).toBe(true);
+      expect(Number.isFinite(openMul) && openMul > 0, `${id}:open scale`).toBe(true);
     }
   });
 

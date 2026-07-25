@@ -181,7 +181,6 @@ import {
   GROUND_EPSILON,
   generateArena,
   getDimension,
-  gunLocomotionRecoilFor,
   HAIRTRIGGER_MAX,
   HAIRTRIGGER_WINDOW,
   HIT_KNOCKBACK_IMPULSE,
@@ -234,7 +233,6 @@ import {
   MoneyDropState,
   type MoveStance,
   meleeComboGraceMs,
-  meleeComboSelectionFor,
   meleeDamageEnvelopeFor,
   meleeDamageHalfWidthAt,
   meleeDamageReachAt,
@@ -527,6 +525,25 @@ export const ZERO_IMPULSE = { vx: 0, vy: 0 } as const;
 export const tickReached = (now: number, target: number): boolean => ((now - target) | 0) >= 0;
 export const ticksFromSeconds = (seconds: number): number =>
   Math.max(1, Math.round((seconds * 1000) / TICK_MS));
+/** Closed census of every legal server-authored player-motion owner.
+ * Weapon attacks are deliberately absent: the player alone owns attack-time locomotion. */
+export const SERVER_MOTION_SOURCES = [
+  "dodge-roll",
+  "distance-jump",
+  "slide-hop",
+  "parry-slide",
+  "parry-launch",
+  "enemy-contact-hit",
+  "enemy-commit-hit",
+  "enemy-commit-launch",
+  "hostile-projectile-hit",
+  "pit-snapback",
+  "elevator-boarding",
+  "revive-placement",
+  "teleport-placement",
+  "ultimate",
+] as const;
+export type ServerMotionSource = (typeof SERVER_MOTION_SOURCES)[number];
 
 export function pointSegmentDistanceSq(
   px: number,
@@ -721,30 +738,6 @@ export interface PendingHybridProjectile {
   crit: number;
 }
 
-/** One accepted authored lunge per player. A Map hard-caps this transient at MAX_PLAYERS. */
-export interface PendingWeaponLunge {
-  t: number;
-  playerId: string;
-  weaponId: string;
-  aimX: number;
-  aimY: number;
-  distancePx: number;
-  durationSeconds: number;
-  invulnerable: boolean;
-  impactAtDestination: boolean;
-  destinationQuake?: {
-    radius: number;
-    damage: number;
-    crit: number;
-    zoneDamagePerSecond?: number;
-  };
-  elapsedSeconds?: number;
-  startX?: number;
-  startY?: number;
-  endX?: number;
-  endY?: number;
-}
-
 /** A committed thrown beat whose authored in-hand draw must finish before projectile release. */
 export interface PendingWeaponThrow {
   t: number;
@@ -783,7 +776,6 @@ export interface ActiveMeleeSwing {
   /** Intra-attack authoritative contacts expressed on the immutable accepted pose clock. */
   rapidImpactSeconds?: readonly number[];
   rapidHitIndex?: number;
-  waitForWeaponLunge?: boolean;
   originX?: number;
   originY?: number;
 }
@@ -980,8 +972,6 @@ export interface CombatState {
   parryGuardCycles: Map<string, ParryGuardCycleState>;
   /** Exact accepted parry epoch; boss counters never mistake slide/ultimate i-frames for a white answer. */
   parryOpenedTick: number;
-  /** Exclusive tick bound for weapon-lunge i-frames. Kept separate so they never count as a parry. */
-  weaponLungeIFrameUntilTick: number;
   /** Graveside Manner's bounded event receipt; no per-tick allocation or synced counter. */
   killHealWindowStart: number;
   killHealWindowAmount: number;
@@ -1120,43 +1110,6 @@ export interface DuelistComboState {
 
 export type RewardBoundary = "extract" | "descent" | "belt-victory" | "bossrush-victory" | "boss-clear";
 
-export interface WeaponComboForwardDrift {
-  readonly distancePx: number;
-  readonly durationSeconds: number;
-}
-
-export interface WeaponComboRootMotion {
-  readonly forwardPx: number;
-  readonly lateralPx: number;
-  readonly durationSeconds: number;
-}
-
-/** Resolve authored character displacement from the same combo index that owns damage and presentation. */
-export function weaponComboRootMotion(
-  weapon: Readonly<WeaponDef>,
-  comboStepIndex: number | undefined,
-): WeaponComboRootMotion | undefined {
-  const sequence = meleeComboSelectionFor(weapon)?.sequence;
-  if (!sequence?.length) return undefined;
-  const step = Math.max(0, Math.trunc(comboStepIndex ?? 0)) % sequence.length;
-  return sequence[step]?.rootMotion;
-}
-
-/** Resolve one accepted combo beat's server-owned walking displacement. Most weapons keep one fixed
- * drift; authored martial sequences may vary the same bounded movement by beat without client inference. */
-export function weaponComboForwardDrift(
-  weapon: Readonly<WeaponDef>,
-  comboStepIndex: number | undefined,
-): WeaponComboForwardDrift | undefined {
-  const drift = weapon.performance?.forwardDrift;
-  if (!drift) return undefined;
-  const step = Math.max(0, Math.trunc(comboStepIndex ?? 0));
-  const multiplier = drift.comboStepMultipliers?.[step] ?? 1;
-  return {
-    distancePx: drift.speedPxPerSecond * drift.durationSeconds * multiplier,
-    durationSeconds: drift.durationSeconds,
-  };
-}
 export const GAME_ROOM_STATICS = Object.freeze({
   GALLERY_ROSTER: [...ACTIVE_WEAPON_CATALOG_IDS].sort(
     (a, b) => {
@@ -1196,6 +1149,7 @@ export interface GameRoomContext extends Room<ArenaState> {
   readonly inputs: Map<string, InputState>;
   readonly acceptedClientMovement: Map<string, ClientMovementReport>;
   readonly serverMotionUntilTick: Map<string, number>;
+  readonly serverMotionSourceByPlayer: Map<string, ServerMotionSource>;
   readonly combat: Map<string, CombatState>;
   readonly metaAccounts: Map<string, MetaAccountV5>;
   readonly weaponRuns: Map<string, RunWeaponLedger>;
@@ -1267,7 +1221,6 @@ export interface GameRoomContext extends Room<ArenaState> {
   }[];
   readonly pendingScatterVolleys: PendingScatterVolley[];
   readonly pendingHybridProjectiles: PendingHybridProjectile[];
-  readonly pendingWeaponLunges: Map<string, PendingWeaponLunge>;
   readonly minimumAttackInputSlowUntilTick: Map<string, number>;
   readonly pendingWeaponThrows: PendingWeaponThrow[];
   readonly pickupGrace: Map<string, number>;
@@ -1428,7 +1381,6 @@ export interface GameRoomContext extends Room<ArenaState> {
   creditWeaponResource(player: PlayerState, c: CombatState, amount: number): number;
   trySpendWeaponResource(player: PlayerState, c: CombatState, weapon: WeaponDef, _weaponInstanceId: string, _delivery: number, _hand: WeaponHand, effectiveInterval: number, costMultiplier: number, continuousDt: number, reason: WeaponSpendReason): WeaponSpendResult;
   slideInvulnerable(c: CombatState): boolean;
-  weaponLungeInvulnerable(c: CombatState): boolean;
   noteSlideDodge(player: PlayerState): void;
   damagePlayer(player: PlayerState, amount: number, kind?: PlayerDamageKind): void;
   consumeDebugCommitDefense(player: PlayerState, attacker: EnemyState): void;
@@ -1437,7 +1389,7 @@ export interface GameRoomContext extends Room<ArenaState> {
   syncSlideWire(player: PlayerState, c: CombatState): void;
   cancelMoveStance(player: PlayerState, c: CombatState, forced: boolean): void;
   clientMovementNavValid(player: PlayerState, combat: CombatState | undefined, fromX: number, fromY: number, toX: number, toY: number): boolean;
-  beginServerMotion(player: PlayerState, ticks: number): void;
+  beginServerMotion(player: PlayerState, ticks: number, source: ServerMotionSource): void;
   refreshServerMotionState(player: PlayerState, id: string, dt: number): void;
   freshInputState(): InputState;
   stepSlideStance(player: PlayerState, c: CombatState): void;
@@ -1494,11 +1446,8 @@ export interface GameRoomContext extends Room<ArenaState> {
   stepPlayerChargedProjectile(player: PlayerState, id: string, c: CombatState, weapon: WeaponDef, acting: boolean): void;
   fireChargedProjectile(player: PlayerState, c: CombatState, weapon: WeaponDef, fraction: number): void;
   stepPlayerAura(player: PlayerState, id: string, c: CombatState, weapon: WeaponDef, dt: number, acting: boolean): void;
-  cancelDestinationLungeImpact(playerId: string, weaponId: string): void;
-  releaseDestinationLungeImpact(player: PlayerState, combat: CombatState, lunge: PendingWeaponLunge): void;
-  navValidLungeDest(player: PlayerState, combat: CombatState, targetX: number, targetY: number, maxRange: number): Vec2;
+  navValidMotionDest(player: PlayerState, combat: CombatState, targetX: number, targetY: number, maxRange: number): Vec2;
   playerAttackMoveMode(playerId: string, dt: number): number;
-  stepPendingWeaponLunges(dt: number): void;
   zoneTarget(player: PlayerState, c: CombatState, placementRange: number): Vec2;
   stepPlayerGroundZone(player: PlayerState, id: string, c: CombatState, weapon: WeaponDef, dt: number, acting: boolean): void;
   clearBeamRows(ownerId: string, satellitesOnly?: boolean): void;
@@ -1555,7 +1504,7 @@ export interface GameRoomContext extends Room<ArenaState> {
   armGunBurst(c: CombatState, weapon: WeaponDef, hand: WeaponHand): void;
   clearGunBurst(c: CombatState): void;
   stepGunBurst(player: PlayerState, c: CombatState, weapon: WeaponDef | undefined, acting: boolean): void;
-  warpWeaponToCursor(player: PlayerState, c: CombatState, weapon: WeaponDef): void;
+  detonateWarpAtCursor(player: PlayerState, c: CombatState, weapon: WeaponDef): void;
   fireGun(player: PlayerState, c: CombatState, weapon: WeaponDef, hand?: WeaponHand, recoilElapsedMs?: number, burstIndex?: number): void;
   applyProjectileChain(seed: EnemyState, seedId: string, meta: {
       hit: Set<string>;
@@ -1580,7 +1529,7 @@ export interface GameRoomContext extends Room<ArenaState> {
   damageWormSlots(slots: readonly number[], raw: number, sourceKey: string, kills: string[], crit?: number, piercing?: boolean, sourcePlayerId?: string, sourceWeaponId?: string, delivery?: number, sourceX?: number, sourceY?: number): void;
   collectWormRadiusHits(x: number, y: number, radius: number): readonly number[];
   damageEnemy(enemy: EnemyState, eid: string, raw: number, kills: string[], crit?: number, sourcePlayerId?: string, sourceWeaponId?: string, delivery?: number, sourceX?: number, sourceY?: number): void;
-  zeroMoveVel(id: string, bumpTeleport?: boolean): void;
+  zeroMoveVel(id: string, bumpTeleport: boolean | undefined, source: ServerMotionSource): void;
   placePickupPos(x: number, y: number): { x: number; y: number };
   detonate(x: number, y: number, radius: number, damage: number, crit?: number, sourcePlayerId?: string, sourceWeaponId?: string, delivery?: number): void;
   emberguardWave(x: number, y: number, aimX: number, aimY: number, dmg: number, crit?: number, sourcePlayerId?: string, sourceWeaponId?: string): void;
@@ -2574,7 +2523,6 @@ export const roomProgressionMethods = {
     this.pendingQuakes.length = 0; // §40.2 no landed-blade detonation may carry across a run boundary
     this.pendingScatterVolleys.length = 0;
     this.pendingHybridProjectiles.length = 0;
-    this.pendingWeaponLunges.clear();
     this.minimumAttackInputSlowUntilTick.clear();
     this.pendingWeaponThrows.length = 0;
     this.pickupGrace.clear();
@@ -2714,7 +2662,7 @@ export const roomProgressionMethods = {
         player.hp = player.maxHp;
         player.x = cx;
         player.y = cy + 20;
-        this.zeroMoveVel(id); // §7 the reposition is a teleport — don't glide out of it
+        this.zeroMoveVel(id, undefined, "teleport-placement"); // §7 the reposition is a teleport — don't glide out of it
       });
     } else {
       this.state.mode = "arena";
@@ -2956,7 +2904,7 @@ export const roomProgressionMethods = {
         c.rollCd = 0;
         c.slideParryLockT = 0;
       }
-      this.zeroMoveVel(id); // §7 fresh run, fresh momentum
+      this.zeroMoveVel(id, undefined, "teleport-placement"); // §7 fresh run, fresh momentum
     });
     // §16 v0.116 a restart in BOSS RUSH re-arms the gauntlet from boss 1 (mode is preserved across restart).
     if (this.state.mode === "bossrush") {
@@ -3240,7 +3188,6 @@ export const roomProgressionMethods = {
       parryChainT: 0,
       parryGuardCycles: new Map<string, ParryGuardCycleState>(),
       parryOpenedTick: 0xffffffff,
-      weaponLungeIFrameUntilTick: 0,
       killHealWindowStart: -999,
       killHealWindowAmount: 0,
       vh: 0,
@@ -3311,6 +3258,7 @@ export const roomProgressionMethods = {
     this.inputs.delete(client.sessionId);
     this.acceptedClientMovement.delete(client.sessionId);
     this.serverMotionUntilTick.delete(client.sessionId);
+    this.serverMotionSourceByPlayer.delete(client.sessionId);
     this.combat.delete(client.sessionId);
     this.debugCommitDefense.delete(client.sessionId);
     this.debugAttackMoveCapture.delete(client.sessionId);
@@ -3662,21 +3610,20 @@ export const roomProgressionMethods = {
       if (movement && movementEpochCurrent && !player.dualWield.serverMotionActive) {
         const movementSpeedBudget = Math.max(
           baseMoveSpeed,
-          // B41's shared attack step may replace ordinary steering with a faster authored root-motion
-          // vector. Admit that exact per-tick budget without granting a generic tier outside its window.
+          // Distance jumps and dodge rolls are player traversal verbs with explicit motion epochs.
+          // Admit their exact per-tick budget without granting a generic tier outside those windows.
           Math.hypot(player.mvx, player.mvy),
           beamRuntime?.stance === STANCE_DASH ? DIST_JUMP_SPEED : 0,
           activeRoll && beamRuntime
             ? relicRollSpeedAtTick(player.relics, Math.max(0, beamRuntime.slidePhaseTick - 1))
             : 0,
         );
-        const recoilBudget = gunLocomotionRecoilFor(WEAPONS[player.weapon]).maxImpulse;
         const envelope = evaluateClientMovementEnvelope(movement, {
           fromX: movementStartX,
           fromY: movementStartY,
           dtSeconds: dt,
           maxMoveSpeed: movementSpeedBudget,
-          maxImpulseSpeed: Math.max(movementStartImpulse, recoilBudget),
+          maxImpulseSpeed: movementStartImpulse,
         });
         if (
           envelope.accepted &&
@@ -3809,7 +3756,7 @@ export const roomProgressionMethods = {
         player.x = beltSafeX(this.beltLevel, player.x, c.lastGroundX);
         c.lastGroundX = player.x;
         c.pitGrace = PIT_FALL_GRACE;
-        this.zeroMoveVel(id);
+        this.zeroMoveVel(id, undefined, "pit-snapback");
         player.fellSeq++;
         return;
       }
@@ -3830,7 +3777,7 @@ export const roomProgressionMethods = {
       c.lastGroundX = safe.x;
       c.lastGroundY = safe.y;
       c.pitGrace = PIT_FALL_GRACE;
-      this.zeroMoveVel(id); // §7 the snap-back is a teleport — carried steering would glide you back in
+      this.zeroMoveVel(id, undefined, "pit-snapback"); // §7 the snap-back is a teleport — carried steering would glide you back in
       player.fellSeq++;
     });
 
@@ -4055,7 +4002,7 @@ export const roomProgressionMethods = {
             ).accepted
           ) {
             this.stampAttackBeat(player);
-            this.warpWeaponToCursor(player, c, weapon);
+            this.detonateWarpAtCursor(player, c, weapon);
             c.cd = cooldown;
           }
         }
@@ -4248,7 +4195,6 @@ export const roomProgressionMethods = {
     }
 
     // 4.7 §ULT immutable-epoch action machines settle before enemy targeting reads player positions.
-    this.stepPendingWeaponLunges(dt);
     this.stepUltimates(dt);
     if (this.state.outcome !== "active") {
       this.clearCombatEntities();
@@ -4435,7 +4381,6 @@ export const roomProgressionMethods = {
         if (!player.alive) return;
         const pcc = this.combat.get(player.id);
         if ((pcc?.invuln ?? 0) > 0) return; // parry i-frames
-        if (pcc && this.weaponLungeInvulnerable(pcc)) return;
         if ((pcc?.juggleMercy ?? 0) > 0) return; // §51 G10 touchdown mercy — a juggle can't chain into the horde
         const reach = kind.radius + PLAYER_RADIUS;
         const dx = enemy.x - player.x;
@@ -4466,7 +4411,7 @@ export const roomProgressionMethods = {
             const k = addImpulse(player, (-dx / d) * push, (-dy / d) * push);
             player.vx = k.vx;
             player.vy = k.vy;
-            this.beginServerMotion(player, SERVER_MOTION_IMPULSE_TICKS);
+            this.beginServerMotion(player, SERVER_MOTION_IMPULSE_TICKS, "enemy-contact-hit");
           }
         }
       });
@@ -4492,7 +4437,7 @@ export const roomProgressionMethods = {
           player.hp = relicRevive.hp;
           player.revivedSeq = (player.revivedSeq + 1) % 100000;
           player.alive = true;
-          this.zeroMoveVel(player.id);
+          this.zeroMoveVel(player.id, undefined, "revive-placement");
           this.clearEnemiesNear(player.x, player.y, RESPAWN_CLEAR_RADIUS);
           this.sendOwnerMessage(player.id, "relicTriggered", { id: "revive" });
           anyAlive = true;
@@ -4623,7 +4568,7 @@ export const roomProgressionMethods = {
       player.alive = true;
       player.hp = Math.max(1, Math.round(player.maxHp * REVIVE_HP_FRAC));
       player.revivedSeq = (player.revivedSeq + 1) % 100000;
-      this.zeroMoveVel(player.id);
+      this.zeroMoveVel(player.id, undefined, "revive-placement");
       this.vastagharDownTicks.delete(player.id);
     });
     encounter.markRewardsOpen(this.state.tick);
@@ -4701,8 +4646,8 @@ export const roomProgressionMethods = {
         : CORPORATE_ELEVATOR_ARRIVAL_TICKS;
       // Departure reasserts the car point every tick and arrival immediately follows it. Keep those
       // writes inside one ownership epoch; repeated holds are not fresh teleports/corrections.
-      this.beginServerMotion(player, ticksLeft + 1);
-      this.zeroMoveVel(id, bumpTeleport);
+      this.beginServerMotion(player, ticksLeft + 1, "elevator-boarding");
+      this.zeroMoveVel(id, bumpTeleport, "elevator-boarding");
       ordinal++;
     });
   },
@@ -4913,7 +4858,7 @@ export const roomProgressionMethods = {
       }
       const descentHeal = this.petRuns.get(id)?.mods.descentHealMaxHpFraction ?? 0;
       if (descentHeal > 0) this.applyHeal(player, player.maxHp * descentHeal, false);
-      this.zeroMoveVel(id); // §7 the descent repositions the body — momentum doesn't cross dimensions
+      this.zeroMoveVel(id, undefined, "teleport-placement"); // §7 the descent repositions the body — momentum doesn't cross dimensions
     });
     console.log(
       `[room ${this.roomId}] ⇓ rift descent — depth ${this.state.depth}, dimension ${this.state.dimensionId}`,

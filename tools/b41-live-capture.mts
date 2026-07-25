@@ -22,7 +22,7 @@ const evidenceDir = path.resolve(
 );
 const STOP_WITHIN_TICKS = 3;
 const SLOW_WEAPON = "x2-sparkknuckle-hex-mitt";
-const ROOT_WEAPON = "x2-thunderhead-stormfists";
+const PLANTED_WEAPON = "x2-thunderhead-stormfists";
 
 type LiveRoom = Awaited<ReturnType<Client["create"]>>;
 
@@ -178,7 +178,7 @@ async function captureScenario(
   targetMode: number,
 ): Promise<ScenarioCapture> {
   await equip(room, weapon);
-  const scenario = `${mode}:${targetMode === PlayerAttackMoveMode.RootMotion ? "root" : "slow"}`;
+  const scenario = `${mode}:${weapon}:slow`;
   const frames: LiveFrame[] = [];
   let step = 0;
   for (; step < 8; step++) frames.push(await captureStep(room, predictor, scenario, step, 1));
@@ -292,8 +292,8 @@ async function captureMode(mode: "arena" | "belt"): Promise<ScenarioCapture[]> {
         room,
         predictor,
         mode,
-        ROOT_WEAPON,
-        PlayerAttackMoveMode.RootMotion,
+        PLANTED_WEAPON,
+        PlayerAttackMoveMode.InputSlow,
       ),
     ];
   } finally {

@@ -71,7 +71,7 @@ const MOURNVEIL_PRE_RESTORATION_MANIFEST = {
 const MOURNVEIL_REGISTRATION_TOLERANCE_PX = 1;
 
 const RIG_SOURCE = readFileSync(
-  new URL("../packages/client/src/entities/SpriteRig.ts", import.meta.url),
+  new URL("../packages/client/src/entities/rig/rig-gear.ts", import.meta.url),
   "utf8",
 );
 const HARVEST_SOURCE = readFileSync(
@@ -244,9 +244,7 @@ describe("B35 Prismhex correct actor-facing mirror axis", () => {
     expect(prismhex.imageFacing).toBeUndefined();
     expect(spriteImageFacingX(prismhex.imageFacing)).toBe(1);
     expect(spriteImageFacingX(undefined)).toBe(1);
-    expect(HARVEST_SOURCE).not.toContain(
-      '"x2-prismhex-diffraction-gauntlet": "mirror-x"',
-    );
+    expect(HARVEST_SOURCE).not.toContain('"x2-prismhex-diffraction-gauntlet": "mirror-x"');
     expect(RIG_SOURCE.match(/weapon\.img\.scaleX \*= weapon\.imageFacingX/g)).toHaveLength(1);
     expect(RIG_SOURCE).not.toContain("weapon.img.scaleY *= weapon.imageFacingX");
   });

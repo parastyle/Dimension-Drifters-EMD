@@ -182,20 +182,26 @@ describe("big-sword visual combo panel", () => {
   });
 
   it("consumes the retained beat in SpriteRig and keeps all flourish on visual channels", () => {
-    const source = readFileSync(
-      new URL("../packages/client/src/entities/SpriteRig.ts", import.meta.url),
-      "utf8",
-    );
+    const source = [
+      readFileSync(
+        new URL("../packages/client/src/entities/rig/rig-combat.ts", import.meta.url),
+        "utf8",
+      ),
+      readFileSync(
+        new URL("../packages/client/src/entities/rig/rig-pose.ts", import.meta.url),
+        "utf8",
+      ),
+    ].join("\n");
     expect(source).toContain("comboStepForAttackSeq(this.attackBeatSeq, sequence.length)");
     expect(source).toContain(
       "remapPoseTimeAtImpact(tt, comboPose.timing.impact, descriptorImpact)",
     );
-    expect(source).toContain("private applyMomentumCombo(");
-    expect(source).toContain("private applyBreachCombo(");
-    expect(source).toContain("private applyCompassCombo(");
-    expect(source).toContain("private applyHookbreakCombo(");
+    expect(source).toContain("applyMomentumCombo(this: SpriteRigContext,");
+    expect(source).toContain("applyBreachCombo(this: SpriteRigContext,");
+    expect(source).toContain("applyCompassCombo(this: SpriteRigContext,");
+    expect(source).toContain("applyHookbreakCombo(this: SpriteRigContext,");
     const panelPoses = source.slice(
-      source.indexOf("private applyMomentumCombo("),
+      source.indexOf("applyMomentumCombo(this: SpriteRigContext,"),
       source.indexOf("/** Hammer-head fulcrum vault"),
     );
     expect(panelPoses).not.toMatch(/this\.root\.(?:x|y)\s*[+\-*/]?=/);

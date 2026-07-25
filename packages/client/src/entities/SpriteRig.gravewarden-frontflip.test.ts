@@ -47,17 +47,16 @@ describe("SpriteRig Gravewarden continuous frontflip routing", () => {
     expect(velocityAfter).toBeCloseTo(velocityBefore, 8);
   });
 
-  it("runs six visible turns in one third of the old cadence while jumping forward", () => {
+  it("runs six visible in-place turns in one third of the old cadence", () => {
     const descriptor = swingDescriptorFor(gravewarden, gravewarden.cooldown);
 
     expect(gravewarden).toMatchObject({
       damage: 8,
-      range: 210,
+      range: 354,
       halfArc: 0.95,
       cooldown: 0.6,
       swingArc: Math.PI * 2,
       performance: {
-        lunge: { distancePx: 144, durationSeconds: 0.2 },
         twirl: { visualRevolutions: 6, cadenceSeconds: 0.2 },
       },
     });

@@ -4,7 +4,6 @@ import { PROJECTILE_SPRITES } from "../packages/client/src/sprites/projectile-ma
 import { GUN_GENERATED_PROJECTILES } from "../packages/client/src/vfx/gun-projectile-art.js";
 import { PROJECTILE_EXPLOSION_VFX_RECIPES } from "../packages/client/src/vfx/projectile-explosion-vfx-recipes.js";
 import {
-  gunUserRecoilFor,
   serverSeededGunPelletVolley,
   WEAPON_MUZZLE_COUNT_CAP,
   WEAPONS,
@@ -106,7 +105,7 @@ describe("Batch R ranged owner orders", () => {
     });
   });
 
-  it("applies the exact size, projectile-scale, knockback, and one-hand orders", () => {
+  it("applies the exact size, projectile-scale, planted recoil, and one-hand orders", () => {
     expect(WEAPONS["x2-dustline-lever-action"]?.displayLength).toBe(240);
     expect(WEAPONS["x2-gravelung-punt-rifle"]?.gun?.projectileVisualScale).toBe(2);
     const hexbore = WEAPONS["x2-hexbore-voidmaw"];
@@ -117,11 +116,9 @@ describe("Batch R ranged owner orders", () => {
     });
     expect(hexbore?.gripPoints?.secondary).toBeUndefined();
     const sanctus = WEAPONS["x2-sanctus-siege-bombard"];
-    expect(sanctus?.gun?.userKnockbackMultiplier).toBe(5);
     if (!sanctus?.gun) throw new Error("Sanctus gun fixture is required");
-    expect(gunUserRecoilFor(sanctus).maxImpulse).toBe(
-      gunUserRecoilFor({ gun: { ...sanctus.gun, userKnockbackMultiplier: 1 } }).maxImpulse * 5,
-    );
+    expect(sanctus.gun.recoil).toBe(0.0038);
+    expect("userKnockbackMultiplier" in sanctus.gun).toBe(false);
   });
 
   it("retains Stormcaller's already-shipped six barrel-aligned beams", () => {
