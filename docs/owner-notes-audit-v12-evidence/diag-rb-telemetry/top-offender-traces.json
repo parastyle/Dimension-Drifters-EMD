@@ -1,0 +1,4937 @@
+{
+  "elevator-board": {
+    "label": "Corporate elevator board / depart / arrive",
+    "summary": {
+      "b42CounterEdges": 2,
+      "correctionRequests": 90,
+      "nonzeroCorrections": 2,
+      "silentCorrections": 0,
+      "smoothCorrections": 0,
+      "snapCorrections": 2,
+      "totalMagnitudePx": 3883.036739,
+      "maxMagnitudePx": 3570,
+      "meanMagnitudePx": 1941.51837,
+      "correctionDebtDurationMs": 0,
+      "serverMotionDurationMs": 4500,
+      "maxCorrectionWindowMs": 0,
+      "scenarioDurationMs": 9350,
+      "peakAuthorityStepPx": 3570,
+      "sourceCounts": {
+        "elevator-boarding": 2
+      },
+      "causeCounts": {
+        "server-motion-epoch": 1,
+        "teleport": 2,
+        "server-motion-active": 2,
+        "source:elevator-boarding": 2
+      }
+    },
+    "corrections": [
+      {
+        "dx": 66,
+        "dy": -306,
+        "magnitudePx": 313.036739,
+        "band": "snap",
+        "remainingMsAfterApply": 0,
+        "tick": 62,
+        "elapsedMs": 2200,
+        "action": "elevator-cycle",
+        "counterDelta": 1,
+        "causes": [
+          "server-motion-epoch",
+          "teleport",
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 3990,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 1,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 63,
+        "elapsedMs": 2250,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 3990,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 1,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 65,
+        "elapsedMs": 2300,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 3990,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 1,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 66,
+        "elapsedMs": 2350,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 3990,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 1,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 67,
+        "elapsedMs": 2400,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 3990,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 1,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 69,
+        "elapsedMs": 2450,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 3990,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 1,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 70,
+        "elapsedMs": 2500,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 3990,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 1,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 71,
+        "elapsedMs": 2550,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 3990,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 1,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 3570,
+        "dy": 0,
+        "magnitudePx": 3570,
+        "band": "snap",
+        "remainingMsAfterApply": 0,
+        "tick": 74,
+        "elapsedMs": 2600,
+        "action": "elevator-cycle",
+        "counterDelta": 1,
+        "causes": [
+          "teleport",
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 420,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 2,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 75,
+        "elapsedMs": 2650,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 420,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 2,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 76,
+        "elapsedMs": 2700,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 420,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 2,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 77,
+        "elapsedMs": 2750,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 420,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 2,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 78,
+        "elapsedMs": 2800,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 420,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 2,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 80,
+        "elapsedMs": 2850,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 420,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 2,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 81,
+        "elapsedMs": 2900,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 420,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 2,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 82,
+        "elapsedMs": 2950,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 420,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 2,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 83,
+        "elapsedMs": 3000,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 420,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 2,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 84,
+        "elapsedMs": 3050,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 420,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 2,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 85,
+        "elapsedMs": 3100,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 420,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 2,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 87,
+        "elapsedMs": 3150,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 420,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 2,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 88,
+        "elapsedMs": 3200,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 420,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 2,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 89,
+        "elapsedMs": 3250,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 420,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 2,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 91,
+        "elapsedMs": 3300,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 420,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 2,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 92,
+        "elapsedMs": 3350,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 420,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 2,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 94,
+        "elapsedMs": 3400,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 420,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 2,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 95,
+        "elapsedMs": 3450,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 420,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 2,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 96,
+        "elapsedMs": 3500,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 420,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 2,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 98,
+        "elapsedMs": 3550,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 420,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 2,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 99,
+        "elapsedMs": 3600,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 420,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 2,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 101,
+        "elapsedMs": 3650,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 420,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 2,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 103,
+        "elapsedMs": 3700,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 420,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 2,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 104,
+        "elapsedMs": 3750,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 420,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 2,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 106,
+        "elapsedMs": 3800,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 420,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 2,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 107,
+        "elapsedMs": 3850,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 420,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 2,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 108,
+        "elapsedMs": 3900,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 420,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 2,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 110,
+        "elapsedMs": 3950,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 420,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 2,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 111,
+        "elapsedMs": 4000,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 420,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 2,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 112,
+        "elapsedMs": 4050,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 420,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 2,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 113,
+        "elapsedMs": 4100,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 420,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 2,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 114,
+        "elapsedMs": 4150,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 420,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 2,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 115,
+        "elapsedMs": 4200,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 420,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 2,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 116,
+        "elapsedMs": 4250,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 420,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 2,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 117,
+        "elapsedMs": 4300,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 420,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 2,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 119,
+        "elapsedMs": 4350,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 420,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 2,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 120,
+        "elapsedMs": 4400,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 420,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 2,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 121,
+        "elapsedMs": 4450,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 420,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 2,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 122,
+        "elapsedMs": 4500,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 420,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 2,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 123,
+        "elapsedMs": 4550,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 420,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 2,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 124,
+        "elapsedMs": 4600,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 420,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 2,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 125,
+        "elapsedMs": 4650,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 420,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 2,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 126,
+        "elapsedMs": 4700,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 420,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 2,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 128,
+        "elapsedMs": 4750,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 420,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 2,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 129,
+        "elapsedMs": 4800,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 420,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 2,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 130,
+        "elapsedMs": 4850,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 420,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 2,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 131,
+        "elapsedMs": 4900,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 420,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 2,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 132,
+        "elapsedMs": 4950,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 420,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 2,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 133,
+        "elapsedMs": 5000,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 420,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 2,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 134,
+        "elapsedMs": 5050,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 420,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 2,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 136,
+        "elapsedMs": 5100,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 420,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 2,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 137,
+        "elapsedMs": 5150,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 420,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 2,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 139,
+        "elapsedMs": 5200,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 420,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 2,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 140,
+        "elapsedMs": 5250,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 420,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 2,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 141,
+        "elapsedMs": 5300,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 420,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 2,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 143,
+        "elapsedMs": 5350,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 420,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 2,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 145,
+        "elapsedMs": 5400,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 420,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 2,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 146,
+        "elapsedMs": 5450,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 420,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 2,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 147,
+        "elapsedMs": 5500,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 420,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 2,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 148,
+        "elapsedMs": 5550,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 420,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 2,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 150,
+        "elapsedMs": 5600,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 420,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 2,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 151,
+        "elapsedMs": 5650,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 420,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 2,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 152,
+        "elapsedMs": 5700,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 420,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 2,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 153,
+        "elapsedMs": 5750,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 420,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 2,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 154,
+        "elapsedMs": 5800,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 420,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 2,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 155,
+        "elapsedMs": 5850,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 420,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 2,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 156,
+        "elapsedMs": 5900,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 420,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 2,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 157,
+        "elapsedMs": 5950,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 420,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 2,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 159,
+        "elapsedMs": 6000,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 420,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 2,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 160,
+        "elapsedMs": 6050,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 420,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 2,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 161,
+        "elapsedMs": 6100,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 420,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 2,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 162,
+        "elapsedMs": 6150,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 420,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 2,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 163,
+        "elapsedMs": 6200,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 420,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 2,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 164,
+        "elapsedMs": 6250,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 420,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 2,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 165,
+        "elapsedMs": 6300,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 420,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 2,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 167,
+        "elapsedMs": 6350,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 420,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 2,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 168,
+        "elapsedMs": 6400,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 420,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 2,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 169,
+        "elapsedMs": 6450,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 420,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 2,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 170,
+        "elapsedMs": 6500,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 420,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 2,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 172,
+        "elapsedMs": 6550,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 420,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 2,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 173,
+        "elapsedMs": 6600,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 420,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 2,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 174,
+        "elapsedMs": 6650,
+        "action": "elevator-cycle",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "authority": {
+          "x": 420,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 1,
+          "source": "elevator-boarding",
+          "correctionSeq": 0,
+          "teleportSeq": 2,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      }
+    ],
+    "frames": [
+      {
+        "index": 43,
+        "tick": 60,
+        "elapsedMs": 2150,
+        "action": "elevator-cycle",
+        "input": {
+          "dx": 0,
+          "dy": 0,
+          "jump": false,
+          "pound": false,
+          "slide": false,
+          "slideHeld": false,
+          "fireHeld": false
+        },
+        "authority": {
+          "tick": 60,
+          "x": 4056,
+          "y": 2224,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0,
+          "alive": true,
+          "stance": 0,
+          "stanceSeq": 0,
+          "momentumX": 0,
+          "momentumY": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0,
+          "correctionSeq": 0,
+          "motionEpoch": 0,
+          "motionActive": false,
+          "motionSource": "",
+          "teleportSeq": 0,
+          "ackSeq": 39,
+          "attackSeq": 0,
+          "parriedSeq": 0,
+          "fellSeq": 0,
+          "poundSeq": 0,
+          "ultSeq": 0,
+          "ultPhase": 0
+        },
+        "delta": {
+          "positionPx": 0,
+          "movementEpoch": 0,
+          "correctionSeq": 0,
+          "teleportSeq": 0
+        },
+        "causes": [
+          "relaxed-authority-reconcile"
+        ],
+        "b42": {
+          "counterBefore": 0,
+          "counterAfter": 0,
+          "counterDelta": 0,
+          "pending": 0
+        },
+        "correction": {
+          "requests": 0,
+          "nonzeroRequests": 0,
+          "maxMagnitudePx": 0,
+          "errorBeforeDecayPx": 0,
+          "remainingBeforeDecayMs": 0,
+          "errorAfterDecayPx": 0,
+          "remainingAfterDecayMs": 0,
+          "renderedBefore": {
+            "x": 4056,
+            "y": 2224
+          },
+          "renderedAfterReconcile": {
+            "x": 4056,
+            "y": 2224
+          },
+          "renderedAfterDecay": {
+            "x": 4056,
+            "y": 2224
+          }
+        }
+      },
+      {
+        "index": 44,
+        "tick": 62,
+        "elapsedMs": 2200,
+        "action": "elevator-cycle",
+        "input": {
+          "dx": 0,
+          "dy": 0,
+          "jump": false,
+          "pound": false,
+          "slide": false,
+          "slideHeld": false,
+          "fireHeld": false
+        },
+        "authority": {
+          "tick": 62,
+          "x": 3990,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0,
+          "alive": true,
+          "stance": 0,
+          "stanceSeq": 0,
+          "momentumX": 0,
+          "momentumY": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0,
+          "correctionSeq": 0,
+          "motionEpoch": 1,
+          "motionActive": true,
+          "motionSource": "elevator-boarding",
+          "teleportSeq": 1,
+          "ackSeq": 40,
+          "attackSeq": 0,
+          "parriedSeq": 0,
+          "fellSeq": 0,
+          "poundSeq": 0,
+          "ultSeq": 0,
+          "ultPhase": 0
+        },
+        "delta": {
+          "positionPx": 313.036739,
+          "movementEpoch": 1,
+          "correctionSeq": 0,
+          "teleportSeq": 1
+        },
+        "causes": [
+          "server-motion-epoch",
+          "teleport",
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "b42": {
+          "counterBefore": 0,
+          "counterAfter": 1,
+          "counterDelta": 1,
+          "pending": 0
+        },
+        "correction": {
+          "requests": 1,
+          "nonzeroRequests": 1,
+          "maxMagnitudePx": 313.036739,
+          "errorBeforeDecayPx": 0,
+          "remainingBeforeDecayMs": 0,
+          "errorAfterDecayPx": 0,
+          "remainingAfterDecayMs": 0,
+          "renderedBefore": {
+            "x": 4056,
+            "y": 2224
+          },
+          "renderedAfterReconcile": {
+            "x": 3990,
+            "y": 2530
+          },
+          "renderedAfterDecay": {
+            "x": 3990,
+            "y": 2530
+          }
+        }
+      },
+      {
+        "index": 45,
+        "tick": 63,
+        "elapsedMs": 2250,
+        "action": "elevator-cycle",
+        "input": {
+          "dx": 0,
+          "dy": 0,
+          "jump": false,
+          "pound": false,
+          "slide": false,
+          "slideHeld": false,
+          "fireHeld": false
+        },
+        "authority": {
+          "tick": 63,
+          "x": 3990,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0,
+          "alive": true,
+          "stance": 0,
+          "stanceSeq": 0,
+          "momentumX": 0,
+          "momentumY": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0,
+          "correctionSeq": 0,
+          "motionEpoch": 1,
+          "motionActive": true,
+          "motionSource": "elevator-boarding",
+          "teleportSeq": 1,
+          "ackSeq": 41,
+          "attackSeq": 0,
+          "parriedSeq": 0,
+          "fellSeq": 0,
+          "poundSeq": 0,
+          "ultSeq": 0,
+          "ultPhase": 0
+        },
+        "delta": {
+          "positionPx": 0,
+          "movementEpoch": 0,
+          "correctionSeq": 0,
+          "teleportSeq": 0
+        },
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "b42": {
+          "counterBefore": 1,
+          "counterAfter": 1,
+          "counterDelta": 0,
+          "pending": 0
+        },
+        "correction": {
+          "requests": 1,
+          "nonzeroRequests": 0,
+          "maxMagnitudePx": 0,
+          "errorBeforeDecayPx": 0,
+          "remainingBeforeDecayMs": 0,
+          "errorAfterDecayPx": 0,
+          "remainingAfterDecayMs": 0,
+          "renderedBefore": {
+            "x": 3990,
+            "y": 2530
+          },
+          "renderedAfterReconcile": {
+            "x": 3990,
+            "y": 2530
+          },
+          "renderedAfterDecay": {
+            "x": 3990,
+            "y": 2530
+          }
+        }
+      },
+      {
+        "index": 51,
+        "tick": 71,
+        "elapsedMs": 2550,
+        "action": "elevator-cycle",
+        "input": {
+          "dx": 0,
+          "dy": 0,
+          "jump": false,
+          "pound": false,
+          "slide": false,
+          "slideHeld": false,
+          "fireHeld": false
+        },
+        "authority": {
+          "tick": 71,
+          "x": 3990,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0,
+          "alive": true,
+          "stance": 0,
+          "stanceSeq": 0,
+          "momentumX": 0,
+          "momentumY": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0,
+          "correctionSeq": 0,
+          "motionEpoch": 1,
+          "motionActive": true,
+          "motionSource": "elevator-boarding",
+          "teleportSeq": 1,
+          "ackSeq": 47,
+          "attackSeq": 0,
+          "parriedSeq": 0,
+          "fellSeq": 0,
+          "poundSeq": 0,
+          "ultSeq": 0,
+          "ultPhase": 0
+        },
+        "delta": {
+          "positionPx": 0,
+          "movementEpoch": 0,
+          "correctionSeq": 0,
+          "teleportSeq": 0
+        },
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "b42": {
+          "counterBefore": 1,
+          "counterAfter": 1,
+          "counterDelta": 0,
+          "pending": 0
+        },
+        "correction": {
+          "requests": 1,
+          "nonzeroRequests": 0,
+          "maxMagnitudePx": 0,
+          "errorBeforeDecayPx": 0,
+          "remainingBeforeDecayMs": 0,
+          "errorAfterDecayPx": 0,
+          "remainingAfterDecayMs": 0,
+          "renderedBefore": {
+            "x": 3990,
+            "y": 2530
+          },
+          "renderedAfterReconcile": {
+            "x": 3990,
+            "y": 2530
+          },
+          "renderedAfterDecay": {
+            "x": 3990,
+            "y": 2530
+          }
+        }
+      },
+      {
+        "index": 52,
+        "tick": 74,
+        "elapsedMs": 2600,
+        "action": "elevator-cycle",
+        "input": {
+          "dx": 0,
+          "dy": 0,
+          "jump": false,
+          "pound": false,
+          "slide": false,
+          "slideHeld": false,
+          "fireHeld": false
+        },
+        "authority": {
+          "tick": 74,
+          "x": 420,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0,
+          "alive": true,
+          "stance": 0,
+          "stanceSeq": 0,
+          "momentumX": 0,
+          "momentumY": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0,
+          "correctionSeq": 0,
+          "motionEpoch": 1,
+          "motionActive": true,
+          "motionSource": "elevator-boarding",
+          "teleportSeq": 2,
+          "ackSeq": 48,
+          "attackSeq": 0,
+          "parriedSeq": 0,
+          "fellSeq": 0,
+          "poundSeq": 0,
+          "ultSeq": 0,
+          "ultPhase": 0
+        },
+        "delta": {
+          "positionPx": 3570,
+          "movementEpoch": 0,
+          "correctionSeq": 0,
+          "teleportSeq": 1
+        },
+        "causes": [
+          "teleport",
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "b42": {
+          "counterBefore": 1,
+          "counterAfter": 2,
+          "counterDelta": 1,
+          "pending": 0
+        },
+        "correction": {
+          "requests": 1,
+          "nonzeroRequests": 1,
+          "maxMagnitudePx": 3570,
+          "errorBeforeDecayPx": 0,
+          "remainingBeforeDecayMs": 0,
+          "errorAfterDecayPx": 0,
+          "remainingAfterDecayMs": 0,
+          "renderedBefore": {
+            "x": 3990,
+            "y": 2530
+          },
+          "renderedAfterReconcile": {
+            "x": 420,
+            "y": 2530
+          },
+          "renderedAfterDecay": {
+            "x": 420,
+            "y": 2530
+          }
+        }
+      },
+      {
+        "index": 53,
+        "tick": 75,
+        "elapsedMs": 2650,
+        "action": "elevator-cycle",
+        "input": {
+          "dx": 0,
+          "dy": 0,
+          "jump": false,
+          "pound": false,
+          "slide": false,
+          "slideHeld": false,
+          "fireHeld": false
+        },
+        "authority": {
+          "tick": 75,
+          "x": 420,
+          "y": 2530,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0,
+          "alive": true,
+          "stance": 0,
+          "stanceSeq": 0,
+          "momentumX": 0,
+          "momentumY": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0,
+          "correctionSeq": 0,
+          "motionEpoch": 1,
+          "motionActive": true,
+          "motionSource": "elevator-boarding",
+          "teleportSeq": 2,
+          "ackSeq": 49,
+          "attackSeq": 0,
+          "parriedSeq": 0,
+          "fellSeq": 0,
+          "poundSeq": 0,
+          "ultSeq": 0,
+          "ultPhase": 0
+        },
+        "delta": {
+          "positionPx": 0,
+          "movementEpoch": 0,
+          "correctionSeq": 0,
+          "teleportSeq": 0
+        },
+        "causes": [
+          "server-motion-active",
+          "source:elevator-boarding"
+        ],
+        "b42": {
+          "counterBefore": 2,
+          "counterAfter": 2,
+          "counterDelta": 0,
+          "pending": 0
+        },
+        "correction": {
+          "requests": 1,
+          "nonzeroRequests": 0,
+          "maxMagnitudePx": 0,
+          "errorBeforeDecayPx": 0,
+          "remainingBeforeDecayMs": 0,
+          "errorAfterDecayPx": 0,
+          "remainingAfterDecayMs": 0,
+          "renderedBefore": {
+            "x": 420,
+            "y": 2530
+          },
+          "renderedAfterReconcile": {
+            "x": 420,
+            "y": 2530
+          },
+          "renderedAfterDecay": {
+            "x": 420,
+            "y": 2530
+          }
+        }
+      }
+    ]
+  },
+  "ultimate-alpha-strike": {
+    "label": "Ultimate — Alpha Strike (4 targets)",
+    "summary": {
+      "b42CounterEdges": 4,
+      "correctionRequests": 6,
+      "nonzeroCorrections": 5,
+      "silentCorrections": 0,
+      "smoothCorrections": 2,
+      "snapCorrections": 3,
+      "totalMagnitudePx": 1209.171721,
+      "maxMagnitudePx": 444.894457,
+      "meanMagnitudePx": 241.834344,
+      "correctionDebtDurationMs": 100,
+      "serverMotionDurationMs": 300,
+      "maxCorrectionWindowMs": 140,
+      "scenarioDurationMs": 2000,
+      "peakAuthorityStepPx": 444.894457,
+      "sourceCounts": {
+        "ultimate": 5
+      },
+      "causeCounts": {
+        "server-motion-epoch": 1,
+        "teleport": 4,
+        "server-motion-active": 5,
+        "source:ultimate": 5
+      }
+    },
+    "corrections": [
+      {
+        "dx": -126,
+        "dy": 0,
+        "magnitudePx": 126,
+        "band": "smooth",
+        "remainingMsAfterApply": 140,
+        "tick": 1511,
+        "elapsedMs": 50,
+        "action": "ultimate-tail",
+        "counterDelta": 1,
+        "causes": [
+          "server-motion-epoch",
+          "teleport",
+          "server-motion-active",
+          "source:ultimate"
+        ],
+        "authority": {
+          "x": 2326,
+          "y": 1500,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 31,
+          "source": "ultimate",
+          "correctionSeq": 1,
+          "teleportSeq": 4,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": -81,
+        "dy": 0,
+        "magnitudePx": 81,
+        "band": "smooth",
+        "remainingMsAfterApply": 90,
+        "tick": 1512,
+        "elapsedMs": 100,
+        "action": "ultimate-tail",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:ultimate"
+        ],
+        "authority": {
+          "x": 2326,
+          "y": 1500,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 31,
+          "source": "ultimate",
+          "correctionSeq": 1,
+          "teleportSeq": 4,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 65.69628,
+        "dy": -201.778333,
+        "magnitudePx": 212.203904,
+        "band": "snap",
+        "remainingMsAfterApply": 0,
+        "tick": 1513,
+        "elapsedMs": 150,
+        "action": "ultimate-tail",
+        "counterDelta": 1,
+        "causes": [
+          "teleport",
+          "server-motion-active",
+          "source:ultimate"
+        ],
+        "authority": {
+          "x": 2224.30372,
+          "y": 1701.778333,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 31,
+          "source": "ultimate",
+          "correctionSeq": 1,
+          "teleportSeq": 5,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 297.71479,
+        "dy": 174.475007,
+        "magnitudePx": 345.073361,
+        "band": "snap",
+        "remainingMsAfterApply": 0,
+        "tick": 1515,
+        "elapsedMs": 200,
+        "action": "ultimate-tail",
+        "counterDelta": 1,
+        "causes": [
+          "teleport",
+          "server-motion-active",
+          "source:ultimate"
+        ],
+        "authority": {
+          "x": 1926.58893,
+          "y": 1527.303326,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 31,
+          "source": "ultimate",
+          "correctionSeq": 1,
+          "teleportSeq": 6,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "magnitudePx": 0,
+        "band": "silent",
+        "remainingMsAfterApply": 0,
+        "tick": 1516,
+        "elapsedMs": 250,
+        "action": "ultimate-tail",
+        "counterDelta": 0,
+        "causes": [
+          "server-motion-active",
+          "source:ultimate"
+        ],
+        "authority": {
+          "x": 1926.58893,
+          "y": 1527.303326,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 31,
+          "source": "ultimate",
+          "correctionSeq": 1,
+          "teleportSeq": 6,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      },
+      {
+        "dx": -243.81724,
+        "dy": 372.134695,
+        "magnitudePx": 444.894457,
+        "band": "snap",
+        "remainingMsAfterApply": 0,
+        "tick": 1517,
+        "elapsedMs": 300,
+        "action": "ultimate-tail",
+        "counterDelta": 1,
+        "causes": [
+          "teleport",
+          "server-motion-active",
+          "source:ultimate"
+        ],
+        "authority": {
+          "x": 2170.40617,
+          "y": 1155.168631,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 31,
+          "source": "ultimate",
+          "correctionSeq": 1,
+          "teleportSeq": 7,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      }
+    ],
+    "frames": [
+      {
+        "index": 0,
+        "tick": 1509,
+        "elapsedMs": 0,
+        "action": "ultimate-input",
+        "input": {
+          "dx": 0,
+          "dy": 0,
+          "jump": false,
+          "pound": false,
+          "slide": false,
+          "slideHeld": false,
+          "fireHeld": false
+        },
+        "authority": {
+          "tick": 1509,
+          "x": 2200,
+          "y": 1500,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0,
+          "alive": true,
+          "stance": 0,
+          "stanceSeq": 0,
+          "momentumX": 0,
+          "momentumY": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0,
+          "correctionSeq": 1,
+          "motionEpoch": 30,
+          "motionActive": false,
+          "motionSource": "",
+          "teleportSeq": 2,
+          "ackSeq": 992,
+          "attackSeq": 82,
+          "parriedSeq": 4,
+          "fellSeq": 1,
+          "poundSeq": 1,
+          "ultSeq": 1,
+          "ultPhase": 1
+        },
+        "delta": {
+          "positionPx": 0,
+          "movementEpoch": 0,
+          "correctionSeq": 0,
+          "teleportSeq": 0
+        },
+        "causes": [
+          "relaxed-authority-reconcile"
+        ],
+        "b42": {
+          "counterBefore": 0,
+          "counterAfter": 0,
+          "counterDelta": 0,
+          "pending": 0
+        },
+        "correction": {
+          "requests": 0,
+          "nonzeroRequests": 0,
+          "maxMagnitudePx": 0,
+          "errorBeforeDecayPx": 0,
+          "remainingBeforeDecayMs": 0,
+          "errorAfterDecayPx": 0,
+          "remainingAfterDecayMs": 0,
+          "renderedBefore": {
+            "x": 2200,
+            "y": 1500
+          },
+          "renderedAfterReconcile": {
+            "x": 2200,
+            "y": 1500
+          },
+          "renderedAfterDecay": {
+            "x": 2200,
+            "y": 1500
+          }
+        }
+      },
+      {
+        "index": 1,
+        "tick": 1511,
+        "elapsedMs": 50,
+        "action": "ultimate-tail",
+        "input": {
+          "dx": 0,
+          "dy": 0,
+          "jump": false,
+          "pound": false,
+          "slide": false,
+          "slideHeld": false,
+          "fireHeld": false
+        },
+        "authority": {
+          "tick": 1511,
+          "x": 2326,
+          "y": 1500,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0,
+          "alive": true,
+          "stance": 0,
+          "stanceSeq": 0,
+          "momentumX": 0,
+          "momentumY": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0,
+          "correctionSeq": 1,
+          "motionEpoch": 31,
+          "motionActive": true,
+          "motionSource": "ultimate",
+          "teleportSeq": 4,
+          "ackSeq": 993,
+          "attackSeq": 82,
+          "parriedSeq": 4,
+          "fellSeq": 1,
+          "poundSeq": 1,
+          "ultSeq": 1,
+          "ultPhase": 2
+        },
+        "delta": {
+          "positionPx": 126,
+          "movementEpoch": 1,
+          "correctionSeq": 0,
+          "teleportSeq": 2
+        },
+        "causes": [
+          "server-motion-epoch",
+          "teleport",
+          "server-motion-active",
+          "source:ultimate"
+        ],
+        "b42": {
+          "counterBefore": 0,
+          "counterAfter": 1,
+          "counterDelta": 1,
+          "pending": 0
+        },
+        "correction": {
+          "requests": 1,
+          "nonzeroRequests": 1,
+          "maxMagnitudePx": 126,
+          "errorBeforeDecayPx": 126,
+          "remainingBeforeDecayMs": 140,
+          "errorAfterDecayPx": 81,
+          "remainingAfterDecayMs": 90,
+          "renderedBefore": {
+            "x": 2200,
+            "y": 1500
+          },
+          "renderedAfterReconcile": {
+            "x": 2200,
+            "y": 1500
+          },
+          "renderedAfterDecay": {
+            "x": 2245,
+            "y": 1500
+          }
+        }
+      },
+      {
+        "index": 2,
+        "tick": 1512,
+        "elapsedMs": 100,
+        "action": "ultimate-tail",
+        "input": {
+          "dx": 0,
+          "dy": 0,
+          "jump": false,
+          "pound": false,
+          "slide": false,
+          "slideHeld": false,
+          "fireHeld": false
+        },
+        "authority": {
+          "tick": 1512,
+          "x": 2326,
+          "y": 1500,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0,
+          "alive": true,
+          "stance": 0,
+          "stanceSeq": 0,
+          "momentumX": 0,
+          "momentumY": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0,
+          "correctionSeq": 1,
+          "motionEpoch": 31,
+          "motionActive": true,
+          "motionSource": "ultimate",
+          "teleportSeq": 4,
+          "ackSeq": 994,
+          "attackSeq": 82,
+          "parriedSeq": 4,
+          "fellSeq": 1,
+          "poundSeq": 1,
+          "ultSeq": 1,
+          "ultPhase": 2
+        },
+        "delta": {
+          "positionPx": 0,
+          "movementEpoch": 0,
+          "correctionSeq": 0,
+          "teleportSeq": 0
+        },
+        "causes": [
+          "server-motion-active",
+          "source:ultimate"
+        ],
+        "b42": {
+          "counterBefore": 1,
+          "counterAfter": 1,
+          "counterDelta": 0,
+          "pending": 0
+        },
+        "correction": {
+          "requests": 1,
+          "nonzeroRequests": 1,
+          "maxMagnitudePx": 81,
+          "errorBeforeDecayPx": 81,
+          "remainingBeforeDecayMs": 90,
+          "errorAfterDecayPx": 36,
+          "remainingAfterDecayMs": 40,
+          "renderedBefore": {
+            "x": 2245,
+            "y": 1500
+          },
+          "renderedAfterReconcile": {
+            "x": 2245,
+            "y": 1500
+          },
+          "renderedAfterDecay": {
+            "x": 2290,
+            "y": 1500
+          }
+        }
+      },
+      {
+        "index": 3,
+        "tick": 1513,
+        "elapsedMs": 150,
+        "action": "ultimate-tail",
+        "input": {
+          "dx": 0,
+          "dy": 0,
+          "jump": false,
+          "pound": false,
+          "slide": false,
+          "slideHeld": false,
+          "fireHeld": false
+        },
+        "authority": {
+          "tick": 1513,
+          "x": 2224.30372,
+          "y": 1701.778333,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0,
+          "alive": true,
+          "stance": 0,
+          "stanceSeq": 0,
+          "momentumX": 0,
+          "momentumY": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0,
+          "correctionSeq": 1,
+          "motionEpoch": 31,
+          "motionActive": true,
+          "motionSource": "ultimate",
+          "teleportSeq": 5,
+          "ackSeq": 994,
+          "attackSeq": 82,
+          "parriedSeq": 4,
+          "fellSeq": 1,
+          "poundSeq": 1,
+          "ultSeq": 1,
+          "ultPhase": 2
+        },
+        "delta": {
+          "positionPx": 225.95714,
+          "movementEpoch": 0,
+          "correctionSeq": 0,
+          "teleportSeq": 1
+        },
+        "causes": [
+          "teleport",
+          "server-motion-active",
+          "source:ultimate"
+        ],
+        "b42": {
+          "counterBefore": 1,
+          "counterAfter": 2,
+          "counterDelta": 1,
+          "pending": 0
+        },
+        "correction": {
+          "requests": 1,
+          "nonzeroRequests": 1,
+          "maxMagnitudePx": 212.203904,
+          "errorBeforeDecayPx": 0,
+          "remainingBeforeDecayMs": 0,
+          "errorAfterDecayPx": 0,
+          "remainingAfterDecayMs": 0,
+          "renderedBefore": {
+            "x": 2290,
+            "y": 1500
+          },
+          "renderedAfterReconcile": {
+            "x": 2224.30372,
+            "y": 1701.778333
+          },
+          "renderedAfterDecay": {
+            "x": 2224.30372,
+            "y": 1701.778333
+          }
+        }
+      },
+      {
+        "index": 4,
+        "tick": 1515,
+        "elapsedMs": 200,
+        "action": "ultimate-tail",
+        "input": {
+          "dx": 0,
+          "dy": 0,
+          "jump": false,
+          "pound": false,
+          "slide": false,
+          "slideHeld": false,
+          "fireHeld": false
+        },
+        "authority": {
+          "tick": 1515,
+          "x": 1926.58893,
+          "y": 1527.303326,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0,
+          "alive": true,
+          "stance": 0,
+          "stanceSeq": 0,
+          "momentumX": 0,
+          "momentumY": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0,
+          "correctionSeq": 1,
+          "motionEpoch": 31,
+          "motionActive": true,
+          "motionSource": "ultimate",
+          "teleportSeq": 6,
+          "ackSeq": 995,
+          "attackSeq": 82,
+          "parriedSeq": 4,
+          "fellSeq": 1,
+          "poundSeq": 1,
+          "ultSeq": 1,
+          "ultPhase": 2
+        },
+        "delta": {
+          "positionPx": 345.073361,
+          "movementEpoch": 0,
+          "correctionSeq": 0,
+          "teleportSeq": 1
+        },
+        "causes": [
+          "teleport",
+          "server-motion-active",
+          "source:ultimate"
+        ],
+        "b42": {
+          "counterBefore": 2,
+          "counterAfter": 3,
+          "counterDelta": 1,
+          "pending": 0
+        },
+        "correction": {
+          "requests": 1,
+          "nonzeroRequests": 1,
+          "maxMagnitudePx": 345.073361,
+          "errorBeforeDecayPx": 0,
+          "remainingBeforeDecayMs": 0,
+          "errorAfterDecayPx": 0,
+          "remainingAfterDecayMs": 0,
+          "renderedBefore": {
+            "x": 2224.30372,
+            "y": 1701.778333
+          },
+          "renderedAfterReconcile": {
+            "x": 1926.58893,
+            "y": 1527.303326
+          },
+          "renderedAfterDecay": {
+            "x": 1926.58893,
+            "y": 1527.303326
+          }
+        }
+      },
+      {
+        "index": 5,
+        "tick": 1516,
+        "elapsedMs": 250,
+        "action": "ultimate-tail",
+        "input": {
+          "dx": 0,
+          "dy": 0,
+          "jump": false,
+          "pound": false,
+          "slide": false,
+          "slideHeld": false,
+          "fireHeld": false
+        },
+        "authority": {
+          "tick": 1516,
+          "x": 1926.58893,
+          "y": 1527.303326,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0,
+          "alive": true,
+          "stance": 0,
+          "stanceSeq": 0,
+          "momentumX": 0,
+          "momentumY": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0,
+          "correctionSeq": 1,
+          "motionEpoch": 31,
+          "motionActive": true,
+          "motionSource": "ultimate",
+          "teleportSeq": 6,
+          "ackSeq": 996,
+          "attackSeq": 82,
+          "parriedSeq": 4,
+          "fellSeq": 1,
+          "poundSeq": 1,
+          "ultSeq": 1,
+          "ultPhase": 2
+        },
+        "delta": {
+          "positionPx": 0,
+          "movementEpoch": 0,
+          "correctionSeq": 0,
+          "teleportSeq": 0
+        },
+        "causes": [
+          "server-motion-active",
+          "source:ultimate"
+        ],
+        "b42": {
+          "counterBefore": 3,
+          "counterAfter": 3,
+          "counterDelta": 0,
+          "pending": 0
+        },
+        "correction": {
+          "requests": 1,
+          "nonzeroRequests": 0,
+          "maxMagnitudePx": 0,
+          "errorBeforeDecayPx": 0,
+          "remainingBeforeDecayMs": 0,
+          "errorAfterDecayPx": 0,
+          "remainingAfterDecayMs": 0,
+          "renderedBefore": {
+            "x": 1926.58893,
+            "y": 1527.303326
+          },
+          "renderedAfterReconcile": {
+            "x": 1926.58893,
+            "y": 1527.303326
+          },
+          "renderedAfterDecay": {
+            "x": 1926.58893,
+            "y": 1527.303326
+          }
+        }
+      },
+      {
+        "index": 6,
+        "tick": 1517,
+        "elapsedMs": 300,
+        "action": "ultimate-tail",
+        "input": {
+          "dx": 0,
+          "dy": 0,
+          "jump": false,
+          "pound": false,
+          "slide": false,
+          "slideHeld": false,
+          "fireHeld": false
+        },
+        "authority": {
+          "tick": 1517,
+          "x": 2170.40617,
+          "y": 1155.168631,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0,
+          "alive": true,
+          "stance": 0,
+          "stanceSeq": 0,
+          "momentumX": 0,
+          "momentumY": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0,
+          "correctionSeq": 1,
+          "motionEpoch": 31,
+          "motionActive": true,
+          "motionSource": "ultimate",
+          "teleportSeq": 7,
+          "ackSeq": 997,
+          "attackSeq": 82,
+          "parriedSeq": 4,
+          "fellSeq": 1,
+          "poundSeq": 1,
+          "ultSeq": 1,
+          "ultPhase": 2
+        },
+        "delta": {
+          "positionPx": 444.894457,
+          "movementEpoch": 0,
+          "correctionSeq": 0,
+          "teleportSeq": 1
+        },
+        "causes": [
+          "teleport",
+          "server-motion-active",
+          "source:ultimate"
+        ],
+        "b42": {
+          "counterBefore": 3,
+          "counterAfter": 4,
+          "counterDelta": 1,
+          "pending": 0
+        },
+        "correction": {
+          "requests": 1,
+          "nonzeroRequests": 1,
+          "maxMagnitudePx": 444.894457,
+          "errorBeforeDecayPx": 0,
+          "remainingBeforeDecayMs": 0,
+          "errorAfterDecayPx": 0,
+          "remainingAfterDecayMs": 0,
+          "renderedBefore": {
+            "x": 1926.58893,
+            "y": 1527.303326
+          },
+          "renderedAfterReconcile": {
+            "x": 2170.40617,
+            "y": 1155.168631
+          },
+          "renderedAfterDecay": {
+            "x": 2170.40617,
+            "y": 1155.168631
+          }
+        }
+      },
+      {
+        "index": 7,
+        "tick": 1520,
+        "elapsedMs": 350,
+        "action": "ultimate-tail",
+        "input": {
+          "dx": 0,
+          "dy": 0,
+          "jump": false,
+          "pound": false,
+          "slide": false,
+          "slideHeld": false,
+          "fireHeld": false
+        },
+        "authority": {
+          "tick": 1520,
+          "x": 2170.40617,
+          "y": 1155.168631,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0,
+          "alive": true,
+          "stance": 0,
+          "stanceSeq": 0,
+          "momentumX": 0,
+          "momentumY": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0,
+          "correctionSeq": 1,
+          "motionEpoch": 31,
+          "motionActive": false,
+          "motionSource": "",
+          "teleportSeq": 7,
+          "ackSeq": 998,
+          "attackSeq": 82,
+          "parriedSeq": 4,
+          "fellSeq": 1,
+          "poundSeq": 1,
+          "ultSeq": 1,
+          "ultPhase": 3
+        },
+        "delta": {
+          "positionPx": 0,
+          "movementEpoch": 0,
+          "correctionSeq": 0,
+          "teleportSeq": 0
+        },
+        "causes": [
+          "relaxed-authority-reconcile"
+        ],
+        "b42": {
+          "counterBefore": 4,
+          "counterAfter": 4,
+          "counterDelta": 0,
+          "pending": 0
+        },
+        "correction": {
+          "requests": 0,
+          "nonzeroRequests": 0,
+          "maxMagnitudePx": 0,
+          "errorBeforeDecayPx": 0,
+          "remainingBeforeDecayMs": 0,
+          "errorAfterDecayPx": 0,
+          "remainingAfterDecayMs": 0,
+          "renderedBefore": {
+            "x": 2170.40617,
+            "y": 1155.168631
+          },
+          "renderedAfterReconcile": {
+            "x": 2170.40617,
+            "y": 1155.168631
+          },
+          "renderedAfterDecay": {
+            "x": 2170.40617,
+            "y": 1155.168631
+          }
+        }
+      }
+    ]
+  },
+  "pit-fall": {
+    "label": "Pit fall / snap-back",
+    "summary": {
+      "b42CounterEdges": 1,
+      "correctionRequests": 1,
+      "nonzeroCorrections": 1,
+      "silentCorrections": 0,
+      "smoothCorrections": 0,
+      "snapCorrections": 1,
+      "totalMagnitudePx": 320,
+      "maxMagnitudePx": 320,
+      "meanMagnitudePx": 320,
+      "correctionDebtDurationMs": 0,
+      "serverMotionDurationMs": 50,
+      "maxCorrectionWindowMs": 0,
+      "scenarioDurationMs": 1000,
+      "peakAuthorityStepPx": 320,
+      "sourceCounts": {
+        "pit-snapback": 1
+      },
+      "causeCounts": {
+        "movement-envelope-rejection": 1,
+        "server-motion-epoch": 1,
+        "teleport": 1,
+        "server-motion-active": 1,
+        "source:pit-snapback": 1
+      }
+    },
+    "corrections": [
+      {
+        "dx": 320,
+        "dy": 0,
+        "magnitudePx": 320,
+        "band": "snap",
+        "remainingMsAfterApply": 0,
+        "tick": 1242,
+        "elapsedMs": 0,
+        "action": "grounded-over-pit",
+        "counterDelta": 1,
+        "causes": [
+          "movement-envelope-rejection",
+          "server-motion-epoch",
+          "teleport",
+          "server-motion-active",
+          "source:pit-snapback"
+        ],
+        "authority": {
+          "x": 1880,
+          "y": 1500,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0
+        },
+        "motion": {
+          "active": true,
+          "epoch": 30,
+          "source": "pit-snapback",
+          "correctionSeq": 1,
+          "teleportSeq": 2,
+          "stance": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0
+        }
+      }
+    ],
+    "frames": [
+      {
+        "index": 0,
+        "tick": 1242,
+        "elapsedMs": 0,
+        "action": "grounded-over-pit",
+        "input": {
+          "dx": 0,
+          "dy": 0,
+          "jump": false,
+          "pound": false,
+          "slide": false,
+          "slideHeld": false,
+          "fireHeld": false
+        },
+        "authority": {
+          "tick": 1242,
+          "x": 1880,
+          "y": 1500,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0,
+          "alive": true,
+          "stance": 0,
+          "stanceSeq": 0,
+          "momentumX": 0,
+          "momentumY": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0,
+          "correctionSeq": 1,
+          "motionEpoch": 30,
+          "motionActive": true,
+          "motionSource": "pit-snapback",
+          "teleportSeq": 2,
+          "ackSeq": 825,
+          "attackSeq": 54,
+          "parriedSeq": 4,
+          "fellSeq": 1,
+          "poundSeq": 1,
+          "ultSeq": 0,
+          "ultPhase": 0
+        },
+        "delta": {
+          "positionPx": 320,
+          "movementEpoch": 1,
+          "correctionSeq": 1,
+          "teleportSeq": 1
+        },
+        "causes": [
+          "movement-envelope-rejection",
+          "server-motion-epoch",
+          "teleport",
+          "server-motion-active",
+          "source:pit-snapback"
+        ],
+        "b42": {
+          "counterBefore": 0,
+          "counterAfter": 1,
+          "counterDelta": 1,
+          "pending": 0
+        },
+        "correction": {
+          "requests": 1,
+          "nonzeroRequests": 1,
+          "maxMagnitudePx": 320,
+          "errorBeforeDecayPx": 0,
+          "remainingBeforeDecayMs": 0,
+          "errorAfterDecayPx": 0,
+          "remainingAfterDecayMs": 0,
+          "renderedBefore": {
+            "x": 2200,
+            "y": 1500
+          },
+          "renderedAfterReconcile": {
+            "x": 1880,
+            "y": 1500
+          },
+          "renderedAfterDecay": {
+            "x": 1880,
+            "y": 1500
+          }
+        }
+      },
+      {
+        "index": 1,
+        "tick": 1244,
+        "elapsedMs": 50,
+        "action": "settle",
+        "input": {
+          "dx": 0,
+          "dy": 0,
+          "jump": false,
+          "pound": false,
+          "slide": false,
+          "slideHeld": false,
+          "fireHeld": false
+        },
+        "authority": {
+          "tick": 1244,
+          "x": 1880,
+          "y": 1500,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": 0,
+          "vy": 0,
+          "height": 0,
+          "vh": 0,
+          "alive": true,
+          "stance": 0,
+          "stanceSeq": 0,
+          "momentumX": 0,
+          "momentumY": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0,
+          "correctionSeq": 1,
+          "motionEpoch": 30,
+          "motionActive": false,
+          "motionSource": "",
+          "teleportSeq": 2,
+          "ackSeq": 826,
+          "attackSeq": 54,
+          "parriedSeq": 4,
+          "fellSeq": 1,
+          "poundSeq": 1,
+          "ultSeq": 0,
+          "ultPhase": 0
+        },
+        "delta": {
+          "positionPx": 0,
+          "movementEpoch": 0,
+          "correctionSeq": 0,
+          "teleportSeq": 0
+        },
+        "causes": [
+          "relaxed-authority-reconcile"
+        ],
+        "b42": {
+          "counterBefore": 1,
+          "counterAfter": 1,
+          "counterDelta": 0,
+          "pending": 0
+        },
+        "correction": {
+          "requests": 0,
+          "nonzeroRequests": 0,
+          "maxMagnitudePx": 0,
+          "errorBeforeDecayPx": 0,
+          "remainingBeforeDecayMs": 0,
+          "errorAfterDecayPx": 0,
+          "remainingAfterDecayMs": 0,
+          "renderedBefore": {
+            "x": 1880,
+            "y": 1500
+          },
+          "renderedAfterReconcile": {
+            "x": 1880,
+            "y": 1500
+          },
+          "renderedAfterDecay": {
+            "x": 1880,
+            "y": 1500
+          }
+        }
+      }
+    ]
+  }
+}

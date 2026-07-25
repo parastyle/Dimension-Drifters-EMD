@@ -1,0 +1,1525 @@
+{
+  "capturedAt": "2026-07-25T04:31:49.080Z",
+  "transport": {
+    "endpoint": "ws://127.0.0.1:52761",
+    "osAssignedEphemeralPort": 52761,
+    "protectedPortsUntouched": true,
+    "liveColyseusStack": true,
+    "simultaneousClients": 1,
+    "solo": true
+  },
+  "method": {
+    "client": "colyseus.js node client",
+    "prediction": "production SelfPredictor",
+    "correctionInstrumentation": "per-instance applyMovementCorrection wrapper; no runtime source edits",
+    "rankLaw": "descending cumulative non-zero requested correction magnitude, then count, then server-motion duration",
+    "correctionEpsilonPx": 0.000001,
+    "tickMs": 50
+  },
+  "coverage": {
+    "scenarios": 41,
+    "gunTagFamilies": 17,
+    "rangedBeams": 4,
+    "kungFuWraps": 4,
+    "parryDirections": 4
+  },
+  "totals": {
+    "b42CounterEdges": 35,
+    "correctionRequests": 449,
+    "nonzeroCorrections": 114,
+    "totalMagnitudePx": 6102.003706
+  },
+  "topThree": [
+    {
+      "id": "elevator-board",
+      "label": "Corporate elevator board / depart / arrive",
+      "corrections": 2,
+      "b42CounterEdges": 2,
+      "totalMagnitudePx": 3883.036739,
+      "maxMagnitudePx": 3570,
+      "serverMotionDurationMs": 4500
+    },
+    {
+      "id": "ultimate-alpha-strike",
+      "label": "Ultimate — Alpha Strike (4 targets)",
+      "corrections": 5,
+      "b42CounterEdges": 4,
+      "totalMagnitudePx": 1209.171721,
+      "maxMagnitudePx": 444.894457,
+      "serverMotionDurationMs": 300
+    },
+    {
+      "id": "pit-fall",
+      "label": "Pit fall / snap-back",
+      "corrections": 1,
+      "b42CounterEdges": 1,
+      "totalMagnitudePx": 320,
+      "maxMagnitudePx": 320,
+      "serverMotionDurationMs": 50
+    }
+  ],
+  "scenarios": [
+    {
+      "rank": 1,
+      "id": "elevator-board",
+      "label": "Corporate elevator board / depart / arrive",
+      "category": "placement",
+      "metadata": {
+        "beltLevel": "corporate-grid",
+        "startDepth": 1,
+        "endDepth": 2
+      },
+      "assertions": {
+        "advancedFloor": true,
+        "classified": true
+      },
+      "b42CounterEdges": 2,
+      "correctionRequests": 90,
+      "nonzeroCorrections": 2,
+      "silentCorrections": 0,
+      "smoothCorrections": 0,
+      "snapCorrections": 2,
+      "totalMagnitudePx": 3883.036739,
+      "maxMagnitudePx": 3570,
+      "meanMagnitudePx": 1941.51837,
+      "correctionDebtDurationMs": 0,
+      "serverMotionDurationMs": 4500,
+      "maxCorrectionWindowMs": 0,
+      "scenarioDurationMs": 9350,
+      "peakAuthorityStepPx": 3570,
+      "sourceCounts": {
+        "elevator-boarding": 2
+      },
+      "causeCounts": {
+        "server-motion-epoch": 1,
+        "teleport": 2,
+        "server-motion-active": 2,
+        "source:elevator-boarding": 2
+      }
+    },
+    {
+      "rank": 2,
+      "id": "ultimate-alpha-strike",
+      "label": "Ultimate — Alpha Strike (4 targets)",
+      "category": "ultimate",
+      "metadata": {
+        "family": "AlphaStrike",
+        "variant": "str",
+        "targets": 4
+      },
+      "assertions": {
+        "accepted": true,
+        "classified": true
+      },
+      "b42CounterEdges": 4,
+      "correctionRequests": 6,
+      "nonzeroCorrections": 5,
+      "silentCorrections": 0,
+      "smoothCorrections": 2,
+      "snapCorrections": 3,
+      "totalMagnitudePx": 1209.171721,
+      "maxMagnitudePx": 444.894457,
+      "meanMagnitudePx": 241.834344,
+      "correctionDebtDurationMs": 100,
+      "serverMotionDurationMs": 300,
+      "maxCorrectionWindowMs": 140,
+      "scenarioDurationMs": 2000,
+      "peakAuthorityStepPx": 444.894457,
+      "sourceCounts": {
+        "ultimate": 5
+      },
+      "causeCounts": {
+        "server-motion-epoch": 1,
+        "teleport": 4,
+        "server-motion-active": 5,
+        "source:ultimate": 5
+      }
+    },
+    {
+      "rank": 3,
+      "id": "pit-fall",
+      "label": "Pit fall / snap-back",
+      "category": "placement",
+      "metadata": {
+        "safePoint": {
+          "x": 1880,
+          "y": 1500
+        },
+        "pitTile": {
+          "col": 27,
+          "row": 18
+        }
+      },
+      "assertions": {
+        "fell": true,
+        "classified": true
+      },
+      "b42CounterEdges": 1,
+      "correctionRequests": 1,
+      "nonzeroCorrections": 1,
+      "silentCorrections": 0,
+      "smoothCorrections": 0,
+      "snapCorrections": 1,
+      "totalMagnitudePx": 320,
+      "maxMagnitudePx": 320,
+      "meanMagnitudePx": 320,
+      "correctionDebtDurationMs": 0,
+      "serverMotionDurationMs": 50,
+      "maxCorrectionWindowMs": 0,
+      "scenarioDurationMs": 1000,
+      "peakAuthorityStepPx": 320,
+      "sourceCounts": {
+        "pit-snapback": 1
+      },
+      "causeCounts": {
+        "movement-envelope-rejection": 1,
+        "server-motion-epoch": 1,
+        "teleport": 1,
+        "server-motion-active": 1,
+        "source:pit-snapback": 1
+      }
+    },
+    {
+      "rank": 4,
+      "id": "slide-hop",
+      "label": "Slide-hop input chain",
+      "category": "traversal",
+      "metadata": {},
+      "assertions": {
+        "rollClassified": true,
+        "jumpClassified": true,
+        "dormantSlideHopSource": true
+      },
+      "b42CounterEdges": 1,
+      "correctionRequests": 17,
+      "nonzeroCorrections": 11,
+      "silentCorrections": 0,
+      "smoothCorrections": 11,
+      "snapCorrections": 0,
+      "totalMagnitudePx": 284.357143,
+      "maxMagnitudePx": 70.857143,
+      "meanMagnitudePx": 25.850649,
+      "correctionDebtDurationMs": 520,
+      "serverMotionDurationMs": 850,
+      "maxCorrectionWindowMs": 140,
+      "scenarioDurationMs": 1900,
+      "peakAuthorityStepPx": 66,
+      "sourceCounts": {
+        "dodge-roll": 5,
+        "distance-jump": 6
+      },
+      "causeCounts": {
+        "server-motion-epoch": 1,
+        "server-motion-active": 11,
+        "source:dodge-roll": 5,
+        "source:distance-jump": 6
+      }
+    },
+    {
+      "rank": 5,
+      "id": "jump-pound",
+      "label": "Distance jump / pound",
+      "category": "traversal",
+      "metadata": {},
+      "assertions": {
+        "distanceJumpClassified": true,
+        "poundLanded": true
+      },
+      "b42CounterEdges": 1,
+      "correctionRequests": 9,
+      "nonzeroCorrections": 6,
+      "silentCorrections": 0,
+      "smoothCorrections": 6,
+      "snapCorrections": 0,
+      "totalMagnitudePx": 119.571429,
+      "maxMagnitudePx": 31,
+      "meanMagnitudePx": 19.928571,
+      "correctionDebtDurationMs": 280,
+      "serverMotionDurationMs": 450,
+      "maxCorrectionWindowMs": 140,
+      "scenarioDurationMs": 1600,
+      "peakAuthorityStepPx": 62,
+      "sourceCounts": {
+        "distance-jump": 6
+      },
+      "causeCounts": {
+        "server-motion-epoch": 1,
+        "server-motion-active": 6,
+        "source:distance-jump": 6
+      }
+    },
+    {
+      "rank": 6,
+      "id": "dodge-roll",
+      "label": "Dodge roll",
+      "category": "traversal",
+      "metadata": {},
+      "assertions": {
+        "enteredRoll": true,
+        "classified": true
+      },
+      "b42CounterEdges": 1,
+      "correctionRequests": 6,
+      "nonzeroCorrections": 6,
+      "silentCorrections": 0,
+      "smoothCorrections": 6,
+      "snapCorrections": 0,
+      "totalMagnitudePx": 110.5,
+      "maxMagnitudePx": 32,
+      "meanMagnitudePx": 18.416667,
+      "correctionDebtDurationMs": 280,
+      "serverMotionDurationMs": 300,
+      "maxCorrectionWindowMs": 140,
+      "scenarioDurationMs": 1000,
+      "peakAuthorityStepPx": 66,
+      "sourceCounts": {
+        "dodge-roll": 6
+      },
+      "causeCounts": {
+        "server-motion-epoch": 1,
+        "server-motion-active": 6,
+        "source:dodge-roll": 6
+      }
+    },
+    {
+      "rank": 7,
+      "id": "parry-left",
+      "label": "Parry — incoming from left",
+      "category": "parry",
+      "metadata": {
+        "id": "left",
+        "angle": 3.141593,
+        "expectedSource": "parry-slide"
+      },
+      "assertions": {
+        "successfulParry": true,
+        "expectedMotionSource": true
+      },
+      "b42CounterEdges": 1,
+      "correctionRequests": 1,
+      "nonzeroCorrections": 1,
+      "silentCorrections": 0,
+      "smoothCorrections": 1,
+      "snapCorrections": 0,
+      "totalMagnitudePx": 25.6,
+      "maxMagnitudePx": 25.6,
+      "meanMagnitudePx": 25.6,
+      "correctionDebtDurationMs": 50,
+      "serverMotionDurationMs": 50,
+      "maxCorrectionWindowMs": 140,
+      "scenarioDurationMs": 1900,
+      "peakAuthorityStepPx": 25.6,
+      "sourceCounts": {
+        "parry-slide": 1
+      },
+      "causeCounts": {
+        "server-motion-epoch": 1,
+        "server-motion-active": 1,
+        "source:parry-slide": 1
+      }
+    },
+    {
+      "rank": 8,
+      "id": "parry-right",
+      "label": "Parry — incoming from right",
+      "category": "parry",
+      "metadata": {
+        "id": "right",
+        "angle": 0,
+        "expectedSource": "parry-slide"
+      },
+      "assertions": {
+        "successfulParry": true,
+        "expectedMotionSource": true
+      },
+      "b42CounterEdges": 1,
+      "correctionRequests": 1,
+      "nonzeroCorrections": 1,
+      "silentCorrections": 0,
+      "smoothCorrections": 1,
+      "snapCorrections": 0,
+      "totalMagnitudePx": 25.6,
+      "maxMagnitudePx": 25.6,
+      "meanMagnitudePx": 25.6,
+      "correctionDebtDurationMs": 50,
+      "serverMotionDurationMs": 50,
+      "maxCorrectionWindowMs": 140,
+      "scenarioDurationMs": 2050,
+      "peakAuthorityStepPx": 25.6,
+      "sourceCounts": {
+        "parry-slide": 1
+      },
+      "causeCounts": {
+        "server-motion-epoch": 1,
+        "server-motion-active": 1,
+        "source:parry-slide": 1
+      }
+    },
+    {
+      "rank": 9,
+      "id": "gun-shotgun",
+      "label": "Gun class — shotgun",
+      "category": "gun-class",
+      "metadata": {
+        "family": "shotgun",
+        "weaponId": "x-gun-coffin-shotgun",
+        "weaponName": "Coffin Shotgun",
+        "recoil": 161,
+        "acceptedAttacks": 1
+      },
+      "assertions": {
+        "acceptedShot": true,
+        "classified": true
+      },
+      "b42CounterEdges": 1,
+      "correctionRequests": 9,
+      "nonzeroCorrections": 4,
+      "silentCorrections": 1,
+      "smoothCorrections": 3,
+      "snapCorrections": 0,
+      "totalMagnitudePx": 20.597461,
+      "maxMagnitudePx": 8.447886,
+      "meanMagnitudePx": 5.149365,
+      "correctionDebtDurationMs": 140,
+      "serverMotionDurationMs": 450,
+      "maxCorrectionWindowMs": 140,
+      "scenarioDurationMs": 1000,
+      "peakAuthorityStepPx": 8.05,
+      "sourceCounts": {
+        "weapon-fire-recoil": 4
+      },
+      "causeCounts": {
+        "server-motion-epoch": 1,
+        "server-motion-active": 4,
+        "source:weapon-fire-recoil": 4
+      }
+    },
+    {
+      "rank": 10,
+      "id": "sustained-gatling",
+      "label": "Sustained Gatling",
+      "category": "gun-sustained",
+      "metadata": {
+        "weaponId": "x-gun-gatling",
+        "weaponName": "Gatling",
+        "recoil": 14,
+        "fireRate": 0.08,
+        "acceptedAttacks": 29
+      },
+      "assertions": {
+        "acceptedBurst": true,
+        "classified": true
+      },
+      "b42CounterEdges": 1,
+      "correctionRequests": 43,
+      "nonzeroCorrections": 15,
+      "silentCorrections": 15,
+      "smoothCorrections": 0,
+      "snapCorrections": 0,
+      "totalMagnitudePx": 17.78639,
+      "maxMagnitudePx": 1.532433,
+      "meanMagnitudePx": 1.185759,
+      "correctionDebtDurationMs": 0,
+      "serverMotionDurationMs": 2150,
+      "maxCorrectionWindowMs": 0,
+      "scenarioDurationMs": 2850,
+      "peakAuthorityStepPx": 2.837948,
+      "sourceCounts": {
+        "weapon-fire-recoil": 15
+      },
+      "causeCounts": {
+        "server-motion-epoch": 1,
+        "server-motion-active": 15,
+        "source:weapon-fire-recoil": 15
+      }
+    },
+    {
+      "rank": 11,
+      "id": "gun-blunderbuss",
+      "label": "Gun class — blunderbuss",
+      "category": "gun-class",
+      "metadata": {
+        "family": "blunderbuss",
+        "weaponId": "x2-pearlbreech-volleygun",
+        "weaponName": "Pearlbreech Volleygun",
+        "recoil": 171,
+        "acceptedAttacks": 1
+      },
+      "assertions": {
+        "acceptedShot": true,
+        "classified": true
+      },
+      "b42CounterEdges": 1,
+      "correctionRequests": 9,
+      "nonzeroCorrections": 4,
+      "silentCorrections": 2,
+      "smoothCorrections": 2,
+      "snapCorrections": 0,
+      "totalMagnitudePx": 17.390449,
+      "maxMagnitudePx": 8.55,
+      "meanMagnitudePx": 4.347612,
+      "correctionDebtDurationMs": 100,
+      "serverMotionDurationMs": 450,
+      "maxCorrectionWindowMs": 140,
+      "scenarioDurationMs": 950,
+      "peakAuthorityStepPx": 8.55,
+      "sourceCounts": {
+        "weapon-fire-recoil": 4
+      },
+      "causeCounts": {
+        "server-motion-epoch": 1,
+        "server-motion-active": 4,
+        "source:weapon-fire-recoil": 4
+      }
+    },
+    {
+      "rank": 12,
+      "id": "gun-marksman-rifle",
+      "label": "Gun class — marksman-rifle",
+      "category": "gun-class",
+      "metadata": {
+        "family": "marksman-rifle",
+        "weaponId": "x2-barrett-50-cal-sniper",
+        "weaponName": "Barrett .50-Cal Sniper",
+        "recoil": 146,
+        "acceptedAttacks": 1
+      },
+      "assertions": {
+        "acceptedShot": true,
+        "classified": true
+      },
+      "b42CounterEdges": 1,
+      "correctionRequests": 10,
+      "nonzeroCorrections": 4,
+      "silentCorrections": 2,
+      "smoothCorrections": 2,
+      "snapCorrections": 0,
+      "totalMagnitudePx": 14.847986,
+      "maxMagnitudePx": 7.3,
+      "meanMagnitudePx": 3.711996,
+      "correctionDebtDurationMs": 100,
+      "serverMotionDurationMs": 500,
+      "maxCorrectionWindowMs": 140,
+      "scenarioDurationMs": 950,
+      "peakAuthorityStepPx": 7.3,
+      "sourceCounts": {
+        "weapon-fire-recoil": 4
+      },
+      "causeCounts": {
+        "server-motion-epoch": 1,
+        "server-motion-active": 4,
+        "source:weapon-fire-recoil": 4
+      }
+    },
+    {
+      "rank": 13,
+      "id": "parry-below",
+      "label": "Parry — incoming from below",
+      "category": "parry",
+      "metadata": {
+        "id": "below",
+        "angle": 1.570796,
+        "expectedSource": "parry-launch"
+      },
+      "assertions": {
+        "successfulParry": true,
+        "expectedMotionSource": true
+      },
+      "b42CounterEdges": 1,
+      "correctionRequests": 10,
+      "nonzeroCorrections": 4,
+      "silentCorrections": 2,
+      "smoothCorrections": 2,
+      "snapCorrections": 0,
+      "totalMagnitudePx": 10.863938,
+      "maxMagnitudePx": 4.349436,
+      "meanMagnitudePx": 2.715985,
+      "correctionDebtDurationMs": 100,
+      "serverMotionDurationMs": 500,
+      "maxCorrectionWindowMs": 140,
+      "scenarioDurationMs": 1750,
+      "peakAuthorityStepPx": 10.644583,
+      "sourceCounts": {
+        "parry-launch": 4
+      },
+      "causeCounts": {
+        "server-motion-active": 4,
+        "source:parry-launch": 4
+      }
+    },
+    {
+      "rank": 14,
+      "id": "gun-heavy-ordnance",
+      "label": "Gun class — heavy-ordnance",
+      "category": "gun-class",
+      "metadata": {
+        "family": "heavy-ordnance",
+        "weaponId": "x2-calamity-howitzer",
+        "weaponName": "Calamity Howitzer",
+        "recoil": 233,
+        "acceptedAttacks": 1
+      },
+      "assertions": {
+        "acceptedShot": true,
+        "classified": true
+      },
+      "b42CounterEdges": 1,
+      "correctionRequests": 10,
+      "nonzeroCorrections": 4,
+      "silentCorrections": 2,
+      "smoothCorrections": 2,
+      "snapCorrections": 0,
+      "totalMagnitudePx": 9.633976,
+      "maxMagnitudePx": 4.736537,
+      "meanMagnitudePx": 2.408494,
+      "correctionDebtDurationMs": 100,
+      "serverMotionDurationMs": 500,
+      "maxCorrectionWindowMs": 140,
+      "scenarioDurationMs": 950,
+      "peakAuthorityStepPx": 12.164905,
+      "sourceCounts": {
+        "weapon-fire-recoil": 4
+      },
+      "causeCounts": {
+        "server-motion-active": 4,
+        "source:weapon-fire-recoil": 4
+      }
+    },
+    {
+      "rank": 15,
+      "id": "gun-lever-rifle",
+      "label": "Gun class — lever-rifle",
+      "category": "gun-class",
+      "metadata": {
+        "family": "lever-rifle",
+        "weaponId": "x2-brasswork-volley-rifle",
+        "weaponName": "Brasswork Volley Rifle",
+        "recoil": 107,
+        "acceptedAttacks": 1
+      },
+      "assertions": {
+        "acceptedShot": true,
+        "classified": true
+      },
+      "b42CounterEdges": 1,
+      "correctionRequests": 9,
+      "nonzeroCorrections": 3,
+      "silentCorrections": 2,
+      "smoothCorrections": 1,
+      "snapCorrections": 0,
+      "totalMagnitudePx": 5.963845,
+      "maxMagnitudePx": 3.411311,
+      "meanMagnitudePx": 1.987948,
+      "correctionDebtDurationMs": 50,
+      "serverMotionDurationMs": 450,
+      "maxCorrectionWindowMs": 140,
+      "scenarioDurationMs": 950,
+      "peakAuthorityStepPx": 8.761311,
+      "sourceCounts": {
+        "weapon-fire-recoil": 3
+      },
+      "causeCounts": {
+        "server-motion-active": 3,
+        "source:weapon-fire-recoil": 3
+      }
+    },
+    {
+      "rank": 16,
+      "id": "gun-auto-rifle",
+      "label": "Gun class — auto-rifle",
+      "category": "gun-class",
+      "metadata": {
+        "family": "auto-rifle",
+        "weaponId": "x2-brimstone-gallows-rifle",
+        "weaponName": "Brimstone Gallows-Rifle",
+        "recoil": 100,
+        "acceptedAttacks": 1
+      },
+      "assertions": {
+        "acceptedShot": true,
+        "classified": true
+      },
+      "b42CounterEdges": 1,
+      "correctionRequests": 9,
+      "nonzeroCorrections": 3,
+      "silentCorrections": 2,
+      "smoothCorrections": 1,
+      "snapCorrections": 0,
+      "totalMagnitudePx": 5.573687,
+      "maxMagnitudePx": 3.188141,
+      "meanMagnitudePx": 1.857896,
+      "correctionDebtDurationMs": 50,
+      "serverMotionDurationMs": 450,
+      "maxCorrectionWindowMs": 140,
+      "scenarioDurationMs": 950,
+      "peakAuthorityStepPx": 8.188141,
+      "sourceCounts": {
+        "weapon-fire-recoil": 3
+      },
+      "causeCounts": {
+        "server-motion-active": 3,
+        "source:weapon-fire-recoil": 3
+      }
+    },
+    {
+      "rank": 17,
+      "id": "gun-hand-cannon",
+      "label": "Gun class — hand-cannon",
+      "category": "gun-class",
+      "metadata": {
+        "family": "hand-cannon",
+        "weaponId": "x-gun-hand-mortar",
+        "weaponName": "Hand Mortar",
+        "recoil": 147,
+        "acceptedAttacks": 1
+      },
+      "assertions": {
+        "acceptedShot": true,
+        "classified": true
+      },
+      "b42CounterEdges": 1,
+      "correctionRequests": 10,
+      "nonzeroCorrections": 2,
+      "silentCorrections": 2,
+      "smoothCorrections": 0,
+      "snapCorrections": 0,
+      "totalMagnitudePx": 3.30325,
+      "maxMagnitudePx": 2.988287,
+      "meanMagnitudePx": 1.651625,
+      "correctionDebtDurationMs": 0,
+      "serverMotionDurationMs": 500,
+      "maxCorrectionWindowMs": 0,
+      "scenarioDurationMs": 950,
+      "peakAuthorityStepPx": 7.674854,
+      "sourceCounts": {
+        "weapon-fire-recoil": 2
+      },
+      "causeCounts": {
+        "server-motion-active": 2,
+        "source:weapon-fire-recoil": 2
+      }
+    },
+    {
+      "rank": 18,
+      "id": "gun-scrap-cannon",
+      "label": "Gun class — scrap-cannon",
+      "category": "gun-class",
+      "metadata": {
+        "family": "scrap-cannon",
+        "weaponId": "x2-confetti-cannon",
+        "weaponName": "Confetti Cannon",
+        "recoil": 177,
+        "acceptedAttacks": 1
+      },
+      "assertions": {
+        "acceptedShot": true,
+        "classified": true
+      },
+      "b42CounterEdges": 1,
+      "correctionRequests": 9,
+      "nonzeroCorrections": 2,
+      "silentCorrections": 2,
+      "smoothCorrections": 0,
+      "snapCorrections": 0,
+      "totalMagnitudePx": 2.889045,
+      "maxMagnitudePx": 2.294276,
+      "meanMagnitudePx": 1.444523,
+      "correctionDebtDurationMs": 0,
+      "serverMotionDurationMs": 450,
+      "maxCorrectionWindowMs": 0,
+      "scenarioDurationMs": 1000,
+      "peakAuthorityStepPx": 8.85,
+      "sourceCounts": {
+        "weapon-fire-recoil": 2
+      },
+      "causeCounts": {
+        "server-motion-active": 2,
+        "source:weapon-fire-recoil": 2
+      }
+    },
+    {
+      "rank": 19,
+      "id": "gun-railgun",
+      "label": "Gun class — railgun",
+      "category": "gun-class",
+      "metadata": {
+        "family": "railgun",
+        "weaponId": "x2-sunbreaker-railgun",
+        "weaponName": "Sunbreaker Railgun",
+        "recoil": 213,
+        "acceptedAttacks": 1
+      },
+      "assertions": {
+        "acceptedShot": true,
+        "classified": true
+      },
+      "b42CounterEdges": 1,
+      "correctionRequests": 9,
+      "nonzeroCorrections": 1,
+      "silentCorrections": 1,
+      "smoothCorrections": 0,
+      "snapCorrections": 0,
+      "totalMagnitudePx": 2.882935,
+      "maxMagnitudePx": 2.882935,
+      "meanMagnitudePx": 2.882935,
+      "correctionDebtDurationMs": 0,
+      "serverMotionDurationMs": 450,
+      "maxCorrectionWindowMs": 0,
+      "scenarioDurationMs": 1000,
+      "peakAuthorityStepPx": 10.65,
+      "sourceCounts": {
+        "weapon-fire-recoil": 1
+      },
+      "causeCounts": {
+        "server-motion-active": 1,
+        "source:weapon-fire-recoil": 1
+      }
+    },
+    {
+      "rank": 20,
+      "id": "gun-pistol",
+      "label": "Gun class — pistol",
+      "category": "gun-class",
+      "metadata": {
+        "family": "pistol",
+        "weaponId": "x2-scattershot-saint",
+        "weaponName": "Scattershot Saint",
+        "recoil": 73,
+        "acceptedAttacks": 1
+      },
+      "assertions": {
+        "acceptedShot": true,
+        "classified": true
+      },
+      "b42CounterEdges": 1,
+      "correctionRequests": 9,
+      "nonzeroCorrections": 1,
+      "silentCorrections": 1,
+      "smoothCorrections": 0,
+      "snapCorrections": 0,
+      "totalMagnitudePx": 2.327343,
+      "maxMagnitudePx": 2.327343,
+      "meanMagnitudePx": 2.327343,
+      "correctionDebtDurationMs": 0,
+      "serverMotionDurationMs": 450,
+      "maxCorrectionWindowMs": 0,
+      "scenarioDurationMs": 1000,
+      "peakAuthorityStepPx": 5.977343,
+      "sourceCounts": {
+        "weapon-fire-recoil": 1
+      },
+      "causeCounts": {
+        "server-motion-active": 1,
+        "source:weapon-fire-recoil": 1
+      }
+    },
+    {
+      "rank": 21,
+      "id": "gun-grenade-launcher",
+      "label": "Gun class — grenade-launcher",
+      "category": "gun-class",
+      "metadata": {
+        "family": "grenade-launcher",
+        "weaponId": "x2-quicksilver-streetsweeper",
+        "weaponName": "Quicksilver Streetsweeper",
+        "recoil": 178,
+        "acceptedAttacks": 1
+      },
+      "assertions": {
+        "acceptedShot": true,
+        "classified": true
+      },
+      "b42CounterEdges": 1,
+      "correctionRequests": 10,
+      "nonzeroCorrections": 1,
+      "silentCorrections": 1,
+      "smoothCorrections": 0,
+      "snapCorrections": 0,
+      "totalMagnitudePx": 2.307238,
+      "maxMagnitudePx": 2.307238,
+      "meanMagnitudePx": 2.307238,
+      "correctionDebtDurationMs": 0,
+      "serverMotionDurationMs": 500,
+      "maxCorrectionWindowMs": 0,
+      "scenarioDurationMs": 950,
+      "peakAuthorityStepPx": 8.9,
+      "sourceCounts": {
+        "weapon-fire-recoil": 1
+      },
+      "causeCounts": {
+        "server-motion-active": 1,
+        "source:weapon-fire-recoil": 1
+      }
+    },
+    {
+      "rank": 22,
+      "id": "gun-exotic-ranged",
+      "label": "Gun class — exotic-ranged",
+      "category": "gun-class",
+      "metadata": {
+        "family": "exotic-ranged",
+        "weaponId": "x2-grave-anchor-harpoon",
+        "weaponName": "Grave-Anchor Harpoon",
+        "recoil": 126,
+        "acceptedAttacks": 1
+      },
+      "assertions": {
+        "acceptedShot": true,
+        "classified": true
+      },
+      "b42CounterEdges": 1,
+      "correctionRequests": 10,
+      "nonzeroCorrections": 1,
+      "silentCorrections": 1,
+      "smoothCorrections": 0,
+      "snapCorrections": 0,
+      "totalMagnitudePx": 1.633214,
+      "maxMagnitudePx": 1.633214,
+      "meanMagnitudePx": 1.633214,
+      "correctionDebtDurationMs": 0,
+      "serverMotionDurationMs": 500,
+      "maxCorrectionWindowMs": 0,
+      "scenarioDurationMs": 950,
+      "peakAuthorityStepPx": 6.3,
+      "sourceCounts": {
+        "weapon-fire-recoil": 1
+      },
+      "causeCounts": {
+        "server-motion-active": 1,
+        "source:weapon-fire-recoil": 1
+      }
+    },
+    {
+      "rank": 23,
+      "id": "gun-concussion-cannon",
+      "label": "Gun class — concussion-cannon",
+      "category": "gun-class",
+      "metadata": {
+        "family": "concussion-cannon",
+        "weaponId": "x2-hailshot-hand-maul",
+        "weaponName": "Hailshot Hand-Maul",
+        "recoil": 174,
+        "acceptedAttacks": 1
+      },
+      "assertions": {
+        "acceptedShot": true,
+        "classified": true
+      },
+      "b42CounterEdges": 1,
+      "correctionRequests": 10,
+      "nonzeroCorrections": 1,
+      "silentCorrections": 1,
+      "smoothCorrections": 0,
+      "snapCorrections": 0,
+      "totalMagnitudePx": 1.4381,
+      "maxMagnitudePx": 1.4381,
+      "meanMagnitudePx": 1.4381,
+      "correctionDebtDurationMs": 0,
+      "serverMotionDurationMs": 500,
+      "maxCorrectionWindowMs": 0,
+      "scenarioDurationMs": 950,
+      "peakAuthorityStepPx": 8.7,
+      "sourceCounts": {
+        "weapon-fire-recoil": 1
+      },
+      "causeCounts": {
+        "server-motion-active": 1,
+        "source:weapon-fire-recoil": 1
+      }
+    },
+    {
+      "rank": 24,
+      "id": "beam-x2-stormcaller-tesla-gatling",
+      "label": "Ranged beam recoil — Stormcaller Tesla Gatling",
+      "category": "gun-beam",
+      "metadata": {
+        "weaponId": "x2-stormcaller-tesla-gatling",
+        "weaponName": "Stormcaller Tesla Gatling",
+        "family": "heavy-ordnance",
+        "recoilPerSecond": 38
+      },
+      "assertions": {
+        "activeBeamObserved": true,
+        "classified": true
+      },
+      "b42CounterEdges": 1,
+      "correctionRequests": 25,
+      "nonzeroCorrections": 9,
+      "silentCorrections": 9,
+      "smoothCorrections": 0,
+      "snapCorrections": 0,
+      "totalMagnitudePx": 0.95,
+      "maxMagnitudePx": 0.19,
+      "meanMagnitudePx": 0.105556,
+      "correctionDebtDurationMs": 0,
+      "serverMotionDurationMs": 1250,
+      "maxCorrectionWindowMs": 0,
+      "scenarioDurationMs": 2650,
+      "peakAuthorityStepPx": 0.285,
+      "sourceCounts": {
+        "weapon-fire-recoil": 9
+      },
+      "causeCounts": {
+        "server-motion-active": 9,
+        "source:weapon-fire-recoil": 9
+      }
+    },
+    {
+      "rank": 25,
+      "id": "gun-nailgun",
+      "label": "Gun class — nailgun",
+      "category": "gun-class",
+      "metadata": {
+        "family": "nailgun",
+        "weaponId": "x-gun-nailgun",
+        "weaponName": "Nailgun",
+        "recoil": 29,
+        "acceptedAttacks": 1
+      },
+      "assertions": {
+        "acceptedShot": true,
+        "classified": true
+      },
+      "b42CounterEdges": 1,
+      "correctionRequests": 9,
+      "nonzeroCorrections": 1,
+      "silentCorrections": 1,
+      "smoothCorrections": 0,
+      "snapCorrections": 0,
+      "totalMagnitudePx": 0.924561,
+      "maxMagnitudePx": 0.924561,
+      "meanMagnitudePx": 0.924561,
+      "correctionDebtDurationMs": 0,
+      "serverMotionDurationMs": 450,
+      "maxCorrectionWindowMs": 0,
+      "scenarioDurationMs": 1000,
+      "peakAuthorityStepPx": 2.374561,
+      "sourceCounts": {
+        "weapon-fire-recoil": 1
+      },
+      "causeCounts": {
+        "server-motion-active": 1,
+        "source:weapon-fire-recoil": 1
+      }
+    },
+    {
+      "rank": 26,
+      "id": "gun-machine-pistol",
+      "label": "Gun class — machine-pistol",
+      "category": "gun-class",
+      "metadata": {
+        "family": "machine-pistol",
+        "weaponId": "x2-reliquary-repeater",
+        "weaponName": "Reliquary Repeater",
+        "recoil": 23,
+        "acceptedAttacks": 1
+      },
+      "assertions": {
+        "acceptedShot": true,
+        "classified": true
+      },
+      "b42CounterEdges": 1,
+      "correctionRequests": 9,
+      "nonzeroCorrections": 1,
+      "silentCorrections": 1,
+      "smoothCorrections": 0,
+      "snapCorrections": 0,
+      "totalMagnitudePx": 0.733272,
+      "maxMagnitudePx": 0.733272,
+      "meanMagnitudePx": 0.733272,
+      "correctionDebtDurationMs": 0,
+      "serverMotionDurationMs": 450,
+      "maxCorrectionWindowMs": 0,
+      "scenarioDurationMs": 950,
+      "peakAuthorityStepPx": 1.883272,
+      "sourceCounts": {
+        "weapon-fire-recoil": 1
+      },
+      "causeCounts": {
+        "server-motion-active": 1,
+        "source:weapon-fire-recoil": 1
+      }
+    },
+    {
+      "rank": 27,
+      "id": "beam-x2-mirage-coilrifle",
+      "label": "Ranged beam recoil — Mirage Coilrifle",
+      "category": "gun-beam",
+      "metadata": {
+        "weaponId": "x2-mirage-coilrifle",
+        "weaponName": "Mirage Coilrifle",
+        "family": "railgun",
+        "recoilPerSecond": 31
+      },
+      "assertions": {
+        "activeBeamObserved": true,
+        "classified": true
+      },
+      "b42CounterEdges": 1,
+      "correctionRequests": 25,
+      "nonzeroCorrections": 8,
+      "silentCorrections": 8,
+      "smoothCorrections": 0,
+      "snapCorrections": 0,
+      "totalMagnitudePx": 0.6975,
+      "maxMagnitudePx": 0.155,
+      "meanMagnitudePx": 0.087187,
+      "correctionDebtDurationMs": 0,
+      "serverMotionDurationMs": 1250,
+      "maxCorrectionWindowMs": 0,
+      "scenarioDurationMs": 2500,
+      "peakAuthorityStepPx": 0.155,
+      "sourceCounts": {
+        "weapon-fire-recoil": 8
+      },
+      "causeCounts": {
+        "server-motion-epoch": 1,
+        "server-motion-active": 8,
+        "source:weapon-fire-recoil": 8
+      }
+    },
+    {
+      "rank": 28,
+      "id": "beam-x2-permafrost-siege-lobber",
+      "label": "Ranged beam recoil — Permafrost Siege Lobber",
+      "category": "gun-beam",
+      "metadata": {
+        "weaponId": "x2-permafrost-siege-lobber",
+        "weaponName": "Permafrost Siege Lobber",
+        "family": "heavy-ordnance",
+        "recoilPerSecond": 31
+      },
+      "assertions": {
+        "activeBeamObserved": true,
+        "classified": true
+      },
+      "b42CounterEdges": 1,
+      "correctionRequests": 27,
+      "nonzeroCorrections": 6,
+      "silentCorrections": 6,
+      "smoothCorrections": 0,
+      "snapCorrections": 0,
+      "totalMagnitudePx": 0.5425,
+      "maxMagnitudePx": 0.155,
+      "meanMagnitudePx": 0.090417,
+      "correctionDebtDurationMs": 0,
+      "serverMotionDurationMs": 1350,
+      "maxCorrectionWindowMs": 0,
+      "scenarioDurationMs": 2350,
+      "peakAuthorityStepPx": 0.155,
+      "sourceCounts": {
+        "weapon-fire-recoil": 6
+      },
+      "causeCounts": {
+        "server-motion-active": 6,
+        "source:weapon-fire-recoil": 6
+      }
+    },
+    {
+      "rank": 29,
+      "id": "beam-x2-doomsday-drum-cannon",
+      "label": "Ranged beam recoil — Doomsday Drum Cannon",
+      "category": "gun-beam",
+      "metadata": {
+        "weaponId": "x2-doomsday-drum-cannon",
+        "weaponName": "Doomsday Drum Cannon",
+        "family": "heavy-ordnance",
+        "recoilPerSecond": 38
+      },
+      "assertions": {
+        "activeBeamObserved": true,
+        "classified": true
+      },
+      "b42CounterEdges": 1,
+      "correctionRequests": 27,
+      "nonzeroCorrections": 5,
+      "silentCorrections": 5,
+      "smoothCorrections": 0,
+      "snapCorrections": 0,
+      "totalMagnitudePx": 0.475,
+      "maxMagnitudePx": 0.095,
+      "meanMagnitudePx": 0.095,
+      "correctionDebtDurationMs": 0,
+      "serverMotionDurationMs": 1350,
+      "maxCorrectionWindowMs": 0,
+      "scenarioDurationMs": 2300,
+      "peakAuthorityStepPx": 0.19,
+      "sourceCounts": {
+        "weapon-fire-recoil": 5
+      },
+      "causeCounts": {
+        "server-motion-active": 5,
+        "source:weapon-fire-recoil": 5
+      }
+    },
+    {
+      "rank": 30,
+      "id": "gun-gauntlet",
+      "label": "Gun class — gauntlet",
+      "category": "gun-class",
+      "metadata": {
+        "family": "gauntlet",
+        "weaponId": "x2-tesla-faradayer",
+        "weaponName": "Tesla Faradayer",
+        "recoil": 49,
+        "acceptedAttacks": 1
+      },
+      "assertions": {
+        "acceptedShot": true,
+        "classified": true
+      },
+      "b42CounterEdges": 1,
+      "correctionRequests": 10,
+      "nonzeroCorrections": 1,
+      "silentCorrections": 1,
+      "smoothCorrections": 0,
+      "snapCorrections": 0,
+      "totalMagnitudePx": 0.404982,
+      "maxMagnitudePx": 0.404982,
+      "meanMagnitudePx": 0.404982,
+      "correctionDebtDurationMs": 0,
+      "serverMotionDurationMs": 500,
+      "maxCorrectionWindowMs": 0,
+      "scenarioDurationMs": 950,
+      "peakAuthorityStepPx": 2.45,
+      "sourceCounts": {
+        "weapon-fire-recoil": 1
+      },
+      "causeCounts": {
+        "server-motion-active": 1,
+        "source:weapon-fire-recoil": 1
+      }
+    },
+    {
+      "rank": 31,
+      "id": "gun-gun",
+      "label": "Gun class — gun",
+      "category": "gun-class",
+      "metadata": {
+        "family": "gun",
+        "weaponId": "x-gun-gatling",
+        "weaponName": "Gatling",
+        "recoil": 14,
+        "acceptedAttacks": 1
+      },
+      "assertions": {
+        "acceptedShot": true,
+        "classified": true
+      },
+      "b42CounterEdges": 1,
+      "correctionRequests": 10,
+      "nonzeroCorrections": 0,
+      "silentCorrections": 0,
+      "smoothCorrections": 0,
+      "snapCorrections": 0,
+      "totalMagnitudePx": 0,
+      "maxMagnitudePx": 0,
+      "meanMagnitudePx": 0,
+      "correctionDebtDurationMs": 0,
+      "serverMotionDurationMs": 500,
+      "maxCorrectionWindowMs": 0,
+      "scenarioDurationMs": 950,
+      "peakAuthorityStepPx": 0.7,
+      "sourceCounts": {},
+      "causeCounts": {}
+    },
+    {
+      "rank": 32,
+      "id": "chest-open",
+      "label": "Chest open",
+      "category": "interaction",
+      "metadata": {},
+      "assertions": {
+        "opened": true
+      },
+      "b42CounterEdges": 0,
+      "correctionRequests": 0,
+      "nonzeroCorrections": 0,
+      "silentCorrections": 0,
+      "smoothCorrections": 0,
+      "snapCorrections": 0,
+      "totalMagnitudePx": 0,
+      "maxMagnitudePx": 0,
+      "meanMagnitudePx": 0,
+      "correctionDebtDurationMs": 0,
+      "serverMotionDurationMs": 0,
+      "maxCorrectionWindowMs": 0,
+      "scenarioDurationMs": 450,
+      "peakAuthorityStepPx": 0,
+      "sourceCounts": {},
+      "causeCounts": {}
+    },
+    {
+      "rank": 33,
+      "id": "kung-fu-wrap-x2-drunken-fist-wraps",
+      "label": "Kung-fu wrap — Drunken Fist Wraps",
+      "category": "kung-fu-wrap",
+      "metadata": {
+        "weaponId": "x2-drunken-fist-wraps",
+        "weaponName": "Drunken Fist Wraps",
+        "comboLength": 5,
+        "acceptedAttacks": 5
+      },
+      "assertions": {
+        "fullComboAccepted": true
+      },
+      "b42CounterEdges": 0,
+      "correctionRequests": 0,
+      "nonzeroCorrections": 0,
+      "silentCorrections": 0,
+      "smoothCorrections": 0,
+      "snapCorrections": 0,
+      "totalMagnitudePx": 0,
+      "maxMagnitudePx": 0,
+      "meanMagnitudePx": 0,
+      "correctionDebtDurationMs": 0,
+      "serverMotionDurationMs": 0,
+      "maxCorrectionWindowMs": 0,
+      "scenarioDurationMs": 1450,
+      "peakAuthorityStepPx": 0,
+      "sourceCounts": {},
+      "causeCounts": {}
+    },
+    {
+      "rank": 34,
+      "id": "kung-fu-wrap-x2-iron-palm-wraps",
+      "label": "Kung-fu wrap — Iron Palm Wraps",
+      "category": "kung-fu-wrap",
+      "metadata": {
+        "weaponId": "x2-iron-palm-wraps",
+        "weaponName": "Iron Palm Wraps",
+        "comboLength": 4,
+        "acceptedAttacks": 4
+      },
+      "assertions": {
+        "fullComboAccepted": true
+      },
+      "b42CounterEdges": 0,
+      "correctionRequests": 0,
+      "nonzeroCorrections": 0,
+      "silentCorrections": 0,
+      "smoothCorrections": 0,
+      "snapCorrections": 0,
+      "totalMagnitudePx": 0,
+      "maxMagnitudePx": 0,
+      "meanMagnitudePx": 0,
+      "correctionDebtDurationMs": 0,
+      "serverMotionDurationMs": 0,
+      "maxCorrectionWindowMs": 0,
+      "scenarioDurationMs": 1350,
+      "peakAuthorityStepPx": 0,
+      "sourceCounts": {},
+      "causeCounts": {}
+    },
+    {
+      "rank": 35,
+      "id": "kung-fu-wrap-x2-muay-thai-wraps",
+      "label": "Kung-fu wrap — Muay Thai Wraps",
+      "category": "kung-fu-wrap",
+      "metadata": {
+        "weaponId": "x2-muay-thai-wraps",
+        "weaponName": "Muay Thai Wraps",
+        "comboLength": 5,
+        "acceptedAttacks": 5
+      },
+      "assertions": {
+        "fullComboAccepted": true
+      },
+      "b42CounterEdges": 0,
+      "correctionRequests": 0,
+      "nonzeroCorrections": 0,
+      "silentCorrections": 0,
+      "smoothCorrections": 0,
+      "snapCorrections": 0,
+      "totalMagnitudePx": 0,
+      "maxMagnitudePx": 0,
+      "meanMagnitudePx": 0,
+      "correctionDebtDurationMs": 0,
+      "serverMotionDurationMs": 0,
+      "maxCorrectionWindowMs": 0,
+      "scenarioDurationMs": 1350,
+      "peakAuthorityStepPx": 0,
+      "sourceCounts": {},
+      "causeCounts": {}
+    },
+    {
+      "rank": 36,
+      "id": "kung-fu-wrap-x2-wing-chun-wraps",
+      "label": "Kung-fu wrap — Wing Chun Wraps",
+      "category": "kung-fu-wrap",
+      "metadata": {
+        "weaponId": "x2-wing-chun-wraps",
+        "weaponName": "Wing Chun Wraps",
+        "comboLength": 5,
+        "acceptedAttacks": 5
+      },
+      "assertions": {
+        "fullComboAccepted": true
+      },
+      "b42CounterEdges": 0,
+      "correctionRequests": 0,
+      "nonzeroCorrections": 0,
+      "silentCorrections": 0,
+      "smoothCorrections": 0,
+      "snapCorrections": 0,
+      "totalMagnitudePx": 0,
+      "maxMagnitudePx": 0,
+      "meanMagnitudePx": 0,
+      "correctionDebtDurationMs": 0,
+      "serverMotionDurationMs": 0,
+      "maxCorrectionWindowMs": 0,
+      "scenarioDurationMs": 1200,
+      "peakAuthorityStepPx": 0,
+      "sourceCounts": {},
+      "causeCounts": {}
+    },
+    {
+      "rank": 37,
+      "id": "melee-attack-move-stop",
+      "label": "Attack / move / stop — Cinderbrand Cleaver",
+      "category": "baseline",
+      "metadata": {
+        "weaponId": "x2-cinderbrand-cleaver",
+        "weaponName": "Cinderbrand Cleaver",
+        "acceptedAttacks": 4
+      },
+      "assertions": {
+        "acceptedAttack": true
+      },
+      "b42CounterEdges": 0,
+      "correctionRequests": 0,
+      "nonzeroCorrections": 0,
+      "silentCorrections": 0,
+      "smoothCorrections": 0,
+      "snapCorrections": 0,
+      "totalMagnitudePx": 0,
+      "maxMagnitudePx": 0,
+      "meanMagnitudePx": 0,
+      "correctionDebtDurationMs": 0,
+      "serverMotionDurationMs": 0,
+      "maxCorrectionWindowMs": 0,
+      "scenarioDurationMs": 1450,
+      "peakAuthorityStepPx": 32,
+      "sourceCounts": {},
+      "causeCounts": {}
+    },
+    {
+      "rank": 38,
+      "id": "parry-above",
+      "label": "Parry — incoming from above",
+      "category": "parry",
+      "metadata": {
+        "id": "above",
+        "angle": -1.570796,
+        "expectedSource": ""
+      },
+      "assertions": {
+        "successfulParry": true,
+        "expectedMotionSource": true
+      },
+      "b42CounterEdges": 0,
+      "correctionRequests": 0,
+      "nonzeroCorrections": 0,
+      "silentCorrections": 0,
+      "smoothCorrections": 0,
+      "snapCorrections": 0,
+      "totalMagnitudePx": 0,
+      "maxMagnitudePx": 0,
+      "meanMagnitudePx": 0,
+      "correctionDebtDurationMs": 0,
+      "serverMotionDurationMs": 0,
+      "maxCorrectionWindowMs": 0,
+      "scenarioDurationMs": 1900,
+      "peakAuthorityStepPx": 0,
+      "sourceCounts": {},
+      "causeCounts": {}
+    },
+    {
+      "rank": 39,
+      "id": "spade-spin",
+      "label": "Gravedigger's Spade spin",
+      "category": "special-weapon",
+      "metadata": {
+        "weaponId": "gravediggers-spade",
+        "weaponName": "Gravewarden Buster"
+      },
+      "assertions": {
+        "accepted": true
+      },
+      "b42CounterEdges": 0,
+      "correctionRequests": 0,
+      "nonzeroCorrections": 0,
+      "silentCorrections": 0,
+      "smoothCorrections": 0,
+      "snapCorrections": 0,
+      "totalMagnitudePx": 0,
+      "maxMagnitudePx": 0,
+      "meanMagnitudePx": 0,
+      "correctionDebtDurationMs": 0,
+      "serverMotionDurationMs": 0,
+      "maxCorrectionWindowMs": 0,
+      "scenarioDurationMs": 1100,
+      "peakAuthorityStepPx": 0,
+      "sourceCounts": {},
+      "causeCounts": {}
+    },
+    {
+      "rank": 40,
+      "id": "sparkmitt-x2-coyote-trickster-s-sparkmitt",
+      "label": "Combo — Coyote Trickster's Sparkmitt",
+      "category": "sparkmitt",
+      "metadata": {
+        "weaponId": "x2-coyote-trickster-s-sparkmitt",
+        "weaponName": "Coyote Trickster's Sparkmitt",
+        "comboLength": 8,
+        "acceptedAttacks": 8
+      },
+      "assertions": {
+        "fullComboAccepted": true
+      },
+      "b42CounterEdges": 0,
+      "correctionRequests": 0,
+      "nonzeroCorrections": 0,
+      "silentCorrections": 0,
+      "smoothCorrections": 0,
+      "snapCorrections": 0,
+      "totalMagnitudePx": 0,
+      "maxMagnitudePx": 0,
+      "meanMagnitudePx": 0,
+      "correctionDebtDurationMs": 0,
+      "serverMotionDurationMs": 0,
+      "maxCorrectionWindowMs": 0,
+      "scenarioDurationMs": 1700,
+      "peakAuthorityStepPx": 0,
+      "sourceCounts": {},
+      "causeCounts": {}
+    },
+    {
+      "rank": 41,
+      "id": "walk-stop",
+      "label": "Walk / stop",
+      "category": "baseline",
+      "metadata": {},
+      "assertions": {
+        "completed": true,
+        "zeroCorrections": true
+      },
+      "b42CounterEdges": 0,
+      "correctionRequests": 0,
+      "nonzeroCorrections": 0,
+      "silentCorrections": 0,
+      "smoothCorrections": 0,
+      "snapCorrections": 0,
+      "totalMagnitudePx": 0,
+      "maxMagnitudePx": 0,
+      "meanMagnitudePx": 0,
+      "correctionDebtDurationMs": 0,
+      "serverMotionDurationMs": 0,
+      "maxCorrectionWindowMs": 0,
+      "scenarioDurationMs": 1100,
+      "peakAuthorityStepPx": 32,
+      "sourceCounts": {},
+      "causeCounts": {}
+    }
+  ]
+}
