@@ -181,7 +181,6 @@ import {
   GROUND_EPSILON,
   generateArena,
   getDimension,
-  gunLocomotionRecoilFor,
   HAIRTRIGGER_MAX,
   HAIRTRIGGER_WINDOW,
   HIT_KNOCKBACK_IMPULSE,
@@ -514,8 +513,8 @@ import {
   type WeaponSettlementResult,
   wipeWeaponBankForPrestige,
 } from "../progression.js";
-import { SpatialGrid } from "../SpatialGrid.js";import { COMBO_RINGOUT_ORBIT, COMBO_RIPOSTE_STAGGER_TICKS, ZERO_MOVE_INPUT, ZERO_IMPULSE, tickReached, ticksFromSeconds, pointSegmentDistanceSq, pointInConvexQuadrilateral, pointSweptUprightCapsuleDistanceSq, EXTRACT_ARM_SECONDS, EXTRACT_HOLD_SECONDS, SPAWN_CANDIDATE_COUNT, SPAWN_MIN_DISTANCE, SPAWN_CAMERA_HALF_WIDTH, SPAWN_CAMERA_HALF_HEIGHT, ENEMY_GRID_CELL_SIZE, MAX_ENEMY_RADIUS, ENEMY_SEPARATION_OVERLAP_FRACTION, ENEMY_SEPARATION_MAX_STEP, GROUND_ZONE_ENTITY_CAP, GROUND_ZONE_OWNER_CAP, weaponComboRootMotion, weaponComboForwardDrift } from "./room-progression.js";
-import type { InputCmd, InputState, WeaponResourceLedger, WeaponSpendReason, ZoneRuntime, WeaponSpendResult, PendingScatterVolley, PendingHybridProjectile, PendingWeaponLunge, PendingWeaponThrow, ActiveMeleeSwing, DriveRuntime, RunWeaponLedger, PickupWeaponBankMeta, DisconnectedPlayerReservation, PlayerDamageKind, PetRunRuntime, UltimateTarget, UltimateRuntime, WeaponHand, CombatState, DuelistComboState, RewardBoundary, WeaponComboForwardDrift, WeaponComboRootMotion, GameRoomContext } from "./room-progression.js";
+import { SpatialGrid } from "../SpatialGrid.js";import { COMBO_RINGOUT_ORBIT, COMBO_RIPOSTE_STAGGER_TICKS, ZERO_MOVE_INPUT, ZERO_IMPULSE, tickReached, ticksFromSeconds, pointSegmentDistanceSq, pointInConvexQuadrilateral, pointSweptUprightCapsuleDistanceSq, EXTRACT_ARM_SECONDS, EXTRACT_HOLD_SECONDS, SPAWN_CANDIDATE_COUNT, SPAWN_MIN_DISTANCE, SPAWN_CAMERA_HALF_WIDTH, SPAWN_CAMERA_HALF_HEIGHT, ENEMY_GRID_CELL_SIZE, MAX_ENEMY_RADIUS, ENEMY_SEPARATION_OVERLAP_FRACTION, ENEMY_SEPARATION_MAX_STEP, GROUND_ZONE_ENTITY_CAP, GROUND_ZONE_OWNER_CAP } from "./room-progression.js";
+import type { InputCmd, InputState, WeaponResourceLedger, WeaponSpendReason, ZoneRuntime, WeaponSpendResult, PendingScatterVolley, PendingHybridProjectile, PendingWeaponThrow, ActiveMeleeSwing, DriveRuntime, RunWeaponLedger, PickupWeaponBankMeta, DisconnectedPlayerReservation, PlayerDamageKind, PetRunRuntime, UltimateTarget, UltimateRuntime, WeaponHand, CombatState, DuelistComboState, RewardBoundary, GameRoomContext } from "./room-progression.js";
 
 export const roomEnemyMethods = {
 
@@ -951,14 +950,12 @@ export const roomEnemyMethods = {
       const dx = p.x - x;
       const dy = p.y - y;
       if (dx * dx + dy * dy > r2) return;
-      const combat = this.combat.get(p.id);
-      if (combat && this.weaponLungeInvulnerable(combat)) return;
       this.damagePlayer(p, damage, "enemy"); // §16 unparryable — dodge it, don't block it
       const d = Math.hypot(dx, dy) || 1;
       const k = addImpulse(p, (dx / d) * knockback, (dy / d) * knockback);
       p.vx = k.vx;
       p.vy = k.vy;
-      this.beginServerMotion(p, SERVER_MOTION_IMPULSE_TICKS);
+      this.beginServerMotion(p, SERVER_MOTION_IMPULSE_TICKS, "enemy-commit-hit");
     });
   },
 
@@ -994,7 +991,7 @@ export const roomEnemyMethods = {
       const k = addImpulse(p, (dx / d) * knockback, (dy / d) * knockback);
       p.vx = k.vx;
       p.vy = k.vy;
-      this.beginServerMotion(p, SERVER_MOTION_IMPULSE_TICKS);
+      this.beginServerMotion(p, SERVER_MOTION_IMPULSE_TICKS, "enemy-commit-hit");
     });
   },
 
@@ -1044,7 +1041,7 @@ export const roomEnemyMethods = {
       const impulse = addImpulse(player, (dx / distance) * knockback, (dy / distance) * knockback);
       player.vx = impulse.vx;
       player.vy = impulse.vy;
-      this.beginServerMotion(player, SERVER_MOTION_IMPULSE_TICKS);
+      this.beginServerMotion(player, SERVER_MOTION_IMPULSE_TICKS, "enemy-commit-hit");
     });
   },
 
@@ -1116,7 +1113,7 @@ export const roomEnemyMethods = {
       const impulse = addImpulse(player, (dx / distance) * knockback, (dy / distance) * knockback);
       player.vx = impulse.vx;
       player.vy = impulse.vy;
-      this.beginServerMotion(player, SERVER_MOTION_IMPULSE_TICKS);
+      this.beginServerMotion(player, SERVER_MOTION_IMPULSE_TICKS, "enemy-commit-hit");
     });
   },
 
@@ -1189,7 +1186,7 @@ export const roomEnemyMethods = {
         const k = addImpulse(p, nx * side * knockback, ny * side * knockback);
         p.vx = k.vx;
         p.vy = k.vy;
-        this.beginServerMotion(p, SERVER_MOTION_IMPULSE_TICKS);
+        this.beginServerMotion(p, SERVER_MOTION_IMPULSE_TICKS, "enemy-commit-hit");
       }
     });
   },
@@ -1699,7 +1696,6 @@ export const roomEnemyMethods = {
       target.height > GROUND_EPSILON ||
       combat?.stance === STANCE_DASH ||
       combat?.stance === STANCE_SLIDE ||
-      this.pendingWeaponLunges.has(target.id) ||
       this.ultimateOwnsMovement(target);
     if (authoredMotion) strike.authoredEscape = true;
   },
@@ -1761,7 +1757,7 @@ export const roomEnemyMethods = {
     );
     target.vx = impulse.vx;
     target.vy = impulse.vy;
-    this.beginServerMotion(target, SERVER_MOTION_IMPULSE_TICKS);
+    this.beginServerMotion(target, SERVER_MOTION_IMPULSE_TICKS, "enemy-commit-hit");
   },
 
   /** §51 one TOUGH combo-speaking elite, one tick — the authored, tick-anchored machine (worm action
@@ -2461,7 +2457,7 @@ export const roomEnemyMethods = {
       const k = addImpulse(player, (hx / hd) * step.launch.push, (hy / hd) * step.launch.push);
       player.vx = k.vx;
       player.vy = k.vy;
-      this.beginServerMotion(player, SERVER_MOTION_LAUNCH_TICKS);
+      this.beginServerMotion(player, SERVER_MOTION_LAUNCH_TICKS, "enemy-commit-launch");
       player.juggledSeq = (player.juggledSeq + 1) & 0xff;
       st.launchTick = this.state.tick;
       enemy.comboFlags |= COMBO_FLAG_JUGGLE;
@@ -2474,7 +2470,7 @@ export const roomEnemyMethods = {
         const k = addImpulse(player, (hx / hd) * step.airkeep.push, (hy / hd) * step.airkeep.push);
         player.vx = k.vx;
         player.vy = k.vy;
-        this.beginServerMotion(player, SERVER_MOTION_LAUNCH_TICKS);
+        this.beginServerMotion(player, SERVER_MOTION_LAUNCH_TICKS, "enemy-commit-launch");
       }
       player.juggledSeq = (player.juggledSeq + 1) & 0xff;
       st.juggleHits = (st.juggleHits ?? 0) + 1;
@@ -2483,7 +2479,7 @@ export const roomEnemyMethods = {
       const k = addImpulse(player, (hx / hd) * push, (hy / hd) * push);
       player.vx = k.vx;
       player.vy = k.vy;
-      this.beginServerMotion(player, SERVER_MOTION_IMPULSE_TICKS);
+      this.beginServerMotion(player, SERVER_MOTION_IMPULSE_TICKS, "enemy-commit-hit");
     }
   },
 
@@ -2539,7 +2535,7 @@ export const roomEnemyMethods = {
     incomingX: number,
     incomingY: number,
   ): void {
-    this.beginServerMotion(player, SERVER_MOTION_LAUNCH_TICKS);
+    this.beginServerMotion(player, SERVER_MOTION_LAUNCH_TICKS, "parry-launch");
     if (pc.stance !== STANCE_POUND) {
       pc.vh = Math.min(pc.vh + PARRY_LAUNCH, PARRY_LAUNCH_MAX);
       player.vh = pc.vh;
@@ -2562,12 +2558,12 @@ export const roomEnemyMethods = {
     incomingY: number,
     preventedDamage: number,
   ): void {
-    this.beginServerMotion(player, 1);
+    this.beginServerMotion(player, 1, "parry-slide");
     const distance = parrySlideDistance(preventedDamage);
     let destination: Vec2;
     if (this.belt && this.beltLevel) {
       const length = Math.hypot(incomingX, incomingY) || 1;
-      destination = this.navValidLungeDest(
+      destination = this.navValidMotionDest(
         player,
         pc,
         player.x + (incomingX / length) * distance,
@@ -2781,7 +2777,7 @@ export const roomEnemyMethods = {
       const kk = addImpulse(player, (hx / hd) * knockback, (hy / hd) * knockback);
       player.vx = kk.vx;
       player.vy = kk.vy;
-      this.beginServerMotion(player, SERVER_MOTION_IMPULSE_TICKS);
+      this.beginServerMotion(player, SERVER_MOTION_IMPULSE_TICKS, "enemy-commit-hit");
     });
   },
 

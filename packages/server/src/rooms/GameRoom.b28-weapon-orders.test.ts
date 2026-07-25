@@ -47,6 +47,7 @@ describe("GameRoom — B28 Venomtongue lunge authority", () => {
     combat.aimX = 1;
     combat.aimY = 0;
 
+    const start = { x: player.x, y: player.y };
     const endpointX = player.x + 128;
     const target = new EnemyState();
     target.id = "b28-venomtongue-endpoint";
@@ -58,32 +59,11 @@ describe("GameRoom — B28 Venomtongue lunge authority", () => {
     room.rebuildEnemyGrid();
 
     const swing = swingDescriptorFor(weapon, weapon.cooldown);
-    const validate = vi.spyOn(room, "navValidDest").mockReturnValue({ x: endpointX, y: player.y });
     room.resolveSwing(player, combat, weapon, swing);
-    expect(room.pendingWeaponLunges.get(player.id)).toMatchObject({
-      distancePx: 128,
-      durationSeconds: 0.28,
-      impactAtDestination: true,
-    });
-    expect(room.meleeSwings.get(player.id)).toMatchObject({ waitForWeaponLunge: true });
-
-    room.stepMeleeSwings(swing.activeEndSeconds);
-    expect(target.hp).toBe(10_000);
-    room.stepPendingWeaponLunges(swing.activeStartSeconds);
-    room.stepPendingWeaponLunges(0.28);
-
-    expect(validate).toHaveBeenCalledTimes(1);
-    expect(player.x).toBe(endpointX);
-    expect(room.pendingWeaponLunges.has(player.id)).toBe(false);
-    expect(room.meleeSwings.get(player.id)).toMatchObject({
-      waitForWeaponLunge: false,
-      originX: endpointX,
-      originY: player.y,
-    });
-
-    player.x = 1_500;
-    room.rebuildEnemyGrid();
-    room.stepMeleeSwings(swing.activeEndSeconds - swing.activeStartSeconds + 0.001);
+    expect(weapon.range).toBe(323);
+    expect({ x: player.x, y: player.y }).toEqual(start);
+    room.stepMeleeSwings(swing.activeEndSeconds + 0.001);
     expect(target.hp).toBeLessThan(10_000);
+    expect({ x: player.x, y: player.y }).toEqual(start);
   });
 });

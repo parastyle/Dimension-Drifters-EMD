@@ -830,7 +830,7 @@ export const ENEMY_MELEE_COMMIT_SECONDS = 0.2 as const;
 export const ENEMY_MELEE_COMMIT_TICKS = 4 as const;
 /** Every successfully parried committed lunge gives its attacker this minimum punish pause. */
 export const PARRY_ENEMY_STAGGER_SECONDS = 0.4 as const;
-/** Active unauthored attacks retain 75% input speed. Authored root motion replaces input entirely. */
+/** Active weapon attacks retain 75% input speed; weapons never replace player input. */
 export const PLAYER_ATTACK_INPUT_SPEED_MULT = 0.75 as const;
 
 /** §8/§20 parry-LAUNCH (Stage D) — a successful parry of an attack lofts the PARRIER: it adds an upward kick
@@ -850,10 +850,6 @@ export const IMPULSE_FRICTION = 9;
 export const IMPULSE_EPSILON = 5;
 /** Cap on accumulated impulse speed (px/s) so a gatling stream / pile-up can't fling you across the map. */
 export const IMPULSE_MAX = 780;
-/** Per-shot gun recoil pushback (px/s), backward along aim, scaled by the gun's authored `recoil`. */
-export const GUN_RECOIL_IMPULSE = 190;
-/** The recoil baseline `recoil` value the impulse scale is normalised against (the revolver's kick). */
-export const GUN_RECOIL_BASELINE = 0.0017;
 /** Knockback (px/s) shoved onto a player when an enemy contact-hits or a hostile projectile lands. */
 export const HIT_KNOCKBACK_IMPULSE = 300;
 

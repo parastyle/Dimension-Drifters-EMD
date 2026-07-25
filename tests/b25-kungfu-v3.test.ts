@@ -11,7 +11,7 @@ import { SPRITES } from "../packages/client/src/sprites/manifest.js";
 import { KUNG_FU_WRAP_VFX_RECIPES } from "../packages/client/src/vfx/kung-fu-wrap-vfx-recipes.js";
 
 const require = createRequire(import.meta.url);
-const { PNG } = require("../tools/artkit/node_modules/pngjs") as {
+const { PNG } = require("pngjs") as {
   PNG: {
     sync: {
       read(bytes: Buffer): { width: number; height: number; data: Buffer };
@@ -139,7 +139,7 @@ describe("B25 theatrical kung-fu v3", () => {
             : "mirror-guard",
       );
       expect(weapon?.authoritativeCombo, id).toBe(true);
-      expect(weapon?.performance?.forwardDrift, id).toBeUndefined();
+      expect("forwardDrift" in (weapon?.performance ?? {}), id).toBe(false);
       expect(weapon?.impactMuzzle, id).toBe(true);
       expect(weapon?.muzzle?.points.length, id).toBe(NATIVE_PARTS[id].length);
       comboSignatures.add(
@@ -147,7 +147,6 @@ describe("B25 theatrical kung-fu v3", () => {
           variant: weapon?.comboVariant,
           cooldown: weapon?.cooldown,
           combo: meleeComboSelectionFor(weapon!)?.sequence,
-          drift: weapon?.performance?.forwardDrift,
         }),
       );
       vfxSignatures.add(KUNG_FU_WRAP_VFX_RECIPES[id]?.signature ?? "");
@@ -164,7 +163,7 @@ describe("B25 theatrical kung-fu v3", () => {
       ["knee-strike", "foot"],
       ["roundhouse-kick", "foot"],
     ]);
-    expect(comboSteps("x2-muay-thai-wraps")?.every((step) => step.rootMotion === undefined)).toBe(
+    expect(comboSteps("x2-muay-thai-wraps")?.every((step) => !("rootMotion" in step))).toBe(
       true,
     );
     expect(
@@ -176,7 +175,7 @@ describe("B25 theatrical kung-fu v3", () => {
       ["oblique-kick", "off", "foot"],
       ["double-palm", "both", "hand"],
     ]);
-    expect(comboSteps("x2-wing-chun-wraps")?.every((step) => step.rootMotion === undefined)).toBe(
+    expect(comboSteps("x2-wing-chun-wraps")?.every((step) => !("rootMotion" in step))).toBe(
       true,
     );
     const wing = WEAPONS["x2-wing-chun-wraps"]!;
@@ -190,7 +189,7 @@ describe("B25 theatrical kung-fu v3", () => {
       ["sweeping-leg", "foot"],
       ["frontflip-heel-drop", "foot"],
     ]);
-    expect(comboSteps("x2-drunken-fist-wraps")?.every((step) => step.rootMotion === undefined)).toBe(
+    expect(comboSteps("x2-drunken-fist-wraps")?.every((step) => !("rootMotion" in step))).toBe(
       true,
     );
     expect(comboSteps("x2-iron-palm-wraps")?.map((step) => [step.motion, step.limb])).toEqual([
@@ -199,7 +198,7 @@ describe("B25 theatrical kung-fu v3", () => {
       ["roundhouse-kick", "foot"],
       ["mantis-double-hook", "hand"],
     ]);
-    expect(comboSteps("x2-iron-palm-wraps")?.every((step) => step.rootMotion === undefined)).toBe(
+    expect(comboSteps("x2-iron-palm-wraps")?.every((step) => !("rootMotion" in step))).toBe(
       true,
     );
     expect(comboSteps("x2-iron-palm-wraps")?.at(-1)?.path.knockback).toBe(48);
@@ -211,7 +210,7 @@ describe("B25 theatrical kung-fu v3", () => {
     const iron = comboSteps("x2-iron-palm-wraps")!;
 
     expect(muay[0]?.name).toContain("Dragon-Rocket");
-    expect(muay[0]?.rootMotion).toBeUndefined();
+    expect("rootMotion" in (muay[0] ?? {})).toBe(false);
     expect(muay[0]?.theatrics?.limbStretch).toBe(2.15);
     expect(muay[2]?.theatrics?.paperTurns).toBe(1);
     expect(muay[4]?.theatrics).toMatchObject({
@@ -232,21 +231,8 @@ describe("B25 theatrical kung-fu v3", () => {
   });
 
   it("keeps every wrap planted while retaining the non-displacement theatrics", () => {
-    const pathLength = (id: (typeof B25_WRAPS)[number]) =>
-      (comboSteps(id) ?? []).reduce(
-        (sum, step) =>
-          sum + Math.hypot(step.rootMotion?.forwardPx ?? 0, step.rootMotion?.lateralPx ?? 0),
-        0,
-      );
-    const netForward = (id: (typeof B25_WRAPS)[number]) =>
-      (comboSteps(id) ?? []).reduce((sum, step) => sum + (step.rootMotion?.forwardPx ?? 0), 0);
-    const netLateral = (id: (typeof B25_WRAPS)[number]) =>
-      (comboSteps(id) ?? []).reduce((sum, step) => sum + (step.rootMotion?.lateralPx ?? 0), 0);
-
     for (const id of B25_WRAPS) {
-      expect(pathLength(id), id).toBe(0);
-      expect(netForward(id), id).toBe(0);
-      expect(netLateral(id), id).toBe(0);
+      expect((comboSteps(id) ?? []).every((step) => !("rootMotion" in step)), id).toBe(true);
     }
   });
 

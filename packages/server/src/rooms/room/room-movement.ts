@@ -181,7 +181,6 @@ import {
   GROUND_EPSILON,
   generateArena,
   getDimension,
-  gunLocomotionRecoilFor,
   HAIRTRIGGER_MAX,
   HAIRTRIGGER_WINDOW,
   HIT_KNOCKBACK_IMPULSE,
@@ -514,8 +513,8 @@ import {
   type WeaponSettlementResult,
   wipeWeaponBankForPrestige,
 } from "../progression.js";
-import { SpatialGrid } from "../SpatialGrid.js";import { COMBO_RINGOUT_ORBIT, COMBO_RIPOSTE_STAGGER_TICKS, ZERO_MOVE_INPUT, ZERO_IMPULSE, tickReached, ticksFromSeconds, pointSegmentDistanceSq, pointInConvexQuadrilateral, pointSweptUprightCapsuleDistanceSq, EXTRACT_ARM_SECONDS, EXTRACT_HOLD_SECONDS, SPAWN_CANDIDATE_COUNT, SPAWN_MIN_DISTANCE, SPAWN_CAMERA_HALF_WIDTH, SPAWN_CAMERA_HALF_HEIGHT, ENEMY_GRID_CELL_SIZE, MAX_ENEMY_RADIUS, ENEMY_SEPARATION_OVERLAP_FRACTION, ENEMY_SEPARATION_MAX_STEP, GROUND_ZONE_ENTITY_CAP, GROUND_ZONE_OWNER_CAP, weaponComboRootMotion, weaponComboForwardDrift } from "./room-progression.js";
-import type { InputCmd, InputState, WeaponResourceLedger, WeaponSpendReason, ZoneRuntime, WeaponSpendResult, PendingScatterVolley, PendingHybridProjectile, PendingWeaponLunge, PendingWeaponThrow, ActiveMeleeSwing, DriveRuntime, RunWeaponLedger, PickupWeaponBankMeta, DisconnectedPlayerReservation, PlayerDamageKind, PetRunRuntime, UltimateTarget, UltimateRuntime, WeaponHand, CombatState, DuelistComboState, RewardBoundary, WeaponComboForwardDrift, WeaponComboRootMotion, GameRoomContext } from "./room-progression.js";
+import { SpatialGrid } from "../SpatialGrid.js";import { COMBO_RINGOUT_ORBIT, COMBO_RIPOSTE_STAGGER_TICKS, ZERO_MOVE_INPUT, ZERO_IMPULSE, tickReached, ticksFromSeconds, pointSegmentDistanceSq, pointInConvexQuadrilateral, pointSweptUprightCapsuleDistanceSq, EXTRACT_ARM_SECONDS, EXTRACT_HOLD_SECONDS, SPAWN_CANDIDATE_COUNT, SPAWN_MIN_DISTANCE, SPAWN_CAMERA_HALF_WIDTH, SPAWN_CAMERA_HALF_HEIGHT, ENEMY_GRID_CELL_SIZE, MAX_ENEMY_RADIUS, ENEMY_SEPARATION_OVERLAP_FRACTION, ENEMY_SEPARATION_MAX_STEP, GROUND_ZONE_ENTITY_CAP, GROUND_ZONE_OWNER_CAP } from "./room-progression.js";
+import type { InputCmd, InputState, WeaponResourceLedger, WeaponSpendReason, ZoneRuntime, WeaponSpendResult, PendingScatterVolley, PendingHybridProjectile, PendingWeaponThrow, ActiveMeleeSwing, DriveRuntime, RunWeaponLedger, PickupWeaponBankMeta, DisconnectedPlayerReservation, PlayerDamageKind, PetRunRuntime, UltimateTarget, UltimateRuntime, WeaponHand, CombatState, DuelistComboState, RewardBoundary, GameRoomContext, ServerMotionSource } from "./room-progression.js";
 
 export const roomMovementMethods = {
 
@@ -591,6 +590,7 @@ export const roomMovementMethods = {
         if (c.beamPhase !== 0 || c.beamDescriptor)
           this.cancelBeam(player, player.id, c, true, false);
         this.setMoveStance(player, c, STANCE_SLIDE);
+        this.beginServerMotion(player, ROLL_DURATION_TICKS + 1, "dodge-roll");
       }
     }
   },
@@ -723,12 +723,18 @@ export const roomMovementMethods = {
   },
 
   /** Begin or extend an authored server-displacement window. Epoch advances only on a new ownership edge. */
-  beginServerMotion(this: GameRoomContext, player: PlayerState, ticks: number): void {
+  beginServerMotion(
+    this: GameRoomContext,
+    player: PlayerState,
+    ticks: number,
+    source: ServerMotionSource,
+  ): void {
     const duration = Math.max(1, Math.ceil(ticks));
     const candidate = (this.state.tick + duration) >>> 0;
     const current = this.serverMotionUntilTick.get(player.id);
     if (current === undefined || tickReached(candidate, current))
       this.serverMotionUntilTick.set(player.id, candidate);
+    this.serverMotionSourceByPlayer.set(player.id, source);
     if (!player.dualWield.serverMotionActive) {
       player.dualWield.serverMotionEpoch = (player.dualWield.serverMotionEpoch + 1) >>> 0;
       player.dualWield.serverMotionActive = true;
@@ -736,17 +742,20 @@ export const roomMovementMethods = {
   },
 
   /** Recompute the wire flag before consuming this tick's client report. */
-  refreshServerMotionState(this: GameRoomContext, player: PlayerState, id: string, dt: number): void {
+  refreshServerMotionState(this: GameRoomContext, player: PlayerState, id: string, _dt: number): void {
     const untilTick = this.serverMotionUntilTick.get(id);
     const timed = untilTick !== undefined && !tickReached(this.state.tick, untilTick);
-    if (untilTick !== undefined && !timed) this.serverMotionUntilTick.delete(id);
-    const lunge = this.pendingWeaponLunges.get(id);
-    const lungeActive =
-      lunge !== undefined && (lunge.elapsedSeconds !== undefined || lunge.t <= dt + 1e-9);
-    const active = timed || lungeActive || this.ultimateOwnsMovement(player);
+    if (untilTick !== undefined && !timed) {
+      this.serverMotionUntilTick.delete(id);
+      this.serverMotionSourceByPlayer.delete(id);
+    }
+    const ultimate = this.ultimateOwnsMovement(player);
+    if (ultimate) this.serverMotionSourceByPlayer.set(id, "ultimate");
+    const active = timed || ultimate;
     if (active && !player.dualWield.serverMotionActive)
       player.dualWield.serverMotionEpoch = (player.dualWield.serverMotionEpoch + 1) >>> 0;
     player.dualWield.serverMotionActive = active;
+    if (!active) this.serverMotionSourceByPlayer.delete(id);
   },
 
   freshInputState(this: GameRoomContext): InputState {
@@ -911,6 +920,11 @@ export const roomMovementMethods = {
     player.mvx = input.mvx;
     player.mvy = input.mvy;
     this.setMoveStance(player, c, STANCE_DASH);
+    this.beginServerMotion(
+      player,
+      Math.ceil(DIST_JUMP_AIRTIME / (TICK_MS / 1000)) + 1,
+      "distance-jump",
+    );
   },
 
   /** Bend toward held WASD at <=45°/s and never farther than ±27° from the launch heading. */

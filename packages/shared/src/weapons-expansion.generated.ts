@@ -794,7 +794,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
     "name": "Cinderbrand Cleaver",
     "expansion": true,
     "damage": 5.555555555555555,
-    "range": 158,
+    "range": 182,
     "halfArc": 1,
     "cooldown": 0.3333333333333333,
     "displayLength": 140,
@@ -825,11 +825,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
     "performance": {
       "hold": "steady",
       "action": "overhead-downswing",
-      "continuous": true,
-      "forwardDrift": {
-        "speedPxPerSecond": 72,
-        "durationSeconds": 0.3333333333333333
-      }
+      "continuous": true
     },
     "twoHanded": true,
     "durability": 90,
@@ -1697,7 +1693,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
     "name": "Venomtongue Trident",
     "expansion": true,
     "damage": 9,
-    "range": 195,
+    "range": 323,
     "halfArc": 0.9,
     "cooldown": 0.46,
     "displayLength": 140,
@@ -1719,12 +1715,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
     },
     "performance": {
       "hold": "steady",
-      "action": "default-swing",
-      "lunge": {
-        "distancePx": 128,
-        "durationSeconds": 0.28,
-        "impactAtDestination": true
-      }
+      "action": "default-swing"
     },
     "twoHanded": true,
     "durability": 90,
@@ -1868,7 +1859,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
     "name": "Quarry-Splitter Bardiche",
     "expansion": true,
     "damage": 15,
-    "range": 240,
+    "range": 336,
     "halfArc": 1.1,
     "cooldown": 0.88,
     "displayLength": 256,
@@ -3376,7 +3367,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
     "name": "Frostfang Rakes",
     "expansion": true,
     "damage": 6,
-    "range": 108,
+    "range": 172,
     "halfArc": 0.72,
     "cooldown": 0.3,
     "displayLength": 57,
@@ -3402,11 +3393,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
     "comboVariant": "frostfang-forward-rend",
     "performance": {
       "hold": "steady",
-      "action": "default-swing",
-      "lunge": {
-        "distancePx": 64,
-        "durationSeconds": 0.18
-      }
+      "action": "default-swing"
     },
     "dual": true,
     "durability": 75
@@ -7216,7 +7203,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "recoil": 0.0038,
       "projectileArt": "cannonball",
       "projectileVisualScale": 4,
-      "userKnockbackMultiplier": 5,
       "explode": {
         "radius": 70,
         "damage": 12
@@ -7406,7 +7392,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "recoil": 0.004,
       "projectileArt": "generated",
       "projectileVisualScale": 1.35,
-      "userKnockbackMultiplier": 2,
       "explode": {
         "radius": 150,
         "damage": 32
@@ -12312,7 +12297,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
     "name": "Thunderhead Stormfists",
     "expansion": true,
     "damage": 6,
-    "range": 200,
+    "range": 680,
     "halfArc": 1,
     "cooldown": 0.8,
     "displayLength": 145,
@@ -12339,18 +12324,13 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "hold": "steady",
       "action": "lunge-punch",
       "suppressSwing": true,
-      "windupSeconds": 0.3,
-      "lunge": {
-        "distancePx": 480,
-        "durationSeconds": 0.025,
-        "invulnerable": true,
-        "impactAtDestination": true
-      }
+      "windupSeconds": 0.3
     },
     "twoHanded": true,
     "quake": {
       "radius": 180,
-      "damage": 8
+      "damage": 8,
+      "placementRange": 480
     }
   },
   "x2-prismhex-diffraction-gauntlet": {
@@ -12394,7 +12374,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
     "name": "Coyote Trickster's Sparkmitt",
     "expansion": true,
     "damage": 1.0588235294117647,
-    "range": 150,
+    "range": 156,
     "halfArc": 0.5,
     "cooldown": 0.12,
     "displayLength": 56,
@@ -12426,11 +12406,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
     "performance": {
       "hold": "steady",
       "action": "default-swing",
-      "continuous": true,
-      "forwardDrift": {
-        "speedPxPerSecond": 48,
-        "durationSeconds": 0.12
-      }
+      "continuous": true
     },
     "twoHanded": true,
     "glovePair": {}
@@ -12765,10 +12741,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
     "comboFamily": "chop",
     "comboVariant": "katana-riftstep",
     "katanaHook": {
-      "kind": "finisher-dash",
+      "kind": "finisher-reach",
       "summary": "The final beat carries the wielder through a short rift and lands harder.",
-      "finisherDamageMultiplier": 1.14,
-      "finisherDashImpulse": 260
+      "finisherDamageMultiplier": 1.14
     },
     "bespokeVfxSheet": true,
     "twoHanded": true,
@@ -13525,7 +13500,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "projectileArt": "generated",
       "sonicBoomRing": true,
       "projectileVisualScale": 1.35,
-      "userKnockbackMultiplier": 1.6,
       "pierce": 5,
       "muzzleColor": 16757060
     }
@@ -13861,7 +13835,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "projectileArt": "generated",
       "sonicBoomRing": true,
       "projectileVisualScale": 1.3,
-      "userKnockbackMultiplier": 1.5,
       "pierce": 4,
       "muzzleColor": 16766820
     }
@@ -14249,7 +14222,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "bulletKind": "pellet",
       "muzzle": "boom",
       "recoil": 0.005,
-      "userKnockbackMultiplier": 2.2,
       "pellets": 7,
       "spread": 0.55,
       "muzzleColor": 16733855
@@ -15397,11 +15369,6 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "damageMultiplier": 1,
         "knockback": 24,
         "deltaAngle": 6.283185307179586
-      },
-      "rootMotion": {
-        "forwardPx": 96,
-        "lateralPx": 0,
-        "durationSeconds": 0.22
       },
       "theatrics": {
         "flip": "front"
@@ -17179,7 +17146,7 @@ export const GENERATED_MELEE_COMBO_BARS = {
       "path": {
         "kind": "sweep",
         "arcMultiplier": 1.22,
-        "rangeMultiplier": 1.12,
+        "rangeMultiplier": 1.36,
         "damageMultiplier": 1.34,
         "knockback": 26
       },

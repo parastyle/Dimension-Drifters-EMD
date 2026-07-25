@@ -181,7 +181,6 @@ import {
   GROUND_EPSILON,
   generateArena,
   getDimension,
-  gunLocomotionRecoilFor,
   HAIRTRIGGER_MAX,
   HAIRTRIGGER_WINDOW,
   HIT_KNOCKBACK_IMPULSE,
@@ -514,14 +513,12 @@ import {
   type WeaponSettlementResult,
   wipeWeaponBankForPrestige,
 } from "./progression.js";
-import { SpatialGrid } from "./SpatialGrid.js";import { COMBO_RINGOUT_ORBIT, COMBO_RIPOSTE_STAGGER_TICKS, ZERO_MOVE_INPUT, ZERO_IMPULSE, tickReached, ticksFromSeconds, pointSegmentDistanceSq, pointInConvexQuadrilateral, pointSweptUprightCapsuleDistanceSq, EXTRACT_ARM_SECONDS, EXTRACT_HOLD_SECONDS, SPAWN_CANDIDATE_COUNT, SPAWN_MIN_DISTANCE, SPAWN_CAMERA_HALF_WIDTH, SPAWN_CAMERA_HALF_HEIGHT, ENEMY_GRID_CELL_SIZE, MAX_ENEMY_RADIUS, ENEMY_SEPARATION_OVERLAP_FRACTION, ENEMY_SEPARATION_MAX_STEP, GROUND_ZONE_ENTITY_CAP, GROUND_ZONE_OWNER_CAP, weaponComboRootMotion, weaponComboForwardDrift, roomProgressionMethods, GAME_ROOM_STATICS } from "./room/room-progression.js";
-import type { InputCmd, InputState, WeaponResourceLedger, WeaponSpendReason, ZoneRuntime, WeaponSpendResult, PendingScatterVolley, PendingHybridProjectile, PendingWeaponLunge, PendingWeaponThrow, ActiveMeleeSwing, DriveRuntime, RunWeaponLedger, PickupWeaponBankMeta, DisconnectedPlayerReservation, PlayerDamageKind, PetRunRuntime, UltimateTarget, UltimateRuntime, WeaponHand, CombatState, DuelistComboState, RewardBoundary, WeaponComboForwardDrift, WeaponComboRootMotion } from "./room/room-progression.js";
+import { SpatialGrid } from "./SpatialGrid.js";import { COMBO_RINGOUT_ORBIT, COMBO_RIPOSTE_STAGGER_TICKS, ZERO_MOVE_INPUT, ZERO_IMPULSE, tickReached, ticksFromSeconds, pointSegmentDistanceSq, pointInConvexQuadrilateral, pointSweptUprightCapsuleDistanceSq, EXTRACT_ARM_SECONDS, EXTRACT_HOLD_SECONDS, SPAWN_CANDIDATE_COUNT, SPAWN_MIN_DISTANCE, SPAWN_CAMERA_HALF_WIDTH, SPAWN_CAMERA_HALF_HEIGHT, ENEMY_GRID_CELL_SIZE, MAX_ENEMY_RADIUS, ENEMY_SEPARATION_OVERLAP_FRACTION, ENEMY_SEPARATION_MAX_STEP, GROUND_ZONE_ENTITY_CAP, GROUND_ZONE_OWNER_CAP, roomProgressionMethods, GAME_ROOM_STATICS } from "./room/room-progression.js";
+import type { InputCmd, InputState, WeaponResourceLedger, WeaponSpendReason, ZoneRuntime, WeaponSpendResult, PendingScatterVolley, PendingHybridProjectile, PendingWeaponThrow, ActiveMeleeSwing, DriveRuntime, RunWeaponLedger, PickupWeaponBankMeta, DisconnectedPlayerReservation, PlayerDamageKind, PetRunRuntime, UltimateTarget, UltimateRuntime, WeaponHand, CombatState, DuelistComboState, RewardBoundary, ServerMotionSource } from "./room/room-progression.js";
 import { roomMovementMethods } from "./room/room-movement.js";
 import { roomCombatMethods } from "./room/room-combat.js";
 import { roomEnemyMethods } from "./room/room-enemies.js";
 import { roomEconomyMethods } from "./room/room-economy.js";
-export { weaponComboRootMotion, weaponComboForwardDrift } from "./room/room-progression.js";
-export type { WeaponComboForwardDrift, WeaponComboRootMotion } from "./room/room-progression.js";
 
 
 /**
@@ -572,6 +569,8 @@ export class GameRoom extends Room<ArenaState> {
   private readonly acceptedClientMovement = new Map<string, ClientMovementReport>();
   /** Exclusive tick deadline for short server-authored impulse/reposition ownership windows. */
   private readonly serverMotionUntilTick = new Map<string, number>();
+  /** Classification companion for the active B42 epoch. Weapon attacks are not legal sources. */
+  private readonly serverMotionSourceByPlayer = new Map<string, ServerMotionSource>();
   private readonly combat = new Map<string, CombatState>();
   /** Local/offline account truth: validated client claim in, canonical room mutations/receipts out. */
   private readonly metaAccounts = new Map<string, MetaAccountV5>();
@@ -757,8 +756,6 @@ export class GameRoom extends Room<ArenaState> {
   private readonly pendingScatterVolleys: PendingScatterVolley[] = [];
   /** Accepted fan hybrids waiting for the close edge's authored impact epoch. */
   private readonly pendingHybridProjectiles: PendingHybridProjectile[] = [];
-  /** Accepted punch lunges waiting for active start; final displacement is validated by server navigation. */
-  private readonly pendingWeaponLunges = new Map<string, PendingWeaponLunge>();
   /** Non-displacing sub-tick melee still owes B33 one authoritative 0.75-input movement tick. */
   private readonly minimumAttackInputSlowUntilTick = new Map<string, number>();
   /** Accepted authored draws waiting for their visible pre-throw revolution to complete. */
@@ -1149,9 +1146,6 @@ export class GameRoom extends Room<ArenaState> {
   /** Direct-contact slide predicate. Separate from parry `invuln`; ticks 1..5 are the inherited budget. */
     private declare slideInvulnerable: OmitThisParameter<typeof roomCombatMethods.slideInvulnerable>;
 
-  /** Thunderhead's accepted lunge is immunity only through its exclusive server tick bound. */
-    private declare weaponLungeInvulnerable: OmitThisParameter<typeof roomCombatMethods.weaponLungeInvulnerable>;
-
     private declare noteSlideDodge: OmitThisParameter<typeof roomCombatMethods.noteSlideDodge>;
 
   /** One authoritative player-damage seam. Bulwark spends its successful-parry shield before HP. */
@@ -1314,21 +1308,9 @@ export class GameRoom extends Room<ArenaState> {
    * damage receives only the funded fraction of the final step and the channel release-locks at empty. */
     private declare stepPlayerAura: OmitThisParameter<typeof roomCombatMethods.stepPlayerAura>;
 
-    private declare cancelDestinationLungeImpact: OmitThisParameter<typeof roomCombatMethods.cancelDestinationLungeImpact>;
+    private declare navValidMotionDest: OmitThisParameter<typeof roomCombatMethods.navValidMotionDest>;
 
-  /** Unlock one accepted punch at its immutable legal endpoint and release its destination-only layers. */
-    private declare releaseDestinationLungeImpact: OmitThisParameter<typeof roomCombatMethods.releaseDestinationLungeImpact>;
-
-  /** Clamp an arena lunge to the last unobstructed point on its accepted segment. Endpoint navigation can
-   * legitimately snap a target out of a pit or POI; sampling prevents that correction from carrying the
-   * player through the intervening obstacle. Belt endpoints already use the belt's swept safe-X resolver. */
-    private declare navValidLungeDest: OmitThisParameter<typeof roomCombatMethods.navValidLungeDest>;
-
-  /** Resolve an accepted lunge across its authored active window. Cursor intent is captured at acceptance;
-   * the endpoint and complete travel segment are navigation-validated before authoritative movement. */
     private declare playerAttackMoveMode: OmitThisParameter<typeof roomCombatMethods.playerAttackMoveMode>;
-
-    private declare stepPendingWeaponLunges: OmitThisParameter<typeof roomCombatMethods.stepPendingWeaponLunges>;
 
     private declare zoneTarget: OmitThisParameter<typeof roomCombatMethods.zoneTarget>;
 
@@ -1497,7 +1479,7 @@ export class GameRoom extends Room<ArenaState> {
   /** Cogwright's Tesla-Rod: the cursor is intent only. The server resolves the full-distance endpoint through
    * the same bounds/POI/pit/deck validator as every other teleport, writes position itself, and bumps the
    * movement hard-resync edge before applying the small arrival burst. */
-    private declare warpWeaponToCursor: OmitThisParameter<typeof roomCombatMethods.warpWeaponToCursor>;
+    private declare detonateWarpAtCursor: OmitThisParameter<typeof roomCombatMethods.detonateWarpAtCursor>;
 
     private declare fireGun: OmitThisParameter<typeof roomCombatMethods.fireGun>;
 
@@ -1915,7 +1897,6 @@ installPrototypeMembers(GameRoom, [
   [roomCombatMethods, "creditWeaponResource"],
   [roomCombatMethods, "trySpendWeaponResource"],
   [roomCombatMethods, "slideInvulnerable"],
-  [roomCombatMethods, "weaponLungeInvulnerable"],
   [roomCombatMethods, "noteSlideDodge"],
   [roomCombatMethods, "damagePlayer"],
   [roomCombatMethods, "consumeDebugCommitDefense"],
@@ -1974,11 +1955,8 @@ installPrototypeMembers(GameRoom, [
   [roomCombatMethods, "stepPlayerChargedProjectile"],
   [roomCombatMethods, "fireChargedProjectile"],
   [roomCombatMethods, "stepPlayerAura"],
-  [roomCombatMethods, "cancelDestinationLungeImpact"],
-  [roomCombatMethods, "releaseDestinationLungeImpact"],
-  [roomCombatMethods, "navValidLungeDest"],
+  [roomCombatMethods, "navValidMotionDest"],
   [roomCombatMethods, "playerAttackMoveMode"],
-  [roomCombatMethods, "stepPendingWeaponLunges"],
   [roomCombatMethods, "zoneTarget"],
   [roomCombatMethods, "stepPlayerGroundZone"],
   [roomCombatMethods, "clearBeamRows"],
@@ -2035,7 +2013,7 @@ installPrototypeMembers(GameRoom, [
   [roomCombatMethods, "armGunBurst"],
   [roomCombatMethods, "clearGunBurst"],
   [roomCombatMethods, "stepGunBurst"],
-  [roomCombatMethods, "warpWeaponToCursor"],
+  [roomCombatMethods, "detonateWarpAtCursor"],
   [roomCombatMethods, "fireGun"],
   [roomCombatMethods, "applyProjectileChain"],
   [roomCombatMethods, "fireCast"],

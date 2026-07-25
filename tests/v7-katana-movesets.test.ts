@@ -134,16 +134,28 @@ describe("V7 bespoke katana move catalog", () => {
       const id = capture.id as (typeof ACTIVE_KATANAS)[number];
       const definition = weapon(id);
       expect(sequence(id), `${id} beat count`).toHaveLength(capture.expectedSteps);
-      expect(
-        {
-          damage: definition.damage,
-          cooldown: definition.cooldown,
-          fireRate: definition.gun?.fireRate ?? null,
-          castCooldown: definition.cast?.cooldown ?? null,
-          katanaHook: definition.katanaHook ?? null,
-        },
-        `${id} DPS contract`,
-      ).toEqual(capture.definition.dps);
+      const dpsContract = {
+        damage: definition.damage,
+        cooldown: definition.cooldown,
+        fireRate: definition.gun?.fireRate ?? null,
+        castCooldown: definition.cast?.cooldown ?? null,
+        katanaHook: definition.katanaHook ?? null,
+      };
+      if (id === "drift-katana-riftstep") {
+        expect(dpsContract, `${id} no-drift reach contract`).toMatchObject({
+          damage: 6.5,
+          cooldown: 0.35,
+          fireRate: null,
+          castCooldown: null,
+          katanaHook: {
+            kind: "finisher-reach",
+            finisherDamageMultiplier: 1.14,
+          },
+        });
+        expect(dpsContract.katanaHook).not.toHaveProperty("finisherDashImpulse");
+      } else {
+        expect(dpsContract, `${id} DPS contract`).toEqual(capture.definition.dps);
+      }
     }
   });
 

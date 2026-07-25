@@ -171,11 +171,11 @@ describe("SpriteRig glove-pair rendering", () => {
       { name: "thunder cross finisher", motion: "cross", hand: "off" },
     ]);
 
-    // The sibling owner-approved Coyote movement remains authored; the B5 deletion is weapon-local.
-    expect(WEAPONS["x2-coyote-trickster-s-sparkmitt"]?.performance?.forwardDrift).toEqual({
-      speedPxPerSecond: 48,
-      durationSeconds: 0.12,
-    });
-    expect(WEAPONS["x2-emberfist-wraps"]?.performance?.forwardDrift).toBeUndefined();
+    // B44's standing law applies to the sibling Coyote mitt and every martial weapon.
+    expect(
+      "forwardDrift" in
+        (WEAPONS["x2-coyote-trickster-s-sparkmitt"]?.performance ?? {}),
+    ).toBe(false);
+    expect("forwardDrift" in (WEAPONS["x2-emberfist-wraps"]?.performance ?? {})).toBe(false);
   });
 });

@@ -63,13 +63,13 @@ describe("B33 commitment melee contract", () => {
     ).toBe(false);
   });
 
-  it("replaces input during authored root motion and slows unauthored active frames", () => {
+  it("slows active attack input without exposing a weapon-owned replacement mode", () => {
     expect(playerAttackInputSpeedMultiplier(PlayerAttackMoveMode.Normal)).toBe(1);
     expect(playerAttackInputSpeedMultiplier(PlayerAttackMoveMode.InputSlow)).toBe(
       PLAYER_ATTACK_INPUT_SPEED_MULT,
     );
     expect(PLAYER_ATTACK_INPUT_SPEED_MULT).toBe(0.75);
-    expect(playerAttackInputSpeedMultiplier(PlayerAttackMoveMode.RootMotion)).toBe(0);
+    expect(PlayerAttackMoveMode).not.toHaveProperty("RootMotion");
   });
 
   it("gives the Wild West wolf a red body accent and selects shipped per-family cues", () => {

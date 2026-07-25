@@ -10,7 +10,7 @@ import { SPRITES } from "../packages/client/src/sprites/manifest.js";
 import { FAN_TORNADO_WEAPON_VFX_RECIPES } from "../packages/client/src/vfx/generated-image-weapon-vfx-recipes.js";
 
 const require = createRequire(import.meta.url);
-const { PNG } = require("../tools/artkit/node_modules/pngjs") as {
+const { PNG } = require("pngjs") as {
   PNG: {
     sync: {
       read(bytes: Buffer): { width: number; height: number; data: Buffer };

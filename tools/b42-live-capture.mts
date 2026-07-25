@@ -18,9 +18,12 @@ import { SnapshotBuffer } from "../packages/client/src/net/snapshots.js";
 import { matchMaker } from "../packages/server/node_modules/colyseus/build/index.mjs";
 import { createGameServer } from "../packages/server/src/index.js";
 
+const b44NoWeaponDrift = process.env.DD_B44_LIVE === "1";
 const evidenceDir = path.resolve(
   import.meta.dirname,
-  "../docs/owner-notes-audit-v11-evidence/b42-relaxed-authority",
+  b44NoWeaponDrift
+    ? "../docs/owner-notes-audit-v11-evidence/b44-no-weapon-drift"
+    : "../docs/owner-notes-audit-v11-evidence/b42-relaxed-authority",
 );
 const protectedPorts = new Set([5180, 2567]);
 const stateTimeoutMs = 12_000;
@@ -189,40 +192,107 @@ async function captureMovementAndParry(endpoint: string) {
     "shared training mode",
     () => mover.state?.mode === "training" && observer.state?.mode === "training",
   );
-  mover.send("devEquip", { weapon: "x2-sparkknuckle-hex-mitt" });
-  await waitFor("slow attack weapon", () => row(mover)?.weapon === "x2-sparkknuckle-hex-mitt");
-
-  // Setup deliberately teleports the party. Start the B42 normal-play counter only after that epoch.
+  const weaponPlans = b44NoWeaponDrift
+    ? [
+        {
+          weaponId: "x2-coyote-trickster-s-sparkmitt",
+          steps: 28,
+          attackSteps: new Set([0, 4, 8, 12, 16, 20, 24]),
+          minimumAcceptedAttacks: 4,
+        },
+        {
+          weaponId: "x2-venomtongue-trident",
+          steps: 18,
+          attackSteps: new Set([0]),
+          minimumAcceptedAttacks: 1,
+        },
+        {
+          weaponId: "x2-thunderhead-stormfists",
+          steps: 18,
+          attackSteps: new Set([0]),
+          minimumAcceptedAttacks: 1,
+        },
+      ]
+    : [
+        {
+          weaponId: "x2-sparkknuckle-hex-mitt",
+          steps: 32,
+          attackSteps: new Set([7, 20]),
+          minimumAcceptedAttacks: 1,
+        },
+      ];
+  const weaponRuns: Array<{
+    observerBuffer: SnapshotBuffer;
+    telemetry: {
+      weaponId: string;
+      frames: MovementFrame[];
+      acceptedAttacks: number;
+      correctionSeqBefore: number;
+      correctionSeqAfter: number;
+      selfCorrections: number;
+    };
+  }> = [];
   const predictor = new SelfPredictor(serverView(mover));
   predictor.setRelics(row(mover)?.dualWield?.relics);
-  const observerBuffer = new SnapshotBuffer();
-  const initial = row(observer, mover.sessionId);
-  observerBuffer.push(Number(observer.state.tick) * TICK_MS, initial.x, initial.y);
 
-  const frames: MovementFrame[] = [];
-  const pattern = [
-    ...Array<number>(8).fill(1),
-    ...Array<number>(8).fill(1),
-    ...Array<number>(4).fill(0),
-    ...Array<number>(8).fill(-1),
-    ...Array<number>(4).fill(0),
-  ];
-  for (let step = 0; step < pattern.length; step++) {
-    if (step === 7 || step === 20) {
-      const self = row(mover);
-      mover.send("attack", { aimX: pattern[step] || 1, aimY: 0, tx: self.x + 500, ty: self.y });
+  // Training setup deliberately teleports the party. Begin the predictor after setup, then retain its
+  // command sequence across weapon swaps exactly as the live Arena client does.
+  for (const plan of weaponPlans) {
+    mover.send("devEquip", { weapon: plan.weaponId });
+    await waitFor(`${plan.weaponId} equipped`, () => row(mover)?.weapon === plan.weaponId);
+    const observerBuffer = new SnapshotBuffer();
+    const initial = row(observer, mover.sessionId);
+    observerBuffer.push(Number(observer.state.tick) * TICK_MS, initial.x, initial.y);
+    const frames: MovementFrame[] = [];
+    const attackSeqBefore = Number(row(mover).attackSeq);
+    const correctionSeqBefore = Number(row(mover).dualWield.movementCorrectionSeq);
+    const selfCorrectionsBefore = predictor.stats.selfCorrections;
+    for (let step = 0; step < plan.steps; step++) {
+      if (plan.attackSteps.has(step)) {
+        const self = row(mover);
+        mover.send("attack", { aimX: 1, aimY: 0, tx: self.x + 700, ty: self.y });
+      }
+      frames.push(await movementStep(mover, observer, predictor, observerBuffer, step, 1));
     }
-    frames.push(
-      await movementStep(mover, observer, predictor, observerBuffer, step, pattern[step] ?? 0),
-    );
+    const acceptedAttacks = Number(row(mover).attackSeq) - attackSeqBefore;
+    const correctionSeqAfter = Number(row(mover).dualWield.movementCorrectionSeq);
+    if (
+      predictor.stats.selfCorrections !== selfCorrectionsBefore ||
+      correctionSeqAfter !== correctionSeqBefore ||
+      frames.some((frame) => frame.attackMoveMode > 1) ||
+      acceptedAttacks < plan.minimumAcceptedAttacks
+    ) {
+      throw new Error(
+        `${plan.weaponId} attack-move gate failed: ${JSON.stringify({
+          acceptedAttacks,
+          minimumAcceptedAttacks: plan.minimumAcceptedAttacks,
+          selfCorrectionsBefore,
+          selfCorrectionsAfter: predictor.stats.selfCorrections,
+          correctionSeqBefore,
+          correctionSeqAfter,
+          attackMoveModes: [...new Set(frames.map((frame) => frame.attackMoveMode))],
+        })}`,
+      );
+    }
+    weaponRuns.push({
+      observerBuffer,
+      telemetry: {
+        weaponId: plan.weaponId,
+        frames,
+        acceptedAttacks,
+        correctionSeqBefore,
+        correctionSeqAfter,
+        selfCorrections: predictor.stats.selfCorrections - selfCorrectionsBefore,
+      },
+    });
   }
 
-  const normalCorrections = predictor.stats.selfCorrections;
+  const finalRun = weaponRuns.at(-1);
+  if (!finalRun) throw new Error("weapon movement plan produced no live run");
+  const observerBuffer = finalRun.observerBuffer;
+  const frames = weaponRuns.flatMap((run) => run.telemetry.frames);
+  const normalCorrections = weaponRuns.reduce((sum, run) => sum + run.telemetry.selfCorrections, 0);
   const normalCorrectionSeq = row(mover).dualWield.movementCorrectionSeq;
-  if (normalCorrections !== 0 || normalCorrectionSeq !== 0)
-    throw new Error(
-      `normal movement corrected: telemetry=${normalCorrections}, wire=${normalCorrectionSeq}`,
-    );
   const observerAuthorityMismatch = Math.max(
     ...frames.map((frame) =>
       Math.hypot(
@@ -369,6 +439,7 @@ async function captureMovementAndParry(endpoint: string) {
     rooms: [mover, observer],
     telemetry: {
       normal: {
+        weapons: weaponRuns.map((run) => run.telemetry),
         frames,
         selfCorrections: normalCorrections,
         movementCorrectionSeq: normalCorrectionSeq,
@@ -533,11 +604,17 @@ try {
       protectedDefaultsUntouched: !protectedPorts.has(port),
       clients: 4,
       simultaneousClientsPerScenario: 2,
-      liveStackBooted: false,
+      liveStackBooted: true,
     },
     assertions: {
       normalSelfCorrectionsZero: movement.telemetry.normal.selfCorrections === 0,
       normalCorrectionSeqZero: movement.telemetry.normal.movementCorrectionSeq === 0,
+      weaponRootMotionModeAbsent: movement.telemetry.normal.weapons.every((run) =>
+        run.frames.every((frame) => frame.attackMoveMode <= 1),
+      ),
+      weaponAttackCorrectionsZero: movement.telemetry.normal.weapons.every(
+        (run) => run.selfCorrections === 0 && run.correctionSeqAfter === run.correctionSeqBefore,
+      ),
       observerInterpolated: movement.telemetry.normal.observerIntermediateSamples > 0,
       forcedViolationInstantSnap: movement.telemetry.violation.errorAfterPx <= 1e-6,
       correctionCapMs: 140,
@@ -554,6 +631,15 @@ try {
       movementCorrectionSeq: movement.telemetry.normal.movementCorrectionSeq,
       observerMaxStep: movement.telemetry.normal.observerMaxStep,
       observerIntermediateSamples: movement.telemetry.normal.observerIntermediateSamples,
+      weapons: movement.telemetry.normal.weapons.map((run) => ({
+        weaponId: run.weaponId,
+        frameCount: run.frames.length,
+        acceptedAttacks: run.acceptedAttacks,
+        attackMoveModes: [...new Set(run.frames.map((frame) => frame.attackMoveMode))],
+        selfCorrections: run.selfCorrections,
+        correctionSeqBefore: run.correctionSeqBefore,
+        correctionSeqAfter: run.correctionSeqAfter,
+      })),
     },
     violation: movement.telemetry.violation,
     parry: movement.telemetry.parry,
@@ -571,13 +657,17 @@ try {
   await writeFile(
     path.join(evidenceDir, "README.md"),
     [
-      "# B42 relaxed movement authority — private live gate",
+      b44NoWeaponDrift
+        ? "# B44 no-weapon-drift — private live gate"
+        : "# B42 relaxed movement authority — private live gate",
       "",
       `Real Colyseus transport on OS-assigned loopback port ${port}; protected ports 5180/2567 were untouched.`,
       "",
       "- `live-summary.json`: pass/fail assertions and compact telemetry.",
       "- `live-telemetry.json`: every mover/observer frame, forced violation, parry epoch, and elevator placement.",
-      "- Normal attack–move–stop reports produced zero owner corrections.",
+      b44NoWeaponDrift
+        ? "- Sparkmitt, Venomtongue, and Stormfists attack-while-moving runs never entered a displacement mode and produced zero owner corrections."
+        : "- Normal attack–move–stop reports produced zero owner corrections.",
       "- The observer sampled intermediate positions from the adopted server path.",
       "- A teleport-sized client violation advanced the correction epoch and snapped instantly.",
       "- A real committed-lunge parry and real corporate elevator transition converged on both clients.",

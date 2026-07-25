@@ -73,7 +73,6 @@ import {
   GROUND_EPSILON,
   generateArena,
   getDimension,
-  gunLocomotionRecoilFor,
   hasAugment,
   INTERP_DELAY_MS,
   INTERP_SNAP_ENEMY,
@@ -3630,14 +3629,15 @@ export class ArenaScene extends Phaser.Scene {
     const weapon = WEAPONS[player.weapon] ?? WEAPONS[DEFAULT_WEAPON];
     if (!weapon) return;
     if (weapon.warp) {
-      const arrivalY = this.belt ? this.beltY(player.y) : player.y;
-      if (player.id !== this.room?.sessionId) spawnTeslaWarpDeparture(this, rig.x, rig.y);
-      spawnTeslaWarpArrival(this, player.x, arrivalY);
-      spawnExplosion(this, player.x, arrivalY, weapon.warp.burstRadius, "shock", "player-weapon");
-      this.audio.play("shot:spark", {
-        x: player.x,
-        amt: player.id === this.room?.sessionId ? 1 : 0.65,
-      });
+      if (player.id !== this.room?.sessionId) {
+        const impactX = player.x + Math.cos(player.aimDir) * weapon.range;
+        const impactWorldY = player.y + Math.sin(player.aimDir) * weapon.range;
+        const impactY = this.belt ? this.beltY(impactWorldY) : impactWorldY;
+        spawnTeslaWarpDeparture(this, rig.x, rig.y);
+        spawnTeslaWarpArrival(this, impactX, impactY);
+        spawnExplosion(this, impactX, impactY, weapon.warp.burstRadius, "shock", "player-weapon");
+        this.audio.play("shot:spark", { x: impactX, amt: 0.65 });
+      }
       return;
     }
     const swing = swingDescriptorFor(
@@ -3645,14 +3645,13 @@ export class ArenaScene extends Phaser.Scene {
       weapon.cooldown * lootCooldownMult(player.weaponAffix),
     );
     if (weapon.tags.classPool === "caster" && !weapon.performance?.aura)
-      this.cueAttackCasterSource(weapon, swing, player.id, rig, player.aimDir);
+      this.cueAttackCasterSource(weapon, swing, rig, player.aimDir);
     // Guns use projectile/muzzle state instead of a melee swing. Cast/tome and ordinary melee rigs share
     // this descriptor path, including the authoritative affix-adjusted cadence.
     if (weapon.gun || weapon.performance?.aura) return;
     rig.triggerSwing(epoch, player.aimDir, swing);
     this.cueWeaponSwingIdentity(
       rig,
-      player.id,
       weapon,
       player.aimDir,
       rig.activeSwing ?? swing,
@@ -3676,7 +3675,6 @@ export class ArenaScene extends Phaser.Scene {
 
   private cueWeaponSwingIdentity(
     rig: SpriteRig,
-    playerId: string,
     weapon: WeaponDef,
     aimAngle: number,
     swing: SwingDescriptor,
@@ -3706,25 +3704,10 @@ export class ArenaScene extends Phaser.Scene {
     const recipe = resolveWeaponEffectRecipe(weapon);
     if (!recipe?.swingPack && !recipe?.impactPack && !recipe?.musicalNotes && !recipe?.paintedSwing)
       return;
-    const cueSeconds = this.destinationReadyCueSeconds(
-      weapon,
-      swing,
-      weaponEffectCueSeconds(weapon, swing),
-    );
+    const cueSeconds = weaponEffectCueSeconds(weapon, swing);
     this.time.delayedCall(cueSeconds * 1000, () => {
       const impactAnchored = recipe.impactAnchor === "target";
-      const destinationAuthority =
-        weapon.performance?.lunge?.impactAtDestination === true
-          ? this.room?.state.players.get(playerId)
-          : undefined;
-      const destinationActor = destinationAuthority
-        ? {
-            x: destinationAuthority.x,
-            y: this.belt ? this.beltY(destinationAuthority.y) : destinationAuthority.y,
-          }
-        : undefined;
-      const actor =
-        destinationActor ?? (impactAnchored && actorWorld ? actorWorld : { x: rig.x, y: rig.y });
+      const actor = impactAnchored && actorWorld ? actorWorld : { x: rig.x, y: rig.y };
       const point = weaponEffectCuePoint(
         recipe,
         weapon,
@@ -3795,40 +3778,17 @@ export class ArenaScene extends Phaser.Scene {
     });
   }
 
-  /** Destination-bound attack accents may never precede the collision-clamped server arrival. */
-  private destinationReadyCueSeconds(
-    weapon: WeaponDef,
-    swing: SwingDescriptor,
-    requestedSeconds: number,
-  ): number {
-    const lunge = weapon.performance?.lunge;
-    if (lunge?.impactAtDestination !== true) return requestedSeconds;
-    return Math.max(
-      requestedSeconds,
-      swing.activeStartSeconds + (lunge.durationSeconds ?? TICK_MS / 1000),
-    );
-  }
-
-  /** Keep caster-source paint on the authoritative dash destination instead of the click-time rig root. */
+  /** Cue caster-source paint from the planted implement root. */
   private cueAttackCasterSource(
     weapon: WeaponDef,
     swing: SwingDescriptor,
-    playerId: string,
     rig: SpriteRig,
     angle: number,
     onCue?: () => void,
   ): void {
-    const destinationBound = weapon.performance?.lunge?.impactAtDestination === true;
-    const requestedSeconds = weapon.performance?.vfxAt === "impact" ? swing.impactSeconds : 0;
-    const cueSeconds = this.destinationReadyCueSeconds(weapon, swing, requestedSeconds);
+    const cueSeconds = weapon.performance?.vfxAt === "impact" ? swing.impactSeconds : 0;
     const cue = () => {
-      const authority = destinationBound ? this.room?.state.players.get(playerId) : undefined;
-      this.spawnCasterSource(
-        weapon,
-        authority?.x ?? rig.x,
-        authority ? (this.belt ? this.beltY(authority.y) : authority.y) : rig.y,
-        angle,
-      );
+      this.spawnCasterSource(weapon, rig.x, rig.y, angle);
       onCue?.();
     };
     if (cueSeconds > 0) this.time.delayedCall(cueSeconds * 1000, cue);
@@ -8445,8 +8405,7 @@ export class ArenaScene extends Phaser.Scene {
         this.predictor.decayError(deltaMs / 1000, this.curDx, this.curDy);
         const r = this.predictor.renderPos(this.curDx, this.curDy, this.inputAccMs / 1000);
         const weapon = WEAPONS[player.weapon];
-        const presentationOnlyGunRecoil =
-          !!weapon?.gun && gunLocomotionRecoilFor(weapon).impulse <= 0;
+        const presentationOnlyGunRecoil = !!weapon?.gun;
         const candidate = presentationOnlyGunRecoil
           ? this.predictor.boundLocomotionPresentation(player.x, player.y, r.x, r.y)
           : r;
@@ -9819,14 +9778,19 @@ export class ArenaScene extends Phaser.Scene {
     if (weapon && rig && !weapon.gun && !weapon.warp && swing)
       this.cueWeaponSwingIdentity(
         rig,
-        selfId,
         weapon,
         Math.atan2(this.selfAim.y, this.selfAim.x),
         rig.activeSwing ?? swing,
         { x: cwx, y: cwy },
         { x: rig.x, y: selfWy },
       );
-    if (weapon?.warp && rig) spawnTeslaWarpDeparture(this, rig.x, rig.y);
+    if (weapon?.warp && rig) {
+      const impactY = this.belt ? this.beltY(cwy) : cwy;
+      spawnTeslaWarpDeparture(this, rig.x, rig.y);
+      spawnTeslaWarpArrival(this, cwx, impactY);
+      spawnExplosion(this, cwx, impactY, weapon.warp.burstRadius, "shock", "player-weapon");
+      this.audio.play("shot:spark", { x: cwx, amt: 1 });
+    }
     if (
       weapon?.tags.classPool === "caster" &&
       !weapon.warp &&
@@ -9837,7 +9801,6 @@ export class ArenaScene extends Phaser.Scene {
       this.cueAttackCasterSource(
         weapon,
         swing,
-        selfId,
         rig,
         Math.atan2(this.selfAim.y, this.selfAim.x),
         () => {
@@ -9851,21 +9814,15 @@ export class ArenaScene extends Phaser.Scene {
       const ep = clampQuakeEpicenter(
         { x: rig?.x ?? self.x, y: selfWy },
         { x: cwx, y: cwy },
-        QUAKE_REACH,
+        weapon.quake.placementRange ?? QUAKE_REACH,
       );
       // §44 the eruption samples the SAME descriptor/scene epoch as rig + authored VFX; the server samples
       // this fraction from its accepted epoch, leaving only the explicitly documented protocol residual.
       const quake = weapon.quake;
-      const quakeCueSeconds = this.destinationReadyCueSeconds(weapon, swing, swing.impactSeconds);
+      const quakeCueSeconds = swing.impactSeconds;
       this.time.delayedCall(quakeCueSeconds * 1000, () => {
         if (!this.room) return;
-        const authoritativeDestination =
-          weapon.performance?.lunge?.impactAtDestination === true
-            ? this.room.state.players.get(selfId)
-            : undefined;
-        const impact = authoritativeDestination
-          ? { x: authoritativeDestination.x, y: authoritativeDestination.y }
-          : ep;
+        const impact = ep;
         const impactRenderY = this.belt ? this.beltY(impact.y) : impact.y;
         const quakeIdentity = resolveWeaponEffectRecipe(weapon);
         if (quakeIdentity?.quakeExplosionPaintedOnlyWeaponIds?.includes(weapon.id))
@@ -10009,7 +9966,11 @@ export class ArenaScene extends Phaser.Scene {
       if (this.vfxPlayer.spawnsAtCursor(weapon.id)) {
         // §37 clamp in WORLD space (selfWy, not the projected rig y — mixed spaces skewed the radius), then
         // belt-project the epicenter for the draw so the eruption sits ON the cursor, not below it.
-        const ep = clampQuakeEpicenter({ x: rx, y: selfWy }, { x: cwx, y: cwy }, QUAKE_REACH);
+        const ep = clampQuakeEpicenter(
+          { x: rx, y: selfWy },
+          { x: cwx, y: cwy },
+          weapon.quake?.placementRange ?? QUAKE_REACH,
+        );
         this.spawnSlash(
           ep.x,
           this.belt ? this.beltY(ep.y) : ep.y,
@@ -10061,7 +10022,6 @@ export class ArenaScene extends Phaser.Scene {
       saY /= l;
     }
     if (weapon?.gun) {
-      this.predictGunRoundRecoil(weapon, saX, saY);
       const burst = weapon.gun.burst;
       const predictedSeq = this.localPredictedAttackSeq;
       if (burst && burst.count > 1) {
@@ -10077,25 +10037,12 @@ export class ArenaScene extends Phaser.Scene {
             const aimLength = Math.hypot(aimX, aimY) || 1;
             aimX /= aimLength;
             aimY /= aimLength;
-            this.predictGunRoundRecoil(weapon, aimX, aimY);
             this.cuePredictedBurstRound(liveSelf, weapon, liveRig, aimX, aimY, predictedSeq);
           });
         }
       }
     }
     this.room.send("attack", { aimX: saX, aimY: saY, tx: cwx, ty: cwy });
-  }
-
-  /** Mirror only recoil that authority declares locomotion-owning. Presentation-only gun recoil remains
-   * on the rig/camera clocks above and can never enter the predictor position sampled by later muzzles. */
-  private predictGunRoundRecoil(weapon: WeaponDef, aimX: number, aimY: number): void {
-    const recoil = gunLocomotionRecoilFor(weapon);
-    if (recoil.impulse <= 0) return;
-    this.predictor?.addPredictedImpulse(
-      -aimX * recoil.impulse,
-      -aimY * recoil.impulse,
-      recoil.maxImpulse,
-    );
   }
 
   /** Replay follow-up burst punctuation from the current rendered implement, never the trigger snapshot. */
@@ -13686,13 +13633,6 @@ export class ArenaScene extends Phaser.Scene {
   ): void {
     if (weapon.suppressVfx) return;
     const ang = Math.atan2(aim.y, aim.x);
-    // Destination-authored lunges use their one delayed recipe cue, sampled from server position. Starting
-    // the generic suite here would leave a second impact at the click-time origin.
-    if (
-      weapon.performance?.lunge?.impactAtDestination === true &&
-      resolveWeaponEffectRecipe(weapon)
-    )
-      return;
     if (weapon.tags.classPool === "melee" && weapon.performance?.action === "page-flip") {
       this.spawnPageFlutterArc(x, y, ang, weapon);
       return;

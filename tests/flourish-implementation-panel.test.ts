@@ -1,18 +1,33 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
+const rigCoreSource = readFileSync(
+  new URL("../packages/client/src/entities/rig/rig-core.ts", import.meta.url),
+  "utf8",
+);
+const rigCombatSource = readFileSync(
+  new URL("../packages/client/src/entities/rig/rig-combat.ts", import.meta.url),
+  "utf8",
+);
+const rigFlourishSource = readFileSync(
+  new URL("../packages/client/src/entities/rig/rig-flourish.ts", import.meta.url),
+  "utf8",
+);
+const rigGearSource = readFileSync(
+  new URL("../packages/client/src/entities/rig/rig-gear.ts", import.meta.url),
+  "utf8",
+);
+const rigPoseSource = readFileSync(
+  new URL("../packages/client/src/entities/rig/rig-pose.ts", import.meta.url),
+  "utf8",
+);
 const rigSource = [
-  "rig-pose.ts",
-  "rig-flourish.ts",
-  "rig-combat.ts",
-  "../SpriteRig.ts",
-  "rig-gear.ts",
-  "rig-core.ts",
-]
-  .map((file) =>
-    readFileSync(new URL(`../packages/client/src/entities/rig/${file}`, import.meta.url), "utf8"),
-  )
-  .join("\n");
+  rigCoreSource,
+  rigCombatSource,
+  rigFlourishSource,
+  rigGearSource,
+  rigPoseSource,
+].join("\n");
 const arenaSource = readFileSync(
   new URL("../packages/client/src/scenes/ArenaScene.ts", import.meta.url),
   "utf8",
@@ -32,9 +47,9 @@ function methodBody(source: string, signature: string, nextSignature: string): s
 describe("flourish implementation ownership panel", () => {
   it("routes authored head performance only through the existing floating-head spring input", () => {
     const headSync = methodBody(
-      rigSource,
-      "private syncFloatingHeadPose(",
-      "private topSocketPosition(",
+      rigGearSource,
+      "syncFloatingHeadPose(this: SpriteRigContext,",
+      "topSocketPosition(this: SpriteRigContext,",
     );
     expect(headSync).toContain("input.authoredOffsetX =");
     expect(headSync).toContain("this.flourishHeadX");
@@ -45,8 +60,16 @@ describe("flourish implementation ownership panel", () => {
   });
 
   it("cancels at strong action APIs before those actions can sample", () => {
-    const swing = methodBody(rigSource, "triggerSwing(", "/** Sample a horde-melee anticipation");
-    const brace = methodBody(rigSource, "triggerBrace(", "/** §8 Brand augment");
+    const swing = methodBody(
+      rigCombatSource,
+      "triggerSwing(this: SpriteRigContext,",
+      "/** Sample a horde-melee anticipation",
+    );
+    const brace = methodBody(
+      rigCombatSource,
+      "triggerBrace(this: SpriteRigContext,",
+      "/** Snap the held implement",
+    );
     expect(swing.indexOf('this.cancelFlourish("attack-input")')).toBeGreaterThanOrEqual(0);
     expect(swing.indexOf('this.cancelFlourish("attack-input")')).toBeLessThan(
       swing.indexOf("this.swingStart = timeMs"),
@@ -74,9 +97,9 @@ describe("flourish implementation ownership panel", () => {
     expect(arenaSource.match(/beginWeaponSwap/g)).toHaveLength(1);
     expect(equipWeapons).toContain("rig.equipWeapon(spriteId, def, manifest)");
     const completeSwap = methodBody(
-      rigSource,
-      "private completePendingWeaponSwap(): void",
-      "private armAfterAttack(",
+      rigFlourishSource,
+      "completePendingWeaponSwap(this: SpriteRigContext): void",
+      "armAfterAttack(this: SpriteRigContext,",
     );
     expect(completeSwap).toContain("this.startIncomingDraw(epochMs)");
     expect(completeSwap).not.toMatch(/timer|tween|delayedCall|await|Promise/);
@@ -90,16 +113,16 @@ describe("flourish implementation ownership panel", () => {
     );
     expect(sampler).not.toMatch(/\bnew\b|\[\]|Object\.|\.map\(|\.filter\(|\.reduce\(/);
     const runtime = methodBody(
-      rigSource,
-      "private startFlourishChannel(",
-      "/** Allocation-free lifetime reset",
+      rigFlourishSource,
+      "startFlourishChannel(this: SpriteRigContext,",
+      "startIncomingDraw(this: SpriteRigContext,",
     );
     expect(runtime).not.toMatch(/scene\.tweens|delayedCall|setTimeout|Promise|await/);
   });
 
   it("retains raw local attack intent even when cooldown or acceptance rejects the request", () => {
-    const animate = rigSource.slice(
-      rigSource.indexOf("animate(timeMs: number, anim: RigAnim): void"),
+    const animate = rigPoseSource.slice(
+      rigPoseSource.indexOf("animate(this: SpriteRigContext, timeMs: number, anim: RigAnim): void"),
     );
     expect(animate).toContain("this.scene.input?.activePointer?.rightButtonDown?.()");
     expect(animate).toContain("const flourishAttackIntent");
@@ -122,8 +145,8 @@ describe("flourish implementation ownership panel", () => {
   });
 
   it("does not let Last Word's retained page event cancel its own flourish", () => {
-    const animate = rigSource.slice(
-      rigSource.indexOf("animate(timeMs: number, anim: RigAnim): void"),
+    const animate = rigPoseSource.slice(
+      rigPoseSource.indexOf("animate(this: SpriteRigContext, timeMs: number, anim: RigAnim): void"),
     );
     expect(animate).toContain("const tomeFlourishOwnsPage =");
     expect(animate).toContain("this.tome && !tomeFlourishOwnsPage");
@@ -156,7 +179,7 @@ describe("flourish raw Arena cancellation panel", () => {
       "rawFlourishIntent.desiredMoveX,\n      rawFlourishIntent.desiredMoveY,",
     );
     const movementIntent = methodBody(
-      rigSource,
+      rigCoreSource,
       "export function flourishMovementIntent(",
       "/** One per-frame Arena capture",
     );
@@ -178,7 +201,7 @@ describe("flourish raw Arena cancellation panel", () => {
 
   it("does not add inventory or menu keys to the raw cancellation grammar", () => {
     const decision = methodBody(
-      rigSource,
+      rigCoreSource,
       "export function rawFlourishIntentCancels(",
       "export function nextFlourishStreakCount(",
     );

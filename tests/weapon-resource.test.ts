@@ -73,10 +73,6 @@ describe("Drive formula v1", () => {
         multiplier: 1.15,
         reason: "A successful swing can revive; that utility has no damage statistic.",
       },
-      "drift-katana-riftstep": {
-        multiplier: 1.08,
-        reason: "The finisher dash adds mobility that the damage-and-reach formula cannot value.",
-      },
       "drift-greatkatana-tempest-regent": {
         multiplier: 1.1,
         reason: "Perfect continuations grant brief invulnerability outside the damage formula.",
@@ -141,7 +137,7 @@ describe("Drive formula v1", () => {
       hushglass: 4,
       stillwater: 7.25,
       stormthread: 6,
-      riftstep: 7.5,
+      riftstep: 7,
       paleHorizon: 10,
       gatebreaker: 9,
       moonwake: 16,

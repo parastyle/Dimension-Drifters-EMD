@@ -20,20 +20,17 @@ function baseline(attackMoveMode: number): ServerView {
 }
 
 describe("SelfPredictor B33 attack movement modes", () => {
-  it("mirrors normal, slowed active-frame, and root-motion replacement inputs", () => {
+  it("mirrors normal and slowed active-frame inputs without a weapon root mode", () => {
     const normal = new SelfPredictor(baseline(PlayerAttackMoveMode.Normal));
     const slowed = new SelfPredictor(baseline(PlayerAttackMoveMode.InputSlow));
-    const rooted = new SelfPredictor(baseline(PlayerAttackMoveMode.RootMotion));
     for (let tick = 0; tick < 4; tick++) {
       normal.tick(normal.mintCmd(1, 0, false));
       slowed.tick(slowed.mintCmd(1, 0, false));
-      rooted.tick(rooted.mintCmd(1, 0, false));
     }
     const normalX = normal.renderPos(0, 0, 0).x;
     const slowedX = slowed.renderPos(0, 0, 0).x;
-    const rootedX = rooted.renderPos(0, 0, 0).x;
-    expect(rootedX).toBe(1_000);
-    expect(slowedX).toBeGreaterThan(rootedX);
+    expect(slowedX).toBeGreaterThan(1_000);
     expect(slowedX).toBeLessThan(normalX);
+    expect(PlayerAttackMoveMode).not.toHaveProperty("RootMotion");
   });
 });

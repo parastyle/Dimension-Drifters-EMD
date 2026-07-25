@@ -8,7 +8,7 @@ import { GUN_GENERATED_PROJECTILES } from "../packages/client/src/vfx/gun-projec
 import { WEAPONS, weaponHasHandlingTag } from "../packages/shared/src/index.js";
 
 const require = createRequire(import.meta.url);
-const { PNG } = require("../tools/artkit/node_modules/pngjs") as {
+const { PNG } = require("pngjs") as {
   PNG: {
     sync: {
       read(bytes: Buffer): { width: number; height: number; data: Buffer };

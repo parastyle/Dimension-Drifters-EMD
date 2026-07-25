@@ -194,7 +194,7 @@ describe("B31 recovered-art integrator", () => {
         continuous: true,
       },
     });
-    expect(emberfist.performance?.forwardDrift).toBeUndefined();
+    expect("forwardDrift" in (emberfist.performance ?? {})).toBe(false);
     expect(emberfist.damage / emberfist.cooldown).toBe(20);
     expect(
       emberCombo.sequence.map(({ name: _name, ...signature }) => signature),

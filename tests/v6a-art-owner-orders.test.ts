@@ -56,7 +56,7 @@ describe("V6A generated-art owner orders", () => {
       id: "gravediggers-spade",
       name: "Gravewarden Buster",
       sprite: "gravewarden-buster",
-      range: 210,
+      range: 354,
       cooldown: 0.6,
       swingArc: Math.PI * 2,
       performance: {
@@ -64,7 +64,6 @@ describe("V6A generated-art owner orders", () => {
         action: "spin",
         continuous: true,
         suppressSwing: true,
-        lunge: { distancePx: 144, durationSeconds: 0.2 },
         twirl: {
           plane: "continuous-frontflip",
           direction: "forward",

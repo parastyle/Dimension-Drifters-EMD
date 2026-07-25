@@ -76,12 +76,10 @@ describe("owner-notes NR REDO iteration contracts", () => {
     expect(combo?.sequence.map((step) => step.hand)).toEqual(["lead", "off", "lead", "off"]);
     expect(aura).toBeUndefined();
 
-    const rigSource = [
-      "../packages/client/src/entities/SpriteRig.ts",
-      "../packages/client/src/entities/rig/rig-pose.ts",
-    ]
-      .map((file) => readFileSync(new URL(file, import.meta.url), "utf8"))
-      .join("\n");
+    const rigSource = readFileSync(
+      new URL("../packages/client/src/entities/rig/rig-pose.ts", import.meta.url),
+      "utf8",
+    );
     expect(rigSource).toContain('poseVariant === "sparkknuckle-voltage-boxing"');
     expect(rigSource).toContain("authoredDualGlintAlpha");
     expect(rigSource).toContain("paintedAuraParticles");
@@ -120,7 +118,9 @@ describe("owner-notes NR REDO iteration contracts", () => {
       "utf8",
     );
     expect(arenaSource).toContain("spawnTeslaWarpDeparture(this, rig.x, rig.y)");
-    expect(arenaSource).toContain("spawnTeslaWarpArrival(this, player.x, arrivalY)");
+    expect(arenaSource).toContain("spawnTeslaWarpArrival(this, impactX, impactY)");
+    expect(arenaSource).not.toContain("player.x = impactX");
+    expect(arenaSource).not.toContain("player.y = impactY");
   });
 
   it("releases Riftcleaver's real shards from the forward blade midpoint on its cooler fourth beat", () => {

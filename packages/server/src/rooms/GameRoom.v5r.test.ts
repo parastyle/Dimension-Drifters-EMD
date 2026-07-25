@@ -69,41 +69,21 @@ function equip(player: AnyRoom, combat: AnyRoom, id: string) {
 }
 
 describe("GameRoom — V5R ranged/caster authority", () => {
-  it("bounds Stormfists immunity to one server tick and validates its 25ms 480px endpoint", () => {
+  it("keeps Stormfists planted and grants no attack-owned immunity", () => {
     const { room, player, combat } = fixture("stormfists");
     const weapon = equip(player, combat, "x2-thunderhead-stormfists");
     const swing = swingDescriptorFor(weapon, weapon.cooldown);
-    const validate = vi.spyOn(room, "navValidDest");
-    const startX = player.x;
-    const startY = player.y;
+    const start = { x: player.x, y: player.y };
+    const epoch = player.dualWield.serverMotionEpoch;
 
     room.resolveSwing(player, combat, weapon, swing);
     room.damagePlayer(player, 7, "enemy");
     expect(player.hp).toBe(player.maxHp - 7);
-    player.hp = player.maxHp;
-
-    while (combat.weaponLungeIFrameUntilTick <= room.state.tick) {
-      room.state.tick++;
-      room.stepPendingWeaponLunges(0.05);
-    }
-    const activeStartTick = room.state.tick;
-    expect(combat.weaponLungeIFrameUntilTick - activeStartTick).toBe(1);
-    expect(weapon.performance?.lunge?.durationSeconds).toBe(0.025);
-    room.stepPendingWeaponLunges(weapon.performance?.lunge?.durationSeconds ?? 0);
-
-    for (let index = 0; index < 1; index++) {
-      expect(room.weaponLungeInvulnerable(combat), `active tick ${index}`).toBe(true);
-      room.damagePlayer(player, 9, "enemy");
-      expect(player.hp).toBe(player.maxHp);
-    }
-
-    expect(room.pendingWeaponLunges.size).toBe(0);
-    expect(validate).toHaveBeenCalledTimes(1);
-    expect(Math.hypot(player.x - startX, player.y - startY)).toBeCloseTo(480, 8);
-    room.state.tick++;
-    expect(room.weaponLungeInvulnerable(combat)).toBe(false);
     room.damagePlayer(player, 9, "enemy");
-    expect(player.hp).toBe(player.maxHp - 9);
+    expect(player.hp).toBe(player.maxHp - 16);
+    expect({ x: player.x, y: player.y }).toEqual(start);
+    expect(player.dualWield.serverMotionEpoch).toBe(epoch);
+    expect(room.pendingQuakes[0]).toMatchObject({ x: start.x + 480, y: start.y });
   });
 
   it("converts Gilded channeling and Snowglobe impact into server-owned ice slow zones", () => {

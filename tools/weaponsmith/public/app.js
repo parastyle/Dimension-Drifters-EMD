@@ -94,7 +94,7 @@ function mountPanelEngine(key, stageSelector, heroEnabled) {
   engine.setVfxRadius?.(state.vfxRadius);
   engine.setHero(heroUrl());
   if (key === "combined" && engine.setActors) {
-    engine.setActors("/art/dust-ranger/candidate-1.keyed.png", "/art/dummy/candidate-1.keyed.png");
+    engine.setActors("/character-sprite/dust-ranger/body.png", "/character-sprite/dummy/body.png");
     engine.setWeaponSprite(state.weaponArt, {
       thrown: Boolean(state.weapon?.thrown),
       displayLength: state.displayLength,
@@ -148,9 +148,14 @@ function populateFilterOptions() {
     const select = $(`#${selectId}`);
     const previous = select.value;
     select.replaceChildren(new Option("All", "all"));
-    const values = [...new Set(allWeapons.map((weapon) => weapon[key]).filter(Boolean).map(String))].sort(
-      (a, b) => a.localeCompare(b),
-    );
+    const values = [
+      ...new Set(
+        allWeapons
+          .map((weapon) => weapon[key])
+          .filter(Boolean)
+          .map(String),
+      ),
+    ].sort((a, b) => a.localeCompare(b));
     for (const value of values) select.appendChild(new Option(pretty(value), value));
     select.value = values.includes(previous) ? previous : "all";
   }
@@ -168,7 +173,10 @@ function listMatches(weapon) {
     weapon.source,
     ...(weapon.tags || []),
   ];
-  if (query && !queryValues.filter(Boolean).some((value) => String(value).toLowerCase().includes(query)))
+  if (
+    query &&
+    !queryValues.filter(Boolean).some((value) => String(value).toLowerCase().includes(query))
+  )
     return false;
   for (const [selectId, key] of FILTER_IDS) {
     const selected = $(`#${selectId}`).value;
@@ -200,7 +208,8 @@ function renderListWindow() {
   if (!filteredWeapons.length) {
     const empty = document.createElement("div");
     empty.className = "empty-state";
-    empty.innerHTML = "<strong>No matches</strong><span>Clear one or more filters to restore the roster.</span>";
+    empty.innerHTML =
+      "<strong>No matches</strong><span>Clear one or more filters to restore the roster.</span>";
     empty.style.height = `${viewport.clientHeight}px`;
     windowNode.appendChild(empty);
     updateDebug(0);
@@ -335,7 +344,9 @@ function showStatus(message, timeout = 0) {
 }
 function updateHeader() {
   const weapon = state.weapon;
-  $("#selectedHeader").textContent = weapon ? `${weapon.id} · ${ART_STATUS[weapon.artStatus]?.label || "ARTLESS"}` : "No selection";
+  $("#selectedHeader").textContent = weapon
+    ? `${weapon.id} · ${ART_STATUS[weapon.artStatus]?.label || "ARTLESS"}`
+    : "No selection";
   $("#save").disabled = !weapon;
   $("#launchSelected").disabled = !weapon;
   if (weapon) {
@@ -422,8 +433,12 @@ function stepRotation(delta) {
   markDirty("rotation");
 }
 function wireStudio() {
-  $$(`[data-view-tab]`).forEach((button) => (button.onclick = () => setViewTab(button.dataset.viewTab)));
-  $$(`[data-reference]`).forEach((button) => (button.onclick = () => setViewTab(button.dataset.reference)));
+  $$(`[data-view-tab]`).forEach(
+    (button) => (button.onclick = () => setViewTab(button.dataset.viewTab)),
+  );
+  $$(`[data-reference]`).forEach(
+    (button) => (button.onclick = () => setViewTab(button.dataset.reference)),
+  );
   $("#replay").onclick = pushAllEngines;
   $("#rotateLeft").onclick = () => stepRotation(-15);
   $("#rotateRight").onclick = () => stepRotation(15);
@@ -531,7 +546,9 @@ function wireInspector() {
       markDirty(`${textarea.dataset.editNote} note`);
     };
   });
-  $$(`[data-savepanel]`).forEach((button) => (button.onclick = () => savePanelNote(button.dataset.savepanel)));
+  $$(`[data-savepanel]`).forEach(
+    (button) => (button.onclick = () => savePanelNote(button.dataset.savepanel)),
+  );
   $("#reroll") && ($("#reroll").onclick = doReroll);
 }
 
@@ -620,7 +637,10 @@ function renderCandidates() {
     const node = document.createElement("button");
     node.type = "button";
     node.className = `cand${file === state.image ? " sel" : ""}`;
-    node.setAttribute("aria-label", `${file === state.image ? "Selected" : "Select"} candidate ${file}`);
+    node.setAttribute(
+      "aria-label",
+      `${file === state.image ? "Selected" : "Select"} candidate ${file}`,
+    );
     node.innerHTML = `<img src="/art/${escapeHtml(state.vfxSubject)}/${escapeHtml(file)}" alt="${escapeHtml(file)}" /><span class="tick">✓</span>`;
     node.onclick = () => {
       state.image = file;
@@ -642,7 +662,11 @@ async function doReroll() {
     const { jobId } = await api("/api/reroll", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ weaponId: state.weapon.id, prompt: $("#prompt").value, candidates: 3 }),
+      body: JSON.stringify({
+        weaponId: state.weapon.id,
+        prompt: $("#prompt").value,
+        candidates: 3,
+      }),
     });
     const poll = setInterval(async () => {
       try {
@@ -683,7 +707,11 @@ async function saveAuthorPayload(payload) {
 }
 async function saveAuthor() {
   $("#authorStatus").innerHTML = '<span class="spin"></span> saving';
-  await saveAuthorPayload({ painted: state.author.painted, engine: state.author.engine, pending: true });
+  await saveAuthorPayload({
+    painted: state.author.painted,
+    engine: state.author.engine,
+    pending: true,
+  });
   state.author.pending = true;
   clearDirty("painted prompt", "engine prompt");
   $("#authorStatus").textContent = "Saved and requested";
@@ -781,7 +809,8 @@ function updateDebug(mountedRows = $("#listWindow")?.children.length || 0) {
 
 $("#save").onclick = saveAll;
 $("#launchSelected").onclick = launchSelected;
-for (const [selectId] of FILTER_IDS) $(`#${selectId}`).addEventListener("change", () => renderList());
+for (const [selectId] of FILTER_IDS)
+  $(`#${selectId}`).addEventListener("change", () => renderList());
 $("#assignmentFilter").addEventListener("change", () => renderList());
 $("#artFilter").addEventListener("change", () => renderList());
 $("#weaponSearch").addEventListener("input", () => renderList());
@@ -793,20 +822,20 @@ $("#clearListFilters").addEventListener("click", () => {
   $("#artFilter").value = "all";
   renderList();
 });
-$("#listViewport").addEventListener(
-  "scroll",
-  () => scheduleListWindow(),
-  { passive: true },
-);
+$("#listViewport").addEventListener("scroll", () => scheduleListWindow(), { passive: true });
 $("#listViewport").addEventListener("keydown", (event) => {
   if (event.key === "ArrowDown") moveListFocus(listFocusIndex + 1);
   else if (event.key === "ArrowUp") moveListFocus(listFocusIndex - 1);
   else if (event.key === "Home") moveListFocus(0);
   else if (event.key === "End") moveListFocus(filteredWeapons.length - 1);
   else if (event.key === "PageDown")
-    moveListFocus(listFocusIndex + Math.max(1, Math.floor($("#listViewport").clientHeight / ROW_HEIGHT)));
+    moveListFocus(
+      listFocusIndex + Math.max(1, Math.floor($("#listViewport").clientHeight / ROW_HEIGHT)),
+    );
   else if (event.key === "PageUp")
-    moveListFocus(listFocusIndex - Math.max(1, Math.floor($("#listViewport").clientHeight / ROW_HEIGHT)));
+    moveListFocus(
+      listFocusIndex - Math.max(1, Math.floor($("#listViewport").clientHeight / ROW_HEIGHT)),
+    );
   else if (event.key === "Enter" || event.key === " ") moveListFocus(listFocusIndex, true);
   else return;
   event.preventDefault();
@@ -814,8 +843,7 @@ $("#listViewport").addEventListener("keydown", (event) => {
 document.addEventListener("keydown", (event) => {
   const target = event.target;
   const editing =
-    target &&
-    (target.matches("input, textarea, select, button") || target.isContentEditable);
+    target && (target.matches("input, textarea, select, button") || target.isContentEditable);
   if (editing || event.altKey || event.ctrlKey || event.metaKey) return;
   const key = event.key.toLowerCase();
   if (key === "z") {

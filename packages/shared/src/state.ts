@@ -93,7 +93,7 @@ export class DualWieldState extends Schema {
   @type("uint8") prestige = 0;
   /** Schema v35. Run-scoped common stacks, rare ownership, and survival cooldown state. */
   @type(RelicState) relics = new RelicState();
-  /** Schema v38. 0 normal · 1 active unauthored attack (75% input) · 2 root motion (input replaced). */
+  /** Schema v38. B44 permits 0 normal and 1 active attack input-slow; legacy value 2 is retired. */
   @type("uint8") attackMoveMode = 0;
   /** Schema v40. Raw held-fire intent after the authoritative stale-input watchdog. */
   @type("boolean") fireInputHeld = false;

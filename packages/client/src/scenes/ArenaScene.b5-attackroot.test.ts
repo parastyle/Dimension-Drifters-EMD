@@ -22,39 +22,23 @@ const { ArenaScene } = await import("./ArenaScene.js");
 type AnyScene = any;
 
 describe("ArenaScene — B5 destination-authored attack presentation", () => {
-  it("delays Stormfists source paint until dash arrival and samples the authoritative endpoint once", () => {
+  it("paints Stormfists from the planted implement root with no dash arrival dependency", () => {
     const weapon = WEAPONS["x2-thunderhead-stormfists"];
     if (!weapon) throw new Error("Missing Stormfists fixture");
     const swing = swingDescriptorFor(weapon, weapon.cooldown);
     const scene = Object.create(ArenaScene.prototype) as AnyScene;
-    const delayed = vi.fn();
     scene.time = {
-      delayedCall: vi.fn((delayMs: number, callback: () => void) => {
-        delayed.mockImplementation(callback);
-        return { delayMs };
-      }),
+      delayedCall: vi.fn(),
     };
-    scene.room = {
-      state: {
-        players: new Map([["storm", { x: 1_860, y: 1_420 }]]),
-      },
-    };
-    scene.belt = false;
     scene.spawnCasterSource = vi.fn();
     const onCue = vi.fn();
+    const rig = { x: 1_500, y: 1_420 };
 
-    scene.cueAttackCasterSource(weapon, swing, "storm", { x: 1_500, y: 1_420 }, 0, onCue);
+    scene.cueAttackCasterSource(weapon, swing, rig, 0, onCue);
 
-    expect(scene.time.delayedCall).toHaveBeenCalledTimes(1);
-    expect(scene.time.delayedCall).toHaveBeenCalledWith(
-      (swing.activeStartSeconds + (weapon.performance?.lunge?.durationSeconds ?? 0)) * 1_000,
-      expect.any(Function),
-    );
-    expect(scene.spawnCasterSource).not.toHaveBeenCalled();
-
-    delayed();
+    expect(scene.time.delayedCall).not.toHaveBeenCalled();
     expect(scene.spawnCasterSource).toHaveBeenCalledTimes(1);
-    expect(scene.spawnCasterSource).toHaveBeenCalledWith(weapon, 1_860, 1_420, 0);
+    expect(scene.spawnCasterSource).toHaveBeenCalledWith(weapon, rig.x, rig.y, 0);
     expect(onCue).toHaveBeenCalledTimes(1);
   });
 });

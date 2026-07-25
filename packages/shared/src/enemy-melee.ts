@@ -7,15 +7,13 @@ import {
 export const PlayerAttackMoveMode = {
   Normal: 0,
   InputSlow: 1,
-  RootMotion: 2,
 } as const;
 
 export type PlayerAttackMoveModeValue =
   (typeof PlayerAttackMoveMode)[keyof typeof PlayerAttackMoveMode];
 
-/** Root motion is a replacement channel; unauthored active frames retain modest steering. */
+/** Attack active frames retain modest steering; weapons never replace player input. */
 export function playerAttackInputSpeedMultiplier(mode: number): number {
-  if (mode === PlayerAttackMoveMode.RootMotion) return 0;
   if (mode === PlayerAttackMoveMode.InputSlow) return PLAYER_ATTACK_INPUT_SPEED_MULT;
   return 1;
 }

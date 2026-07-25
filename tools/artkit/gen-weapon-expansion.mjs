@@ -98,14 +98,13 @@ const STATS_KEYS = new Set([
 const BEHAVIOR_KEYS = {
   edge: new Set(["kind"]),
   thrown: new Set(["kind", "speed", "range", "damage", "charges", "refillSeconds", "pierce", "arcHeight", "rotation", "ricochetHops", "ricochetRange", "returning", "zone"]),
-  quake: new Set(["kind", "radius", "damage", "zone"]),
+  quake: new Set(["kind", "radius", "damage", "placementRange", "zone"]),
   chainLightning: new Set(["kind", "jumps", "range", "damage", "falloff", "vfx"]),
   scatter: new Set(["kind", "count", "spread", "aim", "speed", "range", "damage", "pierce", "explode"]),
   gun: new Set(["kind", "damage", "projectileSpeed", "range", "fireRate", "pellets", "spread", "pierce",
     "bounces", "magazine", "reloadSeconds", "bulletKind", "muzzle", "muzzleColor", "recoil",
     "projectileArt", "projectileVisualScale", "projectileColor", "arcHeight", "explode", "burst",
     "chainLightning",
-    "userKnockbackMultiplier",
     "randomPellets",
     "sonicBoomRing", "width"]),
   beam: new Set(["kind", "damage", "range", "tickRate", "width", "chargeSeconds", "sweepLagSeconds",
@@ -190,7 +189,7 @@ const RIBBON_PROFILES = new Set([
 ]);
 const RIBBON_ENDS = new Set(["clean", "squared", "torn", "hooked", "open"]);
 const COMBO_STEP_KEYS = new Set([
-  "name", "motion", "limb", "direction", "hand", "timing", "path", "rootMotion", "theatrics", "ribbon",
+  "name", "motion", "limb", "direction", "hand", "timing", "path", "theatrics", "ribbon",
 ]);
 const COMBO_TIMING_KEYS = new Set([
   "activeStart", "activeEnd", "impact", "followEnd", "secondaryActiveStart", "secondaryActiveEnd",
@@ -198,7 +197,6 @@ const COMBO_TIMING_KEYS = new Set([
 const COMBO_PATH_KEYS = new Set([
   "kind", "arcMultiplier", "deltaAngle", "rangeMultiplier", "damageMultiplier", "knockback",
 ]);
-const COMBO_ROOT_MOTION_KEYS = new Set(["forwardPx", "lateralPx", "durationSeconds"]);
 const COMBO_THEATRICS_KEYS = new Set([
   "paperTurns", "flip", "limbStretch", "holdPose", "holdStart",
 ]);
@@ -215,21 +213,21 @@ const KATANA_CHOREOGRAPHY_PRIMITIVES = new Set([
 ]);
 const KATANA_CHOREOGRAPHY_KEYS = new Set(["primitive", "intensity", "hand"]);
 const KATANA_HOOK_KINDS = new Set([
-  "short-flurry", "draw-opener", "perfect-tempo", "storm-tempo", "finisher-dash",
+  "short-flurry", "draw-opener", "perfect-tempo", "storm-tempo", "finisher-reach",
   "reach-crescendo", "haste-break", "finisher-burst", "perfect-guard", "colossal-release",
 ]);
 const KATANA_HOOK_KEYS = new Set([
   "kind", "summary", "openerDamageMultiplier", "perfectWindowFraction", "perfectDamageMultiplier",
-  "stackDamagePerBeat", "maxStacks", "finisherDamageMultiplier", "finisherDashImpulse",
+  "stackDamagePerBeat", "maxStacks", "finisherDamageMultiplier",
   "reachPerBeat", "recoveryMultiplier", "nonFinisherDamageMultiplier", "toughFinisherMultiplier",
   "finisherBurst", "perfectInvulnerabilitySeconds",
 ]);
 const KATANA_BURST_KEYS = new Set(["radius", "damage"]);
 const PERFORMANCE_KEYS = new Set([
   "hold", "action", "continuous", "suppressSwing", "windupSeconds", "carryForwardPx", "shake",
-  "carryAngleRad", "preThrowRevolutions", "lunge", "twirl", "holdScaling", "strideTap",
+  "carryAngleRad", "preThrowRevolutions", "twirl", "holdScaling", "strideTap",
   "emitter", "vfxAt", "aura", "comboForwardPx", "edgeLeadFlip", "throwHeightPx", "frontflip",
-  "vfxForwardPx", "preThrowDamage", "forwardDrift", "throwStyle", "flourishStyle",
+  "vfxForwardPx", "preThrowDamage", "throwStyle", "flourishStyle",
 ]);
 const PERFORMANCE_HOLDS = new Set([
   "upright", "hanging-chain", "drag-at-feet", "steady", "aim-forward", "overhead", "shoulder-launcher",
@@ -240,13 +238,7 @@ const PERFORMANCE_ACTIONS = new Set([
   "overhead-downswing", "throw-release",
 ]);
 const PERFORMANCE_SHAKE_KEYS = new Set(["amplitudePx", "rotationRad", "frequencyHz"]);
-const PERFORMANCE_LUNGE_KEYS = new Set([
-  "distancePx", "durationSeconds", "invulnerable", "impactAtDestination",
-]);
 const PERFORMANCE_PRE_THROW_DAMAGE_KEYS = new Set(["damage", "range"]);
-const PERFORMANCE_FORWARD_DRIFT_KEYS = new Set([
-  "speedPxPerSecond", "durationSeconds", "comboStepMultipliers",
-]);
 const PERFORMANCE_TWIRL_KEYS = new Set(["plane", "pivot", "direction", "visualRevolutions"]);
 const PERFORMANCE_HOLD_SCALING_KEYS = new Set(["cadence"]);
 const PERFORMANCE_STRIDE_TAP_KEYS = new Set(["amplitudePx", "phaseOffset"]);
@@ -434,25 +426,6 @@ function comboBarOf(w, choreography) {
       );
     if (step.limb !== undefined)
       mapped.limb = enumOf(step.limb, COMBO_LIMBS, `${path}.limb`);
-    if (step.rootMotion !== undefined) {
-      const rootMotion = step.rootMotion;
-      if (!rootMotion || typeof rootMotion !== "object" || Array.isArray(rootMotion)) {
-        fail(`${path}.rootMotion is not an object`);
-      } else {
-        checkKeys(rootMotion, COMBO_ROOT_MOTION_KEYS, `${path}.rootMotion`);
-        mapped.rootMotion = {
-          forwardPx: num(rootMotion.forwardPx, -480, 480, 0, `${path}.rootMotion.forwardPx`),
-          lateralPx: num(rootMotion.lateralPx, -480, 480, 0, `${path}.rootMotion.lateralPx`),
-          durationSeconds: num(
-            rootMotion.durationSeconds,
-            0.05,
-            0.4,
-            0.12,
-            `${path}.rootMotion.durationSeconds`,
-          ),
-        };
-      }
-    }
     if (step.theatrics !== undefined) {
       const theatrics = step.theatrics;
       if (!theatrics || typeof theatrics !== "object" || Array.isArray(theatrics)) {
@@ -577,7 +550,6 @@ function katanaHookOf(h) {
     perfectDamageMultiplier: [0.5, 2],
     stackDamagePerBeat: [0, 0.25],
     finisherDamageMultiplier: [0.5, 2.5],
-    finisherDashImpulse: [0, 500],
     reachPerBeat: [0, 0.2],
     recoveryMultiplier: [0.7, 1.3],
     nonFinisherDamageMultiplier: [0.5, 1.5],
@@ -654,37 +626,6 @@ function performanceOf(p) {
       };
     }
   }
-  if (p.forwardDrift !== undefined) {
-    if (!p.forwardDrift || typeof p.forwardDrift !== "object" || Array.isArray(p.forwardDrift)) {
-      fail("performance.forwardDrift is not an object");
-    } else {
-      checkKeys(p.forwardDrift, PERFORMANCE_FORWARD_DRIFT_KEYS, "performance.forwardDrift");
-      out.forwardDrift = {
-        speedPxPerSecond: num(p.forwardDrift.speedPxPerSecond, 8, 240, 60, "performance.forwardDrift.speedPxPerSecond"),
-        durationSeconds: num(p.forwardDrift.durationSeconds, 0.05, 0.75, 0.3, "performance.forwardDrift.durationSeconds"),
-      };
-      if (p.forwardDrift.comboStepMultipliers !== undefined) {
-        if (
-          !Array.isArray(p.forwardDrift.comboStepMultipliers) ||
-          p.forwardDrift.comboStepMultipliers.length < 1 ||
-          p.forwardDrift.comboStepMultipliers.length > 8
-        ) {
-          fail("performance.forwardDrift.comboStepMultipliers must contain 1..8 beats");
-        } else {
-          out.forwardDrift.comboStepMultipliers = p.forwardDrift.comboStepMultipliers.map(
-            (value, index) =>
-              num(
-                value,
-                0.25,
-                2,
-                1,
-                `performance.forwardDrift.comboStepMultipliers[${index}]`,
-              ),
-          );
-        }
-      }
-    }
-  }
   if (p.edgeLeadFlip !== undefined) {
     if (typeof p.edgeLeadFlip !== "boolean") fail("performance.edgeLeadFlip is not a boolean");
     else out.edgeLeadFlip = p.edgeLeadFlip;
@@ -705,34 +646,6 @@ function performanceOf(p) {
         rotationRad: num(p.shake.rotationRad, 0, 0.25, 0.05, "performance.shake.rotationRad"),
         frequencyHz: num(p.shake.frequencyHz, 1, 24, 11, "performance.shake.frequencyHz"),
       };
-    }
-  }
-  if (p.lunge !== undefined) {
-    if (!p.lunge || typeof p.lunge !== "object" || Array.isArray(p.lunge)) {
-      fail("performance.lunge is not an object");
-    } else {
-      checkKeys(p.lunge, PERFORMANCE_LUNGE_KEYS, "performance.lunge");
-      out.lunge = {
-        distancePx: num(p.lunge.distancePx, 48, 720, 120, "performance.lunge.distancePx"),
-      };
-      if (p.lunge.durationSeconds !== undefined)
-        out.lunge.durationSeconds = num(
-          p.lunge.durationSeconds,
-          0.025,
-          0.6,
-          0.2,
-          "performance.lunge.durationSeconds",
-        );
-      if (p.lunge.invulnerable !== undefined) {
-        if (typeof p.lunge.invulnerable !== "boolean")
-          fail("performance.lunge.invulnerable is not a boolean");
-        else out.lunge.invulnerable = p.lunge.invulnerable;
-      }
-      if (p.lunge.impactAtDestination !== undefined) {
-        if (typeof p.lunge.impactAtDestination !== "boolean")
-          fail("performance.lunge.impactAtDestination is not a boolean");
-        else out.lunge.impactAtDestination = p.lunge.impactAtDestination;
-      }
     }
   }
   if (p.twirl !== undefined) {
@@ -1233,14 +1146,6 @@ function mapWeapon(w) {
       def.gun.projectileColor = int(
         b.projectileColor, 0, 0xffffff, 0, "behavior.projectileColor",
       );
-    if (b.userKnockbackMultiplier !== undefined)
-      def.gun.userKnockbackMultiplier = num(
-        b.userKnockbackMultiplier,
-        0.25,
-        5,
-        1,
-        "behavior.userKnockbackMultiplier",
-      );
     if (b.arcHeight !== undefined)
       def.gun.arcHeight = num(b.arcHeight, 24, 180, 96, "behavior.arcHeight");
     if (b.burst !== undefined) {
@@ -1516,6 +1421,14 @@ function mapWeapon(w) {
       radius: num(b.radius, 70, 220, 130, "behavior.radius"),
       damage: num(b.damage, 1, 30, 7, "behavior.damage"),
     };
+    if (b.placementRange !== undefined)
+      def.quake.placementRange = num(
+        b.placementRange,
+        0,
+        1200,
+        260,
+        "behavior.placementRange",
+      );
   } else if (kind === "chainLightning") {
     def.chainLightning = {
       jumps: int(b.jumps, 1, 6, 3, "behavior.jumps"),
@@ -1605,11 +1518,6 @@ for (const w of data.weapons) {
       fail("comboBar requires comboFamily + comboVariant");
     else if (comboBars[w.comboVariant]) fail(`duplicate comboVariant ${w.comboVariant}`);
     else comboBars[w.comboVariant] = comboBar;
-    if (
-      Array.isArray(w.performance?.forwardDrift?.comboStepMultipliers) &&
-      w.performance.forwardDrift.comboStepMultipliers.length !== comboBar.length
-    )
-      fail("performance.forwardDrift.comboStepMultipliers must match comboBar length");
   } else if (w.comboFamily !== undefined || w.comboVariant !== undefined) {
     fail("comboFamily/comboVariant require comboBar");
   }

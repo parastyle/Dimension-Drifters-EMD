@@ -309,13 +309,10 @@ describe("V7-HIT standing VFX-collision law", () => {
   it("keeps collision on shared timing while presentation reads only the final rig attachment", () => {
     const client = readFileSync("packages/client/src/vfx/VfxPlayer.ts", "utf8");
     const rig = [
-      "rig-core.ts",
-      "rig-combat.ts",
-      "rig-gun-mechanisms.ts",
-      "rig-pose.ts",
-    ]
-      .map((file) => readFileSync(`packages/client/src/entities/rig/${file}`, "utf8"))
-      .join("\n");
+      readFileSync("packages/client/src/entities/rig/rig-core.ts", "utf8"),
+      readFileSync("packages/client/src/entities/rig/rig-combat.ts", "utf8"),
+      readFileSync("packages/client/src/entities/rig/rig-gear.ts", "utf8"),
+    ].join("\n");
     const server = readFileSync("packages/server/src/rooms/room/room-combat.ts", "utf8");
     expect(client).toContain("bladeExtensionGeometryFor(weapon)");
     expect(client).toContain("bladeExtensionDrawTransform(pose, state.geometry, state.reveal)");

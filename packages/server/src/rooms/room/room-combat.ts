@@ -181,7 +181,6 @@ import {
   GROUND_EPSILON,
   generateArena,
   getDimension,
-  gunLocomotionRecoilFor,
   HAIRTRIGGER_MAX,
   HAIRTRIGGER_WINDOW,
   HIT_KNOCKBACK_IMPULSE,
@@ -514,8 +513,8 @@ import {
   type WeaponSettlementResult,
   wipeWeaponBankForPrestige,
 } from "../progression.js";
-import { SpatialGrid } from "../SpatialGrid.js";import { COMBO_RINGOUT_ORBIT, COMBO_RIPOSTE_STAGGER_TICKS, ZERO_MOVE_INPUT, ZERO_IMPULSE, tickReached, ticksFromSeconds, pointSegmentDistanceSq, pointInConvexQuadrilateral, pointSweptUprightCapsuleDistanceSq, EXTRACT_ARM_SECONDS, EXTRACT_HOLD_SECONDS, SPAWN_CANDIDATE_COUNT, SPAWN_MIN_DISTANCE, SPAWN_CAMERA_HALF_WIDTH, SPAWN_CAMERA_HALF_HEIGHT, ENEMY_GRID_CELL_SIZE, MAX_ENEMY_RADIUS, ENEMY_SEPARATION_OVERLAP_FRACTION, ENEMY_SEPARATION_MAX_STEP, GROUND_ZONE_ENTITY_CAP, GROUND_ZONE_OWNER_CAP, weaponComboRootMotion, weaponComboForwardDrift } from "./room-progression.js";
-import type { InputCmd, InputState, WeaponResourceLedger, WeaponSpendReason, ZoneRuntime, WeaponSpendResult, PendingScatterVolley, PendingHybridProjectile, PendingWeaponLunge, PendingWeaponThrow, ActiveMeleeSwing, DriveRuntime, RunWeaponLedger, PickupWeaponBankMeta, DisconnectedPlayerReservation, PlayerDamageKind, PetRunRuntime, UltimateTarget, UltimateRuntime, WeaponHand, CombatState, DuelistComboState, RewardBoundary, WeaponComboForwardDrift, WeaponComboRootMotion, GameRoomContext } from "./room-progression.js";
+import { SpatialGrid } from "../SpatialGrid.js";import { COMBO_RINGOUT_ORBIT, COMBO_RIPOSTE_STAGGER_TICKS, ZERO_MOVE_INPUT, ZERO_IMPULSE, tickReached, ticksFromSeconds, pointSegmentDistanceSq, pointInConvexQuadrilateral, pointSweptUprightCapsuleDistanceSq, EXTRACT_ARM_SECONDS, EXTRACT_HOLD_SECONDS, SPAWN_CANDIDATE_COUNT, SPAWN_MIN_DISTANCE, SPAWN_CAMERA_HALF_WIDTH, SPAWN_CAMERA_HALF_HEIGHT, ENEMY_GRID_CELL_SIZE, MAX_ENEMY_RADIUS, ENEMY_SEPARATION_OVERLAP_FRACTION, ENEMY_SEPARATION_MAX_STEP, GROUND_ZONE_ENTITY_CAP, GROUND_ZONE_OWNER_CAP } from "./room-progression.js";
+import type { InputCmd, InputState, WeaponResourceLedger, WeaponSpendReason, ZoneRuntime, WeaponSpendResult, PendingScatterVolley, PendingHybridProjectile, PendingWeaponThrow, ActiveMeleeSwing, DriveRuntime, RunWeaponLedger, PickupWeaponBankMeta, DisconnectedPlayerReservation, PlayerDamageKind, PetRunRuntime, UltimateTarget, UltimateRuntime, WeaponHand, CombatState, DuelistComboState, RewardBoundary, GameRoomContext, ServerMotionSource } from "./room-progression.js";
 
 export const roomCombatMethods = {
 
@@ -706,14 +705,6 @@ export const roomCombatMethods = {
     return slideContactInvulnerable(c.stance, c.slidePhase, c.slidePhaseTick);
   },
 
-  /** Thunderhead's accepted lunge is immunity only through its exclusive server tick bound. */
-  weaponLungeInvulnerable(this: GameRoomContext, c: CombatState): boolean {
-    return (
-      c.weaponLungeIFrameUntilTick !== 0 &&
-      !tickReached(this.state.tick, c.weaponLungeIFrameUntilTick)
-    );
-  },
-
   noteSlideDodge(this: GameRoomContext, player: PlayerState): void {
     player.dodgedSeq = (player.dodgedSeq + 1) & 0xff;
   },
@@ -726,9 +717,6 @@ export const roomCombatMethods = {
   ): void {
     const c = this.combat.get(player.id);
     let left = Math.max(0, amount);
-    // Weapon-lunge i-frames are a pure phase: no HP loss, pressure, parry reward, or defensive proc.
-    // Pit recovery remains authoritative and cannot be bypassed by attacking over a ledge.
-    if (c && kind !== "pit" && this.weaponLungeInvulnerable(c) && left > 0) return;
     if (
       player.ultPhase === UltimatePhase.Windup &&
       ultimateFamilyForCode(player.ultArchetype) === UltimateFamily.Seismarch
@@ -1183,7 +1171,7 @@ export const roomCombatMethods = {
     c.lastGroundY = dest.y;
     c.pitGrace = PIT_FALL_GRACE;
     c.invuln = Math.max(c.invuln, ULT_BLINK_IFRAMES);
-    this.zeroMoveVel(player.id);
+    this.zeroMoveVel(player.id, undefined, "ultimate");
     c.ultBuffer = 0;
     c.ult = {
       family: UltimateFamily.DimensionDoor,
@@ -1227,7 +1215,7 @@ export const roomCombatMethods = {
       c.lastGroundY = player.y;
       c.pitGrace = PIT_FALL_GRACE;
       c.invuln = Math.max(c.invuln, ult.variant === "con" ? 0.9 : ULT_BLINK_IFRAMES);
-      this.zeroMoveVel(player.id);
+      this.zeroMoveVel(player.id, undefined, "ultimate");
       ult.teleportSeqAtAccept = player.teleportSeq;
       if (ult.variant === "str") {
         this.detonate(
@@ -1254,7 +1242,7 @@ export const roomCombatMethods = {
     const distance = Math.hypot(dx, dy) || 1;
     ult.dirX = dx / distance;
     ult.dirY = dy / distance;
-    this.zeroMoveVel(player.id);
+    this.zeroMoveVel(player.id, undefined, "ultimate");
     ult.teleportSeqAtAccept = player.teleportSeq;
     const activeTicks = Math.max(1, (ult.activeEndTick - this.state.tick) >>> 0);
     c.invuln = Math.max(c.invuln, (activeTicks * TICK_MS) / 1000 + TICK_MS / 1000);
@@ -1331,7 +1319,7 @@ export const roomCombatMethods = {
     if (progress < 1 || ult.impactDone) return;
     ult.impactDone = true;
     this.resolveSeismarchImpact(player, c, ult);
-    this.zeroMoveVel(player.id);
+    this.zeroMoveVel(player.id, undefined, "ultimate");
     ult.teleportSeqAtAccept = player.teleportSeq;
     player.ultPhase = UltimatePhase.Recovery;
   },
@@ -1439,7 +1427,7 @@ export const roomCombatMethods = {
     player.x = toX;
     player.y = toY;
     if (progress < 1) return;
-    this.zeroMoveVel(player.id);
+    this.zeroMoveVel(player.id, undefined, "ultimate");
     ult.teleportSeqAtAccept = player.teleportSeq;
     player.ultPhase = UltimatePhase.Recovery;
   },
@@ -1547,7 +1535,7 @@ export const roomCombatMethods = {
         player.y = dest.y;
         c.lastGroundX = dest.x;
         c.lastGroundY = dest.y;
-        this.zeroMoveVel(player.id);
+        this.zeroMoveVel(player.id, undefined, "ultimate");
         ult.teleportSeqAtAccept = player.teleportSeq;
         const scale = this.ultimateScale(player, ult);
         let base = ult.variant === "str" ? 38 : ULT_ALPHA_DAMAGE;
@@ -1606,7 +1594,8 @@ export const roomCombatMethods = {
   },
 
   cancelUltimate(this: GameRoomContext, player: PlayerState, c: CombatState): void {
-    if (this.ultimateOwnsMovement(player)) this.zeroMoveVel(player.id);
+    if (this.ultimateOwnsMovement(player))
+      this.zeroMoveVel(player.id, undefined, "ultimate");
     player.ultPhase = UltimatePhase.Idle;
     c.ult = undefined;
   },
@@ -1927,8 +1916,6 @@ export const roomCombatMethods = {
     const rangeMultiplier =
       (comboStep?.path.rangeMultiplier ?? 1) * (katanaEffect?.reachMultiplier ?? 1);
     const reach = envelope.maxReach * rangeMultiplier;
-    const authoredLunge = weapon.performance?.lunge;
-    const impactAtDestination = hand === 0 && authoredLunge?.impactAtDestination === true;
     if (weapon.suppressMeleeHitbox !== true)
       this.meleeSwings.set(swingKey, {
         playerId: player.id,
@@ -1943,7 +1930,7 @@ export const roomCombatMethods = {
           weapon.damage *
           edgePower *
           (katanaEffect?.damageMultiplier ?? 1) *
-          (comboStep && (comboStep.rootMotion || weapon.glovePair?.wrapsFeet === true)
+          (comboStep && weapon.glovePair?.wrapsFeet === true
             ? comboStep.path.damageMultiplier
             : 1) *
           (weapon.rapidThrust?.damageMultiplier ?? 1),
@@ -1959,74 +1946,15 @@ export const roomCombatMethods = {
               rapidHitIndex: 0,
             }
           : {}),
-        waitForWeaponLunge: impactAtDestination,
       });
 
-    if (authoredLunge && hand === 0) {
-      this.pendingWeaponLunges.set(player.id, {
-        t: authoritativeSwing.activeStartSeconds,
-        playerId: player.id,
-        weaponId: weapon.id,
-        aimX: Math.cos(aim0),
-        aimY: Math.sin(aim0),
-        distancePx: authoredLunge.distancePx,
-        durationSeconds: authoredLunge.durationSeconds ?? TICK_MS / 1000,
-        invulnerable: authoredLunge.invulnerable === true,
-        impactAtDestination,
-      });
-    } else if (hand === 0) {
-      const rootMotion = comboStep?.rootMotion ?? weaponComboRootMotion(weapon, hybridBeat?.step);
-      if (rootMotion) {
-        const forwardX = Math.cos(aim0);
-        const forwardY = Math.sin(aim0);
-        const moveX = forwardX * rootMotion.forwardPx - forwardY * rootMotion.lateralPx;
-        const moveY = forwardY * rootMotion.forwardPx + forwardX * rootMotion.lateralPx;
-        const distancePx = Math.hypot(moveX, moveY);
-        if (distancePx > 1e-6)
-          this.pendingWeaponLunges.set(player.id, {
-            t: authoritativeSwing.activeStartSeconds,
-            playerId: player.id,
-            weaponId: weapon.id,
-            aimX: moveX / distancePx,
-            aimY: moveY / distancePx,
-            distancePx,
-            durationSeconds: rootMotion.durationSeconds,
-            invulnerable: false,
-            impactAtDestination: false,
-          });
-      } else {
-        const drift = weaponComboForwardDrift(weapon, hybridBeat?.step);
-        if (drift)
-          this.pendingWeaponLunges.set(player.id, {
-            t: 0,
-            playerId: player.id,
-            weaponId: weapon.id,
-            aimX: Math.cos(aim0),
-            aimY: Math.sin(aim0),
-            distancePx: drift.distancePx,
-            durationSeconds: drift.durationSeconds,
-            invulnerable: false,
-            impactAtDestination: false,
-          });
-        else
-          // Movement runs before attack acceptance, while a sub-tick active envelope can age out later in
-          // this same 20 Hz step. Preserve B33's modest attack-input slow for the following movement tick.
-          this.minimumAttackInputSlowUntilTick.set(player.id, (this.state.tick + 2) >>> 0);
-      }
-    }
+    if (hand === 0)
+      // Movement runs before attack acceptance, while a sub-tick active envelope can age out later in
+      // this same 20 Hz step. Preserve B33's modest attack-input slow for the following movement tick.
+      this.minimumAttackInputSlowUntilTick.set(player.id, (this.state.tick + 2) >>> 0);
 
     if (katanaEffect?.invulnerabilitySeconds)
       c.invuln = Math.max(c.invuln, katanaEffect.invulnerabilitySeconds);
-    if (katanaEffect?.dashImpulse) {
-      const impulse = addImpulse(
-        player,
-        Math.cos(aim0) * katanaEffect.dashImpulse,
-        Math.sin(aim0) * katanaEffect.dashImpulse,
-      );
-      player.vx = impulse.vx;
-      player.vy = impulse.vy;
-      this.beginServerMotion(player, SERVER_MOTION_IMPULSE_TICKS);
-    }
     if (katanaEffect?.burstRadius && katanaEffect.burstDamage) {
       this.detonate(
         player.x,
@@ -2170,29 +2098,22 @@ export const roomCombatMethods = {
         weapon.groundZone?.trigger === "impact"
           ? weapon.groundZone.damagePerSecond * this.heldDamageMult(weapon, player, hand)
           : undefined;
-      if (impactAtDestination) {
-        const lunge = this.pendingWeaponLunges.get(player.id);
-        if (lunge)
-          lunge.destinationQuake = {
-            radius: weapon.quake.radius,
-            damage: weapon.quake.damage * qPower,
-            crit: attackCrit,
-            zoneDamagePerSecond,
-          };
-      } else {
-        const ep = clampQuakeEpicenter(player, { x: c.targetX, y: c.targetY }, QUAKE_REACH);
-        this.pendingQuakes.push({
-          t: swing.impactSeconds,
-          x: ep.x,
-          y: ep.y,
-          radius: weapon.quake.radius,
-          damage: weapon.quake.damage * qPower,
-          crit: attackCrit,
-          sourcePlayerId: player.id,
-          sourceWeaponId: weapon.id,
-          zoneDamagePerSecond,
-        });
-      }
+      const ep = clampQuakeEpicenter(
+        player,
+        { x: c.targetX, y: c.targetY },
+        weapon.quake.placementRange ?? QUAKE_REACH,
+      );
+      this.pendingQuakes.push({
+        t: swing.impactSeconds,
+        x: ep.x,
+        y: ep.y,
+        radius: weapon.quake.radius,
+        damage: weapon.quake.damage * qPower,
+        crit: attackCrit,
+        sourcePlayerId: player.id,
+        sourceWeaponId: weapon.id,
+        zoneDamagePerSecond,
+      });
     }
 
     // Scatter shot (§14 WYSIWYG): fling real magma projectiles with flat authored hit/blast damage.
@@ -2262,7 +2183,7 @@ export const roomCombatMethods = {
     // heading they died on (the movement loop skips non-alive players, so it never decays). Zero it on
     // revive — otherwise stepSteeredMovement resumes from that stale velocity and slides the player
     // uncommanded for ~100ms on the first tick back, feeding that tick's pit/wall checks.
-    this.zeroMoveVel(ally.id);
+    this.zeroMoveVel(ally.id, undefined, "revive-placement");
     const reviveHpFraction = petMods?.reviveHpFraction || REVIVE_HP_FRAC;
     ally.hp = Math.max(1, Math.round(ally.maxHp * reviveHpFraction));
     ally.revivedSeq = (ally.revivedSeq + 1) % 100000;
@@ -2518,59 +2439,8 @@ export const roomCombatMethods = {
     c.auraInputWasHeld = held;
   },
 
-  cancelDestinationLungeImpact(this: GameRoomContext, playerId: string, weaponId: string): void {
-    for (const key of [playerId, `${playerId}:0`]) {
-      const swing = this.meleeSwings.get(key);
-      if (swing?.waitForWeaponLunge && swing.weaponId === weaponId) this.meleeSwings.delete(key);
-    }
-  },
-
-  /** Unlock one accepted punch at its immutable legal endpoint and release its destination-only layers. */
-  releaseDestinationLungeImpact(this: GameRoomContext,
-    player: PlayerState,
-    combat: CombatState,
-    lunge: PendingWeaponLunge,
-  ): void {
-    if (!lunge.impactAtDestination) return;
-    for (const key of [player.id, `${player.id}:0`]) {
-      const swing = this.meleeSwings.get(key);
-      if (!swing?.waitForWeaponLunge || swing.weaponId !== lunge.weaponId) continue;
-      swing.waitForWeaponLunge = false;
-      swing.elapsed = Math.max(swing.elapsed, swing.swing.activeStartSeconds);
-      swing.originX = player.x;
-      swing.originY = player.y;
-    }
-    const quake = lunge.destinationQuake;
-    lunge.destinationQuake = undefined;
-    if (!quake) return;
-    this.detonate(
-      player.x,
-      player.y,
-      quake.radius,
-      quake.damage,
-      quake.crit,
-      player.id,
-      lunge.weaponId,
-      CombatDelivery.Quake,
-    );
-    const weapon = WEAPONS[lunge.weaponId];
-    if (quake.zoneDamagePerSecond !== undefined && weapon?.groundZone?.trigger === "impact")
-      this.spawnWeaponGroundZoneAt(
-        player,
-        weapon,
-        player.x,
-        player.y,
-        quake.zoneDamagePerSecond,
-        quake.crit,
-      );
-    combat.lastGroundX = player.x;
-    combat.lastGroundY = player.y;
-  },
-
-  /** Clamp an arena lunge to the last unobstructed point on its accepted segment. Endpoint navigation can
-   * legitimately snap a target out of a pit or POI; sampling prevents that correction from carrying the
-   * player through the intervening obstacle. Belt endpoints already use the belt's swept safe-X resolver. */
-  navValidLungeDest(this: GameRoomContext,
+  /** Clamp a server-owned placement to the last unobstructed point on its accepted segment. */
+  navValidMotionDest(this: GameRoomContext,
     player: PlayerState,
     combat: CombatState,
     targetX: number,
@@ -2606,14 +2476,7 @@ export const roomCombatMethods = {
     return { x: safeX, y: safeY };
   },
 
-  /** Resolve an accepted lunge across its authored active window. Cursor intent is captured at acceptance;
-   * the endpoint and complete travel segment are navigation-validated before authoritative movement. */
   playerAttackMoveMode(this: GameRoomContext, playerId: string, dt: number): number {
-    const lunge = this.pendingWeaponLunges.get(playerId);
-    if (lunge && (lunge.elapsedSeconds !== undefined || lunge.t <= dt + 1e-9)) {
-      // Authored combo travel owns displacement; input never stacks on top.
-      return PlayerAttackMoveMode.RootMotion;
-    }
     const minimumSlowUntilTick = this.minimumAttackInputSlowUntilTick.get(playerId);
     if (minimumSlowUntilTick !== undefined) {
       if (!tickReached(this.state.tick, minimumSlowUntilTick))
@@ -2621,7 +2484,7 @@ export const roomCombatMethods = {
       this.minimumAttackInputSlowUntilTick.delete(playerId);
     }
     for (const swing of this.meleeSwings.values()) {
-      if (swing.playerId !== playerId || swing.waitForWeaponLunge) continue;
+      if (swing.playerId !== playerId) continue;
       const activeStart = swing.swing.activeStartSeconds;
       const activeEnd = swing.swing.activeEndSeconds;
       if (swing.elapsed < activeEnd && swing.elapsed + dt + 1e-9 >= activeStart) {
@@ -2629,66 +2492,6 @@ export const roomCombatMethods = {
       }
     }
     return PlayerAttackMoveMode.Normal;
-  },
-
-  stepPendingWeaponLunges(this: GameRoomContext, dt: number): void {
-    for (const [playerId, lunge] of this.pendingWeaponLunges) {
-      const player = this.state.players.get(playerId);
-      const combat = this.combat.get(playerId);
-      if (!player?.alive || !combat || player.weapon !== lunge.weaponId) {
-        if (combat) combat.weaponLungeIFrameUntilTick = this.state.tick;
-        this.cancelDestinationLungeImpact(playerId, lunge.weaponId);
-        this.pendingWeaponLunges.delete(playerId);
-        continue;
-      }
-      let travelDt = dt;
-      if (lunge.elapsedSeconds === undefined) {
-        const waitSeconds = lunge.t;
-        lunge.t = Math.max(0, waitSeconds - dt);
-        if (lunge.t > 1e-9) continue;
-        travelDt = Math.max(0, dt - waitSeconds);
-        const destination = this.navValidLungeDest(
-          player,
-          combat,
-          player.x + lunge.aimX * lunge.distancePx,
-          player.y + lunge.aimY * lunge.distancePx,
-          lunge.distancePx,
-        );
-        const dx = destination.x - player.x;
-        const dy = destination.y - player.y;
-        // A pit/obstacle correction may slide sideways, but it may never turn the authored lunge backward.
-        const blocked = dx * lunge.aimX + dy * lunge.aimY <= 0;
-        lunge.elapsedSeconds = 0;
-        lunge.startX = player.x;
-        lunge.startY = player.y;
-        lunge.endX = blocked ? player.x : destination.x;
-        lunge.endY = blocked ? player.y : destination.y;
-        if (lunge.invulnerable) {
-          combat.weaponLungeIFrameUntilTick =
-            (this.state.tick + ticksFromSeconds(lunge.durationSeconds)) >>> 0;
-        }
-      }
-      const nextElapsed = (lunge.elapsedSeconds ?? 0) + travelDt;
-      lunge.elapsedSeconds =
-        nextElapsed + 1e-9 >= lunge.durationSeconds ? lunge.durationSeconds : nextElapsed;
-      const progress = lunge.elapsedSeconds / lunge.durationSeconds;
-      this.beginServerMotion(
-        player,
-        Math.max(1, Math.ceil((lunge.durationSeconds - lunge.elapsedSeconds) / dt) + 1),
-      );
-      player.x =
-        (lunge.startX ?? player.x) +
-        ((lunge.endX ?? player.x) - (lunge.startX ?? player.x)) * progress;
-      player.y =
-        (lunge.startY ?? player.y) +
-        ((lunge.endY ?? player.y) - (lunge.startY ?? player.y)) * progress;
-      combat.lastGroundX = player.x;
-      combat.lastGroundY = player.y;
-      if (progress >= 1) {
-        this.releaseDestinationLungeImpact(player, combat, lunge);
-        this.pendingWeaponLunges.delete(playerId);
-      }
-    }
   },
 
   zoneTarget(this: GameRoomContext, player: PlayerState, c: CombatState, placementRange: number): Vec2 {
@@ -3720,7 +3523,6 @@ export const roomCombatMethods = {
         this.meleeSwings.delete(pid);
         continue;
       }
-      if (sw.waitForWeaponLunge) continue;
       if (sw.rapidImpactSeconds) {
         sw.elapsed += dt;
         let rapidHitIndex = sw.rapidHitIndex ?? 0;
@@ -4130,10 +3932,9 @@ export const roomCombatMethods = {
     else c.gunBurstT += weapon.gun.burst.intervalSeconds;
   },
 
-  /** Cogwright's Tesla-Rod: the cursor is intent only. The server resolves the full-distance endpoint through
-   * the same bounds/POI/pit/deck validator as every other teleport, writes position itself, and bumps the
-   * movement hard-resync edge before applying the small arrival burst. */
-  warpWeaponToCursor(this: GameRoomContext, player: PlayerState, c: CombatState, weapon: WeaponDef): void {
+  /** Cogwright's Tesla-Rod resolves its full-distance cursor endpoint through navigation, but only the
+   * damage burst travels. Weapon attacks never write the character root. */
+  detonateWarpAtCursor(this: GameRoomContext, player: PlayerState, c: CombatState, weapon: WeaponDef): void {
     const warp = weapon.warp;
     if (!warp) return;
     const destination = this.navValidDest(
@@ -4145,12 +3946,6 @@ export const roomCombatMethods = {
     );
     const damage = weapon.damage * this.heldDamageMult(weapon, player, 0);
     const crit = this.weaponCritChance(player, c);
-    player.x = destination.x;
-    player.y = destination.y;
-    c.lastGroundX = destination.x;
-    c.lastGroundY = destination.y;
-    c.pitGrace = PIT_FALL_GRACE;
-    this.zeroMoveVel(player.id);
     this.detonate(
       destination.x,
       destination.y,
@@ -4292,18 +4087,7 @@ export const roomCombatMethods = {
         );
       }
     }
-    // §20 RECOIL pushback (Stage A): most guns kick the body backward along aim. Presentation-only
-    // exceptions keep their authored rig/camera response without injecting velocity into authoritative
-    // locomotion; remote interpolation therefore observes the same stable movement-only root.
-    const recoil = gunLocomotionRecoilFor(weapon);
-    const r = addImpulse(
-      player,
-      -aim.x * recoil.impulse,
-      -aim.y * recoil.impulse,
-      recoil.maxImpulse,
-    );
-    player.vx = r.vx;
-    player.vy = r.vy;
+    // B44: gun kick remains entirely on rig/camera clocks; the player root is untouched.
   },
 
   /** §38 CASTER fire — conjure one piercing arcane BOLT down aim (no ammo). Distinct from a gun
@@ -4933,7 +4717,12 @@ export const roomCombatMethods = {
    *  direction (a teleport must not replay stale pre-teleport intent; the next command lands ≤50ms later),
    *  mirrors zero velocity, and normally bumps `teleportSeq`. Repeated elevator holds can suppress only
    *  that redundant bump while one server-motion epoch already owns the complete placement window. */
-  zeroMoveVel(this: GameRoomContext, id: string, bumpTeleport = true): void {
+  zeroMoveVel(
+    this: GameRoomContext,
+    id: string,
+    bumpTeleport = true,
+    source: ServerMotionSource,
+  ): void {
     const inp = this.inputs.get(id);
     if (inp) {
       inp.mvx = 0;
@@ -4951,7 +4740,7 @@ export const roomCombatMethods = {
     const c = this.combat.get(id);
     const player = this.state.players.get(id);
     if (player) {
-      this.beginServerMotion(player, 1);
+      this.beginServerMotion(player, 1, source);
       if (c) {
         c.crouchPrevHeld = false;
         c.momentumX = 0;
@@ -5404,7 +5193,6 @@ export const roomCombatMethods = {
           const dy = pr.y - player.y;
           if (dx * dx + dy * dy > reach * reach) return; // no overlap with this player
           const pc = this.combat.get(player.id);
-          if (pc && this.weaponLungeInvulnerable(pc)) return;
           // §8 v0.117 PROJECTILE PARRY: a bullet caught inside the parry i-frame window is DEFLECTED into a
           // friendly counter-shot rocketed back at the horde — the block lands with UMPH, not a silent phase.
           if ((pc?.invuln ?? 0) > 0 && pc) {
@@ -5427,7 +5215,7 @@ export const roomCombatMethods = {
           );
           player.vx = k.vx;
           player.vy = k.vy;
-          this.beginServerMotion(player, SERVER_MOTION_IMPULSE_TICKS);
+          this.beginServerMotion(player, SERVER_MOTION_IMPULSE_TICKS, "hostile-projectile-hit");
           consumed = true;
         });
         if (consumed && !reflected) doomed.push(id);

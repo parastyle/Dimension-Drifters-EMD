@@ -1,7 +1,5 @@
 import {
   characterScale,
-  gunLocomotionRecoilFor,
-  gunUserRecoilFor,
   TICK_MS,
   TILE_GROUND,
   WEAPONS,
@@ -88,10 +86,7 @@ describe("V7 moving multi-round gun origin authority", () => {
       h.combat.targetX = h.player.x + aimX * weapon.gun.range;
       h.combat.targetY = h.player.y;
 
-      const authored = gunUserRecoilFor(weapon);
-      const locomotion = gunLocomotionRecoilFor(weapon);
-      expect(authored.impulse).toBeGreaterThan(0);
-      expect(locomotion.impulse).toBe(0);
+      expect(weapon.gun.recoil).toBeGreaterThan(0);
 
       for (let round = 0; round < weapon.gun.burst.count; round++) {
         h.room.fireGun(

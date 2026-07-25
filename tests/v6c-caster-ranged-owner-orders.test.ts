@@ -111,12 +111,9 @@ describe("V6C caster/ranged owner orders", () => {
 
   it("compresses Stormfists travel to 25ms while keeping one-tick immunity and DPS intact", () => {
     const definition = weapon("x2-thunderhead-stormfists");
-    expect(definition.performance?.lunge).toEqual({
-      distancePx: 480,
-      durationSeconds: 0.025,
-      invulnerable: true,
-      impactAtDestination: true,
-    });
+    expect("lunge" in (definition.performance ?? {})).toBe(false);
+    expect(definition.range).toBe(680);
+    expect(definition.quake?.placementRange).toBe(480);
     expect((definition.damage + (definition.quake?.damage ?? 0)) / definition.cooldown).toBe(17.5);
   });
 
@@ -171,15 +168,15 @@ describe("V6C caster/ranged owner orders", () => {
     });
   });
 
-  it("doubles only Calamity's server knockback channel", () => {
+  it("keeps Calamity's recoil visual-only", () => {
     const gun = weapon("x2-calamity-howitzer").gun;
     expect(gun).toMatchObject({
       damage: 22,
       fireRate: 2.2,
       recoil: 0.004,
-      userKnockbackMultiplier: 2,
       explode: { radius: 150, damage: 32 },
     });
+    expect("userKnockbackMultiplier" in (gun ?? {})).toBe(false);
   });
 
   it("turns Tidehook's enlarged radius into a frost-typed ice bloom", () => {

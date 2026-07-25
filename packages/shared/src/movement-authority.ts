@@ -35,7 +35,7 @@ export interface MovementEnvelope {
   dtSeconds: number;
   maxMoveSpeed: number;
   maxImpulseSpeed: number;
-  /** Authored root motion/knockback may widen continuity for its exact server-owned window. */
+  /** Classified server-authored motion may widen continuity for its exact ownership window. */
   authoredDisplacementPx?: number;
   speedTolerance?: number;
   positionTolerancePx?: number;
