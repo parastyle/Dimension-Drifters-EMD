@@ -201,9 +201,15 @@ const FLOOR_STYLES = {
     skirt: 0x493a35,
     disturbance: 0x665148,
     shadow: 0x281e20,
-    tileBase: [3],
-    tileCluster: [1],
-    tileEdge: [2],
+    // B60: ashlands tiles are re-authored to fixed semantic roles — 0 quiet bed, 1 worn route,
+    // 2 disturbed cluster, 3 pit approach. Only three roles are wired: `buildWearRoutes` and the
+    // "route" material zone were removed with the POI landmarks (48f8f7f) because routes pathed
+    // BETWEEN landmarks and lost their anchors. tile-1 is therefore authored but unreferenced.
+    // Do NOT fold it into tileBase — its directional sweep would scatter randomly through the
+    // commons and read as wallpaper. Restoring routes on non-landmark anchors is a pending call.
+    tileBase: [0],
+    tileCluster: [2],
+    tileEdge: [3],
   },
   "neon-cyber": {
     skirt: 0x35404d,

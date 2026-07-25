@@ -3,6 +3,7 @@ import { dirname } from "node:path";
 import sharp from "sharp";
 
 const clampByte = (value) => Math.max(0, Math.min(255, Math.round(value)));
+const luma = (r, g, b) => 0.2126 * r + 0.7152 * g + 0.0722 * b;
 
 async function rgbBuffer(file) {
   const { data, info } = await sharp(file)
@@ -16,6 +17,340 @@ async function rgbBuffer(file) {
 function edgeWeight(distance, strip) {
   if (distance >= strip) return 0;
   return 0.5 * (1 + Math.cos((Math.PI * distance) / strip));
+}
+
+function compressLuminance(data, targetMean, maxSpread) {
+  const pixels = data.length / 3;
+  const sourceValues = new Float64Array(pixels);
+  let sourceTotal = 0;
+  for (let pixel = 0; pixel < pixels; pixel++) {
+    const index = pixel * 3;
+    const value = luma(data[index], data[index + 1], data[index + 2]);
+    sourceValues[pixel] = value;
+    sourceTotal += value;
+  }
+  const sourceMean = sourceTotal / pixels;
+  let sourceSpread = 1;
+  for (const value of sourceValues) sourceSpread = Math.max(sourceSpread, Math.abs(value - sourceMean));
+  const scale = Math.min(1, maxSpread / sourceSpread);
+  const low = targetMean - maxSpread;
+  const high = targetMean + maxSpread;
+  const mappedMean = (offset) => {
+    let total = 0;
+    for (const value of sourceValues) total += Math.max(low, Math.min(high, targetMean + (value - sourceMean) * scale + offset));
+    return total / pixels;
+  };
+  let lowerOffset = -maxSpread * 2;
+  let upperOffset = maxSpread * 2;
+  for (let iteration = 0; iteration < 24; iteration++) {
+    const middle = (lowerOffset + upperOffset) / 2;
+    if (mappedMean(middle) < targetMean) lowerOffset = middle;
+    else upperOffset = middle;
+  }
+  const offset = (lowerOffset + upperOffset) / 2;
+  const out = Buffer.from(data);
+  for (let pixel = 0; pixel < pixels; pixel++) {
+    const index = pixel * 3;
+    const source = sourceValues[pixel];
+    const target = Math.max(low, Math.min(high, targetMean + (source - sourceMean) * scale + offset));
+    const delta = target - source;
+    out[index] = clampByte(data[index] + delta);
+    out[index + 1] = clampByte(data[index + 1] + delta);
+    out[index + 2] = clampByte(data[index + 2] + delta);
+  }
+  return out;
+}
+
+async function quantizedRgb(input, width, height, colours) {
+  const palette = await sharp(input)
+    .resize(width, height, { fit: "fill" })
+    .png({ palette: true, colours, dither: 0 })
+    .toBuffer();
+  return sharp(palette)
+    .removeAlpha()
+    .toColourspace("srgb")
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+}
+
+function parseHexColour(hex) {
+  const match = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex);
+  if (!match) throw new Error(`invalid fixed cel colour ${hex}`);
+  return match.slice(1).map((channel) => Number.parseInt(channel, 16));
+}
+
+function isEmberAccent(data, offset) {
+  const r = data[offset];
+  const g = data[offset + 1];
+  const b = data[offset + 2];
+  return r - Math.max(g, b) >= 42 && r >= g * 1.35 && g >= b * 1.2;
+}
+
+function fixedCelPalette(source, original, width, paletteHex, accentHex) {
+  const palette = paletteHex.map(parseHexColour);
+  const accent = parseHexColour(accentHex);
+  const colours = new Map();
+  for (let offset = 0; offset < source.length; offset += 3) {
+    const key = `${source[offset]},${source[offset + 1]},${source[offset + 2]}`;
+    const existing = colours.get(key);
+    if (existing) existing.count++;
+    else {
+      colours.set(key, {
+        rgb: [source[offset], source[offset + 1], source[offset + 2]],
+        count: 1,
+      });
+    }
+  }
+  const ranked = [...colours.entries()].sort(
+    (left, right) => luma(...left[1].rgb) - luma(...right[1].rgb),
+  );
+  const mappedIndex = new Map();
+  for (let index = 0; index < ranked.length; index++) {
+    const paletteIndex =
+      ranked.length === 1
+        ? Math.floor(palette.length / 2)
+        : Math.round((index * (palette.length - 1)) / (ranked.length - 1));
+    mappedIndex.set(ranked[index][0], paletteIndex);
+  }
+
+  const inkKey = ranked[0][0];
+  // The image generator authors at a larger square than the installed tile,
+  // so its requested 4px/2px linework would otherwise downsample toward
+  // 2px/1px. Extend the darkest source line one pixel south-east: generated
+  // 2-3px major joints install at 3-4px, while 1px minor lines install at 2px.
+  const pixels = source.length / 3;
+  const inkMask = new Uint8Array(pixels);
+  for (let pixel = 0; pixel < pixels; pixel++) {
+    const offset = pixel * 3;
+    const x = pixel % width;
+    const y = Math.floor(pixel / width);
+    const left = x > 0 ? offset - 3 : -1;
+    const up = y > 0 ? offset - width * 3 : -1;
+    const sourceKey = `${source[offset]},${source[offset + 1]},${source[offset + 2]}`;
+    const leftKey = left >= 0 ? `${source[left]},${source[left + 1]},${source[left + 2]}` : "";
+    const upKey = up >= 0 ? `${source[up]},${source[up + 1]},${source[up + 2]}` : "";
+    inkMask[pixel] = sourceKey === inkKey || leftKey === inkKey || upKey === inkKey ? 1 : 0;
+  }
+
+  // Alternate the six surface hues by ink-enclosed material region, never by
+  // noisy source pixels. This adds bounded hue structure without inventing an
+  // un-inked colour boundary or turning cel planes into photographic grain.
+  const components = new Int32Array(pixels);
+  components.fill(-1);
+  const queue = new Int32Array(pixels);
+  let component = 0;
+  for (let start = 0; start < pixels; start++) {
+    if (inkMask[start] || components[start] >= 0) continue;
+    let head = 0;
+    let tail = 0;
+    queue[tail++] = start;
+    components[start] = component;
+    while (head < tail) {
+      const pixel = queue[head++];
+      const x = pixel % width;
+      const neighbours = [
+        x > 0 ? pixel - 1 : -1,
+        x + 1 < width ? pixel + 1 : -1,
+        pixel >= width ? pixel - width : -1,
+        pixel + width < pixels ? pixel + width : -1,
+      ];
+      for (const neighbour of neighbours) {
+        if (neighbour < 0 || inkMask[neighbour] || components[neighbour] >= 0) continue;
+        components[neighbour] = component;
+        queue[tail++] = neighbour;
+      }
+    }
+    component++;
+  }
+
+  const out = Buffer.alloc(source.length);
+  for (let pixel = 0; pixel < pixels; pixel++) {
+    const offset = pixel * 3;
+    const sourceKey = `${source[offset]},${source[offset + 1]},${source[offset + 2]}`;
+    let target;
+    if (isEmberAccent(original, offset)) {
+      // Accent pixels remain visible inside the widest failing-ground gaps.
+      target = accent;
+    } else if (inkMask[pixel]) {
+      target = palette[0];
+    } else {
+      const baseIndex = mappedIndex.get(sourceKey);
+      const alternate = components[pixel] % 2;
+      target = palette[Math.max(1, baseIndex - alternate)];
+    }
+    out[offset] = target[0];
+    out[offset + 1] = target[1];
+    out[offset + 2] = target[2];
+  }
+  return out;
+}
+
+/**
+ * Collapse generated floor shading into a bounded cel palette before the
+ * family perimeter fold. The fold remains the final seam operation.
+ */
+export async function normalizeCelTileValues({
+  files,
+  targetMeans,
+  maxSpread = 10,
+  colours = 7,
+  fixedPalette,
+  accent,
+}) {
+  if (files.length !== targetMeans.length) throw new Error("tile value target count must match files");
+  if ((fixedPalette && !accent) || (!fixedPalette && accent)) {
+    throw new Error("fixed cel palettes require both fixedPalette and accent");
+  }
+  for (let index = 0; index < files.length; index++) {
+    const file = files[index];
+    const source = await quantizedRgb(file, 512, 512, colours);
+    let celData = source.data;
+    if (fixedPalette) {
+      const original = await sharp(file)
+        .resize(512, 512, { fit: "fill" })
+        .removeAlpha()
+        .toColourspace("srgb")
+        .raw()
+        .toBuffer();
+      celData = fixedCelPalette(source.data, original, 512, fixedPalette, accent);
+    }
+    const tileSpread = Array.isArray(maxSpread) ? maxSpread[index] : maxSpread;
+    if (!Number.isFinite(tileSpread)) throw new Error(`missing tile value spread at index ${index}`);
+    const out = compressLuminance(celData, targetMeans[index], tileSpread);
+    await sharp(out, { raw: { width: 512, height: 512, channels: 3 } }).png().toFile(file);
+  }
+}
+
+function rowMeans(data, width, height) {
+  const rows = new Float64Array(height);
+  for (let y = 0; y < height; y++) {
+    let total = 0;
+    for (let x = 0; x < width; x++) {
+      const index = (y * width + x) * 3;
+      total += luma(data[index], data[index + 1], data[index + 2]);
+    }
+    rows[y] = total / width;
+  }
+  return rows;
+}
+
+function strongestDarkStep(rows, from, to) {
+  let row = from;
+  let drop = -Infinity;
+  for (let y = Math.max(1, from); y <= Math.min(rows.length - 1, to); y++) {
+    const candidate = rows[y - 1] - rows[y];
+    if (candidate > drop) {
+      drop = candidate;
+      row = y;
+    }
+  }
+  return row;
+}
+
+async function rimRegion(source, extract, targetHeight, targetMean, maxSpread, colours) {
+  const resized = await sharp(source)
+    .extract(extract)
+    .resize(1024, targetHeight, { fit: "fill" })
+    .png({ palette: true, colours, dither: 0 })
+    .toBuffer();
+  const decoded = await sharp(resized)
+    .removeAlpha()
+    .toColourspace("srgb")
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  const compressed = compressLuminance(decoded.data, targetMean, maxSpread);
+  return sharp(compressed, { raw: { width: 1024, height: targetHeight, channels: 3 } }).png().toBuffer();
+}
+
+async function horizontalizeTopBand(input, bandHeight = 72) {
+  const decoded = await sharp(input).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+  const out = Buffer.from(decoded.data);
+  const limit = Math.min(decoded.info.height, bandHeight);
+  for (let y = 0; y < limit; y++) {
+    const average = [0, 0, 0];
+    for (let x = 0; x < decoded.info.width; x++) {
+      const index = (y * decoded.info.width + x) * 3;
+      average[0] += decoded.data[index];
+      average[1] += decoded.data[index + 1];
+      average[2] += decoded.data[index + 2];
+    }
+    for (let channel = 0; channel < 3; channel++) average[channel] = clampByte(average[channel] / decoded.info.width);
+    for (let x = 0; x < decoded.info.width; x++) {
+      const index = (y * decoded.info.width + x) * 3;
+      out[index] = average[0];
+      out[index + 1] = average[1];
+      out[index + 2] = average[2];
+    }
+  }
+  return sharp(out, {
+    raw: { width: decoded.info.width, height: decoded.info.height, channels: 3 },
+  })
+    .png()
+    .toBuffer();
+}
+
+/**
+ * Recompose a generated rim around the renderer's exact y=128 split. Image
+ * generation may place the requested halfway lip a little high or low; detect
+ * its two dark steps, then preserve and flatten the authored ground/wall/void
+ * regions into the fixed 126/5/93/32 contract.
+ */
+export async function normalizeCelRim(file) {
+  const source = await sharp(file).removeAlpha().toColourspace("srgb").png().toBuffer();
+  const decoded = await sharp(source).raw().toBuffer({ resolveWithObject: true });
+  const { data, info } = decoded;
+  const rows = rowMeans(data, info.width, info.height);
+  const lip = strongestDarkStep(rows, Math.floor(info.height * 0.28), Math.floor(info.height * 0.62));
+  const voidStart = strongestDarkStep(
+    rows,
+    lip + Math.floor((info.height - lip) * 0.42),
+    info.height - 2,
+  );
+  if (lip < 16 || voidStart <= lip + 16) {
+    throw new Error(`could not detect rim bands in ${file}: lip=${lip}, void=${voidStart}`);
+  }
+
+  const groundAuthored = await rimRegion(
+    source,
+    { left: 0, top: 0, width: info.width, height: lip },
+    126,
+    90,
+    15,
+    6,
+  );
+  const ground = await horizontalizeTopBand(groundAuthored);
+  const wall = await rimRegion(
+    source,
+    { left: 0, top: lip, width: info.width, height: voidStart - lip },
+    93,
+    45,
+    12,
+    6,
+  );
+  const pitVoid = await rimRegion(
+    source,
+    { left: 0, top: voidStart, width: info.width, height: info.height - voidStart },
+    32,
+    20,
+    4,
+    3,
+  );
+  const lipLine = await sharp({
+    create: { width: 1024, height: 5, channels: 3, background: { r: 36, g: 30, b: 32 } },
+  })
+    .png()
+    .toBuffer();
+  await sharp({
+    create: { width: 1024, height: 256, channels: 3, background: { r: 23, g: 20, b: 22 } },
+  })
+    .composite([
+      { input: ground, left: 0, top: 0 },
+      { input: lipLine, left: 0, top: 126 },
+      { input: wall, left: 0, top: 131 },
+      { input: pitVoid, left: 0, top: 224 },
+    ])
+    .png()
+    .toFile(file);
 }
 
 /**
