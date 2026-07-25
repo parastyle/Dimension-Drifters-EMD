@@ -81,7 +81,7 @@ export type DecalVisualMeta = Readonly<{
   pitOnly: boolean;
 }>;
 
-type DimensionFloorStyle = Readonly<{
+type DimensionFloorBaseStyle = Readonly<{
   skirt: number;
   disturbance: number;
   shadow: number;
@@ -89,6 +89,29 @@ type DimensionFloorStyle = Readonly<{
   tileCluster: readonly number[];
   tileEdge: readonly number[];
 }>;
+
+type DimensionDecalAlphas = Readonly<{
+  decalAlphaFlat: number;
+  decalAlphaEdge: number;
+  decalAlphaSolid: number;
+}>;
+
+type DimensionFloorStyle = DimensionFloorBaseStyle & DimensionDecalAlphas;
+
+const DEFAULT_DECAL_ALPHAS = {
+  decalAlphaFlat: 0.18,
+  decalAlphaEdge: 0.52,
+  decalAlphaSolid: 0.64,
+} as const satisfies DimensionDecalAlphas;
+
+const dimensionFloorStyle = (
+  style: DimensionFloorBaseStyle,
+  decalAlphas: Partial<DimensionDecalAlphas> = {},
+): DimensionFloorStyle => ({
+  ...style,
+  ...DEFAULT_DECAL_ALPHAS,
+  ...decalAlphas,
+});
 
 export type DimensionPropPack = Readonly<{
   decalIds: readonly string[];
@@ -219,14 +242,14 @@ const FLOOR_STYLES = {
     tileCluster: [2],
     tileEdge: [3],
   },
-} as const satisfies Readonly<Record<string, DimensionFloorStyle>>;
+} as const satisfies Readonly<Record<string, DimensionFloorBaseStyle>>;
 
 /** §17 active-dimension decal registry. The original generic manifest is Wild West's authored pack. */
 const WILD_WEST_PROP_PACK: DimensionPropPack = {
   decalIds: DECAL_IDS,
   decalMeta: WILD_WEST_DECAL_META,
   decalDir: "decals",
-  style: FLOOR_STYLES["wild-west"],
+  style: dimensionFloorStyle(FLOOR_STYLES["wild-west"]),
 };
 export const DIMENSION_PROP_PACKS: Readonly<Record<string, DimensionPropPack>> = {
   "wild-west": WILD_WEST_PROP_PACK,
@@ -234,25 +257,25 @@ export const DIMENSION_PROP_PACKS: Readonly<Record<string, DimensionPropPack>> =
     decalIds: DECAL_IDS_FROSTFELL,
     decalMeta: FROSTFELL_DECAL_META,
     decalDir: "decals/frostfell",
-    style: FLOOR_STYLES.frostfell,
+    style: dimensionFloorStyle(FLOOR_STYLES.frostfell),
   },
   "verdant-ruins": {
     decalIds: DECAL_IDS_VERDANT_RUINS,
     decalMeta: VERDANT_RUINS_DECAL_META,
     decalDir: "decals/verdant-ruins",
-    style: FLOOR_STYLES["verdant-ruins"],
+    style: dimensionFloorStyle(FLOOR_STYLES["verdant-ruins"]),
   },
   ashlands: {
     decalIds: DECAL_IDS_ASHLANDS,
     decalMeta: ASHLANDS_DECAL_META,
     decalDir: "decals/ashlands",
-    style: FLOOR_STYLES.ashlands,
+    style: dimensionFloorStyle(FLOOR_STYLES.ashlands),
   },
   "neon-cyber": {
     decalIds: DECAL_IDS_NEON_CYBER,
     decalMeta: NEON_CYBER_DECAL_META,
     decalDir: "decals/neon-cyber",
-    style: FLOOR_STYLES["neon-cyber"],
+    style: dimensionFloorStyle(FLOOR_STYLES["neon-cyber"]),
   },
 };
 
@@ -379,7 +402,49 @@ export function drawArena(
         .setDepth(-19),
     );
   }
-  // Arena boundary — a themed rail (marks the playable bound; the ground extends past it on big screens).
+  // Keep the void beyond the shelf as ONE replaceable layer: a later parallax pass can swap this object
+  // without unpicking the painted shelf or the gameplay rail.
+  const paintedWidth = Math.ceil((map.cols * map.tileSize) / PAINTED_TILE_SIZE) * PAINTED_TILE_SIZE;
+  const paintedHeight =
+    Math.ceil((map.rows * map.tileSize) / PAINTED_TILE_SIZE) * PAINTED_TILE_SIZE;
+  const overhangX = Math.max(0, paintedWidth - ARENA_WIDTH);
+  const overhangY = Math.max(0, paintedHeight - ARENA_HEIGHT);
+  const boundaryVoid = scene.add.graphics().setName("arena-boundary-void").setDepth(-14.5);
+  boundaryVoid.fillStyle(palette.pitVoid, 1);
+  boundaryVoid.fillRect(-overhangX, -overhangY, ARENA_WIDTH + overhangX * 2, overhangY);
+  boundaryVoid.fillRect(-overhangX, ARENA_HEIGHT, ARENA_WIDTH + overhangX * 2, overhangY);
+  boundaryVoid.fillRect(-overhangX, 0, overhangX, ARENA_HEIGHT);
+  boundaryVoid.fillRect(ARENA_WIDTH, 0, overhangX, ARENA_HEIGHT);
+  out.push(boundaryVoid);
+
+  // Four synthetic outward-facing runs reuse the active dimension rim: the camera-facing south edge keeps
+  // the full wall, while the north/east/west edges use the derived lip.
+  const boundarySegments: PitSegment[] = [
+    { x1: 0, y1: 0, x2: ARENA_WIDTH, y2: 0, nx: 0, ny: -1, hop: false },
+    {
+      x1: 0,
+      y1: ARENA_HEIGHT,
+      x2: ARENA_WIDTH,
+      y2: ARENA_HEIGHT,
+      nx: 0,
+      ny: 1,
+      hop: false,
+    },
+    { x1: 0, y1: 0, x2: 0, y2: ARENA_HEIGHT, nx: -1, ny: 0, hop: false },
+    {
+      x1: ARENA_WIDTH,
+      y1: 0,
+      x2: ARENA_WIDTH,
+      y2: ARENA_HEIGHT,
+      nx: 1,
+      ny: 0,
+      hop: false,
+    },
+  ];
+  const rimKey = terrainRimKey(dimensionId);
+  if (hasTile(rimKey)) out.push(...buildPaintedRims(scene, dimensionId, rimKey, boundarySegments));
+
+  // Arena boundary — the existing themed rail remains the exact playable-bound semaphore above the shelf.
   out.push(
     scene.add
       .rectangle(cx, cy, ARENA_WIDTH, ARENA_HEIGHT)
@@ -699,11 +764,17 @@ function buildPitDebris(
         .image(x, y, meta.id)
         .setScale(scale)
         .setRotation(decalRotation(meta, tangent, rotationRoll))
-        .setAlpha(0.52)
+        .setAlpha(decalAlphaForRole(pack.style, meta.role))
         .setDepth(-13.85),
     );
   }
   return out;
+}
+
+function decalAlphaForRole(style: DimensionFloorStyle, role: DecalRole): number {
+  if (role === "flat") return style.decalAlphaFlat;
+  if (role === "edge") return style.decalAlphaEdge;
+  return style.decalAlphaSolid;
 }
 
 type ZoneBoundarySegment = Readonly<{
@@ -1014,7 +1085,7 @@ export function scatterDecor(
           .image(descriptor.x, descriptor.y, id)
           .setScale(descriptor.scale)
           .setRotation(descriptor.rotation)
-          .setAlpha(0.065)
+          .setAlpha(pack.style.decalAlphaFlat)
           .setDepth(-15),
       );
   return out;
