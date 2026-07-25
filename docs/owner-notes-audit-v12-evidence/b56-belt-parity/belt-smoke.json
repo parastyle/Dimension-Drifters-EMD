@@ -1,0 +1,364 @@
+{
+  "boot": {
+    "active": true,
+    "belt": true,
+    "roomId": "yIKXVtwFT",
+    "sessionId": "Hkof6nV9z",
+    "character": "proto-cowboy-hidden-face",
+    "corporateFloorId": "office-red-carpet-gallery",
+    "corporateFloorDepth": 1
+  },
+  "ui": {
+    "weaponDock": true,
+    "backpackAffordance": true,
+    "backpackPanel": true,
+    "money": true,
+    "health": true,
+    "relicRow": true,
+    "floorCounter": true,
+    "prompts": true,
+    "objective": true,
+    "copy": {
+      "arsenal": [
+        "1",
+        "2",
+        "3",
+        "Rusty Cleaver",
+        "Empty",
+        "Empty",
+        "[Q] Next slot · ◈ 0 Money · Pack 0/12 · [Tab] Backpack",
+        "◆◇◇◇◇ 15"
+      ],
+      "health": "100 / 100",
+      "relics": "RELICS MV",
+      "floor": "F1",
+      "prompt": "[E] OPEN CHEST",
+      "objective": "Advance to the next room",
+      "openPanel": {
+        "arsenal": [
+          "1",
+          "2",
+          "3",
+          "Rusty Cleaver",
+          "Empty",
+          "Empty",
+          "[Q] Next slot · ◈ 0 Money",
+          "STOW",
+          "STOW",
+          "STOW",
+          "◆◇◇◇◇ 15"
+        ],
+        "health": "100 / 100",
+        "relics": "RELICS MV",
+        "floor": "F1",
+        "prompt": "[E] OPEN CHEST",
+        "objective": "Advance to the next room"
+      }
+    }
+  },
+  "chestId": "chest:b56-belt:53",
+  "actions": {
+    "attackSeqBefore": 0,
+    "attackSeqAfter": 3,
+    "parryCooldown": 0.4500100000000002,
+    "dodgeStance": 4,
+    "jumpHeight": 58.55500030517578
+  },
+  "aims": [
+    {
+      "label": "right-high",
+      "cursor": {
+        "x": 1272,
+        "y": 206.41159889914775
+      },
+      "rig": {
+        "x": 2409.048473238945,
+        "y": 2082.947509765625
+      },
+      "expected": {
+        "x": 0.36609986034007264,
+        "y": -0.9305755704181039
+      },
+      "selfAim": {
+        "x": 0.36609986034007264,
+        "y": -0.9305755704181039
+      },
+      "weaponAxis": {
+        "x": 0.36609984295456854,
+        "y": -0.9305755772577745
+      },
+      "facing": 1,
+      "pointerMoves": 6
+    },
+    {
+      "label": "right-low",
+      "cursor": {
+        "x": 1272,
+        "y": 536.4115988991477
+      },
+      "rig": {
+        "x": 2409.048583984375,
+        "y": 2082.947509765625
+      },
+      "expected": {
+        "x": 0.5691472638168201,
+        "y": 0.8222356061919399
+      },
+      "selfAim": {
+        "x": 0.5691472638168201,
+        "y": 0.8222356061919399
+      },
+      "weaponAxis": {
+        "x": 0.5691472940694288,
+        "y": 0.8222355852512389
+      },
+      "facing": 1,
+      "pointerMoves": 8
+    },
+    {
+      "label": "left-high",
+      "cursor": {
+        "x": 1099.2215687144887,
+        "y": 206.41159889914775
+      },
+      "rig": {
+        "x": 2409.048473238945,
+        "y": 2082.947509765625
+      },
+      "expected": {
+        "x": -0.39408552547798953,
+        "y": -0.9190737721253591
+      },
+      "selfAim": {
+        "x": -0.39408552547798953,
+        "y": -0.9190737721253591
+      },
+      "weaponAxis": {
+        "x": -0.3940855410512303,
+        "y": -0.919073765447779
+      },
+      "facing": -1,
+      "pointerMoves": 10
+    },
+    {
+      "label": "left-low",
+      "cursor": {
+        "x": 1099.2215687144887,
+        "y": 536.4115988991477
+      },
+      "rig": {
+        "x": 2409.048583984375,
+        "y": 2082.947509765625
+      },
+      "expected": {
+        "x": -0.6022631723512051,
+        "y": 0.798297608182226
+      },
+      "selfAim": {
+        "x": -0.6022631723512051,
+        "y": 0.798297608182226
+      },
+      "weaponAxis": {
+        "x": -0.6022631696522478,
+        "y": 0.7982976102184122
+      },
+      "facing": -1,
+      "pointerMoves": 12
+    }
+  ],
+  "position": {
+    "samples": [
+      {
+        "wallMs": 33259,
+        "rootX": 855.1484985351562,
+        "rootY": 2072.989013671875,
+        "candidateX": 855.1484985351562,
+        "candidateY": 2395.97802734375,
+        "presentedWorldX": 855.1484985351562,
+        "presentedWorldY": 2395.97802734375,
+        "serverX": 855.1484985351562,
+        "serverY": 2395.97802734375
+      },
+      {
+        "wallMs": 33560.800000000745,
+        "rootX": 891.1284985351563,
+        "rootY": 2072.989013671875,
+        "candidateX": 891.1284985351563,
+        "candidateY": 2395.97802734375,
+        "presentedWorldX": 891.1284985351563,
+        "presentedWorldY": 2395.97802734375,
+        "serverX": 855.1484985351562,
+        "serverY": 2395.97802734375
+      },
+      {
+        "wallMs": 33858.09999999963,
+        "rootX": 990.0084790039064,
+        "rootY": 2072.989013671875,
+        "candidateX": 990.0084790039064,
+        "candidateY": 2395.97802734375,
+        "presentedWorldX": 990.0084790039064,
+        "presentedWorldY": 2395.97802734375,
+        "serverX": 891.1284790039062,
+        "serverY": 2395.97802734375
+      },
+      {
+        "wallMs": 34109.300000000745,
+        "rootX": 1087.7876198867189,
+        "rootY": 2072.989013671875,
+        "candidateX": 1087.7876198867189,
+        "candidateY": 2395.97802734375,
+        "presentedWorldX": 1087.7876198867189,
+        "presentedWorldY": 2395.97802734375,
+        "serverX": 990.0084838867188,
+        "serverY": 2395.97802734375
+      },
+      {
+        "wallMs": 34410.199999999255,
+        "rootX": 1153.157170796875,
+        "rootY": 2072.989013671875,
+        "candidateX": 1153.157170796875,
+        "candidateY": 2395.97802734375,
+        "presentedWorldX": 1153.157170796875,
+        "presentedWorldY": 2395.97802734375,
+        "serverX": 1055.928466796875,
+        "serverY": 2395.97802734375
+      },
+      {
+        "wallMs": 34713,
+        "rootX": 1268.5171561484376,
+        "rootY": 2072.989013671875,
+        "candidateX": 1268.5171561484376,
+        "candidateY": 2395.97802734375,
+        "presentedWorldX": 1268.5171561484376,
+        "presentedWorldY": 2395.97802734375,
+        "serverX": 1171.2884521484375,
+        "serverY": 2395.97802734375
+      },
+      {
+        "wallMs": 35009.699999999255,
+        "rootX": 1367.39716103125,
+        "rootY": 2072.989013671875,
+        "candidateX": 1367.39716103125,
+        "candidateY": 2395.97802734375,
+        "presentedWorldX": 1367.39716103125,
+        "presentedWorldY": 2395.97802734375,
+        "serverX": 1270.16845703125,
+        "serverY": 2395.97802734375
+      },
+      {
+        "wallMs": 35304.59999999963,
+        "rootX": 1449.8004814453127,
+        "rootY": 2072.989013671875,
+        "candidateX": 1449.8004814453127,
+        "candidateY": 2395.97802734375,
+        "presentedWorldX": 1449.8004814453127,
+        "presentedWorldY": 2395.97802734375,
+        "serverX": 1352.5684814453125,
+        "serverY": 2395.97802734375
+      },
+      {
+        "wallMs": 35621.800000000745,
+        "rootX": 1549.7780543281249,
+        "rootY": 2072.989013671875,
+        "candidateX": 1549.7780543281249,
+        "candidateY": 2395.97802734375,
+        "presentedWorldX": 1549.7780543281249,
+        "presentedWorldY": 2395.97802734375,
+        "serverX": 1451.448486328125,
+        "serverY": 2395.97802734375
+      },
+      {
+        "wallMs": 35922.40000000037,
+        "rootX": 1649.2084912109376,
+        "rootY": 2072.989013671875,
+        "candidateX": 1649.2084912109376,
+        "candidateY": 2395.97802734375,
+        "presentedWorldX": 1649.2084912109376,
+        "presentedWorldY": 2395.97802734375,
+        "serverX": 1550.3284912109375,
+        "serverY": 2395.97802734375
+      },
+      {
+        "wallMs": 36224.300000000745,
+        "rootX": 1786.6407985811977,
+        "rootY": 2067.2761383578927,
+        "candidateX": 1786.6407985811977,
+        "candidateY": 2384.5522767157854,
+        "presentedWorldX": 1786.6407985811977,
+        "presentedWorldY": 2384.5522767157854,
+        "serverX": 1672.729248046875,
+        "serverY": 2388.89404296875
+      },
+      {
+        "wallMs": 36527.90000000037,
+        "rootX": 1925.2827128614142,
+        "rootY": 2060.6370983455618,
+        "candidateX": 1925.2827128614142,
+        "candidateY": 2371.274196691124,
+        "presentedWorldX": 1925.2827128614142,
+        "presentedWorldY": 2371.274196691124,
+        "serverX": 1821.7349853515625,
+        "serverY": 2372.54736328125
+      },
+      {
+        "wallMs": 36830.40000000037,
+        "rootX": 2153.8707722829354,
+        "rootY": 2046.2956971394233,
+        "candidateX": 2152.6011267032964,
+        "candidateY": 2336.1436803554475,
+        "presentedWorldX": 2153.8707722829354,
+        "presentedWorldY": 2342.5913942788466,
+        "serverX": 1970.5662841796875,
+        "serverY": 2363.3765788631185
+      },
+      {
+        "wallMs": 37090.5,
+        "rootX": 2256.840715588741,
+        "rootY": 2042.3451313851365,
+        "candidateX": 2256.840715588741,
+        "candidateY": 2334.690262770273,
+        "presentedWorldX": 2256.840715588741,
+        "presentedWorldY": 2334.690262770273,
+        "serverX": 2152.60107421875,
+        "serverY": 2336.143679545974
+      },
+      {
+        "wallMs": 37348.300000000745,
+        "rootX": 2286.7807968709812,
+        "rootY": 2042.3450892925262,
+        "candidateX": 2286.7807968709812,
+        "candidateY": 2334.6901785850523,
+        "presentedWorldX": 2286.7807968709812,
+        "presentedWorldY": 2334.6901785850523,
+        "serverX": 2255.197265625,
+        "serverY": 2332.481085745502
+      },
+      {
+        "wallMs": 37666.5,
+        "rootX": 2360.848902718544,
+        "rootY": 2039.6181640625,
+        "candidateX": 2360.848902718544,
+        "candidateY": 2329.236328125,
+        "presentedWorldX": 2360.848902718544,
+        "presentedWorldY": 2329.236328125,
+        "serverX": 2359.517822265625,
+        "serverY": 2329.236328125
+      },
+      {
+        "wallMs": 37973.199999999255,
+        "rootX": 2360.848876953125,
+        "rootY": 2039.6181640625,
+        "candidateX": 2360.848876953125,
+        "candidateY": 2329.236328125,
+        "presentedWorldX": 2360.848876953125,
+        "presentedWorldY": 2329.236328125,
+        "serverX": 2360.848876953125,
+        "serverY": 2329.236328125
+      }
+    ],
+    "maxRootStepPx": 229.03750063832848,
+    "maxUnexpectedRootStepPx": 2.2737367544323206e-13,
+    "maxProjectionErrorPx": 0,
+    "maxServerProjectionErrorPx": 10.392592292136214
+  }
+}

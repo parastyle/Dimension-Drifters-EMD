@@ -124,9 +124,16 @@ export async function runArenaSpec(
  * until the arena room is live for this session. The deep-link path skips the menu, enters the
  * Testing Grounds, and applies the requested asset — all through the real MenuScene/ArenaScene flow.
  */
-export async function bootArena(page: Page, baseURL: string, devSpec?: string): Promise<void> {
-  const url = devSpec ? `${baseURL}/?dev=${devSpec}` : baseURL;
-  await page.goto(url, { waitUntil: "domcontentloaded" });
+export async function bootArena(
+  page: Page,
+  baseURL: string,
+  devSpec?: string,
+  beltLevel?: string,
+): Promise<void> {
+  const url = new URL(baseURL);
+  if (devSpec) url.searchParams.set("dev", devSpec);
+  if (beltLevel) url.searchParams.set("belt", beltLevel);
+  await page.goto(url.toString(), { waitUntil: "domcontentloaded" });
   await expect(
     page.locator("#game-root canvas"),
     "Phaser must mount a visible canvas",

@@ -3683,7 +3683,10 @@ export class MenuScene extends Phaser.Scene {
 
   /** §36 launch a specific belt LEVEL (belt mode, the level's own dimension roster/palette). */
   private launchBelt(levelId: string): void {
-    this.launch(beltLevelFor(levelId).dimensionId, false, true, levelId);
+    // B56: URL deep-links are cold-boot routing, not an interactive menu transition. Starting them must not
+    // depend on a camera-fade completion event: background/throttled tabs can pause Phaser's render clock
+    // after `launching` is armed, leaving the menu active and the DOM status at "connecting…" forever.
+    this.launch(beltLevelFor(levelId).dimensionId, false, true, levelId, true);
   }
 
   /** §16 v0.116 the BOSS RUSH card — a distinct crimson tile that launches the boss gauntlet (all 10
@@ -3770,7 +3773,13 @@ export class MenuScene extends Phaser.Scene {
     this.audioRow?.setVisible(!fullScreenWorkspace).setPosition(24, h - 26);
   }
 
-  private launch(id: string, bossRush = false, belt = false, beltLevel?: string): void {
+  private launch(
+    id: string,
+    bossRush = false,
+    belt = false,
+    beltLevel?: string,
+    direct = false,
+  ): void {
     if (this.launching) return; // guard the key+click double-fire
     const account = this.metaAccount ?? loadPetMetaAccount();
     const draft = this.armoryDraft ?? createArmoryDraft(account);
@@ -3796,21 +3805,30 @@ export class MenuScene extends Phaser.Scene {
         return m.installMatchmakingContract();
       }),
     ]);
+    const startArena = (): void => {
+      this.scene.start("arena", {
+        dimensionId: id,
+        bossRush,
+        belt,
+        beltLevel,
+        ...menuLaunchSelections(this.selectedCharacterId, account.selectedPetId),
+        carry,
+      });
+    };
+    // Cold URL launches have no menu gesture/transition to communicate. Resolve their imports/contracts and
+    // enter ArenaScene directly, even if the render loop is throttled before a fade could emit completion.
+    if (direct) {
+      void ready.then(startArena).catch((error: unknown) => {
+        this.launching = false;
+        console.error("[menu] direct arena launch failed", error);
+      });
+      return;
+    }
     // §19 v0.108 fade to black, THEN start the arena — every run start feels intentional.
     this.cameras.main.fadeOut(280, 0, 0, 0);
     this.cameras.main.once(
       "camerafadeoutcomplete",
-      () =>
-        void ready.then(() =>
-          this.scene.start("arena", {
-            dimensionId: id,
-            bossRush,
-            belt,
-            beltLevel,
-            ...menuLaunchSelections(this.selectedCharacterId, account.selectedPetId),
-            carry,
-          }),
-        ),
+      () => void ready.then(startArena),
     );
   }
 

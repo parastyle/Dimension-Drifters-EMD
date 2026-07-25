@@ -1,0 +1,73 @@
+{
+  "baseURL": "http://127.0.0.1:52622",
+  "samples": [
+    {
+      "step": 0,
+      "targetFacing": -1,
+      "facing": -1,
+      "facingBlend": -0.39983912647128367,
+      "rootScaleX": -0.6623394948497249,
+      "rootX": 2400,
+      "rootY": 2420,
+      "presentedWorldX": 2400,
+      "presentedWorldY": 2420,
+      "projectionErrorPx": 0,
+      "weaponAimError": 0.00014650770681766336,
+      "cursor": {
+        "x": 459.2735023061332,
+        "y": 240.40404848701928
+      }
+    },
+    {
+      "step": 1,
+      "targetFacing": 1,
+      "facing": 1,
+      "facingBlend": 0.9985117101784454,
+      "rootScaleX": 0.6623394948497249,
+      "rootX": 2400,
+      "rootY": 2420,
+      "presentedWorldX": 2400,
+      "presentedWorldY": 2420,
+      "projectionErrorPx": 0,
+      "weaponAimError": 3.511934933537851e-8,
+      "cursor": {
+        "x": 1239.9134987914408,
+        "y": 460.0481084561434
+      }
+    },
+    {
+      "step": 2,
+      "targetFacing": -1,
+      "facing": -1,
+      "facingBlend": -0.9985068292128051,
+      "rootScaleX": -0.6623394948497249,
+      "rootX": 2400,
+      "rootY": 2420,
+      "presentedWorldX": 2400,
+      "presentedWorldY": 2420,
+      "projectionErrorPx": 0,
+      "weaponAimError": 1.0686936143395418e-8,
+      "cursor": {
+        "x": 459.99999932133323,
+        "y": 240.00000037744712
+      }
+    },
+    {
+      "step": 3,
+      "targetFacing": 1,
+      "facing": 1,
+      "facingBlend": 0.9985068292155257,
+      "rootScaleX": 0.6623394948497249,
+      "rootX": 2400,
+      "rootY": 2420,
+      "presentedWorldX": 2400,
+      "presentedWorldY": 2420,
+      "projectionErrorPx": 0,
+      "weaponAimError": 0,
+      "cursor": {
+        "x": 1239.999999999999,
+        "y": 460.00000000000045
+      }
+    }
+  ]
+}

@@ -1,0 +1,107 @@
+{
+  "baseURL": "http://127.0.0.1:52622",
+  "samples": [
+    {
+      "step": 0,
+      "targetFacing": -1,
+      "facing": -1,
+      "facingBlend": -0.9891533437495311,
+      "rootScaleX": -0.6623394948497249,
+      "rootX": 1296,
+      "rootY": 2085,
+      "presentedWorldX": 1296,
+      "presentedWorldY": 2420,
+      "projectionErrorPx": 0,
+      "weaponAimError": 2.2894367922503842e-8,
+      "cursor": {
+        "x": 880.3636363636365,
+        "y": 298.0909090909091
+      }
+    },
+    {
+      "step": 1,
+      "targetFacing": 1,
+      "facing": 1,
+      "facingBlend": 0.9985068283836561,
+      "rootScaleX": 0.6623394948497249,
+      "rootX": 1296,
+      "rootY": 2085,
+      "presentedWorldX": 1296,
+      "presentedWorldY": 2420,
+      "projectionErrorPx": 0,
+      "weaponAimError": 1.62839444812299e-9,
+      "cursor": {
+        "x": 1270,
+        "y": 518.0909090909091
+      }
+    },
+    {
+      "step": 2,
+      "targetFacing": -1,
+      "facing": -1,
+      "facingBlend": -0.998506828383303,
+      "rootScaleX": -0.6623394948497249,
+      "rootX": 1296,
+      "rootY": 2085,
+      "presentedWorldX": 1296,
+      "presentedWorldY": 2420,
+      "projectionErrorPx": 0,
+      "weaponAimError": 2.2894367922503842e-8,
+      "cursor": {
+        "x": 880.3636363636365,
+        "y": 298.0909090909091
+      }
+    },
+    {
+      "step": 3,
+      "targetFacing": 1,
+      "facing": 1,
+      "facingBlend": 0.9985068292155261,
+      "rootScaleX": 0.6623394948497249,
+      "rootX": 1296,
+      "rootY": 2085,
+      "presentedWorldX": 1296,
+      "presentedWorldY": 2420,
+      "projectionErrorPx": 0,
+      "weaponAimError": 1.62839444812299e-9,
+      "cursor": {
+        "x": 1270,
+        "y": 518.0909090909091
+      }
+    },
+    {
+      "step": 4,
+      "targetFacing": -1,
+      "facing": -1,
+      "facingBlend": -0.9985068292155257,
+      "rootScaleX": -0.6623394948497249,
+      "rootX": 1296,
+      "rootY": 2085,
+      "presentedWorldX": 1296,
+      "presentedWorldY": 2420,
+      "projectionErrorPx": 0,
+      "weaponAimError": 2.2894367922503842e-8,
+      "cursor": {
+        "x": 880.3636363636365,
+        "y": 298.0909090909091
+      }
+    },
+    {
+      "step": 5,
+      "targetFacing": 1,
+      "facing": 1,
+      "facingBlend": 0.9985068292155257,
+      "rootScaleX": 0.6623394948497249,
+      "rootX": 1296,
+      "rootY": 2085,
+      "presentedWorldX": 1296,
+      "presentedWorldY": 2420,
+      "projectionErrorPx": 0,
+      "weaponAimError": 1.62839444812299e-9,
+      "cursor": {
+        "x": 1270,
+        "y": 518.0909090909091
+      }
+    }
+  ]
+}

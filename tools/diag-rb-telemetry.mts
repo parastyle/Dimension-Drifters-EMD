@@ -6,6 +6,8 @@ import {
   type ArenaMap,
   type ArenaState,
   BeamPhase,
+  BELT_Y0,
+  beltBounds,
   type BeltLevel,
   beamDescriptorFor,
   ChestState,
@@ -41,7 +43,7 @@ import { createGameServer } from "../packages/server/src/index.js";
 
 const evidenceDir = path.resolve(
   import.meta.dirname,
-  "../docs/owner-notes-audit-v12-evidence/b51-warp-fix",
+  "../docs/owner-notes-audit-v12-evidence/b56-belt-parity/diag-rb-telemetry",
 );
 const protectedPorts = new Set([5180, 2567]);
 const timeoutMs = 15_000;
@@ -871,13 +873,20 @@ function resetHeldInput(held: HeldInput): void {
 async function normalizeArena(
   instrumented: InstrumentedRoom,
   weaponId = "fists",
-  position = { x: 2_200, y: 1_500 },
+  requestedPosition?: { x: number; y: number },
 ): Promise<void> {
   const { room, local } = instrumented;
   const player = local.state.players.get(room.sessionId);
   const combat = local.combat.get(room.sessionId);
   const input = local.inputs.get(room.sessionId);
   if (!player || !combat || !input) throw new Error("arena reset fixture unavailable");
+  const x = requestedPosition?.x ?? 2_200;
+  const beltBand = local.beltLevel ? beltBounds(local.beltLevel, x) : undefined;
+  const position =
+    requestedPosition ??
+    (beltBand
+      ? { x, y: BELT_Y0 + (beltBand.yMin + beltBand.yMax) / 2 }
+      : { x, y: 1_500 });
 
   local.map.tiles.fill(TILE_GROUND);
   local.map.pois.length = 0;
@@ -887,6 +896,7 @@ async function normalizeArena(
   local.state.zones.clear();
   local.state.pickups.clear();
   local.state.chests.clear();
+  local.state.beltLockX = 0;
   local.spawnAccum = -1_000_000;
   local.shifterCd = 1_000_000;
   local.serverMotionUntilTick.delete(player.id);
@@ -1004,7 +1014,15 @@ function createProbe(
   } else {
     predictor.setMap(instrumented.local.map);
   }
-  return new ScenarioProbe(id, label, category, metadata, instrumented, predictor);
+  const mode = instrumented.local.beltLevel ? "belt" : "topdown";
+  return new ScenarioProbe(
+    `${mode}:${id}`,
+    `${mode === "belt" ? "Belt" : "Top-down"} — ${label}`,
+    category,
+    { mode, ...metadata },
+    instrumented,
+    predictor,
+  );
 }
 
 function sendAttack(room: LiveRoom, aimX = 1, aimY = 0): void {
@@ -1351,6 +1369,16 @@ async function runPitFall(instrumented: InstrumentedRoom): Promise<ScenarioResul
   const safe = { x: player.x - 320, y: player.y };
   combat.lastGroundX = safe.x;
   combat.lastGroundY = safe.y;
+  const originalBeltLevel = instrumented.local.beltLevel;
+  if (originalBeltLevel) {
+    // Corporate floors deliberately ship without pits. Inject one through the same BeltLevel contract so
+    // the belt half of the standing matrix exercises its real fall/snap-back branch instead of silently
+    // falling through to the unrelated top-down tile map.
+    instrumented.local.beltLevel = {
+      ...originalBeltLevel,
+      pits: [{ x0: player.x - 8, x1: player.x + 8 }],
+    };
+  }
   const col = Math.floor(player.x / instrumented.local.map.tileSize);
   const row = Math.floor(player.y / instrumented.local.map.tileSize);
   const fellBefore = player.fellSeq;
@@ -1361,14 +1389,17 @@ async function runPitFall(instrumented: InstrumentedRoom): Promise<ScenarioResul
   await probe.tick({
     action: "grounded-over-pit",
     beforeSend: () => {
-      instrumented.local.map.tiles[row * instrumented.local.map.cols + col] = TILE_PIT;
+      if (!originalBeltLevel)
+        instrumented.local.map.tiles[row * instrumented.local.map.cols + col] = TILE_PIT;
     },
   });
   await settle(probe, 18);
-  return probe.finish({
+  const result = probe.finish({
     fell: player.fellSeq > fellBefore,
     classified: resultSourceSeen(probe, "pit-snapback"),
   });
+  instrumented.local.beltLevel = originalBeltLevel;
+  return result;
 }
 
 const wrapIds = [
@@ -1627,15 +1658,10 @@ const endpoint = `ws://127.0.0.1:${port}`;
 const rooms: LiveRoom[] = [];
 const results: ScenarioResult[] = [];
 const logLines: string[] = [];
+const gunRepresentatives = gunFamilyRepresentatives();
+const beams = rangedBeamWeapons();
 
 try {
-  const topdown = await joinRoom(
-    endpoint,
-    { belt: false, beltLevel: "", dimensionId: "wild-west", bossRush: false },
-    true,
-  );
-  rooms.push(topdown.room);
-
   const run = async (factory: () => Promise<ScenarioResult>): Promise<void> => {
     const result = await factory();
     if (!assertionsPass(result.assertions))
@@ -1654,31 +1680,44 @@ try {
     console.log(`[diag-rb] ${line}`);
   };
 
-  await run(() => runWalkStop(topdown));
-  await run(() => runRapidFlipAttack(topdown));
-  await run(() => runWalkSmoothness(topdown));
-  await run(() => runMeleeAttackMoveStop(topdown));
+  const runStandingMatrix = async (instrumented: InstrumentedRoom): Promise<void> => {
+    await run(() => runWalkStop(instrumented));
+    await run(() => runRapidFlipAttack(instrumented));
+    await run(() => runWalkSmoothness(instrumented));
+    await run(() => runMeleeAttackMoveStop(instrumented));
+    for (const representative of gunRepresentatives)
+      await run(() => runGunClass(instrumented, representative));
+    for (const beam of beams) await run(() => runBeam(instrumented, beam));
+    await run(() => runSustainedGatling(instrumented));
+    await run(() => runDodgeRoll(instrumented));
+    for (const direction of parryDirections)
+      await run(() => runParryDirection(instrumented, direction));
+    await run(() => runJumpPound(instrumented));
+    await run(() => runSlideHop(instrumented));
+    await run(() => runChestOpen(instrumented));
+    await run(() => runPitFall(instrumented));
+    for (const weaponId of wrapIds)
+      await run(() => runFullCombo(instrumented, weaponId, "kung-fu-wrap"));
+    await run(() =>
+      runFullCombo(instrumented, "x2-coyote-trickster-s-sparkmitt", "sparkmitt", 8),
+    );
+    await run(() => runSpadeSpin(instrumented));
+    await run(() => runUltimate(instrumented));
+  };
 
-  const gunRepresentatives = gunFamilyRepresentatives();
-  for (const representative of gunRepresentatives)
-    await run(() => runGunClass(topdown, representative));
-
-  const beams = rangedBeamWeapons();
-  for (const beam of beams) await run(() => runBeam(topdown, beam));
-
-  await run(() => runSustainedGatling(topdown));
-  await run(() => runDodgeRoll(topdown));
-  for (const direction of parryDirections) await run(() => runParryDirection(topdown, direction));
-  await run(() => runJumpPound(topdown));
-  await run(() => runSlideHop(topdown));
-  await run(() => runChestOpen(topdown));
-  await run(() => runPitFall(topdown));
-  for (const weaponId of wrapIds) await run(() => runFullCombo(topdown, weaponId, "kung-fu-wrap"));
-  await run(() => runFullCombo(topdown, "x2-coyote-trickster-s-sparkmitt", "sparkmitt", 8));
-  await run(() => runSpadeSpin(topdown));
-  await run(() => runUltimate(topdown));
-  await topdown.room.leave();
-  rooms.splice(rooms.indexOf(topdown.room), 1);
+  for (const mode of ["topdown", "belt"] as const) {
+    const instrumented = await joinRoom(
+      endpoint,
+      mode === "belt"
+        ? { belt: true, beltLevel: "corporate-grid", dimensionId: "wild-west", bossRush: false }
+        : { belt: false, beltLevel: "", dimensionId: "wild-west", bossRush: false },
+      true,
+    );
+    rooms.push(instrumented.room);
+    await runStandingMatrix(instrumented);
+    await instrumented.room.leave();
+    rooms.splice(rooms.indexOf(instrumented.room), 1);
+  }
 
   const elevator = await runElevator(endpoint);
   if (!assertionsPass(elevator.assertions))
@@ -1718,13 +1757,24 @@ try {
     snapCorrections: results.reduce((sum, result) => sum + result.summary.snapCorrections, 0),
     totalMagnitudePx: results.reduce((sum, result) => sum + result.summary.totalMagnitudePx, 0),
   };
+  const modeCounts = {
+    topdown: results.filter((result) => result.metadata.mode === "topdown").length,
+    belt: results.filter((result) => result.metadata.mode === "belt").length,
+  };
   const acceptance = {
-    expectedScenarios: 43,
-    allScenariosRan: results.length === 43,
+    expectedScenarios: 85,
+    expectedTopdownScenarios: 42,
+    expectedBeltScenarios: 43,
+    allScenariosRan:
+      results.length === 85 && modeCounts.topdown === 42 && modeCounts.belt === 43,
     zeroNonzeroCorrections: totals.nonzeroCorrections === 0,
     zeroSnaps: totals.snapCorrections === 0,
     passed:
-      results.length === 43 && totals.nonzeroCorrections === 0 && totals.snapCorrections === 0,
+      results.length === 85 &&
+      modeCounts.topdown === 42 &&
+      modeCounts.belt === 43 &&
+      totals.nonzeroCorrections === 0 &&
+      totals.snapCorrections === 0,
   };
   const summary = {
     capturedAt,
@@ -1748,6 +1798,7 @@ try {
     },
     coverage: {
       scenarios: results.length,
+      modes: modeCounts,
       gunTagFamilies: gunRepresentatives.length,
       rangedBeams: beams.length,
       kungFuWraps: wrapIds.length,
@@ -1815,8 +1866,8 @@ try {
       "- `run-telemetry.json` contains every fixed-tick authority row and every correction request.",
       "- `top-offender-traces.json` retains correction ticks plus adjacent context for the top three.",
       "- `run.log` is the compact scenario-by-scenario console ledger.",
-      "- `before-after-ranked.md` compares all 41 scenarios to the diagnosis capture.",
-      "- The corporate elevator fixture suppresses belt combat waves to isolate placement motion.",
+      "- The standing movement/combat matrix runs once top-down and once on corporate-grid belt.",
+      "- The corporate elevator fixture is belt scenario 43 and suppresses combat waves to isolate placement motion.",
       `- Acceptance: **${acceptance.passed ? "PASS" : "FAIL"}** (${results.length}/${
         acceptance.expectedScenarios
       } scenarios, ${totals.nonzeroCorrections} nonzero corrections, ${

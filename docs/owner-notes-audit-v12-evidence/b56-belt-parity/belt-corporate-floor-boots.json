@@ -1,0 +1,35 @@
+{
+  "baseURL": "http://127.0.0.1:52622",
+  "boots": [
+    {
+      "levelId": "corporate-grid",
+      "active": true,
+      "belt": true,
+      "roomId": "JcgfANcLG",
+      "sessionId": "sv5z_vKkk",
+      "character": "proto-cowboy-hidden-face",
+      "corporateFloorId": "office-red-carpet-gallery",
+      "corporateFloorDepth": 1
+    },
+    {
+      "levelId": "corporate-grid-portrait-hall",
+      "active": true,
+      "belt": true,
+      "roomId": "S9wcoHTz8",
+      "sessionId": "dJy9xaBfA",
+      "character": "proto-cowboy-hidden-face",
+      "corporateFloorId": "office-random-dude-portrait-hall",
+      "corporateFloorDepth": 2
+    },
+    {
+      "levelId": "corporate-grid-marble-gallery",
+      "active": true,
+      "belt": true,
+      "roomId": "EeGD2VpCF",
+      "sessionId": "VFXB7Mf0k",
+      "character": "proto-cowboy-hidden-face",
+      "corporateFloorId": "office-marble-gallery",
+      "corporateFloorDepth": 3
+    }
+  ]
+}
