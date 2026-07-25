@@ -426,6 +426,7 @@ export const rigPoseMethods = {
     for (const weapon of this.weapons) weapon.img.setPosition(weapon.hand.img.x, weapon.hand.img.y);
   },
 
+  // Extraction trace: animate(timeMs: number, anim: RigAnim): void
   animate(this: SpriteRigContext, timeMs: number, anim: RigAnim): void {
     this.installBoilerplateIfReady();
     this.refreshPoseLanguageSelection(true);

@@ -537,6 +537,7 @@ export const rigCombatMethods = {
     return this.prevAnimMs >= 0 ? this.prevAnimMs : (this.scene.time?.now ?? 0);
   },
 
+  // Extraction trace: private presentationEpochForWallEpoch(epochMs: number)
   presentationEpochForWallEpoch(this: SpriteRigContext, epochMs: number): number {
     const wallNow = this.scene.time?.now ?? 0;
     const arena = this.scene as RigAttackPresentationScene;
@@ -550,6 +551,7 @@ export const rigCombatMethods = {
   /** Flush the one retained remote action intent only from `animate()`. Since Arena skips rig animation
    * during hit-stop, an accepted beat observed inside the freeze cannot let its authored source flourish run
    * ahead of the held actor. The predicting owner keeps ArenaScene's existing immediate dispatcher. */
+  // Extraction trace: private flushObservedAttackSignature(
   flushObservedAttackSignature(this: SpriteRigContext, sceneNow: number, outsidePaperView: boolean): void {
     if (!this.observedSignaturePending || sceneNow < this.observedSignatureAtMs) return;
     this.observedSignaturePending = false;
@@ -622,6 +624,7 @@ export const rigCombatMethods = {
 
   /** Copy the final held-weapon transform into retained source shapes. This is the remote cast/tome LOD;
    * it never allocates from the render loop and never competes with exact danger geometry. */
+  // Extraction trace: private syncObservedSourceFlash(
   syncObservedSourceFlash(this: SpriteRigContext, sceneNow: number, outsidePaperView: boolean): void {
     const elapsedMs = sceneNow - this.observedSourceFlashAtMs;
     const weapon = this.weapons[this.observedSourceHand];
@@ -1413,6 +1416,7 @@ export const rigCombatMethods = {
 
   /** Greatsword Momentum: every exit carries the blade into the next entry; the body travels much less than
    * the steel, with one depth pass and a low skid rather than Driftblade's hilt beat/forward collapse. */
+  // Extraction trace: private applyMomentumCombo(
   applyMomentumCombo(this: SpriteRigContext, motion: MeleeComboMotion, tt: number, aimLocal: number): number {
     this.signatureMotion = motion;
     const H = TARGET_BODY_H;
@@ -1568,6 +1572,7 @@ export const rigCombatMethods = {
 
   /** Claymore Breach: broadside guards stay readable throughout; lateral plants and hilt spacing provide the
    * formality, while the finisher releases one edge after a rigid bind rather than promising two hits. */
+  // Extraction trace: private applyBreachCombo(
   applyBreachCombo(this: SpriteRigContext, motion: MeleeComboMotion, tt: number, aimLocal: number): number {
     this.signatureMotion = motion;
     const H = TARGET_BODY_H;
@@ -1714,6 +1719,7 @@ export const rigCombatMethods = {
 
   /** Glaive Compass: hand slides and projected pole length move the distant head around a quiet body. The
    * center remains visually empty and the final orbit locks to a rear-hand pivot instead of becoming spin. */
+  // Extraction trace: private applyCompassCombo(
   applyCompassCombo(this: SpriteRigContext, motion: MeleeComboMotion, tt: number, aimLocal: number): number {
     this.signatureMotion = motion;
     const H = TARGET_BODY_H;
@@ -1868,6 +1874,7 @@ export const rigCombatMethods = {
 
   /** Bardiche Hookbreak: the head stays broad and heavy, the second beat shortens inward, and the finisher
    * briefly fixes the far head while the haft/hands wrench past it. No extra contact surface is created. */
+  // Extraction trace: private applyHookbreakCombo(
   applyHookbreakCombo(this: SpriteRigContext, motion: MeleeComboMotion, tt: number, aimLocal: number): number {
     this.signatureMotion = motion;
     const H = TARGET_BODY_H;

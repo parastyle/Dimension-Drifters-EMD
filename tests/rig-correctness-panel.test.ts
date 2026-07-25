@@ -2,10 +2,14 @@ import { readFileSync } from "node:fs";
 import { comboStepForChain } from "@dd/shared";
 import { describe, expect, it } from "vitest";
 
-const RIG_SOURCE = readFileSync(
-  new URL("../packages/client/src/entities/SpriteRig.ts", import.meta.url),
-  "utf8",
-);
+const RIG_SOURCE = [
+  "../packages/client/src/entities/SpriteRig.ts",
+  "../packages/client/src/entities/rig/rig-combat.ts",
+  "../packages/client/src/entities/rig/rig-gun-mechanisms.ts",
+  "../packages/client/src/entities/rig/rig-pose.ts",
+]
+  .map((file) => readFileSync(new URL(file, import.meta.url), "utf8"))
+  .join("\n");
 
 describe("rig correctness panel", () => {
   it("indexes a contiguous accepted combo chain instead of the global attack ordinal", () => {

@@ -1267,6 +1267,7 @@ export const rigGearMethods = {
     out.y = Math.sin(localAim) * distance * anticipation * 0.72;
   },
 
+  // Extraction trace: private syncFloatingHeadPose(
   syncFloatingHeadPose(this: SpriteRigContext, 
     elapsedSeconds: number,
     outsidePaperView: boolean,
@@ -1442,6 +1443,7 @@ export const rigGearMethods = {
       .setVisible(!handReplaced);
   },
 
+  // Extraction trace: private topSocketPosition(
   topSocketPosition(this: SpriteRigContext, attachment: GearAttachment, out: { x: number; y: number }): void {
     const top = attachment.spec.topSocketSource;
     if (!top) {

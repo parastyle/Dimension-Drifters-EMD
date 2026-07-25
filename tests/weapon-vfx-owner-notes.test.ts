@@ -167,7 +167,7 @@ describe("owner-notes W-VFX weapon identities", () => {
       expect(PARTICLE_PACKS[pack]).toBeDefined();
 
     const rigSource = readFileSync(
-      new URL("../packages/client/src/entities/SpriteRig.ts", import.meta.url),
+      new URL("../packages/client/src/entities/rig/rig-pose.ts", import.meta.url),
       "utf8",
     );
     expect(rigSource).toContain("auraActive && !paintedAuraActive");
@@ -188,7 +188,7 @@ describe("owner-notes W-VFX weapon identities", () => {
     expect(selection.sequence.map((step) => step.hand)).toEqual(["lead", "off", "lead", "off"]);
 
     const rigSource = readFileSync(
-      new URL("../packages/client/src/entities/SpriteRig.ts", import.meta.url),
+      new URL("../packages/client/src/entities/rig/rig-pose.ts", import.meta.url),
       "utf8",
     );
     expect(rigSource).toContain('poseVariant === "sparkknuckle-voltage-boxing"');
@@ -255,7 +255,7 @@ describe("owner-notes W-VFX weapon identities", () => {
     expect(definition.effectEmitter).toBe("tip");
 
     const rigSource = readFileSync(
-      new URL("../packages/client/src/entities/SpriteRig.ts", import.meta.url),
+      new URL("../packages/client/src/entities/rig/rig-pose.ts", import.meta.url),
       "utf8",
     );
     const poseStart = rigSource.indexOf('poseStyle === "thrust"');

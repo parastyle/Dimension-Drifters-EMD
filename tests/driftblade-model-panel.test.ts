@@ -348,7 +348,7 @@ describe("driftblade-model panel", () => {
     // tech panel's #1 functional-regression risk (a silent wrong-frame ground crack otherwise).
     expect(weapon("x2-gravechill-nodachi").quake).toBeTruthy();
     const rigSource = readFileSync(
-      new URL("../packages/client/src/entities/SpriteRig.ts", import.meta.url),
+      new URL("../packages/client/src/entities/rig/rig-pose.ts", import.meta.url),
       "utf8",
     );
     const listStart = rigSource.indexOf("const panelQuakePose =");

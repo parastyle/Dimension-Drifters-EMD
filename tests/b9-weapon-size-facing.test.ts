@@ -71,7 +71,7 @@ const MOURNVEIL_PRE_RESTORATION_MANIFEST = {
 const MOURNVEIL_REGISTRATION_TOLERANCE_PX = 1;
 
 const RIG_SOURCE = readFileSync(
-  new URL("../packages/client/src/entities/SpriteRig.ts", import.meta.url),
+  new URL("../packages/client/src/entities/rig/rig-gear.ts", import.meta.url),
   "utf8",
 );
 const HARVEST_SOURCE = readFileSync(

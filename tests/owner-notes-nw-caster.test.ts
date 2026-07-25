@@ -195,7 +195,7 @@ describe("owner-notes NW-CASTER contracts", () => {
     expect(isWornWeapon(gravewax)).toBe(false);
 
     const rigSource = readFileSync(
-      new URL("../packages/client/src/entities/SpriteRig.ts", import.meta.url),
+      new URL("../packages/client/src/entities/rig/rig-gear.ts", import.meta.url),
       "utf8",
     );
     expect(rigSource).toContain("piece?.worn || piece?.def.renderAboveHands");

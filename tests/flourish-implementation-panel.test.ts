@@ -1,10 +1,18 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-const rigSource = readFileSync(
-  new URL("../packages/client/src/entities/SpriteRig.ts", import.meta.url),
-  "utf8",
-);
+const rigSource = [
+  "rig-pose.ts",
+  "rig-flourish.ts",
+  "rig-combat.ts",
+  "../SpriteRig.ts",
+  "rig-gear.ts",
+  "rig-core.ts",
+]
+  .map((file) =>
+    readFileSync(new URL(`../packages/client/src/entities/rig/${file}`, import.meta.url), "utf8"),
+  )
+  .join("\n");
 const arenaSource = readFileSync(
   new URL("../packages/client/src/scenes/ArenaScene.ts", import.meta.url),
   "utf8",

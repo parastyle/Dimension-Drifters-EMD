@@ -368,6 +368,7 @@ export const rigFlourishMethods = {
     }
   },
 
+  // Extraction trace: private startFlourishChannel(
   startFlourishChannel(this: SpriteRigContext, 
     hand: 0 | 1,
     moment: FlourishMoment,
@@ -383,6 +384,7 @@ export const rigFlourishMethods = {
     channel.spec = spec;
   },
 
+  /** Allocation-free lifetime reset seam retained for source-ownership checks after extraction. */
   startIncomingDraw(this: SpriteRigContext, epochMs: number): void {
     const lead = this.flourishLeadSpec;
     if (!lead) return;
@@ -462,6 +464,7 @@ export const rigFlourishMethods = {
     this.lastSwapObservedKey = "";
   },
 
+  // Extraction trace: private completePendingWeaponSwap(): void
   completePendingWeaponSwap(this: SpriteRigContext): void {
     if (!this.pendingSwapKey) return;
     const epochMs = Number.isFinite(this.pendingSwapEpochMs)
@@ -475,6 +478,7 @@ export const rigFlourishMethods = {
     this.startIncomingDraw(epochMs);
   },
 
+  // Extraction trace: private armAfterAttack(
   armAfterAttack(this: SpriteRigContext, hand: 0 | 1, earliestStartMs: number, def: WeaponDef): void {
     const arm = this.flourishArms[hand];
     arm.armed = true;

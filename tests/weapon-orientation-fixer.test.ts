@@ -12,10 +12,17 @@ const REPORT = JSON.parse(
     "utf8",
   ),
 );
-const RIG_SOURCE = readFileSync(
-  new URL("../packages/client/src/entities/SpriteRig.ts", import.meta.url),
-  "utf8",
-);
+const RIG_SOURCE = [
+  "rig-core.ts",
+  "rig-pose.ts",
+  "rig-combat.ts",
+  "rig-gear.ts",
+  "rig-gun-mechanisms.ts",
+]
+  .map((file) =>
+    readFileSync(new URL(`../packages/client/src/entities/rig/${file}`, import.meta.url), "utf8"),
+  )
+  .join("\n");
 
 describe("weapon orientation fixer", () => {
   it("keeps representative pointed, worn-fist, and tome families forward at semantic rest", () => {

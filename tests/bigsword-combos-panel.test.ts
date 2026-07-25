@@ -182,10 +182,14 @@ describe("big-sword visual combo panel", () => {
   });
 
   it("consumes the retained beat in SpriteRig and keeps all flourish on visual channels", () => {
-    const source = readFileSync(
-      new URL("../packages/client/src/entities/SpriteRig.ts", import.meta.url),
-      "utf8",
-    );
+    const source = ["rig-combat.ts", "rig-pose.ts"]
+      .map((file) =>
+        readFileSync(
+          new URL(`../packages/client/src/entities/rig/${file}`, import.meta.url),
+          "utf8",
+        ),
+      )
+      .join("\n");
     expect(source).toContain("comboStepForAttackSeq(this.attackBeatSeq, sequence.length)");
     expect(source).toContain(
       "remapPoseTimeAtImpact(tt, comboPose.timing.impact, descriptorImpact)",
