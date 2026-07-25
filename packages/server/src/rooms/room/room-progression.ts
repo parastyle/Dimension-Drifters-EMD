@@ -1,4 +1,5 @@
 import { randomBytes } from "node:crypto";
+import { serverDevToolsEnabled } from "../../dev-tools.js";
 import {
   ACTION_MSGS_PER_TICK,
   ACTIVE_WEAPON_CATALOG_IDS,
@@ -320,6 +321,7 @@ import {
   RETURN_STEP_MAX,
   REVIVE_HP_FRAC,
   RelicState,
+  RECONNECTION_WINDOW_SECONDS,
   RIFT_CHANNEL_SECONDS,
   ROLL_ATTACK_CANCEL_SECONDS,
   ROLL_DURATION_TICKS,
@@ -1372,7 +1374,7 @@ export interface GameRoomContext extends Room<ArenaState> {
       selectedPetId?: unknown;
       petId?: unknown;
     }): void;
-  onLeave(client: Client): void;
+  onLeave(client: Client, consented?: boolean): Promise<void>;
   setWeaponResourceRegenOverride(playerId: string, mode: "auto" | "paused" | "forceEngaged"): void;
   drivePendingValue(player: PlayerState, c: CombatState): number;
   markWeaponResourcePressure(c: CombatState): void;
@@ -1623,13 +1625,10 @@ export const roomProgressionMethods = {
     return this.hostId === null || client.sessionId === this.hostId;
   },
 
-  /** §44 dev-tool gate (Sol audit P0 #1): the debug RPCs (training toggle, boss picker, dev summon, dev
-   *  equip, B-key boss) are playtest affordances that must be UNREACHABLE on a public deploy — "host" is
-   *  just the first joiner, so one hostile client could otherwise flood the shared Node process with
-   *  entities. ON outside production (local dev, vitest) or when DD_DEV_TOOLS=1 (a staged playtest build).
-   *  Read per-call (not cached) so tests can flip the environment. */
+  /** Debug RPCs require an exact positive capability. NODE_ENV is intentionally irrelevant so absent or
+   *  misspelled deployment configuration remains safe. Read per-call so tests can exercise both modes. */
   devToolsEnabled(this: GameRoomContext): boolean {
-    return process.env.DD_DEV_TOOLS === "1" || process.env.NODE_ENV !== "production";
+    return serverDevToolsEnabled();
   },
 
   /** §44 spend one ACTION-message token for this client (attack/parry/grab/cycle/… — every gameplay RPC
@@ -1711,6 +1710,13 @@ export const roomProgressionMethods = {
     // against floods (review #18). The steered movement step still clamps magnitude + speed + bounds, so
     // none of this trusts direction values either. Legacy seq-less messages (the test harness) get a
     // synthetic next-seq so held-input semantics keep working.
+    // onJoin owner messages can cross the transport before a client has installed its post-join callbacks.
+    // This read-only request lets the client obtain the authoritative run id after those callbacks exist.
+    this.onMessage("requestWeaponManifest", (client) => {
+      const player = this.state.players.get(client.sessionId);
+      if (player) this.sendWeaponManifest(player);
+    });
+
     this.onMessage(
       "input",
       (
@@ -3272,7 +3278,21 @@ export const roomProgressionMethods = {
     console.log(`[room ${this.roomId}] +join ${client.sessionId} (${this.clients.length} online)`);
   },
 
-  onLeave(this: GameRoomContext, client: Client): void {
+  async onLeave(
+    this: GameRoomContext,
+    client: Client,
+    consented = true,
+  ): Promise<void> {
+    if (!consented) {
+      try {
+        await this.allowReconnection(client, RECONNECTION_WINDOW_SECONDS);
+        console.log(`[room ${this.roomId}] reconnected ${client.sessionId}`);
+        return;
+      } catch {
+        console.log(`[room ${this.roomId}] reconnect expired ${client.sessionId}`);
+      }
+    }
+
     const leaving = this.state.players.get(client.sessionId);
     const leavingCombat = this.combat.get(client.sessionId);
     if (leaving && leavingCombat)

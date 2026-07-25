@@ -2263,11 +2263,15 @@ beforeEach(() => {});
 describe("GameRoom — §44 safety gates", () => {
   const asProd = (fn: () => void) => {
     const prev = process.env.NODE_ENV;
+    const prevDevTools = process.env.DD_DEV_TOOLS;
     process.env.NODE_ENV = "production";
+    delete process.env.DD_DEV_TOOLS;
     try {
       fn();
     } finally {
       process.env.NODE_ENV = prev;
+      if (prevDevTools === undefined) delete process.env.DD_DEV_TOOLS;
+      else process.env.DD_DEV_TOOLS = prevDevTools;
     }
   };
 
@@ -2300,7 +2304,7 @@ describe("GameRoom — §44 safety gates", () => {
     expect(h.state().enemies.size).toBeLessThanOrEqual(MAX_ENEMIES);
   });
 
-  it("in PRODUCTION the debug RPCs are unreachable — training/summon/boss-picker/dev-equip all no-op", () => {
+  it("without DD_DEV_TOOLS=1 the debug RPCs are unreachable in every NODE_ENV", () => {
     const h = makeRoom();
     h.join("p1");
     asProd(() => {
@@ -2316,7 +2320,7 @@ describe("GameRoom — §44 safety gates", () => {
       h.send("p1", "devEquip", { weapon: "x-sword-bone" });
       expect(h.state().players.get("p1").weapon).toBe(before);
     });
-    // Back in dev the same client CAN enter training (the gate reads the env per call).
+    // Restoring the explicit test capability re-enables the same operation.
     h.send("p1", "toggleTraining");
     expect(h.state().mode).toBe("training");
   });

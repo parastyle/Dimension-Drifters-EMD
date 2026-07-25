@@ -14,8 +14,8 @@ import {
   lockedPackCandidates,
   type MetaAccountV5,
   openBoosterPack,
-  type PackOpenReceipt,
   PACK_PRICES,
+  type PackOpenReceipt,
   type PackRarity,
   type PackType,
   PET_IDS,
@@ -31,11 +31,13 @@ import {
 import type { Room } from "colyseus.js";
 import Phaser from "phaser";
 import { AudioBus } from "../audio/AudioBus.js";
+import { clientDevToolsEnabled } from "../dev-tools.js";
 import { SPRITE_ATLAS } from "../entities/SpriteRig.js";
 import { routeArmoryUiInput } from "../input-routing.js";
 // Type-only: erased at build time so the menu/boot chunk stays net-free (the module itself is imported
 // lazily inside launch(), alongside the lazy ArenaScene import).
 import type { LaunchIntent } from "../net/matchmaking.js";
+import { loadReconnectReservation } from "../net/reconnection.js";
 import { RENDER_DPR } from "../render-dpr.js";
 import {
   GEAR_PARTS_MANIFEST,
@@ -550,16 +552,24 @@ export class MenuScene extends Phaser.Scene {
     this.launchIntent = "quick";
     this.launching = false;
     this.selectedCharacterId = loadCharacterSelection().selectedCharacterId;
+    // A browser refresh boots through MenuScene again. A live seat reservation takes priority over
+    // matchmaking so refresh recovers the existing run instead of creating a duplicate.
+    if (loadReconnectReservation()) {
+      void ensureArenaScene(this.scene).then(() =>
+        this.scene.start("arena", {
+          selectedCharacterId: this.selectedCharacterId,
+        }),
+      );
+      return;
+    }
     // §39 DEV PORTAL deep-link: boss/weapon/character/gear/pet specs skip the menu and drop straight into
     // Testing Grounds. Gear and pet specs project the normal local account BEFORE ArenaScene reads it, so
     // the server joins with the complete closet + equipped slot, or the owned + selected companion.
-    const dev = new URLSearchParams(location.search).get("dev");
+    const dev = clientDevToolsEnabled() ? new URLSearchParams(location.search).get("dev") : null;
     if (dev) {
-      if (import.meta.env.DEV) {
-        const account = loadPetMetaAccount();
-        const inspected = devInspectionAccount(account, dev);
-        if (inspected !== account) savePetMetaAccount(inspected);
-      }
+      const account = loadPetMetaAccount();
+      const inspected = devInspectionAccount(account, dev);
+      if (inspected !== account) savePetMetaAccount(inspected);
       void ensureArenaScene(this.scene).then(() =>
         this.scene.start("arena", {
           dimensionId: DEFAULT_DIMENSION,
@@ -1676,9 +1686,7 @@ export class MenuScene extends Phaser.Scene {
       card.name.setText(pull.name);
       card.status
         .setText(pull.duplicate ? `duplicate -> +${pull.refund} money` : "NEW UNLOCK")
-        .setColor(
-          pull.duplicate ? ARMORY_CSS_COLORS.warning : ARMORY_CSS_COLORS.success,
-        );
+        .setColor(pull.duplicate ? ARMORY_CSS_COLORS.warning : ARMORY_CSS_COLORS.success);
       const back = card.root.list[1] as Phaser.GameObjects.Text | undefined;
       back?.setVisible(false);
     };
@@ -3826,10 +3834,7 @@ export class MenuScene extends Phaser.Scene {
     }
     // §19 v0.108 fade to black, THEN start the arena — every run start feels intentional.
     this.cameras.main.fadeOut(280, 0, 0, 0);
-    this.cameras.main.once(
-      "camerafadeoutcomplete",
-      () => void ready.then(startArena),
-    );
+    this.cameras.main.once("camerafadeoutcomplete", () => void ready.then(startArena));
   }
 
   private screenW(): number {

@@ -45,7 +45,7 @@ beforeEach(() => {
   priorDevTools = process.env.DD_DEV_TOOLS;
   priorNotesPath = process.env.DD_OWNER_NOTES_PATH;
   process.env.NODE_ENV = "test";
-  delete process.env.DD_DEV_TOOLS;
+  process.env.DD_DEV_TOOLS = "1";
   process.env.DD_OWNER_NOTES_PATH = notesPath;
 });
 
@@ -138,7 +138,7 @@ describe("GameRoom owner-note persistence", () => {
     });
 
     harness.send("toggleTraining");
-    process.env.NODE_ENV = "production";
+    delete process.env.DD_DEV_TOOLS;
     harness.send("ownerNote", { type: "game", note: "production attempt" });
     expect(existsSync(notesPath)).toBe(false);
     expect(harness.client.send).toHaveBeenLastCalledWith("ownerNoteAck", {

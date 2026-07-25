@@ -145,6 +145,39 @@
           flex-direction: column;
         }
       }
+      #reconnect-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 999999;
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+        box-sizing: border-box;
+        padding: max(64px, 8vh) 16px 0;
+        pointer-events: none;
+      }
+      #reconnect-overlay[hidden] {
+        display: none;
+      }
+      #reconnect-overlay > div {
+        max-width: min(620px, calc(100vw - 32px));
+        padding: 9px 15px;
+        color: #f4f7f8;
+        background: rgba(8, 13, 18, 0.82);
+        border: 1px solid #68c8ce;
+        border-radius: 999px;
+        box-shadow: 0 8px 28px rgba(0, 0, 0, 0.38);
+        font: 700 13px/1.35 ui-monospace, SFMono-Regular, Consolas, monospace;
+        letter-spacing: 0.035em;
+        text-align: center;
+        text-shadow: 0 1px 2px #000;
+      }
+      #reconnect-overlay[data-state="recovered"] > div {
+        border-color: #7de08d;
+      }
+      #reconnect-overlay[data-state="ended"] > div {
+        border-color: #ff8a6b;
+      }
     </style>
   </head>
   <body>
@@ -153,6 +186,9 @@
       <div><b>Dimension Drifters</b></div>
       <div>WASD move · RMB fire · LMB parry · Space jump · E interact · Q cycle · H controls · <span id="status">connecting…</span></div>
       <div id="debug" style="color: #8a7aa0">loop: —</div>
+    </div>
+    <div id="reconnect-overlay" role="status" aria-live="polite" hidden>
+      <div id="reconnect-message"></div>
     </div>
     <script type="module" src="/src/main.ts"></script>
   </body>
