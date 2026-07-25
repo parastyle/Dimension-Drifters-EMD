@@ -36,7 +36,7 @@ describe("Drive formula v1", () => {
         expect(profile.neutralCost % DRIVE_COST_QUANTUM).toBe(0);
       }
     }
-    expect(census).toEqual({ melee: 179, thrown: 27, gun: 122, cast: 4, beam: 22, zone: 4 });
+    expect(census).toEqual({ melee: 178, thrown: 27, gun: 122, cast: 4, beam: 23, zone: 4 });
   });
 
   it("pins every coefficient, frozen median, and the bounded utility overrides", () => {

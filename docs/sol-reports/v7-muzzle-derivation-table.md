@@ -1,6 +1,6 @@
 # V7 Muzzle Derivation Table
 
-Generated from sprite alpha for all 157 active projectile, beam, and authored melee-impact definitions. Coordinates are source-PNG pixels.
+Generated from sprite alpha for all 158 active projectile, beam, and authored melee-impact definitions. Coordinates are source-PNG pixels.
 
 | Weapon | Derived barrel tip | Authored muzzle point(s) | Override |
 | --- | --- | --- | --- |
@@ -80,6 +80,7 @@ Generated from sprite alpha for all 157 active projectile, beam, and authored me
 | `x2-hallowbore-coachgun` (Hallowbore Coachgun) | part-1 (255, 20.1) | part-1 (255, 28)<br>part-1 (255, 51) | Yes - The shared engraved muzzle plate joins both stacked barrels into one alpha mass; the two visible bore centres require explicit art-space points. |
 | `x2-hellbore-gatling` (Hellbore Gatling) | part-1 (255, 42) | part-1 (255, 42) | No |
 | `x2-hellmouth-palmcaster` (Hellmouth Palmcaster) | part-1 (255, 96.3) | part-1 (255, 96.3) | No |
+| `x2-hexbinder-s-iron-orrery` (Hexbinder's Iron Orrery) | part-1 (255, 59) | part-1 (255, 59) | No |
 | `x2-hexbolt-spitter-mitt` (Hexbolt Spitter-Mitt) | part-1 (255, 66.2) | part-1 (255, 66.2) | No |
 | `x2-hexbore-voidmaw` (Hexbore Voidmaw) | part-1 (255, 26.9) | part-1 (255, 26.9) | No |
 | `x2-hexbore-witchrifle` (Hexbore Witchrifle) | part-1 (255, 25.3) | part-1 (255, 25.3) | No |

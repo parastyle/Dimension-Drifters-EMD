@@ -7,6 +7,8 @@ export interface TomeOpenArt {
   readonly openingDirectionRad?: number;
   /** Multiplier for detached page-turn quads; the held book scale remains unchanged. */
   readonly pageScale?: number;
+  /** The painted open state and projectile pages are complete; do not layer generic brown paper shapes. */
+  readonly suppressPageTurnEffects?: true;
 }
 
 /**
@@ -42,7 +44,7 @@ const TOME_OPEN_ART: Readonly<Record<string, TomeOpenArt>> = {
   "x2-verdigris-grand-grimoire": {
     textureKey: "tome-open:x2-verdigris-grand-grimoire",
     url: "sprites/x2-verdigris-grand-grimoire/open.png",
-    pageScale: 7,
+    suppressPageTurnEffects: true,
   },
   "x2-rimebound-folio": {
     textureKey: "procedural-open:x2-rimebound-folio",
@@ -52,6 +54,42 @@ const TOME_OPEN_ART: Readonly<Record<string, TomeOpenArt>> = {
 
 export function tomeOpenArtFor(spriteId: string): TomeOpenArt | undefined {
   return TOME_OPEN_ART[spriteId];
+}
+
+export function chargeHoldsTomeOpen(
+  chargedProjectileActive: boolean,
+  hasChargedProjectile: boolean,
+): boolean {
+  return chargedProjectileActive && hasChargedProjectile;
+}
+
+export interface TomeCenterTransform {
+  readonly a: number;
+  readonly b: number;
+  readonly c: number;
+  readonly d: number;
+  readonly tx: number;
+  readonly ty: number;
+}
+
+export interface TomeCenterImageGeometry {
+  readonly width: number;
+  readonly height: number;
+  readonly displayOriginX: number;
+  readonly displayOriginY: number;
+}
+
+/** Transform the texture's visual midpoint through the final held-sprite affine, including mirroring. */
+export function writeTomeCenterWorldPoint(
+  matrix: TomeCenterTransform,
+  image: TomeCenterImageGeometry,
+  out: { x: number; y: number },
+): boolean {
+  const localX = image.width * 0.5 - image.displayOriginX;
+  const localY = image.height * 0.5 - image.displayOriginY;
+  out.x = matrix.a * localX + matrix.c * localY + matrix.tx;
+  out.y = matrix.b * localX + matrix.d * localY + matrix.ty;
+  return Number.isFinite(out.x) && Number.isFinite(out.y);
 }
 
 /** Rotate painted open-book art so its actual fore-edge, not the bitmap's +X axis, follows aim. */

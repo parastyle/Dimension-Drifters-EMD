@@ -1222,6 +1222,9 @@ export class SpriteRig {
   /** Gun flashes/projectile admission use the exact same accepted-beat salvo selection as authority. */
     declare writeWeaponMuzzleForShot: OmitThisParameter<typeof rigGunMechanismMethods.writeWeaponMuzzleForShot>;
 
+  /** Anchor held charge art to the visible center gutter of an open tome in either facing. */
+    declare writeTomeCenter: OmitThisParameter<typeof rigGunMechanismMethods.writeTomeCenter>;
+
   /** B19 swing punctuation reads the final independent hand/foot worn-sprite affine. */
     declare writeKungFuWrapMuzzle: OmitThisParameter<typeof rigGunMechanismMethods.writeKungFuWrapMuzzle>;
 
@@ -1648,6 +1651,7 @@ installPrototypeMembers(SpriteRig, [
   [rigGunMechanismMethods, "writeWeaponArtMuzzle"],
   [rigGunMechanismMethods, "writeWeaponMuzzle"],
   [rigGunMechanismMethods, "writeWeaponMuzzleForShot"],
+  [rigGunMechanismMethods, "writeTomeCenter"],
   [rigGunMechanismMethods, "writeKungFuWrapMuzzle"],
   [rigGunMechanismMethods, "triggerGunRecoil"],
   [rigGunMechanismMethods, "holdRangedAim"],

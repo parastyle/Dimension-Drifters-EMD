@@ -8982,6 +8982,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "INT"
       ]
     },
+    "archived": true,
     "twoHanded": true,
     "quake": {
       "radius": 150,
@@ -10950,8 +10951,8 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
     "tags": {
       "grip": "2H",
       "size": "L",
-      "delivery": "melee-arc",
-      "fireMode": "tap-charge",
+      "delivery": "beam",
+      "fireMode": "hold",
       "element": "arcane",
       "classPool": "caster",
       "family": "focus",
@@ -10961,16 +10962,26 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "LUK"
       ]
     },
+    "recoil": 0,
     "twoHanded": true,
-    "scatter": {
-      "count": 8,
-      "spread": 0.6,
-      "speed": 380,
-      "range": 250,
-      "damage": 5,
-      "explode": {
-        "radius": 60,
-        "damage": 6
+    "beam": {
+      "damagePerSecond": 130,
+      "tickRate": 0.1,
+      "width": 56,
+      "range": 320,
+      "chargeSeconds": 0.65,
+      "sweepLagSeconds": 0.28,
+      "overheat": {
+        "maxChannelSeconds": 1.25,
+        "heatPerSecond": 0.6,
+        "coolPerSecond": 0.35,
+        "ignitionHeat": 0.25,
+        "lockSeconds": 1.5,
+        "restartHeat": 0.35
+      },
+      "movement": {
+        "chargeMul": 0.55,
+        "channelMul": 0.35
       }
     }
   },
