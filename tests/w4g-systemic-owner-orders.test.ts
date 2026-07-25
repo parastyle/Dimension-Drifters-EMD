@@ -110,10 +110,18 @@ describe("W4G3 low-stock shotgun stance", () => {
       const primary = definition.gripPoints?.primary;
       const secondary = definition.gripPoints?.secondary;
       expect(primary?.x, `${definition.id}:trigger`).toBeGreaterThanOrEqual(0.23);
-      expect(secondary?.x, `${definition.id}:pump`).toBeGreaterThan(primary?.x ?? 1);
-      expect(["horizontal-foregrip", "pump", "vertical-foregrip"], definition.id).toContain(
-        secondary?.role,
-      );
+      if (secondary?.role === "hammer") {
+        expect(definition.id).toBe("x2-hallowbore-coachgun");
+        expect(secondary.x, `${definition.id}:hammer`).toBeLessThanOrEqual(primary?.x ?? 0);
+      } else if (secondary?.role === "lever") {
+        expect(definition.id).toBe("x2-boomstick-saddlegun");
+        expect(secondary.x, `${definition.id}:lever`).toBeLessThan(primary?.x ?? 0);
+      } else {
+        expect(secondary?.x, `${definition.id}:fore-end`).toBeGreaterThan(primary?.x ?? 1);
+        expect(["horizontal-foregrip", "pump", "vertical-foregrip"], definition.id).toContain(
+          secondary?.role,
+        );
+      }
       expect(firingStanceFor(definition).family, definition.id).toBe("scattergun");
       expect(firingStanceFor(definition).lead.y, definition.id).toBeGreaterThan(-0.22);
       expect(firingStanceFor(definition).lead.y, definition.id).toBeLessThanOrEqual(-0.14);
@@ -148,7 +156,7 @@ describe("W4G4 foregrips never use magazine paint", () => {
     expect(weapon("x2-stormspur-coil-carbine").displayLength).toBeCloseTo(116 * 1.45, 5);
   });
 
-  it("gives every two-hand firearm an under-barrel secondary anchor", () => {
+  it("gives every two-hand firearm an under-barrel or authored mechanism secondary anchor", () => {
     const firearms = Object.values(WEAPONS).filter(
       (definition) => !!definition.gun || !!definition.beam,
     );
@@ -162,6 +170,16 @@ describe("W4G4 foregrips never use magazine paint", () => {
         continue;
       }
       expect(grips?.secondary, definition.id).toBeDefined();
+      if (grips?.secondary?.role === "hammer") {
+        expect(definition.id).toBe("x2-hallowbore-coachgun");
+        expect(grips.secondary.x, definition.id).toBeLessThanOrEqual(grips.primary.x);
+        continue;
+      }
+      if (definition.id === "x2-boomstick-saddlegun") {
+        expect(grips?.secondary?.role).toBe("lever");
+        expect(grips?.secondary?.x, definition.id).toBeLessThan(grips?.primary.x ?? 0);
+        continue;
+      }
       expect(grips?.secondary?.x, definition.id).toBeGreaterThan(grips?.primary.x ?? 1);
       if (!definition.gripPoints) {
         expect(grips?.secondary?.x, definition.id).toBeGreaterThanOrEqual(0.68);

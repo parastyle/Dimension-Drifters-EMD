@@ -4557,7 +4557,8 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "secondary": {
         "x": 0.34,
         "y": 0.66,
-        "role": "lever"
+        "role": "lever",
+        "angleRad": 0.72
       }
     },
     "twoHanded": true,
@@ -5966,7 +5967,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "INT"
       ],
       "handling": [
-        "pump"
+        "revolver"
       ]
     },
     "recoil": 150,
@@ -5976,9 +5977,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "y": 0.72
       },
       "secondary": {
-        "x": 0.66,
-        "y": 0.58,
-        "role": "pump"
+        "x": 0.34,
+        "y": 0.29,
+        "role": "hammer"
       }
     },
     "twoHanded": true,
@@ -6392,19 +6393,19 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "DEX"
       ],
       "handling": [
-        "pump"
+        "lever"
       ]
     },
     "recoil": 143,
     "gripPoints": {
       "primary": {
-        "x": 0.3,
-        "y": 0.74
+        "x": 0.38,
+        "y": 0.58
       },
       "secondary": {
-        "x": 0.67,
-        "y": 0.49,
-        "role": "pump"
+        "x": 0.27,
+        "y": 0.78,
+        "role": "lever"
       }
     },
     "twoHanded": true,
@@ -6740,6 +6741,17 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       ]
     },
     "recoil": 198,
+    "gripPoints": {
+      "primary": {
+        "x": 0.08,
+        "y": 0.64
+      },
+      "secondary": {
+        "x": 0.7,
+        "y": 0.68,
+        "role": "two-hand-rifle"
+      }
+    },
     "twoHanded": true,
     "gun": {
       "damage": 11,
@@ -6788,13 +6800,13 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
     "recoil": 201,
     "gripPoints": {
       "primary": {
-        "x": 0.12,
-        "y": 0.5
+        "x": 0.27,
+        "y": 0.62
       },
       "secondary": {
-        "x": 0.34,
-        "y": 0.68,
-        "role": "lever"
+        "x": 0.66,
+        "y": 0.5,
+        "role": "horizontal-foregrip"
       }
     },
     "twoHanded": true,
@@ -7744,12 +7756,12 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
     "recoil": 98,
     "gripPoints": {
       "primary": {
-        "x": 0.1,
-        "y": 0.52
+        "x": 0.31,
+        "y": 0.66
       },
       "secondary": {
-        "x": 0.42,
-        "y": 0.68,
+        "x": 0.44,
+        "y": 0.88,
         "role": "crank"
       }
     },
@@ -8324,6 +8336,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       ]
     },
     "recoil": 27,
+    "dualVerticalSplit": 0.1,
     "dual": true,
     "gun": {
       "damage": 6,
@@ -13272,6 +13285,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "bulletKind": "tracer",
       "muzzle": "rapid",
       "recoil": 0.0011,
+      "projectileArt": "bullet",
       "spread": 0.07,
       "muzzleColor": 16747051
     }

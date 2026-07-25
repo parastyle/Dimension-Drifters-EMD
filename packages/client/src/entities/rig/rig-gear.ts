@@ -836,7 +836,11 @@ export const rigGearMethods = {
     const hammerLayerHand = this.revolverHammerLayerHand;
     const hammerHand =
       hammerLayerHand === 0 ? frontHand : hammerLayerHand === 1 ? backHand : undefined;
-    if (hammerHand && hammerLayerHand !== undefined && this.weapons[hammerLayerHand]) {
+    if (
+      hammerHand &&
+      hammerLayerHand !== undefined &&
+      (this.weapons[hammerLayerHand] || (hammerLayerHand === 1 && this.poseTwoHanded))
+    ) {
       // Like a mechanism-owned support hand, the accepted hammer hand must finish after every gun layer.
       // Re-pushing the retained node is deliberate: Twin-Maw's rear hand must also clear the lead gun.
       stack.push(hammerHand.img);

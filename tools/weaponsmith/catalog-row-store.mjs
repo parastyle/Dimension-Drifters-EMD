@@ -101,6 +101,7 @@ const SECONDARY_GRIP_ROLES = new Set([
   "under-barrel",
   "bolt",
   "lever",
+  "hammer",
   "crank",
   "pump",
   "horizontal-foregrip",
@@ -152,7 +153,7 @@ function supportedEditPath(path) {
     path === "stats.gripFrac" ||
     path === "gripPoints" ||
     /^gripPoints\.primary\.(x|y)$/.test(path) ||
-    /^gripPoints\.secondary\.(x|y)$/.test(path) ||
+    /^gripPoints\.secondary\.(x|y|angleRad)$/.test(path) ||
     path === "poseLanguage" ||
     path === "poseLanguage.idle" ||
     path === "elementTransforms" ||
@@ -290,6 +291,9 @@ export function validatePoseStudioRow(next, baseline) {
     if (secondary) {
       finiteIn(secondary.x, 0, 1, "gripPoints.secondary.x", errors);
       finiteIn(secondary.y, 0, 1, "gripPoints.secondary.y", errors);
+      if (secondary.angleRad !== undefined) {
+        finiteIn(secondary.angleRad, -Math.PI, Math.PI, "gripPoints.secondary.angleRad", errors);
+      }
       if (!SECONDARY_GRIP_ROLES.has(secondary.role)) {
         errors.push("gripPoints.secondary.role must remain a supported authored role");
       }

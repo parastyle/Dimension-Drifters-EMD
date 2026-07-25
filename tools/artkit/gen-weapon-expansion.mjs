@@ -48,7 +48,7 @@ const IDLE_FOOT_POSES = new Set([
   "loose-plant", "combat-plant", "wide-plant", "crane-one-leg",
 ]);
 const SECONDARY_GRIP_ROLES = new Set([
-  "under-barrel", "bolt", "lever", "crank", "pump", "horizontal-foregrip", "vertical-foregrip", "shoulder-RPG",
+  "under-barrel", "bolt", "lever", "hammer", "crank", "pump", "horizontal-foregrip", "vertical-foregrip", "shoulder-RPG",
   "two-hand-rifle", "shaft", "handle",
 ]);
 const SIZES = new Set(["S", "M", "L", "XL"]);
@@ -62,7 +62,7 @@ const BULLET_KINDS = new Set([
   "slug", "pellet", "tracer", "nail", "ricochet", "spark", "orb", "grenade", "fire-plume", "laser",
 ]);
 const MUZZLES = new Set(["heavy", "boom", "rapid", "punch", "spark", "artillery"]);
-const PROJECTILE_ARTS = new Set(["weapon-crop", "generated", "arrow", "cannonball", "fireball"]);
+const PROJECTILE_ARTS = new Set(["weapon-crop", "generated", "arrow", "bullet", "cannonball", "fireball"]);
 // The first gun-beam wave is explicit, not inferred from every ranged weapon. V1 still uses heat only;
 // these ids differ from caster beams through their ranged class/art/pose, never a hidden magazine resource.
 const BEAM_GUN_IDS = new Set([
@@ -89,7 +89,7 @@ const TOP_KEYS = new Set([
   "bespokeVfxSheet", "performance", "swingStyle", "effectRecipe", "effectEmitter", "effectTiming",
   "renderAboveHands", "suppressVfx", "suppressMeleeHitbox", "hitStatus", "gripPoints",
   "handlingTags", "breakAction", "poseLanguage", "elementTransforms", "impactMuzzle", "rapidThrust", "fireMode",
-  "strikeOverlayPart", "recoil",
+  "strikeOverlayPart", "recoil", "dualVerticalSplit",
 ]);
 // The sibling-block bug (§43): mechanic stats authored NEXT TO `behavior` instead of inside it were
 // silently ignored, shipping 11 weapons with default kits. Now an instant failure.
@@ -140,7 +140,7 @@ const HYBRID_PROJECTILE_TRIGGERS = new Set(["each-swing", "combo-finisher"]);
 const GUN_BURST_KEYS = new Set(["count", "intervalSeconds"]);
 const GRIP_POINTS_KEYS = new Set(["primary", "secondary"]);
 const GRIP_ANCHOR_KEYS = new Set(["x", "y"]);
-const SECONDARY_GRIP_KEYS = new Set(["x", "y", "role"]);
+const SECONDARY_GRIP_KEYS = new Set(["x", "y", "role", "angleRad"]);
 const ELEMENT_TRANSFORM_SCOPE_KEYS = new Set(["hold", "poses", "beats"]);
 const ELEMENT_TRANSFORM_POSE_KEYS = new Set(["idle", "held"]);
 const ELEMENT_TRANSFORM_KEYS = new Set(["dx", "dy", "rotationRad", "scale"]);
@@ -776,6 +776,14 @@ function gripPointsOf(points) {
           "gripPoints.secondary.role",
         ),
       };
+      if (points.secondary.angleRad !== undefined)
+        out.secondary.angleRad = num(
+          points.secondary.angleRad,
+          -Math.PI,
+          Math.PI,
+          0,
+          "gripPoints.secondary.angleRad",
+        );
     }
   }
   return out;
@@ -1172,6 +1180,16 @@ function mapWeapon(w) {
   if (w.bespokeVfxSheet !== undefined) {
     if (typeof w.bespokeVfxSheet !== "boolean") fail("bespokeVfxSheet is not a boolean");
     else def.bespokeVfxSheet = w.bespokeVfxSheet;
+  }
+  if (w.dualVerticalSplit !== undefined) {
+    if (grip !== "dual") fail("dualVerticalSplit requires grip dual");
+    def.dualVerticalSplit = num(
+      w.dualVerticalSplit,
+      0.02,
+      0.2,
+      0.08,
+      "dualVerticalSplit",
+    );
   }
   if (grip === "2H") def.twoHanded = true;
   if (grip === "dual") def.dual = true;

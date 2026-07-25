@@ -244,11 +244,49 @@ import {
 } from "../kung-fu-wrap-pose.js";import { SPRITE_ATLAS, partTexture, TARGET_BODY_H, BODY_LOOK_LEAN, MELEE_FORWARD_READY_CANT, forwardMeleeReadyAngle, PARRY_GUARD_ANGLE_OFFSETS, PARRY_GUARD_HAND_FORWARD, PARRY_GUARD_HAND_LIFT, CLIENT_VISUAL_COMBOS, COMBO_HOLD_RELEASE_MS, MONK_FLURRY_MIN_POSE_MS, COMBO_STAGE_TRANSITION_MAX_MS, MELEE_GLINT_LEAD_MS, MELEE_GLINT_CREST_MS, TOME_IDLE_CLOSE_MS, TOME_PAGE_INTERVAL_MS, TOME_PAGE_DURATION_MS, TOME_SETTLE_DURATION_MS, TOME_SCRAP_DURATION_MS, REMOTE_SIGNATURE_LOD_MARGIN_PX, REMOTE_SOURCE_FLASH_MS, RANGED_AIM_LINGER_MS, RANGED_AIM_RAISE_MS, RANGED_AIM_SETTLE_MS, GUN_RECOIL_ACTIVE_MS, RANGED_GUN_RECOVERY_MS, DUAL_BACK_WEAPON_LEAN, CLOSE_BLADE_RELEASE_T, authoredWeaponRenderPlan, opposedWhirlwindPose, NO_WRAP_RIG_MOUNTS, FOUR_LIMB_WRAP_RIG_MOUNTS, wrapRigMountPlan, wrapRigFacingSign, wrapRigReceiverRelativeScale, strikeOverlayImpactVisible, measureBladeWidthAtExtensionJoin, createComboChainState, CROSSFALL_STEP, routeSwingChannels, isTerminalFlourishStep, flourishStreakWindowMs, flourishMovementIntent, rawFlourishIntentCancels, nextFlourishStreakCount, PISTOL_IDLE_TWIRL_DELAY_MS, PISTOL_DUAL_TWIRL_STAGGER_MS, GENERIC_IDLE_FLOURISH_DELAY_MS, DUAL_PISTOL_HAND_RISE_BODY_FRAC, idleFlourishEligibleEpoch, flourishCanOverridePersistentGunAim, authoredDualPistolHandYOffset, createGunHandlingCycleState, gunHandlingMechanismFor, gunHandlingCycleDurationMs, sampleGunHandlingHandOffset, resolveSecondaryGripPosition, resolveBreakActionSecondaryGripPosition, clamp01, smoothstep01, mixRgb, smootherstep01, cubicOut01, backOut01, mixAngle, comboStageTransitionDurationMs, comboStageTransitionBlend, blendComboStagePoseTransform, blendComboStagePresentationTransform, stepAngleBounded, paperPopScaleX, paperPopScaleY, paperPopRotation, signedClamp, sampleAuthoredDualCeremony, attackSignatureColor, actionOwnershipAt, remapPoseTimeAtImpact, createCloseBladePoseInput, createCloseBladePoseSample, sampleCloseBladePose, comboGraceMs, FLOATING_HEAD_SPRING_TUNING, sampleFloatingHeadWalkBob, clampFloatingHeadOffset, stepFloatingHeadSpring, createFlourishChannel, createFlourishArmState, createFlourishStreakState, createOutgoingStowProxy, resetJigglePart, syncOwnedJigglePart, stepJigglePart, sampleRangedAimBlend } from "./rig-core.js";
 import type { RigComboFamily, RigSwingHand, RigLoadoutPiece, OpposedWhirlwindPose, WrapRigReceiver, WrapRigMount, WrapRigScaleInput, RigSwingDescriptor, WeaponBladeAttachmentPose, ComboChainState, ComboStageTransitionState, ComboStageTransformNode, SwingChannelSample, RawFlourishIntent, GunHandlingMechanism, GunHandlingCycleState, GunHandlingHandOffset, SecondaryGripTransformInput, RigAttackPresentationScene, ComboStageTransitionTiming, ComboStagePoseTransform, ComboStageParentTransform, AuthoredDualCeremonySample, CloseBladePoseVariant, CloseBladePoseInput, CloseBladePoseSample, JigglePartState, FloatingHeadSpringState, FloatingHeadSpringInput, FloatingHeadSpringTuning, TomePageQuad, TomeScrap, TomeVisualState, RigHand, RigFoot, BreakActionAttachment, FlourishChannelState, FlourishArmState, FlourishStreakState, OutgoingStowProxy, GearAttachment, RigAnim, VastagharRigPose, PaperDeathTreatment, PaperDeathPartPose, PaperDeathState, SpriteRigContext } from "./rig-core.js";
 
+export type GunHandlingHand = "primary" | "secondary";
+
+/**
+ * Resolve which painted hand owns a mechanism without weapon-id routing. Dual implements cycle the
+ * fired trigger hand. A two-hand lever whose secondary role is the barrel/foregrip leaves that support
+ * hand planted and cycles the trigger hand; ordinary pump/lever/bolt definitions retain support-hand
+ * ownership.
+ */
+export function gunHandlingHandFor(def: WeaponDef | undefined): GunHandlingHand | undefined {
+  const mechanism = gunHandlingMechanismFor(def);
+  if (!mechanism || mechanism === "break") return undefined;
+  if (def?.dual) return "primary";
+  if (mechanism === "lever" && def?.gripPoints?.secondary?.role !== "lever") return "primary";
+  return "secondary";
+}
+
+/** B29 fan beats ordinarily animate the gun hand; an authored hammer grip delegates the fan to the
+ * planted two-hand support hand instead. */
+export function revolverHammerHandFor(def: WeaponDef | undefined): GunHandlingHand | undefined {
+  if (!def?.gun || !weaponHasHandlingTag(def, "revolver")) return undefined;
+  return def.gripPoints?.secondary?.role === "hammer" ? "secondary" : "primary";
+}
+
+/** Preserve the legacy neutral hand angle unless the painted secondary mechanism authors one. */
+export function secondaryGripHandRotationFor(
+  def: WeaponDef | undefined,
+  weaponAngleRad: number,
+): number {
+  const authored = def?.gripPoints?.secondary?.angleRad;
+  return authored === undefined ? 0 : weaponAngleRad + authored;
+}
+
 export const rigGunMechanismMethods = {
 
   /** Re-sort only on hammer ownership edges: start, alternating paired hand, and return to rest. */
   syncRevolverHammerLayer(this: SpriteRigContext): void {
-    const next = this.revolverHammerBeat.active ? this.gunRecoilHand : undefined;
+    const hammerDef = this.weapons?.[this.gunRecoilHand]?.def;
+    const next =
+      this.revolverHammerBeat.active && revolverHammerHandFor(hammerDef) === "secondary"
+        ? 1
+        : this.revolverHammerBeat.active
+          ? this.gunRecoilHand
+          : undefined;
     if (next === this.revolverHammerLayerHand) return;
     this.revolverHammerLayerHand = next;
     this.rebuildRenderStack();

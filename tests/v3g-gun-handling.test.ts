@@ -4,7 +4,7 @@ import { projectileColorSuffix } from "../packages/client/src/scenes/arena/proje
 
 const catalog = Object.values(WEAPONS);
 
-function tagged(tag: "bolt" | "break" | "lever" | "pump" | "pistol"): WeaponDef[] {
+function tagged(tag: "bolt" | "break" | "lever" | "pump" | "pistol" | "revolver"): WeaponDef[] {
   return catalog.filter((weapon) => weaponHasHandlingTag(weapon, tag));
 }
 
@@ -14,9 +14,10 @@ describe("V3G catalog gun-handling laws", () => {
       (weapon) =>
         !!weapon.gun &&
         ((weapon.tags.family === "lever-rifle" && !/\bpump\b/i.test(weapon.name)) ||
-          /\bthunderhead repeater cannon\b/i.test(weapon.name)),
+          /\bthunderhead repeater cannon\b/i.test(weapon.name) ||
+          weapon.id === "x2-boomstick-saddlegun"),
     );
-    expect(candidates).toHaveLength(9);
+    expect(candidates).toHaveLength(10);
     expect(
       tagged("lever")
         .map((weapon) => weapon.id)
@@ -24,7 +25,9 @@ describe("V3G catalog gun-handling laws", () => {
     ).toEqual(candidates.map((weapon) => weapon.id).sort());
     for (const weapon of candidates) {
       expect(weaponHasHandlingTag(weapon, "lever"), weapon.id).toBe(true);
-      expect(weapon.gripPoints?.secondary?.role, weapon.id).toBe("lever");
+      expect(weapon.gripPoints?.secondary?.role, weapon.id).toBe(
+        weapon.id === "x2-thunderhead-repeater-cannon" ? "horizontal-foregrip" : "lever",
+      );
     }
   });
 
@@ -35,11 +38,13 @@ describe("V3G catalog gun-handling laws", () => {
         !weapon.breakAction &&
         ((weapon.tags.family === "shotgun" &&
           weapon.id !== "x2-dustdevil-riotgun" &&
-          weapon.id !== "x2-twin-maw-greenerbore") ||
+          weapon.id !== "x2-twin-maw-greenerbore" &&
+          weapon.id !== "x2-hallowbore-coachgun" &&
+          weapon.id !== "x2-boomstick-saddlegun") ||
           /\bpump-rifle\b/i.test(weapon.name) ||
           /\bbuckshot avalanche\b/i.test(weapon.name)),
     );
-    expect(candidates).toHaveLength(13);
+    expect(candidates).toHaveLength(11);
     expect(
       tagged("pump")
         .map((weapon) => weapon.id)
@@ -102,8 +107,6 @@ describe("V3G named grip truth and Thunderhead redistribution", () => {
     ["x2-rustwidow-pump-rifle", 0.64, 0.78],
     ["x2-buckshot-briar", 0.67, 0.76],
     ["x2-galvanic-coachgun", 0.69, 0.68],
-    ["x2-hallowbore-coachgun", 0.66, 0.58],
-    ["x2-boomstick-saddlegun", 0.67, 0.49],
   ] as const)("places %s's support hand on the pictured pump/fore-end", (id, x, y) => {
     expect(WEAPONS[id]?.gripPoints?.secondary).toMatchObject({ role: "pump", x, y });
   });

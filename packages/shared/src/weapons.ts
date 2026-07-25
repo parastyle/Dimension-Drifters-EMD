@@ -47,6 +47,7 @@ export type WeaponSecondaryGripRole =
   | "under-barrel"
   | "bolt"
   | "lever"
+  | "hammer"
   | "crank"
   | "pump"
   | "horizontal-foregrip"
@@ -58,7 +59,11 @@ export type WeaponSecondaryGripRole =
 
 export interface WeaponGripPoints {
   primary: WeaponGripAnchor;
-  secondary?: WeaponGripAnchor & { role: WeaponSecondaryGripRole };
+  secondary?: WeaponGripAnchor & {
+    role: WeaponSecondaryGripRole;
+    /** Hand rotation relative to the painted weapon axis. Omitted preserves the neutral hand angle. */
+    angleRad?: number;
+  };
 }
 
 /** Registered two-piece break-action art. The receiver remains on the primary grip while part 2 pivots
@@ -201,7 +206,13 @@ export function resolvedGunGripPoints(
   return DEFAULT_TWO_HAND_GUN_GRIPS;
 }
 
-export type GunProjectileArt = "weapon-crop" | "generated" | "arrow" | "cannonball" | "fireball";
+export type GunProjectileArt =
+  | "weapon-crop"
+  | "generated"
+  | "arrow"
+  | "bullet"
+  | "cannonball"
+  | "fireball";
 export const WEAPON_MUZZLE_COUNT_CAP = 7;
 
 /** One declarative Driftblade-line identity hook. The server resolves these fields from the accepted
@@ -794,6 +805,8 @@ export interface WeaponDef {
   breakAction?: WeaponBreakActionDef;
   /** Dual-wield: render a piece in EACH hand (uses sprite parts 1 & 2). */
   dual?: boolean;
+  /** Persistent half-gap between dual held copies, normalized by body height. */
+  dualVerticalSplit?: number;
   /** Two-handed: both hands grip the haft (heavy 2H swords). */
   twoHanded?: boolean;
   /** Held-render sprite override — the manifest id whose sliced parts to draw in-hand, when it differs
@@ -1217,6 +1230,22 @@ export function authoredDualGunVerticalOffset(
   return direction * AUTHORED_DUAL_GUN_VERTICAL_SPLIT_BODY_FRAC * WEAPON_POSE_BODY_HEIGHT;
 }
 
+/** Catalog-authored persistent dual showcase gap. Unlike the B29 gun kick, this stays present through
+ * the complete aimed hold so paired non-firearms remain individually readable. */
+export function authoredDualShowcaseVerticalOffset(
+  weapon: WeaponDef | undefined,
+  hand: 0 | 1,
+): number {
+  if (
+    weapon?.dual !== true ||
+    weapon.tags.grip !== "dual" ||
+    weapon.dualVerticalSplit === undefined
+  )
+    return 0;
+  const direction = hand === 0 ? -1 : 1;
+  return direction * weapon.dualVerticalSplit * WEAPON_POSE_BODY_HEIGHT;
+}
+
 /**
  * Shared deterministic grip/recoil pose. Authority evaluates it at each round's fire tick; the rig uses
  * the same result to mount the actual PNG before its art point is transformed.
@@ -1263,7 +1292,8 @@ export function weaponMuzzleGripOffset(
       anchorY * WEAPON_POSE_BODY_HEIGHT +
       aimY * directAimReach * WEAPON_POSE_BODY_HEIGHT +
       aimY * recoilForward +
-      authoredDualGunVerticalOffset(weapon, hand, pose.recoilElapsedMs),
+      authoredDualGunVerticalOffset(weapon, hand, pose.recoilElapsedMs) +
+      authoredDualShowcaseVerticalOffset(weapon, hand),
   };
 }
 

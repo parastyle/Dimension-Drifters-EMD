@@ -274,6 +274,11 @@ export interface AuthoredRigElementSnapshot {
  *  the gauntlet/fist FAMILIES plus worn WORDS in the name (the melee claws hide under "exotic-melee");
  *  word-boundaries keep held gear out ("Knucklebone Censer-Orb" is a censer on a chain, not knuckles). */
 export { isWornWeapon };export { SPRITE_ATLAS, partTexture, MELEE_FORWARD_READY_CANT, forwardMeleeReadyAngle, COMBO_STAGE_TRANSITION_MAX_MS, RANGED_AIM_LINGER_MS, RANGED_AIM_RAISE_MS, RANGED_AIM_SETTLE_MS, RANGED_GUN_RECOVERY_MS, authoredWeaponRenderPlan, opposedWhirlwindPose, wrapRigMountPlan, wrapRigFacingSign, wrapRigReceiverRelativeScale, strikeOverlayImpactVisible, measureBladeWidthAtExtensionJoin, routeSwingChannels, isTerminalFlourishStep, flourishStreakWindowMs, flourishMovementIntent, rawFlourishIntentCancels, nextFlourishStreakCount, PISTOL_IDLE_TWIRL_DELAY_MS, PISTOL_DUAL_TWIRL_STAGGER_MS, DUAL_PISTOL_HAND_RISE_BODY_FRAC, idleFlourishEligibleEpoch, flourishCanOverridePersistentGunAim, authoredDualPistolHandYOffset, gunHandlingMechanismFor, gunHandlingCycleDurationMs, sampleGunHandlingHandOffset, resolveSecondaryGripPosition, resolveBreakActionSecondaryGripPosition, comboStageTransitionDurationMs, comboStageTransitionBlend, blendComboStagePoseTransform, blendComboStagePresentationTransform, sampleAuthoredDualCeremony, createCloseBladePoseInput, createCloseBladePoseSample, sampleCloseBladePose, FLOATING_HEAD_SPRING_TUNING, sampleFloatingHeadWalkBob, stepFloatingHeadSpring, sampleRangedAimBlend } from "./rig/rig-core.js";
+export {
+  gunHandlingHandFor,
+  revolverHammerHandFor,
+  secondaryGripHandRotationFor,
+} from "./rig/rig-gun-mechanisms.js";
 export type { RigSwingHand, RigLoadoutPiece, OpposedWhirlwindPose, WrapRigReceiver, WrapRigMount, WrapRigScaleInput, RigSwingDescriptor, WeaponBladeAttachmentPose, SwingChannelSample, RawFlourishIntent, GunHandlingMechanism, GunHandlingHandOffset, SecondaryGripTransformInput, ComboStagePoseTransform, ComboStageParentTransform, AuthoredDualCeremonySample, CloseBladePoseVariant, CloseBladePoseInput, CloseBladePoseSample, FloatingHeadSpringState, FloatingHeadSpringInput, FloatingHeadSpringTuning, RigAnim, VastagharRigPose, PaperDeathTreatment } from "./rig/rig-core.js";
 
 

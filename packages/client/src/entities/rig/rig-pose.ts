@@ -245,6 +245,11 @@ import {
   sampleKungFuWrapPose,
 } from "../kung-fu-wrap-pose.js";import { SPRITE_ATLAS, partTexture, TARGET_BODY_H, BODY_LOOK_LEAN, MELEE_FORWARD_READY_CANT, forwardMeleeReadyAngle, PARRY_GUARD_ANGLE_OFFSETS, PARRY_GUARD_HAND_FORWARD, PARRY_GUARD_HAND_LIFT, CLIENT_VISUAL_COMBOS, COMBO_HOLD_RELEASE_MS, MONK_FLURRY_MIN_POSE_MS, COMBO_STAGE_TRANSITION_MAX_MS, MELEE_GLINT_LEAD_MS, MELEE_GLINT_CREST_MS, TOME_IDLE_CLOSE_MS, TOME_PAGE_INTERVAL_MS, TOME_PAGE_DURATION_MS, TOME_SETTLE_DURATION_MS, TOME_SCRAP_DURATION_MS, REMOTE_SIGNATURE_LOD_MARGIN_PX, REMOTE_SOURCE_FLASH_MS, RANGED_AIM_LINGER_MS, RANGED_AIM_RAISE_MS, RANGED_AIM_SETTLE_MS, GUN_RECOIL_ACTIVE_MS, RANGED_GUN_RECOVERY_MS, DUAL_BACK_WEAPON_LEAN, CLOSE_BLADE_RELEASE_T, authoredWeaponRenderPlan, opposedWhirlwindPose, NO_WRAP_RIG_MOUNTS, FOUR_LIMB_WRAP_RIG_MOUNTS, wrapRigMountPlan, wrapRigFacingSign, wrapRigReceiverRelativeScale, strikeOverlayImpactVisible, measureBladeWidthAtExtensionJoin, createComboChainState, CROSSFALL_STEP, routeSwingChannels, isTerminalFlourishStep, flourishStreakWindowMs, flourishMovementIntent, rawFlourishIntentCancels, nextFlourishStreakCount, PISTOL_IDLE_TWIRL_DELAY_MS, PISTOL_DUAL_TWIRL_STAGGER_MS, GENERIC_IDLE_FLOURISH_DELAY_MS, DUAL_PISTOL_HAND_RISE_BODY_FRAC, idleFlourishEligibleEpoch, flourishCanOverridePersistentGunAim, authoredDualPistolHandYOffset, createGunHandlingCycleState, gunHandlingMechanismFor, gunHandlingCycleDurationMs, sampleGunHandlingHandOffset, resolveSecondaryGripPosition, resolveBreakActionSecondaryGripPosition, clamp01, smoothstep01, mixRgb, smootherstep01, cubicOut01, backOut01, mixAngle, comboStageTransitionDurationMs, comboStageTransitionBlend, blendComboStagePoseTransform, blendComboStagePresentationTransform, stepAngleBounded, paperPopScaleX, paperPopScaleY, paperPopRotation, signedClamp, sampleAuthoredDualCeremony, attackSignatureColor, actionOwnershipAt, remapPoseTimeAtImpact, createCloseBladePoseInput, createCloseBladePoseSample, sampleCloseBladePose, comboGraceMs, FLOATING_HEAD_SPRING_TUNING, sampleFloatingHeadWalkBob, clampFloatingHeadOffset, stepFloatingHeadSpring, createFlourishChannel, createFlourishArmState, createFlourishStreakState, createOutgoingStowProxy, resetJigglePart, syncOwnedJigglePart, stepJigglePart, sampleRangedAimBlend, SPRITE_RIG_STATICS as SpriteRig } from "./rig-core.js";
 import type { RigComboFamily, RigSwingHand, RigLoadoutPiece, OpposedWhirlwindPose, WrapRigReceiver, WrapRigMount, WrapRigScaleInput, RigSwingDescriptor, WeaponBladeAttachmentPose, ComboChainState, ComboStageTransitionState, ComboStageTransformNode, SwingChannelSample, RawFlourishIntent, GunHandlingMechanism, GunHandlingCycleState, GunHandlingHandOffset, SecondaryGripTransformInput, RigAttackPresentationScene, ComboStageTransitionTiming, ComboStagePoseTransform, ComboStageParentTransform, AuthoredDualCeremonySample, CloseBladePoseVariant, CloseBladePoseInput, CloseBladePoseSample, JigglePartState, FloatingHeadSpringState, FloatingHeadSpringInput, FloatingHeadSpringTuning, TomePageQuad, TomeScrap, TomeVisualState, RigHand, RigFoot, BreakActionAttachment, FlourishChannelState, FlourishArmState, FlourishStreakState, OutgoingStowProxy, GearAttachment, RigAnim, VastagharRigPose, PaperDeathTreatment, PaperDeathPartPose, PaperDeathState, SpriteRigContext } from "./rig-core.js";
+import {
+  gunHandlingHandFor,
+  revolverHammerHandFor,
+  secondaryGripHandRotationFor,
+} from "./rig-gun-mechanisms.js";
 
 export const rigPoseMethods = {
 
@@ -2964,6 +2969,7 @@ export const rigPoseMethods = {
           const ownsSwingScale = this.swingHand === "both" || this.swingHand === 0;
           const base = held.baseScale / (this.baseScale || 1);
           const handling = gunHandlingMechanismFor(held.def);
+          const handlingHand = gunHandlingHandFor(held.def);
           const cycle = this.gunHandlingCycles[0];
           const cycleDurationMs = gunHandlingCycleDurationMs(handling, held.def.gun?.fireRate);
           const cycleElapsedMs = sceneNow - cycle.startMs;
@@ -2973,7 +2979,7 @@ export const rigPoseMethods = {
             cycle.mechanism === handling &&
             cycle.acceptedSeq === this.attackBeatSeq;
           sampleGunHandlingHandOffset(
-            cycleMatches ? handling : undefined,
+            cycleMatches && handlingHand === "secondary" ? handling : undefined,
             cycleMatches ? cycleElapsedMs : -1,
             cycleDurationMs,
             held.def.displayLength / (this.baseScale || 1),
@@ -3011,7 +3017,7 @@ export const rigPoseMethods = {
           back.img.x = front.img.x + Math.cos(weaponAngle) * haft;
           back.img.y = front.img.y + Math.sin(weaponAngle) * haft;
         }
-        back.img.rotation = 0;
+        back.img.rotation = secondaryGripHandRotationFor(held?.def, weaponAngle);
         if (PROCEDURAL_JIGGLE)
           syncOwnedJigglePart(
             back,
@@ -3494,23 +3500,28 @@ export const rigPoseMethods = {
     this.applyComboStageTransition(sceneNow);
     const revolverWeapon = this.weapons[this.gunRecoilHand];
     if (revolverWeapon && this.revolverHammerBeat.active) {
+      const hammerHand =
+        revolverHammerHandFor(revolverWeapon.def) === "secondary"
+          ? this.hands.find((hand) => !hand.front)
+          : revolverWeapon.hand;
       const c = Math.cos(revolverWeapon.semanticRotation);
       const s = Math.sin(revolverWeapon.semanticRotation);
-      revolverWeapon.hand.img.x +=
-        c * this.revolverHammerBeat.handForward - s * this.revolverHammerBeat.handLateral;
-      revolverWeapon.hand.img.y +=
-        s * this.revolverHammerBeat.handForward + c * this.revolverHammerBeat.handLateral;
+      if (hammerHand) {
+        hammerHand.img.x +=
+          c * this.revolverHammerBeat.handForward - s * this.revolverHammerBeat.handLateral;
+        hammerHand.img.y +=
+          s * this.revolverHammerBeat.handForward + c * this.revolverHammerBeat.handLateral;
+      }
     }
-    // Dual mechanism hands are trigger hands and mechanism hands at once. Every late pose/lift pass has
-    // already re-seated held art onto its canonical aimed hand, so displace only the rendered hand here:
-    // each accepted alternating Sidewinder shot gets an independent lever cycle while both gun/muzzle
-    // affines remain byte-for-byte at the authoritative mount.
-    if (this.weapons.length > 1 && this.orbitT < 0) {
+    // Trigger-owned mechanisms include dual guns and two-hand levers whose other hand is explicitly
+    // planted on the barrel. Every late pose/lift pass has already re-seated held art onto its canonical
+    // aimed hand, so displace only the rendered trigger hand while gun/muzzle affines stay authoritative.
+    if (this.orbitT < 0) {
       for (let handIndex = 0; handIndex < this.weapons.length; handIndex++) {
         const held = this.weapons[handIndex];
         if (!held) continue;
         const handling = gunHandlingMechanismFor(held.def);
-        if (!handling) continue;
+        if (!handling || gunHandlingHandFor(held.def) !== "primary") continue;
         const cycle = this.gunHandlingCycles[handIndex] ?? this.gunHandlingCycles[0];
         const cycleDurationMs = gunHandlingCycleDurationMs(handling, held.def.gun?.fireRate);
         const cycleElapsedMs = sceneNow - cycle.startMs;

@@ -1620,7 +1620,7 @@ export function sampleRevolverHammerBeat(
   const q = clamp01(elapsedMs / durationMs);
   const cock = q <= 0.38 ? smoothstep01(q / 0.38) : 1 - smoothstep01((q - 0.38) / 0.62);
   const motionScale = reducedMotion ? 0.38 : 1;
-  const pairedScale = def.dual ? 1 : 0.55;
+  const pairedScale = def.dual || def.gripPoints?.secondary?.role === "hammer" ? 1 : 0.55;
   out.active = true;
   out.weaponRotationRad = -0.14 * cock * motionScale;
   out.weaponForward = -displayLength * 0.025 * cock * motionScale;

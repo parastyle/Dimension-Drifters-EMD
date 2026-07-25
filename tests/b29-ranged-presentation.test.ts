@@ -78,7 +78,7 @@ describe("B29 ranged/thrown presentation census", () => {
     expect(activeIdsMatching(isAuthoredDualFirearm)).toEqual([...AUTHORED_DUAL_GUNS].sort());
   });
 
-  it("enumerates exactly 17 one-handed revolvers and Twin-Maw as the paired fan-hammer exception", () => {
+  it("enumerates the 17 one-handed revolvers plus the paired and two-hand fan-hammer exceptions", () => {
     expect(
       activeIdsMatching(
         (weapon) => weapon.tags.grip === "1H" && weaponHasHandlingTag(weapon, "revolver"),
@@ -89,6 +89,11 @@ describe("B29 ranged/thrown presentation census", () => {
         (weapon) => weapon.tags.grip === "dual" && weaponHasHandlingTag(weapon, "revolver"),
       ),
     ).toEqual(["x2-twin-maw-greenerbore"]);
+    expect(
+      activeIdsMatching(
+        (weapon) => weapon.tags.grip === "2H" && weaponHasHandlingTag(weapon, "revolver"),
+      ),
+    ).toEqual(["x2-hallowbore-coachgun"]);
   });
 });
 
@@ -208,7 +213,11 @@ describe("B29 revolver hammer beats", () => {
       revolverHammerBeatDurationMs,
       sampleRevolverHammerBeat,
     } = await import("../packages/client/src/sprites/pose-language.js");
-    for (const id of [...ONE_HANDED_REVOLVERS, "x2-twin-maw-greenerbore"]) {
+    for (const id of [
+      ...ONE_HANDED_REVOLVERS,
+      "x2-twin-maw-greenerbore",
+      "x2-hallowbore-coachgun",
+    ]) {
       const weapon = WEAPONS[id];
       if (!weapon?.gun) throw new Error(`missing revolver fixture: ${id}`);
       const durationMs = revolverHammerBeatDurationMs(weapon.gun.fireRate);

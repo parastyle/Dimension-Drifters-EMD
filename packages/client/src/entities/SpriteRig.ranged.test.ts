@@ -427,12 +427,24 @@ describe("SpriteRig V3G grip and mechanism laws", () => {
     expect(out).toEqual({ forward: 0, lateral: 0 });
   });
 
+  it("routes B48 mechanism ownership and the authored Dustline hand angle", async () => {
+    const { gunHandlingHandFor, revolverHammerHandFor, secondaryGripHandRotationFor } =
+      await import("./SpriteRig.js");
+    expect(gunHandlingHandFor(WEAPONS["x2-boomstick-saddlegun"])).toBe("secondary");
+    expect(gunHandlingHandFor(WEAPONS["x2-thunderhead-repeater-cannon"])).toBe("primary");
+    expect(revolverHammerHandFor(WEAPONS["x2-hallowbore-coachgun"])).toBe("secondary");
+    expect(secondaryGripHandRotationFor(WEAPONS["x2-dustline-lever-action"], 0.18)).toBeCloseTo(
+      0.9,
+      10,
+    );
+  });
+
   it("starts one immediate mechanism cycle from every accepted tagged shot", async () => {
     const { SpriteRig, gunHandlingMechanismFor } = await import("./SpriteRig.js");
     const mechanisms = Object.values(WEAPONS).filter(
       (weapon) => gunHandlingMechanismFor(weapon) !== undefined,
     );
-    expect(mechanisms).toHaveLength(29);
+    expect(mechanisms).toHaveLength(28);
     for (const weapon of mechanisms) {
       const rig = Object.create(SpriteRig.prototype) as {
         weapons: Array<{ def: typeof weapon }>;
@@ -441,7 +453,7 @@ describe("SpriteRig V3G grip and mechanism laws", () => {
         gunHandlingCycles: Array<{
           active: boolean;
           acceptedSeq: number;
-          mechanism?: "bolt" | "lever" | "pump";
+          mechanism?: "bolt" | "break" | "lever" | "pump";
           startMs: number;
           weaponId: string;
         }>;
@@ -480,7 +492,7 @@ describe("SpriteRig V3G grip and mechanism laws", () => {
       gunHandlingCycles: Array<{
         active: boolean;
         acceptedSeq: number;
-        mechanism?: "bolt" | "lever" | "pump";
+        mechanism?: "bolt" | "break" | "lever" | "pump";
         startMs: number;
         weaponId: string;
       }>;

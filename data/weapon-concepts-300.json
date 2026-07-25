@@ -6100,7 +6100,8 @@
         "secondary": {
           "x": 0.34,
           "y": 0.66,
-          "role": "lever"
+          "role": "lever",
+          "angleRad": 0.72
         }
       },
       "size": "L",
@@ -7554,7 +7555,7 @@
       "finish": "ornate",
       "grip": "2H",
       "handlingTags": [
-        "pump"
+        "revolver"
       ],
       "gripPoints": {
         "primary": {
@@ -7562,9 +7563,9 @@
           "y": 0.72
         },
         "secondary": {
-          "x": 0.66,
-          "y": 0.58,
-          "role": "pump"
+          "x": 0.34,
+          "y": 0.29,
+          "role": "hammer"
         }
       },
       "size": "M",
@@ -8002,17 +8003,17 @@
       "finish": "worn",
       "grip": "2H",
       "handlingTags": [
-        "pump"
+        "lever"
       ],
       "gripPoints": {
         "primary": {
-          "x": 0.3,
-          "y": 0.74
+          "x": 0.38,
+          "y": 0.58
         },
         "secondary": {
-          "x": 0.67,
-          "y": 0.49,
-          "role": "pump"
+          "x": 0.27,
+          "y": 0.78,
+          "role": "lever"
         }
       },
       "size": "M",
@@ -8369,6 +8370,17 @@
       "element": "fire",
       "finish": "worn",
       "grip": "2H",
+      "gripPoints": {
+        "primary": {
+          "x": 0.08,
+          "y": 0.64
+        },
+        "secondary": {
+          "x": 0.7,
+          "y": 0.68,
+          "role": "two-hand-rifle"
+        }
+      },
       "size": "L",
       "rangeBand": "mid",
       "scaling": [
@@ -8420,13 +8432,13 @@
       ],
       "gripPoints": {
         "primary": {
-          "x": 0.12,
-          "y": 0.5
+          "x": 0.27,
+          "y": 0.62
         },
         "secondary": {
-          "x": 0.34,
-          "y": 0.68,
-          "role": "lever"
+          "x": 0.66,
+          "y": 0.5,
+          "role": "horizontal-foregrip"
         }
       },
       "size": "L",
@@ -9410,12 +9422,12 @@
       "grip": "2H",
       "gripPoints": {
         "primary": {
-          "x": 0.1,
-          "y": 0.52
+          "x": 0.31,
+          "y": 0.66
         },
         "secondary": {
-          "x": 0.42,
-          "y": 0.68,
+          "x": 0.44,
+          "y": 0.88,
           "role": "crank"
         }
       },
@@ -10024,6 +10036,7 @@
       "finish": "pristine",
       "element": "physical",
       "grip": "dual",
+      "dualVerticalSplit": 0.1,
       "size": "S",
       "rangeBand": "mid",
       "scaling": [
@@ -17214,6 +17227,7 @@
         "magazine": 24,
         "reloadSeconds": 1.6,
         "bulletKind": "tracer",
+        "projectileArt": "bullet",
         "muzzle": "rapid",
         "muzzleColor": 16747051,
         "recoil": 0.0011

@@ -1,0 +1,1292 @@
+{
+  "verdict": "pass",
+  "capturedAt": "2026-07-25T04:17:56.448Z",
+  "character": "proto-cowboy-hidden-face",
+  "privatePorts": {
+    "client": 54922,
+    "game": 54921,
+    "forbiddenDefaultPortsAvoided": true
+  },
+  "facings": [
+    "right",
+    "left"
+  ],
+  "weaponIds": [
+    "x2-hallowbore-coachgun",
+    "x2-boomstick-saddlegun",
+    "x2-dustline-lever-action",
+    "x2-gravedog-auto-rifle",
+    "x2-widowmaker-arbalest",
+    "x2-whisperbarb-hand-crossbow",
+    "x2-powderkeg-mortar",
+    "x2-thunderhead-repeater-cannon"
+  ],
+  "captures": [
+    {
+      "weaponId": "x2-hallowbore-coachgun",
+      "facing": "right",
+      "screenshot": "docs/owner-notes-audit-v12-evidence/b48-gun-holds/x2-hallowbore-coachgun-right.png",
+      "snapshot": {
+        "character": "proto-cowboy-hidden-face",
+        "authorityWeapon": "x2-hallowbore-coachgun",
+        "attackSeq": 0,
+        "facingValue": 1,
+        "facingBlend": 0.9999685468939901,
+        "handling": [
+          "revolver"
+        ],
+        "gripPoints": {
+          "primary": {
+            "x": 0.35,
+            "y": 0.72
+          },
+          "secondary": {
+            "x": 0.34,
+            "y": 0.29,
+            "role": "hammer"
+          }
+        },
+        "dualVerticalSplit": null,
+        "projectileArt": null,
+        "bulletKind": "pellet",
+        "rangedAimActive": true,
+        "front": {
+          "x": 17.649272203553938,
+          "y": -6.460001126769294,
+          "rotation": 0
+        },
+        "back": {
+          "x": -1.7907235714702452,
+          "y": -43.26762364045712,
+          "rotation": 0
+        },
+        "primaryContactError": 0,
+        "secondaryContactError": 17.743961234649717,
+        "secondaryTarget": {
+          "x": 12.56712048502147,
+          "y": -32.841671676908774
+        },
+        "weaponRows": [
+          {
+            "hand": 0,
+            "x": 17.649272203553938,
+            "y": -6.460001126769294,
+            "rotation": -0.1385849490802542,
+            "originX": 0.35,
+            "originY": 0.72,
+            "displayWidth": 138.90157648061356,
+            "displayHeight": 62.39719255965062
+          }
+        ],
+        "weaponVerticalGap": null,
+        "stockBehindTriggerPx": 48.61555176821474,
+        "hammer": {
+          "active": true,
+          "weaponRotationRad": -0.1385847687761719,
+          "weaponForward": -3.4374362248592116,
+          "weaponLateral": -2.4749540818986326,
+          "handForward": -16.499693879324216,
+          "handLateral": -12.374770409493161
+        },
+        "hammerLayerHand": 1,
+        "cycle": {
+          "active": false,
+          "acceptedSeq": 0,
+          "elapsedMs": 1000002233.21
+        },
+        "projectile": null,
+        "authorityAcceptedAtCapture": true,
+        "authorityAttackSeqAfter": 1
+      }
+    },
+    {
+      "weaponId": "x2-hallowbore-coachgun",
+      "facing": "left",
+      "screenshot": "docs/owner-notes-audit-v12-evidence/b48-gun-holds/x2-hallowbore-coachgun-left.png",
+      "snapshot": {
+        "character": "proto-cowboy-hidden-face",
+        "authorityWeapon": "x2-hallowbore-coachgun",
+        "attackSeq": 1,
+        "facingValue": -1,
+        "facingBlend": -0.9999326907454889,
+        "handling": [
+          "revolver"
+        ],
+        "gripPoints": {
+          "primary": {
+            "x": 0.35,
+            "y": 0.72
+          },
+          "secondary": {
+            "x": 0.34,
+            "y": 0.29,
+            "role": "hammer"
+          }
+        },
+        "dualVerticalSplit": null,
+        "projectileArt": null,
+        "bulletKind": "pellet",
+        "rangedAimActive": true,
+        "front": {
+          "x": 17.649203393731984,
+          "y": -6.460001126756388,
+          "rotation": 0
+        },
+        "back": {
+          "x": -1.7913800965620936,
+          "y": -43.26784970537734,
+          "rotation": 0
+        },
+        "primaryContactError": 0,
+        "secondaryContactError": 17.74449267301613,
+        "secondaryTarget": {
+          "x": 12.566941106997893,
+          "y": -32.84165037685293
+        },
+        "weaponRows": [
+          {
+            "hand": 0,
+            "x": 17.649203393731984,
+            "y": -6.460001126756388,
+            "rotation": -0.13858914018127066,
+            "originX": 0.35,
+            "originY": 0.72,
+            "displayWidth": 138.90157648061356,
+            "displayHeight": 62.39719255965062
+          }
+        ],
+        "weaponVerticalGap": null,
+        "stockBehindTriggerPx": 48.61555176821474,
+        "hammer": {
+          "active": true,
+          "weaponRotationRad": -0.13858895987726844,
+          "weaponForward": -3.437540180314479,
+          "weaponLateral": -2.475028929826425,
+          "handForward": -16.500192865509497,
+          "handLateral": -12.375144649132125
+        },
+        "hammerLayerHand": 1,
+        "cycle": {
+          "active": false,
+          "acceptedSeq": 0,
+          "elapsedMs": 1000004229.81
+        },
+        "projectile": null,
+        "authorityAcceptedAtCapture": true,
+        "authorityAttackSeqAfter": 2
+      }
+    },
+    {
+      "weaponId": "x2-boomstick-saddlegun",
+      "facing": "right",
+      "screenshot": "docs/owner-notes-audit-v12-evidence/b48-gun-holds/x2-boomstick-saddlegun-right.png",
+      "snapshot": {
+        "character": "proto-cowboy-hidden-face",
+        "authorityWeapon": "x2-boomstick-saddlegun",
+        "attackSeq": 2,
+        "facingValue": 1,
+        "facingBlend": 0.9999539716395274,
+        "handling": [
+          "lever"
+        ],
+        "gripPoints": {
+          "primary": {
+            "x": 0.38,
+            "y": 0.58
+          },
+          "secondary": {
+            "x": 0.27,
+            "y": 0.78,
+            "role": "lever"
+          }
+        },
+        "dualVerticalSplit": null,
+        "projectileArt": null,
+        "bulletKind": "pellet",
+        "rangedAimActive": true,
+        "front": {
+          "x": 17.98905296951547,
+          "y": -6.460001188033154,
+          "rotation": 0
+        },
+        "back": {
+          "x": -3.1595441145713385,
+          "y": 15.538890788292663,
+          "rotation": 0
+        },
+        "primaryContactError": 0,
+        "secondaryContactError": 10.896269378812995,
+        "secondaryTarget": {
+          "x": 1.7134139346345343,
+          "y": 5.792970296808166
+        },
+        "weaponRows": [
+          {
+            "hand": 0,
+            "x": 17.98905296951547,
+            "y": -6.460001188033154,
+            "rotation": -1.8030408277525112e-7,
+            "originX": 0.38,
+            "originY": 0.58,
+            "displayWidth": 147.9603749467405,
+            "displayHeight": 61.26484275138474
+          }
+        ],
+        "weaponVerticalGap": null,
+        "stockBehindTriggerPx": 56.22494247976139,
+        "hammer": {
+          "active": false,
+          "weaponRotationRad": 0,
+          "weaponForward": 0,
+          "weaponLateral": 0,
+          "handForward": 0,
+          "handLateral": 0
+        },
+        "cycle": {
+          "active": true,
+          "mechanism": "lever",
+          "acceptedSeq": 3,
+          "elapsedMs": 75
+        },
+        "projectile": null,
+        "authorityAcceptedAtCapture": true,
+        "authorityAttackSeqAfter": 3
+      }
+    },
+    {
+      "weaponId": "x2-boomstick-saddlegun",
+      "facing": "left",
+      "screenshot": "docs/owner-notes-audit-v12-evidence/b48-gun-holds/x2-boomstick-saddlegun-left.png",
+      "snapshot": {
+        "character": "proto-cowboy-hidden-face",
+        "authorityWeapon": "x2-boomstick-saddlegun",
+        "attackSeq": 3,
+        "facingValue": -1,
+        "facingBlend": -0.9999591814049542,
+        "handling": [
+          "lever"
+        ],
+        "gripPoints": {
+          "primary": {
+            "x": 0.38,
+            "y": 0.58
+          },
+          "secondary": {
+            "x": 0.27,
+            "y": 0.78,
+            "role": "lever"
+          }
+        },
+        "dualVerticalSplit": null,
+        "projectileArt": null,
+        "bulletKind": "pellet",
+        "rangedAimActive": true,
+        "front": {
+          "x": 17.98905296951547,
+          "y": -6.460001188033182,
+          "rotation": 0
+        },
+        "back": {
+          "x": -3.159544114571242,
+          "y": 15.538890788292727,
+          "rotation": 0
+        },
+        "primaryContactError": 0,
+        "secondaryContactError": 10.896269378812988,
+        "secondaryTarget": {
+          "x": 1.7134139346345998,
+          "y": 5.792970296808224
+        },
+        "weaponRows": [
+          {
+            "hand": 0,
+            "x": 17.98905296951547,
+            "y": -6.460001188033182,
+            "rotation": -1.8030408810432164e-7,
+            "originX": 0.38,
+            "originY": 0.58,
+            "displayWidth": 147.9603749467405,
+            "displayHeight": 61.26484275138474
+          }
+        ],
+        "weaponVerticalGap": null,
+        "stockBehindTriggerPx": 56.22494247976139,
+        "hammer": {
+          "active": false,
+          "weaponRotationRad": 0,
+          "weaponForward": 0,
+          "weaponLateral": 0,
+          "handForward": 0,
+          "handLateral": 0
+        },
+        "cycle": {
+          "active": true,
+          "mechanism": "lever",
+          "acceptedSeq": 4,
+          "elapsedMs": 75
+        },
+        "projectile": null,
+        "authorityAcceptedAtCapture": true,
+        "authorityAttackSeqAfter": 4
+      }
+    },
+    {
+      "weaponId": "x2-dustline-lever-action",
+      "facing": "right",
+      "screenshot": "docs/owner-notes-audit-v12-evidence/b48-gun-holds/x2-dustline-lever-action-right.png",
+      "snapshot": {
+        "character": "proto-cowboy-hidden-face",
+        "authorityWeapon": "x2-dustline-lever-action",
+        "attackSeq": 4,
+        "facingValue": 1,
+        "facingBlend": 0.9999630687624675,
+        "handling": [
+          "lever"
+        ],
+        "gripPoints": {
+          "primary": {
+            "x": 0.14,
+            "y": 0.5
+          },
+          "secondary": {
+            "x": 0.34,
+            "y": 0.66,
+            "role": "lever",
+            "angleRad": 0.72
+          }
+        },
+        "dualVerticalSplit": null,
+        "projectileArt": null,
+        "bulletKind": "slug",
+        "rangedAimActive": true,
+        "front": {
+          "x": 17.983591768153683,
+          "y": -9.120001187048477,
+          "rotation": 0
+        },
+        "back": {
+          "x": 78.34919201859951,
+          "y": 26.186603738785337,
+          "rotation": 0.7199998196959179
+        },
+        "primaryContactError": 0,
+        "secondaryContactError": 27.06714188991394,
+        "secondaryTarget": {
+          "x": 90.45398149800775,
+          "y": 1.977013867250097
+        },
+        "weaponRows": [
+          {
+            "hand": 0,
+            "x": 17.983591768153683,
+            "y": -9.120001187048477,
+            "rotation": -1.8030408277525112e-7,
+            "originX": 0.14,
+            "originY": 0.5,
+            "displayWidth": 362.3519386450788,
+            "displayHeight": 69.35642575628461
+          }
+        ],
+        "weaponVerticalGap": null,
+        "stockBehindTriggerPx": 50.729271410311036,
+        "hammer": {
+          "active": false,
+          "weaponRotationRad": 0,
+          "weaponForward": 0,
+          "weaponLateral": 0,
+          "handForward": 0,
+          "handLateral": 0
+        },
+        "cycle": {
+          "active": true,
+          "mechanism": "lever",
+          "acceptedSeq": 5,
+          "elapsedMs": 76.65999999999985
+        },
+        "projectile": null,
+        "authorityAcceptedAtCapture": true,
+        "authorityAttackSeqAfter": 5
+      }
+    },
+    {
+      "weaponId": "x2-dustline-lever-action",
+      "facing": "left",
+      "screenshot": "docs/owner-notes-audit-v12-evidence/b48-gun-holds/x2-dustline-lever-action-left.png",
+      "snapshot": {
+        "character": "proto-cowboy-hidden-face",
+        "authorityWeapon": "x2-dustline-lever-action",
+        "attackSeq": 5,
+        "facingValue": -1,
+        "facingBlend": -0.9999659136251982,
+        "handling": [
+          "lever"
+        ],
+        "gripPoints": {
+          "primary": {
+            "x": 0.14,
+            "y": 0.5
+          },
+          "secondary": {
+            "x": 0.34,
+            "y": 0.66,
+            "role": "lever",
+            "angleRad": 0.72
+          }
+        },
+        "dualVerticalSplit": null,
+        "projectileArt": null,
+        "bulletKind": "slug",
+        "rangedAimActive": true,
+        "front": {
+          "x": 17.983591768153683,
+          "y": -9.120001187048238,
+          "rotation": 0
+        },
+        "back": {
+          "x": 78.34919201859823,
+          "y": 26.186603738787753,
+          "rotation": 0.7199998196959534
+        },
+        "primaryContactError": 0,
+        "secondaryContactError": 27.067141889913987,
+        "secondaryTarget": {
+          "x": 90.45398149800737,
+          "y": 1.9770138672529107
+        },
+        "weaponRows": [
+          {
+            "hand": 0,
+            "x": 17.983591768153683,
+            "y": -9.120001187048238,
+            "rotation": -1.8030404724811433e-7,
+            "originX": 0.14,
+            "originY": 0.5,
+            "displayWidth": 362.3519386450788,
+            "displayHeight": 69.35642575628461
+          }
+        ],
+        "weaponVerticalGap": null,
+        "stockBehindTriggerPx": 50.729271410311036,
+        "hammer": {
+          "active": false,
+          "weaponRotationRad": 0,
+          "weaponForward": 0,
+          "weaponLateral": 0,
+          "handForward": 0,
+          "handLateral": 0
+        },
+        "cycle": {
+          "active": true,
+          "mechanism": "lever",
+          "acceptedSeq": 6,
+          "elapsedMs": 76.65999999999985
+        },
+        "projectile": null,
+        "authorityAcceptedAtCapture": true,
+        "authorityAttackSeqAfter": 6
+      }
+    },
+    {
+      "weaponId": "x2-gravedog-auto-rifle",
+      "facing": "right",
+      "screenshot": "docs/owner-notes-audit-v12-evidence/b48-gun-holds/x2-gravedog-auto-rifle-right.png",
+      "snapshot": {
+        "character": "proto-cowboy-hidden-face",
+        "authorityWeapon": "x2-gravedog-auto-rifle",
+        "attackSeq": 7,
+        "facingValue": 1,
+        "facingBlend": 0.9999820257938498,
+        "handling": [],
+        "gripPoints": {
+          "primary": {
+            "x": 0.31,
+            "y": 0.74
+          },
+          "secondary": {
+            "x": 0.72,
+            "y": 0.74,
+            "role": "vertical-foregrip"
+          }
+        },
+        "dualVerticalSplit": null,
+        "projectileArt": "bullet",
+        "bulletKind": "tracer",
+        "rangedAimActive": true,
+        "front": {
+          "x": 19.582140353655628,
+          "y": -9.120001465005815,
+          "rotation": 0
+        },
+        "back": {
+          "x": 101.29250251811959,
+          "y": -9.120016095182084,
+          "rotation": 0
+        },
+        "primaryContactError": 0,
+        "secondaryContactError": 4.440892098500626e-14,
+        "secondaryTarget": {
+          "x": 101.29250251811959,
+          "y": -9.120016095182129
+        },
+        "weaponRows": [
+          {
+            "hand": 0,
+            "x": 19.582140353655628,
+            "y": -9.120001465005815,
+            "rotation": -1.7904921634226412e-7,
+            "originX": 0.31,
+            "originY": 0.74,
+            "displayWidth": 199.29356625479335,
+            "displayHeight": 72.39961586599915
+          }
+        ],
+        "weaponVerticalGap": null,
+        "stockBehindTriggerPx": 61.78100553898594,
+        "hammer": {
+          "active": false,
+          "weaponRotationRad": 0,
+          "weaponForward": 0,
+          "weaponLateral": 0,
+          "handForward": 0,
+          "handLateral": 0
+        },
+        "cycle": {
+          "active": false,
+          "acceptedSeq": 0,
+          "elapsedMs": 1000017720.93
+        },
+        "projectile": {
+          "projectileArt": "bullet",
+          "ballisticCore": true,
+          "x": 2503.536549949938,
+          "y": 2388.7350708544,
+          "spawnAnchorKind": "muzzle",
+          "spawnMuzzleX": 2503.536549949938,
+          "spawnMuzzleY": 2388.7350708544
+        },
+        "authorityAcceptedAtCapture": true,
+        "authorityAttackSeqAfter": 7
+      }
+    },
+    {
+      "weaponId": "x2-gravedog-auto-rifle",
+      "facing": "left",
+      "screenshot": "docs/owner-notes-audit-v12-evidence/b48-gun-holds/x2-gravedog-auto-rifle-left.png",
+      "snapshot": {
+        "character": "proto-cowboy-hidden-face",
+        "authorityWeapon": "x2-gravedog-auto-rifle",
+        "attackSeq": 8,
+        "facingValue": -1,
+        "facingBlend": -0.9999849866810291,
+        "handling": [],
+        "gripPoints": {
+          "primary": {
+            "x": 0.31,
+            "y": 0.74
+          },
+          "secondary": {
+            "x": 0.72,
+            "y": 0.74,
+            "role": "vertical-foregrip"
+          }
+        },
+        "dualVerticalSplit": null,
+        "projectileArt": "bullet",
+        "bulletKind": "tracer",
+        "rangedAimActive": true,
+        "front": {
+          "x": 19.589983648322924,
+          "y": -9.120001467179602,
+          "rotation": 0
+        },
+        "back": {
+          "x": 101.30034581278687,
+          "y": -9.120016105032592,
+          "rotation": 0
+        },
+        "primaryContactError": 0,
+        "secondaryContactError": 1.0658141036401503e-14,
+        "secondaryTarget": {
+          "x": 101.30034581278687,
+          "y": -9.120016105032581
+        },
+        "weaponRows": [
+          {
+            "hand": 0,
+            "x": 19.589983648322924,
+            "y": -9.120001467179602,
+            "rotation": -1.7914316607914316e-7,
+            "originX": 0.31,
+            "originY": 0.74,
+            "displayWidth": 199.29356625479335,
+            "displayHeight": 72.39961586599915
+          }
+        ],
+        "weaponVerticalGap": null,
+        "stockBehindTriggerPx": 61.78100553898594,
+        "hammer": {
+          "active": false,
+          "weaponRotationRad": 0,
+          "weaponForward": 0,
+          "weaponLateral": 0,
+          "handForward": 0,
+          "handLateral": 0
+        },
+        "cycle": {
+          "active": false,
+          "acceptedSeq": 0,
+          "elapsedMs": 1000019904.16
+        },
+        "projectile": {
+          "projectileArt": "bullet",
+          "ballisticCore": true,
+          "x": 2293.1203196445877,
+          "y": 2388.73507085386,
+          "spawnAnchorKind": "muzzle",
+          "spawnMuzzleX": 2293.1203196445877,
+          "spawnMuzzleY": 2388.73507085386
+        },
+        "authorityAcceptedAtCapture": true,
+        "authorityAttackSeqAfter": 8
+      }
+    },
+    {
+      "weaponId": "x2-widowmaker-arbalest",
+      "facing": "right",
+      "screenshot": "docs/owner-notes-audit-v12-evidence/b48-gun-holds/x2-widowmaker-arbalest-right.png",
+      "snapshot": {
+        "character": "proto-cowboy-hidden-face",
+        "authorityWeapon": "x2-widowmaker-arbalest",
+        "attackSeq": 9,
+        "facingValue": 1,
+        "facingBlend": 0.999998767138687,
+        "handling": [],
+        "gripPoints": {
+          "primary": {
+            "x": 0.31,
+            "y": 0.66
+          },
+          "secondary": {
+            "x": 0.44,
+            "y": 0.88,
+            "role": "crank"
+          }
+        },
+        "dualVerticalSplit": null,
+        "projectileArt": "generated",
+        "bulletKind": "slug",
+        "rangedAimActive": true,
+        "front": {
+          "x": 20.51999999999986,
+          "y": -9.120001605828348,
+          "rotation": 0
+        },
+        "back": {
+          "x": 64.68164899915206,
+          "y": 27.66366642117864,
+          "rotation": 0
+        },
+        "primaryContactError": 0,
+        "secondaryContactError": 1.5888218580782548e-14,
+        "secondaryTarget": {
+          "x": 64.68164899915207,
+          "y": 27.663666421178633
+        },
+        "weaponRows": [
+          {
+            "hand": 0,
+            "x": 20.51999999999986,
+            "y": -9.120001605828348,
+            "rotation": -1.7607766977789652e-7,
+            "originX": 0.31,
+            "originY": 0.66,
+            "displayWidth": 339.70494247976137,
+            "displayHeight": 167.19852637675754
+          }
+        ],
+        "weaponVerticalGap": null,
+        "stockBehindTriggerPx": 105.30853216872602,
+        "hammer": {
+          "active": false,
+          "weaponRotationRad": 0,
+          "weaponForward": 0,
+          "weaponLateral": 0,
+          "handForward": 0,
+          "handLateral": 0
+        },
+        "cycle": {
+          "active": false,
+          "acceptedSeq": 0,
+          "elapsedMs": 1000023352.34
+        },
+        "projectile": {
+          "projectileArt": "generated",
+          "ballisticCore": false,
+          "x": 2761.3691240081644,
+          "y": 2385.693774303292,
+          "spawnAnchorKind": "muzzle",
+          "spawnMuzzleX": 2563.393124008164,
+          "spawnMuzzleY": 2385.6938099991835
+        },
+        "authorityAcceptedAtCapture": true,
+        "authorityAttackSeqAfter": 9
+      }
+    },
+    {
+      "weaponId": "x2-widowmaker-arbalest",
+      "facing": "left",
+      "screenshot": "docs/owner-notes-audit-v12-evidence/b48-gun-holds/x2-widowmaker-arbalest-left.png",
+      "snapshot": {
+        "character": "proto-cowboy-hidden-face",
+        "authorityWeapon": "x2-widowmaker-arbalest",
+        "attackSeq": 10,
+        "facingValue": -1,
+        "facingBlend": -0.9999990684098008,
+        "handling": [],
+        "gripPoints": {
+          "primary": {
+            "x": 0.31,
+            "y": 0.66
+          },
+          "secondary": {
+            "x": 0.44,
+            "y": 0.88,
+            "role": "crank"
+          }
+        },
+        "dualVerticalSplit": null,
+        "projectileArt": "generated",
+        "bulletKind": "slug",
+        "rangedAimActive": true,
+        "front": {
+          "x": 20.51999999999986,
+          "y": -9.120001610919802,
+          "rotation": 0
+        },
+        "back": {
+          "x": 64.68164901968743,
+          "y": 27.66366639143289,
+          "rotation": 0
+        },
+        "primaryContactError": 0,
+        "secondaryContactError": 7.105427357601002e-15,
+        "secondaryTarget": {
+          "x": 64.68164901968743,
+          "y": 27.663666391432898
+        },
+        "weaponRows": [
+          {
+            "hand": 0,
+            "x": 20.51999999999986,
+            "y": -9.120001610919802,
+            "rotation": -1.7663594320538323e-7,
+            "originX": 0.31,
+            "originY": 0.66,
+            "displayWidth": 339.70494247976137,
+            "displayHeight": 167.19852637675754
+          }
+        ],
+        "weaponVerticalGap": null,
+        "stockBehindTriggerPx": 105.30853216872602,
+        "hammer": {
+          "active": false,
+          "weaponRotationRad": 0,
+          "weaponForward": 0,
+          "weaponLateral": 0,
+          "handForward": 0,
+          "handLateral": 0
+        },
+        "cycle": {
+          "active": false,
+          "acceptedSeq": 0,
+          "elapsedMs": 1000025835.59
+        },
+        "projectile": {
+          "projectileArt": "generated",
+          "ballisticCore": false,
+          "x": 2027.6623842453835,
+          "y": 2385.693774659235,
+          "spawnAnchorKind": "muzzle",
+          "spawnMuzzleX": 2223.646384245383,
+          "spawnMuzzleY": 2385.6938099959607
+        },
+        "authorityAcceptedAtCapture": true,
+        "authorityAttackSeqAfter": 10
+      }
+    },
+    {
+      "weaponId": "x2-whisperbarb-hand-crossbow",
+      "facing": "right",
+      "screenshot": "docs/owner-notes-audit-v12-evidence/b48-gun-holds/x2-whisperbarb-hand-crossbow-right.png",
+      "snapshot": {
+        "character": "proto-cowboy-hidden-face",
+        "authorityWeapon": "x2-whisperbarb-hand-crossbow",
+        "attackSeq": 11,
+        "facingValue": 1,
+        "facingBlend": 0.9999992371258951,
+        "handling": [],
+        "gripPoints": null,
+        "dualVerticalSplit": 0.1,
+        "projectileArt": "arrow",
+        "bulletKind": "nail",
+        "rangedAimActive": true,
+        "front": {
+          "x": 24.471999999999852,
+          "y": -14.060001665158119,
+          "rotation": 0
+        },
+        "back": {
+          "x": 12.007999999999978,
+          "y": 2.279999754320934,
+          "rotation": 0
+        },
+        "primaryContactError": 0,
+        "secondaryContactError": null,
+        "secondaryTarget": null,
+        "weaponRows": [
+          {
+            "hand": 0,
+            "x": 24.471999999999852,
+            "y": -14.060001665158119,
+            "rotation": -1.7958996068045963e-7,
+            "originX": 0.16,
+            "originY": 0.5,
+            "displayWidth": 149.470174691095,
+            "displayHeight": 53.13197615972518
+          },
+          {
+            "hand": 1,
+            "x": 12.007999999999978,
+            "y": 2.279999754320934,
+            "rotation": -1.7958996068045963e-7,
+            "originX": 0.16,
+            "originY": 0.5,
+            "displayWidth": 149.470174691095,
+            "displayHeight": 53.13197615972518
+          }
+        ],
+        "weaponVerticalGap": 16.34000141947905,
+        "stockBehindTriggerPx": null,
+        "hammer": {
+          "active": false,
+          "weaponRotationRad": 0,
+          "weaponForward": 0,
+          "weaponLateral": 0,
+          "handForward": 0,
+          "handLateral": 0
+        },
+        "cycle": {
+          "active": false,
+          "acceptedSeq": 0,
+          "elapsedMs": 1000029428.78
+        },
+        "projectile": {
+          "projectileArt": "arrow",
+          "ballisticCore": false,
+          "x": 2675.6627224474546,
+          "y": 2409.1405835901587,
+          "spawnAnchorKind": "muzzle",
+          "spawnMuzzleX": 2497.825722447455,
+          "spawnMuzzleY": 2409.1406156549065
+        },
+        "authorityAcceptedAtCapture": true,
+        "authorityAttackSeqAfter": 11
+      }
+    },
+    {
+      "weaponId": "x2-whisperbarb-hand-crossbow",
+      "facing": "left",
+      "screenshot": "docs/owner-notes-audit-v12-evidence/b48-gun-holds/x2-whisperbarb-hand-crossbow-left.png",
+      "snapshot": {
+        "character": "proto-cowboy-hidden-face",
+        "authorityWeapon": "x2-whisperbarb-hand-crossbow",
+        "attackSeq": 12,
+        "facingValue": -1,
+        "facingBlend": -0.9999983025319839,
+        "handling": [],
+        "gripPoints": null,
+        "dualVerticalSplit": 0.1,
+        "projectileArt": "arrow",
+        "bulletKind": "nail",
+        "rangedAimActive": true,
+        "front": {
+          "x": 24.471999999999852,
+          "y": -14.06000166466453,
+          "rotation": 0
+        },
+        "back": {
+          "x": 12.007999999999978,
+          "y": 2.2799997543937582,
+          "rotation": 0
+        },
+        "primaryContactError": 0,
+        "secondaryContactError": null,
+        "secondaryTarget": null,
+        "weaponRows": [
+          {
+            "hand": 0,
+            "x": 24.471999999999852,
+            "y": -14.06000166466453,
+            "rotation": -1.7953672681869648e-7,
+            "originX": 0.16,
+            "originY": 0.5,
+            "displayWidth": 149.470174691095,
+            "displayHeight": 53.13197615972518
+          },
+          {
+            "hand": 1,
+            "x": 12.007999999999978,
+            "y": 2.2799997543937582,
+            "rotation": -1.7953672681869648e-7,
+            "originX": 0.16,
+            "originY": 0.5,
+            "displayWidth": 149.470174691095,
+            "displayHeight": 53.13197615972518
+          }
+        ],
+        "weaponVerticalGap": 16.34000141905829,
+        "stockBehindTriggerPx": null,
+        "hammer": {
+          "active": false,
+          "weaponRotationRad": 0,
+          "weaponForward": 0,
+          "weaponLateral": 0,
+          "handForward": 0,
+          "handLateral": 0
+        },
+        "cycle": {
+          "active": false,
+          "acceptedSeq": 0,
+          "elapsedMs": 1000031872.02
+        },
+        "projectile": {
+          "projectileArt": "arrow",
+          "ballisticCore": false,
+          "x": 2136.8376677552696,
+          "y": 2419.963213429584,
+          "spawnAnchorKind": "muzzle",
+          "spawnMuzzleX": 2307.3266677552697,
+          "spawnMuzzleY": 2419.9632441694566
+        },
+        "authorityAcceptedAtCapture": true,
+        "authorityAttackSeqAfter": 12
+      }
+    },
+    {
+      "weaponId": "x2-powderkeg-mortar",
+      "facing": "right",
+      "screenshot": "docs/owner-notes-audit-v12-evidence/b48-gun-holds/x2-powderkeg-mortar-right.png",
+      "snapshot": {
+        "character": "proto-cowboy-hidden-face",
+        "authorityWeapon": "x2-powderkeg-mortar",
+        "attackSeq": 13,
+        "facingValue": 1,
+        "facingBlend": 0.9999989062876464,
+        "handling": [],
+        "gripPoints": {
+          "primary": {
+            "x": 0.08,
+            "y": 0.64
+          },
+          "secondary": {
+            "x": 0.7,
+            "y": 0.68,
+            "role": "two-hand-rifle"
+          }
+        },
+        "dualVerticalSplit": null,
+        "projectileArt": null,
+        "bulletKind": "slug",
+        "rangedAimActive": true,
+        "front": {
+          "x": 19.37999999999987,
+          "y": -9.12000151047753,
+          "rotation": 0
+        },
+        "back": {
+          "x": 141.06986006278527,
+          "y": -5.25587882063968,
+          "rotation": 0
+        },
+        "primaryContactError": 0,
+        "secondaryContactError": 7.993605777301127e-14,
+        "secondaryTarget": {
+          "x": 141.06986006278527,
+          "y": -5.2558788206396
+        },
+        "weaponRows": [
+          {
+            "hand": 0,
+            "x": 19.37999999999987,
+            "y": -9.12000151047753,
+            "rotation": -1.7282351549852137e-7,
+            "originX": 0.08,
+            "originY": 0.64,
+            "displayWidth": 196.27396676608436,
+            "displayHeight": 96.60359301768214
+          }
+        ],
+        "weaponVerticalGap": null,
+        "stockBehindTriggerPx": 15.701917341286748,
+        "hammer": {
+          "active": false,
+          "weaponRotationRad": 0,
+          "weaponForward": 0,
+          "weaponLateral": 0,
+          "handForward": 0,
+          "handLateral": 0
+        },
+        "cycle": {
+          "active": false,
+          "acceptedSeq": 0,
+          "elapsedMs": 1000035390.18
+        },
+        "projectile": {
+          "ballisticCore": false,
+          "x": 2620.519969036753,
+          "y": 2393.017237259514,
+          "spawnAnchorKind": "muzzle",
+          "spawnMuzzleX": 2529.995969036753,
+          "spawnMuzzleY": 2393.017253581366
+        },
+        "authorityAcceptedAtCapture": true,
+        "authorityAttackSeqAfter": 13
+      }
+    },
+    {
+      "weaponId": "x2-powderkeg-mortar",
+      "facing": "left",
+      "screenshot": "docs/owner-notes-audit-v12-evidence/b48-gun-holds/x2-powderkeg-mortar-left.png",
+      "snapshot": {
+        "character": "proto-cowboy-hidden-face",
+        "authorityWeapon": "x2-powderkeg-mortar",
+        "attackSeq": 14,
+        "facingValue": -1,
+        "facingBlend": -0.9999994459289002,
+        "handling": [],
+        "gripPoints": {
+          "primary": {
+            "x": 0.08,
+            "y": 0.64
+          },
+          "secondary": {
+            "x": 0.7,
+            "y": 0.68,
+            "role": "two-hand-rifle"
+          }
+        },
+        "dualVerticalSplit": null,
+        "projectileArt": null,
+        "bulletKind": "slug",
+        "rangedAimActive": true,
+        "front": {
+          "x": 19.379999999999875,
+          "y": -9.120001502408693,
+          "rotation": 0
+        },
+        "back": {
+          "x": 141.0698600592179,
+          "y": -5.255878700225811,
+          "rotation": 0
+        },
+        "primaryContactError": 0,
+        "secondaryContactError": 1.2256862191861728e-13,
+        "secondaryTarget": {
+          "x": 141.0698600592179,
+          "y": -5.255878700225688
+        },
+        "weaponRows": [
+          {
+            "hand": 0,
+            "x": 19.379999999999875,
+            "y": -9.120001502408693,
+            "rotation": -1.7190030732194828e-7,
+            "originX": 0.08,
+            "originY": 0.64,
+            "displayWidth": 196.27396676608436,
+            "displayHeight": 96.60359301768214
+          }
+        ],
+        "weaponVerticalGap": null,
+        "stockBehindTriggerPx": 15.701917341286748,
+        "hammer": {
+          "active": false,
+          "weaponRotationRad": 0,
+          "weaponForward": 0,
+          "weaponLateral": 0,
+          "handForward": 0,
+          "handLateral": 0
+        },
+        "cycle": {
+          "active": false,
+          "acceptedSeq": 0,
+          "elapsedMs": 1000037891.76
+        },
+        "projectile": {
+          "ballisticCore": false,
+          "x": 2156.3932372782233,
+          "y": 2393.0172379369515,
+          "spawnAnchorKind": "muzzle",
+          "spawnMuzzleX": 2243.187637278223,
+          "spawnMuzzleY": 2393.017253586341
+        },
+        "authorityAcceptedAtCapture": true,
+        "authorityAttackSeqAfter": 14
+      }
+    },
+    {
+      "weaponId": "x2-thunderhead-repeater-cannon",
+      "facing": "right",
+      "screenshot": "docs/owner-notes-audit-v12-evidence/b48-gun-holds/x2-thunderhead-repeater-cannon-right.png",
+      "snapshot": {
+        "character": "proto-cowboy-hidden-face",
+        "authorityWeapon": "x2-thunderhead-repeater-cannon",
+        "attackSeq": 14,
+        "facingValue": 1,
+        "facingBlend": 0.9999757373595191,
+        "handling": [
+          "lever"
+        ],
+        "gripPoints": {
+          "primary": {
+            "x": 0.27,
+            "y": 0.62
+          },
+          "secondary": {
+            "x": 0.66,
+            "y": 0.5,
+            "role": "horizontal-foregrip"
+          }
+        },
+        "dualVerticalSplit": null,
+        "projectileArt": "generated",
+        "bulletKind": "tracer",
+        "rangedAimActive": true,
+        "front": {
+          "x": 10.757434043856632,
+          "y": 5.124155293969247,
+          "rotation": 0
+        },
+        "back": {
+          "x": 99.13692996555187,
+          "y": -16.93322963339244,
+          "rotation": 0
+        },
+        "primaryContactError": 15.92544978336218,
+        "secondaryContactError": 1.4210854715202004e-14,
+        "secondaryTarget": {
+          "x": 99.13692996555187,
+          "y": -16.933229633392425
+        },
+        "weaponRows": [
+          {
+            "hand": 0,
+            "x": 17.879509133148584,
+            "y": -9.120001305313055,
+            "rotation": -1.8030408277525112e-7,
+            "originX": 0.27,
+            "originY": 0.62,
+            "displayWidth": 208.35236472092032,
+            "displayHeight": 65.1101139752876
+          }
+        ],
+        "weaponVerticalGap": null,
+        "stockBehindTriggerPx": 56.25513847464849,
+        "hammer": {
+          "active": false,
+          "weaponRotationRad": 0,
+          "weaponForward": 0,
+          "weaponLateral": 0,
+          "handForward": 0,
+          "handLateral": 0
+        },
+        "cycle": {
+          "active": true,
+          "mechanism": "lever",
+          "acceptedSeq": 15,
+          "elapsedMs": 79.98999999999796
+        },
+        "projectile": null,
+        "authorityAcceptedAtCapture": true,
+        "authorityAttackSeqAfter": 15
+      }
+    },
+    {
+      "weaponId": "x2-thunderhead-repeater-cannon",
+      "facing": "left",
+      "screenshot": "docs/owner-notes-audit-v12-evidence/b48-gun-holds/x2-thunderhead-repeater-cannon-left.png",
+      "snapshot": {
+        "character": "proto-cowboy-hidden-face",
+        "authorityWeapon": "x2-thunderhead-repeater-cannon",
+        "attackSeq": 15,
+        "facingValue": -1,
+        "facingBlend": -0.9999775929030116,
+        "handling": [
+          "lever"
+        ],
+        "gripPoints": {
+          "primary": {
+            "x": 0.27,
+            "y": 0.62
+          },
+          "secondary": {
+            "x": 0.66,
+            "y": 0.5,
+            "role": "horizontal-foregrip"
+          }
+        },
+        "dualVerticalSplit": null,
+        "projectileArt": "generated",
+        "bulletKind": "tracer",
+        "rangedAimActive": true,
+        "front": {
+          "x": 10.709149992009433,
+          "y": 5.248466347035974,
+          "rotation": 0
+        },
+        "back": {
+          "x": 99.15080141347077,
+          "y": -16.933229635895753,
+          "rotation": 0
+        },
+        "primaryContactError": 16.06443375613468,
+        "secondaryContactError": 4.832213032818602e-14,
+        "secondaryTarget": {
+          "x": 99.15080141347079,
+          "y": -16.933229635895707
+        },
+        "weaponRows": [
+          {
+            "hand": 0,
+            "x": 17.893380581067696,
+            "y": -9.120001307814317,
+            "rotation": -1.8030410764424687e-7,
+            "originX": 0.27,
+            "originY": 0.62,
+            "displayWidth": 208.35236472092032,
+            "displayHeight": 65.1101139752876
+          }
+        ],
+        "weaponVerticalGap": null,
+        "stockBehindTriggerPx": 56.25513847464849,
+        "hammer": {
+          "active": false,
+          "weaponRotationRad": 0,
+          "weaponForward": 0,
+          "weaponLateral": 0,
+          "handForward": 0,
+          "handLateral": 0
+        },
+        "cycle": {
+          "active": true,
+          "mechanism": "lever",
+          "acceptedSeq": 16,
+          "elapsedMs": 81.66000000000349
+        },
+        "projectile": null,
+        "authorityAcceptedAtCapture": true,
+        "authorityAttackSeqAfter": 16
+      }
+    }
+  ]
+}

@@ -336,11 +336,24 @@ export function makeGunIdentityProjectile(
     .setRotation(angle)
     .setBlendMode(Phaser.BlendModes.ADD);
   const glow = scene.add
-    .ellipse(0, 0, 28, 18, fx.color, 0.24)
+    .ellipse(0, 0, art === "bullet" ? 18 : 28, art === "bullet" ? 9 : 18, fx.color, 0.24)
     .setRotation(angle)
     .setBlendMode(Phaser.BlendModes.ADD);
   const children: Phaser.GameObjects.GameObject[] = [trail, glow];
-  if (art === "weapon-crop") {
+  if (art === "bullet") {
+    const body = scene.add
+      .ellipse(0, 0, 16, 5.5, 0x35383d, 1)
+      .setStrokeStyle(1, 0xc9b27a, 0.95)
+      .setRotation(angle)
+      .setData("ballisticCore", true);
+    const jacket = scene.add
+      .rectangle(-Math.cos(angle) * 4.5, -Math.sin(angle) * 4.5, 3, 5.5, 0xb77a45, 1)
+      .setRotation(angle);
+    const tip = scene.add
+      .circle(Math.cos(angle) * 6.5, Math.sin(angle) * 6.5, 1.8, 0xe8e4d8, 1)
+      .setBlendMode(Phaser.BlendModes.ADD);
+    children.push(body, jacket, tip);
+  } else if (art === "weapon-crop") {
     const recipe = GUN_SPRITE_PROJECTILES[weaponId];
     const manifest = recipe ? SPRITES[recipe.spriteId as keyof typeof SPRITES] : undefined;
     const part = manifest?.parts.find((candidate) => candidate.role === recipe?.partRole);
