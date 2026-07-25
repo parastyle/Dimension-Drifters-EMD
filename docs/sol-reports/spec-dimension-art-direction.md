@@ -1,6 +1,8 @@
 # SPEC — Dimension Art Direction (2.5D parity with the tunnel)
 
-Status: **proposed**, 2026-07-25. Art-direction spec only — no code changed by this document.
+Status: **OWNER-RULED, 2026-07-25** — see §-1 below. All seven open decisions are answered; §9 is
+closed. Where §-1 and any later section disagree, **§-1 wins**.
+Art-direction spec only — no code changed by this document.
 Scope: the **DIMENSIONS** (big procedurally generated maps). Not tunnels.
 
 Terminology (owner-locked 2026-07-25):
@@ -30,6 +32,96 @@ Canon this spec is subordinate to:
   escalation, and a closing gas circle.
 - `packages/client/src/scenes/arena/floor-renderer.ts` — the renderer this spec must target.
 - `packages/shared/src/mapgen.ts` — the structure the art must serve.
+
+---
+
+## -1. OWNER RULINGS (2026-07-25) — SUPERSEDING
+
+These answer §9 and correct one factual error in §1.7. **This section overrides every later section.**
+
+### R1 — All five dimensions are re-authored. (§9.1)
+Owner: *"All the dimensions are being reauthored doesnt matter."* `wild-west` included. No fallback
+theme is left in the old style.
+
+### R2 — Value target is a COMPRESSION, not an inversion. (§9.2 — and §1.7 was WRONG)
+
+**§1.7's claim that "the shipped tiles are near-black" is FALSE and must not be acted on.** The
+greyscale 15–25 figure it cited is `palette.groundBed` — a flat rectangle drawn at depth −20 that the
+painted tiles completely cover at −19.5. All five painted kits are complete on disk, so the bed
+**never shows through**. The near-black actually visible in game is `pitVoid` (8–13): the pits.
+
+Measured means of the shipped tiles (alpha-weighted greyscale, `packages/client/public/tiles/<dim>/`):
+
+| Dimension | tile-0 | tile-1 | tile-2 | tile-3 | rim | vs target 70–125 |
+| --- | --- | --- | --- | --- | --- | --- |
+| `wild-west` | 189 | 184 | 168 | 177 | 71 | **far too BRIGHT** |
+| `frostfell` | 189 | 187 | 182 | 172 | 102 | **far too BRIGHT** |
+| `verdant-ruins` | 62 | 68 | 68 | 66 | 39 | ~8 too dark |
+| `neon-cyber` | 64 | 67 | 58 | 53 | 42 | ~12 too dark |
+| `ashlands` | 51 | 40 | 51 | 47 | 24 | ~25 too dark |
+
+The real defect is **spread**: the five dimensions span 40 → 189, a 149-point range, so entity
+readability changes completely depending on which dimension the player is in.
+
+**RULING: every dimension's floor targets mean 70–125 with ≤ ±18 internal variation.**
+`ashlands` / `verdant-ruins` / `neon-cyber` come **up**; `wild-west` / `frostfell` come **down**.
+This is a generation parameter, not extra work.
+
+The half of §1.7 that stands unchanged and matters most: **within-tile spread**. Shipped tiles run
+`wild-west` tile-1 119–232, `frostfell` tile-0 128–240, `ashlands` tile-3 9–145. That is photographic
+noise, and it is why the floors read as mush. Cel-shading fixes it by construction. The rest of the
+§1.7 table (pit void ≤ 25, rim face 30–60, decal within ±20 of floor, gas ring ≥ 230) stands.
+
+### R3 — Boundary shelf: approved. (§9.3)
+T2 ships. Owner note: *"we can always parallax the background past the edges later"* — so the shelf
+must not hard-code the void as a flat fill that a future parallax layer would have to fight. Leave the
+area beyond the shelf a single addressable layer.
+
+### R4 — Whole-kit-per-dimension. (§9.4)
+One complete theme at a time. **`ashlands` is theme one** — largest value correction, so it is the
+most honest test of R2. Owner gate after ashlands before the remaining four are funded.
+
+### R5 — Gas veil: one fixed neutral plum in every dimension. (§9.5)
+`#2A2233` as specced. Owner: *"Perfect, was thinking purpley plum as well."* Not per-theme. This
+forbids `frostfell` from being white — see R2, which independently requires the same thing.
+
+### R6 — Decal alpha: orchestrator sets it from a capture. (§9.6)
+Not an owner decision. `flat` role currently renders at **0.065** — 38 authored decal images are
+effectively invisible. Value to be set from a screenshot at a 40-enemy fight, judged on whether ground
+wear competes with enemies for attention. Ships as part of T4.
+
+### R7 — POI LANDMARKS ARE DELETED FROM DIMENSIONS. (supersedes §9.7, §3.4, and parts of §6)
+
+Owner ruled past the question that was asked. Verbatim:
+
+> "No landmarks, only destructible environments that don't get in our way, like crates, tumbleweeds,
+> tables...(all of them btw should be able to break, dodge rolling through a crate should break it)
+> MAYBE in the tunnels we'll have obstacles as cover since its horizontal, but not the dimensions."
+
+Consequences, all binding:
+
+1. **§3.4 is void.** The 31 POI assets (6–7 per theme) are removed, not re-authored. `poiIds` /
+   `poiDir` leave `DIMENSION_PROP_PACKS`.
+2. **The isometric projection mismatch disappears rather than being corrected.** POIs were the *only*
+   asset class in a dimension drawn in two-point isometric. Deleting them removes one of the three
+   incompatible projections named in §0 outright.
+3. **Dimensions have no blocking geometry except pits.** `poiCollisionCircles` leaves `mapgen.ts`
+   (three call sites: spawn validity, nav, collision). This is intended — "don't get in our way."
+4. **§6.1's implied-height ceiling and §6.2's occlusion policy lose their subject.** Nothing in a
+   dimension is tall enough to occlude a player any more. Both sections apply to tunnels only.
+5. **Destructible props replace them as art** — crates, tumbleweeds, tables, pots, barrels. Per theme.
+   Small, low, ignorable. They obey every rule in §1 and §2 like any other prop.
+6. **Destructibles are NOT art and are NOT in this spec's scope.** No destructible system exists in the
+   codebase today (zero matches for `destructible` in `packages/`). Prop entities with HP, a break
+   reaction, and a dodge-roll interaction are new gameplay code, sequenced as a separate owner-approved
+   batch. Until it lands, the new prop art ships as **inert scenery**. The art does not change either way.
+
+**Load-bearing consequence — read this before authoring tiles.** Landmarks were what made one region of
+a dimension look different from another. With them gone, the only remaining spatial-orientation cue is
+**§3.1's four floor tiles carrying fixed semantic roles** (quiet bed / worn route / disturbed cluster /
+pit approach) plus the pits themselves. §3.1 is now carrying weight it was not designed to carry alone.
+Author the four variants so a player can tell, at a glance and without landmarks, which kind of ground
+they are standing on. Role separation is no longer a nicety — it is the navigation system.
 
 ---
 
@@ -347,7 +439,12 @@ Composition rules:
   a rust band at `T*0.11` (8.8px) and an amber lip at `T*0.045` (3.6px) plus chevron/notch glyphs
   (`buildArenaFloor`). Painting your own glow there produces two competing danger lines.
 
-### 3.4 POI landmarks — 6–7 per theme
+### 3.4 POI landmarks — 6–7 per theme — **VOID (see R7). DO NOT AUTHOR.**
+
+> **This subsection is dead.** Owner deleted landmarks from dimensions entirely on 2026-07-25. The 31
+> existing POI assets are removed, not re-authored. Replaced by low destructible props (crates,
+> tumbleweeds, tables) which follow the ordinary prop rules in §1–§2, carry no height allowance, and
+> block nothing. Retained below only so the deletion is auditable.
 
 Scale math (verified in `buildPois`): `scale = (poiRadius(kind) * 2) / meta.baseSpanPx`, so
 
@@ -842,7 +939,15 @@ A dimension kit ships when **all** of the following hold. Judge against the tunn
 
 ---
 
-## 9. OWNER DECISIONS NEEDED
+## 9. OWNER DECISIONS — **ALL CLOSED 2026-07-25. See §-1 for the rulings.**
+
+> 9.1 → R1 (all five re-authored) · 9.2 → R2 (compression to 70–125, NOT inversion; §1.7's
+> "near-black" premise was factually wrong) · 9.3 → R3 (shelf approved) · 9.4 → R4 (whole-kit,
+> ashlands first) · 9.5 → R5 (fixed plum) · 9.6 → R6 (orchestrator sets from capture) ·
+> 9.7 → R7 (**landmarks deleted entirely**, replaced by destructible props).
+> The original text is retained below for provenance. Do not act on it directly.
+
+### 9 (original text, superseded)
 
 **9.1 — Does `wild-west` get re-authored?** It is a fifth fully-wired dimension pack in code
 (`DIMENSIONS`, `DIMENSION_PROP_PACKS`, complete tile/POI/decal kit shipped, and the compatibility
