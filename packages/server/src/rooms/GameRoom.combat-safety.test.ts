@@ -789,7 +789,7 @@ describe("improve2 integrity regressions", () => {
     expect(receipt?.delivery).toBe(CombatDelivery.Gun);
     expect(h.state().combatReceipts.length).toBe(COMBAT_RECEIPT_CAP);
     expect([...h.state().combatReceipts]).toEqual(rows);
-    expect(h.state().schemaVersion).toBe(47);
+    expect(h.state().schemaVersion).toBe(48);
   });
 });
 

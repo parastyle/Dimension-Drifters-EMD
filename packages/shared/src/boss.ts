@@ -172,6 +172,7 @@ export enum VastagharActionKind {
   HeelReap = 2,
   ShedMountain = 3,
   ThreefoldMarch = 4,
+  SunderCharge = 5,
   TwinTread = 6,
   Worldwheel = 7,
   FinalTread = 8,

@@ -943,6 +943,22 @@ export const VASTAGHAR_ENCOUNTER = {
       sweepRadians: 0,
       maxTargets: 1,
     },
+    [VastagharActionKind.SunderCharge]: {
+      kind: VastagharActionKind.SunderCharge,
+      windupTicks: 23,
+      activeTicks: 10,
+      recoveryTicks: 25,
+      stepOffsets: [],
+      stepFeet: [VastagharFoot.Body],
+      stepRadii: [],
+      stepDamage: [24],
+      stepKnockback: [720],
+      innerRange: 0,
+      outerRange: 620,
+      halfWidth: 135,
+      sweepRadians: 0,
+      maxTargets: 1,
+    },
     [VastagharActionKind.TwinTread]: {
       kind: VastagharActionKind.TwinTread,
       windupTicks: 20,
@@ -1005,6 +1021,7 @@ export const VASTAGHAR_ENCOUNTER = {
   ],
   phaseTwoDeck: [
     VastagharActionKind.ThreefoldMarch,
+    VastagharActionKind.SunderCharge,
     VastagharActionKind.ShedMountain,
   ],
   phaseThreeDeck: [
@@ -1018,6 +1035,7 @@ export const VASTAGHAR_ENCOUNTER = {
     [VastagharActionKind.HeelReap]: 11,
     [VastagharActionKind.ShedMountain]: 14,
     [VastagharActionKind.ThreefoldMarch]: 15,
+    [VastagharActionKind.SunderCharge]: 13,
     [VastagharActionKind.TwinTread]: 12,
     [VastagharActionKind.Worldwheel]: 18,
     [VastagharActionKind.FinalTread]: 20,

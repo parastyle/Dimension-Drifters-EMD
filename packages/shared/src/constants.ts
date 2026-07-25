@@ -10,7 +10,7 @@
  *  decodes new patches with corrupted offsets (HP reads as aim, etc.). The server stamps it on
  *  `ArenaState.schemaVersion`; the client compares on join and tells the player to hard-reload on a
  *  mismatch instead of rendering silently-corrupt state. */
-export const SCHEMA_VERSION = 47 as const; // B60 dimension landmark wire removal
+export const SCHEMA_VERSION = 48 as const; // B60 Vastaghar Sunder Charge wire restoration
 
 /** §ULT stat-free damage/activity meter and action tuning (20Hz tick epochs). */
 /** B55 reversible owner ruling: one switch gates grants, charge, input, activation, reveal, and HUD. */

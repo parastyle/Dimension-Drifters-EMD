@@ -2489,7 +2489,7 @@ describe("improve2 integrity regressions", () => {
     expect(receipt?.delivery).toBe(CombatDelivery.Gun);
     expect(h.state().combatReceipts.length).toBe(COMBAT_RECEIPT_CAP);
     expect([...h.state().combatReceipts]).toEqual(rows);
-    expect(h.state().schemaVersion).toBe(47);
+    expect(h.state().schemaVersion).toBe(48);
   });
 });
 
@@ -3632,7 +3632,7 @@ describe("GameRoom — §51 tough-enemy melee combos (Wave 1 authority)", () => 
   });
 
   it("ships schema 19, named depth decks, and guardrail-safe authored literals", () => {
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(47);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(48);
     expect(new EnemyState().comboSeq).toBe(0);
     expect(new EnemyState().comboFlags).toBe(0);
     expect(herePlayerJuggledDefault()).toBe(0);
@@ -3993,7 +3993,7 @@ describe("GameRoom — jump-feel J1 authoritative stance/physics", () => {
 
   it("ships schema 21 with the three appended uint8 stance/VFX defaults", () => {
     const player = new enemyComboShared.PlayerState();
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(47);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(48);
     expect([player.moveStance, player.poundSeq, player.stanceSeq]).toEqual([0, 0, 0]);
   });
 });
@@ -4171,7 +4171,7 @@ describe("GameRoom — flavor-only character identity", () => {
 
   it("retains schema 21 while defaulting character identity to the shared default", () => {
     const player = new enemyComboShared.PlayerState();
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(47);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(48);
     expect([player.character, player.runCharacter]).toEqual([
       enemyComboShared.DEFAULT_CHARACTER,
       enemyComboShared.DEFAULT_CHARACTER,
@@ -4934,8 +4934,8 @@ describeUltimateImplementation("ULT U1 lifecycle, co-op, and schema 25", () => {
     const h = makeRoom();
     h.join("ult-schema");
     const player = h.state().players.get("ult-schema");
-    expect(h.state().schemaVersion).toBe(47);
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(47);
+    expect(h.state().schemaVersion).toBe(48);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(48);
     expect([
       player.ultimate.archetype,
       player.ultimate.charge,
@@ -4995,9 +4995,9 @@ describe("pet v1 join snapshot, lock, and schema 25", () => {
     h.room.clients.push(client);
     h.room.onJoin(client, { metaAccount: account, selectedPetId: "brass-crab" });
     const player = h.state().players.get("pet-lock");
-    expect([h.state().schemaVersion, enemyComboShared.SCHEMA_VERSION]).toEqual([47, 47]);
+    expect([h.state().schemaVersion, enemyComboShared.SCHEMA_VERSION]).toEqual([48, 48]);
 
-    expect([h.state().schemaVersion, enemyComboShared.SCHEMA_VERSION]).toEqual([47, 47]);    expect({ petId: player.petId, petLevelBand: player.petLevelBand }).toEqual({
+    expect([h.state().schemaVersion, enemyComboShared.SCHEMA_VERSION]).toEqual([48, 48]);    expect({ petId: player.petId, petLevelBand: player.petLevelBand }).toEqual({
       petId: "hearth-newt",
       petLevelBand: 3,
     });
@@ -5374,8 +5374,8 @@ describe("GameRoom — independent weapon slots and compatibility row", () => {
 
   it("keeps schema 38 and the unrelated compatibility-container tenants intact", () => {
     const fresh = new enemyComboShared.PlayerState();
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(47);
-    expect(new enemyComboShared.ArenaState().schemaVersion).toBe(47);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(48);
+    expect(new enemyComboShared.ArenaState().schemaVersion).toBe(48);
     expect(fresh.dualWield).toMatchObject({
       retiredByte0: 255,
       retiredUint32: 0,
@@ -5967,8 +5967,8 @@ describe("GameRoom — schema-31 Drive authority", () => {
     );
     const cost = enemyComboShared.driveCostForProfile(profile, interval);
 
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(47);
-    expect(h.state().schemaVersion).toBe(47);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(48);
+    expect(h.state().schemaVersion).toBe(48);
     expect(player.weaponResource).toBe(player.dualWield.weaponResource);
     expect(player.weaponResource).toMatchObject({
       valueQ: 10_000,
@@ -6281,7 +6281,7 @@ describe("GameRoom — schema-31 public prestige ceremony", () => {
     expect(metadata[11]).toMatchObject({ name: "movementCorrectionSeq", type: "uint32" });
     expect(metadata[12]).toMatchObject({ name: "serverMotionEpoch", type: "uint32" });
     expect(metadata[13]).toMatchObject({ name: "serverMotionActive", type: "boolean" });
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(47);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(48);
   });
 });
 
