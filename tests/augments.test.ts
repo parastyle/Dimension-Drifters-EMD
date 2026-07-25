@@ -2,8 +2,10 @@ import {
   AUG_DRAFT_SIZE,
   AUGMENT_IDS,
   AUGMENTS,
+  augmentStackCap,
   countAugment,
   draftAugments,
+  grantAugment,
   hasAugment,
   isAugment,
   parseAugments,
@@ -118,6 +120,34 @@ describe("owned-augment CSV helpers (stacks)", () => {
     expect(countAugment(owned, "bulwark")).toBe(0);
     expect(hasAugment(owned, "emberguard")).toBe(true);
     expect(hasAugment(owned, "bulwark")).toBe(false);
+  });
+
+  it("grants stackable copies while enforcing non-stackable and Arc Split caps", () => {
+    const first = grantAugment("", "counterblade");
+    expect(first).toEqual({ augments: "counterblade", stacks: 1, granted: true });
+    expect(grantAugment(first.augments, "counterblade")).toEqual({
+      augments: "counterblade",
+      stacks: 1,
+      granted: false,
+    });
+
+    let owned = "";
+    for (let stack = 1; stack <= 4; stack++) {
+      const result = grantAugment(owned, "twin-fang");
+      expect(result.granted).toBe(true);
+      expect(result.stacks).toBe(stack);
+      owned = result.augments;
+    }
+    expect(countAugment(owned, "twin-fang")).toBe(4);
+
+    expect(augmentStackCap("arc-split")).toBe(3);
+    let split = "";
+    for (let stack = 1; stack <= 3; stack++) split = grantAugment(split, "arc-split").augments;
+    expect(grantAugment(split, "arc-split")).toEqual({
+      augments: "arc-split,arc-split,arc-split",
+      stacks: 3,
+      granted: false,
+    });
   });
 });
 

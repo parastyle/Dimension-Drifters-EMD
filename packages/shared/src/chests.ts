@@ -1,3 +1,4 @@
+import { ALL_AUGMENT_IDS, type AugmentDef, augmentStackCap, countAugment } from "./augments.js";
 import { TICK_RATE } from "./constants.js";
 import {
   type ArenaMap,
@@ -6,6 +7,7 @@ import {
   type MapZoneId,
   zoneAtPx,
 } from "./mapgen.js";
+import { PET_IDS, type PetId } from "./pets.js";
 import {
   COMMON_RELIC_IDS,
   type CommonRelicId,
@@ -126,25 +128,47 @@ export function placeChestOnArena(
   throw new Error("generated arena has no safe chest placement candidate");
 }
 
+export const CHEST_CONTENT_TRINKET = "trinket" as const;
+export const CHEST_CONTENT_WEAPON = "weapon" as const;
+export const CHEST_CONTENT_PET = "pet" as const;
+export const CHEST_CONTENT_HP_POTION = "hp-potion" as const;
+export const CHEST_CONTENT_MONEY = "money" as const;
+export type ChestContentKind =
+  | typeof CHEST_CONTENT_TRINKET
+  | typeof CHEST_CONTENT_WEAPON
+  | typeof CHEST_CONTENT_PET
+  | typeof CHEST_CONTENT_HP_POTION
+  | typeof CHEST_CONTENT_MONEY;
+
 export interface ChestZoneWeights {
-  weaponChance: number;
-  relicChance: number;
-  moneyChance: number;
-  rareRelicChance: number;
+  content: Readonly<Record<ChestContentKind, number>>;
+  rareTrinketChance: number;
+  augmentTrinketChance: number;
 }
 
+/** Percent weights. Scar shifts value out of consumables/currency and into lasting run power. */
 export const COMMONS_CHEST_WEIGHTS: ChestZoneWeights = {
-  weaponChance: 0.5,
-  relicChance: 0.7,
-  moneyChance: 0.8,
-  rareRelicChance: 0.08,
+  content: {
+    [CHEST_CONTENT_TRINKET]: 34,
+    [CHEST_CONTENT_WEAPON]: 24,
+    [CHEST_CONTENT_PET]: 10,
+    [CHEST_CONTENT_HP_POTION]: 14,
+    [CHEST_CONTENT_MONEY]: 18,
+  },
+  rareTrinketChance: 0.08,
+  augmentTrinketChance: 0.35,
 };
 
 export const SCAR_CHEST_WEIGHTS: ChestZoneWeights = {
-  weaponChance: 0.7,
-  relicChance: 0.85,
-  moneyChance: 0.9,
-  rareRelicChance: 0.2,
+  content: {
+    [CHEST_CONTENT_TRINKET]: 38,
+    [CHEST_CONTENT_WEAPON]: 30,
+    [CHEST_CONTENT_PET]: 12,
+    [CHEST_CONTENT_HP_POTION]: 8,
+    [CHEST_CONTENT_MONEY]: 12,
+  },
+  rareTrinketChance: 0.2,
+  augmentTrinketChance: 0.5,
 };
 
 export function chestWeightsForZone(zone: MapZoneId): ChestZoneWeights {
@@ -179,8 +203,7 @@ function interpolatedTierWeights(elapsedSeconds: number): WeaponTierWeights {
     if (!left || !right || minute > right.minute) continue;
     const progress = (minute - left.minute) / (right.minute - left.minute);
     return left.weights.map(
-      (weight, tierIndex) =>
-        weight + ((right.weights[tierIndex] ?? weight) - weight) * progress,
+      (weight, tierIndex) => weight + ((right.weights[tierIndex] ?? weight) - weight) * progress,
     ) as unknown as WeaponTierWeights;
   }
   return last.weights;
@@ -197,8 +220,7 @@ export function chestWeaponTierWeights(
     zone === MAP_ZONE_SCAR ? SCAR_WEAPON_TIER_MULTIPLIERS : ([1, 1, 1, 1, 1] as const);
   const highTierLuck = 1 + Math.max(0, Math.min(20, luckStacks)) * 0.05;
   return timeWeights.map(
-    (weight, index) =>
-      weight * (zoneMultipliers[index] ?? 1) * (index >= 3 ? highTierLuck : 1),
+    (weight, index) => weight * (zoneMultipliers[index] ?? 1) * (index >= 3 ? highTierLuck : 1),
   ) as unknown as WeaponTierWeights;
 }
 
@@ -233,6 +255,8 @@ export interface ChestRollInput {
   playerKey: string;
   luckStacks?: number;
   ownedRareIds?: readonly RareRelicId[];
+  ownedAugments?: string;
+  activePetId?: PetId | "";
   weaponIds: readonly string[];
 }
 
@@ -241,19 +265,95 @@ export interface ChestWeaponReward {
   tier: WeaponTier;
 }
 
-export interface ChestRelicReward {
+export type TrinketId = CommonRelicId | RareRelicId;
+
+export interface ChestTrinketReward {
   id: CommonRelicId | RareRelicId;
   rarity: "common" | "rare";
+  augmentId?: string;
 }
 
 export interface ChestReward {
+  content: ChestContentKind;
   weapon?: ChestWeaponReward;
-  relics: ChestRelicReward[];
+  trinket?: ChestTrinketReward;
+  pet?: { id: PetId };
+  potion?: { healFraction: number };
   money: number;
 }
 
-function commonRelic(rng: Rng): ChestRelicReward {
+function commonTrinket(rng: Rng): ChestTrinketReward {
   return { id: rng.pick(COMMON_RELIC_IDS), rarity: "common" };
+}
+
+/** Internal relic ids remain stable; this mapping is the explicit augment payload carried by each trinket. */
+export const TRINKET_AUGMENT_MAPPING: Readonly<Record<TrinketId, readonly string[]>> = {
+  "energy-pool": ["beam-vent"],
+  "energy-regen": ["overcharge"],
+  "parry-reach": ["counterblade"],
+  "dodge-recovery": ["hair-trigger"],
+  "move-speed": ["twin-fang"],
+  "hp-regen": ["second-wind"],
+  luck: ["ricochet-rounds"],
+  crit: ["hollowpoints"],
+  "jump-count": ["arc-split"],
+  "dodge-shuffle": ["deflector"],
+  "dodge-ninja-flip": ["iron-stance"],
+  "dodge-phase-step": ["bulwark"],
+  "dodge-bloodhound-step": ["beam-focus"],
+  revive: ["emberguard"],
+  "one-shot-protection": ["brand", "conflagration"],
+};
+
+const CHEST_CONTENT_KINDS = [
+  CHEST_CONTENT_TRINKET,
+  CHEST_CONTENT_WEAPON,
+  CHEST_CONTENT_PET,
+  CHEST_CONTENT_HP_POTION,
+  CHEST_CONTENT_MONEY,
+] as const;
+
+function weightedContent(rng: Rng, weights: ChestZoneWeights): ChestContentKind {
+  const total = CHEST_CONTENT_KINDS.reduce(
+    (sum, kind) => sum + Math.max(0, weights.content[kind]),
+    0,
+  );
+  if (total <= 0) return CHEST_CONTENT_MONEY;
+  const draw = rng.range(0, total);
+  let cursor = 0;
+  for (const kind of CHEST_CONTENT_KINDS) {
+    cursor += Math.max(0, weights.content[kind]);
+    if (draw < cursor) return kind;
+  }
+  return CHEST_CONTENT_MONEY;
+}
+
+export const CHEST_HP_POTION_HEAL_FRACTION = 0.35 as const;
+
+export interface HpPotionResolution {
+  hp: number;
+  healed: number;
+}
+
+/** Exact instant-heal math used by authority and tests. Invalid inputs collapse safely and overheal clamps. */
+export function resolveChestHpPotion(
+  currentHp: number,
+  maxHp: number,
+  healFraction: number = CHEST_HP_POTION_HEAL_FRACTION,
+): HpPotionResolution {
+  const maximum = Number.isFinite(maxHp) ? Math.max(0, maxHp) : 0;
+  const current = Number.isFinite(currentHp) ? Math.max(0, Math.min(maximum, currentHp)) : 0;
+  const fraction = Number.isFinite(healFraction) ? Math.max(0, healFraction) : 0;
+  const hp = Math.min(maximum, current + maximum * fraction);
+  return { hp, healed: hp - current };
+}
+
+function eligibleMappedAugments(trinketId: TrinketId, owned: string): string[] {
+  return (TRINKET_AUGMENT_MAPPING[trinketId] ?? []).filter(
+    (id) =>
+      (ALL_AUGMENT_IDS as readonly string[]).includes(id) &&
+      countAugment(owned, id) < augmentStackCap(id),
+  );
 }
 
 export function rollChestReward(input: Readonly<ChestRollInput>): ChestReward {
@@ -268,17 +368,18 @@ export function rollChestReward(input: Readonly<ChestRollInput>): ChestReward {
   );
   const categoryRng = makeRng(mixSeeds(baseSeed, 0xca7e));
   const weaponRng = makeRng(mixSeeds(baseSeed, 0x7ea9));
-  const relicRng = makeRng(mixSeeds(baseSeed, 0x4e11c));
+  const trinketRng = makeRng(mixSeeds(baseSeed, 0x4e11c));
+  const augmentRng = makeRng(mixSeeds(baseSeed, 0xa091e));
+  const petRng = makeRng(mixSeeds(baseSeed, 0x0e751));
   const moneyRng = makeRng(mixSeeds(baseSeed, 0x50c1));
   const luckMultiplier = 1 + Math.max(0, Math.min(20, input.luckStacks ?? 0)) * 0.05;
-  let hasWeapon =
-    input.kind === CHEST_KIND_WEAPON_CACHE || categoryRng.chance(weights.weaponChance);
-  const hasRelic = categoryRng.chance(weights.relicChance);
-  let hasMoney = categoryRng.chance(weights.moneyChance);
-  if (!hasWeapon && !hasRelic && !hasMoney) hasMoney = true;
+  let content: ChestContentKind =
+    input.kind === CHEST_KIND_WEAPON_CACHE
+      ? CHEST_CONTENT_WEAPON
+      : weightedContent(categoryRng, weights);
 
   let weapon: ChestWeaponReward | undefined;
-  if (hasWeapon && input.weaponIds.length > 0) {
+  if (content === CHEST_CONTENT_WEAPON && input.weaponIds.length > 0) {
     const candidatesByTier = new Map<WeaponTier, string[]>();
     for (const id of input.weaponIds) {
       const weaponDef = WEAPONS[id];
@@ -302,26 +403,42 @@ export function rollChestReward(input: Readonly<ChestRollInput>): ChestReward {
     const tier = pickWeightedTier(weaponRng, tierWeights);
     const candidates = candidatesByTier.get(tier) ?? [];
     if (candidates.length > 0) weapon = { id: weaponRng.pick(candidates), tier };
-    else hasWeapon = false;
+    else content = CHEST_CONTENT_MONEY;
+  } else if (content === CHEST_CONTENT_WEAPON) {
+    content = CHEST_CONTENT_MONEY;
   }
 
-  const relics: ChestRelicReward[] = [];
-  if (hasRelic) {
-    const rareChance = Math.min(0.75, weights.rareRelicChance * luckMultiplier);
-    if (relicRng.chance(rareChance)) {
-      const rare = relicRng.pick(RARE_RELIC_IDS);
-      if (input.ownedRareIds?.includes(rare)) relics.push(commonRelic(relicRng));
-      else relics.push({ id: rare, rarity: "rare" });
+  let trinket: ChestTrinketReward | undefined;
+  if (content === CHEST_CONTENT_TRINKET) {
+    const rareChance = Math.min(0.75, weights.rareTrinketChance * luckMultiplier);
+    if (trinketRng.chance(rareChance)) {
+      const rare = trinketRng.pick(RARE_RELIC_IDS);
+      if (input.ownedRareIds?.includes(rare)) trinket = commonTrinket(trinketRng);
+      else trinket = { id: rare, rarity: "rare" };
     } else {
-      relics.push(commonRelic(relicRng));
-      if (relicRng.chance(0.2)) relics.push(commonRelic(relicRng));
+      trinket = commonTrinket(trinketRng);
+    }
+    const eligible = eligibleMappedAugments(trinket.id, input.ownedAugments ?? "");
+    const augmentChance = Math.min(0.9, weights.augmentTrinketChance * luckMultiplier);
+    if (eligible.length > 0 && augmentRng.chance(augmentChance)) {
+      trinket.augmentId = augmentRng.pick(eligible);
     }
   }
 
-  const money = hasMoney
-    ? moneyRng.int(8, 16) + Math.max(0, Math.floor(input.elapsedSeconds / 60))
-    : 0;
-  return { weapon, relics, money };
+  const petCandidates = PET_IDS.filter((id) => id !== input.activePetId);
+  const pet =
+    content === CHEST_CONTENT_PET
+      ? { id: petRng.pick(petCandidates.length > 0 ? petCandidates : PET_IDS) }
+      : undefined;
+  const potion =
+    content === CHEST_CONTENT_HP_POTION
+      ? { healFraction: CHEST_HP_POTION_HEAL_FRACTION }
+      : undefined;
+  const money =
+    content === CHEST_CONTENT_MONEY
+      ? moneyRng.int(8, 16) + Math.max(0, Math.floor(input.elapsedSeconds / 60))
+      : 0;
+  return { content, weapon, trinket, pet, potion, money };
 }
 
 export interface ChestOpenReceipt {
@@ -329,6 +446,12 @@ export interface ChestOpenReceipt {
   zone: MapZoneId;
   kind: ChestKind;
   weapon?: ChestWeaponReward & { name: string };
-  relics: Array<ChestRelicReward & { label: string; stacks: number }>;
+  trinket?: ChestTrinketReward & {
+    label: string;
+    stacks: number;
+    augment?: Pick<AugmentDef, "id" | "name" | "desc"> & { stacks: number };
+  };
+  pet?: { id: PetId; name: string; replacedPet?: { id: PetId; name: string } };
+  potion?: { healFraction: number; healed: number; hp: number; maxHp: number };
   money: number;
 }

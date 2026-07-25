@@ -131,6 +131,7 @@ import {
   TOUGH_SCALE,
   thrownProjectileRotationPolicy,
   ULT_RECOVERY_TICKS,
+  ULTIMATES_ENABLED,
   UltimateFamily,
   UltimatePhase,
   type UltimatePhaseValue,
@@ -3494,6 +3495,7 @@ export class ArenaScene extends Phaser.Scene {
 
   /** Consume the dual-purpose uint16 seq: READY is classified from the post-edge authoritative row. */
   private routeUltimates(): void {
+    if (!ULTIMATES_ENABLED) return;
     const room = this.room;
     if (!room) return;
     const selfId = room.sessionId;
@@ -3564,6 +3566,7 @@ export class ArenaScene extends Phaser.Scene {
   }
 
   private maybePlayUltimateReveal(self: PlayerState | undefined): void {
+    if (!ULTIMATES_ENABLED) return;
     const pending = !!this.queuedUltimateReveal;
     if (
       !canReleaseUltimateReveal(pending, this.verbs.isModalBlocking(), !!self?.alive) ||
@@ -3581,6 +3584,7 @@ export class ArenaScene extends Phaser.Scene {
   }
 
   private updateUltimateVfx(): void {
+    if (!ULTIMATES_ENABLED) return;
     const room = this.room;
     if (!room) return;
     const renderTime = this.timeline.ready
@@ -4365,15 +4369,33 @@ export class ArenaScene extends Phaser.Scene {
         const disposeChestOpened = room.onMessage<ChestOpenReceipt>("chestOpened", (receipt) => {
           if (generation !== this.connectionGeneration || this.room !== room) return;
           const drops = [
-            receipt.weapon ? `${receipt.weapon.name} T${receipt.weapon.tier + 1}` : "",
-            ...receipt.relics.map((relic) =>
-              relic.rarity === "rare"
-                ? `RARE ${relic.label}`
-                : `${relic.label}${relic.stacks > 1 ? ` ×${relic.stacks}` : ""}`,
-            ),
+            receipt.weapon ? `WEAPON ${receipt.weapon.name} T${receipt.weapon.tier}` : "",
+            receipt.trinket
+              ? `TRINKET ${receipt.trinket.rarity === "rare" ? "RARE " : ""}${receipt.trinket.label}${
+                  receipt.trinket.stacks > 1 ? ` ×${receipt.trinket.stacks}` : ""
+                }`
+              : "",
+            receipt.trinket?.augment
+              ? `AUGMENT ${receipt.trinket.augment.name} — ${receipt.trinket.augment.desc}${
+                  receipt.trinket.augment.stacks > 1
+                    ? ` (STACK ${receipt.trinket.augment.stacks})`
+                    : ""
+                }`
+              : "",
+            receipt.pet
+              ? `PET ${receipt.pet.name} JOINED${
+                  receipt.pet.replacedPet ? ` · REPLACED ${receipt.pet.replacedPet.name}` : ""
+                }`
+              : "",
+            receipt.potion
+              ? `HP POTION · +${Math.round(receipt.potion.healed)} HP${
+                  receipt.potion.healed <= 0 ? " · FULL HEALTH" : ""
+                }`
+              : "",
             receipt.money > 0 ? `+${receipt.money} MONEY` : "",
           ].filter(Boolean);
           const scar = receipt.zone === MAP_ZONE_SCAR;
+          if (receipt.potion) this.audio.play("revive", { amt: 0.58 });
           this.flashBanner(
             `${scar ? "SCAR" : "COMMONS"} CHEST · ${drops.join(" · ")}`,
             scar ? "#e8a9c0" : "#ffd479",
@@ -4543,7 +4565,7 @@ export class ArenaScene extends Phaser.Scene {
     // its enter-Testing-Grounds verb outside. Restart remains the on-screen button, top-right.
     const selfP = this.room.state.players.get(this.room.sessionId);
     const alive = !!selfP && selfP.alive;
-    const ultimatePressed = Phaser.Input.Keyboard.JustDown(this.keys.F);
+    const ultimatePressed = ULTIMATES_ENABLED && Phaser.Input.Keyboard.JustDown(this.keys.F);
     if (this.summonOpen && this.room.state.mode !== "training") this.closeSummonMenu();
     const summonClosePressed =
       this.summonOpen &&
@@ -9614,6 +9636,7 @@ export class ArenaScene extends Phaser.Scene {
    *  the client mirrors the cooldown locally to fire the swing animation in sync (cosmetic). */
   /** F keydown is a one-shot, budgeted action. All displacement/damage remains server-authoritative. */
   private sendUltimate(): void {
+    if (!ULTIMATES_ENABLED) return;
     if (!this.room) return;
     const selfId = this.room.sessionId;
     const self = this.room.state.players.get(selfId);
@@ -11817,6 +11840,7 @@ export class ArenaScene extends Phaser.Scene {
     if (!g || !label) return;
     g.clear();
     label.setVisible(false);
+    if (!ULTIMATES_ENABLED) return;
     const row = self?.ultimate;
     if (!self || !row || row.archetype === 0) return;
     const layout = ultimateHudLayout({
@@ -12176,7 +12200,7 @@ export class ArenaScene extends Phaser.Scene {
       const parts = [...commons, ...rares];
       this.relicText
         .setPosition(barX, hudRailY - 82 * s)
-        .setText(`RELICS ${parts.join(" · ")}`)
+        .setText(`TRINKETS ${parts.join(" · ")}`)
         .setVisible(parts.length > 0);
     } else {
       this.relicText.setVisible(false);

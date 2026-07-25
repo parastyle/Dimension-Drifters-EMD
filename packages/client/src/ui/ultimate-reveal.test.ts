@@ -1,4 +1,4 @@
-import { UltimatePhase } from "@dd/shared";
+import { ULTIMATES_ENABLED, UltimatePhase } from "@dd/shared";
 import { describe, expect, it } from "vitest";
 import {
   canReleaseUltimateReveal,
@@ -7,13 +7,14 @@ import {
 } from "./ultimate-reveal.js";
 
 describe("ultimateSeqEdge", () => {
-  it("classifies the server's ready edge from authoritative charge and phase", () => {
-    expect(ultimateSeqEdge(7, 8, 100, UltimatePhase.Idle)).toBe("ready");
-    expect(ultimateSeqEdge(8, 9, 0, UltimatePhase.Windup)).toBe("cast");
+  it("suppresses ready and cast edges while the reversible feature flag is off", () => {
+    expect(ULTIMATES_ENABLED).toBe(false);
+    expect(ultimateSeqEdge(7, 8, 100, UltimatePhase.Idle)).toBe("none");
+    expect(ultimateSeqEdge(8, 9, 0, UltimatePhase.Windup)).toBe("none");
   });
 
-  it("accepts uint16 wrap and rejects stale/backward patches", () => {
-    expect(ultimateSeqEdge(0xffff, 0, 100, UltimatePhase.Idle)).toBe("ready");
+  it("keeps wrapped and stale sequence changes silent", () => {
+    expect(ultimateSeqEdge(0xffff, 0, 100, UltimatePhase.Idle)).toBe("none");
     expect(ultimateSeqEdge(8, 7, 100, UltimatePhase.Idle)).toBe("none");
   });
 });
@@ -29,10 +30,10 @@ describe("ultimateInputAffordance", () => {
     doorReturn: false,
   };
 
-  it("sends only a ready cast or live Door return", () => {
-    expect(ultimateInputAffordance(ready)).toBe("send");
-    expect(ultimateInputAffordance({ ...ready, charge: 0 })).toBe("dry");
-    expect(ultimateInputAffordance({ ...ready, charge: 0, doorReturn: true })).toBe("send");
+  it("blocks ready, dry, and Door-return input while ultimates are disabled", () => {
+    expect(ultimateInputAffordance(ready)).toBe("blocked");
+    expect(ultimateInputAffordance({ ...ready, charge: 0 })).toBe("blocked");
+    expect(ultimateInputAffordance({ ...ready, charge: 0, doorReturn: true })).toBe("blocked");
   });
 
   it("keeps death, modal, and pending gates silent", () => {
@@ -43,9 +44,9 @@ describe("ultimateInputAffordance", () => {
 });
 
 describe("ultimate reveal release latch", () => {
-  it("waits for the modal release latch without a level-window gate", () => {
+  it("never releases a reveal while ultimates are disabled", () => {
     expect(canReleaseUltimateReveal(true, true, true)).toBe(false);
-    expect(canReleaseUltimateReveal(true, false, true)).toBe(true);
+    expect(canReleaseUltimateReveal(true, false, true)).toBe(false);
     expect(canReleaseUltimateReveal(true, false, false)).toBe(false);
   });
 });

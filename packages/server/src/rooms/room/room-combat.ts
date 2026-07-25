@@ -451,6 +451,7 @@ import {
   ULT_SEISMARCH_STUN_SECONDS,
   ULT_SEISMARCH_WINDUP_TICKS,
   ULT_STUN_ICD_TICKS,
+  ULTIMATES_ENABLED,
   UltimateFamily,
   type UltimateFamilyValue,
   UltimatePhase,
@@ -938,6 +939,7 @@ export const roomCombatMethods = {
   },
 
   ultimateOwnsMovement(this: GameRoomContext, player: PlayerState): boolean {
+    if (!ULTIMATES_ENABLED) return false;
     if (player.ultPhase !== UltimatePhase.Active) return false;
     const family = ultimateFamilyForCode(player.ultArchetype);
     return (
@@ -1034,6 +1036,7 @@ export const roomCombatMethods = {
 
   acceptUltimate(this: GameRoomContext, player: PlayerState, c: CombatState): boolean {
     if (
+      !ULTIMATES_ENABLED ||
       this.state.outcome !== "active" ||
       !player.alive ||
       c.juggleArmed ||
@@ -1146,6 +1149,7 @@ export const roomCombatMethods = {
   },
 
   tryDimensionDoorReturn(this: GameRoomContext, player: PlayerState, c: CombatState): boolean {
+    if (!ULTIMATES_ENABLED) return false;
     const ticket = this.ultimateDecoys.get(player.id);
     if (
       !ticket ||
@@ -1669,6 +1673,34 @@ export const roomCombatMethods = {
   },
 
   stepUltimates(this: GameRoomContext, dt: number): void {
+    if (!ULTIMATES_ENABLED) {
+      this.ultimateStunUntil.clear();
+      this.ultimateBrands.clear();
+      this.ultimateDecoys.clear();
+      this.ultimateFissures.length = 0;
+      this.state.players.forEach((player, id) => {
+        const c = this.combat.get(id);
+        player.ultFamily = UltimateFamily.Locked;
+        player.ultVariant = "";
+        player.ultArchetype = 0;
+        player.ultCharge = 0;
+        player.ultPhase = UltimatePhase.Idle;
+        player.ultSeq = 0;
+        player.ultStartTick = 0;
+        player.ultResolveTick = 0;
+        player.ultEndTick = 0;
+        player.ultTargetX = 0;
+        player.ultTargetY = 0;
+        if (c) {
+          c.ultChargeF = 0;
+          c.ultBuffer = 0;
+          c.ultAccrualThisTick = 0;
+          c.ult = undefined;
+          this.commitWeaponResourceTick(player, c);
+        }
+      });
+      return;
+    }
     this.stepUltimateWorldEffects(dt);
     this.state.players.forEach((player, id) => {
       const c = this.combat.get(id);
@@ -5524,6 +5556,11 @@ export const roomCombatMethods = {
 
   /** Beam-heat-style ultimate truth: private float, quantized mirror, one ready sequence edge. */
   syncUltimateCharge(this: GameRoomContext, player: PlayerState, c: CombatState): void {
+    if (!ULTIMATES_ENABLED) {
+      c.ultChargeF = 0;
+      player.ultCharge = 0;
+      return;
+    }
     const quantized = Math.max(
       0,
       Math.min(ULT_CHARGE_MAX, Math.floor(c.ultChargeF * ULT_CHARGE_MAX + 1e-9)),
@@ -5542,6 +5579,7 @@ export const roomCombatMethods = {
     enemyKind: string,
     delivery: number,
   ): void {
+    if (!ULTIMATES_ENABLED) return;
     if (!sourcePlayerId || enemyKind === "dummy" || this.state.mode === "training") return;
     const player = this.state.players.get(sourcePlayerId);
     const c = this.combat.get(sourcePlayerId);
@@ -5565,6 +5603,7 @@ export const roomCombatMethods = {
   },
 
   addUltimateFlatCharge(this: GameRoomContext, player: PlayerState, c: CombatState, amount: number): void {
+    if (!ULTIMATES_ENABLED) return;
     if (
       this.state.mode === "training" ||
       !player.alive ||

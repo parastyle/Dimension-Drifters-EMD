@@ -1,3 +1,4 @@
+import { ULTIMATES_ENABLED } from "@dd/shared";
 import type Phaser from "phaser";
 import type { OnboardingSettings } from "../settings.js";
 
@@ -130,7 +131,7 @@ class PhaserVerbLegendSurface implements VerbLegendSurface {
       [
         "[RMB] Fire · Hold to channel",
         "[RMB] Release to vent",
-        "[F] Ultimate · Unlock through stat picks",
+        ...(ULTIMATES_ENABLED ? ["[F] Ultimate"] : []),
         "[E] Pick up / interact",
         "[Q] Next weapon or slot",
         "[Z/X] Previous/next gallery page",
@@ -314,6 +315,7 @@ export class VerbLegendManager {
   }
 
   offerHint(id: ContextHintId, nowMs: number): boolean {
+    if (!ULTIMATES_ENABLED && id === "ultimateReady") return false;
     if (
       this.legendOpen ||
       this.activeHint !== undefined ||

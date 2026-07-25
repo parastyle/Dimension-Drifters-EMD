@@ -1454,3 +1454,69 @@ describe("GameRoom - B20 L2 authoritative chests", () => {
     expect(player.relics.reviveAvailable).toBe(false);
   });
 });
+
+describe("B55 chest-granted augment combat families", () => {
+  function rangedFixture(id: string) {
+    const h = makeRoom();
+    h.join(id);
+    const player = h.state().players.get(id);
+    const combat = h.room.combat.get(id);
+    player.x = 1_000;
+    player.y = 1_000;
+    combat.aimX = 1;
+    combat.aimY = 0;
+    combat.targetX = 1_500;
+    combat.targetY = 1_000;
+    return { h, player, combat };
+  }
+
+  function clearFriendlyProjectiles(h: ReturnType<typeof makeRoom>) {
+    h.state().projectiles.clear();
+    h.room.projectileMeta.clear();
+    h.room.hostileProjectileCount = 0;
+  }
+
+  it("Hollow-Points visibly adds one authoritative pierce per granted stack", () => {
+    const { h, player, combat } = rangedFixture("augment-pierce");
+    const weapon = WEAPONS["x-gun-revolver-cannon"];
+    expect(weapon?.gun).toBeDefined();
+    h.room.fireGun(player, combat, weapon);
+    const base = [...h.room.projectileMeta.values()][0];
+    expect(base).toBeDefined();
+    clearFriendlyProjectiles(h);
+
+    player.augments = "hollowpoints,hollowpoints";
+    h.room.fireGun(player, combat, weapon);
+    const augmented = [...h.room.projectileMeta.values()][0];
+    expect(augmented.pierce).toBe(base.pierce + 2);
+  });
+
+  it("Ricochet Rounds visibly adds one authoritative bounce per granted stack", () => {
+    const { h, player, combat } = rangedFixture("augment-ricochet");
+    const weapon = WEAPONS["x-gun-revolver-cannon"];
+    expect(weapon?.gun).toBeDefined();
+    h.room.fireGun(player, combat, weapon);
+    const base = [...h.room.projectileMeta.values()][0];
+    expect(base).toBeDefined();
+    clearFriendlyProjectiles(h);
+
+    player.augments = "ricochet-rounds,ricochet-rounds";
+    h.room.fireGun(player, combat, weapon);
+    const augmented = [...h.room.projectileMeta.values()][0];
+    expect(augmented.bounces).toBe((base.bounces ?? 0) + 2);
+  });
+
+  it("Arc Split visibly emits one extra authoritative cast bolt per granted stack", () => {
+    const { h, player, combat } = rangedFixture("augment-arc-split");
+    const weapon = WEAPONS["x-staff-arcane-lance"];
+    expect(weapon?.cast).toBeDefined();
+    h.room.fireCast(player, combat, weapon);
+    const baseCount = h.state().projectiles.size;
+    expect(baseCount).toBeGreaterThan(0);
+    clearFriendlyProjectiles(h);
+
+    player.augments = "arc-split,arc-split,arc-split";
+    h.room.fireCast(player, combat, weapon);
+    expect(h.state().projectiles.size).toBe(baseCount + 3);
+  });
+});

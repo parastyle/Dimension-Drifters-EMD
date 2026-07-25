@@ -1,7 +1,14 @@
 import {
   ACTIVE_WEAPON_CATALOG_IDS,
+  ALL_AUGMENT_IDS,
   advanceChestCadence,
+  CHEST_CONTENT_HP_POTION,
+  CHEST_CONTENT_MONEY,
+  CHEST_CONTENT_PET,
+  CHEST_CONTENT_TRINKET,
+  CHEST_CONTENT_WEAPON,
   CHEST_FIRST_TICKS,
+  CHEST_HP_POTION_HEAL_FRACTION,
   CHEST_KIND_STANDARD,
   CHEST_KIND_WEAPON_CACHE,
   CHEST_WEAPON_GUARANTEE_TICKS,
@@ -15,12 +22,14 @@ import {
   MAP_ZONE_COMMONS,
   MAP_ZONE_SCAR,
   placeChestOnArena,
+  resolveChestHpPotion,
   rollChestReward,
   SCAR_CHEST_WEIGHTS,
   SCAR_WEAPON_TIER_MULTIPLIERS,
   TICK_RATE,
-  WEAPONS,
+  TRINKET_AUGMENT_MAPPING,
   WEAPON_TIER_CURVE_ANCHORS,
+  WEAPONS,
   type WeaponTier,
 } from "@dd/shared";
 import { describe, expect, it } from "vitest";
@@ -55,48 +64,70 @@ describe("B20 L2 chest cadence", () => {
 });
 
 describe("B20 L2 zone risk and deterministic instancing", () => {
-  it("pins scar weighting above commons for weapon quality and rare relics", () => {
-    expect(SCAR_CHEST_WEIGHTS.weaponChance).toBeGreaterThan(COMMONS_CHEST_WEIGHTS.weaponChance);
-    expect(SCAR_CHEST_WEIGHTS.relicChance).toBeGreaterThan(COMMONS_CHEST_WEIGHTS.relicChance);
-    expect(SCAR_CHEST_WEIGHTS.rareRelicChance).toBeGreaterThan(
-      COMMONS_CHEST_WEIGHTS.rareRelicChance,
+  it("pins the five-entry table and shifts Scar rolls toward lasting run power", () => {
+    expect(Object.keys(COMMONS_CHEST_WEIGHTS.content).sort()).toEqual(
+      [
+        CHEST_CONTENT_TRINKET,
+        CHEST_CONTENT_WEAPON,
+        CHEST_CONTENT_PET,
+        CHEST_CONTENT_HP_POTION,
+        CHEST_CONTENT_MONEY,
+      ].sort(),
+    );
+    expect(
+      Object.values(COMMONS_CHEST_WEIGHTS.content).reduce((sum, weight) => sum + weight, 0),
+    ).toBe(100);
+    expect(Object.values(SCAR_CHEST_WEIGHTS.content).reduce((sum, weight) => sum + weight, 0)).toBe(
+      100,
+    );
+    for (const kind of [CHEST_CONTENT_TRINKET, CHEST_CONTENT_WEAPON, CHEST_CONTENT_PET]) {
+      expect(SCAR_CHEST_WEIGHTS.content[kind]).toBeGreaterThan(COMMONS_CHEST_WEIGHTS.content[kind]);
+    }
+    expect(SCAR_CHEST_WEIGHTS.rareTrinketChance).toBeGreaterThan(
+      COMMONS_CHEST_WEIGHTS.rareTrinketChance,
+    );
+    expect(SCAR_CHEST_WEIGHTS.augmentTrinketChance).toBeGreaterThan(
+      COMMONS_CHEST_WEIGHTS.augmentTrinketChance,
     );
     expect(SCAR_WEAPON_TIER_MULTIPLIERS[0]).toBeLessThan(1);
     expect(SCAR_WEAPON_TIER_MULTIPLIERS[4]).toBeGreaterThan(1);
 
-    const sample = (
-      zone: typeof MAP_ZONE_COMMONS | typeof MAP_ZONE_SCAR,
-      elapsedSeconds: number,
-    ) => {
+    const sample = (zone: typeof MAP_ZONE_COMMONS | typeof MAP_ZONE_SCAR) => {
       let rare = 0;
-      let tierTotal = 0;
-      let weaponCount = 0;
-      for (let index = 0; index < 2_000; index++) {
+      let augmentBearing = 0;
+      const kinds = new Map<string, number>();
+      for (let index = 0; index < 5_000; index++) {
         const reward = rollChestReward({
           roomSeed: 0x7a0e20,
           chestSequence: index,
           spawnTick: index * 1_100,
-          elapsedSeconds,
+          elapsedSeconds: 0,
           zone,
-          kind: CHEST_KIND_WEAPON_CACHE,
+          kind: CHEST_KIND_STANDARD,
           playerKey: `weight-${index}`,
           weaponIds: ACTIVE_WEAPON_CATALOG_IDS,
         });
-        if (reward.relics.some((relic) => relic.rarity === "rare")) rare++;
-        if (reward.weapon) {
-          tierTotal += reward.weapon.tier;
-          weaponCount++;
-          expect(reward.weapon.tier).toBe(WEAPONS[reward.weapon.id]?.tier);
-        }
+        kinds.set(reward.content, (kinds.get(reward.content) ?? 0) + 1);
+        if (reward.trinket?.rarity === "rare") rare++;
+        if (reward.trinket?.augmentId) augmentBearing++;
+        if (reward.weapon) expect(reward.weapon.tier).toBe(WEAPONS[reward.weapon.id]?.tier);
       }
-      return { rare, averageTier: tierTotal / weaponCount };
+      return { rare, augmentBearing, kinds };
     };
-    const commons = sample(MAP_ZONE_COMMONS, 0);
-    const scar = sample(MAP_ZONE_SCAR, 0);
-    const lateCommons = sample(MAP_ZONE_COMMONS, 15 * 60);
+    const commons = sample(MAP_ZONE_COMMONS);
+    const scar = sample(MAP_ZONE_SCAR);
     expect(scar.rare).toBeGreaterThan(commons.rare);
-    expect(scar.averageTier).toBeGreaterThan(commons.averageTier);
-    expect(lateCommons.averageTier).toBeGreaterThan(commons.averageTier);
+    expect(scar.augmentBearing).toBeGreaterThan(commons.augmentBearing);
+    for (const kind of [
+      CHEST_CONTENT_TRINKET,
+      CHEST_CONTENT_WEAPON,
+      CHEST_CONTENT_PET,
+      CHEST_CONTENT_HP_POTION,
+      CHEST_CONTENT_MONEY,
+    ]) {
+      expect(commons.kinds.get(kind)).toBeGreaterThan(0);
+      expect(scar.kinds.get(kind)).toBeGreaterThan(0);
+    }
   });
 
   it("simulates the authored minute 0/5/10/15 tier distributions", () => {
@@ -121,9 +152,7 @@ describe("B20 L2 zone risk and deterministic instancing", () => {
     };
 
     for (const anchor of WEAPON_TIER_CURVE_ANCHORS) {
-      expect(chestWeaponTierWeights(anchor.minute * 60, MAP_ZONE_COMMONS)).toEqual(
-        anchor.weights,
-      );
+      expect(chestWeaponTierWeights(anchor.minute * 60, MAP_ZONE_COMMONS)).toEqual(anchor.weights);
       const observed = sample(anchor.minute);
       for (let index = 0; index < anchor.weights.length; index++) {
         expect(observed[index]).toBeCloseTo((anchor.weights[index] ?? 0) / 100, 1);
@@ -138,9 +167,7 @@ describe("B20 L2 zone risk and deterministic instancing", () => {
 
   it("renormalizes against available authored tiers without mislabeling the reward", () => {
     const onlyTier: WeaponTier = 5;
-    const weaponIds = ACTIVE_WEAPON_CATALOG_IDS.filter(
-      (id) => WEAPONS[id]?.tier === onlyTier,
-    );
+    const weaponIds = ACTIVE_WEAPON_CATALOG_IDS.filter((id) => WEAPONS[id]?.tier === onlyTier);
     const reward = rollChestReward({
       roomSeed: 5,
       chestSequence: 0,
@@ -174,6 +201,18 @@ describe("B20 L2 zone risk and deterministic instancing", () => {
       ),
     );
     expect(receipts.size).toBeGreaterThan(1);
+  });
+
+  it("keeps every authored augment reachable through an explicit trinket mapping", () => {
+    const mapped = new Set(Object.values(TRINKET_AUGMENT_MAPPING).flat());
+    expect([...mapped].sort()).toEqual([...ALL_AUGMENT_IDS].sort());
+  });
+
+  it("heals exactly 35% max HP and clamps overheal", () => {
+    expect(CHEST_HP_POTION_HEAL_FRACTION).toBe(0.35);
+    expect(resolveChestHpPotion(20, 100)).toEqual({ hp: 55, healed: 35 });
+    expect(resolveChestHpPotion(90, 100)).toEqual({ hp: 100, healed: 10 });
+    expect(resolveChestHpPotion(100, 100)).toEqual({ hp: 100, healed: 0 });
   });
 
   it("places repeatably on valid ground outside pits and POIs", () => {
