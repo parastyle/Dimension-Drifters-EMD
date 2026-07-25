@@ -10,7 +10,7 @@
  *  decodes new patches with corrupted offsets (HP reads as aim, etc.). The server stamps it on
  *  `ArenaState.schemaVersion`; the client compares on join and tells the player to hard-reload on a
  *  mismatch instead of rendering silently-corrupt state. */
-export const SCHEMA_VERSION = 45 as const; // B47 authored final-render element transforms
+export const SCHEMA_VERSION = 46 as const; // B54 L2 presentation-only limb-claim catalog contract
 
 /** §ULT stat-free damage/activity meter and action tuning (20Hz tick epochs). */
 export const ULT_CHARGE_MAX = 100 as const;

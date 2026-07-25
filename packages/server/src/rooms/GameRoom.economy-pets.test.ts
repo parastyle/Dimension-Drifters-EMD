@@ -571,9 +571,9 @@ describe("pet v1 join snapshot, lock, and schema 25", () => {
     h.room.clients.push(client);
     h.room.onJoin(client, { metaAccount: account, selectedPetId: "brass-crab" });
     const player = h.state().players.get("pet-lock");
-    expect([h.state().schemaVersion, enemyComboShared.SCHEMA_VERSION]).toEqual([45, 45]);
+    expect([h.state().schemaVersion, enemyComboShared.SCHEMA_VERSION]).toEqual([46, 46]);
 
-    expect([h.state().schemaVersion, enemyComboShared.SCHEMA_VERSION]).toEqual([45, 45]);    expect({ petId: player.petId, petLevelBand: player.petLevelBand }).toEqual({
+    expect([h.state().schemaVersion, enemyComboShared.SCHEMA_VERSION]).toEqual([46, 46]);    expect({ petId: player.petId, petLevelBand: player.petLevelBand }).toEqual({
       petId: "hearth-newt",
       petLevelBand: 3,
     });
@@ -950,8 +950,8 @@ describe("GameRoom — independent weapon slots and compatibility row", () => {
 
   it("keeps schema 38 and the unrelated compatibility-container tenants intact", () => {
     const fresh = new enemyComboShared.PlayerState();
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(45);
-    expect(new enemyComboShared.ArenaState().schemaVersion).toBe(45);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(46);
+    expect(new enemyComboShared.ArenaState().schemaVersion).toBe(46);
     expect(fresh.dualWield).toMatchObject({
       retiredByte0: 255,
       retiredUint32: 0,
