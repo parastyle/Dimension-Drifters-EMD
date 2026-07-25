@@ -193,6 +193,13 @@ const types =
   "}\n" +
   "export interface WeaponVfxGeneratedImageFanTornado extends WeaponVfxGeneratedImageBase {\n" +
   "  kind: \"fan-tornado\";\n" +
+  "  /** Installed spin phases. The sprite remains upright; only its texture frame advances. */\n" +
+  "  frames: readonly [\n" +
+  "    { readonly textureKey: string; readonly url: string },\n" +
+  "    { readonly textureKey: string; readonly url: string },\n" +
+  "    { readonly textureKey: string; readonly url: string },\n" +
+  "  ];\n" +
+  "  frameRate: number;\n" +
   "  /** Uniform growth above the shared damage envelope; never shrinks below it. */\n" +
   "  scalePulse: number;\n" +
   "}\n" +

@@ -5049,6 +5049,17 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "DEX"
       ]
     },
+    "gripPoints": {
+      "primary": {
+        "x": 0.29,
+        "y": 0.68
+      },
+      "secondary": {
+        "x": 0.48,
+        "y": 0.66,
+        "role": "under-barrel"
+      }
+    },
     "twoHanded": true,
     "gun": {
       "damage": 16,
@@ -5885,6 +5896,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "bulletKind": "grenade",
       "muzzle": "boom",
       "recoil": 0.0018,
+      "projectileArt": "generated",
       "projectileVisualScale": 1.35,
       "arcHeight": 112,
       "explode": {

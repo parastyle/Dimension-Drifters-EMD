@@ -504,8 +504,13 @@ export class VfxPlayer {
       for (const painted of [vfx.paintedAura, vfx.paintedSwing, vfx.paintedQuake])
         if (painted && !scene.textures.exists(painted.textureKey))
           scene.load.image(painted.textureKey, painted.url);
-      if (vfx.generatedImage && !scene.textures.exists(vfx.generatedImage.textureKey))
+      if (vfx.generatedImage?.kind === "fan-tornado") {
+        for (const frame of vfx.generatedImage.frames)
+          if (!scene.textures.exists(frame.textureKey))
+            scene.load.image(frame.textureKey, frame.url);
+      } else if (vfx.generatedImage && !scene.textures.exists(vfx.generatedImage.textureKey)) {
         scene.load.image(vfx.generatedImage.textureKey, vfx.generatedImage.url);
+      }
     }
     for (const assignment of Object.values(KATANA_SLASH_ASSIGNMENTS)) {
       scene.load.spritesheet(assignment.key, assignment.url, {

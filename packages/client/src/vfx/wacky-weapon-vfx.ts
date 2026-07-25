@@ -1,8 +1,10 @@
 import Phaser from "phaser";
+import { PROJECTILE_SPRITES } from "../sprites/projectile-manifest.js";
 import {
   resolveWackyWeaponVfxRecipe,
   type WackyImpactTrigger,
 } from "./wacky-weapon-vfx-recipes.js";
+
 export {
   resolveWackyWeaponVfxRecipe,
   WACKY_WEAPON_VFX_RECIPES,
@@ -19,6 +21,8 @@ interface WackyVfxAuditEvent {
   readonly style: string;
   readonly x: number;
   readonly y: number;
+  readonly visualVariant?: number;
+  readonly textureKey?: string;
 }
 
 function auditWackyVfx(event: WackyVfxAuditEvent): void {
@@ -30,15 +34,58 @@ function auditWackyVfx(event: WackyVfxAuditEvent): void {
   if (audit.__ddB2WackyVfxAudit.length > 256) audit.__ddB2WackyVfxAudit.shift();
 }
 
-/** Procedural projectile identity stays code-native; the seven installed PNGs remain held-weapon art. */
+export function preloadWackyWeaponProjectileArt(scene: Phaser.Scene): void {
+  for (let variant = 1; variant <= 5; variant++) {
+    const sprite =
+      PROJECTILE_SPRITES[`exploding-present-variant-${variant}` as keyof typeof PROJECTILE_SPRITES];
+    const textureKey = `wacky:present:${variant}`;
+    if (sprite && !scene.textures.exists(textureKey)) scene.load.image(textureKey, sprite.url);
+  }
+}
+
+/** Wacky projectile identity uses installed art when supplied and keeps procedural fallbacks for legacy rows. */
 export function makeWackyProjectile(
   scene: Phaser.Scene,
-  projectile: Readonly<{ x: number; y: number; vx: number; vy: number }>,
+  projectile: Readonly<{
+    x: number;
+    y: number;
+    vx: number;
+    vy: number;
+    visualVariant?: number;
+  }>,
   weaponId: string,
 ): Phaser.GameObjects.Container | null {
   const style = resolveWackyWeaponVfxRecipe(weaponId)?.projectile;
   if (!style || style === "none" || style === "own-sprite-return") return null;
   const angle = Math.atan2(projectile.vy, projectile.vx);
+  if (style === "present") {
+    const visualVariant = Phaser.Math.Clamp(Math.trunc(projectile.visualVariant ?? 1), 1, 5);
+    const textureKey = `wacky:present:${visualVariant}`;
+    if (scene.textures.exists(textureKey)) {
+      // Every authored frame shares one 640x512 registration canvas. A fixed canvas size preserves the
+      // supplier's intentionally larger part-5 silhouette instead of normalizing the big payload away.
+      const image = scene.add.image(0, 0, textureKey).setDisplaySize(64, 51.2);
+      const payload = scene.add.container(0, 0, [image]).setRotation(angle);
+      const container = scene.add
+        .container(projectile.x, projectile.y, [payload])
+        .setDepth(99000)
+        .setData("arcPayload", payload)
+        .setData("wackyProjectileStyle", style)
+        .setData("wackyWeaponId", weaponId)
+        .setData("visualVariant", visualVariant)
+        .setData("projectileTextureKey", textureKey);
+      auditWackyVfx({
+        kind: "projectile",
+        weaponId,
+        style,
+        x: projectile.x,
+        y: projectile.y,
+        visualVariant,
+        textureKey,
+      });
+      return container;
+    }
+  }
   const graphics = scene.add.graphics();
   if (style === "fish") {
     graphics.fillStyle(0x315f68, 1).fillEllipse(0, 0, 28, 12);
@@ -65,7 +112,13 @@ export function makeWackyProjectile(
     }
   }
   const trailColor =
-    style === "fish" ? 0x73cddd : style === "bubble" ? 0x8fefff : style === "present" ? 0xe4b84a : 0xff6ca8;
+    style === "fish"
+      ? 0x73cddd
+      : style === "bubble"
+        ? 0x8fefff
+        : style === "present"
+          ? 0xe4b84a
+          : 0xff6ca8;
   const trail = scene.add
     .ellipse(-17, 0, 24, style === "bubble" ? 6 : 4, trailColor, 0.26)
     .setBlendMode(Phaser.BlendModes.ADD);

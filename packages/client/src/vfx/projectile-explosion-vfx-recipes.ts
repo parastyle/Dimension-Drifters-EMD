@@ -1,4 +1,5 @@
 import type Phaser from "phaser";
+import { PROJECTILE_SPRITES } from "../sprites/projectile-manifest.js";
 import type { FxPackName } from "./fx-composer.js";
 
 export interface ProjectileExplosionVfxRecipe {
@@ -10,6 +11,8 @@ export interface ProjectileExplosionVfxRecipe {
   readonly shardCountMultiplier: number;
   readonly wispCountMultiplier: number;
   readonly footprintCount: number;
+  /** The painted texture owns the complete silhouette; skip synthesized bursts/rings/footprints. */
+  readonly suppressProcedural?: boolean;
   readonly paintedTexture?: {
     readonly key: string;
     readonly url: string;
@@ -51,6 +54,23 @@ export const PROJECTILE_EXPLOSION_VFX_RECIPES = Object.freeze({
       url: "vfx/explosions/v7/mesa-detonation.png",
       diameterMultiplier: 1,
       lifeMs: 360,
+    }),
+  }),
+  "x2-quicksilver-streetsweeper": Object.freeze({
+    weaponId: "x2-quicksilver-streetsweeper",
+    element: "fire",
+    pack: "ember-eruption",
+    silhouette: "organic-eruption",
+    paintedHalo: false,
+    shardCountMultiplier: 0,
+    wispCountMultiplier: 0,
+    footprintCount: 0,
+    suppressProcedural: true,
+    paintedTexture: Object.freeze({
+      key: "projectile-explosion:quicksilver-streetsweeper",
+      url: PROJECTILE_SPRITES["streetsweeper-grenade-explosion"].url,
+      diameterMultiplier: 1,
+      lifeMs: 420,
     }),
   }),
   "x2-tidehook-bombarpoon": Object.freeze({

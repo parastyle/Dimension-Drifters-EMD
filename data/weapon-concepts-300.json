@@ -6651,6 +6651,17 @@
       "element": "physical",
       "finish": "worn",
       "grip": "2H",
+      "gripPoints": {
+        "primary": {
+          "x": 0.29,
+          "y": 0.68
+        },
+        "secondary": {
+          "x": 0.48,
+          "y": 0.66,
+          "role": "under-barrel"
+        }
+      },
       "size": "XL",
       "rangeBand": "long",
       "scaling": [
@@ -7531,6 +7542,7 @@
         "magazine": 12,
         "reloadSeconds": 2,
         "bulletKind": "grenade",
+        "projectileArt": "generated",
         "projectileVisualScale": 1.35,
         "arcHeight": 112,
         "muzzle": "boom",

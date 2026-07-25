@@ -188,6 +188,41 @@ export interface ServerSeededGunPelletVolley {
   readonly angles: readonly number[];
 }
 
+export const PRESENT_PAYLOAD_VARIANT_COUNT = 5;
+export const PRESENT_BIG_PAYLOAD_VARIANT = 5;
+export const PRESENT_BIG_PAYLOAD_ODDS = 8;
+export const PRESENT_BIG_PAYLOAD_SCALE = 1.75;
+/** Keeps the 7:1 weighted explosion damage exactly equal to the pre-variant payload. */
+export const PRESENT_REGULAR_PAYLOAD_DAMAGE_SCALE =
+  (PRESENT_BIG_PAYLOAD_ODDS - PRESENT_BIG_PAYLOAD_SCALE) / (PRESENT_BIG_PAYLOAD_ODDS - 1);
+
+export interface ServerSeededPresentPayloadRoll {
+  /** One-based installed art part. Variant 5 is the rare big payload. */
+  readonly variant: number;
+  readonly big: boolean;
+}
+
+/** One server-owned roll per accepted present shot. The replicated variant is the complete client truth. */
+export function serverSeededPresentPayloadRoll(seed: number): ServerSeededPresentPayloadRoll {
+  const rng = makeRng(seed);
+  const big = rng.int(1, PRESENT_BIG_PAYLOAD_ODDS) === PRESENT_BIG_PAYLOAD_ODDS;
+  return Object.freeze({
+    variant: big ? PRESENT_BIG_PAYLOAD_VARIANT : rng.int(1, PRESENT_BIG_PAYLOAD_VARIANT - 1),
+    big,
+  });
+}
+
+/** Apply the present split without changing expected explosion damage across the authored 7:1 odds. */
+export function presentPayloadExplosion(
+  base: Readonly<{ radius: number; damage: number }>,
+  big: boolean,
+): Readonly<{ radius: number; damage: number }> {
+  return Object.freeze({
+    radius: base.radius * (big ? PRESENT_BIG_PAYLOAD_SCALE : 1),
+    damage: base.damage * (big ? PRESENT_BIG_PAYLOAD_SCALE : PRESENT_REGULAR_PAYLOAD_DAMAGE_SCALE),
+  });
+}
+
 export type GunRandomPellets = Readonly<
   { min: number; max: number } & (
     | { directions: "radial" }

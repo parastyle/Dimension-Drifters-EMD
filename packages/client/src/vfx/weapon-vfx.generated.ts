@@ -54,6 +54,13 @@ export interface WeaponVfxGeneratedImageReplacement extends WeaponVfxGeneratedIm
 }
 export interface WeaponVfxGeneratedImageFanTornado extends WeaponVfxGeneratedImageBase {
   kind: "fan-tornado";
+  /** Installed spin phases. The sprite remains upright; only its texture frame advances. */
+  frames: readonly [
+    { readonly textureKey: string; readonly url: string },
+    { readonly textureKey: string; readonly url: string },
+    { readonly textureKey: string; readonly url: string },
+  ];
+  frameRate: number;
   /** Uniform growth above the shared damage envelope; never shrinks below it. */
   scalePulse: number;
 }
@@ -842,6 +849,21 @@ export const WEAPON_VFX: Record<string, WeaponVfx> = {
       "audioCue": "b18:iron-gale-whoosh",
       "lifeMs": 500,
       "poolSize": 1,
+      "frames": [
+        {
+          "textureKey": "b18:tornado:iron-gale",
+          "url": "sprites/vfx-tornado-iron-gale/part-1.png"
+        },
+        {
+          "textureKey": "b37:tornado:iron-gale:2",
+          "url": "sprites/vfx-tornado-iron-gale/part-2.png"
+        },
+        {
+          "textureKey": "b37:tornado:iron-gale:3",
+          "url": "sprites/vfx-tornado-iron-gale/part-3.png"
+        }
+      ],
+      "frameRate": 10,
       "scalePulse": 0.06
     }
   },
@@ -858,6 +880,21 @@ export const WEAPON_VFX: Record<string, WeaponVfx> = {
       "audioCue": "b18:ember-fire-roar",
       "lifeMs": 500,
       "poolSize": 1,
+      "frames": [
+        {
+          "textureKey": "b18:tornado:ember-fire",
+          "url": "sprites/vfx-tornado-ember-fire/part-1.png"
+        },
+        {
+          "textureKey": "b37:tornado:ember-fire:2",
+          "url": "sprites/vfx-tornado-ember-fire/part-2.png"
+        },
+        {
+          "textureKey": "b37:tornado:ember-fire:3",
+          "url": "sprites/vfx-tornado-ember-fire/part-3.png"
+        }
+      ],
+      "frameRate": 10,
       "scalePulse": 0.06
     }
   },
@@ -874,6 +911,21 @@ export const WEAPON_VFX: Record<string, WeaponVfx> = {
       "audioCue": "b18:storm-thunder-crack",
       "lifeMs": 500,
       "poolSize": 1,
+      "frames": [
+        {
+          "textureKey": "b18:tornado:storm-shock",
+          "url": "sprites/vfx-tornado-storm-shock/part-1.png"
+        },
+        {
+          "textureKey": "b37:tornado:storm-shock:2",
+          "url": "sprites/vfx-tornado-storm-shock/part-2.png"
+        },
+        {
+          "textureKey": "b37:tornado:storm-shock:3",
+          "url": "sprites/vfx-tornado-storm-shock/part-3.png"
+        }
+      ],
+      "frameRate": 10,
       "scalePulse": 0.06
     }
   }

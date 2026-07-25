@@ -516,6 +516,8 @@ export class ProjectileState extends Schema {
   @type("uint8") sourceMuzzlePart = 0;
   /** Immutable ordinal within one accepted trigger's sequential gun burst (0 is the trigger round). */
   @type("uint8") sourceBurstIndex = 0;
+  /** One-based server-authored presentation variant. Zero means the projectile has no variant skin. */
+  @type("uint8") visualVariant = 0;
 }
 
 /** One stable, friendly player-beam presentation row. Damage stays private to the server; this is the

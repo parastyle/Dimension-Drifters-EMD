@@ -305,6 +305,7 @@ import {
   pointInOrientedRect,
   pointInSweptAnnularArc,
   poundDamage,
+  presentPayloadExplosion,
   prevWeapon,
   prismaticBeamRayOffsets,
   projectileDamageEnvelopeFor,
@@ -371,6 +372,7 @@ import {
   sanitizeMetaLevels,
   selectChainTargets,
   serverSeededGunPelletVolley,
+  serverSeededPresentPayloadRoll,
   shortestAngleDelta,
   slideContactInvulnerable,
   spawnInterval,
@@ -10665,6 +10667,7 @@ export class GameRoom extends Room<ArenaState> {
     visualScale = 1,
     sourceMuzzlePart = 0,
     sourceBurstIndex = 0,
+    visualVariant = 0,
   ): void {
     // §16 the documented budget is ARENA-wide: reject generic spitters here too. Friendly player fire is
     // and friendly rows each have an explicit ceiling; a reflected hostile shot changes sides and frees
@@ -10696,6 +10699,7 @@ export class GameRoom extends Room<ArenaState> {
     pr.visualScale = Math.max(0.01, visualScale);
     pr.sourceMuzzlePart = Math.max(0, Math.min(0xff, Math.trunc(sourceMuzzlePart)));
     pr.sourceBurstIndex = Math.max(0, Math.min(0xff, Math.trunc(sourceBurstIndex)));
+    pr.visualVariant = Math.max(0, Math.min(0xff, Math.trunc(visualVariant)));
     this.state.projectiles.set(pr.id, pr);
     this.projectileMeta.set(pr.id, {
       ttl,
@@ -10914,13 +10918,25 @@ export class GameRoom extends Room<ArenaState> {
     const randomPelletDivisor = seededVolley?.requestedCount ?? 1;
     const projectileDivisor = parallelDivisor * randomPelletDivisor;
     const dmg = (g.damage * this.heldDamageMult(weapon, player, hand)) / projectileDivisor;
-    const explode = g.explode
+    const baseExplode = g.explode
       ? {
           radius: g.explode.radius,
           damage:
             (g.explode.damage * this.heldDamageMult(weapon, player, hand)) / projectileDivisor,
         }
       : undefined;
+    // One deterministic room-seeded roll owns both installed art and gameplay-bearing payload size. The
+    // one-based variant is replicated on ProjectileState, so every client observes the exact server roll.
+    const presentPayload =
+      weapon.id === "x2-exploding-present-lobber"
+        ? serverSeededPresentPayloadRoll(
+            mixSeeds(this.state.seedHazard, player.attackSeq, this.projectileSeq, 0x70726573),
+          )
+        : undefined;
+    const explode =
+      baseExplode && presentPayload
+        ? presentPayloadExplosion(baseExplode, presentPayload.big)
+        : baseExplode;
     for (const muzzle of muzzles) {
       for (const ang of angles) {
         this.fireProjectile(
@@ -10948,6 +10964,7 @@ export class GameRoom extends Room<ArenaState> {
           g.projectileVisualScale ?? 1,
           muzzle.point.part,
           burstIndex,
+          presentPayload?.variant ?? 0,
         );
       }
     }
