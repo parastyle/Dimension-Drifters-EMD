@@ -95,7 +95,7 @@ describe("GameRoom V7 katana authority contract", () => {
 
   it("keeps choreography presentation-only rather than adding a second authority clock", async () => {
     const source = await import("node:fs/promises").then(({ readFile }) =>
-      readFile(new URL("./GameRoom.ts", import.meta.url), "utf8"),
+      readFile(new URL("./room/room-combat.ts", import.meta.url), "utf8"),
     );
     expect(source).toContain("this.nextSoloMeleeBeat(player, c, weapon, soloCooldown)");
     expect(source).toContain("this.stampAttackBeat(player)");
