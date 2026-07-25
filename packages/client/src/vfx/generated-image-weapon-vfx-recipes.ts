@@ -1,4 +1,9 @@
-import { meleeDamageEnvelopeFor, projectileDamageEnvelopeFor, type WeaponDef } from "@dd/shared";
+import {
+  meleeDamageEnvelopeFor,
+  projectileDamageEnvelopeFor,
+  TICK_MS,
+  type WeaponDef,
+} from "@dd/shared";
 import type { WeaponBladeAttachmentPose } from "../entities/SpriteRig.js";
 import {
   WEAPON_VFX,
@@ -65,6 +70,24 @@ export interface FanTornadoProjectileGeometry {
   readonly damageWidth: number;
   readonly damageHeight: number;
   readonly orientation: "upright";
+}
+
+export const FAN_TORNADO_FRAME_COUNT = 3;
+
+/** Convert the replicated server clock into an upright texture phase. At 10 fps and 20 Hz this holds
+ * each art frame for two simulation ticks, making all clients and replays choose the same phase. */
+export function fanTornadoFrameIndexAtTick(
+  frameRate: number,
+  bornTick: number,
+  flightAgeTicks: number,
+  frameCount = FAN_TORNADO_FRAME_COUNT,
+): number {
+  const count = Math.max(1, Math.trunc(frameCount));
+  const simulationHz = 1000 / TICK_MS;
+  const ticksPerFrame = Math.max(1, Math.round(simulationHz / Math.max(1, frameRate)));
+  return (
+    Math.floor(((bornTick >>> 0) + Math.max(0, Math.trunc(flightAgeTicks))) / ticksPerFrame) % count
+  );
 }
 
 const EXPECTED_KIND: Readonly<Record<GeneratedImageWeaponVfxId, WeaponVfxGeneratedImageKind>> =

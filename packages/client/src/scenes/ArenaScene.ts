@@ -287,6 +287,7 @@ import {
 } from "../vfx/colorblind-assist.js";
 import { playFxPack } from "../vfx/fx-composer.js";
 import {
+  fanTornadoFrameIndexAtTick,
   generatedImageWeaponAudioCue,
   makeGeneratedImageWeaponProjectile,
   resolveGeneratedImageWeaponVfxRecipe,
@@ -326,6 +327,7 @@ import {
 } from "../vfx/vastaghar-vfx.js";
 import {
   makeWackyProjectile,
+  preloadWackyWeaponProjectileArt,
   resolveWackyWeaponVfxRecipe,
   spawnWackyWeaponImpact,
 } from "../vfx/wacky-weapon-vfx.js";
@@ -1849,6 +1851,7 @@ export class ArenaScene extends Phaser.Scene {
     preloadParticlePacks(this); // §41 the painted element×shape particle packs (Codex factory)
     preloadCasterPaintedArt(this);
     preloadGeneratedGunProjectiles(this);
+    preloadWackyWeaponProjectileArt(this);
     preloadProjectileExplosionArt(this);
     preloadPageProjectileArt(this);
     preloadImpactFlipbooks(this); // optional per-element 6-frame hit blooms; missing strips stay silent
@@ -7138,6 +7141,17 @@ export class ArenaScene extends Phaser.Scene {
       const payload = c.getData("arcPayload") as Phaser.GameObjects.Container | undefined;
       const fanTornadoImage = c.getData("fanTornadoImage") as Phaser.GameObjects.Image | undefined;
       if (fanTornadoImage) {
+        const frameTextureKeys =
+          (c.getData("fanTornadoFrameTextureKeys") as readonly string[] | undefined) ?? [];
+        const frameIndex = fanTornadoFrameIndexAtTick(
+          (c.getData("fanTornadoFrameRate") as number | undefined) ?? 10,
+          pr.bornTick,
+          pr.flightAgeTicks,
+          frameTextureKeys.length,
+        );
+        const frameTextureKey = frameTextureKeys[frameIndex];
+        if (frameTextureKey && this.textures.exists(frameTextureKey))
+          fanTornadoImage.setTexture(frameTextureKey);
         const pulseSeconds =
           ((c.getData("fanTornadoPulseSeconds") as number | undefined) ?? 0) + dtSec;
         const pulseAmount = (c.getData("fanTornadoPulse") as number | undefined) ?? 0;
@@ -7151,6 +7165,7 @@ export class ArenaScene extends Phaser.Scene {
           .setFlipX(c.getData("fanTornadoFacing") === -1)
           .setFlipY(false);
         c.setData("fanTornadoPulseSeconds", pulseSeconds);
+        c.setData("fanTornadoFrameIndex", frameIndex);
         c.setRotation(0);
       }
       if (thrown) {

@@ -117,6 +117,11 @@ export const GUN_GENERATED_PROJECTILES: Readonly<
     url: PROJECTILE_SPRITES["ironhide-anti-tank-shell"].url,
     displayLength: 72,
   }),
+  "x2-quicksilver-streetsweeper": Object.freeze({
+    spriteId: "streetsweeper-grenade-shell",
+    url: PROJECTILE_SPRITES["streetsweeper-grenade-shell"].url,
+    displayLength: 34,
+  }),
   "x2-plaguespitter-flak-gun": Object.freeze({
     spriteId: "plaguespitter-green-shot",
     url: PROJECTILE_SPRITES["plaguespitter-green-shot"].url,

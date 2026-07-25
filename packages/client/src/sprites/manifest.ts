@@ -13260,23 +13260,23 @@ export const SPRITES = {
     "id": "x2-ironhide-buffalo-gun",
     "kind": "weapon",
     "canvas": {
-      "w": 265,
-      "h": 265
+      "w": 768,
+      "h": 252
     },
     "body": {
-      "cx": 126.63,
-      "cy": 131.06,
-      "w": 256,
-      "h": 84
+      "cx": 364.97,
+      "cy": 137.14,
+      "w": 768,
+      "h": 252
     },
     "parts": [
       {
         "role": "part-1",
         "file": "part-1.png",
-        "w": 256,
-        "h": 84,
-        "cx": 126.63,
-        "cy": 131.06,
+        "w": 768,
+        "h": 252,
+        "cx": 364.97,
+        "cy": 137.14,
         "ox": 0,
         "oy": 0
       }

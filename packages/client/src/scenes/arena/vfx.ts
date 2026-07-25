@@ -645,11 +645,20 @@ export function spawnExplosion(
 ): void {
   const recipe = resolveProjectileExplosionVfxRecipe(weaponId);
   const visualElement = recipe?.element ?? element;
-  const pack = recipe?.pack ?? explosionPack(radius, visualElement);
-  if (pack) playFxPack(scene, pack, x, y, { intensity: radius });
+  if (!recipe?.suppressProcedural) {
+    const pack = recipe?.pack ?? explosionPack(radius, visualElement);
+    if (pack) playFxPack(scene, pack, x, y, { intensity: radius });
+  }
   const painted = recipe?.paintedTexture;
   if (painted && scene.textures.exists(painted.key)) {
-    const sprite = scene.add.image(x, y, painted.key).setDepth(99012).setAlpha(0.96);
+    const sprite = scene.add
+      .image(x, y, painted.key)
+      .setName(`projectile-explosion:${weaponId ?? "generic"}`)
+      .setDepth(99012)
+      .setAlpha(0.96)
+      .setData("textureKey", painted.key)
+      .setData("damageDiameter", radius * 2)
+      .setData("displayDiameter", radius * 2 * painted.diameterMultiplier);
     sprite.setScale((radius * 2 * painted.diameterMultiplier) / Math.max(1, sprite.width));
     const finalScale = sprite.scaleX;
     sprite.setScale(finalScale * 0.42);
@@ -666,44 +675,46 @@ export function spawnExplosion(
   // PAINTED eruption (§41): element shards blasted out past the rim, embers/motes inside, smoke wisps
   // rising and lingering, plus ONE painted ring frame punched up as the halo. All degrade to no-ops
   // pre-load; the procedural composite below always renders.
-  particleBurst(scene, elementPack(visualElement, "shard"), x, y, {
-    count: Math.round((6 + radius / 22) * (recipe?.shardCountMultiplier ?? 1)),
-    speed: radius * 2.6,
-    scaleContract: paintedParticleDominance(radius, 0.66, 40, 76),
-    lifeMs: 420,
-    sink: 14,
-  });
-  particleBurst(scene, elementPack(visualElement, "mote"), x, y, {
-    count: 6,
-    speed: radius * 1.4,
-    scaleContract: paintedParticleDominance(radius, 0.48, 30, 58),
-    lifeMs: 360,
-    additive: true,
-  });
-  particleBurst(scene, elementPack(visualElement, "wisp"), x, y, {
-    count: Math.round(3 * (recipe?.wispCountMultiplier ?? 1)),
-    dirRad: -Math.PI / 2, // smoke drifts UP
-    spread: 0.5,
-    speed: 55,
-    scaleContract: paintedParticleDominance(radius, 0.84, 52, 88),
-    lifeMs: 900,
-  });
-  if (recipe?.paintedHalo !== false)
-    particleBurst(scene, elementPack(visualElement, "ring"), x, y, {
-      count: 1,
-      speed: 0,
-      scaleContract: paintedParticleDominance(radius, 1.6, 72, 144),
-      lifeMs: 340,
+  if (!recipe?.suppressProcedural) {
+    particleBurst(scene, elementPack(visualElement, "shard"), x, y, {
+      count: Math.round((6 + radius / 22) * (recipe?.shardCountMultiplier ?? 1)),
+      speed: radius * 2.6,
+      scaleContract: paintedParticleDominance(radius, 0.66, 40, 76),
+      lifeMs: 420,
+      sink: 14,
+    });
+    particleBurst(scene, elementPack(visualElement, "mote"), x, y, {
+      count: 6,
+      speed: radius * 1.4,
+      scaleContract: paintedParticleDominance(radius, 0.48, 30, 58),
+      lifeMs: 360,
       additive: true,
     });
-  // The footprint and hot core are painted splats too; no perfect engine disc survives the burst.
-  particleBurst(scene, elementPack(visualElement, "splat"), x, y, {
-    count: recipe?.footprintCount ?? 2,
-    speed: 0,
-    scaleContract: paintedParticleDominance(radius, 1.18, 64, 128),
-    lifeMs: 1100,
-    additive: false,
-  });
+    particleBurst(scene, elementPack(visualElement, "wisp"), x, y, {
+      count: Math.round(3 * (recipe?.wispCountMultiplier ?? 1)),
+      dirRad: -Math.PI / 2, // smoke drifts UP
+      spread: 0.5,
+      speed: 55,
+      scaleContract: paintedParticleDominance(radius, 0.84, 52, 88),
+      lifeMs: 900,
+    });
+    if (recipe?.paintedHalo !== false)
+      particleBurst(scene, elementPack(visualElement, "ring"), x, y, {
+        count: 1,
+        speed: 0,
+        scaleContract: paintedParticleDominance(radius, 1.6, 72, 144),
+        lifeMs: 340,
+        additive: true,
+      });
+    // The footprint and hot core are painted splats too; no perfect engine disc survives the burst.
+    particleBurst(scene, elementPack(visualElement, "splat"), x, y, {
+      count: recipe?.footprintCount ?? 2,
+      speed: 0,
+      scaleContract: paintedParticleDominance(radius, 1.18, 64, 128),
+      lifeMs: 1100,
+      additive: false,
+    });
+  }
   // Radius-scaled kick through the scene's prioritized shake.
   shakeVia(scene, 200, Math.min(0.02, 0.006 + radius / 9000), shakeSource);
 }

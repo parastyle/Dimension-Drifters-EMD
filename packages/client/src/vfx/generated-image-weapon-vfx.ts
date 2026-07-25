@@ -21,6 +21,7 @@ import {
 export {
   FAN_TORNADO_WEAPON_VFX_IDS,
   FAN_TORNADO_WEAPON_VFX_RECIPES,
+  fanTornadoFrameIndexAtTick,
   fanTornadoProjectileGeometryFor,
   GENERATED_IMAGE_WEAPON_VFX_IDS,
   GENERATED_IMAGE_WEAPON_VFX_RECIPES,
@@ -70,6 +71,8 @@ interface GeneratedImageVfxAuditEvent {
   readonly flipX?: boolean;
   readonly scalePulseMin?: number;
   readonly scalePulseMax?: number;
+  readonly frameCount?: number;
+  readonly frameRate?: number;
 }
 
 function auditGeneratedImageVfx(event: GeneratedImageVfxAuditEvent): void {
@@ -382,8 +385,9 @@ export function makeGeneratedImageWeaponProjectile(
     const hybrid = weapon.hybridProjectile;
     if (!geometry || !hybrid) return null;
     const flipX = projectile.vx < 0;
+    const frameTextureKeys = recipe.frames.map((frame) => frame.textureKey);
     const image = scene.add
-      .image(0, 0, recipe.textureKey)
+      .image(0, 0, frameTextureKeys[0] ?? recipe.textureKey)
       .setName(`generated-image-vfx:${weaponId}:fan-tornado-image`)
       .setOrigin(0.5)
       .setDisplaySize(geometry.displayWidth, geometry.displayHeight)
@@ -401,6 +405,9 @@ export function makeGeneratedImageWeaponProjectile(
       .setData("fanTornadoPulse", recipe.scalePulse)
       .setData("fanTornadoPulseSeconds", 0)
       .setData("fanTornadoFacing", flipX ? -1 : 1)
+      .setData("fanTornadoFrameRate", recipe.frameRate)
+      .setData("fanTornadoFrameTextureKeys", frameTextureKeys)
+      .setData("fanTornadoFrameIndex", 0)
       .setData("generatedImageWeaponId", weaponId)
       .setData("generatedImageRecipe", recipe)
       .setData("ang", 0);
@@ -428,6 +435,8 @@ export function makeGeneratedImageWeaponProjectile(
       flipX,
       scalePulseMin: 1,
       scalePulseMax: 1 + recipe.scalePulse,
+      frameCount: frameTextureKeys.length,
+      frameRate: recipe.frameRate,
     });
     return container;
   }

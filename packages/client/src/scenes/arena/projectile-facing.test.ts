@@ -22,14 +22,23 @@ describe("projectile art facing", () => {
       .map(([id]) => id)
       .sort();
 
-    expect(entries).toHaveLength(24);
-    expect(asymmetric).toHaveLength(22);
+    expect(entries).toHaveLength(31);
+    expect(asymmetric).toHaveLength(23);
     expect(asymmetric.every(([, sprite]) => sprite.facing === "mirror-upright")).toBe(true);
     expect(PROJECTILE_SPRITES["saintskull-monstrance-holy-skull"]).toMatchObject({
       asymmetric: true,
       facing: "mirror-upright",
     });
-    expect(rotational).toEqual(["coyotes-grin-throwing-blade", "thunderhead-smoke-ring"]);
+    expect(rotational).toEqual([
+      "coyotes-grin-throwing-blade",
+      "exploding-present-variant-1",
+      "exploding-present-variant-2",
+      "exploding-present-variant-3",
+      "exploding-present-variant-4",
+      "exploding-present-variant-5",
+      "streetsweeper-grenade-explosion",
+      "thunderhead-smoke-ring",
+    ]);
   });
 
   it("mirrors left-moving asymmetric art without rotating its authored top through pi", () => {
