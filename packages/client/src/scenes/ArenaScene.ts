@@ -9122,7 +9122,7 @@ export class ArenaScene extends Phaser.Scene {
     for (const [id, blob] of this.blobs) {
       let mx = blob.x - blob.renderPrevX;
       let my = blob.y - blob.renderPrevY;
-      const speed = Math.hypot(mx, my) * invDt; // §7 v0.105 raw render speed (px/s) for the gait blend
+      let speed = Math.hypot(mx, my) * invDt; // §7 v0.105 raw render speed (px/s) for the gait blend
       const ml = Math.hypot(mx, my);
       if (ml > 0.001) {
         mx /= ml;
@@ -9133,6 +9133,25 @@ export class ArenaScene extends Phaser.Scene {
       }
       blob.renderPrevX = blob.x;
       blob.renderPrevY = blob.y;
+      // B52: the owner root may include B51's correction/presentation debt, whose derivative is not
+      // locomotion. Feeding that frame-to-frame correction into SpriteRig made its independent gait clock
+      // alternately stall and consume several steps, snapping HEAD/limb targets while the root stayed smooth.
+      // SELF already has the exact fixed-tick locomotion vector that moved prediction; use that clock while
+      // movement input is held. Keep render motion for remotes, authored impulses, and blocked/idle frames.
+      if (
+        id === selfId &&
+        this.predictor &&
+        speed > 1 &&
+        Math.hypot(this.curDx, this.curDy) > 0.001
+      ) {
+        const predictedMotion = this.predictor.clientMovementReport();
+        const predictedSpeed = Math.hypot(predictedMotion.mvx, predictedMotion.mvy);
+        if (predictedSpeed > 0.001) {
+          mx = predictedMotion.mvx / predictedSpeed;
+          my = predictedMotion.mvy / predictedSpeed;
+          speed = predictedSpeed;
+        }
+      }
 
       // §5/§20 (Stage B): lift the rig by the HEIGHT arc. §4 v0.107: SELF rides the PREDICTED arc (the
       // hop starts the frame you press SPACE — no round-trip); remotes ride the synced height (smoothed
