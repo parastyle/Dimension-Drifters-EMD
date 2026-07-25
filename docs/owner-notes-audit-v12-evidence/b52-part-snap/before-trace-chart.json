@@ -1,0 +1,2618 @@
+{
+  "label": "before",
+  "capturedAt": "2026-07-25T06:28:53.626Z",
+  "assertion": "HEAD world x must never move backward by more than 1px while root x is monotonic",
+  "summary": [
+    {
+      "scenario": "proto-cowboy-hidden-face:walking",
+      "durationMs": 4266.5,
+      "frames": 32,
+      "headSnapHz": 0.2344,
+      "parts": {
+        "head": {
+          "maxBackwardPx": 17.8552,
+          "maxForwardPx": 82.6772,
+          "maxRelativeStepPx": 35.0562,
+          "backwardEvents": [
+            {
+              "frame": 19,
+              "sceneMs": 11475.7,
+              "dx": -17.8552,
+              "rootDx": 5.3333,
+              "relativeDx": -35.0562
+            }
+          ]
+        },
+        "body": {
+          "maxBackwardPx": 0,
+          "maxForwardPx": 63.0476,
+          "maxRelativeStepPx": 0.0026,
+          "backwardEvents": []
+        },
+        "hand-front": {
+          "maxBackwardPx": 0,
+          "maxForwardPx": 61.2922,
+          "maxRelativeStepPx": 35.9923,
+          "backwardEvents": []
+        },
+        "hand-back": {
+          "maxBackwardPx": 0,
+          "maxForwardPx": 57.426,
+          "maxRelativeStepPx": 27.5171,
+          "backwardEvents": []
+        },
+        "foot-front": {
+          "maxBackwardPx": 0,
+          "maxForwardPx": 61.9319,
+          "maxRelativeStepPx": 20.9898,
+          "backwardEvents": []
+        },
+        "foot-back": {
+          "maxBackwardPx": 0.2288,
+          "maxForwardPx": 62.4558,
+          "maxRelativeStepPx": 17.7572,
+          "backwardEvents": []
+        }
+      }
+    }
+  ],
+  "traces": [
+    {
+      "scenario": "proto-cowboy-hidden-face:walking",
+      "character": "proto-cowboy-hidden-face",
+      "pose": "walking",
+      "durationMs": 4266.5,
+      "frames": [
+        {
+          "frame": 0,
+          "sceneMs": 8825.9,
+          "wallMs": 8829.70000000298,
+          "scenario": "proto-cowboy-hidden-face:walking",
+          "character": "proto-cowboy-hidden-face",
+          "pose": "walking",
+          "root": {
+            "x": 2400,
+            "y": 2420,
+            "localX": 2400,
+            "localY": 2420
+          },
+          "parts": {
+            "head": {
+              "x": 2403.341064453125,
+              "y": 2361.920654296875,
+              "localX": 5.280476887141286,
+              "localY": -87.68803261209958
+            },
+            "body": {
+              "x": 2400.5771484375,
+              "y": 2421.42529296875,
+              "localX": 0.9119997562139167,
+              "localY": 2.151841588559774
+            },
+            "hand-front": {
+              "x": 2465.208984375,
+              "y": 2425.03955078125,
+              "localX": 103.06365406322905,
+              "localY": 7.608688810940447
+            },
+            "hand-back": {
+              "x": 2426.65869140625,
+              "y": 2422.812744140625,
+              "localX": 42.13452477511859,
+              "localY": 4.246649779475258
+            },
+            "foot-front": {
+              "x": 2429.7060546875,
+              "y": 2464.832763671875,
+              "localX": 46.95090389246903,
+              "localY": 67.68832446229852
+            },
+            "foot-back": {
+              "x": 2372.1298828125,
+              "y": 2461.04443359375,
+              "localX": -44.0492535348803,
+              "localY": 61.96894665129512
+            }
+          },
+          "debug": {
+            "facing": 1,
+            "facingBlend": 0.9552584562876689,
+            "rootScaleX": 0.6327054033885027,
+            "gait": 0.002612374443257461,
+            "stridePhase": 2.0923586627749184,
+            "loopDeltaMs": 16.666666666666664,
+            "headSpring": {
+              "x": 5.280476887141286,
+              "y": -87.68803261209958,
+              "vx": 1.4482017448794424,
+              "vy": 1.3930393399429557,
+              "ready": true
+            },
+            "headInput": {
+              "targetX": 6.3017070129735355,
+              "targetY": -88.85775833696775,
+              "authoredOffsetX": 0,
+              "authoredOffsetY": 0.002031339545447531,
+              "impulseX": 0.046395870042975386,
+              "impulseY": 0,
+              "elapsedSeconds": 0.01666666666666663,
+              "reducedMotion": false,
+              "reset": false
+            }
+          }
+        },
+        {
+          "frame": 1,
+          "sceneMs": 8975.9,
+          "wallMs": 8986.5,
+          "scenario": "proto-cowboy-hidden-face:walking",
+          "character": "proto-cowboy-hidden-face",
+          "pose": "walking",
+          "root": {
+            "x": 2400,
+            "y": 2420,
+            "localX": 2400,
+            "localY": 2420
+          },
+          "parts": {
+            "head": {
+              "x": 2403.390869140625,
+              "y": 2361.927001953125,
+              "localX": 5.314046045549599,
+              "localY": -87.67868173703638
+            },
+            "body": {
+              "x": 2400.58203125,
+              "y": 2421.37548828125,
+              "localX": 0.9119998115516077,
+              "localY": 2.076781186532008
+            },
+            "hand-front": {
+              "x": 2465.858154296875,
+              "y": 2425.090576171875,
+              "localX": 103.21336222478546,
+              "localY": 7.685568188113487
+            },
+            "hand-back": {
+              "x": 2426.937255859375,
+              "y": 2422.7041015625,
+              "localX": 42.216415410426634,
+              "localY": 4.0825650521217
+            },
+            "foot-front": {
+              "x": 2429.939453125,
+              "y": 2464.830810546875,
+              "localX": 46.92125298623015,
+              "localY": 67.68556574113052
+            },
+            "foot-back": {
+              "x": 2371.901123046875,
+              "y": 2461.044921875,
+              "localX": -44.03691636261075,
+              "localY": 61.96968525140438
+            }
+          },
+          "debug": {
+            "facing": 1,
+            "facingBlend": 0.9633687222225317,
+            "rootScaleX": 0.6380771528308965,
+            "gait": 0.0022862804120886045,
+            "stridePhase": 2.0923586627749184,
+            "loopDeltaMs": 16.666666666666664,
+            "headSpring": {
+              "x": 5.314046045549599,
+              "y": -87.67868173703638,
+              "vx": 2.5084468379711646,
+              "vy": -0.2362580317194396,
+              "ready": true
+            },
+            "headInput": {
+              "targetX": 6.391669952660025,
+              "targetY": -89.00420860640108,
+              "authoredOffsetX": 0,
+              "authoredOffsetY": 0.0017777741720925082,
+              "impulseX": 0.04225979943360084,
+              "impulseY": 0,
+              "elapsedSeconds": 0.01666666666666663,
+              "reducedMotion": false,
+              "reset": false
+            }
+          }
+        },
+        {
+          "frame": 2,
+          "sceneMs": 9142.6,
+          "wallMs": 9161.39999999851,
+          "scenario": "proto-cowboy-hidden-face:walking",
+          "character": "proto-cowboy-hidden-face",
+          "pose": "walking",
+          "root": {
+            "x": 2400,
+            "y": 2420,
+            "localX": 2400,
+            "localY": 2420
+          },
+          "parts": {
+            "head": {
+              "x": 2403.446533203125,
+              "y": 2361.915283203125,
+              "localX": 5.3644640277340025,
+              "localY": -87.69618082786286
+            },
+            "body": {
+              "x": 2400.5859375,
+              "y": 2421.32373046875,
+              "localX": 0.9119998542532854,
+              "localY": 1.9986761151125603
+            },
+            "hand-front": {
+              "x": 2466.400390625,
+              "y": 2425.139404296875,
+              "localX": 103.35078822571863,
+              "localY": 7.759409598014787
+            },
+            "hand-back": {
+              "x": 2427.16552734375,
+              "y": 2422.60009765625,
+              "localX": 42.28265109281859,
+              "localY": 3.9257758960661455
+            },
+            "foot-front": {
+              "x": 2430.12744140625,
+              "y": 2464.82861328125,
+              "localX": 46.89275606634815,
+              "localY": 67.68228477708189
+            },
+            "foot-back": {
+              "x": 2371.713134765625,
+              "y": 2461.04931640625,
+              "localX": -44.028134743816025,
+              "localY": 61.97627996238288
+            }
+          },
+          "debug": {
+            "facing": 1,
+            "facingBlend": 0.9700088463590446,
+            "rootScaleX": 0.642475169297214,
+            "gait": 0.0020008916165104623,
+            "stridePhase": 2.0923586627749184,
+            "loopDeltaMs": 16.666666666666664,
+            "headSpring": {
+              "x": 5.3644640277340025,
+              "y": -87.69618082786286,
+              "vx": 3.4728379614940375,
+              "vy": -1.824611310258784,
+              "ready": true
+            },
+            "headInput": {
+              "targetX": 6.471237563233914,
+              "targetY": -89.15741541326032,
+              "authoredOffsetX": 0,
+              "authoredOffsetY": 0.001555860522699029,
+              "impulseX": 0.03823774190231573,
+              "impulseY": 0,
+              "elapsedSeconds": 0.01666666666666663,
+              "reducedMotion": false,
+              "reset": false
+            }
+          }
+        },
+        {
+          "frame": 3,
+          "sceneMs": 9259.1,
+          "wallMs": 9268.70000000298,
+          "scenario": "proto-cowboy-hidden-face:walking",
+          "character": "proto-cowboy-hidden-face",
+          "pose": "walking",
+          "root": {
+            "x": 2402.888916015625,
+            "y": 2420,
+            "localX": 2402.8888888888887,
+            "localY": 2420
+          },
+          "parts": {
+            "head": {
+              "x": 2408.10791015625,
+              "y": 2361.21923828125,
+              "localX": 8.078055585689278,
+              "localY": -88.74723400354208
+            },
+            "body": {
+              "x": 2403.47802734375,
+              "y": 2421.054931640625,
+              "localX": 0.9119998852513398,
+              "localY": 1.5926192342764354
+            },
+            "hand-front": {
+              "x": 2468.501708984375,
+              "y": 2425.20947265625,
+              "localX": 101.55581401629698,
+              "localY": 7.86534587845819
+            },
+            "hand-back": {
+              "x": 2429.70849609375,
+              "y": 2422.310302734375,
+              "localX": 41.51146112774251,
+              "localY": 3.4879877488636266
+            },
+            "foot-front": {
+              "x": 2432.5654296875,
+              "y": 2464.742919921875,
+              "localX": 45.93356369642474,
+              "localY": 67.55287733991649
+            },
+            "foot-back": {
+              "x": 2373.658447265625,
+              "y": 2460.89697265625,
+              "localX": -45.243223605906536,
+              "localY": 61.746233287948115
+            }
+          },
+          "debug": {
+            "facing": 1,
+            "facingBlend": 0.9754453201938631,
+            "rootScaleX": 0.6460759606307315,
+            "gait": 0.06936557914213194,
+            "stridePhase": 2.2201855939068884,
+            "loopDeltaMs": 16.666666666666664,
+            "headSpring": {
+              "x": 8.078055585689278,
+              "y": -88.74723400354208,
+              "vx": 8.710265590711876,
+              "vy": -3.7223216842783895,
+              "ready": true
+            },
+            "headInput": {
+              "targetX": 10.582542256603418,
+              "targetY": -89.71062565130654,
+              "authoredOffsetX": 0,
+              "authoredOffsetY": 0.06013355144271825,
+              "impulseX": -0.020772736873941593,
+              "impulseY": 0,
+              "elapsedSeconds": 0.01666666666666663,
+              "reducedMotion": false,
+              "reset": false
+            }
+          }
+        },
+        {
+          "frame": 4,
+          "sceneMs": 9409.1,
+          "wallMs": 9420.60000000149,
+          "scenario": "proto-cowboy-hidden-face:walking",
+          "character": "proto-cowboy-hidden-face",
+          "pose": "walking",
+          "root": {
+            "x": 2406.5,
+            "y": 2420,
+            "localX": 2406.5,
+            "localY": 2420
+          },
+          "parts": {
+            "head": {
+              "x": 2413.900146484375,
+              "y": 2360.658203125,
+              "localX": 11.401965575371769,
+              "localY": -89.59407519669043
+            },
+            "body": {
+              "x": 2407.091796875,
+              "y": 2420.7490234375,
+              "localX": 0.9119999093297813,
+              "localY": 1.1308789623417408
+            },
+            "hand-front": {
+              "x": 2471.353515625,
+              "y": 2425.2685546875,
+              "localX": 99.9244914657921,
+              "localY": 7.954466397076776
+            },
+            "hand-back": {
+              "x": 2433.01513671875,
+              "y": 2421.994873046875,
+              "localX": 40.85402405352782,
+              "localY": 3.011812455120068
+            },
+            "foot-front": {
+              "x": 2435.905517578125,
+              "y": 2464.643798828125,
+              "localX": 45.30713943364693,
+              "localY": 67.40302040819752
+            },
+            "foot-back": {
+              "x": 2376.392822265625,
+              "y": 2460.79638671875,
+              "localX": -46.38838513568558,
+              "localY": 61.59450682897248
+            }
+          },
+          "debug": {
+            "facing": 1,
+            "facingBlend": 0.9798963285107328,
+            "rootScaleX": 0.6490240392308988,
+            "gait": 0.14522496935649812,
+            "stridePhase": 2.379969257821871,
+            "loopDeltaMs": 16.666666666666664,
+            "headSpring": {
+              "x": 11.401965575371769,
+              "y": -89.59407519669043,
+              "vx": 14.121751613753936,
+              "vy": -4.756549993088466,
+              "ready": true
+            },
+            "headInput": {
+              "targetX": 14.163441612995351,
+              "targetY": -90.27790760888773,
+              "authoredOffsetX": 0,
+              "authoredOffsetY": 0.13055474383786478,
+              "impulseX": -0.10361145252959986,
+              "impulseY": 0,
+              "elapsedSeconds": 0.01666666666666663,
+              "reducedMotion": false,
+              "reset": false
+            }
+          }
+        },
+        {
+          "frame": 5,
+          "sceneMs": 9559.2,
+          "wallMs": 9573.29999999702,
+          "scenario": "proto-cowboy-hidden-face:walking",
+          "character": "proto-cowboy-hidden-face",
+          "pose": "walking",
+          "root": {
+            "x": 2456.833251953125,
+            "y": 2420,
+            "localX": 2456.8333333333335,
+            "localY": 2420
+          },
+          "parts": {
+            "head": {
+              "x": 2485.513427734375,
+              "y": 2367.7626953125,
+              "localX": 44.02582356091493,
+              "localY": -78.86801802256991
+            },
+            "body": {
+              "x": 2457.42724609375,
+              "y": 2421.0693359375,
+              "localX": 0.9119999010798273,
+              "localY": 1.61466478143474
+            },
+            "hand-front": {
+              "x": 2511.6611328125,
+              "y": 2425.36767578125,
+              "localX": 84.16456860581458,
+              "localY": 8.104230153606705
+            },
+            "hand-back": {
+              "x": 2477.90673828125,
+              "y": 2422.349365234375,
+              "localX": 32.34901276026244,
+              "localY": 3.5472300381033497
+            },
+            "foot-front": {
+              "x": 2479.54150390625,
+              "y": 2463.38037109375,
+              "localX": 34.85858004133271,
+              "localY": 65.49575757129813
+            },
+            "foot-back": {
+              "x": 2420.640869140625,
+              "y": 2461.392333984375,
+              "localX": -55.55766040109385,
+              "localY": 62.49409397555625
+            }
+          },
+          "debug": {
+            "facing": 1,
+            "facingBlend": 0.98354050590196,
+            "rootScaleX": 0.651437721843347,
+            "gait": 0.2519236993966891,
+            "stridePhase": 4.607107711775201,
+            "loopDeltaMs": 16.666666666666664,
+            "headSpring": {
+              "x": 44.02582356091493,
+              "y": -78.86801802256991,
+              "vx": 47.32114877813473,
+              "vy": 8.044182886884107,
+              "ready": true
+            },
+            "headInput": {
+              "targetX": 46.63073442136556,
+              "targetY": -77.99996012061045,
+              "authoredOffsetX": 0,
+              "authoredOffsetY": -0.04738912551432785,
+              "impulseX": -0.6579574060279738,
+              "impulseY": 0,
+              "elapsedSeconds": 0.01666666666666663,
+              "reducedMotion": false,
+              "reset": false
+            }
+          }
+        },
+        {
+          "frame": 6,
+          "sceneMs": 9675.9,
+          "wallMs": 9681,
+          "scenario": "proto-cowboy-hidden-face:walking",
+          "character": "proto-cowboy-hidden-face",
+          "pose": "walking",
+          "root": {
+            "x": 2510.166748046875,
+            "y": 2420,
+            "localX": 2510.1666666666665,
+            "localY": 2420
+          },
+          "parts": {
+            "head": {
+              "x": 2539.408447265625,
+              "y": 2367.853515625,
+              "localX": 44.75206924003643,
+              "localY": -78.73059033771801
+            },
+            "body": {
+              "x": 2510.7626953125,
+              "y": 2421.552978515625,
+              "localX": 0.9119998868378508,
+              "localY": 2.3448222134031895
+            },
+            "hand-front": {
+              "x": 2565.129150390625,
+              "y": 2425.3681640625,
+              "localX": 84.11566978857765,
+              "localY": 8.10475892797661
+            },
+            "hand-back": {
+              "x": 2530.1240234375,
+              "y": 2422.8359375,
+              "localX": 30.54309117768622,
+              "localY": 4.281710374786488
+            },
+            "foot-front": {
+              "x": 2531.746337890625,
+              "y": 2464.384521484375,
+              "localX": 33.02579147057195,
+              "localY": 67.01177407380919
+            },
+            "foot-back": {
+              "x": 2474.7255859375,
+              "y": 2460.524169921875,
+              "localX": -54.240119734604434,
+              "localY": 61.1834170194916
+            }
+          },
+          "debug": {
+            "facing": 1,
+            "facingBlend": 0.986524106001829,
+            "rootScaleX": 0.6534138780263279,
+            "gait": 0.3453035811036306,
+            "stridePhase": 6.966989517288642,
+            "loopDeltaMs": 16.666666666666664,
+            "headSpring": {
+              "x": 44.75206924003643,
+              "y": -78.73059033771801,
+              "vx": 40.82609292032341,
+              "vy": 8.411961636682904,
+              "ready": true
+            },
+            "headInput": {
+              "targetX": 44.718626686781064,
+              "targetY": -77.24033611730468,
+              "authoredOffsetX": 0,
+              "authoredOffsetY": -0.3043800769163112,
+              "impulseX": -1.017364467935731,
+              "impulseY": 0,
+              "elapsedSeconds": 0.01666666666666663,
+              "reducedMotion": false,
+              "reset": false
+            }
+          }
+        },
+        {
+          "frame": 7,
+          "sceneMs": 9775.8,
+          "wallMs": 9786.20000000298,
+          "scenario": "proto-cowboy-hidden-face:walking",
+          "character": "proto-cowboy-hidden-face",
+          "pose": "walking",
+          "root": {
+            "x": 2519.3095703125,
+            "y": 2420,
+            "localX": 2519.309523809524,
+            "localY": 2420
+          },
+          "parts": {
+            "head": {
+              "x": 2549.027587890625,
+              "y": 2367.94677734375,
+              "localX": 45.368845687260084,
+              "localY": -78.58989316841587
+            },
+            "body": {
+              "x": 2519.906982421875,
+              "y": 2421.509765625,
+              "localX": 0.9119999152899899,
+              "localY": 2.279348321831266
+            },
+            "hand-front": {
+              "x": 2572.97509765625,
+              "y": 2425.449951171875,
+              "localX": 81.92808568160065,
+              "localY": 8.228471390123431
+            },
+            "hand-back": {
+              "x": 2538.116943359375,
+              "y": 2422.853759765625,
+              "localX": 28.712086631957497,
+              "localY": 4.308534384969765
+            },
+            "foot-front": {
+              "x": 2541.114990234375,
+              "y": 2464.277099609375,
+              "localX": 33.288973010509764,
+              "localY": 66.84965137911863
+            },
+            "foot-back": {
+              "x": 2483.119384765625,
+              "y": 2459.90576171875,
+              "localX": -55.249631930793406,
+              "localY": 60.24978395960394
+            }
+          },
+          "debug": {
+            "facing": 1,
+            "facingBlend": 0.9889668711584785,
+            "rootScaleX": 0.6550318178662196,
+            "gait": 0.4270271621089323,
+            "stridePhase": 7.3715406839481,
+            "loopDeltaMs": 16.666666666666664,
+            "headSpring": {
+              "x": 45.368845687260084,
+              "y": -78.58989316841587,
+              "vx": 34.43183681467275,
+              "vy": 8.443416494933135,
+              "ready": true
+            },
+            "headInput": {
+              "targetX": 44.92288747575769,
+              "targetY": -77.35284936150805,
+              "authoredOffsetX": 0,
+              "authoredOffsetY": -0.31590764700713125,
+              "impulseX": -1.2503840026396047,
+              "impulseY": 0,
+              "elapsedSeconds": 0.01666666666666663,
+              "reducedMotion": false,
+              "reset": false
+            }
+          }
+        },
+        {
+          "frame": 8,
+          "sceneMs": 9925.8,
+          "wallMs": 9942.70000000298,
+          "scenario": "proto-cowboy-hidden-face:walking",
+          "character": "proto-cowboy-hidden-face",
+          "pose": "walking",
+          "root": {
+            "x": 2560.452392578125,
+            "y": 2420,
+            "localX": 2560.452380952381,
+            "localY": 2420
+          },
+          "parts": {
+            "head": {
+              "x": 2591.1083984375,
+              "y": 2367.612060546875,
+              "localX": 46.706257984861,
+              "localY": -79.09544479204875
+            },
+            "body": {
+              "x": 2561.051025390625,
+              "y": 2420.025390625,
+              "localX": 0.9119999125248511,
+              "localY": 0.03850376480725333
+            },
+            "hand-front": {
+              "x": 2610.773681640625,
+              "y": 2425.3154296875,
+              "localX": 76.66745909380575,
+              "localY": 8.025351703423187
+            },
+            "hand-back": {
+              "x": 2578.41357421875,
+              "y": 2421.340087890625,
+              "localX": 27.36508255501588,
+              "localY": 2.0234337451497337
+            },
+            "foot-front": {
+              "x": 2584.6884765625,
+              "y": 2464.183837890625,
+              "localX": 36.92506651992682,
+              "localY": 66.70856151426362
+            },
+            "foot-back": {
+              "x": 2521.1298828125,
+              "y": 2461.180419921875,
+              "localX": -59.91031141679658,
+              "localY": 62.17430190223074
+            }
+          },
+          "debug": {
+            "facing": 1,
+            "facingBlend": 0.9909668381147747,
+            "rootScaleX": 0.656356474969769,
+            "gait": 0.49854945974141746,
+            "stridePhase": 9.192020933915632,
+            "loopDeltaMs": 16.666666666666664,
+            "headSpring": {
+              "x": 46.706257984861,
+              "y": -79.09544479204875,
+              "vx": 32.01637671152654,
+              "vy": 5.434436579727485,
+              "ready": true
+            },
+            "headInput": {
+              "targetX": 48.50112645392189,
+              "targetY": -80.49768484460697,
+              "authoredOffsetX": 0,
+              "authoredOffsetY": 0.20141098695900544,
+              "impulseX": -1.4014608993076665,
+              "impulseY": 0,
+              "elapsedSeconds": 0.01666666666666663,
+              "reducedMotion": false,
+              "reset": false
+            }
+          }
+        },
+        {
+          "frame": 9,
+          "sceneMs": 10109.1,
+          "wallMs": 10113.60000000149,
+          "scenario": "proto-cowboy-hidden-face:walking",
+          "character": "proto-cowboy-hidden-face",
+          "pose": "walking",
+          "root": {
+            "x": 2601.59521484375,
+            "y": 2420,
+            "localX": 2601.595238095238,
+            "localY": 2420
+          },
+          "parts": {
+            "head": {
+              "x": 2634.96923828125,
+              "y": 2368.88916015625,
+              "localX": 50.76362935560933,
+              "localY": -77.16729213891769
+            },
+            "body": {
+              "x": 2602.19482421875,
+              "y": 2420.54345703125,
+              "localX": 0.9119999101497335,
+              "localY": 0.8206494008477291
+            },
+            "hand-front": {
+              "x": 2651.103515625,
+              "y": 2425.509033203125,
+              "localX": 75.3044636226834,
+              "localY": 8.317399297854369
+            },
+            "hand-back": {
+              "x": 2616.80859375,
+              "y": 2422.0087890625,
+              "localX": 23.140457274741927,
+              "localY": 3.0326942637208463
+            },
+            "foot-front": {
+              "x": 2623.764892578125,
+              "y": 2461.58056640625,
+              "localX": 33.72105346418693,
+              "localY": 62.778329339923054
+            },
+            "foot-back": {
+              "x": 2563.823974609375,
+              "y": 2461.758544921875,
+              "localX": -57.45179442680365,
+              "localY": 63.047077732410344
+            }
+          },
+          "debug": {
+            "facing": 1,
+            "facingBlend": 0.9926042725670342,
+            "rootScaleX": 0.657441012477728,
+            "gait": 0.5611438663460171,
+            "stridePhase": 11.012501183883144,
+            "loopDeltaMs": 16.666666666666664,
+            "headSpring": {
+              "x": 50.76362935560933,
+              "y": -77.16729213891769,
+              "vx": 33.3229890319186,
+              "vy": 8.106173870889672,
+              "ready": true
+            },
+            "headInput": {
+              "targetX": 53.012698618029425,
+              "targetY": -76.00916060616937,
+              "authoredOffsetX": 0,
+              "authoredOffsetY": 0.017093897685144695,
+              "impulseX": -1.4994107503184744,
+              "impulseY": 0,
+              "elapsedSeconds": 0.01666666666666663,
+              "reducedMotion": false,
+              "reset": false
+            }
+          }
+        },
+        {
+          "frame": 10,
+          "sceneMs": 10209.2,
+          "wallMs": 10226.39999999851,
+          "scenario": "proto-cowboy-hidden-face:walking",
+          "character": "proto-cowboy-hidden-face",
+          "pose": "walking",
+          "root": {
+            "x": 2626.738037109375,
+            "y": 2420,
+            "localX": 2626.7380952380954,
+            "localY": 2420
+          },
+          "parts": {
+            "head": {
+              "x": 2661.020751953125,
+              "y": 2367.92236328125,
+              "localX": 52.075323579000326,
+              "localY": -78.62677616454751
+            },
+            "body": {
+              "x": 2627.33837890625,
+              "y": 2419.34375,
+              "localX": 0.9119999244928537,
+              "localY": -0.9906998043468024
+            },
+            "hand-front": {
+              "x": 2675.2099609375,
+              "y": 2425.3349609375,
+              "localX": 73.62889244515688,
+              "localY": 8.054798395982482
+            },
+            "hand-back": {
+              "x": 2638.796630859375,
+              "y": 2420.7890625,
+              "localX": 18.316964711743047,
+              "localY": 1.1912905028912184
+            },
+            "foot-front": {
+              "x": 2646.373779296875,
+              "y": 2462.848388671875,
+              "localX": 29.826803229576797,
+              "localY": 64.69241645960349
+            },
+            "foot-back": {
+              "x": 2591.13623046875,
+              "y": 2461.823486328125,
+              "localX": -54.079069055829464,
+              "localY": 63.144992577586315
+            }
+          },
+          "debug": {
+            "facing": 1,
+            "facingBlend": 0.9939448905092484,
+            "rootScaleX": 0.6583289566883607,
+            "gait": 0.6159248209276883,
+            "stridePhase": 12.125016892196639,
+            "loopDeltaMs": 16.666666666666664,
+            "headSpring": {
+              "x": 52.075323579000326,
+              "y": -78.62677616454751,
+              "vx": 29.860822394819614,
+              "vy": 4.043732001958592,
+              "ready": true
+            },
+            "headInput": {
+              "targetX": 52.932775257264986,
+              "targetY": -80.30377342807931,
+              "authoredOffsetX": 0,
+              "authoredOffsetY": 0.42820016998842064,
+              "impulseX": -1.5629159819232727,
+              "impulseY": 0,
+              "elapsedSeconds": 0.01666666666666663,
+              "reducedMotion": false,
+              "reset": false
+            }
+          }
+        },
+        {
+          "frame": 11,
+          "sceneMs": 10375.8,
+          "wallMs": 10381.20000000298,
+          "scenario": "proto-cowboy-hidden-face:walking",
+          "character": "proto-cowboy-hidden-face",
+          "pose": "walking",
+          "root": {
+            "x": 2683.880859375,
+            "y": 2420,
+            "localX": 2683.8809523809527,
+            "localY": 2420
+          },
+          "parts": {
+            "head": {
+              "x": 2716.75830078125,
+              "y": 2365.595703125,
+              "localX": 49.88566344042685,
+              "localY": -82.13957955179582
+            },
+            "body": {
+              "x": 2684.48193359375,
+              "y": 2419.172607421875,
+              "localX": 0.9119998995868328,
+              "localY": -1.2491700138182755
+            },
+            "hand-front": {
+              "x": 2727.421630859375,
+              "y": 2425.443115234375,
+              "localX": 66.06536966007606,
+              "localY": 8.218092812745425
+            },
+            "hand-back": {
+              "x": 2694.3486328125,
+              "y": 2420.750732421875,
+              "localX": 15.882839483800812,
+              "localY": 1.1333897789008738
+            },
+            "foot-front": {
+              "x": 2706.48291015625,
+              "y": 2463.970947265625,
+              "localX": 34.294531859313665,
+              "localY": 66.38717545972729
+            },
+            "foot-back": {
+              "x": 2645.0830078125,
+              "y": 2459.286376953125,
+              "localX": -58.868717552517325,
+              "localY": 59.31455620062093
+            }
+          },
+          "debug": {
+            "facing": 1,
+            "facingBlend": 0.9950424956466672,
+            "rootScaleX": 0.6590559439206232,
+            "gait": 0.6638676507692705,
+            "stridePhase": 14.653461683818206,
+            "loopDeltaMs": 16.666666666666664,
+            "headSpring": {
+              "x": 49.88566344042685,
+              "y": -82.13957955179582,
+              "vx": 19.895360878927246,
+              "vy": -4.977675164580532,
+              "ready": true
+            },
+            "headInput": {
+              "targetX": 48.70313590768417,
+              "targetY": -83.7478908709046,
+              "authoredOffsetX": 0,
+              "authoredOffsetY": 0.5130145523826554,
+              "impulseX": -1.604089239458234,
+              "impulseY": 0,
+              "elapsedSeconds": 0.01666666666666663,
+              "reducedMotion": false,
+              "reset": false
+            }
+          }
+        },
+        {
+          "frame": 12,
+          "sceneMs": 10475.8,
+          "wallMs": 10490.20000000298,
+          "scenario": "proto-cowboy-hidden-face:walking",
+          "character": "proto-cowboy-hidden-face",
+          "pose": "walking",
+          "root": {
+            "x": 2725.02392578125,
+            "y": 2420,
+            "localX": 2725.023809523809,
+            "localY": 2420
+          },
+          "parts": {
+            "head": {
+              "x": 2759.796630859375,
+              "y": 2372.185302734375,
+              "localX": 52.71395771268168,
+              "localY": -72.19065974284429
+            },
+            "body": {
+              "x": 2725.62548828125,
+              "y": 2421.956787109375,
+              "localX": 0.911999894390425,
+              "localY": 2.9544922268901113
+            },
+            "hand-front": {
+              "x": 2765.2412109375,
+              "y": 2425.350830078125,
+              "localX": 60.96739535813385,
+              "localY": 8.078600932934414
+            },
+            "hand-back": {
+              "x": 2732.855224609375,
+              "y": 2423.575439453125,
+              "localX": 11.871876763155782,
+              "localY": 5.3981874041526225
+            },
+            "foot-front": {
+              "x": 2748.001708984375,
+              "y": 2461.72119140625,
+              "localX": 34.833190143100424,
+              "localY": 62.99054735499148
+            },
+            "foot-back": {
+              "x": 2685.71240234375,
+              "y": 2461.929931640625,
+              "localX": -59.59434254363007,
+              "localY": 63.305633045388696
+            }
+          },
+          "debug": {
+            "facing": 1,
+            "facingBlend": 0.9959411387274085,
+            "rootScaleX": 0.6596511507247715,
+            "gait": 0.7058259362860392,
+            "stridePhase": 16.473941933785696,
+            "loopDeltaMs": 16.666666666666664,
+            "headSpring": {
+              "x": 52.71395771268168,
+              "y": -72.19065974284429,
+              "vx": 19.387285395107423,
+              "vy": 7.807491292186838,
+              "ready": true
+            },
+            "headInput": {
+              "targetX": 53.152528447403256,
+              "targetY": -70.45946087713004,
+              "authoredOffsetX": 0,
+              "authoredOffsetY": -0.634764280900888,
+              "impulseX": -1.6307836879816238,
+              "impulseY": 0,
+              "elapsedSeconds": 0.01666666666666663,
+              "reducedMotion": false,
+              "reset": false
+            }
+          }
+        },
+        {
+          "frame": 13,
+          "sceneMs": 10659.1,
+          "wallMs": 10666.10000000149,
+          "scenario": "proto-cowboy-hidden-face:walking",
+          "character": "proto-cowboy-hidden-face",
+          "pose": "walking",
+          "root": {
+            "x": 2734.166748046875,
+            "y": 2420,
+            "localX": 2734.1666666666665,
+            "localY": 2420
+          },
+          "parts": {
+            "head": {
+              "x": 2769.139404296875,
+              "y": 2372.25634765625,
+              "localX": 52.977856245478264,
+              "localY": -72.08350687472448
+            },
+            "body": {
+              "x": 2734.768798828125,
+              "y": 2421.58984375,
+              "localX": 0.9119999396989119,
+              "localY": 2.4004548334466813
+            },
+            "hand-front": {
+              "x": 2775.339599609375,
+              "y": 2425.352294921875,
+              "localX": 62.36990864058963,
+              "localY": 8.080818242333125
+            },
+            "hand-back": {
+              "x": 2741.921142578125,
+              "y": 2423.337890625,
+              "localX": 11.74655494804892,
+              "localY": 5.039524266104125
+            },
+            "foot-front": {
+              "x": 2756.81494140625,
+              "y": 2460.802978515625,
+              "localX": 34.30825231741666,
+              "localY": 61.60450363035637
+            },
+            "foot-back": {
+              "x": 2696.86669921875,
+              "y": 2461.973388671875,
+              "localX": -56.5033274485699,
+              "localY": 63.371226986351274
+            }
+          },
+          "debug": {
+            "facing": 1,
+            "facingBlend": 0.9966768854536521,
+            "rootScaleX": 0.660138464839769,
+            "gait": 0.7425467082831013,
+            "stridePhase": 16.878493100445155,
+            "loopDeltaMs": 16.666666666666664,
+            "headSpring": {
+              "x": 52.977856245478264,
+              "y": -72.08350687472448,
+              "vx": 13.88891663525713,
+              "vy": 5.09072733721548,
+              "ready": true
+            },
+            "headInput": {
+              "targetX": 51.322308208865266,
+              "targetY": -73.22906898717461,
+              "authoredOffsetX": 0,
+              "authoredOffsetY": -0.4796514568434942,
+              "impulseX": -1.5721246729026794,
+              "impulseY": 0,
+              "elapsedSeconds": 0.01666666666666663,
+              "reducedMotion": false,
+              "reset": false
+            }
+          }
+        },
+        {
+          "frame": 14,
+          "sceneMs": 10825.8,
+          "wallMs": 10830.70000000298,
+          "scenario": "proto-cowboy-hidden-face:walking",
+          "character": "proto-cowboy-hidden-face",
+          "pose": "walking",
+          "root": {
+            "x": 2791.3095703125,
+            "y": 2420,
+            "localX": 2791.309523809524,
+            "localY": 2420
+          },
+          "parts": {
+            "head": {
+              "x": 2825.36474609375,
+              "y": 2371.892578125,
+              "localX": 51.55675127546732,
+              "localY": -72.63246754678477
+            },
+            "body": {
+              "x": 2791.911865234375,
+              "y": 2421.828369140625,
+              "localX": 0.9119999105935448,
+              "localY": 2.7606423037531878
+            },
+            "hand-front": {
+              "x": 2833.35009765625,
+              "y": 2425.1015625,
+              "localX": 63.645779711841925,
+              "localY": 7.702504167704173
+            },
+            "hand-back": {
+              "x": 2797.085693359375,
+              "y": 2423.594970703125,
+              "localX": 8.744765142467958,
+              "localY": 5.42768259350893
+            },
+            "foot-front": {
+              "x": 2809.556640625,
+              "y": 2463.8408203125,
+              "localX": 27.624475555648175,
+              "localY": 66.19095619716649
+            },
+            "foot-back": {
+              "x": 2756.3701171875,
+              "y": 2460.170166015625,
+              "localX": -52.89545716371856,
+              "localY": 60.648817105782214
+            }
+          },
+          "debug": {
+            "facing": 1,
+            "facingBlend": 0.9972792639249042,
+            "rootScaleX": 0.6605374438921265,
+            "gait": 0.7746837481895895,
+            "stridePhase": 19.406937892066722,
+            "loopDeltaMs": 16.666666666666664,
+            "headSpring": {
+              "x": 51.55675127546732,
+              "y": -72.63246754678477,
+              "vx": 2.537085266738086,
+              "vy": -2.2365329855604474,
+              "ready": true
+            },
+            "headInput": {
+              "targetX": 49.054907199786896,
+              "targetY": -73.59819278817706,
+              "authoredOffsetX": 0,
+              "authoredOffsetY": -0.625964741582528,
+              "impulseX": -1.610059642142764,
+              "impulseY": 0,
+              "elapsedSeconds": 0.01666666666666663,
+              "reducedMotion": false,
+              "reset": false
+            }
+          }
+        },
+        {
+          "frame": 15,
+          "sceneMs": 10975.8,
+          "wallMs": 10994.79999999702,
+          "scenario": "proto-cowboy-hidden-face:walking",
+          "character": "proto-cowboy-hidden-face",
+          "pose": "walking",
+          "root": {
+            "x": 2846.166748046875,
+            "y": 2420,
+            "localX": 2846.1666666666665,
+            "localY": 2420
+          },
+          "parts": {
+            "head": {
+              "x": 2880.876953125,
+              "y": 2368.650634765625,
+              "localX": 52.52234434136632,
+              "localY": -77.52722293548968
+            },
+            "body": {
+              "x": 2846.76953125,
+              "y": 2419.584716796875,
+              "localX": 0.9119998557268353,
+              "localY": -0.6269218420611694
+            },
+            "hand-front": {
+              "x": 2884.541259765625,
+              "y": 2424.8515625,
+              "localX": 58.06719263336721,
+              "localY": 7.324708211726251
+            },
+            "hand-back": {
+              "x": 2853.78857421875,
+              "y": 2421.3603515625,
+              "localX": 11.533254750746874,
+              "localY": 2.053957379084817
+            },
+            "foot-front": {
+              "x": 2869.9619140625,
+              "y": 2463.81201171875,
+              "localX": 36.006094424725944,
+              "localY": 66.14738416253499
+            },
+            "foot-back": {
+              "x": 2805.661376953125,
+              "y": 2461.482666015625,
+              "localX": -61.29149255489055,
+              "localY": 62.63062307083038
+            }
+          },
+          "debug": {
+            "facing": 1,
+            "facingBlend": 0.9977724497043103,
+            "rootScaleX": 0.6608641003121254,
+            "gait": 0.8028092280687665,
+            "stridePhase": 21.83424489202341,
+            "loopDeltaMs": 16.666666666666664,
+            "headSpring": {
+              "x": 52.52234434136632,
+              "y": -77.52722293548968,
+              "vx": 2.2131334416573503,
+              "vy": -8.96625868961856,
+              "ready": true
+            },
+            "headInput": {
+              "targetX": 52.862603924172916,
+              "targetY": -79.26593044435442,
+              "authoredOffsetX": 0,
+              "authoredOffsetY": 0.22303169855601132,
+              "impulseX": -1.634654564775639,
+              "impulseY": 0,
+              "elapsedSeconds": 0.01666666666666663,
+              "reducedMotion": false,
+              "reset": false
+            }
+          }
+        },
+        {
+          "frame": 16,
+          "sceneMs": 11092.5,
+          "wallMs": 11102.60000000149,
+          "scenario": "proto-cowboy-hidden-face:walking",
+          "character": "proto-cowboy-hidden-face",
+          "pose": "walking",
+          "root": {
+            "x": 2883.5,
+            "y": 2420,
+            "localX": 2883.5,
+            "localY": 2420
+          },
+          "parts": {
+            "head": {
+              "x": 2920.759033203125,
+              "y": 2371.140380859375,
+              "localX": 56.356443476217514,
+              "localY": -73.76805504817082
+            },
+            "body": {
+              "x": 2884.10302734375,
+              "y": 2420.628173828125,
+              "localX": 0.9119998621933326,
+              "localY": 0.9485794440400446
+            },
+            "hand-front": {
+              "x": 2923.746337890625,
+              "y": 2425.085205078125,
+              "localX": 60.875093472555065,
+              "localY": 7.677698733558805
+            },
+            "hand-back": {
+              "x": 2890.197021484375,
+              "y": 2422.63916015625,
+              "localX": 10.129574848091853,
+              "localY": 3.9847189623516495
+            },
+            "foot-front": {
+              "x": 2904.73779296875,
+              "y": 2460.07958984375,
+              "localX": 32.12346028282373,
+              "localY": 60.512147773889716
+            },
+            "foot-back": {
+              "x": 2845.587158203125,
+              "y": 2462.07373046875,
+              "localX": -57.345297501870995,
+              "localY": 63.522780199316905
+            }
+          },
+          "debug": {
+            "facing": 1,
+            "facingBlend": 0.9981762360688909,
+            "rootScaleX": 0.661131543968869,
+            "gait": 0.8274238976443015,
+            "stridePhase": 23.486162155882834,
+            "loopDeltaMs": 16.666666666666664,
+            "headSpring": {
+              "x": 56.356443476217514,
+              "y": -73.76805504817082,
+              "vx": 6.325804276033844,
+              "vy": -2.0925641220698328,
+              "ready": true
+            },
+            "headInput": {
+              "targetX": 57.846023019414645,
+              "targetY": -72.24901732636225,
+              "authoredOffsetX": 0,
+              "authoredOffsetY": -0.1124363793939669,
+              "impulseX": -1.6506005436820335,
+              "impulseY": 0,
+              "elapsedSeconds": 0.01666666666666663,
+              "reducedMotion": false,
+              "reset": false
+            }
+          }
+        },
+        {
+          "frame": 17,
+          "sceneMs": 11259.1,
+          "wallMs": 11268.10000000149,
+          "scenario": "proto-cowboy-hidden-face:walking",
+          "character": "proto-cowboy-hidden-face",
+          "pose": "walking",
+          "root": {
+            "x": 2936.833251953125,
+            "y": 2420,
+            "localX": 2936.8333333333335,
+            "localY": 2420
+          },
+          "parts": {
+            "head": {
+              "x": 2971.132568359375,
+              "y": 2371.592529296875,
+              "localX": 51.86265484617561,
+              "localY": -73.0855747271373
+            },
+            "body": {
+              "x": 2937.4365234375,
+              "y": 2422.12646484375,
+              "localX": 0.9119997127917226,
+              "localY": 3.2103940268161995
+            },
+            "hand-front": {
+              "x": 2978.88525390625,
+              "y": 2424.864990234375,
+              "localX": 63.585183569854216,
+              "localY": 7.344976801283944
+            },
+            "hand-back": {
+              "x": 2942.636962890625,
+              "y": 2424.128173828125,
+              "localX": 8.775471236612027,
+              "localY": 6.232876858745634
+            },
+            "foot-front": {
+              "x": 2955.74365234375,
+              "y": 2463.767333984375,
+              "localX": 28.593584637823973,
+              "localY": 66.07977841543472
+            },
+            "foot-back": {
+              "x": 2901.30078125,
+              "y": 2459.6025390625,
+              "localX": -53.727158653999346,
+              "localY": 59.79206851900385
+            }
+          },
+          "debug": {
+            "facing": 1,
+            "facingBlend": 0.9985068283832467,
+            "rootScaleX": 0.6613505083153606,
+            "gait": 0.8489659997138679,
+            "stridePhase": 25.846043961396294,
+            "loopDeltaMs": 16.666666666666664,
+            "headSpring": {
+              "x": 51.86265484617561,
+              "y": -73.0855747271373,
+              "vx": -4.068076655735117,
+              "vy": -1.389093771719282,
+              "ready": true
+            },
+            "headInput": {
+              "targetX": 48.96723346904371,
+              "targetY": -72.62754287634088,
+              "authoredOffsetX": 0,
+              "authoredOffsetY": -0.7561402667493724,
+              "impulseX": -1.660939028867724,
+              "impulseY": 0,
+              "elapsedSeconds": 0.01666666666666663,
+              "reducedMotion": false,
+              "reset": false
+            }
+          }
+        },
+        {
+          "frame": 18,
+          "sceneMs": 11359.1,
+          "wallMs": 11376,
+          "scenario": "proto-cowboy-hidden-face:walking",
+          "character": "proto-cowboy-hidden-face",
+          "pose": "walking",
+          "root": {
+            "x": 2974.166748046875,
+            "y": 2420,
+            "localX": 2974.1666666666665,
+            "localY": 2420
+          },
+          "parts": {
+            "head": {
+              "x": 3008.56640625,
+              "y": 2364.904541015625,
+              "localX": 51.99999770694105,
+              "localY": -83.18295107474167
+            },
+            "body": {
+              "x": 2974.77001953125,
+              "y": 2418.289306640625,
+              "localX": 0.9119997345259959,
+              "localY": -2.5826216462151064
+            },
+            "hand-front": {
+              "x": 3013.02294921875,
+              "y": 2424.8193359375,
+              "localX": 58.736835451204755,
+              "localY": 7.276204574648657
+            },
+            "hand-back": {
+              "x": 2981.576416015625,
+              "y": 2420.346435546875,
+              "localX": 11.20084119002112,
+              "localY": 0.5232241437008894
+            },
+            "foot-front": {
+              "x": 2997.89599609375,
+              "y": 2463.749755859375,
+              "localX": 35.870276341773675,
+              "localY": 66.05341856034104
+            },
+            "foot-back": {
+              "x": 2933.685546875,
+              "y": 2459.38916015625,
+              "localX": -61.19326479497914,
+              "localY": 59.46986034364602
+            }
+          },
+          "debug": {
+            "facing": 1,
+            "facingBlend": 0.9987774944777409,
+            "rootScaleX": 0.6615297811596608,
+            "gait": 0.8678190726812522,
+            "stridePhase": 27.4979612252557,
+            "loopDeltaMs": 16.666666666666664,
+            "headSpring": {
+              "x": 51.99999770694105,
+              "y": -83.18295107474167,
+              "vx": -4.76914996052672,
+              "vy": -13.339585344448361,
+              "ready": true
+            },
+            "headInput": {
+              "targetX": 52.03945200840007,
+              "targetY": -84.93279972801207,
+              "authoredOffsetX": 0,
+              "authoredOffsetY": 0.7809099226606743,
+              "impulseX": -1.6676419272323941,
+              "impulseY": 0,
+              "elapsedSeconds": 0.01666666666666663,
+              "reducedMotion": false,
+              "reset": false
+            }
+          }
+        },
+        {
+          "frame": 19,
+          "sceneMs": 11475.7,
+          "wallMs": 11482.10000000149,
+          "scenario": "proto-cowboy-hidden-face:walking",
+          "character": "proto-cowboy-hidden-face",
+          "pose": "walking",
+          "root": {
+            "x": 2979.5,
+            "y": 2420,
+            "localX": 2979.5,
+            "localY": 2420
+          },
+          "parts": {
+            "head": {
+              "x": 2990.711181640625,
+              "y": 2355.725830078125,
+              "localX": 16.943756398151596,
+              "localY": -97.04096839350248
+            },
+            "body": {
+              "x": 2980.103515625,
+              "y": 2418.42236328125,
+              "localX": 0.9119999465691655,
+              "localY": -2.381779453178418
+            },
+            "hand-front": {
+              "x": 3031.333251953125,
+              "y": 2424.69384765625,
+              "localX": 78.33614629524624,
+              "localY": 7.086717967444296
+            },
+            "hand-back": {
+              "x": 2993.74951171875,
+              "y": 2420.4765625,
+              "localX": 21.535590241978927,
+              "localY": 0.7193648539599145
+            },
+            "foot-front": {
+              "x": 3012.264892578125,
+              "y": 2463.73486328125,
+              "localX": 49.51797321867738,
+              "localY": 66.03073389231632
+            },
+            "foot-back": {
+              "x": 2946.290283203125,
+              "y": 2460.09765625,
+              "localX": -50.19017475860066,
+              "localY": 60.53941761155018
+            }
+          },
+          "debug": {
+            "facing": 1,
+            "facingBlend": 0.9989990971331189,
+            "rootScaleX": 0.6616765573504811,
+            "gait": 0.8843187791242769,
+            "stridePhase": 27.733949405807053,
+            "loopDeltaMs": 16.666666666666664,
+            "headSpring": {
+              "x": 16.943756398151596,
+              "y": -97.04096839350248,
+              "vx": -41.42566851763232,
+              "vy": -24.24693770081591,
+              "ready": true
+            },
+            "headInput": {
+              "targetX": 14.450865634142454,
+              "targetY": -98.01454030453557,
+              "authoredOffsetX": 0,
+              "authoredOffsetY": 0.7022269111493841,
+              "impulseX": -1.024385184067545,
+              "impulseY": 0,
+              "elapsedSeconds": 0.01666666666666663,
+              "reducedMotion": false,
+              "reset": false
+            }
+          }
+        },
+        {
+          "frame": 20,
+          "sceneMs": 11625.7,
+          "wallMs": 11633.10000000149,
+          "scenario": "proto-cowboy-hidden-face:walking",
+          "character": "proto-cowboy-hidden-face",
+          "pose": "walking",
+          "root": {
+            "x": 3037.10009765625,
+            "y": 2420,
+            "localX": 3037.1,
+            "localY": 2420
+          },
+          "parts": {
+            "head": {
+              "x": 3054.123046875,
+              "y": 2357.11474609375,
+              "localX": 25.719087271760714,
+              "localY": -94.94420698459284
+            },
+            "body": {
+              "x": 3037.70361328125,
+              "y": 2418.7119140625,
+              "localX": 0.9119998682185437,
+              "localY": -1.9447710287321003
+            },
+            "hand-front": {
+              "x": 3090.344970703125,
+              "y": 2424.7880859375,
+              "localX": 80.44536843647711,
+              "localY": 7.229031253999575
+            },
+            "hand-back": {
+              "x": 3049.141845703125,
+              "y": 2420.89794921875,
+              "localX": 18.193247517356866,
+              "localY": 1.355864172045793
+            },
+            "foot-front": {
+              "x": 3064.92529296875,
+              "y": 2460.012451171875,
+              "localX": 42.03998519357904,
+              "localY": 60.41076019628844
+            },
+            "foot-back": {
+              "x": 3007.517822265625,
+              "y": 2462.169921875,
+              "localX": -44.69462098566421,
+              "localY": 63.66832010637478
+            }
+          },
+          "debug": {
+            "facing": 1,
+            "facingBlend": 0.9993016937650804,
+            "rootScaleX": 0.6618769790508378,
+            "gait": 0.9090019286569624,
+            "stridePhase": 30.282621755761586,
+            "loopDeltaMs": 30,
+            "headSpring": {
+              "x": 25.719087271760714,
+              "y": -94.94420698459284,
+              "vx": 1.5861562860550684,
+              "vy": -1.9575551153770014,
+              "ready": true
+            },
+            "headInput": {
+              "targetX": 28.431374657149114,
+              "targetY": -94.1963797623921,
+              "authoredOffsetX": 0,
+              "authoredOffsetY": 0.6279198055094873,
+              "impulseX": -0.8919146387358166,
+              "impulseY": 0,
+              "elapsedSeconds": 0.03,
+              "reducedMotion": false,
+              "reset": false
+            }
+          }
+        },
+        {
+          "frame": 21,
+          "sceneMs": 11725.7,
+          "wallMs": 11739.60000000149,
+          "scenario": "proto-cowboy-hidden-face:walking",
+          "character": "proto-cowboy-hidden-face",
+          "pose": "walking",
+          "root": {
+            "x": 3081.36669921875,
+            "y": 2420,
+            "localX": 3081.366666666667,
+            "localY": 2420
+          },
+          "parts": {
+            "head": {
+              "x": 3080.350341796875,
+              "y": 2362.58935546875,
+              "localX": -1.535266277460833,
+              "localY": -86.67863396451614
+            },
+            "body": {
+              "x": 3081.970458984375,
+              "y": 2422.31103515625,
+              "localX": 0.9119999609030078,
+              "localY": 3.489251155793833
+            },
+            "hand-front": {
+              "x": 3145.709716796875,
+              "y": 2424.68017578125,
+              "localX": 97.18799160382393,
+              "localY": 7.0661624712720865
+            },
+            "hand-back": {
+              "x": 3099.727783203125,
+              "y": 2424.48193359375,
+              "localX": 27.733698490667063,
+              "localY": 6.7668904017264175
+            },
+            "foot-front": {
+              "x": 3113.32373046875,
+              "y": 2463.6923828125,
+              "localX": 48.26997133104945,
+              "localY": 65.96656994693429
+            },
+            "foot-back": {
+              "x": 3059.09765625,
+              "y": 2459.115966796875,
+              "localX": -33.636604940384856,
+              "localY": 59.057363599607214
+            }
+          },
+          "debug": {
+            "facing": 1,
+            "facingBlend": 0.9995591706943397,
+            "rootScaleX": 0.6620475161900989,
+            "gait": 0.9330348961536814,
+            "stridePhase": 32.24132365433777,
+            "loopDeltaMs": 38.33333333333335,
+            "headSpring": {
+              "x": -1.535266277460833,
+              "y": -86.67863396451614,
+              "vx": -46.42454847928088,
+              "vy": 12.196774101986945,
+              "ready": true
+            },
+            "headInput": {
+              "targetX": -4.191532277961798,
+              "targetY": -85.86525497077328,
+              "authoredOffsetX": 0,
+              "authoredOffsetY": -0.8370458391191479,
+              "impulseX": 1.0396272409785043,
+              "impulseY": 0,
+              "elapsedSeconds": 0.03833333333333337,
+              "reducedMotion": false,
+              "reset": false
+            }
+          }
+        },
+        {
+          "frame": 22,
+          "sceneMs": 11842.4,
+          "wallMs": 11848,
+          "scenario": "proto-cowboy-hidden-face:walking",
+          "character": "proto-cowboy-hidden-face",
+          "pose": "walking",
+          "root": {
+            "x": 3096.83447265625,
+            "y": 2420,
+            "localX": 3096.8344,
+            "localY": 2420
+          },
+          "parts": {
+            "head": {
+              "x": 3085.01220703125,
+              "y": 2361.076904296875,
+              "localX": -17.853481146853557,
+              "localY": -88.96188821656904
+            },
+            "body": {
+              "x": 3097.4384765625,
+              "y": 2420.562255859375,
+              "localX": 0.9119999951942718,
+              "localY": 0.8487784449000018
+            },
+            "hand-front": {
+              "x": 3174.017578125,
+              "y": 2424.833984375,
+              "localX": 116.55968531403147,
+              "localY": 7.298171080609783
+            },
+            "hand-back": {
+              "x": 3127.774169921875,
+              "y": 2422.766845703125,
+              "localX": 46.724190877383066,
+              "localY": 4.177233121282026
+            },
+            "foot-front": {
+              "x": 3134.13330078125,
+              "y": 2463.672119140625,
+              "localX": 56.32760960570427,
+              "localY": 65.9361933937467
+            },
+            "foot-back": {
+              "x": 3078.961181640625,
+              "y": 2457.939208984375,
+              "localX": -26.99178172235302,
+              "localY": 57.28062373192496
+            }
+          },
+          "debug": {
+            "facing": 1,
+            "facingBlend": 0.9997531902644136,
+            "rootScaleX": 0.6621760230141326,
+            "gait": 0.9545106463774752,
+            "stridePhase": 32.925736575572785,
+            "loopDeltaMs": 48.336666666666574,
+            "headSpring": {
+              "x": -17.853481146853557,
+              "y": -88.96188821656904,
+              "vx": -47.99874179999738,
+              "vy": -0.34754225237094044,
+              "ready": true
+            },
+            "headInput": {
+              "targetX": -20.703434252432242,
+              "targetY": -89.50840876045527,
+              "authoredOffsetX": 0,
+              "authoredOffsetY": -0.10452209016643456,
+              "impulseX": 3.8588422181134177,
+              "impulseY": 0,
+              "elapsedSeconds": 0.04833666666666659,
+              "reducedMotion": false,
+              "reset": false
+            }
+          }
+        },
+        {
+          "frame": 23,
+          "sceneMs": 11992.4,
+          "wallMs": 12002.89999999851,
+          "scenario": "proto-cowboy-hidden-face:walking",
+          "character": "proto-cowboy-hidden-face",
+          "pose": "walking",
+          "root": {
+            "x": 3132.56884765625,
+            "y": 2420,
+            "localX": 3132.5688,
+            "localY": 2420
+          },
+          "parts": {
+            "head": {
+              "x": 3121.746826171875,
+              "y": 2359.410888671875,
+              "localX": -16.340923932584072,
+              "localY": -91.4775176578062
+            },
+            "body": {
+              "x": 3133.1728515625,
+              "y": 2419.7802734375,
+              "localX": 0.9119999986405152,
+              "localY": -0.3316742066472548
+            },
+            "hand-front": {
+              "x": 3224.035888671875,
+              "y": 2424.51953125,
+              "localX": 138.1131737711355,
+              "localY": 6.823526695164511
+            },
+            "hand-back": {
+              "x": 3181.736083984375,
+              "y": 2421.67578125,
+              "localX": 74.24126993690044,
+              "localY": 2.5299442060582984
+            },
+            "foot-front": {
+              "x": 3173.653076171875,
+              "y": 2463.651611328125,
+              "localX": 62.036369405818725,
+              "localY": 65.90500948877181
+            },
+            "foot-back": {
+              "x": 3113.888916015625,
+              "y": 2462.020263671875,
+              "localX": -28.206113045256018,
+              "localY": 63.442278919170995
+            }
+          },
+          "debug": {
+            "facing": 1,
+            "facingBlend": 0.9998822483508258,
+            "rootScaleX": 0.6622615032818931,
+            "gait": 0.9722255005917018,
+            "stridePhase": 34.506904582902905,
+            "loopDeltaMs": 61.66999999999987,
+            "headSpring": {
+              "x": -16.340923932584072,
+              "y": -91.4775176578062,
+              "vx": -15.84364158701004,
+              "vy": -10.951210072447667,
+              "ready": true
+            },
+            "headInput": {
+              "targetX": -14.503490855712622,
+              "targetY": -92.86087143454499,
+              "authoredOffsetX": 0,
+              "authoredOffsetY": 0.08842465966794619,
+              "impulseX": 5.956163205969195,
+              "impulseY": 0,
+              "elapsedSeconds": 0.06166999999999984,
+              "reducedMotion": false,
+              "reset": false
+            }
+          }
+        },
+        {
+          "frame": 24,
+          "sceneMs": 12109.1,
+          "wallMs": 12117.79999999702,
+          "scenario": "proto-cowboy-hidden-face:walking",
+          "character": "proto-cowboy-hidden-face",
+          "pose": "walking",
+          "root": {
+            "x": 3155.504150390625,
+            "y": 2420,
+            "localX": 3155.5042666666664,
+            "localY": 2420
+          },
+          "parts": {
+            "head": {
+              "x": 3151.736572265625,
+              "y": 2362.37060546875,
+              "localX": -5.688590311756902,
+              "localY": -87.00875454912442
+            },
+            "body": {
+              "x": 3156.108154296875,
+              "y": 2422.325439453125,
+              "localX": 0.9119999997018521,
+              "localY": 3.511101417960606
+            },
+            "hand-front": {
+              "x": 3246.58935546875,
+              "y": 2425.170166015625,
+              "localX": 137.52741263156162,
+              "localY": 7.806003569916781
+            },
+            "hand-back": {
+              "x": 3203.4365234375,
+              "y": 2424.220458984375,
+              "localX": 72.37202728019571,
+              "localY": 6.372111664978301
+            },
+            "foot-front": {
+              "x": 3198.228759765625,
+              "y": 2460.00244140625,
+              "localX": 64.50882986711416,
+              "localY": 60.39583287158002
+            },
+            "foot-back": {
+              "x": 3133.155029296875,
+              "y": 2462.25634765625,
+              "localX": -33.744348209786956,
+              "localY": 63.798717829724055
+            }
+          },
+          "debug": {
+            "facing": 1,
+            "facingBlend": 0.9999501759530223,
+            "rootScaleX": 0.6623064944156183,
+            "gait": 0.9843459190653115,
+            "stridePhase": 35.5217481545459,
+            "loopDeltaMs": 71.67333333333328,
+            "headSpring": {
+              "x": -5.688590311756902,
+              "y": -87.00875454912442,
+              "vx": 31.06342432560935,
+              "vy": 6.697922049359371,
+              "ready": true
+            },
+            "headInput": {
+              "targetX": -3.3194431265745754,
+              "targetY": -85.93517687529204,
+              "authoredOffsetX": 0,
+              "authoredOffsetY": -0.8298491051905644,
+              "impulseX": 6.458600654690013,
+              "impulseY": 0,
+              "elapsedSeconds": 0.07167333333333317,
+              "reducedMotion": false,
+              "reset": false
+            }
+          }
+        },
+        {
+          "frame": 25,
+          "sceneMs": 12259.1,
+          "wallMs": 12269.10000000149,
+          "scenario": "proto-cowboy-hidden-face:walking",
+          "character": "proto-cowboy-hidden-face",
+          "pose": "walking",
+          "root": {
+            "x": 3214.706298828125,
+            "y": 2420,
+            "localX": 3214.7064,
+            "localY": 2420
+          },
+          "parts": {
+            "head": {
+              "x": 3221.96533203125,
+              "y": 2362.71337890625,
+              "localX": 10.959810674912735,
+              "localY": -86.49142255120907
+            },
+            "body": {
+              "x": 3215.310302734375,
+              "y": 2421.855224609375,
+              "localX": 0.9119999998995527,
+              "localY": 2.801113192453
+            },
+            "hand-front": {
+              "x": 3299.3896484375,
+              "y": 2425.15673828125,
+              "localX": 127.85732699185978,
+              "localY": 7.785697955942751
+            },
+            "hand-back": {
+              "x": 3255.07861328125,
+              "y": 2423.5517578125,
+              "localX": 60.955267142044924,
+              "localY": 5.362348633204119
+            },
+            "foot-front": {
+              "x": 3243.530029296875,
+              "y": 2463.627197265625,
+              "localX": 43.51900584544502,
+              "localY": 65.8684810913607
+            },
+            "foot-back": {
+              "x": 3190.725341796875,
+              "y": 2460.358642578125,
+              "localX": -36.2071564747216,
+              "localY": 60.93344741918981
+            }
+          },
+          "debug": {
+            "facing": 1,
+            "facingBlend": 0.9999820351380073,
+            "rootScaleX": 0.6623275960121076,
+            "gait": 0.9920697995539232,
+            "stridePhase": 38.14131135393807,
+            "loopDeltaMs": 85.00666666666662,
+            "headSpring": {
+              "x": 10.959810674912735,
+              "y": -86.49142255120907,
+              "vx": 47.942205916405456,
+              "vy": 2.354759407875217,
+              "ready": true
+            },
+            "headInput": {
+              "targetX": 13.958268744918731,
+              "targetY": -86.43532176650596,
+              "authoredOffsetX": 0,
+              "authoredOffsetY": -0.6906599752244682,
+              "impulseX": 2.0346351236866256,
+              "impulseY": 0,
+              "elapsedSeconds": 0.08500666666666666,
+              "reducedMotion": false,
+              "reset": false
+            }
+          }
+        },
+        {
+          "frame": 26,
+          "sceneMs": 12359,
+          "wallMs": 12376.89999999851,
+          "scenario": "proto-cowboy-hidden-face:walking",
+          "character": "proto-cowboy-hidden-face",
+          "pose": "walking",
+          "root": {
+            "x": 3228.572021484375,
+            "y": 2420,
+            "localX": 3228.5719999999997,
+            "localY": 2420
+          },
+          "parts": {
+            "head": {
+              "x": 3226.12841796875,
+              "y": 2361.0791015625,
+              "localX": -3.6895315734016365,
+              "localY": -88.95877207640882
+            },
+            "body": {
+              "x": 3229.176025390625,
+              "y": 2421.16552734375,
+              "localX": 0.9119999999821033,
+              "localY": 1.759566130787796
+            },
+            "hand-front": {
+              "x": 3316.684326171875,
+              "y": 2425.236328125,
+              "localX": 133.03280497643854,
+              "localY": 7.9059403988743036
+            },
+            "hand-back": {
+              "x": 3271.949462890625,
+              "y": 2422.79541015625,
+              "localX": 65.4915552426903,
+              "localY": 4.220526026736634
+            },
+            "foot-front": {
+              "x": 3261.918212890625,
+              "y": 2463.959716796875,
+              "localX": 50.34648342949245,
+              "localY": 66.3705374351211
+            },
+            "foot-back": {
+              "x": 3208.16845703125,
+              "y": 2459.146484375,
+              "localX": -30.805434932298592,
+              "localY": 59.10338256089923
+            }
+          },
+          "debug": {
+            "facing": 1,
+            "facingBlend": 0.999994138194051,
+            "rootScaleX": 0.6623356123441337,
+            "gait": 0.714422280498977,
+            "stridePhase": 38.75483342573544,
+            "loopDeltaMs": 93.32999999999991,
+            "headSpring": {
+              "x": -3.6895315734016365,
+              "y": -88.95877207640882,
+              "vx": -17.57405843705492,
+              "vy": -8.313754089862375,
+              "ready": true
+            },
+            "headInput": {
+              "targetX": -6.596287779903106,
+              "targetY": -89.3916857308922,
+              "authoredOffsetX": 0,
+              "authoredOffsetY": -0.5512756262203219,
+              "impulseX": 5.123483369397377,
+              "impulseY": 0,
+              "elapsedSeconds": 0.09332999999999993,
+              "reducedMotion": false,
+              "reset": false
+            }
+          }
+        },
+        {
+          "frame": 27,
+          "sceneMs": 12525.7,
+          "wallMs": 12542,
+          "scenario": "proto-cowboy-hidden-face:walking",
+          "character": "proto-cowboy-hidden-face",
+          "pose": "walking",
+          "root": {
+            "x": 3291.61962890625,
+            "y": 2420,
+            "localX": 3291.619619047619,
+            "localY": 2420
+          },
+          "parts": {
+            "head": {
+              "x": 3308.8056640625,
+              "y": 2363.36767578125,
+              "localX": 25.947650003120785,
+              "localY": -85.50364974466467
+            },
+            "body": {
+              "x": 3292.2236328125,
+              "y": 2421.5380859375,
+              "localX": 0.9119999999947042,
+              "localY": 2.3221821031037297
+            },
+            "hand-front": {
+              "x": 3355.893310546875,
+              "y": 2424.90966796875,
+              "localX": 97.04055072745152,
+              "localY": 7.4125853749487725
+            },
+            "hand-back": {
+              "x": 3319.39111328125,
+              "y": 2423.354248046875,
+              "localX": 41.929567874057874,
+              "localY": 5.064070998786199
+            },
+            "foot-front": {
+              "x": 3323.85009765625,
+              "y": 2461.93017578125,
+              "localX": 48.66176981131002,
+              "localY": 63.30616033723315
+            },
+            "foot-back": {
+              "x": 3259.454833984375,
+              "y": 2462.12353515625,
+              "localX": -48.56259988057361,
+              "localY": 63.59820849586245
+            }
+          },
+          "debug": {
+            "facing": 1,
+            "facingBlend": 0.9999982344579769,
+            "rootScaleX": 0.6623383254615132,
+            "gait": 0.8716816591216469,
+            "stridePhase": 41.32995719812541,
+            "loopDeltaMs": 108.33333333333334,
+            "headSpring": {
+              "x": 25.947650003120785,
+              "y": -85.50364974466467,
+              "vx": 0,
+              "vy": 0,
+              "ready": true
+            },
+            "headInput": {
+              "targetX": 25.947650003120785,
+              "targetY": -84.85276720542947,
+              "authoredOffsetX": 0,
+              "authoredOffsetY": -0.6508825392352023,
+              "impulseX": 0,
+              "impulseY": 0,
+              "elapsedSeconds": 0.1,
+              "reducedMotion": false,
+              "reset": true
+            }
+          }
+        },
+        {
+          "frame": 28,
+          "sceneMs": 12642.3,
+          "wallMs": 12649.39999999851,
+          "scenario": "proto-cowboy-hidden-face:walking",
+          "character": "proto-cowboy-hidden-face",
+          "pose": "walking",
+          "root": {
+            "x": 3347.5,
+            "y": 2420,
+            "localX": 3347.5,
+            "localY": 2420
+          },
+          "parts": {
+            "head": {
+              "x": 3363.724365234375,
+              "y": 2356.269775390625,
+              "localX": 24.495623124870125,
+              "localY": -96.21986189584108
+            },
+            "body": {
+              "x": 3348.10400390625,
+              "y": 2418.14404296875,
+              "localX": 0.9119999999994305,
+              "localY": -2.8022318401610318
+            },
+            "hand-front": {
+              "x": 3417.185546875,
+              "y": 2424.954345703125,
+              "localX": 105.21118638550641,
+              "localY": 7.479900061857683
+            },
+            "hand-back": {
+              "x": 3373.98779296875,
+              "y": 2420.009033203125,
+              "localX": 39.9914650552512,
+              "localY": 0.013790281237509139
+            },
+            "foot-front": {
+              "x": 3374.920654296875,
+              "y": 2461.42724609375,
+              "localX": 41.39957701406281,
+              "localY": 62.54679713329276
+            },
+            "foot-back": {
+              "x": 3321.91064453125,
+              "y": 2462.208251953125,
+              "localX": -38.63489879485569,
+              "localY": 63.72597911282813
+            }
+          },
+          "debug": {
+            "facing": 1,
+            "facingBlend": 0.9999994682289618,
+            "rootScaleX": 0.6623391426367641,
+            "gait": 0.942342852815889,
+            "stridePhase": 43.419581699245484,
+            "loopDeltaMs": 118.32666666666653,
+            "headSpring": {
+              "x": 24.495623124870125,
+              "y": -96.21986189584108,
+              "vx": 0,
+              "vy": 0,
+              "ready": true
+            },
+            "headInput": {
+              "targetX": 24.495623124870125,
+              "targetY": -96.98524027574848,
+              "authoredOffsetX": 0,
+              "authoredOffsetY": 0.7653783799074042,
+              "impulseX": 0,
+              "impulseY": 0,
+              "elapsedSeconds": 0.1,
+              "reducedMotion": false,
+              "reset": true
+            }
+          }
+        },
+        {
+          "frame": 29,
+          "sceneMs": 12742.4,
+          "wallMs": 12758,
+          "scenario": "proto-cowboy-hidden-face:walking",
+          "character": "proto-cowboy-hidden-face",
+          "pose": "walking",
+          "root": {
+            "x": 3404.034423828125,
+            "y": 2420,
+            "localX": 3404.0344,
+            "localY": 2420
+          },
+          "parts": {
+            "head": {
+              "x": 3413.27197265625,
+              "y": 2360.324951171875,
+              "localX": 13.946945886913364,
+              "localY": -90.09734113540306
+            },
+            "body": {
+              "x": 3404.638427734375,
+              "y": 2420.948974609375,
+              "localX": 0.912,
+              "localY": 1.432663878358164
+            },
+            "hand-front": {
+              "x": 3472.22705078125,
+              "y": 2425.17431640625,
+              "localX": 102.95725708609245,
+              "localY": 7.812199123572057
+            },
+            "hand-back": {
+              "x": 3431.413818359375,
+              "y": 2422.935302734375,
+              "localX": 41.33746253232042,
+              "localY": 4.431714918256072
+            },
+            "foot-front": {
+              "x": 3433.830322265625,
+              "y": 2463.648681640625,
+              "localX": 44.9857479174313,
+              "localY": 65.90069993197278
+            },
+            "foot-back": {
+              "x": 3376.249755859375,
+              "y": 2457.92333984375,
+              "localX": -41.94916687805989,
+              "localY": 57.25651174123488
+            }
+          },
+          "debug": {
+            "facing": 1,
+            "facingBlend": 0.9999998398336413,
+            "rootScaleX": 0.6623393887652197,
+            "gait": 0.9740929737818093,
+            "stridePhase": 45.394415449526036,
+            "loopDeltaMs": 126.66999999999989,
+            "headSpring": {
+              "x": 13.946945886913364,
+              "y": -90.09734113540306,
+              "vx": 0,
+              "vy": 0,
+              "ready": true
+            },
+            "headInput": {
+              "targetX": 13.946945886913364,
+              "targetY": -89.82376696388214,
+              "authoredOffsetX": 0,
+              "authoredOffsetY": -0.2735741715209142,
+              "impulseX": 0,
+              "impulseY": 0,
+              "elapsedSeconds": 0.1,
+              "reducedMotion": false,
+              "reset": true
+            }
+          }
+        },
+        {
+          "frame": 30,
+          "sceneMs": 12909,
+          "wallMs": 12923.29999999702,
+          "scenario": "proto-cowboy-hidden-face:walking",
+          "character": "proto-cowboy-hidden-face",
+          "pose": "walking",
+          "root": {
+            "x": 3428.833740234375,
+            "y": 2420,
+            "localX": 3428.8337142857144,
+            "localY": 2420
+          },
+          "parts": {
+            "head": {
+              "x": 3432.293701171875,
+              "y": 2354.19384765625,
+              "localX": 5.223991961689407,
+              "localY": -99.3542266716501
+            },
+            "body": {
+              "x": 3429.437744140625,
+              "y": 2418.0595703125,
+              "localX": 0.912,
+              "localY": -2.9298312954717756
+            },
+            "hand-front": {
+              "x": 3498.010986328125,
+              "y": 2424.99658203125,
+              "localX": 104.44372088250067,
+              "localY": 7.543670177915762
+            },
+            "hand-back": {
+              "x": 3458.355712890625,
+              "y": 2419.928466796875,
+              "localX": 44.57237647238218,
+              "localY": -0.10790102405386237
+            },
+            "foot-front": {
+              "x": 3462.769287109375,
+              "y": 2463.892822265625,
+              "localX": 51.23599421940727,
+              "localY": 66.26942673093215
+            },
+            "foot-back": {
+              "x": 3400.18017578125,
+              "y": 2459.34619140625,
+              "localX": -43.26102524287822,
+              "localY": 59.40500354497438
+            }
+          },
+          "debug": {
+            "facing": 1,
+            "facingBlend": 0.9999999517588198,
+            "rootScaleX": 0.662339462897686,
+            "gait": 0.7702357226814709,
+            "stridePhase": 46.249488073406866,
+            "loopDeltaMs": 128.32999999999993,
+            "headSpring": {
+              "x": 5.223991961689407,
+              "y": -99.3542266716501,
+              "vx": 0,
+              "vy": 0,
+              "ready": true
+            },
+            "headInput": {
+              "targetX": 5.223991961689407,
+              "targetY": -100.03648504469612,
+              "authoredOffsetX": 0,
+              "authoredOffsetY": 0.682258373046019,
+              "impulseX": 0,
+              "impulseY": 0,
+              "elapsedSeconds": 0.1,
+              "reducedMotion": false,
+              "reset": true
+            }
+          }
+        },
+        {
+          "frame": 31,
+          "sceneMs": 13092.4,
+          "wallMs": 13099.10000000149,
+          "scenario": "proto-cowboy-hidden-face:walking",
+          "character": "proto-cowboy-hidden-face",
+          "pose": "walking",
+          "root": {
+            "x": 3437.36669921875,
+            "y": 2398.2021484375,
+            "localX": 3437.3668040277153,
+            "localY": 2398.202106345855
+          },
+          "parts": {
+            "head": {
+              "x": 3444.535888671875,
+              "y": 2336.982421875,
+              "localX": 10.823980071971446,
+              "localY": -92.42942541936601
+            },
+            "body": {
+              "x": 3437.968994140625,
+              "y": 2397.236328125,
+              "localX": 0.9094084073049536,
+              "localY": -1.4582391296536776
+            },
+            "hand-front": {
+              "x": 3507.050048828125,
+              "y": 2403.388916015625,
+              "localX": 105.20792188677544,
+              "localY": 7.831040491666549
+            },
+            "hand-back": {
+              "x": 3467.927490234375,
+              "y": 2397.69384765625,
+              "localX": 46.14061513440393,
+              "localY": -0.767464738635812
+            },
+            "foot-front": {
+              "x": 3471.985107421875,
+              "y": 2442.880615234375,
+              "localX": 52.2670391862205,
+              "localY": 67.45568724735256
+            },
+            "foot-back": {
+              "x": 3408.150634765625,
+              "y": 2440.344970703125,
+              "localX": -44.11056719821084,
+              "localY": 63.62717070790125
+            }
+          },
+          "debug": {
+            "facing": 1,
+            "facingBlend": 0.9999999854700358,
+            "rootScaleX": 0.6623394852259558,
+            "gait": 0.640832693752412,
+            "stridePhase": 47.007355893318405,
+            "loopDeltaMs": 136.6699999999999,
+            "headSpring": {
+              "x": 10.823980071971446,
+              "y": -92.42942541936601,
+              "vx": 0,
+              "vy": 0,
+              "ready": true
+            },
+            "headInput": {
+              "targetX": 10.823980071971446,
+              "targetY": -92.56263347368781,
+              "authoredOffsetX": 0,
+              "authoredOffsetY": 0.1332080543217979,
+              "impulseX": 0,
+              "impulseY": 0,
+              "elapsedSeconds": 0.1,
+              "reducedMotion": false,
+              "reset": true
+            }
+          }
+        }
+      ],
+      "parts": {
+        "head": {
+          "samples": 32,
+          "maxBackwardPx": 17.8552,
+          "maxForwardPx": 82.6772,
+          "maxRelativeStepPx": 35.0562,
+          "backwardEvents": [
+            {
+              "frame": 19,
+              "sceneMs": 11475.7,
+              "dx": -17.8552,
+              "rootDx": 5.3333,
+              "relativeDx": -35.0562
+            }
+          ]
+        },
+        "body": {
+          "samples": 32,
+          "maxBackwardPx": 0,
+          "maxForwardPx": 63.0476,
+          "maxRelativeStepPx": 0.0026,
+          "backwardEvents": []
+        },
+        "hand-front": {
+          "samples": 32,
+          "maxBackwardPx": 0,
+          "maxForwardPx": 61.2922,
+          "maxRelativeStepPx": 35.9923,
+          "backwardEvents": []
+        },
+        "hand-back": {
+          "samples": 32,
+          "maxBackwardPx": 0,
+          "maxForwardPx": 57.426,
+          "maxRelativeStepPx": 27.5171,
+          "backwardEvents": []
+        },
+        "foot-front": {
+          "samples": 32,
+          "maxBackwardPx": 0,
+          "maxForwardPx": 61.9319,
+          "maxRelativeStepPx": 20.9898,
+          "backwardEvents": []
+        },
+        "foot-back": {
+          "samples": 32,
+          "maxBackwardPx": 0.2288,
+          "maxForwardPx": 62.4558,
+          "maxRelativeStepPx": 17.7572,
+          "backwardEvents": []
+        }
+      },
+      "headSnapHz": 0.2344
+    }
+  ]
+}
