@@ -28,6 +28,7 @@ import {
   paintedParticleDominance,
   paintedSwingDisplayWidth,
 } from "../packages/client/src/vfx/painted-particle-scale.js";
+import { pageProjectileArtFor } from "../packages/client/src/vfx/page-projectile-art.js";
 import { resolveQuakeVfxRecipe } from "../packages/client/src/vfx/quake-vfx-recipes.js";
 import {
   resolveWeaponAuraVfxRecipe,
@@ -233,8 +234,9 @@ describe("W4M melee/caster iteration orders", () => {
     });
   });
 
-  it("makes Verdigris pages seven times larger and doubles server reach", () => {
-    expect(tomeOpenArtFor("x2-verdigris-grand-grimoire")?.pageScale).toBe(7);
+  it("keeps Verdigris's painted pages seven times larger, suppresses brown page turns, and doubles reach", () => {
+    expect(tomeOpenArtFor("x2-verdigris-grand-grimoire")?.suppressPageTurnEffects).toBe(true);
+    expect(pageProjectileArtFor("x2-verdigris-grand-grimoire")?.scaleMultiplier).toBe(7);
     expect(weapon("x2-verdigris-grand-grimoire").range).toBe(400);
   });
 

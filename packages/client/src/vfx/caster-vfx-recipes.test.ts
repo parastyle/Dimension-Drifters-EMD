@@ -85,7 +85,7 @@ describe("caster VFX recipe resolver", () => {
   });
 
   it("resolves every beam weapon id to a distinct authored recipe signature", () => {
-    expect(BEAMS).toHaveLength(22);
+    expect(BEAMS).toHaveLength(23);
     expect(Object.keys(BEAM_VFX_RECIPES).sort()).toEqual(BEAMS.map((weapon) => weapon.id).sort());
     const signatures = new Set<string>();
     const visualSignatures = new Set<string>();
@@ -133,7 +133,7 @@ describe("caster VFX recipe resolver", () => {
     expect(visualSignatures.size).toBe(BEAMS.length);
   });
 
-  it("distributes the 22 procedural beams across five data-owned structure families", () => {
+  it("distributes the 23 procedural beams across five data-owned structure families", () => {
     const structuredBeams = BEAMS.filter(
       (weapon) => weapon.id !== "x2-unicorn-rainbow-beam",
     );

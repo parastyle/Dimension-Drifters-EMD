@@ -10710,6 +10710,7 @@
         "swingArc": 3.1,
         "gripFrac": 0.1
       },
+      "archived": true,
       "id": "x2-cinderquill-almanac"
     },
     {
@@ -11010,7 +11011,7 @@
       "name": "Verdigris Grand Grimoire",
       "type": "melee",
       "family": "grimoire",
-      "theme": "monumental toxic chain-tome",
+      "theme": "monumental toxic page-cone grimoire",
       "element": "toxic",
       "finish": "organic",
       "grip": "2H",
@@ -11022,7 +11023,7 @@
       "artPrompt": "Weapon-only in-world sprite (no character, no background): a MONUMENTAL grand grimoire, far longer than a normal book and rendered as a wide low slab so it reads XL — corroded verdigris-bronze boards crusted dull-teal (#3C6E6A) over olive leather (#6E7042), enormous off-white pages dripping plasma-lime venom-script (#9CFF3B / #E8E4D8), a heavy muted-red bog-iron clasp (#9E3B36). Ancient and oozing. Flat orthographic full side-profile, long axis across the frame, open casting fore-edge to the RIGHT, massive bound spine/grip on the LEFT. ~6 colours, flat cel, thick uneven black outline. No spores, no haze, no emitted glow.",
       "palettePrimary": "#3C6E6A",
       "paletteAccent": "#9CFF3B",
-      "cardartAction": "groaning open as a sickly plasma-lime venom-arc leaps off the giant page and chains corrosively through a whole crowd",
+      "cardartAction": "groaning open as a tight cone of enormous plasma-lime venom-script pages tears forward from the book",
       "behavior": {
         "kind": "edge"
       },
@@ -12690,7 +12691,7 @@
       "name": "Hexbinder's Iron Orrery",
       "type": "caster",
       "family": "focus",
-      "theme": "arcane scatter-focus",
+      "theme": "purple arcane beam-focus",
       "element": "arcane",
       "finish": "ornate",
       "grip": "2H",
@@ -12703,7 +12704,7 @@
       "palettePrimary": "#3A4049",
       "paletteAccent": "#B14BFF",
       "artPrompt": "Weapon-only in-world sprite (no character, no background): a brass-ringed orrery with a small violet arcane core at centre and three frozen orbiting bead-planets on rigid arms, mounted on a long blued-iron haft running LEFT. A hex orrery focus. Flat orthographic full side-profile, the ringed core HEAD to the RIGHT, iron haft on the LEFT. ~5 colours: gunmetal #3A4049, tan #C49A5A brass rings, arc-violet #B14BFF core, charcoal #22252B outline, off-white #E8E4D8. Matte solid, NO glow, NO trails.",
-      "cardartAction": "spun forward, the bead-planets flinging off as a scatter of violet arcane orbs, each bursting on impact",
+      "cardartAction": "leveled forward as the bead-planets align around one sustained purple arcane beam",
       "stats": {
         "damage": 8,
         "range": 320,
@@ -12714,16 +12715,13 @@
         "gripFrac": 0.1
       },
       "behavior": {
-        "kind": "scatter",
-        "count": 8,
-        "spread": 0.6,
-        "speed": 380,
-        "range": 250,
-        "damage": 5,
-        "explode": {
-          "radius": 60,
-          "damage": 6
-        }
+        "kind": "beam",
+        "damage": 13,
+        "range": 320,
+        "tickRate": 0.1,
+        "width": 56,
+        "chargeSeconds": 0.65,
+        "sweepLagSeconds": 0.28
       },
       "id": "x2-hexbinder-s-iron-orrery"
     },

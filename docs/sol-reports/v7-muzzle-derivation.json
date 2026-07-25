@@ -1747,6 +1747,28 @@
     "barrelMode": "parallel"
   },
   {
+    "id": "x2-hexbinder-s-iron-orrery",
+    "name": "Hexbinder's Iron Orrery",
+    "sprite": "x2-hexbinder-s-iron-orrery",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 59
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 59
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
     "id": "x2-hexbolt-spitter-mitt",
     "name": "Hexbolt Spitter-Mitt",
     "sprite": "x2-hexbolt-spitter-mitt",

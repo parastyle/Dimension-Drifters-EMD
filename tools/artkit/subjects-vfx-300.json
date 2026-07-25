@@ -1816,7 +1816,7 @@
     "name": "Hexbinder's Iron Orrery — signature VFX",
     "kind": "vfx",
     "styleRef": "out/x2-hexbinder-s-iron-orrery/identity-ref.png",
-    "prompt": "The SCATTER BLAST the weapon in Image 1 (a Hexbinder's Iron Orrery, a arcane focus) makes — a wide cone of several pellets/shards spraying out to the RIGHT from a muzzle flash, with a puff of smoke. Frozen at its peak, arc-violet energy. Render on a perfectly flat fully-opaque #00ff00 chroma field with NOTHING else behind or beneath it — NO ground, NO floor disc, NO dirt, NO background, NO terrain (it composites ON TOP of the live arena floor at runtime, so any baked ground would show as a wrong solid blob). SIMPLE flat-cel CHUNKY shapes, thick black outlines, MINIMAL interior detail to match the game's bold character art; do NOT draw the weapon itself — only the effect."
+    "prompt": "The BEAM the weapon in Image 1 (a Hexbinder's Iron Orrery, a arcane focus) makes when it fires — one straight bright energy beam lancing to the RIGHT with a hot white core and a soft outer glow. Frozen at its peak, arc-violet energy. Render on a perfectly flat fully-opaque #00ff00 chroma field with NOTHING else behind or beneath it — NO ground, NO floor disc, NO dirt, NO background, NO terrain (it composites ON TOP of the live arena floor at runtime, so any baked ground would show as a wrong solid blob). SIMPLE flat-cel CHUNKY shapes, thick black outlines, MINIMAL interior detail to match the game's bold character art; do NOT draw the weapon itself — only the effect."
   },
   {
     "id": "vfx-x2-smoldering-eye-of-perdition",

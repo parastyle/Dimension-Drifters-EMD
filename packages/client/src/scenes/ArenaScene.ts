@@ -309,7 +309,12 @@ import {
   spawnKungFuWrapSwing,
 } from "../vfx/kung-fu-wrap-vfx.js";
 import { MoneyDropRenderer } from "../vfx/money-drops.js";
-import { pageProjectileArtFor, preloadPageProjectileArt } from "../vfx/page-projectile-art.js";
+import {
+  pageProjectileArtFor,
+  preloadPageProjectileArt,
+  VERDIGRIS_PAGE_CONE_COUNT,
+  verdigrisPageConeLane,
+} from "../vfx/page-projectile-art.js";
 import {
   elementPack,
   paintedParticlePixels,
@@ -3437,6 +3442,7 @@ export class ArenaScene extends Phaser.Scene {
         player.charges,
         player.maxCharges,
         player.dualWield?.fireInputHeld,
+        player.weaponChargeActive,
       );
       const seq = player.attackSeq >>> 0;
       const previous = this.lastAttackSeq.get(id);
@@ -6986,7 +6992,9 @@ export class ArenaScene extends Phaser.Scene {
       const fraction = chargedProjectileFraction(heldSeconds, definition);
       const snapshot = chargedProjectileSnapshot(definition, fraction);
       const muzzle = { x: rig.x, y: rig.y };
-      rig.writeWeaponMuzzleForShot((player.attackSeq + 1) >>> 0, 0, muzzle);
+      if (!rig.writeTomeCenter(muzzle)) {
+        rig.writeWeaponMuzzleForShot((player.attackSeq + 1) >>> 0, 0, muzzle);
+      }
       image
         .setPosition(muzzle.x, muzzle.y)
         .setDisplaySize(
@@ -9237,7 +9245,11 @@ export class ArenaScene extends Phaser.Scene {
         (!WEAPONS[pl.weapon]?.performance?.aura ||
           Math.floor(Number(pl.dualWield?.weaponResource?.valueQ) || 0) > 0) &&
         pointer.rightButtonDown();
-      anim.fireHeld = pl?.attackHeld === true || beamChannelLive || localChannelHeld;
+      anim.fireHeld =
+        pl?.attackHeld === true ||
+        pl?.weaponChargeActive === true ||
+        beamChannelLive ||
+        localChannelHeld;
       if (pl) {
         const ultimateTick = isSelf ? (this.room?.state.tick ?? 0) : remoteUltimateTick;
         const ultimatePhase = isSelf
@@ -13634,7 +13646,7 @@ export class ArenaScene extends Phaser.Scene {
     if (weapon.suppressVfx) return;
     const ang = Math.atan2(aim.y, aim.x);
     if (weapon.tags.classPool === "melee" && weapon.performance?.action === "page-flip") {
-      this.spawnPageFlutterArc(x, y, ang, weapon);
+      this.spawnPageFlutterArc(x, y, ang, weapon, sourceRig);
       return;
     }
     const effectRecipe = resolveWeaponEffectRecipe(weapon);
@@ -13722,31 +13734,76 @@ export class ArenaScene extends Phaser.Scene {
   /** §39 DEV PORTAL: apply a `?dev=` deep-link once the room is live — enter Testing Grounds, then spawn the
    * boss / equip the weapon / wear the character requested. Gear and pet were already applied to the normal
    * join account by MenuScene, so reaching this target confirms the inspection after training mode syncs. */
-  /** Verdigris's paper is the melee tell: page scraps trace the authored sweep instead of layering an
-   * unrelated generic slash over the open-book attack. Damage remains the server's swept edge. */
-  private spawnPageFlutterArc(x: number, y: number, aimAngle: number, weapon: WeaponDef): void {
+  /** Verdigris's painted pages launch from the visible book gutter in one tight forward cone. */
+  private spawnPageFlutterArc(
+    x: number,
+    y: number,
+    aimAngle: number,
+    weapon: WeaponDef,
+    sourceRig?: SpriteRig,
+  ): void {
     const art = pageProjectileArtFor(weapon.id);
     if (!art || !this.textures.exists(art.textureKey)) return;
-    const count = 9;
-    for (let i = 0; i < count; i++) {
-      const progress = (i + 0.5) / count;
-      const angle = aimAngle - weapon.swingArc * 0.5 + weapon.swingArc * progress;
-      const radius = weapon.range * (0.28 + progress * 0.58);
+    const source = { x, y };
+    if (!sourceRig?.writeTomeCenter(source)) {
+      source.x += Math.cos(aimAngle) * weapon.displayLength * 0.22;
+      source.y += Math.sin(aimAngle) * weapon.displayLength * 0.22;
+    }
+    const shots: Array<{
+      startX: number;
+      startY: number;
+      endX: number;
+      endY: number;
+      angleOffsetRad: number;
+    }> = [];
+    for (let i = 0; i < VERDIGRIS_PAGE_CONE_COUNT; i++) {
+      const lane = verdigrisPageConeLane(i);
+      const angle = aimAngle + lane.angleOffsetRad;
+      const sideX = -Math.sin(aimAngle);
+      const sideY = Math.cos(aimAngle);
+      const startX =
+        source.x + Math.cos(aimAngle) * lane.startForward + sideX * lane.startLateral;
+      const startY =
+        source.y + Math.sin(aimAngle) * lane.startForward + sideY * lane.startLateral;
+      const travel = weapon.range * lane.distanceScale;
+      const endX = startX + Math.cos(angle) * travel;
+      const endY = startY + Math.sin(angle) * travel;
       const page = this.add
-        .image(x + Math.cos(angle) * radius, y + Math.sin(angle) * radius, art.textureKey)
+        .image(startX, startY, art.textureKey)
         .setDisplaySize(art.displayWidth, art.displayHeight)
         .setRotation(angle + (i % 2 === 0 ? 0.28 : -0.32))
         .setDepth(100100);
+      shots.push({ startX, startY, endX, endY, angleOffsetRad: lane.angleOffsetRad });
       this.tweens.add({
         targets: page,
-        x: page.x + Math.cos(angle) * 26,
-        y: page.y + Math.sin(angle) * 20 - 8,
-        rotation: page.rotation + (i % 2 === 0 ? 1.2 : -1.05),
+        x: endX,
+        y: endY,
+        rotation: page.rotation + lane.spinRad,
         alpha: 0,
-        delay: i * 18,
-        duration: 300 + i * 12,
+        delay: lane.delayMs,
+        duration: lane.durationMs,
         ease: "Cubic.out",
         onComplete: () => page.destroy(),
+      });
+    }
+    const audit = globalThis as typeof globalThis & {
+      __ddB50VerdigrisConeCapture?: boolean;
+      __ddB50VerdigrisConeEvents?: Array<{
+        weaponId: string;
+        sourceX: number;
+        sourceY: number;
+        aimAngle: number;
+        shots: typeof shots;
+      }>;
+    };
+    if (audit.__ddB50VerdigrisConeCapture) {
+      const events = (audit.__ddB50VerdigrisConeEvents ??= []);
+      events.push({
+        weaponId: weapon.id,
+        sourceX: source.x,
+        sourceY: source.y,
+        aimAngle,
+        shots,
       });
     }
   }

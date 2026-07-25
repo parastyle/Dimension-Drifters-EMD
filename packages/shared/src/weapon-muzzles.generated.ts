@@ -1808,6 +1808,28 @@ export const WEAPON_ART_MUZZLES = {
     "salvoMode": "parallel",
     "barrelMode": "parallel"
   },
+  "x2-hexbinder-s-iron-orrery": {
+    "sprite": "x2-hexbinder-s-iron-orrery",
+    "parts": [
+      {
+        "width": 256,
+        "height": 118
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 59,
+        "derived": {
+          "x": 255,
+          "y": 59
+        }
+      }
+    ],
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
   "x2-hexbolt-spitter-mitt": {
     "sprite": "x2-hexbolt-spitter-mitt",
     "parts": [

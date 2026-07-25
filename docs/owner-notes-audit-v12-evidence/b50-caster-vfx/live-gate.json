@@ -1,0 +1,283 @@
+{
+  "verdict": "pass",
+  "capturedAt": "2026-07-25T04:09:12.957Z",
+  "character": "proto-cowboy-hidden-face",
+  "privatePorts": {
+    "clientPort": 65082,
+    "gamePort": 65081,
+    "forbiddenDefaultPortsAvoided": true
+  },
+  "facings": [
+    "right",
+    "left"
+  ],
+  "orrery": [
+    {
+      "facing": "right",
+      "phase": 2,
+      "weaponId": "x2-hexbinder-s-iron-orrery",
+      "effectiveLength": 320,
+      "authoritativeWidth": 56,
+      "renderFacing": 1,
+      "structure": {
+        "family": "converging-strands",
+        "textureKey": "beam-v7-structure:converging-strands",
+        "textureReady": true,
+        "generatedSheetVisible": true,
+        "coneStream": false,
+        "iceOnly": false,
+        "authoritativeWidth": 56,
+        "authoritativeLength": 320,
+        "renderLength": 320,
+        "artRenderedWidth": 50.06720750234175,
+        "proceduralCoreWidth": 2.9931482745965177,
+        "normalWobble": 4.081565828995251,
+        "maxTransverseExtent": 19.98833487921841,
+        "longitudinalStart": 10,
+        "longitudinalEnd": 310,
+        "visualWidth": 54.42087771993668,
+        "strandCount": 0,
+        "strandPalette": []
+      },
+      "bodyTexture": "beam-v7-structure:converging-strands",
+      "bodyVisible": true,
+      "lipVisible": false,
+      "screenshot": "docs/owner-notes-audit-v12-evidence/b50-caster-vfx/x2-hexbinder-s-iron-orrery-right-purple-beam.png"
+    },
+    {
+      "facing": "left",
+      "phase": 2,
+      "weaponId": "x2-hexbinder-s-iron-orrery",
+      "effectiveLength": 320,
+      "authoritativeWidth": 56,
+      "renderFacing": -1,
+      "structure": {
+        "family": "converging-strands",
+        "textureKey": "beam-v7-structure:converging-strands",
+        "textureReady": true,
+        "generatedSheetVisible": true,
+        "coneStream": false,
+        "iceOnly": false,
+        "authoritativeWidth": 56,
+        "authoritativeLength": 320,
+        "renderLength": 320,
+        "artRenderedWidth": 49.141190720647025,
+        "proceduralCoreWidth": 2.9377885756908544,
+        "normalWobble": 4.006075330487529,
+        "maxTransverseExtent": 19.61864113235976,
+        "longitudinalStart": 10,
+        "longitudinalEnd": 310,
+        "visualWidth": 53.41433773983372,
+        "strandCount": 0,
+        "strandPalette": []
+      },
+      "bodyTexture": "beam-v7-structure:converging-strands",
+      "bodyVisible": true,
+      "lipVisible": false,
+      "screenshot": "docs/owner-notes-audit-v12-evidence/b50-caster-vfx/x2-hexbinder-s-iron-orrery-left-purple-beam.png"
+    }
+  ],
+  "emberleaf": [
+    {
+      "facing": "right",
+      "chargeActive": true,
+      "chargeTicks": 3,
+      "openVisible": true,
+      "chargeOpenActive": true,
+      "heldTexture": "tome-open:x2-emberleaf-chapbook",
+      "fireballWidth": 35.23333333333334,
+      "fireballHeight": 35.23333333333334,
+      "bookCenter": {
+        "x": 2388.0523967146873,
+        "y": 2399.422747399658
+      },
+      "fireballCenter": {
+        "x": 2388.0523967146873,
+        "y": 2399.422747399658
+      },
+      "centerError": 0,
+      "screenshot": "docs/owner-notes-audit-v12-evidence/b50-caster-vfx/x2-emberleaf-chapbook-right-open-charge.png"
+    },
+    {
+      "facing": "left",
+      "chargeActive": true,
+      "chargeTicks": 1,
+      "openVisible": true,
+      "chargeOpenActive": true,
+      "heldTexture": "tome-open:x2-emberleaf-chapbook",
+      "fireballWidth": 33.016666666666666,
+      "fireballHeight": 33.016666666666666,
+      "bookCenter": {
+        "x": 2411.9299663826823,
+        "y": 2401.7628267370164
+      },
+      "fireballCenter": {
+        "x": 2411.9299663826823,
+        "y": 2401.7628267370164
+      },
+      "centerError": 0,
+      "screenshot": "docs/owner-notes-audit-v12-evidence/b50-caster-vfx/x2-emberleaf-chapbook-left-open-charge.png"
+    }
+  ],
+  "verdigris": [
+    {
+      "facing": "right",
+      "weaponId": "x2-verdigris-grand-grimoire",
+      "sourceX": 2452.4995220592687,
+      "sourceY": 2414.375039240281,
+      "aimAngle": -0.10673589801937336,
+      "shots": [
+        {
+          "startX": 2459.708261664498,
+          "startY": 2406.5626085491326,
+          "endX": 2653.3456403997848,
+          "endY": 2293.954591265606,
+          "angleOffsetRad": -0.42
+        },
+        {
+          "startX": 2461.1375814353996,
+          "startY": 2408.169482841823,
+          "endX": 2681.9334771555295,
+          "endY": 2309.1080249828474,
+          "angleOffsetRad": -0.315
+        },
+        {
+          "startX": 2462.566901206301,
+          "startY": 2409.776357134514,
+          "endX": 2709.6337567868954,
+          "endY": 2328.7950699533535,
+          "angleOffsetRad": -0.21
+        },
+        {
+          "startX": 2463.996220977202,
+          "startY": 2411.383231427205,
+          "endX": 2735.7878071630844,
+          "endY": 2352.9594890054627,
+          "angleOffsetRad": -0.105
+        },
+        {
+          "startX": 2465.4255407481037,
+          "startY": 2412.9901057198954,
+          "endX": 2759.7410432015786,
+          "endY": 2381.4562347941974,
+          "angleOffsetRad": 0
+        },
+        {
+          "startX": 2464.369087694229,
+          "startY": 2414.863313381891,
+          "endX": 2742.3686688398057,
+          "endY": 2414.3807339748682,
+          "angleOffsetRad": 0.105
+        },
+        {
+          "startX": 2463.312634640354,
+          "startY": 2416.7365210438866,
+          "endX": 2721.9276143390707,
+          "endY": 2443.5374963140607,
+          "angleOffsetRad": 0.21
+        },
+        {
+          "startX": 2462.25618158648,
+          "startY": 2418.609728705882,
+          "endX": 2699.0268776625007,
+          "endY": 2468.646090281007,
+          "angleOffsetRad": 0.315
+        },
+        {
+          "startX": 2461.1997285326056,
+          "startY": 2420.4829363678778,
+          "endX": 2674.2982658555015,
+          "endY": 2489.512012783851,
+          "angleOffsetRad": 0.42
+        }
+      ],
+      "heldTexture": "tome-open:x2-verdigris-grand-grimoire",
+      "openVisible": true,
+      "brownPageShapesVisible": 0,
+      "brownScrapsVisible": 0,
+      "screenshot": "docs/owner-notes-audit-v12-evidence/b50-caster-vfx/x2-verdigris-grand-grimoire-right-clean-page-cone.png"
+    },
+    {
+      "facing": "left",
+      "weaponId": "x2-verdigris-grand-grimoire",
+      "sourceX": 2347.500477697203,
+      "sourceY": 2414.375041513208,
+      "aimAngle": -3.0348567988646695,
+      "shots": [
+        {
+          "startX": 2338.800271488303,
+          "startY": 2420.482939017474,
+          "endX": 2125.7017371539696,
+          "endY": 2489.5120246593888,
+          "angleOffsetRad": -0.42
+        },
+        {
+          "startX": 2337.7438183533295,
+          "startY": 2418.609731401217,
+          "endX": 2100.9731244435957,
+          "endY": 2468.646103227152,
+          "angleOffsetRad": -0.315
+        },
+        {
+          "startX": 2336.687365218356,
+          "startY": 2416.7365237849594,
+          "endX": 2078.0723866799676,
+          "endY": 2443.537510251675,
+          "angleOffsetRad": -0.21
+        },
+        {
+          "startX": 2335.630912083382,
+          "startY": 2414.863316168702,
+          "endX": 2057.631330916913,
+          "endY": 2414.3807487974623,
+          "angleOffsetRad": -0.105
+        },
+        {
+          "startX": 2334.5744589484084,
+          "startY": 2412.990108552445,
+          "endX": 2040.2589551296985,
+          "endY": 2381.456250368916,
+          "angleOffsetRad": 0
+        },
+        {
+          "startX": 2336.0037786497414,
+          "startY": 2411.383234197873,
+          "endX": 2064.2121899344475,
+          "endY": 2352.959503543144,
+          "angleOffsetRad": 0.105
+        },
+        {
+          "startX": 2337.4330983510745,
+          "startY": 2409.7763598433007,
+          "endX": 2090.366239264456,
+          "endY": 2328.7950833587147,
+          "angleOffsetRad": 0.21
+        },
+        {
+          "startX": 2338.8624180524075,
+          "startY": 2408.169485488729,
+          "endX": 2118.066518043486,
+          "endY": 2309.1080371889466,
+          "angleOffsetRad": 0.315
+        },
+        {
+          "startX": 2340.2917377537406,
+          "startY": 2406.5626111341567,
+          "endX": 2146.6543541431743,
+          "endY": 2293.954602234015,
+          "angleOffsetRad": 0.42
+        }
+      ],
+      "heldTexture": "tome-open:x2-verdigris-grand-grimoire",
+      "openVisible": true,
+      "brownPageShapesVisible": 0,
+      "brownScrapsVisible": 0,
+      "screenshot": "docs/owner-notes-audit-v12-evidence/b50-caster-vfx/x2-verdigris-grand-grimoire-left-clean-page-cone.png"
+    }
+  ],
+  "almanac": {
+    "id": "x2-cinderquill-almanac",
+    "rejected": true,
+    "retainedWeapon": "x2-hexbinder-s-iron-orrery"
+  }
+}

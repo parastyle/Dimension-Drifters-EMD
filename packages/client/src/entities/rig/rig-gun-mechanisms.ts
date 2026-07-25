@@ -223,7 +223,12 @@ import {
   weaponPoseSpecFor,
 } from "../../sprites/pose-language.js";
 import { secondaryGripHandRendersAbove } from "../../sprites/secondary-grip.js";
-import { tomeOpenArtFor, tomeOpenRotationForAim } from "../../sprites/tome-open-art.js";
+import {
+  chargeHoldsTomeOpen,
+  tomeOpenArtFor,
+  tomeOpenRotationForAim,
+  writeTomeCenterWorldPoint,
+} from "../../sprites/tome-open-art.js";
 import {
   isWholeArtCharacterId,
   isWholeArtCharacterPartRole,
@@ -387,6 +392,14 @@ export const rigGunMechanismMethods = {
     return point ? this.writeWeaponArtMuzzle(point, out, hand) : false;
   },
 
+  /** Transform the visible open-book gutter through the final held-sprite affine. */
+  writeTomeCenter(this: SpriteRigContext, out: { x: number; y: number }): boolean {
+    const tome = this.tome;
+    const image = this.weapons[0]?.img;
+    if (!tome?.openVisible || tome.proceduralSplay || !image?.active || !image.visible) return false;
+    return writeTomeCenterWorldPoint(image.getWorldTransformMatrix(), image, out);
+  },
+
   /** B19 swing punctuation reads the final independent hand/foot worn-sprite affine. */
   writeKungFuWrapMuzzle(this: SpriteRigContext,
     limb: MeleeComboLimb | undefined,
@@ -515,12 +528,14 @@ export const rigGunMechanismMethods = {
       openRotationOffsetRad: tomeOpenRotationForAim(spriteId, 0),
       openGeometry: heldWeapon.artGeometry?.open,
       proceduralSplay: art.proceduralSplay === true,
+      suppressPageTurnEffects: art.suppressPageTurnEffects === true,
       proceduralLeaves,
       pages: [makePage(0xf1d09a), makePage(0xe5bd80)],
       scraps: [makeScrap(0xe9c88f), makeScrap(0xdab276)],
       openBaseScale: art.proceduralSplay ? heldWeapon.baseScale : 0,
       openTextureReady: art.proceduralSplay === true,
       openVisible: false,
+      chargeOpenActive: false,
       hasSeq: false,
       lastSeq: 0,
       openAtMs: Number.POSITIVE_INFINITY,
@@ -615,6 +630,11 @@ export const rigGunMechanismMethods = {
       tome.openUntilMs,
       epochMs + ATTACK_HELD_WINDOW * TICK_MS + TOME_IDLE_CLOSE_MS,
     );
+    if (tome.suppressPageTurnEffects) {
+      tome.pendingPage = false;
+      tome.settleForUntilMs = tome.openUntilMs;
+      return;
+    }
     // Rapid-fire books coalesce queued edges onto a ~3Hz physical page cadence; every latest attack beat
     // still refreshes the open latch and replaces the pending page rather than allocating overlapping VFX.
     tome.pendingPage = true;
@@ -764,12 +784,19 @@ export const rigGunMechanismMethods = {
     charges = 0,
     maxCharges = 0,
     fireInputHeld?: boolean,
+    chargedProjectileActive = false,
   ): void {
     this.authoritativeFiringAttackTick = attackTick >>> 0;
     this.authoritativeFiringClockTick = clockTick >>> 0;
     this.authoritativeGunCharges = Math.max(0, charges);
     this.authoritativeGunMaxCharges = Math.max(0, maxCharges);
     this.authoritativeFiringInputHeld = fireInputHeld;
+    if (this.tome) {
+      this.tome.chargeOpenActive = chargeHoldsTomeOpen(
+        chargedProjectileActive,
+        this.weaponDef?.chargedProjectile !== undefined,
+      );
+    }
     this.refreshBreakActionClock();
     // Clock ingestion continues through hit-stop. This also guarantees the closed-frame return is
     // applied at the authoritative boundary rather than waiting for animation to resume.
@@ -791,11 +818,9 @@ export const rigGunMechanismMethods = {
       }
     }
 
+    const timedOpen = sceneNow >= tome.openAtMs && sceneNow < tome.openUntilMs;
     const wantsOpen =
-      !weapon.def.muzzle &&
-      tome.openTextureReady &&
-      sceneNow >= tome.openAtMs &&
-      sceneNow < tome.openUntilMs;
+      tome.openTextureReady && (tome.chargeOpenActive || (!weapon.def.muzzle && timedOpen));
     if (!wantsOpen) {
       this.setTomeClosed(tome);
       if (sceneNow >= tome.openUntilMs) tome.pendingPage = false;
@@ -809,6 +834,11 @@ export const rigGunMechanismMethods = {
         weapon.img.setTexture(tome.openTextureKey);
       }
       tome.openVisible = true;
+    }
+
+    if (tome.chargeOpenActive || tome.suppressPageTurnEffects) {
+      this.hideTomeShapes(tome);
+      return;
     }
 
     const settleAt = tome.openUntilMs - TOME_SETTLE_DURATION_MS;
@@ -835,6 +865,10 @@ export const rigGunMechanismMethods = {
     const weapon = this.weapons[0];
     if (!tome || !weapon || !tome.openVisible || outsidePaperView) {
       if (tome) this.hideTomeShapes(tome);
+      return;
+    }
+    if (tome.suppressPageTurnEffects) {
+      this.hideTomeShapes(tome);
       return;
     }
     const img = weapon.img;

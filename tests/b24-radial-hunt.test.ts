@@ -79,8 +79,8 @@ describe("B24 shared radial fallback removal", () => {
       "twin-slash": 24,
       "thrust-streak": 11,
     });
-    expect(candidates.filter((definition) => !definition.archived)).toHaveLength(305);
-    expect(candidates.filter((definition) => definition.archived)).toHaveLength(17);
+    expect(candidates.filter((definition) => !definition.archived)).toHaveLength(304);
+    expect(candidates.filter((definition) => definition.archived)).toHaveLength(18);
     for (const id of MARKED_RADIAL_WEAPON_IDS)
       expect(
         candidates.map((definition) => definition.id),
@@ -173,8 +173,8 @@ describe("B24 shared radial fallback removal", () => {
     expect(weapon("x2-pocket-hexicon").archived).toBe(true);
     expect(ARCHIVED_WEAPON_IDS).toContain("x2-pocket-hexicon");
     expect(ACTIVE_WEAPON_CATALOG_IDS).not.toContain("x2-pocket-hexicon");
-    expect(ACTIVE_WEAPON_CATALOG_IDS).toHaveLength(339);
-    expect(ARCHIVED_WEAPON_IDS).toHaveLength(19);
+    expect(ACTIVE_WEAPON_CATALOG_IDS).toHaveLength(338);
+    expect(ARCHIVED_WEAPON_IDS).toHaveLength(20);
   });
 
   it("renders Spitfire Censer Wand exactly forty percent larger without stat or art edits", () => {

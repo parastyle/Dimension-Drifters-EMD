@@ -122,9 +122,9 @@ describe("B20 L4 seeded pack opening", () => {
 });
 
 describe("B20 L4 starter and persistence laws", () => {
-  it("ships a valid 74-weapon, 58-family starter set containing every base/default weapon", () => {
-    expect(STARTER_UNLOCKED_WEAPON_IDS).toHaveLength(74);
-    expect(new Set(STARTER_UNLOCKED_WEAPON_IDS).size).toBe(74);
+  it("ships a valid 73-weapon starter set containing every base/default weapon", () => {
+    expect(STARTER_UNLOCKED_WEAPON_IDS).toHaveLength(73);
+    expect(new Set(STARTER_UNLOCKED_WEAPON_IDS).size).toBe(73);
     expect(STARTER_UNLOCKED_WEAPON_IDS).toContain("rusty-cleaver");
     expect(STARTER_UNLOCKED_WEAPON_IDS.every((id) => ACTIVE_WEAPON_CATALOG_IDS.includes(id))).toBe(
       true,
@@ -135,7 +135,7 @@ describe("B20 L4 starter and persistence laws", () => {
         (id) => WEAPONS[id]?.tags.family ?? WEAPONS[id]?.tags.classPool,
       ),
     );
-    expect(families.size).toBeGreaterThanOrEqual(58);
+    expect(families.size).toBeGreaterThanOrEqual(57);
 
     expect(STARTER_UNLOCKED_CHARACTER_IDS).toHaveLength(6);
     expect(STARTER_UNLOCKED_CHARACTER_IDS).toContain(DEFAULT_CHARACTER);

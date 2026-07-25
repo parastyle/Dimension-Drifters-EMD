@@ -1765,6 +1765,7 @@ export interface TomeVisualState {
   readonly openRotationOffsetRad: number;
   readonly openGeometry?: WeaponArtStateGeometry;
   readonly proceduralSplay: boolean;
+  readonly suppressPageTurnEffects: boolean;
   readonly proceduralLeaves?: readonly [
     Phaser.GameObjects.Image,
     Phaser.GameObjects.Image,
@@ -1774,6 +1775,7 @@ export interface TomeVisualState {
   openBaseScale: number;
   openTextureReady: boolean;
   openVisible: boolean;
+  chargeOpenActive: boolean;
   hasSeq: boolean;
   lastSeq: number;
   openAtMs: number;
@@ -2592,6 +2594,7 @@ export interface SpriteRigContext {
   writeWeaponArtMuzzle(point: WeaponArtMuzzlePoint, out: { x: number; y: number }, preferredHand?: 0 | 1): boolean;
   writeWeaponMuzzle(hand: 0 | 1, out: { x: number; y: number }, pointIndex?: number): boolean;
   writeWeaponMuzzleForShot(acceptedSeq: number, barrelIndex: number, out: { x: number; y: number }, salvoIndex?: number): boolean;
+  writeTomeCenter(out: { x: number; y: number }): boolean;
   writeKungFuWrapMuzzle(limb: MeleeComboLimb | undefined, side: 0 | 1, out: { x: number; y: number }): boolean;
   triggerGunRecoil(timeMs: number, hand: 0 | 1): void;
   holdRangedAim(epochMs: number, durationMs: number): void;
@@ -2663,7 +2666,7 @@ export interface SpriteRigContext {
     phase: BreakActionPhase;
     shellCount: number;
   }>;
-  setAuthoritativeAttackClock(attackTick: number, clockTick: number, charges?: number, maxCharges?: number, fireInputHeld?: boolean): void;
+  setAuthoritativeAttackClock(attackTick: number, clockTick: number, charges?: number, maxCharges?: number, fireInputHeld?: boolean, chargedProjectileActive?: boolean): void;
   prepareTomeVisual(sceneNow: number, outsidePaperView: boolean): void;
   syncTomeVisual(sceneNow: number, outsidePaperView: boolean): void;
   applyWeaponArtGeometry(): void;

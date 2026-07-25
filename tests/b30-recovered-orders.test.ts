@@ -95,8 +95,8 @@ describe("B30 recovered skipped-window orders", () => {
       expect(DROP_POOL, id).not.toContain(id);
       expect(packIds, id).not.toContain(id);
     }
-    expect(ACTIVE_WEAPON_CATALOG_IDS).toHaveLength(339);
-    expect(ARCHIVED_WEAPON_IDS).toHaveLength(19);
+    expect(ACTIVE_WEAPON_CATALOG_IDS).toHaveLength(338);
+    expect(ARCHIVED_WEAPON_IDS).toHaveLength(20);
   });
 
   it("places Frostgig overhead and pins the revolver and Railgun grips to the painted handles", () => {
