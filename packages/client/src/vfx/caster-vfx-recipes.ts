@@ -301,6 +301,16 @@ export const CASTER_PARTICLE_PROJECTILES: Readonly<
     >
   >
 > = Object.freeze({
+  "x2-hailshard-resonator": Object.freeze({
+    treatment: "stream",
+    pack: "frost-shard",
+    count: 5,
+  }),
+  "x2-frostknuckle-rimewrap": Object.freeze({
+    treatment: "stream",
+    pack: "frost-mote",
+    count: 5,
+  }),
   "x2-reliquary-lantern-wand": Object.freeze({
     treatment: "stream",
     pack: "holy-spark",
@@ -975,6 +985,14 @@ function authoredDamage(def: WeaponDef): number {
     def.quake?.damage ?? 0,
     def.chainLightning?.damage ?? 0,
     (def.beam?.damagePerSecond ?? 0) * 0.25,
+  );
+}
+
+/** B49 glove casts originate at the rendered fist, never at the actor/root aura anchor. */
+export function casterSourceUsesFist(def: WeaponDef | undefined): boolean {
+  return (
+    def?.id === "x2-cinderpalm-brand-glove" ||
+    def?.id === "x2-frostknuckle-rimewrap"
   );
 }
 

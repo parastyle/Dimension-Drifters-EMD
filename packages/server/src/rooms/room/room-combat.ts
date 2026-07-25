@@ -3659,11 +3659,10 @@ export const roomCombatMethods = {
       // visibly crossing them every turn (playtest). WYSIWYG: each completed 2π re-arms the hit set, so
       // every revolution the blade actually sweeps through an enemy damages it again.
       const absoluteSwingArc = Math.abs(sw.swingArc);
-      if (absoluteSwingArc > Math.PI * 2 + 1e-6) {
-        const rev0 = Math.floor((absoluteSwingArc * p0) / (Math.PI * 2));
-        const rev1 = Math.floor((absoluteSwingArc * p1) / (Math.PI * 2));
-        if (rev1 > rev0) sw.hit.clear();
-      }
+      const multiRevolutionSwing = absoluteSwingArc > Math.PI * 2 + 1e-6;
+      let sampledRevolution = Math.floor(
+        (absoluteSwingArc * Math.min(p0, 1 - Number.EPSILON)) / (Math.PI * 2),
+      );
       const activeSeconds = sw.swing.activeEndSeconds - sw.swing.activeStartSeconds;
       const extensionAngleAt = (progress: number): number | undefined =>
         envelopeWeapon
@@ -3700,6 +3699,17 @@ export const roomCombatMethods = {
       }
       for (let s = 1; s <= steps; s++) {
         const sampleProgress = p0 + ((p1 - p0) * s) / steps;
+        if (multiRevolutionSwing) {
+          // Re-arm at the exact visual boundary, including when a coarse server tick
+          // samples more than one revolution. Clamp the terminal endpoint so it does
+          // not manufacture a zero-length fourth hit after a three-turn spin.
+          const revolution = Math.floor(
+            (absoluteSwingArc * Math.min(sampleProgress, 1 - Number.EPSILON)) /
+              (Math.PI * 2),
+          );
+          if (revolution > sampledRevolution) sw.hit.clear();
+          sampledRevolution = revolution;
+        }
         const sampleElapsed = Math.min(
           sw.swing.activeEndSeconds - 1e-9,
           sw.swing.activeStartSeconds +
@@ -4261,12 +4271,11 @@ export const roomCombatMethods = {
     if (!t) return;
     const damageMultiplier = this.heldDamageMult(weapon, player, hand);
     const dmg = t.damage * damageMultiplier;
-    const outboundSeconds = t.range / t.speed;
-    const ttl = outboundSeconds * (t.returning ? 2 : 1);
     const aim = this.aimDir(player, c); // §37 aim at the cursor POINT, not the rig-derived vector
     const drawSeconds = weapon.performance?.windupSeconds ?? 0;
-    if ((weapon.performance?.preThrowRevolutions ?? 0) > 0 && drawSeconds > 0) {
-      const attackCrit = this.weaponCritChance(player, c);
+    const attackCrit = this.weaponCritChance(player, c);
+    const drawRevolutions = weapon.performance?.preThrowRevolutions ?? 0;
+    if (drawRevolutions > 0 && drawSeconds > 0) {
       const drawDamage = weapon.performance?.preThrowDamage;
       if (drawDamage) {
         this.meleeSwings.set(`${player.id}:prethrow:${hand}`, {
@@ -4281,7 +4290,7 @@ export const roomCombatMethods = {
           },
           aim0: Math.atan2(aim.y, aim.x),
           range: drawDamage.range,
-          swingArc: Math.PI * 2 * (weapon.performance?.preThrowRevolutions ?? 1),
+          swingArc: Math.PI * 2 * drawRevolutions,
           halfWidth: MELEE_BLADE_HALFWIDTH,
           rangeMultiplier: 1,
           timedWeaponEnvelope: false,
@@ -4293,7 +4302,13 @@ export const roomCombatMethods = {
           hit: new Set<string>(),
         });
       }
-      this.pendingWeaponThrows.push({
+    }
+    const queueThrow = (
+      damage: number,
+      sourceMuzzlePart: 0 | 1,
+      projectileWaveform?: ProjectileWaveformDef,
+    ): void => {
+      const pending: PendingWeaponThrow = {
         t: drawSeconds,
         playerId: player.id,
         weaponId: weapon.id,
@@ -4301,7 +4316,7 @@ export const roomCombatMethods = {
         aimY: aim.y,
         speed: t.speed,
         range: t.range,
-        damage: dmg,
+        damage,
         pierce: t.pierce,
         kind: thrownProjectileKindFor(weapon),
         crit: attackCrit,
@@ -4314,35 +4329,19 @@ export const roomCombatMethods = {
           : undefined,
         arcHeight: t.arcHeight ?? weapon.groundZone?.grenadeArcHeight,
         returning: t.returning,
-      });
-      return;
+        projectileWaveform,
+        sourceMuzzlePart,
+      };
+      if (drawSeconds > 0) this.pendingWeaponThrows.push(pending);
+      else this.emitWeaponThrow(pending, player.x, player.y);
+    };
+    if (t.helix) {
+      const halfDamage = dmg / 2;
+      queueThrow(halfDamage, 0, { ...t.helix, phaseRad: 0 });
+      queueThrow(halfDamage, 1, { ...t.helix, phaseRad: Math.PI });
+    } else {
+      queueThrow(dmg, hand, undefined);
     }
-    this.fireProjectile(
-      { x: player.x, y: player.y },
-      { x: player.x + aim.x, y: player.y + aim.y },
-      t.speed,
-      dmg,
-      false,
-      thrownProjectileKindFor(weapon),
-      t.pierce,
-      ttl,
-      undefined,
-      0,
-      this.weaponCritChance(player, c), // §ULT Door rider consumes once per throw
-      player.id,
-      weapon.id,
-      CombatDelivery.Thrown,
-      undefined,
-      weapon.groundZone?.trigger === "landing"
-        ? weapon.groundZone.damagePerSecond * this.heldDamageMult(weapon, player, hand)
-        : undefined,
-      t.ricochetHops
-        ? { hops: t.ricochetHops, range: t.ricochetRange ?? Math.min(t.range, 320) }
-        : undefined,
-      undefined,
-      t.arcHeight ?? weapon.groundZone?.grenadeArcHeight ?? 0,
-      t.returning ? outboundSeconds : undefined,
-    );
   },
 
   /** §14 scatter shot — fling `count` REAL magma projectiles in a cone toward aim. Each is a WYSIWYG
@@ -4368,9 +4367,12 @@ export const roomCombatMethods = {
       undefined,
       pending.landingDamagePerSecond,
       pending.ricochet,
-      undefined,
+      pending.projectileWaveform,
       pending.arcHeight ?? 0,
       pending.returning ? pending.range / pending.speed : undefined,
+      undefined,
+      1,
+      pending.sourceMuzzlePart ?? 0,
     );
   },
 
@@ -4453,6 +4455,7 @@ export const roomCombatMethods = {
       crit,
       sourcePlayerId: player.id,
       sourceWeaponId: weapon.id,
+      sourceMuzzlePart: hand,
       kind,
     };
     if (volley.t > 0) this.pendingScatterVolleys.push(volley);
@@ -4485,6 +4488,14 @@ export const roomCombatMethods = {
         volley.sourceWeaponId,
         CombatDelivery.Scatter,
         { x: volley.sweepX, y: volley.sweepY },
+        undefined,
+        undefined,
+        undefined,
+        0,
+        undefined,
+        undefined,
+        1,
+        volley.sourceMuzzlePart,
       );
     }
   },

@@ -276,7 +276,11 @@ import {
   spawnCasterCast,
   spawnCasterImpact,
 } from "../vfx/caster-vfx.js";
-import { type CasterVfxRecipe, resolveCasterVfxRecipe } from "../vfx/caster-vfx-recipes.js";
+import {
+  casterSourceUsesFist,
+  type CasterVfxRecipe,
+  resolveCasterVfxRecipe,
+} from "../vfx/caster-vfx-recipes.js";
 import {
   colorblindShapesEnabled,
   MELEE_FINAL_GLINT_LEAD_MS,
@@ -3778,7 +3782,7 @@ export class ArenaScene extends Phaser.Scene {
     });
   }
 
-  /** Cue caster-source paint from the planted implement root. */
+  /** Cue caster-source paint from the held implement; gauntlets emit from the rendered fist. */
   private cueAttackCasterSource(
     weapon: WeaponDef,
     swing: SwingDescriptor,
@@ -3788,11 +3792,16 @@ export class ArenaScene extends Phaser.Scene {
   ): void {
     const cueSeconds = weapon.performance?.vfxAt === "impact" ? swing.impactSeconds : 0;
     const cue = () => {
-      this.spawnCasterSource(weapon, rig.x, rig.y, angle);
+      this.spawnCasterSourceAtRig(weapon, rig, angle);
       onCue?.();
     };
     if (cueSeconds > 0) this.time.delayedCall(cueSeconds * 1000, cue);
     else cue();
+  }
+
+  private spawnCasterSourceAtRig(weapon: WeaponDef, rig: SpriteRig, angle: number): void {
+    const anchor = casterSourceUsesFist(weapon) ? rig.handWorldAnchor(0) : { x: rig.x, y: rig.y };
+    this.spawnCasterSource(weapon, anchor.x, anchor.y, angle);
   }
 
   /** One presentation-only recipe cue at the held implement tip. */
@@ -6638,14 +6647,18 @@ export class ArenaScene extends Phaser.Scene {
           ? "muzzle"
           : sourceWeapon?.thrown && isThrownProjectileKind(pr.kind)
             ? "throw"
-            : undefined;
+            : sourceWeapon?.scatter && casterSourceUsesFist(sourceWeapon)
+              ? "cast"
+              : undefined;
       const spawnAnchor =
         sourcePlayer && sourceWeapon && sourceRig
           ? spawnAnchorKind === "muzzle"
             ? this.writeLiveGunRoundMuzzle(pr, sourcePlayer, sourceWeapon, sourceRig)
             : spawnAnchorKind === "throw"
-              ? this.writeLiveThrownOrigin(sourceRig)
-              : undefined
+              ? this.writeLiveThrownOrigin(sourceRig, pr.sourceMuzzlePart === 1 ? 1 : 0)
+              : spawnAnchorKind === "cast"
+                ? sourceRig.handWorldAnchor(pr.sourceMuzzlePart === 1 ? 1 : 0)
+                : undefined
           : undefined;
       if (spawnAnchor && !authoritativeStraightFlight) {
         // The wire row is already one or more 50 ms simulation steps downrange when it first renders.
@@ -6747,7 +6760,7 @@ export class ArenaScene extends Phaser.Scene {
                   spawnSonicBoomRing(this, muzzle.x, muzzle.y, ang, fx.color);
               }
             } else if (srig && flashWeapon) {
-              this.spawnCasterSource(flashWeapon, srig.x, srig.y, ang);
+              this.spawnCasterSourceAtRig(flashWeapon, srig, ang);
             }
             // §19 a REMOTE shooter's gun sound (self already played its predicted shot at click time —
             // `suppressed` gates this the same way it gates the flash, so self never double-fires).
@@ -6960,8 +6973,8 @@ export class ArenaScene extends Phaser.Scene {
   }
 
   /** Resolve an own-sprite thrown row onto the accepted beat's final rendered release hand. */
-  private writeLiveThrownOrigin(rig: SpriteRig): { x: number; y: number } {
-    const out = rig.throwWorldAnchor();
+  private writeLiveThrownOrigin(rig: SpriteRig, hand: 0 | 1 = 0): { x: number; y: number } {
+    const out = rig.handWorldAnchor(hand);
     if (this.belt) out.y = BELT_Y0 + (out.y - BELT_Y0) / BELT_FORESHORTEN;
     return out;
   }
@@ -7014,7 +7027,14 @@ export class ArenaScene extends Phaser.Scene {
       if (!c) return;
       const weaponId = (c.getData("sourceWeapon") as string | undefined) ?? "";
       const weapon = WEAPONS[weaponId];
-      const waveform = weapon?.cast?.projectileWaveform;
+      const waveform =
+        weapon?.cast?.projectileWaveform ??
+        (weapon?.thrown?.helix
+          ? {
+              ...weapon.thrown.helix,
+              phaseRad: pr.sourceMuzzlePart === 1 ? Math.PI : 0,
+            }
+          : undefined);
       const authoritativeStraightFlight = usesAuthoritativeStraightFlight(
         weaponId,
         weapon?.gun?.arcHeight,
@@ -10057,7 +10077,7 @@ export class ArenaScene extends Phaser.Scene {
     const angle = Math.atan2(aimY, aimX);
     rig.triggerGunRecoil(this.time.now, 0);
     if (weapon.tags.classPool === "caster") {
-      this.spawnCasterSource(weapon, rig.x, rig.y, angle);
+      this.spawnCasterSourceAtRig(weapon, rig, angle);
     } else if (weapon.gun) {
       const element = weapon.tags.element;
       const fx = gunFx(

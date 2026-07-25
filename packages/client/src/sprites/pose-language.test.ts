@@ -647,6 +647,31 @@ describe("weapon performance pose states", () => {
     expect(released.weaponAngle).toBe(0);
   });
 
+  it.each(["x2-gallows-splitter", "x2-saloon-tomahawk"] as const)(
+    "winds %s behind the head in both hands before an over-shoulder release",
+    (id) => {
+      const input = createWeaponPerformanceInput();
+      const out = createWeaponPerformanceSample();
+      input.spec = performance(id);
+      input.aimLocal = 0;
+      input.phase = "anticipation";
+      input.phaseT = 1;
+      const wound = { ...sampleWeaponPerformance(input, out) };
+      input.phase = "active";
+      input.phaseT = 1;
+      const released = { ...sampleWeaponPerformance(input, out) };
+
+      expect(wound.handX).toBeLessThan(-0.3);
+      expect(wound.backHandX).toBeLessThan(-0.25);
+      expect(wound.handY).toBeLessThan(-0.5);
+      expect(wound.backHandY).toBeLessThan(-0.45);
+      expect(wound.backHandBlend).toBe(1);
+      expect(released.handX).toBeGreaterThan(0.5);
+      expect(released.backHandX).toBeGreaterThan(0.4);
+      expect(released.backHandBlend).toBe(1);
+    },
+  );
+
   it("holds Gravesinger behind and above the shoulders and Boothill upright at rest", () => {
     const input = createWeaponPerformanceInput();
     const out = createWeaponPerformanceSample();

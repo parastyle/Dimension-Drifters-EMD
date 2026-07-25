@@ -24,6 +24,7 @@ const B28_PARTIAL_OR_COMPLETE_REMOVAL_IDS = [
 const B30_REMOVED_AFTER_B24_IDS = new Set([
   "x2-hailshard-resonator",
   "x2-coyote-trickster-s-sparkmitt",
+  "x2-brimstone-doubleheader",
 ]);
 
 const PROJECTILE_DELIVERIES = [

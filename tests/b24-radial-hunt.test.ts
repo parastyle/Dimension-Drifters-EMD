@@ -32,6 +32,7 @@ const SYNTHETIC_PER_LAYER_IDS = ["blade-trail", "twin-slash", "thrust-streak"] a
 const B30_REMOVED_AFTER_B24_IDS = new Set([
   "x2-hailshard-resonator",
   "x2-coyote-trickster-s-sparkmitt",
+  "x2-brimstone-doubleheader",
 ]);
 
 function weapon(id: string): WeaponDef {
@@ -75,8 +76,8 @@ describe("B24 shared radial fallback removal", () => {
 
     expect(candidates).toHaveLength(322);
     expect(byFormerLayer).toEqual({
-      "blade-trail": 287,
-      "twin-slash": 24,
+      "blade-trail": 284,
+      "twin-slash": 27,
       "thrust-streak": 11,
     });
     expect(candidates.filter((definition) => !definition.archived)).toHaveLength(305);

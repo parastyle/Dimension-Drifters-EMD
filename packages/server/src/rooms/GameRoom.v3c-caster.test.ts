@@ -84,11 +84,13 @@ describe("GameRoom — V3C caster authority", () => {
     expect(damages.reduce((sum, damage) => sum + damage, 0)).toBeCloseTo(expectedTotal, 8);
   });
 
-  it("keeps Hailshard projectiles inside its aimed ice cone with no inherited melee swing", () => {
-    const { room, player, combat } = makeRoom("hail-cone");
+  it("spreads Hailshard ice through all four quadrants with no inherited melee hitbox", () => {
+    const { room, player, combat } = makeRoom("hail-radial");
     const definition = equip(room, player, combat, "x2-hailshard-resonator");
     if (!definition.scatter) throw new Error("Hailshard scatter fixture is required");
-    const random = vi.spyOn(Math, "random").mockReturnValue(0.5);
+    const samples = [0, 0.5, 0.25, 0.5, 0.5, 0.5, 0.75, 0.5, 0.999, 0.5];
+    let sample = 0;
+    const random = vi.spyOn(Math, "random").mockImplementation(() => samples[sample++] ?? 0.5);
     room.resolveSwing(
       player,
       combat,
@@ -100,8 +102,9 @@ describe("GameRoom — V3C caster authority", () => {
       Math.atan2(row.vy, row.vx),
     );
     expect(headings).toHaveLength(definition.scatter.count);
-    expect(Math.max(...headings)).toBeLessThanOrEqual(definition.scatter.spread + 1e-8);
-    expect(Math.min(...headings)).toBeGreaterThanOrEqual(-definition.scatter.spread - 1e-8);
+    expect(headings.some((heading) => heading > 1.4 && heading < 1.8)).toBe(true);
+    expect(headings.some((heading) => Math.abs(heading) > 3)).toBe(true);
+    expect(headings.some((heading) => heading < -1.4 && heading > -1.8)).toBe(true);
     expect(room.meleeSwings.has(player.id)).toBe(false);
     random.mockRestore();
   });

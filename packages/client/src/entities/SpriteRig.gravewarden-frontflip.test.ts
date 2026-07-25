@@ -15,12 +15,12 @@ describe("SpriteRig Gravewarden continuous frontflip routing", () => {
       plane: "continuous-frontflip",
       pivot: "grip",
       direction: "forward",
-      visualRevolutions: 6,
+      visualRevolutions: 3,
     });
     expect(continuousTwirlAxisFor(gravewarden.performance)).toBe("pitch");
     expect(gravewarden.performance?.twirl?.plane).not.toBe("ground-whirlwind");
-    expect(continuousFrontflipAngle(0.25, 6, 1, 1)).toBeCloseTo(Math.PI * 3, 12);
-    expect(continuousFrontflipAngle(0.25, 6, 1, -1)).toBeCloseTo(-Math.PI * 3, 12);
+    expect(continuousFrontflipAngle(0.25, 3, 1, 1)).toBeCloseTo(Math.PI * 1.5, 12);
+    expect(continuousFrontflipAngle(0.25, 3, 1, -1)).toBeCloseTo(-Math.PI * 1.5, 12);
   });
 
   it("closes each cadence loop at the same pose and angular velocity", () => {
@@ -35,31 +35,32 @@ describe("SpriteRig Gravewarden continuous frontflip routing", () => {
     expect(afterPhase).toBeGreaterThan(0);
     expect(afterPhase).toBeLessThan(0.001);
 
-    const start = continuousFrontflipAngle(0, 6, 1, 1);
-    const end = continuousFrontflipAngle(1, 6, 1, 1);
+    const start = continuousFrontflipAngle(0, 3, 1, 1);
+    const end = continuousFrontflipAngle(1, 3, 1, 1);
     expect(Math.cos(end)).toBeCloseTo(Math.cos(start), 12);
     expect(Math.sin(end)).toBeCloseTo(Math.sin(start), 12);
 
     const epsilon = 1e-6;
-    const velocityBefore = (end - continuousFrontflipAngle(1 - epsilon, 6, 1, 1)) / epsilon;
-    const velocityAfter = (continuousFrontflipAngle(epsilon, 6, 1, 1) - start) / epsilon;
-    expect(velocityBefore).toBeCloseTo(Math.PI * 12, 8);
+    const velocityBefore = (end - continuousFrontflipAngle(1 - epsilon, 3, 1, 1)) / epsilon;
+    const velocityAfter = (continuousFrontflipAngle(epsilon, 3, 1, 1) - start) / epsilon;
+    expect(velocityBefore).toBeCloseTo(Math.PI * 6, 8);
     expect(velocityAfter).toBeCloseTo(velocityBefore, 8);
   });
 
-  it("runs six visible in-place turns in one third of the old cadence", () => {
+  it("runs three visible in-place turns at five turns per second", () => {
     const descriptor = swingDescriptorFor(gravewarden, gravewarden.cooldown);
 
     expect(gravewarden).toMatchObject({
-      damage: 8,
+      damage: 8 / 3,
       range: 354,
       halfArc: 0.95,
       cooldown: 0.6,
-      swingArc: Math.PI * 2,
+      swingArc: Math.PI * 6,
       performance: {
-        twirl: { visualRevolutions: 6, cadenceSeconds: 0.2 },
+        twirl: { visualRevolutions: 3, cadenceSeconds: 0.6 },
       },
     });
     expect(descriptor.poseSeconds).toBeLessThanOrEqual(gravewarden.cooldown);
+    expect(gravewarden.damage * 3).toBeCloseTo(8, 12);
   });
 });

@@ -402,7 +402,8 @@
             "knockback": 12
           },
           "theatrics": {
-            "flip": "front"
+            "flip": "front",
+            "flipEnd": 0.68
           }
         }
       ],
@@ -1136,6 +1137,14 @@
         "pierce": 2,
         "arcHeight": 104
       },
+      "performance": {
+        "hold": "steady",
+        "action": "throw-release",
+        "suppressSwing": true,
+        "windupSeconds": 0.34,
+        "throwHeightPx": 20,
+        "throwStyle": "two-hand-overhead"
+      },
       "id": "x2-gallows-splitter"
     },
     {
@@ -1489,6 +1498,13 @@
       "behavior": {
         "kind": "edge"
       },
+      "performance": {
+        "hold": "upright",
+        "action": "default-swing",
+        "carryForwardPx": 16,
+        "carryAngleRad": -1.45,
+        "comboForwardPx": 26
+      },
       "comboFamily": "chop",
       "comboVariant": "hollowmoon-eclipse",
       "comboBar": [
@@ -1698,6 +1714,14 @@
         "refillSeconds": 1.4,
         "pierce": 2
       },
+      "performance": {
+        "hold": "steady",
+        "action": "throw-release",
+        "suppressSwing": true,
+        "windupSeconds": 0.3,
+        "throwHeightPx": 18,
+        "throwStyle": "two-hand-overhead"
+      },
       "id": "x2-saloon-tomahawk"
     },
     {
@@ -1726,9 +1750,26 @@
         "halfArc": 0.7,
         "cooldown": 0.28,
         "displayLength": 58,
-        "swingArc": 2.2,
+        "swingArc": 6.283185307179586,
         "gripFrac": 0.16
       },
+      "swingStyle": "spin",
+      "performance": {
+        "hold": "steady",
+        "action": "spin",
+        "continuous": true,
+        "suppressSwing": true,
+        "twirl": {
+          "plane": "ground-whirlwind",
+          "pivot": "grip",
+          "direction": "forward",
+          "visualRevolutions": 1
+        },
+        "holdScaling": {
+          "cadence": "weapon-cooldown"
+        }
+      },
+      "suppressVfx": true,
       "behavior": {
         "kind": "edge"
       },
@@ -4844,7 +4885,8 @@
       ],
       "performance": {
         "hold": "steady",
-        "action": "default-swing"
+        "action": "default-swing",
+        "comboForwardPx": 64
       }
     },
     {
@@ -12122,11 +12164,12 @@
         "swingArc": 1.2,
         "gripFrac": 0.14
       },
+      "swingStyle": "spin",
       "behavior": {
         "kind": "scatter",
         "count": 5,
         "spread": 0.4,
-        "aim": "cone",
+        "aim": "radial-random",
         "speed": 420,
         "range": 260,
         "damage": 6,
@@ -12137,10 +12180,19 @@
       },
       "performance": {
         "hold": "steady",
-        "action": "hold",
-        "suppressSwing": true
+        "action": "spin",
+        "continuous": true,
+        "suppressSwing": true,
+        "twirl": {
+          "plane": "screen-circle",
+          "pivot": "shaft-midpoint",
+          "direction": "forward",
+          "visualRevolutions": 1
+        },
+        "holdScaling": {
+          "cadence": "weapon-cooldown"
+        }
       },
-      "suppressVfx": true,
       "suppressMeleeHitbox": true,
       "id": "x2-hailshard-resonator"
     },
@@ -13895,7 +13947,7 @@
       "theme": "ember-throwing fire glove — close burst",
       "finish": "worn",
       "element": "fire",
-      "grip": "1H",
+      "grip": "dual",
       "size": "S",
       "rangeBand": "close",
       "scaling": [
@@ -14010,7 +14062,7 @@
       "theme": "hexed frost glove — close cold burst",
       "finish": "ornate",
       "element": "frost",
-      "grip": "1H",
+      "grip": "dual",
       "size": "M",
       "rangeBand": "close",
       "scaling": [
@@ -14904,10 +14956,10 @@
       "cardartAction": "alternating boxing punches with a fitted cel-flame sheath flashing directly over each striking wrapped fist",
       "stats": {
         "damage": 2.4,
-        "range": 150,
+        "range": 184,
         "halfArc": 0.5,
         "cooldown": 0.12,
-        "displayLength": 56,
+        "displayLength": 40,
         "swingArc": 2.2,
         "gripFrac": 0.15
       },
@@ -17778,7 +17830,7 @@
       "theme": "void-black throwing star",
       "element": "void",
       "finish": "ancient",
-      "grip": "1H",
+      "grip": "dual",
       "size": "S",
       "rangeBand": "mid",
       "scaling": [
@@ -17815,7 +17867,11 @@
         "charges": 3,
         "refillSeconds": 1.8,
         "pierce": 3,
-        "rotation": "spin"
+        "rotation": "spin",
+        "helix": {
+          "amplitudePx": 44,
+          "frequencyHz": 2
+        }
       }
     },
     {

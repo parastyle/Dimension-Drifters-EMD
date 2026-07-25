@@ -229,11 +229,12 @@ describe("V5M melee owner orders", () => {
     expect(point).toMatchObject({ x: 80, y: 25 });
   });
 
-  it("performs the six-turn forward-jump Gravewarden frontflip at triple cadence", () => {
+  it("performs the slower three-turn planted Gravewarden frontflip with equal total DPS", () => {
     const spade = weapon("gravediggers-spade");
     const descriptor = swingDescriptorFor(spade, spade.cooldown);
     expect(spade.cooldown).toBe(0.6);
-    expect(spade.swingArc).toBeCloseTo(Math.PI * 2, 10);
+    expect(spade.swingArc).toBeCloseTo(Math.PI * 6, 10);
+    expect(spade.damage * 3).toBeCloseTo(8, 10);
     expect(descriptor.poseSeconds).toBeLessThanOrEqual(spade.cooldown);
     expect(spade.performance).toMatchObject({
       action: "spin",
@@ -242,8 +243,8 @@ describe("V5M melee owner orders", () => {
       twirl: {
         plane: "continuous-frontflip",
         direction: "forward",
-        visualRevolutions: 6,
-        cadenceSeconds: 0.2,
+        visualRevolutions: 3,
+        cadenceSeconds: 0.6,
       },
       holdScaling: { cadence: "weapon-cooldown" },
     });
@@ -256,18 +257,18 @@ describe("V5M melee owner orders", () => {
         spade.performance?.twirl?.cadenceSeconds ?? spade.cooldown,
       ),
     ).toBe(0);
-    const start = continuousFrontflipAngle(0, 6, 1, 1);
-    const end = continuousFrontflipAngle(1, 6, 1, 1);
+    const start = continuousFrontflipAngle(0, 3, 1, 1);
+    const end = continuousFrontflipAngle(1, 3, 1, 1);
     expect(Math.cos(end)).toBeCloseTo(Math.cos(start), 12);
     expect(Math.sin(end)).toBeCloseTo(Math.sin(start), 12);
     const epsilon = 1e-5;
     const speedBefore =
-      (continuousFrontflipAngle(1, 6, 1, 1) -
-        continuousFrontflipAngle(1 - epsilon, 6, 1, 1)) /
+      (continuousFrontflipAngle(1, 3, 1, 1) -
+        continuousFrontflipAngle(1 - epsilon, 3, 1, 1)) /
       epsilon;
     const speedAfter =
-      (continuousFrontflipAngle(epsilon, 6, 1, 1) -
-        continuousFrontflipAngle(0, 6, 1, 1)) /
+      (continuousFrontflipAngle(epsilon, 3, 1, 1) -
+        continuousFrontflipAngle(0, 3, 1, 1)) /
       epsilon;
     expect(speedAfter).toBeGreaterThan(0);
     expect(speedBefore).toBeCloseTo(speedAfter, 8);

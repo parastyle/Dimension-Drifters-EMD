@@ -2523,6 +2523,25 @@ export function sampleWeaponPerformance(
     out.backFootForward = -0.095;
     out.backFootLateral = -0.09;
     out.footBlend = 0.72;
+  } else if (spec.throwStyle === "two-hand-overhead" && input.phase === "idle") {
+    const cosine = Math.cos(input.aimLocal);
+    const sine = Math.sin(input.aimLocal);
+    const readyForward = -0.18;
+    const readyLateral = -0.28;
+    angle = input.aimLocal + 0.68;
+    handX = cosine * readyForward - sine * readyLateral;
+    handY = sine * readyForward + cosine * readyLateral - 0.04;
+    out.backHandX = cosine * -0.12 - sine * -0.24;
+    out.backHandY = sine * -0.12 + cosine * -0.24 - 0.04;
+    out.backHandBlend = 1;
+    out.bodyForward = -0.018;
+    out.bodyLateral = 0;
+    out.bodyTurn = -0.08;
+    out.frontFootForward = 0.055;
+    out.frontFootLateral = 0.09;
+    out.backFootForward = -0.1;
+    out.backFootLateral = -0.1;
+    out.footBlend = 0.78;
   }
   if (spec.carryAngleRad !== undefined && spec.hold !== "upright") angle = spec.carryAngleRad;
   const restAngle = angle;
@@ -2567,10 +2586,17 @@ export function sampleWeaponPerformance(
     }
   } else if (spec.action === "throw-release" && input.phase !== "idle") {
     const engaged = spec.throwStyle === "engaged";
+    const twoHandOverhead = spec.throwStyle === "two-hand-overhead";
     const wind = input.phase === "anticipation";
     const release = input.phase === "active";
     const e = smoothstep01(phaseT);
-    const forward = engaged
+    const forward = twoHandOverhead
+      ? wind
+        ? mix(-0.18, -0.36, e)
+        : release
+          ? mix(-0.36, 0.52, e)
+          : mix(0.52, -0.18, e)
+      : engaged
       ? wind
         ? mix(0.13, -0.38, e)
         : release
@@ -2581,7 +2607,13 @@ export function sampleWeaponPerformance(
         : release
           ? mix(-0.3, 0.46, e)
           : mix(0.46, 0.12, e);
-    const lateral = engaged
+    const lateral = twoHandOverhead
+      ? wind
+        ? mix(-0.28, -0.38, e)
+        : release
+          ? mix(-0.38, -0.03, e)
+          : mix(-0.03, -0.28, e)
+      : engaged
       ? wind
         ? mix(-0.16, 0.23, e)
         : release
@@ -2596,18 +2628,32 @@ export function sampleWeaponPerformance(
     const sine = Math.sin(input.aimLocal);
     handX = cosine * forward - sine * lateral;
     handY = sine * forward + cosine * lateral - 0.04;
-    const supportForward = engaged
+    const supportForward = twoHandOverhead
+      ? wind
+        ? mix(-0.12, -0.28, e)
+        : release
+          ? mix(-0.28, 0.42, e)
+          : mix(0.42, -0.12, e)
+      : engaged
       ? wind
         ? mix(0.05, 0.18, e)
         : release
           ? mix(0.18, -0.14, e)
           : mix(-0.14, 0.07, e)
       : forward;
-    const supportLateral = engaged ? -0.14 : -lateral;
+    const supportLateral = twoHandOverhead
+      ? wind
+        ? mix(-0.24, -0.32, e)
+        : release
+          ? mix(-0.32, 0.02, e)
+          : mix(0.02, -0.24, e)
+      : engaged
+        ? -0.14
+        : -lateral;
     out.backHandX = cosine * supportForward - sine * supportLateral;
     out.backHandY = sine * supportForward + cosine * supportLateral - 0.04;
     out.backHandBlend = 1;
-    if (engaged) {
+    if (engaged || twoHandOverhead) {
       out.bodyForward = wind
         ? mix(0.018, -0.055, e)
         : release

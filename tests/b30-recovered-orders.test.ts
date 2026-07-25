@@ -122,14 +122,19 @@ describe("B30 recovered skipped-window orders", () => {
     expect(derringer.collisionLength).toBeUndefined();
   });
 
-  it("removes Hailshard's rogue swing authority while retaining only its aimed ice projectiles", () => {
+  it("records B49's restoration of Hailshard's circular swing and omnidirectional ice", () => {
     const hail = weapon("x2-hailshard-resonator");
     const envelope = weaponDamageEnvelopeFor(hail);
     expect(hail).toMatchObject({
-      suppressVfx: true,
       suppressMeleeHitbox: true,
-      performance: { action: "hold", suppressSwing: true },
-      scatter: { aim: "cone", count: 5, explode: { radius: 48, damage: 5 } },
+      swingStyle: "spin",
+      performance: {
+        action: "spin",
+        continuous: true,
+        suppressSwing: true,
+        twirl: { plane: "screen-circle", visualRevolutions: 1 },
+      },
+      scatter: { aim: "radial-random", count: 5, explode: { radius: 48, damage: 5 } },
     });
     expect(hail.performance?.aura).toBeUndefined();
     expect(envelope.melee).toBeUndefined();
@@ -192,18 +197,19 @@ describe("B30 recovered skipped-window orders", () => {
     });
   });
 
-  it("makes Gravewarden jump forward through six correctly directed turns at 3x visual speed", () => {
+  it("records B49's planted three-revolution Gravewarden cadence and split hit damage", () => {
     const spade = weapon("gravediggers-spade");
     expect(spade).toMatchObject({
       cooldown: 0.6,
       range: 354,
-      swingArc: Math.PI * 2,
+      damage: 8 / 3,
+      swingArc: Math.PI * 6,
       performance: {
         twirl: {
           plane: "continuous-frontflip",
           direction: "forward",
-          visualRevolutions: 6,
-          cadenceSeconds: 0.2,
+          visualRevolutions: 3,
+          cadenceSeconds: 0.6,
         },
       },
     });
@@ -262,7 +268,9 @@ describe("B30 recovered skipped-window orders", () => {
     for (const id of SURVIVING_B30_IDS) {
       const definition = weapon(id);
       expect(definition.performance?.aura, `${id}: aura`).toBeUndefined();
-      expect(definition.scatter?.aim, `${id}: radial scatter`).not.toBe("radial-random");
+      if (id === "x2-hailshard-resonator")
+        expect(definition.scatter?.aim, `${id}: restored radial scatter`).toBe("radial-random");
+      else expect(definition.scatter?.aim, `${id}: radial scatter`).not.toBe("radial-random");
       expect(JSON.stringify(definition), `${id}: chain/tassel metadata`).not.toMatch(
         /tassel|chain(?:ed)?-ornament/i,
       );
