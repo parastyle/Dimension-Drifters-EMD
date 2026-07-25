@@ -107,6 +107,7 @@ import {
   RARE_RELIC_DEFS,
   RARITIES,
   RARITY_CURSED,
+  RECONNECTION_WINDOW_SECONDS,
   RING_BAND_HALF,
   ROLL_COOLDOWN,
   ROLL_SPEED_CURVE,
@@ -172,6 +173,7 @@ import {
   type DamageNumberEvent,
   type HitContactEvent,
 } from "../combat-feedback.js";
+import { clientDevToolsEnabled } from "../dev-tools.js";
 import { PetRig, playPetEvolutionCeremony } from "../entities/PetRig.js";
 import {
   GEAR_PARTS_MANIFEST,
@@ -200,6 +202,13 @@ import {
   slideHeldFromBindings,
   slidePressedFromBindings,
 } from "../net/prediction.js";
+import {
+  clearReconnectReservation,
+  loadReconnectReservation,
+  type ReconnectReservation,
+  reconnectDelayMs,
+  saveReconnectReservation,
+} from "../net/reconnection.js";
 import { SnapshotBuffer, TimelineSync } from "../net/snapshots.js";
 import { RENDER_DPR } from "../render-dpr.js";
 import {
@@ -279,8 +288,8 @@ import {
   spawnCasterImpact,
 } from "../vfx/caster-vfx.js";
 import {
-  casterSourceUsesFist,
   type CasterVfxRecipe,
+  casterSourceUsesFist,
   resolveCasterVfxRecipe,
 } from "../vfx/caster-vfx-recipes.js";
 import {
@@ -1211,6 +1220,8 @@ export class ArenaScene extends Phaser.Scene {
   private connectionGeneration = 0;
   /** §4 exact Colyseus callback removers for the currently installed room. */
   private roomStateDisposers: (() => void)[] = [];
+  private reconnectReservation?: ReconnectReservation;
+  private reconnectOverlayTimer = 0;
   /** §4 raw/global listener references — Phaser cannot remove listeners it did not install. */
   private pointerMoveHandler: ((event: MouseEvent) => void) | null = null;
   private contextMenuHandler: ((event: MouseEvent) => void) | null = null;
@@ -1848,7 +1859,7 @@ export class ArenaScene extends Phaser.Scene {
     this.selectedCharacterId = data?.selectedCharacterId;
     this.pendingCarry = data?.carry;
     // §39 dev-portal deep-link (boss/weapon/char/gear/pet), applied once after the room connects.
-    this.devLaunch = data?.dev ?? params.get("dev") ?? null;
+    this.devLaunch = clientDevToolsEnabled() ? (data?.dev ?? params.get("dev") ?? null) : null;
   }
 
   /** Load the sprite art. §28: ONE packed multiatlas (tools/artkit/pack-atlas.mjs) holds every non-expansion
@@ -1984,6 +1995,75 @@ export class ArenaScene extends Phaser.Scene {
     for (const dispose of this.roomStateDisposers.splice(0)) dispose();
   }
 
+  private setReconnectOverlay(
+    state: "reconnecting" | "recovered" | "ended" | undefined,
+    message = "",
+  ): void {
+    if (this.reconnectOverlayTimer !== 0) {
+      window.clearTimeout(this.reconnectOverlayTimer);
+      this.reconnectOverlayTimer = 0;
+    }
+    const overlay = document.getElementById("reconnect-overlay");
+    const label = document.getElementById("reconnect-message");
+    if (!overlay || !label) return;
+    if (!state) {
+      overlay.hidden = true;
+      overlay.removeAttribute("data-state");
+      label.textContent = "";
+      return;
+    }
+    overlay.hidden = false;
+    overlay.dataset.state = state;
+    label.textContent = message;
+  }
+
+  private showRecoveredOverlay(): void {
+    this.setReconnectOverlay("recovered", "Connection recovered · run state restored");
+    const generation = this.connectionGeneration;
+    this.reconnectOverlayTimer = window.setTimeout(() => {
+      this.reconnectOverlayTimer = 0;
+      if (generation === this.connectionGeneration && this.room)
+        this.setReconnectOverlay(undefined);
+    }, 1_800);
+  }
+
+  private persistReconnectReservation(room: Room<ArenaState>, runId = ""): void {
+    const previous = this.reconnectReservation ?? loadReconnectReservation();
+    const accountRunId = this.petMetaAccount?.weaponBank.expedition?.runId ?? "";
+    const reservation: ReconnectReservation = {
+      token: room.reconnectionToken,
+      roomId: room.roomId,
+      runId:
+        runId ||
+        this.weaponManifestRunId ||
+        accountRunId ||
+        (previous?.roomId === room.roomId ? previous.runId : ""),
+    };
+    this.reconnectReservation = reservation;
+    saveReconnectReservation(reservation);
+  }
+
+  private clearReconnectReservation(): void {
+    clearReconnectReservation(this.reconnectReservation?.token);
+    this.reconnectReservation = undefined;
+  }
+
+  private handleUnexpectedRoomLeave(
+    room: Room<ArenaState>,
+    generation: number,
+    code: number,
+    reason?: string,
+  ): void {
+    if (generation !== this.connectionGeneration || this.room !== room || code === 4000) {
+      return;
+    }
+    this.disposeRoomStateCallbacks();
+    this.room = undefined;
+    this.setReconnectOverlay("reconnecting", "Connection lost · reclaiming your run…");
+    console.warn(`[client] transport left (${code}${reason ? `: ${reason}` : ""}); reconnecting`);
+    void this.connect(generation);
+  }
+
   /** §4 remove listeners whose owners outlive a Scene shutdown (DOM, ScaleManager, and input globals). */
   private removeSceneListeners(): void {
     if (this.pointerMoveHandler) {
@@ -2019,6 +2099,8 @@ export class ArenaScene extends Phaser.Scene {
     this.disposeRoomStateCallbacks();
     const room = this.room;
     this.room = undefined;
+    if (room || this.reconnectReservation) this.clearReconnectReservation();
+    this.setReconnectOverlay(undefined);
     if (room) {
       void room
         .leave()
@@ -4269,11 +4351,18 @@ export class ArenaScene extends Phaser.Scene {
       : Number.NaN;
     const port = Number.isInteger(portOverride) && portOverride > 0 ? portOverride : DEFAULT_PORT;
     const client = new Client(`${scheme}://${location.hostname}:${port}`);
+    const reconnectReservation = loadReconnectReservation();
+    const recovering = reconnectReservation !== undefined;
+    if (recovering) {
+      this.reconnectReservation = reconnectReservation;
+      this.setReconnectOverlay("reconnecting", "Reclaiming your interrupted run…");
+    }
 
     // Retry with backoff: on a cold `pnpm dev`, the Vite client is ready seconds before
     // the Colyseus server finishes starting. Without retry, the first load throws and
     // shows no player until a manual refresh. This self-heals as soon as the server is up.
-    const maxAttempts = 30;
+    const maxAttempts = recovering ? 12 : 30;
+    const reconnectDeadline = Date.now() + RECONNECTION_WINDOW_SECONDS * 1_000;
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
         // §17 pass the menu's dimension pick as a join option (the room creator scopes the run to it; a
@@ -4291,9 +4380,15 @@ export class ArenaScene extends Phaser.Scene {
         // §39 a DEV-PORTAL deep-link gets its OWN fresh room via create() (never joinOrCreate) — otherwise it
         // lands in a live/other-tab co-op room as a NON-host, and the host-only dev messages (spawnBossDef,
         // toggleTraining) are silently dropped (looks like "boss never spawned / empty arena").
-        const room = this.devLaunch
-          ? await client.create<ArenaState>(ROOM_NAME, joinOpts)
-          : await client.joinOrCreate<ArenaState>(ROOM_NAME, joinOpts);
+        const room = recovering
+          ? await client.reconnect<ArenaState>(reconnectReservation!.token)
+          : this.devLaunch
+            ? await client.create<ArenaState>(ROOM_NAME, joinOpts)
+            : await client.joinOrCreate<ArenaState>(ROOM_NAME, joinOpts);
+        if (recovering && room.roomId !== reconnectReservation!.roomId) {
+          await room.leave();
+          throw new Error("reconnection returned the wrong room");
+        }
         // The Scene may have shut down while the join handshake was in flight. Never install that room.
         if (generation !== this.connectionGeneration) {
           void room
@@ -4304,10 +4399,26 @@ export class ArenaScene extends Phaser.Scene {
           return;
         }
         this.room = room;
+        const onRoomLeave = (code: number, reason?: string): void => {
+          this.handleUnexpectedRoomLeave(room, generation, code, reason);
+        };
+        const onRoomError = (code: number, message?: string): void => {
+          if (generation !== this.connectionGeneration || this.room !== room) return;
+          this.setReconnectOverlay("reconnecting", "Connection trouble · preserving your run…");
+          console.warn(`[client] room error ${code}${message ? `: ${message}` : ""}`);
+        };
+        room.onLeave(onRoomLeave);
+        room.onError(onRoomError);
+        this.roomStateDisposers.push(
+          () => room.onLeave.remove(onRoomLeave),
+          () => room.onError.remove(onRoomError),
+        );
+        this.persistReconnectReservation(room, reconnectReservation?.runId);
         const disposeMetaAccount = room.onMessage<unknown>("metaAccount", (payload) => {
           if (generation !== this.connectionGeneration || this.room !== room) return;
           this.petMetaAccount = savePetMetaAccount(payload);
           this.selectedPetId = this.petMetaAccount.selectedPetId;
+          this.persistReconnectReservation(room);
         }) as () => void;
         const disposePetProgress = room.onMessage<unknown>("petProgressReceipt", (payload) => {
           if (generation !== this.connectionGeneration || this.room !== room) return;
@@ -4328,6 +4439,7 @@ export class ArenaScene extends Phaser.Scene {
         const disposeWeaponManifest = room.onMessage<unknown>("weaponManifest", (payload) => {
           if (generation !== this.connectionGeneration || this.room !== room) return;
           this.onWeaponManifest(payload);
+          this.persistReconnectReservation(room, this.weaponManifestRunId);
         }) as () => void;
         const disposeWeaponSettlement = room.onMessage<unknown>(
           "weaponSettlementReceipt",
@@ -4429,6 +4541,9 @@ export class ArenaScene extends Phaser.Scene {
           disposeChestDenied,
           disposeRelicTriggered,
         );
+        // Server owner messages sent during onJoin may precede post-join callback registration. Ask for the
+        // existing manifest again now so sessionStorage always receives the authoritative run id.
+        room.send("requestWeaponManifest");
         // §4 schema handshake (audit): if the server's schema version ≠ ours, our compiled state schema is
         // stale → Colyseus would decode patches with corrupted field offsets. Detect on the first state and
         // tell the player to hard-reload instead of silently rendering garbage.
@@ -4468,17 +4583,38 @@ export class ArenaScene extends Phaser.Scene {
           room.onStateChange.remove(onStateChange);
         });
         if (status) status.textContent = `connected · you are ${room.sessionId.slice(0, 4)}`;
+        if (recovering) this.showRecoveredOverlay();
+        else this.setReconnectOverlay(undefined);
         return;
       } catch (err) {
         if (generation !== this.connectionGeneration) return;
-        console.warn(`[client] join attempt ${attempt}/${maxAttempts} failed, retrying…`, err);
-        if (status) status.textContent = `connecting… (waiting for server, attempt ${attempt})`;
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+        const action = recovering ? "reconnect" : "join";
+        console.warn(`[client] ${action} attempt ${attempt}/${maxAttempts} failed, retrying…`, err);
+        if (status) {
+          status.textContent = recovering
+            ? `reconnecting… (attempt ${attempt})`
+            : `connecting… (waiting for server, attempt ${attempt})`;
+        }
+        if (recovering && Date.now() >= reconnectDeadline) break;
+        const delay = recovering ? reconnectDelayMs(attempt - 1) : 1_000;
+        const remaining = reconnectDeadline - Date.now();
+        await new Promise((resolve) =>
+          setTimeout(resolve, recovering ? Math.max(0, Math.min(delay, remaining)) : delay),
+        );
         if (generation !== this.connectionGeneration) return;
       }
     }
 
-    if (generation === this.connectionGeneration && status) {
+    if (generation !== this.connectionGeneration) return;
+    if (recovering) {
+      this.clearReconnectReservation();
+      this.setReconnectOverlay("ended", "Run ended · the reconnection window expired");
+      if (status) status.textContent = "run ended · reconnection window expired";
+      this.reconnectOverlayTimer = window.setTimeout(() => {
+        this.reconnectOverlayTimer = 0;
+        if (generation === this.connectionGeneration && !this.room) this.scene.start("menu");
+      }, 2_500);
+    } else if (status) {
       status.textContent = "connection failed — is the server running? (pnpm dev:server)";
     }
   }

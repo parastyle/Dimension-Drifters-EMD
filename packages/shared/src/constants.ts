@@ -11,6 +11,8 @@
  *  `ArenaState.schemaVersion`; the client compares on join and tells the player to hard-reload on a
  *  mismatch instead of rendering silently-corrupt state. */
 export const SCHEMA_VERSION = 47 as const; // B60 dimension landmark wire removal
+/** Bounded seat reservation for an unexpected transport loss. */
+export const RECONNECTION_WINDOW_SECONDS = 30 as const;
 
 /** §ULT stat-free damage/activity meter and action tuning (20Hz tick epochs). */
 /** B55 reversible owner ruling: one switch gates grants, charge, input, activation, reveal, and HUD. */

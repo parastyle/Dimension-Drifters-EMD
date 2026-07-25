@@ -74,7 +74,16 @@ async function loadVite(): Promise<ViteModule> {
 /** Start the production Colyseus setup and a source-serving Vite instance in this Playwright worker. */
 export async function startRealStack(): Promise<StackStart> {
   const previousDevTools = process.env.DD_DEV_TOOLS;
+  const previousClientDevTools = process.env.VITE_DD_DEV_TOOLS;
   process.env.DD_DEV_TOOLS = "1";
+  process.env.VITE_DD_DEV_TOOLS = "1";
+
+  const restoreDevTools = (): void => {
+    if (previousDevTools === undefined) delete process.env.DD_DEV_TOOLS;
+    else process.env.DD_DEV_TOOLS = previousDevTools;
+    if (previousClientDevTools === undefined) delete process.env.VITE_DD_DEV_TOOLS;
+    else process.env.VITE_DD_DEV_TOOLS = previousClientDevTools;
+  };
 
   let gameServer: Awaited<ReturnType<typeof createGameServer>>;
   try {
@@ -86,8 +95,7 @@ export async function startRealStack(): Promise<StackStart> {
       "Colyseus startup",
     );
   } catch (error) {
-    if (previousDevTools === undefined) delete process.env.DD_DEV_TOOLS;
-    else process.env.DD_DEV_TOOLS = previousDevTools;
+    restoreDevTools();
 
     if (hasErrorCode(error, "EADDRINUSE")) {
       const reason = `real-stack smoke skipped: client DEFAULT_PORT ${DEFAULT_PORT} is already in use`;
@@ -145,8 +153,7 @@ export async function startRealStack(): Promise<StackStart> {
           failures.push(error);
         } finally {
           if (gameServer.transport.server?.listening) gameServer.transport.shutdown();
-          if (previousDevTools === undefined) delete process.env.DD_DEV_TOOLS;
-          else process.env.DD_DEV_TOOLS = previousDevTools;
+          restoreDevTools();
         }
 
         if (failures.length > 0) throw new AggregateError(failures, "real-stack teardown failed");
@@ -168,8 +175,7 @@ export async function startRealStack(): Promise<StackStart> {
       );
     } finally {
       if (gameServer.transport.server?.listening) gameServer.transport.shutdown();
-      if (previousDevTools === undefined) delete process.env.DD_DEV_TOOLS;
-      else process.env.DD_DEV_TOOLS = previousDevTools;
+      restoreDevTools();
     }
     throw error;
   }

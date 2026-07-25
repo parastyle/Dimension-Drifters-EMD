@@ -844,11 +844,8 @@ export class GameRoom extends Room<ArenaState> {
   private hostId: string | null = null;
     private declare isHost: OmitThisParameter<typeof roomProgressionMethods.isHost>;
 
-  /** §44 dev-tool gate (Sol audit P0 #1): the debug RPCs (training toggle, boss picker, dev summon, dev
-   *  equip, B-key boss) are playtest affordances that must be UNREACHABLE on a public deploy — "host" is
-   *  just the first joiner, so one hostile client could otherwise flood the shared Node process with
-   *  entities. ON outside production (local dev, vitest) or when DD_DEV_TOOLS=1 (a staged playtest build).
-   *  Read per-call (not cached) so tests can flip the environment. */
+  /** Debug RPCs require an exact positive capability. NODE_ENV is intentionally irrelevant so absent or
+   *  misspelled deployment configuration remains safe. Read per-call so tests can exercise both modes. */
     private declare devToolsEnabled: OmitThisParameter<typeof roomProgressionMethods.devToolsEnabled>;
 
   /** §44 spend one ACTION-message token for this client (attack/parry/grab/cycle/… — every gameplay RPC
@@ -1107,7 +1104,9 @@ export class GameRoom extends Room<ArenaState> {
     },
   ): void { return Reflect.apply(roomProgressionMethods.onJoin, this, arguments); }
 
-    override onLeave(client: Client): void { return Reflect.apply(roomProgressionMethods.onLeave, this, arguments); }
+    override onLeave(client: Client, consented = true): Promise<void> {
+      return Reflect.apply(roomProgressionMethods.onLeave, this, [client, consented]);
+    }
 
   /** Explicit encounter/modal hook. Auto remains the default; callers never write Drive or regenMode. */
     declare setWeaponResourceRegenOverride: OmitThisParameter<typeof roomCombatMethods.setWeaponResourceRegenOverride>;

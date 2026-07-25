@@ -1,5 +1,11 @@
 import { createRequire } from "node:module";
-import { type ArenaState, ROOM_NAME } from "@dd/shared";
+import {
+  type ArenaState,
+  createMetaAccountV5,
+  ROOM_NAME,
+  type SingleWeaponEntryV1,
+} from "@dd/shared";
+import { matchMaker } from "colyseus";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import type { Room } from "../../../node_modules/.pnpm/node_modules/colyseus.js";
 import { createGameServer } from "./index.js";
@@ -85,6 +91,15 @@ function waitForPatch(
     }, STATE_TIMEOUT_MS);
     room.onStateChange(onStateChange);
   });
+}
+
+async function waitForValue(predicate: () => boolean, label: string): Promise<void> {
+  const deadline = Date.now() + STATE_TIMEOUT_MS;
+  while (Date.now() < deadline) {
+    if (predicate()) return;
+    await new Promise((resolve) => setTimeout(resolve, 20));
+  }
+  throw new Error(`${label} timed out after ${STATE_TIMEOUT_MS}ms`);
 }
 
 describe("real Colyseus transport", () => {
@@ -196,5 +211,149 @@ describe("real Colyseus transport", () => {
         !!state.players?.has(rejoinedRoom.sessionId) && !state.players.has(departedSessionId),
       "clean rejoin state",
     );
+  }, 20_000);
+
+  it("terminates the socket and reconnects the same run without state or settlement duplication", async () => {
+    const client = new Client(endpoint);
+    const account = createMetaAccountV5();
+    const carried: SingleWeaponEntryV1 = {
+      kind: "single",
+      entryId: "wi_reconnecttransport0001",
+      weapon: {
+        instanceId: "wi_reconnecttransport0001",
+        weaponId: "rusty-cleaver",
+        rarity: "common",
+        affix: "",
+        provenance: "enemy-drop",
+        sourceWorldTier: 0,
+      },
+    };
+    account.weaponBank.stash.push(carried);
+    const room = await withTimeout(
+      client.joinOrCreate<ArenaState>(ROOM_NAME, {
+        belt: false,
+        beltLevel: "",
+        dimensionId: "wild-west",
+        bossRush: false,
+        metaAccount: account,
+        carry: {
+          requestId: "reconnect-transport-carry",
+          expectedRevision: account.revision,
+          placements: [{ entryId: carried.entryId, zone: "active", start: 1 }],
+          activeEntryId: carried.entryId,
+          requestedWorldTier: 0,
+        },
+      }),
+      STATE_TIMEOUT_MS,
+      "reconnection fixture join",
+    );
+    openRooms.add(room);
+    await waitForState(
+      room,
+      (state) => !!state.players?.has(room.sessionId),
+      "reconnection fixture state",
+    );
+    const initialManifests: Array<{ runId?: unknown }> = [];
+    room.onMessage("weaponManifest", (payload: { runId?: unknown }) => {
+      initialManifests.push(payload);
+    });
+    room.send("requestWeaponManifest");
+    await waitForValue(
+      () => typeof initialManifests.at(-1)?.runId === "string",
+      "post-handler weapon manifest",
+    );
+
+    // Reach the authoritative room only to pin exact state and inspect private escrow. The disconnect and
+    // recovery themselves cross the real WebSocket transport and public reconnection handshake.
+    // biome-ignore lint/suspicious/noExplicitAny: the public test server API intentionally hides local room internals.
+    const authoritative = matchMaker.getLocalRoomById(room.roomId) as any;
+    const serverPlayer = authoritative.state.players.get(room.sessionId);
+    serverPlayer.x = 1_234;
+    serverPlayer.y = 987;
+    serverPlayer.maxHp = 73;
+    serverPlayer.hp = 73;
+    authoritative.combat.get(room.sessionId).invuln = 999;
+    authoritative.broadcastPatch();
+    await waitForPatch(
+      room,
+      (state) => {
+        const player = state.players?.get(room.sessionId);
+        return player?.x === 1_234 && player.y === 987 && player.hp === 73;
+      },
+      "pinned player state patch",
+    );
+
+    const departedSessionId = room.sessionId;
+    const reconnectionToken = room.reconnectionToken;
+    const beforeAccount = authoritative.metaAccounts.get(departedSessionId);
+    const beforeEscrow = structuredClone(beforeAccount.weaponBank.expedition);
+    const beforeRunId = beforeEscrow?.runId;
+    expect(beforeRunId).toMatch(/^run_/);
+    expect(initialManifests.at(-1)?.runId).toBe(beforeRunId);
+
+    const transportLeave = new Promise<void>((resolve) => room.onLeave.once(() => resolve()));
+    const socket = authoritative.clients.find(
+      (candidate: { sessionId: string }) => candidate.sessionId === departedSessionId,
+    )?.ref as { terminate?: () => void } | undefined;
+    if (typeof socket?.terminate !== "function") {
+      throw new Error("server transport did not expose a terminable WebSocket");
+    }
+    openRooms.delete(room);
+    socket.terminate();
+    await withTimeout(transportLeave, STATE_TIMEOUT_MS, "terminated socket close");
+
+    let recovered: ClientRoom | undefined;
+    let reconnectError: unknown;
+    for (let attempt = 0; attempt < 20 && !recovered; attempt++) {
+      try {
+        recovered = await client.reconnect<ArenaState>(reconnectionToken);
+      } catch (error) {
+        reconnectError = error;
+        await new Promise((resolve) => setTimeout(resolve, 25));
+      }
+    }
+    if (!recovered) throw reconnectError ?? new Error("reconnect failed");
+    openRooms.add(recovered);
+
+    expect(recovered.roomId).toBe(room.roomId);
+    expect(recovered.sessionId).toBe(departedSessionId);
+    const recoveredManifests: Array<{ runId?: unknown }> = [];
+    recovered.onMessage("weaponManifest", (payload: { runId?: unknown }) => {
+      recoveredManifests.push(payload);
+    });
+    recovered.send("requestWeaponManifest");
+    await waitForValue(
+      () => typeof recoveredManifests.at(-1)?.runId === "string",
+      "recovered weapon manifest",
+    );
+    await waitForState(
+      recovered,
+      (state) => {
+        const player = state.players?.get(departedSessionId);
+        return player?.x === 1_234 && player.y === 987 && player.hp === 73;
+      },
+      "recovered full state",
+    );
+    const afterAccount = authoritative.metaAccounts.get(departedSessionId);
+    expect(afterAccount.weaponBank.expedition?.runId).toBe(beforeRunId);
+    expect(recoveredManifests.at(-1)?.runId).toBe(beforeRunId);
+    expect(afterAccount.weaponBank.expedition).toEqual(beforeEscrow);
+    expect(authoritative.state.players.get(departedSessionId)).toMatchObject({
+      hp: 73,
+      x: 1_234,
+      y: 987,
+    });
+
+    const settlementReceipts: unknown[] = [];
+    recovered.onMessage("weaponSettlementReceipt", (receipt) => {
+      settlementReceipts.push(receipt);
+    });
+    authoritative.enterTerminalOutcome("victory");
+    await waitForValue(() => settlementReceipts.length === 1, "single settlement receipt");
+    authoritative.enterTerminalOutcome("victory");
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    expect(settlementReceipts).toHaveLength(1);
+    expect(afterAccount.weaponBank.expedition).toBeNull();
+    expect(afterAccount.weaponBank.stash).toContainEqual(carried);
   }, 20_000);
 });
