@@ -153,7 +153,6 @@ function makeBeamRoom(sessionId: string) {
   player.x = h.room.map.spawnX;
   player.y = h.room.map.spawnY;
   player.weapon = TEST_BEAM_WEAPON;
-  h.room.map.pois.length = 0;
   h.tick(1); // settle the swap before the first held edge
   return { h, player, combat: h.room.combat.get(sessionId) };
 }
@@ -216,7 +215,6 @@ const enemyComboShared = await import("@dd/shared");
 function makeEnemyComboRoom(depth = 1) {
   const h = makeRoom();
   h.join("combo-victim");
-  h.room.map.pois.length = 0;
   h.room.map.tiles.fill(TILE_GROUND); // map-RNG law: every pinned combo position is known solid ground
   h.room.spawnAccum = -1_000_000;
   h.room.shifterCd = 1_000_000;
@@ -291,7 +289,6 @@ function herePlayerJuggledDefault() {
 function makeJumpFeelRoom(id = "jump-feel") {
   const h = makeRoom();
   h.join(id);
-  h.room.map.pois.length = 0;
   h.room.map.tiles.fill(TILE_GROUND);
   h.room.spawnAccum = -1_000_000;
   h.room.shifterCd = 1_000_000;
@@ -411,7 +408,6 @@ function makeUltimateRoom(
 ) {
   const h = makeRoom();
   h.join(id);
-  h.room.map.pois.length = 0;
   h.room.map.tiles.fill(TILE_GROUND);
   h.room.spawnAccum = -999;
   const player = h.state().players.get(id);
@@ -806,7 +802,7 @@ describe("GameRoom — §51 tough-enemy melee combos (Wave 1 authority)", () => 
   });
 
   it("ships schema 19, named depth decks, and guardrail-safe authored literals", () => {
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(46);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(47);
     expect(new EnemyState().comboSeq).toBe(0);
     expect(new EnemyState().comboFlags).toBe(0);
     expect(herePlayerJuggledDefault()).toBe(0);
@@ -954,7 +950,6 @@ describe("GameRoom — jump-feel J1 authoritative stance/physics", () => {
       h.room.map,
       rawX,
       rawY,
-      enemyComboShared.PLAYER_RADIUS,
     );
     const dx = expected.x - player.x;
     const dy = expected.y - player.y;
@@ -1099,7 +1094,7 @@ describe("GameRoom — jump-feel J1 authoritative stance/physics", () => {
 
   it("ships schema 21 with the three appended uint8 stance/VFX defaults", () => {
     const player = new enemyComboShared.PlayerState();
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(46);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(47);
     expect([player.moveStance, player.poundSeq, player.stanceSeq]).toEqual([0, 0, 0]);
   });
 });

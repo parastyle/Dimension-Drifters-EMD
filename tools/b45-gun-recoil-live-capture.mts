@@ -25,7 +25,7 @@ type LiveRoom = Awaited<ReturnType<Client["joinOrCreate"]>>;
 
 interface LocalRoom {
   state: ArenaState;
-  map: { tiles: Uint8Array; pois: unknown[] };
+  map: { tiles: Uint8Array };
   combat: Map<
     string,
     { cd: number; attackBuffer: number; lastGroundX: number; lastGroundY: number }
@@ -175,7 +175,6 @@ async function runPlan(
   if (!localOwner || !localObserver || !combat || !input)
     throw new Error("local two-client recoil fixture unavailable");
   local.map.tiles.fill(TILE_GROUND);
-  local.map.pois.length = 0;
   local.state.enemies.clear();
   local.spawnAccum = -1_000_000;
   local.shifterCd = 1_000_000;

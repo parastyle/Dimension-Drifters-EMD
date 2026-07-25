@@ -44,7 +44,6 @@ function fixture(options?: Record<string, unknown>) {
   room.clients = [client];
   room.onCreate(options);
   room.onJoin(client);
-  room.map.pois.length = 0;
   room.map.tiles.fill(TILE_GROUND);
   room.state.enemies.clear();
   const player = room.state.players.get(client.sessionId);

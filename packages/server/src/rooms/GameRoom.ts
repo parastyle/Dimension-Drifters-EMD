@@ -110,7 +110,6 @@ import {
   clampBeltFloorY,
   clampParrySlideToNavigation,
   clampQuakeEpicenter,
-  clipPoiRayLength,
   comboStepForChain,
   committedMeleeEvaded,
   coneAngles,
@@ -195,7 +194,6 @@ import {
   isAugment,
   isBreakActionWeapon,
   isCharacterUnlocked,
-  isInsidePoi,
   isPetId,
   isPitAtPx,
   isPlayableCharacter,
@@ -283,7 +281,6 @@ import {
   POUND_RECOVERY_SECONDS,
   POUND_SPEED,
   POUND_STAGGER_SECONDS,
-  PoiCollisionIndex,
   PROJECTILE_RADIUS,
   PROJECTILE_TTL,
   type ProjectileDamageEnvelope,
@@ -300,7 +297,6 @@ import {
   placeArenaGatePair,
   placeChestOnArena,
   playerAttackInputSpeedMultiplier,
-  poiCollisionAt,
   pointInAnnulusGap,
   pointInOrientedRect,
   pointInSweptAnnularArc,
@@ -344,7 +340,6 @@ import {
   resolveBodyCollisions,
   selectCorporateWaveAnchor,
   resolveOneShotProtection,
-  resolvePoiCollisionInto,
   resolveRelicRevive,
   rollChestReward,
   runtimeModsForQuirk,
@@ -459,7 +454,6 @@ import {
   ultimateVariantForCode,
   unlockedWeaponDropPool,
   VASTAGHAR_ENCOUNTER,
-  type VastagharArenaMutationKind,
   VastagharMode,
   type Vec2,
   validateArena,
@@ -552,8 +546,6 @@ export class GameRoom extends Room<ArenaState> {
   private readonly beamSampleEndX = new Float64Array(17);
   private readonly beamSampleEndY = new Float64Array(17);
   private readonly beamSampleLength = new Float64Array(17);
-  /** Shared caller-owned POI projection slot; every use consumes it before the next query. */
-  private readonly poiResolveScratch = { x: 0, y: 0 };
   /** Scratch endpoint for the active beam currently being stepped. Kept off CombatState so the
    * previous pose remains intact until it has been published for remote swept-ribbon interpolation. */
   private beamCurrentX = 0;
@@ -827,7 +819,7 @@ export class GameRoom extends Room<ArenaState> {
   /** §6 chain (v0.103): the menu-picked dimension the room was created with — a run RESTART returns here
    *  (a wipe deep in the chain shouldn't strand the next expedition in a random dimension). */
   private homeDimension = DEFAULT_DIMENSION;
-  /** §29 v0.118 BELT mode — the SAME game, confined to a wide-shallow depth band + flat deck (no pits/POIs),
+  /** §29 v0.118 BELT mode — the SAME game, confined to a wide-shallow depth band + flat deck (no pits),
    *  rendered belt-scroller by the client. Set from the `belt` join option; all combat/enemies/bosses/loot
    *  are unchanged. */
   private belt = false;
@@ -1074,7 +1066,7 @@ export class GameRoom extends Room<ArenaState> {
 
   /** §31 (re)spawn the current showroom PAGE: clear the gallery pickups (`pk*`) and lay out this page's
    *  slice of GALLERY_ROSTER in a grid above the player. Wraps the page index. Training mode only.
-   *  §41 cells keep their EXACT grid position — a cell over a pit/POI is SKIPPED (the shelf shows a gap)
+   *  §41 cells keep their EXACT grid position — a cell over a pit is SKIPPED (the shelf shows a gap)
    *  instead of safeSpawnPos NUDGING it: the old nudge scattered the neat grid and piled pickups onto their
    *  neighbours, so E grabbed "the wrong thing" and pages read as disorganized. */
     private declare spawnGalleryPage: OmitThisParameter<typeof roomProgressionMethods.spawnGalleryPage>;
@@ -1233,7 +1225,7 @@ export class GameRoom extends Room<ArenaState> {
 
     private declare nearestDoorDecoy: OmitThisParameter<typeof roomCombatMethods.nearestDoorDecoy>;
 
-  /** One postcondition for every blink/hop/dash endpoint: range, bounds, POI/deck, pit, gate. */
+  /** One postcondition for every blink/hop/dash endpoint: range, bounds, deck, pit, gate. */
     private declare navValidDest: OmitThisParameter<typeof roomMovementMethods.navValidDest>;
 
     private declare ultimateTargetPosition: OmitThisParameter<typeof roomCombatMethods.ultimateTargetPosition>;
@@ -1343,7 +1335,7 @@ export class GameRoom extends Room<ArenaState> {
   /** Weapon-rooted beam origin. Every authoritative consumer calls this exact seam each fixed tick. */
     private declare writeBeamMuzzle: OmitThisParameter<typeof roomCombatMethods.writeBeamMuzzle>;
 
-  /** Exact ray truncation against arena edges and colliding POI/belt circles. */
+  /** Exact ray truncation against arena edges and colliding belt circles. */
     private declare clipBeamLength: OmitThisParameter<typeof roomCombatMethods.clipBeamLength>;
 
     private declare rayCircleLength: OmitThisParameter<typeof roomCombatMethods.rayCircleLength>;
@@ -1433,10 +1425,6 @@ export class GameRoom extends Room<ArenaState> {
   /** Same personal chain/cooldown/heal/augment ledger as melee parry, without moving the 230px titan root. */
     private declare resolveVastagharParry: OmitThisParameter<typeof roomEnemyMethods.resolveVastagharParry>;
 
-  /** POI identity stays at its deterministic seed index; moving the server copy off-map removes collision
-   * on the exact synchronized mutation edge while the client consumes `destroyedPoiMask`. */
-    private declare mutateVastagharArena: OmitThisParameter<typeof roomEnemyMethods.mutateVastagharArena>;
-
   /** §16 v0.109 Slice 2 — damage every living player inside an oriented rect (a beam / dash lane). `damage`
    *  is ALREADY the per-tick depth-scaled amount. `knockback` (dash) shoves them PERPENDICULAR out of the lane. */
     private declare damageBeamRect: OmitThisParameter<typeof roomEnemyMethods.damageBeamRect>;
@@ -1451,7 +1439,7 @@ export class GameRoom extends Room<ArenaState> {
     private declare dropBossZone: OmitThisParameter<typeof roomEnemyMethods.dropBossZone>;
 
   /** §16 conjure one boss ADD at a telegraphed spot (HP scaled to living count × depth), tracked so the
-   *  add-cap counts only boss-summoned adds. Lands on solid ground clear of POIs. */
+   *  add-cap counts only boss-summoned adds. Lands on solid ground. */
     private declare spawnBossAddAt: OmitThisParameter<typeof roomEnemyMethods.spawnBossAddAt>;
 
   /** Hard encounter budget: seven-second add life, and no residual add pressure during the solo rez beat. */
@@ -1482,7 +1470,7 @@ export class GameRoom extends Room<ArenaState> {
     private declare stepGunBurst: OmitThisParameter<typeof roomCombatMethods.stepGunBurst>;
 
   /** Cogwright's Tesla-Rod: the cursor is intent only. The server resolves the full-distance endpoint through
-   * the same bounds/POI/pit/deck validator as every other teleport, writes position itself, and bumps the
+   * the same bounds/pit/deck validator as every other teleport, writes position itself, and bumps the
    * movement hard-resync edge before applying the small arrival burst. */
     private declare detonateWarpAtCursor: OmitThisParameter<typeof roomCombatMethods.detonateWarpAtCursor>;
 
@@ -1570,7 +1558,7 @@ export class GameRoom extends Room<ArenaState> {
   /** Capture one nav-valid endpoint and immutable target/vector at the white pop. */
     private declare planDuelistStrike: OmitThisParameter<typeof roomEnemyMethods.planDuelistStrike>;
 
-  /** Sample the complete accepted enemy segment so the fixed lunge cannot cross a pit or landmark. */
+  /** Sample the complete accepted enemy segment so the fixed lunge cannot cross a pit. */
     private declare navValidEnemyLungeDest: OmitThisParameter<typeof roomEnemyMethods.navValidEnemyLungeDest>;
 
     private declare captureAuthoredMeleeEscape: OmitThisParameter<typeof roomEnemyMethods.captureAuthoredMeleeEscape>;
@@ -1624,8 +1612,7 @@ export class GameRoom extends Room<ArenaState> {
    *  zero garbage-collector pressure. */
     private declare moveComboEnemyToward: OmitThisParameter<typeof roomEnemyMethods.moveComboEnemyToward>;
 
-  /** §51 schedule parry recoil as a continuous ≤90px/tick motion. Pits remain lethal and POI collision
-   *  still runs in the normal phase afterward — no immunity is granted to protect authored content. */
+  /** §51 schedule parry recoil as a continuous ≤90px/tick motion. Pits remain lethal. */
     private declare scheduleComboKnockback: OmitThisParameter<typeof roomEnemyMethods.scheduleComboKnockback>;
 
   /** §51 advance one scheduled recoil slice; completion captures the ACTUAL post-knockback position from
@@ -1726,7 +1713,7 @@ export class GameRoom extends Room<ArenaState> {
     private declare spawnEnemy: OmitThisParameter<typeof roomEnemyMethods.spawnEnemy>;
 
   /** §21 Dev summon: place ONE enemy of `kindId` on the spawn ring around `anchor`, optionally tough.
-   *  Mirrors spawnEnemy's placement (ring offset + pit/POI safe-spawn) but with a CHOSEN kind/tier so the
+   *  Mirrors spawnEnemy's placement (ring offset + pit-safe spawn) but with a CHOSEN kind/tier so the
    *  Testing-Grounds Tab menu can conjure exactly what the playtester wants to fight. */
     private declare debugSpawnOne: OmitThisParameter<typeof roomEnemyMethods.debugSpawnOne>;
 
@@ -2006,7 +1993,6 @@ installPrototypeMembers(GameRoom, [
   [roomEnemyMethods, "applyVastagharSweep"],
   [roomEnemyMethods, "vastagharParryActive"],
   [roomEnemyMethods, "resolveVastagharParry"],
-  [roomEnemyMethods, "mutateVastagharArena"],
   [roomEnemyMethods, "damageBeamRect"],
   [roomEnemyMethods, "damageRingBand"],
   [roomEnemyMethods, "spawnWeaponGroundZoneAt"],

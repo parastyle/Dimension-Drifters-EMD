@@ -952,11 +952,7 @@ describe("GameRoom — §17 pitfall + terrain-death + §9 gun cadence", () => {
     // Fire from far enough that the shell EXPIRES level with the dummy (muzzle reach ~90 + range 560),
     // offset 90px to the side — a plain bullet on that line never touches it, but the 130px blast where
     // the shell dies must catch it.
-    // §50 PIN both bodies to fixed mid-arena coordinates AND clear the RNG-placed landmarks: projectiles
-    // COLLIDE with POIs (stepProjectiles poiAt reflection), so a random map roll could park a landmark on
-    // the 650px firing line and kill the shell early — the source of this test's ~40% parallel-run flake
-    // (the per-run Math.random stream differs between full/isolated runs, so it looked scheduler-dependent).
-    h.room.map.pois.length = 0;
+    // Pin both bodies to fixed solid-ground coordinates so the blast path is deterministic.
     h.room.map.tiles.fill(TILE_GROUND); // pits are RNG too — the pinned spots must be solid
     dummy.x = 2400;
     dummy.y = 2400;
@@ -984,7 +980,6 @@ describe("GameRoom — §17 pitfall + terrain-death + §9 gun cadence", () => {
     if (!dummy) throw new Error("no training dummy");
     const hp0 = dummy.hp;
     // Pin the dummy on the direct line: the owner order explicitly removes the old off-line blast.
-    h.room.map.pois.length = 0;
     h.room.map.tiles.fill(TILE_GROUND);
     dummy.x = 2400;
     dummy.y = 2400;
@@ -1955,7 +1950,6 @@ describe("GameRoom — B26 directional parry reactions", () => {
   it("routes below/side/above and publishes the deterministic three-pose cycle", () => {
     const h = makeRoom();
     h.join("parry-directions");
-    h.room.map.pois.length = 0;
     h.room.map.tiles.fill(TILE_GROUND);
     const player = h.state().players.get("parry-directions");
     const combat = h.room.combat.get(player.id);
@@ -2495,7 +2489,7 @@ describe("improve2 integrity regressions", () => {
     expect(receipt?.delivery).toBe(CombatDelivery.Gun);
     expect(h.state().combatReceipts.length).toBe(COMBAT_RECEIPT_CAP);
     expect([...h.state().combatReceipts]).toEqual(rows);
-    expect(h.state().schemaVersion).toBe(46);
+    expect(h.state().schemaVersion).toBe(47);
   });
 });
 
@@ -2563,9 +2557,8 @@ describe("GameRoom — §46 terminal quiescence + hostile projectile ceiling", (
     const rng = makeRng(0x46ce11a1);
     vi.spyOn(Math, "random").mockImplementation(() => rng.next());
     const p = h.state().players.get("p1");
-    // Map-RNG law: this test pins a volley path near spawn — random POIs/pits under it (likelier since
+    // Map-RNG law: this test pins a volley path near spawn — random pits under it (likelier since
     // the QOL-03 gate-disc solver reshapes spawn-adjacent terrain) would annihilate the volley mid-step.
-    h.room.map.pois.length = 0;
     h.room.map.tiles.fill(TILE_GROUND);
     const safe = { x: h.room.map.spawnX + 120, y: h.room.map.spawnY };
 
@@ -2728,7 +2721,7 @@ describe("GameRoom — §50 spin re-hits per revolution", () => {
   it("ONE whirlwind press (4π sweep) dips a pinned enemy at least twice", () => {
     const h = makeRoom();
     h.join("p1");
-    // Determinism: clear POIs AND flatten the map to ground so a randomly-placed pit tile can't
+    // Determinism: flatten the map to ground so a randomly-placed pit tile can't
     // swallow the sweep in a full-suite RNG stream (matches the sibling parry test at ~L2570).
     h.room.map.tiles.fill(TILE_GROUND);
     h.send("p1", "toggleTraining");
@@ -2736,7 +2729,6 @@ describe("GameRoom — §50 spin re-hits per revolution", () => {
     const p = h.state().players.get("p1");
     p.weapon = "x-sword-whirlwind";
     h.tick(1);
-    h.room.map.pois.length = 0;
     h.send("p1", "debugSpawn", { kind: "ronin", count: 1 });
     h.tick(1);
     const found = [...h.state().enemies.entries()].find(
@@ -2812,7 +2804,6 @@ describe("GameRoom — melee parry telegraph commitment", () => {
     const h = makeRoom();
     h.join("token-player");
     h.room.map.tiles.fill(TILE_GROUND);
-    h.room.map.pois.length = 0;
     h.room.spawnAccum = -1_000_000;
     const player = h.state().players.get("token-player");
     player.x = h.room.map.spawnX;
@@ -2989,7 +2980,6 @@ describe("GameRoom — synced authoritative attack beat", () => {
     h.join("melee-beat");
     h.state().mode = "training";
     h.room.map.tiles.fill(TILE_GROUND);
-    h.room.map.pois.length = 0;
     const player = h.state().players.get("melee-beat");
     player.weapon = "x-sword-whirlwind";
     h.tick(1); // settle the weapon swap before arming an attack
@@ -3129,7 +3119,6 @@ function makeBeamRoom(sessionId: string) {
   player.x = h.room.map.spawnX;
   player.y = h.room.map.spawnY;
   player.weapon = TEST_BEAM_WEAPON;
-  h.room.map.pois.length = 0;
   h.tick(1); // settle the swap before the first held edge
   return { h, player, combat: h.room.combat.get(sessionId) };
 }
@@ -3385,7 +3374,6 @@ const enemyComboShared = await import("@dd/shared");
 function makeEnemyComboRoom(depth = 1) {
   const h = makeRoom();
   h.join("combo-victim");
-  h.room.map.pois.length = 0;
   h.room.map.tiles.fill(TILE_GROUND); // map-RNG law: every pinned combo position is known solid ground
   h.room.spawnAccum = -1_000_000;
   h.room.shifterCd = 1_000_000;
@@ -3644,7 +3632,7 @@ describe("GameRoom — §51 tough-enemy melee combos (Wave 1 authority)", () => 
   });
 
   it("ships schema 19, named depth decks, and guardrail-safe authored literals", () => {
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(46);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(47);
     expect(new EnemyState().comboSeq).toBe(0);
     expect(new EnemyState().comboFlags).toBe(0);
     expect(herePlayerJuggledDefault()).toBe(0);
@@ -3682,7 +3670,6 @@ function herePlayerJuggledDefault() {
 function makeJumpFeelRoom(id = "jump-feel") {
   const h = makeRoom();
   h.join(id);
-  h.room.map.pois.length = 0;
   h.room.map.tiles.fill(TILE_GROUND);
   h.room.spawnAccum = -1_000_000;
   h.room.shifterCd = 1_000_000;
@@ -3862,7 +3849,6 @@ describe("GameRoom — jump-feel J1 authoritative stance/physics", () => {
       h.room.map,
       rawX,
       rawY,
-      enemyComboShared.PLAYER_RADIUS,
     );
     const dx = expected.x - player.x;
     const dy = expected.y - player.y;
@@ -4007,7 +3993,7 @@ describe("GameRoom — jump-feel J1 authoritative stance/physics", () => {
 
   it("ships schema 21 with the three appended uint8 stance/VFX defaults", () => {
     const player = new enemyComboShared.PlayerState();
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(46);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(47);
     expect([player.moveStance, player.poundSeq, player.stanceSeq]).toEqual([0, 0, 0]);
   });
 });
@@ -4185,7 +4171,7 @@ describe("GameRoom — flavor-only character identity", () => {
 
   it("retains schema 21 while defaulting character identity to the shared default", () => {
     const player = new enemyComboShared.PlayerState();
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(46);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(47);
     expect([player.character, player.runCharacter]).toEqual([
       enemyComboShared.DEFAULT_CHARACTER,
       enemyComboShared.DEFAULT_CHARACTER,
@@ -4610,7 +4596,6 @@ describe("GameRoom — MAP QOL final enemy-spawn fairness", () => {
     const player = h.state().players.get("qol-spawn-defer");
     player.x = h.room.map.spawnX;
     player.y = h.room.map.spawnY;
-    h.room.map.pois.length = 0;
     h.room.map.tiles.fill(TILE_PIT);
     const col = Math.floor(player.x / h.room.map.tileSize);
     const row = Math.floor(player.y / h.room.map.tileSize);
@@ -4633,7 +4618,6 @@ function makeUltimateRoom(
 ) {
   const h = makeRoom();
   h.join(id);
-  h.room.map.pois.length = 0;
   h.room.map.tiles.fill(TILE_GROUND);
   h.room.spawnAccum = -999;
   const player = h.state().players.get(id);
@@ -4950,8 +4934,8 @@ describeUltimateImplementation("ULT U1 lifecycle, co-op, and schema 25", () => {
     const h = makeRoom();
     h.join("ult-schema");
     const player = h.state().players.get("ult-schema");
-    expect(h.state().schemaVersion).toBe(46);
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(46);
+    expect(h.state().schemaVersion).toBe(47);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(47);
     expect([
       player.ultimate.archetype,
       player.ultimate.charge,
@@ -5011,9 +4995,9 @@ describe("pet v1 join snapshot, lock, and schema 25", () => {
     h.room.clients.push(client);
     h.room.onJoin(client, { metaAccount: account, selectedPetId: "brass-crab" });
     const player = h.state().players.get("pet-lock");
-    expect([h.state().schemaVersion, enemyComboShared.SCHEMA_VERSION]).toEqual([46, 46]);
+    expect([h.state().schemaVersion, enemyComboShared.SCHEMA_VERSION]).toEqual([47, 47]);
 
-    expect([h.state().schemaVersion, enemyComboShared.SCHEMA_VERSION]).toEqual([46, 46]);    expect({ petId: player.petId, petLevelBand: player.petLevelBand }).toEqual({
+    expect([h.state().schemaVersion, enemyComboShared.SCHEMA_VERSION]).toEqual([47, 47]);    expect({ petId: player.petId, petLevelBand: player.petLevelBand }).toEqual({
       petId: "hearth-newt",
       petLevelBand: 3,
     });
@@ -5390,8 +5374,8 @@ describe("GameRoom — independent weapon slots and compatibility row", () => {
 
   it("keeps schema 38 and the unrelated compatibility-container tenants intact", () => {
     const fresh = new enemyComboShared.PlayerState();
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(46);
-    expect(new enemyComboShared.ArenaState().schemaVersion).toBe(46);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(47);
+    expect(new enemyComboShared.ArenaState().schemaVersion).toBe(47);
     expect(fresh.dualWield).toMatchObject({
       retiredByte0: 255,
       retiredUint32: 0,
@@ -5983,8 +5967,8 @@ describe("GameRoom — schema-31 Drive authority", () => {
     );
     const cost = enemyComboShared.driveCostForProfile(profile, interval);
 
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(46);
-    expect(h.state().schemaVersion).toBe(46);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(47);
+    expect(h.state().schemaVersion).toBe(47);
     expect(player.weaponResource).toBe(player.dualWield.weaponResource);
     expect(player.weaponResource).toMatchObject({
       valueQ: 10_000,
@@ -6297,7 +6281,7 @@ describe("GameRoom — schema-31 public prestige ceremony", () => {
     expect(metadata[11]).toMatchObject({ name: "movementCorrectionSeq", type: "uint32" });
     expect(metadata[12]).toMatchObject({ name: "serverMotionEpoch", type: "uint32" });
     expect(metadata[13]).toMatchObject({ name: "serverMotionActive", type: "boolean" });
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(46);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(47);
   });
 });
 
@@ -6597,7 +6581,6 @@ describe("GameRoom - hit registration regressions", () => {
   it("deals full point-blank gun damage when a long muzzle starts inside a colossus collider", () => {
     const h = makeRoom();
     h.join("point-blank-gun");
-    h.room.map.pois.length = 0;
     h.room.map.tiles.fill(TILE_GROUND);
     const player = h.state().players.get("point-blank-gun");
     const weapon = WEAPONS["x2-sunbreaker-railgun"];
@@ -6641,7 +6624,6 @@ describe("GameRoom - hit registration regressions", () => {
   it("counts a friendly projectile that spawns inside a collider as a tick-one hit", () => {
     const h = makeRoom();
     h.join("spawn-inside");
-    h.room.map.pois.length = 0;
     h.room.map.tiles.fill(TILE_GROUND);
     const boss = addProjectileTarget(h, "inside-colossus", "dimensional-colossus", 2_000, 2_000);
     const radius = ENEMY_KINDS[boss.kind]?.radius ?? 24;
@@ -6665,7 +6647,6 @@ describe("GameRoom - hit registration regressions", () => {
   it("keeps a from-range projectile as a full-damage control", () => {
     const h = makeRoom();
     h.join("range-control");
-    h.room.map.pois.length = 0;
     h.room.map.tiles.fill(TILE_GROUND);
     const boss = addProjectileTarget(h, "range-colossus", "dimensional-colossus", 2_000, 2_000);
     const damage = 37;
@@ -6688,7 +6669,6 @@ describe("GameRoom - hit registration regressions", () => {
 
   it("registers spawn-inside contact against a live multi-segment worm collider", () => {
     const { h, runtime, root } = makeSerrakethRoom();
-    h.room.map.pois.length = 0;
     h.room.map.tiles.fill(TILE_GROUND);
     h.room.rebuildEnemyGrid();
     const slot = 0;
@@ -6881,7 +6861,6 @@ describe("GameRoom — shared procedural weapon ground zones", () => {
     const { weaponResourceProfile, ZoneKind } = await import("@dd/shared");
     const h = makeRoom();
     h.join("grave-zone");
-    h.room.map.pois.length = 0;
     h.room.map.tiles.fill(TILE_GROUND);
     const player = h.state().players.get("grave-zone");
     const combat = h.room.combat.get(player.id);
@@ -6920,7 +6899,6 @@ describe("GameRoom — shared procedural weapon ground zones", () => {
     const { ZoneStyle } = await import("@dd/shared");
     const h = makeRoom();
     h.join("zone-ticks");
-    h.room.map.pois.length = 0;
     h.room.map.tiles.fill(TILE_GROUND);
     const player = h.state().players.get("zone-ticks");
     const enemy = new EnemyState();
@@ -6958,7 +6936,6 @@ describe("GameRoom — shared procedural weapon ground zones", () => {
     const { thrownProjectileSpriteId, ZoneStyle } = await import("@dd/shared");
     const h = makeRoom();
     h.join("carrion-grenade");
-    h.room.map.pois.length = 0;
     h.room.map.tiles.fill(TILE_GROUND);
     const player = h.state().players.get("carrion-grenade");
     const combat = h.room.combat.get(player.id);
@@ -6996,7 +6973,6 @@ describe("GameRoom — Cogwright Tesla-Rod warp", () => {
   it("lands at the server-validated cursor with no weapon-range cap and bursts on arrival", () => {
     const h = makeRoom();
     h.join("tesla-warp");
-    h.room.map.pois.length = 0;
     h.room.map.tiles.fill(TILE_GROUND);
     const player = h.state().players.get("tesla-warp");
     const combat = h.room.combat.get(player.id);
@@ -7053,7 +7029,6 @@ describe("GameRoom - NB projectile contracts", () => {
     const h = makeRoom();
     h.join(id);
     h.state().mode = "training";
-    h.room.map.pois.length = 0;
     h.room.map.tiles.fill(TILE_GROUND);
     h.state().enemies.clear();
     const player = h.state().players.get(id);
@@ -7294,7 +7269,6 @@ describe("GameRoom - B20 L2 authoritative chests", () => {
         enemyComboShared.CHEST_PLACEMENT_RADIUS,
       ),
     ).toBe(true);
-    expect(enemyComboShared.isInsidePoi(h.room.map, chest.x, chest.y)).toBe(false);
     expect(enemyComboShared.isPitAtPx(h.room.map, chest.x, chest.y)).toBe(false);
   });
 

@@ -28,8 +28,6 @@ const layerNamed = (project: JsonObject, identifier: string): JsonObject =>
   project.levels[0].layerInstances.find((layer: JsonObject) => layer.__identifier === identifier);
 const fieldNamed = (entity: JsonObject, identifier: string): JsonObject =>
   entity.fieldInstances.find((field: JsonObject) => field.__identifier === identifier);
-const byRowColIid = (a: JsonObject, b: JsonObject): number =>
-  a.__grid[1] - b.__grid[1] || a.__grid[0] - b.__grid[0] || a.iid.localeCompare(b.iid);
 
 function applyMutation(project: JsonObject, mutation: JsonObject): void {
   const level = project.levels[0];
@@ -62,30 +60,6 @@ function applyMutation(project: JsonObject, mutation: JsonObject): void {
               : 1;
       return;
     }
-    case "remove-cluster-tree": {
-      const gameplay = gameplayLayer(project);
-      const clusters = gameplay.entityInstances
-        .filter((entity: JsonObject) => entity.__identifier === "PoiCluster")
-        .sort(byRowColIid);
-      const removed = clusters[mutation.clusterOrdinal];
-      gameplay.entityInstances = gameplay.entityInstances.filter(
-        (entity: JsonObject) =>
-          entity.iid !== removed.iid &&
-          !(
-            entity.__identifier === "Landmark" &&
-            fieldNamed(entity, "Cluster").__value.entityIid === removed.iid
-          ),
-      );
-      return;
-    }
-    case "set-landmark-cluster-ref": {
-      const landmarks = gameplayLayer(project)
-        .entityInstances.filter((entity: JsonObject) => entity.__identifier === "Landmark")
-        .sort(byRowColIid);
-      fieldNamed(landmarks[mutation.landmarkOrdinal], "Cluster").__value.entityIid =
-        mutation.entityIid;
-      return;
-    }
     case "remove-player-spawn": {
       const gameplay = gameplayLayer(project);
       gameplay.entityInstances = gameplay.entityInstances.filter(
@@ -107,34 +81,20 @@ function cloneLevelWithFreshIids(project: JsonObject): JsonObject {
   clone.worldX = 4800;
   fieldNamed({ fieldInstances: clone.fieldInstances }, "DisplayName").__value = "Zeta Arena";
 
-  const oldLayerIids = new Map<string, string>();
   for (let index = 0; index < clone.layerInstances.length; index++) {
     const layer = clone.layerInstances[index];
-    const oldIid = layer.iid;
     layer.iid = `64444444-4444-4444-8444-${String(index + 1).padStart(12, "0")}`;
     layer.levelId = 101;
-    oldLayerIids.set(oldIid, layer.iid);
   }
   const gameplay = clone.layerInstances.find(
     (layer: JsonObject) => layer.__identifier === "Gameplay",
   );
-  const entityIids = new Map<string, string>();
   for (let index = 0; index < gameplay.entityInstances.length; index++) {
     const entity = gameplay.entityInstances[index];
-    const oldIid = entity.iid;
     entity.iid = `65000000-0000-4000-8000-${String(index + 1).padStart(12, "0")}`;
     entity.__worldX = clone.worldX + entity.px[0];
     entity.__worldY = clone.worldY + entity.px[1];
-    entityIids.set(oldIid, entity.iid);
   }
-  for (const entity of gameplay.entityInstances)
-    for (const field of entity.fieldInstances) {
-      const ref = field.__value;
-      if (field.__type !== "EntityRef" || !ref) continue;
-      ref.entityIid = entityIids.get(ref.entityIid);
-      ref.layerIid = oldLayerIids.get(ref.layerIid);
-      ref.levelIid = clone.iid;
-    }
   return clone;
 }
 
@@ -174,8 +134,6 @@ describe("LDtk authored arena compiler", () => {
     });
     expect(records[0].tiles).toHaveLength(3600);
     expect(records[0].zoneIds).toHaveLength(3600);
-    expect(records[0].poiClusters).toHaveLength(6);
-    expect(records[0].pois).toHaveLength(24);
     expect(records[0].revision).toMatch(/^sha256:[0-9a-f]{64}$/);
   });
 
@@ -212,12 +170,11 @@ describe("LDtk authored arena compiler", () => {
     }));
     const activeFixtures = fixtures.filter(({ fixture }) => fixture.handoff == null);
     const handoffFixtures = fixtures.filter(({ fixture }) => fixture.handoff != null);
-    expect(activeFixtures).toHaveLength(10);
+    expect(activeFixtures).toHaveLength(8);
     expect(handoffFixtures.map(({ fixtureName }) => fixtureName)).toEqual([
       "blocked-spawn-disc.sol2-handoff.json",
       "disconnected-zone.sol2-handoff.json",
       "insufficient-gate-space.sol2-handoff.json",
-      "overlapping-unsafe-poi.sol2-handoff.json",
     ]);
     for (const { fixture } of handoffFixtures) {
       expect(fixture.handoff).toBe("ldtk-runtime-integration");

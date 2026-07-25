@@ -36,7 +36,6 @@ function makeRoom(id: string) {
   room.clients = [{ sessionId: id }];
   room.onCreate();
   room.onJoin({ sessionId: id });
-  room.map.pois.length = 0;
   room.map.tiles.fill(TILE_GROUND);
   const player = room.state.players.get(id);
   const combat = room.combat.get(id);

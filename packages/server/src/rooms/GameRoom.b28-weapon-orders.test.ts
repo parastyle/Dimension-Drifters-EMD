@@ -30,7 +30,6 @@ describe("GameRoom — B28 Venomtongue lunge authority", () => {
     room.clients = [{ sessionId: "b28-venomtongue" }];
     room.onCreate();
     room.onJoin({ sessionId: "b28-venomtongue" });
-    room.map.pois.length = 0;
     room.map.tiles.fill(TILE_GROUND);
     room.state.enemies.clear();
 

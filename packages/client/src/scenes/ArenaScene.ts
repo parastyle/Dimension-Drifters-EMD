@@ -375,13 +375,11 @@ import {
 import { boltPoints, strokeBolt } from "./arena/draw-util.js";
 import {
   buildArenaFloor,
-  buildPois,
   dimensionPropPack,
   drawArena,
   GATE_GROUND_DEPTH,
   GATE_PROTECTED_DEPTH,
   gateNeedsEdgeLocator,
-  type PoiSprite,
   terrainRimKey,
   terrainTileKey,
 } from "./arena/floor-renderer.js";
@@ -570,7 +568,6 @@ const TelegraphKindTag = {
   Eruption: 8,
   WormSweep: 9,
   TitanSweep: 10,
-  TitanLandmark: 11,
 } as const;
 
 const MELEE_FULL_TELL_COUNT = 6;
@@ -1334,8 +1331,6 @@ export class ArenaScene extends Phaser.Scene {
   private parryGfx!: Phaser.GameObjects.Graphics;
   /** H10 `time.now` of the last parry press, so the ring can flash bright through the i-frame window. */
   private lastParryPress = -9999;
-  /** §17 v0.102 placed landmark sprites — faded when the local player walks behind one (see-through cover). */
-  private poiSprites: PoiSprite[] = [];
   /** §16 v0.116 Polish B — a screen-space AMBIENT DUST layer (drifting motes tinted the dimension's dust
    *  colour) that lends the arena atmosphere. Lazily built on the first update; purely cosmetic. */
   private dustG?: Phaser.GameObjects.Graphics;
@@ -1951,21 +1946,16 @@ export class ArenaScene extends Phaser.Scene {
     if (!this.textures.exists(rimKey) && !this.floorArtMissing.has(rimKey)) {
       this.queueOptionalFloorArt(rimKey, `tiles/${terrainDimensionId}/rim.png`);
     }
-    // §17 P4 active-dimension prop pack: DECAL ground litter + POI landmarks. A joiner/rift whose synced
-    // dimension differs is covered by maybeBuildFloor's identical lazy-load gate below.
+    // §17 P4 active-dimension DECAL ground litter. A joiner/rift whose synced dimension differs is covered
+    // by maybeBuildFloor's identical lazy-load gate below.
     const propPack = dimensionPropPack(terrainDimensionId);
     for (const id of propPack.decalIds) {
       if (!this.textures.exists(id) && !this.floorArtMissing.has(id)) {
         this.queueOptionalFloorArt(id, `${propPack.decalDir}/${id}.png`);
       }
     }
-    for (const id of propPack.poiIds) {
-      if (!this.textures.exists(id) && !this.floorArtMissing.has(id)) {
-        this.queueOptionalFloorArt(id, `${propPack.poiDir}/${id}.png`);
-      }
-    }
     this.load.on("loaderror", (file: Phaser.Loader.File) => {
-      if (/^(tile|decal|poi)-/.test(file.key) || file.key.startsWith("terrain:")) {
+      if (/^(tile|decal)-/.test(file.key) || file.key.startsWith("terrain:")) {
         this.floorArtMissing.add(file.key);
       }
     });
@@ -2119,7 +2109,6 @@ export class ArenaScene extends Phaser.Scene {
     // Failed/missing-art sets deliberately follow Phaser's game-wide texture cache, not a run.
 
     // Display-object/UI pools and handles. The previous objects are already destroyed by Phaser.
-    this.poiSprites = [];
     this.dust.length = 0;
     this.floorObjs = [];
     this.beltTilemaps = [];
@@ -4135,7 +4124,7 @@ export class ArenaScene extends Phaser.Scene {
     const dimension = getDimension(s.dimensionId);
     const propPack = dimensionPropPack(dimension.id);
     // §17 a joiner can inherit the host's dimension, and a §6 rift changes it mid-scene. Preload covered the
-    // requested starting dimension; here the floor gate lazily queues its terrain + props before teardown.
+    // requested starting dimension; here the floor gate lazily queues its terrain + decals before teardown.
     // Network failures hit preload's loaderror guard; HTTP-200/non-image stubs use this silent decode hook.
     const floorArtFiles = [
       ...Array.from({ length: 4 }, (_, i) => ({
@@ -4149,10 +4138,6 @@ export class ArenaScene extends Phaser.Scene {
       ...propPack.decalIds.map((id) => ({
         key: id,
         url: `${propPack.decalDir}/${id}.png`,
-      })),
-      ...propPack.poiIds.map((id) => ({
-        key: id,
-        url: `${propPack.poiDir}/${id}.png`,
       })),
     ];
     const floorArtPending = floorArtFiles.filter(
@@ -4179,7 +4164,6 @@ export class ArenaScene extends Phaser.Scene {
     this.floorObjs = [];
     this.beltTilemaps = [];
     this.corporateDoors = [];
-    this.poiSprites = [];
     this.arenaMap = generateArena({
       seedTerrain: s.seedTerrain,
       seedHazard: s.seedHazard,
@@ -4190,7 +4174,7 @@ export class ArenaScene extends Phaser.Scene {
     const palette = dimension.palette;
     if (this.belt) {
       // §29 belt: build the authored DECK from the level's floor profile + obstacles (WYSIWYG collision), and
-      // hand the level to the predictor (no POI map) so local collision matches the server exactly.
+      // hand the level to the predictor so local pit handling matches the server exactly.
       this.beltLevel =
         corporateDepth > 0
           ? corporateGridBeltLevelForDepth(
@@ -4215,11 +4199,8 @@ export class ArenaScene extends Phaser.Scene {
       this.floorObjs.push(
         ...buildArenaFloor(this, this.arenaMap, dimension.id, (k) => this.hasTile(k), palette),
       );
-      const pois = buildPois(this, this.arenaMap, dimension.id);
-      this.poiSprites = pois.sprites;
-      this.floorObjs.push(...pois.objs);
-      // §4 v0.107: a re-minted map = a new world — the predictor must collide against the NEW landmarks
-      // (review #15) and every snapshot ring holds coordinates from the OLD map (review #16). Swap + clear.
+      // §4 v0.107: a re-minted map = a new world. Swap the predictor's pit map and clear every snapshot
+      // ring that still holds coordinates from the old map.
       this.predictor?.setMap(this.arenaMap);
     }
     this.lastSeedKey = seedKey;
@@ -5012,7 +4993,6 @@ export class ArenaScene extends Phaser.Scene {
     this.sendAttack();
     this.sendParry();
     this.renderParryState();
-    this.updatePoiOcclusion(); // §17 v0.102 fade a landmark the local player is hidden behind
     this.updatePortalArrow(); // §17 v0.102 edge-of-screen pointer to an off-screen open portal
     this.updateAmbientDust(); // §16 v0.116 Polish B — drifting atmosphere motes
     this.updateCombatFx();
@@ -7381,7 +7361,7 @@ export class ArenaScene extends Phaser.Scene {
   }
 
   /** Build one QOL-04 gate: broad disc/core are honest ground art below actors; the thin halo, icon, and
-   *  decision copy live in the protected world-response layer above POIs/bodies but below the HUD. */
+   *  decision copy live in the protected world-response layer above bodies but below the HUD. */
   private buildGate(
     x: number,
     y: number,
@@ -10439,33 +10419,6 @@ export class ArenaScene extends Phaser.Scene {
         -Math.PI / 2 + st.riftCharge * Math.PI * 2,
       );
       g.strokePath();
-    }
-  }
-
-  /** §17 v0.102 landmark occlusion fade: an L/XL structure is taller than the viewport, so when the LOCAL
-   *  player walks behind one (inside the sprite's bounds, above its base), it eases to ~45% alpha — cover
-   *  you can see yourself behind, the standard top-down-action treatment. Eases back to opaque when clear. */
-  private updatePoiOcclusion(): void {
-    const selfId = this.room?.sessionId;
-    const self = selfId ? this.room?.state.players.get(selfId) : undefined;
-    // §4 v0.107: read the RENDERED self position (the predicted rig), not raw state — post-prediction the
-    // rig LEADS state by ~RTT/2, so a state-based fade would start visibly late walking behind a landmark.
-    const rig = selfId ? this.blobs.get(selfId) : undefined;
-    const sx = rig?.x ?? self?.x ?? 0;
-    const sy = rig?.y ?? self?.y ?? 0;
-    // §16 v0.117 Polish B — a gentle wind SWAY: the bottom-origin landmarks lean ±~1° on a slow sine, each
-    // offset by its position so they don't sway in lockstep. Subtle enough to read as wind, not a wobble.
-    const sway = this.time.now / 1000;
-    for (const p of this.poiSprites) {
-      let target = 1;
-      if (self?.alive) {
-        const halfW = p.img.displayWidth / 2;
-        const top = p.y - p.img.displayHeight;
-        // "Behind" = horizontally within the sprite and standing between its top and its base line.
-        if (sy < p.y && sy > top && Math.abs(sx - p.x) < halfW) target = 0.45;
-      }
-      p.img.alpha = Phaser.Math.Linear(p.img.alpha, target, 0.18);
-      p.img.rotation = Math.sin(sway * 0.6 + p.x * 0.013) * 0.018;
     }
   }
 

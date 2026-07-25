@@ -621,7 +621,6 @@ type VastAnswer = "miss" | "jump" | "parry";
 
 function makeVastagharHarness(answer: VastAnswer = "miss", liveAdds = 0) {
   const base = mockSink({ adds: liveAdds });
-  const mutations: { kind: number; poiIndex: number }[] = [];
   const addCounts: number[] = [];
   const answerMode = { value: answer };
   const fill = (out: import("@dd/shared").BossCounterSummary) => {
@@ -657,7 +656,6 @@ function makeVastagharHarness(answer: VastAnswer = "miss", liveAdds = 0) {
       _airborne: boolean,
       out: import("@dd/shared").BossCounterSummary,
     ) => fill(out),
-    mutateVastagharArena: (kind: number, poiIndex: number) => mutations.push({ kind, poiIndex }),
     spawnAdds: (_kind: string, spots: readonly Vec2[]) => addCounts.push(spots.length),
   }) as import("./BossController.js").VastagharEmitSink;
   const state = new vastShared.VastagharBossState();
@@ -673,18 +671,12 @@ function makeVastagharHarness(answer: VastAnswer = "miss", liveAdds = 0) {
     root.hp,
     root.id,
     0,
-    5,
-    1500,
-    1200,
-    6,
-    1200,
-    1500,
   );
   const targets: import("./BossController.js").VastagharTarget[] = [
     { id: "p1", x: 1300, y: 1200, alive: true, downTick: 0, recentBossDamage: 0 },
     { id: "p2", x: 1000, y: 1200, alive: true, downTick: 0, recentBossDamage: 0 },
   ];
-  return { runtime, state, root, sink, targets, mutations, addCounts, answerMode };
+  return { runtime, state, root, sink, targets, addCounts, answerMode };
 }
 
 function stepVastaghar(
@@ -716,15 +708,14 @@ describe("Vastaghar flagship — authored 20 Hz authority", () => {
     h.root.hp -= p1Damage;
     const p2Tick = reachVastagharPhase(h, vastShared.VastagharPhase.BreakStride, 89);
     expect(h.state.maxHp).toBe(1900);
-    expect(h.mutations[0]).toEqual({
-      kind: vastShared.VastagharArenaMutationKind.StuckStep,
-      poiIndex: 5,
-    });
+    expect(h.state.arenaMutationKind).toBe(vastShared.VastagharArenaMutationKind.StuckStep);
+    expect(h.state.arenaMutationSeq).toBe(1);
 
     const p2Damage = h.runtime.capIncomingDamage(h.root.hp, 1900 * 0.35, "p1", "ultimate", 6, 0, 0);
     h.root.hp -= p2Damage;
     const p3Tick = reachVastagharPhase(h, vastShared.VastagharPhase.UnderHeel, p2Tick + 1);
-    expect(h.mutations.some((m) => m.kind === vastShared.VastagharArenaMutationKind.WorldTurn)).toBe(true);
+    expect(h.state.arenaMutationKind).toBe(vastShared.VastagharArenaMutationKind.WorldTurn);
+    expect(h.state.arenaMutationSeq).toBe(2);
 
     const p3Damage = h.runtime.capIncomingDamage(h.root.hp, 1900 * 0.27, "p2", "pound", 1, 0, 0);
     h.root.hp -= p3Damage;
@@ -771,20 +762,6 @@ describe("Vastaghar flagship — authored 20 Hz authority", () => {
     expect(jumped.state.stridePips).toBe(1);
   });
 
-  it("destroys no more than the two authored POIs and publishes mutation/collision edges together", () => {
-    const h = makeVastagharHarness("miss");
-    stepVastaghar(h, 0, 88);
-    h.root.hp -= h.runtime.capIncomingDamage(h.root.hp, 570, "p1", "hammer", 1, 0, 0);
-    let tick = reachVastagharPhase(h, vastShared.VastagharPhase.BreakStride, 89);
-    while (!h.mutations.some((m) => m.kind === vastShared.VastagharArenaMutationKind.LandmarkBreak)) {
-      tick++;
-      h.runtime.step(0.05, h.root, h.targets, 1, tick, h.sink, tick);
-      if (tick > 700) throw new Error("Landmark Break did not resolve");
-    }
-    expect(h.state.destroyedPoiMask).toBe((1 << 5) | (1 << 6));
-    expect(h.mutations.filter((m) => m.poiIndex !== 255).map((m) => m.poiIndex)).toEqual([5, 6]);
-  });
-
   it("enforces the four-add encounter budget even when the authored wave requests more", () => {
     const h = makeVastagharHarness("miss", 1);
     stepVastaghar(h, 0, 88);
@@ -813,8 +790,8 @@ describe("Vastaghar flagship — authored 20 Hz authority", () => {
   });
 
   it("retains the v26 nested flagship state under schema 31", () => {
-    expect(vastShared.SCHEMA_VERSION).toBe(46);
-    expect(new vastShared.ArenaState().schemaVersion).toBe(46);
+    expect(vastShared.SCHEMA_VERSION).toBe(47);
+    expect(new vastShared.ArenaState().schemaVersion).toBe(47);
     expect(new vastShared.ArenaState().vastaghar).toBeInstanceOf(vastShared.VastagharBossState);
   });
 });

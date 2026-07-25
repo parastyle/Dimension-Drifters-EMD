@@ -111,7 +111,6 @@ import {
   clampBeltFloorY,
   clampParrySlideToNavigation,
   clampQuakeEpicenter,
-  clipPoiRayLength,
   comboStepForChain,
   committedMeleeEvaded,
   coneAngles,
@@ -196,7 +195,6 @@ import {
   isAugment,
   isBreakActionWeapon,
   isCharacterUnlocked,
-  isInsidePoi,
   isPetId,
   isPitAtPx,
   isPlayableCharacter,
@@ -283,7 +281,6 @@ import {
   POUND_RECOVERY_SECONDS,
   POUND_SPEED,
   POUND_STAGGER_SECONDS,
-  PoiCollisionIndex,
   PROJECTILE_RADIUS,
   PROJECTILE_TTL,
   type ProjectileDamageEnvelope,
@@ -300,7 +297,6 @@ import {
   placeArenaGatePair,
   placeChestOnArena,
   playerAttackInputSpeedMultiplier,
-  poiCollisionAt,
   pointInAnnulusGap,
   pointInOrientedRect,
   pointInSweptAnnularArc,
@@ -344,7 +340,6 @@ import {
   resolveBodyCollisions,
   selectCorporateWaveAnchor,
   resolveOneShotProtection,
-  resolvePoiCollisionInto,
   resolveRelicRevive,
   rollChestReward,
   runtimeModsForQuirk,
@@ -460,7 +455,6 @@ import {
   ultimateVariantForCode,
   unlockedWeaponDropPool,
   VASTAGHAR_ENCOUNTER,
-  type VastagharArenaMutationKind,
   VastagharMode,
   type Vec2,
   validateArena,
@@ -1148,7 +1142,6 @@ export interface GameRoomContext extends Room<ArenaState> {
   readonly beamSampleEndX: Float64Array<ArrayBuffer>;
   readonly beamSampleEndY: Float64Array<ArrayBuffer>;
   readonly beamSampleLength: Float64Array<ArrayBuffer>;
-  readonly poiResolveScratch: { x: number; y: number; };
   beamCurrentX: number;
   beamCurrentY: number;
   beamCurrentLength: number;
@@ -1505,7 +1498,6 @@ export interface GameRoomContext extends Room<ArenaState> {
   applyVastagharSweep(x: number, y: number, innerRange: number, outerRange: number, halfWidth: number, fromAngle: number, toAngle: number, damage: number, knockback: number, actionSeq: number, revolution: number, airborneAnswers: boolean, out: BossCounterSummary): void;
   vastagharParryActive(player: PlayerState, combat: CombatState): boolean;
   resolveVastagharParry(player: PlayerState, combat: CombatState, sourceX: number, sourceY: number, preventedDamage: number): void;
-  mutateVastagharArena(_kind: VastagharArenaMutationKind, poiIndex: number): void;
   damageBeamRect(x: number, y: number, len: number, halfW: number, rot: number, damage: number, knockback: number): void;
   damageRingBand(cx: number, cy: number, bandR: number, bandHalf: number, gapCenter: number, gapHalf: number, damage: number): void;
   spawnWeaponGroundZoneAt(player: PlayerState, weapon: WeaponDef, x: number, y: number, damagePerSecond: number, crit?: number): ZoneState | undefined;
@@ -2684,7 +2676,7 @@ export const roomProgressionMethods = {
         dummy.kind = "dummy";
         dummy.hp = DUMMY_HP;
         // A dummy is a non-boss enemy — over a pit the §17 terrain-death rule would delete it on tick 1.
-        const sp = safeSpawnPos(this.map, cx + (i - 1) * 200, cy + 170, DUMMY_RADIUS);
+        const sp = safeSpawnPos(this.map, cx + (i - 1) * 200, cy + 170);
         dummy.x = sp.x;
         dummy.y = sp.y;
         this.state.enemies.set(dummy.id, dummy);
@@ -2742,7 +2734,7 @@ export const roomProgressionMethods = {
 
   /** §31 (re)spawn the current showroom PAGE: clear the gallery pickups (`pk*`) and lay out this page's
    *  slice of GALLERY_ROSTER in a grid above the player. Wraps the page index. Training mode only.
-   *  §41 cells keep their EXACT grid position — a cell over a pit/POI is SKIPPED (the shelf shows a gap)
+   *  §41 cells keep their EXACT grid position — a cell over a pit is SKIPPED (the shelf shows a gap)
    *  instead of safeSpawnPos NUDGING it: the old nudge scattered the neat grid and piled pickups onto their
    *  neighbours, so E grabbed "the wrong thing" and pages read as disorganized. */
   spawnGalleryPage(this: GameRoomContext): void {
@@ -2765,7 +2757,7 @@ export const roomProgressionMethods = {
         const gx = cx + (col - (COLS - 1) / 2) * GAP;
         const gy = cy - 200 - row * GAP;
         if (gx < PICKUP_RADIUS || gx > ARENA_WIDTH - PICKUP_RADIUS || gy < PICKUP_RADIUS) continue;
-        if (isPitAtPx(this.map, gx, gy) || isInsidePoi(this.map, gx, gy)) continue;
+        if (isPitAtPx(this.map, gx, gy)) continue;
         cells.push({ x: gx, y: gy });
       }
     }
@@ -3353,14 +3345,6 @@ export const roomProgressionMethods = {
 
   /** One EXACT 50ms authoritative sub-step. The hand-numbered phase order is a CONTRACT (golden test). */
   stepSim(this: GameRoomContext, dt: number): void {
-    // Production maps keep immutable POIs. Authored test/dev maps may replace that geometry after mapgen;
-    // refresh once at the mutation boundary, never in the steady collision hot path.
-    if (this.map.poiCollisionIndex.sourcePoiCount !== this.map.pois.length)
-      this.map.poiCollisionIndex = new PoiCollisionIndex(
-        this.map.pois,
-        this.map.cols * this.map.tileSize,
-        this.map.rows * this.map.tileSize,
-      );
     // 0. §4 v0.107 the sim-tick counter (the snapshot timeline) + per-tick input plumbing: refill each
     //    player's message budget, then consume toward ONE command per sub-step for EVERY player — alive,
     //    downed, or frozen (review #3: consumption must never stall, or queues pin at cap during a level
@@ -3724,8 +3708,8 @@ export const roomProgressionMethods = {
       }
     });
 
-    // 2.4 COLLISION — top-down: §17 POI landmarks. Belt (§29): clamp DEPTH to the authored floor profile at
-    // this belt-x + route out of deck obstacles — the accurate edge/obstacle collision under the art.
+    // 2.4 COLLISION — belt (§29): clamp DEPTH to the authored floor profile at this belt-x + route out of
+    // deck obstacles — the accurate edge/obstacle collision under the art.
     if (this.belt && this.beltLevel) {
       const level = this.beltLevel;
       const floor = corporateGridFloorForBelt(level);
@@ -3750,23 +3734,10 @@ export const roomProgressionMethods = {
           player.y = clampBeltFloorY(level, player.x, o.y, PLAYER_RADIUS);
         }
       });
-    } else if (!this.belt) {
-      this.state.players.forEach((player) => {
-        if (!player.alive) return;
-        const r = resolvePoiCollisionInto(
-          this.map,
-          player.x,
-          player.y,
-          PLAYER_RADIUS,
-          this.poiResolveScratch,
-        );
-        player.x = r.x;
-        player.y = r.y;
-      });
     }
 
     // Accepted client truth wins after the legacy friend-body pass. Reports were swept against navigation
-    // above, so this cannot restore a wall/POI/pit clip; it only avoids making co-op friends authority walls.
+    // above, so this cannot restore a wall/pit clip; it only avoids making co-op friends authority walls.
     for (const [id, movement] of this.acceptedClientMovement) {
       const player = this.state.players.get(id);
       if (!player?.alive || player.dualWield.serverMotionActive) continue;
@@ -4354,10 +4325,7 @@ export const roomProgressionMethods = {
     // players (one-way — players stay authoritative). Stops the horde stacking on the spawn.
     this.resolveEnemyCollisions();
 
-    // 5.55 §17 POI collision — enemies are blocked by the landmarks too (they bunch up + flow around them).
-    // The BOSS is exempt (like the pit rule below): a boss body — especially the colossus (r=170, far bigger
-    // than any landmark) — crushes through cover rather than wedging on it, and its size exceeds the §17
-    // wedge/push-out guards that keep normal bodies un-stuck.
+    // 5.55 §29 belt collision.
     if (this.belt && this.beltLevel) {
       const level = this.beltLevel;
       const floor = corporateGridFloorForBelt(level);
@@ -4375,19 +4343,6 @@ export const roomProgressionMethods = {
         } else {
           enemy.y = clampBeltFloorY(level, enemy.x, enemy.y, er);
         }
-      });
-    } else if (!this.belt) {
-      this.state.enemies.forEach((enemy, eid) => {
-        if (eid === this.bossId) return;
-        const r = resolvePoiCollisionInto(
-          this.map,
-          enemy.x,
-          enemy.y,
-          ENEMY_KINDS[enemy.kind]?.radius ?? ENEMY_RADIUS,
-          this.poiResolveScratch,
-        );
-        enemy.x = r.x;
-        enemy.y = r.y;
       });
     }
 

@@ -110,7 +110,6 @@ import {
   clampBeltFloorY,
   clampParrySlideToNavigation,
   clampQuakeEpicenter,
-  clipPoiRayLength,
   comboStepForChain,
   committedMeleeEvaded,
   coneAngles,
@@ -195,7 +194,6 @@ import {
   isAugment,
   isBreakActionWeapon,
   isCharacterUnlocked,
-  isInsidePoi,
   isPetId,
   isPitAtPx,
   isPlayableCharacter,
@@ -283,7 +281,6 @@ import {
   POUND_RECOVERY_SECONDS,
   POUND_SPEED,
   POUND_STAGGER_SECONDS,
-  PoiCollisionIndex,
   PROJECTILE_RADIUS,
   PROJECTILE_TTL,
   type ProjectileDamageEnvelope,
@@ -300,7 +297,6 @@ import {
   placeArenaGatePair,
   placeChestOnArena,
   playerAttackInputSpeedMultiplier,
-  poiCollisionAt,
   pointInAnnulusGap,
   pointInOrientedRect,
   pointInSweptAnnularArc,
@@ -344,7 +340,6 @@ import {
   resolveBodyCollisions,
   selectCorporateWaveAnchor,
   resolveOneShotProtection,
-  resolvePoiCollisionInto,
   resolveRelicRevive,
   rollChestReward,
   runtimeModsForQuirk,
@@ -2502,16 +2497,6 @@ export const roomCombatMethods = {
       const x = player.x + dx * progress;
       const y = player.y + dy * progress;
       if (isPitAtPx(this.map, x, y)) break;
-      if (this.map.pois.length > 0) {
-        const resolved = resolvePoiCollisionInto(
-          this.map,
-          x,
-          y,
-          PLAYER_RADIUS,
-          this.poiResolveScratch,
-        );
-        if (Math.hypot(resolved.x - x, resolved.y - y) > 1e-6) break;
-      }
       safeX = x;
       safeY = y;
     }
@@ -3145,7 +3130,7 @@ export const roomCombatMethods = {
     return this.beamMuzzleScratch;
   },
 
-  /** Exact ray truncation against arena edges and colliding POI/belt circles. */
+  /** Exact ray truncation against arena edges and colliding belt circles. */
   clipBeamLength(this: GameRoomContext,
     ox: number,
     oy: number,
@@ -3178,8 +3163,6 @@ export const roomCombatMethods = {
           length,
         );
       }
-    } else {
-      length = clipPoiRayLength(this.map.poiCollisionIndex, ox, oy, dx, dy, halfWidth, length);
     }
     return Math.max(0, Math.min(authoredRange, length));
   },
@@ -4850,7 +4833,7 @@ export const roomCombatMethods = {
       const bx = beltSafeX(this.beltLevel, x, x);
       return { x: bx, y: clampBeltFloorY(this.beltLevel, bx, y, PICKUP_RADIUS) };
     }
-    return safeSpawnPos(this.map, x, y, PICKUP_RADIUS);
+    return safeSpawnPos(this.map, x, y);
   },
 
   /** Apply an AoE blast at (x,y): damage every enemy within `radius`, with the same kill/money/portal
@@ -5226,35 +5209,6 @@ export const roomCombatMethods = {
           if (pr.y < 0 || pr.y > ARENA_HEIGHT) pr.vy = -pr.vy;
           pr.x = clamp(pr.x, 0, worldWidth);
           pr.y = clamp(pr.y, 0, ARENA_HEIGHT);
-          meta.hit.clear();
-          meta.pierce = meta.pierceMax ?? meta.pierce;
-          meta.ttl += meta.legTtl ?? 0;
-          projectileFromX = pr.x;
-          projectileFromY = pr.y;
-        } else {
-          doomed.push(id);
-          return;
-        }
-      }
-      // §17 POI COVER — a projectile that flies into a landmark is BLOCKED. A RICOCHET round (bounces left)
-      // CAROMS off the landmark like a wall: reflect the velocity across the radial normal, snap to the
-      // surface, and re-arm (fresh pierce/hit-set/life) so it keeps hunting. Everything else is ABSORBED
-      // (exploding rounds detonate via the doomed loop). Cover works both ways — a landmark in YOUR line
-      // eats your shots too.
-      const hitPoi = corporateFloor ? undefined : poiCollisionAt(this.map, pr.x, pr.y);
-      if (hitPoi) {
-        if ((meta.bounces ?? 0) > 0) {
-          meta.bounces = (meta.bounces ?? 0) - 1;
-          const nx = pr.x - hitPoi.circle.x;
-          const ny = pr.y - hitPoi.circle.y;
-          const nl = Math.hypot(nx, ny) || 1;
-          const ux = nx / nl;
-          const uy = ny / nl;
-          const dot = pr.vx * ux + pr.vy * uy;
-          pr.vx -= 2 * dot * ux;
-          pr.vy -= 2 * dot * uy;
-          pr.x = hitPoi.circle.x + ux * (hitPoi.circle.radius + PROJECTILE_RADIUS);
-          pr.y = hitPoi.circle.y + uy * (hitPoi.circle.radius + PROJECTILE_RADIUS);
           meta.hit.clear();
           meta.pierce = meta.pierceMax ?? meta.pierce;
           meta.ttl += meta.legTtl ?? 0;

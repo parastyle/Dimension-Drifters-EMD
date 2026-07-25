@@ -153,7 +153,6 @@ function makeBeamRoom(sessionId: string) {
   player.x = h.room.map.spawnX;
   player.y = h.room.map.spawnY;
   player.weapon = TEST_BEAM_WEAPON;
-  h.room.map.pois.length = 0;
   h.tick(1); // settle the swap before the first held edge
   return { h, player, combat: h.room.combat.get(sessionId) };
 }
@@ -216,7 +215,6 @@ const enemyComboShared = await import("@dd/shared");
 function makeEnemyComboRoom(depth = 1) {
   const h = makeRoom();
   h.join("combo-victim");
-  h.room.map.pois.length = 0;
   h.room.map.tiles.fill(TILE_GROUND); // map-RNG law: every pinned combo position is known solid ground
   h.room.spawnAccum = -1_000_000;
   h.room.shifterCd = 1_000_000;
@@ -291,7 +289,6 @@ function herePlayerJuggledDefault() {
 function makeJumpFeelRoom(id = "jump-feel") {
   const h = makeRoom();
   h.join(id);
-  h.room.map.pois.length = 0;
   h.room.map.tiles.fill(TILE_GROUND);
   h.room.spawnAccum = -1_000_000;
   h.room.shifterCd = 1_000_000;
@@ -411,7 +408,6 @@ function makeUltimateRoom(
 ) {
   const h = makeRoom();
   h.join(id);
-  h.room.map.pois.length = 0;
   h.room.map.tiles.fill(TILE_GROUND);
   h.room.spawnAccum = -999;
   const player = h.state().players.get(id);
@@ -571,9 +567,9 @@ describe("pet v1 join snapshot, lock, and schema 25", () => {
     h.room.clients.push(client);
     h.room.onJoin(client, { metaAccount: account, selectedPetId: "brass-crab" });
     const player = h.state().players.get("pet-lock");
-    expect([h.state().schemaVersion, enemyComboShared.SCHEMA_VERSION]).toEqual([46, 46]);
+    expect([h.state().schemaVersion, enemyComboShared.SCHEMA_VERSION]).toEqual([47, 47]);
 
-    expect([h.state().schemaVersion, enemyComboShared.SCHEMA_VERSION]).toEqual([46, 46]);    expect({ petId: player.petId, petLevelBand: player.petLevelBand }).toEqual({
+    expect([h.state().schemaVersion, enemyComboShared.SCHEMA_VERSION]).toEqual([47, 47]);    expect({ petId: player.petId, petLevelBand: player.petLevelBand }).toEqual({
       petId: "hearth-newt",
       petLevelBand: 3,
     });
@@ -950,8 +946,8 @@ describe("GameRoom — independent weapon slots and compatibility row", () => {
 
   it("keeps schema 38 and the unrelated compatibility-container tenants intact", () => {
     const fresh = new enemyComboShared.PlayerState();
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(46);
-    expect(new enemyComboShared.ArenaState().schemaVersion).toBe(46);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(47);
+    expect(new enemyComboShared.ArenaState().schemaVersion).toBe(47);
     expect(fresh.dualWield).toMatchObject({
       retiredByte0: 255,
       retiredUint32: 0,

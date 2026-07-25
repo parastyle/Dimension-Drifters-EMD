@@ -169,7 +169,7 @@ export function clampBeltFloorY(level: BeltLevel, x: number, worldY: number, bod
 }
 
 /** Push a body (belt `x`, world `y`, radius `bodyR`) out of any obstacle it overlaps. Returns adjusted
- *  `{x, y}`. PURE — the belt equivalent of resolvePoiCollision. */
+ *  `{x, y}`. PURE and allocation-free. */
 export function resolveBeltObstacles(
   level: BeltLevel,
   x: number,

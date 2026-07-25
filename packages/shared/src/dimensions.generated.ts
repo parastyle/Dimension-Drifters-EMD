@@ -37,7 +37,6 @@ export const EXTRA_DIMENSIONS: Record<string, DimensionDef> = {
     },
     "assets": {
       "tile": "tile-ground",
-      "poiSet": "frostfell",
       "decalSet": "frostfell"
     }
   },
@@ -70,7 +69,6 @@ export const EXTRA_DIMENSIONS: Record<string, DimensionDef> = {
     },
     "assets": {
       "tile": "tile-ground",
-      "poiSet": "verdant-ruins",
       "decalSet": "verdant-ruins"
     }
   },
@@ -103,7 +101,6 @@ export const EXTRA_DIMENSIONS: Record<string, DimensionDef> = {
     },
     "assets": {
       "tile": "tile-ground",
-      "poiSet": "ashlands",
       "decalSet": "ashlands"
     }
   },
@@ -136,7 +133,6 @@ export const EXTRA_DIMENSIONS: Record<string, DimensionDef> = {
     },
     "assets": {
       "tile": "tile-ground",
-      "poiSet": "neon-cyber",
       "decalSet": "neon-cyber"
     }
   }

@@ -3262,10 +3262,6 @@ export const rigCombatMethods = {
       this.body.y += 5 * brace;
       this.body.scaleY *= 1 - 0.05 * brace;
       for (const foot of this.feet) foot.img.rotation *= 0.2;
-    } else if (action === VastagharActionKind.LandmarkBreak) {
-      const load = smoothstep01(pose.windupT);
-      this.body.rotation -= 0.1 * load;
-      this.body.scaleY *= 1 - 0.08 * load;
     }
 
     // The authored 16-tick breaks stay boss-local: a crease/through-plane turn, never a screen takeover.

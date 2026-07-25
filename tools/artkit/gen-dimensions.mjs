@@ -111,9 +111,9 @@ for (const d of dimsData.dimensions) {
     boss: d.boss.id,
     hazard: { name: d.hazard.name, description: d.hazard.description },
     palette: palette(d.palette),
-    // Themed ground tile / POI / decal sets land with the art pass; until then the renderer falls back to
-    // the shared Wild-West "tile-ground" + global decal/POI packs (palette re-skin does the heavy lifting).
-    assets: { tile: "tile-ground", poiSet: d.id, decalSet: d.id },
+    // Themed ground tile / decal sets land with the art pass; until then the renderer falls back to
+    // the shared Wild-West "tile-ground" plus themed decals (palette re-skin does the heavy lifting).
+    assets: { tile: "tile-ground", decalSet: d.id },
   };
   for (const e of d.enemies) {
     kinds[e.id] = mapKind(e);

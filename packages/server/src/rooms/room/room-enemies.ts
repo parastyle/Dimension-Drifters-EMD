@@ -110,7 +110,6 @@ import {
   clampBeltFloorY,
   clampParrySlideToNavigation,
   clampQuakeEpicenter,
-  clipPoiRayLength,
   comboStepForChain,
   committedMeleeEvaded,
   coneAngles,
@@ -195,7 +194,6 @@ import {
   isAugment,
   isBreakActionWeapon,
   isCharacterUnlocked,
-  isInsidePoi,
   isPetId,
   isPitAtPx,
   isPlayableCharacter,
@@ -283,7 +281,6 @@ import {
   POUND_RECOVERY_SECONDS,
   POUND_SPEED,
   POUND_STAGGER_SECONDS,
-  PoiCollisionIndex,
   PROJECTILE_RADIUS,
   PROJECTILE_TTL,
   type ProjectileDamageEnvelope,
@@ -300,7 +297,6 @@ import {
   placeArenaGatePair,
   placeChestOnArena,
   playerAttackInputSpeedMultiplier,
-  poiCollisionAt,
   pointInAnnulusGap,
   pointInOrientedRect,
   pointInSweptAnnularArc,
@@ -344,7 +340,6 @@ import {
   resolveBodyCollisions,
   selectCorporateWaveAnchor,
   resolveOneShotProtection,
-  resolvePoiCollisionInto,
   resolveRelicRevive,
   rollChestReward,
   runtimeModsForQuirk,
@@ -459,7 +454,6 @@ import {
   ultimateVariantForCode,
   unlockedWeaponDropPool,
   VASTAGHAR_ENCOUNTER,
-  type VastagharArenaMutationKind,
   VastagharMode,
   type Vec2,
   validateArena,
@@ -852,7 +846,6 @@ export const roomEnemyMethods = {
             airborneAnswers,
             out,
           ),
-        mutateVastagharArena: (kind, poiIndex) => this.mutateVastagharArena(kind, poiIndex),
         applyMelee: (x, y, aimX, aimY, range, halfArc, damage, knockback) =>
           this.applyBossMelee(x, y, aimX, aimY, range, halfArc, damage, knockback),
         moveBoss: (x, y) => {
@@ -892,7 +885,6 @@ export const roomEnemyMethods = {
             this.map,
             clamp(x, radius, ARENA_WIDTH - radius),
             clamp(y, radius, ARENA_HEIGHT - radius),
-            radius,
           );
         },
       };
@@ -1154,16 +1146,6 @@ export const roomEnemyMethods = {
     this.applyParryQuirk(player, combat, heal);
   },
 
-  /** POI identity stays at its deterministic seed index; moving the server copy off-map removes collision
-   * on the exact synchronized mutation edge while the client consumes `destroyedPoiMask`. */
-  mutateVastagharArena(this: GameRoomContext, _kind: VastagharArenaMutationKind, poiIndex: number): void {
-    if (poiIndex < 0 || poiIndex >= this.map.pois.length || poiIndex === 255) return;
-    const poi = this.map.pois[poiIndex];
-    if (!poi) return;
-    poi.x = -100_000;
-    poi.y = -100_000;
-  },
-
   /** §16 v0.109 Slice 2 — damage every living player inside an oriented rect (a beam / dash lane). `damage`
    *  is ALREADY the per-tick depth-scaled amount. `knockback` (dash) shoves them PERPENDICULAR out of the lane. */
   damageBeamRect(this: GameRoomContext,
@@ -1291,7 +1273,7 @@ export const roomEnemyMethods = {
   },
 
   /** §16 conjure one boss ADD at a telegraphed spot (HP scaled to living count × depth), tracked so the
-   *  add-cap counts only boss-summoned adds. Lands on solid ground clear of POIs. */
+   *  add-cap counts only boss-summoned adds. Lands on solid ground. */
   spawnBossAddAt(this: GameRoomContext, kindId: string, x: number, y: number): void {
     if (this.bossController?.wormRuntime || this.effectiveEnemyBodies() >= MAX_ENEMIES) return;
     if (this.vastagharEncounter && this.bossAddIds.size >= VASTAGHAR_ENCOUNTER.addCap) return;
@@ -1312,7 +1294,6 @@ export const roomEnemyMethods = {
         this.map,
         clamp(x, kind.radius, ARENA_WIDTH - kind.radius),
         clamp(y, kind.radius, ARENA_HEIGHT - kind.radius),
-        kind.radius,
       );
       e.x = sp.x;
       e.y = sp.y;
@@ -1649,7 +1630,7 @@ export const roomEnemyMethods = {
     };
   },
 
-  /** Sample the complete accepted enemy segment so the fixed lunge cannot cross a pit or landmark. */
+  /** Sample the complete accepted enemy segment so the fixed lunge cannot cross a pit. */
   navValidEnemyLungeDest(this: GameRoomContext, enemy: EnemyState, targetX: number, targetY: number): Vec2 {
     const r = ENEMY_KINDS[enemy.kind]?.radius ?? ENEMY_RADIUS;
     const maxX = this.belt && this.beltLevel ? this.beltLevel.length - r : ARENA_WIDTH - r;
@@ -1672,10 +1653,6 @@ export const roomEnemyMethods = {
         safeY = clampBeltFloorY(this.beltLevel, x, y, r);
       } else {
         if (isPitAtPx(this.map, x, y)) break;
-        if (this.map.pois.length > 0) {
-          const resolved = resolvePoiCollisionInto(this.map, x, y, r, this.poiResolveScratch);
-          if (Math.hypot(resolved.x - x, resolved.y - y) > 1e-6) break;
-        }
         safeX = x;
         safeY = y;
       }
@@ -1973,7 +1950,7 @@ export const roomEnemyMethods = {
         // return path-plans from here, not from where the swing was thrown.
         enemy.windup = 0;
         if (!knockbackMoving) {
-          // Phase-5.55 POI/belt resolution runs after AI; refreshing during the hold captures that final
+          // Phase-5.55 belt resolution runs after AI; refreshing during the hold captures that final
           // legal post-recoil spot rather than the pre-collision endpoint scheduled in resolveParry.
           st.displacedX = enemy.x;
           st.displacedY = enemy.y;
@@ -2195,7 +2172,6 @@ export const roomEnemyMethods = {
         this.map,
         clamp(rawX, r, ARENA_WIDTH - r),
         clamp(rawY, r, ARENA_HEIGHT - r),
-        r,
       );
       x = safe.x;
       y = safe.y;
@@ -2320,8 +2296,7 @@ export const roomEnemyMethods = {
     enemy.y = clamp(enemy.y + (dy / d) * move, r, ARENA_HEIGHT - r);
   },
 
-  /** §51 schedule parry recoil as a continuous ≤90px/tick motion. Pits remain lethal and POI collision
-   *  still runs in the normal phase afterward — no immunity is granted to protect authored content. */
+  /** §51 schedule parry recoil as a continuous ≤90px/tick motion. Pits remain lethal. */
   scheduleComboKnockback(this: GameRoomContext,
     enemy: EnemyState,
     st: DuelistComboState,
@@ -2586,15 +2561,7 @@ export const roomEnemyMethods = {
             isPitAtPx(this.map, x, y)
           )
             return false;
-          if (this.map.pois.length === 0) return true;
-          const resolved = resolvePoiCollisionInto(
-            this.map,
-            x,
-            y,
-            PLAYER_RADIUS,
-            this.poiResolveScratch,
-          );
-          return Math.hypot(resolved.x - x, resolved.y - y) <= 1e-6;
+          return true;
         },
       );
     }
@@ -3055,7 +3022,7 @@ export const roomEnemyMethods = {
       const angle = baseAngle + (attempt / SPAWN_CANDIDATE_COUNT) * Math.PI * 2;
       const rawX = clamp(anchor.x + Math.cos(angle) * SPAWN_RING, margin, ARENA_WIDTH - margin);
       const rawY = clamp(anchor.y + Math.sin(angle) * SPAWN_RING, margin, ARENA_HEIGHT - margin);
-      const corrected = safeSpawnPos(this.map, rawX, rawY, radius);
+      const corrected = safeSpawnPos(this.map, rawX, rawY);
       let fair = true;
       this.state.players.forEach((player) => {
         if (!fair || !player.alive) return;
@@ -3124,7 +3091,7 @@ export const roomEnemyMethods = {
   },
 
   /** §21 Dev summon: place ONE enemy of `kindId` on the spawn ring around `anchor`, optionally tough.
-   *  Mirrors spawnEnemy's placement (ring offset + pit/POI safe-spawn) but with a CHOSEN kind/tier so the
+   *  Mirrors spawnEnemy's placement (ring offset + pit-safe spawn) but with a CHOSEN kind/tier so the
    *  Testing-Grounds Tab menu can conjure exactly what the playtester wants to fight. */
   debugSpawnOne(this: GameRoomContext,
     kindId: string,
@@ -3151,7 +3118,7 @@ export const roomEnemyMethods = {
     enemy.hp = kind.hp * (enemy.tough ? TOUGH_HP_MULT : 1) * enemyHpScale(players);
     const ex = clamp(anchor.x + Math.cos(angle) * distance, m, ARENA_WIDTH - m);
     const ey = clamp(anchor.y + Math.sin(angle) * distance, m, ARENA_HEIGHT - m);
-    const sp = safeSpawnPos(this.map, ex, ey, kind.radius);
+    const sp = safeSpawnPos(this.map, ex, ey);
     enemy.x = sp.x;
     enemy.y = sp.y;
     this.state.enemies.set(enemy.id, enemy);
@@ -3267,7 +3234,7 @@ export const roomEnemyMethods = {
       kind.radius,
       ARENA_HEIGHT - kind.radius,
     );
-    // §17 land the boss on solid ground + clear of POIs so its grand entrance doesn't teleport-out next tick.
+    // §17 land the boss on solid ground so its grand entrance doesn't teleport-out next tick.
     // §33 belt: place it ON the deck — just ahead of the room gate, mid-depth — instead of the procgen map.
     if (this.belt && this.beltLevel) {
       boss.x = clamp(
@@ -3277,7 +3244,7 @@ export const roomEnemyMethods = {
       );
       boss.y = clampBeltFloorY(this.beltLevel, boss.x, BELT_Y0 + DEPTH_MAX * 0.5, kind.radius);
     } else {
-      const sp = safeSpawnPos(this.map, bx, by, kind.radius);
+      const sp = safeSpawnPos(this.map, bx, by);
       boss.x = sp.x;
       boss.y = sp.y;
     }
@@ -3293,54 +3260,12 @@ export const roomEnemyMethods = {
       this.bossController.attachWorm(this.state.wormBoss, boss, this.state.tick, angle + Math.PI);
     }
     if (def.encounter === "vastaghar" && def.vastaghar && !(this.belt && this.beltLevel)) {
-      let poi0 = 255;
-      let poi1 = 255;
-      let score0 = Number.POSITIVE_INFINITY;
-      let score1 = Number.POSITIVE_INFINITY;
-      let quadrant0 = -1;
-      for (let i = 0; i < this.map.pois.length; i++) {
-        const poi = this.map.pois[i];
-        if (!poi) continue;
-        const dx = poi.x - boss.x;
-        const dy = poi.y - boss.y;
-        const distance = Math.hypot(dx, dy);
-        if (distance < 320 || distance > 760 || distance > 1100) continue;
-        const score = Math.abs(distance - 540) * 100 + i;
-        if (score < score0) {
-          poi0 = i;
-          score0 = score;
-          quadrant0 = (dx >= 0 ? 1 : 0) | (dy >= 0 ? 2 : 0);
-        }
-      }
-      for (let i = 0; i < this.map.pois.length; i++) {
-        if (i === poi0) continue;
-        const poi = this.map.pois[i];
-        if (!poi) continue;
-        const dx = poi.x - boss.x;
-        const dy = poi.y - boss.y;
-        const distance = Math.hypot(dx, dy);
-        if (distance < 320 || distance > 760 || distance > 1100) continue;
-        const quadrant = (dx >= 0 ? 1 : 0) | (dy >= 0 ? 2 : 0);
-        const score = Math.abs(distance - 540) * 100 + i + (quadrant === quadrant0 ? 100_000 : 0);
-        if (score < score1) {
-          poi1 = i;
-          score1 = score;
-        }
-      }
-      const firstPoi = poi0 === 255 ? undefined : this.map.pois[poi0];
-      const secondPoi = poi1 === 255 ? undefined : this.map.pois[poi1];
       this.vastagharEncounter = new VastagharEncounterRuntime(
         def.vastaghar,
         this.state.vastaghar,
         boss.hp,
         boss.id,
         this.state.tick,
-        poi0,
-        firstPoi?.x ?? 0,
-        firstPoi?.y ?? 0,
-        poi1,
-        secondPoi?.x ?? 0,
-        secondPoi?.y ?? 0,
       );
     }
     this.insertEnemyGrid(boss.id, boss);

@@ -32,14 +32,13 @@ may enter the outer 10% unless it continues toroidally through the exact opposit
 const cutoutPrompt = ({ subject, request, key = "#00ff00" }) => `Generate an image: an identity-preserving
 EDIT / clean re-render of the attached original game cutout.
 Use case: precise-object-edit
-Asset type: high-3/4 top-down game landmark cutout
+Asset type: top-down game decal cutout
 Input image: Image 1 is the identity reference. Preserve its recognizable subject, silhouette family,
 materials, palette, HD cel-shaded rendering, and thick dark outline treatment.
 Subject: ${subject}.
 Primary request: ${request}
 Scene/backdrop: a perfectly flat solid ${key} chroma-key field for local background removal.
-Composition: one complete isolated landmark, high 3/4 view, full physical base in frame, one explicit base
-footline centered at the bottom, generous empty padding on every side.
+Composition: one complete isolated top-down decal with generous empty padding on every side.
 Constraints: isolated physical object only; absolutely no cast shadow, contact shadow, painted ground patch,
 snow/dirt/moss/soot floor, glow pool, reflection, or ambient occlusion outside the physical base. The backdrop
 must be one uniform color with no texture, gradient, floor plane, lighting variation, or shadow. Crisp complete
@@ -59,91 +58,6 @@ const terrainJobs = [
   [11, "tiles/ashlands/tile-1.png", "Confine ropey lava detail to the interior. The perimeter is neutral packed ash matching tile-2; no ember line reaches an edge."],
   [12, "tiles/ashlands/tile-2.png", "Neutral packed-ash perimeter shared with tile-1; ember cracks stay interior and low contrast."],
 ].map(([priority, path, request]) => ({ priority, path, request, rim: path.endsWith("rim.png") }));
-
-const propJobs = [
-  {
-    priority: 13,
-    path: "pois/neon-cyber/poi-neon-cyber-03.png",
-    subject: "a full readable rooftop holo-billboard tower, not a cropped sign sliver",
-    request: "Recover a complete high-3/4 landmark with its support tower and centered physical base; no chroma residue or underpaint.",
-    width: 220,
-    height: 280,
-    contactX: 110,
-    contactY: 275,
-  },
-  {
-    priority: 14,
-    path: "pois/ashlands/poi-ashlands-00.png",
-    subject: "the same squat jagged black obsidian crystal spire cluster",
-    request: "Preserve the recognizable obsidian silhouette and physical basal rocks only; remove every painted ground/contact/cast shadow.",
-    width: 191,
-    height: 280,
-    contactX: 96,
-    contactY: 276,
-  },
-  {
-    priority: 15,
-    path: "pois/ashlands/poi-ashlands-02.png",
-    subject: "the same squat dormant charcoal fumarole cone with a small intrinsic smoke wisp",
-    request: "Preserve the cone and attached physical rocks; remove the soot ground patch and all painted shadow; use one clear centered footline.",
-    width: 280,
-    height: 263,
-    contactX: 140,
-    contactY: 258,
-  },
-  {
-    priority: 16,
-    path: "pois/neon-cyber/poi-neon-cyber-00.png",
-    subject: "the same tall industrial holo-billboard machinery tower with magenta panels",
-    request: "Keep the machinery landmark isolated with a complete support base; remove underpaint, glow pool, AO, contact shadow, and cast shadow.",
-    width: 169,
-    height: 280,
-    contactX: 85,
-    contactY: 276,
-  },
-  {
-    priority: 17,
-    path: "pois/frostfell/poi-frostfell-01.png",
-    subject: "the same leaning frozen pine with snow and ice physically attached to its branches and roots",
-    request: "Give the tree a visually explicit physical root base and footline; remove the surrounding snow-floor patch and every painted shadow.",
-    width: 148,
-    height: 280,
-    contactX: 74,
-    contactY: 276,
-  },
-  {
-    priority: 18,
-    path: "pois/poi-00.png",
-    subject: "the same tall leafless weathered Wild West dead tree",
-    request: "Keep the trunk, branches, and physical roots; fully expose and center the base; remove surrounding dirt and every painted shadow.",
-    width: 135,
-    height: 280,
-    contactX: 68,
-    contactY: 274,
-  },
-  {
-    priority: 19,
-    path: "pois/verdant-ruins/poi-verdant-ruins-04.png",
-    subject: "the same strangler-fig tree physically devouring a broken mossy ruin wall",
-    request: "Keep roots that physically belong to the tree/wall; remove the surrounding moss floor and every shadow; create one clear centered anchor footline.",
-    key: "magenta",
-    keyHex: "#ff00ff",
-    width: 280,
-    height: 263,
-    contactX: 140,
-    contactY: 258,
-  },
-  {
-    priority: 20,
-    path: "pois/neon-cyber/poi-neon-cyber-06.png",
-    subject: "the same collapsed rusted industrial crane with yellow machinery housing and truss boom",
-    request: "Keep only the complete crane and its actual support feet; no ground glow or shadow; center the physical support base on the declared anchor.",
-    width: 280,
-    height: 268,
-    contactX: 110,
-    contactY: 264,
-  },
-];
 
 const decalJob = {
   priority: 21,
@@ -205,7 +119,7 @@ if (wantsTerrain) {
 }
 
 if (wantsProps) {
-  for (const job of [...propJobs, decalJob].filter(selected)) {
+  for (const job of [decalJob].filter(selected)) {
     const key = job.key ?? "green";
     const keyHex = job.keyHex ?? "#00ff00";
     const { raw, target } = await render(job, cutoutPrompt({ subject: job.subject, request: job.request, key: keyHex }));
@@ -218,7 +132,7 @@ if (wantsProps) {
       contactY: job.contactY,
       key,
       margin: 4,
-      alignContact: job.path.startsWith("pois/"),
+      alignContact: false,
     });
     console.log(`INSTALLED P${job.priority} ${job.path} ${validation.width}x${validation.height} margins=${validation.margins.join("/")}`);
   }

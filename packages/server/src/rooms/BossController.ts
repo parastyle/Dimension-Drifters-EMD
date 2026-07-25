@@ -2243,11 +2243,9 @@ export interface VastagharEmitSink extends BossEmitSink {
     airborneAnswers: boolean,
     out: BossCounterSummary,
   ): void;
-  mutateVastagharArena(kind: VastagharArenaMutationKind, poiIndex: number): void;
 }
 
 const VASTAGHAR_TAU = Math.PI * 2;
-const VASTAGHAR_POI_NONE = 255;
 const VASTAGHAR_MERCY_TICKS = 50;
 const VASTAGHAR_MERCY_RADIUS = 180;
 const VASTAGHAR_ANTI_KITE_DISTANCE = 900;
@@ -2334,13 +2332,6 @@ export class VastagharEncounterRuntime {
   private readonly addView2: readonly Vec2[];
   private readonly addView3: readonly Vec2[];
   private readonly addView4: readonly Vec2[];
-  private readonly poiIndex0: number;
-  private readonly poiIndex1: number;
-  private readonly poiX0: number;
-  private readonly poiY0: number;
-  private readonly poiX1: number;
-  private readonly poiY1: number;
-  private destroyedPoiCount = 0;
 
   constructor(
     private readonly def: VastagharEncounterDef,
@@ -2348,19 +2339,7 @@ export class VastagharEncounterRuntime {
     private readonly maxHp: number,
     private readonly ownerId: string,
     spawnTick: number,
-    poiIndex0 = VASTAGHAR_POI_NONE,
-    poiX0 = 0,
-    poiY0 = 0,
-    poiIndex1 = VASTAGHAR_POI_NONE,
-    poiX1 = 0,
-    poiY1 = 0,
   ) {
-    this.poiIndex0 = poiIndex0;
-    this.poiIndex1 = poiIndex1;
-    this.poiX0 = poiX0;
-    this.poiY0 = poiY0;
-    this.poiX1 = poiX1;
-    this.poiY1 = poiY1;
     this.addView1 = [this.addSpot0];
     this.addView2 = [this.addSpot0, this.addSpot1];
     this.addView3 = [this.addSpot0, this.addSpot1, this.addSpot2];
@@ -2379,8 +2358,6 @@ export class VastagharEncounterRuntime {
     state.actionKind = VastagharActionKind.None;
     state.actionResult = VastagharActionResult.Pending;
     state.stridePips = 0;
-    state.destroyedPoiMask = 0;
-    state.arenaMutationPoiIndex = VASTAGHAR_POI_NONE;
     state.victoryStage = VastagharVictoryStage.None;
     state.victoryMoney = 0;
     this.nextActionTick = (spawnTick + def.entranceDelayTicks) >>> 0;
@@ -2662,10 +2639,6 @@ export class VastagharEncounterRuntime {
       }
       return;
     }
-    if (kind === VastagharActionKind.LandmarkBreak) {
-      this.startLandmarkBreak(action, boss, focus, tick, sink);
-      return;
-    }
     if (kind === VastagharActionKind.HeelReap || kind === VastagharActionKind.Worldwheel) {
       this.startSweep(action, boss, tick, sink);
       return;
@@ -2773,59 +2746,6 @@ export class VastagharEncounterRuntime {
     this.telegraphResolved[i] = 0;
   }
 
-  private startLandmarkBreak(
-    action: VastagharActionDef,
-    boss: EnemyState,
-    focus: VastagharTarget | null,
-    tick: number,
-    sink: VastagharEmitSink,
-  ): void {
-    let targetX = focus?.x ?? boss.x + Math.cos(this.state.aim) * 480;
-    let targetY = focus?.y ?? boss.y + Math.sin(this.state.aim) * 480;
-    const candidate = this.nextIntactPoi();
-    if (candidate === this.poiIndex0) {
-      targetX = this.poiX0;
-      targetY = this.poiY0;
-    } else if (candidate === this.poiIndex1) {
-      targetX = this.poiX1;
-      targetY = this.poiY1;
-    }
-    const dx = targetX - boss.x;
-    const dy = targetY - boss.y;
-    const rawLength = Math.hypot(dx, dy) || 1;
-    const length = clamp(rawLength, 320, action.outerRange);
-    const rot = Math.atan2(dy, dx);
-    this.stepX[0] = boss.x;
-    this.stepY[0] = boss.y;
-    this.stepX[1] = boss.x + Math.cos(rot) * length;
-    this.stepY[1] = boss.y + Math.sin(rot) * length;
-    this.stepFoot[0] = candidate;
-    this.state.aim = rot;
-    this.state.impactX = this.stepX[1]!;
-    this.state.impactY = this.stepY[1]!;
-    this.telegraphCount = 1;
-    this.telegraphIds[0] = sink.addTelegraph({
-      shape: TgShape.Rect,
-      x: boss.x,
-      y: boss.y,
-      a: length,
-      b: action.halfWidth,
-      rot,
-      danger: TELEGRAPH_DODGE,
-      kindTag: BossTelegraphKindTag.TitanLandmark,
-      ownerId: this.ownerId,
-      castSeq: (this.state.actionSeq << 3) + 1,
-    });
-    this.telegraphSettledGeneration[0] = -1;
-    this.telegraphResolved[0] = 0;
-    this.actionResolveTick = (tick + action.windupTicks) >>> 0;
-    this.actionActiveEndTick = (this.actionResolveTick + action.activeTicks) >>> 0;
-    this.actionEndTick = (this.actionActiveEndTick + action.recoveryTicks) >>> 0;
-    this.state.stepCount = 1;
-    this.publishActionTicks();
-    this.publishStep(0, tick, this.actionResolveTick);
-  }
-
   private startSweep(
     action: VastagharActionDef,
     boss: EnemyState,
@@ -2874,9 +2794,7 @@ export class VastagharEncounterRuntime {
   ): void {
     const action = this.currentDef;
     if (!action) return;
-    if (this.currentAction === VastagharActionKind.LandmarkBreak)
-      this.stepLandmarkBreak(boss, action, depth, tick, sink, broadcastGeneration);
-    else if (
+    if (
       this.currentAction === VastagharActionKind.HeelReap ||
       this.currentAction === VastagharActionKind.Worldwheel
     ) this.stepSweep(boss, action, depth, tick, sink, broadcastGeneration);
@@ -2974,46 +2892,6 @@ export class VastagharEncounterRuntime {
       const elapsed = (tick - this.actionStartTick) >>> 0;
       const t = Math.min(1, elapsed / Math.max(1, action.windupTicks));
       for (let i = 0; i < this.telegraphCount; i++) sink.setTelegraphProgress(this.telegraphIds[i]!, t);
-    }
-  }
-
-  private stepLandmarkBreak(
-    boss: EnemyState,
-    action: VastagharActionDef,
-    depth: number,
-    tick: number,
-    sink: VastagharEmitSink,
-    broadcastGeneration: number,
-  ): void {
-    if (!vastagharTickReached(tick, this.actionResolveTick)) {
-      const elapsed = (tick - this.actionStartTick) >>> 0;
-      sink.setTelegraphProgress(this.telegraphIds[0]!, Math.min(1, elapsed / Math.max(1, action.windupTicks)));
-      return;
-    }
-    if (!vastagharTickReached(tick, this.actionActiveEndTick)) {
-      const activeElapsed = Math.min(action.activeTicks, ((tick - this.actionResolveTick) >>> 0) + 1);
-      const frac = activeElapsed / Math.max(1, action.activeTicks);
-      boss.x = clamp(this.stepX[0]! + (this.stepX[1]! - this.stepX[0]!) * frac, 230, ARENA_WIDTH - 230);
-      boss.y = clamp(this.stepY[0]! + (this.stepY[1]! - this.stepY[0]!) * frac, 230, ARENA_HEIGHT - 230);
-      sink.damageRect(
-        this.stepX[0]!,
-        this.stepY[0]!,
-        Math.hypot(this.stepX[1]! - this.stepX[0]!, this.stepY[1]! - this.stepY[0]!),
-        action.halfWidth,
-        this.state.aim,
-        ((action.stepDamage[0] ?? 24) * depthDamageScale(depth)) / Math.max(1, action.activeTicks),
-        (action.stepKnockback[0] ?? 720) / Math.max(1, action.activeTicks),
-      );
-      return;
-    }
-    if (this.telegraphResolved[0] === 0) {
-      this.telegraphResolved[0] = 1;
-      sink.setTelegraphProgress(this.telegraphIds[0]!, 1);
-      this.telegraphSettledGeneration[0] = broadcastGeneration;
-      const poiIndex = this.stepFoot[0]!;
-      if (poiIndex !== VASTAGHAR_POI_NONE)
-        this.emitArenaMutation(VastagharArenaMutationKind.LandmarkBreak, poiIndex, tick, sink);
-      this.state.actionResult = VastagharActionResult.Resolved;
     }
   }
 
@@ -3197,9 +3075,9 @@ export class VastagharEncounterRuntime {
   ): void {
     const leaving = this.phase;
     if (leaving === VastagharPhase.LearnWeight) {
-      this.emitArenaMutation(VastagharArenaMutationKind.StuckStep, this.poiIndex0, tick, sink);
+      this.emitArenaMutation(VastagharArenaMutationKind.StuckStep, tick);
     } else if (leaving === VastagharPhase.BreakStride) {
-      this.emitArenaMutation(VastagharArenaMutationKind.WorldTurn, VASTAGHAR_POI_NONE, tick, sink);
+      this.emitArenaMutation(VastagharArenaMutationKind.WorldTurn, tick);
     }
     this.state.actionResult = VastagharActionResult.Resolved;
     this.state.phase = Math.min(VastagharPhase.FinalTread, leaving + 1);
@@ -3243,41 +3121,13 @@ export class VastagharEncounterRuntime {
 
   private emitArenaMutation(
     kind: VastagharArenaMutationKind,
-    poiIndex: number,
     tick: number,
-    sink: VastagharEmitSink,
   ): void {
-    let resolvedPoi = poiIndex;
-    if (
-      resolvedPoi < 0 ||
-      resolvedPoi >= 32 ||
-      resolvedPoi === VASTAGHAR_POI_NONE ||
-      this.destroyedPoiCount >= this.def.maxDestroyedPois ||
-      (this.state.destroyedPoiMask & (1 << resolvedPoi)) !== 0
-    ) resolvedPoi = VASTAGHAR_POI_NONE;
-    if (resolvedPoi !== VASTAGHAR_POI_NONE) {
-      this.state.destroyedPoiMask = (this.state.destroyedPoiMask | (1 << resolvedPoi)) >>> 0;
-      this.destroyedPoiCount++;
-    }
     this.state.arenaMutationSeq = bumpUint16(this.state.arenaMutationSeq);
     this.state.arenaMutationKind = kind;
     this.state.arenaMutationTick = tick >>> 0;
-    this.state.arenaMutationPoiIndex = resolvedPoi;
     this.state.arenaPaintStep = Math.min(2, this.state.arenaPaintStep + 1);
     if (kind === VastagharArenaMutationKind.WorldTurn) this.state.arenaPaintRotation = Math.PI / 4;
-    sink.mutateVastagharArena(kind, resolvedPoi);
-  }
-
-  private nextIntactPoi(): number {
-    if (
-      this.poiIndex0 !== VASTAGHAR_POI_NONE &&
-      (this.state.destroyedPoiMask & (1 << this.poiIndex0)) === 0
-    ) return this.poiIndex0;
-    if (
-      this.poiIndex1 !== VASTAGHAR_POI_NONE &&
-      (this.state.destroyedPoiMask & (1 << this.poiIndex1)) === 0
-    ) return this.poiIndex1;
-    return VASTAGHAR_POI_NONE;
   }
 
   private spawnAddWave(

@@ -47,37 +47,13 @@ background is a FLAT PURE CHROMA GREEN #00ff00 (RGB 0,255,0) with NOTHING else o
 no gradient. Each prop must be fully painted + fully inside the frame, well separated, so they can be cut out
 individually.`,
   },
-  // §17 P4 POI LANDMARKS — big standing structures placed in the map as cover/orientation. Drawn at a
-  // high 3/4 angle (like the §17 side-profile characters) so they read as tall objects in a top-down world.
-  pois: {
-    out: resolve(here, "out/pois"),
-    public: resolve(REPO, "packages/client/public/pois"),
-    manifest: resolve(REPO, "packages/client/src/sprites/poi-manifest.ts"),
-    manifestConst: "POI_IDS",
-    idPrefix: "poi",
-    max: 280,
-    keep: 7,
-    prompt: `Paint ONE wide image: about SIX distinct Wild-West LANDMARK STRUCTURES, each a SEPARATE island
-with GENEROUS empty space between them — none touching another or the frame edge. Draw each at a HIGH 3/4
-ANGLE (as if standing in a top-down world, seen from above-and-slightly-in-front), with its BASE at the
-bottom of the object and the structure rising UP — the same staging as the game's side-profile characters.
-Structures (one each): a wooden OIL DERRICK; a farm WINDMILL with a bladed wheel; a tall dead leafless TREE;
-a crumbling ADOBE wall ruin; a wooden WATER TOWER on legs; a jagged tall RED-ROCK spire. Style: HD cel-shaded,
-thick dark outlines, MUTED desaturated Wild-West palette (weathered wood brown, rust, adobe tan, bleached
-grey, red rock). Isolated physical structures only: no cast shadow, no contact shadow, no ground patch, and
-no ambient occlusion painted outside the physical base. Give each landmark one explicit centered footline
-at the bottom and keep the complete base in frame. The ENTIRE background is a FLAT PURE CHROMA GREEN
-#00ff00 (RGB 0,255,0) with NOTHING else — no ground, no sky, no gradient. Each landmark fully
-painted + fully inside the frame, well separated, so they can be cut out individually.`,
-  },
 };
 
-// §47 CODEX FINAL RUN P0.2 — THEMED packs per dimension (the original two packs above are wild-west).
+// Themed decal packs per dimension use the same extraction machinery and shared style.
 // Same machinery: one render, chroma-key, island-extract. Style line shared so every dim reads as one game.
 const STYLE = `Style: HD cel-shaded, thick dark outlines, MUTED desaturated palette. Isolated physical
 material/object only, with EVEN flat lighting. No cast shadow, no contact shadow, no ground patch, no glow
-pool, and no ambient occlusion painted outside the physical base. Upright structures must have one explicit
-centered footline at the bottom and the complete base in frame. The ENTIRE background is a FLAT PURE
+pool, and no ambient occlusion painted outside the physical material. The ENTIRE background is a FLAT PURE
 CHROMA GREEN #00ff00 (RGB 0,255,0) with NOTHING else — no ground, no texture, no gradient. Every prop fully
 painted, fully inside the frame, well separated so each can be cut out individually.`;
 const themedDecals = (dim, list) => ({
@@ -93,29 +69,11 @@ OVERHEAD (orthographic), arranged loosely with GENEROUS EMPTY SPACE between them
 island that does NOT touch any other prop or the frame edge. Props (one each, varied sizes): ${list}.
 ${STYLE}`,
 });
-const themedPois = (dim, list) => ({
-  out: resolve(here, `out/pois-${dim}`),
-  public: resolve(REPO, `packages/client/public/pois/${dim}`),
-  manifest: resolve(REPO, `packages/client/src/sprites/poi-manifest-${dim}.ts`),
-  manifestConst: `POI_IDS_${dim.replace(/-/g, "_").toUpperCase()}`,
-  idPrefix: `poi-${dim}`,
-  max: 280,
-  keep: 7,
-  prompt: `Paint ONE wide image: about SIX distinct LANDMARK STRUCTURES, each a SEPARATE island with GENEROUS
-empty space between them — none touching another or the frame edge. Draw each at a HIGH 3/4 ANGLE (standing
-in a top-down world, seen from above-and-slightly-in-front), base at the bottom, rising UP. Structures (one
-each): ${list}. ${STYLE}`,
-});
 PACKS["decals-frostfell"] = themedDecals(
   "frostfell",
   `a jagged blue ICE SHARD cluster; a snow-drift mound; a frozen-over small pond slick; a cracked ice plate;
 a frost-rimed dead shrub; scattered hail stones; a fallen icicle spear; a snow-buried stone; a pale frozen
 bone pile`,
-);
-PACKS["pois-frostfell"] = themedPois(
-  "frostfell",
-  `a towering blue GLACIER SPUR; a frozen WATERFALL column; an ancient ice-encased STANDING STONE; a snow-
-crushed wooden watchtower ruin; a colossal frost-heaved BOULDER; a leaning frozen PINE`,
 );
 PACKS["decals-verdant-ruins"] = themedDecals(
   "verdant-ruins",
@@ -123,33 +81,17 @@ PACKS["decals-verdant-ruins"] = themedDecals(
 green SPORE mushroom cluster; a coiled root knot; scattered temple rubble; a shallow leaf-choked puddle;
 a broken statue HAND; a flowering vine tangle`,
 );
-PACKS["pois-verdant-ruins"] = themedPois(
-  "verdant-ruins",
-  `a vine-strangled broken TEMPLE ARCH; a colossal mossy STATUE HEAD sunk to the chin; a crumbling stone
-STELE; a strangler-fig tree devouring a wall; a collapsed pillar leaning on its base; an overgrown fountain`,
-);
 PACKS["decals-ashlands"] = themedDecals(
   "ashlands",
   `a cooled ropey LAVA coil; an ember-cracked basalt slab; a charred tree stump; a sulfur-yellow crust
 patch; a slag heap; scattered obsidian shards; a smoldering ash pile with faint ember glow; a blackened
 ribcage; a heat-split boulder`,
 );
-PACKS["pois-ashlands"] = themedPois(
-  "ashlands",
-  `a jagged OBSIDIAN spire; a dormant fumarole CONE venting thin smoke; a charred dead TREE claw; a basalt
-column cluster (giant's-causeway style); a half-melted iron mining rig ruin; a cracked lava-rock arch`,
-);
 PACKS["decals-neon-cyber"] = themedDecals(
   "neon-cyber",
   `a burst steam VENT grate; a tangle of severed glowing CABLES; a shattered holo-sign panel face-up on the
 ground; an oil slick with faint neon sheen; a knocked-over traffic drone husk; scattered circuit debris; a
 glowing paint-tag GLYPH; a crushed vending crate; a manhole cover ajar with cyan underglow`,
-);
-PACKS["pois-neon-cyber"] = themedPois(
-  "neon-cyber",
-  `a rooftop HOLO-BILLBOARD tower (flickering magenta); an industrial AC/vent STACK cluster; a rusted
-water-tank on struts wrapped in cabling; a satellite-dish array mast; a neon SHRINE kiosk; a collapsed
-crane arm`,
 );
 
 // §48 BESPOKE WEAPON-FX COMPONENT PACKS — one render per effect, every component a SEPARATE island so

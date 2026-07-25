@@ -110,7 +110,6 @@ import {
   clampBeltFloorY,
   clampParrySlideToNavigation,
   clampQuakeEpicenter,
-  clipPoiRayLength,
   comboStepForChain,
   committedMeleeEvaded,
   coneAngles,
@@ -195,7 +194,6 @@ import {
   isAugment,
   isBreakActionWeapon,
   isCharacterUnlocked,
-  isInsidePoi,
   isPetId,
   isPitAtPx,
   isPlayableCharacter,
@@ -283,7 +281,6 @@ import {
   POUND_RECOVERY_SECONDS,
   POUND_SPEED,
   POUND_STAGGER_SECONDS,
-  PoiCollisionIndex,
   PROJECTILE_RADIUS,
   PROJECTILE_TTL,
   type ProjectileDamageEnvelope,
@@ -300,7 +297,6 @@ import {
   placeArenaGatePair,
   placeChestOnArena,
   playerAttackInputSpeedMultiplier,
-  poiCollisionAt,
   pointInAnnulusGap,
   pointInOrientedRect,
   pointInSweptAnnularArc,
@@ -344,7 +340,6 @@ import {
   resolveBodyCollisions,
   selectCorporateWaveAnchor,
   resolveOneShotProtection,
-  resolvePoiCollisionInto,
   resolveRelicRevive,
   rollChestReward,
   runtimeModsForQuirk,
@@ -710,14 +705,6 @@ export const roomMovementMethods = {
         (grounded && isPitAtPx(this.map, x, y))
       )
         return false;
-      const resolved = resolvePoiCollisionInto(
-        this.map,
-        x,
-        y,
-        PLAYER_RADIUS,
-        this.poiResolveScratch,
-      );
-      if (Math.hypot(resolved.x - x, resolved.y - y) > 0.75) return false;
     }
     return true;
   },
@@ -907,7 +894,7 @@ export const roomMovementMethods = {
       targetX = target.x;
       targetY = target.y;
     } else {
-      const safe = safeSpawnPos(this.map, rawX, rawY, PLAYER_RADIUS);
+      const safe = safeSpawnPos(this.map, rawX, rawY);
       targetX = safe.x;
       targetY = safe.y;
     }
@@ -994,7 +981,7 @@ export const roomMovementMethods = {
     c.poundUsed = false;
   },
 
-  /** One postcondition for every blink/hop/dash endpoint: range, bounds, POI/deck, pit, gate. */
+  /** One postcondition for every blink/hop/dash endpoint: range, bounds, deck, pit, gate. */
   navValidDest(this: GameRoomContext,
     player: PlayerState,
     c: CombatState,
@@ -1034,9 +1021,6 @@ export const roomMovementMethods = {
     }
     let x = clamp(ranged.x, PLAYER_RADIUS, ARENA_WIDTH - PLAYER_RADIUS);
     let y = clamp(ranged.y, PLAYER_RADIUS, ARENA_HEIGHT - PLAYER_RADIUS);
-    const poi = resolvePoiCollisionInto(this.map, x, y, PLAYER_RADIUS, this.poiResolveScratch);
-    x = poi.x;
-    y = poi.y;
     if (isPitAtPx(this.map, x, y)) {
       const safe = nearestGroundPx(this.map, x, y);
       x = safe.x;

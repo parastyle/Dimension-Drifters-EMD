@@ -10,7 +10,7 @@
  *  decodes new patches with corrupted offsets (HP reads as aim, etc.). The server stamps it on
  *  `ArenaState.schemaVersion`; the client compares on join and tells the player to hard-reload on a
  *  mismatch instead of rendering silently-corrupt state. */
-export const SCHEMA_VERSION = 46 as const; // B54 L2 presentation-only limb-claim catalog contract
+export const SCHEMA_VERSION = 47 as const; // B60 dimension landmark wire removal
 
 /** §ULT stat-free damage/activity meter and action tuning (20Hz tick epochs). */
 /** B55 reversible owner ruling: one switch gates grants, charge, input, activation, reveal, and HUD. */
@@ -301,31 +301,6 @@ export const MAP_PIT_SPACING_TILES = 7;
  * comfortable while the committed distance jump remains an optional route verb.
  */
 export const MAP_MAX_JUMP_TILES = 2;
-
-/**
- * §17 POI LANDMARKS — big standing structures (oil derrick / windmill / dead tree / adobe ruin /
- * water tower / rock spire) placed deterministically in the arena for cover + orientation. Players AND
- * enemies COLLIDE with them (static circle obstacles), so they read as real cover. (tuning)
- *
- * v0.102 size-class system: every landmark gets a deterministic size class from its `kind`
- * (`poiScale(kind)` in mapgen.ts — S/M/L/XL), its collision radius scales with it (`poiRadius(kind)`),
- * and the client derives each sprite's visual scale FROM the collision radius (WYSIWYG — the art's base
- * width matches the blocker you actually collide with). MAP_POI_RADIUS is the M-class BASE radius.
- */
-export const MAP_POI_COUNT = 28;
-/** Minimum spacing between POIs (tiles) — a floor; the real rule is pairwise radius-aware (mapgen). */
-export const MAP_POI_SPACING_TILES = 5;
-/** BASE (M-class) POI collision radius (px) — size classes multiply this (S 0.8× → XL 1.9×). */
-export const MAP_POI_RADIUS = 58;
-/** Guaranteed clear WALKING gap (px) between any two landmark footprints — wide enough that a player
- *  (and the horde chasing them) can always thread between neighbouring blockers without wedging. */
-export const MAP_POI_GAP = 150;
-/** GROUND ring guaranteed around each landmark's footprint (px) — must exceed the LARGEST body radius,
- *  because resolvePoiCollision parks a pushed-out body's centre at `poiRadius + bodyRadius`: without this
- *  ring an XL landmark on a pit lip shoves the body straight over the edge (adversarial-verify finding). */
-export const MAP_POI_GROUND_CLEARANCE = 72;
-/** Keep POIs this many tiles clear of the spawn disc so they never trap a spawning player. */
-export const MAP_POI_SPAWN_CLEAR_TILES = 5;
 
 /** Blob body radius in px. Body collision is respected by all objects (§5) — added later. (tuning) */
 export const PLAYER_RADIUS = 24;

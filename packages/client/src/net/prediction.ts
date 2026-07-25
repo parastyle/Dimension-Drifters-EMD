@@ -41,7 +41,6 @@ import {
   relicMoveSpeed,
   relicRollSpeedAtTick,
   resolveBeltNavigation,
-  resolvePoiCollision,
   SLIDE_PHASE_GROUND,
   SLIDE_PHASE_OFF,
   type SlidePhase,
@@ -314,7 +313,7 @@ export function writeDistanceJumpIndicator(
     out.x = resolved.x;
     out.y = resolved.y;
   } else if (map) {
-    const safe = safeSpawnPos(map, boundedX, boundedY, PLAYER_RADIUS);
+    const safe = safeSpawnPos(map, boundedX, boundedY);
     out.x = safe.x;
     out.y = safe.y;
   } else {
@@ -453,7 +452,7 @@ function steerDistanceJump(s: PredStanceState, cmd: PredCmd, dt: number): void {
 }
 
 /** One horizontal sim step — the same phase order as the server's movement block: steer+integrate+clamp,
- *  impulse on top, POI pushout. NOT replicated (server-only, corrections absorb them): pit teleports
+ *  impulse on top. NOT replicated (server-only, corrections absorb them): pit teleports
  *  (teleportSeq hard-snap) and player-player BODY collisions — under sustained mutual contact the
  *  ~16px/patch pushout correction converges to a STABLE self-view offset of roughly 35-70px into the
  *  other player (no jitter/oscillation; verified by the adversarial review). Acceptable for co-op PvE;
@@ -466,7 +465,6 @@ function stepHorizontal(
   dt: number,
   attackMoveMode: number,
   moveSpeedMultiplier: number,
-  map?: ArenaMap,
   belt?: BeltLevel,
   beltLockX = 0,
 ): PredState {
@@ -502,10 +500,6 @@ function stepHorizontal(
     const resolved = resolveBeltNavigation(belt, x, y, PLAYER_RADIUS);
     x = Math.min(resolved.x, beltMaxX - PLAYER_RADIUS);
     y = resolved.y;
-  } else if (map) {
-    const r = resolvePoiCollision(map, x, y, PLAYER_RADIUS);
-    x = r.x;
-    y = r.y;
   }
   return {
     x,
@@ -527,7 +521,6 @@ function stepStanceHorizontal(
   dt: number,
   attackMoveMode: number,
   moveSpeedMultiplier: number,
-  map?: ArenaMap,
   belt?: BeltLevel,
   beltLockX = 0,
   deferDashDisplacement = false,
@@ -543,7 +536,6 @@ function stepStanceHorizontal(
       dt,
       attackMoveMode,
       moveSpeedMultiplier,
-      map,
       belt,
       beltLockX,
     );
@@ -571,7 +563,6 @@ function stepStanceHorizontal(
         dt,
         attackMoveMode,
         moveSpeedMultiplier,
-        map,
         belt,
         beltLockX,
       );
@@ -604,10 +595,6 @@ function stepStanceHorizontal(
     const resolved = resolveBeltNavigation(belt, x, y, PLAYER_RADIUS);
     x = Math.min(resolved.x, beltMaxX - PLAYER_RADIUS);
     y = resolved.y;
-  } else if (map) {
-    const r = resolvePoiCollision(map, x, y, PLAYER_RADIUS);
-    x = r.x;
-    y = r.y;
   }
   if (activeSlide && s.stance === STANCE_SLIDE) {
     s.slidePhaseTick++;
@@ -798,7 +785,6 @@ function stepPredictionTick(
     dt,
     attackMoveMode,
     moveSpeedMultiplier,
-    map,
     belt,
     beltLockX,
     launchedDistanceJump,
@@ -881,7 +867,7 @@ export class SelfPredictor {
   private readonly pending: PendingPredCmd[] = [];
   private readonly immediateInputGate = new ImmediateInputSendGate();
   private map?: ArenaMap;
-  /** §29 belt level (floor profile + obstacles) — when set, prediction uses belt collision, not POI. */
+  /** §29 belt level (floor profile + obstacles) for predicted authored navigation. */
   private belt?: BeltLevel;
   private lastTeleportSeq: number;
   private lastStanceSeq: number;
@@ -1039,13 +1025,12 @@ export class SelfPredictor {
     this.pred.vy = impulse.vy;
   }
 
-  /** The client-side arena map (regenerated from synced seeds) — enables predicted POI collision. Swap
-   *  it on a rift descent BEFORE the next reconcile so the replay pushes out of the NEW map's landmarks. */
+  /** The client-side arena map, regenerated from synced seeds for pit-safe distance-jump endpoints. */
   setMap(map: ArenaMap | undefined): void {
     this.map = map;
   }
 
-  /** §29 set the belt level so prediction uses the authored floor/obstacle collision (not POI). */
+  /** §29 set the belt level so prediction uses the authored floor/obstacle collision. */
   setBeltLevel(level: BeltLevel | undefined): void {
     this.belt = level;
   }
@@ -1640,7 +1625,6 @@ export class SelfPredictor {
         frac,
         this.attackMoveMode,
         this.moveSpeedMultiplier,
-        this.map,
         this.belt,
         this.beltLockX,
       );

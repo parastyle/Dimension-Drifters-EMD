@@ -153,7 +153,6 @@ function makeBeamRoom(sessionId: string) {
   player.x = h.room.map.spawnX;
   player.y = h.room.map.spawnY;
   player.weapon = TEST_BEAM_WEAPON;
-  h.room.map.pois.length = 0;
   h.tick(1); // settle the swap before the first held edge
   return { h, player, combat: h.room.combat.get(sessionId) };
 }
@@ -216,7 +215,6 @@ const enemyComboShared = await import("@dd/shared");
 function makeEnemyComboRoom(depth = 1) {
   const h = makeRoom();
   h.join("combo-victim");
-  h.room.map.pois.length = 0;
   h.room.map.tiles.fill(TILE_GROUND); // map-RNG law: every pinned combo position is known solid ground
   h.room.spawnAccum = -1_000_000;
   h.room.shifterCd = 1_000_000;
@@ -291,7 +289,6 @@ function herePlayerJuggledDefault() {
 function makeJumpFeelRoom(id = "jump-feel") {
   const h = makeRoom();
   h.join(id);
-  h.room.map.pois.length = 0;
   h.room.map.tiles.fill(TILE_GROUND);
   h.room.spawnAccum = -1_000_000;
   h.room.shifterCd = 1_000_000;
@@ -411,7 +408,6 @@ function makeUltimateRoom(
 ) {
   const h = makeRoom();
   h.join(id);
-  h.room.map.pois.length = 0;
   h.room.map.tiles.fill(TILE_GROUND);
   h.room.spawnAccum = -999;
   const player = h.state().players.get(id);

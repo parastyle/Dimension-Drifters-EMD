@@ -10,11 +10,11 @@ const REPO = resolve(here, "../..");
 const PUBLIC = resolve(REPO, "packages/client/public");
 const THEMES = ["wild-west", "frostfell", "verdant-ruins", "ashlands", "neon-cyber"];
 const DIRS = {
-  "wild-west": { pois: resolve(PUBLIC, "pois"), decals: resolve(PUBLIC, "decals") },
-  frostfell: { pois: resolve(PUBLIC, "pois/frostfell"), decals: resolve(PUBLIC, "decals/frostfell") },
-  "verdant-ruins": { pois: resolve(PUBLIC, "pois/verdant-ruins"), decals: resolve(PUBLIC, "decals/verdant-ruins") },
-  ashlands: { pois: resolve(PUBLIC, "pois/ashlands"), decals: resolve(PUBLIC, "decals/ashlands") },
-  "neon-cyber": { pois: resolve(PUBLIC, "pois/neon-cyber"), decals: resolve(PUBLIC, "decals/neon-cyber") },
+  "wild-west": resolve(PUBLIC, "decals"),
+  frostfell: resolve(PUBLIC, "decals/frostfell"),
+  "verdant-ruins": resolve(PUBLIC, "decals/verdant-ruins"),
+  ashlands: resolve(PUBLIC, "decals/ashlands"),
+  "neon-cyber": resolve(PUBLIC, "decals/neon-cyber"),
 };
 
 const round = (value, places = 3) => Number(value.toFixed(places));
@@ -198,7 +198,7 @@ for (const theme of THEMES) {
     rim: { file: rel(rimFile), ...compareEdges(rim, rim, "horizontal") },
   };
 
-  const propFiles = [...pngs(DIRS[theme].pois), ...pngs(DIRS[theme].decals)];
+  const propFiles = pngs(DIRS[theme]);
   report.props.push(...(await Promise.all(propFiles.map(propReport))));
   report.palette[theme] = await paletteReport([...tileFiles, rimFile, ...propFiles]);
 }

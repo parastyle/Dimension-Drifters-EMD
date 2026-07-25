@@ -153,7 +153,6 @@ function makeBeamRoom(sessionId: string) {
   player.x = h.room.map.spawnX;
   player.y = h.room.map.spawnY;
   player.weapon = TEST_BEAM_WEAPON;
-  h.room.map.pois.length = 0;
   h.tick(1); // settle the swap before the first held edge
   return { h, player, combat: h.room.combat.get(sessionId) };
 }
@@ -216,7 +215,6 @@ const enemyComboShared = await import("@dd/shared");
 function makeEnemyComboRoom(depth = 1) {
   const h = makeRoom();
   h.join("combo-victim");
-  h.room.map.pois.length = 0;
   h.room.map.tiles.fill(TILE_GROUND); // map-RNG law: every pinned combo position is known solid ground
   h.room.spawnAccum = -1_000_000;
   h.room.shifterCd = 1_000_000;
@@ -291,7 +289,6 @@ function herePlayerJuggledDefault() {
 function makeJumpFeelRoom(id = "jump-feel") {
   const h = makeRoom();
   h.join(id);
-  h.room.map.pois.length = 0;
   h.room.map.tiles.fill(TILE_GROUND);
   h.room.spawnAccum = -1_000_000;
   h.room.shifterCd = 1_000_000;
@@ -411,7 +408,6 @@ function makeUltimateRoom(
 ) {
   const h = makeRoom();
   h.join(id);
-  h.room.map.pois.length = 0;
   h.room.map.tiles.fill(TILE_GROUND);
   h.room.spawnAccum = -999;
   const player = h.state().players.get(id);
@@ -698,11 +694,7 @@ describe("GameRoom — §17 pitfall + terrain-death + §9 gun cadence", () => {
     // Fire from far enough that the shell EXPIRES level with the dummy (muzzle reach ~90 + range 560),
     // offset 90px to the side — a plain bullet on that line never touches it, but the 130px blast where
     // the shell dies must catch it.
-    // §50 PIN both bodies to fixed mid-arena coordinates AND clear the RNG-placed landmarks: projectiles
-    // COLLIDE with POIs (stepProjectiles poiAt reflection), so a random map roll could park a landmark on
-    // the 650px firing line and kill the shell early — the source of this test's ~40% parallel-run flake
-    // (the per-run Math.random stream differs between full/isolated runs, so it looked scheduler-dependent).
-    h.room.map.pois.length = 0;
+    // Pin both bodies to fixed solid-ground coordinates so the blast path is deterministic.
     h.room.map.tiles.fill(TILE_GROUND); // pits are RNG too — the pinned spots must be solid
     dummy.x = 2400;
     dummy.y = 2400;
@@ -730,7 +722,6 @@ describe("GameRoom — §17 pitfall + terrain-death + §9 gun cadence", () => {
     if (!dummy) throw new Error("no training dummy");
     const hp0 = dummy.hp;
     // Pin the dummy on the direct line: the owner order explicitly removes the old off-line blast.
-    h.room.map.pois.length = 0;
     h.room.map.tiles.fill(TILE_GROUND);
     dummy.x = 2400;
     dummy.y = 2400;

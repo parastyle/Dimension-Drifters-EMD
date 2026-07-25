@@ -1,7 +1,6 @@
 import {
   meleeComboSelectionFor,
   PlayerAttackMoveMode,
-  PoiCollisionIndex,
   swingDescriptorFor,
   TILE_GROUND,
   WEAPONS,
@@ -44,12 +43,6 @@ function fixture(id: string) {
   room.clients = [{ sessionId: id }];
   room.onCreate();
   room.onJoin({ sessionId: id });
-  room.map.pois.length = 0;
-  room.map.poiCollisionIndex = new PoiCollisionIndex(
-    [],
-    room.map.cols * room.map.tileSize,
-    room.map.rows * room.map.tileSize,
-  );
   room.map.tiles.fill(TILE_GROUND);
   room.state.enemies.clear();
   const player = room.state.players.get(id);

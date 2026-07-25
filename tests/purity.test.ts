@@ -20,7 +20,7 @@ const SHARED_SRC = join(HERE, "..", "packages", "shared", "src");
 // mapgen.ts is the highest-stakes replicated module: server + client each run generateArena from the
 // synced seeds and MUST produce byte-identical maps — one stray Math.random desyncs the whole floor.
 // §4 v0.107: movement.ts + collision.ts + math.ts joined the boundary — CLIENT-SIDE PREDICTION replays
-// the movement steppers + POI pushout bit-identically to the server tick (docs/NETCODE_DESIGN.md #9);
+// the movement steppers bit-identically to the server tick (docs/NETCODE_DESIGN.md #9);
 // an impurity there reads as constant, maddening micro-rubber-banding, not a test failure.
 const REPLICATED_MODULES = [
   "combat.ts",

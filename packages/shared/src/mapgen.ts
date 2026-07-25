@@ -25,15 +25,8 @@ import {
   MAP_PIT_MAX,
   MAP_PIT_SPACING_TILES,
   MAP_PIT_TARGET,
-  MAP_POI_COUNT,
-  MAP_POI_GAP,
-  MAP_POI_GROUND_CLEARANCE,
-  MAP_POI_RADIUS,
-  MAP_POI_SPACING_TILES,
-  MAP_POI_SPAWN_CLEAR_TILES,
   MAP_SPAWN_CLEAR_TILES,
   MAP_TILE,
-  PLAYER_RADIUS,
   RIFT_OFFSET,
 } from "./constants.js";
 import { makeRng, mixSeeds, type Rng } from "./rng.js";
@@ -61,24 +54,12 @@ export type MapZoneSeed = Readonly<{
   row: number;
 }>;
 
-export type PoiCluster = Readonly<{
-  id: number;
-  x: number;
-  y: number;
-  zoneId: MapZoneId;
-  /** Shared placement phase for the cluster's satellite ring. Cosmetic code may read it, never replace it. */
-  phase: number;
-}>;
-
 export type ArenaMapSeeds = {
   seedTerrain: number;
   seedHazard: number;
   seedTheme: number;
   seedDecor: number;
 };
-
-/** A §17 POI landmark placed in the arena — world px + a `kind` index the client maps to a sprite. */
-export type PoiInstance = { x: number; y: number; kind: number; clusterId: number };
 
 export type ArenaMap = {
   /** Grid dimensions in tiles + the px size of one tile. */
@@ -94,18 +75,12 @@ export type ArenaMap = {
   /** Guaranteed-ground spawn point, in WORLD px (centre of the arena). */
   spawnX: number;
   spawnY: number;
-  /** §17 collidable landmark structures (cover + orientation), placed deterministically on ground. */
-  pois: PoiInstance[];
-  /** Immutable flattened POI geometry plus retained allocation-free query scratch. Built once with the map. */
-  poiCollisionIndex: PoiCollisionIndex;
-  /** Authoritative macro-cluster anchors used by shared POI placement. */
-  poiClusters: PoiCluster[];
   /** The seeds this map was built from (so consumers can confirm they reproduced the right one). */
   seeds: ArenaMapSeeds;
 };
 
 /** The two post-boss choices are one placement contract: both complete discs must be usable and the
- * circles must remain visually/physically distinct after every terrain/POI correction. */
+ * circles must remain visually/physically distinct after every terrain correction. */
 export type ArenaGatePair = Readonly<{
   extractX: number;
   extractY: number;
@@ -579,357 +554,6 @@ function ensureConnected(tiles: Uint8Array, cols: number, rows: number, spawn: n
     if (tiles[i] === TILE_GROUND && !reached[i]) tiles[i] = TILE_PIT;
 }
 
-/**
- * §17 per-landmark SIZE CLASS, derived deterministically from `kind` so server collision + client visual
- * always agree (both sides call this — no sync needed). Distribution over kind%7: three M (the everyday
- * blocker), two L, one XL (a genuinely building-sized landmark), one S (scrub/boulder accent). "Bigger
- * clipping obstacles" (v0.102): the collision footprint scales with the class AND the client derives the
- * sprite's visual scale FROM the collision radius, so what blocks you is what you see (WYSIWYG).
- */
-export function poiScale(kind: number): number {
-  const c = ((kind % 7) + 7) % 7;
-  if (c === 6) return 0.8; // S — scrub / boulder
-  if (c === 5) return 1.9; // XL — the landmark you navigate BY
-  if (c >= 3) return 1.45; // L
-  return 1.0; // M (c 0..2)
-}
-
-/** §17 a landmark's collision radius (px) — the M-class base scaled by its size class. */
-export function poiRadius(kind: number): number {
-  return MAP_POI_RADIUS * poiScale(kind);
-}
-
-export type PoiCollisionCircle = Readonly<{ x: number; y: number; radius: number }>;
-
-/** Shared WYSIWYG footprint. S/M landmarks retain the familiar circle; L/XL structures use an overlapping
- * three-circle base whose union reads as a broad building/skirt without inventing walk-through arches.
- * The union stays inside `poiRadius(kind)`, so the existing placement gap remains a conservative bound. */
-export function poiCollisionCircles(poi: PoiInstance): readonly PoiCollisionCircle[] {
-  const outer = poiRadius(poi.kind);
-  if (poiScale(poi.kind) < 1.45) return [{ x: poi.x, y: poi.y, radius: outer }];
-  const centreRadius = outer * (poiScale(poi.kind) >= 1.9 ? 0.7 : 0.66);
-  const sideRadius = outer * (poiScale(poi.kind) >= 1.9 ? 0.52 : 0.5);
-  const offset = outer - sideRadius;
-  return [
-    { x: poi.x, y: poi.y, radius: centreRadius },
-    { x: poi.x - offset, y: poi.y, radius: sideRadius },
-    { x: poi.x + offset, y: poi.y, radius: sideRadius },
-  ];
-}
-
-export type PoiCollisionHit = Readonly<{ poi: PoiInstance; circle: PoiCollisionCircle }>;
-
-/**
- * Immutable flattened POI-circle geometry with a retained uniform-grid query workspace. Geometry arrays,
- * circle records, and hit records are created once with the map; `queryAabb` mutates only the retained
- * stamps/candidate buffer, so steady collision queries allocate nothing. Candidate ids are emitted in the
- * original POI/child order, preserving the old brute-force solver's deterministic projection order.
- */
-export class PoiCollisionIndex {
-  readonly sourcePoiCount: number;
-  readonly cellSize: number;
-  readonly cols: number;
-  readonly rows: number;
-  readonly circleCount: number;
-  readonly circles: readonly PoiCollisionCircle[];
-  readonly hits: readonly PoiCollisionHit[];
-  readonly candidates: Uint32Array;
-  readonly circleX: Float64Array;
-  readonly circleY: Float64Array;
-  readonly circleRadius: Float64Array;
-  readonly circlePoiIndex: Uint32Array;
-  readonly cellStarts: Uint32Array;
-  readonly cellCircleIds: Uint32Array;
-  lastCandidateCount = 0;
-  lastCellEntryVisits = 0;
-
-  private readonly marks: Uint32Array;
-  private stamp = 0;
-
-  constructor(
-    pois: readonly PoiInstance[],
-    worldWidth: number,
-    worldHeight: number,
-    cellSize = MAP_TILE * 2,
-  ) {
-    this.sourcePoiCount = pois.length;
-    this.cellSize = Math.max(1, cellSize);
-    this.cols = Math.max(1, Math.ceil(worldWidth / this.cellSize));
-    this.rows = Math.max(1, Math.ceil(worldHeight / this.cellSize));
-
-    const circles: PoiCollisionCircle[] = [];
-    const hits: PoiCollisionHit[] = [];
-    const poiIndices: number[] = [];
-    for (let poiIndex = 0; poiIndex < pois.length; poiIndex++) {
-      const poi = pois[poiIndex];
-      if (!poi) continue;
-      for (const circle of poiCollisionCircles(poi)) {
-        circles.push(circle);
-        hits.push({ poi, circle });
-        poiIndices.push(poiIndex);
-      }
-    }
-    this.circles = circles;
-    this.hits = hits;
-    this.circleCount = circles.length;
-    this.candidates = new Uint32Array(this.circleCount);
-    this.circleX = new Float64Array(this.circleCount);
-    this.circleY = new Float64Array(this.circleCount);
-    this.circleRadius = new Float64Array(this.circleCount);
-    this.circlePoiIndex = new Uint32Array(this.circleCount);
-    this.marks = new Uint32Array(this.circleCount);
-
-    const cellCount = this.cols * this.rows;
-    const cellCounts = new Uint32Array(cellCount);
-    for (let circleIndex = 0; circleIndex < circles.length; circleIndex++) {
-      const circle = circles[circleIndex];
-      if (!circle) continue;
-      this.circleX[circleIndex] = circle.x;
-      this.circleY[circleIndex] = circle.y;
-      this.circleRadius[circleIndex] = circle.radius;
-      this.circlePoiIndex[circleIndex] = poiIndices[circleIndex] ?? 0;
-      const minCol = Math.max(0, Math.floor((circle.x - circle.radius) / this.cellSize));
-      const maxCol = Math.min(this.cols - 1, Math.floor((circle.x + circle.radius) / this.cellSize));
-      const minRow = Math.max(0, Math.floor((circle.y - circle.radius) / this.cellSize));
-      const maxRow = Math.min(this.rows - 1, Math.floor((circle.y + circle.radius) / this.cellSize));
-      for (let row = minRow; row <= maxRow; row++)
-        for (let col = minCol; col <= maxCol; col++) {
-          const cell = row * this.cols + col;
-          cellCounts[cell] = (cellCounts[cell] ?? 0) + 1;
-        }
-    }
-
-    this.cellStarts = new Uint32Array(cellCount + 1);
-    for (let cell = 0; cell < cellCount; cell++)
-      this.cellStarts[cell + 1] = (this.cellStarts[cell] ?? 0) + (cellCounts[cell] ?? 0);
-    this.cellCircleIds = new Uint32Array(this.cellStarts[cellCount] ?? 0);
-    const cursors = this.cellStarts.slice(0, cellCount);
-    for (let circleIndex = 0; circleIndex < circles.length; circleIndex++) {
-      const circle = circles[circleIndex];
-      if (!circle) continue;
-      const minCol = Math.max(0, Math.floor((circle.x - circle.radius) / this.cellSize));
-      const maxCol = Math.min(this.cols - 1, Math.floor((circle.x + circle.radius) / this.cellSize));
-      const minRow = Math.max(0, Math.floor((circle.y - circle.radius) / this.cellSize));
-      const maxRow = Math.min(this.rows - 1, Math.floor((circle.y + circle.radius) / this.cellSize));
-      for (let row = minRow; row <= maxRow; row++)
-        for (let col = minCol; col <= maxCol; col++) {
-          const cell = row * this.cols + col;
-          const cursor = cursors[cell] ?? 0;
-          this.cellCircleIds[cursor] = circleIndex;
-          cursors[cell] = cursor + 1;
-        }
-    }
-  }
-
-  /** Fill the retained candidate buffer with ascending flattened-circle ids; returns its active length. */
-  queryAabb(minX: number, minY: number, maxX: number, maxY: number): number {
-    const left = Math.min(minX, maxX);
-    const right = Math.max(minX, maxX);
-    const top = Math.min(minY, maxY);
-    const bottom = Math.max(minY, maxY);
-    const worldWidth = this.cols * this.cellSize;
-    const worldHeight = this.rows * this.cellSize;
-    if (right < 0 || bottom < 0 || left >= worldWidth || top >= worldHeight) {
-      this.lastCandidateCount = 0;
-      this.lastCellEntryVisits = 0;
-      return 0;
-    }
-
-    this.stamp = (this.stamp + 1) >>> 0;
-    if (this.stamp === 0) {
-      this.marks.fill(0);
-      this.stamp = 1;
-    }
-    const minCol = Math.max(0, Math.min(this.cols - 1, Math.floor(left / this.cellSize)));
-    const maxCol = Math.max(0, Math.min(this.cols - 1, Math.floor(right / this.cellSize)));
-    const minRow = Math.max(0, Math.min(this.rows - 1, Math.floor(top / this.cellSize)));
-    const maxRow = Math.max(0, Math.min(this.rows - 1, Math.floor(bottom / this.cellSize)));
-    let count = 0;
-    let visits = 0;
-    for (let row = minRow; row <= maxRow; row++)
-      for (let col = minCol; col <= maxCol; col++) {
-        const cell = row * this.cols + col;
-        const end = this.cellStarts[cell + 1] ?? 0;
-        for (let cursor = this.cellStarts[cell] ?? 0; cursor < end; cursor++) {
-          const circleIndex = this.cellCircleIds[cursor] ?? 0;
-          visits++;
-          if (this.marks[circleIndex] === this.stamp) continue;
-          this.marks[circleIndex] = this.stamp;
-          // Grid cells overlap, so deduplicate with stamps and retain legacy order via an in-place
-          // insertion into the caller-visible scratch buffer. This keeps the query O(local candidates),
-          // rather than scanning every circle merely to recover deterministic order.
-          let insertAt = count;
-          while (insertAt > 0 && (this.candidates[insertAt - 1] ?? 0) > circleIndex) {
-            this.candidates[insertAt] = this.candidates[insertAt - 1] ?? 0;
-            insertAt--;
-          }
-          this.candidates[insertAt] = circleIndex;
-          count++;
-        }
-      }
-    this.lastCandidateCount = count;
-    this.lastCellEntryVisits = visits;
-    return count;
-  }
-}
-
-/** Allocation-free exact point query. Returns the first containing flattened circle in legacy order. */
-export function poiCollisionCircleIndexAt(index: PoiCollisionIndex, x: number, y: number): number {
-  const count = index.queryAabb(x, y, x, y);
-  for (let candidate = 0; candidate < count; candidate++) {
-    const circleIndex = index.candidates[candidate] ?? 0;
-    const dx = x - (index.circleX[circleIndex] ?? 0);
-    const dy = y - (index.circleY[circleIndex] ?? 0);
-    const radius = index.circleRadius[circleIndex] ?? 0;
-    if (dx * dx + dy * dy < radius * radius) return circleIndex;
-  }
-  return -1;
-}
-
-/** Exact compound-circle containing test, including the child circle needed for a correct carom normal. */
-export function poiCollisionAt(map: ArenaMap, x: number, y: number): PoiCollisionHit | undefined {
-  const circleIndex = poiCollisionCircleIndexAt(map.poiCollisionIndex, x, y);
-  return circleIndex >= 0 ? map.poiCollisionIndex.hits[circleIndex] : undefined;
-}
-
-function pointOverlapsPoi(
-  pois: readonly PoiInstance[],
-  x: number,
-  y: number,
-  radius: number,
-): boolean {
-  for (const poi of pois)
-    for (const circle of poiCollisionCircles(poi)) {
-      const reach = circle.radius + radius;
-      const dx = x - circle.x;
-      const dy = y - circle.y;
-      if (dx * dx + dy * dy < reach * reach - 1e-6) return true;
-    }
-  return false;
-}
-
-function distanceToSegmentSquared(
-  px: number,
-  py: number,
-  ax: number,
-  ay: number,
-  bx: number,
-  by: number,
-): number {
-  const dx = bx - ax;
-  const dy = by - ay;
-  const length2 = dx * dx + dy * dy;
-  const t =
-    length2 > 0 ? Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / length2)) : 0;
-  const qx = ax + dx * t;
-  const qy = ay + dy * t;
-  return (px - qx) ** 2 + (py - qy) ** 2;
-}
-
-function segmentClearsPoiFootprints(
-  pois: readonly PoiInstance[],
-  ax: number,
-  ay: number,
-  bx: number,
-  by: number,
-  bodyRadius: number,
-): boolean {
-  for (const poi of pois)
-    for (const circle of poiCollisionCircles(poi)) {
-      const reach = circle.radius + bodyRadius;
-      if (distanceToSegmentSquared(circle.x, circle.y, ax, ay, bx, by) < reach * reach) return false;
-    }
-  return true;
-}
-
-/** The size-class deal order: the c-value (kind%7) each successive landmark is FORCED to, cycling. An iid
- *  roll made XL a lottery (4% of maps had zero "landmark you navigate BY"); dealing from a fixed cycle
- *  guarantees every map the same S/M/L/XL mix (per 7: 1×XL, 3×M, 2×L, 1×S) while the art stays random. */
-const POI_CLASS_CYCLE = [5, 0, 3, 1, 6, 4, 2] as const; // XL, M, L, M, S, L, M
-
-/** Place §17 POI landmarks: rejection-sample GROUND tiles, spread out (pairwise radius-aware spacing with
- *  a guaranteed walking gap) + clear of the spawn disc + the landmark's whole footprint AND a
- *  `MAP_POI_GROUND_CLEARANCE` ring on solid ground — the ring is where resolvePoiCollision parks pushed-out
- *  bodies (centre at r+bodyRadius), so without it an XL on a pit lip shoves players/enemies into the void.
- *  Deterministic (its own seed stream; all distance rejects compare SQUARED distances — Math.hypot is
- *  implementation-approximated per ECMA-262, sqrt/mul are correctly rounded, so this stays engine-exact).
- *  Each landmark's size class is dealt from POI_CLASS_CYCLE; the art roll stays random via the kind. */
-function placePoisLegacy(
-  tiles: Uint8Array,
-  cols: number,
-  rows: number,
-  spawnCol: number,
-  spawnRow: number,
-  rng: Rng,
-): PoiInstance[] {
-  const pois: PoiInstance[] = [];
-  const floorPx = MAP_POI_SPACING_TILES * MAP_TILE; // legacy tile floor — the radius-aware rule usually exceeds it
-  const attempts = MAP_POI_COUNT * 60;
-  const groundAt = (gx: number, gy: number): boolean =>
-    inBounds(gx, gy, cols, rows) && tiles[idx(gx, gy, cols)] === TILE_GROUND;
-  for (let a = 0; a < attempts && pois.length < MAP_POI_COUNT; a++) {
-    const tx = rng.int(MAP_BORDER_TILES + 1, cols - MAP_BORDER_TILES - 2);
-    const ty = rng.int(MAP_BORDER_TILES + 1, rows - MAP_BORDER_TILES - 2);
-    const roll = rng.int(0, 999); // draw BEFORE any reject so the RNG cadence stays fixed per attempt
-    // Deal the size class from the cycle (keyed by how many landmarks are already placed); keep the roll's
-    // entropy in the upper bits for the client's art pick.
-    const cls = POI_CLASS_CYCLE[pois.length % POI_CLASS_CYCLE.length] as number;
-    const kind = roll - (roll % 7) + cls;
-    if (tiles[idx(tx, ty, cols)] !== TILE_GROUND) continue; // stand on solid ground
-    const cx = (tx + 0.5) * MAP_TILE;
-    const cy = (ty + 0.5) * MAP_TILE;
-    const r = poiRadius(kind);
-    // Spawn clearance scales with the landmark's own footprint so an XL can't loom over the safe disc.
-    const spawnNeed = MAP_POI_SPAWN_CLEAR_TILES * MAP_TILE + r;
-    const sdx = (tx - spawnCol) * MAP_TILE;
-    const sdy = (ty - spawnRow) * MAP_TILE;
-    if (sdx * sdx + sdy * sdy <= spawnNeed * spawnNeed) continue;
-    // The collision footprint PLUS the push-out clearance ring must sit on ground — check every tile that
-    // disc overlaps (proper circle-vs-tile-rect test: nearest point on the tile's rect to the centre;
-    // a centre-only check misses edge-clipped tiles).
-    const guard = r + MAP_POI_GROUND_CLEARANCE;
-    const rt = Math.ceil(guard / MAP_TILE) + 1;
-    let footprintOk = true;
-    for (let dy = -rt; dy <= rt && footprintOk; dy++)
-      for (let dx = -rt; dx <= rt && footprintOk; dx++) {
-        const x0 = (tx + dx) * MAP_TILE;
-        const y0 = (ty + dy) * MAP_TILE;
-        const nx = Math.max(x0, Math.min(cx, x0 + MAP_TILE)) - cx;
-        const ny = Math.max(y0, Math.min(cy, y0 + MAP_TILE)) - cy;
-        if (nx * nx + ny * ny < guard * guard && !groundAt(tx + dx, ty + dy)) footprintOk = false;
-      }
-    if (!footprintOk) continue;
-    // Pairwise spacing: both footprints + a guaranteed walking gap (or the legacy tile floor if larger).
-    const spaced = pois.every((p) => {
-      const need = Math.max(floorPx, r + poiRadius(p.kind) + MAP_POI_GAP);
-      const dx = p.x - cx;
-      const dy = p.y - cy;
-      return dx * dx + dy * dy >= need * need;
-    });
-    if (!spaced) continue;
-    pois.push({ x: cx, y: cy, kind, clusterId: -1 });
-  }
-  return pois;
-}
-
-/** Generate the arena for a set of seeds. PURE: same seeds → byte-identical map, on any machine. */
-function zoneInteriorAt(
-  zoneIds: Uint8Array,
-  cols: number,
-  rows: number,
-  col: number,
-  row: number,
-  zoneId: MapZoneId,
-): boolean {
-  if (!inBounds(col, row, cols, rows) || zoneIds[idx(col, row, cols)] !== zoneId) return false;
-  for (const [dx, dy] of CARDINALS) {
-    const x = col + dx * 2;
-    const y = row + dy * 2;
-    if (!inBounds(x, y, cols, rows) || zoneIds[idx(x, y, cols)] !== zoneId) return false;
-  }
-  return true;
-}
-
 function groundDiscClear(
   tiles: Uint8Array,
   cols: number,
@@ -958,252 +582,6 @@ function groundDiscClear(
   return true;
 }
 
-function satelliteCourtCount(
-  tiles: Uint8Array,
-  zoneIds: Uint8Array,
-  cols: number,
-  rows: number,
-  cx: number,
-  cy: number,
-  zoneId: MapZoneId,
-  apron: number,
-): number {
-  let count = 0;
-  for (let step = 0; step < 24; step++) {
-    const angle = (step / 24) * Math.PI * 2;
-    const x = (Math.floor((cx + Math.cos(angle) * MAP_TILE * 5) / MAP_TILE) + 0.5) * MAP_TILE;
-    const y = (Math.floor((cy + Math.sin(angle) * MAP_TILE * 5) / MAP_TILE) + 0.5) * MAP_TILE;
-    const col = Math.floor(x / MAP_TILE);
-    const row = Math.floor(y / MAP_TILE);
-    if (!inBounds(col, row, cols, rows) || zoneIds[idx(col, row, cols)] !== zoneId) continue;
-    if (groundDiscClear(tiles, cols, rows, x, y, apron)) count++;
-  }
-  return count;
-}
-
-function placePoiClusters(
-  tiles: Uint8Array,
-  zoneIds: Uint8Array,
-  cols: number,
-  rows: number,
-  spawnCol: number,
-  spawnRow: number,
-  rng: Rng,
-): PoiCluster[] {
-  const desired: MapZoneId[] = [
-    MAP_ZONE_COVER,
-    MAP_ZONE_COVER,
-    MAP_ZONE_COVER,
-    MAP_ZONE_COVER,
-    MAP_ZONE_COVER,
-    MAP_ZONE_SCAR,
-  ];
-  for (let i = desired.length - 1; i > 0; i--) {
-    const j = rng.int(0, i);
-    const swap = desired[i] as MapZoneId;
-    desired[i] = desired[j] as MapZoneId;
-    desired[j] = swap;
-  }
-  const anchors: PoiCluster[] = [];
-  const minAnchorSpacing = 9 * MAP_TILE;
-  const anchorApron = MAP_POI_RADIUS * 1.9 + MAP_POI_GROUND_CLEARANCE;
-  for (const desiredZone of desired) {
-    let accepted: PoiCluster | undefined;
-    for (let attempt = 0; attempt < 420; attempt++) {
-      const tx = rng.int(MAP_BORDER_TILES + 3, cols - MAP_BORDER_TILES - 4);
-      const ty = rng.int(MAP_BORDER_TILES + 3, rows - MAP_BORDER_TILES - 4);
-      const phase = rng.range(0, Math.PI * 2);
-      if (tiles[idx(tx, ty, cols)] !== TILE_GROUND) continue;
-      if (!zoneInteriorAt(zoneIds, cols, rows, tx, ty, desiredZone)) continue;
-      const spawnDx = (tx - spawnCol) * MAP_TILE;
-      const spawnDy = (ty - spawnRow) * MAP_TILE;
-      if (spawnDx * spawnDx + spawnDy * spawnDy < (7 * MAP_TILE) ** 2) continue;
-      const x = (tx + 0.5) * MAP_TILE;
-      const y = (ty + 0.5) * MAP_TILE;
-      if (!groundDiscClear(tiles, cols, rows, x, y, anchorApron)) continue;
-      if (
-        desiredZone === MAP_ZONE_SCAR &&
-        satelliteCourtCount(tiles, zoneIds, cols, rows, x, y, desiredZone, anchorApron) < 2
-      )
-        continue;
-      if (anchors.some((anchor) => (anchor.x - x) ** 2 + (anchor.y - y) ** 2 < minAnchorSpacing ** 2))
-        continue;
-      accepted = { id: anchors.length, x, y, zoneId: desiredZone, phase };
-      break;
-    }
-    if (!accepted) {
-      let bestScore = Number.NEGATIVE_INFINITY;
-      for (let ty = MAP_BORDER_TILES + 3; ty < rows - MAP_BORDER_TILES - 3; ty++) {
-        for (let tx = MAP_BORDER_TILES + 3; tx < cols - MAP_BORDER_TILES - 3; tx++) {
-          if (tiles[idx(tx, ty, cols)] !== TILE_GROUND) continue;
-          if (!zoneInteriorAt(zoneIds, cols, rows, tx, ty, desiredZone)) continue;
-          const spawnDx = (tx - spawnCol) * MAP_TILE;
-          const spawnDy = (ty - spawnRow) * MAP_TILE;
-          if (spawnDx * spawnDx + spawnDy * spawnDy < (7 * MAP_TILE) ** 2) continue;
-          const x = (tx + 0.5) * MAP_TILE;
-          const y = (ty + 0.5) * MAP_TILE;
-          if (!groundDiscClear(tiles, cols, rows, x, y, anchorApron)) continue;
-          if (
-            desiredZone === MAP_ZONE_SCAR &&
-            satelliteCourtCount(tiles, zoneIds, cols, rows, x, y, desiredZone, anchorApron) < 2
-          )
-            continue;
-          let score = spawnDx * spawnDx + spawnDy * spawnDy;
-          for (const anchor of anchors)
-            score = Math.min(score, (anchor.x - x) ** 2 + (anchor.y - y) ** 2);
-          if (score <= bestScore) continue;
-          bestScore = score;
-          accepted = {
-            id: anchors.length,
-            x,
-            y,
-            zoneId: desiredZone,
-            phase: (mixSeeds(tx, ty, desiredZone, 0xc1157e) / 0x100000000) * Math.PI * 2,
-          };
-        }
-      }
-    }
-    if (accepted) anchors.push(accepted);
-  }
-  return anchors.map((anchor, id) => ({ ...anchor, id }));
-}
-
-/** Place authoritative landmark macro-clusters. Cover receives four courts, Commons one sparse navigation
- * cluster, and Scar one small claim: global count/class budget stays fixed while geography becomes legible. */
-function placePois(
-  tiles: Uint8Array,
-  zoneIds: Uint8Array,
-  cols: number,
-  rows: number,
-  spawnCol: number,
-  spawnRow: number,
-  rng: Rng,
-): { pois: PoiInstance[]; clusters: PoiCluster[] } {
-  const clusters = placePoiClusters(tiles, zoneIds, cols, rows, spawnCol, spawnRow, rng);
-  const pois: PoiInstance[] = [];
-  if (clusters.length === 0) return { pois, clusters };
-  const counts = new Int16Array(clusters.length);
-  const quotas = clusters.map((cluster) => (cluster.zoneId === MAP_ZONE_SCAR ? 3 : 5));
-  const floorPx = MAP_POI_SPACING_TILES * MAP_TILE;
-  const attempts = MAP_POI_COUNT * 180;
-  const groundAt = (gx: number, gy: number): boolean =>
-    inBounds(gx, gy, cols, rows) && tiles[idx(gx, gy, cols)] === TILE_GROUND;
-  for (let a = 0; a < attempts && pois.length < MAP_POI_COUNT; a++) {
-    let minimum = Number.POSITIVE_INFINITY;
-    for (let i = 0; i < clusters.length; i++)
-      if ((counts[i] ?? 0) < (quotas[i] ?? 0)) minimum = Math.min(minimum, counts[i] ?? 0);
-    const eligibleClusters: number[] = [];
-    for (let i = 0; i < clusters.length; i++)
-      if ((counts[i] ?? 0) === minimum && (counts[i] ?? 0) < (quotas[i] ?? 0))
-        eligibleClusters.push(i);
-    const clusterIndex = eligibleClusters[a % Math.max(1, eligibleClusters.length)] ?? 0;
-    const cluster = clusters[clusterIndex];
-    const quota = quotas[clusterIndex] ?? 0;
-    const placed = counts[clusterIndex] ?? 0;
-    const roll = rng.int(0, 999);
-    const angleJitter = rng.range(-Math.PI, Math.PI);
-    const distanceRoll = rng.next();
-    const centreAngle = rng.range(0, Math.PI * 2);
-    const centreDistance = rng.range(0, MAP_TILE * 0.7);
-    const zoneAcceptanceRoll = rng.next();
-    if (!cluster || placed >= quota) continue;
-    const cls = POI_CLASS_CYCLE[pois.length % POI_CLASS_CYCLE.length] as number;
-    const kind = roll - (roll % 7) + cls;
-    const satelliteCount = Math.max(1, quota - 1);
-    const angle =
-      placed === 0
-        ? centreAngle
-        : cluster.phase + ((placed - 1) / satelliteCount) * Math.PI * 2 + angleJitter;
-    const distance = placed === 0 ? 0 : MAP_TILE * (4.2 + distanceRoll * 9.8);
-    const rawX = cluster.x + Math.cos(angle) * distance;
-    const rawY = cluster.y + Math.sin(angle) * distance;
-    const tx = Math.floor(rawX / MAP_TILE);
-    const ty = Math.floor(rawY / MAP_TILE);
-    const cx = (tx + 0.5) * MAP_TILE;
-    const cy = (ty + 0.5) * MAP_TILE;
-    if (!inBounds(tx, ty, cols, rows) || tiles[idx(tx, ty, cols)] !== TILE_GROUND) continue;
-    const candidateZone = (zoneIds[idx(tx, ty, cols)] ?? MAP_ZONE_COMMONS) as MapZoneId;
-    const zoneAcceptance =
-      candidateZone === cluster.zoneId
-        ? 1
-        : candidateZone === MAP_ZONE_SCAR
-          ? 0.14
-          : candidateZone === MAP_ZONE_COMMONS
-            ? 0.45
-            : 0.7;
-    if (zoneAcceptanceRoll >= zoneAcceptance) continue;
-    const r = poiRadius(kind);
-    const spawnNeed = MAP_POI_SPAWN_CLEAR_TILES * MAP_TILE + r;
-    const sdx = cx - (spawnCol + 0.5) * MAP_TILE;
-    const sdy = cy - (spawnRow + 0.5) * MAP_TILE;
-    if (sdx * sdx + sdy * sdy <= spawnNeed * spawnNeed) continue;
-    const guard = r + MAP_POI_GROUND_CLEARANCE;
-    const rt = Math.ceil(guard / MAP_TILE) + 1;
-    let footprintOk = true;
-    for (let dy = -rt; dy <= rt && footprintOk; dy++)
-      for (let dx = -rt; dx <= rt && footprintOk; dx++) {
-        const x0 = (tx + dx) * MAP_TILE;
-        const y0 = (ty + dy) * MAP_TILE;
-        const nx = Math.max(x0, Math.min(cx, x0 + MAP_TILE)) - cx;
-        const ny = Math.max(y0, Math.min(cy, y0 + MAP_TILE)) - cy;
-        if (nx * nx + ny * ny < guard * guard && !groundAt(tx + dx, ty + dy)) footprintOk = false;
-      }
-    if (!footprintOk) continue;
-    const spaced = pois.every((poi) => {
-      const need = Math.max(floorPx, r + poiRadius(poi.kind) + MAP_POI_GAP);
-      return (poi.x - cx) ** 2 + (poi.y - cy) ** 2 >= need * need;
-    });
-    if (!spaced) continue;
-    pois.push({ x: cx, y: cy, kind, clusterId: cluster.id });
-    counts[clusterIndex] = (counts[clusterIndex] ?? 0) + 1;
-  }
-  // If terrain/spacing exhausts a satellite court before the global landmark budget is dealt, finish with
-  // zone-biased ground candidates and attach each to its nearest non-full macro anchor. This preserves the
-  // 3-6 member cluster contract while avoiding a seed-dependent POI-count collapse.
-  for (let attempt = 0; attempt < MAP_POI_COUNT * 240 && pois.length < MAP_POI_COUNT; attempt++) {
-    const tx = rng.int(MAP_BORDER_TILES + 1, cols - MAP_BORDER_TILES - 2);
-    const ty = rng.int(MAP_BORDER_TILES + 1, rows - MAP_BORDER_TILES - 2);
-    const roll = rng.int(0, 999);
-    const acceptanceRoll = rng.next();
-    const candidateZone = (zoneIds[idx(tx, ty, cols)] ?? MAP_ZONE_COMMONS) as MapZoneId;
-    const acceptance =
-      candidateZone === MAP_ZONE_COVER ? 1 : candidateZone === MAP_ZONE_COMMONS ? 0.38 : 0.12;
-    if (acceptanceRoll >= acceptance || tiles[idx(tx, ty, cols)] !== TILE_GROUND) continue;
-    const cls = POI_CLASS_CYCLE[pois.length % POI_CLASS_CYCLE.length] as number;
-    const kind = roll - (roll % 7) + cls;
-    const cx = (tx + 0.5) * MAP_TILE;
-    const cy = (ty + 0.5) * MAP_TILE;
-    const r = poiRadius(kind);
-    const spawnNeed = MAP_POI_SPAWN_CLEAR_TILES * MAP_TILE + r;
-    const sdx = cx - (spawnCol + 0.5) * MAP_TILE;
-    const sdy = cy - (spawnRow + 0.5) * MAP_TILE;
-    if (sdx * sdx + sdy * sdy <= spawnNeed * spawnNeed) continue;
-    if (!groundDiscClear(tiles, cols, rows, cx, cy, r + MAP_POI_GROUND_CLEARANCE)) continue;
-    const spaced = pois.every((poi) => {
-      const need = Math.max(floorPx, r + poiRadius(poi.kind) + MAP_POI_GAP);
-      return (poi.x - cx) ** 2 + (poi.y - cy) ** 2 >= need * need;
-    });
-    if (!spaced) continue;
-    let clusterIndex = -1;
-    let clusterDistance = Number.POSITIVE_INFINITY;
-    for (let i = 0; i < clusters.length; i++) {
-      if ((counts[i] ?? 0) >= 6) continue;
-      const cluster = clusters[i];
-      if (!cluster) continue;
-      const distance2 = (cluster.x - cx) ** 2 + (cluster.y - cy) ** 2;
-      if (distance2 < clusterDistance) {
-        clusterDistance = distance2;
-        clusterIndex = i;
-      }
-    }
-    const cluster = clusters[clusterIndex];
-    if (!cluster) continue;
-    pois.push({ x: cx, y: cy, kind, clusterId: cluster.id });
-    counts[clusterIndex] = (counts[clusterIndex] ?? 0) + 1;
-  }
-  return { pois, clusters };
-}
-
 export function generateArena(seeds: ArenaMapSeeds): ArenaMap {
   const cols = Math.floor(ARENA_WIDTH / MAP_TILE);
   const rows = Math.floor(ARENA_HEIGHT / MAP_TILE);
@@ -1224,19 +602,6 @@ export function generateArena(seeds: ArenaMapSeeds): ArenaMap {
   forceGround(tiles, cols, rows, spawnCol, spawnRow);
   ensureConnected(tiles, cols, rows, idx(spawnCol, spawnRow, cols));
 
-  // POI landmarks — its own seed stream so tuning pits/decor won't reshuffle them.
-  const poiRng = makeRng(mixSeeds(seeds.seedTheme, seeds.seedDecor, 0x9011));
-  const { pois, clusters: poiClusters } = placePois(
-    tiles,
-    zoneIds,
-    cols,
-    rows,
-    spawnCol,
-    spawnRow,
-    poiRng,
-  );
-  const poiCollisionIndex = new PoiCollisionIndex(pois, cols * MAP_TILE, rows * MAP_TILE);
-
   return {
     cols,
     rows,
@@ -1246,9 +611,6 @@ export function generateArena(seeds: ArenaMapSeeds): ArenaMap {
     zoneSeeds,
     spawnX: (spawnCol + 0.5) * MAP_TILE,
     spawnY: (spawnRow + 0.5) * MAP_TILE,
-    pois,
-    poiCollisionIndex,
-    poiClusters,
     seeds: { ...seeds },
   };
 }
@@ -1266,153 +628,7 @@ export function isPitAtPx(map: ArenaMap, px: number, py: number): boolean {
   return tileAtPx(map, px, py) === TILE_PIT;
 }
 
-/** §17 the POI whose obstacle footprint contains a world px point, or undefined. Radius is per-landmark
- *  (size classes — `poiRadius(kind)`). PURE. */
-export function poiAt(map: ArenaMap, x: number, y: number): PoiInstance | undefined {
-  return poiCollisionAt(map, x, y)?.poi;
-}
-
-/** §17 true if a world px point is inside a POI obstacle (the landmark footprint) — projectiles blocked
- *  here so the landmarks are real cover from gunfire. PURE. */
-export function isInsidePoi(map: ArenaMap, x: number, y: number): boolean {
-  return poiAt(map, x, y) !== undefined;
-}
-
-/** §17 push an entity (centre x,y + body radius) OUT of any overlapping POI obstacle, returning the
- *  corrected position. Radii are per-landmark (size classes); placement guarantees a walking gap between
- *  footprints, but a push-out CAN nudge a body toward a neighbour, so resolve against every POI (a second
- *  pass settles the rare double-touch — bounded, deterministic). PURE. */
-function resolvePoiCollisionLegacy(
-  map: ArenaMap,
-  x: number,
-  y: number,
-  radius: number,
-): { x: number; y: number } {
-  let nx = x;
-  let ny = y;
-  for (let pass = 0; pass < 2; pass++) {
-    let touched = false;
-    for (const p of map.pois) {
-      const min = poiRadius(p.kind) + radius;
-      const dx = nx - p.x;
-      const dy = ny - p.y;
-      const d2 = dx * dx + dy * dy;
-      if (d2 >= min * min) continue;
-      touched = true;
-      const d = Math.sqrt(d2);
-      if (d < 1e-4) {
-        nx = p.x;
-        ny = p.y - min; // dead centre → pop straight out
-      } else {
-        nx = p.x + (dx / d) * min;
-        ny = p.y + (dy / d) * min;
-      }
-    }
-    if (!touched) break;
-  }
-  return { x: nx, y: ny };
-}
-
 /** Fraction of the grid that is pit — for tuning + tests. */
-export function resolvePoiCollision(
-  map: ArenaMap,
-  x: number,
-  y: number,
-  radius: number,
-): { x: number; y: number } {
-  return resolvePoiCollisionInto(map, x, y, radius, { x, y });
-}
-
-/**
- * Allocation-free compound-circle projection into caller-owned storage. A hit restarts the spatial query
- * at the updated point but resumes after that flattened id, exactly matching a brute-force ordered pass.
- */
-export function resolvePoiCollisionInto<T extends { x: number; y: number }>(
-  map: ArenaMap,
-  x: number,
-  y: number,
-  radius: number,
-  out: T,
-): T {
-  let nx = x;
-  let ny = y;
-  const index = map.poiCollisionIndex;
-  for (let pass = 0; pass < 10; pass++) {
-    let touched = false;
-    let nextCircle = 0;
-    while (nextCircle < index.circleCount) {
-      const count = index.queryAabb(nx - radius, ny - radius, nx + radius, ny + radius);
-      let projected = false;
-      for (let candidate = 0; candidate < count; candidate++) {
-        const circleIndex = index.candidates[candidate] ?? 0;
-        if (circleIndex < nextCircle) continue;
-        nextCircle = circleIndex + 1;
-        const circleX = index.circleX[circleIndex] ?? 0;
-        const circleY = index.circleY[circleIndex] ?? 0;
-        const reach = (index.circleRadius[circleIndex] ?? 0) + radius;
-        const dx = nx - circleX;
-        const dy = ny - circleY;
-        const distance2 = dx * dx + dy * dy;
-        if (distance2 >= reach * reach) continue;
-        touched = true;
-        projected = true;
-        const distance = Math.sqrt(distance2);
-        if (distance < 1e-4) {
-          nx = circleX;
-          ny = circleY - reach;
-        } else {
-          nx = circleX + (dx / distance) * reach;
-          ny = circleY + (dy / distance) * reach;
-        }
-        break;
-      }
-      if (!projected) break;
-    }
-    if (!touched) break;
-  }
-  out.x = nx;
-  out.y = ny;
-  return out;
-}
-
-/** Exact allocation-free ray truncation against indexed POI circles, retaining legacy circle order. */
-export function clipPoiRayLength(
-  index: PoiCollisionIndex,
-  ox: number,
-  oy: number,
-  dx: number,
-  dy: number,
-  inflateRadius: number,
-  currentLength: number,
-): number {
-  let length = currentLength;
-  const ex = ox + dx * length;
-  const ey = oy + dy * length;
-  const count = index.queryAabb(
-    Math.min(ox, ex) - inflateRadius,
-    Math.min(oy, ey) - inflateRadius,
-    Math.max(ox, ex) + inflateRadius,
-    Math.max(oy, ey) + inflateRadius,
-  );
-  for (let candidate = 0; candidate < count; candidate++) {
-    const circleIndex = index.candidates[candidate] ?? 0;
-    const radius = (index.circleRadius[circleIndex] ?? 0) + inflateRadius;
-    const rx = ox - (index.circleX[circleIndex] ?? 0);
-    const ry = oy - (index.circleY[circleIndex] ?? 0);
-    const c = rx * rx + ry * ry - radius * radius;
-    if (c <= 0) {
-      length = 0;
-      continue;
-    }
-    const b = rx * dx + ry * dy;
-    const discriminant = b * b - c;
-    if (discriminant < 0) continue;
-    const t = -b - Math.sqrt(discriminant);
-    if (t >= 0 && t < length) length = t;
-  }
-  return length;
-}
-
 export function pitFraction(map: ArenaMap): number {
   let pit = 0;
   for (let i = 0; i < map.tiles.length; i++) if (map.tiles[i] === TILE_PIT) pit++;
@@ -1453,37 +669,13 @@ export function nearestGroundPx(map: ArenaMap, px: number, py: number): { x: num
   return center(Math.floor(cols / 2), Math.floor(rows / 2)); // unreachable (border is ground)
 }
 
-/** §17 nudge a spawn position onto solid GROUND and OUT of any POI obstacle, so nothing spawns inside a
- *  pit or a landmark and then teleports out on the next tick. Pure — the server's spawn paths + the
- *  unit tests share it. */
-export function safeSpawnPos(
-  map: ArenaMap,
-  x: number,
-  y: number,
-  radius: number,
-): { x: number; y: number } {
-  let nx = x;
-  let ny = y;
-  // Two settle rounds: pit-snap can land inside a POI's (all-ground) footprint, and a POI push-out could in
-  // principle end over a pit — placement's MAP_POI_GROUND_CLEARANCE ring makes that near-impossible, but
-  // this stays correct even if a future body outgrows the ring. Round 2 re-checks both; bounded + pure.
-  for (let round = 0; round < 2; round++) {
-    if (isPitAtPx(map, nx, ny)) {
-      const g = nearestGroundPx(map, nx, ny);
-      nx = g.x;
-      ny = g.y;
-    }
-    const safe = resolvePoiCollision(map, nx, ny, radius);
-    nx = safe.x;
-    ny = safe.y;
-    if (!isPitAtPx(map, nx, ny) && !pointOverlapsPoi(map.pois, nx, ny, radius)) break;
-  }
-  return { x: nx, y: ny };
+/** Nudge a spawn position onto solid GROUND so nothing spawns inside a pit and falls on the next tick. */
+export function safeSpawnPos(map: ArenaMap, x: number, y: number): { x: number; y: number } {
+  return isPitAtPx(map, x, y) ? nearestGroundPx(map, x, y) : { x, y };
 }
 
-/** True only when the COMPLETE objective disc lies on ground, inside the arena, and outside every exact
- * compound POI child. Unlike `safeSpawnPos`, this intentionally rejects a ground centre whose rim hangs
- * over a pit. Pure and shared by gate authority + validation/tests. */
+/** True only when the COMPLETE objective disc lies on ground and inside the arena. Unlike `safeSpawnPos`,
+ * this intentionally rejects a ground centre whose rim hangs over a pit. */
 export function isArenaDiscSafe(
   map: ArenaMap,
   x: number,
@@ -1495,8 +687,7 @@ export function isArenaDiscSafe(
     Number.isFinite(y) &&
     Number.isFinite(radius) &&
     radius > 0 &&
-    groundDiscClear(map.tiles, map.cols, map.rows, x, y, radius) &&
-    !pointOverlapsPoi(map.pois, x, y, radius)
+    groundDiscClear(map.tiles, map.cols, map.rows, x, y, radius)
   );
 }
 
@@ -1688,13 +879,9 @@ export type ArenaNavigationAudit = Readonly<{
   navigableCells: number;
 }>;
 
-/** Collision-aware navigation proof for the generated arena. The grid uses actual player radius, exact pit
- * hops, and every compound POI child. It is intentionally stricter than AI steering: all navigable cell
- * centres must remain in the spawn component, so no cluster can make a sealed pocket or wall off a zone. */
-export function auditArenaNavigation(
-  map: ArenaMap,
-  bodyRadius = PLAYER_RADIUS,
-): ArenaNavigationAudit {
+/** Navigation proof for the generated arena. All ground cell centres must remain in the spawn component,
+ * including exact hops across pit gaps no wider than the shared jump limit. */
+export function auditArenaNavigation(map: ArenaMap): ArenaNavigationAudit {
   const total = map.cols * map.rows;
   const passable = new Uint8Array(total);
   let navigableCells = 0;
@@ -1702,9 +889,6 @@ export function auditArenaNavigation(
     for (let col = 0; col < map.cols; col++) {
       const cell = idx(col, row, map.cols);
       if (map.tiles[cell] !== TILE_GROUND) continue;
-      const x = (col + 0.5) * map.tileSize;
-      const y = (row + 0.5) * map.tileSize;
-      if (pointOverlapsPoi(map.pois, x, y, bodyRadius)) continue;
       passable[cell] = 1;
       navigableCells++;
     }
@@ -1712,7 +896,7 @@ export function auditArenaNavigation(
   const spawnRow = Math.floor(map.spawnY / map.tileSize);
   const spawn = idx(spawnCol, spawnRow, map.cols);
   if (!passable[spawn])
-    return { ok: false, reason: "spawn is blocked by terrain or a POI", reachableCells: 0, navigableCells };
+    return { ok: false, reason: "spawn is blocked by terrain", reachableCells: 0, navigableCells };
   const seen = new Uint8Array(total);
   const stack = [spawn];
   seen[spawn] = 1;
@@ -1722,20 +906,12 @@ export function auditArenaNavigation(
     reachableCells++;
     const col = cur % map.cols;
     const row = Math.floor(cur / map.cols);
-    const ax = (col + 0.5) * map.tileSize;
-    const ay = (row + 0.5) * map.tileSize;
     for (const [dx, dy] of CARDINALS) {
       const walkCol = col + dx;
       const walkRow = row + dy;
       if (inBounds(walkCol, walkRow, map.cols, map.rows)) {
         const walk = idx(walkCol, walkRow, map.cols);
-        const bx = (walkCol + 0.5) * map.tileSize;
-        const by = (walkRow + 0.5) * map.tileSize;
-        if (
-          passable[walk] &&
-          !seen[walk] &&
-          segmentClearsPoiFootprints(map.pois, ax, ay, bx, by, bodyRadius)
-        ) {
+        if (passable[walk] && !seen[walk]) {
           seen[walk] = 1;
           stack.push(walk);
         }
@@ -1753,9 +929,6 @@ export function auditArenaNavigation(
         if (!inBounds(landCol, landRow, map.cols, map.rows)) continue;
         const land = idx(landCol, landRow, map.cols);
         if (!passable[land] || seen[land]) continue;
-        const bx = (landCol + 0.5) * map.tileSize;
-        const by = (landRow + 0.5) * map.tileSize;
-        if (!segmentClearsPoiFootprints(map.pois, ax, ay, bx, by, bodyRadius)) continue;
         seen[land] = 1;
         stack.push(land);
       }
@@ -1778,23 +951,6 @@ export function auditArenaNavigation(
         reachableCells,
         navigableCells,
       };
-  for (const cluster of map.poiClusters) {
-    let approached = false;
-    const reach = MAP_TILE * 3;
-    for (let i = 0; i < total && !approached; i++) {
-      if (!seen[i]) continue;
-      const x = ((i % map.cols) + 0.5) * map.tileSize;
-      const y = (Math.floor(i / map.cols) + 0.5) * map.tileSize;
-      approached = (x - cluster.x) ** 2 + (y - cluster.y) ** 2 <= reach * reach;
-    }
-    if (!approached)
-      return {
-        ok: false,
-        reason: `POI cluster ${cluster.id} has no reachable approach`,
-        reachableCells,
-        navigableCells,
-      };
-  }
   return { ok: true, reason: "", reachableCells, navigableCells };
 }
 
@@ -1822,16 +978,6 @@ export function validateArena(
       )
         return { ok: false, reason: "Commons does not own the central identity core" };
     }
-  if (map.poiClusters.length !== 6) return { ok: false, reason: "expected six POI macro-clusters" };
-  const clusterMembers = new Int16Array(map.poiClusters.length);
-  for (const poi of map.pois) {
-    const cluster = map.poiClusters[poi.clusterId];
-    if (!cluster) return { ok: false, reason: "POI has an invalid cluster id" };
-    clusterMembers[poi.clusterId] = (clusterMembers[poi.clusterId] ?? 0) + 1;
-  }
-  for (let clusterId = 0; clusterId < clusterMembers.length; clusterId++)
-    if ((clusterMembers[clusterId] ?? 0) < 3)
-      return { ok: false, reason: `POI cluster ${clusterId} has fewer than three landmarks` };
   const spawn = idx(Math.floor(cols / 2), Math.floor(rows / 2), cols);
   if (tiles[spawn] !== TILE_GROUND) return { ok: false, reason: "spawn tile is not ground" };
   for (let x = 0; x < cols; x++) {

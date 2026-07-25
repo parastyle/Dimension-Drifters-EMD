@@ -2,7 +2,7 @@
  * §17 DIMENSIONS — the data-driven theme registry. "One big themed room per stage = one dimension"; a run
  * is a chain of these (§6). Each dimension owns a spawn ROSTER (which `ENEMY_KINDS` spawn here — so frost
  * revenants never appear in the desert), a BOSS, an environmental HAZARD, a floor PALETTE (a re-skin of the
- * "Dust & The Drop" language), and client ASSET set keys (ground tile + POI/decal manifests). The active
+ * "Dust & The Drop" language), and client ASSET set keys (ground tile + decal manifests). The active
  * dimension id is synced on `ArenaState.dimensionId`; the server scopes spawns to it and the client picks
  * the palette + asset sets from it. Wild West is dimension 1; the rest are added as their art lands.
  */
@@ -36,8 +36,8 @@ export interface DimensionDef {
   hazard: { name: string; description: string };
   /** §17 floor palette. */
   palette: DimensionPalette;
-  /** Client asset set keys: the ground TILE texture key + the POI/decal manifest set names. */
-  assets: { tile: string; poiSet: string; decalSet: string };
+  /** Client asset set keys: the ground TILE texture key + decal manifest set name. */
+  assets: { tile: string; decalSet: string };
 }
 
 const WILD_WEST: DimensionDef = {
@@ -70,7 +70,7 @@ const WILD_WEST: DimensionDef = {
     spawnRingSafe: 0x33e6ff,
     dustDrift: 0xc49a5a,
   },
-  assets: { tile: "tile-ground", poiSet: "wild-west", decalSet: "wild-west" },
+  assets: { tile: "tile-ground", decalSet: "wild-west" },
 };
 
 /** All dimensions: the hand-authored Wild West (dimension 1) + the codegen'd themed dimensions (Frostfell,

@@ -153,7 +153,6 @@ function makeBeamRoom(sessionId: string) {
   player.x = h.room.map.spawnX;
   player.y = h.room.map.spawnY;
   player.weapon = TEST_BEAM_WEAPON;
-  h.room.map.pois.length = 0;
   h.tick(1); // settle the swap before the first held edge
   return { h, player, combat: h.room.combat.get(sessionId) };
 }
@@ -216,7 +215,6 @@ const enemyComboShared = await import("@dd/shared");
 function makeEnemyComboRoom(depth = 1) {
   const h = makeRoom();
   h.join("combo-victim");
-  h.room.map.pois.length = 0;
   h.room.map.tiles.fill(TILE_GROUND); // map-RNG law: every pinned combo position is known solid ground
   h.room.spawnAccum = -1_000_000;
   h.room.shifterCd = 1_000_000;
@@ -291,7 +289,6 @@ function herePlayerJuggledDefault() {
 function makeJumpFeelRoom(id = "jump-feel") {
   const h = makeRoom();
   h.join(id);
-  h.room.map.pois.length = 0;
   h.room.map.tiles.fill(TILE_GROUND);
   h.room.spawnAccum = -1_000_000;
   h.room.shifterCd = 1_000_000;
@@ -411,7 +408,6 @@ function makeUltimateRoom(
 ) {
   const h = makeRoom();
   h.join(id);
-  h.room.map.pois.length = 0;
   h.room.map.tiles.fill(TILE_GROUND);
   h.room.spawnAccum = -999;
   const player = h.state().players.get(id);
@@ -619,7 +615,6 @@ describe("GameRoom - hit registration regressions", () => {
   it("deals full point-blank gun damage when a long muzzle starts inside a colossus collider", () => {
     const h = makeRoom();
     h.join("point-blank-gun");
-    h.room.map.pois.length = 0;
     h.room.map.tiles.fill(TILE_GROUND);
     const player = h.state().players.get("point-blank-gun");
     const weapon = WEAPONS["x2-sunbreaker-railgun"];
@@ -663,7 +658,6 @@ describe("GameRoom - hit registration regressions", () => {
   it("counts a friendly projectile that spawns inside a collider as a tick-one hit", () => {
     const h = makeRoom();
     h.join("spawn-inside");
-    h.room.map.pois.length = 0;
     h.room.map.tiles.fill(TILE_GROUND);
     const boss = addProjectileTarget(h, "inside-colossus", "dimensional-colossus", 2_000, 2_000);
     const radius = ENEMY_KINDS[boss.kind]?.radius ?? 24;
@@ -687,7 +681,6 @@ describe("GameRoom - hit registration regressions", () => {
   it("keeps a from-range projectile as a full-damage control", () => {
     const h = makeRoom();
     h.join("range-control");
-    h.room.map.pois.length = 0;
     h.room.map.tiles.fill(TILE_GROUND);
     const boss = addProjectileTarget(h, "range-colossus", "dimensional-colossus", 2_000, 2_000);
     const damage = 37;
@@ -710,7 +703,6 @@ describe("GameRoom - hit registration regressions", () => {
 
   it("registers spawn-inside contact against a live multi-segment worm collider", () => {
     const { h, runtime, root } = makeSerrakethRoom();
-    h.room.map.pois.length = 0;
     h.room.map.tiles.fill(TILE_GROUND);
     h.room.rebuildEnemyGrid();
     const slot = 0;
@@ -903,7 +895,6 @@ describe("GameRoom — shared procedural weapon ground zones", () => {
     const { weaponResourceProfile, ZoneKind } = await import("@dd/shared");
     const h = makeRoom();
     h.join("grave-zone");
-    h.room.map.pois.length = 0;
     h.room.map.tiles.fill(TILE_GROUND);
     const player = h.state().players.get("grave-zone");
     const combat = h.room.combat.get(player.id);
@@ -942,7 +933,6 @@ describe("GameRoom — shared procedural weapon ground zones", () => {
     const { ZoneStyle } = await import("@dd/shared");
     const h = makeRoom();
     h.join("zone-ticks");
-    h.room.map.pois.length = 0;
     h.room.map.tiles.fill(TILE_GROUND);
     const player = h.state().players.get("zone-ticks");
     const enemy = new EnemyState();
@@ -980,7 +970,6 @@ describe("GameRoom — shared procedural weapon ground zones", () => {
     const { thrownProjectileSpriteId, ZoneStyle } = await import("@dd/shared");
     const h = makeRoom();
     h.join("carrion-grenade");
-    h.room.map.pois.length = 0;
     h.room.map.tiles.fill(TILE_GROUND);
     const player = h.state().players.get("carrion-grenade");
     const combat = h.room.combat.get(player.id);
@@ -1018,7 +1007,6 @@ describe("GameRoom — Cogwright Tesla-Rod warp", () => {
   it("lands at the server-validated cursor with no weapon-range cap and bursts on arrival", () => {
     const h = makeRoom();
     h.join("tesla-warp");
-    h.room.map.pois.length = 0;
     h.room.map.tiles.fill(TILE_GROUND);
     const player = h.state().players.get("tesla-warp");
     const combat = h.room.combat.get(player.id);
@@ -1078,7 +1066,6 @@ describe("GameRoom - NB projectile contracts", () => {
     const h = makeRoom();
     h.join(id);
     h.state().mode = "training";
-    h.room.map.pois.length = 0;
     h.room.map.tiles.fill(TILE_GROUND);
     h.state().enemies.clear();
     const player = h.state().players.get(id);
@@ -1319,7 +1306,6 @@ describe("GameRoom - B20 L2 authoritative chests", () => {
         enemyComboShared.CHEST_PLACEMENT_RADIUS,
       ),
     ).toBe(true);
-    expect(enemyComboShared.isInsidePoi(h.room.map, chest.x, chest.y)).toBe(false);
     expect(enemyComboShared.isPitAtPx(h.room.map, chest.x, chest.y)).toBe(false);
   });
 

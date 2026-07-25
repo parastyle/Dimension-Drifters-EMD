@@ -43,7 +43,6 @@ function makeRoom(id = "moving-burst") {
   room.clients.push({ sessionId: id });
   room.onJoin({ sessionId: id });
   room.state.mode = "training";
-  room.map.pois.length = 0;
   room.map.tiles.fill(TILE_GROUND);
   room.state.enemies.clear();
   return {

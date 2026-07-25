@@ -45,7 +45,6 @@ function fixture(belt = false) {
   room.clients = [client];
   room.onCreate(belt ? { belt: true, beltLevel: "corporate-grid" } : undefined);
   room.onJoin(client);
-  room.map.pois.length = 0;
   room.map.tiles.fill(TILE_GROUND);
   room.spawnAccum = -1_000_000;
   room.shifterCd = 1_000_000;

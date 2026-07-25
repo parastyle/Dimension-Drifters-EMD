@@ -2,20 +2,10 @@ import {
   type ArenaMapSeeds,
   classifyPitRegions,
   generateArena,
-  isInsidePoi,
   isPitAtPx,
   MAP_MAX_JUMP_TILES,
-  MAP_POI_COUNT,
-  MAP_POI_GAP,
-  MAP_POI_SPACING_TILES,
-  MAP_POI_SPAWN_CLEAR_TILES,
-  MAP_TILE,
   nearestGroundPx,
   pitFraction,
-  poiAt,
-  poiRadius,
-  poiScale,
-  resolvePoiCollision,
   safeSpawnPos,
   TILE_GROUND,
   TILE_PIT,
@@ -119,100 +109,7 @@ describe("mapgen — pit helpers (fall + rim)", () => {
   });
 });
 
-describe("mapgen — POI landmarks (v0.102 size classes)", () => {
-  it("poiScale is a deterministic size-class map with real variety (S/M/L/XL all occur)", () => {
-    const classes = new Set<number>();
-    for (let k = 0; k < 200; k++) {
-      const sc = poiScale(k);
-      expect(sc).toBe(poiScale(k)); // pure
-      expect(sc).toBeGreaterThan(0.5);
-      expect(sc).toBeLessThan(2.5);
-      classes.add(sc);
-    }
-    expect(classes.size).toBe(4); // S, M, L, XL
-  });
-
-  it("places POIs on GROUND (whole footprint), radius-aware spaced with a walk gap, clear of spawn", () => {
-    for (const s of SAMPLES.slice(0, 80)) {
-      const map = generateArena(s);
-      expect(map.pois.length).toBeLessThanOrEqual(MAP_POI_COUNT);
-      const floorPx = MAP_POI_SPACING_TILES * MAP_TILE;
-      const spawnClearPx = MAP_POI_SPAWN_CLEAR_TILES * MAP_TILE;
-      for (let i = 0; i < map.pois.length; i++) {
-        const p = map.pois[i];
-        if (!p) continue;
-        const r = poiRadius(p.kind);
-        // The WHOLE collision footprint stands on ground — probe the centre + the 4 cardinal rim points.
-        expect(isPitAtPx(map, p.x, p.y), "POI centre must be ground").toBe(false);
-        for (const [ox, oy] of [
-          [r - 1, 0],
-          [-(r - 1), 0],
-          [0, r - 1],
-          [0, -(r - 1)],
-        ] as const) {
-          expect(isPitAtPx(map, p.x + ox, p.y + oy), "POI rim hangs over a pit").toBe(false);
-        }
-        expect(Math.hypot(p.x - map.spawnX, p.y - map.spawnY)).toBeGreaterThan(
-          spawnClearPx + r - MAP_TILE,
-        );
-        for (let j = i + 1; j < map.pois.length; j++) {
-          const q = map.pois[j];
-          if (!q) continue;
-          // Pairwise rule: both footprints + the guaranteed walking gap (or the legacy tile floor).
-          const need = Math.max(floorPx, r + poiRadius(q.kind) + MAP_POI_GAP);
-          expect(Math.hypot(p.x - q.x, p.y - q.y)).toBeGreaterThanOrEqual(need);
-        }
-      }
-    }
-  });
-
-  it("resolvePoiCollision pushes an entity OUT of a landmark + leaves clear ground untouched", () => {
-    const map = generateArena(seeds(3, 4, 5, 6));
-    if (map.pois.length === 0) return;
-    const p = map.pois[0];
-    if (!p) return;
-    const r = 24;
-    const out = resolvePoiCollision(map, p.x + 5, p.y, r); // start INSIDE the obstacle
-    expect(Math.hypot(out.x - p.x, out.y - p.y)).toBeGreaterThanOrEqual(
-      poiRadius(p.kind) + r - 0.5,
-    );
-    // A point far from every POI is returned unchanged.
-    const far = resolvePoiCollision(map, map.spawnX, map.spawnY, r);
-    expect([far.x, far.y]).toEqual([map.spawnX, map.spawnY]);
-  });
-
-  it("resolvePoiCollision never leaves a body inside ANY landmark (multi-POI settle)", () => {
-    for (const s of SAMPLES.slice(0, 30)) {
-      const map = generateArena(s);
-      for (const p of map.pois) {
-        const out = resolvePoiCollision(map, p.x + 3, p.y - 2, 24);
-        expect(poiAt(map, out.x, out.y), "body left inside a landmark").toBeUndefined();
-      }
-    }
-  });
-
-  it("isInsidePoi blocks a projectile inside a landmark, passes clear ground (§17 cover)", () => {
-    const map = generateArena(seeds(11, 12, 13, 14));
-    if (map.pois.length === 0) return;
-    const p = map.pois[0];
-    if (!p) return;
-    expect(isInsidePoi(map, p.x, p.y)).toBe(true); // dead centre = blocked
-    expect(isInsidePoi(map, p.x + poiRadius(p.kind) + 5, p.y)).toBe(false); // just outside the footprint
-    expect(isInsidePoi(map, map.spawnX, map.spawnY)).toBe(false); // spawn is clear of POIs
-  });
-
-  it("poiAt returns the containing landmark (for the ricochet carom) or undefined", () => {
-    const map = generateArena(seeds(7, 8, 9, 10));
-    if (map.pois.length === 0) return;
-    const p = map.pois[0];
-    if (!p) return;
-    expect(poiAt(map, p.x, p.y)).toBe(p); // inside → that POI
-    expect(poiAt(map, map.spawnX, map.spawnY)).toBeUndefined(); // clear ground → none
-  });
-});
-
-describe("mapgen — safeSpawnPos (§17 spawn nudge)", () => {
-  const R = 24;
+describe("mapgen - safeSpawnPos", () => {
 
   it("nudges a pit-centre spawn onto solid ground", () => {
     for (const s of SAMPLES.slice(0, 60)) {
@@ -221,27 +118,18 @@ describe("mapgen — safeSpawnPos (§17 spawn nudge)", () => {
         if (map.tiles[i] !== TILE_PIT) continue;
         const cx = ((i % map.cols) + 0.5) * map.tileSize;
         const cy = (Math.floor(i / map.cols) + 0.5) * map.tileSize;
-        const sp = safeSpawnPos(map, cx, cy, R);
+        const sp = safeSpawnPos(map, cx, cy);
         expect(isPitAtPx(map, sp.x, sp.y), `pit spawn for seed ${JSON.stringify(s)}`).toBe(false);
         break; // one pit cell per map is enough to exercise the nudge
       }
     }
   });
 
-  it("pushes a spawn out of a POI footprint", () => {
-    const map = generateArena(seeds(3, 4, 5, 6));
-    const p = map.pois[0];
-    if (!p) return;
-    const sp = safeSpawnPos(map, p.x + 5, p.y, R); // start inside the landmark
-    expect(isInsidePoi(map, sp.x, sp.y)).toBe(false);
-  });
-
-  it("leaves an already-clear spawn (the map spawn point) on ground + out of POIs", () => {
+  it("leaves an already-clear spawn on ground", () => {
     for (const s of SAMPLES.slice(0, 40)) {
       const map = generateArena(s);
-      const sp = safeSpawnPos(map, map.spawnX, map.spawnY, R);
+      const sp = safeSpawnPos(map, map.spawnX, map.spawnY);
       expect(isPitAtPx(map, sp.x, sp.y)).toBe(false);
-      expect(isInsidePoi(map, sp.x, sp.y)).toBe(false);
     }
   });
 });
@@ -265,18 +153,13 @@ describe("mapgen — shape sanity", () => {
   });
 });
 
-// Natural-zone / authoritative-cluster coverage is intentionally appended so every legacy assertion above
-// remains an unchanged gate.
+// Natural-zone authority coverage.
 import {
   auditArenaNavigation,
   MAP_ZONE_COMMONS,
   MAP_ZONE_COUNT,
   MAP_ZONE_COVER,
   MAP_ZONE_SCAR,
-  PLAYER_RADIUS,
-  poiCollisionAt,
-  poiCollisionCircles,
-  zoneAtPx,
   zoneAtTile,
 } from "@dd/shared";
 
@@ -331,31 +214,16 @@ function authorityDigest(map: ReturnType<typeof generateArena>): string {
     addInt(zone.col);
     addInt(zone.row);
   }
-  for (const cluster of map.poiClusters) {
-    addInt(cluster.id);
-    addInt(cluster.x);
-    addInt(cluster.y);
-    addInt(cluster.zoneId);
-    addInt(Math.round(cluster.phase * 1_000_000));
-  }
-  for (const poi of map.pois) {
-    addInt(poi.x);
-    addInt(poi.y);
-    addInt(poi.kind);
-    addInt(poi.clusterId);
-  }
   return hash.toString(16).padStart(8, "0");
 }
 
 describe("mapgen — natural-zone authority", () => {
-  it("reproduces byte-identical zones, clusters, and POIs from the four synced seeds", () => {
+  it("reproduces byte-identical terrain and zones from the four synced seeds", () => {
     for (const sample of SAMPLES.slice(0, 30)) {
       const serverMap = generateArena(sample);
       const clientMap = generateArena(sample);
       expect(Array.from(clientMap.zoneIds)).toEqual(Array.from(serverMap.zoneIds));
       expect(clientMap.zoneSeeds).toEqual(serverMap.zoneSeeds);
-      expect(clientMap.poiClusters).toEqual(serverMap.poiClusters);
-      expect(clientMap.pois).toEqual(serverMap.pois);
       expect(Array.from(clientMap.tiles)).toEqual(Array.from(serverMap.tiles));
     }
   });
@@ -389,10 +257,9 @@ describe("mapgen — natural-zone authority", () => {
     }
   });
 
-  it("correlates the existing risk exchanges: Scar owns pits and Cover owns landmarks", () => {
+  it("keeps pits concentrated in Scar and sparse in Cover", () => {
     const cells = new Int32Array(MAP_ZONE_COUNT);
     const pits = new Int32Array(MAP_ZONE_COUNT);
-    const pois = new Int32Array(MAP_ZONE_COUNT);
     for (const sample of SAMPLES) {
       const map = generateArena(sample);
       for (let index = 0; index < map.tiles.length; index++) {
@@ -400,86 +267,29 @@ describe("mapgen — natural-zone authority", () => {
         cells[zoneId] = (cells[zoneId] ?? 0) + 1;
         if (map.tiles[index] === TILE_PIT) pits[zoneId] = (pits[zoneId] ?? 0) + 1;
       }
-      for (const poi of map.pois) {
-        const zoneId = zoneAtPx(map, poi.x, poi.y);
-        pois[zoneId] = (pois[zoneId] ?? 0) + 1;
-      }
     }
     const pitRate = (zoneId: number) => (pits[zoneId] ?? 0) / Math.max(1, cells[zoneId] ?? 0);
     expect(pitRate(MAP_ZONE_SCAR)).toBeGreaterThan(pitRate(MAP_ZONE_COMMONS) * 1.8);
     expect(pitRate(MAP_ZONE_COVER)).toBeLessThan(pitRate(MAP_ZONE_COMMONS) * 0.8);
-    expect(pois[MAP_ZONE_COVER] ?? 0).toBeGreaterThan((pois[MAP_ZONE_COMMONS] ?? 0) * 3);
-    expect(pois[MAP_ZONE_COVER] ?? 0).toBeGreaterThan((pois[MAP_ZONE_SCAR] ?? 0) * 3);
   });
 
-  it("deals the full landmark budget into six navigable macro-clusters", () => {
+  it("proves navigation through every zone", () => {
     for (const sample of SAMPLES) {
       const map = generateArena(sample);
-      expect(map.pois).toHaveLength(MAP_POI_COUNT);
-      expect(map.poiClusters).toHaveLength(6);
-      const classes = new Int16Array(7);
-      for (const poi of map.pois) {
-        const classId = ((poi.kind % 7) + 7) % 7;
-        classes[classId] = (classes[classId] ?? 0) + 1;
-      }
-      expect(Array.from(classes)).toEqual([4, 4, 4, 4, 4, 4, 4]);
-      for (const cluster of map.poiClusters) {
-        const members = map.pois.filter((poi) => poi.clusterId === cluster.id);
-        expect(members.length).toBeGreaterThanOrEqual(3);
-        expect(members.length).toBeLessThanOrEqual(6);
-        expect(Math.min(...members.map((poi) => Math.hypot(poi.x - cluster.x, poi.y - cluster.y)))).toBe(
-          0,
-        );
-      }
-    }
-  });
-
-  it("proves player-radius navigation through every zone and cluster approach", () => {
-    for (const sample of SAMPLES) {
-      const map = generateArena(sample);
-      const audit = auditArenaNavigation(map, PLAYER_RADIUS);
+      const audit = auditArenaNavigation(map);
       expect(audit.ok, `seed ${JSON.stringify(sample)} failed: ${audit.reason}`).toBe(true);
       expect(audit.reachableCells).toBe(audit.navigableCells);
     }
   });
 });
 
-describe("mapgen — compound landmark authority", () => {
-  it("uses shared compound children for large cover and settles bodies outside every child", () => {
-    let compound = 0;
-    for (const sample of SAMPLES.slice(0, 40)) {
-      const map = generateArena(sample);
-      for (const poi of map.pois) {
-        const circles = poiCollisionCircles(poi);
-        if (poiScale(poi.kind) >= 1.45) {
-          expect(circles).toHaveLength(3);
-          compound++;
-        } else {
-          expect(circles).toHaveLength(1);
-        }
-        for (const circle of circles) {
-          expect(poiCollisionAt(map, circle.x, circle.y)?.poi).toBe(poi);
-          expect(Math.hypot(circle.x - poi.x, circle.y - poi.y) + circle.radius).toBeLessThanOrEqual(
-            poiRadius(poi.kind) + 1e-6,
-          );
-          const settled = resolvePoiCollision(map, circle.x, circle.y, PLAYER_RADIUS);
-          for (const other of map.pois)
-            for (const child of poiCollisionCircles(other))
-              expect(Math.hypot(settled.x - child.x, settled.y - child.y)).toBeGreaterThanOrEqual(
-                child.radius + PLAYER_RADIUS - 0.01,
-              );
-        }
-      }
-    }
-    expect(compound).toBeGreaterThan(0);
-  });
-
-  it("locks golden zone/cluster/POI descriptors", () => {
-    expect(authorityDigest(generateArena(seeds(1, 2, 3, 4)))).toBe("543176bd");
+describe("mapgen - natural-zone golden authority", () => {
+  it("locks golden zone descriptors", () => {
+    expect(authorityDigest(generateArena(seeds(1, 2, 3, 4)))).toBe("245aa52c");
     expect(
       authorityDigest(generateArena(seeds(0xdeadbeef, 0x12345678, 0xabcdef01, 0x31415926))),
-    ).toBe("845118fb");
-    expect(authorityDigest(generateArena(seeds(2654435761, 40510, 2, 18)))).toBe("90c9fa82");
+    ).toBe("c56f66ae");
+    expect(authorityDigest(generateArena(seeds(2654435761, 40510, 2, 18)))).toBe("958fedbc");
   });
 });
 
@@ -501,17 +311,10 @@ describe("mapgen — jointly validated post-boss gate pair", () => {
       const sample = SAMPLES[sampleIndex];
       if (!sample) continue;
       const map = generateArena(sample);
-      let corpseX = map.spawnX;
-      let corpseY = map.spawnY;
-      if (sampleIndex % 2 === 0 && map.pois[0]) {
-        corpseX = map.pois[0].x;
-        corpseY = map.pois[0].y;
-      } else {
-        const pit = map.tiles.indexOf(TILE_PIT);
-        expect(pit).toBeGreaterThanOrEqual(0);
-        corpseX = ((pit % map.cols) + 0.5) * map.tileSize;
-        corpseY = (Math.floor(pit / map.cols) + 0.5) * map.tileSize;
-      }
+      const pit = map.tiles.indexOf(TILE_PIT);
+      expect(pit).toBeGreaterThanOrEqual(0);
+      const corpseX = ((pit % map.cols) + 0.5) * map.tileSize;
+      const corpseY = (Math.floor(pit / map.cols) + 0.5) * map.tileSize;
       const pair = mapQolShared.placeArenaGatePair(
         map,
         corpseX,
@@ -556,151 +359,5 @@ describe("gate locator — complete-circle HUD-safe visibility", () => {
     expect(
       gateVisibility.gateNeedsEdgeLocator(false, 70, 400, radius, viewport, true),
     ).toBe(false);
-  });
-});
-
-// Server tick-time wave — append-only indexed-vs-brute POI collision property proof.
-const latencyMapgen = await import("@dd/shared");
-
-function brutePoiHit(map: ReturnType<typeof generateArena>, x: number, y: number) {
-  for (const poi of map.pois)
-    for (const circle of poiCollisionCircles(poi)) {
-      const dx = x - circle.x;
-      const dy = y - circle.y;
-      if (dx * dx + dy * dy < circle.radius * circle.radius) return { poi, circle };
-    }
-  return undefined;
-}
-
-function brutePoiResolve(
-  map: ReturnType<typeof generateArena>,
-  x: number,
-  y: number,
-  radius: number,
-) {
-  let nx = x;
-  let ny = y;
-  for (let pass = 0; pass < 10; pass++) {
-    let touched = false;
-    for (const poi of map.pois)
-      for (const circle of poiCollisionCircles(poi)) {
-        const reach = circle.radius + radius;
-        const dx = nx - circle.x;
-        const dy = ny - circle.y;
-        const distance2 = dx * dx + dy * dy;
-        if (distance2 >= reach * reach) continue;
-        touched = true;
-        const distance = Math.sqrt(distance2);
-        if (distance < 1e-4) {
-          nx = circle.x;
-          ny = circle.y - reach;
-        } else {
-          nx = circle.x + (dx / distance) * reach;
-          ny = circle.y + (dy / distance) * reach;
-        }
-      }
-    if (!touched) break;
-  }
-  return { x: nx, y: ny };
-}
-
-function brutePoiRay(
-  map: ReturnType<typeof generateArena>,
-  ox: number,
-  oy: number,
-  dx: number,
-  dy: number,
-  inflate: number,
-  initialLength: number,
-): number {
-  let length = initialLength;
-  for (const poi of map.pois)
-    for (const circle of poiCollisionCircles(poi)) {
-      const radius = circle.radius + inflate;
-      const rx = ox - circle.x;
-      const ry = oy - circle.y;
-      const c = rx * rx + ry * ry - radius * radius;
-      if (c <= 0) {
-        length = 0;
-        continue;
-      }
-      const b = rx * dx + ry * dy;
-      const discriminant = b * b - c;
-      if (discriminant < 0) continue;
-      const t = -b - Math.sqrt(discriminant);
-      if (t >= 0 && t < length) length = t;
-    }
-  return length;
-}
-
-describe("mapgen — immutable indexed POI collision parity", () => {
-  it("matches brute-force point, ordered body projection, and ray results across seeds", () => {
-    for (let sampleIndex = 0; sampleIndex < 32; sampleIndex++) {
-      const sample = seeds(
-        Math.imul(sampleIndex + 1, 0x9e3779b1) >>> 0,
-        Math.imul(sampleIndex + 3, 0x85ebca6b) >>> 0,
-        Math.imul(sampleIndex + 5, 0xc2b2ae35) >>> 0,
-        Math.imul(sampleIndex + 7, 0x27d4eb2f) >>> 0,
-      );
-      const map = generateArena(sample);
-      let word = (sample.seedTerrain ^ sample.seedHazard ^ sample.seedDecor) >>> 0;
-      const nextUnit = () => {
-        word = (Math.imul(word ^ (word >>> 15), 0x2c1b3c6d) + 0x9e3779b9) >>> 0;
-        return word / 0x100000000;
-      };
-      for (let probe = 0; probe < 96; probe++) {
-        const x = nextUnit() * latencyMapgen.ARENA_WIDTH;
-        const y = nextUnit() * latencyMapgen.ARENA_HEIGHT;
-        const bruteHit = brutePoiHit(map, x, y);
-        const indexedHit = poiCollisionAt(map, x, y);
-        expect(indexedHit?.poi).toBe(bruteHit?.poi);
-        expect(indexedHit?.circle).toEqual(bruteHit?.circle);
-
-        const radius = [0, PLAYER_RADIUS, 52][probe % 3] ?? PLAYER_RADIUS;
-        const bruteResolved = brutePoiResolve(map, x, y, radius);
-        const out = { x: Number.NaN, y: Number.NaN };
-        expect(latencyMapgen.resolvePoiCollisionInto(map, x, y, radius, out)).toBe(out);
-        expect(out.x).toBe(bruteResolved.x);
-        expect(out.y).toBe(bruteResolved.y);
-
-        const angle = nextUnit() * Math.PI * 2;
-        const dx = Math.cos(angle);
-        const dy = Math.sin(angle);
-        const inflate = (probe % 4) * 6;
-        const range = 200 + nextUnit() * 1_200;
-        expect(
-          latencyMapgen.clipPoiRayLength(
-            map.poiCollisionIndex,
-            x,
-            y,
-            dx,
-            dy,
-            inflate,
-            range,
-          ),
-        ).toBe(brutePoiRay(map, x, y, dx, dy, inflate, range));
-      }
-    }
-  });
-
-  it("reuses query/result storage and visits a strict subset for a local hot-path probe", () => {
-    const map = generateArena(seeds(0x1234, 0x5678, 0x9abc, 0xdef0));
-    const index = map.poiCollisionIndex;
-    const circle = index.circles[0];
-    expect(circle).toBeDefined();
-    if (!circle) return;
-    const candidates = index.candidates;
-    const firstHit = poiCollisionAt(map, circle.x, circle.y);
-    const secondHit = poiCollisionAt(map, circle.x, circle.y);
-    expect(index.candidates).toBe(candidates);
-    expect(secondHit).toBe(firstHit); // precomputed hit record, not a per-query object
-    expect(index.lastCandidateCount).toBeLessThan(index.circleCount);
-
-    const out = { x: 0, y: 0 };
-    for (let iteration = 0; iteration < 1_000; iteration++)
-      expect(
-        latencyMapgen.resolvePoiCollisionInto(map, circle.x, circle.y, PLAYER_RADIUS, out),
-      ).toBe(out);
-    expect(index.candidates).toBe(candidates);
   });
 });

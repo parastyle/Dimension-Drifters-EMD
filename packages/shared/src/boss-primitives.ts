@@ -56,7 +56,6 @@ export enum BossTelegraphKindTag {
   Eruption = 8,
   WormSweep = 9,
   TitanSweep = 10,
-  TitanLandmark = 11,
 }
 
 /** One projectile the boss launches. `damage` is BASE (the controller applies the depth scale). `aimX/aimY`

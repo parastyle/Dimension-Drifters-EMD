@@ -889,7 +889,6 @@ async function normalizeArena(
       : { x, y: 1_500 });
 
   local.map.tiles.fill(TILE_GROUND);
-  local.map.pois.length = 0;
   local.state.enemies.clear();
   local.state.projectiles.clear();
   local.state.beams.clear();

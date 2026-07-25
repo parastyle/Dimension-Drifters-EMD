@@ -153,7 +153,6 @@ function makeBeamRoom(sessionId: string) {
   player.x = h.room.map.spawnX;
   player.y = h.room.map.spawnY;
   player.weapon = TEST_BEAM_WEAPON;
-  h.room.map.pois.length = 0;
   h.tick(1); // settle the swap before the first held edge
   return { h, player, combat: h.room.combat.get(sessionId) };
 }
@@ -216,7 +215,6 @@ const enemyComboShared = await import("@dd/shared");
 function makeEnemyComboRoom(depth = 1) {
   const h = makeRoom();
   h.join("combo-victim");
-  h.room.map.pois.length = 0;
   h.room.map.tiles.fill(TILE_GROUND); // map-RNG law: every pinned combo position is known solid ground
   h.room.spawnAccum = -1_000_000;
   h.room.shifterCd = 1_000_000;
@@ -291,7 +289,6 @@ function herePlayerJuggledDefault() {
 function makeJumpFeelRoom(id = "jump-feel") {
   const h = makeRoom();
   h.join(id);
-  h.room.map.pois.length = 0;
   h.room.map.tiles.fill(TILE_GROUND);
   h.room.spawnAccum = -1_000_000;
   h.room.shifterCd = 1_000_000;
@@ -411,7 +408,6 @@ function makeUltimateRoom(
 ) {
   const h = makeRoom();
   h.join(id);
-  h.room.map.pois.length = 0;
   h.room.map.tiles.fill(TILE_GROUND);
   h.room.spawnAccum = -999;
   const player = h.state().players.get(id);
@@ -793,7 +789,7 @@ describe("improve2 integrity regressions", () => {
     expect(receipt?.delivery).toBe(CombatDelivery.Gun);
     expect(h.state().combatReceipts.length).toBe(COMBAT_RECEIPT_CAP);
     expect([...h.state().combatReceipts]).toEqual(rows);
-    expect(h.state().schemaVersion).toBe(46);
+    expect(h.state().schemaVersion).toBe(47);
   });
 });
 
@@ -859,9 +855,8 @@ describe("GameRoom — §46 terminal quiescence + hostile projectile ceiling", (
     const rng = makeRng(0x46ce11a1);
     vi.spyOn(Math, "random").mockImplementation(() => rng.next());
     const p = h.state().players.get("p1");
-    // Map-RNG law: this test pins a volley path near spawn — random POIs/pits under it (likelier since
+    // Map-RNG law: this test pins a volley path near spawn — random pits under it (likelier since
     // the QOL-03 gate-disc solver reshapes spawn-adjacent terrain) would annihilate the volley mid-step.
-    h.room.map.pois.length = 0;
     h.room.map.tiles.fill(TILE_GROUND);
     const safe = { x: h.room.map.spawnX + 120, y: h.room.map.spawnY };
 
@@ -1024,7 +1019,7 @@ describe("GameRoom — §50 spin re-hits per revolution", () => {
   it("ONE whirlwind press (4π sweep) dips a pinned enemy at least twice", () => {
     const h = makeRoom();
     h.join("p1");
-    // Determinism: clear POIs AND flatten the map to ground so a randomly-placed pit tile can't
+    // Determinism: flatten the map to ground so a randomly-placed pit tile can't
     // swallow the sweep in a full-suite RNG stream (matches the sibling parry test at ~L2570).
     h.room.map.tiles.fill(TILE_GROUND);
     h.send("p1", "toggleTraining");
@@ -1032,7 +1027,6 @@ describe("GameRoom — §50 spin re-hits per revolution", () => {
     const p = h.state().players.get("p1");
     p.weapon = "x-sword-whirlwind";
     h.tick(1);
-    h.room.map.pois.length = 0;
     h.send("p1", "debugSpawn", { kind: "ronin", count: 1 });
     h.tick(1);
     const found = [...h.state().enemies.entries()].find(

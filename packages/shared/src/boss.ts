@@ -172,7 +172,6 @@ export enum VastagharActionKind {
   HeelReap = 2,
   ShedMountain = 3,
   ThreefoldMarch = 4,
-  LandmarkBreak = 5,
   TwinTread = 6,
   Worldwheel = 7,
   FinalTread = 8,
@@ -200,7 +199,6 @@ export enum VastagharActionResult {
 export enum VastagharArenaMutationKind {
   None = 0,
   StuckStep = 1,
-  LandmarkBreak = 2,
   WorldTurn = 3,
 }
 
@@ -242,7 +240,6 @@ export interface VastagharEncounterDef {
   responseWindowTicks: number;
   addCap: number;
   addLifetimeTicks: number;
-  maxDestroyedPois: number;
   bossMoney: number;
   actions: Readonly<Partial<Record<VastagharActionKind, VastagharActionDef>>>;
   phaseOneDeck: readonly VastagharActionKind[];

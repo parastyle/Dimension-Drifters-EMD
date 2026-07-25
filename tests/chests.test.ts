@@ -17,7 +17,6 @@ import {
   chestWeaponTierWeights,
   generateArena,
   isArenaDiscSafe,
-  isInsidePoi,
   isPitAtPx,
   MAP_ZONE_COMMONS,
   MAP_ZONE_SCAR,
@@ -215,7 +214,7 @@ describe("B20 L2 zone risk and deterministic instancing", () => {
     expect(resolveChestHpPotion(100, 100)).toEqual({ hp: 100, healed: 0 });
   });
 
-  it("places repeatably on valid ground outside pits and POIs", () => {
+  it("places repeatably on valid ground outside pits", () => {
     const map = generateArena({
       seedTerrain: 101,
       seedHazard: 202,
@@ -227,7 +226,6 @@ describe("B20 L2 zone risk and deterministic instancing", () => {
     expect(b).toEqual(a);
     expect(isArenaDiscSafe(map, a.x, a.y, 24)).toBe(true);
     expect(isPitAtPx(map, a.x, a.y)).toBe(false);
-    expect(isInsidePoi(map, a.x, a.y)).toBe(false);
     expect(Number.isInteger(a.zone)).toBe(true);
   });
 });

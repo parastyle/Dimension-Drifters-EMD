@@ -6,23 +6,9 @@ const TERRAIN_LAYER = "Terrain";
 const ZONES_LAYER = "Zones";
 const GAMEPLAY_LAYER = "Gameplay";
 const PLAYER_SPAWN = "PlayerSpawn";
-const POI_CLUSTER = "PoiCluster";
-const LANDMARK = "Landmark";
-const LANDMARK_SIZE_ENUM = "LandmarkSize";
 const LEVEL_FIELDS = new Map([
   ["DisplayName", "String"],
   ["InitialDimensionId", "String"],
-]);
-const LANDMARK_FIELDS = new Map([
-  ["Cluster", "EntityRef"],
-  ["Size", `LocalEnum.${LANDMARK_SIZE_ENUM}`],
-  ["Variant", "Int"],
-]);
-const SIZE_TO_KIND_CLASS = new Map([
-  ["S", 6],
-  ["M", 0],
-  ["L", 3],
-  ["XL", 5],
 ]);
 
 export class LdtkImportError extends Error {
@@ -239,43 +225,12 @@ function validateProjectDefinitions(project, sourceLabel, gridSize) {
   if ((layerById.get(GAMEPLAY_LAYER).intGridValues?.length ?? 0) !== 0)
     fail(context, "Gameplay entity layer may not define IntGrid values");
 
-  requireExactIdentifiers(
-    entities,
-    [PLAYER_SPAWN, POI_CLUSTER, LANDMARK],
-    context,
-    "entity definitions",
-  );
+  requireExactIdentifiers(entities, [PLAYER_SPAWN], context, "entity definitions");
   const entityById = indexUnique(entities, "identifier", context, "entity definitions");
   indexUnique(entities, "uid", context, "entity definitions");
-  for (const identifier of [PLAYER_SPAWN, POI_CLUSTER]) {
-    if ((entityById.get(identifier).fieldDefs?.length ?? 0) !== 0)
-      fail(context, `${identifier} must not define custom fields`);
-  }
-  const landmarkFieldDefs = requireArray(
-    entityById.get(LANDMARK).fieldDefs,
-    context,
-    "Landmark field definitions",
-  );
-  requireExactIdentifiers(
-    landmarkFieldDefs,
-    [...LANDMARK_FIELDS.keys()],
-    context,
-    "Landmark field definitions",
-  );
-  for (const field of landmarkFieldDefs) {
-    const expectedType = LANDMARK_FIELDS.get(field.identifier);
-    if (field.__type !== expectedType)
-      fail(context, `Landmark.${field.identifier} must have type ${expectedType}`);
-  }
-
-  requireExactIdentifiers(enums, [LANDMARK_SIZE_ENUM], context, "enum definitions");
-  const sizeEnum = enums.find((entry) => entry.identifier === LANDMARK_SIZE_ENUM);
-  const sizeValues = requireArray(sizeEnum.values, context, `${LANDMARK_SIZE_ENUM} values`)
-    .map((entry) => entry?.id)
-    .sort()
-    .join(",");
-  if (sizeValues !== "L,M,S,XL")
-    fail(context, `${LANDMARK_SIZE_ENUM} values must be exactly S, M, L, XL`);
+  if ((entityById.get(PLAYER_SPAWN).fieldDefs?.length ?? 0) !== 0)
+    fail(context, `${PLAYER_SPAWN} must not define custom fields`);
+  requireExactIdentifiers(enums, [], context, "enum definitions");
 
   requireExactIdentifiers(
     levelFields,
@@ -298,7 +253,7 @@ function validateProjectDefinitions(project, sourceLabel, gridSize) {
 
 function validateSharedContract(shared, project, sourceLabel) {
   const context = projectContext(project, sourceLabel);
-  const requiredFunctions = ["validateArena", "auditArenaNavigation", "PoiCollisionIndex"];
+  const requiredFunctions = ["validateArena", "auditArenaNavigation"];
   for (const name of requiredFunctions)
     if (typeof shared?.[name] !== "function")
       fail(context, `shared map contract does not export ${name}`);
@@ -457,9 +412,6 @@ function validateEntityPosition(
 }
 
 const compareText = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
-const byRowColIid = (a, b) =>
-  a.row - b.row || a.col - b.col || compareText(a.entity.iid, b.entity.iid);
-
 function deriveZoneSeeds(project, level, zonesLayer, zoneIds, sourceLabel, cols) {
   const kinds = ["commons", "cover", "scar"];
   return kinds.map((kind, id) => {
@@ -514,11 +466,6 @@ function geometryFailureContext(
   if (reason.includes("spawn")) return entityContext(project, level, gameplay, spawn, sourceLabel);
   if (reason.includes("zone") || reason.includes("Commons"))
     return layerContext(project, level, zones, sourceLabel);
-  const clusterMatch = /cluster (\d+)/i.exec(reason);
-  if (clusterMatch) {
-    const cluster = entities.clusters[Number(clusterMatch[1])];
-    if (cluster) return entityContext(project, level, gameplay, cluster.entity, sourceLabel);
-  }
   return layerContext(project, level, gameplay, sourceLabel);
 }
 
@@ -601,7 +548,7 @@ function compileLevel(project, level, definitions, shared, sourceLabel) {
     layerContext(project, level, gameplay, sourceLabel),
     "Gameplay.entityInstances",
   );
-  const entityByIid = indexUnique(
+  indexUnique(
     entityInstances,
     "iid",
     layerContext(project, level, gameplay, sourceLabel),
@@ -629,28 +576,11 @@ function compileLevel(project, level, definitions, shared, sourceLabel) {
   }
 
   const spawns = positioned.filter((entry) => entry.entity.__identifier === PLAYER_SPAWN);
-  const clusterEntries = positioned
-    .filter((entry) => entry.entity.__identifier === POI_CLUSTER)
-    .sort(byRowColIid);
-  const landmarkEntries = positioned
-    .filter((entry) => entry.entity.__identifier === LANDMARK)
-    .sort(byRowColIid);
   if (spawns.length !== 1)
     fail(
       layerContext(project, level, gameplay, sourceLabel),
       `level must contain exactly one ${PLAYER_SPAWN} (observed ${spawns.length})`,
     );
-  if (clusterEntries.length !== 6)
-    fail(
-      layerContext(project, level, gameplay, sourceLabel),
-      `level must contain exactly six ${POI_CLUSTER} entities (observed ${clusterEntries.length})`,
-    );
-  if (landmarkEntries.length === 0)
-    fail(
-      layerContext(project, level, gameplay, sourceLabel),
-      `level must contain ${LANDMARK} entities`,
-    );
-
   for (const spawn of spawns)
     validateFieldInstances(
       project,
@@ -660,16 +590,6 @@ function compileLevel(project, level, definitions, shared, sourceLabel) {
       sourceLabel,
       new Map(),
       spawn.definition.fieldDefs,
-    );
-  for (const cluster of clusterEntries)
-    validateFieldInstances(
-      project,
-      level,
-      gameplay,
-      cluster.entity,
-      sourceLabel,
-      new Map(),
-      cluster.definition.fieldDefs,
     );
 
   const tiles = Uint8Array.from(terrainCsv);
@@ -682,64 +602,6 @@ function compileLevel(project, level, definitions, shared, sourceLabel) {
     sourceLabel,
     cols,
   );
-  const clusterIdByIid = new Map(clusterEntries.map((entry, index) => [entry.entity.iid, index]));
-  const poiClusters = clusterEntries.map((entry, idValue) => ({
-    id: idValue,
-    x: entry.x,
-    y: entry.y,
-    zoneId: zoneIds[entry.row * cols + entry.col],
-    phase: 0,
-  }));
-  const pois = landmarkEntries.map((entry) => {
-    const fields = validateFieldInstances(
-      project,
-      level,
-      gameplay,
-      entry.entity,
-      sourceLabel,
-      LANDMARK_FIELDS,
-      entry.definition.fieldDefs,
-    );
-    const context = entityContext(project, level, gameplay, entry.entity, sourceLabel);
-    const reference = fields.get("Cluster").__value;
-    if (!isObject(reference) || typeof reference.entityIid !== "string")
-      fail(context, "Landmark.Cluster must contain an LDtk EntityRef value");
-    const target = entityByIid.get(reference.entityIid);
-    if (!target)
-      fail(
-        context,
-        `Landmark.Cluster dangles to unknown entity IID ${JSON.stringify(reference.entityIid)}`,
-      );
-    if (target.__identifier !== POI_CLUSTER)
-      fail(
-        context,
-        `Landmark.Cluster IID ${JSON.stringify(reference.entityIid)} does not identify a PoiCluster`,
-      );
-    if (
-      reference.worldIid !== project.dummyWorldIid ||
-      reference.levelIid !== level.iid ||
-      reference.layerIid !== gameplay.iid
-    )
-      fail(context, "Landmark.Cluster EntityRef location metadata is stale");
-    const clusterId = clusterIdByIid.get(reference.entityIid);
-    if (clusterId == null)
-      fail(context, "Landmark.Cluster does not resolve in canonical cluster order");
-    const size = fields.get("Size").__value;
-    const kindClass = SIZE_TO_KIND_CLASS.get(size);
-    if (kindClass == null)
-      fail(context, `Landmark.Size must be S, M, L, or XL; observed ${String(size)}`);
-    const variant = fields.get("Variant").__value;
-    if (!isSafeInt(variant) || variant < 0)
-      fail(
-        context,
-        `Landmark.Variant must be a non-negative finite safe integer; observed ${String(variant)}`,
-      );
-    const kind = variant * 7 + kindClass;
-    if (!isSafeInt(kind))
-      fail(context, `Landmark.Variant ${variant} produces an unsafe runtime kind integer`);
-    return { x: entry.x, y: entry.y, kind, clusterId };
-  });
-
   const levelFields = requireArray(level.fieldInstances, levelCtx, "level.fieldInstances");
   const levelFieldCounts = new Map();
   for (const field of levelFields) {
@@ -781,12 +643,9 @@ function compileLevel(project, level, definitions, shared, sourceLabel) {
     zoneSeeds,
     spawnX: spawn.x,
     spawnY: spawn.y,
-    pois,
-    poiCollisionIndex: new shared.PoiCollisionIndex(pois, shared.ARENA_WIDTH, shared.ARENA_HEIGHT),
-    poiClusters,
     seeds: { seedTerrain: 0, seedHazard: 0, seedTheme: 0, seedDecor: 0 },
   };
-  const entityMetadata = { spawn: spawn.entity, clusters: clusterEntries };
+  const entityMetadata = { spawn: spawn.entity };
   let arenaValidation;
   try {
     arenaValidation = shared.validateArena(map);
@@ -810,7 +669,7 @@ function compileLevel(project, level, definitions, shared, sourceLabel) {
       ),
       `shared validateArena rejected authored geometry: ${arenaValidation.reason} (jump limit ${shared.MAP_MAX_JUMP_TILES} tiles; spawn clear radius ${shared.MAP_SPAWN_CLEAR_TILES} tiles)`,
     );
-  const navigation = shared.auditArenaNavigation(map, shared.PLAYER_RADIUS);
+  const navigation = shared.auditArenaNavigation(map);
   if (!navigation.ok)
     fail(
       geometryFailureContext(
@@ -838,8 +697,6 @@ function compileLevel(project, level, definitions, shared, sourceLabel) {
     zoneSeeds,
     spawnX: spawn.x,
     spawnY: spawn.y,
-    poiClusters,
-    pois,
   };
   return { ...record, revision: revisionFor(record) };
 }
@@ -944,8 +801,6 @@ export function renderGeneratedCatalog(records) {
     "  zoneSeeds: readonly Readonly<{ id: number; kind: string; col: number; row: number }>[];",
     "  spawnX: number;",
     "  spawnY: number;",
-    "  poiClusters: readonly Readonly<{ id: number; x: number; y: number; zoneId: number; phase: number }>[];",
-    "  pois: readonly Readonly<{ x: number; y: number; kind: number; clusterId: number }>[];",
     "}>;",
     "",
     "export const AUTHORED_ARENAS = {",
@@ -967,8 +822,6 @@ export function renderGeneratedCatalog(records) {
     lines.push(`    zoneSeeds: ${renderSmall(record.zoneSeeds, 4)},`);
     lines.push(`    spawnX: ${record.spawnX},`);
     lines.push(`    spawnY: ${record.spawnY},`);
-    lines.push(`    poiClusters: ${renderSmall(record.poiClusters, 4)},`);
-    lines.push(`    pois: ${renderSmall(record.pois, 4)},`);
     lines.push("  },");
   }
   lines.push(

@@ -35,7 +35,6 @@ function makeRoom(id: string, weaponId: string) {
   room.clients = [{ sessionId: id }];
   room.onCreate();
   room.onJoin({ sessionId: id });
-  room.map.pois.length = 0;
   room.map.tiles.fill(TILE_GROUND);
   room.state.seedHazard = 0x4567abcd;
   const player = room.state.players.get(id);

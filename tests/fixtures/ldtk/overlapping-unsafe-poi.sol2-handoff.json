@@ -1,7 +1,0 @@
-{
-  "description": "Move landmark ordinal 1 onto landmark ordinal 0 and cut ground inside its collision-plus-clearance footprint.",
-  "handoff": "ldtk-runtime-integration",
-  "missingSharedLaw": "validateArena must enforce landmark pair spacing, collision footprint plus MAP_POI_GROUND_CLEARANCE, and spawn clearance using the shared POI geometry.",
-  "expectedWitness": { "entityOrdinal": 1, "terrainCol": 9, "terrainRow": 10 },
-  "mutation": { "kind": "overlap-and-undercut-landmark", "landmarkOrdinal": 1, "targetLandmarkOrdinal": 0, "terrainCol": 9, "terrainRow": 10 }
-}

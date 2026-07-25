@@ -6,8 +6,8 @@ set LOG=tools\artkit\out\final-run-day1.log
 echo === FINAL RUN DAY 1 start %date% %time% === >> %LOG%
 echo --- P0.1 terrain kits + P0.5 menu key-art --- >> %LOG%
 node tools\artkit\gen-terrain-kits.mjs >> %LOG% 2>&1
-echo --- P0.2 themed decal/POI packs --- >> %LOG%
-for %%P in (decals-frostfell pois-frostfell decals-verdant-ruins pois-verdant-ruins decals-ashlands pois-ashlands decals-neon-cyber pois-neon-cyber) do (
+echo --- P0.2 themed decal packs --- >> %LOG%
+for %%P in (decals-frostfell decals-verdant-ruins decals-ashlands decals-neon-cyber) do (
   echo pack %%P >> %LOG%
   node tools\artkit\gen-decals.mjs --pack=%%P >> %LOG% 2>&1
 )
