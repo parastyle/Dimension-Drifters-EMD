@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dimension Drifters — Weapon Pose Studio</title>
+    <script type="module" src="/src/pose-studio/main.ts"></script>
+  </head>
+  <body>
+    <header class="masthead">
+      <div>
+        <p class="eyebrow">Weaponsmith / Rig authoring</p>
+        <h1>Weapon Pose Studio <span>v1</span></h1>
+      </div>
+      <div class="save-cluster">
+        <span class="dirty-chip" id="dirtyChip" data-dirty="false">
+          <span class="dirty-dot"></span>
+          <span id="dirtyText">Loading row…</span>
+        </span>
+        <button id="snapshotButton" class="button ghost" type="button">Snapshot disk</button>
+        <button id="restoreButton" class="button ghost" type="button" disabled>Restore</button>
+        <button id="saveButton" class="button" type="button">Save row</button>
+        <button id="saveRegenButton" class="button primary" type="button">Save + regen</button>
+      </div>
+    </header>
+
+    <main class="studio">
+      <section class="picker-bar" aria-label="Stage setup">
+        <label>
+          <span>Character</span>
+          <select id="characterSelect" data-testid="character-picker"></select>
+        </label>
+        <label class="weapon-search">
+          <span>Find active weapon</span>
+          <input
+            id="weaponSearch"
+            data-testid="weapon-search"
+            type="search"
+            placeholder="katana, pistol, crozier…"
+            autocomplete="off"
+          />
+        </label>
+        <label class="weapon-select">
+          <span>Weapon</span>
+          <select id="weaponSelect" data-testid="weapon-picker"></select>
+        </label>
+        <label class="compact-control">
+          <span>Zoom <output id="zoomOutput">1.00×</output></span>
+          <input id="zoomInput" type="range" min="0.6" max="2.2" value="1" step="0.05" />
+        </label>
+        <label class="toggle-control">
+          <input id="combatScaleInput" type="checkbox" />
+          <span>Combat scale</span>
+        </label>
+      </section>
+
+      <div class="workspace">
+        <div class="stage-column">
+          <section class="panel stage-panel" aria-labelledby="stageTitle">
+            <header class="panel-heading">
+              <div>
+                <p class="eyebrow">Real Phaser SpriteRig</p>
+                <h2 id="stageTitle">Mirrored stage</h2>
+              </div>
+              <div class="stage-key">
+                <span><i class="key-primary"></i>primary</span>
+                <span><i class="key-secondary"></i>secondary</span>
+                <span><i class="key-idle"></i>idle pose</span>
+                <span><i class="key-path"></i>beat target</span>
+              </div>
+            </header>
+            <div id="stageWrap" class="stage-wrap">
+              <div id="stageHost" class="stage-host" data-testid="rig-stage"></div>
+              <svg id="stageGuides" class="stage-guides" aria-hidden="true">
+                <path id="pathGuide" class="path-guide" d="" />
+              </svg>
+              <button
+                class="stage-handle primary"
+                id="primaryHandle"
+                data-handle="primary"
+                data-testid="primary-grip-handle"
+                type="button"
+                aria-label="Drag primary grip point"
+              >
+                P
+              </button>
+              <button
+                class="stage-handle secondary"
+                id="secondaryHandle"
+                data-handle="secondary"
+                type="button"
+                aria-label="Drag secondary grip point"
+              >
+                S
+              </button>
+              <button
+                class="stage-handle idle"
+                id="idleHandle"
+                data-handle="idle"
+                type="button"
+                aria-label="Drag idle hand to nearest supported pose"
+              >
+                I
+              </button>
+              <button
+                class="stage-handle path"
+                id="pathHandle"
+                data-handle="path"
+                data-testid="beat-path-handle"
+                type="button"
+                aria-label="Drag beat reach and arc target"
+              >
+                T
+              </button>
+            </div>
+          </section>
+
+          <section class="panel timeline-panel" aria-labelledby="timelineTitle">
+            <header class="playback-row">
+              <div>
+                <p class="eyebrow">Combo playback</p>
+                <h2 id="timelineTitle"><span id="beatReadout">Beat —</span></h2>
+              </div>
+              <div class="transport">
+                <button id="playButton" class="transport-button" type="button" aria-label="Play">
+                  ▶
+                </button>
+                <label class="toggle-control inline">
+                  <input id="loopInput" type="checkbox" checked />
+                  <span>Loop</span>
+                </label>
+                <label class="toggle-control inline">
+                  <input id="onionInput" type="checkbox" checked />
+                  <span>Onion skin</span>
+                </label>
+                <label class="speed-control">
+                  <span>Speed</span>
+                  <input id="speedInput" type="range" min="0.1" max="2" step="0.1" value="1" />
+                  <output id="speedOutput">1.0×</output>
+                </label>
+              </div>
+            </header>
+            <div id="timelineWindows" class="timeline-windows"></div>
+            <input
+              id="timelineInput"
+              data-testid="timeline-scrubber"
+              class="timeline-input"
+              type="range"
+              min="0"
+              max="1"
+              value="0"
+              step="0.001"
+            />
+            <div class="timeline-legend">
+              <span><i class="windup"></i>wind-up</span>
+              <span><i class="active"></i>active</span>
+              <span><i class="impact"></i>impact</span>
+              <span><i class="follow"></i>follow</span>
+            </div>
+          </section>
+        </div>
+
+        <aside class="panel tweak-panel" aria-labelledby="tweakTitle">
+          <header class="panel-heading sticky">
+            <div>
+              <p class="eyebrow">Schema-validated source row</p>
+              <h2 id="tweakTitle">Tweak beat</h2>
+            </div>
+            <span id="rowId" class="row-id">—</span>
+          </header>
+          <div id="tweakContent" class="tweak-content"></div>
+          <section class="law-box" aria-labelledby="lawsTitle">
+            <p class="eyebrow">Standing laws</p>
+            <h3 id="lawsTitle">Locked in this editor</h3>
+            <ul>
+              <li><strong>Melee displacement:</strong> hidden and non-authorable.</li>
+              <li>
+                <strong>Gun recoil:</strong>
+                <output id="recoilReadout">not a gun</output>
+                <span class="read-only">read-only / B45</span>
+              </li>
+              <li><strong>Chain and aura:</strong> no authoring affordances.</li>
+            </ul>
+          </section>
+        </aside>
+      </div>
+    </main>
+
+    <footer class="status-bar">
+      <span id="statusMessage" role="status">Connecting to Weaponsmith authoring API…</span>
+      <span class="reload-hint">After regen: reload the game client to inspect the authored row in context.</span>
+    </footer>
+  </body>
+</html>

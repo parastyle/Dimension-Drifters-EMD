@@ -1,0 +1,25 @@
+{
+  "date": "2026-07-24",
+  "character": "proto-cowboy-hidden-face",
+  "weapon": "x2-voltfang-tachi",
+  "privatePorts": {
+    "api": 57622,
+    "studio": 57623
+  },
+  "scrubReadout": "Beat 2 · voltage rise · 42%",
+  "playbackAdvanced": true,
+  "dragEdit": {
+    "field": "gripPoints.primary.x",
+    "before": 0.11,
+    "after": 0.12,
+    "changedOnDisk": true
+  },
+  "save": "passed",
+  "regen": {
+    "status": "passed",
+    "ok": true,
+    "exitCode": 0
+  },
+  "pageErrors": [],
+  "cleanup": "The transient catalog edit was restored after capturing evidence so the pinned Voltfang source contract and full test suite remain unchanged."
+}

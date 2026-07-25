@@ -19,6 +19,12 @@ import { createServer } from "node:http";
 import { dirname, extname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { readAssignment, readAssignments, writeAssignment } from "./assignment-store.mjs";
+import {
+  poseStudioCatalogSummary,
+  readWeaponRow,
+  validatePoseStudioRow,
+  writeWeaponRow,
+} from "./catalog-row-store.mjs";
 
 // assignments/<weapon-id>.json is the authoring source. The tracked assignments.json compatibility
 // aggregate is produced only by `pnpm weaponsmith:aggregate`, never by this save server.
@@ -48,6 +54,10 @@ function readVfxRadiusDefault() {
 }
 const PUBLIC = join(ROOT, "public");
 const PORT = Number(process.env.PORT) || 5050;
+const HOST = process.env.HOST;
+const poseStudioSnapshots = new Map();
+let poseStudioRegen;
+let poseStudioRegenState = { status: "idle", ok: undefined, code: undefined, log: "" };
 
 const readJSON = (p, d) => {
   try {
@@ -324,11 +334,111 @@ function body(req) {
   });
 }
 
+function runPoseStudioRegen() {
+  if (poseStudioRegen) return poseStudioRegen;
+  poseStudioRegenState = { status: "running", ok: undefined, code: undefined, log: "" };
+  poseStudioRegen = new Promise((resolveJob) => {
+    const command = process.platform === "win32" ? (process.env.ComSpec ?? "cmd.exe") : "pnpm";
+    const args = process.platform === "win32" ? ["/d", "/s", "/c", "pnpm gen"] : ["gen"];
+    const child = spawn(command, args, {
+      cwd: REPO,
+      env: process.env,
+      windowsHide: true,
+    });
+    let log = "";
+    child.stdout.on("data", (chunk) => {
+      log = `${log}${chunk}`.slice(-24_000);
+    });
+    child.stderr.on("data", (chunk) => {
+      log = `${log}${chunk}`.slice(-24_000);
+    });
+    child.on("error", (error) =>
+      resolveJob({ ok: false, code: -1, log: `${log}\n${error.message}` }),
+    );
+    child.on("close", (code) => {
+      resolveJob({ ok: code === 0, code, log });
+    });
+  })
+    .catch((error) => ({
+      ok: false,
+      code: -1,
+      log: error instanceof Error ? error.message : String(error),
+    }))
+    .then((result) => {
+      poseStudioRegenState = {
+        status: result.ok ? "passed" : "failed",
+        ...result,
+      };
+      return result;
+    })
+    .finally(() => {
+      poseStudioRegen = undefined;
+    });
+  return poseStudioRegen;
+}
+
 const server = createServer(async (req, res) => {
   const u = new URL(req.url, `http://localhost:${PORT}`);
   const p = u.pathname;
   try {
     // ---- API ----
+    if (p === "/api/pose-studio/catalog" && req.method === "GET") {
+      return json(res, {
+        weapons: poseStudioCatalogSummary(),
+        source: "data/weapon-concepts-300.json",
+      });
+    }
+    if (p.startsWith("/api/pose-studio/row/") && req.method === "GET") {
+      const id = decodeURIComponent(p.slice("/api/pose-studio/row/".length));
+      const row = readWeaponRow(id);
+      if (!row) return json(res, { error: "unknown weapon row" }, 404);
+      return json(res, {
+        row,
+        snapshotAvailable: poseStudioSnapshots.has(id),
+      });
+    }
+    if (p === "/api/pose-studio/validate" && req.method === "POST") {
+      const request = await body(req);
+      const baseline = readWeaponRow(request.id);
+      if (!baseline) return json(res, { error: "unknown weapon row" }, 404);
+      const errors = validatePoseStudioRow(request.row, baseline);
+      return json(res, { ok: errors.length === 0, errors }, errors.length === 0 ? 200 : 422);
+    }
+    if (p === "/api/pose-studio/snapshot" && req.method === "POST") {
+      const request = await body(req);
+      const row = readWeaponRow(request.id);
+      if (!row) return json(res, { error: "unknown weapon row" }, 404);
+      poseStudioSnapshots.set(request.id, row);
+      return json(res, { ok: true, snapshotAvailable: true });
+    }
+    if (p === "/api/pose-studio/save" && req.method === "POST") {
+      const request = await body(req);
+      const baseline = readWeaponRow(request.id);
+      if (!baseline) return json(res, { error: "unknown weapon row" }, 404);
+      if (!poseStudioSnapshots.has(request.id)) {
+        poseStudioSnapshots.set(request.id, baseline);
+      }
+      const errors = validatePoseStudioRow(request.row, baseline);
+      if (errors.length > 0) return json(res, { error: errors[0], errors }, 422);
+      const row = writeWeaponRow(request.id, request.row);
+      return json(res, { ok: true, row, snapshotAvailable: true });
+    }
+    if (p === "/api/pose-studio/restore" && req.method === "POST") {
+      const request = await body(req);
+      const snapshot = poseStudioSnapshots.get(request.id);
+      if (!snapshot) return json(res, { error: "no snapshot is available for this row" }, 409);
+      if (!readWeaponRow(request.id)) return json(res, { error: "unknown weapon row" }, 404);
+      const row = writeWeaponRow(request.id, snapshot);
+      poseStudioSnapshots.delete(request.id);
+      return json(res, { ok: true, row, snapshotAvailable: false });
+    }
+    if (p === "/api/pose-studio/regen" && req.method === "GET") {
+      return json(res, poseStudioRegenState);
+    }
+    if (p === "/api/pose-studio/regen" && req.method === "POST") {
+      void runPoseStudioRegen();
+      return json(res, poseStudioRegenState, 202);
+    }
     if (p === "/api/weapons") {
       const assignments = readAssignments();
       return json(
@@ -525,4 +635,6 @@ const server = createServer(async (req, res) => {
     return json(res, { error: String(e.message || e) }, 500);
   }
 });
-server.listen(PORT, () => console.log(`weaponsmith → http://localhost:${PORT}`));
+server.listen(PORT, HOST, () =>
+  console.log(`weaponsmith → http://${HOST ?? "localhost"}:${PORT}`),
+);

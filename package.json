@@ -13,6 +13,7 @@
     "dev:server": "pnpm --filter @dd/shared build && concurrently -n shared,server -c gray,blue \"pnpm --filter @dd/shared dev\" \"pnpm --filter @dd/server dev\"",
     "dev:client": "pnpm --filter @dd/shared build && concurrently -n shared,client -c gray,green \"pnpm --filter @dd/shared dev\" \"pnpm --filter @dd/client dev\"",
     "dev:desktop": "pnpm --filter @dd/shared build && concurrently -n shared,server,client,electron -c gray,blue,green,magenta \"pnpm --filter @dd/shared dev\" \"pnpm --filter @dd/server dev\" \"pnpm --filter @dd/client dev\" \"pnpm --filter @dd/desktop dev\"",
+    "pose-studio": "pnpm --filter @dd/shared build && concurrently -n pose-api,pose-ui -c cyan,green \"node tools/weaponsmith/server.mjs\" \"pnpm --filter @dd/client dev\"",
     "build": "pnpm -r build",
     "weaponsmith:aggregate": "node tools/weaponsmith/build-assignments.mjs",
     "weaponsmith:aggregate:check": "node tools/weaponsmith/build-assignments.mjs --check",
