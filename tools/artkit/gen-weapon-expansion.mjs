@@ -102,7 +102,7 @@ const STATS_KEYS = new Set([
 ]);
 const BEHAVIOR_KEYS = {
   edge: new Set(["kind"]),
-  thrown: new Set(["kind", "speed", "range", "damage", "charges", "refillSeconds", "pierce", "arcHeight", "rotation", "ricochetHops", "ricochetRange", "returning", "zone"]),
+  thrown: new Set(["kind", "speed", "range", "damage", "charges", "refillSeconds", "pierce", "arcHeight", "rotation", "ricochetHops", "ricochetRange", "returning", "helix", "zone"]),
   quake: new Set(["kind", "radius", "damage", "placementRange", "zone"]),
   chainLightning: new Set(["kind", "jumps", "range", "damage", "falloff", "vfx"]),
   scatter: new Set(["kind", "count", "spread", "aim", "speed", "range", "damage", "pierce", "explode"]),
@@ -206,7 +206,7 @@ const COMBO_PATH_KEYS = new Set([
   "kind", "arcMultiplier", "deltaAngle", "rangeMultiplier", "damageMultiplier", "knockback",
 ]);
 const COMBO_THEATRICS_KEYS = new Set([
-  "paperTurns", "flip", "limbStretch", "holdPose", "holdStart",
+  "paperTurns", "flip", "flipEnd", "limbStretch", "holdPose", "holdStart",
 ]);
 const COMBO_FLIPS = new Set(["front", "back"]);
 const COMBO_HOLD_POSES = new Set([
@@ -253,6 +253,7 @@ const PERFORMANCE_STRIDE_TAP_KEYS = new Set(["amplitudePx", "phaseOffset"]);
 const PERFORMANCE_AURA_KEYS = new Set([
   "radius", "damagePerSecond", "resourcePerSecond", "tickRate", "color", "damageType",
 ]);
+const THROWN_HELIX_KEYS = new Set(["amplitudePx", "frequencyHz"]);
 const HIT_STATUS_KEYS = new Set(["kind", "multiplier", "seconds"]);
 const POSE_LANGUAGE_KEYS = new Set(["idle", "feet"]);
 const HIT_STATUS_KINDS = new Set(["slow"]);
@@ -451,6 +452,17 @@ function comboBarOf(w, choreography) {
           );
         if (theatrics.flip !== undefined)
           presentation.flip = enumOf(theatrics.flip, COMBO_FLIPS, `${path}.theatrics.flip`);
+        if (theatrics.flipEnd !== undefined) {
+          presentation.flipEnd = num(
+            theatrics.flipEnd,
+            activeStart + 0.01,
+            1,
+            followEnd,
+            `${path}.theatrics.flipEnd`,
+          );
+          if (presentation.flipEnd > followEnd)
+            fail(`${path}.theatrics.flipEnd must be at or before timing.followEnd`);
+        }
         if (theatrics.limbStretch !== undefined)
           presentation.limbStretch = num(
             theatrics.limbStretch,
@@ -616,7 +628,11 @@ function performanceOf(p) {
       p.preThrowRevolutions, 0, 3, 0, "performance.preThrowRevolutions",
     );
   if (p.throwStyle !== undefined)
-    out.throwStyle = enumOf(p.throwStyle, new Set(["engaged"]), "performance.throwStyle");
+    out.throwStyle = enumOf(
+      p.throwStyle,
+      new Set(["engaged", "two-hand-overhead"]),
+      "performance.throwStyle",
+    );
   if (p.flourishStyle !== undefined)
     out.flourishStyle = enumOf(
       p.flourishStyle,
@@ -1560,6 +1576,17 @@ function mapWeapon(w) {
       def.thrown.arcHeight = num(b.arcHeight, 24, 180, 88, "behavior.arcHeight");
     if (b.rotation !== undefined)
       def.thrown.rotation = enumOf(b.rotation, THROWN_ROTATIONS, "behavior.rotation");
+    if (b.helix !== undefined) {
+      if (!b.helix || typeof b.helix !== "object" || Array.isArray(b.helix)) {
+        fail("behavior.helix is not an object");
+      } else {
+        checkKeys(b.helix, THROWN_HELIX_KEYS, "behavior.helix");
+        def.thrown.helix = {
+          amplitudePx: num(b.helix.amplitudePx, 8, 96, 36, "behavior.helix.amplitudePx"),
+          frequencyHz: num(b.helix.frequencyHz, 0.5, 6, 2, "behavior.helix.frequencyHz"),
+        };
+      }
+    }
     if (b.ricochetHops !== undefined)
       def.thrown.ricochetHops = int(b.ricochetHops, 0, 4, 0, "behavior.ricochetHops");
     if (b.ricochetRange !== undefined)

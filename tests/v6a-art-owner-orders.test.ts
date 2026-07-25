@@ -58,7 +58,8 @@ describe("V6A generated-art owner orders", () => {
       sprite: "gravewarden-buster",
       range: 354,
       cooldown: 0.6,
-      swingArc: Math.PI * 2,
+      damage: 8 / 3,
+      swingArc: Math.PI * 6,
       performance: {
         hold: "steady",
         action: "spin",
@@ -67,8 +68,8 @@ describe("V6A generated-art owner orders", () => {
         twirl: {
           plane: "continuous-frontflip",
           direction: "forward",
-          visualRevolutions: 6,
-          cadenceSeconds: 0.2,
+          visualRevolutions: 3,
+          cadenceSeconds: 0.6,
         },
       },
     });

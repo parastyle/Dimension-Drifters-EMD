@@ -1193,7 +1193,9 @@ export const rigPoseMethods = {
           const flipStart = comboPose.timing.activeStart;
           const flipEnd = Math.max(
             flipStart + 0.001,
-            comboPose.timing.impact ?? comboPose.timing.activeEnd,
+            comboPose.theatrics.flipEnd ??
+              comboPose.timing.impact ??
+              comboPose.timing.activeEnd,
           );
           const flipProgress = clamp01((tt - flipStart) / (flipEnd - flipStart));
           const flipDirection = comboPose.theatrics.flip === "front" ? 1 : -1;

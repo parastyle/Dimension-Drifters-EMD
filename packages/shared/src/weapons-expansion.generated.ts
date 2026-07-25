@@ -778,6 +778,14 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       ]
     },
     "description": "A grim executioner's hand-axe with a wide blood-darkened bit and a noose-knot wound round the haft butt, balanced for one clean ugly chop.",
+    "performance": {
+      "hold": "steady",
+      "action": "throw-release",
+      "suppressSwing": true,
+      "windupSeconds": 0.34,
+      "throwStyle": "two-hand-overhead",
+      "throwHeightPx": 20
+    },
     "durability": 75,
     "thrown": {
       "speed": 620,
@@ -1037,6 +1045,13 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
     "description": "A jagged shadow-iron battleaxe whose crescent bit fades to smoky nothing at the horns, drinking the light from whatever its wide arc crosses.",
     "comboFamily": "chop",
     "comboVariant": "hollowmoon-eclipse",
+    "performance": {
+      "hold": "upright",
+      "action": "default-swing",
+      "carryForwardPx": 16,
+      "comboForwardPx": 26,
+      "carryAngleRad": -1.45
+    },
     "twoHanded": true,
     "durability": 90
   },
@@ -1098,6 +1113,14 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       ]
     },
     "description": "A light belt tomahawk with a slim spike-poll and a feather-charm on the haft, quick as a card-flick and thrown faster than a man can draw.",
+    "performance": {
+      "hold": "steady",
+      "action": "throw-release",
+      "suppressSwing": true,
+      "windupSeconds": 0.3,
+      "throwStyle": "two-hand-overhead",
+      "throwHeightPx": 18
+    },
     "durability": 75,
     "thrown": {
       "speed": 760,
@@ -1117,13 +1140,13 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
     "halfArc": 0.7,
     "cooldown": 0.28,
     "displayLength": 58,
-    "swingArc": 2.2,
+    "swingArc": 6.283185307179586,
     "gripFrac": 0.16,
     "tags": {
       "grip": "dual",
       "size": "S",
       "delivery": "melee-arc",
-      "fireMode": "tap-charge",
+      "fireMode": "hold",
       "element": "fire",
       "classPool": "melee",
       "family": "axe",
@@ -1134,6 +1157,23 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       ]
     },
     "description": "A paired set of blackened infernal hatchets seamed with molten orange, their twin bits crossing in a furious dual flurry that smears the air with embers.",
+    "swingStyle": "spin",
+    "suppressVfx": true,
+    "performance": {
+      "hold": "steady",
+      "action": "spin",
+      "continuous": true,
+      "suppressSwing": true,
+      "twirl": {
+        "plane": "ground-whirlwind",
+        "pivot": "grip",
+        "direction": "forward",
+        "visualRevolutions": 1
+      },
+      "holdScaling": {
+        "cadence": "weapon-cooldown"
+      }
+    },
     "dual": true,
     "durability": 75
   },
@@ -3395,7 +3435,8 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
     "comboVariant": "frostfang-forward-rend",
     "performance": {
       "hold": "steady",
-      "action": "default-swing"
+      "action": "default-swing",
+      "comboForwardPx": 64
     },
     "dual": true,
     "durability": 75
@@ -10377,7 +10418,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
     "halfArc": 0.6,
     "cooldown": 0.45,
     "displayLength": 60,
-    "swingArc": 1.8,
+    "swingArc": 6.283185307179586,
     "gripFrac": 0.14,
     "tags": {
       "grip": "1H",
@@ -10392,12 +10433,22 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "INT"
       ]
     },
-    "suppressVfx": true,
+    "swingStyle": "spin",
     "suppressMeleeHitbox": true,
     "performance": {
       "hold": "steady",
-      "action": "hold",
-      "suppressSwing": true
+      "action": "spin",
+      "continuous": true,
+      "suppressSwing": true,
+      "twirl": {
+        "plane": "screen-circle",
+        "pivot": "shaft-midpoint",
+        "direction": "forward",
+        "visualRevolutions": 1
+      },
+      "holdScaling": {
+        "cadence": "weapon-cooldown"
+      }
     },
     "scatter": {
       "count": 5,
@@ -10405,7 +10456,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "speed": 420,
       "range": 260,
       "damage": 6,
-      "aim": "cone",
+      "aim": "radial-random",
       "explode": {
         "radius": 48,
         "damage": 5
@@ -11860,7 +11911,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
     "swingArc": 2.5,
     "gripFrac": 0.14,
     "tags": {
-      "grip": "1H",
+      "grip": "dual",
       "size": "S",
       "delivery": "melee-arc",
       "fireMode": "tap-charge",
@@ -11872,6 +11923,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "INT"
       ]
     },
+    "dual": true,
     "scatter": {
       "count": 5,
       "spread": 0.45,
@@ -11966,7 +12018,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
     "swingArc": 2.4,
     "gripFrac": 0.13,
     "tags": {
-      "grip": "1H",
+      "grip": "dual",
       "size": "M",
       "delivery": "melee-arc",
       "fireMode": "tap-charge",
@@ -11979,6 +12031,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       ]
     },
     "effectEmitter": "tip",
+    "dual": true,
     "scatter": {
       "count": 6,
       "spread": 0.28,
@@ -12569,10 +12622,10 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
     "name": "Emberfist Wraps",
     "expansion": true,
     "damage": 2.4,
-    "range": 150,
+    "range": 184,
     "halfArc": 0.5,
     "cooldown": 0.12,
-    "displayLength": 56,
+    "displayLength": 40,
     "swingArc": 2.2,
     "gripFrac": 0.15,
     "tags": {
@@ -13813,7 +13866,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
     "swingArc": 2.2,
     "gripFrac": 0.5,
     "tags": {
-      "grip": "1H",
+      "grip": "dual",
       "size": "S",
       "delivery": "thrown",
       "fireMode": "tap-charge",
@@ -13836,6 +13889,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "preThrowRevolutions": 0.5,
       "throwStyle": "engaged"
     },
+    "dual": true,
     "durability": 75,
     "thrown": {
       "speed": 760,
@@ -13844,7 +13898,11 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "charges": 3,
       "refillSeconds": 1.8,
       "pierce": 3,
-      "rotation": "spin"
+      "rotation": "spin",
+      "helix": {
+        "amplitudePx": 44,
+        "frequencyHz": 2
+      }
     }
   },
   "x2-kunai": {
@@ -14932,7 +14990,8 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "deltaAngle": 0
       },
       "theatrics": {
-        "flip": "front"
+        "flip": "front",
+        "flipEnd": 0.68
       }
     }
   ],

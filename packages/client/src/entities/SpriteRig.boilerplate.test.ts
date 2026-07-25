@@ -912,7 +912,7 @@ describe("SpriteRig glove-weapon hand replacement", () => {
   }
 
   it("hides only the occupied weapon hand for a single glove", async () => {
-    const { def, sprite } = await weaponFixture("x2-cinderpalm-brand-glove");
+    const { def, sprite } = await weaponFixture("x2-hellmouth-palmcaster");
     const rig = new SpriteRig(fakeScene(), 0, 0, false, "single-glove-rig", "drifter");
     const hands = handImages(rig);
 
@@ -936,7 +936,7 @@ describe("SpriteRig glove-weapon hand replacement", () => {
   it("restores hands on stow and when swapping to a held weapon", async () => {
     const [{ WEAPONS }, glove, sword] = await Promise.all([
       import("@dd/shared"),
-      weaponFixture("x2-cinderpalm-brand-glove"),
+      weaponFixture("x2-hellmouth-palmcaster"),
       weaponFixture("rattler-sabre"),
     ]);
     const rig = new SpriteRig(fakeScene(), 0, 0, false, "glove-swap-rig", "drifter");

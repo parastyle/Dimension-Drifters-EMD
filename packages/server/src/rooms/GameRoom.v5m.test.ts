@@ -73,7 +73,7 @@ describe("GameRoom — V5M melee authority", () => {
     expect(target.hp).toBeLessThan(10_000);
   });
 
-  it("damages targets once across the Gravewarden frontflip's full-circle union", () => {
+  it("damages every target once per visible Gravewarden revolution", () => {
     const { room, player, combat } = makeRoom("spade-circle");
     const weapon = equip(room, player, combat, "gravediggers-spade");
     const targets = [
@@ -101,10 +101,48 @@ describe("GameRoom — V5M melee authority", () => {
 
     for (const target of targets) {
       expect(target.hp).toBeLessThan(10_000);
-      expect(damageEnemy.mock.calls.filter((call) => call[1] === target.id)).toHaveLength(1);
+      const calls = damageEnemy.mock.calls.filter((call) => call[1] === target.id);
+      expect(calls).toHaveLength(3);
+      expect(calls.reduce((total, call) => total + Number(call[2]), 0)).toBeCloseTo(8, 10);
     }
+    const receipts = [...room.state.combatReceipts].filter(
+      (row) => row.seq > 0 && row.weaponId === weapon.id,
+    );
+    expect(receipts).toHaveLength(targets.length * 3);
+    expect(receipts.every((row) => row.damage > 0)).toBe(true);
+    expect(weapon.swingArc).toBeCloseTo(Math.PI * 6, 10);
+    expect(weapon.performance?.twirl?.visualRevolutions).toBe(3);
+    expect(weapon.performance?.twirl?.cadenceSeconds).toBeCloseTo(0.6, 10);
+  });
+
+  it("keeps Doubleheader's held whirlwind planted with one receipt per visual revolution", () => {
+    const { room, player, combat } = makeRoom("doubleheader-whirlwind");
+    const weapon = equip(room, player, combat, "x2-brimstone-doubleheader");
+    const start = { x: player.x, y: player.y };
+    const target = new EnemyState();
+    target.id = "doubleheader-target";
+    target.kind = "critter";
+    target.x = player.x + 72;
+    target.y = player.y;
+    target.hp = 10_000;
+    room.state.enemies.set(target.id, target);
+    room.rebuildEnemyGrid();
+    const swing = swingDescriptorFor(weapon, weapon.cooldown);
+    const damageEnemy = vi.spyOn(room, "damageEnemy");
+
+    room.resolveSwing(player, combat, weapon, swing);
+    for (let elapsed = 0; elapsed < swing.poseSeconds + 0.1; elapsed += 0.05)
+      room.stepMeleeSwings(0.05);
+
+    const calls = damageEnemy.mock.calls.filter((call) => call[1] === target.id);
+    const receipts = [...room.state.combatReceipts].filter(
+      (row) => row.seq > 0 && row.weaponId === weapon.id && row.targetId === target.id,
+    );
+    expect(calls).toHaveLength(1);
+    expect(receipts).toHaveLength(1);
+    expect(receipts[0]?.damage).toBeCloseTo(weapon.damage, 10);
+    expect({ x: player.x, y: player.y }).toEqual(start);
     expect(weapon.swingArc).toBeCloseTo(Math.PI * 2, 10);
-    expect(weapon.performance?.twirl?.visualRevolutions).toBe(6);
-    expect(weapon.performance?.twirl?.cadenceSeconds).toBeCloseTo(0.2, 10);
+    expect(weapon.performance?.twirl?.visualRevolutions).toBe(1);
   });
 });

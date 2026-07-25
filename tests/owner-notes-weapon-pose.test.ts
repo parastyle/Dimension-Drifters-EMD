@@ -79,7 +79,7 @@ describe("owner ledger B8 pose, grip, and combo language", () => {
       ),
     ).toEqual({
       "gravediggers-spade": {
-        damage: 8,
+        damage: 8 / 3,
         cooldown: 0.6,
         gunDamage: null,
         fireRate: null,
@@ -147,8 +147,8 @@ describe("owner ledger B8 pose, grip, and combo language", () => {
         plane: "continuous-frontflip",
         pivot: "grip",
         direction: "forward",
-        visualRevolutions: 6,
-        cadenceSeconds: 0.2,
+        visualRevolutions: 3,
+        cadenceSeconds: 0.6,
       },
       holdScaling: { cadence: "weapon-cooldown" },
     });
@@ -164,12 +164,12 @@ describe("owner ledger B8 pose, grip, and combo language", () => {
       ),
     ).toBe(0);
     const epsilon = 1e-6;
-    const start = continuousFrontflipAngle(0, 6, 1, 1);
-    const end = continuousFrontflipAngle(1, 6, 1, 1);
+    const start = continuousFrontflipAngle(0, 3, 1, 1);
+    const end = continuousFrontflipAngle(1, 3, 1, 1);
     expect(Math.cos(end)).toBeCloseTo(Math.cos(start), 12);
     expect(Math.sin(end)).toBeCloseTo(Math.sin(start), 12);
-    expect((end - continuousFrontflipAngle(1 - epsilon, 6, 1, 1)) / epsilon).toBeCloseTo(
-      (continuousFrontflipAngle(epsilon, 6, 1, 1) - start) / epsilon,
+    expect((end - continuousFrontflipAngle(1 - epsilon, 3, 1, 1)) / epsilon).toBeCloseTo(
+      (continuousFrontflipAngle(epsilon, 3, 1, 1) - start) / epsilon,
       8,
     );
   });

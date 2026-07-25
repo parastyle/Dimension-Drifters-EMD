@@ -558,7 +558,7 @@ export interface WeaponPerformanceDef {
   /** Full hand revolutions during a thrown weapon's anticipation/draw phase. */
   preThrowRevolutions?: number;
   /** Presentation-only whole-art throwing treatment; authoritative delivery remains unchanged. */
-  throwStyle?: "engaged";
+  throwStyle?: "engaged" | "two-hand-overhead";
   /** Reuse a shipped flourish vocabulary while retaining this weapon's ordinary pose family. */
   flourishStyle?: "pistol-end-hook";
   /** Authoritative one-hit sweep performed during a thrown weapon's accepted draw twirl. */
@@ -843,6 +843,11 @@ export interface WeaponDef {
     arcHeight?: number;
     /** In-flight orientation policy for the own-sprite projectile. */
     rotation?: "spin" | "point-forward" | "barrel-roll";
+    /** Two server-owned, equal-damage projectiles on opposite sine phases. */
+    helix?: {
+      amplitudePx: number;
+      frequencyHz: number;
+    };
     /** Enemy-to-enemy redirects remaining after the initial impact. */
     ricochetHops?: number;
     /** Maximum acquisition distance for each enemy ricochet. */
@@ -1568,18 +1573,18 @@ const BASE_WEAPONS: Record<string, WeaponDefSource> = {
     },
   },
   // §6/§15 #10 GRAVEWARDEN BUSTER — the stable M0 rez-carrier id presents an original heroic
-  // greatblade. B30's recovered order makes each accepted attack a fast forward jump through six complete
-  // pitch-axis spins; its authoritative swept edge covers the same six visible revolutions.
+  // greatblade. B49 slows the frontflip loop to five turns/second and assigns one authoritative,
+  // damage-number-producing hit to each of the three visible revolutions without changing beat DPS.
   "gravediggers-spade": {
     id: "gravediggers-spade",
     name: "Gravewarden Buster",
     sprite: "gravewarden-buster",
-    damage: 8,
+    damage: 8 / 3,
     range: 354,
     halfArc: 0.95,
     cooldown: 0.6,
     displayLength: 164,
-    swingArc: Math.PI * 2,
+    swingArc: Math.PI * 6,
     gripFrac: 0.1,
     twoHanded: true,
     performance: {
@@ -1591,8 +1596,8 @@ const BASE_WEAPONS: Record<string, WeaponDefSource> = {
         plane: "continuous-frontflip",
         pivot: "grip",
         direction: "forward",
-        visualRevolutions: 6,
-        cadenceSeconds: 0.2,
+        visualRevolutions: 3,
+        cadenceSeconds: 0.6,
       },
       holdScaling: { cadence: "weapon-cooldown" },
     },

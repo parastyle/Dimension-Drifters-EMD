@@ -19,10 +19,16 @@ describe("authored pre-made dual rig presentation", () => {
     const catalogDuals = Object.values(WEAPONS).filter((weapon) => weapon.tags.grip === "dual");
     const expansionDuals = catalogDuals.filter((weapon) => weapon.id.startsWith("x2-"));
 
-    // B31 promotes Wyrmscale after B30's Falcata. The legacy twin-bowie-fangs
-    // is also catalog-authored and remains covered, bringing the live total to 25.
-    expect(expansionDuals).toHaveLength(24);
+    // B49 adds the Void star and mirrors both single-art caster gloves into authored duals.
+    expect(expansionDuals).toHaveLength(27);
     expect(catalogDuals.map((weapon) => weapon.id)).toContain("twin-bowie-fangs");
+    expect(expansionDuals.map((weapon) => weapon.id)).toEqual(
+      expect.arrayContaining([
+        "x2-void-throwing-star",
+        "x2-frostknuckle-rimewrap",
+        "x2-cinderpalm-brand-glove",
+      ]),
+    );
 
     for (const weapon of catalogDuals) {
       const spriteId = weaponDisplaySpriteId(weapon);

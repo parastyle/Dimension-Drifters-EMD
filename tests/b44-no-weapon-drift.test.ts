@@ -100,9 +100,11 @@ describe("B44 no-weapon-drift standing law", () => {
       expect(reachDelta, `${guard.id}:reach`).toBeLessThanOrEqual(0.1);
       const quakeDamage =
         guard.id === "x2-thunderhead-stormfists" ? (weapon.quake?.damage ?? 0) : 0;
-      expect(weapon.damage + quakeDamage, `${guard.id}:damage`).toBeCloseTo(guard.d, 12);
+      const revolutionHits = guard.id === "gravediggers-spade" ? 3 : 1;
+      const damagePerBeat = weapon.damage * revolutionHits + quakeDamage;
+      expect(damagePerBeat, `${guard.id}:damage`).toBeCloseTo(guard.d, 12);
       expect(weapon.cooldown, `${guard.id}:cooldown`).toBeCloseTo(guard.cd, 12);
-      expect((weapon.damage + quakeDamage) / weapon.cooldown, `${guard.id}:dps`).toBeCloseTo(
+      expect(damagePerBeat / weapon.cooldown, `${guard.id}:dps`).toBeCloseTo(
         guard.d / guard.cd,
         12,
       );

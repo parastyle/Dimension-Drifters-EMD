@@ -154,6 +154,8 @@ export interface MeleeComboTheatrics {
   readonly paperTurns?: number;
   /** Full-card somersault direction, rendered through the movement kit's tumble helper. */
   readonly flip?: MeleeComboFlip;
+  /** Normalized beat time when the somersault finishes; omitted finishes at authoritative impact. */
+  readonly flipEnd?: number;
   /** Peak scale of the striking worn hand/foot along its attack axis; identity is exactly 1. */
   readonly limbStretch?: number;
   /** Readable silhouette held after the strike before the next accepted beat. */

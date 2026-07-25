@@ -85,21 +85,31 @@ describe("GameRoom — W4M server authority", () => {
 
       room.throwWeapon(player, combat, weapon);
       expect(room.state.projectiles.size, `${id}: no early release`).toBe(0);
-      expect(room.pendingWeaponThrows, `${id}: queued release`).toHaveLength(1);
+      const expectedRows = id === "x2-void-throwing-star" ? 2 : 1;
+      expect(room.pendingWeaponThrows, `${id}: queued release`).toHaveLength(expectedRows);
 
-      const pending = room.pendingWeaponThrows[0];
-      room.emitWeaponThrow(pending, player.x, player.y);
-      const projectile = [...room.state.projectiles.values()][0];
-      expect(projectile?.kind, `${id}: encoded weapon identity`).toBe(`thrown:${id}`);
-      expect(thrownProjectileSpriteId(projectile?.kind ?? ""), `${id}: own sprite`).toBe(id);
-      expect(
-        projectile && room.projectileMeta.get(projectile.id),
-        `${id}: authority meta`,
-      ).toMatchObject({
-        sourcePlayerId: player.id,
-        sourceWeaponId: id,
-        delivery: CombatDelivery.Thrown,
-      });
+      for (const pending of room.pendingWeaponThrows)
+        room.emitWeaponThrow(pending, player.x, player.y);
+      const projectiles = [...room.state.projectiles.values()];
+      expect(projectiles).toHaveLength(expectedRows);
+      for (const projectile of projectiles) {
+        expect(projectile.kind, `${id}: encoded weapon identity`).toBe(`thrown:${id}`);
+        expect(thrownProjectileSpriteId(projectile.kind), `${id}: own sprite`).toBe(id);
+        expect(room.projectileMeta.get(projectile.id), `${id}: authority meta`).toMatchObject({
+          sourcePlayerId: player.id,
+          sourceWeaponId: id,
+          delivery: CombatDelivery.Thrown,
+        });
+      }
+      if (id === "x2-void-throwing-star") {
+        expect(projectiles.map((projectile) => projectile.sourceMuzzlePart)).toEqual([0, 1]);
+        const metas = projectiles.map((projectile) => room.projectileMeta.get(projectile.id));
+        expect(metas.map((meta) => meta?.waveform?.definition.phaseRad)).toEqual([0, Math.PI]);
+        expect(metas.reduce((total, meta) => total + (meta?.damage ?? 0), 0)).toBeCloseTo(
+          weapon.thrown.damage,
+          10,
+        );
+      }
     }
   });
 

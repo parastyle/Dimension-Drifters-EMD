@@ -127,16 +127,18 @@ describe("owner-notes V3C caster orders", () => {
     });
   });
 
-  it("removes Hailshard's rogue swing while retaining its bounded forward five-shard payload", () => {
+  it("restores Hailshard's 360 swing and omnidirectional five-shard payload", () => {
     const definition = weapon("x2-hailshard-resonator");
     expect(definition.performance).toMatchObject({
-      action: "hold",
+      action: "spin",
+      continuous: true,
       suppressSwing: true,
+      twirl: { plane: "screen-circle", visualRevolutions: 1 },
     });
-    expect(definition.performance?.continuous).not.toBe(true);
-    expect(definition.suppressVfx).toBe(true);
+    expect(definition.swingStyle).toBe("spin");
+    expect(definition.suppressVfx).not.toBe(true);
     expect(definition.suppressMeleeHitbox).toBe(true);
-    expect(definition.scatter).toMatchObject({ count: 5, aim: "cone" });
+    expect(definition.scatter).toMatchObject({ count: 5, aim: "radial-random" });
   });
 
   it("splits Arcanist's Lance into three capped bolts without multiplying DPS", () => {

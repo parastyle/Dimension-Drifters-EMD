@@ -61,15 +61,15 @@ describe("B16 single-glove occupancy and facing-side idle hand", () => {
     ]);
   });
 
-  it("releases Cinderpalm's unused hand without requiring an explicit idle override", () => {
+  it("occupies both hands for B49's dual-wield Cinderpalm without an idle override", () => {
     const cinderpalm = weapon("x2-cinderpalm-brand-glove");
     const idleFrame = { phase: "idle" as const, phaseT: 0 };
 
     expect(cinderpalm.poseLanguage?.idle).toBeUndefined();
-    expect(cinderpalm.tags.grip).toBe("1H");
+    expect(cinderpalm.tags.grip).toBe("dual");
     expect(
       ([0, 1] as const).map((hand) => classifyHandRole(cinderpalm, idleFrame, hand)),
-    ).toEqual(["hard-constrained", "authored-idle"]);
+    ).toEqual(["hard-constrained", "hard-constrained"]);
   });
 
   it("activates Gatling's synthesized 2H support grip under the default art policy", () => {

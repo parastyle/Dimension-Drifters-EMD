@@ -27,7 +27,7 @@ describe("Reverent Broadsword martial two-beat combo", () => {
       combo.sequence.map(({ motion, hand, theatrics }) => ({ motion, hand, theatrics })),
     ).toEqual([
       { motion: "jab", hand: "lead", theatrics: undefined },
-      { motion: "impale", hand: "lead", theatrics: { flip: "front" } },
+      { motion: "impale", hand: "lead", theatrics: { flip: "front", flipEnd: 0.68 } },
     ]);
     expect(combo.sequence.every((step) => !("rootMotion" in step))).toBe(true);
     expect("forwardDrift" in (weapon.performance ?? {})).toBe(false);

@@ -1,0 +1,35 @@
+# B49 melee/thrown live gate
+
+- Verdict: PASS — 26 captures (13 orders × 2 facings).
+- Private client/game ports: 58185 / 58184.
+- Gravedigger and Doubleheader captures include authoritative per-revolution receipts and visible damage-number counts.
+- Void Throwing Star captures include two rendered source parts crossing on opposite helix phases.
+- Hailshard regression culprit: B30 commit `2a577c7` (merge `12986aa`).
+- Machine receipt: [live-gate.json](./live-gate.json)
+
+- x2-void-throwing-star / right: [screenshot](./x2-void-throwing-star-right.png)
+- x2-void-throwing-star / left: [screenshot](./x2-void-throwing-star-left.png)
+- x2-hailshard-resonator / right: [screenshot](./x2-hailshard-resonator-right.png)
+- x2-hailshard-resonator / left: [screenshot](./x2-hailshard-resonator-left.png)
+- gravediggers-spade / right: [screenshot](./gravediggers-spade-right.png) · [damage cadence](./gravediggers-spade-right-damage-cadence.png)
+- gravediggers-spade / left: [screenshot](./gravediggers-spade-left.png) · [damage cadence](./gravediggers-spade-left-damage-cadence.png)
+- x2-cinderbrand-cleaver / right: [screenshot](./x2-cinderbrand-cleaver-right.png)
+- x2-cinderbrand-cleaver / left: [screenshot](./x2-cinderbrand-cleaver-left.png)
+- x2-brimstone-doubleheader / right: [screenshot](./x2-brimstone-doubleheader-right.png) · [damage cadence](./x2-brimstone-doubleheader-right-damage-cadence.png)
+- x2-brimstone-doubleheader / left: [screenshot](./x2-brimstone-doubleheader-left.png) · [damage cadence](./x2-brimstone-doubleheader-left-damage-cadence.png)
+- x2-hollowmoon-reaver / right: [screenshot](./x2-hollowmoon-reaver-right.png)
+- x2-hollowmoon-reaver / left: [screenshot](./x2-hollowmoon-reaver-left.png)
+- x2-frostfang-rakes / right: [screenshot](./x2-frostfang-rakes-right.png)
+- x2-frostfang-rakes / left: [screenshot](./x2-frostfang-rakes-left.png)
+- x2-gallows-splitter / right: [screenshot](./x2-gallows-splitter-right.png)
+- x2-gallows-splitter / left: [screenshot](./x2-gallows-splitter-left.png)
+- x2-saloon-tomahawk / right: [screenshot](./x2-saloon-tomahawk-right.png)
+- x2-saloon-tomahawk / left: [screenshot](./x2-saloon-tomahawk-left.png)
+- x2-reverent-broadsword / right: [screenshot](./x2-reverent-broadsword-right.png)
+- x2-reverent-broadsword / left: [screenshot](./x2-reverent-broadsword-left.png)
+- x2-emberfist-wraps / right: [screenshot](./x2-emberfist-wraps-right.png)
+- x2-emberfist-wraps / left: [screenshot](./x2-emberfist-wraps-left.png)
+- x2-frostknuckle-rimewrap / right: [screenshot](./x2-frostknuckle-rimewrap-right.png)
+- x2-frostknuckle-rimewrap / left: [screenshot](./x2-frostknuckle-rimewrap-left.png)
+- x2-cinderpalm-brand-glove / right: [screenshot](./x2-cinderpalm-brand-glove-right.png)
+- x2-cinderpalm-brand-glove / left: [screenshot](./x2-cinderpalm-brand-glove-left.png)

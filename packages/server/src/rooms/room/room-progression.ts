@@ -725,6 +725,7 @@ export interface PendingScatterVolley {
   crit: number;
   sourcePlayerId: string;
   sourceWeaponId: string;
+  sourceMuzzlePart: 0 | 1;
   kind: string;
 }
 
@@ -754,8 +755,10 @@ export interface PendingWeaponThrow {
   crit: number;
   landingDamagePerSecond?: number;
   ricochet?: { hops: number; range: number };
+  projectileWaveform?: ProjectileWaveformDef;
   arcHeight?: number;
   returning?: boolean;
+  sourceMuzzlePart?: 0 | 1;
 }
 
 export interface ActiveMeleeSwing {
