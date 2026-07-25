@@ -526,7 +526,7 @@ export const tickReached = (now: number, target: number): boolean => ((now - tar
 export const ticksFromSeconds = (seconds: number): number =>
   Math.max(1, Math.round((seconds * 1000) / TICK_MS));
 /** Closed census of every legal server-authored player-motion owner.
- * Weapon attacks are deliberately absent: the player alone owns attack-time locomotion. */
+ * B45 gun/beam recoil is the sole weapon-fire source; melee and caster motion remain prohibited. */
 export const SERVER_MOTION_SOURCES = [
   "dodge-roll",
   "distance-jump",
@@ -542,6 +542,7 @@ export const SERVER_MOTION_SOURCES = [
   "revive-placement",
   "teleport-placement",
   "ultimate",
+  "weapon-fire-recoil",
 ] as const;
 export type ServerMotionSource = (typeof SERVER_MOTION_SOURCES)[number];
 
@@ -1506,6 +1507,7 @@ export interface GameRoomContext extends Room<ArenaState> {
   stepGunBurst(player: PlayerState, c: CombatState, weapon: WeaponDef | undefined, acting: boolean): void;
   detonateWarpAtCursor(player: PlayerState, c: CombatState, weapon: WeaponDef): void;
   fireGun(player: PlayerState, c: CombatState, weapon: WeaponDef, hand?: WeaponHand, recoilElapsedMs?: number, burstIndex?: number): void;
+  applyWeaponFireRecoil(player: PlayerState, aimX: number, aimY: number, impulse: number): void;
   applyProjectileChain(seed: EnemyState, seedId: string, meta: {
       hit: Set<string>;
       sourcePlayerId?: string;

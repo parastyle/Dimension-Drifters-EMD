@@ -1,0 +1,91 @@
+{
+  "capturedAt": "2026-07-25T02:30:35.116Z",
+  "transport": {
+    "endpoint": "ws://127.0.0.1:49153",
+    "osAssignedEphemeralPort": 49153,
+    "protectedDefaultsUntouched": true,
+    "simultaneousClients": 2,
+    "liveColyseusStack": true
+  },
+  "assertions": {
+    "privateEphemeralPort": true,
+    "fourWeaponClassesCovered": true,
+    "zeroEnvelopeRejections": true,
+    "observerSawSameMotion": true,
+    "allMotionClassified": true,
+    "pistolNudge": true,
+    "shotgunShove": true,
+    "heavyPush": true,
+    "gatlingCreep": true
+  },
+  "runs": [
+    {
+      "weaponId": "x-gun-revolver-cannon",
+      "label": "pistol-nudge",
+      "fireTicks": 1,
+      "settleTicks": 14,
+      "recoil": 65,
+      "cameraKick": 0.004,
+      "acceptedShots": 1,
+      "displacementPx": 8.365966796875,
+      "correctionSeqBefore": 0,
+      "correctionSeqAfter": 0,
+      "epochBefore": 1,
+      "epochAfter": 2,
+      "classifiedFrames": 10,
+      "maxObserverErrorPx": 0,
+      "ownerSelfCorrections": 1
+    },
+    {
+      "weaponId": "x-gun-coffin-shotgun",
+      "label": "shotgun-shove",
+      "fireTicks": 1,
+      "settleTicks": 14,
+      "recoil": 161,
+      "cameraKick": 0.0035,
+      "acceptedShots": 1,
+      "displacementPx": 21.607666015625,
+      "correctionSeqBefore": 0,
+      "correctionSeqAfter": 0,
+      "epochBefore": 2,
+      "epochAfter": 3,
+      "classifiedFrames": 10,
+      "maxObserverErrorPx": 0,
+      "ownerSelfCorrections": 1
+    },
+    {
+      "weaponId": "x2-calamity-howitzer",
+      "label": "heavy-cannon-push",
+      "fireTicks": 1,
+      "settleTicks": 14,
+      "recoil": 233,
+      "cameraKick": 0.004,
+      "acceptedShots": 1,
+      "displacementPx": 31.589111328125,
+      "correctionSeqBefore": 0,
+      "correctionSeqAfter": 0,
+      "epochBefore": 3,
+      "epochAfter": 4,
+      "classifiedFrames": 10,
+      "maxObserverErrorPx": 0,
+      "ownerSelfCorrections": 1
+    },
+    {
+      "weaponId": "x-gun-gatling",
+      "label": "sustained-gatling-creep",
+      "fireTicks": 24,
+      "settleTicks": 14,
+      "recoil": 14,
+      "cameraKick": 0.0006,
+      "acceptedShots": 19,
+      "displacementPx": 36.108050341651506,
+      "correctionSeqBefore": 0,
+      "correctionSeqAfter": 0,
+      "epochBefore": 4,
+      "epochAfter": 5,
+      "classifiedFrames": 33,
+      "maxObserverErrorPx": 0,
+      "ownerSelfCorrections": 1
+    }
+  ]
+}

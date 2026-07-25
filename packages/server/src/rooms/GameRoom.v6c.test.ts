@@ -72,16 +72,20 @@ describe("GameRoom — V6C caster/ranged authority", () => {
     }
   });
 
-  it("keeps Calamity planted without changing its camera-recoil field", () => {
+  it("gives Calamity a classified heavy push without changing its camera-recoil field", () => {
     const { room, player, combat } = fixture("calamity-recoil");
     const weapon = equip(player, combat, "x2-calamity-howitzer");
     if (!weapon.gun) throw new Error("Calamity gun fixture is required");
 
-    const before = { vx: player.vx, vy: player.vy };
+    const epochBefore = player.dualWield.serverMotionEpoch;
     room.fireGun(player, combat, weapon);
 
+    expect(weapon.recoil).toBe(233);
     expect(weapon.gun.recoil).toBe(0.004);
     expect("userKnockbackMultiplier" in weapon.gun).toBe(false);
-    expect({ vx: player.vx, vy: player.vy }).toEqual(before);
+    expect({ vx: player.vx, vy: player.vy }).toEqual({ vx: -233, vy: 0 });
+    expect(player.dualWield.serverMotionEpoch).toBe(epochBefore + 1);
+    expect(player.dualWield.serverMotionActive).toBe(true);
+    expect(room.serverMotionSourceByPlayer.get(player.id)).toBe("weapon-fire-recoil");
   });
 });

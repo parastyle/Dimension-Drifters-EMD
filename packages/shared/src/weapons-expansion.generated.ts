@@ -2644,6 +2644,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "DEX"
       ]
     },
+    "recoil": 174,
     "gun": {
       "damage": 24,
       "projectileSpeed": 720,
@@ -2684,6 +2685,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "DEX"
       ]
     },
+    "recoil": 27,
     "twoHanded": true,
     "gun": {
       "damage": 6,
@@ -3639,6 +3641,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "revolver"
       ]
     },
+    "recoil": 41,
     "gun": {
       "damage": 9,
       "projectileSpeed": 920,
@@ -3682,6 +3685,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "revolver"
       ]
     },
+    "recoil": 39,
     "gun": {
       "damage": 7,
       "projectileSpeed": 820,
@@ -3725,6 +3729,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "revolver"
       ]
     },
+    "recoil": 143,
     "gun": {
       "damage": 16,
       "projectileSpeed": 1050,
@@ -3774,6 +3779,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "pistol"
       ]
     },
+    "recoil": 48,
     "gun": {
       "damage": 8,
       "projectileSpeed": 760,
@@ -3822,6 +3828,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "revolver"
       ]
     },
+    "recoil": 25,
     "gun": {
       "damage": 6,
       "projectileSpeed": 740,
@@ -3863,6 +3870,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "pistol"
       ]
     },
+    "recoil": 14,
     "gun": {
       "damage": 6,
       "projectileSpeed": 4000,
@@ -3905,6 +3913,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "pistol"
       ]
     },
+    "recoil": 18,
     "gun": {
       "damage": 5,
       "projectileSpeed": 780,
@@ -3948,6 +3957,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "revolver"
       ]
     },
+    "recoil": 138,
     "gun": {
       "damage": 11,
       "projectileSpeed": 1000,
@@ -3992,6 +4002,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "revolver"
       ]
     },
+    "recoil": 44,
     "collisionLength": 54,
     "gun": {
       "damage": 12,
@@ -4037,6 +4048,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "revolver"
       ]
     },
+    "recoil": 42,
     "gripPoints": {
       "primary": {
         "x": 0.22,
@@ -4085,6 +4097,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "revolver"
       ]
     },
+    "recoil": 22,
     "gun": {
       "damage": 1,
       "projectileSpeed": 880,
@@ -4132,6 +4145,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "revolver"
       ]
     },
+    "recoil": 140,
     "gun": {
       "damage": 13,
       "projectileSpeed": 980,
@@ -4178,6 +4192,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "pistol"
       ]
     },
+    "recoil": 73,
     "gun": {
       "damage": 5,
       "projectileSpeed": 680,
@@ -4222,6 +4237,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "revolver"
       ]
     },
+    "recoil": 40,
     "gun": {
       "damage": 8,
       "projectileSpeed": 860,
@@ -4266,6 +4282,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "pistol"
       ]
     },
+    "recoil": 18,
     "dual": true,
     "gun": {
       "damage": 5,
@@ -4310,6 +4327,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "revolver"
       ]
     },
+    "recoil": 40,
     "gun": {
       "damage": 8,
       "projectileSpeed": 820,
@@ -4356,6 +4374,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "pistol"
       ]
     },
+    "recoil": 69,
     "gun": {
       "damage": 6,
       "projectileSpeed": 700,
@@ -4400,6 +4419,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "revolver"
       ]
     },
+    "recoil": 137,
     "gun": {
       "damage": 10,
       "projectileSpeed": 940,
@@ -4442,6 +4462,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "pistol"
       ]
     },
+    "recoil": 11,
     "gun": {
       "damage": 4,
       "projectileSpeed": 760,
@@ -4484,6 +4505,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "pistol"
       ]
     },
+    "recoil": 23,
     "gun": {
       "damage": 5,
       "projectileSpeed": 880,
@@ -4526,6 +4548,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "lever"
       ]
     },
+    "recoil": 105,
     "gripPoints": {
       "primary": {
         "x": 0.14,
@@ -4578,6 +4601,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "lever"
       ]
     },
+    "recoil": 84,
     "archived": true,
     "gripPoints": {
       "primary": {
@@ -4630,6 +4654,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "bolt"
       ]
     },
+    "recoil": 108,
     "gripPoints": {
       "primary": {
         "x": 0.28,
@@ -4685,6 +4710,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "INT"
       ]
     },
+    "recoil": 213,
     "gripPoints": {
       "primary": {
         "x": 0.36,
@@ -4740,6 +4766,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "lever"
       ]
     },
+    "recoil": 104,
     "gripPoints": {
       "primary": {
         "x": 0.13,
@@ -4790,6 +4817,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "DEX"
       ]
     },
+    "recoil": 106,
     "twoHanded": true,
     "gun": {
       "damage": 14,
@@ -4833,6 +4861,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "lever"
       ]
     },
+    "recoil": 102,
     "gripPoints": {
       "primary": {
         "x": 0.13,
@@ -4885,6 +4914,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "STR"
       ]
     },
+    "recoil": 105,
     "twoHanded": true,
     "gun": {
       "damage": 13,
@@ -4932,6 +4962,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "lever"
       ]
     },
+    "recoil": 36,
     "gripPoints": {
       "primary": {
         "x": 0.13,
@@ -4985,6 +5016,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "bolt"
       ]
     },
+    "recoil": 32,
     "gripPoints": {
       "primary": {
         "x": 0.29,
@@ -5036,6 +5068,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "DEX"
       ]
     },
+    "recoil": 133,
     "gripPoints": {
       "primary": {
         "x": 0.29,
@@ -5088,6 +5121,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "INT"
       ]
     },
+    "recoil": 31,
     "twoHanded": true,
     "beam": {
       "damagePerSecond": 30,
@@ -5138,6 +5172,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "pump"
       ]
     },
+    "recoil": 88,
     "gripPoints": {
       "primary": {
         "x": 0.31,
@@ -5188,6 +5223,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "INT"
       ]
     },
+    "recoil": 212,
     "twoHanded": true,
     "gun": {
       "damage": 15,
@@ -5241,6 +5277,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "lever"
       ]
     },
+    "recoil": 25,
     "gripPoints": {
       "primary": {
         "x": 0.15,
@@ -5290,6 +5327,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "STR"
       ]
     },
+    "recoil": 129,
     "twoHanded": true,
     "gun": {
       "damage": 12,
@@ -5336,6 +5374,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "bolt"
       ]
     },
+    "recoil": 106,
     "gripPoints": {
       "primary": {
         "x": 0.28,
@@ -5390,6 +5429,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "lever"
       ]
     },
+    "recoil": 107,
     "gripPoints": {
       "primary": {
         "x": 0.13,
@@ -5442,6 +5482,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "DEX"
       ]
     },
+    "recoil": 105,
     "twoHanded": true,
     "gun": {
       "damage": 13,
@@ -5485,6 +5526,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "lever"
       ]
     },
+    "recoil": 86,
     "gripPoints": {
       "primary": {
         "x": 0.14,
@@ -5543,6 +5585,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "pump"
       ]
     },
+    "recoil": 146,
     "gripPoints": {
       "primary": {
         "x": 0.31,
@@ -5597,6 +5640,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "pump"
       ]
     },
+    "recoil": 156,
     "archived": true,
     "gripPoints": {
       "primary": {
@@ -5649,6 +5693,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "INT"
       ]
     },
+    "recoil": 168,
     "twoHanded": true,
     "gun": {
       "damage": 6,
@@ -5697,6 +5742,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "break"
       ]
     },
+    "recoil": 150,
     "gripPoints": {
       "primary": {
         "x": 0.36,
@@ -5759,6 +5805,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "pump"
       ]
     },
+    "recoil": 146,
     "gripPoints": {
       "primary": {
         "x": 0.37,
@@ -5813,6 +5860,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "INT"
       ]
     },
+    "recoil": 120,
     "twoHanded": true,
     "gun": {
       "damage": 5,
@@ -5861,6 +5909,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "DEX"
       ]
     },
+    "recoil": 178,
     "gripPoints": {
       "primary": {
         "x": 0.34,
@@ -5920,6 +5969,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "pump"
       ]
     },
+    "recoil": 150,
     "gripPoints": {
       "primary": {
         "x": 0.35,
@@ -5970,6 +6020,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "INT"
       ]
     },
+    "recoil": 162,
     "twoHanded": true,
     "gun": {
       "damage": 6,
@@ -6016,6 +6067,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "revolver"
       ]
     },
+    "recoil": 121,
     "gripPoints": {
       "primary": {
         "x": 0.25,
@@ -6069,6 +6121,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "pump"
       ]
     },
+    "recoil": 151,
     "gripPoints": {
       "primary": {
         "x": 0.31,
@@ -6120,6 +6173,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "DEX"
       ]
     },
+    "recoil": 164,
     "twoHanded": true,
     "gun": {
       "damage": 5,
@@ -6164,6 +6218,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "pump"
       ]
     },
+    "recoil": 151,
     "gripPoints": {
       "primary": {
         "x": 0.23,
@@ -6223,6 +6278,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "pump"
       ]
     },
+    "recoil": 146,
     "gripPoints": {
       "primary": {
         "x": 0.23,
@@ -6282,6 +6338,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "pump"
       ]
     },
+    "recoil": 143,
     "gripPoints": {
       "primary": {
         "x": 0.39,
@@ -6338,6 +6395,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "pump"
       ]
     },
+    "recoil": 143,
     "gripPoints": {
       "primary": {
         "x": 0.3,
@@ -6392,6 +6450,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "pump"
       ]
     },
+    "recoil": 151,
     "gripPoints": {
       "primary": {
         "x": 0.31,
@@ -6449,6 +6508,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "pistol"
       ]
     },
+    "recoil": 124,
     "gun": {
       "damage": 4,
       "projectileSpeed": 820,
@@ -6489,6 +6549,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "STR"
       ]
     },
+    "recoil": 171,
     "twoHanded": true,
     "gun": {
       "damage": 6,
@@ -6530,6 +6591,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "STR"
       ]
     },
+    "recoil": 154,
     "gripPoints": {
       "primary": {
         "x": 0.3,
@@ -6581,6 +6643,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "STR"
       ]
     },
+    "recoil": 13,
     "gripPoints": {
       "primary": {
         "x": 0.08,
@@ -6630,6 +6693,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "STR"
       ]
     },
+    "recoil": 228,
     "twoHanded": true,
     "gun": {
       "damage": 16,
@@ -6675,6 +6739,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "INT"
       ]
     },
+    "recoil": 198,
     "twoHanded": true,
     "gun": {
       "damage": 11,
@@ -6720,6 +6785,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "lever"
       ]
     },
+    "recoil": 201,
     "gripPoints": {
       "primary": {
         "x": 0.12,
@@ -6777,6 +6843,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "INT"
       ]
     },
+    "recoil": 226,
     "gripPoints": {
       "primary": {
         "x": 0.28,
@@ -6835,6 +6902,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "pump"
       ]
     },
+    "recoil": 217,
     "gripPoints": {
       "primary": {
         "x": 0.27,
@@ -6895,6 +6963,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "revolver"
       ]
     },
+    "recoil": 23,
     "gripPoints": {
       "primary": {
         "x": 0.38,
@@ -6939,6 +7008,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "LUK"
       ]
     },
+    "recoil": 197,
     "twoHanded": true,
     "gun": {
       "damage": 10,
@@ -6983,6 +7053,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "INT"
       ]
     },
+    "recoil": 18,
     "gripPoints": {
       "primary": {
         "x": 0.43,
@@ -7034,6 +7105,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "DEX"
       ]
     },
+    "recoil": 38,
     "twoHanded": true,
     "beam": {
       "damagePerSecond": 38.23529411764706,
@@ -7087,6 +7159,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "bolt"
       ]
     },
+    "recoil": 203,
     "gripPoints": {
       "primary": {
         "x": 0.24,
@@ -7142,6 +7215,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "DEX"
       ]
     },
+    "recoil": 210,
     "twoHanded": true,
     "gun": {
       "damage": 5,
@@ -7191,6 +7265,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "INT"
       ]
     },
+    "recoil": 227,
     "gun": {
       "damage": 15,
       "projectileSpeed": 620,
@@ -7236,6 +7311,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "pistol"
       ]
     },
+    "recoil": 199,
     "collisionLength": 112,
     "gripPoints": {
       "primary": {
@@ -7291,6 +7367,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "pistol"
       ]
     },
+    "recoil": 194,
     "dual": true,
     "gun": {
       "damage": 24,
@@ -7333,6 +7410,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "DEX"
       ]
     },
+    "recoil": 38,
     "twoHanded": true,
     "beam": {
       "damagePerSecond": 33.333333333333336,
@@ -7380,6 +7458,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "CON"
       ]
     },
+    "recoil": 233,
     "gun": {
       "damage": 22,
       "projectileSpeed": 700,
@@ -7423,6 +7502,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "INT"
       ]
     },
+    "recoil": 219,
     "twoHanded": true,
     "gun": {
       "damage": 4,
@@ -7467,6 +7547,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "STR"
       ]
     },
+    "recoil": 31,
     "twoHanded": true,
     "beam": {
       "damagePerSecond": 25,
@@ -7518,6 +7599,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "STR"
       ]
     },
+    "recoil": 196,
     "gripPoints": {
       "primary": {
         "x": 0.13,
@@ -7574,6 +7656,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "STR"
       ]
     },
+    "recoil": 31,
     "gun": {
       "damage": 6,
       "projectileSpeed": 1050,
@@ -7617,6 +7700,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "revolver"
       ]
     },
+    "recoil": 58,
     "gun": {
       "damage": 11,
       "projectileSpeed": 880,
@@ -7657,6 +7741,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "STR"
       ]
     },
+    "recoil": 98,
     "gripPoints": {
       "primary": {
         "x": 0.1,
@@ -7709,6 +7794,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "DEX"
       ]
     },
+    "recoil": 20,
     "twoHanded": true,
     "gun": {
       "damage": 4,
@@ -7749,6 +7835,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "DEX"
       ]
     },
+    "recoil": 96,
     "twoHanded": true,
     "gun": {
       "damage": 19,
@@ -7790,6 +7877,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "LUK"
       ]
     },
+    "recoil": 90,
     "twoHanded": true,
     "gun": {
       "damage": 4,
@@ -7831,6 +7919,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "STR"
       ]
     },
+    "recoil": 36,
     "gripPoints": {
       "primary": {
         "x": 0.14,
@@ -7886,6 +7975,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "INT"
       ]
     },
+    "recoil": 92,
     "twoHanded": true,
     "gun": {
       "damage": 15,
@@ -7928,6 +8018,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "LUK"
       ]
     },
+    "recoil": 54,
     "gun": {
       "damage": 7,
       "projectileSpeed": 1000,
@@ -7970,6 +8061,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "pistol"
       ]
     },
+    "recoil": 32,
     "dual": true,
     "gun": {
       "damage": 6,
@@ -8010,6 +8102,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "INT"
       ]
     },
+    "recoil": 94,
     "twoHanded": true,
     "gun": {
       "damage": 17,
@@ -8051,6 +8144,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "INT"
       ]
     },
+    "recoil": 69,
     "gun": {
       "damage": 7,
       "projectileSpeed": 1080,
@@ -8090,6 +8184,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "STR"
       ]
     },
+    "recoil": 84,
     "twoHanded": true,
     "gun": {
       "damage": 8,
@@ -8133,6 +8228,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "INT"
       ]
     },
+    "recoil": 95,
     "gripPoints": {
       "primary": {
         "x": 0.1,
@@ -8187,6 +8283,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "pistol"
       ]
     },
+    "recoil": 87,
     "gun": {
       "damage": 4,
       "projectileSpeed": 680,
@@ -8226,6 +8323,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "DEX"
       ]
     },
+    "recoil": 27,
     "dual": true,
     "gun": {
       "damage": 6,
@@ -8267,6 +8365,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "INT"
       ]
     },
+    "recoil": 126,
     "twoHanded": true,
     "gun": {
       "damage": 26,
@@ -8312,6 +8411,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "INT"
       ]
     },
+    "recoil": 25,
     "gripPoints": {
       "primary": {
         "x": 0.15,
@@ -8366,6 +8466,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "revolver"
       ]
     },
+    "recoil": 75,
     "gun": {
       "damage": 13,
       "projectileSpeed": 860,
@@ -8406,6 +8507,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "DEX"
       ]
     },
+    "recoil": 118,
     "twoHanded": true,
     "gun": {
       "damage": 16,
@@ -8530,6 +8632,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "INT"
       ]
     },
+    "recoil": 0,
     "beam": {
       "damagePerSecond": 40,
       "tickRate": 0.1,
@@ -8755,6 +8858,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "INT"
       ]
     },
+    "recoil": 0,
     "archived": true,
     "twoHanded": true,
     "beam": {
@@ -9006,6 +9110,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "INT"
       ]
     },
+    "recoil": 0,
     "twoHanded": true,
     "beam": {
       "damagePerSecond": 40,
@@ -9273,6 +9378,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "DEX"
       ]
     },
+    "recoil": 0,
     "description": "A weathered brass scepter wound in barnacle-crusted rope, its head a fluted conch lacquered in pale rime that breathes a continuous lance of freezing brine.",
     "beam": {
       "damagePerSecond": 33.333333333333336,
@@ -9320,6 +9426,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "LUK"
       ]
     },
+    "recoil": 0,
     "gripPoints": {
       "primary": {
         "x": 0.16,
@@ -9413,6 +9520,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "INT"
       ]
     },
+    "recoil": 0,
     "gripPoints": {
       "primary": {
         "x": 0.1,
@@ -9619,6 +9727,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "INT"
       ]
     },
+    "recoil": 0,
     "description": "A black-iron scepter crowned with a fanged vulture skull whose beak gapes open, draining a thin ribbon of devouring void-shadow from its hollow eyes.",
     "beam": {
       "damagePerSecond": 49.99999999999999,
@@ -9734,6 +9843,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "INT"
       ]
     },
+    "recoil": 0,
     "description": "A slim glass wand encasing a single curled tungsten filament that hums with caged current, drawing a thin unbroken thread of crackling shock down the line.",
     "beam": {
       "damagePerSecond": 50,
@@ -9876,6 +9986,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "INT"
       ]
     },
+    "recoil": 0,
     "gripPoints": {
       "primary": {
         "x": 0.1,
@@ -10163,6 +10274,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "INT"
       ]
     },
+    "recoil": 0,
     "collisionLength": 92,
     "effectRecipe": "riftglass-rainbow-volley",
     "effectEmitter": "tip",
@@ -10590,6 +10702,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "INT"
       ]
     },
+    "recoil": 0,
     "beam": {
       "damagePerSecond": 45.45454545454545,
       "tickRate": 0.1,
@@ -10745,6 +10858,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "INT"
       ]
     },
+    "recoil": 0,
     "twoHanded": true,
     "beam": {
       "damagePerSecond": 60,
@@ -10871,6 +10985,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "INT"
       ]
     },
+    "recoil": 0,
     "beam": {
       "damagePerSecond": 60,
       "tickRate": 0.1,
@@ -10987,6 +11102,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "INT"
       ]
     },
+    "recoil": 0,
     "beam": {
       "damagePerSecond": 58.333333333333336,
       "tickRate": 0.1,
@@ -11161,6 +11277,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "INT"
       ]
     },
+    "recoil": 0,
     "performance": {
       "hold": "aim-forward",
       "action": "recoil",
@@ -11203,6 +11320,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "INT"
       ]
     },
+    "recoil": 0,
     "renderAboveHands": true,
     "dual": true,
     "gun": {
@@ -11479,6 +11597,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "INT"
       ]
     },
+    "recoil": 0,
     "performance": {
       "hold": "shoulder-launcher",
       "action": "recoil",
@@ -11527,6 +11646,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "INT"
       ]
     },
+    "recoil": 0,
     "gun": {
       "damage": 4,
       "projectileSpeed": 820,
@@ -11596,6 +11716,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "INT"
       ]
     },
+    "recoil": 0,
     "gripPoints": {
       "primary": {
         "x": 0.1,
@@ -11764,6 +11885,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "DEX"
       ]
     },
+    "recoil": 0,
     "dual": true,
     "gun": {
       "damage": 4,
@@ -11869,6 +11991,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "INT"
       ]
     },
+    "recoil": 49,
     "gun": {
       "damage": 4,
       "projectileSpeed": 900,
@@ -11910,6 +12033,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "INT"
       ]
     },
+    "recoil": 0,
     "gun": {
       "damage": 4,
       "projectileSpeed": 700,
@@ -11949,6 +12073,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "LUK"
       ]
     },
+    "recoil": 0,
     "gun": {
       "damage": 5,
       "projectileSpeed": 1000,
@@ -12025,6 +12150,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "INT"
       ]
     },
+    "recoil": 0,
     "beam": {
       "damagePerSecond": 25,
       "tickRate": 0.1,
@@ -12106,6 +12232,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "INT"
       ]
     },
+    "recoil": 0,
     "beam": {
       "damagePerSecond": 40,
       "tickRate": 0.1,
@@ -12184,6 +12311,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "INT"
       ]
     },
+    "recoil": 0,
     "effectRecipe": "galvanic-blue-burst",
     "effectEmitter": "tip",
     "twoHanded": true,
@@ -12271,6 +12399,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "LUK"
       ]
     },
+    "recoil": 0,
     "beam": {
       "damagePerSecond": 23.076923076923077,
       "tickRate": 0.15,
@@ -12482,6 +12611,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "INT"
       ]
     },
+    "recoil": 0,
     "gun": {
       "damage": 13,
       "projectileSpeed": 1200,
@@ -13118,6 +13248,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "STR"
       ]
     },
+    "recoil": 29,
     "gripPoints": {
       "primary": {
         "x": 0.31,
@@ -13170,6 +13301,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "INT"
       ]
     },
+    "recoil": 22,
     "gripPoints": {
       "primary": {
         "x": 0.29,
@@ -13222,6 +13354,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "DEX"
       ]
     },
+    "recoil": 100,
     "gripPoints": {
       "primary": {
         "x": 0.31,
@@ -13474,6 +13607,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "bolt"
       ]
     },
+    "recoil": 146,
     "gripPoints": {
       "primary": {
         "x": 0.25,
@@ -13809,6 +13943,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "bolt"
       ]
     },
+    "recoil": 145,
     "gripPoints": {
       "primary": {
         "x": 0.29,
@@ -13864,6 +13999,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "LUK"
       ]
     },
+    "recoil": 0,
     "gripPoints": {
       "primary": {
         "x": 0.2,
@@ -13917,6 +14053,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "STR"
       ]
     },
+    "recoil": 151,
     "gripPoints": {
       "primary": {
         "x": 0.25,
@@ -14029,6 +14166,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "LUK"
       ]
     },
+    "recoil": 195,
     "gripPoints": {
       "primary": {
         "x": 0.25,
@@ -14195,6 +14333,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "DEX"
       ]
     },
+    "recoil": 177,
     "gripPoints": {
       "primary": {
         "x": 0.23,

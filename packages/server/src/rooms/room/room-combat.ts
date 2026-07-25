@@ -2867,6 +2867,12 @@ export const roomCombatMethods = {
       dt,
       descriptor.maxTurnRate,
     );
+    this.applyWeaponFireRecoil(
+      player,
+      Math.cos(c.beamAngle),
+      Math.sin(c.beamAngle),
+      (weapon.recoil ?? 0) * dt,
+    );
     const length = this.damageBeamSweep(player, c, descriptor, dt);
     c.beamChannelT += dt;
     for (let ray = 0; ray < c.beamRayOffsets.length; ray++)
@@ -3905,6 +3911,29 @@ export const roomCombatMethods = {
     c.gunBurstT = 0;
   },
 
+  /** B45 sanctioned gun/beam root motion. It enters the existing additive impulse rail so input composes,
+   * navigation clamps still resolve, airborne bodies are pushed, and B42 ignores owner reports for the
+   * complete fast-decay window instead of rejecting/rubberbanding them. */
+  applyWeaponFireRecoil(
+    this: GameRoomContext,
+    player: PlayerState,
+    aimX: number,
+    aimY: number,
+    impulse: number,
+  ): void {
+    if (!(impulse > 0)) return;
+    const length = Math.hypot(aimX, aimY);
+    if (!(length > 1e-6)) return;
+    const next = addImpulse(
+      player,
+      (-aimX / length) * impulse,
+      (-aimY / length) * impulse,
+    );
+    player.vx = next.vx;
+    player.vy = next.vy;
+    this.beginServerMotion(player, SERVER_MOTION_IMPULSE_TICKS, "weapon-fire-recoil");
+  },
+
   /** Emit follow-up rounds from an accepted trigger; they need no second input or Drive spend. */
   stepGunBurst(this: GameRoomContext,
     player: PlayerState,
@@ -4087,7 +4116,7 @@ export const roomCombatMethods = {
         );
       }
     }
-    // B44: gun kick remains entirely on rig/camera clocks; the player root is untouched.
+    this.applyWeaponFireRecoil(player, aim.x, aim.y, weapon.recoil ?? 0);
   },
 
   /** §38 CASTER fire — conjure one piercing arcane BOLT down aim (no ammo). Distinct from a gun

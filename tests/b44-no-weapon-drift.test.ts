@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { meleeComboSelectionFor, WEAPONS } from "../packages/shared/src/index.js";
 import { SERVER_MOTION_SOURCES } from "../packages/server/src/rooms/room/room-progression.js";
+import { meleeComboSelectionFor, WEAPONS } from "../packages/shared/src/index.js";
 
 const REMOVED_MOTION_KEYS = new Set([
   "forwardDrift",
@@ -41,7 +41,7 @@ describe("B44 no-weapon-drift standing law", () => {
     }
   });
 
-  it("has a closed, weapon-free census for every retained server-motion epoch", () => {
+  it("has a closed census with gun fire as the sole sanctioned weapon-motion epoch", () => {
     expect(SERVER_MOTION_SOURCES).toEqual([
       "dodge-roll",
       "distance-jump",
@@ -57,8 +57,11 @@ describe("B44 no-weapon-drift standing law", () => {
       "revive-placement",
       "teleport-placement",
       "ultimate",
+      "weapon-fire-recoil",
     ]);
-    expect(SERVER_MOTION_SOURCES.some((source) => /weapon|attack/i.test(source))).toBe(false);
+    expect(SERVER_MOTION_SOURCES.filter((source) => /weapon|attack/i.test(source))).toEqual([
+      "weapon-fire-recoil",
+    ]);
 
     const context = readFileSync("packages/server/src/rooms/room/room-progression.ts", "utf8");
     expect(context).toContain(

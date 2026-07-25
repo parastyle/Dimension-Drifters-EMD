@@ -569,7 +569,7 @@ export class GameRoom extends Room<ArenaState> {
   private readonly acceptedClientMovement = new Map<string, ClientMovementReport>();
   /** Exclusive tick deadline for short server-authored impulse/reposition ownership windows. */
   private readonly serverMotionUntilTick = new Map<string, number>();
-  /** Classification companion for the active B42 epoch. Weapon attacks are not legal sources. */
+  /** Classification companion for the active B42 epoch. B45 recoil is the sole legal weapon source. */
   private readonly serverMotionSourceByPlayer = new Map<string, ServerMotionSource>();
   private readonly combat = new Map<string, CombatState>();
   /** Local/offline account truth: validated client claim in, canonical room mutations/receipts out. */
@@ -2015,6 +2015,7 @@ installPrototypeMembers(GameRoom, [
   [roomCombatMethods, "stepGunBurst"],
   [roomCombatMethods, "detonateWarpAtCursor"],
   [roomCombatMethods, "fireGun"],
+  [roomCombatMethods, "applyWeaponFireRecoil"],
   [roomCombatMethods, "applyProjectileChain"],
   [roomCombatMethods, "fireCast"],
   [roomCombatMethods, "throwWeapon"],

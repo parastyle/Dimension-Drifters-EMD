@@ -598,6 +598,12 @@ export interface WeaponDef {
   tier: WeaponTier;
   /** Optional authored catalog lore; generated concepts retain it instead of marooning it in JSON. */
   description?: string;
+  /**
+   * B45 physical shooter recoil. Guns consume this as one opposite-aim impulse in px/s per accepted round;
+   * ranged beams consume it as px/s added per second while active. Zero/omitted keeps the root planted.
+   * This is independent from `gun.recoil`, the retained presentation-only camera/rig kick.
+   */
+  recoil?: number;
   /** Driftblade-line silhouette class for stance-by-size consumers. */
   sizeClass?: WeaponSizeClass;
   /** Reusable named neutral stance resolved by the client pose-language registry. */
@@ -894,7 +900,7 @@ export interface WeaponDef {
     muzzleColor?: number;
     /** Explicit in-flight projectile tint. The server serializes it into the generic projectile kind. */
     projectileColor?: number;
-    /** Recoil camera-kick intensity per shot (heavy slugs punch, the gatling barely buzzes). ~0.0006–0.004. */
+    /** Presentation-only camera/rig kick per shot. B45 physical movement is the top-level `recoil`. */
     recoil?: number;
     /** Presentation recipe: an expanding sonic ring at every authoritative launch origin. */
     sonicBoomRing?: boolean;
@@ -1831,6 +1837,7 @@ const BASE_WEAPONS: Record<string, WeaponDefSource> = {
   "x-gun-revolver-cannon": {
     id: "x-gun-revolver-cannon",
     name: "Revolver Cannon",
+    recoil: 65,
     durability: 70,
     damage: 5, // pistol-whip fallback (point-blank); the gun block does the work
     range: 72,
@@ -1948,6 +1955,7 @@ const BASE_WEAPONS: Record<string, WeaponDefSource> = {
   "x-gun-coffin-shotgun": {
     id: "x-gun-coffin-shotgun",
     name: "Coffin Shotgun",
+    recoil: 161,
     durability: 60,
     damage: 6,
     range: 80,
@@ -1995,6 +2003,7 @@ const BASE_WEAPONS: Record<string, WeaponDefSource> = {
   "x-gun-hand-mortar": {
     id: "x-gun-hand-mortar",
     name: "Hand Mortar",
+    recoil: 147,
     durability: 65,
     damage: 5, // stock-whack fallback
     range: 78,
@@ -2035,6 +2044,7 @@ const BASE_WEAPONS: Record<string, WeaponDefSource> = {
   "x-gun-gatling": {
     id: "x-gun-gatling",
     name: "Gatling",
+    recoil: 14,
     durability: 90,
     damage: 4,
     range: 76,
@@ -2073,6 +2083,7 @@ const BASE_WEAPONS: Record<string, WeaponDefSource> = {
   "x-gun-nailgun": {
     id: "x-gun-nailgun",
     name: "Nailgun",
+    recoil: 29,
     durability: 80,
     damage: 4,
     range: 74,
@@ -2110,6 +2121,7 @@ const BASE_WEAPONS: Record<string, WeaponDefSource> = {
   "x-gun-ricochet-pistol": {
     id: "x-gun-ricochet-pistol",
     name: "Ricochet Pistol",
+    recoil: 40,
     durability: 75,
     damage: 4,
     range: 70,

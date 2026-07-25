@@ -14,6 +14,7 @@ import { readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { emit, isCheck } from "./lib/emit.mjs";
+import { deriveBeamRecoil, deriveGunRecoil } from "./lib/weapon-recoil.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)));
 const REPO = resolve(ROOT, "..", "..");
@@ -84,7 +85,7 @@ const TOP_KEYS = new Set([
   "bespokeVfxSheet", "performance", "swingStyle", "effectRecipe", "effectEmitter", "effectTiming",
   "renderAboveHands", "suppressVfx", "suppressMeleeHitbox", "hitStatus", "gripPoints",
   "handlingTags", "breakAction", "poseLanguage", "impactMuzzle", "rapidThrust", "fireMode",
-  "strikeOverlayPart",
+  "strikeOverlayPart", "recoil",
 ]);
 // The sibling-block bug (§43): mechanic stats authored NEXT TO `behavior` instead of inside it were
 // silently ignored, shipping 11 weapons with default kits. Now an instant failure.
@@ -923,6 +924,21 @@ function mapWeapon(w) {
       scaling: Array.isArray(w.scaling) && w.scaling.length ? w.scaling : ["STR"],
     },
   };
+  const derivedRecoil =
+    type !== "ranged"
+      ? 0
+      : isBeam
+        ? deriveBeamRecoil({ behavior: b, family: w.family, size, type })
+        : isGun
+          ? deriveGunRecoil({ behavior: b, family: w.family, size })
+          : 0;
+  if (w.recoil !== undefined && type !== "ranged")
+    fail("recoil is sanctioned only for ranged gun/beam weapons; melee and caster stay planted");
+  if (isBeam || isGun) {
+    def.recoil = num(w.recoil, 0, 300, derivedRecoil, "recoil");
+  } else if (w.recoil !== undefined) {
+    fail("recoil requires gun or beam delivery");
+  }
   if (s.collisionLength !== undefined) {
     def.collisionLength = num(
       s.collisionLength,
