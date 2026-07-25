@@ -99,6 +99,22 @@ The existing arena mapgen becomes the **grind rooms**.
 
 ---
 
+## 4b. Fiction: who you work for (LOCKED, 2026-07-25)
+
+**LOCKED (owner):** "The chests will be dimensional capsule btw. Look kinda like helldiver pods,
+but for an armory. Resupplies from the dimension police department you work for."
+
+- Chests are **DIMENSIONAL CAPSULES** — armored armory resupply pods, not chests. Rename the
+  player-facing noun everywhere (pickup prompts, toasts, HUD); internal `chest` identifiers may
+  stay to avoid churn, but no player-facing string says "chest".
+- The player is an agent of the **Dimension Police Department**; capsules are its resupply drops.
+  This is the first established employer/fiction anchor — future naming (packs, HUD chrome, run
+  framing) should hang off it rather than inventing a competing organization.
+- Art: `dimensional-capsule` part-1 sealed / part-2 open (B58), replacing the B20 L2 placeholder.
+- *Recommended (not locked):* capsules ARRIVE by drop — a streak-in and impact landing rather than
+  simply existing when the room loads. Reinforces "resupply" and gives the grind room a rhythmic
+  beat. Wire alongside the sealed->open swap when the integrator lands.
+
 ## 5. Dispositions
 
 | System | Disposition |
