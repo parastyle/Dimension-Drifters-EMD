@@ -316,7 +316,7 @@ export const rigFlourishMethods = {
     return this.pendingSwapKey.length > 0;
   },
 
-  resetFlourishState(this: SpriteRigContext, 
+  resetFlourishState(this: SpriteRigContext,
     clearCounters: boolean,
     preservePendingSwap = false,
     preserveArms = false,
@@ -369,7 +369,7 @@ export const rigFlourishMethods = {
   },
 
   // Extraction trace: private startFlourishChannel(
-  startFlourishChannel(this: SpriteRigContext, 
+  startFlourishChannel(this: SpriteRigContext,
     hand: 0 | 1,
     moment: FlourishMoment,
     startMs: number,
@@ -575,7 +575,7 @@ export const rigFlourishMethods = {
     if (both) start(second, sceneNow + FLOURISH_DUAL_AFTER_ECHO_MS);
   },
 
-  sampleFlourishChannel(this: SpriteRigContext, 
+  sampleFlourishChannel(this: SpriteRigContext,
     hand: 0 | 1,
     sceneNow: number,
     aimLocal: number,

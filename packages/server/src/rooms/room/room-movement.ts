@@ -520,7 +520,7 @@ import type { InputCmd, InputState, WeaponResourceLedger, WeaponSpendReason, Zon
 export const roomMovementMethods = {
 
   /** Consume the two jump-feel command bits on their exact acknowledged input tick. */
-  consumeMoveStanceInput(this: GameRoomContext, 
+  consumeMoveStanceInput(this: GameRoomContext,
     player: PlayerState,
     input: InputState,
     c: CombatState,
@@ -660,7 +660,7 @@ export const roomMovementMethods = {
   },
 
   /** Swept environment half of B42's envelope. The numeric budget is shared; only the room owns map truth. */
-  clientMovementNavValid(this: GameRoomContext, 
+  clientMovementNavValid(this: GameRoomContext,
     player: PlayerState,
     combat: CombatState | undefined,
     fromX: number,
@@ -931,7 +931,7 @@ export const roomMovementMethods = {
     c.dashDirY = Math.sin(angle);
   },
 
-  finishPlayerLanding(this: GameRoomContext, 
+  finishPlayerLanding(this: GameRoomContext,
     player: PlayerState,
     c: CombatState,
     landingStance: MoveStance,
@@ -969,7 +969,7 @@ export const roomMovementMethods = {
   },
 
   /** One postcondition for every blink/hop/dash endpoint: range, bounds, POI/deck, pit, gate. */
-  navValidDest(this: GameRoomContext, 
+  navValidDest(this: GameRoomContext,
     player: PlayerState,
     c: CombatState,
     targetX: number,

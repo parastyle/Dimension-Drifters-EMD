@@ -283,7 +283,7 @@ export const rigPoseMethods = {
     }
   },
 
-  sampleWeaponPose(this: SpriteRigContext, 
+  sampleWeaponPose(this: SpriteRigContext,
     input: PoseLanguageInput,
     out: PoseLanguageSample,
     spec: WeaponPoseSpec,

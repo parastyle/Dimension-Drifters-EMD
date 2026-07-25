@@ -260,7 +260,7 @@ export const rigCombatMethods = {
 
   /** Exact cosmetic enemy-arc sample. Unlike player height, this value is already locally reconstructed at
    *  render time; animate applies it without another network-smoothing lag. */
-  setEnemyComboPresentation(this: SpriteRigContext, 
+  setEnemyComboPresentation(this: SpriteRigContext,
     offerPhase: number,
     leapHeight: number,
     empowered: boolean,
@@ -664,7 +664,7 @@ export const rigCombatMethods = {
 
   /** Start a swing animation (damage is server-authoritative). `timeMs` is the accepted/predicted Phaser
    * wall epoch and is mapped once onto Arena's freeze-aware presentation clock; `aimWorld` freezes aim. */
-  triggerSwing(this: SpriteRigContext, 
+  triggerSwing(this: SpriteRigContext,
     timeMs: number,
     aimWorld?: number,
     swing?: RigSwingDescriptor,
@@ -977,7 +977,7 @@ export const rigCombatMethods = {
   },
 
   /** Sample a horde-melee anticipation directly from the latest reconstructed authoritative phase. */
-  setMeleeTell(this: SpriteRigContext, 
+  setMeleeTell(this: SpriteRigContext,
     phase: number,
     aimWorld: number,
     remainingMs: number,
@@ -1126,7 +1126,7 @@ export const rigCombatMethods = {
   },
 
   /** Snap the held implement and hands to the server-selected high/mid/low guard on a success receipt. */
-  triggerParrySuccess(this: SpriteRigContext, 
+  triggerParrySuccess(this: SpriteRigContext,
     timeMs: number,
     guardPose: ParryGuardPose,
     reaction: ParryReactionValue,
@@ -1204,7 +1204,7 @@ export const rigCombatMethods = {
     );
   },
 
-  writeSlideAfterimage(this: SpriteRigContext, 
+  writeSlideAfterimage(this: SpriteRigContext,
     image: Phaser.GameObjects.Image,
     worldX: number,
     worldY: number,
@@ -1371,7 +1371,7 @@ export const rigCombatMethods = {
 
   /** Absolute two-foot targets layer under the authored body translation. Ownership reaches zero by the
    * held guard, so gait/jiggle can settle without moving the authoritative root. */
-  setComboFootwork(this: SpriteRigContext, 
+  setComboFootwork(this: SpriteRigContext,
     tt: number,
     activeStart: number,
     activeEnd: number,
@@ -1396,7 +1396,7 @@ export const rigCombatMethods = {
   },
 
   /** Place the rear hand at a stable pole pivot and reconstruct the lead hand down the same haft. */
-  setRearPivotGrip(this: SpriteRigContext, 
+  setRearPivotGrip(this: SpriteRigContext,
     angle: number,
     rearX: number,
     rearY: number,

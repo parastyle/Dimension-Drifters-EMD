@@ -537,7 +537,7 @@ export const rigGearMethods = {
    * Diff a validated account loadout onto retained gear images. The optional composition is already bounded
    * account data; absent composition repeats the equipped signature hat through unlocked prestige slots.
    */
-  equipSyncedGear(this: SpriteRigContext, 
+  equipSyncedGear(this: SpriteRigContext,
     gearUpper: string,
     gearLower: string,
     manifest: GearPartsManifest,
@@ -562,7 +562,7 @@ export const rigGearMethods = {
     return true;
   },
 
-  equipGearLoadout(this: SpriteRigContext, 
+  equipGearLoadout(this: SpriteRigContext,
     loadout: Readonly<Record<GearSlot, GearId>>,
     manifest: GearPartsManifest,
     prestige = 0,
@@ -690,7 +690,7 @@ export const rigGearMethods = {
     }
   },
 
-  pushGearPlane(this: SpriteRigContext, 
+  pushGearPlane(this: SpriteRigContext,
     stack: Phaser.GameObjects.GameObject[],
     minPlane: number,
     maxPlane = minPlane,
@@ -703,7 +703,7 @@ export const rigGearMethods = {
       stack.push(this.hatOverflowLabel);
   },
 
-  pushWeaponLayers(this: SpriteRigContext, 
+  pushWeaponLayers(this: SpriteRigContext,
     stack: Phaser.GameObjects.GameObject[],
     weapon: (typeof this.weapons)[number] | undefined,
   ): void {
@@ -924,7 +924,7 @@ export const rigGearMethods = {
     this.strikeOverlays.length = 0;
   },
 
-  setupStrikeOverlays(this: SpriteRigContext, 
+  setupStrikeOverlays(this: SpriteRigContext,
     spriteId: string,
     def: WeaponDef,
     manifest: SpriteManifest,
@@ -1233,7 +1233,7 @@ export const rigGearMethods = {
       );
   },
 
-  sampleFloatingHeadAttackLead(this: SpriteRigContext, 
+  sampleFloatingHeadAttackLead(this: SpriteRigContext,
     sceneNow: number,
     anim: RigAnim,
     reducedMotion: boolean,
@@ -1268,7 +1268,7 @@ export const rigGearMethods = {
   },
 
   // Extraction trace: private syncFloatingHeadPose(
-  syncFloatingHeadPose(this: SpriteRigContext, 
+  syncFloatingHeadPose(this: SpriteRigContext,
     elapsedSeconds: number,
     outsidePaperView: boolean,
     rebase: boolean,
@@ -1460,7 +1460,7 @@ export const rigGearMethods = {
   },
 
   /** Final-pose wardrobe pass. Offscreen rigs retain their last transforms and rebase springs on wake. */
-  syncGearPose(this: SpriteRigContext, 
+  syncGearPose(this: SpriteRigContext,
     elapsedSeconds: number,
     outsidePaperView: boolean,
     rebase: boolean,

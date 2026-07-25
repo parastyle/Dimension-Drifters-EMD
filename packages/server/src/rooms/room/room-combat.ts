@@ -640,7 +640,7 @@ export const roomCombatMethods = {
    * The one weapon spend seam. It resolves canonical formula data and live cadence; callers never supply a
    * price. The reused result row avoids a per-action allocation in the fixed 20 Hz loop.
    */
-  trySpendWeaponResource(this: GameRoomContext, 
+  trySpendWeaponResource(this: GameRoomContext,
     player: PlayerState,
     c: CombatState,
     weapon: WeaponDef,
@@ -719,7 +719,7 @@ export const roomCombatMethods = {
   },
 
   /** One authoritative player-damage seam. Bulwark spends its successful-parry shield before HP. */
-  damagePlayer(this: GameRoomContext, 
+  damagePlayer(this: GameRoomContext,
     player: PlayerState,
     amount: number,
     kind: PlayerDamageKind = "enemy",
@@ -900,7 +900,7 @@ export const roomCombatMethods = {
   },
 
   /** Write into the fixed v18 ring. Every field comes from the accepted source epoch, never proximity. */
-  writeCombatReceipt(this: GameRoomContext, 
+  writeCombatReceipt(this: GameRoomContext,
     targetId: string,
     targetX: number,
     targetY: number,
@@ -972,7 +972,7 @@ export const roomCombatMethods = {
     return best;
   },
 
-  ultimateTargetPosition(this: GameRoomContext, 
+  ultimateTargetPosition(this: GameRoomContext,
     target: UltimateTarget,
   ): { x: number; y: number; radius: number } | null {
     if (target.slot >= 0) {
@@ -1265,7 +1265,7 @@ export const roomCombatMethods = {
   },
 
   /** L1's additive seam now consumes the run-scoped L2 crit line. */
-  critAdditiveModifiers(this: GameRoomContext, 
+  critAdditiveModifiers(this: GameRoomContext,
     player: PlayerState,
     _combat: CombatState | undefined,
   ): readonly number[] {
@@ -1444,7 +1444,7 @@ export const roomCombatMethods = {
     player.ultPhase = UltimatePhase.Recovery;
   },
 
-  damageEventHorizonSweep(this: GameRoomContext, 
+  damageEventHorizonSweep(this: GameRoomContext,
     player: PlayerState,
     ult: UltimateRuntime,
     fromX: number,
@@ -1726,7 +1726,7 @@ export const roomCombatMethods = {
   },
 
   /** Prospective solo combo beat for generated katana hooks, using the presentation chain law. */
-  nextSoloMeleeBeat(this: GameRoomContext, 
+  nextSoloMeleeBeat(this: GameRoomContext,
     player: PlayerState,
     c: CombatState,
     weapon: WeaponDef,
@@ -1773,7 +1773,7 @@ export const roomCombatMethods = {
     };
   },
 
-  recordSoloMeleeBeat(this: GameRoomContext, 
+  recordSoloMeleeBeat(this: GameRoomContext,
     player: PlayerState,
     c: CombatState,
     weapon: WeaponDef,
@@ -1875,7 +1875,7 @@ export const roomCombatMethods = {
     return true;
   },
 
-  resolveSwing(this: GameRoomContext, 
+  resolveSwing(this: GameRoomContext,
     player: PlayerState,
     c: CombatState,
     weapon: WeaponDef,
@@ -2282,7 +2282,7 @@ export const roomCombatMethods = {
   },
 
   /** Hold starts one immutable server clock; release snapshots the curve into one real projectile. */
-  stepPlayerChargedProjectile(this: GameRoomContext, 
+  stepPlayerChargedProjectile(this: GameRoomContext,
     player: PlayerState,
     id: string,
     c: CombatState,
@@ -2361,7 +2361,7 @@ export const roomCombatMethods = {
     c.chargedProjectileInputWasHeld = held;
   },
 
-  fireChargedProjectile(this: GameRoomContext, 
+  fireChargedProjectile(this: GameRoomContext,
     player: PlayerState,
     c: CombatState,
     weapon: WeaponDef,
@@ -2421,7 +2421,7 @@ export const roomCombatMethods = {
 
   /** Server-authoritative character-centered aura. Drive pays the authored net drain every fixed step;
    * damage receives only the funded fraction of the final step and the channel release-locks at empty. */
-  stepPlayerAura(this: GameRoomContext, 
+  stepPlayerAura(this: GameRoomContext,
     player: PlayerState,
     id: string,
     c: CombatState,
@@ -2526,7 +2526,7 @@ export const roomCombatMethods = {
   },
 
   /** Unlock one accepted punch at its immutable legal endpoint and release its destination-only layers. */
-  releaseDestinationLungeImpact(this: GameRoomContext, 
+  releaseDestinationLungeImpact(this: GameRoomContext,
     player: PlayerState,
     combat: CombatState,
     lunge: PendingWeaponLunge,
@@ -2570,7 +2570,7 @@ export const roomCombatMethods = {
   /** Clamp an arena lunge to the last unobstructed point on its accepted segment. Endpoint navigation can
    * legitimately snap a target out of a pit or POI; sampling prevents that correction from carrying the
    * player through the intervening obstacle. Belt endpoints already use the belt's swept safe-X resolver. */
-  navValidLungeDest(this: GameRoomContext, 
+  navValidLungeDest(this: GameRoomContext,
     player: PlayerState,
     combat: CombatState,
     targetX: number,
@@ -2710,7 +2710,7 @@ export const roomCombatMethods = {
   },
 
   /** Hold-to-grow authority. One ZoneState row changes only its radius; input remains the normal heartbeat. */
-  stepPlayerGroundZone(this: GameRoomContext, 
+  stepPlayerGroundZone(this: GameRoomContext,
     player: PlayerState,
     id: string,
     c: CombatState,
@@ -2802,7 +2802,7 @@ export const roomCombatMethods = {
     return count;
   },
 
-  stepPlayerBeam(this: GameRoomContext, 
+  stepPlayerBeam(this: GameRoomContext,
     player: PlayerState,
     id: string,
     c: CombatState,
@@ -3031,7 +3031,7 @@ export const roomCombatMethods = {
     c.beamInputWasHeld = held;
   },
 
-  stepActiveBeam(this: GameRoomContext, 
+  stepActiveBeam(this: GameRoomContext,
     player: PlayerState,
     id: string,
     c: CombatState,
@@ -3121,7 +3121,7 @@ export const roomCombatMethods = {
   },
 
   /** Hard cancellation for swaps/death/teleports/parry. Early/escape cancels pay the 20-heat commitment. */
-  cancelBeam(this: GameRoomContext, 
+  cancelBeam(this: GameRoomContext,
     player: PlayerState,
     id: string,
     c: CombatState,
@@ -3169,7 +3169,7 @@ export const roomCombatMethods = {
     }
   },
 
-  syncRestingBeamRow(this: GameRoomContext, 
+  syncRestingBeamRow(this: GameRoomContext,
     player: PlayerState,
     id: string,
     c: CombatState,
@@ -3207,7 +3207,7 @@ export const roomCombatMethods = {
     );
   },
 
-  syncBeamRow(this: GameRoomContext, 
+  syncBeamRow(this: GameRoomContext,
     player: PlayerState,
     id: string,
     c: CombatState,
@@ -3268,7 +3268,7 @@ export const roomCombatMethods = {
   },
 
   /** Weapon-rooted beam origin. Every authoritative consumer calls this exact seam each fixed tick. */
-  writeBeamMuzzle(this: GameRoomContext, 
+  writeBeamMuzzle(this: GameRoomContext,
     player: PlayerState,
     weaponId: string,
     angle: number,
@@ -3295,7 +3295,7 @@ export const roomCombatMethods = {
   },
 
   /** Exact ray truncation against arena edges and colliding POI/belt circles. */
-  clipBeamLength(this: GameRoomContext, 
+  clipBeamLength(this: GameRoomContext,
     ox: number,
     oy: number,
     angle: number,
@@ -3333,7 +3333,7 @@ export const roomCombatMethods = {
     return Math.max(0, Math.min(authoredRange, length));
   },
 
-  rayCircleLength(this: GameRoomContext, 
+  rayCircleLength(this: GameRoomContext,
     ox: number,
     oy: number,
     dx: number,
@@ -3355,7 +3355,7 @@ export const roomCombatMethods = {
   },
 
   /** One broad-phase query for the complete previous→current swept capsule union. */
-  damageBeamSweep(this: GameRoomContext, 
+  damageBeamSweep(this: GameRoomContext,
     player: PlayerState,
     c: CombatState,
     descriptor: BeamDescriptor,
@@ -3564,7 +3564,7 @@ export const roomCombatMethods = {
 
   /** Resolve one authored rapid-thrust pulse at its exact shared pose epoch. Each pulse starts with a fresh
    * hit ledger, so a target held on the visible pike line receives one distinct authoritative contact. */
-  applyRapidThrustHit(this: GameRoomContext, 
+  applyRapidThrustHit(this: GameRoomContext,
     player: PlayerState,
     sw: ActiveMeleeSwing,
     impactElapsed: number,
@@ -3966,7 +3966,7 @@ export const roomCombatMethods = {
     for (const eid of kills) this.state.enemies.delete(eid);
   },
 
-  fireProjectile(this: GameRoomContext, 
+  fireProjectile(this: GameRoomContext,
     from: Vec2,
     to: Vec2,
     speed: number,
@@ -4104,7 +4104,7 @@ export const roomCombatMethods = {
   },
 
   /** Emit follow-up rounds from an accepted trigger; they need no second input or Drive spend. */
-  stepGunBurst(this: GameRoomContext, 
+  stepGunBurst(this: GameRoomContext,
     player: PlayerState,
     c: CombatState,
     weapon: WeaponDef | undefined,
@@ -4163,7 +4163,7 @@ export const roomCombatMethods = {
     );
   },
 
-  fireGun(this: GameRoomContext, 
+  fireGun(this: GameRoomContext,
     player: PlayerState,
     c: CombatState,
     weapon: WeaponDef,
@@ -4310,7 +4310,7 @@ export const roomCombatMethods = {
    *  (no magazine/spread; pierces the whole line) and from melee (ranged). Spawns from the same muzzle reach. */
   /** Gun-contact version of the existing Venomtongue chain idiom. The projectile hit is the seed and is
    * excluded from the extra links; every hop is selected and damaged on the server. */
-  applyProjectileChain(this: GameRoomContext, 
+  applyProjectileChain(this: GameRoomContext,
     seed: EnemyState,
     seedId: string,
     meta: {
@@ -4357,7 +4357,7 @@ export const roomCombatMethods = {
     }
   },
 
-  fireCast(this: GameRoomContext, 
+  fireCast(this: GameRoomContext,
     player: PlayerState,
     c: CombatState,
     weapon: WeaponDef,
@@ -4438,7 +4438,7 @@ export const roomCombatMethods = {
   },
 
   /** Hurl a thrown weapon at the player's aim — a friendly, piercing projectile (§10). */
-  throwWeapon(this: GameRoomContext, 
+  throwWeapon(this: GameRoomContext,
     player: PlayerState,
     c: CombatState,
     weapon: WeaponDef,
@@ -4561,7 +4561,7 @@ export const roomCombatMethods = {
     );
   },
 
-  redirectThrownRicochet(this: GameRoomContext, 
+  redirectThrownRicochet(this: GameRoomContext,
     pr: ProjectileState,
     meta: {
       ttl: number;
@@ -4592,7 +4592,7 @@ export const roomCombatMethods = {
     return true;
   },
 
-  fireScatter(this: GameRoomContext, 
+  fireScatter(this: GameRoomContext,
     player: PlayerState,
     c: CombatState,
     weapon: WeaponDef,
@@ -4724,7 +4724,7 @@ export const roomCombatMethods = {
     }
   },
 
-  damageWormSlots(this: GameRoomContext, 
+  damageWormSlots(this: GameRoomContext,
     slots: readonly number[],
     raw: number,
     sourceKey: string,
@@ -4804,7 +4804,7 @@ export const roomCombatMethods = {
   },
 
   /** Apply `raw` damage, then perform shared kill, money, and portal bookkeeping. */
-  damageEnemy(this: GameRoomContext, 
+  damageEnemy(this: GameRoomContext,
     enemy: EnemyState,
     eid: string,
     raw: number,
@@ -4984,7 +4984,7 @@ export const roomCombatMethods = {
 
   /** Apply an AoE blast at (x,y): damage every enemy within `radius`, with the same kill/money/portal
    *  bookkeeping as a swing hit. Used by the scatter-shot magma explosions (§14). */
-  detonate(this: GameRoomContext, 
+  detonate(this: GameRoomContext,
     x: number,
     y: number,
     radius: number,
@@ -5035,7 +5035,7 @@ export const roomCombatMethods = {
   /** §8 Emberguard fire wave — a cone of fire in front of `aim` (origin at the player), `dmg` to each enemy
    *  inside, kill bookkeeping via `damageEnemy`. The shared primitive for the on-parry wave AND the
    *  Conflagration re-pulse. */
-  emberguardWave(this: GameRoomContext, 
+  emberguardWave(this: GameRoomContext,
     x: number,
     y: number,
     aimX: number,
@@ -5600,7 +5600,7 @@ export const roomCombatMethods = {
    *    + damage (kind "counter"), the offensive upgrade.
    *  Either way it fires the parry reward (flash + heal + FLOW cd + chain build) so catching a spit chains
    *  like a melee parry, and the client re-skins the bullet mid-flight (it sees `hostile`+`kind` flip). */
-  reflectProjectile(this: GameRoomContext, 
+  reflectProjectile(this: GameRoomContext,
     pr: ProjectileState,
     meta: {
       hostile: boolean;
@@ -5697,7 +5697,7 @@ export const roomCombatMethods = {
   },
 
   /** Personal anti-farm seam shared by ordinary enemies and Serraketh slots. */
-  accrueUltimateCharge(this: GameRoomContext, 
+  accrueUltimateCharge(this: GameRoomContext,
     sourcePlayerId: string,
     applied: number,
     finalBlow: boolean,

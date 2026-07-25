@@ -902,7 +902,7 @@ export const roomEnemyMethods = {
   },
 
   /** §16/§15 v0.113 create a synced telegraph row (used by boss casts AND enemy leaps). Returns its id. */
-  addTelegraphRow(this: GameRoomContext, 
+  addTelegraphRow(this: GameRoomContext,
     shape: number,
     x: number,
     y: number,
@@ -938,7 +938,7 @@ export const roomEnemyMethods = {
 
   /** §16 an unparryable radius AoE (the generalised punch-slam): flat damage + a hard radial knockback to
    *  every living player inside. `damage` arrives already depth-scaled from the controller. */
-  applyBossAoE(this: GameRoomContext, 
+  applyBossAoE(this: GameRoomContext,
     x: number,
     y: number,
     radius: number,
@@ -965,7 +965,7 @@ export const roomEnemyMethods = {
   /** §33 FOOTFALL QUAKE resolve: a ground shockwave you JUMP over or PARRY. Grounded, un-parried players in
    *  the radius take it + a radial shove; AIRBORNE players (mid-jump) clear it; a player in a parry/i-frame
    *  window NEGATES it (white flash — the timing reward). This is the colossus's whole rhythm. */
-  applyBossQuake(this: GameRoomContext, 
+  applyBossQuake(this: GameRoomContext,
     x: number,
     y: number,
     radius: number,
@@ -999,7 +999,7 @@ export const roomEnemyMethods = {
   },
 
   /** One-foot-one-epoch flagship quake. Only authoritative jump/parry answers buy Stride/punish credit. */
-  applyVastagharQuake(this: GameRoomContext, 
+  applyVastagharQuake(this: GameRoomContext,
     x: number,
     y: number,
     radius: number,
@@ -1049,7 +1049,7 @@ export const roomEnemyMethods = {
   },
 
   /** Swept-angular truth with a per-player/per-revolution receipt. A two-turn Worldwheel can hit twice. */
-  applyVastagharSweep(this: GameRoomContext, 
+  applyVastagharSweep(this: GameRoomContext,
     x: number,
     y: number,
     innerRange: number,
@@ -1131,7 +1131,7 @@ export const roomEnemyMethods = {
   },
 
   /** Same personal chain/cooldown/heal/augment ledger as melee parry, without moving the 230px titan root. */
-  resolveVastagharParry(this: GameRoomContext, 
+  resolveVastagharParry(this: GameRoomContext,
     player: PlayerState,
     combat: CombatState,
     sourceX: number,
@@ -1169,7 +1169,7 @@ export const roomEnemyMethods = {
 
   /** §16 v0.109 Slice 2 — damage every living player inside an oriented rect (a beam / dash lane). `damage`
    *  is ALREADY the per-tick depth-scaled amount. `knockback` (dash) shoves them PERPENDICULAR out of the lane. */
-  damageBeamRect(this: GameRoomContext, 
+  damageBeamRect(this: GameRoomContext,
     x: number,
     y: number,
     len: number,
@@ -1196,7 +1196,7 @@ export const roomEnemyMethods = {
 
   /** §16 v0.109 Slice 2 — damage every living player in an expanding ring's danger band (outside the safe
    *  gap wedge). `damage` is the per-tick depth-scaled amount. */
-  damageRingBand(this: GameRoomContext, 
+  damageRingBand(this: GameRoomContext,
     cx: number,
     cy: number,
     bandR: number,
@@ -1213,7 +1213,7 @@ export const roomEnemyMethods = {
   },
 
   /** §16 drop a corrosive DoT puddle (reuses ZoneState + the zoner DoT machinery) at a boss-authored spot. */
-  spawnWeaponGroundZoneAt(this: GameRoomContext, 
+  spawnWeaponGroundZoneAt(this: GameRoomContext,
     player: PlayerState,
     weapon: WeaponDef,
     x: number,
@@ -1590,7 +1590,7 @@ export const roomEnemyMethods = {
   },
 
   /** Non-holder movement stays legible: close normally, then take a deterministic ring-out posture. */
-  postureMeleeEnemy(this: GameRoomContext, 
+  postureMeleeEnemy(this: GameRoomContext,
     enemy: EnemyState,
     id: string,
     target: PlayerState,
@@ -1619,7 +1619,7 @@ export const roomEnemyMethods = {
   },
 
   /** Capture one nav-valid endpoint and immutable target/vector at the white pop. */
-  planDuelistStrike(this: GameRoomContext, 
+  planDuelistStrike(this: GameRoomContext,
     enemy: EnemyState,
     target: PlayerState,
     m: { range: number; step: number },
@@ -1686,7 +1686,7 @@ export const roomEnemyMethods = {
     return { x: safeX, y: safeY };
   },
 
-  captureAuthoredMeleeEscape(this: GameRoomContext, 
+  captureAuthoredMeleeEscape(this: GameRoomContext,
     strike: NonNullable<DuelistComboState["strike"]>,
     target: PlayerState,
     combat: CombatState | undefined,
@@ -1704,7 +1704,7 @@ export const roomEnemyMethods = {
     if (authoredMotion) strike.authoredEscape = true;
   },
 
-  enterOrdinaryMeleeRecover(this: GameRoomContext, 
+  enterOrdinaryMeleeRecover(this: GameRoomContext,
     enemy: EnemyState,
     id: string,
     st: DuelistComboState,
@@ -1719,7 +1719,7 @@ export const roomEnemyMethods = {
   },
 
   /** Resolve against the committed player identity. Walking/strafing is deliberately not an answer. */
-  duelistSwing(this: GameRoomContext, 
+  duelistSwing(this: GameRoomContext,
     enemy: EnemyState,
     enemyId: string,
     target: PlayerState | undefined,
@@ -1770,7 +1770,7 @@ export const roomEnemyMethods = {
    *  universal white pop, then four fixed commit ticks own a frozen vector; every displacement is bounded
    *  motion or a ≤COMBO_STEP_MAX commit-write (G2); juggle strings obey every G9 cap at the resolve
    *  tick; the parried bait stands a visible ≥0.4s stagger at its DISPLACED spot before returning (G8). */
-  stepComboEnemy(this: GameRoomContext, 
+  stepComboEnemy(this: GameRoomContext,
     enemy: EnemyState,
     id: string,
     kind: EnemyKind,
@@ -2010,7 +2010,7 @@ export const roomEnemyMethods = {
   /** §51 commit one combo performance: pick from the depth-gated deck (no-repeat + ≤40% advanced),
    *  CLAIM the duel token (G12 — the choreography aims at ONE player, period), and either negotiate
    *  the leap (frozen at THIS decision) or open grounded at step 0. */
-  commitCombo(this: GameRoomContext, 
+  commitCombo(this: GameRoomContext,
     enemy: EnemyState,
     id: string,
     kind: EnemyKind,
@@ -2116,7 +2116,7 @@ export const roomEnemyMethods = {
   /** §51 one immutable landing promise. The base 0.8×-range point is distance-clamped, then routed through
    *  the exact arena/belt spawn-safety functions. A >40px nav correction searches the nearest bearings on
    *  the player's front 90° arc and marks the landing awkward (+0.10s settle), as authored. */
-  negotiateComboLanding(this: GameRoomContext, 
+  negotiateComboLanding(this: GameRoomContext,
     enemy: EnemyState,
     targetX: number,
     targetY: number,
@@ -2164,7 +2164,7 @@ export const roomEnemyMethods = {
 
   /** Decision-edge helper for `negotiateComboLanding`; `navShift` measures only the safety correction,
    *  not the authored 560px range pullback. */
-  comboLandingCandidate(this: GameRoomContext, 
+  comboLandingCandidate(this: GameRoomContext,
     enemy: EnemyState,
     targetX: number,
     targetY: number,
@@ -2222,7 +2222,7 @@ export const roomEnemyMethods = {
 
   /** §51 end a combo performance: clear rows + presentation flags, FREE the duel token (G12 — the
    *  kneeling punish window pressures no one), and hold `recover` for `ticks`. */
-  enterComboRecover(this: GameRoomContext, 
+  enterComboRecover(this: GameRoomContext,
     enemy: EnemyState,
     id: string,
     st: DuelistComboState,
@@ -2247,7 +2247,7 @@ export const roomEnemyMethods = {
   /** §51 G9 air-keep gate at the RESOLVE tick: the victim must still be airborne inside the authored
    *  height window, under the ≤2 air-hit cap, and inside the ≤2.0s loss-of-control ceiling. Any miss =
    *  the whole string whiffs into recover — falling out (or being left to land) IS an escape. */
-  airkeepValid(this: GameRoomContext, 
+  airkeepValid(this: GameRoomContext,
     st: DuelistComboState,
     step: ToughComboStep,
     live: PlayerState | undefined,
@@ -2273,7 +2273,7 @@ export const roomEnemyMethods = {
   /** §51 capture a combo step's committed origin + aim — planDuelistStrike generalised: authored range,
    *  an explicit travel cap (COMBO_STEP_MAX for steps, RETURN_STEP_MAX for the bait return), and an
    *  optional ONE-TIME velocity lead (air-keep fall compensation, sampled at Lock, never re-timed). */
-  planComboStrike(this: GameRoomContext, 
+  planComboStrike(this: GameRoomContext,
     enemy: EnemyState,
     target: PlayerState,
     range: number,
@@ -2326,7 +2326,7 @@ export const roomEnemyMethods = {
 
   /** §51 schedule parry recoil as a continuous ≤90px/tick motion. Pits remain lethal and POI collision
    *  still runs in the normal phase afterward — no immunity is granted to protect authored content. */
-  scheduleComboKnockback(this: GameRoomContext, 
+  scheduleComboKnockback(this: GameRoomContext,
     enemy: EnemyState,
     st: DuelistComboState,
     dirX: number,
@@ -2391,7 +2391,7 @@ export const roomEnemyMethods = {
    *  RED steps (unparryable) speak the FEET language — an airborne player clears them, the parry does
    *  not answer them. Juggle displacement rides ONLY the two channels prediction already reconciles
    *  (`addImpulse` and vh) — never a position write, never zeroMoveVel (no new divergence classes). */
-  comboSwing(this: GameRoomContext, 
+  comboSwing(this: GameRoomContext,
     enemy: EnemyState,
     enemyId: string,
     st: DuelistComboState,
@@ -2509,7 +2509,7 @@ export const roomEnemyMethods = {
   },
 
   /** Publish one deterministic success pose, then route the server-owned displacement/state by incidence. */
-  applyDirectionalParryReaction(this: GameRoomContext, 
+  applyDirectionalParryReaction(this: GameRoomContext,
     player: PlayerState,
     pc: CombatState,
     incomingX: number,
@@ -2533,7 +2533,7 @@ export const roomEnemyMethods = {
   },
 
   /** The pre-B26 parry lift, extracted byte-for-byte in behavior and reached only by below incidence. */
-  applyLegacyParryLift(this: GameRoomContext, 
+  applyLegacyParryLift(this: GameRoomContext,
     player: PlayerState,
     pc: CombatState,
     incomingX: number,
@@ -2555,7 +2555,7 @@ export const roomEnemyMethods = {
   },
 
   /** Move immediately to a swept-valid endpoint; snapshot interpolation presents the authored slide beat. */
-  applySideParrySlide(this: GameRoomContext, 
+  applySideParrySlide(this: GameRoomContext,
     player: PlayerState,
     pc: CombatState,
     incomingX: number,
@@ -2614,7 +2614,7 @@ export const roomEnemyMethods = {
    *  reward. `attacker` is bump-knocked back; `attackerId` looks up its `comboState` for the high-chain
    *  STAGGER (a boss has no comboState entry → no stagger, which is correct — bosses aren't stunlockable).
    *  Shared by the horde duelist swing and the boss `meleeCombo` so the two parry paths can't drift. */
-  resolveParry(this: GameRoomContext, 
+  resolveParry(this: GameRoomContext,
     player: PlayerState,
     pc: CombatState,
     attacker: EnemyState,
@@ -2744,7 +2744,7 @@ export const roomEnemyMethods = {
   /** §16 Slice 3 — resolve a PARRYABLE boss melee wedge (the `meleeCombo` primitive). Mirrors the horde
    *  duelist swing: a player in the arc with parry i-frames PARRIES it (shared `resolveParry` reward),
    *  otherwise takes the (already depth-scaled) hit + a knockback shove along the strike. */
-  applyBossMelee(this: GameRoomContext, 
+  applyBossMelee(this: GameRoomContext,
     x: number,
     y: number,
     aimX: number,
@@ -2926,7 +2926,7 @@ export const roomEnemyMethods = {
   },
 
   /** §29 spawn a room's wave: `n` enemies spread across the room's belt x-range, on the authored floor. */
-  spawnBeltWave(this: GameRoomContext, 
+  spawnBeltWave(this: GameRoomContext,
     n: number,
     x0: number,
     x1: number,
@@ -3130,7 +3130,7 @@ export const roomEnemyMethods = {
   /** §21 Dev summon: place ONE enemy of `kindId` on the spawn ring around `anchor`, optionally tough.
    *  Mirrors spawnEnemy's placement (ring offset + pit/POI safe-spawn) but with a CHOSEN kind/tier so the
    *  Testing-Grounds Tab menu can conjure exactly what the playtester wants to fight. */
-  debugSpawnOne(this: GameRoomContext, 
+  debugSpawnOne(this: GameRoomContext,
     kindId: string,
     tough: boolean,
     anchor: PlayerState,

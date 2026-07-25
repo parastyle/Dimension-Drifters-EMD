@@ -696,7 +696,7 @@ export const roomEconomyMethods = {
     return `${prefix}_${randomBytes(16).toString("base64url")}`;
   },
 
-  mintWeaponInstance(this: GameRoomContext, 
+  mintWeaponInstance(this: GameRoomContext,
     weaponId: string,
     rarity: number,
     affix: string,
@@ -712,7 +712,7 @@ export const roomEconomyMethods = {
     };
   },
 
-  installWeaponMember(this: GameRoomContext, 
+  installWeaponMember(this: GameRoomContext,
     slot: ArsenalSlot,
     entry: WeaponBankEntryV1,
     member: WeaponInstanceV1,
@@ -1236,7 +1236,7 @@ export const roomEconomyMethods = {
   },
 
   /** Restore a weapon's own debt. Only a genuinely new pickup may initialize a fresh resource row. */
-  restoreWeaponResource(this: GameRoomContext, 
+  restoreWeaponResource(this: GameRoomContext,
     player: PlayerState,
     c: CombatState,
     genuinelyNewPickup = false,
@@ -1289,7 +1289,7 @@ export const roomEconomyMethods = {
     player.charges = breakAction ? Math.max(0, Math.min(player.maxCharges, charges)) : 0;
   },
 
-  transitionWeapon(this: GameRoomContext, 
+  transitionWeapon(this: GameRoomContext,
     player: PlayerState,
     c: CombatState,
     genuinelyNewPickup = false,
@@ -1324,7 +1324,7 @@ export const roomEconomyMethods = {
 
   /** Frostbore's two-shell exception reuses the retained private reload/resource row. The row advances on
    * the fixed simulation clock and mirrors only its two public counters for deterministic remote posing. */
-  stepHeldBreakActionReload(this: GameRoomContext, 
+  stepHeldBreakActionReload(this: GameRoomContext,
     player: PlayerState,
     c: CombatState,
     weapon: WeaponDef | undefined,
@@ -1431,7 +1431,7 @@ export const roomEconomyMethods = {
   /** §29 BELT grab: ADD the grabbed weapon to the arsenal instead of the arena swap-drop. Fills the first
    *  empty slot (and equips it); if all 3 are full, the current active weapon overflows to the bag (or drops
    *  to the floor when the bag is full too — still never destroyed) and the grab takes the active slot. */
-  grabIntoArsenal(this: GameRoomContext, 
+  grabIntoArsenal(this: GameRoomContext,
     player: PlayerState,
     c: CombatState | undefined,
     grabbed: PickupState,
@@ -1503,7 +1503,7 @@ export const roomEconomyMethods = {
   },
 
   /** Capture the cosmetic character as flavor-only run identity. */
-  snapshotRunCharacter(this: GameRoomContext, 
+  snapshotRunCharacter(this: GameRoomContext,
     player: PlayerState,
     combat: CombatState | undefined,
     _rebase: boolean,
@@ -1527,7 +1527,7 @@ export const roomEconomyMethods = {
   },
 
   /** Install one validated, catalog-derived wardrobe snapshot without applying numeric stats. */
-  snapshotGearRun(this: GameRoomContext, 
+  snapshotGearRun(this: GameRoomContext,
     player: PlayerState,
     combat: CombatState | undefined,
     runtime: GearRunRuntime,
@@ -1551,7 +1551,7 @@ export const roomEconomyMethods = {
   },
 
   /** Gear owns identity when present; character kits remain the compatibility fallback until the art wave. */
-  snapshotRunIdentity(this: GameRoomContext, 
+  snapshotRunIdentity(this: GameRoomContext,
     player: PlayerState,
     combat: CombatState | undefined,
     rebase: boolean,
@@ -1567,7 +1567,7 @@ export const roomEconomyMethods = {
   },
 
   /** Interpret pure quirk descriptors at event seams through existing authoritative state machinery. */
-  applyQuirkEffects(this: GameRoomContext, 
+  applyQuirkEffects(this: GameRoomContext,
     player: PlayerState,
     combat: CombatState,
     effects: readonly QuirkEffect[],
@@ -1846,7 +1846,7 @@ export const roomEconomyMethods = {
 
   /** Explicit event/intermission heal; passive regen, revive HP, meta headroom and Hearth's own 15% use
    * their dedicated paths. The receiver's selected pet owns the multiplier. */
-  applyHeal(this: GameRoomContext, 
+  applyHeal(this: GameRoomContext,
     target: PlayerState,
     rawAmount: number,
     applyReceivedMultiplier = true,
@@ -1884,7 +1884,7 @@ export const roomEconomyMethods = {
     );
   },
 
-  nearestMoneyCollector(this: GameRoomContext, 
+  nearestMoneyCollector(this: GameRoomContext,
     x: number,
     y: number,
     requireReach: boolean,

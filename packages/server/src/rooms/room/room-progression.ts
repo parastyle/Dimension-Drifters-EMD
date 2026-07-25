@@ -2966,7 +2966,7 @@ export const roomProgressionMethods = {
     console.log(`[room ${this.roomId}] run restarted`);
   },
 
-  onJoin(this: GameRoomContext, 
+  onJoin(this: GameRoomContext,
     client: Client,
     options?: {
       scrip?: number;

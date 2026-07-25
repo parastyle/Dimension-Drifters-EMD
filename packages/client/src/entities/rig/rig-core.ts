@@ -2858,7 +2858,7 @@ export const rigCoreMethods = {
   },
 
   /** Drive lasting pose/tint state exclusively from the synced nested UltimateState row. */
-  setUltimatePresentation(this: SpriteRigContext, 
+  setUltimatePresentation(this: SpriteRigContext,
     family: UltimateFamilyValue,
     phase: UltimatePhaseValue,
     progress: number,

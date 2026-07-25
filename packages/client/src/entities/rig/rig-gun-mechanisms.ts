@@ -312,7 +312,7 @@ export const rigGunMechanismMethods = {
   },
 
   /** Transform one authored PNG muzzle point through the final live sprite affine. */
-  writeWeaponArtMuzzle(this: SpriteRigContext, 
+  writeWeaponArtMuzzle(this: SpriteRigContext,
     point: WeaponArtMuzzlePoint,
     out: { x: number; y: number },
     preferredHand?: 0 | 1,
@@ -373,7 +373,7 @@ export const rigGunMechanismMethods = {
   },
 
   /** Gun flashes/projectile admission use the exact same accepted-beat salvo selection as authority. */
-  writeWeaponMuzzleForShot(this: SpriteRigContext, 
+  writeWeaponMuzzleForShot(this: SpriteRigContext,
     acceptedSeq: number,
     barrelIndex: number,
     out: { x: number; y: number },
@@ -388,7 +388,7 @@ export const rigGunMechanismMethods = {
   },
 
   /** B19 swing punctuation reads the final independent hand/foot worn-sprite affine. */
-  writeKungFuWrapMuzzle(this: SpriteRigContext, 
+  writeKungFuWrapMuzzle(this: SpriteRigContext,
     limb: MeleeComboLimb | undefined,
     side: 0 | 1,
     out: { x: number; y: number },
@@ -461,7 +461,7 @@ export const rigGunMechanismMethods = {
     this.tome = undefined;
   },
 
-  setupTomeVisual(this: SpriteRigContext, 
+  setupTomeVisual(this: SpriteRigContext,
     spriteId: string,
     def: WeaponDef,
     closedTexture: { key: string; frame?: string },
@@ -638,7 +638,7 @@ export const rigGunMechanismMethods = {
     this.hideTomeShapes(tome);
   },
 
-  startTomePage(this: SpriteRigContext, 
+  startTomePage(this: SpriteRigContext,
     tome: TomeVisualState,
     startMs: number,
     seq: number,
@@ -758,7 +758,7 @@ export const rigGunMechanismMethods = {
   },
 
   /** Sample the replicated server attack/resource clock; local prediction never writes this tuple. */
-  setAuthoritativeAttackClock(this: SpriteRigContext, 
+  setAuthoritativeAttackClock(this: SpriteRigContext,
     attackTick: number,
     clockTick: number,
     charges = 0,
@@ -968,7 +968,7 @@ export const rigGunMechanismMethods = {
     this.breakActionAudioActive = false;
   },
 
-  setupBreakActionAttachment(this: SpriteRigContext, 
+  setupBreakActionAttachment(this: SpriteRigContext,
     spriteId: string,
     def: WeaponDef,
     manifest: SpriteManifest,
