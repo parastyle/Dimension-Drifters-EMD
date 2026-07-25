@@ -26,6 +26,20 @@ describe("SnapshotBuffer", () => {
     expect(s?.y).toBeCloseTo(25, 6);
   });
 
+  it("silent-snaps sub-3px dust and caps a sparse medium correction to 140ms", () => {
+    const small = new SnapshotBuffer();
+    small.push(100, 0, 0);
+    small.push(150, 2, 0);
+    expect(small.sample(125, 260)?.x).toBe(2);
+
+    const medium = new SnapshotBuffer();
+    medium.push(0, 0, 0);
+    medium.push(500, 100, 0);
+    expect(medium.sample(350, 260)?.x).toBe(0);
+    expect(medium.sample(430, 260)?.x).toBeCloseTo(50, 6);
+    expect(medium.sample(500, 260)?.x).toBe(100);
+  });
+
   it("sampleInto() writes into and returns the caller-owned point", () => {
     const b = new SnapshotBuffer();
     b.push(100, 0, 0);

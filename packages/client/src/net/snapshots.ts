@@ -1,4 +1,12 @@
-import { INTERP_DELAY_MS, INTERP_EXTRAP_MAX_MS, SNAPSHOT_DEPTH, TICK_MS } from "@dd/shared";
+import {
+  INTERP_DELAY_MS,
+  INTERP_EXTRAP_MAX_MS,
+  MOVEMENT_CORRECTION_SMOOTH_MAX_MS,
+  MovementCorrectionBand,
+  movementCorrectionBand,
+  SNAPSHOT_DEPTH,
+  TICK_MS,
+} from "@dd/shared";
 
 /**
  * §4 v0.107 SNAPSHOT-BUFFER INTERPOLATION for remote entities (docs/NETCODE_DESIGN.md).
@@ -160,7 +168,9 @@ export class SnapshotBuffer {
       if (span <= 0) return this.write(last, out);
       const dx = this.xs[last]! - this.xs[prev]!;
       const dy = this.ys[last]! - this.ys[prev]!;
-      if (Math.hypot(dx, dy) > snapGapPx) return this.write(last, out); // don't extrapolate a teleport
+      const band = movementCorrectionBand(Math.hypot(dx, dy), snapGapPx);
+      if (band !== MovementCorrectionBand.Smooth)
+        return this.write(last, out); // silent dust / teleport: never extrapolate
       const ahead = Math.min(t - this.times[last]!, INTERP_EXTRAP_MAX_MS);
       const k = ahead / span;
       out.x = this.xs[last]! + dx * k;
@@ -175,8 +185,13 @@ export class SnapshotBuffer {
       if (t >= this.times[a]! && t <= this.times[b]!) {
         const dx = this.xs[b]! - this.xs[a]!;
         const dy = this.ys[b]! - this.ys[a]!;
-        if (Math.hypot(dx, dy) > snapGapPx) return this.write(b, out); // teleport: cut
-        const k = (t - this.times[a]!) / (this.times[b]! - this.times[a]!);
+        const band = movementCorrectionBand(Math.hypot(dx, dy), snapGapPx);
+        if (band !== MovementCorrectionBand.Smooth) return this.write(b, out);
+        const span = this.times[b]! - this.times[a]!;
+        const smoothSpan = Math.min(span, MOVEMENT_CORRECTION_SMOOTH_MAX_MS);
+        const smoothStart = this.times[b]! - smoothSpan;
+        if (t <= smoothStart) return this.write(a, out);
+        const k = (t - smoothStart) / smoothSpan;
         out.x = this.xs[a]! + dx * k;
         out.y = this.ys[a]! + dy * k;
         return out;

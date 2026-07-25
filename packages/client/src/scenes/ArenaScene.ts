@@ -13839,9 +13839,10 @@ export class ArenaScene extends Phaser.Scene {
     const enemies = this.room ? this.room.state.enemies.size : 0;
     const elapsed = this.room?.state.elapsedSeconds ?? 0;
     const fps = Math.round(this.game.loop.actualFps);
-    // §4 v0.107 netcode health: un-acked command depth (≈ RTT in ticks) + current reconcile error (px).
-    const net = this.predictor
-      ? ` · net ${this.predictor.stats.pending}q/${this.predictor.stats.errPx.toFixed(0)}px`
+    // Netcode health: un-acked depth, current error, and B42's cumulative real-correction counter.
+    const predictorStats = this.predictor?.stats;
+    const net = predictorStats
+      ? ` · net ${predictorStats.pending}q/${predictorStats.errPx.toFixed(0)}px/${predictorStats.selfCorrections}c`
       : "";
     const fullDeaths = this.paperDeaths.reduce((count, death) => count + (death.full ? 1 : 0), 0);
     const snapshot = this.paperWorldFold
@@ -14003,6 +14004,9 @@ export class ArenaScene extends Phaser.Scene {
       slidePhase: p.slidePhase,
       slidePhaseTick: p.slidePhaseTick,
       attackMoveMode: p.dualWield.attackMoveMode,
+      movementCorrectionSeq: p.dualWield.movementCorrectionSeq,
+      serverMotionEpoch: p.dualWield.serverMotionEpoch,
+      serverMotionActive: p.dualWield.serverMotionActive,
       alive: p.alive,
     };
   }
@@ -14313,8 +14317,23 @@ export class ArenaScene extends Phaser.Scene {
     }
     this.beamPredictionHeld = beamHeld;
     this.stepBeamPrediction({ ...cmd, fireHeld: beamHeld }, self, weapon);
-    this.room.send("input", cmd);
-    if (predictTick) this.predictor.tick(cmd);
+    if (!predictTick) {
+      this.room.send("input", cmd);
+      return;
+    }
+    this.predictor.tick(cmd);
+    const movement = this.predictor.clientMovementReport();
+    this.room.send("input", {
+      ...cmd,
+      clientX: movement.x,
+      clientY: movement.y,
+      clientMvx: movement.mvx,
+      clientMvy: movement.mvy,
+      clientVx: movement.vx,
+      clientVy: movement.vy,
+      clientServerMotionEpoch: movement.serverMotionEpoch,
+      clientCorrectionSeq: movement.movementCorrectionSeq,
+    });
   }
 
   private stepNetInput(

@@ -97,6 +97,12 @@ export class DualWieldState extends Schema {
   @type("uint8") attackMoveMode = 0;
   /** Schema v40. Raw held-fire intent after the authoritative stale-input watchdog. */
   @type("boolean") fireInputHeld = false;
+  /** B42. Incremented only when a fresh client movement report violates the plausibility envelope. */
+  @type("uint32") movementCorrectionSeq = 0;
+  /** B42. Incremented on the false->true edge of an authored server-displacement window. */
+  @type("uint32") serverMotionEpoch = 0;
+  /** B42. While true, owner reports are ignored and the correction bands present server-owned motion. */
+  @type("boolean") serverMotionActive = false;
 }
 
 /**

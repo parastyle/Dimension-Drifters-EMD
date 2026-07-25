@@ -26,6 +26,7 @@ export * from "./math.js";
 export * from "./melee.js";
 export * from "./meta.js";
 export * from "./movement.js";
+export * from "./movement-authority.js";
 export * from "./parry-reactions.js";
 export * from "./relics.js";
 export * from "./rng.js";

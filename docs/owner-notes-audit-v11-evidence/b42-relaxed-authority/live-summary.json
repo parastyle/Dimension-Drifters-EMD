@@ -1,0 +1,149 @@
+{
+  "capturedAt": "2026-07-25T00:14:51.797Z",
+  "transport": {
+    "endpoint": "ws://127.0.0.1:57676",
+    "osAssignedEphemeralPort": 57676,
+    "protectedDefaultsUntouched": true,
+    "clients": 4,
+    "simultaneousClientsPerScenario": 2,
+    "liveStackBooted": false
+  },
+  "assertions": {
+    "normalSelfCorrectionsZero": true,
+    "normalCorrectionSeqZero": true,
+    "observerInterpolated": true,
+    "forcedViolationInstantSnap": true,
+    "correctionCapMs": 140,
+    "parryBothClients": true,
+    "elevatorBothClients": true
+  },
+  "normal": {
+    "frameCount": 32,
+    "selfCorrections": 0,
+    "movementCorrectionSeq": 0,
+    "observerMaxStep": 32,
+    "observerIntermediateSamples": 25
+  },
+  "violation": {
+    "frame": {
+      "step": 32,
+      "tick": 51,
+      "seq": 33,
+      "inputX": 0,
+      "attackMoveMode": 0,
+      "authority": {
+        "x": 2486,
+        "y": 2420
+      },
+      "predictedBeforePatch": {
+        "x": 3046,
+        "y": 2420,
+        "height": 0,
+        "vh": 0,
+        "stance": 0,
+        "slidePhase": 0,
+        "slideTick": 0
+      },
+      "predictedAfterPatch": {
+        "x": 2486,
+        "y": 2420,
+        "height": 0,
+        "vh": 0,
+        "stance": 0,
+        "slidePhase": 0,
+        "slideTick": 0
+      },
+      "observerAuthority": {
+        "x": 2486,
+        "y": 2420
+      },
+      "observerRender": {
+        "x": 2486,
+        "y": 2420
+      },
+      "correctionSeq": 1,
+      "selfCorrections": 1
+    },
+    "correctionSeqBefore": 0,
+    "correctionSeqAfter": 1,
+    "errorBeforePx": 560,
+    "errorAfterPx": 0,
+    "correctionRemainingMs": 0,
+    "selfCorrectionsAfter": 1
+  },
+  "parry": {
+    "before": {
+      "x": 2486,
+      "y": 2420,
+      "parriedSeq": 0,
+      "epoch": 1
+    },
+    "after": {
+      "tick": 74,
+      "x": 2460.39990234375,
+      "y": 2420,
+      "parriedSeq": 1,
+      "epoch": 2,
+      "active": true
+    },
+    "distancePx": 25.60009765625,
+    "correctionStartMs": 140,
+    "ownerInitialErrorPx": 25.60009765625,
+    "ownerErrorPx": 0,
+    "observerErrorPx": 0
+  },
+  "elevator": {
+    "roomId": "bO5nTsVN5",
+    "depthBefore": 1,
+    "depthAfter": 2,
+    "phaseAfter": 4,
+    "placements": [
+      {
+        "id": "IOfLezsAX",
+        "before": {
+          "id": "IOfLezsAX",
+          "x": 4040,
+          "y": 2530,
+          "teleportSeq": 0,
+          "epoch": 0
+        },
+        "rider": {
+          "x": 420,
+          "y": 2530,
+          "teleportSeq": 2,
+          "epoch": 1
+        },
+        "observer": {
+          "x": 420,
+          "y": 2530,
+          "teleportSeq": 2,
+          "epoch": 1
+        },
+        "crossClientErrorPx": 0
+      },
+      {
+        "id": "srs24yeGP",
+        "before": {
+          "id": "srs24yeGP",
+          "x": 4040,
+          "y": 2530,
+          "teleportSeq": 0,
+          "epoch": 0
+        },
+        "rider": {
+          "x": 456,
+          "y": 2530,
+          "teleportSeq": 2,
+          "epoch": 1
+        },
+        "observer": {
+          "x": 456,
+          "y": 2530,
+          "teleportSeq": 2,
+          "epoch": 1
+        },
+        "crossClientErrorPx": 0
+      }
+    ]
+  }
+}
