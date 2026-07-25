@@ -927,6 +927,58 @@ export function clamp01(value: number): number {
   return Math.max(0, Math.min(1, value));
 }
 
+export interface FacingFlipState {
+  visual: number;
+  velocity: number;
+}
+
+/** Maximum signed-mirror travel per second. A 100px authored pivot moves at most 5.84px per 60Hz frame. */
+export const FACING_FLIP_MAX_SPEED = 3.5;
+const FACING_FLIP_SPRING = 18;
+const FACING_FLIP_SUBSTEP_SECONDS = 1 / 120;
+
+/**
+ * Advance the render-only facing mirror without allocating. The retained velocity makes an interrupted turn
+ * continue from its current visual state; neither the mirror nor its derivative restarts at +/-1.
+ */
+export function stepFacingFlip(
+  state: FacingFlipState,
+  targetFacing: -1 | 1,
+  elapsedMs: number,
+): void {
+  const elapsedSeconds = Math.max(0, Math.min(0.1, elapsedMs / 1000));
+  if (elapsedSeconds <= 0) return;
+  const steps = Math.max(1, Math.ceil(elapsedSeconds / FACING_FLIP_SUBSTEP_SECONDS));
+  const dt = elapsedSeconds / steps;
+  for (let step = 0; step < steps; step++) {
+    const delta = targetFacing - state.visual;
+    const acceleration =
+      delta * FACING_FLIP_SPRING ** 2 -
+      state.velocity * (FACING_FLIP_SPRING * 2);
+    state.velocity = Math.max(
+      -FACING_FLIP_MAX_SPEED,
+      Math.min(FACING_FLIP_MAX_SPEED, state.velocity + acceleration * dt),
+    );
+    const next = state.visual + state.velocity * dt;
+    if ((targetFacing - state.visual) * (targetFacing - next) <= 0) {
+      state.visual = targetFacing;
+      state.velocity = 0;
+      break;
+    }
+    state.visual = Math.max(-1, Math.min(1, next));
+  }
+  if (Math.abs(targetFacing - state.visual) < 0.0001 && Math.abs(state.velocity) < 0.01) {
+    state.visual = targetFacing;
+    state.velocity = 0;
+  }
+}
+
+/** Layout changes sides only as the paper mirror crosses edge-on, where offset rebasing is invisible. */
+export function facingLayoutSign(visualFacing: number, targetFacing: -1 | 1): -1 | 1 {
+  if (Math.abs(visualFacing) < 1e-6) return targetFacing;
+  return visualFacing < 0 ? -1 : 1;
+}
+
 export function smoothstep01(value: number): number {
   const p = clamp01(value);
   return p * p * (3 - 2 * p);
@@ -2215,6 +2267,7 @@ export interface SpriteRigContext {
   facing: -1 | 1;
   gait: number;
   facingBlend: number;
+  readonly facingFlip: FacingFlipState;
   spawnStartMs: number;
   spawnDurationMs: number;
   foldStartMs: number;
@@ -2754,6 +2807,8 @@ export const rigCoreMethods = {
     this.jiggleSignalX = 0;
     this.jiggleSignalY = 0;
     this.jiggleRootReady = false;
+    this.facingFlip.visual = this.facingBlend;
+    this.facingFlip.velocity = 0;
     this.poseRecoilConsumedAtMs = -1e9;
     this.floatingHeadSpring.x = 0;
     this.floatingHeadSpring.y = 0;
