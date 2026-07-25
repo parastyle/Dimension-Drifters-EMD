@@ -13,6 +13,7 @@ import {
   REZ_RADIUS,
 } from "./constants.js";
 import { makeRng } from "./rng.js";
+import { GENERATED_WEAPON_LIMB_CLAIMS } from "./weapon-limb-claims.generated.js";
 import {
   transformWeaponArtPoint,
   type WeaponAffineTransform,
@@ -64,6 +65,35 @@ export interface WeaponGripPoints {
     /** Hand rotation relative to the painted weapon axis. Omitted preserves the neutral hand angle. */
     angleRad?: number;
   };
+}
+
+/** Presentation-only pose channels that an authored weapon action may temporarily own. Actor/root motion
+ * is deliberately absent: locomotion and sanctioned recoil remain outside this cosmetic contract. */
+export const WEAPON_LIMBS = Object.freeze([
+  "hand-l",
+  "hand-r",
+  "foot-l",
+  "foot-r",
+  "head",
+  "body-lean",
+] as const);
+export type WeaponLimb = (typeof WEAPON_LIMBS)[number];
+
+/** `handoff` releases into the render-frame spring with the authored exit velocity clamped by
+ * JIGGLE_HANDOFF_MAX_V. `snap` rebases at the spring target with no inherited velocity. */
+export type LimbClaimReleasePolicy = "snap" | "handoff";
+
+export interface WeaponLimbClaim {
+  readonly limb: WeaponLimb;
+  readonly release: LimbClaimReleasePolicy;
+}
+
+/** Optional authoring contract; the generated catalog resolves it for every weapon. `held` is continuous
+ * while equipped. `comboBeats[i]` is additive for beat i, so the effective action ownership is the union
+ * of the held and beat sets. Every omitted limb remains free for render-frame secondary motion. */
+export interface WeaponLimbClaims {
+  readonly held: readonly Readonly<WeaponLimbClaim>[];
+  readonly comboBeats: readonly (readonly Readonly<WeaponLimbClaim>[])[];
 }
 
 /** Registered two-piece break-action art. The receiver remains on the primary grip while part 2 pivots
@@ -722,6 +752,8 @@ export interface WeaponDef {
   poseLanguage?: WeaponPoseLanguageDef;
   /** Optional final-render element affines authored by Pose Studio. */
   elementTransforms?: WeaponElementTransforms;
+  /** Presentation-only held and per-combo-beat pose ownership. Generated inference fills catalog rows. */
+  limbClaims?: WeaponLimbClaims;
   /** Promote this authored combo's signed arc/range/timing path into server hit geometry. */
   authoritativeCombo?: boolean;
   /** Fast repeated forward contacts owned by one accepted attack rather than successive combo inputs. */
@@ -2311,11 +2343,20 @@ const BASE_WEAPONS: Record<string, WeaponDefSource> = {
  *  but held out of the active roster via `expansion`). Both are `WeaponDef`s, so anything keyed by id
  *  (held sprite, card art, VFX) resolves for either. */
 const WEAPON_SOURCES: Record<string, WeaponDefSource> = { ...BASE_WEAPONS, ...GENERATED_WEAPONS };
+const derivingWeaponLimbClaims = (
+  globalThis as typeof globalThis & { __DD_GENERATING_WEAPON_LIMB_CLAIMS__?: boolean }
+).__DD_GENERATING_WEAPON_LIMB_CLAIMS__;
 export const WEAPONS: Record<string, WeaponDef> = Object.fromEntries(
   Object.entries(WEAPON_SOURCES).map(([id, weapon]) => {
     const tier = (GENERATED_WEAPON_TIERS as Readonly<Record<string, WeaponTier>>)[id];
     if (!tier) throw new Error(`Weapon ${id} has no authored tier in data/weapon-tiers.json`);
-    return [id, { ...weapon, tier }];
+    const limbClaims = (GENERATED_WEAPON_LIMB_CLAIMS as Readonly<
+      Record<string, WeaponLimbClaims>
+    >)[id];
+    if (!limbClaims && !derivingWeaponLimbClaims) {
+      throw new Error(`Weapon ${id} has no generated limb-claim declaration`);
+    }
+    return [id, limbClaims ? { ...weapon, tier, limbClaims } : { ...weapon, tier }];
   }),
 );
 for (const id of Object.keys(GENERATED_WEAPON_TIERS)) {

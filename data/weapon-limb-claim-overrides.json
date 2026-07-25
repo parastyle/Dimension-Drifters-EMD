@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "overrides": [
+    {
+      "weaponId": "x2-muay-thai-wraps",
+      "scope": "comboBeat",
+      "beat": 3,
+      "claims": [
+        {
+          "limb": "foot-r",
+          "release": "handoff"
+        }
+      ],
+      "reason": "Knee Strike authors one lead/front-foot strike; hand=both describes its two-hand clinch guard, not two striking feet."
+    },
+    {
+      "weaponId": "x2-muay-thai-wraps",
+      "scope": "comboBeat",
+      "beat": 4,
+      "claims": [
+        {
+          "limb": "foot-r",
+          "release": "handoff"
+        }
+      ],
+      "reason": "Roundhouse Kick authors one lead/front-foot strike; hand=both describes the guarding hands, not two striking feet."
+    },
+    {
+      "weaponId": "x2-drunken-fist-wraps",
+      "scope": "comboBeat",
+      "beat": 3,
+      "claims": [
+        {
+          "limb": "foot-r",
+          "release": "handoff"
+        }
+      ],
+      "reason": "Sweeping Leg authors one lead/front-foot sweep; hand=both describes the loose two-hand guard, not two striking feet."
+    },
+    {
+      "weaponId": "x2-drunken-fist-wraps",
+      "scope": "comboBeat",
+      "beat": 4,
+      "claims": [
+        {
+          "limb": "foot-r",
+          "release": "handoff"
+        }
+      ],
+      "reason": "Frontflip Heel Drop authors one lead/front heel; hand=both describes the accompanying two-hand pose, not two striking feet."
+    }
+  ]
+}
