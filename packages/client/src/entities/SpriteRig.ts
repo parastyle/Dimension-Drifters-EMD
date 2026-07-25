@@ -103,6 +103,7 @@ import {
   type WeaponAffineTransform,
   type WeaponArtMuzzlePoint,
   type WeaponDef,
+  type WeaponElementId,
   weaponArtMuzzlePointsForShot,
   weaponHasHandlingTag,
   weaponMuzzleGripOffset,
@@ -258,6 +259,15 @@ export {
 } from "../sprites/pose-language.js";
 
 export { secondaryGripHandRendersAbove } from "../sprites/secondary-grip.js";
+
+export interface AuthoredRigElementSnapshot {
+  elementId: WeaponElementId;
+  facing: 1 | -1;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
 
 /** §42 a WORN weapon (gauntlet/claw/glove/knuckles) is worn ON the hand, not held by the cuff: the rig
  *  mounts its pivot where the hand sits INSIDE the glove and renders the art OVER the hand. Matched by
@@ -932,6 +942,10 @@ export class SpriteRig {
         if (img)
           this.hands.push({
             img,
+            elementId: p.role as Extract<
+              WeaponElementId,
+              "hand-l" | "hand-r" | "foot-l" | "foot-r"
+            >,
             ox: p.ox * this.scale,
             oy: p.oy * this.scale,
             front: p.ox >= 0,
@@ -951,6 +965,10 @@ export class SpriteRig {
         if (img)
           this.feet.push({
             img,
+            elementId: p.role as Extract<
+              WeaponElementId,
+              "hand-l" | "hand-r" | "foot-l" | "foot-r"
+            >,
             ox: p.ox * this.scale,
             oy: p.oy * this.scale,
             front: p.ox >= 0,
@@ -1081,6 +1099,36 @@ export class SpriteRig {
     this.phase = h / 1000;
     this.idleFlourishOffsetMs = Math.floor(this.phase * 701);
     if (gearManifest) this.requestBoilerplate(gearManifest);
+  }
+
+  /** Pose Studio read-only hit geometry for the exact final images rendered by this rig. */
+  authoredElementSnapshots(): AuthoredRigElementSnapshot[] {
+    const snapshots: AuthoredRigElementSnapshot[] = [];
+    const add = (elementId: WeaponElementId, image: Phaser.GameObjects.Image | undefined): void => {
+      if (!image?.active || !image.visible || image.alpha <= 0.01) return;
+      const bounds = image.getBounds();
+      if (!(bounds.width > 0 && bounds.height > 0)) return;
+      snapshots.push({
+        elementId,
+        facing: this.facing,
+        x: bounds.x,
+        y: bounds.y,
+        width: bounds.width,
+        height: bounds.height,
+      });
+    };
+    add("head", this.boilerplateHead);
+    for (const hand of this.hands) add(hand.elementId, hand.img);
+    for (const foot of this.feet) add(foot.elementId, foot.img);
+    for (const weapon of this.weapons) add(`part-${weapon.partIndex + 1}`, weapon.img);
+    add("part-2", this.breakActionAttachment?.barrel);
+    for (const weapon of this.wrapFootWeapons) add(`part-${weapon.partIndex + 1}`, weapon.img);
+    if (this.weaponDef?.strikeOverlayPart) {
+      for (const overlay of this.strikeOverlays) {
+        add(`part-${this.weaponDef.strikeOverlayPart}`, overlay.img);
+      }
+    }
+    return snapshots;
   }
 
   /** Select the fixed blank kit without ever exposing an unresolved texture key. */

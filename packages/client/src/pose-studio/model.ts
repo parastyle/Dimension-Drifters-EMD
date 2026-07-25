@@ -101,6 +101,49 @@ export interface SecondaryGripAnchor extends GripAnchor {
   role: string;
 }
 
+export type TransformableElementId =
+  | "head"
+  | "hand-l"
+  | "hand-r"
+  | "foot-l"
+  | "foot-r"
+  | `part-${number}`;
+export type ElementTransformPose = "idle" | "held";
+export type ElementTransformScope = "beat" | "pose" | "hold";
+
+export interface ElementTransform {
+  dx: number;
+  dy: number;
+  rotationRad: number;
+  scale: number;
+}
+
+export type ElementTransformMap = Partial<Record<TransformableElementId, ElementTransform>>;
+
+export interface ElementTransforms {
+  hold?: ElementTransformMap;
+  poses?: Partial<Record<ElementTransformPose, ElementTransformMap>>;
+  beats?: Partial<Record<number, ElementTransformMap>>;
+}
+
+export const IDENTITY_ELEMENT_TRANSFORM: Readonly<ElementTransform> = Object.freeze({
+  dx: 0,
+  dy: 0,
+  rotationRad: 0,
+  scale: 1,
+});
+
+export function isTransformableElementId(value: string): value is TransformableElementId {
+  return (
+    value === "head" ||
+    value === "hand-l" ||
+    value === "hand-r" ||
+    value === "foot-l" ||
+    value === "foot-r" ||
+    /^part-[1-9]\d*$/.test(value)
+  );
+}
+
 export interface ComboTiming {
   activeStart: number;
   activeEnd: number;
@@ -167,6 +210,7 @@ export interface WeaponAuthoringRow {
     idle?: (typeof IDLE_HAND_POSES)[number];
     feet?: string;
   };
+  elementTransforms?: ElementTransforms;
   behavior?: {
     kind?: string;
     recoil?: number;
@@ -222,6 +266,46 @@ export function validateEditableRow(row: WeaponAuthoringRow): string | undefined
   }
   if (row.poseLanguage?.idle === "secondary-grip" && !row.gripPoints?.secondary) {
     return "The secondary-grip idle requires an authored secondary grip point.";
+  }
+
+  const validateTransformMap = (
+    transforms: ElementTransformMap | undefined,
+    label: string,
+  ): string | undefined => {
+    if (!transforms) return undefined;
+    for (const [element, transform] of Object.entries(transforms)) {
+      if (!isTransformableElementId(element)) return `${label} has unsupported element ${element}.`;
+      if (!transform) return `${label}.${element} must be a transform.`;
+      const error =
+        finiteIn(transform.dx, -512, 512, `${label}.${element}.dx`) ??
+        finiteIn(transform.dy, -512, 512, `${label}.${element}.dy`) ??
+        finiteIn(
+          transform.rotationRad,
+          -Math.PI * 2,
+          Math.PI * 2,
+          `${label}.${element}.rotationRad`,
+        ) ??
+        finiteIn(transform.scale, 0.1, 5, `${label}.${element}.scale`);
+      if (error) return error;
+    }
+    return undefined;
+  };
+  const holdTransformError = validateTransformMap(row.elementTransforms?.hold, "Hold transform");
+  if (holdTransformError) return holdTransformError;
+  for (const pose of ["idle", "held"] as const) {
+    const poseTransformError = validateTransformMap(
+      row.elementTransforms?.poses?.[pose],
+      `${pose} pose transform`,
+    );
+    if (poseTransformError) return poseTransformError;
+  }
+  for (const [beatKey, transforms] of Object.entries(row.elementTransforms?.beats ?? {})) {
+    const beatIndex = Number(beatKey);
+    if (!Number.isInteger(beatIndex) || beatIndex < 0 || beatIndex >= (row.comboBar?.length ?? 0)) {
+      return `Beat transform ${beatKey} must identify an authored combo beat.`;
+    }
+    const beatTransformError = validateTransformMap(transforms, `Beat ${beatIndex + 1} transform`);
+    if (beatTransformError) return beatTransformError;
   }
 
   for (const [index, beat] of (row.comboBar ?? []).entries()) {

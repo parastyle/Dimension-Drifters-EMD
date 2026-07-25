@@ -4,9 +4,14 @@ import {
   COMBO_MOTIONS,
   COMBO_PATHS,
   cloneRow,
+  type ElementTransform,
+  type ElementTransformPose,
+  type ElementTransformScope,
+  IDENTITY_ELEMENT_TRANSFORM,
   IDLE_HAND_POSES,
   RIBBON_PROFILES,
   rowFingerprint,
+  type TransformableElementId,
   validateEditableRow,
   type WeaponAuthoringRow,
   type WeaponSummary,
@@ -34,6 +39,19 @@ interface DragState {
   startClientY: number;
   startRow: WeaponAuthoringRow;
   startMarkers: StageMarkers;
+}
+
+interface TransformDragState {
+  mode: "move" | "rotate" | "scale";
+  pointerId: number;
+  elementId: TransformableElementId;
+  facing: 1 | -1;
+  startPoint: Readonly<{ x: number; y: number }>;
+  center: Readonly<{ x: number; y: number }>;
+  startDistance: number;
+  startAngle: number;
+  startTransform: ElementTransform;
+  pixelsPerLocalUnit: number;
 }
 
 const element = <T extends Element>(id: string): T => {
@@ -71,6 +89,10 @@ const snapshotButton = element<HTMLButtonElement>("snapshotButton");
 const restoreButton = element<HTMLButtonElement>("restoreButton");
 const statusMessage = element<HTMLSpanElement>("statusMessage");
 const statusBar = statusMessage.closest(".status-bar") as HTMLElement;
+const transformSelection = element<HTMLDivElement>("transformSelection");
+const transformSelectionLabel = element<HTMLSpanElement>("transformSelectionLabel");
+const rotationHandle = element<HTMLButtonElement>("rotationHandle");
+const scaleHandles = [...document.querySelectorAll<HTMLButtonElement>("[data-scale-corner]")];
 
 const handles: Record<HandleKind, HTMLButtonElement> = {
   primary: element<HTMLButtonElement>("primaryHandle"),
@@ -87,6 +109,11 @@ let selectedBeat = 0;
 let snapshotAvailable = false;
 let latestMarkers: StageMarkers | undefined;
 let drag: DragState | undefined;
+let transformDrag: TransformDragState | undefined;
+let selectedElement: TransformableElementId | undefined;
+let selectedFacing: 1 | -1 = 1;
+let transformScope: ElementTransformScope = "beat";
+let transformPose: ElementTransformPose = "held";
 let busy = false;
 let lastFrameBeat = -1;
 let stageUpdateQueued = false;
@@ -169,6 +196,143 @@ function numberField(
     </label>`;
 }
 
+function scopedTransform(
+  source: WeaponAuthoringRow,
+  elementId = selectedElement,
+): Readonly<ElementTransform> {
+  if (!elementId) return IDENTITY_ELEMENT_TRANSFORM;
+  const authored =
+    transformScope === "hold"
+      ? source.elementTransforms?.hold?.[elementId]
+      : transformScope === "pose"
+        ? source.elementTransforms?.poses?.[transformPose]?.[elementId]
+        : source.elementTransforms?.beats?.[selectedBeat]?.[elementId];
+  return authored ?? IDENTITY_ELEMENT_TRANSFORM;
+}
+
+function pruneElementTransforms(candidate: WeaponAuthoringRow): void {
+  const transforms = candidate.elementTransforms;
+  if (!transforms) return;
+  if (transforms.hold && Object.keys(transforms.hold).length === 0) delete transforms.hold;
+  if (transforms.poses) {
+    for (const pose of ["idle", "held"] as const) {
+      const map = transforms.poses[pose];
+      if (map && Object.keys(map).length === 0) delete transforms.poses[pose];
+    }
+    if (Object.keys(transforms.poses).length === 0) delete transforms.poses;
+  }
+  if (transforms.beats) {
+    for (const beatKey of Object.keys(transforms.beats)) {
+      const beatIndex = Number(beatKey);
+      const map = transforms.beats[beatIndex];
+      if (map && Object.keys(map).length === 0) delete transforms.beats[beatIndex];
+    }
+    if (Object.keys(transforms.beats).length === 0) delete transforms.beats;
+  }
+  if (Object.keys(transforms).length === 0) delete candidate.elementTransforms;
+}
+
+function writeScopedTransform(
+  candidate: WeaponAuthoringRow,
+  elementId: TransformableElementId,
+  transform: ElementTransform | undefined,
+): void {
+  if (!transform) {
+    const map =
+      transformScope === "hold"
+        ? candidate.elementTransforms?.hold
+        : transformScope === "pose"
+          ? candidate.elementTransforms?.poses?.[transformPose]
+          : candidate.elementTransforms?.beats?.[selectedBeat];
+    if (map) delete map[elementId];
+    pruneElementTransforms(candidate);
+    return;
+  }
+  candidate.elementTransforms ??= {};
+  if (transformScope === "hold") {
+    candidate.elementTransforms.hold ??= {};
+    candidate.elementTransforms.hold[elementId] = transform;
+  } else if (transformScope === "pose") {
+    candidate.elementTransforms.poses ??= {};
+    candidate.elementTransforms.poses[transformPose] ??= {};
+    const poseMap = candidate.elementTransforms.poses[transformPose];
+    if (poseMap) poseMap[elementId] = transform;
+  } else {
+    candidate.elementTransforms.beats ??= {};
+    candidate.elementTransforms.beats[selectedBeat] ??= {};
+    const beatMap = candidate.elementTransforms.beats[selectedBeat];
+    if (beatMap) beatMap[elementId] = transform;
+  }
+}
+
+function renderTransformSection(): string {
+  const beatAvailable = !!row.comboBar?.[selectedBeat];
+  if (!selectedElement) {
+    return `
+      <section class="field-section" data-testid="transform-editor">
+        <h3>Element transform</h3>
+        <div class="selected-element-empty">
+          Click a hand, foot, head, or weapon part on either facing to select it. Drag the selected
+          art to move; use the white rotation and corner handles for angle and uniform scale.
+        </div>
+      </section>`;
+  }
+  const transform = scopedTransform(row, selectedElement);
+  const angleDegrees = round((transform.rotationRad * 180) / Math.PI, 3);
+  return `
+    <section class="field-section" data-testid="transform-editor">
+      <h3>${escapeHtml(selectedElement)} · facing ${selectedFacing === 1 ? "right" : "left"}</h3>
+      <div class="transform-scope" role="radiogroup" aria-label="Transform scope">
+        <label>
+          <input type="radio" name="transformScope" data-transform-scope="beat" ${
+            transformScope === "beat" ? "checked" : ""
+          } ${beatAvailable ? "" : "disabled"} />
+          <span>Current beat</span>
+        </label>
+        <label>
+          <input type="radio" name="transformScope" data-transform-scope="pose" ${
+            transformScope === "pose" ? "checked" : ""
+          } />
+          <span>Pose</span>
+        </label>
+        <label>
+          <input type="radio" name="transformScope" data-transform-scope="hold" ${
+            transformScope === "hold" ? "checked" : ""
+          } />
+          <span>Whole hold</span>
+        </label>
+      </div>
+      ${
+        transformScope === "pose"
+          ? `<label class="wide">
+              <span>Pose scope</span>
+              <select data-transform-pose data-testid="transform-pose">
+                <option value="held"${transformPose === "held" ? " selected" : ""}>held</option>
+                <option value="idle"${transformPose === "idle" ? " selected" : ""}>idle</option>
+              </select>
+            </label>`
+          : ""
+      }
+      <div class="field-grid">
+        ${numberField("Move X (px)", "transform.dx", transform.dx, -512, 512, 1)}
+        ${numberField("Move Y (px)", "transform.dy", transform.dy, -512, 512, 1)}
+        ${numberField("Angle (deg)", "transform.angleDegrees", angleDegrees, -360, 360, 0.1)}
+        ${numberField("Uniform scale", "transform.scale", transform.scale, 0.1, 5, 0.01)}
+      </div>
+      <div class="transform-actions">
+        <button type="button" data-transform-action="copy-facing" data-testid="copy-facing">
+          Copy to other facing
+        </button>
+        <button type="button" data-transform-action="reset-element" data-testid="reset-element">
+          Reset element
+        </button>
+        <button type="button" data-transform-action="reset-all" data-testid="reset-all-transforms">
+          Reset all
+        </button>
+      </div>
+    </section>`;
+}
+
 function renderTweak(): void {
   rowId.textContent = row.id;
   rowId.title = row.id;
@@ -247,6 +411,7 @@ function renderTweak(): void {
       </section>`;
 
   tweakContent.innerHTML = `
+    ${renderTransformSection()}
     <section class="field-section">
       <h3>Weapon mount</h3>
       <div class="field-grid">
@@ -283,6 +448,25 @@ function renderTweak(): void {
     .forEach((input) => {
       input.addEventListener("change", () => applyFieldEdit(input));
     });
+  tweakContent.querySelectorAll<HTMLInputElement>("[data-transform-scope]").forEach((input) => {
+    input.addEventListener("change", () => {
+      transformScope = input.dataset.transformScope as ElementTransformScope;
+      if (transformScope === "beat" && !row.comboBar?.[selectedBeat]) transformScope = "pose";
+      stage?.setPosePreview(transformScope === "pose" ? transformPose : "held");
+      renderTweak();
+      updateTransformOverlay();
+    });
+  });
+  tweakContent
+    .querySelector<HTMLSelectElement>("[data-transform-pose]")
+    ?.addEventListener("change", (event) => {
+      transformPose = (event.currentTarget as HTMLSelectElement).value as ElementTransformPose;
+      stage.setPosePreview(transformPose);
+      renderTweak();
+    });
+  tweakContent.querySelectorAll<HTMLButtonElement>("[data-transform-action]").forEach((button) => {
+    button.addEventListener("click", () => applyTransformAction(button.dataset.transformAction));
+  });
 }
 
 function renderTimeline(): void {
@@ -351,6 +535,56 @@ function updateMarkers(markers: StageMarkers): void {
       1,
     )} ${(Math.min(markers.pathOrigin.y, markers.path.y) - 28).toFixed(1)} ${markers.path.x.toFixed(1)} ${markers.path.y.toFixed(1)}`,
   );
+  updateTransformOverlay();
+}
+
+function selectedElementBounds():
+  | Readonly<{ x: number; y: number; width: number; height: number }>
+  | undefined {
+  if (!selectedElement || !latestMarkers) return undefined;
+  const matches = latestMarkers.elements.filter(
+    (snapshot) => snapshot.elementId === selectedElement && snapshot.facing === selectedFacing,
+  );
+  if (matches.length === 0) return undefined;
+  const left = Math.min(...matches.map((snapshot) => snapshot.x));
+  const top = Math.min(...matches.map((snapshot) => snapshot.y));
+  const right = Math.max(...matches.map((snapshot) => snapshot.x + snapshot.width));
+  const bottom = Math.max(...matches.map((snapshot) => snapshot.y + snapshot.height));
+  return { x: left, y: top, width: right - left, height: bottom - top };
+}
+
+function updateTransformOverlay(): void {
+  const bounds = selectedElementBounds();
+  const visible = !!bounds && !!selectedElement;
+  transformSelection.hidden = !visible;
+  rotationHandle.hidden = !visible;
+  for (const handle of scaleHandles) handle.hidden = !visible;
+  if (!visible || !bounds || !selectedElement) return;
+  transformSelection.style.left = `${bounds.x}px`;
+  transformSelection.style.top = `${bounds.y}px`;
+  transformSelection.style.width = `${bounds.width}px`;
+  transformSelection.style.height = `${bounds.height}px`;
+  transformSelectionLabel.textContent = `${selectedElement} · ${
+    transformScope === "beat"
+      ? `beat ${selectedBeat + 1}`
+      : transformScope === "pose"
+        ? transformPose
+        : "whole hold"
+  }`;
+  rotationHandle.style.left = `${bounds.x + bounds.width / 2}px`;
+  rotationHandle.style.top = `${bounds.y - 28}px`;
+  const corners = {
+    nw: { x: bounds.x, y: bounds.y },
+    ne: { x: bounds.x + bounds.width, y: bounds.y },
+    sw: { x: bounds.x, y: bounds.y + bounds.height },
+    se: { x: bounds.x + bounds.width, y: bounds.y + bounds.height },
+  } as const;
+  for (const handle of scaleHandles) {
+    const corner = corners[handle.dataset.scaleCorner as keyof typeof corners];
+    if (!corner) continue;
+    handle.style.left = `${corner.x}px`;
+    handle.style.top = `${corner.y}px`;
+  }
 }
 
 function scheduleStageRow(): void {
@@ -399,6 +633,20 @@ function applyFieldEdit(input: HTMLInputElement | HTMLSelectElement): void {
   commitEdit((candidate) => {
     const beat = candidate.comboBar?.[beatIndex];
     switch (edit) {
+      case "transform.dx":
+      case "transform.dy":
+      case "transform.angleDegrees":
+      case "transform.scale": {
+        if (!selectedElement) break;
+        const transform = { ...scopedTransform(candidate, selectedElement) };
+        if (edit === "transform.dx") transform.dx = number;
+        else if (edit === "transform.dy") transform.dy = number;
+        else if (edit === "transform.angleDegrees") {
+          transform.rotationRad = round((number * Math.PI) / 180, 6);
+        } else transform.scale = number;
+        writeScopedTransform(candidate, selectedElement, transform);
+        break;
+      }
       case "stats.displayLength":
         candidate.stats.displayLength = number;
         break;
@@ -467,6 +715,36 @@ function applyFieldEdit(input: HTMLInputElement | HTMLSelectElement): void {
   }, `Updated ${edit}; the in-memory authoring row is dirty.`);
 }
 
+function applyTransformAction(action: string | undefined): void {
+  if (action === "copy-facing") {
+    selectedFacing = selectedFacing === 1 ? -1 : 1;
+    document.documentElement.dataset.selectedFacing = String(selectedFacing);
+    document.documentElement.dataset.lastTransformAction = "copy-facing";
+    renderTweak();
+    updateTransformOverlay();
+    setStatus(
+      `Copied and selected the ${selectedFacing === 1 ? "right" : "left"} facing. The shared authored source mirrors X and angle deterministically.`,
+      "success",
+    );
+    return;
+  }
+  if (action === "reset-element" && selectedElement) {
+    const resetElement = selectedElement;
+    commitEdit(
+      (candidate) => writeScopedTransform(candidate, resetElement, undefined),
+      `Reset ${resetElement} in the current ${transformScope} scope.`,
+    );
+    document.documentElement.dataset.lastTransformAction = "reset-element";
+    return;
+  }
+  if (action === "reset-all") {
+    commitEdit((candidate) => {
+      delete candidate.elementTransforms;
+    }, "Reset every authored element transform for this weapon.");
+    document.documentElement.dataset.lastTransformAction = "reset-all";
+  }
+}
+
 function filteredSummaries(): WeaponSummary[] {
   const query = weaponSearch.value.trim().toLowerCase();
   if (!query) return summaries;
@@ -497,6 +775,10 @@ async function loadRow(id: string): Promise<void> {
     savedRow = cloneRow(response.row);
     snapshotAvailable = response.snapshotAvailable;
     selectedBeat = 0;
+    selectedElement = undefined;
+    transformScope = row.comboBar?.length ? "beat" : "pose";
+    transformPose = "held";
+    delete document.documentElement.dataset.selectedElement;
     lastFrameBeat = -1;
     weaponSelect.value = id;
     renderTweak();
@@ -578,6 +860,146 @@ async function pollRegen(): Promise<void> {
 function pointerPosition(event: PointerEvent): { x: number; y: number } {
   const bounds = stageWrap.getBoundingClientRect();
   return { x: event.clientX - bounds.left, y: event.clientY - bounds.top };
+}
+
+function elementAtPoint(
+  point: Readonly<{ x: number; y: number }>,
+): StageMarkers["elements"][number] | undefined {
+  return latestMarkers?.elements
+    .filter(
+      (snapshot) =>
+        point.x >= snapshot.x &&
+        point.x <= snapshot.x + snapshot.width &&
+        point.y >= snapshot.y &&
+        point.y <= snapshot.y + snapshot.height,
+    )
+    .sort((left, right) => left.width * left.height - right.width * right.height)[0];
+}
+
+function selectTransformElement(elementId: TransformableElementId, facing: 1 | -1): void {
+  selectedElement = elementId;
+  selectedFacing = facing;
+  if (transformScope === "beat" && !row.comboBar?.[selectedBeat]) transformScope = "pose";
+  document.documentElement.dataset.selectedElement = elementId;
+  document.documentElement.dataset.selectedFacing = String(facing);
+  renderTweak();
+  updateTransformOverlay();
+  setStatus(
+    `Selected ${elementId} on the ${facing === 1 ? "right" : "left"} facing. Drag its art or use the transform controls.`,
+  );
+}
+
+function beginTransformDrag(event: PointerEvent, mode: TransformDragState["mode"]): void {
+  if (!selectedElement || event.button !== 0) return;
+  const bounds = selectedElementBounds();
+  if (!bounds) return;
+  const point = pointerPosition(event);
+  const center = {
+    x: bounds.x + bounds.width / 2,
+    y: bounds.y + bounds.height / 2,
+  };
+  const target = event.currentTarget as HTMLElement;
+  target.setPointerCapture?.(event.pointerId);
+  transformDrag = {
+    mode,
+    pointerId: event.pointerId,
+    elementId: selectedElement,
+    facing: selectedFacing,
+    startPoint: point,
+    center,
+    startDistance: Math.max(1, Math.hypot(point.x - center.x, point.y - center.y)),
+    startAngle: Math.atan2(point.y - center.y, point.x - center.x),
+    startTransform: { ...scopedTransform(row, selectedElement) },
+    pixelsPerLocalUnit: Math.max(0.1, (latestMarkers?.bodyHeight ?? 76) / 76),
+  };
+  stage.setPlaying(false);
+  document.documentElement.dataset.dragging = `transform-${mode}`;
+  event.preventDefault();
+}
+
+function beginStageTransform(event: PointerEvent): void {
+  const target = event.target as Element;
+  if (target.closest(".stage-handle, .transform-handle")) return;
+  if (event.button !== 0) return;
+  const hit = elementAtPoint(pointerPosition(event));
+  if (!hit) return;
+  selectTransformElement(hit.elementId as TransformableElementId, hit.facing);
+  beginTransformDrag(event, "move");
+}
+
+function moveTransformDrag(event: PointerEvent): void {
+  if (!transformDrag || event.pointerId !== transformDrag.pointerId) return;
+  const point = pointerPosition(event);
+  const next = { ...transformDrag.startTransform };
+  if (transformDrag.mode === "move") {
+    next.dx = round(
+      PhaserClamp(
+        transformDrag.startTransform.dx +
+          ((point.x - transformDrag.startPoint.x) / transformDrag.pixelsPerLocalUnit) *
+            transformDrag.facing,
+        -512,
+        512,
+      ),
+      3,
+    );
+    next.dy = round(
+      PhaserClamp(
+        transformDrag.startTransform.dy +
+          (point.y - transformDrag.startPoint.y) / transformDrag.pixelsPerLocalUnit,
+        -512,
+        512,
+      ),
+      3,
+    );
+  } else if (transformDrag.mode === "rotate") {
+    const angle = Math.atan2(point.y - transformDrag.center.y, point.x - transformDrag.center.x);
+    const delta = wrapAngle(angle - transformDrag.startAngle);
+    next.rotationRad = round(
+      PhaserClamp(
+        transformDrag.startTransform.rotationRad + delta * transformDrag.facing,
+        -Math.PI * 2,
+        Math.PI * 2,
+      ),
+      6,
+    );
+  } else {
+    const distance = Math.max(
+      1,
+      Math.hypot(point.x - transformDrag.center.x, point.y - transformDrag.center.y),
+    );
+    next.scale = round(
+      PhaserClamp(
+        transformDrag.startTransform.scale * (distance / transformDrag.startDistance),
+        0.1,
+        5,
+      ),
+      4,
+    );
+  }
+  const selected = transformDrag.elementId;
+  commitEdit(
+    (candidate) => writeScopedTransform(candidate, selected, next),
+    `${selected} ${transformDrag.mode} updated live.`,
+    false,
+  );
+  document.documentElement.dataset.lastEdit = `transform-${transformDrag.mode}`;
+  document.documentElement.dataset.transformDx = String(next.dx);
+  document.documentElement.dataset.transformDy = String(next.dy);
+  document.documentElement.dataset.transformRotationRad = String(next.rotationRad);
+  document.documentElement.dataset.transformScale = String(next.scale);
+  event.preventDefault();
+}
+
+function endTransformDrag(event: PointerEvent): void {
+  if (!transformDrag || event.pointerId !== transformDrag.pointerId) return;
+  const finished = transformDrag;
+  transformDrag = undefined;
+  delete document.documentElement.dataset.dragging;
+  renderTweak();
+  setStatus(
+    `${finished.elementId} ${finished.mode} committed in ${transformScope} scope; Save row persists it.`,
+    "success",
+  );
 }
 
 function startDrag(event: PointerEvent, kind: HandleKind): void {
@@ -799,9 +1221,11 @@ combatScaleInput.addEventListener("change", () => {
 });
 timelineInput.addEventListener("input", () => {
   stage.setPlaying(false);
+  stage.setPosePreview("held");
   stage.setTimeline(Number(timelineInput.value));
 });
 playButton.addEventListener("click", () => {
+  stage.setPosePreview("held");
   stage.togglePlaying();
 });
 loopInput.addEventListener("change", () => stage.setLooping(loopInput.checked));
@@ -818,6 +1242,44 @@ for (const [kind, handle] of Object.entries(handles) as Array<[HandleKind, HTMLB
   handle.addEventListener("pointerup", endDrag);
   handle.addEventListener("pointercancel", endDrag);
 }
+
+stageWrap.addEventListener("pointerdown", beginStageTransform);
+stageWrap.addEventListener("pointermove", moveTransformDrag);
+stageWrap.addEventListener("pointerup", endTransformDrag);
+stageWrap.addEventListener("pointercancel", endTransformDrag);
+rotationHandle.addEventListener("pointerdown", (event) => beginTransformDrag(event, "rotate"));
+for (const handle of scaleHandles) {
+  handle.addEventListener("pointerdown", (event) => beginTransformDrag(event, "scale"));
+}
+
+document.addEventListener("keydown", (event) => {
+  if (
+    !selectedElement ||
+    !["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)
+  ) {
+    return;
+  }
+  const target = event.target as HTMLElement | null;
+  if (target?.matches("input, select, textarea, button") || target?.isContentEditable) {
+    return;
+  }
+  const amount = event.shiftKey ? 10 : 1;
+  const dx = event.key === "ArrowLeft" ? -amount : event.key === "ArrowRight" ? amount : 0;
+  const dy = event.key === "ArrowUp" ? -amount : event.key === "ArrowDown" ? amount : 0;
+  const selected = selectedElement;
+  const current = scopedTransform(row, selected);
+  const next = {
+    ...current,
+    dx: round(PhaserClamp(current.dx + dx * selectedFacing, -512, 512), 3),
+    dy: round(PhaserClamp(current.dy + dy, -512, 512), 3),
+  };
+  commitEdit(
+    (candidate) => writeScopedTransform(candidate, selected, next),
+    `Nudged ${selected} by ${dx}, ${dy} px.`,
+  );
+  document.documentElement.dataset.lastEdit = "transform-nudge";
+  event.preventDefault();
+});
 
 snapshotButton.addEventListener("click", () =>
   withBusy(async () => {

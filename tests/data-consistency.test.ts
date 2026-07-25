@@ -152,6 +152,7 @@ describe("§43 expansion codegen: every authored gameplay field survives into th
       idle?: string;
       feet?: string;
     };
+    elementTransforms?: Record<string, unknown>;
     gripPoints?: {
       primary: { x: number; y: number };
       secondary?: { x: number; y: number; role: string };
@@ -275,6 +276,8 @@ describe("§43 expansion codegen: every authored gameplay field survives into th
         expect(def.effectTiming, `${w.id}.effectTiming`).toBe(w.effectTiming);
       if (w.poseLanguage !== undefined)
         expect(def.poseLanguage, `${w.id}.poseLanguage`).toEqual(w.poseLanguage);
+      if (w.elementTransforms !== undefined)
+        expect(def.elementTransforms, `${w.id}.elementTransforms`).toEqual(w.elementTransforms);
       if (w.gripPoints !== undefined)
         expect(def.gripPoints, `${w.id}.gripPoints`).toEqual(w.gripPoints);
       if (w.handlingTags !== undefined)

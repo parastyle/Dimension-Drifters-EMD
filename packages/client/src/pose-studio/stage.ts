@@ -7,7 +7,7 @@ import {
 } from "@dd/shared";
 import Phaser from "phaser";
 import type { RigAnim } from "../entities/rig/rig-core.js";
-import { SpriteRig } from "../entities/SpriteRig.js";
+import { type AuthoredRigElementSnapshot, SpriteRig } from "../entities/SpriteRig.js";
 import { SPRITES, type SpriteManifest } from "../sprites/manifest.js";
 import {
   WHOLE_ART_CHARACTER_PART_ROLES,
@@ -15,7 +15,7 @@ import {
   wholeArtCharacterTextureKey,
   wholeArtCharacterTextureUrl,
 } from "../sprites/whole-art-character.js";
-import type { ComboBeat, WeaponAuthoringRow } from "./model.js";
+import type { ComboBeat, ElementTransformPose, WeaponAuthoringRow } from "./model.js";
 
 export interface StageMarkers {
   primary: Readonly<{ x: number; y: number }>;
@@ -24,6 +24,7 @@ export interface StageMarkers {
   path: Readonly<{ x: number; y: number }>;
   pathOrigin: Readonly<{ x: number; y: number }>;
   bodyHeight: number;
+  elements: readonly AuthoredRigElementSnapshot[];
 }
 
 export interface PlaybackFrame {
@@ -57,6 +58,9 @@ function editableDefinition(row: WeaponAuthoringRow): WeaponDef | undefined {
     poseLanguage: row.poseLanguage
       ? (structuredClone(row.poseLanguage) as unknown as WeaponDef["poseLanguage"])
       : base.poseLanguage,
+    elementTransforms: row.elementTransforms
+      ? (structuredClone(row.elementTransforms) as WeaponDef["elementTransforms"])
+      : undefined,
     performance: row.performance
       ? (structuredClone(row.performance) as unknown as WeaponDef["performance"])
       : base.performance,
@@ -116,6 +120,7 @@ class PoseStudioScene extends Phaser.Scene {
   private playbackSpeed = 1;
   private zoom = 1;
   private combatScale = false;
+  private previewPose: ElementTransformPose = "held";
   private animationClock = 1_000;
   private restartPending = true;
   private loaderGeneration = 0;
@@ -281,6 +286,12 @@ class PoseStudioScene extends Phaser.Scene {
     this.applyScale();
   }
 
+  setPosePreview(pose: ElementTransformPose): void {
+    if (pose === this.previewPose) return;
+    this.previewPose = pose;
+    this.rebuildRigs();
+  }
+
   private applyScale(): void {
     const scale = this.zoom * (this.combatScale ? 1 : 1.55);
     for (const rig of [...this.liveRigs, ...this.onionRigs]) rig.setRigScale(scale);
@@ -359,21 +370,25 @@ class PoseStudioScene extends Phaser.Scene {
     if (!definition || this.liveRigs.length === 0) return;
     const current = descriptorFor(this.row, definition, this.beatIndex);
     const durationMs = current.poseSeconds * 1000;
-    for (const [index, rig] of this.liveRigs.entries()) {
-      const aim = index === 0 ? -0.08 : Math.PI + 0.08;
-      rig.triggerSwing(this.animationClock - this.progress * durationMs, aim, current);
+    if (this.previewPose === "held") {
+      for (const [index, rig] of this.liveRigs.entries()) {
+        const aim = index === 0 ? -0.08 : Math.PI + 0.08;
+        rig.triggerSwing(this.animationClock - this.progress * durationMs, aim, current);
+      }
     }
     const count = beatCount(this.row);
     const previousIndex = (this.beatIndex - 1 + count) % count;
     const previous = descriptorFor(this.row, definition, previousIndex);
     const ghostProgress = Math.max(0.18, Math.min(0.92, this.progress));
-    for (const [index, rig] of this.onionRigs.entries()) {
-      const aim = index === 0 ? -0.08 : Math.PI + 0.08;
-      rig.triggerSwing(
-        this.animationClock - ghostProgress * previous.poseSeconds * 1000,
-        aim,
-        previous,
-      );
+    if (this.previewPose === "held") {
+      for (const [index, rig] of this.onionRigs.entries()) {
+        const aim = index === 0 ? -0.08 : Math.PI + 0.08;
+        rig.triggerSwing(
+          this.animationClock - ghostProgress * previous.poseSeconds * 1000,
+          aim,
+          previous,
+        );
+      }
     }
     this.restartPending = false;
   }
@@ -439,6 +454,7 @@ class PoseStudioScene extends Phaser.Scene {
       path,
       pathOrigin: primary,
       bodyHeight: 76 * this.zoom * (this.combatScale ? 1 : 1.55),
+      elements: this.liveRigs.flatMap((liveRig) => liveRig.authoredElementSnapshots()),
     };
   }
 
@@ -539,6 +555,10 @@ export class PoseStage {
 
   setCombatScale(enabled: boolean): void {
     this.scene.setCombatScale(enabled);
+  }
+
+  setPosePreview(pose: ElementTransformPose): void {
+    this.scene.setPosePreview(pose);
   }
 
   destroy(): void {

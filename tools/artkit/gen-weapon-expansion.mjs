@@ -21,9 +21,13 @@ const REPO = resolve(ROOT, "..", "..");
 const SRC = process.env.DD_WEAPON_CONCEPTS_SRC
   ? resolve(process.env.DD_WEAPON_CONCEPTS_SRC)
   : join(REPO, "data", "weapon-concepts-300.json");
-const OUT = join(REPO, "packages", "shared", "src", "weapons-expansion.generated.ts");
+const OUT = process.env.DD_WEAPON_EXPANSION_OUT
+  ? resolve(process.env.DD_WEAPON_EXPANSION_OUT)
+  : join(REPO, "packages", "shared", "src", "weapons-expansion.generated.ts");
 const TIERS_SRC = join(REPO, "data", "weapon-tiers.json");
-const TIERS_OUT = join(REPO, "packages", "shared", "src", "weapon-tiers.generated.ts");
+const TIERS_OUT = process.env.DD_WEAPON_TIERS_OUT
+  ? resolve(process.env.DD_WEAPON_TIERS_OUT)
+  : join(REPO, "packages", "shared", "src", "weapon-tiers.generated.ts");
 
 // ── validation state ──────────────────────────────────────────────────────────────────────────────
 const errors = [];
@@ -84,7 +88,7 @@ const TOP_KEYS = new Set([
   "sprite", "firingFrame", "sizeClass", "stance", "authoritativeCombo", "comboFamily", "comboVariant", "comboBar", "comboChoreography", "katanaHook",
   "bespokeVfxSheet", "performance", "swingStyle", "effectRecipe", "effectEmitter", "effectTiming",
   "renderAboveHands", "suppressVfx", "suppressMeleeHitbox", "hitStatus", "gripPoints",
-  "handlingTags", "breakAction", "poseLanguage", "impactMuzzle", "rapidThrust", "fireMode",
+  "handlingTags", "breakAction", "poseLanguage", "elementTransforms", "impactMuzzle", "rapidThrust", "fireMode",
   "strikeOverlayPart", "recoil",
 ]);
 // The sibling-block bug (§43): mechanic stats authored NEXT TO `behavior` instead of inside it were
@@ -137,6 +141,9 @@ const GUN_BURST_KEYS = new Set(["count", "intervalSeconds"]);
 const GRIP_POINTS_KEYS = new Set(["primary", "secondary"]);
 const GRIP_ANCHOR_KEYS = new Set(["x", "y"]);
 const SECONDARY_GRIP_KEYS = new Set(["x", "y", "role"]);
+const ELEMENT_TRANSFORM_SCOPE_KEYS = new Set(["hold", "poses", "beats"]);
+const ELEMENT_TRANSFORM_POSE_KEYS = new Set(["idle", "held"]);
+const ELEMENT_TRANSFORM_KEYS = new Set(["dx", "dy", "rotationRad", "scale"]);
 const BREAK_ACTION_KEYS = new Set(["hinge", "openAngleRad"]);
 const ZONE_KEYS = new Set(["trigger", "style", "initialRadius", "maxRadius", "growthPerSecond",
   "lingerSeconds", "damagePerSecond", "tickRate", "placementRange",
@@ -830,6 +837,112 @@ function poseLanguageOf(language, gripPoints) {
   return out;
 }
 
+function elementIdValid(value) {
+  return (
+    value === "head" ||
+    value === "hand-l" ||
+    value === "hand-r" ||
+    value === "foot-l" ||
+    value === "foot-r" ||
+    /^part-[1-9]\d*$/.test(value)
+  );
+}
+
+function elementTransformOf(value, path) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    fail(`${path} is not an object`);
+    return undefined;
+  }
+  checkKeys(value, ELEMENT_TRANSFORM_KEYS, path);
+  for (const key of ELEMENT_TRANSFORM_KEYS) {
+    if (value[key] === undefined) fail(`${path}.${key} is required`);
+  }
+  return {
+    dx: num(value.dx, -512, 512, 0, `${path}.dx`),
+    dy: num(value.dy, -512, 512, 0, `${path}.dy`),
+    rotationRad: num(
+      value.rotationRad,
+      -Math.PI * 2,
+      Math.PI * 2,
+      0,
+      `${path}.rotationRad`,
+    ),
+    scale: num(value.scale, 0.1, 5, 1, `${path}.scale`),
+  };
+}
+
+function elementTransformMapOf(value, path) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    fail(`${path} is not an object`);
+    return undefined;
+  }
+  const out = {};
+  for (const [element, transform] of Object.entries(value)) {
+    if (!elementIdValid(element)) {
+      fail(`${path} has unsupported element ${JSON.stringify(element)}`);
+      continue;
+    }
+    const mapped = elementTransformOf(transform, `${path}.${element}`);
+    if (mapped) out[element] = mapped;
+  }
+  return out;
+}
+
+function elementTransformsOf(value, comboLength) {
+  if (value === undefined) return undefined;
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    fail("elementTransforms is not an object");
+    return undefined;
+  }
+  checkKeys(value, ELEMENT_TRANSFORM_SCOPE_KEYS, "elementTransforms");
+  const out = {};
+  if (value.hold !== undefined) {
+    out.hold = elementTransformMapOf(value.hold, "elementTransforms.hold");
+  }
+  if (value.poses !== undefined) {
+    if (!value.poses || typeof value.poses !== "object" || Array.isArray(value.poses)) {
+      fail("elementTransforms.poses is not an object");
+    } else {
+      checkKeys(value.poses, ELEMENT_TRANSFORM_POSE_KEYS, "elementTransforms.poses");
+      out.poses = {};
+      for (const pose of ELEMENT_TRANSFORM_POSE_KEYS) {
+        if (value.poses[pose] !== undefined) {
+          out.poses[pose] = elementTransformMapOf(
+            value.poses[pose],
+            `elementTransforms.poses.${pose}`,
+          );
+        }
+      }
+    }
+  }
+  if (value.beats !== undefined) {
+    if (!value.beats || typeof value.beats !== "object" || Array.isArray(value.beats)) {
+      fail("elementTransforms.beats is not an object");
+    } else {
+      out.beats = {};
+      for (const [beatKey, transforms] of Object.entries(value.beats)) {
+        const beatIndex = Number(beatKey);
+        if (
+          !Number.isInteger(beatIndex) ||
+          beatIndex < 0 ||
+          comboLength === undefined ||
+          beatIndex >= comboLength
+        ) {
+          fail(
+            `elementTransforms.beats.${beatKey} must identify an authored comboBar beat`,
+          );
+          continue;
+        }
+        out.beats[beatIndex] = elementTransformMapOf(
+          transforms,
+          `elementTransforms.beats.${beatKey}`,
+        );
+      }
+    }
+  }
+  return out;
+}
+
 function mapWeapon(w) {
   checkKeys(w, TOP_KEYS, "");
   for (const k of MECH_SIBLINGS)
@@ -864,6 +977,10 @@ function mapWeapon(w) {
   const handlingTags = handlingTagsOf(w.handlingTags);
   const breakAction = breakActionOf(w.breakAction);
   const poseLanguage = poseLanguageOf(w.poseLanguage, gripPoints);
+  const elementTransforms = elementTransformsOf(
+    w.elementTransforms,
+    Array.isArray(w.comboBar) ? w.comboBar.length : undefined,
+  );
   const def = {
     id: w.id,
     name: w.name,
@@ -958,6 +1075,7 @@ function mapWeapon(w) {
     fail("handlingTags break requires breakAction");
   }
   if (poseLanguage) def.poseLanguage = poseLanguage;
+  if (elementTransforms) def.elementTransforms = elementTransforms;
   if (handlingTags) def.tags.handling = handlingTags;
   if (w.description !== undefined) {
     if (typeof w.description !== "string") fail("description is not a string");

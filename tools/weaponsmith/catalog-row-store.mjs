@@ -110,6 +110,9 @@ const SECONDARY_GRIP_ROLES = new Set([
   "shaft",
   "handle",
 ]);
+const ELEMENT_TRANSFORM_SCOPES = new Set(["hold", "poses", "beats"]);
+const ELEMENT_TRANSFORM_POSES = new Set(["idle", "held"]);
+const ELEMENT_TRANSFORM_KEYS = new Set(["dx", "dy", "rotationRad", "scale"]);
 
 const clone = (value) => structuredClone(value);
 const same = (left, right) => JSON.stringify(left) === JSON.stringify(right);
@@ -152,6 +155,8 @@ function supportedEditPath(path) {
     /^gripPoints\.secondary\.(x|y)$/.test(path) ||
     path === "poseLanguage" ||
     path === "poseLanguage.idle" ||
+    path === "elementTransforms" ||
+    path.startsWith("elementTransforms.") ||
     /^comboBar\[\d+\]\.name$/.test(path) ||
     /^comboBar\[\d+\]\.motion$/.test(path) ||
     /^comboBar\[\d+\]\.timing\.(activeStart|activeEnd|impact|followEnd)$/.test(path) ||
@@ -165,6 +170,90 @@ function supportedEditPath(path) {
 function finiteIn(value, minimum, maximum, path, errors) {
   if (!Number.isFinite(value) || value < minimum || value > maximum) {
     errors.push(`${path} must be a finite number from ${minimum} to ${maximum}`);
+  }
+}
+
+function elementIdValid(value) {
+  return (
+    value === "head" ||
+    value === "hand-l" ||
+    value === "hand-r" ||
+    value === "foot-l" ||
+    value === "foot-r" ||
+    /^part-[1-9]\d*$/.test(value)
+  );
+}
+
+function validateElementTransformMap(value, path, errors) {
+  if (value === undefined) return;
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    errors.push(`${path} must be an element transform map`);
+    return;
+  }
+  for (const [element, transform] of Object.entries(value)) {
+    const elementPath = `${path}.${element}`;
+    if (!elementIdValid(element)) {
+      errors.push(`${elementPath} is not a transformable rendered element`);
+      continue;
+    }
+    if (!transform || typeof transform !== "object" || Array.isArray(transform)) {
+      errors.push(`${elementPath} must be a transform object`);
+      continue;
+    }
+    if (Object.keys(transform).some((key) => !ELEMENT_TRANSFORM_KEYS.has(key))) {
+      errors.push(`${elementPath} contains an unsupported key`);
+    }
+    for (const key of ELEMENT_TRANSFORM_KEYS) {
+      if (transform[key] === undefined) errors.push(`${elementPath}.${key} is required`);
+    }
+    finiteIn(transform.dx, -512, 512, `${elementPath}.dx`, errors);
+    finiteIn(transform.dy, -512, 512, `${elementPath}.dy`, errors);
+    finiteIn(
+      transform.rotationRad,
+      -Math.PI * 2,
+      Math.PI * 2,
+      `${elementPath}.rotationRad`,
+      errors,
+    );
+    finiteIn(transform.scale, 0.1, 5, `${elementPath}.scale`, errors);
+  }
+}
+
+function validateElementTransforms(value, comboLength, errors) {
+  if (value === undefined) return;
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    errors.push("elementTransforms must be an object");
+    return;
+  }
+  if (Object.keys(value).some((key) => !ELEMENT_TRANSFORM_SCOPES.has(key))) {
+    errors.push("elementTransforms contains an unsupported scope");
+  }
+  validateElementTransformMap(value.hold, "elementTransforms.hold", errors);
+  if (value.poses !== undefined) {
+    if (!value.poses || typeof value.poses !== "object" || Array.isArray(value.poses)) {
+      errors.push("elementTransforms.poses must be an object");
+    } else {
+      if (Object.keys(value.poses).some((key) => !ELEMENT_TRANSFORM_POSES.has(key))) {
+        errors.push("elementTransforms.poses contains an unsupported pose");
+      }
+      for (const pose of ELEMENT_TRANSFORM_POSES) {
+        validateElementTransformMap(value.poses[pose], `elementTransforms.poses.${pose}`, errors);
+      }
+    }
+  }
+  if (value.beats !== undefined) {
+    if (!value.beats || typeof value.beats !== "object" || Array.isArray(value.beats)) {
+      errors.push("elementTransforms.beats must be an object");
+    } else {
+      for (const [beatKey, transforms] of Object.entries(value.beats)) {
+        const beatIndex = Number(beatKey);
+        if (!Number.isInteger(beatIndex) || beatIndex < 0 || beatIndex >= comboLength) {
+          errors.push(`elementTransforms.beats.${beatKey} must identify an authored combo beat`);
+          continue;
+        }
+        validateElementTransformMap(transforms, `elementTransforms.beats.${beatKey}`, errors);
+      }
+    }
   }
 }
 
@@ -219,6 +308,7 @@ export function validatePoseStudioRow(next, baseline) {
   if (next.poseLanguage?.idle === "secondary-grip" && !next.gripPoints?.secondary) {
     errors.push("poseLanguage.idle secondary-grip requires gripPoints.secondary");
   }
+  validateElementTransforms(next.elementTransforms, next.comboBar?.length ?? 0, errors);
 
   if (next.comboBar !== undefined) {
     if (!Array.isArray(next.comboBar) || next.comboBar.length < 1 || next.comboBar.length > 8) {

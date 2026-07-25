@@ -287,6 +287,7 @@ export const rigGearMethods = {
       .setRotation(part.rotation);
     const limb: RigHand = {
       img,
+      elementId: part.source.id as RigHand["elementId"],
       ox: part.x,
       oy: part.y,
       front: part.source.id.endsWith("-r"),

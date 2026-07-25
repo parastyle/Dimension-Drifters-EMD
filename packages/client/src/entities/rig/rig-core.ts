@@ -103,6 +103,7 @@ import {
   type WeaponAffineTransform,
   type WeaponArtMuzzlePoint,
   type WeaponDef,
+  type WeaponElementId,
   weaponArtMuzzlePointsForShot,
   weaponHasHandlingTag,
   weaponMuzzleGripOffset,
@@ -1786,6 +1787,7 @@ export interface TomeVisualState {
 
 export interface RigHand extends JigglePartState {
   img: Phaser.GameObjects.Image;
+  elementId: Extract<WeaponElementId, "hand-l" | "hand-r" | "foot-l" | "foot-r">;
   ox: number;
   oy: number;
   front: boolean;
@@ -1793,6 +1795,7 @@ export interface RigHand extends JigglePartState {
 
 export interface RigFoot extends JigglePartState {
   img: Phaser.GameObjects.Image;
+  elementId: Extract<WeaponElementId, "hand-l" | "hand-r" | "foot-l" | "foot-r">;
   ox: number;
   oy: number;
   front: boolean;

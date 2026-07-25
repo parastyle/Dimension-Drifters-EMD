@@ -103,6 +103,8 @@ import {
   type WeaponAffineTransform,
   type WeaponArtMuzzlePoint,
   type WeaponDef,
+  type WeaponElementId,
+  resolveWeaponElementTransform,
   weaponArtMuzzlePointsForShot,
   weaponHasHandlingTag,
   weaponMuzzleGripOffset,
@@ -3548,6 +3550,40 @@ export const rigPoseMethods = {
       landed,
       movementPose.headBobPx,
     );
+    if (this.weaponDef?.elementTransforms) {
+      const authoredPose = posePhase === "idle" ? "idle" : "held";
+      const authoredBeat =
+        posePhase === "idle"
+          ? undefined
+          : (this.swing?.comboStep ?? (this.comboFamily !== "none" ? this.swingStep : undefined));
+      const applyAuthored = (
+        elementId: WeaponElementId,
+        image: Phaser.GameObjects.Image | undefined,
+        definition: WeaponDef | undefined = this.weaponDef,
+      ): void => {
+        if (!image || !definition?.elementTransforms) return;
+        const transform = resolveWeaponElementTransform(
+          definition.elementTransforms,
+          elementId,
+          authoredPose,
+          authoredBeat,
+          this.facing,
+        );
+        if (!transform) return;
+        image.x += transform.dx;
+        image.y += transform.dy;
+        image.rotation += transform.rotationRad;
+        image.scaleX *= transform.scale;
+        image.scaleY *= transform.scale;
+      };
+      applyAuthored("head", this.boilerplateHead);
+      for (const hand of this.hands) applyAuthored(hand.elementId, hand.img);
+      for (const foot of this.feet) applyAuthored(foot.elementId, foot.img);
+      for (const weapon of this.weapons) {
+        applyAuthored(`part-${weapon.partIndex + 1}`, weapon.img, weapon.def);
+      }
+      applyAuthored("part-2", this.breakActionAttachment?.barrel);
+    }
     if (hasGunHeld && gunCheekWeldPose && this.boilerplateHead) {
       const determinantSign =
         this.boilerplateHead.scaleX * this.boilerplateHead.scaleY < 0 ? -1 : 1;
@@ -3571,6 +3607,28 @@ export const rigPoseMethods = {
       landed,
     );
     this.syncWrapFootWeapons();
+    if (this.weaponDef?.elementTransforms) {
+      const authoredPose = posePhase === "idle" ? "idle" : "held";
+      const authoredBeat =
+        posePhase === "idle"
+          ? undefined
+          : (this.swing?.comboStep ?? (this.comboFamily !== "none" ? this.swingStep : undefined));
+      for (const weapon of this.wrapFootWeapons) {
+        const transform = resolveWeaponElementTransform(
+          this.weaponDef.elementTransforms,
+          `part-${weapon.partIndex + 1}`,
+          authoredPose,
+          authoredBeat,
+          this.facing,
+        );
+        if (!transform) continue;
+        weapon.img.x += transform.dx;
+        weapon.img.y += transform.dy;
+        weapon.img.rotation += transform.rotationRad;
+        weapon.img.scaleX *= transform.scale;
+        weapon.img.scaleY *= transform.scale;
+      }
+    }
     const leadWeapon = this.weapons[0];
     const offWeapon = this.weapons[1];
     if (this.authoredDualGlintAlpha > 0 && leadWeapon && offWeapon && !outsidePaperView) {
@@ -3595,6 +3653,29 @@ export const rigPoseMethods = {
     }
     this.syncTomeVisual(sceneNow, outsidePaperView);
     this.syncStrikeOverlays(sceneNow, outsidePaperView);
+    if (this.weaponDef?.elementTransforms && this.weaponDef.strikeOverlayPart) {
+      const authoredPose = posePhase === "idle" ? "idle" : "held";
+      const authoredBeat =
+        posePhase === "idle"
+          ? undefined
+          : (this.swing?.comboStep ?? (this.comboFamily !== "none" ? this.swingStep : undefined));
+      const transform = resolveWeaponElementTransform(
+        this.weaponDef.elementTransforms,
+        `part-${this.weaponDef.strikeOverlayPart}`,
+        authoredPose,
+        authoredBeat,
+        this.facing,
+      );
+      if (transform) {
+        for (const overlay of this.strikeOverlays) {
+          overlay.img.x += transform.dx;
+          overlay.img.y += transform.dy;
+          overlay.img.rotation += transform.rotationRad;
+          overlay.img.scaleX *= transform.scale;
+          overlay.img.scaleY *= transform.scale;
+        }
+      }
+    }
     this.syncObservedSourceFlash(sceneNow, outsidePaperView);
     this.flushCrossfallRibbon(sceneNow, outsidePaperView);
     this.updateMeleeTellWeaponVisuals(sceneNow);

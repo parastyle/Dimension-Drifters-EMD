@@ -821,8 +821,8 @@ describe("GameRoom — schema-31 Drive authority", () => {
     );
     const cost = enemyComboShared.driveCostForProfile(profile, interval);
 
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(44);
-    expect(h.state().schemaVersion).toBe(44);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(45);
+    expect(h.state().schemaVersion).toBe(45);
     expect(player.weaponResource).toBe(player.dualWield.weaponResource);
     expect(player.weaponResource).toMatchObject({
       valueQ: 10_000,
@@ -1135,7 +1135,7 @@ describe("GameRoom — schema-31 public prestige ceremony", () => {
     expect(metadata[11]).toMatchObject({ name: "movementCorrectionSeq", type: "uint32" });
     expect(metadata[12]).toMatchObject({ name: "serverMotionEpoch", type: "uint32" });
     expect(metadata[13]).toMatchObject({ name: "serverMotionActive", type: "boolean" });
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(44);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(45);
   });
 });
 

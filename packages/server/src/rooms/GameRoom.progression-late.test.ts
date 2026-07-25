@@ -734,7 +734,7 @@ describe("GameRoom — flavor-only character identity", () => {
 
   it("retains schema 21 while defaulting character identity to the shared default", () => {
     const player = new enemyComboShared.PlayerState();
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(44);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(45);
     expect([player.character, player.runCharacter]).toEqual([
       enemyComboShared.DEFAULT_CHARACTER,
       enemyComboShared.DEFAULT_CHARACTER,
@@ -1402,8 +1402,8 @@ describe("ULT U1 lifecycle, co-op, and schema 25", () => {
     const h = makeRoom();
     h.join("ult-schema");
     const player = h.state().players.get("ult-schema");
-    expect(h.state().schemaVersion).toBe(44);
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(44);
+    expect(h.state().schemaVersion).toBe(45);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(45);
     expect([
       player.ultimate.archetype,
       player.ultimate.charge,

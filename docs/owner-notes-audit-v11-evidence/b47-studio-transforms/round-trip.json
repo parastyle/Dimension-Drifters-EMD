@@ -1,0 +1,55 @@
+{
+  "lane": "B47 Studio V2 full element transforms",
+  "date": "2026-07-24",
+  "weaponId": "x2-blightfork-glaive",
+  "privatePorts": {
+    "api": 57642,
+    "ui": 57643
+  },
+  "authoredTransforms": {
+    "hold": {
+      "part-1": {
+        "dx": 2,
+        "dy": -1,
+        "rotationRad": 0.08,
+        "scale": 1.03
+      }
+    },
+    "poses": {
+      "held": {
+        "hand-r": {
+          "dx": 5,
+          "dy": -4,
+          "rotationRad": 0.22,
+          "scale": 1.18
+        }
+      }
+    },
+    "beats": {
+      "0": {
+        "hand-r": {
+          "dx": 7,
+          "dy": 3,
+          "rotationRad": -0.14,
+          "scale": 0.92
+        }
+      }
+    }
+  },
+  "saveResponseMatches": true,
+  "reloadMatches": true,
+  "snapshotAvailableAfterSave": true,
+  "restoreResponseMatchesInitialRow": true,
+  "catalogRestoredToGitHead": true,
+  "catalogGitHeadSha256": "d3763373f52320651ff10e34c709a282657e072484574b9c958decbbbec9a170",
+  "http": {
+    "poseStudioHtml": 200,
+    "mainModule": 200
+  },
+  "connectedBrowser": {
+    "status": "unavailable",
+    "browserList": [],
+    "screenshots": [],
+    "reason": "The required connected Browser runtime reported that no browser was available."
+  }
+}

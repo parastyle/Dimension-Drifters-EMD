@@ -87,6 +87,105 @@ export interface WeaponPoseLanguageDef {
   feet?: IdleFootPose;
 }
 
+/** B47 authored final-render targets. Body/root displacement is intentionally absent. */
+export type WeaponElementId =
+  | "head"
+  | "hand-l"
+  | "hand-r"
+  | "foot-l"
+  | "foot-r"
+  | `part-${number}`;
+
+export type WeaponElementPose = "idle" | "held";
+
+/** One uniform local affine layered over the computed rig pose. */
+export interface WeaponElementTransform {
+  dx: number;
+  dy: number;
+  rotationRad: number;
+  scale: number;
+}
+
+export type WeaponElementTransformMap = Partial<
+  Readonly<Record<WeaponElementId, Readonly<WeaponElementTransform>>>
+>;
+
+/**
+ * Scope order is deterministic: whole-hold, then named pose, then accepted combo beat. Translation and
+ * rotation add; scale multiplies. Missing maps never enter the render writer, preserving legacy output.
+ */
+export interface WeaponElementTransforms {
+  hold?: WeaponElementTransformMap;
+  poses?: Partial<Readonly<Record<WeaponElementPose, WeaponElementTransformMap>>>;
+  beats?: Partial<Readonly<Record<number, WeaponElementTransformMap>>>;
+}
+
+export const IDENTITY_WEAPON_ELEMENT_TRANSFORM: Readonly<WeaponElementTransform> = Object.freeze({
+  dx: 0,
+  dy: 0,
+  rotationRad: 0,
+  scale: 1,
+});
+
+export function isWeaponElementId(value: string): value is WeaponElementId {
+  return (
+    value === "head" ||
+    value === "hand-l" ||
+    value === "hand-r" ||
+    value === "foot-l" ||
+    value === "foot-r" ||
+    /^part-[1-9]\d*$/.test(value)
+  );
+}
+
+/**
+ * Resolve one authored overlay in rig-local coordinates. Facing is explicit rather than inferred from
+ * image scale so both ordinary and special-part renderers share the same mirror law.
+ */
+export function resolveWeaponElementTransform(
+  source: Readonly<WeaponElementTransforms> | undefined,
+  element: WeaponElementId,
+  pose: WeaponElementPose,
+  beatIndex: number | undefined,
+  facing: 1 | -1,
+): WeaponElementTransform | undefined {
+  const hold = source?.hold?.[element];
+  const posed = source?.poses?.[pose]?.[element];
+  const beat = beatIndex === undefined ? undefined : source?.beats?.[beatIndex]?.[element];
+  if (!hold && !posed && !beat) return undefined;
+  return {
+    dx: ((hold?.dx ?? 0) + (posed?.dx ?? 0) + (beat?.dx ?? 0)) * facing,
+    dy: (hold?.dy ?? 0) + (posed?.dy ?? 0) + (beat?.dy ?? 0),
+    rotationRad:
+      ((hold?.rotationRad ?? 0) + (posed?.rotationRad ?? 0) + (beat?.rotationRad ?? 0)) *
+      facing,
+    scale: (hold?.scale ?? 1) * (posed?.scale ?? 1) * (beat?.scale ?? 1),
+  };
+}
+
+export interface WeaponElementRenderTransform {
+  x: number;
+  y: number;
+  rotation: number;
+  scaleX: number;
+  scaleY: number;
+}
+
+/** Pure final-affine reference used to verify renderer composition and the unauthored-weapon census. */
+export function applyWeaponElementTransform(
+  base: Readonly<WeaponElementRenderTransform>,
+  authored: Readonly<WeaponElementTransform> | undefined,
+): WeaponElementRenderTransform {
+  if (!authored) return { ...base };
+  return {
+    x: base.x + authored.dx,
+    y: base.y + authored.dy,
+    rotation: base.rotation + authored.rotationRad,
+    scaleX: base.scaleX * authored.scale,
+    scaleY: base.scaleY * authored.scale,
+  };
+}
+
 /** Shared fallback because render mounting and authoritative muzzle reach must resolve the same pivot. */
 export const DEFAULT_TWO_HAND_GUN_GRIPS: Readonly<WeaponGripPoints> = Object.freeze({
   primary: Object.freeze({ x: 0.3, y: 0.66 }),
@@ -610,6 +709,8 @@ export interface WeaponDef {
   stance?: WeaponStanceId;
   /** Optional presentation overrides; family defaults remain client-owned and action owners win. */
   poseLanguage?: WeaponPoseLanguageDef;
+  /** Optional final-render element affines authored by Pose Studio. */
+  elementTransforms?: WeaponElementTransforms;
   /** Promote this authored combo's signed arc/range/timing path into server hit geometry. */
   authoritativeCombo?: boolean;
   /** Fast repeated forward contacts owned by one accepted attack rather than successive combo inputs. */

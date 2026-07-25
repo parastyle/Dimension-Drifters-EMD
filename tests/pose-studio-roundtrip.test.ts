@@ -67,6 +67,21 @@ describe("Pose Studio catalog round-trip", () => {
     loaded.gripPoints.primary.x = 0.16;
     loaded.comboBar[0].path.rangeMultiplier = 1.08;
     loaded.comboBar[0].timing.impact = 0.31;
+    loaded.elementTransforms = {
+      hold: {
+        "part-1": { dx: 2, dy: -1, rotationRad: 0.1, scale: 1.05 },
+      },
+      poses: {
+        held: {
+          "hand-r": { dx: 4, dy: 3, rotationRad: -0.2, scale: 0.9 },
+        },
+      },
+      beats: {
+        0: {
+          "hand-l": { dx: 7, dy: -5, rotationRad: 0.3, scale: 1.2 },
+        },
+      },
+    };
 
     const saved = writeWeaponRow(row.id, loaded, path);
     const reloaded = readWeaponRow(row.id, path);

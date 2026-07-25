@@ -10,7 +10,7 @@
     <header class="masthead">
       <div>
         <p class="eyebrow">Weaponsmith / Rig authoring</p>
-        <h1>Weapon Pose Studio <span>v1</span></h1>
+        <h1>Weapon Pose Studio <span>v2 transforms</span></h1>
       </div>
       <div class="save-cluster">
         <span class="dirty-chip" id="dirtyChip" data-dirty="false">
@@ -67,6 +67,7 @@
                 <span><i class="key-secondary"></i>secondary</span>
                 <span><i class="key-idle"></i>idle pose</span>
                 <span><i class="key-path"></i>beat target</span>
+                <span><i class="key-transform"></i>selected element</span>
               </div>
             </header>
             <div id="stageWrap" class="stage-wrap">
@@ -112,6 +113,36 @@
               >
                 T
               </button>
+              <div
+                id="transformSelection"
+                class="transform-selection"
+                data-testid="transform-selection"
+                hidden
+              >
+                <span id="transformSelectionLabel" class="transform-selection-label"></span>
+              </div>
+              <button
+                id="rotationHandle"
+                class="transform-handle rotation-handle"
+                data-transform-handle="rotate"
+                data-testid="rotation-handle"
+                type="button"
+                aria-label="Rotate selected element"
+                hidden
+              >
+                R
+              </button>
+              <button class="transform-handle scale-handle nw" data-scale-corner="nw" type="button" aria-label="Scale selected element from top left" hidden></button>
+              <button class="transform-handle scale-handle ne" data-scale-corner="ne" type="button" aria-label="Scale selected element from top right" hidden></button>
+              <button class="transform-handle scale-handle sw" data-scale-corner="sw" type="button" aria-label="Scale selected element from bottom left" hidden></button>
+              <button
+                class="transform-handle scale-handle se"
+                data-scale-corner="se"
+                data-testid="scale-handle"
+                type="button"
+                aria-label="Scale selected element from bottom right"
+                hidden
+              ></button>
             </div>
           </section>
 
