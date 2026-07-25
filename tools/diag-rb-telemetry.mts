@@ -1036,6 +1036,32 @@ async function runWalkStop(instrumented: InstrumentedRoom): Promise<ScenarioResu
   return result;
 }
 
+async function runRapidFlipAttack(instrumented: InstrumentedRoom): Promise<ScenarioResult> {
+  // Owner repro 2026-07-25: "tap ADADADADADA while moving and attacking" — alternate dx every tick
+  // for 3 seconds while swinging; the flip churn must produce ZERO corrections of any band.
+  const weaponId = "x2-cinderbrand-cleaver";
+  await normalizeArena(instrumented, weaponId);
+  const probe = createProbe(instrumented, "rapid-flip-attack", "ADADAD flip while attacking", "owner-repro");
+  for (let step = 0; step < 60; step++)
+    await probe.tick({ dx: step % 2 === 0 ? 1 : -1, action: step % 6 === 0 ? "swing" : "walk" });
+  for (let step = 0; step < 10; step++) await probe.tick({ action: "stop" });
+  const result = probe.finish({ completed: true });
+  result.assertions.zeroCorrections = result.summary.nonzeroCorrections === 0;
+  result.assertions.zeroSilent = result.summary.correctionRequests === 0;
+  return result;
+}
+
+async function runWalkSmoothness(instrumented: InstrumentedRoom): Promise<ScenarioResult> {
+  // Owner repro 2026-07-25: "movement in general is super vibraty" — a plain 4s straight walk must
+  // produce ZERO correction requests of ANY band (silent included): constant micro-error IS the vibration.
+  const probe = createProbe(instrumented, "walk-smoothness", "Plain walk zero-band", "owner-repro");
+  for (let step = 0; step < 80; step++) await probe.tick({ dx: 1, action: "walk-right" });
+  const result = probe.finish({ completed: true });
+  result.assertions.zeroCorrections = result.summary.nonzeroCorrections === 0;
+  result.assertions.zeroSilent = result.summary.correctionRequests === 0;
+  return result;
+}
+
 async function runMeleeAttackMoveStop(instrumented: InstrumentedRoom): Promise<ScenarioResult> {
   const weaponId = "x2-cinderbrand-cleaver";
   await normalizeArena(instrumented, weaponId);
@@ -1629,6 +1655,8 @@ try {
   };
 
   await run(() => runWalkStop(topdown));
+  await run(() => runRapidFlipAttack(topdown));
+  await run(() => runWalkSmoothness(topdown));
   await run(() => runMeleeAttackMoveStop(topdown));
 
   const gunRepresentatives = gunFamilyRepresentatives();
@@ -1692,11 +1720,11 @@ try {
   };
   const acceptance = {
     expectedScenarios: 41,
-    allScenariosRan: results.length === 41,
+    allScenariosRan: results.length === 43,
     zeroNonzeroCorrections: totals.nonzeroCorrections === 0,
     zeroSnaps: totals.snapCorrections === 0,
     passed:
-      results.length === 41 && totals.nonzeroCorrections === 0 && totals.snapCorrections === 0,
+      results.length === 43 && totals.nonzeroCorrections === 0 && totals.snapCorrections === 0,
   };
   const summary = {
     capturedAt,

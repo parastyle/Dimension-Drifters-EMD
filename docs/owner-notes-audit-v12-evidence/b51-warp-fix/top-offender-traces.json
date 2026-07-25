@@ -545,7 +545,7 @@
       "serverMotionDurationMs": 2200,
       "maxCorrectionWindowMs": 0,
       "scenarioDurationMs": 2700,
-      "peakAuthorityStepPx": 2.834562,
+      "peakAuthorityStepPx": 2.609584,
       "sourceCounts": {},
       "causeCounts": {}
     },
@@ -553,7 +553,7 @@
     "frames": [
       {
         "index": 0,
-        "tick": 746,
+        "tick": 934,
         "elapsedMs": 0,
         "action": "sustained-fire",
         "input": {
@@ -566,7 +566,7 @@
           "fireHeld": true
         },
         "authority": {
-          "tick": 746,
+          "tick": 934,
           "x": 2200,
           "y": 1500,
           "mvx": 0,
@@ -589,7 +589,7 @@
           "airJumpsRemaining": 0,
           "motionSource": "weapon-fire-recoil",
           "teleportSeq": 1,
-          "ackSeq": 550,
+          "ackSeq": 700,
           "attackSeq": 25,
           "parriedSeq": 0,
           "fellSeq": 0,
@@ -638,7 +638,7 @@
       },
       {
         "index": 1,
-        "tick": 748,
+        "tick": 935,
         "elapsedMs": 50,
         "action": "sustained-fire",
         "input": {
@@ -651,12 +651,12 @@
           "fireHeld": true
         },
         "authority": {
-          "tick": 748,
-          "x": 2198.15366,
+          "tick": 935,
+          "x": 2199.3,
           "y": 1500,
           "mvx": 0,
           "mvy": 0,
-          "vx": -14.618769,
+          "vx": -22.926794,
           "vy": 0,
           "height": 0,
           "vh": 0,
@@ -674,7 +674,7 @@
           "airJumpsRemaining": 0,
           "motionSource": "weapon-fire-recoil",
           "teleportSeq": 1,
-          "ackSeq": 551,
+          "ackSeq": 701,
           "attackSeq": 26,
           "parriedSeq": 0,
           "fellSeq": 0,
@@ -683,7 +683,7 @@
           "ultPhase": 0
         },
         "delta": {
-          "positionPx": 1.84634,
+          "positionPx": 0.7,
           "movementEpoch": 0,
           "correctionSeq": 0,
           "teleportSeq": 0
@@ -711,11 +711,11 @@
             "y": 1500
           },
           "renderedAfterReconcile": {
-            "x": 2198.15366,
+            "x": 2199.3,
             "y": 1500
           },
           "renderedAfterDecay": {
-            "x": 2198.15366,
+            "x": 2199.3,
             "y": 1500
           }
         }
@@ -746,7 +746,7 @@
     "frames": [
       {
         "index": 8,
-        "tick": 527,
+        "tick": 714,
         "elapsedMs": 400,
         "action": "beam-charge",
         "input": {
@@ -759,7 +759,7 @@
           "fireHeld": true
         },
         "authority": {
-          "tick": 527,
+          "tick": 714,
           "x": 2200,
           "y": 1500,
           "mvx": 0,
@@ -782,7 +782,7 @@
           "airJumpsRemaining": 0,
           "motionSource": "",
           "teleportSeq": 1,
-          "ackSeq": 382,
+          "ackSeq": 532,
           "attackSeq": 20,
           "parriedSeq": 0,
           "fellSeq": 0,
@@ -829,7 +829,7 @@
       },
       {
         "index": 9,
-        "tick": 528,
+        "tick": 716,
         "elapsedMs": 450,
         "action": "beam-charge",
         "input": {
@@ -842,7 +842,7 @@
           "fireHeld": true
         },
         "authority": {
-          "tick": 528,
+          "tick": 716,
           "x": 2200,
           "y": 1500,
           "mvx": 0,
@@ -865,7 +865,7 @@
           "airJumpsRemaining": 0,
           "motionSource": "weapon-fire-recoil",
           "teleportSeq": 1,
-          "ackSeq": 383,
+          "ackSeq": 533,
           "attackSeq": 21,
           "parriedSeq": 0,
           "fellSeq": 0,
@@ -914,7 +914,7 @@
       },
       {
         "index": 10,
-        "tick": 529,
+        "tick": 717,
         "elapsedMs": 500,
         "action": "beam-charge",
         "input": {
@@ -927,7 +927,7 @@
           "fireHeld": true
         },
         "authority": {
-          "tick": 529,
+          "tick": 717,
           "x": 2199.905,
           "y": 1500,
           "mvx": 0,
@@ -950,7 +950,7 @@
           "airJumpsRemaining": 0,
           "motionSource": "weapon-fire-recoil",
           "teleportSeq": 1,
-          "ackSeq": 384,
+          "ackSeq": 534,
           "attackSeq": 21,
           "parriedSeq": 0,
           "fellSeq": 0,

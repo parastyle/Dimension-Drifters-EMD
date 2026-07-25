@@ -1,6 +1,6 @@
 # Solo rubberband telemetry evidence
 
-Captured 2026-07-25T05:29:44.402Z through one real Colyseus client on OS-assigned loopback port 61081.
+Captured 2026-07-25T06:01:07.328Z through one real Colyseus client on OS-assigned loopback port 57880.
 Ports 5180 and 2567 were not used.
 
 - `run-summary.json` is the ranked scenario table and aggregate count.
@@ -9,7 +9,7 @@ Ports 5180 and 2567 were not used.
 - `run.log` is the compact scenario-by-scenario console ledger.
 - `before-after-ranked.md` compares all 41 scenarios to the diagnosis capture.
 - The corporate elevator fixture suppresses belt combat waves to isolate placement motion.
-- Acceptance: **PASS** (41/41 scenarios, 0 nonzero corrections, 0 snaps).
+- Acceptance: **FAIL** (43/41 scenarios, 0 nonzero corrections, 0 snaps).
 
 Reproduce from the repository root:
 

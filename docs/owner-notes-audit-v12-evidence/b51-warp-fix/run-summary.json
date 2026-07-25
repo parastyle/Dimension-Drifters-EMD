@@ -1,8 +1,8 @@
 {
-  "capturedAt": "2026-07-25T05:29:44.402Z",
+  "capturedAt": "2026-07-25T06:01:07.328Z",
   "transport": {
-    "endpoint": "ws://127.0.0.1:61081",
-    "osAssignedEphemeralPort": 61081,
+    "endpoint": "ws://127.0.0.1:57880",
+    "osAssignedEphemeralPort": 57880,
     "protectedPortsUntouched": true,
     "liveColyseusStack": true,
     "simultaneousClients": 1,
@@ -17,7 +17,7 @@
     "tickMs": 50
   },
   "coverage": {
-    "scenarios": 41,
+    "scenarios": 43,
     "gunTagFamilies": 17,
     "rangedBeams": 4,
     "kungFuWraps": 4,
@@ -34,10 +34,10 @@
   },
   "acceptance": {
     "expectedScenarios": 41,
-    "allScenariosRan": true,
+    "allScenariosRan": false,
     "zeroNonzeroCorrections": true,
     "zeroSnaps": true,
-    "passed": true
+    "passed": false
   },
   "topThree": [
     {
@@ -110,7 +110,7 @@
         "weaponName": "Gatling",
         "recoil": 14,
         "fireRate": 0.08,
-        "acceptedAttacks": 27
+        "acceptedAttacks": 26
       },
       "assertions": {
         "acceptedBurst": true,
@@ -129,7 +129,7 @@
       "serverMotionDurationMs": 2200,
       "maxCorrectionWindowMs": 0,
       "scenarioDurationMs": 2700,
-      "peakAuthorityStepPx": 2.834562,
+      "peakAuthorityStepPx": 2.609584,
       "sourceCounts": {},
       "causeCounts": {}
     },
@@ -167,13 +167,13 @@
     },
     {
       "rank": 4,
-      "id": "beam-x2-permafrost-siege-lobber",
-      "label": "Ranged beam recoil — Permafrost Siege Lobber",
+      "id": "beam-x2-mirage-coilrifle",
+      "label": "Ranged beam recoil — Mirage Coilrifle",
       "category": "gun-beam",
       "metadata": {
-        "weaponId": "x2-permafrost-siege-lobber",
-        "weaponName": "Permafrost Siege Lobber",
-        "family": "heavy-ordnance",
+        "weaponId": "x2-mirage-coilrifle",
+        "weaponName": "Mirage Coilrifle",
+        "family": "railgun",
         "recoilPerSecond": 31
       },
       "assertions": {
@@ -199,13 +199,45 @@
     },
     {
       "rank": 5,
-      "id": "beam-x2-mirage-coilrifle",
-      "label": "Ranged beam recoil — Mirage Coilrifle",
+      "id": "beam-x2-stormcaller-tesla-gatling",
+      "label": "Ranged beam recoil — Stormcaller Tesla Gatling",
       "category": "gun-beam",
       "metadata": {
-        "weaponId": "x2-mirage-coilrifle",
-        "weaponName": "Mirage Coilrifle",
-        "family": "railgun",
+        "weaponId": "x2-stormcaller-tesla-gatling",
+        "weaponName": "Stormcaller Tesla Gatling",
+        "family": "heavy-ordnance",
+        "recoilPerSecond": 38
+      },
+      "assertions": {
+        "activeBeamObserved": true,
+        "classified": true
+      },
+      "b42CounterEdges": 1,
+      "correctionRequests": 0,
+      "nonzeroCorrections": 0,
+      "silentCorrections": 0,
+      "smoothCorrections": 0,
+      "snapCorrections": 0,
+      "totalMagnitudePx": 0,
+      "maxMagnitudePx": 0,
+      "meanMagnitudePx": 0,
+      "correctionDebtDurationMs": 0,
+      "serverMotionDurationMs": 1300,
+      "maxCorrectionWindowMs": 0,
+      "scenarioDurationMs": 2200,
+      "peakAuthorityStepPx": 0.19,
+      "sourceCounts": {},
+      "causeCounts": {}
+    },
+    {
+      "rank": 6,
+      "id": "beam-x2-permafrost-siege-lobber",
+      "label": "Ranged beam recoil — Permafrost Siege Lobber",
+      "category": "gun-beam",
+      "metadata": {
+        "weaponId": "x2-permafrost-siege-lobber",
+        "weaponName": "Permafrost Siege Lobber",
+        "family": "heavy-ordnance",
         "recoilPerSecond": 31
       },
       "assertions": {
@@ -230,38 +262,6 @@
       "causeCounts": {}
     },
     {
-      "rank": 6,
-      "id": "beam-x2-stormcaller-tesla-gatling",
-      "label": "Ranged beam recoil — Stormcaller Tesla Gatling",
-      "category": "gun-beam",
-      "metadata": {
-        "weaponId": "x2-stormcaller-tesla-gatling",
-        "weaponName": "Stormcaller Tesla Gatling",
-        "family": "heavy-ordnance",
-        "recoilPerSecond": 38
-      },
-      "assertions": {
-        "activeBeamObserved": true,
-        "classified": true
-      },
-      "b42CounterEdges": 1,
-      "correctionRequests": 0,
-      "nonzeroCorrections": 0,
-      "silentCorrections": 0,
-      "smoothCorrections": 0,
-      "snapCorrections": 0,
-      "totalMagnitudePx": 0,
-      "maxMagnitudePx": 0,
-      "meanMagnitudePx": 0,
-      "correctionDebtDurationMs": 0,
-      "serverMotionDurationMs": 1250,
-      "maxCorrectionWindowMs": 0,
-      "scenarioDurationMs": 2200,
-      "peakAuthorityStepPx": 0.19,
-      "sourceCounts": {},
-      "causeCounts": {}
-    },
-    {
       "rank": 7,
       "id": "slide-hop",
       "label": "Slide-hop input chain",
@@ -282,10 +282,10 @@
       "maxMagnitudePx": 0,
       "meanMagnitudePx": 0,
       "correctionDebtDurationMs": 0,
-      "serverMotionDurationMs": 850,
+      "serverMotionDurationMs": 800,
       "maxCorrectionWindowMs": 0,
       "scenarioDurationMs": 1650,
-      "peakAuthorityStepPx": 62,
+      "peakAuthorityStepPx": 66,
       "sourceCounts": {},
       "causeCounts": {}
     },
@@ -322,14 +322,14 @@
     },
     {
       "rank": 9,
-      "id": "gun-gun",
-      "label": "Gun class — gun",
+      "id": "gun-blunderbuss",
+      "label": "Gun class — blunderbuss",
       "category": "gun-class",
       "metadata": {
-        "family": "gun",
-        "weaponId": "x-gun-gatling",
-        "weaponName": "Gatling",
-        "recoil": 14,
+        "family": "blunderbuss",
+        "weaponId": "x2-pearlbreech-volleygun",
+        "weaponName": "Pearlbreech Volleygun",
+        "recoil": 171,
         "acceptedAttacks": 1
       },
       "assertions": {
@@ -349,20 +349,20 @@
       "serverMotionDurationMs": 550,
       "maxCorrectionWindowMs": 0,
       "scenarioDurationMs": 950,
-      "peakAuthorityStepPx": 0.7,
+      "peakAuthorityStepPx": 8.55,
       "sourceCounts": {},
       "causeCounts": {}
     },
     {
       "rank": 10,
-      "id": "gun-hand-cannon",
-      "label": "Gun class — hand-cannon",
+      "id": "gun-concussion-cannon",
+      "label": "Gun class — concussion-cannon",
       "category": "gun-class",
       "metadata": {
-        "family": "hand-cannon",
-        "weaponId": "x-gun-hand-mortar",
-        "weaponName": "Hand Mortar",
-        "recoil": 147,
+        "family": "concussion-cannon",
+        "weaponId": "x2-hailshot-hand-maul",
+        "weaponName": "Hailshot Hand-Maul",
+        "recoil": 174,
         "acceptedAttacks": 1
       },
       "assertions": {
@@ -382,12 +382,45 @@
       "serverMotionDurationMs": 550,
       "maxCorrectionWindowMs": 0,
       "scenarioDurationMs": 950,
-      "peakAuthorityStepPx": 7.35,
+      "peakAuthorityStepPx": 8.7,
       "sourceCounts": {},
       "causeCounts": {}
     },
     {
       "rank": 11,
+      "id": "gun-heavy-ordnance",
+      "label": "Gun class — heavy-ordnance",
+      "category": "gun-class",
+      "metadata": {
+        "family": "heavy-ordnance",
+        "weaponId": "x2-calamity-howitzer",
+        "weaponName": "Calamity Howitzer",
+        "recoil": 233,
+        "acceptedAttacks": 1
+      },
+      "assertions": {
+        "acceptedShot": true,
+        "classified": true
+      },
+      "b42CounterEdges": 1,
+      "correctionRequests": 0,
+      "nonzeroCorrections": 0,
+      "silentCorrections": 0,
+      "smoothCorrections": 0,
+      "snapCorrections": 0,
+      "totalMagnitudePx": 0,
+      "maxMagnitudePx": 0,
+      "meanMagnitudePx": 0,
+      "correctionDebtDurationMs": 0,
+      "serverMotionDurationMs": 550,
+      "maxCorrectionWindowMs": 0,
+      "scenarioDurationMs": 950,
+      "peakAuthorityStepPx": 11.65,
+      "sourceCounts": {},
+      "causeCounts": {}
+    },
+    {
+      "rank": 12,
       "id": "gun-pistol",
       "label": "Gun class — pistol",
       "category": "gun-class",
@@ -420,7 +453,7 @@
       "causeCounts": {}
     },
     {
-      "rank": 12,
+      "rank": 13,
       "id": "gun-railgun",
       "label": "Gun class — railgun",
       "category": "gun-class",
@@ -448,34 +481,7 @@
       "serverMotionDurationMs": 550,
       "maxCorrectionWindowMs": 0,
       "scenarioDurationMs": 950,
-      "peakAuthorityStepPx": 10.65,
-      "sourceCounts": {},
-      "causeCounts": {}
-    },
-    {
-      "rank": 13,
-      "id": "jump-pound",
-      "label": "Distance jump / pound",
-      "category": "traversal",
-      "metadata": {},
-      "assertions": {
-        "distanceJumpClassified": true,
-        "poundLanded": true
-      },
-      "b42CounterEdges": 1,
-      "correctionRequests": 0,
-      "nonzeroCorrections": 0,
-      "silentCorrections": 0,
-      "smoothCorrections": 0,
-      "snapCorrections": 0,
-      "totalMagnitudePx": 0,
-      "maxMagnitudePx": 0,
-      "meanMagnitudePx": 0,
-      "correctionDebtDurationMs": 0,
-      "serverMotionDurationMs": 550,
-      "maxCorrectionWindowMs": 0,
-      "scenarioDurationMs": 1400,
-      "peakAuthorityStepPx": 62,
+      "peakAuthorityStepPx": 11.120707,
       "sourceCounts": {},
       "causeCounts": {}
     },
@@ -508,78 +514,12 @@
       "serverMotionDurationMs": 500,
       "maxCorrectionWindowMs": 0,
       "scenarioDurationMs": 950,
-      "peakAuthorityStepPx": 8.188141,
+      "peakAuthorityStepPx": 5,
       "sourceCounts": {},
       "causeCounts": {}
     },
     {
       "rank": 15,
-      "id": "gun-blunderbuss",
-      "label": "Gun class — blunderbuss",
-      "category": "gun-class",
-      "metadata": {
-        "family": "blunderbuss",
-        "weaponId": "x2-pearlbreech-volleygun",
-        "weaponName": "Pearlbreech Volleygun",
-        "recoil": 171,
-        "acceptedAttacks": 1
-      },
-      "assertions": {
-        "acceptedShot": true,
-        "classified": true
-      },
-      "b42CounterEdges": 1,
-      "correctionRequests": 0,
-      "nonzeroCorrections": 0,
-      "silentCorrections": 0,
-      "smoothCorrections": 0,
-      "snapCorrections": 0,
-      "totalMagnitudePx": 0,
-      "maxMagnitudePx": 0,
-      "meanMagnitudePx": 0,
-      "correctionDebtDurationMs": 0,
-      "serverMotionDurationMs": 500,
-      "maxCorrectionWindowMs": 0,
-      "scenarioDurationMs": 950,
-      "peakAuthorityStepPx": 14.001721,
-      "sourceCounts": {},
-      "causeCounts": {}
-    },
-    {
-      "rank": 16,
-      "id": "gun-concussion-cannon",
-      "label": "Gun class — concussion-cannon",
-      "category": "gun-class",
-      "metadata": {
-        "family": "concussion-cannon",
-        "weaponId": "x2-hailshot-hand-maul",
-        "weaponName": "Hailshot Hand-Maul",
-        "recoil": 174,
-        "acceptedAttacks": 1
-      },
-      "assertions": {
-        "acceptedShot": true,
-        "classified": true
-      },
-      "b42CounterEdges": 1,
-      "correctionRequests": 0,
-      "nonzeroCorrections": 0,
-      "silentCorrections": 0,
-      "smoothCorrections": 0,
-      "snapCorrections": 0,
-      "totalMagnitudePx": 0,
-      "maxMagnitudePx": 0,
-      "meanMagnitudePx": 0,
-      "correctionDebtDurationMs": 0,
-      "serverMotionDurationMs": 500,
-      "maxCorrectionWindowMs": 0,
-      "scenarioDurationMs": 950,
-      "peakAuthorityStepPx": 8.7,
-      "sourceCounts": {},
-      "causeCounts": {}
-    },
-    {
-      "rank": 17,
       "id": "gun-exotic-ranged",
       "label": "Gun class — exotic-ranged",
       "category": "gun-class",
@@ -607,12 +547,12 @@
       "serverMotionDurationMs": 500,
       "maxCorrectionWindowMs": 0,
       "scenarioDurationMs": 950,
-      "peakAuthorityStepPx": 6.3,
+      "peakAuthorityStepPx": 6.578446,
       "sourceCounts": {},
       "causeCounts": {}
     },
     {
-      "rank": 18,
+      "rank": 16,
       "id": "gun-gauntlet",
       "label": "Gun class — gauntlet",
       "category": "gun-class",
@@ -639,13 +579,13 @@
       "correctionDebtDurationMs": 0,
       "serverMotionDurationMs": 500,
       "maxCorrectionWindowMs": 0,
-      "scenarioDurationMs": 1000,
+      "scenarioDurationMs": 950,
       "peakAuthorityStepPx": 4.012189,
       "sourceCounts": {},
       "causeCounts": {}
     },
     {
-      "rank": 19,
+      "rank": 17,
       "id": "gun-grenade-launcher",
       "label": "Gun class — grenade-launcher",
       "category": "gun-class",
@@ -673,20 +613,20 @@
       "serverMotionDurationMs": 500,
       "maxCorrectionWindowMs": 0,
       "scenarioDurationMs": 950,
-      "peakAuthorityStepPx": 8.9,
+      "peakAuthorityStepPx": 14.574891,
       "sourceCounts": {},
       "causeCounts": {}
     },
     {
-      "rank": 20,
-      "id": "gun-heavy-ordnance",
-      "label": "Gun class — heavy-ordnance",
+      "rank": 18,
+      "id": "gun-gun",
+      "label": "Gun class — gun",
       "category": "gun-class",
       "metadata": {
-        "family": "heavy-ordnance",
-        "weaponId": "x2-calamity-howitzer",
-        "weaponName": "Calamity Howitzer",
-        "recoil": 233,
+        "family": "gun",
+        "weaponId": "x-gun-gatling",
+        "weaponName": "Gatling",
+        "recoil": 14,
         "acceptedAttacks": 1
       },
       "assertions": {
@@ -706,12 +646,45 @@
       "serverMotionDurationMs": 500,
       "maxCorrectionWindowMs": 0,
       "scenarioDurationMs": 950,
-      "peakAuthorityStepPx": 12.164905,
+      "peakAuthorityStepPx": 0.7,
       "sourceCounts": {},
       "causeCounts": {}
     },
     {
-      "rank": 21,
+      "rank": 19,
+      "id": "gun-hand-cannon",
+      "label": "Gun class — hand-cannon",
+      "category": "gun-class",
+      "metadata": {
+        "family": "hand-cannon",
+        "weaponId": "x-gun-hand-mortar",
+        "weaponName": "Hand Mortar",
+        "recoil": 147,
+        "acceptedAttacks": 1
+      },
+      "assertions": {
+        "acceptedShot": true,
+        "classified": true
+      },
+      "b42CounterEdges": 1,
+      "correctionRequests": 0,
+      "nonzeroCorrections": 0,
+      "silentCorrections": 0,
+      "smoothCorrections": 0,
+      "snapCorrections": 0,
+      "totalMagnitudePx": 0,
+      "maxMagnitudePx": 0,
+      "meanMagnitudePx": 0,
+      "correctionDebtDurationMs": 0,
+      "serverMotionDurationMs": 500,
+      "maxCorrectionWindowMs": 0,
+      "scenarioDurationMs": 950,
+      "peakAuthorityStepPx": 7.35,
+      "sourceCounts": {},
+      "causeCounts": {}
+    },
+    {
+      "rank": 20,
       "id": "gun-lever-rifle",
       "label": "Gun class — lever-rifle",
       "category": "gun-class",
@@ -744,7 +717,7 @@
       "causeCounts": {}
     },
     {
-      "rank": 22,
+      "rank": 21,
       "id": "gun-machine-pistol",
       "label": "Gun class — machine-pistol",
       "category": "gun-class",
@@ -777,7 +750,7 @@
       "causeCounts": {}
     },
     {
-      "rank": 23,
+      "rank": 22,
       "id": "gun-marksman-rifle",
       "label": "Gun class — marksman-rifle",
       "category": "gun-class",
@@ -805,12 +778,12 @@
       "serverMotionDurationMs": 500,
       "maxCorrectionWindowMs": 0,
       "scenarioDurationMs": 950,
-      "peakAuthorityStepPx": 11.954686,
+      "peakAuthorityStepPx": 7.3,
       "sourceCounts": {},
       "causeCounts": {}
     },
     {
-      "rank": 24,
+      "rank": 23,
       "id": "gun-nailgun",
       "label": "Gun class — nailgun",
       "category": "gun-class",
@@ -843,7 +816,7 @@
       "causeCounts": {}
     },
     {
-      "rank": 25,
+      "rank": 24,
       "id": "gun-scrap-cannon",
       "label": "Gun class — scrap-cannon",
       "category": "gun-class",
@@ -876,7 +849,7 @@
       "causeCounts": {}
     },
     {
-      "rank": 26,
+      "rank": 25,
       "id": "gun-shotgun",
       "label": "Gun class — shotgun",
       "category": "gun-class",
@@ -909,6 +882,33 @@
       "causeCounts": {}
     },
     {
+      "rank": 26,
+      "id": "jump-pound",
+      "label": "Distance jump / pound",
+      "category": "traversal",
+      "metadata": {},
+      "assertions": {
+        "distanceJumpClassified": true,
+        "poundLanded": true
+      },
+      "b42CounterEdges": 1,
+      "correctionRequests": 0,
+      "nonzeroCorrections": 0,
+      "silentCorrections": 0,
+      "smoothCorrections": 0,
+      "snapCorrections": 0,
+      "totalMagnitudePx": 0,
+      "maxMagnitudePx": 0,
+      "meanMagnitudePx": 0,
+      "correctionDebtDurationMs": 0,
+      "serverMotionDurationMs": 500,
+      "maxCorrectionWindowMs": 0,
+      "scenarioDurationMs": 1400,
+      "peakAuthorityStepPx": 62,
+      "sourceCounts": {},
+      "causeCounts": {}
+    },
+    {
       "rank": 27,
       "id": "dodge-roll",
       "label": "Dodge roll",
@@ -931,7 +931,7 @@
       "serverMotionDurationMs": 350,
       "maxCorrectionWindowMs": 0,
       "scenarioDurationMs": 850,
-      "peakAuthorityStepPx": 54,
+      "peakAuthorityStepPx": 61,
       "sourceCounts": {},
       "causeCounts": {}
     },
@@ -968,37 +968,6 @@
     },
     {
       "rank": 29,
-      "id": "parry-left",
-      "label": "Parry — incoming from left",
-      "category": "parry",
-      "metadata": {
-        "id": "left",
-        "angle": 3.141593,
-        "expectedSource": "parry-slide"
-      },
-      "assertions": {
-        "successfulParry": true,
-        "expectedMotionSource": true
-      },
-      "b42CounterEdges": 1,
-      "correctionRequests": 0,
-      "nonzeroCorrections": 0,
-      "silentCorrections": 0,
-      "smoothCorrections": 0,
-      "snapCorrections": 0,
-      "totalMagnitudePx": 0,
-      "maxMagnitudePx": 0,
-      "meanMagnitudePx": 0,
-      "correctionDebtDurationMs": 0,
-      "serverMotionDurationMs": 50,
-      "maxCorrectionWindowMs": 0,
-      "scenarioDurationMs": 1800,
-      "peakAuthorityStepPx": 25.6,
-      "sourceCounts": {},
-      "causeCounts": {}
-    },
-    {
-      "rank": 30,
       "id": "parry-right",
       "label": "Parry — incoming from right",
       "category": "parry",
@@ -1023,13 +992,13 @@
       "correctionDebtDurationMs": 0,
       "serverMotionDurationMs": 50,
       "maxCorrectionWindowMs": 0,
-      "scenarioDurationMs": 1800,
+      "scenarioDurationMs": 1850,
       "peakAuthorityStepPx": 25.6,
       "sourceCounts": {},
       "causeCounts": {}
     },
     {
-      "rank": 31,
+      "rank": 30,
       "id": "pit-fall",
       "label": "Pit fall / snap-back",
       "category": "placement",
@@ -1065,7 +1034,7 @@
       "causeCounts": {}
     },
     {
-      "rank": 32,
+      "rank": 31,
       "id": "chest-open",
       "label": "Chest open",
       "category": "interaction",
@@ -1091,7 +1060,7 @@
       "causeCounts": {}
     },
     {
-      "rank": 33,
+      "rank": 32,
       "id": "kung-fu-wrap-x2-drunken-fist-wraps",
       "label": "Kung-fu wrap — Drunken Fist Wraps",
       "category": "kung-fu-wrap",
@@ -1122,7 +1091,7 @@
       "causeCounts": {}
     },
     {
-      "rank": 34,
+      "rank": 33,
       "id": "kung-fu-wrap-x2-iron-palm-wraps",
       "label": "Kung-fu wrap — Iron Palm Wraps",
       "category": "kung-fu-wrap",
@@ -1153,7 +1122,7 @@
       "causeCounts": {}
     },
     {
-      "rank": 35,
+      "rank": 34,
       "id": "kung-fu-wrap-x2-muay-thai-wraps",
       "label": "Kung-fu wrap — Muay Thai Wraps",
       "category": "kung-fu-wrap",
@@ -1184,7 +1153,7 @@
       "causeCounts": {}
     },
     {
-      "rank": 36,
+      "rank": 35,
       "id": "kung-fu-wrap-x2-wing-chun-wraps",
       "label": "Kung-fu wrap — Wing Chun Wraps",
       "category": "kung-fu-wrap",
@@ -1215,7 +1184,7 @@
       "causeCounts": {}
     },
     {
-      "rank": 37,
+      "rank": 36,
       "id": "melee-attack-move-stop",
       "label": "Attack / move / stop — Cinderbrand Cleaver",
       "category": "baseline",
@@ -1245,7 +1214,7 @@
       "causeCounts": {}
     },
     {
-      "rank": 38,
+      "rank": 37,
       "id": "parry-above",
       "label": "Parry — incoming from above",
       "category": "parry",
@@ -1276,7 +1245,66 @@
       "causeCounts": {}
     },
     {
+      "rank": 38,
+      "id": "parry-left",
+      "label": "Parry — incoming from left",
+      "category": "parry",
+      "metadata": {
+        "id": "left",
+        "angle": 3.141593,
+        "expectedSource": "parry-slide"
+      },
+      "assertions": {
+        "successfulParry": true,
+        "expectedMotionSource": true
+      },
+      "b42CounterEdges": 1,
+      "correctionRequests": 0,
+      "nonzeroCorrections": 0,
+      "silentCorrections": 0,
+      "smoothCorrections": 0,
+      "snapCorrections": 0,
+      "totalMagnitudePx": 0,
+      "maxMagnitudePx": 0,
+      "meanMagnitudePx": 0,
+      "correctionDebtDurationMs": 0,
+      "serverMotionDurationMs": 0,
+      "maxCorrectionWindowMs": 0,
+      "scenarioDurationMs": 1850,
+      "peakAuthorityStepPx": 25.6,
+      "sourceCounts": {},
+      "causeCounts": {}
+    },
+    {
       "rank": 39,
+      "id": "rapid-flip-attack",
+      "label": "ADADAD flip while attacking",
+      "category": "owner-repro",
+      "metadata": {},
+      "assertions": {
+        "completed": true,
+        "zeroCorrections": true,
+        "zeroSilent": true
+      },
+      "b42CounterEdges": 0,
+      "correctionRequests": 0,
+      "nonzeroCorrections": 0,
+      "silentCorrections": 0,
+      "smoothCorrections": 0,
+      "snapCorrections": 0,
+      "totalMagnitudePx": 0,
+      "maxMagnitudePx": 0,
+      "meanMagnitudePx": 0,
+      "correctionDebtDurationMs": 0,
+      "serverMotionDurationMs": 0,
+      "maxCorrectionWindowMs": 0,
+      "scenarioDurationMs": 3500,
+      "peakAuthorityStepPx": 31.328,
+      "sourceCounts": {},
+      "causeCounts": {}
+    },
+    {
+      "rank": 40,
       "id": "spade-spin",
       "label": "Gravedigger's Spade spin",
       "category": "special-weapon",
@@ -1305,7 +1333,7 @@
       "causeCounts": {}
     },
     {
-      "rank": 40,
+      "rank": 41,
       "id": "sparkmitt-x2-coyote-trickster-s-sparkmitt",
       "label": "Combo — Coyote Trickster's Sparkmitt",
       "category": "sparkmitt",
@@ -1336,7 +1364,35 @@
       "causeCounts": {}
     },
     {
-      "rank": 41,
+      "rank": 42,
+      "id": "walk-smoothness",
+      "label": "Plain walk zero-band",
+      "category": "owner-repro",
+      "metadata": {},
+      "assertions": {
+        "completed": true,
+        "zeroCorrections": true,
+        "zeroSilent": true
+      },
+      "b42CounterEdges": 0,
+      "correctionRequests": 0,
+      "nonzeroCorrections": 0,
+      "silentCorrections": 0,
+      "smoothCorrections": 0,
+      "snapCorrections": 0,
+      "totalMagnitudePx": 0,
+      "maxMagnitudePx": 0,
+      "meanMagnitudePx": 0,
+      "correctionDebtDurationMs": 0,
+      "serverMotionDurationMs": 0,
+      "maxCorrectionWindowMs": 0,
+      "scenarioDurationMs": 4000,
+      "peakAuthorityStepPx": 32,
+      "sourceCounts": {},
+      "causeCounts": {}
+    },
+    {
+      "rank": 43,
       "id": "walk-stop",
       "label": "Walk / stop",
       "category": "baseline",

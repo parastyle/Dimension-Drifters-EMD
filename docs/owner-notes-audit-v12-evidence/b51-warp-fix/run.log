@@ -1,17 +1,19 @@
-capturedAt=2026-07-25T05:29:44.402Z
-endpoint=ws://127.0.0.1:61081
+capturedAt=2026-07-25T06:01:07.328Z
+endpoint=ws://127.0.0.1:57880
 solo=true
 walk-stop applications=0 b42=0 requests=0 sumPx=0.000 maxPx=0.000 motionMs=0
+rapid-flip-attack applications=0 b42=0 requests=0 sumPx=0.000 maxPx=0.000 motionMs=0
+walk-smoothness applications=0 b42=0 requests=0 sumPx=0.000 maxPx=0.000 motionMs=0
 melee-attack-move-stop applications=0 b42=0 requests=0 sumPx=0.000 maxPx=0.000 motionMs=0
 gun-auto-rifle applications=0 b42=1 requests=0 sumPx=0.000 maxPx=0.000 motionMs=500
-gun-blunderbuss applications=0 b42=1 requests=0 sumPx=0.000 maxPx=0.000 motionMs=500
-gun-concussion-cannon applications=0 b42=1 requests=0 sumPx=0.000 maxPx=0.000 motionMs=500
+gun-blunderbuss applications=0 b42=1 requests=0 sumPx=0.000 maxPx=0.000 motionMs=550
+gun-concussion-cannon applications=0 b42=1 requests=0 sumPx=0.000 maxPx=0.000 motionMs=550
 gun-exotic-ranged applications=0 b42=1 requests=0 sumPx=0.000 maxPx=0.000 motionMs=500
 gun-gauntlet applications=0 b42=1 requests=0 sumPx=0.000 maxPx=0.000 motionMs=500
 gun-grenade-launcher applications=0 b42=1 requests=0 sumPx=0.000 maxPx=0.000 motionMs=500
-gun-gun applications=0 b42=1 requests=0 sumPx=0.000 maxPx=0.000 motionMs=550
-gun-hand-cannon applications=0 b42=1 requests=0 sumPx=0.000 maxPx=0.000 motionMs=550
-gun-heavy-ordnance applications=0 b42=1 requests=0 sumPx=0.000 maxPx=0.000 motionMs=500
+gun-gun applications=0 b42=1 requests=0 sumPx=0.000 maxPx=0.000 motionMs=500
+gun-hand-cannon applications=0 b42=1 requests=0 sumPx=0.000 maxPx=0.000 motionMs=500
+gun-heavy-ordnance applications=0 b42=1 requests=0 sumPx=0.000 maxPx=0.000 motionMs=550
 gun-lever-rifle applications=0 b42=1 requests=0 sumPx=0.000 maxPx=0.000 motionMs=500
 gun-machine-pistol applications=0 b42=1 requests=0 sumPx=0.000 maxPx=0.000 motionMs=500
 gun-marksman-rifle applications=0 b42=1 requests=0 sumPx=0.000 maxPx=0.000 motionMs=500
@@ -21,17 +23,17 @@ gun-railgun applications=0 b42=1 requests=0 sumPx=0.000 maxPx=0.000 motionMs=550
 gun-scrap-cannon applications=0 b42=1 requests=0 sumPx=0.000 maxPx=0.000 motionMs=500
 gun-shotgun applications=0 b42=1 requests=0 sumPx=0.000 maxPx=0.000 motionMs=500
 beam-x2-doomsday-drum-cannon applications=0 b42=1 requests=0 sumPx=0.000 maxPx=0.000 motionMs=1350
-beam-x2-mirage-coilrifle applications=0 b42=1 requests=0 sumPx=0.000 maxPx=0.000 motionMs=1250
-beam-x2-permafrost-siege-lobber applications=0 b42=1 requests=0 sumPx=0.000 maxPx=0.000 motionMs=1350
-beam-x2-stormcaller-tesla-gatling applications=0 b42=1 requests=0 sumPx=0.000 maxPx=0.000 motionMs=1250
+beam-x2-mirage-coilrifle applications=0 b42=1 requests=0 sumPx=0.000 maxPx=0.000 motionMs=1350
+beam-x2-permafrost-siege-lobber applications=0 b42=1 requests=0 sumPx=0.000 maxPx=0.000 motionMs=1250
+beam-x2-stormcaller-tesla-gatling applications=0 b42=1 requests=0 sumPx=0.000 maxPx=0.000 motionMs=1300
 sustained-gatling applications=0 b42=1 requests=0 sumPx=0.000 maxPx=0.000 motionMs=2200
 dodge-roll applications=0 b42=1 requests=0 sumPx=0.000 maxPx=0.000 motionMs=350
 parry-right applications=0 b42=1 requests=0 sumPx=0.000 maxPx=0.000 motionMs=50
-parry-left applications=0 b42=1 requests=0 sumPx=0.000 maxPx=0.000 motionMs=50
+parry-left applications=0 b42=1 requests=0 sumPx=0.000 maxPx=0.000 motionMs=0
 parry-above applications=0 b42=0 requests=0 sumPx=0.000 maxPx=0.000 motionMs=0
 parry-below applications=0 b42=1 requests=0 sumPx=0.000 maxPx=0.000 motionMs=650
-jump-pound applications=0 b42=1 requests=0 sumPx=0.000 maxPx=0.000 motionMs=550
-slide-hop applications=0 b42=1 requests=0 sumPx=0.000 maxPx=0.000 motionMs=850
+jump-pound applications=0 b42=1 requests=0 sumPx=0.000 maxPx=0.000 motionMs=500
+slide-hop applications=0 b42=1 requests=0 sumPx=0.000 maxPx=0.000 motionMs=800
 chest-open applications=0 b42=0 requests=0 sumPx=0.000 maxPx=0.000 motionMs=0
 pit-fall applications=0 b42=1 requests=0 sumPx=0.000 maxPx=0.000 motionMs=50
 kung-fu-wrap-x2-muay-thai-wraps applications=0 b42=0 requests=0 sumPx=0.000 maxPx=0.000 motionMs=0
@@ -42,4 +44,4 @@ sparkmitt-x2-coyote-trickster-s-sparkmitt applications=0 b42=0 requests=0 sumPx=
 spade-spin applications=0 b42=0 requests=0 sumPx=0.000 maxPx=0.000 motionMs=0
 ultimate-alpha-strike applications=0 b42=4 requests=0 sumPx=0.000 maxPx=0.000 motionMs=350
 elevator-board applications=0 b42=2 requests=0 sumPx=0.000 maxPx=0.000 motionMs=4500
-verdict=PASS; 41/41 scenarios; nonzero=0; snaps=0
+verdict=FAIL; 43/41 scenarios; nonzero=0; snaps=0
