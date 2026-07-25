@@ -74,6 +74,7 @@ import {
   bossSpawnAt,
   CAST_VOLLEY_PROJECTILE_CAP,
   type CarrySelectionV1,
+  type ClientMovementReport,
   CHAIN_MAX_RANGE,
   CHEST_OPEN_RADIUS,
   CHEST_PLACEMENT_RADIUS,
@@ -370,6 +371,8 @@ import {
   sanitizeMetaAccountV5WithDiagnostics,
   sanitizeMetaLevels,
   selectChainTargets,
+  SERVER_MOTION_IMPULSE_TICKS,
+  SERVER_MOTION_LAUNCH_TICKS,
   serverSeededGunPelletVolley,
   shortestAngleDelta,
   slideContactInvulnerable,
@@ -377,6 +380,7 @@ import {
   stepBeamAngle,
   stepEnemyChase,
   stepEnemyKite,
+  evaluateClientMovementEnvelope,
   stepImpulse,
   stepPlayerAttackMovement,
   stepSteeredMovement,
@@ -628,6 +632,8 @@ interface InputCmd {
   aimY: number;
   targetX: number;
   targetY: number;
+  /** B42 post-prediction owner pose for this exact sequence. Absent only for legacy tests/clients. */
+  movement?: ClientMovementReport;
 }
 
 /** Per-client input pipeline + the player's PERSISTENT steered movement velocity (§7 course correction).
@@ -646,6 +652,8 @@ interface InputState {
   actionBudget: number;
   mvx: number;
   mvy: number;
+  /** Set only on a newly consumed command; held fallback must never re-adopt an old pose. */
+  freshMovement?: ClientMovementReport;
 }
 
 interface WeaponResourceLedger {
@@ -1151,12 +1159,11 @@ export function weaponComboForwardDrift(
 /**
  * Authoritative PvE room (§4 RoR2-style host-authoritative sync via Colyseus).
  *
- * §4 v0.107 ONLINE NETCODE (docs/NETCODE_DESIGN.md): the server runs a FIXED 50ms timestep,
- * consumes one sequence-numbered input command per player per sub-step (validated, bounded,
- * drain-to-newest), integrates with the shared pure steppers, and mirrors ackSeq/mvx/mvy/vh/
- * teleportSeq on state so the owning client PREDICTS its own movement and reconciles exactly.
- * Remote entities interpolate between tick-stamped snapshots (`ArenaState.tick`). The server
- * stays fully authoritative — prediction is display-only; damage/economy never leave the tick.
+ * ONLINE NETCODE: the server runs a fixed 50ms timestep and consumes one bounded, sequence-numbered
+ * command per player. B42 adopts a fresh owner-reported pose only inside the shared speed/continuity
+ * envelope and server-owned navigation; violations and authored server-motion epochs retain server truth.
+ * Remote entities interpolate tick-stamped adopted positions. Combat, enemies, damage, loot, and economy
+ * never leave server authority.
  */
 export class GameRoom extends Room<ArenaState> {
   override maxClients = MAX_PLAYERS;
@@ -1192,6 +1199,11 @@ export class GameRoom extends Room<ArenaState> {
   /** Tick-local launch markers defer only the first dash displacement while height/pit immunity begin now. */
   private readonly distanceJumpLaunches = new Set<string>();
   private readonly inputs = new Map<string, InputState>();
+  /** B42 accepted owner poses are re-applied after legacy player-body resolution; navigation was already
+   * swept and validated, while co-op friends deliberately do not become an authority wall. */
+  private readonly acceptedClientMovement = new Map<string, ClientMovementReport>();
+  /** Exclusive tick deadline for short server-authored impulse/reposition ownership windows. */
+  private readonly serverMotionUntilTick = new Map<string, number>();
   private readonly combat = new Map<string, CombatState>();
   /** Local/offline account truth: validated client claim in, canonical room mutations/receipts out. */
   private readonly metaAccounts = new Map<string, MetaAccountV5>();
@@ -1583,6 +1595,14 @@ export class GameRoom extends Room<ArenaState> {
           aimY?: number;
           targetX?: number;
           targetY?: number;
+          clientX?: number;
+          clientY?: number;
+          clientMvx?: number;
+          clientMvy?: number;
+          clientVx?: number;
+          clientVy?: number;
+          clientServerMotionEpoch?: number;
+          clientCorrectionSeq?: number;
         },
       ) => {
         const rec = this.inputs.get(client.sessionId);
@@ -1607,6 +1627,13 @@ export class GameRoom extends Room<ArenaState> {
         const delta = (seq - rec.lastSeq) >>> 0;
         if (delta === 0 || delta > 10000) return;
         rec.lastSeq = seq;
+        const carriesMovement =
+          message?.clientX !== undefined ||
+          message?.clientY !== undefined ||
+          message?.clientMvx !== undefined ||
+          message?.clientMvy !== undefined ||
+          message?.clientVx !== undefined ||
+          message?.clientVy !== undefined;
         rec.queue.push({
           seq,
           dx: Number.isFinite(message?.dx) ? (message?.dx as number) : 0,
@@ -1626,6 +1653,24 @@ export class GameRoom extends Room<ArenaState> {
           targetY: Number.isFinite(message?.targetY)
             ? (message.targetY as number)
             : rec.held.targetY,
+          movement: carriesMovement
+            ? {
+                // Preserve invalid/missing components as NaN. The shared envelope rejects the complete
+                // report atomically; coercing one component to zero could accidentally legalize it.
+                x: Number(message?.clientX),
+                y: Number(message?.clientY),
+                mvx: Number(message?.clientMvx),
+                mvy: Number(message?.clientMvy),
+                vx: Number(message?.clientVx),
+                vy: Number(message?.clientVy),
+                serverMotionEpoch: Number.isFinite(message?.clientServerMotionEpoch)
+                  ? (message.clientServerMotionEpoch as number) >>> 0
+                  : 0xffffffff,
+                movementCorrectionSeq: Number.isFinite(message?.clientCorrectionSeq)
+                  ? (message.clientCorrectionSeq as number) >>> 0
+                  : 0xffffffff,
+              }
+            : undefined,
         });
         // Bounded queue: shed the OLDEST beyond the cap (the freshest intent must survive).
         while (rec.queue.length > INPUT_QUEUE_MAX) rec.queue.shift();
@@ -4612,6 +4657,8 @@ export class GameRoom extends Room<ArenaState> {
     this.state.players.delete(client.sessionId);
     this.refreshAllChestOpened();
     this.inputs.delete(client.sessionId);
+    this.acceptedClientMovement.delete(client.sessionId);
+    this.serverMotionUntilTick.delete(client.sessionId);
     this.combat.delete(client.sessionId);
     this.debugCommitDefense.delete(client.sessionId);
     this.debugAttackMoveCapture.delete(client.sessionId);
@@ -5050,6 +5097,96 @@ export class GameRoom extends Room<ArenaState> {
     if (forced) player.stanceSeq = (player.stanceSeq + 1) & 0xff;
   }
 
+  /** Swept environment half of B42's envelope. The numeric budget is shared; only the room owns map truth. */
+  private clientMovementNavValid(
+    player: PlayerState,
+    combat: CombatState | undefined,
+    fromX: number,
+    fromY: number,
+    toX: number,
+    toY: number,
+  ): boolean {
+    if (![fromX, fromY, toX, toY].every(Number.isFinite)) return false;
+    const dx = toX - fromX;
+    const dy = toY - fromY;
+    const distance = Math.hypot(dx, dy);
+    const samples = Math.max(1, Math.ceil(distance / 4));
+    const grounded = player.height <= GROUND_EPSILON && (combat?.vh ?? 0) <= 0;
+
+    if (this.belt && this.beltLevel) {
+      const level = this.beltLevel;
+      const beltX = beltPlayableXBounds(level);
+      const rightBound =
+        (this.state.beltLockX > 0 ? this.state.beltLockX : beltX.maxX) - PLAYER_RADIUS;
+      for (let sample = 1; sample <= samples; sample++) {
+        const progress = sample / samples;
+        const x = fromX + dx * progress;
+        const y = fromY + dy * progress;
+        if (
+          x < beltX.minX + PLAYER_RADIUS ||
+          x > rightBound ||
+          y < BELT_Y0 ||
+          y > BELT_Y0 + DEPTH_MAX ||
+          (grounded && beltPitAtX(level, x))
+        )
+          return false;
+        const resolved = resolveBeltNavigation(level, x, y, PLAYER_RADIUS);
+        if (Math.hypot(resolved.x - x, resolved.y - y) > 0.75) return false;
+      }
+      return true;
+    }
+
+    for (let sample = 1; sample <= samples; sample++) {
+      const progress = sample / samples;
+      const x = fromX + dx * progress;
+      const y = fromY + dy * progress;
+      if (
+        x < PLAYER_RADIUS ||
+        x > ARENA_WIDTH - PLAYER_RADIUS ||
+        y < PLAYER_RADIUS ||
+        y > ARENA_HEIGHT - PLAYER_RADIUS ||
+        (grounded && isPitAtPx(this.map, x, y))
+      )
+        return false;
+      const resolved = resolvePoiCollisionInto(
+        this.map,
+        x,
+        y,
+        PLAYER_RADIUS,
+        this.poiResolveScratch,
+      );
+      if (Math.hypot(resolved.x - x, resolved.y - y) > 0.75) return false;
+    }
+    return true;
+  }
+
+  /** Begin or extend an authored server-displacement window. Epoch advances only on a new ownership edge. */
+  private beginServerMotion(player: PlayerState, ticks: number): void {
+    const duration = Math.max(1, Math.ceil(ticks));
+    const candidate = (this.state.tick + duration) >>> 0;
+    const current = this.serverMotionUntilTick.get(player.id);
+    if (current === undefined || tickReached(candidate, current))
+      this.serverMotionUntilTick.set(player.id, candidate);
+    if (!player.dualWield.serverMotionActive) {
+      player.dualWield.serverMotionEpoch = (player.dualWield.serverMotionEpoch + 1) >>> 0;
+      player.dualWield.serverMotionActive = true;
+    }
+  }
+
+  /** Recompute the wire flag before consuming this tick's client report. */
+  private refreshServerMotionState(player: PlayerState, id: string, dt: number): void {
+    const untilTick = this.serverMotionUntilTick.get(id);
+    const timed = untilTick !== undefined && !tickReached(this.state.tick, untilTick);
+    if (untilTick !== undefined && !timed) this.serverMotionUntilTick.delete(id);
+    const lunge = this.pendingWeaponLunges.get(id);
+    const lungeActive =
+      lunge !== undefined && (lunge.elapsedSeconds !== undefined || lunge.t <= dt + 1e-9);
+    const active = timed || lungeActive || this.ultimateOwnsMovement(player);
+    if (active && !player.dualWield.serverMotionActive)
+      player.dualWield.serverMotionEpoch = (player.dualWield.serverMotionEpoch + 1) >>> 0;
+    player.dualWield.serverMotionActive = active;
+  }
+
   private freshInputState(): InputState {
     return {
       queue: [],
@@ -5477,6 +5614,7 @@ export class GameRoom extends Room<ArenaState> {
     //    the NEWEST command (input only sets direction; the ack jump is client-safe by design).
     this.state.tick = (this.state.tick + 1) >>> 0;
     this.advancePetPresence(dt);
+    this.acceptedClientMovement.clear();
     this.state.players.forEach((player, id) => {
       // The wire latch derives only from accepted attack epochs. Wrap-safe uint32 subtraction keeps the
       // short window correct across ArenaState.tick rollover; write only on the true→false lapse edge.
@@ -5485,6 +5623,8 @@ export class GameRoom extends Room<ArenaState> {
       }
       const input = this.inputs.get(id);
       if (!input) return;
+      this.refreshServerMotionState(player, id, dt);
+      input.freshMovement = undefined;
       const tickCombat = this.combat.get(id);
       if (tickCombat) tickCombat.ultAccrualThisTick = 0;
       input.msgBudget = INPUT_MSGS_PER_TICK;
@@ -5515,6 +5655,7 @@ export class GameRoom extends Room<ArenaState> {
       }
       if (cmd) {
         input.held = cmd;
+        input.freshMovement = cmd.movement;
         input.lastFreshFireTick = this.state.tick;
         player.ackSeq = cmd.seq;
         const beamAim = this.combat.get(id);
@@ -5617,6 +5758,7 @@ export class GameRoom extends Room<ArenaState> {
         attackMoveMode === PlayerAttackMoveMode.InputSlow && this.debugAttackMoveCapture.delete(id);
       const movementStartX = player.x;
       const movementStartY = player.y;
+      const movementStartImpulse = Math.hypot(player.vx, player.vy);
       let normalSpeedProjection: { x: number; y: number } | undefined;
       let nextX: number;
       let nextY: number;
@@ -5748,6 +5890,50 @@ export class GameRoom extends Room<ArenaState> {
       player.y = imp.y;
       player.vx = imp.vx;
       player.vy = imp.vy;
+      const movement = input.freshMovement;
+      const movementEpochCurrent =
+        movement?.serverMotionEpoch === player.dualWield.serverMotionEpoch &&
+        movement?.movementCorrectionSeq === player.dualWield.movementCorrectionSeq;
+      if (movement && movementEpochCurrent && !player.dualWield.serverMotionActive) {
+        const movementSpeedBudget = Math.max(
+          baseMoveSpeed,
+          // B41's shared attack step may replace ordinary steering with a faster authored root-motion
+          // vector. Admit that exact per-tick budget without granting a generic tier outside its window.
+          Math.hypot(player.mvx, player.mvy),
+          beamRuntime?.stance === STANCE_DASH ? DIST_JUMP_SPEED : 0,
+          activeRoll && beamRuntime
+            ? relicRollSpeedAtTick(player.relics, Math.max(0, beamRuntime.slidePhaseTick - 1))
+            : 0,
+        );
+        const recoilBudget = gunLocomotionRecoilFor(WEAPONS[player.weapon]).maxImpulse;
+        const envelope = evaluateClientMovementEnvelope(movement, {
+          fromX: movementStartX,
+          fromY: movementStartY,
+          dtSeconds: dt,
+          maxMoveSpeed: movementSpeedBudget,
+          maxImpulseSpeed: Math.max(movementStartImpulse, recoilBudget),
+        });
+        if (
+          envelope.accepted &&
+          this.clientMovementNavValid(
+            player,
+            beamRuntime,
+            movementStartX,
+            movementStartY,
+            movement.x,
+            movement.y,
+          )
+        ) {
+          input.mvx = movement.mvx;
+          input.mvy = movement.mvy;
+          player.mvx = movement.mvx;
+          player.mvy = movement.mvy;
+          this.acceptedClientMovement.set(id, movement);
+        } else {
+          player.dualWield.movementCorrectionSeq =
+            (player.dualWield.movementCorrectionSeq + 1) >>> 0;
+        }
+      }
     });
 
     // 2. Resolve body collisions so living players block each other (§5). Authoritative.
@@ -5820,6 +6006,15 @@ export class GameRoom extends Room<ArenaState> {
         player.x = r.x;
         player.y = r.y;
       });
+    }
+
+    // Accepted client truth wins after the legacy friend-body pass. Reports were swept against navigation
+    // above, so this cannot restore a wall/POI/pit clip; it only avoids making co-op friends authority walls.
+    for (const [id, movement] of this.acceptedClientMovement) {
+      const player = this.state.players.get(id);
+      if (!player?.alive || player.dualWield.serverMotionActive) continue;
+      player.x = movement.x;
+      player.y = movement.y;
     }
 
     // 2.5 §17 PITFALL — a GROUNDED player whose body is over a pit falls: chip damage + snap back to the
@@ -6506,6 +6701,7 @@ export class GameRoom extends Room<ArenaState> {
             const k = addImpulse(player, (-dx / d) * push, (-dy / d) * push);
             player.vx = k.vx;
             player.vy = k.vy;
+            this.beginServerMotion(player, SERVER_MOTION_IMPULSE_TICKS);
           }
         }
       });
@@ -7733,6 +7929,7 @@ export class GameRoom extends Room<ArenaState> {
       );
       player.vx = impulse.vx;
       player.vy = impulse.vy;
+      this.beginServerMotion(player, SERVER_MOTION_IMPULSE_TICKS);
     }
     if (katanaEffect?.burstRadius && katanaEffect.burstDamage) {
       this.detonate(
@@ -8379,6 +8576,10 @@ export class GameRoom extends Room<ArenaState> {
       lunge.elapsedSeconds =
         nextElapsed + 1e-9 >= lunge.durationSeconds ? lunge.durationSeconds : nextElapsed;
       const progress = lunge.elapsedSeconds / lunge.durationSeconds;
+      this.beginServerMotion(
+        player,
+        Math.max(1, Math.ceil((lunge.durationSeconds - lunge.elapsedSeconds) / dt) + 1),
+      );
       player.x =
         (lunge.startX ?? player.x) +
         ((lunge.endX ?? player.x) - (lunge.startX ?? player.x)) * progress;
@@ -10189,6 +10390,7 @@ export class GameRoom extends Room<ArenaState> {
       const k = addImpulse(p, (dx / d) * knockback, (dy / d) * knockback);
       p.vx = k.vx;
       p.vy = k.vy;
+      this.beginServerMotion(p, SERVER_MOTION_IMPULSE_TICKS);
     });
   }
 
@@ -10224,6 +10426,7 @@ export class GameRoom extends Room<ArenaState> {
       const k = addImpulse(p, (dx / d) * knockback, (dy / d) * knockback);
       p.vx = k.vx;
       p.vy = k.vy;
+      this.beginServerMotion(p, SERVER_MOTION_IMPULSE_TICKS);
     });
   }
 
@@ -10273,6 +10476,7 @@ export class GameRoom extends Room<ArenaState> {
       const impulse = addImpulse(player, (dx / distance) * knockback, (dy / distance) * knockback);
       player.vx = impulse.vx;
       player.vy = impulse.vy;
+      this.beginServerMotion(player, SERVER_MOTION_IMPULSE_TICKS);
     });
   }
 
@@ -10344,6 +10548,7 @@ export class GameRoom extends Room<ArenaState> {
       const impulse = addImpulse(player, (dx / distance) * knockback, (dy / distance) * knockback);
       player.vx = impulse.vx;
       player.vy = impulse.vy;
+      this.beginServerMotion(player, SERVER_MOTION_IMPULSE_TICKS);
     });
   }
 
@@ -10416,6 +10621,7 @@ export class GameRoom extends Room<ArenaState> {
         const k = addImpulse(p, nx * side * knockback, ny * side * knockback);
         p.vx = k.vx;
         p.vy = k.vy;
+        this.beginServerMotion(p, SERVER_MOTION_IMPULSE_TICKS);
       }
     });
   }
@@ -11590,9 +11796,9 @@ export class GameRoom extends Room<ArenaState> {
    *  snap-back, rift descent, restart, training reposition, revive) so carried momentum can't glide the
    *  body away from where it was authoritatively placed. §4 v0.107: also DROPS the queued/held input
    *  direction (a teleport must not replay stale pre-teleport intent; the next command lands ≤50ms later),
-   *  mirrors the zeroed velocity to synced state, and bumps `teleportSeq` — the ONE hard-resync signal the
-   *  predicting client watches, so every current and future teleport site is covered by construction. */
-  private zeroMoveVel(id: string): void {
+   *  mirrors zero velocity, and normally bumps `teleportSeq`. Repeated elevator holds can suppress only
+   *  that redundant bump while one server-motion epoch already owns the complete placement window. */
+  private zeroMoveVel(id: string, bumpTeleport = true): void {
     const inp = this.inputs.get(id);
     if (inp) {
       inp.mvx = 0;
@@ -11610,6 +11816,7 @@ export class GameRoom extends Room<ArenaState> {
     const c = this.combat.get(id);
     const player = this.state.players.get(id);
     if (player) {
+      this.beginServerMotion(player, 1);
       if (c) {
         c.crouchPrevHeld = false;
         c.momentumX = 0;
@@ -11625,7 +11832,7 @@ export class GameRoom extends Room<ArenaState> {
       player.slidePhase = SLIDE_PHASE_OFF;
       player.slidePhaseTick = 0;
       player.dualWield.fireInputHeld = false;
-      player.teleportSeq = (player.teleportSeq + 1) >>> 0;
+      if (bumpTeleport) player.teleportSeq = (player.teleportSeq + 1) >>> 0;
     }
   }
 
@@ -12256,6 +12463,7 @@ export class GameRoom extends Room<ArenaState> {
     );
     target.vx = impulse.vx;
     target.vy = impulse.vy;
+    this.beginServerMotion(target, SERVER_MOTION_IMPULSE_TICKS);
   }
 
   /** §51 one TOUGH combo-speaking elite, one tick — the authored, tick-anchored machine (worm action
@@ -12955,6 +13163,7 @@ export class GameRoom extends Room<ArenaState> {
       const k = addImpulse(player, (hx / hd) * step.launch.push, (hy / hd) * step.launch.push);
       player.vx = k.vx;
       player.vy = k.vy;
+      this.beginServerMotion(player, SERVER_MOTION_LAUNCH_TICKS);
       player.juggledSeq = (player.juggledSeq + 1) & 0xff;
       st.launchTick = this.state.tick;
       enemy.comboFlags |= COMBO_FLAG_JUGGLE;
@@ -12967,6 +13176,7 @@ export class GameRoom extends Room<ArenaState> {
         const k = addImpulse(player, (hx / hd) * step.airkeep.push, (hy / hd) * step.airkeep.push);
         player.vx = k.vx;
         player.vy = k.vy;
+        this.beginServerMotion(player, SERVER_MOTION_LAUNCH_TICKS);
       }
       player.juggledSeq = (player.juggledSeq + 1) & 0xff;
       st.juggleHits = (st.juggleHits ?? 0) + 1;
@@ -12975,6 +13185,7 @@ export class GameRoom extends Room<ArenaState> {
       const k = addImpulse(player, (hx / hd) * push, (hy / hd) * push);
       player.vx = k.vx;
       player.vy = k.vy;
+      this.beginServerMotion(player, SERVER_MOTION_IMPULSE_TICKS);
     }
   }
 
@@ -13030,6 +13241,7 @@ export class GameRoom extends Room<ArenaState> {
     incomingX: number,
     incomingY: number,
   ): void {
+    this.beginServerMotion(player, SERVER_MOTION_LAUNCH_TICKS);
     if (pc.stance !== STANCE_POUND) {
       pc.vh = Math.min(pc.vh + PARRY_LAUNCH, PARRY_LAUNCH_MAX);
       player.vh = pc.vh;
@@ -13052,6 +13264,7 @@ export class GameRoom extends Room<ArenaState> {
     incomingY: number,
     preventedDamage: number,
   ): void {
+    this.beginServerMotion(player, 1);
     const distance = parrySlideDistance(preventedDamage);
     let destination: Vec2;
     if (this.belt && this.beltLevel) {
@@ -13270,6 +13483,7 @@ export class GameRoom extends Room<ArenaState> {
       const kk = addImpulse(player, (hx / hd) * knockback, (hy / hd) * knockback);
       player.vx = kk.vx;
       player.vy = kk.vy;
+      this.beginServerMotion(player, SERVER_MOTION_IMPULSE_TICKS);
     });
   }
 
@@ -13449,6 +13663,7 @@ export class GameRoom extends Room<ArenaState> {
           );
           player.vx = k.vx;
           player.vy = k.vy;
+          this.beginServerMotion(player, SERVER_MOTION_IMPULSE_TICKS);
           consumed = true;
         });
         if (consumed && !reflected) doomed.push(id);
@@ -13839,7 +14054,7 @@ export class GameRoom extends Room<ArenaState> {
   /** §29 belt ROOM state machine — walk into a room → the gate locks + its wave spawns → clear it → the gate
    *  opens → advance; the last room drops the boss, and clearing it wins the run. Server-authoritative + the
    *  lock x syncs so every client's camera + the gate render agree. */
-  private positionCorporateParty(atExit: boolean): void {
+  private positionCorporateParty(atExit: boolean, bumpTeleport = true): void {
     const level = this.beltLevel;
     const floor = level ? corporateGridFloorForBelt(level) : undefined;
     if (!level || !floor) return;
@@ -13862,7 +14077,13 @@ export class GameRoom extends Room<ArenaState> {
         combat.lastGroundY = player.y;
         combat.pitGrace = 0;
       }
-      this.zeroMoveVel(id);
+      const ticksLeft = atExit
+        ? Math.max(0, (this.state.elevatorDeadlineTick - this.state.tick) | 0)
+        : CORPORATE_ELEVATOR_ARRIVAL_TICKS;
+      // Departure reasserts the car point every tick and arrival immediately follows it. Keep those
+      // writes inside one ownership epoch; repeated holds are not fresh teleports/corrections.
+      this.beginServerMotion(player, ticksLeft + 1);
+      this.zeroMoveVel(id, bumpTeleport);
       ordinal++;
     });
   }
@@ -13915,7 +14136,7 @@ export class GameRoom extends Room<ArenaState> {
     if (phase === CORPORATE_ELEVATOR_PHASE.departing) {
       // Re-assert the car position through the short fade so a queued movement command cannot peel a
       // straggler back out after the server has committed the party transition.
-      this.positionCorporateParty(true);
+      this.positionCorporateParty(true, false);
       if (this.state.tick >= this.state.elevatorDeadlineTick) this.transitionCorporateFloor();
       return;
     }

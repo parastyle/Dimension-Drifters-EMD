@@ -10,7 +10,7 @@
  *  decodes new patches with corrupted offsets (HP reads as aim, etc.). The server stamps it on
  *  `ArenaState.schemaVersion`; the client compares on join and tells the player to hard-reload on a
  *  mismatch instead of rendering silently-corrupt state. */
-export const SCHEMA_VERSION = 42 as const; // B35 gun metadata + B36 held-fire frame clock
+export const SCHEMA_VERSION = 43 as const; // B42 relaxed self-movement authority + correction epochs
 
 /** §ULT stat-free damage/activity meter and action tuning (20Hz tick epochs). */
 export const ULT_CHARGE_MAX = 100 as const;
@@ -250,9 +250,21 @@ export const INTERP_DELAY_MS = 120;
 export const INTERP_EXTRAP_MAX_MS = 60;
 /** Snapshot ring depth per entity (~400ms at 20Hz) — rides a burst arrival without dropping brackets. */
 export const SNAPSHOT_DEPTH = 8;
-/** Exponential decay rate (per second) of the predictor's visual error offset — a reconciliation
- *  correction GLIDES over ~⅓s tail instead of popping (review #11/#14 fold corrections through this). */
+/** Legacy B41 parity-test constant. B42 production corrections use the explicit three-band 140ms law. */
 export const PRED_ERR_DECAY = 12;
+/** B42 client-authoritative movement plausibility envelope. The speed tolerance absorbs float32 wire
+ * quantization and one fixed-step mode edge without turning the envelope into a second movement tier. */
+export const CLIENT_MOVE_SPEED_TOLERANCE = 24;
+/** Position continuity/nav comparisons receive a sub-body tolerance; this is also the silent correction band. */
+export const MOVEMENT_CORRECTION_SILENT_PX = 3;
+/** Remote and owner medium corrections must finish inside this wall-clock duration, even under held input. */
+export const MOVEMENT_CORRECTION_SMOOTH_MAX_MS = 140;
+/** Anything at least this far from adopted truth is a lag/teleport cut, never a smoothing journey. */
+export const MOVEMENT_CORRECTION_LARGE_PX = INTERP_SNAP_PLAYER;
+/** Horizontal hostile/parry impulse ownership lasts until the 780px/s cap decays below the 5px/s epsilon. */
+export const SERVER_MOTION_IMPULSE_TICKS = 12;
+/** A parry/juggle launch owns the complete conservative airborne window. */
+export const SERVER_MOTION_LAUNCH_TICKS = 16;
 
 /** One big arena per stage (§5). Server-seeded procedural arenas come later (§4/§17). (tuning)
  *  v0.102 "release-roominess" pass: 2400² → 4800² (4× the area) so the arena reads as a WORLD you roam,

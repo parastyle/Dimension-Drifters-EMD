@@ -1,0 +1,1383 @@
+{
+  "movement": {
+    "normal": {
+      "frames": [
+        {
+          "step": 0,
+          "tick": 6,
+          "seq": 1,
+          "inputX": 1,
+          "attackMoveMode": 0,
+          "authority": {
+            "x": 2387.375,
+            "y": 2420
+          },
+          "predictedBeforePatch": {
+            "x": 2382.5,
+            "y": 2420,
+            "height": 0,
+            "vh": 0,
+            "stance": 0,
+            "slidePhase": 0,
+            "slideTick": 0
+          },
+          "predictedAfterPatch": {
+            "x": 2387.375,
+            "y": 2420,
+            "height": 0,
+            "vh": 0,
+            "stance": 0,
+            "slidePhase": 0,
+            "slideTick": 0
+          },
+          "observerAuthority": {
+            "x": 2387.375,
+            "y": 2420
+          },
+          "observerRender": {
+            "x": 2384.53125,
+            "y": 2420
+          },
+          "correctionSeq": 0,
+          "selfCorrections": 0
+        },
+        {
+          "step": 1,
+          "tick": 7,
+          "seq": 2,
+          "inputX": 1,
+          "attackMoveMode": 0,
+          "authority": {
+            "x": 2403.375,
+            "y": 2420
+          },
+          "predictedBeforePatch": {
+            "x": 2403.375,
+            "y": 2420,
+            "height": 0,
+            "vh": 0,
+            "stance": 0,
+            "slidePhase": 0,
+            "slideTick": 0
+          },
+          "predictedAfterPatch": {
+            "x": 2403.375,
+            "y": 2420,
+            "height": 0,
+            "vh": 0,
+            "stance": 0,
+            "slidePhase": 0,
+            "slideTick": 0
+          },
+          "observerAuthority": {
+            "x": 2403.375,
+            "y": 2420
+          },
+          "observerRender": {
+            "x": 2395.375,
+            "y": 2420
+          },
+          "correctionSeq": 0,
+          "selfCorrections": 0
+        },
+        {
+          "step": 2,
+          "tick": 8,
+          "seq": 3,
+          "inputX": 1,
+          "attackMoveMode": 0,
+          "authority": {
+            "x": 2419.375,
+            "y": 2420
+          },
+          "predictedBeforePatch": {
+            "x": 2419.375,
+            "y": 2420,
+            "height": 0,
+            "vh": 0,
+            "stance": 0,
+            "slidePhase": 0,
+            "slideTick": 0
+          },
+          "predictedAfterPatch": {
+            "x": 2419.375,
+            "y": 2420,
+            "height": 0,
+            "vh": 0,
+            "stance": 0,
+            "slidePhase": 0,
+            "slideTick": 0
+          },
+          "observerAuthority": {
+            "x": 2419.375,
+            "y": 2420
+          },
+          "observerRender": {
+            "x": 2411.375,
+            "y": 2420
+          },
+          "correctionSeq": 0,
+          "selfCorrections": 0
+        },
+        {
+          "step": 3,
+          "tick": 9,
+          "seq": 4,
+          "inputX": 1,
+          "attackMoveMode": 0,
+          "authority": {
+            "x": 2435.375,
+            "y": 2420
+          },
+          "predictedBeforePatch": {
+            "x": 2435.375,
+            "y": 2420,
+            "height": 0,
+            "vh": 0,
+            "stance": 0,
+            "slidePhase": 0,
+            "slideTick": 0
+          },
+          "predictedAfterPatch": {
+            "x": 2435.375,
+            "y": 2420,
+            "height": 0,
+            "vh": 0,
+            "stance": 0,
+            "slidePhase": 0,
+            "slideTick": 0
+          },
+          "observerAuthority": {
+            "x": 2435.375,
+            "y": 2420
+          },
+          "observerRender": {
+            "x": 2427.375,
+            "y": 2420
+          },
+          "correctionSeq": 0,
+          "selfCorrections": 0
+        },
+        {
+          "step": 4,
+          "tick": 10,
+          "seq": 5,
+          "inputX": 1,
+          "attackMoveMode": 0,
+          "authority": {
+            "x": 2451.375,
+            "y": 2420
+          },
+          "predictedBeforePatch": {
+            "x": 2451.375,
+            "y": 2420,
+            "height": 0,
+            "vh": 0,
+            "stance": 0,
+            "slidePhase": 0,
+            "slideTick": 0
+          },
+          "predictedAfterPatch": {
+            "x": 2451.375,
+            "y": 2420,
+            "height": 0,
+            "vh": 0,
+            "stance": 0,
+            "slidePhase": 0,
+            "slideTick": 0
+          },
+          "observerAuthority": {
+            "x": 2451.375,
+            "y": 2420
+          },
+          "observerRender": {
+            "x": 2443.375,
+            "y": 2420
+          },
+          "correctionSeq": 0,
+          "selfCorrections": 0
+        },
+        {
+          "step": 5,
+          "tick": 12,
+          "seq": 6,
+          "inputX": 1,
+          "attackMoveMode": 0,
+          "authority": {
+            "x": 2467.625,
+            "y": 2420
+          },
+          "predictedBeforePatch": {
+            "x": 2467.375,
+            "y": 2420,
+            "height": 0,
+            "vh": 0,
+            "stance": 0,
+            "slidePhase": 0,
+            "slideTick": 0
+          },
+          "predictedAfterPatch": {
+            "x": 2467.625,
+            "y": 2420,
+            "height": 0,
+            "vh": 0,
+            "stance": 0,
+            "slidePhase": 0,
+            "slideTick": 0
+          },
+          "observerAuthority": {
+            "x": 2467.625,
+            "y": 2420
+          },
+          "observerRender": {
+            "x": 2463.5625,
+            "y": 2420
+          },
+          "correctionSeq": 0,
+          "selfCorrections": 0
+        },
+        {
+          "step": 6,
+          "tick": 14,
+          "seq": 7,
+          "inputX": 1,
+          "attackMoveMode": 0,
+          "authority": {
+            "x": 2487.625,
+            "y": 2420
+          },
+          "predictedBeforePatch": {
+            "x": 2483.625,
+            "y": 2420,
+            "height": 0,
+            "vh": 0,
+            "stance": 0,
+            "slidePhase": 0,
+            "slideTick": 0
+          },
+          "predictedAfterPatch": {
+            "x": 2487.625,
+            "y": 2420,
+            "height": 0,
+            "vh": 0,
+            "stance": 0,
+            "slidePhase": 0,
+            "slideTick": 0
+          },
+          "observerAuthority": {
+            "x": 2487.625,
+            "y": 2420
+          },
+          "observerRender": {
+            "x": 2482.625,
+            "y": 2420
+          },
+          "correctionSeq": 0,
+          "selfCorrections": 0
+        },
+        {
+          "step": 7,
+          "tick": 15,
+          "seq": 8,
+          "inputX": 1,
+          "attackMoveMode": 0,
+          "authority": {
+            "x": 2503.625,
+            "y": 2420
+          },
+          "predictedBeforePatch": {
+            "x": 2503.625,
+            "y": 2420,
+            "height": 0,
+            "vh": 0,
+            "stance": 0,
+            "slidePhase": 0,
+            "slideTick": 0
+          },
+          "predictedAfterPatch": {
+            "x": 2503.625,
+            "y": 2420,
+            "height": 0,
+            "vh": 0,
+            "stance": 0,
+            "slidePhase": 0,
+            "slideTick": 0
+          },
+          "observerAuthority": {
+            "x": 2503.625,
+            "y": 2420
+          },
+          "observerRender": {
+            "x": 2495.625,
+            "y": 2420
+          },
+          "correctionSeq": 0,
+          "selfCorrections": 0
+        },
+        {
+          "step": 8,
+          "tick": 16,
+          "seq": 9,
+          "inputX": 1,
+          "attackMoveMode": 1,
+          "authority": {
+            "x": 2519.625,
+            "y": 2420
+          },
+          "predictedBeforePatch": {
+            "x": 2519.625,
+            "y": 2420,
+            "height": 0,
+            "vh": 0,
+            "stance": 0,
+            "slidePhase": 0,
+            "slideTick": 0
+          },
+          "predictedAfterPatch": {
+            "x": 2519.625,
+            "y": 2420,
+            "height": 0,
+            "vh": 0,
+            "stance": 0,
+            "slidePhase": 0,
+            "slideTick": 0
+          },
+          "observerAuthority": {
+            "x": 2519.625,
+            "y": 2420
+          },
+          "observerRender": {
+            "x": 2511.625,
+            "y": 2420
+          },
+          "correctionSeq": 0,
+          "selfCorrections": 0
+        },
+        {
+          "step": 9,
+          "tick": 18,
+          "seq": 10,
+          "inputX": 1,
+          "attackMoveMode": 0,
+          "authority": {
+            "x": 2531.625,
+            "y": 2420
+          },
+          "predictedBeforePatch": {
+            "x": 2531.625,
+            "y": 2420,
+            "height": 0,
+            "vh": 0,
+            "stance": 0,
+            "slidePhase": 0,
+            "slideTick": 0
+          },
+          "predictedAfterPatch": {
+            "x": 2531.625,
+            "y": 2420,
+            "height": 0,
+            "vh": 0,
+            "stance": 0,
+            "slidePhase": 0,
+            "slideTick": 0
+          },
+          "observerAuthority": {
+            "x": 2531.625,
+            "y": 2420
+          },
+          "observerRender": {
+            "x": 2528.625,
+            "y": 2420
+          },
+          "correctionSeq": 0,
+          "selfCorrections": 0
+        },
+        {
+          "step": 10,
+          "tick": 20,
+          "seq": 11,
+          "inputX": 1,
+          "attackMoveMode": 0,
+          "authority": {
+            "x": 2550.375,
+            "y": 2420
+          },
+          "predictedBeforePatch": {
+            "x": 2547.625,
+            "y": 2420,
+            "height": 0,
+            "vh": 0,
+            "stance": 0,
+            "slidePhase": 0,
+            "slideTick": 0
+          },
+          "predictedAfterPatch": {
+            "x": 2550.375,
+            "y": 2420,
+            "height": 0,
+            "vh": 0,
+            "stance": 0,
+            "slidePhase": 0,
+            "slideTick": 0
+          },
+          "observerAuthority": {
+            "x": 2550.375,
+            "y": 2420
+          },
+          "observerRender": {
+            "x": 2545.6875,
+            "y": 2420
+          },
+          "correctionSeq": 0,
+          "selfCorrections": 0
+        },
+        {
+          "step": 11,
+          "tick": 21,
+          "seq": 12,
+          "inputX": 1,
+          "attackMoveMode": 0,
+          "authority": {
+            "x": 2566.375,
+            "y": 2420
+          },
+          "predictedBeforePatch": {
+            "x": 2566.375,
+            "y": 2420,
+            "height": 0,
+            "vh": 0,
+            "stance": 0,
+            "slidePhase": 0,
+            "slideTick": 0
+          },
+          "predictedAfterPatch": {
+            "x": 2566.375,
+            "y": 2420,
+            "height": 0,
+            "vh": 0,
+            "stance": 0,
+            "slidePhase": 0,
+            "slideTick": 0
+          },
+          "observerAuthority": {
+            "x": 2566.375,
+            "y": 2420
+          },
+          "observerRender": {
+            "x": 2558.375,
+            "y": 2420
+          },
+          "correctionSeq": 0,
+          "selfCorrections": 0
+        },
+        {
+          "step": 12,
+          "tick": 23,
+          "seq": 13,
+          "inputX": 1,
+          "attackMoveMode": 0,
+          "authority": {
+            "x": 2584.375,
+            "y": 2420
+          },
+          "predictedBeforePatch": {
+            "x": 2582.375,
+            "y": 2420,
+            "height": 0,
+            "vh": 0,
+            "stance": 0,
+            "slidePhase": 0,
+            "slideTick": 0
+          },
+          "predictedAfterPatch": {
+            "x": 2584.375,
+            "y": 2420,
+            "height": 0,
+            "vh": 0,
+            "stance": 0,
+            "slidePhase": 0,
+            "slideTick": 0
+          },
+          "observerAuthority": {
+            "x": 2584.375,
+            "y": 2420
+          },
+          "observerRender": {
+            "x": 2579.875,
+            "y": 2420
+          },
+          "correctionSeq": 0,
+          "selfCorrections": 0
+        },
+        {
+          "step": 13,
+          "tick": 25,
+          "seq": 14,
+          "inputX": 1,
+          "attackMoveMode": 0,
+          "authority": {
+            "x": 2604.375,
+            "y": 2420
+          },
+          "predictedBeforePatch": {
+            "x": 2600.375,
+            "y": 2420,
+            "height": 0,
+            "vh": 0,
+            "stance": 0,
+            "slidePhase": 0,
+            "slideTick": 0
+          },
+          "predictedAfterPatch": {
+            "x": 2604.375,
+            "y": 2420,
+            "height": 0,
+            "vh": 0,
+            "stance": 0,
+            "slidePhase": 0,
+            "slideTick": 0
+          },
+          "observerAuthority": {
+            "x": 2604.375,
+            "y": 2420
+          },
+          "observerRender": {
+            "x": 2599.375,
+            "y": 2420
+          },
+          "correctionSeq": 0,
+          "selfCorrections": 0
+        },
+        {
+          "step": 14,
+          "tick": 26,
+          "seq": 15,
+          "inputX": 1,
+          "attackMoveMode": 0,
+          "authority": {
+            "x": 2620.375,
+            "y": 2420
+          },
+          "predictedBeforePatch": {
+            "x": 2620.375,
+            "y": 2420,
+            "height": 0,
+            "vh": 0,
+            "stance": 0,
+            "slidePhase": 0,
+            "slideTick": 0
+          },
+          "predictedAfterPatch": {
+            "x": 2620.375,
+            "y": 2420,
+            "height": 0,
+            "vh": 0,
+            "stance": 0,
+            "slidePhase": 0,
+            "slideTick": 0
+          },
+          "observerAuthority": {
+            "x": 2620.375,
+            "y": 2420
+          },
+          "observerRender": {
+            "x": 2612.375,
+            "y": 2420
+          },
+          "correctionSeq": 0,
+          "selfCorrections": 0
+        },
+        {
+          "step": 15,
+          "tick": 27,
+          "seq": 16,
+          "inputX": 1,
+          "attackMoveMode": 0,
+          "authority": {
+            "x": 2636.375,
+            "y": 2420
+          },
+          "predictedBeforePatch": {
+            "x": 2636.375,
+            "y": 2420,
+            "height": 0,
+            "vh": 0,
+            "stance": 0,
+            "slidePhase": 0,
+            "slideTick": 0
+          },
+          "predictedAfterPatch": {
+            "x": 2636.375,
+            "y": 2420,
+            "height": 0,
+            "vh": 0,
+            "stance": 0,
+            "slidePhase": 0,
+            "slideTick": 0
+          },
+          "observerAuthority": {
+            "x": 2636.375,
+            "y": 2420
+          },
+          "observerRender": {
+            "x": 2628.375,
+            "y": 2420
+          },
+          "correctionSeq": 0,
+          "selfCorrections": 0
+        },
+        {
+          "step": 16,
+          "tick": 29,
+          "seq": 17,
+          "inputX": 0,
+          "attackMoveMode": 0,
+          "authority": {
+            "x": 2642,
+            "y": 2420
+          },
+          "predictedBeforePatch": {
+            "x": 2645.875,
+            "y": 2420,
+            "height": 0,
+            "vh": 0,
+            "stance": 0,
+            "slidePhase": 0,
+            "slideTick": 0
+          },
+          "predictedAfterPatch": {
+            "x": 2642,
+            "y": 2420,
+            "height": 0,
+            "vh": 0,
+            "stance": 0,
+            "slidePhase": 0,
+            "slideTick": 0
+          },
+          "observerAuthority": {
+            "x": 2642,
+            "y": 2420
+          },
+          "observerRender": {
+            "x": 2640.59375,
+            "y": 2420
+          },
+          "correctionSeq": 0,
+          "selfCorrections": 0
+        },
+        {
+          "step": 17,
+          "tick": 31,
+          "seq": 18,
+          "inputX": 0,
+          "attackMoveMode": 0,
+          "authority": {
+            "x": 2642,
+            "y": 2420
+          },
+          "predictedBeforePatch": {
+            "x": 2642,
+            "y": 2420,
+            "height": 0,
+            "vh": 0,
+            "stance": 0,
+            "slidePhase": 0,
+            "slideTick": 0
+          },
+          "predictedAfterPatch": {
+            "x": 2642,
+            "y": 2420,
+            "height": 0,
+            "vh": 0,
+            "stance": 0,
+            "slidePhase": 0,
+            "slideTick": 0
+          },
+          "observerAuthority": {
+            "x": 2642,
+            "y": 2420
+          },
+          "observerRender": {
+            "x": 2642,
+            "y": 2420
+          },
+          "correctionSeq": 0,
+          "selfCorrections": 0
+        },
+        {
+          "step": 18,
+          "tick": 32,
+          "seq": 19,
+          "inputX": 0,
+          "attackMoveMode": 0,
+          "authority": {
+            "x": 2642,
+            "y": 2420
+          },
+          "predictedBeforePatch": {
+            "x": 2642,
+            "y": 2420,
+            "height": 0,
+            "vh": 0,
+            "stance": 0,
+            "slidePhase": 0,
+            "slideTick": 0
+          },
+          "predictedAfterPatch": {
+            "x": 2642,
+            "y": 2420,
+            "height": 0,
+            "vh": 0,
+            "stance": 0,
+            "slidePhase": 0,
+            "slideTick": 0
+          },
+          "observerAuthority": {
+            "x": 2642,
+            "y": 2420
+          },
+          "observerRender": {
+            "x": 2642,
+            "y": 2420
+          },
+          "correctionSeq": 0,
+          "selfCorrections": 0
+        },
+        {
+          "step": 19,
+          "tick": 33,
+          "seq": 20,
+          "inputX": 0,
+          "attackMoveMode": 0,
+          "authority": {
+            "x": 2642,
+            "y": 2420
+          },
+          "predictedBeforePatch": {
+            "x": 2642,
+            "y": 2420,
+            "height": 0,
+            "vh": 0,
+            "stance": 0,
+            "slidePhase": 0,
+            "slideTick": 0
+          },
+          "predictedAfterPatch": {
+            "x": 2642,
+            "y": 2420,
+            "height": 0,
+            "vh": 0,
+            "stance": 0,
+            "slidePhase": 0,
+            "slideTick": 0
+          },
+          "observerAuthority": {
+            "x": 2642,
+            "y": 2420
+          },
+          "observerRender": {
+            "x": 2642,
+            "y": 2420
+          },
+          "correctionSeq": 0,
+          "selfCorrections": 0
+        },
+        {
+          "step": 20,
+          "tick": 34,
+          "seq": 21,
+          "inputX": -1,
+          "attackMoveMode": 0,
+          "authority": {
+            "x": 2635.5,
+            "y": 2420
+          },
+          "predictedBeforePatch": {
+            "x": 2635.5,
+            "y": 2420,
+            "height": 0,
+            "vh": 0,
+            "stance": 0,
+            "slidePhase": 0,
+            "slideTick": 0
+          },
+          "predictedAfterPatch": {
+            "x": 2635.5,
+            "y": 2420,
+            "height": 0,
+            "vh": 0,
+            "stance": 0,
+            "slidePhase": 0,
+            "slideTick": 0
+          },
+          "observerAuthority": {
+            "x": 2635.5,
+            "y": 2420
+          },
+          "observerRender": {
+            "x": 2638.75,
+            "y": 2420
+          },
+          "correctionSeq": 0,
+          "selfCorrections": 0
+        },
+        {
+          "step": 21,
+          "tick": 35,
+          "seq": 22,
+          "inputX": -1,
+          "attackMoveMode": 1,
+          "authority": {
+            "x": 2622.5,
+            "y": 2420
+          },
+          "predictedBeforePatch": {
+            "x": 2622.5,
+            "y": 2420,
+            "height": 0,
+            "vh": 0,
+            "stance": 0,
+            "slidePhase": 0,
+            "slideTick": 0
+          },
+          "predictedAfterPatch": {
+            "x": 2622.5,
+            "y": 2420,
+            "height": 0,
+            "vh": 0,
+            "stance": 0,
+            "slidePhase": 0,
+            "slideTick": 0
+          },
+          "observerAuthority": {
+            "x": 2622.5,
+            "y": 2420
+          },
+          "observerRender": {
+            "x": 2629,
+            "y": 2420
+          },
+          "correctionSeq": 0,
+          "selfCorrections": 0
+        },
+        {
+          "step": 22,
+          "tick": 37,
+          "seq": 23,
+          "inputX": -1,
+          "attackMoveMode": 0,
+          "authority": {
+            "x": 2594.5,
+            "y": 2420
+          },
+          "predictedBeforePatch": {
+            "x": 2610.5,
+            "y": 2420,
+            "height": 0,
+            "vh": 0,
+            "stance": 0,
+            "slidePhase": 0,
+            "slideTick": 0
+          },
+          "predictedAfterPatch": {
+            "x": 2594.5,
+            "y": 2420,
+            "height": 0,
+            "vh": 0,
+            "stance": 0,
+            "slidePhase": 0,
+            "slideTick": 0
+          },
+          "observerAuthority": {
+            "x": 2594.5,
+            "y": 2420
+          },
+          "observerRender": {
+            "x": 2601.5,
+            "y": 2420
+          },
+          "correctionSeq": 0,
+          "selfCorrections": 0
+        },
+        {
+          "step": 23,
+          "tick": 38,
+          "seq": 24,
+          "inputX": -1,
+          "attackMoveMode": 0,
+          "authority": {
+            "x": 2578.5,
+            "y": 2420
+          },
+          "predictedBeforePatch": {
+            "x": 2578.5,
+            "y": 2420,
+            "height": 0,
+            "vh": 0,
+            "stance": 0,
+            "slidePhase": 0,
+            "slideTick": 0
+          },
+          "predictedAfterPatch": {
+            "x": 2578.5,
+            "y": 2420,
+            "height": 0,
+            "vh": 0,
+            "stance": 0,
+            "slidePhase": 0,
+            "slideTick": 0
+          },
+          "observerAuthority": {
+            "x": 2578.5,
+            "y": 2420
+          },
+          "observerRender": {
+            "x": 2586.5,
+            "y": 2420
+          },
+          "correctionSeq": 0,
+          "selfCorrections": 0
+        },
+        {
+          "step": 24,
+          "tick": 40,
+          "seq": 25,
+          "inputX": -1,
+          "attackMoveMode": 0,
+          "authority": {
+            "x": 2546.5,
+            "y": 2420
+          },
+          "predictedBeforePatch": {
+            "x": 2562.5,
+            "y": 2420,
+            "height": 0,
+            "vh": 0,
+            "stance": 0,
+            "slidePhase": 0,
+            "slideTick": 0
+          },
+          "predictedAfterPatch": {
+            "x": 2546.5,
+            "y": 2420,
+            "height": 0,
+            "vh": 0,
+            "stance": 0,
+            "slidePhase": 0,
+            "slideTick": 0
+          },
+          "observerAuthority": {
+            "x": 2546.5,
+            "y": 2420
+          },
+          "observerRender": {
+            "x": 2554.5,
+            "y": 2420
+          },
+          "correctionSeq": 0,
+          "selfCorrections": 0
+        },
+        {
+          "step": 25,
+          "tick": 41,
+          "seq": 26,
+          "inputX": -1,
+          "attackMoveMode": 0,
+          "authority": {
+            "x": 2530.5,
+            "y": 2420
+          },
+          "predictedBeforePatch": {
+            "x": 2530.5,
+            "y": 2420,
+            "height": 0,
+            "vh": 0,
+            "stance": 0,
+            "slidePhase": 0,
+            "slideTick": 0
+          },
+          "predictedAfterPatch": {
+            "x": 2530.5,
+            "y": 2420,
+            "height": 0,
+            "vh": 0,
+            "stance": 0,
+            "slidePhase": 0,
+            "slideTick": 0
+          },
+          "observerAuthority": {
+            "x": 2530.5,
+            "y": 2420
+          },
+          "observerRender": {
+            "x": 2538.5,
+            "y": 2420
+          },
+          "correctionSeq": 0,
+          "selfCorrections": 0
+        },
+        {
+          "step": 26,
+          "tick": 43,
+          "seq": 27,
+          "inputX": -1,
+          "attackMoveMode": 0,
+          "authority": {
+            "x": 2514.5,
+            "y": 2420
+          },
+          "predictedBeforePatch": {
+            "x": 2514.5,
+            "y": 2420,
+            "height": 0,
+            "vh": 0,
+            "stance": 0,
+            "slidePhase": 0,
+            "slideTick": 0
+          },
+          "predictedAfterPatch": {
+            "x": 2514.5,
+            "y": 2420,
+            "height": 0,
+            "vh": 0,
+            "stance": 0,
+            "slidePhase": 0,
+            "slideTick": 0
+          },
+          "observerAuthority": {
+            "x": 2514.5,
+            "y": 2420
+          },
+          "observerRender": {
+            "x": 2518.5,
+            "y": 2420
+          },
+          "correctionSeq": 0,
+          "selfCorrections": 0
+        },
+        {
+          "step": 27,
+          "tick": 44,
+          "seq": 28,
+          "inputX": -1,
+          "attackMoveMode": 0,
+          "authority": {
+            "x": 2498.5,
+            "y": 2420
+          },
+          "predictedBeforePatch": {
+            "x": 2498.5,
+            "y": 2420,
+            "height": 0,
+            "vh": 0,
+            "stance": 0,
+            "slidePhase": 0,
+            "slideTick": 0
+          },
+          "predictedAfterPatch": {
+            "x": 2498.5,
+            "y": 2420,
+            "height": 0,
+            "vh": 0,
+            "stance": 0,
+            "slidePhase": 0,
+            "slideTick": 0
+          },
+          "observerAuthority": {
+            "x": 2498.5,
+            "y": 2420
+          },
+          "observerRender": {
+            "x": 2506.5,
+            "y": 2420
+          },
+          "correctionSeq": 0,
+          "selfCorrections": 0
+        },
+        {
+          "step": 28,
+          "tick": 47,
+          "seq": 29,
+          "inputX": 0,
+          "attackMoveMode": 0,
+          "authority": {
+            "x": 2486,
+            "y": 2420
+          },
+          "predictedBeforePatch": {
+            "x": 2489,
+            "y": 2420,
+            "height": 0,
+            "vh": 0,
+            "stance": 0,
+            "slidePhase": 0,
+            "slideTick": 0
+          },
+          "predictedAfterPatch": {
+            "x": 2486,
+            "y": 2420,
+            "height": 0,
+            "vh": 0,
+            "stance": 0,
+            "slidePhase": 0,
+            "slideTick": 0
+          },
+          "observerAuthority": {
+            "x": 2486,
+            "y": 2420
+          },
+          "observerRender": {
+            "x": 2488.2321428571427,
+            "y": 2420
+          },
+          "correctionSeq": 0,
+          "selfCorrections": 0
+        },
+        {
+          "step": 29,
+          "tick": 48,
+          "seq": 30,
+          "inputX": 0,
+          "attackMoveMode": 0,
+          "authority": {
+            "x": 2486,
+            "y": 2420
+          },
+          "predictedBeforePatch": {
+            "x": 2486,
+            "y": 2420,
+            "height": 0,
+            "vh": 0,
+            "stance": 0,
+            "slidePhase": 0,
+            "slideTick": 0
+          },
+          "predictedAfterPatch": {
+            "x": 2486,
+            "y": 2420,
+            "height": 0,
+            "vh": 0,
+            "stance": 0,
+            "slidePhase": 0,
+            "slideTick": 0
+          },
+          "observerAuthority": {
+            "x": 2486,
+            "y": 2420
+          },
+          "observerRender": {
+            "x": 2486,
+            "y": 2420
+          },
+          "correctionSeq": 0,
+          "selfCorrections": 0
+        },
+        {
+          "step": 30,
+          "tick": 49,
+          "seq": 31,
+          "inputX": 0,
+          "attackMoveMode": 0,
+          "authority": {
+            "x": 2486,
+            "y": 2420
+          },
+          "predictedBeforePatch": {
+            "x": 2486,
+            "y": 2420,
+            "height": 0,
+            "vh": 0,
+            "stance": 0,
+            "slidePhase": 0,
+            "slideTick": 0
+          },
+          "predictedAfterPatch": {
+            "x": 2486,
+            "y": 2420,
+            "height": 0,
+            "vh": 0,
+            "stance": 0,
+            "slidePhase": 0,
+            "slideTick": 0
+          },
+          "observerAuthority": {
+            "x": 2486,
+            "y": 2420
+          },
+          "observerRender": {
+            "x": 2486,
+            "y": 2420
+          },
+          "correctionSeq": 0,
+          "selfCorrections": 0
+        },
+        {
+          "step": 31,
+          "tick": 50,
+          "seq": 32,
+          "inputX": 0,
+          "attackMoveMode": 0,
+          "authority": {
+            "x": 2486,
+            "y": 2420
+          },
+          "predictedBeforePatch": {
+            "x": 2486,
+            "y": 2420,
+            "height": 0,
+            "vh": 0,
+            "stance": 0,
+            "slidePhase": 0,
+            "slideTick": 0
+          },
+          "predictedAfterPatch": {
+            "x": 2486,
+            "y": 2420,
+            "height": 0,
+            "vh": 0,
+            "stance": 0,
+            "slidePhase": 0,
+            "slideTick": 0
+          },
+          "observerAuthority": {
+            "x": 2486,
+            "y": 2420
+          },
+          "observerRender": {
+            "x": 2486,
+            "y": 2420
+          },
+          "correctionSeq": 0,
+          "selfCorrections": 0
+        }
+      ],
+      "selfCorrections": 0,
+      "movementCorrectionSeq": 0,
+      "observerAuthorityMismatch": 0,
+      "observerMaxStep": 32,
+      "observerIntermediateSamples": 25
+    },
+    "violation": {
+      "frame": {
+        "step": 32,
+        "tick": 51,
+        "seq": 33,
+        "inputX": 0,
+        "attackMoveMode": 0,
+        "authority": {
+          "x": 2486,
+          "y": 2420
+        },
+        "predictedBeforePatch": {
+          "x": 3046,
+          "y": 2420,
+          "height": 0,
+          "vh": 0,
+          "stance": 0,
+          "slidePhase": 0,
+          "slideTick": 0
+        },
+        "predictedAfterPatch": {
+          "x": 2486,
+          "y": 2420,
+          "height": 0,
+          "vh": 0,
+          "stance": 0,
+          "slidePhase": 0,
+          "slideTick": 0
+        },
+        "observerAuthority": {
+          "x": 2486,
+          "y": 2420
+        },
+        "observerRender": {
+          "x": 2486,
+          "y": 2420
+        },
+        "correctionSeq": 1,
+        "selfCorrections": 1
+      },
+      "correctionSeqBefore": 0,
+      "correctionSeqAfter": 1,
+      "errorBeforePx": 560,
+      "errorAfterPx": 0,
+      "correctionRemainingMs": 0,
+      "selfCorrectionsAfter": 1
+    },
+    "parry": {
+      "before": {
+        "x": 2486,
+        "y": 2420,
+        "parriedSeq": 0,
+        "epoch": 1
+      },
+      "after": {
+        "tick": 74,
+        "x": 2460.39990234375,
+        "y": 2420,
+        "parriedSeq": 1,
+        "epoch": 2,
+        "active": true
+      },
+      "distancePx": 25.60009765625,
+      "correctionStartMs": 140,
+      "ownerInitialErrorPx": 25.60009765625,
+      "ownerErrorPx": 0,
+      "observerErrorPx": 0
+    }
+  },
+  "elevator": {
+    "roomId": "bO5nTsVN5",
+    "depthBefore": 1,
+    "depthAfter": 2,
+    "phaseAfter": 4,
+    "placements": [
+      {
+        "id": "IOfLezsAX",
+        "before": {
+          "id": "IOfLezsAX",
+          "x": 4040,
+          "y": 2530,
+          "teleportSeq": 0,
+          "epoch": 0
+        },
+        "rider": {
+          "x": 420,
+          "y": 2530,
+          "teleportSeq": 2,
+          "epoch": 1
+        },
+        "observer": {
+          "x": 420,
+          "y": 2530,
+          "teleportSeq": 2,
+          "epoch": 1
+        },
+        "crossClientErrorPx": 0
+      },
+      {
+        "id": "srs24yeGP",
+        "before": {
+          "id": "srs24yeGP",
+          "x": 4040,
+          "y": 2530,
+          "teleportSeq": 0,
+          "epoch": 0
+        },
+        "rider": {
+          "x": 456,
+          "y": 2530,
+          "teleportSeq": 2,
+          "epoch": 1
+        },
+        "observer": {
+          "x": 456,
+          "y": 2530,
+          "teleportSeq": 2,
+          "epoch": 1
+        },
+        "crossClientErrorPx": 0
+      }
+    ]
+  }
+}

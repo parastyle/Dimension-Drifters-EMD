@@ -16,11 +16,11 @@ import {
   DIST_JUMP_VERTICAL_VELOCITY,
   GROUND_EPSILON,
   INPUT_MSGS_PER_TICK,
-  INTERP_SNAP_PLAYER,
   JUMP_BUFFER_SECONDS,
   EMPTY_RELIC_STACKS,
-  MOVE_SPEED,
-  MOVE_STOP_DECEL,
+  MOVEMENT_CORRECTION_SMOOTH_MAX_MS,
+  MovementCorrectionBand,
+  movementCorrectionBand,
   type RelicStacks,
   relicDodgeCooldown,
   relicMoveSpeed,
@@ -34,7 +34,6 @@ import {
   POUND_MIN_HEIGHT,
   POUND_RECOVERY_SECONDS,
   POUND_SPEED,
-  PRED_ERR_DECAY,
   PRED_PENDING_MAX,
   ROLL_ATTACK_CANCEL_SECONDS,
   ROLL_DURATION_TICKS,
@@ -117,6 +116,10 @@ export interface ServerView {
   slidePhase?: number;
   slidePhaseTick?: number;
   attackMoveMode?: number;
+  /** B42 fields are optional only for compact legacy unit fixtures. Production schema 43 always supplies. */
+  movementCorrectionSeq?: number;
+  serverMotionEpoch?: number;
+  serverMotionActive?: boolean;
   alive: boolean;
 }
 
@@ -382,14 +385,6 @@ class ImmediateInputSendGate {
 
 /** Height divergence (px) beyond which the local vertical prediction adopts the server's arc. */
 const HEIGHT_ADOPT_PX = 12;
-/** Position-only reconciliation must be unmistakably teleport-sized before it may cut. Authored pit,
- *  blink, restart, and ultimate teleports use their explicit sequence edges and still snap immediately. */
-const PRED_HARD_SNAP_PX = Math.max(INTERP_SNAP_PLAYER * 8, MOVE_SPEED * 5);
-/** While commanded movement is active, correction presentation stays inside this directional envelope:
- *  it can help forward motion, but cannot overpower it or bend a 45-degree input step into a reversal. */
-const PRED_CORRECTION_FORWARD_SHARE = 0.6;
-const PRED_CORRECTION_REVERSE_SHARE = 0.1;
-const PRED_CORRECTION_SIDE_SHARE = 0.05;
 const PRED_PRESENT_MAX_COMMAND_DELTA = Math.PI / 18;
 /** A locomotion-only firing presentation may lead authority, but stale correction debt never gets a
  * multi-character leash. This leaves 32 px of margin under B4's unchanged 80 px live bound. */
@@ -846,14 +841,28 @@ export class SelfPredictor {
   private belt?: BeltLevel;
   private lastTeleportSeq: number;
   private lastStanceSeq: number;
+  private lastMovementCorrectionSeq: number;
+  private lastServerMotionEpoch: number;
   private attackMoveMode: number;
   /** Visual error offset — reconciliation corrections land here and decay (glide, don't pop). */
   private errX = 0;
   private errY = 0;
+  /** Remaining wall-clock budget for the current medium correction. It only decreases; fresh patches
+   * cannot restart an already-active 140ms window. */
+  private correctionRemainingSec = 0;
+  private selfCorrectionCount = 0;
+  private readonly movementReport = {
+    x: 0,
+    y: 0,
+    mvx: 0,
+    mvy: 0,
+    vx: 0,
+    vy: 0,
+    serverMotionEpoch: 0,
+    movementCorrectionSeq: 0,
+  };
   /** Set when the pending buffer overflows (a stall) — forces a hard resync on the next patch. */
   private needResync = false;
-  /** A short client-frame discontinuity drops stale replay history but still folds correction visually. */
-  private smoothResync = false;
   /** One-shot bypass so an authored teleport remains a cut instead of being folded into presentation. */
   private presentationSnapPending = false;
   /** True while dead — prediction pauses and renders server truth directly. */
@@ -935,6 +944,8 @@ export class SelfPredictor {
     this.height = server.height;
     this.vh = server.vh;
     this.lastTeleportSeq = server.teleportSeq;
+    this.lastMovementCorrectionSeq = server.movementCorrectionSeq ?? 0;
+    this.lastServerMotionEpoch = server.serverMotionEpoch ?? 0;
     this.attackMoveMode = server.attackMoveMode ?? PlayerAttackMoveMode.Normal;
     const serverStance = server.moveStance ?? STANCE_NONE;
     this.lastStanceSeq = server.stanceSeq ?? 0;
@@ -1116,9 +1127,31 @@ export class SelfPredictor {
       // The connection STALLED (~3.2s of un-acked commands): FREEZE prediction (tick() short-circuits
       // from now on) and rebase hard when truth next arrives — amendment #13.
       this.needResync = true;
-      this.smoothResync = false;
       this.stalled = true;
     }
+  }
+
+  /** B42 post-prediction pose attached to the same sequence-numbered input heartbeat. Caller must consume
+   * immediately; the allocation-free object is reused on the next call. */
+  clientMovementReport(): Readonly<{
+    x: number;
+    y: number;
+    mvx: number;
+    mvy: number;
+    vx: number;
+    vy: number;
+    serverMotionEpoch: number;
+    movementCorrectionSeq: number;
+  }> {
+    this.movementReport.x = this.pred.x;
+    this.movementReport.y = this.pred.y;
+    this.movementReport.mvx = this.pred.mvx;
+    this.movementReport.mvy = this.pred.mvy;
+    this.movementReport.vx = this.pred.vx;
+    this.movementReport.vy = this.pred.vy;
+    this.movementReport.serverMotionEpoch = this.lastServerMotionEpoch;
+    this.movementReport.movementCorrectionSeq = this.lastMovementCorrectionSeq;
+    return this.movementReport;
   }
 
   private stanceFromServer(server: ServerView): PredStanceState {
@@ -1243,15 +1276,46 @@ export class SelfPredictor {
   }
 
   /** Reconcile against a fresh patch (call from room.onStateChange — data only, never touch rigs here). */
+  private applyMovementCorrection(dx: number, dy: number): void {
+    this.errX = dx;
+    this.errY = dy;
+    const band = movementCorrectionBand(Math.hypot(dx, dy));
+    if (band === MovementCorrectionBand.Smooth) {
+      if (this.correctionRemainingSec <= 0)
+        this.correctionRemainingSec = MOVEMENT_CORRECTION_SMOOTH_MAX_MS / 1000;
+      return;
+    }
+    this.errX = 0;
+    this.errY = 0;
+    this.correctionRemainingSec = 0;
+    this.presentationSnapPending = true;
+  }
+
   reconcile(server: ServerView): void {
-    const previousAttackMoveMode = this.attackMoveMode;
     this.attackMoveMode = server.attackMoveMode ?? PlayerAttackMoveMode.Normal;
-    const authoritativeAttackRoot =
-      this.attackMoveMode === PlayerAttackMoveMode.RootMotion ||
-      previousAttackMoveMode === PlayerAttackMoveMode.RootMotion;
     const teleported = server.teleportSeq !== this.lastTeleportSeq;
-    if (teleported) this.presentationSnapPending = true;
+    const relaxedAuthority =
+      server.movementCorrectionSeq !== undefined &&
+      server.serverMotionEpoch !== undefined &&
+      server.serverMotionActive !== undefined;
+    const correctionChanged =
+      server.movementCorrectionSeq !== undefined &&
+      server.movementCorrectionSeq !== this.lastMovementCorrectionSeq;
+    const serverMotionChanged =
+      server.serverMotionEpoch !== undefined &&
+      server.serverMotionEpoch !== this.lastServerMotionEpoch;
+    const correctionRequested =
+      !relaxedAuthority ||
+      correctionChanged ||
+      server.serverMotionActive === true ||
+      serverMotionChanged ||
+      teleported;
+    if (relaxedAuthority && (correctionChanged || serverMotionChanged || teleported))
+      this.selfCorrectionCount++;
     this.lastTeleportSeq = server.teleportSeq;
+    this.lastMovementCorrectionSeq =
+      server.movementCorrectionSeq ?? this.lastMovementCorrectionSeq;
+    this.lastServerMotionEpoch = server.serverMotionEpoch ?? this.lastServerMotionEpoch;
     const stanceSeq = server.stanceSeq ?? 0;
     const stanceChanged = stanceSeq !== this.lastStanceSeq;
     this.lastStanceSeq = stanceSeq;
@@ -1265,14 +1329,6 @@ export class SelfPredictor {
       const consumed = this.pending.shift();
       if (consumed?.slide) acknowledgedSlideEdge = true;
     }
-    const newestPending = this.pending[this.pending.length - 1];
-    const releasedAttackInput =
-      previousAttackMoveMode === PlayerAttackMoveMode.InputSlow &&
-      this.attackMoveMode === PlayerAttackMoveMode.Normal &&
-      (newestPending
-        ? Math.hypot(newestPending.dx, newestPending.dy) < 1e-4
-        : Math.hypot(server.mvx, server.mvy) <= MOVE_STOP_DECEL * DT + 1);
-
     const slideDenied =
       acknowledgedSlideEdge &&
       (server.moveStance ?? STANCE_NONE) !== STANCE_SLIDE &&
@@ -1321,27 +1377,16 @@ export class SelfPredictor {
       //   GLIDES back instead of popping backward by ~RTT×speed;
       // - mid-freeze reconciles PRESERVE the decaying offset (re-zeroing would undo the fold).
       const enteringPause = pauseNow && !this.paused;
-      if (teleported || (this.needResync && !this.smoothResync)) {
+      if (correctionRequested || enteringPause || this.needResync) {
+        this.applyMovementCorrection(visX - server.x, visY - server.y);
+      } else {
         this.errX = 0;
         this.errY = 0;
-      } else if (enteringPause || this.smoothResync) {
-        this.errX = visX - server.x;
-        this.errY = visY - server.y;
-        if (Math.hypot(this.errX, this.errY) > PRED_HARD_SNAP_PX) {
-          this.errX = 0;
-          this.errY = 0;
-          this.presentationSnapPending = true;
-        }
-      }
-      if (authoritativeAttackRoot) {
-        this.errX = 0;
-        this.errY = 0;
-        this.presentationSnapPending = true;
+        this.correctionRemainingSec = 0;
       }
       // else: staying paused / resuming — keep the (already-decayed) offset as-is.
       this.pending.length = 0;
       this.needResync = false;
-      this.smoothResync = false;
       this.stalled = false; // truth arrived — the stall (if any) is over
       this.height = server.height;
       this.vh = server.vh;
@@ -1384,28 +1429,14 @@ export class SelfPredictor {
     }
 
     // Fold the correction into the error offset so it GLIDES out; teleport-sized error snaps.
-    this.errX = visX - this.pred.x;
-    this.errY = visY - this.pred.y;
-    const attackReleaseCorrectionBudget =
-      relicMoveSpeed(this.relics) *
-        (1 - playerAttackInputSpeedMultiplier(PlayerAttackMoveMode.InputSlow)) *
-        DT *
-        Math.max(1, this.pending.length + 1) +
-      1;
-    const correctionMagnitude = Math.hypot(this.errX, this.errY);
-    if (
-      authoritativeAttackRoot ||
-      (releasedAttackInput && correctionMagnitude <= attackReleaseCorrectionBudget)
-    ) {
-      // Authored root travel is not generic prediction error, and a bounded slow-mode edge on a released
-      // stick must not become post-input correction motion. Present the authoritative result directly.
+    const correctionX = visX - this.pred.x;
+    const correctionY = visY - this.pred.y;
+    if (correctionRequested) {
+      this.applyMovementCorrection(correctionX, correctionY);
+    } else {
       this.errX = 0;
       this.errY = 0;
-      this.presentationSnapPending = true;
-    } else if (correctionMagnitude > PRED_HARD_SNAP_PX) {
-      this.errX = 0;
-      this.errY = 0;
-      this.presentationSnapPending = true;
+      this.correctionRemainingSec = 0;
     }
 
     // Vertical: only a residual AFTER authoritative rebase + pending replay is real divergence (a denied
@@ -1422,59 +1453,27 @@ export class SelfPredictor {
   /** Fold an external visual displacement into the error offset so it GLIDES out instead of popping —
    *  used when a hit-stop freeze lifts (the predictor kept ticking; the rig didn't move — review #11). */
   foldError(dx: number, dy: number): void {
-    this.errX += dx;
-    this.errY += dy;
-    if (Math.hypot(this.errX, this.errY) > PRED_HARD_SNAP_PX) {
-      this.errX = 0;
-      this.errY = 0;
-      this.presentationSnapPending = true;
-    }
+    this.applyMovementCorrection(this.errX + dx, this.errY + dy);
   }
 
-  /** Decay the visual error offset (call once per render frame). The exponential remains the target, but
-   *  its rendered displacement is bounded relative to held movement so correction cannot overpower the
-   *  command and make the owner rig travel backward for a frame. */
-  decayError(dtSec: number, dx = 0, dy = 0): void {
+  /** Retire medium correction debt on a strict wall-clock deadline. */
+  decayError(dtSec: number, _dx = 0, _dy = 0): void {
     const dt = Math.min(Math.max(dtSec, 0), 0.25);
-    if (dt <= 0) return;
-    const k = Math.exp(-PRED_ERR_DECAY * dt);
-    let correctionX = this.errX * (k - 1);
-    let correctionY = this.errY * (k - 1);
-    const inputLength = Math.hypot(dx, dy);
-    const movementBudget = relicMoveSpeed(this.relics) * dt;
-    if (inputLength > 1e-4) {
-      const ux = dx / inputLength;
-      const uy = dy / inputLength;
-      const parallel = correctionX * ux + correctionY * uy;
-      const boundedParallel = Math.max(
-        -movementBudget * PRED_CORRECTION_REVERSE_SHARE,
-        Math.min(movementBudget * PRED_CORRECTION_FORWARD_SHARE, parallel),
-      );
-      let sideX = correctionX - parallel * ux;
-      let sideY = correctionY - parallel * uy;
-      const sideLength = Math.hypot(sideX, sideY);
-      const sideLimit = movementBudget * PRED_CORRECTION_SIDE_SHARE;
-      if (sideLength > sideLimit && sideLength > 1e-4) {
-        const scale = sideLimit / sideLength;
-        sideX *= scale;
-        sideY *= scale;
-      }
-      correctionX = boundedParallel * ux + sideX;
-      correctionY = boundedParallel * uy + sideY;
-    } else {
-      const correctionLength = Math.hypot(correctionX, correctionY);
-      if (correctionLength > movementBudget && correctionLength > 1e-4) {
-        const scale = movementBudget / correctionLength;
-        correctionX *= scale;
-        correctionY *= scale;
-      }
-    }
-    this.errX += correctionX;
-    this.errY += correctionY;
-    if (Math.abs(this.errX) + Math.abs(this.errY) < 0.5) {
+    if (dt <= 0 || Math.abs(this.errX) + Math.abs(this.errY) <= 0) return;
+    if (
+      this.correctionRemainingSec <= 1e-9 ||
+      dt + 1e-9 >= this.correctionRemainingSec
+    ) {
       this.errX = 0;
       this.errY = 0;
+      this.correctionRemainingSec = 0;
+      this.presentationSnapPending = true;
+      return;
     }
+    const remainingFraction = 1 - dt / this.correctionRemainingSec;
+    this.errX *= remainingFraction;
+    this.errY *= remainingFraction;
+    this.correctionRemainingSec -= dt;
   }
 
   /**
@@ -1718,7 +1717,6 @@ export class SelfPredictor {
    *  throttled-tab wake), mirroring the server's own stall posture (amendment #12). */
   forceResync(): void {
     this.needResync = true;
-    this.smoothResync = true;
   }
 
   /** True while prediction is paused (dead / level-window freeze) — the scene renders server truth. */
@@ -1731,8 +1729,18 @@ export class SelfPredictor {
     return this.stalled;
   }
 
-  /** Diagnostics for the debug HUD + live verification: pending depth + current error magnitude. */
-  get stats(): { pending: number; errPx: number } {
-    return { pending: this.pending.length, errPx: Math.hypot(this.errX, this.errY) };
+  /** Diagnostics for the debug HUD + B42 live verification. */
+  get stats(): {
+    pending: number;
+    errPx: number;
+    selfCorrections: number;
+    correctionRemainingMs: number;
+  } {
+    return {
+      pending: this.pending.length,
+      errPx: Math.hypot(this.errX, this.errY),
+      selfCorrections: this.selfCorrectionCount,
+      correctionRemainingMs: this.correctionRemainingSec * 1000,
+    };
   }
 }
