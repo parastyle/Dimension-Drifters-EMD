@@ -1052,11 +1052,14 @@ describe("GameRoom — Cogwright Tesla-Rod warp", () => {
 
     combat.targetX = target.x;
     combat.targetY = target.y;
-    h.room.warpWeaponToCursor(player, combat, weapon);
+    const plantedX = player.x;
+    const plantedY = player.y;
+    h.room.detonateWarpAtCursor(player, combat, weapon);
 
-    expect(player.x).toBeCloseTo(expected.x, 6);
-    expect(player.y).toBeCloseTo(expected.y, 6);
-    expect(player.teleportSeq).toBe(teleportSeq + 1);
+    // B44: weapon attacks never write the character root — only the burst travels.
+    expect(player.x).toBeCloseTo(plantedX, 6);
+    expect(player.y).toBeCloseTo(plantedY, 6);
+    expect(player.teleportSeq).toBe(teleportSeq);
     expect(enemy.hp).toBeLessThan(1_000);
     expect(h.room.meleeSwings.has(player.id)).toBe(false);
     expect(
