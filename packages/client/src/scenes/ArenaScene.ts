@@ -6638,20 +6638,13 @@ export class ArenaScene extends Phaser.Scene {
         ? "muzzle"
         : sourceWeapon?.chargedProjectile
           ? "muzzle"
-<<<<<<< HEAD
-        : sourceWeapon?.hybridProjectile
-          ? "muzzle"
-          : sourceWeapon?.thrown && isThrownProjectileKind(pr.kind)
-            ? "throw"
-            : sourceWeapon?.scatter && casterSourceUsesFist(sourceWeapon)
-              ? "cast"
-=======
           : sourceWeapon?.hybridProjectile
             ? "muzzle"
             : sourceWeapon?.thrown && isThrownProjectileKind(pr.kind)
               ? "throw"
->>>>>>> sol/b51-warp-fix
-              : undefined;
+              : sourceWeapon?.scatter && casterSourceUsesFist(sourceWeapon)
+                ? "cast"
+                : undefined;
       const spawnAnchor =
         sourcePlayer && sourceWeapon && sourceRig
           ? spawnAnchorKind === "muzzle"
