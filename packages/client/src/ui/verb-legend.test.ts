@@ -109,7 +109,8 @@ describe("VerbLegendManager", () => {
     });
 
     expect(manager.offerHint("empoweredReturn", 0)).toBe(false);
-    expect(manager.offerHint("ultimateReady", 0)).toBe(true);
+    expect(manager.offerHint("ultimateReady", 0)).toBe(false);
+    expect(manager.offerHint("juggle", 0)).toBe(true);
     manager.update(1_000, 1024, 768);
     expect(surface.hintAlpha).toBe(1);
     manager.update(2_201, 1024, 768);

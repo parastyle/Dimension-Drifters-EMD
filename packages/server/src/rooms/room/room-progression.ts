@@ -451,6 +451,7 @@ import {
   ULT_SEISMARCH_STUN_SECONDS,
   ULT_SEISMARCH_WINDUP_TICKS,
   ULT_STUN_ICD_TICKS,
+  ULTIMATES_ENABLED,
   UltimateFamily,
   type UltimateFamilyValue,
   UltimatePhase,
@@ -826,6 +827,8 @@ export type PlayerDamageKind = "pit" | "ground-hazard" | "enemy" | "self";
 
 export interface PetRunRuntime {
   petId: PetId;
+  /** Chest companions are run-only and never write ownership or Bond XP to the meta account. */
+  runOnly: boolean;
   level: number;
   stageBand: PetStageBand;
   catalogVersion: number;
@@ -1320,6 +1323,7 @@ export interface GameRoomContext extends Room<ArenaState> {
   maybeDropEnemyWeapon(enemy: EnemyState, kind: EnemyKind): void;
   grantCommonRelic(player: PlayerState, id: CommonRelicId): number;
   grantRareRelic(player: PlayerState, id: RareRelicId): number;
+  grantChestPet(player: PlayerState, id: PetId): PetId | "";
   openChestForPlayer(playerId: string, chestId: string): void;
   saveWeaponResource(player: PlayerState, c: CombatState): void;
   restoreWeaponResource(player: PlayerState, c: CombatState, genuinelyNewPickup?: boolean, applyDrawLock?: boolean): void;
@@ -1874,6 +1878,7 @@ export const roomProgressionMethods = {
     this.onMessage(
       "ultimate",
       (client, message: { aimX?: number; aimY?: number; tx?: number; ty?: number }) => {
+        if (!ULTIMATES_ENABLED) return;
         if (!this.takeAction(client)) return;
         const player = this.state.players.get(client.sessionId);
         const c = this.combat.get(client.sessionId);
@@ -2600,6 +2605,19 @@ export const roomProgressionMethods = {
   enterTerminalOutcome(this: GameRoomContext, outcome: "defeat" | "victory"): void {
     this.settleMetaAccounts(outcome);
     if (outcome === "defeat") this.state.moneyDrops.clear();
+    this.state.players.forEach((player, id) => {
+      player.augments = "";
+      player.ultFamily = UltimateFamily.Locked;
+      player.ultVariant = "";
+      player.ultArchetype = 0;
+      player.ultCharge = 0;
+      player.ultPhase = UltimatePhase.Idle;
+      if (this.petRuns.get(id)?.runOnly) {
+        this.petRuns.delete(id);
+        player.petId = "";
+        player.petLevelBand = 0;
+      }
+    });
     this.state.outcome = outcome;
     this.clearCombatEntities();
   },
@@ -2625,8 +2643,12 @@ export const roomProgressionMethods = {
     // panic button that launders at-stake weapons through a depth reset. Also clear the
     // elapsed-clock parry timestamps (elapsed resets below) + weapon provenance (the gallery is free).
     this.state.players.forEach((p) => {
-      this.resetPetAccrual(p.id);
+      if (this.petRuns.get(p.id)?.runOnly)
+        this.snapshotPetRun(p, this.metaAccounts.get(p.id)?.selectedPetId ?? "");
+      else this.resetPetAccrual(p.id);
       p.dualWield.relics = new RelicState();
+      p.augments = "";
+      if (!ULTIMATES_ENABLED) p.ultArchetype = 0;
       p.ultCharge = 0;
       // …and the held weapon sheds its rolled loot identity too — without this, the workshop is a
       // risk-free reroll booth whose Legendary rides back into the real run (adversarial-verify).
@@ -2822,12 +2844,13 @@ export const roomProgressionMethods = {
       player.weaponAffix = "";
       player.dualWield.relics = new RelicState();
       this.snapshotRunIdentity(player, c, false);
-      // Augments remain an empty hook until a non-level acquisition lane owns them.
+      // Fresh run: chest-granted augments are run-scoped.
       player.augments = "";
-      // B20 interim: every identity uses the same flat, damage-meter Sunspite ultimate.
-      player.ultFamily = UltimateFamily.SunspiteComet;
-      player.ultVariant = "str";
-      player.ultArchetype = ultimateCodeFor(UltimateFamily.SunspiteComet, "str");
+      player.ultFamily = ULTIMATES_ENABLED ? UltimateFamily.SunspiteComet : UltimateFamily.Locked;
+      player.ultVariant = ULTIMATES_ENABLED ? "str" : "";
+      player.ultArchetype = ULTIMATES_ENABLED
+        ? ultimateCodeFor(UltimateFamily.SunspiteComet, "str")
+        : 0;
       player.ultCharge = 0;
       player.ultPhase = UltimatePhase.Idle;
       player.ultStartTick = 0;
@@ -3025,9 +3048,11 @@ export const roomProgressionMethods = {
     // Persisted gear remains sanitized in the canonical account but is archived runtime-inert state.
     // Every ordinary join snapshots the selected/default whole-art kit and creates no gear run.
     this.snapshotRunCharacter(player, undefined, false, false);
-    player.ultFamily = UltimateFamily.SunspiteComet;
-    player.ultVariant = "str";
-    player.ultArchetype = ultimateCodeFor(UltimateFamily.SunspiteComet, "str");
+    player.ultFamily = ULTIMATES_ENABLED ? UltimateFamily.SunspiteComet : UltimateFamily.Locked;
+    player.ultVariant = ULTIMATES_ENABLED ? "str" : "";
+    player.ultArchetype = ULTIMATES_ENABLED
+      ? ultimateCodeFor(UltimateFamily.SunspiteComet, "str")
+      : 0;
     player.hp = player.maxHp;
     this.snapshotPetRun(player, account.selectedPetId);
     for (let i = 0; i < ARSENAL_SLOTS; i++) player.slots.push(new ArsenalSlot());

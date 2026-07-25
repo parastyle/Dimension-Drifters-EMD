@@ -956,6 +956,8 @@ export class GameRoom extends Room<ArenaState> {
 
     private declare grantRareRelic: OmitThisParameter<typeof roomEconomyMethods.grantRareRelic>;
 
+    private declare grantChestPet: OmitThisParameter<typeof roomEconomyMethods.grantChestPet>;
+
     private declare openChestForPlayer: OmitThisParameter<typeof roomEconomyMethods.openChestForPlayer>;
 
   /** Persist only the active weapon instance's cadence debt before identity changes. */
@@ -1843,6 +1845,7 @@ installPrototypeMembers(GameRoom, [
   [roomEconomyMethods, "maybeDropEnemyWeapon"],
   [roomEconomyMethods, "grantCommonRelic"],
   [roomEconomyMethods, "grantRareRelic"],
+  [roomEconomyMethods, "grantChestPet"],
   [roomEconomyMethods, "openChestForPlayer"],
   [roomEconomyMethods, "saveWeaponResource"],
   [roomEconomyMethods, "restoreWeaponResource"],

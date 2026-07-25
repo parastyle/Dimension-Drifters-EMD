@@ -13,6 +13,8 @@
 export const SCHEMA_VERSION = 45 as const; // B47 authored final-render element transforms
 
 /** §ULT stat-free damage/activity meter and action tuning (20Hz tick epochs). */
+/** B55 reversible owner ruling: one switch gates grants, charge, input, activation, reveal, and HUD. */
+export const ULTIMATES_ENABLED = false as const;
 export const ULT_CHARGE_MAX = 100 as const;
 /** Precise charge is normalized 0..1: 30 applied damage pays one displayed charge point. */
 export const ULT_CHARGE_PER_DAMAGE = 0.0003333333333333333 as const;

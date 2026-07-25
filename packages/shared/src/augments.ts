@@ -7,7 +7,7 @@
  *
  * `[RULED v0.81]` Offer model: each signature pick is a **3-of-9 random draft** (roguelike) — Pool>picks
  * implies a constrained offer. The owned set is a CSV on `PlayerState.augments` (repeats = stacks);
- * acquisition is intentionally external to this mechanics catalog.
+ * acquisition is owned by augment-bearing chest trinkets.
  */
 
 import type { WeaponDef } from "./weapons.js";
@@ -189,6 +189,8 @@ Object.defineProperties(AUGMENTS, {
 
 export const AUGMENT_IDS = Object.keys(AUGMENTS);
 export const BEAM_AUGMENT_IDS = Object.keys(BEAM_AUGMENTS);
+/** Complete acquisition pool. `AUGMENT_IDS` remains the legacy enumerable 14-card surface. */
+export const ALL_AUGMENT_IDS = [...AUGMENT_IDS, ...BEAM_AUGMENT_IDS] as const;
 
 /** Type guard for an untrusted value (a network message field) → a real augment id. */
 export function isAugment(value: unknown): value is string {
@@ -258,6 +260,34 @@ export function hasAugment(csv: string, id: string): boolean {
   return parseAugments(csv).includes(id);
 }
 
+/** Existing mechanical caps expressed at the acquisition seam: non-stackables own one copy and Arc Split's
+ * authored projectile cap owns three. Other explicitly stackable augments remain uncapped. */
+export function augmentStackCap(id: string): number {
+  const def = AUGMENTS[id];
+  if (!def) return 0;
+  if (!def.stacks) return 1;
+  if (id === "arc-split") return AUG_CAST_SPLIT_MAX;
+  return Number.POSITIVE_INFINITY;
+}
+
+export interface AugmentGrant {
+  augments: string;
+  stacks: number;
+  granted: boolean;
+}
+
+/** Append one validated augment stack to PlayerState's synchronized CSV without exceeding authored caps. */
+export function grantAugment(csv: string, id: string): AugmentGrant {
+  const before = countAugment(csv, id);
+  const cap = augmentStackCap(id);
+  if (cap <= 0 || before >= cap) return { augments: csv, stacks: before, granted: false };
+  return {
+    augments: csv ? `${csv},${id}` : id,
+    stacks: before + 1,
+    granted: true,
+  };
+}
+
 /** Roll a signature draft — `AUG_DRAFT_SIZE` DISTINCT augments from the pool. `roll` is a 0..1 source
  *  (server passes `Math.random`; the offer is server-authoritative + synced, so it need not be seeded).
  *  §38 `weaponKind` gates the WEAPON-specific augments: the universal PARRY augments (no `weapon`) are always
@@ -268,7 +298,7 @@ export function draftAugments(
   weaponKind?: AugmentDelivery | readonly AugmentDelivery[],
 ): string[] {
   const lanes: readonly AugmentDelivery[] =
-    typeof weaponKind === "string" ? [weaponKind] : weaponKind ?? [];
+    typeof weaponKind === "string" ? [weaponKind] : (weaponKind ?? []);
   const ids = lanes.includes("beam") ? [...AUGMENT_IDS, ...BEAM_AUGMENT_IDS] : AUGMENT_IDS;
   const pool = ids.filter((id) => {
     const w = AUGMENTS[id]?.weapon;
@@ -295,7 +325,8 @@ export function augmentGateForWeapon(def: WeaponDef | undefined): AugmentGate {
   if (
     def.tags.classPool === "ranged" &&
     (def.tags.delivery === "projectile" || def.tags.delivery === "spread")
-  ) return "gun";
+  )
+    return "gun";
   return "parry";
 }
 

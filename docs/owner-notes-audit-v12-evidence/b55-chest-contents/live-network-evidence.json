@@ -1,0 +1,162 @@
+{
+  "capturedAt": "2026-07-25T16:28:42.299Z",
+  "ports": {
+    "client": 5195,
+    "game": 2591,
+    "control": 2592
+  },
+  "forbiddenPortsUsed": false,
+  "character": "proto-cowboy-hidden-face",
+  "mode": "training",
+  "opened": [
+    {
+      "kind": "money",
+      "chestId": "chest:5502:2",
+      "seed": 6,
+      "receipt": {
+        "chestId": "chest:5502:2",
+        "zone": 2,
+        "kind": 0,
+        "money": 14
+      }
+    },
+    {
+      "kind": "weapon",
+      "chestId": "chest:5502:2",
+      "seed": 5,
+      "receipt": {
+        "chestId": "chest:5502:2",
+        "zone": 2,
+        "kind": 0,
+        "weapon": {
+          "id": "x-gun-gatling",
+          "tier": 2,
+          "name": "Gatling"
+        },
+        "money": 0
+      }
+    },
+    {
+      "kind": "trinket",
+      "chestId": "chest:5502:2",
+      "seed": 1,
+      "receipt": {
+        "chestId": "chest:5502:2",
+        "zone": 2,
+        "kind": 0,
+        "trinket": {
+          "id": "dodge-shuffle",
+          "rarity": "rare",
+          "label": "The Shuffle",
+          "stacks": 1
+        },
+        "money": 0
+      }
+    },
+    {
+      "kind": "potion",
+      "chestId": "chest:5502:2",
+      "seed": 4,
+      "receipt": {
+        "chestId": "chest:5502:2",
+        "zone": 2,
+        "kind": 0,
+        "potion": {
+          "healFraction": 0.35,
+          "healed": 35,
+          "hp": 80,
+          "maxHp": 100
+        },
+        "money": 0
+      }
+    },
+    {
+      "kind": "pet",
+      "chestId": "chest:5502:2",
+      "seed": 3,
+      "receipt": {
+        "chestId": "chest:5502:2",
+        "zone": 2,
+        "kind": 0,
+        "pet": {
+          "id": "slate-tortoise",
+          "name": "Slate Tortoise",
+          "replacedPet": {
+            "id": "verdant-wing",
+            "name": "Verdant Wing"
+          }
+        },
+        "money": 0
+      }
+    }
+  ],
+  "augmentChest": {
+    "chestId": "chest:5502:2",
+    "seed": 45,
+    "receipt": {
+      "chestId": "chest:5502:2",
+      "zone": 2,
+      "kind": 0,
+      "trinket": {
+        "id": "crit",
+        "rarity": "common",
+        "augmentId": "hollowpoints",
+        "label": "Keen Edge",
+        "stacks": 1,
+        "augment": {
+          "id": "hollowpoints",
+          "name": "Hollow-Points",
+          "desc": "Your bullets pierce +1 enemy. Stacks.",
+          "stacks": 1
+        }
+      },
+      "money": 0
+    },
+    "synchronizedAugments": "hollowpoints"
+  },
+  "combatProof": {
+    "setup": {
+      "playerId": "B_2yonMT0",
+      "augments": "hollowpoints",
+      "weapon": "x-gun-revolver-cannon",
+      "targets": [
+        {
+          "id": "b55-pierce-a",
+          "x": 810
+        },
+        {
+          "id": "b55-pierce-b",
+          "x": 950
+        }
+      ]
+    },
+    "attackSeqBefore": 0,
+    "attackSeqAfter": 1,
+    "hitTargets": [
+      {
+        "seq": 1,
+        "tick": 7,
+        "targetId": "b55-pierce-a",
+        "sourcePlayerId": "B_2yonMT0",
+        "weaponId": "x-gun-revolver-cannon",
+        "delivery": 2,
+        "damage": 18
+      },
+      {
+        "seq": 2,
+        "tick": 10,
+        "targetId": "b55-pierce-b",
+        "sourcePlayerId": "B_2yonMT0",
+        "weaponId": "x-gun-revolver-cannon",
+        "delivery": 2,
+        "damage": 18
+      }
+    ],
+    "distinctTargetsHit": 2
+  },
+  "ultimateDisabled": {
+    "archetype": 0,
+    "charge": 0,
+    "phase": 0
+  }
+}

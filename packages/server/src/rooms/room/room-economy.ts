@@ -23,6 +23,7 @@ import {
   AUG_PROJECTILE_PIERCE,
   AUG_PROJECTILE_SPEED,
   AUG_PROJECTILE_SPREAD,
+  AUGMENTS,
   addImpulse,
   admittedPrismaticBeamRayCount,
   advanceChestCadence,
@@ -180,6 +181,7 @@ import {
   type GearRunRuntime,
   GROUND_EPSILON,
   generateArena,
+  grantAugment,
   getDimension,
   HAIRTRIGGER_MAX,
   HAIRTRIGGER_WINDOW,
@@ -262,6 +264,7 @@ import {
   type ParryGuardCycleState,
   ParryReaction,
   PET_CATALOG_VERSION,
+  PET_CATALOG,
   type PetId,
   type PetMods,
   type PetProgressReceipt,
@@ -346,6 +349,7 @@ import {
   resolveOneShotProtection,
   resolvePoiCollisionInto,
   resolveRelicRevive,
+  resolveChestHpPotion,
   rollChestReward,
   runtimeModsForQuirk,
   SECOND_WIND_BASE,
@@ -1133,6 +1137,35 @@ export const roomEconomyMethods = {
     return 1;
   },
 
+  /** One-active-pet swap. This constructs the shipped runtime at level 1 without touching meta ownership. */
+  grantChestPet(this: GameRoomContext, player: PlayerState, id: PetId): PetId | "" {
+    const replaced = this.petRuns.get(player.id)?.petId ?? "";
+    const level = 1;
+    const stageBand = petStageBandForLevel(level);
+    this.petSettledAccounts.delete(player.id);
+    this.petRuns.set(player.id, {
+      petId: id,
+      runOnly: true,
+      level,
+      stageBand,
+      catalogVersion: PET_CATALOG_VERSION,
+      mods: petModsForLevel(id, level),
+      pendingBondXp: 0,
+      clearReceipts: 0,
+      lastEvaluatedDimensionEpoch: -1,
+      dimensionPresenceSeconds: 0,
+      acceptedActionsThisDimension: 0,
+      geckoFraction: 0,
+      geckoMinted: 0,
+      tortoisePitRegenSeconds: 0,
+      settled: false,
+    });
+    player.petId = id;
+    player.petLevelBand = stageBand;
+    this.publishPetPickupEligibility();
+    return replaced;
+  },
+
   openChestForPlayer(this: GameRoomContext, playerId: string, chestId: string): void {
     const player = this.state.players.get(playerId);
     const chest = this.state.chests.get(chestId);
@@ -1152,6 +1185,8 @@ export const roomEconomyMethods = {
       playerKey: playerId,
       luckStacks: player.relics.luck,
       ownedRareIds,
+      ownedAugments: player.augments,
+      activePetId: isPetId(player.petId) ? player.petId : "",
       weaponIds: account ? unlockedWeaponDropPool(account) : [],
     });
     if (reward.weapon) {
@@ -1161,31 +1196,61 @@ export const roomEconomyMethods = {
         if (!this.dropChestWeapon(player, chest, reward.weapon.id)) return;
       }
     }
-    const relicReceipts: Array<{
-      id: CommonRelicId | RareRelicId;
-      rarity: "common" | "rare";
-      label: string;
-      stacks: number;
-    }> = [];
-    for (const relic of reward.relics) {
-      if (relic.rarity === "rare") {
-        const id = relic.id as RareRelicId;
-        const stacks = this.grantRareRelic(player, id);
-        relicReceipts.push({
-          ...relic,
-          label: RARE_RELIC_DEFS.find((def) => def.id === id)?.label ?? id,
-          stacks,
-        });
-      } else {
-        const id = relic.id as CommonRelicId;
-        const stacks = this.grantCommonRelic(player, id);
-        relicReceipts.push({
-          ...relic,
-          label: COMMON_RELIC_DEFS.find((def) => def.id === id)?.label ?? id,
-          stacks,
-        });
+    let trinket:
+      | {
+          id: CommonRelicId | RareRelicId;
+          rarity: "common" | "rare";
+          label: string;
+          stacks: number;
+          augment?: { id: string; name: string; desc: string; stacks: number };
+        }
+      | undefined;
+    if (reward.trinket) {
+      const id = reward.trinket.id;
+      const stacks =
+        reward.trinket.rarity === "rare"
+          ? this.grantRareRelic(player, id as RareRelicId)
+          : this.grantCommonRelic(player, id as CommonRelicId);
+      const label =
+        reward.trinket.rarity === "rare"
+          ? (RARE_RELIC_DEFS.find((def) => def.id === id)?.label ?? id)
+          : (COMMON_RELIC_DEFS.find((def) => def.id === id)?.label ?? id);
+      let augment: { id: string; name: string; desc: string; stacks: number } | undefined;
+      if (reward.trinket.augmentId) {
+        const result = grantAugment(player.augments, reward.trinket.augmentId);
+        if (result.granted) {
+          player.augments = result.augments;
+          const def = AUGMENTS[reward.trinket.augmentId];
+          if (def) augment = { id: def.id, name: def.name, desc: def.desc, stacks: result.stacks };
+        }
       }
+      trinket = { ...reward.trinket, label, stacks, augment };
     }
+    const pet = reward.pet
+      ? (() => {
+          const replacedId = this.grantChestPet(player, reward.pet.id);
+          return {
+            id: reward.pet.id,
+            name: PET_CATALOG[reward.pet.id].name,
+            replacedPet:
+              replacedId && replacedId !== reward.pet.id
+                ? { id: replacedId, name: PET_CATALOG[replacedId].name }
+                : undefined,
+          };
+        })()
+      : undefined;
+    const potion = reward.potion
+      ? (() => {
+          const resolved = resolveChestHpPotion(player.hp, player.maxHp, reward.potion.healFraction);
+          const healed = this.applyHeal(player, resolved.healed, false);
+          return {
+            healFraction: reward.potion.healFraction,
+            healed,
+            hp: player.hp,
+            maxHp: player.maxHp,
+          };
+        })()
+      : undefined;
     if (reward.money > 0) this.dropMoney(chest.x, chest.y, reward.money, playerId);
     chest.openedBy.set(playerId, true);
     this.refreshChestOpened(chest);
@@ -1200,7 +1265,9 @@ export const roomEconomyMethods = {
       zone: chest.zone,
       kind: chest.kind,
       weapon,
-      relics: relicReceipts,
+      trinket,
+      pet,
+      potion,
       money: reward.money,
     });
   },
@@ -1682,6 +1749,7 @@ export const roomEconomyMethods = {
     const stageBand = petStageBandForLevel(level);
     this.petRuns.set(player.id, {
       petId: selectedPetId,
+      runOnly: false,
       level,
       stageBand,
       catalogVersion: PET_CATALOG_VERSION,
@@ -1808,7 +1876,7 @@ export const roomEconomyMethods = {
       }
       const pet = this.petRuns.get(playerId);
       let receipt: PetProgressReceipt | undefined;
-      if (pet) {
+      if (pet && !pet.runOnly) {
         pet.settled = true;
         const earnedBondXp = Math.min(
           500,

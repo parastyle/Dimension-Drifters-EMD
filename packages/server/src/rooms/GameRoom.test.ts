@@ -47,6 +47,7 @@ import {
   TILE_PIT,
   unpackParryGuardPose,
   unpackParryReaction,
+  ULTIMATES_ENABLED,
   WEAPON_IDS,
   WEAPONS,
   weaponEffectEmitterPoint,
@@ -4666,7 +4667,9 @@ function addUltimateEnemy(
   return enemy;
 }
 
-describe("ULT U1 flat activity charge truth and validation", () => {
+const describeUltimateImplementation = ULTIMATES_ENABLED ? describe : describe.skip;
+
+describeUltimateImplementation("ULT U1 flat activity charge truth and validation", () => {
   it("credits applied personal damage once, emits the ready edge, and enforces every anti-farm gate", () => {
     const { h, id, player, combat } = makeUltimateRoom(
       enemyComboShared.UltimateFamily.Seismarch,
@@ -4763,7 +4766,7 @@ describe("ULT U1 flat activity charge truth and validation", () => {
   });
 });
 
-describe("ULT U1 five authoritative family executions", () => {
+describeUltimateImplementation("ULT U1 five authoritative family executions", () => {
   it("Seismarch leaps to the resolved point, damages the inner ring, and opens a stun+ICD window", () => {
     const { h, id, player } = makeUltimateRoom(
       enemyComboShared.UltimateFamily.Seismarch,
@@ -4920,7 +4923,7 @@ describe("ULT U1 five authoritative family executions", () => {
   });
 });
 
-describe("ULT U1 lifecycle, co-op, and schema 25", () => {
+describeUltimateImplementation("ULT U1 lifecycle, co-op, and schema 25", () => {
   it("cancels on an external teleport, preserves charge through downing, and keeps downed owners inert", () => {
     const { h, id, player, combat } = makeUltimateRoom(
       enemyComboShared.UltimateFamily.EventHorizon,

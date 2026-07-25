@@ -1,4 +1,5 @@
 import {
+  ULTIMATES_ENABLED,
   UltimateFamily,
   UltimatePhase,
   ultimateFamilyForCode,
@@ -14,6 +15,7 @@ export function ultimateSeqEdge(
   charge: number,
   phase: number,
 ): UltimateSeqEdge {
+  if (!ULTIMATES_ENABLED) return "none";
   if (previous === undefined) return "none";
   const distance = ((next & 0xffff) - (previous & 0xffff)) & 0xffff;
   if (distance === 0 || distance >= 0x8000) return "none";
@@ -32,6 +34,7 @@ export interface UltimateInputGate {
 
 /** Client affordance only. The server repeats every one of these checks authoritatively. */
 export function ultimateInputAffordance(gate: UltimateInputGate): "send" | "dry" | "blocked" {
+  if (!ULTIMATES_ENABLED) return "blocked";
   if (!gate.alive || gate.modal) return "blocked";
   if (gate.pending) return "blocked";
   if (gate.doorReturn) return "send";
@@ -44,7 +47,7 @@ export function canReleaseUltimateReveal(
   releaseLatch: boolean,
   alive: boolean,
 ): boolean {
-  return pending && !releaseLatch && alive;
+  return ULTIMATES_ENABLED && pending && !releaseLatch && alive;
 }
 
 export const ULTIMATE_FAMILY_NAME: Readonly<Record<number, string>> = {

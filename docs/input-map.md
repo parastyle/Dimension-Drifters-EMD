@@ -21,7 +21,7 @@ The survey also searched the rest of `packages/client`, `packages/client/index.h
 | `1–3` | Direct belt slots; level-up choices 1–3 | Unchanged | Level window owns the keys while open; otherwise belt mode owns them |
 | `4–5` | Level-up choices 4–5 | Unchanged | Level window only |
 | `Tab` | Backpack in belt mode; summon sheet in Testing Grounds | Unchanged | Belt and Testing Grounds are mutually exclusive; second press closes the active surface |
-| `F` | Trade near a belt shopkeeper; ultimate everywhere else | Unchanged | Proximity is tested first, so one press cannot trade and cast |
+| `F` | Trade near a belt shopkeeper | No arena action while `ULTIMATES_ENABLED` is false | Ultimates are reversibly disabled by the B55 owner ruling |
 | LMB / RMB over clickable HUD | A HUD click could share the held-button frame with parry/fire outside hard modals | HUD hit-testing suppresses parry/fire while the pointer is over an interactive object | Restart, arsenal, backpack, shop, level window, and summon controls |
 
 ### The reported Q/E collision
@@ -68,7 +68,7 @@ The new route has no fallback meaning: `E` can only produce pickup, `Q` can only
 | `B` | Spawn the playtest boss | Active gameplay; server validates the request |
 | `C` | Cycle legacy cosmetic character | Active gameplay |
 | `M` | Toggle persisted audio mute | Active gameplay |
-| `F` | Use ultimate | Not near the belt shopkeeper and no blocking modal |
+| `F` | No arena action (`ULTIMATES_ENABLED = false`) | Ultimate input remains dormant until the owner re-enables the feature |
 | `F` | Open/close Trading Post | Belt mode and inside shop radius; suppresses ultimate for that press |
 | `Tab` | Open/close Backpack | Belt mode |
 | `Tab` | Open/close summon menu | Testing Grounds outside belt mode |
@@ -79,7 +79,7 @@ The new route has no fallback meaning: `E` can only produce pickup, `Q` can only
 
 ### Level-up / signature window
 
-The level window is a hard modal. Its release latch must clear before gameplay resumes, so the press that selected or closed the window cannot leak into movement, jump, slot selection, fire, parry, or ultimate.
+The level window is a hard modal. Its release latch must clear before gameplay resumes, so the press that selected or closed the window cannot leak into movement, jump, slot selection, fire, or parry.
 
 | Input | Action |
 | --- | --- |

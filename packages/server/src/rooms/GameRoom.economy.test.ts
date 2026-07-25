@@ -1403,3 +1403,170 @@ describe("GameRoom — §38 weapon-gated signature draft", () => {
     for (const id of GUN_AUGS) expect(s.has(id)).toBe(false);
   });
 });
+
+describe("B55 chest content authority and run boundaries", () => {
+  function joinWithReceipts(id: string) {
+    const h = makeRoom();
+    const messages: Array<{ type: string; payload: AnyRoom }> = [];
+    const client = {
+      sessionId: id,
+      send: (type: string, payload: unknown) => messages.push({ type, payload }),
+    };
+    h.room.clients.push(client);
+    h.room.onJoin(client);
+    return {
+      h,
+      player: h.state().players.get(id),
+      messages,
+      account: h.room.metaAccounts.get(id),
+    };
+  }
+
+  function seededStandardChest(
+    h: ReturnType<typeof makeRoom>,
+    player: AnyRoom,
+    sequence: number,
+    spawnTick = 500,
+  ) {
+    const chest = new ChestState();
+    chest.id = `chest:${sequence}:${spawnTick}`;
+    chest.x = player.x;
+    chest.y = player.y;
+    chest.zone = enemyComboShared.MAP_ZONE_SCAR;
+    chest.kind = enemyComboShared.CHEST_KIND_STANDARD;
+    chest.spawnTick = spawnTick;
+    chest.openedBy.set(player.id, false);
+    h.state().chests.set(chest.id, chest);
+    return chest;
+  }
+
+  function findSequence(
+    fixture: ReturnType<typeof joinWithReceipts>,
+    matches: (reward: ReturnType<typeof enemyComboShared.rollChestReward>) => boolean,
+  ) {
+    fixture.h.room.chestRoomSeed = 0xb55c0de;
+    fixture.h.room.chestRunStartTick = 0;
+    fixture.h.state().tick = 1_000;
+    for (let sequence = 0; sequence < 20_000; sequence++) {
+      const reward = enemyComboShared.rollChestReward({
+        roomSeed: fixture.h.room.chestRoomSeed,
+        chestSequence: sequence,
+        spawnTick: 500,
+        elapsedSeconds: 50,
+        zone: enemyComboShared.MAP_ZONE_SCAR,
+        kind: enemyComboShared.CHEST_KIND_STANDARD,
+        playerKey: fixture.player.id,
+        luckStacks: fixture.player.relics.luck,
+        ownedRareIds: [],
+        ownedAugments: fixture.player.augments,
+        activePetId: fixture.player.petId,
+        weaponIds: enemyComboShared.unlockedWeaponDropPool(fixture.account),
+      });
+      if (matches(reward)) return sequence;
+    }
+    throw new Error("deterministic B55 chest fixture not found");
+  }
+
+  it("writes an augment-bearing trinket grant and sends its full player-facing explanation", () => {
+    const fixture = joinWithReceipts("chest-augment");
+    const sequence = findSequence(fixture, (reward) => !!reward.trinket?.augmentId);
+    const chest = seededStandardChest(fixture.h, fixture.player, sequence);
+    fixture.h.room.openChestForPlayer(fixture.player.id, chest.id);
+
+    const receipt = fixture.messages.find((message) => message.type === "chestOpened")?.payload;
+    expect(receipt?.trinket?.augment?.id).toBeTruthy();
+    expect(receipt?.trinket?.augment?.desc.length).toBeGreaterThan(8);
+    expect(
+      enemyComboShared.countAugment(fixture.player.augments, receipt.trinket.augment.id),
+    ).toBe(1);
+    expect(chest.openedBy.get(fixture.player.id)).toBe(true);
+  });
+
+  it("applies a chest HP potion instantly at 35% max HP and clamps overheal", () => {
+    const fixture = joinWithReceipts("chest-potion");
+    const sequence = findSequence(
+      fixture,
+      (reward) => reward.content === enemyComboShared.CHEST_CONTENT_HP_POTION,
+    );
+    fixture.player.hp = 80;
+    const chest = seededStandardChest(fixture.h, fixture.player, sequence);
+    fixture.h.room.openChestForPlayer(fixture.player.id, chest.id);
+
+    const receipt = fixture.messages.find((message) => message.type === "chestOpened")?.payload;
+    expect(fixture.player.hp).toBe(fixture.player.maxHp);
+    expect(receipt?.potion).toMatchObject({
+      healFraction: enemyComboShared.CHEST_HP_POTION_HEAL_FRACTION,
+      healed: 20,
+      hp: fixture.player.maxHp,
+      maxHp: fixture.player.maxHp,
+    });
+  });
+
+  it("swaps to one run-only chest pet without adding a permanent account unlock", () => {
+    const fixture = joinWithReceipts("chest-pet");
+    const original = fixture.player.petId;
+    expect(original).toBe("verdant-wing");
+    expect(fixture.account.pets["hearth-newt"]).toBeUndefined();
+
+    const sequence = findSequence(
+      fixture,
+      (reward) =>
+        reward.content === enemyComboShared.CHEST_CONTENT_PET &&
+        reward.pet?.id === "hearth-newt",
+    );
+    const chest = seededStandardChest(fixture.h, fixture.player, sequence);
+    fixture.h.room.openChestForPlayer(fixture.player.id, chest.id);
+
+    const receipt = fixture.messages.find((message) => message.type === "chestOpened")?.payload;
+    expect(receipt?.pet).toMatchObject({
+      id: "hearth-newt",
+      replacedPet: { id: original },
+    });
+    expect(fixture.player.petId).toBe("hearth-newt");
+    expect(fixture.h.room.petRuns.get(fixture.player.id)).toMatchObject({
+      petId: "hearth-newt",
+      runOnly: true,
+      level: 1,
+    });
+    fixture.h.room.enterTerminalOutcome("defeat");
+    expect(fixture.account.pets["hearth-newt"]).toBeUndefined();
+    expect(fixture.player.petId).toBe("");
+  });
+
+  it("clears chest augments on restart and terminal run end", () => {
+    const h = makeRoom();
+    h.join("augment-boundary");
+    const player = h.state().players.get("augment-boundary");
+    player.augments = "hollowpoints,ricochet-rounds,arc-split";
+    h.room.restartRun();
+    expect(player.augments).toBe("");
+
+    player.augments = "counterblade";
+    h.room.enterTerminalOutcome("defeat");
+    expect(player.augments).toBe("");
+  });
+
+  it("keeps ultimate grants, meter, input, and activation inert behind ULTIMATES_ENABLED", () => {
+    expect(enemyComboShared.ULTIMATES_ENABLED).toBe(false);
+    const h = makeRoom();
+    h.join("ultimate-disabled");
+    const player = h.state().players.get("ultimate-disabled");
+    const combat = h.room.combat.get(player.id);
+    expect(player.ultArchetype).toBe(0);
+    expect(player.ultCharge).toBe(0);
+
+    player.ultArchetype = enemyComboShared.ultimateCodeFor(
+      enemyComboShared.UltimateFamily.SunspiteComet,
+      "str",
+    );
+    player.ultCharge = 100;
+    combat.ultChargeF = 1;
+    h.send(player.id, "ultimate", { aimX: 1, aimY: 0 });
+    expect(combat.ultBuffer).toBe(0);
+    expect(h.room.acceptUltimate(player, combat)).toBe(false);
+    h.tick(1);
+    expect(player.ultArchetype).toBe(0);
+    expect(player.ultCharge).toBe(0);
+    expect(combat.ultChargeF).toBe(0);
+  });
+});
