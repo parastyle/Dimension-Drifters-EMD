@@ -73,16 +73,150 @@ async function quantizedRgb(input, width, height, colours) {
     .toBuffer({ resolveWithObject: true });
 }
 
+function parseHexColour(hex) {
+  const match = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex);
+  if (!match) throw new Error(`invalid fixed cel colour ${hex}`);
+  return match.slice(1).map((channel) => Number.parseInt(channel, 16));
+}
+
+function isEmberAccent(data, offset) {
+  const r = data[offset];
+  const g = data[offset + 1];
+  const b = data[offset + 2];
+  return r - Math.max(g, b) >= 42 && r >= g * 1.35 && g >= b * 1.2;
+}
+
+function fixedCelPalette(source, original, width, paletteHex, accentHex) {
+  const palette = paletteHex.map(parseHexColour);
+  const accent = parseHexColour(accentHex);
+  const colours = new Map();
+  for (let offset = 0; offset < source.length; offset += 3) {
+    const key = `${source[offset]},${source[offset + 1]},${source[offset + 2]}`;
+    const existing = colours.get(key);
+    if (existing) existing.count++;
+    else {
+      colours.set(key, {
+        rgb: [source[offset], source[offset + 1], source[offset + 2]],
+        count: 1,
+      });
+    }
+  }
+  const ranked = [...colours.entries()].sort(
+    (left, right) => luma(...left[1].rgb) - luma(...right[1].rgb),
+  );
+  const mappedIndex = new Map();
+  for (let index = 0; index < ranked.length; index++) {
+    const paletteIndex =
+      ranked.length === 1
+        ? Math.floor(palette.length / 2)
+        : Math.round((index * (palette.length - 1)) / (ranked.length - 1));
+    mappedIndex.set(ranked[index][0], paletteIndex);
+  }
+
+  const inkKey = ranked[0][0];
+  // The image generator authors at a larger square than the installed tile,
+  // so its requested 4px/2px linework would otherwise downsample toward
+  // 2px/1px. Extend the darkest source line one pixel south-east: generated
+  // 2-3px major joints install at 3-4px, while 1px minor lines install at 2px.
+  const pixels = source.length / 3;
+  const inkMask = new Uint8Array(pixels);
+  for (let pixel = 0; pixel < pixels; pixel++) {
+    const offset = pixel * 3;
+    const x = pixel % width;
+    const y = Math.floor(pixel / width);
+    const left = x > 0 ? offset - 3 : -1;
+    const up = y > 0 ? offset - width * 3 : -1;
+    const sourceKey = `${source[offset]},${source[offset + 1]},${source[offset + 2]}`;
+    const leftKey = left >= 0 ? `${source[left]},${source[left + 1]},${source[left + 2]}` : "";
+    const upKey = up >= 0 ? `${source[up]},${source[up + 1]},${source[up + 2]}` : "";
+    inkMask[pixel] = sourceKey === inkKey || leftKey === inkKey || upKey === inkKey ? 1 : 0;
+  }
+
+  // Alternate the six surface hues by ink-enclosed material region, never by
+  // noisy source pixels. This adds bounded hue structure without inventing an
+  // un-inked colour boundary or turning cel planes into photographic grain.
+  const components = new Int32Array(pixels);
+  components.fill(-1);
+  const queue = new Int32Array(pixels);
+  let component = 0;
+  for (let start = 0; start < pixels; start++) {
+    if (inkMask[start] || components[start] >= 0) continue;
+    let head = 0;
+    let tail = 0;
+    queue[tail++] = start;
+    components[start] = component;
+    while (head < tail) {
+      const pixel = queue[head++];
+      const x = pixel % width;
+      const neighbours = [
+        x > 0 ? pixel - 1 : -1,
+        x + 1 < width ? pixel + 1 : -1,
+        pixel >= width ? pixel - width : -1,
+        pixel + width < pixels ? pixel + width : -1,
+      ];
+      for (const neighbour of neighbours) {
+        if (neighbour < 0 || inkMask[neighbour] || components[neighbour] >= 0) continue;
+        components[neighbour] = component;
+        queue[tail++] = neighbour;
+      }
+    }
+    component++;
+  }
+
+  const out = Buffer.alloc(source.length);
+  for (let pixel = 0; pixel < pixels; pixel++) {
+    const offset = pixel * 3;
+    const sourceKey = `${source[offset]},${source[offset + 1]},${source[offset + 2]}`;
+    let target;
+    if (isEmberAccent(original, offset)) {
+      // Accent pixels remain visible inside the widest failing-ground gaps.
+      target = accent;
+    } else if (inkMask[pixel]) {
+      target = palette[0];
+    } else {
+      const baseIndex = mappedIndex.get(sourceKey);
+      const alternate = components[pixel] % 2;
+      target = palette[Math.max(1, baseIndex - alternate)];
+    }
+    out[offset] = target[0];
+    out[offset + 1] = target[1];
+    out[offset + 2] = target[2];
+  }
+  return out;
+}
+
 /**
  * Collapse generated floor shading into a bounded cel palette before the
  * family perimeter fold. The fold remains the final seam operation.
  */
-export async function normalizeCelTileValues({ files, targetMeans, maxSpread = 10, colours = 7 }) {
+export async function normalizeCelTileValues({
+  files,
+  targetMeans,
+  maxSpread = 10,
+  colours = 7,
+  fixedPalette,
+  accent,
+}) {
   if (files.length !== targetMeans.length) throw new Error("tile value target count must match files");
+  if ((fixedPalette && !accent) || (!fixedPalette && accent)) {
+    throw new Error("fixed cel palettes require both fixedPalette and accent");
+  }
   for (let index = 0; index < files.length; index++) {
     const file = files[index];
     const source = await quantizedRgb(file, 512, 512, colours);
-    const out = compressLuminance(source.data, targetMeans[index], maxSpread);
+    let celData = source.data;
+    if (fixedPalette) {
+      const original = await sharp(file)
+        .resize(512, 512, { fit: "fill" })
+        .removeAlpha()
+        .toColourspace("srgb")
+        .raw()
+        .toBuffer();
+      celData = fixedCelPalette(source.data, original, 512, fixedPalette, accent);
+    }
+    const tileSpread = Array.isArray(maxSpread) ? maxSpread[index] : maxSpread;
+    if (!Number.isFinite(tileSpread)) throw new Error(`missing tile value spread at index ${index}`);
+    const out = compressLuminance(celData, targetMeans[index], tileSpread);
     await sharp(out, { raw: { width: 512, height: 512, channels: 3 } }).png().toFile(file);
   }
 }

@@ -45,6 +45,63 @@ function statsForRegion(data, width, { x = 0, y = 0, regionWidth = width, region
   };
 }
 
+function rgbStatsForRegion(
+  data,
+  width,
+  { x = 0, y = 0, regionWidth = width, regionHeight, channels },
+) {
+  let alphaTotal = 0;
+  const totals = [0, 0, 0];
+  for (let py = y; py < y + regionHeight; py++) {
+    for (let px = x; px < x + regionWidth; px++) {
+      const index = (py * width + px) * channels;
+      const alpha = channels === 4 ? data[index + 3] / 255 : 1;
+      if (alpha <= 0) continue;
+      alphaTotal += alpha;
+      for (let channel = 0; channel < 3; channel++) {
+        totals[channel] += data[index + channel] * alpha;
+      }
+    }
+  }
+  return totals.map((total) => (alphaTotal ? total / alphaTotal : 0));
+}
+
+function ashlandsPaletteStats(data, width, height, channels) {
+  const inset = 32;
+  const nonAccentColours = new Map();
+  let accentPixels = 0;
+  let pixels = 0;
+  for (let y = inset; y < height - inset; y++) {
+    for (let x = inset; x < width - inset; x++) {
+      const index = (y * width + x) * channels;
+      const alpha = channels === 4 ? data[index + 3] / 255 : 1;
+      if (alpha <= 0) continue;
+      const r = data[index];
+      const g = data[index + 1];
+      const b = data[index + 2];
+      const isAccent = r - Math.max(g, b) >= 35 && r >= g * 1.3;
+      if (isAccent) accentPixels++;
+      else nonAccentColours.set(`${r},${g},${b}`, [r, g, b]);
+      pixels++;
+    }
+  }
+  const ranked = [...nonAccentColours.values()].sort(
+    (left, right) => luminance(...left) - luminance(...right),
+  );
+  const darkest = ranked[0];
+  const nextDarkest = ranked[1];
+  const inkPresent =
+    darkest &&
+    nextDarkest &&
+    darkest[1] + 6 <= Math.min(darkest[0], darkest[2]) &&
+    luminance(...nextDarkest) - luminance(...darkest) >= 3;
+  return {
+    surfaceColours: nonAccentColours.size - (inkPresent ? 1 : 0),
+    inkPresent,
+    accentFraction: pixels ? accentPixels / pixels : 0,
+  };
+}
+
 async function readImage(file) {
   return sharp(file).toColourspace("srgb").raw().toBuffer({ resolveWithObject: true });
 }
@@ -65,6 +122,7 @@ for (const dimension of dimensions) {
 
   console.log(`${dimension}:`);
   const tileMeans = [];
+  let familyAccentFraction = 0;
   for (let index = 0; index < 4; index++) {
     const name = `tile-${index}.png`;
     const decoded = await readImage(resolve(dir, name));
@@ -85,10 +143,35 @@ for (const dimension of dimensions) {
     }
     if (stats.mean < 70 || stats.mean > 125) reasons.push("mean outside 70-125");
     if (stats.spread > 18) reasons.push("spread exceeds ±18");
+    const rgb = rgbStatsForRegion(data, info.width, {
+      regionHeight: info.height,
+      channels: info.channels,
+    });
+    let paletteSummary = "";
+    if (dimension === "ashlands" && info.width === 512 && info.height === 512) {
+      const palette = ashlandsPaletteStats(data, info.width, info.height, info.channels);
+      familyAccentFraction += palette.accentFraction;
+      if (palette.surfaceColours < 4 || palette.surfaceColours > 6) {
+        reasons.push(`expected 4-6 surface colours, got ${palette.surfaceColours}`);
+      }
+      if (!palette.inkPresent) reasons.push("distinct dark warm-purple ink is absent");
+      if (palette.accentFraction > 0.08) {
+        reasons.push(`accent covers ${(palette.accentFraction * 100).toFixed(2)}%, exceeds 8%`);
+      }
+      paletteSummary =
+        ` rgb=(${rgb.map((channel) => channel.toFixed(2)).join(",")})` +
+        ` palette=${palette.surfaceColours}+ink accent=${(palette.accentFraction * 100).toFixed(3)}%`;
+    }
     const pass = reasons.length === 0;
     if (!pass) failed = true;
     tileMeans.push(stats.mean);
-    console.log(`  ${name.padEnd(10)} ${formatStats(stats)} ${pass ? "PASS" : `FAIL (${reasons.join("; ")})`}`);
+    console.log(
+      `  ${name.padEnd(10)} ${formatStats(stats)}${paletteSummary} ${pass ? "PASS" : `FAIL (${reasons.join("; ")})`}`,
+    );
+  }
+  if (dimension === "ashlands" && familyAccentFraction <= 0) {
+    console.log("  palette     FAIL (theme accent is absent from all four tiles)");
+    failed = true;
   }
 
   const familyMean = tileMeans.reduce((sum, value) => sum + value, 0) / tileMeans.length;

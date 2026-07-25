@@ -6,7 +6,7 @@ Branch: `sol/b60-ashlands-kit`
 
 Scope: Ashlands only — four floor tiles and one pit rim.
 
-## Result
+## Iteration 1 result (v1, `13a7676`)
 
 Ashlands is now a lit ash-grey cel-shaded field rather than a near-black photographic texture. The
 four fixed slots carry the navigation roles in order:
@@ -89,7 +89,9 @@ install menu key art.
 
 `node tools/artkit/check-tile-values.mjs ashlands` checks all five required files, dimensions, opacity,
 alpha-weighted mean/min/max/spread, floor-family drift, rim ground/wall/void bands, and the y=128 split.
-It exits non-zero on a violation and exits 0 for the shipped kit.
+Iteration 2 extends the gate with per-tile mean RGB, central-field palette classification, a 4-6 surface
+colour contract, distinct ink detection, and accent-area enforcement at no more than 8%. It exits
+non-zero on a violation and exits 0 for the shipped kit.
 
 ## Verification
 
@@ -101,4 +103,71 @@ It exits non-zero on a violation and exits 0 for the shipped kit.
 - Entity-outline thesis crop — black outline visibly separated from the new ash-grey floor:
   `docs/sol-reports/b60-evidence/ashlands-entity-outline.png`.
 
-VERDICT: PASS — means tile-0 92.12, tile-1 100.50, tile-2 94.01, tile-3 93.95, rim 63.71; R2/rim bands PASS; iterations 2/2/4/2/2; typecheck PASS; full test 2,778 PASS (20 skipped); captures docs/sol-reports/b60-evidence/ashlands-live.png and docs/sol-reports/b60-evidence/ashlands-entity-outline.png
+V1 VERDICT (`13a7676`): value gate PASS; ink, colour, and semantic-role contracts required correction.
+
+## Iteration 2 — v1 vs v2 contract correction
+
+Iteration 2 keeps the validated value family, exact toroidal folds, and unchanged rim while correcting
+the three failed contracts. Colour variation is carried by bounded hue and saturation changes inside
+the established luminance family: six flat volcanic surface colours, the near-black warm-purple theme
+ink `#574A5C`, and the ember accent `#C44C14`. Accent coverage is 0.149% across the four-tile family
+and no more than 0.432% on any tile, comfortably below the 8% cap.
+
+| File | v1 mean | v1 mean RGB | v2 mean | v2 mean RGB | v2 spread | v2 palette / accent |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| `tile-0.png` | 92.6 | (99, 91, 86) | 93.07 | (99.08, 91.60, 89.86) | ±13.01 | 6 + ink / 0.000% |
+| `tile-1.png` | 101.1 | (108, 99, 94) | 100.22 | (110.17, 98.04, 92.51) | ±17.38 | 6 + ink / 0.025% |
+| `tile-2.png` | 94.4 | (100, 93, 87) | 93.19 | (101.00, 90.79, 93.93) | ±16.13 | 6 + ink / 0.139% |
+| `tile-3.png` | 94.4 | (100, 93, 89) | 93.46 | (103.18, 91.04, 88.81) | ±16.40 | 6 + ink / 0.432% |
+
+The v2 floor-family mean is 94.99 with maximum tile drift ±5.23. Every floor remains inside the
+70–125 mean band and ±18 spread gate. The unchanged rim remains mean 63.71 with ground 90.05, wall
+44.81, void 20.02, and its five-pixel lip at y=126–130 centred exactly on y=128.
+
+### Ink contract
+
+All material-region boundaries are deliberate, hard-edged drawn ink rather than embossed shading.
+Installed tile lines measure 3–4px on major plate/material boundaries and 2px on minor cracks; the
+unchanged rim lip remains 5px. The fixed ink colour is part of the theme palette and is kept distinct
+from surface-colour quantization.
+
+### Semantic role read
+
+- `tile-0`, quiet bed: broad uninterrupted settled-ash and basalt fields with the fewest joints make
+  the default ground visibly calm.
+- `tile-1`, worn route: a broad horizontal swept/scuffed lane and partly filled joints give a
+  directional travelled read even when only a crop is visible.
+- `tile-2`, disturbed cluster: overlapping broken plate, slag, and ash-bank clusters read as churned
+  ground where an event has upheaved the surface.
+- `tile-3`, pit approach: branching stress lines widen into dark, ember-bearing gaps toward a collapse
+  fan, making the tile a failing-ground warning.
+
+### V2 evidence and seam audit
+
+- `docs/sol-reports/b60-evidence/ashlands-live.png` — 1920×1080 live Ashlands fight with v2 tiles,
+  entities, pits, and unchanged rim.
+- `docs/sol-reports/b60-evidence/ashlands-entity-outline.png` — 520×360 live entity-outline crop on
+  the v2 palette.
+- `docs/sol-reports/b60-evidence/ashlands-tiles-sheet.png` — 1024×1024, 2×2 at 1:1: tile 0 top-left,
+  tile 1 top-right, tile 2 bottom-left, and tile 3 bottom-right.
+
+All four tiles measure 0.000 MAE at left/right and top/bottom folds, and all shared cross-variant
+perimeters measure 0.000 MAE. The contact sheet therefore shows the authored centres without hiding
+any seam correction.
+
+### Amber-wash measurement
+
+The gameplay semaphore was left unchanged. In the typical-fight live capture, its saturated
+amber/orange rail and core occupy approximately 1.8% of the 1920×1080 viewport (1.51% at the strict
+core threshold; 1.76% with the full rail threshold). A deliberately broad warm-pixel threshold reads
+16.8%, but it also counts authored umber/cinder floor regions, so that number is an inclusive visual
+wash estimate rather than attributable semaphore area. The owner can rule using both measures.
+
+### V2 verification
+
+- `node tools/artkit/check-tile-values.mjs ashlands` — PASS, exit 0.
+- `pnpm typecheck` — PASS.
+- Full `pnpm test` — PASS: 220 test files; 2,778 passed, 20 skipped.
+- Real-stack Playwright evidence capture — PASS.
+
+VERDICT: PASS — means tile-0 93.07 RGB (99.08,91.60,89.86), tile-1 100.22 RGB (110.17,98.04,92.51), tile-2 93.19 RGB (101.00,90.79,93.93), tile-3 93.46 RGB (103.18,91.04,88.81), rim 63.71; band PASS (family 94.99, drift ±5.23; rim split y=128 PASS); ink 3–4px major / 2px minor (rim lip 5px); amber-wash coverage ~1.8% rail/core (16.8% inclusive warm threshold); typecheck PASS; full test PASS — 220 files, 2,778 passed, 20 skipped.

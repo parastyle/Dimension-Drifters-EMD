@@ -118,28 +118,33 @@ light, colossal mossy statues half-sunk in foliage. Palette: deep greens, grey s
   },
   ashlands: {
     edgeBase: 0,
-    valueMeans: [92, 102, 94, 94],
-    valueSpread: 9.5,
+    valueMeans: [93, 101, 94, 94],
+    // The family edge fold comes from tile-0. Its slightly tighter ink value
+    // keeps those shared perimeter pixels inside tile-1's lighter value band.
+    valueSpread: [13, 17, 17, 17],
+    fixedPalette: ["#574A5C", "#4F626D", "#725C72", "#77604F", "#6F6862", "#786B63", "#6D7079"],
+    accent: "#C44C14",
     normalizeCelRim: true,
-    ground: `a lit volcanic ash-grey field in one material family. Palette targets: warm ash-grey base
-#665E5A, lighter basalt/chamfer #746A64, mid basalt #6B605B, shadow plane #5A504B, dark warm ink #554A45,
-and restrained dull ember #A4572D. Keep every floor pixel between greyscale values 76 and 110 so the exact
-min/max remain within +/-18 of a mean near 93. Never use pure black on the floor`,
+    ground: `a lit volcanic ash field in one material family. Use visibly distinct hues held at comparable
+luminance: pale warm settled ash, muted plum-grey basalt, slightly blue charcoal slag, dusty umber-grey
+cinder, cool grey chamfer, dark warm-purple ink, and restrained dull ember-orange. Hue and saturation must
+create the material separation rather than brightness. Keep every floor pixel within +/-18 greyscale value
+of its role mean. Never use pure black on the floor`,
     tiles: [
       `COMMONS BED / quiet bed: packed grey ash over broad cooled basalt plates. Use the largest, plainest
 material units and the fewest joints in the family. Quiet and intentionally boring, internal variation
 within +/-12. No wind ripple, mottling, scuff, crack, or distinctive mark`,
-      `ROUTE / worn route: the same broad basalt plates and identical palette/history family, compacted by
-traffic. Ash is evenly swept back so more smooth plate face is exposed and joints are partly filled.
-Shift the mean +8 to +12 lighter than the commons bed. No footprint, arrow, stripe, or directional mark`,
-      `DISTURBED CLUSTER: the same ash-covered basalt family disturbed into more numerous material units.
-Introduce short anonymous GREY ropey cooled-lava bands and a secondary cinder-crust mosaic between plates.
-Distribute both evenly; no isolated blob, island, focal patch, dense pebble field, ember, or orange anywhere.
-Richest joint rhythm in the family but still pristine, low-relief, non-object-like, and without a hero feature`,
-      `PIT APPROACH / failing ground: the same basalt is fractured into smaller flat plates, with wider
-dark warm-ink fissures and sparse dull ember-orange point specks deep in a few gaps. Ember occupies under
-4% of area and never forms a continuous line. This must read as structurally disturbed ground at a glance
-without depicting a pit, hole, ledge, obstacle, hazard marking, or unique crack`,
+      `ROUTE / worn route: the same ash-covered basalt compacted by traffic into a broad coherent swept
+path. Several parallel scuffed ash bands establish a readable travel axis even in a cropped moving view;
+joints inside the worn band are partly filled. No footprint, arrow, chevron, painted stripe, or symbol`,
+      `DISTURBED CLUSTER: the same ash-covered basalt after a violent local event. Multiple distributed
+clusters of overlapping broken plates, displaced flat fragments, upturned crisp slab edges, irregular
+short ash banks, and cooled slag interrupt the settled bed. Read as churn and upheaval, not smaller grain,
+one central crater, a different material, or a directional route`,
+      `PIT APPROACH / failing ground: the same basalt crossed by a directional stress-fracture fan.
+Hairline branches progressively widen into dark broken gaps toward collapse, forcing plates into sharper
+wedge shapes. Sparse dull ember-orange sits only inside the widest gaps, under 5% of area and never a
+continuous hot line. Read as an unmistakable warning without depicting a literal pit, ledge, or symbol`,
     ],
     rim: `a cracked basalt shelf matching ashlands tile-3: ash-dusted warm grey ground band and blocky
 columnar-basalt wall planes falling to a near-black void. No ember glow anywhere on the lip. Use warm
@@ -243,6 +248,8 @@ for (const [dim, d] of Object.entries(DIMS)) {
         files: tileFiles,
         targetMeans: d.valueMeans,
         maxSpread: d.valueSpread,
+        fixedPalette: d.fixedPalette,
+        accent: d.accent,
       });
     }
     await normalizeTileFamily({ files: tileFiles, baseFile: tileFiles[d.edgeBase], strip: 32 });
