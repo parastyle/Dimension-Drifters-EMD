@@ -5,8 +5,9 @@ import { pathToFileURL } from "node:url";
 import {
   type ArenaMap,
   type ArenaState,
-  BELT_Y0,
+  BeamPhase,
   type BeltLevel,
+  beamDescriptorFor,
   ChestState,
   CORPORATE_ELEVATOR_PHASE,
   corporateGridFloorForBelt,
@@ -23,8 +24,11 @@ import {
   TILE_GROUND,
   TILE_PIT,
   UltimateFamily,
+  UltimatePhase,
   ultimateCodeFor,
+  ultimateFamilyForCode,
   WEAPONS,
+  weaponAttackCooldown,
 } from "@dd/shared";
 import { Client } from "../packages/client/node_modules/colyseus.js/build/esm/index.mjs";
 import {
@@ -37,7 +41,7 @@ import { createGameServer } from "../packages/server/src/index.js";
 
 const evidenceDir = path.resolve(
   import.meta.dirname,
-  "../docs/owner-notes-audit-v12-evidence/diag-rb-telemetry",
+  "../docs/owner-notes-audit-v12-evidence/b51-warp-fix",
 );
 const protectedPorts = new Set([5180, 2567]);
 const timeoutMs = 15_000;
@@ -142,6 +146,7 @@ interface LocalRoom {
   spawnAccum: number;
   shifterCd: number;
   beginServerMotion(player: PlayerState, ticks: number, source: string): void;
+  positionCorporateParty(atExit: boolean, bumpTeleport?: boolean): void;
   broadcastPatch(): void;
 }
 
@@ -166,6 +171,7 @@ interface ServerTickMotion {
   correctionSeq: number;
   motionEpoch: number;
   motionActive: boolean;
+  airJumpsRemaining: number;
   motionSource: string;
   teleportSeq: number;
   ackSeq: number;
@@ -189,6 +195,7 @@ interface TickInput {
   aimY?: number;
   action?: string;
   beforeSend?: () => void;
+  predictDiscreteRecoil?: boolean;
 }
 
 interface CapturedApplication {
@@ -309,6 +316,7 @@ interface InstrumentedRoom {
   room: LiveRoom;
   local: LocalRoom;
   serverTicks: Map<number, ServerTickMotion>;
+  motionSourceEvents: Array<{ tick: number; source: string }>;
 }
 
 function sleep(ms: number): Promise<void> {
@@ -360,6 +368,7 @@ function serverView(room: LiveRoom): ServerView {
     movementCorrectionSeq: player.dualWield.movementCorrectionSeq,
     serverMotionEpoch: player.dualWield.serverMotionEpoch,
     serverMotionActive: player.dualWield.serverMotionActive,
+    airJumpsRemaining: player.dualWield.relics.airJumpsRemaining,
     alive: player.alive,
   };
 }
@@ -386,8 +395,36 @@ function serverViewFromTick(tick: ServerTickMotion): ServerView {
     movementCorrectionSeq: tick.correctionSeq,
     serverMotionEpoch: tick.motionEpoch,
     serverMotionActive: tick.motionActive,
+    airJumpsRemaining: tick.airJumpsRemaining,
     alive: tick.alive,
   };
+}
+
+function syncPredictorContext(predictor: SelfPredictor, room: LiveRoom): void {
+  const player = requiredPlayer(room);
+  const weapon = WEAPONS[player.weapon];
+  const beam = room.state.beams.get(player.id);
+  let moveSpeedMultiplier = 1;
+  let recoilXPerSecond = 0;
+  let recoilYPerSecond = 0;
+  if (weapon?.beam && beam) {
+    const descriptor = beamDescriptorFor(weapon, 0, 0);
+    if (beam.phase === BeamPhase.Charging) moveSpeedMultiplier *= descriptor.chargeMoveMul;
+    else if (beam.phase === BeamPhase.Active) {
+      moveSpeedMultiplier *= descriptor.channelMoveMul;
+      const recoil = weapon.recoil ?? 0;
+      recoilXPerSecond = -Math.cos(beam.angle) * recoil;
+      recoilYPerSecond = -Math.sin(beam.angle) * recoil;
+    }
+  }
+  if (
+    player.ultPhase === UltimatePhase.Windup &&
+    ultimateFamilyForCode(player.ultArchetype) === UltimateFamily.SunspiteComet
+  )
+    moveSpeedMultiplier *= 0.55;
+  predictor.setRelics(player.dualWield.relics, player.dualWield.relics.airJumpsRemaining);
+  predictor.setServerMovementContext(moveSpeedMultiplier, recoilXPerSecond, recoilYPerSecond);
+  predictor.setBeltLockX(room.state.beltLockX);
 }
 
 function snapshotServerTick(local: LocalRoom, playerId: string): ServerTickMotion | undefined {
@@ -414,6 +451,7 @@ function snapshotServerTick(local: LocalRoom, playerId: string): ServerTickMotio
     correctionSeq: player.dualWield.movementCorrectionSeq,
     motionEpoch: player.dualWield.serverMotionEpoch,
     motionActive: player.dualWield.serverMotionActive,
+    airJumpsRemaining: player.dualWield.relics.airJumpsRemaining,
     motionSource: local.serverMotionSourceByPlayer.get(playerId) ?? "",
     teleportSeq: player.teleportSeq,
     ackSeq: player.ackSeq,
@@ -449,6 +487,7 @@ function snapshotFromWire(room: LiveRoom, source = ""): ServerTickMotion {
     correctionSeq: player.dualWield.movementCorrectionSeq,
     motionEpoch: player.dualWield.serverMotionEpoch,
     motionActive: player.dualWield.serverMotionActive,
+    airJumpsRemaining: player.dualWield.relics.airJumpsRemaining,
     motionSource: source,
     teleportSeq: player.teleportSeq,
     ackSeq: player.ackSeq,
@@ -464,12 +503,14 @@ function snapshotFromWire(room: LiveRoom, source = ""): ServerTickMotion {
 function installServerTickRecorder(
   room: LiveRoom,
   local: LocalRoom,
-): Map<number, ServerTickMotion> {
+): Pick<InstrumentedRoom, "serverTicks" | "motionSourceEvents"> {
   const snapshots = new Map<number, ServerTickMotion>();
   const sourceAtTick = new Map<number, string>();
+  const motionSourceEvents: InstrumentedRoom["motionSourceEvents"] = [];
   const annotateSource = (source: string): void => {
     const tick = Number(local.state.tick);
     sourceAtTick.set(tick, source);
+    motionSourceEvents.push({ tick, source });
     if (!snapshots.has(tick)) return;
     const refreshed = snapshotServerTick(local, room.sessionId);
     if (!refreshed) return;
@@ -499,7 +540,7 @@ function installServerTickRecorder(
   };
   const initial = snapshotServerTick(local, room.sessionId);
   if (initial) snapshots.set(initial.tick, initial);
-  return snapshots;
+  return { serverTicks: snapshots, motionSourceEvents };
 }
 
 function correctionBandName(magnitudePx: number): CapturedApplication["band"] {
@@ -526,6 +567,8 @@ class ScenarioProbe {
   private pendingApplications: CapturedApplication[] = [];
   private correctionDebtDurationMs = 0;
   private motionDurationMs = 0;
+  private localAttackCooldown = 0;
+  private readonly motionSourceEventStart: number;
 
   constructor(
     readonly id: string,
@@ -552,6 +595,13 @@ class ScenarioProbe {
       });
     };
     this.previous = this.currentServerTick();
+    this.motionSourceEventStart = instrumented.motionSourceEvents.length;
+  }
+
+  sawMotionSource(source: string): boolean {
+    return this.instrumented.motionSourceEvents
+      .slice(this.motionSourceEventStart)
+      .some((event) => event.source === source);
   }
 
   private currentServerTick(): ServerTickMotion {
@@ -584,6 +634,7 @@ class ScenarioProbe {
     const renderedBefore = this.predictor.renderPos(dx, dy, 0);
     const before = this.predictor.stats;
     this.pendingApplications = [];
+    syncPredictorContext(this.predictor, this.instrumented.room);
     this.predictor.reconcile(serverViewFromTick(current));
     const afterReconcile = this.predictor.stats;
     const renderedAfterReconcile = this.predictor.renderPos(dx, dy, 0);
@@ -687,6 +738,8 @@ class ScenarioProbe {
     const aimY = options.aimY ?? (Math.hypot(dx, dy) > 1e-6 ? dy : 0);
     const action = options.action ?? "idle";
     options.beforeSend?.();
+    syncPredictorContext(this.predictor, room);
+    this.localAttackCooldown = Math.max(0, this.localAttackCooldown - TICK_MS / 1000);
 
     const priorTick = Number(room.state.tick);
     const cmd: PredCmd & {
@@ -704,6 +757,14 @@ class ScenarioProbe {
       targetY: requiredPlayer(room).y + aimY * 900,
     };
     this.predictor.tick(cmd);
+    if (options.predictDiscreteRecoil && this.localAttackCooldown <= 0) {
+      const weapon = WEAPONS[requiredPlayer(room).weapon];
+      const recoil = weapon?.gun ? (weapon.recoil ?? 0) : 0;
+      const length = Math.hypot(aimX, aimY);
+      if (recoil > 0 && length > 1e-6)
+        this.predictor.addPredictedImpulse((-aimX / length) * recoil, (-aimY / length) * recoil);
+      this.localAttackCooldown = weapon ? weaponAttackCooldown(weapon) : 0.3;
+    }
     const report = this.predictor.clientMovementReport();
     room.send("input", {
       ...cmd,
@@ -936,7 +997,7 @@ function createProbe(
   metadata: Record<string, unknown> = {},
 ): ScenarioProbe {
   const predictor = new SelfPredictor(serverView(instrumented.room));
-  predictor.setRelics(requiredPlayer(instrumented.room).dualWield.relics);
+  syncPredictorContext(predictor, instrumented.room);
   if (instrumented.local.beltLevel) {
     predictor.setMap(undefined);
     predictor.setBeltLevel(instrumented.local.beltLevel);
@@ -1045,6 +1106,7 @@ async function runGunClass(
   await probe.tick({
     fireHeld: true,
     action: "fire",
+    predictDiscreteRecoil: true,
     beforeSend: () => sendAttack(instrumented.room),
   });
   await settle(probe, 18);
@@ -1061,7 +1123,10 @@ async function runGunClass(
 }
 
 function resultSourceSeen(probe: ScenarioProbe, source: string): boolean {
-  return probe.frames.some((frame) => frame.authority.motionSource === source);
+  return (
+    probe.frames.some((frame) => frame.authority.motionSource === source) ||
+    probe.sawMotionSource(source)
+  );
 }
 
 function rangedBeamWeapons(): Array<{
@@ -1129,6 +1194,7 @@ async function runSustainedGatling(instrumented: InstrumentedRoom): Promise<Scen
     await probe.tick({
       fireHeld: true,
       action: "sustained-fire",
+      predictDiscreteRecoil: true,
       beforeSend: () => sendAttack(instrumented.room),
     });
   await settle(probe, 20);
@@ -1398,12 +1464,12 @@ async function joinRoom(
   await waitFor("solo player row", () => !!playerRow(room));
   const local = matchMaker.getLocalRoomById(room.roomId) as unknown as LocalRoom | undefined;
   if (!local) throw new Error("local diagnostic room unavailable");
-  const serverTicks = installServerTickRecorder(room, local);
+  const recording = installServerTickRecorder(room, local);
   if (training) {
     room.send("toggleTraining");
     await waitFor("training mode", () => room.state.mode === "training");
   }
-  return { room, local, serverTicks };
+  return { room, local, ...recording };
 }
 
 async function runElevator(endpoint: string): Promise<ScenarioResult> {
@@ -1415,34 +1481,29 @@ async function runElevator(endpoint: string): Promise<ScenarioResult> {
   try {
     const { room, local } = instrumented;
     const player = local.state.players.get(room.sessionId);
-    const combat = local.combat.get(room.sessionId);
     const input = local.inputs.get(room.sessionId);
     const floor = local.beltLevel ? corporateGridFloorForBelt(local.beltLevel) : undefined;
     const exit = floor?.elevatorMarkers[2];
-    if (!player || !combat || !input || !exit)
-      throw new Error("corporate elevator fixture unavailable");
+    if (!player || !input || !exit) throw new Error("corporate elevator fixture unavailable");
     local.state.enemies.clear();
     local.spawnBeltWave = (): void => {};
     local.spawnAccum = -1_000_000;
     local.shifterCd = 1_000_000;
     local.state.elevatorPhase = CORPORATE_ELEVATOR_PHASE.ready;
     local.state.beltLockX = 0;
-    player.x = exit.x;
-    player.y = BELT_Y0 + exit.y;
-    player.mvx = 0;
-    player.mvy = 0;
-    player.vx = 0;
-    player.vy = 0;
-    combat.lastGroundX = player.x;
-    combat.lastGroundY = player.y;
     input.queue.length = 0;
     input.mvx = 0;
     input.mvy = 0;
     resetHeldInput(input.held);
+    // Use the production placement path for a stable, navigable car position. The raw exit marker
+    // sits beyond the player-radius movement bound, so assigning the marker itself races the next
+    // movement clamp and makes this live-wire setup timing-dependent.
+    local.positionCorporateParty(true);
+    const startX = player.x;
     local.broadcastPatch();
     await waitFor(
       "elevator start placement",
-      () => Math.abs(requiredPlayer(room).x - exit.x) < 0.01,
+      () => Math.abs(requiredPlayer(room).x - startX) < 0.01,
     );
     const startDepth = local.state.corporateFloorDepth;
     const probe = createProbe(
@@ -1620,6 +1681,23 @@ try {
   }));
   const topThree = ranked.slice(0, 3);
   const capturedAt = new Date().toISOString();
+  const totals = {
+    b42CounterEdges: results.reduce((sum, result) => sum + result.summary.b42CounterEdges, 0),
+    correctionRequests: results.reduce((sum, result) => sum + result.summary.correctionRequests, 0),
+    nonzeroCorrections: results.reduce((sum, result) => sum + result.summary.nonzeroCorrections, 0),
+    silentCorrections: results.reduce((sum, result) => sum + result.summary.silentCorrections, 0),
+    smoothCorrections: results.reduce((sum, result) => sum + result.summary.smoothCorrections, 0),
+    snapCorrections: results.reduce((sum, result) => sum + result.summary.snapCorrections, 0),
+    totalMagnitudePx: results.reduce((sum, result) => sum + result.summary.totalMagnitudePx, 0),
+  };
+  const acceptance = {
+    expectedScenarios: 41,
+    allScenariosRan: results.length === 41,
+    zeroNonzeroCorrections: totals.nonzeroCorrections === 0,
+    zeroSnaps: totals.snapCorrections === 0,
+    passed:
+      results.length === 41 && totals.nonzeroCorrections === 0 && totals.snapCorrections === 0,
+  };
   const summary = {
     capturedAt,
     transport: {
@@ -1647,18 +1725,8 @@ try {
       kungFuWraps: wrapIds.length,
       parryDirections: parryDirections.length,
     },
-    totals: {
-      b42CounterEdges: results.reduce((sum, result) => sum + result.summary.b42CounterEdges, 0),
-      correctionRequests: results.reduce(
-        (sum, result) => sum + result.summary.correctionRequests,
-        0,
-      ),
-      nonzeroCorrections: results.reduce(
-        (sum, result) => sum + result.summary.nonzeroCorrections,
-        0,
-      ),
-      totalMagnitudePx: results.reduce((sum, result) => sum + result.summary.totalMagnitudePx, 0),
-    },
+    totals,
+    acceptance,
     topThree: topThree.map((result) => ({
       id: result.id,
       label: result.label,
@@ -1702,9 +1770,9 @@ try {
       `endpoint=${endpoint}`,
       `solo=true`,
       ...logLines,
-      `verdict=${results.length} scenarios; top3=${topThree
-        .map((result) => `${result.id}:${result.summary.nonzeroCorrections}`)
-        .join(",")}`,
+      `verdict=${acceptance.passed ? "PASS" : "FAIL"}; ${results.length}/${
+        acceptance.expectedScenarios
+      } scenarios; nonzero=${totals.nonzeroCorrections}; snaps=${totals.snapCorrections}`,
     ].join("\n")}\n`,
   );
   await writeFile(
@@ -1719,7 +1787,13 @@ try {
       "- `run-telemetry.json` contains every fixed-tick authority row and every correction request.",
       "- `top-offender-traces.json` retains correction ticks plus adjacent context for the top three.",
       "- `run.log` is the compact scenario-by-scenario console ledger.",
+      "- `before-after-ranked.md` compares all 41 scenarios to the diagnosis capture.",
       "- The corporate elevator fixture suppresses belt combat waves to isolate placement motion.",
+      `- Acceptance: **${acceptance.passed ? "PASS" : "FAIL"}** (${results.length}/${
+        acceptance.expectedScenarios
+      } scenarios, ${totals.nonzeroCorrections} nonzero corrections, ${
+        totals.snapCorrections
+      } snaps).`,
       "",
       "Reproduce from the repository root:",
       "",
@@ -1731,6 +1805,11 @@ try {
     ].join("\n"),
   );
   console.log(JSON.stringify(roundNumbers(summary), null, 2));
+  if (!acceptance.passed)
+    throw new Error(
+      `telemetry acceptance failed: ${results.length}/${acceptance.expectedScenarios} scenarios, ` +
+        `${totals.nonzeroCorrections} nonzero corrections, ${totals.snapCorrections} snaps`,
+    );
 } finally {
   await Promise.allSettled(rooms.map((room) => room.leave()));
   try {

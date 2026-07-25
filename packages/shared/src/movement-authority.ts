@@ -51,6 +51,21 @@ export interface MovementEnvelopeResult {
   maxDisplacementPx: number;
 }
 
+/**
+ * Once server-authored motion has released, a report that still echoes the immediately preceding epoch is
+ * post-motion input caught in the patch-plus-return-trip race. It remains subject to the complete numeric
+ * and navigation envelope; older reports and every report during active server motion stay inadmissible.
+ */
+export function clientServerMotionEpochAdmissible(
+  reportedEpoch: number | undefined,
+  currentEpoch: number,
+  serverMotionActive: boolean,
+): boolean {
+  if (serverMotionActive || reportedEpoch === undefined) return false;
+  const age = (currentEpoch - (reportedEpoch >>> 0)) >>> 0;
+  return age <= 1;
+}
+
 /** Pure numeric half of B42's self-movement plausibility gate. Navigation stays environment-specific on the
  * server, but all finite/speed/continuity math is shared and directly testable by both simulations. */
 export function evaluateClientMovementEnvelope(

@@ -3,6 +3,7 @@ import {
   BEAM_CHANNEL_MOVE_MUL,
   BELT_Y0,
   beltLevelFor,
+  clientServerMotionEpochAdmissible,
   DEPTH_MAX,
   EMPTY_RELIC_STACKS,
   MOVE_SPEED,
@@ -43,7 +44,7 @@ function view(extra: Partial<ServerView> = {}): ServerView {
   };
 }
 
-describe("diag-rb-client: prediction parity reproductions", () => {
+describe("B51 client prediction parity regressions", () => {
   it("wires B45 gun recoil from the accepted local shot edge into SelfPredictor", () => {
     const arenaSource = readFileSync(new URL("../scenes/ArenaScene.ts", import.meta.url), "utf8");
 
@@ -55,6 +56,7 @@ describe("diag-rb-client: prediction parity reproductions", () => {
     expect(weapon?.beam).toBeDefined();
     expect(weapon?.recoil).toBeGreaterThan(0);
     const predictor = new SelfPredictor(view());
+    predictor.setServerMovementContext(1, -(weapon?.recoil ?? 0), 0);
     const cmd = {
       ...predictor.mintCmd(0, 0, false, false, false, 1, 0),
       fireHeld: true,
@@ -68,6 +70,7 @@ describe("diag-rb-client: prediction parity reproductions", () => {
   it("uses the server beam-channel movement scalar in the predicted shared step", () => {
     const initial = view({ mvx: MOVE_SPEED });
     const predictor = new SelfPredictor(initial);
+    predictor.setServerMovementContext(BEAM_CHANNEL_MOVE_MUL);
     const cmd = predictor.mintCmd(1, 0, false);
     const authority = stepPlayerAttackMovement(
       initial,
@@ -116,6 +119,7 @@ describe("diag-rb-client: prediction parity reproductions", () => {
     );
     const predictor = new SelfPredictor(view(start));
     predictor.setBeltLevel(level);
+    predictor.setBeltLockX(gateX);
 
     predictor.tick(predictor.mintCmd(1, 0, false));
 
@@ -123,7 +127,7 @@ describe("diag-rb-client: prediction parity reproductions", () => {
   });
 });
 
-describe("diag-rb-client: correction-policy reproductions", () => {
+describe("B51 correction policy regressions", () => {
   it("lets a medium correction finish its 140ms band across ordinary state patches", () => {
     const predictor = new SelfPredictor(view());
     predictor.reconcile(view({ x: 1_040, movementCorrectionSeq: 1 }));
@@ -165,7 +169,7 @@ describe("diag-rb-client: correction-policy reproductions", () => {
   });
 });
 
-describe("diag-rb-client: motion-epoch echo reproduction", () => {
+describe("B51 motion-epoch round-trip regression", () => {
   it("does not leave post-epoch owner reports stale for a full return trip", () => {
     const predictor = new SelfPredictor(view({ serverMotionEpoch: 7 }));
 
@@ -175,8 +179,26 @@ describe("diag-rb-client: motion-epoch echo reproduction", () => {
     const currentServerEpoch = 8;
     predictor.tick(predictor.mintCmd(1, 0, false));
     const postEpochReport = predictor.clientMovementReport();
-    const serverWouldAdopt = postEpochReport.serverMotionEpoch === currentServerEpoch;
+    const serverWouldAdopt = clientServerMotionEpochAdmissible(
+      postEpochReport.serverMotionEpoch,
+      currentServerEpoch,
+      false,
+    );
 
     expect(serverWouldAdopt).toBe(true);
+    expect(
+      clientServerMotionEpochAdmissible(
+        postEpochReport.serverMotionEpoch,
+        currentServerEpoch,
+        true,
+      ),
+    ).toBe(false);
+    expect(
+      clientServerMotionEpochAdmissible(
+        postEpochReport.serverMotionEpoch,
+        currentServerEpoch + 1,
+        false,
+      ),
+    ).toBe(false);
   });
 });

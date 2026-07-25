@@ -741,6 +741,18 @@ export const roomMovementMethods = {
     }
   },
 
+  /** Register placement ownership before any position field is mutated in the supplied atomic callback. */
+  placeWithMotionEpoch(
+    this: GameRoomContext,
+    player: PlayerState,
+    source: ServerMotionSource,
+    place: () => void,
+    ticks = 1,
+  ): void {
+    this.beginServerMotion(player, ticks, source);
+    place();
+  },
+
   /** Recompute the wire flag before consuming this tick's client report. */
   refreshServerMotionState(this: GameRoomContext, player: PlayerState, id: string, _dt: number): void {
     const untilTick = this.serverMotionUntilTick.get(id);

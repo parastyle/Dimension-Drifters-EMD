@@ -1170,6 +1170,9 @@ export class GameRoom extends Room<ArenaState> {
   /** Begin or extend an authored server-displacement window. Epoch advances only on a new ownership edge. */
     private declare beginServerMotion: OmitThisParameter<typeof roomMovementMethods.beginServerMotion>;
 
+  /** Register placement ownership before mutating any synchronized position fields. */
+    private declare placeWithMotionEpoch: OmitThisParameter<typeof roomMovementMethods.placeWithMotionEpoch>;
+
   /** Recompute the wire flag before consuming this tick's client report. */
     private declare refreshServerMotionState: OmitThisParameter<typeof roomMovementMethods.refreshServerMotionState>;
 
@@ -1906,6 +1909,7 @@ installPrototypeMembers(GameRoom, [
   [roomMovementMethods, "cancelMoveStance"],
   [roomMovementMethods, "clientMovementNavValid"],
   [roomMovementMethods, "beginServerMotion"],
+  [roomMovementMethods, "placeWithMotionEpoch"],
   [roomMovementMethods, "refreshServerMotionState"],
   [roomMovementMethods, "freshInputState"],
   [roomMovementMethods, "stepSlideStance"],

@@ -89,8 +89,8 @@ function unownedImpulseDisplacement(source: ServerMotionSource): number {
   return displacement;
 }
 
-describe("diagnostic: B42/B45 server-motion window mismatches", () => {
-  it.fails.each([
+describe("B51 server-motion impulse ownership", () => {
+  it.each([
     "enemy-contact-hit",
     "enemy-commit-hit",
     "hostile-projectile-hit",
@@ -100,8 +100,8 @@ describe("diagnostic: B42/B45 server-motion window mismatches", () => {
   });
 });
 
-describe("diagnostic: placement must register authority before position mutation", () => {
-  it.fails("pit-snapback registers before the safe-ground assignment", () => {
+describe("B51 placement registers authority before position mutation", () => {
+  it("pit-snapback registers before the safe-ground assignment", () => {
     const { room, player, combat } = fixture();
     const tileSize = room.map.tileSize;
     const pitTileX = Math.floor(player.x / tileSize);
@@ -119,7 +119,7 @@ describe("diagnostic: placement must register authority before position mutation
     expect(captured()).toEqual(overPit);
   });
 
-  it.fails("elevator-boarding registers before the car-position assignment", () => {
+  it("elevator-boarding registers before the car-position assignment", () => {
     const { room, player } = fixture(true);
     const before = { x: player.x, y: player.y };
     room.state.elevatorDeadlineTick = room.state.tick + 4;
@@ -130,7 +130,7 @@ describe("diagnostic: placement must register authority before position mutation
     expect(captured()).toEqual(before);
   });
 
-  it.fails("teleport-placement registers before the Testing Grounds assignment", () => {
+  it("teleport-placement registers before the Testing Grounds assignment", () => {
     const { room, player } = fixture();
     const before = { x: player.x, y: player.y };
     const captured = captureFirstRegistration(room, "teleport-placement");
@@ -140,7 +140,7 @@ describe("diagnostic: placement must register authority before position mutation
     expect(captured()).toEqual(before);
   });
 
-  it.fails("Dimension Door registers ultimate authority before its blink assignment", () => {
+  it("Dimension Door registers ultimate authority before its blink assignment", () => {
     const { room, player, combat } = fixture();
     const before = { x: player.x, y: player.y };
     const target = { x: player.x + 400, y: player.y + 100 };
@@ -171,7 +171,7 @@ describe("diagnostic: placement must register authority before position mutation
   });
 });
 
-describe("diagnostic: interaction controls", () => {
+describe("B51 interaction controls", () => {
   it("rapid recoil extends one epoch instead of minting an epoch per shot", () => {
     const { room, player } = fixture();
     room.applyWeaponFireRecoil(player, 1, 0, 13);

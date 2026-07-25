@@ -74,6 +74,7 @@ import {
   bossSpawnAt,
   CAST_VOLLEY_PROJECTILE_CAP,
   type CarrySelectionV1,
+  clientServerMotionEpochAdmissible,
   type ClientMovementReport,
   CHAIN_MAX_RANGE,
   CHEST_OPEN_RADIUS,
@@ -1391,6 +1392,12 @@ export interface GameRoomContext extends Room<ArenaState> {
   cancelMoveStance(player: PlayerState, c: CombatState, forced: boolean): void;
   clientMovementNavValid(player: PlayerState, combat: CombatState | undefined, fromX: number, fromY: number, toX: number, toY: number): boolean;
   beginServerMotion(player: PlayerState, ticks: number, source: ServerMotionSource): void;
+  placeWithMotionEpoch(
+    player: PlayerState,
+    source: ServerMotionSource,
+    place: () => void,
+    ticks?: number,
+  ): void;
   refreshServerMotionState(player: PlayerState, id: string, dt: number): void;
   freshInputState(): InputState;
   stepSlideStance(player: PlayerState, c: CombatState): void;
@@ -2662,9 +2669,11 @@ export const roomProgressionMethods = {
       this.state.players.forEach((player, id) => {
         player.alive = true;
         player.hp = player.maxHp;
-        player.x = cx;
-        player.y = cy + 20;
-        this.zeroMoveVel(id, undefined, "teleport-placement"); // §7 the reposition is a teleport — don't glide out of it
+        this.placeWithMotionEpoch(player, "teleport-placement", () => {
+          player.x = cx;
+          player.y = cy + 20;
+          this.zeroMoveVel(id, undefined, "teleport-placement"); // §7 the reposition is a teleport — don't glide out of it
+        });
       });
     } else {
       this.state.mode = "arena";
@@ -2833,19 +2842,21 @@ export const roomProgressionMethods = {
           ? corporateGridFloorForBelt(this.beltLevel)
           : undefined;
       const corporateSpawn = corporateFloor?.playerSpawns[0];
-      if (corporateSpawn && this.beltLevel) {
-        const placed = resolveBeltNavigation(
-          this.beltLevel,
-          corporateSpawn.x,
-          BELT_Y0 + corporateSpawn.y,
-          PLAYER_RADIUS,
-        );
-        player.x = placed.x;
-        player.y = placed.y;
-      } else {
-        player.x = this.map.spawnX + (Math.random() * 200 - 100);
-        player.y = this.map.spawnY + (Math.random() * 200 - 100);
-      }
+      this.placeWithMotionEpoch(player, "teleport-placement", () => {
+        if (corporateSpawn && this.beltLevel) {
+          const placed = resolveBeltNavigation(
+            this.beltLevel,
+            corporateSpawn.x,
+            BELT_Y0 + corporateSpawn.y,
+            PLAYER_RADIUS,
+          );
+          player.x = placed.x;
+          player.y = placed.y;
+        } else {
+          player.x = this.map.spawnX + (Math.random() * 200 - 100);
+          player.y = this.map.spawnY + (Math.random() * 200 - 100);
+        }
+      });
       for (const slot of player.slots) slot.resourceReady = false;
       for (const slot of player.bag) slot.resourceReady = false;
       if (c) {
@@ -3607,7 +3618,11 @@ export const roomProgressionMethods = {
       player.vy = imp.vy;
       const movement = input.freshMovement;
       const movementEpochCurrent =
-        movement?.serverMotionEpoch === player.dualWield.serverMotionEpoch &&
+        clientServerMotionEpochAdmissible(
+          movement?.serverMotionEpoch,
+          player.dualWield.serverMotionEpoch,
+          player.dualWield.serverMotionActive,
+        ) &&
         movement?.movementCorrectionSeq === player.dualWield.movementCorrectionSeq;
       if (movement && movementEpochCurrent && !player.dualWield.serverMotionActive) {
         const movementSpeedBudget = Math.max(
@@ -3749,16 +3764,19 @@ export const roomProgressionMethods = {
       // §29 belt PITS — gaps in the deck; grounded-over-a-gap falls (chip + snap back to the edge you came
       // from), a jump clears it. Enemies (which can't jump) get kited in for free kills (5.6 below).
       if (this.belt && this.beltLevel) {
-        if (!beltPitAtX(this.beltLevel, player.x)) {
+        const level = this.beltLevel;
+        if (!beltPitAtX(level, player.x)) {
           c.lastGroundX = player.x;
           return;
         }
         if (c.pitGrace > 0) return;
         this.damagePitFall(player);
-        player.x = beltSafeX(this.beltLevel, player.x, c.lastGroundX);
-        c.lastGroundX = player.x;
-        c.pitGrace = PIT_FALL_GRACE;
-        this.zeroMoveVel(id, undefined, "pit-snapback");
+        this.placeWithMotionEpoch(player, "pit-snapback", () => {
+          player.x = beltSafeX(level, player.x, c.lastGroundX);
+          c.lastGroundX = player.x;
+          c.pitGrace = PIT_FALL_GRACE;
+          this.zeroMoveVel(id, undefined, "pit-snapback");
+        });
         player.fellSeq++;
         return;
       }
@@ -3774,12 +3792,14 @@ export const roomProgressionMethods = {
       const safe = isPitAtPx(this.map, c.lastGroundX, c.lastGroundY)
         ? nearestGroundPx(this.map, player.x, player.y)
         : { x: c.lastGroundX, y: c.lastGroundY };
-      player.x = safe.x;
-      player.y = safe.y;
-      c.lastGroundX = safe.x;
-      c.lastGroundY = safe.y;
-      c.pitGrace = PIT_FALL_GRACE;
-      this.zeroMoveVel(id, undefined, "pit-snapback"); // §7 the snap-back is a teleport — carried steering would glide you back in
+      this.placeWithMotionEpoch(player, "pit-snapback", () => {
+        player.x = safe.x;
+        player.y = safe.y;
+        c.lastGroundX = safe.x;
+        c.lastGroundY = safe.y;
+        c.pitGrace = PIT_FALL_GRACE;
+        this.zeroMoveVel(id, undefined, "pit-snapback"); // §7 the snap-back is a teleport — carried steering would glide you back in
+      });
       player.fellSeq++;
     });
 
@@ -4632,24 +4652,30 @@ export const roomProgressionMethods = {
       const scatter = atExit ? 0 : (Math.ceil(ordinal / 2) * (ordinal % 2 ? 1 : -1)) * 36;
       const targetX = atExit ? marker.x - 90 : spawn.x + scatter;
       const resolved = resolveBeltNavigation(level, targetX, BELT_Y0 + spawn.y, PLAYER_RADIUS);
-      player.x = resolved.x;
-      player.y = resolved.y;
-      player.vx = 0;
-      player.vy = 0;
-      player.height = 0;
-      const combat = this.combat.get(id);
-      if (combat) {
-        combat.lastGroundX = player.x;
-        combat.lastGroundY = player.y;
-        combat.pitGrace = 0;
-      }
       const ticksLeft = atExit
         ? Math.max(0, (this.state.elevatorDeadlineTick - this.state.tick) | 0)
         : CORPORATE_ELEVATOR_ARRIVAL_TICKS;
       // Departure reasserts the car point every tick and arrival immediately follows it. Keep those
       // writes inside one ownership epoch; repeated holds are not fresh teleports/corrections.
-      this.beginServerMotion(player, ticksLeft + 1, "elevator-boarding");
-      this.zeroMoveVel(id, bumpTeleport, "elevator-boarding");
+      this.placeWithMotionEpoch(
+        player,
+        "elevator-boarding",
+        () => {
+          player.x = resolved.x;
+          player.y = resolved.y;
+          player.vx = 0;
+          player.vy = 0;
+          player.height = 0;
+          const combat = this.combat.get(id);
+          if (combat) {
+            combat.lastGroundX = player.x;
+            combat.lastGroundY = player.y;
+            combat.pitGrace = 0;
+          }
+          this.zeroMoveVel(id, bumpTeleport, "elevator-boarding");
+        },
+        ticksLeft + 1,
+      );
       ordinal++;
     });
   },
@@ -4843,24 +4869,26 @@ export const roomProgressionMethods = {
     this.state.players.forEach((player, id) => {
       const c = this.combat.get(id);
       this.snapshotRunIdentity(player, c, true, player.alive);
-      player.x = this.map.spawnX + (Math.random() * 200 - 100);
-      player.y = this.map.spawnY + (Math.random() * 200 - 100);
-      player.vx = 0;
-      player.vy = 0;
-      player.height = 0;
-      if (c) {
-        c.lastGroundX = player.x;
-        c.lastGroundY = player.y;
-        c.pitGrace = 0;
-        // The Hair-Trigger streak timestamps ride the elapsed clock, which just reset — clear them or the
-        // first parry in the new dimension inherits the old dimension's streak (verify finding).
-        c.lastParryAt = -999;
-        c.hairStreak = 0;
-        c.parryGuardCycles.clear();
-      }
-      const descentHeal = this.petRuns.get(id)?.mods.descentHealMaxHpFraction ?? 0;
-      if (descentHeal > 0) this.applyHeal(player, player.maxHp * descentHeal, false);
-      this.zeroMoveVel(id, undefined, "teleport-placement"); // §7 the descent repositions the body — momentum doesn't cross dimensions
+      this.placeWithMotionEpoch(player, "teleport-placement", () => {
+        player.x = this.map.spawnX + (Math.random() * 200 - 100);
+        player.y = this.map.spawnY + (Math.random() * 200 - 100);
+        player.vx = 0;
+        player.vy = 0;
+        player.height = 0;
+        if (c) {
+          c.lastGroundX = player.x;
+          c.lastGroundY = player.y;
+          c.pitGrace = 0;
+          // The Hair-Trigger streak timestamps ride the elapsed clock, which just reset — clear them or the
+          // first parry in the new dimension inherits the old dimension's streak (verify finding).
+          c.lastParryAt = -999;
+          c.hairStreak = 0;
+          c.parryGuardCycles.clear();
+        }
+        const descentHeal = this.petRuns.get(id)?.mods.descentHealMaxHpFraction ?? 0;
+        if (descentHeal > 0) this.applyHeal(player, player.maxHp * descentHeal, false);
+        this.zeroMoveVel(id, undefined, "teleport-placement"); // §7 the descent repositions the body — momentum doesn't cross dimensions
+      });
     });
     console.log(
       `[room ${this.roomId}] ⇓ rift descent — depth ${this.state.depth}, dimension ${this.state.dimensionId}`,

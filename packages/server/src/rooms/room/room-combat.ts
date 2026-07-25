@@ -1165,13 +1165,15 @@ export const roomCombatMethods = {
     player.ultTargetY = dest.y;
     player.ultPhase = UltimatePhase.Recovery;
     player.ultSeq = (player.ultSeq + 1) & 0xffff;
-    player.x = dest.x;
-    player.y = dest.y;
-    c.lastGroundX = dest.x;
-    c.lastGroundY = dest.y;
-    c.pitGrace = PIT_FALL_GRACE;
-    c.invuln = Math.max(c.invuln, ULT_BLINK_IFRAMES);
-    this.zeroMoveVel(player.id, undefined, "ultimate");
+    this.placeWithMotionEpoch(player, "ultimate", () => {
+      player.x = dest.x;
+      player.y = dest.y;
+      c.lastGroundX = dest.x;
+      c.lastGroundY = dest.y;
+      c.pitGrace = PIT_FALL_GRACE;
+      c.invuln = Math.max(c.invuln, ULT_BLINK_IFRAMES);
+      this.zeroMoveVel(player.id, undefined, "ultimate");
+    });
     c.ultBuffer = 0;
     c.ult = {
       family: UltimateFamily.DimensionDoor,
@@ -1209,13 +1211,15 @@ export const roomCombatMethods = {
         damage:
           (ult.variant === "int" ? 50 : ULT_DOOR_DETONATE_DAMAGE) * this.ultimateScale(player, ult),
       });
-      player.x = player.ultTargetX;
-      player.y = player.ultTargetY;
-      c.lastGroundX = player.x;
-      c.lastGroundY = player.y;
-      c.pitGrace = PIT_FALL_GRACE;
-      c.invuln = Math.max(c.invuln, ult.variant === "con" ? 0.9 : ULT_BLINK_IFRAMES);
-      this.zeroMoveVel(player.id, undefined, "ultimate");
+      this.placeWithMotionEpoch(player, "ultimate", () => {
+        player.x = player.ultTargetX;
+        player.y = player.ultTargetY;
+        c.lastGroundX = player.x;
+        c.lastGroundY = player.y;
+        c.pitGrace = PIT_FALL_GRACE;
+        c.invuln = Math.max(c.invuln, ult.variant === "con" ? 0.9 : ULT_BLINK_IFRAMES);
+        this.zeroMoveVel(player.id, undefined, "ultimate");
+      });
       ult.teleportSeqAtAccept = player.teleportSeq;
       if (ult.variant === "str") {
         this.detonate(
@@ -1314,8 +1318,10 @@ export const roomCombatMethods = {
   stepSeismarch(this: GameRoomContext, player: PlayerState, c: CombatState, ult: UltimateRuntime): void {
     const elapsed = ((this.state.tick - player.ultResolveTick) >>> 0) + 1;
     const progress = Math.min(1, elapsed / ULT_SEISMARCH_AIR_TICKS);
-    player.x = ult.startX + (player.ultTargetX - ult.startX) * progress;
-    player.y = ult.startY + (player.ultTargetY - ult.startY) * progress;
+    this.placeWithMotionEpoch(player, "ultimate", () => {
+      player.x = ult.startX + (player.ultTargetX - ult.startX) * progress;
+      player.y = ult.startY + (player.ultTargetY - ult.startY) * progress;
+    });
     if (progress < 1 || ult.impactDone) return;
     ult.impactDone = true;
     this.resolveSeismarchImpact(player, c, ult);
@@ -1424,8 +1430,10 @@ export const roomCombatMethods = {
     const toX = ult.startX + (player.ultTargetX - ult.startX) * progress;
     const toY = ult.startY + (player.ultTargetY - ult.startY) * progress;
     this.damageEventHorizonSweep(player, ult, fromX, fromY, toX, toY);
-    player.x = toX;
-    player.y = toY;
+    this.placeWithMotionEpoch(player, "ultimate", () => {
+      player.x = toX;
+      player.y = toY;
+    });
     if (progress < 1) return;
     this.zeroMoveVel(player.id, undefined, "ultimate");
     ult.teleportSeqAtAccept = player.teleportSeq;
@@ -1531,11 +1539,13 @@ export const roomCombatMethods = {
           position.y - (ay / distance) * (position.radius + PLAYER_RADIUS),
           Number.POSITIVE_INFINITY,
         );
-        player.x = dest.x;
-        player.y = dest.y;
-        c.lastGroundX = dest.x;
-        c.lastGroundY = dest.y;
-        this.zeroMoveVel(player.id, undefined, "ultimate");
+        this.placeWithMotionEpoch(player, "ultimate", () => {
+          player.x = dest.x;
+          player.y = dest.y;
+          c.lastGroundX = dest.x;
+          c.lastGroundY = dest.y;
+          this.zeroMoveVel(player.id, undefined, "ultimate");
+        });
         ult.teleportSeqAtAccept = player.teleportSeq;
         const scale = this.ultimateScale(player, ult);
         let base = ult.variant === "str" ? 38 : ULT_ALPHA_DAMAGE;

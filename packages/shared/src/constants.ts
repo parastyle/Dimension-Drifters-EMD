@@ -261,8 +261,6 @@ export const MOVEMENT_CORRECTION_SILENT_PX = 3;
 export const MOVEMENT_CORRECTION_SMOOTH_MAX_MS = 140;
 /** Anything at least this far from adopted truth is a lag/teleport cut, never a smoothing journey. */
 export const MOVEMENT_CORRECTION_LARGE_PX = INTERP_SNAP_PLAYER;
-/** Horizontal hostile/parry impulse ownership lasts until the 780px/s cap decays below the 5px/s epsilon. */
-export const SERVER_MOTION_IMPULSE_TICKS = 12;
 /** A parry/juggle launch owns the complete conservative airborne window. */
 export const SERVER_MOTION_LAUNCH_TICKS = 16;
 
@@ -850,6 +848,14 @@ export const IMPULSE_FRICTION = 9;
 export const IMPULSE_EPSILON = 5;
 /** Cap on accumulated impulse speed (px/s) so a gatling stream / pile-up can't fling you across the map. */
 export const IMPULSE_MAX = 780;
+/**
+ * Impulses are registered after the current tick's movement phase. `beginServerMotion` stores an exclusive
+ * expiry tick, so the duration needs one registration tick in addition to every future integration whose
+ * pre-decay velocity is non-zero. The strict epsilon snap needs floor(log(max/epsilon)/(friction*dt)) + 1
+ * integrations; the extra +1 below owns the late-registration tick as well.
+ */
+export const SERVER_MOTION_IMPULSE_TICKS =
+  Math.floor(Math.log(IMPULSE_MAX / IMPULSE_EPSILON) / (IMPULSE_FRICTION * (TICK_MS / 1000))) + 2;
 /** Knockback (px/s) shoved onto a player when an enemy contact-hits or a hostile projectile lands. */
 export const HIT_KNOCKBACK_IMPULSE = 300;
 

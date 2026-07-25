@@ -140,7 +140,7 @@ describe("GameRoom B42 relaxed self-movement authority", () => {
     expect(player.dualWield.movementCorrectionSeq).toBe(2);
   });
 
-  it("server-motion epochs ignore matching and stale client reports until the owner observes release", () => {
+  it("ignores reports during server motion and admits the previous epoch after release", () => {
     const { room, client, player } = fixture();
     room.beginServerMotion(player, 2, "teleport-placement");
     const epoch = player.dualWield.serverMotionEpoch;
@@ -167,7 +167,7 @@ describe("GameRoom B42 relaxed self-movement authority", () => {
       }),
     );
     expect(player.dualWield.serverMotionActive).toBe(false);
-    expect(player.x).toBe(startX);
+    expect(player.x).toBe(startX + 16);
     expect(player.dualWield.movementCorrectionSeq).toBe(0);
 
     send(
