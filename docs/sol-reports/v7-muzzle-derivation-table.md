@@ -1,6 +1,6 @@
 # V7 Muzzle Derivation Table
 
-Generated from sprite alpha for all 158 active projectile, beam, and authored melee-impact definitions. Coordinates are source-PNG pixels.
+Generated from sprite alpha for all 159 active projectile, beam, and authored melee-impact definitions. Coordinates are source-PNG pixels.
 
 | Weapon | Derived barrel tip | Authored muzzle point(s) | Override |
 | --- | --- | --- | --- |
@@ -151,6 +151,7 @@ Generated from sprite alpha for all 158 active projectile, beam, and authored me
 | `x2-tumbleweed-skipper` (Tumbleweed Skipper) | part-1 (255, 21.3) | part-1 (255, 21.3) | No |
 | `x2-twin-maw-greenerbore` (Twin-Maw Greenerbore) | part-1 (255, 19.9)<br>part-2 (255, 19.9) | part-1 (255, 19.9)<br>part-2 (255, 19.9) | No |
 | `x2-unicorn-rainbow-beam` (Unicorn Rainbow Beam) | part-1 (376, 68.5) | part-1 (383, 99) | Yes - The beam must anchor at the painted unicorn-horn tip, not the broader pearl housing selected by alpha mass. |
+| `x2-varmint-bolt-223` (Varmint Bolt .223) | part-1 (255, 27) | part-1 (255, 27) | No |
 | `x2-venomspine-repeater` (Venomspine Repeater) | part-1 (255, 9.1) | part-1 (255, 9.1) | No |
 | `x2-voidgrasp-null-gauntlet` (Voidgrasp Null-Gauntlet) | part-1 (255, 55.8) | part-1 (255, 55.8) | No |
 | `x2-voidwell-idol` (Voidwell Idol) | part-1 (255, 78.2) | part-1 (255, 78.2) | No |

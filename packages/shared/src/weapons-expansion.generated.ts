@@ -14874,6 +14874,61 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
     "glovePair": {
       "wrapsFeet": true
     }
+  },
+  "x2-varmint-bolt-223": {
+    "id": "x2-varmint-bolt-223",
+    "name": "Varmint Bolt .223",
+    "expansion": true,
+    "damage": 14,
+    "range": 320,
+    "halfArc": 0.5,
+    "cooldown": 0.82,
+    "displayLength": 178,
+    "swingArc": 1.8,
+    "gripFrac": 0.12,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "marksman-rifle",
+      "rangeBand": "long",
+      "scaling": [
+        "DEX"
+      ],
+      "handling": [
+        "bolt"
+      ]
+    },
+    "recoil": 106,
+    "gripPoints": {
+      "primary": {
+        "x": 0.28,
+        "y": 0.68
+      },
+      "secondary": {
+        "x": 0.4,
+        "y": 0.6,
+        "role": "bolt"
+      }
+    },
+    "description": "An immaculate issue-grade precision bolt rifle built for small-target accuracy, with dark form-hugging digital camouflage and a clearly visible warm amber bedding witness line.",
+    "twoHanded": true,
+    "gun": {
+      "damage": 14,
+      "projectileSpeed": 1650,
+      "range": 960,
+      "fireRate": 0.82,
+      "magazine": 5,
+      "reloadSeconds": 2,
+      "bulletKind": "slug",
+      "muzzle": "punch",
+      "recoil": 0.0016,
+      "pierce": 2,
+      "muzzleColor": 14454874
+    }
   }
 };
 

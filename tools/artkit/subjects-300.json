@@ -6516,5 +6516,21 @@
     "palette": { "primary": "#39423F", "accent": "#8B806A" },
     "tags": ["weapon", "ranged", "marksman-rifle", "physical", "2H", "XL", "long", "bolt-action", "anti-materiel", "modern-military"],
     "cardartAction": "braced on a plain dust-range firing mat as the muzzle brake vents one hard white-orange blast and a single .50-caliber round drives rightward"
+  },
+  {
+    "id": "x2-varmint-bolt-223",
+    "name": "Varmint Bolt .223",
+    "tier": "medium",
+    "dimension": "cross-dimension",
+    "styleRef": "../../packages/client/public/sprites/x2-gravedog-auto-rifle/part-1.png",
+    "prompt": "Weapon-only in-world sprite: one immaculate issue-grade precision bolt rifle with a heavy fluted barrel, a chunky synthetic stock, an oversized round bolt handle jutting sideways, and a large scope sitting high in tall lapped rings. The action is hand-bedded with one clearly visible warm amber bedding witness line at the stock seam, wide enough to read at sprite scale; the barrel crown is protected under a fitted machined cap. Familiar bulk-procurement silhouette with matched near-black finishes, exact machined tolerances, and every assembly torqued true. Dark digital / MARPAT camouflage is painted only on the stock and furniture, wrapping each panel and following the gun's forms; the barrel, receiver, bolt, scope, and rings remain bare near-black metal. Base value near-black charcoal, highlights restricted to thin top edges only, bold black outer silhouette and rough heavy black internal ink dividing every panel, housing, seam, flute, ring, and camo block. Simplify into fewer broad flat shapes: this is a grim, chunky hand-inked game prop, never a clean product-catalog illustration. Slightly exaggerated: chunky stock chunkier, heavy barrel heavier, round bolt handle larger. About 5 flat colours plus black ink, decisive flat cel planes, no gradients, no soft shading. The rough drawing treatment must not make the immaculate weapon look damaged. One complete connected gun that makes mechanical sense. No laser, flashlight, rail-mounted box, under-barrel accessory, bipod, sling, strap, rope, chain, tassel, improvised repair, tape, salvage, rust, text, logo, serial, maker's mark, character, hands, muzzle flash, smoke, glow, background, ground, or shadow. Flat orthographic full side-profile, stock and grip LEFT, muzzle RIGHT, fully visible.",
+    "palette": { "primary": "#22252B", "accent": "#C49A5A" },
+    "tags": ["weapon", "ranged", "marksman-rifle", "physical", "2H", "L", "long", "bolt", "precision", "digital-camouflage", "issue-grade"],
+    "cardartAction": "settled into one exact long-range shot, the heavy barrel barely lifting as a single fast copper tracer drives straight to the right",
+    "feedback": [
+      "Reject the previous clean product-catalog illustration treatment. Push the approved dark-comic reference much harder: fewer broader flat shapes, rougher heavier black internal ink, deeper near-black values, and highlights only along top edges.",
+      "Make the single warm amber bedding witness line clearly visible at sprite scale while keeping all other accents cool and dark.",
+      "Keep the mechanism and immaculate issue-grade fit, but exaggerate the chunky stock, heavy barrel, tall rings, and oversized round bolt handle."
+    ]
   }
 ]

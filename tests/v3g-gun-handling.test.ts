@@ -70,6 +70,7 @@ describe("V3G catalog gun-handling laws", () => {
         "x2-mauler-slug-thrower",
         "x2-pale-horse-longgun",
         "x2-tracer-saint-carbine",
+        "x2-varmint-bolt-223",
       ].sort(),
     );
     for (const id of boltIds) {

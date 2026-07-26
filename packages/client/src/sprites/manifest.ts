@@ -17108,6 +17108,32 @@ export const SPRITES = {
       }
     ]
   },
+  "x2-varmint-bolt-223": {
+    "id": "x2-varmint-bolt-223",
+    "kind": "weapon",
+    "canvas": {
+      "w": 263,
+      "h": 263
+    },
+    "body": {
+      "cx": 107.94,
+      "cy": 123.48,
+      "w": 256,
+      "h": 66
+    },
+    "parts": [
+      {
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 66,
+        "cx": 107.94,
+        "cy": 123.48,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
+  },
   "x2-venomspine-repeater": {
     "id": "x2-venomspine-repeater",
     "kind": "weapon",

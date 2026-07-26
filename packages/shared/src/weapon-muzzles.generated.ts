@@ -3560,6 +3560,28 @@ export const WEAPON_ART_MUZZLES = {
     "salvoMode": "parallel",
     "barrelMode": "parallel"
   },
+  "x2-varmint-bolt-223": {
+    "sprite": "x2-varmint-bolt-223",
+    "parts": [
+      {
+        "width": 256,
+        "height": 66
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 27,
+        "derived": {
+          "x": 255,
+          "y": 27
+        }
+      }
+    ],
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
   "x2-venomspine-repeater": {
     "sprite": "x2-venomspine-repeater",
     "parts": [
