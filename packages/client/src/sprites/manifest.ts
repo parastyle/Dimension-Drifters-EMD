@@ -14096,6 +14096,32 @@ export const SPRITES = {
       }
     ]
   },
+  "x2-patriot-carbine-ar": {
+    "id": "x2-patriot-carbine-ar",
+    "kind": "weapon",
+    "canvas": {
+      "w": 268,
+      "h": 114
+    },
+    "body": {
+      "cx": 122.29,
+      "cy": 47.22,
+      "w": 256,
+      "h": 95
+    },
+    "parts": [
+      {
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 95,
+        "cx": 122.29,
+        "cy": 47.22,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
+  },
   "x2-pearl-of-penance-censer": {
     "id": "x2-pearl-of-penance-censer",
     "kind": "weapon",

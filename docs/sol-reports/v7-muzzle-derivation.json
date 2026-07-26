@@ -2295,6 +2295,28 @@
     "barrelMode": "parallel"
   },
   {
+    "id": "x2-patriot-carbine-ar",
+    "name": "Patriot Carbine AR",
+    "sprite": "x2-patriot-carbine-ar",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 25.7
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 25.7
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
     "id": "x2-pearl-of-penance-censer",
     "name": "Pearl-of-Penance Censer",
     "sprite": "x2-pearl-of-penance-censer",

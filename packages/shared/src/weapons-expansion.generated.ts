@@ -14874,6 +14874,60 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
     "glovePair": {
       "wrapsFeet": true
     }
+  },
+  "x2-patriot-carbine-ar": {
+    "id": "x2-patriot-carbine-ar",
+    "name": "Patriot Carbine AR",
+    "expansion": true,
+    "damage": 7,
+    "range": 250,
+    "halfArc": 0.48,
+    "cooldown": 0.34,
+    "displayLength": 132,
+    "swingArc": 1.8,
+    "gripFrac": 0.17,
+    "tags": {
+      "grip": "2H",
+      "size": "M",
+      "delivery": "projectile",
+      "fireMode": "semi-auto",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "semi-auto carbine",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "STR"
+      ]
+    },
+    "recoil": 54,
+    "gripPoints": {
+      "primary": {
+        "x": 0.29,
+        "y": 0.72
+      },
+      "secondary": {
+        "x": 0.66,
+        "y": 0.53,
+        "role": "horizontal-foregrip"
+      }
+    },
+    "description": "An immaculate issue-grade semi-automatic patrol carbine tuned for fast, precise follow-up shots without sacrificing a full service magazine.",
+    "twoHanded": true,
+    "gun": {
+      "damage": 7,
+      "projectileSpeed": 1200,
+      "range": 720,
+      "fireRate": 0.22,
+      "magazine": 30,
+      "reloadSeconds": 1.55,
+      "bulletKind": "tracer",
+      "muzzle": "rapid",
+      "recoil": 0.0008,
+      "projectileArt": "bullet",
+      "spread": 0.025,
+      "muzzleColor": 16755282
+    }
   }
 };
 
