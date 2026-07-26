@@ -2065,6 +2065,28 @@
     "barrelMode": "parallel"
   },
   {
+    "id": "x2-longwatch-dmr",
+    "name": "Longwatch DMR",
+    "sprite": "x2-longwatch-dmr",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 26.7
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 26.7
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
     "id": "x2-m50-anti-materiel-rifle",
     "name": "M-50 Anti-Materiel Rifle",
     "sprite": "x2-m50-anti-materiel-rifle",

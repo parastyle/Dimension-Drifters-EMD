@@ -14874,6 +14874,46 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
     "glovePair": {
       "wrapsFeet": true
     }
+  },
+  "x2-longwatch-dmr": {
+    "id": "x2-longwatch-dmr",
+    "name": "Longwatch DMR",
+    "expansion": true,
+    "damage": 12,
+    "range": 300,
+    "halfArc": 0.45,
+    "cooldown": 0.36,
+    "displayLength": 186,
+    "swingArc": 1.8,
+    "gripFrac": 0.11,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "marksman-rifle",
+      "rangeBand": "long",
+      "scaling": [
+        "DEX"
+      ]
+    },
+    "recoil": 104,
+    "twoHanded": true,
+    "gun": {
+      "damage": 12,
+      "projectileSpeed": 1600,
+      "range": 920,
+      "fireRate": 0.36,
+      "magazine": 16,
+      "reloadSeconds": 1.8,
+      "bulletKind": "tracer",
+      "muzzle": "punch",
+      "recoil": 0.0024,
+      "pierce": 2,
+      "muzzleColor": 12884570
+    }
   }
 };
 

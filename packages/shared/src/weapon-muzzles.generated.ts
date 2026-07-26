@@ -2132,6 +2132,28 @@ export const WEAPON_ART_MUZZLES = {
     "salvoMode": "parallel",
     "barrelMode": "parallel"
   },
+  "x2-longwatch-dmr": {
+    "sprite": "x2-longwatch-dmr",
+    "parts": [
+      {
+        "width": 256,
+        "height": 61
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 26.7,
+        "derived": {
+          "x": 255,
+          "y": 26.7
+        }
+      }
+    ],
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
   "x2-m50-anti-materiel-rifle": {
     "sprite": "x2-m50-anti-materiel-rifle",
     "parts": [

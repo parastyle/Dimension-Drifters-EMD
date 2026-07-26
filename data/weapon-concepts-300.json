@@ -1,10 +1,10 @@
 {
   "generated": "2026-06-17",
   "source": "design-300-weapons workflow (15 agents)",
-  "count": 339,
+  "count": 340,
   "byType": {
     "melee": 132,
-    "ranged": 111,
+    "ranged": 112,
     "caster": 96
   },
   "weapons": [
@@ -19589,6 +19589,48 @@
         "kind": "glovePair",
         "wrapsFeet": true
       }
+    },
+    {
+      "name": "Longwatch DMR",
+      "type": "ranged",
+      "family": "marksman-rifle",
+      "theme": "near-black frontline splinter-camouflaged semi-automatic precision rifle with calibrated issue optics",
+      "element": "physical",
+      "finish": "pristine",
+      "grip": "2H",
+      "size": "L",
+      "rangeBand": "long",
+      "scaling": [
+        "DEX"
+      ],
+      "artPrompt": "Weapon-only in-world sprite (no character, no hands, no background scene): one long semi-automatic precision rifle with a free-floating slotted rail tube, slim match barrel, adjustable stock with a hand-set raised cheek riser, long capped scope on a torque-marked base, straight box magazine, and a small boxy rail-mounted laser/light combo with one visible lens. Frontline duty issue: matched immaculate finish, tight machined seams, every fastener torqued true, only a trace of honest muzzle carbon; no damage or improvisation. Paint angular dark splinter camouflage only on the stock, cheek riser, grip, receiver furniture and rail tube, each patch conforming to those separate surfaces; keep the slim barrel, scope and combo unit bare near-black metal. Base reads near-black charcoal, with steel top-edge highlights only and one small warm amber accent in the capped scope glass; overall must stay dark, never mid-grey. Heavy black ink around the full silhouette and equally bold internal ink separating every panel, housing, rail slot, cap, seam and magazine. Slightly exaggerate the scope and precision furniture for a chunky readable cartoon prop. 4-6 flat cel colours plus black ink, no gradients or soft shading. One complete connected mechanically plausible gun; strict flat orthographic full side-profile, muzzle RIGHT, grip and stock LEFT. No beam, no glow, no light cone, no muzzle flash. No second weapon, background, floor, shadow, text, logo, serial, maker mark, sling, strap, chain, rope, tassel or dangling part.",
+      "palettePrimary": "#22252B",
+      "paletteAccent": "#C49A5A",
+      "cardartAction": "settled behind the hand-set cheek riser as a controlled amber tracer snaps rightward, capped glass and torque witness marks catching the top light",
+      "stats": {
+        "damage": 12,
+        "range": 300,
+        "halfArc": 0.45,
+        "cooldown": 0.36,
+        "displayLength": 186,
+        "swingArc": 1,
+        "gripFrac": 0.11
+      },
+      "behavior": {
+        "kind": "gun",
+        "damage": 12,
+        "projectileSpeed": 1600,
+        "range": 920,
+        "fireRate": 0.36,
+        "pierce": 2,
+        "magazine": 16,
+        "reloadSeconds": 1.8,
+        "bulletKind": "tracer",
+        "muzzle": "punch",
+        "muzzleColor": 12884570,
+        "recoil": 0.0024
+      },
+      "id": "x2-longwatch-dmr"
     }
   ]
 }

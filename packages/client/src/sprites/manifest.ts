@@ -13448,6 +13448,32 @@ export const SPRITES = {
       }
     ]
   },
+  "x2-longwatch-dmr": {
+    "id": "x2-longwatch-dmr",
+    "kind": "weapon",
+    "canvas": {
+      "w": 266,
+      "h": 89
+    },
+    "body": {
+      "cx": 107.98,
+      "cy": 41.14,
+      "w": 256,
+      "h": 61
+    },
+    "parts": [
+      {
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 61,
+        "cx": 107.98,
+        "cy": 41.14,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
+  },
   "x2-m50-anti-materiel-rifle": {
     "id": "x2-m50-anti-materiel-rifle",
     "kind": "weapon",
