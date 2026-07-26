@@ -28,6 +28,36 @@ roster are bolt-action snipers (08, 15), permitted on this basis.
 **A4 — EVERY GUN CARRIES A GAMIFICATION HOOK.** Not a catalogue item: a used object with history.
 Each brief names one.
 
+**A5 — THIS SET IS THE COP DIMENSION'S OWN ARSENAL.** Owner ruling, 2026-07-26 (verbatim):
+
+> "the game is dimension drifters, you're basically dimensional cop force trying to save all
+> dimensions from the purple gas that kills you (its getting everyone) but the theme is that you're
+> well supplied by the organization, the capsule that come in give you the best weaponry
+> multi-dimensional cop force can buy. Assault rifles, laser rifles, scoped, lasers...top of the line
+> stuff"
+
+and:
+
+> "The only ones prim and proper our two default characters (to be made later) and their arsenal;
+> their force name is yet to be determined. All the trashy weapons and fantasy weapons are good and we
+> want to keep making them in the future; but this is THEIR dimension, the cop dimension or whatever"
+
+Consequences, all binding on this order:
+
+1. **DIMENSION = WEAPON CULTURE.** Every dimension has its own arsenal flavour. The battered, improvised,
+   fantasy hardware already shipped (coffin magazines, gallows rifles, wrapped grips) is CORRECT and
+   stays — it simply belongs to OTHER dimensions. These 30 belong to the player's own force.
+2. **These 30 are ISSUE-GRADE.** Matched finish, machined tolerances, torqued and true. Top of the line.
+   No improvised repairs, no tape, no ground-off serials, no salvage plate, no poverty signals.
+   Light honest carbon at muzzles and vents is fine; a professional force uses its kit.
+3. The house RENDER is unchanged and confirmed good — near-black base, heavy internal ink, one warm
+   accent, slight exaggeration, flat cel planes. "Immaculate" describes the WEAPON, not the drawing:
+   dark and inked, not bright and clean-lined.
+4. **The force has no name yet.** Never write one into art, prose, or concept text. Nothing in the art
+   carries lettering regardless.
+5. The two default characters and their personal arsenal are the other "prim and proper" surface. They
+   are not part of this order and will be authored later.
+
 ## Standing laws that bind every gun in this order
 
 1. **ONE SOL, ONE GUN.** Batching subjects bleeds themes across them. Non-negotiable.
@@ -66,7 +96,7 @@ useless past a few hundred metres: **08 Varmint Bolt .223**, **15 Anvil .50**, *
 
 ## The roster
 
-### Tier A — consumer / "the ones you get at Walmart" (real-world inspired)
+### Tier A — familiar platforms (the recognisable everyday shapes, in issue-grade trim)
 
 | # | Name | Family | Inspiration | Camo | Laser/light |
 | --- | --- | --- | --- | --- | --- |
