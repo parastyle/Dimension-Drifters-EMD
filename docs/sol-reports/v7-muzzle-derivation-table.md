@@ -115,6 +115,7 @@ Generated from sprite alpha for all 159 active projectile, beam, and authored me
 | `x2-pinwheel-caromer` (Pinwheel Caromer) | part-1 (255, 30.4)<br>part-2 (255, 30.3) | part-1 (255, 30.4)<br>part-2 (255, 30.3) | No |
 | `x2-plaguespitter-flak-gun` (Plaguespitter Flak Gun) | part-1 (255, 47) | part-1 (255, 47) | No |
 | `x2-powderkeg-mortar` (Powderkeg Mortar) | part-1 (255, 39.4) | part-1 (255, 39.4) | No |
+| `x2-precinct-smg-9` (Precinct SMG-9) | part-1 (255, 17.9) | part-1 (255, 17.9) | No |
 | `x2-psalter-of-the-burning-halo` (Psalter of the Burning Halo) | part-1 (255, 109.9) | part-1 (255, 109.9) | No |
 | `x2-quartzlight-wayfinder` (Quartzlight Wayfinder) | part-1 (253, 72.5) | part-1 (253, 72.5) | No |
 | `x2-quicksilver-fanner` (Quicksilver Fanner) | part-1 (255, 16) | part-1 (255, 16) | No |
