@@ -619,7 +619,7 @@ const FOCUS_FAMILY = /^(?:focus|orb|relic\/totem|rod|scepter|wand)$/i;
 const POLEARM_FAMILY = /^(?:glaive|halberd|naginata|partisan|spear|staff)$/i;
 const FAN_FAMILY = /^(?:paired-war-fan|war-fan)$/i;
 const BLADE_FAMILY = /^(?:broadsword|energy-blade|greatsword|katana|nodachi|rapier|saber|sword)$/i;
-const BLUNT_FAMILY = /^(?:axe|cleaver|flail|mace|maul|spade|warhammer)$/i;
+const BLUNT_FAMILY = /^(?:axe|cleaver|flail|mace|maul|paddle-club|spade|warhammer)$/i;
 const RANGED_FAMILY =
   /^(?:auto-rifle|blunderbuss|concussion-cannon|exotic-ranged|grenade-launcher|gun|hand-cannon|heavy-ordnance|lever-rifle|machine-pistol|marksman-rifle|nailgun|pistol|railgun|rimfire-rifle|scrap-cannon|shotgun)$/i;
 const CLAW_WORDS = /\b(?:claws?|talons?|rakes?|fangs?)\b/i;
