@@ -291,6 +291,19 @@ describe("real Colyseus transport", () => {
     expect(beforeRunId).toMatch(/^run_/);
     expect(initialManifests.at(-1)?.runId).toBe(beforeRunId);
 
+    let markReconnectWindowReady: () => void = () => {};
+    const reconnectWindowReady = new Promise<void>((resolve) => {
+      markReconnectWindowReady = resolve;
+    });
+    const allowReconnection = authoritative.allowReconnection.bind(authoritative);
+    authoritative.allowReconnection = (...args: unknown[]) => {
+      const reconnection = allowReconnection(...args);
+      // Colyseus registers the token synchronously inside allowReconnection(). Waiting for this
+      // boundary avoids racing the client's socket-close event against the server's onLeave hook.
+      markReconnectWindowReady();
+      return reconnection;
+    };
+
     const transportLeave = new Promise<void>((resolve) => room.onLeave.once(() => resolve()));
     const socket = authoritative.clients.find(
       (candidate: { sessionId: string }) => candidate.sessionId === departedSessionId,
@@ -301,18 +314,9 @@ describe("real Colyseus transport", () => {
     openRooms.delete(room);
     socket.terminate();
     await withTimeout(transportLeave, STATE_TIMEOUT_MS, "terminated socket close");
+    await withTimeout(reconnectWindowReady, STATE_TIMEOUT_MS, "server reconnection window");
 
-    let recovered: ClientRoom | undefined;
-    let reconnectError: unknown;
-    for (let attempt = 0; attempt < 20 && !recovered; attempt++) {
-      try {
-        recovered = await client.reconnect<ArenaState>(reconnectionToken);
-      } catch (error) {
-        reconnectError = error;
-        await new Promise((resolve) => setTimeout(resolve, 25));
-      }
-    }
-    if (!recovered) throw reconnectError ?? new Error("reconnect failed");
+    const recovered = await client.reconnect<ArenaState>(reconnectionToken);
     openRooms.add(recovered);
 
     expect(recovered.roomId).toBe(room.roomId);

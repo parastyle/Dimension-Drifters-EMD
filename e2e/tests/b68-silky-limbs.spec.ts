@@ -4,9 +4,11 @@ import {
   ARENA_HEIGHT,
   ARENA_WIDTH,
   type ArenaMap,
+  type BeltLevel,
   isArenaDiscSafe,
   isPitAtPx,
   PLAYER_RADIUS,
+  resolveBeltNavigation,
 } from "@dd/shared";
 import { expect, type Page, test } from "@playwright/test";
 import { matchMaker } from "../../packages/server/node_modules/colyseus/build/index.mjs";
@@ -90,6 +92,7 @@ interface ProbeGlobal {
 
 interface LocalGameRoom {
   map: ArenaMap;
+  beltLevel: BeltLevel | null;
   state: {
     beltLockX: number;
     enemies: { clear(): void };
@@ -355,7 +358,9 @@ async function resetPlayer(page: Page): Promise<void> {
   const room = matchMaker.getLocalRoomById(identity.roomId) as unknown as LocalGameRoom | undefined;
   const player = room?.state.players.get(identity.sessionId);
   if (!room || !player) throw new Error("B68 could not resolve its authority player");
-  const patch = findClearPatch(room.map);
+  const patch = room.beltLevel
+    ? resolveBeltNavigation(room.beltLevel, player.x, player.y, PLAYER_RADIUS)
+    : findClearPatch(room.map);
   room.state.enemies.clear();
   room.state.beltLockX = 0;
   player.x = patch.x;
@@ -475,5 +480,51 @@ test("B68 presented root and all six limbs stay continuous through owner repro m
       }
       expect(result.priorityViolations, `${scenario} limb owner/weight contract`).toBe(0);
     }
+  });
+});
+
+test("B68 belt ADAD repro keeps the presented root and all six limbs continuous", async ({ page }) => {
+  test.setTimeout(120_000);
+  await runArenaSpec(page, async (baseURL) => {
+    await bootArena(page, baseURL, `char:${CHARACTER}`, "corporate-grid");
+    await installSampler(page);
+    await equipFixture(page);
+    await captureScenario(page, "rapid-flip-attack");
+    const frames = await page.evaluate(
+      () => (globalThis as unknown as ProbeGlobal).__b68Frames?.["rapid-flip-attack"] ?? [],
+    );
+    const stats = analyzeScenario("rapid-flip-attack", frames);
+    await mkdir(EVIDENCE_DIR, { recursive: true });
+    await writeFile(
+      path.join(EVIDENCE_DIR, `${CAPTURE_NAME}-belt-frame-deltas.json`),
+      `${JSON.stringify(
+        {
+          capturedAt: new Date().toISOString(),
+          limits: LIMITS["rapid-flip-attack"],
+          stats,
+          frames,
+        },
+        null,
+        2,
+      )}\n`,
+    );
+
+    expect(stats.frames, "belt rapid-flip-attack rendered frame coverage").toBeGreaterThanOrEqual(
+      10,
+    );
+    expect(stats.clock.nonMonotonic, "belt rapid-flip-attack monotonic rig clock").toBe(0);
+    if (!ENFORCE_THRESHOLDS) return;
+    expect(stats.root.discontinuities, "belt rapid-flip-attack rendered root discontinuities").toBe(
+      0,
+    );
+    for (const part of PART_NAMES) {
+      expect(
+        stats.parts[part].discontinuities,
+        `belt rapid-flip-attack/${part} discontinuities above ${
+          LIMITS["rapid-flip-attack"][part]
+        }px @ 60Hz`,
+      ).toBe(0);
+    }
+    expect(stats.priorityViolations, "belt rapid-flip-attack limb owner/weight contract").toBe(0);
   });
 });

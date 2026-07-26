@@ -166,13 +166,81 @@ and limits are in `docs/owner-notes-audit-v12-evidence/b68-silky-limbs/`.
 
 - `pnpm gen:check`: passed.
 - `pnpm typecheck`: passed.
-- `pnpm test`: passed, 230 files / 2,796 tests; 20 skipped.
+- `pnpm test`: passed three consecutive times, each at 230 files / 2,796 tests; 20 skipped.
 - Focused presentation/priority/panel tests: passed, including coherent remote row, freeze-aware
   monotonic clock, root derivative bound, total-order independence, and smooth attack release.
-- Browser rendered-rig regression: passed all four scenarios.
+- Browser rendered-rig regression: passed all four top-down scenarios plus the belt ADAD scenario.
 - `tools/diag-rb-telemetry.mts`: completed all 83 scenarios (41 top-down, 42 belt), acceptance passed,
   correction requests `0`, nonzero `0`, silent `0`, smooth `0`, snaps `0`, magnitude `0.000 px`.
 - Guardrails: no map owner file, tile, weapon-concepts, subclass taxonomy, or light/laser file changed;
   no aura/modal added; no attack displacement added.
 
-VERDICT: root cause = split client presentation sampling/clock and implicit limb writer order; clocks unified 3->1; priority layers = constraint > attack > gun-mechanism > flourish > locomotion > spring with smooth handoff; regression test added = straight/reversal/attack/ADAD+attack root and six-limb sampling; telemetry corrections = 83/83 complete, requests 0, applications 0, sumPx 0.000, maxPx 0.000, snaps 0; tests = gen:check clean, typecheck clean, 230/230 files and 2,796/2,796 tests green, rendered smoothness green.
+## Iteration 2 — v1 vs v2
+
+Iteration 2 replayed B68 as `7a27e74` on required base `868b89b`, preserving the one-clock,
+one-presented-state, root-debt, and total-priority implementation.
+
+### Doubleheader whirlwind
+
+The failed value did not come from two visual-revolution receipts. The two assertions immediately
+before the failed damage assertion already proved `damageEnemy` was called once and exactly one
+receipt was booked. The sole `10`-damage receipt was exactly `5 × CRIT_MULT` because the shared V5M
+fixture retained the independent base `5%` critical chance. That made an authored base-damage
+assertion fail randomly one run in twenty.
+
+The V5M fixture now sets `weaponCritChance` to zero for the whole authority fixture, whose tests
+measure authored damage and receipt cadence rather than the separately tested crit lane. Expected
+damage, receipt-count assertions, production crit behavior, whirlwind timing, and revolution
+counting are unchanged. The focused V5M file passed three consecutive runs.
+
+### Top-down and belt, reported separately
+
+The belt ADAD rendered-rig test uses the same rapid-flip-plus-attack input as top-down, samples the
+root and all six limbs, and resolves its reset point with belt navigation rather than the top-down
+map helper.
+
+| Mode | Root max / p95 px at 60 Hz | Root/limb discontinuities | Clock edges | Priority violations |
+| --- | ---: | ---: | ---: | ---: |
+| Top-down ADAD | `6.6365 / 6.4570` | `0 / 0` | `0` | `0` |
+| Belt ADAD | `6.7782 / 6.3064` | `0 / 0` | `0` | `0` |
+
+The belt body/head/hand-L/hand-R/foot-L/foot-R maxima were respectively
+`0.3540 / 3.8667 / 1.7721 / 0.7356 / 0.5978 / 0.5897 px`, all within the same declared rapid-flip
+limits used by top-down.
+
+| Telemetry mode | Scenarios | Requests | Applications | Snaps | Sum px | Max px |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Top-down | 41 | 0 | 0 | 0 | `0.000` | `0.000` |
+| Belt | 42 | 0 | 0 | 0 | `0.000` | `0.000` |
+
+The earlier `topdown:parry-right requests=1` was a predictor reconciliation request associated with a
+movement-correction-sequence edge, not a presentation-rig request; its applied residual was already
+zero pixels. On the required rebased source and complete harness it is
+`applications=0, b42=1, requests=0, sumPx=0.000, maxPx=0.000`. The full matrix likewise no longer
+reproduces the belt rapid-flip correction. B68 does not alter server authority or the predictor's
+correction policy, so no unrelated production correction special case was added.
+
+### Reconnect integration verdict
+
+This was the old transport-test race resurfacing, not a B68 regression. B68's dependency diff contains
+no server, shared-schema, settlement, database, or transport code. Before hardening, the reconnect
+file failed once in ten isolated repetitions: the client socket-close event could arrive before the
+server's `onLeave` had registered the Colyseus reconnection token, and immediate retries on the same
+SDK client occasionally left the recovered full-state handshake unresolved.
+
+The test now waits at the exact server `allowReconnection()` registration boundary before performing
+one public reconnect. It does not increase a timeout or weaken/remove any recovered-state,
+run-identity, escrow, or settlement-deduplication assertion. The focused integration file then passed
+20 consecutive isolated runs, and it passed in all three final full-suite runs.
+
+### Iteration 2 verification
+
+- `pnpm gen:check`: passed.
+- `pnpm typecheck`: passed.
+- Full `pnpm test` streak: run 1, run 2, and run 3 each passed `230/230` files and
+  `2,796/2,796` tests, with 20 skipped.
+- Rendered smoothness: all four top-down cases plus belt ADAD passed.
+- Telemetry: 83/83 passed, split 41 top-down and 42 belt, with zero requests, applications, snaps,
+  silent/smooth corrections, and correction pixels in each mode.
+
+VERDICT: whirlwind cause+fix = one receipt randomly crit for exactly 2×, so the V5M authored-damage fixture now disables crit while production revolution and damage logic stay unchanged; belt corrections = 0 requests, 0 applications, 0 snaps, 0.000 px; topdown corrections = 0 requests, 0 applications, 0 snaps, 0.000 px including parry-right; 3x test results = 230/230 files and 2,796/2,796 tests passed in each consecutive run; telemetry = 83/83 both modes (41 top-down + 42 belt), all correction counters and pixels zero.
