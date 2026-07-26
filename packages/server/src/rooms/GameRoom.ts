@@ -564,8 +564,10 @@ export class GameRoom extends Room<ArenaState> {
   /** Classification companion for the active B42 epoch. B45 recoil is the sole legal weapon source. */
   private readonly serverMotionSourceByPlayer = new Map<string, ServerMotionSource>();
   private readonly combat = new Map<string, CombatState>();
-  /** Local/offline account truth: validated client claim in, canonical room mutations/receipts out. */
+  /** Room working copies; stable identities are backed by the process-wide durable account store. */
   private readonly metaAccounts = new Map<string, MetaAccountV5>();
+  /** Stable private identity for accounts backed by the process-wide SQLite store. */
+  private readonly accountIds = new Map<string, string>();
   /** Account-private move-not-copy escrow. Nothing here is synchronized at 20 Hz. */
   private readonly weaponRuns = new Map<string, RunWeaponLedger>();
   private worldTier = 0;
@@ -1041,6 +1043,8 @@ export class GameRoom extends Room<ArenaState> {
 
     private declare rollSlateTortoise: OmitThisParameter<typeof roomEconomyMethods.rollSlateTortoise>;
 
+    private declare sendCommittedSettlement: OmitThisParameter<typeof roomEconomyMethods.sendCommittedSettlement>;
+
   /** One idempotent account commit for pets, money, and exact weapon escrow on every terminal route. */
     private declare settleMetaAccounts: OmitThisParameter<typeof roomEconomyMethods.settleMetaAccounts>;
 
@@ -1097,6 +1101,7 @@ export class GameRoom extends Room<ArenaState> {
       scrip?: number;
       up?: unknown;
       metaAccount?: unknown;
+      accountId?: unknown;
       carry?: CarrySelectionV1;
       selectedCharacterId?: unknown;
       selectedPetId?: unknown;
@@ -1864,6 +1869,7 @@ installPrototypeMembers(GameRoom, [
   [roomEconomyMethods, "awardPetDimensionClear"],
   [roomEconomyMethods, "beginNextPetDimension"],
   [roomEconomyMethods, "rollSlateTortoise"],
+  [roomEconomyMethods, "sendCommittedSettlement"],
   [roomEconomyMethods, "settleMetaAccounts"],
   [roomEconomyMethods, "applyHeal"],
   [roomProgressionMethods, "toggleTraining"],

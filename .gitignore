@@ -35,4 +35,6 @@ tools/artkit/output/
 
 # Durable local owner playtest notes are runtime data, not source.
 /data/owner-notes.jsonl
+# Durable local account/settlement SQLite files are runtime data, not source.
+/data/accounts.sqlite*
 # Sol worktrees live in ../ddv2-wt (outside repo); never tracked

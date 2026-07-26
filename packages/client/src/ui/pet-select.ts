@@ -16,8 +16,39 @@ import {
 } from "@dd/shared";
 
 export const PET_META_STORAGE_KEY = "dd.metaAccount.v5";
+export const PET_ACCOUNT_ID_STORAGE_KEY = "dd.accountId.v1";
 const LEGACY_V4_META_STORAGE_KEY = "dd.metaAccount.v4";
 const LEGACY_PET_META_STORAGE_KEY = "dd.metaAccount.v2";
+const PET_ACCOUNT_ID_PATTERN = /^acct_[A-Za-z0-9_-]{16,80}$/;
+
+export class MetaAccountStorageError extends Error {
+  constructor(operation: "identity" | "write" | "verify", cause?: unknown) {
+    super(`Account cache ${operation} failed`, { cause });
+    this.name = "MetaAccountStorageError";
+  }
+}
+
+/** Stable browser identity only. Money, unlocks, escrow, and receipts live in the server's SQLite store. */
+export function loadOrCreatePetAccountId(): string {
+  let existing: string | null;
+  try {
+    existing = localStorage.getItem(PET_ACCOUNT_ID_STORAGE_KEY);
+  } catch (error) {
+    throw new MetaAccountStorageError("identity", error);
+  }
+  if (existing && PET_ACCOUNT_ID_PATTERN.test(existing)) return existing;
+  const accountId = `acct_${crypto.randomUUID().replaceAll("-", "")}`;
+  try {
+    localStorage.setItem(PET_ACCOUNT_ID_STORAGE_KEY, accountId);
+    if (localStorage.getItem(PET_ACCOUNT_ID_STORAGE_KEY) !== accountId) {
+      throw new MetaAccountStorageError("verify");
+    }
+  } catch (error) {
+    if (error instanceof MetaAccountStorageError) throw error;
+    throw new MetaAccountStorageError("identity", error);
+  }
+  return accountId;
+}
 
 export interface PetSelectionView {
   id: PetId;
@@ -62,14 +93,22 @@ export function loadPetMetaAccount(): MetaAccountV5 {
   }
 }
 
-/** Persist a complete replacement response and keep the legacy belt cache coherent during rollout. */
+/** Cache a server-authored replacement atomically and verify it; callers must surface any failure. */
 export function savePetMetaAccount(value: unknown): MetaAccountV5 {
   const account = sanitizeMetaAccountV5(value);
+  const serialized = JSON.stringify(account);
   try {
-    localStorage.setItem(PET_META_STORAGE_KEY, JSON.stringify(account));
-    localStorage.setItem("dd.beltScrip", String(account.scrip));
-  } catch {
-    // Local/offline trust is still allowed to run when storage is blocked; it just cannot persist.
+    localStorage.setItem(PET_META_STORAGE_KEY, serialized);
+  } catch (error) {
+    throw new MetaAccountStorageError("write", error);
+  }
+  try {
+    if (localStorage.getItem(PET_META_STORAGE_KEY) !== serialized) {
+      throw new MetaAccountStorageError("verify");
+    }
+  } catch (error) {
+    if (error instanceof MetaAccountStorageError) throw error;
+    throw new MetaAccountStorageError("verify", error);
   }
   return account;
 }

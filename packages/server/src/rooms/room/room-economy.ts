@@ -499,6 +499,11 @@ import {
 import { type Client, Room } from "colyseus";
 import { appendOwnerNote, sanitizeOwnerNote } from "../../owner-notes.js";
 import {
+  type DurableSettlementReceipt,
+  getSettlementStore,
+  isDurableRunId,
+} from "../../settlement-store.js";
+import {
   BossController,
   type VastagharEmitSink,
   VastagharEncounterRuntime,
@@ -1845,62 +1850,99 @@ export const roomEconomyMethods = {
     return false;
   },
 
-  /** One idempotent account commit for pets, money, and exact weapon escrow on every terminal route. */
+  /** Retryable owner-private delivery. Every payload here was already committed by `(accountId, runId)`. */
+  sendCommittedSettlement(
+    this: GameRoomContext,
+    playerId: string,
+    receipt: DurableSettlementReceipt,
+  ): void {
+    if (receipt.weapon) {
+      this.sendOwnerMessage(playerId, "weaponSettlementReceipt", receipt.weapon);
+    }
+    this.sendOwnerMessage(playerId, "moneyBankReceipt", receipt.money);
+    if (receipt.pet) this.sendOwnerMessage(playerId, "petProgressReceipt", receipt.pet);
+    this.sendOwnerMessage(playerId, "metaAccount", receipt.account);
+  },
+
+  /** Compute off to the side, commit account + immutable receipt, then acknowledge the terminal outcome. */
   settleMetaAccounts(this: GameRoomContext, outcome: "defeat" | "victory"): void {
     this.metaAccounts.forEach((account, playerId) => {
       if (this.petSettledAccounts.has(playerId)) return;
-      this.petSettledAccounts.add(playerId);
-      if (outcome === "victory") this.prestigeGameClearReceipts.add(playerId);
-      else this.prestigeGameClearReceipts.delete(playerId);
       const player =
         this.state.players.get(playerId) ?? this.disconnectedPlayers.get(playerId)?.player;
+      if (player) this.syncWeaponRunFromArsenal(player);
+      const runId = account.weaponBank.expedition?.runId;
+      const nextAccount = structuredClone(account);
       const previousBank = Math.max(0, Math.min(META_ACCOUNT_SCRIP_MAX, Math.floor(account.scrip)));
       const runMoney = player
         ? Math.max(0, Math.min(META_ACCOUNT_SCRIP_MAX, Math.floor(player.scrip)))
         : 0;
-      account.scrip = Math.min(META_ACCOUNT_SCRIP_MAX, previousBank + runMoney);
-      if (player) player.scrip = 0;
+      nextAccount.scrip = Math.min(META_ACCOUNT_SCRIP_MAX, previousBank + runMoney);
       const moneyReceipt: MoneyBankReceipt = {
         outcome,
-        banked: account.scrip - previousBank,
+        banked: nextAccount.scrip - previousBank,
         previousBank,
-        bankTotal: account.scrip,
+        bankTotal: nextAccount.scrip,
       };
-      if (player) {
-        this.syncWeaponRunFromArsenal(player);
-      }
       const pet = this.petRuns.get(playerId);
-      let receipt: PetProgressReceipt | undefined;
+      let petReceipt: PetProgressReceipt | undefined;
       if (pet && !pet.runOnly) {
-        pet.settled = true;
         const earnedBondXp = Math.min(
           500,
           pet.pendingBondXp + (outcome === "victory" && pet.clearReceipts > 0 ? 80 : 0),
         );
-        const banked = bankPetBondXp(account, pet.petId, earnedBondXp);
-        receipt = {
+        const banked = bankPetBondXp(nextAccount, pet.petId, earnedBondXp);
+        petReceipt = {
           petId: pet.petId,
           outcome,
           ...banked,
           slateTortoiseAwarded: false,
         };
       }
-      const slateTortoiseAwarded = this.rollSlateTortoise(account, outcome);
-      if (receipt) receipt.slateTortoiseAwarded = slateTortoiseAwarded;
-      const runId = account.weaponBank.expedition?.runId;
+      const slateTortoiseAwarded = this.rollSlateTortoise(nextAccount, outcome);
+      if (petReceipt) petReceipt.slateTortoiseAwarded = slateTortoiseAwarded;
+      let weaponReceipt: WeaponSettlementResult | undefined;
       if (runId) {
         const settlementKey = `${playerId}:${runId}:${outcome}:1`;
-        let weaponReceipt = this.weaponSettlementReceipts.get(settlementKey);
-        if (!weaponReceipt) {
-          weaponReceipt = settleWeaponExpedition(account, outcome, false);
-          this.weaponSettlementReceipts.set(settlementKey, weaponReceipt);
-        }
-        this.sendOwnerMessage(playerId, "weaponSettlementReceipt", weaponReceipt);
+        weaponReceipt =
+          this.weaponSettlementReceipts.get(settlementKey) ??
+          settleWeaponExpedition(nextAccount, outcome, false);
       }
-      this.bumpAccountRevision(account);
-      this.sendOwnerMessage(playerId, "moneyBankReceipt", moneyReceipt);
-      if (receipt) this.sendOwnerMessage(playerId, "petProgressReceipt", receipt);
-      this.sendOwnerMessage(playerId, "metaAccount", account);
+      this.bumpAccountRevision(nextAccount);
+      const accountId = this.accountIds.get(playerId);
+      const candidate: DurableSettlementReceipt = {
+        version: 1,
+        accountId: accountId ?? `ephemeral_${playerId}`,
+        runId: runId ?? `ephemeral_${playerId}`,
+        outcome,
+        accountRevision: nextAccount.revision,
+        account: nextAccount,
+        money: moneyReceipt,
+        ...(petReceipt ? { pet: petReceipt } : {}),
+        ...(weaponReceipt ? { weapon: weaponReceipt } : {}),
+      };
+      const committed =
+        accountId && runId && isDurableRunId(runId)
+          ? getSettlementStore().commitSettlement({
+              accountId,
+              runId,
+              expectedRevision: account.revision,
+              account: nextAccount,
+              receipt: candidate,
+            }).receipt
+          : candidate;
+
+      Object.assign(account, structuredClone(committed.account));
+      if (player) player.scrip = 0;
+      if (pet) pet.settled = true;
+      this.petSettledAccounts.add(playerId);
+      if (committed.outcome === "victory") this.prestigeGameClearReceipts.add(playerId);
+      else this.prestigeGameClearReceipts.delete(playerId);
+      if (committed.weapon) {
+        const settlementKey = `${playerId}:${committed.runId}:${committed.outcome}:1`;
+        this.weaponSettlementReceipts.set(settlementKey, committed.weapon);
+      }
+      this.sendCommittedSettlement(playerId, committed);
       this.weaponRuns.delete(playerId);
       this.disconnectedPlayers.delete(playerId);
     });
