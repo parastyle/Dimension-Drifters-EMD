@@ -13308,6 +13308,32 @@ export const SPRITES = {
       }
     ]
   },
+  "x2-ironclad-lmg": {
+    "id": "x2-ironclad-lmg",
+    "kind": "weapon",
+    "canvas": {
+      "w": 399,
+      "h": 199
+    },
+    "body": {
+      "cx": 196.18,
+      "cy": 91.91,
+      "w": 380,
+      "h": 113
+    },
+    "parts": [
+      {
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 380,
+        "h": 113,
+        "cx": 196.18,
+        "cy": 91.91,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
+  },
   "x2-ironhail-pepperbox": {
     "id": "x2-ironhail-pepperbox",
     "kind": "weapon",

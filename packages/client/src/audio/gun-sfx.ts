@@ -164,6 +164,7 @@ export function gunFireFamilyForWeapon(weapon: WeaponDef): GunFireFamily | undef
     case "blunderbuss":
       return "blunderbuss";
     case "gun":
+    case "light machine gun":
     case "machine-pistol":
     case "auto-rifle":
     case "rimfire-rifle":

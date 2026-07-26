@@ -1,7 +1,7 @@
 {
   "generated": "2026-06-17",
   "source": "design-300-weapons workflow (15 agents)",
-  "count": 351,
+  "count": 352,
   "byType": {
     "melee": 132,
     "ranged": 112,
@@ -20222,6 +20222,63 @@
         "recoil": 0.0024
       },
       "id": "x2-longwatch-dmr"
+    },
+    {
+      "id": "x2-ironclad-lmg",
+      "name": "Ironclad LMG",
+      "description": "A frontline support gun built for long, controlled lanes, with every feed and hinge fitted to duty standard.",
+      "type": "ranged",
+      "family": "light machine gun",
+      "theme": "frontline issue belt-fed support weapon with a rigid brass feed stub and immaculate near-black finish",
+      "element": "physical",
+      "finish": "pristine",
+      "grip": "2H",
+      "gripPoints": {
+        "primary": {
+          "x": 0.31,
+          "y": 0.73
+        },
+        "secondary": {
+          "x": 0.63,
+          "y": 0.72,
+          "role": "under-barrel"
+        }
+      },
+      "size": "L",
+      "rangeBand": "mid",
+      "scaling": [
+        "STR",
+        "DEX"
+      ],
+      "palettePrimary": "#171A1E",
+      "paletteAccent": "#C99345",
+      "artPrompt": "Weapon-only game sprite on a perfectly flat solid #00ff00 field: one expensive, well-maintained heavy support weapon with a broad near-black charcoal receiver, a hinged rectangular top feed cover, and a SHORT RIGID stub of brass-linked ammunition projecting stiffly and horizontally from the feed port. The machined belt stub is seated square and stops after only a few rounds; nothing hangs. Add a thick barrel with a stout hinged carry handle arcing above it, a folded bipod clamped tightly beneath the muzzle, a sturdy shoulder stock and pistol grip on the LEFT, and a small boxy rail-mounted laser/light combo unit with one visible dark amber lens beneath the barrel. The attachment is silhouette detail only: no beam, glow, light cone, or emitted light. Support-issue quality throughout: evenly matched finish, crisp feed-cover hinge, precise panel fit, torqued hardware, clean top-edge wear only, and at most a trace of honest muzzle carbon. House treatment: DARK near-black base value, highlights catching top edges ONLY, never evenly lit or mid-grey overall; bold heavy black ink around the entire silhouette AND strong black internal lines separating every panel, plate, housing, hinge, and seam; slightly exaggerated chunky proportions with the receiver and muzzle end reading heavy; about 4-6 flat cel colours plus black ink, no soft gradients. The brass feed stub is the single warm accent. One complete connected weapon, flat orthographic full side-profile, muzzle faces RIGHT and stock/grip face LEFT, fully visible with generous padding. No background scene, no hands, no character, no text, no logos, no serials, no maker marks, no camo, no dangling parts, no extra weapon, no cast shadow, no reflection, no photographic product rendering.",
+      "cardartAction": "shouldered into a sustained support burst, the square brass feed stub stepping inward as a disciplined amber tracer lane drives right",
+      "behavior": {
+        "kind": "gun",
+        "damage": 5,
+        "projectileSpeed": 1150,
+        "range": 780,
+        "fireRate": 0.11,
+        "spread": 0.09,
+        "pierce": 1,
+        "magazine": 72,
+        "reloadSeconds": 2.75,
+        "bulletKind": "tracer",
+        "projectileArt": "bullet",
+        "muzzle": "rapid",
+        "muzzleColor": 13869647,
+        "recoil": 0.0016
+      },
+      "stats": {
+        "damage": 5,
+        "range": 280,
+        "halfArc": 0.62,
+        "cooldown": 0.38,
+        "displayLength": 190,
+        "swingArc": 1.8,
+        "gripFrac": 0.16
+      }
     }
   ]
 }
