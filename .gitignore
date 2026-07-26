@@ -29,6 +29,9 @@ tools/artkit/review/flags.json
 # secrets + generated audio raws (soundkit)
 .env
 .env.*
+# ...but the dev-tools flag file MUST be committed: without it `pnpm dev` silently runs with
+# every client dev tool disabled (F3 made the gate fail-closed). Contains no secrets.
+!packages/client/.env.development
 tools/soundkit/out/
 tools/artkit/.artkit-codex-homes/
 tools/artkit/output/
