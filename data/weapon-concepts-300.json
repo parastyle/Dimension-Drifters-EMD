@@ -1,7 +1,7 @@
 {
   "generated": "2026-06-17",
   "source": "design-300-weapons workflow (15 agents)",
-  "count": 346,
+  "count": 347,
   "byType": {
     "melee": 132,
     "ranged": 112,
@@ -19973,6 +19973,63 @@
         "displayLength": 82,
         "swingArc": 1.8,
         "gripFrac": 0.18
+      }
+    },
+    {
+      "id": "x2-varmint-bolt-223",
+      "name": "Varmint Bolt .223",
+      "description": "An immaculate issue-grade precision bolt rifle built for small-target accuracy, with dark form-hugging digital camouflage and a clearly visible warm amber bedding witness line.",
+      "type": "ranged",
+      "family": "marksman-rifle",
+      "theme": "issue-grade long-range bolt rifle with dark form-hugging digital camouflage",
+      "element": "physical",
+      "finish": "pristine",
+      "grip": "2H",
+      "handlingTags": [
+        "bolt"
+      ],
+      "gripPoints": {
+        "primary": {
+          "x": 0.28,
+          "y": 0.68
+        },
+        "secondary": {
+          "x": 0.4,
+          "y": 0.6,
+          "role": "bolt"
+        }
+      },
+      "size": "L",
+      "rangeBand": "long",
+      "scaling": [
+        "DEX"
+      ],
+      "artPrompt": "Weapon-only in-world sprite: one immaculate issue-grade precision bolt rifle with a heavy fluted barrel, a chunky synthetic stock, an oversized round bolt handle jutting sideways, and a large scope sitting high in tall lapped rings. The action is hand-bedded with one clearly visible warm amber bedding witness line at the stock seam, wide enough to read at sprite scale; the barrel crown is protected under a fitted machined cap. Familiar bulk-procurement silhouette with matched near-black finishes, exact machined tolerances, and every assembly torqued true. Dark digital / MARPAT camouflage is painted only on the stock and furniture, wrapping each panel and following the gun's forms; the barrel, receiver, bolt, scope, and rings remain bare near-black metal. Base value near-black charcoal, highlights restricted to thin top edges only, bold black outer silhouette and rough heavy black internal ink dividing every panel, housing, seam, flute, ring, and camo block. Simplify into fewer broad flat shapes: this is a grim, chunky hand-inked game prop, never a clean product-catalog illustration. Slightly exaggerated: chunky stock chunkier, heavy barrel heavier, round bolt handle larger. About 5 flat colours plus black ink, decisive flat cel planes, no gradients, no soft shading. The rough drawing treatment must not make the immaculate weapon look damaged. One complete connected gun that makes mechanical sense. No laser, flashlight, rail-mounted box, under-barrel accessory, bipod, sling, strap, rope, chain, tassel, improvised repair, tape, salvage, rust, text, logo, serial, maker's mark, character, hands, muzzle flash, smoke, glow, background, ground, or shadow. Flat orthographic full side-profile, stock and grip LEFT, muzzle RIGHT, fully visible.",
+      "palettePrimary": "#22252B",
+      "paletteAccent": "#C49A5A",
+      "cardartAction": "settled into one exact long-range shot, the heavy barrel barely lifting as a single fast copper tracer drives straight to the right",
+      "stats": {
+        "damage": 14,
+        "range": 320,
+        "halfArc": 0.5,
+        "cooldown": 0.82,
+        "displayLength": 178,
+        "swingArc": 1,
+        "gripFrac": 0.12
+      },
+      "behavior": {
+        "kind": "gun",
+        "damage": 14,
+        "projectileSpeed": 1650,
+        "range": 960,
+        "fireRate": 0.82,
+        "pierce": 2,
+        "magazine": 5,
+        "reloadSeconds": 2,
+        "bulletKind": "slug",
+        "muzzle": "punch",
+        "muzzleColor": 14454874,
+        "recoil": 0.0016
       }
     }
   ]

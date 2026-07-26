@@ -23,6 +23,7 @@ const BOLT_IDS = [
   "x2-mauler-slug-thrower",
   "x2-pale-horse-longgun",
   "x2-tracer-saint-carbine",
+  "x2-varmint-bolt-223",
 ] as const;
 
 describe("V8 Wave B bolt-action owner order", () => {

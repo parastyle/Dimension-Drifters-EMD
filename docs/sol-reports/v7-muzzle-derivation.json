@@ -3573,6 +3573,28 @@
     "barrelMode": "parallel"
   },
   {
+    "id": "x2-varmint-bolt-223",
+    "name": "Varmint Bolt .223",
+    "sprite": "x2-varmint-bolt-223",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 27
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 27
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
     "id": "x2-venomspine-repeater",
     "name": "Venomspine Repeater",
     "sprite": "x2-venomspine-repeater",
