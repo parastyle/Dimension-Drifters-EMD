@@ -13826,6 +13826,32 @@ export const SPRITES = {
       }
     ]
   },
+  "x2-miremaw-shears": {
+    "id": "x2-miremaw-shears",
+    "kind": "weapon",
+    "canvas": {
+      "w": 256,
+      "h": 107
+    },
+    "body": {
+      "cx": 128,
+      "cy": 53.5,
+      "w": 256,
+      "h": 107
+    },
+    "parts": [
+      {
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 107,
+        "cx": 128,
+        "cy": 53.5,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
+  },
   "x2-mistral-kusarigama": {
     "id": "x2-mistral-kusarigama",
     "kind": "weapon",

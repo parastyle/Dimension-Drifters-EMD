@@ -787,6 +787,25 @@ export const WEAPON_VFX: Record<string, WeaponVfx> = {
       ]
     }
   },
+  "x2-miremaw-shears": {
+    "suite": {},
+    "rot": 0,
+    "suppressFallback": true,
+    "paintedSwing": {
+      "textureKey": "b66:miremaw-snip",
+      "url": "vfx/weapons/b66/miremaw-shears-snip.png",
+      "extentMultiplier": 1,
+      "originX": 0.02,
+      "tint": 16777215,
+      "lifeMs": 260,
+      "subjects": [
+        "crossing-green-snip-arcs",
+        "sharp-almond-close",
+        "three-dark-sap-squares",
+        "two-pale-cut-chips"
+      ]
+    }
+  },
   "x2-dustreaper-zweihander": {
     "suite": {},
     "rot": 0,

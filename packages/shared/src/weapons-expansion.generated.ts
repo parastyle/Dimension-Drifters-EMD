@@ -14874,6 +14874,65 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
     "glovePair": {
       "wrapsFeet": true
     }
+  },
+  "x2-miremaw-shears": {
+    "id": "x2-miremaw-shears",
+    "name": "Miremaw Shears",
+    "expansion": true,
+    "damage": 16,
+    "range": 158,
+    "halfArc": 0.38,
+    "cooldown": 1,
+    "displayLength": 174,
+    "swingArc": 1.9,
+    "gripFrac": 0.16,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "physical",
+      "classPool": "melee",
+      "family": "great-shears",
+      "rangeBand": "close",
+      "scaling": [
+        "STR",
+        "DEX"
+      ]
+    },
+    "collisionLength": 152,
+    "gripPoints": {
+      "primary": {
+        "x": 0.18,
+        "y": 0.3
+      },
+      "secondary": {
+        "x": 0.18,
+        "y": 0.7,
+        "role": "handle"
+      }
+    },
+    "poseLanguage": {
+      "idle": "secondary-grip",
+      "feet": "wide-plant"
+    },
+    "description": "A ruin gardener's monumental closing jaw: slow to open, brutally decisive at contact, and punishing to recover when its narrow bite misses.",
+    "authoritativeCombo": true,
+    "swingStyle": "pivot",
+    "comboFamily": "rake",
+    "comboVariant": "miremaw-open-close",
+    "effectRecipe": "miremaw-snip",
+    "effectEmitter": "blade",
+    "effectTiming": "impact",
+    "performance": {
+      "hold": "steady",
+      "action": "default-swing",
+      "windupSeconds": 0.44,
+      "comboForwardPx": 0
+    },
+    "bespokeVfxSheet": true,
+    "twoHanded": true,
+    "durability": 90
   }
 };
 
@@ -18939,6 +18998,29 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "limbStretch": 2.1,
         "holdPose": "praying-mantis",
         "holdStart": 0.58
+      }
+    }
+  ],
+  "miremaw-open-close": [
+    {
+      "name": "Root-Jaw Close",
+      "motion": "scissor",
+      "direction": 0,
+      "hand": "both",
+      "timing": {
+        "activeStart": 0.34,
+        "activeEnd": 0.72,
+        "impact": 0.64,
+        "followEnd": 0.95,
+        "secondaryActiveStart": 0.4,
+        "secondaryActiveEnd": 0.72
+      },
+      "path": {
+        "kind": "dual-sweep",
+        "arcMultiplier": 0.34,
+        "rangeMultiplier": 1,
+        "damageMultiplier": 1.5,
+        "knockback": 56
       }
     }
   ]

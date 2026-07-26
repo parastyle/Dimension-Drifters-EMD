@@ -456,7 +456,8 @@ export type WeaponEffectRecipeId =
   | "cinderbrand-magma-impact"
   | "cinderchoke-fire-impact"
   | "mauler-fire-impact"
-  | "wyrmscale-fire-slash";
+  | "wyrmscale-fire-slash"
+  | "miremaw-snip";
 
 /** Named, reusable neutral guards. These are authored as pose-language vocabulary rather than id checks. */
 export type WeaponStanceId =
