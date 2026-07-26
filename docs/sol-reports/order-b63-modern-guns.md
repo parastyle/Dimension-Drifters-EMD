@@ -9,6 +9,25 @@ Owner order, 2026-07-25 (verbatim):
 > have a laser pointer / light combo attachment. I'm thinking 30 guns should do. Remember 1 Sol 1
 > gun, don't let them concept bleed and weird guns that don't make sense."
 
+## Owner amendments, 2026-07-25 (these override the tables below where they conflict)
+
+**A1 — NEVER NAME A REAL FIREARM in any prompt, theme, or artPrompt.** Owner: *"asking for the exact
+weapon trips up AI art. You should have a modern weapon in mind and then just describe it instead of
+naming it, add the fantasy/gamification and the camo."* Naming a real model makes the generator
+retrieve that gun's catalogue photograph and render it realistically, which overpowers every style
+instruction. Wave 1 came back looking like product photos and was discarded for exactly this. The
+real-world anchors in the tables below are **internal design intent only** — they exist so 30 guns
+stay distinct from each other, and they must never reach a prompt.
+
+**A2 — MOST GUNS ARE AUTOMATIC.** Owner: *"try to make most of these weapons automatics, no revolvers
+or break-action shotguns."* Revolvers and break-actions are BANNED. 28 of 30 are semi- or full-auto.
+
+**A3 — SNIPERS ARE ALLOWED.** Owner: *"Snipers are cool and OK."* The only two manual actions in the
+roster are bolt-action snipers (08, 15), permitted on this basis.
+
+**A4 — EVERY GUN CARRIES A GAMIFICATION HOOK.** Not a catalogue item: a used object with history.
+Each brief names one.
+
 ## Standing laws that bind every gun in this order
 
 1. **ONE SOL, ONE GUN.** Batching subjects bleeds themes across them. Non-negotiable.
@@ -27,9 +46,9 @@ Owner order, 2026-07-25 (verbatim):
 
 | Camo | Guns |
 | --- | --- |
-| **Red tiger** | 02 Blacktail Pump 12, 19 Cyclone Micro-Gat |
+| **Red tiger** | 02 Blacktail Auto 12, 19 Cyclone Micro-Gat |
 | **Blue tiger** | 10 Warden Battle Rifle, 25 Voltcaster Arc Pistol |
-| Woodland | 05 Mallard Sweeper |
+| Woodland | 05 Mallard Marsh PDW |
 | Digital / MARPAT | 08 Varmint Bolt .223 |
 | Splinter | 12 Longwatch DMR |
 | Desert tan | 15 Anvil .50 |
@@ -42,8 +61,8 @@ Owner order, 2026-07-25 (verbatim):
 
 ## Laser/light combo
 
-Fitted to **27 of 30**. The three exempt are pieces where a rail unit would look wrong and the owner
-said "almost all", not all: **04 Deacon Snub .38**, **05 Mallard Sweeper**, **06 Trailhead Lever .357**.
+Fitted to **27 of 30**. The three exempt are the scoped long-range guns, where a visible laser is
+useless past a few hundred metres: **08 Varmint Bolt .223**, **15 Anvil .50**, **27 Zenith Photon DMR**.
 
 ## The roster
 
@@ -52,13 +71,13 @@ said "almost all", not all: **04 Deacon Snub .38**, **05 Mallard Sweeper**, **06
 | # | Name | Family | Inspiration | Camo | Laser/light |
 | --- | --- | --- | --- | --- | --- |
 | 01 | Rancher .22 Plinker | semi-auto rimfire | Ruger 10/22, wood stock | — | yes |
-| 02 | Blacktail Pump 12 | pump shotgun | Mossberg 500 / Rem 870 | **red tiger** | yes |
+| 02 | Blacktail Auto 12 | semi-auto shotgun | gas-operated autoloader | **red tiger** | yes |
 | 03 | Patriot Carbine AR | semi-auto carbine | civilian AR-15, flat-top | — | yes |
-| 04 | Deacon Snub .38 | snub revolver | S&W J-frame | — | no |
-| 05 | Mallard Sweeper | over/under | bird gun, blued + walnut | woodland | no |
-| 06 | Trailhead Lever .357 | lever action | modern lever, ghost ring | — | no |
+| 04 | Deacon Burstpiece | machine pistol | select-fire compact | — | yes |
+| 05 | Mallard Marsh PDW | automatic PDW | compact full-auto PDW | woodland | yes |
+| 06 | Trailhead Carbine .357 | semi-auto PCC | blowback pistol-calibre | — | yes |
 | 07 | Sidewalk Nine | polymer pistol | Glock-pattern striker 9mm | — | yes |
-| 08 | Varmint Bolt .223 | bolt rifle | budget varmint bolt + scope | digital | yes |
+| 08 | Varmint Bolt .223 | bolt sniper | scoped varmint bolt | digital | no |
 
 ### Tier B — duty / modern military
 
@@ -70,7 +89,7 @@ said "almost all", not all: **04 Deacon Snub .38**, **05 Mallard Sweeper**, **06
 | 12 | Longwatch DMR | marksman rifle | SR-25 / M110 | splinter | yes |
 | 13 | Ironclad LMG | light machine gun | belt-fed, bipod folded | — | yes |
 | 14 | Pocket Vector .45 | folding SMG | KRISS Vector | — | yes |
-| 15 | Anvil .50 | anti-materiel | M82-pattern bolt | desert tan | yes |
+| 15 | Anvil .50 | anti-materiel sniper | heavy bolt AM rifle | desert tan | no |
 
 ### Tier C — modern concept / near-future, still ballistic
 
@@ -92,7 +111,7 @@ said "almost all", not all: **04 Deacon Snub .38**, **05 Mallard Sweeper**, **06
 | 24 | Prism Scatter Emitter | energy shotgun | split-prism spread | — | yes |
 | 25 | Voltcaster Arc Pistol | arc pistol | arc emitter sidearm | **blue tiger** | yes |
 | 26 | Nova Pulse Repeater | pulse rifle | pulse-packet rifle | — | yes |
-| 27 | Zenith Photon DMR | photon marksman | long photon barrel | — | yes |
+| 27 | Zenith Photon DMR | photon marksman | long photon barrel | — | no |
 | 28 | Ember Plasma Carbine | plasma carbine | plasma bottle + vents | gold | yes |
 | 29 | Singularity Micro-Lance | beam sidearm | pocket beam emitter | — | yes |
 | 30 | Aurora Ion Cannon | heavy ion | shoulder ion cannon | tiger stripe | yes |
