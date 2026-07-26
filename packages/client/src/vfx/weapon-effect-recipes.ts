@@ -182,6 +182,13 @@ export const WEAPON_EFFECT_RECIPES = Object.freeze({
     swingParticleDominance: 0.38,
     additive: true,
   }),
+  "miremaw-snip": Object.freeze({
+    id: "miremaw-snip",
+    weaponId: "x2-miremaw-shears",
+    emitter: "blade",
+    classification: "weapon-motion",
+    paintedSwing: true,
+  }),
   "gravechain-dominant-spin": Object.freeze({
     id: "gravechain-dominant-spin",
     weaponId: "x2-gravechain-scythe",

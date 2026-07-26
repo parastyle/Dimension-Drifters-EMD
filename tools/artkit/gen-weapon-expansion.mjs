@@ -164,7 +164,7 @@ const EFFECT_RECIPES = new Set([
   "gravechain-dominant-spin", "void-caster-explosion", "hexbloom-toxic-impact",
   "cinderbrand-magma-impact", "cinderchoke-fire-impact", "hollow-harvest-circle",
   "abyssal-whirlwind-vortex", "wyrmscale-fire-slash",
-  "mauler-fire-impact",
+  "mauler-fire-impact", "miremaw-snip",
 ]);
 const STANCES = new Set([
   "hasso-no-kamae", "tachi-no-tori", "blade-forward-high-hilt", "near-ear-blade-up",

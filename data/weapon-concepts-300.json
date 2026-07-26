@@ -1,7 +1,7 @@
 {
   "generated": "2026-06-17",
   "source": "design-300-weapons workflow (15 agents)",
-  "count": 358,
+  "count": 359,
   "byType": {
     "melee": 132,
     "ranged": 112,
@@ -20623,6 +20623,92 @@
         "displayLength": 104,
         "swingArc": 1.8,
         "gripFrac": 0.14
+      }
+    },
+    {
+      "id": "x2-miremaw-shears",
+      "name": "Miremaw Shears",
+      "description": "A ruin gardener's monumental closing jaw: slow to open, brutally decisive at contact, and punishing to recover when its narrow bite misses.",
+      "type": "melee",
+      "family": "great-shears",
+      "theme": "paired opposing near-black crescent cutting planes with rigid oval rear loops and a swollen acid-green pivot core",
+      "element": "physical",
+      "finish": "ruin-black",
+      "grip": "2H",
+      "size": "L",
+      "rangeBand": "close",
+      "scaling": [
+        "STR",
+        "DEX"
+      ],
+      "palettePrimary": "#15191A",
+      "paletteAccent": "#B5D334",
+      "artPrompt": "Weapon-only in-world sprite: two thick opposing crescent cutting planes joined by one oversized round pivot, extending left into two separate rigid oval grip loops and right into a broad visibly open jaw, with the upper crescent slightly longer than the lower. Near-black iron outer planes, moss-green inner bevels, and one swollen acid-green organic pivot core locked inside a dark iron ring. Battered verdant-ruin construction with chipped top edges, grime in crevices, heavy near-black ink around the silhouette and dividing every internal plane, slightly exaggerated proportions, flat 4-6 colour cel treatment, and restrained top-edge highlights. One connected item, flat orthographic full side-profile, fully visible, open striking jaw faces RIGHT and paired loops remain on the LEFT. Flat #ff00ff chroma-key field. No character, hands, scenery, text, logos, labels, symbols, dangling parts, smoke, projectile, flash, aura, baked attack effect, gradients, product photography, or clean vector treatment.",
+      "cardartAction": "remaining planted while the broad open jaw closes at short reach, two green crossing strokes meeting in a sharp almond-shaped contact",
+      "gripPoints": {
+        "primary": {
+          "x": 0.18,
+          "y": 0.3
+        },
+        "secondary": {
+          "x": 0.18,
+          "y": 0.7,
+          "role": "handle"
+        }
+      },
+      "poseLanguage": {
+        "idle": "secondary-grip",
+        "feet": "wide-plant"
+      },
+      "authoritativeCombo": true,
+      "swingStyle": "pivot",
+      "comboFamily": "rake",
+      "comboVariant": "miremaw-open-close",
+      "comboBar": [
+        {
+          "name": "Root-Jaw Close",
+          "motion": "scissor",
+          "direction": 0,
+          "hand": "both",
+          "timing": {
+            "activeStart": 0.34,
+            "activeEnd": 0.72,
+            "impact": 0.64,
+            "followEnd": 0.95,
+            "secondaryActiveStart": 0.4,
+            "secondaryActiveEnd": 0.72
+          },
+          "path": {
+            "kind": "dual-sweep",
+            "arcMultiplier": 0.34,
+            "rangeMultiplier": 1,
+            "damageMultiplier": 1.5,
+            "knockback": 56
+          }
+        }
+      ],
+      "bespokeVfxSheet": true,
+      "effectRecipe": "miremaw-snip",
+      "effectEmitter": "blade",
+      "effectTiming": "impact",
+      "performance": {
+        "hold": "steady",
+        "action": "default-swing",
+        "windupSeconds": 0.44,
+        "comboForwardPx": 0
+      },
+      "stats": {
+        "damage": 16,
+        "range": 158,
+        "halfArc": 0.38,
+        "cooldown": 1,
+        "displayLength": 174,
+        "collisionLength": 152,
+        "swingArc": 1.9,
+        "gripFrac": 0.16
+      },
+      "behavior": {
+        "kind": "edge"
       }
     }
   ]
