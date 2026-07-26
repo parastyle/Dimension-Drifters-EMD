@@ -1725,6 +1725,44 @@ export const roomProgressionMethods = {
       const player = this.state.players.get(client.sessionId);
       if (player) this.sendWeaponManifest(player);
     });
+    // A reconnect handshake proves only that Colyseus reclaimed a seat. Before the browser installs that
+    // room, expose the private run invariants that make the seat playable: self row, input/combat runtime,
+    // exact weapon escrow, active outcome, and solo host authority. This is read-only and request-correlated
+    // so a delayed reply from an abandoned attempt cannot bless a later connection.
+    this.onMessage("reconnectProbe", (client, message?: { requestId?: unknown }) => {
+      const requestId =
+        typeof message?.requestId === "string" && message.requestId.length <= 64
+          ? message.requestId
+          : "";
+      if (!requestId) return;
+      const player = this.state.players.get(client.sessionId);
+      const run = this.weaponRuns.get(client.sessionId);
+      const expedition = this.metaAccounts.get(client.sessionId)?.weaponBank.expedition;
+      const isHost = this.isHost(client);
+      const reason =
+        !player
+          ? "player-missing"
+          : this.state.outcome !== "active"
+            ? "run-not-active"
+            : !this.inputs.has(client.sessionId)
+              ? "input-runtime-missing"
+              : !this.combat.has(client.sessionId)
+                ? "combat-runtime-missing"
+                : !run || !expedition || run.runId !== expedition.runId
+                  ? "escrow-runtime-missing"
+                  : this.state.players.size === 1 && !isHost
+                    ? "solo-host-lost"
+                    : "";
+      client.send("reconnectProbeResult", {
+        requestId,
+        ok: reason === "",
+        reason,
+        roomId: this.roomId,
+        sessionId: client.sessionId,
+        runId: run?.runId ?? "",
+        isHost,
+      });
+    });
     this.onMessage(
       "requestSettlementReceipt",
       (client, message?: { runId?: unknown }) => {
@@ -3445,8 +3483,15 @@ export const roomProgressionMethods = {
     consented = true,
   ): Promise<void> {
     if (!consented) {
+      // A room whose last live socket is waiting on a reserved seat must not remain in the public
+      // joinOrCreate pool. Otherwise a reload's fresh session can match into this room beside the ghost
+      // reserved player, inherit non-host status, and lose every host-only escape/dev command.
+      const lockWhileEmpty = this.clients.length === 0;
+      const reconnection = this.allowReconnection(client, RECONNECTION_WINDOW_SECONDS);
+      if (lockWhileEmpty) await this.lock();
       try {
-        await this.allowReconnection(client, RECONNECTION_WINDOW_SECONDS);
+        await reconnection;
+        if (lockWhileEmpty) await this.unlock();
         console.log(`[room ${this.roomId}] reconnected ${client.sessionId}`);
         return;
       } catch {

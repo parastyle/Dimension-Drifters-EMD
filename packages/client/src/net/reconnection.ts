@@ -6,6 +6,16 @@ export interface ReconnectReservation {
   readonly runId: string;
 }
 
+export interface ReconnectProbeResult {
+  readonly requestId: string;
+  readonly ok: boolean;
+  readonly reason: string;
+  readonly roomId: string;
+  readonly sessionId: string;
+  readonly runId: string;
+  readonly isHost: boolean;
+}
+
 type SessionStorageLike = Pick<Storage, "getItem" | "setItem" | "removeItem">;
 
 function currentSessionStorage(): SessionStorageLike | undefined {
@@ -18,6 +28,58 @@ function currentSessionStorage(): SessionStorageLike | undefined {
 
 function isBoundedString(value: unknown, maxLength: number, allowEmpty = false): value is string {
   return typeof value === "string" && value.length <= maxLength && (allowEmpty || value.length > 0);
+}
+
+export function parseReconnectProbeResult(
+  value: unknown,
+  expectedRequestId: string,
+): ReconnectProbeResult | undefined {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return undefined;
+  const probe = value as Partial<ReconnectProbeResult>;
+  if (
+    probe.requestId !== expectedRequestId ||
+    typeof probe.ok !== "boolean" ||
+    !isBoundedString(probe.reason, 64, true) ||
+    !isBoundedString(probe.roomId, 128) ||
+    !isBoundedString(probe.sessionId, 128) ||
+    !isBoundedString(probe.runId, 64, true) ||
+    typeof probe.isHost !== "boolean"
+  ) {
+    return undefined;
+  }
+  return {
+    requestId: probe.requestId,
+    ok: probe.ok,
+    reason: probe.reason,
+    roomId: probe.roomId,
+    sessionId: probe.sessionId,
+    runId: probe.runId,
+    isHost: probe.isHost,
+  };
+}
+
+export function reconnectValidationFailure(options: {
+  readonly reservation: ReconnectReservation;
+  readonly probe: ReconnectProbeResult;
+  readonly roomId: string;
+  readonly sessionId: string;
+  readonly schemaVersion: number;
+  readonly expectedSchemaVersion: number;
+  readonly tick: number;
+  readonly outcome: string;
+  readonly hasPlayer: boolean;
+}): string | undefined {
+  const { reservation, probe } = options;
+  if (options.roomId !== reservation.roomId || probe.roomId !== reservation.roomId)
+    return "wrong-room";
+  if (probe.sessionId !== options.sessionId) return "wrong-session";
+  if (options.schemaVersion !== options.expectedSchemaVersion) return "schema-mismatch";
+  if (options.tick <= 0) return "simulation-not-ready";
+  if (!options.hasPlayer) return "player-missing";
+  if (options.outcome !== "active") return "run-not-active";
+  if (!probe.ok) return probe.reason || "server-refused";
+  if (reservation.runId && probe.runId !== reservation.runId) return "wrong-run";
+  return undefined;
 }
 
 export function loadReconnectReservation(

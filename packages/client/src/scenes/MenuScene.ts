@@ -37,7 +37,7 @@ import { routeArmoryUiInput } from "../input-routing.js";
 // Type-only: erased at build time so the menu/boot chunk stays net-free (the module itself is imported
 // lazily inside launch(), alongside the lazy ArenaScene import).
 import type { LaunchIntent } from "../net/matchmaking.js";
-import { loadReconnectReservation } from "../net/reconnection.js";
+import { clearReconnectReservation, loadReconnectReservation } from "../net/reconnection.js";
 import { RENDER_DPR } from "../render-dpr.js";
 import {
   GEAR_PARTS_MANIFEST,
@@ -552,12 +552,16 @@ export class MenuScene extends Phaser.Scene {
     this.launchIntent = "quick";
     this.launching = false;
     this.selectedCharacterId = loadCharacterSelection().selectedCharacterId;
-    // A browser refresh boots through MenuScene again. A live seat reservation takes priority over
-    // matchmaking so refresh recovers the existing run instead of creating a duplicate.
-    if (loadReconnectReservation()) {
+    // A deliberate browser reload is a fresh playtest boundary, not a transport failure. Consume the
+    // page-surviving marker here, before ArenaScene can see it, and create a private fresh room so the
+    // still-reserved old seat cannot catch the new session through joinOrCreate matchmaking.
+    const reloadReservation = loadReconnectReservation();
+    if (reloadReservation) {
+      clearReconnectReservation(reloadReservation.token);
       void ensureArenaScene(this.scene).then(() =>
         this.scene.start("arena", {
           selectedCharacterId: this.selectedCharacterId,
+          forceFreshRoom: true,
         }),
       );
       return;

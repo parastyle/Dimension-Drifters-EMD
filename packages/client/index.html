@@ -171,12 +171,49 @@
         letter-spacing: 0.035em;
         text-align: center;
         text-shadow: 0 1px 2px #000;
+        display: flex;
+        align-items: center;
+        gap: 12px;
       }
       #reconnect-overlay[data-state="recovered"] > div {
         border-color: #7de08d;
       }
       #reconnect-overlay[data-state="ended"] > div {
         border-color: #ff8a6b;
+      }
+      #reconnect-abandon,
+      #session-escape {
+        padding: 7px 10px;
+        color: #fff7e8;
+        background: rgba(75, 35, 26, 0.96);
+        border: 1px solid #ff9b72;
+        border-radius: 999px;
+        font: 800 12px/1 ui-monospace, SFMono-Regular, Consolas, monospace;
+        letter-spacing: 0.02em;
+        cursor: pointer;
+        pointer-events: auto;
+        white-space: nowrap;
+      }
+      #reconnect-abandon:hover,
+      #reconnect-abandon:focus-visible,
+      #session-escape:hover,
+      #session-escape:focus-visible {
+        background: #743c2e;
+        border-color: #ffd0b8;
+        outline: 2px solid rgba(255, 208, 184, 0.35);
+        outline-offset: 2px;
+      }
+      #session-escape {
+        position: fixed;
+        right: 14px;
+        bottom: 14px;
+        z-index: 999998;
+        color: #e8f8f7;
+        background: rgba(10, 28, 32, 0.88);
+        border-color: #68c8ce;
+      }
+      #session-escape[hidden] {
+        display: none;
       }
     </style>
   </head>
@@ -188,8 +225,12 @@
       <div id="debug" style="color: #8a7aa0">loop: —</div>
     </div>
     <div id="reconnect-overlay" role="status" aria-live="polite" hidden>
-      <div id="reconnect-message"></div>
+      <div>
+        <span id="reconnect-message"></span>
+        <button id="reconnect-abandon" type="button">Abandon &amp; Start Fresh</button>
+      </div>
     </div>
+    <button id="session-escape" type="button" hidden>⌂ Exit to Lobby</button>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
