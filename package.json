@@ -5,7 +5,7 @@
   "description": "Dimension Drifters — online co-op bullet-heaven. See DIMENSION_DRIFTERS_MASTER_SPEC.md.",
   "packageManager": "pnpm@9.12.0",
   "engines": {
-    "node": ">=22"
+    "node": ">=23.4"
   },
   "type": "module",
   "scripts": {
