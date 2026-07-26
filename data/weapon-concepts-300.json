@@ -1,10 +1,10 @@
 {
   "generated": "2026-06-17",
   "source": "design-300-weapons workflow (15 agents)",
-  "count": 339,
+  "count": 340,
   "byType": {
     "melee": 132,
-    "ranged": 111,
+    "ranged": 112,
     "caster": 96
   },
   "weapons": [
@@ -19588,6 +19588,67 @@
       "behavior": {
         "kind": "glovePair",
         "wrapsFeet": true
+      }
+    },
+    {
+      "id": "x2-anvil-50",
+      "name": "Anvil .50",
+      "description": "A frontline precision anti-armour bolt rifle built around an immense brake, rigid cut-out chassis, protected optics, and punishingly deliberate shots.",
+      "type": "ranged",
+      "family": "anti-materiel-rifle",
+      "theme": "frontline precision anti-armour issue rifle in form-following desert-tan camouflage",
+      "element": "physical",
+      "finish": "pristine",
+      "grip": "2H",
+      "handlingTags": [
+        "bolt"
+      ],
+      "gripPoints": {
+        "primary": {
+          "x": 0.28,
+          "y": 0.68
+        },
+        "secondary": {
+          "x": 0.43,
+          "y": 0.61,
+          "role": "bolt"
+        }
+      },
+      "size": "XL",
+      "rangeBand": "long",
+      "scaling": [
+        "DEX",
+        "STR"
+      ],
+      "palettePrimary": "#171A1E",
+      "paletteAccent": "#C58A3A",
+      "artPrompt": "Weapon-only in-world sprite: exactly one enormous bolt-action precision anti-armour issue rifle. Strict flat orthographic full side-profile, entire weapon visible, stock and grip LEFT, huge arrow-shaped muzzle brake RIGHT. Build it around a very long heavy fluted bare-metal barrel, a symmetrically machined brake, a slab receiver with a clearly readable raised bolt handle and functional box magazine, a skeletonised cut-out uniformly anodised charcoal chassis, a thick recoil pad, a folded bipod tucked rigidly beneath the fore-end, and a very large bare-metal scope with both glass ends capped; the bore is capped too. Desert-tan camouflage is painted only on the stock and furniture and follows each form; it never floats or coats the whole weapon. Leave the barrel and optic bare metal. Precision issue-grade matched finish, clean machined tolerances, everything torqued and true, expensive and maintained to standard; no improvisation, tape, repair, salvage, mismatched parts, or neglect. Dark house rendering: near-black charcoal base, highlights catching top edges only, never evenly lit or mid-grey overall; bold black silhouette outline and heavy internal black ink dividing every panel, plate, housing, and seam. Slightly exaggerate the chunky brake, scope, chassis, and recoil pad. Use 4-6 flat colours plus black ink, hard cel planes, no airbrushed gradients. One small warm brass accent only on the protective cap latches. Perfectly flat fully opaque #00ff00 chroma-key field with no ground, cast shadow, scene, hands, character, text, logos, serials, maker marks, muzzle flash, emitted light, chains, tassels, ropes, slings, dangling parts, or rail-mounted laser/light unit.",
+      "cardartAction": "settled behind a prepared firing rest as one armour-breaking shot punches rightward through a hard amber muzzle flash and the bolt waits for a deliberate cycle",
+      "stats": {
+        "damage": 40,
+        "range": 320,
+        "halfArc": 0.5,
+        "cooldown": 0.9,
+        "displayLength": 224,
+        "swingArc": 1,
+        "gripFrac": 0.1
+      },
+      "behavior": {
+        "kind": "gun",
+        "damage": 40,
+        "projectileSpeed": 2400,
+        "range": 1100,
+        "fireRate": 0.9,
+        "pierce": 6,
+        "magazine": 2,
+        "reloadSeconds": 3,
+        "bulletKind": "slug",
+        "projectileArt": "generated",
+        "projectileVisualScale": 1.5,
+        "sonicBoomRing": true,
+        "muzzle": "heavy",
+        "muzzleColor": 12945978,
+        "recoil": 0.005
       }
     }
   ]

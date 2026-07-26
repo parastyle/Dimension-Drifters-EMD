@@ -8824,6 +8824,32 @@ export const SPRITES = {
       }
     ]
   },
+  "x2-anvil-50": {
+    "id": "x2-anvil-50",
+    "kind": "weapon",
+    "canvas": {
+      "w": 455,
+      "h": 152
+    },
+    "body": {
+      "cx": 185.32,
+      "cy": 77.36,
+      "w": 448,
+      "h": 80
+    },
+    "parts": [
+      {
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 448,
+        "h": 80,
+        "cx": 185.32,
+        "cy": 77.36,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
+  },
   "x2-anvil-drop": {
     "id": "x2-anvil-drop",
     "kind": "weapon",

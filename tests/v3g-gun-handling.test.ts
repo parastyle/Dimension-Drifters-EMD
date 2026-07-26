@@ -64,6 +64,7 @@ describe("V3G catalog gun-handling laws", () => {
       .sort();
     expect(boltIds).toEqual(
       [
+        "x2-anvil-50",
         "x2-barrett-50-cal-sniper",
         "x2-buzzard-s-eye-marksman",
         "x2-m50-anti-materiel-rifle",

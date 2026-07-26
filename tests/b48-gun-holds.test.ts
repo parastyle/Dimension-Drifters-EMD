@@ -30,7 +30,7 @@ describe("B48 gun mechanism census and ownership", () => {
           weaponHasHandlingTag(definition, tag),
         ),
       ),
-    ).toHaveLength(28);
+    ).toHaveLength(29);
   });
 
   it("routes Hallowbore to the B29 support-hand fan instead of a pump cycle", async () => {

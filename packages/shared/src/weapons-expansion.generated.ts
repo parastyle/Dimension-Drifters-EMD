@@ -14874,6 +14874,65 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
     "glovePair": {
       "wrapsFeet": true
     }
+  },
+  "x2-anvil-50": {
+    "id": "x2-anvil-50",
+    "name": "Anvil .50",
+    "expansion": true,
+    "damage": 40,
+    "range": 320,
+    "halfArc": 0.5,
+    "cooldown": 0.9,
+    "displayLength": 224,
+    "swingArc": 1.8,
+    "gripFrac": 0.1,
+    "tags": {
+      "grip": "2H",
+      "size": "XL",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "anti-materiel-rifle",
+      "rangeBand": "long",
+      "scaling": [
+        "DEX",
+        "STR"
+      ],
+      "handling": [
+        "bolt"
+      ]
+    },
+    "recoil": 119,
+    "gripPoints": {
+      "primary": {
+        "x": 0.28,
+        "y": 0.68
+      },
+      "secondary": {
+        "x": 0.43,
+        "y": 0.61,
+        "role": "bolt"
+      }
+    },
+    "description": "A frontline precision anti-armour bolt rifle built around an immense brake, rigid cut-out chassis, protected optics, and punishingly deliberate shots.",
+    "twoHanded": true,
+    "gun": {
+      "damage": 40,
+      "projectileSpeed": 2400,
+      "range": 1100,
+      "fireRate": 0.9,
+      "magazine": 2,
+      "reloadSeconds": 3,
+      "bulletKind": "slug",
+      "muzzle": "heavy",
+      "recoil": 0.005,
+      "projectileArt": "generated",
+      "sonicBoomRing": true,
+      "projectileVisualScale": 1.5,
+      "pierce": 6,
+      "muzzleColor": 12945978
+    }
   }
 };
 

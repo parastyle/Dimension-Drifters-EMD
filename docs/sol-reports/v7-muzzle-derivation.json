@@ -176,6 +176,28 @@
     "barrelMode": "parallel"
   },
   {
+    "id": "x2-anvil-50",
+    "name": "Anvil .50",
+    "sprite": "x2-anvil-50",
+    "derived": [
+      {
+        "part": 0,
+        "x": 447,
+        "y": 37.9
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 447,
+        "y": 37.9
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
     "id": "x2-ashfall-peacemaker",
     "name": "Ashfall Peacemaker",
     "sprite": "x2-ashfall-peacemaker",
