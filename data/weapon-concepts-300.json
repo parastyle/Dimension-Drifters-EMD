@@ -1,10 +1,10 @@
 {
   "generated": "2026-06-17",
   "source": "design-300-weapons workflow (15 agents)",
-  "count": 339,
+  "count": 340,
   "byType": {
     "melee": 132,
-    "ranged": 111,
+    "ranged": 112,
     "caster": 96
   },
   "weapons": [
@@ -19588,6 +19588,41 @@
       "behavior": {
         "kind": "glovePair",
         "wrapsFeet": true
+      }
+    },
+    {
+      "id": "x2-precinct-smg-9",
+      "name": "Precinct SMG-9",
+      "type": "ranged",
+      "family": "machine-pistol",
+      "theme": "near-black entry-team duty submachine gun with a brass inspection glyph",
+      "element": "physical",
+      "finish": "pristine",
+      "grip": "2H",
+      "size": "S",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "STR"
+      ],
+      "artPrompt": "Weapon-only in-world sprite on a perfectly flat fully opaque #00ff00 chroma field: ONE compact issue-grade machine pistol with a slim tubular receiver, a large drum-shaped rear sight, a three-lug collar at the short muzzle, a sliding wire stock, and a gently curved magazine. Add one small boxy rail-mounted laser/light combo beneath the short barrel with a visible amber glass lens; it is a silhouette detail only, with no beam, no glow, no bloom, and no light cone. Entry-team frontline duty issue: immaculate matched near-black charcoal finish, tight receiver welds, machined tolerances, everything torqued and true, controls subtly polished by drill rather than neglect, and one clean brass non-alphabetic geometric inspection glyph stencilled at the magazine well. No camo, no dirt, no rust, no tape, no repairs, no salvage, no mismatched parts. Near-black base value dominates; narrow steel highlights catch TOP EDGES ONLY while sides and underside stay in deep shadow, never evenly lit and never mid-grey overall. Bold heavy black outline around the entire silhouette AND heavy black internal ink lines dividing every panel, housing, weld and seam. Slightly exaggerated cartoon proportions: the rear sight drum, short muzzle collar and compact receiver read chunkier than strict anatomy while the grip-to-barrel mechanism remains credible. Use only 4-6 flat cel colours plus black ink, hard flat planes, no gradients, no airbrushing, no photorealism. ONE complete connected gun, strict flat orthographic full side-profile, muzzle points RIGHT, grip and stock point LEFT. No character, no hands, no scenery, no ground shadow, no second weapon, no sling, no strap, no rope, no chain, no tassel, no dangling part, no emitted VFX, no text, no logo, no serial, and no maker's mark.",
+      "palettePrimary": "#20242A",
+      "paletteAccent": "#C58A3A",
+      "cardartAction": "held tight at an entry angle while a short disciplined amber tracer burst drives rightward",
+      "behavior": {
+        "kind": "gun",
+        "damage": 5,
+        "projectileSpeed": 1080,
+        "range": 500,
+        "fireRate": 0.09,
+        "spread": 0.08,
+        "pierce": 1,
+        "magazine": 30,
+        "reloadSeconds": 1.35,
+        "bulletKind": "tracer",
+        "muzzle": "rapid",
+        "muzzleColor": 16750902,
+        "recoil": 0.0008
       }
     }
   ]

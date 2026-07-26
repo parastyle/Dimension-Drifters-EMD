@@ -14418,6 +14418,32 @@ export const SPRITES = {
       }
     ]
   },
+  "x2-precinct-smg-9": {
+    "id": "x2-precinct-smg-9",
+    "kind": "weapon",
+    "canvas": {
+      "w": 271,
+      "h": 116
+    },
+    "body": {
+      "cx": 144.01,
+      "cy": 48.1,
+      "w": 256,
+      "h": 90
+    },
+    "parts": [
+      {
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 90,
+        "cx": 144.01,
+        "cy": 48.1,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
+  },
   "x2-prismhex-diffraction-gauntlet": {
     "id": "x2-prismhex-diffraction-gauntlet",
     "kind": "weapon",

@@ -2534,6 +2534,28 @@ export const WEAPON_ART_MUZZLES = {
     "salvoMode": "parallel",
     "barrelMode": "parallel"
   },
+  "x2-precinct-smg-9": {
+    "sprite": "x2-precinct-smg-9",
+    "parts": [
+      {
+        "width": 256,
+        "height": 90
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 17.9,
+        "derived": {
+          "x": 255,
+          "y": 17.9
+        }
+      }
+    ],
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
   "x2-psalter-of-the-burning-halo": {
     "sprite": "x2-psalter-of-the-burning-halo",
     "parts": [

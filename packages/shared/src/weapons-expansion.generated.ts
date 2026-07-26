@@ -14874,6 +14874,47 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
     "glovePair": {
       "wrapsFeet": true
     }
+  },
+  "x2-precinct-smg-9": {
+    "id": "x2-precinct-smg-9",
+    "name": "Precinct SMG-9",
+    "expansion": true,
+    "damage": 8,
+    "range": 140,
+    "halfArc": 0.85,
+    "cooldown": 0.4,
+    "displayLength": 90,
+    "swingArc": 2.6,
+    "gripFrac": 0.12,
+    "tags": {
+      "grip": "2H",
+      "size": "S",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "machine-pistol",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "STR"
+      ]
+    },
+    "recoil": 16,
+    "twoHanded": true,
+    "gun": {
+      "damage": 5,
+      "projectileSpeed": 1080,
+      "range": 500,
+      "fireRate": 0.09,
+      "magazine": 30,
+      "reloadSeconds": 1.35,
+      "bulletKind": "tracer",
+      "muzzle": "rapid",
+      "recoil": 0.0008,
+      "spread": 0.08,
+      "muzzleColor": 16750902
+    }
   }
 };
 

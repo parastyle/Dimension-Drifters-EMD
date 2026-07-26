@@ -2459,6 +2459,28 @@
     "barrelMode": "parallel"
   },
   {
+    "id": "x2-precinct-smg-9",
+    "name": "Precinct SMG-9",
+    "sprite": "x2-precinct-smg-9",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 17.9
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 17.9
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
     "id": "x2-psalter-of-the-burning-halo",
     "name": "Psalter of the Burning Halo",
     "sprite": "x2-psalter-of-the-burning-halo",
