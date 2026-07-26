@@ -42,6 +42,11 @@ const STYLE_BIAS: Readonly<Record<string, number>> = Object.freeze({
   artillery: 5,
 });
 
+const OWNER_ASSIGNED_VARIANTS: Readonly<Partial<Record<string, MuzzleFlashVariant>>> =
+  Object.freeze({
+    "x2-thornhive-seedcaster": "bloom",
+  });
+
 const gunCatalog = Object.values(WEAPONS).filter((weapon) => !!weapon.gun && !weapon.archived);
 let previousFrame = -1;
 export const MUZZLE_FLASH_ASSIGNMENTS: Readonly<Record<string, MuzzleFlashAssignment>> =
@@ -49,10 +54,14 @@ export const MUZZLE_FLASH_ASSIGNMENTS: Readonly<Record<string, MuzzleFlashAssign
     Object.fromEntries(
       gunCatalog.map((weapon) => {
         const style = weapon.gun?.muzzle ?? "heavy";
-        let frame = (hashId(weapon.id) + (STYLE_BIAS[style] ?? 0)) % MUZZLE_FLASH_VARIANTS.length;
+        const ownerVariant = OWNER_ASSIGNED_VARIANTS[weapon.id];
+        let frame = ownerVariant
+          ? MUZZLE_FLASH_VARIANTS.indexOf(ownerVariant)
+          : (hashId(weapon.id) + (STYLE_BIAS[style] ?? 0)) % MUZZLE_FLASH_VARIANTS.length;
         // Catalog neighbors are the guns most likely to be compared in the armory. Never let them share a
         // silhouette, even when their semantic style/hash proposal collides.
-        if (frame === previousFrame) frame = (frame + 1) % MUZZLE_FLASH_VARIANTS.length;
+        if (!ownerVariant && frame === previousFrame)
+          frame = (frame + 1) % MUZZLE_FLASH_VARIANTS.length;
         previousFrame = frame;
         return [
           weapon.id,

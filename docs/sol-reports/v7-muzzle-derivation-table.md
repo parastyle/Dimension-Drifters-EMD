@@ -1,6 +1,6 @@
 # V7 Muzzle Derivation Table
 
-Generated from sprite alpha for all 158 active projectile, beam, and authored melee-impact definitions. Coordinates are source-PNG pixels.
+Generated from sprite alpha for all 159 active projectile, beam, and authored melee-impact definitions. Coordinates are source-PNG pixels.
 
 | Weapon | Derived barrel tip | Authored muzzle point(s) | Override |
 | --- | --- | --- | --- |
@@ -143,6 +143,7 @@ Generated from sprite alpha for all 158 active projectile, beam, and authored me
 | `x2-sunmote-reliquary-staff` (Sunmote Reliquary Staff) | part-1 (254, 46.5) | part-1 (254, 46.5) | No |
 | `x2-tesla-drumbore` (Tesla Drumbore) | part-1 (255, 66.6) | part-1 (255, 66.6) | No |
 | `x2-tesla-faradayer` (Tesla Faradayer) | part-1 (255, 84.9) | part-1 (255, 84.9) | No |
+| `x2-thornhive-seedcaster` (Thornhive Seedcaster) | part-1 (255, 55.5) | part-1 (255, 55.5) | No |
 | `x2-thunderhead-lever-gun` (Thunderhead Lever-Gun) | part-1 (255, 17) | part-1 (255, 17) | No |
 | `x2-thunderhead-repeater-cannon` (Thunderhead Repeater Cannon) | part-1 (255, 24.8) | part-1 (255, 24.8) | No |
 | `x2-thunderhead-spikecaster` (Thunderhead Spikecaster) | part-1 (255, 21.5) | part-1 (255, 21.5) | No |

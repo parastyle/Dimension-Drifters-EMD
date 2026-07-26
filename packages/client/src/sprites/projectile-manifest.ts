@@ -225,6 +225,14 @@ export const PROJECTILE_SPRITES = {
     asymmetric: true,
     facing: "mirror-upright",
   },
+  "thornhive-drill-seed": {
+    url: "projectiles/b66/thornhive-drill-seed.png",
+    width: 192,
+    height: 73,
+    source: "generated",
+    asymmetric: true,
+    facing: "mirror-upright",
+  },
   "thunderhead-blue-helix": {
     url: "projectiles/v8/thunderhead-blue-helix.png",
     width: 176,

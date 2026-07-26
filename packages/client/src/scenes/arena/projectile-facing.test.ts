@@ -22,8 +22,8 @@ describe("projectile art facing", () => {
       .map(([id]) => id)
       .sort();
 
-    expect(entries).toHaveLength(31);
-    expect(asymmetric).toHaveLength(23);
+    expect(entries).toHaveLength(32);
+    expect(asymmetric).toHaveLength(24);
     expect(asymmetric.every(([, sprite]) => sprite.facing === "mirror-upright")).toBe(true);
     expect(PROJECTILE_SPRITES["saintskull-monstrance-holy-skull"]).toMatchObject({
       asymmetric: true,

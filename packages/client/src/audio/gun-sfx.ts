@@ -169,6 +169,8 @@ export function gunFireFamilyForWeapon(weapon: WeaponDef): GunFireFamily | undef
     case "nailgun":
     case "scrap-cannon":
       return "industrial-repeater";
+    case "seed-launcher":
+      return "bolt-launcher";
     case "lever-rifle":
       return "lever-rifle";
     case "marksman-rifle":

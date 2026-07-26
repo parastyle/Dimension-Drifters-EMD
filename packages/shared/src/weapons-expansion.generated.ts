@@ -14874,6 +14874,72 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
     "glovePair": {
       "wrapsFeet": true
     }
+  },
+  "x2-thornhive-seedcaster": {
+    "id": "x2-thornhive-seedcaster",
+    "name": "Thornhive Seedcaster",
+    "expansion": true,
+    "damage": 12,
+    "range": 104,
+    "halfArc": 0.48,
+    "cooldown": 0.75,
+    "displayLength": 118,
+    "swingArc": 1.8,
+    "gripFrac": 0.14,
+    "tags": {
+      "grip": "2H",
+      "size": "M",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "toxic",
+      "classPool": "ranged",
+      "family": "seed-launcher",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "INT"
+      ]
+    },
+    "recoil": 164,
+    "gripPoints": {
+      "primary": {
+        "x": 0.14,
+        "y": 0.62
+      },
+      "secondary": {
+        "x": 0.31,
+        "y": 0.68,
+        "role": "horizontal-foregrip"
+      }
+    },
+    "description": "A hollow carnivorous growth braced in scavenged iron, launching one spiral-ribbed seed that breaks into a small acid-green branch burst on its first direct hit.",
+    "twoHanded": true,
+    "gun": {
+      "damage": 12,
+      "projectileSpeed": 700,
+      "range": 600,
+      "fireRate": 0.75,
+      "magazine": 4,
+      "reloadSeconds": 1.8,
+      "bulletKind": "nail",
+      "muzzle": "spark",
+      "recoil": 0.0016,
+      "projectileArt": "generated",
+      "projectileVisualScale": 1,
+      "spread": 0.015,
+      "muzzleColor": 10288955
+    },
+    "chainLightning": {
+      "jumps": 3,
+      "range": 130,
+      "damage": 3,
+      "falloff": 0.7,
+      "vfx": {
+        "color": 0.29,
+        "jag": 0.1,
+        "life": 120
+      }
+    }
   }
 };
 

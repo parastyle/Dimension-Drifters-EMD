@@ -1,10 +1,10 @@
 {
   "generated": "2026-06-17",
   "source": "design-300-weapons workflow (15 agents)",
-  "count": 339,
+  "count": 340,
   "byType": {
     "melee": 132,
-    "ranged": 111,
+    "ranged": 112,
     "caster": 96
   },
   "weapons": [
@@ -19588,6 +19588,76 @@
       "behavior": {
         "kind": "glovePair",
         "wrapsFeet": true
+      }
+    },
+    {
+      "id": "x2-thornhive-seedcaster",
+      "name": "Thornhive Seedcaster",
+      "description": "A hollow carnivorous growth braced in scavenged iron, launching one spiral-ribbed seed that breaks into a small acid-green branch burst on its first direct hit.",
+      "type": "ranged",
+      "family": "seed-launcher",
+      "theme": "verdant-ruins tapered dark growth form with three flush spiral ribs and one acid-green fin",
+      "element": "toxic",
+      "finish": "organic",
+      "grip": "2H",
+      "gripPoints": {
+        "primary": {
+          "x": 0.14,
+          "y": 0.62
+        },
+        "secondary": {
+          "x": 0.31,
+          "y": 0.68,
+          "role": "horizontal-foregrip"
+        }
+      },
+      "size": "M",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "INT"
+      ],
+      "palettePrimary": "#22252B",
+      "paletteAccent": "#9CFF3B",
+      "artPrompt": "Weapon-only in-world sprite with no character, hands, background, projectile, or baked effect: one thick tapered charcoal-black growth body, broadest at the middle and narrowing left, with a round open emission mouth at the RIGHT; exactly three rigid raised spiral ribs wrap flush around the dark body; one squat rectangular seed chamber rises above the middle; two short solid root-shaped grips sit on the LEFT; one acid-green leaf-shaped sight fin is fixed rigidly along the top. Scavenged iron braces, charcoal bruising, deliberate grime in crevices, chipped top-edge highlights, heavy near-black outer contour and heavy black ink dividing every internal panel, slightly exaggerated proportions, flat opaque cel planes, approximately 5 colours. Flat orthographic full side-profile, perfectly horizontal, faces RIGHT: circular mouth on the RIGHT, both grips on the LEFT. No dangling pieces, cords, straps, chains, text, logos, symbols, serials, markings, hands, character, ammunition, flash, smoke, shadow, floor, perspective, gradients, gloss, photorealism, clean vector treatment, or extra weapon.",
+      "cardartAction": "braced and firing one fat spiral-ribbed seed to the right, a compact five-thorn acid-green release bloom at the circular mouth and three small leaf splinters branching from the first impact",
+      "behavior": {
+        "kind": "gun",
+        "damage": 12,
+        "projectileSpeed": 700,
+        "range": 600,
+        "fireRate": 0.75,
+        "pellets": 1,
+        "spread": 0.015,
+        "pierce": 1,
+        "magazine": 4,
+        "reloadSeconds": 1.8,
+        "bulletKind": "nail",
+        "projectileArt": "generated",
+        "projectileVisualScale": 1,
+        "muzzle": "spark",
+        "muzzleColor": 10288955,
+        "recoil": 0.0016,
+        "chainLightning": {
+          "jumps": 3,
+          "range": 130,
+          "damage": 3,
+          "falloff": 0.7,
+          "vfx": {
+            "color": 0.29,
+            "jag": 0.1,
+            "life": 120
+          }
+        }
+      },
+      "stats": {
+        "damage": 12,
+        "range": 104,
+        "halfArc": 0.48,
+        "cooldown": 0.75,
+        "displayLength": 118,
+        "swingArc": 1.8,
+        "gripFrac": 0.14
       }
     }
   ]
