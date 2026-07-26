@@ -2066,6 +2066,28 @@ export const WEAPON_ART_MUZZLES = {
     "salvoMode": "parallel",
     "barrelMode": "parallel"
   },
+  "x2-ironclad-lmg": {
+    "sprite": "x2-ironclad-lmg",
+    "parts": [
+      {
+        "width": 380,
+        "height": 113
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 379,
+        "y": 36.4,
+        "derived": {
+          "x": 379,
+          "y": 36.4
+        }
+      }
+    ],
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
   "x2-ironhail-pepperbox": {
     "sprite": "x2-ironhail-pepperbox",
     "parts": [

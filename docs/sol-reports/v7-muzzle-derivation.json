@@ -1999,6 +1999,28 @@
     "barrelMode": "parallel"
   },
   {
+    "id": "x2-ironclad-lmg",
+    "name": "Ironclad LMG",
+    "sprite": "x2-ironclad-lmg",
+    "derived": [
+      {
+        "part": 0,
+        "x": 379,
+        "y": 36.4
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 379,
+        "y": 36.4
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
     "id": "x2-ironhail-pepperbox",
     "name": "Ironhail Pepperbox",
     "sprite": "x2-ironhail-pepperbox",

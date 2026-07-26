@@ -10234,5 +10234,18 @@ export const GENERATED_WEAPON_LIMB_CLAIMS = {
         }
       ]
     ]
+  },
+  "x2-ironclad-lmg": {
+    "held": [
+      {
+        "limb": "hand-l",
+        "release": "handoff"
+      },
+      {
+        "limb": "hand-r",
+        "release": "handoff"
+      }
+    ],
+    "comboBeats": []
   }
 } as const satisfies Readonly<Record<string, WeaponLimbClaims>>;

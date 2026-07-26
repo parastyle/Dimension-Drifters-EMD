@@ -14874,6 +14874,60 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
     "glovePair": {
       "wrapsFeet": true
     }
+  },
+  "x2-ironclad-lmg": {
+    "id": "x2-ironclad-lmg",
+    "name": "Ironclad LMG",
+    "expansion": true,
+    "damage": 5,
+    "range": 280,
+    "halfArc": 0.62,
+    "cooldown": 0.38,
+    "displayLength": 190,
+    "swingArc": 1.8,
+    "gripFrac": 0.16,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "light machine gun",
+      "rangeBand": "mid",
+      "scaling": [
+        "STR",
+        "DEX"
+      ]
+    },
+    "recoil": 20,
+    "gripPoints": {
+      "primary": {
+        "x": 0.31,
+        "y": 0.73
+      },
+      "secondary": {
+        "x": 0.63,
+        "y": 0.72,
+        "role": "under-barrel"
+      }
+    },
+    "description": "A frontline support gun built for long, controlled lanes, with every feed and hinge fitted to duty standard.",
+    "twoHanded": true,
+    "gun": {
+      "damage": 5,
+      "projectileSpeed": 1150,
+      "range": 780,
+      "fireRate": 0.11,
+      "magazine": 72,
+      "reloadSeconds": 2.75,
+      "bulletKind": "tracer",
+      "muzzle": "rapid",
+      "recoil": 0.0016,
+      "projectileArt": "bullet",
+      "spread": 0.09,
+      "muzzleColor": 13869647
+    }
   }
 };
 
