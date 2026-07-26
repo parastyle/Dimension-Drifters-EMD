@@ -309,7 +309,7 @@ describe("driftblade-model panel", () => {
     });
     expect(defaultCounts).toEqual({
       "punch/default": 19,
-      "arc/default": 121,
+      "arc/default": 122,
       "chop/default": 8,
       "rake/dagger": 1,
       "rake/claw": 3,

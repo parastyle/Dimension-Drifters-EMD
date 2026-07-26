@@ -10706,6 +10706,32 @@ export const SPRITES = {
       }
     ]
   },
+  "x2-deacon-burstpiece": {
+    "id": "x2-deacon-burstpiece",
+    "kind": "weapon",
+    "canvas": {
+      "w": 311,
+      "h": 207
+    },
+    "body": {
+      "cx": 139.64,
+      "cy": 70.22,
+      "w": 256,
+      "h": 188
+    },
+    "parts": [
+      {
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 188,
+        "cx": 139.64,
+        "cy": 70.22,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
+  },
   "x2-doomsday-drum-cannon": {
     "id": "x2-doomsday-drum-cannon",
     "kind": "weapon",

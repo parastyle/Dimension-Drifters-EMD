@@ -45,6 +45,7 @@ Generated from sprite alpha for all 159 active projectile, beam, and authored me
 | `x2-coffinnail-driver` (Coffinnail Driver) | part-1 (255, 6) | part-1 (255, 6) | No |
 | `x2-confetti-cannon` (Confetti Cannon) | part-1 (1379, 281.7) | part-1 (1379, 291) | Yes - The spread originates at the centre of the oversized bell opening, not the lower grip silhouette. |
 | `x2-coyote-stinger` (Coyote Stinger) | part-1 (255, 35.2)<br>part-2 (255, 35.2) | part-1 (255, 35.2)<br>part-2 (255, 35.2) | No |
+| `x2-deacon-burstpiece` (Deacon Burstpiece) | part-1 (255, 25) | part-1 (255, 25) | No |
 | `x2-doomsday-drum-cannon` (Doomsday Drum Cannon) | part-1 (255, 60.1) | part-1 (255, 60.1) | No |
 | `x2-drunken-fist-wraps` (Drunken Fist Wraps) | part-1 (362, 276.4)<br>part-2 (509, 286.3) | part-1 (182.3, 256.4)<br>part-2 (255.6, 216.9) | Yes - The sway sequence alternates alpha-weighted striking-hand centroids, including the rigid gourd-wrist haymaker. |
 | `x2-dustdevil-riotgun` (Dustdevil Riotgun) | part-1 (255, 19.9) | part-1 (255, 19.9) | No |
