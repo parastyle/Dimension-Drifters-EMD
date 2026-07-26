@@ -104,6 +104,7 @@ import {
   type WeaponArtMuzzlePoint,
   type WeaponDef,
   type WeaponElementId,
+  type WeaponLimb,
   resolveWeaponElementTransform,
   weaponArtMuzzlePointsForShot,
   weaponHasHandlingTag,
@@ -250,6 +251,7 @@ import {
   revolverHammerHandFor,
   secondaryGripHandRotationFor,
 } from "./rig-gun-mechanisms.js";
+import type { PresentedActorState } from "./rig-presentation.js";
 
 export const rigPoseMethods = {
 
@@ -433,17 +435,18 @@ export const rigPoseMethods = {
     for (const weapon of this.weapons) weapon.img.setPosition(weapon.hand.img.x, weapon.hand.img.y);
   },
 
-  // Extraction trace: animate(timeMs: number, anim: RigAnim): void
-  animate(this: SpriteRigContext, timeMs: number, anim: RigAnim): void {
+  // Extraction trace: animate(state: PresentedActorState): void
+  animate(this: SpriteRigContext, anim: PresentedActorState): void {
     this.installBoilerplateIfReady();
     this.refreshPoseLanguageSelection(true);
+    const timeMs = anim.frame.nowMs;
     const t = timeMs / 1000 + this.phase;
     // §7 v0.105 de-clunk: derive a frame dt from the (freeze-paused) animation clock for the eased blends,
     // clamped so a hit-stop gap or first frame can't produce a jump.
     // §7 v0.112 clamp to [0,100]: a scene restart / clock reset can make timeMs < prevAnimMs → a NEGATIVE dt
     // that would flip the exponential-blend signs and blow every eased value to infinity. Never allow that.
     const firstAnim = this.prevAnimMs < 0;
-    const rawDtMs = firstAnim ? 16 : timeMs - this.prevAnimMs;
+    const rawDtMs = anim.frame.deltaMs;
     const dtMs = Math.max(0, Math.min(100, rawDtMs));
     this.prevAnimMs = timeMs;
     const s = this.scale;
@@ -452,7 +455,7 @@ export const rigPoseMethods = {
     const rootDx = this.root.x - this.jigglePrevRootX;
     const rootDy = this.root.y - this.jigglePrevRootY;
     const rootCut = Math.hypot(rootDx, rootDy) > INTERP_SNAP_PLAYER;
-    const jiggleRebase = firstAnim || rawDtMs <= 0 || rawDtMs > JIGGLE_MAX_DT_S * 1000 || rootCut;
+    const jiggleRebase = firstAnim || anim.frame.cut || rootCut;
     this.jigglePrevRootX = this.root.x;
     this.jigglePrevRootY = this.root.y;
     const view = this.scene.cameras.main.worldView;
@@ -475,9 +478,7 @@ export const rigPoseMethods = {
     const cancellationMoveUnitY = cancellationMoveActive
       ? cancellationMoveY / cancellationMoveLength
       : 0;
-    const localAttackIntent =
-      anim.isSelf && this.scene.input?.activePointer?.rightButtonDown?.() === true;
-    const flourishAttackIntent = anim.fireHeld === true || localAttackIntent;
+    const flourishAttackIntent = anim.fireHeld === true;
     const flourishAttackReleased = this.flourishAttackIntentHeld && !flourishAttackIntent;
     this.flourishAttackIntentHeld = flourishAttackIntent;
     const flourishActive = this.flourishChannels[0].active || this.flourishChannels[1].active;
@@ -513,7 +514,7 @@ export const rigPoseMethods = {
         this.gunRecoveryWallUntilMs,
       );
     }
-    const flourishTimingCut = rootCut || rawDtMs <= 0 || rawDtMs > JIGGLE_MAX_DT_S * 1000;
+    const flourishTimingCut = rootCut || anim.frame.cut;
     const flourishClockCut = outsidePaperView || flourishTimingCut;
     const preserveEndHookArmThroughAttackIntent =
       this.weaponDef?.performance?.flourishStyle === "pistol-end-hook" && flourishArmed;
@@ -644,7 +645,7 @@ export const rigPoseMethods = {
     // signal (nonzero only while the speed is CHANGING) that trails the limbs behind the body — free-moving
     // weight that reacts to input, not a hard-set loop. `strideT` accumulates by DISTANCE so the step cadence
     // matches real speed exactly (and freezes when you stop). `lagX/Y` are ~[-1,1] world-space inertia.
-    const dtS = Math.max(0.001, dtMs / 1000);
+    const dtS = dtMs / 1000;
     const spd = anim.speed ?? 0;
     const rvx = anim.moveX * spd;
     const rvy = anim.moveY * spd;
@@ -3558,6 +3559,94 @@ export const rigPoseMethods = {
           s * this.secondaryGripFlourish.forward + c * this.secondaryGripFlourish.lateral;
       }
     }
+
+    // B68 final-channel arbitration. The existing modules author candidate transforms above; this is the
+    // only commit gate. B54 claims scope attacks to their declared limbs, then a total priority order and
+    // retained crossfade remove execution-order ownership and hard release pops.
+    const actionActive =
+      posePhase !== "idle" || ownFront > 0.001 || ownBack > 0.001 || ownFeet > 0.001;
+    const activeBeat =
+      this.swing?.comboStep ?? (this.comboFamily !== "none" ? this.swingStep : undefined);
+    const heldClaims = this.weaponDef?.limbClaims?.held;
+    const beatClaims =
+      activeBeat === undefined
+        ? undefined
+        : (this.weaponDef?.limbClaims?.comboBeats[activeBeat] ??
+          this.weaponDef?.limbClaims?.comboBeats[Math.max(0, activeBeat - 1)]);
+    const claimWeight = (limb: WeaponLimb, fallback: number): number => {
+      if (!actionActive) return 0;
+      if (!heldClaims && !beatClaims) return fallback;
+      return heldClaims?.some((claim) => claim.limb === limb) ||
+        beatClaims?.some((claim) => claim.limb === limb)
+        ? Math.max(fallback, 0.001)
+        : 0;
+    };
+    const heldConstraint = (limb: WeaponLimb): number =>
+      !actionActive && heldClaims?.some((claim) => claim.limb === limb) ? 1 : 0;
+    const hardConstraint =
+      this.downed || this.ultimatePhase !== UltimatePhase.Idle || this.orbitT >= 0 ? 1 : 0;
+    const flourishBodyWeight = anyFlourishActive ? 1 : 0;
+    const mechanismActive =
+      this.revolverHammerBeat.active || this.gunHandlingCycles.some((cycle) => cycle.active);
+
+    this.limbPriority.applyWeights(
+      "body-lean",
+      this.body,
+      sceneNow,
+      hardConstraint,
+      claimWeight("body-lean", Math.max(ownFront, ownBack, ownFeet)),
+      0,
+      flourishBodyWeight,
+      gait,
+    );
+    for (const hand of this.hands) {
+      const limb = hand.elementId as WeaponLimb;
+      if (limb !== "hand-l" && limb !== "hand-r") continue;
+      const beforeX = hand.img.x;
+      const beforeY = hand.img.y;
+      const authoredOwn = hand.front ? ownFront : ownBack;
+      const channel = this.flourishChannels[hand.front ? 0 : 1];
+      const handMechanism =
+        mechanismActive &&
+        (this.weapons.some((weapon) => weapon.hand === hand) ||
+          (this.revolverHammerBeat.active &&
+            revolverHammerHandFor(this.weaponDef) === "secondary"))
+          ? 1
+          : 0;
+      this.limbPriority.applyWeights(
+        limb,
+        hand.img,
+        sceneNow,
+        Math.max(hardConstraint, heldConstraint(limb)),
+        claimWeight(limb, authoredOwn),
+        handMechanism,
+        channel?.active ? 1 : 0,
+        gait,
+      );
+      const dx = hand.img.x - beforeX;
+      const dy = hand.img.y - beforeY;
+      if (Math.abs(dx) + Math.abs(dy) > 1e-6) {
+        for (const weapon of this.weapons) {
+          if (weapon.hand !== hand) continue;
+          weapon.img.x += dx;
+          weapon.img.y += dy;
+        }
+      }
+    }
+    for (const foot of this.feet) {
+      const limb = foot.elementId as WeaponLimb;
+      if (limb !== "foot-l" && limb !== "foot-r") continue;
+      this.limbPriority.applyWeights(
+        limb,
+        foot.img,
+        sceneNow,
+        hardConstraint,
+        claimWeight(limb, ownFeet),
+        0,
+        0,
+        gait,
+      );
+    }
     const localMoveX = anim.moveX * this.facing;
     this.sampleFloatingHeadAttackLead(sceneNow, anim, anim.reducedMotion === true);
     this.syncFloatingHeadPose(
@@ -3614,6 +3703,18 @@ export const rigPoseMethods = {
       // raise/lower envelope, and determinantSign keeps the nod visually downward through either facing.
       this.boilerplateHead.y += gunCheekWeldPose.dropPx * rangedAimBlend;
       this.boilerplateHead.rotation += determinantSign * gunCheekWeldPose.nodRad * rangedAimBlend;
+    }
+    if (this.boilerplateHead) {
+      this.limbPriority.applyWeights(
+        "head",
+        this.boilerplateHead,
+        sceneNow,
+        hardConstraint,
+        claimWeight("head", Math.max(ownFront, ownBack)),
+        0,
+        anyFlourishActive ? 1 : 0,
+        gait,
+      );
     }
     const dashLean =
       this.moveStance === STANCE_DASH

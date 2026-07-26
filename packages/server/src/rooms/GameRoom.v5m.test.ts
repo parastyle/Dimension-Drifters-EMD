@@ -29,6 +29,9 @@ function makeRoom(id: string) {
   room.clients = [{ sessionId: id }];
   room.onCreate();
   room.onJoin({ sessionId: id });
+  // These fixtures verify authored per-revolution damage, not the independent 5% crit lane.
+  // A random crit is exactly 2x and otherwise makes the base-damage assertion fail one run in twenty.
+  room.weaponCritChance = () => 0;
   room.map.tiles.fill(TILE_GROUND);
   const player = room.state.players.get(id);
   const combat = room.combat.get(id);

@@ -213,6 +213,14 @@ import {
   saveReconnectReservation,
 } from "../net/reconnection.js";
 import { SnapshotBuffer, TimelineSync } from "../net/snapshots.js";
+import {
+  createPresentedActorState,
+  limitPresentedRootStep,
+  type PresentedActorState,
+  PresentedActorBuffer,
+  type PresentationFrame,
+  PresentationFrameClock,
+} from "../entities/rig/rig-presentation.js";
 import { RENDER_DPR } from "../render-dpr.js";
 import {
   type FeedbackSettings,
@@ -1422,28 +1430,11 @@ export class ArenaScene extends Phaser.Scene {
   private bossPoseRowId = "";
   private bossPoseBeatMask = 0;
   /** §4 hot-loop scratch: one sample + animation input per call site; each loop consumes it synchronously. */
-  private readonly playerSample = { x: 0, y: 0 };
+  private readonly presentationClock = new PresentationFrameClock();
+  private presentationFrame = this.presentationClock.advance(0, 0, false);
+  private readonly presentedPlayers = new Map<string, PresentedActorState>();
+  private readonly presentedEnemies = new Map<string, PresentedActorState>();
   private readonly enemySample = { x: 0, y: 0 };
-  private readonly playerAnimInput: RigAnim = {
-    moveX: 0,
-    moveY: 0,
-    speed: 0,
-    aimX: 0,
-    aimY: 0,
-    aimDir: 0,
-    isSelf: false,
-    recoilX: 0,
-    recoilY: 0,
-  };
-  private readonly enemyAnimInput: RigAnim = {
-    moveX: 0,
-    moveY: 0,
-    speed: 0,
-    aimX: 0,
-    aimY: 0,
-    aimDir: 0,
-    isSelf: false,
-  };
   /** One-tick-bounded presentation sampler. It can smooth the 20 Hz stairs but cannot declare contact. */
   private readonly enemyWindup = new Map<string, EnemyWindupSample>();
   /** §51 delayed-edge cursors: combo flags/seq are applied when the snapshot render timeline reaches their
@@ -1556,7 +1547,7 @@ export class ArenaScene extends Phaser.Scene {
   private wasFrozen = false;
   /** Server-tick timeline mapper + per-entity snapshot rings for REMOTE players and enemies. */
   private readonly timeline = new TimelineSync();
-  private readonly playerBufs = new Map<string, SnapshotBuffer>();
+  private readonly playerBufs = new Map<string, PresentedActorBuffer>();
   private readonly enemyBufs = new Map<string, SnapshotBuffer>();
   /** Last-seen fellSeq per REMOTE player — a pit snap-back purges + reseeds their snapshot ring so the
    *  interpolator can't re-walk them into the pit (review #10). (Self dust/flash stays in checkFalls.) */
@@ -2187,6 +2178,8 @@ export class ArenaScene extends Phaser.Scene {
     this.meleeTellCandidates.length = 0;
     this.playerBufs.clear();
     this.enemyBufs.clear();
+    this.presentedPlayers.clear();
+    this.presentedEnemies.clear();
     this.snapFell.clear();
     this.enemyHp.clear();
     this.enemyCrit.clear();
@@ -2311,6 +2304,8 @@ export class ArenaScene extends Phaser.Scene {
     this.lastElevatorPhase = -1;
     this.predictor = null;
     this.timeline.reset();
+    this.presentationClock.reset();
+    this.presentationFrame = this.presentationClock.advance(0, 0, false);
     this.inputAccMs = 0;
     this.jumpQueued = false;
     this.spaceGesture.reset();
@@ -3563,7 +3558,7 @@ export class ArenaScene extends Phaser.Scene {
    *  epoch. Remote poses deliberately include INTERP_DELAY_MS: their attack meets the interpolated body at
    *  the same rendered tick. The rare unpredicted local fallback removes that delay. */
   private attackClientEpoch(attackTick: number, remote: boolean): number {
-    const now = this.time.now;
+    const now = this.presentationFrame.wallNowMs;
     if (!this.timeline.ready) return now;
     const epoch = now + attackTick * TICK_MS - this.timeline.renderTime(now);
     return remote ? epoch : epoch - INTERP_DELAY_MS;
@@ -3576,44 +3571,45 @@ export class ArenaScene extends Phaser.Scene {
     const room = this.room;
     if (!room) return;
     const selfId = room.sessionId;
-    room.state.players.forEach((player, id) => {
+    room.state.players.forEach((_player, id) => {
       const rig = this.blobs.get(id);
-      if (!rig) return;
+      const presented = this.presentedPlayers.get(id);
+      if (!rig || !presented) return;
       rig.setAuthoritativeAttackClock(
-        player.attackTick,
-        room.state.tick,
-        player.charges,
-        player.maxCharges,
-        player.dualWield?.fireInputHeld,
-        player.weaponChargeActive,
+        presented.attackTick,
+        presented.tick,
+        presented.charges,
+        presented.maxCharges,
+        presented.dualFireHeld,
+        presented.weaponChargeActive,
       );
-      const seq = player.attackSeq >>> 0;
+      const seq = presented.attackSeq >>> 0;
       const previous = this.lastAttackSeq.get(id);
       const previousHeld = this.lastAttackHeld.get(id);
       const remote = id !== selfId;
 
       if (previous === undefined) {
         this.lastAttackSeq.set(id, seq);
-        this.lastAttackHeld.set(id, player.attackHeld);
+        this.lastAttackHeld.set(id, presented.attackHeld);
         if (!remote) {
           this.localPredictedAttackSeq = seq;
           this.localPredictedAttackAtMs = -1e9;
         }
-        const epoch = this.attackClientEpoch(player.attackTick, remote);
-        rig.setAttackBeat(seq, player.attackHeld, epoch);
+        const epoch = this.attackClientEpoch(presented.attackTick, remote);
+        rig.setAttackBeat(seq, presented.attackHeld, epoch);
         // A join can land inside the short authoritative latch. Let a newly-observed remote catch up to the
         // live pose, but never manufacture a second owner swing on scene attach.
-        if (!remote || !player.attackHeld || seq === 0) return;
-        this.triggerAcceptedRigAttack(rig, player, epoch);
+        if (!remote || !presented.attackHeld || seq === 0) return;
+        this.triggerAcceptedRigAttack(rig, presented, epoch);
         return;
       }
 
       const seqChanged = previous !== seq;
-      const heldChanged = previousHeld !== player.attackHeld;
+      const heldChanged = previousHeld !== presented.attackHeld;
       if (!seqChanged && !heldChanged) return;
-      this.lastAttackHeld.set(id, player.attackHeld);
-      const epoch = this.attackClientEpoch(player.attackTick, remote);
-      rig.setAttackBeat(seq, player.attackHeld, epoch);
+      this.lastAttackHeld.set(id, presented.attackHeld);
+      const epoch = this.attackClientEpoch(presented.attackTick, remote);
+      rig.setAttackBeat(seq, presented.attackHeld, epoch);
       if (!seqChanged) return;
       this.lastAttackSeq.set(id, seq);
 
@@ -3629,7 +3625,7 @@ export class ArenaScene extends Phaser.Scene {
         this.localPredictedAttackSeq = seq;
         this.localPredictedAttackAtMs = -1e9;
       }
-      this.triggerAcceptedRigAttack(rig, player, epoch);
+      this.triggerAcceptedRigAttack(rig, presented, epoch);
     });
   }
 
@@ -3743,7 +3739,7 @@ export class ArenaScene extends Phaser.Scene {
   }
 
   private ultimatePresentationPhase(
-    row: PlayerState["ultimate"],
+    row: Pick<PlayerState["ultimate"], "phase" | "startTick" | "resolveTick" | "endTick">,
     tick: number,
   ): UltimatePhaseValue {
     if (row.phase === UltimatePhase.Idle || !this.tickAtOrAfter(tick, row.startTick))
@@ -3760,7 +3756,7 @@ export class ArenaScene extends Phaser.Scene {
   }
 
   private ultimatePhaseProgress(
-    row: PlayerState["ultimate"],
+    row: Pick<PlayerState["ultimate"], "startTick" | "resolveTick" | "endTick">,
     tick: number,
     phase: UltimatePhaseValue,
   ): number {
@@ -3777,13 +3773,17 @@ export class ArenaScene extends Phaser.Scene {
     return Math.max(0, Math.min(1, ((tick - start) >>> 0) / duration));
   }
 
-  private triggerAcceptedRigAttack(rig: SpriteRig, player: PlayerState, epoch: number): void {
-    const weapon = WEAPONS[player.weapon] ?? WEAPONS[DEFAULT_WEAPON];
+  private triggerAcceptedRigAttack(
+    rig: SpriteRig,
+    actor: PresentedActorState,
+    epoch: number,
+  ): void {
+    const weapon = WEAPONS[actor.weaponId] ?? WEAPONS[DEFAULT_WEAPON];
     if (!weapon) return;
     if (weapon.warp) {
-      if (player.id !== this.room?.sessionId) {
-        const impactX = player.x + Math.cos(player.aimDir) * weapon.range;
-        const impactWorldY = player.y + Math.sin(player.aimDir) * weapon.range;
+      if (actor.actorId !== this.room?.sessionId) {
+        const impactX = actor.rootX + Math.cos(actor.aimDir) * weapon.range;
+        const impactWorldY = actor.rootY + Math.sin(actor.aimDir) * weapon.range;
         const impactY = this.belt ? this.beltY(impactWorldY) : impactWorldY;
         spawnTeslaWarpDeparture(this, rig.x, rig.y);
         spawnTeslaWarpArrival(this, impactX, impactY);
@@ -3794,26 +3794,26 @@ export class ArenaScene extends Phaser.Scene {
     }
     const swing = swingDescriptorFor(
       weapon,
-      weapon.cooldown * lootCooldownMult(player.weaponAffix),
+      weapon.cooldown * lootCooldownMult(actor.weaponAffix),
     );
     if (weapon.tags.classPool === "caster" && !weapon.performance?.aura)
-      this.cueAttackCasterSource(weapon, swing, rig, player.aimDir);
+      this.cueAttackCasterSource(weapon, swing, rig, actor.aimDir);
     // Guns use projectile/muzzle state instead of a melee swing. Cast/tome and ordinary melee rigs share
     // this descriptor path, including the authoritative affix-adjusted cadence.
     if (weapon.gun || weapon.performance?.aura) return;
-    rig.triggerSwing(epoch, player.aimDir, swing);
-    this.cueWeaponSwingIdentity(rig, weapon, player.aimDir, rig.activeSwing ?? swing, undefined, {
-      x: player.x,
-      y: player.y,
+    rig.triggerSwing(epoch, actor.aimDir, swing);
+    this.cueWeaponSwingIdentity(rig, weapon, actor.aimDir, rig.activeSwing ?? swing, undefined, {
+      x: actor.rootX,
+      y: actor.rootY,
     });
     if (weapon.chainLightning) {
-      const aim = { x: Math.cos(player.aimDir), y: Math.sin(player.aimDir) };
+      const aim = { x: Math.cos(actor.aimDir), y: Math.sin(actor.aimDir) };
       this.spawnChain(rig.x, rig.y, aim, weapon, rig.activeSwing ?? swing);
     }
     this.playWeaponSourceAudio(
       weapon,
       rig.x,
-      player.id === this.room?.sessionId,
+      actor.actorId === this.room?.sessionId,
       rig.activeSwing ?? swing,
     );
   }
@@ -4729,6 +4729,7 @@ export class ArenaScene extends Phaser.Scene {
     this.equipped.delete(id);
     this.charOf.delete(id);
     this.playerBufs.delete(id); // §4 v0.107 snapshot ring + fell watcher go with the player
+    this.presentedPlayers.delete(id);
     this.snapFell.delete(id);
     // §8/§6/§17 edge-trigger cursors are session-scoped too — a departed id must not live in these maps.
     this.lastParried.delete(id);
@@ -5140,7 +5141,6 @@ export class ArenaScene extends Phaser.Scene {
     this.syncPetRigs();
     this.checkFalls(); // §17 fall VFX (after blobs so the landing poof lands right)
     this.equipWeapons();
-    this.routePlayerAttacks();
     this.routeUltimates();
     this.maybePlayUltimateReveal(selfP);
     // Receipts must drain while last frame's target rigs still exist. This both preserves the death contact
@@ -5158,9 +5158,16 @@ export class ArenaScene extends Phaser.Scene {
     if (cancelFlourishThisFrame) {
       this.blobs.get(this.room.sessionId)?.cancelFlourish("raw-arena-input");
     }
+    const presentationRunning = this.time.now >= this.frozenUntil;
+    this.presentationFrame = this.presentationClock.advance(
+      _time,
+      deltaMs,
+      presentationRunning,
+    );
+    this.animClock = this.presentationFrame.nowMs;
     // Hit-stop (§20): briefly freeze the visuals on impactful events for weight. Input/sync keep
     // running so it doesn't feel laggy; positions/poses catch up when the freeze lifts.
-    if (this.time.now >= this.frozenUntil) {
+    if (presentationRunning) {
       // §4 v0.107 UNFREEZE edge: the predictor kept ticking through the freeze but the rig didn't move —
       // fold the accrued displacement into the error offset so the catch-up GLIDES instead of popping
       // ~42px on the exact frame that was supposed to feel weighty (review #11).
@@ -5179,18 +5186,14 @@ export class ArenaScene extends Phaser.Scene {
         }
       }
       this.wasFrozen = false;
-      // §7 v0.105 de-clunk: advance the ANIMATION clock only on UNFROZEN frames, so a hit-stop pauses the
-      // rig's swing/brace/idle timing too (they ride `animClock`) instead of skipping ~a third of a swing.
-      this.animClock += deltaMs;
       this.updatePaperDeaths(deltaMs);
-      this.interpolate(deltaMs);
+      this.presentBlobs(this.presentationFrame);
       this.interpolateEnemies(deltaMs);
       this.interpolateWorm(deltaMs);
       this.processPredictedMeleeContacts();
       this.moveProjectiles(this.deltaSec);
-      this.animateBlobs(deltaMs);
       this.animateEnemies(deltaMs);
-      this.updatePetRigs(deltaMs);
+      this.updatePetRigs();
       this.projectBelt(); // §29 belt mode: remap floor objects onto the depth band + depth-sort (no-op otherwise)
       this.renderProjectileTells(); // M2: parry tell on incoming hostile shots (drawn on the white-tell layer)
     } else {
@@ -5475,6 +5478,7 @@ export class ArenaScene extends Phaser.Scene {
         this.enemyComboPresentation.delete(id);
         this.meleeFullTells.delete(id);
         this.enemyBufs.delete(id); // §4 v0.107 ids RECYCLE (restart resets enemySeq) — never bracket stale snaps
+        this.presentedEnemies.delete(id);
         if (rig) {
           // §6 v0.103: a rift descent bulk-clears the horde — those removals are "left behind", not
           // kills. During the mute window they vanish silently (no pop/poof/hit-stop celebration).
@@ -6084,7 +6088,16 @@ export class ArenaScene extends Phaser.Scene {
       }
       rig.renderPrevX = rig.x;
       rig.renderPrevY = rig.y;
-      const anim = this.enemyAnimInput;
+      let anim = this.presentedEnemies.get(id);
+      if (!anim) {
+        anim = createPresentedActorState(this.presentationFrame);
+        this.presentedEnemies.set(id, anim);
+      }
+      anim.frame = this.presentationFrame;
+      anim.rootX = rig.x;
+      anim.rootY = rig.y;
+      anim.height = 0;
+      anim.alive = true;
       anim.moveX = mx;
       anim.moveY = my;
       anim.speed = speed;
@@ -6123,7 +6136,7 @@ export class ArenaScene extends Phaser.Scene {
         if (es && es.kind === this.room?.state.bossKind)
           this.applyBossTelegraphPose(rig, es.kind, anim);
       }
-      rig.animate(this.animClock, anim);
+      rig.animate(anim);
       // §8 Brand tint — and §16 OLD RUST glows the same heat-orange at P3 ENRAGE (overheating).
       const enraged = es?.kind === "old-rust" && (this.room?.state.bossPhase ?? 0) >= 3;
       rig.setBranded((es?.branded ?? 0) > 0 || enraged);
@@ -8665,65 +8678,6 @@ export class ArenaScene extends Phaser.Scene {
     }
   }
 
-  private interpolate(deltaMs: number): void {
-    if (!this.room) return;
-    // §4 v0.107: SELF renders the PREDICTOR (instant response — no lerp, no round-trip); REMOTES render
-    // their snapshot rings at the delayed server-tick timeline (faithful motion under jitter — no
-    // τ-trailing, no rubber-banding). Teleport cuts live inside both paths (predictor hard-resync on
-    // teleportSeq / ring gap-snap + fellSeq reset). Fallback = raw state (pre-timeline first frames).
-    const selfId = this.room.sessionId;
-    const rt = this.timeline.ready ? this.timeline.renderTime(this.time.now) : -1;
-    this.room.state.players.forEach((player, id) => {
-      const blob = this.blobs.get(id);
-      if (!blob) return;
-      if (id === selfId && this.predictor) {
-        this.predictor.decayError(deltaMs / 1000, this.curDx, this.curDy);
-        const r = this.predictor.renderPos(this.curDx, this.curDy, this.inputAccMs / 1000);
-        const weapon = WEAPONS[player.weapon];
-        const presentationOnlyGunRecoil = !!weapon?.gun;
-        const candidate = presentationOnlyGunRecoil
-          ? this.predictor.boundLocomotionPresentation(player.x, player.y, r.x, r.y)
-          : r;
-        this.selfPredictionCandidateX = candidate.x;
-        this.selfPredictionCandidateY = candidate.y;
-        const previousWorldX = Number.isFinite(this.selfPresentedWorldX)
-          ? this.selfPresentedWorldX
-          : player.x;
-        const previousWorldY = Number.isFinite(this.selfPresentedWorldY)
-          ? this.selfPresentedWorldY
-          : player.y;
-        const presented = this.predictor.constrainRenderStep(
-          previousWorldX,
-          previousWorldY,
-          candidate.x,
-          candidate.y,
-          this.curDx,
-          this.curDy,
-          r.stance === STANCE_NONE && !presentationOnlyGunRecoil,
-        );
-        this.selfPresentedWorldX = presented.x;
-        this.selfPresentedWorldY = presented.y;
-        blob.setPosition(presented.x, presented.y);
-        this.selfPredHeight = r.height;
-        this.selfPredVh = r.vh;
-        this.selfPredStance = r.stance;
-        this.selfPredSlidePhase = r.slidePhase;
-        this.selfPredSlideTick = r.slideTick;
-        return;
-      }
-      const s =
-        rt >= 0
-          ? this.playerBufs.get(id)?.sampleInto(rt, INTERP_SNAP_PLAYER, this.playerSample)
-          : null;
-      if (s) blob.setPosition(s.x, s.y);
-      else blob.setPosition(player.x, player.y);
-      if (id === selfId) {
-        this.selfPresentedWorldX = s?.x ?? player.x;
-        this.selfPresentedWorldY = s?.y ?? player.y;
-      }
-    });
-  }
-
   /** Keep the camera locked on the local player every frame (robust vs startFollow drift). */
   /** §29 belt DEPTH projection: world y → foreshortened screen-plane y (world units). Pure. */
   private beltY(worldY: number): number {
@@ -9339,20 +9293,140 @@ export class ArenaScene extends Phaser.Scene {
   }
 
   /** Drive each character's procedural animation from its render-velocity + the cursor aim. */
-  private animateBlobs(deltaMs: number): void {
+  private presentBlobs(frame: PresentationFrame): void {
     const selfId = this.room?.sessionId;
+    if (!selfId || !this.room) return;
+    const deltaMs = frame.deltaMs;
     const cam = this.cameras.main;
     const pointer = this.input.activePointer;
-    const remoteUltimateTick = Math.max(
-      0,
-      Math.floor(
-        (this.timeline.ready
-          ? this.timeline.renderTime(this.time.now)
-          : (this.room?.state.tick ?? 0) * TICK_MS - INTERP_DELAY_MS) / TICK_MS,
-      ),
-    );
-    const invDt = deltaMs > 0 ? 1000 / deltaMs : 0; // px/frame → px/s for the §5 gait blend
+    const remoteRenderTime = this.timeline.ready
+      ? this.timeline.renderTime(frame.wallNowMs)
+      : -1;
     const reducedMotion = prefersReducedPaperMotion();
+
+    const writeLatest = (player: PlayerState, state: PresentedActorState): void => {
+      const speed = Math.hypot(player.mvx, player.mvy);
+      state.frame = frame;
+      state.tick = this.room?.state.tick ?? 0;
+      state.actorId = player.id;
+      state.weaponId = player.weapon;
+      state.weaponAffix = player.weaponAffix;
+      state.rootX = player.x;
+      state.rootY = player.y;
+      state.height = player.height;
+      state.hp = player.hp;
+      state.jumpVh = player.vh;
+      state.moveX = speed > 0.001 ? player.mvx / speed : 0;
+      state.moveY = speed > 0.001 ? player.mvy / speed : 0;
+      state.speed = speed;
+      state.recoilX = player.vx;
+      state.recoilY = player.vy;
+      state.aimDir = player.aimDir;
+      state.moveStance = player.moveStance as MoveStance;
+      state.slidePhase = player.slidePhase as SlidePhase;
+      state.slideTick = player.slidePhaseTick;
+      state.alive = player.alive;
+      state.revivedSeq = player.revivedSeq;
+      state.juggledSeq = player.juggledSeq;
+      state.poundSeq = player.poundSeq;
+      state.attackSeq = player.attackSeq;
+      state.attackTick = player.attackTick;
+      state.attackHeld = player.attackHeld;
+      state.charges = player.charges;
+      state.maxCharges = player.maxCharges;
+      state.dualFireHeld = player.dualWield?.fireInputHeld === true;
+      state.weaponChargeActive = player.weaponChargeActive;
+      state.teleportSeq = player.teleportSeq;
+      state.fireHeld = player.attackHeld || player.weaponChargeActive;
+      state.ultimate.archetype = player.ultimate.archetype;
+      state.ultimate.phase = player.ultimate.phase;
+      state.ultimate.startTick = player.ultimate.startTick;
+      state.ultimate.resolveTick = player.ultimate.resolveTick;
+      state.ultimate.endTick = player.ultimate.endTick;
+    };
+
+    // Sample root and pose together before any per-actor visual consumer runs.
+    this.room.state.players.forEach((player, id) => {
+      const blob = this.blobs.get(id);
+      if (!blob) return;
+      let state = this.presentedPlayers.get(id);
+      if (!state) {
+        state = createPresentedActorState(frame);
+        this.presentedPlayers.set(id, state);
+      }
+      writeLatest(player, state);
+      const isSelf = id === selfId;
+      state.isSelf = isSelf;
+      if (isSelf && this.predictor) {
+        this.predictor.decayError(frame.deltaSeconds, this.curDx, this.curDy);
+        const predicted = this.predictor.renderPos(
+          this.curDx,
+          this.curDy,
+          this.inputAccMs / 1000,
+        );
+        const presentationOnlyGunRecoil = !!WEAPONS[player.weapon]?.gun;
+        const candidate = presentationOnlyGunRecoil
+          ? this.predictor.boundLocomotionPresentation(
+              player.x,
+              player.y,
+              predicted.x,
+              predicted.y,
+            )
+          : predicted;
+        this.selfPredictionCandidateX = candidate.x;
+        this.selfPredictionCandidateY = candidate.y;
+        const previousWorldX = Number.isFinite(this.selfPresentedWorldX)
+          ? this.selfPresentedWorldX
+          : player.x;
+        const previousWorldY = Number.isFinite(this.selfPresentedWorldY)
+          ? this.selfPresentedWorldY
+          : player.y;
+        const constrainedRoot = this.predictor.constrainRenderStep(
+          previousWorldX,
+          previousWorldY,
+          candidate.x,
+          candidate.y,
+          this.curDx,
+          this.curDy,
+          predicted.stance === STANCE_NONE && !presentationOnlyGunRecoil,
+        );
+        const motion = this.predictor.clientMovementReport();
+        const locomotionSpeed = Math.hypot(motion.mvx, motion.mvy);
+        const recoilSpeed = Math.hypot(motion.vx, motion.vy);
+        const root = limitPresentedRootStep(
+          previousWorldX,
+          previousWorldY,
+          constrainedRoot.x,
+          constrainedRoot.y,
+          frame.wallDeltaMs,
+          locomotionSpeed + recoilSpeed + 48,
+          INTERP_SNAP_PLAYER,
+        );
+        state.rootX = root.x;
+        state.rootY = root.y;
+        state.height = predicted.height;
+        state.jumpVh = predicted.vh;
+        state.moveStance = predicted.stance;
+        state.slidePhase = predicted.slidePhase;
+        state.slideTick = predicted.slideTick;
+        state.moveX = locomotionSpeed > 0.001 ? motion.mvx / locomotionSpeed : 0;
+        state.moveY = locomotionSpeed > 0.001 ? motion.mvy / locomotionSpeed : 0;
+        state.speed = locomotionSpeed;
+        state.recoilX = motion.vx;
+        state.recoilY = motion.vy;
+        this.selfPresentedWorldX = root.x;
+        this.selfPresentedWorldY = root.y;
+        this.selfPredHeight = predicted.height;
+        this.selfPredVh = predicted.vh;
+        this.selfPredStance = predicted.stance;
+        this.selfPredSlidePhase = predicted.slidePhase;
+        this.selfPredSlideTick = predicted.slideTick;
+      } else if (!isSelf && remoteRenderTime >= 0) {
+        this.playerBufs.get(id)?.sampleInto(remoteRenderTime, frame, state);
+      }
+      blob.setPosition(state.rootX, state.rootY);
+    });
+    this.routePlayerAttacks();
 
     let aimX = 0;
     let aimY = 0;
@@ -9394,54 +9468,22 @@ export class ArenaScene extends Phaser.Scene {
     }
 
     for (const [id, blob] of this.blobs) {
-      let mx = blob.x - blob.renderPrevX;
-      let my = blob.y - blob.renderPrevY;
-      let speed = Math.hypot(mx, my) * invDt; // §7 v0.105 raw render speed (px/s) for the gait blend
-      const ml = Math.hypot(mx, my);
-      if (ml > 0.001) {
-        mx /= ml;
-        my /= ml;
-      } else {
-        mx = 0;
-        my = 0;
-      }
-      blob.renderPrevX = blob.x;
-      blob.renderPrevY = blob.y;
-      // B52: the owner root may include B51's correction/presentation debt, whose derivative is not
-      // locomotion. Feeding that frame-to-frame correction into SpriteRig made its independent gait clock
-      // alternately stall and consume several steps, snapping HEAD/limb targets while the root stayed smooth.
-      // SELF already has the exact fixed-tick locomotion vector that moved prediction; use that clock while
-      // movement input is held. Keep render motion for remotes, authored impulses, and blocked/idle frames.
-      if (
-        id === selfId &&
-        this.predictor &&
-        speed > 1 &&
-        Math.hypot(this.curDx, this.curDy) > 0.001
-      ) {
-        const predictedMotion = this.predictor.clientMovementReport();
-        const predictedSpeed = Math.hypot(predictedMotion.mvx, predictedMotion.mvy);
-        if (predictedSpeed > 0.001) {
-          mx = predictedMotion.mvx / predictedSpeed;
-          my = predictedMotion.mvy / predictedSpeed;
-          speed = predictedSpeed;
-        }
-      }
+      const anim = this.presentedPlayers.get(id);
+      const pl = this.room.state.players.get(id);
+      if (!anim || !pl) continue;
+      const mx = anim.moveX;
+      const my = anim.moveY;
+      const speed = anim.speed ?? 0;
 
       // §5/§20 (Stage B): lift the rig by the HEIGHT arc. §4 v0.107: SELF rides the PREDICTED arc (the
       // hop starts the frame you press SPACE — no round-trip); remotes ride the synced height (smoothed
       // by the v0.105 hop lerp in the rig).
-      const pl = this.room?.state.players.get(id);
-      const isSelfPred = id === selfId && this.predictor !== null;
-      const jumpHeight = isSelfPred ? this.selfPredHeight : (pl?.height ?? 0);
-      const jumpVh = isSelfPred ? this.selfPredVh : (pl?.vh ?? 0);
-      const moveStance = isSelfPred
-        ? this.selfPredStance
-        : ((pl?.moveStance ?? STANCE_NONE) as MoveStance);
-      const slidePhase = isSelfPred
-        ? this.selfPredSlidePhase
-        : ((pl?.slidePhase ?? SLIDE_PHASE_OFF) as SlidePhase);
-      const slideTick = isSelfPred ? this.selfPredSlideTick : (pl?.slidePhaseTick ?? 0);
-      const juggledSeq = pl?.juggledSeq ?? 0;
+      const jumpHeight = anim.height;
+      const jumpVh = anim.jumpVh ?? 0;
+      const moveStance = anim.moveStance ?? STANCE_NONE;
+      const slidePhase = anim.slidePhase ?? SLIDE_PHASE_OFF;
+      const slideTick = anim.slideTick ?? 0;
+      const juggledSeq = anim.juggledSeq;
       let juggle = this.jugglePresentation.get(id);
       if (!juggle) {
         juggle = { seq: juggledSeq, lastAtMs: -1e9 };
@@ -9479,7 +9521,7 @@ export class ArenaScene extends Phaser.Scene {
         moveStance,
         slidePhase,
         slideTick,
-        pl?.poundSeq ?? 0,
+        anim.poundSeq,
         mx,
         my,
         speed,
@@ -9488,9 +9530,9 @@ export class ArenaScene extends Phaser.Scene {
       );
 
       // §6 DOWNED look + revive pop. A downed body greys out + fades; a rez (revivedSeq tick) pops it green.
-      const alive = pl?.alive ?? true;
+      const alive = anim.alive;
       blob.setDowned(!alive);
-      const rs = pl?.revivedSeq ?? 0;
+      const rs = anim.revivedSeq;
       if (this.lastRevived.get(id) !== rs) {
         if (this.lastRevived.has(id) && alive) {
           blob.flash(170, 0x9cff3b);
@@ -9504,23 +9546,11 @@ export class ArenaScene extends Phaser.Scene {
       }
 
       const isSelf = id === selfId;
-      const anim = this.playerAnimInput;
-      anim.moveX = mx;
-      anim.moveY = my;
       anim.desiredMoveX = isSelf ? this.curDx : undefined;
       anim.desiredMoveY = isSelf ? this.curDy : undefined;
-      anim.speed = speed;
       anim.aimX = isSelf ? aimX : 0;
       anim.aimY = isSelf ? aimY : 0;
       anim.aimDxPx = isSelf ? aimDxPx : undefined; // §37 raw offset → the flip commits at the midpoint
-      anim.aimDir = pl?.aimDir ?? 0; // §9 remote gun pose tracks the synced aim
-      anim.isSelf = isSelf;
-      anim.recoilX = pl?.vx ?? 0; // §20 momentum flinch (gun recoil / hit knockback)
-      anim.recoilY = pl?.vy ?? 0;
-      anim.jumpVh = jumpVh;
-      anim.moveStance = moveStance;
-      anim.slidePhase = slidePhase;
-      anim.slideTick = slideTick;
       anim.reducedMotion = reducedMotion;
       const beam = this.room?.state.beams.get(id);
       const beamChannelLive =
@@ -9539,55 +9569,56 @@ export class ArenaScene extends Phaser.Scene {
           Math.floor(Number(pl.dualWield?.weaponResource?.valueQ) || 0) > 0) &&
         pointer.rightButtonDown();
       anim.fireHeld =
-        pl?.attackHeld === true ||
-        pl?.weaponChargeActive === true ||
+        anim.fireHeld === true ||
         beamChannelLive ||
         localChannelHeld;
-      if (pl) {
-        const ultimateTick = isSelf ? (this.room?.state.tick ?? 0) : remoteUltimateTick;
-        const ultimatePhase = isSelf
-          ? (pl.ultimate.phase as UltimatePhaseValue)
-          : this.ultimatePresentationPhase(pl.ultimate, ultimateTick);
-        blob.setUltimatePresentation(
-          ultimateFamilyForCode(pl.ultimate.archetype),
-          ultimatePhase,
-          this.ultimatePhaseProgress(pl.ultimate, ultimateTick, ultimatePhase),
-          reducedMotion,
-        );
-      }
-      blob.animate(this.animClock, anim);
+      const ultimateTick = anim.tick;
+      const ultimatePhase = isSelf
+        ? (anim.ultimate.phase as UltimatePhaseValue)
+        : this.ultimatePresentationPhase(anim.ultimate, ultimateTick);
+      blob.setUltimatePresentation(
+        ultimateFamilyForCode(anim.ultimate.archetype),
+        ultimatePhase,
+        this.ultimatePhaseProgress(anim.ultimate, ultimateTick, ultimatePhase),
+        reducedMotion,
+      );
+      blob.animate(anim);
       blob.setDepth(blob.y);
     }
   }
 
-  private updatePetRigs(deltaMs: number): void {
+  private updatePetRigs(): void {
     if (!this.room) return;
     const selfId = this.room.sessionId;
     const reducedMotion = prefersReducedPaperMotion();
-    this.room.state.players.forEach((player, id) => {
+    this.room.state.players.forEach((_player, id) => {
       const pet = this.petRigs.get(id);
       const owner = this.blobs.get(id);
-      if (!pet || !owner) return;
+      const presented = this.presentedPlayers.get(id);
+      if (!pet || !owner || !presented) return;
       const previousHp = this.petOwnerHp.get(id);
-      if (previousHp !== undefined && player.hp < previousHp - 0.01)
-        pet.onOwnerHit(player.vx, player.vy, this.time.now);
-      this.petOwnerHp.set(id, player.hp);
+      if (previousHp !== undefined && presented.hp < previousHp - 0.01)
+        pet.onOwnerHit(
+          presented.recoilX ?? 0,
+          presented.recoilY ?? 0,
+          presented.frame.nowMs,
+        );
+      this.petOwnerHp.set(id, presented.hp);
       const isSelf = id === selfId;
-      const stance =
-        isSelf && this.predictor ? this.selfPredStance : (player.moveStance as MoveStance);
-      const aimX = isSelf ? this.selfAim.x : Math.cos(player.aimDir);
-      const aimY = isSelf ? this.selfAim.y : Math.sin(player.aimDir);
+      const stance = presented.moveStance ?? STANCE_NONE;
+      const aimX = isSelf ? this.selfAim.x : Math.cos(presented.aimDir);
+      const aimY = isSelf ? this.selfAim.y : Math.sin(presented.aimDir);
       pet.update(
-        this.time.now,
-        deltaMs,
+        presented.frame.nowMs,
+        presented.frame.deltaMs,
         owner.x,
         owner.y,
         aimX,
         aimY,
         stance,
-        player.teleportSeq,
-        player.attackSeq,
-        !player.alive,
+        presented.teleportSeq,
+        presented.attackSeq,
+        !presented.alive,
         reducedMotion,
       );
       this.writePetTelegraphAvoidance(
@@ -14228,13 +14259,13 @@ export class ArenaScene extends Phaser.Scene {
       if (id === selfId) return; // self renders from the predictor, not snapshots
       let buf = this.playerBufs.get(id);
       if (!buf) {
-        buf = new SnapshotBuffer();
+        buf = new PresentedActorBuffer();
         this.playerBufs.set(id, buf);
       }
       // A pit snap-back must CUT the remote's ring, not leave a path back into the pit (review #10).
       const prevFell = this.snapFell.get(id);
-      if (prevFell !== undefined && prevFell !== p.fellSeq) buf.reset(t, p.x, p.y);
-      else buf.push(t, p.x, p.y);
+      if (prevFell !== undefined && prevFell !== p.fellSeq) buf.reset(t, p);
+      else buf.push(t, p);
       this.snapFell.set(id, p.fellSeq);
     });
     state.enemies.forEach((e, id) => {

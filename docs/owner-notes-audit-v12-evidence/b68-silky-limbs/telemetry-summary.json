@@ -1,0 +1,23 @@
+{
+  "capturedAt": "2026-07-26T17:15:16.073Z",
+  "command": "pnpm --filter @dd/server exec tsx ../../tools/diag-rb-telemetry.mts",
+  "coverage": {
+    "scenarios": 83,
+    "topdown": 41,
+    "belt": 42
+  },
+  "totals": {
+    "correctionRequests": 0,
+    "nonzeroCorrections": 0,
+    "silentCorrections": 0,
+    "smoothCorrections": 0,
+    "snapCorrections": 0,
+    "totalMagnitudePx": 0
+  },
+  "acceptance": {
+    "allScenariosRan": true,
+    "zeroNonzeroCorrections": true,
+    "zeroSnaps": true,
+    "passed": true
+  }
+}

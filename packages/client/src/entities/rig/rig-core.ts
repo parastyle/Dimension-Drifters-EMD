@@ -251,6 +251,8 @@ import type {
   WeaponPerformanceSample,
 } from "../../sprites/pose-language.js";
 import type { KungFuWrapPoseInput, KungFuWrapPoseSample } from "../kung-fu-wrap-pose.js";
+import type { LimbPriorityResolver, LimbResolution } from "./rig-limb-priority.js";
+import type { PresentationFrame, PresentedActorState } from "./rig-presentation.js";
 
 
 export { GEAR_PARTS_MANIFEST } from "../../sprites/gear-parts.js";
@@ -919,6 +921,7 @@ export interface RigAttackPresentationScene extends Phaser.Scene {
   ): void;
   spawnChain?(x: number, y: number, aim: { x: number; y: number }, weapon: WeaponDef): void;
   readonly animClock?: number;
+  readonly presentationFrame?: PresentationFrame;
   readonly frozenUntil?: number;
   readonly wasFrozen?: boolean;
 }
@@ -2321,6 +2324,7 @@ export interface SpriteRigContext {
   jigglePrevRootY: number;
   jiggleRootReady: boolean;
   prevAnimMs: number;
+  readonly limbPriority: LimbPriorityResolver;
   weapons: {
     img: Phaser.GameObjects.Image;
     hand: { img: Phaser.GameObjects.Image; ox: number; oy: number };
@@ -2788,7 +2792,8 @@ export interface SpriteRigContext {
   placeNodeGear(attachment: GearAttachment): void;
   topSocketPosition(attachment: GearAttachment, out: { x: number; y: number }): void;
   syncGearPose(elapsedSeconds: number, outsidePaperView: boolean, rebase: boolean, reducedMotion: boolean, excitation: number, dashLean: number, landed: boolean): void;
-  animate(timeMs: number, anim: RigAnim): void;
+  animate(state: PresentedActorState): void;
+  limbPrioritySnapshot(): Readonly<Partial<Record<import("@dd/shared").WeaponLimb, LimbResolution>>>;
 }
 const SpriteRig = SPRITE_RIG_STATICS;
 

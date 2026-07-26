@@ -249,6 +249,7 @@ import { rigCombatMethods } from "./rig/rig-combat.js";
 import { rigGunMechanismMethods } from "./rig/rig-gun-mechanisms.js";
 import { rigFlourishMethods } from "./rig/rig-flourish.js";
 import { rigGearMethods } from "./rig/rig-gear.js";
+import { LimbPriorityResolver } from "./rig/rig-limb-priority.js";
 
 
 export { GEAR_PARTS_MANIFEST } from "../sprites/gear-parts.js";
@@ -280,6 +281,7 @@ export {
   secondaryGripHandRotationFor,
 } from "./rig/rig-gun-mechanisms.js";
 export type { RigSwingHand, RigLoadoutPiece, OpposedWhirlwindPose, WrapRigReceiver, WrapRigMount, WrapRigScaleInput, RigSwingDescriptor, WeaponBladeAttachmentPose, SwingChannelSample, RawFlourishIntent, GunHandlingMechanism, GunHandlingHandOffset, SecondaryGripTransformInput, ComboStagePoseTransform, ComboStageParentTransform, AuthoredDualCeremonySample, CloseBladePoseVariant, CloseBladePoseInput, CloseBladePoseSample, FloatingHeadSpringState, FloatingHeadSpringInput, FloatingHeadSpringTuning, RigAnim, VastagharRigPose, PaperDeathTreatment } from "./rig/rig-core.js";
+export type { PresentedActorState, PresentationFrame } from "./rig/rig-presentation.js";
 
 
 /**
@@ -458,6 +460,8 @@ export class SpriteRig {
   private jiggleRootReady = false;
   /** §7 v0.105 de-clunk — last `animate` clock (ms) to derive a frame dt for the eased blends; -1 = first. */
   private prevAnimMs = -1;
+  /** B68 one final owner per visual limb. Candidate modules never commit by execution order. */
+  private readonly limbPriority = new LimbPriorityResolver();
   /** §8 parry brace envelope duration (ms) ≈ PARRY_IFRAMES. Hoisted so `triggerBrace` can plateau a chain. */
     private static readonly BRACE_DUR = SPRITE_RIG_STATICS.BRACE_DUR;
     private static readonly PARRY_SUCCESS_DUR = SPRITE_RIG_STATICS.PARRY_SUCCESS_DUR;
@@ -1136,6 +1140,11 @@ export class SpriteRig {
       }
     }
     return snapshots;
+  }
+
+  /** Read-only B68 probe surface: exactly one resolved owner and blend weight per rendered limb. */
+  limbPrioritySnapshot() {
+    return this.limbPriority.snapshot();
   }
 
   /** Select the fixed blank kit without ever exposing an unresolved texture key. */
