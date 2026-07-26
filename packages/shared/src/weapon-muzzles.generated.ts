@@ -244,6 +244,28 @@ export const WEAPON_ART_MUZZLES = {
     "salvoMode": "parallel",
     "barrelMode": "parallel"
   },
+  "x2-blacktail-auto-12": {
+    "sprite": "x2-blacktail-auto-12",
+    "parts": [
+      {
+        "width": 256,
+        "height": 66
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 6,
+        "derived": {
+          "x": 255,
+          "y": 6
+        }
+      }
+    ],
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
   "x2-boneash-scattergun-rifle": {
     "sprite": "x2-boneash-scattergun-rifle",
     "parts": [

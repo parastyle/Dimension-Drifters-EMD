@@ -14874,6 +14874,61 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
     "glovePair": {
       "wrapsFeet": true
     }
+  },
+  "x2-blacktail-auto-12": {
+    "id": "x2-blacktail-auto-12",
+    "name": "Blacktail Auto 12",
+    "expansion": true,
+    "damage": 6,
+    "range": 136,
+    "halfArc": 0.58,
+    "cooldown": 0.3,
+    "displayLength": 136,
+    "swingArc": 1.8,
+    "gripFrac": 0.16,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "projectile",
+      "fireMode": "semi-auto",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "shotgun",
+      "rangeBand": "close",
+      "scaling": [
+        "STR",
+        "DEX"
+      ]
+    },
+    "recoil": 154,
+    "gripPoints": {
+      "primary": {
+        "x": 0.29,
+        "y": 0.72
+      },
+      "secondary": {
+        "x": 0.69,
+        "y": 0.71,
+        "role": "horizontal-foregrip"
+      }
+    },
+    "description": "An immaculate issue breacher whose clean gas collar and fitted reserve shells show the care of a force equipped to cross dimensions.",
+    "twoHanded": true,
+    "gun": {
+      "damage": 4,
+      "projectileSpeed": 820,
+      "range": 390,
+      "fireRate": 0.3,
+      "magazine": 8,
+      "reloadSeconds": 1.75,
+      "bulletKind": "pellet",
+      "muzzle": "boom",
+      "recoil": 0.0024,
+      "projectileArt": "bullet",
+      "pellets": 6,
+      "spread": 0.28,
+      "muzzleColor": 16747051
+    }
   }
 };
 

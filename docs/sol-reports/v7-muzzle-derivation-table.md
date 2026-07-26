@@ -1,6 +1,6 @@
 # V7 Muzzle Derivation Table
 
-Generated from sprite alpha for all 158 active projectile, beam, and authored melee-impact definitions. Coordinates are source-PNG pixels.
+Generated from sprite alpha for all 159 active projectile, beam, and authored melee-impact definitions. Coordinates are source-PNG pixels.
 
 | Weapon | Derived barrel tip | Authored muzzle point(s) | Override |
 | --- | --- | --- | --- |
@@ -15,6 +15,7 @@ Generated from sprite alpha for all 158 active projectile, beam, and authored me
 | `x2-ashfall-peacemaker` (Ashfall Peacemaker) | part-1 (255, 17.2) | part-1 (255, 17.2) | No |
 | `x2-auroral-filament-wand` (Auroral Filament Wand) | part-1 (255, 16) | part-1 (255, 16) | No |
 | `x2-barrett-50-cal-sniper` (Barrett .50-Cal Sniper) | part-1 (255, 15.5) | part-1 (255, 15.5) | No |
+| `x2-blacktail-auto-12` (Blacktail Auto 12) | part-1 (255, 6) | part-1 (255, 6) | No |
 | `x2-boneash-scattergun-rifle` (Boneash Scattergun-Rifle) | part-1 (255, 11.8) | part-1 (255, 11.8) | No |
 | `x2-bonepicker-coachgun` (Bonepicker Coachgun) | part-1 (255, 19.9) | part-1 (255, 19.9) | No |
 | `x2-boneyard-ricochet-mortar` (Boneyard Ricochet Mortar) | part-1 (255, 81.5) | part-1 (255, 81.5) | No |
