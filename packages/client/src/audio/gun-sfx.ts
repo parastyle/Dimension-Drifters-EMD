@@ -170,6 +170,7 @@ export function gunFireFamilyForWeapon(weapon: WeaponDef): GunFireFamily | undef
     case "rimfire-rifle":
       return "rotary-auto";
     case "nailgun":
+    case "puck-launcher":
     case "scrap-cannon":
     case "pistol-calibre-carbine":
       return "industrial-repeater";

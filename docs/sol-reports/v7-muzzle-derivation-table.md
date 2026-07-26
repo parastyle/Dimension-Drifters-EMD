@@ -78,6 +78,7 @@ Generated from sprite alpha for all 159 active projectile, beam, and authored me
 | `x2-gravewax-twin-idols` (Gravewax Twin Idols) | part-1 (255, 76.5)<br>part-2 (254, 74) | part-1 (255, 76.5)<br>part-2 (254, 74) | No |
 | `x2-gravewind-rimfire` (Gravewind Rimfire) | part-1 (255, 14.3) | part-1 (255, 14.3) | No |
 | `x2-grit-snubnose` (Grit Snubnose) | part-1 (255, 26.1) | part-1 (255, 26.1) | No |
+| `x2-hailbarrel-sledcaster` (Hailbarrel Sledcaster) | part-1 (255, 26.5) | part-1 (255, 26.5) | No |
 | `x2-hailshot-hand-maul` (Hailshot Hand-Maul) | part-1 (255, 16.2) | part-1 (255, 16.2) | No |
 | `x2-hailspitter-pepperbox` (Hailspitter Pepperbox) | part-1 (255, 44.3) | part-1 (252, 41)<br>part-1 (252, 54)<br>part-1 (252, 67)<br>part-1 (252, 81)<br>part-1 (252, 95)<br>part-1 (252, 109)<br>part-1 (252, 122) | Yes - The seven frosted pepperbox bores share one connected front plate; explicit art-space centres span the painted barrel cluster and launch one tight parallel lane each. |
 | `x2-hailstorm-coilgun` (Hailstorm Coilgun) | part-1 (255, 17.1) | part-1 (255, 17.1) | No |

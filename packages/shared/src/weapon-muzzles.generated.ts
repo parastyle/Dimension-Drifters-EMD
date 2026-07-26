@@ -1692,6 +1692,28 @@ export const WEAPON_ART_MUZZLES = {
     "salvoMode": "parallel",
     "barrelMode": "parallel"
   },
+  "x2-hailbarrel-sledcaster": {
+    "sprite": "x2-hailbarrel-sledcaster",
+    "parts": [
+      {
+        "width": 256,
+        "height": 80
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 26.5,
+        "derived": {
+          "x": 255,
+          "y": 26.5
+        }
+      }
+    ],
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
   "x2-hailshot-hand-maul": {
     "sprite": "x2-hailshot-hand-maul",
     "parts": [

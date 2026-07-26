@@ -25,14 +25,17 @@ const ALPHA_THRESHOLD = 48;
 // validation path; a direct invocation reports the missing prerequisite honestly.
 let WEAPONS;
 try {
-  // A newly generated gun necessarily appears in the catalog one step before its first derived muzzle.
-  // This flag bypasses only that bootstrap completeness assertion in this process; ordinary server/client
-  // imports still fail closed if a generated muzzle is missing.
+  // A newly generated gun necessarily appears one step before its first derived muzzle, and pnpm gen
+  // regenerates limb claims without rebuilding shared before this import. Bypass only those two stale
+  // generated-registry completeness assertions in this process; ordinary runtime imports remain fail-fast.
   globalThis.__DD_GENERATING_WEAPON_MUZZLES__ = true;
+  globalThis.__DD_GENERATING_WEAPON_LIMB_CLAIMS__ = true;
   ({ WEAPONS } = await import("../../packages/shared/dist/index.js"));
   delete globalThis.__DD_GENERATING_WEAPON_MUZZLES__;
+  delete globalThis.__DD_GENERATING_WEAPON_LIMB_CLAIMS__;
 } catch (error) {
   delete globalThis.__DD_GENERATING_WEAPON_MUZZLES__;
+  delete globalThis.__DD_GENERATING_WEAPON_LIMB_CLAIMS__;
   throw new Error("Build @dd/shared before deriving weapon muzzles", { cause: error });
 }
 
