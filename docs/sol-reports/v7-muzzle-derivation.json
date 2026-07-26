@@ -3539,6 +3539,28 @@
     "barrelMode": "parallel"
   },
   {
+    "id": "x2-warden-battle-rifle",
+    "name": "Warden Battle Rifle",
+    "sprite": "x2-warden-battle-rifle",
+    "derived": [
+      {
+        "part": 0,
+        "x": 323,
+        "y": 41.4
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 323,
+        "y": 41.4
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
     "id": "x2-whisperbarb-hand-crossbow",
     "name": "Whisperbarb Hand-Crossbow",
     "sprite": "x2-whisperbarb-hand-crossbow",

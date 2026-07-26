@@ -14874,6 +14874,61 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
     "glovePair": {
       "wrapsFeet": true
     }
+  },
+  "x2-warden-battle-rifle": {
+    "id": "x2-warden-battle-rifle",
+    "name": "Warden Battle Rifle",
+    "expansion": true,
+    "damage": 9,
+    "range": 272,
+    "halfArc": 0.5,
+    "cooldown": 0.4,
+    "displayLength": 162,
+    "swingArc": 1.8,
+    "gripFrac": 0.16,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "battle-rifle",
+      "rangeBand": "long",
+      "scaling": [
+        "STR",
+        "DEX"
+      ]
+    },
+    "recoil": 71,
+    "gripPoints": {
+      "primary": {
+        "x": 0.35,
+        "y": 0.73
+      },
+      "secondary": {
+        "x": 0.62,
+        "y": 0.7,
+        "role": "under-barrel"
+      }
+    },
+    "description": "A heavy frontline automatic rifle whose rigid one-piece upper and tightly fitted controls turn disciplined bursts into dependable hard-target authority.",
+    "twoHanded": true,
+    "gun": {
+      "damage": 9,
+      "projectileSpeed": 1200,
+      "range": 760,
+      "fireRate": 0.22,
+      "magazine": 20,
+      "reloadSeconds": 1.9,
+      "bulletKind": "tracer",
+      "muzzle": "heavy",
+      "recoil": 0.0017,
+      "projectileArt": "bullet",
+      "spread": 0.035,
+      "pierce": 2,
+      "muzzleColor": 12884570
+    }
   }
 };
 

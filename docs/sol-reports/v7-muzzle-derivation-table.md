@@ -1,6 +1,6 @@
 # V7 Muzzle Derivation Table
 
-Generated from sprite alpha for all 158 active projectile, beam, and authored melee-impact definitions. Coordinates are source-PNG pixels.
+Generated from sprite alpha for all 159 active projectile, beam, and authored melee-impact definitions. Coordinates are source-PNG pixels.
 
 | Weapon | Derived barrel tip | Authored muzzle point(s) | Override |
 | --- | --- | --- | --- |
@@ -156,6 +156,7 @@ Generated from sprite alpha for all 158 active projectile, beam, and authored me
 | `x2-voidwell-idol` (Voidwell Idol) | part-1 (255, 78.2) | part-1 (255, 78.2) | No |
 | `x2-voltcaster-machine-pistol` (Voltcaster Machine Pistol) | part-1 (255, 39.1) | part-1 (255, 39.1) | No |
 | `x2-voltvein-conductors` (Voltvein Conductors) | part-1 (255, 57.4)<br>part-2 (254, 56.4) | part-1 (255, 57.4)<br>part-2 (254, 56.4) | No |
+| `x2-warden-battle-rifle` (Warden Battle Rifle) | part-1 (323, 41.4) | part-1 (323, 41.4) | No |
 | `x2-whisperbarb-hand-crossbow` (Whisperbarb Hand-Crossbow) | part-1 (253, 41.5)<br>part-2 (253, 41.5) | part-1 (253, 41.5)<br>part-2 (253, 41.5) | No |
 | `x2-widowmaker-arbalest` (Widowmaker Arbalest) | part-1 (252, 51) | part-1 (252, 51) | No |
 | `x2-widowmaker-cannon` (Widowmaker Cannon) | part-1 (255, 40.4) | part-1 (255, 40.4) | No |
