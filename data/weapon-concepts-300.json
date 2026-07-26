@@ -1,7 +1,7 @@
 {
   "generated": "2026-06-17",
   "source": "design-300-weapons workflow (15 agents)",
-  "count": 343,
+  "count": 344,
   "byType": {
     "melee": 132,
     "ranged": 112,
@@ -19810,6 +19810,63 @@
         "gripFrac": 0.15
       },
       "id": "x2-deacon-burstpiece"
+    },
+    {
+      "id": "x2-mallard-marsh-pdw",
+      "name": "Mallard Marsh PDW",
+      "description": "A close-protection automatic whose compact issue frame locks solid, clears tight spaces, and keeps a disciplined burst on target.",
+      "type": "ranged",
+      "family": "machine-pistol",
+      "theme": "issue-grade compact automatic personal defence weapon with fitted woodland furniture",
+      "element": "physical",
+      "finish": "pristine",
+      "grip": "2H",
+      "gripPoints": {
+        "primary": {
+          "x": 0.34,
+          "y": 0.72
+        },
+        "secondary": {
+          "x": 0.82,
+          "y": 0.75,
+          "role": "vertical-foregrip"
+        }
+      },
+      "size": "M",
+      "rangeBand": "close",
+      "scaling": [
+        "DEX",
+        "CON"
+      ],
+      "palettePrimary": "#1B1D20",
+      "paletteAccent": "#D6A648",
+      "artPrompt": "Weapon-only in-world sprite (no character, no hands, no background scene): one compact full-auto personal defence weapon with a stubby barrel, broad squared near-black receiver, rigid top-folding wire stock, chunky moulded vertical foregrip, short curved magazine, compact bare-metal optic, and a small boxy bare-metal under-barrel laser/light combo with one visible amber lens. Close-protection issue hardware: immaculate matched finish, hard-fitted stock hinge with no slop, precise panel seams, every fastener torqued and true; only a trace of honest carbon at the muzzle. Woodland camouflage is painted only onto the stock and polymer furniture in form-following olive and deep-brown shapes; leave the barrel, optic, receiver hardware, and laser/light unit dark bare metal. Near-black charcoal base value with sparse gunmetal highlights catching top edges only; deep shadow below. Heavy bold black silhouette outline plus equally firm internal black ink dividing every panel, plate, housing, seam, fastener, and camo boundary. Slightly exaggerated broad receiver, sturdy stock hinge, and chunky foregrip. About 5 flat colours plus black ink, hard cel planes, no gradients, no soft shading, never photorealistic. One complete connected gun, flat orthographic full side-profile, fully visible, muzzle RIGHT and grip/stock LEFT. The amber lens is a small solid warm accent with no emitted beam, glow, light cone, bloom, or spill. No junk, tape, repairs, salvage, dangling pieces, sling, text, logos, serials, maker's marks, muzzle flash, projectile, scenery, floor, shadow, or extra weapon. Render on a perfectly flat fully opaque uniform #00ff00 chroma-key background with generous padding; do not use #00ff00 or near-green in the weapon.",
+      "cardartAction": "locked into its fitted stock and driving a tight amber-tracer close-protection burst through marsh-dark cover",
+      "behavior": {
+        "kind": "gun",
+        "damage": 4,
+        "projectileSpeed": 960,
+        "range": 500,
+        "fireRate": 0.075,
+        "spread": 0.095,
+        "pierce": 1,
+        "magazine": 20,
+        "reloadSeconds": 1.15,
+        "bulletKind": "tracer",
+        "projectileArt": "bullet",
+        "muzzle": "rapid",
+        "muzzleColor": 14067272,
+        "recoil": 0.00065
+      },
+      "stats": {
+        "damage": 4,
+        "range": 168,
+        "halfArc": 0.5,
+        "cooldown": 0.26,
+        "displayLength": 96,
+        "swingArc": 1.8,
+        "gripFrac": 0.22
+      }
     }
   ]
 }

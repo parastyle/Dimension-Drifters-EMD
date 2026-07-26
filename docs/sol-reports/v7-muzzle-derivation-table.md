@@ -98,6 +98,7 @@ Generated from sprite alpha for all 159 active projectile, beam, and authored me
 | `x2-leviathan-harpoon-gun` (Leviathan Harpoon Gun) | part-1 (253, 22.5) | part-1 (253, 22.5) | No |
 | `x2-m50-anti-materiel-rifle` (M-50 Anti-Materiel Rifle) | part-1 (255, 20.1) | part-1 (255, 20.1) | No |
 | `x2-magpie-scattergun` (Magpie Scattergun) | part-1 (255, 18) | part-1 (255, 18) | No |
+| `x2-mallard-marsh-pdw` (Mallard Marsh PDW) | part-1 (255, 28.5) | part-1 (255, 28.5) | No |
 | `x2-mauler-slug-thrower` (Mauler Slug-Thrower) | part-1 (255, 12.5) | part-1 (255, 12.5) | No |
 | `x2-mesa-hand-cannon` (Mesa Hand-Cannon) | part-1 (255, 28.4) | part-1 (255, 28.4) | No |
 | `x2-mesa-spine-thunder-stave` (Mesa-Spine Thunder Stave) | part-1 (255, 9.5) | part-1 (255, 9.5) | No |
