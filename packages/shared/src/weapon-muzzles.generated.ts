@@ -897,6 +897,28 @@ export const WEAPON_ART_MUZZLES = {
     "salvoMode": "cycle",
     "barrelMode": "parallel"
   },
+  "x2-deacon-burstpiece": {
+    "sprite": "x2-deacon-burstpiece",
+    "parts": [
+      {
+        "width": 256,
+        "height": 188
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 25,
+        "derived": {
+          "x": 255,
+          "y": 25
+        }
+      }
+    ],
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
   "x2-doomsday-drum-cannon": {
     "sprite": "x2-doomsday-drum-cannon",
     "parts": [

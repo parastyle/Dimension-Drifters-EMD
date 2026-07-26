@@ -29,7 +29,7 @@ describe("B45 physical gun recoil catalog", () => {
     const rangedBeams = definitions.filter(
       (weapon) => weapon.tags.classPool === "ranged" && weapon.beam,
     );
-    expect(rangedGuns).toHaveLength(113);
+    expect(rangedGuns).toHaveLength(114);
     expect(rangedBeams).toHaveLength(4);
     expect(rangedGuns.every((weapon) => (weapon.recoil ?? 0) > 0)).toBe(true);
     expect(rangedBeams.every((weapon) => (weapon.recoil ?? 0) > 0)).toBe(true);

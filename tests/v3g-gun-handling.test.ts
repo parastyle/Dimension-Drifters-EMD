@@ -80,7 +80,7 @@ describe("V3G catalog gun-handling laws", () => {
 
   it("enumerates every authored pistol without a client weapon-id list", () => {
     const pistols = tagged("pistol");
-    expect(pistols).toHaveLength(31);
+    expect(pistols).toHaveLength(32);
     expect(pistols.every((weapon) => !!(weapon.gun || weapon.beam))).toBe(true);
   });
 });

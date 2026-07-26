@@ -890,6 +890,28 @@
     "barrelMode": "parallel"
   },
   {
+    "id": "x2-deacon-burstpiece",
+    "name": "Deacon Burstpiece",
+    "sprite": "x2-deacon-burstpiece",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 25
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 25
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
     "id": "x2-doomsday-drum-cannon",
     "name": "Doomsday Drum Cannon",
     "sprite": "x2-doomsday-drum-cannon",

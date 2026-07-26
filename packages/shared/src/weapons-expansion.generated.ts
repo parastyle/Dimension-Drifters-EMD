@@ -14874,6 +14874,52 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
     "glovePair": {
       "wrapsFeet": true
     }
+  },
+  "x2-deacon-burstpiece": {
+    "id": "x2-deacon-burstpiece",
+    "name": "Deacon Burstpiece",
+    "expansion": true,
+    "damage": 5,
+    "range": 80,
+    "halfArc": 0.5,
+    "cooldown": 0.34,
+    "displayLength": 78,
+    "swingArc": 1.8,
+    "gripFrac": 0.15,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "projectile",
+      "fireMode": "semi-auto",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "machine-pistol",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX"
+      ],
+      "handling": [
+        "pistol"
+      ]
+    },
+    "recoil": 49,
+    "gun": {
+      "damage": 4,
+      "projectileSpeed": 960,
+      "range": 520,
+      "fireRate": 0.32,
+      "magazine": 8,
+      "reloadSeconds": 1.35,
+      "bulletKind": "slug",
+      "muzzle": "rapid",
+      "recoil": 0.0012,
+      "burst": {
+        "count": 3,
+        "intervalSeconds": 0.075
+      },
+      "spread": 0.05,
+      "muzzleColor": 16751915
+    }
   }
 };
 
