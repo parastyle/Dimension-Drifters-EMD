@@ -33,6 +33,64 @@ export const RARE_RELIC_IDS = [
 export type RareRelicId = (typeof RARE_RELIC_IDS)[number];
 export type DodgeRelicId = Extract<RareRelicId, `dodge-${string}`>;
 
+export const RELIC_ENERGY_POOL_PER_STACK = 10 as const;
+export const RELIC_ENERGY_REGEN_PER_STACK = 0.8 as const;
+export const RELIC_PARRY_REACH_PER_STACK = 8 as const;
+export const RELIC_DODGE_RECOVERY_PER_STACK = 0.06 as const;
+export const RELIC_MOVE_SPEED_PER_STACK = 0.03 as const;
+export const RELIC_HP_REGEN_PER_STACK = 0.25 as const;
+export const RELIC_LUCK_PER_STACK = 0.05 as const;
+export const RELIC_CRIT_PER_STACK = 0.02 as const;
+export const DEATH_WARD_HP_THRESHOLD = 0.35 as const;
+export const DEATH_WARD_COOLDOWN_SECONDS = 90 as const;
+
+export interface DodgeProfile {
+  id: "" | DodgeRelicId;
+  label: string;
+  distanceMultiplier: number;
+  cooldownSeconds: number;
+  presentation: "roll" | "shuffle" | "flip" | "phase" | "bloodhound";
+}
+
+const BASE_DODGE_PROFILE: Readonly<DodgeProfile> = Object.freeze({
+  id: "",
+  label: "Combat Roll",
+  distanceMultiplier: 1,
+  cooldownSeconds: ROLL_COOLDOWN,
+  presentation: "roll",
+});
+
+const DODGE_RELIC_PROFILES: Readonly<Record<DodgeRelicId, Readonly<DodgeProfile>>> = Object.freeze({
+  "dodge-shuffle": Object.freeze({
+    id: "dodge-shuffle",
+    label: "The Shuffle",
+    distanceMultiplier: 0.78,
+    cooldownSeconds: 2.1,
+    presentation: "shuffle",
+  }),
+  "dodge-ninja-flip": Object.freeze({
+    id: "dodge-ninja-flip",
+    label: "Ninja Flip",
+    distanceMultiplier: 1.12,
+    cooldownSeconds: 3.35,
+    presentation: "flip",
+  }),
+  "dodge-phase-step": Object.freeze({
+    id: "dodge-phase-step",
+    label: "Phase Step",
+    distanceMultiplier: 1,
+    cooldownSeconds: 2.8,
+    presentation: "phase",
+  }),
+  "dodge-bloodhound-step": Object.freeze({
+    id: "dodge-bloodhound-step",
+    label: "Bloodhound Step",
+    distanceMultiplier: 1.35,
+    cooldownSeconds: 3.8,
+    presentation: "bloodhound",
+  }),
+});
+
 export interface RelicStacks {
   energyPool: number;
   energyRegen: number;
@@ -64,45 +122,95 @@ export interface CommonRelicDef {
   label: string;
   hud: string;
   value: number;
+  desc: string;
+}
+
+function percentText(value: number): string {
+  return `${Number((value * 100).toFixed(2))}%`;
+}
+
+function commonRelicDescription(id: CommonRelicId, value: number): string {
+  switch (id) {
+    case "energy-pool":
+      return `Adds ${value} maximum Drive.`;
+    case "energy-regen":
+      return `Restores ${value} more Drive per second.`;
+    case "parry-reach":
+      return `Adds ${value} px to your parry reach.`;
+    case "dodge-recovery":
+      return `Your dodge recharges ${value} seconds sooner.`;
+    case "move-speed":
+      return `Increases movement speed by ${percentText(value)}.`;
+    case "hp-regen":
+      return `Restores ${value} more health per second.`;
+    case "luck":
+      return `Increases rare chest reward chances by ${percentText(value)}.`;
+    case "crit":
+      return `Adds ${percentText(value)} critical-hit chance.`;
+    case "jump-count":
+      return `Adds ${value} air ${value === 1 ? "jump" : "jumps"}.`;
+  }
+}
+
+function commonRelic(id: CommonRelicId, label: string, hud: string, value: number): CommonRelicDef {
+  return { id, label, hud, value, desc: commonRelicDescription(id, value) };
 }
 
 export const COMMON_RELIC_DEFS: readonly CommonRelicDef[] = [
-  { id: "energy-pool", label: "Capacitor", hud: "EN", value: 10 },
-  { id: "energy-regen", label: "Kinetic Coil", hud: "RG", value: 0.8 },
-  { id: "parry-reach", label: "Wide Guard", hud: "PR", value: 8 },
-  { id: "dodge-recovery", label: "Light Soles", hud: "DG", value: 0.06 },
-  { id: "move-speed", label: "Roadrunner Spur", hud: "MV", value: 0.03 },
-  { id: "hp-regen", label: "Mending Thread", hud: "HP", value: 0.25 },
-  { id: "luck", label: "Lucky Tooth", hud: "LK", value: 0.05 },
-  { id: "crit", label: "Keen Edge", hud: "CR", value: 0.02 },
-  { id: "jump-count", label: "Skyhook", hud: "JP", value: 1 },
+  commonRelic("energy-pool", "Capacitor", "EN", RELIC_ENERGY_POOL_PER_STACK),
+  commonRelic("energy-regen", "Kinetic Coil", "RG", RELIC_ENERGY_REGEN_PER_STACK),
+  commonRelic("parry-reach", "Wide Guard", "PR", RELIC_PARRY_REACH_PER_STACK),
+  commonRelic("dodge-recovery", "Light Soles", "DG", RELIC_DODGE_RECOVERY_PER_STACK),
+  commonRelic("move-speed", "Roadrunner Spur", "MV", RELIC_MOVE_SPEED_PER_STACK),
+  commonRelic("hp-regen", "Mending Thread", "HP", RELIC_HP_REGEN_PER_STACK),
+  commonRelic("luck", "Lucky Tooth", "LK", RELIC_LUCK_PER_STACK),
+  commonRelic("crit", "Keen Edge", "CR", RELIC_CRIT_PER_STACK),
+  commonRelic("jump-count", "Skyhook", "JP", 1),
 ] as const;
 
 export interface RareRelicDef {
   id: RareRelicId;
   label: string;
   hud: string;
+  desc: string;
+}
+
+function rareRelicDescription(id: RareRelicId): string {
+  if (isDodgeRelicId(id)) {
+    const profile = DODGE_RELIC_PROFILES[id];
+    const distanceDelta = profile.distanceMultiplier - 1;
+    const distance =
+      Math.abs(distanceDelta) < 1e-9
+        ? "travels the usual distance"
+        : `travels ${percentText(Math.abs(distanceDelta))} ${distanceDelta > 0 ? "farther" : "less distance"}`;
+    return `Replaces your roll with a dodge that ${distance} and recharges in ${profile.cooldownSeconds} seconds.`;
+  }
+  if (id === "revive") {
+    return `Revives you once per run at ${percentText(REVIVE_HP_FRAC)} health when you are downed.`;
+  }
+  return `Blocks a lethal hit while you have at least ${percentText(DEATH_WARD_HP_THRESHOLD)} health, then recharges for ${DEATH_WARD_COOLDOWN_SECONDS} seconds.`;
+}
+
+function rareRelic(id: RareRelicId, label: string, hud: string): RareRelicDef {
+  return { id, label, hud, desc: rareRelicDescription(id) };
 }
 
 export const RARE_RELIC_DEFS: readonly RareRelicDef[] = [
-  { id: "dodge-shuffle", label: "The Shuffle", hud: "SH" },
-  { id: "dodge-ninja-flip", label: "Ninja Flip", hud: "NF" },
-  { id: "dodge-phase-step", label: "Phase Step", hud: "PH" },
-  { id: "dodge-bloodhound-step", label: "Bloodhound Step", hud: "BH" },
-  { id: "revive", label: "Second Wind", hud: "RV" },
-  { id: "one-shot-protection", label: "Death Ward", hud: "DW" },
+  rareRelic("dodge-shuffle", "The Shuffle", "SH"),
+  rareRelic("dodge-ninja-flip", "Ninja Flip", "NF"),
+  rareRelic("dodge-phase-step", "Phase Step", "PH"),
+  rareRelic("dodge-bloodhound-step", "Bloodhound Step", "BH"),
+  rareRelic("revive", "Second Wind", "RV"),
+  rareRelic("one-shot-protection", "Death Ward", "DW"),
 ] as const;
 
-export const RELIC_ENERGY_POOL_PER_STACK = 10 as const;
-export const RELIC_ENERGY_REGEN_PER_STACK = 0.8 as const;
-export const RELIC_PARRY_REACH_PER_STACK = 8 as const;
-export const RELIC_DODGE_RECOVERY_PER_STACK = 0.06 as const;
-export const RELIC_MOVE_SPEED_PER_STACK = 0.03 as const;
-export const RELIC_HP_REGEN_PER_STACK = 0.25 as const;
-export const RELIC_LUCK_PER_STACK = 0.05 as const;
-export const RELIC_CRIT_PER_STACK = 0.02 as const;
-export const DEATH_WARD_HP_THRESHOLD = 0.35 as const;
-export const DEATH_WARD_COOLDOWN_SECONDS = 90 as const;
+export function relicDescriptionFor(id: CommonRelicId | RareRelicId): string {
+  return (
+    COMMON_RELIC_DEFS.find((definition) => definition.id === id)?.desc ??
+    RARE_RELIC_DEFS.find((definition) => definition.id === id)?.desc ??
+    ""
+  );
+}
 
 function boundedStacks(value: number): number {
   return Math.max(0, Math.min(RELIC_COMMON_STACK_CAP, Math.floor(Number(value) || 0)));
@@ -163,50 +271,9 @@ export function relicJumpCount(relics: Readonly<RelicStacks>): number {
   return boundedStacks(relics.jumpCount);
 }
 
-export interface DodgeProfile {
-  id: "" | DodgeRelicId;
-  label: string;
-  distanceMultiplier: number;
-  cooldownSeconds: number;
-  presentation: "roll" | "shuffle" | "flip" | "phase" | "bloodhound";
-}
-
 export const DODGE_PROFILES: Readonly<Record<"" | DodgeRelicId, DodgeProfile>> = {
-  "": {
-    id: "",
-    label: "Combat Roll",
-    distanceMultiplier: 1,
-    cooldownSeconds: ROLL_COOLDOWN,
-    presentation: "roll",
-  },
-  "dodge-shuffle": {
-    id: "dodge-shuffle",
-    label: "The Shuffle",
-    distanceMultiplier: 0.78,
-    cooldownSeconds: 2.1,
-    presentation: "shuffle",
-  },
-  "dodge-ninja-flip": {
-    id: "dodge-ninja-flip",
-    label: "Ninja Flip",
-    distanceMultiplier: 1.12,
-    cooldownSeconds: 3.35,
-    presentation: "flip",
-  },
-  "dodge-phase-step": {
-    id: "dodge-phase-step",
-    label: "Phase Step",
-    distanceMultiplier: 1,
-    cooldownSeconds: 2.8,
-    presentation: "phase",
-  },
-  "dodge-bloodhound-step": {
-    id: "dodge-bloodhound-step",
-    label: "Bloodhound Step",
-    distanceMultiplier: 1.35,
-    cooldownSeconds: 3.8,
-    presentation: "bloodhound",
-  },
+  "": BASE_DODGE_PROFILE,
+  ...DODGE_RELIC_PROFILES,
 };
 
 export function isDodgeRelicId(value: unknown): value is DodgeRelicId {

@@ -108,6 +108,7 @@ import {
   RARITIES,
   RARITY_CURSED,
   RECONNECTION_WINDOW_SECONDS,
+  relicDescriptionFor,
   RING_BAND_HALF,
   ROLL_COOLDOWN,
   ROLL_SPEED_CURVE,
@@ -152,6 +153,7 @@ import {
   type WholeArtCharacter,
   WormBossMode,
   weaponArtMuzzlePointsForShot,
+  weaponBehaviourLine,
   weaponDisassemblyValue,
   weaponDisplaySpriteId,
   weaponEffectCueSeconds,
@@ -1726,6 +1728,8 @@ export class ArenaScene extends Phaser.Scene {
   private weaponText!: Phaser.GameObjects.Text;
   private augmentText!: Phaser.GameObjects.Text;
   private relicText!: Phaser.GameObjects.Text;
+  private relicTooltipText!: Phaser.GameObjects.Text;
+  private relicRowHovered = false;
   private objectiveHudGfx!: Phaser.GameObjects.Graphics;
   private objectiveText!: Phaser.GameObjects.Text;
   private objectiveLocationText!: Phaser.GameObjects.Text;
@@ -2245,6 +2249,8 @@ export class ArenaScene extends Phaser.Scene {
     this.weaponText = undefined!;
     this.augmentText = undefined!;
     this.relicText = undefined!;
+    this.relicTooltipText = undefined!;
+    this.relicRowHovered = false;
     this.objectiveHudGfx = undefined!;
     this.objectiveText = undefined!;
     this.objectiveLocationText = undefined!;
@@ -2513,8 +2519,10 @@ export class ArenaScene extends Phaser.Scene {
         fontSize: "12px",
         color: "#fff0b0",
         fontStyle: "bold",
+        align: "center",
         backgroundColor: "#090805",
         padding: { x: 5, y: 3 },
+        wordWrap: { width: 460, useAdvancedWrap: true },
       })
       .setOrigin(0.5, 1)
       .setDepth(99989)
@@ -2762,6 +2770,7 @@ export class ArenaScene extends Phaser.Scene {
     this.weaponText.setFontSize(13 * s);
     this.augmentText.setFontSize(12 * s);
     this.relicText.setFontSize(11 * s);
+    this.relicTooltipText.setFontSize(12 * s).setWordWrapWidth(520 * s, true);
     this.objectiveText.setFontSize(Math.max(15, 16 * s));
     this.objectiveLocationText.setFontSize(Math.max(10, 11 * s));
     this.objectiveEconomyText.setFontSize(Math.max(10, 11 * s));
@@ -2904,7 +2913,7 @@ export class ArenaScene extends Phaser.Scene {
 
     // L2 relic inventory: a compact always-live icon row, never a gameplay-blocking panel.
     this.relicText = this.add
-      .text(0, 0, "", {
+      .text(0, 0, "TRINKETS", {
         fontFamily: "monospace",
         fontSize: "11px",
         color: "#8fe8d3",
@@ -2917,6 +2926,29 @@ export class ArenaScene extends Phaser.Scene {
       .setShadow(0, 1, "#000000", 2, true, true)
       .setResolution(Math.max(2, Math.ceil(RENDER_DPR)))
       .setDepth(100002)
+      .setVisible(false);
+    this.relicText
+      .setInteractive({ useHandCursor: true })
+      .on("pointerover", () => {
+        this.relicRowHovered = true;
+      })
+      .on("pointerout", () => {
+        this.relicRowHovered = false;
+      });
+    this.relicTooltipText = this.add
+      .text(0, 0, "", {
+        fontFamily: "monospace",
+        fontSize: "12px",
+        color: "#e8fff8",
+        backgroundColor: "#0a0805",
+        padding: { x: 8, y: 7 },
+        wordWrap: { width: 520, useAdvancedWrap: true },
+      })
+      .setScrollFactor(0)
+      .setOrigin(0, 1)
+      .setShadow(0, 1, "#000000", 2, true, true)
+      .setResolution(Math.max(2, Math.ceil(RENDER_DPR)))
+      .setDepth(100003)
       .setVisible(false);
 
     // Finding #11: retained top HUD = objective/progress, session-vital chips, and a resolving notice chip.
@@ -3109,6 +3141,7 @@ export class ArenaScene extends Phaser.Scene {
       const labelText = isMystery
         ? `${rarity.name} ${classGlyph}`
         : `${def?.name ?? weapon}${affixName ? ` · ${affixName}` : ""}${pk.rarity > 0 ? ` (${rarity.name})` : ""}`;
+      const behaviourText = !isMystery && def ? weaponBehaviourLine(def) : "";
       const label = this.add
         .text(0, 42, isGallery ? galleryPlate : labelText, {
           fontSize: "14px",
@@ -3134,7 +3167,7 @@ export class ArenaScene extends Phaser.Scene {
         mysteryMark,
         pickupLabel: label,
         pickupLabelShort: isGallery ? galleryPlate : labelText,
-        pickupLabelFull: labelText,
+        pickupLabelFull: [labelText, behaviourText].filter(Boolean).join("\n"),
         pickupWeapon: pk.weaponPublic,
         baseScale,
         spinTheta: 0,
@@ -4474,12 +4507,17 @@ export class ArenaScene extends Phaser.Scene {
         ) as () => void;
         const disposeChestOpened = room.onMessage<ChestOpenReceipt>("chestOpened", (receipt) => {
           if (generation !== this.connectionGeneration || this.room !== room) return;
+          const rewardWeaponDef = receipt.weapon ? WEAPONS[receipt.weapon.id] : undefined;
           const drops = [
-            receipt.weapon ? `WEAPON ${receipt.weapon.name} T${receipt.weapon.tier}` : "",
+            receipt.weapon
+              ? `WEAPON ${receipt.weapon.name} T${receipt.weapon.tier}${
+                  rewardWeaponDef ? ` — ${weaponBehaviourLine(rewardWeaponDef)}` : ""
+                }`
+              : "",
             receipt.trinket
               ? `TRINKET ${receipt.trinket.rarity === "rare" ? "RARE " : ""}${receipt.trinket.label}${
                   receipt.trinket.stacks > 1 ? ` ×${receipt.trinket.stacks}` : ""
-                }`
+                } — ${relicDescriptionFor(receipt.trinket.id)}`
               : "",
             receipt.trinket?.augment
               ? `AUGMENT ${receipt.trinket.augment.name} — ${receipt.trinket.augment.desc}${
@@ -10441,18 +10479,20 @@ export class ArenaScene extends Phaser.Scene {
       this.eHoldPickupId === this.grabTargetId &&
       this.keys.E.isDown;
     const holdPercent = Math.min(100, Math.round((this.eHold / DISASSEMBLY_HOLD_SECONDS) * 100));
+    const pickup = this.room?.state.pickups.get(this.grabTargetId);
+    const pickupDef = pickup?.known ? WEAPONS[pickup.weaponPublic] : undefined;
+    const behaviour = pickupDef ? weaponBehaviourLine(pickupDef) : "";
+    const action = this.grabTargetId.startsWith("chest:")
+      ? "[E] OPEN CHEST"
+      : this.grabTargetId === "elevator:right"
+        ? "[E] ENTER ELEVATOR"
+        : holdingForDisassembly
+          ? `[E] DISASSEMBLING ${holdPercent}%`
+          : this.grabTargetDisassemblable
+            ? "[E] TAP PICK UP · HOLD DISASSEMBLE"
+            : "[E] PICK UP";
     this.grabPromptText
-      .setText(
-        this.grabTargetId.startsWith("chest:")
-          ? "[E] OPEN CHEST"
-          : this.grabTargetId === "elevator:right"
-            ? "[E] ENTER ELEVATOR"
-            : holdingForDisassembly
-              ? `[E] DISASSEMBLING ${holdPercent}%`
-              : this.grabTargetDisassemblable
-                ? "[E] TAP PICK UP · HOLD DISASSEMBLE"
-                : "[E] PICK UP",
-      )
+      .setText(`${action}${behaviour ? `\n${behaviour}` : ""}`)
       .setPosition(t.x, t.y - 45)
       .setVisible(true);
   }
@@ -11676,9 +11716,10 @@ export class ArenaScene extends Phaser.Scene {
         const rar = RARITIES[self.weaponRarity];
         const tierName = self.weaponRarity > 0 ? `${rar?.name ?? ""} ` : "";
         const affix = self.weaponAffix ? `${affixById(self.weaponAffix).name} ` : "";
-        const name = WEAPONS[self.weapon]?.name ?? self.weapon;
+        const heldDef = WEAPONS[self.weapon];
+        const name = heldDef?.name ?? self.weapon;
         this.flashBanner(
-          `${tierName}${affix}${name}`,
+          `${tierName}${affix}${name}${heldDef ? `\n${weaponBehaviourLine(heldDef)}` : ""}`,
           `#${(rar?.color ?? 0xffd479).toString(16).padStart(6, "0")}`,
         );
         // §19 the loot chime rises in pitch with rarity — a Legendary literally sounds better than a Common.
@@ -12316,21 +12357,35 @@ export class ArenaScene extends Phaser.Scene {
 
     const relics = self?.dualWield?.relics;
     if (relics) {
-      const commons = COMMON_RELIC_DEFS.flatMap((def) => {
-        const stacks = commonRelicStacks(relics, def.id);
-        return stacks > 0 ? [`${def.hud}${stacks > 1 ? `×${stacks}` : ""}`] : [];
-      });
-      const ownedRare = new Set(relics.ownedRare.split(",").filter(Boolean));
-      const rares = RARE_RELIC_DEFS.filter((def) => ownedRare.has(def.id)).map(
-        (def) => `[${def.hud}]`,
+      const ownedCommons = COMMON_RELIC_DEFS.map((def) => ({
+        def,
+        stacks: commonRelicStacks(relics, def.id),
+      })).filter((entry) => entry.stacks > 0);
+      const commons = ownedCommons.map(
+        ({ def, stacks }) => `${def.hud}${stacks > 1 ? `×${stacks}` : ""}`,
       );
+      const ownedRare = new Set(relics.ownedRare.split(",").filter(Boolean));
+      const ownedRares = RARE_RELIC_DEFS.filter((def) => ownedRare.has(def.id));
+      const rares = ownedRares.map((def) => `[${def.hud}]`);
       const parts = [...commons, ...rares];
       this.relicText
         .setPosition(barX, hudRailY - 82 * s)
         .setText(`TRINKETS ${parts.join(" · ")}`)
         .setVisible(parts.length > 0);
+      const tooltipLines = [
+        ...ownedCommons.map(
+          ({ def, stacks }) =>
+            `${def.label}${stacks > 1 ? ` ×${stacks}` : ""} — ${def.desc}`,
+        ),
+        ...ownedRares.map((def) => `${def.label} — ${def.desc}`),
+      ];
+      this.relicTooltipText
+        .setPosition(barX, hudRailY - 88 * s)
+        .setText(tooltipLines.join("\n"))
+        .setVisible(this.relicRowHovered && tooltipLines.length > 0);
     } else {
       this.relicText.setVisible(false);
+      this.relicTooltipText.setVisible(false);
     }
 
     // §8 owned parry augments — a compact "name ×count" summary above the weapon readout.
@@ -13624,7 +13679,7 @@ export class ArenaScene extends Phaser.Scene {
           ? weaponDisassemblyValue(selectedWeaponId)
           : 0;
       const isBagItem = this.bagSelected?.source === "bag";
-      detailCopy = `${rarityMark(rarityName)}\n${selectedAffix ? affixById(selectedAffix).name : "No affix"}\n\n${isBagItem ? "Stored in backpack" : `Active cell ${(this.bagSelected?.index ?? 0) + 1}`}\nDisassembly value  ◈${value} money\n\n${isBagItem ? "Clicking the tile equips it. The action below disassembles it in place." : "Move this weapon into the finite backpack."}`;
+      detailCopy = `${weaponBehaviourLine(weapon)}\n\n${rarityMark(rarityName)}\n${selectedAffix ? affixById(selectedAffix).name : "No affix"}\n\n${isBagItem ? "Stored in backpack" : `Active cell ${(this.bagSelected?.index ?? 0) + 1}`}\nDisassembly value  ◈${value} money\n\n${isBagItem ? "Clicking the tile equips it. The action below disassembles it in place." : "Move this weapon into the finite backpack."}`;
       if (isBagItem) {
         actionLabel = value > 0 ? `DISASSEMBLE  +◈${value} MONEY` : "CANNOT DISASSEMBLE";
         actionEnabled =

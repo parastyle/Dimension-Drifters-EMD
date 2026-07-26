@@ -31,6 +31,7 @@ export * from "./parry-reactions.js";
 export * from "./relics.js";
 export * from "./rng.js";
 export * from "./state.js";
+export * from "./weapon-behaviour.js";
 export * from "./weapon-muzzle.js";
 export * from "./weapon-resource.js";
 export * from "./weapon-tiers.js";

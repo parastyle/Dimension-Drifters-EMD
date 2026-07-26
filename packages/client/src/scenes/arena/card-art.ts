@@ -3,6 +3,7 @@ import {
   RARITIES,
   RARITY_CURSED,
   WEAPONS,
+  weaponBehaviourLine,
   weaponDamageSources,
   weaponDisplaySpriteId,
 } from "@dd/shared";
@@ -540,8 +541,7 @@ export function drawIcon(
   }
 }
 
-/** Build one card: full-bleed art + a §5 tooltip slab — name + tag subtitle are the ONLY labels; the
- *  flat damage sources and charges/durability remain icon-driven (§9). */
+/** Build one card: full-bleed art + a §5 tooltip slab with identity, behavior, damage, and resource truth. */
 export function buildCard(scene: Phaser.Scene, id: string): Card {
   const def = WEAPONS[id];
   const W = 212;
@@ -590,7 +590,16 @@ export function buildCard(scene: Phaser.Scene, id: string): Card {
   const grip = def?.dual ? "Dual-wield" : def?.twoHanded ? "Two-handed" : "One-handed";
   const sub = def ? `${grip} · ${titleCase(def.tags.family)} · ${titleCase(def.tags.element)}` : "";
   o.push(mk(padL, y, 10, "#b9b3a3", sub));
-  y += 15;
+  y += 14;
+
+  // Authored copy is the explicit override; every other weapon gets one line derived from combat data.
+  if (def) {
+    const behaviour = mk(padL, y, 8, "#eee5ce", weaponBehaviourLine(def));
+    behaviour.setWordWrapWidth(padR - padL, true).setLineSpacing(-1);
+    o.push(behaviour);
+    y += behaviour.height + 7;
+  }
+
   const div = scene.add.graphics();
   div.lineStyle(1, accent, 0.3).lineBetween(padL, y, padR, y);
   o.push(div);
@@ -600,7 +609,9 @@ export function buildCard(scene: Phaser.Scene, id: string): Card {
   const icons = scene.add.graphics();
   o.push(icons);
   const sources: { text: Phaser.GameObjects.Text; src: DamageSource }[] = [];
+  const resY = H / 2 - 22;
   for (const src of (def ? weaponDamageSources(def) : []).slice(0, 4)) {
+    if (y + 18 > resY - 5) break;
     drawIcon(icons, src.label, padL + 6, y + 7, 6, accent);
     if (src.count > 1) o.push(mk(padL + 15, y + 1, 10, "#8f897a", `×${src.count}`));
     const eqText = mk(padR, y, 13, "#ffd479", "", 1, true);
@@ -611,7 +622,6 @@ export function buildCard(scene: Phaser.Scene, id: string): Card {
   y += 6;
 
   // Charges (thrown, live) or durability (melee) — an ICON + a live number, anchored at the card bottom.
-  const resY = H / 2 - 22;
   drawIcon(icons, def?.thrown ? "charges" : "durability", padL + 6, resY + 6, 6, accent);
   const resource = mk(padL + 17, resY, 12, accentHex, "", 0, true);
   o.push(resource);
