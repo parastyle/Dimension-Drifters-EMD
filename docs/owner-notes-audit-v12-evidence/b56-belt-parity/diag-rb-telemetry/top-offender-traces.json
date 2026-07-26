@@ -12,7 +12,7 @@
       "maxMagnitudePx": 0,
       "meanMagnitudePx": 0,
       "correctionDebtDurationMs": 0,
-      "serverMotionDurationMs": 4550,
+      "serverMotionDurationMs": 4500,
       "maxCorrectionWindowMs": 0,
       "scenarioDurationMs": 8650,
       "peakAuthorityStepPx": 3570,
@@ -22,9 +22,9 @@
     "corrections": [],
     "frames": [
       {
-        "index": 46,
-        "tick": 58,
-        "elapsedMs": 2300,
+        "index": 47,
+        "tick": 59,
+        "elapsedMs": 2350,
         "action": "elevator-cycle",
         "input": {
           "dx": 0,
@@ -36,7 +36,7 @@
           "fireHeld": false
         },
         "authority": {
-          "tick": 58,
+          "tick": 59,
           "x": 3990,
           "y": 2530,
           "mvx": 0,
@@ -59,7 +59,7 @@
           "airJumpsRemaining": 0,
           "motionSource": "",
           "teleportSeq": 1,
-          "ackSeq": 47,
+          "ackSeq": 48,
           "attackSeq": 0,
           "parriedSeq": 0,
           "fellSeq": 0,
@@ -105,9 +105,9 @@
         }
       },
       {
-        "index": 47,
+        "index": 48,
         "tick": 60,
-        "elapsedMs": 2350,
+        "elapsedMs": 2400,
         "action": "elevator-cycle",
         "input": {
           "dx": 0,
@@ -142,7 +142,7 @@
           "airJumpsRemaining": 0,
           "motionSource": "elevator-boarding",
           "teleportSeq": 2,
-          "ackSeq": 48,
+          "ackSeq": 49,
           "attackSeq": 0,
           "parriedSeq": 0,
           "fellSeq": 0,
@@ -191,9 +191,9 @@
         }
       },
       {
-        "index": 48,
-        "tick": 61,
-        "elapsedMs": 2400,
+        "index": 49,
+        "tick": 62,
+        "elapsedMs": 2450,
         "action": "elevator-cycle",
         "input": {
           "dx": 0,
@@ -205,7 +205,7 @@
           "fireHeld": false
         },
         "authority": {
-          "tick": 61,
+          "tick": 62,
           "x": 3990,
           "y": 2530,
           "mvx": 0,
@@ -228,7 +228,7 @@
           "airJumpsRemaining": 0,
           "motionSource": "elevator-boarding",
           "teleportSeq": 2,
-          "ackSeq": 49,
+          "ackSeq": 50,
           "attackSeq": 0,
           "parriedSeq": 0,
           "fellSeq": 0,
@@ -276,7 +276,7 @@
       },
       {
         "index": 56,
-        "tick": 71,
+        "tick": 70,
         "elapsedMs": 2800,
         "action": "elevator-cycle",
         "input": {
@@ -289,7 +289,7 @@
           "fireHeld": false
         },
         "authority": {
-          "tick": 71,
+          "tick": 70,
           "x": 3990,
           "y": 2530,
           "mvx": 0,
@@ -545,200 +545,7 @@
       "serverMotionDurationMs": 2200,
       "maxCorrectionWindowMs": 0,
       "scenarioDurationMs": 2700,
-      "peakAuthorityStepPx": 2.249847,
-      "sourceCounts": {},
-      "causeCounts": {}
-    },
-    "corrections": [],
-    "frames": [
-      {
-        "index": 0,
-        "tick": 935,
-        "elapsedMs": 0,
-        "action": "sustained-fire",
-        "input": {
-          "dx": 0,
-          "dy": 0,
-          "jump": false,
-          "pound": false,
-          "slide": false,
-          "slideHeld": false,
-          "fireHeld": true
-        },
-        "authority": {
-          "tick": 935,
-          "x": 2200,
-          "y": 2440,
-          "mvx": 0,
-          "mvy": 0,
-          "vx": -14,
-          "vy": 0,
-          "height": 0,
-          "vh": 0,
-          "alive": true,
-          "stance": 0,
-          "stanceSeq": 0,
-          "momentumX": 0,
-          "momentumY": 0,
-          "slidePhase": 0,
-          "slidePhaseTick": 0,
-          "attackMoveMode": 0,
-          "correctionSeq": 15,
-          "motionEpoch": 23,
-          "motionActive": true,
-          "airJumpsRemaining": 0,
-          "motionSource": "weapon-fire-recoil",
-          "teleportSeq": 1,
-          "ackSeq": 700,
-          "attackSeq": 25,
-          "parriedSeq": 0,
-          "fellSeq": 0,
-          "poundSeq": 0,
-          "ultSeq": 0,
-          "ultPhase": 0
-        },
-        "delta": {
-          "positionPx": 0,
-          "movementEpoch": 1,
-          "correctionSeq": 0,
-          "teleportSeq": 0
-        },
-        "causes": [
-          "server-motion-epoch",
-          "server-motion-active",
-          "source:weapon-fire-recoil"
-        ],
-        "b42": {
-          "counterBefore": 0,
-          "counterAfter": 1,
-          "counterDelta": 1,
-          "pending": 0
-        },
-        "correction": {
-          "requests": 0,
-          "nonzeroRequests": 0,
-          "maxMagnitudePx": 0,
-          "errorBeforeDecayPx": 0,
-          "remainingBeforeDecayMs": 0,
-          "errorAfterDecayPx": 0,
-          "remainingAfterDecayMs": 0,
-          "renderedBefore": {
-            "x": 2200,
-            "y": 2440
-          },
-          "renderedAfterReconcile": {
-            "x": 2200,
-            "y": 2440
-          },
-          "renderedAfterDecay": {
-            "x": 2200,
-            "y": 2440
-          }
-        }
-      },
-      {
-        "index": 1,
-        "tick": 936,
-        "elapsedMs": 50,
-        "action": "sustained-fire",
-        "input": {
-          "dx": 0,
-          "dy": 0,
-          "jump": false,
-          "pound": false,
-          "slide": false,
-          "slideHeld": false,
-          "fireHeld": true
-        },
-        "authority": {
-          "tick": 936,
-          "x": 2199.3,
-          "y": 2440,
-          "mvx": 0,
-          "mvy": 0,
-          "vx": -22.926794,
-          "vy": 0,
-          "height": 0,
-          "vh": 0,
-          "alive": true,
-          "stance": 0,
-          "stanceSeq": 0,
-          "momentumX": 0,
-          "momentumY": 0,
-          "slidePhase": 0,
-          "slidePhaseTick": 0,
-          "attackMoveMode": 0,
-          "correctionSeq": 15,
-          "motionEpoch": 23,
-          "motionActive": true,
-          "airJumpsRemaining": 0,
-          "motionSource": "weapon-fire-recoil",
-          "teleportSeq": 1,
-          "ackSeq": 701,
-          "attackSeq": 26,
-          "parriedSeq": 0,
-          "fellSeq": 0,
-          "poundSeq": 0,
-          "ultSeq": 0,
-          "ultPhase": 0
-        },
-        "delta": {
-          "positionPx": 0.7,
-          "movementEpoch": 0,
-          "correctionSeq": 0,
-          "teleportSeq": 0
-        },
-        "causes": [
-          "server-motion-active",
-          "source:weapon-fire-recoil"
-        ],
-        "b42": {
-          "counterBefore": 1,
-          "counterAfter": 1,
-          "counterDelta": 0,
-          "pending": 0
-        },
-        "correction": {
-          "requests": 0,
-          "nonzeroRequests": 0,
-          "maxMagnitudePx": 0,
-          "errorBeforeDecayPx": 0,
-          "remainingBeforeDecayMs": 0,
-          "errorAfterDecayPx": 0,
-          "remainingAfterDecayMs": 0,
-          "renderedBefore": {
-            "x": 2199.3,
-            "y": 2440
-          },
-          "renderedAfterReconcile": {
-            "x": 2199.3,
-            "y": 2440
-          },
-          "renderedAfterDecay": {
-            "x": 2199.3,
-            "y": 2440
-          }
-        }
-      }
-    ]
-  },
-  "topdown:sustained-gatling": {
-    "label": "Top-down — Sustained Gatling",
-    "summary": {
-      "b42CounterEdges": 1,
-      "correctionRequests": 0,
-      "nonzeroCorrections": 0,
-      "silentCorrections": 0,
-      "smoothCorrections": 0,
-      "snapCorrections": 0,
-      "totalMagnitudePx": 0,
-      "maxMagnitudePx": 0,
-      "meanMagnitudePx": 0,
-      "correctionDebtDurationMs": 0,
-      "serverMotionDurationMs": 2150,
-      "maxCorrectionWindowMs": 0,
-      "scenarioDurationMs": 2700,
-      "peakAuthorityStepPx": 2.249847,
+      "peakAuthorityStepPx": 2.834534,
       "sourceCounts": {},
       "causeCounts": {}
     },
@@ -761,7 +568,7 @@
         "authority": {
           "tick": 934,
           "x": 2200,
-          "y": 1500,
+          "y": 2440,
           "mvx": 0,
           "mvy": 0,
           "vx": -14,
@@ -817,15 +624,15 @@
           "remainingAfterDecayMs": 0,
           "renderedBefore": {
             "x": 2200,
-            "y": 1500
+            "y": 2440
           },
           "renderedAfterReconcile": {
             "x": 2200,
-            "y": 1500
+            "y": 2440
           },
           "renderedAfterDecay": {
             "x": 2200,
-            "y": 1500
+            "y": 2440
           }
         }
       },
@@ -846,7 +653,7 @@
         "authority": {
           "tick": 936,
           "x": 2198.15366,
-          "y": 1500,
+          "y": 2440,
           "mvx": 0,
           "mvy": 0,
           "vx": -14.618769,
@@ -901,14 +708,207 @@
           "remainingAfterDecayMs": 0,
           "renderedBefore": {
             "x": 2199.3,
-            "y": 1500
+            "y": 2440
           },
           "renderedAfterReconcile": {
             "x": 2198.15366,
-            "y": 1500
+            "y": 2440
           },
           "renderedAfterDecay": {
             "x": 2198.15366,
+            "y": 2440
+          }
+        }
+      }
+    ]
+  },
+  "topdown:sustained-gatling": {
+    "label": "Top-down — Sustained Gatling",
+    "summary": {
+      "b42CounterEdges": 1,
+      "correctionRequests": 0,
+      "nonzeroCorrections": 0,
+      "silentCorrections": 0,
+      "smoothCorrections": 0,
+      "snapCorrections": 0,
+      "totalMagnitudePx": 0,
+      "maxMagnitudePx": 0,
+      "meanMagnitudePx": 0,
+      "correctionDebtDurationMs": 0,
+      "serverMotionDurationMs": 2200,
+      "maxCorrectionWindowMs": 0,
+      "scenarioDurationMs": 2700,
+      "peakAuthorityStepPx": 2.249847,
+      "sourceCounts": {},
+      "causeCounts": {}
+    },
+    "corrections": [],
+    "frames": [
+      {
+        "index": 0,
+        "tick": 935,
+        "elapsedMs": 0,
+        "action": "sustained-fire",
+        "input": {
+          "dx": 0,
+          "dy": 0,
+          "jump": false,
+          "pound": false,
+          "slide": false,
+          "slideHeld": false,
+          "fireHeld": true
+        },
+        "authority": {
+          "tick": 935,
+          "x": 2199.3,
+          "y": 1500,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": -8.926794,
+          "vy": 0,
+          "height": 0,
+          "vh": 0,
+          "alive": true,
+          "stance": 0,
+          "stanceSeq": 0,
+          "momentumX": 0,
+          "momentumY": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0,
+          "correctionSeq": 15,
+          "motionEpoch": 23,
+          "motionActive": true,
+          "airJumpsRemaining": 0,
+          "motionSource": "weapon-fire-recoil",
+          "teleportSeq": 1,
+          "ackSeq": 700,
+          "attackSeq": 25,
+          "parriedSeq": 0,
+          "fellSeq": 0,
+          "poundSeq": 0,
+          "ultSeq": 0,
+          "ultPhase": 0
+        },
+        "delta": {
+          "positionPx": 0.7,
+          "movementEpoch": 1,
+          "correctionSeq": 0,
+          "teleportSeq": 0
+        },
+        "causes": [
+          "server-motion-epoch",
+          "server-motion-active",
+          "source:weapon-fire-recoil"
+        ],
+        "b42": {
+          "counterBefore": 0,
+          "counterAfter": 1,
+          "counterDelta": 1,
+          "pending": 0
+        },
+        "correction": {
+          "requests": 0,
+          "nonzeroRequests": 0,
+          "maxMagnitudePx": 0,
+          "errorBeforeDecayPx": 0,
+          "remainingBeforeDecayMs": 0,
+          "errorAfterDecayPx": 0,
+          "remainingAfterDecayMs": 0,
+          "renderedBefore": {
+            "x": 2200,
+            "y": 1500
+          },
+          "renderedAfterReconcile": {
+            "x": 2199.3,
+            "y": 1500
+          },
+          "renderedAfterDecay": {
+            "x": 2199.3,
+            "y": 1500
+          }
+        }
+      },
+      {
+        "index": 1,
+        "tick": 936,
+        "elapsedMs": 50,
+        "action": "sustained-fire",
+        "input": {
+          "dx": 0,
+          "dy": 0,
+          "jump": false,
+          "pound": false,
+          "slide": false,
+          "slideHeld": false,
+          "fireHeld": true
+        },
+        "authority": {
+          "tick": 936,
+          "x": 2198.85366,
+          "y": 1500,
+          "mvx": 0,
+          "mvy": 0,
+          "vx": -19.691975,
+          "vy": 0,
+          "height": 0,
+          "vh": 0,
+          "alive": true,
+          "stance": 0,
+          "stanceSeq": 0,
+          "momentumX": 0,
+          "momentumY": 0,
+          "slidePhase": 0,
+          "slidePhaseTick": 0,
+          "attackMoveMode": 0,
+          "correctionSeq": 15,
+          "motionEpoch": 23,
+          "motionActive": true,
+          "airJumpsRemaining": 0,
+          "motionSource": "weapon-fire-recoil",
+          "teleportSeq": 1,
+          "ackSeq": 701,
+          "attackSeq": 26,
+          "parriedSeq": 0,
+          "fellSeq": 0,
+          "poundSeq": 0,
+          "ultSeq": 0,
+          "ultPhase": 0
+        },
+        "delta": {
+          "positionPx": 0.44634,
+          "movementEpoch": 0,
+          "correctionSeq": 0,
+          "teleportSeq": 0
+        },
+        "causes": [
+          "server-motion-active",
+          "source:weapon-fire-recoil"
+        ],
+        "b42": {
+          "counterBefore": 1,
+          "counterAfter": 1,
+          "counterDelta": 0,
+          "pending": 0
+        },
+        "correction": {
+          "requests": 0,
+          "nonzeroRequests": 0,
+          "maxMagnitudePx": 0,
+          "errorBeforeDecayPx": 0,
+          "remainingBeforeDecayMs": 0,
+          "errorAfterDecayPx": 0,
+          "remainingAfterDecayMs": 0,
+          "renderedBefore": {
+            "x": 2198.85366,
+            "y": 1500
+          },
+          "renderedAfterReconcile": {
+            "x": 2198.85366,
+            "y": 1500
+          },
+          "renderedAfterDecay": {
+            "x": 2198.85366,
             "y": 1500
           }
         }

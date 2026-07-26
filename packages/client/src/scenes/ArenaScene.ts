@@ -3140,7 +3140,7 @@ export class ArenaScene extends Phaser.Scene {
             .setOrigin(0.5)
         : null;
       const shine =
-        part && tx
+        part && tx && !isGallery
           ? this.add
               .image(0, 0, tx.key, tx.frame)
               .setScale(baseScale)
@@ -3190,7 +3190,7 @@ export class ArenaScene extends Phaser.Scene {
         baseScale,
         spinTheta: 0,
       });
-      if (!reducedMotion) {
+      if (!reducedMotion && !isGallery) {
         const spawnTween = this.tweens.addCounter({
           from: 0,
           to: 220,
@@ -3225,25 +3225,27 @@ export class ArenaScene extends Phaser.Scene {
         });
       }
 
-      this.tweens.add({
-        targets: spinner,
-        y: -14,
-        duration: 900,
-        yoyo: true,
-        repeat: -1,
-        ease: "Sine.inOut",
-      });
-      this.tweens.add({
-        targets: halo,
-        scaleX: 1.14,
-        scaleY: 1.14,
-        alpha: 0.34,
-        duration: 1100,
-        yoyo: true,
-        repeat: -1,
-        ease: "Sine.inOut",
-      });
-      if (!reducedMotion) {
+      if (!isGallery) {
+        this.tweens.add({
+          targets: spinner,
+          y: -14,
+          duration: 900,
+          yoyo: true,
+          repeat: -1,
+          ease: "Sine.inOut",
+        });
+        this.tweens.add({
+          targets: halo,
+          scaleX: 1.14,
+          scaleY: 1.14,
+          alpha: 0.34,
+          duration: 1100,
+          yoyo: true,
+          repeat: -1,
+          ease: "Sine.inOut",
+        });
+      }
+      if (!reducedMotion && !isGallery) {
         const spinTween = this.tweens.addCounter({
           from: 0,
           to: TAU,

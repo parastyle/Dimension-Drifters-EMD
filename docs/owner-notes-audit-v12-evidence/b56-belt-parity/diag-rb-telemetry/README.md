@@ -1,6 +1,6 @@
 # Solo rubberband telemetry evidence
 
-Captured 2026-07-25T16:46:43.068Z through one real Colyseus client on OS-assigned loopback port 62478.
+Captured 2026-07-26T06:18:54.781Z through one real Colyseus client on OS-assigned loopback port 55987.
 Ports 5180 and 2567 were not used.
 
 - `run-summary.json` is the ranked scenario table and aggregate count.
@@ -8,8 +8,8 @@ Ports 5180 and 2567 were not used.
 - `top-offender-traces.json` retains correction ticks plus adjacent context for the top three.
 - `run.log` is the compact scenario-by-scenario console ledger.
 - The standing movement/combat matrix runs once top-down and once on corporate-grid belt.
-- The corporate elevator fixture is belt scenario 43 and suppresses combat waves to isolate placement motion.
-- Acceptance: **PASS** (85/85 scenarios, 0 nonzero corrections, 0 snaps).
+- The corporate elevator fixture is the final belt scenario and suppresses combat waves to isolate placement motion.
+- Acceptance: **PASS** (83/83 scenarios, 0 nonzero corrections, 0 snaps).
 
 Reproduce from the repository root:
 

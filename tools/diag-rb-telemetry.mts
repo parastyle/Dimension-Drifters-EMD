@@ -25,6 +25,7 @@ import {
   TICK_MS,
   TILE_GROUND,
   TILE_PIT,
+  ULTIMATES_ENABLED,
   UltimateFamily,
   UltimatePhase,
   ultimateCodeFor,
@@ -1701,7 +1702,14 @@ try {
       runFullCombo(instrumented, "x2-coyote-trickster-s-sparkmitt", "sparkmitt", 8),
     );
     await run(() => runSpadeSpin(instrumented));
-    await run(() => runUltimate(instrumented));
+    if (ULTIMATES_ENABLED) {
+      await run(() => runUltimate(instrumented));
+    } else {
+      const mode = instrumented.local.beltLevel ? "belt" : "topdown";
+      const line = `${mode}:ultimate-alpha-strike skipped=ULTIMATES_ENABLED=false`;
+      logLines.push(line);
+      console.log(`[diag-rb] ${line}`);
+    }
   };
 
   for (const mode of ["topdown", "belt"] as const) {
@@ -1760,18 +1768,23 @@ try {
     topdown: results.filter((result) => result.metadata.mode === "topdown").length,
     belt: results.filter((result) => result.metadata.mode === "belt").length,
   };
+  const expectedTopdownScenarios = ULTIMATES_ENABLED ? 42 : 41;
+  const expectedBeltScenarios = ULTIMATES_ENABLED ? 43 : 42;
+  const expectedScenarios = expectedTopdownScenarios + expectedBeltScenarios;
   const acceptance = {
-    expectedScenarios: 85,
-    expectedTopdownScenarios: 42,
-    expectedBeltScenarios: 43,
+    expectedScenarios,
+    expectedTopdownScenarios,
+    expectedBeltScenarios,
     allScenariosRan:
-      results.length === 85 && modeCounts.topdown === 42 && modeCounts.belt === 43,
+      results.length === expectedScenarios &&
+      modeCounts.topdown === expectedTopdownScenarios &&
+      modeCounts.belt === expectedBeltScenarios,
     zeroNonzeroCorrections: totals.nonzeroCorrections === 0,
     zeroSnaps: totals.snapCorrections === 0,
     passed:
-      results.length === 85 &&
-      modeCounts.topdown === 42 &&
-      modeCounts.belt === 43 &&
+      results.length === expectedScenarios &&
+      modeCounts.topdown === expectedTopdownScenarios &&
+      modeCounts.belt === expectedBeltScenarios &&
       totals.nonzeroCorrections === 0 &&
       totals.snapCorrections === 0,
   };
@@ -1866,7 +1879,7 @@ try {
       "- `top-offender-traces.json` retains correction ticks plus adjacent context for the top three.",
       "- `run.log` is the compact scenario-by-scenario console ledger.",
       "- The standing movement/combat matrix runs once top-down and once on corporate-grid belt.",
-      "- The corporate elevator fixture is belt scenario 43 and suppresses combat waves to isolate placement motion.",
+      "- The corporate elevator fixture is the final belt scenario and suppresses combat waves to isolate placement motion.",
       `- Acceptance: **${acceptance.passed ? "PASS" : "FAIL"}** (${results.length}/${
         acceptance.expectedScenarios
       } scenarios, ${totals.nonzeroCorrections} nonzero corrections, ${
