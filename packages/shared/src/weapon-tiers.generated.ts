@@ -349,6 +349,7 @@ export const GENERATED_WEAPON_TIERS = {
   "x2-kunai": 3,
   "x2-iron-chakram": 1,
   "x2-m50-anti-materiel-rifle": 5,
+  "x2-longwatch-dmr": 4,
   "x2-unicorn-rainbow-beam": 1,
   "x2-fish-launcher": 1,
   "x2-squeaky-mallet": 1,
