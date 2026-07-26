@@ -7,6 +7,7 @@ export default defineConfig({
   test: {
     include: ["tests/**/*.test.ts", "packages/**/src/**/*.test.ts"],
     environment: "node",
+    setupFiles: ["./vitest.setup.ts"],
     // Debug-facing tests opt in explicitly; individual fail-closed tests remove this capability.
     env: {
       DD_DEV_TOOLS: "1",
