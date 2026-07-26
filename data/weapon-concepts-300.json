@@ -1,7 +1,7 @@
 {
   "generated": "2026-06-17",
   "source": "design-300-weapons workflow (15 agents)",
-  "count": 349,
+  "count": 350,
   "byType": {
     "melee": 132,
     "ranged": 112,
@@ -20122,6 +20122,63 @@
         "displayLength": 162,
         "swingArc": 1.8,
         "gripFrac": 0.16
+      }
+    },
+    {
+      "id": "x2-breachmaster-auto-12",
+      "name": "Breachmaster Auto-12",
+      "description": "An armoury-flagship automatic scattergun built to hold a doorway under sustained close-range pressure.",
+      "type": "ranged",
+      "family": "automatic-shotgun",
+      "theme": "near-black institutional automatic scattergun with a precision drum and brass drum hub",
+      "element": "physical",
+      "finish": "matched-matte-black",
+      "grip": "2H",
+      "gripPoints": {
+        "primary": {
+          "x": 0.27,
+          "y": 0.67
+        },
+        "secondary": {
+          "x": 0.69,
+          "y": 0.69,
+          "role": "horizontal-foregrip"
+        }
+      },
+      "size": "L",
+      "rangeBand": "close",
+      "scaling": [
+        "STR",
+        "DEX"
+      ],
+      "palettePrimary": "#22252B",
+      "paletteAccent": "#C49A5A",
+      "artPrompt": "Weapon-only in-world sprite (no character, no hands, no background scene): ONE complete connected armoury-grade full-auto shotgun, brutally boxy, with an enormous flat circular drum magazine hanging beneath a slab-sided receiver, a precisely vented barrel shroud, a squared carry handle on top, a compact fixed stock and a real pistol-grip-to-barrel relationship. Fit a small boxy rail-mounted laser/light combo beneath the forward shroud with one visible glass lens; it is a silhouette detail only, with NO beam, NO glow and NO light cone. Armoury flagship quality: drum face machined true, shroud vents cut precisely, all panels squared and matched, all fasteners torqued and true, professionally maintained; light honest carbon only at the muzzle and vents. Plain matched matte finish with NO camo, NO improvised repair, tape, salvage, poverty, mismatched plate or ground-off markings. DARK house treatment: the base reads near-black charcoal overall, never mid-grey; only narrow top edges catch restrained gunmetal and steel highlights while the undersides fall into black. Use a bold heavy black outline around the entire silhouette AND equally heavy black internal ink lines dividing every panel, plate, housing and seam. One warm brass accent is confined to the precisely machined drum hub. Slightly exaggerate the chunky receiver, heavy forward shroud and enormous flat drum while keeping the mechanism believable. About 4-6 flat cel colours plus black ink, decisive flat planes only; NO gradients, airbrushing, soft shading, photorealism, realistic product photography or even studio lighting. Flat orthographic full side-profile, entire weapon visible with generous padding, faces RIGHT: muzzle to the RIGHT, stock and grip to the LEFT. Render on a perfectly flat opaque #00ff00 field with no floor, shadow, smoke, flash, particles or reflections. No second weapon, no text, logos, serials, maker marks, chains, tassels, ropes, slings or dangling parts.",
+      "cardartAction": "braced into a controlled automatic breach-clearing burst as the heavy drum indexes cleanly beneath the receiver",
+      "behavior": {
+        "kind": "gun",
+        "damage": 3,
+        "projectileSpeed": 820,
+        "range": 380,
+        "fireRate": 0.24,
+        "pellets": 7,
+        "spread": 0.28,
+        "pierce": 1,
+        "magazine": 20,
+        "reloadSeconds": 2.6,
+        "bulletKind": "pellet",
+        "projectileArt": "bullet",
+        "muzzle": "rapid",
+        "recoil": 0.0018
+      },
+      "stats": {
+        "damage": 6,
+        "range": 280,
+        "halfArc": 0.55,
+        "cooldown": 0.24,
+        "displayLength": 142,
+        "swingArc": 1.8,
+        "gripFrac": 0.18
       }
     }
   ]

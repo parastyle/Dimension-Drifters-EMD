@@ -374,6 +374,28 @@
     "barrelMode": "parallel"
   },
   {
+    "id": "x2-breachmaster-auto-12",
+    "name": "Breachmaster Auto-12",
+    "sprite": "x2-breachmaster-auto-12",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 33.6
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 33.6
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
     "id": "x2-brimstone-bull",
     "name": "Brimstone Bull",
     "sprite": "x2-brimstone-bull",

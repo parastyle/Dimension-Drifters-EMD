@@ -21,6 +21,7 @@ Generated from sprite alpha for all 159 active projectile, beam, and authored me
 | `x2-boneyard-ricochet-mortar` (Boneyard Ricochet Mortar) | part-1 (255, 81.5) | part-1 (255, 81.5) | No |
 | `x2-boomstick-saddlegun` (Boomstick Saddlegun) | part-1 (255, 13.1) | part-1 (255, 13.1) | No |
 | `x2-brasswork-volley-rifle` (Brasswork Volley Rifle) | part-1 (255, 10.6) | part-1 (255, 10.6) | No |
+| `x2-breachmaster-auto-12` (Breachmaster Auto-12) | part-1 (255, 33.6) | part-1 (255, 33.6) | No |
 | `x2-brimstone-bull` (Brimstone Bull) | part-1 (255, 29.2) | part-1 (255, 29.2) | No |
 | `x2-brimstone-gallows-rifle` (Brimstone Gallows-Rifle) | part-1 (255, 13.3) | part-1 (255, 13.3) | No |
 | `x2-brimstone-rocket-tube` (Brimstone Rocket Tube) | part-1 (255, 39.5) | part-1 (255, 39.5) | No |
