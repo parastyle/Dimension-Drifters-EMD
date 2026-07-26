@@ -58,7 +58,8 @@ describe("active gun sound-family census", () => {
     const activeGunIds = ACTIVE_WEAPON_CATALOG_IDS.filter((id) => WEAPONS[id]?.gun).sort();
     const mappedIds = Object.keys(ACTIVE_GUN_FIRE_FAMILY_BY_ID).sort();
 
-    expect(activeGunIds).toHaveLength(122);
+    // B69 adds the B63/B66 guns to this deliberate loss-and-placeholder tripwire.
+    expect(activeGunIds).toHaveLength(138);
     expect(mappedIds).toEqual(activeGunIds);
     for (const weaponId of activeGunIds) {
       const family = gunFireFamilyFor(weaponId);

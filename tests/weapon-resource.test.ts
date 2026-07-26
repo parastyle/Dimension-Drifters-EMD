@@ -19,8 +19,8 @@ import {
 import { describe, expect, it } from "vitest";
 
 describe("Drive formula v1", () => {
-  it("covers the frozen 359-weapon catalog in deterministic id order", () => {
-    expect(WEAPON_RESOURCE_IDS).toHaveLength(359);
+  it("covers the frozen 379-weapon post-B63/B66 catalog in deterministic id order", () => {
+    expect(WEAPON_RESOURCE_IDS).toHaveLength(379);
     expect(WEAPON_RESOURCE_IDS).toEqual([...WEAPON_RESOURCE_IDS].sort());
     expect(Object.keys(WEAPON_RESOURCE_PROFILES)).toEqual(WEAPON_RESOURCE_IDS);
 
@@ -36,7 +36,8 @@ describe("Drive formula v1", () => {
         expect(profile.neutralCost % DRIVE_COST_QUANTUM).toBe(0);
       }
     }
-    expect(census).toEqual({ melee: 178, thrown: 27, gun: 123, cast: 4, beam: 23, zone: 4 });
+    // B69 deliberately adds three melee, sixteen gun, and one cast resource profiles.
+    expect(census).toEqual({ melee: 181, thrown: 27, gun: 139, cast: 5, beam: 23, zone: 4 });
   });
 
   it("pins every coefficient, frozen median, and the bounded utility overrides", () => {
@@ -160,8 +161,9 @@ describe("Drive formula v1", () => {
     };
     expect(bands("melee")).toEqual({ min: 3, median: 14, max: 35 });
     expect(bands("thrown")).toEqual({ min: 11.25, median: 15, max: 22.5 });
-    expect(bands("gun")).toEqual({ min: 1.25, median: 12, max: 50.75 });
-    expect(bands("cast")).toEqual({ min: 7, median: 18, max: 30 });
+    // The new rows legitimately move these distribution pins; the formula coefficients stay frozen.
+    expect(bands("gun")).toEqual({ min: 1.25, median: 10.75, max: 50.75 });
+    expect(bands("cast")).toEqual({ min: 7, median: 18, max: 42 });
   });
 
   it("guarantees fists and every load-1 melee can sustain the 20/s floor", () => {

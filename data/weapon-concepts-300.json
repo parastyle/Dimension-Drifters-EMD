@@ -3,9 +3,9 @@
   "source": "design-300-weapons workflow (15 agents)",
   "count": 360,
   "byType": {
-    "melee": 132,
-    "ranged": 112,
-    "caster": 96
+    "melee": 135,
+    "ranged": 128,
+    "caster": 97
   },
   "weapons": [
     {

@@ -15592,6 +15592,32 @@ export const SPRITES = {
       }
     ]
   },
+  "x2-rimechoir-chime-rack": {
+    "id": "x2-rimechoir-chime-rack",
+    "kind": "weapon",
+    "canvas": {
+      "w": 256,
+      "h": 111
+    },
+    "body": {
+      "cx": 141.21,
+      "cy": 55.41,
+      "w": 256,
+      "h": 111
+    },
+    "parts": [
+      {
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 111,
+        "cx": 141.21,
+        "cy": 55.41,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
+  },
   "x2-rimegut-ice-tongs": {
     "id": "x2-rimegut-ice-tongs",
     "kind": "weapon",

@@ -962,5 +962,20 @@ export const WEAPON_VFX: Record<string, WeaponVfx> = {
     "suppressFallback": true,
     "vfxRadius": 184,
     "hero": "vfx/weapons/b66/whiteout-snowshoe-ram-vfx.png"
+  },
+  "x2-rimegut-ice-tongs": {
+    "suite": {
+      "hero-skin": {
+        "on": true,
+        "params": {
+          "size": 1,
+          "rise": 0
+        }
+      }
+    },
+    "rot": 0,
+    "vfxRadius": 52,
+    "hero": "vfx/x2-rimegut-ice-tongs.png",
+    "suppressFallback": true
   }
 };

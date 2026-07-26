@@ -260,6 +260,8 @@ describe("driftblade-model panel", () => {
       "arc/thunderpost-storm-cadence": ["x2-thunderpost-fetish"],
       "punch/coyote-voltage-boxing": ["x2-coyote-trickster-s-sparkmitt"],
       "rake/frostfang-forward-rend": ["x2-frostfang-rakes"],
+      // B66 adds two authored pincer/shears routes; neither is allowed to collapse to a default combo.
+      "rake/miremaw-open-close": ["x2-miremaw-shears"],
       "rake/rimegut-open-and-close": ["x2-rimegut-ice-tongs"],
       "rake/wyrmscale-inferno-talons": ["x2-wyrmscale-hex-talon"],
       "thrust/blightfork-jab": ["x2-blightfork-glaive"],
@@ -310,7 +312,8 @@ describe("driftblade-model panel", () => {
     });
     expect(defaultCounts).toEqual({
       "punch/default": 19,
-      "arc/default": 122,
+      // The B63/B66 catalog merge deliberately contributes two ordinary arc routes.
+      "arc/default": 124,
       "chop/default": 8,
       "rake/dagger": 1,
       "rake/claw": 3,

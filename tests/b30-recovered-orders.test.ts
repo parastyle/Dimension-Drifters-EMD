@@ -95,7 +95,8 @@ describe("B30 recovered skipped-window orders", () => {
       expect(DROP_POOL, id).not.toContain(id);
       expect(packIds, id).not.toContain(id);
     }
-    expect(ACTIVE_WEAPON_CATALOG_IDS).toHaveLength(339);
+    // B63/B66 deliberately add twenty active rows; the four B30 archives remain excluded.
+    expect(ACTIVE_WEAPON_CATALOG_IDS).toHaveLength(359);
     expect(ARCHIVED_WEAPON_IDS).toHaveLength(20);
   });
 

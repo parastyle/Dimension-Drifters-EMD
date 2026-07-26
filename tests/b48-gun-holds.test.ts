@@ -16,7 +16,7 @@ function weapon(id: string) {
 }
 
 describe("B48 gun mechanism census and ownership", () => {
-  it("moves the deliberate pump, lever, and fan pins together", () => {
+  it("moves the deliberate pump, lever, fan, and B63 bolt pins together", () => {
     const definitions = Object.values(WEAPONS);
     const tagged = (tag: "pump" | "lever" | "revolver") =>
       definitions.filter((definition) => weaponHasHandlingTag(definition, tag));
@@ -30,7 +30,7 @@ describe("B48 gun mechanism census and ownership", () => {
           weaponHasHandlingTag(definition, tag),
         ),
       ),
-    ).toHaveLength(29);
+    ).toHaveLength(30);
   });
 
   it("routes Hallowbore to the B29 support-hand fan instead of a pump cycle", async () => {

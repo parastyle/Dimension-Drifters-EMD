@@ -212,9 +212,10 @@ describe("B31 recovered-art integrator", () => {
   it("moves the active census by exactly one and exposes Emberfist to both acquisition pools", () => {
     const id = "x2-emberfist-wraps";
     const packIds = lockedPackCandidates(createMetaAccountV5(), "weapon").map((row) => row.id);
-    expect(WEAPON_CATALOG_IDS).toHaveLength(359);
-    expect(ACTIVE_WEAPON_CATALOG_IDS).toHaveLength(339);
-    expect(ACTIVE_EXPANSION_WEAPON_IDS).toHaveLength(310);
+    // B69's deliberate B63/B66 merge advances each live census while archives remain fixed at twenty.
+    expect(WEAPON_CATALOG_IDS).toHaveLength(379);
+    expect(ACTIVE_WEAPON_CATALOG_IDS).toHaveLength(359);
+    expect(ACTIVE_EXPANSION_WEAPON_IDS).toHaveLength(330);
     expect(ARCHIVED_WEAPON_IDS).toHaveLength(20);
     expect(ACTIVE_WEAPON_CATALOG_IDS).toContain(id);
     expect(ACTIVE_EXPANSION_WEAPON_IDS).toContain(id);

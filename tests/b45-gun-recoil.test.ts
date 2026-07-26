@@ -21,7 +21,7 @@ describe("B45 physical gun recoil catalog", () => {
     expect(WEAPONS[weaponId]?.recoil).toBe(recoil);
   });
 
-  it("covers every ranged gun and ranged beam while melee/caster roots stay planted", () => {
+  it("covers the post-B63/B66 ranged catalog while melee/caster roots stay planted", () => {
     const definitions = Object.values(WEAPONS);
     const rangedGuns = definitions.filter(
       (weapon) => weapon.tags.classPool === "ranged" && weapon.gun,
@@ -29,7 +29,8 @@ describe("B45 physical gun recoil catalog", () => {
     const rangedBeams = definitions.filter(
       (weapon) => weapon.tags.classPool === "ranged" && weapon.beam,
     );
-    expect(rangedGuns).toHaveLength(114);
+    // Literal tripwire: the merged catalog now contains 130 ranged-class guns, all of which must recoil.
+    expect(rangedGuns).toHaveLength(130);
     expect(rangedBeams).toHaveLength(4);
     expect(rangedGuns.every((weapon) => (weapon.recoil ?? 0) > 0)).toBe(true);
     expect(rangedBeams.every((weapon) => (weapon.recoil ?? 0) > 0)).toBe(true);

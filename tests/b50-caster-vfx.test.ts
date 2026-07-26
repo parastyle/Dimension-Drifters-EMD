@@ -143,8 +143,9 @@ describe("B50 caster/VFX corrections", () => {
     expect(STARTER_UNLOCKED_WEAPON_IDS).not.toContain(CINDERQUILL_ID);
     expect(packIds).not.toContain(CINDERQUILL_ID);
     expect(WEAPON_RESOURCE_PROFILES[CINDERQUILL_ID]).toBeDefined();
-    expect(ACTIVE_WEAPON_CATALOG_IDS).toHaveLength(339);
-    expect(ACTIVE_EXPANSION_WEAPON_IDS).toHaveLength(310);
+    // B63/B66 add twenty active expansion rows without changing Cinderquill's archived status.
+    expect(ACTIVE_WEAPON_CATALOG_IDS).toHaveLength(359);
+    expect(ACTIVE_EXPANSION_WEAPON_IDS).toHaveLength(330);
     expect(ARCHIVED_WEAPON_IDS).toHaveLength(20);
   });
 });

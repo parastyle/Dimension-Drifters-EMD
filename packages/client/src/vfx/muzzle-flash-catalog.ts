@@ -59,16 +59,23 @@ let previousFrame = -1;
 export const MUZZLE_FLASH_ASSIGNMENTS: Readonly<Record<string, MuzzleFlashAssignment>> =
   Object.freeze(
     Object.fromEntries(
-      gunCatalog.map((weapon) => {
+      gunCatalog.map((weapon, index) => {
         const style = weapon.gun?.muzzle ?? "heavy";
         const override = MUZZLE_FLASH_VARIANT_OVERRIDES[weapon.id];
         let frame = override
           ? MUZZLE_FLASH_VARIANTS.indexOf(override)
           : (hashId(weapon.id) + (STYLE_BIAS[style] ?? 0)) % MUZZLE_FLASH_VARIANTS.length;
         // Catalog neighbors are the guns most likely to be compared in the armory. Never let them share a
-        // silhouette, even when their semantic style/hash proposal collides.
-        if (!override && frame === previousFrame)
-          frame = (frame + 1) % MUZZLE_FLASH_VARIANTS.length;
+        // silhouette, even when their semantic style/hash proposal collides. A non-overridden row also
+        // reserves the next row's authored override so that Hailbarrel can keep its mandated shard.
+        if (!override) {
+          const nextOverride = MUZZLE_FLASH_VARIANT_OVERRIDES[gunCatalog[index + 1]?.id ?? ""];
+          const nextOverrideFrame = nextOverride
+            ? MUZZLE_FLASH_VARIANTS.indexOf(nextOverride)
+            : -1;
+          while (frame === previousFrame || frame === nextOverrideFrame)
+            frame = (frame + 1) % MUZZLE_FLASH_VARIANTS.length;
+        }
         previousFrame = frame;
         return [
           weapon.id,
