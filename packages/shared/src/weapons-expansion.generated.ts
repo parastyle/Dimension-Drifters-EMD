@@ -14874,6 +14874,59 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
     "glovePair": {
       "wrapsFeet": true
     }
+  },
+  "x2-trailhead-carbine-357": {
+    "id": "x2-trailhead-carbine-357",
+    "name": "Trailhead Carbine .357",
+    "expansion": true,
+    "damage": 7,
+    "range": 220,
+    "halfArc": 0.48,
+    "cooldown": 0.36,
+    "displayLength": 138,
+    "swingArc": 1.8,
+    "gripFrac": 0.18,
+    "tags": {
+      "grip": "2H",
+      "size": "M",
+      "delivery": "projectile",
+      "fireMode": "semi-auto",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "pistol-calibre-carbine",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "STR"
+      ]
+    },
+    "recoil": 54,
+    "gripPoints": {
+      "primary": {
+        "x": 0.38,
+        "y": 0.67
+      },
+      "secondary": {
+        "x": 0.65,
+        "y": 0.63,
+        "role": "horizontal-foregrip"
+      }
+    },
+    "description": "A ceremonial-grade service carbine pairing presentation-figured hardwood with a precision blowback action for steady close-to-midrange patrol fire.",
+    "twoHanded": true,
+    "gun": {
+      "damage": 7,
+      "projectileSpeed": 1120,
+      "range": 640,
+      "fireRate": 0.24,
+      "magazine": 15,
+      "reloadSeconds": 1.45,
+      "bulletKind": "slug",
+      "muzzle": "punch",
+      "recoil": 0.0013,
+      "spread": 0.035,
+      "muzzleColor": 16747051
+    }
   }
 };
 

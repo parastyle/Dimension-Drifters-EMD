@@ -3480,6 +3480,28 @@ export const WEAPON_ART_MUZZLES = {
     "salvoMode": "parallel",
     "barrelMode": "parallel"
   },
+  "x2-trailhead-carbine-357": {
+    "sprite": "x2-trailhead-carbine-357",
+    "parts": [
+      {
+        "width": 256,
+        "height": 79
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 22.9,
+        "derived": {
+          "x": 255,
+          "y": 22.9
+        }
+      }
+    ],
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
   "x2-tumbleweed-skipper": {
     "sprite": "x2-tumbleweed-skipper",
     "parts": [

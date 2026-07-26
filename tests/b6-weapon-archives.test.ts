@@ -70,11 +70,11 @@ describe("B6 weapon catalog archives", () => {
       ...B50_ARCHIVE_IDS,
     ].sort();
     expect([...ARCHIVED_WEAPON_IDS].sort()).toEqual(expected);
-    expect(WEAPON_CATALOG_IDS).toHaveLength(358);
-    expect(ACTIVE_WEAPON_CATALOG_IDS).toHaveLength(338);
+    expect(WEAPON_CATALOG_IDS).toHaveLength(359);
+    expect(ACTIVE_WEAPON_CATALOG_IDS).toHaveLength(339);
     expect(ARCHIVED_WEAPON_IDS).toHaveLength(20);
-    expect(ACTIVE_EXPANSION_WEAPON_IDS).toHaveLength(309);
-    expect(WEAPON_RESOURCE_IDS).toHaveLength(358);
+    expect(ACTIVE_EXPANSION_WEAPON_IDS).toHaveLength(310);
+    expect(WEAPON_RESOURCE_IDS).toHaveLength(359);
 
     const concepts = JSON.parse(readFileSync("data/weapon-concepts-300.json", "utf8")) as {
       weapons: { id: string; archived?: boolean }[];

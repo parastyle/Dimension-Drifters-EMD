@@ -3343,6 +3343,28 @@
     "barrelMode": "parallel"
   },
   {
+    "id": "x2-trailhead-carbine-357",
+    "name": "Trailhead Carbine .357",
+    "sprite": "x2-trailhead-carbine-357",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 22.9
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 22.9
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
     "id": "x2-tumbleweed-skipper",
     "name": "Tumbleweed Skipper",
     "sprite": "x2-tumbleweed-skipper",
