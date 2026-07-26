@@ -102,7 +102,14 @@ for (const file of stillConflicted) {
 
 execFileSync("pnpm", ["gen"], { stdio: "inherit", shell: true });
 gitQuiet("add", "-A");
-execFileSync("git", ["commit", "--no-edit"], { stdio: "inherit" });
+// `--no-edit` only works while MERGE_HEAD exists; resolving every path can end the merge state,
+// so pass an explicit message and fall back rather than dying with a bare "command failed".
+if (!gitQuiet("commit", "--no-edit")) {
+  if (!gitQuiet("commit", "-m", `Merge branch '${branch}' (semantic weapon-data union)`)) {
+    console.error(`${branch}: nothing to commit — inspect \`git status\` before continuing`);
+    process.exit(1);
+  }
+}
 
 console.log(`${branch}: resolved (added ${added.length}: ${added.join(", ") || "none"})`);
 console.log(`  regenerated after union; still-conflicted-at-entry: ${stillConflicted.join(", ")}`);

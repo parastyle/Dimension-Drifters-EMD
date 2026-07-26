@@ -242,6 +242,28 @@
     "barrelMode": "parallel"
   },
   {
+    "id": "x2-blacktail-auto-12",
+    "name": "Blacktail Auto 12",
+    "sprite": "x2-blacktail-auto-12",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 6
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 6
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
     "id": "x2-boneash-scattergun-rifle",
     "name": "Boneash Scattergun-Rifle",
     "sprite": "x2-boneash-scattergun-rifle",

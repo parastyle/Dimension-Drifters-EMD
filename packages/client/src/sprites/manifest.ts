@@ -8132,72 +8132,6 @@ export const SPRITES = {
       }
     ]
   },
-  "vine-lasher": {
-    "id": "vine-lasher",
-    "kind": "character",
-    "canvas": {
-      "w": 440,
-      "h": 248
-    },
-    "body": {
-      "cx": 209.61,
-      "cy": 107.96,
-      "w": 122,
-      "h": 168
-    },
-    "parts": [
-      {
-        "role": "body",
-        "file": "body.png",
-        "w": 122,
-        "h": 168,
-        "cx": 209.61,
-        "cy": 107.96,
-        "ox": 0,
-        "oy": 0
-      },
-      {
-        "role": "hand-l",
-        "file": "hand-l.png",
-        "w": 45,
-        "h": 45,
-        "cx": 121.13,
-        "cy": 150.36,
-        "ox": -88.48,
-        "oy": 42.66
-      },
-      {
-        "role": "hand-r",
-        "file": "hand-r.png",
-        "w": 45,
-        "h": 45,
-        "cx": 299.66,
-        "cy": 151.15,
-        "ox": 90.06,
-        "oy": 43.18
-      },
-      {
-        "role": "foot-l",
-        "file": "foot-l.png",
-        "w": 59,
-        "h": 39,
-        "cx": 170.63,
-        "cy": 214.08,
-        "ox": -38.97,
-        "oy": 106.38
-      },
-      {
-        "role": "foot-r",
-        "file": "foot-r.png",
-        "w": 55,
-        "h": 37,
-        "cx": 249.89,
-        "cy": 213.29,
-        "ox": 40.29,
-        "oy": 105.33
-      }
-    ]
-  },
   "vfx-tornado-ember-fire": {
     "id": "vfx-tornado-ember-fire",
     "kind": "weapon-vfx",
@@ -8273,6 +8207,72 @@ export const SPRITES = {
         "cy": 722,
         "ox": 0,
         "oy": 0
+      }
+    ]
+  },
+  "vine-lasher": {
+    "id": "vine-lasher",
+    "kind": "character",
+    "canvas": {
+      "w": 440,
+      "h": 248
+    },
+    "body": {
+      "cx": 209.61,
+      "cy": 107.96,
+      "w": 122,
+      "h": 168
+    },
+    "parts": [
+      {
+        "role": "body",
+        "file": "body.png",
+        "w": 122,
+        "h": 168,
+        "cx": 209.61,
+        "cy": 107.96,
+        "ox": 0,
+        "oy": 0
+      },
+      {
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 45,
+        "h": 45,
+        "cx": 121.13,
+        "cy": 150.36,
+        "ox": -88.48,
+        "oy": 42.66
+      },
+      {
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 45,
+        "h": 45,
+        "cx": 299.66,
+        "cy": 151.15,
+        "ox": 90.06,
+        "oy": 43.18
+      },
+      {
+        "role": "foot-l",
+        "file": "foot-l.png",
+        "w": 59,
+        "h": 39,
+        "cx": 170.63,
+        "cy": 214.08,
+        "ox": -38.97,
+        "oy": 106.38
+      },
+      {
+        "role": "foot-r",
+        "file": "foot-r.png",
+        "w": 55,
+        "h": 37,
+        "cx": 249.89,
+        "cy": 213.29,
+        "ox": 40.29,
+        "oy": 105.33
       }
     ]
   },
@@ -8949,6 +8949,32 @@ export const SPRITES = {
         "h": 48,
         "cx": 100.75,
         "cy": 47.65,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
+  },
+  "x2-blacktail-auto-12": {
+    "id": "x2-blacktail-auto-12",
+    "kind": "weapon",
+    "canvas": {
+      "w": 309,
+      "h": 103
+    },
+    "body": {
+      "cx": 143.44,
+      "cy": 43.97,
+      "w": 256,
+      "h": 66
+    },
+    "parts": [
+      {
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 66,
+        "cx": 143.44,
+        "cy": 43.97,
         "ox": 0,
         "oy": 0
       }
@@ -10706,32 +10732,6 @@ export const SPRITES = {
       }
     ]
   },
-  "x2-dust-devil-cyclone-orb": {
-    "id": "x2-dust-devil-cyclone-orb",
-    "kind": "weapon",
-    "canvas": {
-      "w": 268,
-      "h": 268
-    },
-    "body": {
-      "cx": 163.61,
-      "cy": 130.67,
-      "w": 256,
-      "h": 74
-    },
-    "parts": [
-      {
-        "role": "part-1",
-        "file": "part-1.png",
-        "w": 256,
-        "h": 74,
-        "cx": 163.61,
-        "cy": 130.67,
-        "ox": 0,
-        "oy": 0
-      }
-    ]
-  },
   "x2-drunken-fist-wraps": {
     "id": "x2-drunken-fist-wraps",
     "kind": "weapon",
@@ -10765,6 +10765,32 @@ export const SPRITES = {
         "cy": 216.85,
         "ox": 73.25,
         "oy": -39.51
+      }
+    ]
+  },
+  "x2-dust-devil-cyclone-orb": {
+    "id": "x2-dust-devil-cyclone-orb",
+    "kind": "weapon",
+    "canvas": {
+      "w": 268,
+      "h": 268
+    },
+    "body": {
+      "cx": 163.61,
+      "cy": 130.67,
+      "w": 256,
+      "h": 74
+    },
+    "parts": [
+      {
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 74,
+        "cx": 163.61,
+        "cy": 130.67,
+        "ox": 0,
+        "oy": 0
       }
     ]
   },
@@ -13090,6 +13116,42 @@ export const SPRITES = {
       }
     ]
   },
+  "x2-iron-palm-wraps": {
+    "id": "x2-iron-palm-wraps",
+    "kind": "weapon",
+    "canvas": {
+      "w": 512,
+      "h": 512
+    },
+    "body": {
+      "cx": 184,
+      "cy": 256.87,
+      "w": 368,
+      "h": 512
+    },
+    "parts": [
+      {
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 368,
+        "h": 512,
+        "cx": 184,
+        "cy": 256.87,
+        "ox": 0,
+        "oy": 0
+      },
+      {
+        "role": "part-2",
+        "file": "part-2.png",
+        "w": 512,
+        "h": 408,
+        "cx": 254.55,
+        "cy": 220.99,
+        "ox": 70.55,
+        "oy": -35.88
+      }
+    ]
+  },
   "x2-iron-throwing-star": {
     "id": "x2-iron-throwing-star",
     "kind": "weapon",
@@ -13139,42 +13201,6 @@ export const SPRITES = {
         "cy": 130.76,
         "ox": 0,
         "oy": 0
-      }
-    ]
-  },
-  "x2-iron-palm-wraps": {
-    "id": "x2-iron-palm-wraps",
-    "kind": "weapon",
-    "canvas": {
-      "w": 512,
-      "h": 512
-    },
-    "body": {
-      "cx": 184.0,
-      "cy": 256.87,
-      "w": 368,
-      "h": 512
-    },
-    "parts": [
-      {
-        "role": "part-1",
-        "file": "part-1.png",
-        "w": 368,
-        "h": 512,
-        "cx": 184.0,
-        "cy": 256.87,
-        "ox": 0,
-        "oy": 0
-      },
-      {
-        "role": "part-2",
-        "file": "part-2.png",
-        "w": 512,
-        "h": 408,
-        "cx": 254.55,
-        "cy": 220.99,
-        "ox": 70.55,
-        "oy": -35.88
       }
     ]
   },

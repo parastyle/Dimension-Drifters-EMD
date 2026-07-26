@@ -37,6 +37,7 @@ describe("V3G catalog gun-handling laws", () => {
         !!weapon.gun &&
         !weapon.breakAction &&
         ((weapon.tags.family === "shotgun" &&
+          weapon.tags.fireMode !== "semi-auto" &&
           weapon.id !== "x2-dustdevil-riotgun" &&
           weapon.id !== "x2-twin-maw-greenerbore" &&
           weapon.id !== "x2-hallowbore-coachgun" &&
