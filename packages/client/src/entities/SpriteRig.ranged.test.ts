@@ -439,12 +439,12 @@ describe("SpriteRig V3G grip and mechanism laws", () => {
     );
   });
 
-  it("starts one immediate mechanism cycle from every accepted tagged shot", async () => {
+  it("starts one immediate mechanism cycle from every accepted tagged shot, including B63 bolts", async () => {
     const { SpriteRig, gunHandlingMechanismFor } = await import("./SpriteRig.js");
     const mechanisms = Object.values(WEAPONS).filter(
       (weapon) => gunHandlingMechanismFor(weapon) !== undefined,
     );
-    expect(mechanisms).toHaveLength(29);
+    expect(mechanisms).toHaveLength(30);
     for (const weapon of mechanisms) {
       const rig = Object.create(SpriteRig.prototype) as {
         weapons: Array<{ def: typeof weapon }>;

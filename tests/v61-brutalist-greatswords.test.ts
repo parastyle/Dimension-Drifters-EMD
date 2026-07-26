@@ -35,10 +35,11 @@ const PRIMARY_GREATSWORD_DPS_MEDIAN = 16.67;
 describe("V6.1 brutalist greatsword line", () => {
   it("ships six active two-hand slabs in the authored DPS band and existing status vocabulary", () => {
     expect(BRUTALIST_GREATSWORD_IDS).toEqual(LINE.map(([id]) => id));
-    expect(WEAPON_CATALOG_IDS).toHaveLength(359);
-    expect(ACTIVE_WEAPON_CATALOG_IDS).toHaveLength(339);
+    // B63/B66 add twenty active rows while the six-slab line and twenty archives remain unchanged.
+    expect(WEAPON_CATALOG_IDS).toHaveLength(379);
+    expect(ACTIVE_WEAPON_CATALOG_IDS).toHaveLength(359);
     expect(ARCHIVED_WEAPON_IDS).toHaveLength(20);
-    expect(WEAPON_RESOURCE_IDS).toHaveLength(359);
+    expect(WEAPON_RESOURCE_IDS).toHaveLength(379);
 
     for (const [id, name, element, damage, cooldown, expectedDps] of LINE) {
       const weapon = WEAPONS[id];
@@ -137,7 +138,8 @@ describe("V6.1 brutalist greatsword line", () => {
     const assignments = JSON.parse(
       readFileSync("tools/weaponsmith/assignments.json", "utf8"),
     ) as Record<string, { suite?: Record<string, { on?: boolean }> }>;
-    expect(portal).toContain('"count":339');
+    // Preserve the regenerated post-B69 Testing Grounds census as a literal loss tripwire.
+    expect(portal).toContain('"count":359');
 
     for (const [id] of LINE) {
       const sprite = SPRITES[id as keyof typeof SPRITES];

@@ -178,7 +178,9 @@ export function gunFireFamilyForWeapon(weapon: WeaponDef): GunFireFamily | undef
       return "bolt-launcher";
     case "lever-rifle":
       return "lever-rifle";
+    case "semi-auto carbine":
     case "battle-rifle":
+    case "anti-materiel-rifle":
     case "marksman-rifle":
       return "long-rifle";
     case "railgun":
