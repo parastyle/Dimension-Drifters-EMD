@@ -100,7 +100,12 @@ for (const file of stillConflicted) {
   gitQuiet("add", file);
 }
 
-execFileSync("pnpm", ["gen"], { stdio: "inherit", shell: true });
+// `--defer-gen` batches many branches before regenerating once. Codegen pins the catalog size
+// (`weapon-resource.ts` throws on an unexpected weapon count), so adding N weapons one merge at a
+// time would trip that guard on every single merge. Merge them all, bump the pin deliberately, gen once.
+if (!process.argv.includes("--defer-gen")) {
+  execFileSync("pnpm", ["gen"], { stdio: "inherit", shell: true });
+}
 gitQuiet("add", "-A");
 // `--no-edit` only works while MERGE_HEAD exists; resolving every path can end the merge state,
 // so pass an explicit message and fall back rather than dying with a bare "command failed".
