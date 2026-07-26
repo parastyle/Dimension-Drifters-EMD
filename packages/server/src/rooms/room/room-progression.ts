@@ -1,6 +1,12 @@
 import { randomBytes } from "node:crypto";
 import { serverDevToolsEnabled } from "../../dev-tools.js";
 import {
+  type DurableSettlementReceipt,
+  getSettlementStore,
+  isDurableAccountId,
+  isDurableRunId,
+} from "../../settlement-store.js";
+import {
   ACTION_MSGS_PER_TICK,
   ACTIVE_WEAPON_CATALOG_IDS,
   ARENA_HEIGHT,
@@ -1155,6 +1161,7 @@ export interface GameRoomContext extends Room<ArenaState> {
   readonly serverMotionSourceByPlayer: Map<string, ServerMotionSource>;
   readonly combat: Map<string, CombatState>;
   readonly metaAccounts: Map<string, MetaAccountV5>;
+  readonly accountIds: Map<string, string>;
   readonly weaponRuns: Map<string, RunWeaponLedger>;
   worldTier: number;
   readonly disconnectedPlayers: Map<string, DisconnectedPlayerReservation>;
@@ -1351,6 +1358,7 @@ export interface GameRoomContext extends Room<ArenaState> {
   awardPetDimensionClear(): void;
   beginNextPetDimension(): void;
   rollSlateTortoise(account: MetaAccountV5, outcome: "defeat" | "victory"): boolean;
+  sendCommittedSettlement(playerId: string, receipt: DurableSettlementReceipt): void;
   settleMetaAccounts(outcome: "defeat" | "victory"): void;
   applyHeal(target: PlayerState, rawAmount: number, applyReceivedMultiplier?: boolean): number;
   toggleTraining(abandoningPlayerId?: string): void;
@@ -1369,6 +1377,7 @@ export interface GameRoomContext extends Room<ArenaState> {
       scrip?: number;
       up?: unknown;
       metaAccount?: unknown;
+      accountId?: unknown;
       carry?: CarrySelectionV1;
       selectedCharacterId?: unknown;
       selectedPetId?: unknown;
@@ -1716,6 +1725,42 @@ export const roomProgressionMethods = {
       const player = this.state.players.get(client.sessionId);
       if (player) this.sendWeaponManifest(player);
     });
+    this.onMessage(
+      "requestSettlementReceipt",
+      (client, message?: { runId?: unknown }) => {
+        const accountId = this.accountIds.get(client.sessionId);
+        if (!accountId || !isDurableRunId(message?.runId)) return;
+        const store = getSettlementStore();
+        const receipt = store.getSettlement(accountId, message.runId);
+        if (!receipt) return;
+        this.sendCommittedSettlement(client.sessionId, receipt);
+        const current = store.getAccount(accountId);
+        if (current) this.sendOwnerMessage(client.sessionId, "metaAccount", current);
+      },
+    );
+    this.onMessage(
+      "requestAccountRecovery",
+      (
+        client,
+        message?: { runId?: unknown; knownRevision?: unknown },
+      ) => {
+        const accountId = this.accountIds.get(client.sessionId);
+        if (!accountId) return;
+        const store = getSettlementStore();
+        const knownRevision = Number.isInteger(message?.knownRevision)
+          ? Math.max(0, Number(message?.knownRevision))
+          : -1;
+        const exact = isDurableRunId(message?.runId)
+          ? store.getSettlement(accountId, message.runId)
+          : undefined;
+        const latest = exact ?? store.getLatestSettlement(accountId);
+        if (latest && latest.accountRevision > knownRevision) {
+          this.sendCommittedSettlement(client.sessionId, latest);
+        }
+        const current = store.getAccount(accountId);
+        if (current) this.sendOwnerMessage(client.sessionId, "metaAccount", current);
+      },
+    );
 
     this.onMessage(
       "input",
@@ -2091,8 +2136,13 @@ export const roomProgressionMethods = {
           !this.prestigeGameClearReceipts.has(client.sessionId)
         )
           return;
+        const previousRevision = account.revision;
         const result = wipeWeaponBankForPrestige(account);
         if (!result.ok) return;
+        const accountId = this.accountIds.get(client.sessionId);
+        if (accountId) {
+          getSettlementStore().replaceAccount(accountId, previousRevision, account);
+        }
         this.prestigeGameClearReceipts.delete(client.sessionId);
         const player =
           this.state.players.get(client.sessionId) ??
@@ -2714,9 +2764,44 @@ export const roomProgressionMethods = {
     if (!account || !expedition || !player) return;
     this.syncWeaponRunFromArsenal(player);
     const settlementKey = `${playerId}:${expedition.runId}:defeat:1`;
-    const receipt = settleWeaponExpedition(account, "defeat");
+    const accountId = this.accountIds.get(playerId);
+    let receipt: WeaponSettlementResult;
+    if (accountId && isDurableRunId(expedition.runId)) {
+      const nextAccount = structuredClone(account);
+      const weapon = settleWeaponExpedition(nextAccount, "defeat");
+      const previousBank = Math.max(
+        0,
+        Math.min(META_ACCOUNT_SCRIP_MAX, Math.floor(account.scrip)),
+      );
+      const committed = getSettlementStore().commitSettlement({
+        accountId,
+        runId: expedition.runId,
+        expectedRevision: account.revision,
+        account: nextAccount,
+        receipt: {
+          version: 1,
+          accountId,
+          runId: expedition.runId,
+          outcome: "defeat",
+          accountRevision: nextAccount.revision,
+          account: nextAccount,
+          money: {
+            outcome: "defeat",
+            banked: 0,
+            previousBank,
+            bankTotal: previousBank,
+          },
+          weapon,
+        },
+      }).receipt;
+      Object.assign(account, structuredClone(committed.account));
+      receipt = committed.weapon ?? weapon;
+    } else {
+      receipt = settleWeaponExpedition(account, "defeat");
+    }
     this.weaponSettlementReceipts.set(settlementKey, receipt);
     this.weaponRuns.delete(playerId);
+    const carryRevision = account.revision;
     const committed = commitWeaponCarry(
       account,
       {
@@ -2731,6 +2816,7 @@ export const roomProgressionMethods = {
       this.worldTier,
     );
     if (!committed.ok) throw new Error(`workshop weapon reset rejected: ${committed.error}`);
+    if (accountId) getSettlementStore().replaceAccount(accountId, carryRevision, account);
     this.materializeWeaponRun(player, account);
     this.createWeaponRun(playerId, account);
     this.sendOwnerMessage(playerId, "weaponSettlementReceipt", receipt);
@@ -2819,6 +2905,7 @@ export const roomProgressionMethods = {
       this.snapshotPetRun(player, this.metaAccounts.get(id)?.selectedPetId ?? "");
       const account = this.metaAccounts.get(id);
       if (account && !account.weaponBank.expedition) {
+        const previousRevision = account.revision;
         const committed = commitWeaponCarry(
           account,
           {
@@ -2833,6 +2920,10 @@ export const roomProgressionMethods = {
           this.worldTier,
         );
         if (committed.ok) {
+          const accountId = this.accountIds.get(id);
+          if (accountId) {
+            getSettlementStore().replaceAccount(accountId, previousRevision, account);
+          }
           this.materializeWeaponRun(player, account);
           this.createWeaponRun(id, account);
         }
@@ -2941,6 +3032,8 @@ export const roomProgressionMethods = {
         c.rollCd = 0;
         c.slideParryLockT = 0;
       }
+      if (account) this.sendOwnerMessage(id, "metaAccount", account);
+      this.sendWeaponManifest(player);
       this.zeroMoveVel(id, undefined, "teleport-placement"); // §7 fresh run, fresh momentum
     });
     // §16 v0.116 a restart in BOSS RUSH re-arms the gauntlet from boss 1 (mode is preserved across restart).
@@ -2957,6 +3050,7 @@ export const roomProgressionMethods = {
       scrip?: number;
       up?: unknown;
       metaAccount?: unknown;
+      accountId?: unknown;
       carry?: CarrySelectionV1;
       selectedCharacterId?: unknown;
       selectedPetId?: unknown;
@@ -3026,7 +3120,36 @@ export const roomProgressionMethods = {
     if (suppliedBankAccount && !accountResult.ok) {
       throw new Error(`invalid weapon bank: ${accountResult.bank.errors.join(",")}`);
     }
-    const account = accountResult.account;
+    const claimedAccount = accountResult.account;
+    const clientRunId = claimedAccount.weaponBank.expedition?.runId;
+    const accountId = isDurableAccountId(options?.accountId) ? options.accountId : undefined;
+    let recoveredSettlement: DurableSettlementReceipt | undefined;
+    let account = claimedAccount;
+    if (accountId) {
+      const store = getSettlementStore();
+      account = store.loadOrCreateAccount(accountId, claimedAccount);
+      recoveredSettlement =
+        clientRunId && isDurableRunId(clientRunId)
+          ? store.getSettlement(accountId, clientRunId)
+          : undefined;
+      if (!recoveredSettlement && claimedAccount.revision < account.revision) {
+        const latest = store.getLatestSettlement(accountId);
+        if (latest && latest.accountRevision > claimedAccount.revision) {
+          recoveredSettlement = latest;
+        }
+      }
+      // Menu-only purchases still arrive as a revisioned local command until the menu gains a transport.
+      // Admit only a strictly newer, closed-expedition snapshot; terminal receipts and live escrow always win.
+      if (
+        !recoveredSettlement &&
+        !account.weaponBank.expedition &&
+        !claimedAccount.weaponBank.expedition &&
+        claimedAccount.revision > account.revision
+      ) {
+        account = store.replaceAccount(accountId, account.revision, claimedAccount);
+      }
+      this.accountIds.set(client.sessionId, accountId);
+    }
     // W4A archive migration: persisted rows are accepted only so every retired instance can be valued and
     // removed here. Do not advance revision yet — like stale-expedition abandonment below, the client's
     // carry was built against the exact revision it supplied. The carry commit performs the ordinary bump.
@@ -3080,16 +3203,50 @@ export const roomProgressionMethods = {
           : "",
       };
     }
-    // Bank §2.3 — disconnect is never extraction, and there is no reservation machinery yet: an
-    // account arriving at a NEW join with an OPEN expedition abandoned the old one (client killed,
-    // Wi-Fi lost — the settlement only ever lived in that room's memory while the blob lives in
-    // localStorage). Settle it as the defeat outcome BEFORE this carry: the stake is lost, the bank
-    // un-bricks, and no kill-the-client replay can turn a carried instance into a safe copy plus a
-    // live copy. Revision must NOT advance here — the client built this join's carry against the
-    // account exactly as it last saw it, so a bump would falsely stale-reject the fresh carry.
-    const abandoned = account.weaponBank.expedition
-      ? settleWeaponExpedition(account, "defeat", false)
-      : undefined;
+    // Bank §2.3 — disconnect is never extraction. A durable OPEN expedition on a NEW join has no
+    // committed terminal receipt and therefore abandoned the old run. Settle that exact run id as defeat
+    // before this carry. A committed victory was looked up above and its snapshot has no open expedition,
+    // so it can never reach this path or be converted into a loss.
+    let abandoned: WeaponSettlementResult | undefined;
+    if (account.weaponBank.expedition) {
+      const abandonedRunId = account.weaponBank.expedition.runId;
+      if (accountId && isDurableRunId(abandonedRunId)) {
+        const nextAccount = structuredClone(account);
+        const weapon = settleWeaponExpedition(nextAccount, "defeat", false);
+        this.bumpAccountRevision(nextAccount);
+        const previousBank = Math.max(
+          0,
+          Math.min(META_ACCOUNT_SCRIP_MAX, Math.floor(account.scrip)),
+        );
+        const receipt = getSettlementStore().commitSettlement({
+          accountId,
+          runId: abandonedRunId,
+          expectedRevision: account.revision,
+          account: nextAccount,
+          receipt: {
+            version: 1,
+            accountId,
+            runId: abandonedRunId,
+            outcome: "defeat",
+            accountRevision: nextAccount.revision,
+            account: nextAccount,
+            money: {
+              outcome: "defeat",
+              banked: 0,
+              previousBank,
+              bankTotal: previousBank,
+            },
+            weapon,
+          },
+        }).receipt;
+        Object.assign(account, structuredClone(receipt.account));
+        abandoned = receipt.weapon;
+      } else {
+        abandoned = settleWeaponExpedition(account, "defeat", false);
+      }
+    }
+    const carryRevision = account.revision;
+    if (accountId) carry = { ...carry, expectedRevision: carryRevision };
     const committed = commitWeaponCarry(
       account,
       carry,
@@ -3098,6 +3255,7 @@ export const roomProgressionMethods = {
       this.worldTier,
     );
     if (!committed.ok) throw new Error(`weapon carry rejected: ${committed.error}`);
+    if (accountId) getSettlementStore().replaceAccount(accountId, carryRevision, account);
     if (abandoned?.ok) {
       // Honest ledger: the owner learns what the abandoned run cost the moment they are back.
       this.sendOwnerMessage(client.sessionId, "expeditionAbandonReceipt", abandoned);
@@ -3272,6 +3430,9 @@ export const roomProgressionMethods = {
       ultCritCharges: 0,
       ultCritEndTick: 0,
     });
+    if (recoveredSettlement) {
+      this.sendCommittedSettlement(client.sessionId, recoveredSettlement);
+    }
     this.sendWeaponManifest(player);
     this.publishPetPickupEligibility();
     if (typeof client.send === "function") client.send("metaAccount", account);

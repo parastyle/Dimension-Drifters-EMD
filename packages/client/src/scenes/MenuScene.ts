@@ -1579,7 +1579,15 @@ export class MenuScene extends Phaser.Scene {
       this.refreshPacksWorkspace();
       return;
     }
-    this.metaAccount = savePetMetaAccount(opened.account);
+    try {
+      this.metaAccount = savePetMetaAccount(opened.account);
+    } catch (error) {
+      console.error("[client] booster purchase cache write failed", error);
+      this.audio.play("ui:cancel");
+      this.packsHint?.setText("PURCHASE NOT COMPLETED · ACCOUNT STORAGE IS BLOCKED");
+      this.refreshPacksWorkspace();
+      return;
+    }
     this.audio.play("ui:confirm");
     this.refreshPacksWorkspace();
     this.refreshCharacterWorkspace();

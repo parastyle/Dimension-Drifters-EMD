@@ -116,6 +116,7 @@ import {
   ROOM_NAME,
   relicEnergyCapacity,
   relicParryRadius,
+  sanitizeMetaAccountV5,
   SCHEMA_VERSION,
   SLIDE_PHASE_GROUND,
   SLIDE_PHASE_OFF,
@@ -248,6 +249,7 @@ import {
 import { OwnerNoteOverlay } from "../ui/owner-note-overlay.js";
 import {
   formatPetProgressReceipt,
+  loadOrCreatePetAccountId,
   loadPetMetaAccount,
   petEvolutionLabel,
   savePetMetaAccount,
@@ -1236,6 +1238,8 @@ export class ArenaScene extends Phaser.Scene {
   private readonly petOwnerHp = new Map<string, number>();
   private petManifest: PetPartsManifest | null | undefined;
   private petMetaAccount!: MetaAccountV5;
+  private accountId = "";
+  private accountIdentityError: unknown;
   private selectedPetId: MetaAccountV5["selectedPetId"] = "verdant-wing";
   private selectedCharacterId?: WholeArtCharacter;
   private pendingCarry?: CarrySelectionV1;
@@ -1859,6 +1863,13 @@ export class ArenaScene extends Phaser.Scene {
     this.selectedBeltLevel =
       data?.beltLevel ?? (urlLevel && urlLevel !== "1" ? urlLevel : "sky-carrier");
     this.petMetaAccount = loadPetMetaAccount();
+    try {
+      this.accountId = loadOrCreatePetAccountId();
+      this.accountIdentityError = undefined;
+    } catch (error) {
+      this.accountId = "";
+      this.accountIdentityError = error;
+    }
     this.selectedPetId = data?.selectedPetId ?? this.petMetaAccount.selectedPetId;
     this.selectedCharacterId = data?.selectedCharacterId;
     this.pendingCarry = data?.carry;
@@ -2697,6 +2708,13 @@ export class ArenaScene extends Phaser.Scene {
     this.buildCarousel();
     this.drawVignette();
     this.drawJuggleVignette();
+    if (this.accountIdentityError) {
+      const status = document.getElementById("status");
+      if (status) status.textContent = "account storage unavailable · run not started";
+      console.error("[client] durable account identity unavailable", this.accountIdentityError);
+      this.flashBanner("ACCOUNT STORAGE BLOCKED · RUN NOT STARTED", "#ff8a6b");
+      return;
+    }
     // §19 v0.108 every run start feels intentional — a short black fade-in.
     this.cameras.main.fadeIn(420, 0, 0, 0);
     void this.connect(connectionGeneration);
@@ -4385,6 +4403,9 @@ export class ArenaScene extends Phaser.Scene {
     const port = Number.isInteger(portOverride) && portOverride > 0 ? portOverride : DEFAULT_PORT;
     const client = new Client(`${scheme}://${location.hostname}:${port}`);
     const reconnectReservation = loadReconnectReservation();
+    const requestedSettlementRunId =
+      this.petMetaAccount.weaponBank.expedition?.runId ?? reconnectReservation?.runId ?? "";
+    const requestedAccountRevision = this.petMetaAccount.revision;
     const recovering = reconnectReservation !== undefined;
     if (recovering) {
       this.reconnectReservation = reconnectReservation;
@@ -4401,6 +4422,7 @@ export class ArenaScene extends Phaser.Scene {
         // §17 pass the menu's dimension pick as a join option (the room creator scopes the run to it; a
         // joiner inherits the host's synced dimension — `getDimension` server-side rejects an unknown id).
         const joinOpts = {
+          accountId: this.accountId,
           metaAccount: this.petMetaAccount,
           carry: this.pendingCarry,
           selectedCharacterId: this.selectedCharacterId,
@@ -4449,7 +4471,14 @@ export class ArenaScene extends Phaser.Scene {
         this.persistReconnectReservation(room, reconnectReservation?.runId);
         const disposeMetaAccount = room.onMessage<unknown>("metaAccount", (payload) => {
           if (generation !== this.connectionGeneration || this.room !== room) return;
-          this.petMetaAccount = savePetMetaAccount(payload);
+          const canonical = sanitizeMetaAccountV5(payload);
+          this.petMetaAccount = canonical;
+          try {
+            savePetMetaAccount(canonical);
+          } catch (error) {
+            console.error("[client] server account committed; local cache write failed", error);
+            this.flashBanner("ACCOUNT SAFE ON SERVER · LOCAL CACHE BLOCKED", "#ffb36b");
+          }
           this.selectedPetId = this.petMetaAccount.selectedPetId;
           this.persistReconnectReservation(room);
         }) as () => void;
@@ -4582,6 +4611,10 @@ export class ArenaScene extends Phaser.Scene {
         // Server owner messages sent during onJoin may precede post-join callback registration. Ask for the
         // existing manifest again now so sessionStorage always receives the authoritative run id.
         room.send("requestWeaponManifest");
+        room.send("requestAccountRecovery", {
+          runId: requestedSettlementRunId,
+          knownRevision: requestedAccountRevision,
+        });
         // §4 schema handshake (audit): if the server's schema version ≠ ours, our compiled state schema is
         // stale → Colyseus would decode patches with corrupted field offsets. Detect on the first state and
         // tell the player to hard-reload instead of silently rendering garbage.
