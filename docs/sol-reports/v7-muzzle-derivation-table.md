@@ -1,6 +1,6 @@
 # V7 Muzzle Derivation Table
 
-Generated from sprite alpha for all 158 active projectile, beam, and authored melee-impact definitions. Coordinates are source-PNG pixels.
+Generated from sprite alpha for all 159 active projectile, beam, and authored melee-impact definitions. Coordinates are source-PNG pixels.
 
 | Weapon | Derived barrel tip | Authored muzzle point(s) | Override |
 | --- | --- | --- | --- |
@@ -117,6 +117,7 @@ Generated from sprite alpha for all 158 active projectile, beam, and authored me
 | `x2-quicksilver-slugthrower` (Quicksilver Slugthrower) | part-1 (255, 11.7) | part-1 (255, 11.7) | No |
 | `x2-quicksilver-streetsweeper` (Quicksilver Streetsweeper) | part-1 (255, 27.9) | part-1 (255, 27.9) | No |
 | `x2-quill-storm-repeater` (Quill Storm Repeater) | part-1 (241, 108.9) | part-1 (241, 108.9) | No |
+| `x2-rancher-22-plinker` (Rancher .22 Plinker) | part-1 (263, 8.7) | part-1 (263, 8.7) | No |
 | `x2-reliquary-nailcaster` (Reliquary Nailcaster) | part-1 (250, 46) | part-1 (255, 43)<br>part-1 (255, 76)<br>part-1 (255, 110) | Yes - The three exposed spike tips are intentionally isolated bayonet-like extrema, which the barrel-mass heuristic rejects. |
 | `x2-reliquary-repeater` (Reliquary Repeater) | part-1 (255, 36.3) | part-1 (255, 36.3) | No |
 | `x2-ricochet-roulette` (Ricochet Roulette) | part-1 (255, 30.1) | part-1 (255, 30.1) | No |
