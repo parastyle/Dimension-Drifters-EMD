@@ -411,6 +411,7 @@ import {
   makeEmberleafFireball,
   makeGunIdentityProjectile,
   makeMagma,
+  makeRimechoirPressureWedge,
   makeSpit,
   makeThrownWeapon,
 } from "./arena/projectile-factory.js";
@@ -1894,6 +1895,10 @@ export class ArenaScene extends Phaser.Scene {
     preloadPageProjectileArt(this);
     preloadImpactFlipbooks(this); // optional per-element 6-frame hit blooms; missing strips stay silent
     this.load.image("recovered:emberleaf-fireball", "sprites/vfx-emberleaf-fireball/part-1.png");
+    this.load.image(
+      "projectile:rimechoir-pressure-wedge",
+      "projectiles/rimechoir-chime-rack-pressure-wedge.png",
+    );
     this.load.image(
       "recovered:unicorn-rainbow-beam",
       "sprites/vfx-unicorn-rainbow-beam/part-1.png",
@@ -6843,6 +6848,9 @@ export class ArenaScene extends Phaser.Scene {
         : null;
       const container =
         (pr.kind === "emberleaf-fireball" ? makeEmberleafFireball(this, pr) : null) ??
+        (pr.kind === "rimechoir-pressure-wedge"
+          ? makeRimechoirPressureWedge(this, pr)
+          : null) ??
         generatedImageIdentity ??
         wackyIdentity ??
         gunIdentity ??
@@ -6931,6 +6939,9 @@ export class ArenaScene extends Phaser.Scene {
       this.projectiles.set(id, container);
       if (sourceWeaponId) container.setData("sourceWeapon", sourceWeaponId);
       if (shooter) container.setData("sourcePlayer", shooter);
+      if (pr.kind === "rimechoir-pressure-wedge" && sourceWeapon && sourceRig) {
+        this.spawnCasterSourceAtRig(sourceWeapon, sourceRig, Math.atan2(pr.vy, pr.vx));
+      }
       // Muzzle flash a freshly-fired gun bullet at the SHOOTER's barrel (nearest player), one per shot.
       if (fx) {
         const flashKey = shooter ? `${shooter}:${pr.bornTick}:${pr.sourceBurstIndex}` : "";
@@ -7156,7 +7167,7 @@ export class ArenaScene extends Phaser.Scene {
     weapon: WeaponDef,
     rig: SpriteRig,
   ): { x: number; y: number } | undefined {
-    if (!weapon.gun && !weapon.hybridProjectile) return undefined;
+    if (!weapon.gun && !weapon.hybridProjectile && !weapon.chargedProjectile) return undefined;
     const speed = Math.hypot(projectile.vx, projectile.vy);
     if (speed <= 1e-4) return undefined;
     const aimX = projectile.vx / speed;
@@ -7230,14 +7241,28 @@ export class ArenaScene extends Phaser.Scene {
       if (!rig.writeTomeCenter(muzzle)) {
         rig.writeWeaponMuzzleForShot((player.attackSeq + 1) >>> 0, 0, muzzle);
       }
-      image
-        .setPosition(muzzle.x, muzzle.y)
-        .setDisplaySize(
-          definition.baseRadius * 2 * snapshot.visualScale,
-          definition.baseRadius * 2 * snapshot.visualScale,
-        )
-        .setRotation((this.time.now / 1000) * 0.7)
-        .setVisible(true);
+      const rimechoir = player.weapon === "x2-rimechoir-chime-rack";
+      image.setTexture(
+        rimechoir ? "projectile:rimechoir-pressure-wedge" : "recovered:emberleaf-fireball",
+      );
+      image.setPosition(muzzle.x, muzzle.y).setVisible(true);
+      if (rimechoir) {
+        image
+          .setDisplaySize(
+            definition.baseRadius * 5 * snapshot.visualScale,
+            definition.baseRadius * 2 * snapshot.visualScale,
+          )
+          .setRotation(player.aimDir)
+          .setFlipY(Math.cos(player.aimDir) < 0);
+      } else {
+        image
+          .setDisplaySize(
+            definition.baseRadius * 2 * snapshot.visualScale,
+            definition.baseRadius * 2 * snapshot.visualScale,
+          )
+          .setRotation((this.time.now / 1000) * 0.7)
+          .setFlipY(false);
+      }
     });
     for (const [id, image] of this.chargedProjectileMuzzles) {
       if (live.has(id)) continue;

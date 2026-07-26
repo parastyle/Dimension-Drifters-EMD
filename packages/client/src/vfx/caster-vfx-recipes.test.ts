@@ -19,8 +19,8 @@ const BEAMS = Object.values(WEAPONS).filter((weapon) => weapon.beam);
 
 describe("caster VFX recipe resolver", () => {
   it("resolves every non-replaced caster id to a complete non-default recipe", () => {
-    expect(CASTERS).toHaveLength(97);
-    expect(PROCEDURAL_CASTERS).toHaveLength(95);
+    expect(CASTERS).toHaveLength(98);
+    expect(PROCEDURAL_CASTERS).toHaveLength(96);
     const resolved = PROCEDURAL_CASTERS.map(
       (weapon) => [weapon, resolveCasterVfxRecipe(weapon)] as const,
     );

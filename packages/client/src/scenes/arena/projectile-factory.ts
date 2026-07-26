@@ -199,6 +199,21 @@ export function makeEmberleafFireball(
   return scene.add.container(pr.x, pr.y, [image]).setDepth(99000);
 }
 
+/** B66 Rimechoir art. Its 2.5:1 display matches the authoritative charged capsule. */
+export function makeRimechoirPressureWedge(
+  scene: Phaser.Scene,
+  pr: { x: number; y: number; vx: number; vy: number; visualScale: number },
+): Phaser.GameObjects.Container {
+  const scale = Math.max(0.01, pr.visualScale || 1);
+  const angle = Math.atan2(pr.vy, pr.vx);
+  const image = scene.add
+    .image(0, 0, "projectile:rimechoir-pressure-wedge")
+    .setDisplaySize(90 * scale, 36 * scale)
+    .setRotation(angle)
+    .setFlipY(pr.vx < 0);
+  return scene.add.container(pr.x, pr.y, [image]).setDepth(99000);
+}
+
 /** §8 Counterblade parry projectile — a cyan blade-streak (velocity-aligned hot capsule + white core)
  *  so the parry's riposte reads distinct from gun bullets / enemy spit. */
 export function makeCounter(
