@@ -10,6 +10,7 @@
     "build": "tsc"
   },
   "dependencies": {
+    "@colyseus/schema": "^3.0.0",
     "@colyseus/ws-transport": "^0.16.0",
     "@dd/shared": "workspace:*",
     "colyseus": "0.16.5"

@@ -14874,6 +14874,60 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
     "glovePair": {
       "wrapsFeet": true
     }
+  },
+  "x2-mallard-marsh-pdw": {
+    "id": "x2-mallard-marsh-pdw",
+    "name": "Mallard Marsh PDW",
+    "expansion": true,
+    "damage": 4,
+    "range": 168,
+    "halfArc": 0.5,
+    "cooldown": 0.26,
+    "displayLength": 96,
+    "swingArc": 1.8,
+    "gripFrac": 0.22,
+    "tags": {
+      "grip": "2H",
+      "size": "M",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "machine-pistol",
+      "rangeBand": "close",
+      "scaling": [
+        "DEX",
+        "CON"
+      ]
+    },
+    "recoil": 14,
+    "gripPoints": {
+      "primary": {
+        "x": 0.34,
+        "y": 0.72
+      },
+      "secondary": {
+        "x": 0.82,
+        "y": 0.75,
+        "role": "vertical-foregrip"
+      }
+    },
+    "description": "A close-protection automatic whose compact issue frame locks solid, clears tight spaces, and keeps a disciplined burst on target.",
+    "twoHanded": true,
+    "gun": {
+      "damage": 4,
+      "projectileSpeed": 960,
+      "range": 500,
+      "fireRate": 0.075,
+      "magazine": 20,
+      "reloadSeconds": 1.15,
+      "bulletKind": "tracer",
+      "muzzle": "rapid",
+      "recoil": 0.00065,
+      "projectileArt": "bullet",
+      "spread": 0.095,
+      "muzzleColor": 14067272
+    }
   }
 };
 

@@ -69,6 +69,9 @@ importers:
 
   packages/server:
     dependencies:
+      '@colyseus/schema':
+        specifier: ^3.0.0
+        version: 3.0.76
       '@colyseus/ws-transport':
         specifier: ^0.16.0
         version: 0.16.5(@colyseus/core@0.16.24(@colyseus/schema@3.0.76)(@pm2/io@6.1.0))

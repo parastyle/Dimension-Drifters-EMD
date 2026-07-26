@@ -1,10 +1,15 @@
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { Encoder } from "@colyseus/schema";
 import { WebSocketTransport } from "@colyseus/ws-transport";
 import { DEFAULT_PORT, ROOM_NAME } from "@dd/shared";
 import { Server } from "colyseus";
 import { serverDevToolsEnabled } from "./dev-tools.js";
 import { GameRoom } from "./rooms/GameRoom.js";
+
+// The active weapon roster is part of the initial ArenaState snapshot. Keep full-state joins and
+// reconnects inside one encoder allocation as the authored catalog grows beyond Node's 8 KiB pool.
+Encoder.BUFFER_SIZE = 16 * 1024;
 
 /** Build and start the real Colyseus transport so production and integration tests share one setup path. */
 export async function createGameServer(port: number): Promise<Server> {

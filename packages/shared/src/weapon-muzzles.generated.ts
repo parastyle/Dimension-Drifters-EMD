@@ -2176,6 +2176,28 @@ export const WEAPON_ART_MUZZLES = {
     "salvoMode": "parallel",
     "barrelMode": "parallel"
   },
+  "x2-mallard-marsh-pdw": {
+    "sprite": "x2-mallard-marsh-pdw",
+    "parts": [
+      {
+        "width": 256,
+        "height": 96
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 28.5,
+        "derived": {
+          "x": 255,
+          "y": 28.5
+        }
+      }
+    ],
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
   "x2-mauler-slug-thrower": {
     "sprite": "x2-mauler-slug-thrower",
     "parts": [

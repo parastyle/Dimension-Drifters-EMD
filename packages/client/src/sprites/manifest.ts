@@ -13556,6 +13556,32 @@ export const SPRITES = {
       }
     ]
   },
+  "x2-mallard-marsh-pdw": {
+    "id": "x2-mallard-marsh-pdw",
+    "kind": "weapon",
+    "canvas": {
+      "w": 277,
+      "h": 127
+    },
+    "body": {
+      "cx": 158.77,
+      "cy": 56.01,
+      "w": 256,
+      "h": 96
+    },
+    "parts": [
+      {
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 96,
+        "cx": 158.77,
+        "cy": 56.01,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
+  },
   "x2-marrowpike-ranseur": {
     "id": "x2-marrowpike-ranseur",
     "kind": "weapon",
