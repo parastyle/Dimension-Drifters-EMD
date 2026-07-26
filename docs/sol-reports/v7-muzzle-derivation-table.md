@@ -1,6 +1,6 @@
 # V7 Muzzle Derivation Table
 
-Generated from sprite alpha for all 158 active projectile, beam, and authored melee-impact definitions. Coordinates are source-PNG pixels.
+Generated from sprite alpha for all 159 active projectile, beam, and authored melee-impact definitions. Coordinates are source-PNG pixels.
 
 | Weapon | Derived barrel tip | Authored muzzle point(s) | Override |
 | --- | --- | --- | --- |
@@ -121,6 +121,7 @@ Generated from sprite alpha for all 158 active projectile, beam, and authored me
 | `x2-reliquary-repeater` (Reliquary Repeater) | part-1 (255, 36.3) | part-1 (255, 36.3) | No |
 | `x2-ricochet-roulette` (Ricochet Roulette) | part-1 (255, 30.1) | part-1 (255, 30.1) | No |
 | `x2-riftglass-prism-lantern` (Riftglass Prism-Lantern) | part-1 (123, 127) | part-1 (123, 127) | No |
+| `x2-rimechoir-chime-rack` (Rimechoir Chime-Rack) | part-1 (252, 42) | part-1 (252, 42) | No |
 | `x2-rustwidow-pump-rifle` (Rustwidow Pump-Rifle) | part-1 (255, 7.7) | part-1 (255, 7.7) | No |
 | `x2-saintskull-monstrance` (Saintskull Monstrance) | part-1 (254, 98.5) | part-1 (254, 98.5) | No |
 | `x2-sanctum-brazier-staff` (Sanctum Brazier-Staff) | part-1 (254, 37.4) | part-1 (254, 37.4) | No |

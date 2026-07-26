@@ -2775,6 +2775,28 @@ export const WEAPON_ART_MUZZLES = {
     "salvoMode": "parallel",
     "barrelMode": "parallel"
   },
+  "x2-rimechoir-chime-rack": {
+    "sprite": "x2-rimechoir-chime-rack",
+    "parts": [
+      {
+        "width": 256,
+        "height": 111
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 252,
+        "y": 42,
+        "derived": {
+          "x": 252,
+          "y": 42
+        }
+      }
+    ],
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
   "x2-rustwidow-pump-rifle": {
     "sprite": "x2-rustwidow-pump-rifle",
     "parts": [

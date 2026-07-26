@@ -14874,6 +14874,53 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
     "glovePair": {
       "wrapsFeet": true
     }
+  },
+  "x2-rimechoir-chime-rack": {
+    "id": "x2-rimechoir-chime-rack",
+    "name": "Rimechoir Chime-Rack",
+    "expansion": true,
+    "damage": 6,
+    "range": 140,
+    "halfArc": 0.45,
+    "cooldown": 0.85,
+    "displayLength": 104,
+    "swingArc": 1.8,
+    "gripFrac": 0.14,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "projectile",
+      "fireMode": "hold",
+      "element": "frost",
+      "classPool": "caster",
+      "family": "resonator",
+      "rangeBand": "long",
+      "scaling": [
+        "INT"
+      ]
+    },
+    "description": "A battered frostfell caster frame whose four fixed ice-metal bars release a charge-grown pressure wedge down a long lane.",
+    "performance": {
+      "hold": "aim-forward",
+      "action": "hold",
+      "suppressSwing": true
+    },
+    "chargedProjectile": {
+      "chargeSeconds": 1.25,
+      "speed": 620,
+      "range": 760,
+      "directDamageMin": 4,
+      "directDamageMax": 24,
+      "explosionDamageMin": 0,
+      "explosionDamageMax": 0,
+      "explosionRadiusMin": 16,
+      "explosionRadiusMax": 16,
+      "visualScaleMin": 0.55,
+      "visualScaleMax": 1.55,
+      "scaleExponent": 2,
+      "baseRadius": 18,
+      "sprite": "projectiles/rimechoir-chime-rack-pressure-wedge.png"
+    }
   }
 };
 

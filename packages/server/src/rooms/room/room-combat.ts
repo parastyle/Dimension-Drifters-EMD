@@ -2348,13 +2348,14 @@ export const roomCombatMethods = {
         };
     const damageMultiplier = this.heldDamageMult(weapon, player);
     const radius = definition.baseRadius * release.visualScale;
+    const rimechoir = weapon.id === "x2-rimechoir-chime-rack";
     this.fireProjectile(
       source,
       { x: source.x + aim.x, y: source.y + aim.y },
       definition.speed,
       release.directDamage * damageMultiplier,
       false,
-      "emberleaf-fireball",
+      rimechoir ? "rimechoir-pressure-wedge" : "emberleaf-fireball",
       1,
       definition.range / definition.speed,
       {
@@ -2372,7 +2373,7 @@ export const roomCombatMethods = {
       undefined,
       0,
       undefined,
-      { shape: "capsule", radius, halfLength: 0 },
+      { shape: "capsule", radius, halfLength: rimechoir ? radius * 1.5 : 0 },
       release.visualScale,
     );
   },

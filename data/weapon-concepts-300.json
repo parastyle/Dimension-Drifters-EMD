@@ -1,11 +1,11 @@
 {
   "generated": "2026-06-17",
   "source": "design-300-weapons workflow (15 agents)",
-  "count": 339,
+  "count": 340,
   "byType": {
     "melee": 132,
     "ranged": 111,
-    "caster": 96
+    "caster": 97
   },
   "weapons": [
     {
@@ -19588,6 +19588,57 @@
       "behavior": {
         "kind": "glovePair",
         "wrapsFeet": true
+      }
+    },
+    {
+      "id": "x2-rimechoir-chime-rack",
+      "name": "Rimechoir Chime-Rack",
+      "description": "A battered frostfell caster frame whose four fixed ice-metal bars release a charge-grown pressure wedge down a long lane.",
+      "type": "caster",
+      "family": "resonator",
+      "theme": "frostfell rigid four-bar pressure-note frame",
+      "element": "frost",
+      "finish": "battle-worn",
+      "grip": "1H",
+      "size": "M",
+      "rangeBand": "long",
+      "scaling": [
+        "INT"
+      ],
+      "palettePrimary": "#1D2329",
+      "paletteAccent": "#31D7FF",
+      "artPrompt": "Weapon-only in-world sprite (no character, no hands, no background): a narrow battered rectangular carry frame made from near-black ice-metal, with a rear horizontal handle on the LEFT, four solid bars of descending length pinned rigidly inside the frame, and a small forked striking tab projecting from the RIGHT edge. The longest bar is bone-white and one middle bar has a bright cyan repair sleeve. Cold top-edge highlights, grime deliberately painted into crevices, a heavy black outer silhouette, and heavy black ink dividing every internal bar, pin, repair plane, and frame panel. Slightly exaggerated proportions, flat cel planes, approximately 5 colours. Flat orthographic full side-profile; forked emission tab faces RIGHT and handle stays LEFT. Every bar is fixed: nothing hanging, swinging, loose, or dangling. No text, symbols, hands, character, projectile, flare, smoke, shadow, gradients, or glossy realism.",
+      "cardartAction": "held planted in a forward carry pose as the right fork-tip snaps cyan and releases three nested pale pressure chevrons down one long lane",
+      "performance": {
+        "hold": "aim-forward",
+        "action": "hold",
+        "suppressSwing": true
+      },
+      "behavior": {
+        "kind": "chargedProjectile",
+        "chargeSeconds": 1.25,
+        "speed": 620,
+        "range": 760,
+        "directDamageMin": 4,
+        "directDamageMax": 24,
+        "explosionDamageMin": 0,
+        "explosionDamageMax": 0,
+        "explosionRadiusMin": 16,
+        "explosionRadiusMax": 16,
+        "visualScaleMin": 0.55,
+        "visualScaleMax": 1.55,
+        "scaleExponent": 2,
+        "baseRadius": 18,
+        "sprite": "projectiles/rimechoir-chime-rack-pressure-wedge.png"
+      },
+      "stats": {
+        "damage": 6,
+        "range": 140,
+        "halfArc": 0.45,
+        "cooldown": 0.85,
+        "displayLength": 104,
+        "swingArc": 1.8,
+        "gripFrac": 0.14
       }
     }
   ]
