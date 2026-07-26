@@ -12,6 +12,7 @@ Generated from sprite alpha for all 159 active projectile, beam, and authored me
 | `x-gun-ricochet-pistol` (Ricochet Pistol) | part-1 (255, 25.9) | part-1 (255, 25.9) | No |
 | `x-staff-arcane-lance` (Arcanist's Lance) | part-1 (255, 18) | part-1 (255, 18) | No |
 | `x-staff-storm-rod` (Stormcaller Rod) | part-1 (249, 32) | part-1 (249, 32) | No |
+| `x2-anvil-50` (Anvil .50) | part-1 (447, 37.9) | part-1 (447, 37.9) | No |
 | `x2-ashfall-peacemaker` (Ashfall Peacemaker) | part-1 (255, 17.2) | part-1 (255, 17.2) | No |
 | `x2-auroral-filament-wand` (Auroral Filament Wand) | part-1 (255, 16) | part-1 (255, 16) | No |
 | `x2-barrett-50-cal-sniper` (Barrett .50-Cal Sniper) | part-1 (255, 15.5) | part-1 (255, 15.5) | No |

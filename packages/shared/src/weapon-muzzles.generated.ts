@@ -178,6 +178,28 @@ export const WEAPON_ART_MUZZLES = {
     "salvoMode": "parallel",
     "barrelMode": "parallel"
   },
+  "x2-anvil-50": {
+    "sprite": "x2-anvil-50",
+    "parts": [
+      {
+        "width": 448,
+        "height": 80
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 447,
+        "y": 37.9,
+        "derived": {
+          "x": 447,
+          "y": 37.9
+        }
+      }
+    ],
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
   "x2-ashfall-peacemaker": {
     "sprite": "x2-ashfall-peacemaker",
     "parts": [

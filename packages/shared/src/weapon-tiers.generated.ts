@@ -342,6 +342,7 @@ export const GENERATED_WEAPON_TIERS = {
   "x2-dawnwall-testament": 1,
   "x2-cairnfall-monolith": 1,
   "x2-barrett-50-cal-sniper": 5,
+  "x2-anvil-50": 5,
   "x2-iron-throwing-star": 3,
   "x2-fire-throwing-star": 2,
   "x2-ice-throwing-star": 2,

@@ -17,6 +17,7 @@ const { PNG } = require("pngjs") as {
 };
 
 const BOLT_IDS = [
+  "x2-anvil-50",
   "x2-barrett-50-cal-sniper",
   "x2-buzzard-s-eye-marksman",
   "x2-m50-anti-materiel-rifle",
