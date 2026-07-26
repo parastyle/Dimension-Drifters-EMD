@@ -113,6 +113,14 @@ export const PROJECTILE_SPRITES = {
     asymmetric: true,
     facing: "mirror-upright",
   },
+  "hailbarrel-sledcaster-ice-puck": {
+    url: "projectiles/hailbarrel-sledcaster-ice-puck.png",
+    width: 192,
+    height: 100,
+    source: "generated",
+    asymmetric: true,
+    facing: "mirror-upright",
+  },
   "hand-mortar-shell": {
     url: "projectiles/hand-mortar-shell.png",
     width: 160,

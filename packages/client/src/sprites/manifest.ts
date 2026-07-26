@@ -12248,6 +12248,32 @@ export const SPRITES = {
       }
     ]
   },
+  "x2-hailbarrel-sledcaster": {
+    "id": "x2-hailbarrel-sledcaster",
+    "kind": "weapon",
+    "canvas": {
+      "w": 304,
+      "h": 101
+    },
+    "body": {
+      "cx": 154.08,
+      "cy": 51.45,
+      "w": 256,
+      "h": 80
+    },
+    "parts": [
+      {
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 80,
+        "cx": 154.08,
+        "cy": 51.45,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
+  },
   "x2-hailshard-resonator": {
     "id": "x2-hailshard-resonator",
     "kind": "weapon",

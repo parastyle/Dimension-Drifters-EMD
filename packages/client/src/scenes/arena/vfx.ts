@@ -8,7 +8,11 @@ import { FX_LIGHTNING_BALL } from "../../vfx/fx-pack-lightning-ball.js";
 import { FX_QUAKE_BURST } from "../../vfx/fx-pack-quake-burst.js";
 import { FX_TOXIC_BURST } from "../../vfx/fx-pack-toxic-burst.js";
 import { FX_VOID_IMPLOSION } from "../../vfx/fx-pack-void-implosion.js";
-import { MUZZLE_FLASH_SHEET, muzzleFlashAssignmentFor } from "../../vfx/muzzle-flash-catalog.js";
+import {
+  HAILBARREL_MUZZLE_FLASH,
+  MUZZLE_FLASH_SHEET,
+  muzzleFlashAssignmentFor,
+} from "../../vfx/muzzle-flash-catalog.js";
 import {
   elementPack,
   paintedParticleDominance,
@@ -355,6 +359,8 @@ export function preloadImpactFlipbooks(scene: Phaser.Scene): void {
       frameWidth: MUZZLE_FLASH_SHEET.frameWidth,
       frameHeight: MUZZLE_FLASH_SHEET.frameHeight,
     });
+  if (!scene.textures.exists(HAILBARREL_MUZZLE_FLASH.key))
+    scene.load.image(HAILBARREL_MUZZLE_FLASH.key, HAILBARREL_MUZZLE_FLASH.url);
   scene.load.on("loaderror", (file: Phaser.Loader.File) => {
     if (file.key.startsWith("vfx:impact:")) missingImpactFlipbooks.add(file.key);
   });
@@ -446,14 +452,24 @@ export function spawnMuzzleFlash(
   weaponId?: string,
 ): void {
   const assignment = muzzleFlashAssignmentFor(weaponId, style);
-  if (!scene.textures.exists(MUZZLE_FLASH_SHEET.key)) return;
+  const hailbarrelFrostPowder = weaponId === "x2-hailbarrel-sledcaster";
+  const textureKey = hailbarrelFrostPowder
+    ? HAILBARREL_MUZZLE_FLASH.key
+    : MUZZLE_FLASH_SHEET.key;
+  if (!scene.textures.exists(textureKey)) return;
   const g = scene.add
-    .sprite(x, y, MUZZLE_FLASH_SHEET.key, assignment.frame)
-    .setOrigin(MUZZLE_FLASH_SHEET.originX, 0.5)
-    .setDisplaySize(size * 3.7, size * 2.35)
-    .setTint(color)
+    .sprite(x, y, textureKey, hailbarrelFrostPowder ? undefined : assignment.frame)
+    .setOrigin(
+      hailbarrelFrostPowder ? HAILBARREL_MUZZLE_FLASH.originX : MUZZLE_FLASH_SHEET.originX,
+      0.5,
+    )
+    .setDisplaySize(
+      size * (hailbarrelFrostPowder ? 3.2 : 3.7),
+      size * (hailbarrelFrostPowder ? 1.6 : 2.35),
+    )
     .setDepth(99500)
     .setBlendMode(Phaser.BlendModes.ADD);
+  if (!hailbarrelFrostPowder) g.setTint(color);
   // Rapid fire gets slight per-shot rotation jitter so a held stream flickers instead of stacking.
   const jitter = style === "rapid" ? (Math.random() - 0.5) * 0.5 : 0;
   g.setRotation(ang + jitter);
@@ -468,10 +484,26 @@ export function spawnMuzzleFlash(
     ease: "Quad.out",
     onComplete: () => g.destroy(),
   });
+  if (hailbarrelFrostPowder) {
+    particleBurst(
+      scene,
+      "steel-wisp",
+      x + Math.cos(ang) * size * 0.28,
+      y + Math.sin(ang) * size * 0.28,
+      {
+        count: 2,
+        dirRad: ang + Math.PI,
+        spread: 0.34,
+        speed: 42,
+        scaleContract: paintedParticlePixels(30),
+        lifeMs: 280,
+      },
+    );
+  }
   // §41 best-practice gunfeel: a BRASS CASING ejects perpendicular to the barrel on every shot — a tiny
   // tumbling rectangle arcing out and dropping (the classic shooter tell that a round was spent) — and the
   // heavy/boom shots leave a lingering painted smoke wisp curling off the muzzle.
-  {
+  if (!hailbarrelFrostPowder) {
     const side = Math.random() < 0.5 ? 1 : -1; // eject to either side
     const ej = ang + (side * Math.PI) / 2 + (Math.random() - 0.5) * 0.4;
     const casing = scene.add

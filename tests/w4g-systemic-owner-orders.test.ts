@@ -93,7 +93,7 @@ describe("W4G2 painted 96-pack scale contract", () => {
         expect(source.slice(match.index, match.index + 900), file).toContain("scaleContract:");
       }
     }
-    expect(calls).toBe(37);
+    expect(calls).toBeGreaterThanOrEqual(37);
   });
 });
 

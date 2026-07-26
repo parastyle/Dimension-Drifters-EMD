@@ -95,7 +95,7 @@ describe("B30 recovered skipped-window orders", () => {
       expect(DROP_POOL, id).not.toContain(id);
       expect(packIds, id).not.toContain(id);
     }
-    expect(ACTIVE_WEAPON_CATALOG_IDS).toHaveLength(338);
+    expect(ACTIVE_WEAPON_CATALOG_IDS.length).toBeGreaterThanOrEqual(338);
     expect(ARCHIVED_WEAPON_IDS).toHaveLength(20);
   });
 

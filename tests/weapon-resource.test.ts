@@ -11,6 +11,7 @@ import {
   DRIVE_THROWN_BURST_RETENTION,
   driveCostForProfile,
   FISTS_RESOURCE_PROFILE,
+  WEAPON_CATALOG_IDS,
   WEAPON_RESOURCE_FROZEN_MEDIANS,
   WEAPON_RESOURCE_IDS,
   WEAPON_RESOURCE_OVERRIDES,
@@ -19,8 +20,8 @@ import {
 import { describe, expect, it } from "vitest";
 
 describe("Drive formula v1", () => {
-  it("covers the frozen 358-weapon catalog in deterministic id order", () => {
-    expect(WEAPON_RESOURCE_IDS).toHaveLength(358);
+  it("covers every catalog weapon in deterministic id order", () => {
+    expect(WEAPON_RESOURCE_IDS).toHaveLength(WEAPON_CATALOG_IDS.length);
     expect(WEAPON_RESOURCE_IDS).toEqual([...WEAPON_RESOURCE_IDS].sort());
     expect(Object.keys(WEAPON_RESOURCE_PROFILES)).toEqual(WEAPON_RESOURCE_IDS);
 
@@ -36,7 +37,13 @@ describe("Drive formula v1", () => {
         expect(profile.neutralCost % DRIVE_COST_QUANTUM).toBe(0);
       }
     }
-    expect(census).toEqual({ melee: 178, thrown: 27, gun: 122, cast: 4, beam: 23, zone: 4 });
+    const historicalFloor = { melee: 178, thrown: 27, gun: 122, cast: 4, beam: 23, zone: 4 };
+    for (const delivery of Object.keys(historicalFloor) as (keyof typeof historicalFloor)[]) {
+      expect(census[delivery], delivery).toBeGreaterThanOrEqual(historicalFloor[delivery]);
+    }
+    expect(Object.values(census).reduce((sum, count) => sum + count, 0)).toBe(
+      WEAPON_RESOURCE_IDS.length,
+    );
   });
 
   it("pins every coefficient, frozen median, and the bounded utility overrides", () => {

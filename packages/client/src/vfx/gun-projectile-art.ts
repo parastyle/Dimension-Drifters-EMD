@@ -107,6 +107,11 @@ export const GUN_GENERATED_PROJECTILES: Readonly<
     url: PROJECTILE_SPRITES["frostfang-pictured-harpoon"].url,
     displayLength: 96,
   }),
+  "x2-hailbarrel-sledcaster": Object.freeze({
+    spriteId: "hailbarrel-sledcaster-ice-puck",
+    url: PROJECTILE_SPRITES["hailbarrel-sledcaster-ice-puck"].url,
+    displayLength: 52,
+  }),
   "x2-galvanic-coachgun": Object.freeze({
     spriteId: "galvanic-coachgun-electric-slug",
     url: PROJECTILE_SPRITES["galvanic-coachgun-electric-slug"].url,

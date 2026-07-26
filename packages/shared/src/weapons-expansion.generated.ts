@@ -14874,6 +14874,66 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
     "glovePair": {
       "wrapsFeet": true
     }
+  },
+  "x2-hailbarrel-sledcaster": {
+    "id": "x2-hailbarrel-sledcaster",
+    "name": "Hailbarrel Sledcaster",
+    "expansion": true,
+    "damage": 13,
+    "range": 120,
+    "halfArc": 0.5,
+    "cooldown": 0.58,
+    "displayLength": 122,
+    "swingArc": 1.8,
+    "gripFrac": 0.14,
+    "tags": {
+      "grip": "2H",
+      "size": "M",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "frost",
+      "classPool": "ranged",
+      "family": "puck-launcher",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "CON"
+      ]
+    },
+    "recoil": 64,
+    "gripPoints": {
+      "primary": {
+        "x": 0.18,
+        "y": 0.66
+      },
+      "secondary": {
+        "x": 0.42,
+        "y": 0.76,
+        "role": "under-barrel"
+      }
+    },
+    "description": "Frostfell sled mechanics pressure-fuse lake ice into toothed skimming rounds, then drive each one straight through a scarred cylindrical housing to numb whatever it strikes.",
+    "hitStatus": {
+      "kind": "slow",
+      "multiplier": 0.72,
+      "seconds": 0.75
+    },
+    "twoHanded": true,
+    "gun": {
+      "damage": 13,
+      "projectileSpeed": 1250,
+      "range": 620,
+      "fireRate": 0.58,
+      "magazine": 8,
+      "reloadSeconds": 1.4,
+      "bulletKind": "slug",
+      "muzzle": "punch",
+      "recoil": 0.0012,
+      "projectileArt": "generated",
+      "projectileVisualScale": 1,
+      "spread": 0,
+      "muzzleColor": 9433076
+    }
   }
 };
 

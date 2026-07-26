@@ -20,6 +20,7 @@ import {
   ACTIVE_WEAPON_CATALOG_IDS,
   ARCHIVED_WEAPON_IDS,
   hybridProjectileDamagePerAcceptedBeat,
+  WEAPON_CATALOG_IDS,
   WEAPONS,
   type WeaponDef,
   weaponAttackCooldown,
@@ -287,8 +288,8 @@ export function deriveWeaponResourceProfile(weapon: WeaponDef): WeaponResourcePr
 }
 
 /**
- * Deterministic formula output for all 358 durable ids: 338 active + 20 archived. Archived profiles remain
- * resolvable so old receipts/instances never dangle while the join migration converts owned copies.
+ * Deterministic formula output for every durable catalog id. Archived profiles remain resolvable so old
+ * receipts/instances never dangle while the join migration converts owned copies.
  */
 export const WEAPON_RESOURCE_IDS = Object.freeze(
   Object.keys(WEAPONS)
@@ -311,18 +312,17 @@ export function weaponResourceProfile(weaponId: string): WeaponResourceProfile |
   return weaponId === "fists" ? FISTS_RESOURCE_PROFILE : WEAPON_RESOURCE_PROFILES[weaponId];
 }
 
-if (WEAPON_RESOURCE_IDS.length !== 358) {
+if (WEAPON_RESOURCE_IDS.length !== WEAPON_CATALOG_IDS.length) {
   throw new Error(
-    `Drive formula expected 358 catalog weapons, received ${WEAPON_RESOURCE_IDS.length}`,
+    `Drive formula expected ${WEAPON_CATALOG_IDS.length} catalog weapons, received ${WEAPON_RESOURCE_IDS.length}`,
   );
 }
 if (
-  ACTIVE_WEAPON_CATALOG_IDS.length !== 338 ||
   ARCHIVED_WEAPON_IDS.length !== 20 ||
   ACTIVE_WEAPON_CATALOG_IDS.length + ARCHIVED_WEAPON_IDS.length !== WEAPON_RESOURCE_IDS.length
 ) {
   throw new Error(
-    `Weapon archive census expected 338 active + 20 archived, received ${ACTIVE_WEAPON_CATALOG_IDS.length} + ${ARCHIVED_WEAPON_IDS.length}`,
+    `Weapon archive census expected every active row plus 20 archived rows, received ${ACTIVE_WEAPON_CATALOG_IDS.length} + ${ARCHIVED_WEAPON_IDS.length}`,
   );
 }
 if (Object.keys(WEAPON_RESOURCE_OVERRIDES).length > 15) {

@@ -1,10 +1,10 @@
 {
   "generated": "2026-06-17",
   "source": "design-300-weapons workflow (15 agents)",
-  "count": 339,
+  "count": 340,
   "byType": {
     "melee": 132,
-    "ranged": 111,
+    "ranged": 112,
     "caster": 96
   },
   "weapons": [
@@ -3830,7 +3830,7 @@
         "halfArc": 0.55,
         "cooldown": 0.5,
         "displayLength": 96,
-        "swingArc": 1.1,
+        "swingArc": 1.8,
         "gripFrac": 0.16
       },
       "id": "x2-hailshot-hand-maul"
@@ -19588,6 +19588,72 @@
       "behavior": {
         "kind": "glovePair",
         "wrapsFeet": true
+      }
+    },
+    {
+      "id": "x2-hailbarrel-sledcaster",
+      "name": "Hailbarrel Sledcaster",
+      "description": "Frostfell sled mechanics pressure-fuse lake ice into toothed skimming rounds, then drive each one straight through a scarred cylindrical housing to numb whatever it strikes.",
+      "type": "ranged",
+      "family": "puck-launcher",
+      "theme": "frostfell squat horizontal cylinder on one curved lower support",
+      "element": "frost",
+      "finish": "battered",
+      "grip": "2H",
+      "recoil": 64,
+      "gripPoints": {
+        "primary": {
+          "x": 0.18,
+          "y": 0.66
+        },
+        "secondary": {
+          "x": 0.42,
+          "y": 0.76,
+          "role": "under-barrel"
+        }
+      },
+      "size": "M",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "CON"
+      ],
+      "palettePrimary": "#171D22",
+      "paletteAccent": "#43C9CF",
+      "artPrompt": "Weapon-only in-world sprite: one squat horizontal cylinder seated on one long curved lower runner, with a wide circular bore at the RIGHT, a boxy top loading lid, and a rear grip plus short rigid lower brace at the LEFT. Battered near-black casing, dark brown-black scarred planes, cold grey edge chips, grime in the crevices, and one uneven turquoise bore collar as the only bright accent. Heavy black ink around the silhouette and dividing every internal panel, crisp flat cel planes, approximately 4-6 colours. Flat orthographic full side-profile, bore faces RIGHT and grips remain LEFT. No background, hands, character, projectile, muzzle flash, smoke, loose pieces, dangling elements, text, symbols, numbers, logos, or maker marks.",
+      "cardartAction": "held planted as one low pale-cyan toothed disc skims straight to the right through a compact white-centred turquoise shard flash and a restrained grey frost-powder puff",
+      "hitStatus": {
+        "kind": "slow",
+        "multiplier": 0.72,
+        "seconds": 0.75
+      },
+      "stats": {
+        "damage": 13,
+        "range": 120,
+        "halfArc": 0.5,
+        "cooldown": 0.58,
+        "displayLength": 122,
+        "swingArc": 1.1,
+        "gripFrac": 0.14
+      },
+      "behavior": {
+        "kind": "gun",
+        "damage": 13,
+        "projectileSpeed": 1250,
+        "range": 620,
+        "fireRate": 0.58,
+        "pellets": 1,
+        "spread": 0,
+        "pierce": 1,
+        "bounces": 0,
+        "magazine": 8,
+        "reloadSeconds": 1.4,
+        "bulletKind": "slug",
+        "muzzle": "punch",
+        "muzzleColor": 9433076,
+        "recoil": 0.0012,
+        "projectileArt": "generated",
+        "projectileVisualScale": 1
       }
     }
   ]

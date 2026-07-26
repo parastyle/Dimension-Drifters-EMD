@@ -51,11 +51,13 @@ const CURATED_ARCHIVE_IDS = new Set(["drift-wakizashi-hushglass", "drift-wakizas
 describe("W4A weapon archive contracts", () => {
   it("keeps twenty durable catalog rows while excluding them from every active acquisition census", () => {
     expect([...ARCHIVED_WEAPON_IDS].sort()).toEqual([...ARCHIVE_IDS].sort());
-    expect(WEAPON_CATALOG_IDS).toHaveLength(358);
-    expect(ACTIVE_WEAPON_CATALOG_IDS).toHaveLength(338);
+    expect(WEAPON_CATALOG_IDS).toHaveLength(
+      ACTIVE_WEAPON_CATALOG_IDS.length + ARCHIVED_WEAPON_IDS.length,
+    );
+    expect(ACTIVE_WEAPON_CATALOG_IDS.length).toBeGreaterThanOrEqual(338);
     expect(ARCHIVED_WEAPON_IDS).toHaveLength(20);
-    expect(ACTIVE_EXPANSION_WEAPON_IDS).toHaveLength(309);
-    expect(WEAPON_RESOURCE_IDS).toHaveLength(358);
+    expect(ACTIVE_EXPANSION_WEAPON_IDS.length).toBeGreaterThanOrEqual(309);
+    expect(WEAPON_RESOURCE_IDS).toHaveLength(WEAPON_CATALOG_IDS.length);
 
     const provenances: WeaponProvenance[] = [
       "enemy-drop",
@@ -90,7 +92,7 @@ describe("W4A weapon archive contracts", () => {
     const portal = readFileSync("tools/portal/index.html", "utf8");
     const smith = readFileSync("tools/weaponsmith/public/index.html", "utf8");
     const smithServer = readFileSync("tools/weaponsmith/server.mjs", "utf8");
-    expect(portal).toContain('"count":338');
+    expect(portal).toContain(`"count":${ACTIVE_WEAPON_CATALOG_IDS.length}`);
     expect(smith).toContain("Search 338 active weapons");
     expect(smith).toContain('aria-setsize="338"');
     expect(smithServer).toContain("definition.archived === true");

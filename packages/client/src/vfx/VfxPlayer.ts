@@ -36,7 +36,11 @@ import {
   weaponSupportsBladeExtension,
 } from "./blade-extension-treatments.js";
 import { KATANA_SLASH_ASSIGNMENTS } from "./katana-slash.generated.js";
-import { MUZZLE_FLASH_SHEET, muzzleFlashAssignmentFor } from "./muzzle-flash-catalog.js";
+import {
+  HAILBARREL_MUZZLE_FLASH,
+  MUZZLE_FLASH_SHEET,
+  muzzleFlashAssignmentFor,
+} from "./muzzle-flash-catalog.js";
 import { WEAPON_VFX, type WeaponVfx } from "./weapon-vfx.generated.js";
 import {
   RIFTCALLER_DELETED_AURA_LAYERS,
@@ -522,6 +526,7 @@ export class VfxPlayer {
       frameWidth: MUZZLE_FLASH_SHEET.frameWidth,
       frameHeight: MUZZLE_FLASH_SHEET.frameHeight,
     });
+    scene.load.image(HAILBARREL_MUZZLE_FLASH.key, HAILBARREL_MUZZLE_FLASH.url);
     for (const treatment of ALL_BLADE_EXTENSION_TEXTURES)
       scene.load.image(treatment.textureKey, treatment.url);
     ensureProceduralBladeExtensionTextures(scene);
@@ -748,12 +753,19 @@ export class VfxPlayer {
         ? { key: katanaSlash.key, url: katanaSlash.url, frame: 0, frames: 10 }
         : undefined,
       muzzleFlashArt: muzzleFlash
-        ? {
-            key: MUZZLE_FLASH_SHEET.key,
-            url: MUZZLE_FLASH_SHEET.url,
-            frame: muzzleFlash.frame,
-            originX: MUZZLE_FLASH_SHEET.originX,
-          }
+        ? weaponId === "x2-hailbarrel-sledcaster"
+          ? {
+              key: HAILBARREL_MUZZLE_FLASH.key,
+              url: HAILBARREL_MUZZLE_FLASH.url,
+              frame: 0,
+              originX: HAILBARREL_MUZZLE_FLASH.originX,
+            }
+          : {
+              key: MUZZLE_FLASH_SHEET.key,
+              url: MUZZLE_FLASH_SHEET.url,
+              frame: muzzleFlash.frame,
+              originX: MUZZLE_FLASH_SHEET.originX,
+            }
         : undefined,
       originX: perAnchorX * Math.cos(perRot) + perAnchorY * Math.sin(perRot),
       originY: -perAnchorX * Math.sin(perRot) + perAnchorY * Math.cos(perRot),
