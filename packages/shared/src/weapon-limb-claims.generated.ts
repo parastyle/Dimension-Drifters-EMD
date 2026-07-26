@@ -10247,5 +10247,346 @@ export const GENERATED_WEAPON_LIMB_CLAIMS = {
       }
     ],
     "comboBeats": []
+  },
+  "x2-blacktail-auto-12": {
+    "held": [
+      {
+        "limb": "hand-l",
+        "release": "handoff"
+      },
+      {
+        "limb": "hand-r",
+        "release": "handoff"
+      }
+    ],
+    "comboBeats": []
+  },
+  "x2-patriot-carbine-ar": {
+    "held": [
+      {
+        "limb": "hand-l",
+        "release": "handoff"
+      },
+      {
+        "limb": "hand-r",
+        "release": "handoff"
+      }
+    ],
+    "comboBeats": []
+  },
+  "x2-deacon-burstpiece": {
+    "held": [
+      {
+        "limb": "hand-r",
+        "release": "handoff"
+      }
+    ],
+    "comboBeats": [
+      [
+        {
+          "limb": "hand-r",
+          "release": "handoff"
+        }
+      ],
+      [
+        {
+          "limb": "hand-r",
+          "release": "handoff"
+        }
+      ],
+      [
+        {
+          "limb": "hand-r",
+          "release": "handoff"
+        }
+      ]
+    ]
+  },
+  "x2-mallard-marsh-pdw": {
+    "held": [
+      {
+        "limb": "hand-l",
+        "release": "handoff"
+      },
+      {
+        "limb": "hand-r",
+        "release": "handoff"
+      }
+    ],
+    "comboBeats": []
+  },
+  "x2-trailhead-carbine-357": {
+    "held": [
+      {
+        "limb": "hand-l",
+        "release": "handoff"
+      },
+      {
+        "limb": "hand-r",
+        "release": "handoff"
+      }
+    ],
+    "comboBeats": []
+  },
+  "x2-sidewalk-nine": {
+    "held": [
+      {
+        "limb": "hand-r",
+        "release": "handoff"
+      }
+    ],
+    "comboBeats": [
+      [
+        {
+          "limb": "hand-r",
+          "release": "handoff"
+        }
+      ],
+      [
+        {
+          "limb": "hand-r",
+          "release": "handoff"
+        }
+      ],
+      [
+        {
+          "limb": "hand-r",
+          "release": "handoff"
+        }
+      ]
+    ]
+  },
+  "x2-varmint-bolt-223": {
+    "held": [
+      {
+        "limb": "hand-l",
+        "release": "handoff"
+      },
+      {
+        "limb": "hand-r",
+        "release": "handoff"
+      }
+    ],
+    "comboBeats": []
+  },
+  "x2-precinct-smg-9": {
+    "held": [
+      {
+        "limb": "hand-l",
+        "release": "handoff"
+      },
+      {
+        "limb": "hand-r",
+        "release": "handoff"
+      }
+    ],
+    "comboBeats": []
+  },
+  "x2-warden-battle-rifle": {
+    "held": [
+      {
+        "limb": "hand-l",
+        "release": "handoff"
+      },
+      {
+        "limb": "hand-r",
+        "release": "handoff"
+      }
+    ],
+    "comboBeats": []
+  },
+  "x2-breachmaster-auto-12": {
+    "held": [
+      {
+        "limb": "hand-l",
+        "release": "handoff"
+      },
+      {
+        "limb": "hand-r",
+        "release": "handoff"
+      }
+    ],
+    "comboBeats": []
+  },
+  "x2-longwatch-dmr": {
+    "held": [
+      {
+        "limb": "hand-l",
+        "release": "handoff"
+      },
+      {
+        "limb": "hand-r",
+        "release": "handoff"
+      }
+    ],
+    "comboBeats": []
+  },
+  "x2-ironclad-lmg": {
+    "held": [
+      {
+        "limb": "hand-l",
+        "release": "handoff"
+      },
+      {
+        "limb": "hand-r",
+        "release": "handoff"
+      }
+    ],
+    "comboBeats": []
+  },
+  "x2-pocket-vector-45": {
+    "held": [
+      {
+        "limb": "hand-l",
+        "release": "handoff"
+      },
+      {
+        "limb": "hand-r",
+        "release": "handoff"
+      }
+    ],
+    "comboBeats": []
+  },
+  "x2-anvil-50": {
+    "held": [
+      {
+        "limb": "hand-l",
+        "release": "handoff"
+      },
+      {
+        "limb": "hand-r",
+        "release": "handoff"
+      }
+    ],
+    "comboBeats": []
+  },
+  "x2-whiteout-snowshoe-ram": {
+    "held": [
+      {
+        "limb": "hand-l",
+        "release": "handoff"
+      },
+      {
+        "limb": "hand-r",
+        "release": "handoff"
+      }
+    ],
+    "comboBeats": []
+  },
+  "x2-rimegut-ice-tongs": {
+    "held": [
+      {
+        "limb": "hand-l",
+        "release": "handoff"
+      },
+      {
+        "limb": "hand-r",
+        "release": "handoff"
+      }
+    ],
+    "comboBeats": [
+      [
+        {
+          "limb": "hand-l",
+          "release": "handoff"
+        },
+        {
+          "limb": "hand-r",
+          "release": "handoff"
+        }
+      ],
+      [
+        {
+          "limb": "hand-l",
+          "release": "handoff"
+        },
+        {
+          "limb": "hand-r",
+          "release": "handoff"
+        }
+      ]
+    ]
+  },
+  "x2-hailbarrel-sledcaster": {
+    "held": [
+      {
+        "limb": "hand-l",
+        "release": "handoff"
+      },
+      {
+        "limb": "hand-r",
+        "release": "handoff"
+      }
+    ],
+    "comboBeats": []
+  },
+  "x2-rimechoir-chime-rack": {
+    "held": [
+      {
+        "limb": "hand-l",
+        "release": "handoff"
+      },
+      {
+        "limb": "hand-r",
+        "release": "handoff"
+      }
+    ],
+    "comboBeats": [
+      [
+        {
+          "limb": "hand-r",
+          "release": "handoff"
+        }
+      ],
+      [
+        {
+          "limb": "hand-r",
+          "release": "handoff"
+        }
+      ],
+      [
+        {
+          "limb": "hand-r",
+          "release": "handoff"
+        }
+      ]
+    ]
+  },
+  "x2-miremaw-shears": {
+    "held": [
+      {
+        "limb": "hand-l",
+        "release": "handoff"
+      },
+      {
+        "limb": "hand-r",
+        "release": "handoff"
+      }
+    ],
+    "comboBeats": [
+      [
+        {
+          "limb": "hand-l",
+          "release": "handoff"
+        },
+        {
+          "limb": "hand-r",
+          "release": "handoff"
+        }
+      ]
+    ]
+  },
+  "x2-thornhive-seedcaster": {
+    "held": [
+      {
+        "limb": "hand-l",
+        "release": "handoff"
+      },
+      {
+        "limb": "hand-r",
+        "release": "handoff"
+      }
+    ],
+    "comboBeats": []
   }
 } as const satisfies Readonly<Record<string, WeaponLimbClaims>>;

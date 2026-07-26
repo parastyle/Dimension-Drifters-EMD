@@ -311,13 +311,16 @@ export function weaponResourceProfile(weaponId: string): WeaponResourceProfile |
   return weaponId === "fists" ? FISTS_RESOURCE_PROFILE : WEAPON_RESOURCE_PROFILES[weaponId];
 }
 
-if (WEAPON_RESOURCE_IDS.length !== 359) {
+// B63/B66: +20 catalogued weapons (30-gun cop-dimension order + 20-weapon other-dimension order).
+// These pins are a deliberate tripwire against SILENT weapon loss — bump them consciously when the
+// roster grows, never to make a failing build pass.
+if (WEAPON_RESOURCE_IDS.length !== 379) {
   throw new Error(
-    `Drive formula expected 359 catalog weapons, received ${WEAPON_RESOURCE_IDS.length}`,
+    `Drive formula expected 379 catalog weapons, received ${WEAPON_RESOURCE_IDS.length}`,
   );
 }
 if (
-  ACTIVE_WEAPON_CATALOG_IDS.length !== 339 ||
+  ACTIVE_WEAPON_CATALOG_IDS.length !== 359 ||
   ARCHIVED_WEAPON_IDS.length !== 20 ||
   ACTIVE_WEAPON_CATALOG_IDS.length + ARCHIVED_WEAPON_IDS.length !== WEAPON_RESOURCE_IDS.length
 ) {

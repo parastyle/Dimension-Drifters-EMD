@@ -14983,6 +14983,969 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "spread": 0.28,
       "muzzleColor": 16747051
     }
+  },
+  "x2-patriot-carbine-ar": {
+    "id": "x2-patriot-carbine-ar",
+    "name": "Patriot Carbine AR",
+    "expansion": true,
+    "damage": 7,
+    "range": 250,
+    "halfArc": 0.48,
+    "cooldown": 0.34,
+    "displayLength": 132,
+    "swingArc": 1.8,
+    "gripFrac": 0.17,
+    "tags": {
+      "grip": "2H",
+      "size": "M",
+      "delivery": "projectile",
+      "fireMode": "semi-auto",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "semi-auto carbine",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "STR"
+      ]
+    },
+    "recoil": 54,
+    "gripPoints": {
+      "primary": {
+        "x": 0.29,
+        "y": 0.72
+      },
+      "secondary": {
+        "x": 0.66,
+        "y": 0.53,
+        "role": "horizontal-foregrip"
+      }
+    },
+    "description": "An immaculate issue-grade semi-automatic patrol carbine tuned for fast, precise follow-up shots without sacrificing a full service magazine.",
+    "twoHanded": true,
+    "gun": {
+      "damage": 7,
+      "projectileSpeed": 1200,
+      "range": 720,
+      "fireRate": 0.22,
+      "magazine": 30,
+      "reloadSeconds": 1.55,
+      "bulletKind": "tracer",
+      "muzzle": "rapid",
+      "recoil": 0.0008,
+      "projectileArt": "bullet",
+      "spread": 0.025,
+      "muzzleColor": 16755282
+    }
+  },
+  "x2-deacon-burstpiece": {
+    "id": "x2-deacon-burstpiece",
+    "name": "Deacon Burstpiece",
+    "expansion": true,
+    "damage": 5,
+    "range": 80,
+    "halfArc": 0.5,
+    "cooldown": 0.34,
+    "displayLength": 78,
+    "swingArc": 1.8,
+    "gripFrac": 0.15,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "projectile",
+      "fireMode": "semi-auto",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "machine-pistol",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX"
+      ],
+      "handling": [
+        "pistol"
+      ]
+    },
+    "recoil": 49,
+    "gun": {
+      "damage": 4,
+      "projectileSpeed": 960,
+      "range": 520,
+      "fireRate": 0.32,
+      "magazine": 8,
+      "reloadSeconds": 1.35,
+      "bulletKind": "slug",
+      "muzzle": "rapid",
+      "recoil": 0.0012,
+      "burst": {
+        "count": 3,
+        "intervalSeconds": 0.075
+      },
+      "spread": 0.05,
+      "muzzleColor": 16751915
+    }
+  },
+  "x2-mallard-marsh-pdw": {
+    "id": "x2-mallard-marsh-pdw",
+    "name": "Mallard Marsh PDW",
+    "expansion": true,
+    "damage": 4,
+    "range": 168,
+    "halfArc": 0.5,
+    "cooldown": 0.26,
+    "displayLength": 96,
+    "swingArc": 1.8,
+    "gripFrac": 0.22,
+    "tags": {
+      "grip": "2H",
+      "size": "M",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "machine-pistol",
+      "rangeBand": "close",
+      "scaling": [
+        "DEX",
+        "CON"
+      ]
+    },
+    "recoil": 14,
+    "gripPoints": {
+      "primary": {
+        "x": 0.34,
+        "y": 0.72
+      },
+      "secondary": {
+        "x": 0.82,
+        "y": 0.75,
+        "role": "vertical-foregrip"
+      }
+    },
+    "description": "A close-protection automatic whose compact issue frame locks solid, clears tight spaces, and keeps a disciplined burst on target.",
+    "twoHanded": true,
+    "gun": {
+      "damage": 4,
+      "projectileSpeed": 960,
+      "range": 500,
+      "fireRate": 0.075,
+      "magazine": 20,
+      "reloadSeconds": 1.15,
+      "bulletKind": "tracer",
+      "muzzle": "rapid",
+      "recoil": 0.00065,
+      "projectileArt": "bullet",
+      "spread": 0.095,
+      "muzzleColor": 14067272
+    }
+  },
+  "x2-trailhead-carbine-357": {
+    "id": "x2-trailhead-carbine-357",
+    "name": "Trailhead Carbine .357",
+    "expansion": true,
+    "damage": 7,
+    "range": 220,
+    "halfArc": 0.48,
+    "cooldown": 0.36,
+    "displayLength": 138,
+    "swingArc": 1.8,
+    "gripFrac": 0.18,
+    "tags": {
+      "grip": "2H",
+      "size": "M",
+      "delivery": "projectile",
+      "fireMode": "semi-auto",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "pistol-calibre-carbine",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "STR"
+      ]
+    },
+    "recoil": 54,
+    "gripPoints": {
+      "primary": {
+        "x": 0.38,
+        "y": 0.67
+      },
+      "secondary": {
+        "x": 0.65,
+        "y": 0.63,
+        "role": "horizontal-foregrip"
+      }
+    },
+    "description": "A ceremonial-grade service carbine pairing presentation-figured hardwood with a precision blowback action for steady close-to-midrange patrol fire.",
+    "twoHanded": true,
+    "gun": {
+      "damage": 7,
+      "projectileSpeed": 1120,
+      "range": 640,
+      "fireRate": 0.24,
+      "magazine": 15,
+      "reloadSeconds": 1.45,
+      "bulletKind": "slug",
+      "muzzle": "punch",
+      "recoil": 0.0013,
+      "spread": 0.035,
+      "muzzleColor": 16747051
+    }
+  },
+  "x2-sidewalk-nine": {
+    "id": "x2-sidewalk-nine",
+    "name": "Sidewalk Nine",
+    "expansion": true,
+    "damage": 5,
+    "range": 120,
+    "halfArc": 0.5,
+    "cooldown": 0.25,
+    "displayLength": 82,
+    "swingArc": 1.8,
+    "gripFrac": 0.18,
+    "tags": {
+      "grip": "1H",
+      "size": "S",
+      "delivery": "projectile",
+      "fireMode": "semi-auto",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "pistol",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX"
+      ],
+      "handling": [
+        "pistol"
+      ]
+    },
+    "recoil": 34,
+    "description": "An immaculate bulk-issue duty sidearm whose uniform tolerances, crisp stippling, and abstract dust-cover inventory glyph make procurement discipline its signature.",
+    "gun": {
+      "damage": 6,
+      "projectileSpeed": 980,
+      "range": 560,
+      "fireRate": 0.19,
+      "magazine": 17,
+      "reloadSeconds": 1.2,
+      "bulletKind": "slug",
+      "muzzle": "punch",
+      "recoil": 0.001,
+      "projectileArt": "bullet",
+      "spread": 0.025,
+      "muzzleColor": 15906891
+    }
+  },
+  "x2-varmint-bolt-223": {
+    "id": "x2-varmint-bolt-223",
+    "name": "Varmint Bolt .223",
+    "expansion": true,
+    "damage": 14,
+    "range": 320,
+    "halfArc": 0.5,
+    "cooldown": 0.82,
+    "displayLength": 178,
+    "swingArc": 1.8,
+    "gripFrac": 0.12,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "marksman-rifle",
+      "rangeBand": "long",
+      "scaling": [
+        "DEX"
+      ],
+      "handling": [
+        "bolt"
+      ]
+    },
+    "recoil": 106,
+    "gripPoints": {
+      "primary": {
+        "x": 0.28,
+        "y": 0.68
+      },
+      "secondary": {
+        "x": 0.4,
+        "y": 0.6,
+        "role": "bolt"
+      }
+    },
+    "description": "An immaculate issue-grade precision bolt rifle built for small-target accuracy, with dark form-hugging digital camouflage and a clearly visible warm amber bedding witness line.",
+    "twoHanded": true,
+    "gun": {
+      "damage": 14,
+      "projectileSpeed": 1650,
+      "range": 960,
+      "fireRate": 0.82,
+      "magazine": 5,
+      "reloadSeconds": 2,
+      "bulletKind": "slug",
+      "muzzle": "punch",
+      "recoil": 0.0016,
+      "pierce": 2,
+      "muzzleColor": 14454874
+    }
+  },
+  "x2-precinct-smg-9": {
+    "id": "x2-precinct-smg-9",
+    "name": "Precinct SMG-9",
+    "expansion": true,
+    "damage": 8,
+    "range": 140,
+    "halfArc": 0.85,
+    "cooldown": 0.4,
+    "displayLength": 90,
+    "swingArc": 2.6,
+    "gripFrac": 0.12,
+    "tags": {
+      "grip": "2H",
+      "size": "S",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "machine-pistol",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "STR"
+      ]
+    },
+    "recoil": 16,
+    "twoHanded": true,
+    "gun": {
+      "damage": 5,
+      "projectileSpeed": 1080,
+      "range": 500,
+      "fireRate": 0.09,
+      "magazine": 30,
+      "reloadSeconds": 1.35,
+      "bulletKind": "tracer",
+      "muzzle": "rapid",
+      "recoil": 0.0008,
+      "spread": 0.08,
+      "muzzleColor": 16750902
+    }
+  },
+  "x2-warden-battle-rifle": {
+    "id": "x2-warden-battle-rifle",
+    "name": "Warden Battle Rifle",
+    "expansion": true,
+    "damage": 9,
+    "range": 272,
+    "halfArc": 0.5,
+    "cooldown": 0.4,
+    "displayLength": 162,
+    "swingArc": 1.8,
+    "gripFrac": 0.16,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "battle-rifle",
+      "rangeBand": "long",
+      "scaling": [
+        "STR",
+        "DEX"
+      ]
+    },
+    "recoil": 71,
+    "gripPoints": {
+      "primary": {
+        "x": 0.35,
+        "y": 0.73
+      },
+      "secondary": {
+        "x": 0.62,
+        "y": 0.7,
+        "role": "under-barrel"
+      }
+    },
+    "description": "A heavy frontline automatic rifle whose rigid one-piece upper and tightly fitted controls turn disciplined bursts into dependable hard-target authority.",
+    "twoHanded": true,
+    "gun": {
+      "damage": 9,
+      "projectileSpeed": 1200,
+      "range": 760,
+      "fireRate": 0.22,
+      "magazine": 20,
+      "reloadSeconds": 1.9,
+      "bulletKind": "tracer",
+      "muzzle": "heavy",
+      "recoil": 0.0017,
+      "projectileArt": "bullet",
+      "spread": 0.035,
+      "pierce": 2,
+      "muzzleColor": 12884570
+    }
+  },
+  "x2-breachmaster-auto-12": {
+    "id": "x2-breachmaster-auto-12",
+    "name": "Breachmaster Auto-12",
+    "expansion": true,
+    "damage": 6,
+    "range": 280,
+    "halfArc": 0.55,
+    "cooldown": 0.24,
+    "displayLength": 142,
+    "swingArc": 1.8,
+    "gripFrac": 0.18,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "automatic-shotgun",
+      "rangeBand": "close",
+      "scaling": [
+        "STR",
+        "DEX"
+      ]
+    },
+    "recoil": 152,
+    "gripPoints": {
+      "primary": {
+        "x": 0.27,
+        "y": 0.67
+      },
+      "secondary": {
+        "x": 0.69,
+        "y": 0.69,
+        "role": "horizontal-foregrip"
+      }
+    },
+    "description": "An armoury-flagship automatic scattergun built to hold a doorway under sustained close-range pressure.",
+    "twoHanded": true,
+    "gun": {
+      "damage": 3,
+      "projectileSpeed": 820,
+      "range": 380,
+      "fireRate": 0.24,
+      "magazine": 20,
+      "reloadSeconds": 2.6,
+      "bulletKind": "pellet",
+      "muzzle": "rapid",
+      "recoil": 0.0018,
+      "projectileArt": "bullet",
+      "pellets": 7,
+      "spread": 0.28
+    }
+  },
+  "x2-longwatch-dmr": {
+    "id": "x2-longwatch-dmr",
+    "name": "Longwatch DMR",
+    "expansion": true,
+    "damage": 12,
+    "range": 300,
+    "halfArc": 0.45,
+    "cooldown": 0.36,
+    "displayLength": 186,
+    "swingArc": 1.8,
+    "gripFrac": 0.11,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "marksman-rifle",
+      "rangeBand": "long",
+      "scaling": [
+        "DEX"
+      ]
+    },
+    "recoil": 104,
+    "twoHanded": true,
+    "gun": {
+      "damage": 12,
+      "projectileSpeed": 1600,
+      "range": 920,
+      "fireRate": 0.36,
+      "magazine": 16,
+      "reloadSeconds": 1.8,
+      "bulletKind": "tracer",
+      "muzzle": "punch",
+      "recoil": 0.0024,
+      "pierce": 2,
+      "muzzleColor": 12884570
+    }
+  },
+  "x2-ironclad-lmg": {
+    "id": "x2-ironclad-lmg",
+    "name": "Ironclad LMG",
+    "expansion": true,
+    "damage": 5,
+    "range": 280,
+    "halfArc": 0.62,
+    "cooldown": 0.38,
+    "displayLength": 190,
+    "swingArc": 1.8,
+    "gripFrac": 0.16,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "light machine gun",
+      "rangeBand": "mid",
+      "scaling": [
+        "STR",
+        "DEX"
+      ]
+    },
+    "recoil": 20,
+    "gripPoints": {
+      "primary": {
+        "x": 0.31,
+        "y": 0.73
+      },
+      "secondary": {
+        "x": 0.63,
+        "y": 0.72,
+        "role": "under-barrel"
+      }
+    },
+    "description": "A frontline support gun built for long, controlled lanes, with every feed and hinge fitted to duty standard.",
+    "twoHanded": true,
+    "gun": {
+      "damage": 5,
+      "projectileSpeed": 1150,
+      "range": 780,
+      "fireRate": 0.11,
+      "magazine": 72,
+      "reloadSeconds": 2.75,
+      "bulletKind": "tracer",
+      "muzzle": "rapid",
+      "recoil": 0.0016,
+      "projectileArt": "bullet",
+      "spread": 0.09,
+      "muzzleColor": 13869647
+    }
+  },
+  "x2-pocket-vector-45": {
+    "id": "x2-pocket-vector-45",
+    "name": "Pocket Vector .45",
+    "expansion": true,
+    "damage": 8,
+    "range": 140,
+    "halfArc": 0.85,
+    "cooldown": 0.4,
+    "displayLength": 90,
+    "swingArc": 2.6,
+    "gripFrac": 0.12,
+    "tags": {
+      "grip": "2H",
+      "size": "M",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "machine-pistol",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "STR"
+      ]
+    },
+    "recoil": 18,
+    "twoHanded": true,
+    "gun": {
+      "damage": 6,
+      "projectileSpeed": 880,
+      "range": 470,
+      "fireRate": 0.1,
+      "magazine": 25,
+      "reloadSeconds": 1.5,
+      "bulletKind": "tracer",
+      "muzzle": "rapid",
+      "recoil": 0.0011,
+      "spread": 0.07,
+      "muzzleColor": 13732405
+    }
+  },
+  "x2-anvil-50": {
+    "id": "x2-anvil-50",
+    "name": "Anvil .50",
+    "expansion": true,
+    "damage": 40,
+    "range": 320,
+    "halfArc": 0.5,
+    "cooldown": 0.9,
+    "displayLength": 224,
+    "swingArc": 1.8,
+    "gripFrac": 0.1,
+    "tags": {
+      "grip": "2H",
+      "size": "XL",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "anti-materiel-rifle",
+      "rangeBand": "long",
+      "scaling": [
+        "DEX",
+        "STR"
+      ],
+      "handling": [
+        "bolt"
+      ]
+    },
+    "recoil": 119,
+    "gripPoints": {
+      "primary": {
+        "x": 0.28,
+        "y": 0.68
+      },
+      "secondary": {
+        "x": 0.43,
+        "y": 0.61,
+        "role": "bolt"
+      }
+    },
+    "description": "A frontline precision anti-armour bolt rifle built around an immense brake, rigid cut-out chassis, protected optics, and punishingly deliberate shots.",
+    "twoHanded": true,
+    "gun": {
+      "damage": 40,
+      "projectileSpeed": 2400,
+      "range": 1100,
+      "fireRate": 0.9,
+      "magazine": 2,
+      "reloadSeconds": 3,
+      "bulletKind": "slug",
+      "muzzle": "heavy",
+      "recoil": 0.005,
+      "projectileArt": "generated",
+      "sonicBoomRing": true,
+      "projectileVisualScale": 1.5,
+      "pierce": 6,
+      "muzzleColor": 12945978
+    }
+  },
+  "x2-whiteout-snowshoe-ram": {
+    "id": "x2-whiteout-snowshoe-ram",
+    "name": "Whiteout Snowshoe Ram",
+    "expansion": true,
+    "damage": 10,
+    "range": 184,
+    "halfArc": 1.34,
+    "cooldown": 1.18,
+    "displayLength": 208,
+    "swingArc": 3.32,
+    "gripFrac": 0.15,
+    "tags": {
+      "grip": "2H",
+      "size": "XL",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "frost",
+      "classPool": "melee",
+      "family": "paddle-club",
+      "rangeBand": "close",
+      "scaling": [
+        "STR",
+        "CON"
+      ]
+    },
+    "collisionLength": 196,
+    "description": "A frost hunter's iron-bound travel frame, packed with old snow and swung in one broad planted sweep to batter ice-armoured guards apart.",
+    "twoHanded": true,
+    "durability": 90
+  },
+  "x2-rimegut-ice-tongs": {
+    "id": "x2-rimegut-ice-tongs",
+    "name": "Rimegut Ice-Tongs",
+    "expansion": true,
+    "damage": 7.2,
+    "range": 124,
+    "halfArc": 0.32,
+    "cooldown": 0.48,
+    "displayLength": 144,
+    "swingArc": 1.8,
+    "gripFrac": 0.2,
+    "tags": {
+      "grip": "2H",
+      "size": "M",
+      "delivery": "melee-arc",
+      "fireMode": "hold",
+      "element": "frost",
+      "classPool": "melee",
+      "family": "pincer",
+      "rangeBand": "close",
+      "scaling": [
+        "DEX",
+        "STR"
+      ]
+    },
+    "collisionLength": 132,
+    "gripPoints": {
+      "primary": {
+        "x": 0.2,
+        "y": 0.68
+      },
+      "secondary": {
+        "x": 0.2,
+        "y": 0.32,
+        "role": "handle"
+      }
+    },
+    "description": "A frostfell ice-cutter's paired jaws rake lightly before snapping shut for a precise centre-line fracture.",
+    "authoritativeCombo": true,
+    "swingStyle": "pivot",
+    "comboFamily": "rake",
+    "comboVariant": "rimegut-open-and-close",
+    "performance": {
+      "hold": "steady",
+      "action": "default-swing",
+      "continuous": true,
+      "comboForwardPx": 0
+    },
+    "twoHanded": true,
+    "durability": 90
+  },
+  "x2-hailbarrel-sledcaster": {
+    "id": "x2-hailbarrel-sledcaster",
+    "name": "Hailbarrel Sledcaster",
+    "expansion": true,
+    "damage": 13,
+    "range": 120,
+    "halfArc": 0.5,
+    "cooldown": 0.58,
+    "displayLength": 122,
+    "swingArc": 1.8,
+    "gripFrac": 0.14,
+    "tags": {
+      "grip": "2H",
+      "size": "M",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "frost",
+      "classPool": "ranged",
+      "family": "puck-launcher",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "CON"
+      ]
+    },
+    "recoil": 64,
+    "gripPoints": {
+      "primary": {
+        "x": 0.18,
+        "y": 0.66
+      },
+      "secondary": {
+        "x": 0.42,
+        "y": 0.76,
+        "role": "under-barrel"
+      }
+    },
+    "description": "Frostfell sled mechanics pressure-fuse lake ice into toothed skimming rounds, then drive each one straight through a scarred cylindrical housing to numb whatever it strikes.",
+    "hitStatus": {
+      "kind": "slow",
+      "multiplier": 0.72,
+      "seconds": 0.75
+    },
+    "twoHanded": true,
+    "gun": {
+      "damage": 13,
+      "projectileSpeed": 1250,
+      "range": 620,
+      "fireRate": 0.58,
+      "magazine": 8,
+      "reloadSeconds": 1.4,
+      "bulletKind": "slug",
+      "muzzle": "punch",
+      "recoil": 0.0012,
+      "projectileArt": "generated",
+      "projectileVisualScale": 1,
+      "spread": 0,
+      "muzzleColor": 9433076
+    }
+  },
+  "x2-rimechoir-chime-rack": {
+    "id": "x2-rimechoir-chime-rack",
+    "name": "Rimechoir Chime-Rack",
+    "expansion": true,
+    "damage": 6,
+    "range": 140,
+    "halfArc": 0.45,
+    "cooldown": 0.85,
+    "displayLength": 104,
+    "swingArc": 1.8,
+    "gripFrac": 0.14,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "projectile",
+      "fireMode": "hold",
+      "element": "frost",
+      "classPool": "caster",
+      "family": "resonator",
+      "rangeBand": "long",
+      "scaling": [
+        "INT"
+      ]
+    },
+    "description": "A battered frostfell caster frame whose four fixed ice-metal bars release a charge-grown pressure wedge down a long lane.",
+    "performance": {
+      "hold": "aim-forward",
+      "action": "hold",
+      "suppressSwing": true
+    },
+    "chargedProjectile": {
+      "chargeSeconds": 1.25,
+      "speed": 620,
+      "range": 760,
+      "directDamageMin": 4,
+      "directDamageMax": 24,
+      "explosionDamageMin": 0,
+      "explosionDamageMax": 0,
+      "explosionRadiusMin": 16,
+      "explosionRadiusMax": 16,
+      "visualScaleMin": 0.55,
+      "visualScaleMax": 1.55,
+      "scaleExponent": 2,
+      "baseRadius": 18,
+      "sprite": "projectiles/rimechoir-chime-rack-pressure-wedge.png"
+    }
+  },
+  "x2-miremaw-shears": {
+    "id": "x2-miremaw-shears",
+    "name": "Miremaw Shears",
+    "expansion": true,
+    "damage": 16,
+    "range": 158,
+    "halfArc": 0.38,
+    "cooldown": 1,
+    "displayLength": 174,
+    "swingArc": 1.9,
+    "gripFrac": 0.16,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "physical",
+      "classPool": "melee",
+      "family": "great-shears",
+      "rangeBand": "close",
+      "scaling": [
+        "STR",
+        "DEX"
+      ]
+    },
+    "collisionLength": 152,
+    "gripPoints": {
+      "primary": {
+        "x": 0.18,
+        "y": 0.3
+      },
+      "secondary": {
+        "x": 0.18,
+        "y": 0.7,
+        "role": "handle"
+      }
+    },
+    "poseLanguage": {
+      "idle": "secondary-grip",
+      "feet": "wide-plant"
+    },
+    "description": "A ruin gardener's monumental closing jaw: slow to open, brutally decisive at contact, and punishing to recover when its narrow bite misses.",
+    "authoritativeCombo": true,
+    "swingStyle": "pivot",
+    "comboFamily": "rake",
+    "comboVariant": "miremaw-open-close",
+    "effectRecipe": "miremaw-snip",
+    "effectEmitter": "blade",
+    "effectTiming": "impact",
+    "performance": {
+      "hold": "steady",
+      "action": "default-swing",
+      "windupSeconds": 0.44,
+      "comboForwardPx": 0
+    },
+    "bespokeVfxSheet": true,
+    "twoHanded": true,
+    "durability": 90
+  },
+  "x2-thornhive-seedcaster": {
+    "id": "x2-thornhive-seedcaster",
+    "name": "Thornhive Seedcaster",
+    "expansion": true,
+    "damage": 12,
+    "range": 104,
+    "halfArc": 0.48,
+    "cooldown": 0.75,
+    "displayLength": 118,
+    "swingArc": 1.8,
+    "gripFrac": 0.14,
+    "tags": {
+      "grip": "2H",
+      "size": "M",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "toxic",
+      "classPool": "ranged",
+      "family": "seed-launcher",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "INT"
+      ]
+    },
+    "recoil": 164,
+    "gripPoints": {
+      "primary": {
+        "x": 0.14,
+        "y": 0.62
+      },
+      "secondary": {
+        "x": 0.31,
+        "y": 0.68,
+        "role": "horizontal-foregrip"
+      }
+    },
+    "description": "A hollow carnivorous growth braced in scavenged iron, launching one spiral-ribbed seed that breaks into a small acid-green branch burst on its first direct hit.",
+    "twoHanded": true,
+    "gun": {
+      "damage": 12,
+      "projectileSpeed": 700,
+      "range": 600,
+      "fireRate": 0.75,
+      "magazine": 4,
+      "reloadSeconds": 1.8,
+      "bulletKind": "nail",
+      "muzzle": "spark",
+      "recoil": 0.0016,
+      "projectileArt": "generated",
+      "projectileVisualScale": 1,
+      "spread": 0.015,
+      "muzzleColor": 10288955
+    },
+    "chainLightning": {
+      "jumps": 3,
+      "range": 130,
+      "damage": 3,
+      "falloff": 0.7,
+      "vfx": {
+        "color": 0.29,
+        "jag": 0.1,
+        "life": 120
+      }
+    }
   }
 };
 
@@ -19048,6 +20011,72 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "limbStretch": 2.1,
         "holdPose": "praying-mantis",
         "holdStart": 0.58
+      }
+    }
+  ],
+  "rimegut-open-and-close": [
+    {
+      "name": "Crevasse Opening Rake",
+      "motion": "rake",
+      "direction": 1,
+      "hand": "both",
+      "timing": {
+        "activeStart": 0.11,
+        "activeEnd": 0.38,
+        "impact": 0.27,
+        "followEnd": 0.54
+      },
+      "path": {
+        "kind": "sweep",
+        "arcMultiplier": 0.42,
+        "rangeMultiplier": 0.92,
+        "damageMultiplier": 0.62,
+        "knockback": 4
+      }
+    },
+    {
+      "name": "Rimegut Closing Pinch",
+      "motion": "scissor",
+      "direction": 0,
+      "hand": "both",
+      "timing": {
+        "activeStart": 0.15,
+        "activeEnd": 0.43,
+        "impact": 0.33,
+        "followEnd": 0.58,
+        "secondaryActiveStart": 0.19,
+        "secondaryActiveEnd": 0.45
+      },
+      "path": {
+        "kind": "capsule",
+        "arcMultiplier": 0.18,
+        "rangeMultiplier": 1.08,
+        "damageMultiplier": 1.58,
+        "knockback": 10,
+        "deltaAngle": 0
+      }
+    }
+  ],
+  "miremaw-open-close": [
+    {
+      "name": "Root-Jaw Close",
+      "motion": "scissor",
+      "direction": 0,
+      "hand": "both",
+      "timing": {
+        "activeStart": 0.34,
+        "activeEnd": 0.72,
+        "impact": 0.64,
+        "followEnd": 0.95,
+        "secondaryActiveStart": 0.4,
+        "secondaryActiveEnd": 0.72
+      },
+      "path": {
+        "kind": "dual-sweep",
+        "arcMultiplier": 0.34,
+        "rangeMultiplier": 1,
+        "damageMultiplier": 1.5,
+        "knockback": 56
       }
     }
   ]
