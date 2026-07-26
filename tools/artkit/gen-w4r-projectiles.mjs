@@ -269,6 +269,7 @@ const supplementalAssets = [
   ["streetsweeper-grenade-shell", "x2-quicksilver-streetsweeper", "sprites/vfx-streetsweeper-grenade/part-1.png"],
   ["tesla-drumbore-electric-particle", "x2-tesla-drumbore", "projectiles/v7/tesla-drumbore-electric-particle.png"],
   ["tesla-faradayer-hand-drawn-bolt", "x2-tesla-faradayer", "projectiles/v7/tesla-faradayer-hand-drawn-bolt.png"],
+  ["thornhive-drill-seed", "x2-thornhive-seedcaster", "projectiles/b66/thornhive-drill-seed.png", { width: 176, height: 96 }],
   ["thunderhead-blue-helix", "x2-thunderhead-lever-gun", "projectiles/v8/thunderhead-blue-helix.png", { width: 160, height: 80 }],
   ["thunderhead-smoke-ring", "x2-thunderhead-repeater-cannon", "projectiles/v8/thunderhead-smoke-ring.png", { width: 112, height: 112 }],
 ].map(([id, weaponId, url, normalize]) => ({ id, weaponId, url, normalize }));
@@ -297,6 +298,7 @@ const mirrorUprightProjectileIds = new Set([
   "streetsweeper-grenade-shell",
   "tesla-drumbore-electric-particle",
   "tesla-faradayer-hand-drawn-bolt",
+  "thornhive-drill-seed",
   "thunderhead-blue-helix",
   "tidehook-bombarpoon-harpoon",
   "widowmaker-arbalest-arrow",

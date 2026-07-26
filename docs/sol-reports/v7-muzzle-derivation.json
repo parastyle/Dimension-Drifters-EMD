@@ -3541,6 +3541,28 @@
     "barrelMode": "parallel"
   },
   {
+    "id": "x2-thornhive-seedcaster",
+    "name": "Thornhive Seedcaster",
+    "sprite": "x2-thornhive-seedcaster",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 55.5
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 55.5
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
     "id": "x2-thunderhead-lever-gun",
     "name": "Thunderhead Lever-Gun",
     "sprite": "x2-thunderhead-lever-gun",

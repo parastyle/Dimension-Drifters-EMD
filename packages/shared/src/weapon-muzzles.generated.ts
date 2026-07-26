@@ -3678,6 +3678,28 @@ export const WEAPON_ART_MUZZLES = {
     "salvoMode": "parallel",
     "barrelMode": "parallel"
   },
+  "x2-thornhive-seedcaster": {
+    "sprite": "x2-thornhive-seedcaster",
+    "parts": [
+      {
+        "width": 256,
+        "height": 112
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 55.5,
+        "derived": {
+          "x": 255,
+          "y": 55.5
+        }
+      }
+    ],
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
   "x2-thunderhead-lever-gun": {
     "sprite": "x2-thunderhead-lever-gun",
     "parts": [

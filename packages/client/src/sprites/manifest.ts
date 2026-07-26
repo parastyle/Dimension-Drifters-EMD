@@ -16958,6 +16958,32 @@ export const SPRITES = {
       }
     ]
   },
+  "x2-thornhive-seedcaster": {
+    "id": "x2-thornhive-seedcaster",
+    "kind": "weapon",
+    "canvas": {
+      "w": 281,
+      "h": 131
+    },
+    "body": {
+      "cx": 151.24,
+      "cy": 67.14,
+      "w": 256,
+      "h": 112
+    },
+    "parts": [
+      {
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 112,
+        "cx": 151.24,
+        "cy": 67.14,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
+  },
   "x2-throne-of-ash-coal-scepter": {
     "id": "x2-throne-of-ash-coal-scepter",
     "kind": "weapon",

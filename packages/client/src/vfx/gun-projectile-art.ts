@@ -142,6 +142,11 @@ export const GUN_GENERATED_PROJECTILES: Readonly<
     url: PROJECTILE_SPRITES["tesla-faradayer-hand-drawn-bolt"].url,
     displayLength: 68,
   }),
+  "x2-thornhive-seedcaster": Object.freeze({
+    spriteId: "thornhive-drill-seed",
+    url: PROJECTILE_SPRITES["thornhive-drill-seed"].url,
+    displayLength: 58,
+  }),
   "x2-thunderhead-lever-gun": Object.freeze({
     spriteId: "thunderhead-blue-helix",
     url: PROJECTILE_SPRITES["thunderhead-blue-helix"].url,
