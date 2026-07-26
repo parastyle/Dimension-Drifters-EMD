@@ -143,8 +143,8 @@ describe("B50 caster/VFX corrections", () => {
     expect(STARTER_UNLOCKED_WEAPON_IDS).not.toContain(CINDERQUILL_ID);
     expect(packIds).not.toContain(CINDERQUILL_ID);
     expect(WEAPON_RESOURCE_PROFILES[CINDERQUILL_ID]).toBeDefined();
-    expect(ACTIVE_WEAPON_CATALOG_IDS).toHaveLength(338);
-    expect(ACTIVE_EXPANSION_WEAPON_IDS).toHaveLength(309);
+    expect(ACTIVE_WEAPON_CATALOG_IDS).toHaveLength(339);
+    expect(ACTIVE_EXPANSION_WEAPON_IDS).toHaveLength(310);
     expect(ARCHIVED_WEAPON_IDS).toHaveLength(20);
   });
 });

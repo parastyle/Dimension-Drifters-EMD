@@ -2591,6 +2591,28 @@
     "barrelMode": "parallel"
   },
   {
+    "id": "x2-rancher-22-plinker",
+    "name": "Rancher .22 Plinker",
+    "sprite": "x2-rancher-22-plinker",
+    "derived": [
+      {
+        "part": 0,
+        "x": 263,
+        "y": 8.7
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 263,
+        "y": 8.7
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
     "id": "x2-reliquary-nailcaster",
     "name": "Reliquary Nailcaster",
     "sprite": "x2-reliquary-nailcaster",

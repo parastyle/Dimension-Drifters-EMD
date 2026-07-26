@@ -2666,6 +2666,28 @@ export const WEAPON_ART_MUZZLES = {
     "salvoMode": "parallel",
     "barrelMode": "parallel"
   },
+  "x2-rancher-22-plinker": {
+    "sprite": "x2-rancher-22-plinker",
+    "parts": [
+      {
+        "width": 264,
+        "height": 48
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 263,
+        "y": 8.7,
+        "derived": {
+          "x": 263,
+          "y": 8.7
+        }
+      }
+    ],
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
   "x2-reliquary-nailcaster": {
     "sprite": "x2-reliquary-nailcaster",
     "parts": [

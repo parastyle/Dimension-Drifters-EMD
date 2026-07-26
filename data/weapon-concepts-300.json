@@ -1,10 +1,10 @@
 {
   "generated": "2026-06-17",
   "source": "design-300-weapons workflow (15 agents)",
-  "count": 339,
+  "count": 340,
   "byType": {
     "melee": 132,
-    "ranged": 111,
+    "ranged": 112,
     "caster": 96
   },
   "weapons": [
@@ -19588,6 +19588,64 @@
       "behavior": {
         "kind": "glovePair",
         "wrapsFeet": true
+      }
+    },
+    {
+      "id": "x2-rancher-22-plinker",
+      "name": "Rancher .22 Plinker",
+      "description": "A quick, mild department rimfire whose fitted hardwood and ten-round belly magazine reward steady strings over raw stopping power.",
+      "type": "ranged",
+      "family": "rimfire-rifle",
+      "theme": "issue-grade hardwood-stocked semi-auto rimfire rifle",
+      "element": "physical",
+      "finish": "pristine",
+      "grip": "2H",
+      "fireMode": "semi-auto",
+      "gripPoints": {
+        "primary": {
+          "x": 0.34,
+          "y": 0.7
+        },
+        "secondary": {
+          "x": 0.62,
+          "y": 0.6,
+          "role": "horizontal-foregrip"
+        }
+      },
+      "size": "M",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "LUK"
+      ],
+      "palettePrimary": "#22252B",
+      "paletteAccent": "#B8874E",
+      "artPrompt": "Weapon-only in-world sprite: one slim lightweight department-issue semi-auto rimfire rifle with a long thin barrel, a full-length warm honey-walnut hardwood stock with a straight comb, factory-crisp checkering, a tiny stamped inventory glyph at the wrist, a small stubby detachable magazine tucked at the belly, tiny simple iron sights, and a small boxy dark under-barrel laser/light combo unit with one visible glass lens. Immaculate armoury-matched furniture, precise machined fit, everything torqued and true; no camouflage, repairs, tape, salvage, dirt, text, logos, serials, maker marks, sling, strap, rope, chain, tassel, character, hands, beam, glow, light cone, muzzle flash, or projectile. Near-black charcoal metal base with narrow steel highlights on top edges only, warm wood as the single accent, bold heavy black outer contour and heavy black internal ink lines dividing every panel, housing and seam, slightly exaggerated chunky receiver and stubby magazine, about 5 flat colours and hard cel planes with no gradients or photorealism. One complete connected weapon in strict flat orthographic full side-profile, stock and grip LEFT, muzzle RIGHT, fully visible on a perfectly flat solid #00ff00 chroma field with no floor, shadow, texture, lighting variation, watermark, or other object.",
+      "cardartAction": "held level through a fast disciplined string of tiny precise shots, the fitted hardwood steady while the compact action cycles",
+      "stats": {
+        "damage": 3,
+        "range": 208,
+        "halfArc": 0.5,
+        "cooldown": 0.24,
+        "displayLength": 132,
+        "swingArc": 1.8,
+        "gripFrac": 0.18
+      },
+      "behavior": {
+        "kind": "gun",
+        "damage": 3,
+        "projectileSpeed": 1050,
+        "range": 610,
+        "fireRate": 0.12,
+        "spread": 0.035,
+        "pierce": 1,
+        "magazine": 10,
+        "reloadSeconds": 1.15,
+        "bulletKind": "slug",
+        "projectileArt": "bullet",
+        "muzzle": "rapid",
+        "muzzleColor": 16757060,
+        "recoil": 0.0006
       }
     }
   ]

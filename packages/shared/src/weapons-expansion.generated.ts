@@ -14874,6 +14874,60 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
     "glovePair": {
       "wrapsFeet": true
     }
+  },
+  "x2-rancher-22-plinker": {
+    "id": "x2-rancher-22-plinker",
+    "name": "Rancher .22 Plinker",
+    "expansion": true,
+    "damage": 3,
+    "range": 208,
+    "halfArc": 0.5,
+    "cooldown": 0.24,
+    "displayLength": 132,
+    "swingArc": 1.8,
+    "gripFrac": 0.18,
+    "tags": {
+      "grip": "2H",
+      "size": "M",
+      "delivery": "projectile",
+      "fireMode": "semi-auto",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "rimfire-rifle",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "LUK"
+      ]
+    },
+    "recoil": 22,
+    "gripPoints": {
+      "primary": {
+        "x": 0.34,
+        "y": 0.7
+      },
+      "secondary": {
+        "x": 0.62,
+        "y": 0.6,
+        "role": "horizontal-foregrip"
+      }
+    },
+    "description": "A quick, mild department rimfire whose fitted hardwood and ten-round belly magazine reward steady strings over raw stopping power.",
+    "twoHanded": true,
+    "gun": {
+      "damage": 3,
+      "projectileSpeed": 1050,
+      "range": 610,
+      "fireRate": 0.12,
+      "magazine": 10,
+      "reloadSeconds": 1.15,
+      "bulletKind": "slug",
+      "muzzle": "rapid",
+      "recoil": 0.0006,
+      "projectileArt": "bullet",
+      "spread": 0.035,
+      "muzzleColor": 16757060
+    }
   }
 };
 

@@ -14854,6 +14854,32 @@ export const SPRITES = {
       }
     ]
   },
+  "x2-rancher-22-plinker": {
+    "id": "x2-rancher-22-plinker",
+    "kind": "weapon",
+    "canvas": {
+      "w": 272,
+      "h": 91
+    },
+    "body": {
+      "cx": 108.01,
+      "cy": 38.84,
+      "w": 264,
+      "h": 48
+    },
+    "parts": [
+      {
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 264,
+        "h": 48,
+        "cx": 108.01,
+        "cy": 38.84,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
+  },
   "x2-reaper-s-tithe": {
     "id": "x2-reaper-s-tithe",
     "kind": "weapon",
