@@ -534,13 +534,13 @@ export const rigCombatMethods = {
   presentationClockNow(this: SpriteRigContext): number {
     const sceneClock = (this.scene as RigAttackPresentationScene).animClock;
     if (typeof sceneClock === "number" && Number.isFinite(sceneClock)) return sceneClock;
-    return this.prevAnimMs >= 0 ? this.prevAnimMs : (this.scene.time?.now ?? 0);
+    return this.prevAnimMs >= 0 ? this.prevAnimMs : 0;
   },
 
   // Extraction trace: private presentationEpochForWallEpoch(epochMs: number)
   presentationEpochForWallEpoch(this: SpriteRigContext, epochMs: number): number {
-    const wallNow = this.scene.time?.now ?? 0;
     const arena = this.scene as RigAttackPresentationScene;
+    const wallNow = arena.presentationFrame?.wallNowMs ?? epochMs;
     const freezeHolding = (arena.frozenUntil ?? -Infinity) > wallNow || arena.wasFrozen === true;
     // A beat accepted while presentation is held begins at the held phase. Authoritative simulation still
     // advances; this only prevents the first unfrozen rig frame from inheriting wall time spent in hit-stop.

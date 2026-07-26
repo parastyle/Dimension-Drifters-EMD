@@ -7,6 +7,11 @@ import {
 } from "@dd/shared";
 import Phaser from "phaser";
 import type { RigAnim } from "../entities/rig/rig-core.js";
+import {
+  createPresentedActorState,
+  type PresentationFrame,
+  type PresentedActorState,
+} from "../entities/rig/rig-presentation.js";
 import { type AuthoredRigElementSnapshot, SpriteRig } from "../entities/SpriteRig.js";
 import { SPRITES, type SpriteManifest } from "../sprites/manifest.js";
 import {
@@ -122,6 +127,8 @@ class PoseStudioScene extends Phaser.Scene {
   private combatScale = false;
   private previewPose: ElementTransformPose = "held";
   private animationClock = 1_000;
+  private presentationFrameId = 0;
+  private readonly presentedRigs = new WeakMap<SpriteRig, PresentedActorState>();
   private restartPending = true;
   private loaderGeneration = 0;
   private lastWidth = -1;
@@ -462,15 +469,24 @@ class PoseStudioScene extends Phaser.Scene {
     this.layout();
     this.advance(deltaMs);
     this.animationClock += this.playing ? deltaMs * this.playbackSpeed : 0;
+    const presentationFrame: PresentationFrame = {
+      frame: ++this.presentationFrameId,
+      nowMs: this.animationClock,
+      deltaMs: this.playing ? Math.min(100, deltaMs * this.playbackSpeed) : 0,
+      deltaSeconds: this.playing ? Math.min(0.1, (deltaMs * this.playbackSpeed) / 1000) : 0,
+      wallNowMs: _time,
+      wallDeltaMs: deltaMs,
+      cut: deltaMs > 100,
+    };
     if (this.restartPending) this.restartPoses();
     const inputs = [this.animationInput(1), this.animationInput(-1)];
     for (const [index, rig] of this.onionRigs.entries()) {
       const input = index === 0 ? inputs[0] : inputs[1];
-      if (input) rig.animate(this.animationClock, input);
+      if (input) this.animatePresentedRig(rig, input, presentationFrame);
     }
     for (const [index, rig] of this.liveRigs.entries()) {
       const input = index === 0 ? inputs[0] : inputs[1];
-      if (input) rig.animate(this.animationClock, input);
+      if (input) this.animatePresentedRig(rig, input, presentationFrame);
     }
     this.callbacks.onFrame(
       {
@@ -481,6 +497,19 @@ class PoseStudioScene extends Phaser.Scene {
       },
       this.markers(),
     );
+  }
+
+  private animatePresentedRig(rig: SpriteRig, input: RigAnim, frame: PresentationFrame): void {
+    let state = this.presentedRigs.get(rig);
+    if (!state) {
+      state = createPresentedActorState(frame);
+      this.presentedRigs.set(rig, state);
+    }
+    Object.assign(state, input);
+    state.frame = frame;
+    state.rootX = rig.x;
+    state.rootY = rig.y;
+    rig.animate(state);
   }
 }
 

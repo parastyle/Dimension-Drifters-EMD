@@ -120,12 +120,12 @@ describe("flourish implementation ownership panel", () => {
     expect(runtime).not.toMatch(/scene\.tweens|delayedCall|setTimeout|Promise|await/);
   });
 
-  it("retains raw local attack intent even when cooldown or acceptance rejects the request", () => {
+  it("consumes the frame-captured attack intent even when cooldown or acceptance rejects the request", () => {
     const animate = rigPoseSource.slice(
-      rigPoseSource.indexOf("animate(this: SpriteRigContext, timeMs: number, anim: RigAnim): void"),
+      rigPoseSource.indexOf("animate(this: SpriteRigContext, anim: PresentedActorState): void"),
     );
-    expect(animate).toContain("this.scene.input?.activePointer?.rightButtonDown?.()");
-    expect(animate).toContain("const flourishAttackIntent");
+    expect(animate).toContain("const flourishAttackIntent = anim.fireHeld === true");
+    expect(animate).not.toContain("this.scene.input?.activePointer?.rightButtonDown?.()");
     expect(animate).toContain('this.cancelFlourish("anim-input")');
   });
 
@@ -146,7 +146,7 @@ describe("flourish implementation ownership panel", () => {
 
   it("does not let Last Word's retained page event cancel its own flourish", () => {
     const animate = rigPoseSource.slice(
-      rigPoseSource.indexOf("animate(this: SpriteRigContext, timeMs: number, anim: RigAnim): void"),
+      rigPoseSource.indexOf("animate(this: SpriteRigContext, anim: PresentedActorState): void"),
     );
     expect(animate).toContain("const tomeFlourishOwnsPage =");
     expect(animate).toContain("this.tome && !tomeFlourishOwnsPage");
@@ -187,12 +187,12 @@ describe("flourish raw Arena cancellation panel", () => {
     expect(movementIntent).not.toMatch(/render|displacement|anim\.move|speed/);
   });
 
-  it("cancels the self rig before hit-stop gating and before animateBlobs samples a pose", () => {
+  it("cancels the self rig before hit-stop gating and before presentBlobs samples a pose", () => {
     const update = arenaSource.slice(arenaSource.indexOf("override update("));
     const captureAt = update.indexOf("const cancelFlourishThisFrame =");
     const cancelAt = update.indexOf('cancelFlourish("raw-arena-input")');
-    const freezeGateAt = update.indexOf("if (this.time.now >= this.frozenUntil)");
-    const animateAt = update.indexOf("this.animateBlobs(deltaMs)");
+    const freezeGateAt = update.indexOf("if (presentationRunning)");
+    const animateAt = update.indexOf("this.presentBlobs(this.presentationFrame)");
     expect(captureAt).toBeGreaterThanOrEqual(0);
     expect(cancelAt).toBeGreaterThan(captureAt);
     expect(cancelAt).toBeLessThan(freezeGateAt);
