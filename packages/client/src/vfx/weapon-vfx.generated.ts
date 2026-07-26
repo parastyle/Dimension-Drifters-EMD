@@ -928,5 +928,20 @@ export const WEAPON_VFX: Record<string, WeaponVfx> = {
       "frameRate": 10,
       "scalePulse": 0.06
     }
+  },
+  "x2-whiteout-snowshoe-ram": {
+    "suite": {
+      "hero-skin": {
+        "on": true,
+        "params": {
+          "size": 1,
+          "rise": 0
+        }
+      }
+    },
+    "rot": 0,
+    "suppressFallback": true,
+    "vfxRadius": 184,
+    "hero": "vfx/weapons/b66/whiteout-snowshoe-ram-vfx.png"
   }
 };

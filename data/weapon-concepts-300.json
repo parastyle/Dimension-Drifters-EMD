@@ -1,9 +1,9 @@
 {
   "generated": "2026-06-17",
   "source": "design-300-weapons workflow (15 agents)",
-  "count": 339,
+  "count": 340,
   "byType": {
-    "melee": 132,
+    "melee": 133,
     "ranged": 111,
     "caster": 96
   },
@@ -19588,6 +19588,40 @@
       "behavior": {
         "kind": "glovePair",
         "wrapsFeet": true
+      }
+    },
+    {
+      "id": "x2-whiteout-snowshoe-ram",
+      "name": "Whiteout Snowshoe Ram",
+      "description": "A frost hunter's iron-bound travel frame, packed with old snow and swung in one broad planted sweep to batter ice-armoured guards apart.",
+      "type": "melee",
+      "family": "paddle-club",
+      "theme": "near-black flattened oval lattice with a thick blunt bound rim and one turquoise repair plate",
+      "element": "frost",
+      "finish": "battle-worn",
+      "grip": "2H",
+      "size": "XL",
+      "rangeBand": "close",
+      "scaling": [
+        "STR",
+        "CON"
+      ],
+      "palettePrimary": "#22252B",
+      "paletteAccent": "#2D9C9A",
+      "artPrompt": "Weapon-only in-world sprite: one long flattened oval frame filled by a rigid crisscross lattice, narrowing directly into a short fixed two-hand grip on the LEFT, with a visibly thicker blunt iron-bound rim at the RIGHT end. Near-black battered metal, soot-grey grime in the crevices, pale top-edge chips, packed dirty off-white snow wedged inside exactly three lattice cells, and one small turquoise repair plate riveted flush across a damaged lower rim. Heavy black ink around the silhouette and between every internal plane, broad flat cel shading, slightly exaggerated proportions, approximately 5 colours. Flat orthographic full side-profile; faces RIGHT. One connected subject only; no character, hands, background, attack effect, text, symbols, loose pieces, dangling parts, chains, tassels, ropes, straps, blades, spikes, or separate head.",
+      "cardartAction": "swept through a slow broad planted guard-breaking arc as compacted off-white snow collapses into three black-crevassed slabs with a thin turquoise lower edge",
+      "stats": {
+        "damage": 10,
+        "range": 184,
+        "halfArc": 1.34,
+        "cooldown": 1.18,
+        "displayLength": 208,
+        "collisionLength": 196,
+        "swingArc": 3.32,
+        "gripFrac": 0.15
+      },
+      "behavior": {
+        "kind": "edge"
       }
     }
   ]

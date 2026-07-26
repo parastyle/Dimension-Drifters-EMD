@@ -14874,6 +14874,36 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
     "glovePair": {
       "wrapsFeet": true
     }
+  },
+  "x2-whiteout-snowshoe-ram": {
+    "id": "x2-whiteout-snowshoe-ram",
+    "name": "Whiteout Snowshoe Ram",
+    "expansion": true,
+    "damage": 10,
+    "range": 184,
+    "halfArc": 1.34,
+    "cooldown": 1.18,
+    "displayLength": 208,
+    "swingArc": 3.32,
+    "gripFrac": 0.15,
+    "tags": {
+      "grip": "2H",
+      "size": "XL",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "frost",
+      "classPool": "melee",
+      "family": "paddle-club",
+      "rangeBand": "close",
+      "scaling": [
+        "STR",
+        "CON"
+      ]
+    },
+    "collisionLength": 196,
+    "description": "A frost hunter's iron-bound travel frame, packed with old snow and swung in one broad planted sweep to batter ice-armoured guards apart.",
+    "twoHanded": true,
+    "durability": 90
   }
 };
 

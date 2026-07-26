@@ -174,7 +174,7 @@ describe("B24 shared radial fallback removal", () => {
     expect(weapon("x2-pocket-hexicon").archived).toBe(true);
     expect(ARCHIVED_WEAPON_IDS).toContain("x2-pocket-hexicon");
     expect(ACTIVE_WEAPON_CATALOG_IDS).not.toContain("x2-pocket-hexicon");
-    expect(ACTIVE_WEAPON_CATALOG_IDS).toHaveLength(338);
+    expect(ACTIVE_WEAPON_CATALOG_IDS).toHaveLength(339);
     expect(ARCHIVED_WEAPON_IDS).toHaveLength(20);
   });
 

@@ -17476,6 +17476,32 @@ export const SPRITES = {
       }
     ]
   },
+  "x2-whiteout-snowshoe-ram": {
+    "id": "x2-whiteout-snowshoe-ram",
+    "kind": "weapon",
+    "canvas": {
+      "w": 461,
+      "h": 187
+    },
+    "body": {
+      "cx": 257.37,
+      "cy": 90.08,
+      "w": 416,
+      "h": 138
+    },
+    "parts": [
+      {
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 416,
+        "h": 138,
+        "cx": 257.37,
+        "cy": 90.08,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
+  },
   "x2-wickfire-fauchard": {
     "id": "x2-wickfire-fauchard",
     "kind": "weapon",
