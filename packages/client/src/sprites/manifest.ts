@@ -9328,6 +9328,32 @@ export const SPRITES = {
       }
     ]
   },
+  "x2-breachmaster-auto-12": {
+    "id": "x2-breachmaster-auto-12",
+    "kind": "weapon",
+    "canvas": {
+      "w": 268,
+      "h": 268
+    },
+    "body": {
+      "cx": 130.78,
+      "cy": 124.58,
+      "w": 256,
+      "h": 132
+    },
+    "parts": [
+      {
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 132,
+        "cx": 130.78,
+        "cy": 124.58,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
+  },
   "x2-brimstone-bull": {
     "id": "x2-brimstone-bull",
     "kind": "weapon",

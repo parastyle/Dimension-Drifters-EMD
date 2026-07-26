@@ -354,6 +354,28 @@ export const WEAPON_ART_MUZZLES = {
     "salvoMode": "parallel",
     "barrelMode": "parallel"
   },
+  "x2-breachmaster-auto-12": {
+    "sprite": "x2-breachmaster-auto-12",
+    "parts": [
+      {
+        "width": 256,
+        "height": 132
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 33.6,
+        "derived": {
+          "x": 255,
+          "y": 33.6
+        }
+      }
+    ],
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
   "x2-brimstone-bull": {
     "sprite": "x2-brimstone-bull",
     "parts": [

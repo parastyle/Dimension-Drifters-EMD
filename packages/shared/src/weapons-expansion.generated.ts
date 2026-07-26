@@ -14874,6 +14874,60 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
     "glovePair": {
       "wrapsFeet": true
     }
+  },
+  "x2-breachmaster-auto-12": {
+    "id": "x2-breachmaster-auto-12",
+    "name": "Breachmaster Auto-12",
+    "expansion": true,
+    "damage": 6,
+    "range": 280,
+    "halfArc": 0.55,
+    "cooldown": 0.24,
+    "displayLength": 142,
+    "swingArc": 1.8,
+    "gripFrac": 0.18,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "automatic-shotgun",
+      "rangeBand": "close",
+      "scaling": [
+        "STR",
+        "DEX"
+      ]
+    },
+    "recoil": 152,
+    "gripPoints": {
+      "primary": {
+        "x": 0.27,
+        "y": 0.67
+      },
+      "secondary": {
+        "x": 0.69,
+        "y": 0.69,
+        "role": "horizontal-foregrip"
+      }
+    },
+    "description": "An armoury-flagship automatic scattergun built to hold a doorway under sustained close-range pressure.",
+    "twoHanded": true,
+    "gun": {
+      "damage": 3,
+      "projectileSpeed": 820,
+      "range": 380,
+      "fireRate": 0.24,
+      "magazine": 20,
+      "reloadSeconds": 2.6,
+      "bulletKind": "pellet",
+      "muzzle": "rapid",
+      "recoil": 0.0018,
+      "projectileArt": "bullet",
+      "pellets": 7,
+      "spread": 0.28
+    }
   }
 };
 

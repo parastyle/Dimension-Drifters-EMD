@@ -158,6 +158,7 @@ export function gunFireFamilyForWeapon(weapon: WeaponDef): GunFireFamily | undef
       return weapon.id === "x-gun-hand-mortar" ? "siege-ordnance" : "hand-cannon";
     case "concussion-cannon":
       return "hand-cannon";
+    case "automatic-shotgun":
     case "shotgun":
       return "shotgun";
     case "blunderbuss":
