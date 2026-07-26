@@ -14874,6 +14874,47 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
     "glovePair": {
       "wrapsFeet": true
     }
+  },
+  "x2-pocket-vector-45": {
+    "id": "x2-pocket-vector-45",
+    "name": "Pocket Vector .45",
+    "expansion": true,
+    "damage": 8,
+    "range": 140,
+    "halfArc": 0.85,
+    "cooldown": 0.4,
+    "displayLength": 90,
+    "swingArc": 2.6,
+    "gripFrac": 0.12,
+    "tags": {
+      "grip": "2H",
+      "size": "M",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "machine-pistol",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "STR"
+      ]
+    },
+    "recoil": 18,
+    "twoHanded": true,
+    "gun": {
+      "damage": 6,
+      "projectileSpeed": 880,
+      "range": 470,
+      "fireRate": 0.1,
+      "magazine": 25,
+      "reloadSeconds": 1.5,
+      "bulletKind": "tracer",
+      "muzzle": "rapid",
+      "recoil": 0.0011,
+      "spread": 0.07,
+      "muzzleColor": 13732405
+    }
   }
 };
 

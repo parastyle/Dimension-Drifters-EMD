@@ -2512,6 +2512,28 @@ export const WEAPON_ART_MUZZLES = {
     "salvoMode": "parallel",
     "barrelMode": "parallel"
   },
+  "x2-pocket-vector-45": {
+    "sprite": "x2-pocket-vector-45",
+    "parts": [
+      {
+        "width": 256,
+        "height": 124
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 60.3,
+        "derived": {
+          "x": 255,
+          "y": 60.3
+        }
+      }
+    ],
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
   "x2-powderkeg-mortar": {
     "sprite": "x2-powderkeg-mortar",
     "parts": [

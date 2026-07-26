@@ -1,10 +1,10 @@
 {
   "generated": "2026-06-17",
   "source": "design-300-weapons workflow (15 agents)",
-  "count": 339,
+  "count": 340,
   "byType": {
     "melee": 132,
-    "ranged": 111,
+    "ranged": 112,
     "caster": 96
   },
   "weapons": [
@@ -19588,6 +19588,41 @@
       "behavior": {
         "kind": "glovePair",
         "wrapsFeet": true
+      }
+    },
+    {
+      "id": "x2-pocket-vector-45",
+      "name": "Pocket Vector .45",
+      "type": "ranged",
+      "family": "machine-pistol",
+      "theme": "specialist issue folding submachine gun with a tall over-barrel receiver and forward-raked magazine well",
+      "element": "physical",
+      "finish": "pristine",
+      "grip": "2H",
+      "size": "M",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "STR"
+      ],
+      "artPrompt": "Weapon-only in-world sprite on a perfectly flat fully opaque #00ff00 chroma field: ONE oddly tall angular issue-grade submachine gun whose near-black body rises well above the barrel line, with the magazine well and compact magazine raked sharply forward and down, a side-folding shoulder stock shown locked hard open to the LEFT, and a very short muzzle pointing RIGHT. Preserve a credible mechanism: pistol grip and trigger beneath the rear housing, magazine feeding the chamber ahead of the grip, barrel aligned through the low front housing, and a clean rigid stock hinge. Add one small boxy issue-fitted laser/light combination unit beneath the short barrel with a clearly visible dark glass lens; it is a silhouette detail only, with no beam, no glow, no bloom, and no light cone. Specialist frontline duty issue: complex angular geometry machined cleanly at every corner, matched immaculate finish, tight panel fit, positive stock lock, everything torqued and true, maintained to standard, no aftermarket parts. No camo, no dirt, no rust, no tape, no repairs, no salvage, no mismatched parts, no improvised hardware. Near-black charcoal base value dominates; narrow cool gunmetal highlights catch TOP EDGES ONLY while sides and underside remain in deep shadow, never evenly lit and never mid-grey overall. Use one localized warm accent only: a small amber-anodized positive-lock cam at the folding-stock hinge. Bold heavy black outline around the entire silhouette AND heavy black internal ink lines dividing every panel, plate, housing, control and seam. Slightly exaggerated cartoon proportions: the tall top-heavy receiver, sharply forward-raked magazine well, hard stock hinge and stub muzzle read chunkier than strict anatomy while the grip-to-barrel relationship remains functional. Use only 4-6 flat cel colours plus black ink, hard flat planes, no gradients, no airbrushing, no photorealism. ONE complete connected gun, strict flat orthographic full side-profile, muzzle RIGHT, grip and stock LEFT. No character, no hands, no scenery, no ground shadow, no second weapon, no sling, no strap, no rope, no chain, no tassel, no dangling part, no emitted VFX, no text, no logo, no serial, and no maker's mark.",
+      "palettePrimary": "#1E2228",
+      "paletteAccent": "#D18A35",
+      "cardartAction": "stock locked open during a disciplined close-range burst, the short muzzle punching compact amber flashes rightward",
+      "behavior": {
+        "kind": "gun",
+        "damage": 6,
+        "projectileSpeed": 880,
+        "range": 470,
+        "fireRate": 0.1,
+        "spread": 0.07,
+        "pierce": 1,
+        "magazine": 25,
+        "reloadSeconds": 1.5,
+        "bulletKind": "tracer",
+        "muzzle": "rapid",
+        "muzzleColor": 13732405,
+        "recoil": 0.0011
       }
     }
   ]
