@@ -2389,6 +2389,28 @@ export const WEAPON_ART_MUZZLES = {
     "salvoMode": "parallel",
     "barrelMode": "parallel"
   },
+  "x2-patriot-carbine-ar": {
+    "sprite": "x2-patriot-carbine-ar",
+    "parts": [
+      {
+        "width": 256,
+        "height": 95
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 25.7,
+        "derived": {
+          "x": 255,
+          "y": 25.7
+        }
+      }
+    ],
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
   "x2-pearl-of-penance-censer": {
     "sprite": "x2-pearl-of-penance-censer",
     "parts": [

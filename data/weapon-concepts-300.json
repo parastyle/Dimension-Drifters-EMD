@@ -1,7 +1,7 @@
 {
   "generated": "2026-06-17",
   "source": "design-300-weapons workflow (15 agents)",
-  "count": 341,
+  "count": 342,
   "byType": {
     "melee": 132,
     "ranged": 112,
@@ -19699,6 +19699,64 @@
         "displayLength": 136,
         "swingArc": 1.8,
         "gripFrac": 0.16
+      }
+    },
+    {
+      "id": "x2-patriot-carbine-ar",
+      "name": "Patriot Carbine AR",
+      "description": "An immaculate issue-grade semi-automatic patrol carbine tuned for fast, precise follow-up shots without sacrificing a full service magazine.",
+      "type": "ranged",
+      "family": "semi-auto carbine",
+      "theme": "plain near-black issue-grade modular patrol carbine with restrained brass-amber witness accents",
+      "element": "physical",
+      "finish": "pristine",
+      "grip": "2H",
+      "fireMode": "semi-auto",
+      "gripPoints": {
+        "primary": {
+          "x": 0.29,
+          "y": 0.72
+        },
+        "secondary": {
+          "x": 0.66,
+          "y": 0.53,
+          "role": "horizontal-foregrip"
+        }
+      },
+      "size": "M",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "STR"
+      ],
+      "palettePrimary": "#171B1E",
+      "paletteAccent": "#C18A32",
+      "artPrompt": "Weapon-only in-world sprite: one immaculate issue-grade boxy modular semi-automatic carbine with a full-length flat slotted top rail, slim ventilated handguard tube, tall triangular front sight post, compact co-witnessed optic, collapsible skeleton stock, long curved magazine with one narrow brass-amber witness strip, and a small boxy under-barrel laser/light combination unit with a visible amber lens but no beam, glow, or light cone. Familiar bulk-procurement patrol silhouette, every rail and housing matched, torqued true, evenly finished near-black to the last edge, with only light honest carbon at the muzzle and vents. Dark-comic game prop with a near-black charcoal base, sparse steel-blue highlights on top edges only, bold black outer contour and equally heavy internal ink lines dividing every panel, housing, seam, and vent, slightly exaggerated chunky parts, and 4-6 flat cel colours plus black ink. One complete mechanically coherent weapon, flat orthographic full side-profile, stock and grip LEFT, muzzle RIGHT, flat #00ff00 background. No character, hands, text, logos, serials, maker marks, camo, photorealism, product lighting, soft gradients, junk, tape, improvised repairs, mismatched parts, dangling straps, chains, tassels, ropes, emitted light, or extra objects.",
+      "cardartAction": "shouldered with its co-witnessed sights aligned while measured amber-tracer pairs cross a dark patrol corridor",
+      "behavior": {
+        "kind": "gun",
+        "damage": 7,
+        "projectileSpeed": 1200,
+        "range": 720,
+        "fireRate": 0.22,
+        "spread": 0.025,
+        "pierce": 1,
+        "magazine": 30,
+        "reloadSeconds": 1.55,
+        "bulletKind": "tracer",
+        "projectileArt": "bullet",
+        "muzzle": "rapid",
+        "muzzleColor": 16755282,
+        "recoil": 0.0008
+      },
+      "stats": {
+        "damage": 7,
+        "range": 250,
+        "halfArc": 0.48,
+        "cooldown": 0.34,
+        "displayLength": 132,
+        "swingArc": 1.8,
+        "gripFrac": 0.17
       }
     }
   ]

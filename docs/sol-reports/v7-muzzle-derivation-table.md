@@ -105,6 +105,7 @@ Generated from sprite alpha for all 159 active projectile, beam, and authored me
 | `x2-null-grimoire-of-the-hollow-page` (Null Grimoire of the Hollow Page) | part-1 (254, 44) | part-1 (254, 44) | No |
 | `x2-nullsaint-reliquary` (Nullsaint Reliquary) | part-1 (255, 104) | part-1 (255, 104) | No |
 | `x2-pale-horse-longgun` (Pale-Horse Longgun) | part-1 (255, 6.9) | part-1 (255, 6.9) | No |
+| `x2-patriot-carbine-ar` (Patriot Carbine AR) | part-1 (255, 25.7) | part-1 (255, 25.7) | No |
 | `x2-pearl-of-penance-censer` (Pearl-of-Penance Censer) | part-1 (254, 35.5) | part-1 (254, 35.5) | No |
 | `x2-pearlbreech-volleygun` (Pearlbreech Volleygun) | part-1 (255, 51.2) | part-1 (255, 51.2) | No |
 | `x2-permafrost-cryo-bracer` (Permafrost Cryo-Bracer) | part-1 (253, 42.5) | part-1 (253, 42.5) | No |
