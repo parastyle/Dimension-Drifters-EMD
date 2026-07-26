@@ -153,6 +153,7 @@ Generated from sprite alpha for all 159 active projectile, beam, and authored me
 | `x2-thunderhead-spikecaster` (Thunderhead Spikecaster) | part-1 (255, 21.5) | part-1 (255, 21.5) | No |
 | `x2-tidehook-bombarpoon` (Tidehook Bombarpoon) | part-1 (253, 37.5) | part-1 (253, 37.5) | No |
 | `x2-tracer-saint-carbine` (Tracer-Saint Carbine) | part-1 (255, 11.7) | part-1 (255, 11.7) | No |
+| `x2-trailhead-carbine-357` (Trailhead Carbine .357) | part-1 (255, 22.9) | part-1 (255, 22.9) | No |
 | `x2-tumbleweed-skipper` (Tumbleweed Skipper) | part-1 (255, 21.3) | part-1 (255, 21.3) | No |
 | `x2-twin-maw-greenerbore` (Twin-Maw Greenerbore) | part-1 (255, 19.9)<br>part-2 (255, 19.9) | part-1 (255, 19.9)<br>part-2 (255, 19.9) | No |
 | `x2-unicorn-rainbow-beam` (Unicorn Rainbow Beam) | part-1 (376, 68.5) | part-1 (383, 99) | Yes - The beam must anchor at the painted unicorn-horn tip, not the broader pearl housing selected by alpha mass. |

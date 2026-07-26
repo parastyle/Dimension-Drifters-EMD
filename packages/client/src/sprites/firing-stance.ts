@@ -206,7 +206,8 @@ const BOOK_FAMILY =
 const WAND_FAMILY = /^(?:focus|orb|relic\/totem|rod|scepter|wand)$/i;
 const SCATTER_FAMILY = /^(?:blunderbuss|shotgun)$/i;
 const RAPID_FAMILY = /^(?:gun|machine-pistol|nailgun)$/i;
-const LONG_GUN_FAMILY = /^(?:lever-rifle|marksman-rifle|railgun|scrap-cannon)$/i;
+const LONG_GUN_FAMILY =
+  /^(?:lever-rifle|marksman-rifle|pistol-calibre-carbine|railgun|scrap-cannon)$/i;
 
 function gunLaunchesPayload(def: WeaponDef): boolean {
   if (!def.gun) return false;

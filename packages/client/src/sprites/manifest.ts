@@ -17036,6 +17036,32 @@ export const SPRITES = {
       }
     ]
   },
+  "x2-trailhead-carbine-357": {
+    "id": "x2-trailhead-carbine-357",
+    "kind": "weapon",
+    "canvas": {
+      "w": 271,
+      "h": 107
+    },
+    "body": {
+      "cx": 121.48,
+      "cy": 44.79,
+      "w": 256,
+      "h": 79
+    },
+    "parts": [
+      {
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 79,
+        "cx": 121.48,
+        "cy": 44.79,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
+  },
   "x2-tumbleweed-flail": {
     "id": "x2-tumbleweed-flail",
     "kind": "weapon",
