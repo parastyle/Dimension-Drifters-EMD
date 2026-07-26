@@ -14874,6 +14874,50 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
     "glovePair": {
       "wrapsFeet": true
     }
+  },
+  "x2-sidewalk-nine": {
+    "id": "x2-sidewalk-nine",
+    "name": "Sidewalk Nine",
+    "expansion": true,
+    "damage": 5,
+    "range": 120,
+    "halfArc": 0.5,
+    "cooldown": 0.25,
+    "displayLength": 82,
+    "swingArc": 1.8,
+    "gripFrac": 0.18,
+    "tags": {
+      "grip": "1H",
+      "size": "S",
+      "delivery": "projectile",
+      "fireMode": "semi-auto",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "pistol",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX"
+      ],
+      "handling": [
+        "pistol"
+      ]
+    },
+    "recoil": 34,
+    "description": "An immaculate bulk-issue duty sidearm whose uniform tolerances, crisp stippling, and abstract dust-cover inventory glyph make procurement discipline its signature.",
+    "gun": {
+      "damage": 6,
+      "projectileSpeed": 980,
+      "range": 560,
+      "fireRate": 0.19,
+      "magazine": 17,
+      "reloadSeconds": 1.2,
+      "bulletKind": "slug",
+      "muzzle": "punch",
+      "recoil": 0.001,
+      "projectileArt": "bullet",
+      "spread": 0.025,
+      "muzzleColor": 15906891
+    }
   }
 };
 

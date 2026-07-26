@@ -15758,6 +15758,32 @@ export const SPRITES = {
       }
     ]
   },
+  "x2-sidewalk-nine": {
+    "id": "x2-sidewalk-nine",
+    "kind": "weapon",
+    "canvas": {
+      "w": 307,
+      "h": 205
+    },
+    "body": {
+      "cx": 140.89,
+      "cy": 83.73,
+      "w": 256,
+      "h": 164
+    },
+    "parts": [
+      {
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 164,
+        "cx": 140.89,
+        "cy": 83.73,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
+  },
   "x2-sidewinder-spitfire": {
     "id": "x2-sidewinder-spitfire",
     "kind": "weapon",

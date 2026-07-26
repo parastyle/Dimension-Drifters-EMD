@@ -1,10 +1,10 @@
 {
   "generated": "2026-06-17",
   "source": "design-300-weapons workflow (15 agents)",
-  "count": 339,
+  "count": 340,
   "byType": {
     "melee": 132,
-    "ranged": 111,
+    "ranged": 112,
     "caster": 96
   },
   "weapons": [
@@ -19588,6 +19588,56 @@
       "behavior": {
         "kind": "glovePair",
         "wrapsFeet": true
+      }
+    },
+    {
+      "id": "x2-sidewalk-nine",
+      "name": "Sidewalk Nine",
+      "description": "An immaculate bulk-issue duty sidearm whose uniform tolerances, crisp stippling, and abstract dust-cover inventory glyph make procurement discipline its signature.",
+      "type": "ranged",
+      "family": "pistol",
+      "theme": "issue-grade squared polymer duty sidearm with a boxy under-muzzle combo unit",
+      "element": "physical",
+      "finish": "pristine",
+      "grip": "1H",
+      "handlingTags": [
+        "pistol"
+      ],
+      "size": "S",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX"
+      ],
+      "palettePrimary": "#1C2024",
+      "paletteAccent": "#C99632",
+      "artPrompt": "Weapon-only in-world sprite (no character, no hands, no background scene): one original immaculate issue-grade squared polymer duty pistol with a chunky blocky slab slide, deep angled grip stippling, no external hammer, a flat-faced trigger, and a short accessory rail beneath the muzzle. A small boxy laser/light combo unit is firmly mounted under the muzzle with one visible cool smoked lens as a silhouette detail only: no beam, glow, light cone, bloom, or spill. Thousands-issued uniform construction, matched near-black charcoal finish, crisp machining, aligned seams, everything torqued true, and one small abstract geometric inventory glyph stamped on the dust cover in muted amber-brass; no letters, numerals, logo, serial, or maker mark. Near-black base value with highlights restricted to narrow top-facing edges, one bold black exterior contour plus equally heavy crisp internal black ink lines dividing every slide panel, frame housing, seam, control, rail slot, grip plane, trigger, and combo-unit panel. Slightly exaggerated slide thickness, dust cover, grip mass, and boxy combo unit while preserving a believable mechanism and grip-to-barrel relationship. About 5 hard flat cel colours plus black ink, no gradients, soft shading, glossy product lighting, photorealism, camo, wear, repairs, tape, mismatched parts, salvage, dangling elements, muzzle flash, projectile, or VFX. Flat orthographic FULL SIDE-PROFILE, faces RIGHT: muzzle to the RIGHT and grip to the LEFT.",
+      "cardartAction": "held level in an exact service stance while one controlled amber-white muzzle flash marks a quick follow-up shot",
+      "fireMode": "semi-auto",
+      "behavior": {
+        "kind": "gun",
+        "damage": 6,
+        "projectileSpeed": 980,
+        "range": 560,
+        "fireRate": 0.19,
+        "pellets": 1,
+        "spread": 0.025,
+        "pierce": 1,
+        "magazine": 17,
+        "reloadSeconds": 1.2,
+        "bulletKind": "slug",
+        "projectileArt": "bullet",
+        "muzzle": "punch",
+        "muzzleColor": 15906891,
+        "recoil": 0.001
+      },
+      "stats": {
+        "damage": 5,
+        "range": 120,
+        "halfArc": 0.5,
+        "cooldown": 0.25,
+        "displayLength": 82,
+        "swingArc": 1.8,
+        "gripFrac": 0.18
       }
     }
   ]

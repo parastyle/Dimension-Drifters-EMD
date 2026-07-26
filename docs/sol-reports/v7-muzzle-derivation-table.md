@@ -1,6 +1,6 @@
 # V7 Muzzle Derivation Table
 
-Generated from sprite alpha for all 158 active projectile, beam, and authored melee-impact definitions. Coordinates are source-PNG pixels.
+Generated from sprite alpha for all 159 active projectile, beam, and authored melee-impact definitions. Coordinates are source-PNG pixels.
 
 | Weapon | Derived barrel tip | Authored muzzle point(s) | Override |
 | --- | --- | --- | --- |
@@ -128,6 +128,7 @@ Generated from sprite alpha for all 158 active projectile, beam, and authored me
 | `x2-scattershell-duster` (Scattershell Duster) | part-1 (251, 37.2)<br>part-2 (251, 37.2) | part-1 (252, 49)<br>part-1 (252, 79)<br>part-2 (252, 49)<br>part-2 (252, 79) | Yes - Each akimbo sprite has two bores inside one opaque front plate; alpha exposes the plate edge but not the four bore centres. |
 | `x2-scattershot-saint` (Scattershot Saint) | part-1 (255, 30.4) | part-1 (255, 30.4) | No |
 | `x2-seraph-s-knuckle-reliquary` (Seraph's Knuckle-Reliquary) | part-1 (255, 67.1) | part-1 (255, 67.1) | No |
+| `x2-sidewalk-nine` (Sidewalk Nine) | part-1 (255, 21.6) | part-1 (255, 21.6) | No |
 | `x2-sidewinder-spitfire` (Sidewinder Spitfire) | part-1 (253, 46.9) | part-1 (253, 42)<br>part-1 (253, 52) | Yes - The organic muzzle is one joined alpha mass; the owner-ordered twin parallel venom lanes need two explicit centres spanning its open mouth. |
 | `x2-sidewinder-twin-rifles` (Sidewinder Twin-Rifles) | part-1 (255, 13.8)<br>part-2 (255, 13.8) | part-1 (255, 13.8)<br>part-2 (255, 13.8) | No |
 | `x2-slughammer-breachgun` (Slughammer Breachgun) | part-1 (255, 27.4) | part-1 (255, 27.4) | No |

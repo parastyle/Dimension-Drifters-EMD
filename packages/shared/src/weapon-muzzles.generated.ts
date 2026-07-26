@@ -2964,6 +2964,28 @@ export const WEAPON_ART_MUZZLES = {
     "salvoMode": "parallel",
     "barrelMode": "parallel"
   },
+  "x2-sidewalk-nine": {
+    "sprite": "x2-sidewalk-nine",
+    "parts": [
+      {
+        "width": 256,
+        "height": 164
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 21.6,
+        "derived": {
+          "x": 255,
+          "y": 21.6
+        }
+      }
+    ],
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
   "x2-sidewinder-spitfire": {
     "sprite": "x2-sidewinder-spitfire",
     "parts": [
