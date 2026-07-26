@@ -260,6 +260,7 @@ describe("driftblade-model panel", () => {
       "arc/thunderpost-storm-cadence": ["x2-thunderpost-fetish"],
       "punch/coyote-voltage-boxing": ["x2-coyote-trickster-s-sparkmitt"],
       "rake/frostfang-forward-rend": ["x2-frostfang-rakes"],
+      "rake/rimegut-open-and-close": ["x2-rimegut-ice-tongs"],
       "rake/wyrmscale-inferno-talons": ["x2-wyrmscale-hex-talon"],
       "thrust/blightfork-jab": ["x2-blightfork-glaive"],
       "thrust/marrowpike-triple-stab": ["x2-marrowpike-ranseur"],

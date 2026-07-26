@@ -15254,6 +15254,32 @@ export const SPRITES = {
       }
     ]
   },
+  "x2-rimegut-ice-tongs": {
+    "id": "x2-rimegut-ice-tongs",
+    "kind": "weapon",
+    "canvas": {
+      "w": 269,
+      "h": 121
+    },
+    "body": {
+      "cx": 131.74,
+      "cy": 58.17,
+      "w": 256,
+      "h": 89
+    },
+    "parts": [
+      {
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 89,
+        "cx": 131.74,
+        "cy": 58.17,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
+  },
   "x2-rimethorn-naginata": {
     "id": "x2-rimethorn-naginata",
     "kind": "weapon",

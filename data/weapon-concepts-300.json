@@ -1,9 +1,9 @@
 {
   "generated": "2026-06-17",
   "source": "design-300-weapons workflow (15 agents)",
-  "count": 339,
+  "count": 340,
   "byType": {
-    "melee": 132,
+    "melee": 133,
     "ranged": 111,
     "caster": 96
   },
@@ -19588,6 +19588,104 @@
       "behavior": {
         "kind": "glovePair",
         "wrapsFeet": true
+      }
+    },
+    {
+      "id": "x2-rimegut-ice-tongs",
+      "name": "Rimegut Ice-Tongs",
+      "description": "A frostfell ice-cutter's paired jaws rake lightly before snapping shut for a precise centre-line fracture.",
+      "type": "melee",
+      "family": "pincer",
+      "theme": "mismatched rigid double-arm closure with bone-white and soot-black jaws around a cold cyan pivot",
+      "element": "frost",
+      "finish": "battle-worn",
+      "grip": "2H",
+      "gripPoints": {
+        "primary": {
+          "x": 0.2,
+          "y": 0.68
+        },
+        "secondary": {
+          "x": 0.2,
+          "y": 0.32,
+          "role": "handle"
+        }
+      },
+      "size": "M",
+      "rangeBand": "close",
+      "scaling": [
+        "DEX",
+        "STR"
+      ],
+      "palettePrimary": "#181D22",
+      "paletteAccent": "#39D9F2",
+      "artPrompt": "Weapon-only in-world sprite, no character, hands, background, attack effect, smoke, text, symbols, loose pieces, or hanging hardware: two narrow rigid near-black arms joined at one oversized round cold-cyan central pivot; each arm extends RIGHT into a short inward-facing triangular jaw, with the upper jaw chipped bone-white and the lower jaw soot-black; both arms extend LEFT into separate closed oval hand loops aligned vertically. Battered frostfell salvage with grime packed into crevices, heavy black ink around the silhouette and dividing every internal plate, small top-edge bone-grey highlights, flat cel planes, slightly exaggerated pivot and jaw proportions, approximately five colours. Flat orthographic full side-profile, both jaw tips and business end face RIGHT, both closed hand loops remain on the LEFT. Matte painted game sprite, no gradients, no photorealism, no clean vector treatment, perfectly flat solid #00ff00 chroma field.",
+      "cardartAction": "the long rigid arms closing from a light opening rake into one exact centre-line bite, two slim cyan traces converging on a white diamond fracture",
+      "authoritativeCombo": true,
+      "swingStyle": "pivot",
+      "comboFamily": "rake",
+      "comboVariant": "rimegut-open-and-close",
+      "comboBar": [
+        {
+          "name": "Crevasse Opening Rake",
+          "motion": "rake",
+          "direction": 1,
+          "hand": "both",
+          "timing": {
+            "activeStart": 0.11,
+            "activeEnd": 0.38,
+            "impact": 0.27,
+            "followEnd": 0.54
+          },
+          "path": {
+            "kind": "sweep",
+            "arcMultiplier": 0.42,
+            "rangeMultiplier": 0.92,
+            "damageMultiplier": 0.62,
+            "knockback": 4
+          }
+        },
+        {
+          "name": "Rimegut Closing Pinch",
+          "motion": "scissor",
+          "direction": 0,
+          "hand": "both",
+          "timing": {
+            "activeStart": 0.15,
+            "activeEnd": 0.43,
+            "impact": 0.33,
+            "followEnd": 0.58,
+            "secondaryActiveStart": 0.19,
+            "secondaryActiveEnd": 0.45
+          },
+          "path": {
+            "kind": "capsule",
+            "deltaAngle": 0,
+            "arcMultiplier": 0.18,
+            "rangeMultiplier": 1.08,
+            "damageMultiplier": 1.58,
+            "knockback": 10
+          }
+        }
+      ],
+      "performance": {
+        "hold": "steady",
+        "action": "default-swing",
+        "continuous": true,
+        "comboForwardPx": 0
+      },
+      "stats": {
+        "damage": 7.2,
+        "range": 124,
+        "halfArc": 0.32,
+        "cooldown": 0.48,
+        "displayLength": 144,
+        "collisionLength": 132,
+        "swingArc": 1.8,
+        "gripFrac": 0.2
+      },
+      "behavior": {
+        "kind": "edge"
       }
     }
   ]

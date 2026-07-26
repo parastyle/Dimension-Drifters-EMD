@@ -928,5 +928,20 @@ export const WEAPON_VFX: Record<string, WeaponVfx> = {
       "frameRate": 10,
       "scalePulse": 0.06
     }
+  },
+  "x2-rimegut-ice-tongs": {
+    "suite": {
+      "hero-skin": {
+        "on": true,
+        "params": {
+          "size": 1,
+          "rise": 0
+        }
+      }
+    },
+    "rot": 0,
+    "vfxRadius": 52,
+    "hero": "vfx/x2-rimegut-ice-tongs.png",
+    "suppressFallback": true
   }
 };

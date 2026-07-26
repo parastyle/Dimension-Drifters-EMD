@@ -14874,6 +14874,57 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
     "glovePair": {
       "wrapsFeet": true
     }
+  },
+  "x2-rimegut-ice-tongs": {
+    "id": "x2-rimegut-ice-tongs",
+    "name": "Rimegut Ice-Tongs",
+    "expansion": true,
+    "damage": 7.2,
+    "range": 124,
+    "halfArc": 0.32,
+    "cooldown": 0.48,
+    "displayLength": 144,
+    "swingArc": 1.8,
+    "gripFrac": 0.2,
+    "tags": {
+      "grip": "2H",
+      "size": "M",
+      "delivery": "melee-arc",
+      "fireMode": "hold",
+      "element": "frost",
+      "classPool": "melee",
+      "family": "pincer",
+      "rangeBand": "close",
+      "scaling": [
+        "DEX",
+        "STR"
+      ]
+    },
+    "collisionLength": 132,
+    "gripPoints": {
+      "primary": {
+        "x": 0.2,
+        "y": 0.68
+      },
+      "secondary": {
+        "x": 0.2,
+        "y": 0.32,
+        "role": "handle"
+      }
+    },
+    "description": "A frostfell ice-cutter's paired jaws rake lightly before snapping shut for a precise centre-line fracture.",
+    "authoritativeCombo": true,
+    "swingStyle": "pivot",
+    "comboFamily": "rake",
+    "comboVariant": "rimegut-open-and-close",
+    "performance": {
+      "hold": "steady",
+      "action": "default-swing",
+      "continuous": true,
+      "comboForwardPx": 0
+    },
+    "twoHanded": true,
+    "durability": 90
   }
 };
 
@@ -18939,6 +18990,49 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "limbStretch": 2.1,
         "holdPose": "praying-mantis",
         "holdStart": 0.58
+      }
+    }
+  ],
+  "rimegut-open-and-close": [
+    {
+      "name": "Crevasse Opening Rake",
+      "motion": "rake",
+      "direction": 1,
+      "hand": "both",
+      "timing": {
+        "activeStart": 0.11,
+        "activeEnd": 0.38,
+        "impact": 0.27,
+        "followEnd": 0.54
+      },
+      "path": {
+        "kind": "sweep",
+        "arcMultiplier": 0.42,
+        "rangeMultiplier": 0.92,
+        "damageMultiplier": 0.62,
+        "knockback": 4
+      }
+    },
+    {
+      "name": "Rimegut Closing Pinch",
+      "motion": "scissor",
+      "direction": 0,
+      "hand": "both",
+      "timing": {
+        "activeStart": 0.15,
+        "activeEnd": 0.43,
+        "impact": 0.33,
+        "followEnd": 0.58,
+        "secondaryActiveStart": 0.19,
+        "secondaryActiveEnd": 0.45
+      },
+      "path": {
+        "kind": "capsule",
+        "arcMultiplier": 0.18,
+        "rangeMultiplier": 1.08,
+        "damageMultiplier": 1.58,
+        "knockback": 10,
+        "deltaAngle": 0
       }
     }
   ]
