@@ -2591,6 +2591,28 @@
     "barrelMode": "parallel"
   },
   {
+    "id": "x2-pocket-vector-45",
+    "name": "Pocket Vector .45",
+    "sprite": "x2-pocket-vector-45",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 60.3
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 60.3
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
     "id": "x2-powderkeg-mortar",
     "name": "Powderkeg Mortar",
     "sprite": "x2-powderkeg-mortar",

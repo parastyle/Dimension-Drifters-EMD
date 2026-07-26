@@ -14574,6 +14574,32 @@ export const SPRITES = {
       }
     ]
   },
+  "x2-pocket-vector-45": {
+    "id": "x2-pocket-vector-45",
+    "kind": "weapon",
+    "canvas": {
+      "w": 269,
+      "h": 134
+    },
+    "body": {
+      "cx": 149.06,
+      "cy": 65.44,
+      "w": 256,
+      "h": 124
+    },
+    "parts": [
+      {
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 124,
+        "cx": 149.06,
+        "cy": 65.44,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
+  },
   "x2-powderkeg-mortar": {
     "id": "x2-powderkeg-mortar",
     "kind": "weapon",
