@@ -1,7 +1,7 @@
 {
   "generated": "2026-06-17",
   "source": "design-300-weapons workflow (15 agents)",
-  "count": 348,
+  "count": 349,
   "byType": {
     "melee": 132,
     "ranged": 112,
@@ -20065,6 +20065,63 @@
         "muzzle": "rapid",
         "muzzleColor": 16750902,
         "recoil": 0.0008
+      }
+    },
+    {
+      "id": "x2-warden-battle-rifle",
+      "name": "Warden Battle Rifle",
+      "description": "A heavy frontline automatic rifle whose rigid one-piece upper and tightly fitted controls turn disciplined bursts into dependable hard-target authority.",
+      "type": "ranged",
+      "family": "battle-rifle",
+      "theme": "near-black issue-grade battle rifle with form-following blue tiger furniture and one restrained amber lens accent",
+      "element": "physical",
+      "finish": "pristine",
+      "grip": "2H",
+      "gripPoints": {
+        "primary": {
+          "x": 0.35,
+          "y": 0.73
+        },
+        "secondary": {
+          "x": 0.62,
+          "y": 0.7,
+          "role": "under-barrel"
+        }
+      },
+      "size": "L",
+      "rangeBand": "long",
+      "scaling": [
+        "STR",
+        "DEX"
+      ],
+      "palettePrimary": "#22252B",
+      "paletteAccent": "#C49A5A",
+      "artPrompt": "Weapon-only in-world sprite (no character, no hands, no background scene): Warden Battle Rifle, one heavy angular duty automatic rifle with a monolithic top rail machined from one billet, a compact bare-metal optic, a tight side-folding adjustable stock, a hard-edged polymer lower body, a short ported muzzle brake, a thick straight magazine, and a small boxy bare-gunmetal rail-mounted laser/light combination unit with a clearly visible flat amber lens. The lens is the single warm accent and emits no beam, glow, light cone, rays, or bloom. Immaculate frontline issue quality: matched near-black charcoal finish, evenly hard-anodised upper, precise machined tolerances, every part torqued true, folding hinge tight as new; no improvised repairs, tape, scratches, dents, ground-off marks, mismatched parts, or salvage. Paint dark blue tiger stripes only across the stock and polymer furniture, wrapping along and following each form; the stripes never float, never cover the whole weapon, and leave the barrel, optic, muzzle, magazine, and laser/light unit bare metal. DARK house render: the overall base reads near-black charcoal, with narrow steel highlights catching TOP EDGES ONLY and deep spot-black undersides; never evenly lit and never mid-grey overall. Heavy black ink around the entire silhouette AND equally heavy internal black ink dividing every panel, plate, housing, rail cut, hinge, control, and seam. Slightly exaggerated chunky proportions, especially the thick magazine, rigid upper, stock hinge, and heavy front end, while retaining a believable grip-to-action-to-barrel mechanism. About 4-6 flat colours plus black ink, hard cel planes only; no gradients, soft shading, airbrushing, realistic product photography, catalogue rendering, 3D render, or diagram treatment. One complete connected weapon, flat orthographic full side-profile, stock and grip LEFT, muzzle RIGHT, fully visible on a perfectly flat opaque #00ff00 chroma field with generous padding. No second weapon, ammunition, sling, strap, chain, tassel, rope, dangling part, text, logo, serial, maker mark, muzzle flash, smoke, cast shadow, floor, scenery, border, or watermark.",
+      "cardartAction": "braced through a measured heavy burst, compact amber muzzle flashes marking a controlled line of hard-hitting tracers to the right",
+      "behavior": {
+        "kind": "gun",
+        "damage": 9,
+        "projectileSpeed": 1200,
+        "range": 760,
+        "fireRate": 0.22,
+        "spread": 0.035,
+        "pierce": 2,
+        "magazine": 20,
+        "reloadSeconds": 1.9,
+        "bulletKind": "tracer",
+        "projectileArt": "bullet",
+        "muzzle": "heavy",
+        "muzzleColor": 12884570,
+        "recoil": 0.0017
+      },
+      "stats": {
+        "damage": 9,
+        "range": 272,
+        "halfArc": 0.5,
+        "cooldown": 0.4,
+        "displayLength": 162,
+        "swingArc": 1.8,
+        "gripFrac": 0.16
       }
     }
   ]

@@ -3881,6 +3881,28 @@ export const WEAPON_ART_MUZZLES = {
     "salvoMode": "cycle",
     "barrelMode": "parallel"
   },
+  "x2-warden-battle-rifle": {
+    "sprite": "x2-warden-battle-rifle",
+    "parts": [
+      {
+        "width": 324,
+        "height": 129
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 323,
+        "y": 41.4,
+        "derived": {
+          "x": 323,
+          "y": 41.4
+        }
+      }
+    ],
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
   "x2-whisperbarb-hand-crossbow": {
     "sprite": "x2-whisperbarb-hand-crossbow",
     "parts": [

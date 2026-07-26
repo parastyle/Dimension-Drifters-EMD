@@ -173,6 +173,7 @@ export function gunFireFamilyForWeapon(weapon: WeaponDef): GunFireFamily | undef
       return "industrial-repeater";
     case "lever-rifle":
       return "lever-rifle";
+    case "battle-rifle":
     case "marksman-rifle":
       return "long-rifle";
     case "railgun":

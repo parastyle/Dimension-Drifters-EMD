@@ -17638,6 +17638,32 @@ export const SPRITES = {
       }
     ]
   },
+  "x2-warden-battle-rifle": {
+    "id": "x2-warden-battle-rifle",
+    "kind": "weapon",
+    "canvas": {
+      "w": 334,
+      "h": 144
+    },
+    "body": {
+      "cx": 158.5,
+      "cy": 61.17,
+      "w": 324,
+      "h": 129
+    },
+    "parts": [
+      {
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 324,
+        "h": 129,
+        "cx": 158.5,
+        "cy": 61.17,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
+  },
   "x2-wendigo-claws": {
     "id": "x2-wendigo-claws",
     "kind": "weapon",
