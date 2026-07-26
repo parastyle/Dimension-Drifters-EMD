@@ -2973,6 +2973,28 @@
     "barrelMode": "parallel"
   },
   {
+    "id": "x2-sidewalk-nine",
+    "name": "Sidewalk Nine",
+    "sprite": "x2-sidewalk-nine",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 21.6
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 21.6
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
     "id": "x2-sidewinder-spitfire",
     "name": "Sidewinder Spitfire",
     "sprite": "x2-sidewinder-spitfire",
