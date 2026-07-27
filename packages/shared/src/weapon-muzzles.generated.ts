@@ -2565,6 +2565,28 @@ export const WEAPON_ART_MUZZLES = {
     "salvoMode": "cycle",
     "barrelMode": "parallel"
   },
+  "x2-nova-pulse-repeater": {
+    "sprite": "x2-nova-pulse-repeater",
+    "parts": [
+      {
+        "width": 256,
+        "height": 88
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 28.9,
+        "derived": {
+          "x": 255,
+          "y": 28.9
+        }
+      }
+    ],
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
   "x2-null-grimoire-of-the-hollow-page": {
     "sprite": "x2-null-grimoire-of-the-hollow-page",
     "parts": [

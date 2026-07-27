@@ -1,7 +1,7 @@
 {
   "generated": "2026-06-17",
   "source": "design-300-weapons workflow (15 agents)",
-  "count": 370,
+  "count": 371,
   "byType": {
     "melee": 135,
     "ranged": 138,
@@ -21286,6 +21286,63 @@
         "displayLength": 104,
         "swingArc": 1.8,
         "gripFrac": 0.19
+      }
+    },
+    {
+      "id": "x2-nova-pulse-repeater",
+      "name": "Nova Pulse Repeater",
+      "description": "An immaculate automatic pulse rifle whose crisp lengthwise indicator walks amber with each rapid energy packet before its short shroud sheds the heat.",
+      "type": "ranged",
+      "family": "pulse-rifle",
+      "theme": "plain near-black issue-grade slab-bodied pulse rifle with a crisp lengthwise amber charge-indicator slot and a clean short vented shroud",
+      "element": "shock",
+      "finish": "pristine",
+      "grip": "2H",
+      "fireMode": "auto",
+      "gripPoints": {
+        "primary": {
+          "x": 0.27,
+          "y": 0.71
+        },
+        "secondary": {
+          "x": 0.62,
+          "y": 0.69,
+          "role": "horizontal-foregrip"
+        }
+      },
+      "size": "M",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "INT"
+      ],
+      "palettePrimary": "#15191D",
+      "paletteAccent": "#E3A13B",
+      "artPrompt": "Weapon-only in-world game sprite on a perfectly flat fully opaque #00ff00 chroma field: exactly ONE slab-bodied rectangular PULSE RIFLE, mechanically coherent and unmistakably built for a person to shoulder, hold, aim, and fire. Build it around a broad deep rectangular receiver with evenly matched near-black slab faces, a short stout vented barrel shroud projecting to the RIGHT, one narrow recessed charge-indicator slot running almost the full length of the receiver, and a chunky boxy carry rail spanning the top. Keep a credible connected gun mechanism: a rigid short shoulder butt integrated at the LEFT rear, a conventional pistol grip beneath the left half, a clearly visible trigger inside a sturdy trigger guard, a solid underside support handhold, low aligned sights on the carry rail, and a round emitter aperture centered on the barrel axis at the RIGHT. Mount one small boxy laser/light combination unit rigidly beneath the short forward shroud with one visible smoked lens; the unit is switched off and is silhouette detail only, with no beam, glow, bloom, light cone, ray, or spill. Standard energy-issue quality: every slab face has an even matched finish, the long indicator slot is ruler-crisp and precisely recessed, every shroud vent is cut clean and identical, the carry rail is square and true, panel gaps are hairline-even, sights align, and every fastener is torqued; expensive, immaculate, and professionally maintained. Plain finish with NO camouflage. No wear beyond a faint honest carbon trace at the emitter and inside the vents; no junk, improvisation, tape, repair, salvage, mismatched plate, scratch, dent, rust, dirt, neglect, poverty signal, or ground-off marking. DARK house rendering: near-black charcoal dominates the entire weapon, narrow cool gunmetal highlights catch TOP-FACING EDGES ONLY, and broad side faces and the underside stay in deep spot-black shadow; never evenly lit and never mid-grey overall. Use one warm accent material only: amber-gold energy glass confined to the crisp lengthwise indicator slot and deep inside the emitter aperture, rendered as solid flat contained brightness with no aura, bloom, haze, or cast light. Bold heavy black outline around the complete silhouette AND equally heavy crisp internal black ink dividing every receiver slab, panel, plate, housing, seam, shroud vent, carry-rail edge, sight, grip plane, trigger guard, emitter rim, fastener, indicator border, and combination-unit panel. Slightly exaggerate the deep slab receiver, chunky carry rail, stout short shroud, sturdy grip, and boxy attachment while keeping the shoulder-butt-to-grip-to-trigger-to-receiver-to-barrel relationship functional. Use approximately 4-6 flat cel colours plus black ink, hard flat planes only. Strict flat orthographic full side-profile, perfectly horizontal, one complete connected weapon fully visible with generous padding, shoulder butt and grip LEFT, emitter muzzle RIGHT. No character, hands, second weapon, detached part, ammunition, projectile, firing effect, muzzle flash, smoke, aura, background scene, floor, cast shadow, reflection, text, letters, numbers, logo, serial, maker mark, symbol, watermark, chain, tassel, rope, sling, strap, cable, loose piece, or anything dangling. No gradients, soft airbrushing, glossy studio lighting, photorealism, realistic product photography, catalogue rendering, 3D rendering, sterile graphic treatment, technical diagram, wand, staff, sculpture, abstract prop, or nonsensical mechanism.",
+      "cardartAction": "shouldered through a disciplined automatic string as the crisp amber indicator advances in rapid steps and compact energy packets drive straight right",
+      "behavior": {
+        "kind": "gun",
+        "damage": 4,
+        "projectileSpeed": 1800,
+        "range": 700,
+        "fireRate": 0.085,
+        "spread": 0.018,
+        "magazine": 36,
+        "reloadSeconds": 1.6,
+        "bulletKind": "laser",
+        "projectileArt": "generated",
+        "muzzle": "rapid",
+        "muzzleColor": 14917947,
+        "recoil": 0.00055
+      },
+      "stats": {
+        "damage": 4,
+        "range": 260,
+        "halfArc": 0.42,
+        "cooldown": 0.12,
+        "displayLength": 168,
+        "swingArc": 1.8,
+        "gripFrac": 0.16
       }
     }
   ]

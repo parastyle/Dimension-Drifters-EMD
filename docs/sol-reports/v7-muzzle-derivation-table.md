@@ -113,6 +113,7 @@ Generated from sprite alpha for all 186 active projectile, beam, and authored me
 | `x2-mesa-spine-thunder-stave` (Mesa-Spine Thunder Stave) | part-1 (255, 9.5) | part-1 (255, 9.5) | No |
 | `x2-mirage-coilrifle` (Mirage Coilrifle) | part-1 (255, 13.5) | part-1 (255, 13.5) | No |
 | `x2-muay-thai-wraps` (Muay Thai Wraps) | part-1 (378, 249.5)<br>part-2 (430, 231.8) | part-1 (189.4, 257.7)<br>part-2 (257.8, 191.5) | Yes - For melee impact punctuation, muzzle means the alpha-weighted striking-hand centroid at the authored elbow, knee, or kick impact frame. |
+| `x2-nova-pulse-repeater` (Nova Pulse Repeater) | part-1 (255, 28.9) | part-1 (255, 28.9) | No |
 | `x2-null-grimoire-of-the-hollow-page` (Null Grimoire of the Hollow Page) | part-1 (254, 44) | part-1 (254, 44) | No |
 | `x2-nullsaint-reliquary` (Nullsaint Reliquary) | part-1 (255, 104) | part-1 (255, 104) | No |
 | `x2-pale-horse-longgun` (Pale-Horse Longgun) | part-1 (255, 6.9) | part-1 (255, 6.9) | No |

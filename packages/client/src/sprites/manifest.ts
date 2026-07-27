@@ -14278,6 +14278,32 @@ export const SPRITES = {
       }
     ]
   },
+  "x2-nova-pulse-repeater": {
+    "id": "x2-nova-pulse-repeater",
+    "kind": "weapon",
+    "canvas": {
+      "w": 276,
+      "h": 110
+    },
+    "body": {
+      "cx": 130.85,
+      "cy": 49.09,
+      "w": 256,
+      "h": 88
+    },
+    "parts": [
+      {
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 88,
+        "cx": 130.85,
+        "cy": 49.09,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
+  },
   "x2-null-grimoire-of-the-hollow-page": {
     "id": "x2-null-grimoire-of-the-hollow-page",
     "kind": "weapon",
