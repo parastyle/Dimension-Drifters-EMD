@@ -3252,6 +3252,28 @@
     "barrelMode": "parallel"
   },
   {
+    "id": "x2-smartlink-burstmaster",
+    "name": "Smartlink Burstmaster",
+    "sprite": "x2-smartlink-burstmaster",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 32.3
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 32.3
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
     "id": "x2-smoldering-eye-of-perdition",
     "name": "Smoldering Eye of Perdition",
     "sprite": "x2-smoldering-eye-of-perdition",

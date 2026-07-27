@@ -15946,6 +15946,64 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "life": 120
       }
     }
+  },
+  "x2-smartlink-burstmaster": {
+    "id": "x2-smartlink-burstmaster",
+    "name": "Smartlink Burstmaster",
+    "expansion": true,
+    "damage": 6,
+    "range": 300,
+    "halfArc": 0.45,
+    "cooldown": 0.42,
+    "displayLength": 176,
+    "swingArc": 1.8,
+    "gripFrac": 0.14,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "smart-burst-rifle",
+      "rangeBand": "long",
+      "scaling": [
+        "DEX",
+        "INT"
+      ]
+    },
+    "recoil": 67,
+    "gripPoints": {
+      "primary": {
+        "x": 0.3,
+        "y": 0.7
+      },
+      "secondary": {
+        "x": 0.62,
+        "y": 0.7,
+        "role": "under-barrel"
+      }
+    },
+    "description": "A command-grade ballistic rifle whose bonded sensor housing and flawless optic coordinate disciplined three-round bursts without compromising a conventional ammunition feed.",
+    "twoHanded": true,
+    "gun": {
+      "damage": 6,
+      "projectileSpeed": 1450,
+      "range": 850,
+      "fireRate": 0.42,
+      "magazine": 10,
+      "reloadSeconds": 1.7,
+      "bulletKind": "tracer",
+      "muzzle": "rapid",
+      "recoil": 0.0008,
+      "projectileArt": "bullet",
+      "burst": {
+        "count": 3,
+        "intervalSeconds": 0.065
+      },
+      "spread": 0.012,
+      "muzzleColor": 13998650
+    }
   }
 };
 

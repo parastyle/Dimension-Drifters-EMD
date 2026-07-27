@@ -3362,6 +3362,28 @@ export const WEAPON_ART_MUZZLES = {
     "salvoMode": "parallel",
     "barrelMode": "parallel"
   },
+  "x2-smartlink-burstmaster": {
+    "sprite": "x2-smartlink-burstmaster",
+    "parts": [
+      {
+        "width": 256,
+        "height": 90
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 32.3,
+        "derived": {
+          "x": 255,
+          "y": 32.3
+        }
+      }
+    ],
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
   "x2-smoldering-eye-of-perdition": {
     "sprite": "x2-smoldering-eye-of-perdition",
     "parts": [

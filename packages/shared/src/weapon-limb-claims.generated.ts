@@ -10588,5 +10588,18 @@ export const GENERATED_WEAPON_LIMB_CLAIMS = {
       }
     ],
     "comboBeats": []
+  },
+  "x2-smartlink-burstmaster": {
+    "held": [
+      {
+        "limb": "hand-l",
+        "release": "handoff"
+      },
+      {
+        "limb": "hand-r",
+        "release": "handoff"
+      }
+    ],
+    "comboBeats": []
   }
 } as const satisfies Readonly<Record<string, WeaponLimbClaims>>;
