@@ -52,7 +52,7 @@ describe("B20 L5 authored weapon tiers", () => {
         ACTIVE_WEAPON_CATALOG_IDS.filter((id) => WEAPONS[id]?.tier === tier).length,
     );
     // Deliberately literal: this distribution detects lost or mis-tiered authored rows.
-    expect(counts).toEqual([75, 77, 70, 78, 65]);
+    expect(counts).toEqual([75, 77, 70, 79, 65]);
     expect(counts.every((count) => count > 0)).toBe(true);
     expect(Math.max(...counts)).toBeLessThanOrEqual(ACTIVE_WEAPON_CATALOG_IDS.length / 2);
   });

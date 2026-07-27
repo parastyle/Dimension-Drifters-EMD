@@ -2307,6 +2307,28 @@
     "barrelMode": "parallel"
   },
   {
+    "id": "x2-magnetar-coilgun",
+    "name": "Magnetar Coilgun",
+    "sprite": "x2-magnetar-coilgun",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 21.3
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 21.3
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
     "id": "x2-magpie-scattergun",
     "name": "Magpie Scattergun",
     "sprite": "x2-magpie-scattergun",

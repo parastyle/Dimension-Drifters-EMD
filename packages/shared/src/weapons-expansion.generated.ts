@@ -16241,6 +16241,49 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "spread": 0.018,
       "muzzleColor": 12945978
     }
+  },
+  "x2-magnetar-coilgun": {
+    "id": "x2-magnetar-coilgun",
+    "name": "Magnetar Coilgun",
+    "expansion": true,
+    "damage": 8,
+    "range": 140,
+    "halfArc": 0.85,
+    "cooldown": 0.4,
+    "displayLength": 90,
+    "swingArc": 2.6,
+    "gripFrac": 0.12,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "coil-accelerator",
+      "rangeBand": "long",
+      "scaling": [
+        "DEX",
+        "INT"
+      ]
+    },
+    "recoil": 77,
+    "twoHanded": true,
+    "gun": {
+      "damage": 15,
+      "projectileSpeed": 2400,
+      "range": 1000,
+      "fireRate": 0.52,
+      "magazine": 7,
+      "reloadSeconds": 2.25,
+      "bulletKind": "slug",
+      "muzzle": "punch",
+      "recoil": 0.0012,
+      "projectileArt": "bullet",
+      "spread": 0.007,
+      "pierce": 3,
+      "muzzleColor": 13072946
+    }
   }
 };
 

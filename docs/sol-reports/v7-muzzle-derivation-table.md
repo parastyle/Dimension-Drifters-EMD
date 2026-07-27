@@ -1,6 +1,6 @@
 # V7 Muzzle Derivation Table
 
-Generated from sprite alpha for all 182 active projectile, beam, and authored melee-impact definitions. Coordinates are source-PNG pixels.
+Generated from sprite alpha for all 183 active projectile, beam, and authored melee-impact definitions. Coordinates are source-PNG pixels.
 
 | Weapon | Derived barrel tip | Authored muzzle point(s) | Override |
 | --- | --- | --- | --- |
@@ -105,6 +105,7 @@ Generated from sprite alpha for all 182 active projectile, beam, and authored me
 | `x2-leviathan-harpoon-gun` (Leviathan Harpoon Gun) | part-1 (253, 22.5) | part-1 (253, 22.5) | No |
 | `x2-longwatch-dmr` (Longwatch DMR) | part-1 (255, 26.7) | part-1 (255, 26.7) | No |
 | `x2-m50-anti-materiel-rifle` (M-50 Anti-Materiel Rifle) | part-1 (255, 20.1) | part-1 (255, 20.1) | No |
+| `x2-magnetar-coilgun` (Magnetar Coilgun) | part-1 (255, 21.3) | part-1 (255, 21.3) | No |
 | `x2-magpie-scattergun` (Magpie Scattergun) | part-1 (255, 18) | part-1 (255, 18) | No |
 | `x2-mallard-marsh-pdw` (Mallard Marsh PDW) | part-1 (255, 28.5) | part-1 (255, 28.5) | No |
 | `x2-mauler-slug-thrower` (Mauler Slug-Thrower) | part-1 (255, 12.5) | part-1 (255, 12.5) | No |
