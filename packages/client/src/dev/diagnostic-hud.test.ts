@@ -24,6 +24,7 @@ describe("DiagnosticHudTelemetry", () => {
       "this.diagnosticHud?.recordServerPatch(",
       "this.diagnosticHud?.recordSelfCorrection(event)",
       "this.diagnosticHud?.recordRenderCommitDivergence(",
+      "this.diagnosticHud?.recordIntraTickRenderCommitDivergence(",
       "this.diagnosticHud?.recordResync()",
       "this.diagnosticHud?.markSelfCorrectionSourceAvailable()",
       "out.pendingInputs = this.predictor?.stats.pending",
@@ -114,6 +115,7 @@ describe("DiagnosticHudTelemetry", () => {
     telemetry.recordCommand(2, 170);
     telemetry.recordServerPatch(3, 2, 200);
     telemetry.recordRenderCommitDivergence(DIAGNOSTIC_THRESHOLDS.divergenceAmberPx, 200);
+    telemetry.recordIntraTickRenderCommitDivergence(DIAGNOSTIC_THRESHOLDS.divergenceAmberPx, 200);
     telemetry.recordContext(
       {
         pendingInputs: 1,
@@ -236,6 +238,19 @@ describe("DiagnosticHudTelemetry", () => {
     expect(dump).toContain("RED   Render<->commit");
     expect(dump).toContain("EVENTS 10s stalls=1 corrections=1 resyncs=1");
     expect(dump).toContain("FLAGS red=Frame time,Stalls >250ms,SELF corrections");
+  });
+
+  it("keeps the worst intra-tick disagreement visible when the boundary value is zero", () => {
+    const telemetry = new DiagnosticHudTelemetry(0);
+    telemetry.recordRenderCommitDivergence(0, 100);
+    telemetry.recordIntraTickRenderCommitDivergence(13.056, 99);
+    telemetry.recordIntraTickRenderCommitDivergence(0, 100);
+
+    const divergence = telemetry.snapshot(100).metrics.find((metric) => metric.id === "divergence");
+    expect(divergence).toMatchObject({ state: "RED" });
+    expect(divergence?.value).toContain("intra now 0.0px | 10s peak 13.1px");
+    expect(divergence?.value).toContain("boundary now 0.0px | 10s peak 0.0px");
+    expect(telemetry.dump(100)).toContain("renderCommitIntra=13.1px renderCommitBoundary=0.0px");
   });
 
   it("treats exact red boundaries as amber because red means strictly above the threshold", () => {

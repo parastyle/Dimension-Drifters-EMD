@@ -1834,6 +1834,10 @@ export class SelfPredictor {
   ): {
     x: number;
     y: number;
+    mvx: number;
+    mvy: number;
+    vx: number;
+    vy: number;
     height: number;
     vh: number;
     stance: MoveStance;
@@ -1847,6 +1851,10 @@ export class SelfPredictor {
       return {
         x: this.pred.x + this.errX,
         y: this.pred.y + this.errY,
+        mvx: this.pred.mvx,
+        mvy: this.pred.mvy,
+        vx: this.pred.vx,
+        vy: this.pred.vy,
         height: this.height,
         vh: this.vh,
         stance: this.stance.stance,
@@ -1915,6 +1923,13 @@ export class SelfPredictor {
     return {
       x: p.x + this.errX,
       y: p.y + this.errY,
+      // Presentation must consume the same sampled preview velocity as the position above. The committed
+      // movement report is intentionally one tick behind during the first partial window; using it to cap
+      // the root creates hidden travel debt that the stop cut pays out as a forward pop.
+      mvx: p.mvx,
+      mvy: p.mvy,
+      vx: p.vx,
+      vy: p.vy,
       height,
       vh,
       stance: this.stance.stance,

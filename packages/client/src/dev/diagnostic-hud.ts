@@ -296,7 +296,10 @@ export class DiagnosticHudTelemetry {
   private readonly frameWindow = new NumericWindow(FRAME_RING_CAPACITY);
   private readonly stallWindow = new NumericWindow(EVENT_RING_CAPACITY);
   private readonly correctionMagnitudeWindow = new NumericWindow(EVENT_RING_CAPACITY);
-  private readonly divergenceWindow = new NumericWindow(SAMPLE_RING_CAPACITY);
+  /** B85's exact tick-boundary value, retained because it catches commit/replay discontinuities. */
+  private readonly boundaryDivergenceWindow = new NumericWindow(SAMPLE_RING_CAPACITY);
+  /** Actual rendered root versus the sampled commit prefix on every frame; 10s at normal frame rates. */
+  private readonly intraTickDivergenceWindow = new NumericWindow(FRAME_RING_CAPACITY);
   private readonly inputLatencyWindow = new NumericWindow(SAMPLE_RING_CAPACITY);
   private readonly tickDriftWindow = new NumericWindow(SAMPLE_RING_CAPACITY);
   private readonly tickGapWindow = new NumericWindow(SAMPLE_RING_CAPACITY);
@@ -326,8 +329,10 @@ export class DiagnosticHudTelemetry {
   private maxCorrectionPx = Number.NaN;
   private lastCorrectionBand = -1;
   private lastCorrectionCause = "none";
-  private currentDivergencePx = Number.NaN;
-  private sessionDivergencePeakPx = Number.NaN;
+  private currentBoundaryDivergencePx = Number.NaN;
+  private sessionBoundaryDivergencePeakPx = Number.NaN;
+  private currentIntraTickDivergencePx = Number.NaN;
+  private sessionIntraTickDivergencePeakPx = Number.NaN;
   private pendingKeyAtMs = Number.NaN;
   private currentInputLatencyMs = Number.NaN;
   private sessionInputLatencyPeakMs = Number.NaN;
@@ -498,10 +503,25 @@ export class DiagnosticHudTelemetry {
 
   recordRenderCommitDivergence(divergencePx: number, nowMs = performance.now()): void {
     const divergence = nonNegativeOrNaN(divergencePx);
-    this.currentDivergencePx = divergence;
+    this.currentBoundaryDivergencePx = divergence;
     if (!Number.isFinite(divergence)) return;
-    this.sessionDivergencePeakPx = finiteMax(this.sessionDivergencePeakPx, divergence);
-    this.divergenceWindow.push(nowMs, divergence);
+    this.sessionBoundaryDivergencePeakPx = finiteMax(
+      this.sessionBoundaryDivergencePeakPx,
+      divergence,
+    );
+    this.boundaryDivergenceWindow.push(nowMs, divergence);
+  }
+
+  /** Record the visible root's disagreement with the sampled prefix that the current tick will commit. */
+  recordIntraTickRenderCommitDivergence(divergencePx: number, nowMs = performance.now()): void {
+    const divergence = nonNegativeOrNaN(divergencePx);
+    this.currentIntraTickDivergencePx = divergence;
+    if (!Number.isFinite(divergence)) return;
+    this.sessionIntraTickDivergencePeakPx = finiteMax(
+      this.sessionIntraTickDivergencePeakPx,
+      divergence,
+    );
+    this.intraTickDivergenceWindow.push(nowMs, divergence);
   }
 
   recordResync(nowMs = performance.now()): void {
@@ -544,9 +564,15 @@ export class DiagnosticHudTelemetry {
         : this.smoothCount > 0
           ? "AMBER"
           : "GREEN";
-    const recentDivergencePeak = this.divergenceWindow.maxSince(nowMs);
+    const recentBoundaryDivergencePeak = this.boundaryDivergenceWindow.maxSince(nowMs);
+    const recentIntraTickDivergencePeak = this.intraTickDivergenceWindow.maxSince(nowMs);
     const divergenceState = severity(
-      finiteMax(this.currentDivergencePx, recentDivergencePeak),
+      finiteMax(
+        this.currentBoundaryDivergencePx,
+        recentBoundaryDivergencePeak,
+        this.currentIntraTickDivergencePx,
+        recentIntraTickDivergencePeak,
+      ),
       t.divergenceAmberPx,
       t.divergenceRedPx,
     );
@@ -655,8 +681,10 @@ export class DiagnosticHudTelemetry {
         label: "Render<->commit",
         state: divergenceState,
         value:
-          `now ${formatPx(this.currentDivergencePx)} | ` +
-          `10s peak ${formatPx(recentDivergencePeak)}`,
+          `intra now ${formatPx(this.currentIntraTickDivergencePx)} | ` +
+          `10s peak ${formatPx(recentIntraTickDivergencePeak)} | ` +
+          `boundary now ${formatPx(this.currentBoundaryDivergencePx)} | ` +
+          `10s peak ${formatPx(recentBoundaryDivergencePeak)}`,
       },
       {
         id: "input",
@@ -762,7 +790,7 @@ export class DiagnosticHudTelemetry {
     }
     lines.push(
       `EVENTS 10s stalls=${Number.isFinite(this.currentFrameMs) ? this.stallWindow.countSince(nowMs) : "n/a"} corrections=${this.selfCorrectionSourceAvailable ? this.correctionMagnitudeWindow.countSince(nowMs) : "n/a"} resyncs=${Number.isFinite(this.currentFrameMs) ? this.resyncWindow.countSince(nowMs) : "n/a"}`,
-      `PEAKS session frame=${formatMs(this.sessionFramePeakMs)} renderCommit=${formatPx(this.sessionDivergencePeakPx)} input=${formatMs(this.sessionInputLatencyPeakMs)} rtt=${formatMs(this.sessionRttPeakMs)} tickDrift=${formatMs(this.sessionTickDriftPeakMs)} heap=${Number.isFinite(this.sessionHeapPeakMb) ? `${this.sessionHeapPeakMb.toFixed(1)}MB` : "n/a"} hudDisplay=${formatCostMs(this.visibleDisplayCostPeakMs)}`,
+      `PEAKS session frame=${formatMs(this.sessionFramePeakMs)} renderCommitIntra=${formatPx(this.sessionIntraTickDivergencePeakPx)} renderCommitBoundary=${formatPx(this.sessionBoundaryDivergencePeakPx)} input=${formatMs(this.sessionInputLatencyPeakMs)} rtt=${formatMs(this.sessionRttPeakMs)} tickDrift=${formatMs(this.sessionTickDriftPeakMs)} heap=${Number.isFinite(this.sessionHeapPeakMb) ? `${this.sessionHeapPeakMb.toFixed(1)}MB` : "n/a"} hudDisplay=${formatCostMs(this.visibleDisplayCostPeakMs)}`,
       `LAST SELF cause=${this.lastCorrectionCause} band=${correctionBandName(this.lastCorrectionBand)}`,
     );
     const redLabels = snapshot.metrics
@@ -933,6 +961,10 @@ export class DiagnosticHud {
 
   recordRenderCommitDivergence(divergencePx: number): void {
     this.telemetry.recordRenderCommitDivergence(divergencePx);
+  }
+
+  recordIntraTickRenderCommitDivergence(divergencePx: number): void {
+    this.telemetry.recordIntraTickRenderCommitDivergence(divergencePx);
   }
 
   recordResync(): void {

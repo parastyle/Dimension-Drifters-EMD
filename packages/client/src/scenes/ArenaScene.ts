@@ -9908,9 +9908,11 @@ export class ArenaScene extends Phaser.Scene {
           predicted.stance === STANCE_NONE && !presentationOnlyGunRecoil,
           correctionWasSmoothing || this.predictor.isSmoothingCorrection,
         );
-        const motion = this.predictor.clientMovementReport();
-        const locomotionSpeed = Math.hypot(motion.mvx, motion.mvy);
-        const recoilSpeed = Math.hypot(motion.vx, motion.vy);
+        // Root speed/direction comes from the same frame-sampled preview as root position. The committed
+        // B42 report is still the network payload, but it remains zero until the first 50ms boundary and
+        // must not throttle L10's frame-immediate local presentation.
+        const locomotionSpeed = Math.hypot(predicted.mvx, predicted.mvy);
+        const recoilSpeed = Math.hypot(predicted.vx, predicted.vy);
         const moveIntentActive = Math.hypot(this.curDx, this.curDy) > 1e-4;
         const inputStopped = isPresentedInputStop(
           this.selfMoveIntentActive,
@@ -9938,14 +9940,17 @@ export class ArenaScene extends Phaser.Scene {
         state.moveStance = predicted.stance;
         state.slidePhase = predicted.slidePhase;
         state.slideTick = predicted.slideTick;
-        state.moveX = locomotionSpeed > 0.001 ? motion.mvx / locomotionSpeed : 0;
-        state.moveY = locomotionSpeed > 0.001 ? motion.mvy / locomotionSpeed : 0;
+        state.moveX = locomotionSpeed > 0.001 ? predicted.mvx / locomotionSpeed : 0;
+        state.moveY = locomotionSpeed > 0.001 ? predicted.mvy / locomotionSpeed : 0;
         state.speed = locomotionSpeed;
-        state.recoilX = motion.vx;
-        state.recoilY = motion.vy;
+        state.recoilX = predicted.vx;
+        state.recoilY = predicted.vy;
         this.selfPresentedWorldX = root.x;
         this.selfPresentedWorldY = root.y;
         this.selfMoveIntentActive = moveIntentActive;
+        this.diagnosticHud?.recordIntraTickRenderCommitDivergence(
+          Math.hypot(root.x - predicted.x, root.y - predicted.y),
+        );
         this.selfPredHeight = predicted.height;
         this.selfPredVh = predicted.vh;
         this.selfPredStance = predicted.stance;
