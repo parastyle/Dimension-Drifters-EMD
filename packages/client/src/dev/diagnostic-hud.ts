@@ -1,8 +1,10 @@
 import {
   BOSS_PROJECTILE_BUDGET,
+  ENEMY_RADIUS,
   FRIENDLY_PROJECTILE_ENTITY_CAP,
   MAX_ENEMIES,
   MovementCorrectionBand,
+  PLAYER_RADIUS,
   PRED_PENDING_MAX,
   TICK_MS,
 } from "@dd/shared";
@@ -338,6 +340,8 @@ export class DiagnosticHudTelemetry {
   private readonly rootGapPx = new Float32Array(ROOT_STEP_TRACE_FRAMES);
   private readonly baseStepPx = new Float32Array(ROOT_STEP_TRACE_FRAMES);
   private readonly previewMs = new Float32Array(ROOT_STEP_TRACE_FRAMES);
+  private readonly authLeadPx = new Float32Array(ROOT_STEP_TRACE_FRAMES);
+  private sessionAuthLeadPeakPx = Number.NaN;
   private readonly rootStepIntent = new Uint8Array(ROOT_STEP_TRACE_FRAMES);
   private rootStepIndex = 0;
   private rootStepCount = 0;
@@ -545,12 +549,18 @@ export class DiagnosticHudTelemetry {
     gapPx = Number.NaN,
     baseStepPx = Number.NaN,
     previewMs = Number.NaN,
+    authLeadPx = Number.NaN,
   ): void {
     const step = Number.isFinite(stepPx) ? Math.max(0, stepPx) : 0;
     this.rootStepPx[this.rootStepIndex] = step;
     this.rootGapPx[this.rootStepIndex] = Number.isFinite(gapPx) ? Math.max(0, gapPx) : 0;
     this.baseStepPx[this.rootStepIndex] = Number.isFinite(baseStepPx) ? Math.max(0, baseStepPx) : 0;
     this.previewMs[this.rootStepIndex] = Number.isFinite(previewMs) ? Math.max(0, previewMs) : 0;
+    const lead = Number.isFinite(authLeadPx) ? Math.max(0, authLeadPx) : 0;
+    this.authLeadPx[this.rootStepIndex] = lead;
+    if (Number.isFinite(authLeadPx)) {
+      this.sessionAuthLeadPeakPx = finiteMax(this.sessionAuthLeadPeakPx, lead);
+    }
     this.rootStepIntent[this.rootStepIndex] = moveIntent ? 1 : 0;
     this.rootStepIndex = (this.rootStepIndex + 1) % ROOT_STEP_TRACE_FRAMES;
     if (this.rootStepCount < ROOT_STEP_TRACE_FRAMES) this.rootStepCount++;
@@ -871,6 +881,11 @@ export class DiagnosticHudTelemetry {
       this.traceRing(this.baseStepPx),
       `PREVIEW ms (frame-sampled lead; should saw 0->TICK_MS and reset, never collapse early)`,
       this.traceRing(this.previewMs),
+      // PHANTOM-HIT BUDGET. The server resolves enemy contact against ITS copy of the player, with reach
+      // PLAYER_RADIUS + ENEMY_RADIUS = 42px. Anything this row exceeds 42 means an enemy that is visually
+      // clear of you is still inside your server-side hitbox, and you will be hit by nothing.
+      `AUTH LEAD px |drawn - server self| (>${PLAYER_RADIUS + ENEMY_RADIUS} = hittable while visually clear; session peak ${formatPx(this.sessionAuthLeadPeakPx)})`,
+      this.traceRing(this.authLeadPx),
     );
     const redLabels = snapshot.metrics
       .filter((metric) => metric.state === "RED")
@@ -1048,8 +1063,9 @@ export class DiagnosticHud {
     gapPx?: number,
     baseStepPx?: number,
     previewMs?: number,
+    authLeadPx?: number,
   ): void {
-    this.telemetry.recordSelfRootStep(stepPx, moveIntent, gapPx, baseStepPx, previewMs);
+    this.telemetry.recordSelfRootStep(stepPx, moveIntent, gapPx, baseStepPx, previewMs, authLeadPx);
   }
 
   recordIntraTickRenderCommitDivergence(divergencePx: number): void {

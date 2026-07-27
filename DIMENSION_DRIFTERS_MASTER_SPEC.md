@@ -89,6 +89,23 @@ architecture document, tuning table, content census, roadmap, or changelog.
   [Citation: B42 relaxed authority; `prediction.ts:1459` groups `needResync` with `teleported`, which
   is the hard path this law closes for self.]
 
+- **L11 `[LOCKED]` — If a player doesn't SEE themself get hit, they are never hit.** Owner ruling,
+  2026-07-27: *"If a player doesn't see themself get hit, they should never get hit."*
+  The body drawn on the player's screen is the ONLY body that may take damage. Incoming contact,
+  projectiles, and area effects resolve against the position the local client was PRESENTING at that
+  moment — never against a staler server copy of the player.
+  Rationale: L10 makes self position client-authoritative, so the server's copy necessarily trails
+  the drawn body by the input lead. Enemy contact reach is `PLAYER_RADIUS + ENEMY_RADIUS` = 42 px
+  while the measured lead exceeded 48 px, so an enemy fully clear of the player on screen could sit
+  inside the server-side hitbox. A phantom hit is strictly worse than a missed one: the player cannot
+  learn from it, cannot avoid it, and cannot tell it from a bug.
+  Consequences: enemy→player resolution uses the client-presented body; where the server must decide
+  alone, it errs toward NOT hitting. The reverse case (player sees a hit that the server does not) is
+  the acceptable direction. This is SELF defence only — the player's own attacks on enemies keep
+  ordinary server authority, and cheating remains explicitly not a concern (see L10).
+  Verification: the `AUTH LEAD` row in the F8/F9 diagnostic dump measures |drawn − server self|
+  against the 42 px contact reach; it is the standing evidence for this law.
+
 ## Current locked decisions and supersession chain
 
 Every line states the current decision, date, what it replaces, and its evidence.

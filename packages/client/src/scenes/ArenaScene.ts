@@ -10016,6 +10016,8 @@ export class ArenaScene extends Phaser.Scene {
             Math.hypot(root.x - predicted.x, root.y - predicted.y),
             baseStep,
             this.predictor.previewFracSec * 1000,
+            // Distance between the body you SEE and the body the server tests for enemy contact.
+            Math.hypot(root.x - player.x, root.y - player.y),
           );
         }
         this.selfPredHeight = predicted.height;
