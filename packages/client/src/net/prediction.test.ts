@@ -235,10 +235,13 @@ describe("SelfPredictor — §4 v0.107 prediction + reconciliation", () => {
     const frozenAt = pred.renderPos(1, 0, 0);
     pred.tick(pred.mintCmd(1, 0, false)); // further ticks are no-ops — hold still, don't guess
     expect(pred.renderPos(1, 0, 0).x).toBe(frozenAt.x);
-    // Truth finally arrives → hard resync, stall cleared, prediction resumes.
+    // Truth finally arrives → simulation rebases, but L10 preserves SELF and glides the stale lead out.
     server.tick();
     pred.reconcile(server.view());
     expect(pred.isStalled).toBe(false);
+    expect(pred.renderPos(0, 0, 0).x).toBeCloseTo(frozenAt.x, 6);
+    expect(pred.isSmoothingCorrection).toBe(true);
+    for (let frame = 0; frame < 12; frame++) pred.decayError(1 / 60);
     expect(pred.renderPos(0, 0, 0).x).toBeCloseTo(server.x, 6);
   });
 

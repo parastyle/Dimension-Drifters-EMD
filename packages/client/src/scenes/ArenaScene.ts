@@ -83,10 +83,10 @@ import {
   isPitAtPx,
   isThrownProjectileKind,
   isWholeArtCharacter,
+  LAVA_DIMENSION_ID,
   landingThumpTier,
   lootCooldownMult,
   lootDamageMult,
-  LAVA_DIMENSION_ID,
   MAP_ZONE_SCAR,
   type MetaAccountV5,
   type MoneyBankReceipt,
@@ -110,15 +110,14 @@ import {
   RARITIES,
   RARITY_CURSED,
   RECONNECTION_WINDOW_SECONDS,
-  relicDescriptionFor,
   RING_BAND_HALF,
   ROLL_COOLDOWN,
   ROLL_SPEED_CURVE,
   ROLL_TICK_SECONDS,
   ROOM_NAME,
+  relicDescriptionFor,
   relicEnergyCapacity,
   relicParryRadius,
-  sanitizeMetaAccountV5,
   SCHEMA_VERSION,
   SLIDE_PHASE_GROUND,
   SLIDE_PHASE_OFF,
@@ -128,6 +127,7 @@ import {
   STANCE_POUND,
   STANCE_SLIDE,
   type SwingDescriptor,
+  sanitizeMetaAccountV5,
   selectChainTargets,
   stepBeamAngle,
   swingDescriptorFor,
@@ -182,6 +182,15 @@ import {
 import { clientDevToolsEnabled } from "../dev-tools.js";
 import { PetRig, playPetEvolutionCeremony } from "../entities/PetRig.js";
 import {
+  createPresentedActorState,
+  isPresentedInputStop,
+  limitPresentedRootStep,
+  type PresentationFrame,
+  PresentationFrameClock,
+  PresentedActorBuffer,
+  type PresentedActorState,
+} from "../entities/rig/rig-presentation.js";
+import {
   GEAR_PARTS_MANIFEST,
   type PaperDeathTreatment,
   partTexture,
@@ -202,6 +211,7 @@ import {
 } from "../input-routing.js";
 import {
   type PredCmd,
+  type SelfCorrectionEvent,
   SelfPredictor,
   type ServerView,
   SpaceGestureClassifier,
@@ -216,16 +226,11 @@ import {
   reconnectValidationFailure,
   saveReconnectReservation,
 } from "../net/reconnection.js";
-import { SnapshotBuffer, TimelineSync } from "../net/snapshots.js";
 import {
-  createPresentedActorState,
-  isPresentedInputStop,
-  limitPresentedRootStep,
-  type PresentedActorState,
-  PresentedActorBuffer,
-  type PresentationFrame,
-  PresentationFrameClock,
-} from "../entities/rig/rig-presentation.js";
+  SelfCorrectionTelemetry,
+  selfCorrectionBandLabel,
+} from "../net/self-correction-telemetry.js";
+import { SnapshotBuffer, TimelineSync } from "../net/snapshots.js";
 import { RENDER_DPR } from "../render-dpr.js";
 import {
   type FeedbackSettings,
@@ -409,18 +414,18 @@ import {
   terrainRimKey,
   terrainTileKey,
 } from "./arena/floor-renderer.js";
+import { makeGroundZonePatch, syncGroundZonePatch } from "./arena/ground-zone-renderer.js";
 import {
   buildLavaDimensionFloor,
-  lavaAssetFilesForMap,
   type LavaParallax,
+  lavaAssetFilesForMap,
   updateLavaParallax,
 } from "./arena/lava-floor-renderer.js";
-import { makeGroundZonePatch, syncGroundZonePatch } from "./arena/ground-zone-renderer.js";
-import { resolvePauseFrame } from "./arena/pause-control.js";
 import {
   hasDriveForPredictedAttack,
   localAttackPredictionLeadGate,
 } from "./arena/local-attack-prediction.js";
+import { resolvePauseFrame } from "./arena/pause-control.js";
 import { barrelRollArtTransform } from "./arena/projectile-facing.js";
 import {
   baseKind,
@@ -1533,8 +1538,13 @@ export class ArenaScene extends Phaser.Scene {
   /** Client-side prediction for the LOCAL player: created on the first patch that carries our player,
    *  ticked once per 50ms input command, reconciled on every patch. The self rig renders THIS. */
   private predictor: SelfPredictor | null = null;
+  /** L10 instrumentation exists only in explicit dev-tools builds. */
+  private readonly selfCorrectionTelemetry = clientDevToolsEnabled()
+    ? new SelfCorrectionTelemetry()
+    : undefined;
+  private selfCorrectionDebugEl: HTMLDivElement | null = null;
   /** Fixed 50ms input-command accumulator (clamped ≤3 ticks/frame — a tab-throttle wake must not burst
-   *  20 commands; a >250ms frame gap resets it and hard-resyncs, mirroring the server's own dt clamp). */
+   *  20 commands; a >250ms frame gap drops stale replay and L10 Smooth-recovers SELF on the next patch). */
   private inputAccMs = 0;
   /** A classified tap released since the last command — jump rides the next numbered input. */
   private jumpQueued = false;
@@ -2290,6 +2300,8 @@ export class ArenaScene extends Phaser.Scene {
       this.resumeAudioKeyHandler = null;
     }
     this.removeSessionEscapeHandlers();
+    this.selfCorrectionDebugEl?.remove();
+    this.selfCorrectionDebugEl = null;
     this.ownerNoteUi?.destroy();
     this.ownerNoteUi = undefined;
     this.restoreOwnerNoteKeyboard();
@@ -2342,6 +2354,7 @@ export class ArenaScene extends Phaser.Scene {
     this.removeSceneListeners();
     this.leaveCurrentRoom();
     this.destroyPaperPagePool();
+    this.selfCorrectionTelemetry?.reset();
 
     // Entity, reconciliation, and event-history collections.
     this.blobs.clear();
@@ -2673,6 +2686,7 @@ export class ArenaScene extends Phaser.Scene {
 
   create(): void {
     this.resetSceneState();
+    this.installSelfCorrectionDiagnostics();
     const connectionGeneration = ++this.connectionGeneration;
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.shutdownScene, this);
     void loadPetPartsManifest().then((manifest) => {
@@ -3325,18 +3339,12 @@ export class ArenaScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
     this.pauseOverlay = this.add
-      .container(0, 0, [
-        this.pauseBackdrop,
-        this.pausePanel,
-        this.pauseTitle,
-        this.pauseDetail,
-      ])
+      .container(0, 0, [this.pauseBackdrop, this.pausePanel, this.pauseTitle, this.pauseDetail])
       .setScrollFactor(0)
       .setDepth(100100)
       .setVisible(false);
     this.pauseBackdrop.on("pointerdown", () => {
-      if (this.room?.state.paused)
-        this.room.send("pauseVote", { confirmed: false });
+      if (this.room?.state.paused) this.room.send("pauseVote", { confirmed: false });
     });
     this.pauseVoteStrip = this.add
       .text(0, 0, "", {
@@ -3406,7 +3414,10 @@ export class ArenaScene extends Phaser.Scene {
   private pauseParticipantLabel(playerId: string, allyIndex: number): string {
     if (playerId === this.room?.sessionId) return "YOU";
     const character = this.room?.state.players.get(playerId)?.character ?? "DRIFTER";
-    return `ALLY ${allyIndex} ${character.replace(/^proto-/, "").replace(/-/g, " ").toUpperCase()}`;
+    return `ALLY ${allyIndex} ${character
+      .replace(/^proto-/, "")
+      .replace(/-/g, " ")
+      .toUpperCase()}`;
   }
 
   private updatePauseUi(): void {
@@ -4183,10 +4194,7 @@ export class ArenaScene extends Phaser.Scene {
       }
       return;
     }
-    const swing = swingDescriptorFor(
-      weapon,
-      weapon.cooldown * lootCooldownMult(actor.weaponAffix),
-    );
+    const swing = swingDescriptorFor(weapon, weapon.cooldown * lootCooldownMult(actor.weaponAffix));
     if (weapon.tags.classPool === "caster" && !weapon.performance?.aura)
       this.cueAttackCasterSource(weapon, swing, rig, actor.aimDir);
     // Guns use projectile/muzzle state instead of a melee swing. Cast/tome and ordinary melee rigs share
@@ -5184,6 +5192,7 @@ export class ArenaScene extends Phaser.Scene {
   }
 
   override update(_time: number, deltaMs: number): void {
+    this.recordLongFrame(deltaMs);
     const ownerNoteModalOpen = !!this.ownerNoteUi?.isOpen();
     if (!ownerNoteModalOpen && Phaser.Input.Keyboard.JustDown(this.keys.H)) {
       if (!this.verbs.isLegendOpen()) {
@@ -5210,10 +5219,7 @@ export class ArenaScene extends Phaser.Scene {
     // or action messages into it during that edge; the DOM-owned reconnect escape remains fully interactive.
     if (!this.room.connection.isOpen) return;
     const pauseModalBlocking =
-      ownerNoteModalOpen ||
-      this.verbs.isModalBlocking() ||
-      this.summonOpen ||
-      this.bagOpen;
+      ownerNoteModalOpen || this.verbs.isModalBlocking() || this.summonOpen || this.bagOpen;
     const pauseFrame = resolvePauseFrame({
       authoritativePaused: this.room.state.paused,
       escapePressed: Phaser.Input.Keyboard.JustDown(this.keys.ESC),
@@ -5627,11 +5633,7 @@ export class ArenaScene extends Phaser.Scene {
       this.blobs.get(this.room.sessionId)?.cancelFlourish("raw-arena-input");
     }
     const presentationRunning = this.time.now >= this.frozenUntil;
-    this.presentationFrame = this.presentationClock.advance(
-      _time,
-      deltaMs,
-      presentationRunning,
-    );
+    this.presentationFrame = this.presentationClock.advance(_time, deltaMs, presentationRunning);
     this.animClock = this.presentationFrame.nowMs;
     // Hit-stop (§20): briefly freeze the visuals on impactful events for weight. Input/sync keep
     // running so it doesn't feel laggy; positions/poses catch up when the freeze lifts.
@@ -7329,9 +7331,7 @@ export class ArenaScene extends Phaser.Scene {
         : null;
       const container =
         (pr.kind === "emberleaf-fireball" ? makeEmberleafFireball(this, pr) : null) ??
-        (pr.kind === "rimechoir-pressure-wedge"
-          ? makeRimechoirPressureWedge(this, pr)
-          : null) ??
+        (pr.kind === "rimechoir-pressure-wedge" ? makeRimechoirPressureWedge(this, pr) : null) ??
         generatedImageIdentity ??
         wackyIdentity ??
         gunIdentity ??
@@ -8271,10 +8271,7 @@ export class ArenaScene extends Phaser.Scene {
       if (d.x > W + 8) d.x = -8;
       if (d.y < -8) d.y = H + 8;
       else if (d.y > H + 8) d.y = -8;
-      d.bob.setPosition(
-        d.x - AMBIENT_DUST_FRAME_SIZE / 2,
-        d.y - AMBIENT_DUST_FRAME_SIZE / 2,
-      );
+      d.bob.setPosition(d.x - AMBIENT_DUST_FRAME_SIZE / 2, d.y - AMBIENT_DUST_FRAME_SIZE / 2);
     }
   }
 
@@ -8489,12 +8486,7 @@ export class ArenaScene extends Phaser.Scene {
           const rs = ENEMY_KINDS[boss.kind]?.renderScale ?? 1;
           const titanic = rs >= 5;
           this.shakeCam(titanic ? 700 : 360, titanic ? 0.02 : 0.011, "world");
-          this.flashCamera(
-            titanic ? 420 : 240,
-            titanic ? 130 : 80,
-            titanic ? 32 : 20,
-            18,
-          );
+          this.flashCamera(titanic ? 420 : 240, titanic ? 130 : 80, titanic ? 32 : 20, 18);
           this.audio.play("bossslam", { x: boss.x, amt: 1 });
         }
       }
@@ -9820,9 +9812,7 @@ export class ArenaScene extends Phaser.Scene {
     const deltaMs = frame.deltaMs;
     const cam = this.cameras.main;
     const pointer = this.input.activePointer;
-    const remoteRenderTime = this.timeline.ready
-      ? this.timeline.renderTime(frame.wallNowMs)
-      : -1;
+    const remoteRenderTime = this.timeline.ready ? this.timeline.renderTime(frame.wallNowMs) : -1;
     const reducedMotion = prefersReducedPaperMotion();
 
     const writeLatest = (player: PlayerState, state: PresentedActorState): void => {
@@ -9880,20 +9870,12 @@ export class ArenaScene extends Phaser.Scene {
       const isSelf = id === selfId;
       state.isSelf = isSelf;
       if (isSelf && this.predictor) {
+        const correctionWasSmoothing = this.predictor.isSmoothingCorrection;
         this.predictor.decayError(frame.deltaSeconds, this.curDx, this.curDy);
-        const predicted = this.predictor.renderPos(
-          this.curDx,
-          this.curDy,
-          this.inputAccMs / 1000,
-        );
+        const predicted = this.predictor.renderPos(this.curDx, this.curDy, this.inputAccMs / 1000);
         const presentationOnlyGunRecoil = !!WEAPONS[player.weapon]?.gun;
         const candidate = presentationOnlyGunRecoil
-          ? this.predictor.boundLocomotionPresentation(
-              player.x,
-              player.y,
-              predicted.x,
-              predicted.y,
-            )
+          ? this.predictor.boundLocomotionPresentation(player.x, player.y, predicted.x, predicted.y)
           : predicted;
         this.selfPredictionCandidateX = candidate.x;
         this.selfPredictionCandidateY = candidate.y;
@@ -9933,6 +9915,7 @@ export class ArenaScene extends Phaser.Scene {
           Math.max(48, locomotionSpeed + recoilSpeed),
           INTERP_SNAP_PLAYER,
           inputStopped,
+          correctionWasSmoothing || this.predictor.isSmoothingCorrection,
         );
         state.rootX = root.x;
         state.rootY = root.y;
@@ -10107,10 +10090,7 @@ export class ArenaScene extends Phaser.Scene {
         (!WEAPONS[pl.weapon]?.performance?.aura ||
           Math.floor(Number(pl.dualWield?.weaponResource?.valueQ) || 0) > 0) &&
         pointer.rightButtonDown();
-      anim.fireHeld =
-        anim.fireHeld === true ||
-        beamChannelLive ||
-        localChannelHeld;
+      anim.fireHeld = anim.fireHeld === true || beamChannelLive || localChannelHeld;
       const ultimateTick = anim.tick;
       const ultimatePhase = isSelf
         ? (anim.ultimate.phase as UltimatePhaseValue)
@@ -10151,11 +10131,7 @@ export class ArenaScene extends Phaser.Scene {
       if (!pet || !owner || !presented) return;
       const previousHp = this.petOwnerHp.get(id);
       if (previousHp !== undefined && presented.hp < previousHp - 0.01)
-        pet.onOwnerHit(
-          presented.recoilX ?? 0,
-          presented.recoilY ?? 0,
-          presented.frame.nowMs,
-        );
+        pet.onOwnerHit(presented.recoilX ?? 0, presented.recoilY ?? 0, presented.frame.nowMs);
       this.petOwnerHp.set(id, presented.hp);
       const isSelf = id === selfId;
       const stance = presented.moveStance ?? STANCE_NONE;
@@ -11173,13 +11149,7 @@ export class ArenaScene extends Phaser.Scene {
       context.save();
       context.translate(frameX + frameSize / 2, frameSize / 2);
       context.beginPath();
-      context.arc(
-        0,
-        0,
-        radius,
-        -Math.PI / 2,
-        -Math.PI / 2 + fraction * Math.PI * 2,
-      );
+      context.arc(0, 0, radius, -Math.PI / 2, -Math.PI / 2 + fraction * Math.PI * 2);
       if (fill) {
         context.fillStyle = "#ffffff";
         context.fill();
@@ -11196,12 +11166,7 @@ export class ArenaScene extends Phaser.Scene {
     addArcFrame("parry-ready", 30, 2, 1);
     addArcFrame("parry-active", 30, 3.5, 1);
     for (let index = 0; index < PARRY_COOLDOWN_FRAMES; index++) {
-      addArcFrame(
-        `parry-cooldown-${index}`,
-        30,
-        3,
-        index / (PARRY_COOLDOWN_FRAMES - 1),
-      );
+      addArcFrame(`parry-cooldown-${index}`, 30, 3, index / (PARRY_COOLDOWN_FRAMES - 1));
     }
     addArcFrame("roll-ready", 2.25, 0, 1, true);
     for (let index = 0; index < ROLL_COOLDOWN_FRAMES; index++) {
@@ -11236,9 +11201,7 @@ export class ArenaScene extends Phaser.Scene {
     } else if (this.localParryCd > 0) {
       // RECOVERING — a dim arc filling clockwise from the top back to a full ring as the cooldown drains.
       const frac = 1 - this.localParryCd / PARRY_COOLDOWN; // 0 = just whiffed, 1 = ready
-      const frame = Math.round(
-        Phaser.Math.Clamp(frac, 0, 1) * (PARRY_COOLDOWN_FRAMES - 1),
-      );
+      const frame = Math.round(Phaser.Math.Clamp(frac, 0, 1) * (PARRY_COOLDOWN_FRAMES - 1));
       this.parryRingImage
         .setFrame(`parry-cooldown-${frame}`)
         .setPosition(x, y)
@@ -11261,9 +11224,7 @@ export class ArenaScene extends Phaser.Scene {
     const pipY = y + 20;
     if (slideCd > 0) {
       const ready = 1 - Math.min(1, slideCd / ROLL_COOLDOWN);
-      const frame = Math.round(
-        Phaser.Math.Clamp(ready, 0, 1) * (ROLL_COOLDOWN_FRAMES - 1),
-      );
+      const frame = Math.round(Phaser.Math.Clamp(ready, 0, 1) * (ROLL_COOLDOWN_FRAMES - 1));
       this.rollPipImage
         .setFrame(`roll-cooldown-${frame}`)
         .setPosition(pipX, pipY)
@@ -13107,8 +13068,7 @@ export class ArenaScene extends Phaser.Scene {
         .setVisible(parts.length > 0);
       const tooltipLines = [
         ...ownedCommons.map(
-          ({ def, stacks }) =>
-            `${def.label}${stacks > 1 ? ` ×${stacks}` : ""} — ${def.desc}`,
+          ({ def, stacks }) => `${def.label}${stacks > 1 ? ` ×${stacks}` : ""} — ${def.desc}`,
         ),
         ...ownedRares.map((def) => `${def.label} — ${def.desc}`),
       ];
@@ -14817,6 +14777,45 @@ export class ArenaScene extends Phaser.Scene {
       : "off";
     const paper = ` · paper ${fullDeaths}/${this.paperDeaths.length}d ${this.closingPickups.size}p rt:${snapshot} peak:${this.paperPeakObjects}`;
     this.debugEl.textContent = `run ${elapsed}s · fps ${fps} · players ${players} · enemies ${enemies} · mouseMoves ${this.pointerMoves}${net}${paper}`;
+    this.refreshSelfCorrectionReadout();
+  }
+
+  private installSelfCorrectionDiagnostics(): void {
+    if (!this.selfCorrectionTelemetry || this.selfCorrectionDebugEl) return;
+    const host = this.debugEl?.parentElement;
+    if (!host) return;
+    const line = document.createElement("div");
+    line.dataset.instrument = "l10-self-corrections";
+    line.style.color = "#e0b86b";
+    line.style.fontFamily = "ui-monospace, SFMono-Regular, Consolas, monospace";
+    line.style.pointerEvents = "none";
+    host.append(line);
+    this.selfCorrectionDebugEl = line;
+    this.refreshSelfCorrectionReadout();
+  }
+
+  private refreshSelfCorrectionReadout(): void {
+    if (!this.selfCorrectionTelemetry || !this.selfCorrectionDebugEl) return;
+    this.selfCorrectionDebugEl.textContent = this.selfCorrectionTelemetry.summaryLine();
+  }
+
+  private recordSelfCorrection(event: Readonly<SelfCorrectionEvent>): void {
+    const telemetry = this.selfCorrectionTelemetry;
+    if (!telemetry) return;
+    telemetry.recordCorrection(event);
+    console.info(
+      `[L10 self-correction] ${event.magnitudePx.toFixed(1)}px ` +
+        `band=${selfCorrectionBandLabel(event)} cause=${event.cause}`,
+    );
+    this.refreshSelfCorrectionReadout();
+  }
+
+  private recordLongFrame(deltaMs: number): void {
+    const telemetry = this.selfCorrectionTelemetry;
+    if (!telemetry || deltaMs <= 250) return;
+    telemetry.recordLongFrame(deltaMs);
+    console.warn(`[L10 long-frame] ${deltaMs.toFixed(1)}ms`);
+    this.refreshSelfCorrectionReadout();
   }
 
   /** §4 v0.107 one PATCH = one completed server tick. Stamp the snapshot timeline + remote rings and
@@ -14936,6 +14935,8 @@ export class ArenaScene extends Phaser.Scene {
           this.predictor.reconcile(view);
         } else {
           this.predictor = new SelfPredictor(view);
+          if (this.selfCorrectionTelemetry)
+            this.predictor.setCorrectionObserver((event) => this.recordSelfCorrection(event));
           this.predictor.setRelics(
             self.dualWield?.relics,
             self.dualWield?.relics?.airJumpsRemaining,
@@ -15019,7 +15020,7 @@ export class ArenaScene extends Phaser.Scene {
 
   /** §4 v0.107 the fixed 50ms INPUT-COMMAND loop: sample WASD once per frame, mint + send + predict one
    *  sequence-numbered command per elapsed 50ms (clamped ≤3/frame — a throttled-tab wake must not burst
-   *  its whole backlog; the server would drain-to-newest anyway, and the predictor hard-resyncs). */
+   *  its whole backlog; the server would drain-to-newest anyway, and stale SELF replay Smooth-recovers). */
   /** Stable scratch shared by fixed input and the owner's non-damaging pre-acceptance charge. */
   private currentBeamAim(): typeof this.beamAimCommand {
     const out = this.beamAimCommand;
@@ -15362,8 +15363,8 @@ export class ArenaScene extends Phaser.Scene {
     }
     let elapsedForInput = deltaMs;
     if (deltaMs > 250) {
-      // A real frame stall (throttled tab wake / GC pause): drop the input backlog AND hard-resync the
-      // predictor on the next patch — its pending window is stale by the whole gap (amendment #12).
+      // A real frame stall (throttled tab wake / GC pause): drop the input backlog and mark prediction
+      // replay stale. The next patch rebases simulation immediately; L10 grades SELF presentation Smooth.
       this.inputAccMs = 0;
       elapsedForInput = 0;
       this.predictor.forceResync();

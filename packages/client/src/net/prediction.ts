@@ -22,6 +22,7 @@ import {
   JUMP_BUFFER_SECONDS,
   MOVEMENT_CORRECTION_SMOOTH_MAX_MS,
   MovementCorrectionBand,
+  type MovementCorrectionBandValue,
   type MoveStance,
   movementCorrectionBand,
   PLAYER_RADIUS,
@@ -70,9 +71,9 @@ import {
  * - HORIZONTAL is predicted + reconciled: each patch is tick-locked server truth for the tick that
  *   consumed `ackSeq`, so we REBASE (adopt x/y + steering mv + impulse v — all synced) and REPLAY the
  *   still-pending commands with exact 50ms steps. Player-player pushes/knockback arriving mid-window
- *   surface as a small residual that GLIDES out through a decaying error offset (never pops); anything
- *   teleport-sized (or a `teleportSeq` bump — the server bumps it inside zeroMoveVel at every teleport
- *   site) hard-snaps.
+ *   surface as a residual that GLIDES out through a decaying error offset. A stale replay resync always
+ *   uses Smooth, regardless of size; only a `teleportSeq` bump (the server bumps it inside zeroMoveVel at
+ *   every authored placement site) hard-snaps.
  * - VERTICAL is predicted LOCALLY and only ADOPTED on divergence: jumps are deterministic off the
  *   command stream (buffer/cooldown mirrored from the shared constants), so reconciliation rebases at
  *   the server's acked height/vh and replays every pending jump step. Only a residual beyond the height
@@ -123,6 +124,14 @@ export interface ServerView {
   /** Runtime relic charge mirrored from the synced nested relic row. */
   airJumpsRemaining?: number;
   alive: boolean;
+}
+
+export type SelfCorrectionCause = "stall-resync" | "envelope-violation" | "teleport";
+
+export interface SelfCorrectionEvent {
+  magnitudePx: number;
+  band: MovementCorrectionBandValue;
+  cause: SelfCorrectionCause;
 }
 
 interface PredState {
@@ -886,6 +895,8 @@ export class SelfPredictor {
    * cannot restart an already-active 140ms window. */
   private correctionRemainingSec = 0;
   private selfCorrectionCount = 0;
+  private correctionObserver?: (event: Readonly<SelfCorrectionEvent>) => void;
+  private correctionEvent?: SelfCorrectionEvent;
   private readonly movementReport = {
     x: 0,
     y: 0,
@@ -896,7 +907,8 @@ export class SelfPredictor {
     serverMotionEpoch: 0,
     movementCorrectionSeq: 0,
   };
-  /** Set when the pending buffer overflows (a stall) — forces a hard resync on the next patch. */
+  /** Set when a frame/pending stall makes replay stale. The next patch rebases simulation immediately
+   * while preserving the current SELF presentation and retiring its residual through Smooth. */
   private needResync = false;
   /** One-shot bypass so an authored teleport remains a cut instead of being folded into presentation. */
   private presentationSnapPending = false;
@@ -904,7 +916,7 @@ export class SelfPredictor {
   private paused = false;
   /** True while the connection has STALLED (pending overflowed with no ack) — the predictor FREEZES
    *  (stops advancing; dead-reckoning seconds into the dark is worse than holding still) and the scene
-   *  shows a connection hint; the next patch hard-resyncs and clears it (review amendment #13). */
+   *  shows a connection hint; the next patch rebases and Smooth-recovers SELF (L10). */
   private stalled = false;
   /** A forced cancel while Space is still physically held must not invent a fresh press before release. */
   private suppressCrouchUntilRelease = false;
@@ -1207,7 +1219,7 @@ export class SelfPredictor {
     if (this.pending.length > PRED_PENDING_MAX) {
       this.pending.shift();
       // The connection STALLED (~3.2s of un-acked commands): FREEZE prediction (tick() short-circuits
-      // from now on) and rebase hard when truth next arrives — amendment #13.
+      // from now on), then rebase simulation and Smooth-recover SELF when truth arrives.
       this.needResync = true;
       this.stalled = true;
     }
@@ -1357,12 +1369,55 @@ export class SelfPredictor {
     }
   }
 
+  /** Dev diagnostics are opt-in at the scene seam; production never installs this observer. */
+  setCorrectionObserver(
+    observer: ((event: Readonly<SelfCorrectionEvent>) => void) | undefined,
+  ): void {
+    this.correctionObserver = observer;
+    if (observer && !this.correctionEvent) {
+      this.correctionEvent = {
+        magnitudePx: 0,
+        band: MovementCorrectionBand.Silent,
+        cause: "envelope-violation",
+      };
+    }
+  }
+
+  private reportSelfCorrection(
+    magnitudePx: number,
+    band: MovementCorrectionBandValue,
+    cause: SelfCorrectionCause,
+  ): void {
+    const event = this.correctionEvent;
+    if (!this.correctionObserver || !event) return;
+    event.magnitudePx = magnitudePx;
+    event.band = band;
+    event.cause = cause;
+    this.correctionObserver(event);
+  }
+
   /** Reconcile against a fresh patch (call from room.onStateChange — data only, never touch rigs here). */
-  private applyMovementCorrection(dx: number, dy: number): void {
+  private applyMovementCorrection(
+    dx: number,
+    dy: number,
+    cause?: SelfCorrectionCause,
+    forcedBand?: MovementCorrectionBandValue,
+  ): void {
     this.errX = dx;
     this.errY = dy;
-    const band = movementCorrectionBand(Math.hypot(dx, dy));
+    const magnitudePx = Math.hypot(dx, dy);
+    const band =
+      forcedBand !== undefined && Number.isFinite(magnitudePx)
+        ? forcedBand
+        : movementCorrectionBand(magnitudePx);
+    if (cause) this.reportSelfCorrection(magnitudePx, band, cause);
     if (band === MovementCorrectionBand.Smooth) {
+      if (magnitudePx <= 1e-9) {
+        this.errX = 0;
+        this.errY = 0;
+        this.correctionRemainingSec = 0;
+        return;
+      }
       if (this.correctionRemainingSec <= 0)
         this.correctionRemainingSec = MOVEMENT_CORRECTION_SMOOTH_MAX_MS / 1000;
       return;
@@ -1430,6 +1485,18 @@ export class SelfPredictor {
       this.stripPendingStanceBits(this.stance);
     }
 
+    // Where the player is DRAWN right now (pred + offset) — corrections preserve this, then glide.
+    const visX = this.pred.x + this.errX;
+    const visY = this.pred.y + this.errY;
+
+    if (teleported) {
+      this.reportSelfCorrection(
+        Math.hypot(visX - server.x, visY - server.y),
+        MovementCorrectionBand.Snap,
+        "teleport",
+      );
+    }
+
     if (serverMotionChanged || teleported) {
       // Server-owned placements/motion are authoritative cuts, not client-error corrections. Retire any
       // older smooth debt without routing the authored displacement through the correction bands.
@@ -1438,10 +1505,6 @@ export class SelfPredictor {
       this.correctionRemainingSec = 0;
       this.presentationSnapPending = true;
     }
-
-    // Where the player is DRAWN right now (pred + offset) — corrections preserve this, then glide.
-    const visX = this.pred.x + this.errX;
-    const visY = this.pred.y + this.errY;
 
     // REBASE from synced truth (tick-locked: this is the state of the tick that consumed ackSeq).
     this.pred = {
@@ -1457,8 +1520,9 @@ export class SelfPredictor {
     sanitizePredMomentum(this.pred, this.relics);
 
     if (teleported || this.needResync || pauseNow || this.paused) {
-      // HARD RESYNC family — but the error-offset treatment differs by CAUSE (amendment #14):
-      // - a TELEPORT / stall recovery SNAPS (a rift/pit/restart is a cut, not a glide): err = 0;
+      // Replay-reset family — but the error-offset treatment differs by CAUSE:
+      // - a TELEPORT SNAPS (a rift/pit/restart is an authored cut): err = 0;
+      // - a stale SELF prediction rebase preserves the visible position and recovers through Smooth;
       // - ENTERING a downed pause FOLDS the visual lead into the offset so the rig
       //   GLIDES back instead of popping backward by ~RTT×speed;
       // - mid-freeze reconciles PRESERVE the decaying offset (re-zeroing would undo the fold).
@@ -1468,7 +1532,19 @@ export class SelfPredictor {
         this.errY = 0;
         this.correctionRemainingSec = 0;
         this.presentationSnapPending = true;
-      } else if (correctionRequested || enteringPause || this.needResync) {
+      } else if (this.needResync) {
+        // L10: a frame/pending stall is stale prediction, never a server-authored placement. Rebase
+        // simulation now, but force the SELF presentation residual through the existing Smooth window
+        // even when its magnitude would ordinarily classify as Snap.
+        this.applyMovementCorrection(
+          visX - server.x,
+          visY - server.y,
+          "stall-resync",
+          MovementCorrectionBand.Smooth,
+        );
+      } else if (correctionRequested) {
+        this.applyMovementCorrection(visX - server.x, visY - server.y, "envelope-violation");
+      } else if (enteringPause) {
         this.applyMovementCorrection(visX - server.x, visY - server.y);
       }
       // else: staying paused / resuming — keep the (already-decayed) offset as-is.
@@ -1529,7 +1605,7 @@ export class SelfPredictor {
     const correctionX = visX - this.pred.x;
     const correctionY = visY - this.pred.y;
     if (correctionRequested) {
-      this.applyMovementCorrection(correctionX, correctionY);
+      this.applyMovementCorrection(correctionX, correctionY, "envelope-violation");
     }
 
     // Vertical: only a residual AFTER authoritative rebase + pending replay is real divergence (a denied
@@ -1806,10 +1882,15 @@ export class SelfPredictor {
     );
   }
 
-  /** Force a hard resync on the next patch — the scene calls this after a >250ms frame gap (a
-   *  throttled-tab wake), mirroring the server's own stall posture (amendment #12). */
+  /** Mark replay stale after a >250ms frame gap. The next patch rebases simulation immediately but
+   * L10 keeps the current SELF presentation and retires the displacement through Smooth. */
   forceResync(): void {
     this.needResync = true;
+  }
+
+  /** True while SELF correction debt is being retired through the canonical Smooth window. */
+  get isSmoothingCorrection(): boolean {
+    return this.correctionRemainingSec > 0;
   }
 
   /** True while prediction is paused (dead / level-window freeze) — the scene renders server truth. */

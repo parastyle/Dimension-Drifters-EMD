@@ -98,10 +98,15 @@ export function limitPresentedRootStep(
   declaredSpeed: number,
   snapDistance: number,
   inputStopped = false,
+  smoothingCorrection = false,
 ): Readonly<{ x: number; y: number }> {
   const dx = targetX - previousX;
   const dy = targetY - previousY;
   const distance = Math.hypot(dx, dy);
+  // The predictor has already graded this SELF displacement into the fixed Smooth window. Applying the
+  // generic snap-distance cut or locomotion-speed cap here would either recreate L10's hard snap or extend
+  // the correction beyond that window. Genuine teleports arrive with smoothingCorrection=false.
+  if (smoothingCorrection) return { x: targetX, y: targetY };
   if (inputStopped || distance <= 1e-6 || distance >= snapDistance)
     return { x: targetX, y: targetY };
   const maxStep = (Math.max(0, declaredSpeed) * Math.max(0, elapsedMs)) / 1000;
