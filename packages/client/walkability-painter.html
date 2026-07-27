@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Walkability Painter · Dimension Drifters</title>
+    <meta
+      name="description"
+      content="Author prefab-local walkable collision polygons directly over native platform art."
+    />
+    <script type="module" src="/src/walkability-painter/main.ts"></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="library-panel">
+        <div class="brand">
+          <div class="brand-mark" aria-hidden="true">W</div>
+          <div>
+            <p class="eyebrow">Dimension Drifters</p>
+            <h1>Walkability Painter</h1>
+          </div>
+        </div>
+
+        <div class="library-summary">
+          <div>
+            <strong id="done-count">0</strong>
+            <span>saved</span>
+          </div>
+          <div>
+            <strong id="untouched-count">0</strong>
+            <span>untouched</span>
+          </div>
+        </div>
+
+        <label class="search-field">
+          <span>Find prefab</span>
+          <input id="prefab-search" type="search" placeholder="turntable, reactor…" />
+        </label>
+
+        <div class="status-legend">
+          <span><i class="status-dot saved"></i>Saved</span>
+          <span><i class="status-dot seeded"></i>Auto-seeded</span>
+        </div>
+
+        <nav id="prefab-list" class="prefab-list" aria-label="Platform prefabs"></nav>
+
+        <div class="library-foot">
+          <span>Repo data</span>
+          <code>data/prefab-walkability.json</code>
+        </div>
+      </aside>
+
+      <main class="workspace">
+        <header class="workspace-header">
+          <div class="selection-heading">
+            <div class="title-row">
+              <h2 id="prefab-name">Loading prefabs…</h2>
+              <span id="authoring-badge" class="authoring-badge seed">AUTO SEED</span>
+            </div>
+            <p>
+              <span id="prefab-dimensions">—</span>
+              <span class="separator">·</span>
+              <span id="prefab-source">Discovering the lava package</span>
+            </p>
+          </div>
+          <div class="save-cluster">
+            <span id="dirty-indicator" class="dirty-indicator">No unsaved edits</span>
+            <button id="save-button" class="save-button" type="button">
+              <span>Save collision</span>
+              <kbd>Ctrl S</kbd>
+            </button>
+          </div>
+        </header>
+
+        <section class="toolbar" aria-label="Painter tools">
+          <div class="tool-group primary-tools">
+            <button id="select-tool" class="tool-button active" type="button" aria-pressed="true">
+              <span class="tool-icon">↖</span>
+              Select
+              <kbd>V</kbd>
+            </button>
+            <button id="polygon-tool" class="tool-button" type="button" aria-pressed="false">
+              <span class="tool-icon polygon-icon">⬡</span>
+              Polygon
+              <kbd>P</kbd>
+            </button>
+          </div>
+
+          <div class="toolbar-rule"></div>
+
+          <div class="tool-group">
+            <button id="undo-button" class="icon-button" type="button" title="Undo (Ctrl+Z)">
+              ↶
+            </button>
+            <button id="redo-button" class="icon-button" type="button" title="Redo (Ctrl+Shift+Z)">
+              ↷
+            </button>
+            <button id="delete-button" class="icon-button danger" type="button" title="Delete polygon">
+              Delete
+            </button>
+            <button id="reseed-button" class="icon-button" type="button" title="Restore alpha seed (A)">
+              Auto-seed
+            </button>
+          </div>
+
+          <div class="toolbar-rule"></div>
+
+          <label class="compact-control">
+            <span>Zoom</span>
+            <select id="zoom-select">
+              <option value="0.5">50%</option>
+              <option value="0.75">75%</option>
+              <option value="1" selected>100% · 1:1</option>
+              <option value="1.5">150%</option>
+              <option value="2">200%</option>
+            </select>
+          </label>
+          <button id="overlay-button" class="overlay-button active" type="button" aria-pressed="true">
+            <i></i>
+            Collision
+            <kbd>O</kbd>
+          </button>
+        </section>
+
+        <div class="content-row">
+          <section class="stage-panel">
+            <div class="stage-ruler">
+              <span id="native-scale-label">Native pixels · 1:1</span>
+              <span id="cursor-coordinate">x — · y —</span>
+            </div>
+            <div id="stage-scroll" class="stage-scroll">
+              <div id="canvas-wrap" class="canvas-wrap">
+                <canvas id="paint-canvas" tabindex="0" aria-label="Walkability painting canvas"></canvas>
+              </div>
+            </div>
+            <div class="stage-status">
+              <span id="status-message">Loading the prefab catalog…</span>
+              <span id="save-confirmation">Disk changes only when you choose Save collision.</span>
+            </div>
+          </section>
+
+          <aside class="inspector">
+            <section class="stand-card">
+              <div class="inspector-heading">
+                <div>
+                  <p class="eyebrow">Runtime read</p>
+                  <h3>Can the player stand here?</h3>
+                </div>
+                <span id="stand-state" class="stand-state idle">MOVE CURSOR</span>
+              </div>
+              <div class="stand-preview">
+                <div id="stand-figure" class="stand-figure idle">
+                  <span></span>
+                </div>
+                <div>
+                  <strong id="stand-title">Probe the overlay</strong>
+                  <p id="stand-detail">
+                    The filled cyan region is the exact polygon data the game will consume.
+                  </p>
+                </div>
+              </div>
+              <label class="radius-control">
+                <span>Player footprint radius</span>
+                <output id="radius-output">24 px</output>
+                <input id="radius-input" type="range" min="4" max="64" value="24" />
+              </label>
+            </section>
+
+            <section class="polygon-card">
+              <div class="inspector-heading">
+                <div>
+                  <p class="eyebrow">Walkable regions</p>
+                  <h3>Polygons</h3>
+                </div>
+                <span id="polygon-count" class="count-pill">0</span>
+              </div>
+              <div id="polygon-list" class="polygon-list"></div>
+            </section>
+
+            <section class="shortcut-card">
+              <p class="eyebrow">Fast path</p>
+              <dl>
+                <div><dt><kbd>P</kbd></dt><dd>Draw a polygon</dd></div>
+                <div><dt><kbd>Enter</kbd></dt><dd>Close polygon</dd></div>
+                <div><dt><kbd>Ctrl Z</kbd></dt><dd>Undo edit</dd></div>
+                <div><dt><kbd>Arrows</kbd></dt><dd>Nudge vertex 1 px</dd></div>
+                <div><dt><kbd>Shift</kbd> + arrows</dt><dd>Nudge 10 px</dd></div>
+                <div><dt><kbd>Del</kbd></dt><dd>Remove polygon</dd></div>
+              </dl>
+              <p class="shortcut-note">
+                Click or drag a vertex in Select mode. Unsaved work is guarded when switching prefabs
+                or closing the page.
+              </p>
+            </section>
+          </aside>
+        </div>
+      </main>
+    </div>
+  </body>
+</html>
