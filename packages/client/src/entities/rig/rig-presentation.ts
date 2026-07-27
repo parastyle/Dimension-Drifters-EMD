@@ -110,7 +110,11 @@ export function limitPresentedRootStep(
   if (inputStopped || distance <= 1e-6 || distance >= snapDistance)
     return { x: targetX, y: targetY };
   const maxStep = (Math.max(0, declaredSpeed) * Math.max(0, elapsedMs)) / 1000;
-  if (distance <= maxStep) return { x: targetX, y: targetY };
+  // Ordinary locomotion produces `distance` and `maxStep` from the same clock and the same speed, so they
+  // are arithmetically equal — but `distance` is measured after two upstream filters, so float noise can
+  // leave it a hair above. Without tolerance that hair clamps EVERY frame and re-accrues exactly the
+  // debt this limiter is supposed to only hold for genuine overspeed. The margin is far below a pixel.
+  if (distance <= maxStep * (1 + 1e-6) + 1e-6) return { x: targetX, y: targetY };
   const scale = maxStep / distance;
   return { x: previousX + dx * scale, y: previousY + dy * scale };
 }

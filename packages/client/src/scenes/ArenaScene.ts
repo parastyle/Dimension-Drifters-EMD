@@ -9925,7 +9925,15 @@ export class ArenaScene extends Phaser.Scene {
           previousWorldY,
           constrainedRoot.x,
           constrainedRoot.y,
-          frame.wallDeltaMs,
+          // SAME CLOCK AS THE TARGET. `main.ts` runs Phaser with `smoothStep: true`, so the delta that
+          // advanced this frame's prediction target is an AVERAGED timestep, not raw wall time. Feeding
+          // the limiter `wallDeltaMs` compared a distance built from the smoothed clock against a budget
+          // built from the raw one: every frame that ran faster than the running average was clamped and
+          // the remainder retained as debt. That debt then dumped in a single frame at the `inputStopped`
+          // cut below — the owner's "warp a foot in the direction I was moving after I'm done moving",
+          // scaling with how long they had walked. The limiter's real job (clamping genuine authority
+          // corrections that exceed the locomotion lane) is unaffected: those exceed the budget on any clock.
+          frame.deltaMs,
           // Root correction debt never adds speed to ordinary locomotion. It may retire at a quiet
           // 48 px/s while idle; once the actor moves, the declared locomotion/recoil lane is the cap.
           Math.max(48, locomotionSpeed + recoilSpeed),

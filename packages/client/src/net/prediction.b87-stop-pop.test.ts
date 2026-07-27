@@ -205,8 +205,14 @@ describe("B87 stop-transition rendered-path regression", () => {
       "const locomotionSpeed = Math.hypot(predicted.mvx, predicted.mvy)",
     );
     expect(arenaSource).toContain("const recoilSpeed = Math.hypot(predicted.vx, predicted.vy)");
+    // The limiter MUST be fed the same clock that advanced the target. Phaser runs with
+    // `smoothStep: true`, so the target moves on an AVERAGED delta; budgeting it against raw
+    // `wallDeltaMs` clamped every faster-than-average frame and retained the remainder as debt,
+    // which then dumped in one frame at the `inputStopped` cut. Pin the smoothed clock so that
+    // mismatch cannot silently return.
     expect(arenaSource).toMatch(
-      /limitPresentedRootStep\([\s\S]*?frame\.wallDeltaMs,[\s\S]*?Math\.max\(48, locomotionSpeed \+ recoilSpeed\)/,
+      /limitPresentedRootStep\([\s\S]*?frame\.deltaMs,[\s\S]*?Math\.max\(48, locomotionSpeed \+ recoilSpeed\)/,
     );
+    expect(arenaSource).not.toMatch(/limitPresentedRootStep\([\s\S]*?frame\.wallDeltaMs,/);
   });
 });

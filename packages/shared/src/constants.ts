@@ -175,9 +175,20 @@ export const INTERP_SNAP_ENEMY = 260;
  * camera focus EASES toward the player with a frame-rate-independent exponential smoothing, plus a subtle
  * look-AHEAD so you see a touch more of where you're heading (vital in a bullet-dodge game). All tuning.
  */
-/** Follow smoothing time-constant (sec): lower = tighter/snappier, higher = floatier. ~0.13s trails just
- *  enough to read as a real camera without feeling laggy or sea-sick. */
-export const CAM_FOLLOW_TAU = 0.13;
+/** Follow smoothing time-constant (sec): lower = tighter/snappier, higher = floatier.
+ *
+ *  OWNER RULING 2026-07-27 — was 0.13, which is a camera the player can SEE. An exponential follow
+ *  settles into a steady-state lag of `MOVE_SPEED * tau` behind the character: at 0.13 that is
+ *  320 * 0.13 = ~42px of permanent off-centre displacement in the direction of travel. Release the
+ *  key and the camera spends ~tau closing it, so the character visibly SLIDES FORWARD across the
+ *  screen after the player has stopped. Reported as "still snapping in the direction I was moving
+ *  after I'm done moving" and invisible to every diagnostic metric, because world position is
+ *  correct throughout — the defect lives entirely in the world->screen transform.
+ *
+ *  This is the same "weight" the owner already rejected for movement (canon L09); it was never
+ *  applied to the camera. 0.02 keeps a hair of smoothing to absorb single-frame jitter while
+ *  cutting steady-state lag to ~6px, below the perceptual floor. */
+export const CAM_FOLLOW_TAU = 0.02;
 /** Look-ahead lead (px at full move speed): the focus leads along the move direction. Small on purpose —
  *  enough to open up the approach, not so much it swims. Scales down with speed (0 at a standstill). */
 export const CAM_LOOKAHEAD = 74;
