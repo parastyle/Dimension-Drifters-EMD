@@ -14,6 +14,7 @@ Generated from sprite alpha for all 186 active projectile, beam, and authored me
 | `x-staff-storm-rod` (Stormcaller Rod) | part-1 (249, 32) | part-1 (249, 32) | No |
 | `x2-anvil-50` (Anvil .50) | part-1 (447, 37.9) | part-1 (447, 37.9) | No |
 | `x2-ashfall-peacemaker` (Ashfall Peacemaker) | part-1 (255, 17.2) | part-1 (255, 17.2) | No |
+| `x2-aurora-ion-cannon` (Aurora Ion Cannon) | part-1 (255, 27.5) | part-1 (255, 27.5) | No |
 | `x2-auroral-filament-wand` (Auroral Filament Wand) | part-1 (255, 16) | part-1 (255, 16) | No |
 | `x2-barrett-50-cal-sniper` (Barrett .50-Cal Sniper) | part-1 (255, 15.5) | part-1 (255, 15.5) | No |
 | `x2-blacktail-auto-12` (Blacktail Auto 12) | part-1 (255, 6) | part-1 (255, 6) | No |

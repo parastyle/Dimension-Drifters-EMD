@@ -8928,6 +8928,32 @@ export const SPRITES = {
       }
     ]
   },
+  "x2-aurora-ion-cannon": {
+    "id": "x2-aurora-ion-cannon",
+    "kind": "weapon",
+    "canvas": {
+      "w": 266,
+      "h": 114
+    },
+    "body": {
+      "cx": 137.15,
+      "cy": 53.81,
+      "w": 256,
+      "h": 91
+    },
+    "parts": [
+      {
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 91,
+        "cx": 137.15,
+        "cy": 53.81,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
+  },
   "x2-auroral-filament-wand": {
     "id": "x2-auroral-filament-wand",
     "kind": "weapon",
