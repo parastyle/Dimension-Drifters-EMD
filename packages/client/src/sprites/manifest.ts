@@ -15244,6 +15244,32 @@ export const SPRITES = {
       }
     ]
   },
+  "x2-recoilless-whisper": {
+    "id": "x2-recoilless-whisper",
+    "kind": "weapon",
+    "canvas": {
+      "w": 262,
+      "h": 88
+    },
+    "body": {
+      "cx": 134.55,
+      "cy": 38.1,
+      "w": 256,
+      "h": 68
+    },
+    "parts": [
+      {
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 68,
+        "cx": 134.55,
+        "cy": 38.1,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
+  },
   "x2-reliquary-broadaxe": {
     "id": "x2-reliquary-broadaxe",
     "kind": "weapon",

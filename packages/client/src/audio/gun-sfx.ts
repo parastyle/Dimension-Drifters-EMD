@@ -173,6 +173,7 @@ export function gunFireFamilyForWeapon(weapon: WeaponDef): GunFireFamily | undef
     case "puck-launcher":
     case "scrap-cannon":
     case "pistol-calibre-carbine":
+    case "integrally-suppressed-rifle":
       return "industrial-repeater";
     case "seed-launcher":
       return "bolt-launcher";

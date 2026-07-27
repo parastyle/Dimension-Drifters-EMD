@@ -65,7 +65,7 @@ function formerSyntheticLayer(definition: WeaponDef): (typeof SYNTHETIC_PER_LAYE
 }
 
 describe("B24 shared radial fallback removal", () => {
-  it("records the complete 340-weapon resolver cohort after the B63/B66 catalog merge", () => {
+  it("records the complete 341-weapon resolver cohort after the B63/B66 catalog merge", () => {
     const candidates = Object.values(WEAPONS).filter(wasSyntheticFallbackCandidate);
     const byFormerLayer = Object.fromEntries(
       SYNTHETIC_PER_LAYER_IDS.map((layerId) => [
@@ -75,13 +75,13 @@ describe("B24 shared radial fallback removal", () => {
     );
 
     // B69 deliberately adds 17 fallback-candidate rows; authored Rimegut/Whiteout VFX stay excluded.
-    expect(candidates).toHaveLength(340);
+    expect(candidates).toHaveLength(341);
     expect(byFormerLayer).toEqual({
-      "blade-trail": 302,
+      "blade-trail": 303,
       "twin-slash": 27,
       "thrust-streak": 11,
     });
-    expect(candidates.filter((definition) => !definition.archived)).toHaveLength(322);
+    expect(candidates.filter((definition) => !definition.archived)).toHaveLength(323);
     expect(candidates.filter((definition) => definition.archived)).toHaveLength(18);
     for (const id of MARKED_RADIAL_WEAPON_IDS)
       expect(
@@ -175,8 +175,8 @@ describe("B24 shared radial fallback removal", () => {
     expect(weapon("x2-pocket-hexicon").archived).toBe(true);
     expect(ARCHIVED_WEAPON_IDS).toContain("x2-pocket-hexicon");
     expect(ACTIVE_WEAPON_CATALOG_IDS).not.toContain("x2-pocket-hexicon");
-    // B63/B66 add twenty active catalog rows while the archive census stays fixed.
-    expect(ACTIVE_WEAPON_CATALOG_IDS).toHaveLength(359);
+    // B63/B66 add twenty-one active catalog rows while the archive census stays fixed.
+    expect(ACTIVE_WEAPON_CATALOG_IDS).toHaveLength(360);
     expect(ARCHIVED_WEAPON_IDS).toHaveLength(20);
   });
 

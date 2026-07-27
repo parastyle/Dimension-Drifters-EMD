@@ -15946,6 +15946,47 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "life": 120
       }
     }
+  },
+  "x2-recoilless-whisper": {
+    "id": "x2-recoilless-whisper",
+    "name": "Recoilless Whisper",
+    "expansion": true,
+    "damage": 8,
+    "range": 140,
+    "halfArc": 0.85,
+    "cooldown": 0.4,
+    "displayLength": 90,
+    "swingArc": 2.6,
+    "gripFrac": 0.12,
+    "tags": {
+      "grip": "2H",
+      "size": "M",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "integrally-suppressed-rifle",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "INT"
+      ]
+    },
+    "recoil": 25,
+    "twoHanded": true,
+    "gun": {
+      "damage": 7,
+      "projectileSpeed": 920,
+      "range": 640,
+      "fireRate": 0.14,
+      "magazine": 24,
+      "reloadSeconds": 1.65,
+      "bulletKind": "slug",
+      "muzzle": "spark",
+      "recoil": 0.00065,
+      "spread": 0.018,
+      "muzzleColor": 12945978
+    }
   }
 };
 

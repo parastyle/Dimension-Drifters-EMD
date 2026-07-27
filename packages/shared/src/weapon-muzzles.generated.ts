@@ -2930,6 +2930,28 @@ export const WEAPON_ART_MUZZLES = {
     "salvoMode": "parallel",
     "barrelMode": "parallel"
   },
+  "x2-recoilless-whisper": {
+    "sprite": "x2-recoilless-whisper",
+    "parts": [
+      {
+        "width": 256,
+        "height": 68
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 17.7,
+        "derived": {
+          "x": 255,
+          "y": 17.7
+        }
+      }
+    ],
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
   "x2-reliquary-nailcaster": {
     "sprite": "x2-reliquary-nailcaster",
     "parts": [

@@ -1,10 +1,10 @@
 {
   "generated": "2026-06-17",
   "source": "design-300-weapons workflow (15 agents)",
-  "count": 360,
+  "count": 361,
   "byType": {
     "melee": 135,
-    "ranged": 128,
+    "ranged": 129,
     "caster": 97
   },
   "weapons": [
@@ -20779,6 +20779,41 @@
         "displayLength": 118,
         "swingArc": 1.8,
         "gripFrac": 0.14
+      }
+    },
+    {
+      "id": "x2-recoilless-whisper",
+      "name": "Recoilless Whisper",
+      "type": "ranged",
+      "family": "integrally-suppressed-rifle",
+      "theme": "near-future issue-grade ballistic covert carbine with one continuous sound-moderating tube and form-following snakeskin furniture",
+      "element": "physical",
+      "finish": "pristine",
+      "grip": "2H",
+      "size": "M",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "INT"
+      ],
+      "artPrompt": "Weapon-only in-world sprite on a perfectly flat fully opaque #00ff00 chroma field: ONE near-future ballistic covert carbine whose barrel and suppressor are ONE continuous fat monolithic tube from receiver to muzzle, with minimal furniture, a slim rigid stock extending LEFT, a restrained pistol grip and functional box magazine beneath the receiver, a compact low-profile bare-metal optic, and low folding backup sights. Preserve a credible physical-ammunition mechanism: magazine feeds the chamber above and ahead of the grip, receiver aligns directly into the bore, and the shoulder stock locks firmly behind the action. Add one small boxy bare-gunmetal laser/light combination unit beneath the forward tube with one clearly visible dark glass lens; it is silhouette detail only, with no beam, no glow, no bloom, and no light cone. Covert issue quality: the continuous heavy tube is finished uniformly end to end, its internal baffles are precisely machined, its external seams are invisible, every panel fits tightly, every fastener is torqued true, and the whole carbine reads expensive and professionally maintained; only a trace of honest carbon may darken the muzzle crown. Paint dark olive-and-muted-sand SNAKESKIN camouflage only on the slim stock, pistol grip, magazine shell, and small receiver furniture panels, with every scale patch bending along and following each separate form; the camouflage never floats and never covers the whole weapon. Leave the continuous tube, optic, folding sights, and laser/light unit bare near-black metal. Near-black charcoal dominates the value structure; narrow cool gunmetal highlights catch TOP EDGES ONLY while broad sides and the underside remain in deep shadow, never evenly lit and never mid-grey overall. Use one localized warm accent only: a small brass-amber cartridge witness window in the magazine. Bold heavy black outline around the entire silhouette AND equally heavy black internal ink lines dividing every panel, housing, sight, control, camo boundary, magazine plane, and seam. Slightly exaggerated cartoon proportions: make the continuous fat tube and compact receiver chunkier and heavier than strict anatomy while the slim stock and low sights stay readable and the mechanism remains believable. Use only 4-6 flat cel colours plus black ink, hard flat planes, no gradients, no airbrushing, no realistic product photography, no catalogue rendering, and no clean technical-diagram treatment. ONE complete connected gun, strict flat orthographic full side-profile, muzzle RIGHT, grip and stock LEFT, fully visible with generous padding. No character, no hands, no scenery, no floor, no cast shadow, no second weapon, no sling, no strap, no rope, no chain, no tassel, no dangling part, no muzzle flash, no emitted VFX, no text, no logo, no serial, and no maker's mark.",
+      "palettePrimary": "#171B1F",
+      "paletteAccent": "#C58A3A",
+      "cardartAction": "held steady through a disciplined low-signature burst, the continuous dark tube releasing only a pinprick brass-amber muzzle spark to the right",
+      "behavior": {
+        "kind": "gun",
+        "damage": 7,
+        "projectileSpeed": 920,
+        "range": 640,
+        "fireRate": 0.14,
+        "spread": 0.018,
+        "pierce": 1,
+        "magazine": 24,
+        "reloadSeconds": 1.65,
+        "bulletKind": "slug",
+        "muzzle": "spark",
+        "muzzleColor": 12945978,
+        "recoil": 0.00065
       }
     }
   ]
