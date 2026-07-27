@@ -529,8 +529,8 @@
       }
     ]
   },
-  "belt:sustained-gatling": {
-    "label": "Belt — Sustained Gatling",
+  "topdown:sustained-gatling": {
+    "label": "Top-down — Sustained Gatling",
     "summary": {
       "b42CounterEdges": 1,
       "correctionRequests": 0,
@@ -553,7 +553,7 @@
     "frames": [
       {
         "index": 0,
-        "tick": 934,
+        "tick": 1166,
         "elapsedMs": 0,
         "action": "sustained-fire",
         "input": {
@@ -566,9 +566,9 @@
           "fireHeld": true
         },
         "authority": {
-          "tick": 934,
+          "tick": 1166,
           "x": 2200,
-          "y": 2440,
+          "y": 1500,
           "mvx": 0,
           "mvy": 0,
           "vx": -14,
@@ -583,14 +583,14 @@
           "slidePhase": 0,
           "slidePhaseTick": 0,
           "attackMoveMode": 0,
-          "correctionSeq": 15,
-          "motionEpoch": 23,
+          "correctionSeq": 0,
+          "motionEpoch": 32,
           "motionActive": true,
           "airJumpsRemaining": 0,
           "motionSource": "weapon-fire-recoil",
           "teleportSeq": 1,
-          "ackSeq": 700,
-          "attackSeq": 25,
+          "ackSeq": 871,
+          "attackSeq": 34,
           "parriedSeq": 0,
           "fellSeq": 0,
           "poundSeq": 0,
@@ -624,21 +624,21 @@
           "remainingAfterDecayMs": 0,
           "renderedBefore": {
             "x": 2200,
-            "y": 2440
+            "y": 1500
           },
           "renderedAfterReconcile": {
             "x": 2200,
-            "y": 2440
+            "y": 1500
           },
           "renderedAfterDecay": {
             "x": 2200,
-            "y": 2440
+            "y": 1500
           }
         }
       },
       {
         "index": 1,
-        "tick": 936,
+        "tick": 1168,
         "elapsedMs": 50,
         "action": "sustained-fire",
         "input": {
@@ -651,9 +651,9 @@
           "fireHeld": true
         },
         "authority": {
-          "tick": 936,
+          "tick": 1168,
           "x": 2198.15366,
-          "y": 2440,
+          "y": 1500,
           "mvx": 0,
           "mvy": 0,
           "vx": -14.618769,
@@ -668,14 +668,14 @@
           "slidePhase": 0,
           "slidePhaseTick": 0,
           "attackMoveMode": 0,
-          "correctionSeq": 15,
-          "motionEpoch": 23,
+          "correctionSeq": 0,
+          "motionEpoch": 32,
           "motionActive": true,
           "airJumpsRemaining": 0,
           "motionSource": "weapon-fire-recoil",
           "teleportSeq": 1,
-          "ackSeq": 701,
-          "attackSeq": 26,
+          "ackSeq": 872,
+          "attackSeq": 35,
           "parriedSeq": 0,
           "fellSeq": 0,
           "poundSeq": 0,
@@ -708,22 +708,22 @@
           "remainingAfterDecayMs": 0,
           "renderedBefore": {
             "x": 2199.3,
-            "y": 2440
+            "y": 1500
           },
           "renderedAfterReconcile": {
             "x": 2198.15366,
-            "y": 2440
+            "y": 1500
           },
           "renderedAfterDecay": {
             "x": 2198.15366,
-            "y": 2440
+            "y": 1500
           }
         }
       }
     ]
   },
-  "topdown:sustained-gatling": {
-    "label": "Top-down — Sustained Gatling",
+  "belt:sustained-gatling": {
+    "label": "Belt — Sustained Gatling",
     "summary": {
       "b42CounterEdges": 1,
       "correctionRequests": 0,
@@ -735,10 +735,10 @@
       "maxMagnitudePx": 0,
       "meanMagnitudePx": 0,
       "correctionDebtDurationMs": 0,
-      "serverMotionDurationMs": 2200,
+      "serverMotionDurationMs": 2150,
       "maxCorrectionWindowMs": 0,
       "scenarioDurationMs": 2700,
-      "peakAuthorityStepPx": 2.249847,
+      "peakAuthorityStepPx": 2.833409,
       "sourceCounts": {},
       "causeCounts": {}
     },
@@ -746,7 +746,7 @@
     "frames": [
       {
         "index": 0,
-        "tick": 935,
+        "tick": 1168,
         "elapsedMs": 0,
         "action": "sustained-fire",
         "input": {
@@ -759,9 +759,9 @@
           "fireHeld": true
         },
         "authority": {
-          "tick": 935,
+          "tick": 1168,
           "x": 2199.3,
-          "y": 1500,
+          "y": 2440,
           "mvx": 0,
           "mvy": 0,
           "vx": -8.926794,
@@ -776,14 +776,14 @@
           "slidePhase": 0,
           "slidePhaseTick": 0,
           "attackMoveMode": 0,
-          "correctionSeq": 15,
-          "motionEpoch": 23,
+          "correctionSeq": 0,
+          "motionEpoch": 32,
           "motionActive": true,
           "airJumpsRemaining": 0,
           "motionSource": "weapon-fire-recoil",
           "teleportSeq": 1,
-          "ackSeq": 700,
-          "attackSeq": 25,
+          "ackSeq": 871,
+          "attackSeq": 34,
           "parriedSeq": 0,
           "fellSeq": 0,
           "poundSeq": 0,
@@ -817,21 +817,21 @@
           "remainingAfterDecayMs": 0,
           "renderedBefore": {
             "x": 2200,
-            "y": 1500
+            "y": 2440
           },
           "renderedAfterReconcile": {
             "x": 2199.3,
-            "y": 1500
+            "y": 2440
           },
           "renderedAfterDecay": {
             "x": 2199.3,
-            "y": 1500
+            "y": 2440
           }
         }
       },
       {
         "index": 1,
-        "tick": 936,
+        "tick": 1169,
         "elapsedMs": 50,
         "action": "sustained-fire",
         "input": {
@@ -844,9 +844,9 @@
           "fireHeld": true
         },
         "authority": {
-          "tick": 936,
+          "tick": 1169,
           "x": 2198.85366,
-          "y": 1500,
+          "y": 2440,
           "mvx": 0,
           "mvy": 0,
           "vx": -19.691975,
@@ -861,14 +861,14 @@
           "slidePhase": 0,
           "slidePhaseTick": 0,
           "attackMoveMode": 0,
-          "correctionSeq": 15,
-          "motionEpoch": 23,
+          "correctionSeq": 0,
+          "motionEpoch": 32,
           "motionActive": true,
           "airJumpsRemaining": 0,
           "motionSource": "weapon-fire-recoil",
           "teleportSeq": 1,
-          "ackSeq": 701,
-          "attackSeq": 26,
+          "ackSeq": 872,
+          "attackSeq": 35,
           "parriedSeq": 0,
           "fellSeq": 0,
           "poundSeq": 0,
@@ -901,15 +901,15 @@
           "remainingAfterDecayMs": 0,
           "renderedBefore": {
             "x": 2198.85366,
-            "y": 1500
+            "y": 2440
           },
           "renderedAfterReconcile": {
             "x": 2198.85366,
-            "y": 1500
+            "y": 2440
           },
           "renderedAfterDecay": {
             "x": 2198.85366,
-            "y": 1500
+            "y": 2440
           }
         }
       }

@@ -37,6 +37,7 @@ Generated from sprite alpha for all 177 active projectile, beam, and authored me
 | `x2-carom-coachgun` (Carom Coachgun) | part-1 (255, 17.8) | part-1 (255, 17.8) | No |
 | `x2-carom-king` (Carom King) | part-1 (255, 17.9) | part-1 (255, 17.9) | No |
 | `x2-carrion-roost-necro-scepter` (Carrion Roost Necro-Scepter) | part-1 (255, 21.5) | part-1 (255, 21.5) | No |
+| `x2-caseless-vanguard` (Caseless Vanguard) | part-1 (255, 20) | part-1 (255, 20) | No |
 | `x2-caustic-drum-sweeper` (Caustic Drum Sweeper) | part-1 (255, 73.1) | part-1 (255, 73.1) | No |
 | `x2-cinderbore-longrifle` (Cinderbore Longrifle) | part-1 (255, 12.7) | part-1 (255, 12.7) | No |
 | `x2-cinderchoke-blunderbuss` (Cinderchoke Blunderbuss) | part-1 (255, 47.5) | part-1 (255, 47.5) | No |

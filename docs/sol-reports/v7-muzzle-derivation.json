@@ -726,6 +726,28 @@
     "barrelMode": "parallel"
   },
   {
+    "id": "x2-caseless-vanguard",
+    "name": "Caseless Vanguard",
+    "sprite": "x2-caseless-vanguard",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 20
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 20
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
     "id": "x2-caustic-drum-sweeper",
     "name": "Caustic Drum Sweeper",
     "sprite": "x2-caustic-drum-sweeper",
