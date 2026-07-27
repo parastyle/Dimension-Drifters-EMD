@@ -427,7 +427,8 @@ export const GENERATED_WEAPON_SUBCLASS_RULES = [
       "ranged"
     ],
     "families": [
-      "marksman-rifle"
+      "marksman-rifle",
+      "photon-marksman-rifle"
     ]
   },
   {

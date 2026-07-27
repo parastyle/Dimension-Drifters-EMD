@@ -17156,6 +17156,63 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "pierce": 2,
       "muzzleColor": 14719546
     }
+  },
+  "x2-zenith-photon-dmr": {
+    "id": "x2-zenith-photon-dmr",
+    "name": "Zenith Photon DMR",
+    "expansion": true,
+    "damage": 15,
+    "range": 300,
+    "halfArc": 0.38,
+    "cooldown": 0.46,
+    "displayLength": 196,
+    "swingArc": 1.8,
+    "gripFrac": 0.13,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "projectile",
+      "fireMode": "semi-auto",
+      "element": "arcane",
+      "classPool": "ranged",
+      "family": "photon-marksman-rifle",
+      "rangeBand": "long",
+      "scaling": [
+        "DEX",
+        "INT"
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Marksman Rifles"
+    },
+    "recoil": 107,
+    "gripPoints": {
+      "primary": {
+        "x": 0.25,
+        "y": 0.68
+      },
+      "secondary": {
+        "x": 0.6,
+        "y": 0.67,
+        "role": "under-barrel"
+      }
+    },
+    "description": "An immaculate photon marksman rifle whose trued open frame holds a flawless forward lens stack and torque-witnessed optic in exact alignment for measured long-range pulses.",
+    "twoHanded": true,
+    "gun": {
+      "damage": 15,
+      "projectileSpeed": 2500,
+      "range": 1050,
+      "fireRate": 0.46,
+      "magazine": 6,
+      "reloadSeconds": 2.1,
+      "bulletKind": "laser",
+      "muzzle": "spark",
+      "recoil": 0.0006,
+      "projectileArt": "generated",
+      "spread": 0.004,
+      "pierce": 2,
+      "muzzleColor": 14459706
+    }
   }
 };
 

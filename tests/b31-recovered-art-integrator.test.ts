@@ -212,10 +212,10 @@ describe("B31 recovered-art integrator", () => {
   it("moves the active census by exactly one and exposes Emberfist to both acquisition pools", () => {
     const id = "x2-emberfist-wraps";
     const packIds = lockedPackCandidates(createMetaAccountV5(), "weapon").map((row) => row.id);
-    // Keep these literals: this historical recovery contract intentionally pins the one-row census move.
-    expect(WEAPON_CATALOG_IDS).toHaveLength(386);
-    expect(ACTIVE_WEAPON_CATALOG_IDS).toHaveLength(366);
-    expect(ACTIVE_EXPANSION_WEAPON_IDS).toHaveLength(337);
+    // Keep these literals: this acquisition contract also serves as the current catalog census tripwire.
+    expect(WEAPON_CATALOG_IDS).toHaveLength(389);
+    expect(ACTIVE_WEAPON_CATALOG_IDS).toHaveLength(369);
+    expect(ACTIVE_EXPANSION_WEAPON_IDS).toHaveLength(340);
     expect(ARCHIVED_WEAPON_IDS).toHaveLength(20);
     expect(ACTIVE_WEAPON_CATALOG_IDS).toContain(id);
     expect(ACTIVE_EXPANSION_WEAPON_IDS).toContain(id);

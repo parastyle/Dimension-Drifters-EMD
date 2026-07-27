@@ -204,10 +204,10 @@ export const FIRING_STANCES: Readonly<Record<FiringStanceFamily, FiringStanceSpe
 const BOOK_FAMILY =
   /^(?:almanac|bestiary|chapbook|codex|compendium|grimoire|ledger|manuscript|psalter|spellbook|tome)$/i;
 const WAND_FAMILY = /^(?:focus|orb|relic\/totem|rod|scepter|wand)$/i;
-const SCATTER_FAMILY = /^(?:blunderbuss|shotgun)$/i;
+const SCATTER_FAMILY = /^(?:blunderbuss|energy-shotgun|shotgun)$/i;
 const RAPID_FAMILY = /^(?:gun|machine-pistol|nailgun)$/i;
 const LONG_GUN_FAMILY =
-  /^(?:lever-rifle|marksman-rifle|pistol-calibre-carbine|railgun|scrap-cannon)$/i;
+  /^(?:lever-rifle|marksman-rifle|photon-marksman-rifle|pistol-calibre-carbine|railgun|scrap-cannon)$/i;
 
 function gunLaunchesPayload(def: WeaponDef): boolean {
   if (!def.gun) return false;

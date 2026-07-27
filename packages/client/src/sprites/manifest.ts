@@ -18593,6 +18593,32 @@ export const SPRITES = {
         "oy": 0
       }
     ]
+  },
+  "x2-zenith-photon-dmr": {
+    "id": "x2-zenith-photon-dmr",
+    "kind": "weapon",
+    "canvas": {
+      "w": 264,
+      "h": 88
+    },
+    "body": {
+      "cx": 130.67,
+      "cy": 43.52,
+      "w": 256,
+      "h": 55
+    },
+    "parts": [
+      {
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 55,
+        "cx": 130.67,
+        "cy": 43.52,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   }
 } as const satisfies Record<string, SpriteManifest>;
 

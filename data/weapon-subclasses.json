@@ -275,7 +275,7 @@
       "weaponClass": "ranged",
       "subclass": "Marksman Rifles",
       "sourceClasses": ["ranged"],
-      "families": ["marksman-rifle"]
+      "families": ["marksman-rifle", "photon-marksman-rifle"]
     },
     {
       "weaponClass": "ranged",
