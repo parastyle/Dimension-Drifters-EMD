@@ -1,4 +1,4 @@
-import type { PickupState } from "@dd/shared";
+import { ACTIVE_WEAPON_SUBCLASS_GROUPS, type PickupState } from "@dd/shared";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("colyseus", () => {
@@ -49,6 +49,27 @@ function makeRoom() {
 
 // v0.118 Testing-Grounds owner regression — focused simulation of the page-rebuild/grab race.
 describe("GameRoom — Testing-Grounds gallery grab identity", () => {
+  it("spawns exactly one class-ordered subclass on each page", () => {
+    const harness = makeRoom();
+    harness.join("subclass-pages");
+    harness.send("subclass-pages", "toggleTraining");
+
+    const groups = harness.room.constructor.GALLERY_GROUPS;
+    expect(groups).toEqual(ACTIVE_WEAPON_SUBCLASS_GROUPS);
+    const shown = [...harness.room.state.pickups.values()]
+      .filter((pickup: PickupState) => pickup.id.startsWith("pk:"))
+      .map((pickup: PickupState) => pickup.weapon);
+    expect(shown).toEqual(expect.arrayContaining(groups[0].weaponIds));
+    expect(shown).toHaveLength(groups[0].weaponIds.length);
+
+    harness.send("subclass-pages", "galleryPage", { dir: 1 });
+    const next = [...harness.room.state.pickups.values()]
+      .filter((pickup: PickupState) => pickup.id.startsWith("pk:"))
+      .map((pickup: PickupState) => pickup.weapon);
+    expect(next).toEqual(expect.arrayContaining(groups[1].weaponIds));
+    expect(next).toHaveLength(groups[1].weaponIds.length);
+  });
+
   it("equips the exact current gallery pickup named by the client", () => {
     const harness = makeRoom();
     harness.join("gallery-current");

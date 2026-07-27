@@ -148,6 +148,7 @@ import {
   VastagharMode,
   VastagharPhase,
   VFX_RADIUS_DEFAULT,
+  WEAPON_CLASS_LABELS,
   WEAPON_IDS,
   WEAPONS,
   type WeaponDef,
@@ -12494,41 +12495,30 @@ export class ArenaScene extends Phaser.Scene {
       lagging,
     });
     if (mode === "training") {
-      let galleryPage = 0;
-      let galleryPages = 0;
-      let galleryWeapons = 0;
-      state?.pickups.forEach((_pickup, id) => {
-        if (!id.startsWith("pk:")) return;
-        galleryWeapons++;
-        if (galleryPage > 0) return;
-        const [, rawPage, rawPages] = id.split(":", 4);
-        const page = Number(rawPage);
-        const pages = Number(rawPages);
-        if (Number.isInteger(page) && page > 0 && Number.isInteger(pages) && pages >= page) {
-          galleryPage = page;
-          galleryPages = pages;
-        }
-      });
-      if (galleryPage > 0) {
-        copy.location = `${copy.location} · Page ${galleryPage}/${galleryPages} · ${galleryWeapons} weapons · [Z/X] Prev/Next · [G] Game note · [T] Weapon note`;
-      } else {
-        copy.location = `${copy.location} · [G] Game note · [T] Weapon note`;
-      }
-    }
-    if (mode === "training") {
       let page = 0;
       let pages = 0;
       let count = 0;
-      state?.pickups.forEach((_pickup, id) => {
+      let pageWeapon: WeaponDef | undefined;
+      state?.pickups.forEach((pickup, id) => {
         if (!id.startsWith("pk:")) return;
         count++;
-        if (page > 0) return;
-        const [, rawPage, rawPages] = id.split(":", 4);
-        page = Number(rawPage) || 0;
-        pages = Number(rawPages) || 0;
+        if (page === 0) {
+          const [, rawPage, rawPages] = id.split(":", 4);
+          page = Number(rawPage) || 0;
+          pages = Number(rawPages) || 0;
+          pageWeapon = WEAPONS[pickup.weaponPublic];
+        }
       });
-      if (page > 0) {
-        copy.location = `WEAPON EVALUATION  ·  PAGE ${String(page).padStart(2, "0")}/${String(pages).padStart(2, "0")}  ·  ${count} WEAPONS  ·  [Z/X] PAGE  ·  [Q] CYCLE  ·  [E] PICK UP  ·  [R] DROP  ·  [/] PORTAL SEARCH  ·  [G/T] OWNER NOTES`;
+      if (page > 0 && pageWeapon) {
+        const weaponClass = pageWeapon.tags.weaponClass;
+        copy.location =
+          `CLASS: ${WEAPON_CLASS_LABELS[weaponClass].toUpperCase()}  ·  ` +
+          `SUBCLASS: ${pageWeapon.tags.subclass.toUpperCase()}  ·  ` +
+          `${String(page).padStart(2, "0")}/${String(pages).padStart(2, "0")}  ·  ` +
+          `${count} WEAPONS  ·  [Z/X] SUBCLASS  ·  [Q] CYCLE  ·  [E] PICK UP  ·  ` +
+          `[R] DROP  ·  [/] PORTAL SEARCH  ·  [G/T] OWNER NOTES`;
+      } else {
+        copy.location = `${copy.location} · [G] Game note · [T] Weapon note`;
       }
     }
     const layout = objectiveHudLayout({

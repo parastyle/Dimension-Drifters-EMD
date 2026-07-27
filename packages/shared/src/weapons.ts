@@ -23,6 +23,10 @@ import {
   weaponSpriteTransform,
 } from "./weapon-muzzle.js";
 import { WEAPON_ART_MUZZLES } from "./weapon-muzzles.generated.js";
+import {
+  GENERATED_WEAPON_CLASS_ORDER,
+  GENERATED_WEAPON_SUBCLASS_RULES,
+} from "./weapon-subclasses.generated.js";
 import { GENERATED_WEAPON_TIERS } from "./weapon-tiers.generated.js";
 import { GENERATED_WEAPONS } from "./weapons-expansion.generated.js";
 
@@ -32,6 +36,18 @@ import { GENERATED_WEAPONS } from "./weapons-expansion.generated.js";
 export type WeaponSizeClass = "short" | "standard" | "long" | "great" | "colossal";
 /** B20's authored, descriptive power band. It never mutates a weapon's combat stats. */
 export type WeaponTier = 1 | 2 | 3 | 4 | 5;
+/** Player-facing weapon hierarchy. `classPool` remains combat's three-way mechanical source class. */
+export type WeaponClass = (typeof GENERATED_WEAPON_CLASS_ORDER)[number];
+/** Authored subclass labels plus deterministic labels derived for families added after the rule file. */
+export type WeaponSubclass = string;
+
+export const WEAPON_CLASS_ORDER: readonly WeaponClass[] = GENERATED_WEAPON_CLASS_ORDER;
+export const WEAPON_CLASS_LABELS: Readonly<Record<WeaponClass, string>> = Object.freeze({
+  melee: "Melee",
+  ranged: "Ranged",
+  caster: "Caster",
+  Special: "Special",
+});
 
 /** V3G catalog laws. Authored tags are the only membership source used by presentation code. */
 export type GunHandlingTag = "bolt" | "break" | "lever" | "pump" | "pistol" | "revolver";
@@ -1071,6 +1087,10 @@ export interface WeaponDef {
     element: string;
     classPool: "melee" | "ranged" | "caster";
     family: string;
+    /** Player-facing class. A form with no real peer resolves to Special. */
+    weaponClass: WeaponClass;
+    /** Exactly one codegen-backed gallery/page grouping. */
+    subclass: WeaponSubclass;
     rangeBand: "close" | "mid" | "long";
     scaling: string[];
     /** Authored V3G law membership; consumers must not maintain weapon-id allowlists. */
@@ -1094,8 +1114,60 @@ export interface WeaponDef {
   archived?: boolean;
 }
 
-/** Generator/base authoring shape before the one catalog tier registry is joined. */
-export type WeaponDefSource = Omit<WeaponDef, "tier">;
+/** Generator/base authoring shape before taxonomy and the one catalog tier registry are joined. */
+export type WeaponDefSource = Omit<WeaponDef, "tier" | "tags"> & {
+  tags: Omit<WeaponDef["tags"], "weaponClass" | "subclass"> &
+    Partial<Pick<WeaponDef["tags"], "weaponClass" | "subclass">>;
+};
+
+interface WeaponSubclassRule {
+  readonly weaponClass: WeaponClass;
+  readonly subclass: WeaponSubclass;
+  readonly sourceClasses: readonly WeaponDef["tags"]["classPool"][];
+  readonly families?: readonly string[];
+  readonly ids?: readonly string[];
+  readonly excludeIds?: readonly string[];
+}
+
+const WEAPON_SUBCLASS_RULES: readonly WeaponSubclassRule[] = GENERATED_WEAPON_SUBCLASS_RULES;
+
+/** Stable, readable taxonomy for a family that arrived after the authored grouping rules. */
+export function weaponSubclassFromFamily(family: string): WeaponSubclass {
+  const words = family
+    .trim()
+    .split(/[\s_/-]+/)
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1));
+  return words.length > 0 ? words.join(" ") : "Unclassified";
+}
+
+function rawWeaponTaxonomyFor(
+  weapon: {
+    readonly id: string;
+    readonly tags: Pick<WeaponDefSource["tags"], "classPool" | "family">;
+  },
+): Readonly<{ weaponClass: WeaponClass; subclass: WeaponSubclass }> {
+  const matches = WEAPON_SUBCLASS_RULES.filter(
+    (rule) =>
+      rule.sourceClasses.includes(weapon.tags.classPool) &&
+      !rule.excludeIds?.includes(weapon.id) &&
+      (rule.families?.includes(weapon.tags.family) || rule.ids?.includes(weapon.id)),
+  );
+  if (matches.length > 1) {
+    throw new Error(
+      `Weapon ${weapon.id} matches multiple subclasses: ${matches
+        .map((rule) => rule.subclass)
+        .join(", ")}`,
+    );
+  }
+  const match = matches[0];
+  return match
+    ? { weaponClass: match.weaponClass, subclass: match.subclass }
+    : {
+        weaponClass: weapon.tags.classPool,
+        subclass: weaponSubclassFromFamily(weapon.tags.family),
+      };
+}
 
 /** Damage-scaling letter grade (§10). */
 export function weaponHasHandlingTag(weapon: WeaponDef | undefined, tag: GunHandlingTag): boolean {
@@ -2344,6 +2416,35 @@ const BASE_WEAPONS: Record<string, WeaponDefSource> = {
  *  but held out of the active roster via `expansion`). Both are `WeaponDef`s, so anything keyed by id
  *  (held sprite, card art, VFX) resolves for either. */
 const WEAPON_SOURCES: Record<string, WeaponDefSource> = { ...BASE_WEAPONS, ...GENERATED_WEAPONS };
+const RAW_WEAPON_TAXONOMY = new Map(
+  Object.entries(WEAPON_SOURCES).map(([id, weapon]) => [id, rawWeaponTaxonomyFor(weapon)] as const),
+);
+const RAW_SUBCLASS_COUNTS = new Map<WeaponSubclass, number>();
+for (const taxonomy of RAW_WEAPON_TAXONOMY.values()) {
+  RAW_SUBCLASS_COUNTS.set(taxonomy.subclass, (RAW_SUBCLASS_COUNTS.get(taxonomy.subclass) ?? 0) + 1);
+}
+
+/**
+ * Resolve exactly one class/subclass for any weapon shape.
+ *
+ * Authored rules win. An unseen family derives a title-cased subclass from `family`, so a new batch
+ * cannot crash module import. The catalog-wide census then applies the owner law: any subclass with
+ * only one member becomes `Special/Special`. An unseen standalone probe is therefore Special until a
+ * peer in the same family joins the catalog.
+ */
+export function weaponTaxonomyFor(
+  weapon: {
+    readonly id: string;
+    readonly tags: Pick<WeaponDefSource["tags"], "classPool" | "family">;
+  },
+): Readonly<{ weaponClass: WeaponClass; subclass: WeaponSubclass }> {
+  const raw = RAW_WEAPON_TAXONOMY.get(weapon.id) ?? rawWeaponTaxonomyFor(weapon);
+  if (raw.weaponClass !== "Special" && (RAW_SUBCLASS_COUNTS.get(raw.subclass) ?? 0) <= 1) {
+    return { weaponClass: "Special", subclass: "Special" };
+  }
+  return raw;
+}
+
 const derivingWeaponLimbClaims = (
   globalThis as typeof globalThis & { __DD_GENERATING_WEAPON_LIMB_CLAIMS__?: boolean }
 ).__DD_GENERATING_WEAPON_LIMB_CLAIMS__;
@@ -2357,7 +2458,14 @@ export const WEAPONS: Record<string, WeaponDef> = Object.fromEntries(
     if (!limbClaims && !derivingWeaponLimbClaims) {
       throw new Error(`Weapon ${id} has no generated limb-claim declaration`);
     }
-    return [id, limbClaims ? { ...weapon, tier, limbClaims } : { ...weapon, tier }];
+    const taxonomy = weaponTaxonomyFor(weapon);
+    const resolved: WeaponDef = {
+      ...weapon,
+      tier,
+      tags: { ...weapon.tags, ...taxonomy },
+      ...(limbClaims ? { limbClaims } : {}),
+    };
+    return [id, resolved];
   }),
 );
 for (const id of Object.keys(GENERATED_WEAPON_TIERS)) {
@@ -2416,6 +2524,62 @@ export const EXPANSION_WEAPON_IDS = Object.keys(WEAPONS).filter((id) => WEAPONS[
 export const ACTIVE_EXPANSION_WEAPON_IDS = EXPANSION_WEAPON_IDS.filter(
   (id) => !WEAPONS[id]?.archived,
 );
+
+export interface WeaponSubclassGroup {
+  readonly weaponClass: WeaponClass;
+  readonly subclass: WeaponSubclass;
+  readonly weaponIds: readonly string[];
+}
+
+function weaponSubclassGroups(ids: readonly string[]): readonly WeaponSubclassGroup[] {
+  const bySubclass = new Map<
+    WeaponSubclass,
+    { weaponClass: WeaponClass; weaponIds: string[] }
+  >();
+  for (const id of ids) {
+    const weapon = WEAPONS[id];
+    if (!weapon) throw new Error(`Subclass census references unknown weapon ${id}`);
+    const existing = bySubclass.get(weapon.tags.subclass);
+    if (existing && existing.weaponClass !== weapon.tags.weaponClass) {
+      throw new Error(
+        `Subclass ${weapon.tags.subclass} belongs to both ${existing.weaponClass} and ` +
+          weapon.tags.weaponClass,
+      );
+    }
+    const group = existing ?? { weaponClass: weapon.tags.weaponClass, weaponIds: [] };
+    group.weaponIds.push(id);
+    bySubclass.set(weapon.tags.subclass, group);
+  }
+  const classIndex = new Map(WEAPON_CLASS_ORDER.map((weaponClass, index) => [weaponClass, index]));
+  return [...bySubclass.entries()]
+    .map(([subclass, group]) => ({
+      weaponClass: group.weaponClass,
+      subclass,
+      weaponIds: group.weaponIds.sort((a, b) =>
+        (WEAPONS[a]?.name ?? a).localeCompare(WEAPONS[b]?.name ?? b),
+      ),
+    }))
+    .sort(
+      (a, b) =>
+        (classIndex.get(a.weaponClass) ?? Number.MAX_SAFE_INTEGER) -
+          (classIndex.get(b.weaponClass) ?? Number.MAX_SAFE_INTEGER) ||
+        a.subclass.localeCompare(b.subclass),
+    );
+}
+
+/** Full canonical census, including archived identities retained for persistence compatibility. */
+export const WEAPON_SUBCLASS_GROUPS = weaponSubclassGroups(WEAPON_CATALOG_IDS);
+/** Testing-Grounds pages: one active subclass per page, ordered subclass within class. */
+export const ACTIVE_WEAPON_SUBCLASS_GROUPS = weaponSubclassGroups(ACTIVE_WEAPON_CATALOG_IDS);
+
+for (const group of WEAPON_SUBCLASS_GROUPS) {
+  if (group.weaponIds.length === 1 && group.weaponClass !== "Special") {
+    throw new Error(
+      `Singleton ${group.weaponClass}/${group.subclass} must be merged or assigned to Special`,
+    );
+  }
+}
+
 export function isActiveWeaponId(id: string): boolean {
   return id !== FISTS_WEAPON && !!WEAPONS[id] && WEAPONS[id]?.archived !== true;
 }

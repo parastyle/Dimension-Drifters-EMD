@@ -28,6 +28,10 @@ const TIERS_SRC = join(REPO, "data", "weapon-tiers.json");
 const TIERS_OUT = process.env.DD_WEAPON_TIERS_OUT
   ? resolve(process.env.DD_WEAPON_TIERS_OUT)
   : join(REPO, "packages", "shared", "src", "weapon-tiers.generated.ts");
+const TAXONOMY_SRC = join(REPO, "data", "weapon-subclasses.json");
+const TAXONOMY_OUT = process.env.DD_WEAPON_TAXONOMY_OUT
+  ? resolve(process.env.DD_WEAPON_TAXONOMY_OUT)
+  : join(REPO, "packages", "shared", "src", "weapon-subclasses.generated.ts");
 
 // ── validation state ──────────────────────────────────────────────────────────────────────────────
 const errors = [];
@@ -1649,6 +1653,139 @@ function mapWeapon(w) {
 
 const data = JSON.parse(readFileSync(SRC, "utf8"));
 const tierData = JSON.parse(readFileSync(TIERS_SRC, "utf8"));
+const taxonomyData = JSON.parse(readFileSync(TAXONOMY_SRC, "utf8"));
+const taxonomyClasses = new Set(["melee", "ranged", "caster", "Special"]);
+const taxonomyRuleKeys = new Set([
+  "weaponClass",
+  "subclass",
+  "sourceClasses",
+  "families",
+  "ids",
+  "excludeIds",
+]);
+const taxonomyRules =
+  taxonomyData && typeof taxonomyData === "object" && !Array.isArray(taxonomyData)
+    ? taxonomyData.rules
+    : undefined;
+const taxonomyClassOrder =
+  taxonomyData && typeof taxonomyData === "object" && !Array.isArray(taxonomyData)
+    ? taxonomyData.classOrder
+    : undefined;
+if (taxonomyData?.version !== 1) {
+  errors.push("weapon-subclasses.json: version must be 1");
+}
+if (
+  !Array.isArray(taxonomyClassOrder) ||
+  taxonomyClassOrder.length !== taxonomyClasses.size ||
+  new Set(taxonomyClassOrder).size !== taxonomyClasses.size ||
+  taxonomyClassOrder.some((value) => !taxonomyClasses.has(value))
+) {
+  errors.push("weapon-subclasses.json: classOrder must list melee, ranged, caster, and Special once");
+}
+if (!Array.isArray(taxonomyRules) || taxonomyRules.length === 0) {
+  errors.push("weapon-subclasses.json: rules must be a non-empty array");
+}
+const subclassOwners = new Map();
+for (const [index, rule] of (taxonomyRules ?? []).entries()) {
+  const path = `weapon-subclasses.json: rules[${index}]`;
+  if (!rule || typeof rule !== "object" || Array.isArray(rule)) {
+    errors.push(`${path} must be an object`);
+    continue;
+  }
+  for (const key of Object.keys(rule)) {
+    if (!taxonomyRuleKeys.has(key)) errors.push(`${path} has unknown key ${key}`);
+  }
+  if (!taxonomyClasses.has(rule.weaponClass)) {
+    errors.push(`${path}.weaponClass is invalid`);
+  }
+  if (typeof rule.subclass !== "string" || !rule.subclass.trim()) {
+    errors.push(`${path}.subclass must be a non-empty string`);
+  } else {
+    const owner = subclassOwners.get(rule.subclass);
+    if (owner && owner !== rule.weaponClass) {
+      errors.push(
+        `${path}.subclass ${JSON.stringify(rule.subclass)} belongs to both ${owner} and ${rule.weaponClass}`,
+      );
+    } else if (owner) {
+      errors.push(`${path}.subclass ${JSON.stringify(rule.subclass)} has more than one rule`);
+    } else {
+      subclassOwners.set(rule.subclass, rule.weaponClass);
+    }
+  }
+  if (
+    !Array.isArray(rule.sourceClasses) ||
+    rule.sourceClasses.length === 0 ||
+    rule.sourceClasses.some((value) => !new Set(["melee", "ranged", "caster"]).has(value))
+  ) {
+    errors.push(`${path}.sourceClasses must list one or more source classes`);
+  }
+  for (const key of ["families", "ids", "excludeIds"]) {
+    if (
+      rule[key] !== undefined &&
+      (!Array.isArray(rule[key]) ||
+        rule[key].length === 0 ||
+        rule[key].some((value) => typeof value !== "string" || !value))
+    ) {
+      errors.push(`${path}.${key} must be a non-empty string array when present`);
+    }
+  }
+  if (!Array.isArray(rule.families) && !Array.isArray(rule.ids)) {
+    errors.push(`${path} must match at least one family or id`);
+  }
+  if (rule.weaponClass === "Special" && rule.subclass !== "Special") {
+    errors.push(`${path}: Special class must use the standalone Special subclass`);
+  }
+  if (rule.subclass === "Special" && rule.weaponClass !== "Special") {
+    errors.push(`${path}: Special subclass must belong to the Special class`);
+  }
+}
+function subclassFromFamily(family) {
+  const words = String(family ?? "")
+    .trim()
+    .split(/[\s_/-]+/)
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1));
+  return words.length > 0 ? words.join(" ") : "Unclassified";
+}
+function rawTaxonomyFor(w) {
+  const matches = (taxonomyRules ?? []).filter((rule) => {
+    if (!rule?.sourceClasses?.includes(w.type)) return false;
+    if (rule.excludeIds?.includes(w.id)) return false;
+    return rule.families?.includes(w.family) || rule.ids?.includes(w.id);
+  });
+  if (matches.length > 1) {
+    fail(`matches multiple subclass rules: ${matches.map((rule) => rule.subclass).join(", ")}`);
+  }
+  if (matches.length === 0) {
+    return { weaponClass: w.type, subclass: subclassFromFamily(w.family) };
+  }
+  return {
+    weaponClass: matches[0].weaponClass,
+    subclass: matches[0].subclass,
+  };
+}
+const rawTaxonomyById = new Map();
+const rawSubclassCounts = new Map();
+for (const w of data.weapons) {
+  if (w.banned) continue;
+  CUR = w.id ?? w.name ?? "<missing id>";
+  const taxonomy = rawTaxonomyFor(w);
+  rawTaxonomyById.set(w.id, taxonomy);
+  rawSubclassCounts.set(
+    taxonomy.subclass,
+    (rawSubclassCounts.get(taxonomy.subclass) ?? 0) + 1,
+  );
+}
+function taxonomyFor(w) {
+  const taxonomy = rawTaxonomyById.get(w.id) ?? rawTaxonomyFor(w);
+  if (
+    taxonomy.weaponClass !== "Special" &&
+    (rawSubclassCounts.get(taxonomy.subclass) ?? 0) <= 1
+  ) {
+    return { weaponClass: "Special", subclass: "Special" };
+  }
+  return taxonomy;
+}
 const tierRows =
   tierData && typeof tierData === "object" && !Array.isArray(tierData) ? tierData.tiers : undefined;
 if (!tierRows || typeof tierRows !== "object" || Array.isArray(tierRows)) {
@@ -1685,6 +1822,9 @@ for (const w of data.weapons) {
   if (w.archived !== undefined && typeof w.archived !== "boolean")
     fail("archived is not a boolean");
   const mappedWeapon = mapWeapon(w);
+  const taxonomy = taxonomyFor(w);
+  mappedWeapon.tags.weaponClass = taxonomy.weaponClass;
+  mappedWeapon.tags.subclass = taxonomy.subclass;
   const choreography = comboChoreographyOf(
     w.comboChoreography,
     Array.isArray(w.comboBar) ? w.comboBar.length : undefined,
@@ -1728,12 +1868,26 @@ const tierBody =
   `satisfies Readonly<Record<string, WeaponTier>>;\n`;
 emit(TIERS_OUT, `${tierBanner}\n${tierBody}`, "weapon-tiers.generated.ts");
 
+const taxonomyBanner =
+  "// AUTO-GENERATED by tools/artkit/gen-weapon-expansion.mjs — DO NOT EDIT.\n" +
+  "// Runtime taxonomy rules emitted from data/weapon-subclasses.json. The generator applies the same\n" +
+  "// rules to every concept row and the merged catalog applies them to legacy base weapons.\n";
+const taxonomyBody =
+  `export const GENERATED_WEAPON_CLASS_ORDER = ${JSON.stringify(taxonomyClassOrder)} as const;\n\n` +
+  `export const GENERATED_WEAPON_SUBCLASS_RULES = ${JSON.stringify(taxonomyRules, null, 2)} as const;\n`;
+emit(
+  TAXONOMY_OUT,
+  `${taxonomyBanner}\n${taxonomyBody}`,
+  "weapon-subclasses.generated.ts",
+);
+
 if (!isCheck) {
   const byType = { melee: 0, ranged: 0, caster: 0 };
   for (const id of Object.keys(out)) byType[out[id].tags.classPool]++;
   console.log(
     `wrote weapons-expansion.generated.ts — ${Object.keys(out).length} weapons / ` +
       `${Object.keys(comboBars).length} generated combo bars ` +
+      `/ ${subclassOwners.size} subclasses ` +
       `(melee ${byType.melee} / ranged ${byType.ranged} / caster ${byType.caster}); ` +
       `${clampCount} value(s) clamped to design bands` +
       (clampSamples.length ? ` (e.g. ${clampSamples.slice(0, 3).join("; ")})` : ""),

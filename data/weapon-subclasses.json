@@ -1,0 +1,418 @@
+{
+  "version": 1,
+  "classOrder": ["melee", "ranged", "caster", "Special"],
+  "rules": [
+    {
+      "weaponClass": "melee",
+      "subclass": "Axes",
+      "sourceClasses": ["melee"],
+      "families": ["axe"]
+    },
+    {
+      "weaponClass": "melee",
+      "subclass": "Battle Grimoires",
+      "sourceClasses": ["melee"],
+      "families": ["grimoire"]
+    },
+    {
+      "weaponClass": "melee",
+      "subclass": "Broadswords",
+      "sourceClasses": ["melee"],
+      "families": ["broadsword"]
+    },
+    {
+      "weaponClass": "melee",
+      "subclass": "Claws",
+      "sourceClasses": ["melee"],
+      "ids": [
+        "x2-wendigo-claws",
+        "x2-knucklebone-talons",
+        "x2-rendclaw-vambrace",
+        "x2-frostfang-rakes"
+      ]
+    },
+    {
+      "weaponClass": "melee",
+      "subclass": "Cleavers",
+      "sourceClasses": ["melee"],
+      "families": ["cleaver"],
+      "ids": ["rusty-cleaver"]
+    },
+    {
+      "weaponClass": "melee",
+      "subclass": "Energy Blades",
+      "sourceClasses": ["melee"],
+      "families": ["energy-blade"]
+    },
+    {
+      "weaponClass": "melee",
+      "subclass": "Fist Blades",
+      "sourceClasses": ["melee"],
+      "families": ["fist-blade"]
+    },
+    {
+      "weaponClass": "melee",
+      "subclass": "Flails",
+      "sourceClasses": ["melee"],
+      "families": ["flail"],
+      "ids": ["x2-coilshot-meteor", "x2-dust-devil-flail"]
+    },
+    {
+      "weaponClass": "melee",
+      "subclass": "Glaives",
+      "sourceClasses": ["melee"],
+      "families": ["glaive"]
+    },
+    {
+      "weaponClass": "melee",
+      "subclass": "Greatswords",
+      "sourceClasses": ["melee"],
+      "families": ["greatsword"]
+    },
+    {
+      "weaponClass": "melee",
+      "subclass": "Halberds",
+      "sourceClasses": ["melee"],
+      "families": ["halberd"]
+    },
+    {
+      "weaponClass": "melee",
+      "subclass": "Harpoons",
+      "sourceClasses": ["melee"],
+      "families": ["harpoon"]
+    },
+    {
+      "weaponClass": "melee",
+      "subclass": "Katanas",
+      "sourceClasses": ["melee"],
+      "families": ["katana"]
+    },
+    {
+      "weaponClass": "melee",
+      "subclass": "Maces",
+      "sourceClasses": ["melee"],
+      "families": ["mace"]
+    },
+    {
+      "weaponClass": "melee",
+      "subclass": "Martial Arts",
+      "sourceClasses": ["melee"],
+      "families": ["gauntlet", "wraps"]
+    },
+    {
+      "weaponClass": "melee",
+      "subclass": "Mauls",
+      "sourceClasses": ["melee"],
+      "families": ["maul"]
+    },
+    {
+      "weaponClass": "melee",
+      "subclass": "Naginatas",
+      "sourceClasses": ["melee"],
+      "families": ["naginata"]
+    },
+    {
+      "weaponClass": "melee",
+      "subclass": "Nodachi",
+      "sourceClasses": ["melee"],
+      "families": ["nodachi"]
+    },
+    {
+      "weaponClass": "melee",
+      "subclass": "Partisans",
+      "sourceClasses": ["melee"],
+      "families": ["partisan"]
+    },
+    {
+      "weaponClass": "melee",
+      "subclass": "Rapiers",
+      "sourceClasses": ["melee"],
+      "families": ["rapier"]
+    },
+    {
+      "weaponClass": "melee",
+      "subclass": "Sabers",
+      "sourceClasses": ["melee"],
+      "families": ["saber"]
+    },
+    {
+      "weaponClass": "melee",
+      "subclass": "Scythes & Sickles",
+      "sourceClasses": ["melee"],
+      "ids": [
+        "x2-reaper-s-tithe",
+        "x2-gravechain-scythe",
+        "x2-hailspur-sickle",
+        "x2-mournveil-scythe",
+        "x2-plaguethresh",
+        "x2-hollow-harvest"
+      ]
+    },
+    {
+      "weaponClass": "melee",
+      "subclass": "Spears",
+      "sourceClasses": ["melee"],
+      "families": ["spear"]
+    },
+    {
+      "weaponClass": "melee",
+      "subclass": "Swords",
+      "sourceClasses": ["melee"],
+      "families": ["sword"]
+    },
+    {
+      "weaponClass": "melee",
+      "subclass": "Thrown Weapons",
+      "sourceClasses": ["melee"],
+      "families": ["thrown"],
+      "excludeIds": ["rusty-cleaver"]
+    },
+    {
+      "weaponClass": "melee",
+      "subclass": "War Fans",
+      "sourceClasses": ["melee"],
+      "families": ["war-fan", "paired-war-fan"]
+    },
+    {
+      "weaponClass": "melee",
+      "subclass": "Warhammers",
+      "sourceClasses": ["melee"],
+      "families": ["warhammer"]
+    },
+    {
+      "weaponClass": "melee",
+      "subclass": "Whips & Chains",
+      "sourceClasses": ["melee"],
+      "ids": [
+        "x2-snakebite-lash",
+        "x2-bramblecoil",
+        "x2-nine-tail-razorlash",
+        "x2-ferrous-serpent",
+        "x2-cinder-briar",
+        "x2-quicksilver-chainblade",
+        "x2-mistral-kusarigama"
+      ]
+    },
+    {
+      "weaponClass": "ranged",
+      "subclass": "Auto Rifles",
+      "sourceClasses": ["ranged"],
+      "families": ["auto-rifle"]
+    },
+    {
+      "weaponClass": "ranged",
+      "subclass": "Blunderbusses",
+      "sourceClasses": ["ranged"],
+      "families": ["blunderbuss"]
+    },
+    {
+      "weaponClass": "ranged",
+      "subclass": "Crossbows",
+      "sourceClasses": ["ranged"],
+      "ids": [
+        "x2-widowmaker-arbalest",
+        "x2-ghostbolt-crossbow",
+        "x2-buckshot-bramble-bow",
+        "x2-whisperbarb-hand-crossbow"
+      ]
+    },
+    {
+      "weaponClass": "ranged",
+      "subclass": "Hand Cannons",
+      "sourceClasses": ["ranged"],
+      "families": ["hand-cannon", "concussion-cannon"]
+    },
+    {
+      "weaponClass": "ranged",
+      "subclass": "Harpoon Guns",
+      "sourceClasses": ["ranged"],
+      "ids": [
+        "x2-leviathan-harpoon-gun",
+        "x2-frostfang-speargun",
+        "x2-grave-anchor-harpoon",
+        "x2-tidehook-bombarpoon"
+      ]
+    },
+    {
+      "weaponClass": "ranged",
+      "subclass": "Heavy Scatterguns",
+      "sourceClasses": ["ranged"],
+      "ids": [
+        "x2-buckshot-avalanche",
+        "x2-ironhail-pepperbox",
+        "x2-plaguespitter-flak-gun",
+        "x2-scattershell-duster",
+        "x2-cinderfan-dragoon"
+      ]
+    },
+    {
+      "weaponClass": "ranged",
+      "subclass": "Launchers & Mortars",
+      "sourceClasses": ["ranged"],
+      "families": ["grenade-launcher"],
+      "ids": [
+        "x2-powderkeg-mortar",
+        "x2-brimstone-rocket-tube",
+        "x2-graveshot-grenade-gun",
+        "x2-permafrost-siege-lobber",
+        "x2-boneyard-ricochet-mortar",
+        "x2-exploding-present-lobber"
+      ]
+    },
+    {
+      "weaponClass": "ranged",
+      "subclass": "Lever Rifles",
+      "sourceClasses": ["ranged"],
+      "families": ["lever-rifle"]
+    },
+    {
+      "weaponClass": "ranged",
+      "subclass": "Machine Pistols",
+      "sourceClasses": ["ranged"],
+      "families": ["machine-pistol"]
+    },
+    {
+      "weaponClass": "ranged",
+      "subclass": "Marksman Rifles",
+      "sourceClasses": ["ranged"],
+      "families": ["marksman-rifle"]
+    },
+    {
+      "weaponClass": "ranged",
+      "subclass": "Pistols",
+      "sourceClasses": ["ranged"],
+      "families": ["pistol"]
+    },
+    {
+      "weaponClass": "ranged",
+      "subclass": "Railguns",
+      "sourceClasses": ["ranged"],
+      "families": ["railgun"],
+      "ids": ["x2-hailstorm-coilgun"]
+    },
+    {
+      "weaponClass": "ranged",
+      "subclass": "Ricochet Guns",
+      "sourceClasses": ["ranged"],
+      "ids": ["x2-carom-king", "x2-pinwheel-caromer", "x2-ricochet-roulette"]
+    },
+    {
+      "weaponClass": "ranged",
+      "subclass": "Rotary Guns",
+      "sourceClasses": ["ranged"],
+      "families": ["gun"],
+      "ids": [
+        "x2-hellbore-gatling",
+        "x2-thunderhead-repeater-cannon",
+        "x2-stormcaller-tesla-gatling"
+      ]
+    },
+    {
+      "weaponClass": "ranged",
+      "subclass": "Scrap Cannons",
+      "sourceClasses": ["ranged"],
+      "families": ["scrap-cannon"]
+    },
+    {
+      "weaponClass": "ranged",
+      "subclass": "Shotguns",
+      "sourceClasses": ["ranged"],
+      "families": ["shotgun"],
+      "ids": ["x2-magpie-scattergun"]
+    },
+    {
+      "weaponClass": "ranged",
+      "subclass": "Siege Cannons",
+      "sourceClasses": ["ranged"],
+      "ids": [
+        "x2-widowmaker-cannon",
+        "x2-doomsday-drum-cannon",
+        "x2-mauler-slug-thrower",
+        "x2-sanctus-siege-bombard",
+        "x2-hexbore-voidmaw",
+        "x2-calamity-howitzer"
+      ]
+    },
+    {
+      "weaponClass": "ranged",
+      "subclass": "Spike Launchers",
+      "sourceClasses": ["ranged"],
+      "families": ["nailgun"],
+      "ids": [
+        "x2-coffinnail-driver",
+        "x2-quill-storm-repeater",
+        "x2-hornet-s-nest-bolter",
+        "x2-embernail-repeater",
+        "x2-snakebite-dart-slinger",
+        "x2-reliquary-nailcaster",
+        "x2-thunderhead-spikecaster",
+        "x2-cinderquill-dart-caster"
+      ]
+    },
+    {
+      "weaponClass": "caster",
+      "subclass": "Foci",
+      "sourceClasses": ["caster"],
+      "families": ["focus"]
+    },
+    {
+      "weaponClass": "caster",
+      "subclass": "Gauntlets",
+      "sourceClasses": ["caster"],
+      "families": ["gauntlet"]
+    },
+    {
+      "weaponClass": "caster",
+      "subclass": "Orbs",
+      "sourceClasses": ["caster"],
+      "families": ["orb"]
+    },
+    {
+      "weaponClass": "caster",
+      "subclass": "Relics & Totems",
+      "sourceClasses": ["caster"],
+      "families": ["relic/totem"]
+    },
+    {
+      "weaponClass": "caster",
+      "subclass": "Scepters",
+      "sourceClasses": ["caster"],
+      "families": ["scepter"]
+    },
+    {
+      "weaponClass": "caster",
+      "subclass": "Spellbooks",
+      "sourceClasses": ["caster"],
+      "families": [
+        "almanac",
+        "bestiary",
+        "chapbook",
+        "compendium",
+        "grimoire",
+        "ledger",
+        "manuscript",
+        "psalter",
+        "spellbook",
+        "tome"
+      ]
+    },
+    {
+      "weaponClass": "caster",
+      "subclass": "Staves & Rods",
+      "sourceClasses": ["caster"],
+      "families": ["staff", "rod"]
+    },
+    {
+      "weaponClass": "caster",
+      "subclass": "Wands",
+      "sourceClasses": ["caster"],
+      "families": ["wand"]
+    },
+    {
+      "weaponClass": "Special",
+      "subclass": "Special",
+      "sourceClasses": ["melee", "ranged", "caster"],
+      "ids": ["fists", "gravediggers-spade", "x2-tesla-faradayer"]
+    }
+  ]
+}

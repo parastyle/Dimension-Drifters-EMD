@@ -8,7 +8,7 @@ import {
 } from "../../settlement-store.js";
 import {
   ACTION_MSGS_PER_TICK,
-  ACTIVE_WEAPON_CATALOG_IDS,
+  ACTIVE_WEAPON_SUBCLASS_GROUPS,
   ARENA_HEIGHT,
   ARENA_WIDTH,
   ARSENAL_SLOTS,
@@ -1132,18 +1132,8 @@ export interface DuelistComboState {
 export type RewardBoundary = "extract" | "descent" | "belt-victory" | "bossrush-victory" | "boss-clear";
 
 export const GAME_ROOM_STATICS = Object.freeze({
-  GALLERY_ROSTER: [...ACTIVE_WEAPON_CATALOG_IDS].sort(
-    (a, b) => {
-      const wa = WEAPONS[a];
-      const wb = WEAPONS[b];
-      const c = (wa?.tags?.classPool ?? "").localeCompare(wb?.tags?.classPool ?? "");
-      if (c !== 0) return c;
-      const f = (wa?.tags?.family ?? "").localeCompare(wb?.tags?.family ?? "");
-      if (f !== 0) return f;
-      return (wa?.name ?? a).localeCompare(wb?.name ?? b);
-    },
-  ),
-  GALLERY_PAGE: 42,
+  GALLERY_GROUPS: ACTIVE_WEAPON_SUBCLASS_GROUPS,
+  GALLERY_ROSTER: ACTIVE_WEAPON_SUBCLASS_GROUPS.flatMap((group) => group.weaponIds),
 });
 export interface GameRoomContext extends Room<ArenaState> {
   maxClients: number;
@@ -2795,7 +2785,7 @@ export const roomProgressionMethods = {
       this.resetElapsed();
       this.spawnAccum = 0;
       // §31 SHOWROOM: browse every ACTIVE arted weapon (curated + expansion; archived rows stay hidden),
-      // one page at a time (Z/X cycles pages), so the gallery remains comfortably performant.
+      // one subclass per page (Z/X cycles class-then-subclass order).
       this.galleryPage = 0;
       this.spawnGalleryPage();
       for (let i = 0; i < 3; i++) {
@@ -2896,8 +2886,8 @@ export const roomProgressionMethods = {
     this.sendWeaponManifest(player);
   },
 
-  /** §31 (re)spawn the current showroom PAGE: clear the gallery pickups (`pk*`) and lay out this page's
-   *  slice of GALLERY_ROSTER in a grid above the player. Wraps the page index. Training mode only.
+  /** §31 (re)spawn the current showroom SUBCLASS: clear gallery pickups (`pk*`) and lay out the current
+   *  GALLERY_GROUP in a grid above the player. Wraps the page index. Training mode only.
    *  §41 cells keep their EXACT grid position — a cell over a pit is SKIPPED (the shelf shows a gap)
    *  instead of safeSpawnPos NUDGING it: the old nudge scattered the neat grid and piled pickups onto their
    *  neighbours, so E grabbed "the wrong thing" and pages read as disorganized. */
@@ -2905,11 +2895,10 @@ export const roomProgressionMethods = {
     for (const id of [...this.state.pickups.keys()]) {
       if (id.startsWith("pk")) this.state.pickups.delete(id);
     }
-    const roster = GameRoom.GALLERY_ROSTER;
-    const pages = Math.max(1, Math.ceil(roster.length / GameRoom.GALLERY_PAGE));
+    const groups = GameRoom.GALLERY_GROUPS;
+    const pages = Math.max(1, groups.length);
     this.galleryPage = ((this.galleryPage % pages) + pages) % pages;
-    const start = this.galleryPage * GameRoom.GALLERY_PAGE;
-    const slice = roster.slice(start, start + GameRoom.GALLERY_PAGE);
+    const slice = groups[this.galleryPage]?.weaponIds ?? [];
     const cx = ARENA_WIDTH / 2;
     const cy = ARENA_HEIGHT / 2;
     const COLS = 14;

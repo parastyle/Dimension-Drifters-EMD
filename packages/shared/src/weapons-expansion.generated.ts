@@ -29,7 +29,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "STR"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Sabers"
     },
     "durability": 75
   },
@@ -56,7 +58,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "LUK"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Sabers"
     },
     "dual": true,
     "durability": 75,
@@ -92,7 +96,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "STR",
         "DEX"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Sabers"
     },
     "swingStyle": "spin",
     "performance": {
@@ -135,7 +141,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "close",
       "scaling": [
         "DEX"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Katanas"
     },
     "stance": "tachi-no-tori",
     "authoritativeCombo": true,
@@ -171,7 +179,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "STR",
         "DEX"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Nodachi"
     },
     "twoHanded": true,
     "durability": 90,
@@ -203,7 +213,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "INT"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Katanas"
     },
     "gripPoints": {
       "primary": {
@@ -270,7 +282,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "STR",
         "DEX"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Broadswords"
     },
     "authoritativeCombo": true,
     "swingStyle": "thrust",
@@ -306,7 +320,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "STR",
         "CON"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Broadswords"
     },
     "effectRecipe": "tombwarden-dark-slash",
     "effectEmitter": "blade",
@@ -341,7 +357,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "LUK"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Rapiers"
     },
     "effectRecipe": "hexbloom-toxic-impact",
     "effectEmitter": "tip",
@@ -371,7 +389,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "INT"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Rapiers"
     },
     "durability": 75,
     "scatter": {
@@ -405,7 +425,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "close",
       "scaling": [
         "DEX"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Energy Blades"
     },
     "gripPoints": {
       "primary": {
@@ -443,7 +465,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "STR",
         "INT"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Energy Blades"
     },
     "comboFamily": "chop",
     "comboVariant": "riftcleaver-crystal-cadence",
@@ -487,7 +511,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "STR",
         "DEX"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Sabers"
     },
     "durability": 75
   },
@@ -514,7 +540,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "STR"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Katanas"
     },
     "performance": {
       "hold": "steady",
@@ -564,7 +592,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "mid",
       "scaling": [
         "STR"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Broadswords"
     },
     "twoHanded": true,
     "durability": 90
@@ -592,7 +622,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "STR",
         "INT"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Broadswords"
     },
     "comboFamily": "thrust",
     "comboVariant": "verdict-procession",
@@ -634,7 +666,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "INT"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Rapiers"
     },
     "durability": 75,
     "scatter": {
@@ -669,7 +703,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "STR"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Nodachi"
     },
     "twoHanded": true,
     "durability": 90,
@@ -708,7 +744,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "STR",
         "DEX"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Sabers"
     },
     "durability": 75
   },
@@ -735,7 +773,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "STR",
         "DEX"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Axes"
     },
     "description": "A stout one-hand camp hatchet with a chipped grey bit and an ash haft gone black with grip-sweat, the workhorse of every drifter's bedroll.",
     "performance": {
@@ -775,7 +815,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "close",
       "scaling": [
         "STR"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Axes"
     },
     "description": "A grim executioner's hand-axe with a wide blood-darkened bit and a noose-knot wound round the haft butt, balanced for one clean ugly chop.",
     "performance": {
@@ -820,7 +862,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "STR",
         "INT"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Cleavers"
     },
     "description": "A massive smithy cleaver pulled glowing from the forge, its broad bit veined with dull molten-orange heat-cracks that smear embers on every fall.",
     "authoritativeCombo": true,
@@ -872,7 +916,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "STR",
         "DEX"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Axes"
     },
     "gripPoints": {
       "primary": {
@@ -918,7 +964,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "STR",
         "DEX"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Axes"
     },
     "description": "A broad two-hand battleaxe with copper conduits chasing its bit, every wide swing snapping a fork of blue current to the nearest foes.",
     "swingStyle": "spin",
@@ -963,7 +1011,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "close",
       "scaling": [
         "STR"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Cleavers"
     },
     "description": "A flawless white-gold execution cleaver chased with a vigil-cross, its mirror bit humming with a sanctified warmth that judges in one heavy stroke.",
     "authoritativeCombo": true,
@@ -997,7 +1047,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "LUK"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Axes"
     },
     "description": "A matched pair of swamp-iron hand-axes slick with green bog-rot, hurled spinning to bury their corroded bits before whirling back to the grip.",
     "performance": {
@@ -1040,7 +1092,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "STR",
         "INT"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Axes"
     },
     "description": "A jagged shadow-iron battleaxe whose crescent bit fades to smoky nothing at the horns, drinking the light from whatever its wide arc crosses.",
     "comboFamily": "chop",
@@ -1078,7 +1132,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "STR",
         "CON"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Axes"
     },
     "description": "A heavy miner's poll-axe with a broad bit on one cheek and a blunt iron poll on the other, its earth-cracking slam quaking the ground all around.",
     "twoHanded": true,
@@ -1110,7 +1166,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "mid",
       "scaling": [
         "DEX"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Axes"
     },
     "description": "A light belt tomahawk with a slim spike-poll and a feather-charm on the haft, quick as a card-flick and thrown faster than a man can draw.",
     "performance": {
@@ -1154,7 +1212,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "STR"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Axes"
     },
     "description": "A paired set of blackened infernal hatchets seamed with molten orange, their twin bits crossing in a furious dual flurry that smears the air with embers.",
     "swingStyle": "spin",
@@ -1200,7 +1260,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "STR",
         "INT"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Cleavers"
     },
     "description": "An immense executioner's cleaver hewn from a single block of eternal blue ice, its faceted bit so cold the wound never warms after the slow heavy fall.",
     "swingStyle": "chop",
@@ -1237,7 +1299,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "STR"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Axes"
     },
     "description": "A pair of weathered war-hatchets balanced for an unbroken spinning whirl, the drifter at the eye of a dust-devil of cutting steel.",
     "dual": true,
@@ -1265,7 +1329,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "close",
       "scaling": [
         "STR"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Axes"
     },
     "description": "A towering ceremonial greataxe chased in brass and stained-glass enamel, its broad bit carrying a blade-hugging tongue of flame through each cut.",
     "effectRecipe": "choir-iron-flame-slash",
@@ -1295,7 +1361,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "close",
       "scaling": [
         "DEX"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Cleavers"
     },
     "description": "A slim mirror-polished skinning cleaver light as a razor, flicked through close-work in tight precise cuts a trapper makes without looking.",
     "durability": 75,
@@ -1332,7 +1400,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "STR",
         "INT"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Axes"
     },
     "description": "A felling axe grown rather than forged, its bit a living amber-veined wedge of hardwood that weeps a green sap-rot, flinging gobbets of it as it bites.",
     "twoHanded": true,
@@ -1372,7 +1442,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "STR",
         "CON"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Cleavers"
     },
     "description": "A colossal gallows-iron greatcleaver scarred with notches, its overhead drop landing like a falling trapdoor that quakes the dust from the boards.",
     "effectRecipe": "hangman-blood-spatter",
@@ -1408,7 +1480,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "INT"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Axes"
     },
     "description": "A pair of cobalt-chased hatchets that snap with caged current, each crossing bite leaping a forked arc to whatever stands nearest.",
     "performance": {
@@ -1451,7 +1525,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "STR",
         "INT"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Axes"
     },
     "description": "A broadaxe with a violet relic-shard fused into its bit, each swing planting a humming glyph that blooms a silent arcane blast.",
     "twoHanded": true,
@@ -1491,7 +1567,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "STR",
         "DEX"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Axes"
     },
     "collisionLength": 128,
     "description": "A mirror-bright knightly battleaxe with a deep hooked beard and a vow-script throat, a balanced and disciplined cleave that splits a line clean through.",
@@ -1529,7 +1607,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "STR"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Harpoons"
     },
     "performance": {
       "hold": "steady",
@@ -1573,7 +1653,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "STR"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Glaives"
     },
     "authoritativeCombo": true,
     "comboFamily": "chop",
@@ -1611,7 +1693,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "STR",
         "DEX"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Spears"
     },
     "rapidThrust": {
       "impacts": [
@@ -1650,7 +1734,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "STR"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Naginatas"
     },
     "swingStyle": "arc",
     "twoHanded": true,
@@ -1679,7 +1765,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "INT"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Spears"
     },
     "twoHanded": true,
     "durability": 90,
@@ -1713,7 +1801,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "STR",
         "DEX"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Halberds"
     },
     "authoritativeCombo": true,
     "comboFamily": "chop",
@@ -1751,7 +1841,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "STR"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Spears"
     },
     "performance": {
       "hold": "steady",
@@ -1794,7 +1886,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "INT",
         "DEX"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Partisans"
     },
     "twoHanded": true,
     "durability": 90,
@@ -1833,7 +1927,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "INT",
         "DEX"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Spears"
     },
     "gripPoints": {
       "primary": {
@@ -1886,7 +1982,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "STR",
         "DEX"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Spears"
     },
     "effectRecipe": "hangman-blood-spatter",
     "effectEmitter": "blade",
@@ -1917,7 +2015,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "STR",
         "CON"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Glaives"
     },
     "authoritativeCombo": true,
     "swingStyle": "chop",
@@ -1952,7 +2052,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "STR",
         "INT"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Glaives"
     },
     "performance": {
       "hold": "upright",
@@ -1997,7 +2099,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "LUK"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Spears"
     },
     "performance": {
       "hold": "steady",
@@ -2039,7 +2143,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "STR",
         "DEX"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Halberds"
     },
     "authoritativeCombo": true,
     "comboFamily": "chop",
@@ -2071,7 +2177,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "INT"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Harpoons"
     },
     "performance": {
       "hold": "overhead",
@@ -2113,7 +2221,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "STR",
         "DEX"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Glaives"
     },
     "suppressVfx": true,
     "performance": {
@@ -2152,7 +2262,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "STR",
         "DEX"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Partisans"
     },
     "authoritativeCombo": true,
     "comboFamily": "thrust",
@@ -2183,7 +2295,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "INT"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Spears"
     },
     "performance": {
       "hold": "steady",
@@ -2225,7 +2339,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "INT"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Glaives"
     },
     "authoritativeCombo": true,
     "comboFamily": "thrust",
@@ -2267,7 +2383,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "INT",
         "DEX"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Naginatas"
     },
     "twoHanded": true,
     "durability": 90
@@ -2294,7 +2412,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "close",
       "scaling": [
         "STR"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Mauls"
     },
     "twoHanded": true,
     "durability": 90,
@@ -2326,7 +2446,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "STR",
         "DEX"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Flails"
     },
     "archived": true,
     "durability": 75
@@ -2354,7 +2476,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "STR",
         "CON"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Warhammers"
     },
     "performance": {
       "hold": "steady",
@@ -2397,7 +2521,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "STR",
         "INT"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Flails"
     },
     "comboFamily": "chop",
     "comboVariant": "quicksilver-up-down",
@@ -2441,7 +2567,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "STR",
         "DEX"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Mauls"
     },
     "twoHanded": true,
     "durability": 90,
@@ -2475,7 +2603,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "STR",
         "INT"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Mauls"
     },
     "twoHanded": true,
     "durability": 90,
@@ -2507,7 +2637,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "STR",
         "DEX"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Maces"
     },
     "performance": {
       "hold": "steady",
@@ -2548,7 +2680,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "mid",
       "scaling": [
         "STR"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Flails"
     },
     "twoHanded": true,
     "durability": 90,
@@ -2587,7 +2721,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "STR",
         "CON"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Mauls"
     },
     "twoHanded": true,
     "durability": 90,
@@ -2619,7 +2755,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "STR"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Maces"
     },
     "dual": true,
     "durability": 75
@@ -2647,7 +2785,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "STR",
         "INT"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Maces"
     },
     "effectRecipe": "sermon-musical-notes",
     "effectEmitter": "body",
@@ -2682,7 +2822,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "STR",
         "DEX"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Hand Cannons"
     },
     "recoil": 174,
     "gun": {
@@ -2723,7 +2865,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "STR",
         "DEX"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Scrap Cannons"
     },
     "recoil": 27,
     "twoHanded": true,
@@ -2768,7 +2912,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "STR",
         "CON"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Warhammers"
     },
     "twoHanded": true,
     "durability": 90,
@@ -2800,7 +2946,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "STR"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Flails"
     },
     "archived": true,
     "durability": 75
@@ -2828,7 +2976,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "STR",
         "INT"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Warhammers"
     },
     "twoHanded": true,
     "durability": 90,
@@ -2860,7 +3010,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "STR",
         "DEX"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Maces"
     },
     "durability": 75,
     "thrown": {
@@ -2898,7 +3050,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "STR",
         "INT"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Mauls"
     },
     "twoHanded": true,
     "durability": 90,
@@ -2930,7 +3084,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "STR"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Warhammers"
     },
     "durability": 75,
     "thrown": {
@@ -2965,7 +3121,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "STR",
         "CON"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Mauls"
     },
     "description": "A massive pitted demolition sphere permanently socketed to a riveted solid-steel neck and two-handed braced haft: the Widowmaker's old wrecking-ball identity rebuilt as one rigid crushing implement.",
     "twoHanded": true,
@@ -2998,7 +3156,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "STR"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Whips & Chains"
     },
     "archived": true,
     "description": "A long braided rawhide whip studded with rattler-fang barbs along its length, the cracking tip slick with dull-teal venom that lingers where it bites.",
@@ -3027,7 +3187,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "INT"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Whips & Chains"
     },
     "description": "A whip grown rather than forged — a length of living olive-green bramble-vine bristling with hooked thorns that flex and lash, weeping a faint amber sap that poisons every welt.",
     "durability": 75
@@ -3055,7 +3217,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "STR",
         "DEX"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Whips & Chains"
     },
     "archived": true,
     "description": "A brutal cat-o-nine-tails whose nine leather thongs each end in a glinting razor-shard, fanning into a wide flogging spray that shreds everything in a forward cone.",
@@ -3095,7 +3259,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "STR",
         "DEX"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Scythes & Sickles"
     },
     "description": "A long farmhand's scythe gone to war, its sweeping crescent blade notched and oil-darkened, balanced for wide ground-reaping arcs that fell a whole row at once.",
     "authoritativeCombo": true,
@@ -3135,7 +3301,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "STR",
         "INT"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Scythes & Sickles"
     },
     "description": "A spectral reaper's scythe of blackened iron, its haft wrapped in rusted grave-chain and its crescent blade trailing wisps of devouring violet void that drink the light at the edge.",
     "swingStyle": "spin",
@@ -3176,7 +3344,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "close",
       "scaling": [
         "DEX"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Scythes & Sickles"
     },
     "description": "A compact curved sickle of pale rimed steel, its inner edge furred with everlasting frost so each fast hooking cut leaves a bite of killing cold.",
     "performance": {
@@ -3220,7 +3390,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "STR",
         "DEX"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Scythes & Sickles"
     },
     "collisionLength": 280,
     "description": "An ornate twin-bladed war-scythe of silvered steel, a crescent at each end of the long haft chased with mourning-veil filigree, sweeping in immense double-cutting arcs.",
@@ -3264,7 +3436,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "STR",
         "INT"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Scythes & Sickles"
     },
     "description": "A grim threshing scythe sprouting clusters of fungal spore-pods along its rusted blade, each wide cut bursting a hissing cloud of corrosive green rot.",
     "twoHanded": true,
@@ -3296,7 +3470,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "mid",
       "scaling": [
         "STR"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Scythes & Sickles"
     },
     "description": "A scythe lashed together from a curved rib-bone blade and a femur haft bound in cracked sinew, its yellowed edge whistling thin and clean through a wide killing sweep.",
     "swingStyle": "spin",
@@ -3342,7 +3518,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "STR"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Claws"
     },
     "description": "A pair of strapped-on beast gauntlets ending in four curved antler-bone talons each, frost-rimed and brutal, raking in a blizzard of paired slashes.",
     "dual": true,
@@ -3371,7 +3549,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "STR",
         "DEX"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Claws"
     },
     "description": "Brass-knuckle frames fitted with three hooked railroad-spike talons apiece, scavenged and welded, hammering out fast brutal raking jabs.",
     "dual": true,
@@ -3399,7 +3579,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "close",
       "scaling": [
         "DEX"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Claws"
     },
     "description": "A single heavy forearm vambrace mounting three forward-jutting steel rend-blades wired with a sparking coil, snapping out a crackling triple-rake of blue current.",
     "durability": 75
@@ -3427,7 +3609,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "INT"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Claws"
     },
     "description": "Twin handheld rakes grown from a single shard of violet quartz each, their faceted talons humming with caged arcane light as they tear in glittering paired arcs.",
     "authoritativeCombo": true,
@@ -3464,7 +3648,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "STR",
         "DEX"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Whips & Chains"
     },
     "archived": true,
     "description": "A meat-cleaver blade welded to a long whirring length of heavy chain, swung in roaring helicopter circles so the steel serpent gnaws a wide ring of anything near.",
@@ -3497,7 +3683,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "STR"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Whips & Chains"
     },
     "description": "A segmented chain-whip of blackened links each set with a glowing ember-coal, its hooked blade-tip dragging a smear of fire that scatters burning motes on every wide lash.",
     "durability": 75,
@@ -3535,7 +3723,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "mid",
       "scaling": [
         "DEX"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Whips & Chains"
     },
     "archived": true,
     "description": "A mirror-bright sabre whose blade dissolves into a flowing chain of silver links mid-length, snapping fluidly between a rigid cut and a long whipping reach with each pristine strike.",
@@ -3564,7 +3754,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "STR",
         "LUK"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Flails"
     },
     "description": "A spiked iron weight on a long coiled rope-chain, swung overhead and hurled out like a comet on a leash before snapping back into the grip for another pass.",
     "performance": {
@@ -3612,7 +3804,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "STR"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Whips & Chains"
     },
     "archived": true,
     "description": "A weathered hand-sickle joined by a long weighted chain to an iron counterweight, whirled and snapped to reap close then fling the weight wide in fast wind-cutting passes.",
@@ -3641,7 +3835,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "STR"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Flails"
     },
     "archived": true,
     "description": "A storm-charged kusarigama whose sickle and dual chained weights crackle with arena dust and blue static, lashed in roaring whirlwind passes that shock everything they graze.",
@@ -3680,7 +3876,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "handling": [
         "pistol",
         "revolver"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Pistols"
     },
     "recoil": 41,
     "gun": {
@@ -3724,7 +3922,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "handling": [
         "pistol",
         "revolver"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Pistols"
     },
     "recoil": 39,
     "gun": {
@@ -3768,7 +3968,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "handling": [
         "pistol",
         "revolver"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Hand Cannons"
     },
     "recoil": 143,
     "gun": {
@@ -3818,7 +4020,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       ],
       "handling": [
         "pistol"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Pistols"
     },
     "recoil": 48,
     "gun": {
@@ -3867,7 +4071,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "handling": [
         "pistol",
         "revolver"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Pistols"
     },
     "recoil": 25,
     "gun": {
@@ -3909,7 +4115,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       ],
       "handling": [
         "pistol"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Machine Pistols"
     },
     "recoil": 14,
     "gun": {
@@ -3952,7 +4160,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       ],
       "handling": [
         "pistol"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Machine Pistols"
     },
     "recoil": 18,
     "gun": {
@@ -3996,7 +4206,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "handling": [
         "pistol",
         "revolver"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Hand Cannons"
     },
     "recoil": 138,
     "gun": {
@@ -4041,7 +4253,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "handling": [
         "pistol",
         "revolver"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Pistols"
     },
     "recoil": 44,
     "collisionLength": 54,
@@ -4087,7 +4301,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "handling": [
         "pistol",
         "revolver"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Pistols"
     },
     "recoil": 42,
     "gripPoints": {
@@ -4136,7 +4352,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "handling": [
         "pistol",
         "revolver"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Pistols"
     },
     "recoil": 22,
     "gun": {
@@ -4184,7 +4402,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "handling": [
         "pistol",
         "revolver"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Hand Cannons"
     },
     "recoil": 140,
     "gun": {
@@ -4231,7 +4451,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       ],
       "handling": [
         "pistol"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Pistols"
     },
     "recoil": 73,
     "gun": {
@@ -4276,7 +4498,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "handling": [
         "pistol",
         "revolver"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Pistols"
     },
     "recoil": 40,
     "gun": {
@@ -4321,7 +4545,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       ],
       "handling": [
         "pistol"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Machine Pistols"
     },
     "recoil": 18,
     "dual": true,
@@ -4366,7 +4592,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "handling": [
         "pistol",
         "revolver"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Pistols"
     },
     "recoil": 40,
     "gun": {
@@ -4413,7 +4641,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       ],
       "handling": [
         "pistol"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Pistols"
     },
     "recoil": 69,
     "gun": {
@@ -4458,7 +4688,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "handling": [
         "pistol",
         "revolver"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Hand Cannons"
     },
     "recoil": 137,
     "gun": {
@@ -4501,7 +4733,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       ],
       "handling": [
         "pistol"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Machine Pistols"
     },
     "recoil": 11,
     "gun": {
@@ -4544,7 +4778,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       ],
       "handling": [
         "pistol"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Machine Pistols"
     },
     "recoil": 23,
     "gun": {
@@ -4587,7 +4823,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       ],
       "handling": [
         "lever"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Lever Rifles"
     },
     "recoil": 105,
     "gripPoints": {
@@ -4641,7 +4879,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       ],
       "handling": [
         "lever"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Lever Rifles"
     },
     "recoil": 84,
     "archived": true,
@@ -4694,7 +4934,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       ],
       "handling": [
         "bolt"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Marksman Rifles"
     },
     "recoil": 108,
     "gripPoints": {
@@ -4750,7 +4992,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "INT"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Railguns"
     },
     "recoil": 213,
     "gripPoints": {
@@ -4806,7 +5050,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       ],
       "handling": [
         "lever"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Lever Rifles"
     },
     "recoil": 104,
     "gripPoints": {
@@ -4857,7 +5103,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "long",
       "scaling": [
         "DEX"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Marksman Rifles"
     },
     "recoil": 106,
     "twoHanded": true,
@@ -4901,7 +5149,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       ],
       "handling": [
         "lever"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Lever Rifles"
     },
     "recoil": 102,
     "gripPoints": {
@@ -4954,7 +5204,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "STR"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Marksman Rifles"
     },
     "recoil": 105,
     "twoHanded": true,
@@ -5002,7 +5254,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       ],
       "handling": [
         "lever"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Lever Rifles"
     },
     "recoil": 36,
     "gripPoints": {
@@ -5056,7 +5310,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       ],
       "handling": [
         "bolt"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Marksman Rifles"
     },
     "recoil": 32,
     "gripPoints": {
@@ -5108,7 +5364,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "STR",
         "DEX"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Marksman Rifles"
     },
     "recoil": 133,
     "gripPoints": {
@@ -5161,7 +5419,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "INT"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Railguns"
     },
     "recoil": 31,
     "twoHanded": true,
@@ -5212,7 +5472,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       ],
       "handling": [
         "pump"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Lever Rifles"
     },
     "recoil": 88,
     "gripPoints": {
@@ -5263,7 +5525,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "INT"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Railguns"
     },
     "recoil": 212,
     "twoHanded": true,
@@ -5317,7 +5581,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       ],
       "handling": [
         "lever"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Lever Rifles"
     },
     "recoil": 25,
     "gripPoints": {
@@ -5367,7 +5633,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "long",
       "scaling": [
         "STR"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Marksman Rifles"
     },
     "recoil": 129,
     "twoHanded": true,
@@ -5414,7 +5682,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       ],
       "handling": [
         "bolt"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Marksman Rifles"
     },
     "recoil": 106,
     "gripPoints": {
@@ -5469,7 +5739,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       ],
       "handling": [
         "lever"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Lever Rifles"
     },
     "recoil": 107,
     "gripPoints": {
@@ -5522,7 +5794,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "INT",
         "DEX"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Marksman Rifles"
     },
     "recoil": 105,
     "twoHanded": true,
@@ -5566,7 +5840,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       ],
       "handling": [
         "lever"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Lever Rifles"
     },
     "recoil": 86,
     "gripPoints": {
@@ -5625,7 +5901,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       ],
       "handling": [
         "pump"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Shotguns"
     },
     "recoil": 146,
     "gripPoints": {
@@ -5680,7 +5958,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       ],
       "handling": [
         "pump"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Shotguns"
     },
     "recoil": 156,
     "archived": true,
@@ -5733,7 +6013,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "STR",
         "INT"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Blunderbusses"
     },
     "recoil": 168,
     "twoHanded": true,
@@ -5782,7 +6064,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       ],
       "handling": [
         "break"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Shotguns"
     },
     "recoil": 150,
     "gripPoints": {
@@ -5845,7 +6129,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       ],
       "handling": [
         "pump"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Shotguns"
     },
     "recoil": 146,
     "gripPoints": {
@@ -5900,7 +6186,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "INT"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Blunderbusses"
     },
     "recoil": 120,
     "twoHanded": true,
@@ -5949,7 +6237,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "close",
       "scaling": [
         "DEX"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Launchers & Mortars"
     },
     "recoil": 178,
     "gripPoints": {
@@ -6009,7 +6299,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       ],
       "handling": [
         "revolver"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Shotguns"
     },
     "recoil": 150,
     "gripPoints": {
@@ -6060,7 +6352,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "INT"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Blunderbusses"
     },
     "recoil": 162,
     "twoHanded": true,
@@ -6107,7 +6401,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "handling": [
         "pistol",
         "revolver"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Shotguns"
     },
     "recoil": 121,
     "gripPoints": {
@@ -6161,7 +6457,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       ],
       "handling": [
         "pump"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Shotguns"
     },
     "recoil": 151,
     "gripPoints": {
@@ -6213,7 +6511,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "STR",
         "DEX"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Blunderbusses"
     },
     "recoil": 164,
     "twoHanded": true,
@@ -6258,7 +6558,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       ],
       "handling": [
         "pump"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Shotguns"
     },
     "recoil": 151,
     "gripPoints": {
@@ -6318,7 +6620,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       ],
       "handling": [
         "pump"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Shotguns"
     },
     "recoil": 146,
     "gripPoints": {
@@ -6378,7 +6682,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       ],
       "handling": [
         "pump"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Shotguns"
     },
     "recoil": 143,
     "gripPoints": {
@@ -6435,7 +6741,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       ],
       "handling": [
         "lever"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Shotguns"
     },
     "recoil": 143,
     "gripPoints": {
@@ -6490,7 +6798,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       ],
       "handling": [
         "pump"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Shotguns"
     },
     "recoil": 151,
     "gripPoints": {
@@ -6548,7 +6858,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       ],
       "handling": [
         "pistol"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Blunderbusses"
     },
     "recoil": 124,
     "gun": {
@@ -6589,7 +6901,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "STR"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Blunderbusses"
     },
     "recoil": 171,
     "twoHanded": true,
@@ -6631,7 +6945,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "STR"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Shotguns"
     },
     "recoil": 154,
     "gripPoints": {
@@ -6683,7 +6999,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "STR"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Rotary Guns"
     },
     "recoil": 13,
     "gripPoints": {
@@ -6733,7 +7051,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "long",
       "scaling": [
         "STR"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Siege Cannons"
     },
     "recoil": 228,
     "twoHanded": true,
@@ -6779,7 +7099,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "STR",
         "INT"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Launchers & Mortars"
     },
     "recoil": 198,
     "gripPoints": {
@@ -6836,7 +7158,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       ],
       "handling": [
         "lever"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Rotary Guns"
     },
     "recoil": 201,
     "gripPoints": {
@@ -6894,7 +7218,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "STR",
         "INT"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Launchers & Mortars"
     },
     "recoil": 226,
     "gripPoints": {
@@ -6953,7 +7279,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       ],
       "handling": [
         "pump"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Heavy Scatterguns"
     },
     "recoil": 217,
     "gripPoints": {
@@ -7014,7 +7342,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "handling": [
         "pistol",
         "revolver"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Heavy Scatterguns"
     },
     "recoil": 23,
     "gripPoints": {
@@ -7059,7 +7389,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "STR",
         "LUK"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Launchers & Mortars"
     },
     "recoil": 197,
     "twoHanded": true,
@@ -7104,7 +7436,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "INT"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Railguns"
     },
     "recoil": 18,
     "gripPoints": {
@@ -7156,7 +7490,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "STR",
         "DEX"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Siege Cannons"
     },
     "recoil": 38,
     "twoHanded": true,
@@ -7210,7 +7546,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       ],
       "handling": [
         "bolt"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Siege Cannons"
     },
     "recoil": 203,
     "gripPoints": {
@@ -7266,7 +7604,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "INT",
         "DEX"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Heavy Scatterguns"
     },
     "recoil": 210,
     "twoHanded": true,
@@ -7316,7 +7656,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "STR",
         "INT"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Siege Cannons"
     },
     "recoil": 227,
     "gun": {
@@ -7362,7 +7704,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       ],
       "handling": [
         "pistol"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Siege Cannons"
     },
     "recoil": 199,
     "collisionLength": 112,
@@ -7418,7 +7762,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       ],
       "handling": [
         "pistol"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Heavy Scatterguns"
     },
     "recoil": 194,
     "dual": true,
@@ -7461,7 +7807,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "INT",
         "DEX"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Rotary Guns"
     },
     "recoil": 38,
     "twoHanded": true,
@@ -7509,7 +7857,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "STR",
         "CON"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Siege Cannons"
     },
     "recoil": 233,
     "gun": {
@@ -7553,7 +7903,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "STR",
         "INT"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Heavy Scatterguns"
     },
     "recoil": 219,
     "twoHanded": true,
@@ -7598,7 +7950,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "INT",
         "STR"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Launchers & Mortars"
     },
     "recoil": 31,
     "twoHanded": true,
@@ -7650,7 +8004,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "LUK",
         "STR"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Launchers & Mortars"
     },
     "recoil": 196,
     "gripPoints": {
@@ -7707,7 +8063,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "STR"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Spike Launchers"
     },
     "recoil": 31,
     "gun": {
@@ -7751,7 +8109,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "handling": [
         "pistol",
         "revolver"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Ricochet Guns"
     },
     "recoil": 58,
     "gun": {
@@ -7792,7 +8152,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "STR"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Crossbows"
     },
     "recoil": 98,
     "gripPoints": {
@@ -7845,7 +8207,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "mid",
       "scaling": [
         "DEX"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Spike Launchers"
     },
     "recoil": 20,
     "twoHanded": true,
@@ -7886,7 +8250,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "STR",
         "DEX"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Harpoon Guns"
     },
     "recoil": 96,
     "twoHanded": true,
@@ -7928,7 +8294,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "LUK"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Spike Launchers"
     },
     "recoil": 90,
     "twoHanded": true,
@@ -7970,7 +8338,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "STR"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Spike Launchers"
     },
     "recoil": 36,
     "gripPoints": {
@@ -8026,7 +8396,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "INT"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Crossbows"
     },
     "recoil": 92,
     "twoHanded": true,
@@ -8069,7 +8441,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "LUK"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Spike Launchers"
     },
     "recoil": 54,
     "gun": {
@@ -8112,7 +8486,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       ],
       "handling": [
         "pistol"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Ricochet Guns"
     },
     "recoil": 32,
     "dual": true,
@@ -8153,7 +8529,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "INT"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Harpoon Guns"
     },
     "recoil": 94,
     "twoHanded": true,
@@ -8195,7 +8573,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "INT"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Spike Launchers"
     },
     "recoil": 69,
     "gun": {
@@ -8235,7 +8615,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "STR"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Crossbows"
     },
     "recoil": 84,
     "twoHanded": true,
@@ -8279,7 +8661,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "INT"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Spike Launchers"
     },
     "recoil": 95,
     "gripPoints": {
@@ -8334,7 +8718,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       ],
       "handling": [
         "pistol"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Shotguns"
     },
     "recoil": 87,
     "gun": {
@@ -8374,7 +8760,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "mid",
       "scaling": [
         "DEX"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Crossbows"
     },
     "recoil": 27,
     "dualVerticalSplit": 0.1,
@@ -8417,7 +8805,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "STR",
         "INT"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Harpoon Guns"
     },
     "recoil": 126,
     "twoHanded": true,
@@ -8463,7 +8853,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "INT"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Spike Launchers"
     },
     "recoil": 25,
     "gripPoints": {
@@ -8518,7 +8910,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "handling": [
         "pistol",
         "revolver"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Ricochet Guns"
     },
     "recoil": 75,
     "gun": {
@@ -8559,7 +8953,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "STR",
         "DEX"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Harpoon Guns"
     },
     "recoil": 118,
     "twoHanded": true,
@@ -8605,7 +9001,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "mid",
       "scaling": [
         "INT"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Spellbooks"
     },
     "archived": true,
     "chainLightning": {
@@ -8637,7 +9035,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "mid",
       "scaling": [
         "INT"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Spellbooks"
     },
     "performance": {
       "hold": "steady",
@@ -8684,7 +9084,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "long",
       "scaling": [
         "INT"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Spellbooks"
     },
     "recoil": 0,
     "beam": {
@@ -8730,7 +9132,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "mid",
       "scaling": [
         "INT"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Spellbooks"
     },
     "scatter": {
       "count": 5,
@@ -8766,7 +9170,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "mid",
       "scaling": [
         "INT"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Spellbooks"
     },
     "suppressMeleeHitbox": true,
     "performance": {
@@ -8809,7 +9215,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "mid",
       "scaling": [
         "INT"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Spellbooks"
     },
     "performance": {
       "hold": "steady",
@@ -8859,7 +9267,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "mid",
       "scaling": [
         "INT"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Spellbooks"
     },
     "effectRecipe": "witherleaf-tip-spores",
     "effectEmitter": "tip",
@@ -8910,7 +9320,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "long",
       "scaling": [
         "INT"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Spellbooks"
     },
     "recoil": 0,
     "archived": true,
@@ -8958,7 +9370,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "mid",
       "scaling": [
         "INT"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Spellbooks"
     },
     "archived": true,
     "scatter": {
@@ -8991,7 +9405,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "close",
       "scaling": [
         "INT"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Spellbooks"
     },
     "twoHanded": true,
     "quake": {
@@ -9021,7 +9437,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "close",
       "scaling": [
         "INT"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Spellbooks"
     },
     "archived": true,
     "twoHanded": true,
@@ -9052,7 +9470,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "mid",
       "scaling": [
         "INT"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Spellbooks"
     },
     "effectRecipe": "whispervolume-page-scatter",
     "effectEmitter": "tip",
@@ -9086,7 +9506,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "mid",
       "scaling": [
         "INT"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Battle Grimoires"
     },
     "swingStyle": "spin",
     "effectRecipe": "abyssal-whirlwind-vortex",
@@ -9131,7 +9553,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "mid",
       "scaling": [
         "INT"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Spellbooks"
     },
     "scatter": {
       "count": 10,
@@ -9163,7 +9587,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "long",
       "scaling": [
         "INT"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Spellbooks"
     },
     "recoil": 0,
     "twoHanded": true,
@@ -9223,7 +9649,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "mid",
       "scaling": [
         "INT"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Spellbooks"
     },
     "performance": {
       "hold": "steady",
@@ -9270,7 +9698,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "close",
       "scaling": [
         "INT"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Spellbooks"
     },
     "twoHanded": true,
     "quake": {
@@ -9300,7 +9730,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "mid",
       "scaling": [
         "INT"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Spellbooks"
     },
     "archived": true,
     "scatter": {
@@ -9337,7 +9769,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "mid",
       "scaling": [
         "INT"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Battle Grimoires"
     },
     "performance": {
       "hold": "steady",
@@ -9370,7 +9804,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "mid",
       "scaling": [
         "INT"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Staves & Rods"
     },
     "gripPoints": {
       "primary": {
@@ -9431,7 +9867,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "INT",
         "DEX"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Scepters"
     },
     "recoil": 0,
     "description": "A weathered brass scepter wound in barnacle-crusted rope, its head a fluted conch lacquered in pale rime that breathes a continuous lance of freezing brine.",
@@ -9479,7 +9917,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "INT",
         "LUK"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Wands"
     },
     "recoil": 0,
     "gripPoints": {
@@ -9539,7 +9979,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "mid",
       "scaling": [
         "INT"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Wands"
     },
     "description": "A polished brass rod ringed with spinning copper coils and a glass spark-gap bulb, snapping a forked arc that chains across a crowd in a brass-bright crackle.",
     "performance": {
@@ -9573,7 +10015,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "long",
       "scaling": [
         "INT"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Staves & Rods"
     },
     "recoil": 0,
     "gripPoints": {
@@ -9632,7 +10076,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "mid",
       "scaling": [
         "INT"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Wands"
     },
     "description": "A gnarled bog-root wand sprouting a cluster of glass wisp-globes filled with sickly green marsh-gas, flinging a scattering of bursting toxic motes.",
     "performance": {
@@ -9682,7 +10128,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "INT",
         "STR"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Staves & Rods"
     },
     "gripPoints": {
       "primary": {
@@ -9725,7 +10173,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "INT",
         "DEX"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Staves & Rods"
     },
     "gripPoints": {
       "primary": {
@@ -9780,7 +10230,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "long",
       "scaling": [
         "INT"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Scepters"
     },
     "recoil": 0,
     "description": "A black-iron scepter crowned with a fanged vulture skull whose beak gapes open, draining a thin ribbon of devouring void-shadow from its hollow eyes.",
@@ -9828,7 +10280,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "INT",
         "LUK"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Wands"
     },
     "archived": true,
     "description": "A bent gold-panning trowel re-forged into a wand, its scoop full of glittering fool's-gold flakes that fling out in a lucky scatter of bursting arcane sparks.",
@@ -9866,7 +10320,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "mid",
       "scaling": [
         "INT"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Scepters"
     },
     "description": "A heavy blackened-gold scepter shaped like a tiny burning throne, its coal-cushion seat raked across the ground to split the earth in a creeping fissure of cinders.",
     "quake": {
@@ -9896,7 +10352,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "long",
       "scaling": [
         "INT"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Wands"
     },
     "recoil": 0,
     "description": "A slim glass wand encasing a single curled tungsten filament that hums with caged current, drawing a thin unbroken thread of crackling shock down the line.",
@@ -9943,7 +10401,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "mid",
       "scaling": [
         "INT"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Staves & Rods"
     },
     "gripPoints": {
       "primary": {
@@ -9992,7 +10452,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "INT",
         "LUK"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Scepters"
     },
     "description": "A tarnished medicine-show scepter topped with a corked tonic bottle of luminous green miracle-cure, flicking a chaining splash of corrosive quackery foe to foe.",
     "effectRecipe": "snakeoil-tip-sparks",
@@ -10039,7 +10501,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "long",
       "scaling": [
         "INT"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Staves & Rods"
     },
     "recoil": 0,
     "gripPoints": {
@@ -10098,7 +10562,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "mid",
       "scaling": [
         "INT"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Wands"
     },
     "description": "A short brass wand topped with a tiny stained-glass votive lantern, swung to fling a scattering of blessed sun-sparks that burst into pools of light.",
     "scatter": {
@@ -10135,7 +10601,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "mid",
       "scaling": [
         "INT"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Staves & Rods"
     },
     "gripPoints": {
       "primary": {
@@ -10178,7 +10646,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "INT",
         "DEX"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Scepters"
     },
     "description": "A jeweled scepter cradling a small hourglass of blue glacial sand, pouring a slow continuous beam of creeping numbing cold from its narrowing throat.",
     "groundZone": {
@@ -10217,7 +10687,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "mid",
       "scaling": [
         "INT"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Staves & Rods"
     },
     "gripPoints": {
       "primary": {
@@ -10267,7 +10739,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "INT",
         "LUK"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Orbs"
     },
     "effectRecipe": "void-caster-explosion",
     "effectEmitter": "body",
@@ -10298,7 +10772,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "mid",
       "scaling": [
         "INT"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Foci"
     },
     "quake": {
       "radius": 150,
@@ -10327,7 +10803,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "long",
       "scaling": [
         "INT"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Foci"
     },
     "recoil": 0,
     "collisionLength": 92,
@@ -10380,7 +10858,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "mid",
       "scaling": [
         "INT"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Orbs"
     },
     "effectRecipe": "cinderchoke-fire-impact",
     "effectEmitter": "body",
@@ -10431,7 +10911,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "mid",
       "scaling": [
         "INT"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Foci"
     },
     "swingStyle": "spin",
     "suppressMeleeHitbox": true,
@@ -10486,7 +10968,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "INT",
         "LUK"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Orbs"
     },
     "performance": {
       "hold": "overhead",
@@ -10541,7 +11025,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "INT",
         "LUK"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Foci"
     },
     "performance": {
       "hold": "hanging-chain",
@@ -10574,7 +11060,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "mid",
       "scaling": [
         "INT"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Orbs"
     },
     "performance": {
       "hold": "overhead",
@@ -10629,7 +11117,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "long",
       "scaling": [
         "INT"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Orbs"
     },
     "groundZone": {
       "trigger": "channel",
@@ -10666,7 +11156,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "INT",
         "DEX"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Orbs"
     },
     "dual": true,
     "chainLightning": {
@@ -10698,7 +11190,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "mid",
       "scaling": [
         "INT"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Orbs"
     },
     "twoHanded": true,
     "quake": {
@@ -10729,7 +11223,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "INT",
         "DEX"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Foci"
     },
     "scatter": {
       "count": 6,
@@ -10765,7 +11261,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "long",
       "scaling": [
         "INT"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Foci"
     },
     "recoil": 0,
     "beam": {
@@ -10812,7 +11310,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "INT",
         "LUK"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Orbs"
     },
     "dual": true,
     "scatter": {
@@ -10849,7 +11349,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "mid",
       "scaling": [
         "INT"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Orbs"
     },
     "twoHanded": true,
     "quake": {
@@ -10879,7 +11381,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "mid",
       "scaling": [
         "INT"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Orbs"
     },
     "performance": {
       "hold": "aim-forward",
@@ -10921,7 +11425,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "long",
       "scaling": [
         "INT"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Foci"
     },
     "recoil": 0,
     "twoHanded": true,
@@ -10968,7 +11474,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "mid",
       "scaling": [
         "INT"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Orbs"
     },
     "quake": {
       "radius": 140,
@@ -11011,7 +11519,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "INT",
         "LUK"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Foci"
     },
     "recoil": 0,
     "twoHanded": true,
@@ -11058,7 +11568,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "long",
       "scaling": [
         "INT"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Orbs"
     },
     "recoil": 0,
     "beam": {
@@ -11104,7 +11616,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "mid",
       "scaling": [
         "INT"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Relics & Totems"
     },
     "scatter": {
       "count": 6,
@@ -11141,7 +11655,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "INT",
         "CON"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Relics & Totems"
     },
     "performance": {
       "hold": "upright",
@@ -11175,7 +11691,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "long",
       "scaling": [
         "INT"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Relics & Totems"
     },
     "recoil": 0,
     "beam": {
@@ -11221,7 +11739,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "mid",
       "scaling": [
         "INT"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Relics & Totems"
     },
     "collisionLength": 148,
     "gripPoints": {
@@ -11264,7 +11784,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "INT",
         "DEX"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Relics & Totems"
     },
     "thrown": {
       "speed": 420,
@@ -11310,7 +11832,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "INT",
         "LUK"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Relics & Totems"
     },
     "comboFamily": "arc",
     "comboVariant": "thunderpost-storm-cadence",
@@ -11350,7 +11874,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "long",
       "scaling": [
         "INT"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Relics & Totems"
     },
     "recoil": 0,
     "performance": {
@@ -11393,7 +11919,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "mid",
       "scaling": [
         "INT"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Relics & Totems"
     },
     "recoil": 0,
     "renderAboveHands": true,
@@ -11435,7 +11963,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "INT",
         "CON"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Relics & Totems"
     },
     "effectRecipe": "void-caster-explosion",
     "effectEmitter": "body",
@@ -11474,7 +12004,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "INT",
         "LUK"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Relics & Totems"
     },
     "gripPoints": {
       "primary": {
@@ -11527,7 +12059,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "close",
       "scaling": [
         "INT"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Relics & Totems"
     },
     "quake": {
       "radius": 120,
@@ -11556,7 +12090,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "mid",
       "scaling": [
         "INT"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Relics & Totems"
     },
     "twoHanded": true,
     "scatter": {
@@ -11594,7 +12130,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "INT",
         "STR"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Relics & Totems"
     },
     "performance": {
       "hold": "drag-at-feet",
@@ -11628,7 +12166,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "mid",
       "scaling": [
         "INT"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Relics & Totems"
     },
     "firingFrame": "x2-wyrmskull-reliquary-open",
     "authoritativeCombo": true,
@@ -11670,7 +12210,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "long",
       "scaling": [
         "INT"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Relics & Totems"
     },
     "recoil": 0,
     "performance": {
@@ -11719,7 +12261,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "mid",
       "scaling": [
         "INT"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Relics & Totems"
     },
     "recoil": 0,
     "gun": {
@@ -11759,7 +12303,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "INT",
         "CON"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Relics & Totems"
     },
     "twoHanded": true,
     "quake": {
@@ -11789,7 +12335,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "long",
       "scaling": [
         "INT"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Relics & Totems"
     },
     "recoil": 0,
     "gripPoints": {
@@ -11848,7 +12396,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "INT",
         "LUK"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Relics & Totems"
     },
     "archived": true,
     "scatter": {
@@ -11886,7 +12436,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "INT",
         "DEX"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Gauntlets"
     },
     "swingStyle": "punch",
     "comboFamily": "punch",
@@ -11921,7 +12473,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "close",
       "scaling": [
         "INT"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Gauntlets"
     },
     "dual": true,
     "scatter": {
@@ -11959,7 +12513,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "INT",
         "DEX"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Gauntlets"
     },
     "recoil": 0,
     "dual": true,
@@ -11998,7 +12554,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "INT",
         "STR"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Gauntlets"
     },
     "twoHanded": true,
     "quake": {
@@ -12028,7 +12586,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "close",
       "scaling": [
         "INT"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Gauntlets"
     },
     "effectEmitter": "tip",
     "dual": true,
@@ -12066,7 +12626,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "mid",
       "scaling": [
         "INT"
-      ]
+      ],
+      "weaponClass": "Special",
+      "subclass": "Special"
     },
     "recoil": 49,
     "gun": {
@@ -12108,7 +12670,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "mid",
       "scaling": [
         "INT"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Gauntlets"
     },
     "recoil": 0,
     "gun": {
@@ -12148,7 +12712,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "INT",
         "LUK"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Gauntlets"
     },
     "recoil": 0,
     "gun": {
@@ -12188,7 +12754,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "INT",
         "DEX"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Gauntlets"
     },
     "dual": true,
     "scatter": {
@@ -12225,7 +12793,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "mid",
       "scaling": [
         "INT"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Gauntlets"
     },
     "recoil": 0,
     "beam": {
@@ -12271,7 +12841,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "close",
       "scaling": [
         "INT"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Gauntlets"
     },
     "scatter": {
       "count": 6,
@@ -12307,7 +12879,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "mid",
       "scaling": [
         "INT"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Gauntlets"
     },
     "recoil": 0,
     "beam": {
@@ -12354,7 +12928,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "INT",
         "STR"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Gauntlets"
     },
     "poseLanguage": {
       "idle": "mirror-guard"
@@ -12386,7 +12962,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "long",
       "scaling": [
         "INT"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Gauntlets"
     },
     "recoil": 0,
     "effectRecipe": "galvanic-blue-burst",
@@ -12433,7 +13011,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "INT",
         "DEX"
-      ]
+      ],
+      "weaponClass": "Special",
+      "subclass": "Special"
     },
     "authoritativeCombo": true,
     "swingStyle": "pivot",
@@ -12474,7 +13054,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "INT",
         "LUK"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Gauntlets"
     },
     "recoil": 0,
     "beam": {
@@ -12521,7 +13103,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "INT",
         "STR"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Gauntlets"
     },
     "effectRecipe": "stormfist-blue-lunge",
     "effectEmitter": "body",
@@ -12561,7 +13145,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "mid",
       "scaling": [
         "INT"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Gauntlets"
     },
     "scatter": {
       "count": 8,
@@ -12598,7 +13184,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "INT",
         "LUK"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Gauntlets"
     },
     "poseLanguage": {
       "idle": "boxer-guard",
@@ -12640,7 +13228,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "STR",
         "DEX"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Martial Arts"
     },
     "poseLanguage": {
       "idle": "boxer-guard",
@@ -12686,7 +13276,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "long",
       "scaling": [
         "INT"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Gauntlets"
     },
     "recoil": 0,
     "gun": {
@@ -12725,7 +13317,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "LUK"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Katanas"
     },
     "archived": true,
     "description": "The first short blade cut from the Driftblade's discarded shadow. It leaves no room between question and answer.",
@@ -12763,7 +13357,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "LUK"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Katanas"
     },
     "archived": true,
     "description": "Its smoky blade hoards the sound of being drawn. The stolen note returns in the opening cut.",
@@ -12802,7 +13398,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "INT"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Katanas"
     },
     "description": "A magistrate's Driftblade whose edge brightens only when each draw arrives on the last cut's dying breath.",
     "sprite": "driftblade",
@@ -12869,7 +13467,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "INT"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Katanas"
     },
     "description": "A blue-steel tachi that stitches weather into every uninterrupted cut. Break cadence and the storm unravels.",
     "sprite": "driftblade",
@@ -12939,7 +13539,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "INT"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Katanas"
     },
     "description": "The scabbard stays where the duel began. Its final cut does not.",
     "sprite": "driftblade",
@@ -12997,7 +13599,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "STR"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Katanas"
     },
     "description": "A long frost-white blade that teaches each cut to travel farther than the last.",
     "sprite": "driftblade",
@@ -13059,7 +13663,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "STR",
         "DEX"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Katanas"
     },
     "description": "An impatient odachi sharpened for armored thresholds. It spends weight for speed, then demands the last cut repay the debt.",
     "sprite": "driftblade",
@@ -13131,7 +13737,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "DEX",
         "STR",
         "INT"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Katanas"
     },
     "description": "A great blade that drags a moonlit wake behind its last stroke; those standing near the cut inherit the tide.",
     "sprite": "driftblade",
@@ -13201,7 +13809,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "DEX",
         "CON",
         "INT"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Katanas"
     },
     "description": "A sovereign great katana that grants one breath of storm-shelter to the duelist who meets its cadence exactly.",
     "sprite": "driftblade",
@@ -13265,7 +13875,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "STR",
         "DEX",
         "INT"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Katanas"
     },
     "description": "No surviving school claims it. Four cuts teach the weapon where the world joins; the fourth opens the lesson.",
     "sprite": "driftblade",
@@ -13323,7 +13935,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "STR"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Auto Rifles"
     },
     "recoil": 29,
     "gripPoints": {
@@ -13377,7 +13991,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "INT"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Auto Rifles"
     },
     "recoil": 22,
     "gripPoints": {
@@ -13430,7 +14046,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "STR",
         "DEX"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Auto Rifles"
     },
     "recoil": 100,
     "gripPoints": {
@@ -13484,7 +14102,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "STR",
         "INT"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Greatswords"
     },
     "description": "A frost court's last warrant hammered into a massive iron slab, its square shoulders wearing a permanent white rime.",
     "sizeClass": "great",
@@ -13520,7 +14140,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "mid",
       "scaling": [
         "STR"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Greatswords"
     },
     "description": "A condemned forge's gate bar sharpened into a war blade, black at the spine and furnace-red along the sentence edge.",
     "sizeClass": "great",
@@ -13552,7 +14174,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "STR",
         "DEX"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Greatswords"
     },
     "description": "A frontier lightning rail recast as a great blade, copper grounding ribs counting every thunderstroke across its blue-black face.",
     "sizeClass": "great",
@@ -13584,7 +14208,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "STR",
         "INT"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Greatswords"
     },
     "description": "A chapel door of starless iron narrowed to an edge, its hollow-black fuller swallowing every reflection except a violet rim.",
     "sizeClass": "great",
@@ -13616,7 +14242,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "STR",
         "INT"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Greatswords"
     },
     "description": "A sunlit bastion plate given a hilt, pale and uncompromising, with a blue-white meridian dividing its broad face.",
     "sizeClass": "great",
@@ -13648,7 +14276,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "STR",
         "CON"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Greatswords"
     },
     "description": "A mesa standing stone bound to a miner's hilt, every blunt plane waiting for the swing that makes the mountain continue.",
     "sizeClass": "great",
@@ -13683,7 +14313,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       ],
       "handling": [
         "bolt"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Marksman Rifles"
     },
     "recoil": 146,
     "gripPoints": {
@@ -13739,7 +14371,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "LUK"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Thrown Weapons"
     },
     "collisionLength": 56,
     "description": "A plain forged-iron four-point star, balanced around a square finger-ring for repeatable close-range throws.",
@@ -13785,7 +14419,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "INT"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Thrown Weapons"
     },
     "collisionLength": 58,
     "description": "A blackened four-point star with ember-red cutting edges that carries furnace heat into every throw.",
@@ -13831,7 +14467,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "INT"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Thrown Weapons"
     },
     "collisionLength": 58,
     "description": "A pale frost-steel four-point star whose heavy rimed blades hold their edge in killing cold.",
@@ -13877,7 +14515,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "INT"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Thrown Weapons"
     },
     "collisionLength": 60,
     "description": "A dense violet-black four-point star with missing-looking inner bevels that makes a throw feel briefly weightless.",
@@ -13928,7 +14568,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "LUK"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Thrown Weapons"
     },
     "description": "A balanced black-iron throwing knife with a leaf point, corded grip, and ring pommel built for a straight decisive cast.",
     "performance": {
@@ -13973,7 +14615,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "LUK"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Thrown Weapons"
     },
     "collisionLength": 76,
     "description": "A broad battle-worn iron throwing ring that bites one target, then caroms through nearby enemies before its momentum fails.",
@@ -14024,7 +14668,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       ],
       "handling": [
         "bolt"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Marksman Rifles"
     },
     "recoil": 145,
     "gripPoints": {
@@ -14080,7 +14726,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "INT",
         "LUK"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Wands"
     },
     "recoil": 0,
     "gripPoints": {
@@ -14134,7 +14782,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "STR"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Blunderbusses"
     },
     "recoil": 151,
     "gripPoints": {
@@ -14192,7 +14842,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "STR",
         "CON"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Mauls"
     },
     "collisionLength": 90,
     "gripPoints": {
@@ -14247,7 +14899,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "STR",
         "LUK"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Launchers & Mortars"
     },
     "recoil": 195,
     "gripPoints": {
@@ -14308,7 +14962,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "INT",
         "LUK"
-      ]
+      ],
+      "weaponClass": "caster",
+      "subclass": "Wands"
     },
     "gripPoints": {
       "primary": {
@@ -14361,7 +15017,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "STR",
         "DEX"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Thrown Weapons"
     },
     "archived": true,
     "gripPoints": {
@@ -14414,7 +15072,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "STR",
         "DEX"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Scrap Cannons"
     },
     "recoil": 177,
     "gripPoints": {
@@ -14472,7 +15132,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "STR",
         "DEX"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "War Fans"
     },
     "gripPoints": {
       "primary": {
@@ -14550,7 +15212,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "INT"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "War Fans"
     },
     "gripPoints": {
       "primary": {
@@ -14628,7 +15292,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "INT"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "War Fans"
     },
     "gripPoints": {
       "primary": {
@@ -14706,7 +15372,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "STR",
         "DEX"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Martial Arts"
     },
     "collisionLength": 84,
     "poseLanguage": {
@@ -14754,7 +15422,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "STR"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Martial Arts"
     },
     "collisionLength": 72,
     "poseLanguage": {
@@ -14802,7 +15472,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "LUK"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Martial Arts"
     },
     "collisionLength": 86,
     "poseLanguage": {
@@ -14850,7 +15522,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "STR",
         "CON"
-      ]
+      ],
+      "weaponClass": "melee",
+      "subclass": "Martial Arts"
     },
     "collisionLength": 88,
     "poseLanguage": {
@@ -14898,7 +15572,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "LUK"
-      ]
+      ],
+      "weaponClass": "Special",
+      "subclass": "Special"
     },
     "recoil": 22,
     "gripPoints": {
@@ -14952,7 +15628,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "STR",
         "DEX"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Shotguns"
     },
     "recoil": 154,
     "gripPoints": {
@@ -15007,7 +15685,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "STR"
-      ]
+      ],
+      "weaponClass": "Special",
+      "subclass": "Special"
     },
     "recoil": 54,
     "gripPoints": {
@@ -15063,7 +15743,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       ],
       "handling": [
         "pistol"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Machine Pistols"
     },
     "recoil": 49,
     "gun": {
@@ -15107,7 +15789,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "CON"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Machine Pistols"
     },
     "recoil": 14,
     "gripPoints": {
@@ -15161,7 +15845,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "STR"
-      ]
+      ],
+      "weaponClass": "Special",
+      "subclass": "Special"
     },
     "recoil": 54,
     "gripPoints": {
@@ -15216,7 +15902,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       ],
       "handling": [
         "pistol"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Pistols"
     },
     "recoil": 34,
     "description": "An immaculate bulk-issue duty sidearm whose uniform tolerances, crisp stippling, and abstract dust-cover inventory glyph make procurement discipline its signature.",
@@ -15260,7 +15948,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       ],
       "handling": [
         "bolt"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Marksman Rifles"
     },
     "recoil": 106,
     "gripPoints": {
@@ -15313,7 +16003,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "STR"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Machine Pistols"
     },
     "recoil": 16,
     "twoHanded": true,
@@ -15354,7 +16046,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "STR",
         "DEX"
-      ]
+      ],
+      "weaponClass": "Special",
+      "subclass": "Special"
     },
     "recoil": 71,
     "gripPoints": {
@@ -15409,7 +16103,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "STR",
         "DEX"
-      ]
+      ],
+      "weaponClass": "Special",
+      "subclass": "Special"
     },
     "recoil": 152,
     "gripPoints": {
@@ -15462,7 +16158,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "long",
       "scaling": [
         "DEX"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Marksman Rifles"
     },
     "recoil": 104,
     "twoHanded": true,
@@ -15503,7 +16201,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "STR",
         "DEX"
-      ]
+      ],
+      "weaponClass": "Special",
+      "subclass": "Special"
     },
     "recoil": 20,
     "gripPoints": {
@@ -15557,7 +16257,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "STR"
-      ]
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Machine Pistols"
     },
     "recoil": 18,
     "twoHanded": true,
@@ -15601,7 +16303,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       ],
       "handling": [
         "bolt"
-      ]
+      ],
+      "weaponClass": "Special",
+      "subclass": "Special"
     },
     "recoil": 119,
     "gripPoints": {
@@ -15657,7 +16361,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "STR",
         "CON"
-      ]
+      ],
+      "weaponClass": "Special",
+      "subclass": "Special"
     },
     "collisionLength": 196,
     "description": "A frost hunter's iron-bound travel frame, packed with old snow and swung in one broad planted sweep to batter ice-armoured guards apart.",
@@ -15687,7 +16393,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "STR"
-      ]
+      ],
+      "weaponClass": "Special",
+      "subclass": "Special"
     },
     "collisionLength": 132,
     "gripPoints": {
@@ -15738,7 +16446,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "CON"
-      ]
+      ],
+      "weaponClass": "Special",
+      "subclass": "Special"
     },
     "recoil": 64,
     "gripPoints": {
@@ -15797,7 +16507,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "rangeBand": "long",
       "scaling": [
         "INT"
-      ]
+      ],
+      "weaponClass": "Special",
+      "subclass": "Special"
     },
     "description": "A battered frostfell caster frame whose four fixed ice-metal bars release a charge-grown pressure wedge down a long lane.",
     "performance": {
@@ -15845,7 +16557,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "STR",
         "DEX"
-      ]
+      ],
+      "weaponClass": "Special",
+      "subclass": "Special"
     },
     "collisionLength": 152,
     "gripPoints": {
@@ -15904,7 +16618,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "INT"
-      ]
+      ],
+      "weaponClass": "Special",
+      "subclass": "Special"
     },
     "recoil": 164,
     "gripPoints": {
@@ -15970,7 +16686,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "STR"
-      ]
+      ],
+      "weaponClass": "Special",
+      "subclass": "Special"
     },
     "recoil": 25,
     "twoHanded": true,
@@ -16012,7 +16730,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "INT"
-      ]
+      ],
+      "weaponClass": "Special",
+      "subclass": "Special"
     },
     "recoil": 18,
     "gripPoints": {
@@ -16069,7 +16789,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       ],
       "handling": [
         "pistol"
-      ]
+      ],
+      "weaponClass": "Special",
+      "subclass": "Special"
     },
     "recoil": 42,
     "description": "An immaculate prototype service sidearm that drives physical slugs through a conventional chamber while its paired top conductors add velocity and penetration.",
@@ -16112,7 +16834,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "STR"
-      ]
+      ],
+      "weaponClass": "Special",
+      "subclass": "Special"
     },
     "recoil": 12,
     "gripPoints": {
@@ -16166,7 +16890,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "INT"
-      ]
+      ],
+      "weaponClass": "Special",
+      "subclass": "Special"
     },
     "recoil": 67,
     "gripPoints": {
@@ -16224,7 +16950,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "INT"
-      ]
+      ],
+      "weaponClass": "Special",
+      "subclass": "Special"
     },
     "recoil": 25,
     "twoHanded": true,

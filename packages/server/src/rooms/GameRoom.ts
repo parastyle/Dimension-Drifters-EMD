@@ -1058,15 +1058,14 @@ export class GameRoom extends Room<ArenaState> {
   /** The dev workshop is an explicit abandon, followed by an empty non-bank training reservation. */
     private declare forfeitWeaponRunForWorkshop: OmitThisParameter<typeof roomProgressionMethods.forfeitWeaponRunForWorkshop>;
 
-  /** §31 full browsable ACTIVE roster. Archived ids remain canonical but have no showroom page. */
-  /** §41 the showroom roster, ORGANIZED: class → family → name, so every page reads as a coherent shelf
-   *  ("all the melee axes together") instead of concept-file order. Stable + deterministic. */
+  /** Full browsable ACTIVE roster. Archived ids remain canonical but have no showroom page. */
     private static readonly GALLERY_ROSTER = GAME_ROOM_STATICS.GALLERY_ROSTER;
-    private static readonly GALLERY_PAGE = GAME_ROOM_STATICS.GALLERY_PAGE; // weapons per page (14×3 grid) — comfortably performant
+  /** One deterministic page per subclass, ordered subclass within the player-facing class. */
+    private static readonly GALLERY_GROUPS = GAME_ROOM_STATICS.GALLERY_GROUPS;
   private galleryPage = 0;
 
-  /** §31 (re)spawn the current showroom PAGE: clear the gallery pickups (`pk*`) and lay out this page's
-   *  slice of GALLERY_ROSTER in a grid above the player. Wraps the page index. Training mode only.
+  /** §31 (re)spawn the current showroom SUBCLASS: clear the gallery pickups (`pk*`) and lay out this
+   *  subclass in a grid above the player. Wraps the page index. Training mode only.
    *  §41 cells keep their EXACT grid position — a cell over a pit is SKIPPED (the shelf shows a gap)
    *  instead of safeSpawnPos NUDGING it: the old nudge scattered the neat grid and piled pickups onto their
    *  neighbours, so E grabbed "the wrong thing" and pages read as disorganized. */
