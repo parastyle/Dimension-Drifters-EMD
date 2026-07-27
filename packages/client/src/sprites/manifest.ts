@@ -14808,6 +14808,32 @@ export const SPRITES = {
       }
     ]
   },
+  "x2-prism-scatter-emitter": {
+    "id": "x2-prism-scatter-emitter",
+    "kind": "weapon",
+    "canvas": {
+      "w": 274,
+      "h": 143
+    },
+    "body": {
+      "cx": 143.31,
+      "cy": 65.97,
+      "w": 256,
+      "h": 91
+    },
+    "parts": [
+      {
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 91,
+        "cx": 143.31,
+        "cy": 65.97,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
+  },
   "x2-prismhex-diffraction-gauntlet": {
     "id": "x2-prismhex-diffraction-gauntlet",
     "kind": "weapon",

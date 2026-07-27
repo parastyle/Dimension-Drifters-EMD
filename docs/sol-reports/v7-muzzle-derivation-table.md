@@ -1,6 +1,6 @@
 # V7 Muzzle Derivation Table
 
-Generated from sprite alpha for all 182 active projectile, beam, and authored melee-impact definitions. Coordinates are source-PNG pixels.
+Generated from sprite alpha for all 183 active projectile, beam, and authored melee-impact definitions. Coordinates are source-PNG pixels.
 
 | Weapon | Derived barrel tip | Authored muzzle point(s) | Override |
 | --- | --- | --- | --- |
@@ -125,6 +125,7 @@ Generated from sprite alpha for all 182 active projectile, beam, and authored me
 | `x2-pocket-vector-45` (Pocket Vector .45) | part-1 (255, 60.3) | part-1 (255, 60.3) | No |
 | `x2-powderkeg-mortar` (Powderkeg Mortar) | part-1 (255, 39.4) | part-1 (255, 39.4) | No |
 | `x2-precinct-smg-9` (Precinct SMG-9) | part-1 (255, 17.9) | part-1 (255, 17.9) | No |
+| `x2-prism-scatter-emitter` (Prism Scatter Emitter) | part-1 (255, 26.4) | part-1 (255, 26.4) | No |
 | `x2-psalter-of-the-burning-halo` (Psalter of the Burning Halo) | part-1 (255, 109.9) | part-1 (255, 109.9) | No |
 | `x2-quartzlight-wayfinder` (Quartzlight Wayfinder) | part-1 (253, 72.5) | part-1 (253, 72.5) | No |
 | `x2-quicksilver-fanner` (Quicksilver Fanner) | part-1 (255, 16) | part-1 (255, 16) | No |

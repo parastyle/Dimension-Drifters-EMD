@@ -88,8 +88,8 @@ function assertVisibleExtentEqualsDamageExtent(definition: WeaponDef): void {
 describe("B30 B15/B24/B28 expunged-VFX hit-envelope audit", () => {
   it("sweeps the complete post-B63/B66 cohort through the envelope law", () => {
     const cohort = Object.values(WEAPONS).filter(wasB24FallbackCandidate);
-    // Preserve the literal membership-loss tripwire: all five new eligible guns must be audited.
-    expect(cohort).toHaveLength(346);
+    // Preserve the literal membership-loss tripwire: all six new eligible guns must be audited.
+    expect(cohort).toHaveLength(347);
 
     for (const definition of cohort) {
       assertVisibleExtentEqualsDamageExtent(definition);

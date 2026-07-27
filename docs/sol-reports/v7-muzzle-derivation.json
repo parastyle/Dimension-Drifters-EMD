@@ -2767,6 +2767,28 @@
     "barrelMode": "parallel"
   },
   {
+    "id": "x2-prism-scatter-emitter",
+    "name": "Prism Scatter Emitter",
+    "sprite": "x2-prism-scatter-emitter",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 26.4
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 26.4
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
     "id": "x2-psalter-of-the-burning-halo",
     "name": "Psalter of the Burning Halo",
     "sprite": "x2-psalter-of-the-burning-halo",

@@ -16241,6 +16241,62 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "spread": 0.018,
       "muzzleColor": 12945978
     }
+  },
+  "x2-prism-scatter-emitter": {
+    "id": "x2-prism-scatter-emitter",
+    "name": "Prism Scatter Emitter",
+    "expansion": true,
+    "damage": 6,
+    "range": 118,
+    "halfArc": 0.58,
+    "cooldown": 0.58,
+    "displayLength": 132,
+    "swingArc": 1.8,
+    "gripFrac": 0.17,
+    "tags": {
+      "grip": "2H",
+      "size": "M",
+      "delivery": "projectile",
+      "fireMode": "semi-auto",
+      "element": "arcane",
+      "classPool": "ranged",
+      "family": "energy-shotgun",
+      "rangeBand": "close",
+      "scaling": [
+        "INT",
+        "STR"
+      ]
+    },
+    "recoil": 143,
+    "gripPoints": {
+      "primary": {
+        "x": 0.28,
+        "y": 0.7
+      },
+      "secondary": {
+        "x": 0.62,
+        "y": 0.67,
+        "role": "horizontal-foregrip"
+      }
+    },
+    "description": "An immaculate breaching energy shotgun whose precisely angled splitter prisms turn each charged discharge into a fast penetrating fan.",
+    "twoHanded": true,
+    "gun": {
+      "damage": 5,
+      "projectileSpeed": 1150,
+      "range": 420,
+      "fireRate": 0.58,
+      "magazine": 5,
+      "reloadSeconds": 1.9,
+      "bulletKind": "laser",
+      "muzzle": "spark",
+      "recoil": 0.0012,
+      "projectileArt": "generated",
+      "pellets": 6,
+      "spread": 0.34,
+      "pierce": 2,
+      "muzzleColor": 14719546
+    }
   }
 };
 

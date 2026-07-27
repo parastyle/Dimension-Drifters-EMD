@@ -75,15 +75,15 @@ describe("B24 shared radial fallback removal", () => {
       ]),
     );
 
-    // Literal membership-loss tripwires: five new guns must join this behavioral cohort rather than
+    // Literal membership-loss tripwires: six new guns must join this behavioral cohort rather than
     // silently escaping the fallback-removal law. Authored Rimegut/Whiteout VFX stay excluded.
-    expect(candidates).toHaveLength(346);
+    expect(candidates).toHaveLength(347);
     expect(byFormerLayer).toEqual({
-      "blade-trail": 308,
+      "blade-trail": 309,
       "twin-slash": 27,
       "thrust-streak": 11,
     });
-    expect(candidates.filter((definition) => !definition.archived)).toHaveLength(328);
+    expect(candidates.filter((definition) => !definition.archived)).toHaveLength(329);
     expect(candidates.filter((definition) => definition.archived)).toHaveLength(18);
     for (const id of MARKED_RADIAL_WEAPON_IDS)
       expect(

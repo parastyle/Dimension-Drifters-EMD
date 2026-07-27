@@ -59,7 +59,7 @@ describe("active gun sound-family census", () => {
     const mappedIds = Object.keys(ACTIVE_GUN_FIRE_FAMILY_BY_ID).sort();
 
     // Deliberately literal: losing a gun from the classification cohort must not self-validate.
-    expect(activeGunIds).toHaveLength(144);
+    expect(activeGunIds).toHaveLength(145);
     expect(mappedIds).toEqual(activeGunIds);
     for (const weaponId of activeGunIds) {
       const family = gunFireFamilyFor(weaponId);

@@ -2842,6 +2842,28 @@ export const WEAPON_ART_MUZZLES = {
     "salvoMode": "parallel",
     "barrelMode": "parallel"
   },
+  "x2-prism-scatter-emitter": {
+    "sprite": "x2-prism-scatter-emitter",
+    "parts": [
+      {
+        "width": 256,
+        "height": 91
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 26.4,
+        "derived": {
+          "x": 255,
+          "y": 26.4
+        }
+      }
+    ],
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
   "x2-psalter-of-the-burning-halo": {
     "sprite": "x2-psalter-of-the-burning-halo",
     "parts": [
