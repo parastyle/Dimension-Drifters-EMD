@@ -503,6 +503,13 @@ import {
   ZoneStyle,
 } from "@dd/shared";
 import { type Client, Room } from "colyseus";
+
+/**
+ * Simulation TIMER granularity — deliberately a divisor of TICK_MS, not TICK_MS itself. The authoritative
+ * sub-step stays exactly TICK_MS; this only controls how often the accumulator is sampled, so ordinary
+ * Node timer lateness cannot bank a whole tick of remainder and then emit two sub-steps in one patch.
+ */
+const SIM_SAMPLE_MS = TICK_MS / 5;
 import { appendOwnerNote, sanitizeOwnerNote } from "../../owner-notes.js";
 import {
   BossController,
@@ -2667,7 +2674,18 @@ export const roomProgressionMethods = {
       },
     );
 
-    this.setSimulationInterval((deltaMs) => this.update(deltaMs), TICK_MS);
+    // SAMPLE FINER THAN THE STEP. The sim integrates in exact TICK_MS sub-steps (see `update`), but
+    // driving it from a TICK_MS timer samples on the very grid it must emit on. Node timers fire LATE
+    // (Windows granularity), so the remainder accumulates until one invocation runs TWO sub-steps and
+    // broadcasts them as a single double-tick patch. Owner captures showed exactly that: server tick
+    // measured at 31-62ms against a 50ms target, `gap 1-2`, drift peaking at a full missed tick, and a
+    // matching 16px one-tick jump in the client's rendered path.
+    //
+    // A divisor grid decouples sampling from emission: each invocation adds ~10ms, a sub-step lands on
+    // roughly every fifth, and ordinary timer jitter shifts the boundary by at most one small slot
+    // instead of swallowing a whole tick. Sub-steps stay EXACTLY TICK_MS, so the client-prediction
+    // agreement contract is untouched -- only the sampling granularity changes.
+    this.setSimulationInterval((deltaMs) => this.update(deltaMs), SIM_SAMPLE_MS);
     // §7 v0.105 de-clunk: DISABLE the independent patch timer and broadcast at the END of each tick
     // instead (`this.broadcastPatch()` in `update`). Colyseus's default patch interval is a SECOND 50ms
     // timer whose phase drifts against the sim, so a fresh tick's results could wait up to a full extra

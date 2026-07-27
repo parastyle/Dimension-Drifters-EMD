@@ -1,6 +1,6 @@
 # Solo rubberband telemetry evidence
 
-Captured 2026-07-27T20:00:31.517Z through one real Colyseus client on OS-assigned loopback port 49468.
+Captured 2026-07-27T20:28:55.731Z through one real Colyseus client on OS-assigned loopback port 55710.
 Ports 5180 and 2567 were not used.
 
 - `run-summary.json` is the ranked scenario table and aggregate count.
