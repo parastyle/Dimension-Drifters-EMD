@@ -63,7 +63,7 @@ import {
   type MeleeComboMotion,
   type MeleeComboStep,
   type MeleeComboVariant,
-  MOVE_HITCH_MIN_ANGLE,
+  MOVE_TURN_PRESENTATION_MIN_ANGLE,
   MOVE_SPEED,
   PARRY_ABOVE_BRACE_SECONDS,
   type ParryGuardPose,
@@ -74,7 +74,7 @@ import {
   meleeComboSequenceFor,
   meleeReach,
   PLAYER_RADIUS,
-  PROCEDURAL_JIGGLE,
+  PROCEDURAL_LIMB_PHYSICS,
   rapidThrustExtensionAt,
   ROLL_DURATION,
   ROLL_IFRAME_TICKS,
@@ -678,7 +678,7 @@ export function flourishMovementIntent(
   const directionDot =
     (previousX * desiredX + previousY * desiredY) / (previousLength * desiredLength);
   const directionChange = Math.acos(Math.max(-1, Math.min(1, directionDot)));
-  return directionChange > MOVE_HITCH_MIN_ANGLE + 1e-10;
+  return directionChange > MOVE_TURN_PRESENTATION_MIN_ANGLE + 1e-10;
 }
 
 /** One per-frame Arena capture, including requests rejected by gameplay cooldowns or collision. */
@@ -935,8 +935,8 @@ export interface FacingFlipState {
   velocity: number;
 }
 
-/** Maximum signed-mirror travel per second. A 100px authored pivot moves at most 5.84px per 60Hz frame. */
-export const FACING_FLIP_MAX_SPEED = 3.5;
+/** Maximum signed-mirror travel per second. A 100px authored pivot moves at most 5px per 60Hz frame. */
+export const FACING_FLIP_MAX_SPEED = 3;
 const FACING_FLIP_SPRING = 18;
 const FACING_FLIP_SUBSTEP_SECONDS = 1 / 120;
 
@@ -1225,7 +1225,7 @@ export function attackSignatureColor(element: WeaponDef["tags"]["element"]): num
   }
 }
 
-/** PROCEDURAL_JIGGLE ownership envelope: anticipation ramps in, active is exact, follow-through hands off. */
+/** Limb-physics ownership envelope: anticipation ramps in, active is exact, follow-through hands off. */
 export function actionOwnershipAt(
   t: number,
   activeStart: number,
@@ -1651,6 +1651,8 @@ export interface FloatingHeadSpringTuning {
   reducedAngularFrequency: number;
   reducedMaxOffset: number;
   manifestRestInsetPx: number;
+  idleDriftXPx: number;
+  idleDriftYPx: number;
   walkBobPx: number;
   dashLagPx: number;
   slideLagPx: number;
@@ -1659,22 +1661,24 @@ export interface FloatingHeadSpringTuning {
   bigAttackLeadPx: number;
 }
 
-/** Slightly slower and more damped than the 10rad/s, 0.32 hand channel: compact mass, not a loose limb. */
+/** Compact, critically damped head mass: always alive, never a loose or oscillating bobblehead. */
 export const FLOATING_HEAD_SPRING_TUNING: Readonly<FloatingHeadSpringTuning> = Object.freeze({
-  angularFrequency: 8.4,
-  dampingRatio: 0.48,
-  maxOffsetX: 3,
-  maxOffsetY: 1.75,
-  maxVelocity: 48,
+  angularFrequency: 9,
+  dampingRatio: 1,
+  maxOffsetX: 0.55,
+  maxOffsetY: 0.65,
+  maxVelocity: 18,
   reducedAngularFrequency: 30,
   reducedMaxOffset: 0.35,
   manifestRestInsetPx: 4.5,
-  walkBobPx: 0.55,
-  dashLagPx: 1.4,
-  slideLagPx: 1.7,
-  airHangPx: 0.75,
-  landingDipPx: 0.85,
-  bigAttackLeadPx: 1.6,
+  idleDriftXPx: 0.18,
+  idleDriftYPx: 0.24,
+  walkBobPx: 0.45,
+  dashLagPx: 1.1,
+  slideLagPx: 1.25,
+  airHangPx: 0.6,
+  landingDipPx: 0.65,
+  bigAttackLeadPx: 1.25,
 });
 
 /** One counter-phase step beat. The authored body socket remains the zero/rest geometry. */
@@ -2865,7 +2869,7 @@ export const rigCoreMethods = {
     }
   },
 
-  /** Arrival envelope is evaluated by `animate()` so facing, combo poses, and jiggle keep transform ownership. */
+  /** Arrival envelope is evaluated by `animate()` so facing, combo poses, and limb physics keep ownership. */
   playSpawnUnfold(this: SpriteRigContext, timeMs: number, durationMs = 220): void {
     this.resetFlourishState(false);
     this.foldStartMs = -1;

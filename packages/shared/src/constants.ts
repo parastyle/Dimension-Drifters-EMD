@@ -107,63 +107,49 @@ export const DRIVE_BEAM_RESTART_THRESHOLD = 68 as const;
 export const MOVE_SPEED = 320;
 
 /**
- * §7 v0.111 PIVOT movement ("pull the reins"). Superseded the v0.105 continuous velocity-steer (which
- * curved the PATH on every turn = mushy). The heading is now DIRECT — the body faces input instantly
- * (responsive, essential for a dodge game) — and the directional WEIGHT is a discrete, ONE-TIME
- * TURN-HITCH: a SHARP direction change (> MOVE_HITCH_MIN_ANGLE) briefly dips the speed (the "stop"),
- * scaled by how sharp the turn is (a full reversal now retains 95.8%; a 45° nudge is free), then speed
- * recovers over MOVE_RECOVER_ACCEL (the "go"). A slow arc keeps each tick's turn angle small → never
- * hitches. The dip fires ONCE because the heading snaps to input each tick (next tick already aligned
- * → no re-dip). All state lives in the (synced) velocity, so client prediction is unchanged. (tuning)
+ * Presentation-only threshold for a visible turn commitment. It may move loose art inside the rig, but
+ * never feeds the authoritative/predicted root velocity: ordinary locomotion is always exactly MOVE_SPEED.
  */
-/** Sharp-turn threshold (rad). Below this the turn is smooth/free; above it dips the speed. ~45°. */
-export const MOVE_HITCH_MIN_ANGLE = Math.PI / 4;
-/** Max fraction the speed dips on the sharpest (180°) turn. Server-tuning wave: 0.42→0.042 cuts the
- *  direction-switch gate's INTENSITY by 90%, so a full reversal retains 95.8% speed. */
-export const MOVE_HITCH_DIP = 0.042;
-/** Below this speed (px/s) a turn can't hitch — starting from ~rest just accelerates, never "pivots". */
-export const MOVE_HITCH_MIN_SPEED = 40;
-/** Speed recovery after a hitch / spin-up from rest (px/s²). v0.117 EASE 1800→2600 (~0.12s to top, was
- *  ~0.18s) so the "go" snaps back fast after a swap — responsiveness is king in a dodge game. */
-export const MOVE_RECOVER_ACCEL = 2600;
-/** Crisp stop when input is released (px/s²) — ~0.12s from top speed to 0, no ice-skating. */
-export const MOVE_STOP_DECEL = 2600;
+export const MOVE_TURN_PRESENTATION_MIN_ANGLE = Math.PI / 4;
 
 /**
- * PROCEDURAL JIGGLE (client-cosmetic Stage 1). These exports live here only to keep the rollback flag and
- * role tuning in one auditable block; server simulation never reads spring state. Migration deliberately
- * starts near critical and inside the devil's-advocate combat/readability ceilings. Frequencies are angular
- * rad/s, damping values are ratios, displacement is normalized rig-local px, and velocity is local px/s.
+ * HEAD/HAND/FOOT PHYSICS (client-cosmetic). The legacy `JIGGLE_*` tuning names remain source-compatible,
+ * but this is no longer a general bouncy-secondary-motion system. Only the detached head, hands, and feet
+ * consume these values; every follower is critically damped, tightly bounded, and committed through the
+ * B68 limb-priority resolver. Server simulation never reads spring state. Frequencies are angular rad/s,
+ * damping values are ratios, displacement is normalized rig-local px, and velocity is local px/s.
  */
-export const PROCEDURAL_JIGGLE = true;
-export const JIGGLE_HAND_W = 10; // §50 FLOPPY tune (director: "much more bouncier and floppier")
-export const JIGGLE_HAND_Z = 0.32;
-export const JIGGLE_FOOT_AIR_W = 12;
-export const JIGGLE_FOOT_AIR_Z = 0.38;
+export const PROCEDURAL_LIMB_PHYSICS = true;
+/** @deprecated Compatibility alias. New code must use PROCEDURAL_LIMB_PHYSICS. */
+export const PROCEDURAL_JIGGLE = PROCEDURAL_LIMB_PHYSICS;
+export const JIGGLE_HAND_W = 14;
+export const JIGGLE_HAND_Z = 1;
+export const JIGGLE_FOOT_AIR_W = 16;
+export const JIGGLE_FOOT_AIR_Z = 1;
 export const JIGGLE_FOOT_PLANT_W = 34;
 export const JIGGLE_FOOT_PLANT_Z = 1;
-export const JIGGLE_HAND_MAX_X = 22; // §50 floppy: 0.29 body heights
-export const JIGGLE_HAND_MAX_Y = 22;
-export const JIGGLE_FOOT_MAX_X = 9; // §50 floppy
-export const JIGGLE_FOOT_MAX_Y = 9;
-export const JIGGLE_HAND_MAX_V = 420;
-export const JIGGLE_FOOT_MAX_V = 240;
-export const JIGGLE_FREE_HAND_INERTIA = 0.95;
-export const JIGGLE_WEAPON_HAND_INERTIA = 0.7;
-export const JIGGLE_FOOT_AIR_INERTIA = 0.45;
-export const JIGGLE_FOOT_PLANT_INERTIA = 0.05;
+export const JIGGLE_HAND_MAX_X = 5;
+export const JIGGLE_HAND_MAX_Y = 5.5;
+export const JIGGLE_FOOT_MAX_X = 2.5;
+export const JIGGLE_FOOT_MAX_Y = 2.25;
+export const JIGGLE_HAND_MAX_V = 90;
+export const JIGGLE_FOOT_MAX_V = 60;
+export const JIGGLE_FREE_HAND_INERTIA = 0.24;
+export const JIGGLE_WEAPON_HAND_INERTIA = 0.16;
+export const JIGGLE_FOOT_AIR_INERTIA = 0.14;
+export const JIGGLE_FOOT_PLANT_INERTIA = 0.02;
 export const JIGGLE_SIGNAL_IMPULSE_HZ = 7;
 export const JIGGLE_SELF_FILTER_HZ = 26;
 export const JIGGLE_REMOTE_FILTER_HZ = 14;
 export const JIGGLE_SIGNAL_DEAD_ZONE = 0.015;
-export const JIGGLE_HANDOFF_MAX_V = 120;
+export const JIGGLE_HANDOFF_MAX_V = 40;
 export const JIGGLE_HAND_IDLE_X = 0.55;
 export const JIGGLE_HAND_IDLE_Y = 0.75;
 export const JIGGLE_FOOT_IDLE_X = 0.16;
 export const JIGGLE_FOOT_IDLE_Y = 0.22;
-export const JIGGLE_TURN_HAND_KICK = 30;
-export const JIGGLE_TURN_FOOT_KICK = 4;
-export const JIGGLE_LAND_HAND_KICK = 48;
+export const JIGGLE_TURN_HAND_KICK = 7;
+export const JIGGLE_TURN_FOOT_KICK = 1.5;
+export const JIGGLE_LAND_HAND_KICK = 12;
 export const JIGGLE_SIZE_FREQ_POWER = -0.35;
 export const JIGGLE_SIZE_FREQ_MIN = 0.42;
 export const JIGGLE_SIZE_FREQ_MAX = 1.05;

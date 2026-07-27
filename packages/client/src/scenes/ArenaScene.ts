@@ -9399,7 +9399,9 @@ export class ArenaScene extends Phaser.Scene {
           constrainedRoot.x,
           constrainedRoot.y,
           frame.wallDeltaMs,
-          locomotionSpeed + recoilSpeed + 48,
+          // Root correction debt never adds speed to ordinary locomotion. It may retire at a quiet
+          // 48 px/s while idle; once the actor moves, the declared locomotion/recoil lane is the cap.
+          Math.max(48, locomotionSpeed + recoilSpeed),
           INTERP_SNAP_PLAYER,
         );
         state.rootX = root.x;

@@ -63,7 +63,7 @@ import {
   type MeleeComboMotion,
   type MeleeComboStep,
   type MeleeComboVariant,
-  MOVE_HITCH_MIN_ANGLE,
+  MOVE_TURN_PRESENTATION_MIN_ANGLE,
   MOVE_SPEED,
   PARRY_ABOVE_BRACE_SECONDS,
   type ParryGuardPose,
@@ -74,7 +74,7 @@ import {
   meleeComboSequenceFor,
   meleeReach,
   PLAYER_RADIUS,
-  PROCEDURAL_JIGGLE,
+  PROCEDURAL_LIMB_PHYSICS,
   rapidThrustExtensionAt,
   ROLL_DURATION,
   ROLL_IFRAME_TICKS,
@@ -1154,7 +1154,7 @@ export class SpriteRig {
     private declare applyLoadoutHeadTexture: OmitThisParameter<typeof rigGearMethods.applyLoadoutHeadTexture>;
 
   /** A compatibility scaffold may omit a limb; promote the authored boilerplate part into the normal
-   * hand/foot arrays so every pose and jiggle writer sees the same complete five-node base skeleton. */
+   * hand/foot arrays so every pose and limb-physics writer sees the same complete five-node base skeleton. */
     private declare createBoilerplateLimb: OmitThisParameter<typeof rigGearMethods.createBoilerplateLimb>;
 
   /** Atomically retarget the retained skeleton once all six loose textures exist. */
@@ -1257,7 +1257,7 @@ export class SpriteRig {
    * its requested ~0.5s onset by several seconds. */
     private declare idleFlourishTimerNow: OmitThisParameter<typeof rigFlourishMethods.idleFlourishTimerNow>;
 
-  /** Actionable presentation input wins immediately; combat clocks and the broader jiggle system are intact. */
+  /** Actionable presentation input wins immediately; combat clocks and head/hand/foot physics stay intact. */
     declare cancelFlourish: OmitThisParameter<typeof rigFlourishMethods.cancelFlourish>;
 
   /** Test/debug seam: one increment per real cancellation edge, never per polling frame. */
@@ -1326,7 +1326,7 @@ export class SpriteRig {
   /** Set/clear the seekable flagship pose. The caller reasserts it each frame; no milestone tween owns it. */
     declare setVastagharPose: OmitThisParameter<typeof rigCoreMethods.setVastagharPose>;
 
-  /** Arrival envelope is evaluated by `animate()` so facing, combo poses, and jiggle keep transform ownership. */
+  /** Arrival envelope is evaluated by `animate()` so facing, combo poses, and limb physics keep ownership. */
     declare playSpawnUnfold: OmitThisParameter<typeof rigCoreMethods.playSpawnUnfold>;
 
   /** Cosmetic-only departure twin of `playSpawnUnfold`; teleport ownership stays entirely server-side. */
@@ -1533,7 +1533,7 @@ export class SpriteRig {
     declare destroy: OmitThisParameter<typeof rigCoreMethods.destroy>;
 
   /** Absolute two-foot targets layer under the authored body translation. Ownership reaches zero by the
-   * held guard, so gait/jiggle can settle without moving the authoritative root. */
+   * held guard, so gait/limb physics can settle without moving the authoritative root. */
     private declare setComboFootwork: OmitThisParameter<typeof rigCombatMethods.setComboFootwork>;
 
   /** Place the rear hand at a stable pole pivot and reconstruct the lead hand down the same haft. */

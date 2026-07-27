@@ -82,7 +82,8 @@ export class PresentationFrameClock {
 /**
  * Final root-only guard. Predictor/authority debt may move the presentation target faster than the actor's
  * declared locomotion plus recoil channels; retain that debt in root space instead of differentiating it
- * into pose. Teleports still cut immediately.
+ * into pose. The caller may supply a quiet idle-correction floor, but there is no per-frame additive
+ * headroom that can pulse ordinary movement. Teleports still cut immediately.
  */
 export function limitPresentedRootStep(
   previousX: number,
@@ -97,7 +98,7 @@ export function limitPresentedRootStep(
   const dy = targetY - previousY;
   const distance = Math.hypot(dx, dy);
   if (distance <= 1e-6 || distance >= snapDistance) return { x: targetX, y: targetY };
-  const maxStep = Math.max(2, (Math.max(0, declaredSpeed) * Math.max(0, elapsedMs)) / 1000 + 2);
+  const maxStep = (Math.max(0, declaredSpeed) * Math.max(0, elapsedMs)) / 1000;
   if (distance <= maxStep) return { x: targetX, y: targetY };
   const scale = maxStep / distance;
   return { x: previousX + dx * scale, y: previousY + dy * scale };

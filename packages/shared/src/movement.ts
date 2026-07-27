@@ -16,12 +16,7 @@ import {
   LANDING_TIER_SOFT,
   LANDING_TIER_SOLID,
   type LandingThumpTier,
-  MOVE_HITCH_DIP,
-  MOVE_HITCH_MIN_ANGLE,
-  MOVE_HITCH_MIN_SPEED,
-  MOVE_RECOVER_ACCEL,
   MOVE_SPEED,
-  MOVE_STOP_DECEL,
   PLAYER_RADIUS,
   POUND_DAMAGE_BASE,
   POUND_DAMAGE_CAP,
@@ -90,66 +85,29 @@ export interface Impulse {
 }
 
 /**
- * §7 v0.111 PIVOT the movement velocity toward the input — the directional WEIGHT is a discrete turn-hitch,
- * NOT a continuous path-curve (v0.105's steer, which felt mushy). The heading is DIRECT: the velocity snaps
- * to the input direction every tick (responsive — vital for dodging). The WEIGHT is a one-time speed dip on
- * a SHARP turn: if the angle between the current heading and the new input heading exceeds
- * MOVE_HITCH_MIN_ANGLE (~45°), the speed dips to `1 − t·MOVE_HITCH_DIP` (t = 0 at the threshold → 1 at a
- * 180° reversal). The tuned dip is deliberately light (95.8% retention on a reversal), then RECOVERS
- * toward top speed at MOVE_RECOVER_ACCEL. It fires ONCE per turn: after the
- * dip the heading already matches input, so the next tick's angle is ~0 and the speed just recovers. A slow
- * arc keeps each tick's angle small → never hitches. Released input decelerates to 0 (MOVE_STOP_DECEL, no
- * ice-skating). PURE + deterministic; all state is the returned velocity, so client prediction is unchanged.
+ * §7 constant-speed law. Non-zero input snaps directly to its unit heading at exactly `speed`; released
+ * input snaps to rest. There is no acceleration, turn hitch, facing/aim comparison, per-direction scalar,
+ * or retained velocity magnitude. `speed` is the single explicit seam for sanctioned attack/parry or
+ * environmental-slow rules. PURE + deterministic for authority and owner prediction.
  */
 export function steerVelocity(
-  vel: Impulse,
+  _vel: Impulse,
   input: MoveInput,
-  dtSeconds: number,
+  _dtSeconds: number,
   speed: number = MOVE_SPEED,
 ): Impulse {
   const dx = input.dx;
   const dy = input.dy;
   const inLen = Math.hypot(dx, dy);
-  const curSpeed = Math.hypot(vel.vx, vel.vy);
-
-  // No input → crisp decel to a stop along the current heading (no ice-skating).
-  if (inLen < 1e-4) {
-    const ns = curSpeed - MOVE_STOP_DECEL * dtSeconds;
-    if (ns <= 1 || curSpeed < 1e-4) return { vx: 0, vy: 0 };
-    return { vx: (vel.vx / curSpeed) * ns, vy: (vel.vy / curSpeed) * ns };
-  }
-
-  // Desired heading (unit) — the body faces input INSTANTLY (direct). Input magnitude is clamped ≤1 for
-  // the flat-speed / anti-cheat posture, but the DIRECTION is always taken as a unit vector.
-  const inx = dx / inLen;
-  const iny = dy / inLen;
-
-  // TURN-HITCH: a sharp change vs the current heading dips the speed once (the "stop"). Skipped from ~rest
-  // (nothing to pivot from) — that just spins up via the recover path below.
-  if (curSpeed > MOVE_HITCH_MIN_SPEED) {
-    const vdx = vel.vx / curSpeed;
-    const vdy = vel.vy / curSpeed;
-    const dot = clamp(vdx * inx + vdy * iny, -1, 1);
-    const ang = Math.acos(dot); // 0 (same way) … π (full reversal)
-    if (ang > MOVE_HITCH_MIN_ANGLE) {
-      const t = clamp((ang - MOVE_HITCH_MIN_ANGLE) / (Math.PI - MOVE_HITCH_MIN_ANGLE), 0, 1);
-      const dipped = speed * (1 - t * MOVE_HITCH_DIP);
-      // snap the heading + dip the speed (but never SPEED UP on the turn tick).
-      const ns = Math.min(curSpeed, dipped);
-      return { vx: inx * ns, vy: iny * ns };
-    }
-  }
-
-  // Aligned / gentle turn / spin-up-from-rest → recover toward top speed (the "go"), heading = input.
-  const ns = Math.min(speed, curSpeed + MOVE_RECOVER_ACCEL * dtSeconds);
-  return { vx: inx * ns, vy: iny * ns };
+  if (inLen < 1e-4 || speed <= 0) return { vx: 0, vy: 0 };
+  const constantSpeed = Math.max(0, speed);
+  return { vx: (dx / inLen) * constantSpeed, vy: (dy / inLen) * constantSpeed };
 }
 
 /**
- * §7 v0.105 one STEERED movement step: steer the velocity toward the input, integrate it, clamp to the
- * arena. The server's authoritative movement (replacing the old instant-velocity step); returns the new
- * velocity so the caller persists it per player. Same anti-cheat posture as before — the input magnitude
- * is clamped inside `steerVelocity` and the speed ceiling is hard. PURE.
+ * One constant-speed movement step: normalize the input exactly once, integrate it, and clamp to the arena.
+ * The server and predictor persist the returned vector for presentation/network truth, but its magnitude
+ * carries no gait phase or acceleration debt. Same anti-cheat posture as before. PURE.
  */
 export function stepSteeredMovement(
   pos: Vec2,

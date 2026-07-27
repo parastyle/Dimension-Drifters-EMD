@@ -660,7 +660,7 @@ export interface InputCmd {
   movement?: ClientMovementReport;
 }
 
-/** Per-client input pipeline + the player's PERSISTENT steered movement velocity (§7 course correction).
+/** Per-client input pipeline + the player's constant-speed movement velocity.
  *  §4 v0.107: commands queue here (bounded), the tick consumes toward ONE per fixed sub-step and falls
  *  back to `held` when starved (preserving the original held-input semantics); `lastSeq` enforces
  *  monotonicity (drops replays/garbage), `msgBudget` rate-caps the message handler per tick. */
@@ -1716,7 +1716,7 @@ export const roomProgressionMethods = {
     // every field is coerced (a non-number `seq` assigned raw into the uint32 `ackSeq` would THROW inside
     // the schema setter and, uncaught, kill the process — review #4), seq is forced MONOTONIC (drops
     // replays/regressions and keeps ackSeq meaningful), and a per-tick message budget caps handler CPU
-    // against floods (review #18). The steered movement step still clamps magnitude + speed + bounds, so
+    // against floods (review #18). The movement step still normalizes direction and clamps bounds, so
     // none of this trusts direction values either. Legacy seq-less messages (the test harness) get a
     // synthetic next-seq so held-input semantics keep working.
     // onJoin owner messages can cross the transport before a client has installed its post-join callbacks.
@@ -3645,8 +3645,8 @@ export const roomProgressionMethods = {
         player.mvy = 0;
         return;
       }
-      // §7 v0.105 STEERED movement (course correction): the velocity blends toward the input's target,
-      // so forward→up sweeps through the diagonal, taps ease in, releases ease out — no more snap-turns.
+      // Ordinary movement snaps to the normalized input heading at one declared speed. Attack/parry and
+      // explicit environmental channels pass their own declared scalar into the same shared stepper.
       // §29 belt mode confines DEPTH (y) to the shallow band; the client predictor passes identical bounds.
       const beamRuntime = this.combat.get(id);
       if (
@@ -3818,6 +3818,18 @@ export const roomProgressionMethods = {
         ) &&
         movement?.movementCorrectionSeq === player.dualWield.movementCorrectionSeq;
       if (movement && movementEpochCurrent && !player.dualWield.serverMotionActive) {
+        const pendingWeapon = WEAPONS[player.weapon];
+        const pendingGunRecoil =
+          pendingWeapon?.gun &&
+          player.ultPhase === UltimatePhase.Idle &&
+          beamRuntime &&
+          beamRuntime.stance !== STANCE_SLIDE &&
+          beamRuntime.attackBuffer > dt &&
+          beamRuntime.cd <= dt &&
+          beamRuntime.drawLock <= dt &&
+          (!isBreakActionWeapon(pendingWeapon) || (player.charges > 0 && beamRuntime.reloadCd <= 0))
+            ? (pendingWeapon.recoil ?? 0)
+            : 0;
         const movementSpeedBudget = Math.max(
           baseMoveSpeed,
           // Distance jumps and dodge rolls are player traversal verbs with explicit motion epochs.
@@ -3833,9 +3845,19 @@ export const roomProgressionMethods = {
           fromY: movementStartY,
           dtSeconds: dt,
           maxMoveSpeed: movementSpeedBudget,
-          maxImpulseSpeed: movementStartImpulse,
+          // The client may mint up to INPUT_MSGS_PER_TICK fixed-step heartbeats after a loaded frame.
+          // Newest-wins draining consumes that batch in one server step. The accepted self-movement path
+          // adopts its newest position after collision resolution, so bound the report by the same number
+          // of fixed client steps: elapsed distance still equals declared speed times elapsed client time.
+          clientCatchUpDisplacementPx:
+            movementSpeedBudget * dt * Math.max(0, INPUT_MSGS_PER_TICK - 1),
+          // A locally predicted gun impulse can share the input heartbeat that armed the shot. Movement
+          // authority runs before combat acceptance in this fixed step, so admit exactly the authored
+          // recoil only when the buffered gun is due to fire later in this same tick. The envelope remains
+          // bounded; arbitrary impulse and every non-gun attack still reject.
+          maxImpulseSpeed: Math.max(movementStartImpulse, pendingGunRecoil),
         });
-        if (
+        const movementNavValid =
           envelope.accepted &&
           this.clientMovementNavValid(
             player,
@@ -3844,8 +3866,8 @@ export const roomProgressionMethods = {
             movementStartY,
             movement.x,
             movement.y,
-          )
-        ) {
+          );
+        if (movementNavValid) {
           input.mvx = movement.mvx;
           input.mvy = movement.mvy;
           player.mvx = movement.mvx;

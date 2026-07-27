@@ -37,6 +37,8 @@ export interface MovementEnvelope {
   maxImpulseSpeed: number;
   /** Classified server-authored motion may widen continuity for its exact ownership window. */
   authoredDisplacementPx?: number;
+  /** Newest-wins input draining may carry a report predicted several fixed ticks ahead. */
+  clientCatchUpDisplacementPx?: number;
   speedTolerance?: number;
   positionTolerancePx?: number;
 }
@@ -85,6 +87,7 @@ export function evaluateClientMovementEnvelope(
     envelope.maxMoveSpeed,
     envelope.maxImpulseSpeed,
     envelope.authoredDisplacementPx ?? 0,
+    envelope.clientCatchUpDisplacementPx ?? 0,
   ].every(Number.isFinite);
   const displacementPx = Math.hypot(report.x - envelope.fromX, report.y - envelope.fromY);
   const moveSpeed = Math.hypot(report.mvx, report.mvy);
@@ -96,6 +99,7 @@ export function evaluateClientMovementEnvelope(
   const maxDisplacementPx =
     (maxMoveSpeed + maxImpulseSpeed) * Math.max(0, envelope.dtSeconds) +
     Math.max(0, envelope.authoredDisplacementPx ?? 0) +
+    Math.max(0, envelope.clientCatchUpDisplacementPx ?? 0) +
     Math.max(0, envelope.positionTolerancePx ?? MOVEMENT_CORRECTION_SILENT_PX);
 
   let reason: MovementEnvelopeRejectReason = MovementEnvelopeReject.None;

@@ -63,7 +63,7 @@ import {
   type MeleeComboMotion,
   type MeleeComboStep,
   type MeleeComboVariant,
-  MOVE_HITCH_MIN_ANGLE,
+  MOVE_TURN_PRESENTATION_MIN_ANGLE,
   MOVE_SPEED,
   PARRY_ABOVE_BRACE_SECONDS,
   type ParryGuardPose,
@@ -74,7 +74,7 @@ import {
   meleeComboSequenceFor,
   meleeReach,
   PLAYER_RADIUS,
-  PROCEDURAL_JIGGLE,
+  PROCEDURAL_LIMB_PHYSICS,
   rapidThrustExtensionAt,
   ROLL_DURATION,
   ROLL_IFRAME_TICKS,
@@ -465,7 +465,7 @@ export const rigPoseMethods = {
         this.root.x > view.right + JIGGLE_LOD_MARGIN_PX ||
         this.root.y < view.top - JIGGLE_LOD_MARGIN_PX ||
         this.root.y > view.bottom + JIGGLE_LOD_MARGIN_PX);
-    const jiggleLodSkip = PROCEDURAL_JIGGLE && outsidePaperView;
+    const jiggleLodSkip = PROCEDURAL_LIMB_PHYSICS && outsidePaperView;
     const currentMoveLength = Math.hypot(anim.moveX, anim.moveY);
     const currentMoveActive = currentMoveLength > 0.15 || (anim.speed ?? 0) > MOVE_SPEED * 0.12;
     const cancellationMoveX = anim.isSelf ? (anim.desiredMoveX ?? 0) : anim.moveX;
@@ -657,7 +657,7 @@ export const rigPoseMethods = {
     const lagY = Math.max(-1.4, Math.min(1.4, (this.velY - this.slowVelY) / MOVE_SPEED));
     let springSignalX = 0;
     let springSignalY = 0;
-    if (PROCEDURAL_JIGGLE) {
+    if (PROCEDURAL_LIMB_PHYSICS) {
       if (!this.jiggleRootReady || jiggleRebase || jiggleLodSkip) {
         this.jiggleSignalX = 0;
         this.jiggleSignalY = 0;
@@ -2713,7 +2713,7 @@ export const rigPoseMethods = {
           : Math.sin(t * 2 + (hnd.front ? 0 : 1.3)) * s * 2.5 * (1 - gait); // breathing when idle
       let hx = hnd.ox + swingX + movementPose.handTrailXPx * s;
       let hy = hnd.oy + bobY + movementPose.handTrailYPx * s;
-      if (!PROCEDURAL_JIGGLE) {
+      if (!PROCEDURAL_LIMB_PHYSICS) {
         hy += idleY;
       }
       const handIndex = hnd.front ? 0 : 1;
@@ -2886,7 +2886,7 @@ export const rigPoseMethods = {
           this.closeBladeBackHandDy = hy - beforeY;
         }
       }
-      if (PROCEDURAL_JIGGLE) {
+      if (PROCEDURAL_LIMB_PHYSICS) {
         const authoredOwn = hnd.front ? ownFront : ownBack;
         const own =
           handIndex === poseSupportHand && poseHandSample && !poseCloseBladeSuppressed
@@ -3030,7 +3030,7 @@ export const rigPoseMethods = {
           back.img.y = front.img.y + Math.sin(weaponAngle) * haft;
         }
         back.img.rotation = secondaryGripHandRotationFor(held?.def, weaponAngle);
-        if (PROCEDURAL_JIGGLE)
+        if (PROCEDURAL_LIMB_PHYSICS)
           syncOwnedJigglePart(
             back,
             back.img.x,
@@ -3076,7 +3076,7 @@ export const rigPoseMethods = {
       let fy = ft.oy - footLift * s + movementPose.footTrailYPx * s;
       let fx =
         ft.ox + movementPose.footStridePx * footPhaseSign * s + movementPose.footTrailXPx * s;
-      if (!PROCEDURAL_JIGGLE) {
+      if (!PROCEDURAL_LIMB_PHYSICS) {
         fy += idle;
       }
       if (semanticDef && !poseCloseBladeSuppressed && !this.crossfallActive) {
@@ -3111,7 +3111,7 @@ export const rigPoseMethods = {
           this.closeBladeBackFootDy = fy - beforeY;
         }
       }
-      if (PROCEDURAL_JIGGLE) {
+      if (PROCEDURAL_LIMB_PHYSICS) {
         const inertia = planted ? JIGGLE_FOOT_PLANT_INERTIA : JIGGLE_FOOT_AIR_INERTIA;
         const rolePhase = this.phase * Math.PI * 2 + i * 2.1 + 4.3;
         const idleMix = anim.reducedMotion === true || outsidePaperView ? 0 : 1 - gait;
@@ -3148,7 +3148,7 @@ export const rigPoseMethods = {
       }
       ft.img.y = fy; // §MADNESS higher foot lift
       ft.img.x = fx; // stride + drag
-      ft.img.rotation = PROCEDURAL_JIGGLE
+      ft.img.rotation = PROCEDURAL_LIMB_PHYSICS
         ? movementPose.footPivotRad * footPhaseSign - (ft.jx / JIGGLE_FOOT_MAX_X) * 0.18
         : movementPose.footPivotRad * footPhaseSign;
     }
@@ -3205,7 +3205,7 @@ export const rigPoseMethods = {
           );
           back.img.rotation = 0;
         }
-        if (PROCEDURAL_JIGGLE) {
+        if (PROCEDURAL_LIMB_PHYSICS) {
           if (front)
             syncOwnedJigglePart(
               front,
@@ -3301,7 +3301,7 @@ export const rigPoseMethods = {
             );
             back.img.rotation = 0;
           }
-          if (PROCEDURAL_JIGGLE) {
+          if (PROCEDURAL_LIMB_PHYSICS) {
             if (front)
               syncOwnedJigglePart(
                 front,
@@ -3360,7 +3360,7 @@ export const rigPoseMethods = {
           back.img.setPosition(gx + ux * haft, gy + uy * haft - TARGET_BODY_H * 0.05);
           back.img.rotation = 0;
         }
-        if (PROCEDURAL_JIGGLE) {
+        if (PROCEDURAL_LIMB_PHYSICS) {
           if (front)
             syncOwnedJigglePart(
               front,

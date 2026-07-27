@@ -813,9 +813,9 @@ describe("GameRoom — §4 v0.107 seq'd input protocol (queue / ack / fixed time
     expect(p.ackSeq).toBe(1); // consumed + acked
     expect(p.mvx).toBeGreaterThan(0); // steering velocity mirrored for the predicting client
     const mv1 = p.mvx;
-    h.tick(1); // queue starved → held fallback keeps steering (ack unchanged)
+    h.tick(1); // queue starved → held fallback keeps the same speed (ack unchanged)
     expect(p.ackSeq).toBe(1);
-    expect(p.mvx).toBeGreaterThan(mv1); // still accelerating on the held command
+    expect(p.mvx).toBe(mv1);
   });
 
   it("drains a BURST straight to the newest command (no latency ratchet) and acks its seq", () => {

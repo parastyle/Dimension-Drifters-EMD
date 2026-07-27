@@ -37,7 +37,8 @@ export const RELIC_ENERGY_POOL_PER_STACK = 10 as const;
 export const RELIC_ENERGY_REGEN_PER_STACK = 0.8 as const;
 export const RELIC_PARRY_REACH_PER_STACK = 8 as const;
 export const RELIC_DODGE_RECOVERY_PER_STACK = 0.06 as const;
-export const RELIC_MOVE_SPEED_PER_STACK = 0.03 as const;
+/** Legacy `move-speed` wire/loot slot, repurposed so ordinary locomotion remains one constant speed. */
+export const RELIC_ROADRUNNER_DODGE_RECOVERY_PER_STACK = 0.03 as const;
 export const RELIC_HP_REGEN_PER_STACK = 0.25 as const;
 export const RELIC_LUCK_PER_STACK = 0.05 as const;
 export const RELIC_CRIT_PER_STACK = 0.02 as const;
@@ -140,7 +141,7 @@ function commonRelicDescription(id: CommonRelicId, value: number): string {
     case "dodge-recovery":
       return `Your dodge recharges ${value} seconds sooner.`;
     case "move-speed":
-      return `Increases movement speed by ${percentText(value)}.`;
+      return `Your dodge recharges ${value} seconds sooner.`;
     case "hp-regen":
       return `Restores ${value} more health per second.`;
     case "luck":
@@ -161,7 +162,7 @@ export const COMMON_RELIC_DEFS: readonly CommonRelicDef[] = [
   commonRelic("energy-regen", "Kinetic Coil", "RG", RELIC_ENERGY_REGEN_PER_STACK),
   commonRelic("parry-reach", "Wide Guard", "PR", RELIC_PARRY_REACH_PER_STACK),
   commonRelic("dodge-recovery", "Light Soles", "DG", RELIC_DODGE_RECOVERY_PER_STACK),
-  commonRelic("move-speed", "Roadrunner Spur", "MV", RELIC_MOVE_SPEED_PER_STACK),
+  commonRelic("move-speed", "Roadrunner Spur", "MV", RELIC_ROADRUNNER_DODGE_RECOVERY_PER_STACK),
   commonRelic("hp-regen", "Mending Thread", "HP", RELIC_HP_REGEN_PER_STACK),
   commonRelic("luck", "Lucky Tooth", "LK", RELIC_LUCK_PER_STACK),
   commonRelic("crit", "Keen Edge", "CR", RELIC_CRIT_PER_STACK),
@@ -251,8 +252,12 @@ export function relicParryRadius(relics: Readonly<RelicStacks>): number {
   return PARRY_RADIUS + boundedStacks(relics.parryReach) * RELIC_PARRY_REACH_PER_STACK;
 }
 
-export function relicMoveSpeed(relics: Readonly<RelicStacks>): number {
-  return MOVE_SPEED * (1 + boundedStacks(relics.moveSpeed) * RELIC_MOVE_SPEED_PER_STACK);
+/**
+ * Compatibility seam retained for existing state/replay callers. No relic may alter ordinary locomotion;
+ * sanctioned attack/parry/environment multipliers compose outside this base-speed function.
+ */
+export function relicMoveSpeed(_relics: Readonly<RelicStacks>): number {
+  return MOVE_SPEED;
 }
 
 export function relicHpRegenAdd(relics: Readonly<RelicStacks>): number {
@@ -293,7 +298,8 @@ export function relicDodgeCooldown(relics: Readonly<RelicStacks>): number {
   return Math.max(
     0.65,
     dodgeProfileFor(relics.activeDodge).cooldownSeconds -
-      boundedStacks(relics.dodgeRecovery) * RELIC_DODGE_RECOVERY_PER_STACK,
+      boundedStacks(relics.dodgeRecovery) * RELIC_DODGE_RECOVERY_PER_STACK -
+      boundedStacks(relics.moveSpeed) * RELIC_ROADRUNNER_DODGE_RECOVERY_PER_STACK,
   );
 }
 

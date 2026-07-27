@@ -885,9 +885,7 @@ async function normalizeArena(
   const beltBand = local.beltLevel ? beltBounds(local.beltLevel, x) : undefined;
   const position =
     requestedPosition ??
-    (beltBand
-      ? { x, y: BELT_Y0 + (beltBand.yMin + beltBand.yMax) / 2 }
-      : { x, y: 1_500 });
+    (beltBand ? { x, y: BELT_Y0 + (beltBand.yMin + beltBand.yMax) / 2 } : { x, y: 1_500 });
 
   local.map.tiles.fill(TILE_GROUND);
   local.state.enemies.clear();
@@ -995,8 +993,19 @@ async function normalizeArena(
   combat.cd = 0;
   combat.reloadCd = 0;
   player.charges = weapon?.gun?.magazine ?? player.charges;
+  const normalizedAtTick = Number(local.state.tick);
   local.broadcastPatch();
-  await sleep(TICK_MS);
+  // Cross one real simulation boundary before a scenario may send an attack or input. A fixed 50ms sleep
+  // can wake just before the 20Hz step under scheduler jitter, leaving the previous scenario's spent action
+  // budget in place. The harness would then predict a sanctioned gun recoil for a shot authority rejected,
+  // producing a telemetry-only B42 impulse rejection even though the game paths agree.
+  await waitFor(
+    `arena normalized tick ${weaponId}`,
+    () =>
+      Number(room.state.tick) > normalizedAtTick &&
+      Math.abs(requiredPlayer(room).x - position.x) < 0.01 &&
+      Math.abs(requiredPlayer(room).y - position.y) < 0.01,
+  );
 }
 
 function createProbe(
@@ -1059,7 +1068,12 @@ async function runRapidFlipAttack(instrumented: InstrumentedRoom): Promise<Scena
   // for 3 seconds while swinging; the flip churn must produce ZERO corrections of any band.
   const weaponId = "x2-cinderbrand-cleaver";
   await normalizeArena(instrumented, weaponId);
-  const probe = createProbe(instrumented, "rapid-flip-attack", "ADADAD flip while attacking", "owner-repro");
+  const probe = createProbe(
+    instrumented,
+    "rapid-flip-attack",
+    "ADADAD flip while attacking",
+    "owner-repro",
+  );
   for (let step = 0; step < 60; step++)
     await probe.tick({ dx: step % 2 === 0 ? 1 : -1, action: step % 6 === 0 ? "swing" : "walk" });
   for (let step = 0; step < 10; step++) await probe.tick({ action: "stop" });
@@ -1665,7 +1679,11 @@ try {
   const run = async (factory: () => Promise<ScenarioResult>): Promise<void> => {
     const result = await factory();
     if (!assertionsPass(result.assertions))
-      throw new Error(`${result.id} assertion failure: ${JSON.stringify(result.assertions)}`);
+      throw new Error(
+        `${result.id} assertion failure: ${JSON.stringify(result.assertions)}; ` +
+          `summary=${JSON.stringify(result.summary)}; ` +
+          `corrections=${JSON.stringify(result.corrections.slice(0, 3))}`,
+      );
     results.push(result);
     const line = [
       result.id,
@@ -1698,9 +1716,7 @@ try {
     await run(() => runPitFall(instrumented));
     for (const weaponId of wrapIds)
       await run(() => runFullCombo(instrumented, weaponId, "kung-fu-wrap"));
-    await run(() =>
-      runFullCombo(instrumented, "x2-coyote-trickster-s-sparkmitt", "sparkmitt", 8),
-    );
+    await run(() => runFullCombo(instrumented, "x2-coyote-trickster-s-sparkmitt", "sparkmitt", 8));
     await run(() => runSpadeSpin(instrumented));
     if (ULTIMATES_ENABLED) {
       await run(() => runUltimate(instrumented));
@@ -1768,8 +1784,11 @@ try {
     topdown: results.filter((result) => result.metadata.mode === "topdown").length,
     belt: results.filter((result) => result.metadata.mode === "belt").length,
   };
-  const expectedTopdownScenarios = ULTIMATES_ENABLED ? 42 : 41;
-  const expectedBeltScenarios = ULTIMATES_ENABLED ? 43 : 42;
+  // The standing matrix has 24 non-gun-family top-down cases and one additional belt elevator case.
+  // Derive the catalog-sized lane instead of pinning the old 17-family total (41/42): newly installed gun
+  // families must expand coverage without making a complete zero-correction run fail its own count gate.
+  const expectedTopdownScenarios = 24 + gunRepresentatives.length + (ULTIMATES_ENABLED ? 1 : 0);
+  const expectedBeltScenarios = expectedTopdownScenarios + 1;
   const expectedScenarios = expectedTopdownScenarios + expectedBeltScenarios;
   const acceptance = {
     expectedScenarios,

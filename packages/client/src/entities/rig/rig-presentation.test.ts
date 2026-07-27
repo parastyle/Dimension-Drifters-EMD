@@ -31,7 +31,13 @@ describe("presentation frame clock", () => {
 
   it("keeps correction debt in root space and bounds its rendered derivative", () => {
     const root = limitPresentedRootStep(0, 0, 140, 0, 200, 384, 400);
-    expect(root.x).toBeCloseTo(78.8);
+    expect(root.x).toBeCloseTo(76.8);
+    expect(root.y).toBe(0);
+  });
+
+  it("adds no per-frame speed headroom to ordinary locomotion", () => {
+    const root = limitPresentedRootStep(0, 0, 140, 0, 50, 320, 400);
+    expect(root.x).toBeCloseTo(16);
     expect(root.y).toBe(0);
   });
 

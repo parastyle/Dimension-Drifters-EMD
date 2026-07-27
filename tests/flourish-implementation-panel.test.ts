@@ -183,7 +183,7 @@ describe("flourish raw Arena cancellation panel", () => {
       "export function flourishMovementIntent(",
       "/** One per-frame Arena capture",
     );
-    expect(movementIntent).toContain("MOVE_HITCH_MIN_ANGLE");
+    expect(movementIntent).toContain("MOVE_TURN_PRESENTATION_MIN_ANGLE");
     expect(movementIntent).not.toMatch(/render|displacement|anim\.move|speed/);
   });
 

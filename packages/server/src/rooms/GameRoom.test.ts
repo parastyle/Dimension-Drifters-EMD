@@ -1071,9 +1071,9 @@ describe("GameRoom — §4 v0.107 seq'd input protocol (queue / ack / fixed time
     expect(p.ackSeq).toBe(1); // consumed + acked
     expect(p.mvx).toBeGreaterThan(0); // steering velocity mirrored for the predicting client
     const mv1 = p.mvx;
-    h.tick(1); // queue starved → held fallback keeps steering (ack unchanged)
+    h.tick(1); // queue starved → held fallback keeps the same speed (ack unchanged)
     expect(p.ackSeq).toBe(1);
-    expect(p.mvx).toBeGreaterThan(mv1); // still accelerating on the held command
+    expect(p.mvx).toBe(mv1);
   });
 
   it("drains a BURST straight to the newest command (no latency ratchet) and acks its seq", () => {
@@ -5403,18 +5403,16 @@ describe("GameRoom — independent weapon slots and compatibility row", () => {
   });
 });
 
-// Server-tuning wave — appended regression laws for the shared pivot, melee goldens, and grid separation.
+// Server-tuning wave — appended regression laws for shared movement, melee goldens, and grid separation.
 describe("server-tuning wave — momentum, melee pressure, and enemy separation", () => {
-  it("retains at least 95.8% movement speed on a full reversal after the 90% gate reduction", () => {
+  it("retains exactly one movement speed on a full reversal", () => {
     const reversed = enemyComboShared.steerVelocity(
       { vx: enemyComboShared.MOVE_SPEED, vy: 0 },
       { dx: -1, dy: 0 },
       0.05,
     );
     const retention = Math.hypot(reversed.vx, reversed.vy) / enemyComboShared.MOVE_SPEED;
-    expect(enemyComboShared.MOVE_HITCH_DIP).toBe(0.042); // 0.42 → 0.042
-    expect(retention).toBeCloseTo(1 - enemyComboShared.MOVE_HITCH_DIP, 10);
-    expect(retention).toBeGreaterThanOrEqual(0.958);
+    expect(retention).toBe(1);
   });
 
   it("pins the faster melee roster and preserves legacy reach metadata without floor sectors", () => {

@@ -35,8 +35,9 @@ describe("B20 L2 common relic stacking", () => {
     expect(relicLuckMultiplier(relics({ luck: 2 }))).toBeCloseTo(1.1);
     expect(relicCritAdd(relics({ crit: 2 }))).toBeCloseTo(0.04);
     expect(relicJumpCount(relics({ jumpCount: 2 }))).toBe(2);
-    expect(relicMoveSpeed(relics({ moveSpeed: 2 }))).toBeCloseTo(
-      relicMoveSpeed(EMPTY_RELIC_STACKS) * 1.06,
+    expect(relicMoveSpeed(relics({ moveSpeed: 20 }))).toBe(relicMoveSpeed(EMPTY_RELIC_STACKS));
+    expect(relicDodgeCooldown(relics({ moveSpeed: 2 }))).toBeCloseTo(
+      relicDodgeCooldown(EMPTY_RELIC_STACKS) - 0.06,
     );
     expect(relicJumpCount(relics({ jumpCount: 255 }))).toBe(20);
   });

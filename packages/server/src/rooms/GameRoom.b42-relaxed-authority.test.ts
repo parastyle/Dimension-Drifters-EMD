@@ -1,5 +1,7 @@
 import {
   CORPORATE_ELEVATOR_PHASE,
+  INPUT_MSGS_PER_TICK,
+  MOVE_SPEED,
   meleeComboSelectionFor,
   swingDescriptorFor,
   TILE_GROUND,
@@ -94,8 +96,8 @@ describe("GameRoom B42 relaxed self-movement authority", () => {
       room,
       client,
       report(player, 3, {
-        clientX: player.x + 60,
-        clientMvx: 320,
+        clientX: player.x + 80,
+        clientMvx: MOVE_SPEED,
         clientCorrectionSeq: 1,
       }),
     );
@@ -120,6 +122,28 @@ describe("GameRoom B42 relaxed self-movement authority", () => {
     );
     expect(player.x).toBe(startX);
     expect(player.dualWield.movementCorrectionSeq).toBe(3);
+  });
+
+  it("admits bounded catch-up reports at the declared movement rate", () => {
+    const { room, client, player } = fixture();
+    const startX = player.x;
+    const fixedStepSec = 0.05;
+
+    send(
+      room,
+      client,
+      report(player, 1, {
+        dx: 1,
+        clientX: startX + MOVE_SPEED * fixedStepSec * INPUT_MSGS_PER_TICK,
+        clientMvx: MOVE_SPEED,
+      }),
+    );
+
+    const elapsedClientTime = fixedStepSec * INPUT_MSGS_PER_TICK;
+    expect(player.x).toBeCloseTo(startX + MOVE_SPEED * elapsedClientTime, 6);
+    expect((player.x - startX) / elapsedClientTime).toBeCloseTo(MOVE_SPEED, 8);
+    expect(player.mvx).toBe(MOVE_SPEED);
+    expect(player.dualWield.movementCorrectionSeq).toBe(0);
   });
 
   it("rejects non-finite/out-of-world reports without corrupting schema state", () => {
@@ -179,6 +203,40 @@ describe("GameRoom B42 relaxed self-movement authority", () => {
       }),
     );
     expect(player.x).toBe(startX + 16);
+  });
+
+  it("admits only the authored recoil when a predicted gun shot shares its input tick", () => {
+    const run = (clientVx: number) => {
+      const { room, client, player, combat } = fixture();
+      const weapon = WEAPONS["x-gun-revolver-cannon"];
+      if (!weapon?.gun) throw new Error("missing predicted-recoil fixture");
+      player.weapon = weapon.id;
+      player.slots[player.activeSlot].weapon = weapon.id;
+      player.charges = weapon.gun.magazine;
+      combat.lastWeapon = weapon.id;
+      combat.cd = 0;
+      combat.reloadCd = 0;
+      combat.attackBuffer = 0;
+      player.weaponResource.valueQ = 10_000;
+
+      const attack = handlers.get("attack");
+      const input = handlers.get("input");
+      if (!attack || !input) throw new Error("attack/input handler missing");
+      attack(client, { aimX: 1, aimY: 0, tx: player.x + 700, ty: player.y });
+      input(client, report(player, 1, { clientVx }));
+      room.stepSim(0.05);
+      return { player, recoil: weapon.recoil ?? 0 };
+    };
+
+    const sanctioned = run(-65);
+    expect(sanctioned.recoil).toBe(65);
+    expect(sanctioned.player.attackSeq).toBe(1);
+    expect(sanctioned.player.dualWield.serverMotionActive).toBe(true);
+    expect(sanctioned.player.dualWield.movementCorrectionSeq).toBe(0);
+
+    const oversized = run(-500);
+    expect(oversized.player.attackSeq).toBe(1);
+    expect(oversized.player.dualWield.movementCorrectionSeq).toBe(1);
   });
 
   it("flags parry slides as server-owned placement epochs", () => {

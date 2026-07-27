@@ -4,7 +4,6 @@ import {
   GRAVITY,
   IMPULSE_MAX,
   JUMP_VELOCITY,
-  MOVE_HITCH_DIP,
   MOVE_SPEED,
   PLAYER_RADIUS,
   ROLL_DISTANCE,
@@ -22,9 +21,7 @@ import { describe, expect, it } from "vitest";
 
 describe("V7 fixed roll sentence", () => {
   it("samples eight deterministic speeds totaling exactly 188 px over 400 ms", () => {
-    const samples = Array.from({ length: ROLL_DURATION_TICKS }, (_, tick) =>
-      rollSpeedAtTick(tick),
-    );
+    const samples = Array.from({ length: ROLL_DURATION_TICKS }, (_, tick) => rollSpeedAtTick(tick));
     expect(samples).toEqual(ROLL_SPEED_CURVE);
     expect(samples.reduce((distance, speed) => distance + speed * ROLL_TICK_SECONDS, 0)).toBe(
       ROLL_DISTANCE,
@@ -74,88 +71,58 @@ describe("stepPlayerMovement", () => {
   });
 });
 
-// §7 v0.105 STEERED movement — the "directional combination course correction". The authoritative tick
-// now blends velocity toward the input target instead of snapping, so direction changes TRANSITION
-// (forward→up sweeps through the diagonal), taps ease in, and releases settle to an exact stop.
-describe("steerVelocity / stepSteeredMovement (§7 v0.111 pivot / turn-hitch)", () => {
+// B74 owner law: ordinary movement has exactly two magnitudes — MOVE_SPEED while input is held, or zero.
+// Heading changes are direct and may never feed an animation/gait/facing phase back into root velocity.
+describe("steerVelocity / stepSteeredMovement (B74 constant-speed law)", () => {
   const TICK = 0.05; // the server's 20Hz dt
 
-  it("spins up from rest to ~full speed quickly (the responsive baseline, no continuous ramp)", () => {
-    let v = { vx: 0, vy: 0 };
-    const speeds: number[] = [];
-    for (let i = 0; i < 6; i++) {
-      v = steerVelocity(v, { dx: 1, dy: 0 }, TICK);
-      speeds.push(v.vx);
-    }
-    for (let i = 1; i < speeds.length; i++) {
-      expect(speeds[i]).toBeGreaterThanOrEqual(speeds[i - 1] ?? 0); // monotonic spin-up
-    }
-    expect(v.vx).toBeGreaterThan(MOVE_SPEED * 0.95); // ~full speed within ~5 ticks (250ms)
-    expect(v.vy).toBe(0);
+  it("starts at full speed on the first held-input tick", () => {
+    const v = steerVelocity({ vx: 0, vy: 0 }, { dx: 1, dy: 0 }, TICK);
+    expect(v).toEqual({ vx: MOVE_SPEED, vy: 0 });
   });
 
-  it("PIVOTS a right→up turn: heading SNAPS to up (direct), speed DIPS once, then recovers", () => {
-    // Run full-right, then hold UP (a 90° turn). The new model does NOT glide through the diagonal —
-    // the heading snaps to vertical immediately (responsive), but the speed hitches (dips) on the turn.
-    let v = steerVelocity({ vx: 0, vy: 0 }, { dx: 1, dy: 0 }, 2); // settle at full right
-    expect(v.vx).toBeCloseTo(MOVE_SPEED, 0);
-    v = steerVelocity(v, { dx: 0, dy: -1 }, TICK); // now hold UP
-    expect(Math.abs(v.vx)).toBeLessThan(1e-6); // heading SNAPPED to vertical — no rightward glide
-    expect(v.vy).toBeLessThan(0); // moving up
-    const dipped = Math.hypot(v.vx, v.vy);
-    // A 90° turn is one-third of the 45°→180° hitch curve: 275.2 → 315.52 after
-    // the requested 90% gate-intensity reduction (MOVE_HITCH_DIP 0.42 → 0.042).
-    expect(dipped).toBeCloseTo(MOVE_SPEED * (1 - MOVE_HITCH_DIP / 3), 10);
-    expect(dipped).toBeLessThan(MOVE_SPEED); // the hitch remains, but is intentionally subtle
-    // …then it recovers to full speed up over the next few ticks (the "go").
-    for (let i = 0; i < 6; i++) v = steerVelocity(v, { dx: 0, dy: -1 }, TICK);
-    expect(Math.abs(v.vx)).toBeLessThan(1e-6);
-    expect(v.vy).toBeLessThan(-MOVE_SPEED * 0.95);
+  it("snaps a 90-degree turn to the new heading without a speed dip", () => {
+    const v = steerVelocity({ vx: MOVE_SPEED, vy: 0 }, { dx: 0, dy: -1 }, TICK);
+    expect(v.vx).toBe(0);
+    expect(v.vy).toBe(-MOVE_SPEED);
+    expect(Math.hypot(v.vx, v.vy)).toBe(MOVE_SPEED);
   });
 
-  it("a 180° REVERSAL dips harder than a 90° turn (the hitch scales with turn sharpness)", () => {
-    const full = steerVelocity({ vx: 0, vy: 0 }, { dx: 1, dy: 0 }, 2); // full right
-    const after90 = steerVelocity(full, { dx: 0, dy: -1 }, TICK); // 90° turn
-    const after180 = steerVelocity(full, { dx: -1, dy: 0 }, TICK); // 180° reversal
-    expect(Math.hypot(after180.vx, after180.vy)).toBeLessThan(Math.hypot(after90.vx, after90.vy));
+  it("snaps a full reversal without a hitch or recovery frame", () => {
+    const v = steerVelocity({ vx: MOVE_SPEED, vy: 0 }, { dx: -1, dy: 0 }, TICK);
+    expect(v).toEqual({ vx: -MOVE_SPEED, vy: 0 });
   });
 
-  it("a SLOW arc never hitches — small per-tick angle changes keep full speed", () => {
-    let v = steerVelocity({ vx: 0, vy: 0 }, { dx: 1, dy: 0 }, 2); // full right
-    // Rotate the input a few degrees per tick (well under the 45° threshold) — a smooth arc.
-    for (let i = 1; i <= 12; i++) {
-      const a = i * 0.15 * -1; // ~8.6°/tick, downward-ish arc
+  it("keeps a changing heading at constant speed", () => {
+    let v = { vx: MOVE_SPEED, vy: 0 };
+    for (let i = 1; i <= 32; i++) {
+      const a = i * 0.31;
       v = steerVelocity(v, { dx: Math.cos(a), dy: Math.sin(a) }, TICK);
-      expect(Math.hypot(v.vx, v.vy)).toBeGreaterThan(MOVE_SPEED * 0.95); // never dipped
+      expect(Math.hypot(v.vx, v.vy)).toBeCloseTo(MOVE_SPEED, 10);
     }
   });
 
-  it("NEVER exceeds the §7 flat-speed ceiling, even mid-turn", () => {
-    let v = steerVelocity({ vx: 0, vy: 0 }, { dx: 1, dy: 0 }, 2);
+  it("stays exactly at the §7 flat speed even while input thrashes", () => {
+    let v = { vx: MOVE_SPEED, vy: 0 };
     for (let i = 0; i < 20; i++) {
       v = steerVelocity(v, { dx: i % 2 ? 1 : 0, dy: i % 2 ? 0 : -1 }, TICK); // thrash the stick
-      expect(Math.hypot(v.vx, v.vy)).toBeLessThanOrEqual(MOVE_SPEED + 1e-9);
+      expect(Math.hypot(v.vx, v.vy)).toBe(MOVE_SPEED);
     }
   });
 
-  it("releasing the keys settles to an EXACT stop (no ice-skating, no residual drift)", () => {
-    let v = steerVelocity({ vx: 0, vy: 0 }, { dx: 1, dy: 0 }, 2);
-    for (let i = 0; i < 8; i++) v = steerVelocity(v, { dx: 0, dy: 0 }, TICK);
-    expect(v.vx).toBe(0); // snapped to exactly zero, not 0.0003
-    expect(v.vy).toBe(0);
+  it("releasing input stops on the first tick with no residual drift", () => {
+    expect(steerVelocity({ vx: MOVE_SPEED, vy: 0 }, { dx: 0, dy: 0 }, TICK)).toEqual({
+      vx: 0,
+      vy: 0,
+    });
   });
 
-  it("is deterministic + the linear recover composes across substeps (aligned, below the speed cap)", () => {
-    // The fixed-timestep netcode (v0.107) always steps at the SAME dt on server + predictor, so identical
-    // (vel,input,dt) MUST give identical output — pin that. And in the aligned recover region (no turn, below
-    // the cap) the linear accel composes exactly (two 25ms ≡ one 50ms), so a fractional preview stays honest.
-    const start = { vx: 100, vy: 0 }; // moving right, below the cap, input aligned → pure recover (no hitch)
-    const input = { dx: 1, dy: 0 };
-    expect(steerVelocity(start, input, 0.05)).toEqual(steerVelocity(start, input, 0.05)); // deterministic
-    const one = steerVelocity(start, input, 0.05);
-    const half = steerVelocity(steerVelocity(start, input, 0.025), input, 0.025);
-    expect(half.vx).toBeCloseTo(one.vx, 9);
-    expect(half.vy).toBeCloseTo(one.vy, 9);
+  it("is deterministic and independent of substep size or retained velocity magnitude", () => {
+    const input = { dx: 1, dy: 1 };
+    const a = steerVelocity({ vx: -17, vy: 203 }, input, 0.05);
+    const b = steerVelocity({ vx: 999, vy: -999 }, input, 0.001);
+    expect(a).toEqual(b);
+    expect(Math.hypot(a.vx, a.vy)).toBeCloseTo(MOVE_SPEED, 10);
   });
 
   it("stepSteeredMovement integrates the steered velocity + clamps to the arena", () => {
@@ -170,9 +137,9 @@ describe("steerVelocity / stepSteeredMovement (§7 v0.111 pivot / turn-hitch)", 
   });
 
   it("over-unit input cannot buy speed (anti speed-hack holds through the steering layer)", () => {
-    let v = { vx: 0, vy: 0 };
-    for (let i = 0; i < 40; i++) v = steerVelocity(v, { dx: 99, dy: 0 }, TICK);
-    expect(v.vx).toBeLessThanOrEqual(MOVE_SPEED + 1e-9);
+    const v = steerVelocity({ vx: 0, vy: 0 }, { dx: 99, dy: 0 }, TICK);
+    expect(v.vx).toBe(MOVE_SPEED);
+    expect(v.vy).toBe(0);
   });
 });
 

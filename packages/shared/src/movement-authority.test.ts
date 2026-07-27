@@ -38,6 +38,12 @@ describe("B42 client movement plausibility envelope", () => {
         { ...envelope, authoredDisplacementPx: 100 },
       ).accepted,
     ).toBe(true);
+    expect(
+      evaluateClientMovementEnvelope(
+        { ...baseline, x: 1_064, mvx: -320 },
+        { ...envelope, clientCatchUpDisplacementPx: 48 },
+      ).accepted,
+    ).toBe(true);
   });
 
   it.each([

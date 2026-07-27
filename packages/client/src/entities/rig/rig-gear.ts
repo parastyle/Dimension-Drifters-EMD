@@ -63,7 +63,7 @@ import {
   type MeleeComboMotion,
   type MeleeComboStep,
   type MeleeComboVariant,
-  MOVE_HITCH_MIN_ANGLE,
+  MOVE_TURN_PRESENTATION_MIN_ANGLE,
   MOVE_SPEED,
   PARRY_ABOVE_BRACE_SECONDS,
   type ParryGuardPose,
@@ -74,7 +74,7 @@ import {
   meleeComboSequenceFor,
   meleeReach,
   PLAYER_RADIUS,
-  PROCEDURAL_JIGGLE,
+  PROCEDURAL_LIMB_PHYSICS,
   rapidThrustExtensionAt,
   ROLL_DURATION,
   ROLL_IFRAME_TICKS,
@@ -278,7 +278,7 @@ export const rigGearMethods = {
   },
 
   /** A compatibility scaffold may omit a limb; promote the authored boilerplate part into the normal
-   * hand/foot arrays so every pose and jiggle writer sees the same complete five-node base skeleton. */
+   * hand/foot arrays so every pose and limb-physics writer sees the same complete five-node base skeleton. */
   createBoilerplateLimb(this: SpriteRigContext, part: BoilerplateAssemblyPart): RigHand {
     const img = this.scene.add
       .image(part.x, part.y, boilerplateTextureKey(part.source.id))
@@ -1328,12 +1328,26 @@ export const rigGearMethods = {
     const directionX = movementLength > 0.05 ? localMoveX / movementLength : 1;
     const directionY = movementLength > 0.05 ? moveY / movementLength : 0;
     const airMix = smoothstep01(this.hopPx / 14);
+    // Idle is not a statue: the head's tiny two-axis equilibrium keeps moving through this same critically
+    // damped follower. It is deliberately independent of gait phase and disappears under reduced motion.
+    const idleMix =
+      reducedMotion || rebase || !this.floatingHeadSpring.ready ? 0 : Math.max(0, 1 - this.gait);
+    const idleTime = this.presentationClockNow() / 1000 + this.phase;
+    const idleX =
+      Math.sin(idleTime * Math.PI * 2 * 0.43 + this.phase * 1.7) *
+      FLOATING_HEAD_SPRING_TUNING.idleDriftXPx *
+      idleMix;
+    const idleY =
+      Math.sin(idleTime * Math.PI * 2 * 0.79 + this.phase * 2.3) *
+      FLOATING_HEAD_SPRING_TUNING.idleDriftYPx *
+      idleMix;
     const input = this.floatingHeadSpringInput;
     input.targetX = targetX;
     input.targetY = targetY;
     input.authoredOffsetX =
-      this.floatingHeadAttackLead.x - directionX * stanceLag + this.flourishHeadX;
+      idleX + this.floatingHeadAttackLead.x - directionX * stanceLag + this.flourishHeadX;
     input.authoredOffsetY =
+      idleY +
       movementHeadBobPx +
       this.floatingHeadAttackLead.y -
       directionY * stanceLag * 0.7 -
