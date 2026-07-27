@@ -1,7 +1,7 @@
 {
   "generated": "2026-06-17",
   "source": "design-300-weapons workflow (15 agents)",
-  "count": 367,
+  "count": 368,
   "byType": {
     "melee": 135,
     "ranged": 135,
@@ -21114,6 +21114,57 @@
         "muzzle": "punch",
         "muzzleColor": 13072946,
         "recoil": 0.0012
+      }
+    },
+    {
+      "id": "x2-solaris-beam-lance",
+      "name": "Solaris Beam Lance",
+      "description": "A flagship continuous beam rifle whose optically matched lens stack holds a narrow solar column until its monolithic receiver heat sink reaches the issue limit.",
+      "type": "ranged",
+      "family": "continuous-beam-rifle",
+      "theme": "near-black issue-grade continuous beam rifle with a long matched lens-ring barrel, monolithic ribbed receiver heat sink, and one solar-amber optical accent",
+      "element": "fire",
+      "finish": "pristine",
+      "grip": "2H",
+      "gripPoints": {
+        "primary": {
+          "x": 0.27,
+          "y": 0.72
+        },
+        "secondary": {
+          "x": 0.62,
+          "y": 0.68,
+          "role": "under-barrel"
+        }
+      },
+      "size": "L",
+      "rangeBand": "long",
+      "scaling": [
+        "DEX",
+        "INT"
+      ],
+      "palettePrimary": "#15191E",
+      "paletteAccent": "#E3A33A",
+      "artPrompt": "Weapon-only in-world game sprite on a perfectly flat fully opaque #00ff00 chroma field: exactly ONE long slim continuous beam RIFLE with a rigid shoulder stock and pistol grip on the LEFT, a visible trigger inside a sturdy trigger guard, low aligned sights, a mechanically continuous receiver and barrel, and a wide round emitter aperture at the RIGHT. Run a clearly readable stacked column of thick focusing lens rings down the long barrel into the wide polished emitter aperture. Span the receiver with one oversized ribbed heat sink visibly machined from a single solid block. Mount one small boxy laser/light combination unit rigidly beneath the forward barrel with one visible smoked lens; this accessory is switched off and is silhouette detail only, with no beam, glow, bloom, light cone, rays, or spill. Flagship energy-issue quality: every focusing ring is optically matched and perfectly coaxial, the one-block heat sink has exact parallel ribs, the emitter aperture is mirror-clean and unclouded, the sights are true, every seam aligns, and every fastener is torqued; expensive, immaculate, and professionally maintained. Plain matched near-black finish with NO camouflage. No wear beyond a faint honest carbon trace in the heat-sink vents; no improvisation, tape, repair, salvage, mismatched plate, scratch, dent, rust, dirt, or neglect. DARK house rendering: the overall base reads near-black charcoal, narrow cool steel highlights catch TOP EDGES ONLY, and the broad sides and underside remain in deep shadow; never evenly lit and never mid-grey overall. Use one warm accent material only: solar-amber optical glass confined to the thin lens-ring windows and deep inside the emitter aperture, with a restrained contained glow inside the aperture only and no cast light. Bold heavy black outline around the complete silhouette AND equally heavy crisp internal black ink dividing every focusing ring, heat-sink rib, receiver panel, barrel housing, stock plane, grip plane, sight, trigger guard, aperture rim, fastener, and combo-unit seam. Slightly exaggerate the repeated lens rings, massive one-block heat sink, wide aperture, sturdy grip, and boxy attachment while keeping the stock-to-grip-to-trigger-to-receiver-to-barrel relationship credible for a person to shoulder, hold, aim, and fire. Use approximately 4-6 flat cel colours plus black ink, hard flat planes only. Strict flat orthographic full side-profile, the complete connected weapon fully visible with generous padding, stock and grip LEFT, emitter muzzle RIGHT. No character, hands, second weapon, detached parts, ammunition, projectile, emitted beam, muzzle flash, smoke, aura, floor, cast shadow, reflection, scenery, text, letters, numbers, logo, serial, maker mark, chain, tassel, rope, sling, strap, cable, loose part, or anything dangling. No gradients, soft airbrushing, glossy studio lighting, photorealism, realistic product photography, catalogue rendering, technical diagram, clean vector treatment, wand, staff, sculpture, or abstract prop.",
+      "cardartAction": "braced through a narrow sustained solar-amber line, the matched lens stack holding perfect alignment while the monolithic heat sink rises toward its limit",
+      "fireMode": "hold",
+      "behavior": {
+        "kind": "beam",
+        "damage": 4,
+        "range": 620,
+        "tickRate": 0.1,
+        "width": 12,
+        "chargeSeconds": 0.85,
+        "sweepLagSeconds": 0.12
+      },
+      "stats": {
+        "damage": 4,
+        "range": 300,
+        "halfArc": 0.42,
+        "cooldown": 0.85,
+        "displayLength": 184,
+        "swingArc": 1.8,
+        "gripFrac": 0.16
       }
     }
   ]

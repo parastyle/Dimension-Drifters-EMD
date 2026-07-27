@@ -3450,6 +3450,28 @@
     "barrelMode": "parallel"
   },
   {
+    "id": "x2-solaris-beam-lance",
+    "name": "Solaris Beam Lance",
+    "sprite": "x2-solaris-beam-lance",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 15.5
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 15.5
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
     "id": "x2-spitfire-censer-wand",
     "name": "Spitfire Censer-Wand",
     "sprite": "x2-spitfire-censer-wand",

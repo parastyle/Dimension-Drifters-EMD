@@ -16626,6 +16626,32 @@ export const SPRITES = {
       }
     ]
   },
+  "x2-solaris-beam-lance": {
+    "id": "x2-solaris-beam-lance",
+    "kind": "weapon",
+    "canvas": {
+      "w": 269,
+      "h": 96
+    },
+    "body": {
+      "cx": 132.22,
+      "cy": 44.67,
+      "w": 256,
+      "h": 61
+    },
+    "parts": [
+      {
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 61,
+        "cx": 132.22,
+        "cy": 44.67,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
+  },
   "x2-sparkknuckle-hex-mitt": {
     "id": "x2-sparkknuckle-hex-mitt",
     "kind": "weapon",

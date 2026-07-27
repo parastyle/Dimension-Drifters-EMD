@@ -154,6 +154,7 @@ Generated from sprite alpha for all 183 active projectile, beam, and authored me
 | `x2-smartlink-burstmaster` (Smartlink Burstmaster) | part-1 (255, 32.3) | part-1 (255, 32.3) | No |
 | `x2-smoldering-eye-of-perdition` (Smoldering Eye of Perdition) | part-1 (254, 68.5) | part-1 (254, 68.5) | No |
 | `x2-snakebite-dart-slinger` (Snakebite Dart-Slinger) | part-1 (254, 26.5) | part-1 (254, 26.5) | No |
+| `x2-solaris-beam-lance` (Solaris Beam Lance) | part-1 (255, 15.5) | part-1 (255, 15.5) | No |
 | `x2-spitfire-censer-wand` (Spitfire Censer-Wand) | part-1 (255, 27.4) | part-1 (255, 27.4) | No |
 | `x2-spore-spitter-blunderbuss` (Spore-Spitter Blunderbuss) | part-1 (255, 66) | part-1 (255, 66) | No |
 | `x2-storm-fan` (Storm Fan) | part-1 (379, 100.5) | part-1 (383, 99) | Yes - The returning slash arc launches from the far-right leading edge of the crossed fan pair. |

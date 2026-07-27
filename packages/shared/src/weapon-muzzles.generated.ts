@@ -3560,6 +3560,28 @@ export const WEAPON_ART_MUZZLES = {
     "salvoMode": "parallel",
     "barrelMode": "parallel"
   },
+  "x2-solaris-beam-lance": {
+    "sprite": "x2-solaris-beam-lance",
+    "parts": [
+      {
+        "width": 256,
+        "height": 61
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 15.5,
+        "derived": {
+          "x": 255,
+          "y": 15.5
+        }
+      }
+    ],
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
   "x2-spitfire-censer-wand": {
     "sprite": "x2-spitfire-censer-wand",
     "parts": [
