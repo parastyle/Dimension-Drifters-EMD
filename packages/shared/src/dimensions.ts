@@ -73,12 +73,39 @@ const WILD_WEST: DimensionDef = {
   assets: { tile: "tile-ground", decalSet: "wild-west" },
 };
 
+/** Additive V9 native-prefab map. Combat content intentionally reuses the proven Ashlands pipelines. */
+const LAVA_FOUNDRY: DimensionDef = {
+  id: "lava-foundry",
+  name: "Lava Foundry",
+  tagline: "Broken reactor decks adrift on an endless molten sea.",
+  roster: ["cinder-imp", "ember-mote", "slag-crawler", "ember-spitter", "magma-duelist"],
+  boss: "molten-brute",
+  hazard: {
+    name: "Open lava gaps",
+    description:
+      "Native-scale industrial platforms hang above endless lava; direct distance-jumps cross authored gaps.",
+  },
+  palette: {
+    groundBed: 0x160706,
+    gridColor1: 0x160706,
+    gridColor2: 0x28100c,
+    boundaryRail: 0xc83a24,
+    pitVoid: 0x120302,
+    pitRustBand: 0xd33b1f,
+    pitAmberLip: 0xff8a2b,
+    spawnRingSafe: 0x33e6ff,
+    dustDrift: 0xb64728,
+  },
+  assets: { tile: "lava-background", decalSet: "lava-foundry" },
+};
+
 /** All dimensions: the hand-authored Wild West (dimension 1) + the codegen'd themed dimensions (Frostfell,
  *  Verdant Ruins, Ashlands, Neon-Cyber — see dimensions.generated.ts). Wild West stays FIRST so it's the
  *  default + the back-compat fallback. */
 export const DIMENSIONS: Record<string, DimensionDef> = {
   "wild-west": WILD_WEST,
   ...EXTRA_DIMENSIONS,
+  "lava-foundry": LAVA_FOUNDRY,
 };
 
 /** The dimension a run starts in (and the back-compat default). */

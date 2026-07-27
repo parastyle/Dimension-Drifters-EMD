@@ -72,7 +72,7 @@ import {
   GEAR_CATALOG,
   type GearId,
   GROUND_EPSILON,
-  generateArena,
+  generateDimensionArena,
   getDimension,
   hasAugment,
   INTERP_DELAY_MS,
@@ -86,6 +86,7 @@ import {
   landingThumpTier,
   lootCooldownMult,
   lootDamageMult,
+  LAVA_DIMENSION_ID,
   MAP_ZONE_SCAR,
   type MetaAccountV5,
   type MoneyBankReceipt,
@@ -406,6 +407,12 @@ import {
   terrainRimKey,
   terrainTileKey,
 } from "./arena/floor-renderer.js";
+import {
+  buildLavaDimensionFloor,
+  lavaAssetFilesForMap,
+  type LavaParallax,
+  updateLavaParallax,
+} from "./arena/lava-floor-renderer.js";
 import { makeGroundZonePatch, syncGroundZonePatch } from "./arena/ground-zone-renderer.js";
 import {
   hasDriveForPredictedAttack,
@@ -1703,11 +1710,16 @@ export class ArenaScene extends Phaser.Scene {
   /** §17 the procgen arena, regenerated client-side from the synced seeds (identical to the server's), +
    *  the baked floor graphics. Built once the seeds arrive. */
   private arenaMap?: ArenaMap;
+  /** Prepared while native prefab textures load; avoids rerasterizing collision polygons every frame. */
+  private preparedArenaMap?: ArenaMap;
+  private preparedArenaMapKey = "";
   /** §6 chain (v0.103): the seed+dimension fingerprint the CURRENT floor was baked from — when the synced
    *  values diverge (rift descent / run restart re-mints the map), the floor is torn down and rebuilt. */
   private lastSeedKey = "";
   /** Every game object the floor bake created, so a rebuild can destroy the lot. */
   private floorObjs: Phaser.GameObjects.GameObject[] = [];
+  /** Two endless tiled layers, present only when the generated map carries Lava Foundry layout data. */
+  private lavaParallax?: LavaParallax;
   /** B34 generated LDtk tilemaps retained for scene-restart teardown. */
   private beltTilemaps: Phaser.Tilemaps.Tilemap[] = [];
   /** §6 v0.103: until this clock, enemy-REMOVAL VFX are muted — a rift descent bulk-clears the old
@@ -1969,22 +1981,24 @@ export class ArenaScene extends Phaser.Scene {
     // Missing/half-rendered kits are optional. Override only these files' decode-error hook because Vite may
     // answer a missing public asset with index.html (HTTP 200): Phaser's default hook logs each bad decode.
     const terrainDimensionId = getDimension(this.selectedDimension).id;
-    for (let i = 0; i < 4; i++) {
-      const key = terrainTileKey(terrainDimensionId, i);
-      if (!this.textures.exists(key) && !this.floorArtMissing.has(key)) {
-        this.queueOptionalFloorArt(key, `tiles/${terrainDimensionId}/tile-${i}.png`);
+    if (terrainDimensionId !== LAVA_DIMENSION_ID) {
+      for (let i = 0; i < 4; i++) {
+        const key = terrainTileKey(terrainDimensionId, i);
+        if (!this.textures.exists(key) && !this.floorArtMissing.has(key)) {
+          this.queueOptionalFloorArt(key, `tiles/${terrainDimensionId}/tile-${i}.png`);
+        }
       }
-    }
-    const rimKey = terrainRimKey(terrainDimensionId);
-    if (!this.textures.exists(rimKey) && !this.floorArtMissing.has(rimKey)) {
-      this.queueOptionalFloorArt(rimKey, `tiles/${terrainDimensionId}/rim.png`);
-    }
-    // §17 P4 active-dimension DECAL ground litter. A joiner/rift whose synced dimension differs is covered
-    // by maybeBuildFloor's identical lazy-load gate below.
-    const propPack = dimensionPropPack(terrainDimensionId);
-    for (const id of propPack.decalIds) {
-      if (!this.textures.exists(id) && !this.floorArtMissing.has(id)) {
-        this.queueOptionalFloorArt(id, `${propPack.decalDir}/${id}.png`);
+      const rimKey = terrainRimKey(terrainDimensionId);
+      if (!this.textures.exists(rimKey) && !this.floorArtMissing.has(rimKey)) {
+        this.queueOptionalFloorArt(rimKey, `tiles/${terrainDimensionId}/rim.png`);
+      }
+      // §17 P4 active-dimension DECAL ground litter. A joiner/rift whose synced dimension differs is covered
+      // by maybeBuildFloor's identical lazy-load gate below.
+      const propPack = dimensionPropPack(terrainDimensionId);
+      for (const id of propPack.decalIds) {
+        if (!this.textures.exists(id) && !this.floorArtMissing.has(id)) {
+          this.queueOptionalFloorArt(id, `${propPack.decalDir}/${id}.png`);
+        }
       }
     }
     this.load.on("loaderror", (file: Phaser.Loader.File) => {
@@ -2361,6 +2375,9 @@ export class ArenaScene extends Phaser.Scene {
     // Display-object/UI pools and handles. The previous objects are already destroyed by Phaser.
     this.dust.length = 0;
     this.floorObjs = [];
+    this.lavaParallax = undefined;
+    this.preparedArenaMap = undefined;
+    this.preparedArenaMapKey = "";
     this.beltTilemaps = [];
     this.corporateDoors = [];
     this.summonObjects = [];
@@ -4420,23 +4437,39 @@ export class ArenaScene extends Phaser.Scene {
     if (!s.seedTerrain) return; // seeds not synced yet (0 = "no map")
     const dimension = getDimension(s.dimensionId);
     const propPack = dimensionPropPack(dimension.id);
+    const preparedKey = `${s.seedTerrain}:${s.seedHazard}:${s.seedTheme}:${s.seedDecor}:${dimension.id}`;
+    if (preparedKey !== this.preparedArenaMapKey || !this.preparedArenaMap) {
+      this.preparedArenaMap = generateDimensionArena(
+        {
+          seedTerrain: s.seedTerrain,
+          seedHazard: s.seedHazard,
+          seedTheme: s.seedTheme,
+          seedDecor: s.seedDecor,
+        },
+        dimension.id,
+      );
+      this.preparedArenaMapKey = preparedKey;
+    }
+    const nextArenaMap = this.preparedArenaMap;
     // §17 a joiner can inherit the host's dimension, and a §6 rift changes it mid-scene. Preload covered the
     // requested starting dimension; here the floor gate lazily queues its terrain + decals before teardown.
     // Network failures hit preload's loaderror guard; HTTP-200/non-image stubs use this silent decode hook.
-    const floorArtFiles = [
-      ...Array.from({ length: 4 }, (_, i) => ({
-        key: terrainTileKey(dimension.id, i),
-        url: `tiles/${dimension.id}/tile-${i}.png`,
-      })),
-      {
-        key: terrainRimKey(dimension.id),
-        url: `tiles/${dimension.id}/rim.png`,
-      },
-      ...propPack.decalIds.map((id) => ({
-        key: id,
-        url: `${propPack.decalDir}/${id}.png`,
-      })),
-    ];
+    const floorArtFiles = nextArenaMap.lavaLayout
+      ? lavaAssetFilesForMap(nextArenaMap)
+      : [
+          ...Array.from({ length: 4 }, (_, i) => ({
+            key: terrainTileKey(dimension.id, i),
+            url: `tiles/${dimension.id}/tile-${i}.png`,
+          })),
+          {
+            key: terrainRimKey(dimension.id),
+            url: `tiles/${dimension.id}/rim.png`,
+          },
+          ...propPack.decalIds.map((id) => ({
+            key: id,
+            url: `${propPack.decalDir}/${id}.png`,
+          })),
+        ];
     const floorArtPending = floorArtFiles.filter(
       ({ key }) => !this.textures.exists(key) && !this.floorArtMissing.has(key),
     );
@@ -4457,16 +4490,12 @@ export class ArenaScene extends Phaser.Scene {
     const corporateTransition = this.belt && corporateDepth > 0;
     const riftDescent = descending && s.depth > 1 && !corporateTransition;
     const worldFold = riftDescent ? this.capturePaperWorldFold() : undefined;
+    this.lavaParallax = undefined;
     for (const o of this.floorObjs) o.destroy();
     this.floorObjs = [];
     this.beltTilemaps = [];
     this.corporateDoors = [];
-    this.arenaMap = generateArena({
-      seedTerrain: s.seedTerrain,
-      seedHazard: s.seedHazard,
-      seedTheme: s.seedTheme,
-      seedDecor: s.seedDecor,
-    });
+    this.arenaMap = nextArenaMap;
     // §17 the active dimension's floor palette (re-skin of "Dust & The Drop"); unknown id → Wild West.
     const palette = dimension.palette;
     if (this.belt) {
@@ -4489,6 +4518,11 @@ export class ArenaScene extends Phaser.Scene {
       }
       this.predictor?.setMap(undefined);
       this.predictor?.setBeltLevel(this.beltLevel);
+    } else if (this.arenaMap.lavaLayout) {
+      const floor = buildLavaDimensionFloor(this, this.arenaMap);
+      this.floorObjs.push(...floor.objects);
+      this.lavaParallax = floor.parallax;
+      this.predictor?.setMap(this.arenaMap);
     } else {
       this.floorObjs.push(
         ...drawArena(this, this.arenaMap, dimension.id, (k) => this.hasTile(k), palette),
@@ -4958,6 +4992,7 @@ export class ArenaScene extends Phaser.Scene {
     // calls (so a sound's stereo position tracks where it happens on screen; end-of-update ordering panned
     // against the prior frame + origin-0 on frame one — adversarial-verify finding).
     const cam = this.cameras.main;
+    updateLavaParallax(this.lavaParallax, cam, this.time.now, this.scale.width, this.scale.height);
     this.audio.setListener(cam.scrollX + cam.width / cam.zoom / 2, cam.width / cam.zoom / 2);
     // Weapon verbs stay physically distinct: E interacts, Q cycles, Z/X page the training gallery, and
     // R owns only drop. G/T become hard-modal owner notes only inside Testing Grounds; T retains

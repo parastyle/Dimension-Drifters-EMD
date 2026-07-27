@@ -1,0 +1,35 @@
+{
+  "package": "claude-lava-procedural-v9-package-20260726",
+  "created_for": "prefab-based procedural lava exploration map handoff",
+  "runtime": {
+    "entry": "index.html",
+    "serve_command": "python -m http.server 8789 --bind 127.0.0.1",
+    "local_url": "http://127.0.0.1:8789/index.html"
+  },
+  "assets": {
+    "lava_background_base": "assets/lava/lava-background-4k-loop.png",
+    "lava_flow_overlay": "assets/lava/lava-flow-overlay-v1.png",
+    "platforms": "assets/platforms/*.png",
+    "mega_connected_rooms": "assets/mega-connected/*.png",
+    "decorative_debris": "assets/broken-bridge-pieces/*.png"
+  },
+  "manifests": {
+    "platforms": "metadata/broken-output-platforms-manifest.json",
+    "mega_connected_rooms": "metadata/mega-connected-assets-manifest.json",
+    "decorative_debris": "metadata/broken-bridge-pieces-manifest.json"
+  },
+  "counts": {
+    "platforms": 6,
+    "mega_connected_rooms": 3,
+    "decorative_debris": 20,
+    "background_layers": 2
+  },
+  "runtime_rules": {
+    "background": "Use the 3840x2160 lava base plate plus the transparent molten-flow overlay as endless tiled parallax layers. Move them at different slow camera/time offsets so the biome feels alive without reading as fast side-scrolling terrain.",
+    "platform_scale": "Every platform and mega-connected room renders at native source scale. Do not shrink or enlarge at runtime.",
+    "normal_route": "Place adjacent platform prefabs close enough for direct movement/jump traversal.",
+    "bridges": "Do not generate modular bridges. Use only baked mega-connected room images when a complete bridge should exist.",
+    "decorative_debris": "Broken bridge pieces are non-colliding dressing only in this handoff. Keep them off required traversal paths.",
+    "collision": "Current rectangles are broad debug placeholders. Replace with authored top-surface polygons before production gameplay."
+  }
+}

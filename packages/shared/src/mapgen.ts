@@ -30,6 +30,7 @@ import {
   PLAYER_GROUND_CONTACT_OFFSET_Y,
   RIFT_OFFSET,
 } from "./constants.js";
+import type { LavaRoomLayout } from "./lava-prefabs.js";
 import { makeRng, mixSeeds, type Rng } from "./rng.js";
 
 /** Tile kinds (Phase 0 is binary: walkable vs hazard). Walls/decor/themes come in later §17 phases. */
@@ -78,6 +79,10 @@ export type ArenaMap = {
   spawnY: number;
   /** The seeds this map was built from (so consumers can confirm they reproduced the right one). */
   seeds: ArenaMapSeeds;
+  /** Per-map hop audit reach. Existing dimensions omit this and retain MAP_MAX_JUMP_TILES exactly. */
+  maxJumpTiles?: number;
+  /** Present only for the additive native-prefab Lava Foundry dimension. */
+  lavaLayout?: LavaRoomLayout;
 };
 
 /** The two post-boss choices are one placement contract: both complete discs must be usable and the
@@ -559,21 +564,22 @@ function groundDiscClear(
   tiles: Uint8Array,
   cols: number,
   rows: number,
+  tileSize: number,
   cx: number,
   cy: number,
   radius: number,
 ): boolean {
-  const centreCol = Math.floor(cx / MAP_TILE);
-  const centreRow = Math.floor(cy / MAP_TILE);
-  const tileRadius = Math.ceil(radius / MAP_TILE) + 1;
+  const centreCol = Math.floor(cx / tileSize);
+  const centreRow = Math.floor(cy / tileSize);
+  const tileRadius = Math.ceil(radius / tileSize) + 1;
   for (let dy = -tileRadius; dy <= tileRadius; dy++)
     for (let dx = -tileRadius; dx <= tileRadius; dx++) {
       const col = centreCol + dx;
       const row = centreRow + dy;
-      const x0 = col * MAP_TILE;
-      const y0 = row * MAP_TILE;
-      const nx = Math.max(x0, Math.min(cx, x0 + MAP_TILE)) - cx;
-      const ny = Math.max(y0, Math.min(cy, y0 + MAP_TILE)) - cy;
+      const x0 = col * tileSize;
+      const y0 = row * tileSize;
+      const nx = Math.max(x0, Math.min(cx, x0 + tileSize)) - cx;
+      const ny = Math.max(y0, Math.min(cy, y0 + tileSize)) - cy;
       if (
         nx * nx + ny * ny < radius * radius &&
         (!inBounds(col, row, cols, rows) || tiles[idx(col, row, cols)] !== TILE_GROUND)
@@ -697,7 +703,7 @@ export function isArenaDiscSafe(
     Number.isFinite(y) &&
     Number.isFinite(radius) &&
     radius > 0 &&
-    groundDiscClear(map.tiles, map.cols, map.rows, x, y, radius)
+    groundDiscClear(map.tiles, map.cols, map.rows, map.tileSize, x, y, radius)
   );
 }
 
@@ -926,7 +932,7 @@ export function auditArenaNavigation(map: ArenaMap): ArenaNavigationAudit {
           stack.push(walk);
         }
       }
-      for (let gap = 1; gap <= MAP_MAX_JUMP_TILES; gap++) {
+      for (let gap = 1; gap <= (map.maxJumpTiles ?? MAP_MAX_JUMP_TILES); gap++) {
         const pitCol = col + dx * gap;
         const pitRow = row + dy * gap;
         if (
@@ -951,6 +957,9 @@ export function auditArenaNavigation(map: ArenaMap): ArenaNavigationAudit {
       reachableCells,
       navigableCells,
     };
+  if (map.lavaLayout) {
+    return { ok: true, reason: "", reachableCells, navigableCells };
+  }
   const reachedByZone = new Uint8Array(MAP_ZONE_COUNT);
   for (let i = 0; i < total; i++) if (seen[i]) reachedByZone[map.zoneIds[i] ?? MAP_ZONE_COMMONS] = 1;
   for (let zoneId = 0; zoneId < MAP_ZONE_COUNT; zoneId++)
@@ -974,6 +983,16 @@ export function validateArena(
   gates?: ArenaGatePair,
 ): { ok: boolean; reason: string } {
   const { tiles, cols, rows } = map;
+  if (map.lavaLayout) {
+    const spawnCol = Math.floor(map.spawnX / map.tileSize);
+    const spawnRow = Math.floor(map.spawnY / map.tileSize);
+    if (tiles[idx(spawnCol, spawnRow, cols)] !== TILE_GROUND)
+      return { ok: false, reason: "spawn tile is not ground" };
+    const navigation = auditArenaNavigation(map);
+    if (!navigation.ok) return { ok: false, reason: navigation.reason };
+    if (gates) return validateArenaGatePair(map, gates);
+    return { ok: true, reason: "" };
+  }
   if (!zoneLayoutValid(map.zoneIds, map.zoneSeeds, cols, rows))
     return { ok: false, reason: "invalid/disconnected map-zone layout" };
   const centreCol = Math.floor(cols / 2);

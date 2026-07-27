@@ -1,0 +1,73 @@
+{
+  "asset_pack": "lava-procedural-exploration-prototype-v9-broken-output-platforms",
+  "count": 6,
+  "policy": "Native-scale room prefabs with decorative broken bridge outputs. Do not scale at runtime. Place close enough for direct traversal; do not attach modular bridges.",
+  "assets": [
+    {
+      "id": "broken-turntable-arena",
+      "file": "assets/platforms/01-broken-turntable-arena.png",
+      "size_px": [1368, 1007],
+      "role": "arena",
+      "art_note": "circular turntable arena with ruined bridge outputs",
+      "canvas_policy": "cropped transparent asset",
+      "fit_to_canvas": null,
+      "bridge_policy": "Broken bridge outputs are decorative. Do not attempt to align external bridge tiles to these mouths.",
+      "recommended_collision": "author broad top-surface polygon manually; generated placeholder not included for main platforms"
+    },
+    {
+      "id": "broken-reactor-arena",
+      "file": "assets/platforms/02-broken-reactor-arena.png",
+      "size_px": [1563, 946],
+      "role": "arena",
+      "art_note": "reactor-core arena with broken perimeter outputs",
+      "canvas_policy": "cropped transparent asset",
+      "fit_to_canvas": null,
+      "bridge_policy": "Broken bridge outputs are decorative. Do not attempt to align external bridge tiles to these mouths.",
+      "recommended_collision": "author broad top-surface polygon manually; generated placeholder not included for main platforms"
+    },
+    {
+      "id": "broken-security-gate-platform",
+      "file": "assets/platforms/03-broken-security-gate-platform.png",
+      "size_px": [1685, 930],
+      "role": "arena",
+      "art_note": "rectangular security-gate combat platform with ruined side mouths",
+      "canvas_policy": "cropped transparent asset",
+      "fit_to_canvas": null,
+      "bridge_policy": "Broken bridge outputs are decorative. Do not attempt to align external bridge tiles to these mouths.",
+      "recommended_collision": "author broad top-surface polygon manually; generated placeholder not included for main platforms"
+    },
+    {
+      "id": "broken-glass-observatory",
+      "file": "assets/platforms/04-broken-glass-observatory.png",
+      "size_px": [1672, 879],
+      "role": "rare",
+      "art_note": "glass-floor observatory with snapped bridge mouths",
+      "canvas_policy": "cropped transparent asset",
+      "fit_to_canvas": null,
+      "bridge_policy": "Broken bridge outputs are decorative. Do not attempt to align external bridge tiles to these mouths.",
+      "recommended_collision": "author broad top-surface polygon manually; generated placeholder not included for main platforms"
+    },
+    {
+      "id": "broken-lavafall-overlook",
+      "file": "assets/platforms/05-broken-lavafall-overlook.png",
+      "size_px": [1609, 893],
+      "role": "arena",
+      "art_note": "large clean platform with damaged output stubs",
+      "canvas_policy": "cropped transparent asset",
+      "fit_to_canvas": null,
+      "bridge_policy": "Broken bridge outputs are decorative. Do not attempt to align external bridge tiles to these mouths.",
+      "recommended_collision": "author broad top-surface polygon manually; generated placeholder not included for main platforms"
+    },
+    {
+      "id": "broken-mega-arena",
+      "file": "assets/platforms/06-broken-mega-arena-4k.png",
+      "size_px": [3840, 2160],
+      "role": "mega",
+      "art_note": "near-full-canvas mega arena with ruined outputs",
+      "canvas_policy": "3840x2160 transparent canvas",
+      "fit_to_canvas": [420, 80, 3000, 2000],
+      "bridge_policy": "Broken bridge outputs are decorative. Do not attempt to align external bridge tiles to these mouths.",
+      "recommended_collision": "author broad top-surface polygon manually; generated placeholder not included for main platforms"
+    }
+  ]
+}
