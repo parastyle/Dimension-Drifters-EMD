@@ -150,6 +150,11 @@ interface PredState {
  * the exact buffered-jump phase over an authoritative height/vh without mistaking an un-acked hop for
  * divergence. */
 interface PendingPredCmd extends PredCmd {
+  /**
+   * Frame-rate input slices that make up this 50ms command window. They are client-only replay data:
+   * the B42 movement report carries the resulting pose on the existing wire.
+   */
+  inputSamples: PredInputSample[];
   jumpCdBefore: number;
   jumpBufBefore: number;
   airJumpsBefore: number;
@@ -181,6 +186,12 @@ interface PendingPredCmd extends PredCmd {
   slideParryLockTBefore: number;
   aimXBefore: number;
   aimYBefore: number;
+}
+
+interface PredInputSample {
+  dx: number;
+  dy: number;
+  dt: number;
 }
 
 interface PredVerticalState {
@@ -522,6 +533,85 @@ function stepHorizontal(
   };
 }
 
+/**
+ * Integrate ordinary locomotion through the frame-rate direction slices captured inside one command
+ * window. Every non-zero slice still uses the canonical constant speed; reversals only change heading.
+ * Impulse remains one exact fixed-tick step so its server/predictor decay law is unchanged.
+ */
+function stepAliasedInputHorizontal(
+  p: PredState,
+  inputSamples: readonly PredInputSample[],
+  relics: Readonly<RelicStacks>,
+  dt: number,
+  attackMoveMode: number,
+  moveSpeedMultiplier: number,
+  belt?: BeltLevel,
+  beltLockX = 0,
+): PredState {
+  const beltX = belt ? beltPlayableXBounds(belt) : undefined;
+  const beltMaxX =
+    belt && beltLockX > 0
+      ? Math.min(beltX?.maxX ?? ARENA_WIDTH, beltLockX)
+      : (beltX?.maxX ?? ARENA_WIDTH);
+  let x = p.x;
+  let y = p.y;
+  let mvx = p.mvx;
+  let mvy = p.mvy;
+  let elapsed = 0;
+
+  for (const sample of inputSamples) {
+    const sampleDt = Math.min(Math.max(sample.dt, 0), Math.max(0, dt - elapsed));
+    if (sampleDt <= 1e-9) continue;
+    const moved = stepPlayerAttackMovement(
+      { x, y },
+      { vx: mvx, vy: mvy },
+      { dx: sample.dx, dy: sample.dy },
+      sampleDt,
+      relicMoveSpeed(relics) * moveSpeedMultiplier,
+      attackMoveMode,
+      belt ? BELT_Y0 : undefined,
+      belt ? BELT_Y0 + DEPTH_MAX : undefined,
+      (beltX?.minX ?? 0) + PLAYER_RADIUS,
+      beltMaxX - PLAYER_RADIUS,
+    );
+    x = moved.x;
+    y = moved.y;
+    mvx = moved.vx;
+    mvy = moved.vy;
+    if (belt) {
+      const resolved = resolveBeltNavigation(belt, x, y, PLAYER_RADIUS);
+      x = Math.min(resolved.x, beltMaxX - PLAYER_RADIUS);
+      y = resolved.y;
+    }
+    elapsed += sampleDt;
+  }
+
+  const imp = stepImpulse(
+    { x, y },
+    { vx: p.vx, vy: p.vy },
+    Math.min(dt, elapsed),
+    (beltX?.minX ?? 0) + PLAYER_RADIUS,
+    beltMaxX - PLAYER_RADIUS,
+  );
+  x = imp.x;
+  y = imp.y;
+  if (belt) {
+    const resolved = resolveBeltNavigation(belt, x, y, PLAYER_RADIUS);
+    x = Math.min(resolved.x, beltMaxX - PLAYER_RADIUS);
+    y = resolved.y;
+  }
+  return {
+    x,
+    y,
+    mvx,
+    mvy,
+    vx: imp.vx,
+    vy: imp.vy,
+    momentumX: p.momentumX,
+    momentumY: p.momentumY,
+  };
+}
+
 function stepStanceHorizontal(
   p: PredState,
   s: PredStanceState,
@@ -758,6 +848,7 @@ function stepPredictionTick(
   map?: ArenaMap,
   belt?: BeltLevel,
   beltLockX = 0,
+  inputSamples?: readonly PredInputSample[],
 ): PredState {
   if (cmd.jump) {
     const rollTail =
@@ -786,18 +877,35 @@ function stepPredictionTick(
     if (airJump && launchedDistanceJump) v.airJumpsRemaining--;
   }
 
-  const next = stepStanceHorizontal(
-    p,
-    s,
-    cmd,
-    relics,
-    dt,
-    attackMoveMode,
-    moveSpeedMultiplier,
-    belt,
-    beltLockX,
-    launchedDistanceJump,
-  );
+  const aliasesOrdinaryMovement =
+    inputSamples !== undefined &&
+    inputSamples.length > 0 &&
+    !launchedDistanceJump &&
+    s.stance === STANCE_NONE &&
+    s.recoveryT <= 0;
+  const next = aliasesOrdinaryMovement
+    ? stepAliasedInputHorizontal(
+        p,
+        inputSamples,
+        relics,
+        dt,
+        attackMoveMode,
+        moveSpeedMultiplier,
+        belt,
+        beltLockX,
+      )
+    : stepStanceHorizontal(
+        p,
+        s,
+        cmd,
+        relics,
+        dt,
+        attackMoveMode,
+        moveSpeedMultiplier,
+        belt,
+        beltLockX,
+        launchedDistanceJump,
+      );
   if (cmd.fireHeld && Math.hypot(continuousRecoilX, continuousRecoilY) > 1e-9) {
     const recoil = addImpulse(next, continuousRecoilX * dt, continuousRecoilY * dt);
     next.vx = recoil.vx;
@@ -874,6 +982,9 @@ export class SelfPredictor {
   private readonly constrainedRenderPos = { x: 0, y: 0 };
   private readonly authorityBoundRenderPos = { x: 0, y: 0 };
   private readonly pending: PendingPredCmd[] = [];
+  /** Frame-rate direction history for the not-yet-committed 50ms movement window. */
+  private inputSamples: PredInputSample[] = [];
+  private inputSampleSeconds = 0;
   private readonly immediateInputGate = new ImmediateInputSendGate();
   private map?: ArenaMap;
   /** §29 belt level (floor profile + obstacles) for predicted authored navigation. */
@@ -1139,8 +1250,50 @@ export class SelfPredictor {
     return { seq: this.seq, dx, dy, jump, crouchHeld, pound, slide, slideHeld, aimX, aimY };
   }
 
-  /** Advance one exact 50ms predicted tick with `cmd` (the scene sends the same cmd to the server). */
+  /** Add one physical-frame direction slice to the pending command window. */
+  sampleInputFrame(dx: number, dy: number, elapsedSeconds: number): void {
+    if (this.paused || this.stalled) return;
+    const dt = Math.min(
+      Math.max(Number.isFinite(elapsedSeconds) ? elapsedSeconds : 0, 0),
+      Math.max(0, DT - this.inputSampleSeconds),
+    );
+    if (dt <= 1e-9) return;
+    const last = this.inputSamples[this.inputSamples.length - 1];
+    if (last && last.dx === dx && last.dy === dy) {
+      last.dt += dt;
+    } else {
+      this.inputSamples.push({ dx, dy, dt });
+    }
+    this.inputSampleSeconds += dt;
+  }
+
+  /** Drop an incomplete frame-sampled window when scene time is intentionally reset. */
+  resetInputFrameWindow(): void {
+    this.inputSamples = [];
+    this.inputSampleSeconds = 0;
+  }
+
+  private takeInputFrameWindow(cmd: PredCmd): PredInputSample[] {
+    if (this.inputSamples.length === 0) return [];
+    const remaining = DT - this.inputSampleSeconds;
+    if (remaining > 1e-9) {
+      const last = this.inputSamples[this.inputSamples.length - 1];
+      if (last && last.dx === cmd.dx && last.dy === cmd.dy) last.dt += remaining;
+      else this.inputSamples.push({ dx: cmd.dx, dy: cmd.dy, dt: remaining });
+    } else if (remaining < -1e-9) {
+      const last = this.inputSamples[this.inputSamples.length - 1];
+      if (last) last.dt = Math.max(0, last.dt + remaining);
+    }
+    const samples = this.inputSamples;
+    this.inputSamples = [];
+    this.inputSampleSeconds = 0;
+    return samples;
+  }
+
+  /** Advance one exact 50ms tick. Frame-sampled steering commits into the existing B42 pose report while
+   *  the scene sends `cmd` as the final held direction on the unchanged input wire. */
   tick(cmd: PredCmd): void {
+    const inputSamples = this.takeInputFrameWindow(cmd);
     if (this.paused || this.stalled) return; // dead/stalled — don't advance into the dark
     const physicalCrouchHeld = cmd.crouchHeld === true;
     if (this.suppressCrouchUntilRelease && !physicalCrouchHeld)
@@ -1152,6 +1305,7 @@ export class SelfPredictor {
     const predictedSlideHeld = this.suppressSlideUntilRelease ? false : physicalSlideHeld;
     const pending: PendingPredCmd = {
       ...cmd,
+      inputSamples,
       crouchHeld: predictedCrouchHeld,
       slide: this.suppressSlideUntilRelease ? false : cmd.slide,
       slideHeld: predictedSlideHeld,
@@ -1209,6 +1363,7 @@ export class SelfPredictor {
       this.map,
       this.belt,
       pending.beltLockXBefore,
+      pending.inputSamples,
     );
     this.height = vert.height;
     this.vh = vert.vh;
@@ -1598,6 +1753,7 @@ export class SelfPredictor {
         this.map,
         this.belt,
         cmd.beltLockXBefore,
+        cmd.inputSamples,
       );
     }
 
@@ -1644,10 +1800,10 @@ export class SelfPredictor {
   }
 
   /**
-   * The position to DRAW this frame: the last predicted tick advanced by the fractional frame time as a
-   * PURE preview (recomputed from `pred` each frame, never accumulated — review #8: position integration
-   * doesn't compose across sub-steps, so the preview must always be one single partial step), plus the
-   * decaying error offset. `sinceTickSec` ∈ [0, 50ms].
+   * The position to DRAW this frame: the last predicted tick advanced through the retained frame-rate
+   * input slices for the pending window. Recomputing those slices from `pred` keeps the preview pure while
+   * preserving every sub-tick direction change; callers without sampled slices retain the legacy single
+   * partial-step path. The decaying correction offset is presentation-only.
    */
   renderPos(
     dx: number,
@@ -1676,7 +1832,10 @@ export class SelfPredictor {
         slideTick: this.stance.slidePhaseTick,
       };
     }
-    const frac = Math.min(Math.max(sinceTickSec, 0), DT);
+    const hasFrameSamples = this.inputSamples.length > 0;
+    const frac = hasFrameSamples
+      ? Math.min(Math.max(this.inputSampleSeconds, 0), DT)
+      : Math.min(Math.max(sinceTickSec, 0), DT);
     this.previewCmd.dx = dx;
     this.previewCmd.dy = dy;
     let p = this.pred;
@@ -1693,17 +1852,29 @@ export class SelfPredictor {
       previewPred.vy = this.pred.vy;
       previewPred.momentumX = this.pred.momentumX;
       previewPred.momentumY = this.pred.momentumY;
-      p = stepStanceHorizontal(
-        previewPred,
-        previewStance,
-        this.previewCmd,
-        this.relics,
-        frac,
-        this.attackMoveMode,
-        this.moveSpeedMultiplier,
-        this.belt,
-        this.beltLockX,
-      );
+      p =
+        hasFrameSamples && previewStance.stance === STANCE_NONE && previewStance.recoveryT <= 0
+          ? stepAliasedInputHorizontal(
+              previewPred,
+              this.inputSamples,
+              this.relics,
+              frac,
+              this.attackMoveMode,
+              this.moveSpeedMultiplier,
+              this.belt,
+              this.beltLockX,
+            )
+          : stepStanceHorizontal(
+              previewPred,
+              previewStance,
+              this.previewCmd,
+              this.relics,
+              frac,
+              this.attackMoveMode,
+              this.moveSpeedMultiplier,
+              this.belt,
+              this.beltLockX,
+            );
     }
     let height = this.height;
     let vh = this.vh;
@@ -1770,6 +1941,7 @@ export class SelfPredictor {
     dx: number,
     dy: number,
     enabled = true,
+    foldWithheldDisplacement = true,
   ): { x: number; y: number } {
     const out = this.constrainedRenderPos;
     out.x = candidateX;
@@ -1794,7 +1966,7 @@ export class SelfPredictor {
       Math.max(-PRED_PRESENT_MAX_COMMAND_DELTA, Math.min(PRED_PRESENT_MAX_COMMAND_DELTA, delta));
     out.x = previousX + Math.cos(constrainedAngle) * stepLength;
     out.y = previousY + Math.sin(constrainedAngle) * stepLength;
-    this.foldError(out.x - candidateX, out.y - candidateY);
+    if (foldWithheldDisplacement) this.foldError(out.x - candidateX, out.y - candidateY);
     return out;
   }
 
@@ -1885,6 +2057,7 @@ export class SelfPredictor {
   /** Mark replay stale after a >250ms frame gap. The next patch rebases simulation immediately but
    * L10 keeps the current SELF presentation and retires the displacement through Smooth. */
   forceResync(): void {
+    this.resetInputFrameWindow();
     this.needResync = true;
   }
 
