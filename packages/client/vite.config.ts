@@ -11,11 +11,14 @@ export default defineConfig({
     // Bind on all interfaces so a second machine on the LAN can test co-op (M0 exit
     // criterion: two people on different machines complete a run together, §23).
     host: process.env.HOST ?? true,
-    // Pose Studio is a dev-only Vite entry. The existing Weaponsmith process owns the only write surface;
-    // proxying it keeps the browser same-origin and leaves production/game runtime bundles untouched.
+    // Authoring studios are dev-only Vite entries. Their small local servers own repo writes;
+    // proxying keeps the browser same-origin and leaves production/game runtime bundles untouched.
     proxy: {
       "/api/pose-studio": {
         target: `http://127.0.0.1:${Number(process.env.POSE_STUDIO_API_PORT) || 5050}`,
+      },
+      "/api/walkability-painter": {
+        target: `http://127.0.0.1:${Number(process.env.WALKABILITY_PAINTER_API_PORT) || 5051}`,
       },
     },
   },
