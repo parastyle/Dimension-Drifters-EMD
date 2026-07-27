@@ -21,6 +21,8 @@ export * from "./gear.js";
 export * from "./hit-envelope.js";
 export * from "./leveling.js";
 export * from "./loot.js";
+export * from "./lava-dimension.js";
+export * from "./lava-prefabs.js";
 export * from "./mapgen.js";
 export * from "./math.js";
 export * from "./melee.js";

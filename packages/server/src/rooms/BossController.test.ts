@@ -365,8 +365,11 @@ describe("§36 dimension finale bosses — each level plays a distinct fight", (
       expect(def.kind, `${dim.id} boss "${dim.boss}" fell back to CLASSIC`).not.toBe("classic");
     }
   });
-  it("maps the five dimensions onto five DISTINCT fights (no two levels share a boss)", () => {
-    const kinds = Object.values(DIMENSIONS).map((d) => bossDefFor(d.boss).kind);
+  it("keeps the five original dimensions on five DISTINCT fights", () => {
+    // Lava Foundry is an additive map/prefab trial that intentionally reuses Ashlands combat content.
+    const kinds = Object.values(DIMENSIONS)
+      .filter((dimension) => dimension.id !== "lava-foundry")
+      .map((dimension) => bossDefFor(dimension.boss).kind);
     expect(new Set(kinds).size).toBe(kinds.length);
   });
 });

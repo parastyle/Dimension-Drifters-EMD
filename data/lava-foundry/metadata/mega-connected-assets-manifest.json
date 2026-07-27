@@ -1,0 +1,34 @@
+{
+  "asset_pack": "lava-procedural-exploration-prototype-v9-mega-connected",
+  "count": 3,
+  "policy": "Rare native-scale authored rooms where two platforms and a full bridge are baked into one transparent image. Do not split or retile.",
+  "assets": [
+    {
+      "id": "dual-turntable-bridge",
+      "file": "assets/mega-connected/01-dual-turntable-bridge-4k.png",
+      "size_px": [3840, 2160],
+      "orientation": "landscape",
+      "art_note": "two circular turntable platforms connected by one baked straight bridge",
+      "fit_to_canvas": [64, 501, 3712, 1158],
+      "bridge_policy": "Bridge is baked into the same image as both platforms. Do not split into modular bridge pieces."
+    },
+    {
+      "id": "security-to-turntable-bridge",
+      "file": "assets/mega-connected/02-security-to-turntable-bridge-4k.png",
+      "size_px": [3840, 2160],
+      "orientation": "landscape",
+      "art_note": "rectangular security platform connected to circular turntable platform",
+      "fit_to_canvas": [64, 426, 3712, 1307],
+      "bridge_policy": "Bridge is baked into the same image as both platforms. Do not split into modular bridge pieces."
+    },
+    {
+      "id": "glass-to-reactor-vertical-bridge",
+      "file": "assets/mega-connected/03-glass-to-reactor-vertical-bridge-4k.png",
+      "size_px": [2160, 3840],
+      "orientation": "portrait",
+      "art_note": "glass observatory connected to reactor platform by one baked vertical bridge",
+      "fit_to_canvas": [64, 396, 2032, 3048],
+      "bridge_policy": "Bridge is baked into the same image as both platforms. Do not split into modular bridge pieces."
+    }
+  ]
+}

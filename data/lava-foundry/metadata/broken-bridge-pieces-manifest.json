@@ -1,0 +1,294 @@
+{
+  "asset_pack": "lava-procedural-exploration-prototype-v9-broken-bridge-pieces",
+  "style": "dark corporate comic cel-shaded 2.5D lava infrastructure debris",
+  "count": 20,
+  "draw_order": [
+    "endless animated lava parallax background",
+    "main platforms",
+    "decorative broken bridge pieces",
+    "characters/effects"
+  ],
+  "piece_policy": "Decorative non-colliding debris only in the current prototype. Do not use as required jump platforms.",
+  "assets": [
+    {
+      "id": "snapped-catwalk-slab",
+      "file": "assets/broken-bridge-pieces/01-snapped-catwalk-slab.png",
+      "size_px": [725, 840],
+      "category": "medium",
+      "usage": "single-medium-gap",
+      "art_note": "rectangular slab, general stepping",
+      "recommended_collision_rect_px": [130, 151, 464, 336],
+      "placement": {
+        "random_rotation_allowed": false,
+        "random_flip_allowed": true,
+        "recommended_gap_px": [430, 720]
+      }
+    },
+    {
+      "id": "bent-grated-rectangle",
+      "file": "assets/broken-bridge-pieces/02-bent-grated-rectangle.png",
+      "size_px": [1048, 732],
+      "category": "large",
+      "usage": "large-gap-stabilizer",
+      "art_note": "wide grated landing",
+      "recommended_collision_rect_px": [167, 124, 712, 314],
+      "placement": {
+        "random_rotation_allowed": false,
+        "random_flip_allowed": true,
+        "recommended_gap_px": [650, 1050]
+      }
+    },
+    {
+      "id": "half-ring-rim-fragment",
+      "file": "assets/broken-bridge-pieces/03-half-ring-rim-fragment.png",
+      "size_px": [1073, 655],
+      "category": "medium",
+      "usage": "curved-route",
+      "art_note": "curved perimeter fragment",
+      "recommended_collision_rect_px": [193, 117, 686, 262],
+      "placement": {
+        "random_rotation_allowed": false,
+        "random_flip_allowed": true,
+        "recommended_gap_px": [430, 720]
+      }
+    },
+    {
+      "id": "red-rail-strip",
+      "file": "assets/broken-bridge-pieces/04-red-rail-strip.png",
+      "size_px": [895, 612],
+      "category": "medium",
+      "usage": "narrow-risk",
+      "art_note": "narrow rail strip",
+      "recommended_collision_rect_px": [161, 110, 572, 244],
+      "placement": {
+        "random_rotation_allowed": false,
+        "random_flip_allowed": true,
+        "recommended_gap_px": [430, 720]
+      }
+    },
+    {
+      "id": "cracked-landing-pad",
+      "file": "assets/broken-bridge-pieces/05-cracked-landing-pad.png",
+      "size_px": [943, 871],
+      "category": "medium",
+      "usage": "safe-landing",
+      "art_note": "compact pad",
+      "recommended_collision_rect_px": [169, 156, 603, 348],
+      "placement": {
+        "random_rotation_allowed": false,
+        "random_flip_allowed": true,
+        "recommended_gap_px": [430, 720]
+      }
+    },
+    {
+      "id": "wide-wedge-deck",
+      "file": "assets/broken-bridge-pieces/06-wide-wedge-deck.png",
+      "size_px": [914, 873],
+      "category": "large",
+      "usage": "wide-wedge",
+      "art_note": "wide wedge deck",
+      "recommended_collision_rect_px": [146, 148, 621, 375],
+      "placement": {
+        "random_rotation_allowed": false,
+        "random_flip_allowed": true,
+        "recommended_gap_px": [650, 1050]
+      }
+    },
+    {
+      "id": "compact-service-panel",
+      "file": "assets/broken-bridge-pieces/07-compact-service-panel.png",
+      "size_px": [829, 716],
+      "category": "small",
+      "usage": "safe-step",
+      "art_note": "compact service panel",
+      "recommended_collision_rect_px": [182, 143, 464, 257],
+      "placement": {
+        "random_rotation_allowed": false,
+        "random_flip_allowed": true,
+        "recommended_gap_px": [280, 460]
+      }
+    },
+    {
+      "id": "broken-threshold-chunk",
+      "file": "assets/broken-bridge-pieces/08-broken-threshold-chunk.png",
+      "size_px": [1242, 868],
+      "category": "large",
+      "usage": "pause-platform",
+      "art_note": "broken threshold chunk",
+      "recommended_collision_rect_px": [198, 147, 844, 373],
+      "placement": {
+        "random_rotation_allowed": false,
+        "random_flip_allowed": true,
+        "recommended_gap_px": [650, 1050]
+      }
+    },
+    {
+      "id": "pipe-bundle-walkway",
+      "file": "assets/broken-bridge-pieces/09-pipe-bundle-walkway.png",
+      "size_px": [1114, 846],
+      "category": "medium",
+      "usage": "industrial-service",
+      "art_note": "pipe bundle walkway",
+      "recommended_collision_rect_px": [200, 152, 712, 338],
+      "placement": {
+        "random_rotation_allowed": false,
+        "random_flip_allowed": true,
+        "recommended_gap_px": [430, 720]
+      }
+    },
+    {
+      "id": "small-t-junction-chunk",
+      "file": "assets/broken-bridge-pieces/10-small-t-junction-chunk.png",
+      "size_px": [949, 838],
+      "category": "medium",
+      "usage": "turn-step",
+      "art_note": "small T fragment",
+      "recommended_collision_rect_px": [170, 150, 607, 335],
+      "placement": {
+        "random_rotation_allowed": false,
+        "random_flip_allowed": true,
+        "recommended_gap_px": [430, 720]
+      }
+    },
+    {
+      "id": "diagonal-ripped-deck",
+      "file": "assets/broken-bridge-pieces/11-diagonal-ripped-deck.png",
+      "size_px": [1117, 935],
+      "category": "large",
+      "usage": "long-gap-step",
+      "art_note": "diagonal ripped deck",
+      "recommended_collision_rect_px": [178, 158, 759, 402],
+      "placement": {
+        "random_rotation_allowed": false,
+        "random_flip_allowed": true,
+        "recommended_gap_px": [650, 1050]
+      }
+    },
+    {
+      "id": "square-bolted-plate",
+      "file": "assets/broken-bridge-pieces/12-square-bolted-plate.png",
+      "size_px": [801, 751],
+      "category": "small",
+      "usage": "basic-step",
+      "art_note": "square bolted plate",
+      "recommended_collision_rect_px": [176, 150, 448, 270],
+      "placement": {
+        "random_rotation_allowed": false,
+        "random_flip_allowed": true,
+        "recommended_gap_px": [280, 460]
+      }
+    },
+    {
+      "id": "curved-guardrail-chunk",
+      "file": "assets/broken-bridge-pieces/13-curved-guardrail-chunk.png",
+      "size_px": [955, 660],
+      "category": "medium",
+      "usage": "curved-route",
+      "art_note": "curved guardrail chunk",
+      "recommended_collision_rect_px": [171, 118, 611, 264],
+      "placement": {
+        "random_rotation_allowed": false,
+        "random_flip_allowed": true,
+        "recommended_gap_px": [430, 720]
+      }
+    },
+    {
+      "id": "lava-rock-stepping-slab",
+      "file": "assets/broken-bridge-pieces/14-lava-rock-stepping-slab.png",
+      "size_px": [1023, 788],
+      "category": "medium",
+      "usage": "rock-metal-step",
+      "art_note": "lava rock stepping slab",
+      "recommended_collision_rect_px": [184, 141, 654, 315],
+      "placement": {
+        "random_rotation_allowed": false,
+        "random_flip_allowed": true,
+        "recommended_gap_px": [430, 720]
+      }
+    },
+    {
+      "id": "split-double-panel",
+      "file": "assets/broken-bridge-pieces/15-split-double-panel.png",
+      "size_px": [1000, 787],
+      "category": "large",
+      "usage": "unstable-large",
+      "art_note": "split double panel",
+      "recommended_collision_rect_px": [160, 133, 680, 338],
+      "placement": {
+        "random_rotation_allowed": false,
+        "random_flip_allowed": true,
+        "recommended_gap_px": [650, 1050]
+      }
+    },
+    {
+      "id": "narrow-maintenance-beam",
+      "file": "assets/broken-bridge-pieces/16-narrow-maintenance-beam.png",
+      "size_px": [1247, 576],
+      "category": "medium",
+      "usage": "narrow-risk",
+      "art_note": "maintenance beam",
+      "recommended_collision_rect_px": [224, 103, 798, 230],
+      "placement": {
+        "random_rotation_allowed": false,
+        "random_flip_allowed": true,
+        "recommended_gap_px": [430, 720]
+      }
+    },
+    {
+      "id": "wide-jump-islet",
+      "file": "assets/broken-bridge-pieces/17-wide-jump-islet.png",
+      "size_px": [1326, 853],
+      "category": "large",
+      "usage": "safe-islet",
+      "art_note": "wide jump islet",
+      "recommended_collision_rect_px": [212, 145, 901, 366],
+      "placement": {
+        "random_rotation_allowed": false,
+        "random_flip_allowed": true,
+        "recommended_gap_px": [650, 1050]
+      }
+    },
+    {
+      "id": "broken-corner-elbow",
+      "file": "assets/broken-bridge-pieces/18-broken-corner-elbow.png",
+      "size_px": [1175, 788],
+      "category": "large",
+      "usage": "corner-step",
+      "art_note": "broken elbow chunk",
+      "recommended_collision_rect_px": [188, 133, 799, 338],
+      "placement": {
+        "random_rotation_allowed": false,
+        "random_flip_allowed": true,
+        "recommended_gap_px": [650, 1050]
+      }
+    },
+    {
+      "id": "emergency-marker-plate",
+      "file": "assets/broken-bridge-pieces/19-emergency-marker-plate.png",
+      "size_px": [943, 809],
+      "category": "small",
+      "usage": "basic-step",
+      "art_note": "emergency marker plate",
+      "recommended_collision_rect_px": [207, 161, 528, 291],
+      "placement": {
+        "random_rotation_allowed": false,
+        "random_flip_allowed": true,
+        "recommended_gap_px": [280, 460]
+      }
+    },
+    {
+      "id": "fractured-glass-tile",
+      "file": "assets/broken-bridge-pieces/20-fractured-glass-tile.png",
+      "size_px": [1097, 886],
+      "category": "large",
+      "usage": "rare-special",
+      "art_note": "fractured glass tile",
+      "recommended_collision_rect_px": [175, 150, 745, 380],
+      "placement": {
+        "random_rotation_allowed": false,
+        "random_flip_allowed": true,
+        "recommended_gap_px": [650, 1050]
+      }
+    }
+  ]
+}

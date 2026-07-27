@@ -186,7 +186,7 @@ import {
   FRIENDLY_PROJECTILE_ENTITY_CAP,
   type GearRunRuntime,
   GROUND_EPSILON,
-  generateArena,
+  generateDimensionArena,
   getDimension,
   HAIRTRIGGER_MAX,
   HAIRTRIGGER_WINDOW,
@@ -4955,12 +4955,15 @@ export const roomProgressionMethods = {
     this.state.seedHazard = randomSeed();
     this.state.seedTheme = randomSeed();
     this.state.seedDecor = randomSeed();
-    this.map = generateArena({
-      seedTerrain: this.state.seedTerrain,
-      seedHazard: this.state.seedHazard,
-      seedTheme: this.state.seedTheme,
-      seedDecor: this.state.seedDecor,
-    });
+    this.map = generateDimensionArena(
+      {
+        seedTerrain: this.state.seedTerrain,
+        seedHazard: this.state.seedHazard,
+        seedTheme: this.state.seedTheme,
+        seedDecor: this.state.seedDecor,
+      },
+      this.state.dimensionId,
+    );
     // The generator guarantees a connected, spawn-clear map; assert it (cheap) so a future regression
     // surfaces loudly instead of shipping an unplayable arena.
     const v = validateArena(this.map);
