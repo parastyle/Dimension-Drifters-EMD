@@ -1813,6 +1813,28 @@
     "barrelMode": "parallel"
   },
   {
+    "id": "x2-helix-bullpup-6-8",
+    "name": "Helix Bullpup 6.8",
+    "sprite": "x2-helix-bullpup-6-8",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 32.1
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 32.1
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
     "id": "x2-hellbore-gatling",
     "name": "Hellbore Gatling",
     "sprite": "x2-hellbore-gatling",

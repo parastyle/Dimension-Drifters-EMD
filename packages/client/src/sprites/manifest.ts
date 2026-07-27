@@ -12612,6 +12612,32 @@ export const SPRITES = {
       }
     ]
   },
+  "x2-helix-bullpup-6-8": {
+    "id": "x2-helix-bullpup-6-8",
+    "kind": "weapon",
+    "canvas": {
+      "w": 286,
+      "h": 143
+    },
+    "body": {
+      "cx": 129.53,
+      "cy": 63.64,
+      "w": 256,
+      "h": 95
+    },
+    "parts": [
+      {
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 95,
+        "cx": 129.53,
+        "cy": 63.64,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
+  },
   "x2-hellbore-gatling": {
     "id": "x2-hellbore-gatling",
     "kind": "weapon",

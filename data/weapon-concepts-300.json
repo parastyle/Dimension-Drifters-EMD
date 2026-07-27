@@ -1,10 +1,10 @@
 {
   "generated": "2026-06-17",
   "source": "design-300-weapons workflow (15 agents)",
-  "count": 360,
+  "count": 361,
   "byType": {
     "melee": 135,
-    "ranged": 128,
+    "ranged": 129,
     "caster": 97
   },
   "weapons": [
@@ -20779,6 +20779,42 @@
         "displayLength": 118,
         "swingArc": 1.8,
         "gripFrac": 0.14
+      }
+    },
+    {
+      "id": "x2-helix-bullpup-6-8",
+      "name": "Helix Bullpup 6.8",
+      "type": "ranged",
+      "family": "bullpup-rifle",
+      "theme": "next-issue compact rear-fed automatic rifle with a continuous carry-rail optic shell and plain immaculate finish",
+      "element": "physical",
+      "finish": "pristine",
+      "grip": "2H",
+      "size": "M",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "STR"
+      ],
+      "artPrompt": "Weapon-only in-world game sprite on a perfectly flat fully opaque #00ff00 chroma field: exactly ONE smooth compact automatic rifle with a thick rounded polymer body, a clearly visible detachable box magazine seated BEHIND the trigger group, a conventional pistol grip and trigger on the LEFT-middle, an optic housing moulded directly into the raised carry rail as one uninterrupted continuous shell, and a short exposed physical barrel pointing RIGHT. Preserve a credible ballistic mechanism: the rear magazine feeds a chamber aligned behind the grip, the barrel continues straight forward from that chamber, and a compact ejection panel sits above the rear feed area. The weapon fires physical cartridges and must look buildable by a real engineer, not like an energy weapon. Add one small boxy combination unit rigidly rail-mounted beneath the short barrel with a clearly visible flat smoked lens; it is silhouette detail only and emits no beam, no glow, no bloom, no rays, and no light cone. Next-issue standard throughout: seamless matched shell mouldings, the optic bonded flush into the rail, hairline-even panel gaps, precision fasteners, every assembly torqued true, expensive and immaculately maintained. Plain matched near-black finish with NO camouflage, no paint pattern, no dirt, no rust, no tape, no repairs, no salvage, no mismatched parts, and no improvised hardware. DARK house render: near-black charcoal is the dominant overall value, narrow cool highlights catch TOP EDGES ONLY, sides and underside remain in deep shadow, never evenly lit and never mid-grey overall. One localized warm accent only: a small flat muted-amber optic viewing pane bonded into the carry-rail shell; it is solid colour, not luminous, and emits no light. Bold heavy black outline around the entire silhouette AND equally heavy crisp black internal ink dividing every shell panel, ejection panel, housing, control, magazine plane, fastener, and hairline seam. Slightly exaggerated cartoon proportions: make the rounded rear body, deep rear magazine, continuous optic rail, and compact front housing read chunkier while keeping the grip-to-feed-to-barrel relationship functional. Use only 4-6 flat cel colours plus black ink, hard flat planes, no gradients, no airbrushing, no soft studio lighting, no photorealism, no product photograph, no catalogue rendering, no 3D render, and no technical diagram treatment. One complete connected weapon, strict flat orthographic full side-profile, muzzle RIGHT, grip and magazine LEFT, fully visible with generous padding. No character, no hands, no background scene, no floor, no cast shadow, no second weapon, no ammunition beside the gun, no sling, no strap, no rope, no chain, no tassel, no dangling part, no text, no logo, no serial, no maker mark, no muzzle flash, no smoke, no emitted VFX, no border, and no watermark.",
+      "palettePrimary": "#171B20",
+      "paletteAccent": "#D29A45",
+      "cardartAction": "held tight through a controlled automatic burst, compact amber muzzle beats driving right while the rear magazine keeps the silhouette planted",
+      "behavior": {
+        "kind": "gun",
+        "damage": 7,
+        "projectileSpeed": 1320,
+        "range": 700,
+        "fireRate": 0.14,
+        "spread": 0.025,
+        "pierce": 1,
+        "magazine": 26,
+        "reloadSeconds": 1.55,
+        "bulletKind": "tracer",
+        "projectileArt": "bullet",
+        "muzzle": "rapid",
+        "muzzleColor": 13802053,
+        "recoil": 0.0009
       }
     }
   ]

@@ -1,6 +1,6 @@
 # V7 Muzzle Derivation Table
 
-Generated from sprite alpha for all 176 active projectile, beam, and authored melee-impact definitions. Coordinates are source-PNG pixels.
+Generated from sprite alpha for all 177 active projectile, beam, and authored melee-impact definitions. Coordinates are source-PNG pixels.
 
 | Weapon | Derived barrel tip | Authored muzzle point(s) | Override |
 | --- | --- | --- | --- |
@@ -83,6 +83,7 @@ Generated from sprite alpha for all 176 active projectile, beam, and authored me
 | `x2-hailspitter-pepperbox` (Hailspitter Pepperbox) | part-1 (255, 44.3) | part-1 (252, 41)<br>part-1 (252, 54)<br>part-1 (252, 67)<br>part-1 (252, 81)<br>part-1 (252, 95)<br>part-1 (252, 109)<br>part-1 (252, 122) | Yes - The seven frosted pepperbox bores share one connected front plate; explicit art-space centres span the painted barrel cluster and launch one tight parallel lane each. |
 | `x2-hailstorm-coilgun` (Hailstorm Coilgun) | part-1 (255, 17.1) | part-1 (255, 17.1) | No |
 | `x2-hallowbore-coachgun` (Hallowbore Coachgun) | part-1 (255, 20.1) | part-1 (255, 28)<br>part-1 (255, 51) | Yes - The shared engraved muzzle plate joins both stacked barrels into one alpha mass; the two visible bore centres require explicit art-space points. |
+| `x2-helix-bullpup-6-8` (Helix Bullpup 6.8) | part-1 (255, 32.1) | part-1 (255, 32.1) | No |
 | `x2-hellbore-gatling` (Hellbore Gatling) | part-1 (255, 42) | part-1 (255, 42) | No |
 | `x2-hellmouth-palmcaster` (Hellmouth Palmcaster) | part-1 (255, 96.3) | part-1 (255, 96.3) | No |
 | `x2-hexbinder-s-iron-orrery` (Hexbinder's Iron Orrery) | part-1 (255, 59) | part-1 (255, 59) | No |

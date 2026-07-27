@@ -15946,6 +15946,48 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "life": 120
       }
     }
+  },
+  "x2-helix-bullpup-6-8": {
+    "id": "x2-helix-bullpup-6-8",
+    "name": "Helix Bullpup 6.8",
+    "expansion": true,
+    "damage": 8,
+    "range": 140,
+    "halfArc": 0.85,
+    "cooldown": 0.4,
+    "displayLength": 90,
+    "swingArc": 2.6,
+    "gripFrac": 0.12,
+    "tags": {
+      "grip": "2H",
+      "size": "M",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "bullpup-rifle",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "STR"
+      ]
+    },
+    "recoil": 25,
+    "twoHanded": true,
+    "gun": {
+      "damage": 7,
+      "projectileSpeed": 1320,
+      "range": 700,
+      "fireRate": 0.14,
+      "magazine": 26,
+      "reloadSeconds": 1.55,
+      "bulletKind": "tracer",
+      "muzzle": "rapid",
+      "recoil": 0.0009,
+      "projectileArt": "bullet",
+      "spread": 0.025,
+      "muzzleColor": 13802053
+    }
   }
 };
 
