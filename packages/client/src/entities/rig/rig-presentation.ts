@@ -157,6 +157,7 @@ export interface PresentedActorState extends RigAnim {
   maxCharges: number;
   dualFireHeld: boolean;
   weaponChargeActive: boolean;
+  weaponUtilityMode: number;
   teleportSeq: number;
   ultimate: PresentedUltimateState;
 }
@@ -183,6 +184,7 @@ export function createPresentedActorState(frame: PresentationFrame): PresentedAc
     maxCharges: 0,
     dualFireHeld: false,
     weaponChargeActive: false,
+    weaponUtilityMode: 0,
     teleportSeq: 0,
     ultimate: { archetype: 0, phase: 0, startTick: 0, resolveTick: 0, endTick: 0 },
     moveX: 0,
@@ -232,6 +234,7 @@ interface ActorPatch {
   maxCharges: number;
   dualFireHeld: boolean;
   weaponChargeActive: boolean;
+  weaponUtilityMode: number;
   teleportSeq: number;
   fireHeld: boolean;
   ultimate: PresentedUltimateState;
@@ -269,6 +272,7 @@ function capturePatch(t: number, player: PlayerState): ActorPatch {
     maxCharges: player.maxCharges,
     dualFireHeld: player.dualWield?.fireInputHeld === true,
     weaponChargeActive: player.weaponChargeActive,
+    weaponUtilityMode: player.weaponUtilityMode,
     teleportSeq: player.teleportSeq,
     fireHeld: player.attackHeld || player.weaponChargeActive,
     ultimate: {
@@ -408,6 +412,7 @@ export class PresentedActorBuffer {
     out.maxCharges = discrete.maxCharges;
     out.dualFireHeld = discrete.dualFireHeld;
     out.weaponChargeActive = discrete.weaponChargeActive;
+    out.weaponUtilityMode = discrete.weaponUtilityMode;
     out.teleportSeq = discrete.teleportSeq;
     out.fireHeld = discrete.fireHeld;
     out.ultimate.archetype = discrete.ultimate.archetype;

@@ -15577,6 +15577,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "subclass": "Special"
     },
     "recoil": 22,
+    "weaponUtility": "both",
     "gripPoints": {
       "primary": {
         "x": 0.34,
@@ -15633,6 +15634,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "subclass": "Shotguns"
     },
     "recoil": 154,
+    "weaponUtility": "both",
     "gripPoints": {
       "primary": {
         "x": 0.29,
@@ -15690,6 +15692,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "subclass": "Special"
     },
     "recoil": 54,
+    "weaponUtility": "both",
     "gripPoints": {
       "primary": {
         "x": 0.29,
@@ -15748,6 +15751,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "subclass": "Machine Pistols"
     },
     "recoil": 49,
+    "weaponUtility": "both",
     "gun": {
       "damage": 4,
       "projectileSpeed": 960,
@@ -15794,6 +15798,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "subclass": "Machine Pistols"
     },
     "recoil": 14,
+    "weaponUtility": "both",
     "gripPoints": {
       "primary": {
         "x": 0.34,
@@ -15850,6 +15855,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "subclass": "Special"
     },
     "recoil": 54,
+    "weaponUtility": "both",
     "gripPoints": {
       "primary": {
         "x": 0.38,
@@ -15907,6 +15913,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "subclass": "Pistols"
     },
     "recoil": 34,
+    "weaponUtility": "both",
     "description": "An immaculate bulk-issue duty sidearm whose uniform tolerances, crisp stippling, and abstract dust-cover inventory glyph make procurement discipline its signature.",
     "gun": {
       "damage": 6,
@@ -16008,6 +16015,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "subclass": "Machine Pistols"
     },
     "recoil": 16,
+    "weaponUtility": "both",
     "twoHanded": true,
     "gun": {
       "damage": 5,
@@ -16051,6 +16059,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "subclass": "Special"
     },
     "recoil": 71,
+    "weaponUtility": "both",
     "gripPoints": {
       "primary": {
         "x": 0.35,
@@ -16108,6 +16117,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "subclass": "Special"
     },
     "recoil": 152,
+    "weaponUtility": "both",
     "gripPoints": {
       "primary": {
         "x": 0.27,
@@ -16163,6 +16173,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "subclass": "Marksman Rifles"
     },
     "recoil": 104,
+    "weaponUtility": "both",
     "twoHanded": true,
     "gun": {
       "damage": 12,
@@ -16206,6 +16217,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "subclass": "Special"
     },
     "recoil": 20,
+    "weaponUtility": "both",
     "gripPoints": {
       "primary": {
         "x": 0.31,
@@ -16262,6 +16274,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "subclass": "Machine Pistols"
     },
     "recoil": 18,
+    "weaponUtility": "both",
     "twoHanded": true,
     "gun": {
       "damage": 6,
@@ -16691,6 +16704,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "subclass": "Special"
     },
     "recoil": 25,
+    "weaponUtility": "both",
     "twoHanded": true,
     "gun": {
       "damage": 7,
@@ -16735,6 +16749,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "subclass": "Special"
     },
     "recoil": 18,
+    "weaponUtility": "both",
     "gripPoints": {
       "primary": {
         "x": 0.28,
@@ -16794,6 +16809,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "subclass": "Special"
     },
     "recoil": 42,
+    "weaponUtility": "both",
     "description": "An immaculate prototype service sidearm that drives physical slugs through a conventional chamber while its paired top conductors add velocity and penetration.",
     "gun": {
       "damage": 10,
@@ -16839,6 +16855,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "subclass": "Special"
     },
     "recoil": 12,
+    "weaponUtility": "both",
     "gripPoints": {
       "primary": {
         "x": 0.25,
@@ -16895,6 +16912,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "subclass": "Special"
     },
     "recoil": 67,
+    "weaponUtility": "both",
     "gripPoints": {
       "primary": {
         "x": 0.3,
@@ -16955,6 +16973,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "subclass": "Special"
     },
     "recoil": 25,
+    "weaponUtility": "both",
     "twoHanded": true,
     "gun": {
       "damage": 7,

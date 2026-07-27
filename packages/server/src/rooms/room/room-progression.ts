@@ -247,6 +247,7 @@ import {
   nearestGroundPx,
   nearestPoint,
   nextWeapon,
+  nextWeaponUtilityMode,
   nextWholeArtCharacter,
   PARRY_BUFFER_SECONDS,
   PARRY_CHAIN_CD,
@@ -2104,6 +2105,17 @@ export const roomProgressionMethods = {
 
     // §39 DEV PORTAL: jump straight to a specific weapon / character by id (Testing-Grounds only, so it can't
     // touch a live run). Both ids are validated against the real catalogs; a bad id is ignored.
+    // V = one cosmetic utility edge. Authority retains the preference across every weapon/slot swap and
+    // publishes it through PlayerState; clients intersect it with their local catalog capability. This is
+    // one patch on a toggle, never another per-frame aim message.
+    this.onMessage("toggleWeaponUtility", (client) => {
+      if (!this.takeAction(client)) return;
+      const player = this.state.players.get(client.sessionId);
+      if (!player?.alive) return;
+      const next = nextWeaponUtilityMode(WEAPONS[player.weapon], player.weaponUtilityMode);
+      if (next !== player.weaponUtilityMode) player.weaponUtilityMode = next;
+    });
+
     this.onMessage("devEquip", (client, message: { weapon?: string; character?: string }) => {
       // §44 dev-gated (defense in depth: training is itself unreachable without dev tools) + budgeted.
       if (!this.devToolsEnabled() || !this.takeAction(client)) return;

@@ -134,12 +134,14 @@ describe("presentation frame clock", () => {
     player.x = 0;
     player.attackSeq = 4;
     player.attackHeld = false;
+    player.weaponUtilityMode = 1;
 
     const buffer = new PresentedActorBuffer();
     buffer.push(0, player);
     player.x = 10;
     player.attackSeq = 5;
     player.attackHeld = true;
+    player.weaponUtilityMode = 3;
     buffer.push(100, player);
 
     const frame = new PresentationFrameClock().advance(50, 16, true);
@@ -150,10 +152,12 @@ describe("presentation frame clock", () => {
     expect(actor.tick).toBe(1);
     expect(actor.attackSeq).toBe(4);
     expect(actor.attackHeld).toBe(false);
+    expect(actor.weaponUtilityMode).toBe(1);
 
     buffer.sampleInto(100, frame, actor);
     expect(actor.rootX).toBe(10);
     expect(actor.attackSeq).toBe(5);
     expect(actor.attackHeld).toBe(true);
+    expect(actor.weaponUtilityMode).toBe(3);
   });
 });

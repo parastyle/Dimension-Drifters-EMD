@@ -234,6 +234,9 @@ export class PlayerState extends Schema {
    * reconstructs muzzle growth without trusting a client wall clock. APPENDED at schema v38. */
   @type("boolean") weaponChargeActive = false;
   @type("uint32") weaponChargeStartTick = 0;
+  /** B67 run-persistent directional utility preference. Bit 0 = flashlight, bit 1 = laser. The server
+   * changes it only on a validated toggle edge; clients intersect it with the equipped weapon capability. */
+  @type("uint8") weaponUtilityMode = 0;
   /** Direct accessor keeps the resource contract independent of the packed tail envelope.
    *  REFLECTION LAW (client): the room joins WITHOUT a root-schema constructor, so decoded client
    *  rows carry only wire fields — these compatibility getters exist ONLY on server-constructed

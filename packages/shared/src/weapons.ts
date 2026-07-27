@@ -865,6 +865,12 @@ export interface WeaponDef {
   firingFrame?: string;
   /** Source-PNG muzzle truth. Every launch/beam/flash consumer transforms these exact art pixels. */
   muzzle?: WeaponArtMuzzleDefinition;
+  /**
+   * Installed directional utility hardware. Omitted means the art has no such unit; consumers must never
+   * infer one from ranged delivery alone. Generated concepts derive this only from an explicit authoring
+   * declaration or positive laser/light attachment language in the weapon's own source data.
+   */
+  weaponUtility?: InstalledWeaponUtility;
   /** Melee-only source point: `muzzle` is the striking-hand centroid at the authored impact frame. */
   impactMuzzle?: true;
   /** §6 REZ effect — a swing within `radius` of a DOWNED ally REVIVES them (at REVIVE_HP_FRAC of max HP).
@@ -1112,6 +1118,71 @@ export interface WeaponDef {
    * must treat them as inactive. Owned instances are converted to money by the join migration.
    */
   archived?: boolean;
+}
+
+/** The complete per-weapon capability, including the honest absent default. */
+export type WeaponUtilityCapability = "neither" | "light" | "laser" | "both";
+export type InstalledWeaponUtility = Exclude<WeaponUtilityCapability, "neither">;
+
+/** Bit-compatible wire/render modes: bit 0 = flashlight, bit 1 = laser. */
+export const WeaponUtilityMode = {
+  Off: 0,
+  Light: 1,
+  Laser: 2,
+  Both: 3,
+} as const;
+export type WeaponUtilityModeValue =
+  (typeof WeaponUtilityMode)[keyof typeof WeaponUtilityMode];
+
+export function weaponUtilityCapability(
+  weapon: Pick<WeaponDef, "weaponUtility"> | undefined,
+): WeaponUtilityCapability {
+  return weapon?.weaponUtility ?? "neither";
+}
+
+export function weaponUtilityMask(
+  weapon: Pick<WeaponDef, "weaponUtility"> | undefined,
+): WeaponUtilityModeValue {
+  switch (weaponUtilityCapability(weapon)) {
+    case "light":
+      return WeaponUtilityMode.Light;
+    case "laser":
+      return WeaponUtilityMode.Laser;
+    case "both":
+      return WeaponUtilityMode.Both;
+    default:
+      return WeaponUtilityMode.Off;
+  }
+}
+
+/** Intersect a retained player preference with the hardware currently in hand. */
+export function activeWeaponUtilityMode(
+  weapon: Pick<WeaponDef, "weaponUtility"> | undefined,
+  retainedMode: number,
+): WeaponUtilityModeValue {
+  return ((retainedMode & WeaponUtilityMode.Both) &
+    weaponUtilityMask(weapon)) as WeaponUtilityModeValue;
+}
+
+/**
+ * One-key capability-aware cycle. A combined unit walks off -> light -> laser -> both; single-purpose
+ * hardware is a simple off/on toggle. A weapon with no unit returns the retained preference unchanged.
+ */
+export function nextWeaponUtilityMode(
+  weapon: Pick<WeaponDef, "weaponUtility"> | undefined,
+  retainedMode: number,
+): WeaponUtilityModeValue {
+  const mode = (retainedMode & WeaponUtilityMode.Both) as WeaponUtilityModeValue;
+  switch (weaponUtilityMask(weapon)) {
+    case WeaponUtilityMode.Light:
+      return mode === WeaponUtilityMode.Light ? WeaponUtilityMode.Off : WeaponUtilityMode.Light;
+    case WeaponUtilityMode.Laser:
+      return mode === WeaponUtilityMode.Laser ? WeaponUtilityMode.Off : WeaponUtilityMode.Laser;
+    case WeaponUtilityMode.Both:
+      return ((mode + 1) & WeaponUtilityMode.Both) as WeaponUtilityModeValue;
+    default:
+      return mode;
+  }
 }
 
 /** Generator/base authoring shape before taxonomy and the one catalog tier registry are joined. */

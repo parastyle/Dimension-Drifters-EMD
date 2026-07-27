@@ -92,6 +92,7 @@ import {
   type MoneyBankReceipt,
   type MoveStance,
   meleeReach,
+  nextWeaponUtilityMode,
   PARRY_CHAIN_CD,
   PARRY_CHAIN_RIPOSTE_AT,
   PARRY_CHAIN_WINDOW,
@@ -453,6 +454,7 @@ import {
   spawnWeaponKillFx,
   TelegraphForeshadowPool,
 } from "./arena/vfx.js";
+import { WeaponUtilityRenderer } from "./arena/weapon-utility-renderer.js";
 
 const VASTAGHAR_ACTIONS: Readonly<Partial<Record<number, VastagharActionDef>>> =
   VASTAGHAR_ENCOUNTER.actions;
@@ -1303,6 +1305,7 @@ export class ArenaScene extends Phaser.Scene {
   private vfxPlayer!: VfxPlayer;
   private moneyDropRenderer!: MoneyDropRenderer;
   private beamRenderer!: BeamRenderer;
+  private weaponUtilityRenderer!: WeaponUtilityRenderer;
   private ultimateVfx!: UltimateVfx;
   /** One fixed-pool flagship director; semantic epochs never compete with player VFX surfaces. */
   private vastagharVfx!: VastagharVfx;
@@ -1477,6 +1480,7 @@ export class ArenaScene extends Phaser.Scene {
     | "B"
     | "C"
     | "M"
+    | "V"
     | "TAB"
     | "ESC"
     | "SPACE"
@@ -1592,6 +1596,8 @@ export class ArenaScene extends Phaser.Scene {
   /** Pointer position read straight off the DOM (robust aim — bypasses Phaser's input pipeline,
    *  which was dropping mouse movement that began while a key was held). */
   private readonly pointerScreen = { x: 0, y: 0, set: false };
+  /** Shared getWorldPoint output for live aim and utility endpoints; avoids a frame-time Vector2 allocation. */
+  private readonly weaponUtilityPointerWorld = new Phaser.Math.Vector2();
   private pointerMoves = 0;
   /** Suppresses LMB/RMB combat while the pointer is over a clickable HUD or modal control. */
   private pointerOverInteractiveUi = false;
@@ -2307,6 +2313,7 @@ export class ArenaScene extends Phaser.Scene {
   private resetSceneState(): void {
     // Defensive as well as shutdown-driven: a direct create cannot inherit global listeners or a room.
     this.beamRenderer?.destroy();
+    this.weaponUtilityRenderer?.destroy();
     this.moneyDropRenderer?.destroy();
     this.ultimateVfx?.destroy();
     this.vastagharVfx?.destroy();
@@ -2410,6 +2417,7 @@ export class ArenaScene extends Phaser.Scene {
     this.bagPanelCloseAt = 0;
     this.vfxPlayer = undefined!;
     this.beamRenderer = undefined!;
+    this.weaponUtilityRenderer = undefined!;
     this.ultimateVfx = undefined as unknown as UltimateVfx;
     this.vastagharVfx = undefined as unknown as VastagharVfx;
     this.damageNumberRenderer = undefined!;
@@ -2623,6 +2631,8 @@ export class ArenaScene extends Phaser.Scene {
     this.connectionGeneration++;
     this.beamRenderer?.destroy();
     this.beamRenderer = undefined!;
+    this.weaponUtilityRenderer?.destroy();
+    this.weaponUtilityRenderer = undefined!;
     this.moneyDropRenderer?.destroy();
     this.moneyDropRenderer = undefined!;
     this.ultimateVfx?.destroy();
@@ -2679,6 +2689,7 @@ export class ArenaScene extends Phaser.Scene {
       },
     });
     this.beamRenderer = new BeamRenderer(this);
+    this.weaponUtilityRenderer = new WeaponUtilityRenderer(this);
     this.ultimateVfx = new UltimateVfx(this, {
       actor: (ownerId, out) => {
         const rig = this.blobs.get(ownerId);
@@ -2793,7 +2804,7 @@ export class ArenaScene extends Phaser.Scene {
     const keyboard = this.input.keyboard;
     if (!keyboard) throw new Error("Keyboard input unavailable");
     this.keys = keyboard.addKeys(
-      "W,A,S,D,R,P,Q,E,Z,X,F,G,H,T,B,C,M,TAB,ESC,SPACE,SHIFT,CTRL,ONE,TWO,THREE,FOUR,FIVE,LEFT,RIGHT,UP,DOWN,ENTER",
+      "W,A,S,D,R,P,Q,E,Z,X,F,G,H,T,B,C,M,V,TAB,ESC,SPACE,SHIFT,CTRL,ONE,TWO,THREE,FOUR,FIVE,LEFT,RIGHT,UP,DOWN,ENTER",
     ) as Record<
       | "W"
       | "A"
@@ -2812,6 +2823,7 @@ export class ArenaScene extends Phaser.Scene {
       | "B"
       | "C"
       | "M"
+      | "V"
       | "TAB"
       | "ESC"
       | "SPACE"
@@ -5117,6 +5129,7 @@ export class ArenaScene extends Phaser.Scene {
   private removeBlob(id: string): void {
     this.blobs.get(id)?.destroy();
     this.blobs.delete(id);
+    this.weaponUtilityRenderer?.remove(id);
     this.petRigs.get(id)?.destroy();
     this.petRigs.delete(id);
     this.petOwnerHp.delete(id);
@@ -5417,6 +5430,11 @@ export class ArenaScene extends Phaser.Scene {
       }
       if (Phaser.Input.Keyboard.JustDown(this.keys.R) && alive && holdingWeapon)
         this.room.send("dropWeapon");
+      if (Phaser.Input.Keyboard.JustDown(this.keys.V) && alive && selfP) {
+        const nextMode = nextWeaponUtilityMode(WEAPONS[selfP.weapon], selfP.weaponUtilityMode);
+        // Unsupported weapons preserve the preference and emit nothing: no false affordance, no wire noise.
+        if (nextMode !== selfP.weaponUtilityMode) this.room.send("toggleWeaponUtility");
+      }
       // Jump-feel Space routing is sampled above the context block so a level-window edge also clears the
       // hold latch. Tap emits on release; held state and airborne pound ride the next numbered command.
       const interactPressed = Phaser.Input.Keyboard.JustDown(this.keys.E);
@@ -9759,6 +9777,7 @@ export class ArenaScene extends Phaser.Scene {
       state.maxCharges = player.maxCharges;
       state.dualFireHeld = player.dualWield?.fireInputHeld === true;
       state.weaponChargeActive = player.weaponChargeActive;
+      state.weaponUtilityMode = player.weaponUtilityMode;
       state.teleportSeq = player.teleportSeq;
       state.fireHeld = player.attackHeld || player.weaponChargeActive;
       state.ultimate.archetype = player.ultimate.archetype;
@@ -9864,11 +9883,16 @@ export class ArenaScene extends Phaser.Scene {
 
     let aimX = 0;
     let aimY = 0;
+    let aimTargetX = Number.NaN;
+    let aimTargetY = Number.NaN;
     let aimDxPx = 0; // §37 raw horizontal cursor offset from the character (drives the facing flip)
     const self = selfId ? this.blobs.get(selfId) : undefined;
     if (self) {
       const px = this.pointerScreen.set ? this.pointerScreen.x : pointer.x;
       const py = this.pointerScreen.set ? this.pointerScreen.y : pointer.y;
+      const wp = cam.getWorldPoint(px, py, this.weaponUtilityPointerWorld);
+      aimTargetX = wp.x;
+      aimTargetY = wp.y;
       let ax: number;
       let ay: number;
       if (this.belt) {
@@ -9879,7 +9903,6 @@ export class ArenaScene extends Phaser.Scene {
         // SEND time (stepNetInput), so the server's projectile/melee direction still flows to the cursor.
         // (The old code mixed a projected cursor with a world self and /FORESHORTEN'd it — every aim slewed
         // steeply up/down.) Facing still flips over the CHARACTER, not the screen midpoint.
-        const wp = cam.getWorldPoint(px, py);
         ax = wp.x - self.x;
         ay = wp.y - this.beltY(self.y);
       } else {
@@ -9887,7 +9910,6 @@ export class ArenaScene extends Phaser.Scene {
         // CSS px and the RENDER_DPR camera zoom cancelled it — the §37 DPR listener fix (pointer now in
         // internal px) made the shortcut off by the DPR factor on scaled displays, so the facing flip line sat
         // far from the character and cursor aim skewed. getWorldPoint handles zoom/scroll/origin exactly.
-        const wp = cam.getWorldPoint(px, py);
         ax = wp.x - self.x;
         ay = wp.y - self.y;
       }
@@ -10020,6 +10042,20 @@ export class ArenaScene extends Phaser.Scene {
         reducedMotion,
       );
       blob.animate(anim);
+      this.weaponUtilityRenderer.update(
+        id,
+        anim.weaponUtilityMode,
+        WEAPONS[anim.weaponId],
+        blob,
+        isSelf ? this.selfAim.x : Math.cos(anim.aimDir),
+        isSelf ? this.selfAim.y : Math.sin(anim.aimDir),
+        alive,
+        this.belt ? BELT_Y0 : 0,
+        this.belt ? 1 / BELT_FORESHORTEN : 1,
+        anim.rootY,
+        isSelf ? aimTargetX : Number.NaN,
+        isSelf ? aimTargetY : Number.NaN,
+      );
       blob.setDepth(blob.y);
     }
   }
@@ -14827,7 +14863,7 @@ export class ArenaScene extends Phaser.Scene {
     const self = this.room?.state.players.get(this.room?.sessionId ?? "");
     const px = this.pointerScreen.set ? this.pointerScreen.x : this.input.activePointer.x;
     const py = this.pointerScreen.set ? this.pointerScreen.y : this.input.activePointer.y;
-    const world = this.cameras.main.getWorldPoint(px, py);
+    const world = this.cameras.main.getWorldPoint(px, py, this.weaponUtilityPointerWorld);
     out.aimX = Number.isFinite(aimX) ? aimX : 1;
     out.aimY = Number.isFinite(aimY) ? aimY : 0;
     out.targetX = world.x;

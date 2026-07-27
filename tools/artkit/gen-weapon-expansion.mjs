@@ -67,6 +67,7 @@ const BULLET_KINDS = new Set([
 ]);
 const MUZZLES = new Set(["heavy", "boom", "rapid", "punch", "spark", "artillery"]);
 const PROJECTILE_ARTS = new Set(["weapon-crop", "generated", "arrow", "bullet", "cannonball", "fireball"]);
+const WEAPON_UTILITIES = new Set(["neither", "light", "laser", "both"]);
 // The first gun-beam wave is explicit, not inferred from every ranged weapon. V1 still uses heat only;
 // these ids differ from caster beams through their ranged class/art/pose, never a hidden magazine resource.
 const BEAM_GUN_IDS = new Set([
@@ -93,7 +94,7 @@ const TOP_KEYS = new Set([
   "bespokeVfxSheet", "performance", "swingStyle", "effectRecipe", "effectEmitter", "effectTiming",
   "renderAboveHands", "suppressVfx", "suppressMeleeHitbox", "hitStatus", "gripPoints",
   "handlingTags", "breakAction", "poseLanguage", "elementTransforms", "impactMuzzle", "rapidThrust", "fireMode",
-  "strikeOverlayPart", "recoil", "dualVerticalSplit",
+  "strikeOverlayPart", "recoil", "dualVerticalSplit", "weaponUtility",
 ]);
 // The sibling-block bug (§43): mechanic stats authored NEXT TO `behavior` instead of inside it were
 // silently ignored, shipping 11 weapons with default kits. Now an instant failure.
@@ -297,6 +298,35 @@ const beamTick = (v, path) => {
   }
   return tick;
 };
+
+/**
+ * Capability stays absent by default. New concepts may declare it directly; B63's source rows already
+ * declare their physical combo attachment in the theme/art prompt, so generation recognizes positive
+ * laser/light pair language plus the one unambiguous "small boxy combination unit" wording. Negative art
+ * constraints ("no laser/light unit") remain honestly absent.
+ */
+function weaponUtilityOf(w) {
+  if (w.weaponUtility !== undefined) {
+    return enumOf(w.weaponUtility, WEAPON_UTILITIES, "weaponUtility");
+  }
+  const source = [w.theme, w.description, w.artPrompt]
+    .filter((value) => typeof value === "string")
+    .join(". ");
+  const pair =
+    /(?:laser\s*(?:[/+&-]|\band\b|\bwith\b)\s*light|light\s*(?:[/+&-]|\band\b|\bwith\b)\s*laser|(?:small\s+)?boxy\s+combination\s+unit\b)/i;
+  for (const clause of source.split(/[.;]/)) {
+    const match = pair.exec(clause);
+    if (!match) continue;
+    const before = clause.slice(0, match.index);
+    // A colon/em dash closes an earlier qualifier such as "(no character or background): ONE gun ...".
+    // Within the current phrase, however, keep the full negative list so a distant final
+    // "or rail-mounted laser/light unit" remains excluded.
+    const scopeStart = Math.max(before.lastIndexOf(":"), before.lastIndexOf("—")) + 1;
+    if (/\b(?:no|without|lacks?)\b/i.test(before.slice(scopeStart))) continue;
+    return "both";
+  }
+  return undefined;
+}
 
 /** Nested explode block (scatter/gun) — validated + fully emitted. */
 function explodeOf(e, path, rMax, damageMax = 30) {
@@ -998,6 +1028,9 @@ function mapWeapon(w) {
         ? 220
         : 140;
   const isGroundZone = kind === "groundZone";
+  const weaponUtility = weaponUtilityOf(w);
+  if (weaponUtility !== undefined && weaponUtility !== "neither" && type !== "ranged")
+    fail("weaponUtility requires a ranged weapon");
 
   // Edge/swing baseline (required even for guns — the held-swing fields).
   const damage = num(s.damage, 1, 40, 8, "stats.damage");
@@ -1094,6 +1127,8 @@ function mapWeapon(w) {
     );
   }
   if (w.archived === true) def.archived = true;
+  if (weaponUtility !== undefined && weaponUtility !== "neither")
+    def.weaponUtility = weaponUtility;
   if (gripPoints) def.gripPoints = gripPoints;
   if (breakAction) {
     if (!isGun) fail("breakAction requires gun delivery");
