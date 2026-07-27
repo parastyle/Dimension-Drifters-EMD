@@ -13734,6 +13734,32 @@ export const SPRITES = {
       }
     ]
   },
+  "x2-magnetar-coilgun": {
+    "id": "x2-magnetar-coilgun",
+    "kind": "weapon",
+    "canvas": {
+      "w": 263,
+      "h": 108
+    },
+    "body": {
+      "cx": 118.38,
+      "cy": 48.29,
+      "w": 256,
+      "h": 70
+    },
+    "parts": [
+      {
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 70,
+        "cx": 118.38,
+        "cy": 48.29,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
+  },
   "x2-magpie-scattergun": {
     "id": "x2-magpie-scattergun",
     "kind": "weapon",

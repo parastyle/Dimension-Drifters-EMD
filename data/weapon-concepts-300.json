@@ -1,10 +1,10 @@
 {
   "generated": "2026-06-17",
   "source": "design-300-weapons workflow (15 agents)",
-  "count": 366,
+  "count": 367,
   "byType": {
     "melee": 135,
-    "ranged": 134,
+    "ranged": 135,
     "caster": 97
   },
   "weapons": [
@@ -21078,6 +21078,42 @@
         "muzzle": "spark",
         "muzzleColor": 12945978,
         "recoil": 0.00065
+      }
+    },
+    {
+      "id": "x2-magnetar-coilgun",
+      "name": "Magnetar Coilgun",
+      "type": "ranged",
+      "family": "coil-accelerator",
+      "theme": "near-black issue-grade ballistic coil accelerator with an open staged-ring barrel spine and lacquered amber-copper windings",
+      "element": "physical",
+      "finish": "pristine",
+      "grip": "2H",
+      "size": "L",
+      "rangeBand": "long",
+      "scaling": [
+        "DEX",
+        "INT"
+      ],
+      "artPrompt": "Weapon-only in-world game sprite on a perfectly flat fully opaque #00ff00 chroma field: exactly ONE near-future BALLISTIC coil accelerator that fires physical metal slugs and looks mechanically buildable. Build the weapon around a long OPEN barrel spine ringed by a staged series of six thick separate coil rings, all the same diameter, evenly spaced, uniformly wound, and sealed in immaculate amber-copper lacquer. Keep open dark gaps between the rings so the central spine remains visible. Route one rigid dark cable trunk flat along the TOP of the spine in precise low clamps, with each short connection entering sealed internal channels; no loose, exposed, looping, or dangling wire. Seat one oversized heavy rectangular battery block perfectly flush directly BEHIND the pistol grip on the LEFT, where it also forms a sturdy shoulder butt. Place one short straight physical-slug magazine beneath the chamber immediately AHEAD of the grip, with a visible trigger guard and a credible continuous chamber-to-spine-to-muzzle relationship. Mount one small boxy near-black laser/light combination unit tightly beneath the forward spine with one clearly visible dark glass lens; it is silhouette detail only and emits NO beam, NO glow, NO bloom, and NO light cone. Advanced issue quality: matched plain near-black finish with no camouflage, uniform lacquered coil windings, cables routed inside the spine, battery seated flush, exact machined tolerances, square panel fit, aligned clamps, tight seams, and every fastener torqued true; expensive, immaculate, and professionally maintained, with at most a trace of honest carbon at the muzzle. No tape, repairs, salvage, mismatched plates, scratches, dents, rust, dirt, improvised parts, poverty signals, or ground-off markings. DARK house treatment: the overall base reads near-black charcoal, with narrow cool gunmetal highlights catching TOP EDGES ONLY and deep spot-black sides and undersides; never evenly lit and never mid-grey overall. The lacquered amber-copper coil windings are the ONE warm accent colour; they are solid flat painted planes with no glow, bloom, heat haze, emission, or energy aura. Use bold heavy black ink around the complete silhouette AND equally heavy crisp internal black ink dividing every coil ring, winding band, spine plate, cable clamp, battery panel, chamber housing, magazine plane, grip, trigger guard, attachment panel, and seam. Slightly exaggerate the thick staged coil rings, open barrel spine, heavy rear battery block, and boxy laser/light unit while keeping the physical-ammunition feed and grip-to-barrel relationship believable. Use only about 4-6 flat cel colours plus black ink, hard flat planes only; no gradients, airbrushing, soft shading, photorealism, realistic product photography, studio lighting, catalogue rendering, 3D rendering, clean vector styling, or technical-diagram treatment. ONE complete connected weapon, strict flat orthographic full side-profile, fully visible with generous padding, battery and grip LEFT, open coil-ring muzzle RIGHT. No second weapon, loose ammunition, projectile, character, hands, background scene, floor, cast shadow, reflection, muzzle flash, smoke, emitted VFX, text, logo, serial, maker mark, sling, strap, rope, chain, tassel, or dangling part.",
+      "palettePrimary": "#15191D",
+      "paletteAccent": "#C77A32",
+      "cardartAction": "braced through one measured ballistic shot as a physical metal slug punches rightward and the lacquered amber-copper coil rings step in sequence",
+      "behavior": {
+        "kind": "gun",
+        "damage": 15,
+        "projectileSpeed": 2400,
+        "range": 1000,
+        "fireRate": 0.52,
+        "spread": 0.007,
+        "pierce": 3,
+        "magazine": 7,
+        "reloadSeconds": 2.25,
+        "bulletKind": "slug",
+        "projectileArt": "bullet",
+        "muzzle": "punch",
+        "muzzleColor": 13072946,
+        "recoil": 0.0012
       }
     }
   ]

@@ -2374,6 +2374,28 @@ export const WEAPON_ART_MUZZLES = {
     "salvoMode": "parallel",
     "barrelMode": "parallel"
   },
+  "x2-magnetar-coilgun": {
+    "sprite": "x2-magnetar-coilgun",
+    "parts": [
+      {
+        "width": 256,
+        "height": 70
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 21.3,
+        "derived": {
+          "x": 255,
+          "y": 21.3
+        }
+      }
+    ],
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
   "x2-magpie-scattergun": {
     "sprite": "x2-magpie-scattergun",
     "parts": [

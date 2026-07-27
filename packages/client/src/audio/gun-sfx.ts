@@ -191,6 +191,7 @@ export function gunFireFamilyForWeapon(weapon: WeaponDef): GunFireFamily | undef
     case "marksman-rifle":
     case "smart-burst-rifle":
       return "long-rifle";
+    case "coil-accelerator":
     case "rail-pistol":
     case "railgun":
       return "coil-rail";
