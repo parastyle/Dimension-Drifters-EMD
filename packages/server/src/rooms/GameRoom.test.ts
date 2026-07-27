@@ -1165,6 +1165,77 @@ describe("GameRoom — §4 v0.107 seq'd input protocol (queue / ack / fixed time
   });
 });
 
+describe("GameRoom — B62 authoritative pause", () => {
+  it("pauses solo immediately and halts the complete server simulation tick", () => {
+    const h = makeRoom();
+    h.join("solo");
+    const player = h.state().players.get("solo");
+    player.x = h.room.map.spawnX;
+    player.y = h.room.map.spawnY;
+    player.hp = 80;
+    const enemy = new EnemyState();
+    enemy.id = "pause-threat";
+    enemy.kind = "critter";
+    enemy.hp = 999;
+    enemy.x = player.x + 30;
+    enemy.y = player.y;
+    h.state().enemies.set(enemy.id, enemy);
+    h.tick(1);
+
+    h.send("solo", "pauseVote", { confirmed: true });
+    expect(h.state().paused).toBe(true);
+    expect(h.state().pauseVotes.get("solo")).toBe(true);
+    const stopped = {
+      tick: h.state().tick,
+      elapsed: h.state().elapsed,
+      hp: player.hp,
+      enemyX: enemy.x,
+      enemyY: enemy.y,
+      enemyAttack: enemy.atkSeq,
+    };
+
+    h.room.update(5_000);
+    expect({
+      tick: h.state().tick,
+      elapsed: h.state().elapsed,
+      hp: player.hp,
+      enemyX: enemy.x,
+      enemyY: enemy.y,
+      enemyAttack: enemy.atkSeq,
+    }).toEqual(stopped);
+
+    h.send("solo", "pauseVote", { confirmed: false });
+    expect(h.state().paused).toBe(false);
+    h.tick(1);
+    expect(h.state().tick).toBe(stopped.tick + 1);
+    expect(h.state().elapsed).toBeCloseTo(stopped.elapsed + 0.05, 5);
+  });
+
+  it("keeps multiplayer live until every player confirms and resumes on one withdrawal", () => {
+    const h = makeRoom();
+    h.join("p1");
+    h.join("p2");
+    const startTick = h.state().tick;
+
+    h.send("p1", "pauseVote", { confirmed: true });
+    expect(h.state().paused).toBe(false);
+    expect([...h.state().pauseVotes.keys()]).toEqual(["p1"]);
+    h.tick(1);
+    expect(h.state().tick).toBe(startTick + 1);
+
+    h.send("p2", "pauseVote", { confirmed: true });
+    expect(h.state().paused).toBe(true);
+    const pausedTick = h.state().tick;
+    h.tick(20);
+    expect(h.state().tick).toBe(pausedTick);
+
+    h.send("p1", "pauseVote", { confirmed: false });
+    expect(h.state().paused).toBe(false);
+    h.tick(1);
+    expect(h.state().tick).toBe(pausedTick + 1);
+  });
+});
+
 describe("GameRoom — §7 v0.105 de-clunk input buffering (attack / parry / jump)", () => {
   // The bug: a press that lands one tick BEFORE the server cooldown clears used to be silently EATEN —
   // the client had already played the whole swing/brace/hop, so the input felt dropped. These pin the fix:
@@ -2495,7 +2566,7 @@ describe("improve2 integrity regressions", () => {
     expect(receipt?.delivery).toBe(CombatDelivery.Gun);
     expect(h.state().combatReceipts.length).toBe(COMBAT_RECEIPT_CAP);
     expect([...h.state().combatReceipts]).toEqual(rows);
-    expect(h.state().schemaVersion).toBe(48);
+    expect(h.state().schemaVersion).toBe(49);
   });
 });
 
@@ -3638,7 +3709,7 @@ describe("GameRoom — §51 tough-enemy melee combos (Wave 1 authority)", () => 
   });
 
   it("ships schema 19, named depth decks, and guardrail-safe authored literals", () => {
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(48);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(49);
     expect(new EnemyState().comboSeq).toBe(0);
     expect(new EnemyState().comboFlags).toBe(0);
     expect(herePlayerJuggledDefault()).toBe(0);
@@ -3999,7 +4070,7 @@ describe("GameRoom — jump-feel J1 authoritative stance/physics", () => {
 
   it("ships schema 21 with the three appended uint8 stance/VFX defaults", () => {
     const player = new enemyComboShared.PlayerState();
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(48);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(49);
     expect([player.moveStance, player.poundSeq, player.stanceSeq]).toEqual([0, 0, 0]);
   });
 });
@@ -4177,7 +4248,7 @@ describe("GameRoom — flavor-only character identity", () => {
 
   it("retains schema 21 while defaulting character identity to the shared default", () => {
     const player = new enemyComboShared.PlayerState();
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(48);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(49);
     expect([player.character, player.runCharacter]).toEqual([
       enemyComboShared.DEFAULT_CHARACTER,
       enemyComboShared.DEFAULT_CHARACTER,
@@ -4940,8 +5011,8 @@ describeUltimateImplementation("ULT U1 lifecycle, co-op, and schema 25", () => {
     const h = makeRoom();
     h.join("ult-schema");
     const player = h.state().players.get("ult-schema");
-    expect(h.state().schemaVersion).toBe(48);
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(48);
+    expect(h.state().schemaVersion).toBe(49);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(49);
     expect([
       player.ultimate.archetype,
       player.ultimate.charge,
@@ -5001,9 +5072,9 @@ describe("pet v1 join snapshot, lock, and schema 25", () => {
     h.room.clients.push(client);
     h.room.onJoin(client, { metaAccount: account, selectedPetId: "brass-crab" });
     const player = h.state().players.get("pet-lock");
-    expect([h.state().schemaVersion, enemyComboShared.SCHEMA_VERSION]).toEqual([48, 48]);
+    expect([h.state().schemaVersion, enemyComboShared.SCHEMA_VERSION]).toEqual([49, 49]);
 
-    expect([h.state().schemaVersion, enemyComboShared.SCHEMA_VERSION]).toEqual([48, 48]);    expect({ petId: player.petId, petLevelBand: player.petLevelBand }).toEqual({
+    expect([h.state().schemaVersion, enemyComboShared.SCHEMA_VERSION]).toEqual([49, 49]);    expect({ petId: player.petId, petLevelBand: player.petLevelBand }).toEqual({
       petId: "hearth-newt",
       petLevelBand: 3,
     });
@@ -5380,8 +5451,8 @@ describe("GameRoom — independent weapon slots and compatibility row", () => {
 
   it("keeps schema 38 and the unrelated compatibility-container tenants intact", () => {
     const fresh = new enemyComboShared.PlayerState();
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(48);
-    expect(new enemyComboShared.ArenaState().schemaVersion).toBe(48);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(49);
+    expect(new enemyComboShared.ArenaState().schemaVersion).toBe(49);
     expect(fresh.dualWield).toMatchObject({
       retiredByte0: 255,
       retiredUint32: 0,
@@ -5971,8 +6042,8 @@ describe("GameRoom — schema-31 Drive authority", () => {
     );
     const cost = enemyComboShared.driveCostForProfile(profile, interval);
 
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(48);
-    expect(h.state().schemaVersion).toBe(48);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(49);
+    expect(h.state().schemaVersion).toBe(49);
     expect(player.weaponResource).toBe(player.dualWield.weaponResource);
     expect(player.weaponResource).toMatchObject({
       valueQ: 10_000,
@@ -6285,7 +6356,7 @@ describe("GameRoom — schema-31 public prestige ceremony", () => {
     expect(metadata[11]).toMatchObject({ name: "movementCorrectionSeq", type: "uint32" });
     expect(metadata[12]).toMatchObject({ name: "serverMotionEpoch", type: "uint32" });
     expect(metadata[13]).toMatchObject({ name: "serverMotionActive", type: "boolean" });
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(48);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(49);
   });
 });
 

@@ -52,6 +52,7 @@ describe("MenuScene Characters tab contract", () => {
       { tab: "characters", label: "CHARACTERS", width: 142 },
       { tab: "armory", label: "ARMORY / CARRY", width: 176 },
       { tab: "packs", label: "PACKS", width: 142 },
+      { tab: "options", label: "OPTIONS", width: 142 },
       { tab: "run", label: "DESTINATIONS", width: 142 },
     ]);
     expect(MENU_TAB_DESCRIPTORS.some((row) => String(row.tab) === "wardrobe")).toBe(false);
@@ -73,6 +74,13 @@ describe("MenuScene Characters tab contract", () => {
       companions: false,
       armory: false,
       packs: true,
+    });
+    expect(menuTabVisibility("options")).toMatchObject({
+      characters: false,
+      companions: false,
+      armory: false,
+      packs: false,
+      options: true,
     });
     expect(menuTabVisibility("run")).toMatchObject({
       destinations: true,

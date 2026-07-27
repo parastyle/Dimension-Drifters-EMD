@@ -1286,6 +1286,8 @@ export interface GameRoomContext extends Room<ArenaState> {
   isHost(client: Client): boolean;
   devToolsEnabled(): boolean;
   takeAction(client: Client): boolean;
+  clearPauseState(): void;
+  reconcilePauseState(): void;
   installCorporateFloor(depth: number, elevatorPhase: number): void;
   isCorporateLoop(): boolean;
   onCreate(options?: {
@@ -1672,6 +1674,23 @@ export const roomProgressionMethods = {
     return this.belt && this.state.corporateFloorId !== "" && !!this.beltLevel;
   },
 
+  clearPauseState(this: GameRoomContext): void {
+    this.state.pauseVotes.clear();
+    this.state.paused = false;
+  },
+
+  reconcilePauseState(this: GameRoomContext): void {
+    this.state.pauseVotes.forEach((_confirmed, playerId) => {
+      if (!this.state.players.has(playerId)) this.state.pauseVotes.delete(playerId);
+    });
+    let unanimous =
+      this.state.outcome === "active" && this.state.players.size > 0;
+    this.state.players.forEach((_player, playerId) => {
+      if (this.state.pauseVotes.get(playerId) !== true) unanimous = false;
+    });
+    this.state.paused = unanimous;
+  },
+
   onCreate(this: GameRoomContext, options?: {
     dimensionId?: string;
     bossRush?: boolean;
@@ -1798,6 +1817,27 @@ export const roomProgressionMethods = {
         }
         const current = store.getAccount(accountId);
         if (current) this.sendOwnerMessage(client.sessionId, "metaAccount", current);
+      },
+    );
+
+    // B62 consensus pause. Solo is unanimous on the first confirmation; co-op remains live until every
+    // current player confirms. With patchRate disabled, vote edges publish immediately instead of waiting
+    // for a simulation tick that cannot run once the room becomes paused.
+    this.onMessage(
+      "pauseVote",
+      (client, message?: { confirmed?: unknown }) => {
+        if (
+          this.state.outcome !== "active" ||
+          !this.state.players.has(client.sessionId)
+        )
+          return;
+        if (message?.confirmed === true) {
+          this.state.pauseVotes.set(client.sessionId, true);
+        } else {
+          this.state.pauseVotes.delete(client.sessionId);
+        }
+        this.reconcilePauseState();
+        this.broadcastPatch();
       },
     );
 
@@ -2713,6 +2753,7 @@ export const roomProgressionMethods = {
 
   /** §6 enter a terminal result exactly once through the full combat teardown path. */
   enterTerminalOutcome(this: GameRoomContext, outcome: "defeat" | "victory"): void {
+    this.clearPauseState();
     this.settleMetaAccounts(outcome);
     if (outcome === "defeat") this.state.moneyDrops.clear();
     this.state.players.forEach((player, id) => {
@@ -2734,6 +2775,7 @@ export const roomProgressionMethods = {
 
   /** Switch between survival ("arena") and Testing Grounds ("training", §21). */
   toggleTraining(this: GameRoomContext, abandoningPlayerId = this.hostId ?? ""): void {
+    this.clearPauseState();
     if (this.state.mode === "arena") this.forfeitWeaponRunForWorkshop(abandoningPlayerId);
     // Entering/leaving the workshop aborts the expedition; pending run rewards are explicitly forfeited.
     this.state.enemies.clear();
@@ -2930,6 +2972,7 @@ export const roomProgressionMethods = {
   },
 
   restartRun(this: GameRoomContext): void {
+    this.clearPauseState();
     if (this.state.outcome === "active") this.settleMetaAccounts("defeat");
     // A restart is a fresh expedition (progression resets below), so no old field packet crosses it.
     this.state.enemies.clear();
@@ -3503,6 +3546,9 @@ export const roomProgressionMethods = {
     this.sendWeaponManifest(player);
     this.publishPetPickupEligibility();
     if (typeof client.send === "function") client.send("metaAccount", account);
+    this.state.pauseVotes.delete(client.sessionId);
+    this.reconcilePauseState();
+    this.broadcastPatch();
     console.log(`[room ${this.roomId}] +join ${client.sessionId} (${this.clients.length} online)`);
   },
 
@@ -3512,6 +3558,11 @@ export const roomProgressionMethods = {
     consented = true,
   ): Promise<void> {
     if (!consented) {
+      // A reserved B70 body cannot keep the room paused while its socket is absent. Keep the player row
+      // for reconnection consensus, but require that client to confirm again after it reconnects.
+      this.state.pauseVotes.delete(client.sessionId);
+      this.reconcilePauseState();
+      this.broadcastPatch();
       // A room whose last live socket is waiting on a reserved seat must not remain in the public
       // joinOrCreate pool. Otherwise a reload's fresh session can match into this room beside the ghost
       // reserved player, inherit non-host status, and lose every host-only escape/dev command.
@@ -3542,6 +3593,9 @@ export const roomProgressionMethods = {
     }
     this.clearBeamRows(client.sessionId);
     this.state.players.delete(client.sessionId);
+    this.state.pauseVotes.delete(client.sessionId);
+    this.reconcilePauseState();
+    this.broadcastPatch();
     this.refreshAllChestOpened();
     this.inputs.delete(client.sessionId);
     this.acceptedClientMovement.delete(client.sessionId);
@@ -3582,6 +3636,12 @@ export const roomProgressionMethods = {
     console.error(`[room ${this.roomId}] uncaught exception in ${methodName}:`, error);
   },
   update(this: GameRoomContext, deltaMs: number): void {
+    // A pause is an authority stop, not a visual cover over a live room. Drop any partial accumulator so
+    // resuming never catches up damage, spawns, cooldowns, or movement from wall time spent paused.
+    if (this.state.paused) {
+      this.simAccMs = 0;
+      return;
+    }
     this.simAccMs = Math.min(this.simAccMs + deltaMs, TICK_MS * 3.5);
     let stepped = false;
     while (this.simAccMs >= TICK_MS) {

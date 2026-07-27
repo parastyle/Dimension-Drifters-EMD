@@ -415,6 +415,7 @@ import {
   updateLavaParallax,
 } from "./arena/lava-floor-renderer.js";
 import { makeGroundZonePatch, syncGroundZonePatch } from "./arena/ground-zone-renderer.js";
+import { resolvePauseFrame } from "./arena/pause-control.js";
 import {
   hasDriveForPredictedAttack,
   localAttackPredictionLeadGate,
@@ -1758,6 +1759,13 @@ export class ArenaScene extends Phaser.Scene {
   private hpBarFill!: Phaser.GameObjects.Rectangle;
   private hpText!: Phaser.GameObjects.Text;
   private floorText!: Phaser.GameObjects.Text;
+  private pauseOverlay?: Phaser.GameObjects.Container;
+  private pauseBackdrop?: Phaser.GameObjects.Rectangle;
+  private pausePanel?: Phaser.GameObjects.Rectangle;
+  private pauseTitle?: Phaser.GameObjects.Text;
+  private pauseDetail?: Phaser.GameObjects.Text;
+  private pauseVoteStrip?: Phaser.GameObjects.Text;
+  private pauseWasActive = false;
   private driveHudGfx?: Phaser.GameObjects.Graphics;
   private driveHudText?: Phaser.GameObjects.Text;
   private driveLocked = false;
@@ -2445,6 +2453,13 @@ export class ArenaScene extends Phaser.Scene {
     this.hpBarFill = undefined!;
     this.hpText = undefined!;
     this.floorText = undefined!;
+    this.pauseOverlay = undefined;
+    this.pauseBackdrop = undefined;
+    this.pausePanel = undefined;
+    this.pauseTitle = undefined;
+    this.pauseDetail = undefined;
+    this.pauseVoteStrip = undefined;
+    this.pauseWasActive = false;
     this.driveHudGfx = undefined;
     this.driveHudText = undefined;
     this.ultimateHudGfx = undefined;
@@ -2599,6 +2614,8 @@ export class ArenaScene extends Phaser.Scene {
     this.ultimateHudPulseUntil = -1e9;
     this.queuedUltimateReveal = undefined;
     this.ultimateRevealBusyUntil = -1e9;
+    this.time.paused = false;
+    this.tweens.resumeAll();
   }
 
   /** §4 the single shutdown path for globals and network ownership. */
@@ -2876,10 +2893,12 @@ export class ArenaScene extends Phaser.Scene {
       this.cameras.main.setZoom(RENDER_DPR).setOrigin(0, 0);
       this.drawVignette(); // §19 v0.108 re-fit the screen-space danger vignette to the new viewport
       this.drawJuggleVignette();
+      this.layoutPauseUi();
     };
     this.scale.on("resize", this.resizeHandler);
 
     this.buildHud();
+    this.buildPauseUi();
     this.buildCarousel();
     this.drawVignette();
     this.drawJuggleVignette();
@@ -3231,6 +3250,159 @@ export class ArenaScene extends Phaser.Scene {
       .setOrigin(0.5)
       .setDepth(100003)
       .setVisible(false);
+  }
+
+  private buildPauseUi(): void {
+    this.pauseBackdrop = this.add
+      .rectangle(0, 0, 1, 1, 0x08070c, 0.78)
+      .setOrigin(0, 0)
+      .setInteractive({ useHandCursor: true });
+    this.pausePanel = this.add
+      .rectangle(0, 0, 620, 250, 0x17131f, 0.99)
+      .setStrokeStyle(3, 0x33e6ff, 0.92);
+    this.pauseTitle = this.add
+      .text(0, 0, "PAUSED", {
+        fontFamily: "monospace",
+        fontSize: "40px",
+        color: "#f4f0e8",
+        fontStyle: "bold",
+        align: "center",
+      })
+      .setOrigin(0.5);
+    this.pauseDetail = this.add
+      .text(0, 0, "", {
+        fontFamily: "monospace",
+        fontSize: "15px",
+        color: "#b9eaf2",
+        fontStyle: "bold",
+        align: "center",
+        lineSpacing: 8,
+        wordWrap: { width: 540 },
+      })
+      .setOrigin(0.5);
+    this.pauseOverlay = this.add
+      .container(0, 0, [
+        this.pauseBackdrop,
+        this.pausePanel,
+        this.pauseTitle,
+        this.pauseDetail,
+      ])
+      .setScrollFactor(0)
+      .setDepth(100100)
+      .setVisible(false);
+    this.pauseBackdrop.on("pointerdown", () => {
+      if (this.room?.state.paused)
+        this.room.send("pauseVote", { confirmed: false });
+    });
+    this.pauseVoteStrip = this.add
+      .text(0, 0, "", {
+        fontFamily: "monospace",
+        fontSize: "13px",
+        color: "#f4f0e8",
+        fontStyle: "bold",
+        align: "center",
+        backgroundColor: "#15121d",
+        padding: { x: 12, y: 8 },
+      })
+      .setOrigin(0.5, 0)
+      .setScrollFactor(0)
+      .setDepth(100090)
+      .setVisible(false);
+    this.layoutPauseUi();
+  }
+
+  private layoutPauseUi(): void {
+    if (
+      !this.pauseBackdrop ||
+      !this.pausePanel ||
+      !this.pauseTitle ||
+      !this.pauseDetail ||
+      !this.pauseVoteStrip
+    )
+      return;
+    const width = this.screenW();
+    const height = this.screenH();
+    const centerX = width / 2;
+    const centerY = height / 2;
+    const scale = Math.max(0.72, Math.min(1.2, width / 1_280));
+    this.pauseBackdrop.setSize(width, height);
+    this.pausePanel.setPosition(centerX, centerY).setScale(scale);
+    this.pauseTitle.setPosition(centerX, centerY - 70 * scale).setFontSize(40 * scale);
+    this.pauseDetail
+      .setPosition(centerX, centerY + 30 * scale)
+      .setFontSize(15 * scale)
+      .setWordWrapWidth(Math.min(width - 64, 540 * scale));
+    this.pauseVoteStrip
+      .setPosition(centerX, 18 * this.uiScale())
+      .setWordWrapWidth(Math.max(260, width - 48));
+  }
+
+  private closeGameplayPanelsForPause(): void {
+    if (this.summonOpen) this.closeSummonMenu();
+    if (this.bagOpen) this.closeBackpackModal();
+    if (this.verbs.isLegendOpen()) this.verbs.toggleLegend(this.time.now);
+    if (this.ownerNoteUi?.isOpen()) this.ownerNoteUi.close();
+  }
+
+  private setAuthoritativePausePresentation(paused: boolean): void {
+    this.pauseOverlay?.setVisible(paused);
+    if (paused === this.pauseWasActive) return;
+    this.pauseWasActive = paused;
+    this.inputAccMs = 0;
+    if (paused) {
+      this.closeGameplayPanelsForPause();
+      this.tweens.pauseAll();
+      this.time.paused = true;
+    } else {
+      this.time.paused = false;
+      this.tweens.resumeAll();
+    }
+  }
+
+  private pauseParticipantLabel(playerId: string, allyIndex: number): string {
+    if (playerId === this.room?.sessionId) return "YOU";
+    const character = this.room?.state.players.get(playerId)?.character ?? "DRIFTER";
+    return `ALLY ${allyIndex} ${character.replace(/^proto-/, "").replace(/-/g, " ").toUpperCase()}`;
+  }
+
+  private updatePauseUi(): void {
+    const room = this.room;
+    if (!room?.state.players) {
+      this.setAuthoritativePausePresentation(false);
+      this.pauseVoteStrip?.setVisible(false);
+      return;
+    }
+    const state = room.state;
+    const paused = state.paused === true;
+    const total = state.players.size;
+    const confirmed = state.pauseVotes.size;
+    this.setAuthoritativePausePresentation(paused);
+    if (this.pauseDetail && paused) {
+      this.pauseDetail.setText(
+        total === 1
+          ? "SOLO PAUSE · SERVER TICK HALTED\nEnemies, hazards, attacks, spawns, cooldowns, and run time are stopped.\n\n[ESC] OR CLICK TO RESUME"
+          : `CONSENSUS PAUSE · ${confirmed}/${total} CONFIRMED\nThe server simulation is halted for the whole squad.\n\n[ESC] OR CLICK TO RESUME`,
+      );
+    }
+
+    const showVote = state.outcome === "active" && total > 1 && (confirmed > 0 || paused);
+    if (!this.pauseVoteStrip) return;
+    this.pauseVoteStrip.setVisible(showVote);
+    if (!showVote) return;
+    let allyIndex = 0;
+    const participants: string[] = [];
+    state.players.forEach((_player, playerId) => {
+      if (playerId !== room.sessionId) allyIndex++;
+      const mark = state.pauseVotes.get(playerId) === true ? "✓" : "○";
+      participants.push(`${mark} ${this.pauseParticipantLabel(playerId, allyIndex)}`);
+    });
+    const localConfirmed = state.pauseVotes.get(room.sessionId) === true;
+    this.pauseVoteStrip.setText(
+      `PAUSE VOTE ${confirmed}/${total}  ·  ${participants.join("  ·  ")}  ·  [ESC] ${
+        localConfirmed ? "CANCEL" : "CONFIRM"
+      }`,
+    );
+    this.layoutPauseUi();
   }
 
   /** Render weapon pickups — a FANCY faux-3D display: the weapon spins on its vertical axis (scaleX
@@ -4540,8 +4712,8 @@ export class ArenaScene extends Phaser.Scene {
     this.enemyBufs.clear();
     if (descending) {
       if (!worldFold && !corporateTransition) {
-        if (riftDescent) this.cameras.main.flash(260, 96, 48, 160);
-        else this.cameras.main.flash(220, 28, 22, 18);
+        if (riftDescent) this.flashCamera(260, 96, 48, 160);
+        else this.flashCamera(220, 28, 22, 18);
       }
       // Mute the enemy-REMOVAL VFX briefly: the server just bulk-cleared the old dimension's horde, and
       // without this every cleared enemy death-pops at old-map coordinates on the new floor (corpse storm).
@@ -4582,7 +4754,7 @@ export class ArenaScene extends Phaser.Scene {
       if (id === selfId) {
         this.selfPresentedWorldX = player.x;
         this.selfPresentedWorldY = player.y;
-        this.cameras.main.flash(170, 90, 16, 16);
+        this.flashCamera(170, 90, 16, 16);
         this.shakeCam(150, 0.006, "world");
         this.audio.play("fall"); // §19 void whoosh + a thud on the snap-back landing
         this.offerContextHint("pitFall");
@@ -4983,10 +5155,30 @@ export class ArenaScene extends Phaser.Scene {
     // §39 the room resolves BEFORE its first state patch — in that window state.players is still undefined,
     // and an unguarded read threw every frame (killing the scene's step = permanent black screen; hit on real
     // machines where the first patch lands a frame late, never in the fast local preview). Wait for the sync.
-    if (!this.room?.state.players) return;
+    if (!this.room?.state.players) {
+      this.updatePauseUi();
+      return;
+    }
+
+    this.updatePauseUi();
     // A closing WebSocket can spend a few frames in CLOSING before onLeave clears `room`. Do not feed input
     // or action messages into it during that edge; the DOM-owned reconnect escape remains fully interactive.
     if (!this.room.connection.isOpen) return;
+    const pauseModalBlocking =
+      ownerNoteModalOpen ||
+      this.verbs.isModalBlocking() ||
+      this.summonOpen ||
+      this.bagOpen;
+    const pauseFrame = resolvePauseFrame({
+      authoritativePaused: this.room.state.paused,
+      escapePressed: Phaser.Input.Keyboard.JustDown(this.keys.ESC),
+      modalBlocking: pauseModalBlocking,
+      localConfirmed: this.room.state.pauseVotes.get(this.room.sessionId) === true,
+    });
+    if (pauseFrame.voteIntent) {
+      this.room.send("pauseVote", { confirmed: pauseFrame.voteIntent === "confirm" });
+    }
+    if (pauseFrame.blockGameplay) return;
 
     this.deltaSec = deltaMs / 1000;
     // §19 v0.108 refresh the audio pan reference to the camera's world centre BEFORE this frame's play()
@@ -8199,7 +8391,12 @@ export class ArenaScene extends Phaser.Scene {
           const rs = ENEMY_KINDS[boss.kind]?.renderScale ?? 1;
           const titanic = rs >= 5;
           this.shakeCam(titanic ? 700 : 360, titanic ? 0.02 : 0.011, "world");
-          this.cameras.main.flash(titanic ? 420 : 240, titanic ? 130 : 80, titanic ? 32 : 20, 18);
+          this.flashCamera(
+            titanic ? 420 : 240,
+            titanic ? 130 : 80,
+            titanic ? 32 : 20,
+            18,
+          );
           this.audio.play("bossslam", { x: boss.x, amt: 1 });
         }
       }
@@ -9772,7 +9969,10 @@ export class ArenaScene extends Phaser.Scene {
       const rs = anim.revivedSeq;
       if (this.lastRevived.get(id) !== rs) {
         if (this.lastRevived.has(id) && alive) {
-          blob.flash(170, 0x9cff3b);
+          blob.flash(
+            this.feedbackSettings.flashes === "reduced" ? 60 : 170,
+            this.feedbackSettings.flashes === "reduced" ? 0x82947e : 0x9cff3b,
+          );
           this.audio.play("revive", { x: blob.x }); // §19 a warm rising 2-note chord = life
           if (id === selfId) {
             this.resetDeathRecap();
@@ -11558,6 +11758,13 @@ export class ArenaScene extends Phaser.Scene {
     this.frozenUntil = Math.max(this.frozenUntil, now + ms);
   }
 
+  /** Every full-screen flash obeys the persisted flash setting. Reduced mode retains the event read while
+   * cutting its peak dwell to 35%; localized impact flashes also lower tint contrast at their call sites. */
+  private flashCamera(duration: number, red: number, green: number, blue: number): void {
+    const scale = this.feedbackSettings?.flashes === "reduced" ? 0.35 : 1;
+    this.cameras.main.flash(Math.max(35, duration * scale), red, green, blue);
+  }
+
   /** §7 v0.105 de-clunk — PRIORITIZED camera shake. Phaser's `ShakeEffect` ignores a new shake while one is
    *  already running unless `force` is passed, and every call site omitted it — so while the gun's per-shot
    *  shake ran (up to 70% duty on a gatling), got-hit / boss-slam / fall / explosion shakes were silently
@@ -12013,7 +12220,9 @@ export class ArenaScene extends Phaser.Scene {
         self.hp < this.prevSelfHp - 0.01 &&
         this.time.now - this.lastHurt > 180
       ) {
-        this.blobs.get(selfId)?.flash();
+        if (this.feedbackSettings.flashes === "reduced")
+          this.blobs.get(selfId)?.flash(45, 0xb8b8b8);
+        else this.blobs.get(selfId)?.flash();
         this.shakeCam(100, 0.005, "world");
         // §19 a muffled "oof" scaled by the damage taken; §20 punch the low-HP vignette on the hit.
         this.audio.play("hurt", {

@@ -755,4 +755,8 @@ export class ArenaState extends Schema {
   @type("uint8") elevatorPhase = 0;
   /** Absolute 20 Hz tick ending the current timed elevator phase; zero outside a timed phase. */
   @type("uint32") elevatorDeadlineTick = 0;
+  /** B62 server-authoritative pause. The fixed simulation accumulator does not advance while true. */
+  @type("boolean") paused = false;
+  /** B62 confirmed pause voters. A multiplayer pause begins only when every live player is present here. */
+  @type({ map: "boolean" }) pauseVotes = new MapSchema<boolean>();
 }

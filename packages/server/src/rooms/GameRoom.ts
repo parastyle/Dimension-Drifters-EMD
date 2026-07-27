@@ -855,6 +855,10 @@ export class GameRoom extends Room<ArenaState> {
    *  modified client can't monopolize the event loop between ticks. Returns false when over budget. */
     private declare takeAction: OmitThisParameter<typeof roomProgressionMethods.takeAction>;
 
+    private declare clearPauseState: OmitThisParameter<typeof roomProgressionMethods.clearPauseState>;
+
+    private declare reconcilePauseState: OmitThisParameter<typeof roomProgressionMethods.reconcilePauseState>;
+
     private declare installCorporateFloor: OmitThisParameter<typeof roomProgressionMethods.installCorporateFloor>;
 
     private declare isCorporateLoop: OmitThisParameter<typeof roomProgressionMethods.isCorporateLoop>;
@@ -1800,6 +1804,8 @@ installPrototypeMembers(GameRoom, [
   [roomProgressionMethods, "isHost"],
   [roomProgressionMethods, "devToolsEnabled"],
   [roomProgressionMethods, "takeAction"],
+  [roomProgressionMethods, "clearPauseState"],
+  [roomProgressionMethods, "reconcilePauseState"],
   [roomProgressionMethods, "installCorporateFloor"],
   [roomProgressionMethods, "isCorporateLoop"],
   [roomProgressionMethods, "onCreate"],

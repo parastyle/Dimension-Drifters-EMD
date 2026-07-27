@@ -40,6 +40,14 @@ import type { LaunchIntent } from "../net/matchmaking.js";
 import { clearReconnectReservation, loadReconnectReservation } from "../net/reconnection.js";
 import { RENDER_DPR } from "../render-dpr.js";
 import {
+  type ClientSettings,
+  type DeepPartial,
+  type DamageNumberScale,
+  loadSettings,
+  type ScreenShakeScale,
+  updateSettings,
+} from "../settings.js";
+import {
   GEAR_PARTS_MANIFEST,
   gearClickVisibility,
   gearClickVisibilityNotice,
@@ -258,12 +266,236 @@ interface PackRevealCardControl {
   revealed: boolean;
 }
 
+export const ACCESSIBILITY_OPTION_IDS = [
+  "damageNumbers",
+  "damageNumberStyle",
+  "damageNumberScale",
+  "hitConfirmAudio",
+  "confirmVolume",
+  "hitSparks",
+  "screenShake",
+  "hitStop",
+  "flashes",
+  "colorblindAssist",
+  "renderScale",
+] as const;
+
+export type AccessibilityOptionId = (typeof ACCESSIBILITY_OPTION_IDS)[number];
+
+const ACCESSIBILITY_OPTION_COPY: Record<
+  AccessibilityOptionId,
+  { label: string; description: string }
+> = {
+  damageNumbers: {
+    label: "DAMAGE NUMBERS",
+    description: "Show all hits, only your hits, or no values.",
+  },
+  damageNumberStyle: {
+    label: "NUMBER STYLE",
+    description: "Detailed hits or one rolling total per target.",
+  },
+  damageNumberScale: {
+    label: "NUMBER SCALE",
+    description: "Scale combat values from 80% to 140%.",
+  },
+  hitConfirmAudio: {
+    label: "HIT-CONFIRM AUDIO",
+    description: "Play the successful-hit confirmation layer.",
+  },
+  confirmVolume: {
+    label: "CONFIRM VOLUME",
+    description: "Set confirm-layer gain from 0% to 150%.",
+  },
+  hitSparks: {
+    label: "HIT SPARKS",
+    description: "Impact particles only; danger tells stay visible.",
+  },
+  screenShake: {
+    label: "SCREEN SHAKE",
+    description: "Camera movement: off, half, or full.",
+  },
+  hitStop: {
+    label: "HIT STOP",
+    description: "Brief impact freezes; off keeps animation moving.",
+  },
+  flashes: {
+    label: "FLASHES",
+    description: "Reduced shortens flashes and lowers VFX intensity.",
+  },
+  colorblindAssist: {
+    label: "COLOR ASSIST",
+    description: "Add patterns and shapes to danger/response cues.",
+  },
+  renderScale: {
+    label: "RENDER SCALE",
+    description: "Auto balance, native clarity, or 1× performance.",
+  },
+};
+
+const DAMAGE_NUMBER_SCALES = [0.8, 0.9, 1, 1.1, 1.2, 1.3, 1.4] as const;
+const SCREEN_SHAKE_SCALES = [0, 0.5, 1] as const;
+const CONFIRM_VOLUME_STEPS = [
+  0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.1, 1.2, 1.3, 1.4, 1.5,
+] as const;
+
+function cycleValue<T>(values: readonly T[], current: T, direction: -1 | 1): T {
+  const found = values.indexOf(current);
+  const index = found < 0 ? 0 : found;
+  return values[(index + direction + values.length) % values.length] ?? values[0]!;
+}
+
+function cycleNearestNumber(
+  values: readonly number[],
+  current: number,
+  direction: -1 | 1,
+): number {
+  let closest = 0;
+  for (let index = 1; index < values.length; index++) {
+    if (
+      Math.abs((values[index] ?? 0) - current) <
+      Math.abs((values[closest] ?? 0) - current)
+    )
+      closest = index;
+  }
+  return values[(closest + direction + values.length) % values.length] ?? values[0]!;
+}
+
+export function accessibilityOptionValue(
+  settings: ClientSettings,
+  id: AccessibilityOptionId,
+): string {
+  const feedback = settings.feedback;
+  switch (id) {
+    case "damageNumbers":
+      return feedback.damageNumbers === "own"
+        ? "MY HITS"
+        : feedback.damageNumbers === "off"
+          ? "OFF"
+          : "ALL HITS";
+    case "damageNumberStyle":
+      return feedback.damageNumberStyle === "aggregate" ? "AGGREGATE" : "DETAILED";
+    case "damageNumberScale":
+      return `${Math.round(feedback.damageNumberScale * 100)}%`;
+    case "hitConfirmAudio":
+      return feedback.hitConfirmAudio ? "ON" : "OFF";
+    case "confirmVolume":
+      return `${Math.round((feedback.confirmVolume ?? 1) * 100)}%`;
+    case "hitSparks":
+      return feedback.hitSparks ? "ON" : "OFF";
+    case "screenShake":
+      return feedback.screenShake === 0
+        ? "OFF"
+        : `${Math.round(feedback.screenShake * 100)}%`;
+    case "hitStop":
+      return feedback.hitStop ? "ON" : "OFF";
+    case "flashes":
+      return feedback.flashes === "reduced" ? "REDUCED" : "FULL";
+    case "colorblindAssist":
+      return feedback.colorblindAssist === "shapes" ? "SHAPES" : "OFF";
+    case "renderScale":
+      return settings.rendering.renderScale.toUpperCase();
+  }
+}
+
+export function cycleAccessibilitySetting(
+  settings: ClientSettings,
+  id: AccessibilityOptionId,
+  direction: -1 | 1,
+): DeepPartial<ClientSettings> {
+  const feedback = settings.feedback;
+  switch (id) {
+    case "damageNumbers":
+      return {
+        feedback: {
+          damageNumbers: cycleValue(
+            ["all", "own", "off"] as const,
+            feedback.damageNumbers,
+            direction,
+          ),
+        },
+      };
+    case "damageNumberStyle":
+      return {
+        feedback: {
+          damageNumberStyle: cycleValue(
+            ["detailed", "aggregate"] as const,
+            feedback.damageNumberStyle,
+            direction,
+          ),
+        },
+      };
+    case "damageNumberScale":
+      return {
+        feedback: {
+          damageNumberScale: cycleValue(
+            DAMAGE_NUMBER_SCALES,
+            feedback.damageNumberScale,
+            direction,
+          ) as DamageNumberScale,
+        },
+      };
+    case "hitConfirmAudio":
+      return { feedback: { hitConfirmAudio: !feedback.hitConfirmAudio } };
+    case "confirmVolume":
+      return {
+        feedback: {
+          confirmVolume: cycleNearestNumber(
+            CONFIRM_VOLUME_STEPS,
+            feedback.confirmVolume ?? 1,
+            direction,
+          ),
+        },
+      };
+    case "hitSparks":
+      return { feedback: { hitSparks: !feedback.hitSparks } };
+    case "screenShake":
+      return {
+        feedback: {
+          screenShake: cycleValue(
+            SCREEN_SHAKE_SCALES,
+            feedback.screenShake,
+            direction,
+          ) as ScreenShakeScale,
+        },
+      };
+    case "hitStop":
+      return { feedback: { hitStop: !feedback.hitStop } };
+    case "flashes":
+      return {
+        feedback: { flashes: feedback.flashes === "full" ? "reduced" : "full" },
+      };
+    case "colorblindAssist":
+      return {
+        feedback: {
+          colorblindAssist: feedback.colorblindAssist === "shapes" ? "off" : "shapes",
+        },
+      };
+    case "renderScale":
+      return {
+        rendering: {
+          renderScale: cycleValue(
+            ["auto", "native", "performance"] as const,
+            settings.rendering.renderScale,
+            direction,
+          ),
+        },
+      };
+  }
+}
+
+interface AccessibilityOptionControl {
+  id: AccessibilityOptionId;
+  root: Phaser.GameObjects.Container;
+  frame: Phaser.GameObjects.Rectangle;
+  value: Phaser.GameObjects.Text;
+}
+
 interface MenuSceneData {
   prestigeRoom?: Room<ArenaState>;
   prestigeGameCleared?: boolean;
 }
 
-export type MenuTab = "characters" | "armory" | "packs" | "run";
+export type MenuTab = "characters" | "armory" | "packs" | "options" | "run";
 
 export const INITIAL_MENU_TAB: MenuTab = "characters";
 
@@ -271,6 +503,7 @@ export const MENU_TAB_DESCRIPTORS = [
   { tab: "characters", label: "CHARACTERS", width: 142 },
   { tab: "armory", label: "ARMORY / CARRY", width: 176 },
   { tab: "packs", label: "PACKS", width: 142 },
+  { tab: "options", label: "OPTIONS", width: 142 },
   { tab: "run", label: "DESTINATIONS", width: 142 },
 ] as const satisfies ReadonlyArray<{ tab: MenuTab; label: string; width: number }>;
 
@@ -279,6 +512,7 @@ export function menuTabVisibility(tab: MenuTab): {
   companions: boolean;
   armory: boolean;
   packs: boolean;
+  options: boolean;
   destinations: boolean;
   prestige: boolean;
   fullScreen: boolean;
@@ -288,9 +522,11 @@ export function menuTabVisibility(tab: MenuTab): {
     companions: tab === "characters",
     armory: tab === "armory",
     packs: tab === "packs",
+    options: tab === "options",
     destinations: tab === "run",
     prestige: tab === "run",
-    fullScreen: tab === "characters" || tab === "armory" || tab === "packs",
+    fullScreen:
+      tab === "characters" || tab === "armory" || tab === "packs" || tab === "options",
   };
 }
 
@@ -359,6 +595,10 @@ export class MenuScene extends Phaser.Scene {
   private packCeremonyRoot?: Phaser.GameObjects.Container;
   private packCeremonyReceipt?: PackOpenReceipt;
   private packRevealCards: PackRevealCardControl[] = [];
+  private clientSettings!: ClientSettings;
+  private optionsRoot?: Phaser.GameObjects.Container;
+  private optionsRows: AccessibilityOptionControl[] = [];
+  private optionsFocusIndex = 0;
   private wardrobeRoot?: Phaser.GameObjects.Container;
   private wardrobeChrome?: Phaser.GameObjects.Graphics;
   private wardrobePresetState!: WardrobePresetState;
@@ -514,6 +754,9 @@ export class MenuScene extends Phaser.Scene {
     this.packCeremonyRoot = undefined;
     this.packCeremonyReceipt = undefined;
     this.packRevealCards = [];
+    this.optionsRoot = undefined;
+    this.optionsRows = [];
+    this.optionsFocusIndex = 0;
     this.wardrobeRoot = undefined;
     this.wardrobeChrome = undefined;
     this.wardrobePreviewSurface = undefined;
@@ -589,6 +832,7 @@ export class MenuScene extends Phaser.Scene {
     // real gesture (a menu click), then wire the volume/mute row.
     this.audio = (this.game.registry.get("audio") as AudioBus | undefined) ?? new AudioBus();
     this.game.registry.set("audio", this.audio);
+    this.clientSettings = loadSettings();
     this.metaAccount = loadPetMetaAccount();
     // §40 BELT is shelved from the menu (user ruling: top-down is the primary mode) but stays reachable for
     // dev/testing via `?belt=<levelId>` — auto-launches that belt level directly (the Dev Portal links use it).
@@ -739,6 +983,34 @@ export class MenuScene extends Phaser.Scene {
         e.preventDefault();
         return;
       }
+      if (this.menuTab === "options") {
+        if (e.key === "Escape" || e.key === "Tab") {
+          this.setMenuTab("run");
+          e.preventDefault();
+          return;
+        }
+        if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+          const delta = e.key === "ArrowUp" ? -1 : 1;
+          this.optionsFocusIndex =
+            (this.optionsFocusIndex + delta + this.optionsRows.length) %
+            this.optionsRows.length;
+          this.refreshOptionsWorkspace();
+          e.preventDefault();
+          return;
+        }
+        if (
+          e.key === "ArrowLeft" ||
+          e.key === "ArrowRight" ||
+          e.key === "Enter" ||
+          e.key === " "
+        ) {
+          const id = ACCESSIBILITY_OPTION_IDS[this.optionsFocusIndex];
+          if (id)
+            this.applyAccessibilityOption(id, e.key === "ArrowLeft" ? -1 : 1);
+          e.preventDefault();
+        }
+        return;
+      }
       if (this.menuTab !== "run") return;
       if (this.prestigeDrawerOpen && e.key === "Escape") {
         this.prestigeDrawerOpen = false;
@@ -776,6 +1048,7 @@ export class MenuScene extends Phaser.Scene {
     this.buildCharacterWorkspace();
     this.buildArmoryWorkspace();
     this.buildPacksWorkspace();
+    this.buildOptionsWorkspace();
     this.buildCompanionRow();
     this.buildDestinationsPrestige();
     this.buildAudioRow();
@@ -1265,6 +1538,7 @@ export class MenuScene extends Phaser.Scene {
     this.companionRow?.setVisible(visibility.companions);
     this.armoryRoot?.setVisible(visibility.armory);
     this.packsRoot?.setVisible(visibility.packs);
+    this.optionsRoot?.setVisible(visibility.options);
     this.intentRow?.setVisible(visibility.destinations);
     this.destinationsWorldTier?.setVisible(visibility.prestige);
     this.destinationsPrestigeLayer?.setVisible(visibility.prestige);
@@ -1274,8 +1548,112 @@ export class MenuScene extends Phaser.Scene {
     if (tab === "characters") this.refreshCharacterWorkspace();
     if (tab === "armory") this.refreshArmoryWorkspace();
     if (tab === "packs") this.refreshPacksWorkspace();
+    if (tab === "options") this.refreshOptionsWorkspace();
     if (tab === "run") this.refreshPrestigeSurface();
     this.layout();
+  }
+
+  private buildOptionsWorkspace(): void {
+    const root = this.add.container(0, 0).setDepth(10);
+    const title = this.add
+      .text(0, 0, "ACCESSIBILITY & FEEDBACK", armoryTextStyle("pageTitle"))
+      .setOrigin(0.5);
+    const subtitle = this.add
+      .text(
+        0,
+        34,
+        "Persisted on this device · changes apply immediately",
+        armoryTextStyle("secondary", "textSecondary", true),
+      )
+      .setOrigin(0.5);
+    const footer = this.add
+      .text(
+        0,
+        578,
+        "↑/↓ SELECT  ·  ←/→ CHANGE  ·  ENTER CYCLE  ·  ESC DESTINATIONS",
+        armoryTextStyle("secondary", "textMuted", true),
+      )
+      .setOrigin(0.5);
+    root.add([title, subtitle, footer]);
+
+    ACCESSIBILITY_OPTION_IDS.forEach((id, index) => {
+      const copy = ACCESSIBILITY_OPTION_COPY[id];
+      const frame = this.add
+        .rectangle(0, 0, 560, 72, 0x141219, 0.98)
+        .setStrokeStyle(1.5, 0x3a3550)
+        .setInteractive({ useHandCursor: true });
+      const label = this.add
+        .text(-260, -17, copy.label, armoryTextStyle("body"))
+        .setOrigin(0, 0.5);
+      const description = this.add
+        .text(-260, 14, copy.description, armoryTextStyle("secondary", "textMuted", true))
+        .setOrigin(0, 0.5);
+      const value = this.add
+        .text(205, 0, "", {
+          fontFamily: "monospace",
+          fontSize: "12px",
+          color: TITLE_COLOR,
+          fontStyle: "bold",
+          align: "center",
+        })
+        .setOrigin(0.5);
+      const previous = this.makeMenuChip("‹", 40, () => this.applyAccessibilityOption(id, -1));
+      const next = this.makeMenuChip("›", 40, () => this.applyAccessibilityOption(id, 1));
+      previous.setPosition(146, 0);
+      next.setPosition(262, 0);
+      const rowRoot = this.add.container(0, 0, [
+        frame,
+        label,
+        description,
+        value,
+        previous,
+        next,
+      ]);
+      const row: AccessibilityOptionControl = { id, root: rowRoot, frame, value };
+      frame
+        .on("pointerover", () => {
+          this.optionsFocusIndex = index;
+          this.refreshOptionsWorkspace();
+        })
+        .on("pointerdown", () => this.applyAccessibilityOption(id, 1));
+      const column = index < 6 ? 0 : 1;
+      const rowIndex = column === 0 ? index : index - 6;
+      rowRoot.setPosition(column === 0 ? -290 : 290, 94 + rowIndex * 82);
+      root.add(rowRoot);
+      this.optionsRows.push(row);
+    });
+    this.optionsRoot = root;
+    this.refreshOptionsWorkspace();
+  }
+
+  private applyAccessibilityOption(id: AccessibilityOptionId, direction: -1 | 1): void {
+    this.clientSettings = updateSettings(
+      cycleAccessibilitySetting(this.clientSettings, id, direction),
+    );
+    if (id === "confirmVolume")
+      this.audio.setConfirmVolume(this.clientSettings.feedback.confirmVolume ?? 1, false);
+    this.audio.play("ui:confirm");
+    this.refreshOptionsWorkspace();
+  }
+
+  private refreshOptionsWorkspace(): void {
+    for (const [index, row] of this.optionsRows.entries()) {
+      const focused = index === this.optionsFocusIndex;
+      row.frame
+        .setFillStyle(focused ? 0x14232a : 0x141219, 0.98)
+        .setStrokeStyle(focused ? 2.5 : 1.5, focused ? 0x33e6ff : 0x3a3550);
+      row.value.setText(accessibilityOptionValue(this.clientSettings, row.id));
+    }
+  }
+
+  private layoutOptionsWorkspace(): void {
+    if (!this.optionsRoot) return;
+    const scale = Math.min(
+      1,
+      Math.max(0.55, (this.screenW() - 32) / 1_160),
+      Math.max(0.55, (this.screenH() - 90) / 610),
+    );
+    this.optionsRoot.setPosition(this.screenW() / 2, 88).setScale(scale);
   }
 
   private buildCharacterWorkspace(): void {
@@ -3768,6 +4146,7 @@ export class MenuScene extends Phaser.Scene {
     this.layoutCharacterWorkspace();
     this.layoutArmoryWorkspace();
     this.layoutPacksWorkspace();
+    this.layoutOptionsWorkspace();
     this.layoutDestinationsPrestige();
     // §50 finding #1 — the launch-intent selector sits between the subtitle and the card grid.
     this.intentRow?.setPosition(w / 2, titleY + 126);
