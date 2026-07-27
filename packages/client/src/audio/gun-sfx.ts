@@ -196,6 +196,7 @@ export function gunFireFamilyForWeapon(weapon: WeaponDef): GunFireFamily | undef
     case "rail-pistol":
     case "railgun":
       return "coil-rail";
+    case "heavy-ion-cannon":
     case "heavy-ordnance":
     case "grenade-launcher":
       if (weapon.id === "x2-hailstorm-coilgun") return "coil-rail";

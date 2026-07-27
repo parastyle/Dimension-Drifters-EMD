@@ -1,10 +1,10 @@
 {
   "generated": "2026-06-17",
   "source": "design-300-weapons workflow (15 agents)",
-  "count": 369,
+  "count": 370,
   "byType": {
     "melee": 135,
-    "ranged": 135,
+    "ranged": 138,
     "caster": 97
   },
   "weapons": [
@@ -21224,6 +21224,66 @@
         "displayLength": 132,
         "swingArc": 1.5,
         "gripFrac": 0.17
+      }
+    },
+    {
+      "id": "x2-aurora-ion-cannon",
+      "name": "Aurora Ion Cannon",
+      "description": "A flagship shoulder-fired ion cannon whose sealed rear core drives three slow, armor-piercing packets through a broad precision-ribbed emitter.",
+      "type": "ranged",
+      "family": "heavy-ion-cannon",
+      "theme": "near-black flagship heavy ion cannon with a broad ribbed emitter bell, symmetric stabiliser fins, sealed amber core, form-following classic tiger-stripe furniture, and a boxy laser/light unit",
+      "element": "shock",
+      "finish": "pristine",
+      "grip": "2H",
+      "fireMode": "semi-auto",
+      "gripPoints": {
+        "primary": {
+          "x": 0.31,
+          "y": 0.73
+        },
+        "secondary": {
+          "x": 0.6,
+          "y": 0.69,
+          "role": "under-barrel"
+        }
+      },
+      "size": "XL",
+      "rangeBand": "long",
+      "scaling": [
+        "INT",
+        "STR"
+      ],
+      "palettePrimary": "#14191D",
+      "paletteAccent": "#E0A13A",
+      "artPrompt": "Weapon-only in-world game sprite on a perfectly flat fully opaque #00ff00 chroma-key field: exactly ONE huge shoulder-fired heavy ion GUN. Build a broad ribbed emitter bell at the RIGHT end, with every emitter rib machined true around a visible barrel aperture; flare two thick stabiliser fins symmetrically from the upper and lower forward body; fit a thick padded shoulder brace at the LEFT; and seat one chunky sealed power core in an even rear housing immediately ahead of the brace. Keep it unmistakably a gun a person holds and aims: one substantial pistol grip on the lower LEFT with a visible trigger inside a sturdy trigger guard, one rigid support grip beneath the forward body, low aligned iron sights plus one compact bare-metal optic on top, and one straight mechanically continuous barrel axis running through the receiver into the emitter aperture. Mount one small boxy bare-metal laser/light combination unit tightly beneath the forward barrel with one visible dark lens; it is switched off silhouette detail only and emits NO beam, NO glow, NO bloom, NO rays, NO light cone, and NO spill. Flagship heavy issue quality: all emitter ribs are precisely parallel and evenly spaced, the twin fins are mirror-symmetric and seated true, the core housing is sealed and even, the shoulder brace is professionally fitted, the sights align with the barrel, panel gaps are hairline-tight, and every fastener is torqued square. The weapon reads expensive, immaculate, and professionally maintained, with at most a faint honest carbon trace inside the emitter vents. No junk, tape, repairs, salvage, mismatched plates, scratches, dents, rust, grime, improvised parts, poverty signals, or ground-off markings. Paint classic TIGER STRIPE camouflage only onto the padded shoulder brace, pistol grip, support grip, and small furniture panels: broad irregular muted-khaki and dark-olive stripes over charcoal, each stripe bending along and following the separate furniture form. The camouflage never floats, never crosses seams, and never covers the whole gun. Leave the emitter bell, continuous barrel, compact optic, sights, stabiliser fins, core frame, and laser/light unit bare near-black metal. DARK house rendering: near-black charcoal dominates the entire weapon, broad sides and the underside stay deep spot-black, and only narrow cool gunmetal highlights catch TOP-FACING EDGES; never evenly lit and never mid-grey overall. The one warm accent colour is contained amber-gold glass confined to narrow sealed power-core windows and deep inside the emitter aperture, with a small contained emitter glow only and no cast light, aura, or bloom. Use a bold heavy black outline around the complete silhouette AND equally heavy crisp internal black ink dividing every emitter rib, fin root, receiver panel, core seal, furniture plane, camo boundary, grip plane, sight, trigger guard, optic edge, attachment panel, fastener, and seam. Slightly exaggerate the huge emitter bell, thick fins, chunky sealed core, padded brace, grips, and boxy attachment while preserving a credible shoulder-brace-to-grip-to-trigger-to-barrel relationship. Use only about 4-6 flat opaque cel colours plus black ink, hard flat planes only. One complete connected weapon, strict flat orthographic full side-profile, perfectly horizontal and fully visible with generous padding, shoulder brace and grip LEFT, emitter muzzle RIGHT. No character, hands, second weapon, detached object, ammunition, projectile, firing effect, muzzle flash, smoke, scenery, floor, cast shadow, reflection, text, letters, numbers, logo, serial, maker mark, symbol, watermark, sling, strap, rope, chain, tassel, cable, or dangling part. No photorealism, realistic product photography, catalogue rendering, glossy studio lighting, 3D rendering, soft airbrushing, gradients, evenly lit grey surfaces, sterile geometric styling, technical diagram, wand, staff, sculpture, abstract prop, or nonsensical mechanism.",
+      "cardartAction": "braced through one crushing amber ion discharge, the sealed rear core pulsing once as a dense packet punches through a line of targets to the right",
+      "behavior": {
+        "kind": "gun",
+        "damage": 38,
+        "projectileSpeed": 800,
+        "range": 760,
+        "fireRate": 0.82,
+        "spread": 0.018,
+        "pierce": 3,
+        "magazine": 3,
+        "reloadSeconds": 2.8,
+        "bulletKind": "laser",
+        "projectileArt": "generated",
+        "projectileVisualScale": 2.6,
+        "projectileColor": 14721338,
+        "muzzle": "artillery",
+        "muzzleColor": 14721338,
+        "recoil": 0.0023
+      },
+      "stats": {
+        "damage": 38,
+        "range": 300,
+        "halfArc": 0.45,
+        "cooldown": 0.82,
+        "displayLength": 196,
+        "swingArc": 1.8,
+        "gripFrac": 0.18
       }
     }
   ]

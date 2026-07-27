@@ -17156,6 +17156,66 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "pierce": 2,
       "muzzleColor": 14719546
     }
+  },
+  "x2-aurora-ion-cannon": {
+    "id": "x2-aurora-ion-cannon",
+    "name": "Aurora Ion Cannon",
+    "expansion": true,
+    "damage": 38,
+    "range": 300,
+    "halfArc": 0.45,
+    "cooldown": 0.82,
+    "displayLength": 196,
+    "swingArc": 1.8,
+    "gripFrac": 0.18,
+    "tags": {
+      "grip": "2H",
+      "size": "XL",
+      "delivery": "projectile",
+      "fireMode": "semi-auto",
+      "element": "shock",
+      "classPool": "ranged",
+      "family": "heavy-ion-cannon",
+      "rangeBand": "long",
+      "scaling": [
+        "INT",
+        "STR"
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Siege Cannons"
+    },
+    "recoil": 223,
+    "weaponUtility": "both",
+    "gripPoints": {
+      "primary": {
+        "x": 0.31,
+        "y": 0.73
+      },
+      "secondary": {
+        "x": 0.6,
+        "y": 0.69,
+        "role": "under-barrel"
+      }
+    },
+    "description": "A flagship shoulder-fired ion cannon whose sealed rear core drives three slow, armor-piercing packets through a broad precision-ribbed emitter.",
+    "twoHanded": true,
+    "gun": {
+      "damage": 38,
+      "projectileSpeed": 800,
+      "range": 760,
+      "fireRate": 0.82,
+      "magazine": 3,
+      "reloadSeconds": 2.8,
+      "bulletKind": "laser",
+      "muzzle": "artillery",
+      "recoil": 0.0023,
+      "projectileArt": "generated",
+      "projectileVisualScale": 2.6,
+      "projectileColor": 14721338,
+      "spread": 0.018,
+      "pierce": 3,
+      "muzzleColor": 14721338
+    }
   }
 };
 

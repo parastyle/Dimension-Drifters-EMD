@@ -222,6 +222,28 @@ export const WEAPON_ART_MUZZLES = {
     "salvoMode": "parallel",
     "barrelMode": "parallel"
   },
+  "x2-aurora-ion-cannon": {
+    "sprite": "x2-aurora-ion-cannon",
+    "parts": [
+      {
+        "width": 256,
+        "height": 91
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 27.5,
+        "derived": {
+          "x": 255,
+          "y": 27.5
+        }
+      }
+    ],
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
   "x2-auroral-filament-wand": {
     "sprite": "x2-auroral-filament-wand",
     "parts": [

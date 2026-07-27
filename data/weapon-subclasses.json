@@ -324,6 +324,7 @@
       "weaponClass": "ranged",
       "subclass": "Siege Cannons",
       "sourceClasses": ["ranged"],
+      "families": ["heavy-ion-cannon"],
       "ids": [
         "x2-widowmaker-cannon",
         "x2-doomsday-drum-cannon",

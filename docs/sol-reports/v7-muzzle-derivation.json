@@ -220,6 +220,28 @@
     "barrelMode": "parallel"
   },
   {
+    "id": "x2-aurora-ion-cannon",
+    "name": "Aurora Ion Cannon",
+    "sprite": "x2-aurora-ion-cannon",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 27.5
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 27.5
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
     "id": "x2-auroral-filament-wand",
     "name": "Auroral Filament Wand",
     "sprite": "x2-auroral-filament-wand",

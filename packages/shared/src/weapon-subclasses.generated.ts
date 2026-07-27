@@ -509,6 +509,9 @@ export const GENERATED_WEAPON_SUBCLASS_RULES = [
     "sourceClasses": [
       "ranged"
     ],
+    "families": [
+      "heavy-ion-cannon"
+    ],
     "ids": [
       "x2-widowmaker-cannon",
       "x2-doomsday-drum-cannon",
