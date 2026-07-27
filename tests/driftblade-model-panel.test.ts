@@ -312,8 +312,8 @@ describe("driftblade-model panel", () => {
     });
     expect(defaultCounts).toEqual({
       "punch/default": 19,
-      // The B63/B66 catalog merge and Rail-9 deliberately contribute three ordinary arc routes.
-      "arc/default": 125,
+      // The B63/B66 catalog merge and new issue guns deliberately contribute ordinary arc routes.
+      "arc/default": 126,
       "chop/default": 8,
       "rake/dagger": 1,
       "rake/claw": 3,

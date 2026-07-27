@@ -17156,6 +17156,56 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "pierce": 2,
       "muzzleColor": 14719546
     }
+  },
+  "x2-singularity-micro-lance": {
+    "id": "x2-singularity-micro-lance",
+    "name": "Singularity Micro-Lance",
+    "expansion": true,
+    "damage": 5,
+    "range": 100,
+    "halfArc": 0.4,
+    "cooldown": 0.65,
+    "displayLength": 40,
+    "swingArc": 1.8,
+    "gripFrac": 0.24,
+    "tags": {
+      "grip": "1H",
+      "size": "S",
+      "delivery": "beam",
+      "fireMode": "hold",
+      "element": "void",
+      "classPool": "ranged",
+      "family": "beam-sidearm",
+      "rangeBand": "close",
+      "scaling": [
+        "DEX",
+        "INT"
+      ],
+      "weaponClass": "Special",
+      "subclass": "Special"
+    },
+    "recoil": 16,
+    "weaponUtility": "both",
+    "beam": {
+      "damagePerSecond": 50,
+      "tickRate": 0.1,
+      "width": 6,
+      "range": 360,
+      "chargeSeconds": 0.65,
+      "sweepLagSeconds": 0.05,
+      "overheat": {
+        "maxChannelSeconds": 1.25,
+        "heatPerSecond": 0.6,
+        "coolPerSecond": 0.35,
+        "ignitionHeat": 0.25,
+        "lockSeconds": 1.5,
+        "restartHeat": 0.35
+      },
+      "movement": {
+        "chargeMul": 0.55,
+        "channelMul": 0.35
+      }
+    }
   }
 };
 

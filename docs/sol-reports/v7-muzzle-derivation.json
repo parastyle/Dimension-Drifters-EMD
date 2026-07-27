@@ -3362,6 +3362,28 @@
     "barrelMode": "parallel"
   },
   {
+    "id": "x2-singularity-micro-lance",
+    "name": "Singularity Micro-Lance",
+    "sprite": "x2-singularity-micro-lance",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 36.3
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 36.3
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
     "id": "x2-slughammer-breachgun",
     "name": "Slughammer Breachgun",
     "sprite": "x2-slughammer-breachgun",

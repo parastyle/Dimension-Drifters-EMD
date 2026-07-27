@@ -3472,6 +3472,28 @@ export const WEAPON_ART_MUZZLES = {
     "salvoMode": "cycle",
     "barrelMode": "parallel"
   },
+  "x2-singularity-micro-lance": {
+    "sprite": "x2-singularity-micro-lance",
+    "parts": [
+      {
+        "width": 256,
+        "height": 152
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 36.3,
+        "derived": {
+          "x": 255,
+          "y": 36.3
+        }
+      }
+    ],
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
   "x2-slughammer-breachgun": {
     "sprite": "x2-slughammer-breachgun",
     "parts": [
