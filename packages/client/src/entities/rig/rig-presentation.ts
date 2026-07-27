@@ -14,6 +14,9 @@ import {
 } from "@dd/shared";
 import type { RigAnim } from "./rig-core.js";
 
+/** A genuine ordinary-input stop cuts root correction debt on that render sample: at 60 Hz, ≤ one frame. */
+export const PRESENTED_INPUT_STOP_MAX_MS = 17;
+
 export interface PresentationFrame {
   /** Render-frame identity. Every consumer of an actor sees this exact value. */
   readonly frame: number;
@@ -83,7 +86,8 @@ export class PresentationFrameClock {
  * Final root-only guard. Predictor/authority debt may move the presentation target faster than the actor's
  * declared locomotion plus recoil channels; retain that debt in root space instead of differentiating it
  * into pose. The caller may supply a quiet idle-correction floor, but there is no per-frame additive
- * headroom that can pulse ordinary movement. Teleports still cut immediately.
+ * headroom that can pulse ordinary movement. A genuine ordinary-input release is also a cut: easing
+ * fractional prediction lead after the simulation has stopped is visible skating. Teleports still cut.
  */
 export function limitPresentedRootStep(
   previousX: number,
@@ -93,15 +97,30 @@ export function limitPresentedRootStep(
   elapsedMs: number,
   declaredSpeed: number,
   snapDistance: number,
+  inputStopped = false,
 ): Readonly<{ x: number; y: number }> {
   const dx = targetX - previousX;
   const dy = targetY - previousY;
   const distance = Math.hypot(dx, dy);
-  if (distance <= 1e-6 || distance >= snapDistance) return { x: targetX, y: targetY };
+  if (inputStopped || distance <= 1e-6 || distance >= snapDistance)
+    return { x: targetX, y: targetY };
   const maxStep = (Math.max(0, declaredSpeed) * Math.max(0, elapsedMs)) / 1000;
   if (distance <= maxStep) return { x: targetX, y: targetY };
   const scale = maxStep / distance;
   return { x: previousX + dx * scale, y: previousY + dy * scale };
+}
+
+/**
+ * Detect only the moving→zero-intent edge for ordinary root motion. Direction changes never qualify, so
+ * this presentation cut cannot recreate B74's turn hitch or modulate travel speed.
+ */
+export function isPresentedInputStop(
+  wasMoving: boolean,
+  inputX: number,
+  inputY: number,
+  rootMotionException: boolean,
+): boolean {
+  return wasMoving && Math.hypot(inputX, inputY) <= 1e-4 && !rootMotionException;
 }
 
 export interface PresentedUltimateState {

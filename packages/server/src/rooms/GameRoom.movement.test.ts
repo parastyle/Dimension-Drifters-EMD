@@ -34,6 +34,7 @@ import {
   ParryReaction,
   PIT_FALL_DAMAGE_FRAC,
   PickupState,
+  PLAYER_GROUND_CONTACT_OFFSET_Y,
   PLAYER_MAX_HP,
   PLAYER_REGEN,
   REVIVE_HP_FRAC,
@@ -598,6 +599,36 @@ describe("GameRoom — §17 pitfall + terrain-death + §9 gun cadence", () => {
     expect(Math.round(p.x)).toBe(Math.round(sx)); // … specifically the last-ground spot
     expect(Math.round(p.y)).toBe(Math.round(sy));
     expect(p.hp).toBeCloseTo(PLAYER_MAX_HP * (1 - PIT_FALL_DAMAGE_FRAC), 0); // took the chip (± a regen tick)
+  });
+
+  it("triggers pit damage at the visible foot contact, not the torso/root centre", () => {
+    const h = training();
+    const p = h.state().players.get("p1");
+    const map = h.room.map;
+    const col = Math.floor(map.spawnX / map.tileSize);
+    const groundRow = Math.floor(map.spawnY / map.tileSize);
+    const boundaryY = groundRow * map.tileSize;
+    map.tiles[(groundRow - 1) * map.cols + col] = TILE_PIT;
+    map.tiles[groundRow * map.cols + col] = 0;
+    p.x = (col + 0.5) * map.tileSize;
+    p.y = (groundRow + 0.5) * map.tileSize;
+    h.tick(1);
+
+    const fellBefore = p.fellSeq;
+    const hpBefore = p.hp;
+    const visibleGroundRootY = boundaryY - PLAYER_GROUND_CONTACT_OFFSET_Y + 0.25;
+    p.y = visibleGroundRootY;
+    h.room.combat.get("p1").pitGrace = 0;
+    h.tick(1);
+    expect(p.fellSeq).toBe(fellBefore);
+    expect(p.hp).toBe(hpBefore);
+
+    p.y = boundaryY - PLAYER_GROUND_CONTACT_OFFSET_Y - 0.25;
+    h.tick(1);
+    expect(p.fellSeq).toBe((fellBefore + 1) & 0xff);
+    expect(p.hp).toBeLessThan(hpBefore);
+    // Recovery accepts the last root whose feet were visibly on ground, even though its torso is over void.
+    expect(p.y).toBeCloseTo(visibleGroundRootY, 6);
   });
 
   it("an AIRBORNE player (mid-jump) clears the pit — no fall", () => {

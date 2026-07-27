@@ -204,6 +204,7 @@ import {
   isCharacterUnlocked,
   isPetId,
   isPitAtPx,
+  isPlayerGroundContactInPit,
   isPlayableCharacter,
   isRareRelicId,
   isWholeArtCharacter,
@@ -4021,7 +4022,7 @@ export const roomProgressionMethods = {
         player.fellSeq++;
         return;
       }
-      const overPit = isPitAtPx(this.map, player.x, player.y);
+      const overPit = isPlayerGroundContactInPit(this.map, player.x, player.y);
       if (!overPit) {
         c.lastGroundX = player.x; // standing on solid ground → remember it
         c.lastGroundY = player.y;
@@ -4030,7 +4031,7 @@ export const roomProgressionMethods = {
       if (c.pitGrace > 0) return; // just fell/landed — don't immediately re-fall
       // FALL.
       this.damagePitFall(player);
-      const safe = isPitAtPx(this.map, c.lastGroundX, c.lastGroundY)
+      const safe = isPlayerGroundContactInPit(this.map, c.lastGroundX, c.lastGroundY)
         ? nearestGroundPx(this.map, player.x, player.y)
         : { x: c.lastGroundX, y: c.lastGroundY };
       this.placeWithMotionEpoch(player, "pit-snapback", () => {

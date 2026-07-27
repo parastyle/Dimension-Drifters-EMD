@@ -215,6 +215,7 @@ import {
 import { SnapshotBuffer, TimelineSync } from "../net/snapshots.js";
 import {
   createPresentedActorState,
+  isPresentedInputStop,
   limitPresentedRootStep,
   type PresentedActorState,
   PresentedActorBuffer,
@@ -1633,6 +1634,8 @@ export class ArenaScene extends Phaser.Scene {
    */
   private selfPresentedWorldX = Number.NaN;
   private selfPresentedWorldY = Number.NaN;
+  /** Previous rendered input state; used only to identify a genuine moving→stopped presentation edge. */
+  private selfMoveIntentActive = false;
   private localParryCd = 0;
   /** §8 v0.114 PARRY COMBO — client-inferred chain counter for the local drifter (no synced field): each
    *  own-parry within `PARRY_CHAIN_WINDOW` of the last bumps `parryChain`; a lapse resets it. Drives the
@@ -2326,6 +2329,7 @@ export class ArenaScene extends Phaser.Scene {
     this.selfPredictionCandidateY = Number.NaN;
     this.selfPresentedWorldX = Number.NaN;
     this.selfPresentedWorldY = Number.NaN;
+    this.selfMoveIntentActive = false;
     this.jumpPresentation.clear();
     this.wasFrozen = false;
     this.lastSelfMuzzleAt = -9999;
@@ -9393,6 +9397,13 @@ export class ArenaScene extends Phaser.Scene {
         const motion = this.predictor.clientMovementReport();
         const locomotionSpeed = Math.hypot(motion.mvx, motion.mvy);
         const recoilSpeed = Math.hypot(motion.vx, motion.vy);
+        const moveIntentActive = Math.hypot(this.curDx, this.curDy) > 1e-4;
+        const inputStopped = isPresentedInputStop(
+          this.selfMoveIntentActive,
+          this.curDx,
+          this.curDy,
+          predicted.stance !== STANCE_NONE || recoilSpeed > 1e-4,
+        );
         const root = limitPresentedRootStep(
           previousWorldX,
           previousWorldY,
@@ -9403,6 +9414,7 @@ export class ArenaScene extends Phaser.Scene {
           // 48 px/s while idle; once the actor moves, the declared locomotion/recoil lane is the cap.
           Math.max(48, locomotionSpeed + recoilSpeed),
           INTERP_SNAP_PLAYER,
+          inputStopped,
         );
         state.rootX = root.x;
         state.rootY = root.y;
@@ -9418,6 +9430,7 @@ export class ArenaScene extends Phaser.Scene {
         state.recoilY = motion.vy;
         this.selfPresentedWorldX = root.x;
         this.selfPresentedWorldY = root.y;
+        this.selfMoveIntentActive = moveIntentActive;
         this.selfPredHeight = predicted.height;
         this.selfPredVh = predicted.vh;
         this.selfPredStance = predicted.stance;
