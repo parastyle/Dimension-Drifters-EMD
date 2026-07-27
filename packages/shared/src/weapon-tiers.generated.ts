@@ -383,5 +383,6 @@ export const GENERATED_WEAPON_TIERS = {
   "x2-hailbarrel-sledcaster": 2,
   "x2-rimechoir-chime-rack": 1,
   "x2-miremaw-shears": 1,
-  "x2-thornhive-seedcaster": 1
+  "x2-thornhive-seedcaster": 1,
+  "x2-cyclone-micro-gat": 3
 } as const satisfies Readonly<Record<string, WeaponTier>>;

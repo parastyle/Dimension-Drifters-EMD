@@ -963,6 +963,28 @@ export const WEAPON_ART_MUZZLES = {
     "salvoMode": "cycle",
     "barrelMode": "parallel"
   },
+  "x2-cyclone-micro-gat": {
+    "sprite": "x2-cyclone-micro-gat",
+    "parts": [
+      {
+        "width": 256,
+        "height": 106
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 49.9,
+        "derived": {
+          "x": 255,
+          "y": 49.9
+        }
+      }
+    ],
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
   "x2-deacon-burstpiece": {
     "sprite": "x2-deacon-burstpiece",
     "parts": [

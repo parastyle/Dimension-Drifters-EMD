@@ -15946,6 +15946,60 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "life": 120
       }
     }
+  },
+  "x2-cyclone-micro-gat": {
+    "id": "x2-cyclone-micro-gat",
+    "name": "Cyclone Micro-Gat",
+    "expansion": true,
+    "damage": 4,
+    "range": 230,
+    "halfArc": 0.58,
+    "cooldown": 0.36,
+    "displayLength": 152,
+    "swingArc": 1.8,
+    "gripFrac": 0.15,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "heavy-ordnance",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "STR"
+      ]
+    },
+    "recoil": 12,
+    "gripPoints": {
+      "primary": {
+        "x": 0.25,
+        "y": 0.68
+      },
+      "secondary": {
+        "x": 0.68,
+        "y": 0.74,
+        "role": "vertical-foregrip"
+      }
+    },
+    "description": "A compact issue rotary weapon that turns a precisely aligned six-barrel cluster and rigid top feed into short, disciplined torrents of physical ammunition.",
+    "twoHanded": true,
+    "gun": {
+      "damage": 3,
+      "projectileSpeed": 960,
+      "range": 570,
+      "fireRate": 0.065,
+      "magazine": 48,
+      "reloadSeconds": 1.75,
+      "bulletKind": "tracer",
+      "muzzle": "rapid",
+      "recoil": 0.0007,
+      "projectileArt": "bullet",
+      "spread": 0.1,
+      "muzzleColor": 12945978
+    }
   }
 };
 

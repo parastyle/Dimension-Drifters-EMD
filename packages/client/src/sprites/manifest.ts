@@ -10732,6 +10732,32 @@ export const SPRITES = {
       }
     ]
   },
+  "x2-cyclone-micro-gat": {
+    "id": "x2-cyclone-micro-gat",
+    "kind": "weapon",
+    "canvas": {
+      "w": 275,
+      "h": 115
+    },
+    "body": {
+      "cx": 138.13,
+      "cy": 54.4,
+      "w": 256,
+      "h": 106
+    },
+    "parts": [
+      {
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 106,
+        "cx": 138.13,
+        "cy": 54.4,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
+  },
   "x2-dawnwall-testament": {
     "id": "x2-dawnwall-testament",
     "kind": "weapon",
