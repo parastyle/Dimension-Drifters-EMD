@@ -215,4 +215,22 @@ describe("B87 stop-transition rendered-path regression", () => {
     );
     expect(arenaSource).not.toMatch(/limitPresentedRootStep\([\s\S]*?frame\.wallDeltaMs,/);
   });
+
+  it("leashes self presentation to authority only while recoil is actually displacing", () => {
+    // Owner capture 2026-07-27: 40 frames of a clean 2.22px step (constant speed at 143fps) followed by
+    // ONE 48.00px frame at the input-release edge -- exactly LOCOMOTION_ONLY_AUTHORITY_RADIUS_PX. The
+    // leash was applied whenever a gun was merely EQUIPPED, so ordinary walking (whose prediction lead
+    // exceeds 48px) was pinned at the leash for the whole walk and released in a single frame on stop.
+    // Gating on real recoil keeps the leash's actual purpose and restores canon L10 for locomotion.
+    expect(arenaSource).toContain(
+      "const recoilDisplacing = Math.hypot(predicted.vx, predicted.vy) > 1e-4",
+    );
+    expect(arenaSource).toMatch(
+      /presentationOnlyGunRecoil && recoilDisplacing[\s\S]*?boundLocomotionPresentation\(/,
+    );
+    // The unguarded form is what produced the 48px pop; it must never return.
+    expect(arenaSource).not.toMatch(
+      /presentationOnlyGunRecoil\s*\?\s*this\.predictor\.boundLocomotionPresentation\(/,
+    );
+  });
 });

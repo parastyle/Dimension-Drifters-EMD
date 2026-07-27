@@ -9887,9 +9887,18 @@ export class ArenaScene extends Phaser.Scene {
         this.predictor.decayError(frame.deltaSeconds, this.curDx, this.curDy);
         const predicted = this.predictor.renderPos(this.curDx, this.curDy, this.inputAccMs / 1000);
         const presentationOnlyGunRecoil = !!WEAPONS[player.weapon]?.gun;
-        const candidate = presentationOnlyGunRecoil
-          ? this.predictor.boundLocomotionPresentation(player.x, player.y, predicted.x, predicted.y)
-          : predicted;
+        // The authority leash exists to keep GUN RECOIL displacement near server truth. Applying it on
+        // every frame a gun is merely EQUIPPED leashed ordinary walking too: client prediction leads
+        // authority by more than LOCOMOTION_ONLY_AUTHORITY_RADIUS_PX, so the drawn root was pinned at
+        // exactly the leash length for the whole walk and then released in one frame at the inputStopped
+        // cut. Owner capture: 40 frames of a clean 2.22px (constant speed at 143fps) followed by a single
+        // 48.00px frame -- exactly the radius constant. That is also a direct canon L10 violation: it is
+        // self position being held back to server truth. Leash only while recoil is actually displacing.
+        const recoilDisplacing = Math.hypot(predicted.vx, predicted.vy) > 1e-4;
+        const candidate =
+          presentationOnlyGunRecoil && recoilDisplacing
+            ? this.predictor.boundLocomotionPresentation(player.x, player.y, predicted.x, predicted.y)
+            : predicted;
         this.selfPredictionCandidateX = candidate.x;
         this.selfPredictionCandidateY = candidate.y;
         const previousWorldX = Number.isFinite(this.selfPresentedWorldX)
