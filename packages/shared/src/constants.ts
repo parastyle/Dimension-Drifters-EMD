@@ -292,6 +292,13 @@ export const MAP_MAX_JUMP_TILES = 2;
 
 /** Blob body radius in px. Body collision is respected by all objects (§5) — added later. (tuning) */
 export const PLAYER_RADIUS = 24;
+/**
+ * Skin-independent ground contact below the player root: the bottom of the authoritative body disc. It is
+ * also within four world pixels of the default paper rig's scaled shadow contact at the painted pit lip.
+ * Point-sampled floor hazards query here instead of at the torso/root centre. This translates the pit mask
+ * for the upright paper character; it does not shrink pit geometry.
+ */
+export const PLAYER_GROUND_CONTACT_OFFSET_Y = PLAYER_RADIUS;
 
 /**
  * §29 v0.118 BELT-SCROLLER floor plane (see docs/BEATEMUP_CONVERSION.md). The 2.5D conversion reinterprets

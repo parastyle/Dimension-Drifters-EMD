@@ -18,6 +18,7 @@ import {
   type MoveStance,
   meleeComboSelectionFor,
   movementCorrectionBand,
+  PLAYER_GROUND_CONTACT_OFFSET_Y,
   type PlayerState,
   ROOM_NAME,
   SLIDE_PHASE_OFF,
@@ -1394,7 +1395,9 @@ async function runPitFall(instrumented: InstrumentedRoom): Promise<ScenarioResul
     };
   }
   const col = Math.floor(player.x / instrumented.local.map.tileSize);
-  const row = Math.floor(player.y / instrumented.local.map.tileSize);
+  const row = Math.floor(
+    (player.y + PLAYER_GROUND_CONTACT_OFFSET_Y) / instrumented.local.map.tileSize,
+  );
   const fellBefore = player.fellSeq;
   const probe = createProbe(instrumented, "pit-fall", "Pit fall / snap-back", "placement", {
     safePoint: safe,

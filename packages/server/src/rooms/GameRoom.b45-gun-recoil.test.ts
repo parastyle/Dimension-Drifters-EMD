@@ -1,6 +1,7 @@
 import {
   BEAM_MIN_CHARGE_SECONDS,
   beltPlayableXBounds,
+  PLAYER_GROUND_CONTACT_OFFSET_Y,
   PLAYER_RADIUS,
   TILE_GROUND,
   TILE_PIT,
@@ -187,7 +188,9 @@ describe("GameRoom B45 physical gun recoil", () => {
     const run = (airborne: boolean) => {
       const state = fixture("x2-calamity-howitzer");
       const tileSize = state.room.map.tileSize;
-      const tileY = Math.floor(state.player.y / tileSize);
+      const tileY = Math.floor(
+        (state.player.y + PLAYER_GROUND_CONTACT_OFFSET_Y) / tileSize,
+      );
       const groundTileX = Math.floor(state.player.x / tileSize);
       const boundaryX = (groundTileX + 1) * tileSize;
       state.player.x = boundaryX - 5;

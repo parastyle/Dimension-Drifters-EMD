@@ -27,6 +27,7 @@ import {
   MAP_PIT_TARGET,
   MAP_SPAWN_CLEAR_TILES,
   MAP_TILE,
+  PLAYER_GROUND_CONTACT_OFFSET_Y,
   RIFT_OFFSET,
 } from "./constants.js";
 import { makeRng, mixSeeds, type Rng } from "./rng.js";
@@ -626,6 +627,15 @@ export function tileAtPx(map: ArenaMap, px: number, py: number): number {
 /** True if a world px position is over a pit (§17 — fall trigger, once collision is wired in Phase 1). */
 export function isPitAtPx(map: ArenaMap, px: number, py: number): boolean {
   return tileAtPx(map, px, py) === TILE_PIT;
+}
+
+/**
+ * Player-only pit trigger at the visible ground contact under the upright paper rig. `isPitAtPx` remains
+ * exact tile truth for enemies, spawns, recovery searches, and floor rendering; player fall damage samples
+ * the feet instead of the torso/root centre so the hazard crosses the painted lip when the character does.
+ */
+export function isPlayerGroundContactInPit(map: ArenaMap, rootX: number, rootY: number): boolean {
+  return isPitAtPx(map, rootX, rootY + PLAYER_GROUND_CONTACT_OFFSET_Y);
 }
 
 /** Fraction of the grid that is pit — for tuning + tests. */
