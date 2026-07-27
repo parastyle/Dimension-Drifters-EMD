@@ -15988,6 +15988,259 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "spread": 0.025,
       "muzzleColor": 13802053
     }
+  },
+  "x2-caseless-vanguard": {
+    "id": "x2-caseless-vanguard",
+    "name": "Caseless Vanguard",
+    "expansion": true,
+    "damage": 5,
+    "range": 238,
+    "halfArc": 0.48,
+    "cooldown": 0.32,
+    "displayLength": 138,
+    "swingArc": 1.8,
+    "gripFrac": 0.18,
+    "tags": {
+      "grip": "2H",
+      "size": "M",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "caseless-carbine",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "INT"
+      ]
+    },
+    "recoil": 18,
+    "gripPoints": {
+      "primary": {
+        "x": 0.28,
+        "y": 0.72
+      },
+      "secondary": {
+        "x": 0.66,
+        "y": 0.7,
+        "role": "under-barrel"
+      }
+    },
+    "description": "A flagship sealed ballistic carbine whose enclosed action and high-capacity top magazine sustain exceptionally stable automatic fire through a compact frame.",
+    "twoHanded": true,
+    "gun": {
+      "damage": 5,
+      "projectileSpeed": 1350,
+      "range": 680,
+      "fireRate": 0.1,
+      "magazine": 45,
+      "reloadSeconds": 1.9,
+      "bulletKind": "tracer",
+      "muzzle": "rapid",
+      "recoil": 0.00055,
+      "projectileArt": "bullet",
+      "spread": 0.035,
+      "muzzleColor": 15053371
+    }
+  },
+  "x2-slugthrower-rail-9": {
+    "id": "x2-slugthrower-rail-9",
+    "name": "Slugthrower Rail-9",
+    "expansion": true,
+    "damage": 10,
+    "range": 180,
+    "halfArc": 0.46,
+    "cooldown": 0.38,
+    "displayLength": 96,
+    "swingArc": 1.8,
+    "gripFrac": 0.19,
+    "tags": {
+      "grip": "1H",
+      "size": "S",
+      "delivery": "projectile",
+      "fireMode": "semi-auto",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "rail-pistol",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "INT"
+      ],
+      "handling": [
+        "pistol"
+      ]
+    },
+    "recoil": 42,
+    "description": "An immaculate prototype service sidearm that drives physical slugs through a conventional chamber while its paired top conductors add velocity and penetration.",
+    "gun": {
+      "damage": 10,
+      "projectileSpeed": 1800,
+      "range": 680,
+      "fireRate": 0.38,
+      "magazine": 9,
+      "reloadSeconds": 1.55,
+      "bulletKind": "slug",
+      "muzzle": "punch",
+      "recoil": 0.0014,
+      "projectileArt": "bullet",
+      "spread": 0.018,
+      "pierce": 2,
+      "muzzleColor": 16750371
+    }
+  },
+  "x2-cyclone-micro-gat": {
+    "id": "x2-cyclone-micro-gat",
+    "name": "Cyclone Micro-Gat",
+    "expansion": true,
+    "damage": 4,
+    "range": 230,
+    "halfArc": 0.58,
+    "cooldown": 0.36,
+    "displayLength": 152,
+    "swingArc": 1.8,
+    "gripFrac": 0.15,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "heavy-ordnance",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "STR"
+      ]
+    },
+    "recoil": 12,
+    "gripPoints": {
+      "primary": {
+        "x": 0.25,
+        "y": 0.68
+      },
+      "secondary": {
+        "x": 0.68,
+        "y": 0.74,
+        "role": "vertical-foregrip"
+      }
+    },
+    "description": "A compact issue rotary weapon that turns a precisely aligned six-barrel cluster and rigid top feed into short, disciplined torrents of physical ammunition.",
+    "twoHanded": true,
+    "gun": {
+      "damage": 3,
+      "projectileSpeed": 960,
+      "range": 570,
+      "fireRate": 0.065,
+      "magazine": 48,
+      "reloadSeconds": 1.75,
+      "bulletKind": "tracer",
+      "muzzle": "rapid",
+      "recoil": 0.0007,
+      "projectileArt": "bullet",
+      "spread": 0.1,
+      "muzzleColor": 12945978
+    }
+  },
+  "x2-smartlink-burstmaster": {
+    "id": "x2-smartlink-burstmaster",
+    "name": "Smartlink Burstmaster",
+    "expansion": true,
+    "damage": 6,
+    "range": 300,
+    "halfArc": 0.45,
+    "cooldown": 0.42,
+    "displayLength": 176,
+    "swingArc": 1.8,
+    "gripFrac": 0.14,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "smart-burst-rifle",
+      "rangeBand": "long",
+      "scaling": [
+        "DEX",
+        "INT"
+      ]
+    },
+    "recoil": 67,
+    "gripPoints": {
+      "primary": {
+        "x": 0.3,
+        "y": 0.7
+      },
+      "secondary": {
+        "x": 0.62,
+        "y": 0.7,
+        "role": "under-barrel"
+      }
+    },
+    "description": "A command-grade ballistic rifle whose bonded sensor housing and flawless optic coordinate disciplined three-round bursts without compromising a conventional ammunition feed.",
+    "twoHanded": true,
+    "gun": {
+      "damage": 6,
+      "projectileSpeed": 1450,
+      "range": 850,
+      "fireRate": 0.42,
+      "magazine": 10,
+      "reloadSeconds": 1.7,
+      "bulletKind": "tracer",
+      "muzzle": "rapid",
+      "recoil": 0.0008,
+      "projectileArt": "bullet",
+      "burst": {
+        "count": 3,
+        "intervalSeconds": 0.065
+      },
+      "spread": 0.012,
+      "muzzleColor": 13998650
+    }
+  },
+  "x2-recoilless-whisper": {
+    "id": "x2-recoilless-whisper",
+    "name": "Recoilless Whisper",
+    "expansion": true,
+    "damage": 8,
+    "range": 140,
+    "halfArc": 0.85,
+    "cooldown": 0.4,
+    "displayLength": 90,
+    "swingArc": 2.6,
+    "gripFrac": 0.12,
+    "tags": {
+      "grip": "2H",
+      "size": "M",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "integrally-suppressed-rifle",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "INT"
+      ]
+    },
+    "recoil": 25,
+    "twoHanded": true,
+    "gun": {
+      "damage": 7,
+      "projectileSpeed": 920,
+      "range": 640,
+      "fireRate": 0.14,
+      "magazine": 24,
+      "reloadSeconds": 1.65,
+      "bulletKind": "slug",
+      "muzzle": "spark",
+      "recoil": 0.00065,
+      "spread": 0.018,
+      "muzzleColor": 12945978
+    }
   }
 };
 

@@ -10601,5 +10601,85 @@ export const GENERATED_WEAPON_LIMB_CLAIMS = {
       }
     ],
     "comboBeats": []
+  },
+  "x2-caseless-vanguard": {
+    "held": [
+      {
+        "limb": "hand-l",
+        "release": "handoff"
+      },
+      {
+        "limb": "hand-r",
+        "release": "handoff"
+      }
+    ],
+    "comboBeats": []
+  },
+  "x2-slugthrower-rail-9": {
+    "held": [
+      {
+        "limb": "hand-r",
+        "release": "handoff"
+      }
+    ],
+    "comboBeats": [
+      [
+        {
+          "limb": "hand-r",
+          "release": "handoff"
+        }
+      ],
+      [
+        {
+          "limb": "hand-r",
+          "release": "handoff"
+        }
+      ],
+      [
+        {
+          "limb": "hand-r",
+          "release": "handoff"
+        }
+      ]
+    ]
+  },
+  "x2-cyclone-micro-gat": {
+    "held": [
+      {
+        "limb": "hand-l",
+        "release": "handoff"
+      },
+      {
+        "limb": "hand-r",
+        "release": "handoff"
+      }
+    ],
+    "comboBeats": []
+  },
+  "x2-smartlink-burstmaster": {
+    "held": [
+      {
+        "limb": "hand-l",
+        "release": "handoff"
+      },
+      {
+        "limb": "hand-r",
+        "release": "handoff"
+      }
+    ],
+    "comboBeats": []
+  },
+  "x2-recoilless-whisper": {
+    "held": [
+      {
+        "limb": "hand-l",
+        "release": "handoff"
+      },
+      {
+        "limb": "hand-r",
+        "release": "handoff"
+      }
+    ],
+    "comboBeats": []
   }
 } as const satisfies Readonly<Record<string, WeaponLimbClaims>>;

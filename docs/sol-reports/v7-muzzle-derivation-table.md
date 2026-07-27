@@ -1,6 +1,6 @@
 # V7 Muzzle Derivation Table
 
-Generated from sprite alpha for all 177 active projectile, beam, and authored melee-impact definitions. Coordinates are source-PNG pixels.
+Generated from sprite alpha for all 182 active projectile, beam, and authored melee-impact definitions. Coordinates are source-PNG pixels.
 
 | Weapon | Derived barrel tip | Authored muzzle point(s) | Override |
 | --- | --- | --- | --- |
@@ -150,6 +150,7 @@ Generated from sprite alpha for all 177 active projectile, beam, and authored me
 | `x2-sidewinder-twin-rifles` (Sidewinder Twin-Rifles) | part-1 (255, 13.8)<br>part-2 (255, 13.8) | part-1 (255, 13.8)<br>part-2 (255, 13.8) | No |
 | `x2-slughammer-breachgun` (Slughammer Breachgun) | part-1 (255, 27.4) | part-1 (255, 27.4) | No |
 | `x2-slugthrower-rail-9` (Slugthrower Rail-9) | part-1 (255, 22.5) | part-1 (255, 22.5) | No |
+| `x2-smartlink-burstmaster` (Smartlink Burstmaster) | part-1 (255, 32.3) | part-1 (255, 32.3) | No |
 | `x2-smoldering-eye-of-perdition` (Smoldering Eye of Perdition) | part-1 (254, 68.5) | part-1 (254, 68.5) | No |
 | `x2-snakebite-dart-slinger` (Snakebite Dart-Slinger) | part-1 (254, 26.5) | part-1 (254, 26.5) | No |
 | `x2-spitfire-censer-wand` (Spitfire Censer-Wand) | part-1 (255, 27.4) | part-1 (255, 27.4) | No |
