@@ -163,6 +163,7 @@ export function gunFireFamilyForWeapon(weapon: WeaponDef): GunFireFamily | undef
     case "concussion-cannon":
       return "hand-cannon";
     case "automatic-shotgun":
+    case "energy-shotgun":
     case "shotgun":
       return "shotgun";
     case "blunderbuss":

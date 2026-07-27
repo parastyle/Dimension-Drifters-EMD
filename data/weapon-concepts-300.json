@@ -1,7 +1,7 @@
 {
   "generated": "2026-06-17",
   "source": "design-300-weapons workflow (15 agents)",
-  "count": 368,
+  "count": 369,
   "byType": {
     "melee": 135,
     "ranged": 135,
@@ -21165,6 +21165,65 @@
         "displayLength": 184,
         "swingArc": 1.8,
         "gripFrac": 0.16
+      }
+    },
+    {
+      "id": "x2-prism-scatter-emitter",
+      "name": "Prism Scatter Emitter",
+      "description": "An immaculate breaching energy shotgun whose precisely angled splitter prisms turn each charged discharge into a fast penetrating fan.",
+      "type": "ranged",
+      "family": "energy-shotgun",
+      "theme": "plain near-black issue-grade breaching energy shotgun with precision amber splitter prisms and a square under-forend charge cell",
+      "element": "arcane",
+      "finish": "pristine",
+      "grip": "2H",
+      "fireMode": "semi-auto",
+      "gripPoints": {
+        "primary": {
+          "x": 0.28,
+          "y": 0.7
+        },
+        "secondary": {
+          "x": 0.62,
+          "y": 0.67,
+          "role": "horizontal-foregrip"
+        }
+      },
+      "size": "M",
+      "rangeBand": "close",
+      "scaling": [
+        "INT",
+        "STR"
+      ],
+      "palettePrimary": "#171B20",
+      "paletteAccent": "#E09A3A",
+      "artPrompt": "Weapon-only in-world sprite on a perfectly flat fully opaque #00ff00 chroma-key field: exactly ONE compact breaching energy shotgun, a stubby thick gun with a wide heavy flared muzzle on the RIGHT holding a fan of rigid angled splitter prisms, each prism precisely seated and separated by heavy black ink, plus a fat squared removable charge cell slung tightly under the forend. Preserve a credible connected gun mechanism from a short rigid shoulder stock at LEFT through a conventional pistol grip, visible trigger and trigger guard, compact receiver, foregrip, straight barrel axis, low rear and front sights, and the flared emitter at RIGHT. Mount one small boxy laser/light combination unit rigidly beneath the front ahead of the charge cell with one visible dark lens; it is silhouette detail only, switched off, and emits no beam, glow, bloom, rays, light cone, or spill. Immaculate expensive issue-grade construction: the flawless prisms are identically angled, the charge cell is seated square, the flare rim is perfectly true, panel gaps are hairline-even, every fastener is aligned and torqued, and the plain matched finish is professionally maintained. No camouflage, junk, tape, repairs, salvage, mismatched parts, scratches, dents, rust, grime, poverty signals, or improvised hardware. DARK hand-inked game-prop treatment: near-black charcoal dominates the whole gun, sides and underside remain deep spot-black, and only narrow cool gunmetal highlights catch TOP-FACING EDGES. Use a bold heavy black outline around the entire silhouette AND equally heavy crisp black internal lines dividing every prism, receiver panel, plate, housing, cell seam, grip plane, flare ring, sight, control, and accessory panel. The only warm accent is muted amber-gold confined to the splitter-prism faces; they may have a small solid internal energy brightness but no aura or bloom. Slightly exaggerate the chunky flare, receiver, charge cell, and forend while keeping the grip-to-trigger-to-barrel relationship functional. Use only 4-6 flat opaque cel colours plus black ink, hard colour planes only. One complete connected weapon, strict flat orthographic full side-profile, perfectly horizontal and fully visible with generous padding, muzzle and flare RIGHT, stock and pistol grip LEFT. No character, hands, second weapon, detached object, ammunition, projectile, firing effect, muzzle flash, smoke, scenery, floor, shadow, reflection, text, letters, numbers, logo, serial, maker mark, symbol, watermark, sling, strap, rope, chain, tassel, cable, or dangling part. No photorealism, realistic product photography, catalogue rendering, glossy studio lighting, 3D rendering, soft airbrushing, gradients, evenly lit mid-grey surfaces, clean vector styling, diagram treatment, abstract sculpture, wand, staff, or nonfunctional mechanism.",
+      "cardartAction": "braced for a deliberate close-range discharge as six amber energy shards split into a tight penetrating fan to the right",
+      "behavior": {
+        "kind": "gun",
+        "damage": 5,
+        "projectileSpeed": 1150,
+        "range": 420,
+        "fireRate": 0.58,
+        "pellets": 6,
+        "spread": 0.34,
+        "pierce": 2,
+        "magazine": 5,
+        "reloadSeconds": 1.9,
+        "bulletKind": "laser",
+        "projectileArt": "generated",
+        "muzzle": "spark",
+        "muzzleColor": 14719546,
+        "recoil": 0.0012
+      },
+      "stats": {
+        "damage": 6,
+        "range": 118,
+        "halfArc": 0.58,
+        "cooldown": 0.58,
+        "displayLength": 132,
+        "swingArc": 1.5,
+        "gripFrac": 0.17
       }
     }
   ]
