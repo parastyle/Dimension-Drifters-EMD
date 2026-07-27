@@ -486,6 +486,71 @@ type PitSegment = {
   hop: boolean;
 };
 
+const STATIC_FLOOR_BAKE_SCALE = 0.5;
+
+/**
+ * Phaser replays and re-tessellates every retained Graphics command on every WebGL frame. The exact pit
+ * depth and lip layers contain thousands of static commands, so retaining them creates a permanent
+ * allocation stream even though their pixels never change. Rasterize each once at half resolution (the
+ * floor is deliberately low-frequency), then render one ordinary image with no frame-time path churn.
+ */
+function bakeStaticFloorGraphics(
+  scene: Phaser.Scene,
+  graphics: Phaser.GameObjects.Graphics,
+  textureKey: string,
+  depth: number,
+): Phaser.GameObjects.Image {
+  if (scene.textures.exists(textureKey)) scene.textures.remove(textureKey);
+  graphics.setScale(STATIC_FLOOR_BAKE_SCALE);
+  graphics.generateTexture(
+    textureKey,
+    Math.ceil(ARENA_WIDTH * STATIC_FLOOR_BAKE_SCALE),
+    Math.ceil(ARENA_HEIGHT * STATIC_FLOOR_BAKE_SCALE),
+  );
+  graphics.destroy();
+
+  const image = scene.add
+    .image(ARENA_WIDTH / 2, ARENA_HEIGHT / 2, textureKey)
+    .setDisplaySize(ARENA_WIDTH, ARENA_HEIGHT)
+    .setDepth(depth)
+    .setName(textureKey);
+  image.once("destroy", () => {
+    if (scene.textures.exists(textureKey)) scene.textures.remove(textureKey);
+  });
+  return image;
+}
+
+function makeStaticSpawnPatch(
+  scene: Phaser.Scene,
+  textureKey: string,
+  x: number,
+  y: number,
+  radius: number,
+  color: number,
+): Phaser.GameObjects.Image {
+  const textureSize = 128;
+  if (scene.textures.exists(textureKey)) scene.textures.remove(textureKey);
+  const texture = scene.textures.createCanvas(textureKey, textureSize, textureSize);
+  if (texture) {
+    const context = texture.getContext();
+    context.clearRect(0, 0, textureSize, textureSize);
+    context.fillStyle = `#${color.toString(16).padStart(6, "0")}`;
+    context.globalAlpha = 0.045;
+    context.beginPath();
+    context.arc(textureSize / 2, textureSize / 2, textureSize / 2, 0, Math.PI * 2);
+    context.fill();
+    texture.refresh();
+  }
+  const image = scene.add
+    .image(x, y, textureKey)
+    .setDisplaySize(radius * 2, radius * 2)
+    .setDepth(-17.4);
+  image.once("destroy", () => {
+    if (scene.textures.exists(textureKey)) scene.textures.remove(textureKey);
+  });
+  return image;
+}
+
 function localPitCrossingIsHoppable(map: ArenaMap, segment: Omit<PitSegment, "hop">): boolean {
   const T = map.tileSize;
   const mx = (segment.x1 + segment.x2) / 2;
@@ -870,13 +935,27 @@ export function buildArenaFloor(
   const out: Phaser.GameObjects.GameObject[] = [];
   const T = map.tileSize;
   const pack = dimensionPropPack(dimensionId);
-  out.push(buildMapZoneGround(scene, map, palette, pack.style));
+  const floorTextureStem = `floor:${dimensionId}:${map.seeds.seedTerrain}:${map.seeds.seedHazard}:${map.seeds.seedTheme}:${map.seeds.seedDecor}`;
+  out.push(
+    bakeStaticFloorGraphics(
+      scene,
+      buildMapZoneGround(scene, map, palette, pack.style),
+      `${floorTextureStem}:map-zones`,
+      -18.9,
+    ),
+  );
   // A quiet material clearing sits below the exact cool safety rail; dense dressing rejects this radius.
-  const spawnPatch = scene.add.graphics().setDepth(-17.4);
   const sr = MAP_SPAWN_CLEAR_TILES * T;
-  spawnPatch.fillStyle(pack.style.skirt, 0.045);
-  spawnPatch.fillCircle(map.spawnX, map.spawnY, sr * 1.04);
-  out.push(spawnPatch);
+  out.push(
+    makeStaticSpawnPatch(
+      scene,
+      `${floorTextureStem}:spawn-patch`,
+      map.spawnX,
+      map.spawnY,
+      sr * 1.04,
+      pack.style.skirt,
+    ),
+  );
 
   // Pit-edge segments are exact authoritative tile boundaries. Hop vocabulary is checked along each local
   // normal, not inherited from a connected region's bounding box.
@@ -899,12 +978,18 @@ export function buildArenaFloor(
         addSegment({ x1: ox + T, y1: oy, x2: ox + T, y2: oy + T, nx: -1, ny: 0 });
     }
 
-  out.push(drawPitDepth(scene, map, palette, seg));
+  out.push(
+    bakeStaticFloorGraphics(
+      scene,
+      drawPitDepth(scene, map, palette, seg),
+      `${floorTextureStem}:pit-depth`,
+      -14,
+    ),
+  );
   const rimKey = terrainRimKey(dimensionId);
   if (hasTile(rimKey)) out.push(...buildPaintedRims(scene, dimensionId, rimKey, seg));
   out.push(...buildPitDebris(scene, map, pack, seg));
   const g = scene.add.graphics().setDepth(-13.8); // exact gameplay lip + spawn, above all painted material
-  out.push(g);
   // Rust support band (under) then uninterrupted hot/cool exact rail (over).
   g.lineStyle(T * 0.11, palette.pitRustBand, 1);
   for (const s of seg) g.lineBetween(s.x1, s.y1, s.x2, s.y2);
@@ -940,6 +1025,7 @@ export function buildArenaFloor(
   // Cool SPAWN safe-ring (cool = safe — the opposite semaphore to the hot pit lip).
   g.lineStyle(3, palette.spawnRingSafe, 0.85);
   g.strokeCircle(map.spawnX, map.spawnY, sr);
+  out.push(bakeStaticFloorGraphics(scene, g, `${floorTextureStem}:pit-lip`, -13.8));
 
   out.push(...scatterDecor(scene, map, palette, pack, seg));
   return out;
