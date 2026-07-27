@@ -4057,6 +4057,28 @@
     "barrelMode": "parallel"
   },
   {
+    "id": "x2-voltcaster-arc-pistol",
+    "name": "Voltcaster Arc Pistol",
+    "sprite": "x2-voltcaster-arc-pistol",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 35.7
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 35.7
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
     "id": "x2-voltcaster-machine-pistol",
     "name": "Voltcaster Machine Pistol",
     "sprite": "x2-voltcaster-machine-pistol",

@@ -4198,6 +4198,28 @@ export const WEAPON_ART_MUZZLES = {
     "salvoMode": "parallel",
     "barrelMode": "parallel"
   },
+  "x2-voltcaster-arc-pistol": {
+    "sprite": "x2-voltcaster-arc-pistol",
+    "parts": [
+      {
+        "width": 256,
+        "height": 121
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 35.7,
+        "derived": {
+          "x": 255,
+          "y": 35.7
+        }
+      }
+    ],
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
   "x2-voltcaster-machine-pistol": {
     "sprite": "x2-voltcaster-machine-pistol",
     "parts": [

@@ -18018,6 +18018,32 @@ export const SPRITES = {
       }
     ]
   },
+  "x2-voltcaster-arc-pistol": {
+    "id": "x2-voltcaster-arc-pistol",
+    "kind": "weapon",
+    "canvas": {
+      "w": 277,
+      "h": 139
+    },
+    "body": {
+      "cx": 130.19,
+      "cy": 62.98,
+      "w": 256,
+      "h": 121
+    },
+    "parts": [
+      {
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 121,
+        "cx": 130.19,
+        "cy": 62.98,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
+  },
   "x2-voltcaster-machine-pistol": {
     "id": "x2-voltcaster-machine-pistol",
     "kind": "weapon",

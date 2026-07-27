@@ -1,6 +1,6 @@
 # V7 Muzzle Derivation Table
 
-Generated from sprite alpha for all 185 active projectile, beam, and authored melee-impact definitions. Coordinates are source-PNG pixels.
+Generated from sprite alpha for all 186 active projectile, beam, and authored melee-impact definitions. Coordinates are source-PNG pixels.
 
 | Weapon | Derived barrel tip | Authored muzzle point(s) | Override |
 | --- | --- | --- | --- |
@@ -180,6 +180,7 @@ Generated from sprite alpha for all 185 active projectile, beam, and authored me
 | `x2-venomspine-repeater` (Venomspine Repeater) | part-1 (255, 9.1) | part-1 (255, 9.1) | No |
 | `x2-voidgrasp-null-gauntlet` (Voidgrasp Null-Gauntlet) | part-1 (255, 55.8) | part-1 (255, 55.8) | No |
 | `x2-voidwell-idol` (Voidwell Idol) | part-1 (255, 78.2) | part-1 (255, 78.2) | No |
+| `x2-voltcaster-arc-pistol` (Voltcaster Arc Pistol) | part-1 (255, 35.7) | part-1 (255, 35.7) | No |
 | `x2-voltcaster-machine-pistol` (Voltcaster Machine Pistol) | part-1 (255, 39.1) | part-1 (255, 39.1) | No |
 | `x2-voltvein-conductors` (Voltvein Conductors) | part-1 (255, 57.4)<br>part-2 (254, 56.4) | part-1 (255, 57.4)<br>part-2 (254, 56.4) | No |
 | `x2-warden-battle-rifle` (Warden Battle Rifle) | part-1 (323, 41.4) | part-1 (323, 41.4) | No |

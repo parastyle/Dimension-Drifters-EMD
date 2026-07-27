@@ -39,7 +39,7 @@ describe("Drive formula v1", () => {
       }
     }
     // Deliberately literal delivery ownership: all five new profiles must enter the gun branch.
-    expect(census).toEqual({ melee: 181, thrown: 27, gun: 146, cast: 5, beam: 23, zone: 4 });
+    expect(census).toEqual({ melee: 181, thrown: 27, gun: 148, cast: 5, beam: 24, zone: 4 });
   });
 
   it("pins every coefficient, frozen median, and the bounded utility overrides", () => {

@@ -17156,6 +17156,65 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "pierce": 2,
       "muzzleColor": 14719546
     }
+  },
+  "x2-voltcaster-arc-pistol": {
+    "id": "x2-voltcaster-arc-pistol",
+    "name": "Voltcaster Arc Pistol",
+    "expansion": true,
+    "damage": 8,
+    "range": 150,
+    "halfArc": 0.46,
+    "cooldown": 0.32,
+    "displayLength": 104,
+    "swingArc": 1.8,
+    "gripFrac": 0.19,
+    "tags": {
+      "grip": "1H",
+      "size": "S",
+      "delivery": "projectile",
+      "fireMode": "semi-auto",
+      "element": "lightning",
+      "classPool": "ranged",
+      "family": "arc-pistol",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "INT"
+      ],
+      "handling": [
+        "pistol"
+      ],
+      "weaponClass": "Special",
+      "subclass": "Special"
+    },
+    "recoil": 40,
+    "weaponUtility": "both",
+    "description": "An immaculate duty arc sidearm whose matched fork emitter and shrouded capacitor snap controlled current through a target and into nearby threats.",
+    "gun": {
+      "damage": 8,
+      "projectileSpeed": 1500,
+      "range": 520,
+      "fireRate": 0.32,
+      "magazine": 10,
+      "reloadSeconds": 1.45,
+      "bulletKind": "laser",
+      "muzzle": "spark",
+      "recoil": 0.0009,
+      "projectileArt": "generated",
+      "spread": 0.028,
+      "muzzleColor": 6740479
+    },
+    "chainLightning": {
+      "jumps": 2,
+      "range": 150,
+      "damage": 3,
+      "falloff": 0.72,
+      "vfx": {
+        "color": 0.58,
+        "jag": 0.42,
+        "life": 150
+      }
+    }
   }
 };
 

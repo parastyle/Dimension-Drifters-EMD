@@ -1,10 +1,10 @@
 {
   "generated": "2026-06-17",
   "source": "design-300-weapons workflow (15 agents)",
-  "count": 369,
+  "count": 370,
   "byType": {
     "melee": 135,
-    "ranged": 135,
+    "ranged": 138,
     "caster": 97
   },
   "weapons": [
@@ -21224,6 +21224,68 @@
         "displayLength": 132,
         "swingArc": 1.5,
         "gripFrac": 0.17
+      }
+    },
+    {
+      "id": "x2-voltcaster-arc-pistol",
+      "name": "Voltcaster Arc Pistol",
+      "description": "An immaculate duty arc sidearm whose matched fork emitter and shrouded capacitor snap controlled current through a target and into nearby threats.",
+      "type": "ranged",
+      "family": "arc-pistol",
+      "theme": "near-black issue-grade arc sidearm with form-following blue tiger grip and capacitor furniture, matched twin emitter prongs, and bright amber-brass contacts",
+      "element": "lightning",
+      "finish": "pristine",
+      "grip": "1H",
+      "handlingTags": [
+        "pistol"
+      ],
+      "size": "S",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "INT"
+      ],
+      "palettePrimary": "#151A20",
+      "paletteAccent": "#D49A3A",
+      "artPrompt": "Weapon-only in-world game sprite on a perfectly flat fully opaque uniform #00ff00 chroma-key field: exactly ONE compact duty arc sidearm with a forked twin-prong emitter at the RIGHT muzzle, two identically machined short thick prongs separated by one crisp black gap, a tight orderly coil wrap immediately behind them around a short straight barrel, a bulging fully shrouded capacitor swelling over the grip, and a row of exposed bright unpitted contact studs seated flush along the frame. Keep an unmistakable functional gun relationship: one sturdy angled grip on the LEFT with a visible trigger and trigger guard, a short straight barrel axis, low aligned iron sights plus one compact bare-metal reflex optic with a dark unlit lens, and the forked emitter forming the muzzle at the RIGHT. Mount one small boxy bare-metal laser/light combination unit rigidly beneath the barrel with one clearly visible dark lens; it is switched off and is SILHOUETTE DETAIL ONLY, with no beam, no glow, no bloom, no light cone, no rays, and no spill. Immaculate expensive issue-grade construction: both emitter prongs are exactly matched, straight, parallel and evenly spaced; the capacitor is completely enclosed by a precision-fitted shroud; every contact is bright and unpitted; all coil turns are uniform; all panel gaps are hairline-even; the sights are true; and every fastener is aligned and torqued. Professionally maintained matched finish with no junk, tape, repair, salvage, mismatched plate, scratch, dent, rust, grime, poverty signal, improvised hardware, or loose wire. Paint BLUE TIGER camouflage only on the grip panels, rear furniture and outer capacitor shroud, with deep navy and brighter blue stripes bending around each panel and following its form. The camouflage never floats, never crosses seams, and never covers the whole weapon. Leave the barrel, emitter prongs, coil hardware, optic, contact studs, trigger, sights, and laser/light unit bare dark metal. DARK house rendering: the overall base reads near-black charcoal, broad side faces and the underside remain deep spot-black, and only narrow cool gunmetal highlights catch TOP-FACING EDGES; never evenly lit and never mid-grey overall. The single warm accent is polished amber-brass confined to the bright contact studs and thin coil collars. A small contained electric-cyan brightness may sit only inside the forked emitter gap, with no aura or cast light. Use a bold heavy black outline around the complete silhouette AND equally heavy crisp internal black ink dividing every prong, coil turn, capacitor-shroud panel, receiver plate, grip panel, camo boundary, frame seam, contact seat, sight, optic housing, trigger guard, and combination-unit panel. Slightly exaggerate the chunky fork, tight coil mass, bulging capacitor shroud, sturdy grip, contact studs, and boxy accessory while keeping the sidearm practical to hold, aim, and fire. Use only about 4-6 flat opaque cel colours plus black ink, hard flat colour planes only. Strict flat orthographic full side-profile, complete connected weapon fully visible with generous green padding, grip LEFT and emitter muzzle RIGHT. No character, hands, second weapon, detached object, projectile, muzzle flash, emitted arc, smoke, scenery, floor, cast shadow, reflection, text, letters, numbers, logo, serial, maker mark, symbol, watermark, stock, sling, strap, rope, chain, tassel, cable, or dangling part. No gradients, soft airbrushing, glossy studio lighting, photorealism, realistic product photography, catalogue rendering, 3D rendering, clean vector styling, technical diagram, wand, staff, sculpture, or abstract prop.",
+      "cardartAction": "aimed level as a compact electric-cyan discharge snaps through one target and branches across two nearby threats, the amber-brass contacts flashing in sequence",
+      "fireMode": "semi-auto",
+      "behavior": {
+        "kind": "gun",
+        "damage": 8,
+        "projectileSpeed": 1500,
+        "range": 520,
+        "fireRate": 0.32,
+        "pellets": 1,
+        "spread": 0.028,
+        "pierce": 1,
+        "magazine": 10,
+        "reloadSeconds": 1.45,
+        "bulletKind": "laser",
+        "projectileArt": "generated",
+        "muzzle": "spark",
+        "muzzleColor": 6740479,
+        "recoil": 0.0009,
+        "chainLightning": {
+          "jumps": 2,
+          "range": 150,
+          "damage": 3,
+          "falloff": 0.72,
+          "vfx": {
+            "color": 0.58,
+            "jag": 0.42,
+            "life": 150
+          }
+        }
+      },
+      "stats": {
+        "damage": 8,
+        "range": 150,
+        "halfArc": 0.46,
+        "cooldown": 0.32,
+        "displayLength": 104,
+        "swingArc": 1.8,
+        "gripFrac": 0.19
       }
     }
   ]
