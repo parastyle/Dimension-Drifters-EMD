@@ -179,6 +179,11 @@ import {
   type DamageNumberEvent,
   type HitContactEvent,
 } from "../combat-feedback.js";
+import {
+  DiagnosticHud,
+  type DiagnosticHudContext,
+  writeVfxDiagnosticStats,
+} from "../dev/diagnostic-hud.js";
 import { clientDevToolsEnabled } from "../dev-tools.js";
 import { PetRig, playPetEvolutionCeremony } from "../entities/PetRig.js";
 import {
@@ -1543,6 +1548,8 @@ export class ArenaScene extends Phaser.Scene {
     ? new SelfCorrectionTelemetry()
     : undefined;
   private selfCorrectionDebugEl: HTMLDivElement | null = null;
+  /** B84's standalone overlay is constructed only in explicit dev-tools builds. */
+  private diagnosticHud?: DiagnosticHud;
   /** Fixed 50ms input-command accumulator (clamped ≤3 ticks/frame — a tab-throttle wake must not burst
    *  20 commands; a >250ms frame gap drops stale replay and L10 Smooth-recovers SELF on the next patch). */
   private inputAccMs = 0;
@@ -2300,6 +2307,8 @@ export class ArenaScene extends Phaser.Scene {
       this.resumeAudioKeyHandler = null;
     }
     this.removeSessionEscapeHandlers();
+    this.diagnosticHud?.destroy();
+    this.diagnosticHud = undefined;
     this.selfCorrectionDebugEl?.remove();
     this.selfCorrectionDebugEl = null;
     this.ownerNoteUi?.destroy();
@@ -2686,6 +2695,7 @@ export class ArenaScene extends Phaser.Scene {
 
   create(): void {
     this.resetSceneState();
+    this.installDiagnosticHud();
     this.installSelfCorrectionDiagnostics();
     const connectionGeneration = ++this.connectionGeneration;
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.shutdownScene, this);
@@ -5192,6 +5202,7 @@ export class ArenaScene extends Phaser.Scene {
   }
 
   override update(_time: number, deltaMs: number): void {
+    this.diagnosticHud?.recordFrame(deltaMs);
     this.recordLongFrame(deltaMs);
     const ownerNoteModalOpen = !!this.ownerNoteUi?.isOpen();
     if (!ownerNoteModalOpen && Phaser.Input.Keyboard.JustDown(this.keys.H)) {
@@ -14759,6 +14770,19 @@ export class ArenaScene extends Phaser.Scene {
     this.time.delayedCall(100, wait);
   }
 
+  private installDiagnosticHud(): void {
+    // Keep the direct compile-time capability check beside the shared runtime guard so Vite can erase
+    // the complete HUD module from builds that do not explicitly opt in.
+    if (import.meta.env.VITE_DD_DEV_TOOLS !== "1" || !clientDevToolsEnabled() || this.diagnosticHud)
+      return;
+    this.diagnosticHud = new DiagnosticHud((out: DiagnosticHudContext) => {
+      out.pendingInputs = this.predictor?.stats.pending ?? 0;
+      out.enemies = this.room?.state.enemies?.size ?? 0;
+      out.projectiles = this.room?.state.projectiles?.size ?? 0;
+      writeVfxDiagnosticStats(this.vfxPlayer?.bloomRoot, out);
+    });
+  }
+
   /** Live on-screen readout so the game loop's health is visible without a dev console. */
   private updateDebug(): void {
     if (!this.debugEl) return;
@@ -14807,6 +14831,7 @@ export class ArenaScene extends Phaser.Scene {
       `[L10 self-correction] ${event.magnitudePx.toFixed(1)}px ` +
         `band=${selfCorrectionBandLabel(event)} cause=${event.cause}`,
     );
+    this.diagnosticHud?.recordSelfCorrection(event);
     this.refreshSelfCorrectionReadout();
   }
 
@@ -14896,6 +14921,10 @@ export class ArenaScene extends Phaser.Scene {
     this.timeline.onPatch(state.tick, now);
     const t = state.tick * TICK_MS;
     const selfId = this.room?.sessionId;
+    this.diagnosticHud?.recordServerPatch(
+      state.tick,
+      selfId ? state.players.get(selfId)?.ackSeq : undefined,
+    );
     state.players.forEach((p, id) => {
       if (id === selfId) return; // self renders from the predictor, not snapshots
       let buf = this.playerBufs.get(id);
@@ -15301,6 +15330,7 @@ export class ArenaScene extends Phaser.Scene {
     self: PlayerState | undefined,
     weapon: WeaponDef | undefined,
     predictTick: boolean,
+    measureRenderCommit = false,
   ): void {
     if (!this.room || !this.predictor) return;
     const beamHeld = cmd.fireHeld && !!weapon?.beam;
@@ -15325,11 +15355,25 @@ export class ArenaScene extends Phaser.Scene {
     this.beamPredictionHeld = beamHeld;
     this.stepBeamPrediction({ ...cmd, fireHeld: beamHeld }, self, weapon);
     if (!predictTick) {
+      this.diagnosticHud?.recordCommand(cmd.seq);
       this.room.send("input", cmd);
       return;
     }
+    let renderBeforeCommitX = Number.NaN;
+    let renderBeforeCommitY = Number.NaN;
+    if (measureRenderCommit && this.diagnosticHud) {
+      const renderBeforeCommit = this.predictor.renderPos(cmd.dx, cmd.dy, TICK_MS / 1000);
+      renderBeforeCommitX = renderBeforeCommit.x;
+      renderBeforeCommitY = renderBeforeCommit.y;
+    }
     this.predictor.tick(cmd);
     const movement = this.predictor.clientMovementReport();
+    if (Number.isFinite(renderBeforeCommitX) && Number.isFinite(renderBeforeCommitY)) {
+      this.diagnosticHud?.recordRenderCommitDivergence(
+        Math.hypot(renderBeforeCommitX - movement.x, renderBeforeCommitY - movement.y),
+      );
+    }
+    this.diagnosticHud?.recordCommand(cmd.seq);
     this.room.send("input", {
       ...cmd,
       clientX: movement.x,
@@ -15368,6 +15412,7 @@ export class ArenaScene extends Phaser.Scene {
       this.inputAccMs = 0;
       elapsedForInput = 0;
       this.predictor.forceResync();
+      this.diagnosticHud?.recordResync();
     }
     const self = this.room.state.players.get(this.room.sessionId);
     const weapon = self ? WEAPONS[self.weapon] : undefined;
@@ -15415,7 +15460,7 @@ export class ArenaScene extends Phaser.Scene {
       this.poundQueued = false;
       this.slideQueued = false;
       this.predictor.noteInputHeartbeat(nextDx, nextDy, this.crouchHeld, slideHeld, fireHeld);
-      this.dispatchNetInput(cmd, self, weapon, true);
+      this.dispatchNetInput(cmd, self, weapon, true, true);
     }
 
     // The fresh sample drives the render preview now and reaches the server as a transport edge. It must
