@@ -9897,7 +9897,12 @@ export class ArenaScene extends Phaser.Scene {
         const recoilDisplacing = Math.hypot(predicted.vx, predicted.vy) > 1e-4;
         const candidate =
           presentationOnlyGunRecoil && recoilDisplacing
-            ? this.predictor.boundLocomotionPresentation(player.x, player.y, predicted.x, predicted.y)
+            ? this.predictor.boundLocomotionPresentation(
+                player.x,
+                player.y,
+                predicted.x,
+                predicted.y,
+              )
             : predicted;
         this.selfPredictionCandidateX = candidate.x;
         this.selfPredictionCandidateY = candidate.y;
@@ -9907,16 +9912,36 @@ export class ArenaScene extends Phaser.Scene {
         const previousWorldY = Number.isFinite(this.selfPresentedWorldY)
           ? this.selfPresentedWorldY
           : player.y;
-        const constrainedRoot = this.predictor.constrainRenderStep(
-          previousWorldX,
-          previousWorldY,
-          candidate.x,
-          candidate.y,
-          this.curDx,
-          this.curDy,
-          predicted.stance === STANCE_NONE && !presentationOnlyGunRecoil,
-          correctionWasSmoothing || this.predictor.isSmoothingCorrection,
-        );
+        // CANON L10 — when nothing is being corrected, the drawn root IS the prediction.
+        //
+        // Owner captures 2026-07-27 showed the presentation chain behaving as a SECOND simulation that
+        // chases prediction through a rate limiter and a debt ledger, and never converges: |root -
+        // predicted| sat at 16-42px for an entire walk, stepped in ~16px (one-tick) jumps, and bled off
+        // afterwards at the 48px/s idle floor for over a second (the post-stop creep). Because the speed
+        // cap is `locomotionSpeed + recoilSpeed`, a gun's recoil channel let the chase EXCEED move speed
+        // -- rendered steps of 3.86px/frame against a correct 2.22 -- which is the lurch.
+        //
+        // Prediction itself is provably clean in every capture: constant 2.22px/frame, boundary
+        // divergence 0.0px, zero SELF corrections. So bypass the chase entirely on the ordinary path and
+        // keep constrain+limit strictly for real correction debt, which is what they exist to grade.
+        // A genuine teleport also draws instantly here, which is the expected behaviour for one.
+        const correctionActive =
+          correctionWasSmoothing ||
+          this.predictor.isSmoothingCorrection ||
+          correctionWasFastStallRecovery ||
+          this.predictor.isFastStallRecovery;
+        const constrainedRoot = correctionActive
+          ? this.predictor.constrainRenderStep(
+              previousWorldX,
+              previousWorldY,
+              candidate.x,
+              candidate.y,
+              this.curDx,
+              this.curDy,
+              predicted.stance === STANCE_NONE && !presentationOnlyGunRecoil,
+              true,
+            )
+          : candidate;
         // Root speed/direction comes from the same frame-sampled preview as root position. The committed
         // B42 report is still the network payload, but it remains zero until the first 50ms boundary and
         // must not throttle L10's frame-immediate local presentation.
@@ -9929,27 +9954,31 @@ export class ArenaScene extends Phaser.Scene {
           this.curDy,
           predicted.stance !== STANCE_NONE || recoilSpeed > 1e-4,
         );
-        const root = limitPresentedRootStep(
-          previousWorldX,
-          previousWorldY,
-          constrainedRoot.x,
-          constrainedRoot.y,
-          // SAME CLOCK AS THE TARGET. `main.ts` runs Phaser with `smoothStep: true`, so the delta that
-          // advanced this frame's prediction target is an AVERAGED timestep, not raw wall time. Feeding
-          // the limiter `wallDeltaMs` compared a distance built from the smoothed clock against a budget
-          // built from the raw one: every frame that ran faster than the running average was clamped and
-          // the remainder retained as debt. That debt then dumped in a single frame at the `inputStopped`
-          // cut below — the owner's "warp a foot in the direction I was moving after I'm done moving",
-          // scaling with how long they had walked. The limiter's real job (clamping genuine authority
-          // corrections that exceed the locomotion lane) is unaffected: those exceed the budget on any clock.
-          frame.deltaMs,
-          // Root correction debt never adds speed to ordinary locomotion. It may retire at a quiet
-          // 48 px/s while idle; once the actor moves, the declared locomotion/recoil lane is the cap.
-          Math.max(48, locomotionSpeed + recoilSpeed),
-          INTERP_SNAP_PLAYER,
-          inputStopped,
-          correctionWasFastStallRecovery || this.predictor.isFastStallRecovery,
-        );
+        // Ordinary locomotion draws prediction directly (see the L10 note above); the rate limiter and
+        // its debt ledger run only while real correction debt is being retired.
+        const root = !correctionActive
+          ? constrainedRoot
+          : limitPresentedRootStep(
+              previousWorldX,
+              previousWorldY,
+              constrainedRoot.x,
+              constrainedRoot.y,
+              // SAME CLOCK AS THE TARGET. `main.ts` runs Phaser with `smoothStep: true`, so the delta that
+              // advanced this frame's prediction target is an AVERAGED timestep, not raw wall time. Feeding
+              // the limiter `wallDeltaMs` compared a distance built from the smoothed clock against a budget
+              // built from the raw one: every frame that ran faster than the running average was clamped and
+              // the remainder retained as debt. That debt then dumped in a single frame at the `inputStopped`
+              // cut below — the owner's "warp a foot in the direction I was moving after I'm done moving",
+              // scaling with how long they had walked. The limiter's real job (clamping genuine authority
+              // corrections that exceed the locomotion lane) is unaffected: those exceed the budget on any clock.
+              frame.deltaMs,
+              // Root correction debt never adds speed to ordinary locomotion. It may retire at a quiet
+              // 48 px/s while idle; once the actor moves, the declared locomotion/recoil lane is the cap.
+              Math.max(48, locomotionSpeed + recoilSpeed),
+              INTERP_SNAP_PLAYER,
+              inputStopped,
+              correctionWasFastStallRecovery || this.predictor.isFastStallRecovery,
+            );
         state.rootX = root.x;
         state.rootY = root.y;
         state.height = predicted.height;
