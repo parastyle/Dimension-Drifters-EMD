@@ -17156,6 +17156,64 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "pierce": 2,
       "muzzleColor": 14719546
     }
+  },
+  "x2-ember-plasma-carbine": {
+    "id": "x2-ember-plasma-carbine",
+    "name": "Ember Plasma Carbine",
+    "expansion": true,
+    "damage": 7,
+    "range": 220,
+    "halfArc": 0.48,
+    "cooldown": 0.32,
+    "displayLength": 142,
+    "swingArc": 1.8,
+    "gripFrac": 0.17,
+    "tags": {
+      "grip": "2H",
+      "size": "M",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "fire",
+      "classPool": "ranged",
+      "family": "plasma-carbine",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "INT"
+      ],
+      "weaponClass": "Special",
+      "subclass": "Special"
+    },
+    "recoil": 29,
+    "weaponUtility": "both",
+    "gripPoints": {
+      "primary": {
+        "x": 0.27,
+        "y": 0.7
+      },
+      "secondary": {
+        "x": 0.64,
+        "y": 0.68,
+        "role": "horizontal-foregrip"
+      }
+    },
+    "twoHanded": true,
+    "gun": {
+      "damage": 7,
+      "projectileSpeed": 850,
+      "range": 570,
+      "fireRate": 0.16,
+      "magazine": 18,
+      "reloadSeconds": 1.8,
+      "bulletKind": "laser",
+      "muzzle": "rapid",
+      "recoil": 0.00075,
+      "projectileArt": "generated",
+      "projectileVisualScale": 1.4,
+      "projectileColor": 14263100,
+      "spread": 0.025,
+      "muzzleColor": 14263100
+    }
   }
 };
 

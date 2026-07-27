@@ -1,6 +1,6 @@
 # V7 Muzzle Derivation Table
 
-Generated from sprite alpha for all 185 active projectile, beam, and authored melee-impact definitions. Coordinates are source-PNG pixels.
+Generated from sprite alpha for all 186 active projectile, beam, and authored melee-impact definitions. Coordinates are source-PNG pixels.
 
 | Weapon | Derived barrel tip | Authored muzzle point(s) | Override |
 | --- | --- | --- | --- |
@@ -55,6 +55,7 @@ Generated from sprite alpha for all 185 active projectile, beam, and authored me
 | `x2-dustdevil-riotgun` (Dustdevil Riotgun) | part-1 (255, 19.9) | part-1 (255, 19.9) | No |
 | `x2-dustline-lever-action` (Dustline Lever-Action) | part-1 (255, 7.7) | part-1 (255, 7.7) | No |
 | `x2-ember-fan` (Ember Fan) | part-1 (254, 147.3) | part-1 (255, 151) | Yes - The cinder shard cone originates at the ember fan's far-right glowing blade edge. |
+| `x2-ember-plasma-carbine` (Ember Plasma Carbine) | part-1 (255, 26.8) | part-1 (255, 26.8) | No |
 | `x2-emberfan-pumpgun` (Emberfan Pumpgun) | part-1 (255, 19.8) | part-1 (255, 19.8) | No |
 | `x2-emberleaf-chapbook` (Emberleaf Chapbook) | part-1 (250, 211.9) | part-1 (330, 201) | Yes - The charged fireball grows at the open chapbook fore-edge; the authoritative projectile releases from that same painted page edge. |
 | `x2-embernail-repeater` (Embernail Repeater) | part-1 (251, 50) | part-1 (251, 50) | No |

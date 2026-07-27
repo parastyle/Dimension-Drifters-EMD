@@ -62,8 +62,8 @@ describe("V7 catalog-wide art-space muzzle law", () => {
     }
 
     // Literal cohort pins ensure new guns cannot silently escape the catalog-wide muzzle law.
-    expect(weaponCount).toBe(170);
-    expect(pointCount).toBeGreaterThanOrEqual(170);
+    expect(weaponCount).toBe(173);
+    expect(pointCount).toBeGreaterThanOrEqual(173);
     expect(failures, failures.join("\n")).toEqual([]);
   });
 
