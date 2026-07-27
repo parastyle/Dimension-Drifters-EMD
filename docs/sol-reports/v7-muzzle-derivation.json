@@ -2921,6 +2921,28 @@
     "barrelMode": "parallel"
   },
   {
+    "id": "x2-recoilless-whisper",
+    "name": "Recoilless Whisper",
+    "sprite": "x2-recoilless-whisper",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 17.7
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 17.7
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
     "id": "x2-reliquary-nailcaster",
     "name": "Reliquary Nailcaster",
     "sprite": "x2-reliquary-nailcaster",
