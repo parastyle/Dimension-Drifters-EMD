@@ -625,6 +625,15 @@ type VastAnswer = "miss" | "jump" | "parry";
 function makeVastagharHarness(answer: VastAnswer = "miss", liveAdds = 0) {
   const base = mockSink({ adds: liveAdds });
   const addCounts: number[] = [];
+  const chargeRects: {
+    x: number;
+    y: number;
+    length: number;
+    halfWidth: number;
+    rot: number;
+    damage: number;
+    knockback: number;
+  }[] = [];
   const answerMode = { value: answer };
   const fill = (out: import("@dd/shared").BossCounterSummary) => {
     out.threatened = 1;
@@ -659,6 +668,15 @@ function makeVastagharHarness(answer: VastAnswer = "miss", liveAdds = 0) {
       _airborne: boolean,
       out: import("@dd/shared").BossCounterSummary,
     ) => fill(out),
+    damageRect: (
+      x: number,
+      y: number,
+      length: number,
+      halfWidth: number,
+      rot: number,
+      damage: number,
+      knockback: number,
+    ) => chargeRects.push({ x, y, length, halfWidth, rot, damage, knockback }),
     spawnAdds: (_kind: string, spots: readonly Vec2[]) => addCounts.push(spots.length),
   }) as import("./BossController.js").VastagharEmitSink;
   const state = new vastShared.VastagharBossState();
@@ -679,7 +697,7 @@ function makeVastagharHarness(answer: VastAnswer = "miss", liveAdds = 0) {
     { id: "p1", x: 1300, y: 1200, alive: true, downTick: 0, recentBossDamage: 0 },
     { id: "p2", x: 1000, y: 1200, alive: true, downTick: 0, recentBossDamage: 0 },
   ];
-  return { runtime, state, root, sink, targets, addCounts, answerMode };
+  return { runtime, state, root, sink, targets, calls: base.calls, addCounts, chargeRects, answerMode };
 }
 
 function stepVastaghar(
@@ -763,6 +781,69 @@ describe("Vastaghar flagship — authored 20 Hz authority", () => {
     expect(jumped.state.mode).toBe(vastShared.VastagharMode.Punish);
     expect(jumped.state.punishEndTick - 64).toBeGreaterThanOrEqual(20);
     expect(jumped.state.stridePips).toBe(1);
+  });
+
+  it("drives Sunder Charge down its lane and applies the authored damage and knockback", () => {
+    expect(vastShared.VastagharActionKind.SunderCharge).toBe(5);
+    expect(vastShared.VASTAGHAR_ENCOUNTER.phaseTwoDeck).toEqual([
+      vastShared.VastagharActionKind.ThreefoldMarch,
+      vastShared.VastagharActionKind.SunderCharge,
+      vastShared.VastagharActionKind.ShedMountain,
+    ]);
+    expect(vastShared.VASTAGHAR_ENCOUNTER.neutralTicks[vastShared.VastagharActionKind.SunderCharge]).toBe(
+      13,
+    );
+    const h = makeVastagharHarness("miss");
+    stepVastaghar(h, 0, 88);
+    h.root.hp -= h.runtime.capIncomingDamage(h.root.hp, 570, "p1", "hammer", 1, 0, 0);
+    let tick = reachVastagharPhase(h, vastShared.VastagharPhase.BreakStride, 89);
+    while (h.state.actionKind !== vastShared.VastagharActionKind.SunderCharge) {
+      tick++;
+      h.runtime.step(0.05, h.root, h.targets, 1, tick, h.sink, tick);
+      if (tick > 1000) throw new Error("Sunder Charge did not start");
+    }
+
+    const startX = h.root.x;
+    const startY = h.root.y;
+    const chargeLane = h.calls.addTelegraph.at(-1);
+    expect(chargeLane?.shape).toBe(vastShared.TgShape.Rect);
+    const laneLength = chargeLane?.a ?? 0;
+    const laneRot = chargeLane?.rot ?? 0;
+    const endX = startX + Math.cos(laneRot) * laneLength;
+    const endY = startY + Math.sin(laneRot) * laneLength;
+    const resolveTick = h.state.actionResolveTick;
+    const activeTicks = h.state.actionActiveEndTick - resolveTick;
+    expect(resolveTick - h.state.actionStartTick).toBe(23);
+    expect(activeTicks).toBe(10);
+    expect(h.state.actionEndTick - h.state.actionActiveEndTick).toBe(25);
+
+    while (tick < resolveTick - 1) {
+      tick++;
+      h.runtime.step(0.05, h.root, h.targets, 1, tick, h.sink, tick);
+    }
+    expect([h.root.x, h.root.y]).toEqual([startX, startY]);
+
+    for (let activeIndex = 1; activeIndex <= activeTicks; activeIndex++) {
+      tick++;
+      expect(tick).toBe(resolveTick + activeIndex - 1);
+      h.runtime.step(0.05, h.root, h.targets, 1, tick, h.sink, tick);
+      const fraction = activeIndex / activeTicks;
+      expect(h.root.x).toBeCloseTo(startX + (endX - startX) * fraction, 5);
+      expect(h.root.y).toBeCloseTo(startY + (endY - startY) * fraction, 5);
+    }
+
+    expect(h.chargeRects).toHaveLength(10);
+    expect(h.chargeRects[0]).toMatchObject({
+      x: startX,
+      y: startY,
+      length: laneLength,
+      halfWidth: 135,
+      rot: laneRot,
+      damage: 2.4,
+      knockback: 72,
+    });
+    expect(h.chargeRects.reduce((sum, hit) => sum + hit.damage, 0)).toBeCloseTo(24, 5);
+    expect(h.chargeRects.reduce((sum, hit) => sum + hit.knockback, 0)).toBe(720);
   });
 
   it("enforces the four-add encounter budget even when the authored wave requests more", () => {

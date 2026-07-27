@@ -2639,6 +2639,10 @@ export class VastagharEncounterRuntime {
       }
       return;
     }
+    if (kind === VastagharActionKind.SunderCharge) {
+      this.startSunderCharge(action, boss, focus, tick, sink);
+      return;
+    }
     if (kind === VastagharActionKind.HeelReap || kind === VastagharActionKind.Worldwheel) {
       this.startSweep(action, boss, tick, sink);
       return;
@@ -2746,6 +2750,50 @@ export class VastagharEncounterRuntime {
     this.telegraphResolved[i] = 0;
   }
 
+  private startSunderCharge(
+    action: VastagharActionDef,
+    boss: EnemyState,
+    focus: VastagharTarget | null,
+    tick: number,
+    sink: VastagharEmitSink,
+  ): void {
+    const targetX = focus?.x ?? boss.x + Math.cos(this.state.aim) * 480;
+    const targetY = focus?.y ?? boss.y + Math.sin(this.state.aim) * 480;
+    const dx = targetX - boss.x;
+    const dy = targetY - boss.y;
+    const rawLength = Math.hypot(dx, dy) || 1;
+    const length = clamp(rawLength, 320, action.outerRange);
+    const rot = Math.atan2(dy, dx);
+    this.stepX[0] = boss.x;
+    this.stepY[0] = boss.y;
+    this.stepX[1] = boss.x + Math.cos(rot) * length;
+    this.stepY[1] = boss.y + Math.sin(rot) * length;
+    this.state.aim = rot;
+    this.state.impactX = this.stepX[1]!;
+    this.state.impactY = this.stepY[1]!;
+    this.telegraphCount = 1;
+    this.telegraphIds[0] = sink.addTelegraph({
+      shape: TgShape.Rect,
+      x: boss.x,
+      y: boss.y,
+      a: length,
+      b: action.halfWidth,
+      rot,
+      danger: TELEGRAPH_DODGE,
+      kindTag: BossTelegraphKindTag.TitanCharge,
+      ownerId: this.ownerId,
+      castSeq: (this.state.actionSeq << 3) + 1,
+    });
+    this.telegraphSettledGeneration[0] = -1;
+    this.telegraphResolved[0] = 0;
+    this.actionResolveTick = (tick + action.windupTicks) >>> 0;
+    this.actionActiveEndTick = (this.actionResolveTick + action.activeTicks) >>> 0;
+    this.actionEndTick = (this.actionActiveEndTick + action.recoveryTicks) >>> 0;
+    this.state.stepCount = 1;
+    this.publishActionTicks();
+    this.publishStep(0, tick, this.actionResolveTick);
+  }
+
   private startSweep(
     action: VastagharActionDef,
     boss: EnemyState,
@@ -2794,7 +2842,9 @@ export class VastagharEncounterRuntime {
   ): void {
     const action = this.currentDef;
     if (!action) return;
-    if (
+    if (this.currentAction === VastagharActionKind.SunderCharge)
+      this.stepSunderCharge(boss, action, depth, tick, sink, broadcastGeneration);
+    else if (
       this.currentAction === VastagharActionKind.HeelReap ||
       this.currentAction === VastagharActionKind.Worldwheel
     ) this.stepSweep(boss, action, depth, tick, sink, broadcastGeneration);
@@ -2892,6 +2942,43 @@ export class VastagharEncounterRuntime {
       const elapsed = (tick - this.actionStartTick) >>> 0;
       const t = Math.min(1, elapsed / Math.max(1, action.windupTicks));
       for (let i = 0; i < this.telegraphCount; i++) sink.setTelegraphProgress(this.telegraphIds[i]!, t);
+    }
+  }
+
+  private stepSunderCharge(
+    boss: EnemyState,
+    action: VastagharActionDef,
+    depth: number,
+    tick: number,
+    sink: VastagharEmitSink,
+    broadcastGeneration: number,
+  ): void {
+    if (!vastagharTickReached(tick, this.actionResolveTick)) {
+      const elapsed = (tick - this.actionStartTick) >>> 0;
+      sink.setTelegraphProgress(this.telegraphIds[0]!, Math.min(1, elapsed / Math.max(1, action.windupTicks)));
+      return;
+    }
+    if (!vastagharTickReached(tick, this.actionActiveEndTick)) {
+      const activeElapsed = Math.min(action.activeTicks, ((tick - this.actionResolveTick) >>> 0) + 1);
+      const frac = activeElapsed / Math.max(1, action.activeTicks);
+      boss.x = clamp(this.stepX[0]! + (this.stepX[1]! - this.stepX[0]!) * frac, 230, ARENA_WIDTH - 230);
+      boss.y = clamp(this.stepY[0]! + (this.stepY[1]! - this.stepY[0]!) * frac, 230, ARENA_HEIGHT - 230);
+      sink.damageRect(
+        this.stepX[0]!,
+        this.stepY[0]!,
+        Math.hypot(this.stepX[1]! - this.stepX[0]!, this.stepY[1]! - this.stepY[0]!),
+        action.halfWidth,
+        this.state.aim,
+        ((action.stepDamage[0] ?? 24) * depthDamageScale(depth)) / Math.max(1, action.activeTicks),
+        (action.stepKnockback[0] ?? 720) / Math.max(1, action.activeTicks),
+      );
+      return;
+    }
+    if (this.telegraphResolved[0] === 0) {
+      this.telegraphResolved[0] = 1;
+      sink.setTelegraphProgress(this.telegraphIds[0]!, 1);
+      this.telegraphSettledGeneration[0] = broadcastGeneration;
+      this.state.actionResult = VastagharActionResult.Resolved;
     }
   }
 
