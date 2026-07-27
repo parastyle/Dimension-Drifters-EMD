@@ -17012,9 +17012,12 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "scaling": [
         "DEX",
         "INT"
-      ]
+      ],
+      "weaponClass": "Special",
+      "subclass": "Special"
     },
     "recoil": 77,
+    "weaponUtility": "both",
     "twoHanded": true,
     "gun": {
       "damage": 15,
@@ -17030,6 +17033,128 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "spread": 0.007,
       "pierce": 3,
       "muzzleColor": 13072946
+    }
+  },
+  "x2-solaris-beam-lance": {
+    "id": "x2-solaris-beam-lance",
+    "name": "Solaris Beam Lance",
+    "expansion": true,
+    "damage": 4,
+    "range": 300,
+    "halfArc": 0.42,
+    "cooldown": 0.85,
+    "displayLength": 184,
+    "swingArc": 1.8,
+    "gripFrac": 0.16,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "beam",
+      "fireMode": "hold",
+      "element": "fire",
+      "classPool": "ranged",
+      "family": "continuous-beam-rifle",
+      "rangeBand": "long",
+      "scaling": [
+        "DEX",
+        "INT"
+      ],
+      "weaponClass": "Special",
+      "subclass": "Special"
+    },
+    "recoil": 24,
+    "weaponUtility": "both",
+    "gripPoints": {
+      "primary": {
+        "x": 0.27,
+        "y": 0.72
+      },
+      "secondary": {
+        "x": 0.62,
+        "y": 0.68,
+        "role": "under-barrel"
+      }
+    },
+    "description": "A flagship continuous beam rifle whose optically matched lens stack holds a narrow solar column until its monolithic receiver heat sink reaches the issue limit.",
+    "twoHanded": true,
+    "beam": {
+      "damagePerSecond": 40,
+      "tickRate": 0.1,
+      "width": 12,
+      "range": 620,
+      "chargeSeconds": 0.85,
+      "sweepLagSeconds": 0.12,
+      "overheat": {
+        "maxChannelSeconds": 1.25,
+        "heatPerSecond": 0.6,
+        "coolPerSecond": 0.35,
+        "ignitionHeat": 0.25,
+        "lockSeconds": 1.5,
+        "restartHeat": 0.35
+      },
+      "movement": {
+        "chargeMul": 0.55,
+        "channelMul": 0.35
+      }
+    }
+  },
+  "x2-prism-scatter-emitter": {
+    "id": "x2-prism-scatter-emitter",
+    "name": "Prism Scatter Emitter",
+    "expansion": true,
+    "damage": 6,
+    "range": 118,
+    "halfArc": 0.58,
+    "cooldown": 0.58,
+    "displayLength": 132,
+    "swingArc": 1.8,
+    "gripFrac": 0.17,
+    "tags": {
+      "grip": "2H",
+      "size": "M",
+      "delivery": "projectile",
+      "fireMode": "semi-auto",
+      "element": "arcane",
+      "classPool": "ranged",
+      "family": "energy-shotgun",
+      "rangeBand": "close",
+      "scaling": [
+        "INT",
+        "STR"
+      ],
+      "weaponClass": "Special",
+      "subclass": "Special"
+    },
+    "recoil": 143,
+    "weaponUtility": "both",
+    "gripPoints": {
+      "primary": {
+        "x": 0.28,
+        "y": 0.7
+      },
+      "secondary": {
+        "x": 0.62,
+        "y": 0.67,
+        "role": "horizontal-foregrip"
+      }
+    },
+    "description": "An immaculate breaching energy shotgun whose precisely angled splitter prisms turn each charged discharge into a fast penetrating fan.",
+    "twoHanded": true,
+    "gun": {
+      "damage": 5,
+      "projectileSpeed": 1150,
+      "range": 420,
+      "fireRate": 0.58,
+      "magazine": 5,
+      "reloadSeconds": 1.9,
+      "bulletKind": "laser",
+      "muzzle": "spark",
+      "recoil": 0.0012,
+      "projectileArt": "generated",
+      "pellets": 6,
+      "spread": 0.34,
+      "pierce": 2,
+      "muzzleColor": 14719546
     }
   }
 };
