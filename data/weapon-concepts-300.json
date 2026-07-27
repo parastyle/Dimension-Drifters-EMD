@@ -1,7 +1,7 @@
 {
   "generated": "2026-06-17",
   "source": "design-300-weapons workflow (15 agents)",
-  "count": 362,
+  "count": 363,
   "byType": {
     "melee": 135,
     "ranged": 129,
@@ -20873,6 +20873,57 @@
         "muzzle": "rapid",
         "muzzleColor": 15053371,
         "recoil": 0.00055
+      }
+    },
+    {
+      "id": "x2-slugthrower-rail-9",
+      "name": "Slugthrower Rail-9",
+      "description": "An immaculate prototype service sidearm that drives physical slugs through a conventional chamber while its paired top conductors add velocity and penetration.",
+      "type": "ranged",
+      "family": "rail-pistol",
+      "theme": "near-black institutional ballistic accelerator sidearm with paired bright conductors and amber ceramic rail insulators",
+      "element": "physical",
+      "finish": "pristine",
+      "grip": "1H",
+      "handlingTags": [
+        "pistol"
+      ],
+      "size": "S",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "INT"
+      ],
+      "palettePrimary": "#171B20",
+      "paletteAccent": "#D28A32",
+      "artPrompt": "Weapon-only in-world sprite on a perfectly flat fully opaque #00ff00 chroma field: ONE near-future prototype ballistic handgun that fires physical ammunition, with a detachable box magazine seated inside the angled grip, a visible trigger and guard, a conventional chamber and short physical barrel aligned above the grip, and one round open muzzle pointing RIGHT. A pair of exposed bright conductor rails run perfectly parallel along the entire top of the chunky slab slide. A squared shrouded capacitor block sits immediately above the rear of the grip, joined to both rails by small rigid amber ceramic insulator collars; all wiring is routed internally with no loose cable. Thin rigid heat fins rib the lower frame beneath the slide. Mount one small boxy laser/light combination unit tightly beneath the barrel with one visible dark glass lens; it is silhouette detail only, with no beam, glow, bloom, light cone, or spill. Institutional prototype issue quality: matched near-black charcoal finish, crisp rail machining, tight panel fit, sealed capacitor shroud, aligned fins, precise tolerances, every fastener torqued and true, expensive and professionally maintained; at most a trace of honest carbon at the muzzle and fin vents. No camouflage, dirt, rust, scratches, tape, repairs, salvage, mismatched parts, improvised hardware, exposed wire, or poverty signals. DARK house treatment: near-black charcoal dominates the entire sidearm, narrow steel highlights catch TOP EDGES ONLY, and the sides and underside remain in deep shadow; never evenly lit and never mid-grey overall. The amber ceramic rail insulators are the single warm accent. Use a bold heavy black outline around the complete silhouette AND equally heavy crisp internal black ink lines dividing every slide panel, capacitor plate, frame housing, heat fin, rail seat, grip plane, magazine seam, trigger guard, and combo-unit panel. Slightly exaggerate the thick slide, squared capacitor block, twin rails, thin repeated fins, grip mass, and boxy combo unit while keeping the chamber-to-magazine-to-barrel mechanism credible. Use only 4-6 flat cel colours plus black ink, hard flat planes, no gradients, airbrushing, soft shading, glossy studio light, photorealism, product photography, catalogue rendering, or diagram treatment. ONE complete connected gun in strict flat orthographic full side-profile, fully visible with generous padding, faces RIGHT: muzzle RIGHT, grip LEFT. No character, hands, second weapon, loose ammunition, projectile, muzzle flash, smoke, emitted light, VFX, ground, shadow, reflection, scenery, text, logo, serial, maker mark, chain, tassel, rope, sling, strap, or dangling part.",
+      "cardartAction": "held level as one physical copper-jacketed slug snaps rightward, the paired conductors staying dark while a compact amber-white muzzle flash marks the shot",
+      "fireMode": "semi-auto",
+      "behavior": {
+        "kind": "gun",
+        "damage": 10,
+        "projectileSpeed": 1800,
+        "range": 680,
+        "fireRate": 0.38,
+        "pellets": 1,
+        "spread": 0.018,
+        "pierce": 2,
+        "magazine": 9,
+        "reloadSeconds": 1.55,
+        "bulletKind": "slug",
+        "projectileArt": "bullet",
+        "muzzle": "punch",
+        "muzzleColor": 16750371,
+        "recoil": 0.0014
+      },
+      "stats": {
+        "damage": 10,
+        "range": 180,
+        "halfArc": 0.46,
+        "cooldown": 0.38,
+        "displayLength": 96,
+        "swingArc": 1.8,
+        "gripFrac": 0.19
       }
     }
   ]

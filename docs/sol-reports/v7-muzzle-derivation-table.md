@@ -147,6 +147,7 @@ Generated from sprite alpha for all 177 active projectile, beam, and authored me
 | `x2-sidewinder-spitfire` (Sidewinder Spitfire) | part-1 (253, 46.9) | part-1 (253, 42)<br>part-1 (253, 52) | Yes - The organic muzzle is one joined alpha mass; the owner-ordered twin parallel venom lanes need two explicit centres spanning its open mouth. |
 | `x2-sidewinder-twin-rifles` (Sidewinder Twin-Rifles) | part-1 (255, 13.8)<br>part-2 (255, 13.8) | part-1 (255, 13.8)<br>part-2 (255, 13.8) | No |
 | `x2-slughammer-breachgun` (Slughammer Breachgun) | part-1 (255, 27.4) | part-1 (255, 27.4) | No |
+| `x2-slugthrower-rail-9` (Slugthrower Rail-9) | part-1 (255, 22.5) | part-1 (255, 22.5) | No |
 | `x2-smoldering-eye-of-perdition` (Smoldering Eye of Perdition) | part-1 (254, 68.5) | part-1 (254, 68.5) | No |
 | `x2-snakebite-dart-slinger` (Snakebite Dart-Slinger) | part-1 (254, 26.5) | part-1 (254, 26.5) | No |
 | `x2-spitfire-censer-wand` (Spitfire Censer-Wand) | part-1 (255, 27.4) | part-1 (255, 27.4) | No |
