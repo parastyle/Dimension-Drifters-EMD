@@ -131,7 +131,11 @@ const HEAVY_SCATTER = new Set([
   "x2-scattershell-duster",
 ]);
 
-const ROTARY_HEAVY = new Set(["x2-hellbore-gatling", "x2-ironhail-pepperbox"]);
+const ROTARY_HEAVY = new Set([
+  "x2-cyclone-micro-gat",
+  "x2-hellbore-gatling",
+  "x2-ironhail-pepperbox",
+]);
 
 function classifyExoticRanged(weapon: WeaponDef): GunFireFamily {
   const fiction = `${weapon.id} ${weapon.name}`.toLowerCase();

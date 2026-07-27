@@ -1,7 +1,7 @@
 {
   "generated": "2026-06-17",
   "source": "design-300-weapons workflow (15 agents)",
-  "count": 363,
+  "count": 364,
   "byType": {
     "melee": 135,
     "ranged": 129,
@@ -20924,6 +20924,63 @@
         "displayLength": 96,
         "swingArc": 1.8,
         "gripFrac": 0.19
+      }
+    },
+    {
+      "id": "x2-cyclone-micro-gat",
+      "name": "Cyclone Micro-Gat",
+      "description": "A compact issue rotary weapon that turns a precisely aligned six-barrel cluster and rigid top feed into short, disciplined torrents of physical ammunition.",
+      "type": "ranged",
+      "family": "heavy-ordnance",
+      "theme": "near-future issue-grade compact rotary gun with form-following red tiger furniture and a machined brass feed throat",
+      "element": "physical",
+      "finish": "pristine",
+      "grip": "2H",
+      "gripPoints": {
+        "primary": {
+          "x": 0.25,
+          "y": 0.68
+        },
+        "secondary": {
+          "x": 0.68,
+          "y": 0.74,
+          "role": "vertical-foregrip"
+        }
+      },
+      "size": "L",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "STR"
+      ],
+      "palettePrimary": "#15191D",
+      "paletteAccent": "#C58A3A",
+      "artPrompt": "Weapon-only in-world sprite on a perfectly flat solid #00ff00 chroma-key field: exactly one handheld ballistic rotary gun in strict flat orthographic full side-profile, facing RIGHT. Build it around a SHORT cluster of exactly six stubby parallel bare-metal barrels, a compact drum-shaped sealed drive housing directly behind them, a precisely machined warm-brass feed throat rising into one rigid boxy ammunition magazine seated on top, a sturdy vertical foregrip below, a compact rear trigger grip, a short rigid shoulder stock, one small low-profile bare-metal optic, and one small boxy bare-metal laser/light combination unit mounted beneath the front with a visible dark glass lens. The unit is switched off and is silhouette detail only: no beam, glow, light cone, rays, or bloom. Immaculate expensive issue-grade construction with the barrel cluster indexed true, matched near-black charcoal finish, exact machined tolerances, aligned fasteners, sealed housings, and every assembly torqued true; only faint honest carbon at the barrel mouths. Paint form-following RED TIGER camouflage only on the stock, trigger grip, and vertical foregrip furniture; the stripes wrap each form and never float. Leave all six barrels, optic, magazine hardware, and laser/light unit bare dark metal. DARK hand-inked game-prop rendering: deep near-black base with spot-black undersides, sparse narrow highlights on top-facing edges only, bold heavy black ink around the entire silhouette, and equally heavy crisp internal black ink dividing every barrel, panel, plate, housing, rail, and seam. Slightly exaggerated chunky proportions, about 4-6 broad flat opaque cel colours plus black, no gradients or airbrushing. One complete connected mechanically coherent weapon, fully visible with generous padding, physical ammunition only, a plausible near-future prototype a real engineer could build. No character, hands, second weapon, detached parts, loose ammunition, text, letters, numbers, logos, serials, maker marks, symbols, chains, tassels, ropes, slings, straps, dangling elements, muzzle flash, smoke, projectile, emitted light, floor, cast shadow, reflection, scenery, photorealism, product photography, catalogue rendering, glossy studio lighting, junk, tape, repairs, salvage, mismatched plates, rust, dents, or neglect.",
+      "cardartAction": "braced into a short controlled torrent as the indexed barrel cluster spins and tight amber tracer beats drive right",
+      "behavior": {
+        "kind": "gun",
+        "damage": 3,
+        "projectileSpeed": 960,
+        "range": 570,
+        "fireRate": 0.065,
+        "spread": 0.1,
+        "pierce": 1,
+        "magazine": 48,
+        "reloadSeconds": 1.75,
+        "bulletKind": "tracer",
+        "projectileArt": "bullet",
+        "muzzle": "rapid",
+        "muzzleColor": 12945978,
+        "recoil": 0.0007
+      },
+      "stats": {
+        "damage": 4,
+        "range": 230,
+        "halfArc": 0.58,
+        "cooldown": 0.36,
+        "displayLength": 152,
+        "swingArc": 1.2,
+        "gripFrac": 0.15
       }
     }
   ]
