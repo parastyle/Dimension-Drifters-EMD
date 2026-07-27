@@ -5,11 +5,11 @@ import { pathToFileURL } from "node:url";
 import {
   type ArenaMap,
   type ArenaState,
-  BeamPhase,
   BELT_Y0,
-  beltBounds,
+  BeamPhase,
   type BeltLevel,
   beamDescriptorFor,
+  beltBounds,
   ChestState,
   CORPORATE_ELEVATOR_PHASE,
   corporateGridFloorForBelt,
@@ -206,6 +206,7 @@ interface TickInput {
   action?: string;
   beforeSend?: () => void;
   predictDiscreteRecoil?: boolean;
+  subTickSamples?: Array<{ dx: number; dy: number; dtMs: number }>;
 }
 
 interface CapturedApplication {
@@ -579,6 +580,9 @@ class ScenarioProbe {
   private motionDurationMs = 0;
   private localAttackCooldown = 0;
   private readonly motionSourceEventStart: number;
+  private previousSubTickRender?: { x: number; y: number };
+  private maxSubTickRenderStepPx = 0;
+  private maxSubTickRenderCommitAliasPx = 0;
 
   constructor(
     readonly id: string,
@@ -750,6 +754,23 @@ class ScenarioProbe {
     options.beforeSend?.();
     syncPredictorContext(this.predictor, room);
     this.localAttackCooldown = Math.max(0, this.localAttackCooldown - TICK_MS / 1000);
+    if (options.subTickSamples && options.subTickSamples.length > 0) {
+      // Reconciliation is graded separately by the correction counters below. Start the frame-rate path
+      // measurement from the reconciled root so it measures only input sampling and the commit boundary.
+      this.previousSubTickRender = this.predictor.renderPos(dx, dy, 0);
+      for (const sample of options.subTickSamples) {
+        this.predictor.sampleInputFrame(sample.dx, sample.dy, sample.dtMs / 1_000);
+        const rendered = this.predictor.renderPos(sample.dx, sample.dy, 0);
+        this.maxSubTickRenderStepPx = Math.max(
+          this.maxSubTickRenderStepPx,
+          Math.hypot(
+            rendered.x - this.previousSubTickRender.x,
+            rendered.y - this.previousSubTickRender.y,
+          ),
+        );
+        this.previousSubTickRender = rendered;
+      }
+    }
 
     const priorTick = Number(room.state.tick);
     const cmd: PredCmd & {
@@ -766,7 +787,18 @@ class ScenarioProbe {
       targetX: requiredPlayer(room).x + aimX * 900,
       targetY: requiredPlayer(room).y + aimY * 900,
     };
+    const renderedAtCommit = options.subTickSamples?.length
+      ? this.predictor.renderPos(dx, dy, 0)
+      : undefined;
     this.predictor.tick(cmd);
+    if (renderedAtCommit) {
+      const committed = this.predictor.renderPos(dx, dy, 0);
+      this.maxSubTickRenderCommitAliasPx = Math.max(
+        this.maxSubTickRenderCommitAliasPx,
+        Math.hypot(committed.x - renderedAtCommit.x, committed.y - renderedAtCommit.y),
+      );
+      this.previousSubTickRender = committed;
+    }
     if (options.predictDiscreteRecoil && this.localAttackCooldown <= 0) {
       const weapon = WEAPONS[requiredPlayer(room).weapon];
       const recoil = weapon?.gun ? (weapon.recoil ?? 0) : 0;
@@ -811,6 +843,16 @@ class ScenarioProbe {
     for (const snapshot of snapshots) frame = this.capture(snapshot, captureInput);
     if (!frame) throw new Error(`${this.id}: no server tick captured`);
     return frame;
+  }
+
+  subTickRenderStats(): {
+    maxStepPx: number;
+    maxRenderCommitAliasPx: number;
+  } {
+    return {
+      maxStepPx: this.maxSubTickRenderStepPx,
+      maxRenderCommitAliasPx: this.maxSubTickRenderCommitAliasPx,
+    };
   }
 
   finish(assertions: Record<string, boolean>): ScenarioResult {
@@ -1140,6 +1182,58 @@ async function runRapidFlipAttack(instrumented: InstrumentedRoom): Promise<Scena
   result.assertions.projectilesFollowCommandedAim = directionSamples.every(
     (sample) => sample.dot > 0.999999,
   );
+  return result;
+}
+
+async function runFasterThanTickInputAlias(
+  instrumented: InstrumentedRoom,
+): Promise<ScenarioResult> {
+  // B83 owner repro: sample a WASD rotation every 16/16/18ms, three direction changes inside each
+  // 50ms heartbeat. This intentionally does not share the tick-aligned cadence of rapid-flip-attack.
+  await normalizeArena(instrumented);
+  const probe = createProbe(
+    instrumented,
+    "faster-than-tick-input-alias",
+    "WASD flips every 16-18ms",
+    "owner-repro",
+    { sampleDurationsMs: [16, 16, 18], renderedStepThresholdPx: 5.761 },
+  );
+  const directions = [
+    { dx: 1, dy: 0 },
+    { dx: 0, dy: 1 },
+    { dx: -1, dy: 0 },
+    { dx: 0, dy: -1 },
+  ] as const;
+  let directionIndex = 0;
+  for (let step = 0; step < 40; step++) {
+    const subTickSamples = [16, 16, 18].map((dtMs) => {
+      const direction = directions[directionIndex % directions.length] as {
+        dx: number;
+        dy: number;
+      };
+      directionIndex++;
+      return { ...direction, dtMs };
+    });
+    const finalDirection = subTickSamples.at(-1) as {
+      dx: number;
+      dy: number;
+      dtMs: number;
+    };
+    await probe.tick({
+      dx: finalDirection.dx,
+      dy: finalDirection.dy,
+      action: "faster-than-tick-wasd",
+      subTickSamples,
+    });
+  }
+  const renderStats = probe.subTickRenderStats();
+  const result = probe.finish({ completed: true });
+  result.metadata.maxRenderedSubTickStepPx = renderStats.maxStepPx;
+  result.metadata.maxRenderCommitAliasPx = renderStats.maxRenderCommitAliasPx;
+  result.assertions.zeroCorrections = result.summary.nonzeroCorrections === 0;
+  result.assertions.zeroSilent = result.summary.correctionRequests === 0;
+  result.assertions.renderedPathContinuous = renderStats.maxStepPx <= 5.761;
+  result.assertions.renderAndCommitAgree = renderStats.maxRenderCommitAliasPx <= 1e-8;
   return result;
 }
 
@@ -1763,6 +1857,7 @@ try {
   const runStandingMatrix = async (instrumented: InstrumentedRoom): Promise<void> => {
     await run(() => runWalkStop(instrumented));
     await run(() => runRapidFlipAttack(instrumented));
+    await run(() => runFasterThanTickInputAlias(instrumented));
     await run(() => runWalkSmoothness(instrumented));
     await run(() => runMeleeAttackMoveStop(instrumented));
     for (const representative of gunRepresentatives)
@@ -1846,11 +1941,11 @@ try {
     topdown: results.filter((result) => result.metadata.mode === "topdown").length,
     belt: results.filter((result) => result.metadata.mode === "belt").length,
   };
-  // Twelve fixed cases plus every declared parry, combo-wrap, gun-family, and beam representative form
+  // Thirteen fixed cases plus every declared parry, combo-wrap, gun-family, and beam representative form
   // each standing matrix. Derive every catalog-sized lane so new mechanisms expand coverage without
   // making a complete zero-correction run fail its own count gate.
   const expectedTopdownScenarios =
-    12 +
+    13 +
     parryDirections.length +
     wrapIds.length +
     gunRepresentatives.length +

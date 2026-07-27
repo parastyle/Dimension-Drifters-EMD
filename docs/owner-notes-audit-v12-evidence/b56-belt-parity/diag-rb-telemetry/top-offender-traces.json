@@ -974,7 +974,7 @@
       },
       {
         "index": 25,
-        "tick": 66,
+        "tick": 65,
         "elapsedMs": 1250,
         "action": "rapid-flip",
         "input": {
@@ -987,8 +987,8 @@
           "fireHeld": false
         },
         "authority": {
-          "tick": 66,
-          "x": 2088,
+          "tick": 65,
+          "x": 2168,
           "y": 2440,
           "mvx": -320,
           "mvy": 0,
@@ -1019,7 +1019,7 @@
           "ultPhase": 0
         },
         "delta": {
-          "positionPx": 32,
+          "positionPx": 16,
           "movementEpoch": 0,
           "correctionSeq": 0,
           "teleportSeq": 0
@@ -1042,15 +1042,15 @@
           "errorAfterDecayPx": 0,
           "remainingAfterDecayMs": 0,
           "renderedBefore": {
-            "x": 2104,
+            "x": 2168,
             "y": 2440
           },
           "renderedAfterReconcile": {
-            "x": 2088,
+            "x": 2168,
             "y": 2440
           },
           "renderedAfterDecay": {
-            "x": 2088,
+            "x": 2168,
             "y": 2440
           }
         }
@@ -1071,11 +1071,11 @@
         },
         "authority": {
           "tick": 67,
-          "x": 2104,
+          "x": 2196.75,
           "y": 2440,
           "mvx": 320,
           "mvy": 0,
-          "vx": -65,
+          "vx": -41.44583,
           "vy": 0,
           "height": 0,
           "vh": 0,
@@ -1102,7 +1102,7 @@
           "ultPhase": 0
         },
         "delta": {
-          "positionPx": 16,
+          "positionPx": 28.75,
           "movementEpoch": 1,
           "correctionSeq": 0,
           "teleportSeq": 0
@@ -1127,15 +1127,15 @@
           "errorAfterDecayPx": 0,
           "remainingAfterDecayMs": 0,
           "renderedBefore": {
-            "x": 2104,
+            "x": 2184,
             "y": 2440
           },
           "renderedAfterReconcile": {
-            "x": 2104,
+            "x": 2196.75,
             "y": 2440
           },
           "renderedAfterDecay": {
-            "x": 2104,
+            "x": 2196.75,
             "y": 2440
           }
         }
@@ -1156,11 +1156,11 @@
         },
         "authority": {
           "tick": 68,
-          "x": 2084.75,
+          "x": 2178.677709,
           "y": 2440,
           "mvx": -320,
           "mvy": 0,
-          "vx": -41.44583,
+          "vx": -26.427028,
           "vy": 0,
           "height": 0,
           "vh": 0,
@@ -1187,7 +1187,7 @@
           "ultPhase": 0
         },
         "delta": {
-          "positionPx": 19.25,
+          "positionPx": 18.072291,
           "movementEpoch": 0,
           "correctionSeq": 0,
           "teleportSeq": 0
@@ -1211,15 +1211,15 @@
           "errorAfterDecayPx": 0,
           "remainingAfterDecayMs": 0,
           "renderedBefore": {
-            "x": 2084.75,
+            "x": 2178.677709,
             "y": 2440
           },
           "renderedAfterReconcile": {
-            "x": 2084.75,
+            "x": 2178.677709,
             "y": 2440
           },
           "renderedAfterDecay": {
-            "x": 2084.75,
+            "x": 2178.677709,
             "y": 2440
           }
         }
@@ -1240,7 +1240,7 @@
         },
         "authority": {
           "tick": 82,
-          "x": 2047.634057,
+          "x": 2239.634057,
           "y": 2440,
           "mvx": 320,
           "mvy": 0,
@@ -1271,7 +1271,7 @@
           "ultPhase": 0
         },
         "delta": {
-          "positionPx": 16,
+          "positionPx": 32,
           "movementEpoch": 0,
           "correctionSeq": 0,
           "teleportSeq": 0
@@ -1294,15 +1294,15 @@
           "errorAfterDecayPx": 0,
           "remainingAfterDecayMs": 0,
           "renderedBefore": {
-            "x": 2047.634057,
+            "x": 2223.634057,
             "y": 2440
           },
           "renderedAfterReconcile": {
-            "x": 2047.634057,
+            "x": 2239.634057,
             "y": 2440
           },
           "renderedAfterDecay": {
-            "x": 2047.634057,
+            "x": 2239.634057,
             "y": 2440
           }
         }
@@ -1323,7 +1323,7 @@
         },
         "authority": {
           "tick": 83,
-          "x": 2031.634057,
+          "x": 2223.634057,
           "y": 2440,
           "mvx": -320,
           "mvy": 0,
@@ -1379,15 +1379,15 @@
           "errorAfterDecayPx": 0,
           "remainingAfterDecayMs": 0,
           "renderedBefore": {
-            "x": 2031.634057,
+            "x": 2223.634057,
             "y": 2440
           },
           "renderedAfterReconcile": {
-            "x": 2031.634057,
+            "x": 2223.634057,
             "y": 2440
           },
           "renderedAfterDecay": {
-            "x": 2031.634057,
+            "x": 2223.634057,
             "y": 2440
           }
         }
@@ -1408,7 +1408,7 @@
         },
         "authority": {
           "tick": 84,
-          "x": 2050.884057,
+          "x": 2242.884057,
           "y": 2440,
           "mvx": 320,
           "mvy": 0,
@@ -1463,15 +1463,15 @@
           "errorAfterDecayPx": 0,
           "remainingAfterDecayMs": 0,
           "renderedBefore": {
-            "x": 2050.884057,
+            "x": 2242.884057,
             "y": 2440
           },
           "renderedAfterReconcile": {
-            "x": 2050.884057,
+            "x": 2242.884057,
             "y": 2440
           },
           "renderedAfterDecay": {
-            "x": 2050.884057,
+            "x": 2242.884057,
             "y": 2440
           }
         }
@@ -1492,7 +1492,7 @@
         },
         "authority": {
           "tick": 98,
-          "x": 1992,
+          "x": 2280,
           "y": 2440,
           "mvx": -320,
           "mvy": 0,
@@ -1546,15 +1546,15 @@
           "errorAfterDecayPx": 0,
           "remainingAfterDecayMs": 0,
           "renderedBefore": {
-            "x": 1992,
+            "x": 2280,
             "y": 2440
           },
           "renderedAfterReconcile": {
-            "x": 1992,
+            "x": 2280,
             "y": 2440
           },
           "renderedAfterDecay": {
-            "x": 1992,
+            "x": 2280,
             "y": 2440
           }
         }
@@ -1575,7 +1575,7 @@
         },
         "authority": {
           "tick": 99,
-          "x": 2008,
+          "x": 2296,
           "y": 2440,
           "mvx": 320,
           "mvy": 0,
@@ -1631,22 +1631,22 @@
           "errorAfterDecayPx": 0,
           "remainingAfterDecayMs": 0,
           "renderedBefore": {
-            "x": 2008,
+            "x": 2296,
             "y": 2440
           },
           "renderedAfterReconcile": {
-            "x": 2008,
+            "x": 2296,
             "y": 2440
           },
           "renderedAfterDecay": {
-            "x": 2008,
+            "x": 2296,
             "y": 2440
           }
         }
       },
       {
         "index": 53,
-        "tick": 101,
+        "tick": 100,
         "elapsedMs": 2650,
         "action": "rapid-flip",
         "input": {
@@ -1659,12 +1659,12 @@
           "fireHeld": false
         },
         "authority": {
-          "tick": 101,
-          "x": 1970.677709,
+          "tick": 100,
+          "x": 2276.75,
           "y": 2440,
           "mvx": -320,
           "mvy": 0,
-          "vx": -26.427028,
+          "vx": -41.44583,
           "vy": 0,
           "height": 0,
           "vh": 0,
@@ -1691,7 +1691,7 @@
           "ultPhase": 0
         },
         "delta": {
-          "positionPx": 37.322291,
+          "positionPx": 19.25,
           "movementEpoch": 0,
           "correctionSeq": 0,
           "teleportSeq": 0
@@ -1715,15 +1715,15 @@
           "errorAfterDecayPx": 0,
           "remainingAfterDecayMs": 0,
           "renderedBefore": {
-            "x": 1988.75,
+            "x": 2276.75,
             "y": 2440
           },
           "renderedAfterReconcile": {
-            "x": 1970.677709,
+            "x": 2276.75,
             "y": 2440
           },
           "renderedAfterDecay": {
-            "x": 1970.677709,
+            "x": 2276.75,
             "y": 2440
           }
         }
@@ -1923,7 +1923,7 @@
       },
       {
         "index": 12,
-        "tick": 50,
+        "tick": 49,
         "elapsedMs": 600,
         "action": "rapid-flip",
         "input": {
@@ -1936,8 +1936,8 @@
           "fireHeld": false
         },
         "authority": {
-          "tick": 50,
-          "x": 2271.634057,
+          "tick": 49,
+          "x": 2191.634057,
           "y": 1500,
           "mvx": 320,
           "mvy": 0,
@@ -1968,7 +1968,7 @@
           "ultPhase": 0
         },
         "delta": {
-          "positionPx": 32,
+          "positionPx": 16,
           "movementEpoch": 0,
           "correctionSeq": 0,
           "teleportSeq": 0
@@ -1991,15 +1991,15 @@
           "errorAfterDecayPx": 0,
           "remainingAfterDecayMs": 0,
           "renderedBefore": {
-            "x": 2255.634057,
+            "x": 2191.634057,
             "y": 1500
           },
           "renderedAfterReconcile": {
-            "x": 2271.634057,
+            "x": 2191.634057,
             "y": 1500
           },
           "renderedAfterDecay": {
-            "x": 2271.634057,
+            "x": 2191.634057,
             "y": 1500
           }
         }
@@ -2020,11 +2020,11 @@
         },
         "authority": {
           "tick": 51,
-          "x": 2255.634057,
+          "x": 2162.884057,
           "y": 1500,
           "mvx": -320,
           "mvy": 0,
-          "vx": 65,
+          "vx": 41.44583,
           "vy": 0,
           "height": 0,
           "vh": 0,
@@ -2051,7 +2051,7 @@
           "ultPhase": 0
         },
         "delta": {
-          "positionPx": 16,
+          "positionPx": 28.75,
           "movementEpoch": 1,
           "correctionSeq": 0,
           "teleportSeq": 0
@@ -2076,15 +2076,15 @@
           "errorAfterDecayPx": 0,
           "remainingAfterDecayMs": 0,
           "renderedBefore": {
-            "x": 2255.634057,
+            "x": 2175.634057,
             "y": 1500
           },
           "renderedAfterReconcile": {
-            "x": 2255.634057,
+            "x": 2162.884057,
             "y": 1500
           },
           "renderedAfterDecay": {
-            "x": 2255.634057,
+            "x": 2162.884057,
             "y": 1500
           }
         }
@@ -2105,11 +2105,11 @@
         },
         "authority": {
           "tick": 52,
-          "x": 2274.884057,
+          "x": 2180.956349,
           "y": 1500,
           "mvx": 320,
           "mvy": 0,
-          "vx": 41.44583,
+          "vx": 26.427028,
           "vy": 0,
           "height": 0,
           "vh": 0,
@@ -2136,7 +2136,7 @@
           "ultPhase": 0
         },
         "delta": {
-          "positionPx": 19.25,
+          "positionPx": 18.072291,
           "movementEpoch": 0,
           "correctionSeq": 0,
           "teleportSeq": 0
@@ -2160,15 +2160,15 @@
           "errorAfterDecayPx": 0,
           "remainingAfterDecayMs": 0,
           "renderedBefore": {
-            "x": 2274.884057,
+            "x": 2180.956349,
             "y": 1500
           },
           "renderedAfterReconcile": {
-            "x": 2274.884057,
+            "x": 2180.956349,
             "y": 1500
           },
           "renderedAfterDecay": {
-            "x": 2274.884057,
+            "x": 2180.956349,
             "y": 1500
           }
         }
@@ -2189,7 +2189,7 @@
         },
         "authority": {
           "tick": 66,
-          "x": 2312,
+          "x": 2152,
           "y": 1500,
           "mvx": -320,
           "mvy": 0,
@@ -2220,7 +2220,7 @@
           "ultPhase": 0
         },
         "delta": {
-          "positionPx": 16,
+          "positionPx": 32,
           "movementEpoch": 0,
           "correctionSeq": 0,
           "teleportSeq": 0
@@ -2243,15 +2243,15 @@
           "errorAfterDecayPx": 0,
           "remainingAfterDecayMs": 0,
           "renderedBefore": {
-            "x": 2312,
+            "x": 2168,
             "y": 1500
           },
           "renderedAfterReconcile": {
-            "x": 2312,
+            "x": 2152,
             "y": 1500
           },
           "renderedAfterDecay": {
-            "x": 2312,
+            "x": 2152,
             "y": 1500
           }
         }
@@ -2272,7 +2272,7 @@
         },
         "authority": {
           "tick": 67,
-          "x": 2328,
+          "x": 2168,
           "y": 1500,
           "mvx": 320,
           "mvy": 0,
@@ -2328,15 +2328,15 @@
           "errorAfterDecayPx": 0,
           "remainingAfterDecayMs": 0,
           "renderedBefore": {
-            "x": 2328,
+            "x": 2168,
             "y": 1500
           },
           "renderedAfterReconcile": {
-            "x": 2328,
+            "x": 2168,
             "y": 1500
           },
           "renderedAfterDecay": {
-            "x": 2328,
+            "x": 2168,
             "y": 1500
           }
         }
@@ -2357,7 +2357,7 @@
         },
         "authority": {
           "tick": 68,
-          "x": 2308.75,
+          "x": 2148.75,
           "y": 1500,
           "mvx": -320,
           "mvy": 0,
@@ -2412,15 +2412,15 @@
           "errorAfterDecayPx": 0,
           "remainingAfterDecayMs": 0,
           "renderedBefore": {
-            "x": 2308.75,
+            "x": 2148.75,
             "y": 1500
           },
           "renderedAfterReconcile": {
-            "x": 2308.75,
+            "x": 2148.75,
             "y": 1500
           },
           "renderedAfterDecay": {
-            "x": 2308.75,
+            "x": 2148.75,
             "y": 1500
           }
         }
@@ -2441,7 +2441,7 @@
         },
         "authority": {
           "tick": 82,
-          "x": 2367.634057,
+          "x": 2111.634057,
           "y": 1500,
           "mvx": 320,
           "mvy": 0,
@@ -2495,15 +2495,15 @@
           "errorAfterDecayPx": 0,
           "remainingAfterDecayMs": 0,
           "renderedBefore": {
-            "x": 2367.634057,
+            "x": 2111.634057,
             "y": 1500
           },
           "renderedAfterReconcile": {
-            "x": 2367.634057,
+            "x": 2111.634057,
             "y": 1500
           },
           "renderedAfterDecay": {
-            "x": 2367.634057,
+            "x": 2111.634057,
             "y": 1500
           }
         }
@@ -2524,7 +2524,7 @@
         },
         "authority": {
           "tick": 83,
-          "x": 2351.634057,
+          "x": 2095.634057,
           "y": 1500,
           "mvx": -320,
           "mvy": 0,
@@ -2580,22 +2580,22 @@
           "errorAfterDecayPx": 0,
           "remainingAfterDecayMs": 0,
           "renderedBefore": {
-            "x": 2351.634057,
+            "x": 2095.634057,
             "y": 1500
           },
           "renderedAfterReconcile": {
-            "x": 2351.634057,
+            "x": 2095.634057,
             "y": 1500
           },
           "renderedAfterDecay": {
-            "x": 2351.634057,
+            "x": 2095.634057,
             "y": 1500
           }
         }
       },
       {
         "index": 40,
-        "tick": 85,
+        "tick": 84,
         "elapsedMs": 2000,
         "action": "rapid-flip",
         "input": {
@@ -2608,12 +2608,12 @@
           "fireHeld": false
         },
         "authority": {
-          "tick": 85,
-          "x": 2388.956349,
+          "tick": 84,
+          "x": 2114.884057,
           "y": 1500,
           "mvx": 320,
           "mvy": 0,
-          "vx": 26.427028,
+          "vx": 41.44583,
           "vy": 0,
           "height": 0,
           "vh": 0,
@@ -2640,7 +2640,7 @@
           "ultPhase": 0
         },
         "delta": {
-          "positionPx": 37.322291,
+          "positionPx": 19.25,
           "movementEpoch": 0,
           "correctionSeq": 0,
           "teleportSeq": 0
@@ -2664,15 +2664,15 @@
           "errorAfterDecayPx": 0,
           "remainingAfterDecayMs": 0,
           "renderedBefore": {
-            "x": 2370.884057,
+            "x": 2114.884057,
             "y": 1500
           },
           "renderedAfterReconcile": {
-            "x": 2388.956349,
+            "x": 2114.884057,
             "y": 1500
           },
           "renderedAfterDecay": {
-            "x": 2388.956349,
+            "x": 2114.884057,
             "y": 1500
           }
         }
@@ -2693,7 +2693,7 @@
         },
         "authority": {
           "tick": 98,
-          "x": 2408,
+          "x": 2056,
           "y": 1500,
           "mvx": -320,
           "mvy": 0,
@@ -2747,22 +2747,22 @@
           "errorAfterDecayPx": 0,
           "remainingAfterDecayMs": 0,
           "renderedBefore": {
-            "x": 2408,
+            "x": 2056,
             "y": 1500
           },
           "renderedAfterReconcile": {
-            "x": 2408,
+            "x": 2056,
             "y": 1500
           },
           "renderedAfterDecay": {
-            "x": 2408,
+            "x": 2056,
             "y": 1500
           }
         }
       },
       {
         "index": 52,
-        "tick": 100,
+        "tick": 99,
         "elapsedMs": 2600,
         "action": "flip-and-fire",
         "input": {
@@ -2775,12 +2775,12 @@
           "fireHeld": true
         },
         "authority": {
-          "tick": 100,
-          "x": 2436.75,
+          "tick": 99,
+          "x": 2072,
           "y": 1500,
           "mvx": 320,
           "mvy": 0,
-          "vx": -41.44583,
+          "vx": -65,
           "vy": 0,
           "height": 0,
           "vh": 0,
@@ -2807,7 +2807,7 @@
           "ultPhase": 0
         },
         "delta": {
-          "positionPx": 28.75,
+          "positionPx": 16,
           "movementEpoch": 1,
           "correctionSeq": 0,
           "teleportSeq": 0
@@ -2832,15 +2832,15 @@
           "errorAfterDecayPx": 0,
           "remainingAfterDecayMs": 0,
           "renderedBefore": {
-            "x": 2424,
+            "x": 2072,
             "y": 1500
           },
           "renderedAfterReconcile": {
-            "x": 2436.75,
+            "x": 2072,
             "y": 1500
           },
           "renderedAfterDecay": {
-            "x": 2436.75,
+            "x": 2072,
             "y": 1500
           }
         }
@@ -2861,7 +2861,7 @@
         },
         "authority": {
           "tick": 101,
-          "x": 2418.677709,
+          "x": 2034.677709,
           "y": 1500,
           "mvx": -320,
           "mvy": 0,
@@ -2892,7 +2892,7 @@
           "ultPhase": 0
         },
         "delta": {
-          "positionPx": 18.072291,
+          "positionPx": 37.322291,
           "movementEpoch": 0,
           "correctionSeq": 0,
           "teleportSeq": 0
@@ -2916,15 +2916,15 @@
           "errorAfterDecayPx": 0,
           "remainingAfterDecayMs": 0,
           "renderedBefore": {
-            "x": 2418.677709,
+            "x": 2052.75,
             "y": 1500
           },
           "renderedAfterReconcile": {
-            "x": 2418.677709,
+            "x": 2034.677709,
             "y": 1500
           },
           "renderedAfterDecay": {
-            "x": 2418.677709,
+            "x": 2034.677709,
             "y": 1500
           }
         }
