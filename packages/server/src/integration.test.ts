@@ -22,7 +22,11 @@ const { Client } = requireFromWorkspace(
 type ClientRoom = Room<ArenaState>;
 type GameServer = Awaited<ReturnType<typeof createGameServer>>;
 
-const STATE_TIMEOUT_MS = 5_000;
+// This file owns real TCP/WebSocket timers while the full Vitest run saturates sibling workers. Five
+// seconds was shorter than a valid event-loop stall under that load (the strict test passed 3/3 alone and
+// failed about half of full runs). Keep every event/state assertion exact, but give the real transport a
+// load-insensitive scheduling budget.
+const STATE_TIMEOUT_MS = 15_000;
 
 // Colyseus registers optional PM2 metrics when the real Server starts. In Vitest's fork pool PM2 sees the
 // runner IPC channel and emits `axm:*` objects into it, but Vitest's channel only accepts serialized buffers.
@@ -268,8 +272,10 @@ describe("real Colyseus transport", () => {
     // biome-ignore lint/suspicious/noExplicitAny: the public test server API intentionally hides local room internals.
     const authoritative = matchMaker.getLocalRoomById(room.roomId) as any;
     const serverPlayer = authoritative.state.players.get(room.sessionId);
-    serverPlayer.x = 1_234;
-    serverPlayer.y = 987;
+    const preservedX = authoritative.map.spawnX;
+    const preservedY = authoritative.map.spawnY;
+    serverPlayer.x = preservedX;
+    serverPlayer.y = preservedY;
     serverPlayer.maxHp = 73;
     serverPlayer.hp = 73;
     authoritative.combat.get(room.sessionId).invuln = 999;
@@ -278,7 +284,7 @@ describe("real Colyseus transport", () => {
       room,
       (state) => {
         const player = state.players?.get(room.sessionId);
-        return player?.x === 1_234 && player.y === 987 && player.hp === 73;
+        return player?.x === preservedX && player?.y === preservedY && player?.hp === 73;
       },
       "pinned player state patch",
     );
@@ -316,11 +322,50 @@ describe("real Colyseus transport", () => {
     await withTimeout(transportLeave, STATE_TIMEOUT_MS, "terminated socket close");
     await withTimeout(reconnectWindowReady, STATE_TIMEOUT_MS, "server reconnection window");
 
+    // While the only player is seat-reserved, joinOrCreate must not admit a fresh session beside that
+    // disconnected ghost. This is the exact refresh trap: the newcomer would be a non-host in the old run.
+    const freshClient = new Client(endpoint);
+    const freshRoom = await withTimeout(
+      freshClient.joinOrCreate<ArenaState>(ROOM_NAME, {
+        belt: false,
+        beltLevel: "",
+        dimensionId: "wild-west",
+        bossRush: false,
+      }),
+      STATE_TIMEOUT_MS,
+      "fresh matchmaking while old seat is reserved",
+    );
+    openRooms.add(freshRoom);
+    expect(freshRoom.roomId).not.toBe(room.roomId);
+
     const recovered = await client.reconnect<ArenaState>(reconnectionToken);
     openRooms.add(recovered);
 
     expect(recovered.roomId).toBe(room.roomId);
     expect(recovered.sessionId).toBe(departedSessionId);
+    const reconnectProbes: Array<{
+      requestId?: unknown;
+      ok?: unknown;
+      reason?: unknown;
+      roomId?: unknown;
+      sessionId?: unknown;
+      runId?: unknown;
+      isHost?: unknown;
+    }> = [];
+    recovered.onMessage("reconnectProbeResult", (payload) => {
+      reconnectProbes.push(payload);
+    });
+    recovered.send("reconnectProbe", { requestId: "integration-reconnect-probe" });
+    await waitForValue(() => reconnectProbes.length === 1, "reconnect resumability probe");
+    expect(reconnectProbes[0]).toEqual({
+      requestId: "integration-reconnect-probe",
+      ok: true,
+      reason: "",
+      roomId: room.roomId,
+      sessionId: departedSessionId,
+      runId: beforeRunId,
+      isHost: true,
+    });
     const recoveredManifests: Array<{ runId?: unknown }> = [];
     recovered.onMessage("weaponManifest", (payload: { runId?: unknown }) => {
       recoveredManifests.push(payload);
@@ -334,7 +379,7 @@ describe("real Colyseus transport", () => {
       recovered,
       (state) => {
         const player = state.players?.get(departedSessionId);
-        return player?.x === 1_234 && player.y === 987 && player.hp === 73;
+        return player?.x === preservedX && player?.y === preservedY && player?.hp === 73;
       },
       "recovered full state",
     );
@@ -344,9 +389,23 @@ describe("real Colyseus transport", () => {
     expect(afterAccount.weaponBank.expedition).toEqual(beforeEscrow);
     expect(authoritative.state.players.get(departedSessionId)).toMatchObject({
       hp: 73,
-      x: 1_234,
-      y: 987,
+      x: preservedX,
+      y: preservedY,
     });
+
+    // Playability is part of recovery, not merely identity: the retained input runtime must acknowledge a
+    // new command and advance the same authoritative body after the socket replacement.
+    const resumedInputSeq = 91;
+    const resumedMovement = waitForPatch(
+      recovered,
+      (state) => {
+        const player = state.players?.get(departedSessionId);
+        return (player?.ackSeq ?? 0) >= resumedInputSeq && (player?.x ?? 0) > preservedX;
+      },
+      "recovered movement acknowledgement",
+    );
+    recovered.send("input", { seq: resumedInputSeq, dx: 1, dy: 0, jump: false });
+    await resumedMovement;
 
     const settlementReceipts: unknown[] = [];
     recovered.onMessage("weaponSettlementReceipt", (receipt) => {
@@ -359,5 +418,36 @@ describe("real Colyseus transport", () => {
     expect(settlementReceipts).toHaveLength(1);
     expect(afterAccount.weaponBank.expedition).toBeNull();
     expect(afterAccount.weaponBank.stash).toContainEqual(carried);
-  }, 20_000);
+
+    const terminalProbes: typeof reconnectProbes = [];
+    recovered.onMessage("reconnectProbeResult", (payload) => {
+      if (payload.requestId === "integration-terminal-probe") terminalProbes.push(payload);
+    });
+    recovered.send("reconnectProbe", { requestId: "integration-terminal-probe" });
+    await waitForValue(() => terminalProbes.length === 1, "terminal reconnect refusal probe");
+    expect(terminalProbes[0]).toMatchObject({
+      requestId: "integration-terminal-probe",
+      ok: false,
+      reason: "run-not-active",
+      roomId: room.roomId,
+      sessionId: departedSessionId,
+      isHost: true,
+    });
+
+    // The solo host identity must survive too. Exercise the real host-gated T command after recovery and
+    // terminal settlement; it must reactivate the room and install actual training targets.
+    const trainingReady = waitForPatch(
+      recovered,
+      (state) => {
+        let hasDummy = false;
+        state.enemies?.forEach((enemy) => {
+          if (enemy.kind === "dummy") hasDummy = true;
+        });
+        return state.mode === "training" && state.outcome === "active" && hasDummy;
+      },
+      "recovered host training toggle",
+    );
+    recovered.send("toggleTraining");
+    await trainingReady;
+  }, 45_000);
 });
