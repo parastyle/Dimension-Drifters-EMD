@@ -9959,6 +9959,11 @@ export class ArenaScene extends Phaser.Scene {
         this.diagnosticHud?.recordIntraTickRenderCommitDivergence(
           Math.hypot(root.x - predicted.x, root.y - predicted.y),
         );
+        // Raw per-frame motion of the DRAWN root. Aggregates cannot show a one-frame repayment; this can.
+        this.diagnosticHud?.recordSelfRootStep(
+          Math.hypot(root.x - previousWorldX, root.y - previousWorldY),
+          moveIntentActive,
+        );
         this.selfPredHeight = predicted.height;
         this.selfPredVh = predicted.vh;
         this.selfPredStance = predicted.stance;

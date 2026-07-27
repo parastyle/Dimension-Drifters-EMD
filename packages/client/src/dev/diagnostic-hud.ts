@@ -291,6 +291,9 @@ function correctionBandName(band: number): "Silent" | "Smooth" | "Snap" | "none"
  * Fixed-ring, allocation-free hot-path telemetry. Snapshot/dump formatting allocates only at the
  * throttled 4 Hz display edge or on explicit F9 copy.
  */
+/** ~1.3s at 60Hz — long enough to hold a walk, the release edge, and the settle after it. */
+const ROOT_STEP_TRACE_FRAMES = 80;
+
 export class DiagnosticHudTelemetry {
   private readonly startedAtMs: number;
   private readonly frameWindow = new NumericWindow(FRAME_RING_CAPACITY);
@@ -332,6 +335,10 @@ export class DiagnosticHudTelemetry {
   private currentBoundaryDivergencePx = Number.NaN;
   private sessionBoundaryDivergencePeakPx = Number.NaN;
   private currentIntraTickDivergencePx = Number.NaN;
+  private readonly rootStepPx = new Float32Array(ROOT_STEP_TRACE_FRAMES);
+  private readonly rootStepIntent = new Uint8Array(ROOT_STEP_TRACE_FRAMES);
+  private rootStepIndex = 0;
+  private rootStepCount = 0;
   private sessionIntraTickDivergencePeakPx = Number.NaN;
   private pendingKeyAtMs = Number.NaN;
   private currentInputLatencyMs = Number.NaN;
@@ -522,6 +529,36 @@ export class DiagnosticHudTelemetry {
       divergence,
     );
     this.intraTickDivergenceWindow.push(nowMs, divergence);
+  }
+
+  /**
+   * Per-frame ROOT MOTION trace. Every other metric here reports an aggregate; none of them can answer
+   * "what did the sprite actually do on the four frames around the moment I let go of the key". That
+   * question is the whole of the owner's stop-pop report, so record the raw per-frame step and the
+   * move-intent flag in fixed rings (no per-frame allocation) and print them in the dump.
+   */
+  recordSelfRootStep(stepPx: number, moveIntent: boolean): void {
+    const step = Number.isFinite(stepPx) ? Math.max(0, stepPx) : 0;
+    this.rootStepPx[this.rootStepIndex] = step;
+    this.rootStepIntent[this.rootStepIndex] = moveIntent ? 1 : 0;
+    this.rootStepIndex = (this.rootStepIndex + 1) % ROOT_STEP_TRACE_FRAMES;
+    if (this.rootStepCount < ROOT_STEP_TRACE_FRAMES) this.rootStepCount++;
+  }
+
+  /** Oldest-to-newest trace, each entry `step[intent]`, with the release edge marked `<STOP`. */
+  private rootStepTrace(): string {
+    if (this.rootStepCount <= 0) return "n/a (no frames recorded)";
+    const out: string[] = [];
+    const start = (this.rootStepIndex - this.rootStepCount + ROOT_STEP_TRACE_FRAMES) % ROOT_STEP_TRACE_FRAMES;
+    let previousIntent = -1;
+    for (let i = 0; i < this.rootStepCount; i++) {
+      const slot = (start + i) % ROOT_STEP_TRACE_FRAMES;
+      const intent = this.rootStepIntent[slot] ?? 0;
+      const edge = previousIntent === 1 && intent === 0 ? "<STOP " : "";
+      previousIntent = intent;
+      out.push(`${edge}${(this.rootStepPx[slot] ?? 0).toFixed(2)}${intent === 1 ? "" : "i"}`);
+    }
+    return out.join(" ");
   }
 
   recordResync(nowMs = performance.now()): void {
@@ -792,6 +829,11 @@ export class DiagnosticHudTelemetry {
       `EVENTS 10s stalls=${Number.isFinite(this.currentFrameMs) ? this.stallWindow.countSince(nowMs) : "n/a"} corrections=${this.selfCorrectionSourceAvailable ? this.correctionMagnitudeWindow.countSince(nowMs) : "n/a"} resyncs=${Number.isFinite(this.currentFrameMs) ? this.resyncWindow.countSince(nowMs) : "n/a"}`,
       `PEAKS session frame=${formatMs(this.sessionFramePeakMs)} renderCommitIntra=${formatPx(this.sessionIntraTickDivergencePeakPx)} renderCommitBoundary=${formatPx(this.sessionBoundaryDivergencePeakPx)} input=${formatMs(this.sessionInputLatencyPeakMs)} rtt=${formatMs(this.sessionRttPeakMs)} tickDrift=${formatMs(this.sessionTickDriftPeakMs)} heap=${Number.isFinite(this.sessionHeapPeakMb) ? `${this.sessionHeapPeakMb.toFixed(1)}MB` : "n/a"} hudDisplay=${formatCostMs(this.visibleDisplayCostPeakMs)}`,
       `LAST SELF cause=${this.lastCorrectionCause} band=${correctionBandName(this.lastCorrectionBand)}`,
+      // Constant-speed travel at 60Hz is ~5.33px/frame (MOVE_SPEED 320 / 60). Steps BELOW that while
+      // intent is held are withheld movement; a step ABOVE it right after `<STOP` is that withheld
+      // movement being repaid in one frame -- the stop-pop, in raw numbers. `i` marks an idle frame.
+      `ROOT STEPS px/frame (oldest->newest, expect ~5.33 while moving, ~0 after <STOP)`,
+      this.rootStepTrace(),
     );
     const redLabels = snapshot.metrics
       .filter((metric) => metric.state === "RED")
@@ -961,6 +1003,10 @@ export class DiagnosticHud {
 
   recordRenderCommitDivergence(divergencePx: number): void {
     this.telemetry.recordRenderCommitDivergence(divergencePx);
+  }
+
+  recordSelfRootStep(stepPx: number, moveIntent: boolean): void {
+    this.telemetry.recordSelfRootStep(stepPx, moveIntent);
   }
 
   recordIntraTickRenderCommitDivergence(divergencePx: number): void {
