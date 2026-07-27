@@ -15412,6 +15412,15 @@ export class ArenaScene extends Phaser.Scene {
     measureRenderCommit = false,
   ): void {
     if (!this.room || !this.predictor) return;
+    // Canon L11 samples the body already on screen when this existing input command leaves. In particular,
+    // hit-stop/correction presentation may intentionally differ from the predictor; defence follows the
+    // visible body, never the unpublished next simulation step.
+    const presentedX = Number.isFinite(this.selfPresentedWorldX)
+      ? this.selfPresentedWorldX
+      : (self?.x ?? 0);
+    const presentedY = Number.isFinite(this.selfPresentedWorldY)
+      ? this.selfPresentedWorldY
+      : (self?.y ?? 0);
     const beamHeld = cmd.fireHeld && !!weapon?.beam;
     const beamWasHeld = this.beamPredictionHeld;
     if (
@@ -15435,7 +15444,7 @@ export class ArenaScene extends Phaser.Scene {
     this.stepBeamPrediction({ ...cmd, fireHeld: beamHeld }, self, weapon);
     if (!predictTick) {
       this.diagnosticHud?.recordCommand(cmd.seq);
-      this.room.send("input", cmd);
+      this.room.send("input", { ...cmd, px: presentedX, py: presentedY });
       return;
     }
     let renderBeforeCommitX = Number.NaN;
@@ -15465,6 +15474,9 @@ export class ArenaScene extends Phaser.Scene {
       clientVy: movement.vy,
       clientServerMotionEpoch: movement.serverMotionEpoch,
       clientCorrectionSeq: movement.movementCorrectionSeq,
+      // Terse keys save 16 key bytes per 20 Hz command versus `presentedX` / `presentedY`.
+      px: presentedX,
+      py: presentedY,
     });
   }
 

@@ -939,8 +939,10 @@ export const roomEnemyMethods = {
     const r2 = radius * radius;
     this.state.players.forEach((p) => {
       if (!p.alive) return;
-      const dx = p.x - x;
-      const dy = p.y - y;
+      const presented = this.presentedPlayerPosition(p);
+      if (!presented) return;
+      const dx = presented.x - x;
+      const dy = presented.y - y;
       if (dx * dx + dy * dy > r2) return;
       this.damagePlayer(p, damage, "enemy"); // §16 unparryable — dodge it, don't block it
       const d = Math.hypot(dx, dy) || 1;
@@ -964,8 +966,10 @@ export const roomEnemyMethods = {
     const r2 = radius * radius;
     this.state.players.forEach((p) => {
       if (!p.alive) return;
-      const dx = p.x - x;
-      const dy = p.y - y;
+      const presented = this.presentedPlayerPosition(p);
+      if (!presented) return;
+      const dx = presented.x - x;
+      const dy = presented.y - y;
       if (dx * dx + dy * dy > r2) return;
       if (p.height > GROUND_EPSILON) return; // JUMPED — airborne clears the quake
       const c = this.combat.get(p.id);
@@ -1006,8 +1010,10 @@ export const roomEnemyMethods = {
     const r2 = radius * radius;
     this.state.players.forEach((player) => {
       if (!player.alive) return;
-      const dx = player.x - x;
-      const dy = player.y - y;
+      const presented = this.presentedPlayerPosition(player);
+      if (!presented) return;
+      const dx = presented.x - x;
+      const dy = presented.y - y;
       if (dx * dx + dy * dy > r2) return;
       out.threatened++;
       if (player.height > GROUND_EPSILON) {
@@ -1063,10 +1069,12 @@ export const roomEnemyMethods = {
     this.state.players.forEach((player) => {
       if (!player.alive) return;
       if (this.vastagharSweepEpoch.get(player.id) === epoch) return;
+      const presented = this.presentedPlayerPosition(player);
+      if (!presented) return;
       if (
         !pointInSweptAnnularArc(
-          player.x,
-          player.y,
+          presented.x,
+          presented.y,
           x,
           y,
           innerRange,
@@ -1099,8 +1107,8 @@ export const roomEnemyMethods = {
       }
       out.hit++;
       this.damagePlayer(player, damage, "enemy");
-      const dx = player.x - x;
-      const dy = player.y - y;
+      const dx = presented.x - x;
+      const dy = presented.y - y;
       const distance = Math.hypot(dx, dy) || 1;
       const impulse = addImpulse(player, (dx / distance) * knockback, (dy / distance) * knockback);
       player.vx = impulse.vx;
@@ -1161,10 +1169,15 @@ export const roomEnemyMethods = {
     const ny = Math.cos(rot);
     this.state.players.forEach((p) => {
       if (!p.alive) return;
-      if (!pointInOrientedRect(p.x, p.y, x, y, len, halfW, rot)) return;
+      const presented = this.presentedPlayerPosition(p);
+      if (
+        !presented ||
+        !pointInOrientedRect(presented.x, presented.y, x, y, len, halfW, rot)
+      )
+        return;
       this.damagePlayer(p, damage, "enemy");
       if (knockback > 0) {
-        const side = (p.x - x) * nx + (p.y - y) * ny >= 0 ? 1 : -1; // shove to the side they're already on
+        const side = (presented.x - x) * nx + (presented.y - y) * ny >= 0 ? 1 : -1; // shove to the side they're already on
         const k = addImpulse(p, nx * side * knockback, ny * side * knockback);
         p.vx = k.vx;
         p.vy = k.vy;
@@ -1186,7 +1199,21 @@ export const roomEnemyMethods = {
   ): void {
     this.state.players.forEach((p) => {
       if (!p.alive) return;
-      if (!pointInAnnulusGap(p.x, p.y, cx, cy, bandR, bandHalf, gapCenter, gapHalf)) return;
+      const presented = this.presentedPlayerPosition(p);
+      if (
+        !presented ||
+        !pointInAnnulusGap(
+          presented.x,
+          presented.y,
+          cx,
+          cy,
+          bandR,
+          bandHalf,
+          gapCenter,
+          gapHalf,
+        )
+      )
+        return;
       this.damagePlayer(p, damage, "enemy");
     });
   },
@@ -1701,6 +1728,13 @@ export const roomEnemyMethods = {
   ): void {
     enemy.atkSeq = (enemy.atkSeq + 1) % 100000;
     if (!target?.alive) return;
+    const presented = this.presentedPlayerPosition(target);
+    if (
+      !presented ||
+      Math.hypot(presented.x - committed.endX, presented.y - committed.endY) >
+        committed.range + PLAYER_RADIUS
+    )
+      return;
     const dmgMul = enemy.tough ? TOUGH_DAMAGE_MULT : 1;
     const pc = this.combat.get(target.id);
     const parrying = (pc?.invuln ?? 0) > 0;
@@ -2379,6 +2413,13 @@ export const roomEnemyMethods = {
       depthDamageScale(this.state.depth);
     const player = this.state.players.get(strike.targetId);
     if (!player?.alive) return;
+    const presented = this.presentedPlayerPosition(player);
+    if (
+      !presented ||
+      Math.hypot(presented.x - strike.endX, presented.y - strike.endY) >
+        strike.range + PLAYER_RADIUS
+    )
+      return;
     const pc = this.combat.get(player.id);
     const parrying = !step?.unparryable && (pc?.invuln ?? 0) > 0;
     const rolling = !step?.airkeep && !!pc && this.slideInvulnerable(pc);
@@ -2413,8 +2454,8 @@ export const roomEnemyMethods = {
       st.comboDamage = (st.comboDamage ?? 0) + dmg;
     }
     if (dmg > 0) this.damagePlayer(player, dmg, "enemy");
-    const hx = player.x - enemy.x;
-    const hy = player.y - enemy.y;
+    const hx = presented.x - enemy.x;
+    const hy = presented.y - enemy.y;
     const hd = Math.hypot(hx, hy) || 1;
     const displacementHit = !!(step?.launch || step?.airkeep);
     if (
@@ -2721,13 +2762,20 @@ export const roomEnemyMethods = {
     const boss = this.bossId ? this.state.enemies.get(this.bossId) : undefined;
     this.state.players.forEach((player) => {
       if (!player.alive) return;
-      if (!inMeleeArc(origin, aimX, aimY, player, range, halfArc)) return;
+      const presented = this.presentedPlayerPosition(player);
+      if (!presented || !inMeleeArc(origin, aimX, aimY, presented, range, halfArc)) return;
       const pc = this.combat.get(player.id);
       if (pc && pc.invuln > 0) {
         if (boss && this.bossId) this.resolveParry(player, pc, boss, this.bossId, damage);
         else {
           player.parriedSeq = (player.parriedSeq + 1) % 100000;
-          this.applyDirectionalParryReaction(player, pc, player.x - x, player.y - y, damage);
+          this.applyDirectionalParryReaction(
+            player,
+            pc,
+            presented.x - x,
+            presented.y - y,
+            damage,
+          );
           this.applyParryAugments(player, pc);
         }
         this.bossController?.acceptWormParry(player.id, this.state.tick);
@@ -2738,8 +2786,8 @@ export const roomEnemyMethods = {
         return;
       }
       this.damagePlayer(player, damage, "enemy"); // already depth-scaled by the controller
-      const hx = player.x - x;
-      const hy = player.y - y;
+      const hx = presented.x - x;
+      const hy = presented.y - y;
       const hd = Math.hypot(hx, hy) || 1;
       const kk = addImpulse(player, (hx / hd) * knockback, (hy / hd) * knockback);
       player.vx = kk.vx;
@@ -2828,8 +2876,10 @@ export const roomEnemyMethods = {
         this.state.players.forEach((player) => {
           // Zoner puddles are unparryable; you must walk out of them.
           if (!player.alive) return;
-          const dx = player.x - zone.x;
-          const dy = player.y - zone.y;
+          const presented = this.presentedPlayerPosition(player);
+          if (!presented) return;
+          const dx = presented.x - zone.x;
+          const dy = presented.y - zone.y;
           if (dx * dx + dy * dy <= r2) {
             // Enemy-created zoner puddles are not authored neutral ground hazards.
             this.damagePlayer(player, meta.damagePerSecond * dt, "enemy");

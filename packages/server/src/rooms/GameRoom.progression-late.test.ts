@@ -316,6 +316,7 @@ function sendJumpFeelInput(
     fireHeld?: boolean;
   } = {},
 ) {
+  const player = h.state().players.get(id);
   h.send(id, "input", {
     seq,
     dx: fields.dx ?? 0,
@@ -328,6 +329,8 @@ function sendJumpFeelInput(
     aimY: 0,
     targetX: 0,
     targetY: 0,
+    px: player.x,
+    py: player.y,
   });
   h.tick(1);
 }
@@ -365,6 +368,7 @@ function sendRollInput(
     fireHeld?: boolean;
   } = {},
 ) {
+  const player = h.state().players.get(id);
   h.send(id, "input", {
     seq,
     dx: fields.dx ?? 0,
@@ -379,6 +383,8 @@ function sendRollInput(
     aimY: 0,
     targetX: 0,
     targetY: 0,
+    px: player.x,
+    py: player.y,
   });
   h.tick(1);
 }
@@ -386,6 +392,14 @@ function sendRollInput(
 function makeRollRoom(id = "roll-player") {
   const fixture = makeJumpFeelRoom(id);
   return { ...fixture, combatInput: fixture.h.room.inputs.get(id) };
+}
+
+function presentRollBody(fixture: ReturnType<typeof makeRollRoom>) {
+  const body = fixture.h.room.presentedSelfBodies.get(fixture.player.id);
+  body.x = fixture.player.x;
+  body.y = fixture.player.y;
+  body.reported = true;
+  body.hittable = true;
 }
 
 function beginRoll(fixture: ReturnType<typeof makeRollRoom>, seq = 1, dx = 1, dy = 0) {
@@ -731,7 +745,7 @@ describe("GameRoom — flavor-only character identity", () => {
 
   it("retains schema 21 while defaulting character identity to the shared default", () => {
     const player = new enemyComboShared.PlayerState();
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(50);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(51);
     expect([player.character, player.runCharacter]).toEqual([
       enemyComboShared.DEFAULT_CHARACTER,
       enemyComboShared.DEFAULT_CHARACTER,
@@ -826,12 +840,14 @@ describe("GameRoom — V7 fixed tumble roll", () => {
     const hp = fixture.player.hp;
     const parried = fixture.player.parriedSeq;
     for (let tick = 1; tick <= enemyComboShared.ROLL_IFRAME_TICKS; tick++) {
+      presentRollBody(fixture);
       fixture.h.room.applyBossMelee(fixture.player.x - 20, fixture.player.y, 1, 0, 80, 1, 7, 0);
       expect(fixture.player.hp).toBe(hp);
       if (tick < enemyComboShared.ROLL_IFRAME_TICKS) fixture.h.tick(1);
     }
     expect(fixture.player.parriedSeq).toBe(parried);
     fixture.h.tick(1);
+    presentRollBody(fixture);
     fixture.h.room.applyBossMelee(fixture.player.x - 20, fixture.player.y, 1, 0, 80, 1, 7, 0);
     expect(fixture.player.hp).toBe(hp - 7);
   });
@@ -899,6 +915,7 @@ describe("GameRoom — V7 fixed tumble roll", () => {
       const fixture = makeRollRoom(`roll-${name}`);
       beginRoll(fixture);
       const hp = fixture.player.hp;
+      presentRollBody(fixture);
       damage(fixture);
       expect(fixture.player.hp).toBe(hp - 9);
     }
@@ -913,6 +930,7 @@ describe("GameRoom — V7 fixed tumble roll", () => {
     puddle.h.state().zones.set(zone.id, zone);
     puddle.h.room.zoneMeta.set(zone.id, ZONE_TTL);
     const hp = puddle.player.hp;
+    presentRollBody(puddle);
     puddle.h.room.stepZones(0.05);
     expect(puddle.player.hp).toBeLessThan(hp);
   });
@@ -1400,8 +1418,8 @@ describeUltimateImplementation("ULT U1 lifecycle, co-op, and schema 25", () => {
     const h = makeRoom();
     h.join("ult-schema");
     const player = h.state().players.get("ult-schema");
-    expect(h.state().schemaVersion).toBe(50);
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(50);
+    expect(h.state().schemaVersion).toBe(51);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(51);
     expect([
       player.ultimate.archetype,
       player.ultimate.charge,

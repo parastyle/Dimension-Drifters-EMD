@@ -316,6 +316,7 @@ function sendJumpFeelInput(
     fireHeld?: boolean;
   } = {},
 ) {
+  const player = h.state().players.get(id);
   h.send(id, "input", {
     seq,
     dx: fields.dx ?? 0,
@@ -328,6 +329,8 @@ function sendJumpFeelInput(
     aimY: 0,
     targetX: 0,
     targetY: 0,
+    px: player.x,
+    py: player.y,
   });
   h.tick(1);
 }
@@ -365,6 +368,7 @@ function sendRollInput(
     fireHeld?: boolean;
   } = {},
 ) {
+  const player = h.state().players.get(id);
   h.send(id, "input", {
     seq,
     dx: fields.dx ?? 0,
@@ -379,6 +383,8 @@ function sendRollInput(
     aimY: 0,
     targetX: 0,
     targetY: 0,
+    px: player.x,
+    py: player.y,
   });
   h.tick(1);
 }

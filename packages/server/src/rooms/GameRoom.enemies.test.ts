@@ -315,6 +315,7 @@ function sendJumpFeelInput(
     fireHeld?: boolean;
   } = {},
 ) {
+  const player = h.state().players.get(id);
   h.send(id, "input", {
     seq,
     dx: fields.dx ?? 0,
@@ -327,6 +328,8 @@ function sendJumpFeelInput(
     aimY: 0,
     targetX: 0,
     targetY: 0,
+    px: player.x,
+    py: player.y,
   });
   h.tick(1);
 }
@@ -364,6 +367,7 @@ function sendRollInput(
     fireHeld?: boolean;
   } = {},
 ) {
+  const player = h.state().players.get(id);
   h.send(id, "input", {
     seq,
     dx: fields.dx ?? 0,
@@ -378,6 +382,8 @@ function sendRollInput(
     aimY: 0,
     targetX: 0,
     targetY: 0,
+    px: player.x,
+    py: player.y,
   });
   h.tick(1);
 }
@@ -641,7 +647,7 @@ describe("GameRoom — §51 tough-enemy melee combos (Wave 1 authority)", () => 
     expect(enemy.comboSeq).toBe(1); // no strike Lock has happened yet
   });
 
-  it("gives every tough-combo beat the same four-tick locked commit window", () => {
+  it("keeps every tough-combo beat's four-tick lock while a visually clear body evades", () => {
     const { h, player } = makeEnemyComboRoom(1);
     const enemy = addComboEnemy(h, player, "combo-lock", "ronin", 140);
     h.tick(1); // grounded K1 begins
@@ -665,7 +671,7 @@ describe("GameRoom — §51 tough-enemy melee combos (Wave 1 authority)", () => 
     expect(enemy.atkSeq).toBe(attack);
     h.tick(1);
     expect(enemy.atkSeq).toBe(attack + 1);
-    expect(player.hp).toBeLessThan(hp);
+    expect(player.hp).toBe(hp);
     expect(enemy.x).toBeCloseTo(frozen.endX, 6);
     expect(enemy.y).toBeCloseTo(frozen.endY, 6);
     expect(enemy.comboSeq).toBe(1);
@@ -802,7 +808,7 @@ describe("GameRoom — §51 tough-enemy melee combos (Wave 1 authority)", () => 
   });
 
   it("ships schema 19, named depth decks, and guardrail-safe authored literals", () => {
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(50);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(51);
     expect(new EnemyState().comboSeq).toBe(0);
     expect(new EnemyState().comboFlags).toBe(0);
     expect(herePlayerJuggledDefault()).toBe(0);
@@ -1094,7 +1100,7 @@ describe("GameRoom — jump-feel J1 authoritative stance/physics", () => {
 
   it("ships schema 21 with the three appended uint8 stance/VFX defaults", () => {
     const player = new enemyComboShared.PlayerState();
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(50);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(51);
     expect([player.moveStance, player.poundSeq, player.stanceSeq]).toEqual([0, 0, 0]);
   });
 });

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  clampPresentedSelfPosition,
   evaluateClientMovementEnvelope,
   MovementCorrectionBand,
   MovementEnvelopeReject,
@@ -80,6 +81,32 @@ describe("B42 client movement plausibility envelope", () => {
     },
   ])("rejects $label violations", ({ report, reason, customEnvelope }) => {
     expect(evaluateClientMovementEnvelope(report, customEnvelope ?? envelope).reason).toBe(reason);
+  });
+});
+
+describe("L11 presented-self B42 clamp", () => {
+  it("keeps an in-envelope body exact and radially projects an outlier", () => {
+    const presentedEnvelope = {
+      fromX: 1_000,
+      fromY: 2_000,
+      dtSeconds: 0.05,
+      maxMoveSpeed: 320,
+      maxImpulseSpeed: 0,
+      clientCatchUpDisplacementPx: 32,
+    };
+    expect(clampPresentedSelfPosition({ x: 1_049, y: 2_000 }, presentedEnvelope)).toEqual({
+      x: 1_049,
+      y: 2_000,
+      clamped: false,
+    });
+    expect(clampPresentedSelfPosition({ x: 1_100, y: 2_000 }, presentedEnvelope)).toEqual({
+      x: 1_051,
+      y: 2_000,
+      clamped: true,
+    });
+    expect(
+      clampPresentedSelfPosition({ x: Number.NaN, y: 2_000 }, presentedEnvelope),
+    ).toBeUndefined();
   });
 });
 

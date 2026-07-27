@@ -53,6 +53,54 @@ export interface MovementEnvelopeResult {
   maxDisplacementPx: number;
 }
 
+export interface ClientPresentedSelfPosition {
+  x: number;
+  y: number;
+}
+
+export interface ClampedPresentedSelfPosition extends ClientPresentedSelfPosition {
+  /** False only when the report was already inside B42's radial continuity bound. */
+  clamped: boolean;
+}
+
+/** B42's exact radial continuity budget, shared by movement adoption and L11's defensive-body clamp. */
+export function movementEnvelopeMaxDisplacement(envelope: Readonly<MovementEnvelope>): number {
+  const maxMoveSpeed = Math.max(0, envelope.maxMoveSpeed);
+  const maxImpulseSpeed = Math.max(0, envelope.maxImpulseSpeed);
+  return (
+    (maxMoveSpeed + maxImpulseSpeed) * Math.max(0, envelope.dtSeconds) +
+    Math.max(0, envelope.authoredDisplacementPx ?? 0) +
+    Math.max(0, envelope.clientCatchUpDisplacementPx ?? 0) +
+    Math.max(0, envelope.positionTolerancePx ?? MOVEMENT_CORRECTION_SILENT_PX)
+  );
+}
+
+/**
+ * L11 robustness rail. The reported defensive body cannot be stored farther from server truth than the
+ * existing B42 continuity radius. Callers must treat `clamped` as uncertainty and therefore NOT hit: the
+ * projected point is safe storage/debug truth, not permission to turn a broken report into a phantom hit.
+ */
+export function clampPresentedSelfPosition(
+  report: Readonly<ClientPresentedSelfPosition>,
+  envelope: Readonly<MovementEnvelope>,
+): ClampedPresentedSelfPosition | undefined {
+  if (![report.x, report.y, envelope.fromX, envelope.fromY].every(Number.isFinite))
+    return undefined;
+  const maxDisplacementPx = movementEnvelopeMaxDisplacement(envelope);
+  if (!Number.isFinite(maxDisplacementPx)) return undefined;
+  const dx = report.x - envelope.fromX;
+  const dy = report.y - envelope.fromY;
+  const distance = Math.hypot(dx, dy);
+  if (distance <= maxDisplacementPx || distance <= 1e-9)
+    return { x: report.x, y: report.y, clamped: false };
+  const scale = maxDisplacementPx / distance;
+  return {
+    x: envelope.fromX + dx * scale,
+    y: envelope.fromY + dy * scale,
+    clamped: true,
+  };
+}
+
 /**
  * Once server-authored motion has released, a report that still echoes the immediately preceding epoch is
  * post-motion input caught in the patch-plus-return-trip race. It remains subject to the complete numeric
@@ -96,11 +144,7 @@ export function evaluateClientMovementEnvelope(
   const speedTolerance = Math.max(0, envelope.speedTolerance ?? CLIENT_MOVE_SPEED_TOLERANCE);
   const maxMoveSpeed = Math.max(0, envelope.maxMoveSpeed);
   const maxImpulseSpeed = Math.max(0, envelope.maxImpulseSpeed);
-  const maxDisplacementPx =
-    (maxMoveSpeed + maxImpulseSpeed) * Math.max(0, envelope.dtSeconds) +
-    Math.max(0, envelope.authoredDisplacementPx ?? 0) +
-    Math.max(0, envelope.clientCatchUpDisplacementPx ?? 0) +
-    Math.max(0, envelope.positionTolerancePx ?? MOVEMENT_CORRECTION_SILENT_PX);
+  const maxDisplacementPx = movementEnvelopeMaxDisplacement(envelope);
 
   let reason: MovementEnvelopeRejectReason = MovementEnvelopeReject.None;
   if (!finite) reason = MovementEnvelopeReject.NonFinite;

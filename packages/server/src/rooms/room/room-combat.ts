@@ -5233,9 +5233,11 @@ export const roomCombatMethods = {
         let reflected = false; // …unless it was PARRIED — then it lives on as a friendly counter-shot
         this.state.players.forEach((player) => {
           if (consumed || !player.alive) return;
+          const presented = this.presentedPlayerPosition(player);
+          if (!presented) return;
           const reach = PROJECTILE_RADIUS + PLAYER_RADIUS;
-          const dx = pr.x - player.x;
-          const dy = pr.y - player.y;
+          const dx = pr.x - presented.x;
+          const dy = pr.y - presented.y;
           if (dx * dx + dy * dy > reach * reach) return; // no overlap with this player
           const pc = this.combat.get(player.id);
           // §8 v0.117 PROJECTILE PARRY: a bullet caught inside the parry i-frame window is DEFLECTED into a

@@ -83,6 +83,7 @@ import {
   type CarrySelectionV1,
   clientServerMotionEpochAdmissible,
   type ClientMovementReport,
+  type ClientPresentedSelfPosition,
   CHAIN_MAX_RANGE,
   CHEST_OPEN_RADIUS,
   CHEST_PLACEMENT_RADIUS,
@@ -386,6 +387,7 @@ import {
   stepBeamAngle,
   stepEnemyChase,
   stepEnemyKite,
+  clampPresentedSelfPosition,
   evaluateClientMovementEnvelope,
   stepImpulse,
   stepPlayerAttackMovement,
@@ -667,6 +669,15 @@ export interface InputCmd {
   targetY: number;
   /** B42 post-prediction owner pose for this exact sequence. Absent only for legacy tests/clients. */
   movement?: ClientMovementReport;
+  /** L11 body actually visible on the owner's screen when this existing input command was sent. */
+  presented?: ClientPresentedSelfPosition;
+}
+
+export interface PresentedSelfBody extends ClientPresentedSelfPosition {
+  /** False after malformed/out-of-envelope uncertainty: L11 requires the server to err toward no hit. */
+  hittable: boolean;
+  /** Tests and the pre-first-input join frame retain the known synchronized spawn body. */
+  reported: boolean;
 }
 
 /** Per-client input pipeline + the player's constant-speed movement velocity.
@@ -687,6 +698,10 @@ export interface InputState {
   mvy: number;
   /** Set only on a newly consumed command; held fallback must never re-adopt an old pose. */
   freshMovement?: ClientMovementReport;
+  /** Same freshness rule as movement: only a newly consumed client presentation may replace defence truth. */
+  freshPresented?: ClientPresentedSelfPosition;
+  /** Distinguishes a quiet held-input tick from a fresh schema-51 command that omitted its body pair. */
+  freshPresentedCommand?: boolean;
 }
 
 export interface WeaponResourceLedger {
@@ -1166,6 +1181,7 @@ export interface GameRoomContext extends Room<ArenaState> {
   readonly distanceJumpLaunches: Set<string>;
   readonly inputs: Map<string, InputState>;
   readonly acceptedClientMovement: Map<string, ClientMovementReport>;
+  readonly presentedSelfBodies: Map<string, PresentedSelfBody>;
   readonly serverMotionUntilTick: Map<string, number>;
   readonly serverMotionSourceByPlayer: Map<string, ServerMotionSource>;
   readonly combat: Map<string, CombatState>;
@@ -1424,6 +1440,7 @@ export interface GameRoomContext extends Room<ArenaState> {
   freshInputState(): InputState;
   stepSlideStance(player: PlayerState, c: CombatState): void;
   damagePitFall(player: PlayerState): void;
+  presentedPlayerPosition(player: PlayerState): ClientPresentedSelfPosition | undefined;
   stepTraversalLaunches(dt: number): void;
   launchDistanceJump(player: PlayerState, c: CombatState, input: InputState): void;
   steerDistanceJump(c: CombatState, input: InputCmd, dt: number): void;
@@ -1875,6 +1892,9 @@ export const roomProgressionMethods = {
           clientVy?: number;
           clientServerMotionEpoch?: number;
           clientCorrectionSeq?: number;
+          /** L11: terse keys keep the 20 Hz defensive-body addition to the minimum wire budget. */
+          px?: number;
+          py?: number;
         },
       ) => {
         const rec = this.inputs.get(client.sessionId);
@@ -1906,6 +1926,7 @@ export const roomProgressionMethods = {
           message?.clientMvy !== undefined ||
           message?.clientVx !== undefined ||
           message?.clientVy !== undefined;
+        const carriesPresented = message?.px !== undefined || message?.py !== undefined;
         rec.queue.push({
           seq,
           dx: Number.isFinite(message?.dx) ? (message?.dx as number) : 0,
@@ -1941,6 +1962,13 @@ export const roomProgressionMethods = {
                 movementCorrectionSeq: Number.isFinite(message?.clientCorrectionSeq)
                   ? (message.clientCorrectionSeq as number) >>> 0
                   : 0xffffffff,
+              }
+            : undefined,
+          presented: carriesPresented
+            ? {
+                // Keep malformed pairs atomic. The defensive resolver will mark uncertainty non-hittable.
+                x: Number(message?.px),
+                y: Number(message?.py),
               }
             : undefined,
         });
@@ -3205,6 +3233,12 @@ export const roomProgressionMethods = {
       });
       this.combat.set(client.sessionId, disconnected.combat);
       this.inputs.set(client.sessionId, this.freshInputState());
+      this.presentedSelfBodies.set(client.sessionId, {
+        x: disconnected.player.x,
+        y: disconnected.player.y,
+        hittable: true,
+        reported: false,
+      });
       if (this.hostId === null) this.hostId = client.sessionId;
       this.sendOwnerMessage(client.sessionId, "metaAccount", reservedAccount);
       this.sendWeaponManifest(disconnected.player);
@@ -3436,6 +3470,12 @@ export const roomProgressionMethods = {
     });
     if (this.hostId === null) this.hostId = client.sessionId; // first joiner is the co-op host
     this.inputs.set(client.sessionId, this.freshInputState());
+    this.presentedSelfBodies.set(client.sessionId, {
+      x: player.x,
+      y: player.y,
+      hittable: true,
+      reported: false,
+    });
     const joinedQuirk = quirkForCharacter(player.runCharacter);
     this.combat.set(client.sessionId, {
       identityCharacter: player.runCharacter,
@@ -3629,6 +3669,7 @@ export const roomProgressionMethods = {
     this.refreshAllChestOpened();
     this.inputs.delete(client.sessionId);
     this.acceptedClientMovement.delete(client.sessionId);
+    this.presentedSelfBodies.delete(client.sessionId);
     this.serverMotionUntilTick.delete(client.sessionId);
     this.serverMotionSourceByPlayer.delete(client.sessionId);
     this.combat.delete(client.sessionId);
@@ -3656,6 +3697,18 @@ export const roomProgressionMethods = {
   resetElapsed(this: GameRoomContext): void {
     this.state.elapsed = 0;
     this.state.elapsedSeconds = 0;
+  },
+
+  /** The only positional body eligible for incoming player damage under canon L11. */
+  presentedPlayerPosition(
+    this: GameRoomContext,
+    player: PlayerState,
+  ): ClientPresentedSelfPosition | undefined {
+    const body = this.presentedSelfBodies.get(player.id);
+    if (!body) return undefined;
+    // Before the first schema-51 command, the synchronized spawn is the only body the client can draw.
+    if (!body.reported) return player;
+    return body.hittable ? body : undefined;
   },
 
   /** §4 v0.107 defense-in-depth (review #4): WITHOUT this, Colyseus does not wrap the simulation-interval
@@ -3708,6 +3761,8 @@ export const roomProgressionMethods = {
       if (!input) return;
       this.refreshServerMotionState(player, id, dt);
       input.freshMovement = undefined;
+      input.freshPresented = undefined;
+      input.freshPresentedCommand = false;
       const tickCombat = this.combat.get(id);
       if (tickCombat) tickCombat.ultAccrualThisTick = 0;
       input.msgBudget = INPUT_MSGS_PER_TICK;
@@ -3739,6 +3794,8 @@ export const roomProgressionMethods = {
       if (cmd) {
         input.held = cmd;
         input.freshMovement = cmd.movement;
+        input.freshPresented = cmd.presented;
+        input.freshPresentedCommand = true;
         input.lastFreshFireTick = this.state.tick;
         player.ackSeq = cmd.seq;
         const beamAim = this.combat.get(id);
@@ -3783,6 +3840,47 @@ export const roomProgressionMethods = {
     // Accepted long jumps own the tick before pit sampling. Their launch tick advances height but defers
     // horizontal travel so the authored 12 flight samples still total exactly 372 px.
     this.stepTraversalLaunches(dt);
+
+    // L11 SELF DEFENCE. Store the body the owner was actually presenting on the existing input command.
+    // Its radial clamp is B42's exact continuity budget (one fixed step + newest-wins catch-up + 3px
+    // tolerance). A malformed or projected report is deliberately NON-HITTABLE: clamping is robustness
+    // against a broken/desynced client, never permission to manufacture a hit at the projected point.
+    this.state.players.forEach((player, id) => {
+      const input = this.inputs.get(id);
+      const report = input?.freshPresented;
+      if (!input?.freshPresentedCommand) return;
+      const body = this.presentedSelfBodies.get(id);
+      if (!body) return;
+      body.reported = true;
+      // Once a command exists, an absent pair is uncertainty rather than permission to fall back to a
+      // potentially trailing server body. Schema-51 clients always send both keys.
+      if (!report) {
+        body.hittable = false;
+        return;
+      }
+      const combat = this.combat.get(id);
+      const baseMoveSpeed = relicMoveSpeed(player.relics);
+      const traversalSpeed =
+        combat?.stance === STANCE_DASH
+          ? DIST_JUMP_SPEED
+          : combat?.stance === STANCE_SLIDE
+            ? relicRollSpeedAtTick(player.relics, combat.slidePhaseTick)
+            : 0;
+      const maxMoveSpeed = Math.max(baseMoveSpeed, traversalSpeed, Math.hypot(player.mvx, player.mvy));
+      const clamped = clampPresentedSelfPosition(report, {
+        fromX: player.x,
+        fromY: player.y,
+        dtSeconds: dt,
+        maxMoveSpeed,
+        maxImpulseSpeed: Math.hypot(player.vx, player.vy),
+        clientCatchUpDisplacementPx: maxMoveSpeed * dt * Math.max(0, INPUT_MSGS_PER_TICK - 1),
+      });
+      body.hittable = clamped !== undefined && !clamped.clamped;
+      if (clamped) {
+        body.x = clamped.x;
+        body.y = clamped.y;
+      }
+    });
 
     // 1. Integrate each living player's authoritative movement from held input.
     this.state.players.forEach((player, id) => {
@@ -4126,19 +4224,21 @@ export const roomProgressionMethods = {
       }
       if (c.pitGrace > 0) c.pitGrace = Math.max(0, c.pitGrace - dt);
       if (this.ultimateOwnsMovement(player)) return;
+      const presented = this.presentedPlayerPosition(player);
+      if (!presented) return;
       if (player.height > GROUND_EPSILON || c.vh > 0) return; // airborne distance jump / launch — the vertical sentence carries you over
       // §29 belt PITS — gaps in the deck; grounded-over-a-gap falls (chip + snap back to the edge you came
       // from), a jump clears it. Enemies (which can't jump) get kited in for free kills (5.6 below).
       if (this.belt && this.beltLevel) {
         const level = this.beltLevel;
-        if (!beltPitAtX(level, player.x)) {
-          c.lastGroundX = player.x;
+        if (!beltPitAtX(level, presented.x)) {
+          c.lastGroundX = presented.x;
           return;
         }
         if (c.pitGrace > 0) return;
         this.damagePitFall(player);
         this.placeWithMotionEpoch(player, "pit-snapback", () => {
-          player.x = beltSafeX(level, player.x, c.lastGroundX);
+          player.x = beltSafeX(level, presented.x, c.lastGroundX);
           c.lastGroundX = player.x;
           c.pitGrace = PIT_FALL_GRACE;
           this.zeroMoveVel(id, undefined, "pit-snapback");
@@ -4146,17 +4246,17 @@ export const roomProgressionMethods = {
         player.fellSeq++;
         return;
       }
-      const overPit = isPlayerGroundContactInPit(this.map, player.x, player.y);
+      const overPit = isPlayerGroundContactInPit(this.map, presented.x, presented.y);
       if (!overPit) {
-        c.lastGroundX = player.x; // standing on solid ground → remember it
-        c.lastGroundY = player.y;
+        c.lastGroundX = presented.x; // standing on solid ground → remember the visible body
+        c.lastGroundY = presented.y;
         return;
       }
       if (c.pitGrace > 0) return; // just fell/landed — don't immediately re-fall
       // FALL.
       this.damagePitFall(player);
       const safe = isPlayerGroundContactInPit(this.map, c.lastGroundX, c.lastGroundY)
-        ? nearestGroundPx(this.map, player.x, player.y)
+        ? nearestGroundPx(this.map, presented.x, presented.y)
         : { x: c.lastGroundX, y: c.lastGroundY };
       this.placeWithMotionEpoch(player, "pit-snapback", () => {
         player.x = safe.x;
@@ -4763,9 +4863,11 @@ export const roomProgressionMethods = {
         const pcc = this.combat.get(player.id);
         if ((pcc?.invuln ?? 0) > 0) return; // parry i-frames
         if ((pcc?.juggleMercy ?? 0) > 0) return; // §51 G10 touchdown mercy — a juggle can't chain into the horde
+        const presented = this.presentedPlayerPosition(player);
+        if (!presented) return;
         const reach = kind.radius + PLAYER_RADIUS;
-        const dx = enemy.x - player.x;
-        const dy = enemy.y - player.y;
+        const dx = enemy.x - presented.x;
+        const dy = enemy.y - presented.y;
         const dmgMul = enemy.tough ? TOUGH_DAMAGE_MULT : 1;
         // §29 BELT: contact is LANE-gated too — horizontal touch AND a TIGHT depth alignment
         // (DEPTH_TOL_ENEMY), so sidestepping in depth is a real dodge. A player actively repositioning in

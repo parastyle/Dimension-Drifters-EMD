@@ -2590,7 +2590,7 @@ describe("improve2 integrity regressions", () => {
     expect(receipt?.delivery).toBe(CombatDelivery.Gun);
     expect(h.state().combatReceipts.length).toBe(COMBAT_RECEIPT_CAP);
     expect([...h.state().combatReceipts]).toEqual(rows);
-    expect(h.state().schemaVersion).toBe(50);
+    expect(h.state().schemaVersion).toBe(51);
   });
 });
 
@@ -2856,7 +2856,7 @@ describe("GameRoom — §50 spin re-hits per revolution", () => {
 });
 
 describe("GameRoom — melee parry telegraph commitment", () => {
-  it("locks one identity-targeted lunge for four ticks and never emits a floor cone", () => {
+  it("locks one victim identity for four ticks but lets its visually clear body evade", () => {
     const h = makeRoom();
     h.join("p1");
     h.room.map.tiles.fill(TILE_GROUND);
@@ -2880,7 +2880,7 @@ describe("GameRoom — melee parry telegraph commitment", () => {
     expect(st.phase).toBe("commit");
     const committed = { ...st.strike };
 
-    // Plain displacement models walking after the pop: it cannot exchange the committed victim or evade.
+    // Canon L11: the commitment cannot exchange victims, but its locked identity is hit only where drawn.
     p1.x -= 240;
     p1.y += 120;
     h.join("p2");
@@ -2896,7 +2896,7 @@ describe("GameRoom — melee parry telegraph commitment", () => {
     expect(st.strike).toEqual(committed);
     h.tick(1);
     expect(enemy.atkSeq).toBe(attackBefore + 1);
-    expect(p1.hp).toBeLessThan(p1Hp);
+    expect(p1.hp).toBe(p1Hp);
     expect(p2.hp).toBe(p2.maxHp);
     expect(h.state().telegraphs.size).toBe(0);
   });
@@ -2957,7 +2957,11 @@ describe("GameRoom — melee parry telegraph commitment", () => {
     combat.momentumY = 0;
     const hp = player.hp;
     const dodged = player.dodgedSeq;
-    h.tick(enemyComboShared.ENEMY_MELEE_COMMIT_TICKS);
+    h.tick(enemyComboShared.ENEMY_MELEE_COMMIT_TICKS - 1);
+    const committed = h.room.comboState.get(enemy.id).strike;
+    player.x = committed.endX;
+    player.y = committed.endY;
+    h.tick(1);
     expect(enemy.atkSeq).toBe(1);
     expect(player.hp).toBe(hp);
     expect(player.dodgedSeq).toBe(dodged + 1);
@@ -3572,7 +3576,7 @@ describe("GameRoom — §51 tough-enemy melee combos (Wave 1 authority)", () => 
     expect(enemy.comboSeq).toBe(1); // no strike Lock has happened yet
   });
 
-  it("gives every tough-combo beat the same four-tick locked commit window", () => {
+  it("keeps every tough-combo beat's four-tick lock while a visually clear body evades", () => {
     const { h, player } = makeEnemyComboRoom(1);
     const enemy = addComboEnemy(h, player, "combo-lock", "ronin", 140);
     h.tick(1); // grounded K1 begins
@@ -3596,7 +3600,7 @@ describe("GameRoom — §51 tough-enemy melee combos (Wave 1 authority)", () => 
     expect(enemy.atkSeq).toBe(attack);
     h.tick(1);
     expect(enemy.atkSeq).toBe(attack + 1);
-    expect(player.hp).toBeLessThan(hp);
+    expect(player.hp).toBe(hp);
     expect(enemy.x).toBeCloseTo(frozen.endX, 6);
     expect(enemy.y).toBeCloseTo(frozen.endY, 6);
     expect(enemy.comboSeq).toBe(1);
@@ -3733,7 +3737,7 @@ describe("GameRoom — §51 tough-enemy melee combos (Wave 1 authority)", () => 
   });
 
   it("ships schema 19, named depth decks, and guardrail-safe authored literals", () => {
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(50);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(51);
     expect(new EnemyState().comboSeq).toBe(0);
     expect(new EnemyState().comboFlags).toBe(0);
     expect(herePlayerJuggledDefault()).toBe(0);
@@ -3797,6 +3801,7 @@ function sendJumpFeelInput(
     fireHeld?: boolean;
   } = {},
 ) {
+  const player = h.state().players.get(id);
   h.send(id, "input", {
     seq,
     dx: fields.dx ?? 0,
@@ -3809,6 +3814,8 @@ function sendJumpFeelInput(
     aimY: 0,
     targetX: 0,
     targetY: 0,
+    px: player.x,
+    py: player.y,
   });
   h.tick(1);
 }
@@ -4094,7 +4101,7 @@ describe("GameRoom — jump-feel J1 authoritative stance/physics", () => {
 
   it("ships schema 21 with the three appended uint8 stance/VFX defaults", () => {
     const player = new enemyComboShared.PlayerState();
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(50);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(51);
     expect([player.moveStance, player.poundSeq, player.stanceSeq]).toEqual([0, 0, 0]);
   });
 });
@@ -4272,7 +4279,7 @@ describe("GameRoom — flavor-only character identity", () => {
 
   it("retains schema 21 while defaulting character identity to the shared default", () => {
     const player = new enemyComboShared.PlayerState();
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(50);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(51);
     expect([player.character, player.runCharacter]).toEqual([
       enemyComboShared.DEFAULT_CHARACTER,
       enemyComboShared.DEFAULT_CHARACTER,
@@ -4297,6 +4304,7 @@ function sendRollInput(
     fireHeld?: boolean;
   } = {},
 ) {
+  const player = h.state().players.get(id);
   h.send(id, "input", {
     seq,
     dx: fields.dx ?? 0,
@@ -4311,6 +4319,8 @@ function sendRollInput(
     aimY: 0,
     targetX: 0,
     targetY: 0,
+    px: player.x,
+    py: player.y,
   });
   h.tick(1);
 }
@@ -4318,6 +4328,14 @@ function sendRollInput(
 function makeRollRoom(id = "roll-player") {
   const fixture = makeJumpFeelRoom(id);
   return { ...fixture, combatInput: fixture.h.room.inputs.get(id) };
+}
+
+function presentRollBody(fixture: ReturnType<typeof makeRollRoom>) {
+  const body = fixture.h.room.presentedSelfBodies.get(fixture.player.id);
+  body.x = fixture.player.x;
+  body.y = fixture.player.y;
+  body.reported = true;
+  body.hittable = true;
 }
 
 function beginRoll(fixture: ReturnType<typeof makeRollRoom>, seq = 1, dx = 1, dy = 0) {
@@ -4418,12 +4436,14 @@ describe("GameRoom — V7 fixed tumble roll", () => {
     const hp = fixture.player.hp;
     const parried = fixture.player.parriedSeq;
     for (let tick = 1; tick <= enemyComboShared.ROLL_IFRAME_TICKS; tick++) {
+      presentRollBody(fixture);
       fixture.h.room.applyBossMelee(fixture.player.x - 20, fixture.player.y, 1, 0, 80, 1, 7, 0);
       expect(fixture.player.hp).toBe(hp);
       if (tick < enemyComboShared.ROLL_IFRAME_TICKS) fixture.h.tick(1);
     }
     expect(fixture.player.parriedSeq).toBe(parried);
     fixture.h.tick(1);
+    presentRollBody(fixture);
     fixture.h.room.applyBossMelee(fixture.player.x - 20, fixture.player.y, 1, 0, 80, 1, 7, 0);
     expect(fixture.player.hp).toBe(hp - 7);
   });
@@ -4491,6 +4511,7 @@ describe("GameRoom — V7 fixed tumble roll", () => {
       const fixture = makeRollRoom(`roll-${name}`);
       beginRoll(fixture);
       const hp = fixture.player.hp;
+      presentRollBody(fixture);
       damage(fixture);
       expect(fixture.player.hp).toBe(hp - 9);
     }
@@ -4505,6 +4526,7 @@ describe("GameRoom — V7 fixed tumble roll", () => {
     puddle.h.state().zones.set(zone.id, zone);
     puddle.h.room.zoneMeta.set(zone.id, ZONE_TTL);
     const hp = puddle.player.hp;
+    presentRollBody(puddle);
     puddle.h.room.stepZones(0.05);
     expect(puddle.player.hp).toBeLessThan(hp);
   });
@@ -5035,8 +5057,8 @@ describeUltimateImplementation("ULT U1 lifecycle, co-op, and schema 25", () => {
     const h = makeRoom();
     h.join("ult-schema");
     const player = h.state().players.get("ult-schema");
-    expect(h.state().schemaVersion).toBe(50);
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(50);
+    expect(h.state().schemaVersion).toBe(51);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(51);
     expect([
       player.ultimate.archetype,
       player.ultimate.charge,
@@ -5096,9 +5118,9 @@ describe("pet v1 join snapshot, lock, and schema 25", () => {
     h.room.clients.push(client);
     h.room.onJoin(client, { metaAccount: account, selectedPetId: "brass-crab" });
     const player = h.state().players.get("pet-lock");
-    expect([h.state().schemaVersion, enemyComboShared.SCHEMA_VERSION]).toEqual([50, 50]);
+    expect([h.state().schemaVersion, enemyComboShared.SCHEMA_VERSION]).toEqual([51, 51]);
 
-    expect([h.state().schemaVersion, enemyComboShared.SCHEMA_VERSION]).toEqual([50, 50]);    expect({ petId: player.petId, petLevelBand: player.petLevelBand }).toEqual({
+    expect([h.state().schemaVersion, enemyComboShared.SCHEMA_VERSION]).toEqual([51, 51]);    expect({ petId: player.petId, petLevelBand: player.petLevelBand }).toEqual({
       petId: "hearth-newt",
       petLevelBand: 3,
     });
@@ -5475,8 +5497,8 @@ describe("GameRoom — independent weapon slots and compatibility row", () => {
 
   it("keeps schema 38 and the unrelated compatibility-container tenants intact", () => {
     const fresh = new enemyComboShared.PlayerState();
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(50);
-    expect(new enemyComboShared.ArenaState().schemaVersion).toBe(50);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(51);
+    expect(new enemyComboShared.ArenaState().schemaVersion).toBe(51);
     expect(fresh.dualWield).toMatchObject({
       retiredByte0: 255,
       retiredUint32: 0,
@@ -6066,8 +6088,8 @@ describe("GameRoom — schema-31 Drive authority", () => {
     );
     const cost = enemyComboShared.driveCostForProfile(profile, interval);
 
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(50);
-    expect(h.state().schemaVersion).toBe(50);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(51);
+    expect(h.state().schemaVersion).toBe(51);
     expect(player.weaponResource).toBe(player.dualWield.weaponResource);
     expect(player.weaponResource).toMatchObject({
       valueQ: 10_000,
@@ -6380,7 +6402,7 @@ describe("GameRoom — schema-31 public prestige ceremony", () => {
     expect(metadata[11]).toMatchObject({ name: "movementCorrectionSeq", type: "uint32" });
     expect(metadata[12]).toMatchObject({ name: "serverMotionEpoch", type: "uint32" });
     expect(metadata[13]).toMatchObject({ name: "serverMotionActive", type: "boolean" });
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(50);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(51);
   });
 });
 

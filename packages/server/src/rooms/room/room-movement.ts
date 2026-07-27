@@ -738,6 +738,9 @@ export const roomMovementMethods = {
   ): void {
     this.beginServerMotion(player, ticks, source);
     place();
+    const presented = this.presentedSelfBodies.get(player.id);
+    // The client may still be drawing the pre-placement body until it reports the next visible frame.
+    if (presented?.reported) presented.hittable = false;
   },
 
   /** Recompute the wire flag before consuming this tick's client report. */

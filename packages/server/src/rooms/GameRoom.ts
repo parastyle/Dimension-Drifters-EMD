@@ -508,7 +508,7 @@ import {
   wipeWeaponBankForPrestige,
 } from "./progression.js";
 import { SpatialGrid } from "./SpatialGrid.js";import { COMBO_RINGOUT_ORBIT, COMBO_RIPOSTE_STAGGER_TICKS, ZERO_MOVE_INPUT, ZERO_IMPULSE, tickReached, ticksFromSeconds, pointSegmentDistanceSq, pointInConvexQuadrilateral, pointSweptUprightCapsuleDistanceSq, EXTRACT_ARM_SECONDS, EXTRACT_HOLD_SECONDS, SPAWN_CANDIDATE_COUNT, SPAWN_MIN_DISTANCE, SPAWN_CAMERA_HALF_WIDTH, SPAWN_CAMERA_HALF_HEIGHT, ENEMY_GRID_CELL_SIZE, MAX_ENEMY_RADIUS, ENEMY_SEPARATION_OVERLAP_FRACTION, ENEMY_SEPARATION_MAX_STEP, GROUND_ZONE_ENTITY_CAP, GROUND_ZONE_OWNER_CAP, roomProgressionMethods, GAME_ROOM_STATICS } from "./room/room-progression.js";
-import type { InputCmd, InputState, WeaponResourceLedger, WeaponSpendReason, ZoneRuntime, WeaponSpendResult, PendingScatterVolley, PendingHybridProjectile, PendingWeaponThrow, ActiveMeleeSwing, DriveRuntime, RunWeaponLedger, PickupWeaponBankMeta, DisconnectedPlayerReservation, PlayerDamageKind, PetRunRuntime, UltimateTarget, UltimateRuntime, WeaponHand, CombatState, DuelistComboState, RewardBoundary, ServerMotionSource } from "./room/room-progression.js";
+import type { InputCmd, InputState, PresentedSelfBody, WeaponResourceLedger, WeaponSpendReason, ZoneRuntime, WeaponSpendResult, PendingScatterVolley, PendingHybridProjectile, PendingWeaponThrow, ActiveMeleeSwing, DriveRuntime, RunWeaponLedger, PickupWeaponBankMeta, DisconnectedPlayerReservation, PlayerDamageKind, PetRunRuntime, UltimateTarget, UltimateRuntime, WeaponHand, CombatState, DuelistComboState, RewardBoundary, ServerMotionSource } from "./room/room-progression.js";
 import { roomMovementMethods } from "./room/room-movement.js";
 import { roomCombatMethods } from "./room/room-combat.js";
 import { roomEnemyMethods } from "./room/room-enemies.js";
@@ -559,6 +559,8 @@ export class GameRoom extends Room<ArenaState> {
   /** B42 accepted owner poses are re-applied after legacy player-body resolution; navigation was already
    * swept and validated, while co-op friends deliberately do not become an authority wall. */
   private readonly acceptedClientMovement = new Map<string, ClientMovementReport>();
+  /** L11 owner-reported screen body. This is read only by incoming player-defence resolution. */
+  private readonly presentedSelfBodies = new Map<string, PresentedSelfBody>();
   /** Exclusive tick deadline for short server-authored impulse/reposition ownership windows. */
   private readonly serverMotionUntilTick = new Map<string, number>();
   /** Classification companion for the active B42 epoch. B45 recoil is the sole legal weapon source. */
@@ -1209,6 +1211,9 @@ export class GameRoom extends Room<ArenaState> {
     private declare advanceElapsed: OmitThisParameter<typeof roomProgressionMethods.advanceElapsed>;
 
     private declare resetElapsed: OmitThisParameter<typeof roomProgressionMethods.resetElapsed>;
+
+  /** Canon L11: the client-presented SELF body is the only positional incoming-damage target. */
+    private declare presentedPlayerPosition: OmitThisParameter<typeof roomProgressionMethods.presentedPlayerPosition>;
 
   /** §4 v0.107 defense-in-depth (review #4): WITHOUT this, Colyseus does not wrap the simulation-interval
    *  or message handlers in try/catch — a single uncaught throw (e.g. a hostile payload reaching a schema
@@ -1924,6 +1929,7 @@ installPrototypeMembers(GameRoom, [
   [roomCombatMethods, "writeCombatReceipt"],
   [roomProgressionMethods, "advanceElapsed"],
   [roomProgressionMethods, "resetElapsed"],
+  [roomProgressionMethods, "presentedPlayerPosition"],
   [roomProgressionMethods, "onUncaughtException"],
   [roomProgressionMethods, "update"],
   [roomProgressionMethods, "stepSim"],

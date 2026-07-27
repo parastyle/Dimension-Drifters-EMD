@@ -1,8 +1,12 @@
 import {
   CORPORATE_ELEVATOR_PHASE,
+  ENEMY_KINDS,
+  ENEMY_RADIUS,
+  EnemyState,
   INPUT_MSGS_PER_TICK,
   MOVE_SPEED,
   meleeComboSelectionFor,
+  PLAYER_RADIUS,
   swingDescriptorFor,
   TILE_GROUND,
   TILE_PIT,
@@ -82,6 +86,47 @@ function send(room: AnyRoom, client: { sessionId: string }, payload: unknown): v
 }
 
 describe("GameRoom B42 relaxed self-movement authority", () => {
+  it("L11 never damages a visually clear presented body when the stale server copy is in 42px contact", () => {
+    const { room, client, player } = fixture();
+    const kindId = "b88-l11-contact-fixture";
+    const boothill = ENEMY_KINDS.boothill;
+    if (!boothill) throw new Error("boothill fixture kind missing");
+    ENEMY_KINDS[kindId] = {
+      ...boothill,
+      archetype: "spitter",
+      speed: 0,
+      radius: ENEMY_RADIUS,
+      contactDamage: 4,
+      ranged: undefined,
+    };
+    try {
+      const reach = PLAYER_RADIUS + ENEMY_RADIUS;
+      const authLead = 49; // Owner capture: ordinary walking exceeded 48px.
+      expect(reach).toBe(42);
+      expect(authLead).toBeGreaterThan(48);
+
+      const serverX = player.x;
+      const enemy = new EnemyState();
+      enemy.id = "stale-contact";
+      enemy.kind = kindId;
+      enemy.hp = 100;
+      enemy.x = serverX - (reach - 1);
+      enemy.y = player.y;
+      room.state.enemies.set(enemy.id, enemy);
+
+      const presentedX = serverX + authLead;
+      expect(Math.abs(enemy.x - serverX)).toBeLessThan(reach);
+      expect(Math.abs(enemy.x - presentedX)).toBeGreaterThan(reach);
+      const hp = player.hp;
+      send(room, client, report(player, 1, { px: presentedX, py: player.y }));
+
+      expect(player.x).toBe(serverX);
+      expect(player.hp).toBe(hp);
+    } finally {
+      delete ENEMY_KINDS[kindId];
+    }
+  });
+
   it("adopts a plausible client pose and rejects speed, continuity, and pit violations", () => {
     const { room, client, player } = fixture();
     send(room, client, report(player, 1, { clientX: 1_516, clientMvx: 320 }));

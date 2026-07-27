@@ -558,7 +558,7 @@ function joinWeaponAccount(
 
 
 describe("GameRoom — melee parry telegraph commitment", () => {
-  it("locks one identity-targeted lunge for four ticks and never emits a floor cone", () => {
+  it("locks one victim identity for four ticks but lets its visually clear body evade", () => {
     const h = makeRoom();
     h.join("p1");
     h.room.map.tiles.fill(TILE_GROUND);
@@ -582,7 +582,7 @@ describe("GameRoom — melee parry telegraph commitment", () => {
     expect(st.phase).toBe("commit");
     const committed = { ...st.strike };
 
-    // Plain displacement models walking after the pop: it cannot exchange the committed victim or evade.
+    // Canon L11: the commitment cannot exchange victims, but its locked identity is hit only where drawn.
     p1.x -= 240;
     p1.y += 120;
     h.join("p2");
@@ -598,7 +598,7 @@ describe("GameRoom — melee parry telegraph commitment", () => {
     expect(st.strike).toEqual(committed);
     h.tick(1);
     expect(enemy.atkSeq).toBe(attackBefore + 1);
-    expect(p1.hp).toBeLessThan(p1Hp);
+    expect(p1.hp).toBe(p1Hp);
     expect(p2.hp).toBe(p2.maxHp);
     expect(h.state().telegraphs.size).toBe(0);
   });
@@ -659,7 +659,11 @@ describe("GameRoom — melee parry telegraph commitment", () => {
     combat.momentumY = 0;
     const hp = player.hp;
     const dodged = player.dodgedSeq;
-    h.tick(enemyComboShared.ENEMY_MELEE_COMMIT_TICKS);
+    h.tick(enemyComboShared.ENEMY_MELEE_COMMIT_TICKS - 1);
+    const committed = h.room.comboState.get(enemy.id).strike;
+    player.x = committed.endX;
+    player.y = committed.endY;
+    h.tick(1);
     expect(enemy.atkSeq).toBe(1);
     expect(player.hp).toBe(hp);
     expect(player.dodgedSeq).toBe(dodged + 1);

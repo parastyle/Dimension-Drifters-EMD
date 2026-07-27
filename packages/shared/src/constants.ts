@@ -10,7 +10,7 @@
  *  decodes new patches with corrupted offsets (HP reads as aim, etc.). The server stamps it on
  *  `ArenaState.schemaVersion`; the client compares on join and tells the player to hard-reload on a
  *  mismatch instead of rendering silently-corrupt state. */
-export const SCHEMA_VERSION = 50 as const; // B67 utility preference appended after B62 pause/B70 resume
+export const SCHEMA_VERSION = 51 as const; // L11 input wire adds the client-presented defensive body
 /** Bounded seat reservation for an unexpected transport loss. */
 export const RECONNECTION_WINDOW_SECONDS = 30 as const;
 
