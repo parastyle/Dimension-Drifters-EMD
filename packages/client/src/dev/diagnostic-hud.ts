@@ -47,8 +47,7 @@ export const DIAGNOSTIC_THRESHOLDS = Object.freeze({
   enemyRed: MAX_ENEMIES,
   projectileAmber:
     Math.floor(
-      (FRIENDLY_PROJECTILE_ENTITY_CAP + BOSS_PROJECTILE_BUDGET) *
-        ENTITY_LOAD_AMBER_FRACTION,
+      (FRIENDLY_PROJECTILE_ENTITY_CAP + BOSS_PROJECTILE_BUDGET) * ENTITY_LOAD_AMBER_FRACTION,
     ) + 1,
   projectileRed: FRIENDLY_PROJECTILE_ENTITY_CAP + BOSS_PROJECTILE_BUDGET,
   vfxSurfaceAmber: Math.floor(12 * ENTITY_LOAD_AMBER_FRACTION) + 1,
@@ -337,6 +336,8 @@ export class DiagnosticHudTelemetry {
   private currentIntraTickDivergencePx = Number.NaN;
   private readonly rootStepPx = new Float32Array(ROOT_STEP_TRACE_FRAMES);
   private readonly rootGapPx = new Float32Array(ROOT_STEP_TRACE_FRAMES);
+  private readonly baseStepPx = new Float32Array(ROOT_STEP_TRACE_FRAMES);
+  private readonly previewMs = new Float32Array(ROOT_STEP_TRACE_FRAMES);
   private readonly rootStepIntent = new Uint8Array(ROOT_STEP_TRACE_FRAMES);
   private rootStepIndex = 0;
   private rootStepCount = 0;
@@ -538,10 +539,18 @@ export class DiagnosticHudTelemetry {
    * question is the whole of the owner's stop-pop report, so record the raw per-frame step and the
    * move-intent flag in fixed rings (no per-frame allocation) and print them in the dump.
    */
-  recordSelfRootStep(stepPx: number, moveIntent: boolean, gapPx = Number.NaN): void {
+  recordSelfRootStep(
+    stepPx: number,
+    moveIntent: boolean,
+    gapPx = Number.NaN,
+    baseStepPx = Number.NaN,
+    previewMs = Number.NaN,
+  ): void {
     const step = Number.isFinite(stepPx) ? Math.max(0, stepPx) : 0;
     this.rootStepPx[this.rootStepIndex] = step;
     this.rootGapPx[this.rootStepIndex] = Number.isFinite(gapPx) ? Math.max(0, gapPx) : 0;
+    this.baseStepPx[this.rootStepIndex] = Number.isFinite(baseStepPx) ? Math.max(0, baseStepPx) : 0;
+    this.previewMs[this.rootStepIndex] = Number.isFinite(previewMs) ? Math.max(0, previewMs) : 0;
     this.rootStepIntent[this.rootStepIndex] = moveIntent ? 1 : 0;
     this.rootStepIndex = (this.rootStepIndex + 1) % ROOT_STEP_TRACE_FRAMES;
     if (this.rootStepCount < ROOT_STEP_TRACE_FRAMES) this.rootStepCount++;
@@ -855,6 +864,13 @@ export class DiagnosticHudTelemetry {
       this.rootStepTrace(),
       `ROOT GAP px |root-predicted| (same frames; should stay ~0 -- growth = withheld movement)`,
       this.rootGapTrace(),
+      // renderPos = committed base + preview(frac). A one-tick rendered spike means those disagreed for a
+      // frame. BASE spikes ~16px on the same frame the spike appears => the committed tick landed and the
+      // preview did not hand it back. BASE flat => the preview itself jumped.
+      `BASE STEP px/frame (committed tick base; ~0 between ticks, one MOVE_SPEED*TICK jump per commit)`,
+      this.traceRing(this.baseStepPx),
+      `PREVIEW ms (frame-sampled lead; should saw 0->TICK_MS and reset, never collapse early)`,
+      this.traceRing(this.previewMs),
     );
     const redLabels = snapshot.metrics
       .filter((metric) => metric.state === "RED")
@@ -1026,8 +1042,14 @@ export class DiagnosticHud {
     this.telemetry.recordRenderCommitDivergence(divergencePx);
   }
 
-  recordSelfRootStep(stepPx: number, moveIntent: boolean, gapPx?: number): void {
-    this.telemetry.recordSelfRootStep(stepPx, moveIntent, gapPx);
+  recordSelfRootStep(
+    stepPx: number,
+    moveIntent: boolean,
+    gapPx?: number,
+    baseStepPx?: number,
+    previewMs?: number,
+  ): void {
+    this.telemetry.recordSelfRootStep(stepPx, moveIntent, gapPx, baseStepPx, previewMs);
   }
 
   recordIntraTickRenderCommitDivergence(divergencePx: number): void {

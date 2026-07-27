@@ -1678,6 +1678,9 @@ export class ArenaScene extends Phaser.Scene {
    */
   private selfPresentedWorldX = Number.NaN;
   private selfPresentedWorldY = Number.NaN;
+  /** Diagnostic only: previous frame's committed prediction base, for the per-frame step split. */
+  private selfCommittedBaseX = Number.NaN;
+  private selfCommittedBaseY = Number.NaN;
   /** Previous rendered input state; used only to identify a genuine moving→stopped presentation edge. */
   private selfMoveIntentActive = false;
   private localParryCd = 0;
@@ -9998,11 +10001,23 @@ export class ArenaScene extends Phaser.Scene {
           Math.hypot(root.x - predicted.x, root.y - predicted.y),
         );
         // Raw per-frame motion of the DRAWN root. Aggregates cannot show a one-frame repayment; this can.
-        this.diagnosticHud?.recordSelfRootStep(
-          Math.hypot(root.x - previousWorldX, root.y - previousWorldY),
-          moveIntentActive,
-          Math.hypot(root.x - predicted.x, root.y - predicted.y),
-        );
+        {
+          // Split the rendered step into its two sources so a one-tick spike can be attributed.
+          const baseX = this.predictor.committedBaseX;
+          const baseY = this.predictor.committedBaseY;
+          const baseStep = Number.isFinite(this.selfCommittedBaseX)
+            ? Math.hypot(baseX - this.selfCommittedBaseX, baseY - this.selfCommittedBaseY)
+            : 0;
+          this.selfCommittedBaseX = baseX;
+          this.selfCommittedBaseY = baseY;
+          this.diagnosticHud?.recordSelfRootStep(
+            Math.hypot(root.x - previousWorldX, root.y - previousWorldY),
+            moveIntentActive,
+            Math.hypot(root.x - predicted.x, root.y - predicted.y),
+            baseStep,
+            this.predictor.previewFracSec * 1000,
+          );
+        }
         this.selfPredHeight = predicted.height;
         this.selfPredVh = predicted.vh;
         this.selfPredStance = predicted.stance;

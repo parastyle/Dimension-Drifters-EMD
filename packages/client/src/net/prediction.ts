@@ -2132,4 +2132,21 @@ export class SelfPredictor {
       correctionRemainingMs: this.correctionRemainingSec * 1000,
     };
   }
+
+  /**
+   * DIAGNOSTIC ONLY (read-only). `renderPos` returns committed base + preview fraction. A rendered step
+   * of one whole tick means those two disagreed for a frame, but the composed result cannot say which
+   * moved. Expose both so the per-frame trace can separate "the committed base jumped a tick" from
+   * "the preview failed to hand that tick back".
+   */
+  get committedBaseX(): number {
+    return this.pred.x;
+  }
+  get committedBaseY(): number {
+    return this.pred.y;
+  }
+  /** Seconds of frame-sampled input currently previewed ahead of the committed base, as renderPos uses it. */
+  get previewFracSec(): number {
+    return this.inputSamples.length > 0 ? Math.min(Math.max(this.inputSampleSeconds, 0), DT) : 0;
+  }
 }
