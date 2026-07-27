@@ -20,7 +20,7 @@ import {
 import { describe, expect, it } from "vitest";
 
 describe("Drive formula v1", () => {
-  it("covers the frozen 385-weapon post-B63/B66 catalog in deterministic id order", () => {
+  it("covers the frozen 386-weapon post-B63/B66 catalog in deterministic id order", () => {
     // The deliberate literal remains in weapon-resource.ts; this consumer does not duplicate it.
     expect(WEAPON_RESOURCE_IDS).toHaveLength(WEAPON_RESOURCE_CENSUS_PINS.catalog);
     expect(WEAPON_RESOURCE_IDS).toEqual([...WEAPON_RESOURCE_IDS].sort());
@@ -38,8 +38,8 @@ describe("Drive formula v1", () => {
         expect(profile.neutralCost % DRIVE_COST_QUANTUM).toBe(0);
       }
     }
-    // Deliberately literal delivery ownership: all five new profiles must enter the gun branch.
-    expect(census).toEqual({ melee: 181, thrown: 27, gun: 145, cast: 5, beam: 23, zone: 4 });
+    // Deliberately literal delivery ownership: Solaris enters the beam branch.
+    expect(census).toEqual({ melee: 181, thrown: 27, gun: 145, cast: 5, beam: 24, zone: 4 });
   });
 
   it("pins every coefficient, frozen median, and the bounded utility overrides", () => {

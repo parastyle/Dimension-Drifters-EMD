@@ -16241,6 +16241,66 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "spread": 0.018,
       "muzzleColor": 12945978
     }
+  },
+  "x2-solaris-beam-lance": {
+    "id": "x2-solaris-beam-lance",
+    "name": "Solaris Beam Lance",
+    "expansion": true,
+    "damage": 4,
+    "range": 300,
+    "halfArc": 0.42,
+    "cooldown": 0.85,
+    "displayLength": 184,
+    "swingArc": 1.8,
+    "gripFrac": 0.16,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "beam",
+      "fireMode": "hold",
+      "element": "fire",
+      "classPool": "ranged",
+      "family": "continuous-beam-rifle",
+      "rangeBand": "long",
+      "scaling": [
+        "DEX",
+        "INT"
+      ]
+    },
+    "recoil": 24,
+    "gripPoints": {
+      "primary": {
+        "x": 0.27,
+        "y": 0.72
+      },
+      "secondary": {
+        "x": 0.62,
+        "y": 0.68,
+        "role": "under-barrel"
+      }
+    },
+    "description": "A flagship continuous beam rifle whose optically matched lens stack holds a narrow solar column until its monolithic receiver heat sink reaches the issue limit.",
+    "twoHanded": true,
+    "beam": {
+      "damagePerSecond": 40,
+      "tickRate": 0.1,
+      "width": 12,
+      "range": 620,
+      "chargeSeconds": 0.85,
+      "sweepLagSeconds": 0.12,
+      "overheat": {
+        "maxChannelSeconds": 1.25,
+        "heatPerSecond": 0.6,
+        "coolPerSecond": 0.35,
+        "ignitionHeat": 0.25,
+        "lockSeconds": 1.5,
+        "restartHeat": 0.35
+      },
+      "movement": {
+        "chargeMul": 0.55,
+        "channelMul": 0.35
+      }
+    }
   }
 };
 

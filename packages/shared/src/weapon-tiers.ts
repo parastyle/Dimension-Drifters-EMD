@@ -21,6 +21,7 @@ export const WEAPON_TIER_MANUAL_FLOORS: Readonly<Partial<Record<string, WeaponTi
     "x2-abyssal-apocrypha": 4,
     "x2-choir-iron-greataxe": 3,
     "x2-quarry-splitter-bardiche": 3,
+    "x2-solaris-beam-lance": 5,
   });
 
 function expectedPierceTargets(pierce: number | undefined): number {
