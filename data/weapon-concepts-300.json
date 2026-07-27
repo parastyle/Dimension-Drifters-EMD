@@ -1,7 +1,7 @@
 {
   "generated": "2026-06-17",
   "source": "design-300-weapons workflow (15 agents)",
-  "count": 371,
+  "count": 372,
   "byType": {
     "melee": 135,
     "ranged": 138,
@@ -21343,6 +21343,64 @@
         "displayLength": 168,
         "swingArc": 1.8,
         "gripFrac": 0.16
+      }
+    },
+    {
+      "id": "x2-zenith-photon-dmr",
+      "name": "Zenith Photon DMR",
+      "description": "An immaculate photon marksman rifle whose trued open frame holds a flawless forward lens stack and torque-witnessed optic in exact alignment for measured long-range pulses.",
+      "type": "ranged",
+      "family": "photon-marksman-rifle",
+      "theme": "plain near-black issue-grade photon marksman rifle with a very long slender emitter barrel, skeletal open frame, large flawless amber forward lens assembly, precision optic, and folded thin bipod",
+      "element": "arcane",
+      "finish": "pristine",
+      "grip": "2H",
+      "fireMode": "semi-auto",
+      "gripPoints": {
+        "primary": {
+          "x": 0.25,
+          "y": 0.68
+        },
+        "secondary": {
+          "x": 0.6,
+          "y": 0.67,
+          "role": "under-barrel"
+        }
+      },
+      "size": "L",
+      "rangeBand": "long",
+      "scaling": [
+        "DEX",
+        "INT"
+      ],
+      "palettePrimary": "#14191E",
+      "paletteAccent": "#DCA33A",
+      "artPrompt": "Weapon-only in-world game sprite on a perfectly flat fully opaque #00ff00 chroma-key field: exactly ONE very long thin photon marksman RIFLE with a rigid narrow shoulder stock and conventional pistol grip on the LEFT, a clearly visible trigger inside a sturdy trigger guard, aligned sights, a mechanically continuous skeletal OPEN frame, and a slender straight emitter barrel ending at the RIGHT. Build one large forward focusing-lens assembly around the barrel near the muzzle, with a thick round housing, flawless amber optical glass, and precisely concentric internal rings. Leave bold open negative-space windows through the trued frame between the receiver and forward lens assembly, while sturdy upper and lower spars keep the barrel, action, and stock visibly connected. Seat one substantial boxy precision optic firmly above the receiver with aligned clamps and short nonverbal amber torque-witness ticks on its fasteners. Fold one very thin rigid bipod tightly rearward beneath the forward frame, both narrow legs clipped flat against the underside with no loose or dangling piece. Keep it unmistakably a held-and-aimed GUN: shoulder stock, cheek line, pistol grip, trigger, trigger guard, support-grip surface, sights, connected action, straight barrel axis, and muzzle aperture are all clear. Do NOT mount any laser, flashlight, combination unit, accessory box, rail light, or emitted aiming beam. Precision photon-issue quality: the open frame is perfectly trued, both spars are dead straight, the forward lens stack is flawless and coaxial, the optic is torque-marked and exactly aligned, the folded bipod seats symmetrically, every panel gap is hairline-even, and every fastener is torqued true; expensive, immaculate, and professionally maintained. Use a plain matched near-black finish with NO camouflage. No junk, tape, repair, salvage, mismatched plate, scratch, dent, rust, grime, poverty signal, improvised part, or ground-off marking. DARK house rendering: near-black charcoal dominates the complete weapon, the broad sides and underside stay deep spot-black, and only narrow cool gunmetal highlights catch TOP-FACING EDGES; never evenly lit and never mid-grey overall. Use exactly one warm accent colour: muted amber-gold confined to the flawless forward optical glass, the dark interior of the muzzle aperture, and the tiny nonverbal optic torque-witness ticks; allow only a restrained contained emitter brightness with no cast light, aura, bloom, beam, ray, or spill. Draw a bold heavy black outline around the entire silhouette AND equally heavy crisp black internal ink dividing every frame spar, open window, lens ring, receiver panel, optic housing, clamp, stock plane, grip plane, trigger guard, barrel section, folded bipod leg, fastener, and seam. Slightly exaggerate the large forward lens housing, substantial precision optic, long open-frame span, and readable folded bipod while keeping the barrel itself slender and the grip-to-trigger-to-action-to-barrel relationship functional. Use only about 4-6 flat opaque cel colours plus black ink, hard flat colour planes only. One complete connected weapon, strict flat orthographic full side-profile, perfectly horizontal and fully visible with generous padding, stock and grip LEFT, emitter muzzle RIGHT. No character, hands, second weapon, detached object, ammunition, projectile, firing effect, muzzle flash, smoke, scenery, floor, shadow, reflection, text, letters, numbers, logo, serial, maker mark, symbol, watermark, sling, strap, rope, chain, tassel, cable, or dangling part. No photorealism, realistic product photography, catalogue rendering, glossy studio lighting, 3D rendering, soft airbrushing, gradients, evenly lit mid-grey surfaces, clean vector styling, technical diagram, wand, staff, sculpture, or abstract prop.",
+      "cardartAction": "settled on its folded bipod through one measured long-range shot as a narrow amber photon pulse snaps rightward from the flawless lens stack",
+      "behavior": {
+        "kind": "gun",
+        "damage": 15,
+        "projectileSpeed": 2500,
+        "range": 1050,
+        "fireRate": 0.46,
+        "spread": 0.004,
+        "pierce": 2,
+        "magazine": 6,
+        "reloadSeconds": 2.1,
+        "bulletKind": "laser",
+        "projectileArt": "generated",
+        "muzzle": "spark",
+        "muzzleColor": 14459706,
+        "recoil": 0.0006
+      },
+      "stats": {
+        "damage": 15,
+        "range": 300,
+        "halfArc": 0.38,
+        "cooldown": 0.46,
+        "displayLength": 196,
+        "swingArc": 1.8,
+        "gripFrac": 0.13
       }
     }
   ]

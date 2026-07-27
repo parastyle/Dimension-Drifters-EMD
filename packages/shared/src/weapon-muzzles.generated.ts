@@ -4481,5 +4481,27 @@ export const WEAPON_ART_MUZZLES = {
     ],
     "salvoMode": "parallel",
     "barrelMode": "parallel"
+  },
+  "x2-zenith-photon-dmr": {
+    "sprite": "x2-zenith-photon-dmr",
+    "parts": [
+      {
+        "width": 256,
+        "height": 55
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 29,
+        "derived": {
+          "x": 255,
+          "y": 29
+        }
+      }
+    ],
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
   }
 } as const satisfies Readonly<Record<string, WeaponArtMuzzleDefinition>>;

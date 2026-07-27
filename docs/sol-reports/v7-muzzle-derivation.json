@@ -4327,5 +4327,27 @@
     "override": "The release cone originates inside the registered open wyrm mouth; the closed silhouette cannot expose that aperture to alpha derivation.",
     "salvoMode": "parallel",
     "barrelMode": "parallel"
+  },
+  {
+    "id": "x2-zenith-photon-dmr",
+    "name": "Zenith Photon DMR",
+    "sprite": "x2-zenith-photon-dmr",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 29
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 29
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
   }
 ]
