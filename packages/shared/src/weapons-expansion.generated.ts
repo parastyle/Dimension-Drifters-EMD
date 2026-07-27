@@ -17215,6 +17215,288 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "life": 150
       }
     }
+  },
+  "x2-nova-pulse-repeater": {
+    "id": "x2-nova-pulse-repeater",
+    "name": "Nova Pulse Repeater",
+    "expansion": true,
+    "damage": 4,
+    "range": 260,
+    "halfArc": 0.42,
+    "cooldown": 0.12,
+    "displayLength": 168,
+    "swingArc": 1.8,
+    "gripFrac": 0.16,
+    "tags": {
+      "grip": "2H",
+      "size": "M",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "shock",
+      "classPool": "ranged",
+      "family": "pulse-rifle",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "INT"
+      ],
+      "weaponClass": "Special",
+      "subclass": "Special"
+    },
+    "recoil": 15,
+    "weaponUtility": "both",
+    "gripPoints": {
+      "primary": {
+        "x": 0.27,
+        "y": 0.71
+      },
+      "secondary": {
+        "x": 0.62,
+        "y": 0.69,
+        "role": "horizontal-foregrip"
+      }
+    },
+    "description": "An immaculate automatic pulse rifle whose crisp lengthwise indicator walks amber with each rapid energy packet before its short shroud sheds the heat.",
+    "twoHanded": true,
+    "gun": {
+      "damage": 4,
+      "projectileSpeed": 1800,
+      "range": 700,
+      "fireRate": 0.085,
+      "magazine": 36,
+      "reloadSeconds": 1.6,
+      "bulletKind": "laser",
+      "muzzle": "rapid",
+      "recoil": 0.00055,
+      "projectileArt": "generated",
+      "spread": 0.018,
+      "muzzleColor": 14917947
+    }
+  },
+  "x2-zenith-photon-dmr": {
+    "id": "x2-zenith-photon-dmr",
+    "name": "Zenith Photon DMR",
+    "expansion": true,
+    "damage": 15,
+    "range": 300,
+    "halfArc": 0.38,
+    "cooldown": 0.46,
+    "displayLength": 196,
+    "swingArc": 1.8,
+    "gripFrac": 0.13,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "projectile",
+      "fireMode": "semi-auto",
+      "element": "arcane",
+      "classPool": "ranged",
+      "family": "photon-marksman-rifle",
+      "rangeBand": "long",
+      "scaling": [
+        "DEX",
+        "INT"
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Marksman Rifles"
+    },
+    "recoil": 107,
+    "gripPoints": {
+      "primary": {
+        "x": 0.25,
+        "y": 0.68
+      },
+      "secondary": {
+        "x": 0.6,
+        "y": 0.67,
+        "role": "under-barrel"
+      }
+    },
+    "description": "An immaculate photon marksman rifle whose trued open frame holds a flawless forward lens stack and torque-witnessed optic in exact alignment for measured long-range pulses.",
+    "twoHanded": true,
+    "gun": {
+      "damage": 15,
+      "projectileSpeed": 2500,
+      "range": 1050,
+      "fireRate": 0.46,
+      "magazine": 6,
+      "reloadSeconds": 2.1,
+      "bulletKind": "laser",
+      "muzzle": "spark",
+      "recoil": 0.0006,
+      "projectileArt": "generated",
+      "spread": 0.004,
+      "pierce": 2,
+      "muzzleColor": 14459706
+    }
+  },
+  "x2-ember-plasma-carbine": {
+    "id": "x2-ember-plasma-carbine",
+    "name": "Ember Plasma Carbine",
+    "expansion": true,
+    "damage": 7,
+    "range": 220,
+    "halfArc": 0.48,
+    "cooldown": 0.32,
+    "displayLength": 142,
+    "swingArc": 1.8,
+    "gripFrac": 0.17,
+    "tags": {
+      "grip": "2H",
+      "size": "M",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "fire",
+      "classPool": "ranged",
+      "family": "plasma-carbine",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "INT"
+      ],
+      "weaponClass": "Special",
+      "subclass": "Special"
+    },
+    "recoil": 29,
+    "weaponUtility": "both",
+    "gripPoints": {
+      "primary": {
+        "x": 0.27,
+        "y": 0.7
+      },
+      "secondary": {
+        "x": 0.64,
+        "y": 0.68,
+        "role": "horizontal-foregrip"
+      }
+    },
+    "twoHanded": true,
+    "gun": {
+      "damage": 7,
+      "projectileSpeed": 850,
+      "range": 570,
+      "fireRate": 0.16,
+      "magazine": 18,
+      "reloadSeconds": 1.8,
+      "bulletKind": "laser",
+      "muzzle": "rapid",
+      "recoil": 0.00075,
+      "projectileArt": "generated",
+      "projectileVisualScale": 1.4,
+      "projectileColor": 14263100,
+      "spread": 0.025,
+      "muzzleColor": 14263100
+    }
+  },
+  "x2-singularity-micro-lance": {
+    "id": "x2-singularity-micro-lance",
+    "name": "Singularity Micro-Lance",
+    "expansion": true,
+    "damage": 5,
+    "range": 100,
+    "halfArc": 0.4,
+    "cooldown": 0.65,
+    "displayLength": 40,
+    "swingArc": 1.8,
+    "gripFrac": 0.24,
+    "tags": {
+      "grip": "1H",
+      "size": "S",
+      "delivery": "beam",
+      "fireMode": "hold",
+      "element": "void",
+      "classPool": "ranged",
+      "family": "beam-sidearm",
+      "rangeBand": "close",
+      "scaling": [
+        "DEX",
+        "INT"
+      ],
+      "weaponClass": "Special",
+      "subclass": "Special"
+    },
+    "recoil": 16,
+    "weaponUtility": "both",
+    "beam": {
+      "damagePerSecond": 50,
+      "tickRate": 0.1,
+      "width": 6,
+      "range": 360,
+      "chargeSeconds": 0.65,
+      "sweepLagSeconds": 0.05,
+      "overheat": {
+        "maxChannelSeconds": 1.25,
+        "heatPerSecond": 0.6,
+        "coolPerSecond": 0.35,
+        "ignitionHeat": 0.25,
+        "lockSeconds": 1.5,
+        "restartHeat": 0.35
+      },
+      "movement": {
+        "chargeMul": 0.55,
+        "channelMul": 0.35
+      }
+    }
+  },
+  "x2-aurora-ion-cannon": {
+    "id": "x2-aurora-ion-cannon",
+    "name": "Aurora Ion Cannon",
+    "expansion": true,
+    "damage": 38,
+    "range": 300,
+    "halfArc": 0.45,
+    "cooldown": 0.82,
+    "displayLength": 196,
+    "swingArc": 1.8,
+    "gripFrac": 0.18,
+    "tags": {
+      "grip": "2H",
+      "size": "XL",
+      "delivery": "projectile",
+      "fireMode": "semi-auto",
+      "element": "shock",
+      "classPool": "ranged",
+      "family": "heavy-ion-cannon",
+      "rangeBand": "long",
+      "scaling": [
+        "INT",
+        "STR"
+      ],
+      "weaponClass": "ranged",
+      "subclass": "Siege Cannons"
+    },
+    "recoil": 223,
+    "weaponUtility": "both",
+    "gripPoints": {
+      "primary": {
+        "x": 0.31,
+        "y": 0.73
+      },
+      "secondary": {
+        "x": 0.6,
+        "y": 0.69,
+        "role": "under-barrel"
+      }
+    },
+    "description": "A flagship shoulder-fired ion cannon whose sealed rear core drives three slow, armor-piercing packets through a broad precision-ribbed emitter.",
+    "twoHanded": true,
+    "gun": {
+      "damage": 38,
+      "projectileSpeed": 800,
+      "range": 760,
+      "fireRate": 0.82,
+      "magazine": 3,
+      "reloadSeconds": 2.8,
+      "bulletKind": "laser",
+      "muzzle": "artillery",
+      "recoil": 0.0023,
+      "projectileArt": "generated",
+      "projectileVisualScale": 2.6,
+      "projectileColor": 14721338,
+      "spread": 0.018,
+      "pierce": 3,
+      "muzzleColor": 14721338
+    }
   }
 };
 

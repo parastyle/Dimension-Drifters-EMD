@@ -314,8 +314,8 @@ export function weaponResourceProfile(weaponId: string): WeaponResourceProfile |
 // These are the one deliberate literal tripwire against SILENT weapon loss. Catalog additions bump this
 // owner once; tests consume the owner instead of copying its totals into unrelated census assertions.
 export const WEAPON_RESOURCE_CENSUS_PINS = Object.freeze({
-  catalog: 389,
-  active: 369,
+  catalog: 394,
+  active: 374,
   archived: 20,
 } as const);
 

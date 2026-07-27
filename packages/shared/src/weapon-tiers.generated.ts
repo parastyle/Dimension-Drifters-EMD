@@ -393,5 +393,10 @@ export const GENERATED_WEAPON_TIERS = {
   "x2-magnetar-coilgun": 4,
   "x2-solaris-beam-lance": 5,
   "x2-prism-scatter-emitter": 4,
-  "x2-voltcaster-arc-pistol": 3
+  "x2-voltcaster-arc-pistol": 3,
+  "x2-nova-pulse-repeater": 4,
+  "x2-zenith-photon-dmr": 4,
+  "x2-ember-plasma-carbine": 3,
+  "x2-singularity-micro-lance": 2,
+  "x2-aurora-ion-cannon": 5
 } as const satisfies Readonly<Record<string, WeaponTier>>;

@@ -10748,5 +10748,89 @@ export const GENERATED_WEAPON_LIMB_CLAIMS = {
         }
       ]
     ]
+  },
+  "x2-nova-pulse-repeater": {
+    "held": [
+      {
+        "limb": "hand-l",
+        "release": "handoff"
+      },
+      {
+        "limb": "hand-r",
+        "release": "handoff"
+      }
+    ],
+    "comboBeats": []
+  },
+  "x2-zenith-photon-dmr": {
+    "held": [
+      {
+        "limb": "hand-l",
+        "release": "handoff"
+      },
+      {
+        "limb": "hand-r",
+        "release": "handoff"
+      }
+    ],
+    "comboBeats": []
+  },
+  "x2-ember-plasma-carbine": {
+    "held": [
+      {
+        "limb": "hand-l",
+        "release": "handoff"
+      },
+      {
+        "limb": "hand-r",
+        "release": "handoff"
+      }
+    ],
+    "comboBeats": []
+  },
+  "x2-singularity-micro-lance": {
+    "held": [
+      {
+        "limb": "hand-l",
+        "release": "handoff"
+      },
+      {
+        "limb": "hand-r",
+        "release": "handoff"
+      }
+    ],
+    "comboBeats": [
+      [
+        {
+          "limb": "hand-r",
+          "release": "handoff"
+        }
+      ],
+      [
+        {
+          "limb": "hand-r",
+          "release": "handoff"
+        }
+      ],
+      [
+        {
+          "limb": "hand-r",
+          "release": "handoff"
+        }
+      ]
+    ]
+  },
+  "x2-aurora-ion-cannon": {
+    "held": [
+      {
+        "limb": "hand-l",
+        "release": "handoff"
+      },
+      {
+        "limb": "hand-r",
+        "release": "handoff"
+      }
+    ],
+    "comboBeats": []
   }
 } as const satisfies Readonly<Record<string, WeaponLimbClaims>>;
