@@ -17156,6 +17156,63 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "pierce": 2,
       "muzzleColor": 14719546
     }
+  },
+  "x2-nova-pulse-repeater": {
+    "id": "x2-nova-pulse-repeater",
+    "name": "Nova Pulse Repeater",
+    "expansion": true,
+    "damage": 4,
+    "range": 260,
+    "halfArc": 0.42,
+    "cooldown": 0.12,
+    "displayLength": 168,
+    "swingArc": 1.8,
+    "gripFrac": 0.16,
+    "tags": {
+      "grip": "2H",
+      "size": "M",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "shock",
+      "classPool": "ranged",
+      "family": "pulse-rifle",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "INT"
+      ],
+      "weaponClass": "Special",
+      "subclass": "Special"
+    },
+    "recoil": 15,
+    "weaponUtility": "both",
+    "gripPoints": {
+      "primary": {
+        "x": 0.27,
+        "y": 0.71
+      },
+      "secondary": {
+        "x": 0.62,
+        "y": 0.69,
+        "role": "horizontal-foregrip"
+      }
+    },
+    "description": "An immaculate automatic pulse rifle whose crisp lengthwise indicator walks amber with each rapid energy packet before its short shroud sheds the heat.",
+    "twoHanded": true,
+    "gun": {
+      "damage": 4,
+      "projectileSpeed": 1800,
+      "range": 700,
+      "fireRate": 0.085,
+      "magazine": 36,
+      "reloadSeconds": 1.6,
+      "bulletKind": "laser",
+      "muzzle": "rapid",
+      "recoil": 0.00055,
+      "projectileArt": "generated",
+      "spread": 0.018,
+      "muzzleColor": 14917947
+    }
   }
 };
 
