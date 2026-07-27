@@ -16470,6 +16470,32 @@ export const SPRITES = {
       }
     ]
   },
+  "x2-singularity-micro-lance": {
+    "id": "x2-singularity-micro-lance",
+    "kind": "weapon",
+    "canvas": {
+      "w": 435,
+      "h": 225
+    },
+    "body": {
+      "cx": 205.85,
+      "cy": 100.05,
+      "w": 256,
+      "h": 152
+    },
+    "parts": [
+      {
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 152,
+        "cx": 205.85,
+        "cy": 100.05,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
+  },
   "x2-slughammer-breachgun": {
     "id": "x2-slughammer-breachgun",
     "kind": "weapon",

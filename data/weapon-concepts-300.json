@@ -1,7 +1,7 @@
 {
   "generated": "2026-06-17",
   "source": "design-300-weapons workflow (15 agents)",
-  "count": 373,
+  "count": 374,
   "byType": {
     "melee": 135,
     "ranged": 138,
@@ -21460,6 +21460,45 @@
         "displayLength": 142,
         "swingArc": 1.8,
         "gripFrac": 0.17
+      }
+    },
+    {
+      "id": "x2-singularity-micro-lance",
+      "name": "Singularity Micro-Lance",
+      "type": "ranged",
+      "family": "beam-sidearm",
+      "theme": "plain near-black issue-grade micro beam sidearm with a satin slab body, flawless stubby emitter lens, crisp amber status window, and boxy under-barrel combo unit",
+      "element": "void",
+      "finish": "pristine",
+      "grip": "1H",
+      "fireMode": "hold",
+      "size": "S",
+      "rangeBand": "close",
+      "scaling": [
+        "DEX",
+        "INT"
+      ],
+      "palettePrimary": "#15181C",
+      "paletteAccent": "#D49A3A",
+      "artPrompt": "Weapon-only in-world game sprite on a perfectly flat fully opaque #00ff00 chroma-key field: exactly ONE TINY slab-shaped BEAM PISTOL, the smallest weapon in the roster. Build a very short rectangular satin receiver around one single stubby round emitter lens at the RIGHT, with a minimal compact grip on the LEFT barely long enough for one hand, a visible trigger inside a sturdy trigger guard, a short credible barrel axis, and low aligned front and rear sights. Set exactly one small crisp blank rectangular status window into the side of the slab. Mount one small boxy laser/light combination unit tightly beneath the short barrel with one clearly visible dark lens; it is switched off and is silhouette detail only, with NO beam, NO glow, NO bloom, NO rays, NO light cone, and NO spill. Concealed-carry issue quality: the slab has one uniform flawless satin finish, the emitter lens is optically clean and perfectly seated, the status window is crisp and square, panel gaps are hairline-even, the sights are true, every seam aligns, and every fastener is torqued; expensive, immaculate, and professionally maintained. Plain finish with NO camouflage. No tape, repair, salvage, mismatched plate, scratch, dent, rust, dirt, grime, carbon buildup, improvisation, poverty signal, or ground-off marking. DARK house rendering: near-black charcoal dominates the entire pistol, the broad side and underside remain deep spot-black, and only narrow cool gunmetal highlights catch TOP EDGES. Never evenly lit and never mid-grey overall. The ONE warm accent colour is muted amber-gold confined to the small blank status-window glass; it is a solid flat tinted plane with no symbols, glow, bloom, aura, or cast light. Use a bold heavy black outline around the complete silhouette AND equally heavy crisp internal black ink dividing the receiver panels, emitter rim, lens seat, status-window frame, grip plane, trigger guard, sights, controls, barrel seam, combo-unit housing, and its lens rim. Slightly exaggerate the chunky slab thickness, stubby emitter rim, squared trigger guard, and boxy attachment while keeping the minimal grip-to-trigger-to-barrel relationship functional for a person to hold, aim, and fire. Use only about 4-6 flat opaque cel colours plus black ink, hard flat planes only. ONE complete connected gun, strict flat orthographic full side-profile, perfectly horizontal and fully visible with generous padding, minimal grip LEFT and emitter muzzle RIGHT. No character, hands, second weapon, detached object, ammunition, projectile, emitted beam, firing effect, muzzle flash, smoke, scenery, floor, cast shadow, reflection, text, letters, numbers, logo, serial, maker mark, symbol, watermark, sling, strap, rope, chain, tassel, cable, loose part, or anything dangling. No photorealism, realistic product photography, catalogue rendering, glossy studio lighting, 3D rendering, soft airbrushing, gradients, evenly lit mid-grey surfaces, clean vector styling, technical diagram, wand, staff, sculpture, or abstract prop.",
+      "cardartAction": "held one-handed through a short precision channel, a hair-thin amber line drilling rightward while the crisp status window stays dark and blank",
+      "behavior": {
+        "kind": "beam",
+        "damage": 5,
+        "range": 360,
+        "tickRate": 0.1,
+        "width": 6,
+        "chargeSeconds": 0.65,
+        "sweepLagSeconds": 0.05
+      },
+      "stats": {
+        "damage": 5,
+        "range": 100,
+        "halfArc": 0.4,
+        "cooldown": 0.65,
+        "displayLength": 40,
+        "swingArc": 1.8,
+        "gripFrac": 0.24
       }
     }
   ]

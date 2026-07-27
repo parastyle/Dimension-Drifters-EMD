@@ -298,13 +298,14 @@ const {
 describe("beam weapons — hard panel laws", () => {
   const beamDefs = Object.values(WEAPONS).filter((weapon) => weapon.beam);
 
-  it("keeps the 19 caster beams plus five channelled energy guns after Solaris", () => {
+  it("keeps the 19 caster beams plus six channelled energy guns after the Micro-Lance", () => {
     expect(beamDefs.filter((weapon) => weapon.tags.classPool === "caster")).toHaveLength(19);
     expect(WEAPONS["x2-voltcaster-machine-pistol"]?.gun?.bulletKind).toBe("laser");
     expect(WEAPONS["x2-stormcaller-tesla-gatling"]?.beam).toBeDefined();
     expect(WEAPONS["x2-mirage-coilrifle"]?.beam).toBeDefined();
     expect(WEAPONS["x2-solaris-beam-lance"]?.beam).toBeDefined();
-    expect(beamDefs).toHaveLength(24);
+    expect(WEAPONS["x2-singularity-micro-lance"]?.beam).toBeDefined();
+    expect(beamDefs).toHaveLength(25);
     for (const weapon of beamDefs) expect(weapon.gun, weapon.id).toBeUndefined();
   });
 
