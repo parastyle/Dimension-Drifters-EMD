@@ -729,6 +729,28 @@ export const WEAPON_ART_MUZZLES = {
     "salvoMode": "parallel",
     "barrelMode": "parallel"
   },
+  "x2-caseless-vanguard": {
+    "sprite": "x2-caseless-vanguard",
+    "parts": [
+      {
+        "width": 256,
+        "height": 69
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 20,
+        "derived": {
+          "x": 255,
+          "y": 20
+        }
+      }
+    ],
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
   "x2-caustic-drum-sweeper": {
     "sprite": "x2-caustic-drum-sweeper",
     "parts": [

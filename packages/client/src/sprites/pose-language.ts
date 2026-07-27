@@ -621,7 +621,7 @@ const FAN_FAMILY = /^(?:paired-war-fan|war-fan)$/i;
 const BLADE_FAMILY = /^(?:broadsword|energy-blade|greatsword|katana|nodachi|rapier|saber|sword)$/i;
 const BLUNT_FAMILY = /^(?:axe|cleaver|flail|mace|maul|paddle-club|spade|warhammer)$/i;
 const RANGED_FAMILY =
-  /^(?:anti-materiel-rifle|auto-rifle|automatic-shotgun|battle-rifle|blunderbuss|concussion-cannon|exotic-ranged|grenade-launcher|gun|hand-cannon|heavy-ordnance|lever-rifle|light machine gun|machine-pistol|marksman-rifle|nailgun|pistol|pistol-calibre-carbine|puck-launcher|railgun|rimfire-rifle|scrap-cannon|seed-launcher|semi-auto carbine|shotgun)$/i;
+  /^(?:anti-materiel-rifle|auto-rifle|automatic-shotgun|battle-rifle|blunderbuss|caseless-carbine|concussion-cannon|exotic-ranged|grenade-launcher|gun|hand-cannon|heavy-ordnance|lever-rifle|light machine gun|machine-pistol|marksman-rifle|nailgun|pistol|pistol-calibre-carbine|puck-launcher|railgun|rimfire-rifle|scrap-cannon|seed-launcher|semi-auto carbine|shotgun)$/i;
 const CLAW_WORDS = /\b(?:claws?|talons?|rakes?|fangs?)\b/i;
 const BLADE_WORDS =
   /\b(?:blade|claymore|greatblade|katana|nodachi|sabre|saber|sword|zweihander)\b/i;

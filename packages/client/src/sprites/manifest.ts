@@ -9962,6 +9962,32 @@ export const SPRITES = {
       }
     ]
   },
+  "x2-caseless-vanguard": {
+    "id": "x2-caseless-vanguard",
+    "kind": "weapon",
+    "canvas": {
+      "w": 274,
+      "h": 125
+    },
+    "body": {
+      "cx": 135.59,
+      "cy": 52.61,
+      "w": 256,
+      "h": 69
+    },
+    "parts": [
+      {
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 69,
+        "cx": 135.59,
+        "cy": 52.61,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
+  },
   "x2-caustic-drum-sweeper": {
     "id": "x2-caustic-drum-sweeper",
     "kind": "weapon",

@@ -1,10 +1,10 @@
 {
   "generated": "2026-06-17",
   "source": "design-300-weapons workflow (15 agents)",
-  "count": 360,
+  "count": 361,
   "byType": {
     "melee": 135,
-    "ranged": 128,
+    "ranged": 129,
     "caster": 97
   },
   "weapons": [
@@ -20779,6 +20779,64 @@
         "displayLength": 118,
         "swingArc": 1.8,
         "gripFrac": 0.14
+      }
+    },
+    {
+      "id": "x2-caseless-vanguard",
+      "name": "Caseless Vanguard",
+      "description": "A flagship sealed ballistic carbine whose enclosed action and high-capacity top magazine sustain exceptionally stable automatic fire through a compact frame.",
+      "type": "ranged",
+      "family": "caseless-carbine",
+      "theme": "flagship sealed near-black ballistic carbine with form-following hex furniture and one brass magazine latch",
+      "element": "physical",
+      "finish": "pristine",
+      "grip": "2H",
+      "fireMode": "auto",
+      "gripPoints": {
+        "primary": {
+          "x": 0.28,
+          "y": 0.72
+        },
+        "secondary": {
+          "x": 0.66,
+          "y": 0.7,
+          "role": "under-barrel"
+        }
+      },
+      "size": "M",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "INT"
+      ],
+      "palettePrimary": "#171B1E",
+      "paletteAccent": "#C58A3A",
+      "artPrompt": "Weapon-only in-world sprite on a perfectly flat fully opaque #00ff00 chroma-key field: exactly ONE compact near-future BALLISTIC carbine firing physical ammunition, built as a fully enclosed rectangular sealed shell with NO visible ejection port. A broad horizontal magazine lies flat along the top of the body, a straight dark sighting tunnel is bored cleanly through the upper receiver below it, and a stubby bare-metal barrel projects from the RIGHT. Preserve a believable continuous mechanism from the integrated stock at LEFT through the rear pistol grip, sealed action, short fore-end, and barrel at RIGHT. Fit one small boxy bare-gunmetal laser/light combination unit rigidly under the barrel with a clearly visible smoked lens; silhouette detail only, switched off, with no beam, glow, light cone, bloom, or spill. Flagship procurement quality: the sealed shell has a uniform matched near-black sheen, the sight tunnel is bored true, every seam is aligned, and not a fastener is out of place; expensive, immaculate, and professionally maintained. No wear beyond a faint honest carbon trace at the muzzle; no improvisation, tape, repairs, salvage, mismatched parts, scratches, dents, rust, or neglect. Paint a restrained dark olive-and-gunmetal HEX pattern only onto the integrated stock and lower furniture, each hex cell wrapping with and following those forms; the pattern never floats, never covers the whole weapon, and leaves the stubby barrel, sighting tunnel, and laser/light unit bare metal. Use one small warm brass magazine latch as the only warm accent. DARK house rendering: the overall base reads near-black charcoal, narrow steel highlights catch TOP EDGES ONLY, and side and underside planes remain deep shadow; never evenly lit and never mid-grey overall. Heavy black ink around the complete silhouette AND equally heavy crisp internal black ink dividing every shell panel, magazine plate, housing, seam, tunnel edge, fastener, grip plane, and attachment. Slightly exaggerate the chunky sealed body, flat top magazine, tunnel opening, and stubby front end while keeping the grip-to-action-to-barrel relationship mechanically credible. Use approximately 4-6 flat colours plus black ink, hard cel planes only. Strict flat orthographic full side-profile, entire connected weapon visible with generous padding, integrated stock and grip LEFT, muzzle RIGHT. No separate optic, character, hands, second weapon, ammunition, projectile, muzzle flash, smoke, cast shadow, floor, scenery, text, letters, numbers, logos, serials, maker marks, chains, tassels, ropes, slings, straps, loose pieces, or anything dangling. No gradients, soft airbrushing, glossy studio lighting, realistic product photography, catalogue rendering, diagram treatment, or clean vector styling.",
+      "cardartAction": "held level through a long disciplined automatic string, the sealed action staying flat while warm tracers run rightward beneath the locked top magazine",
+      "stats": {
+        "damage": 5,
+        "range": 238,
+        "halfArc": 0.48,
+        "cooldown": 0.32,
+        "displayLength": 138,
+        "swingArc": 1.8,
+        "gripFrac": 0.18
+      },
+      "behavior": {
+        "kind": "gun",
+        "damage": 5,
+        "projectileSpeed": 1350,
+        "range": 680,
+        "fireRate": 0.1,
+        "spread": 0.035,
+        "pierce": 1,
+        "magazine": 45,
+        "reloadSeconds": 1.9,
+        "bulletKind": "tracer",
+        "projectileArt": "bullet",
+        "muzzle": "rapid",
+        "muzzleColor": 15053371,
+        "recoil": 0.00055
       }
     }
   ]

@@ -15946,6 +15946,60 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "life": 120
       }
     }
+  },
+  "x2-caseless-vanguard": {
+    "id": "x2-caseless-vanguard",
+    "name": "Caseless Vanguard",
+    "expansion": true,
+    "damage": 5,
+    "range": 238,
+    "halfArc": 0.48,
+    "cooldown": 0.32,
+    "displayLength": 138,
+    "swingArc": 1.8,
+    "gripFrac": 0.18,
+    "tags": {
+      "grip": "2H",
+      "size": "M",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "caseless-carbine",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "INT"
+      ]
+    },
+    "recoil": 18,
+    "gripPoints": {
+      "primary": {
+        "x": 0.28,
+        "y": 0.72
+      },
+      "secondary": {
+        "x": 0.66,
+        "y": 0.7,
+        "role": "under-barrel"
+      }
+    },
+    "description": "A flagship sealed ballistic carbine whose enclosed action and high-capacity top magazine sustain exceptionally stable automatic fire through a compact frame.",
+    "twoHanded": true,
+    "gun": {
+      "damage": 5,
+      "projectileSpeed": 1350,
+      "range": 680,
+      "fireRate": 0.1,
+      "magazine": 45,
+      "reloadSeconds": 1.9,
+      "bulletKind": "tracer",
+      "muzzle": "rapid",
+      "recoil": 0.00055,
+      "projectileArt": "bullet",
+      "spread": 0.035,
+      "muzzleColor": 15053371
+    }
   }
 };
 

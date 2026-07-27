@@ -51,12 +51,12 @@ const CURATED_ARCHIVE_IDS = new Set(["drift-wakizashi-hushglass", "drift-wakizas
 describe("W4A weapon archive contracts", () => {
   it("keeps twenty durable catalog rows while excluding them from every active acquisition census", () => {
     expect([...ARCHIVED_WEAPON_IDS].sort()).toEqual([...ARCHIVE_IDS].sort());
-    // B69 adds twenty live B63/B66 rows without changing the durable archive set.
-    expect(WEAPON_CATALOG_IDS).toHaveLength(379);
-    expect(ACTIVE_WEAPON_CATALOG_IDS).toHaveLength(359);
+    // B63/B66 add twenty-one live rows without changing the durable archive set.
+    expect(WEAPON_CATALOG_IDS).toHaveLength(380);
+    expect(ACTIVE_WEAPON_CATALOG_IDS).toHaveLength(360);
     expect(ARCHIVED_WEAPON_IDS).toHaveLength(20);
-    expect(ACTIVE_EXPANSION_WEAPON_IDS).toHaveLength(330);
-    expect(WEAPON_RESOURCE_IDS).toHaveLength(379);
+    expect(ACTIVE_EXPANSION_WEAPON_IDS).toHaveLength(331);
+    expect(WEAPON_RESOURCE_IDS).toHaveLength(380);
 
     const provenances: WeaponProvenance[] = [
       "enemy-drop",
@@ -87,13 +87,13 @@ describe("W4A weapon archive contracts", () => {
     for (const id of ARCHIVE_IDS) expect(wielded, id).not.toContain(id);
   });
 
-  it("regenerates the portal and default Weaponsmith listing with 359 active rows after B69", () => {
+  it("regenerates the portal and default Weaponsmith listing with 360 active rows", () => {
     const portal = readFileSync("tools/portal/index.html", "utf8");
     const smith = readFileSync("tools/weaponsmith/public/index.html", "utf8");
     const smithServer = readFileSync("tools/weaponsmith/server.mjs", "utf8");
-    expect(portal).toContain('"count":359');
-    expect(smith).toContain("Search 359 active weapons");
-    expect(smith).toContain('aria-setsize="359"');
+    expect(portal).toContain('"count":360');
+    expect(smith).toContain("Search 360 active weapons");
+    expect(smith).toContain('aria-setsize="360"');
     expect(smithServer).toContain("definition.archived === true");
     for (const id of ARCHIVE_IDS) {
       expect(portal, id).not.toContain(`/?dev=weapon:${id}`);
