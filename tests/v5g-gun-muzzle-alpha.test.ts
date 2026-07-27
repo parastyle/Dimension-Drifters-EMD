@@ -62,8 +62,8 @@ describe("V7 catalog-wide art-space muzzle law", () => {
     }
 
     // Sixteen newly installed gun/muzzle definitions join the catalog-wide derivation law in B69.
-    expect(weaponCount).toBe(163);
-    expect(pointCount).toBeGreaterThanOrEqual(163);
+    expect(weaponCount).toBe(164);
+    expect(pointCount).toBeGreaterThanOrEqual(164);
     expect(failures, failures.join("\n")).toEqual([]);
   });
 

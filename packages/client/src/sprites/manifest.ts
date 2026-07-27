@@ -16288,6 +16288,32 @@ export const SPRITES = {
       }
     ]
   },
+  "x2-slugthrower-rail-9": {
+    "id": "x2-slugthrower-rail-9",
+    "kind": "weapon",
+    "canvas": {
+      "w": 314,
+      "h": 157
+    },
+    "body": {
+      "cx": 151.44,
+      "cy": 61.57,
+      "w": 256,
+      "h": 131
+    },
+    "parts": [
+      {
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 131,
+        "cx": 151.44,
+        "cy": 61.57,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
+  },
   "x2-sluicebox-maul-axe": {
     "id": "x2-sluicebox-maul-axe",
     "kind": "weapon",

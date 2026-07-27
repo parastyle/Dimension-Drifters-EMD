@@ -3362,6 +3362,28 @@ export const WEAPON_ART_MUZZLES = {
     "salvoMode": "parallel",
     "barrelMode": "parallel"
   },
+  "x2-slugthrower-rail-9": {
+    "sprite": "x2-slugthrower-rail-9",
+    "parts": [
+      {
+        "width": 256,
+        "height": 131
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 22.5,
+        "derived": {
+          "x": 255,
+          "y": 22.5
+        }
+      }
+    ],
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
   "x2-smoldering-eye-of-perdition": {
     "sprite": "x2-smoldering-eye-of-perdition",
     "parts": [

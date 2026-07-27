@@ -83,7 +83,7 @@ describe("V3G catalog gun-handling laws", () => {
 
   it("enumerates every authored pistol after the B63 sidearm additions", () => {
     const pistols = tagged("pistol");
-    expect(pistols).toHaveLength(33);
+    expect(pistols).toHaveLength(34);
     expect(pistols.every((weapon) => !!(weapon.gun || weapon.beam))).toBe(true);
   });
 });

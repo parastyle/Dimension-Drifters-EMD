@@ -15946,6 +15946,52 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
         "life": 120
       }
     }
+  },
+  "x2-slugthrower-rail-9": {
+    "id": "x2-slugthrower-rail-9",
+    "name": "Slugthrower Rail-9",
+    "expansion": true,
+    "damage": 10,
+    "range": 180,
+    "halfArc": 0.46,
+    "cooldown": 0.38,
+    "displayLength": 96,
+    "swingArc": 1.8,
+    "gripFrac": 0.19,
+    "tags": {
+      "grip": "1H",
+      "size": "S",
+      "delivery": "projectile",
+      "fireMode": "semi-auto",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "rail-pistol",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "INT"
+      ],
+      "handling": [
+        "pistol"
+      ]
+    },
+    "recoil": 42,
+    "description": "An immaculate prototype service sidearm that drives physical slugs through a conventional chamber while its paired top conductors add velocity and penetration.",
+    "gun": {
+      "damage": 10,
+      "projectileSpeed": 1800,
+      "range": 680,
+      "fireRate": 0.38,
+      "magazine": 9,
+      "reloadSeconds": 1.55,
+      "bulletKind": "slug",
+      "muzzle": "punch",
+      "recoil": 0.0014,
+      "projectileArt": "bullet",
+      "spread": 0.018,
+      "pierce": 2,
+      "muzzleColor": 16750371
+    }
   }
 };
 

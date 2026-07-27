@@ -10588,5 +10588,33 @@ export const GENERATED_WEAPON_LIMB_CLAIMS = {
       }
     ],
     "comboBeats": []
+  },
+  "x2-slugthrower-rail-9": {
+    "held": [
+      {
+        "limb": "hand-r",
+        "release": "handoff"
+      }
+    ],
+    "comboBeats": [
+      [
+        {
+          "limb": "hand-r",
+          "release": "handoff"
+        }
+      ],
+      [
+        {
+          "limb": "hand-r",
+          "release": "handoff"
+        }
+      ],
+      [
+        {
+          "limb": "hand-r",
+          "release": "handoff"
+        }
+      ]
+    ]
   }
 } as const satisfies Readonly<Record<string, WeaponLimbClaims>>;
