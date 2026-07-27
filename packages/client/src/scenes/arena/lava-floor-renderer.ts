@@ -9,6 +9,7 @@ import Phaser from "phaser";
 
 export const LAVA_BACKGROUND_KEY = "lava-foundry:background";
 export const LAVA_FLOW_KEY = "lava-foundry:flow";
+const LAVA_SPAWN_RING_KEY = "lava-foundry:spawn-ring";
 
 export type LavaParallax = Readonly<{
   background: Phaser.GameObjects.TileSprite;
@@ -93,10 +94,22 @@ export function buildLavaDimensionFloor(
     );
   }
 
-  const spawnRing = scene.add.graphics().setDepth(-14.8);
-  spawnRing.lineStyle(3, 0x33e6ff, 0.8);
-  spawnRing.strokeCircle(map.spawnX, map.spawnY, 118);
-  objects.push(spawnRing);
+  if (!scene.textures.exists(LAVA_SPAWN_RING_KEY)) {
+    const textureSize = 248;
+    const texture = scene.textures.createCanvas(LAVA_SPAWN_RING_KEY, textureSize, textureSize);
+    if (texture) {
+      const context = texture.getContext();
+      context.clearRect(0, 0, textureSize, textureSize);
+      context.strokeStyle = "#33e6ff";
+      context.globalAlpha = 0.8;
+      context.lineWidth = 3;
+      context.beginPath();
+      context.arc(textureSize / 2, textureSize / 2, 118, 0, Math.PI * 2);
+      context.stroke();
+      texture.refresh();
+    }
+  }
+  objects.push(scene.add.image(map.spawnX, map.spawnY, LAVA_SPAWN_RING_KEY).setDepth(-14.8));
   return { objects, parallax: { background, flow } };
 }
 

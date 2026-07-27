@@ -589,6 +589,14 @@ const BELT_FORESHORTEN = 0.5;
 const BELT_VIEW_H = 880;
 const BELT_SKY = 176;
 const PLAYER_SHADOW_LOCAL_Y = 76 * 0.42;
+const AMBIENT_DUST_TEXTURE_KEY = "arena:ambient-dust";
+const AMBIENT_DUST_FRAME_SIZE = 8;
+const AMBIENT_DUST_RADII = [0.9, 1.5, 2.1, 2.8] as const;
+const OBJECTIVE_HUD_TEXTURE_KEY = "arena:objective-hud";
+const PARRY_INDICATOR_TEXTURE_KEY = "arena:parry-indicators";
+const PARRY_INDICATOR_FRAME_SIZE = 72;
+const PARRY_COOLDOWN_FRAMES = 33;
+const ROLL_COOLDOWN_FRAMES = 17;
 
 /** Existing kindTag wire values, named locally so the first layered pass stays protocol-neutral. */
 const TelegraphKindTag = {
@@ -1371,20 +1379,20 @@ export class ArenaScene extends Phaser.Scene {
   /** §TELEGRAPH optional painted world preludes; exact geometry does not depend on this pool. */
   private telegraphForeshadows!: TelegraphForeshadowPool;
   /** H10 §20 parry-state ring under the LOCAL drifter — active i-frame flash + cooldown-recovery arc. */
-  private parryGfx!: Phaser.GameObjects.Graphics;
+  private parryRingImage!: Phaser.GameObjects.Image;
+  private rollPipImage!: Phaser.GameObjects.Image;
   /** H10 `time.now` of the last parry press, so the ring can flash bright through the i-frame window. */
   private lastParryPress = -9999;
   /** §16 v0.116 Polish B — a screen-space AMBIENT DUST layer (drifting motes tinted the dimension's dust
    *  colour) that lends the arena atmosphere. Lazily built on the first update; purely cosmetic. */
-  private dustG?: Phaser.GameObjects.Graphics;
+  private dustBlitter?: Phaser.GameObjects.Blitter;
   private readonly dust: {
     x: number;
     y: number;
     vx: number;
     vy: number;
-    r: number;
-    a: number;
     ph: number;
+    bob: Phaser.GameObjects.Bob;
   }[] = [];
   /** §17 v0.102 off-screen extraction-portal locator (a 4800² arena needs a pointer, not just copy). */
   private portalArrow: Phaser.GameObjects.Container | null = null;
@@ -1754,6 +1762,7 @@ export class ArenaScene extends Phaser.Scene {
   private relicTooltipText!: Phaser.GameObjects.Text;
   private relicRowHovered = false;
   private objectiveHudGfx!: Phaser.GameObjects.Graphics;
+  private objectiveHudImage!: Phaser.GameObjects.Image;
   private objectiveText!: Phaser.GameObjects.Text;
   private objectiveLocationText!: Phaser.GameObjects.Text;
   private objectiveEconomyText!: Phaser.GameObjects.Text;
@@ -2426,8 +2435,9 @@ export class ArenaScene extends Phaser.Scene {
     this.telegraphGroundGfx = undefined!;
     this.telegraphGfx = undefined!;
     this.telegraphForeshadows = undefined!;
-    this.parryGfx = undefined!;
-    this.dustG = undefined;
+    this.parryRingImage = undefined!;
+    this.rollPipImage = undefined!;
+    this.dustBlitter = undefined;
     this.portalArrow = null;
     this.riftArrow = null;
     this.portalLocatorPulseUntil = -1;
@@ -2450,6 +2460,7 @@ export class ArenaScene extends Phaser.Scene {
     this.relicTooltipText = undefined!;
     this.relicRowHovered = false;
     this.objectiveHudGfx = undefined!;
+    this.objectiveHudImage = undefined!;
     this.objectiveText = undefined!;
     this.objectiveLocationText = undefined!;
     this.objectiveEconomyText = undefined!;
@@ -2721,9 +2732,17 @@ export class ArenaScene extends Phaser.Scene {
     this.telegraphForeshadows = new TelegraphForeshadowPool(this);
     // Thin response boundaries and compact source cues stay above beams, below HUD.
     this.telegraphGfx = this.add.graphics().setDepth(99997);
-    // H10: the local player's parry-state ring. Just under the white-tell layer + above the bodies, so the
-    // "ready vs recovering vs i-frames-up" read sits right on your own drifter.
-    this.parryGfx = this.add.graphics().setDepth(99989);
+    // H10: pre-baked frames preserve the local parry/roll read without asking GraphicsWebGLRenderer to
+    // allocate and tessellate two circular paths on every frame.
+    this.ensureParryIndicatorTexture();
+    this.parryRingImage = this.add
+      .image(0, 0, PARRY_INDICATOR_TEXTURE_KEY, "parry-ready")
+      .setDepth(99989)
+      .setVisible(false);
+    this.rollPipImage = this.add
+      .image(0, 0, PARRY_INDICATOR_TEXTURE_KEY, "roll-ready")
+      .setDepth(99989)
+      .setVisible(false);
     // The grab-highlight ring and prompt mark the pickup E will take (just under the parry ring).
     this.grabGfx = this.add.graphics().setDepth(99988);
     this.grabPromptText = this.add
@@ -3177,7 +3196,20 @@ export class ArenaScene extends Phaser.Scene {
 
     // Finding #11: retained top HUD = objective/progress, session-vital chips, and a resolving notice chip.
     // Every glyph rides a dark plate; objective copy is width-bound and may use at most two lines.
-    this.objectiveHudGfx = this.add.graphics().setScrollFactor(0).setDepth(100000);
+    // The plate geometry changes only when the viewport/layout changes. Keep its Graphics off the display
+    // list and rasterize that rare layout edge; retaining rounded paths would make Phaser rebuild 36 arcs
+    // every rendered frame even while the HUD is visually unchanged.
+    this.objectiveHudGfx = this.add.graphics().setVisible(false);
+    this.objectiveHudImage = this.add
+      .image(0, 0, "__WHITE")
+      .setScrollFactor(0)
+      .setOrigin(0)
+      .setDepth(100000)
+      .setVisible(false);
+    this.objectiveHudImage.once("destroy", () => {
+      if (this.textures.exists(OBJECTIVE_HUD_TEXTURE_KEY))
+        this.textures.remove(OBJECTIVE_HUD_TEXTURE_KEY);
+    });
     const objectiveResolution = Math.max(2, Math.ceil(RENDER_DPR));
     this.objectiveText = this.add
       .text(0, 0, "", {
@@ -8168,33 +8200,81 @@ export class ArenaScene extends Phaser.Scene {
     if (!this.room) return;
     const W = this.screenW();
     const H = this.screenH();
-    if (!this.dustG) {
-      this.dustG = this.add.graphics().setScrollFactor(0).setDepth(90);
+    const color = getDimension(this.room.state.dimensionId).palette.dustDrift;
+    if (!this.dustBlitter) {
+      if (!this.textures.exists(AMBIENT_DUST_TEXTURE_KEY)) {
+        const texture = this.textures.createCanvas(
+          AMBIENT_DUST_TEXTURE_KEY,
+          AMBIENT_DUST_FRAME_SIZE * AMBIENT_DUST_RADII.length,
+          AMBIENT_DUST_FRAME_SIZE,
+        );
+        if (texture) {
+          const context = texture.getContext();
+          context.clearRect(
+            0,
+            0,
+            AMBIENT_DUST_FRAME_SIZE * AMBIENT_DUST_RADII.length,
+            AMBIENT_DUST_FRAME_SIZE,
+          );
+          context.fillStyle = "#ffffff";
+          for (let index = 0; index < AMBIENT_DUST_RADII.length; index++) {
+            context.beginPath();
+            context.arc(
+              index * AMBIENT_DUST_FRAME_SIZE + AMBIENT_DUST_FRAME_SIZE / 2,
+              AMBIENT_DUST_FRAME_SIZE / 2,
+              AMBIENT_DUST_RADII[index] ?? 1,
+              0,
+              Math.PI * 2,
+            );
+            context.fill();
+            texture.add(
+              String(index),
+              0,
+              index * AMBIENT_DUST_FRAME_SIZE,
+              0,
+              AMBIENT_DUST_FRAME_SIZE,
+              AMBIENT_DUST_FRAME_SIZE,
+            );
+          }
+          texture.refresh();
+        }
+      }
+      this.dustBlitter = this.add
+        .blitter(0, 0, AMBIENT_DUST_TEXTURE_KEY)
+        .setScrollFactor(0)
+        .setDepth(90);
       for (let i = 0; i < 48; i++) {
+        const x = Math.random() * W;
+        const y = Math.random() * H;
+        const r = 0.8 + Math.random() * 1.9;
+        const a = 0.05 + Math.random() * 0.12;
+        const frame = Math.min(AMBIENT_DUST_RADII.length - 1, Math.floor((r - 0.8) / 0.55));
+        const bob = this.dustBlitter
+          .create(x - AMBIENT_DUST_FRAME_SIZE / 2, y - AMBIENT_DUST_FRAME_SIZE / 2, String(frame))
+          .setAlpha(a)
+          .setTint(color);
         this.dust.push({
-          x: Math.random() * W,
-          y: Math.random() * H,
+          x,
+          y,
           vx: 6 + Math.random() * 14, // a slow prevailing wind (rightward)
           vy: (Math.random() * 2 - 1) * 5,
-          r: 0.8 + Math.random() * 1.9,
-          a: 0.05 + Math.random() * 0.12,
           ph: Math.random() * Math.PI * 2,
+          bob,
         });
       }
     }
-    const color = getDimension(this.room.state.dimensionId).palette.dustDrift;
     const dt = Math.min(0.05, this.deltaSec);
     const t = this.time.now / 1000;
-    const g = this.dustG;
-    g.clear();
     for (const d of this.dust) {
       d.x += d.vx * dt;
       d.y += (d.vy + Math.sin(t * 0.6 + d.ph) * 6) * dt; // gentle vertical wander
       if (d.x > W + 8) d.x = -8;
       if (d.y < -8) d.y = H + 8;
       else if (d.y > H + 8) d.y = -8;
-      g.fillStyle(color, d.a);
-      g.fillCircle(d.x, d.y, d.r);
+      d.bob.setPosition(
+        d.x - AMBIENT_DUST_FRAME_SIZE / 2,
+        d.y - AMBIENT_DUST_FRAME_SIZE / 2,
+      );
     }
   }
 
@@ -11069,37 +11149,110 @@ export class ArenaScene extends Phaser.Scene {
     );
   }
 
+  private ensureParryIndicatorTexture(): void {
+    if (this.textures.exists(PARRY_INDICATOR_TEXTURE_KEY)) return;
+    const frameSize = PARRY_INDICATOR_FRAME_SIZE;
+    const frameCount = 2 + PARRY_COOLDOWN_FRAMES + 1 + ROLL_COOLDOWN_FRAMES;
+    const texture = this.textures.createCanvas(
+      PARRY_INDICATOR_TEXTURE_KEY,
+      frameSize * frameCount,
+      frameSize,
+    );
+    if (!texture) return;
+    const context = texture.getContext();
+    context.clearRect(0, 0, frameSize * frameCount, frameSize);
+    let frameIndex = 0;
+    const addArcFrame = (
+      name: string,
+      radius: number,
+      lineWidth: number,
+      fraction: number,
+      fill = false,
+    ): void => {
+      const frameX = frameIndex * frameSize;
+      context.save();
+      context.translate(frameX + frameSize / 2, frameSize / 2);
+      context.beginPath();
+      context.arc(
+        0,
+        0,
+        radius,
+        -Math.PI / 2,
+        -Math.PI / 2 + fraction * Math.PI * 2,
+      );
+      if (fill) {
+        context.fillStyle = "#ffffff";
+        context.fill();
+      } else {
+        context.strokeStyle = "#ffffff";
+        context.lineWidth = lineWidth;
+        context.stroke();
+      }
+      context.restore();
+      texture.add(name, 0, frameX, 0, frameSize, frameSize);
+      frameIndex++;
+    };
+
+    addArcFrame("parry-ready", 30, 2, 1);
+    addArcFrame("parry-active", 30, 3.5, 1);
+    for (let index = 0; index < PARRY_COOLDOWN_FRAMES; index++) {
+      addArcFrame(
+        `parry-cooldown-${index}`,
+        30,
+        3,
+        index / (PARRY_COOLDOWN_FRAMES - 1),
+      );
+    }
+    addArcFrame("roll-ready", 2.25, 0, 1, true);
+    for (let index = 0; index < ROLL_COOLDOWN_FRAMES; index++) {
+      addArcFrame(`roll-cooldown-${index}`, 5, 2, index / (ROLL_COOLDOWN_FRAMES - 1));
+    }
+    texture.refresh();
+  }
+
   /** H10 §20 parry-state ring under the LOCAL drifter so the timing is learnable: a bright flash through the
    *  active i-frame window after a press (you're invulnerable NOW), a dim arc sweeping back to a full ring as
    *  the cooldown drains after a whiff, and a faint "ready" ring at rest. Mirrors the press + the shared
    *  PARRY_IFRAMES / PARRY_COOLDOWN (the server owns the real i-frames). */
   private renderParryState(): void {
-    const g = this.parryGfx;
-    g.clear();
+    this.parryRingImage.setVisible(false);
+    this.rollPipImage.setVisible(false);
     const selfId = this.room?.sessionId;
     const self = selfId ? this.room?.state.players.get(selfId) : undefined;
     const rig = selfId ? this.blobs.get(selfId) : undefined;
     if (!self?.alive || !rig || this.inputModalBlocked(self)) return; // hide behind a modal
     const x = rig.x;
     const y = rig.y;
-    const R = 30;
     const sinceParry = (this.time.now - this.lastParryPress) / 1000;
     if (sinceParry < PARRY_IFRAMES) {
       // ACTIVE i-frame window — a bright white ring that fades as the window closes.
       const k = 1 - sinceParry / PARRY_IFRAMES;
-      g.lineStyle(3.5, 0xffffff, 0.35 + 0.5 * k);
-      g.strokeCircle(x, y, R);
+      this.parryRingImage
+        .setFrame("parry-active")
+        .setPosition(x, y)
+        .setTint(0xffffff)
+        .setAlpha(0.35 + 0.5 * k)
+        .setVisible(true);
     } else if (this.localParryCd > 0) {
       // RECOVERING — a dim arc filling clockwise from the top back to a full ring as the cooldown drains.
       const frac = 1 - this.localParryCd / PARRY_COOLDOWN; // 0 = just whiffed, 1 = ready
-      g.lineStyle(3, 0x3aa0c0, 0.5);
-      g.beginPath();
-      g.arc(x, y, R, -Math.PI / 2, -Math.PI / 2 + frac * Math.PI * 2);
-      g.strokePath();
+      const frame = Math.round(
+        Phaser.Math.Clamp(frac, 0, 1) * (PARRY_COOLDOWN_FRAMES - 1),
+      );
+      this.parryRingImage
+        .setFrame(`parry-cooldown-${frame}`)
+        .setPosition(x, y)
+        .setTint(0x3aa0c0)
+        .setAlpha(0.5)
+        .setVisible(true);
     } else {
       // READY — a faint full ring (parry available).
-      g.lineStyle(2, 0x8fdcff, 0.28);
-      g.strokeCircle(x, y, R);
+      this.parryRingImage
+        .setFrame("parry-ready")
+        .setPosition(x, y)
+        .setTint(0x8fdcff)
+        .setAlpha(0.28)
+        .setVisible(true);
     }
 
     // The carried-over pip now shows the fixed roll cooldown.
@@ -11108,13 +11261,22 @@ export class ArenaScene extends Phaser.Scene {
     const pipY = y + 20;
     if (slideCd > 0) {
       const ready = 1 - Math.min(1, slideCd / ROLL_COOLDOWN);
-      g.lineStyle(2, 0xc7a66c, 0.52);
-      g.beginPath();
-      g.arc(pipX, pipY, 5, -Math.PI / 2, -Math.PI / 2 + ready * Math.PI * 2);
-      g.strokePath();
+      const frame = Math.round(
+        Phaser.Math.Clamp(ready, 0, 1) * (ROLL_COOLDOWN_FRAMES - 1),
+      );
+      this.rollPipImage
+        .setFrame(`roll-cooldown-${frame}`)
+        .setPosition(pipX, pipY)
+        .setTint(0xc7a66c)
+        .setAlpha(0.52)
+        .setVisible(true);
     } else {
-      g.fillStyle(0xe8d7b8, 0.32);
-      g.fillCircle(pipX, pipY, 2.25);
+      this.rollPipImage
+        .setFrame("roll-ready")
+        .setPosition(pipX, pipY)
+        .setTint(0xe8d7b8)
+        .setAlpha(0.32)
+        .setVisible(true);
     }
   }
 
@@ -12537,19 +12699,18 @@ export class ArenaScene extends Phaser.Scene {
     const fill = Math.max(0, width * view.fraction);
     const preview = Math.max(0, Math.min(fill, width * view.debitFraction));
     const color = view.locked ? 0xff5d5d : view.low ? 0xff9a45 : 0x6fd6ff;
-    g.fillStyle(0x06080b, 0.96).fillRoundedRect(
+    g.fillStyle(0x06080b, 0.96).fillRect(
       x - 2 * scale,
       y - 2 * scale,
       width + 4 * scale,
       height + 4 * scale,
-      4 * scale,
     );
-    g.fillStyle(0x26313a, 0.95).fillRoundedRect(x, y, width, height, 3 * scale);
-    if (fill > 0) g.fillStyle(color, 0.96).fillRoundedRect(x, y, fill, height, 3 * scale);
+    g.fillStyle(0x26313a, 0.95).fillRect(x, y, width, height);
+    if (fill > 0) g.fillStyle(color, 0.96).fillRect(x, y, fill, height);
     if (preview > 0) {
       g.fillStyle(0xffffff, 0.24).fillRect(x + fill - preview, y, preview, height);
     }
-    g.lineStyle(Math.max(1, scale), color, 0.9).strokeRoundedRect(x, y, width, height, 3 * scale);
+    g.lineStyle(Math.max(1, scale), color, 0.9).strokeRect(x, y, width, height);
     for (let index = 0; index < view.chevrons; index++) {
       const cx = x + width + (8 + index * 7) * scale;
       g.lineStyle(2 * scale, view.chevrons === 2 ? 0x9cff6a : 0x6fd6ff, 0.95)
@@ -12795,6 +12956,16 @@ export class ArenaScene extends Phaser.Scene {
       if (layout.economy)
         this.drawObjectiveHudPlate(graphics, layout.economy, 0xd9c78f, 0.42, scale);
       if (layout.notice) this.drawObjectiveHudPlate(graphics, layout.notice, 0xff8a2b, 0.75, scale);
+      if (this.textures.exists(OBJECTIVE_HUD_TEXTURE_KEY))
+        this.textures.remove(OBJECTIVE_HUD_TEXTURE_KEY);
+      const textureWidth = Math.max(1, Math.ceil(this.screenW()));
+      const textureHeight = Math.max(1, Math.ceil(this.screenH()));
+      graphics.generateTexture(OBJECTIVE_HUD_TEXTURE_KEY, textureWidth, textureHeight);
+      this.objectiveHudImage
+        .setTexture(OBJECTIVE_HUD_TEXTURE_KEY)
+        .setPosition(0, 0)
+        .setDisplaySize(textureWidth, textureHeight)
+        .setVisible(true);
     }
 
     this.objectiveText
