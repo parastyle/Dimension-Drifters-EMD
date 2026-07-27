@@ -1607,6 +1607,8 @@ describe("GameRoom — §M14 golden tick snapshot (the hand-numbered phase order
         if (t % 6 === 3) h.send("p2", "attack", { aimX: -1, aimY: 0 });
         h.tick(1);
       }
+      // Seeded p1 starts beyond c1 and keeps aiming away from it. The surviving c1 locks B76: the former
+      // zero count depended on p1 crossing the stale target and reversing a supposedly +X attack.
       const s = h.state();
       const players = [...s.players.values()]
         // biome-ignore lint/suspicious/noExplicitAny: schema rows, read in the test harness.
@@ -1645,7 +1647,7 @@ describe("GameRoom — §M14 golden tick snapshot (the hand-numbered phase order
         "elapsed": 3,
         "mode": "arena",
         "outcome": "active",
-        "plantedAlive": 0,
+        "plantedAlive": 1,
         "players": [
           {
             "alive": true,

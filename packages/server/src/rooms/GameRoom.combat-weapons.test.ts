@@ -1062,8 +1062,17 @@ describe("GameRoom — Cogwright Tesla-Rod warp", () => {
 
 // NB BUG SQUAD: append-only authoritative projectile attribution and cadence regressions.
 describe("GameRoom - NB projectile contracts", () => {
-  function projectileRoom(id: string, weaponId: string) {
-    const h = makeRoom();
+  const projectileModes = [
+    { mode: "top-down", options: undefined },
+    { mode: "belt", options: { belt: true, beltLevel: "sky-carrier" } },
+  ] as const;
+
+  function projectileRoom(
+    id: string,
+    weaponId: string,
+    options?: { belt?: boolean; beltLevel?: string },
+  ) {
+    const h = makeRoom(options);
     h.join(id);
     h.state().mode = "training";
     h.room.map.tiles.fill(TILE_GROUND);
@@ -1075,6 +1084,278 @@ describe("GameRoom - NB projectile contracts", () => {
     h.tick(1);
     return { h, player };
   }
+
+  it.each(projectileModes)(
+    "keeps a buffered forward shot inside the commanded aim after walking past its cursor in $mode",
+    ({ options }) => {
+      const weaponId = "x-gun-revolver-cannon";
+      const weapon = WEAPONS[weaponId];
+      if (!weapon?.gun) throw new Error("Revolver Cannon fixture is required");
+      const { h, player } = projectileRoom(
+        `b76-buffer-${options?.belt ? "belt" : "top"}`,
+        weaponId,
+        options,
+      );
+      const combat = h.room.combat.get(player.id);
+      const input = h.room.inputs.get(player.id);
+      const targetX = player.x + 8;
+
+      combat.cd = 0.1;
+      combat.drawLock = 0;
+      h.send(player.id, "attack", {
+        aimX: 1,
+        aimY: 0,
+        tx: targetX,
+        ty: player.y,
+      });
+      h.send(player.id, "input", {
+        seq: input.lastSeq + 1,
+        dx: 1,
+        dy: 0,
+        aimX: 1,
+        aimY: 0,
+        targetX,
+        targetY: player.y,
+      });
+      h.tick(2);
+
+      const projectile = [...h.state().projectiles.values()].find(
+        (row) => row.sourceWeaponId === weaponId,
+      );
+      if (!projectile) throw new Error("buffered Revolver shot was not accepted");
+      expect(player.x).toBeGreaterThan(targetX);
+      expect(projectile.vx / Math.hypot(projectile.vx, projectile.vy)).toBeGreaterThan(0.999999);
+      expect(Math.abs(projectile.vy)).toBeLessThan(1e-9);
+    },
+  );
+
+  it("locks every owed burst round to its accepted forward aim while movement crosses the cursor", () => {
+    const weaponId = "x2-galvanic-overcasters";
+    const weapon = WEAPONS[weaponId];
+    if (!weapon?.gun?.burst) throw new Error("Galvanic burst fixture is required");
+    const { h, player } = projectileRoom("b76-burst-crossing", weaponId);
+    const input = h.room.inputs.get(player.id);
+    const targetX = player.x + 20;
+
+    h.send(player.id, "attack", {
+      aimX: 1,
+      aimY: 0,
+      tx: targetX,
+      ty: player.y,
+    });
+    h.send(player.id, "input", {
+      seq: input.lastSeq + 1,
+      dx: 1,
+      dy: 0,
+      aimX: 1,
+      aimY: 0,
+      targetX,
+      targetY: player.y,
+    });
+    h.tick(4);
+
+    const rounds = [...h.state().projectiles.values()].filter(
+      (row) => row.sourceWeaponId === weaponId,
+    );
+    expect(player.x).toBeGreaterThan(targetX);
+    expect(rounds).toHaveLength(weapon.gun.burst.count);
+    expect(rounds.every((row) => row.vx / Math.hypot(row.vx, row.vy) > 0.999999)).toBe(true);
+    expect(rounds.every((row) => Math.abs(row.vy) < 1e-9)).toBe(true);
+  });
+
+  it.each(projectileModes)(
+    "keeps a same-tick forward trigger when a stale opposite input arrives before acceptance in $mode",
+    ({ mode, options }) => {
+      const weaponId = "x-gun-revolver-cannon";
+      const weapon = WEAPONS[weaponId];
+      if (!weapon?.gun) throw new Error("Revolver Cannon fixture is required");
+      const { h, player } = projectileRoom(`b76-stale-input-${mode}`, weaponId, options);
+      const combat = h.room.combat.get(player.id);
+      const input = h.room.inputs.get(player.id);
+
+      combat.cd = 0.1;
+      player.aimDir = Math.PI;
+      h.send(player.id, "attack", {
+        aimX: 1,
+        aimY: 0,
+        tx: player.x + weapon.gun.range,
+        ty: player.y,
+      });
+      h.send(player.id, "input", {
+        seq: input.lastSeq + 1,
+        dx: 1,
+        dy: 0,
+        aimX: -1,
+        aimY: 0,
+        targetX: player.x - weapon.gun.range,
+        targetY: player.y,
+      });
+      h.tick(2);
+
+      const projectile = [...h.state().projectiles.values()].find(
+        (row) => row.sourceWeaponId === weaponId,
+      );
+      if (!projectile) throw new Error("stale-input Revolver shot was not accepted");
+      expect(projectile.vx / Math.hypot(projectile.vx, projectile.vy)).toBeGreaterThan(0.999999);
+      expect(Math.abs(projectile.vy)).toBeLessThan(1e-9);
+    },
+  );
+
+  it.each([
+    {
+      mode: "top-down",
+      options: undefined,
+      label: "zero-length",
+      aimX: 0,
+      aimY: 0,
+      targetX: (playerX: number) => playerX,
+      targetY: (playerY: number) => playerY,
+    },
+    {
+      mode: "belt",
+      options: { belt: true, beltLevel: "sky-carrier" },
+      label: "zero-length",
+      aimX: 0,
+      aimY: 0,
+      targetX: (playerX: number) => playerX,
+      targetY: (playerY: number) => playerY,
+    },
+    {
+      mode: "top-down",
+      options: undefined,
+      label: "overflowing",
+      aimX: Number.MAX_VALUE,
+      aimY: Number.MAX_VALUE,
+      targetX: () => Number.MAX_VALUE,
+      targetY: () => Number.MAX_VALUE,
+    },
+    {
+      mode: "belt",
+      options: { belt: true, beltLevel: "sky-carrier" },
+      label: "overflowing",
+      aimX: Number.MAX_VALUE,
+      aimY: Number.MAX_VALUE,
+      targetX: () => Number.MAX_VALUE,
+      targetY: () => Number.MAX_VALUE,
+    },
+  ])("uses the last finite aim for a $label fire command in $mode instead of inventing a facing", ({
+    mode,
+    options,
+    aimX,
+    aimY,
+    targetX,
+    targetY,
+  }) => {
+    const weaponId = "x-gun-revolver-cannon";
+    const { h, player } = projectileRoom(
+      `b76-degenerate-aim-${aimX === 0 ? "zero" : "huge"}-${mode}`,
+      weaponId,
+      options,
+    );
+    const combat = h.room.combat.get(player.id);
+    combat.aimX = -1;
+    combat.aimY = 0;
+    player.aimDir = Math.PI;
+
+    h.send(player.id, "attack", {
+      aimX,
+      aimY,
+      tx: targetX(player.x),
+      ty: targetY(player.y),
+    });
+    h.tick(1);
+
+    const projectile = [...h.state().projectiles.values()].find(
+      (row) => row.sourceWeaponId === weaponId,
+    );
+    if (!projectile) throw new Error("zero-aim fallback shot was not accepted");
+    expect(Number.isFinite(projectile.vx)).toBe(true);
+    expect(Number.isFinite(projectile.vy)).toBe(true);
+    expect(projectile.vx).toBeLessThan(0);
+    expect(Math.abs(projectile.vy)).toBeLessThan(1e-9);
+  });
+
+  it.each(projectileModes)(
+    "does not corrupt the last finite aim when a held-input normalization overflows in $mode",
+    ({ mode, options }) => {
+      const weaponId = "x-gun-revolver-cannon";
+      const { h, player } = projectileRoom(
+        `b76-overflowing-input-${mode}`,
+        weaponId,
+        options,
+      );
+      const combat = h.room.combat.get(player.id);
+      const input = h.room.inputs.get(player.id);
+      combat.aimX = -1;
+      combat.aimY = 0;
+
+      h.send(player.id, "input", {
+        seq: input.lastSeq + 1,
+        dx: 0,
+        dy: 0,
+        aimX: Number.MAX_VALUE,
+        aimY: Number.MAX_VALUE,
+        targetX: Number.MAX_VALUE,
+        targetY: Number.MAX_VALUE,
+      });
+      h.tick(1);
+      expect(combat.aimX).toBe(-1);
+      expect(combat.aimY).toBe(0);
+
+      h.send(player.id, "attack", {
+        aimX: 0,
+        aimY: 0,
+        tx: player.x,
+        ty: player.y,
+      });
+      h.tick(1);
+      const projectile = [...h.state().projectiles.values()].find(
+        (row) => row.sourceWeaponId === weaponId,
+      );
+      if (!projectile) throw new Error("post-overflow fallback shot was not accepted");
+      expect(projectile.vx).toBeLessThan(0);
+      expect(Number.isFinite(projectile.vx)).toBe(true);
+      expect(Number.isFinite(projectile.vy)).toBe(true);
+    },
+  );
+
+  it.each(projectileModes)(
+    "ignores stale opposite presentation facing and movement when choosing launch velocity in $mode",
+    ({ mode, options }) => {
+      const weaponId = "x2-coyote-stinger";
+      const weapon = WEAPONS[weaponId];
+      if (!weapon?.gun || weapon.muzzle?.salvoMode !== "cycle")
+        throw new Error("Coyote alternating muzzle fixture is required");
+      const { h, player } = projectileRoom(
+        `b76-facing-divergence-${mode}`,
+        weaponId,
+        options,
+      );
+      const combat = h.room.combat.get(player.id);
+      player.aimDir = Math.PI;
+      player.mvx = -320;
+      combat.aimX = 1;
+      combat.aimY = 0;
+      combat.targetX = player.x + weapon.gun.range;
+      combat.targetY = player.y;
+
+      player.attackSeq = 1;
+      h.room.fireGun(player, combat, weapon);
+      player.attackSeq = 2;
+      h.room.fireGun(player, combat, weapon);
+
+      const rounds = [...h.state().projectiles.values()].filter(
+        (row) => row.sourceWeaponId === weaponId,
+      );
+      expect(rounds.map((row) => row.sourceMuzzlePart)).toEqual([0, 1]);
+      expect(
+        rounds.every(
+          (row) =>
+            Math.atan2(Math.abs(row.vy), row.vx) <= (weapon.gun?.spread ?? 0) + 1e-9,
+        ),
+      ).toBe(true);
+    },
+  );
 
   it("emits Galvanic's accepted trigger as four ordered, authoritatively attributed rounds", () => {
     const weaponId = "x2-galvanic-overcasters";

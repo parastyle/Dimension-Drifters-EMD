@@ -90,6 +90,10 @@ interface LocalCombat {
   aimY: number;
   targetX: number;
   targetY: number;
+  bufferedAttackAimX: number;
+  bufferedAttackAimY: number;
+  bufferedAttackTargetX: number;
+  bufferedAttackTargetY: number;
   stance: number;
   slidePhase: number;
   slidePhaseTick: number;
@@ -112,6 +116,8 @@ interface LocalCombat {
   gunBurstWeaponId: string;
   gunBurstRemaining: number;
   gunBurstT: number;
+  gunBurstAimX: number;
+  gunBurstAimY: number;
   beamPhase: number;
   beamDescriptor?: unknown;
   beamPhaseT: number;
@@ -927,6 +933,10 @@ async function normalizeArena(
   combat.aimY = 0;
   combat.targetX = player.x + 900;
   combat.targetY = player.y;
+  combat.bufferedAttackAimX = 1;
+  combat.bufferedAttackAimY = 0;
+  combat.bufferedAttackTargetX = player.x + 900;
+  combat.bufferedAttackTargetY = player.y;
   combat.stance = STANCE_NONE;
   combat.slidePhase = SLIDE_PHASE_OFF;
   combat.slidePhaseTick = 0;
@@ -949,6 +959,8 @@ async function normalizeArena(
   combat.gunBurstWeaponId = "";
   combat.gunBurstRemaining = 0;
   combat.gunBurstT = 0;
+  combat.gunBurstAimX = 1;
+  combat.gunBurstAimY = 0;
   combat.beamPhase = 0;
   combat.beamDescriptor = undefined;
   combat.beamPhaseT = 0;
@@ -1064,22 +1076,69 @@ async function runWalkStop(instrumented: InstrumentedRoom): Promise<ScenarioResu
 }
 
 async function runRapidFlipAttack(instrumented: InstrumentedRoom): Promise<ScenarioResult> {
-  // Owner repro 2026-07-25: "tap ADADADADADA while moving and attacking" — alternate dx every tick
-  // for 3 seconds while swinging; the flip churn must produce ZERO corrections of any band.
-  const weaponId = "x2-cinderbrand-cleaver";
+  // Owner repro: alternate AD every tick and fire on alternating facing-change phases. Live authority
+  // rows must preserve both the existing zero-correction law and the B76 commanded launch direction.
+  const weaponId = "x-gun-revolver-cannon";
   await normalizeArena(instrumented, weaponId);
+  const playerId = instrumented.room.sessionId;
+  const attackSeqBefore = requiredPlayer(instrumented.room).attackSeq;
   const probe = createProbe(
     instrumented,
     "rapid-flip-attack",
-    "ADADAD flip while attacking",
+    "ADADAD flip while firing",
     "owner-repro",
+    { weaponId, weaponName: WEAPONS[weaponId]?.name },
   );
-  for (let step = 0; step < 60; step++)
-    await probe.tick({ dx: step % 2 === 0 ? 1 : -1, action: step % 6 === 0 ? "swing" : "walk" });
+  const fireSteps = new Set([0, 13, 26, 39, 52]);
+  const seenProjectiles = new Set(instrumented.local.state.projectiles.keys());
+  const directionSamples: Array<{
+    step: number;
+    aimX: number;
+    velocityX: number;
+    velocityY: number;
+    dot: number;
+  }> = [];
+  for (let step = 0; step < 60; step++) {
+    const aimX = step % 2 === 0 ? 1 : -1;
+    const firing = fireSteps.has(step);
+    await probe.tick({
+      dx: aimX,
+      aimX,
+      aimY: 0,
+      fireHeld: firing,
+      action: firing ? "flip-and-fire" : "rapid-flip",
+      predictDiscreteRecoil: firing,
+      beforeSend: firing ? () => sendAttack(instrumented.room, aimX, 0) : undefined,
+    });
+    instrumented.local.state.projectiles.forEach((projectile, id) => {
+      if (seenProjectiles.has(id)) return;
+      seenProjectiles.add(id);
+      if (projectile.sourcePlayerId !== playerId || projectile.sourceWeaponId !== weaponId) return;
+      const speed = Math.hypot(projectile.vx, projectile.vy);
+      directionSamples.push({
+        step,
+        aimX,
+        velocityX: projectile.vx,
+        velocityY: projectile.vy,
+        dot: speed > 1e-9 ? (projectile.vx / speed) * aimX : -1,
+      });
+    });
+  }
   for (let step = 0; step < 10; step++) await probe.tick({ action: "stop" });
   const result = probe.finish({ completed: true });
+  const accepted = (requiredPlayer(instrumented.room).attackSeq - attackSeqBefore) >>> 0;
+  result.metadata.acceptedAttacks = accepted;
+  result.metadata.projectileDirectionSamples = directionSamples;
+  result.metadata.minimumProjectileAimDot = Math.min(
+    1,
+    ...directionSamples.map((sample) => sample.dot),
+  );
   result.assertions.zeroCorrections = result.summary.nonzeroCorrections === 0;
   result.assertions.zeroSilent = result.summary.correctionRequests === 0;
+  result.assertions.projectilesObserved = directionSamples.length === fireSteps.size;
+  result.assertions.projectilesFollowCommandedAim = directionSamples.every(
+    (sample) => sample.dot > 0.999999,
+  );
   return result;
 }
 

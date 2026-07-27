@@ -885,6 +885,13 @@ export interface CombatState {
   /** Cursor world target (for slam-at-cursor weapons; clamped to QUAKE_REACH server-side). */
   targetX: number;
   targetY: number;
+  /** Immutable direction/target captured when the currently buffered discrete attack entered authority.
+   * Live input may continue steering presentation while the cooldown drains, but acceptance consumes this
+   * trigger epoch rather than recomputing from a later player position. */
+  bufferedAttackAimX: number;
+  bufferedAttackAimY: number;
+  bufferedAttackTargetX: number;
+  bufferedAttackTargetY: number;
   /** §7 v0.105 de-clunk — remaining ATTACK BUFFER (sec). An "attack" message sets it to
    *  ATTACK_BUFFER_SECONDS; the tick fires the swing the instant the cooldown drains and it's still >0
    *  (a press one tick early is queued, not eaten), then zeroes it. Decays otherwise so a stale press
@@ -903,6 +910,9 @@ export interface CombatState {
   gunBurstT: number;
   gunBurstWeaponId: string;
   gunBurstHand: WeaponHand;
+  /** Every follow-up round owed by one accepted trigger keeps that trigger's launch direction. */
+  gunBurstAimX: number;
+  gunBurstAimY: number;
   /** B31 server-owned hold/release projectile clock. Only the immutable start tick is replicated. */
   chargedProjectileInputWasHeld: boolean;
   chargedProjectileWeaponId: string;
@@ -1523,7 +1533,7 @@ export interface GameRoomContext extends Room<ArenaState> {
   clearGunBurst(c: CombatState): void;
   stepGunBurst(player: PlayerState, c: CombatState, weapon: WeaponDef | undefined, acting: boolean): void;
   detonateWarpAtCursor(player: PlayerState, c: CombatState, weapon: WeaponDef): void;
-  fireGun(player: PlayerState, c: CombatState, weapon: WeaponDef, hand?: WeaponHand, recoilElapsedMs?: number, burstIndex?: number): void;
+  fireGun(player: PlayerState, c: CombatState, weapon: WeaponDef, hand?: WeaponHand, recoilElapsedMs?: number, burstIndex?: number, acceptedAim?: Vec2): void;
   applyWeaponFireRecoil(player: PlayerState, aimX: number, aimY: number, impulse: number): void;
   applyProjectileChain(seed: EnemyState, seedId: string, meta: {
       hit: Set<string>;
@@ -1892,27 +1902,50 @@ export const roomProgressionMethods = {
           ATTACK_BUFFER_SECONDS,
           c.drawLock > 0 ? c.drawLock + TICK_MS / 1000 + 1e-6 : 0,
         );
-        c.aimX = Number.isFinite(message?.aimX) ? (message.aimX as number) : c.aimX;
-        c.aimY = Number.isFinite(message?.aimY) ? (message.aimY as number) : c.aimY;
-        // Trust nothing off the wire: NORMALIZE aim to a unit vector. It feeds the melee-arc direction
-        // and the thrown-projectile velocity directly, so a non-unit (or zero) aim would warp reach/speed.
-        const aimLen = Math.hypot(c.aimX, c.aimY);
-        if (aimLen > 1e-4) {
-          c.aimX /= aimLen;
-          c.aimY /= aimLen;
+        let requestedAimX = Number.isFinite(message?.aimX) ? (message.aimX as number) : c.aimX;
+        let requestedAimY = Number.isFinite(message?.aimY) ? (message.aimY as number) : c.aimY;
+        // Trust nothing off the wire: normalize the vector, and preserve the last finite direction for a
+        // zero-length sample. Defaulting every degenerate edge to +X could itself manufacture a 180° shot.
+        const requestedLength = Math.hypot(requestedAimX, requestedAimY);
+        if (Number.isFinite(requestedLength) && requestedLength > 1e-4) {
+          requestedAimX /= requestedLength;
+          requestedAimY /= requestedLength;
         } else {
-          c.aimX = 1;
-          c.aimY = 0;
+          const fallbackLength = Math.hypot(c.aimX, c.aimY);
+          if (Number.isFinite(fallbackLength) && fallbackLength > 1e-4) {
+            requestedAimX = c.aimX / fallbackLength;
+            requestedAimY = c.aimY / fallbackLength;
+          } else {
+            requestedAimX = 1;
+            requestedAimY = 0;
+          }
         }
-        // §9 sync the aim angle so other clients can point this player's held gun + bullets at their cursor.
-        if (player) player.aimDir = Math.atan2(c.aimY, c.aimX);
-        // Cursor world target (defaults to just ahead of the player along aim).
-        c.targetX = Number.isFinite(message?.tx)
+        const originX = player?.x ?? 0;
+        const originY = player?.y ?? 0;
+        const targetX = Number.isFinite(message?.tx)
           ? (message.tx as number)
-          : (player?.x ?? 0) + c.aimX;
-        c.targetY = Number.isFinite(message?.ty)
+          : originX + requestedAimX;
+        const targetY = Number.isFinite(message?.ty)
           ? (message.ty as number)
-          : (player?.y ?? 0) + c.aimY;
+          : originY + requestedAimY;
+        // B76: §37 cursor-point correction is resolved exactly once, when authority receives the trigger.
+        // Re-evaluating this point after buffered movement can put the shooter beyond it and invert the shot.
+        const targetDx = targetX - originX;
+        const targetDy = targetY - originY;
+        const targetLength = Math.hypot(targetDx, targetDy);
+        const targetDefinesAim = Number.isFinite(targetLength) && targetLength > 1e-3;
+        const acceptedAimX = targetDefinesAim ? targetDx / targetLength : requestedAimX;
+        const acceptedAimY = targetDefinesAim ? targetDy / targetLength : requestedAimY;
+        c.aimX = acceptedAimX;
+        c.aimY = acceptedAimY;
+        c.targetX = targetX;
+        c.targetY = targetY;
+        c.bufferedAttackAimX = acceptedAimX;
+        c.bufferedAttackAimY = acceptedAimY;
+        c.bufferedAttackTargetX = targetX;
+        c.bufferedAttackTargetY = targetY;
+        // §9 sync the accepted direction so other clients point the held gun at the same trigger epoch.
+        if (player) player.aimDir = Math.atan2(acceptedAimY, acceptedAimX);
       },
     );
 
@@ -3311,6 +3344,10 @@ export const roomProgressionMethods = {
       aimY: 0,
       targetX: 0,
       targetY: 0,
+      bufferedAttackAimX: 1,
+      bufferedAttackAimY: 0,
+      bufferedAttackTargetX: 0,
+      bufferedAttackTargetY: 0,
       attackBuffer: 0,
       parryBuffer: 0,
       jumpBuffer: 0,
@@ -3319,6 +3356,8 @@ export const roomProgressionMethods = {
       gunBurstT: 0,
       gunBurstWeaponId: "",
       gunBurstHand: 0,
+      gunBurstAimX: 1,
+      gunBurstAimY: 0,
       chargedProjectileInputWasHeld: false,
       chargedProjectileWeaponId: "",
       chargedProjectileStartTick: 0,
@@ -3580,7 +3619,7 @@ export const roomProgressionMethods = {
         const beamAim = this.combat.get(id);
         if (beamAim) {
           const aimLength = Math.hypot(cmd.aimX, cmd.aimY);
-          if (aimLength > 1e-4) {
+          if (Number.isFinite(aimLength) && aimLength > 1e-4) {
             beamAim.aimX = cmd.aimX / aimLength;
             beamAim.aimY = cmd.aimY / aimLength;
           }
@@ -4203,6 +4242,15 @@ export const roomProgressionMethods = {
       // the buffer so it can't double-fire. A held trigger re-arms the buffer each client cooldown.
       const canAct =
         acting && c.stance !== STANCE_SLIDE && c.attackBuffer > 0 && c.cd <= 0 && c.drawLock <= 0;
+      if (canAct) {
+        // Input heartbeats keep the live aim responsive while a press is buffered. At acceptance, restore
+        // the immutable trigger snapshot so movement, facing, or a later pointer sample cannot retarget it.
+        c.aimX = c.bufferedAttackAimX;
+        c.aimY = c.bufferedAttackAimY;
+        c.targetX = c.bufferedAttackTargetX;
+        c.targetY = c.bufferedAttackTargetY;
+        player.aimDir = Math.atan2(c.aimY, c.aimX);
+      }
       // §10 v0.104: the single Terraria affix can speed up / slow down the held weapon (Swift/Heavy…).
       const cdMul = lootCooldownMult(player.weaponAffix);
       if (weapon?.warp) {

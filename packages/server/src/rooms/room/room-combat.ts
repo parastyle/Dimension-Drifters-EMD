@@ -3920,15 +3920,13 @@ export const roomCombatMethods = {
   /** §9/§15 fire a GUN — spend one ammo to launch `pellets` friendly bullets down-barrel (a cone for
    *  shotguns / a touch of inaccuracy for autos), each WYSIWYG-scaled, piercing/bouncing/exploding per
    *  the gun's block. Ammo + reload are handled by the caller (mirrors the thrown charge model). */
-  /** §37 the PRECISE firing direction: from the shooter's AUTHORITATIVE body toward the CURSOR WORLD POINT the
-   *  client sent (targetX/Y), not the client's rig-derived aim VECTOR. The predicted/interpolated rig can lead
-   *  the real body while moving, so a direction-only aim skews slightly off the cursor; aiming at the sent
-   *  point lands the shot ON the cursor. Falls back to the aim vector if no target was sent. Unit vector. */
-  aimDir(this: GameRoomContext, player: PlayerState, c: CombatState): { x: number; y: number } {
-    const dx = c.targetX - player.x;
-    const dy = c.targetY - player.y;
-    const l = Math.hypot(dx, dy);
-    return l > 1e-3 ? { x: dx / l, y: dy / l } : { x: c.aimX, y: c.aimY };
+  /** B76 immutable accepted direction. The §37 cursor correction is resolved when the trigger message
+   * enters authority; recalculating from a later player position can put the stale target behind the body. */
+  aimDir(this: GameRoomContext, _player: PlayerState, c: CombatState): { x: number; y: number } {
+    const length = Math.hypot(c.aimX, c.aimY);
+    return Number.isFinite(length) && length > 1e-4
+      ? { x: c.aimX / length, y: c.aimY / length }
+      : { x: 1, y: 0 };
   },
 
   armGunBurst(this: GameRoomContext, c: CombatState, weapon: WeaponDef, hand: WeaponHand): void {
@@ -3938,6 +3936,8 @@ export const roomCombatMethods = {
     c.gunBurstHand = hand;
     c.gunBurstRemaining = burst.count - 1;
     c.gunBurstT = burst.intervalSeconds;
+    c.gunBurstAimX = c.aimX;
+    c.gunBurstAimY = c.aimY;
   },
 
   clearGunBurst(this: GameRoomContext, c: CombatState): void {
@@ -3945,6 +3945,8 @@ export const roomCombatMethods = {
     c.gunBurstHand = 0;
     c.gunBurstRemaining = 0;
     c.gunBurstT = 0;
+    c.gunBurstAimX = 1;
+    c.gunBurstAimY = 0;
   },
 
   /** B45 sanctioned gun/beam root motion. It enters the existing additive impulse rail so input composes,
@@ -3991,6 +3993,7 @@ export const roomCombatMethods = {
       c.gunBurstHand,
       weapon.gun.burst.intervalSeconds * 1000,
       burstIndex,
+      { x: c.gunBurstAimX, y: c.gunBurstAimY },
     );
     c.gunBurstRemaining--;
     if (c.gunBurstRemaining <= 0) this.clearGunBurst(c);
@@ -4030,12 +4033,17 @@ export const roomCombatMethods = {
     hand: WeaponHand = 0,
     recoilElapsedMs = 0,
     burstIndex = 0,
+    acceptedAim?: Vec2,
   ): void {
     const g = weapon.gun;
     if (!g) return;
     const pellets = Math.max(1, g.pellets ?? 1);
     const spread = g.spread ?? 0;
-    const aim = this.aimDir(player, c); // §37 aim at the cursor POINT, not the rig-derived vector
+    const acceptedAimLength = acceptedAim ? Math.hypot(acceptedAim.x, acceptedAim.y) : 0;
+    const aim =
+      acceptedAim && Number.isFinite(acceptedAimLength) && acceptedAimLength > 1e-4
+        ? { x: acceptedAim.x / acceptedAimLength, y: acceptedAim.y / acceptedAimLength }
+        : this.aimDir(player, c);
     const muzzles = weaponMuzzleWorldPointsForShot(
       weapon,
       {
