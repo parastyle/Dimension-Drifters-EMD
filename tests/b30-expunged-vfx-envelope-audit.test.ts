@@ -86,10 +86,10 @@ function assertVisibleExtentEqualsDamageExtent(definition: WeaponDef): void {
 }
 
 describe("B30 B15/B24/B28 expunged-VFX hit-envelope audit", () => {
-  it("sweeps the complete 341-weapon post-B63/B66 cohort through the envelope law", () => {
+  it("sweeps the complete post-B63/B66 cohort through the envelope law", () => {
     const cohort = Object.values(WEAPONS).filter(wasB24FallbackCandidate);
-    // Preserve the literal loss tripwire after the merged catalog plus Helix adds 18 eligible rows.
-    expect(cohort).toHaveLength(341);
+    // Preserve the literal membership-loss tripwire: all five new eligible guns must be audited.
+    expect(cohort).toHaveLength(346);
 
     for (const definition of cohort) {
       assertVisibleExtentEqualsDamageExtent(definition);

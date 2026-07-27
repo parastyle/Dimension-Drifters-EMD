@@ -193,7 +193,7 @@ function filterWeapons() {
   if (selectedIndex >= 0) listFocusIndex = selectedIndex;
   else listFocusIndex = Math.min(listFocusIndex, Math.max(0, filteredWeapons.length - 1));
   $("#listCount").textContent = `${filteredWeapons.length} / ${allWeapons.length}`;
-  $("#listViewport").setAttribute("aria-setsize", String(filteredWeapons.length));
+  $("#weaponSearch").setAttribute("aria-label", `Search ${allWeapons.length} active weapons`);
 }
 function scheduleListWindow() {
   cancelAnimationFrame(listRenderFrame);

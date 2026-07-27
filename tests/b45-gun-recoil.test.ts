@@ -29,8 +29,8 @@ describe("B45 physical gun recoil catalog", () => {
     const rangedBeams = definitions.filter(
       (weapon) => weapon.tags.classPool === "ranged" && weapon.beam,
     );
-    // Literal tripwire: the merged catalog now contains 131 ranged-class guns, all of which must recoil.
-    expect(rangedGuns).toHaveLength(131);
+    // Literal cohort tripwires ensure new ranged mechanisms enter the every-weapon recoil law.
+    expect(rangedGuns).toHaveLength(136);
     expect(rangedBeams).toHaveLength(4);
     expect(rangedGuns.every((weapon) => (weapon.recoil ?? 0) > 0)).toBe(true);
     expect(rangedBeams.every((weapon) => (weapon.recoil ?? 0) > 0)).toBe(true);

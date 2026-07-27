@@ -7,6 +7,7 @@ import {
   DROP_POOL,
   lockedPackCandidates,
   STARTER_UNLOCKED_WEAPON_IDS,
+  WEAPON_CATALOG_IDS,
   WEAPON_RESOURCE_PROFILES,
   WEAPONS,
 } from "@dd/shared";
@@ -143,9 +144,13 @@ describe("B50 caster/VFX corrections", () => {
     expect(STARTER_UNLOCKED_WEAPON_IDS).not.toContain(CINDERQUILL_ID);
     expect(packIds).not.toContain(CINDERQUILL_ID);
     expect(WEAPON_RESOURCE_PROFILES[CINDERQUILL_ID]).toBeDefined();
-    // B63/B66 add twenty-one active expansion rows so far without changing Cinderquill's archived status.
-    expect(ACTIVE_WEAPON_CATALOG_IDS).toHaveLength(360);
-    expect(ACTIVE_EXPANSION_WEAPON_IDS).toHaveLength(331);
+    // Live totals derive from the catalog; the literal archive census remains the loss tripwire.
+    expect(ACTIVE_WEAPON_CATALOG_IDS).toHaveLength(
+      WEAPON_CATALOG_IDS.length - ARCHIVED_WEAPON_IDS.length,
+    );
+    expect(ACTIVE_EXPANSION_WEAPON_IDS).toHaveLength(
+      ACTIVE_WEAPON_CATALOG_IDS.filter((id) => WEAPONS[id]?.expansion === true).length,
+    );
     expect(ARCHIVED_WEAPON_IDS).toHaveLength(20);
   });
 });

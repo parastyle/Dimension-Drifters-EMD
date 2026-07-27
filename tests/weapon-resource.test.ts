@@ -12,6 +12,7 @@ import {
   driveCostForProfile,
   FISTS_RESOURCE_PROFILE,
   WEAPON_RESOURCE_FROZEN_MEDIANS,
+  WEAPON_RESOURCE_CENSUS_PINS,
   WEAPON_RESOURCE_IDS,
   WEAPON_RESOURCE_OVERRIDES,
   WEAPON_RESOURCE_PROFILES,
@@ -19,8 +20,9 @@ import {
 import { describe, expect, it } from "vitest";
 
 describe("Drive formula v1", () => {
-  it("covers the frozen 380-weapon post-B63/B66 catalog in deterministic id order", () => {
-    expect(WEAPON_RESOURCE_IDS).toHaveLength(380);
+  it("covers the frozen 385-weapon post-B63/B66 catalog in deterministic id order", () => {
+    // The deliberate literal remains in weapon-resource.ts; this consumer does not duplicate it.
+    expect(WEAPON_RESOURCE_IDS).toHaveLength(WEAPON_RESOURCE_CENSUS_PINS.catalog);
     expect(WEAPON_RESOURCE_IDS).toEqual([...WEAPON_RESOURCE_IDS].sort());
     expect(Object.keys(WEAPON_RESOURCE_PROFILES)).toEqual(WEAPON_RESOURCE_IDS);
 
@@ -36,8 +38,8 @@ describe("Drive formula v1", () => {
         expect(profile.neutralCost % DRIVE_COST_QUANTUM).toBe(0);
       }
     }
-    // The merged additions plus Helix add three melee, seventeen gun, and one cast profiles.
-    expect(census).toEqual({ melee: 181, thrown: 27, gun: 140, cast: 5, beam: 23, zone: 4 });
+    // Deliberately literal delivery ownership: all five new profiles must enter the gun branch.
+    expect(census).toEqual({ melee: 181, thrown: 27, gun: 145, cast: 5, beam: 23, zone: 4 });
   });
 
   it("pins every coefficient, frozen median, and the bounded utility overrides", () => {
@@ -161,8 +163,8 @@ describe("Drive formula v1", () => {
     };
     expect(bands("melee")).toEqual({ min: 3, median: 14, max: 35 });
     expect(bands("thrown")).toEqual({ min: 11.25, median: 15, max: 22.5 });
-    // The new rows legitimately move these distribution pins; the formula coefficients stay frozen.
-    expect(bands("gun")).toEqual({ min: 1.25, median: 10.75, max: 50.75 });
+    // The new rows legitimately move this authored distribution pin; coefficients stay frozen.
+    expect(bands("gun")).toEqual({ min: 1.25, median: 10, max: 50.75 });
     expect(bands("cast")).toEqual({ min: 7, median: 18, max: 42 });
   });
 

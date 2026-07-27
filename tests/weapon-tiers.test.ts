@@ -51,8 +51,8 @@ describe("B20 L5 authored weapon tiers", () => {
       (tier) =>
         ACTIVE_WEAPON_CATALOG_IDS.filter((id) => WEAPONS[id]?.tier === tier).length,
     );
-    // The merged additions plus Helix are retained across the authored five-tier distribution.
-    expect(counts).toEqual([75, 77, 68, 75, 65]);
+    // Deliberately literal: this distribution detects lost or mis-tiered authored rows.
+    expect(counts).toEqual([75, 77, 70, 78, 65]);
     expect(counts.every((count) => count > 0)).toBe(true);
     expect(Math.max(...counts)).toBeLessThanOrEqual(ACTIVE_WEAPON_CATALOG_IDS.length / 2);
   });

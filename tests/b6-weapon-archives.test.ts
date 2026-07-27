@@ -70,12 +70,18 @@ describe("B6 weapon catalog archives", () => {
       ...B50_ARCHIVE_IDS,
     ].sort();
     expect([...ARCHIVED_WEAPON_IDS].sort()).toEqual(expected);
-    // The B63/B66 merge plus Helix adds twenty-one live rows; the archive set remains unchanged.
-    expect(WEAPON_CATALOG_IDS).toHaveLength(380);
-    expect(ACTIVE_WEAPON_CATALOG_IDS).toHaveLength(360);
+    // Pure surrounding catalog sizes derive; the exact list and literal 20-row archive pin detect loss.
+    expect(WEAPON_CATALOG_IDS).toHaveLength(
+      ACTIVE_WEAPON_CATALOG_IDS.length + ARCHIVED_WEAPON_IDS.length,
+    );
+    expect(ACTIVE_WEAPON_CATALOG_IDS).toHaveLength(
+      WEAPON_CATALOG_IDS.length - ARCHIVED_WEAPON_IDS.length,
+    );
     expect(ARCHIVED_WEAPON_IDS).toHaveLength(20);
-    expect(ACTIVE_EXPANSION_WEAPON_IDS).toHaveLength(331);
-    expect(WEAPON_RESOURCE_IDS).toHaveLength(380);
+    expect(ACTIVE_EXPANSION_WEAPON_IDS).toHaveLength(
+      EXPANSION_WEAPON_IDS.filter((id) => WEAPONS[id]?.archived !== true).length,
+    );
+    expect(WEAPON_RESOURCE_IDS).toHaveLength(WEAPON_CATALOG_IDS.length);
 
     const concepts = JSON.parse(readFileSync("data/weapon-concepts-300.json", "utf8")) as {
       weapons: { id: string; archived?: boolean }[];

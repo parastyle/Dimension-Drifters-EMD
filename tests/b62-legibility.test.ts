@@ -4,6 +4,7 @@ import {
   derivedWeaponBehaviourLine,
   RARE_RELIC_DEFS,
   relicDescriptionFor,
+  WEAPON_CATALOG_IDS,
   WEAPONS,
   weaponBehaviourLine,
 } from "@dd/shared";
@@ -22,8 +23,10 @@ describe("B62 player-facing weapon behavior", () => {
       .map((weapon) => weapon.id);
 
     expect(missing).toEqual([]);
-    // Keep the live-catalog total pinned after the merged additions plus Helix resolve copy.
-    expect(ACTIVE_WEAPON_CATALOG_IDS).toHaveLength(360);
+    // The law still checks every row; only its pure live-catalog size is derived.
+    expect(ACTIVE_WEAPON_CATALOG_IDS).toHaveLength(
+      WEAPON_CATALOG_IDS.filter((id) => WEAPONS[id]?.archived !== true).length,
+    );
   });
 
   it("always prefers an authored description over derived combat copy", () => {

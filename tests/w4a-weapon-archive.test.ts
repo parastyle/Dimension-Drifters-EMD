@@ -51,12 +51,18 @@ const CURATED_ARCHIVE_IDS = new Set(["drift-wakizashi-hushglass", "drift-wakizas
 describe("W4A weapon archive contracts", () => {
   it("keeps twenty durable catalog rows while excluding them from every active acquisition census", () => {
     expect([...ARCHIVED_WEAPON_IDS].sort()).toEqual([...ARCHIVE_IDS].sort());
-    // The B63/B66 merge plus Helix adds twenty-one live rows without changing the archive set.
-    expect(WEAPON_CATALOG_IDS).toHaveLength(380);
-    expect(ACTIVE_WEAPON_CATALOG_IDS).toHaveLength(360);
+    // Pure surrounding catalog sizes derive; the exact archive ids and literal count detect loss.
+    expect(WEAPON_CATALOG_IDS).toHaveLength(
+      ACTIVE_WEAPON_CATALOG_IDS.length + ARCHIVED_WEAPON_IDS.length,
+    );
+    expect(ACTIVE_WEAPON_CATALOG_IDS).toHaveLength(
+      WEAPON_CATALOG_IDS.length - ARCHIVED_WEAPON_IDS.length,
+    );
     expect(ARCHIVED_WEAPON_IDS).toHaveLength(20);
-    expect(ACTIVE_EXPANSION_WEAPON_IDS).toHaveLength(331);
-    expect(WEAPON_RESOURCE_IDS).toHaveLength(380);
+    expect(ACTIVE_EXPANSION_WEAPON_IDS).toHaveLength(
+      EXPANSION_WEAPON_IDS.filter((id) => WEAPONS[id]?.archived !== true).length,
+    );
+    expect(WEAPON_RESOURCE_IDS).toHaveLength(WEAPON_CATALOG_IDS.length);
 
     const provenances: WeaponProvenance[] = [
       "enemy-drop",
@@ -87,13 +93,18 @@ describe("W4A weapon archive contracts", () => {
     for (const id of ARCHIVE_IDS) expect(wielded, id).not.toContain(id);
   });
 
-  it("regenerates the portal and default Weaponsmith listing with 360 active rows after B69", () => {
+  it("regenerates the portal and default Weaponsmith listing with every active row", () => {
     const portal = readFileSync("tools/portal/index.html", "utf8");
     const smith = readFileSync("tools/weaponsmith/public/index.html", "utf8");
+    const smithApp = readFileSync("tools/weaponsmith/public/app.js", "utf8");
     const smithServer = readFileSync("tools/weaponsmith/server.mjs", "utf8");
-    expect(portal).toContain('"count":360');
-    expect(smith).toContain("Search 360 active weapons");
-    expect(smith).toContain('aria-setsize="360"');
+    expect(portal).toContain(`"count":${ACTIVE_WEAPON_CATALOG_IDS.length}`);
+    expect(smith).toContain('aria-label="Search active weapons"');
+    expect(smith).not.toContain("aria-setsize=");
+    expect(smithApp).toContain("`Search ${allWeapons.length} active weapons`");
+    expect(smithApp).toContain(
+      'row.setAttribute("aria-setsize", String(filteredWeapons.length))',
+    );
     expect(smithServer).toContain("definition.archived === true");
     for (const id of ARCHIVE_IDS) {
       expect(portal, id).not.toContain(`/?dev=weapon:${id}`);

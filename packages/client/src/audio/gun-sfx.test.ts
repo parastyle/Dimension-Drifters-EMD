@@ -58,8 +58,8 @@ describe("active gun sound-family census", () => {
     const activeGunIds = ACTIVE_WEAPON_CATALOG_IDS.filter((id) => WEAPONS[id]?.gun).sort();
     const mappedIds = Object.keys(ACTIVE_GUN_FIRE_FAMILY_BY_ID).sort();
 
-    // The B63/B66 merge plus Helix advances this deliberate loss-and-placeholder tripwire.
-    expect(activeGunIds).toHaveLength(139);
+    // Deliberately literal: losing a gun from the classification cohort must not self-validate.
+    expect(activeGunIds).toHaveLength(144);
     expect(mappedIds).toEqual(activeGunIds);
     for (const weaponId of activeGunIds) {
       const family = gunFireFamilyFor(weaponId);

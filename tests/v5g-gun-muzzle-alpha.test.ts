@@ -61,9 +61,9 @@ describe("V7 catalog-wide art-space muzzle law", () => {
       }
     }
 
-    // Seventeen newly installed gun/muzzle definitions now join the catalog-wide derivation law.
-    expect(weaponCount).toBe(164);
-    expect(pointCount).toBeGreaterThanOrEqual(164);
+    // Literal cohort pins ensure new guns cannot silently escape the catalog-wide muzzle law.
+    expect(weaponCount).toBe(169);
+    expect(pointCount).toBeGreaterThanOrEqual(169);
     expect(failures, failures.join("\n")).toEqual([]);
   });
 

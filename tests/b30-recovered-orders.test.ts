@@ -8,6 +8,7 @@ import {
   lockedPackCandidates,
   meleeComboSelectionFor,
   meleeReach,
+  WEAPON_CATALOG_IDS,
   WEAPON_IDS,
   WEAPONS,
   type WeaponDef,
@@ -95,8 +96,10 @@ describe("B30 recovered skipped-window orders", () => {
       expect(DROP_POOL, id).not.toContain(id);
       expect(packIds, id).not.toContain(id);
     }
-    // B63/B66 have added twenty-one active rows so far; the four B30 archives remain excluded.
-    expect(ACTIVE_WEAPON_CATALOG_IDS).toHaveLength(360);
+    // The live total is catalog-derived; the exact archive contract and literal loss pin remain.
+    expect(ACTIVE_WEAPON_CATALOG_IDS).toHaveLength(
+      WEAPON_CATALOG_IDS.length - ARCHIVED_WEAPON_IDS.length,
+    );
     expect(ARCHIVED_WEAPON_IDS).toHaveLength(20);
   });
 

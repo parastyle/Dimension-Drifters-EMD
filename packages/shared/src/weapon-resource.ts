@@ -287,8 +287,8 @@ export function deriveWeaponResourceProfile(weapon: WeaponDef): WeaponResourcePr
 }
 
 /**
- * Deterministic formula output for all 380 durable ids: 360 active + 20 archived. Archived profiles remain
- * resolvable so old receipts/instances never dangle while the join migration converts owned copies.
+ * Deterministic formula output for every durable catalog id. Archived profiles remain resolvable so old
+ * receipts/instances never dangle while the join migration converts owned copies.
  */
 export const WEAPON_RESOURCE_IDS = Object.freeze(
   Object.keys(WEAPONS)
@@ -311,21 +311,26 @@ export function weaponResourceProfile(weaponId: string): WeaponResourceProfile |
   return weaponId === "fists" ? FISTS_RESOURCE_PROFILE : WEAPON_RESOURCE_PROFILES[weaponId];
 }
 
-// B63/B66: +21 catalogued weapons so far (30-gun cop-dimension order + 20-weapon other-dimension order).
-// These pins are a deliberate tripwire against SILENT weapon loss — bump them consciously when the
-// roster grows, never to make a failing build pass.
-if (WEAPON_RESOURCE_IDS.length !== 385) {
+// These are the one deliberate literal tripwire against SILENT weapon loss. Catalog additions bump this
+// owner once; tests consume the owner instead of copying its totals into unrelated census assertions.
+export const WEAPON_RESOURCE_CENSUS_PINS = Object.freeze({
+  catalog: 385,
+  active: 365,
+  archived: 20,
+} as const);
+
+if (WEAPON_RESOURCE_IDS.length !== WEAPON_RESOURCE_CENSUS_PINS.catalog) {
   throw new Error(
-    `Drive formula expected 385 catalog weapons, received ${WEAPON_RESOURCE_IDS.length}`,
+    `Drive formula expected ${WEAPON_RESOURCE_CENSUS_PINS.catalog} catalog weapons, received ${WEAPON_RESOURCE_IDS.length}`,
   );
 }
 if (
-  ACTIVE_WEAPON_CATALOG_IDS.length !== 365 ||
-  ARCHIVED_WEAPON_IDS.length !== 20 ||
+  ACTIVE_WEAPON_CATALOG_IDS.length !== WEAPON_RESOURCE_CENSUS_PINS.active ||
+  ARCHIVED_WEAPON_IDS.length !== WEAPON_RESOURCE_CENSUS_PINS.archived ||
   ACTIVE_WEAPON_CATALOG_IDS.length + ARCHIVED_WEAPON_IDS.length !== WEAPON_RESOURCE_IDS.length
 ) {
   throw new Error(
-    `Weapon archive census expected 360 active + 20 archived, received ${ACTIVE_WEAPON_CATALOG_IDS.length} + ${ARCHIVED_WEAPON_IDS.length}`,
+    `Weapon archive census expected ${WEAPON_RESOURCE_CENSUS_PINS.active} active + ${WEAPON_RESOURCE_CENSUS_PINS.archived} archived, received ${ACTIVE_WEAPON_CATALOG_IDS.length} + ${ARCHIVED_WEAPON_IDS.length}`,
   );
 }
 if (Object.keys(WEAPON_RESOURCE_OVERRIDES).length > 15) {
