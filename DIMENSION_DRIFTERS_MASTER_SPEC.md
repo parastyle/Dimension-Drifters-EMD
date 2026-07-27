@@ -59,6 +59,21 @@ architecture document, tuning table, content census, roadmap, or changelog.
   catches style drift before it multiplies across a roster. [Citation: art-production lock
   `e178c1b`; executable reference-anchor policy in
   `tools/artkit/style.json`; pill-grunt anchor update `1f06dca`.]
+- **L09 `[LOCKED]` — Movement is stupid simple. Feel comes from ANIMATION, never from modulating
+  speed.** The character travels at ONE constant speed. The only permitted modifiers are attacking,
+  parrying, and an explicit environmental slow (ice and similar). No turn weight, no reversal hitch,
+  no acceleration curve, no momentum, no per-direction variance — diagonal equals cardinal. Stopping
+  is crisp; a legitimate stop must not be eased by the presentation layer.
+  Why: the owner originally requested direction-change "weight" and then retracted it after playing
+  it — the dip read as lurching, not as heft. Owner ruling, 2026-07-26 (verbatim): *"earlier in
+  development I asked for that weight of movement while switching directions. We dont need any of
+  that. As long as we have good animations, and crisp movement we should make the movement feel
+  stupid simple."* and *"There should be no character lurching."*
+  Consequence: `MOVE_HITCH_MIN_ANGLE` / `MOVE_HITCH_DIP` / `MOVE_HITCH_MIN_SPEED` /
+  `MOVE_RECOVER_ACCEL` / `MOVE_STOP_DECEL` are DELETED and must not return. Anything that makes
+  movement feel better belongs in the rig — gait, limb physics, flourishes — not in the speed model.
+  [Citation: lurch removal `34095d94`; the dip was `MOVE_HITCH_DIP = 0.042`, i.e. 95.8% of 320 px/s
+  = the observed 306.56 oscillation.]
 
 ## Current locked decisions and supersession chain
 
