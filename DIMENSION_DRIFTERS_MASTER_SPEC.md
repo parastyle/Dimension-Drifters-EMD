@@ -75,6 +75,20 @@ architecture document, tuning table, content census, roadmap, or changelog.
   [Citation: lurch removal `34095d94`; the dip was `MOVE_HITCH_DIP = 0.042`, i.e. 95.8% of 320 px/s
   = the observed 306.56 oscillation.]
 
+- **L10 `[LOCKED]` — The local player NEVER feels lag on their own character.** Owner ruling,
+  2026-07-27: *"the priority should be that players never feel the lag on their own character."*
+  Your own character is the one thing that must always respond immediately and never visibly snap.
+  Consequences: self position stays client-authoritative inside the B42 plausibility envelope; a
+  correction to SELF is graded (silent / smoothed) rather than teleported; and a post-stall
+  `forceResync` must not hard-snap the local player — it recovers through the Smooth band. Remote
+  players, enemies and bosses keep ordinary server authority; this law is about SELF only.
+  Cheating is explicitly not a concern here — owner: *"This isnt PvP, if you want to cheat while
+  playing with friends go for it."*
+  NOTE: this never licenses hiding a stall. A frame hitch is a defect to fix at its cause; smoothing
+  the recovery is belt-and-braces, not the remedy.
+  [Citation: B42 relaxed authority; `prediction.ts:1459` groups `needResync` with `teleported`, which
+  is the hard path this law closes for self.]
+
 ## Current locked decisions and supersession chain
 
 Every line states the current decision, date, what it replaces, and its evidence.
