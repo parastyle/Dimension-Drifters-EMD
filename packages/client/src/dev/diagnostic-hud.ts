@@ -336,6 +336,7 @@ export class DiagnosticHudTelemetry {
   private sessionBoundaryDivergencePeakPx = Number.NaN;
   private currentIntraTickDivergencePx = Number.NaN;
   private readonly rootStepPx = new Float32Array(ROOT_STEP_TRACE_FRAMES);
+  private readonly rootGapPx = new Float32Array(ROOT_STEP_TRACE_FRAMES);
   private readonly rootStepIntent = new Uint8Array(ROOT_STEP_TRACE_FRAMES);
   private rootStepIndex = 0;
   private rootStepCount = 0;
@@ -537,9 +538,10 @@ export class DiagnosticHudTelemetry {
    * question is the whole of the owner's stop-pop report, so record the raw per-frame step and the
    * move-intent flag in fixed rings (no per-frame allocation) and print them in the dump.
    */
-  recordSelfRootStep(stepPx: number, moveIntent: boolean): void {
+  recordSelfRootStep(stepPx: number, moveIntent: boolean, gapPx = Number.NaN): void {
     const step = Number.isFinite(stepPx) ? Math.max(0, stepPx) : 0;
     this.rootStepPx[this.rootStepIndex] = step;
+    this.rootGapPx[this.rootStepIndex] = Number.isFinite(gapPx) ? Math.max(0, gapPx) : 0;
     this.rootStepIntent[this.rootStepIndex] = moveIntent ? 1 : 0;
     this.rootStepIndex = (this.rootStepIndex + 1) % ROOT_STEP_TRACE_FRAMES;
     if (this.rootStepCount < ROOT_STEP_TRACE_FRAMES) this.rootStepCount++;
@@ -547,16 +549,30 @@ export class DiagnosticHudTelemetry {
 
   /** Oldest-to-newest trace, each entry `step[intent]`, with the release edge marked `<STOP`. */
   private rootStepTrace(): string {
+    return this.traceRing(this.rootStepPx);
+  }
+
+  /**
+   * Per-frame |drawn root - predicted position|. If this GROWS through the walk the presentation is
+   * being held behind prediction and the stop edge is repaying it; if it is flat and only the step
+   * spikes, the prediction target itself jumped and presentation merely followed.
+   */
+  private rootGapTrace(): string {
+    return this.traceRing(this.rootGapPx);
+  }
+
+  private traceRing(ring: Float32Array): string {
     if (this.rootStepCount <= 0) return "n/a (no frames recorded)";
     const out: string[] = [];
-    const start = (this.rootStepIndex - this.rootStepCount + ROOT_STEP_TRACE_FRAMES) % ROOT_STEP_TRACE_FRAMES;
+    const start =
+      (this.rootStepIndex - this.rootStepCount + ROOT_STEP_TRACE_FRAMES) % ROOT_STEP_TRACE_FRAMES;
     let previousIntent = -1;
     for (let i = 0; i < this.rootStepCount; i++) {
       const slot = (start + i) % ROOT_STEP_TRACE_FRAMES;
       const intent = this.rootStepIntent[slot] ?? 0;
       const edge = previousIntent === 1 && intent === 0 ? "<STOP " : "";
       previousIntent = intent;
-      out.push(`${edge}${(this.rootStepPx[slot] ?? 0).toFixed(2)}${intent === 1 ? "" : "i"}`);
+      out.push(`${edge}${(ring[slot] ?? 0).toFixed(2)}${intent === 1 ? "" : "i"}`);
     }
     return out.join(" ");
   }
@@ -832,8 +848,13 @@ export class DiagnosticHudTelemetry {
       // Constant-speed travel at 60Hz is ~5.33px/frame (MOVE_SPEED 320 / 60). Steps BELOW that while
       // intent is held are withheld movement; a step ABOVE it right after `<STOP` is that withheld
       // movement being repaid in one frame -- the stop-pop, in raw numbers. `i` marks an idle frame.
-      `ROOT STEPS px/frame (oldest->newest, expect ~5.33 while moving, ~0 after <STOP)`,
+      // Expected constant-speed step is MOVE_SPEED/refresh: ~5.33px at 60Hz, ~2.24px at 143Hz. Compare
+      // the two rows: a spike in STEPS with a matching COLLAPSE in GAP means presentation repaid debt it
+      // had been holding; a spike in STEPS with a flat GAP means the prediction target itself jumped.
+      `ROOT STEPS px/frame (oldest->newest; MOVE_SPEED/refresh while moving, ~0 after <STOP)`,
       this.rootStepTrace(),
+      `ROOT GAP px |root-predicted| (same frames; should stay ~0 -- growth = withheld movement)`,
+      this.rootGapTrace(),
     );
     const redLabels = snapshot.metrics
       .filter((metric) => metric.state === "RED")
@@ -1005,8 +1026,8 @@ export class DiagnosticHud {
     this.telemetry.recordRenderCommitDivergence(divergencePx);
   }
 
-  recordSelfRootStep(stepPx: number, moveIntent: boolean): void {
-    this.telemetry.recordSelfRootStep(stepPx, moveIntent);
+  recordSelfRootStep(stepPx: number, moveIntent: boolean, gapPx?: number): void {
+    this.telemetry.recordSelfRootStep(stepPx, moveIntent, gapPx);
   }
 
   recordIntraTickRenderCommitDivergence(divergencePx: number): void {

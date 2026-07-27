@@ -9972,6 +9972,7 @@ export class ArenaScene extends Phaser.Scene {
         this.diagnosticHud?.recordSelfRootStep(
           Math.hypot(root.x - previousWorldX, root.y - previousWorldY),
           moveIntentActive,
+          Math.hypot(root.x - predicted.x, root.y - predicted.y),
         );
         this.selfPredHeight = predicted.height;
         this.selfPredVh = predicted.vh;
