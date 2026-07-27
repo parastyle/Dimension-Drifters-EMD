@@ -1846,10 +1846,16 @@ try {
     topdown: results.filter((result) => result.metadata.mode === "topdown").length,
     belt: results.filter((result) => result.metadata.mode === "belt").length,
   };
-  // The standing matrix has 24 non-gun-family top-down cases and one additional belt elevator case.
-  // Derive the catalog-sized lane instead of pinning the old 17-family total (41/42): newly installed gun
-  // families must expand coverage without making a complete zero-correction run fail its own count gate.
-  const expectedTopdownScenarios = 24 + gunRepresentatives.length + (ULTIMATES_ENABLED ? 1 : 0);
+  // Twelve fixed cases plus every declared parry, combo-wrap, gun-family, and beam representative form
+  // each standing matrix. Derive every catalog-sized lane so new mechanisms expand coverage without
+  // making a complete zero-correction run fail its own count gate.
+  const expectedTopdownScenarios =
+    12 +
+    parryDirections.length +
+    wrapIds.length +
+    gunRepresentatives.length +
+    beams.length +
+    (ULTIMATES_ENABLED ? 1 : 0);
   const expectedBeltScenarios = expectedTopdownScenarios + 1;
   const expectedScenarios = expectedTopdownScenarios + expectedBeltScenarios;
   const acceptance = {

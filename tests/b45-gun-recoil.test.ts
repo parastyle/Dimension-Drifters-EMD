@@ -30,8 +30,8 @@ describe("B45 physical gun recoil catalog", () => {
       (weapon) => weapon.tags.classPool === "ranged" && weapon.beam,
     );
     // Literal cohort tripwires ensure new ranged mechanisms enter the every-weapon recoil law.
-    expect(rangedGuns).toHaveLength(139);
-    expect(rangedBeams).toHaveLength(5);
+    expect(rangedGuns).toHaveLength(143);
+    expect(rangedBeams).toHaveLength(6);
     expect(rangedGuns.every((weapon) => (weapon.recoil ?? 0) > 0)).toBe(true);
     expect(rangedBeams.every((weapon) => (weapon.recoil ?? 0) > 0)).toBe(true);
     expect(

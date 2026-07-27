@@ -621,7 +621,7 @@ const FAN_FAMILY = /^(?:paired-war-fan|war-fan)$/i;
 const BLADE_FAMILY = /^(?:broadsword|energy-blade|greatsword|katana|nodachi|rapier|saber|sword)$/i;
 const BLUNT_FAMILY = /^(?:axe|cleaver|flail|mace|maul|paddle-club|spade|warhammer)$/i;
 const RANGED_FAMILY =
-  /^(?:anti-materiel-rifle|arc-pistol|auto-rifle|automatic-shotgun|battle-rifle|blunderbuss|bullpup-rifle|caseless-carbine|coil-accelerator|concussion-cannon|continuous-beam-rifle|energy-shotgun|exotic-ranged|grenade-launcher|gun|hand-cannon|heavy-ordnance|integrally-suppressed-rifle|lever-rifle|light machine gun|machine-pistol|marksman-rifle|nailgun|pistol|pistol-calibre-carbine|puck-launcher|rail-pistol|railgun|rimfire-rifle|scrap-cannon|seed-launcher|semi-auto carbine|shotgun|smart-burst-rifle)$/i;
+  /^(?:anti-materiel-rifle|arc-pistol|auto-rifle|automatic-shotgun|battle-rifle|beam-sidearm|blunderbuss|bullpup-rifle|caseless-carbine|coil-accelerator|concussion-cannon|continuous-beam-rifle|energy-shotgun|exotic-ranged|grenade-launcher|gun|hand-cannon|heavy-ion-cannon|heavy-ordnance|integrally-suppressed-rifle|lever-rifle|light machine gun|machine-pistol|marksman-rifle|nailgun|photon-marksman-rifle|pistol|pistol-calibre-carbine|plasma-carbine|puck-launcher|pulse-rifle|rail-pistol|railgun|rimfire-rifle|scrap-cannon|seed-launcher|semi-auto carbine|shotgun|smart-burst-rifle)$/i;
 const CLAW_WORDS = /\b(?:claws?|talons?|rakes?|fangs?)\b/i;
 const BLADE_WORDS =
   /\b(?:blade|claymore|greatblade|katana|nodachi|sabre|saber|sword|zweihander)\b/i;

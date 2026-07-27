@@ -1,8 +1,8 @@
 {
-  "capturedAt": "2026-07-27T02:03:33.173Z",
+  "capturedAt": "2026-07-27T06:29:05.057Z",
   "transport": {
-    "endpoint": "ws://127.0.0.1:59576",
-    "osAssignedEphemeralPort": 59576,
+    "endpoint": "ws://127.0.0.1:57744",
+    "osAssignedEphemeralPort": 57744,
     "protectedPortsUntouched": true,
     "liveColyseusStack": true,
     "simultaneousClients": 1,
@@ -17,18 +17,18 @@
     "tickMs": 50
   },
   "coverage": {
-    "scenarios": 101,
+    "scenarios": 129,
     "modes": {
-      "topdown": 50,
-      "belt": 51
+      "topdown": 64,
+      "belt": 65
     },
-    "gunTagFamilies": 26,
-    "rangedBeams": 4,
+    "gunTagFamilies": 38,
+    "rangedBeams": 6,
     "kungFuWraps": 4,
     "parryDirections": 4
   },
   "totals": {
-    "b42CounterEdges": 78,
+    "b42CounterEdges": 116,
     "correctionRequests": 0,
     "nonzeroCorrections": 0,
     "silentCorrections": 0,
@@ -37,9 +37,9 @@
     "totalMagnitudePx": 0
   },
   "acceptance": {
-    "expectedScenarios": 101,
-    "expectedTopdownScenarios": 50,
-    "expectedBeltScenarios": 51,
+    "expectedScenarios": 129,
+    "expectedTopdownScenarios": 64,
+    "expectedBeltScenarios": 65,
     "allScenariosRan": true,
     "zeroNonzeroCorrections": true,
     "zeroSnaps": true,
@@ -56,22 +56,22 @@
       "serverMotionDurationMs": 4500
     },
     {
-      "id": "topdown:sustained-gatling",
-      "label": "Top-down — Sustained Gatling",
+      "id": "belt:rapid-flip-attack",
+      "label": "Belt — ADADAD flip while firing",
       "corrections": 0,
-      "b42CounterEdges": 1,
+      "b42CounterEdges": 5,
       "totalMagnitudePx": 0,
       "maxMagnitudePx": 0,
-      "serverMotionDurationMs": 2200
+      "serverMotionDurationMs": 2550
     },
     {
-      "id": "belt:sustained-gatling",
-      "label": "Belt — Sustained Gatling",
+      "id": "topdown:rapid-flip-attack",
+      "label": "Top-down — ADADAD flip while firing",
       "corrections": 0,
-      "b42CounterEdges": 1,
+      "b42CounterEdges": 5,
       "totalMagnitudePx": 0,
       "maxMagnitudePx": 0,
-      "serverMotionDurationMs": 2150
+      "serverMotionDurationMs": 2550
     }
   ],
   "scenarios": [
@@ -109,22 +109,61 @@
     },
     {
       "rank": 2,
-      "id": "topdown:sustained-gatling",
-      "label": "Top-down — Sustained Gatling",
-      "category": "gun-sustained",
+      "id": "belt:rapid-flip-attack",
+      "label": "Belt — ADADAD flip while firing",
+      "category": "owner-repro",
       "metadata": {
-        "mode": "topdown",
-        "weaponId": "x-gun-gatling",
-        "weaponName": "Gatling",
-        "recoil": 14,
-        "fireRate": 0.08,
-        "acceptedAttacks": 27
+        "mode": "belt",
+        "weaponId": "x-gun-revolver-cannon",
+        "weaponName": "Revolver Cannon",
+        "acceptedAttacks": 5,
+        "projectileDirectionSamples": [
+          {
+            "step": 0,
+            "aimX": 1,
+            "velocityX": 900,
+            "velocityY": 0,
+            "dot": 1
+          },
+          {
+            "step": 13,
+            "aimX": -1,
+            "velocityX": -900,
+            "velocityY": 0,
+            "dot": 1
+          },
+          {
+            "step": 26,
+            "aimX": 1,
+            "velocityX": 900,
+            "velocityY": 0,
+            "dot": 1
+          },
+          {
+            "step": 39,
+            "aimX": -1,
+            "velocityX": -900,
+            "velocityY": 0,
+            "dot": 1
+          },
+          {
+            "step": 52,
+            "aimX": 1,
+            "velocityX": 900,
+            "velocityY": 0,
+            "dot": 1
+          }
+        ],
+        "minimumProjectileAimDot": 1
       },
       "assertions": {
-        "acceptedBurst": true,
-        "classified": true
+        "completed": true,
+        "zeroCorrections": true,
+        "zeroSilent": true,
+        "projectilesObserved": true,
+        "projectilesFollowCommandedAim": true
       },
-      "b42CounterEdges": 1,
+      "b42CounterEdges": 5,
       "correctionRequests": 0,
       "nonzeroCorrections": 0,
       "silentCorrections": 0,
@@ -134,15 +173,88 @@
       "maxMagnitudePx": 0,
       "meanMagnitudePx": 0,
       "correctionDebtDurationMs": 0,
-      "serverMotionDurationMs": 2200,
+      "serverMotionDurationMs": 2550,
       "maxCorrectionWindowMs": 0,
-      "scenarioDurationMs": 2700,
-      "peakAuthorityStepPx": 2.834534,
+      "scenarioDurationMs": 3500,
+      "peakAuthorityStepPx": 37.322291,
       "sourceCounts": {},
       "causeCounts": {}
     },
     {
       "rank": 3,
+      "id": "topdown:rapid-flip-attack",
+      "label": "Top-down — ADADAD flip while firing",
+      "category": "owner-repro",
+      "metadata": {
+        "mode": "topdown",
+        "weaponId": "x-gun-revolver-cannon",
+        "weaponName": "Revolver Cannon",
+        "acceptedAttacks": 5,
+        "projectileDirectionSamples": [
+          {
+            "step": 0,
+            "aimX": 1,
+            "velocityX": 900,
+            "velocityY": 0,
+            "dot": 1
+          },
+          {
+            "step": 13,
+            "aimX": -1,
+            "velocityX": -900,
+            "velocityY": 0,
+            "dot": 1
+          },
+          {
+            "step": 26,
+            "aimX": 1,
+            "velocityX": 900,
+            "velocityY": 0,
+            "dot": 1
+          },
+          {
+            "step": 39,
+            "aimX": -1,
+            "velocityX": -900,
+            "velocityY": 0,
+            "dot": 1
+          },
+          {
+            "step": 52,
+            "aimX": 1,
+            "velocityX": 900,
+            "velocityY": 0,
+            "dot": 1
+          }
+        ],
+        "minimumProjectileAimDot": 1
+      },
+      "assertions": {
+        "completed": true,
+        "zeroCorrections": true,
+        "zeroSilent": true,
+        "projectilesObserved": true,
+        "projectilesFollowCommandedAim": true
+      },
+      "b42CounterEdges": 5,
+      "correctionRequests": 0,
+      "nonzeroCorrections": 0,
+      "silentCorrections": 0,
+      "smoothCorrections": 0,
+      "snapCorrections": 0,
+      "totalMagnitudePx": 0,
+      "maxMagnitudePx": 0,
+      "meanMagnitudePx": 0,
+      "correctionDebtDurationMs": 0,
+      "serverMotionDurationMs": 2550,
+      "maxCorrectionWindowMs": 0,
+      "scenarioDurationMs": 3500,
+      "peakAuthorityStepPx": 37.322291,
+      "sourceCounts": {},
+      "causeCounts": {}
+    },
+    {
+      "rank": 4,
       "id": "belt:sustained-gatling",
       "label": "Belt — Sustained Gatling",
       "category": "gun-sustained",
@@ -168,15 +280,49 @@
       "maxMagnitudePx": 0,
       "meanMagnitudePx": 0,
       "correctionDebtDurationMs": 0,
-      "serverMotionDurationMs": 2150,
+      "serverMotionDurationMs": 2200,
       "maxCorrectionWindowMs": 0,
       "scenarioDurationMs": 2700,
-      "peakAuthorityStepPx": 2.833409,
+      "peakAuthorityStepPx": 2.249847,
       "sourceCounts": {},
       "causeCounts": {}
     },
     {
-      "rank": 4,
+      "rank": 5,
+      "id": "topdown:sustained-gatling",
+      "label": "Top-down — Sustained Gatling",
+      "category": "gun-sustained",
+      "metadata": {
+        "mode": "topdown",
+        "weaponId": "x-gun-gatling",
+        "weaponName": "Gatling",
+        "recoil": 14,
+        "fireRate": 0.08,
+        "acceptedAttacks": 27
+      },
+      "assertions": {
+        "acceptedBurst": true,
+        "classified": true
+      },
+      "b42CounterEdges": 1,
+      "correctionRequests": 0,
+      "nonzeroCorrections": 0,
+      "silentCorrections": 0,
+      "smoothCorrections": 0,
+      "snapCorrections": 0,
+      "totalMagnitudePx": 0,
+      "maxMagnitudePx": 0,
+      "meanMagnitudePx": 0,
+      "correctionDebtDurationMs": 0,
+      "serverMotionDurationMs": 2150,
+      "maxCorrectionWindowMs": 0,
+      "scenarioDurationMs": 2700,
+      "peakAuthorityStepPx": 2.837924,
+      "sourceCounts": {},
+      "causeCounts": {}
+    },
+    {
+      "rank": 6,
       "id": "belt:beam-x2-doomsday-drum-cannon",
       "label": "Belt — Ranged beam recoil — Doomsday Drum Cannon",
       "category": "gun-beam",
@@ -209,7 +355,40 @@
       "causeCounts": {}
     },
     {
-      "rank": 5,
+      "rank": 7,
+      "id": "belt:beam-x2-singularity-micro-lance",
+      "label": "Belt — Ranged beam recoil — Singularity Micro-Lance",
+      "category": "gun-beam",
+      "metadata": {
+        "mode": "belt",
+        "weaponId": "x2-singularity-micro-lance",
+        "weaponName": "Singularity Micro-Lance",
+        "family": "beam-sidearm",
+        "recoilPerSecond": 16
+      },
+      "assertions": {
+        "activeBeamObserved": true,
+        "classified": true
+      },
+      "b42CounterEdges": 1,
+      "correctionRequests": 0,
+      "nonzeroCorrections": 0,
+      "silentCorrections": 0,
+      "smoothCorrections": 0,
+      "snapCorrections": 0,
+      "totalMagnitudePx": 0,
+      "maxMagnitudePx": 0,
+      "meanMagnitudePx": 0,
+      "correctionDebtDurationMs": 0,
+      "serverMotionDurationMs": 1350,
+      "maxCorrectionWindowMs": 0,
+      "scenarioDurationMs": 2200,
+      "peakAuthorityStepPx": 0.08,
+      "sourceCounts": {},
+      "causeCounts": {}
+    },
+    {
+      "rank": 8,
       "id": "belt:beam-x2-stormcaller-tesla-gatling",
       "label": "Belt — Ranged beam recoil — Stormcaller Tesla Gatling",
       "category": "gun-beam",
@@ -242,16 +421,16 @@
       "causeCounts": {}
     },
     {
-      "rank": 6,
-      "id": "topdown:beam-x2-mirage-coilrifle",
-      "label": "Top-down — Ranged beam recoil — Mirage Coilrifle",
+      "rank": 9,
+      "id": "topdown:beam-x2-doomsday-drum-cannon",
+      "label": "Top-down — Ranged beam recoil — Doomsday Drum Cannon",
       "category": "gun-beam",
       "metadata": {
         "mode": "topdown",
-        "weaponId": "x2-mirage-coilrifle",
-        "weaponName": "Mirage Coilrifle",
-        "family": "railgun",
-        "recoilPerSecond": 31
+        "weaponId": "x2-doomsday-drum-cannon",
+        "weaponName": "Doomsday Drum Cannon",
+        "family": "heavy-ordnance",
+        "recoilPerSecond": 38
       },
       "assertions": {
         "activeBeamObserved": true,
@@ -270,12 +449,78 @@
       "serverMotionDurationMs": 1350,
       "maxCorrectionWindowMs": 0,
       "scenarioDurationMs": 2200,
-      "peakAuthorityStepPx": 0.155,
+      "peakAuthorityStepPx": 0.19,
       "sourceCounts": {},
       "causeCounts": {}
     },
     {
-      "rank": 7,
+      "rank": 10,
+      "id": "topdown:beam-x2-singularity-micro-lance",
+      "label": "Top-down — Ranged beam recoil — Singularity Micro-Lance",
+      "category": "gun-beam",
+      "metadata": {
+        "mode": "topdown",
+        "weaponId": "x2-singularity-micro-lance",
+        "weaponName": "Singularity Micro-Lance",
+        "family": "beam-sidearm",
+        "recoilPerSecond": 16
+      },
+      "assertions": {
+        "activeBeamObserved": true,
+        "classified": true
+      },
+      "b42CounterEdges": 1,
+      "correctionRequests": 0,
+      "nonzeroCorrections": 0,
+      "silentCorrections": 0,
+      "smoothCorrections": 0,
+      "snapCorrections": 0,
+      "totalMagnitudePx": 0,
+      "maxMagnitudePx": 0,
+      "meanMagnitudePx": 0,
+      "correctionDebtDurationMs": 0,
+      "serverMotionDurationMs": 1350,
+      "maxCorrectionWindowMs": 0,
+      "scenarioDurationMs": 2200,
+      "peakAuthorityStepPx": 0.08,
+      "sourceCounts": {},
+      "causeCounts": {}
+    },
+    {
+      "rank": 11,
+      "id": "topdown:beam-x2-stormcaller-tesla-gatling",
+      "label": "Top-down — Ranged beam recoil — Stormcaller Tesla Gatling",
+      "category": "gun-beam",
+      "metadata": {
+        "mode": "topdown",
+        "weaponId": "x2-stormcaller-tesla-gatling",
+        "weaponName": "Stormcaller Tesla Gatling",
+        "family": "heavy-ordnance",
+        "recoilPerSecond": 38
+      },
+      "assertions": {
+        "activeBeamObserved": true,
+        "classified": true
+      },
+      "b42CounterEdges": 1,
+      "correctionRequests": 0,
+      "nonzeroCorrections": 0,
+      "silentCorrections": 0,
+      "smoothCorrections": 0,
+      "snapCorrections": 0,
+      "totalMagnitudePx": 0,
+      "maxMagnitudePx": 0,
+      "meanMagnitudePx": 0,
+      "correctionDebtDurationMs": 0,
+      "serverMotionDurationMs": 1350,
+      "maxCorrectionWindowMs": 0,
+      "scenarioDurationMs": 2200,
+      "peakAuthorityStepPx": 0.19,
+      "sourceCounts": {},
+      "causeCounts": {}
+    },
+    {
+      "rank": 12,
       "id": "belt:beam-x2-mirage-coilrifle",
       "label": "Belt — Ranged beam recoil — Mirage Coilrifle",
       "category": "gun-beam",
@@ -308,48 +553,15 @@
       "causeCounts": {}
     },
     {
-      "rank": 8,
-      "id": "topdown:beam-x2-doomsday-drum-cannon",
-      "label": "Top-down — Ranged beam recoil — Doomsday Drum Cannon",
+      "rank": 13,
+      "id": "topdown:beam-x2-mirage-coilrifle",
+      "label": "Top-down — Ranged beam recoil — Mirage Coilrifle",
       "category": "gun-beam",
       "metadata": {
         "mode": "topdown",
-        "weaponId": "x2-doomsday-drum-cannon",
-        "weaponName": "Doomsday Drum Cannon",
-        "family": "heavy-ordnance",
-        "recoilPerSecond": 38
-      },
-      "assertions": {
-        "activeBeamObserved": true,
-        "classified": true
-      },
-      "b42CounterEdges": 1,
-      "correctionRequests": 0,
-      "nonzeroCorrections": 0,
-      "silentCorrections": 0,
-      "smoothCorrections": 0,
-      "snapCorrections": 0,
-      "totalMagnitudePx": 0,
-      "maxMagnitudePx": 0,
-      "meanMagnitudePx": 0,
-      "correctionDebtDurationMs": 0,
-      "serverMotionDurationMs": 1300,
-      "maxCorrectionWindowMs": 0,
-      "scenarioDurationMs": 2200,
-      "peakAuthorityStepPx": 0.19,
-      "sourceCounts": {},
-      "causeCounts": {}
-    },
-    {
-      "rank": 9,
-      "id": "topdown:beam-x2-permafrost-siege-lobber",
-      "label": "Top-down — Ranged beam recoil — Permafrost Siege Lobber",
-      "category": "gun-beam",
-      "metadata": {
-        "mode": "topdown",
-        "weaponId": "x2-permafrost-siege-lobber",
-        "weaponName": "Permafrost Siege Lobber",
-        "family": "heavy-ordnance",
+        "weaponId": "x2-mirage-coilrifle",
+        "weaponName": "Mirage Coilrifle",
+        "family": "railgun",
         "recoilPerSecond": 31
       },
       "assertions": {
@@ -374,7 +586,7 @@
       "causeCounts": {}
     },
     {
-      "rank": 10,
+      "rank": 14,
       "id": "belt:beam-x2-permafrost-siege-lobber",
       "label": "Belt — Ranged beam recoil — Permafrost Siege Lobber",
       "category": "gun-beam",
@@ -407,16 +619,16 @@
       "causeCounts": {}
     },
     {
-      "rank": 11,
-      "id": "topdown:beam-x2-stormcaller-tesla-gatling",
-      "label": "Top-down — Ranged beam recoil — Stormcaller Tesla Gatling",
+      "rank": 15,
+      "id": "topdown:beam-x2-permafrost-siege-lobber",
+      "label": "Top-down — Ranged beam recoil — Permafrost Siege Lobber",
       "category": "gun-beam",
       "metadata": {
         "mode": "topdown",
-        "weaponId": "x2-stormcaller-tesla-gatling",
-        "weaponName": "Stormcaller Tesla Gatling",
+        "weaponId": "x2-permafrost-siege-lobber",
+        "weaponName": "Permafrost Siege Lobber",
         "family": "heavy-ordnance",
-        "recoilPerSecond": 38
+        "recoilPerSecond": 31
       },
       "assertions": {
         "activeBeamObserved": true,
@@ -435,12 +647,78 @@
       "serverMotionDurationMs": 1250,
       "maxCorrectionWindowMs": 0,
       "scenarioDurationMs": 2200,
-      "peakAuthorityStepPx": 0.19,
+      "peakAuthorityStepPx": 0.155,
       "sourceCounts": {},
       "causeCounts": {}
     },
     {
-      "rank": 12,
+      "rank": 16,
+      "id": "belt:beam-x2-solaris-beam-lance",
+      "label": "Belt — Ranged beam recoil — Solaris Beam Lance",
+      "category": "gun-beam",
+      "metadata": {
+        "mode": "belt",
+        "weaponId": "x2-solaris-beam-lance",
+        "weaponName": "Solaris Beam Lance",
+        "family": "continuous-beam-rifle",
+        "recoilPerSecond": 24
+      },
+      "assertions": {
+        "activeBeamObserved": true,
+        "classified": true
+      },
+      "b42CounterEdges": 1,
+      "correctionRequests": 0,
+      "nonzeroCorrections": 0,
+      "silentCorrections": 0,
+      "smoothCorrections": 0,
+      "snapCorrections": 0,
+      "totalMagnitudePx": 0,
+      "maxMagnitudePx": 0,
+      "meanMagnitudePx": 0,
+      "correctionDebtDurationMs": 0,
+      "serverMotionDurationMs": 1100,
+      "maxCorrectionWindowMs": 0,
+      "scenarioDurationMs": 2200,
+      "peakAuthorityStepPx": 0.12,
+      "sourceCounts": {},
+      "causeCounts": {}
+    },
+    {
+      "rank": 17,
+      "id": "topdown:beam-x2-solaris-beam-lance",
+      "label": "Top-down — Ranged beam recoil — Solaris Beam Lance",
+      "category": "gun-beam",
+      "metadata": {
+        "mode": "topdown",
+        "weaponId": "x2-solaris-beam-lance",
+        "weaponName": "Solaris Beam Lance",
+        "family": "continuous-beam-rifle",
+        "recoilPerSecond": 24
+      },
+      "assertions": {
+        "activeBeamObserved": true,
+        "classified": true
+      },
+      "b42CounterEdges": 1,
+      "correctionRequests": 0,
+      "nonzeroCorrections": 0,
+      "silentCorrections": 0,
+      "smoothCorrections": 0,
+      "snapCorrections": 0,
+      "totalMagnitudePx": 0,
+      "maxMagnitudePx": 0,
+      "meanMagnitudePx": 0,
+      "correctionDebtDurationMs": 0,
+      "serverMotionDurationMs": 1100,
+      "maxCorrectionWindowMs": 0,
+      "scenarioDurationMs": 2200,
+      "peakAuthorityStepPx": 0.12,
+      "sourceCounts": {},
+      "causeCounts": {}
+    },
+    {
+      "rank": 18,
       "id": "belt:slide-hop",
       "label": "Belt — Slide-hop input chain",
       "category": "traversal",
@@ -470,7 +748,7 @@
       "causeCounts": {}
     },
     {
-      "rank": 13,
+      "rank": 19,
       "id": "topdown:slide-hop",
       "label": "Top-down — Slide-hop input chain",
       "category": "traversal",
@@ -492,15 +770,15 @@
       "maxMagnitudePx": 0,
       "meanMagnitudePx": 0,
       "correctionDebtDurationMs": 0,
-      "serverMotionDurationMs": 800,
+      "serverMotionDurationMs": 850,
       "maxCorrectionWindowMs": 0,
       "scenarioDurationMs": 1650,
-      "peakAuthorityStepPx": 66,
+      "peakAuthorityStepPx": 62,
       "sourceCounts": {},
       "causeCounts": {}
     },
     {
-      "rank": 14,
+      "rank": 20,
       "id": "belt:gun-machine-pistol",
       "label": "Belt — Gun class — machine-pistol",
       "category": "gun-class",
@@ -534,7 +812,41 @@
       "causeCounts": {}
     },
     {
-      "rank": 15,
+      "rank": 21,
+      "id": "belt:gun-smart-burst-rifle",
+      "label": "Belt — Gun class — smart-burst-rifle",
+      "category": "gun-class",
+      "metadata": {
+        "mode": "belt",
+        "family": "smart-burst-rifle",
+        "weaponId": "x2-smartlink-burstmaster",
+        "weaponName": "Smartlink Burstmaster",
+        "recoil": 67,
+        "acceptedAttacks": 1
+      },
+      "assertions": {
+        "acceptedShot": true,
+        "classified": true
+      },
+      "b42CounterEdges": 1,
+      "correctionRequests": 0,
+      "nonzeroCorrections": 0,
+      "silentCorrections": 0,
+      "smoothCorrections": 0,
+      "snapCorrections": 0,
+      "totalMagnitudePx": 0,
+      "maxMagnitudePx": 0,
+      "meanMagnitudePx": 0,
+      "correctionDebtDurationMs": 0,
+      "serverMotionDurationMs": 650,
+      "maxCorrectionWindowMs": 0,
+      "scenarioDurationMs": 950,
+      "peakAuthorityStepPx": 6.354509,
+      "sourceCounts": {},
+      "causeCounts": {}
+    },
+    {
+      "rank": 22,
       "id": "belt:parry-below",
       "label": "Belt — Parry — incoming from below",
       "category": "parry",
@@ -566,7 +878,7 @@
       "causeCounts": {}
     },
     {
-      "rank": 16,
+      "rank": 23,
       "id": "topdown:gun-machine-pistol",
       "label": "Top-down — Gun class — machine-pistol",
       "category": "gun-class",
@@ -595,12 +907,46 @@
       "serverMotionDurationMs": 650,
       "maxCorrectionWindowMs": 0,
       "scenarioDurationMs": 950,
-      "peakAuthorityStepPx": 8.093423,
+      "peakAuthorityStepPx": 4.647328,
       "sourceCounts": {},
       "causeCounts": {}
     },
     {
-      "rank": 17,
+      "rank": 24,
+      "id": "topdown:gun-smart-burst-rifle",
+      "label": "Top-down — Gun class — smart-burst-rifle",
+      "category": "gun-class",
+      "metadata": {
+        "mode": "topdown",
+        "family": "smart-burst-rifle",
+        "weaponId": "x2-smartlink-burstmaster",
+        "weaponName": "Smartlink Burstmaster",
+        "recoil": 67,
+        "acceptedAttacks": 1
+      },
+      "assertions": {
+        "acceptedShot": true,
+        "classified": true
+      },
+      "b42CounterEdges": 1,
+      "correctionRequests": 0,
+      "nonzeroCorrections": 0,
+      "silentCorrections": 0,
+      "smoothCorrections": 0,
+      "snapCorrections": 0,
+      "totalMagnitudePx": 0,
+      "maxMagnitudePx": 0,
+      "meanMagnitudePx": 0,
+      "correctionDebtDurationMs": 0,
+      "serverMotionDurationMs": 650,
+      "maxCorrectionWindowMs": 0,
+      "scenarioDurationMs": 950,
+      "peakAuthorityStepPx": 6.354509,
+      "sourceCounts": {},
+      "causeCounts": {}
+    },
+    {
+      "rank": 25,
       "id": "topdown:parry-below",
       "label": "Top-down — Parry — incoming from below",
       "category": "parry",
@@ -632,16 +978,16 @@
       "causeCounts": {}
     },
     {
-      "rank": 18,
-      "id": "belt:gun-battle-rifle",
-      "label": "Belt — Gun class — battle-rifle",
+      "rank": 26,
+      "id": "belt:gun-anti-materiel-rifle",
+      "label": "Belt — Gun class — anti-materiel-rifle",
       "category": "gun-class",
       "metadata": {
         "mode": "belt",
-        "family": "battle-rifle",
-        "weaponId": "x2-warden-battle-rifle",
-        "weaponName": "Warden Battle Rifle",
-        "recoil": 71,
+        "family": "anti-materiel-rifle",
+        "weaponId": "x2-anvil-50",
+        "weaponName": "Anvil .50",
+        "recoil": 119,
         "acceptedAttacks": 1
       },
       "assertions": {
@@ -661,12 +1007,12 @@
       "serverMotionDurationMs": 550,
       "maxCorrectionWindowMs": 0,
       "scenarioDurationMs": 950,
-      "peakAuthorityStepPx": 3.55,
+      "peakAuthorityStepPx": 5.95,
       "sourceCounts": {},
       "causeCounts": {}
     },
     {
-      "rank": 19,
+      "rank": 27,
       "id": "belt:gun-blunderbuss",
       "label": "Belt — Gun class — blunderbuss",
       "category": "gun-class",
@@ -700,16 +1046,16 @@
       "causeCounts": {}
     },
     {
-      "rank": 20,
-      "id": "belt:gun-concussion-cannon",
-      "label": "Belt — Gun class — concussion-cannon",
+      "rank": 28,
+      "id": "belt:gun-energy-shotgun",
+      "label": "Belt — Gun class — energy-shotgun",
       "category": "gun-class",
       "metadata": {
         "mode": "belt",
-        "family": "concussion-cannon",
-        "weaponId": "x2-hailshot-hand-maul",
-        "weaponName": "Hailshot Hand-Maul",
-        "recoil": 174,
+        "family": "energy-shotgun",
+        "weaponId": "x2-prism-scatter-emitter",
+        "weaponName": "Prism Scatter Emitter",
+        "recoil": 143,
         "acceptedAttacks": 1
       },
       "assertions": {
@@ -729,21 +1075,21 @@
       "serverMotionDurationMs": 550,
       "maxCorrectionWindowMs": 0,
       "scenarioDurationMs": 950,
-      "peakAuthorityStepPx": 9.084521,
+      "peakAuthorityStepPx": 7.15,
       "sourceCounts": {},
       "causeCounts": {}
     },
     {
-      "rank": 21,
-      "id": "belt:gun-exotic-ranged",
-      "label": "Belt — Gun class — exotic-ranged",
+      "rank": 29,
+      "id": "belt:gun-hand-cannon",
+      "label": "Belt — Gun class — hand-cannon",
       "category": "gun-class",
       "metadata": {
         "mode": "belt",
-        "family": "exotic-ranged",
-        "weaponId": "x2-grave-anchor-harpoon",
-        "weaponName": "Grave-Anchor Harpoon",
-        "recoil": 126,
+        "family": "hand-cannon",
+        "weaponId": "x-gun-hand-mortar",
+        "weaponName": "Hand Mortar",
+        "recoil": 147,
         "acceptedAttacks": 1
       },
       "assertions": {
@@ -763,80 +1109,12 @@
       "serverMotionDurationMs": 550,
       "maxCorrectionWindowMs": 0,
       "scenarioDurationMs": 950,
-      "peakAuthorityStepPx": 6.578446,
+      "peakAuthorityStepPx": 7.35,
       "sourceCounts": {},
       "causeCounts": {}
     },
     {
-      "rank": 22,
-      "id": "belt:gun-heavy-ordnance",
-      "label": "Belt — Gun class — heavy-ordnance",
-      "category": "gun-class",
-      "metadata": {
-        "mode": "belt",
-        "family": "heavy-ordnance",
-        "weaponId": "x2-calamity-howitzer",
-        "weaponName": "Calamity Howitzer",
-        "recoil": 233,
-        "acceptedAttacks": 1
-      },
-      "assertions": {
-        "acceptedShot": true,
-        "classified": true
-      },
-      "b42CounterEdges": 1,
-      "correctionRequests": 0,
-      "nonzeroCorrections": 0,
-      "silentCorrections": 0,
-      "smoothCorrections": 0,
-      "snapCorrections": 0,
-      "totalMagnitudePx": 0,
-      "maxMagnitudePx": 0,
-      "meanMagnitudePx": 0,
-      "correctionDebtDurationMs": 0,
-      "serverMotionDurationMs": 550,
-      "maxCorrectionWindowMs": 0,
-      "scenarioDurationMs": 950,
-      "peakAuthorityStepPx": 11.65,
-      "sourceCounts": {},
-      "causeCounts": {}
-    },
-    {
-      "rank": 23,
-      "id": "belt:gun-lever-rifle",
-      "label": "Belt — Gun class — lever-rifle",
-      "category": "gun-class",
-      "metadata": {
-        "mode": "belt",
-        "family": "lever-rifle",
-        "weaponId": "x2-brasswork-volley-rifle",
-        "weaponName": "Brasswork Volley Rifle",
-        "recoil": 107,
-        "acceptedAttacks": 1
-      },
-      "assertions": {
-        "acceptedShot": true,
-        "classified": true
-      },
-      "b42CounterEdges": 1,
-      "correctionRequests": 0,
-      "nonzeroCorrections": 0,
-      "silentCorrections": 0,
-      "smoothCorrections": 0,
-      "snapCorrections": 0,
-      "totalMagnitudePx": 0,
-      "maxMagnitudePx": 0,
-      "meanMagnitudePx": 0,
-      "correctionDebtDurationMs": 0,
-      "serverMotionDurationMs": 550,
-      "maxCorrectionWindowMs": 0,
-      "scenarioDurationMs": 950,
-      "peakAuthorityStepPx": 5.35,
-      "sourceCounts": {},
-      "causeCounts": {}
-    },
-    {
-      "rank": 24,
+      "rank": 30,
       "id": "belt:gun-light machine gun",
       "label": "Belt — Gun class — light machine gun",
       "category": "gun-class",
@@ -870,16 +1148,16 @@
       "causeCounts": {}
     },
     {
-      "rank": 25,
-      "id": "belt:gun-marksman-rifle",
-      "label": "Belt — Gun class — marksman-rifle",
+      "rank": 31,
+      "id": "belt:gun-pistol-calibre-carbine",
+      "label": "Belt — Gun class — pistol-calibre-carbine",
       "category": "gun-class",
       "metadata": {
         "mode": "belt",
-        "family": "marksman-rifle",
-        "weaponId": "x2-barrett-50-cal-sniper",
-        "weaponName": "Barrett .50-Cal Sniper",
-        "recoil": 146,
+        "family": "pistol-calibre-carbine",
+        "weaponId": "x2-trailhead-carbine-357",
+        "weaponName": "Trailhead Carbine .357",
+        "recoil": 54,
         "acceptedAttacks": 1
       },
       "assertions": {
@@ -899,12 +1177,12 @@
       "serverMotionDurationMs": 550,
       "maxCorrectionWindowMs": 0,
       "scenarioDurationMs": 950,
-      "peakAuthorityStepPx": 7.622644,
+      "peakAuthorityStepPx": 2.7,
       "sourceCounts": {},
       "causeCounts": {}
     },
     {
-      "rank": 26,
+      "rank": 32,
       "id": "belt:gun-railgun",
       "label": "Belt — Gun class — railgun",
       "category": "gun-class",
@@ -938,16 +1216,16 @@
       "causeCounts": {}
     },
     {
-      "rank": 27,
-      "id": "belt:gun-rimfire-rifle",
-      "label": "Belt — Gun class — rimfire-rifle",
+      "rank": 33,
+      "id": "belt:gun-seed-launcher",
+      "label": "Belt — Gun class — seed-launcher",
       "category": "gun-class",
       "metadata": {
         "mode": "belt",
-        "family": "rimfire-rifle",
-        "weaponId": "x2-rancher-22-plinker",
-        "weaponName": "Rancher .22 Plinker",
-        "recoil": 22,
+        "family": "seed-launcher",
+        "weaponId": "x2-thornhive-seedcaster",
+        "weaponName": "Thornhive Seedcaster",
+        "recoil": 164,
         "acceptedAttacks": 1
       },
       "assertions": {
@@ -967,21 +1245,21 @@
       "serverMotionDurationMs": 550,
       "maxCorrectionWindowMs": 0,
       "scenarioDurationMs": 950,
-      "peakAuthorityStepPx": 1.1,
+      "peakAuthorityStepPx": 8.2,
       "sourceCounts": {},
       "causeCounts": {}
     },
     {
-      "rank": 28,
-      "id": "belt:gun-scrap-cannon",
-      "label": "Belt — Gun class — scrap-cannon",
+      "rank": 34,
+      "id": "belt:gun-semi-auto carbine",
+      "label": "Belt — Gun class — semi-auto carbine",
       "category": "gun-class",
       "metadata": {
         "mode": "belt",
-        "family": "scrap-cannon",
-        "weaponId": "x2-confetti-cannon",
-        "weaponName": "Confetti Cannon",
-        "recoil": 177,
+        "family": "semi-auto carbine",
+        "weaponId": "x2-patriot-carbine-ar",
+        "weaponName": "Patriot Carbine AR",
+        "recoil": 54,
         "acceptedAttacks": 1
       },
       "assertions": {
@@ -1001,21 +1279,21 @@
       "serverMotionDurationMs": 550,
       "maxCorrectionWindowMs": 0,
       "scenarioDurationMs": 950,
-      "peakAuthorityStepPx": 9.241151,
+      "peakAuthorityStepPx": 2.7,
       "sourceCounts": {},
       "causeCounts": {}
     },
     {
-      "rank": 29,
-      "id": "topdown:gun-heavy-ordnance",
-      "label": "Top-down — Gun class — heavy-ordnance",
+      "rank": 35,
+      "id": "topdown:gun-automatic-shotgun",
+      "label": "Top-down — Gun class — automatic-shotgun",
       "category": "gun-class",
       "metadata": {
         "mode": "topdown",
-        "family": "heavy-ordnance",
-        "weaponId": "x2-calamity-howitzer",
-        "weaponName": "Calamity Howitzer",
-        "recoil": 233,
+        "family": "automatic-shotgun",
+        "weaponId": "x2-breachmaster-auto-12",
+        "weaponName": "Breachmaster Auto-12",
+        "recoil": 152,
         "acceptedAttacks": 1
       },
       "assertions": {
@@ -1035,12 +1313,148 @@
       "serverMotionDurationMs": 550,
       "maxCorrectionWindowMs": 0,
       "scenarioDurationMs": 950,
-      "peakAuthorityStepPx": 11.65,
+      "peakAuthorityStepPx": 7.6,
       "sourceCounts": {},
       "causeCounts": {}
     },
     {
-      "rank": 30,
+      "rank": 36,
+      "id": "topdown:gun-caseless-carbine",
+      "label": "Top-down — Gun class — caseless-carbine",
+      "category": "gun-class",
+      "metadata": {
+        "mode": "topdown",
+        "family": "caseless-carbine",
+        "weaponId": "x2-caseless-vanguard",
+        "weaponName": "Caseless Vanguard",
+        "recoil": 18,
+        "acceptedAttacks": 1
+      },
+      "assertions": {
+        "acceptedShot": true,
+        "classified": true
+      },
+      "b42CounterEdges": 1,
+      "correctionRequests": 0,
+      "nonzeroCorrections": 0,
+      "silentCorrections": 0,
+      "smoothCorrections": 0,
+      "snapCorrections": 0,
+      "totalMagnitudePx": 0,
+      "maxMagnitudePx": 0,
+      "meanMagnitudePx": 0,
+      "correctionDebtDurationMs": 0,
+      "serverMotionDurationMs": 550,
+      "maxCorrectionWindowMs": 0,
+      "scenarioDurationMs": 950,
+      "peakAuthorityStepPx": 0.9,
+      "sourceCounts": {},
+      "causeCounts": {}
+    },
+    {
+      "rank": 37,
+      "id": "topdown:gun-coil-accelerator",
+      "label": "Top-down — Gun class — coil-accelerator",
+      "category": "gun-class",
+      "metadata": {
+        "mode": "topdown",
+        "family": "coil-accelerator",
+        "weaponId": "x2-magnetar-coilgun",
+        "weaponName": "Magnetar Coilgun",
+        "recoil": 77,
+        "acceptedAttacks": 1
+      },
+      "assertions": {
+        "acceptedShot": true,
+        "classified": true
+      },
+      "b42CounterEdges": 1,
+      "correctionRequests": 0,
+      "nonzeroCorrections": 0,
+      "silentCorrections": 0,
+      "smoothCorrections": 0,
+      "snapCorrections": 0,
+      "totalMagnitudePx": 0,
+      "maxMagnitudePx": 0,
+      "meanMagnitudePx": 0,
+      "correctionDebtDurationMs": 0,
+      "serverMotionDurationMs": 550,
+      "maxCorrectionWindowMs": 0,
+      "scenarioDurationMs": 950,
+      "peakAuthorityStepPx": 3.85,
+      "sourceCounts": {},
+      "causeCounts": {}
+    },
+    {
+      "rank": 38,
+      "id": "topdown:gun-grenade-launcher",
+      "label": "Top-down — Gun class — grenade-launcher",
+      "category": "gun-class",
+      "metadata": {
+        "mode": "topdown",
+        "family": "grenade-launcher",
+        "weaponId": "x2-quicksilver-streetsweeper",
+        "weaponName": "Quicksilver Streetsweeper",
+        "recoil": 178,
+        "acceptedAttacks": 1
+      },
+      "assertions": {
+        "acceptedShot": true,
+        "classified": true
+      },
+      "b42CounterEdges": 1,
+      "correctionRequests": 0,
+      "nonzeroCorrections": 0,
+      "silentCorrections": 0,
+      "smoothCorrections": 0,
+      "snapCorrections": 0,
+      "totalMagnitudePx": 0,
+      "maxMagnitudePx": 0,
+      "meanMagnitudePx": 0,
+      "correctionDebtDurationMs": 0,
+      "serverMotionDurationMs": 550,
+      "maxCorrectionWindowMs": 0,
+      "scenarioDurationMs": 950,
+      "peakAuthorityStepPx": 8.9,
+      "sourceCounts": {},
+      "causeCounts": {}
+    },
+    {
+      "rank": 39,
+      "id": "topdown:gun-integrally-suppressed-rifle",
+      "label": "Top-down — Gun class — integrally-suppressed-rifle",
+      "category": "gun-class",
+      "metadata": {
+        "mode": "topdown",
+        "family": "integrally-suppressed-rifle",
+        "weaponId": "x2-recoilless-whisper",
+        "weaponName": "Recoilless Whisper",
+        "recoil": 25,
+        "acceptedAttacks": 1
+      },
+      "assertions": {
+        "acceptedShot": true,
+        "classified": true
+      },
+      "b42CounterEdges": 1,
+      "correctionRequests": 0,
+      "nonzeroCorrections": 0,
+      "silentCorrections": 0,
+      "smoothCorrections": 0,
+      "snapCorrections": 0,
+      "totalMagnitudePx": 0,
+      "maxMagnitudePx": 0,
+      "meanMagnitudePx": 0,
+      "correctionDebtDurationMs": 0,
+      "serverMotionDurationMs": 550,
+      "maxCorrectionWindowMs": 0,
+      "scenarioDurationMs": 950,
+      "peakAuthorityStepPx": 1.25,
+      "sourceCounts": {},
+      "causeCounts": {}
+    },
+    {
+      "rank": 40,
       "id": "topdown:gun-lever-rifle",
       "label": "Top-down — Gun class — lever-rifle",
       "category": "gun-class",
@@ -1074,16 +1488,16 @@
       "causeCounts": {}
     },
     {
-      "rank": 31,
-      "id": "topdown:gun-light machine gun",
-      "label": "Top-down — Gun class — light machine gun",
+      "rank": 41,
+      "id": "topdown:gun-photon-marksman-rifle",
+      "label": "Top-down — Gun class — photon-marksman-rifle",
       "category": "gun-class",
       "metadata": {
         "mode": "topdown",
-        "family": "light machine gun",
-        "weaponId": "x2-ironclad-lmg",
-        "weaponName": "Ironclad LMG",
-        "recoil": 20,
+        "family": "photon-marksman-rifle",
+        "weaponId": "x2-zenith-photon-dmr",
+        "weaponName": "Zenith Photon DMR",
+        "recoil": 107,
         "acceptedAttacks": 1
       },
       "assertions": {
@@ -1103,21 +1517,21 @@
       "serverMotionDurationMs": 550,
       "maxCorrectionWindowMs": 0,
       "scenarioDurationMs": 950,
-      "peakAuthorityStepPx": 1,
+      "peakAuthorityStepPx": 5.35,
       "sourceCounts": {},
       "causeCounts": {}
     },
     {
-      "rank": 32,
-      "id": "topdown:gun-marksman-rifle",
-      "label": "Top-down — Gun class — marksman-rifle",
+      "rank": 42,
+      "id": "topdown:gun-rail-pistol",
+      "label": "Top-down — Gun class — rail-pistol",
       "category": "gun-class",
       "metadata": {
         "mode": "topdown",
-        "family": "marksman-rifle",
-        "weaponId": "x2-barrett-50-cal-sniper",
-        "weaponName": "Barrett .50-Cal Sniper",
-        "recoil": 146,
+        "family": "rail-pistol",
+        "weaponId": "x2-slugthrower-rail-9",
+        "weaponName": "Slugthrower Rail-9",
+        "recoil": 42,
         "acceptedAttacks": 1
       },
       "assertions": {
@@ -1137,80 +1551,12 @@
       "serverMotionDurationMs": 550,
       "maxCorrectionWindowMs": 0,
       "scenarioDurationMs": 950,
-      "peakAuthorityStepPx": 7.3,
+      "peakAuthorityStepPx": 2.1,
       "sourceCounts": {},
       "causeCounts": {}
     },
     {
-      "rank": 33,
-      "id": "topdown:gun-nailgun",
-      "label": "Top-down — Gun class — nailgun",
-      "category": "gun-class",
-      "metadata": {
-        "mode": "topdown",
-        "family": "nailgun",
-        "weaponId": "x-gun-nailgun",
-        "weaponName": "Nailgun",
-        "recoil": 29,
-        "acceptedAttacks": 1
-      },
-      "assertions": {
-        "acceptedShot": true,
-        "classified": true
-      },
-      "b42CounterEdges": 1,
-      "correctionRequests": 0,
-      "nonzeroCorrections": 0,
-      "silentCorrections": 0,
-      "smoothCorrections": 0,
-      "snapCorrections": 0,
-      "totalMagnitudePx": 0,
-      "maxMagnitudePx": 0,
-      "meanMagnitudePx": 0,
-      "correctionDebtDurationMs": 0,
-      "serverMotionDurationMs": 550,
-      "maxCorrectionWindowMs": 0,
-      "scenarioDurationMs": 950,
-      "peakAuthorityStepPx": 1.45,
-      "sourceCounts": {},
-      "causeCounts": {}
-    },
-    {
-      "rank": 34,
-      "id": "topdown:gun-seed-launcher",
-      "label": "Top-down — Gun class — seed-launcher",
-      "category": "gun-class",
-      "metadata": {
-        "mode": "topdown",
-        "family": "seed-launcher",
-        "weaponId": "x2-thornhive-seedcaster",
-        "weaponName": "Thornhive Seedcaster",
-        "recoil": 164,
-        "acceptedAttacks": 1
-      },
-      "assertions": {
-        "acceptedShot": true,
-        "classified": true
-      },
-      "b42CounterEdges": 1,
-      "correctionRequests": 0,
-      "nonzeroCorrections": 0,
-      "silentCorrections": 0,
-      "smoothCorrections": 0,
-      "snapCorrections": 0,
-      "totalMagnitudePx": 0,
-      "maxMagnitudePx": 0,
-      "meanMagnitudePx": 0,
-      "correctionDebtDurationMs": 0,
-      "serverMotionDurationMs": 550,
-      "maxCorrectionWindowMs": 0,
-      "scenarioDurationMs": 950,
-      "peakAuthorityStepPx": 8.2,
-      "sourceCounts": {},
-      "causeCounts": {}
-    },
-    {
-      "rank": 35,
+      "rank": 43,
       "id": "topdown:gun-semi-auto carbine",
       "label": "Top-down — Gun class — semi-auto carbine",
       "category": "gun-class",
@@ -1239,21 +1585,21 @@
       "serverMotionDurationMs": 550,
       "maxCorrectionWindowMs": 0,
       "scenarioDurationMs": 950,
-      "peakAuthorityStepPx": 2.819334,
+      "peakAuthorityStepPx": 2.7,
       "sourceCounts": {},
       "causeCounts": {}
     },
     {
-      "rank": 36,
-      "id": "belt:gun-anti-materiel-rifle",
-      "label": "Belt — Gun class — anti-materiel-rifle",
+      "rank": 44,
+      "id": "belt:gun-arc-pistol",
+      "label": "Belt — Gun class — arc-pistol",
       "category": "gun-class",
       "metadata": {
         "mode": "belt",
-        "family": "anti-materiel-rifle",
-        "weaponId": "x2-anvil-50",
-        "weaponName": "Anvil .50",
-        "recoil": 119,
+        "family": "arc-pistol",
+        "weaponId": "x2-voltcaster-arc-pistol",
+        "weaponName": "Voltcaster Arc Pistol",
+        "recoil": 40,
         "acceptedAttacks": 1
       },
       "assertions": {
@@ -1273,12 +1619,12 @@
       "serverMotionDurationMs": 500,
       "maxCorrectionWindowMs": 0,
       "scenarioDurationMs": 950,
-      "peakAuthorityStepPx": 5.95,
+      "peakAuthorityStepPx": 2.088396,
       "sourceCounts": {},
       "causeCounts": {}
     },
     {
-      "rank": 37,
+      "rank": 45,
       "id": "belt:gun-auto-rifle",
       "label": "Belt — Gun class — auto-rifle",
       "category": "gun-class",
@@ -1307,12 +1653,12 @@
       "serverMotionDurationMs": 500,
       "maxCorrectionWindowMs": 0,
       "scenarioDurationMs": 950,
-      "peakAuthorityStepPx": 5,
+      "peakAuthorityStepPx": 8.188141,
       "sourceCounts": {},
       "causeCounts": {}
     },
     {
-      "rank": 38,
+      "rank": 46,
       "id": "belt:gun-automatic-shotgun",
       "label": "Belt — Gun class — automatic-shotgun",
       "category": "gun-class",
@@ -1346,7 +1692,211 @@
       "causeCounts": {}
     },
     {
-      "rank": 39,
+      "rank": 47,
+      "id": "belt:gun-battle-rifle",
+      "label": "Belt — Gun class — battle-rifle",
+      "category": "gun-class",
+      "metadata": {
+        "mode": "belt",
+        "family": "battle-rifle",
+        "weaponId": "x2-warden-battle-rifle",
+        "weaponName": "Warden Battle Rifle",
+        "recoil": 71,
+        "acceptedAttacks": 1
+      },
+      "assertions": {
+        "acceptedShot": true,
+        "classified": true
+      },
+      "b42CounterEdges": 1,
+      "correctionRequests": 0,
+      "nonzeroCorrections": 0,
+      "silentCorrections": 0,
+      "smoothCorrections": 0,
+      "snapCorrections": 0,
+      "totalMagnitudePx": 0,
+      "maxMagnitudePx": 0,
+      "meanMagnitudePx": 0,
+      "correctionDebtDurationMs": 0,
+      "serverMotionDurationMs": 500,
+      "maxCorrectionWindowMs": 0,
+      "scenarioDurationMs": 950,
+      "peakAuthorityStepPx": 3.55,
+      "sourceCounts": {},
+      "causeCounts": {}
+    },
+    {
+      "rank": 48,
+      "id": "belt:gun-bullpup-rifle",
+      "label": "Belt — Gun class — bullpup-rifle",
+      "category": "gun-class",
+      "metadata": {
+        "mode": "belt",
+        "family": "bullpup-rifle",
+        "weaponId": "x2-helix-bullpup-6-8",
+        "weaponName": "Helix Bullpup 6.8",
+        "recoil": 25,
+        "acceptedAttacks": 1
+      },
+      "assertions": {
+        "acceptedShot": true,
+        "classified": true
+      },
+      "b42CounterEdges": 1,
+      "correctionRequests": 0,
+      "nonzeroCorrections": 0,
+      "silentCorrections": 0,
+      "smoothCorrections": 0,
+      "snapCorrections": 0,
+      "totalMagnitudePx": 0,
+      "maxMagnitudePx": 0,
+      "meanMagnitudePx": 0,
+      "correctionDebtDurationMs": 0,
+      "serverMotionDurationMs": 500,
+      "maxCorrectionWindowMs": 0,
+      "scenarioDurationMs": 950,
+      "peakAuthorityStepPx": 1.305247,
+      "sourceCounts": {},
+      "causeCounts": {}
+    },
+    {
+      "rank": 49,
+      "id": "belt:gun-caseless-carbine",
+      "label": "Belt — Gun class — caseless-carbine",
+      "category": "gun-class",
+      "metadata": {
+        "mode": "belt",
+        "family": "caseless-carbine",
+        "weaponId": "x2-caseless-vanguard",
+        "weaponName": "Caseless Vanguard",
+        "recoil": 18,
+        "acceptedAttacks": 1
+      },
+      "assertions": {
+        "acceptedShot": true,
+        "classified": true
+      },
+      "b42CounterEdges": 1,
+      "correctionRequests": 0,
+      "nonzeroCorrections": 0,
+      "silentCorrections": 0,
+      "smoothCorrections": 0,
+      "snapCorrections": 0,
+      "totalMagnitudePx": 0,
+      "maxMagnitudePx": 0,
+      "meanMagnitudePx": 0,
+      "correctionDebtDurationMs": 0,
+      "serverMotionDurationMs": 500,
+      "maxCorrectionWindowMs": 0,
+      "scenarioDurationMs": 950,
+      "peakAuthorityStepPx": 1.473865,
+      "sourceCounts": {},
+      "causeCounts": {}
+    },
+    {
+      "rank": 50,
+      "id": "belt:gun-coil-accelerator",
+      "label": "Belt — Gun class — coil-accelerator",
+      "category": "gun-class",
+      "metadata": {
+        "mode": "belt",
+        "family": "coil-accelerator",
+        "weaponId": "x2-magnetar-coilgun",
+        "weaponName": "Magnetar Coilgun",
+        "recoil": 77,
+        "acceptedAttacks": 1
+      },
+      "assertions": {
+        "acceptedShot": true,
+        "classified": true
+      },
+      "b42CounterEdges": 1,
+      "correctionRequests": 0,
+      "nonzeroCorrections": 0,
+      "silentCorrections": 0,
+      "smoothCorrections": 0,
+      "snapCorrections": 0,
+      "totalMagnitudePx": 0,
+      "maxMagnitudePx": 0,
+      "meanMagnitudePx": 0,
+      "correctionDebtDurationMs": 0,
+      "serverMotionDurationMs": 500,
+      "maxCorrectionWindowMs": 0,
+      "scenarioDurationMs": 950,
+      "peakAuthorityStepPx": 3.85,
+      "sourceCounts": {},
+      "causeCounts": {}
+    },
+    {
+      "rank": 51,
+      "id": "belt:gun-concussion-cannon",
+      "label": "Belt — Gun class — concussion-cannon",
+      "category": "gun-class",
+      "metadata": {
+        "mode": "belt",
+        "family": "concussion-cannon",
+        "weaponId": "x2-hailshot-hand-maul",
+        "weaponName": "Hailshot Hand-Maul",
+        "recoil": 174,
+        "acceptedAttacks": 1
+      },
+      "assertions": {
+        "acceptedShot": true,
+        "classified": true
+      },
+      "b42CounterEdges": 1,
+      "correctionRequests": 0,
+      "nonzeroCorrections": 0,
+      "silentCorrections": 0,
+      "smoothCorrections": 0,
+      "snapCorrections": 0,
+      "totalMagnitudePx": 0,
+      "maxMagnitudePx": 0,
+      "meanMagnitudePx": 0,
+      "correctionDebtDurationMs": 0,
+      "serverMotionDurationMs": 500,
+      "maxCorrectionWindowMs": 0,
+      "scenarioDurationMs": 950,
+      "peakAuthorityStepPx": 8.7,
+      "sourceCounts": {},
+      "causeCounts": {}
+    },
+    {
+      "rank": 52,
+      "id": "belt:gun-exotic-ranged",
+      "label": "Belt — Gun class — exotic-ranged",
+      "category": "gun-class",
+      "metadata": {
+        "mode": "belt",
+        "family": "exotic-ranged",
+        "weaponId": "x2-grave-anchor-harpoon",
+        "weaponName": "Grave-Anchor Harpoon",
+        "recoil": 126,
+        "acceptedAttacks": 1
+      },
+      "assertions": {
+        "acceptedShot": true,
+        "classified": true
+      },
+      "b42CounterEdges": 1,
+      "correctionRequests": 0,
+      "nonzeroCorrections": 0,
+      "silentCorrections": 0,
+      "smoothCorrections": 0,
+      "snapCorrections": 0,
+      "totalMagnitudePx": 0,
+      "maxMagnitudePx": 0,
+      "meanMagnitudePx": 0,
+      "correctionDebtDurationMs": 0,
+      "serverMotionDurationMs": 500,
+      "maxCorrectionWindowMs": 0,
+      "scenarioDurationMs": 950,
+      "peakAuthorityStepPx": 6.578446,
+      "sourceCounts": {},
+      "causeCounts": {}
+    },
+    {
+      "rank": 53,
       "id": "belt:gun-gauntlet",
       "label": "Belt — Gun class — gauntlet",
       "category": "gun-class",
@@ -1375,12 +1925,12 @@
       "serverMotionDurationMs": 500,
       "maxCorrectionWindowMs": 0,
       "scenarioDurationMs": 950,
-      "peakAuthorityStepPx": 2.558285,
+      "peakAuthorityStepPx": 4.012189,
       "sourceCounts": {},
       "causeCounts": {}
     },
     {
-      "rank": 40,
+      "rank": 54,
       "id": "belt:gun-grenade-launcher",
       "label": "Belt — Gun class — grenade-launcher",
       "category": "gun-class",
@@ -1409,12 +1959,12 @@
       "serverMotionDurationMs": 500,
       "maxCorrectionWindowMs": 0,
       "scenarioDurationMs": 950,
-      "peakAuthorityStepPx": 14.574891,
+      "peakAuthorityStepPx": 8.9,
       "sourceCounts": {},
       "causeCounts": {}
     },
     {
-      "rank": 41,
+      "rank": 55,
       "id": "belt:gun-gun",
       "label": "Belt — Gun class — gun",
       "category": "gun-class",
@@ -1448,16 +1998,16 @@
       "causeCounts": {}
     },
     {
-      "rank": 42,
-      "id": "belt:gun-hand-cannon",
-      "label": "Belt — Gun class — hand-cannon",
+      "rank": 56,
+      "id": "belt:gun-heavy-ion-cannon",
+      "label": "Belt — Gun class — heavy-ion-cannon",
       "category": "gun-class",
       "metadata": {
         "mode": "belt",
-        "family": "hand-cannon",
-        "weaponId": "x-gun-hand-mortar",
-        "weaponName": "Hand Mortar",
-        "recoil": 147,
+        "family": "heavy-ion-cannon",
+        "weaponId": "x2-aurora-ion-cannon",
+        "weaponName": "Aurora Ion Cannon",
+        "recoil": 223,
         "acceptedAttacks": 1
       },
       "assertions": {
@@ -1477,12 +2027,148 @@
       "serverMotionDurationMs": 500,
       "maxCorrectionWindowMs": 0,
       "scenarioDurationMs": 950,
-      "peakAuthorityStepPx": 7.35,
+      "peakAuthorityStepPx": 11.642806,
       "sourceCounts": {},
       "causeCounts": {}
     },
     {
-      "rank": 43,
+      "rank": 57,
+      "id": "belt:gun-heavy-ordnance",
+      "label": "Belt — Gun class — heavy-ordnance",
+      "category": "gun-class",
+      "metadata": {
+        "mode": "belt",
+        "family": "heavy-ordnance",
+        "weaponId": "x2-calamity-howitzer",
+        "weaponName": "Calamity Howitzer",
+        "recoil": 233,
+        "acceptedAttacks": 1
+      },
+      "assertions": {
+        "acceptedShot": true,
+        "classified": true
+      },
+      "b42CounterEdges": 1,
+      "correctionRequests": 0,
+      "nonzeroCorrections": 0,
+      "silentCorrections": 0,
+      "smoothCorrections": 0,
+      "snapCorrections": 0,
+      "totalMagnitudePx": 0,
+      "maxMagnitudePx": 0,
+      "meanMagnitudePx": 0,
+      "correctionDebtDurationMs": 0,
+      "serverMotionDurationMs": 500,
+      "maxCorrectionWindowMs": 0,
+      "scenarioDurationMs": 950,
+      "peakAuthorityStepPx": 19.078368,
+      "sourceCounts": {},
+      "causeCounts": {}
+    },
+    {
+      "rank": 58,
+      "id": "belt:gun-integrally-suppressed-rifle",
+      "label": "Belt — Gun class — integrally-suppressed-rifle",
+      "category": "gun-class",
+      "metadata": {
+        "mode": "belt",
+        "family": "integrally-suppressed-rifle",
+        "weaponId": "x2-recoilless-whisper",
+        "weaponName": "Recoilless Whisper",
+        "recoil": 25,
+        "acceptedAttacks": 1
+      },
+      "assertions": {
+        "acceptedShot": true,
+        "classified": true
+      },
+      "b42CounterEdges": 1,
+      "correctionRequests": 0,
+      "nonzeroCorrections": 0,
+      "silentCorrections": 0,
+      "smoothCorrections": 0,
+      "snapCorrections": 0,
+      "totalMagnitudePx": 0,
+      "maxMagnitudePx": 0,
+      "meanMagnitudePx": 0,
+      "correctionDebtDurationMs": 0,
+      "serverMotionDurationMs": 500,
+      "maxCorrectionWindowMs": 0,
+      "scenarioDurationMs": 950,
+      "peakAuthorityStepPx": 1.25,
+      "sourceCounts": {},
+      "causeCounts": {}
+    },
+    {
+      "rank": 59,
+      "id": "belt:gun-lever-rifle",
+      "label": "Belt — Gun class — lever-rifle",
+      "category": "gun-class",
+      "metadata": {
+        "mode": "belt",
+        "family": "lever-rifle",
+        "weaponId": "x2-brasswork-volley-rifle",
+        "weaponName": "Brasswork Volley Rifle",
+        "recoil": 107,
+        "acceptedAttacks": 1
+      },
+      "assertions": {
+        "acceptedShot": true,
+        "classified": true
+      },
+      "b42CounterEdges": 1,
+      "correctionRequests": 0,
+      "nonzeroCorrections": 0,
+      "silentCorrections": 0,
+      "smoothCorrections": 0,
+      "snapCorrections": 0,
+      "totalMagnitudePx": 0,
+      "maxMagnitudePx": 0,
+      "meanMagnitudePx": 0,
+      "correctionDebtDurationMs": 0,
+      "serverMotionDurationMs": 500,
+      "maxCorrectionWindowMs": 0,
+      "scenarioDurationMs": 950,
+      "peakAuthorityStepPx": 5.35,
+      "sourceCounts": {},
+      "causeCounts": {}
+    },
+    {
+      "rank": 60,
+      "id": "belt:gun-marksman-rifle",
+      "label": "Belt — Gun class — marksman-rifle",
+      "category": "gun-class",
+      "metadata": {
+        "mode": "belt",
+        "family": "marksman-rifle",
+        "weaponId": "x2-barrett-50-cal-sniper",
+        "weaponName": "Barrett .50-Cal Sniper",
+        "recoil": 146,
+        "acceptedAttacks": 1
+      },
+      "assertions": {
+        "acceptedShot": true,
+        "classified": true
+      },
+      "b42CounterEdges": 1,
+      "correctionRequests": 0,
+      "nonzeroCorrections": 0,
+      "silentCorrections": 0,
+      "smoothCorrections": 0,
+      "snapCorrections": 0,
+      "totalMagnitudePx": 0,
+      "maxMagnitudePx": 0,
+      "meanMagnitudePx": 0,
+      "correctionDebtDurationMs": 0,
+      "serverMotionDurationMs": 500,
+      "maxCorrectionWindowMs": 0,
+      "scenarioDurationMs": 950,
+      "peakAuthorityStepPx": 7.622644,
+      "sourceCounts": {},
+      "causeCounts": {}
+    },
+    {
+      "rank": 61,
       "id": "belt:gun-nailgun",
       "label": "Belt — Gun class — nailgun",
       "category": "gun-class",
@@ -1511,12 +2197,46 @@
       "serverMotionDurationMs": 500,
       "maxCorrectionWindowMs": 0,
       "scenarioDurationMs": 950,
-      "peakAuthorityStepPx": 1.514087,
+      "peakAuthorityStepPx": 2.374561,
       "sourceCounts": {},
       "causeCounts": {}
     },
     {
-      "rank": 44,
+      "rank": 62,
+      "id": "belt:gun-photon-marksman-rifle",
+      "label": "Belt — Gun class — photon-marksman-rifle",
+      "category": "gun-class",
+      "metadata": {
+        "mode": "belt",
+        "family": "photon-marksman-rifle",
+        "weaponId": "x2-zenith-photon-dmr",
+        "weaponName": "Zenith Photon DMR",
+        "recoil": 107,
+        "acceptedAttacks": 1
+      },
+      "assertions": {
+        "acceptedShot": true,
+        "classified": true
+      },
+      "b42CounterEdges": 1,
+      "correctionRequests": 0,
+      "nonzeroCorrections": 0,
+      "silentCorrections": 0,
+      "smoothCorrections": 0,
+      "snapCorrections": 0,
+      "totalMagnitudePx": 0,
+      "maxMagnitudePx": 0,
+      "meanMagnitudePx": 0,
+      "correctionDebtDurationMs": 0,
+      "serverMotionDurationMs": 500,
+      "maxCorrectionWindowMs": 0,
+      "scenarioDurationMs": 950,
+      "peakAuthorityStepPx": 5.35,
+      "sourceCounts": {},
+      "causeCounts": {}
+    },
+    {
+      "rank": 63,
       "id": "belt:gun-pistol",
       "label": "Belt — Gun class — pistol",
       "category": "gun-class",
@@ -1545,21 +2265,21 @@
       "serverMotionDurationMs": 500,
       "maxCorrectionWindowMs": 0,
       "scenarioDurationMs": 950,
-      "peakAuthorityStepPx": 5.977343,
+      "peakAuthorityStepPx": 3.65,
       "sourceCounts": {},
       "causeCounts": {}
     },
     {
-      "rank": 45,
-      "id": "belt:gun-pistol-calibre-carbine",
-      "label": "Belt — Gun class — pistol-calibre-carbine",
+      "rank": 64,
+      "id": "belt:gun-plasma-carbine",
+      "label": "Belt — Gun class — plasma-carbine",
       "category": "gun-class",
       "metadata": {
         "mode": "belt",
-        "family": "pistol-calibre-carbine",
-        "weaponId": "x2-trailhead-carbine-357",
-        "weaponName": "Trailhead Carbine .357",
-        "recoil": 54,
+        "family": "plasma-carbine",
+        "weaponId": "x2-ember-plasma-carbine",
+        "weaponName": "Ember Plasma Carbine",
+        "recoil": 29,
         "acceptedAttacks": 1
       },
       "assertions": {
@@ -1579,12 +2299,12 @@
       "serverMotionDurationMs": 500,
       "maxCorrectionWindowMs": 0,
       "scenarioDurationMs": 950,
-      "peakAuthorityStepPx": 4.421596,
+      "peakAuthorityStepPx": 1.45,
       "sourceCounts": {},
       "causeCounts": {}
     },
     {
-      "rank": 46,
+      "rank": 65,
       "id": "belt:gun-puck-launcher",
       "label": "Belt — Gun class — puck-launcher",
       "category": "gun-class",
@@ -1613,21 +2333,21 @@
       "serverMotionDurationMs": 500,
       "maxCorrectionWindowMs": 0,
       "scenarioDurationMs": 950,
-      "peakAuthorityStepPx": 3.2,
+      "peakAuthorityStepPx": 5.24041,
       "sourceCounts": {},
       "causeCounts": {}
     },
     {
-      "rank": 47,
-      "id": "belt:gun-seed-launcher",
-      "label": "Belt — Gun class — seed-launcher",
+      "rank": 66,
+      "id": "belt:gun-pulse-rifle",
+      "label": "Belt — Gun class — pulse-rifle",
       "category": "gun-class",
       "metadata": {
         "mode": "belt",
-        "family": "seed-launcher",
-        "weaponId": "x2-thornhive-seedcaster",
-        "weaponName": "Thornhive Seedcaster",
-        "recoil": 164,
+        "family": "pulse-rifle",
+        "weaponId": "x2-nova-pulse-repeater",
+        "weaponName": "Nova Pulse Repeater",
+        "recoil": 15,
         "acceptedAttacks": 1
       },
       "assertions": {
@@ -1647,21 +2367,21 @@
       "serverMotionDurationMs": 500,
       "maxCorrectionWindowMs": 0,
       "scenarioDurationMs": 950,
-      "peakAuthorityStepPx": 8.562422,
+      "peakAuthorityStepPx": 0.75,
       "sourceCounts": {},
       "causeCounts": {}
     },
     {
-      "rank": 48,
-      "id": "belt:gun-semi-auto carbine",
-      "label": "Belt — Gun class — semi-auto carbine",
+      "rank": 67,
+      "id": "belt:gun-rail-pistol",
+      "label": "Belt — Gun class — rail-pistol",
       "category": "gun-class",
       "metadata": {
         "mode": "belt",
-        "family": "semi-auto carbine",
-        "weaponId": "x2-patriot-carbine-ar",
-        "weaponName": "Patriot Carbine AR",
-        "recoil": 54,
+        "family": "rail-pistol",
+        "weaponId": "x2-slugthrower-rail-9",
+        "weaponName": "Slugthrower Rail-9",
+        "recoil": 42,
         "acceptedAttacks": 1
       },
       "assertions": {
@@ -1681,12 +2401,80 @@
       "serverMotionDurationMs": 500,
       "maxCorrectionWindowMs": 0,
       "scenarioDurationMs": 950,
-      "peakAuthorityStepPx": 4.421596,
+      "peakAuthorityStepPx": 2.1,
       "sourceCounts": {},
       "causeCounts": {}
     },
     {
-      "rank": 49,
+      "rank": 68,
+      "id": "belt:gun-rimfire-rifle",
+      "label": "Belt — Gun class — rimfire-rifle",
+      "category": "gun-class",
+      "metadata": {
+        "mode": "belt",
+        "family": "rimfire-rifle",
+        "weaponId": "x2-rancher-22-plinker",
+        "weaponName": "Rancher .22 Plinker",
+        "recoil": 22,
+        "acceptedAttacks": 1
+      },
+      "assertions": {
+        "acceptedShot": true,
+        "classified": true
+      },
+      "b42CounterEdges": 1,
+      "correctionRequests": 0,
+      "nonzeroCorrections": 0,
+      "silentCorrections": 0,
+      "smoothCorrections": 0,
+      "snapCorrections": 0,
+      "totalMagnitudePx": 0,
+      "maxMagnitudePx": 0,
+      "meanMagnitudePx": 0,
+      "correctionDebtDurationMs": 0,
+      "serverMotionDurationMs": 500,
+      "maxCorrectionWindowMs": 0,
+      "scenarioDurationMs": 950,
+      "peakAuthorityStepPx": 1.148618,
+      "sourceCounts": {},
+      "causeCounts": {}
+    },
+    {
+      "rank": 69,
+      "id": "belt:gun-scrap-cannon",
+      "label": "Belt — Gun class — scrap-cannon",
+      "category": "gun-class",
+      "metadata": {
+        "mode": "belt",
+        "family": "scrap-cannon",
+        "weaponId": "x2-confetti-cannon",
+        "weaponName": "Confetti Cannon",
+        "recoil": 177,
+        "acceptedAttacks": 1
+      },
+      "assertions": {
+        "acceptedShot": true,
+        "classified": true
+      },
+      "b42CounterEdges": 1,
+      "correctionRequests": 0,
+      "nonzeroCorrections": 0,
+      "silentCorrections": 0,
+      "smoothCorrections": 0,
+      "snapCorrections": 0,
+      "totalMagnitudePx": 0,
+      "maxMagnitudePx": 0,
+      "meanMagnitudePx": 0,
+      "correctionDebtDurationMs": 0,
+      "serverMotionDurationMs": 500,
+      "maxCorrectionWindowMs": 0,
+      "scenarioDurationMs": 950,
+      "peakAuthorityStepPx": 14.493009,
+      "sourceCounts": {},
+      "causeCounts": {}
+    },
+    {
+      "rank": 70,
       "id": "belt:gun-shotgun",
       "label": "Belt — Gun class — shotgun",
       "category": "gun-class",
@@ -1715,12 +2503,12 @@
       "serverMotionDurationMs": 500,
       "maxCorrectionWindowMs": 0,
       "scenarioDurationMs": 950,
-      "peakAuthorityStepPx": 13.182907,
+      "peakAuthorityStepPx": 8.405792,
       "sourceCounts": {},
       "causeCounts": {}
     },
     {
-      "rank": 50,
+      "rank": 71,
       "id": "belt:jump-pound",
       "label": "Belt — Distance jump / pound",
       "category": "traversal",
@@ -1749,7 +2537,7 @@
       "causeCounts": {}
     },
     {
-      "rank": 51,
+      "rank": 72,
       "id": "topdown:gun-anti-materiel-rifle",
       "label": "Top-down — Gun class — anti-materiel-rifle",
       "category": "gun-class",
@@ -1783,7 +2571,41 @@
       "causeCounts": {}
     },
     {
-      "rank": 52,
+      "rank": 73,
+      "id": "topdown:gun-arc-pistol",
+      "label": "Top-down — Gun class — arc-pistol",
+      "category": "gun-class",
+      "metadata": {
+        "mode": "topdown",
+        "family": "arc-pistol",
+        "weaponId": "x2-voltcaster-arc-pistol",
+        "weaponName": "Voltcaster Arc Pistol",
+        "recoil": 40,
+        "acceptedAttacks": 1
+      },
+      "assertions": {
+        "acceptedShot": true,
+        "classified": true
+      },
+      "b42CounterEdges": 1,
+      "correctionRequests": 0,
+      "nonzeroCorrections": 0,
+      "silentCorrections": 0,
+      "smoothCorrections": 0,
+      "snapCorrections": 0,
+      "totalMagnitudePx": 0,
+      "maxMagnitudePx": 0,
+      "meanMagnitudePx": 0,
+      "correctionDebtDurationMs": 0,
+      "serverMotionDurationMs": 500,
+      "maxCorrectionWindowMs": 0,
+      "scenarioDurationMs": 950,
+      "peakAuthorityStepPx": 2,
+      "sourceCounts": {},
+      "causeCounts": {}
+    },
+    {
+      "rank": 74,
       "id": "topdown:gun-auto-rifle",
       "label": "Top-down — Gun class — auto-rifle",
       "category": "gun-class",
@@ -1812,46 +2634,12 @@
       "serverMotionDurationMs": 500,
       "maxCorrectionWindowMs": 0,
       "scenarioDurationMs": 950,
-      "peakAuthorityStepPx": 5.220989,
+      "peakAuthorityStepPx": 5,
       "sourceCounts": {},
       "causeCounts": {}
     },
     {
-      "rank": 53,
-      "id": "topdown:gun-automatic-shotgun",
-      "label": "Top-down — Gun class — automatic-shotgun",
-      "category": "gun-class",
-      "metadata": {
-        "mode": "topdown",
-        "family": "automatic-shotgun",
-        "weaponId": "x2-breachmaster-auto-12",
-        "weaponName": "Breachmaster Auto-12",
-        "recoil": 152,
-        "acceptedAttacks": 1
-      },
-      "assertions": {
-        "acceptedShot": true,
-        "classified": true
-      },
-      "b42CounterEdges": 1,
-      "correctionRequests": 0,
-      "nonzeroCorrections": 0,
-      "silentCorrections": 0,
-      "smoothCorrections": 0,
-      "snapCorrections": 0,
-      "totalMagnitudePx": 0,
-      "maxMagnitudePx": 0,
-      "meanMagnitudePx": 0,
-      "correctionDebtDurationMs": 0,
-      "serverMotionDurationMs": 500,
-      "maxCorrectionWindowMs": 0,
-      "scenarioDurationMs": 950,
-      "peakAuthorityStepPx": 12.445974,
-      "sourceCounts": {},
-      "causeCounts": {}
-    },
-    {
-      "rank": 54,
+      "rank": 75,
       "id": "topdown:gun-battle-rifle",
       "label": "Top-down — Gun class — battle-rifle",
       "category": "gun-class",
@@ -1880,12 +2668,12 @@
       "serverMotionDurationMs": 500,
       "maxCorrectionWindowMs": 0,
       "scenarioDurationMs": 950,
-      "peakAuthorityStepPx": 5.81358,
+      "peakAuthorityStepPx": 3.706902,
       "sourceCounts": {},
       "causeCounts": {}
     },
     {
-      "rank": 55,
+      "rank": 76,
       "id": "topdown:gun-blunderbuss",
       "label": "Top-down — Gun class — blunderbuss",
       "category": "gun-class",
@@ -1919,7 +2707,41 @@
       "causeCounts": {}
     },
     {
-      "rank": 56,
+      "rank": 77,
+      "id": "topdown:gun-bullpup-rifle",
+      "label": "Top-down — Gun class — bullpup-rifle",
+      "category": "gun-class",
+      "metadata": {
+        "mode": "topdown",
+        "family": "bullpup-rifle",
+        "weaponId": "x2-helix-bullpup-6-8",
+        "weaponName": "Helix Bullpup 6.8",
+        "recoil": 25,
+        "acceptedAttacks": 1
+      },
+      "assertions": {
+        "acceptedShot": true,
+        "classified": true
+      },
+      "b42CounterEdges": 1,
+      "correctionRequests": 0,
+      "nonzeroCorrections": 0,
+      "silentCorrections": 0,
+      "smoothCorrections": 0,
+      "snapCorrections": 0,
+      "totalMagnitudePx": 0,
+      "maxMagnitudePx": 0,
+      "meanMagnitudePx": 0,
+      "correctionDebtDurationMs": 0,
+      "serverMotionDurationMs": 500,
+      "maxCorrectionWindowMs": 0,
+      "scenarioDurationMs": 950,
+      "peakAuthorityStepPx": 1.25,
+      "sourceCounts": {},
+      "causeCounts": {}
+    },
+    {
+      "rank": 78,
       "id": "topdown:gun-concussion-cannon",
       "label": "Top-down — Gun class — concussion-cannon",
       "category": "gun-class",
@@ -1948,12 +2770,46 @@
       "serverMotionDurationMs": 500,
       "maxCorrectionWindowMs": 0,
       "scenarioDurationMs": 950,
-      "peakAuthorityStepPx": 14.247365,
+      "peakAuthorityStepPx": 9.084521,
       "sourceCounts": {},
       "causeCounts": {}
     },
     {
-      "rank": 57,
+      "rank": 79,
+      "id": "topdown:gun-energy-shotgun",
+      "label": "Top-down — Gun class — energy-shotgun",
+      "category": "gun-class",
+      "metadata": {
+        "mode": "topdown",
+        "family": "energy-shotgun",
+        "weaponId": "x2-prism-scatter-emitter",
+        "weaponName": "Prism Scatter Emitter",
+        "recoil": 143,
+        "acceptedAttacks": 1
+      },
+      "assertions": {
+        "acceptedShot": true,
+        "classified": true
+      },
+      "b42CounterEdges": 1,
+      "correctionRequests": 0,
+      "nonzeroCorrections": 0,
+      "silentCorrections": 0,
+      "smoothCorrections": 0,
+      "snapCorrections": 0,
+      "totalMagnitudePx": 0,
+      "maxMagnitudePx": 0,
+      "meanMagnitudePx": 0,
+      "correctionDebtDurationMs": 0,
+      "serverMotionDurationMs": 500,
+      "maxCorrectionWindowMs": 0,
+      "scenarioDurationMs": 950,
+      "peakAuthorityStepPx": 11.709041,
+      "sourceCounts": {},
+      "causeCounts": {}
+    },
+    {
+      "rank": 80,
       "id": "topdown:gun-exotic-ranged",
       "label": "Top-down — Gun class — exotic-ranged",
       "category": "gun-class",
@@ -1987,7 +2843,7 @@
       "causeCounts": {}
     },
     {
-      "rank": 58,
+      "rank": 81,
       "id": "topdown:gun-gauntlet",
       "label": "Top-down — Gun class — gauntlet",
       "category": "gun-class",
@@ -2021,41 +2877,7 @@
       "causeCounts": {}
     },
     {
-      "rank": 59,
-      "id": "topdown:gun-grenade-launcher",
-      "label": "Top-down — Gun class — grenade-launcher",
-      "category": "gun-class",
-      "metadata": {
-        "mode": "topdown",
-        "family": "grenade-launcher",
-        "weaponId": "x2-quicksilver-streetsweeper",
-        "weaponName": "Quicksilver Streetsweeper",
-        "recoil": 178,
-        "acceptedAttacks": 1
-      },
-      "assertions": {
-        "acceptedShot": true,
-        "classified": true
-      },
-      "b42CounterEdges": 1,
-      "correctionRequests": 0,
-      "nonzeroCorrections": 0,
-      "silentCorrections": 0,
-      "smoothCorrections": 0,
-      "snapCorrections": 0,
-      "totalMagnitudePx": 0,
-      "maxMagnitudePx": 0,
-      "meanMagnitudePx": 0,
-      "correctionDebtDurationMs": 0,
-      "serverMotionDurationMs": 500,
-      "maxCorrectionWindowMs": 0,
-      "scenarioDurationMs": 950,
-      "peakAuthorityStepPx": 8.9,
-      "sourceCounts": {},
-      "causeCounts": {}
-    },
-    {
-      "rank": 60,
+      "rank": 82,
       "id": "topdown:gun-gun",
       "label": "Top-down — Gun class — gun",
       "category": "gun-class",
@@ -2084,12 +2906,12 @@
       "serverMotionDurationMs": 500,
       "maxCorrectionWindowMs": 0,
       "scenarioDurationMs": 950,
-      "peakAuthorityStepPx": 0.7,
+      "peakAuthorityStepPx": 0.730938,
       "sourceCounts": {},
       "causeCounts": {}
     },
     {
-      "rank": 61,
+      "rank": 83,
       "id": "topdown:gun-hand-cannon",
       "label": "Top-down — Gun class — hand-cannon",
       "category": "gun-class",
@@ -2118,12 +2940,182 @@
       "serverMotionDurationMs": 500,
       "maxCorrectionWindowMs": 0,
       "scenarioDurationMs": 950,
-      "peakAuthorityStepPx": 7.35,
+      "peakAuthorityStepPx": 12.036567,
       "sourceCounts": {},
       "causeCounts": {}
     },
     {
-      "rank": 62,
+      "rank": 84,
+      "id": "topdown:gun-heavy-ion-cannon",
+      "label": "Top-down — Gun class — heavy-ion-cannon",
+      "category": "gun-class",
+      "metadata": {
+        "mode": "topdown",
+        "family": "heavy-ion-cannon",
+        "weaponId": "x2-aurora-ion-cannon",
+        "weaponName": "Aurora Ion Cannon",
+        "recoil": 223,
+        "acceptedAttacks": 1
+      },
+      "assertions": {
+        "acceptedShot": true,
+        "classified": true
+      },
+      "b42CounterEdges": 1,
+      "correctionRequests": 0,
+      "nonzeroCorrections": 0,
+      "silentCorrections": 0,
+      "smoothCorrections": 0,
+      "snapCorrections": 0,
+      "totalMagnitudePx": 0,
+      "maxMagnitudePx": 0,
+      "meanMagnitudePx": 0,
+      "correctionDebtDurationMs": 0,
+      "serverMotionDurationMs": 500,
+      "maxCorrectionWindowMs": 0,
+      "scenarioDurationMs": 950,
+      "peakAuthorityStepPx": 18.259554,
+      "sourceCounts": {},
+      "causeCounts": {}
+    },
+    {
+      "rank": 85,
+      "id": "topdown:gun-heavy-ordnance",
+      "label": "Top-down — Gun class — heavy-ordnance",
+      "category": "gun-class",
+      "metadata": {
+        "mode": "topdown",
+        "family": "heavy-ordnance",
+        "weaponId": "x2-calamity-howitzer",
+        "weaponName": "Calamity Howitzer",
+        "recoil": 233,
+        "acceptedAttacks": 1
+      },
+      "assertions": {
+        "acceptedShot": true,
+        "classified": true
+      },
+      "b42CounterEdges": 1,
+      "correctionRequests": 0,
+      "nonzeroCorrections": 0,
+      "silentCorrections": 0,
+      "smoothCorrections": 0,
+      "snapCorrections": 0,
+      "totalMagnitudePx": 0,
+      "maxMagnitudePx": 0,
+      "meanMagnitudePx": 0,
+      "correctionDebtDurationMs": 0,
+      "serverMotionDurationMs": 500,
+      "maxCorrectionWindowMs": 0,
+      "scenarioDurationMs": 950,
+      "peakAuthorityStepPx": 11.65,
+      "sourceCounts": {},
+      "causeCounts": {}
+    },
+    {
+      "rank": 86,
+      "id": "topdown:gun-light machine gun",
+      "label": "Top-down — Gun class — light machine gun",
+      "category": "gun-class",
+      "metadata": {
+        "mode": "topdown",
+        "family": "light machine gun",
+        "weaponId": "x2-ironclad-lmg",
+        "weaponName": "Ironclad LMG",
+        "recoil": 20,
+        "acceptedAttacks": 1
+      },
+      "assertions": {
+        "acceptedShot": true,
+        "classified": true
+      },
+      "b42CounterEdges": 1,
+      "correctionRequests": 0,
+      "nonzeroCorrections": 0,
+      "silentCorrections": 0,
+      "smoothCorrections": 0,
+      "snapCorrections": 0,
+      "totalMagnitudePx": 0,
+      "maxMagnitudePx": 0,
+      "meanMagnitudePx": 0,
+      "correctionDebtDurationMs": 0,
+      "serverMotionDurationMs": 500,
+      "maxCorrectionWindowMs": 0,
+      "scenarioDurationMs": 950,
+      "peakAuthorityStepPx": 1.044198,
+      "sourceCounts": {},
+      "causeCounts": {}
+    },
+    {
+      "rank": 87,
+      "id": "topdown:gun-marksman-rifle",
+      "label": "Top-down — Gun class — marksman-rifle",
+      "category": "gun-class",
+      "metadata": {
+        "mode": "topdown",
+        "family": "marksman-rifle",
+        "weaponId": "x2-barrett-50-cal-sniper",
+        "weaponName": "Barrett .50-Cal Sniper",
+        "recoil": 146,
+        "acceptedAttacks": 1
+      },
+      "assertions": {
+        "acceptedShot": true,
+        "classified": true
+      },
+      "b42CounterEdges": 1,
+      "correctionRequests": 0,
+      "nonzeroCorrections": 0,
+      "silentCorrections": 0,
+      "smoothCorrections": 0,
+      "snapCorrections": 0,
+      "totalMagnitudePx": 0,
+      "maxMagnitudePx": 0,
+      "meanMagnitudePx": 0,
+      "correctionDebtDurationMs": 0,
+      "serverMotionDurationMs": 500,
+      "maxCorrectionWindowMs": 0,
+      "scenarioDurationMs": 950,
+      "peakAuthorityStepPx": 11.954686,
+      "sourceCounts": {},
+      "causeCounts": {}
+    },
+    {
+      "rank": 88,
+      "id": "topdown:gun-nailgun",
+      "label": "Top-down — Gun class — nailgun",
+      "category": "gun-class",
+      "metadata": {
+        "mode": "topdown",
+        "family": "nailgun",
+        "weaponId": "x-gun-nailgun",
+        "weaponName": "Nailgun",
+        "recoil": 29,
+        "acceptedAttacks": 1
+      },
+      "assertions": {
+        "acceptedShot": true,
+        "classified": true
+      },
+      "b42CounterEdges": 1,
+      "correctionRequests": 0,
+      "nonzeroCorrections": 0,
+      "silentCorrections": 0,
+      "smoothCorrections": 0,
+      "snapCorrections": 0,
+      "totalMagnitudePx": 0,
+      "maxMagnitudePx": 0,
+      "meanMagnitudePx": 0,
+      "correctionDebtDurationMs": 0,
+      "serverMotionDurationMs": 500,
+      "maxCorrectionWindowMs": 0,
+      "scenarioDurationMs": 950,
+      "peakAuthorityStepPx": 1.45,
+      "sourceCounts": {},
+      "causeCounts": {}
+    },
+    {
+      "rank": 89,
       "id": "topdown:gun-pistol",
       "label": "Top-down — Gun class — pistol",
       "category": "gun-class",
@@ -2157,7 +3149,7 @@
       "causeCounts": {}
     },
     {
-      "rank": 63,
+      "rank": 90,
       "id": "topdown:gun-pistol-calibre-carbine",
       "label": "Top-down — Gun class — pistol-calibre-carbine",
       "category": "gun-class",
@@ -2191,7 +3183,41 @@
       "causeCounts": {}
     },
     {
-      "rank": 64,
+      "rank": 91,
+      "id": "topdown:gun-plasma-carbine",
+      "label": "Top-down — Gun class — plasma-carbine",
+      "category": "gun-class",
+      "metadata": {
+        "mode": "topdown",
+        "family": "plasma-carbine",
+        "weaponId": "x2-ember-plasma-carbine",
+        "weaponName": "Ember Plasma Carbine",
+        "recoil": 29,
+        "acceptedAttacks": 1
+      },
+      "assertions": {
+        "acceptedShot": true,
+        "classified": true
+      },
+      "b42CounterEdges": 1,
+      "correctionRequests": 0,
+      "nonzeroCorrections": 0,
+      "silentCorrections": 0,
+      "smoothCorrections": 0,
+      "snapCorrections": 0,
+      "totalMagnitudePx": 0,
+      "maxMagnitudePx": 0,
+      "meanMagnitudePx": 0,
+      "correctionDebtDurationMs": 0,
+      "serverMotionDurationMs": 500,
+      "maxCorrectionWindowMs": 0,
+      "scenarioDurationMs": 950,
+      "peakAuthorityStepPx": 1.45,
+      "sourceCounts": {},
+      "causeCounts": {}
+    },
+    {
+      "rank": 92,
       "id": "topdown:gun-puck-launcher",
       "label": "Top-down — Gun class — puck-launcher",
       "category": "gun-class",
@@ -2220,12 +3246,46 @@
       "serverMotionDurationMs": 500,
       "maxCorrectionWindowMs": 0,
       "scenarioDurationMs": 950,
-      "peakAuthorityStepPx": 5.24041,
+      "peakAuthorityStepPx": 3.2,
       "sourceCounts": {},
       "causeCounts": {}
     },
     {
-      "rank": 65,
+      "rank": 93,
+      "id": "topdown:gun-pulse-rifle",
+      "label": "Top-down — Gun class — pulse-rifle",
+      "category": "gun-class",
+      "metadata": {
+        "mode": "topdown",
+        "family": "pulse-rifle",
+        "weaponId": "x2-nova-pulse-repeater",
+        "weaponName": "Nova Pulse Repeater",
+        "recoil": 15,
+        "acceptedAttacks": 1
+      },
+      "assertions": {
+        "acceptedShot": true,
+        "classified": true
+      },
+      "b42CounterEdges": 1,
+      "correctionRequests": 0,
+      "nonzeroCorrections": 0,
+      "silentCorrections": 0,
+      "smoothCorrections": 0,
+      "snapCorrections": 0,
+      "totalMagnitudePx": 0,
+      "maxMagnitudePx": 0,
+      "meanMagnitudePx": 0,
+      "correctionDebtDurationMs": 0,
+      "serverMotionDurationMs": 500,
+      "maxCorrectionWindowMs": 0,
+      "scenarioDurationMs": 950,
+      "peakAuthorityStepPx": 0.75,
+      "sourceCounts": {},
+      "causeCounts": {}
+    },
+    {
+      "rank": 94,
       "id": "topdown:gun-railgun",
       "label": "Top-down — Gun class — railgun",
       "category": "gun-class",
@@ -2254,12 +3314,12 @@
       "serverMotionDurationMs": 500,
       "maxCorrectionWindowMs": 0,
       "scenarioDurationMs": 950,
-      "peakAuthorityStepPx": 17.44074,
+      "peakAuthorityStepPx": 11.120707,
       "sourceCounts": {},
       "causeCounts": {}
     },
     {
-      "rank": 66,
+      "rank": 95,
       "id": "topdown:gun-rimfire-rifle",
       "label": "Top-down — Gun class — rimfire-rifle",
       "category": "gun-class",
@@ -2288,12 +3348,12 @@
       "serverMotionDurationMs": 500,
       "maxCorrectionWindowMs": 0,
       "scenarioDurationMs": 950,
-      "peakAuthorityStepPx": 1.1,
+      "peakAuthorityStepPx": 1.148618,
       "sourceCounts": {},
       "causeCounts": {}
     },
     {
-      "rank": 67,
+      "rank": 96,
       "id": "topdown:gun-scrap-cannon",
       "label": "Top-down — Gun class — scrap-cannon",
       "category": "gun-class",
@@ -2322,12 +3382,46 @@
       "serverMotionDurationMs": 500,
       "maxCorrectionWindowMs": 0,
       "scenarioDurationMs": 950,
-      "peakAuthorityStepPx": 8.85,
+      "peakAuthorityStepPx": 14.493009,
       "sourceCounts": {},
       "causeCounts": {}
     },
     {
-      "rank": 68,
+      "rank": 97,
+      "id": "topdown:gun-seed-launcher",
+      "label": "Top-down — Gun class — seed-launcher",
+      "category": "gun-class",
+      "metadata": {
+        "mode": "topdown",
+        "family": "seed-launcher",
+        "weaponId": "x2-thornhive-seedcaster",
+        "weaponName": "Thornhive Seedcaster",
+        "recoil": 164,
+        "acceptedAttacks": 1
+      },
+      "assertions": {
+        "acceptedShot": true,
+        "classified": true
+      },
+      "b42CounterEdges": 1,
+      "correctionRequests": 0,
+      "nonzeroCorrections": 0,
+      "silentCorrections": 0,
+      "smoothCorrections": 0,
+      "snapCorrections": 0,
+      "totalMagnitudePx": 0,
+      "maxMagnitudePx": 0,
+      "meanMagnitudePx": 0,
+      "correctionDebtDurationMs": 0,
+      "serverMotionDurationMs": 500,
+      "maxCorrectionWindowMs": 0,
+      "scenarioDurationMs": 950,
+      "peakAuthorityStepPx": 8.2,
+      "sourceCounts": {},
+      "causeCounts": {}
+    },
+    {
+      "rank": 98,
       "id": "topdown:gun-shotgun",
       "label": "Top-down — Gun class — shotgun",
       "category": "gun-class",
@@ -2361,7 +3455,7 @@
       "causeCounts": {}
     },
     {
-      "rank": 69,
+      "rank": 99,
       "id": "topdown:jump-pound",
       "label": "Top-down — Distance jump / pound",
       "category": "traversal",
@@ -2385,12 +3479,12 @@
       "serverMotionDurationMs": 500,
       "maxCorrectionWindowMs": 0,
       "scenarioDurationMs": 1400,
-      "peakAuthorityStepPx": 31,
+      "peakAuthorityStepPx": 62,
       "sourceCounts": {},
       "causeCounts": {}
     },
     {
-      "rank": 70,
+      "rank": 100,
       "id": "belt:dodge-roll",
       "label": "Belt — Dodge roll",
       "category": "traversal",
@@ -2419,7 +3513,7 @@
       "causeCounts": {}
     },
     {
-      "rank": 71,
+      "rank": 101,
       "id": "topdown:dodge-roll",
       "label": "Top-down — Dodge roll",
       "category": "traversal",
@@ -2448,7 +3542,7 @@
       "causeCounts": {}
     },
     {
-      "rank": 72,
+      "rank": 102,
       "id": "belt:parry-left",
       "label": "Belt — Parry — incoming from left",
       "category": "parry",
@@ -2474,13 +3568,13 @@
       "correctionDebtDurationMs": 0,
       "serverMotionDurationMs": 50,
       "maxCorrectionWindowMs": 0,
-      "scenarioDurationMs": 1850,
+      "scenarioDurationMs": 1800,
       "peakAuthorityStepPx": 25.6,
       "sourceCounts": {},
       "causeCounts": {}
     },
     {
-      "rank": 73,
+      "rank": 103,
       "id": "belt:parry-right",
       "label": "Belt — Parry — incoming from right",
       "category": "parry",
@@ -2506,50 +3600,13 @@
       "correctionDebtDurationMs": 0,
       "serverMotionDurationMs": 50,
       "maxCorrectionWindowMs": 0,
-      "scenarioDurationMs": 1800,
+      "scenarioDurationMs": 1850,
       "peakAuthorityStepPx": 25.6,
       "sourceCounts": {},
       "causeCounts": {}
     },
     {
-      "rank": 74,
-      "id": "belt:pit-fall",
-      "label": "Belt — Pit fall / snap-back",
-      "category": "placement",
-      "metadata": {
-        "mode": "belt",
-        "safePoint": {
-          "x": 1880,
-          "y": 2440
-        },
-        "pitTile": {
-          "col": 27,
-          "row": 30
-        }
-      },
-      "assertions": {
-        "fell": true,
-        "classified": true
-      },
-      "b42CounterEdges": 1,
-      "correctionRequests": 0,
-      "nonzeroCorrections": 0,
-      "silentCorrections": 0,
-      "smoothCorrections": 0,
-      "snapCorrections": 0,
-      "totalMagnitudePx": 0,
-      "maxMagnitudePx": 0,
-      "meanMagnitudePx": 0,
-      "correctionDebtDurationMs": 0,
-      "serverMotionDurationMs": 50,
-      "maxCorrectionWindowMs": 0,
-      "scenarioDurationMs": 950,
-      "peakAuthorityStepPx": 12,
-      "sourceCounts": {},
-      "causeCounts": {}
-    },
-    {
-      "rank": 75,
+      "rank": 104,
       "id": "topdown:parry-left",
       "label": "Top-down — Parry — incoming from left",
       "category": "parry",
@@ -2581,7 +3638,7 @@
       "causeCounts": {}
     },
     {
-      "rank": 76,
+      "rank": 105,
       "id": "topdown:pit-fall",
       "label": "Top-down — Pit fall / snap-back",
       "category": "placement",
@@ -2593,7 +3650,7 @@
         },
         "pitTile": {
           "col": 27,
-          "row": 18
+          "row": 19
         }
       },
       "assertions": {
@@ -2618,7 +3675,7 @@
       "causeCounts": {}
     },
     {
-      "rank": 77,
+      "rank": 106,
       "id": "belt:chest-open",
       "label": "Belt — Chest open",
       "category": "interaction",
@@ -2646,7 +3703,7 @@
       "causeCounts": {}
     },
     {
-      "rank": 78,
+      "rank": 107,
       "id": "belt:kung-fu-wrap-x2-drunken-fist-wraps",
       "label": "Belt — Kung-fu wrap — Drunken Fist Wraps",
       "category": "kung-fu-wrap",
@@ -2678,7 +3735,7 @@
       "causeCounts": {}
     },
     {
-      "rank": 79,
+      "rank": 108,
       "id": "belt:kung-fu-wrap-x2-iron-palm-wraps",
       "label": "Belt — Kung-fu wrap — Iron Palm Wraps",
       "category": "kung-fu-wrap",
@@ -2710,7 +3767,7 @@
       "causeCounts": {}
     },
     {
-      "rank": 80,
+      "rank": 109,
       "id": "belt:kung-fu-wrap-x2-muay-thai-wraps",
       "label": "Belt — Kung-fu wrap — Muay Thai Wraps",
       "category": "kung-fu-wrap",
@@ -2742,7 +3799,7 @@
       "causeCounts": {}
     },
     {
-      "rank": 81,
+      "rank": 110,
       "id": "belt:kung-fu-wrap-x2-wing-chun-wraps",
       "label": "Belt — Kung-fu wrap — Wing Chun Wraps",
       "category": "kung-fu-wrap",
@@ -2774,7 +3831,7 @@
       "causeCounts": {}
     },
     {
-      "rank": 82,
+      "rank": 111,
       "id": "belt:melee-attack-move-stop",
       "label": "Belt — Attack / move / stop — Cinderbrand Cleaver",
       "category": "baseline",
@@ -2805,7 +3862,7 @@
       "causeCounts": {}
     },
     {
-      "rank": 83,
+      "rank": 112,
       "id": "belt:parry-above",
       "label": "Belt — Parry — incoming from above",
       "category": "parry",
@@ -2831,25 +3888,32 @@
       "correctionDebtDurationMs": 0,
       "serverMotionDurationMs": 0,
       "maxCorrectionWindowMs": 0,
-      "scenarioDurationMs": 1850,
+      "scenarioDurationMs": 1800,
       "peakAuthorityStepPx": 0,
       "sourceCounts": {},
       "causeCounts": {}
     },
     {
-      "rank": 84,
-      "id": "belt:rapid-flip-attack",
-      "label": "Belt — ADADAD flip while attacking",
-      "category": "owner-repro",
+      "rank": 113,
+      "id": "belt:pit-fall",
+      "label": "Belt — Pit fall / snap-back",
+      "category": "placement",
       "metadata": {
-        "mode": "belt"
+        "mode": "belt",
+        "safePoint": {
+          "x": 1880,
+          "y": 2440
+        },
+        "pitTile": {
+          "col": 27,
+          "row": 30
+        }
       },
       "assertions": {
-        "completed": true,
-        "zeroCorrections": true,
-        "zeroSilent": true
+        "fell": true,
+        "classified": true
       },
-      "b42CounterEdges": 0,
+      "b42CounterEdges": 1,
       "correctionRequests": 0,
       "nonzeroCorrections": 0,
       "silentCorrections": 0,
@@ -2861,13 +3925,13 @@
       "correctionDebtDurationMs": 0,
       "serverMotionDurationMs": 0,
       "maxCorrectionWindowMs": 0,
-      "scenarioDurationMs": 3500,
-      "peakAuthorityStepPx": 32,
+      "scenarioDurationMs": 950,
+      "peakAuthorityStepPx": 12,
       "sourceCounts": {},
       "causeCounts": {}
     },
     {
-      "rank": 85,
+      "rank": 114,
       "id": "belt:spade-spin",
       "label": "Belt — Gravedigger's Spade spin",
       "category": "special-weapon",
@@ -2897,7 +3961,7 @@
       "causeCounts": {}
     },
     {
-      "rank": 86,
+      "rank": 115,
       "id": "belt:sparkmitt-x2-coyote-trickster-s-sparkmitt",
       "label": "Belt — Combo — Coyote Trickster's Sparkmitt",
       "category": "sparkmitt",
@@ -2929,7 +3993,7 @@
       "causeCounts": {}
     },
     {
-      "rank": 87,
+      "rank": 116,
       "id": "belt:walk-smoothness",
       "label": "Belt — Plain walk zero-band",
       "category": "owner-repro",
@@ -2959,7 +4023,7 @@
       "causeCounts": {}
     },
     {
-      "rank": 88,
+      "rank": 117,
       "id": "belt:walk-stop",
       "label": "Belt — Walk / stop",
       "category": "baseline",
@@ -2988,7 +4052,7 @@
       "causeCounts": {}
     },
     {
-      "rank": 89,
+      "rank": 118,
       "id": "topdown:chest-open",
       "label": "Top-down — Chest open",
       "category": "interaction",
@@ -3016,7 +4080,7 @@
       "causeCounts": {}
     },
     {
-      "rank": 90,
+      "rank": 119,
       "id": "topdown:kung-fu-wrap-x2-drunken-fist-wraps",
       "label": "Top-down — Kung-fu wrap — Drunken Fist Wraps",
       "category": "kung-fu-wrap",
@@ -3042,13 +4106,13 @@
       "correctionDebtDurationMs": 0,
       "serverMotionDurationMs": 0,
       "maxCorrectionWindowMs": 0,
-      "scenarioDurationMs": 1400,
+      "scenarioDurationMs": 1350,
       "peakAuthorityStepPx": 0,
       "sourceCounts": {},
       "causeCounts": {}
     },
     {
-      "rank": 91,
+      "rank": 120,
       "id": "topdown:kung-fu-wrap-x2-iron-palm-wraps",
       "label": "Top-down — Kung-fu wrap — Iron Palm Wraps",
       "category": "kung-fu-wrap",
@@ -3080,7 +4144,7 @@
       "causeCounts": {}
     },
     {
-      "rank": 92,
+      "rank": 121,
       "id": "topdown:kung-fu-wrap-x2-muay-thai-wraps",
       "label": "Top-down — Kung-fu wrap — Muay Thai Wraps",
       "category": "kung-fu-wrap",
@@ -3112,7 +4176,7 @@
       "causeCounts": {}
     },
     {
-      "rank": 93,
+      "rank": 122,
       "id": "topdown:kung-fu-wrap-x2-wing-chun-wraps",
       "label": "Top-down — Kung-fu wrap — Wing Chun Wraps",
       "category": "kung-fu-wrap",
@@ -3144,7 +4208,7 @@
       "causeCounts": {}
     },
     {
-      "rank": 94,
+      "rank": 123,
       "id": "topdown:melee-attack-move-stop",
       "label": "Top-down — Attack / move / stop — Cinderbrand Cleaver",
       "category": "baseline",
@@ -3175,7 +4239,7 @@
       "causeCounts": {}
     },
     {
-      "rank": 95,
+      "rank": 124,
       "id": "topdown:parry-above",
       "label": "Top-down — Parry — incoming from above",
       "category": "parry",
@@ -3207,7 +4271,7 @@
       "causeCounts": {}
     },
     {
-      "rank": 96,
+      "rank": 125,
       "id": "topdown:parry-right",
       "label": "Top-down — Parry — incoming from right",
       "category": "parry",
@@ -3239,37 +4303,7 @@
       "causeCounts": {}
     },
     {
-      "rank": 97,
-      "id": "topdown:rapid-flip-attack",
-      "label": "Top-down — ADADAD flip while attacking",
-      "category": "owner-repro",
-      "metadata": {
-        "mode": "topdown"
-      },
-      "assertions": {
-        "completed": true,
-        "zeroCorrections": true,
-        "zeroSilent": true
-      },
-      "b42CounterEdges": 0,
-      "correctionRequests": 0,
-      "nonzeroCorrections": 0,
-      "silentCorrections": 0,
-      "smoothCorrections": 0,
-      "snapCorrections": 0,
-      "totalMagnitudePx": 0,
-      "maxMagnitudePx": 0,
-      "meanMagnitudePx": 0,
-      "correctionDebtDurationMs": 0,
-      "serverMotionDurationMs": 0,
-      "maxCorrectionWindowMs": 0,
-      "scenarioDurationMs": 3500,
-      "peakAuthorityStepPx": 32,
-      "sourceCounts": {},
-      "causeCounts": {}
-    },
-    {
-      "rank": 98,
+      "rank": 126,
       "id": "topdown:spade-spin",
       "label": "Top-down — Gravedigger's Spade spin",
       "category": "special-weapon",
@@ -3299,7 +4333,7 @@
       "causeCounts": {}
     },
     {
-      "rank": 99,
+      "rank": 127,
       "id": "topdown:sparkmitt-x2-coyote-trickster-s-sparkmitt",
       "label": "Top-down — Combo — Coyote Trickster's Sparkmitt",
       "category": "sparkmitt",
@@ -3331,7 +4365,7 @@
       "causeCounts": {}
     },
     {
-      "rank": 100,
+      "rank": 128,
       "id": "topdown:walk-smoothness",
       "label": "Top-down — Plain walk zero-band",
       "category": "owner-repro",
@@ -3361,7 +4395,7 @@
       "causeCounts": {}
     },
     {
-      "rank": 101,
+      "rank": 129,
       "id": "topdown:walk-stop",
       "label": "Top-down — Walk / stop",
       "category": "baseline",
