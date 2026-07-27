@@ -1142,6 +1142,28 @@
     "barrelMode": "parallel"
   },
   {
+    "id": "x2-ember-plasma-carbine",
+    "name": "Ember Plasma Carbine",
+    "sprite": "x2-ember-plasma-carbine",
+    "derived": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 26.8
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 26.8
+      }
+    ],
+    "override": null,
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
+  {
     "id": "x2-emberfan-pumpgun",
     "name": "Emberfan Pumpgun",
     "sprite": "x2-emberfan-pumpgun",

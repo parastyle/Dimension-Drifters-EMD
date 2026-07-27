@@ -1,7 +1,7 @@
 {
   "generated": "2026-06-17",
   "source": "design-300-weapons workflow (15 agents)",
-  "count": 372,
+  "count": 373,
   "byType": {
     "melee": 135,
     "ranged": 138,
@@ -21401,6 +21401,65 @@
         "displayLength": 196,
         "swingArc": 1.8,
         "gripFrac": 0.13
+      }
+    },
+    {
+      "id": "x2-ember-plasma-carbine",
+      "name": "Ember Plasma Carbine",
+      "type": "ranged",
+      "family": "plasma-carbine",
+      "theme": "near-black issue-grade automatic plasma carbine with a receiver-seated clear bottle, machined diagonal heat vents, an armoured top shroud, and form-following ember-gold camouflage",
+      "element": "fire",
+      "finish": "pristine",
+      "grip": "2H",
+      "fireMode": "auto",
+      "gripPoints": {
+        "primary": {
+          "x": 0.27,
+          "y": 0.7
+        },
+        "secondary": {
+          "x": 0.64,
+          "y": 0.68,
+          "role": "horizontal-foregrip"
+        }
+      },
+      "size": "M",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "INT"
+      ],
+      "palettePrimary": "#15191E",
+      "paletteAccent": "#D9A33C",
+      "artPrompt": "Weapon-only in-world game sprite on a perfectly flat fully opaque #00ff00 chroma-key field: exactly ONE short aggressive automatic plasma carbine. Build one compact connected gun from a rigid shoulder stock on the LEFT through a conventional pistol grip, visible trigger inside a sturdy trigger guard, receiver, straight barrel axis, low boxy bare-metal optic, and round emitter muzzle on the RIGHT. Lock one thick-necked CLEAR GLASS BOTTLE horizontally into a black metal cradle in the centre of the receiver so the bottle is visibly seated hardware, not a loose object; depict the clear glass as crisp pale-smoke flat planes with a heavy black outline and a contained ember-gold plasma fill. Arch one thick evenly finished armoured shroud over the bottle and receiver top. Slash exactly four deep diagonal heat-vent slots through the heavy barrel housing ahead of the receiver, evenly spaced and precisely machined. Mount one small boxy bare-metal laser/light combination unit rigidly beneath the forward barrel with one visible dark lens; it is switched off silhouette detail only and emits NO beam, NO glow, NO bloom, NO light cone, NO rays, and NO spill. Heavy energy-issue quality: matched finish, optically clear bottle glass, a perfectly seated bottle cradle, an evenly finished shroud, precisely machined vents, aligned sights, hairline-even panels, tight seams, and every fastener torqued true; expensive, immaculate, and professionally maintained, with only a faint honest carbon trace inside the vents and emitter rim. No junk, tape, repairs, salvage, mismatched plates, scratches, dents, rust, grime, poverty signals, improvised parts, or ground-off markings. Paint restrained angular EMBER-GOLD CAMOUFLAGE patches only onto the shoulder stock, pistol-grip side plates, receiver furniture panels, fore-end furniture, and armoured shroud, with every patch bending along and following each separate gun form; the camouflage never floats, never blankets the whole weapon, and never covers the bottle. Leave the barrel housing, heat vents, optic, bottle cradle, emitter rim, and laser/light unit bare near-black metal. Use the same ember-gold hue for the contained plasma inside the clear bottle and deep inside the emitter so the entire weapon has only ONE warm accent colour; keep the glow fully contained with no cast light or aura. DARK house rendering: the overall base reads near-black charcoal, broad sides and the underside stay deep spot-black, and only narrow cool gunmetal highlights catch TOP-FACING EDGES; never evenly lit and never mid-grey overall. Use a bold heavy black outline around the complete silhouette AND equally heavy crisp internal black ink dividing every shroud plate, bottle rim, glass plane, cradle clamp, vent slot, receiver panel, camo boundary, stock plane, grip plane, trigger guard, sight, optic edge, emitter ring, attachment housing, control, and seam. Slightly exaggerate the chunky armoured shroud, thick receiver bottle, slashed vent housing, compact stock, and heavy forward end while preserving a believable stock-to-grip-to-trigger-to-receiver-to-barrel relationship that a person can shoulder, hold, aim, and fire. Use only about 4-6 flat opaque cel colours plus black ink, hard flat colour planes only. Strict flat orthographic full side-profile, perfectly horizontal, the complete connected weapon fully visible with generous padding, stock and grip LEFT, emitter muzzle RIGHT. No character, hands, second weapon, detached bottle, ammunition, projectile, firing effect, muzzle flash, smoke, background scene, floor, cast shadow, reflection, text, letters, numbers, logo, serial, maker mark, symbol, watermark, sling, strap, rope, chain, tassel, cable, loose part, or anything dangling. No gradients, soft airbrushing, glossy studio lighting, photorealism, realistic product photography, catalogue rendering, 3D rendering, clean vector styling, technical-diagram treatment, wand, staff, sculpture, or abstract prop.",
+      "cardartAction": "driven through a disciplined automatic burst as compact ember-gold plasma bolts punch right and controlled heat rises through the four machined vents",
+      "behavior": {
+        "kind": "gun",
+        "damage": 7,
+        "projectileSpeed": 850,
+        "range": 570,
+        "fireRate": 0.16,
+        "spread": 0.025,
+        "pierce": 1,
+        "magazine": 18,
+        "reloadSeconds": 1.8,
+        "bulletKind": "laser",
+        "projectileArt": "generated",
+        "projectileVisualScale": 1.4,
+        "projectileColor": 14263100,
+        "muzzle": "rapid",
+        "muzzleColor": 14263100,
+        "recoil": 0.00075
+      },
+      "stats": {
+        "damage": 7,
+        "range": 220,
+        "halfArc": 0.48,
+        "cooldown": 0.32,
+        "displayLength": 142,
+        "swingArc": 1.8,
+        "gripFrac": 0.17
       }
     }
   ]

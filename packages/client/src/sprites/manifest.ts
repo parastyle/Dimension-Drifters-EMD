@@ -11142,6 +11142,32 @@ export const SPRITES = {
       }
     ]
   },
+  "x2-ember-plasma-carbine": {
+    "id": "x2-ember-plasma-carbine",
+    "kind": "weapon",
+    "canvas": {
+      "w": 273,
+      "h": 109
+    },
+    "body": {
+      "cx": 132.2,
+      "cy": 51.01,
+      "w": 256,
+      "h": 81
+    },
+    "parts": [
+      {
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 81,
+        "cx": 132.2,
+        "cy": 51.01,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
+  },
   "x2-emberfan-pumpgun": {
     "id": "x2-emberfan-pumpgun",
     "kind": "weapon",

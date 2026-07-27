@@ -1155,6 +1155,28 @@ export const WEAPON_ART_MUZZLES = {
     "salvoMode": "parallel",
     "barrelMode": "parallel"
   },
+  "x2-ember-plasma-carbine": {
+    "sprite": "x2-ember-plasma-carbine",
+    "parts": [
+      {
+        "width": 256,
+        "height": 81
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 26.8,
+        "derived": {
+          "x": 255,
+          "y": 26.8
+        }
+      }
+    ],
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
   "x2-emberfan-pumpgun": {
     "sprite": "x2-emberfan-pumpgun",
     "parts": [
