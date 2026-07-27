@@ -16418,6 +16418,32 @@ export const SPRITES = {
       }
     ]
   },
+  "x2-smartlink-burstmaster": {
+    "id": "x2-smartlink-burstmaster",
+    "kind": "weapon",
+    "canvas": {
+      "w": 275,
+      "h": 122
+    },
+    "body": {
+      "cx": 125.88,
+      "cy": 56.5,
+      "w": 256,
+      "h": 90
+    },
+    "parts": [
+      {
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 90,
+        "cx": 125.88,
+        "cy": 56.5,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
+  },
   "x2-smoldering-eye-of-perdition": {
     "id": "x2-smoldering-eye-of-perdition",
     "kind": "weapon",

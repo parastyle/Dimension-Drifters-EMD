@@ -1,7 +1,7 @@
 {
   "generated": "2026-06-17",
   "source": "design-300-weapons workflow (15 agents)",
-  "count": 364,
+  "count": 365,
   "byType": {
     "melee": 135,
     "ranged": 129,
@@ -20981,6 +20981,68 @@
         "displayLength": 152,
         "swingArc": 1.2,
         "gripFrac": 0.15
+      }
+    },
+    {
+      "id": "x2-smartlink-burstmaster",
+      "name": "Smartlink Burstmaster",
+      "description": "A command-grade ballistic rifle whose bonded sensor housing and flawless optic coordinate disciplined three-round bursts without compromising a conventional ammunition feed.",
+      "type": "ranged",
+      "family": "smart-burst-rifle",
+      "theme": "near-black command smart burst rifle with a seamless receiver-top sensor housing and one unlit amber screen accent",
+      "element": "physical",
+      "finish": "pristine",
+      "grip": "2H",
+      "gripPoints": {
+        "primary": {
+          "x": 0.3,
+          "y": 0.7
+        },
+        "secondary": {
+          "x": 0.62,
+          "y": 0.7,
+          "role": "under-barrel"
+        }
+      },
+      "size": "L",
+      "rangeBand": "long",
+      "scaling": [
+        "DEX",
+        "INT"
+      ],
+      "palettePrimary": "#171A1F",
+      "paletteAccent": "#D59A3A",
+      "artPrompt": "Weapon-only in-world game sprite on a perfectly flat fully opaque #00ff00 chroma field: exactly ONE command-grade smart burst rifle, still clearly ballistic and mechanically buildable, with a rectilinear near-black body, a broad low sensor housing spanning the receiver top and bonded seamlessly into it, a boxy computerised optic with a flawless blank flat side-screen face, clean hard-edged flush side panels, and one thick straight box magazine beneath the chamber. Keep a credible physical-ammunition mechanism: rigid shoulder stock and pistol grip on the LEFT, magazine feeding directly into the chamber above it, and one stout straight barrel ending at the RIGHT. Mount one small boxy laser/light combination unit tightly beneath the forward barrel with one visible dark lens; it is silhouette detail only and emits NO beam, NO glow, NO bloom, and NO light cone. Immaculate command-issue quality: matched plain finish with no camouflage, precise machined tolerances, flawless screen face, every flush panel fitted square, every seam tight, sensor housing bonded cleanly to the receiver, and all parts torqued true; expensive, well-maintained hardware with at most a trace of honest carbon at the muzzle. No tape, repairs, salvage, mismatched plates, scratches, dents, rust, dirt, poverty signals, or ground-off markings. DARK house treatment: the overall base reads near-black charcoal, with narrow cool gunmetal highlights catching TOP EDGES ONLY and deep spot-black undersides; never evenly lit and never mid-grey overall. The single warm accent is confined to the optic's unlit amber-tinted blank screen face; it has no symbols, light, glow, bloom, or emission. Use bold heavy black ink around the entire silhouette AND equally heavy black internal ink dividing every panel, plate, sensor housing, optic edge, magazine plane, control, and seam. Slightly exaggerate the chunky broad sensor housing, boxy optic, slab receiver, straight magazine, and heavy forward end while preserving the believable grip-to-feed-to-barrel relationship. Use about 4-6 flat cel colours plus black ink, hard flat planes only; no gradients, airbrushing, soft shading, photorealism, realistic product photography, studio lighting, catalogue rendering, 3D rendering, or diagram treatment. ONE complete connected weapon, strict flat orthographic full side-profile, fully visible with generous padding, stock and grip LEFT, muzzle RIGHT. No second weapon, loose ammunition, character, hands, background scene, floor, cast shadow, reflection, muzzle flash, smoke, emitted VFX, text, logo, serial, maker mark, sling, strap, rope, chain, tassel, cable, or dangling part.",
+      "cardartAction": "tracking through a perfectly timed three-round ballistic burst, three compact amber-white muzzle pops stepping right while the flawless screen face stays dark and blank",
+      "behavior": {
+        "kind": "gun",
+        "damage": 6,
+        "projectileSpeed": 1450,
+        "range": 850,
+        "fireRate": 0.42,
+        "pellets": 1,
+        "spread": 0.012,
+        "pierce": 1,
+        "magazine": 10,
+        "reloadSeconds": 1.7,
+        "bulletKind": "tracer",
+        "projectileArt": "bullet",
+        "muzzle": "rapid",
+        "muzzleColor": 13998650,
+        "recoil": 0.0008,
+        "burst": {
+          "count": 3,
+          "intervalSeconds": 0.065
+        }
+      },
+      "stats": {
+        "damage": 6,
+        "range": 300,
+        "halfArc": 0.45,
+        "cooldown": 0.42,
+        "displayLength": 176,
+        "swingArc": 1.8,
+        "gripFrac": 0.14
       }
     }
   ]
