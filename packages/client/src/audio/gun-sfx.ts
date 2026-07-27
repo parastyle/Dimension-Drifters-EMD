@@ -167,6 +167,7 @@ export function gunFireFamilyForWeapon(weapon: WeaponDef): GunFireFamily | undef
     case "light machine gun":
     case "machine-pistol":
     case "auto-rifle":
+    case "bullpup-rifle":
     case "rimfire-rifle":
       return "rotary-auto";
     case "nailgun":

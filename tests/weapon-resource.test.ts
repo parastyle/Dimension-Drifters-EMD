@@ -19,8 +19,8 @@ import {
 import { describe, expect, it } from "vitest";
 
 describe("Drive formula v1", () => {
-  it("covers the frozen 379-weapon post-B63/B66 catalog in deterministic id order", () => {
-    expect(WEAPON_RESOURCE_IDS).toHaveLength(379);
+  it("covers the frozen 380-weapon post-B63/B66 catalog in deterministic id order", () => {
+    expect(WEAPON_RESOURCE_IDS).toHaveLength(380);
     expect(WEAPON_RESOURCE_IDS).toEqual([...WEAPON_RESOURCE_IDS].sort());
     expect(Object.keys(WEAPON_RESOURCE_PROFILES)).toEqual(WEAPON_RESOURCE_IDS);
 
@@ -36,8 +36,8 @@ describe("Drive formula v1", () => {
         expect(profile.neutralCost % DRIVE_COST_QUANTUM).toBe(0);
       }
     }
-    // B69 deliberately adds three melee, sixteen gun, and one cast resource profiles.
-    expect(census).toEqual({ melee: 181, thrown: 27, gun: 139, cast: 5, beam: 23, zone: 4 });
+    // The merged additions plus Helix add three melee, seventeen gun, and one cast profiles.
+    expect(census).toEqual({ melee: 181, thrown: 27, gun: 140, cast: 5, beam: 23, zone: 4 });
   });
 
   it("pins every coefficient, frozen median, and the bounded utility overrides", () => {

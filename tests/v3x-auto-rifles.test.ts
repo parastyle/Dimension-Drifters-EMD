@@ -33,8 +33,8 @@ describe("V3X foregrip auto rifles", () => {
 
   it("publishes art-backed Testing Grounds links for every rifle in the regenerated portal", () => {
     const portal = readFileSync("tools/portal/index.html", "utf8");
-    // B69's deliberate catalog merge advances the active Testing Grounds tripwire by twenty.
-    expect(portal).toContain('"count":359');
+    // The deliberate catalog merge plus Helix advances the Testing Grounds tripwire by twenty-one.
+    expect(portal).toContain('"count":360');
     for (const id of RIFLE_IDS) {
       expect(portal, id).toContain(`"path":"/?dev=weapon:${id}"`);
       expect(portal, id).toContain(

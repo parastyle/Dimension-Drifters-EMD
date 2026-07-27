@@ -22,8 +22,8 @@ describe("B62 player-facing weapon behavior", () => {
       .map((weapon) => weapon.id);
 
     expect(missing).toEqual([]);
-    // Keep the B69 live-catalog total pinned after all twenty deliberate additions resolve copy.
-    expect(ACTIVE_WEAPON_CATALOG_IDS).toHaveLength(359);
+    // Keep the live-catalog total pinned after the merged additions plus Helix resolve copy.
+    expect(ACTIVE_WEAPON_CATALOG_IDS).toHaveLength(360);
   });
 
   it("always prefers an authored description over derived combat copy", () => {

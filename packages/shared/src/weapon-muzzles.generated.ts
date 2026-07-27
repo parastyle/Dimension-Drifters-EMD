@@ -1874,6 +1874,28 @@ export const WEAPON_ART_MUZZLES = {
     "salvoMode": "parallel",
     "barrelMode": "parallel"
   },
+  "x2-helix-bullpup-6-8": {
+    "sprite": "x2-helix-bullpup-6-8",
+    "parts": [
+      {
+        "width": 256,
+        "height": 95
+      }
+    ],
+    "points": [
+      {
+        "part": 0,
+        "x": 255,
+        "y": 32.1,
+        "derived": {
+          "x": 255,
+          "y": 32.1
+        }
+      }
+    ],
+    "salvoMode": "parallel",
+    "barrelMode": "parallel"
+  },
   "x2-hellbore-gatling": {
     "sprite": "x2-hellbore-gatling",
     "parts": [
