@@ -18,27 +18,40 @@ const STORAGE_KEY = "dd:diagnostic-hud:visible";
 const FRAME_RING_CAPACITY = 2_048;
 const SAMPLE_RING_CAPACITY = 256;
 const EVENT_RING_CAPACITY = 64;
+const ENTITY_LOAD_AMBER_FRACTION = 0.6;
 
+/**
+ * Player-perception bands use strict `>` comparisons. A 50 ms frame spans three 60 Hz frame
+ * budgets and is plainly visible; 4 px of render/commit disagreement is a perceptible twitch at
+ * the owner's resolution; and 50 ms of physical-input latency is where a responsive game starts
+ * feeling soft. The 250 ms stall threshold remains separate because it is the forceResync trigger.
+ * SELF correction severity remains defined by the canonical L10 bands rather than this table.
+ */
 export const DIAGNOSTIC_THRESHOLDS = Object.freeze({
-  frameAmberMs: 33,
-  frameRedMs: 250,
-  divergenceAmberPx: 2,
-  divergenceRedPx: 8,
-  inputAmberMs: 33,
-  inputRedMs: 100,
-  tickDriftAmberMs: 15,
-  tickDriftRedMs: 50,
+  frameAmberMs: 20,
+  frameRedMs: 50,
+  stallRedMs: 250,
+  divergenceAmberPx: 1,
+  divergenceRedPx: 4,
+  inputAmberMs: 20,
+  inputRedMs: 50,
+  tickDriftAmberMs: 8,
+  tickDriftRedMs: 20,
   rttAmberMs: 150,
   rttRedMs: 300,
-  pendingAmber: 8,
-  pendingRed: 32,
-  pendingGrowthAmber: 8,
-  pendingGrowthRed: 24,
-  enemyAmber: Math.floor(MAX_ENEMIES * 0.8),
+  pendingAmber: 4,
+  pendingRed: 16,
+  pendingGrowthAmber: 4,
+  pendingGrowthRed: 16,
+  enemyAmber: Math.floor(MAX_ENEMIES * ENTITY_LOAD_AMBER_FRACTION) + 1,
   enemyRed: MAX_ENEMIES,
-  projectileAmber: Math.floor((FRIENDLY_PROJECTILE_ENTITY_CAP + BOSS_PROJECTILE_BUDGET) * 0.8),
+  projectileAmber:
+    Math.floor(
+      (FRIENDLY_PROJECTILE_ENTITY_CAP + BOSS_PROJECTILE_BUDGET) *
+        ENTITY_LOAD_AMBER_FRACTION,
+    ) + 1,
   projectileRed: FRIENDLY_PROJECTILE_ENTITY_CAP + BOSS_PROJECTILE_BUDGET,
-  vfxSurfaceAmber: 9,
+  vfxSurfaceAmber: Math.floor(12 * ENTITY_LOAD_AMBER_FRACTION) + 1,
   vfxSurfaceRed: 12,
   particleAmber: 192,
   particleRed: 384,
@@ -354,7 +367,7 @@ export class DiagnosticHudTelemetry {
     if (!Number.isFinite(duration)) return;
     this.sessionFramePeakMs = finiteMax(this.sessionFramePeakMs, duration);
     this.frameWindow.push(nowMs, duration);
-    if (duration > DIAGNOSTIC_THRESHOLDS.frameRedMs) {
+    if (duration > DIAGNOSTIC_THRESHOLDS.stallRedMs) {
       this.stallCount++;
       this.stallWindow.push(nowMs, duration);
     }

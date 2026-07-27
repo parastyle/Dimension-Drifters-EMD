@@ -3,6 +3,7 @@ import { MovementCorrectionBand } from "@dd/shared";
 import { describe, expect, it } from "vitest";
 import {
   DIAGNOSTIC_HUD_METRIC_COUNT,
+  DIAGNOSTIC_THRESHOLDS,
   DiagnosticHudTelemetry,
   writeVfxDiagnosticStats,
 } from "./diagnostic-hud.js";
@@ -32,6 +33,30 @@ describe("DiagnosticHudTelemetry", () => {
     ]) {
       expect(arenaSource, `missing diagnostic intake: ${intake}`).toContain(intake);
     }
+  });
+
+  it("keeps player-visible thresholds centralized at the owner-tuned values", () => {
+    expect(DIAGNOSTIC_THRESHOLDS).toMatchObject({
+      frameAmberMs: 20,
+      frameRedMs: 50,
+      stallRedMs: 250,
+      divergenceAmberPx: 1,
+      divergenceRedPx: 4,
+      inputAmberMs: 20,
+      inputRedMs: 50,
+      tickDriftAmberMs: 8,
+      tickDriftRedMs: 20,
+      pendingAmber: 4,
+      pendingRed: 16,
+      pendingGrowthAmber: 4,
+      pendingGrowthRed: 16,
+      enemyAmber: 49,
+      enemyRed: 80,
+      projectileAmber: 188,
+      projectileRed: 312,
+      vfxSurfaceAmber: 8,
+      vfxSurfaceRed: 12,
+    });
   });
 
   it("counts only visible VFX surfaces and their live particles", () => {
@@ -88,7 +113,7 @@ describe("DiagnosticHudTelemetry", () => {
     telemetry.recordServerPatch(2, undefined, 150);
     telemetry.recordCommand(2, 170);
     telemetry.recordServerPatch(3, 2, 200);
-    telemetry.recordRenderCommitDivergence(1.25, 200);
+    telemetry.recordRenderCommitDivergence(DIAGNOSTIC_THRESHOLDS.divergenceAmberPx, 200);
     telemetry.recordContext(
       {
         pendingInputs: 1,
@@ -215,12 +240,17 @@ describe("DiagnosticHudTelemetry", () => {
 
   it("treats exact red boundaries as amber because red means strictly above the threshold", () => {
     const telemetry = new DiagnosticHudTelemetry(0);
-    telemetry.recordFrame(250, 100);
-    telemetry.recordRenderCommitDivergence(8, 100);
+    telemetry.recordFrame(DIAGNOSTIC_THRESHOLDS.frameRedMs, 100);
+    telemetry.recordRenderCommitDivergence(DIAGNOSTIC_THRESHOLDS.divergenceRedPx, 100);
 
     const states = metricStates(telemetry, 100);
     expect(states.frame).toBe("AMBER");
     expect(states.stalls).toBe("GREEN");
     expect(states.divergence).toBe("AMBER");
+
+    telemetry.recordFrame(DIAGNOSTIC_THRESHOLDS.stallRedMs, 101);
+    const stallBoundaryStates = metricStates(telemetry, 101);
+    expect(stallBoundaryStates.frame).toBe("RED");
+    expect(stallBoundaryStates.stalls).toBe("GREEN");
   });
 });

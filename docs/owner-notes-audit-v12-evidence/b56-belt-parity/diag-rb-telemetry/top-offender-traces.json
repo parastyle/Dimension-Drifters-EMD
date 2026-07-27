@@ -12,7 +12,7 @@
       "maxMagnitudePx": 0,
       "meanMagnitudePx": 0,
       "correctionDebtDurationMs": 0,
-      "serverMotionDurationMs": 4500,
+      "serverMotionDurationMs": 4550,
       "maxCorrectionWindowMs": 0,
       "scenarioDurationMs": 8650,
       "peakAuthorityStepPx": 3570,
@@ -106,7 +106,7 @@
       },
       {
         "index": 48,
-        "tick": 61,
+        "tick": 60,
         "elapsedMs": 2400,
         "action": "elevator-cycle",
         "input": {
@@ -119,7 +119,7 @@
           "fireHeld": false
         },
         "authority": {
-          "tick": 61,
+          "tick": 60,
           "x": 3990,
           "y": 2530,
           "mvx": 0,
@@ -276,7 +276,7 @@
       },
       {
         "index": 56,
-        "tick": 71,
+        "tick": 70,
         "elapsedMs": 2800,
         "action": "elevator-cycle",
         "input": {
@@ -289,7 +289,7 @@
           "fireHeld": false
         },
         "authority": {
-          "tick": 71,
+          "tick": 70,
           "x": 3990,
           "y": 2530,
           "mvx": 0,
@@ -1226,7 +1226,7 @@
       },
       {
         "index": 38,
-        "tick": 82,
+        "tick": 81,
         "elapsedMs": 1900,
         "action": "rapid-flip",
         "input": {
@@ -1239,8 +1239,8 @@
           "fireHeld": false
         },
         "authority": {
-          "tick": 82,
-          "x": 2239.634057,
+          "tick": 81,
+          "x": 2191.634057,
           "y": 2440,
           "mvx": 320,
           "mvy": 0,
@@ -1271,7 +1271,7 @@
           "ultPhase": 0
         },
         "delta": {
-          "positionPx": 32,
+          "positionPx": 16,
           "movementEpoch": 0,
           "correctionSeq": 0,
           "teleportSeq": 0
@@ -1294,15 +1294,15 @@
           "errorAfterDecayPx": 0,
           "remainingAfterDecayMs": 0,
           "renderedBefore": {
-            "x": 2223.634057,
+            "x": 2191.634057,
             "y": 2440
           },
           "renderedAfterReconcile": {
-            "x": 2239.634057,
+            "x": 2191.634057,
             "y": 2440
           },
           "renderedAfterDecay": {
-            "x": 2239.634057,
+            "x": 2191.634057,
             "y": 2440
           }
         }
@@ -1323,11 +1323,11 @@
         },
         "authority": {
           "tick": 83,
-          "x": 2223.634057,
+          "x": 2162.884057,
           "y": 2440,
           "mvx": -320,
           "mvy": 0,
-          "vx": 65,
+          "vx": 41.44583,
           "vy": 0,
           "height": 0,
           "vh": 0,
@@ -1354,7 +1354,7 @@
           "ultPhase": 0
         },
         "delta": {
-          "positionPx": 16,
+          "positionPx": 28.75,
           "movementEpoch": 1,
           "correctionSeq": 0,
           "teleportSeq": 0
@@ -1379,15 +1379,15 @@
           "errorAfterDecayPx": 0,
           "remainingAfterDecayMs": 0,
           "renderedBefore": {
-            "x": 2223.634057,
+            "x": 2175.634057,
             "y": 2440
           },
           "renderedAfterReconcile": {
-            "x": 2223.634057,
+            "x": 2162.884057,
             "y": 2440
           },
           "renderedAfterDecay": {
-            "x": 2223.634057,
+            "x": 2162.884057,
             "y": 2440
           }
         }
@@ -1408,11 +1408,11 @@
         },
         "authority": {
           "tick": 84,
-          "x": 2242.884057,
+          "x": 2180.956349,
           "y": 2440,
           "mvx": 320,
           "mvy": 0,
-          "vx": 41.44583,
+          "vx": 26.427028,
           "vy": 0,
           "height": 0,
           "vh": 0,
@@ -1439,7 +1439,7 @@
           "ultPhase": 0
         },
         "delta": {
-          "positionPx": 19.25,
+          "positionPx": 18.072291,
           "movementEpoch": 0,
           "correctionSeq": 0,
           "teleportSeq": 0
@@ -1463,15 +1463,15 @@
           "errorAfterDecayPx": 0,
           "remainingAfterDecayMs": 0,
           "renderedBefore": {
-            "x": 2242.884057,
+            "x": 2180.956349,
             "y": 2440
           },
           "renderedAfterReconcile": {
-            "x": 2242.884057,
+            "x": 2180.956349,
             "y": 2440
           },
           "renderedAfterDecay": {
-            "x": 2242.884057,
+            "x": 2180.956349,
             "y": 2440
           }
         }
@@ -1492,7 +1492,7 @@
         },
         "authority": {
           "tick": 98,
-          "x": 2280,
+          "x": 2120,
           "y": 2440,
           "mvx": -320,
           "mvy": 0,
@@ -1523,7 +1523,7 @@
           "ultPhase": 0
         },
         "delta": {
-          "positionPx": 16,
+          "positionPx": 32,
           "movementEpoch": 0,
           "correctionSeq": 0,
           "teleportSeq": 0
@@ -1546,15 +1546,15 @@
           "errorAfterDecayPx": 0,
           "remainingAfterDecayMs": 0,
           "renderedBefore": {
-            "x": 2280,
+            "x": 2136,
             "y": 2440
           },
           "renderedAfterReconcile": {
-            "x": 2280,
+            "x": 2120,
             "y": 2440
           },
           "renderedAfterDecay": {
-            "x": 2280,
+            "x": 2120,
             "y": 2440
           }
         }
@@ -1575,7 +1575,7 @@
         },
         "authority": {
           "tick": 99,
-          "x": 2296,
+          "x": 2136,
           "y": 2440,
           "mvx": 320,
           "mvy": 0,
@@ -1631,15 +1631,15 @@
           "errorAfterDecayPx": 0,
           "remainingAfterDecayMs": 0,
           "renderedBefore": {
-            "x": 2296,
+            "x": 2136,
             "y": 2440
           },
           "renderedAfterReconcile": {
-            "x": 2296,
+            "x": 2136,
             "y": 2440
           },
           "renderedAfterDecay": {
-            "x": 2296,
+            "x": 2136,
             "y": 2440
           }
         }
@@ -1660,7 +1660,7 @@
         },
         "authority": {
           "tick": 100,
-          "x": 2276.75,
+          "x": 2116.75,
           "y": 2440,
           "mvx": -320,
           "mvy": 0,
@@ -1715,15 +1715,15 @@
           "errorAfterDecayPx": 0,
           "remainingAfterDecayMs": 0,
           "renderedBefore": {
-            "x": 2276.75,
+            "x": 2116.75,
             "y": 2440
           },
           "renderedAfterReconcile": {
-            "x": 2276.75,
+            "x": 2116.75,
             "y": 2440
           },
           "renderedAfterDecay": {
-            "x": 2276.75,
+            "x": 2116.75,
             "y": 2440
           }
         }
@@ -1768,11 +1768,11 @@
         },
         "authority": {
           "tick": 35,
-          "x": 2228.75,
+          "x": 2216,
           "y": 1500,
           "mvx": 320,
           "mvy": 0,
-          "vx": -41.44583,
+          "vx": -65,
           "vy": 0,
           "height": 0,
           "vh": 0,
@@ -1799,7 +1799,7 @@
           "ultPhase": 0
         },
         "delta": {
-          "positionPx": 28.75,
+          "positionPx": 16,
           "movementEpoch": 1,
           "correctionSeq": 0,
           "teleportSeq": 0
@@ -1828,18 +1828,18 @@
             "y": 1500
           },
           "renderedAfterReconcile": {
-            "x": 2228.75,
+            "x": 2216,
             "y": 1500
           },
           "renderedAfterDecay": {
-            "x": 2228.75,
+            "x": 2216,
             "y": 1500
           }
         }
       },
       {
         "index": 1,
-        "tick": 36,
+        "tick": 37,
         "elapsedMs": 50,
         "action": "rapid-flip",
         "input": {
@@ -1852,8 +1852,8 @@
           "fireHeld": false
         },
         "authority": {
-          "tick": 36,
-          "x": 2210.677709,
+          "tick": 37,
+          "x": 2178.677709,
           "y": 1500,
           "mvx": -320,
           "mvy": 0,
@@ -1884,7 +1884,7 @@
           "ultPhase": 0
         },
         "delta": {
-          "positionPx": 18.072291,
+          "positionPx": 37.322291,
           "movementEpoch": 0,
           "correctionSeq": 0,
           "teleportSeq": 0
@@ -1908,22 +1908,22 @@
           "errorAfterDecayPx": 0,
           "remainingAfterDecayMs": 0,
           "renderedBefore": {
-            "x": 2210.677709,
+            "x": 2196.75,
             "y": 1500
           },
           "renderedAfterReconcile": {
-            "x": 2210.677709,
+            "x": 2178.677709,
             "y": 1500
           },
           "renderedAfterDecay": {
-            "x": 2210.677709,
+            "x": 2178.677709,
             "y": 1500
           }
         }
       },
       {
         "index": 12,
-        "tick": 49,
+        "tick": 50,
         "elapsedMs": 600,
         "action": "rapid-flip",
         "input": {
@@ -1936,8 +1936,8 @@
           "fireHeld": false
         },
         "authority": {
-          "tick": 49,
-          "x": 2191.634057,
+          "tick": 50,
+          "x": 2159.634057,
           "y": 1500,
           "mvx": 320,
           "mvy": 0,
@@ -1991,22 +1991,22 @@
           "errorAfterDecayPx": 0,
           "remainingAfterDecayMs": 0,
           "renderedBefore": {
-            "x": 2191.634057,
+            "x": 2159.634057,
             "y": 1500
           },
           "renderedAfterReconcile": {
-            "x": 2191.634057,
+            "x": 2159.634057,
             "y": 1500
           },
           "renderedAfterDecay": {
-            "x": 2191.634057,
+            "x": 2159.634057,
             "y": 1500
           }
         }
       },
       {
         "index": 13,
-        "tick": 51,
+        "tick": 52,
         "elapsedMs": 650,
         "action": "flip-and-fire",
         "input": {
@@ -2019,8 +2019,8 @@
           "fireHeld": true
         },
         "authority": {
-          "tick": 51,
-          "x": 2162.884057,
+          "tick": 52,
+          "x": 2130.884057,
           "y": 1500,
           "mvx": -320,
           "mvy": 0,
@@ -2076,22 +2076,22 @@
           "errorAfterDecayPx": 0,
           "remainingAfterDecayMs": 0,
           "renderedBefore": {
-            "x": 2175.634057,
+            "x": 2143.634057,
             "y": 1500
           },
           "renderedAfterReconcile": {
-            "x": 2162.884057,
+            "x": 2130.884057,
             "y": 1500
           },
           "renderedAfterDecay": {
-            "x": 2162.884057,
+            "x": 2130.884057,
             "y": 1500
           }
         }
       },
       {
         "index": 14,
-        "tick": 52,
+        "tick": 53,
         "elapsedMs": 700,
         "action": "rapid-flip",
         "input": {
@@ -2104,8 +2104,8 @@
           "fireHeld": false
         },
         "authority": {
-          "tick": 52,
-          "x": 2180.956349,
+          "tick": 53,
+          "x": 2148.956349,
           "y": 1500,
           "mvx": 320,
           "mvy": 0,
@@ -2160,15 +2160,15 @@
           "errorAfterDecayPx": 0,
           "remainingAfterDecayMs": 0,
           "renderedBefore": {
-            "x": 2180.956349,
+            "x": 2148.956349,
             "y": 1500
           },
           "renderedAfterReconcile": {
-            "x": 2180.956349,
+            "x": 2148.956349,
             "y": 1500
           },
           "renderedAfterDecay": {
-            "x": 2180.956349,
+            "x": 2148.956349,
             "y": 1500
           }
         }
@@ -2189,7 +2189,7 @@
         },
         "authority": {
           "tick": 66,
-          "x": 2152,
+          "x": 2168,
           "y": 1500,
           "mvx": -320,
           "mvy": 0,
@@ -2220,7 +2220,7 @@
           "ultPhase": 0
         },
         "delta": {
-          "positionPx": 32,
+          "positionPx": 16,
           "movementEpoch": 0,
           "correctionSeq": 0,
           "teleportSeq": 0
@@ -2247,18 +2247,18 @@
             "y": 1500
           },
           "renderedAfterReconcile": {
-            "x": 2152,
+            "x": 2168,
             "y": 1500
           },
           "renderedAfterDecay": {
-            "x": 2152,
+            "x": 2168,
             "y": 1500
           }
         }
       },
       {
         "index": 26,
-        "tick": 67,
+        "tick": 68,
         "elapsedMs": 1300,
         "action": "flip-and-fire",
         "input": {
@@ -2271,12 +2271,12 @@
           "fireHeld": true
         },
         "authority": {
-          "tick": 67,
-          "x": 2168,
+          "tick": 68,
+          "x": 2196.75,
           "y": 1500,
           "mvx": 320,
           "mvy": 0,
-          "vx": -65,
+          "vx": -41.44583,
           "vy": 0,
           "height": 0,
           "vh": 0,
@@ -2303,7 +2303,7 @@
           "ultPhase": 0
         },
         "delta": {
-          "positionPx": 16,
+          "positionPx": 28.75,
           "movementEpoch": 1,
           "correctionSeq": 0,
           "teleportSeq": 0
@@ -2328,22 +2328,22 @@
           "errorAfterDecayPx": 0,
           "remainingAfterDecayMs": 0,
           "renderedBefore": {
-            "x": 2168,
+            "x": 2184,
             "y": 1500
           },
           "renderedAfterReconcile": {
-            "x": 2168,
+            "x": 2196.75,
             "y": 1500
           },
           "renderedAfterDecay": {
-            "x": 2168,
+            "x": 2196.75,
             "y": 1500
           }
         }
       },
       {
         "index": 27,
-        "tick": 68,
+        "tick": 69,
         "elapsedMs": 1350,
         "action": "rapid-flip",
         "input": {
@@ -2356,12 +2356,12 @@
           "fireHeld": false
         },
         "authority": {
-          "tick": 68,
-          "x": 2148.75,
+          "tick": 69,
+          "x": 2178.677709,
           "y": 1500,
           "mvx": -320,
           "mvy": 0,
-          "vx": -41.44583,
+          "vx": -26.427028,
           "vy": 0,
           "height": 0,
           "vh": 0,
@@ -2388,7 +2388,7 @@
           "ultPhase": 0
         },
         "delta": {
-          "positionPx": 19.25,
+          "positionPx": 18.072291,
           "movementEpoch": 0,
           "correctionSeq": 0,
           "teleportSeq": 0
@@ -2412,15 +2412,15 @@
           "errorAfterDecayPx": 0,
           "remainingAfterDecayMs": 0,
           "renderedBefore": {
-            "x": 2148.75,
+            "x": 2178.677709,
             "y": 1500
           },
           "renderedAfterReconcile": {
-            "x": 2148.75,
+            "x": 2178.677709,
             "y": 1500
           },
           "renderedAfterDecay": {
-            "x": 2148.75,
+            "x": 2178.677709,
             "y": 1500
           }
         }
@@ -2441,7 +2441,7 @@
         },
         "authority": {
           "tick": 82,
-          "x": 2111.634057,
+          "x": 2223.634057,
           "y": 1500,
           "mvx": 320,
           "mvy": 0,
@@ -2495,22 +2495,22 @@
           "errorAfterDecayPx": 0,
           "remainingAfterDecayMs": 0,
           "renderedBefore": {
-            "x": 2111.634057,
+            "x": 2223.634057,
             "y": 1500
           },
           "renderedAfterReconcile": {
-            "x": 2111.634057,
+            "x": 2223.634057,
             "y": 1500
           },
           "renderedAfterDecay": {
-            "x": 2111.634057,
+            "x": 2223.634057,
             "y": 1500
           }
         }
       },
       {
         "index": 39,
-        "tick": 83,
+        "tick": 84,
         "elapsedMs": 1950,
         "action": "flip-and-fire",
         "input": {
@@ -2523,12 +2523,12 @@
           "fireHeld": true
         },
         "authority": {
-          "tick": 83,
-          "x": 2095.634057,
+          "tick": 84,
+          "x": 2194.884057,
           "y": 1500,
           "mvx": -320,
           "mvy": 0,
-          "vx": 65,
+          "vx": 41.44583,
           "vy": 0,
           "height": 0,
           "vh": 0,
@@ -2555,7 +2555,7 @@
           "ultPhase": 0
         },
         "delta": {
-          "positionPx": 16,
+          "positionPx": 28.75,
           "movementEpoch": 1,
           "correctionSeq": 0,
           "teleportSeq": 0
@@ -2580,22 +2580,22 @@
           "errorAfterDecayPx": 0,
           "remainingAfterDecayMs": 0,
           "renderedBefore": {
-            "x": 2095.634057,
+            "x": 2207.634057,
             "y": 1500
           },
           "renderedAfterReconcile": {
-            "x": 2095.634057,
+            "x": 2194.884057,
             "y": 1500
           },
           "renderedAfterDecay": {
-            "x": 2095.634057,
+            "x": 2194.884057,
             "y": 1500
           }
         }
       },
       {
         "index": 40,
-        "tick": 84,
+        "tick": 85,
         "elapsedMs": 2000,
         "action": "rapid-flip",
         "input": {
@@ -2608,12 +2608,12 @@
           "fireHeld": false
         },
         "authority": {
-          "tick": 84,
-          "x": 2114.884057,
+          "tick": 85,
+          "x": 2212.956349,
           "y": 1500,
           "mvx": 320,
           "mvy": 0,
-          "vx": 41.44583,
+          "vx": 26.427028,
           "vy": 0,
           "height": 0,
           "vh": 0,
@@ -2640,7 +2640,7 @@
           "ultPhase": 0
         },
         "delta": {
-          "positionPx": 19.25,
+          "positionPx": 18.072291,
           "movementEpoch": 0,
           "correctionSeq": 0,
           "teleportSeq": 0
@@ -2664,22 +2664,22 @@
           "errorAfterDecayPx": 0,
           "remainingAfterDecayMs": 0,
           "renderedBefore": {
-            "x": 2114.884057,
+            "x": 2212.956349,
             "y": 1500
           },
           "renderedAfterReconcile": {
-            "x": 2114.884057,
+            "x": 2212.956349,
             "y": 1500
           },
           "renderedAfterDecay": {
-            "x": 2114.884057,
+            "x": 2212.956349,
             "y": 1500
           }
         }
       },
       {
         "index": 51,
-        "tick": 98,
+        "tick": 99,
         "elapsedMs": 2550,
         "action": "rapid-flip",
         "input": {
@@ -2692,8 +2692,8 @@
           "fireHeld": false
         },
         "authority": {
-          "tick": 98,
-          "x": 2056,
+          "tick": 99,
+          "x": 2152,
           "y": 1500,
           "mvx": -320,
           "mvy": 0,
@@ -2724,7 +2724,7 @@
           "ultPhase": 0
         },
         "delta": {
-          "positionPx": 16,
+          "positionPx": 32,
           "movementEpoch": 0,
           "correctionSeq": 0,
           "teleportSeq": 0
@@ -2747,22 +2747,22 @@
           "errorAfterDecayPx": 0,
           "remainingAfterDecayMs": 0,
           "renderedBefore": {
-            "x": 2056,
+            "x": 2168,
             "y": 1500
           },
           "renderedAfterReconcile": {
-            "x": 2056,
+            "x": 2152,
             "y": 1500
           },
           "renderedAfterDecay": {
-            "x": 2056,
+            "x": 2152,
             "y": 1500
           }
         }
       },
       {
         "index": 52,
-        "tick": 99,
+        "tick": 100,
         "elapsedMs": 2600,
         "action": "flip-and-fire",
         "input": {
@@ -2775,8 +2775,8 @@
           "fireHeld": true
         },
         "authority": {
-          "tick": 99,
-          "x": 2072,
+          "tick": 100,
+          "x": 2168,
           "y": 1500,
           "mvx": 320,
           "mvy": 0,
@@ -2832,15 +2832,15 @@
           "errorAfterDecayPx": 0,
           "remainingAfterDecayMs": 0,
           "renderedBefore": {
-            "x": 2072,
+            "x": 2168,
             "y": 1500
           },
           "renderedAfterReconcile": {
-            "x": 2072,
+            "x": 2168,
             "y": 1500
           },
           "renderedAfterDecay": {
-            "x": 2072,
+            "x": 2168,
             "y": 1500
           }
         }
@@ -2861,11 +2861,11 @@
         },
         "authority": {
           "tick": 101,
-          "x": 2034.677709,
+          "x": 2148.75,
           "y": 1500,
           "mvx": -320,
           "mvy": 0,
-          "vx": -26.427028,
+          "vx": -41.44583,
           "vy": 0,
           "height": 0,
           "vh": 0,
@@ -2892,7 +2892,7 @@
           "ultPhase": 0
         },
         "delta": {
-          "positionPx": 37.322291,
+          "positionPx": 19.25,
           "movementEpoch": 0,
           "correctionSeq": 0,
           "teleportSeq": 0
@@ -2916,15 +2916,15 @@
           "errorAfterDecayPx": 0,
           "remainingAfterDecayMs": 0,
           "renderedBefore": {
-            "x": 2052.75,
+            "x": 2148.75,
             "y": 1500
           },
           "renderedAfterReconcile": {
-            "x": 2034.677709,
+            "x": 2148.75,
             "y": 1500
           },
           "renderedAfterDecay": {
-            "x": 2034.677709,
+            "x": 2148.75,
             "y": 1500
           }
         }
