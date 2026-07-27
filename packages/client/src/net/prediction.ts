@@ -59,6 +59,10 @@ import {
   TICK_MS,
 } from "@dd/shared";
 
+/** L10 SELF stall recovery is deliberately shorter than the shared remote/ordinary Smooth window.
+ *  Eighty milliseconds is five 60 Hz frames: visibly graded, but too short to become a 140 ms chase. */
+export const SELF_STALL_RECOVERY_MS = 80;
+
 /**
  * §4 v0.107 CLIENT-SIDE PREDICTION for the local player (docs/NETCODE_DESIGN.md is the binding spec).
  *
@@ -1002,9 +1006,12 @@ export class SelfPredictor {
   /** Visual error offset — reconciliation corrections land here and decay (glide, don't pop). */
   private errX = 0;
   private errY = 0;
-  /** Remaining wall-clock budget for the current medium correction. It only decreases; fresh patches
-   * cannot restart an already-active 140ms window. */
+  /** Remaining wall-clock budget for the current correction. Ordinary Smooth uses the shared 140 ms
+   * ceiling; stale SELF recovery uses the shorter L10 deadline below. */
   private correctionRemainingSec = 0;
+  /** Only stale-resync recovery may bypass the final ordinary locomotion limiter. L10 previously leaked
+   * this bypass to every Smooth envelope correction, making unrelated corrections feel more elastic. */
+  private fastStallRecoveryActive = false;
   private selfCorrectionCount = 0;
   private correctionObserver?: (event: Readonly<SelfCorrectionEvent>) => void;
   private correctionEvent?: SelfCorrectionEvent;
@@ -1561,8 +1568,13 @@ export class SelfPredictor {
     this.errX = dx;
     this.errY = dy;
     const magnitudePx = Math.hypot(dx, dy);
-    const band =
-      forcedBand !== undefined && Number.isFinite(magnitudePx)
+    // A new named correction before a stale-resync glide has settled is evidence that the first target is
+    // already obsolete. Do one honest resettle instead of stacking/chasing another visual glide.
+    const resettleFastRecovery =
+      cause !== undefined && this.fastStallRecoveryActive && this.correctionRemainingSec > 0;
+    const band = resettleFastRecovery
+      ? MovementCorrectionBand.Snap
+      : forcedBand !== undefined && Number.isFinite(magnitudePx)
         ? forcedBand
         : movementCorrectionBand(magnitudePx);
     if (cause) this.reportSelfCorrection(magnitudePx, band, cause);
@@ -1571,15 +1583,22 @@ export class SelfPredictor {
         this.errX = 0;
         this.errY = 0;
         this.correctionRemainingSec = 0;
+        this.fastStallRecoveryActive = false;
         return;
       }
-      if (this.correctionRemainingSec <= 0)
+      if (cause === "stall-resync") {
+        this.correctionRemainingSec = SELF_STALL_RECOVERY_MS / 1000;
+        this.fastStallRecoveryActive = true;
+      } else if (this.correctionRemainingSec <= 0) {
         this.correctionRemainingSec = MOVEMENT_CORRECTION_SMOOTH_MAX_MS / 1000;
+        this.fastStallRecoveryActive = false;
+      }
       return;
     }
     this.errX = 0;
     this.errY = 0;
     this.correctionRemainingSec = 0;
+    this.fastStallRecoveryActive = false;
     this.presentationSnapPending = true;
   }
 
@@ -1658,6 +1677,7 @@ export class SelfPredictor {
       this.errX = 0;
       this.errY = 0;
       this.correctionRemainingSec = 0;
+      this.fastStallRecoveryActive = false;
       this.presentationSnapPending = true;
     }
 
@@ -1686,6 +1706,7 @@ export class SelfPredictor {
         this.errX = 0;
         this.errY = 0;
         this.correctionRemainingSec = 0;
+        this.fastStallRecoveryActive = false;
         this.presentationSnapPending = true;
       } else if (this.needResync) {
         // L10: a frame/pending stall is stale prediction, never a server-authored placement. Rebase
@@ -1790,6 +1811,7 @@ export class SelfPredictor {
       this.errX = 0;
       this.errY = 0;
       this.correctionRemainingSec = 0;
+      this.fastStallRecoveryActive = false;
       this.presentationSnapPending = true;
       return;
     }
@@ -2064,6 +2086,11 @@ export class SelfPredictor {
   /** True while SELF correction debt is being retired through the canonical Smooth window. */
   get isSmoothingCorrection(): boolean {
     return this.correctionRemainingSec > 0;
+  }
+
+  /** True only for L10's short stale-resync recovery, never for ordinary B42 Smooth corrections. */
+  get isFastStallRecovery(): boolean {
+    return this.fastStallRecoveryActive && this.correctionRemainingSec > 0;
   }
 
   /** True while prediction is paused (dead / level-window freeze) — the scene renders server truth. */

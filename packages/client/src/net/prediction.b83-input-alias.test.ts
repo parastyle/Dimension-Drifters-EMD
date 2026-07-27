@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { INTERP_SNAP_PLAYER, MOVE_SPEED, TICK_MS } from "@dd/shared";
 import { describe, expect, it } from "vitest";
 import { limitPresentedRootStep } from "../entities/rig/rig-presentation.js";
@@ -5,6 +6,7 @@ import { type PredCmd, SelfPredictor, type ServerView } from "./prediction.js";
 
 const FRAME_MS = 16;
 const MAX_FRAME_STEP_PX = (MOVE_SPEED * FRAME_MS) / 1_000;
+const arenaSource = readFileSync(new URL("../scenes/ArenaScene.ts", import.meta.url), "utf8");
 
 function view(): ServerView {
   return {
@@ -27,6 +29,18 @@ function command(predictor: SelfPredictor, dx: number): PredCmd {
 }
 
 describe("B83 faster-than-tick direction alias measurement", () => {
+  it("keeps the frame sampler and real diagnostic boundary wired into ArenaScene", () => {
+    expect(arenaSource).toContain(
+      "this.predictor.sampleInputFrame(nextDx, nextDy, sliceMs / 1000)",
+    );
+    expect(arenaSource).toContain(
+      "const renderBeforeCommit = this.predictor.renderPos(cmd.dx, cmd.dy, TICK_MS / 1000)",
+    );
+    expect(arenaSource).toContain(
+      "Math.hypot(renderBeforeCommitX - movement.x, renderBeforeCommitY - movement.y)",
+    );
+  });
+
   it("records the confirmed legacy boundary divergence under 16ms AD flips", () => {
     const predictor = new SelfPredictor(view());
     let inputAccMs = 0;

@@ -6,6 +6,7 @@ import {
 import { describe, expect, it } from "vitest";
 import { limitPresentedRootStep } from "../entities/rig/rig-presentation.js";
 import {
+  SELF_STALL_RECOVERY_MS,
   type SelfCorrectionCause,
   type SelfCorrectionEvent,
   SelfPredictor,
@@ -15,7 +16,7 @@ import {
 const FRAME_SECONDS = 1 / 60;
 const FRAME_MS = FRAME_SECONDS * 1000;
 const STALL_CORRECTION_PX = 320;
-const STALL_MAX_FRAME_STEP_PX = 40;
+const STALL_MAX_FRAME_STEP_PX = 70;
 
 function view(overrides: Partial<ServerView> = {}): ServerView {
   return {
@@ -48,7 +49,7 @@ function expectEvent(
 }
 
 describe("Canon L10 — stale SELF prediction is not an authored teleport", () => {
-  it("smooths a >250ms stall resync without a >40px frame, while teleportSeq still cuts instantly", () => {
+  it("settles a >250ms stall resync within 80ms without a one-frame teleport", () => {
     const predictor = new SelfPredictor(view());
     const events: SelfCorrectionEvent[] = [];
     predictor.setCorrectionObserver((event) => events.push({ ...event }));
@@ -62,10 +63,12 @@ describe("Canon L10 — stale SELF prediction is not an authored teleport", () =
     let presentedY = beforeStall.y;
     expect(predictor.renderPos(0, 0, 0)).toMatchObject(beforeStall);
     expectEvent(events[0], "stall-resync", MovementCorrectionBand.Smooth, STALL_CORRECTION_PX);
+    expect(predictor.stats.correctionRemainingMs).toBe(SELF_STALL_RECOVERY_MS);
+    expect(predictor.isFastStallRecovery).toBe(true);
 
     let worstStallFramePx = 0;
-    for (let frame = 0; frame < 12; frame++) {
-      const correctionWasSmoothing = predictor.isSmoothingCorrection;
+    for (let frame = 0; frame < 8; frame++) {
+      const correctionWasFastStallRecovery = predictor.isFastStallRecovery;
       predictor.decayError(FRAME_SECONDS);
       const candidate = predictor.renderPos(0, 0, 0);
       const constrained = predictor.constrainRenderStep(
@@ -85,7 +88,7 @@ describe("Canon L10 — stale SELF prediction is not an authored teleport", () =
         48,
         INTERP_SNAP_PLAYER,
         false,
-        correctionWasSmoothing || predictor.isSmoothingCorrection,
+        correctionWasFastStallRecovery || predictor.isFastStallRecovery,
       );
       worstStallFramePx = Math.max(
         worstStallFramePx,
@@ -95,7 +98,7 @@ describe("Canon L10 — stale SELF prediction is not an authored teleport", () =
       presentedY = next.y;
     }
     expect(worstStallFramePx).toBeLessThan(STALL_MAX_FRAME_STEP_PX);
-    expect(worstStallFramePx).toBeCloseTo(38.095238, 6);
+    expect(worstStallFramePx).toBeCloseTo(66.666667, 6);
     expect(presentedX).toBeCloseTo(beforeStall.x - STALL_CORRECTION_PX, 6);
     expect(presentedY).toBeCloseTo(beforeStall.y, 6);
 
@@ -131,6 +134,24 @@ describe("Canon L10 — stale SELF prediction is not an authored teleport", () =
     );
   });
 
+  it("snaps once and resettles when fresh correction truth arrives inside the short recovery", () => {
+    const predictor = new SelfPredictor(view());
+    const events: SelfCorrectionEvent[] = [];
+    predictor.setCorrectionObserver((event) => events.push({ ...event }));
+
+    predictor.forceResync();
+    predictor.reconcile(view({ x: 680 }));
+    predictor.decayError(FRAME_SECONDS);
+    predictor.forceResync();
+    predictor.reconcile(view({ x: 650 }));
+
+    expectEvent(events[0], "stall-resync", MovementCorrectionBand.Smooth, 320);
+    expectEvent(events[1], "stall-resync", MovementCorrectionBand.Snap, 283.333333);
+    expect(predictor.renderPos(0, 0, 0)).toMatchObject({ x: 650, y: 1000 });
+    expect(predictor.isFastStallRecovery).toBe(false);
+    expect(predictor.isSmoothingCorrection).toBe(false);
+  });
+
   it("reports a B42 rejection with its ordinary envelope-violation band", () => {
     const predictor = new SelfPredictor(view());
     const events: SelfCorrectionEvent[] = [];
@@ -139,5 +160,7 @@ describe("Canon L10 — stale SELF prediction is not an authored teleport", () =
     predictor.reconcile(view({ x: 950, movementCorrectionSeq: 1 }));
 
     expectEvent(events[0], "envelope-violation", MovementCorrectionBand.Smooth, 50);
+    expect(predictor.isSmoothingCorrection).toBe(true);
+    expect(predictor.isFastStallRecovery).toBe(false);
   });
 });

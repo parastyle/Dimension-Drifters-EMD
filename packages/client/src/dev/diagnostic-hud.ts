@@ -50,14 +50,14 @@ export const DIAGNOSTIC_THRESHOLDS = Object.freeze({
   hudCostRedMsPerFrame: 0.5,
 });
 
-export type DiagnosticState = "GREEN" | "AMBER" | "RED";
+export type DiagnosticState = "GREEN" | "AMBER" | "RED" | "N/A";
 
 export interface DiagnosticHudContext {
-  pendingInputs: number;
-  enemies: number;
-  projectiles: number;
-  vfxSurfaces: number;
-  vfxParticles: number;
+  pendingInputs?: number;
+  enemies?: number;
+  projectiles?: number;
+  vfxSurfaces?: number;
+  vfxParticles?: number;
   heapUsedBytes?: number;
   heapLimitBytes?: number;
 }
@@ -83,15 +83,17 @@ function countAliveParticles(node: unknown): number {
  * production VFX player. This is called only by the 4 Hz context sample, never on the per-frame hot path.
  */
 export function writeVfxDiagnosticStats(bloomRoot: unknown, out: DiagnosticHudContext): void {
-  out.vfxSurfaces = 0;
-  out.vfxParticles = 0;
+  out.vfxSurfaces = undefined;
+  out.vfxParticles = undefined;
   const surfaces = (bloomRoot as VfxDiagnosticNode | undefined)?.list;
   if (!surfaces) return;
+  out.vfxSurfaces = 0;
+  out.vfxParticles = 0;
   for (let i = 0; i < surfaces.length; i++) {
     const surface = surfaces[i] as VfxDiagnosticNode | undefined;
     if (!surface || surface.visible === false) continue;
-    out.vfxSurfaces++;
-    out.vfxParticles += countAliveParticles(surface);
+    out.vfxSurfaces = (out.vfxSurfaces ?? 0) + 1;
+    out.vfxParticles = (out.vfxParticles ?? 0) + countAliveParticles(surface);
   }
 }
 
@@ -118,6 +120,7 @@ export interface DiagnosticSnapshot {
   readonly metrics: readonly DiagnosticMetricSnapshot[];
   readonly redCount: number;
   readonly amberCount: number;
+  readonly unavailableCount: number;
   readonly windowSeconds: number;
 }
 
@@ -221,6 +224,7 @@ class NumericWindow {
 }
 
 function severity(value: number, amberAbove: number, redAbove: number): DiagnosticState {
+  if (!Number.isFinite(value)) return "N/A";
   if (value > redAbove) return "RED";
   if (value > amberAbove) return "AMBER";
   return "GREEN";
@@ -229,11 +233,26 @@ function severity(value: number, amberAbove: number, redAbove: number): Diagnost
 function worstState(a: DiagnosticState, b: DiagnosticState): DiagnosticState {
   if (a === "RED" || b === "RED") return "RED";
   if (a === "AMBER" || b === "AMBER") return "AMBER";
+  if (a === "GREEN" || b === "GREEN") return "GREEN";
+  if (a === "N/A" || b === "N/A") return "N/A";
   return "GREEN";
 }
 
-function finiteOrZero(value: number): number {
-  return Number.isFinite(value) ? Math.max(0, value) : 0;
+function nonNegativeOrNaN(value: number): number {
+  return Number.isFinite(value) ? Math.max(0, value) : Number.NaN;
+}
+
+function finiteMax(...values: readonly number[]): number {
+  let result = Number.NaN;
+  for (const value of values) {
+    if (!Number.isFinite(value)) continue;
+    result = Number.isFinite(result) ? Math.max(result, value) : value;
+  }
+  return result;
+}
+
+function formatCount(value: number): string {
+  return Number.isFinite(value) ? Math.max(0, Math.floor(value)).toFixed(0) : "n/a";
 }
 
 function formatMs(value: number): string {
@@ -284,59 +303,65 @@ export class DiagnosticHudTelemetry {
   private readonly sentValid = new Uint8Array(256);
 
   private currentFrameMs = Number.NaN;
-  private sessionFramePeakMs = 0;
+  private sessionFramePeakMs = Number.NaN;
   private stallCount = 0;
+  private selfCorrectionSourceAvailable = false;
   private correctionCount = 0;
   private silentCount = 0;
   private smoothCount = 0;
   private snapCount = 0;
-  private maxCorrectionPx = 0;
+  private maxCorrectionPx = Number.NaN;
   private lastCorrectionBand = -1;
   private lastCorrectionCause = "none";
   private currentDivergencePx = Number.NaN;
-  private sessionDivergencePeakPx = 0;
+  private sessionDivergencePeakPx = Number.NaN;
   private pendingKeyAtMs = Number.NaN;
   private currentInputLatencyMs = Number.NaN;
-  private sessionInputLatencyPeakMs = 0;
+  private sessionInputLatencyPeakMs = Number.NaN;
   private previousTick = 0;
   private previousTickAtMs = Number.NaN;
   private hasPreviousTick = false;
   private currentTickIntervalMs = Number.NaN;
   private currentTickDriftMs = Number.NaN;
   private currentTickGap = 1;
-  private sessionTickDriftPeakMs = 0;
+  private sessionTickDriftPeakMs = Number.NaN;
   private currentRttMs = Number.NaN;
-  private sessionRttPeakMs = 0;
-  private currentPending = 0;
-  private pendingGrowth = 0;
-  private currentEnemies = 0;
-  private currentProjectiles = 0;
-  private currentVfxSurfaces = 0;
-  private currentVfxParticles = 0;
+  private sessionRttPeakMs = Number.NaN;
+  private currentPending = Number.NaN;
+  private pendingGrowth = Number.NaN;
+  private currentEnemies = Number.NaN;
+  private currentProjectiles = Number.NaN;
+  private currentVfxSurfaces = Number.NaN;
+  private currentVfxParticles = Number.NaN;
   private heapAvailable = false;
   private currentHeapUsedMb = Number.NaN;
   private currentHeapLimitMb = Number.NaN;
   private currentHeapGrowthMbPerSec = Number.NaN;
-  private sessionHeapPeakMb = 0;
+  private sessionHeapPeakMb = Number.NaN;
   private resyncCount = 0;
   private visibleFrameCount = 0;
   private visibleCostTotalMs = 0;
   private visibleDisplayCostMs = Number.NaN;
-  private visibleDisplayCostPeakMs = 0;
+  private visibleDisplayCostPeakMs = Number.NaN;
 
   constructor(startedAtMs = performance.now()) {
     this.startedAtMs = startedAtMs;
   }
 
   recordFrame(deltaMs: number, nowMs = performance.now()): void {
-    const duration = finiteOrZero(deltaMs);
+    const duration = nonNegativeOrNaN(deltaMs);
     this.currentFrameMs = duration;
-    this.sessionFramePeakMs = Math.max(this.sessionFramePeakMs, duration);
+    if (!Number.isFinite(duration)) return;
+    this.sessionFramePeakMs = finiteMax(this.sessionFramePeakMs, duration);
     this.frameWindow.push(nowMs, duration);
     if (duration > DIAGNOSTIC_THRESHOLDS.frameRedMs) {
       this.stallCount++;
       this.stallWindow.push(nowMs, duration);
     }
+  }
+
+  markSelfCorrectionSourceAvailable(): void {
+    this.selfCorrectionSourceAvailable = true;
   }
 
   recordInputKey(nowMs = performance.now()): void {
@@ -347,7 +372,7 @@ export class DiagnosticHudTelemetry {
     if (Number.isFinite(this.pendingKeyAtMs)) {
       const latency = Math.max(0, nowMs - this.pendingKeyAtMs);
       this.currentInputLatencyMs = latency;
-      this.sessionInputLatencyPeakMs = Math.max(this.sessionInputLatencyPeakMs, latency);
+      this.sessionInputLatencyPeakMs = finiteMax(this.sessionInputLatencyPeakMs, latency);
       this.inputLatencyWindow.push(nowMs, latency);
       this.pendingKeyAtMs = Number.NaN;
     }
@@ -373,7 +398,7 @@ export class DiagnosticHudTelemetry {
         this.currentTickIntervalMs = interval;
         this.currentTickDriftMs = drift;
         this.currentTickGap = tickGap;
-        this.sessionTickDriftPeakMs = Math.max(this.sessionTickDriftPeakMs, Math.abs(drift));
+        this.sessionTickDriftPeakMs = finiteMax(this.sessionTickDriftPeakMs, Math.abs(drift));
         this.tickDriftWindow.push(nowMs, Math.abs(drift));
         this.tickGapWindow.push(nowMs, tickGap);
       }
@@ -388,23 +413,34 @@ export class DiagnosticHudTelemetry {
     const rtt = Math.max(0, nowMs - (this.sentAt[slot] ?? nowMs));
     this.sentValid[slot] = 0;
     this.currentRttMs = rtt;
-    this.sessionRttPeakMs = Math.max(this.sessionRttPeakMs, rtt);
+    this.sessionRttPeakMs = finiteMax(this.sessionRttPeakMs, rtt);
     this.rttWindow.push(nowMs, rtt);
   }
 
   recordContext(context: Readonly<DiagnosticHudContext>, nowMs = performance.now()): void {
-    this.currentPending = Math.max(0, Math.floor(context.pendingInputs));
-    this.currentEnemies = Math.max(0, Math.floor(context.enemies));
-    this.currentProjectiles = Math.max(0, Math.floor(context.projectiles));
-    this.currentVfxSurfaces = Math.max(0, Math.floor(context.vfxSurfaces));
-    this.currentVfxParticles = Math.max(0, Math.floor(context.vfxParticles));
-    this.pendingWindow.push(nowMs, this.currentPending);
-    this.enemyWindow.push(nowMs, this.currentEnemies);
-    this.projectileWindow.push(nowMs, this.currentProjectiles);
-    this.vfxSurfaceWindow.push(nowMs, this.currentVfxSurfaces);
-    this.vfxParticleWindow.push(nowMs, this.currentVfxParticles);
-    const oldestPending = this.pendingWindow.oldestValueSince(nowMs);
-    this.pendingGrowth = oldestPending ? Math.max(0, this.currentPending - oldestPending.value) : 0;
+    const measuredCount = (value: number | undefined): number =>
+      value !== undefined && Number.isFinite(value) ? Math.max(0, Math.floor(value)) : Number.NaN;
+    this.currentPending = measuredCount(context.pendingInputs);
+    this.currentEnemies = measuredCount(context.enemies);
+    this.currentProjectiles = measuredCount(context.projectiles);
+    this.currentVfxSurfaces = measuredCount(context.vfxSurfaces);
+    this.currentVfxParticles = measuredCount(context.vfxParticles);
+    if (Number.isFinite(this.currentPending)) {
+      this.pendingWindow.push(nowMs, this.currentPending);
+      const oldestPending = this.pendingWindow.oldestValueSince(nowMs);
+      this.pendingGrowth = oldestPending
+        ? Math.max(0, this.currentPending - oldestPending.value)
+        : Number.NaN;
+    } else {
+      this.pendingGrowth = Number.NaN;
+    }
+    if (Number.isFinite(this.currentEnemies)) this.enemyWindow.push(nowMs, this.currentEnemies);
+    if (Number.isFinite(this.currentProjectiles))
+      this.projectileWindow.push(nowMs, this.currentProjectiles);
+    if (Number.isFinite(this.currentVfxSurfaces))
+      this.vfxSurfaceWindow.push(nowMs, this.currentVfxSurfaces);
+    if (Number.isFinite(this.currentVfxParticles))
+      this.vfxParticleWindow.push(nowMs, this.currentVfxParticles);
 
     const usedBytes = context.heapUsedBytes;
     const limitBytes = context.heapLimitBytes;
@@ -422,33 +458,36 @@ export class DiagnosticHudTelemetry {
     this.heapAvailable = true;
     this.currentHeapUsedMb = usedBytes / (1024 * 1024);
     this.currentHeapLimitMb = limitBytes / (1024 * 1024);
-    this.sessionHeapPeakMb = Math.max(this.sessionHeapPeakMb, this.currentHeapUsedMb);
+    this.sessionHeapPeakMb = finiteMax(this.sessionHeapPeakMb, this.currentHeapUsedMb);
     this.heapUsedWindow.push(nowMs, this.currentHeapUsedMb);
     const oldestHeap = this.heapUsedWindow.oldestValueSince(nowMs);
     const elapsedSeconds = oldestHeap ? (nowMs - oldestHeap.timeMs) / 1_000 : 0;
     this.currentHeapGrowthMbPerSec =
       oldestHeap && elapsedSeconds >= 2
         ? (this.currentHeapUsedMb - oldestHeap.value) / elapsedSeconds
-        : 0;
-    this.heapGrowthWindow.push(nowMs, this.currentHeapGrowthMbPerSec);
+        : Number.NaN;
+    if (Number.isFinite(this.currentHeapGrowthMbPerSec))
+      this.heapGrowthWindow.push(nowMs, this.currentHeapGrowthMbPerSec);
   }
 
   recordSelfCorrection(event: Readonly<SelfCorrectionEvent>, nowMs = performance.now()): void {
-    const magnitude = finiteOrZero(event.magnitudePx);
+    this.selfCorrectionSourceAvailable = true;
+    const magnitude = nonNegativeOrNaN(event.magnitudePx);
     this.correctionCount++;
-    this.maxCorrectionPx = Math.max(this.maxCorrectionPx, magnitude);
+    this.maxCorrectionPx = finiteMax(this.maxCorrectionPx, magnitude);
     this.lastCorrectionBand = event.band;
     this.lastCorrectionCause = event.cause;
     if (event.band === MovementCorrectionBand.Silent) this.silentCount++;
     else if (event.band === MovementCorrectionBand.Smooth) this.smoothCount++;
     else this.snapCount++;
-    this.correctionMagnitudeWindow.push(nowMs, magnitude);
+    if (Number.isFinite(magnitude)) this.correctionMagnitudeWindow.push(nowMs, magnitude);
   }
 
   recordRenderCommitDivergence(divergencePx: number, nowMs = performance.now()): void {
-    const divergence = finiteOrZero(divergencePx);
+    const divergence = nonNegativeOrNaN(divergencePx);
     this.currentDivergencePx = divergence;
-    this.sessionDivergencePeakPx = Math.max(this.sessionDivergencePeakPx, divergence);
+    if (!Number.isFinite(divergence)) return;
+    this.sessionDivergencePeakPx = finiteMax(this.sessionDivergencePeakPx, divergence);
     this.divergenceWindow.push(nowMs, divergence);
   }
 
@@ -464,13 +503,14 @@ export class DiagnosticHudTelemetry {
     nowMs = performance.now(),
   ): void {
     if (!visible) return;
-    const cost = finiteOrZero(costMs);
+    const cost = nonNegativeOrNaN(costMs);
+    if (!Number.isFinite(cost)) return;
     this.visibleFrameCount++;
     this.visibleCostTotalMs += cost;
     this.visibleCostWindow.push(nowMs, cost);
     if (displayUpdated) {
       this.visibleDisplayCostMs = cost;
-      this.visibleDisplayCostPeakMs = Math.max(this.visibleDisplayCostPeakMs, cost);
+      this.visibleDisplayCostPeakMs = finiteMax(this.visibleDisplayCostPeakMs, cost);
     }
   }
 
@@ -479,22 +519,27 @@ export class DiagnosticHudTelemetry {
     const frameP99 = this.frameWindow.quantileSince(nowMs, 0.99, this.frameHistogram, 1);
     const recentFramePeak = this.frameWindow.maxSince(nowMs);
     const frameState = severity(
-      Math.max(this.currentFrameMs, frameP99),
+      finiteMax(this.currentFrameMs, frameP99),
       t.frameAmberMs,
       t.frameRedMs,
     );
 
-    const correctionState: DiagnosticState =
-      this.snapCount > 0 ? "RED" : this.smoothCount > 0 ? "AMBER" : "GREEN";
+    const correctionState: DiagnosticState = !this.selfCorrectionSourceAvailable
+      ? "N/A"
+      : this.snapCount > 0
+        ? "RED"
+        : this.smoothCount > 0
+          ? "AMBER"
+          : "GREEN";
     const recentDivergencePeak = this.divergenceWindow.maxSince(nowMs);
     const divergenceState = severity(
-      Math.max(this.currentDivergencePx, recentDivergencePeak),
+      finiteMax(this.currentDivergencePx, recentDivergencePeak),
       t.divergenceAmberPx,
       t.divergenceRedPx,
     );
     const recentInputPeak = this.inputLatencyWindow.maxSince(nowMs);
     const inputState = severity(
-      Math.max(this.currentInputLatencyMs, recentInputPeak),
+      finiteMax(this.currentInputLatencyMs, recentInputPeak),
       t.inputAmberMs,
       t.inputRedMs,
     );
@@ -504,7 +549,11 @@ export class DiagnosticHudTelemetry {
     if (recentTickGapPeak > 3) tickState = "RED";
     else if (recentTickGapPeak > 1) tickState = worstState(tickState, "AMBER");
     const recentRttPeak = this.rttWindow.maxSince(nowMs);
-    const rttState = severity(Math.max(this.currentRttMs, recentRttPeak), t.rttAmberMs, t.rttRedMs);
+    const rttState = severity(
+      finiteMax(this.currentRttMs, recentRttPeak),
+      t.rttAmberMs,
+      t.rttRedMs,
+    );
 
     const recentPendingPeak = this.pendingWindow.maxSince(nowMs);
     let pendingState = severity(recentPendingPeak, t.pendingAmber, t.pendingRed);
@@ -531,7 +580,7 @@ export class DiagnosticHudTelemetry {
       severity(recentVfxParticlePeak, t.particleAmber, t.particleRed),
     );
 
-    let heapState: DiagnosticState = "GREEN";
+    let heapState: DiagnosticState = "N/A";
     let heapFraction = Number.NaN;
     const recentHeapGrowthPeak = this.heapGrowthWindow.maxSince(nowMs);
     if (this.heapAvailable) {
@@ -569,17 +618,24 @@ export class DiagnosticHudTelemetry {
       {
         id: "stalls",
         label: "Stalls >250ms",
-        state: this.stallCount > 0 ? "RED" : "GREEN",
-        value: `${this.stallCount} this session | ${this.stallWindow.countSince(nowMs)} in 10s`,
+        state: Number.isFinite(this.currentFrameMs)
+          ? this.stallCount > 0
+            ? "RED"
+            : "GREEN"
+          : "N/A",
+        value: Number.isFinite(this.currentFrameMs)
+          ? `${this.stallCount} this session | ${this.stallWindow.countSince(nowMs)} in 10s`
+          : "n/a",
       },
       {
         id: "corrections",
         label: "SELF corrections",
         state: correctionState,
-        value:
-          `${this.correctionCount} | max ${formatPx(this.maxCorrectionPx)} | ` +
-          `band ${correctionBandName(this.lastCorrectionBand)} | ` +
-          `S${this.silentCount}/M${this.smoothCount}/N${this.snapCount}`,
+        value: this.selfCorrectionSourceAvailable
+          ? `${this.correctionCount} | max ${this.correctionCount > 0 ? formatPx(this.maxCorrectionPx) : "n/a"} | ` +
+            `band ${correctionBandName(this.lastCorrectionBand)} | ` +
+            `S${this.silentCount}/M${this.smoothCount}/N${this.snapCount}`
+          : "n/a",
       },
       {
         id: "divergence",
@@ -601,10 +657,11 @@ export class DiagnosticHudTelemetry {
         id: "tick",
         label: "Server tick",
         state: tickState,
-        value:
-          `now ${formatMs(this.currentTickIntervalMs)} vs ${TICK_MS}ms | ` +
-          `drift ${Number.isFinite(this.currentTickDriftMs) ? `${this.currentTickDriftMs >= 0 ? "+" : ""}${this.currentTickDriftMs.toFixed(1)}ms` : "n/a"} | ` +
-          `gap ${this.currentTickGap}`,
+        value: Number.isFinite(this.currentTickIntervalMs)
+          ? `now ${formatMs(this.currentTickIntervalMs)} vs ${TICK_MS}ms | ` +
+            `drift ${this.currentTickDriftMs >= 0 ? "+" : ""}${this.currentTickDriftMs.toFixed(1)}ms | ` +
+            `gap ${this.currentTickGap}`
+          : "n/a",
       },
       {
         id: "rtt",
@@ -617,16 +674,16 @@ export class DiagnosticHudTelemetry {
         label: "Prediction pending",
         state: pendingState,
         value:
-          `now ${this.currentPending} | 10s peak ${Number.isFinite(recentPendingPeak) ? recentPendingPeak.toFixed(0) : "n/a"} | ` +
-          `growth +${this.pendingGrowth} | cap ${PRED_PENDING_MAX}`,
+          `now ${formatCount(this.currentPending)} | 10s peak ${formatCount(recentPendingPeak)} | ` +
+          `growth ${Number.isFinite(this.pendingGrowth) ? `+${this.pendingGrowth.toFixed(0)}` : "n/a"} | cap ${PRED_PENDING_MAX}`,
       },
       {
         id: "load",
         label: "Entity load",
         state: loadState,
         value:
-          `E ${this.currentEnemies} | P ${this.currentProjectiles} | ` +
-          `FX ${this.currentVfxSurfaces}/${this.currentVfxParticles} particles`,
+          `E ${formatCount(this.currentEnemies)} | P ${formatCount(this.currentProjectiles)} | ` +
+          `FX ${formatCount(this.currentVfxSurfaces)}/${formatCount(this.currentVfxParticles)} particles`,
       },
       {
         id: "heap",
@@ -634,14 +691,24 @@ export class DiagnosticHudTelemetry {
         state: heapState,
         value: this.heapAvailable
           ? `${this.currentHeapUsedMb.toFixed(1)}/${this.currentHeapLimitMb.toFixed(0)}MB | ` +
-            `${this.currentHeapGrowthMbPerSec >= 0 ? "+" : ""}${this.currentHeapGrowthMbPerSec.toFixed(2)}MB/s`
-          : "performance.memory unavailable",
+            `${
+              Number.isFinite(this.currentHeapGrowthMbPerSec)
+                ? `${this.currentHeapGrowthMbPerSec >= 0 ? "+" : ""}${this.currentHeapGrowthMbPerSec.toFixed(2)}MB/s`
+                : "growth n/a"
+            }`
+          : "n/a (performance.memory unavailable)",
       },
       {
         id: "resync",
         label: "forceResync",
-        state: this.resyncCount > 0 ? "RED" : "GREEN",
-        value: `${this.resyncCount} this session | ${this.resyncWindow.countSince(nowMs)} in 10s`,
+        state: Number.isFinite(this.currentFrameMs)
+          ? this.resyncCount > 0
+            ? "RED"
+            : "GREEN"
+          : "N/A",
+        value: Number.isFinite(this.currentFrameMs)
+          ? `${this.resyncCount} this session | ${this.resyncWindow.countSince(nowMs)} in 10s`
+          : "n/a",
       },
       {
         id: "cost",
@@ -656,14 +723,17 @@ export class DiagnosticHudTelemetry {
     ];
     let redCount = 0;
     let amberCount = 0;
+    let unavailableCount = 0;
     for (const metric of metrics) {
       if (metric.state === "RED") redCount++;
       else if (metric.state === "AMBER") amberCount++;
+      else if (metric.state === "N/A") unavailableCount++;
     }
     return {
       metrics,
       redCount,
       amberCount,
+      unavailableCount,
       windowSeconds: Math.min(WINDOW_MS, Math.max(0, nowMs - this.startedAtMs)) / 1_000,
     };
   }
@@ -672,14 +742,14 @@ export class DiagnosticHudTelemetry {
     const snapshot = this.snapshot(nowMs);
     const lines = [
       `DD DIAG v1 | ${timestamp} | last ${snapshot.windowSeconds.toFixed(1)}s + session peaks`,
-      `STATUS ${snapshot.redCount} RED / ${snapshot.amberCount} AMBER / ${DIAGNOSTIC_HUD_METRIC_COUNT - snapshot.redCount - snapshot.amberCount} GREEN`,
+      `STATUS ${snapshot.redCount} RED / ${snapshot.amberCount} AMBER / ${snapshot.unavailableCount} N/A / ${DIAGNOSTIC_HUD_METRIC_COUNT - snapshot.redCount - snapshot.amberCount - snapshot.unavailableCount} GREEN`,
     ];
     for (const metric of snapshot.metrics) {
       lines.push(`${metric.state.padEnd(5)} ${metric.label.padEnd(19)} ${metric.value}`);
     }
     lines.push(
-      `EVENTS 10s stalls=${this.stallWindow.countSince(nowMs)} corrections=${this.correctionMagnitudeWindow.countSince(nowMs)} resyncs=${this.resyncWindow.countSince(nowMs)}`,
-      `PEAKS session frame=${this.sessionFramePeakMs.toFixed(1)}ms renderCommit=${this.sessionDivergencePeakPx.toFixed(1)}px input=${this.sessionInputLatencyPeakMs.toFixed(1)}ms rtt=${this.sessionRttPeakMs.toFixed(1)}ms tickDrift=${this.sessionTickDriftPeakMs.toFixed(1)}ms heap=${this.sessionHeapPeakMb.toFixed(1)}MB hudDisplay=${this.visibleDisplayCostPeakMs.toFixed(3)}ms`,
+      `EVENTS 10s stalls=${Number.isFinite(this.currentFrameMs) ? this.stallWindow.countSince(nowMs) : "n/a"} corrections=${this.selfCorrectionSourceAvailable ? this.correctionMagnitudeWindow.countSince(nowMs) : "n/a"} resyncs=${Number.isFinite(this.currentFrameMs) ? this.resyncWindow.countSince(nowMs) : "n/a"}`,
+      `PEAKS session frame=${formatMs(this.sessionFramePeakMs)} renderCommit=${formatPx(this.sessionDivergencePeakPx)} input=${formatMs(this.sessionInputLatencyPeakMs)} rtt=${formatMs(this.sessionRttPeakMs)} tickDrift=${formatMs(this.sessionTickDriftPeakMs)} heap=${Number.isFinite(this.sessionHeapPeakMb) ? `${this.sessionHeapPeakMb.toFixed(1)}MB` : "n/a"} hudDisplay=${formatCostMs(this.visibleDisplayCostPeakMs)}`,
       `LAST SELF cause=${this.lastCorrectionCause} band=${correctionBandName(this.lastCorrectionBand)}`,
     );
     const redLabels = snapshot.metrics
@@ -701,6 +771,7 @@ const STATE_COLORS: Record<DiagnosticState, string> = {
   GREEN: "#75ef86",
   AMBER: "#ffd166",
   RED: "#ff5f68",
+  "N/A": "#9aa7af",
 };
 
 function loadPersistedVisibility(): boolean {
@@ -745,11 +816,11 @@ export class DiagnosticHud {
   readonly telemetry: DiagnosticHudTelemetry;
   private readonly writeContext: ContextWriter;
   private readonly context: DiagnosticHudContext = {
-    pendingInputs: 0,
-    enemies: 0,
-    projectiles: 0,
-    vfxSurfaces: 0,
-    vfxParticles: 0,
+    pendingInputs: undefined,
+    enemies: undefined,
+    projectiles: undefined,
+    vfxSurfaces: undefined,
+    vfxParticles: undefined,
   };
   private readonly root: HTMLDivElement;
   private readonly heading: HTMLDivElement;
@@ -802,6 +873,11 @@ export class DiagnosticHud {
     this.telemetry.recordFrame(deltaMs, startedAtMs);
     let displayUpdated = false;
     if (startedAtMs >= this.nextDisplayAtMs) {
+      this.context.pendingInputs = undefined;
+      this.context.enemies = undefined;
+      this.context.projectiles = undefined;
+      this.context.vfxSurfaces = undefined;
+      this.context.vfxParticles = undefined;
       this.context.heapUsedBytes = undefined;
       this.context.heapLimitBytes = undefined;
       this.writeContext(this.context);
@@ -828,6 +904,10 @@ export class DiagnosticHud {
 
   recordCommand(seq: number): void {
     this.telemetry.recordCommand(seq);
+  }
+
+  markSelfCorrectionSourceAvailable(): void {
+    this.telemetry.markSelfCorrectionSourceAvailable();
   }
 
   recordServerPatch(tick: number, ackSeq: number | undefined): void {
@@ -886,7 +966,7 @@ export class DiagnosticHud {
   private render(nowMs: number): void {
     const snapshot = this.telemetry.snapshot(nowMs);
     this.heading.textContent =
-      `DD DIAG | ${snapshot.redCount} RED / ${snapshot.amberCount} AMBER | ` +
+      `DD DIAG | ${snapshot.redCount} RED / ${snapshot.amberCount} AMBER / ${snapshot.unavailableCount} N/A | ` +
       `${DIAGNOSTIC_HUD_TOGGLE_KEY} hide | ${DIAGNOSTIC_HUD_COPY_KEY} copy 10s dump`;
     for (let i = 0; i < this.rows.length; i++) {
       const metric = snapshot.metrics[i];

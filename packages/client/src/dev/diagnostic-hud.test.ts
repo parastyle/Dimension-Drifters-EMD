@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { MovementCorrectionBand } from "@dd/shared";
 import { describe, expect, it } from "vitest";
 import {
@@ -6,6 +7,8 @@ import {
   writeVfxDiagnosticStats,
 } from "./diagnostic-hud.js";
 
+const arenaSource = readFileSync(new URL("../scenes/ArenaScene.ts", import.meta.url), "utf8");
+
 function metricStates(telemetry: DiagnosticHudTelemetry, nowMs: number) {
   return Object.fromEntries(
     telemetry.snapshot(nowMs).metrics.map((metric) => [metric.id, metric.state]),
@@ -13,6 +16,24 @@ function metricStates(telemetry: DiagnosticHudTelemetry, nowMs: number) {
 }
 
 describe("DiagnosticHudTelemetry", () => {
+  it("keeps all twelve live intake seams wired to ArenaScene", () => {
+    for (const intake of [
+      "this.diagnosticHud?.recordFrame(deltaMs)",
+      "this.diagnosticHud?.recordCommand(cmd.seq)",
+      "this.diagnosticHud?.recordServerPatch(",
+      "this.diagnosticHud?.recordSelfCorrection(event)",
+      "this.diagnosticHud?.recordRenderCommitDivergence(",
+      "this.diagnosticHud?.recordResync()",
+      "this.diagnosticHud?.markSelfCorrectionSourceAvailable()",
+      "out.pendingInputs = this.predictor?.stats.pending",
+      "out.enemies = this.room?.state.enemies?.size",
+      "out.projectiles = this.room?.state.projectiles?.size",
+      "writeVfxDiagnosticStats(this.vfxPlayer?.bloomRoot, out)",
+    ]) {
+      expect(arenaSource, `missing diagnostic intake: ${intake}`).toContain(intake);
+    }
+  });
+
   it("counts only visible VFX surfaces and their live particles", () => {
     const context = {
       pendingInputs: 0,
@@ -42,8 +63,24 @@ describe("DiagnosticHudTelemetry", () => {
     expect(context.vfxParticles).toBe(12);
   });
 
+  it("marks VFX unavailable when there is no live emitter root", () => {
+    const context = {
+      pendingInputs: 0,
+      enemies: 0,
+      projectiles: 0,
+      vfxSurfaces: 99 as number | undefined,
+      vfxParticles: 99 as number | undefined,
+    };
+
+    writeVfxDiagnosticStats(undefined, context);
+
+    expect(context.vfxSurfaces).toBeUndefined();
+    expect(context.vfxParticles).toBeUndefined();
+  });
+
   it("keeps a calm ten-second sample fully green", () => {
     const telemetry = new DiagnosticHudTelemetry(0);
+    telemetry.markSelfCorrectionSourceAvailable();
     telemetry.recordFrame(16.4, 100);
     telemetry.recordInputKey(100);
     telemetry.recordCommand(1, 110);
@@ -70,7 +107,40 @@ describe("DiagnosticHudTelemetry", () => {
     expect(snapshot.metrics).toHaveLength(DIAGNOSTIC_HUD_METRIC_COUNT);
     expect(snapshot.redCount).toBe(0);
     expect(snapshot.amberCount).toBe(0);
+    expect(snapshot.unavailableCount).toBe(0);
     expect(snapshot.metrics.every((metric) => metric.state === "GREEN")).toBe(true);
+  });
+
+  it("prints n/a for every source that has not produced a real sample", () => {
+    const telemetry = new DiagnosticHudTelemetry(0);
+
+    const cold = telemetry.snapshot(0);
+    expect(cold.unavailableCount).toBe(DIAGNOSTIC_HUD_METRIC_COUNT);
+    expect(cold.metrics.every((metric) => metric.state === "N/A")).toBe(true);
+    expect(cold.metrics.every((metric) => metric.value.includes("n/a"))).toBe(true);
+    expect(telemetry.dump(0)).toContain("12 N/A / 0 GREEN");
+
+    telemetry.recordFrame(16, 16);
+    telemetry.markSelfCorrectionSourceAvailable();
+    telemetry.recordContext(
+      {
+        pendingInputs: 0,
+        enemies: 0,
+        projectiles: 0,
+        vfxSurfaces: 0,
+        vfxParticles: 0,
+      },
+      16,
+    );
+    const sampled = telemetry.snapshot(16);
+    expect(sampled.metrics.find((metric) => metric.id === "stalls")?.value).toContain(
+      "0 this session",
+    );
+    expect(sampled.metrics.find((metric) => metric.id === "corrections")?.value).toContain(
+      "0 | max n/a",
+    );
+    expect(sampled.metrics.find((metric) => metric.id === "pending")?.value).toContain("now 0");
+    expect(sampled.metrics.find((metric) => metric.id === "input")?.value).toContain("n/a");
   });
 
   it("makes every hard-failure threshold red and preserves the cold-readable dump", () => {
@@ -137,7 +207,7 @@ describe("DiagnosticHudTelemetry", () => {
 
     const dump = telemetry.dump(10_000, "2026-07-27T12:00:00.000Z");
     expect(dump).toContain("DD DIAG v1 | 2026-07-27T12:00:00.000Z | last 10.0s");
-    expect(dump).toContain("STATUS 12 RED / 0 AMBER / 0 GREEN");
+    expect(dump).toContain("STATUS 12 RED / 0 AMBER / 0 N/A / 0 GREEN");
     expect(dump).toContain("RED   Render<->commit");
     expect(dump).toContain("EVENTS 10s stalls=1 corrections=1 resyncs=1");
     expect(dump).toContain("FLAGS red=Frame time,Stalls >250ms,SELF corrections");

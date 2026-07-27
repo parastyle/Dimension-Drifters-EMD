@@ -1550,8 +1550,8 @@ export class ArenaScene extends Phaser.Scene {
   private selfCorrectionDebugEl: HTMLDivElement | null = null;
   /** B84's standalone overlay is constructed only in explicit dev-tools builds. */
   private diagnosticHud?: DiagnosticHud;
-  /** Fixed 50ms input-command accumulator (clamped ≤3 ticks/frame — a tab-throttle wake must not burst
-   *  20 commands; a >250ms frame gap drops stale replay and L10 Smooth-recovers SELF on the next patch). */
+  /** Fixed 50ms input-command accumulator. Predictor retains the matching frame slices; the window stays
+   *  clamped ≤3 ticks/frame, and >250ms gaps still drop stale replay through the L10 Smooth path. */
   private inputAccMs = 0;
   /** A classified tap released since the last command — jump rides the next numbered input. */
   private jumpQueued = false;
@@ -1564,7 +1564,7 @@ export class ArenaScene extends Phaser.Scene {
   private slideDryWindowAt = -1e9;
   private slideDryPresses = 0;
   private slideDryToastShown = false;
-  /** This frame's sampled WASD direction (drives the command mint AND the predictor's frame preview). */
+  /** This frame's sampled WASD direction (drives command mint, animation, and preview fallback). */
   private curDx = 0;
   private curDy = 0;
   /** Retained raw Arena sample; one decision per frame, with no hot-loop allocation. */
@@ -3411,6 +3411,7 @@ export class ArenaScene extends Phaser.Scene {
     if (paused === this.pauseWasActive) return;
     this.pauseWasActive = paused;
     this.inputAccMs = 0;
+    this.predictor?.resetInputFrameWindow();
     if (paused) {
       this.closeGameplayPanelsForPause();
       this.tweens.pauseAll();
@@ -9882,6 +9883,7 @@ export class ArenaScene extends Phaser.Scene {
       state.isSelf = isSelf;
       if (isSelf && this.predictor) {
         const correctionWasSmoothing = this.predictor.isSmoothingCorrection;
+        const correctionWasFastStallRecovery = this.predictor.isFastStallRecovery;
         this.predictor.decayError(frame.deltaSeconds, this.curDx, this.curDy);
         const predicted = this.predictor.renderPos(this.curDx, this.curDy, this.inputAccMs / 1000);
         const presentationOnlyGunRecoil = !!WEAPONS[player.weapon]?.gun;
@@ -9904,6 +9906,7 @@ export class ArenaScene extends Phaser.Scene {
           this.curDx,
           this.curDy,
           predicted.stance === STANCE_NONE && !presentationOnlyGunRecoil,
+          correctionWasSmoothing || this.predictor.isSmoothingCorrection,
         );
         const motion = this.predictor.clientMovementReport();
         const locomotionSpeed = Math.hypot(motion.mvx, motion.mvy);
@@ -9926,7 +9929,7 @@ export class ArenaScene extends Phaser.Scene {
           Math.max(48, locomotionSpeed + recoilSpeed),
           INTERP_SNAP_PLAYER,
           inputStopped,
-          correctionWasSmoothing || this.predictor.isSmoothingCorrection,
+          correctionWasFastStallRecovery || this.predictor.isFastStallRecovery,
         );
         state.rootX = root.x;
         state.rootY = root.y;
@@ -14776,9 +14779,9 @@ export class ArenaScene extends Phaser.Scene {
     if (import.meta.env.VITE_DD_DEV_TOOLS !== "1" || !clientDevToolsEnabled() || this.diagnosticHud)
       return;
     this.diagnosticHud = new DiagnosticHud((out: DiagnosticHudContext) => {
-      out.pendingInputs = this.predictor?.stats.pending ?? 0;
-      out.enemies = this.room?.state.enemies?.size ?? 0;
-      out.projectiles = this.room?.state.projectiles?.size ?? 0;
+      out.pendingInputs = this.predictor?.stats.pending;
+      out.enemies = this.room?.state.enemies?.size;
+      out.projectiles = this.room?.state.projectiles?.size;
       writeVfxDiagnosticStats(this.vfxPlayer?.bloomRoot, out);
     });
   }
@@ -14964,8 +14967,10 @@ export class ArenaScene extends Phaser.Scene {
           this.predictor.reconcile(view);
         } else {
           this.predictor = new SelfPredictor(view);
-          if (this.selfCorrectionTelemetry)
+          if (this.selfCorrectionTelemetry) {
             this.predictor.setCorrectionObserver((event) => this.recordSelfCorrection(event));
+            this.diagnosticHud?.markSelfCorrectionSourceAvailable();
+          }
           this.predictor.setRelics(
             self.dualWield?.relics,
             self.dualWield?.relics?.airJumpsRemaining,
@@ -15362,6 +15367,8 @@ export class ArenaScene extends Phaser.Scene {
     let renderBeforeCommitX = Number.NaN;
     let renderBeforeCommitY = Number.NaN;
     if (measureRenderCommit && this.diagnosticHud) {
+      // B83's frame samples have filled this exact 50 ms window. Compare its live extrapolated endpoint
+      // with the commit produced from those same samples; this is the alias boundary, not a placeholder.
       const renderBeforeCommit = this.predictor.renderPos(cmd.dx, cmd.dy, TICK_MS / 1000);
       renderBeforeCommitX = renderBeforeCommit.x;
       renderBeforeCommitY = renderBeforeCommit.y;
@@ -15432,12 +15439,18 @@ export class ArenaScene extends Phaser.Scene {
     const aim = this.currentBeamAim();
     const slideHeld =
       !inputBlocked && slideHeldFromBindings(this.keys.SHIFT.isDown, this.keys.CTRL.isDown);
-    this.inputAccMs = Math.min(this.inputAccMs + elapsedForInput, TICK_MS * 3);
+    let unsampledInputMs = Math.min(elapsedForInput, Math.max(0, TICK_MS * 3 - this.inputAccMs));
 
-    // Catch-up remains a fixed-timestep simulation: each elapsed 50ms heartbeat advances prediction once.
-    // Transport-only edges below may lower input latency, but never create additional movement time.
-    while (this.inputAccMs >= TICK_MS) {
-      this.inputAccMs -= TICK_MS;
+    // Capture the physical direction path at frame rate, splitting loaded frames on exact 50ms boundaries.
+    // The same slices drive render preview and the next prediction commit; the 20Hz heartbeat and bounded
+    // immediate transport-edge policy stay unchanged.
+    while (unsampledInputMs > 1e-9) {
+      const sliceMs = Math.min(unsampledInputMs, TICK_MS - this.inputAccMs);
+      this.predictor.sampleInputFrame(nextDx, nextDy, sliceMs / 1000);
+      this.inputAccMs += sliceMs;
+      unsampledInputMs -= sliceMs;
+      if (this.inputAccMs < TICK_MS - 1e-9) continue;
+      this.inputAccMs = 0;
       const cmd = {
         ...this.predictor.mintCmd(
           nextDx,
