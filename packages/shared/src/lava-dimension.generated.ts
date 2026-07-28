@@ -26,7 +26,8 @@ export const LAVA_PLATFORM_PREFABS: Readonly<Record<string, PlatformPrefab>> = {
         "cellPx": 12,
         "alphaThreshold": 40,
         "edgeInsetPx": 0,
-        "note": "Alpha envelope + molten-opening rejection; body radius is applied by runtime tests."
+        "minHoleInscribedDiameterPx": 48,
+        "note": "Alpha envelope + molten-opening rejection; derived holes must fit one player diameter, and body radius is applied by runtime tests."
       },
       "surfaces": [
         {
@@ -750,7 +751,8 @@ export const LAVA_PLATFORM_PREFABS: Readonly<Record<string, PlatformPrefab>> = {
         "cellPx": 12,
         "alphaThreshold": 40,
         "edgeInsetPx": 0,
-        "note": "Alpha envelope + molten-opening rejection; body radius is applied by runtime tests."
+        "minHoleInscribedDiameterPx": 48,
+        "note": "Alpha envelope + molten-opening rejection; derived holes must fit one player diameter, and body radius is applied by runtime tests."
       },
       "surfaces": [
         {
@@ -1437,7 +1439,8 @@ export const LAVA_PLATFORM_PREFABS: Readonly<Record<string, PlatformPrefab>> = {
         "cellPx": 12,
         "alphaThreshold": 40,
         "edgeInsetPx": 0,
-        "note": "Alpha envelope + molten-opening rejection; body radius is applied by runtime tests."
+        "minHoleInscribedDiameterPx": 48,
+        "note": "Alpha envelope + molten-opening rejection; derived holes must fit one player diameter, and body radius is applied by runtime tests."
       },
       "surfaces": [
         {
@@ -2101,7 +2104,8 @@ export const LAVA_PLATFORM_PREFABS: Readonly<Record<string, PlatformPrefab>> = {
         "cellPx": 12,
         "alphaThreshold": 40,
         "edgeInsetPx": 0,
-        "note": "Alpha envelope + molten-opening rejection; body radius is applied by runtime tests."
+        "minHoleInscribedDiameterPx": 48,
+        "note": "Alpha envelope + molten-opening rejection; derived holes must fit one player diameter, and body radius is applied by runtime tests."
       },
       "surfaces": [
         {
@@ -2873,7 +2877,8 @@ export const LAVA_PLATFORM_PREFABS: Readonly<Record<string, PlatformPrefab>> = {
         "cellPx": 12,
         "alphaThreshold": 40,
         "edgeInsetPx": 0,
-        "note": "Alpha envelope + molten-opening rejection; body radius is applied by runtime tests."
+        "minHoleInscribedDiameterPx": 48,
+        "note": "Alpha envelope + molten-opening rejection; derived holes must fit one player diameter, and body radius is applied by runtime tests."
       },
       "surfaces": [
         {
@@ -3633,7 +3638,8 @@ export const LAVA_PLATFORM_PREFABS: Readonly<Record<string, PlatformPrefab>> = {
         "cellPx": 12,
         "alphaThreshold": 40,
         "edgeInsetPx": 0,
-        "note": "Alpha envelope + molten-opening rejection; body radius is applied by runtime tests."
+        "minHoleInscribedDiameterPx": 48,
+        "note": "Alpha envelope + molten-opening rejection; derived holes must fit one player diameter, and body radius is applied by runtime tests."
       },
       "surfaces": [
         {
@@ -5307,7 +5313,8 @@ export const LAVA_PLATFORM_PREFABS: Readonly<Record<string, PlatformPrefab>> = {
         "cellPx": 12,
         "alphaThreshold": 40,
         "edgeInsetPx": 0,
-        "note": "Alpha envelope + molten-opening rejection; body radius is applied by runtime tests."
+        "minHoleInscribedDiameterPx": 48,
+        "note": "Alpha envelope + molten-opening rejection; derived holes must fit one player diameter, and body radius is applied by runtime tests."
       },
       "surfaces": [
         {
@@ -6926,7 +6933,8 @@ export const LAVA_PLATFORM_PREFABS: Readonly<Record<string, PlatformPrefab>> = {
         "cellPx": 12,
         "alphaThreshold": 40,
         "edgeInsetPx": 0,
-        "note": "Alpha envelope + molten-opening rejection; body radius is applied by runtime tests."
+        "minHoleInscribedDiameterPx": 48,
+        "note": "Alpha envelope + molten-opening rejection; derived holes must fit one player diameter, and body radius is applied by runtime tests."
       },
       "surfaces": [
         {
@@ -8565,7 +8573,8 @@ export const LAVA_PLATFORM_PREFABS: Readonly<Record<string, PlatformPrefab>> = {
         "cellPx": 12,
         "alphaThreshold": 40,
         "edgeInsetPx": 0,
-        "note": "Alpha envelope + molten-opening rejection; body radius is applied by runtime tests."
+        "minHoleInscribedDiameterPx": 48,
+        "note": "Alpha envelope + molten-opening rejection; derived holes must fit one player diameter, and body radius is applied by runtime tests."
       },
       "surfaces": [
         {
@@ -10271,452 +10280,6 @@ export const LAVA_PLATFORM_PREFABS: Readonly<Record<string, PlatformPrefab>> = {
           "holes": [
             [
               {
-                "x": 1800,
-                "y": 900
-              },
-              {
-                "x": 1788,
-                "y": 924
-              },
-              {
-                "x": 1764,
-                "y": 924
-              },
-              {
-                "x": 1752,
-                "y": 1068
-              },
-              {
-                "x": 1704,
-                "y": 1116
-              },
-              {
-                "x": 1680,
-                "y": 1116
-              },
-              {
-                "x": 1680,
-                "y": 1128
-              },
-              {
-                "x": 1344,
-                "y": 1128
-              },
-              {
-                "x": 1344,
-                "y": 1140
-              },
-              {
-                "x": 1380,
-                "y": 1140
-              },
-              {
-                "x": 1380,
-                "y": 1152
-              },
-              {
-                "x": 1608,
-                "y": 1152
-              },
-              {
-                "x": 1608,
-                "y": 1140
-              },
-              {
-                "x": 1668,
-                "y": 1140
-              },
-              {
-                "x": 1728,
-                "y": 1092
-              },
-              {
-                "x": 1752,
-                "y": 1092
-              },
-              {
-                "x": 1776,
-                "y": 1068
-              },
-              {
-                "x": 1776,
-                "y": 1020
-              },
-              {
-                "x": 1764,
-                "y": 1020
-              },
-              {
-                "x": 1764,
-                "y": 948
-              },
-              {
-                "x": 1800,
-                "y": 912
-              },
-              {
-                "x": 1956,
-                "y": 912
-              },
-              {
-                "x": 1956,
-                "y": 900
-              }
-            ],
-            [
-              {
-                "x": 396,
-                "y": 996
-              },
-              {
-                "x": 384,
-                "y": 996
-              },
-              {
-                "x": 384,
-                "y": 1068
-              },
-              {
-                "x": 432,
-                "y": 1116
-              },
-              {
-                "x": 456,
-                "y": 1116
-              },
-              {
-                "x": 396,
-                "y": 1056
-              }
-            ],
-            [
-              {
-                "x": 1224,
-                "y": 1032
-              },
-              {
-                "x": 1236,
-                "y": 1080
-              },
-              {
-                "x": 1248,
-                "y": 1080
-              },
-              {
-                "x": 1248,
-                "y": 1260
-              },
-              {
-                "x": 1272,
-                "y": 1260
-              },
-              {
-                "x": 1260,
-                "y": 1248
-              },
-              {
-                "x": 1260,
-                "y": 1056
-              },
-              {
-                "x": 1248,
-                "y": 1056
-              },
-              {
-                "x": 1248,
-                "y": 1032
-              }
-            ],
-            [
-              {
-                "x": 468,
-                "y": 1128
-              },
-              {
-                "x": 468,
-                "y": 1140
-              },
-              {
-                "x": 552,
-                "y": 1140
-              },
-              {
-                "x": 552,
-                "y": 1152
-              },
-              {
-                "x": 780,
-                "y": 1152
-              },
-              {
-                "x": 780,
-                "y": 1128
-              }
-            ],
-            [
-              {
-                "x": 888,
-                "y": 1176
-              },
-              {
-                "x": 888,
-                "y": 1260
-              },
-              {
-                "x": 912,
-                "y": 1260
-              },
-              {
-                "x": 912,
-                "y": 1236
-              },
-              {
-                "x": 912,
-                "y": 1176
-              }
-            ],
-            [
-              {
-                "x": 1248,
-                "y": 1272
-              },
-              {
-                "x": 1248,
-                "y": 1344
-              },
-              {
-                "x": 1260,
-                "y": 1344
-              },
-              {
-                "x": 1260,
-                "y": 1368
-              },
-              {
-                "x": 1272,
-                "y": 1368
-              },
-              {
-                "x": 1272,
-                "y": 1272
-              }
-            ],
-            [
-              {
-                "x": 876,
-                "y": 1380
-              },
-              {
-                "x": 876,
-                "y": 1608
-              },
-              {
-                "x": 864,
-                "y": 1608
-              },
-              {
-                "x": 864,
-                "y": 1644
-              },
-              {
-                "x": 888,
-                "y": 1656
-              },
-              {
-                "x": 888,
-                "y": 1488
-              },
-              {
-                "x": 900,
-                "y": 1488
-              },
-              {
-                "x": 900,
-                "y": 1464
-              },
-              {
-                "x": 900,
-                "y": 1452
-              },
-              {
-                "x": 900,
-                "y": 1380
-              }
-            ],
-            [
-              {
-                "x": 1284,
-                "y": 1512
-              },
-              {
-                "x": 1260,
-                "y": 1524
-              },
-              {
-                "x": 1260,
-                "y": 1572
-              },
-              {
-                "x": 1272,
-                "y": 1572
-              },
-              {
-                "x": 1272,
-                "y": 1656
-              },
-              {
-                "x": 1284,
-                "y": 1656
-              }
-            ],
-            [
-              {
-                "x": 864,
-                "y": 1668
-              },
-              {
-                "x": 864,
-                "y": 1800
-              },
-              {
-                "x": 876,
-                "y": 1800
-              },
-              {
-                "x": 876,
-                "y": 1716
-              },
-              {
-                "x": 888,
-                "y": 1716
-              },
-              {
-                "x": 888,
-                "y": 1668
-              }
-            ],
-            [
-              {
-                "x": 1272,
-                "y": 1668
-              },
-              {
-                "x": 1272,
-                "y": 1776
-              },
-              {
-                "x": 1296,
-                "y": 1776
-              },
-              {
-                "x": 1296,
-                "y": 1680
-              },
-              {
-                "x": 1284,
-                "y": 1680
-              }
-            ],
-            [
-              {
-                "x": 852,
-                "y": 1812
-              },
-              {
-                "x": 852,
-                "y": 1956
-              },
-              {
-                "x": 864,
-                "y": 1956
-              },
-              {
-                "x": 864,
-                "y": 1932
-              },
-              {
-                "x": 876,
-                "y": 1932
-              },
-              {
-                "x": 876,
-                "y": 1812
-              }
-            ],
-            [
-              {
-                "x": 1296,
-                "y": 1812
-              },
-              {
-                "x": 1284,
-                "y": 1812
-              },
-              {
-                "x": 1284,
-                "y": 1932
-              },
-              {
-                "x": 1308,
-                "y": 1932
-              },
-              {
-                "x": 1308,
-                "y": 1884
-              },
-              {
-                "x": 1296,
-                "y": 1884
-              }
-            ],
-            [
-              {
-                "x": 1284,
-                "y": 1968
-              },
-              {
-                "x": 1284,
-                "y": 2016
-              },
-              {
-                "x": 1260,
-                "y": 2040
-              },
-              {
-                "x": 1236,
-                "y": 2040
-              },
-              {
-                "x": 1236,
-                "y": 2136
-              },
-              {
-                "x": 1260,
-                "y": 2136
-              },
-              {
-                "x": 1260,
-                "y": 2052
-              },
-              {
-                "x": 1296,
-                "y": 2028
-              },
-              {
-                "x": 1296,
-                "y": 1992
-              },
-              {
-                "x": 1308,
-                "y": 1992
-              },
-              {
-                "x": 1308,
-                "y": 1968
-              }
-            ],
-            [
-              {
                 "x": 1044,
                 "y": 2508
               },
@@ -10799,344 +10362,6 @@ export const LAVA_PLATFORM_PREFABS: Readonly<Record<string, PlatformPrefab>> = {
               {
                 "x": 1104,
                 "y": 2508
-              }
-            ],
-            [
-              {
-                "x": 120,
-                "y": 2628
-              },
-              {
-                "x": 108,
-                "y": 2652
-              },
-              {
-                "x": 264,
-                "y": 2652
-              },
-              {
-                "x": 264,
-                "y": 2640
-              },
-              {
-                "x": 228,
-                "y": 2640
-              },
-              {
-                "x": 216,
-                "y": 2640
-              },
-              {
-                "x": 144,
-                "y": 2640
-              },
-              {
-                "x": 144,
-                "y": 2628
-              }
-            ],
-            [
-              {
-                "x": 1920,
-                "y": 2664
-              },
-              {
-                "x": 1920,
-                "y": 2688
-              },
-              {
-                "x": 1932,
-                "y": 2688
-              },
-              {
-                "x": 1932,
-                "y": 2736
-              },
-              {
-                "x": 1860,
-                "y": 2808
-              },
-              {
-                "x": 1836,
-                "y": 2808
-              },
-              {
-                "x": 1836,
-                "y": 2880
-              },
-              {
-                "x": 1788,
-                "y": 2928
-              },
-              {
-                "x": 1764,
-                "y": 2928
-              },
-              {
-                "x": 1728,
-                "y": 2976
-              },
-              {
-                "x": 1704,
-                "y": 2976
-              },
-              {
-                "x": 1644,
-                "y": 3048
-              },
-              {
-                "x": 1620,
-                "y": 3048
-              },
-              {
-                "x": 1596,
-                "y": 3084
-              },
-              {
-                "x": 1572,
-                "y": 3084
-              },
-              {
-                "x": 1572,
-                "y": 3096
-              },
-              {
-                "x": 1488,
-                "y": 3096
-              },
-              {
-                "x": 1452,
-                "y": 3144
-              },
-              {
-                "x": 1428,
-                "y": 3144
-              },
-              {
-                "x": 1416,
-                "y": 3168
-              },
-              {
-                "x": 1296,
-                "y": 3168
-              },
-              {
-                "x": 1296,
-                "y": 3180
-              },
-              {
-                "x": 1428,
-                "y": 3180
-              },
-              {
-                "x": 1452,
-                "y": 3144
-              },
-              {
-                "x": 1476,
-                "y": 3144
-              },
-              {
-                "x": 1500,
-                "y": 3108
-              },
-              {
-                "x": 1596,
-                "y": 3108
-              },
-              {
-                "x": 1656,
-                "y": 3036
-              },
-              {
-                "x": 1680,
-                "y": 3036
-              },
-              {
-                "x": 1740,
-                "y": 2964
-              },
-              {
-                "x": 1764,
-                "y": 2964
-              },
-              {
-                "x": 1812,
-                "y": 2904
-              },
-              {
-                "x": 1836,
-                "y": 2904
-              },
-              {
-                "x": 1860,
-                "y": 2880
-              },
-              {
-                "x": 1872,
-                "y": 2796
-              },
-              {
-                "x": 1896,
-                "y": 2796
-              },
-              {
-                "x": 1944,
-                "y": 2748
-              },
-              {
-                "x": 1944,
-                "y": 2664
-              }
-            ],
-            [
-              {
-                "x": 240,
-                "y": 2760
-              },
-              {
-                "x": 300,
-                "y": 2820
-              },
-              {
-                "x": 300,
-                "y": 2880
-              },
-              {
-                "x": 336,
-                "y": 2916
-              },
-              {
-                "x": 360,
-                "y": 2916
-              },
-              {
-                "x": 312,
-                "y": 2868
-              },
-              {
-                "x": 312,
-                "y": 2844
-              },
-              {
-                "x": 324,
-                "y": 2844
-              },
-              {
-                "x": 324,
-                "y": 2820
-              },
-              {
-                "x": 264,
-                "y": 2760
-              }
-            ],
-            [
-              {
-                "x": 516,
-                "y": 3048
-              },
-              {
-                "x": 564,
-                "y": 3108
-              },
-              {
-                "x": 648,
-                "y": 3108
-              },
-              {
-                "x": 648,
-                "y": 3120
-              },
-              {
-                "x": 672,
-                "y": 3120
-              },
-              {
-                "x": 660,
-                "y": 3096
-              },
-              {
-                "x": 576,
-                "y": 3096
-              },
-              {
-                "x": 540,
-                "y": 3048
-              }
-            ],
-            [
-              {
-                "x": 864,
-                "y": 3096
-              },
-              {
-                "x": 864,
-                "y": 3216
-              },
-              {
-                "x": 876,
-                "y": 3216
-              },
-              {
-                "x": 876,
-                "y": 3180
-              },
-              {
-                "x": 888,
-                "y": 3180
-              },
-              {
-                "x": 888,
-                "y": 3096
-              }
-            ],
-            [
-              {
-                "x": 1260,
-                "y": 3096
-              },
-              {
-                "x": 1260,
-                "y": 3216
-              },
-              {
-                "x": 1284,
-                "y": 3216
-              },
-              {
-                "x": 1284,
-                "y": 3108
-              },
-              {
-                "x": 1272,
-                "y": 3108
-              }
-            ],
-            [
-              {
-                "x": 684,
-                "y": 3132
-              },
-              {
-                "x": 720,
-                "y": 3180
-              },
-              {
-                "x": 852,
-                "y": 3180
-              },
-              {
-                "x": 852,
-                "y": 3168
-              },
-              {
-                "x": 732,
-                "y": 3168
-              },
-              {
-                "x": 708,
-                "y": 3132
               }
             ]
           ]

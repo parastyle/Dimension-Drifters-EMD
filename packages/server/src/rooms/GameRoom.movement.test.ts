@@ -1198,6 +1198,12 @@ describe("GameRoom — Lava Foundry walkable-floor truth", () => {
     seedTheme: 7_919,
     seedDecor: 104_729,
   };
+  const bridgeSeeds = {
+    seedTerrain: 2_802_362_286,
+    seedHazard: 1_358,
+    seedTheme: 110_866,
+    seedDecor: 1_466_206,
+  };
   const floorSamples = [
     { nodeId: "spawn", prefabId: "broken-security-gate-platform", x: 942, y: 114 },
     { nodeId: "route", prefabId: "broken-lavafall-overlook", x: 450, y: 114 },
@@ -1206,10 +1212,10 @@ describe("GameRoom — Lava Foundry walkable-floor truth", () => {
     { nodeId: "reward", prefabId: "broken-glass-observatory", x: 558, y: 102 },
   ] as const;
 
-  function fixture(id: string) {
+  function fixture(id: string, seeds = lavaSeeds) {
     const h = makeRoom({ dimensionId: enemyComboShared.LAVA_DIMENSION_ID });
     h.join(id);
-    h.room.map = enemyComboShared.generateLavaArena(lavaSeeds);
+    h.room.map = enemyComboShared.generateLavaArena(seeds);
     h.room.spawnAccum = -1_000_000;
     h.room.shifterCd = 1_000_000;
     const player = h.state().players.get(id);
@@ -1333,6 +1339,53 @@ describe("GameRoom — Lava Foundry walkable-floor truth", () => {
       h.tick(1);
       expect(player.hp, `arc sample ${sample}`).toBe(hpBefore);
       expect(player.fellSeq, `arc sample ${sample}`).toBe(fellBefore);
+    }
+  });
+
+  it("traverses the glass-to-reactor bridge end to end without a pit reposition", () => {
+    const { h, player, combat } = fixture("bridge-walk", bridgeSeeds);
+    const bridge = h.room.map.lavaLayout.rooms.find(
+      (candidate: AnyRoom) => candidate.prefabId === "glass-to-reactor-vertical-bridge",
+    );
+    expect(bridge).toBeDefined();
+    if (!bridge) return;
+
+    // A natural left-lane walk down the bridge, then around the genuine reactor-core opening.
+    const localPath = [
+      { x: 1_080, y: 650 },
+      { x: 1_080, y: 900 },
+      { x: 900, y: 1_100 },
+      { x: 900, y: 2_200 },
+      { x: 840, y: 2_400 },
+      { x: 780, y: 2_600 },
+      { x: 840, y: 2_800 },
+      { x: 1_080, y: 3_300 },
+    ];
+    const fellBefore = player.fellSeq;
+
+    for (let segment = 0; segment < localPath.length - 1; segment++) {
+      const from = localPath[segment];
+      const to = localPath[segment + 1];
+      if (!from || !to) throw new Error(`missing bridge path segment ${segment}`);
+      const distance = Math.hypot(to.x - from.x, to.y - from.y);
+      const samples = Math.ceil(distance / 12);
+      for (let sample = segment === 0 ? 0 : 1; sample <= samples; sample++) {
+        const progress = sample / samples;
+        player.x = bridge.x + from.x + (to.x - from.x) * progress;
+        player.y =
+          bridge.y +
+          from.y +
+          (to.y - from.y) * progress -
+          PLAYER_GROUND_CONTACT_OFFSET_Y;
+        player.height = 0;
+        player.vh = 0;
+        combat.vh = 0;
+        h.tick(1);
+        expect(
+          player.fellSeq,
+          `bridge segment ${segment}, sample ${sample}/${samples}`,
+        ).toBe(fellBefore);
+      }
     }
   });
 });

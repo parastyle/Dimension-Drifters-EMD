@@ -223,7 +223,12 @@ describe("Lava Foundry — manifest registry and collision contract", () => {
         string,
         {
           coordinateSpace: string;
-          provenance: { kind: string; edgeInsetPx?: number; bottomTrimFraction?: number };
+          provenance: {
+            kind: string;
+            edgeInsetPx?: number;
+            bottomTrimFraction?: number;
+            minHoleInscribedDiameterPx?: number;
+          };
           surfaces: Array<{ id: string; polygon: unknown[]; holes: unknown[][] }>;
         }
       >;
@@ -240,6 +245,7 @@ describe("Lava Foundry — manifest registry and collision contract", () => {
       if (entry.provenance.kind === "derived-alpha-v1") {
         expect(entry.provenance.edgeInsetPx, id).toBe(0);
         expect(entry.provenance.bottomTrimFraction, id).toBeUndefined();
+        expect(entry.provenance.minHoleInscribedDiameterPx, id).toBe(PLAYER_RADIUS * 2);
       }
       expect(entry.surfaces.length, id).toBeGreaterThan(0);
       for (const surface of entry.surfaces) {
@@ -249,7 +255,7 @@ describe("Lava Foundry — manifest registry and collision contract", () => {
     }
   });
 
-  it("keeps a player-radius body centre on 80–90% of each regular platform's drawn floor", () => {
+  it("keeps a player-radius body centre on at least 80% of every prefab's drawn floor", () => {
     expect(
       Object.fromEntries(
         [
@@ -258,6 +264,10 @@ describe("Lava Foundry — manifest registry and collision contract", () => {
           "broken-lavafall-overlook",
           "broken-reactor-arena",
           "broken-security-gate-platform",
+          "broken-mega-arena",
+          "dual-turntable-bridge",
+          "security-to-turntable-bridge",
+          "glass-to-reactor-vertical-bridge",
         ].map((id) => [id, regularPlatformWalkableShare(id)]),
       ),
     ).toEqual({
@@ -266,6 +276,10 @@ describe("Lava Foundry — manifest registry and collision contract", () => {
       "broken-lavafall-overlook": 83.7,
       "broken-reactor-arena": 82.3,
       "broken-security-gate-platform": 89.1,
+      "broken-mega-arena": 91.9,
+      "dual-turntable-bridge": 87.6,
+      "security-to-turntable-bridge": 88.8,
+      "glass-to-reactor-vertical-bridge": 90.3,
     });
   });
 
@@ -367,7 +381,7 @@ describe("Lava Foundry — graph placement, walkability, and determinism", () =>
     expect(destinationHeroes / 2_000).toBeGreaterThanOrEqual(0.2);
   }, 120_000);
 
-  it("keeps reactor openings lethal and the full ±100px join jitter on the spawn deck", () => {
+  it("keeps genuine reactor openings lethal and the full ±100px join jitter on the spawn deck", () => {
     const map = generateLavaArena(LAVA_EVIDENCE_SEEDS);
     const reactor = map.lavaLayout?.rooms.find((room) => room.prefabId === "broken-reactor-arena");
     const hole = LAVA_PLATFORM_PREFABS["broken-reactor-arena"]?.collision.surfaces[0]?.holes[0];
@@ -377,6 +391,20 @@ describe("Lava Foundry — graph placement, walkability, and determinism", () =>
       const x = reactor.x + hole.reduce((sum, point) => sum + point.x, 0) / hole.length;
       const y = reactor.y + hole.reduce((sum, point) => sum + point.y, 0) / hole.length;
       expect(isPitAtPx(map, x, y)).toBe(true);
+    }
+    const bridgeMap = generateLavaArena(sample(14));
+    const bridge = bridgeMap.lavaLayout?.rooms.find(
+      (room) => room.prefabId === "glass-to-reactor-vertical-bridge",
+    );
+    const bridgeHoles =
+      LAVA_PLATFORM_PREFABS["glass-to-reactor-vertical-bridge"]?.collision.surfaces[0]?.holes;
+    expect(bridge).toBeDefined();
+    expect(bridgeHoles).toHaveLength(1);
+    const bridgeHole = bridgeHoles?.[0];
+    if (bridge && bridgeHole) {
+      const x = bridge.x + bridgeHole.reduce((sum, point) => sum + point.x, 0) / bridgeHole.length;
+      const y = bridge.y + bridgeHole.reduce((sum, point) => sum + point.y, 0) / bridgeHole.length;
+      expect(isPitAtPx(bridgeMap, x, y)).toBe(true);
     }
     for (let x = -100; x <= 100; x += 20) {
       for (let y = -100; y <= 100; y += 20) {

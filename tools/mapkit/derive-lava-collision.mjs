@@ -24,8 +24,11 @@ const OUTPUT = join(DATA_DIR, "collision-surfaces.json");
 const CELL = 12;
 const ALPHA_THRESHOLD = 40;
 const MIN_OUTER_AREA = 60_000;
-const MIN_HOLE_AREA = 2_000;
+const PLAYER_RADIUS_PX = 24;
+const PLAYER_DIAMETER_PX = PLAYER_RADIUS_PX * 2;
+const MIN_HOLE_AREA = Math.PI * PLAYER_RADIUS_PX ** 2;
 const SIMPLIFY_TOLERANCE = 10;
+const HOLE_MEASURE_STEP_PX = CELL / 6;
 
 const manifests = [
   {
@@ -106,6 +109,35 @@ function pointInPolygon(point, polygon) {
     if (intersects) inside = !inside;
   }
   return inside;
+}
+
+/**
+ * Approximate the largest circular body that can fit wholly inside a derived opening. The source
+ * contour is already quantized to 12 px cells, so a 2 px sample is comfortably finer than its input
+ * precision. Equivalent-area diameter is deliberately not used: long molten seams can have substantial
+ * area while remaining far too narrow for a player to fall through.
+ */
+function maximumInscribedDiameter(polygon) {
+  const minX = Math.min(...polygon.map((point) => point.x));
+  const minY = Math.min(...polygon.map((point) => point.y));
+  const maxX = Math.max(...polygon.map((point) => point.x));
+  const maxY = Math.max(...polygon.map((point) => point.y));
+  let maximumRadius = 0;
+  for (let y = minY; y <= maxY; y += HOLE_MEASURE_STEP_PX) {
+    for (let x = minX; x <= maxX; x += HOLE_MEASURE_STEP_PX) {
+      const point = { x, y };
+      if (!pointInPolygon(point, polygon)) continue;
+      let radius = Number.POSITIVE_INFINITY;
+      for (let index = 0; index < polygon.length; index++) {
+        radius = Math.min(
+          radius,
+          pointSegmentDistance(point, polygon[index], polygon[(index + 1) % polygon.length]),
+        );
+      }
+      maximumRadius = Math.max(maximumRadius, radius);
+    }
+  }
+  return maximumRadius * 2;
 }
 
 function erode(mask, cols, rows, radius) {
@@ -280,10 +312,12 @@ async function derive(asset, options) {
   if (outers.length === 0)
     throw new Error(`${asset.id}: alpha derivation produced no walkable surface`);
 
-  // Raised rails and panel seams can briefly disappear from the conservative top-surface mask. They are
-  // not lava holes. Only reactor-authored prefabs retain a derived internal opening; their molten core is
-  // the one visual void that must remain lethal in the default data.
-  const retainedHoles = asset.id.includes("reactor") ? holes : [];
+  // Raised rails, panel seams, and painted grating can briefly disappear from the conservative top-surface
+  // mask. They are not lava holes. Reactor-authored prefabs retain only an opening that can contain a full
+  // player-diameter circle; narrow molten detail cannot meaningfully swallow the body.
+  const retainedHoles = asset.id.includes("reactor")
+    ? holes.filter((hole) => maximumInscribedDiameter(hole) + 1e-6 >= PLAYER_DIAMETER_PX)
+    : [];
   const surfaces = outers
     .sort((a, b) => Math.abs(signedArea(b)) - Math.abs(signedArea(a)))
     .map((polygon, index) => ({
@@ -301,7 +335,8 @@ async function derive(asset, options) {
         cellPx: CELL,
         alphaThreshold: ALPHA_THRESHOLD,
         edgeInsetPx: options.edgeInsetPx,
-        note: "Alpha envelope + molten-opening rejection; body radius is applied by runtime tests.",
+        minHoleInscribedDiameterPx: PLAYER_DIAMETER_PX,
+        note: "Alpha envelope + molten-opening rejection; derived holes must fit one player diameter, and body radius is applied by runtime tests.",
       },
       surfaces,
     },
