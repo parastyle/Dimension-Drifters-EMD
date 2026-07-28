@@ -28,6 +28,7 @@ import {
   MAP_SPAWN_CLEAR_TILES,
   MAP_TILE,
   PLAYER_GROUND_CONTACT_OFFSET_Y,
+  PLAYER_RADIUS,
   RIFT_OFFSET,
 } from "./constants.js";
 import type { LavaRoomLayout } from "./lava-prefabs.js";
@@ -641,6 +642,14 @@ export function isPitAtPx(map: ArenaMap, px: number, py: number): boolean {
  * the feet instead of the torso/root centre so the hazard crosses the painted lip when the character does.
  */
 export function isPlayerGroundContactInPit(map: ArenaMap, rootX: number, rootY: number): boolean {
+  if (map.lavaLayout) {
+    return !isArenaDiscSafe(
+      map,
+      rootX,
+      rootY + PLAYER_GROUND_CONTACT_OFFSET_Y,
+      PLAYER_RADIUS,
+    );
+  }
   return isPitAtPx(map, rootX, rootY + PLAYER_GROUND_CONTACT_OFFSET_Y);
 }
 
@@ -687,6 +696,12 @@ export function nearestGroundPx(map: ArenaMap, px: number, py: number): { x: num
 
 /** Nudge a spawn position onto solid GROUND so nothing spawns inside a pit and falls on the next tick. */
 export function safeSpawnPos(map: ArenaMap, x: number, y: number): { x: number; y: number } {
+  if (map.lavaLayout) {
+    const groundY = y + PLAYER_GROUND_CONTACT_OFFSET_Y;
+    if (isArenaDiscSafe(map, x, groundY, PLAYER_RADIUS)) return { x, y };
+    const safe = nearestArenaDisc(map, x, groundY, PLAYER_RADIUS);
+    return { x: safe.x, y: safe.y - PLAYER_GROUND_CONTACT_OFFSET_Y };
+  }
   return isPitAtPx(map, x, y) ? nearestGroundPx(map, x, y) : { x, y };
 }
 

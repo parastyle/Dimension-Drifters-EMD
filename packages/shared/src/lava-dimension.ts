@@ -30,7 +30,7 @@ export {
 
 export const LAVA_DIMENSION_ID = "lava-foundry" as const;
 export const LAVA_COLLISION_TILE_PX = 20;
-/** Leaves 32 px beneath the real 372 px distance-jump reach; polygons already inset actor centres. */
+/** Leaves 32 px beneath the real 372 px distance-jump reach; body radii are applied at query time. */
 export const LAVA_MAX_TRAVERSAL_GAP_PX = DIST_JUMP_REACH - 32;
 /** Exact Euclidean clearance required between every pair of walkable collision surfaces. */
 export const LAVA_MIN_PLATFORM_CLEARANCE_PX = 72;
@@ -445,19 +445,13 @@ function constructMiddleRows(
     gaps["route->hub"],
   );
   if (!route) return undefined;
-  const spawnBounds = localCollisionBounds(prefab(ids.spawn as string));
   const spawn = placeAcrossBarrier(
     nodeById("spawn"),
     ids.spawn as string,
     route,
-    outward,
-    outward === "left"
-      ? route.collisionBounds.x
-      : route.collisionBounds.x + route.collisionBounds.width,
-    Math.min(
-      supportAlignedStart(route, ids.spawn as string, outward),
-      route.collisionBounds.y + route.collisionBounds.height - spawnBounds.height,
-    ),
+    "above",
+    route.collisionBounds.y,
+    supportAlignedStart(route, ids.spawn as string, "above"),
     gaps["spawn->route"],
   );
   if (!spawn) return undefined;
@@ -527,22 +521,13 @@ function constructLandscapeHub(
     gaps["hub->branch"],
   );
   if (!route || !branch) return undefined;
-  const spawnBounds = localCollisionBounds(prefab(ids.spawn as string));
   const spawn = placeAcrossBarrier(
     nodeById("spawn"),
     ids.spawn as string,
     route,
-    outward,
-    outward === "left"
-      ? route.collisionBounds.x
-      : route.collisionBounds.x + route.collisionBounds.width,
-    Math.min(
-      supportAlignedStart(route, ids.spawn as string, outward),
-      Math.min(
-        route.collisionBounds.y + route.collisionBounds.height,
-        hub.collisionBounds.y - LAVA_MIN_PLATFORM_CLEARANCE_PX,
-      ) - spawnBounds.height,
-    ),
+    "above",
+    route.collisionBounds.y,
+    supportAlignedStart(route, ids.spawn as string, "above"),
     gaps["spawn->route"],
   );
   const exit = placeAcrossBarrier(

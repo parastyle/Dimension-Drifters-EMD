@@ -904,16 +904,15 @@ export const roomMovementMethods = {
     dx = targetX - player.x;
     dy = targetY - player.y;
     len = Math.hypot(dx, dy);
-    if (len <= 1e-4) {
-      this.cancelMoveStance(player, c, false);
-      return;
-    }
-    c.dashDirX = dx / len;
-    c.dashDirY = dy / len;
+    // Endpoint validation may legitimately collapse onto takeoff (for example, a small isolated safe
+    // floor patch). That removes horizontal travel, not the authored jump sentence.
+    const stationary = len <= 1e-4;
+    c.dashDirX = stationary ? 0 : dx / len;
+    c.dashDirY = stationary ? 0 : dy / len;
     c.dashBaseDirX = c.dashDirX;
     c.dashBaseDirY = c.dashDirY;
     c.dashSteer = 0;
-    c.dashSpeed = Math.min(DIST_JUMP_SPEED, len / DIST_JUMP_AIRTIME);
+    c.dashSpeed = stationary ? 0 : Math.min(DIST_JUMP_SPEED, len / DIST_JUMP_AIRTIME);
     c.distJumpCd = DIST_JUMP_COOLDOWN;
     c.vh = DIST_JUMP_VERTICAL_VELOCITY;
     player.vh = c.vh;

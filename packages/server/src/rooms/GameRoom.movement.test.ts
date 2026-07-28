@@ -1190,3 +1190,149 @@ describe("GameRoom — §6 dimension chain (v0.103: extract-vs-descend, bank-or-
     if (shallow > 0 && deep > 0) expect(deep).toBeGreaterThan(shallow); // ×1.5 at depth 3
   });
 });
+
+describe("GameRoom — Lava Foundry walkable-floor truth", () => {
+  const lavaSeeds = {
+    seedTerrain: 2_654_435_761,
+    seedHazard: 97,
+    seedTheme: 7_919,
+    seedDecor: 104_729,
+  };
+  const floorSamples = [
+    { nodeId: "spawn", prefabId: "broken-security-gate-platform", x: 942, y: 114 },
+    { nodeId: "route", prefabId: "broken-lavafall-overlook", x: 450, y: 114 },
+    { nodeId: "hub", prefabId: "broken-reactor-arena", x: 378, y: 102 },
+    { nodeId: "branch", prefabId: "broken-turntable-arena", x: 786, y: 162 },
+    { nodeId: "reward", prefabId: "broken-glass-observatory", x: 558, y: 102 },
+  ] as const;
+
+  function fixture(id: string) {
+    const h = makeRoom({ dimensionId: enemyComboShared.LAVA_DIMENSION_ID });
+    h.join(id);
+    h.room.map = enemyComboShared.generateLavaArena(lavaSeeds);
+    h.room.spawnAccum = -1_000_000;
+    h.room.shifterCd = 1_000_000;
+    const player = h.state().players.get(id);
+    player.hp = player.maxHp;
+    const combat = h.room.combat.get(id);
+    combat.pitGrace = 0;
+    return { h, player, combat };
+  }
+
+  function standingRoot(
+    room: AnyRoom,
+    sample: {
+      nodeId: string;
+      prefabId: string;
+      x: number;
+      y: number;
+    },
+  ) {
+    const placed = room.map.lavaLayout.rooms.find(
+      (candidate: AnyRoom) =>
+        candidate.nodeId === sample.nodeId && candidate.prefabId === sample.prefabId,
+    );
+    if (!placed) throw new Error(`missing ${sample.nodeId}/${sample.prefabId}`);
+    return {
+      x: placed.x + sample.x,
+      y: placed.y + sample.y - PLAYER_GROUND_CONTACT_OFFSET_Y,
+    };
+  }
+
+  it("runs the full authored airtime when takeoff is also the only safe landing", () => {
+    const { h, player, combat } = makeJumpFeelRoom("stationary-safe-jump");
+    const map = h.room.map;
+    const col = Math.floor(player.x / map.tileSize);
+    const row = Math.floor(player.y / map.tileSize);
+    player.x = (col + 0.5) * map.tileSize;
+    player.y = (row + 0.5) * map.tileSize;
+    map.tiles.fill(TILE_PIT);
+    map.tiles[row * map.cols + col] = TILE_GROUND;
+    map.tiles[(row + 1) * map.cols + col] = TILE_GROUND;
+    combat.lastGroundX = player.x;
+    combat.lastGroundY = player.y;
+
+    sendJumpFeelInput(h, player.id, 1, { jump: true, dx: 1 });
+    let airborneTicks = player.height > 0 ? 1 : 0;
+    while (player.height > 0 && airborneTicks < 30) {
+      h.tick(1);
+      airborneTicks++;
+    }
+
+    expect(airborneTicks).toBe(
+      Math.ceil(
+        enemyComboShared.verticalTimeToGround(
+          0,
+          enemyComboShared.DIST_JUMP_VERTICAL_VELOCITY,
+        ) / 0.05,
+      ),
+    );
+    expect(combat.lastLandingTier).toBe(enemyComboShared.LANDING_TIER_HEAVY);
+  });
+
+  it.each(floorSamples)(
+    "does not pit-damage a player on radius-clear $prefabId art",
+    (sample) => {
+      const { h, player, combat } = fixture(`floor-${sample.nodeId}`);
+      const standing = standingRoot(h.room, sample);
+      player.x = standing.x;
+      player.y = standing.y;
+      combat.lastGroundX = standing.x;
+      combat.lastGroundY = standing.y;
+      const hpBefore = player.hp;
+      const fellBefore = player.fellSeq;
+
+      h.tick(1);
+
+      expect(player.hp).toBe(hpBefore);
+      expect(player.fellSeq).toBe(fellBefore);
+      expect(player.x).toBeCloseTo(standing.x, 6);
+      expect(player.y).toBeCloseTo(standing.y, 6);
+    },
+  );
+
+  it("takes no pit damage anywhere along an arc between connected platform floors", () => {
+    const { h, player, combat } = fixture("connected-platform-jump");
+    const startSample = {
+      nodeId: "spawn",
+      prefabId: "broken-security-gate-platform",
+      x: 762,
+      y: 810,
+    };
+    const endSample = {
+      nodeId: "route",
+      prefabId: "broken-lavafall-overlook",
+      x: 654,
+      y: 114,
+    };
+    const edge = h.room.map.lavaLayout.graph.edges.find(
+      (candidate: AnyRoom) =>
+        candidate.from === startSample.nodeId && candidate.to === endSample.nodeId,
+    );
+    expect(edge).toBeDefined();
+    const start = standingRoot(h.room, startSample);
+    const end = standingRoot(h.room, endSample);
+    expect(Math.hypot(end.x - start.x, end.y - start.y)).toBeLessThanOrEqual(
+      enemyComboShared.DIST_JUMP_REACH,
+    );
+    combat.lastGroundX = start.x;
+    combat.lastGroundY = start.y;
+    const hpBefore = player.hp;
+    const fellBefore = player.fellSeq;
+    const samples = Math.round(enemyComboShared.DIST_JUMP_AIRTIME / 0.05);
+
+    for (let sample = 0; sample <= samples; sample++) {
+      const progress = sample / samples;
+      player.x = start.x + (end.x - start.x) * progress;
+      player.y = start.y + (end.y - start.y) * progress;
+      player.height =
+        sample === 0 || sample === samples ? 0 : Math.sin(Math.PI * progress) * 60;
+      combat.vh =
+        sample === 0 || sample === samples ? 0 : Math.cos(Math.PI * progress) * 380;
+      player.vh = combat.vh;
+      h.tick(1);
+      expect(player.hp, `arc sample ${sample}`).toBe(hpBefore);
+      expect(player.fellSeq, `arc sample ${sample}`).toBe(fellBefore);
+    }
+  });
+});

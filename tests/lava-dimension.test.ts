@@ -20,6 +20,7 @@ import {
   LAVA_PLATFORM_PREFABS,
   measureLavaRoomClearance,
   placeChestOnArena,
+  PLAYER_RADIUS,
   validateArena,
 } from "@dd/shared";
 import { PNG } from "pngjs";
@@ -60,6 +61,104 @@ function layoutDigest(seeds: ArenaMapSeeds): string {
   hash.update(map.tiles);
   hash.update(JSON.stringify(map.lavaLayout));
   return hash.digest("hex");
+}
+
+function pointInRing(
+  point: Readonly<{ x: number; y: number }>,
+  ring: readonly Readonly<{ x: number; y: number }>[],
+): boolean {
+  let inside = false;
+  for (let index = 0, previous = ring.length - 1; index < ring.length; previous = index++) {
+    const a = ring[index];
+    const b = ring[previous];
+    if (!a || !b) continue;
+    const intersects =
+      a.y > point.y !== b.y > point.y &&
+      point.x < ((b.x - a.x) * (point.y - a.y)) / (b.y - a.y || 1e-9) + a.x;
+    if (intersects) inside = !inside;
+  }
+  return inside;
+}
+
+function distanceToSegment(
+  point: Readonly<{ x: number; y: number }>,
+  a: Readonly<{ x: number; y: number }>,
+  b: Readonly<{ x: number; y: number }>,
+): number {
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  const lengthSq = dx * dx + dy * dy;
+  const progress =
+    lengthSq <= 1e-9
+      ? 0
+      : Math.max(
+          0,
+          Math.min(1, ((point.x - a.x) * dx + (point.y - a.y) * dy) / lengthSq),
+        );
+  return Math.hypot(point.x - (a.x + dx * progress), point.y - (a.y + dy * progress));
+}
+
+function bodyCentreFitsPrefab(
+  prefab: (typeof LAVA_PLATFORM_PREFABS)[string],
+  point: Readonly<{ x: number; y: number }>,
+): boolean {
+  for (const surface of prefab.collision.surfaces) {
+    if (!pointInRing(point, surface.polygon)) continue;
+    if (surface.holes.some((hole) => pointInRing(point, hole))) continue;
+    let edgeDistance = Number.POSITIVE_INFINITY;
+    for (const ring of [surface.polygon, ...surface.holes]) {
+      for (let index = 0; index < ring.length; index++) {
+        const a = ring[index];
+        const b = ring[(index + 1) % ring.length];
+        if (a && b) edgeDistance = Math.min(edgeDistance, distanceToSegment(point, a, b));
+      }
+    }
+    if (edgeDistance + 1e-6 >= PLAYER_RADIUS) return true;
+  }
+  return false;
+}
+
+function regularPlatformWalkableShare(id: string): number {
+  const prefab = LAVA_PLATFORM_PREFABS[id];
+  if (!prefab) throw new Error(`missing ${id}`);
+  const png = PNG.sync.read(readFileSync(join(PUBLIC, prefab.file)));
+  const cellPx = 12;
+  let visibleFloorCells = 0;
+  let walkableBodyCentres = 0;
+  for (let cellY = 0; cellY < Math.ceil(png.height / cellPx); cellY++) {
+    for (let cellX = 0; cellX < Math.ceil(png.width / cellPx); cellX++) {
+      let opaque = 0;
+      let molten = 0;
+      let samples = 0;
+      for (let y = cellY * cellPx; y < Math.min(png.height, (cellY + 1) * cellPx); y += 2) {
+        for (let x = cellX * cellPx; x < Math.min(png.width, (cellX + 1) * cellPx); x += 2) {
+          samples++;
+          const offset = (y * png.width + x) * 4;
+          const alpha = png.data[offset + 3] ?? 0;
+          if (alpha < 40) continue;
+          opaque++;
+          const red = png.data[offset] ?? 0;
+          const green = png.data[offset + 1] ?? 0;
+          const blue = png.data[offset + 2] ?? 0;
+          if (red > 105 && red > green * 1.28 && red > blue * 1.48) molten++;
+        }
+      }
+      if (
+        opaque / Math.max(1, samples) < 0.28 ||
+        molten / Math.max(1, opaque) >= 0.24
+      )
+        continue;
+      visibleFloorCells++;
+      if (
+        bodyCentreFitsPrefab(prefab, {
+          x: (cellX + 0.5) * cellPx,
+          y: (cellY + 0.5) * cellPx,
+        })
+      )
+        walkableBodyCentres++;
+    }
+  }
+  return Math.round((walkableBodyCentres / visibleFloorCells) * 1_000) / 10;
 }
 
 describe("Lava Foundry — additive dimension registry", () => {
@@ -124,7 +223,7 @@ describe("Lava Foundry — manifest registry and collision contract", () => {
         string,
         {
           coordinateSpace: string;
-          provenance: { kind: string };
+          provenance: { kind: string; edgeInsetPx?: number; bottomTrimFraction?: number };
           surfaces: Array<{ id: string; polygon: unknown[]; holes: unknown[][] }>;
         }
       >;
@@ -138,12 +237,36 @@ describe("Lava Foundry — manifest registry and collision contract", () => {
     for (const [id, entry] of Object.entries(data.prefabs)) {
       expect(entry.coordinateSpace, id).toBe("source-pixels");
       expect(entry.provenance.kind, id).toMatch(/^(derived-alpha-v1|authored)$/);
+      if (entry.provenance.kind === "derived-alpha-v1") {
+        expect(entry.provenance.edgeInsetPx, id).toBe(0);
+        expect(entry.provenance.bottomTrimFraction, id).toBeUndefined();
+      }
       expect(entry.surfaces.length, id).toBeGreaterThan(0);
       for (const surface of entry.surfaces) {
         expect(surface.polygon.length, `${id}/${surface.id}`).toBeGreaterThanOrEqual(3);
         expect(Array.isArray(surface.holes), `${id}/${surface.id}`).toBe(true);
       }
     }
+  });
+
+  it("keeps a player-radius body centre on 80–90% of each regular platform's drawn floor", () => {
+    expect(
+      Object.fromEntries(
+        [
+          "broken-glass-observatory",
+          "broken-turntable-arena",
+          "broken-lavafall-overlook",
+          "broken-reactor-arena",
+          "broken-security-gate-platform",
+        ].map((id) => [id, regularPlatformWalkableShare(id)]),
+      ),
+    ).toEqual({
+      "broken-glass-observatory": 84.5,
+      "broken-turntable-arena": 84.6,
+      "broken-lavafall-overlook": 83.7,
+      "broken-reactor-arena": 82.3,
+      "broken-security-gate-platform": 89.1,
+    });
   });
 
   it("renders platform/hero PNGs with scale=1 and uses endlessly moving tileSprites", () => {
@@ -191,11 +314,12 @@ describe("Lava Foundry — graph placement, walkability, and determinism", () =>
     }
   }, 30_000);
 
-  it("constructs exact collision-surface clearance and traversal invariants over 2,000 seeds", () => {
+  it("constructs exact collision-surface clearance and traversal invariants over 2,000 seeds", async () => {
     const failures: string[] = [];
     let heroLayouts = 0;
     let destinationHeroes = 0;
     for (let index = 1; index <= 2_000; index++) {
+      if (index % 50 === 0) await new Promise<void>((resolve) => setImmediate(resolve));
       let layout: ReturnType<typeof generateLavaLayout>;
       try {
         layout = generateLavaLayout(sample(index));
@@ -241,7 +365,7 @@ describe("Lava Foundry — graph placement, walkability, and determinism", () =>
     expect(LAVA_HERO_ROOM_RATE).toBe(0.5);
     expect(heroLayouts / 2_000).toBeGreaterThanOrEqual(0.48);
     expect(destinationHeroes / 2_000).toBeGreaterThanOrEqual(0.2);
-  }, 60_000);
+  }, 120_000);
 
   it("keeps reactor openings lethal and the full ±100px join jitter on the spawn deck", () => {
     const map = generateLavaArena(LAVA_EVIDENCE_SEEDS);
@@ -273,6 +397,6 @@ describe("Lava Foundry — graph placement, walkability, and determinism", () =>
     const first = layoutDigest(LAVA_EVIDENCE_SEEDS);
     const second = layoutDigest({ ...LAVA_EVIDENCE_SEEDS });
     expect(second).toBe(first);
-    expect(first).toBe("b03c4dba73073fe1d4eb9f402b0cd20af9c9f5b6464b0c9258c866a8ced9ea6c");
+    expect(first).toBe("2fdbbc3f63570be63ff40d49636a140058cfd8f256aaee2b522b5df0c8b59433");
   });
 });

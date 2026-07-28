@@ -337,6 +337,37 @@ describe("SelfPredictor — jump-feel stance replay", () => {
     expect(pred.renderPos(1, 0, 0).height).toBeGreaterThan(0);
   });
 
+  it("predicts full airtime when endpoint safety collapses onto takeoff", async () => {
+    const shared = await import("@dd/shared");
+    const server = new MockServer();
+    const pred = new SelfPredictor({ ...server.view(), moveStance: 0, stanceSeq: 0 });
+    const map = shared.generateArena({
+      seedTerrain: 1,
+      seedHazard: 2,
+      seedTheme: 3,
+      seedDecor: 4,
+    });
+    map.tiles.fill(shared.TILE_PIT);
+    const col = Math.floor(server.x / map.tileSize);
+    const row = Math.floor(server.y / map.tileSize);
+    map.tiles[row * map.cols + col] = shared.TILE_GROUND;
+    pred.setMap(map);
+
+    pred.tick(pred.mintCmd(1, 0, true, false, false, 1, 0));
+    let airborneTicks = pred.renderPos(0, 0, 0).height > 0 ? 1 : 0;
+    while (pred.renderPos(0, 0, 0).height > 0 && airborneTicks < 30) {
+      pred.tick(pred.mintCmd(0, 0, false, false, false, 1, 0));
+      airborneTicks++;
+    }
+
+    expect(airborneTicks).toBe(
+      Math.ceil(
+        shared.verticalTimeToGround(0, shared.DIST_JUMP_VERTICAL_VELOCITY) /
+          (shared.TICK_MS / 1_000),
+      ),
+    );
+  });
+
   it("replays pound gather and constant-speed descent from the one-shot command bit", () => {
     const server = new MockServer();
     const pred = new SelfPredictor({ ...server.view(), moveStance: 0, stanceSeq: 0 });

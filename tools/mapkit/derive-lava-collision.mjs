@@ -32,15 +32,13 @@ const manifests = [
     kind: "platform",
     manifest: JSON.parse(readFileSync(PLATFORM_MANIFEST, "utf8")),
     publicDir: "platforms",
-    edgeInsetPx: 48,
-    bottomTrimFraction: 0.13,
+    edgeInsetPx: 0,
   },
   {
     kind: "hero-room",
     manifest: JSON.parse(readFileSync(HERO_MANIFEST, "utf8")),
     publicDir: "mega-connected",
-    edgeInsetPx: 24,
-    bottomTrimFraction: 0.09,
+    edgeInsetPx: 0,
   },
 ];
 
@@ -224,10 +222,6 @@ async function derive(asset, options) {
   const cols = Math.ceil(info.width / CELL);
   const rows = Math.ceil(info.height / CELL);
   const mask = new Uint8Array(cols * rows);
-  const columnTop = new Int32Array(info.width);
-  const columnBottom = new Int32Array(info.width);
-  columnTop.fill(info.height);
-  columnBottom.fill(-1);
   let minX = info.width;
   let minY = info.height;
   let maxX = -1;
@@ -237,8 +231,6 @@ async function derive(asset, options) {
     for (let x = 0; x < info.width; x++) {
       const alpha = data[(y * info.width + x) * 4 + 3];
       if (alpha < ALPHA_THRESHOLD) continue;
-      columnTop[x] = Math.min(columnTop[x], y);
-      columnBottom[x] = Math.max(columnBottom[x], y);
       minX = Math.min(minX, x);
       minY = Math.min(minY, y);
       maxX = Math.max(maxX, x);
@@ -249,7 +241,6 @@ async function derive(asset, options) {
   for (let gy = 0; gy < rows; gy++) {
     for (let gx = 0; gx < cols; gx++) {
       let opaque = 0;
-      let safeOpaque = 0;
       let molten = 0;
       let samples = 0;
       const x0 = gx * CELL;
@@ -261,10 +252,6 @@ async function derive(asset, options) {
           const alpha = data[offset + 3];
           if (alpha < ALPHA_THRESHOLD) continue;
           opaque++;
-          const top = columnTop[x];
-          const bottom = columnBottom[x];
-          const trimmedBottom = bottom - Math.max(12, (bottom - top) * options.bottomTrimFraction);
-          if (y <= trimmedBottom) safeOpaque++;
           const r = data[offset];
           const g = data[offset + 1];
           const b = data[offset + 2];
@@ -272,13 +259,12 @@ async function derive(asset, options) {
         }
       }
       const enoughAlpha = opaque / Math.max(1, samples) >= 0.28;
-      const mostlyTop = safeOpaque / Math.max(1, opaque) >= 0.58;
       const moltenOpening = molten / Math.max(1, opaque) >= 0.24;
-      if (enoughAlpha && mostlyTop && !moltenOpening) mask[gy * cols + gx] = 1;
+      if (enoughAlpha && !moltenOpening) mask[gy * cols + gx] = 1;
     }
   }
 
-  const insetCells = Math.max(1, Math.round(options.edgeInsetPx / CELL));
+  const insetCells = Math.max(0, Math.round(options.edgeInsetPx / CELL));
   const eroded = erode(mask, cols, rows, insetCells);
   const cleaned = removeSmallComponents(
     eroded,
@@ -315,8 +301,7 @@ async function derive(asset, options) {
         cellPx: CELL,
         alphaThreshold: ALPHA_THRESHOLD,
         edgeInsetPx: options.edgeInsetPx,
-        bottomTrimFraction: options.bottomTrimFraction,
-        note: "Alpha envelope + lower-silhouette trim + molten-opening rejection; authoring may replace this entry.",
+        note: "Alpha envelope + molten-opening rejection; body radius is applied by runtime tests.",
       },
       surfaces,
     },

@@ -345,7 +345,7 @@ export function writeDistanceJumpIndicator(
     out.y = boundedY;
   }
   out.clamped = Math.hypot(out.x - out.rawX, out.y - out.rawY) > 0.5;
-  return Math.hypot(out.x - x, out.y - y) > 1e-4;
+  return true;
 }
 
 const DT = TICK_MS / 1000;
@@ -819,16 +819,14 @@ function launchDistanceJump(
   dx = indicator.x - p.x;
   dy = indicator.y - p.y;
   len = Math.hypot(dx, dy);
-  if (len <= 1e-4) {
-    clearCommittedStance(s);
-    return;
-  }
-  s.dashDirX = dx / len;
-  s.dashDirY = dy / len;
+  // A safe endpoint equal to takeoff means a stationary jump, not a cancelled jump.
+  const stationary = len <= 1e-4;
+  s.dashDirX = stationary ? 0 : dx / len;
+  s.dashDirY = stationary ? 0 : dy / len;
   s.dashBaseDirX = s.dashDirX;
   s.dashBaseDirY = s.dashDirY;
   s.dashSteer = 0;
-  s.dashSpeed = Math.min(DIST_JUMP_SPEED, len / DIST_JUMP_AIRTIME);
+  s.dashSpeed = stationary ? 0 : Math.min(DIST_JUMP_SPEED, len / DIST_JUMP_AIRTIME);
   s.distJumpCd = DIST_JUMP_COOLDOWN;
   v.vh = DIST_JUMP_VERTICAL_VELOCITY;
   p.mvx = s.dashDirX * s.dashSpeed;
