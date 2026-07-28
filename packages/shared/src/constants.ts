@@ -192,15 +192,18 @@ export const INTERP_SNAP_ENEMY = 260;
  *  softened a step ("a little more soft of a camera"). Trailing and stop-slide are the SAME
  *  phenomenon — `MOVE_SPEED * tau` of lag has to be repaid when the player stops — so this value is
  *  purely a question of how much slide reads as "camera" rather than "my character warped".
- *  0.09 is ~29px of trail repaid over ~90ms: softer than 0.06's ~19px, still a third under the
- *  0.13/~42px that was rejected as character lurching.
- *  The dial: 0.02 near-locked / 0.06 present / 0.09 soft / 0.13 the rejected original.
+ *  0.18 is ~58px of trail repaid over ~180ms. NOTE this is ABOVE the 0.13/~42px originally rejected
+ *  as "the character warped" — deliberately, on owner request ("increase the smoothness again, double
+ *  it"). The rejection is not being ignored: back then the camera was one of FOUR stacked
+ *  forward-slide sources and could not be judged alone. It now can, and heavier trail is a
+ *  legitimate look as long as it reads as camera rather than character.
+ *  The dial: 0.02 near-locked / 0.06 present / 0.09 soft / 0.13 once-rejected / 0.18 heavy.
  *
  *  This is now SAFE TO JUDGE, which it was not before. The camera used to be one of four stacked
  *  forward-slide sources (authority leash, presentation debt ledger, the presentation chase, and
  *  this); the other three are fixed. Slide seen now with `ROOT GAP` at 0.00 and `ROOT STEPS` flat
  *  in the F9 dump is the camera alone and nothing else. */
-export const CAM_FOLLOW_TAU = 0.09;
+export const CAM_FOLLOW_TAU = 0.18;
 /** Look-ahead lead (px at full move speed): the focus leads along the move direction. Small on purpose —
  *  enough to open up the approach, not so much it swims. Scales down with speed (0 at a standstill). */
 export const CAM_LOOKAHEAD = 74;
