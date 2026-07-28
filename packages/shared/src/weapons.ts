@@ -1862,7 +1862,11 @@ const BASE_WEAPONS: Record<string, WeaponDefSource> = {
     halfArc: Math.PI, // full-circle contact fallback
     cooldown: 1.0, // a long committed spin
     displayLength: 236,
-    collisionLength: 118,
+    // NO collisionLength: reach derives from the art, so a resize can never leave the hitbox behind.
+    // This weapon is why that rule exists. Owner note 2026-07-22 "sword twice as big" doubled
+    // displayLength 118 -> 236 (b9-size evidence) while `collisionLength: 118` stayed at the OLD art
+    // length, so the spin kept the pre-resize radius: drawn tip 207.7px, hitbox 150px, 57.7px of dead
+    // edge. Owner ruling 2026-07-27: art is truth. Radius is now the drawn tip.
     swingArc: Math.PI * 4, // TWO full revolutions of swept edge — WYSIWYG with the two-turn spin animation
     gripFrac: 0.12,
     twoHanded: true,

@@ -1571,7 +1571,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "weaponClass": "melee",
       "subclass": "Axes"
     },
-    "collisionLength": 128,
     "description": "A mirror-bright knightly battleaxe with a deep hooked beard and a vow-script throat, a balanced and disciplined cleave that splits a line clean through.",
     "swingStyle": "spin",
     "performance": {
@@ -11743,7 +11742,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "weaponClass": "caster",
       "subclass": "Relics & Totems"
     },
-    "collisionLength": 148,
     "gripPoints": {
       "primary": {
         "x": 0.22,
@@ -14846,7 +14844,6 @@ export const GENERATED_WEAPONS: Record<string, WeaponDefSource> = {
       "weaponClass": "melee",
       "subclass": "Mauls"
     },
-    "collisionLength": 90,
     "gripPoints": {
       "primary": {
         "x": 0.14,

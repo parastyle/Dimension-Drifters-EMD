@@ -81,7 +81,10 @@ describe("B28 owner weapon orders", () => {
   it("scales the mallet by 33% while keeping both hands on its painted handle", () => {
     const mallet = weapon("x2-squeaky-mallet");
     expect(mallet.displayLength).toBeCloseTo(116 * 1.33, 10);
-    expect(mallet.collisionLength).toBe(90);
+    // SUPERSEDED 2026-07-27 (owner ruling "art is truth"): the B28 order scaled the art and pinned
+    // collisionLength at 90, leaving 31.2px of drawn mallet unable to hit. Reach now derives from
+    // displayLength. The 33% visual scale and the two-handed grip below are still the B28 contract.
+    expect(mallet.collisionLength).toBeUndefined();
     expect(mallet.gripPoints).toEqual({
       primary: { x: 0.14, y: 0.55 },
       secondary: { x: 0.38, y: 0.55, role: "handle" },

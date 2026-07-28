@@ -19,6 +19,7 @@ const SIZE_ORDERS = [
     multiplier: 1.4,
     damage: 11,
     range: 140,
+    reachFollowsArt: true,
   },
   {
     id: "x-sword-whirlwind",
@@ -27,6 +28,7 @@ const SIZE_ORDERS = [
     multiplier: 2,
     damage: 9,
     range: 150,
+    reachFollowsArt: true,
   },
   {
     id: "x2-mournveil-scythe",
@@ -35,6 +37,7 @@ const SIZE_ORDERS = [
     multiplier: 1.3,
     damage: 14,
     range: 250,
+    reachFollowsArt: false,
   },
   {
     id: "x2-gravewind-rimfire",
@@ -43,6 +46,7 @@ const SIZE_ORDERS = [
     multiplier: 2,
     damage: 7,
     range: 80,
+    reachFollowsArt: false,
   },
 ] as const;
 
@@ -79,10 +83,19 @@ const HARVEST_SOURCE = readFileSync(
   "utf8",
 );
 
-describe("B9 presentation-only weapon size orders", () => {
-  it.each(
-    SIZE_ORDERS,
-  )("$id is exactly $multiplier× larger without changing damage, range, or collision reach", ({
+describe("B9 weapon size orders", () => {
+  /**
+   * SUPERSEDED 2026-07-27 — B9 shipped these as PRESENTATION-ONLY: art scaled, `collisionLength`
+   * pinned at the pre-order length, reach deliberately unchanged. The owner reversed that after
+   * measuring the result on the Dervish Greatblade: 236px of drawn blade against a 150px hitbox,
+   * 57.7px of dead tip. Ruling: "art is truth" — the drawn edge must hit.
+   *
+   * So the size multiplier and the untouched damage/range are still contracts, but the pinned
+   * collision datum is NOT: these weapons now derive reach from their art like the other ~220 melee
+   * weapons, which is also what stops the next resize from silently leaving the hitbox behind.
+   * `weapon-reach-truth.test.ts` is the standing guard for that invariant.
+   */
+  it.each(SIZE_ORDERS)("$id is exactly $multiplier× larger, with damage and range untouched", ({
     id,
     before,
     after,
@@ -95,16 +108,48 @@ describe("B9 presentation-only weapon size orders", () => {
     if (!weapon) return;
     expect(weapon.displayLength, `${id} exact visual length`).toBe(after);
     expect(weapon.displayLength / before, `${id} exact multiplier`).toBe(multiplier);
-    expect(weapon.collisionLength, `${id} preserved collision datum`).toBe(before);
     expect(weapon.damage, `${id} base damage`).toBe(damage);
     expect(weapon.range, `${id} base range`).toBe(range);
+  });
 
-    const preOrder = {
-      ...weapon,
-      displayLength: before,
-      collisionLength: undefined,
-    } as WeaponDef;
-    expect(meleeReach(weapon), `${id} authoritative reach`).toBe(meleeReach(preOrder));
+  it.each(
+    SIZE_ORDERS.filter((order) => order.reachFollowsArt),
+  )("$id now reaches its drawn tip (owner ruling supersedes B9's collision pin)", ({
+    id,
+    before,
+  }) => {
+    const weapon = WEAPONS[id];
+    expect(weapon, id).toBeDefined();
+    if (!weapon) return;
+    // The pre-order collision pin is gone; reach derives from displayLength like ~220 other melee.
+    expect(weapon.collisionLength, `${id} no longer pins a stale collision datum`).toBeUndefined();
+    const drawnTip = (1 - weapon.gripFrac) * weapon.displayLength;
+    expect(meleeReach(weapon), `${id} reach covers its drawn tip`).toBeGreaterThanOrEqual(
+      drawnTip - 0.5,
+    );
+    // Strictly longer than the superseded presentation-only reach — this IS the balance change.
+    const pinned = { ...weapon, collisionLength: before } as WeaponDef;
+    expect(meleeReach(weapon), `${id} out-reaches the B9 presentation-only value`).toBeGreaterThan(
+      meleeReach(pinned),
+    );
+  });
+
+  it.each(
+    SIZE_ORDERS.filter((order) => !order.reachFollowsArt),
+  )("$id keeps its B9 presentation-only contract (art already covered by range, or not melee)", ({
+    id,
+  }) => {
+    const weapon = WEAPONS[id];
+    expect(weapon, id).toBeDefined();
+    if (!weapon) return;
+    // These were NOT reversed: the scythe's authored range already covers its art, and Gravewind is
+    // a gun whose muzzle datum — not melee reach — is the thing its size order had to preserve.
+    const drawnTip = (1 - weapon.gripFrac) * weapon.displayLength;
+    if (!weapon.gun) {
+      expect(meleeReach(weapon), `${id} art was never unreachable`).toBeGreaterThanOrEqual(
+        drawnTip - 0.5,
+      );
+    }
   });
 
   it("preserves each non-sprite gameplay mechanic at its pre-order value", () => {

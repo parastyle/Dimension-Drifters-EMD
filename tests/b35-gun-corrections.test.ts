@@ -28,10 +28,12 @@ describe("B35 gun presentation corrections", () => {
       collisionLength: 92,
       beam: { width: 57.6, randomRays: { count: 7 } },
     });
-    expect(weapon("x2-iron-vow-bearded-axe")).toMatchObject({
-      displayLength: 172.8,
-      collisionLength: 128,
-    });
+    // SUPERSEDED 2026-07-27 (owner ruling "art is truth"): B35 preserved a 128 collision datum under
+    // 172.8 of drawn axe, leaving 1.5px of edge unreachable. Reach now derives from the art. The
+    // render-only sizing itself still holds — only the pin is gone. The lantern and voidmaw above
+    // keep their datums because both are LARGER than their sprites, which is the safe direction.
+    expect(weapon("x2-iron-vow-bearded-axe")).toMatchObject({ displayLength: 172.8 });
+    expect(weapon("x2-iron-vow-bearded-axe").collisionLength).toBeUndefined();
     expect(weapon("x2-hexbore-voidmaw")).toMatchObject({
       displayLength: 97.44,
       collisionLength: 112,

@@ -2182,7 +2182,6 @@
         "halfArc": 0.95,
         "cooldown": 0.64,
         "displayLength": 172.8,
-        "collisionLength": 128,
         "swingArc": 6.283185307179586,
         "gripFrac": 0.1
       },
@@ -12958,7 +12957,6 @@
         "halfArc": 1,
         "cooldown": 0.7,
         "displayLength": 207.2,
-        "collisionLength": 148,
         "swingArc": 2.3,
         "gripFrac": 0.1
       },
@@ -18192,7 +18190,6 @@
         "halfArc": 1.05,
         "cooldown": 1.5,
         "displayLength": 154.28,
-        "collisionLength": 90,
         "swingArc": 3.1,
         "gripFrac": 0.16
       },
