@@ -10018,6 +10018,10 @@ export class ArenaScene extends Phaser.Scene {
             this.predictor.previewFracSec * 1000,
             // Distance between the body you SEE and the body the server tests for enemy contact.
             Math.hypot(root.x - player.x, root.y - player.y),
+            // Camera trail. Steady-state only: builds during sustained travel, decays after release.
+            this.camFocus
+              ? Math.hypot(this.camFocus.x - root.x, this.camFocus.y - root.y)
+              : Number.NaN,
           );
         }
         this.selfPredHeight = predicted.height;

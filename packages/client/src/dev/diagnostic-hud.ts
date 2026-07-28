@@ -342,6 +342,8 @@ export class DiagnosticHudTelemetry {
   private readonly previewMs = new Float32Array(ROOT_STEP_TRACE_FRAMES);
   private readonly authLeadPx = new Float32Array(ROOT_STEP_TRACE_FRAMES);
   private sessionAuthLeadPeakPx = Number.NaN;
+  private readonly camLagPx = new Float32Array(ROOT_STEP_TRACE_FRAMES);
+  private sessionCamLagPeakPx = Number.NaN;
   private readonly rootStepIntent = new Uint8Array(ROOT_STEP_TRACE_FRAMES);
   private rootStepIndex = 0;
   private rootStepCount = 0;
@@ -550,6 +552,7 @@ export class DiagnosticHudTelemetry {
     baseStepPx = Number.NaN,
     previewMs = Number.NaN,
     authLeadPx = Number.NaN,
+    camLagPx = Number.NaN,
   ): void {
     const step = Number.isFinite(stepPx) ? Math.max(0, stepPx) : 0;
     this.rootStepPx[this.rootStepIndex] = step;
@@ -560,6 +563,11 @@ export class DiagnosticHudTelemetry {
     this.authLeadPx[this.rootStepIndex] = lead;
     if (Number.isFinite(authLeadPx)) {
       this.sessionAuthLeadPeakPx = finiteMax(this.sessionAuthLeadPeakPx, lead);
+    }
+    const camLag = Number.isFinite(camLagPx) ? Math.max(0, camLagPx) : 0;
+    this.camLagPx[this.rootStepIndex] = camLag;
+    if (Number.isFinite(camLagPx)) {
+      this.sessionCamLagPeakPx = finiteMax(this.sessionCamLagPeakPx, camLag);
     }
     this.rootStepIntent[this.rootStepIndex] = moveIntent ? 1 : 0;
     this.rootStepIndex = (this.rootStepIndex + 1) % ROOT_STEP_TRACE_FRAMES;
@@ -886,6 +894,13 @@ export class DiagnosticHudTelemetry {
       // clear of you is still inside your server-side hitbox, and you will be hit by nothing.
       `AUTH LEAD px |drawn - server self| (>${PLAYER_RADIUS + ENEMY_RADIUS} = hittable while visually clear; session peak ${formatPx(this.sessionAuthLeadPeakPx)})`,
       this.traceRing(this.authLeadPx),
+      // CAMERA SOFTNESS, measured. An exponential follow trails by velocity * tau, which is a
+      // STEADY-STATE lag: it only builds during sustained travel and decays when the player stops.
+      // Tapping direction keys never establishes velocity, so this row stays near 0 no matter how soft
+      // the camera is -- that input pattern cannot reveal camera weight. Hold one direction to see it
+      // climb toward MOVE_SPEED * CAM_FOLLOW_TAU, then decay over ~tau after release.
+      `CAM LAG px |camera focus - character| (sustained-travel only; expect ~${Math.round(320 * 0.09)} at full speed, session peak ${formatPx(this.sessionCamLagPeakPx)})`,
+      this.traceRing(this.camLagPx),
     );
     const redLabels = snapshot.metrics
       .filter((metric) => metric.state === "RED")
@@ -1064,8 +1079,17 @@ export class DiagnosticHud {
     baseStepPx?: number,
     previewMs?: number,
     authLeadPx?: number,
+    camLagPx?: number,
   ): void {
-    this.telemetry.recordSelfRootStep(stepPx, moveIntent, gapPx, baseStepPx, previewMs, authLeadPx);
+    this.telemetry.recordSelfRootStep(
+      stepPx,
+      moveIntent,
+      gapPx,
+      baseStepPx,
+      previewMs,
+      authLeadPx,
+      camLagPx,
+    );
   }
 
   recordIntraTickRenderCommitDivergence(divergencePx: number): void {
