@@ -418,6 +418,8 @@ import {
   gateNeedsEdgeLocator,
   terrainRimKey,
   terrainTileKey,
+  FLAT_FLOOR_TILE_NAME,
+  FLAT_FLOOR_WASH_NAME,
 } from "./arena/floor-renderer.js";
 import { makeGroundZonePatch, syncGroundZonePatch } from "./arena/ground-zone-renderer.js";
 import {
@@ -2701,6 +2703,7 @@ export class ArenaScene extends Phaser.Scene {
   create(): void {
     this.resetSceneState();
     this.installDiagnosticHud();
+    this.installFlatFloorToggle();
     this.installSelfCorrectionDiagnostics();
     const connectionGeneration = ++this.connectionGeneration;
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.shutdownScene, this);
@@ -14860,6 +14863,43 @@ export class ArenaScene extends Phaser.Scene {
       else this.time.delayedCall(100, wait);
     };
     this.time.delayedCall(100, wait);
+  }
+
+  /**
+   * DEV A/B (F7) — Vampire Survivors floor read.
+   *
+   * The painted floor currently looks soft for three stacked reasons, none of them the tiling itself:
+   * `tiles/ground.jpg` is a lossy JPEG source; `mipmapFilter: LINEAR_MIPMAP_LINEAR` (main.ts) blurs the
+   * texture as it MINIFIES at tileScale 0.5; and three low-alpha zone washes sit over the top. The owner
+   * wants to try the opposite direction — an unapologetic, crisp, obviously-repeating tile.
+   *
+   * This proves the LOOK with the existing assets before any art is commissioned. Flat mode hides the
+   * washes, switches the tile to NEAREST so mips stop softening it, and draws it at native scale so each
+   * repeat is twice as large and plainly a tile. Fully reversible; nothing is rebuilt.
+   */
+  private installFlatFloorToggle(): void {
+    if (!clientDevToolsEnabled()) return;
+    let flat = false;
+    const apply = (): void => {
+      const wash = this.children.getByName(FLAT_FLOOR_WASH_NAME) as Phaser.GameObjects.Image | null;
+      wash?.setVisible(!flat);
+      const tile = this.children.getByName(
+        FLAT_FLOOR_TILE_NAME,
+      ) as Phaser.GameObjects.TileSprite | null;
+      if (tile) {
+        tile.tileScaleX = flat ? 1 : 0.5;
+        tile.tileScaleY = flat ? 1 : 0.5;
+      }
+      const texture = this.textures.exists("tile-ground") ? this.textures.get("tile-ground") : null;
+      texture?.setFilter(
+        flat ? Phaser.Textures.FilterMode.NEAREST : Phaser.Textures.FilterMode.LINEAR,
+      );
+      console.info(`[floor] ${flat ? "FLAT (VS read)" : "painted (default)"} — F7 to toggle`);
+    };
+    this.input.keyboard?.on("keydown-F7", () => {
+      flat = !flat;
+      apply();
+    });
   }
 
   private installDiagnosticHud(): void {

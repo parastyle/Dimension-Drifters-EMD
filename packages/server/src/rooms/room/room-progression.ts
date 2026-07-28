@@ -3727,10 +3727,25 @@ export const roomProgressionMethods = {
     }
     this.simAccMs = Math.min(this.simAccMs + deltaMs, TICK_MS * 3.5);
     let stepped = false;
+    let subSteps = 0;
+    const stepStartedAtMs = serverDevToolsEnabled() ? performance.now() : 0;
     while (this.simAccMs >= TICK_MS) {
       this.simAccMs -= TICK_MS;
       this.stepSim(TICK_MS / 1000);
       stepped = true;
+      subSteps++;
+    }
+    // DIAGNOSTIC (dev only): a batch of >1 sub-step is broadcast as ONE patch, so the client rebases
+    // its prediction base by a whole extra tick at once — the owner's chop, seen as `32.00S` in the
+    // F9 BASE STEP row. The sim itself costs microseconds (b89), so a multi-step batch means the timer
+    // did not fire for >= TICK_MS beyond schedule. Log the delta that produced it so the stall source
+    // (timer starvation vs GC vs contention) is distinguishable from the numbers alone.
+    if (serverDevToolsEnabled() && subSteps > 1) {
+      console.warn(
+        `[tick] ${subSteps} sub-steps in one invocation | deltaMs=${deltaMs.toFixed(1)} ` +
+          `| accAfter=${this.simAccMs.toFixed(1)} | simMs=${(performance.now() - stepStartedAtMs).toFixed(2)} ` +
+          `| players=${this.state.players.size} enemies=${this.state.enemies.size} proj=${this.state.projectiles.size}`,
+      );
     }
     // §7 v0.105 de-clunk: broadcast tick-locked (patchRate is 0 — see onCreate), once per batch, so fresh
     // results never wait on a drifting second timer. Every sub-step bumps `state.tick`, so there is always

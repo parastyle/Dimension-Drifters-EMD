@@ -49,6 +49,16 @@ export type GateSafeViewport = Readonly<{
 
 /** Keep an edge locator until the COMPLETE gate circle clears a padded HUD-safe viewport. A fresh-open
  * pulse intentionally overrides visibility for three seconds so an already-on-screen gate is announced. */
+/**
+ * DEV FLOOR A/B. The painted floor currently reads soft for three stacked reasons: a lossy `ground.jpg`
+ * source, trilinear mipmaps (`mipmapFilter` in main.ts) blurring the tile as it minifies at tileScale
+ * 0.5, and three low-alpha zone washes over the top. Owner wants to try the Vampire Survivors read
+ * instead — an unapologetic, crisp, obviously-repeating tile. These names let the toggle reach both
+ * layers without rebuilding the floor or shipping a second code path.
+ */
+export const FLAT_FLOOR_WASH_NAME = "dev:floor-wash";
+export const FLAT_FLOOR_TILE_NAME = "dev:floor-tile";
+
 export function gateNeedsEdgeLocator(
   open: boolean,
   x: number,
@@ -382,6 +392,7 @@ export function drawArena(
       .setDepth(-19);
     ts.tileScaleX = 0.5;
     ts.tileScaleY = 0.5;
+    ts.setName(FLAT_FLOOR_TILE_NAME);
     out.push(ts);
   } else {
     // Fallback (no tile art installed yet): the low-contrast themed grid.
@@ -901,12 +912,7 @@ function buildMapZoneGround(
   for (const boundary of boundaries) {
     const mx = (boundary.x1 + boundary.x2) / 2;
     const my = (boundary.y1 + boundary.y2) / 2;
-    const marker = mixSeeds(
-      map.seeds.seedTheme,
-      Math.floor(mx / T),
-      Math.floor(my / T),
-      0xb04de2,
-    );
+    const marker = mixSeeds(map.seeds.seedTheme, Math.floor(mx / T), Math.floor(my / T), 0xb04de2);
     if (marker % 6 !== 0) continue;
     // A short flat stitch across the band. It is discontinuous by construction, never a fence.
     g.lineBetween(
@@ -936,13 +942,15 @@ export function buildArenaFloor(
   const T = map.tileSize;
   const pack = dimensionPropPack(dimensionId);
   const floorTextureStem = `floor:${dimensionId}:${map.seeds.seedTerrain}:${map.seeds.seedHazard}:${map.seeds.seedTheme}:${map.seeds.seedDecor}`;
+  // DEV A/B (`FLAT_FLOOR_WASH_NAME`): the three low-alpha zone washes are most of what mutes the tile
+  // read. Named so the flat-floor toggle can hide them without rebuilding the floor.
   out.push(
     bakeStaticFloorGraphics(
       scene,
       buildMapZoneGround(scene, map, palette, pack.style),
       `${floorTextureStem}:map-zones`,
       -18.9,
-    ),
+    ).setName(FLAT_FLOOR_WASH_NAME),
   );
   // A quiet material clearing sits below the exact cool safety rail; dense dressing rejects this radius.
   const sr = MAP_SPAWN_CLEAR_TILES * T;
@@ -1107,13 +1115,9 @@ export function scatterDecor(
     const segment = pitSegments[Math.floor(indexRoll * pitSegments.length)] ?? pitSegments[0];
     if (!segment) continue;
     const x =
-      segment.x1 +
-      (segment.x2 - segment.x1) * positionRoll -
-      segment.nx * map.tileSize * 0.55;
+      segment.x1 + (segment.x2 - segment.x1) * positionRoll - segment.nx * map.tileSize * 0.55;
     const y =
-      segment.y1 +
-      (segment.y2 - segment.y1) * positionRoll -
-      segment.ny * map.tileSize * 0.55;
+      segment.y1 + (segment.y2 - segment.y1) * positionRoll - segment.ny * map.tileSize * 0.55;
     const angle = Math.atan2(segment.y2 - segment.y1, segment.x2 - segment.x1);
     void jitterRoll;
     const width = 120 + widthRoll * 150;
