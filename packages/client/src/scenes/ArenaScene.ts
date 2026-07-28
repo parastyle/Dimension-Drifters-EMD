@@ -14866,7 +14866,7 @@ export class ArenaScene extends Phaser.Scene {
   }
 
   /**
-   * DEV A/B (F7) — Vampire Survivors floor read.
+   * DEV A/B (K) — Vampire Survivors floor read.
    *
    * The painted floor currently looks soft for three stacked reasons, none of them the tiling itself:
    * `tiles/ground.jpg` is a lossy JPEG source; `mipmapFilter: LINEAR_MIPMAP_LINEAR` (main.ts) blurs the
@@ -14894,9 +14894,11 @@ export class ArenaScene extends Phaser.Scene {
       texture?.setFilter(
         flat ? Phaser.Textures.FilterMode.NEAREST : Phaser.Textures.FilterMode.LINEAR,
       );
-      console.info(`[floor] ${flat ? "FLAT (VS read)" : "painted (default)"} — F7 to toggle`);
+      console.info(`[floor] ${flat ? "FLAT (VS read)" : "painted (default)"} — K to toggle`);
     };
-    this.input.keyboard?.on("keydown-F7", () => {
+    // K, not a function key: F7 is caret browsing in Firefox and F8/F9 already belong to the
+    // diagnostic HUD. K is unbound in the arena key list and carries no browser meaning.
+    this.input.keyboard?.on("keydown-K", () => {
       flat = !flat;
       apply();
     });
