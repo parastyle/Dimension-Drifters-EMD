@@ -344,6 +344,7 @@ export class DiagnosticHudTelemetry {
   private sessionAuthLeadPeakPx = Number.NaN;
   private readonly camLagPx = new Float32Array(ROOT_STEP_TRACE_FRAMES);
   private sessionCamLagPeakPx = Number.NaN;
+  private readonly baseFromServer = new Uint8Array(ROOT_STEP_TRACE_FRAMES);
   private readonly rootStepIntent = new Uint8Array(ROOT_STEP_TRACE_FRAMES);
   private rootStepIndex = 0;
   private rootStepCount = 0;
@@ -553,7 +554,9 @@ export class DiagnosticHudTelemetry {
     previewMs = Number.NaN,
     authLeadPx = Number.NaN,
     camLagPx = Number.NaN,
+    serverRebased = false,
   ): void {
+    this.baseFromServer[this.rootStepIndex] = serverRebased ? 1 : 0;
     const step = Number.isFinite(stepPx) ? Math.max(0, stepPx) : 0;
     this.rootStepPx[this.rootStepIndex] = step;
     this.rootGapPx[this.rootStepIndex] = Number.isFinite(gapPx) ? Math.max(0, gapPx) : 0;
@@ -586,6 +589,24 @@ export class DiagnosticHudTelemetry {
    */
   private rootGapTrace(): string {
     return this.traceRing(this.rootGapPx);
+  }
+
+  /** As `traceRing`, but suffixes `tag` on frames whose flag is set. */
+  private traceRingTagged(ring: Float32Array, flags: Uint8Array, tag: string): string {
+    if (this.rootStepCount <= 0) return "n/a (no frames recorded)";
+    const out: string[] = [];
+    const start =
+      (this.rootStepIndex - this.rootStepCount + ROOT_STEP_TRACE_FRAMES) % ROOT_STEP_TRACE_FRAMES;
+    let previousIntent = -1;
+    for (let i = 0; i < this.rootStepCount; i++) {
+      const slot = (start + i) % ROOT_STEP_TRACE_FRAMES;
+      const intent = this.rootStepIntent[slot] ?? 0;
+      const edge = previousIntent === 1 && intent === 0 ? "<STOP " : "";
+      previousIntent = intent;
+      const mark = (flags[slot] ?? 0) === 1 ? tag : "";
+      out.push(`${edge}${(ring[slot] ?? 0).toFixed(2)}${mark}${intent === 1 ? "" : "i"}`);
+    }
+    return out.join(" ");
   }
 
   private traceRing(ring: Float32Array): string {
@@ -885,8 +906,10 @@ export class DiagnosticHudTelemetry {
       // renderPos = committed base + preview(frac). A one-tick rendered spike means those disagreed for a
       // frame. BASE spikes ~16px on the same frame the spike appears => the committed tick landed and the
       // preview did not hand it back. BASE flat => the preview itself jumped.
-      `BASE STEP px/frame (committed tick base; ~0 between ticks, one MOVE_SPEED*TICK jump per commit)`,
-      this.traceRing(this.baseStepPx),
+      // `S` marks a frame where a server patch replayed the pending window. A base step carrying S is a
+      // SERVER rebase; one without is a LOCAL commit. Identical in magnitude, opposite in cause.
+      `BASE STEP px/frame (S = server patch rebased this frame; bare = local tick commit)`,
+      this.traceRingTagged(this.baseStepPx, this.baseFromServer, "S"),
       `PREVIEW ms (frame-sampled lead; should saw 0->TICK_MS and reset, never collapse early)`,
       this.traceRing(this.previewMs),
       // PHANTOM-HIT BUDGET. The server resolves enemy contact against ITS copy of the player, with reach
@@ -1080,6 +1103,7 @@ export class DiagnosticHud {
     previewMs?: number,
     authLeadPx?: number,
     camLagPx?: number,
+    serverRebased?: boolean,
   ): void {
     this.telemetry.recordSelfRootStep(
       stepPx,
@@ -1089,6 +1113,7 @@ export class DiagnosticHud {
       previewMs,
       authLeadPx,
       camLagPx,
+      serverRebased,
     );
   }
 

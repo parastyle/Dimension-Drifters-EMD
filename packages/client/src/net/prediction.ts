@@ -1011,6 +1011,7 @@ export class SelfPredictor {
    * this bypass to every Smooth envelope correction, making unrelated corrections feel more elastic. */
   private fastStallRecoveryActive = false;
   private selfCorrectionCount = 0;
+  private reconcileCount = 0;
   private correctionObserver?: (event: Readonly<SelfCorrectionEvent>) => void;
   private correctionEvent?: SelfCorrectionEvent;
   private readonly movementReport = {
@@ -1601,6 +1602,11 @@ export class SelfPredictor {
   }
 
   reconcile(server: ServerView): void {
+    // DIAGNOSTIC: a patch rebases `pred` by replaying the pending window. That rebase is invisible to
+    // `selfCorrectionCount` when it lands inside the B42 envelope, so a whole-tick rebase reads as a
+    // silent base jump. Count them so the per-frame trace can tell a server rebase apart from a local
+    // double-commit — the two look identical in BASE STEP alone.
+    this.reconcileCount++;
     this.attackMoveMode = server.attackMoveMode ?? PlayerAttackMoveMode.Normal;
     const teleported = server.teleportSeq !== this.lastTeleportSeq;
     const relaxedAuthority =
@@ -2143,6 +2149,11 @@ export class SelfPredictor {
   get committedBaseY(): number {
     return this.pred.y;
   }
+  /** DIAGNOSTIC: monotonic count of `reconcile()` calls, i.e. server patches that replayed the window. */
+  get reconcileSeq(): number {
+    return this.reconcileCount;
+  }
+
   /** Seconds of frame-sampled input currently previewed ahead of the committed base, as renderPos uses it. */
   get previewFracSec(): number {
     return this.inputSamples.length > 0 ? Math.min(Math.max(this.inputSampleSeconds, 0), DT) : 0;

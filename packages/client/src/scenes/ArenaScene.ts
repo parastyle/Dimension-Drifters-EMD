@@ -1681,6 +1681,8 @@ export class ArenaScene extends Phaser.Scene {
   /** Diagnostic only: previous frame's committed prediction base, for the per-frame step split. */
   private selfCommittedBaseX = Number.NaN;
   private selfCommittedBaseY = Number.NaN;
+  /** Diagnostic only: previous frame's predictor reconcile count, for the base-step source split. */
+  private selfReconcileSeq = Number.NaN;
   /** Previous rendered input state; used only to identify a genuine moving→stopped presentation edge. */
   private selfMoveIntentActive = false;
   private localParryCd = 0;
@@ -10022,6 +10024,15 @@ export class ArenaScene extends Phaser.Scene {
             this.camFocus
               ? Math.hypot(this.camFocus.x - root.x, this.camFocus.y - root.y)
               : Number.NaN,
+            // Did a server patch replay the pending window this frame? Separates a SERVER rebase from a
+            // LOCAL double-commit — indistinguishable in BASE STEP magnitude alone.
+            (() => {
+              const seq = this.predictor.reconcileSeq;
+              const rebased =
+                Number.isFinite(this.selfReconcileSeq) && seq !== this.selfReconcileSeq;
+              this.selfReconcileSeq = seq;
+              return rebased;
+            })(),
           );
         }
         this.selfPredHeight = predicted.height;
