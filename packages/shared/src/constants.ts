@@ -186,9 +186,19 @@ export const INTERP_SNAP_ENEMY = 260;
  *  correct throughout — the defect lives entirely in the world->screen transform.
  *
  *  This is the same "weight" the owner already rejected for movement (canon L09); it was never
- *  applied to the camera. 0.02 keeps a hair of smoothing to absorb single-frame jitter while
- *  cutting steady-state lag to ~6px, below the perceptual floor. */
-export const CAM_FOLLOW_TAU = 0.02;
+ *  applied to the camera. 0.02 cut steady-state lag to ~6px, below the perceptual floor.
+ *
+ *  RESTORED 2026-07-27 at 0.06 on owner request ("can we bring back the smooth follow camera").
+ *  Trailing and stop-slide are the SAME phenomenon — `MOVE_SPEED * tau` of lag has to be repaid
+ *  when the player stops — so this value is purely a question of how much slide reads as "camera"
+ *  rather than "my character warped". 0.06 halves the rejected weight: ~19px trail, repaid over
+ *  ~60ms. The dial: 0.02 near-locked / 0.06 present / 0.13 the rejected original.
+ *
+ *  This is now SAFE TO JUDGE, which it was not before. The camera used to be one of four stacked
+ *  forward-slide sources (authority leash, presentation debt ledger, the presentation chase, and
+ *  this); the other three are fixed. Slide seen now with `ROOT GAP` at 0.00 and `ROOT STEPS` flat
+ *  in the F9 dump is the camera alone and nothing else. */
+export const CAM_FOLLOW_TAU = 0.06;
 /** Look-ahead lead (px at full move speed): the focus leads along the move direction. Small on purpose —
  *  enough to open up the approach, not so much it swims. Scales down with speed (0 at a standstill). */
 export const CAM_LOOKAHEAD = 74;
