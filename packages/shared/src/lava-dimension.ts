@@ -32,13 +32,24 @@ export const LAVA_DIMENSION_ID = "lava-foundry" as const;
 export const LAVA_COLLISION_TILE_PX = 20;
 /** Leaves 32 px beneath the real 372 px distance-jump reach; polygons already inset actor centres. */
 export const LAVA_MAX_TRAVERSAL_GAP_PX = DIST_JUMP_REACH - 32;
-const TARGET_GAP_MIN = 72;
+/** Exact Euclidean clearance required between every pair of walkable collision surfaces. */
+export const LAVA_MIN_PLATFORM_CLEARANCE_PX = 72;
 const TARGET_GAP_MAX = 124;
-const MAX_VISIBLE_OVERLAP_FRACTION = 0.32;
+export const LAVA_HERO_ROOM_RATE = 0.5;
 const MAP_MARGIN = 12;
 
 type Rect = { x: number; y: number; width: number; height: number };
 type Direction = "above" | "right" | "below" | "left";
+type GapKey = "spawn->route" | "route->hub" | "hub->exit" | "hub->branch" | "branch->reward";
+type GapPlan = Readonly<Record<GapKey, number>>;
+
+export const LAVA_DEGRADATION_LADDER = [
+  "requested seeded prefab/role construction",
+  "same hero and role with compact gaps and the smaller regular-prefab order",
+  "same hero rerouted to its orientation-safe hub/destination template",
+  "regular-only compact construction",
+  "regular-only compact construction with reward coalesced into the hub",
+] as const;
 
 const GRAPH_NODES: readonly LavaRoomNode[] = [
   { id: "spawn", role: "spawn" },
@@ -130,52 +141,6 @@ function centred(node: LavaRoomNode, prefabId: string, x: number, y: number): Pl
   return makePlaced(node, prefabId, x - rectCenterX(bounds), y - rectCenterY(bounds));
 }
 
-function relative(
-  node: LavaRoomNode,
-  prefabId: string,
-  parent: PlacedLavaRoom,
-  direction: Direction,
-  gap: number,
-  alignment?: number,
-): PlacedLavaRoom {
-  const bounds = localCollisionBounds(prefab(prefabId));
-  const parentBounds = parent.collisionBounds;
-  if (direction === "above") {
-    const targetX = alignment ?? rectCenterX(parentBounds);
-    return makePlaced(
-      node,
-      prefabId,
-      targetX - rectCenterX(bounds),
-      parentBounds.y - gap - (bounds.y + bounds.height),
-    );
-  }
-  if (direction === "below") {
-    const targetX = alignment ?? rectCenterX(parentBounds);
-    return makePlaced(
-      node,
-      prefabId,
-      targetX - rectCenterX(bounds),
-      parentBounds.y + parentBounds.height + gap - bounds.y,
-    );
-  }
-  if (direction === "left") {
-    const targetY = alignment ?? rectCenterY(parentBounds);
-    return makePlaced(
-      node,
-      prefabId,
-      parentBounds.x - gap - (bounds.x + bounds.width),
-      targetY - rectCenterY(bounds),
-    );
-  }
-  const targetY = alignment ?? rectCenterY(parentBounds);
-  return makePlaced(
-    node,
-    prefabId,
-    parentBounds.x + parentBounds.width + gap - bounds.x,
-    targetY - rectCenterY(bounds),
-  );
-}
-
 function shuffle<T>(values: readonly T[], random: () => number): T[] {
   const out = [...values];
   for (let index = out.length - 1; index > 0; index--) {
@@ -185,173 +150,571 @@ function shuffle<T>(values: readonly T[], random: () => number): T[] {
   return out;
 }
 
-function assignment(random: () => number, heroId?: string): Record<string, string> {
-  const regular = shuffle(REGULAR_IDS, random);
-  const take = (fallback: string) => regular.shift() ?? fallback;
-  return {
+const COMPACT_REGULAR_IDS = [...REGULAR_IDS]
+  .filter((id) => id !== "broken-security-gate-platform")
+  .sort((a, b) => {
+    const aBounds = localCollisionBounds(prefab(a));
+    const bBounds = localCollisionBounds(prefab(b));
+    return aBounds.width * aBounds.height - bBounds.width * bBounds.height || a.localeCompare(b);
+  });
+const NARROW_REGULAR_IDS = [...REGULAR_IDS]
+  .filter((id) => id !== "broken-security-gate-platform")
+  .sort(
+    (a, b) =>
+      localCollisionBounds(prefab(a)).width - localCollisionBounds(prefab(b)).width ||
+      a.localeCompare(b),
+  );
+
+function assignment(
+  random: () => number,
+  heroId?: string,
+  heroRole?: LavaRoomNode["role"],
+  compact = false,
+): Record<string, string> {
+  const middle = compact
+    ? [...NARROW_REGULAR_IDS.slice(0, 3)]
+    : shuffle(NARROW_REGULAR_IDS.slice(0, 3), random);
+  const outer = compact ? [...COMPACT_REGULAR_IDS] : shuffle(NARROW_REGULAR_IDS, random);
+  let nextRegular = 0;
+  const take = (): string => {
+    const value = outer[nextRegular % outer.length];
+    nextRegular++;
+    return value ?? "broken-turntable-arena";
+  };
+  const ids: Record<string, string> = {
+    // The fixed spawn keeps the existing 200x200 full-footprint-safe spawn deck guarantee. Art choice
+    // elsewhere is fully procedural; changing spawn safely requires a separate spawn-footprint audit.
     spawn: "broken-security-gate-platform",
-    route: take("broken-reactor-arena"),
-    hub: heroId ?? take("broken-turntable-arena"),
-    branch: take("broken-lavafall-overlook"),
-    reward: take("broken-glass-observatory"),
-    exit: take("broken-reactor-arena"),
+    route: middle[2] ?? "broken-turntable-arena",
+    hub: middle[1] ?? "broken-turntable-arena",
+    branch: middle[0] ?? "broken-reactor-arena",
+    reward: take(),
+    exit: middle[2] ?? "broken-lavafall-overlook",
+  };
+  if (heroId && heroRole) ids[heroRole] = heroId;
+  return ids;
+}
+
+function gapPlan(random: () => number, compact = false): GapPlan {
+  const next = (): number =>
+    compact
+      ? LAVA_MIN_PLATFORM_CLEARANCE_PX
+      : Math.round(
+          LAVA_MIN_PLATFORM_CLEARANCE_PX +
+            random() * (TARGET_GAP_MAX - LAVA_MIN_PLATFORM_CLEARANCE_PX),
+        );
+  return {
+    "spawn->route": next(),
+    "route->hub": next(),
+    "hub->exit": next(),
+    "hub->branch": next(),
+    "branch->reward": next(),
   };
 }
 
-function gap(random: () => number): number {
-  return Math.round(TARGET_GAP_MIN + random() * (TARGET_GAP_MAX - TARGET_GAP_MIN));
+function placedAtCollisionTopLeft(
+  node: LavaRoomNode,
+  prefabId: string,
+  left: number,
+  top: number,
+): PlacedLavaRoom {
+  const bounds = localCollisionBounds(prefab(prefabId));
+  return makePlaced(node, prefabId, left - bounds.x, top - bounds.y);
 }
 
-function normalLayout(
+function shifted(room: PlacedLavaRoom, dx: number, dy: number): PlacedLavaRoom {
+  return {
+    ...makePlaced({ id: room.nodeId, role: room.role }, room.prefabId, room.x + dx, room.y + dy),
+    graphNodeIds: room.graphNodeIds,
+  };
+}
+
+function flatSupportCoordinate(value: PlatformPrefab, side: Direction): number {
+  const bounds = localCollisionBounds(value);
+  const extreme =
+    side === "above"
+      ? bounds.y
+      : side === "below"
+        ? bounds.y + bounds.height
+        : side === "left"
+          ? bounds.x
+          : bounds.x + bounds.width;
+  let bestLength = -1;
+  const centerCoordinate =
+    side === "above" || side === "below" ? rectCenterX(bounds) : rectCenterY(bounds);
+  let coordinate = centerCoordinate;
+  let nearestExtremeVertex = Number.POSITIVE_INFINITY;
+  for (const surface of value.collision.surfaces) {
+    const ring = surface.polygon;
+    for (let index = 0; index < ring.length; index++) {
+      const a = ring[index] as PrefabPoint;
+      const b = ring[(index + 1) % ring.length] as PrefabPoint;
+      const aOnExtreme =
+        side === "above" || side === "below"
+          ? Math.abs(a.y - extreme) <= 1e-7
+          : Math.abs(a.x - extreme) <= 1e-7;
+      if (aOnExtreme && bestLength < 0) {
+        const perpendicular = side === "above" || side === "below" ? a.x : a.y;
+        const distance = Math.abs(perpendicular - centerCoordinate);
+        if (distance < nearestExtremeVertex) {
+          nearestExtremeVertex = distance;
+          coordinate = perpendicular;
+        }
+      }
+      const onExtreme =
+        side === "above" || side === "below"
+          ? Math.abs(a.y - extreme) <= 1e-7 && Math.abs(b.y - extreme) <= 1e-7
+          : Math.abs(a.x - extreme) <= 1e-7 && Math.abs(b.x - extreme) <= 1e-7;
+      if (!onExtreme) continue;
+      const length =
+        side === "above" || side === "below" ? Math.abs(b.x - a.x) : Math.abs(b.y - a.y);
+      if (length > bestLength) {
+        bestLength = length;
+        coordinate = side === "above" || side === "below" ? (a.x + b.x) / 2 : (a.y + b.y) / 2;
+      }
+    }
+  }
+  return coordinate;
+}
+
+function supportAlignedStart(
+  parent: PlacedLavaRoom,
+  childPrefabId: string,
+  direction: Direction,
+): number {
+  const child = prefab(childPrefabId);
+  const childBounds = localCollisionBounds(child);
+  if (direction === "above")
+    return (
+      parent.x +
+      flatSupportCoordinate(prefab(parent.prefabId), "above") -
+      flatSupportCoordinate(child, "below") +
+      childBounds.x
+    );
+  if (direction === "below")
+    return (
+      parent.x +
+      flatSupportCoordinate(prefab(parent.prefabId), "below") -
+      flatSupportCoordinate(child, "above") +
+      childBounds.x
+    );
+  if (direction === "left")
+    return (
+      parent.y +
+      flatSupportCoordinate(prefab(parent.prefabId), "left") -
+      flatSupportCoordinate(child, "right") +
+      childBounds.y
+    );
+  return (
+    parent.y +
+    flatSupportCoordinate(prefab(parent.prefabId), "right") -
+    flatSupportCoordinate(child, "left") +
+    childBounds.y
+  );
+}
+
+const directionalPlacementCache = new Map<string, Readonly<{ dx: number; dy: number }>>();
+let lastDirectionalFailure = "";
+
+/**
+ * Places a child outside a collision-bounds barrier, then solves monotonically outward until the
+ * exact polygon-to-polygon Euclidean distance equals the seeded target. The barrier gives every
+ * non-edge pair a separating axis; the polygon solve gives graph edges their real crossing length.
+ */
+function placeAcrossBarrier(
+  node: LavaRoomNode,
+  prefabId: string,
+  parent: PlacedLavaRoom,
+  direction: Direction,
+  barrier: number,
+  perpendicularStart: number,
+  requestedGap: number,
+): PlacedLavaRoom | undefined {
+  const localBounds = localCollisionBounds(prefab(prefabId));
+  const relativeBarrier =
+    direction === "above" || direction === "below" ? barrier - parent.y : barrier - parent.x;
+  const relativePerpendicular =
+    direction === "above" || direction === "below"
+      ? perpendicularStart - parent.x
+      : perpendicularStart - parent.y;
+  const cacheKey = [
+    parent.prefabId,
+    prefabId,
+    direction,
+    relativeBarrier.toFixed(4),
+    relativePerpendicular.toFixed(4),
+    requestedGap.toFixed(4),
+  ].join("|");
+  const cached = directionalPlacementCache.get(cacheKey);
+  if (cached) return makePlaced(node, prefabId, parent.x + cached.dx, parent.y + cached.dy);
+
+  let left = perpendicularStart;
+  let top = perpendicularStart;
+  if (direction === "above") top = barrier - LAVA_MIN_PLATFORM_CLEARANCE_PX - localBounds.height;
+  if (direction === "below") top = barrier + LAVA_MIN_PLATFORM_CLEARANCE_PX;
+  if (direction === "left") left = barrier - LAVA_MIN_PLATFORM_CLEARANCE_PX - localBounds.width;
+  if (direction === "right") left = barrier + LAVA_MIN_PLATFORM_CLEARANCE_PX;
+  const baseline = placedAtCollisionTopLeft(node, prefabId, left, top);
+  const baselineGap = measureLavaRoomClearance(parent, baseline);
+  const targetGap = Math.max(requestedGap, baselineGap);
+  if (targetGap > LAVA_MAX_TRAVERSAL_GAP_PX + 1e-6) {
+    lastDirectionalFailure = `${parent.nodeId}->${node.id}/${direction}=${baselineGap.toFixed(1)}`;
+    return undefined;
+  }
+
+  const outward = (distance: number): PlacedLavaRoom => {
+    if (direction === "above") return shifted(baseline, 0, -distance);
+    if (direction === "below") return shifted(baseline, 0, distance);
+    if (direction === "left") return shifted(baseline, -distance, 0);
+    return shifted(baseline, distance, 0);
+  };
+
+  let result = baseline;
+  if (targetGap > baselineGap + 0.01) {
+    let low = 0;
+    let high = LAVA_MAX_TRAVERSAL_GAP_PX;
+    for (let iteration = 0; iteration < 16; iteration++) {
+      const middle = (low + high) / 2;
+      const candidate = outward(middle);
+      if (measureLavaRoomClearance(parent, candidate) < targetGap) low = middle;
+      else {
+        high = middle;
+        result = candidate;
+      }
+    }
+  }
+  directionalPlacementCache.set(cacheKey, { dx: result.x - parent.x, dy: result.y - parent.y });
+  return result;
+}
+
+function nodeById(id: string): LavaRoomNode {
+  const node = GRAPH_NODES.find((candidate) => candidate.id === id);
+  if (!node) throw new Error(`unknown Lava Foundry graph node ${id}`);
+  return node;
+}
+
+function constructMiddleRows(
   ids: Record<string, string>,
-  random: () => number,
+  gaps: GapPlan,
   mirrored: boolean,
-): PlacedLavaRoom[] {
-  const byId = new Map(GRAPH_NODES.map((node) => [node.id, node]));
-  const hub = centred(byId.get("hub") as LavaRoomNode, ids.hub as string, ARENA_WIDTH / 2, 2_180);
-  const route = relative(
-    byId.get("route") as LavaRoomNode,
+  coalesceReward: boolean,
+): PlacedLavaRoom[] | undefined {
+  const outward: Direction = mirrored ? "right" : "left";
+  const inward: Direction = mirrored ? "left" : "right";
+  let hub = centred(nodeById("hub"), ids.hub as string, 0, 0);
+  if (coalesceReward) hub = { ...hub, graphNodeIds: ["hub", "reward"] };
+  const branchBounds = localCollisionBounds(prefab(ids.branch as string));
+  const branch = placeAcrossBarrier(
+    nodeById("branch"),
+    ids.branch as string,
+    hub,
+    outward,
+    outward === "left" ? hub.collisionBounds.x : hub.collisionBounds.x + hub.collisionBounds.width,
+    rectCenterY(hub.collisionBounds) - branchBounds.height / 2,
+    gaps["hub->branch"],
+  );
+  const exitBounds = localCollisionBounds(prefab(ids.exit as string));
+  const exit = placeAcrossBarrier(
+    nodeById("exit"),
+    ids.exit as string,
+    hub,
+    inward,
+    inward === "left" ? hub.collisionBounds.x : hub.collisionBounds.x + hub.collisionBounds.width,
+    rectCenterY(hub.collisionBounds) - exitBounds.height / 2,
+    gaps["hub->exit"],
+  );
+  if (!branch || !exit) return undefined;
+
+  const middleTop = Math.min(
+    branch.collisionBounds.y,
+    hub.collisionBounds.y,
+    exit.collisionBounds.y,
+  );
+  const middleBottom = Math.max(
+    branch.collisionBounds.y + branch.collisionBounds.height,
+    hub.collisionBounds.y + hub.collisionBounds.height,
+    exit.collisionBounds.y + exit.collisionBounds.height,
+  );
+  const route = placeAcrossBarrier(
+    nodeById("route"),
     ids.route as string,
     hub,
     "above",
-    gap(random),
+    middleTop,
+    supportAlignedStart(hub, ids.route as string, "above"),
+    gaps["route->hub"],
   );
-  const spawn = relative(
-    byId.get("spawn") as LavaRoomNode,
+  if (!route) return undefined;
+  const spawnBounds = localCollisionBounds(prefab(ids.spawn as string));
+  const spawn = placeAcrossBarrier(
+    nodeById("spawn"),
     ids.spawn as string,
     route,
-    mirrored ? "right" : "left",
-    gap(random),
+    outward,
+    outward === "left"
+      ? route.collisionBounds.x
+      : route.collisionBounds.x + route.collisionBounds.width,
+    Math.min(
+      supportAlignedStart(route, ids.spawn as string, outward),
+      route.collisionBounds.y + route.collisionBounds.height - spawnBounds.height,
+    ),
+    gaps["spawn->route"],
   );
-  const exit = relative(
-    byId.get("exit") as LavaRoomNode,
-    ids.exit as string,
-    hub,
-    mirrored ? "left" : "right",
-    gap(random),
+  if (!spawn) return undefined;
+
+  if (coalesceReward) return [spawn, route, hub, branch, exit];
+  const rewardBounds = localCollisionBounds(prefab(ids.reward as string));
+  const rewardPrefab = prefab(ids.reward as string);
+  const middleLeft = Math.min(
+    branch.collisionBounds.x,
+    hub.collisionBounds.x,
+    exit.collisionBounds.x,
   );
-  const branch = relative(
-    byId.get("branch") as LavaRoomNode,
-    ids.branch as string,
-    hub,
-    mirrored ? "right" : "left",
-    gap(random),
+  const middleRight = Math.max(
+    branch.collisionBounds.x + branch.collisionBounds.width,
+    hub.collisionBounds.x + hub.collisionBounds.width,
+    exit.collisionBounds.x + exit.collisionBounds.width,
   );
-  const reward = relative(
-    byId.get("reward") as LavaRoomNode,
+  const massiveReward =
+    rewardPrefab.tags.includes("mega") || rewardPrefab.tags.includes("hero-room");
+  const rewardLeft = massiveReward
+    ? (middleLeft + middleRight - rewardBounds.width) / 2
+    : supportAlignedStart(branch, ids.reward as string, "below");
+  const reward = placeAcrossBarrier(
+    nodeById("reward"),
     ids.reward as string,
     branch,
     "below",
-    gap(random),
+    middleBottom,
+    rewardLeft,
+    gaps["branch->reward"],
   );
-  return [spawn, route, hub, branch, reward, exit];
+  return reward ? [spawn, route, hub, branch, reward, exit] : undefined;
 }
 
-function heroLayout(
+function constructLandscapeHub(
   ids: Record<string, string>,
-  random: () => number,
+  gaps: GapPlan,
   mirrored: boolean,
-): PlacedLavaRoom[] {
-  const byId = new Map(GRAPH_NODES.map((node) => [node.id, node]));
-  const baseHub = centred(
-    byId.get("hub") as LavaRoomNode,
-    ids.hub as string,
-    ARENA_WIDTH / 2,
-    ARENA_HEIGHT / 2,
-  );
-  // A mega-connected PNG is one authored room. Its broad interior hosts both hub and reward graph beats;
-  // the image is never split, duplicated, tiled, or treated as two platform prefabs.
+): PlacedLavaRoom[] | undefined {
+  const outward: Direction = mirrored ? "right" : "left";
+  const baseHub = centred(nodeById("hub"), ids.hub as string, 0, 0);
   const hub: PlacedLavaRoom = { ...baseHub, graphNodeIds: ["hub", "reward"] };
-  const landscape = hub.collisionBounds.width >= hub.collisionBounds.height;
-  const connectedHero = prefab(ids.hub as string).tags.includes("hero-room");
-  const heroConnectionGap = () =>
-    connectedHero ? (landscape ? Math.max(0, gap(random) - 60) : -120) : gap(random) + 30;
-  if (landscape) {
-    const route = relative(
-      byId.get("route") as LavaRoomNode,
-      ids.route as string,
-      hub,
-      "above",
-      heroConnectionGap(),
-    );
-    const spawn = relative(
-      byId.get("spawn") as LavaRoomNode,
-      ids.spawn as string,
-      route,
-      mirrored ? "right" : "left",
-      gap(random),
-    );
-    const leftTarget = hub.collisionBounds.x + hub.collisionBounds.width * 0.23;
-    const rightTarget = hub.collisionBounds.x + hub.collisionBounds.width * 0.77;
-    const branch = relative(
-      byId.get("branch") as LavaRoomNode,
-      ids.branch as string,
-      hub,
-      "below",
-      heroConnectionGap(),
-      mirrored ? rightTarget : leftTarget,
-    );
-    const exit = relative(
-      byId.get("exit") as LavaRoomNode,
-      ids.exit as string,
-      hub,
-      "below",
-      heroConnectionGap(),
-      mirrored ? leftTarget : rightTarget,
-    );
-    return [spawn, route, hub, branch, exit];
-  }
-
-  const upperTarget = hub.collisionBounds.y + hub.collisionBounds.height * 0.24;
-  const lowerTarget = hub.collisionBounds.y + hub.collisionBounds.height * 0.76;
-  const route = relative(
-    byId.get("route") as LavaRoomNode,
+  const routeBounds = localCollisionBounds(prefab(ids.route as string));
+  const branchBounds = localCollisionBounds(prefab(ids.branch as string));
+  const pairWidth = routeBounds.width + LAVA_MIN_PLATFORM_CLEARANCE_PX + branchBounds.width;
+  const pairLeft = rectCenterX(hub.collisionBounds) - pairWidth / 2;
+  const routeLeft =
+    outward === "left" ? pairLeft : pairLeft + branchBounds.width + LAVA_MIN_PLATFORM_CLEARANCE_PX;
+  const branchLeft =
+    outward === "left" ? pairLeft + routeBounds.width + LAVA_MIN_PLATFORM_CLEARANCE_PX : pairLeft;
+  const route = placeAcrossBarrier(
+    nodeById("route"),
     ids.route as string,
     hub,
-    mirrored ? "right" : "left",
-    heroConnectionGap(),
-    upperTarget,
-  );
-  const spawn = relative(
-    byId.get("spawn") as LavaRoomNode,
-    ids.spawn as string,
-    route,
     "above",
-    gap(random),
+    hub.collisionBounds.y,
+    routeLeft,
+    gaps["route->hub"],
   );
-  const branch = relative(
-    byId.get("branch") as LavaRoomNode,
+  const branch = placeAcrossBarrier(
+    nodeById("branch"),
     ids.branch as string,
     hub,
-    mirrored ? "right" : "left",
-    heroConnectionGap(),
-    lowerTarget,
+    "above",
+    hub.collisionBounds.y,
+    branchLeft,
+    gaps["hub->branch"],
   );
-  const exit = relative(
-    byId.get("exit") as LavaRoomNode,
+  if (!route || !branch) return undefined;
+  const spawnBounds = localCollisionBounds(prefab(ids.spawn as string));
+  const spawn = placeAcrossBarrier(
+    nodeById("spawn"),
+    ids.spawn as string,
+    route,
+    outward,
+    outward === "left"
+      ? route.collisionBounds.x
+      : route.collisionBounds.x + route.collisionBounds.width,
+    Math.min(
+      supportAlignedStart(route, ids.spawn as string, outward),
+      Math.min(
+        route.collisionBounds.y + route.collisionBounds.height,
+        hub.collisionBounds.y - LAVA_MIN_PLATFORM_CLEARANCE_PX,
+      ) - spawnBounds.height,
+    ),
+    gaps["spawn->route"],
+  );
+  const exit = placeAcrossBarrier(
+    nodeById("exit"),
     ids.exit as string,
     hub,
-    mirrored ? "left" : "right",
-    heroConnectionGap(),
-    lowerTarget,
+    "below",
+    hub.collisionBounds.y + hub.collisionBounds.height,
+    supportAlignedStart(hub, ids.exit as string, "below"),
+    gaps["hub->exit"],
   );
+  return spawn && exit ? [spawn, route, hub, branch, exit] : undefined;
+}
+
+function constructPortraitHub(
+  ids: Record<string, string>,
+  gaps: GapPlan,
+  mirrored: boolean,
+): PlacedLavaRoom[] | undefined {
+  const outward: Direction = mirrored ? "right" : "left";
+  const baseHub = centred(nodeById("hub"), ids.hub as string, 0, 0);
+  const hub: PlacedLavaRoom = { ...baseHub, graphNodeIds: ["hub", "reward"] };
+  const route = placeAcrossBarrier(
+    nodeById("route"),
+    ids.route as string,
+    hub,
+    "above",
+    hub.collisionBounds.y,
+    supportAlignedStart(hub, ids.route as string, "above"),
+    gaps["route->hub"],
+  );
+  if (!route) return undefined;
+  const spawnBounds = localCollisionBounds(prefab(ids.spawn as string));
+  const spawn = placeAcrossBarrier(
+    nodeById("spawn"),
+    ids.spawn as string,
+    route,
+    outward,
+    outward === "left"
+      ? route.collisionBounds.x
+      : route.collisionBounds.x + route.collisionBounds.width,
+    Math.min(
+      supportAlignedStart(route, ids.spawn as string, outward),
+      route.collisionBounds.y + route.collisionBounds.height - spawnBounds.height,
+    ),
+    gaps["spawn->route"],
+  );
+  const branchBounds = localCollisionBounds(prefab(ids.branch as string));
+  const branch = placeAcrossBarrier(
+    nodeById("branch"),
+    ids.branch as string,
+    hub,
+    outward,
+    outward === "left" ? hub.collisionBounds.x : hub.collisionBounds.x + hub.collisionBounds.width,
+    Math.max(
+      hub.collisionBounds.y,
+      Math.min(
+        supportAlignedStart(hub, ids.branch as string, outward),
+        hub.collisionBounds.y + hub.collisionBounds.height - branchBounds.height,
+      ),
+    ),
+    gaps["hub->branch"],
+  );
+  const exit = placeAcrossBarrier(
+    nodeById("exit"),
+    ids.exit as string,
+    hub,
+    "below",
+    hub.collisionBounds.y + hub.collisionBounds.height,
+    supportAlignedStart(hub, ids.exit as string, "below"),
+    gaps["hub->exit"],
+  );
+  if (!spawn || !branch || !exit) return undefined;
+  // Top-aligning the side branch keeps it inside the portrait hero's vertical band.
+  if (branchBounds.height > hub.collisionBounds.height) return undefined;
   return [spawn, route, hub, branch, exit];
 }
 
-function overlapArea(a: Rect, b: Rect): number {
-  const width = Math.max(0, Math.min(a.x + a.width, b.x + b.width) - Math.max(a.x, b.x));
-  const height = Math.max(0, Math.min(a.y + a.height, b.y + b.height) - Math.max(a.y, b.y));
-  return width * height;
+function constructPortraitExit(
+  ids: Record<string, string>,
+  gaps: GapPlan,
+  mirrored: boolean,
+): PlacedLavaRoom[] | undefined {
+  const heroDirection: Direction = mirrored ? "left" : "right";
+  const hub = centred(nodeById("hub"), ids.hub as string, 0, 0);
+  const columnEdge =
+    heroDirection === "right"
+      ? hub.collisionBounds.x + hub.collisionBounds.width
+      : hub.collisionBounds.x;
+  const alignedLeft = (prefabId: string): number => {
+    const bounds = localCollisionBounds(prefab(prefabId));
+    return heroDirection === "right" ? columnEdge - bounds.width : columnEdge;
+  };
+  const route = placeAcrossBarrier(
+    nodeById("route"),
+    ids.route as string,
+    hub,
+    "above",
+    hub.collisionBounds.y,
+    alignedLeft(ids.route as string),
+    gaps["route->hub"],
+  );
+  if (!route) return undefined;
+  const spawn = placeAcrossBarrier(
+    nodeById("spawn"),
+    ids.spawn as string,
+    route,
+    "above",
+    route.collisionBounds.y,
+    alignedLeft(ids.spawn as string),
+    gaps["spawn->route"],
+  );
+  const branch = placeAcrossBarrier(
+    nodeById("branch"),
+    ids.branch as string,
+    hub,
+    "below",
+    hub.collisionBounds.y + hub.collisionBounds.height,
+    alignedLeft(ids.branch as string),
+    gaps["hub->branch"],
+  );
+  if (!spawn || !branch) return undefined;
+  const reward = placeAcrossBarrier(
+    nodeById("reward"),
+    ids.reward as string,
+    branch,
+    "below",
+    branch.collisionBounds.y + branch.collisionBounds.height,
+    alignedLeft(ids.reward as string),
+    gaps["branch->reward"],
+  );
+  if (!reward) return undefined;
+  const exit = placeAcrossBarrier(
+    nodeById("exit"),
+    ids.exit as string,
+    hub,
+    heroDirection,
+    columnEdge,
+    supportAlignedStart(hub, ids.exit as string, heroDirection),
+    gaps["hub->exit"],
+  );
+  return exit ? [spawn, route, hub, branch, reward, exit] : undefined;
 }
 
-function normalizeToArena(rooms: readonly PlacedLavaRoom[]): PlacedLavaRoom[] {
+function constructRooms(
+  ids: Record<string, string>,
+  gaps: GapPlan,
+  mirrored: boolean,
+  heroId?: string,
+  heroRole?: LavaRoomNode["role"],
+  coalesceReward = false,
+): PlacedLavaRoom[] | undefined {
+  if (!heroId || !heroRole) return constructMiddleRows(ids, gaps, mirrored, coalesceReward);
+  const heroBounds = localCollisionBounds(prefab(heroId));
+  const landscape = heroBounds.width >= heroBounds.height;
+  if (heroRole === "hub")
+    return landscape
+      ? constructLandscapeHub(ids, gaps, mirrored)
+      : constructPortraitHub(ids, gaps, mirrored);
+  if (heroRole === "reward" && landscape) return constructMiddleRows(ids, gaps, mirrored, false);
+  if (heroRole === "exit" && !landscape) return constructPortraitExit(ids, gaps, mirrored);
+  return undefined;
+}
+
+function normalizeToArena(rooms: readonly PlacedLavaRoom[]): PlacedLavaRoom[] | undefined {
   const minX = Math.min(...rooms.map((room) => room.visibleBounds.x));
   const minY = Math.min(...rooms.map((room) => room.visibleBounds.y));
   const maxX = Math.max(...rooms.map((room) => room.visibleBounds.x + room.visibleBounds.width));
   const maxY = Math.max(...rooms.map((room) => room.visibleBounds.y + room.visibleBounds.height));
   const availableWidth = ARENA_WIDTH - MAP_MARGIN * 2;
   const availableHeight = ARENA_HEIGHT - MAP_MARGIN * 2;
-  if (maxX - minX > availableWidth || maxY - minY > availableHeight) return [...rooms];
+  if (maxX - minX > availableWidth || maxY - minY > availableHeight) return undefined;
   const desiredMinX = MAP_MARGIN + (availableWidth - (maxX - minX)) / 2;
   const desiredMinY = MAP_MARGIN + (availableHeight - (maxY - minY)) / 2;
   const shiftX = desiredMinX - minX;
@@ -365,31 +728,6 @@ function normalizeToArena(rooms: readonly PlacedLavaRoom[]): PlacedLavaRoom[] {
     ),
     graphNodeIds: room.graphNodeIds,
   }));
-}
-
-function layoutFits(rooms: readonly PlacedLavaRoom[]): boolean {
-  for (const room of rooms) {
-    const bounds = room.visibleBounds;
-    if (
-      bounds.x < MAP_MARGIN ||
-      bounds.y < MAP_MARGIN ||
-      bounds.x + bounds.width > ARENA_WIDTH - MAP_MARGIN ||
-      bounds.y + bounds.height > ARENA_HEIGHT - MAP_MARGIN
-    ) {
-      return false;
-    }
-  }
-  for (let first = 0; first < rooms.length; first++) {
-    for (let second = first + 1; second < rooms.length; second++) {
-      const a = rooms[first]?.visibleBounds;
-      const b = rooms[second]?.visibleBounds;
-      if (!a || !b) continue;
-      const overlap = overlapArea(a, b);
-      const smaller = Math.min(a.width * a.height, b.width * b.height);
-      if (overlap / Math.max(1, smaller) > MAX_VISIBLE_OVERLAP_FRACTION) return false;
-    }
-  }
-  return true;
 }
 
 function pointInPolygon(point: PrefabPoint, polygon: readonly PrefabPoint[]): boolean {
@@ -425,75 +763,125 @@ function pointSegmentDistance(point: PrefabPoint, a: PrefabPoint, b: PrefabPoint
   return Math.hypot(point.x - (a.x + dx * t), point.y - (a.y + dy * t));
 }
 
-function roomDistance(a: PlacedLavaRoom, b: PlacedLavaRoom): number {
-  const sampleStep = LAVA_COLLISION_TILE_PX / 2;
-  const horizontalGap = (): number => {
-    const left = rectCenterX(a.collisionBounds) <= rectCenterX(b.collisionBounds) ? a : b;
-    const right = left === a ? b : a;
-    const top = Math.max(left.collisionBounds.y, right.collisionBounds.y);
-    const bottom = Math.min(
-      left.collisionBounds.y + left.collisionBounds.height,
-      right.collisionBounds.y + right.collisionBounds.height,
-    );
-    let minimum = Number.POSITIVE_INFINITY;
-    for (let y = top + sampleStep / 2; y <= bottom; y += sampleStep) {
-      let leftEdge = Number.NEGATIVE_INFINITY;
-      let rightEdge = Number.POSITIVE_INFINITY;
-      for (
-        let x = left.collisionBounds.x;
-        x <= left.collisionBounds.x + left.collisionBounds.width;
-        x += sampleStep
-      ) {
-        if (pointOnRoom(left, x, y)) leftEdge = Math.max(leftEdge, x);
-      }
-      for (
-        let x = right.collisionBounds.x;
-        x <= right.collisionBounds.x + right.collisionBounds.width;
-        x += sampleStep
-      ) {
-        if (pointOnRoom(right, x, y)) rightEdge = Math.min(rightEdge, x);
-      }
-      if (Number.isFinite(leftEdge) && Number.isFinite(rightEdge)) {
-        minimum = Math.min(minimum, Math.max(0, rightEdge - leftEdge));
+type LocalSegment = Readonly<{
+  a: PrefabPoint;
+  b: PrefabPoint;
+  minX: number;
+  minY: number;
+  maxX: number;
+  maxY: number;
+}>;
+
+const COLLISION_SEGMENTS = new Map<string, readonly LocalSegment[]>(
+  Object.values(LAVA_PLATFORM_PREFABS).map((value) => {
+    const segments: LocalSegment[] = [];
+    for (const surface of value.collision.surfaces) {
+      for (const ring of [surface.polygon, ...surface.holes]) {
+        for (let index = 0; index < ring.length; index++) {
+          const a = ring[index] as PrefabPoint;
+          const b = ring[(index + 1) % ring.length] as PrefabPoint;
+          segments.push({
+            a,
+            b,
+            minX: Math.min(a.x, b.x),
+            minY: Math.min(a.y, b.y),
+            maxX: Math.max(a.x, b.x),
+            maxY: Math.max(a.y, b.y),
+          });
+        }
       }
     }
-    return minimum;
-  };
+    return [value.id, segments] as const;
+  }),
+);
 
-  const verticalGap = (): number => {
-    const topRoom = rectCenterY(a.collisionBounds) <= rectCenterY(b.collisionBounds) ? a : b;
-    const bottomRoom = topRoom === a ? b : a;
-    const left = Math.max(topRoom.collisionBounds.x, bottomRoom.collisionBounds.x);
-    const right = Math.min(
-      topRoom.collisionBounds.x + topRoom.collisionBounds.width,
-      bottomRoom.collisionBounds.x + bottomRoom.collisionBounds.width,
-    );
-    let minimum = Number.POSITIVE_INFINITY;
-    for (let x = left + sampleStep / 2; x <= right; x += sampleStep) {
-      let topEdge = Number.NEGATIVE_INFINITY;
-      let bottomEdge = Number.POSITIVE_INFINITY;
-      for (
-        let y = topRoom.collisionBounds.y;
-        y <= topRoom.collisionBounds.y + topRoom.collisionBounds.height;
-        y += sampleStep
-      ) {
-        if (pointOnRoom(topRoom, x, y)) topEdge = Math.max(topEdge, y);
-      }
-      for (
-        let y = bottomRoom.collisionBounds.y;
-        y <= bottomRoom.collisionBounds.y + bottomRoom.collisionBounds.height;
-        y += sampleStep
-      ) {
-        if (pointOnRoom(bottomRoom, x, y)) bottomEdge = Math.min(bottomEdge, y);
-      }
-      if (Number.isFinite(topEdge) && Number.isFinite(bottomEdge)) {
-        minimum = Math.min(minimum, Math.max(0, bottomEdge - topEdge));
-      }
+function orientation(a: PrefabPoint, b: PrefabPoint, c: PrefabPoint): number {
+  return (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
+}
+
+function pointOnSegment(point: PrefabPoint, a: PrefabPoint, b: PrefabPoint): boolean {
+  const epsilon = 1e-7;
+  return (
+    Math.abs(orientation(a, b, point)) <= epsilon &&
+    point.x >= Math.min(a.x, b.x) - epsilon &&
+    point.x <= Math.max(a.x, b.x) + epsilon &&
+    point.y >= Math.min(a.y, b.y) - epsilon &&
+    point.y <= Math.max(a.y, b.y) + epsilon
+  );
+}
+
+function segmentsIntersect(
+  a: PrefabPoint,
+  b: PrefabPoint,
+  c: PrefabPoint,
+  d: PrefabPoint,
+): boolean {
+  const abC = orientation(a, b, c);
+  const abD = orientation(a, b, d);
+  const cdA = orientation(c, d, a);
+  const cdB = orientation(c, d, b);
+  if (
+    ((abC > 0 && abD < 0) || (abC < 0 && abD > 0)) &&
+    ((cdA > 0 && cdB < 0) || (cdA < 0 && cdB > 0))
+  )
+    return true;
+  return (
+    pointOnSegment(c, a, b) ||
+    pointOnSegment(d, a, b) ||
+    pointOnSegment(a, c, d) ||
+    pointOnSegment(b, c, d)
+  );
+}
+
+function segmentBoundsDistance(
+  a: LocalSegment,
+  ax: number,
+  ay: number,
+  b: LocalSegment,
+  bx: number,
+  by: number,
+) {
+  const dx = Math.max(0, Math.max(a.minX + ax, b.minX + bx) - Math.min(a.maxX + ax, b.maxX + bx));
+  const dy = Math.max(0, Math.max(a.minY + ay, b.minY + by) - Math.min(a.maxY + ay, b.maxY + by));
+  return Math.hypot(dx, dy);
+}
+
+/**
+ * Exact minimum Euclidean distance between the two filled collision-polygon sets. Outer polygon and
+ * hole boundary segments are both measured; boundary intersection or filled containment returns zero.
+ */
+export function measureLavaRoomClearance(a: PlacedLavaRoom, b: PlacedLavaRoom): number {
+  const aSegments = COLLISION_SEGMENTS.get(a.prefabId);
+  const bSegments = COLLISION_SEGMENTS.get(b.prefabId);
+  if (!aSegments || !bSegments)
+    throw new Error(`missing collision segments for ${a.prefabId}/${b.prefabId}`);
+  let minimum = Number.POSITIVE_INFINITY;
+  for (const aSegment of aSegments) {
+    const aStart = { x: aSegment.a.x + a.x, y: aSegment.a.y + a.y };
+    const aEnd = { x: aSegment.b.x + a.x, y: aSegment.b.y + a.y };
+    for (const bSegment of bSegments) {
+      if (segmentBoundsDistance(aSegment, a.x, a.y, bSegment, b.x, b.y) >= minimum) continue;
+      const bStart = { x: bSegment.a.x + b.x, y: bSegment.a.y + b.y };
+      const bEnd = { x: bSegment.b.x + b.x, y: bSegment.b.y + b.y };
+      if (segmentsIntersect(aStart, aEnd, bStart, bEnd)) return 0;
+      minimum = Math.min(
+        minimum,
+        pointSegmentDistance(aStart, bStart, bEnd),
+        pointSegmentDistance(aEnd, bStart, bEnd),
+        pointSegmentDistance(bStart, aStart, aEnd),
+        pointSegmentDistance(bEnd, aStart, aEnd),
+      );
     }
-    return minimum;
-  };
-
-  return Math.min(horizontalGap(), verticalGap());
+  }
+  for (const surface of prefab(a.prefabId).collision.surfaces) {
+    const point = surface.polygon[0];
+    if (point && pointOnRoom(b, point.x + a.x, point.y + a.y)) return 0;
+  }
+  for (const surface of prefab(b.prefabId).collision.surfaces) {
+    const point = surface.polygon[0];
+    if (point && pointOnRoom(a, point.x + b.x, point.y + b.y)) return 0;
+  }
+  return minimum;
 }
 
 function traversalFor(rooms: readonly PlacedLavaRoom[]) {
@@ -507,7 +895,7 @@ function traversalFor(rooms: readonly PlacedLavaRoom[]) {
     if (!from || !to) throw new Error(`missing placed graph edge ${edge.from}->${edge.to}`);
     return {
       ...edge,
-      gapPx: Math.round(roomDistance(from, to) * 10) / 10,
+      gapPx: Math.round(measureLavaRoomClearance(from, to) * 10) / 10,
       maxReachPx: LAVA_MAX_TRAVERSAL_GAP_PX,
     };
   });
@@ -562,49 +950,168 @@ function placeDebris(
   return debris;
 }
 
-function generateLayout(seeds: ArenaMapSeeds): LavaRoomLayout {
-  // Graph is constructed first and never depends on which art is chosen.
+function assertConstructedLayout(
+  rooms: readonly PlacedLavaRoom[],
+  traversal: LavaRoomLayout["traversal"],
+): void {
+  for (const room of rooms) {
+    const bounds = room.visibleBounds;
+    if (
+      bounds.x < MAP_MARGIN - 1e-6 ||
+      bounds.y < MAP_MARGIN - 1e-6 ||
+      bounds.x + bounds.width > ARENA_WIDTH - MAP_MARGIN + 1e-6 ||
+      bounds.y + bounds.height > ARENA_HEIGHT - MAP_MARGIN + 1e-6
+    )
+      throw new Error(`Lava Foundry construction invariant: ${room.nodeId} escaped arena bounds`);
+  }
+  for (let first = 0; first < rooms.length; first++) {
+    for (let second = first + 1; second < rooms.length; second++) {
+      const a = rooms[first];
+      const b = rooms[second];
+      if (!a || !b) continue;
+      const clearance = measureLavaRoomClearance(a, b);
+      if (clearance + 0.01 < LAVA_MIN_PLATFORM_CLEARANCE_PX)
+        throw new Error(
+          `Lava Foundry construction invariant: ${a.nodeId}/${b.nodeId} clearance ${clearance}`,
+        );
+    }
+  }
+  for (const edge of traversal) {
+    if (edge.gapPx > LAVA_MAX_TRAVERSAL_GAP_PX)
+      throw new Error(
+        `Lava Foundry construction invariant: ${edge.from}->${edge.to} gap ${edge.gapPx}`,
+      );
+  }
+}
+
+type ConstructionSpec = Readonly<{
+  step: 0 | 1 | 2 | 3 | 4;
+  ids: Record<string, string>;
+  gaps: GapPlan;
+  heroId?: string;
+  heroRole?: LavaRoomNode["role"];
+  coalesceReward?: boolean;
+}>;
+
+/**
+ * Graph-first deterministic construction. Candidate rungs are capabilities, not random attempts:
+ * each successfully constructed rung already satisfies separation/traversal by arithmetic, and only
+ * its visible envelope is consulted before advancing to the next smaller deterministic capability.
+ */
+export function generateLavaLayout(seeds: ArenaMapSeeds): LavaRoomLayout {
   const graph = { nodes: GRAPH_NODES, edges: GRAPH_EDGES };
   const rng = makeRng(mixSeeds(seeds.seedTerrain, seeds.seedTheme, seeds.seedDecor, 0x1a7af04d));
   const random = () => rng.next();
-  const wantsHero = rng.chance(0.16);
-  const heroId = wantsHero ? HERO_IDS[Math.floor(random() * HERO_IDS.length)] : undefined;
-  let rejectedPlacements = 0;
-  let lastFailure = "";
-  for (let attempt = 0; attempt < 32; attempt++) {
-    const useHero = attempt < 16 ? heroId : undefined;
-    const ids = assignment(random, useHero);
-    const mirrored = random() >= 0.5;
-    const rooms = normalizeToArena(
-      useHero ? heroLayout(ids, random, mirrored) : normalLayout(ids, random, mirrored),
+  const wantsHero = rng.chance(LAVA_HERO_ROOM_RATE);
+  const requestedHeroId = wantsHero ? HERO_IDS[Math.floor(random() * HERO_IDS.length)] : undefined;
+  const requestedHeroBounds = requestedHeroId
+    ? localCollisionBounds(prefab(requestedHeroId))
+    : undefined;
+  const requestedHeroLandscape = requestedHeroBounds
+    ? requestedHeroBounds.width >= requestedHeroBounds.height
+    : false;
+  const requestedHeroRole: LavaRoomNode["role"] | undefined = requestedHeroId
+    ? rng.chance(0.5)
+      ? "hub"
+      : requestedHeroLandscape
+        ? "reward"
+        : "exit"
+    : undefined;
+  const reroutedHeroRole: LavaRoomNode["role"] | undefined = requestedHeroId
+    ? requestedHeroRole === "hub"
+      ? requestedHeroLandscape
+        ? "reward"
+        : "exit"
+      : "hub"
+    : undefined;
+  const mirrored = random() >= 0.5;
+  const requestedGaps = gapPlan(random);
+  const compactGaps = gapPlan(random, true);
+  const requestedIds = assignment(random, requestedHeroId, requestedHeroRole);
+  const compactRequestedIds = assignment(random, requestedHeroId, requestedHeroRole, true);
+  const compactReroutedIds = assignment(random, requestedHeroId, reroutedHeroRole, true);
+  const compactRegularIds = assignment(random, undefined, undefined, true);
+  const specs: ConstructionSpec[] = [
+    {
+      step: 0,
+      ids: requestedIds,
+      gaps: requestedGaps,
+      ...(requestedHeroId ? { heroId: requestedHeroId } : {}),
+      ...(requestedHeroRole ? { heroRole: requestedHeroRole } : {}),
+    },
+    {
+      step: 1,
+      ids: compactRequestedIds,
+      gaps: compactGaps,
+      ...(requestedHeroId ? { heroId: requestedHeroId } : {}),
+      ...(requestedHeroRole ? { heroRole: requestedHeroRole } : {}),
+    },
+    ...(requestedHeroId && reroutedHeroRole
+      ? [
+          {
+            step: 2 as const,
+            ids: compactReroutedIds,
+            gaps: compactGaps,
+            heroId: requestedHeroId,
+            heroRole: reroutedHeroRole,
+          },
+        ]
+      : []),
+    { step: 3, ids: compactRegularIds, gaps: compactGaps },
+    {
+      step: 4,
+      ids: compactRegularIds,
+      gaps: compactGaps,
+      coalesceReward: true,
+    },
+  ];
+
+  const unavailable: string[] = [];
+  for (const spec of specs) {
+    const constructed = constructRooms(
+      spec.ids,
+      spec.gaps,
+      mirrored,
+      spec.heroId,
+      spec.heroRole,
+      spec.coalesceReward,
     );
-    const traversal = traversalFor(rooms);
-    const fits = layoutFits(rooms);
-    const longEdge = traversal.find((edge) => edge.gapPx > LAVA_MAX_TRAVERSAL_GAP_PX);
-    if (!fits || longEdge) {
-      lastFailure = !fits
-        ? `bounds/overlap: ${rooms
-            .map(
-              (room) =>
-                `${room.nodeId}=${Math.round(room.visibleBounds.x)},${Math.round(room.visibleBounds.y)},${room.visibleBounds.width}x${room.visibleBounds.height}`,
-            )
-            .join("; ")}`
-        : `${longEdge?.from}->${longEdge?.to} gap ${longEdge?.gapPx}`;
-      rejectedPlacements++;
+    if (!constructed) {
+      unavailable.push(`${spec.step}:crossing-${lastDirectionalFailure}`);
       continue;
     }
+    const rooms = normalizeToArena(constructed);
+    if (!rooms) {
+      const minX = Math.min(...constructed.map((room) => room.visibleBounds.x));
+      const minY = Math.min(...constructed.map((room) => room.visibleBounds.y));
+      const maxX = Math.max(
+        ...constructed.map((room) => room.visibleBounds.x + room.visibleBounds.width),
+      );
+      const maxY = Math.max(
+        ...constructed.map((room) => room.visibleBounds.y + room.visibleBounds.height),
+      );
+      unavailable.push(`${spec.step}:bounds-${Math.round(maxX - minX)}x${Math.round(maxY - minY)}`);
+      continue;
+    }
+    const traversal = traversalFor(rooms);
+    assertConstructedLayout(rooms, traversal);
     return {
       dimensionId: LAVA_DIMENSION_ID,
       graph,
       rooms,
       traversal,
       debris: placeDebris(rooms, random),
-      ...(useHero ? { heroRoomId: useHero } : {}),
-      rejectedPlacements,
+      ...(spec.heroId ? { heroRoomId: spec.heroId } : {}),
+      ...(spec.heroRole ? { heroRoomRole: spec.heroRole } : {}),
+      degradationStep: spec.step,
+      rejectedPlacements: 0,
     };
   }
+
+  // This is the requested tripwire, not placement machinery. Rung 4's fixed regular construction is
+  // smaller than the arena by arithmetic; reaching here means registry/collision data broke that proof.
   throw new Error(
-    `Lava Foundry placement exhausted 32 deterministic overlap/traversal attempts (${lastFailure})`,
+    `Lava Foundry deterministic degradation ladder violated its arena proof (${unavailable.join(", ")})`,
   );
 }
 
@@ -625,7 +1132,7 @@ function polygonCentroid(polygon: readonly PrefabPoint[]): PrefabPoint {
 }
 
 export function generateLavaArena(seeds: ArenaMapSeeds): ArenaMap {
-  const lavaLayout = generateLayout(seeds);
+  const lavaLayout = generateLavaLayout(seeds);
   const cols = Math.floor(ARENA_WIDTH / LAVA_COLLISION_TILE_PX);
   const rows = Math.floor(ARENA_HEIGHT / LAVA_COLLISION_TILE_PX);
   const tiles = new Uint8Array(cols * rows).fill(TILE_PIT);

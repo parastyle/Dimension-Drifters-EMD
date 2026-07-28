@@ -97,5 +97,9 @@ export type LavaRoomLayout = Readonly<{
   traversal: readonly LavaTraversalEdge[];
   debris: readonly PlacedLavaDebris[];
   heroRoomId?: string;
+  heroRoomRole?: LavaRoomRole;
+  /** Zero is the requested construction; larger values identify the deterministic fallback rung. */
+  degradationStep: 0 | 1 | 2 | 3 | 4;
+  /** Retained for older diagnostics. Construction never rejects a randomly guessed placement. */
   rejectedPlacements: number;
 }>;

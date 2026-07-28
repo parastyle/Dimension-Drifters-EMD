@@ -9,12 +9,16 @@ import {
   generateArena,
   generateDimensionArena,
   generateLavaArena,
+  generateLavaLayout,
   isArenaDiscSafe,
   isPitAtPx,
   LAVA_DECORATIVE_PREFABS,
   LAVA_DIMENSION_ID,
+  LAVA_HERO_ROOM_RATE,
   LAVA_MAX_TRAVERSAL_GAP_PX,
+  LAVA_MIN_PLATFORM_CLEARANCE_PX,
   LAVA_PLATFORM_PREFABS,
+  measureLavaRoomClearance,
   placeChestOnArena,
   validateArena,
 } from "@dd/shared";
@@ -56,15 +60,6 @@ function layoutDigest(seeds: ArenaMapSeeds): string {
   hash.update(map.tiles);
   hash.update(JSON.stringify(map.lavaLayout));
   return hash.digest("hex");
-}
-
-function overlapFraction(
-  a: { x: number; y: number; width: number; height: number },
-  b: { x: number; y: number; width: number; height: number },
-): number {
-  const width = Math.max(0, Math.min(a.x + a.width, b.x + b.width) - Math.max(a.x, b.x));
-  const height = Math.max(0, Math.min(a.y + a.height, b.y + b.height) - Math.max(a.y, b.y));
-  return (width * height) / Math.max(1, Math.min(a.width * a.height, b.width * b.height));
 }
 
 describe("Lava Foundry — additive dimension registry", () => {
@@ -196,36 +191,57 @@ describe("Lava Foundry — graph placement, walkability, and determinism", () =>
     }
   }, 30_000);
 
-  it("rejects heavy visible overlaps and keeps every imported hero image indivisible when selected", () => {
-    for (const index of [1, 2, 26, 52, 77]) {
-      const map = generateLavaArena(sample(index));
-      const rooms = map.lavaLayout?.rooms ?? [];
-      for (let a = 0; a < rooms.length; a++) {
-        for (let b = a + 1; b < rooms.length; b++) {
-          const left = rooms[a];
-          const right = rooms[b];
-          if (!left || !right) throw new Error(`missing room pair ${a}/${b}`);
+  it("constructs exact collision-surface clearance and traversal invariants over 2,000 seeds", () => {
+    const failures: string[] = [];
+    let heroLayouts = 0;
+    let destinationHeroes = 0;
+    for (let index = 1; index <= 2_000; index++) {
+      let layout: ReturnType<typeof generateLavaLayout>;
+      try {
+        layout = generateLavaLayout(sample(index));
+      } catch (error) {
+        failures.push(`seed ${index} threw: ${String(error)}`);
+        continue;
+      }
+      expect(layout.rejectedPlacements, `seed ${index}`).toBe(0);
+      for (let first = 0; first < layout.rooms.length; first++) {
+        for (let second = first + 1; second < layout.rooms.length; second++) {
+          const a = layout.rooms[first];
+          const b = layout.rooms[second];
+          if (!a || !b) throw new Error(`missing room pair ${first}/${second}`);
+          const clearance = measureLavaRoomClearance(a, b);
           expect(
-            overlapFraction(left.visibleBounds, right.visibleBounds),
-            `seed ${index}: ${left.nodeId}/${right.nodeId}`,
-          ).toBeLessThanOrEqual(0.32);
+            clearance + 0.01,
+            `seed ${index}: ${a.nodeId}/${b.nodeId} exact polygon clearance ${clearance}`,
+          ).toBeGreaterThanOrEqual(LAVA_MIN_PLATFORM_CLEARANCE_PX);
         }
       }
-      const heroId = map.lavaLayout?.heroRoomId;
-      if (heroId) {
-        const instances = rooms.filter((room) => room.prefabId === heroId);
-        expect(instances, heroId).toHaveLength(1);
-        expect(instances[0]?.graphNodeIds, heroId).toEqual(["hub", "reward"]);
+      for (const edge of layout.traversal) {
+        expect(edge.gapPx, `seed ${index}: ${edge.from}->${edge.to}`).toBeGreaterThanOrEqual(
+          LAVA_MIN_PLATFORM_CLEARANCE_PX,
+        );
+        expect(edge.gapPx, `seed ${index}: ${edge.from}->${edge.to}`).toBeLessThanOrEqual(
+          LAVA_MAX_TRAVERSAL_GAP_PX,
+        );
+      }
+      if (layout.heroRoomId) {
+        heroLayouts++;
+        const instances = layout.rooms.filter((room) => room.prefabId === layout.heroRoomId);
+        expect(instances, layout.heroRoomId).toHaveLength(1);
+        expect(instances[0]?.nativeScale, layout.heroRoomId).toBe(1);
+        if (layout.heroRoomRole === "hub")
+          expect(instances[0]?.graphNodeIds, layout.heroRoomId).toEqual(["hub", "reward"]);
+        else {
+          expect(instances[0]?.graphNodeIds, layout.heroRoomId).toEqual([layout.heroRoomRole]);
+          destinationHeroes++;
+        }
       }
     }
-    expect(generateLavaArena(sample(26)).lavaLayout?.heroRoomId).toBe("dual-turntable-bridge");
-    expect(generateLavaArena(sample(52)).lavaLayout?.heroRoomId).toBe(
-      "security-to-turntable-bridge",
-    );
-    expect(generateLavaArena(sample(77)).lavaLayout?.heroRoomId).toBe(
-      "glass-to-reactor-vertical-bridge",
-    );
-  });
+    expect(failures).toEqual([]);
+    expect(LAVA_HERO_ROOM_RATE).toBe(0.5);
+    expect(heroLayouts / 2_000).toBeGreaterThanOrEqual(0.48);
+    expect(destinationHeroes / 2_000).toBeGreaterThanOrEqual(0.2);
+  }, 60_000);
 
   it("keeps reactor openings lethal and the full ±100px join jitter on the spawn deck", () => {
     const map = generateLavaArena(LAVA_EVIDENCE_SEEDS);
@@ -257,6 +273,6 @@ describe("Lava Foundry — graph placement, walkability, and determinism", () =>
     const first = layoutDigest(LAVA_EVIDENCE_SEEDS);
     const second = layoutDigest({ ...LAVA_EVIDENCE_SEEDS });
     expect(second).toBe(first);
-    expect(first).toBe("d810d5d79e78f8a3d2d8126157d76018200150d738cf7745e1a047a09a6f08f2");
+    expect(first).toBe("b03c4dba73073fe1d4eb9f402b0cd20af9c9f5b6464b0c9258c866a8ced9ea6c");
   });
 });
