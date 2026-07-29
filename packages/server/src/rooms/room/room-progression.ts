@@ -642,10 +642,25 @@ export const MAX_ENEMY_RADIUS = Math.max(
   ENEMY_RADIUS,
   ...Object.values(ENEMY_KINDS).map((kind) => kind.radius),
 );
-/** Soft horde separation consumes this fraction of each pair's radius overlap per 20Hz tick. */
-export const ENEMY_SEPARATION_OVERLAP_FRACTION = 0.45;
-/** A dense crowd can contribute many pair forces; cap the accumulated body correction per tick. */
-export const ENEMY_SEPARATION_MAX_STEP = 12;
+/**
+ * Horde separation consumes this fraction of each pair's radius overlap per 20Hz tick.
+ *
+ * Was 0.45, which resolved under a quarter of an overlap per body per tick. Raised so a pair that is
+ * only overlapping each other clears in roughly one tick instead of three, because the surplus is what
+ * a dense crowd needs: with many neighbours the summed pushes are clamped by MAX_STEP below, so a low
+ * per-pair fraction collapses toward zero separation exactly when it is needed most.
+ */
+export const ENEMY_SEPARATION_OVERLAP_FRACTION = 0.9;
+/**
+ * A dense crowd can contribute many pair forces; cap the accumulated body correction per tick.
+ *
+ * This cap MUST exceed the fastest enemy's per-tick travel or separation can never beat seek, and a
+ * crowd converging on one player compresses into a ball instead of a ring. Runners move 240 px/s =
+ * 12 px/tick, and the old cap was exactly 12 — a dead tie that seek won on any diagonal or whenever a
+ * second neighbour split the budget. Sized at 20 (400 px/s) it is ~1.7x the fastest seek, so bodies
+ * can push apart faster than they close. Re-check this if any enemy is ever made faster than 240 px/s.
+ */
+export const ENEMY_SEPARATION_MAX_STEP = 20;
 
 /** §4 v0.107 one sequence-numbered input COMMAND from a client (~one per 50ms client tick). `jump` rides
  *  the command (not a separate message) so its consume tick is part of the acked timeline (review #5). */
