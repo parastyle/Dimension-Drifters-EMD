@@ -1307,6 +1307,9 @@ export class ArenaScene extends Phaser.Scene {
   private wormAudioTopologySeq = 0;
   /** Horde paper effects stay scalar/live or bounded/detached; priority 2=boss, 1=tough, 0=ordinary. */
   private readonly enemyPaperPriority = new Map<string, 0 | 1 | 2>();
+  /** Weapon each enemy SHOULD hold, and what it currently holds — the retry pair for lazy weapon art. */
+  private readonly enemyWantWeapon = new Map<string, string>();
+  private readonly enemyEquipped = new Map<string, string>();
   private readonly enemyDeathCue = new Map<
     string,
     "death:small" | "death:medium" | "death:tough" | "death:boss"
@@ -3893,6 +3896,46 @@ export class ArenaScene extends Phaser.Scene {
     return false;
   }
 
+  /**
+   * Enemy weapon art, on the SAME lazy-load contract players use.
+   *
+   * A Cultist is assigned any of the 374 active catalog weapons at spawn, so its sprite is almost never
+   * already resident. The old inline equip at rig creation ran once, found no texture, and drew Phaser's
+   * `__MISSING` placeholder forever — the owner reported it as "cultist weapons dont render", and a live
+   * probe showed `tex: "__MISSING"` on two of three spawned Cultists while a wild-west weapon whose art
+   * happened to be loaded rendered fine.
+   *
+   * `ensureWeaponArt` queues the parts, retries on later frames, and marks a 404 as permanently failed so
+   * a packaging gap degrades to empty hands instead of stalling. Reusing it here means enemies and players
+   * cannot drift apart again.
+   */
+  private equipEnemyWeapons(): void {
+    if (!this.room) return;
+    for (const [id, wantId] of this.enemyWantWeapon) {
+      if (this.enemyEquipped.get(id) === wantId) continue;
+      const rig = this.enemies.get(id);
+      if (!rig) continue;
+      if (!wantId) {
+        this.enemyEquipped.set(id, wantId);
+        continue;
+      }
+      const def = WEAPONS[wantId];
+      if (!def) {
+        this.enemyEquipped.set(id, wantId);
+        continue;
+      }
+      const spriteId = weaponDisplaySpriteId(def);
+      const manifest = SPRITES[spriteId as keyof typeof SPRITES];
+      if (!manifest || this.failedArt.has(spriteId)) {
+        this.enemyEquipped.set(id, wantId); // no art authored, or it 404'd — empty hands, stop retrying
+        continue;
+      }
+      if (!this.ensureWeaponArt(spriteId)) continue; // still loading; retry next frame
+      rig.equipWeapon(spriteId, def, manifest);
+      this.enemyEquipped.set(id, wantId);
+    }
+  }
+
   private equipWeapons(): void {
     if (!this.room) return;
     this.room.state.players.forEach((player, id) => {
@@ -4744,12 +4787,8 @@ export class ArenaScene extends Phaser.Scene {
       this.lavaParallax = floor.parallax;
       this.predictor?.setMap(this.arenaMap);
     } else {
-      this.floorObjs.push(
-        ...drawArena(this, this.arenaMap, (k) => this.hasTile(k), palette),
-      );
-      this.floorObjs.push(
-        ...buildArenaFloor(this, this.arenaMap, dimension.id, palette),
-      );
+      this.floorObjs.push(...drawArena(this, this.arenaMap, (k) => this.hasTile(k), palette));
+      this.floorObjs.push(...buildArenaFloor(this, this.arenaMap, dimension.id, palette));
       // §4 v0.107: a re-minted map = a new world. Swap the predictor's map and clear every snapshot
       // ring that still holds coordinates from the old map.
       this.predictor?.setMap(this.arenaMap);
@@ -5611,6 +5650,7 @@ export class ArenaScene extends Phaser.Scene {
     this.syncPetRigs();
     this.checkFalls(); // §17 fall VFX (after blobs so the landing poof lands right)
     this.equipWeapons();
+    this.equipEnemyWeapons();
     this.routeUltimates();
     this.maybePlayUltimateReveal(selfP);
     // Receipts must drain while last frame's target rigs still exist. This both preserves the death contact
@@ -5808,12 +5848,11 @@ export class ArenaScene extends Phaser.Scene {
         if ((kind?.renderScale ?? 0) >= 10) rig.setLowerBodyFrame(0.45);
         if (enemy.tough) rig.addGlow(0xff5d3b);
         // Cultists visibly hold their per-instance authored weapon; Big signature weapons remain intact.
-        const wieldedWeaponId = enemy.weaponId || kind?.wieldsWeapon;
-        if (wieldedWeaponId) {
-          const wdef = WEAPONS[wieldedWeaponId];
-          const wman = SPRITES[wieldedWeaponId as keyof typeof SPRITES];
-          if (wdef && wman) rig.equipWeapon(wieldedWeaponId, wdef, wman);
-        }
+        // Equip runs through `equipEnemyWeapons` below rather than inline: a Cultist draws from the whole
+        // 374-weapon catalog, so its art is usually NOT resident yet, and a one-shot equip at rig creation
+        // silently produced a `__MISSING` texture with no retry. Players already lazy-load + retry through
+        // `ensureWeaponArt`; enemies now use that same path instead of a second, weaker one.
+        this.enemyWantWeapon.set(id, enemy.weaponId || kind?.wieldsWeapon || "");
         const paperPriority: 0 | 1 | 2 = kind?.archetype === "big" ? 2 : enemy.tough ? 1 : 0;
         this.enemyPaperPriority.set(id, paperPriority);
         this.enemyDeathCue.set(
@@ -5889,8 +5928,7 @@ export class ArenaScene extends Phaser.Scene {
         const authoredWeapon = WEAPONS[enemy.weaponId];
         if (attackingRig && authoredWeapon) {
           aimWorld = enemy.aimDir;
-          if (authoredWeapon.gun)
-            attackingRig.triggerGunRecoil(this.time.now, 0);
+          if (authoredWeapon.gun) attackingRig.triggerGunRecoil(this.time.now, 0);
           else if (!authoredWeapon.beam)
             attackingRig.triggerSwing(
               this.time.now,
@@ -5953,6 +5991,8 @@ export class ArenaScene extends Phaser.Scene {
         this.hitEffectRenderer.targetGone(id);
         this.enemyFlinches.delete(id);
         this.enemies.delete(id);
+        this.enemyWantWeapon.delete(id);
+        this.enemyEquipped.delete(id);
         this.enemyPaperPriority.delete(id);
         this.enemyDeathCue.delete(id);
         this.enemyHp.delete(id);
@@ -5971,10 +6011,7 @@ export class ArenaScene extends Phaser.Scene {
             rig.destroy();
             continue;
           }
-          if (
-            this.arenaMap?.lavaLayout &&
-            tileAtPx(this.arenaMap, rig.x, rig.y) !== TILE_GROUND
-          ) {
+          if (this.arenaMap?.lavaLayout && tileAtPx(this.arenaMap, rig.x, rig.y) !== TILE_GROUND) {
             spawnFallStreak(this, rig.x, rig.y);
             this.audio.play("lava-gap-death", { x: rig.x });
             rig.deathPop(0, 0, "lava-gap");
@@ -9026,9 +9063,7 @@ export class ArenaScene extends Phaser.Scene {
     });
     const tx = mStartX + (mults.length - 1) * (chipW + chipGap) + chipW / 2 + 18 + 115;
     const chosenWeapon =
-      this.summonWeaponIndex >= 0
-        ? ACTIVE_WEAPON_CATALOG_IDS[this.summonWeaponIndex]
-        : undefined;
+      this.summonWeaponIndex >= 0 ? ACTIVE_WEAPON_CATALOG_IDS[this.summonWeaponIndex] : undefined;
     const weaponChip = this.add
       .rectangle(tx, my, 230, 30, chosenWeapon ? 0x38205b : 0x1b1812, 0.98)
       .setScrollFactor(0)
@@ -9052,8 +9087,7 @@ export class ArenaScene extends Phaser.Scene {
     weaponChip.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
       const delta = pointer.rightButtonDown() ? -1 : 1;
       const span = ACTIVE_WEAPON_CATALOG_IDS.length + 1;
-      this.summonWeaponIndex =
-        ((this.summonWeaponIndex + 1 + delta + span) % span) - 1;
+      this.summonWeaponIndex = ((this.summonWeaponIndex + 1 + delta + span) % span) - 1;
       this.openSummonMenu();
     });
     this.summonObjects.push(weaponChip, weaponChipText);
