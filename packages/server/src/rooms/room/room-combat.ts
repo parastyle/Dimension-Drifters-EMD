@@ -1401,7 +1401,7 @@ export const roomCombatMethods = {
   },
 
   applyUltimateStun(this: GameRoomContext, enemy: EnemyState, id: string, seconds: number): boolean {
-    if (ENEMY_KINDS[enemy.kind]?.archetype === "boss") return false;
+    if (ENEMY_KINDS[enemy.kind]?.archetype === "big") return false;
     const until = this.ultimateStunUntil.get(id);
     if (until !== undefined && !tickReached(this.state.tick, until)) return false;
     this.ultimateStunUntil.set(id, (this.state.tick + ULT_STUN_ICD_TICKS) >>> 0);
@@ -1470,7 +1470,7 @@ export const roomCombatMethods = {
         fromX,
         fromY,
       );
-      if (enemy.hp > 0 && ENEMY_KINDS[enemy.kind]?.archetype !== "boss") {
+      if (enemy.hp > 0 && ENEMY_KINDS[enemy.kind]?.archetype !== "big") {
         this.ultimateBrands.set(id, {
           remaining: ULT_PHASE_BRAND_SECONDS,
           multiplier: ult.variant === "luk" ? 0.28 : ULT_PHASE_BRAND_MULT - 1,
@@ -1636,7 +1636,7 @@ export const roomCombatMethods = {
     for (const [ownerId, decoy] of this.ultimateDecoys) {
       if (!decoy.detonated) {
         this.state.enemies.forEach((enemy) => {
-          if (decoy.hp <= 0 || ENEMY_KINDS[enemy.kind]?.archetype === "boss") return;
+          if (decoy.hp <= 0 || ENEMY_KINDS[enemy.kind]?.archetype === "big") return;
           const kind = ENEMY_KINDS[enemy.kind];
           const reach = (kind?.radius ?? ENEMY_RADIUS) + PLAYER_RADIUS;
           if ((enemy.x - decoy.x) ** 2 + (enemy.y - decoy.y) ** 2 <= reach * reach)
@@ -4751,10 +4751,10 @@ export const roomCombatMethods = {
     if (kind) this.maybeDropEnemyWeapon(enemy, kind);
     // B20 L3: eligible authored wielders may leave one disassemblable floor weapon. The
     // pre-existing combat/progression cleanup and boss gates still run through this death path.
-    if (kind?.archetype === "boss" && flagship) {
+    if (kind?.archetype === "big" && flagship) {
       if (this.bossPetAwardEligible) this.awardPetDimensionClear();
       this.beginVastagharClear(enemy.x, enemy.y);
-    } else if (kind?.archetype === "boss") {
+    } else if (kind?.archetype === "big") {
       if (enemy.id === this.bossId && this.bossPetAwardEligible) this.awardPetDimensionClear();
       // §16 v0.109 tear the boss down HERE (the death path): dispose the controller + clear any in-flight
       // telegraph rows before opening the portal. Otherwise a boss killed mid-windup leaves orphaned
@@ -5141,8 +5141,10 @@ export const roomCombatMethods = {
           }
         }
         if (returning.returning) {
-          const owner = this.state.players.get(meta.sourcePlayerId ?? "");
-          if (!owner || !owner.alive) {
+          const owner =
+            this.state.players.get(meta.sourcePlayerId ?? "") ??
+            this.state.enemies.get(meta.sourcePlayerId ?? "");
+          if (!owner || ("alive" in owner && !owner.alive)) {
             doomed.push(id);
             return;
           }
@@ -5391,19 +5393,31 @@ export const roomCombatMethods = {
       const pr = this.state.projectiles.get(id);
       const meta = this.projectileMeta.get(id);
       // Detonate exploding projectiles (magma scatter) at their death position — §14 WYSIWYG.
-      if (pr && meta?.explode)
-        this.detonate(
-          pr.x,
-          pr.y,
-          meta.explode.radius,
-          meta.explode.damage,
-          meta.crit ?? 0,
-          meta.sourcePlayerId ?? "",
-          meta.sourceWeaponId ?? "",
-          meta.delivery ?? 0,
-        );
+      if (pr && meta?.explode) {
+        if (meta.hostile)
+          this.applyBossAoE(
+            pr.x,
+            pr.y,
+            meta.explode.radius,
+            meta.explode.damage,
+            0,
+          );
+        else
+          this.detonate(
+            pr.x,
+            pr.y,
+            meta.explode.radius,
+            meta.explode.damage,
+            meta.crit ?? 0,
+            meta.sourcePlayerId ?? "",
+            meta.sourceWeaponId ?? "",
+            meta.delivery ?? 0,
+          );
+      }
       if (pr && meta?.landingZoneDamage !== undefined) {
-        const owner = this.state.players.get(meta.sourcePlayerId ?? "");
+        const owner =
+          this.state.players.get(meta.sourcePlayerId ?? "") ??
+          this.state.enemies.get(meta.sourcePlayerId ?? "");
         const weapon = WEAPONS[meta.sourceWeaponId ?? ""];
         if (owner && weapon?.groundZone?.trigger === "landing")
           this.spawnWeaponGroundZoneAt(
@@ -5413,6 +5427,7 @@ export const roomCombatMethods = {
             pr.y,
             meta.landingZoneDamage,
             meta.crit ?? 0,
+            meta.hostile,
           );
       }
       this.removeProjectile(id);

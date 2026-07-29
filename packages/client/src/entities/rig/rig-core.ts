@@ -2149,6 +2149,8 @@ export interface RigAnim {
   reducedMotion?: boolean;
   /** Attack-held for guns or fireHeld/authoritative channel state for beams. Presentation only. */
   fireHeld?: boolean;
+  /** Enemy-only locomotion vocabulary. Player rigs omit it. */
+  enemyArchetype?: "runner" | "cultist" | "big" | "dummy";
 }
 
 /** Pure ranged-pose envelope. The held window owns the plateau; linger precedes a soft rest-pose settle. */

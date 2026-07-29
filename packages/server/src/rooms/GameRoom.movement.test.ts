@@ -933,7 +933,7 @@ describe("GameRoom — §6 dimension chain (v0.103: extract-vs-descend, bank-or-
     h.send("p1", "spawnBoss");
     h.tick(1);
     h.state().enemies.forEach((e: EnemyState) => {
-      if (ENEMY_KINDS[e.kind]?.archetype === "boss") {
+      if (ENEMY_KINDS[e.kind]?.archetype === "big") {
         e.hp = 1;
         e.x = h.room.map.spawnX + 100;
         e.y = h.room.map.spawnY;

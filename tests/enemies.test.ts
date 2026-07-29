@@ -101,13 +101,13 @@ describe("coneAngles (§15 scatter spread)", () => {
   });
 });
 
-describe("Gatlin (§15 scatter tough)", () => {
+describe("Gatlin compatibility id", () => {
   const g = ENEMY_KINDS.gatlin;
-  it("is a positively-weighted spitter with a shotgun spread", () => {
-    expect(g?.archetype).toBe("spitter");
+  it("now resolves to a positively weighted Cultist with no legacy firing package", () => {
+    expect(g?.archetype).toBe("cultist");
     expect(g?.weight ?? 0).toBeGreaterThan(0);
-    expect(g?.ranged?.spread?.count).toBeGreaterThan(1);
-    expect(g?.ranged?.spread?.arc).toBeGreaterThan(0);
+    expect(g?.ranged).toBeUndefined();
+    expect(g?.melee).toBeUndefined();
   });
   it("can random-spawn from the weighted pool", () => {
     const weighted = Object.keys(ENEMY_KINDS).filter((k) => (ENEMY_KINDS[k]?.weight ?? 0) > 0);
@@ -115,19 +115,13 @@ describe("Gatlin (§15 scatter tough)", () => {
   });
 });
 
-describe("Ronin (§15/§20 Sekiro duelist)", () => {
-  const m = ENEMY_KINDS.ronin?.melee;
-  it("lunges forward each strike (a positive step), advancing rather than standing still", () => {
-    expect(m?.step ?? 0).toBeGreaterThan(0);
-  });
-  it("starts the duel OUTSIDE the lunge floor so the first step reads as closing in", () => {
-    // The lunge never goes inside range×0.45, so approach must be beyond that for the advance to show.
-    expect(m?.approach ?? 0).toBeGreaterThan((m?.range ?? 0) * 0.45);
-  });
-  it("telegraphs every hit — a first windup and a follow-up rhythm gap, both > 0", () => {
-    expect(m?.windup ?? 0).toBeGreaterThan(0);
-    expect(m?.swingGap ?? 0).toBeGreaterThan(0);
-    expect(m?.hits ?? 0).toBeGreaterThan(1);
+describe("Ronin compatibility id", () => {
+  it("now resolves to Cultist and cannot retain the retired duelist combo", () => {
+    const ronin = ENEMY_KINDS.ronin;
+    expect(ronin?.archetype).toBe("cultist");
+    expect(ronin?.melee).toBeUndefined();
+    expect(ronin?.combos).toBeUndefined();
+    expect(ronin?.dropWeapon).toBeGreaterThan(0);
   });
 });
 
@@ -248,29 +242,29 @@ describe("stepEnemyKite (§15 spitter AI)", () => {
   });
 });
 
-describe("effectiveMelee — §20 universal lunge", () => {
-  it("derives a single-hit lunge for the contact archetypes (rusher/swarm/zoner)", () => {
-    for (const kindId of ["critter", "mote-swarm", "pricklepulp"]) {
-      const m = effectiveMelee(ENEMY_KINDS[kindId]);
+describe("effectiveMelee — Runner bodily lunge", () => {
+  it("derives the same cheap, single-hit bodily lunge for every Runner compatibility id", () => {
+    const runnerIds = Object.keys(ENEMY_KINDS).filter(
+      (kindId) => ENEMY_KINDS[kindId]?.archetype === "runner",
+    );
+    expect(runnerIds.length).toBeGreaterThan(0);
+    for (const kindId of runnerIds) {
+      const kind = ENEMY_KINDS[kindId];
+      const m = effectiveMelee(kind);
       expect(m, kindId).toBeDefined();
       expect(m?.hits).toBe(1);
-      expect(m?.windup).toBeGreaterThan(0); // telegraphed → parryable
-      expect(m?.range).toBeGreaterThan(ENEMY_KINDS[kindId]?.radius ?? 0); // reaches a touch past the body
+      expect(m?.windup).toBeGreaterThan(0);
+      expect(m?.range).toBeGreaterThan(kind?.radius ?? 0);
       expect(m?.damage).toBeGreaterThanOrEqual(LUNGE_MIN_DAMAGE);
     }
   });
 
-  it("has NO lunge for ranged spitters, the boss, or dummies (their threat isn't a jab)", () => {
-    expect(effectiveMelee(ENEMY_KINDS.boothill)).toBeUndefined(); // spitter
-    expect(effectiveMelee(ENEMY_KINDS["old-rust"])).toBeUndefined(); // boss
+  it("has no fallback lunge for Cultists, Bigs, or dummies", () => {
+    expect(effectiveMelee(ENEMY_KINDS.boothill)).toBeUndefined();
+    expect(effectiveMelee(ENEMY_KINDS.ronin)).toBeUndefined();
+    expect(effectiveMelee(ENEMY_KINDS["old-rust"])).toBeUndefined();
     expect(effectiveMelee(ENEMY_KINDS.dummy)).toBeUndefined();
     expect(effectiveMelee(undefined)).toBeUndefined();
-  });
-
-  it("returns a duelist's EXPLICIT multi-hit combo verbatim (not the derived jab)", () => {
-    const ronin = ENEMY_KINDS.ronin;
-    expect(effectiveMelee(ronin)).toBe(ronin?.melee); // same object — the authored combo
-    expect(ronin?.melee?.hits).toBeGreaterThan(1);
   });
 
   it("MEMOIZES the derived lunge per kind (no per-tick allocation)", () => {

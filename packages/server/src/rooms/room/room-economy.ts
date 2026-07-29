@@ -1039,10 +1039,10 @@ export const roomEconomyMethods = {
   },
 
   maybeDropEnemyWeapon(this: GameRoomContext, enemy: EnemyState, kind: EnemyKind): void {
-    const weaponId = kind.wieldsWeapon;
+    const weaponId = enemy.weaponId || kind.wieldsWeapon;
     if (
       this.state.mode !== "arena" ||
-      kind.archetype === "boss" ||
+      kind.archetype === "big" ||
       kind.archetype === "dummy" ||
       !weaponId ||
       !WEAPONS[weaponId]

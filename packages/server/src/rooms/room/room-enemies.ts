@@ -158,6 +158,9 @@ import {
   EMBERGUARD_BASE_DMG,
   EMBERGUARD_HALF_ARC,
   EMBERGUARD_RANGE,
+  CULTIST_CHARACTER_IDS,
+  cultistAuthoredRange,
+  cultistBehaviourForWeapon,
   ENEMY_KINDS,
   ENEMY_MELEE_COMMIT_SECONDS,
   ENEMY_MELEE_COMMIT_TICKS,
@@ -312,6 +315,7 @@ import {
   RELIC_COMMON_STACK_CAP,
   RESPAWN_CLEAR_RADIUS,
   RETURN_STAGGER_TICKS,
+  RUNNER_CHARACTER_ID,
   RETURN_STEP_MAX,
   REVIVE_HP_FRAC,
   RelicState,
@@ -503,7 +507,7 @@ import {
   wipeWeaponBankForPrestige,
 } from "../progression.js";
 import { SpatialGrid } from "../SpatialGrid.js";import { COMBO_RINGOUT_ORBIT, COMBO_RIPOSTE_STAGGER_TICKS, ZERO_MOVE_INPUT, ZERO_IMPULSE, tickReached, ticksFromSeconds, pointSegmentDistanceSq, pointInConvexQuadrilateral, pointSweptUprightCapsuleDistanceSq, EXTRACT_ARM_SECONDS, EXTRACT_HOLD_SECONDS, SPAWN_CANDIDATE_COUNT, SPAWN_MIN_DISTANCE, SPAWN_CAMERA_HALF_WIDTH, SPAWN_CAMERA_HALF_HEIGHT, ENEMY_GRID_CELL_SIZE, MAX_ENEMY_RADIUS, ENEMY_SEPARATION_OVERLAP_FRACTION, ENEMY_SEPARATION_MAX_STEP, GROUND_ZONE_ENTITY_CAP, GROUND_ZONE_OWNER_CAP } from "./room-progression.js";
-import type { InputCmd, InputState, WeaponResourceLedger, WeaponSpendReason, ZoneRuntime, WeaponSpendResult, PendingScatterVolley, PendingHybridProjectile, PendingWeaponThrow, ActiveMeleeSwing, DriveRuntime, RunWeaponLedger, PickupWeaponBankMeta, DisconnectedPlayerReservation, PlayerDamageKind, PetRunRuntime, UltimateTarget, UltimateRuntime, WeaponHand, CombatState, DuelistComboState, RewardBoundary, GameRoomContext } from "./room-progression.js";
+import type { InputCmd, InputState, WeaponResourceLedger, WeaponSpendReason, ZoneRuntime, WeaponSpendResult, PendingScatterVolley, PendingHybridProjectile, PendingWeaponThrow, ActiveMeleeSwing, DriveRuntime, RunWeaponLedger, PickupWeaponBankMeta, DisconnectedPlayerReservation, PlayerDamageKind, PetRunRuntime, UltimateTarget, UltimateRuntime, WeaponHand, CombatState, CultistWeaponState, DuelistComboState, RewardBoundary, GameRoomContext } from "./room-progression.js";
 
 export const roomEnemyMethods = {
 
@@ -577,7 +581,7 @@ export const roomEnemyMethods = {
       if (aOrder === undefined || aOrder >= MAX_ENEMIES) return;
       const aKind = ENEMY_KINDS[a.kind];
       const ra = aKind?.radius ?? ENEMY_RADIUS;
-      const aMovable = aKind?.archetype !== "boss" && aKind?.archetype !== "dummy";
+      const aMovable = aKind?.archetype !== "big" && aKind?.archetype !== "dummy";
       if (ra > ENEMY_GRID_CELL_SIZE / 2) {
         this.enemyGrid.queryRadius(a.x, a.y, ra + MAX_ENEMY_RADIUS, this.enemyCandidates);
       } else {
@@ -600,7 +604,7 @@ export const roomEnemyMethods = {
         const b = this.state.enemies.get(bid);
         if (!b || b.hp <= 0) continue;
         const bKind = ENEMY_KINDS[b.kind];
-        const bMovable = bKind?.archetype !== "boss" && bKind?.archetype !== "dummy";
+        const bMovable = bKind?.archetype !== "big" && bKind?.archetype !== "dummy";
         if (!aMovable && !bMovable) continue;
         const minDistance = ra + (bKind?.radius ?? ENEMY_RADIUS);
         const dx = b.x - a.x;
@@ -1215,18 +1219,19 @@ export const roomEnemyMethods = {
 
   /** §16 drop a corrosive DoT puddle (reuses ZoneState + the zoner DoT machinery) at a boss-authored spot. */
   spawnWeaponGroundZoneAt(this: GameRoomContext,
-    player: PlayerState,
+    owner: PlayerState | EnemyState,
     weapon: WeaponDef,
     x: number,
     y: number,
     damagePerSecond: number,
     crit = 0,
+    hostile = false,
   ): ZoneState | undefined {
     const def = weapon.groundZone;
     if (!def || this.state.zones.size >= GROUND_ZONE_ENTITY_CAP) return undefined;
     const owned: ZoneState[] = [];
     this.state.zones.forEach((row) => {
-      if (row.kind === ZoneKind.Weapon && row.ownerId === player.id) owned.push(row);
+      if (row.kind === ZoneKind.Weapon && row.ownerId === owner.id) owned.push(row);
     });
     owned.sort((a, b) => a.bornTick - b.bornTick || a.id.localeCompare(b.id));
     while (owned.length >= GROUND_ZONE_OWNER_CAP) {
@@ -1249,7 +1254,7 @@ export const roomEnemyMethods = {
           : def.style === "ice"
             ? ZoneStyle.Ice
             : ZoneStyle.Poison;
-    zone.ownerId = player.id;
+    zone.ownerId = owner.id;
     zone.weaponId = weapon.id;
     zone.seed = ((this.zoneSeq * 40503) ^ this.state.tick) & 0xffff;
     zone.maxRadius = def.maxRadius;
@@ -1257,8 +1262,8 @@ export const roomEnemyMethods = {
     this.state.zones.set(zone.id, zone);
     this.zoneMeta.set(zone.id, {
       ttl: def.lingerSeconds,
-      hostile: false,
-      ownerId: player.id,
+      hostile,
+      ownerId: owner.id,
       weaponId: weapon.id,
       damagePerSecond: Math.max(0, damagePerSecond),
       tickRate: def.tickRate,
@@ -1305,6 +1310,7 @@ export const roomEnemyMethods = {
     const e = new EnemyState();
     e.id = `e${this.enemySeq++}`;
     e.kind = kindId;
+    this.initializeEnemyIdentity(e, kind);
     e.hp = kind.hp * enemyHpScale(players) * depthHpScale(this.state.depth);
     // §36 belt: a boss's summoned adds must land ON the deck (the telegraphed spot may be off the depth band
     // now that arena bosses run belt finales) — mirror the trash-spawn clamp. Arena keeps map-safe placement.
@@ -1414,10 +1420,682 @@ export const roomEnemyMethods = {
     });
   },
 
+  /** Assign the model/loadout once at spawn. Legacy kind ids remain data keys only; their old combat
+   * archetypes are not consulted after this seam. */
+  initializeEnemyIdentity(
+    this: GameRoomContext,
+    enemy: EnemyState,
+    kind: EnemyKind,
+    requestedWeaponId?: string,
+  ): void {
+    enemy.tough = false;
+    enemy.attackPhase = 0;
+    if (kind.archetype === "runner") {
+      enemy.appearanceId = RUNNER_CHARACTER_ID;
+      enemy.weaponId = "";
+      return;
+    }
+    if (kind.archetype === "cultist") {
+      const ordinal = Math.max(0, Number.parseInt(enemy.id.replace(/\D/g, ""), 10) || 0);
+      enemy.appearanceId = CULTIST_CHARACTER_IDS[ordinal % CULTIST_CHARACTER_IDS.length]!;
+      const requested =
+        requestedWeaponId && ACTIVE_WEAPON_CATALOG_IDS.includes(requestedWeaponId)
+          ? requestedWeaponId
+          : undefined;
+      enemy.weaponId =
+        requested ??
+        ACTIVE_WEAPON_CATALOG_IDS[
+          Math.floor(Math.random() * ACTIVE_WEAPON_CATALOG_IDS.length)
+        ] ??
+        FISTS_WEAPON;
+      return;
+    }
+    enemy.appearanceId = kind.sprite ?? enemy.kind;
+    enemy.weaponId = kind.wieldsWeapon ?? "";
+  },
+
+  clearCultistBeamRows(this: GameRoomContext, enemyId: string): void {
+    const doomed: string[] = [];
+    this.state.beams.forEach((row, key) => {
+      if (row.ownerId === enemyId) doomed.push(key);
+    });
+    for (const key of doomed) this.state.beams.delete(key);
+  },
+
+  /** Cultists decide position by weapon SUBCLASS, then execute the selected catalog row's real delivery
+   * block. No id switch exists here: range, cadence, magazine/reload, charge, beam channel, volley,
+   * projectile art, pierce, bounce and explosion are all read from the authored WeaponDef. */
+  stepCultists(this: GameRoomContext, dt: number): void {
+    for (const [id] of this.cultistWeaponState) {
+      const enemy = this.state.enemies.get(id);
+      if (enemy && ENEMY_KINDS[enemy.kind]?.archetype === "cultist") continue;
+      this.cultistWeaponState.delete(id);
+      this.clearCultistBeamRows(id);
+    }
+
+    this.state.enemies.forEach((enemy, id) => {
+      const kind = ENEMY_KINDS[enemy.kind];
+      if (kind?.archetype !== "cultist" || id === this.bossId || this.poundEnemyEffects.has(id))
+        return;
+      const weapon = WEAPONS[enemy.weaponId];
+      if (!weapon) return;
+      const target = this.nearestLivingPlayer(enemy);
+      if (!target) return;
+      const dx = target.x - enemy.x;
+      const dy = target.y - enemy.y;
+      const distance = Math.hypot(dx, dy) || 1;
+      const aimX = dx / distance;
+      const aimY = dy / distance;
+      const aimAngle = Math.atan2(aimY, aimX);
+      enemy.aimDir = aimAngle;
+
+      let runtime = this.cultistWeaponState.get(id);
+      if (!runtime) {
+        runtime = {
+          cooldown: Math.random() * Math.min(weapon.cooldown, 0.5),
+          phase: "idle",
+          phaseT: 0,
+          pulseT: 0,
+          ammo: weapon.gun?.magazine ?? weapon.thrown?.charges ?? 0,
+          burstRemaining: 0,
+          burstT: 0,
+          comboStep: 0,
+          aimX,
+          aimY,
+        };
+        this.cultistWeaponState.set(id, runtime);
+      }
+      runtime.aimX = aimX;
+      runtime.aimY = aimY;
+      runtime.cooldown = Math.max(0, runtime.cooldown - dt);
+
+      const behaviour = cultistBehaviourForWeapon(weapon);
+      const authoredRange = Math.max(weapon.range, cultistAuthoredRange(weapon));
+      const preferred = Math.max(kind.radius * 3, authoredRange * behaviour.preferredRangeFraction);
+      const retreat = preferred * behaviour.retreatRangeFraction;
+      if (
+        runtime.phase !== "channel" &&
+        runtime.phase !== "zone" &&
+        runtime.phase !== "aura"
+      ) {
+        const slow = kind.speed * this.enemyGroundZoneSlow(id);
+        let forward = distance > preferred ? 1 : distance < retreat ? -1 : 0;
+        if (weapon.tags.weaponClass === "melee" && distance > weapon.range * 0.82) forward = 1;
+        const parity = (id.charCodeAt(id.length - 1) & 1) === 0 ? 1 : -1;
+        const vx = aimX * forward - aimY * behaviour.strafe * parity * (forward === 0 ? 1 : 0.35);
+        const vy = aimY * forward + aimX * behaviour.strafe * parity * (forward === 0 ? 1 : 0.35);
+        const vl = Math.hypot(vx, vy);
+        if (vl > 1e-6) {
+          const r = kind.radius;
+          const maxX = this.belt && this.beltLevel ? this.beltLevel.length - r : ARENA_WIDTH - r;
+          enemy.x = clamp(enemy.x + (vx / vl) * slow * dt, r, maxX);
+          enemy.y = clamp(enemy.y + (vy / vl) * slow * dt, r, ARENA_HEIGHT - r);
+          this.updateEnemyGrid(id, enemy);
+        }
+      }
+
+      const muzzlePoints = (): Array<{ x: number; y: number; part: number }> => {
+        if (!weapon.muzzle) return [{ x: enemy.x, y: enemy.y, part: 0 }];
+        return weaponMuzzleWorldPointsForShot(
+          weapon,
+          {
+            x: enemy.x,
+            y: enemy.y,
+            aimX: runtime!.aimX,
+            aimY: runtime!.aimY,
+            renderScale: characterScale(enemy.appearanceId),
+          },
+          enemy.atkSeq,
+        ).map((muzzle) => ({ x: muzzle.x, y: muzzle.y, part: muzzle.point.part }));
+      };
+      const emit = (
+        speed: number,
+        range: number,
+        damage: number,
+        projectileKind: string,
+        delivery: number,
+        pierce = 1,
+        spread = 0,
+        explode?: { radius: number; damage: number },
+        bounces = 0,
+        waveform?: ProjectileWaveformDef,
+        arcHeight = 0,
+        visualScale = 1,
+        sourceBurstIndex = 0,
+        landingZoneDamage?: number,
+        returnAfterSeconds?: number,
+        ricochet?: { hops: number; range: number },
+      ): void => {
+        const angle = aimAngle + spread;
+        for (const muzzle of muzzlePoints())
+          this.fireProjectile(
+            muzzle,
+            { x: muzzle.x + Math.cos(angle), y: muzzle.y + Math.sin(angle) },
+            speed,
+            damage * depthDamageScale(this.state.depth),
+            true,
+            projectileKind,
+            pierce,
+            range / Math.max(1, speed),
+            explode
+              ? {
+                  radius: explode.radius,
+                  damage: explode.damage * depthDamageScale(this.state.depth),
+                }
+              : undefined,
+            bounces,
+            0,
+            enemy.id,
+            weapon.id,
+            delivery,
+            enemy,
+            landingZoneDamage,
+            ricochet,
+            waveform,
+            arcHeight,
+            returnAfterSeconds,
+            undefined,
+            visualScale,
+            muzzle.part,
+            sourceBurstIndex,
+          );
+      };
+      const fireGunRound = (burstIndex: number): void => {
+        const gun = weapon.gun;
+        if (!gun) return;
+        const fixedPellets = Math.max(1, gun.pellets ?? 1);
+        const randomVolley = gun.randomPellets
+          ? serverSeededGunPelletVolley(
+              gun.randomPellets,
+              mixSeeds(this.state.seedHazard, enemy.atkSeq, this.projectileSeq, burstIndex),
+              10,
+            )
+          : undefined;
+        const offsets = randomVolley
+          ? randomVolley.angles
+          : Array.from({ length: fixedPellets }, (_, index) =>
+              fixedPellets > 1
+                ? (index / (fixedPellets - 1) - 0.5) * 2 * (gun.spread ?? 0)
+                : (Math.random() - 0.5) * 2 * (gun.spread ?? 0),
+            );
+        const divisor = randomVolley?.requestedCount ?? 1;
+        const parallelDivisor =
+          weapon.muzzle?.barrelMode === "parallel" ? Math.max(1, muzzlePoints().length) : 1;
+        const authoredExplosion = gun.explode
+          ? { radius: gun.explode.radius, damage: gun.explode.damage / parallelDivisor }
+          : undefined;
+        const projectileTint =
+          gun.projectileColor === undefined
+            ? undefined
+            : `#${Math.round(gun.projectileColor).toString(16).padStart(6, "0")}`;
+        const bulletKind = projectileTint
+          ? `${gun.bulletKind}:${projectileTint}`
+          : weapon.tags.element !== "physical"
+            ? `${gun.bulletKind}:${weapon.tags.element}`
+            : gun.bulletKind;
+        for (const offset of offsets) {
+          const spread =
+            randomVolley && gun.randomPellets?.directions === "radial"
+              ? offset - aimAngle
+              : offset;
+          emit(
+            gun.projectileSpeed,
+            gun.range,
+            gun.damage / divisor / parallelDivisor,
+            bulletKind,
+            CombatDelivery.Gun,
+            gun.pierce ?? 1,
+            spread,
+            authoredExplosion,
+            gun.bounces ?? 0,
+            undefined,
+            gun.arcHeight ?? 0,
+            gun.projectileVisualScale ?? 1,
+            burstIndex,
+          );
+        }
+      };
+      const spawnHostileZone = (x: number, y: number): ZoneState | undefined => {
+        const zone = this.spawnWeaponGroundZoneAt(
+          enemy,
+          weapon,
+          x,
+          y,
+          weapon.groundZone?.damagePerSecond ?? 0,
+          0,
+          true,
+        );
+        runtime!.zoneId = zone?.id;
+        return zone;
+      };
+
+      if (runtime.burstRemaining > 0 && weapon.gun?.burst) {
+        runtime.burstT -= dt;
+        while (runtime.burstRemaining > 0 && runtime.burstT <= 1e-9) {
+          const burstIndex = weapon.gun.burst.count - runtime.burstRemaining;
+          fireGunRound(burstIndex);
+          runtime.burstRemaining--;
+          runtime.burstT += weapon.gun.burst.intervalSeconds;
+        }
+        if (runtime.burstRemaining <= 0 && runtime.ammo <= 0) {
+          runtime.phase = "reload";
+          runtime.phaseT = weapon.gun.reloadSeconds;
+        }
+        return;
+      }
+
+      if (runtime.phase === "reload") {
+        runtime.phaseT -= dt;
+        enemy.attackPhase = 3;
+        if (runtime.phaseT <= 0) {
+          runtime.phase = "idle";
+          runtime.ammo = weapon.gun?.magazine ?? weapon.thrown?.charges ?? 0;
+          enemy.attackPhase = 0;
+        }
+        return;
+      }
+
+      if (runtime.phase === "charge") {
+        runtime.phaseT -= dt;
+        enemy.attackPhase = 1;
+        if (runtime.phaseT > 0) return;
+        runtime.phase = weapon.beam ? "channel" : "idle";
+        enemy.atkSeq = (enemy.atkSeq + 1) % 100000;
+        if (weapon.chargedProjectile) {
+          const charged = weapon.chargedProjectile;
+          const snapshot = chargedProjectileSnapshot(charged, 1);
+          emit(
+            charged.speed,
+            charged.range,
+            snapshot.directDamage,
+            `charged:${weapon.id}`,
+            CombatDelivery.Cast,
+            1,
+            0,
+            { radius: snapshot.explosionRadius, damage: snapshot.explosionDamage },
+            0,
+            undefined,
+            0,
+            snapshot.visualScale,
+          );
+          runtime.cooldown = weapon.cooldown;
+          enemy.attackPhase = 0;
+        } else if (weapon.beam) {
+          runtime.phaseT = weapon.beam.overheat.maxChannelSeconds;
+          runtime.pulseT = 0;
+          enemy.attackPhase = 2;
+        }
+        return;
+      }
+
+      if (runtime.phase === "channel" && weapon.beam) {
+        const beam = weapon.beam;
+        runtime.phaseT -= dt;
+        runtime.pulseT += dt;
+        enemy.attackPhase = 2;
+        const muzzle = muzzlePoints()[0] ?? { x: enemy.x, y: enemy.y, part: 0 };
+        const endX = muzzle.x + aimX * beam.range;
+        const endY = muzzle.y + aimY * beam.range;
+        let row = this.state.beams.get(`cultist:${id}`);
+        if (!row) {
+          row = new BeamState();
+          row.ownerId = id;
+          row.startSeq = enemy.atkSeq;
+          row.phaseStartTick = this.state.tick;
+          this.state.beams.set(`cultist:${id}`, row);
+        }
+        row.weaponId = weapon.id;
+        row.seq = enemy.atkSeq;
+        row.phase = BeamPhase.Active;
+        row.previousOriginX = row.originX || muzzle.x;
+        row.previousOriginY = row.originY || muzzle.y;
+        row.previousAngle = row.angle || aimAngle;
+        row.previousLength = row.length || beam.range;
+        row.originX = muzzle.x;
+        row.originY = muzzle.y;
+        row.angle = aimAngle;
+        row.length = beam.range;
+        row.effectiveLength = beam.range;
+        row.width = beam.coneStream
+          ? Math.max(beam.width, 2 * beam.range * Math.tan(beam.coneStream.halfAngle))
+          : beam.width;
+        row.halfWidth = row.width / 2;
+        row.intensity = 1;
+        row.element = weapon.tags.element;
+        while (runtime.pulseT + 1e-9 >= beam.tickRate) {
+          runtime.pulseT -= beam.tickRate;
+          const radius = PLAYER_RADIUS + beam.width / 2;
+          this.state.players.forEach((player) => {
+            if (!player.alive) return;
+            const presented = this.presentedPlayerPosition(player);
+            if (
+              presented &&
+              pointSegmentDistanceSq(
+                presented.x,
+                presented.y,
+                muzzle.x,
+                muzzle.y,
+                endX,
+                endY,
+              ) <=
+                radius * radius
+            )
+              this.damagePlayer(
+                player,
+                beam.damagePerSecond * beam.tickRate * depthDamageScale(this.state.depth),
+                "enemy",
+              );
+          });
+        }
+        if (runtime.phaseT <= 0) {
+          runtime.phase = "idle";
+          runtime.cooldown = beam.overheat.lockSeconds;
+          enemy.attackPhase = 0;
+          this.clearCultistBeamRows(id);
+        }
+        return;
+      }
+
+      if (runtime.phase === "zone" && weapon.groundZone?.trigger === "channel") {
+        const zoneDef = weapon.groundZone;
+        runtime.phaseT -= dt;
+        enemy.attackPhase = 2;
+        const zone = runtime.zoneId ? this.state.zones.get(runtime.zoneId) : undefined;
+        const meta = runtime.zoneId ? this.zoneMeta.get(runtime.zoneId) : undefined;
+        if (zone && meta) {
+          zone.radius = Math.min(zoneDef.maxRadius, zone.radius + zoneDef.growthPerSecond * dt);
+          meta.refreshedTick = this.state.tick;
+        }
+        if (runtime.phaseT <= 0 || !zone || !meta) {
+          runtime.phase = "idle";
+          runtime.cooldown = weapon.cooldown;
+          runtime.zoneId = undefined;
+          enemy.attackPhase = 0;
+        }
+        return;
+      }
+
+      if (runtime.phase === "aura" && weapon.performance?.aura) {
+        const aura = weapon.performance.aura;
+        enemy.attackPhase = 2;
+        if (distance > aura.radius + PLAYER_RADIUS) {
+          runtime.phase = "idle";
+          runtime.cooldown = weapon.cooldown;
+          runtime.pulseT = 0;
+          enemy.attackPhase = 0;
+          return;
+        }
+        runtime.pulseT += dt;
+        while (runtime.pulseT + 1e-9 >= aura.tickRate) {
+          runtime.pulseT -= aura.tickRate;
+          this.applyBossAoE(
+            enemy.x,
+            enemy.y,
+            aura.radius,
+            aura.damagePerSecond * aura.tickRate * depthDamageScale(this.state.depth),
+            0,
+          );
+        }
+        return;
+      }
+
+      if (runtime.phase === "windup") {
+        runtime.phaseT -= dt;
+        enemy.windup = Math.max(0, 1 - runtime.phaseT / Math.max(0.001, weapon.cooldown));
+        enemy.attackPhase = 1;
+        if (runtime.phaseT > 0) return;
+        enemy.atkSeq = (enemy.atkSeq + 1) % 100000;
+        const presented = this.presentedPlayerPosition(target);
+        if (presented) {
+          const selection = meleeComboSelectionFor(weapon);
+          const comboBeat =
+            selection?.sequence[
+              runtime.comboStep % Math.max(1, selection.sequence.length)
+            ];
+          const path = weapon.authoritativeCombo ? comboBeat?.path : undefined;
+          const damage = weapon.damage * (path?.damageMultiplier ?? 1);
+          const range = weapon.range * (path?.rangeMultiplier ?? 1);
+          if (weapon.warp) {
+            this.applyBossAoE(
+              presented.x,
+              presented.y,
+              weapon.warp.burstRadius,
+              damage * depthDamageScale(this.state.depth),
+              0,
+            );
+          } else {
+            const hitDx = presented.x - enemy.x;
+            const hitDy = presented.y - enemy.y;
+            const hitDistance = Math.hypot(hitDx, hitDy);
+            const hitAngle = Math.abs(shortestAngleDelta(Math.atan2(hitDy, hitDx), aimAngle));
+            if (hitDistance <= range + PLAYER_RADIUS && hitAngle <= weapon.halfArc)
+              this.damagePlayer(
+                target,
+                damage * depthDamageScale(this.state.depth),
+                "enemy",
+              );
+          }
+          if (
+            weapon.groundZone &&
+            (weapon.groundZone.trigger === "attack" ||
+              weapon.groundZone.trigger === "impact")
+          )
+            spawnHostileZone(presented.x, presented.y);
+        }
+        if (weapon.quake) {
+          const quakeX = weapon.quake.placementRange && presented ? presented.x : enemy.x;
+          const quakeY = weapon.quake.placementRange && presented ? presented.y : enemy.y;
+          this.applyBossAoE(
+            quakeX,
+            quakeY,
+            weapon.quake.radius,
+            weapon.quake.damage * depthDamageScale(this.state.depth),
+            0,
+          );
+        }
+        if (weapon.scatter) {
+          const scatter = weapon.scatter;
+          const count = Math.max(1, scatter.count);
+          for (let index = 0; index < count; index++) {
+            const spread =
+              scatter.aim === "radial-random"
+                ? Math.random() * Math.PI * 2 - aimAngle
+                : count > 1
+                  ? (index / (count - 1) - 0.5) * 2 * scatter.spread
+                  : 0;
+            emit(
+              scatter.speed,
+              scatter.range,
+              scatter.damage,
+              `${weapon.tags.element === "physical" ? "magma" : weapon.tags.element}`,
+              CombatDelivery.Scatter,
+              scatter.pierce ?? 1,
+              spread,
+              scatter.explode,
+            );
+          }
+        }
+        if (weapon.hybridProjectile) {
+          const hybrid = weapon.hybridProjectile;
+          const selectionLength = meleeComboSelectionFor(weapon)?.sequence.length ?? 1;
+          const isFinisher = runtime.comboStep % selectionLength === selectionLength - 1;
+          if (hybrid.trigger === "each-swing" || isFinisher) {
+            const count = Math.max(1, hybrid.count);
+            for (let index = 0; index < count; index++) {
+              const spread =
+                count > 1
+                  ? (index / (count - 1) - 0.5) * 2 * hybrid.spread
+                  : 0;
+              emit(
+                hybrid.speed,
+                hybrid.range,
+                hybrid.damage / count,
+                `hybrid:${hybrid.style}`,
+                CombatDelivery.HybridProjectile,
+                hybrid.pierce,
+                spread,
+                undefined,
+                0,
+                undefined,
+                0,
+                1,
+                0,
+                undefined,
+                hybrid.returnAfterSeconds,
+              );
+            }
+          }
+        }
+        const comboLength = meleeComboSelectionFor(weapon)?.sequence.length ?? 1;
+        runtime.comboStep = (runtime.comboStep + 1) % Math.max(1, comboLength);
+        runtime.phase = "idle";
+        runtime.cooldown = Math.max(0, weapon.cooldown);
+        enemy.windup = 0;
+        enemy.attackPhase = 0;
+        return;
+      }
+
+      if (runtime.cooldown > 0 || distance > authoredRange + PLAYER_RADIUS) return;
+
+      if (weapon.groundZone?.trigger === "channel") {
+        const zoneDef = weapon.groundZone;
+        const placementDistance = Math.min(distance, zoneDef.placementRange);
+        const zone = spawnHostileZone(
+          enemy.x + aimX * placementDistance,
+          enemy.y + aimY * placementDistance,
+        );
+        if (zone) {
+          runtime.phase = "zone";
+          runtime.phaseT = zoneDef.lingerSeconds;
+          enemy.atkSeq = (enemy.atkSeq + 1) % 100000;
+          enemy.attackPhase = 2;
+        }
+        return;
+      }
+      if (weapon.performance?.aura) {
+        runtime.phase = "aura";
+        runtime.pulseT = 0;
+        enemy.atkSeq = (enemy.atkSeq + 1) % 100000;
+        enemy.attackPhase = 2;
+        return;
+      }
+      if (weapon.beam) {
+        runtime.phase = "charge";
+        runtime.phaseT = weapon.beam.chargeSeconds;
+        enemy.attackPhase = 1;
+        return;
+      }
+      if (weapon.chargedProjectile) {
+        runtime.phase = "charge";
+        runtime.phaseT = weapon.chargedProjectile.chargeSeconds;
+        enemy.attackPhase = 1;
+        return;
+      }
+      if (weapon.gun) {
+        const gun = weapon.gun;
+        if (runtime.ammo <= 0) {
+          runtime.phase = "reload";
+          runtime.phaseT = gun.reloadSeconds;
+          return;
+        }
+        enemy.atkSeq = (enemy.atkSeq + 1) % 100000;
+        runtime.ammo--;
+        fireGunRound(0);
+        runtime.burstRemaining = Math.max(0, (gun.burst?.count ?? 1) - 1);
+        runtime.burstT = gun.burst?.intervalSeconds ?? 0;
+        runtime.cooldown = gun.fireRate;
+        if (runtime.ammo <= 0 && runtime.burstRemaining <= 0) {
+          runtime.phase = "reload";
+          runtime.phaseT = gun.reloadSeconds;
+        }
+        return;
+      }
+      if (weapon.cast) {
+        const cast = weapon.cast;
+        enemy.atkSeq = (enemy.atkSeq + 1) % 100000;
+        const count = Math.max(1, Math.min(CAST_VOLLEY_PROJECTILE_CAP, cast.volley?.count ?? 1));
+        for (let index = 0; index < count; index++) {
+          const spread =
+            count > 1
+              ? (index / (count - 1) - 0.5) * 2 * (cast.volley?.spread ?? 0)
+              : 0;
+          emit(
+            cast.speed,
+            cast.range,
+            cast.damage / count,
+            cast.bulletKind,
+            CombatDelivery.Cast,
+            cast.pierce ?? 99,
+            spread,
+            cast.explode
+              ? { radius: cast.explode.radius, damage: cast.explode.damage / count }
+              : undefined,
+            0,
+            cast.projectileWaveform,
+          );
+        }
+        runtime.cooldown = cast.cooldown;
+        return;
+      }
+      if (weapon.thrown) {
+        const thrown = weapon.thrown;
+        if (runtime.ammo <= 0) {
+          runtime.phase = "reload";
+          runtime.phaseT = thrown.refillSeconds;
+          return;
+        }
+        enemy.atkSeq = (enemy.atkSeq + 1) % 100000;
+        runtime.ammo--;
+        emit(
+          thrown.speed,
+          thrown.range,
+          thrown.damage,
+          thrownProjectileKindFor(weapon),
+          CombatDelivery.Thrown,
+          thrown.pierce,
+          0,
+          undefined,
+          0,
+          thrown.helix
+            ? {
+                amplitudePx: thrown.helix.amplitudePx,
+                frequencyHz: thrown.helix.frequencyHz,
+              }
+            : undefined,
+          thrown.arcHeight ?? 0,
+          1,
+          0,
+          weapon.groundZone?.trigger === "landing"
+            ? weapon.groundZone.damagePerSecond
+            : undefined,
+          thrown.returning ? thrown.range / Math.max(1, thrown.speed) : undefined,
+          thrown.ricochetHops
+            ? {
+                hops: thrown.ricochetHops,
+                range: thrown.ricochetRange ?? Math.min(thrown.range, 320),
+              }
+            : undefined,
+        );
+        runtime.cooldown = weapon.cooldown;
+        if (runtime.ammo <= 0) {
+          runtime.phase = "reload";
+          runtime.phaseT = thrown.refillSeconds;
+        }
+        return;
+      }
+
+      const swing = swingDescriptorFor(weapon, weapon.cooldown);
+      runtime.phase = "windup";
+      runtime.phaseT = swing.impactSeconds;
+      enemy.windup = 0;
+      enemy.attackPhase = 1;
+    });
+  },
+
   stepDuelists(this: GameRoomContext, dt: number, _bodies: Vec2[]): void {
     for (const [id, dead] of this.comboState) {
       if (!this.state.enemies.has(id)) {
-        if (dead?.tg) this.removeTelegraphRow(dead.tg); // §15 v0.113 a leaper killed mid-leap: clear its marker
+        if (dead?.tg) this.removeTelegraphRow(dead.tg); // compatibility cleanup for an in-flight marker
         this.meleeAttackTokens.releaseHolder(id);
         // §51 a combo tough killed mid-performance frees its victim's duel token (G12 co-op rescue).
         if (dead?.targetId && this.duelTokens.get(dead.targetId) === id)
@@ -1428,19 +2106,19 @@ export const roomEnemyMethods = {
     this.state.enemies.forEach((enemy, id) => {
       const kind = ENEMY_KINDS[enemy.kind];
       if (this.poundEnemyEffects.has(id)) return;
-      // §20 every contact monster lunges: an explicit duelist combo, or a derived single-hit lunge for
-      // rusher/swarm/zoner (so the attack telegraphs + is parryable). Spitters/boss/dummies → no lunge.
+      // Only Runner owns this density-critical weaponless lunge path. Cultists use their authored weapon;
+      // Bigs retain their BossController; the dummy remains inert.
       const m = effectiveMelee(kind);
       if (!m || !kind) return;
+      const runner = kind.archetype === "runner";
       const moveSpeed = kind.speed * this.enemyGroundZoneSlow(id);
       let st = this.comboState.get(id);
       if (!st) {
         st = { phase: "idle", t: 0, hits: 0, wind: 0 };
         this.comboState.set(id, st);
       }
-      // §51 ELITE COMBO LANGUAGE: TOUGH instances of combo-deck kinds (and shifters, always) run the
-      // tick-anchored authored machine. Every other instance falls through to the legacy float machine
-      // below, byte-for-byte untouched — the language stays special.
+      // Persistence compatibility: a pre-B95 in-flight combo can finish, but normalized live rows never
+      // enter this branch.
       if (kind.combos && (enemy.tough || kind.shifter)) {
         this.stepComboEnemy(enemy, id, kind, m, st, dt);
         this.updateEnemyGrid(id, enemy);
@@ -1460,13 +2138,19 @@ export const roomEnemyMethods = {
       const leap = kind.leap;
       if (st.phase === "idle") {
         enemy.windup = 0;
+        enemy.attackPhase = 0;
         st.leapCd = Math.max(0, (st.leapCd ?? 0) - dt);
         if (!target) return;
         if (dist > m.approach && !(leap && (st.leapCd ?? 0) <= 0 && dist <= leap.range)) {
-          const next = stepEnemyChase({ x: enemy.x, y: enemy.y }, target, moveSpeed, dt);
-          enemy.x = next.x;
-          enemy.y = next.y;
-        } else if (!this.meleeAttackTokens.acquire(target.id, id)) {
+          const dx = target.x - enemy.x;
+          const dy = target.y - enemy.y;
+          const length = Math.hypot(dx, dy);
+          if (length > 1e-6) {
+            const step = Math.min(length, moveSpeed * dt);
+            enemy.x += (dx / length) * step;
+            enemy.y += (dy / length) * step;
+          }
+        } else if (!runner && !this.meleeAttackTokens.acquire(target.id, id)) {
           this.postureMeleeEnemy(enemy, id, target, moveSpeed, m.approach, dt);
         } else if (leap && (st.leapCd ?? 0) <= 0 && dist > m.approach && dist <= leap.range) {
           st.targetId = target.id;
@@ -1477,6 +2161,13 @@ export const roomEnemyMethods = {
           st.tg = this.addTelegraphRow(0, st.lx, st.ly, m.range, 1, 2); // circle · dodge-red · light-poof land
           st.phase = "leapwind";
           st.t = leap.windup;
+          enemy.attackPhase = 2;
+          if (runner) {
+            if (st.tg) this.removeTelegraphRow(st.tg);
+            st.tg = undefined;
+            st.phase = "leap";
+            st.t = leap.airTime;
+          }
         } else if (dist <= m.approach) {
           st.targetId = target.id;
           st.phase = "windup"; // begin the first telegraphed strike
@@ -1484,6 +2175,7 @@ export const roomEnemyMethods = {
           st.wind = m.windup;
           st.t = m.windup;
           st.strike = undefined;
+          enemy.attackPhase = 1;
         }
       } else if (st.phase === "leapwind") {
         st.t -= dt;
@@ -1495,6 +2187,7 @@ export const roomEnemyMethods = {
           st.t = leap?.airTime ?? 0.28;
         }
       } else if (st.phase === "leap") {
+        enemy.attackPhase = 2;
         st.t -= dt;
         // Airborne: cover the remaining distance to the landing spot over the remaining air time.
         if (st.lx !== undefined && st.ly !== undefined) {
@@ -1518,8 +2211,10 @@ export const roomEnemyMethods = {
           st.wind = m.windup;
           st.t = m.windup;
           st.strike = undefined;
+          enemy.attackPhase = 1;
         }
       } else if (st.phase === "windup") {
+        enemy.attackPhase = 1;
         st.t -= dt;
         const phase = st.wind > 0 ? Math.max(0, Math.min(1, 1 - st.t / st.wind)) : 0;
         enemy.windup = phase;
@@ -1542,6 +2237,7 @@ export const roomEnemyMethods = {
           this.consumeDebugCommitDefense(target, enemy);
         }
       } else if (st.phase === "commit") {
+        enemy.attackPhase = 2;
         st.t = Math.max(0, st.t - dt);
         if (st.t <= 1e-9) st.t = 0;
         enemy.windup = 0;
@@ -1583,7 +2279,10 @@ export const roomEnemyMethods = {
       } else if (st.phase === "recover") {
         st.t -= dt;
         enemy.windup = 0;
-        if (st.t <= 0) st.phase = "idle";
+        if (st.t <= 0) {
+          st.phase = "idle";
+          enemy.attackPhase = 0;
+        }
       }
       this.updateEnemyGrid(id, enemy);
     });
@@ -2791,47 +3490,11 @@ export const roomEnemyMethods = {
   },
 
   /** Zoners drop a corrosive puddle under themselves on a cooldown (§15 area denial). */
-  stepZoners(this: GameRoomContext, dt: number): void {
+  stepZoners(this: GameRoomContext, _dt: number): void {
+    // Legacy zoners collapsed into weapon-driven Cultists. Retain only transient pruning for old saves.
     for (const id of [...this.zonerDropCd.keys()]) {
       if (!this.state.enemies.has(id)) this.zonerDropCd.delete(id);
     }
-    this.state.enemies.forEach((enemy, id) => {
-      if (ENEMY_KINDS[enemy.kind]?.archetype !== "zoner") return;
-      let cd = this.zonerDropCd.get(id);
-      if (cd === undefined) {
-        this.zonerDropCd.set(id, Math.random() * ZONER_DROP_INTERVAL); // stagger first drop
-        return;
-      }
-      cd -= dt;
-      if (cd > 0) {
-        this.zonerDropCd.set(id, cd);
-        return;
-      }
-      if (this.state.zones.size >= GROUND_ZONE_ENTITY_CAP) {
-        this.zonerDropCd.set(id, ZONER_DROP_INTERVAL);
-        return;
-      }
-      const zone = new ZoneState();
-      zone.id = `z${this.zoneSeq++}`;
-      zone.x = enemy.x;
-      zone.y = enemy.y;
-      zone.radius = ZONE_RADIUS * (enemy.tough ? 1.4 : 1);
-      this.state.zones.set(zone.id, zone);
-      this.zoneMeta.set(zone.id, {
-        ttl: ZONE_TTL,
-        hostile: true,
-        ownerId: "",
-        weaponId: "",
-        damagePerSecond: ZONE_DPS * depthDamageScale(this.state.depth),
-        tickRate: 0.05,
-        tickAccumulator: 0,
-        slowMultiplier: 1,
-        slowSeconds: 0,
-        refreshedTick: -1,
-        crit: 0,
-      });
-      this.zonerDropCd.set(id, ZONER_DROP_INTERVAL);
-    });
   },
 
   /** Tick puddle lifetimes; DoT any living, non-invulnerable player standing inside one. */
@@ -2958,12 +3621,9 @@ export const roomEnemyMethods = {
       const enemy = new EnemyState();
       enemy.id = `e${this.enemySeq++}`;
       enemy.kind = kindId;
-      enemy.tough =
-        kind.archetype !== "swarm" &&
-        Math.random() < toughChance(this.state.elapsed, players, this.state.depth);
+      this.initializeEnemyIdentity(enemy, kind);
       enemy.hp =
         kind.hp *
-        (enemy.tough ? TOUGH_HP_MULT : 1) *
         enemyHpScale(players) *
         depthHpScale(this.state.depth);
       if (floor) {
@@ -3101,13 +3761,10 @@ export const roomEnemyMethods = {
     enemy.id = `e${this.enemySeq++}`;
     enemy.kind = kindId;
     // Tough tier (§15): rolls more likely with run time AND player count AND §6 chain depth. Swarm stays trash.
-    enemy.tough =
-      kind.archetype !== "swarm" &&
-      Math.random() < toughChance(this.state.elapsed, players, this.state.depth);
+    this.initializeEnemyIdentity(enemy, kind);
     // §6: spongier with more players (equalises death rate vs combined DPS) × depth (the chain's escalation).
     enemy.hp =
       kind.hp *
-      (enemy.tough ? TOUGH_HP_MULT : 1) *
       enemyHpScale(players) *
       depthHpScale(this.state.depth);
     const m = kind.radius + 4;
@@ -3137,11 +3794,11 @@ export const roomEnemyMethods = {
    *  Testing-Grounds Tab menu can conjure exactly what the playtester wants to fight. */
   debugSpawnOne(this: GameRoomContext,
     kindId: string,
-    tough: boolean,
     anchor: PlayerState,
     angleOverride?: number,
     distanceOverride?: number,
     attackReady = false,
+    weaponId?: string,
   ): void {
     // §44 HARD entity cap (Sol audit P0 #1): the spawn director respects MAX_ENEMIES but this path
     // didn't — a summon flood could push the room into the quadratic collision loop unbounded.
@@ -3155,9 +3812,8 @@ export const roomEnemyMethods = {
     const enemy = new EnemyState();
     enemy.id = `e${this.enemySeq++}`;
     enemy.kind = kindId;
-    // Swarm trash can't be tough (matches the director rule); the boss ignores the flag (it's already a tier).
-    enemy.tough = tough && kind.archetype !== "swarm" && kind.archetype !== "boss";
-    enemy.hp = kind.hp * (enemy.tough ? TOUGH_HP_MULT : 1) * enemyHpScale(players);
+    this.initializeEnemyIdentity(enemy, kind, weaponId);
+    enemy.hp = kind.hp * enemyHpScale(players);
     const ex = clamp(anchor.x + Math.cos(angle) * distance, m, ARENA_WIDTH - m);
     const ey = clamp(anchor.y + Math.sin(angle) * distance, m, ARENA_HEIGHT - m);
     const sp = safeSpawnPos(this.map, ex, ey);
@@ -3214,6 +3870,7 @@ export const roomEnemyMethods = {
     this.enemyFireCd.clear();
     this.zonerDropCd.clear();
     this.comboState.clear();
+    this.cultistWeaponState.clear();
     this.duelTokens.clear();
     this.dodgeState.clear();
     this.poundEnemyEffects.clear();
@@ -3226,7 +3883,7 @@ export const roomEnemyMethods = {
   spawnBoss(this: GameRoomContext, overrideKind?: string, petAwardEligible = true): void {
     const bossKind =
       overrideKind &&
-      (ENEMY_KINDS[overrideKind]?.archetype === "boss" || BOSS_DEF_IDS.includes(overrideKind))
+      (ENEMY_KINDS[overrideKind]?.archetype === "big" || BOSS_DEF_IDS.includes(overrideKind))
         ? overrideKind
         : getDimension(this.state.dimensionId).boss;
     const def = bossDefFor(bossKind);
@@ -3261,6 +3918,7 @@ export const roomEnemyMethods = {
     const boss = new EnemyState();
     boss.id = `boss${this.enemySeq++}`;
     boss.kind = bodyKind!;
+    this.initializeEnemyIdentity(boss, kind);
     // §6 boss HP-sponge × players × chain depth (v0.103 — deeper capstones are meaner).
     boss.hp =
       (def.worm?.baseCoreHp ?? kind.hp) *
@@ -3344,6 +4002,8 @@ export const roomEnemyMethods = {
         if (combo?.targetId && this.duelTokens.get(combo.targetId) === this.shifterId)
           this.duelTokens.delete(combo.targetId);
         this.comboState.delete(this.shifterId);
+        this.cultistWeaponState.delete(this.shifterId);
+        this.clearCultistBeamRows(this.shifterId);
         this.enemyFireCd.delete(this.shifterId);
         console.log(`[room ${this.roomId}] ⌁ shifter phased out — ${this.shifterId}`);
         this.shifterId = null;
@@ -3381,6 +4041,7 @@ export const roomEnemyMethods = {
     const s = new EnemyState();
     s.id = `shifter${this.enemySeq++}`;
     s.kind = kindId;
+    this.initializeEnemyIdentity(s, kind);
     s.hp =
       kind.hp *
       enemyHpScale(this.state.players.size) *

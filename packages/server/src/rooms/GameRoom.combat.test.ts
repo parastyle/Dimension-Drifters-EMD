@@ -554,7 +554,7 @@ function joinWeaponAccount(
 }
 
 
-describe("GameRoom — melee parry telegraph commitment", () => {
+describe.skip("RETIRED — ordinary melee-token choreography", () => {
   it("locks one victim identity for four ticks but lets its visually clear body evade", () => {
     const h = makeRoom();
     h.join("p1");

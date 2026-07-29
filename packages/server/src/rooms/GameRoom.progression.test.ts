@@ -818,7 +818,7 @@ describe("GameRoom — §17 dimension wiring", () => {
     h.tick(1);
     let boss: EnemyState | undefined;
     h.state().enemies.forEach((e: EnemyState) => {
-      if (ENEMY_KINDS[e.kind]?.archetype === "boss") boss = e;
+      if (ENEMY_KINDS[e.kind]?.archetype === "big") boss = e;
     });
     expect(boss?.kind).toBe(getDimension("frostfell").boss); // "the-hollow-king", not "old-rust"
   });
@@ -831,7 +831,7 @@ describe("GameRoom — §17 dimension wiring", () => {
     h.tick(1);
     let boss: EnemyState | undefined;
     h.state().enemies.forEach((e: EnemyState) => {
-      if (ENEMY_KINDS[e.kind]?.archetype === "boss") boss = e;
+      if (ENEMY_KINDS[e.kind]?.archetype === "big") boss = e;
     });
     expect(boss?.kind).toBe("old-rust");
   });
@@ -875,8 +875,8 @@ describe("GameRoom — §17 shifter-incursion director", () => {
   });
 });
 
-describe("GameRoom — §20 universal lunge", () => {
-  it("a rusher (critter) TELEGRAPHS a lunge and it's PARRYABLE", () => {
+describe("GameRoom — Runner bodily lunge", () => {
+  it("a Runner flings its body without a landing marker and remains parryable", () => {
     const h = makeRoom();
     h.join("p1");
     const p = h.state().players.get("p1");
@@ -891,13 +891,14 @@ describe("GameRoom — §20 universal lunge", () => {
     e.y = h.room.map.spawnY;
     h.state().enemies.set("lunger", e);
     const pc = h.room.combat.get("p1");
-    let sawWindup = false;
+    let sawBodyLunge = false;
     for (let i = 0; i < 30; i++) {
       pc.invuln = 1; // hold a parry stance every tick (i-frames up)
       h.tick(1);
-      if ((h.state().enemies.get("lunger")?.windup ?? 0) > 0) sawWindup = true;
+      if ((h.state().enemies.get("lunger")?.attackPhase ?? 0) === 2) sawBodyLunge = true;
     }
-    expect(sawWindup).toBe(true); // §8 white-tell telegraph ramped → readable + parryable
+    expect(sawBodyLunge).toBe(true);
+    expect(h.state().telegraphs.size).toBe(0);
     expect(p.parriedSeq).toBeGreaterThan(0); // a lunge connected during the parry window → negated
   });
 
@@ -1021,7 +1022,7 @@ describe("GameRoom — §13 damageEnemy (the one damage primitive, both paths)",
     h.send("p1", "spawnBoss");
     h.tick(1);
     h.state().enemies.forEach((e: EnemyState) => {
-      if (ENEMY_KINDS[e.kind]?.archetype === "boss") {
+      if (ENEMY_KINDS[e.kind]?.archetype === "big") {
         e.hp = 1;
         e.x = h.room.map.spawnX + dx;
         e.y = h.room.map.spawnY;
@@ -1121,7 +1122,7 @@ describe("GameRoom — §16 v0.116 BOSS RUSH gauntlet", () => {
   function killCurrentBoss(h: ReturnType<typeof makeRoom>): boolean {
     let found = false;
     h.state().enemies.forEach((e: EnemyState) => {
-      if (ENEMY_KINDS[e.kind]?.archetype === "boss") {
+      if (ENEMY_KINDS[e.kind]?.archetype === "big") {
         e.hp = 1;
         e.x = h.room.map.spawnX + 100;
         e.y = h.room.map.spawnY;
@@ -1143,7 +1144,7 @@ describe("GameRoom — §16 v0.116 BOSS RUSH gauntlet", () => {
     let bosses = 0;
     let trash = 0;
     h.state().enemies.forEach((e: EnemyState) => {
-      if (ENEMY_KINDS[e.kind]?.archetype === "boss") bosses++;
+      if (ENEMY_KINDS[e.kind]?.archetype === "big") bosses++;
       else trash++;
     });
     expect(bosses).toBe(1); // exactly one gauntlet boss

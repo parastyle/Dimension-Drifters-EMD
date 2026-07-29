@@ -129,7 +129,7 @@ export const EXTRA_DIMENSIONS: Record<string, DimensionDef> = {
 export const DIMENSION_ENEMY_KINDS: Record<string, EnemyKind> = {
   "frostbitten-revenant": {
     "sprite": "frostbitten-revenant",
-    "archetype": "rusher",
+    "archetype": "runner",
     "speed": 172,
     "hp": 3,
     "radius": 18,
@@ -139,7 +139,7 @@ export const DIMENSION_ENEMY_KINDS: Record<string, EnemyKind> = {
   },
   "shriek-wraith": {
     "sprite": "shriek-wraith",
-    "archetype": "swarm",
+    "archetype": "runner",
     "speed": 228,
     "hp": 1,
     "radius": 12,
@@ -149,7 +149,7 @@ export const DIMENSION_ENEMY_KINDS: Record<string, EnemyKind> = {
   },
   "hoarfrost-bloom": {
     "sprite": "hoarfrost-bloom",
-    "archetype": "zoner",
+    "archetype": "cultist",
     "speed": 60,
     "hp": 9,
     "radius": 26,
@@ -159,7 +159,7 @@ export const DIMENSION_ENEMY_KINDS: Record<string, EnemyKind> = {
   },
   "rimebound-archer": {
     "sprite": "rimebound-archer",
-    "archetype": "spitter",
+    "archetype": "cultist",
     "speed": 122,
     "hp": 5,
     "radius": 20,
@@ -176,7 +176,7 @@ export const DIMENSION_ENEMY_KINDS: Record<string, EnemyKind> = {
   },
   "frozen-knight": {
     "sprite": "frozen-knight",
-    "archetype": "duelist",
+    "archetype": "cultist",
     "renderScale": 1.22,
     "speed": 150,
     "hp": 40,
@@ -200,7 +200,7 @@ export const DIMENSION_ENEMY_KINDS: Record<string, EnemyKind> = {
   },
   "the-hollow-king": {
     "sprite": "the-hollow-king",
-    "archetype": "boss",
+    "archetype": "big",
     "renderScale": 2.7,
     "speed": 70,
     "hp": 440,
@@ -220,7 +220,7 @@ export const DIMENSION_ENEMY_KINDS: Record<string, EnemyKind> = {
   },
   "vine-lasher": {
     "sprite": "vine-lasher",
-    "archetype": "rusher",
+    "archetype": "runner",
     "speed": 172,
     "hp": 3,
     "radius": 18,
@@ -230,7 +230,7 @@ export const DIMENSION_ENEMY_KINDS: Record<string, EnemyKind> = {
   },
   "venom-spore": {
     "sprite": "venom-spore",
-    "archetype": "swarm",
+    "archetype": "runner",
     "speed": 228,
     "hp": 1,
     "radius": 12,
@@ -240,7 +240,7 @@ export const DIMENSION_ENEMY_KINDS: Record<string, EnemyKind> = {
   },
   "fungal-bloomer": {
     "sprite": "fungal-bloomer",
-    "archetype": "zoner",
+    "archetype": "cultist",
     "speed": 62,
     "hp": 9,
     "radius": 26,
@@ -250,7 +250,7 @@ export const DIMENSION_ENEMY_KINDS: Record<string, EnemyKind> = {
   },
   "blowdart-sentinel": {
     "sprite": "blowdart-sentinel",
-    "archetype": "spitter",
+    "archetype": "cultist",
     "speed": 120,
     "hp": 5,
     "radius": 20,
@@ -267,7 +267,7 @@ export const DIMENSION_ENEMY_KINDS: Record<string, EnemyKind> = {
   },
   "thornblade-warden": {
     "sprite": "thornblade-warden",
-    "archetype": "duelist",
+    "archetype": "cultist",
     "renderScale": 1.2,
     "speed": 158,
     "hp": 38,
@@ -291,7 +291,7 @@ export const DIMENSION_ENEMY_KINDS: Record<string, EnemyKind> = {
   },
   "moss-stone-golem": {
     "sprite": "moss-stone-golem",
-    "archetype": "boss",
+    "archetype": "big",
     "renderScale": 2.7,
     "speed": 70,
     "hp": 440,
@@ -315,7 +315,7 @@ export const DIMENSION_ENEMY_KINDS: Record<string, EnemyKind> = {
   },
   "cinder-imp": {
     "sprite": "cinder-imp",
-    "archetype": "rusher",
+    "archetype": "runner",
     "speed": 174,
     "hp": 3,
     "radius": 18,
@@ -325,7 +325,7 @@ export const DIMENSION_ENEMY_KINDS: Record<string, EnemyKind> = {
   },
   "ember-mote": {
     "sprite": "ember-mote",
-    "archetype": "swarm",
+    "archetype": "runner",
     "speed": 228,
     "hp": 1,
     "radius": 12,
@@ -335,7 +335,7 @@ export const DIMENSION_ENEMY_KINDS: Record<string, EnemyKind> = {
   },
   "slag-crawler": {
     "sprite": "slag-crawler",
-    "archetype": "zoner",
+    "archetype": "cultist",
     "speed": 60,
     "hp": 9,
     "radius": 26,
@@ -345,7 +345,7 @@ export const DIMENSION_ENEMY_KINDS: Record<string, EnemyKind> = {
   },
   "ember-spitter": {
     "sprite": "ember-spitter",
-    "archetype": "spitter",
+    "archetype": "cultist",
     "speed": 122,
     "hp": 5,
     "radius": 20,
@@ -362,7 +362,7 @@ export const DIMENSION_ENEMY_KINDS: Record<string, EnemyKind> = {
   },
   "magma-duelist": {
     "sprite": "magma-duelist",
-    "archetype": "duelist",
+    "archetype": "cultist",
     "renderScale": 1.2,
     "speed": 152,
     "hp": 40,
@@ -386,7 +386,7 @@ export const DIMENSION_ENEMY_KINDS: Record<string, EnemyKind> = {
   },
   "molten-brute": {
     "sprite": "molten-brute",
-    "archetype": "boss",
+    "archetype": "big",
     "renderScale": 2.7,
     "speed": 70,
     "hp": 440,
@@ -406,7 +406,7 @@ export const DIMENSION_ENEMY_KINDS: Record<string, EnemyKind> = {
   },
   "synthrunner": {
     "sprite": "synthrunner",
-    "archetype": "rusher",
+    "archetype": "runner",
     "speed": 172,
     "hp": 3,
     "radius": 18,
@@ -416,7 +416,7 @@ export const DIMENSION_ENEMY_KINDS: Record<string, EnemyKind> = {
   },
   "dronemite": {
     "sprite": "dronemite",
-    "archetype": "swarm",
+    "archetype": "runner",
     "speed": 228,
     "hp": 1,
     "radius": 12,
@@ -426,7 +426,7 @@ export const DIMENSION_ENEMY_KINDS: Record<string, EnemyKind> = {
   },
   "turret-node": {
     "sprite": "turret-node",
-    "archetype": "zoner",
+    "archetype": "cultist",
     "speed": 60,
     "hp": 9,
     "radius": 26,
@@ -436,7 +436,7 @@ export const DIMENSION_ENEMY_KINDS: Record<string, EnemyKind> = {
   },
   "laser-spire": {
     "sprite": "laser-spire",
-    "archetype": "spitter",
+    "archetype": "cultist",
     "speed": 122,
     "hp": 5,
     "radius": 20,
@@ -453,7 +453,7 @@ export const DIMENSION_ENEMY_KINDS: Record<string, EnemyKind> = {
   },
   "riot-enforcer": {
     "sprite": "riot-enforcer",
-    "archetype": "duelist",
+    "archetype": "cultist",
     "renderScale": 1.18,
     "speed": 156,
     "hp": 36,
@@ -477,7 +477,7 @@ export const DIMENSION_ENEMY_KINDS: Record<string, EnemyKind> = {
   },
   "warden-mech": {
     "sprite": "warden-mech",
-    "archetype": "boss",
+    "archetype": "big",
     "renderScale": 2.7,
     "speed": 70,
     "hp": 420,
@@ -497,7 +497,7 @@ export const DIMENSION_ENEMY_KINDS: Record<string, EnemyKind> = {
   },
   "shifter-cinder-marshal": {
     "sprite": "shifter-cinder-marshal",
-    "archetype": "spitter",
+    "archetype": "cultist",
     "renderScale": 1.2,
     "speed": 132,
     "hp": 64,
@@ -521,7 +521,7 @@ export const DIMENSION_ENEMY_KINDS: Record<string, EnemyKind> = {
   },
   "shifter-voltaic-ronin": {
     "sprite": "shifter-voltaic-ronin",
-    "archetype": "duelist",
+    "archetype": "cultist",
     "renderScale": 1.22,
     "speed": 158,
     "hp": 88,
@@ -549,7 +549,7 @@ export const DIMENSION_ENEMY_KINDS: Record<string, EnemyKind> = {
   },
   "shifter-grave-warden": {
     "sprite": "shifter-grave-warden",
-    "archetype": "duelist",
+    "archetype": "cultist",
     "renderScale": 1.35,
     "speed": 96,
     "hp": 108,

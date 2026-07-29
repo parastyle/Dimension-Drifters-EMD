@@ -943,8 +943,8 @@ export const rigPoseMethods = {
       incoming = clamp01(incoming);
       const direction = this.meleeTellStep % 3 === 1 ? -1 : 1;
       const finalStep = this.meleeTellStep % 3 === 2;
-      const direct = this.meleeTellArchetype === "rusher" || this.meleeTellArchetype === "swarm";
-      const shove = this.meleeTellArchetype === "zoner";
+      const direct = this.meleeTellArchetype === "runner";
+      const shove = this.meleeTellArchetype === "cultist";
       const heavy = this.poseTwoHanded;
       let loadedA: number;
       let contactA = aimLocal;
@@ -3151,6 +3151,52 @@ export const rigPoseMethods = {
       ft.img.rotation = PROCEDURAL_LIMB_PHYSICS
         ? movementPose.footPivotRad * footPhaseSign - (ft.jx / JIGGLE_FOOT_MAX_X) * 0.18
         : movementPose.footPivotRad * footPhaseSign;
+    }
+
+    // Runner is a silhouette vocabulary, not a small gait modifier. With no weapon claims the complete
+    // body is free: arms pump past the torso, knees rise clear of the crowd, and the lunge becomes one
+    // stretched headlong shape. Work stays constant per rig (two hands + two feet).
+    if (anim.enemyArchetype === "runner") {
+      const sprint = clamp01((anim.speed ?? 0) / 180);
+      const stride = Math.sin(legPh);
+      if (anim.fireHeld) {
+        this.body.x += TARGET_BODY_H * 0.24 * s;
+        this.body.y += TARGET_BODY_H * 0.08 * s;
+        this.body.rotation += 0.48;
+        this.body.scaleX *= 1.28;
+        this.body.scaleY *= 0.76;
+        for (const hand of this.hands) {
+          hand.img.x += TARGET_BODY_H * (hand.front ? 0.55 : 0.46) * s;
+          hand.img.y += TARGET_BODY_H * (hand.front ? -0.06 : 0.08) * s;
+          hand.img.rotation = -0.32;
+        }
+        for (const foot of this.feet) {
+          foot.img.x -= TARGET_BODY_H * (foot.front ? 0.36 : 0.28) * s;
+          foot.img.y += TARGET_BODY_H * (foot.front ? 0.15 : 0.08) * s;
+          foot.img.rotation = 0.42;
+        }
+      } else if (sprint > 0.01) {
+        this.body.x += TARGET_BODY_H * 0.08 * sprint * s;
+        this.body.y += Math.abs(stride) * TARGET_BODY_H * 0.055 * sprint * s;
+        this.body.rotation += 0.24 * sprint;
+        this.body.scaleY *= 1 - Math.abs(stride) * 0.07 * sprint;
+        for (let index = 0; index < this.hands.length; index++) {
+          const hand = this.hands[index];
+          if (!hand) continue;
+          const phase = stride * (index === 0 ? 1 : -1);
+          hand.img.x += phase * TARGET_BODY_H * 0.34 * sprint * s;
+          hand.img.y -= Math.max(0, phase) * TARGET_BODY_H * 0.13 * sprint * s;
+          hand.img.rotation += phase * 0.78 * sprint;
+        }
+        for (let index = 0; index < this.feet.length; index++) {
+          const foot = this.feet[index];
+          if (!foot) continue;
+          const phase = stride * (index === 0 ? -1 : 1);
+          foot.img.x += phase * TARGET_BODY_H * 0.22 * sprint * s;
+          foot.img.y -= Math.max(0, phase) * TARGET_BODY_H * 0.12 * sprint * s;
+          foot.img.rotation += phase * 0.38 * sprint;
+        }
+      }
     }
 
     if (

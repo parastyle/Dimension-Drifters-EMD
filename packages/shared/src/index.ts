@@ -15,6 +15,7 @@ export * from "./constants.js";
 export * from "./corporate-grid-map.js";
 export * from "./dimensions.js";
 export * from "./economy.js";
+export * from "./enemy-archetypes.js";
 export * from "./enemy-melee.js";
 export * from "./enemies.js";
 export * from "./gear.js";

@@ -8,6 +8,7 @@ import {
 } from "../../settlement-store.js";
 import {
   ACTION_MSGS_PER_TICK,
+  ACTIVE_WEAPON_CATALOG_IDS,
   ACTIVE_WEAPON_SUBCLASS_GROUPS,
   ARENA_HEIGHT,
   ARENA_WIDTH,
@@ -1147,6 +1148,22 @@ export interface DuelistComboState {
   juggleInterruptHp?: number;
 }
 
+/** Server-only authored-weapon clock for one cultist. The delivery-specific fields are deliberately
+ * small: the weapon definition remains the source of all damage, range, charge, cadence, and VFX data. */
+export interface CultistWeaponState {
+  cooldown: number;
+  phase: "idle" | "windup" | "charge" | "channel" | "zone" | "aura" | "reload";
+  phaseT: number;
+  pulseT: number;
+  ammo: number;
+  burstRemaining: number;
+  burstT: number;
+  comboStep: number;
+  zoneId?: string;
+  aimX: number;
+  aimY: number;
+}
+
 export type RewardBoundary = "extract" | "descent" | "belt-victory" | "bossrush-victory" | "boss-clear";
 
 export const GAME_ROOM_STATICS = Object.freeze({
@@ -1217,6 +1234,7 @@ export interface GameRoomContext extends Room<ArenaState> {
   readonly groundZoneInputWasHeld: Map<string, boolean>;
   readonly enemyZoneSlow: Map<string, { multiplier: number; untilTick: number; }>;
   readonly comboState: Map<string, DuelistComboState>;
+  readonly cultistWeaponState: Map<string, CultistWeaponState>;
   readonly meleeAttackTokens: MeleeAttackTokens;
   readonly debugCommitDefense: Map<string, "roll" | "parry">;
   readonly debugAttackMoveCapture: Set<string>;
@@ -1534,7 +1552,7 @@ export interface GameRoomContext extends Room<ArenaState> {
   resolveVastagharParry(player: PlayerState, combat: CombatState, sourceX: number, sourceY: number, preventedDamage: number): void;
   damageBeamRect(x: number, y: number, len: number, halfW: number, rot: number, damage: number, knockback: number): void;
   damageRingBand(cx: number, cy: number, bandR: number, bandHalf: number, gapCenter: number, gapHalf: number, damage: number): void;
-  spawnWeaponGroundZoneAt(player: PlayerState, weapon: WeaponDef, x: number, y: number, damagePerSecond: number, crit?: number): ZoneState | undefined;
+  spawnWeaponGroundZoneAt(owner: PlayerState | EnemyState, weapon: WeaponDef, x: number, y: number, damagePerSecond: number, crit?: number, hostile?: boolean): ZoneState | undefined;
   dropBossZone(x: number, y: number, radius: number, ttl: number): void;
   spawnBossAddAt(kindId: string, x: number, y: number): void;
   stepVastagharAddBudget(): void;
@@ -1581,6 +1599,9 @@ export interface GameRoomContext extends Room<ArenaState> {
   applyEnemySlow(enemyId: string, multiplier: number, seconds: number): void;
   applyEnemyHitStatus(enemyId: string, status: WeaponDef["hitStatus"]): void;
   stepDuelists(dt: number, _bodies: Vec2[]): void;
+  stepCultists(dt: number): void;
+  initializeEnemyIdentity(enemy: EnemyState, kind: EnemyKind, weaponId?: string): void;
+  clearCultistBeamRows(enemyId: string): void;
   postureMeleeEnemy(enemy: EnemyState, id: string, target: PlayerState, speed: number, approach: number, dt: number): void;
   planDuelistStrike(enemy: EnemyState, target: PlayerState, m: { range: number; step: number }, targetId: string): NonNullable<DuelistComboState["strike"]>;
   navValidEnemyLungeDest(enemy: EnemyState, targetX: number, targetY: number): Vec2;
@@ -1635,7 +1656,7 @@ export interface GameRoomContext extends Room<ArenaState> {
   addUltimateFlatCharge(player: PlayerState, c: CombatState, amount: number): void;
   findFairEnemySpawn(anchor: Vec2, radius: number, baseAngle: number): boolean;
   spawnEnemy(anchors: Vec2[]): boolean;
-  debugSpawnOne(kindId: string, tough: boolean, anchor: PlayerState, angleOverride?: number, distanceOverride?: number, attackReady?: boolean): void;
+  debugSpawnOne(kindId: string, anchor: PlayerState, angleOverride?: number, distanceOverride?: number, attackReady?: boolean, weaponId?: string): void;
   spawnBossRushBoss(): void;
   advanceBossRush(): void;
   retireStageForVastaghar(): void;
@@ -2610,7 +2631,7 @@ export const roomProgressionMethods = {
       const kindId = message?.kind;
       if (
         typeof kindId !== "string" ||
-        (ENEMY_KINDS[kindId]?.archetype !== "boss" && !BOSS_DEF_IDS.includes(kindId))
+        (ENEMY_KINDS[kindId]?.archetype !== "big" && !BOSS_DEF_IDS.includes(kindId))
       )
         return;
       this.spawnBoss(kindId, false);
@@ -2664,7 +2685,7 @@ export const roomProgressionMethods = {
         message: {
           kind?: string;
           count?: number;
-          tough?: boolean;
+          weapon?: string;
           angle?: number;
           distance?: number;
           attackReady?: boolean;
@@ -2674,10 +2695,21 @@ export const roomProgressionMethods = {
         if (this.state.mode !== "training") return;
         const player = this.state.players.get(client.sessionId);
         if (!player) return;
-        const kindId = message?.kind;
-        if (typeof kindId !== "string" || !ENEMY_KINDS[kindId] || kindId === "dummy") return;
+        const requestedKind = message?.kind;
+        if (typeof requestedKind !== "string") return;
+        const kindId =
+          requestedKind === "runner"
+            ? "critter"
+            : requestedKind === "cultist"
+              ? "boothill"
+              : requestedKind;
+        if (!ENEMY_KINDS[kindId] || kindId === "dummy") return;
+        const weaponId =
+          typeof message?.weapon === "string" &&
+          ACTIVE_WEAPON_CATALOG_IDS.includes(message.weapon)
+            ? message.weapon
+            : undefined;
         const count = clamp(Math.floor(message?.count ?? 1), 1, DEBUG_SPAWN_MAX);
-        const tough = message?.tough === true;
         const rawAngle = message?.angle;
         const suppliedAngle =
           typeof rawAngle === "number" && Number.isFinite(rawAngle)
@@ -2692,10 +2724,34 @@ export const roomProgressionMethods = {
         for (let i = 0; i < count; i++) {
           const angle =
             suppliedAngle === undefined ? undefined : suppliedAngle + (i - (count - 1) / 2) * 0.22;
-          this.debugSpawnOne(kindId, tough, player, angle, suppliedDistance, attackReady);
+          this.debugSpawnOne(kindId, player, angle, suppliedDistance, attackReady, weaponId);
         }
       },
     );
+
+    this.onMessage("debugClearField", (client) => {
+      if (!this.devToolsEnabled() || this.state.mode !== "training" || !this.takeAction(client))
+        return;
+      if (this.bossId) this.clearBoss();
+      this.state.enemies.clear();
+      this.enemyGrid.clear();
+      this.state.projectiles.clear();
+      this.projectileMeta.clear();
+      this.hostileProjectileCount = 0;
+      this.state.beams.clear();
+      this.state.zones.clear();
+      this.zoneMeta.clear();
+      this.activeGroundZones.clear();
+      this.enemyFireCd.clear();
+      this.zonerDropCd.clear();
+      this.comboState.clear();
+      this.cultistWeaponState.clear();
+      this.meleeAttackTokens.clear();
+      this.bossAddIds.clear();
+      this.bossAddExpireTick.clear();
+      this.shifterId = null;
+      this.shifterTimer = 0;
+    });
 
     // SAMPLE FINER THAN THE STEP. The sim integrates in exact TICK_MS sub-steps (see `update`), but
     // driving it from a TICK_MS timer samples on the very grid it must emit on. Node timers fire LATE
@@ -2730,6 +2786,7 @@ export const roomProgressionMethods = {
     this.groundZoneInputWasHeld.clear();
     this.enemyZoneSlow.clear();
     this.comboState.clear();
+    this.cultistWeaponState.clear();
     this.meleeAttackTokens.clear();
     this.debugHeldFire.clear();
     this.duelTokens.clear(); // §51 no duel claim may ghost-carry into the fresh run
@@ -4710,7 +4767,8 @@ export const roomProgressionMethods = {
       // §20 lunge-enemies (duelists + the derived rusher/swarm/zoner lunge) move via stepDuelists; this
       // generic pass only chases/kites the rest (ranged spitters kite). §16 v0.109 the boss is stepped by
       // its BossController (which owns movement), so skip it here to avoid a double-move.
-      if (!kind || effectiveMelee(kind) || id === this.bossId) return;
+      if (!kind || effectiveMelee(kind) || kind.archetype === "cultist" || id === this.bossId)
+        return;
       const zoneSlow = this.enemyGroundZoneSlow(id);
       const target = this.nearestDoorDecoy(enemy) ?? nearestPoint(enemy, bodies);
       // §15 v0.113 DODGE-ROLL (rangers): if a player has closed inside `dodge.range` and the roll is off
@@ -4758,6 +4816,7 @@ export const roomProgressionMethods = {
 
     // 5.1 Duelists (ronin): close in, telegraph, then string a melee COMBO (§15).
     this.stepDuelists(dt, bodies);
+    this.stepCultists(dt);
     // 5.15 §16 OLD RUST boss phases (bullet-walls / punch-slams / enrage). Runs BEFORE the spitters so it
     // owns the boss's fire (stepSpitters skips the boss).
     this.stepBoss(dt, bodies);
@@ -4993,6 +5052,7 @@ export const roomProgressionMethods = {
     this.enemyFireCd.clear();
     this.zonerDropCd.clear();
     this.comboState.clear();
+    this.cultistWeaponState.clear();
     this.meleeAttackTokens.clear();
     this.duelTokens.clear();
     this.dodgeState.clear();

@@ -566,7 +566,7 @@ describe("GameRoom — chest-only weapon itemization", () => {
     h.send("p1", "spawnBoss");
     h.tick(1);
     h.state().enemies.forEach((e: EnemyState) => {
-      if (ENEMY_KINDS[e.kind]?.archetype === "boss") {
+      if (ENEMY_KINDS[e.kind]?.archetype === "big") {
         e.hp = 1;
         e.x = h.room.map.spawnX + 100;
         e.y = h.room.map.spawnY;
@@ -793,17 +793,17 @@ describe("GameRoom — §M14 golden tick snapshot (the hand-numbered phase order
         "players": [
           {
             "alive": true,
-            "hp": 100,
+            "hp": 90,
             "id": "p1",
-            "x": 19336,
-            "y": 19142,
+            "x": 19328,
+            "y": 19133,
           },
           {
             "alive": true,
-            "hp": 99,
+            "hp": 77,
             "id": "p2",
-            "x": 19164,
-            "y": 19180,
+            "x": 19240,
+            "y": 19074,
           },
         ],
         "portalOpen": false,
@@ -1353,7 +1353,7 @@ describe("GameRoom — §36 belt levels are well-formed", () => {
         dim.id,
         `${id} dimensionId "${level.dimensionId}" resolves (not the wild-west fallback)`,
       ).toBe(level.dimensionId);
-      expect(ENEMY_KINDS[dim.boss]?.archetype, `${dim.boss} is a registered boss`).toBe("boss");
+      expect(ENEMY_KINDS[dim.boss]?.archetype, `${dim.boss} is a registered boss`).toBe("big");
       if (level.corporateGridFloorId) {
         expect(level.rooms.every((room) => !room.boss)).toBe(true); // elevator, never a boss finale
       } else {

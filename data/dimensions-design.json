@@ -21,7 +21,7 @@
         {
           "id": "frostbitten-revenant",
           "name": "Frostbitten Revenant",
-          "archetype": "rusher",
+          "archetype": "runner",
           "buildType": "full",
           "speed": 172,
           "hp": 3,
@@ -36,7 +36,7 @@
         {
           "id": "shriek-wraith",
           "name": "Shriek-Wraith",
-          "archetype": "swarm",
+          "archetype": "runner",
           "buildType": "pure-blob",
           "speed": 228,
           "hp": 1,
@@ -51,7 +51,7 @@
         {
           "id": "hoarfrost-bloom",
           "name": "Hoarfrost Bloom",
-          "archetype": "zoner",
+          "archetype": "cultist",
           "buildType": "pure-blob",
           "speed": 60,
           "hp": 9,
@@ -66,7 +66,7 @@
         {
           "id": "rimebound-archer",
           "name": "Rimebound Archer",
-          "archetype": "spitter",
+          "archetype": "cultist",
           "buildType": "hands-only",
           "speed": 122,
           "hp": 5,
@@ -89,7 +89,7 @@
       "tough": {
         "id": "frozen-knight",
         "name": "The Frozen Knight",
-        "archetype": "duelist",
+        "archetype": "cultist",
         "buildType": "full",
         "renderScale": 1.22,
         "speed": 150,
@@ -118,7 +118,7 @@
       "boss": {
         "id": "the-hollow-king",
         "name": "THE HOLLOW KING, Lich of the Frozen Choir",
-        "archetype": "boss",
+        "archetype": "big",
         "buildType": "full",
         "hp": 440,
         "renderScale": 2.7,
@@ -160,7 +160,7 @@
         {
           "id": "vine-lasher",
           "name": "Vine-Lasher",
-          "archetype": "rusher",
+          "archetype": "runner",
           "buildType": "full",
           "speed": 172,
           "hp": 3,
@@ -175,7 +175,7 @@
         {
           "id": "venom-spore",
           "name": "Venom-Spore",
-          "archetype": "swarm",
+          "archetype": "runner",
           "buildType": "pure-blob",
           "speed": 228,
           "hp": 1,
@@ -190,7 +190,7 @@
         {
           "id": "fungal-bloomer",
           "name": "Fungal Bloomer",
-          "archetype": "zoner",
+          "archetype": "cultist",
           "buildType": "pure-blob",
           "speed": 62,
           "hp": 9,
@@ -205,7 +205,7 @@
         {
           "id": "blowdart-sentinel",
           "name": "Blowdart Sentinel",
-          "archetype": "spitter",
+          "archetype": "cultist",
           "buildType": "hands-only",
           "speed": 120,
           "hp": 5,
@@ -228,7 +228,7 @@
       "tough": {
         "id": "thornblade-warden",
         "name": "Thornblade Warden",
-        "archetype": "duelist",
+        "archetype": "cultist",
         "buildType": "full",
         "renderScale": 1.2,
         "speed": 158,
@@ -257,7 +257,7 @@
       "boss": {
         "id": "moss-stone-golem",
         "name": "GREENGRASP, the Moss-Stone Golem",
-        "archetype": "boss",
+        "archetype": "big",
         "buildType": "full",
         "speed": 70,
         "hp": 440,
@@ -302,7 +302,7 @@
         {
           "id": "cinder-imp",
           "name": "Cinder-Imp",
-          "archetype": "rusher",
+          "archetype": "runner",
           "buildType": "full",
           "speed": 174,
           "hp": 3,
@@ -317,7 +317,7 @@
         {
           "id": "ember-mote",
           "name": "Ember-Mote",
-          "archetype": "swarm",
+          "archetype": "runner",
           "buildType": "pure-blob",
           "speed": 228,
           "hp": 1,
@@ -332,7 +332,7 @@
         {
           "id": "slag-crawler",
           "name": "Slag-Crawler",
-          "archetype": "zoner",
+          "archetype": "cultist",
           "buildType": "pure-blob",
           "speed": 60,
           "hp": 9,
@@ -347,7 +347,7 @@
         {
           "id": "ember-spitter",
           "name": "Ember-Spitter",
-          "archetype": "spitter",
+          "archetype": "cultist",
           "buildType": "hands-only",
           "speed": 122,
           "hp": 5,
@@ -370,7 +370,7 @@
       "tough": {
         "id": "magma-duelist",
         "name": "Magma-Duelist",
-        "archetype": "duelist",
+        "archetype": "cultist",
         "buildType": "full",
         "renderScale": 1.2,
         "speed": 152,
@@ -399,7 +399,7 @@
       "boss": {
         "id": "molten-brute",
         "name": "MOLTEN BRUTE, the Ashlands' Heart",
-        "archetype": "boss",
+        "archetype": "big",
         "buildType": "full",
         "renderScale": 2.7,
         "speed": 70,
@@ -443,7 +443,7 @@
         {
           "id": "synthrunner",
           "name": "Synthrunner",
-          "archetype": "rusher",
+          "archetype": "runner",
           "buildType": "full",
           "speed": 172,
           "hp": 3,
@@ -458,7 +458,7 @@
         {
           "id": "dronemite",
           "name": "Dronemite",
-          "archetype": "swarm",
+          "archetype": "runner",
           "buildType": "pure-blob",
           "speed": 228,
           "hp": 1,
@@ -473,7 +473,7 @@
         {
           "id": "turret-node",
           "name": "Turret Node",
-          "archetype": "zoner",
+          "archetype": "cultist",
           "buildType": "pure-blob",
           "speed": 60,
           "hp": 9,
@@ -488,7 +488,7 @@
         {
           "id": "laser-spire",
           "name": "Laser-Spire",
-          "archetype": "spitter",
+          "archetype": "cultist",
           "buildType": "hands-only",
           "speed": 122,
           "hp": 5,
@@ -511,7 +511,7 @@
       "tough": {
         "id": "riot-enforcer",
         "name": "Riot Enforcer",
-        "archetype": "duelist",
+        "archetype": "cultist",
         "buildType": "full",
         "renderScale": 1.18,
         "speed": 156,
@@ -540,7 +540,7 @@
       "boss": {
         "id": "warden-mech",
         "name": "WARDEN-7, the Security Mech",
-        "archetype": "boss",
+        "archetype": "big",
         "buildType": "full",
         "hp": 420,
         "speed": 70,

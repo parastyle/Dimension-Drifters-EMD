@@ -3,6 +3,9 @@ import {
   ARENA_WIDTH,
   BOSS_SPAWN_FLOOR,
   BOSS_SPAWN_SECONDS,
+  COMBO_LEAP_AIR_TICKS,
+  COMBO_LEAP_COOLDOWN,
+  COMBO_LEAP_RANGE,
   DEPTH_BOSS_ACCEL,
   DEPTH_DMG_PER,
   DEPTH_HP_PER,
@@ -28,8 +31,14 @@ import {
   TOUGH_CHANCE_MAX,
   TOUGH_CHANCE_PER_PLAYER,
   TOUGH_RAMP_SECONDS,
+  TICK_MS,
 } from "./constants.js";
 import { DIMENSION_ENEMY_KINDS } from "./dimensions.generated.js";
+import {
+  CULTIST_CHARACTER_IDS,
+  type EnemyArchetype,
+  RUNNER_CHARACTER_ID,
+} from "./enemy-archetypes.js";
 import { clamp } from "./math.js";
 import type { Vec2 } from "./movement.js";
 import { isActiveWeaponId } from "./weapons.js";
@@ -43,21 +52,8 @@ import { isActiveWeaponId } from "./weapons.js";
 export interface EnemyKind {
   /** Sprite manifest id (matches an installed harvest-sliced sprite). */
   sprite: string;
-  /** Behavioral archetype (§15). `dummy` = stationary training target (§21); `boss` = §16 OLD RUST;
-   *  `duelist` = a melee swordsman that closes, telegraphs, then strings a COMBO (see `melee`); `leaper`
-   *  (v0.113) = an elite that LEAPS to a telegraphed spot to announce its combo (see `leap`); `ranger`
-   *  (v0.113) = a kiting shooter that DODGE-ROLLS away when you close (see `dodge`). */
-  archetype:
-    | "rusher"
-    | "swarm"
-    | "zoner"
-    | "spitter"
-    | "tough"
-    | "duelist"
-    | "leaper"
-    | "ranger"
-    | "dummy"
-    | "boss";
+  /** Live behavioral tier. `dummy` remains a Testing Grounds fixture, not a combat archetype. */
+  archetype: EnemyArchetype;
   /** Render-size multiplier (§28.6: bosses/toughs are BIGGER, not more detailed). Default 1. */
   renderScale?: number;
   /** Move speed, px/sec. */
@@ -685,7 +681,7 @@ export function pickToughCombo(
 export const ENEMY_KINDS: Record<string, EnemyKind> = {
   critter: {
     sprite: "critter",
-    archetype: "rusher",
+    archetype: "runner",
     speed: 168,
     hp: 3,
     radius: 18,
@@ -695,7 +691,7 @@ export const ENEMY_KINDS: Record<string, EnemyKind> = {
   },
   "mote-swarm": {
     sprite: "mote-swarm",
-    archetype: "swarm",
+    archetype: "runner",
     speed: 225,
     hp: 1,
     radius: 12,
@@ -705,7 +701,7 @@ export const ENEMY_KINDS: Record<string, EnemyKind> = {
   },
   pricklepulp: {
     sprite: "pricklepulp",
-    archetype: "zoner",
+    archetype: "cultist",
     speed: 62,
     hp: 9,
     radius: 26,
@@ -715,7 +711,7 @@ export const ENEMY_KINDS: Record<string, EnemyKind> = {
   },
   boothill: {
     sprite: "boothill",
-    archetype: "spitter",
+    archetype: "cultist",
     speed: 120,
     hp: 5,
     radius: 20,
@@ -736,7 +732,7 @@ export const ENEMY_KINDS: Record<string, EnemyKind> = {
   // = never randomly spawned; only the boss director spawns it at BOSS_SPAWN_SECONDS.
   "old-rust": {
     sprite: "boothill",
-    archetype: "boss",
+    archetype: "big",
     speed: 72,
     hp: 420,
     radius: 64,
@@ -759,7 +755,7 @@ export const ENEMY_KINDS: Record<string, EnemyKind> = {
   // Ver'Kaln — LARGE landing-zone titan.
   verkaln: {
     sprite: "verkaln", // §16 v0.116 bespoke art harvest-installed
-    archetype: "boss",
+    archetype: "big",
     speed: 60,
     hp: 480,
     radius: 72,
@@ -771,7 +767,7 @@ export const ENEMY_KINDS: Record<string, EnemyKind> = {
   // The Choirmath — LARGE bullet-hell spiral god (stationary).
   choirmath: {
     sprite: "choirmath", // §16 v0.116 bespoke art harvest-installed
-    archetype: "boss",
+    archetype: "big",
     speed: 0,
     hp: 440,
     radius: 66,
@@ -783,7 +779,7 @@ export const ENEMY_KINDS: Record<string, EnemyKind> = {
   // Cor-Vane the Hive-Mind — CHARACTER-SIZED fragile summoner (kites).
   corvane: {
     sprite: "corvane", // §16 v0.116 bespoke art harvest-installed
-    archetype: "boss",
+    archetype: "big",
     speed: 150,
     hp: 300,
     radius: 26,
@@ -795,7 +791,7 @@ export const ENEMY_KINDS: Record<string, EnemyKind> = {
   // Nul the Sightline — LARGE stationary beam-sweeper (one enormous eye).
   "nul-sightline": {
     sprite: "nul-sightline", // §16 v0.116 bespoke art harvest-installed
-    archetype: "boss",
+    archetype: "big",
     speed: 0,
     hp: 440,
     radius: 66,
@@ -807,7 +803,7 @@ export const ENEMY_KINDS: Record<string, EnemyKind> = {
   // The Metronome — LARGE stationary expanding-ring rhythm boss.
   metronome: {
     sprite: "metronome", // §16 v0.116 bespoke art harvest-installed
-    archetype: "boss",
+    archetype: "big",
     speed: 0,
     hp: 440,
     radius: 64,
@@ -819,7 +815,7 @@ export const ENEMY_KINDS: Record<string, EnemyKind> = {
   // Grull the Unchained — LARGE chain-dash berserker (lumbers between charges).
   grull: {
     sprite: "grull", // §16 v0.116 bespoke art harvest-installed
-    archetype: "boss",
+    archetype: "big",
     speed: 70,
     hp: 470,
     radius: 70,
@@ -832,7 +828,7 @@ export const ENEMY_KINDS: Record<string, EnemyKind> = {
   // range only (the boss fires via its BossDef, not the generic spitter path, which skips the boss).
   "quickdraw-vane": {
     sprite: "quickdraw-vane", // §16 v0.116 bespoke art harvest-installed
-    archetype: "boss",
+    archetype: "big",
     speed: 150,
     hp: 320,
     radius: 26,
@@ -846,7 +842,7 @@ export const ENEMY_KINDS: Record<string, EnemyKind> = {
   // PARRYABLE white arcs (parry-chain them) and mixes in red dash-lunges you must dodge. Fast, in-your-face.
   kaido: {
     sprite: "kaido", // §16 v0.117 bespoke art harvest-installed
-    archetype: "boss",
+    archetype: "big",
     speed: 170,
     hp: 340,
     radius: 26,
@@ -859,7 +855,7 @@ export const ENEMY_KINDS: Record<string, EnemyKind> = {
   // shuriken between blinks. Watch the poof marker, vacate it. Fragile — punish the recovery.
   nihil: {
     sprite: "nihil", // §16 v0.117 bespoke art harvest-installed
-    archetype: "boss",
+    archetype: "big",
     speed: 120,
     hp: 300,
     radius: 26,
@@ -872,7 +868,7 @@ export const ENEMY_KINDS: Record<string, EnemyKind> = {
   // edges at once — paired dash lanes + a parryable cross-slash. Aggressive, two-danger-at-a-time pressure.
   "blade-twins": {
     sprite: "blade-twins", // §16 v0.117 bespoke art harvest-installed
-    archetype: "boss",
+    archetype: "big",
     speed: 160,
     hp: 380,
     radius: 30,
@@ -887,7 +883,7 @@ export const ENEMY_KINDS: Record<string, EnemyKind> = {
   // silhouette at colossal scale until bespoke art is harvest-installed. Ponderous (slow) but hits like a god.
   "dimensional-colossus": {
     sprite: "grull", // placeholder silhouette — a hulking brute reads right at titan scale
-    archetype: "boss",
+    archetype: "big",
     speed: 46,
     hp: 1300,
     radius: 170,
@@ -900,7 +896,7 @@ export const ENEMY_KINDS: Record<string, EnemyKind> = {
   // his feet; every ponderous FOOTSTEP drops a ground quake you jump over or parry. Slow, unstoppable.
   "world-titan": {
     sprite: "grull", // placeholder silhouette (the same hulking brute, rendered mountain-huge)
-    archetype: "boss",
+    archetype: "big",
     speed: 40,
     hp: 1900,
     radius: 230,
@@ -915,7 +911,7 @@ export const ENEMY_KINDS: Record<string, EnemyKind> = {
   // (humanoid w/ hands); bespoke ronin art lands via CODE-21.
   ronin: {
     sprite: "boothill",
-    archetype: "duelist",
+    archetype: "cultist",
     renderScale: 1.18,
     speed: 156,
     hp: 36,
@@ -951,7 +947,7 @@ export const ENEMY_KINDS: Record<string, EnemyKind> = {
   // but the volley is the danger. POC art = the boothill rig (bespoke full-build Gatlin art via CODE-21).
   gatlin: {
     sprite: "boothill",
-    archetype: "spitter", // reuses the kite + fire framework; `spread` turns the shot into a burst
+    archetype: "cultist", // reuses the kite + fire framework; `spread` turns the shot into a burst
     renderScale: 1.5,
     speed: 92, // slow heavy drifter
     hp: 48,
@@ -972,7 +968,7 @@ export const ENEMY_KINDS: Record<string, EnemyKind> = {
   // you (announcing the combo), and on landing strings a fast 3-hit parryable flurry. Rare special threat.
   "vault-ronin": {
     sprite: "boothill",
-    archetype: "leaper",
+    archetype: "runner",
     renderScale: 1.22,
     speed: 150,
     hp: 44,
@@ -1006,7 +1002,7 @@ export const ENEMY_KINDS: Record<string, EnemyKind> = {
   // pin. Punishes lazy approach; reward = catch it mid-roll or corner it. A special threat, not horde filler.
   "dust-ranger": {
     sprite: "boothill",
-    archetype: "ranger",
+    archetype: "cultist",
     renderScale: 1.15,
     speed: 158,
     hp: 40,
@@ -1041,158 +1037,46 @@ export const ENEMY_KINDS: Record<string, EnemyKind> = {
   ...DIMENSION_ENEMY_KINDS,
 };
 
-// §32 v0.118 EVERY enemy wields one of our weapons — the one it DROPS irregularly on death. Assigned here
-// (post-merge, so it covers hand-authored AND generated dimension kinds) to any non-boss/dummy kind that
-// doesn't already carry a signature weapon. Melee archetypes get a blade, ranged get a gun; the pick is
-// hashed off the kind id so it's stable + varied. `wieldsWeapon` only drives the drop (server) + the
-// in-hand render (client) — no AI change — and handless "blob" rigs simply don't draw it (they still drop).
-const ENEMY_MELEE_POOL: readonly string[] = [
-  "rusty-cleaver",
-  "driftblade",
-  "twin-bowie-fangs",
-  "x-sword-buzzsaw",
-  "x-sword-anchor",
-  "rattler-sabre",
-  "x-sword-coffin",
-  "x-sword-railspike",
-  "x-sword-neon-katana",
-  "x-sword-bone",
-  "tombstone-greatsword",
-].filter(isActiveWeaponId);
-const ENEMY_RANGED_POOL: readonly string[] = [
-  "x-gun-revolver-cannon",
-  "x-gun-coffin-shotgun",
-  "x-gun-gatling",
-  "x-gun-nailgun",
-  "x-gun-ricochet-pistol",
-].filter(isActiveWeaponId);
-const MELEE_ARCHETYPES = new Set(["rusher", "swarm", "leaper", "duelist"]);
-function hashPick(seed: string, pool: readonly string[]): string {
-  let h = 0;
-  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
-  return pool[h % pool.length] ?? pool[0]!;
-}
-for (const [id, kind] of Object.entries(ENEMY_KINDS)) {
-  // Archive is a catalog state, not a hand-authored enemy cleanup chore. If a future retirement names an
-  // explicit wielder, deterministically replace it from the appropriate active pool before any render/drop.
-  if (kind.wieldsWeapon && !isActiveWeaponId(kind.wieldsWeapon)) {
-    const replacementPool = MELEE_ARCHETYPES.has(kind.archetype)
-      ? ENEMY_MELEE_POOL
-      : ENEMY_RANGED_POOL;
-    kind.wieldsWeapon = hashPick(id, replacementPool);
-  }
-  if (kind.archetype === "boss" || kind.archetype === "dummy" || kind.wieldsWeapon) continue;
-  const pool = MELEE_ARCHETYPES.has(kind.archetype) ? ENEMY_MELEE_POOL : ENEMY_RANGED_POOL;
-  kind.wieldsWeapon = hashPick(id, pool);
-  kind.dropWeapon = kind.dropWeapon ?? 0.22; // irregular — most kills don't drop
-}
-
-// §51 COMBO-DECK ASSIGNMENT (post-merge, like the weapon pass above, so it covers hand-authored AND
-// generated dimension kinds): every duelist/leaper/shifter kind with a real `melee` block and a wielded
-// pool blade speaks its BLADE's weapon-family grammar when tough. The family is the vocabulary the
-// player already knows from their own hands (§51 designer roster). G15 pillar law enforced here as
-// data-lint: a LEAPING kind sheds one advanced dialect — shifters keep the family BAIT and shed the
-// juggle (the Warden dialect), other leapers keep the JUGGLE and shed the bait (the vault-ronin
-// template) — so no non-boss kind ever stacks leap + bait + juggle.
-const KATANA_DECK: readonly ToughComboEntry[] = [
-  { combo: "k1-sanren", minDepth: 1 },
-  { combo: "k2-drawn-moon", minDepth: 3 },
-  { combo: "k3-gale-cross", minDepth: 3 },
-  { combo: "k4-sky-hook", minDepth: 5 },
-];
-const HEAVY_DECK: readonly ToughComboEntry[] = [
-  { combo: "h1-sweep-overhead", minDepth: 1 },
-  { combo: "h2-anchor-drag", minDepth: 2 },
-  { combo: "h3-gravedigger", minDepth: 4 },
-  { combo: "h4-coffin-lid", minDepth: 6 },
-];
-const THRUST_DECK: readonly ToughComboEntry[] = [
-  { combo: "t1-rail", minDepth: 1 },
-  { combo: "t2-switchback", minDepth: 3 },
-];
-const DUAL_DECK: readonly ToughComboEntry[] = [
-  { combo: "d1-fang-flurry", minDepth: 1 },
-  { combo: "d2-scissor-lift", minDepth: 4 },
-];
-const COMBO_DECK_BY_WEAPON: Record<string, readonly ToughComboEntry[]> = {
-  "x-sword-neon-katana": KATANA_DECK,
-  "rattler-sabre": KATANA_DECK,
-  driftblade: KATANA_DECK,
-  "rusty-cleaver": HEAVY_DECK,
-  "x-sword-anchor": HEAVY_DECK,
-  "x-sword-coffin": HEAVY_DECK,
-  "x-sword-bone": HEAVY_DECK,
-  "tombstone-greatsword": HEAVY_DECK,
-  "x-sword-buzzsaw": HEAVY_DECK,
-  "x-sword-railspike": THRUST_DECK,
-  "twin-bowie-fangs": DUAL_DECK,
-};
-
-// The generated design data still carries two pre-combo placeholders that contradict the named roster:
-// Marshal is a sabre tutorialist (K1), not a gunner, and the neon Riot Enforcer is the thrust-family
-// dimension duelist. Normalise those identities here rather than editing generated output by hand.
-const comboMarshal = ENEMY_KINDS["shifter-cinder-marshal"];
-if (comboMarshal) {
-  comboMarshal.archetype = "duelist";
-  comboMarshal.ranged = undefined;
-  comboMarshal.wieldsWeapon = "rattler-sabre";
-  comboMarshal.melee = {
-    approach: 150,
-    range: 138,
-    halfArc: 0.9,
-    damage: 11,
-    hits: 3,
-    windup: 0.5,
-    swingGap: 0.3,
-    recover: 0.9,
-    step: 66,
-  };
-  comboMarshal.combos = [{ combo: "k1-sanren", minDepth: 1 }];
-  comboMarshal.comboLeap = true;
-}
-const comboRiotEnforcer = ENEMY_KINDS["riot-enforcer"];
-if (comboRiotEnforcer) comboRiotEnforcer.wieldsWeapon = "x-sword-railspike";
-
+/**
+ * B95 replacement pass. Historical kind ids remain persistence-safe lookup keys, but no legacy behaviour
+ * survives: every non-Big field row is normalized to Runner or Cultist before any roster consumer sees it.
+ * Per-instance appearance/weapon identity is assigned by the server at spawn.
+ */
 for (const kind of Object.values(ENEMY_KINDS)) {
-  if (kind.combos || !kind.melee) continue;
-  if (kind.archetype !== "duelist" && kind.archetype !== "leaper" && !kind.shifter) continue;
-  const deck = COMBO_DECK_BY_WEAPON[kind.wieldsWeapon ?? ""];
-  if (!deck) continue;
-  const leaps = kind.archetype === "leaper" || !!kind.shifter;
-  if (leaps) kind.comboLeap = true;
-  if (!leaps) kind.combos = deck;
-  else if (kind.shifter?.tier === 3) {
-    // Warden's named deck includes H3 at depth 4 and H4 at depth 6. A performance selects ONE entry, so
-    // it is leap+bait OR leap+juggle — never all three pillars in one choreography (G15).
-    kind.combos = deck;
-  } else {
-    kind.combos = kind.shifter
-      ? deck.filter((e) => !comboIsJuggle(e.combo))
-      : deck.filter((e) => !comboIsBait(e.combo));
+  if (kind.archetype === "runner") {
+    kind.sprite = RUNNER_CHARACTER_ID;
+    kind.speed = 240;
+    kind.hp = 3;
+    kind.radius = 18;
+    kind.ranged = undefined;
+    kind.melee = undefined;
+    kind.dodge = undefined;
+    kind.wieldsWeapon = undefined;
+    kind.dropWeapon = undefined;
+    kind.combos = undefined;
+    kind.comboLeap = undefined;
+    kind.leap = {
+      range: COMBO_LEAP_RANGE,
+      windup: 0,
+      airTime: (COMBO_LEAP_AIR_TICKS * TICK_MS) / 1000,
+      cooldown: COMBO_LEAP_COOLDOWN,
+    };
+    kind.contactDamage = 0;
+    continue;
+  }
+  if (kind.archetype === "cultist") {
+    kind.sprite = CULTIST_CHARACTER_IDS[0];
+    kind.ranged = undefined;
+    kind.melee = undefined;
+    kind.leap = undefined;
+    kind.dodge = undefined;
+    kind.combos = undefined;
+    kind.comboLeap = undefined;
+    kind.contactDamage = 0;
+    kind.wieldsWeapon = undefined;
+    kind.dropWeapon = 0.22;
   }
 }
-
-// One roster-wide melee tuning pass covers both hand-authored and generated dimension kinds without
-// editing generated output. Tough instances read the same kind row, so they inherit the speed increase.
-// Explicit combo sectors widen here; derived rusher/swarm/zoner sectors widen in effectiveMelee below.
-for (const kind of Object.values(ENEMY_KINDS)) {
-  const meleeMover =
-    kind.archetype === "rusher" ||
-    kind.archetype === "swarm" ||
-    kind.archetype === "zoner" ||
-    kind.archetype === "duelist" ||
-    kind.archetype === "leaper";
-  if (!meleeMover) continue;
-  kind.speed *=
-    kind.archetype === "leaper" || kind.shifter
-      ? LEAP_MELEE_ENEMY_SPEED_MULT
-      : MELEE_ENEMY_SPEED_MULT;
-  if (!kind.melee) continue;
-  kind.melee.approach *= MELEE_ENEMY_RANGE_MULT;
-  kind.melee.range *= MELEE_ENEMY_RANGE_MULT;
-  kind.melee.halfArc = Math.min(Math.PI, kind.melee.halfArc * MELEE_ENEMY_ARC_MULT);
-}
-
 export const ENEMY_KIND_IDS = Object.keys(ENEMY_KINDS);
 
 /** §17 the DIMENSION-SHIFTER kind ids, ordered by tier (1 = earliest/weakest Marshal → 3 = Warden). Derived
@@ -1217,34 +1101,26 @@ export function pickEnemyKind(roll: number, roster: readonly string[] = ENEMY_KI
   return ids[0] ?? "critter";
 }
 
-/** §8/§20 the LUNGE attack a melee/contact monster uses: the explicit `melee` combo if the kind defines one
- *  (duelists/shifters), else a DERIVED single-hit lunge for the contact archetypes (rusher/swarm/zoner) so
- *  EVERY such monster telegraphs then JUMPS at you = parryable (§8). Ranged spitters, the boss, and dummies
- *  have NO lunge (undefined) — their threat is projectiles / phases / nothing, and DoT puddles + the boss's
- *  AoE slam stay unparryable by design. Passive contact (touch) damage (`contactDamage`) is SEPARATE and
- *  always applies; the lunge is the discrete telegraphed hit on top. Derived lunges are MEMOIZED per kind
- *  (deterministic) so the per-tick AI loop allocates nothing. */
-const LUNGE_ARCHETYPES = new Set(["rusher", "swarm", "zoner"]);
+/** The Runner's derived, weaponless body lunge. It is parryable, moves only the enemy, and is memoized
+ *  per normalized kind so the density-critical per-tick loop allocates nothing. */
 const meleeCache = new WeakMap<EnemyKind, NonNullable<EnemyKind["melee"]> | null>();
 export function effectiveMelee(kind: EnemyKind | undefined): EnemyKind["melee"] {
   if (!kind) return undefined;
-  if (kind.melee) return kind.melee;
   const cached = meleeCache.get(kind);
   if (cached !== undefined) return cached ?? undefined;
   let derived: NonNullable<EnemyKind["melee"]> | null = null;
-  if (LUNGE_ARCHETYPES.has(kind.archetype)) {
-    const swarm = kind.archetype === "swarm";
+  if (kind.archetype === "runner") {
     const reach = (kind.radius + LUNGE_REACH_PAD) * MELEE_ENEMY_RANGE_MULT;
     derived = {
       approach: reach + 16 * MELEE_ENEMY_RANGE_MULT, // preserve the pre-contact windup margin
       range: reach,
       halfArc: 0.95 * MELEE_ENEMY_ARC_MULT, // compatibility metadata; B33 does not hit-test a cone
-      damage: Math.max(LUNGE_MIN_DAMAGE, kind.contactDamage * LUNGE_DAMAGE_MULT),
-      hits: 1, // a single jab (duelists override with a real multi-hit combo)
-      windup: swarm ? LUNGE_WINDUP_SWARM : LUNGE_WINDUP,
-      swingGap: 0.3, // unused at hits:1, kept valid for the combo machine
-      recover: swarm ? LUNGE_RECOVER_SWARM : LUNGE_RECOVER,
-      step: Math.max(48, kind.speed * LUNGE_STEP_FRAC),
+      damage: Math.max(LUNGE_MIN_DAMAGE, 8),
+      hits: 1,
+      windup: TICK_MS / 1000,
+      swingGap: TICK_MS / 1000,
+      recover: (COMBO_LEAP_AIR_TICKS * TICK_MS) / 1000,
+      step: COMBO_LEAP_RANGE,
     };
   }
   meleeCache.set(kind, derived);
@@ -1282,9 +1158,7 @@ const MELEE_ACCENT_BY_KIND: Readonly<Record<string, number>> = Object.freeze({
 export function enemyMeleeAccent(kindId: string, kind = ENEMY_KINDS[kindId]): number {
   const explicit = MELEE_ACCENT_BY_KIND[kindId];
   if (explicit !== undefined) return explicit;
-  if (kind?.archetype === "swarm") return 0x33e6ff;
-  if (kind?.archetype === "zoner") return 0xff8a2b;
-  if (kind?.archetype === "duelist" || kind?.archetype === "leaper") return 0xff4438;
+  if (kind?.archetype === "runner") return 0x8f6aff;
   return 0xff5d3b;
 }
 
@@ -1302,8 +1176,7 @@ export function enemyMeleeCommitCue(
 ): EnemyMeleeCommitCue {
   if (kindId === "shifter-grave-warden" || kindId === "shifter-voltaic-ronin")
     return "melee:arcane";
-  if (kind?.archetype === "swarm" || kind?.archetype === "rusher") return "melee:claw";
-  if (kind?.archetype === "zoner") return "melee:blunt";
+  if (kind?.archetype === "runner") return "melee:claw";
   if ((kind?.renderScale ?? 1) >= 1.45) return "melee:heavy";
   return "melee:light";
 }

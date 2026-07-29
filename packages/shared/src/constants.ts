@@ -359,9 +359,9 @@ export const SPAWN_RING = 720;
  * POC enemy cap. Enemies are full Tier-1 sync here (fine at these counts); the §4 Tier-2
  * soft-synced horde (hundreds/player) lands with StateView AoI before the load test.
  */
-export const MAX_ENEMIES = 80;
+export const MAX_ENEMIES = 200;
 /** Dev summon (§21 Testing Grounds): max monsters spawned per Tab-menu summon click (the multiplier cap). */
-export const DEBUG_SPAWN_MAX = 30;
+export const DEBUG_SPAWN_MAX = MAX_ENEMIES;
 
 /** Player combat/survival (§6, §20). All tuning placeholders. */
 export const PLAYER_MAX_HP = 100;

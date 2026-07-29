@@ -1,4 +1,5 @@
 import {
+  ACTIVE_WEAPON_CATALOG_IDS,
   ARENA_HEIGHT,
   ARENA_WIDTH,
   type ArenaMap,
@@ -130,6 +131,7 @@ import {
   selectChainTargets,
   stepBeamAngle,
   swingDescriptorFor,
+  swingDescriptorForAttackSeq,
   TgShape,
   TILE_GROUND,
   TICK_MS,
@@ -1229,24 +1231,25 @@ function buildVastagharSweepGeometry(
  *  the real sprite lands in the manifest, `resolveEnemySprite` picks it automatically. All targets are
  *  always-installed base sprites. */
 const ENEMY_FALLBACK_SPRITE: Record<string, string> = {
-  rusher: "critter",
-  swarm: "mote-swarm",
-  zoner: "pricklepulp",
-  spitter: "boothill",
-  duelist: "boothill",
-  tough: "boothill",
-  boss: "boothill",
+  runner: "proto-frost-rune-guardian",
+  cultist: "proto-punk-occult-summoner",
+  big: "boothill",
   dummy: "pricklepulp",
 };
 
 /** Resolve the sprite manifest id to render for an enemy kind: the bespoke sprite if its art is installed,
  *  else the archetype stand-in (so an un-rendered themed enemy doesn't crash SpriteRig). */
-function resolveEnemySprite(kind: EnemyKind | undefined, rawKind: string): string {
+function resolveEnemySprite(
+  kind: EnemyKind | undefined,
+  rawKind: string,
+  appearanceId = "",
+): string {
+  if (appearanceId && SPRITES[appearanceId as keyof typeof SPRITES]) return appearanceId;
   // The schema-26 flagship owns installed four-foot art even while the shared legacy fallback remains grull.
   if (rawKind === "world-titan" && SPRITES["world-titan"]) return rawKind;
   const want = kind?.sprite ?? rawKind;
   if (SPRITES[want as keyof typeof SPRITES]) return want;
-  return ENEMY_FALLBACK_SPRITE[kind?.archetype ?? "rusher"] ?? "critter";
+  return ENEMY_FALLBACK_SPRITE[kind?.archetype ?? "runner"] ?? "critter";
 }
 
 /**
@@ -1363,7 +1366,7 @@ export class ArenaScene extends Phaser.Scene {
     _angle: number,
     out: BeamMuzzlePose,
   ): boolean => {
-    const rig = this.blobs.get(ownerId);
+    const rig = this.blobs.get(ownerId) ?? this.enemies.get(ownerId);
     if (!rig || rig.heldWeaponDef(0)?.id !== weaponId) return false;
     const barrelMatch = /:barrel:(\d+)$/.exec(rowKey);
     const barrelIndex = barrelMatch ? Number(barrelMatch[1]) : 0;
@@ -1835,8 +1838,8 @@ export class ArenaScene extends Phaser.Scene {
   // §21 Testing-Grounds Tab summon menu (dev): pick a monster kind + a multiplier to conjure it.
   private summonObjects: Phaser.GameObjects.GameObject[] = [];
   private summonOpen = false;
-  private summonCount = 1; // the multiplier (× this many per spawn click)
-  private summonTough = false;
+  private summonCount = 1;
+  private summonWeaponIndex = -1;
   private summonBossPage = 0;
   /** B20 L3: the exact floor row captured on E-down and its local hold presentation. */
   private eHold = 0;
@@ -2622,7 +2625,7 @@ export class ArenaScene extends Phaser.Scene {
     this.hudScale = -1;
     this.summonOpen = false;
     this.summonCount = 1;
-    this.summonTough = false;
+    this.summonWeaponIndex = -1;
     this.summonBossPage = 0;
     this.eHold = 0;
     this.eHoldPickupId = "";
@@ -5782,7 +5785,7 @@ export class ArenaScene extends Phaser.Scene {
     const reducedMotion = prefersReducedPaperMotion();
     enemies.forEach((enemy, id) => {
       if (id === wormOwner) return;
-      if (ENEMY_KINDS[enemy.kind]?.archetype === "boss") {
+      if (ENEMY_KINDS[enemy.kind]?.archetype === "big") {
         this.lastBossX = enemy.x;
         this.lastBossY = enemy.y;
       }
@@ -5794,7 +5797,7 @@ export class ArenaScene extends Phaser.Scene {
           enemy.y,
           false,
           id,
-          resolveEnemySprite(kind, enemy.kind),
+          resolveEnemySprite(kind, enemy.kind, enemy.appearanceId),
         );
         // Bosses use their own scale; tough kin scale up + glow (§15/§28.6 bigger not detailed).
         if (kind?.renderScale) rig.setRigScale(kind.renderScale);
@@ -5804,17 +5807,18 @@ export class ArenaScene extends Phaser.Scene {
         // level (0.5 = the very bottom at the ground line). Tunable knob if it wants more/less leg on screen.
         if ((kind?.renderScale ?? 0) >= 10) rig.setLowerBodyFrame(0.45);
         if (enemy.tough) rig.addGlow(0xff5d3b);
-        // §15 duelist (ronin): visibly WIELD its sword (held-sprite on the enemy rig).
-        if (kind?.wieldsWeapon) {
-          const wdef = WEAPONS[kind.wieldsWeapon];
-          const wman = SPRITES[kind.wieldsWeapon as keyof typeof SPRITES];
-          if (wdef && wman) rig.equipWeapon(kind.wieldsWeapon, wdef, wman);
+        // Cultists visibly hold their per-instance authored weapon; Big signature weapons remain intact.
+        const wieldedWeaponId = enemy.weaponId || kind?.wieldsWeapon;
+        if (wieldedWeaponId) {
+          const wdef = WEAPONS[wieldedWeaponId];
+          const wman = SPRITES[wieldedWeaponId as keyof typeof SPRITES];
+          if (wdef && wman) rig.equipWeapon(wieldedWeaponId, wdef, wman);
         }
-        const paperPriority: 0 | 1 | 2 = kind?.archetype === "boss" ? 2 : enemy.tough ? 1 : 0;
+        const paperPriority: 0 | 1 | 2 = kind?.archetype === "big" ? 2 : enemy.tough ? 1 : 0;
         this.enemyPaperPriority.set(id, paperPriority);
         this.enemyDeathCue.set(
           id,
-          kind?.archetype === "boss"
+          kind?.archetype === "big"
             ? "death:boss"
             : enemy.tough
               ? "death:tough"
@@ -5881,7 +5885,25 @@ export class ArenaScene extends Phaser.Scene {
             }
           });
         }
-        this.enemies.get(id)?.resolveMeleeTell(this.time.now, aimWorld);
+        const attackingRig = this.enemies.get(id);
+        const authoredWeapon = WEAPONS[enemy.weaponId];
+        if (attackingRig && authoredWeapon) {
+          aimWorld = enemy.aimDir;
+          if (authoredWeapon.gun)
+            attackingRig.triggerGunRecoil(this.time.now, 0);
+          else if (!authoredWeapon.beam)
+            attackingRig.triggerSwing(
+              this.time.now,
+              aimWorld,
+              swingDescriptorForAttackSeq(
+                swingDescriptorFor(authoredWeapon, authoredWeapon.cooldown),
+                authoredWeapon,
+                Math.max(0, enemy.atkSeq - 1),
+              ),
+            );
+        } else {
+          attackingRig?.resolveMeleeTell(this.time.now, aimWorld);
+        }
         if (sample) {
           const melee = effectiveMelee(ENEMY_KINDS[enemy.kind]);
           sample.step = melee ? (sample.step + 1) % melee.hits : 0;
@@ -6517,7 +6539,7 @@ export class ArenaScene extends Phaser.Scene {
         const melee = effectiveMelee(kind);
         if (!melee) return;
         const sample = this.sampleEnemyWindup(id, enemy, melee, tick, now);
-        if (!sample?.active || kind?.archetype === "boss") return;
+        if (!sample?.active || kind?.archetype === "big") return;
         const cx = enemy.x;
         const cy = enemy.y;
         let containsSelf = false;
@@ -6575,6 +6597,9 @@ export class ArenaScene extends Phaser.Scene {
       anim.jumpVh = 0;
       anim.reducedMotion = reducedMotion;
       const es = this.room?.state.enemies.get(id);
+      anim.aimDir = es?.aimDir ?? 0;
+      anim.enemyArchetype = es ? ENEMY_KINDS[es.kind]?.archetype : undefined;
+      anim.fireHeld = es?.attackPhase === 2;
       const windup = this.enemyWindup.get(id);
       if (es) this.presentEnemyCombo(id, rig, es, mx, my, reducedMotion, anim);
       if (es && windup?.active) {
@@ -6589,7 +6614,7 @@ export class ArenaScene extends Phaser.Scene {
           windup.locked,
           kind?.archetype ?? "duelist",
           windup.step,
-          kind?.archetype === "boss" || this.meleeFullTells.has(id),
+          kind?.archetype === "big" || this.meleeFullTells.has(id),
           gold,
           (comboFlags & COMBO_FLAG_JUGGLE) !== 0,
         );
@@ -7352,7 +7377,9 @@ export class ArenaScene extends Phaser.Scene {
                     : pr.kind === "counter" || pr.kind === "deflect"
                       ? makeCounter(this, pr) // §8 parry projectile (bounce-back counter OR Superman side-glance)
                       : makeSpit(this, pr));
-      const sourceRig = shooter ? this.blobs.get(shooter) : undefined;
+      const sourceRig = shooter
+        ? (this.blobs.get(shooter) ?? this.enemies.get(shooter))
+        : undefined;
       const spawnAnchorKind = sourceWeapon?.gun
         ? "muzzle"
         : sourceWeapon?.chargedProjectile
@@ -7486,6 +7513,43 @@ export class ArenaScene extends Phaser.Scene {
                 x: p.x,
                 amt: 0.42,
               });
+          } else {
+            const enemy = room.state.enemies.get(shooter);
+            const erig = this.enemies.get(shooter);
+            if (enemy && erig && sourceWeapon) {
+              const ang = Math.atan2(pr.vy, pr.vx);
+              const muzzles = sourceWeapon.muzzle
+                ? weaponMuzzleWorldPointsForShot(
+                    sourceWeapon,
+                    {
+                      x: enemy.x,
+                      y: enemy.y,
+                      aimX: Math.cos(ang),
+                      aimY: Math.sin(ang),
+                      renderScale: characterScale(enemy.appearanceId),
+                    },
+                    enemy.atkSeq,
+                  )
+                : [];
+              erig.triggerGunRecoil(this.time.now, pr.sourceMuzzlePart === 1 ? 1 : 0);
+              if (!casterRecipe && !generatedImageRecipe)
+                for (const muzzle of muzzles)
+                  spawnMuzzleFlash(
+                    this,
+                    muzzle.x,
+                    muzzle.y,
+                    ang,
+                    fx.size,
+                    fx.color,
+                    sourceWeapon.gun?.muzzle ?? fx.style,
+                    sourceWeapon.id,
+                  );
+              else this.spawnCasterSourceAtRig(sourceWeapon, erig, ang);
+              this.audio.play(gunFireAudioCue(sourceWeaponId) ?? `shot:${baseKind(pr.kind)}`, {
+                x: enemy.x,
+                amt: 0.42,
+              });
+            }
           }
           if (isSelf && comet) this.audio.play("ult:fire:launch", { x: p?.x, amt: 1 });
         }
@@ -8450,7 +8514,7 @@ export class ArenaScene extends Phaser.Scene {
     // its max HP from the roster. The nameplate + approach toast read the active dimension's name.
     let boss: { hp: number; kind: string; x: number; y: number } | undefined;
     this.room.state.enemies.forEach((e) => {
-      if (ENEMY_KINDS[e.kind]?.archetype === "boss") boss = e;
+      if (ENEMY_KINDS[e.kind]?.archetype === "big") boss = e;
     });
     const s = this.uiScale();
     const wormDef = this.room.state.wormBoss.active
@@ -8693,7 +8757,7 @@ export class ArenaScene extends Phaser.Scene {
     // approach, loot reveal, depth) fought the gun/hit shakes for the same channel and read as noise.
   }
 
-  /** §21 Testing-Grounds Tab menu — the summonable roster (boss + dummy excluded; tough is a toggle). */
+  /** Testing-Grounds menu for Runner/Cultist counts, authored Cultist weapons, and specific Bigs. */
   private get verbs(): VerbLegendManager {
     if (!this.verbUi) throw new Error("Verb UI unavailable");
     return this.verbUi;
@@ -8847,14 +8911,8 @@ export class ArenaScene extends Phaser.Scene {
   }
 
   private static readonly SUMMON_KINDS: { id: string; label: string }[] = [
-    { id: "critter", label: "Critter (rusher)" },
-    { id: "mote-swarm", label: "Mote (swarm)" },
-    { id: "pricklepulp", label: "Pricklepulp (zoner)" },
-    { id: "boothill", label: "Boothill (spitter)" },
-    { id: "gatlin", label: "Gatlin (scatter)" },
-    { id: "ronin", label: "Ronin (duelist)" },
-    { id: "vault-ronin", label: "Vault-Ronin (leaper)" },
-    { id: "dust-ranger", label: "Dust-Ranger (dodge)" },
+    { id: "runner", label: "RUNNER — Frost Rune Guardian" },
+    { id: "cultist", label: "CULTIST — selected weapon" },
   ];
 
   /** Tear down the summon overlay. */
@@ -8904,13 +8962,31 @@ export class ArenaScene extends Phaser.Scene {
       .setOrigin(0.5)
       .setDepth(100021);
     this.summonObjects.push(dim, panel, title, hint);
+    const clearX = layout.panel.x + layout.panel.width - 72;
+    const clear = this.add
+      .rectangle(clearX, layout.titleY, 112, 30, 0x4a1722, 0.98)
+      .setScrollFactor(0)
+      .setStrokeStyle(2, 0xff5d72)
+      .setDepth(100021)
+      .setInteractive({ useHandCursor: true });
+    const clearText = this.add
+      .text(clearX, layout.titleY, "CLEAR FIELD", {
+        fontSize: "12px",
+        color: "#ffd5db",
+        fontStyle: "bold",
+      })
+      .setScrollFactor(0)
+      .setOrigin(0.5)
+      .setDepth(100022);
+    clear.on("pointerdown", () => this.room?.send("debugClearField"));
+    this.summonObjects.push(clear, clearText);
 
-    // Multiplier row (×1 … ×DEBUG_SPAWN_MAX) + a Tough toggle. Both rebuild only after their full-size
+    // Count row (1 … DEBUG_SPAWN_MAX) + an authored-weapon picker. Both rebuild only after their full-size
     // pointer target fires, so the displayed and interactive geometry always agree.
-    const mults = [1, 5, 10, DEBUG_SPAWN_MAX].filter((n, i, a) => a.indexOf(n) === i);
+    const mults = [1, 50, 100, DEBUG_SPAWN_MAX].filter((n, i, a) => a.indexOf(n) === i);
     const chipW = 54;
     const chipGap = 8;
-    const controlsWidth = 34 + mults.length * chipW + (mults.length - 1) * chipGap + 18 + 104;
+    const controlsWidth = 34 + mults.length * chipW + (mults.length - 1) * chipGap + 18 + 230;
     const controlsLeft = cx - controlsWidth / 2;
     const mStartX = controlsLeft + 34 + chipW / 2;
     const my = layout.controlsY;
@@ -8948,31 +9024,43 @@ export class ArenaScene extends Phaser.Scene {
       });
       this.summonObjects.push(chip, t);
     });
-    const tx = mStartX + (mults.length - 1) * (chipW + chipGap) + chipW / 2 + 18 + 52;
-    const tough = this.add
-      .rectangle(tx, my, 104, 30, this.summonTough ? 0x6b4a1f : 0x1b1812, 0.98)
+    const tx = mStartX + (mults.length - 1) * (chipW + chipGap) + chipW / 2 + 18 + 115;
+    const chosenWeapon =
+      this.summonWeaponIndex >= 0
+        ? ACTIVE_WEAPON_CATALOG_IDS[this.summonWeaponIndex]
+        : undefined;
+    const weaponChip = this.add
+      .rectangle(tx, my, 230, 30, chosenWeapon ? 0x38205b : 0x1b1812, 0.98)
       .setScrollFactor(0)
-      .setStrokeStyle(2, this.summonTough ? 0xffb24a : 0x4a443a)
+      .setStrokeStyle(2, chosenWeapon ? 0xb47cff : 0x4a443a)
       .setDepth(100021)
       .setInteractive({ useHandCursor: true });
-    const toughT = this.add
-      .text(tx, my, this.summonTough ? "TOUGH ✓" : "tough", {
-        fontSize: "14px",
-        color: this.summonTough ? "#ffd9a8" : "#9a9486",
-        fontStyle: "bold",
-      })
+    const weaponChipText = this.add
+      .text(
+        tx,
+        my,
+        chosenWeapon ? `WEAPON: ${WEAPONS[chosenWeapon]?.name ?? chosenWeapon}` : "WEAPON: RANDOM",
+        {
+          fontSize: "11px",
+          color: chosenWeapon ? "#ead8ff" : "#9a9486",
+          fontStyle: "bold",
+        },
+      )
       .setScrollFactor(0)
       .setOrigin(0.5)
       .setDepth(100022);
-    tough.on("pointerdown", () => {
-      this.summonTough = !this.summonTough;
+    weaponChip.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
+      const delta = pointer.rightButtonDown() ? -1 : 1;
+      const span = ACTIVE_WEAPON_CATALOG_IDS.length + 1;
+      this.summonWeaponIndex =
+        ((this.summonWeaponIndex + 1 + delta + span) % span) - 1;
       this.openSummonMenu();
     });
-    this.summonObjects.push(tough, toughT);
+    this.summonObjects.push(weaponChip, weaponChipText);
 
     const sectionX = layout.panel.x + 24;
     const enemyLabel = this.add
-      .text(sectionX, layout.enemyLabelY, "ENEMIES — count and Tough apply", {
+      .text(sectionX, layout.enemyLabelY, "ARCHETYPES — count applies; weapon applies to Cultist", {
         fontSize: "12px",
         color: "#9eefff",
         fontStyle: "bold",
@@ -8982,8 +9070,7 @@ export class ArenaScene extends Phaser.Scene {
       .setDepth(100022);
     this.summonObjects.push(enemyLabel);
 
-    // Eight enemies occupy exactly two rows. Character identities are deliberately absent: wardrobe gear
-    // owns the boilerplate player rig; this dev surface is only for field actors.
+    // Runner and Cultist share one row; Bigs are selected by their concrete boss-kind ids below.
     const kinds = ArenaScene.SUMMON_KINDS;
     const W = layout.buttonWidth;
     const H = layout.buttonHeight;
@@ -9016,7 +9103,7 @@ export class ArenaScene extends Phaser.Scene {
         this.room?.send("debugSpawn", {
           kind: k.id,
           count: this.summonCount,
-          tough: this.summonTough,
+          weapon: k.id === "cultist" ? chosenWeapon : undefined,
         }),
       );
       this.summonObjects.push(btn, t);
@@ -9032,7 +9119,7 @@ export class ArenaScene extends Phaser.Scene {
       .text(
         sectionX,
         layout.bossLabelY,
-        `BOSSES — page ${this.summonBossPage + 1}/${bossPages} · replaces the live boss`,
+        `BIGS — page ${this.summonBossPage + 1}/${bossPages} · replaces the live Big`,
         {
           fontSize: "12px",
           color: "#ffb24a",

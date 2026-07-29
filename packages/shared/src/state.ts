@@ -366,6 +366,14 @@ export class EnemyState extends Schema {
   @type("uint8") comboFlags = 0;
   /** B33 white-pop/commit edge. Each increment locks one lunge vector for the shared 200ms clock. */
   @type("uint8") commitSeq = 0;
+  /** B95 per-instance player-character model. Runners use Frost Rune Guardian; cultists rotate six purples. */
+  @type("string") appearanceId = "";
+  /** B95 real authored catalog weapon held and executed by a cultist. Empty for runners and Bigs. */
+  @type("string") weaponId = "";
+  /** B95 accepted authored-weapon aim, shared by held pose, muzzle, cast, beam, and melee presentation. */
+  @type("number") aimDir = 0;
+  /** B95 delivery phase: 0 idle, 1 windup/charge, 2 active/commit, 3 recovery/reload. */
+  @type("uint8") attackPhase = 0;
 }
 
 /** A lingering corrosive puddle dropped by a zoner (§15) — DoTs players standing inside. */

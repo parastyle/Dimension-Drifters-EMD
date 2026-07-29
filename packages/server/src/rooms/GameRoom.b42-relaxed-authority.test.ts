@@ -92,7 +92,7 @@ describe("GameRoom B42 relaxed self-movement authority", () => {
     if (!boothill) throw new Error("boothill fixture kind missing");
     ENEMY_KINDS[kindId] = {
       ...boothill,
-      archetype: "spitter",
+      archetype: "cultist",
       speed: 0,
       radius: ENEMY_RADIUS,
       contactDamage: 4,

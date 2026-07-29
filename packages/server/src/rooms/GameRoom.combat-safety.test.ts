@@ -695,16 +695,17 @@ describe("improve2 integrity regressions", () => {
   it("authored wielders can drop disassemblable floor weapons", () => {
     const h = makeRoom();
     h.join("drop-law");
-    const row = Object.entries(ENEMY_KINDS).find(
-      ([, kind]) =>
-        !!kind.wieldsWeapon && !!kind.dropWeapon && !kind.shifter && kind.archetype !== "boss",
-    );
-    if (!row) throw new Error("expected a weapon-wielding enemy fixture");
+    const kind = ENEMY_KINDS.boothill;
+    const weaponId = "rusty-cleaver";
+    if (!kind || kind.archetype !== "cultist" || !WEAPONS[weaponId])
+      throw new Error("expected a Cultist weapon-drop fixture");
+    h.room.metaAccounts.get("drop-law").unlockedWeapons = [weaponId];
     const rng = vi.spyOn(Math, "random").mockReturnValue(0);
     for (const tough of [false, true]) {
       const enemy = new EnemyState();
       enemy.id = `drop-law-${tough ? "tough" : "trash"}`;
-      enemy.kind = row[0];
+      enemy.kind = "boothill";
+      enemy.weaponId = weaponId;
       enemy.hp = 1;
       enemy.tough = tough;
       enemy.x = h.room.map.spawnX;
@@ -715,7 +716,7 @@ describe("improve2 integrity regressions", () => {
     expect(h.state().pickups.size).toBe(2);
     h.state().pickups.forEach((pickup: PickupState) => {
       expect(pickup.disassemblable).toBe(true);
-      expect(pickup.weapon).toBe(row[1].wieldsWeapon);
+      expect(pickup.weapon).toBe(weaponId);
     });
     rng.mockRestore();
   });
@@ -724,22 +725,21 @@ describe("improve2 integrity regressions", () => {
     const h = makeRoom();
     h.join("drop-unlocked");
     h.join("drop-locked");
-    const row = Object.entries(ENEMY_KINDS).find(
-      ([, kind]) =>
-        !!kind.wieldsWeapon && !!kind.dropWeapon && !kind.shifter && kind.archetype !== "boss",
-    );
-    if (!row?.[1].wieldsWeapon) throw new Error("expected a weapon-wielding enemy fixture");
-    const weaponId = row[1].wieldsWeapon;
+    const kind = ENEMY_KINDS.boothill;
+    const weaponId = "rusty-cleaver";
+    if (!kind || kind.archetype !== "cultist" || !WEAPONS[weaponId])
+      throw new Error("expected a Cultist weapon-drop fixture");
     h.room.metaAccounts.get("drop-unlocked").unlockedWeapons = [weaponId];
     h.room.metaAccounts.get("drop-locked").unlockedWeapons = [];
     const enemy = new EnemyState();
     enemy.id = "drop-account-filter";
-    enemy.kind = row[0];
+    enemy.kind = "boothill";
+    enemy.weaponId = weaponId;
     enemy.x = h.room.map.spawnX;
     enemy.y = h.room.map.spawnY;
     const rng = vi.spyOn(Math, "random").mockReturnValue(0);
 
-    h.room.maybeDropEnemyWeapon(enemy, row[1]);
+    h.room.maybeDropEnemyWeapon(enemy, kind);
 
     expect([...h.state().pickups.values()]).toHaveLength(1);
     expect([...h.state().pickups.values()][0]).toMatchObject({

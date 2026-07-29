@@ -12,7 +12,7 @@
     },
     "tags": [
       "enemy",
-      "rusher",
+      "runner",
       "frostfell"
     ]
   },
@@ -29,7 +29,7 @@
     },
     "tags": [
       "enemy",
-      "swarm",
+      "runner",
       "frostfell"
     ]
   },
@@ -46,7 +46,7 @@
     },
     "tags": [
       "enemy",
-      "zoner",
+      "cultist",
       "frostfell"
     ]
   },
@@ -63,7 +63,7 @@
     },
     "tags": [
       "enemy",
-      "spitter",
+      "cultist",
       "frostfell"
     ]
   },
@@ -81,7 +81,7 @@
     "tags": [
       "enemy",
       "tough",
-      "duelist",
+      "cultist",
       "frostfell"
     ]
   },
@@ -117,7 +117,7 @@
     },
     "tags": [
       "enemy",
-      "rusher",
+      "runner",
       "verdant-ruins"
     ]
   },
@@ -134,7 +134,7 @@
     },
     "tags": [
       "enemy",
-      "swarm",
+      "runner",
       "verdant-ruins"
     ]
   },
@@ -151,7 +151,7 @@
     },
     "tags": [
       "enemy",
-      "zoner",
+      "cultist",
       "verdant-ruins"
     ]
   },
@@ -168,7 +168,7 @@
     },
     "tags": [
       "enemy",
-      "spitter",
+      "cultist",
       "verdant-ruins"
     ]
   },
@@ -186,7 +186,7 @@
     "tags": [
       "enemy",
       "tough",
-      "duelist",
+      "cultist",
       "verdant-ruins"
     ]
   },
@@ -222,7 +222,7 @@
     },
     "tags": [
       "enemy",
-      "rusher",
+      "runner",
       "ashlands"
     ]
   },
@@ -239,7 +239,7 @@
     },
     "tags": [
       "enemy",
-      "swarm",
+      "runner",
       "ashlands"
     ]
   },
@@ -256,7 +256,7 @@
     },
     "tags": [
       "enemy",
-      "zoner",
+      "cultist",
       "ashlands"
     ]
   },
@@ -273,7 +273,7 @@
     },
     "tags": [
       "enemy",
-      "spitter",
+      "cultist",
       "ashlands"
     ]
   },
@@ -291,7 +291,7 @@
     "tags": [
       "enemy",
       "tough",
-      "duelist",
+      "cultist",
       "ashlands"
     ]
   },
@@ -327,7 +327,7 @@
     },
     "tags": [
       "enemy",
-      "rusher",
+      "runner",
       "neon-cyber"
     ]
   },
@@ -344,7 +344,7 @@
     },
     "tags": [
       "enemy",
-      "swarm",
+      "runner",
       "neon-cyber"
     ]
   },
@@ -361,7 +361,7 @@
     },
     "tags": [
       "enemy",
-      "zoner",
+      "cultist",
       "neon-cyber"
     ]
   },
@@ -378,7 +378,7 @@
     },
     "tags": [
       "enemy",
-      "spitter",
+      "cultist",
       "neon-cyber"
     ]
   },
@@ -396,7 +396,7 @@
     "tags": [
       "enemy",
       "tough",
-      "duelist",
+      "cultist",
       "neon-cyber"
     ]
   },
@@ -433,7 +433,7 @@
     "tags": [
       "enemy",
       "shifter",
-      "spitter",
+      "cultist",
       "shifter"
     ],
     "cardartAction": "mid-incursion — Vance Holloway, the Cinder Marshal phasing in, rift-light imploding around it as it raises its weapon"
@@ -452,7 +452,7 @@
     "tags": [
       "enemy",
       "shifter",
-      "duelist",
+      "cultist",
       "shifter"
     ],
     "cardartAction": "mid-incursion — Kaori Tsuge, the Voltaic Ronin phasing in, rift-light imploding around it as it raises its weapon"
@@ -471,7 +471,7 @@
     "tags": [
       "enemy",
       "shifter",
-      "duelist",
+      "cultist",
       "shifter"
     ],
     "cardartAction": "mid-incursion — Brother Mordecai, the Grave Warden phasing in, rift-light imploding around it as it raises its weapon"

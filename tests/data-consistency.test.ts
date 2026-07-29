@@ -564,7 +564,7 @@ describe("§17 dimension registry ↔ ENEMY_KINDS", () => {
     it(`${dimId}: the boss id resolves to a kind with archetype "boss"`, () => {
       const boss = ENEMY_KINDS[dim.boss];
       expect(boss, `${dimId} boss "${dim.boss}"`).toBeDefined();
-      expect(boss?.archetype).toBe("boss");
+      expect(boss?.archetype).toBe("big");
     });
   }
 

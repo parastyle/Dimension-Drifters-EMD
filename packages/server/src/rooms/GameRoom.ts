@@ -502,7 +502,7 @@ import {
   wipeWeaponBankForPrestige,
 } from "./progression.js";
 import { SpatialGrid } from "./SpatialGrid.js";import { COMBO_RINGOUT_ORBIT, COMBO_RIPOSTE_STAGGER_TICKS, ZERO_MOVE_INPUT, ZERO_IMPULSE, tickReached, ticksFromSeconds, pointSegmentDistanceSq, pointInConvexQuadrilateral, pointSweptUprightCapsuleDistanceSq, EXTRACT_ARM_SECONDS, EXTRACT_HOLD_SECONDS, SPAWN_CANDIDATE_COUNT, SPAWN_MIN_DISTANCE, SPAWN_CAMERA_HALF_WIDTH, SPAWN_CAMERA_HALF_HEIGHT, ENEMY_GRID_CELL_SIZE, MAX_ENEMY_RADIUS, ENEMY_SEPARATION_OVERLAP_FRACTION, ENEMY_SEPARATION_MAX_STEP, GROUND_ZONE_ENTITY_CAP, GROUND_ZONE_OWNER_CAP, roomProgressionMethods, GAME_ROOM_STATICS } from "./room/room-progression.js";
-import type { InputCmd, InputState, PresentedSelfBody, WeaponResourceLedger, WeaponSpendReason, ZoneRuntime, WeaponSpendResult, PendingScatterVolley, PendingHybridProjectile, PendingWeaponThrow, ActiveMeleeSwing, DriveRuntime, RunWeaponLedger, PickupWeaponBankMeta, DisconnectedPlayerReservation, PlayerDamageKind, PetRunRuntime, UltimateTarget, UltimateRuntime, WeaponHand, CombatState, DuelistComboState, RewardBoundary, ServerMotionSource } from "./room/room-progression.js";
+import type { InputCmd, InputState, PresentedSelfBody, WeaponResourceLedger, WeaponSpendReason, ZoneRuntime, WeaponSpendResult, PendingScatterVolley, PendingHybridProjectile, PendingWeaponThrow, ActiveMeleeSwing, DriveRuntime, RunWeaponLedger, PickupWeaponBankMeta, DisconnectedPlayerReservation, PlayerDamageKind, PetRunRuntime, UltimateTarget, UltimateRuntime, WeaponHand, CombatState, CultistWeaponState, DuelistComboState, RewardBoundary, ServerMotionSource } from "./room/room-progression.js";
 import { roomMovementMethods } from "./room/room-movement.js";
 import { roomCombatMethods } from "./room/room-combat.js";
 import { roomEnemyMethods } from "./room/room-enemies.js";
@@ -673,6 +673,8 @@ export class GameRoom extends Room<ArenaState> {
    *  now telegraphs (no standalone "swing" phase). §51 widened with the tick-anchored TOUGH-COMBO fields
    *  (see DuelistComboState). Pruned with the enemy. */
   private readonly comboState = new Map<string, DuelistComboState>();
+  /** One compact authored-weapon clock per cultist; absent for runners and Bigs. */
+  private readonly cultistWeaponState = new Map<string, CultistWeaponState>();
   /** B33 ordinary melee slots: at most three non-elite attack performances may pressure one player. */
   private readonly meleeAttackTokens = new MeleeAttackTokens();
   /** Training-only live-gate fixture: consume one real player defense on the next white-pop tick. */
@@ -1555,6 +1557,9 @@ export class GameRoom extends Room<ArenaState> {
     private declare applyEnemyHitStatus: OmitThisParameter<typeof roomCombatMethods.applyEnemyHitStatus>;
 
     private declare stepDuelists: OmitThisParameter<typeof roomEnemyMethods.stepDuelists>;
+    private declare stepCultists: OmitThisParameter<typeof roomEnemyMethods.stepCultists>;
+    private declare initializeEnemyIdentity: OmitThisParameter<typeof roomEnemyMethods.initializeEnemyIdentity>;
+    private declare clearCultistBeamRows: OmitThisParameter<typeof roomEnemyMethods.clearCultistBeamRows>;
 
   /** Non-holder movement stays legible: close normally, then take a deterministic ring-out posture. */
     private declare postureMeleeEnemy: OmitThisParameter<typeof roomEnemyMethods.postureMeleeEnemy>;
@@ -2038,6 +2043,9 @@ installPrototypeMembers(GameRoom, [
   [roomCombatMethods, "applyEnemySlow"],
   [roomCombatMethods, "applyEnemyHitStatus"],
   [roomEnemyMethods, "stepDuelists"],
+  [roomEnemyMethods, "stepCultists"],
+  [roomEnemyMethods, "initializeEnemyIdentity"],
+  [roomEnemyMethods, "clearCultistBeamRows"],
   [roomEnemyMethods, "postureMeleeEnemy"],
   [roomEnemyMethods, "planDuelistStrike"],
   [roomEnemyMethods, "navValidEnemyLungeDest"],

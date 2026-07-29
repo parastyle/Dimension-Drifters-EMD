@@ -980,7 +980,7 @@ describe("server-tuning wave — momentum, melee pressure, and enemy separation"
     expect(retention).toBe(1);
   });
 
-  it("pins the faster melee roster and preserves legacy reach metadata without floor sectors", () => {
+  it.skip("RETIRED — legacy seven-archetype melee tuning", () => {
     expect(ENEMY_KINDS.critter?.speed).toBe(210); // 168 → 210
     expect(ENEMY_KINDS["mote-swarm"]?.speed).toBe(281.25); // 225 → 281.25
     expect(ENEMY_KINDS.pricklepulp?.speed).toBe(77.5); // 62 → 77.5

@@ -1,8 +1,10 @@
 import {
   ACTION_MSGS_PER_TICK,
+  ACTIVE_WEAPON_CATALOG_IDS,
   AUGMENTS,
   BELT_LEVEL_IDS,
   BELT_Y0,
+  BOSS_DEF_IDS,
   beltLevelFor,
   ChestState,
   CORPORATE_ELEVATOR_COUNTDOWN_TICKS,
@@ -386,7 +388,7 @@ describe("GameRoom — §17 dimension wiring", () => {
     h.tick(1);
     let boss: EnemyState | undefined;
     h.state().enemies.forEach((e: EnemyState) => {
-      if (ENEMY_KINDS[e.kind]?.archetype === "boss") boss = e;
+      if (ENEMY_KINDS[e.kind]?.archetype === "big") boss = e;
     });
     expect(boss?.kind).toBe(getDimension("frostfell").boss); // "the-hollow-king", not "old-rust"
   });
@@ -399,7 +401,7 @@ describe("GameRoom — §17 dimension wiring", () => {
     h.tick(1);
     let boss: EnemyState | undefined;
     h.state().enemies.forEach((e: EnemyState) => {
-      if (ENEMY_KINDS[e.kind]?.archetype === "boss") boss = e;
+      if (ENEMY_KINDS[e.kind]?.archetype === "big") boss = e;
     });
     expect(boss?.kind).toBe("old-rust");
   });
@@ -443,8 +445,8 @@ describe("GameRoom — §17 shifter-incursion director", () => {
   });
 });
 
-describe("GameRoom — §20 universal lunge", () => {
-  it("a rusher (critter) TELEGRAPHS a lunge and it's PARRYABLE", () => {
+describe("GameRoom — Runner bodily lunge", () => {
+  it("a Runner spends no landing-marker fairness budget and remains parryable", () => {
     const h = makeRoom();
     h.join("p1");
     const p = h.state().players.get("p1");
@@ -459,13 +461,14 @@ describe("GameRoom — §20 universal lunge", () => {
     e.y = h.room.map.spawnY;
     h.state().enemies.set("lunger", e);
     const pc = h.room.combat.get("p1");
-    let sawWindup = false;
+    let sawBodyLunge = false;
     for (let i = 0; i < 30; i++) {
       pc.invuln = 1; // hold a parry stance every tick (i-frames up)
       h.tick(1);
-      if ((h.state().enemies.get("lunger")?.windup ?? 0) > 0) sawWindup = true;
+      if ((h.state().enemies.get("lunger")?.attackPhase ?? 0) === 2) sawBodyLunge = true;
     }
-    expect(sawWindup).toBe(true); // §8 white-tell telegraph ramped → readable + parryable
+    expect(sawBodyLunge).toBe(true);
+    expect(h.state().telegraphs.size).toBe(0);
     expect(p.parriedSeq).toBeGreaterThan(0); // a lunge connected during the parry window → negated
   });
 
@@ -589,7 +592,7 @@ describe("GameRoom — §13 damageEnemy (the one damage primitive, both paths)",
     h.send("p1", "spawnBoss");
     h.tick(1);
     h.state().enemies.forEach((e: EnemyState) => {
-      if (ENEMY_KINDS[e.kind]?.archetype === "boss") {
+      if (ENEMY_KINDS[e.kind]?.archetype === "big") {
         e.hp = 1;
         e.x = h.room.map.spawnX + dx;
         e.y = h.room.map.spawnY;
@@ -689,7 +692,7 @@ describe("GameRoom — §16 v0.116 BOSS RUSH gauntlet", () => {
   function killCurrentBoss(h: ReturnType<typeof makeRoom>): boolean {
     let found = false;
     h.state().enemies.forEach((e: EnemyState) => {
-      if (ENEMY_KINDS[e.kind]?.archetype === "boss") {
+      if (ENEMY_KINDS[e.kind]?.archetype === "big") {
         e.hp = 1;
         e.x = h.room.map.spawnX + 100;
         e.y = h.room.map.spawnY;
@@ -711,7 +714,7 @@ describe("GameRoom — §16 v0.116 BOSS RUSH gauntlet", () => {
     let bosses = 0;
     let trash = 0;
     h.state().enemies.forEach((e: EnemyState) => {
-      if (ENEMY_KINDS[e.kind]?.archetype === "boss") bosses++;
+      if (ENEMY_KINDS[e.kind]?.archetype === "big") bosses++;
       else trash++;
     });
     expect(bosses).toBe(1); // exactly one gauntlet boss
@@ -769,6 +772,224 @@ describe("GameRoom — §4 untrusted-input handlers (anti-cheat surface)", () =>
     expect(Math.hypot(c.aimX, c.aimY)).toBeCloseTo(1, 6);
   });
 
+});
+
+describe("GameRoom — Runner, Cultist, and Big testing controls", () => {
+  function trainingRoom() {
+    const h = makeRoom();
+    h.join("tester");
+    h.send("tester", "toggleTraining");
+    h.send("tester", "debugClearField");
+    return h;
+  }
+
+  function chosenCultist(h: AnyRoom, weaponId: string): EnemyState {
+    h.send("tester", "debugSpawn", { kind: "cultist", count: 1, weapon: weaponId });
+    const cultist = [...h.state().enemies.values()].find(
+      (enemy: EnemyState) =>
+        ENEMY_KINDS[enemy.kind]?.archetype === "cultist" && enemy.weaponId === weaponId,
+    ) as EnemyState | undefined;
+    if (!cultist) throw new Error(`cultist did not spawn with ${weaponId}`);
+    const player = h.state().players.get("tester");
+    cultist.x = player.x + 100;
+    cultist.y = player.y;
+    h.room.cultistWeaponState.clear();
+    h.room.stepCultists(0);
+    const runtime = h.room.cultistWeaponState.get(cultist.id);
+    if (!runtime) throw new Error(`cultist runtime missing for ${weaponId}`);
+    runtime.cooldown = 0;
+    return cultist;
+  }
+
+  it("spawns a requested Runner count with the frost guardian identity and no weapon", () => {
+    const h = trainingRoom();
+    h.send("tester", "debugSpawn", { kind: "runner", count: 12 });
+    const runners = [...h.state().enemies.values()].filter(
+      (enemy: EnemyState) => ENEMY_KINDS[enemy.kind]?.archetype === "runner",
+    );
+    expect(runners).toHaveLength(12);
+    for (const runner of runners) {
+      expect(runner.appearanceId).toBe("proto-frost-rune-guardian");
+      expect(runner.weaponId).toBe("");
+      expect(runner.tough).toBe(false);
+    }
+  });
+
+  it("fires the chosen gun with its authored cadence, projectile source, and magazine", () => {
+    const h = trainingRoom();
+    const weaponId = "x-gun-revolver-cannon";
+    const weapon = WEAPONS[weaponId];
+    if (!weapon?.gun || !ACTIVE_WEAPON_CATALOG_IDS.includes(weaponId))
+      throw new Error("authored cultist gun fixture is required");
+    h.send("tester", "debugSpawn", { kind: "cultist", count: 1, weapon: weaponId });
+    const cultist = [...h.state().enemies.values()].find(
+      (enemy: EnemyState) => ENEMY_KINDS[enemy.kind]?.archetype === "cultist",
+    ) as EnemyState | undefined;
+    if (!cultist) throw new Error("cultist did not spawn");
+    const player = h.state().players.get("tester");
+    cultist.x = player.x + Math.min(180, weapon.gun.range * 0.4);
+    cultist.y = player.y;
+    h.room.cultistWeaponState.clear();
+    for (let tick = 0; tick < 20 && h.state().projectiles.size === 0; tick++)
+      h.room.stepCultists(0.05);
+    const projectile = [...h.state().projectiles.values()][0];
+    const runtime = h.room.cultistWeaponState.get(cultist.id);
+    expect(cultist.weaponId).toBe(weaponId);
+    expect(projectile?.hostile).toBe(true);
+    expect(projectile?.sourcePlayerId).toBe(cultist.id);
+    expect(projectile?.sourceWeaponId).toBe(weaponId);
+    expect(runtime?.cooldown).toBeCloseTo(weapon.gun.fireRate, 6);
+    expect(runtime?.ammo).toBe(weapon.gun.magazine - 1);
+  });
+
+  it("swings a chosen melee weapon on its authored impact clock", () => {
+    const h = trainingRoom();
+    const weaponId = "gravediggers-spade";
+    const weapon = WEAPONS[weaponId];
+    if (!weapon || weapon.gun || weapon.cast || weapon.beam || weapon.thrown)
+      throw new Error("authored cultist melee fixture is required");
+    h.send("tester", "debugSpawn", { kind: "cultist", count: 1, weapon: weaponId });
+    const cultist = [...h.state().enemies.values()].find(
+      (enemy: EnemyState) => ENEMY_KINDS[enemy.kind]?.archetype === "cultist",
+    ) as EnemyState | undefined;
+    if (!cultist) throw new Error("cultist did not spawn");
+    const player = h.state().players.get("tester");
+    cultist.x = player.x + Math.min(60, weapon.range * 0.5);
+    cultist.y = player.y;
+    h.room.cultistWeaponState.clear();
+    const before = player.hp;
+    for (let tick = 0; tick < 40 && cultist.atkSeq === 0; tick++)
+      h.room.stepCultists(0.05);
+    expect(cultist.atkSeq).toBe(1);
+    expect(player.hp).toBeLessThan(before);
+    expect(h.room.cultistWeaponState.get(cultist.id)?.cooldown).toBeCloseTo(
+      weapon.cooldown,
+      6,
+    );
+  });
+
+  it("casts the chosen staff's authored three-bolt volley and cooldown", () => {
+    const h = trainingRoom();
+    const weaponId = "x-staff-arcane-lance";
+    const weapon = WEAPONS[weaponId];
+    if (!weapon?.cast) throw new Error("authored Cultist cast fixture is required");
+    const cultist = chosenCultist(h, weaponId);
+    h.room.stepCultists(0.05);
+    const rows = [...h.state().projectiles.values()].filter(
+      (row) => row.sourcePlayerId === cultist.id && row.sourceWeaponId === weaponId,
+    );
+    expect(rows).toHaveLength(weapon.cast.volley?.count ?? 1);
+    expect(h.room.cultistWeaponState.get(cultist.id)?.cooldown).toBeCloseTo(
+      weapon.cast.cooldown,
+      6,
+    );
+  });
+
+  it("throws the chosen cleaver with its authored charge and refill ledger", () => {
+    const h = trainingRoom();
+    const weaponId = "rusty-cleaver";
+    const weapon = WEAPONS[weaponId];
+    if (!weapon?.thrown) throw new Error("authored Cultist thrown fixture is required");
+    const cultist = chosenCultist(h, weaponId);
+    h.room.stepCultists(0.05);
+    const row = [...h.state().projectiles.values()].find(
+      (projectile) =>
+        projectile.sourcePlayerId === cultist.id && projectile.sourceWeaponId === weaponId,
+    );
+    expect(row?.kind).toContain(weaponId);
+    expect(h.room.cultistWeaponState.get(cultist.id)?.ammo).toBe(
+      weapon.thrown.charges - 1,
+    );
+    expect(h.room.cultistWeaponState.get(cultist.id)?.cooldown).toBeCloseTo(
+      weapon.cooldown,
+      6,
+    );
+  });
+
+  it("channels the chosen beam after its exact authored charge and damages on its tick rate", () => {
+    const h = trainingRoom();
+    const weaponId = "x2-mirage-coilrifle";
+    const weapon = WEAPONS[weaponId];
+    if (!weapon?.beam) throw new Error("authored Cultist beam fixture is required");
+    const cultist = chosenCultist(h, weaponId);
+    const player = h.state().players.get("tester");
+    const hpBefore = player.hp;
+    const chargeTicks = Math.ceil(weapon.beam.chargeSeconds / 0.05);
+    h.room.stepCultists(0.05);
+    expect(h.room.cultistWeaponState.get(cultist.id)?.phaseT).toBeCloseTo(
+      weapon.beam.chargeSeconds,
+      6,
+    );
+    for (let tick = 0; tick < chargeTicks; tick++) h.room.stepCultists(0.05);
+    for (let tick = 0; tick < 3 && h.state().beams.size === 0; tick++)
+      h.room.stepCultists(0.05);
+    expect([...h.state().beams.values()][0]).toMatchObject({
+      ownerId: cultist.id,
+      weaponId,
+    });
+    for (
+      let tick = 0;
+      tick < Math.ceil(weapon.beam.tickRate / 0.05) + 1 && player.hp === hpBefore;
+      tick++
+    )
+      h.room.stepCultists(0.05);
+    expect(player.hp).toBeLessThan(hpBefore);
+  });
+
+  it("emits every authored burst round on the catalog interval with one ammo spend", () => {
+    const h = trainingRoom();
+    const weaponId = "x2-quicksilver-fanner";
+    const weapon = WEAPONS[weaponId];
+    if (!weapon?.gun?.burst) throw new Error("authored Cultist burst fixture is required");
+    const cultist = chosenCultist(h, weaponId);
+    h.room.stepCultists(0.05);
+    const countRows = () =>
+      [...h.state().projectiles.values()].filter(
+        (row) => row.sourcePlayerId === cultist.id && row.sourceWeaponId === weaponId,
+      );
+    expect(countRows()).toHaveLength(1);
+    for (let index = 1; index < weapon.gun.burst.count; index++) {
+      h.room.stepCultists(weapon.gun.burst.intervalSeconds);
+      expect(countRows()).toHaveLength(index + 1);
+    }
+    expect(countRows().map((row) => row.sourceBurstIndex)).toEqual(
+      Array.from({ length: weapon.gun.burst.count }, (_, index) => index),
+    );
+    expect(h.room.cultistWeaponState.get(cultist.id)?.ammo).toBe(
+      weapon.gun.magazine - 1,
+    );
+  });
+
+  it("spawns every existing 13-entry Big definition through the unchanged controller hook", () => {
+    const h = trainingRoom();
+    expect(BOSS_DEF_IDS).toHaveLength(13);
+    for (const bigId of BOSS_DEF_IDS) {
+      h.room.spawnBoss(bigId, false);
+      const root = h.state().enemies.get(h.room.bossId);
+      expect(h.state().bossKind).toBe(bigId);
+      expect(root).toBeDefined();
+      expect(ENEMY_KINDS[root.kind]?.archetype).toBe("big");
+      expect(h.room.bossController).not.toBeNull();
+    }
+  });
+
+  it("clear field removes Runners, Cultists, Bigs, projectiles, beams, and zones", () => {
+    const h = trainingRoom();
+    h.send("tester", "debugSpawn", { kind: "runner", count: 4 });
+    h.tick(1);
+    h.send("tester", "debugSpawn", {
+      kind: "cultist",
+      count: 1,
+      weapon: "x-gun-revolver-cannon",
+    });
+    h.room.spawnBoss(BOSS_DEF_IDS[0], false);
+    h.tick(1);
+    h.send("tester", "debugClearField");
+    expect(h.state().enemies.size).toBe(0);
+    expect(h.state().projectiles.size).toBe(0);
+    expect(h.state().beams.size).toBe(0);
+    expect(h.state().zones.size).toBe(0);
+  });
 });
 
 describe("GameRoom — §6/§15 run-ending + rule-defining transitions", () => {
@@ -1253,7 +1474,7 @@ describe("GameRoom — §6 dimension chain (v0.103: extract-vs-descend, bank-or-
     h.send("p1", "spawnBoss");
     h.tick(1);
     h.state().enemies.forEach((e: EnemyState) => {
-      if (ENEMY_KINDS[e.kind]?.archetype === "boss") {
+      if (ENEMY_KINDS[e.kind]?.archetype === "big") {
         e.hp = 1;
         e.x = h.room.map.spawnX + 100;
         e.y = h.room.map.spawnY;
@@ -1416,7 +1637,7 @@ describe("GameRoom — chest-only weapon itemization", () => {
     h.send("p1", "spawnBoss");
     h.tick(1);
     h.state().enemies.forEach((e: EnemyState) => {
-      if (ENEMY_KINDS[e.kind]?.archetype === "boss") {
+      if (ENEMY_KINDS[e.kind]?.archetype === "big") {
         e.hp = 1;
         e.x = h.room.map.spawnX + 100;
         e.y = h.room.map.spawnY;
@@ -1643,17 +1864,17 @@ describe("GameRoom — §M14 golden tick snapshot (the hand-numbered phase order
         "players": [
           {
             "alive": true,
-            "hp": 100,
+            "hp": 90,
             "id": "p1",
-            "x": 19336,
-            "y": 19142,
+            "x": 19328,
+            "y": 19133,
           },
           {
             "alive": true,
-            "hp": 99,
+            "hp": 77,
             "id": "p2",
-            "x": 19164,
-            "y": 19180,
+            "x": 19240,
+            "y": 19074,
           },
         ],
         "portalOpen": false,
@@ -2203,7 +2424,7 @@ describe("GameRoom — §36 belt levels are well-formed", () => {
         dim.id,
         `${id} dimensionId "${level.dimensionId}" resolves (not the wild-west fallback)`,
       ).toBe(level.dimensionId);
-      expect(ENEMY_KINDS[dim.boss]?.archetype, `${dim.boss} is a registered boss`).toBe("boss");
+      expect(ENEMY_KINDS[dim.boss]?.archetype, `${dim.boss} is a registered boss`).toBe("big");
       if (level.corporateGridFloorId) {
         expect(level.rooms.every((room) => !room.boss)).toBe(true); // elevator, never a boss finale
       } else {
@@ -2415,18 +2636,18 @@ describe("improve2 integrity regressions", () => {
   it("authored wielders can drop disassemblable floor weapons", () => {
     const h = makeRoom();
     h.join("drop-law");
-    const row = Object.entries(ENEMY_KINDS).find(
-      ([, kind]) =>
-        !!kind.wieldsWeapon && !!kind.dropWeapon && !kind.shifter && kind.archetype !== "boss",
-    );
-    if (!row) throw new Error("expected a weapon-wielding enemy fixture");
+    const kind = ENEMY_KINDS.boothill;
+    const weaponId = "x-gun-revolver-cannon";
+    if (!kind?.dropWeapon || !WEAPONS[weaponId])
+      throw new Error("expected a Cultist drop fixture");
+    h.room.metaAccounts.get("drop-law").unlockedWeapons = [weaponId];
     const rng = vi.spyOn(Math, "random").mockReturnValue(0);
-    for (const tough of [false, true]) {
+    for (let index = 0; index < 2; index++) {
       const enemy = new EnemyState();
-      enemy.id = `drop-law-${tough ? "tough" : "trash"}`;
-      enemy.kind = row[0];
+      enemy.id = `drop-law-${index}`;
+      enemy.kind = "boothill";
+      enemy.weaponId = weaponId;
       enemy.hp = 1;
-      enemy.tough = tough;
       enemy.x = h.room.map.spawnX;
       enemy.y = h.room.map.spawnY;
       h.state().enemies.set(enemy.id, enemy);
@@ -2435,7 +2656,7 @@ describe("improve2 integrity regressions", () => {
     expect(h.state().pickups.size).toBe(2);
     h.state().pickups.forEach((pickup: PickupState) => {
       expect(pickup.disassemblable).toBe(true);
-      expect(pickup.weapon).toBe(row[1].wieldsWeapon);
+      expect(pickup.weapon).toBe(weaponId);
     });
     rng.mockRestore();
   });
@@ -2444,22 +2665,21 @@ describe("improve2 integrity regressions", () => {
     const h = makeRoom();
     h.join("drop-unlocked");
     h.join("drop-locked");
-    const row = Object.entries(ENEMY_KINDS).find(
-      ([, kind]) =>
-        !!kind.wieldsWeapon && !!kind.dropWeapon && !kind.shifter && kind.archetype !== "boss",
-    );
-    if (!row?.[1].wieldsWeapon) throw new Error("expected a weapon-wielding enemy fixture");
-    const weaponId = row[1].wieldsWeapon;
+    const kind = ENEMY_KINDS.boothill;
+    const weaponId = "x-gun-revolver-cannon";
+    if (!kind?.dropWeapon || !WEAPONS[weaponId])
+      throw new Error("expected a Cultist drop fixture");
     h.room.metaAccounts.get("drop-unlocked").unlockedWeapons = [weaponId];
     h.room.metaAccounts.get("drop-locked").unlockedWeapons = [];
     const enemy = new EnemyState();
     enemy.id = "drop-account-filter";
-    enemy.kind = row[0];
+    enemy.kind = "boothill";
+    enemy.weaponId = weaponId;
     enemy.x = h.room.map.spawnX;
     enemy.y = h.room.map.spawnY;
     const rng = vi.spyOn(Math, "random").mockReturnValue(0);
 
-    h.room.maybeDropEnemyWeapon(enemy, row[1]);
+    h.room.maybeDropEnemyWeapon(enemy, kind);
 
     expect([...h.state().pickups.values()]).toHaveLength(1);
     expect([...h.state().pickups.values()][0]).toMatchObject({
@@ -2775,7 +2995,7 @@ describe("GameRoom — §50 spin re-hits per revolution", () => {
   });
 });
 
-describe("GameRoom — melee parry telegraph commitment", () => {
+describe.skip("RETIRED — legacy ordinary-melee token choreography", () => {
   it("locks one victim identity for four ticks but lets its visually clear body evade", () => {
     const h = makeRoom();
     h.join("p1");
@@ -3463,7 +3683,7 @@ function pinVictimAbove(player: AnyRoom, enemy: AnyRoom) {
   player.mvy = 0;
 }
 
-describe("GameRoom — §51 tough-enemy melee combos (Wave 1 authority)", () => {
+describe.skip("RETIRED — legacy Tough combo archetypes", () => {
   it("negotiates 143px ahead of the slow facing anchor, then never moves the marker or landing", () => {
     const { h, player } = makeEnemyComboRoom(1);
     const enemy = addComboEnemy(h, player, "combo-leaper", "vault-ronin", 300);
@@ -5323,7 +5543,32 @@ describe("server-tuning wave — momentum, melee pressure, and enemy separation"
     expect(retention).toBe(1);
   });
 
-  it("pins the faster melee roster and preserves legacy reach metadata without floor sectors", () => {
+  it("pins the three-archetype replacement and Runner lunge constants", () => {
+    const runnerKinds = Object.values(ENEMY_KINDS).filter(
+      (kind) => kind.archetype === "runner",
+    );
+    const cultistKinds = Object.values(ENEMY_KINDS).filter(
+      (kind) => kind.archetype === "cultist",
+    );
+    expect(runnerKinds.length).toBeGreaterThan(0);
+    expect(cultistKinds.length).toBeGreaterThan(0);
+    for (const runner of runnerKinds) {
+      expect(runner.speed).toBe(240);
+      expect(runner.sprite).toBe("proto-frost-rune-guardian");
+      expect(runner.ranged).toBeUndefined();
+      expect(runner.wieldsWeapon).toBeUndefined();
+      const melee = enemyComboShared.effectiveMelee(runner);
+      expect(melee?.damage).toBe(8);
+      expect(melee?.step).toBe(enemyComboShared.COMBO_LEAP_RANGE);
+    }
+    for (const cultist of cultistKinds) {
+      expect(cultist.ranged).toBeUndefined();
+      expect(cultist.melee).toBeUndefined();
+      expect(cultist.dropWeapon).toBe(0.22);
+    }
+  });
+
+  it.skip("RETIRED — legacy per-kind speed/reach tuning", () => {
     expect(ENEMY_KINDS.critter?.speed).toBe(210); // 168 → 210
     expect(ENEMY_KINDS["mote-swarm"]?.speed).toBe(281.25); // 225 → 281.25
     expect(ENEMY_KINDS.pricklepulp?.speed).toBe(77.5); // 62 → 77.5

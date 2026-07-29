@@ -1,8 +1,11 @@
 import {
   committedMeleeEvaded,
+  COMBO_LEAP_AIR_TICKS,
+  COMBO_LEAP_RANGE,
   ENEMY_KINDS,
   ENEMY_MELEE_COMMIT_SECONDS,
   ENEMY_MELEE_COMMIT_TICKS,
+  effectiveMelee,
   enemyMeleeAccent,
   enemyMeleeCommitCue,
   lockedLungePointAt,
@@ -14,10 +17,11 @@ import {
 import { describe, expect, it } from "vitest";
 
 describe("B33 commitment melee contract", () => {
-  it("ramps on each kind's authored personality clock, then uses one 200 ms impact clock", () => {
-    expect(ENEMY_KINDS.ronin?.melee?.windup).not.toBe(
-      ENEMY_KINDS["vault-ronin"]?.melee?.windup,
-    );
+  it("keeps the Runner lunge on the reused leap clock and the shared 200 ms impact clock", () => {
+    const lunge = effectiveMelee(ENEMY_KINDS.critter);
+    expect(lunge?.windup).toBe(TICK_MS / 1000);
+    expect(lunge?.step).toBe(COMBO_LEAP_RANGE);
+    expect(lunge?.recover).toBe((COMBO_LEAP_AIR_TICKS * TICK_MS) / 1000);
     expect(ENEMY_MELEE_COMMIT_SECONDS).toBe(0.2);
     expect(ENEMY_MELEE_COMMIT_TICKS).toBe(4);
     expect((ENEMY_MELEE_COMMIT_TICKS * TICK_MS) / 1000).toBe(

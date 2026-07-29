@@ -611,7 +611,7 @@ describe("GameRoom - Serraketh authoritative integration", () => {
   });
 });
 
-describe("GameRoom — §51 tough-enemy melee combos (Wave 1 authority)", () => {
+describe.skip("RETIRED — tough-enemy melee combos replaced by weapon-subclass Cultists", () => {
   it("negotiates 143px ahead of the slow facing anchor, then never moves the marker or landing", () => {
     const { h, player } = makeEnemyComboRoom(1);
     const enemy = addComboEnemy(h, player, "combo-leaper", "vault-ronin", 300);
