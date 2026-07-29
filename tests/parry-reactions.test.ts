@@ -118,7 +118,7 @@ describe("B26 guard cycle", () => {
 });
 
 describe("B26 swept navigation clamp", () => {
-  it("stops at the final sampled point before a wall or pit", () => {
+  it("stops at the final sampled point before a navigation boundary", () => {
     const slide = clampParrySlideToNavigation(0, 0, 1, 0, 100, (x) => x < 47, 2);
     expect(slide.x).toBe(46);
     expect(slide.y).toBe(0);

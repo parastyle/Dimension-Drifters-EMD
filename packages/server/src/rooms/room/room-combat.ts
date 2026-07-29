@@ -54,9 +54,7 @@ import {
   beamSweepSampleCount,
   beltLevelFor,
   beltPlayableXBounds,
-  beltPitAtX,
   beltProjectileBlocked,
-  beltSafeX,
   CORPORATE_ELEVATOR_ARRIVAL_TICKS,
   CORPORATE_ELEVATOR_COUNTDOWN_TICKS,
   CORPORATE_ELEVATOR_DEPART_TICKS,
@@ -195,7 +193,7 @@ import {
   isBreakActionWeapon,
   isCharacterUnlocked,
   isPetId,
-  isPitAtPx,
+  isLavaGapAtPx,
   isPlayableCharacter,
   isRareRelicId,
   isWholeArtCharacter,
@@ -236,7 +234,6 @@ import {
   meleeDamageHalfWidthAt,
   meleeDamageReachAt,
   mixSeeds,
-  nearestGroundPx,
   nearestPoint,
   nextWeapon,
   nextWholeArtCharacter,
@@ -265,8 +262,6 @@ import {
   type PetProgressReceipt,
   type PetStageBand,
   PICKUP_RADIUS,
-  PIT_FALL_DAMAGE_FRAC,
-  PIT_FALL_GRACE,
   PickupState,
   PLAYER_MAX_HP,
   PLAYER_RADIUS,
@@ -718,7 +713,7 @@ export const roomCombatMethods = {
       ultimateFamilyForCode(player.ultArchetype) === UltimateFamily.Seismarch
     )
       left *= 0.4;
-    if (player.alive && (kind === "pit" || kind === "ground-hazard")) {
+    if (player.alive && (kind === "lava-gap" || kind === "ground-hazard")) {
       left *=
         (this.petRuns.get(player.id)?.mods.groundHazardDamageMultiplier ?? 1) *
         (c?.mods.groundHazardDamageMult ?? 1);
@@ -727,7 +722,7 @@ export const roomCombatMethods = {
     if (capFrac < 1) left = Math.min(left, player.maxHp * capFrac);
     // Failed-jump mercy is its own null-immunity channel. It never writes/consults parry `invuln`, so a
     // snap-back cannot mint parry flashes, augments, chain economy, or worm accepts from a later quake.
-    if (c && c.pitGrace > 0 && left > 0) return;
+    if (c && c.lavaGapGrace > 0 && left > 0) return;
     if (c && kind === "enemy" && left > 0) this.markWeaponResourcePressure(c);
     if (c && left > 0 && (c.stance === STANCE_CROUCH || c.stance === STANCE_DASH)) {
       this.cancelMoveStance(player, c, true);
@@ -848,7 +843,7 @@ export const roomCombatMethods = {
     return combo?.phase === "windup" && !!combo.strike;
   },
 
-  /** Decaying 260px/s shove totals <40px and refuses the one step that would cross a ground→pit edge. */
+  /** Decaying 260px/s shove totals <40px and preserves Lava Foundry platform collision. */
   stepPoundEnemyEffects(this: GameRoomContext, dt: number): void {
     const decay = Math.exp(-IMPULSE_FRICTION * dt);
     for (const [id, fx] of this.poundEnemyEffects) {
@@ -861,15 +856,9 @@ export const roomCombatMethods = {
       const radius = kind?.radius ?? ENEMY_RADIUS;
       const nextX = clamp(enemy.x + fx.vx * dt, radius, ARENA_WIDTH - radius);
       const nextY = clamp(enemy.y + fx.vy * dt, radius, ARENA_HEIGHT - radius);
-      const currentlyOverPit =
-        this.belt && this.beltLevel
-          ? beltPitAtX(this.beltLevel, enemy.x)
-          : !this.belt && isPitAtPx(this.map, enemy.x, enemy.y);
-      const nextOverPit =
-        this.belt && this.beltLevel
-          ? beltPitAtX(this.beltLevel, nextX)
-          : !this.belt && isPitAtPx(this.map, nextX, nextY);
-      if (!currentlyOverPit && nextOverPit) {
+      const currentlyOverGap = isLavaGapAtPx(this.map, enemy.x, enemy.y);
+      const nextOverGap = isLavaGapAtPx(this.map, nextX, nextY);
+      if (!currentlyOverGap && nextOverGap) {
         fx.vx = 0;
         fx.vy = 0;
       } else {
@@ -1167,9 +1156,10 @@ export const roomCombatMethods = {
     this.placeWithMotionEpoch(player, "ultimate", () => {
       player.x = dest.x;
       player.y = dest.y;
-      c.lastGroundX = dest.x;
-      c.lastGroundY = dest.y;
-      c.pitGrace = PIT_FALL_GRACE;
+      if (this.map.lavaLayout) {
+        c.lastGroundX = dest.x;
+        c.lastGroundY = dest.y;
+      }
       c.invuln = Math.max(c.invuln, ULT_BLINK_IFRAMES);
       this.zeroMoveVel(player.id, undefined, "ultimate");
     });
@@ -1213,9 +1203,10 @@ export const roomCombatMethods = {
       this.placeWithMotionEpoch(player, "ultimate", () => {
         player.x = player.ultTargetX;
         player.y = player.ultTargetY;
-        c.lastGroundX = player.x;
-        c.lastGroundY = player.y;
-        c.pitGrace = PIT_FALL_GRACE;
+        if (this.map.lavaLayout) {
+          c.lastGroundX = player.x;
+          c.lastGroundY = player.y;
+        }
         c.invuln = Math.max(c.invuln, ult.variant === "con" ? 0.9 : ULT_BLINK_IFRAMES);
         this.zeroMoveVel(player.id, undefined, "ultimate");
       });
@@ -1541,8 +1532,10 @@ export const roomCombatMethods = {
         this.placeWithMotionEpoch(player, "ultimate", () => {
           player.x = dest.x;
           player.y = dest.y;
-          c.lastGroundX = dest.x;
-          c.lastGroundY = dest.y;
+          if (this.map.lavaLayout) {
+            c.lastGroundX = dest.x;
+            c.lastGroundY = dest.y;
+          }
           this.zeroMoveVel(player.id, undefined, "ultimate");
         });
         ult.teleportSeqAtAccept = player.teleportSeq;
@@ -2219,7 +2212,7 @@ export const roomCombatMethods = {
     // §7 v0.105 de-clunk (adversarial-verify fix): a downed player's steered velocity is FROZEN at the
     // heading they died on (the movement loop skips non-alive players, so it never decays). Zero it on
     // revive — otherwise stepSteeredMovement resumes from that stale velocity and slides the player
-    // uncommanded for ~100ms on the first tick back, feeding that tick's pit/wall checks.
+    // uncommanded for ~100ms on the first tick back, feeding that tick's boundary checks.
     this.zeroMoveVel(ally.id, undefined, "revive-placement");
     const reviveHpFraction = petMods?.reviveHpFraction || REVIVE_HP_FRAC;
     ally.hp = Math.max(1, Math.round(ally.maxHp * reviveHpFraction));
@@ -2497,7 +2490,7 @@ export const roomCombatMethods = {
       const progress = sample / samples;
       const x = player.x + dx * progress;
       const y = player.y + dy * progress;
-      if (isPitAtPx(this.map, x, y)) break;
+      if (isLavaGapAtPx(this.map, x, y)) break;
       safeX = x;
       safeY = y;
     }
@@ -2533,7 +2526,7 @@ export const roomCombatMethods = {
       x = clamp(x, 0, ARENA_WIDTH);
       y = clampBeltFloorY(this.beltLevel, x, y);
     } else {
-      const safe = nearestGroundPx(this.map, x, y);
+      const safe = safeSpawnPos(this.map, x, y);
       x = safe.x;
       y = safe.y;
     }
@@ -4785,7 +4778,7 @@ export const roomCombatMethods = {
     kills.push(eid);
   },
 
-  /** §7 v0.105 zero a player's persistent steering velocity — call at every position TELEPORT (pit
+  /** §7 v0.105 zero a player's persistent steering velocity — call at every position TELEPORT (lava gap
    *  snap-back, rift descent, restart, training reposition, revive) so carried momentum can't glide the
    *  body away from where it was authoritatively placed. §4 v0.107: also DROPS the queued/held input
    *  direction (a teleport must not replay stale pre-teleport intent; the next command lands ≤50ms later),
@@ -4835,12 +4828,10 @@ export const roomCombatMethods = {
   },
 
   /** §29 place a floor pickup on solid ground: the BELT deck (clamped into the depth band, nudged off any
-   *  pit gap) in belt mode, else the procgen arena's safe-spawn nudge. Keeps swaps and explicitly issued
-   *  pickups grabbable, never in a pit or off the walkable floor. */
+   *  obstacle) in belt mode, else the arena's placement contract. */
   placePickupPos(this: GameRoomContext, x: number, y: number): { x: number; y: number } {
     if (this.belt && this.beltLevel) {
-      const bx = beltSafeX(this.beltLevel, x, x);
-      return { x: bx, y: clampBeltFloorY(this.beltLevel, bx, y, PICKUP_RADIUS) };
+      return { x, y: clampBeltFloorY(this.beltLevel, x, y, PICKUP_RADIUS) };
     }
     return safeSpawnPos(this.map, x, y);
   },

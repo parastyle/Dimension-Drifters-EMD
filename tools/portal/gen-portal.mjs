@@ -362,7 +362,7 @@ const beltLevels = Object.values(BELT_LEVELS).map((level) => {
       ...(level.rooms ?? []).map((room) => room.name),
     ].filter(Boolean),
     boss,
-    hazard: `${level.pits?.length ?? 0} pits`,
+    hazard: "continuous floor",
     kind: "belt level",
     action: "launch",
     path: `/?belt=${encodeURIComponent(level.id)}`,

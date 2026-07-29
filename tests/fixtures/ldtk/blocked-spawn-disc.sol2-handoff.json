@@ -1,7 +1,0 @@
-{
-  "description": "Block the outer edge of the required three-tile spawn-clear disc while leaving the centre tile ground.",
-  "handoff": "ldtk-runtime-integration",
-  "missingSharedLaw": "validateArena must check the full MAP_SPAWN_CLEAR_TILES disc and the random co-op spawn-jitter envelope around map.spawnX/map.spawnY, not only the fixed centre tile.",
-  "expectedWitness": { "layer": "Terrain", "col": 33, "row": 30 },
-  "mutation": { "kind": "set-int-grid-cell", "layer": "Terrain", "col": 33, "row": 30, "value": 1 }
-}

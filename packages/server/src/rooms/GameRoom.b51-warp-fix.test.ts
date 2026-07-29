@@ -2,7 +2,6 @@ import {
   IMPULSE_MAX,
   SERVER_MOTION_IMPULSE_TICKS,
   TILE_GROUND,
-  TILE_PIT,
   UltimateFamily,
   ultimateCodeFor,
 } from "@dd/shared";
@@ -100,24 +99,6 @@ describe("B51 server-motion impulse ownership", () => {
 });
 
 describe("B51 placement registers authority before position mutation", () => {
-  it("pit-snapback registers before the safe-ground assignment", () => {
-    const { room, player, combat } = fixture();
-    const tileSize = room.map.tileSize;
-    const pitTileX = Math.floor(player.x / tileSize);
-    const tileY = Math.floor(player.y / tileSize);
-    player.x = pitTileX * tileSize + tileSize / 2;
-    player.y = tileY * tileSize + tileSize / 2;
-    const overPit = { x: player.x, y: player.y };
-    combat.lastGroundX = player.x - tileSize;
-    combat.lastGroundY = player.y;
-    room.map.tiles[tileY * room.map.cols + pitTileX] = TILE_PIT;
-    const captured = captureFirstRegistration(room, "pit-snapback");
-
-    room.stepSim(0.05);
-
-    expect(captured()).toEqual(overPit);
-  });
-
   it("elevator-boarding registers before the car-position assignment", () => {
     const { room, player } = fixture(true);
     const before = { x: player.x, y: player.y };

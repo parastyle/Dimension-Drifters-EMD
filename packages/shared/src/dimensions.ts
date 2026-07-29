@@ -9,17 +9,12 @@
 
 import { EXTRA_DIMENSIONS } from "./dimensions.generated.js";
 
-/** Floor/pit/rim/decor colours (hex) — the §17 "Dust & The Drop" slots, re-skinned per theme. Keep the RIM
- *  (rust band + amber lip) a HOT static telegraph, the spawn ring COOL (cyan), both distinct from the
- *  saturated/additive weapon VFX. */
+/** Floor/decor colours (hex), re-skinned per theme. */
 export interface DimensionPalette {
   groundBed: number;
   gridColor1: number;
   gridColor2: number;
   boundaryRail: number;
-  pitVoid: number;
-  pitRustBand: number;
-  pitAmberLip: number;
   spawnRingSafe: number;
   dustDrift: number;
 }
@@ -56,17 +51,14 @@ const WILD_WEST: DimensionDef = {
   ],
   boss: "old-rust",
   hazard: {
-    name: "Pitfall mineshafts",
-    description: "Collapsed shafts scar the mesa — fall in for a chip + snap-back (§17).",
+    name: "Open range",
+    description: "A continuous mesa floor leaves movement and dodge lines unobstructed.",
   },
   palette: {
     groundBed: 0x2a2620,
     gridColor1: 0x2a2620,
     gridColor2: 0x342d22,
     boundaryRail: 0xa8482e,
-    pitVoid: 0x0d0a10,
-    pitRustBand: 0xa8482e,
-    pitAmberLip: 0xf0a73c,
     spawnRingSafe: 0x33e6ff,
     dustDrift: 0xc49a5a,
   },
@@ -90,9 +82,6 @@ const LAVA_FOUNDRY: DimensionDef = {
     gridColor1: 0x160706,
     gridColor2: 0x28100c,
     boundaryRail: 0xc83a24,
-    pitVoid: 0x120302,
-    pitRustBand: 0xd33b1f,
-    pitAmberLip: 0xff8a2b,
     spawnRingSafe: 0x33e6ff,
     dustDrift: 0xb64728,
   },

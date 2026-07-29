@@ -80,7 +80,6 @@ import {
   INTERP_SNAP_PLAYER,
   inMeleeArc,
   isPetId,
-  isPitAtPx,
   isThrownProjectileKind,
   isWholeArtCharacter,
   LAVA_DIMENSION_ID,
@@ -132,7 +131,9 @@ import {
   stepBeamAngle,
   swingDescriptorFor,
   TgShape,
+  TILE_GROUND,
   TICK_MS,
+  tileAtPx,
   TOUGH_SCALE,
   thrownProjectileRotationPolicy,
   ULT_RECOVERY_TICKS,
@@ -416,10 +417,6 @@ import {
   GATE_GROUND_DEPTH,
   GATE_PROTECTED_DEPTH,
   gateNeedsEdgeLocator,
-  terrainRimKey,
-  terrainTileKey,
-  FLAT_FLOOR_TILE_NAME,
-  FLAT_FLOOR_WASH_NAME,
 } from "./arena/floor-renderer.js";
 import { makeGroundZonePatch, syncGroundZonePatch } from "./arena/ground-zone-renderer.js";
 import {
@@ -1594,8 +1591,8 @@ export class ArenaScene extends Phaser.Scene {
   private readonly timeline = new TimelineSync();
   private readonly playerBufs = new Map<string, PresentedActorBuffer>();
   private readonly enemyBufs = new Map<string, SnapshotBuffer>();
-  /** Last-seen fellSeq per REMOTE player — a pit snap-back purges + reseeds their snapshot ring so the
-   *  interpolator can't re-walk them into the pit (review #10). (Self dust/flash stays in checkFalls.) */
+  /** Last-seen fellSeq per remote player — a lava-gap recovery purges and reseeds the snapshot ring so
+   * interpolation cannot re-walk the body into the chasm. Self dust/flash stays in checkFalls. */
   private readonly snapFell = new Map<string, number>();
   /** Suppress the state-driven muzzle flash for SELF for a beat after a locally-predicted one. */
   private lastSelfMuzzleAt = -9999;
@@ -1747,16 +1744,16 @@ export class ArenaScene extends Phaser.Scene {
   private readonly chargedProjectileMuzzles = new Map<string, Phaser.GameObjects.Image>();
   /** Rendered zoner puddles (§15 area denial). */
   private readonly zones = new Map<string, Phaser.GameObjects.Container>();
-  /** §17 the procgen arena, regenerated client-side from the synced seeds (identical to the server's), +
-   *  the baked floor graphics. Built once the seeds arrive. */
+  /** §17 the procgen arena, regenerated client-side from the synced seeds (identical to the server's).
+   *  Its repeated tile and seeded floor objects are built once the seeds arrive. */
   private arenaMap?: ArenaMap;
   /** Prepared while native prefab textures load; avoids rerasterizing collision polygons every frame. */
   private preparedArenaMap?: ArenaMap;
   private preparedArenaMapKey = "";
-  /** §6 chain (v0.103): the seed+dimension fingerprint the CURRENT floor was baked from — when the synced
+  /** §6 chain (v0.103): the seed+dimension fingerprint the CURRENT floor was built from — when the synced
    *  values diverge (rift descent / run restart re-mints the map), the floor is torn down and rebuilt. */
   private lastSeedKey = "";
-  /** Every game object the floor bake created, so a rebuild can destroy the lot. */
+  /** Every floor game object, so a rebuild can destroy the lot. */
   private floorObjs: Phaser.GameObjects.GameObject[] = [];
   /** Two endless tiled layers, present only when the generated map carries Lava Foundry layout data. */
   private lavaParallax?: LavaParallax;
@@ -2024,24 +2021,11 @@ export class ArenaScene extends Phaser.Scene {
     // dev server returns index.html, which fails to decode; `loaderror` flags it so the floor falls back
     // to the flat fill instead of TileSpriting a broken stub.
     this.load.image("tile-ground", "tiles/ground.jpg");
-    // §17 P0.1 DIMENSION TERRAIN: init() has already selected the requested active dimension, so preload
-    // only its four 512px variants + one 1024×256 rim (the menu owns the sixth texture, its key-art JPG).
-    // Missing/half-rendered kits are optional. Override only these files' decode-error hook because Vite may
-    // answer a missing public asset with index.html (HTTP 200): Phaser's default hook logs each bad decode.
+    // Every non-lava arena shares the single repeating tile; the selected dimension contributes decals.
     const terrainDimensionId = getDimension(this.selectedDimension).id;
     if (terrainDimensionId !== LAVA_DIMENSION_ID) {
-      for (let i = 0; i < 4; i++) {
-        const key = terrainTileKey(terrainDimensionId, i);
-        if (!this.textures.exists(key) && !this.floorArtMissing.has(key)) {
-          this.queueOptionalFloorArt(key, `tiles/${terrainDimensionId}/tile-${i}.png`);
-        }
-      }
-      const rimKey = terrainRimKey(terrainDimensionId);
-      if (!this.textures.exists(rimKey) && !this.floorArtMissing.has(rimKey)) {
-        this.queueOptionalFloorArt(rimKey, `tiles/${terrainDimensionId}/rim.png`);
-      }
-      // §17 P4 active-dimension DECAL ground litter. A joiner/rift whose synced dimension differs is covered
-      // by maybeBuildFloor's identical lazy-load gate below.
+      // Active-dimension decal litter. A joiner/rift whose synced dimension differs is covered by
+      // maybeBuildFloor's identical lazy-load gate below.
       const propPack = dimensionPropPack(terrainDimensionId);
       for (const id of propPack.decalIds) {
         if (!this.textures.exists(id) && !this.floorArtMissing.has(id)) {
@@ -2050,7 +2034,7 @@ export class ArenaScene extends Phaser.Scene {
       }
     }
     this.load.on("loaderror", (file: Phaser.Loader.File) => {
-      if (/^(tile|decal)-/.test(file.key) || file.key.startsWith("terrain:")) {
+      if (/^(tile|decal)-/.test(file.key)) {
         this.floorArtMissing.add(file.key);
       }
     });
@@ -2703,7 +2687,6 @@ export class ArenaScene extends Phaser.Scene {
   create(): void {
     this.resetSceneState();
     this.installDiagnosticHud();
-    this.installFlatFloorToggle();
     this.installSelfCorrectionDiagnostics();
     const connectionGeneration = ++this.connectionGeneration;
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.shutdownScene, this);
@@ -2711,7 +2694,7 @@ export class ArenaScene extends Phaser.Scene {
       if (connectionGeneration === this.connectionGeneration) this.petManifest = manifest;
     });
 
-    // The themed floor (bed/grid/rail + pits/rim) is drawn in `maybeBuildFloor` once the server's seeds +
+    // The themed floor (bed/tile/rail) is drawn in `maybeBuildFloor` once the server's seeds +
     // `dimensionId` sync — so it uses the ACTIVE §17 dimension's palette, not a guessed default.
     this.vfxPlayer = new VfxPlayer(this);
     this.moneyDropRenderer = new MoneyDropRenderer(this, {
@@ -4695,25 +4678,15 @@ export class ArenaScene extends Phaser.Scene {
       this.preparedArenaMapKey = preparedKey;
     }
     const nextArenaMap = this.preparedArenaMap;
-    // §17 a joiner can inherit the host's dimension, and a §6 rift changes it mid-scene. Preload covered the
-    // requested starting dimension; here the floor gate lazily queues its terrain + decals before teardown.
+    // A joiner can inherit the host's dimension, and a rift changes it mid-scene. Preload covered the
+    // requested starting dimension; here the floor gate lazily queues its decals before teardown.
     // Network failures hit preload's loaderror guard; HTTP-200/non-image stubs use this silent decode hook.
     const floorArtFiles = nextArenaMap.lavaLayout
       ? lavaAssetFilesForMap(nextArenaMap)
-      : [
-          ...Array.from({ length: 4 }, (_, i) => ({
-            key: terrainTileKey(dimension.id, i),
-            url: `tiles/${dimension.id}/tile-${i}.png`,
-          })),
-          {
-            key: terrainRimKey(dimension.id),
-            url: `tiles/${dimension.id}/rim.png`,
-          },
-          ...propPack.decalIds.map((id) => ({
-            key: id,
-            url: `${propPack.decalDir}/${id}.png`,
-          })),
-        ];
+      : propPack.decalIds.map((id) => ({
+          key: id,
+          url: `${propPack.decalDir}/${id}.png`,
+        }));
     const floorArtPending = floorArtFiles.filter(
       ({ key }) => !this.textures.exists(key) && !this.floorArtMissing.has(key),
     );
@@ -4744,7 +4717,7 @@ export class ArenaScene extends Phaser.Scene {
     const palette = dimension.palette;
     if (this.belt) {
       // §29 belt: build the authored DECK from the level's floor profile + obstacles (WYSIWYG collision), and
-      // hand the level to the predictor so local pit handling matches the server exactly.
+      // Hand the level to the predictor so lava-platform endpoint handling matches the server exactly.
       this.beltLevel =
         corporateDepth > 0
           ? corporateGridBeltLevelForDepth(
@@ -4769,12 +4742,12 @@ export class ArenaScene extends Phaser.Scene {
       this.predictor?.setMap(this.arenaMap);
     } else {
       this.floorObjs.push(
-        ...drawArena(this, this.arenaMap, dimension.id, (k) => this.hasTile(k), palette),
+        ...drawArena(this, this.arenaMap, (k) => this.hasTile(k), palette),
       );
       this.floorObjs.push(
-        ...buildArenaFloor(this, this.arenaMap, dimension.id, (k) => this.hasTile(k), palette),
+        ...buildArenaFloor(this, this.arenaMap, dimension.id, palette),
       );
-      // §4 v0.107: a re-minted map = a new world. Swap the predictor's pit map and clear every snapshot
+      // §4 v0.107: a re-minted map = a new world. Swap the predictor's map and clear every snapshot
       // ring that still holds coordinates from the old map.
       this.predictor?.setMap(this.arenaMap);
     }
@@ -4810,7 +4783,7 @@ export class ArenaScene extends Phaser.Scene {
       this.lastFell.set(id, player.fellSeq);
       if (prev === undefined || prev === player.fellSeq) return;
       // §17/§7 v0.105 de-clunk: the fall + the snap-back arrive in the SAME patch, so the rig is still
-      // rendered out over the pit (pre-snap) right now. Play the sink-dust HERE (over the pit, where you
+      // rendered out over the lava gap (pre-snap) right now. Play the sink-dust here (where you
       // actually fell), then hard-snap the rig to the authoritative safe tile so the following interpolate
       // doesn't rubber-band you backwards out of the void over ~350ms. Runs before interpolate() (see update).
       const rig = this.blobs.get(id);
@@ -4828,7 +4801,7 @@ export class ArenaScene extends Phaser.Scene {
         this.flashCamera(170, 90, 16, 16);
         this.shakeCam(150, 0.006, "world");
         this.audio.play("fall"); // §19 void whoosh + a thud on the snap-back landing
-        this.offerContextHint("pitFall");
+        this.offerContextHint("lavaGapFall");
       }
     });
   }
@@ -5622,7 +5595,7 @@ export class ArenaScene extends Phaser.Scene {
       this.curDy,
     );
 
-    this.maybeBuildFloor(); // §17 bake the procgen floor once the seeds arrive
+    this.maybeBuildFloor(); // §17 build the seeded floor once the seeds arrive
     this.updateCorporateElevators();
     this.stepNetInput(
       deltaMs,
@@ -5925,7 +5898,7 @@ export class ArenaScene extends Phaser.Scene {
     for (const id of this.enemies.keys()) {
       if (!enemies.has(id)) {
         // Enemy gone from authoritative state → it died (or left view). Detach it from the animated set
-        // FIRST, then either fall into the void (§17 pit) or get the §20 DEATH-POP (launch + tumble).
+        // First, then either fall into the lava void or get the §20 death-pop (launch + tumble).
         const rig = this.enemies.get(id);
         const paperPriority = this.enemyPaperPriority.get(id) ?? 0;
         const deathCue = this.enemyDeathCue.get(id) ?? "death:medium";
@@ -5976,10 +5949,13 @@ export class ArenaScene extends Phaser.Scene {
             rig.destroy();
             continue;
           }
-          if (this.arenaMap && isPitAtPx(this.arenaMap, rig.x, rig.y)) {
-            spawnFallStreak(this, rig.x, rig.y); // fell over a pit → sinks into the void, no pop
-            this.audio.play("pitdeath", { x: rig.x }); // §19 downward "whoo" into the void
-            rig.deathPop(0, 0, "pit");
+          if (
+            this.arenaMap?.lavaLayout &&
+            tileAtPx(this.arenaMap, rig.x, rig.y) !== TILE_GROUND
+          ) {
+            spawnFallStreak(this, rig.x, rig.y);
+            this.audio.play("lava-gap-death", { x: rig.x });
+            rig.deathPop(0, 0, "lava-gap");
             this.paperDeaths.push({ rig, full: false });
           } else {
             const flagshipDeath =
@@ -9390,22 +9366,6 @@ export class ArenaScene extends Phaser.Scene {
         gl.strokePath();
       }
     }
-    // §29 PIT GAPS — cut the void into the deck at each authored pit x-range (WYSIWYG: the hole you see is
-    // the gap you fall through), edged with hazard stripes. Drawn over the plating so the hole punches through.
-    for (const pit of level.pits) {
-      const b = beltBounds(level, (pit.x0 + pit.x1) / 2);
-      const top = this.beltY(BELT_Y0 + b.yMin);
-      const bot = this.beltY(BELT_Y0 + b.yMax);
-      gl.fillStyle(0x0c1017, 1).fillRect(pit.x0, top - 4, pit.x1 - pit.x0, bot - top + 12); // void
-      gl.fillStyle(0x161b22, 1).fillRect(pit.x0, bot - 6, pit.x1 - pit.x0, 10); // far inner shading
-      gl.lineStyle(5, 0xffb02e, 0.9); // hazard-stripe edges
-      gl.beginPath();
-      gl.moveTo(pit.x0, top);
-      gl.lineTo(pit.x0, bot);
-      gl.moveTo(pit.x1, top);
-      gl.lineTo(pit.x1, bot);
-      gl.strokePath();
-    }
     this.floorObjs.push(gl);
   }
 
@@ -12222,19 +12182,19 @@ export class ArenaScene extends Phaser.Scene {
     return true;
   }
 
-  /** Best client-side fallback for old servers: pit edge, resolved footprint, pool, then nearby contact. */
+  /** Best client-side fallback: lava-gap event, resolved footprint, pool, then nearby contact. */
   private inferDamageAttribution(self: PlayerState, amount: number): void {
     const tick = this.room?.state.tick ?? 0;
     if (self.fellSeq !== this.observedSelfFellSeq) {
       this.recordDamageRecap(
-        "pit",
+        "lava-gap",
         "",
-        "Pit Fall",
+        "Lava Gap Fall",
         "fall",
         amount,
         false,
         undefined,
-        `inferred:pit:${self.fellSeq}`,
+        `inferred:lava-gap:${self.fellSeq}`,
         tick,
       );
       return;
@@ -12876,7 +12836,7 @@ export class ArenaScene extends Phaser.Scene {
     if (bossId) return BOSSES[bossId]?.name ?? this.humanizeDamageId(bossId);
     if (enemyKind) return this.humanizeDamageId(enemyKind);
     const kind = `${entry.sourceKind} ${entry.damageType}`.toLowerCase();
-    if (kind.includes("pit") || kind.includes("fall")) return "Pit Fall";
+    if (kind.includes("lava-gap") || kind.includes("fall")) return "Lava Gap Fall";
     if (kind.includes("pool") || kind.includes("zone") || kind.includes("acid")) return "Acid Pool";
     if (kind.includes("projectile") || kind.includes("spit") || kind.includes("bullet"))
       return "Projectile";
@@ -12900,7 +12860,7 @@ export class ArenaScene extends Phaser.Scene {
 
   private deathCounter(entry: DamageRecapEntry): string {
     const kind = `${entry.sourceKind} ${entry.damageType} ${entry.telegraphKind}`.toLowerCase();
-    if (kind.includes("pit") || kind.includes("fall"))
+    if (kind.includes("lava-gap") || kind.includes("fall"))
       return "Counter: jump before crossing fractured ground.";
     if (kind.includes("pool") || kind.includes("zone") || kind.includes("acid"))
       return "Counter: move out of the red ground pool.";
@@ -14865,45 +14825,6 @@ export class ArenaScene extends Phaser.Scene {
     this.time.delayedCall(100, wait);
   }
 
-  /**
-   * DEV A/B (K) — Vampire Survivors floor read.
-   *
-   * The painted floor currently looks soft for three stacked reasons, none of them the tiling itself:
-   * `tiles/ground.jpg` is a lossy JPEG source; `mipmapFilter: LINEAR_MIPMAP_LINEAR` (main.ts) blurs the
-   * texture as it MINIFIES at tileScale 0.5; and three low-alpha zone washes sit over the top. The owner
-   * wants to try the opposite direction — an unapologetic, crisp, obviously-repeating tile.
-   *
-   * This proves the LOOK with the existing assets before any art is commissioned. Flat mode hides the
-   * washes, switches the tile to NEAREST so mips stop softening it, and draws it at native scale so each
-   * repeat is twice as large and plainly a tile. Fully reversible; nothing is rebuilt.
-   */
-  private installFlatFloorToggle(): void {
-    if (!clientDevToolsEnabled()) return;
-    let flat = false;
-    const apply = (): void => {
-      const wash = this.children.getByName(FLAT_FLOOR_WASH_NAME) as Phaser.GameObjects.Image | null;
-      wash?.setVisible(!flat);
-      const tile = this.children.getByName(
-        FLAT_FLOOR_TILE_NAME,
-      ) as Phaser.GameObjects.TileSprite | null;
-      if (tile) {
-        tile.tileScaleX = flat ? 1 : 0.5;
-        tile.tileScaleY = flat ? 1 : 0.5;
-      }
-      const texture = this.textures.exists("tile-ground") ? this.textures.get("tile-ground") : null;
-      texture?.setFilter(
-        flat ? Phaser.Textures.FilterMode.NEAREST : Phaser.Textures.FilterMode.LINEAR,
-      );
-      console.info(`[floor] ${flat ? "FLAT (VS read)" : "painted (default)"} — K to toggle`);
-    };
-    // K, not a function key: F7 is caret browsing in Firefox and F8/F9 already belong to the
-    // diagnostic HUD. K is unbound in the arena key list and carries no browser meaning.
-    this.input.keyboard?.on("keydown-K", () => {
-      flat = !flat;
-      apply();
-    });
-  }
-
   private installDiagnosticHud(): void {
     // Keep the direct compile-time capability check beside the shared runtime guard so Vite can erase
     // the complete HUD module from builds that do not explicitly opt in.
@@ -15066,7 +14987,7 @@ export class ArenaScene extends Phaser.Scene {
         buf = new PresentedActorBuffer();
         this.playerBufs.set(id, buf);
       }
-      // A pit snap-back must CUT the remote's ring, not leave a path back into the pit (review #10).
+      // A lava-gap recovery must cut the remote's ring, not leave a path back into the chasm.
       const prevFell = this.snapFell.get(id);
       if (prevFell !== undefined && prevFell !== p.fellSeq) buf.reset(t, p);
       else buf.push(t, p);

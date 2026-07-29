@@ -9,7 +9,6 @@ import {
   PLAYER_RADIUS,
   swingDescriptorFor,
   TILE_GROUND,
-  TILE_PIT,
   WEAPONS,
 } from "@dd/shared";
 import { describe, expect, it, vi } from "vitest";
@@ -127,7 +126,7 @@ describe("GameRoom B42 relaxed self-movement authority", () => {
     }
   });
 
-  it("adopts a plausible client pose and rejects speed, continuity, and pit violations", () => {
+  it("adopts a plausible client pose and rejects speed and continuity violations", () => {
     const { room, client, player } = fixture();
     send(room, client, report(player, 1, { clientX: 1_516, clientMvx: 320 }));
     expect(player.x).toBe(1_516);
@@ -148,25 +147,6 @@ describe("GameRoom B42 relaxed self-movement authority", () => {
     );
     expect(player.dualWield.movementCorrectionSeq).toBe(2);
 
-    const startX = Math.floor(player.x / room.map.tileSize) * room.map.tileSize + 72;
-    player.x = startX;
-    player.mvx = 0;
-    room.inputs.get(player.id).mvx = 0;
-    const targetX = startX + 16;
-    const tileX = Math.floor(targetX / room.map.tileSize);
-    const tileY = Math.floor(player.y / room.map.tileSize);
-    room.map.tiles[tileY * room.map.cols + tileX] = TILE_PIT;
-    send(
-      room,
-      client,
-      report(player, 4, {
-        clientX: targetX,
-        clientMvx: 320,
-        clientCorrectionSeq: 2,
-      }),
-    );
-    expect(player.x).toBe(startX);
-    expect(player.dualWield.movementCorrectionSeq).toBe(3);
   });
 
   it("admits bounded catch-up reports at the declared movement rate", () => {

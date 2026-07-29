@@ -107,7 +107,7 @@ describe("pet v1 account sanitization and deterministic progression", () => {
       [156, 0.4],
     ]);
     expect(
-      mods("slate-tortoise").map((m) => [m.groundHazardDamageMultiplier, m.pitRegenMultiplier]),
+      mods("slate-tortoise").map((m) => [m.groundHazardDamageMultiplier, m.lavaGapRegenMultiplier]),
     ).toEqual([
       [0.985, 1],
       [0.865, 1],

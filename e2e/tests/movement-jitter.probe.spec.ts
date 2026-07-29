@@ -186,7 +186,7 @@ test("tight-circle jitter probe: per-frame rig displacement stats", async ({ pag
         const sd = Math.hypot(s[i].sx - s[i - 1].sx, s[i].sy - s[i - 1].sy);
         if (sd > 0.01) serverSteps.push({ i, sd });
       }
-      // Authored pit/blink teleports are intentional cuts. Keep them visible as a separate readout while
+      // Authored lava-gap/blink teleports are intentional cuts. Keep them visible as a separate readout while
       // holding ordinary reconciliation to the no-spike/no-reversal contract.
       const legalCutSteps = steps.filter((x) => x.legalCut && x.d > 0.3);
       const moving = steps.filter((x) => !x.legalCut && x.d > 0.3);

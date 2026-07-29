@@ -39,15 +39,6 @@ square so it reads as endless ground. Fill the ENTIRE square frame edge to edge.
 floor that bright neon effects will be drawn on top of — it must NEVER distract. Muted, dim, almost
 monochrome dark earth.`,
   },
-  pit: {
-    px: 1024,
-    prompt: `Paint ONE square top-down TEXTURE TILE looking straight DOWN into the bottom of a deep dark PIT
-/ dry chasm in a Wild-West desert. Almost BLACK, base tone #0d0a10 (a hair warmer than pure black), with
-only the faintest hint of jagged dark rock and dust far below — barely visible depth, mostly void. VERY
-LOW CONTRAST, no bright spots, no directional light, no border, no vignette, uniform across the square so
-it tiles. This is the inside of a hole the player can fall into; it should read as a dark ABSENCE, not a
-detailed scene. Fill the entire square frame.`,
-  },
 };
 
 async function makeSeamless(rawPath, outPath, px) {

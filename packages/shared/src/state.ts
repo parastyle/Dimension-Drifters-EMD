@@ -145,9 +145,9 @@ export class PlayerState extends Schema {
   @type("string") weaponAffix = "";
   /** §5/§20 jump (Stage B): HEIGHT in px above the ground (0 = grounded). A real vertical axis under
    *  gravity — the jump seeds the upward velocity, the §8 parry-launch will add to it. Synced so every
-   *  client lifts the rig; the server gates pit-falling on it (§17 — airborne, height>0, clears gaps). */
+   *  client lifts the rig; the server gates lava-gap falling on it (airborne height clears gaps). */
   @type("number") height = 0;
-  /** §17 pit fall: increments each time this player falls into a pit. Synced ONLY as a client VFX trigger
+  /** Lava gap fall: increments each time this player falls into the chasm. Synced only as a client VFX trigger
    *  (dust poof + a local red flash) — the fall's damage/reposition is applied server-authoritatively. */
   @type("number") fellSeq = 0;
   /** §20 momentum layer (Stage A): impulse velocity (px/s) — the shove from gun recoil / hit knockback.
@@ -172,7 +172,7 @@ export class PlayerState extends Schema {
   @type("number") mvy = 0;
   /** §5 vertical velocity (px/s) — synced so the predicting client can rebase its jump arc exactly. */
   @type("number") vh = 0;
-  /** Bumped INSIDE `zeroMoveVel` — i.e. on EVERY server-side teleport/reposition (pit snap-back, rift
+  /** Bumped INSIDE `zeroMoveVel` — i.e. on EVERY server-side teleport/reposition (lava recovery, rift
    *  descent, restart, training toggle, revive, and any future site). The owning client hard-resyncs its
    *  predictor on a change instead of hand-mirroring the server's teleport call sites (review #7). */
   @type("uint32") teleportSeq = 0;

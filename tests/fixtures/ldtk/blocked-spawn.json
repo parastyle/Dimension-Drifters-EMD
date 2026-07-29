@@ -1,5 +1,0 @@
-{
-  "description": "A blocked spawn centre must fail through shared validation without repair.",
-  "expected": "shared validateArena rejected authored geometry: spawn tile is not ground",
-  "mutation": { "kind": "set-int-grid-cell", "layer": "Terrain", "col": 30, "row": 30, "value": 1 }
-}

@@ -1,5 +1,5 @@
 {
-  "description": "Terrain accepts only Ground=0 and Pit=1.",
+  "description": "Terrain accepts continuous Ground=0 only.",
   "expected": "Terrain has illegal IntGrid value 9",
   "mutation": { "kind": "set-int-grid-cell", "layer": "Terrain", "col": 11, "row": 7, "value": 9 }
 }

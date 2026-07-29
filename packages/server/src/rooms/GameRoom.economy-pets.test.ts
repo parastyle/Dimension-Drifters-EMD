@@ -4,7 +4,6 @@ import {
   BELT_LEVEL_IDS,
   BELT_Y0,
   beltLevelFor,
-  beltPitAtX,
   ChestState,
   CORPORATE_ELEVATOR_COUNTDOWN_TICKS,
   CORPORATE_ELEVATOR_DEPART_TICKS,
@@ -22,7 +21,6 @@ import {
   EnemyState,
   FISTS_WEAPON,
   getDimension,
-  isPitAtPx,
   MAX_ENEMIES,
   META_VITALITY_HP,
   MoneyDropState,
@@ -32,7 +30,7 @@ import {
   PARRY_IFRAMES,
   PARRY_LAUNCH,
   ParryReaction,
-  PIT_FALL_DAMAGE_FRAC,
+  LAVA_GAP_FALL_DAMAGE_FRAC,
   PickupState,
   PLAYER_MAX_HP,
   PLAYER_REGEN,
@@ -44,7 +42,6 @@ import {
   weaponDisassemblyValue,
   swingDescriptorFor,
   TILE_GROUND,
-  TILE_PIT,
   unpackParryGuardPose,
   unpackParryReaction,
   WEAPON_IDS,
@@ -285,7 +282,7 @@ function herePlayerJuggledDefault() {
 }
 
 // Jump-feel J1 — appended authoritative fixtures. Every pinned position starts from an all-ground map;
-// individual tests then author only the pit geometry they need.
+// individual tests then author only the state they need.
 function makeJumpFeelRoom(id = "jump-feel") {
   const h = makeRoom();
   h.join(id);
@@ -712,20 +709,20 @@ describe("pet v1 approved roster bonus enforcement", () => {
     h.state().mode = "training";
     player.maxHp = 200;
     player.hp = 200;
-    h.room.damagePlayer(player, 20, "pit");
+    h.room.damagePlayer(player, 20, "lava-gap");
     expect(player.hp).toBe(183);
     player.hp = 200;
     h.room.damagePlayer(player, 20, "enemy");
     expect(player.hp).toBe(180);
     player.hp = 100;
-    h.room.damagePitFall(player);
-    expect(pet.tortoisePitRegenSeconds).toBe(3);
-    h.room.damagePitFall(player);
-    expect(pet.tortoisePitRegenSeconds).toBe(3);
+    h.room.damageLavaGapFall(player);
+    expect(pet.tortoiseLavaGapRegenSeconds).toBe(3);
+    h.room.damageLavaGapFall(player);
+    expect(pet.tortoiseLavaGapRegenSeconds).toBe(3);
     player.hp = 50;
     h.room.stepSim(0.05);
     expect(player.hp).toBeCloseTo(50 + PLAYER_REGEN * 1.5 * 0.05, 6);
-    expect(pet.tortoisePitRegenSeconds).toBeCloseTo(2.95, 8);
+    expect(pet.tortoiseLavaGapRegenSeconds).toBeCloseTo(2.95, 8);
   });
 });
 

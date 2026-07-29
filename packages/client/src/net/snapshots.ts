@@ -129,7 +129,7 @@ export class SnapshotBuffer {
     this.ys[index] = y;
   }
 
-  /** Drop history and hold a single authoritative point — used on TELEPORTS (a remote pit snap-back /
+  /** Drop history and hold a single authoritative point — used on TELEPORTS (a remote lava recovery /
    *  reposition must cut, not re-walk the old path — review #10). */
   reset(t: number, x: number, y: number): void {
     this.head = 0;

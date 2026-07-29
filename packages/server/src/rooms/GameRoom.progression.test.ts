@@ -4,7 +4,6 @@ import {
   BELT_LEVEL_IDS,
   BELT_Y0,
   beltLevelFor,
-  beltPitAtX,
   ChestState,
   CORPORATE_ELEVATOR_COUNTDOWN_TICKS,
   CORPORATE_ELEVATOR_DEPART_TICKS,
@@ -22,7 +21,6 @@ import {
   EnemyState,
   FISTS_WEAPON,
   getDimension,
-  isPitAtPx,
   MAX_ENEMIES,
   META_VITALITY_HP,
   MoneyDropState,
@@ -32,7 +30,7 @@ import {
   PARRY_IFRAMES,
   PARRY_LAUNCH,
   ParryReaction,
-  PIT_FALL_DAMAGE_FRAC,
+  LAVA_GAP_FALL_DAMAGE_FRAC,
   PickupState,
   PLAYER_MAX_HP,
   PLAYER_REGEN,
@@ -44,7 +42,6 @@ import {
   weaponDisassemblyValue,
   swingDescriptorFor,
   TILE_GROUND,
-  TILE_PIT,
   unpackParryGuardPose,
   unpackParryReaction,
   WEAPON_IDS,
@@ -285,7 +282,7 @@ function herePlayerJuggledDefault() {
 }
 
 // Jump-feel J1 — appended authoritative fixtures. Every pinned position starts from an all-ground map;
-// individual tests then author only the pit geometry they need.
+// individual tests then author only the state they need.
 function makeJumpFeelRoom(id = "jump-feel") {
   const h = makeRoom();
   h.join(id);
@@ -734,7 +731,7 @@ describe("GameRoom — §6 rez-or-dead death model", () => {
     const p1 = h.state().players.get("p1");
     const p2 = h.state().players.get("p2");
     // p1 goes down; p2 stands on the body wielding the rez spade. Anchor to the mapgen-guaranteed clear
-    // spawn disc (240px radius) so a random pit can't snap a player off-position and flake the rez.
+    // Spawn disc fixture keeps the player position deterministic for the rez.
     p1.x = h.room.map.spawnX;
     p1.y = h.room.map.spawnY;
     p1.hp = 0;
@@ -845,8 +842,7 @@ describe("GameRoom — §17 shifter-incursion director", () => {
     const h = makeRoom();
     h.join("p1");
     // Pave the arena (all ground) so the shifter — which spawns far on the ring then drifts toward the
-    // player — can't wander onto a random pit and pit-die the same tick (terrain noise vs the lifecycle
-    // under test; only the boss is pit-immune by design).
+    // player — this test isolates the lifecycle under test from unrelated movement.
     h.room.map.tiles.fill(TILE_GROUND);
     // Fast-forward to the first incursion: tier-0 (early) → the weakest shifter (Marshal).
     h.state().elapsed = 10;
@@ -915,7 +911,7 @@ describe("GameRoom — §20 universal lunge", () => {
     // The companion test proves a parry NEGATES the lunge; this proves it LANDS without one. We assert the
     // discrete lunge hit (≥ LUNGE_MIN_DAMAGE 5, derived 6.4 for a critter), NOT passive touch chip —
     // passive contact (4/s × dt ≈ 0.2/tick) is smaller than per-tick regen, so it clamps right back to maxHp.
-    // On the clear spawn disc (no pits) the windup→strike is fully deterministic.
+    // On the clear spawn disc the windup→strike is fully deterministic.
     const e = new EnemyState();
     e.id = "lunger2";
     e.kind = "critter";
@@ -1019,7 +1015,7 @@ describe("GameRoom — §8 v0.117 PROJECTILE PARRY (deflect, don't phase through
 });
 
 describe("GameRoom — §13 damageEnemy (the one damage primitive, both paths)", () => {
-  // Place the boss `dx` px right of the clear spawn disc centre, at 1 HP. The boss is pit-immune, but the
+  // Place the boss `dx` px right of the clear spawn disc centre, at 1 HP. The
   // PLAYER who must reach it is not — anchoring to spawnX/spawnY keeps the attacker on guaranteed ground.
   function spawnLowBoss(h: ReturnType<typeof makeRoom>, dx: number) {
     h.send("p1", "spawnBoss");
@@ -1212,7 +1208,7 @@ describe("GameRoom — §6/§15 run-ending + rule-defining transitions", () => {
     const h = makeRoom();
     h.join("p1");
     const p = h.state().players.get("p1");
-    // Stand the player and the portal on the clear spawn disc — a random pit under an arbitrary coordinate
+    // Stand the player and the portal on the clear spawn disc — an arbitrary coordinate
     // would chip + snap the player off the portal mouth and flake the victory check.
     p.x = h.room.map.spawnX;
     p.y = h.room.map.spawnY;
@@ -1227,7 +1223,7 @@ describe("GameRoom — §6/§15 run-ending + rule-defining transitions", () => {
     const h = makeRoom();
     h.join("p1");
     const p = h.state().players.get("p1");
-    // On the clear spawn disc so the only thing that can chip the player is the puddle, not a random pit.
+    // On the clear spawn disc so the only thing that can chip the player is the puddle.
     p.x = h.room.map.spawnX;
     p.y = h.room.map.spawnY;
     p.hp = 100;

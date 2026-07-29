@@ -57,7 +57,7 @@ export interface NavClampedParrySlide {
 
 /**
  * Walk a side-parry segment in small deterministic samples and stop at the last valid point. The caller
- * owns world-specific navigation truth (arena bounds + pits, or an equivalent test predicate).
+ * owns world-specific navigation truth (arena bounds, lava platforms, or an equivalent test predicate).
  */
 export function clampParrySlideToNavigation(
   startX: number,

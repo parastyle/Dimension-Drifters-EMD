@@ -10,15 +10,12 @@
         "gridColor1": "#1C2330",
         "gridColor2": "#23303F",
         "boundaryRail": "#3C6E6A",
-        "pitVoid": "#070A12",
-        "pitRustBand": "#2E6E9E",
-        "pitAmberLip": "#9FD8E8",
         "spawnRingSafe": "#33E6FF",
         "dustDrift": "#CFE0E8"
       },
       "hazard": {
         "name": "Black-ice slicks",
-        "description": "Glassy frozen meltwater sheets the nave in dark mirror-slicks. Step on one and you keep sliding — momentum carries you past where you stopped steering, drifting into contact range or off the lip of a frozen pit. A pale freezing fog clings low over each slick so the edges read before you commit (§17)."
+        "description": "Glassy frozen meltwater sheets the nave in dark mirror-slicks. Step on one and you keep sliding — momentum carries you past where you stopped steering and into contact range. A pale freezing fog clings low over each slick so the edges read before you commit (§17)."
       },
       "enemies": [
         {
@@ -152,9 +149,6 @@
         "gridColor1": "#1c2a1e",
         "gridColor2": "#243a26",
         "boundaryRail": "#6e7042",
-        "pitVoid": "#0a120c",
-        "pitRustBand": "#3c6e3a",
-        "pitAmberLip": "#c4b24a",
         "spawnRingSafe": "#33e6ff",
         "dustDrift": "#9cff3b"
       },
@@ -297,15 +291,12 @@
         "gridColor1": "0x1a1210",
         "gridColor2": "0x261713",
         "boundaryRail": "0x9e3b36",
-        "pitVoid": "0x120608",
-        "pitRustBand": "0xc0341f",
-        "pitAmberLip": "0xff8a2b",
         "spawnRingSafe": "0x33e6ff",
         "dustDrift": "0x6e3a24"
       },
       "hazard": {
         "name": "Lava cracks & fire vents",
-        "description": "Glowing fissures split the basalt floor and pressure-vents flare on a cycle — the §17 pit-rim language re-skinned as molten cracks (hot amber lip = the burn telegraph). Standing on a lit crack or a venting tile chips you and snap-repositions, same as a Wild-West mineshaft fall; the cool cyan spawn ring stays the one safe pad."
+        "description": "Glowing fissures cross the continuous basalt floor and pressure-vents flare on a cycle. A hot amber telegraph marks the burn before a lit crack or venting tile chips anyone still standing on it."
       },
       "enemies": [
         {
@@ -441,9 +432,6 @@
         "gridColor1": "#171A21",
         "gridColor2": "#1E2A33",
         "boundaryRail": "#FF3BD4",
-        "pitVoid": "#08060E",
-        "pitRustBand": "#B14BFF",
-        "pitAmberLip": "#33E6FF",
         "spawnRingSafe": "#9CFF3B",
         "dustDrift": "#3C6E6A"
       },

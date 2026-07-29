@@ -2188,7 +2188,7 @@ export interface VastagharRigPose {
   worldwheelAngle: number;
 }
 
-export type PaperDeathTreatment = "crumple" | "flutter" | "tear" | "lite" | "pit";
+export type PaperDeathTreatment = "crumple" | "flutter" | "tear" | "lite" | "lava-gap";
 
 export interface PaperDeathPartPose {
   readonly img: Phaser.GameObjects.Image;
@@ -2944,7 +2944,7 @@ export const rigCoreMethods = {
     if (changed) this.restTint();
   },
 
-  /** §20 detached death: crumple, through-plane flutter, tear, or the cheap overflow/pit fold. */
+  /** §20 detached death: crumple, through-plane flutter, tear, or the cheap overflow/lava-gap fold. */
   deathPop(this: SpriteRigContext, vx: number, vy: number, treatment: PaperDeathTreatment = "flutter"): void {
     this.resetFlourishState(true);
     this.resetSwingCombo();
@@ -2992,7 +2992,7 @@ export const rigCoreMethods = {
     this.paperDeath = {
       treatment,
       durationMs:
-        treatment === "lite" || treatment === "pit"
+        treatment === "lite" || treatment === "lava-gap"
           ? 160
           : treatment === "crumple"
             ? 240
@@ -3026,7 +3026,7 @@ export const rigCoreMethods = {
     death.elapsedMs += Math.max(0, Math.min(100, deltaMs));
     const q = clamp01(death.elapsedMs / death.durationMs);
 
-    if (death.treatment === "pit") {
+    if (death.treatment === "lava-gap") {
       this.root.x = death.x0;
       this.root.y = death.y0 + 14 * q;
       this.root.scaleX = death.scaleX * (1 - 0.25 * q);

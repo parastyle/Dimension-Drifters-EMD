@@ -11,7 +11,7 @@ import {
   generateLavaArena,
   generateLavaLayout,
   isArenaDiscSafe,
-  isPitAtPx,
+  isLavaGapAtPx,
   LAVA_DECORATIVE_PREFABS,
   LAVA_DIMENSION_ID,
   LAVA_HERO_ROOM_RATE,
@@ -390,7 +390,7 @@ describe("Lava Foundry — graph placement, walkability, and determinism", () =>
     if (reactor && hole) {
       const x = reactor.x + hole.reduce((sum, point) => sum + point.x, 0) / hole.length;
       const y = reactor.y + hole.reduce((sum, point) => sum + point.y, 0) / hole.length;
-      expect(isPitAtPx(map, x, y)).toBe(true);
+      expect(isLavaGapAtPx(map, x, y)).toBe(true);
     }
     const bridgeMap = generateLavaArena(sample(14));
     const bridge = bridgeMap.lavaLayout?.rooms.find(
@@ -404,11 +404,11 @@ describe("Lava Foundry — graph placement, walkability, and determinism", () =>
     if (bridge && bridgeHole) {
       const x = bridge.x + bridgeHole.reduce((sum, point) => sum + point.x, 0) / bridgeHole.length;
       const y = bridge.y + bridgeHole.reduce((sum, point) => sum + point.y, 0) / bridgeHole.length;
-      expect(isPitAtPx(bridgeMap, x, y)).toBe(true);
+      expect(isLavaGapAtPx(bridgeMap, x, y)).toBe(true);
     }
     for (let x = -100; x <= 100; x += 20) {
       for (let y = -100; y <= 100; y += 20) {
-        expect(isPitAtPx(map, map.spawnX + x, map.spawnY + y), `${x},${y}`).toBe(false);
+        expect(isLavaGapAtPx(map, map.spawnX + x, map.spawnY + y), `${x},${y}`).toBe(false);
       }
     }
   });

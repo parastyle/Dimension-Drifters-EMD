@@ -6,7 +6,7 @@ export type ContextHintId =
   | "beamOverheat"
   | "juggle"
   | "ultimateReady"
-  | "pitFall"
+  | "lavaGapFall"
   | "empoweredReturn";
 
 interface ContextHintDefinition {
@@ -18,7 +18,7 @@ export const CONTEXT_HINTS: Readonly<Record<ContextHintId, ContextHintDefinition
   beamOverheat: { copy: "DRIVE empty · [RMB] Release", color: "#ffb26b" },
   juggle: { copy: "[LMB] Air parry", color: "#e8f5ff" },
   ultimateReady: { copy: "[F] Ultimate", color: "#a8f1e8" },
-  pitFall: { copy: "[Space] Hold to leap gaps", color: "#ff9a78" },
+  lavaGapFall: { copy: "[Space] Hold to leap lava gaps", color: "#ff9a78" },
   empoweredReturn: {
     copy: "Gold glint — parry again or step out",
     color: "#ffd66b",

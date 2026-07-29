@@ -480,7 +480,7 @@ async function keyUpAll(page: Page, keys: readonly string[]): Promise<void> {
 async function driveRoll(page: Page, direction: DirectionCase, screenshot = false): Promise<void> {
   await labelAction(page, direction.label);
   // Sample the steering chord and roll edge in one gameplay frame. Waiting between them lets ordinary
-  // movement reach generated pits before a heavily loaded renderer observes the modifier edge.
+  // movement reach crossed the old 4,800px arena before a heavily loaded renderer observed the modifier edge.
   await keyDownAll(page, direction.keys);
   await page.keyboard.down(direction.binding);
   await page.waitForFunction((label) => {

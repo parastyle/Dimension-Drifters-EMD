@@ -47,19 +47,6 @@ function applyMutation(project: JsonObject, mutation: JsonObject): void {
       layer.intGridCsv[mutation.row * layer.__cWid + mutation.col] = mutation.value;
       return;
     }
-    case "build-stranded-island": {
-      const terrain = layerNamed(project, "Terrain");
-      for (let row = mutation.top; row <= mutation.bottom; row++)
-        for (let col = mutation.left; col <= mutation.right; col++)
-          terrain.intGridCsv[row * terrain.__cWid + col] =
-            col >= mutation.islandLeft &&
-            col <= mutation.islandRight &&
-            row >= mutation.islandTop &&
-            row <= mutation.islandBottom
-              ? 0
-              : 1;
-      return;
-    }
     case "remove-player-spawn": {
       const gameplay = gameplayLayer(project);
       gameplay.entityInstances = gameplay.entityInstances.filter(
@@ -170,11 +157,9 @@ describe("LDtk authored arena compiler", () => {
     }));
     const activeFixtures = fixtures.filter(({ fixture }) => fixture.handoff == null);
     const handoffFixtures = fixtures.filter(({ fixture }) => fixture.handoff != null);
-    expect(activeFixtures).toHaveLength(8);
+    expect(activeFixtures).toHaveLength(5);
     expect(handoffFixtures.map(({ fixtureName }) => fixtureName)).toEqual([
-      "blocked-spawn-disc.sol2-handoff.json",
       "disconnected-zone.sol2-handoff.json",
-      "insufficient-gate-space.sol2-handoff.json",
     ]);
     for (const { fixture } of handoffFixtures) {
       expect(fixture.handoff).toBe("ldtk-runtime-integration");

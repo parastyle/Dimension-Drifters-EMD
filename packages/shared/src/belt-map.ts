@@ -8,7 +8,7 @@
  * Coordinate model: `x` = belt position (world px). DEPTH is band-relative (0 = FAR/back edge … DEPTH_MAX =
  * NEAR/front edge); the collision helpers add `BELT_Y0` to return WORLD y for the sim.
  */
-import { ARENA_WIDTH, BELT_Y0, DEPTH_MAX } from "./constants.js";
+import { BELT_Y0, DEPTH_MAX } from "./constants.js";
 import {
   type CorporateGridBounds,
   type CorporateGridFloor,
@@ -37,14 +37,6 @@ export interface BeltFloorKey {
   yMax: number;
 }
 
-/** A jumpable PIT — a gap in the deck spanning belt x ∈ [x0, x1] (full depth). A GROUNDED body over it falls
- *  (chip + snap-back for players, death for enemies, §17); an AIRBORNE body (mid-jump) clears it. Sized
- *  under the jump reach (~run-speed × airtime) so a running jump always makes it across. */
-export interface BeltPit {
-  x0: number;
-  x1: number;
-}
-
 /** A ROOM the squad clears to advance (beat-'em-up progression). The camera + movement LOCK at `gateX`
  *  while `wave` enemies are alive; clear them → the gate opens → walk on to the next room. `boss` rooms
  *  spawn the dimension boss instead of a trash wave. Rooms are contiguous: room i spans (prev gateX, gateX]. */
@@ -71,8 +63,6 @@ export interface BeltLevel {
   length: number;
   /** Floor profile, sorted by `x`. */
   floor: readonly BeltFloorKey[];
-  /** Jumpable pits (the only hazard) — gaps in the deck. */
-  pits: readonly BeltPit[];
   obstacles: readonly BeltObstacle[];
   /** Ordered rooms (clear-to-advance gates), last is the boss. */
   rooms: readonly BeltRoom[];
@@ -83,6 +73,9 @@ export interface BeltLevel {
   /** Deterministic runtime crop. Present only on generated Corporate Grid floor instances. */
   corporateVariant?: CorporateGridVariant;
 }
+
+/** Authored side-scrolling stages keep their original extent; the open-arena expansion is independent. */
+const AUTHORED_BELT_LENGTH = 4800;
 
 /** The generated LDtk floor behind a corporate belt level, if this is one. */
 export function corporateGridFloorForBelt(level: BeltLevel): CorporateGridFloor | undefined {
@@ -122,22 +115,6 @@ export function clampBeltX(level: BeltLevel, x: number, bodyR = 0): number {
   const max = bounds.maxX - bodyR;
   if (max < min) return (min + max) / 2;
   return x < min ? min : x > max ? max : x;
-}
-
-/** Is belt position `x` over a pit gap? PURE. */
-export function beltPitAtX(level: BeltLevel, x: number): boolean {
-  for (const p of level.pits) if (x >= p.x0 && x <= p.x1) return true;
-  return false;
-}
-
-/** Nearest safe belt x OUTSIDE any pit, given a fall-back reference `fromX` (the last grounded x) — used to
- *  snap a fallen body back to solid deck (before the pit it walked into). PURE. */
-export function beltSafeX(level: BeltLevel, x: number, fromX: number): number {
-  if (!beltPitAtX(level, x)) return x;
-  for (const p of level.pits) {
-    if (x >= p.x0 && x <= p.x1) return fromX <= p.x0 ? p.x0 - 4 : p.x1 + 4; // step back to the edge you came from
-  }
-  return x;
 }
 
 /** Walkable depth band [yMin, yMax] (band-relative) at belt position `x`, linearly interpolated. PURE. */
@@ -414,7 +391,7 @@ export const SKY_CARRIER: BeltLevel = {
   name: "Sky Carrier",
   dimensionId: "wild-west",
   blurb: "Board a flying dreadnought. Fight up the flight deck to the bridge — and the World-Tread.",
-  length: ARENA_WIDTH,
+  length: AUTHORED_BELT_LENGTH,
   // §37 margins ×1.5 with the deeper DEPTH_MAX so the wide/pinch proportions hold (+50% room everywhere).
   floor: [
     { x: 0, yMin: 66, yMax: DEPTH_MAX - 66 },
@@ -422,14 +399,7 @@ export const SKY_CARRIER: BeltLevel = {
     { x: 2450, yMin: 320, yMax: DEPTH_MAX - 320 }, // pinch → catwalk
     { x: 3150, yMin: 320, yMax: DEPTH_MAX - 320 },
     { x: 3750, yMin: 60, yMax: DEPTH_MAX - 60 }, // open → boss arena
-    { x: ARENA_WIDTH, yMin: 60, yMax: DEPTH_MAX - 60 },
-  ],
-  // Jumpable pits — the only hazard (§29). Placed in the WIDE sections (never the catwalk); ~110px wide so
-  // a running jump (~144px reach) clears them. Kite enemies in — they can't jump, so pits are free kills.
-  pits: [
-    { x0: 1180, x1: 1290 },
-    { x0: 1560, x1: 1670 },
-    { x0: 4120, x1: 4235 },
+    { x: AUTHORED_BELT_LENGTH, yMin: 60, yMax: DEPTH_MAX - 60 },
   ],
   obstacles: [],
   // Clear-to-advance rooms → boss on the bridge. Gates fall on the deck's natural beats (flight deck /
@@ -438,126 +408,103 @@ export const SKY_CARRIER: BeltLevel = {
     { gateX: 1900, wave: 4, name: "Flight Deck" },
     { gateX: 3150, wave: 5, name: "The Catwalk" },
     { gateX: 3750, wave: 6, name: "Arena Mouth" },
-    { gateX: ARENA_WIDTH, wave: 0, boss: true, bossKind: "world-titan", name: "The Bridge" },
+    { gateX: AUTHORED_BELT_LENGTH, wave: 0, boss: true, bossKind: "world-titan", name: "The Bridge" },
   ],
-  // The Catwalk opens just past the first gate on clear deck (clear of the 1560–1670 pit).
+  // The Catwalk opens just past the first gate on clear deck.
 };
 
-/** §36 FROSTFELL DESCENT — a glacier chasm. Narrow crevasse pinches, more pits, frost roster, Hollow King. */
+/** §36 FROSTFELL DESCENT — a glacier chasm with a continuous combat deck. */
 export const FROST_CHASM: BeltLevel = {
   id: "frost-chasm",
   name: "Frostfell Descent",
   dimensionId: "frostfell",
-  blurb: "Cross a shattered glacier. Mind the crevasses — a running jump clears them, the frostbitten can't.",
-  length: ARENA_WIDTH,
+  blurb: "Cross a shattered glacier on one continuous combat deck to the Hollow Throne.",
+  length: AUTHORED_BELT_LENGTH,
   floor: [
     { x: 0, yMin: 90, yMax: DEPTH_MAX - 90 },
     { x: 1500, yMin: 90, yMax: DEPTH_MAX - 90 }, // wide shelf
     { x: 2000, yMin: 360, yMax: DEPTH_MAX - 360 }, // pinch → the crevasse
     { x: 2900, yMin: 360, yMax: DEPTH_MAX - 360 },
     { x: 3400, yMin: 75, yMax: DEPTH_MAX - 75 }, // open → the throne
-    { x: ARENA_WIDTH, yMin: 75, yMax: DEPTH_MAX - 75 },
-  ],
-  pits: [
-    { x0: 900, x1: 1010 },
-    { x0: 1300, x1: 1410 },
-    { x0: 3600, x1: 3712 },
-    { x0: 4000, x1: 4110 },
+    { x: AUTHORED_BELT_LENGTH, yMin: 75, yMax: DEPTH_MAX - 75 },
   ],
   obstacles: [],
   rooms: [
     { gateX: 1600, wave: 4, name: "Glacier Shelf" },
     { gateX: 2900, wave: 5, name: "The Crevasse" },
     { gateX: 3400, wave: 6, name: "Frost Gate" },
-    { gateX: ARENA_WIDTH, wave: 0, boss: true, name: "The Hollow Throne" },
+    { gateX: AUTHORED_BELT_LENGTH, wave: 0, boss: true, name: "The Hollow Throne" },
   ],
 };
 
-/** §36 VERDANT OVERGROWTH — a sunken ruin swallowed by jungle. Root-choked, few pits, verdant roster. */
+/** §36 VERDANT OVERGROWTH — a sunken ruin swallowed by jungle. */
 export const VERDANT_RUIN: BeltLevel = {
   id: "verdant-ruin",
   name: "Verdant Overgrowth",
   dimensionId: "verdant-ruins",
   blurb: "Push through a ruin the jungle reclaimed. Vine-lashers swarm the root halls to the Moss-Stone Golem.",
-  length: ARENA_WIDTH,
+  length: AUTHORED_BELT_LENGTH,
   floor: [
     { x: 0, yMin: 75, yMax: DEPTH_MAX - 75 },
     { x: 1700, yMin: 180, yMax: DEPTH_MAX - 180 },
     { x: 2600, yMin: 180, yMax: DEPTH_MAX - 180 }, // root corridor
     { x: 3300, yMin: 300, yMax: DEPTH_MAX - 90 }, // canted floor → ruin mouth
-    { x: ARENA_WIDTH, yMin: 90, yMax: DEPTH_MAX - 90 },
-  ],
-  pits: [
-    { x0: 2050, x1: 2160 },
-    { x0: 3050, x1: 3160 },
+    { x: AUTHORED_BELT_LENGTH, yMin: 90, yMax: DEPTH_MAX - 90 },
   ],
   obstacles: [],
   rooms: [
     { gateX: 1800, wave: 5, name: "Root Hall" },
     { gateX: 2900, wave: 6, name: "Canopy Walk" },
     { gateX: 3600, wave: 6, name: "Ruin Mouth" },
-    { gateX: ARENA_WIDTH, wave: 0, boss: true, name: "The Heart-Stone" },
+    { gateX: AUTHORED_BELT_LENGTH, wave: 0, boss: true, name: "The Heart-Stone" },
   ],
 };
 
-/** §36 NEON UNDERGRID — a cyber sublevel. Long clean sightlines, catwalk pits over the void, cyber roster. */
+/** §36 NEON UNDERGRID — a cyber sublevel with long clean sightlines. */
 export const NEON_UNDERGRID: BeltLevel = {
   id: "neon-undergrid",
   name: "Neon Undergrid",
   dimensionId: "neon-cyber",
   blurb: "Descend a server sublevel. Ranged synth-mobs hold the conduits down to the Warden's reactor core.",
-  length: ARENA_WIDTH,
+  length: AUTHORED_BELT_LENGTH,
   floor: [
     { x: 0, yMin: 105, yMax: DEPTH_MAX - 105 },
     { x: 1600, yMin: 105, yMax: DEPTH_MAX - 105 }, // server farm
     { x: 2100, yMin: 390, yMax: DEPTH_MAX - 390 }, // data conduit (tight)
     { x: 3400, yMin: 390, yMax: DEPTH_MAX - 390 },
     { x: 3800, yMin: 60, yMax: DEPTH_MAX - 60 }, // reactor floor
-    { x: ARENA_WIDTH, yMin: 60, yMax: DEPTH_MAX - 60 },
-  ],
-  pits: [
-    { x0: 1150, x1: 1260 },
-    { x0: 2500, x1: 2610 },
-    { x0: 3000, x1: 3110 },
-    { x0: 4180, x1: 4290 },
+    { x: AUTHORED_BELT_LENGTH, yMin: 60, yMax: DEPTH_MAX - 60 },
   ],
   obstacles: [],
   rooms: [
     { gateX: 1700, wave: 5, name: "Server Farm" },
     { gateX: 3400, wave: 6, name: "Data Conduit" },
     { gateX: 3800, wave: 7, name: "Reactor Gate" },
-    { gateX: ARENA_WIDTH, wave: 0, boss: true, name: "The Core" },
+    { gateX: AUTHORED_BELT_LENGTH, wave: 0, boss: true, name: "The Core" },
   ],
 };
 
-/** §36 ASHLAND FORGE — a live volcanic foundry. Lava-gap pits, the cinder roster, the Molten Brute (Ver'Kaln
- *  the Descending). Tight pour-line catwalk in the middle, an open crucible at the end. */
+/** §36 ASHLAND FORGE — a live volcanic foundry with a continuous pour-line deck. */
 export const ASHLAND_FORGE: BeltLevel = {
   id: "ashland-forge",
   name: "Ashland Forge",
   dimensionId: "ashlands",
-  blurb: "Cross a live foundry. Leap the lava gaps — the cinder-born wade them, you won't. Ver'Kaln waits at the pour.",
-  length: ARENA_WIDTH,
+  blurb: "Cross a live foundry on a continuous pour-line deck. Ver'Kaln waits at the crucible.",
+  length: AUTHORED_BELT_LENGTH,
   floor: [
     { x: 0, yMin: 84, yMax: DEPTH_MAX - 84 },
     { x: 1650, yMin: 84, yMax: DEPTH_MAX - 84 }, // foundry floor
     { x: 2150, yMin: 345, yMax: DEPTH_MAX - 345 }, // pinch → the pour-line catwalk
     { x: 3100, yMin: 345, yMax: DEPTH_MAX - 345 },
     { x: 3600, yMin: 69, yMax: DEPTH_MAX - 69 }, // open → the crucible
-    { x: ARENA_WIDTH, yMin: 69, yMax: DEPTH_MAX - 69 },
-  ],
-  pits: [
-    { x0: 1000, x1: 1110 },
-    { x0: 1400, x1: 1510 },
-    { x0: 3750, x1: 3862 },
-    { x0: 4150, x1: 4260 },
+    { x: AUTHORED_BELT_LENGTH, yMin: 69, yMax: DEPTH_MAX - 69 },
   ],
   obstacles: [],
   rooms: [
     { gateX: 1700, wave: 5, name: "Foundry Floor" },
     { gateX: 3100, wave: 6, name: "The Pour-Line" },
     { gateX: 3600, wave: 7, name: "Crucible Gate" },
-    { gateX: ARENA_WIDTH, wave: 0, boss: true, name: "The Crucible" },
+    { gateX: AUTHORED_BELT_LENGTH, wave: 0, boss: true, name: "The Crucible" },
   ],
 };
 
@@ -622,7 +569,6 @@ function corporateGridBeltLevel(
       { x: floor.playableBounds.minX, yMin: floor.laneBounds.minY, yMax: floor.laneBounds.maxY },
       { x: floor.playableBounds.maxX, yMin: floor.laneBounds.minY, yMax: floor.laneBounds.maxY },
     ],
-    pits: [],
     obstacles: [],
     rooms: corporateGridRooms(floor, floorDepth, variant),
     corporateGridFloorId: floor.id,
@@ -654,7 +600,6 @@ export function corporateGridBeltLevelForDepth(
       { x: floor.playableBounds.minX, yMin: floor.laneBounds.minY, yMax: floor.laneBounds.maxY },
       { x: floor.playableBounds.maxX, yMin: floor.laneBounds.minY, yMax: floor.laneBounds.maxY },
     ],
-    pits: [],
     obstacles: [],
     rooms: corporateGridRooms(floor, normalizedDepth, variant),
     corporateGridFloorId: floor.id,

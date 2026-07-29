@@ -1,7 +1,0 @@
-{
-  "description": "Pit all otherwise safe objective-disc candidates outside the spawn court while preserving a narrow player route.",
-  "handoff": "ldtk-runtime-integration",
-  "missingSharedLaw": "validateArena must probe representative corpse positions and prove capacity for two full EXTRACT_RADIUS discs separated by the gate-pair contract.",
-  "expectedWitness": { "layer": "Terrain", "col": 30, "row": 30 },
-  "mutation": { "kind": "remove-representative-gate-capacity", "preserveSpawnCourt": true, "preserveOneTileRoutes": true }
-}

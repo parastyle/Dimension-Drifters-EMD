@@ -55,9 +55,7 @@ import {
   beamSweepSampleCount,
   beltLevelFor,
   beltPlayableXBounds,
-  beltPitAtX,
   beltProjectileBlocked,
-  beltSafeX,
   CORPORATE_ELEVATOR_ARRIVAL_TICKS,
   CORPORATE_ELEVATOR_COUNTDOWN_TICKS,
   CORPORATE_ELEVATOR_DEPART_TICKS,
@@ -197,7 +195,6 @@ import {
   isBreakActionWeapon,
   isCharacterUnlocked,
   isPetId,
-  isPitAtPx,
   isPlayableCharacter,
   isRareRelicId,
   isWholeArtCharacter,
@@ -238,7 +235,6 @@ import {
   meleeDamageHalfWidthAt,
   meleeDamageReachAt,
   mixSeeds,
-  nearestGroundPx,
   nearestPoint,
   nextWeapon,
   nextWholeArtCharacter,
@@ -268,8 +264,6 @@ import {
   type PetProgressReceipt,
   type PetStageBand,
   PICKUP_RADIUS,
-  PIT_FALL_DAMAGE_FRAC,
-  PIT_FALL_GRACE,
   PickupState,
   PLAYER_MAX_HP,
   PLAYER_RADIUS,
@@ -554,7 +548,7 @@ export const roomEconomyMethods = {
       PICKUP_RADIUS,
       ARENA_HEIGHT - PICKUP_RADIUS,
     );
-    const sp = this.placePickupPos(dropX, dropY); // §29 belt: keep the drop on the deck (band + off pits)
+    const sp = this.placePickupPos(dropX, dropY); // §29 belt: keep the drop on the deck band
     pk.x = sp.x;
     pk.y = sp.y;
     pk.disassemblable = !!bankEntry || !!c?.heldEarned;
@@ -1157,7 +1151,7 @@ export const roomEconomyMethods = {
       acceptedActionsThisDimension: 0,
       geckoFraction: 0,
       geckoMinted: 0,
-      tortoisePitRegenSeconds: 0,
+      tortoiseLavaGapRegenSeconds: 0,
       settled: false,
     });
     player.petId = id;
@@ -1761,7 +1755,7 @@ export const roomEconomyMethods = {
       acceptedActionsThisDimension: 0,
       geckoFraction: 0,
       geckoMinted: 0,
-      tortoisePitRegenSeconds: 0,
+      tortoiseLavaGapRegenSeconds: 0,
       settled: false,
     });
     player.petId = selectedPetId;
@@ -1778,7 +1772,7 @@ export const roomEconomyMethods = {
     pet.acceptedActionsThisDimension = 0;
     pet.geckoFraction = 0;
     pet.geckoMinted = 0;
-    pet.tortoisePitRegenSeconds = 0;
+    pet.tortoiseLavaGapRegenSeconds = 0;
     pet.settled = false;
     this.petSettledAccounts.delete(playerId);
   },

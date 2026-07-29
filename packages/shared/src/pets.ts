@@ -49,8 +49,8 @@ export interface PetMods {
   reviveReachAdd: number;
   reviveHpFraction: number;
   groundHazardDamageMultiplier: number;
-  pitRegenMultiplier: number;
-  pitRegenSeconds: number;
+  lavaGapRegenMultiplier: number;
+  lavaGapRegenSeconds: number;
 }
 
 export const PET_CATALOG = {
@@ -116,7 +116,7 @@ export const PET_CATALOG = {
     budgetKey: "sustain.ground-hazard",
     maxLevel: PET_MAX_LEVEL,
     bonus: { kind: "ground-hazard-damage", reductionPerLevel: 0.015 },
-    capstone: { kind: "pit-regen", multiplier: 1.5, seconds: 3 },
+    capstone: { kind: "lava-gap-regen", multiplier: 1.5, seconds: 3 },
   },
 } as const;
 
@@ -171,8 +171,8 @@ export function petModsForLevel(id: PetId, value: number): Readonly<PetMods> {
     reviveReachAdd: 0,
     reviveHpFraction: 0,
     groundHazardDamageMultiplier: 1,
-    pitRegenMultiplier: 1,
-    pitRegenSeconds: 0,
+    lavaGapRegenMultiplier: 1,
+    lavaGapRegenSeconds: 0,
   };
 
   const def = PET_CATALOG[id];
@@ -222,9 +222,9 @@ export function petModsForLevel(id: PetId, value: number): Readonly<PetMods> {
       break;
     case "ground-hazard-damage":
       mods.groundHazardDamageMultiplier = 1 - def.bonus.reductionPerLevel * level;
-      if (capstone && def.capstone.kind === "pit-regen") {
-        mods.pitRegenMultiplier = def.capstone.multiplier;
-        mods.pitRegenSeconds = def.capstone.seconds;
+      if (capstone && def.capstone.kind === "lava-gap-regen") {
+        mods.lavaGapRegenMultiplier = def.capstone.multiplier;
+        mods.lavaGapRegenSeconds = def.capstone.seconds;
       }
       break;
   }

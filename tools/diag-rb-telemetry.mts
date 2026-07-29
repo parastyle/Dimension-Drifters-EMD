@@ -18,14 +18,12 @@ import {
   type MoveStance,
   meleeComboSelectionFor,
   movementCorrectionBand,
-  PLAYER_GROUND_CONTACT_OFFSET_Y,
   type PlayerState,
   ROOM_NAME,
   SLIDE_PHASE_OFF,
   STANCE_NONE,
   TICK_MS,
   TILE_GROUND,
-  TILE_PIT,
   ULTIMATES_ENABLED,
   UltimateFamily,
   UltimatePhase,
@@ -101,7 +99,7 @@ interface LocalCombat {
   slideParryLockT: number;
   rollCd: number;
   recoveryT: number;
-  pitGrace: number;
+  lavaGapGrace: number;
   invuln: number;
   parryCd: number;
   parryBuffer: number;
@@ -986,7 +984,7 @@ async function normalizeArena(
   combat.slideParryLockT = 0;
   combat.rollCd = 0;
   combat.recoveryT = 0;
-  combat.pitGrace = 0;
+  combat.lavaGapGrace = 0;
   combat.invuln = 0;
   combat.parryCd = 0;
   combat.parryBuffer = 0;
@@ -1529,49 +1527,6 @@ async function runChestOpen(instrumented: InstrumentedRoom): Promise<ScenarioRes
   });
 }
 
-async function runPitFall(instrumented: InstrumentedRoom): Promise<ScenarioResult> {
-  await normalizeArena(instrumented);
-  const player = instrumented.local.state.players.get(instrumented.room.sessionId);
-  const combat = instrumented.local.combat.get(instrumented.room.sessionId);
-  if (!player || !combat) throw new Error("pit fixture unavailable");
-  const safe = { x: player.x - 320, y: player.y };
-  combat.lastGroundX = safe.x;
-  combat.lastGroundY = safe.y;
-  const originalBeltLevel = instrumented.local.beltLevel;
-  if (originalBeltLevel) {
-    // Corporate floors deliberately ship without pits. Inject one through the same BeltLevel contract so
-    // the belt half of the standing matrix exercises its real fall/snap-back branch instead of silently
-    // falling through to the unrelated top-down tile map.
-    instrumented.local.beltLevel = {
-      ...originalBeltLevel,
-      pits: [{ x0: player.x - 8, x1: player.x + 8 }],
-    };
-  }
-  const col = Math.floor(player.x / instrumented.local.map.tileSize);
-  const row = Math.floor(
-    (player.y + PLAYER_GROUND_CONTACT_OFFSET_Y) / instrumented.local.map.tileSize,
-  );
-  const fellBefore = player.fellSeq;
-  const probe = createProbe(instrumented, "pit-fall", "Pit fall / snap-back", "placement", {
-    safePoint: safe,
-    pitTile: { col, row },
-  });
-  await probe.tick({
-    action: "grounded-over-pit",
-    beforeSend: () => {
-      if (!originalBeltLevel)
-        instrumented.local.map.tiles[row * instrumented.local.map.cols + col] = TILE_PIT;
-    },
-  });
-  await settle(probe, 18);
-  const result = probe.finish({
-    fell: player.fellSeq > fellBefore,
-    classified: resultSourceSeen(probe, "pit-snapback"),
-  });
-  instrumented.local.beltLevel = originalBeltLevel;
-  return result;
-}
-
 const wrapIds = [
   "x2-muay-thai-wraps",
   "x2-wing-chun-wraps",
@@ -1870,7 +1825,6 @@ try {
     await run(() => runJumpPound(instrumented));
     await run(() => runSlideHop(instrumented));
     await run(() => runChestOpen(instrumented));
-    await run(() => runPitFall(instrumented));
     for (const weaponId of wrapIds)
       await run(() => runFullCombo(instrumented, weaponId, "kung-fu-wrap"));
     await run(() => runFullCombo(instrumented, "x2-coyote-trickster-s-sparkmitt", "sparkmitt", 8));

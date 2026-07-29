@@ -52,7 +52,7 @@ describe("B44 no-weapon-drift standing law", () => {
       "enemy-commit-hit",
       "enemy-commit-launch",
       "hostile-projectile-hit",
-      "pit-snapback",
+      "lava-gap-recovery",
       "elevator-boarding",
       "revive-placement",
       "teleport-placement",

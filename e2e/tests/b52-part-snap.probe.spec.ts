@@ -9,7 +9,7 @@ import {
   type BeltLevel,
   beltPitAtX,
   DEPTH_MAX,
-  isPitAtPx,
+  isLavaGapAtPx,
   PLAYER_RADIUS,
   resolveBeltNavigation,
   resolvePoiCollision,
@@ -433,7 +433,7 @@ function findClearCorridor(map: ArenaMap): ClearCorridor {
       for (let sampleX = x; sampleX <= x + length; sampleX += PLAYER_RADIUS) {
         const resolved = resolvePoiCollision(map, sampleX, y, PLAYER_RADIUS);
         if (
-          isPitAtPx(map, sampleX, y) ||
+          isLavaGapAtPx(map, sampleX, y) ||
           Math.abs(resolved.x - sampleX) > 0.01 ||
           Math.abs(resolved.y - y) > 0.01
         ) {

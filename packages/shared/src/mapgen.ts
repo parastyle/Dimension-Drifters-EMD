@@ -1,42 +1,22 @@
-/**
- * §17 procedural arena generation — PURE + DETERMINISTIC.
- *
- * The server mints four seed scalars at room create and syncs them on `ArenaState`; both server and
- * client call `generateArena` with those seeds and get a BYTE-IDENTICAL tile map (no tile streaming).
- *
- * Recipe (the research verdict — "build the hazard, not the platformer"):
- *   1. scatter PIT seed sites with min-spacing (Poisson-disc-ish) so hazards spread, not clump;
- *   2. grow each into an organic blob;
- *   3. cellular-automata smooth for natural edges;
- *   4. force GROUND where the game needs it (a central spawn disc + a border ring);
- *   5. VALIDATE + REPAIR: guarantee every ground tile is reachable from spawn by walking + hopping pit
- *      gaps no wider than the jump reach — anything stranded behind a too-wide pit is bridged with ground
- *      (or, if it's a tiny nub, dissolved into the pit). The post-condition is GUARANTEED on return.
- *
- * Phase 0 (this module) produces + guarantees the grid. Rendering the pits, pit collision, and the
- * fall→chip+reposition rule are the §17 Phase 1+ follow-ups; they consume this map read-only.
- */
+/** §17 procedural arena generation — pure, deterministic, and continuously walkable. */
 import {
   ARENA_HEIGHT,
   ARENA_WIDTH,
   EXTRACT_RADIUS,
   MAP_BORDER_TILES,
-  MAP_MAX_JUMP_TILES,
-  MAP_PIT_MAX,
-  MAP_PIT_SPACING_TILES,
-  MAP_PIT_TARGET,
-  MAP_SPAWN_CLEAR_TILES,
   MAP_TILE,
   PLAYER_GROUND_CONTACT_OFFSET_Y,
   PLAYER_RADIUS,
   RIFT_OFFSET,
 } from "./constants.js";
 import type { LavaRoomLayout } from "./lava-prefabs.js";
-import { makeRng, mixSeeds, type Rng } from "./rng.js";
+import { makeRng, mixSeeds } from "./rng.js";
 
-/** Tile kinds (Phase 0 is binary: walkable vs hazard). Walls/decor/themes come in later §17 phases. */
+/** Ordinary arenas contain only ground. */
 export const TILE_GROUND = 0;
-export const TILE_PIT = 1;
+export const TILE_LAVA_GAP = 1;
+/** Compatibility name retained only because the locked lava generator imports it directly. */
+export const TILE_PIT = TILE_LAVA_GAP;
 
 /** Static macro-geography. These ids are structural across every dimension; only the active palette/art
  * changes client-side. V1 deliberately has exactly two authored terrain exchanges plus neutral ground. */
@@ -44,10 +24,7 @@ export const MAP_ZONE_COMMONS = 0;
 export const MAP_ZONE_COVER = 1;
 export const MAP_ZONE_SCAR = 2;
 export const MAP_ZONE_COUNT = 3;
-export type MapZoneId =
-  | typeof MAP_ZONE_COMMONS
-  | typeof MAP_ZONE_COVER
-  | typeof MAP_ZONE_SCAR;
+export type MapZoneId = typeof MAP_ZONE_COMMONS | typeof MAP_ZONE_COVER | typeof MAP_ZONE_SCAR;
 export type MapZoneKind = "commons" | "cover" | "scar";
 
 export type MapZoneSeed = Readonly<{
@@ -69,7 +46,7 @@ export type ArenaMap = {
   cols: number;
   rows: number;
   tileSize: number;
-  /** Row-major tile grid (`cols*rows`), each cell `TILE_GROUND` or `TILE_PIT`. */
+  /** Row-major walkability grid. Ordinary arenas contain only `TILE_GROUND`. */
   tiles: Uint8Array;
   /** Row-major static macro-geography, regenerated from the same synced seeds on server and client. */
   zoneIds: Uint8Array;
@@ -80,7 +57,7 @@ export type ArenaMap = {
   spawnY: number;
   /** The seeds this map was built from (so consumers can confirm they reproduced the right one). */
   seeds: ArenaMapSeeds;
-  /** Per-map hop audit reach. Existing dimensions omit this and retain MAP_MAX_JUMP_TILES exactly. */
+  /** Lava-only gap audit reach. */
   maxJumpTiles?: number;
   /** Present only for the additive native-prefab Lava Foundry dimension. */
   lavaLayout?: LavaRoomLayout;
@@ -115,6 +92,10 @@ const ZONE_LATTICE = 6;
 const ZONE_WARP_FIXED = 576; // 2.25 cells in 8-bit fixed point
 const ZONE_COMMONS_CORE_TILES = 5;
 const ZONE_MIN_AREA_FRAC = 0.08;
+/** Macro-zone ownership has no collision or rendering edge, so sample it at 160px and expand to the
+ * 80px gameplay grid. This preserves two-tile boundary fidelity while avoiding expensive noise hashes
+ * at every one of the 230,400 gameplay cells. */
+const ZONE_SAMPLE_SCALE_TILES = 2;
 
 function zoneKind(id: MapZoneId): MapZoneKind {
   if (id === MAP_ZONE_COVER) return "cover";
@@ -201,18 +182,26 @@ function buildZoneAttempt(
   rows: number,
   attempt: number,
   warped: boolean,
+  gameplayTilesPerSample = 1,
 ): { zoneIds: Uint8Array; zoneSeeds: MapZoneSeed[] } {
   const rng = makeRng(mixSeeds(source.seedTerrain, source.seedTheme, ZONE_SALT, attempt));
   const centreCol = Math.floor(cols / 2);
   const centreRow = Math.floor(rows / 2);
+  const minExtent = Math.min(cols, rows);
   const baseAngle = rng.range(0, Math.PI * 2);
-  const firstRadius = rng.range(17, 21);
-  const secondRadius = rng.range(17, 21);
+  // Preserve the authored 60x60 compass deal as proportions at every arena size.
+  const firstRadius = rng.range((minExtent * 17) / 60, (minExtent * 21) / 60);
+  const secondRadius = rng.range((minExtent * 17) / 60, (minExtent * 21) / 60);
   const secondAngle = baseAngle + Math.PI + rng.range(-0.3, 0.3);
   const firstId = rng.chance(0.5) ? MAP_ZONE_COVER : MAP_ZONE_SCAR;
   const secondId = firstId === MAP_ZONE_COVER ? MAP_ZONE_SCAR : MAP_ZONE_COVER;
+  const sampleBorder = Math.ceil(MAP_BORDER_TILES / gameplayTilesPerSample);
+  const siteInset = Math.ceil(5 / gameplayTilesPerSample);
   const clampSite = (value: number, extent: number) =>
-    Math.max(MAP_BORDER_TILES + 5, Math.min(extent - MAP_BORDER_TILES - 6, Math.round(value)));
+    Math.max(
+      sampleBorder + siteInset,
+      Math.min(extent - sampleBorder - siteInset - 1, Math.round(value)),
+    );
   const outer = [
     {
       id: firstId,
@@ -227,17 +216,16 @@ function buildZoneAttempt(
   ] as const;
   const zoneSeeds: MapZoneSeed[] = [
     { id: MAP_ZONE_COMMONS, kind: "commons", col: centreCol, row: centreRow },
-    ...outer
-      .map((site) => ({ ...site, kind: zoneKind(site.id) }))
-      .sort((a, b) => a.id - b.id),
+    ...outer.map((site) => ({ ...site, kind: zoneKind(site.id) })).sort((a, b) => a.id - b.id),
   ];
   const zoneIds = new Uint8Array(cols * rows);
   const warpSeed = mixSeeds(source.seedTerrain, source.seedTheme, ZONE_SALT, attempt, 0x0a11);
+  const commonsCoreSamples = Math.ceil(ZONE_COMMONS_CORE_TILES / gameplayTilesPerSample);
   for (let row = 0; row < rows; row++) {
     for (let col = 0; col < cols; col++) {
       const coreDx = col - centreCol;
       const coreDy = row - centreRow;
-      if (coreDx * coreDx + coreDy * coreDy <= ZONE_COMMONS_CORE_TILES ** 2) {
+      if (coreDx * coreDx + coreDy * coreDy <= commonsCoreSamples ** 2) {
         zoneIds[idx(col, row, cols)] = MAP_ZONE_COMMONS;
         continue;
       }
@@ -266,15 +254,41 @@ function generateMapZones(
   cols: number,
   rows: number,
 ): { zoneIds: Uint8Array; zoneSeeds: MapZoneSeed[] } {
+  const sampleScale = ZONE_SAMPLE_SCALE_TILES;
+  const sampleCols = Math.ceil(cols / sampleScale);
+  const sampleRows = Math.ceil(rows / sampleScale);
+  let sampled: { zoneIds: Uint8Array; zoneSeeds: MapZoneSeed[] } | undefined;
   for (let attempt = 0; attempt < 4; attempt++) {
-    const layout = buildZoneAttempt(source, cols, rows, attempt, true);
-    if (zoneLayoutValid(layout.zoneIds, layout.zoneSeeds, cols, rows)) return layout;
+    const layout = buildZoneAttempt(source, sampleCols, sampleRows, attempt, true, sampleScale);
+    if (zoneLayoutValid(layout.zoneIds, layout.zoneSeeds, sampleCols, sampleRows)) {
+      sampled = layout;
+      break;
+    }
   }
-  // Bounded deterministic fallback: keep the seeded compass deal but remove the displacement field.
-  const fallback = buildZoneAttempt(source, cols, rows, 4, false);
-  if (zoneLayoutValid(fallback.zoneIds, fallback.zoneSeeds, cols, rows)) return fallback;
-  // The symmetric final layout is construction-safe for the fixed 60x60 arena and retains seeded rotation.
-  return buildZoneAttempt(source, cols, rows, 5, false);
+  if (!sampled) {
+    // Bounded deterministic fallback: keep the seeded compass deal but remove the displacement field.
+    const fallback = buildZoneAttempt(source, sampleCols, sampleRows, 4, false, sampleScale);
+    sampled = zoneLayoutValid(fallback.zoneIds, fallback.zoneSeeds, sampleCols, sampleRows)
+      ? fallback
+      : buildZoneAttempt(source, sampleCols, sampleRows, 5, false, sampleScale);
+  }
+
+  const zoneIds = new Uint8Array(cols * rows);
+  for (let row = 0; row < rows; row++) {
+    const sampledRow = Math.min(sampleRows - 1, Math.floor(row / sampleScale));
+    const sourceOffset = sampledRow * sampleCols;
+    const targetOffset = row * cols;
+    for (let col = 0; col < cols; col++) {
+      const sampledCol = Math.min(sampleCols - 1, Math.floor(col / sampleScale));
+      zoneIds[targetOffset + col] = sampled.zoneIds[sourceOffset + sampledCol] as number;
+    }
+  }
+  const zoneSeeds = sampled.zoneSeeds.map((seed) => ({
+    ...seed,
+    col: Math.min(cols - 1, seed.col * sampleScale + Math.floor(sampleScale / 2)),
+    row: Math.min(rows - 1, seed.row * sampleScale + Math.floor(sampleScale / 2)),
+  }));
+  return { zoneIds, zoneSeeds };
 }
 
 /** Clamp to the nearest map cell; static geography extends visually to the arena rail. */
@@ -286,279 +300,6 @@ export function zoneAtTile(map: ArenaMap, col: number, row: number): MapZoneId {
 
 export function zoneAtPx(map: ArenaMap, x: number, y: number): MapZoneId {
   return zoneAtTile(map, x / map.tileSize, y / map.tileSize);
-}
-
-/** Scatter pit seed sites with a minimum spacing (rejection-sampled Poisson-disc). Deterministic. */
-function pitSites(
-  rng: Rng,
-  cols: number,
-  rows: number,
-  target: number,
-  zoneIds: Uint8Array,
-): Array<[number, number]> {
-  const sites: Array<[number, number]> = [];
-  // Roughly one site per (target-scaled) area; each grows into a blob downstream. The divisor is the
-  // MEASURED per-blob footprint (~20 cells at radius 2–3 AFTER the two dilating smooth() passes —
-  // calibrated empirically over 2000 seeds so real coverage lands on the target, not 25% above it).
-  const wanted = Math.max(4, Math.round((cols * rows * target) / 20));
-  const attempts = wanted * 48;
-  for (let a = 0; a < attempts && sites.length < wanted; a++) {
-    const x = rng.int(MAP_BORDER_TILES + 1, cols - MAP_BORDER_TILES - 2);
-    const y = rng.int(MAP_BORDER_TILES + 1, rows - MAP_BORDER_TILES - 2);
-    const acceptanceRoll = rng.next();
-    const zoneId = (zoneIds[idx(x, y, cols)] ?? MAP_ZONE_COMMONS) as MapZoneId;
-    const acceptance =
-      zoneId === MAP_ZONE_SCAR ? 1 : zoneId === MAP_ZONE_COVER ? 0.2 : 0.42;
-    if (acceptanceRoll >= acceptance) continue;
-    const spacing =
-      zoneId === MAP_ZONE_SCAR ? 4 : zoneId === MAP_ZONE_COVER ? 9 : MAP_PIT_SPACING_TILES + 1;
-    let ok = true;
-    for (const [sx, sy] of sites) {
-      const dx = sx - x;
-      const dy = sy - y;
-      const otherZone = (zoneIds[idx(sx, sy, cols)] ?? MAP_ZONE_COMMONS) as MapZoneId;
-      const otherSpacing =
-        otherZone === MAP_ZONE_SCAR
-          ? 4
-          : otherZone === MAP_ZONE_COVER
-            ? 9
-            : MAP_PIT_SPACING_TILES + 1;
-      const need = Math.min(spacing, otherSpacing);
-      if (dx * dx + dy * dy < need * need) {
-        ok = false;
-        break;
-      }
-    }
-    if (ok) sites.push([x, y]);
-  }
-  return sites;
-}
-
-/** Grow a site into an organic pit blob: a jittered disc with probabilistic falloff toward the edge.
- *  v0.102: radius 2–3 (was 1–2) — fewer, GRANDER pit features that read as deliberate terrain, not noise. */
-function growBlob(
-  tiles: Uint8Array,
-  cols: number,
-  rows: number,
-  cx: number,
-  cy: number,
-  rng: Rng,
-): void {
-  const r = rng.int(2, 3);
-  for (let dy = -r; dy <= r; dy++) {
-    for (let dx = -r; dx <= r; dx++) {
-      const x = cx + dx;
-      const y = cy + dy;
-      if (!inBounds(x, y, cols, rows)) continue;
-      const dist = Math.hypot(dx, dy);
-      if (dist > r + 0.5) continue;
-      // Solid core, ragged rim: outer cells get carved only sometimes.
-      if (dist <= r - 0.5 || rng.chance(1 - (dist - (r - 0.5)))) tiles[idx(x, y, cols)] = TILE_PIT;
-    }
-  }
-}
-
-/** One cellular-automata smoothing pass: a cell flips toward the majority of its 8 neighbours, so blob
- *  edges read as organic coastline rather than pixel noise. Border cells are left for the force-ground pass. */
-function smooth(tiles: Uint8Array, cols: number, rows: number): void {
-  const next = tiles.slice();
-  for (let y = 1; y < rows - 1; y++) {
-    for (let x = 1; x < cols - 1; x++) {
-      let pit = 0;
-      for (let dy = -1; dy <= 1; dy++)
-        for (let dx = -1; dx <= 1; dx++) {
-          if (dx === 0 && dy === 0) continue;
-          if (tiles[idx(x + dx, y + dy, cols)] === TILE_PIT) pit++;
-        }
-      const i = idx(x, y, cols);
-      if (pit >= 5) next[i] = TILE_PIT;
-      else if (pit <= 2) next[i] = TILE_GROUND;
-    }
-  }
-  tiles.set(next);
-}
-
-/** Count of pit tiles. */
-function pitCount(tiles: Uint8Array): number {
-  let n = 0;
-  for (let i = 0; i < tiles.length; i++) if (tiles[i] === TILE_PIT) n++;
-  return n;
-}
-
-/** One erosion pass: flip rim pit cells (those with few pit neighbours) back to ground. Shrinks blobs
- *  from their edges to pull total coverage down under the ceiling without erasing whole hazards. */
-function erode(tiles: Uint8Array, cols: number, rows: number): void {
-  const next = tiles.slice();
-  for (let y = 1; y < rows - 1; y++) {
-    for (let x = 1; x < cols - 1; x++) {
-      const i = idx(x, y, cols);
-      if (tiles[i] !== TILE_PIT) continue;
-      let pit = 0;
-      for (const [dx, dy] of CARDINALS) if (tiles[idx(x + dx, y + dy, cols)] === TILE_PIT) pit++;
-      if (pit <= 2) next[i] = TILE_GROUND; // an edge/spur cell → ground
-    }
-  }
-  tiles.set(next);
-}
-
-/** Force a solid GROUND border ring + a clear GROUND spawn disc at the centre. */
-function forceGround(
-  tiles: Uint8Array,
-  cols: number,
-  rows: number,
-  spawnX: number,
-  spawnY: number,
-): void {
-  for (let y = 0; y < rows; y++)
-    for (let x = 0; x < cols; x++) {
-      const onBorder =
-        x < MAP_BORDER_TILES ||
-        y < MAP_BORDER_TILES ||
-        x >= cols - MAP_BORDER_TILES ||
-        y >= rows - MAP_BORDER_TILES;
-      const inSpawn = Math.hypot(x - spawnX, y - spawnY) <= MAP_SPAWN_CLEAR_TILES;
-      if (onBorder || inSpawn) tiles[idx(x, y, cols)] = TILE_GROUND;
-    }
-}
-
-/**
- * Tiles reachable from `start` by WALKING (4-dir ground steps) or HOPPING a straight pit gap of up to
- * `MAP_MAX_JUMP_TILES` cells (all intermediate cells pit, landing cell ground). This is the connectivity
- * the player actually has once the jump (§5) is wired to clear pits.
- */
-function reachable(tiles: Uint8Array, cols: number, rows: number, start: number): Uint8Array {
-  const seen = new Uint8Array(cols * rows);
-  if (tiles[start] !== TILE_GROUND) return seen;
-  const stack = [start];
-  seen[start] = 1;
-  while (stack.length) {
-    const cur = stack.pop() as number;
-    const cx = cur % cols;
-    const cy = (cur / cols) | 0;
-    for (const [dx, dy] of CARDINALS) {
-      // Walk one ground step.
-      const wx = cx + dx;
-      const wy = cy + dy;
-      if (inBounds(wx, wy, cols, rows)) {
-        const wi = idx(wx, wy, cols);
-        if (tiles[wi] === TILE_GROUND && !seen[wi]) {
-          seen[wi] = 1;
-          stack.push(wi);
-        }
-      }
-      // Hop a gap of g pit cells, landing on ground at g+1.
-      for (let g = 1; g <= MAP_MAX_JUMP_TILES; g++) {
-        const mx = cx + dx * g;
-        const my = cy + dy * g;
-        if (!inBounds(mx, my, cols, rows) || tiles[idx(mx, my, cols)] !== TILE_PIT) break; // gap broke → no hop
-        const lx = cx + dx * (g + 1);
-        const ly = cy + dy * (g + 1);
-        if (!inBounds(lx, ly, cols, rows)) continue;
-        const li = idx(lx, ly, cols);
-        if (tiles[li] === TILE_GROUND && !seen[li]) {
-          seen[li] = 1;
-          stack.push(li);
-        }
-      }
-    }
-  }
-  return seen;
-}
-
-/** The 4-connected GROUND component containing `start` (a stranded island, when start is unreachable). */
-function groundComponent(tiles: Uint8Array, cols: number, rows: number, start: number): number[] {
-  const out: number[] = [];
-  const seen = new Uint8Array(cols * rows);
-  const stack = [start];
-  seen[start] = 1;
-  while (stack.length) {
-    const cur = stack.pop() as number;
-    out.push(cur);
-    const cx = cur % cols;
-    const cy = (cur / cols) | 0;
-    for (const [dx, dy] of CARDINALS) {
-      const nx = cx + dx;
-      const ny = cy + dy;
-      if (!inBounds(nx, ny, cols, rows)) continue;
-      const ni = idx(nx, ny, cols);
-      if (tiles[ni] === TILE_GROUND && !seen[ni]) {
-        seen[ni] = 1;
-        stack.push(ni);
-      }
-    }
-  }
-  return out;
-}
-
-/** Carve a 4-connected GROUND corridor from a stranded tile to the nearest reached ground tile (BFS over
- *  all cells, shortest hop count), converting the pit cells on the path. Connects the island by WALKING. */
-function carveBridge(
-  tiles: Uint8Array,
-  cols: number,
-  rows: number,
-  from: number,
-  reached: Uint8Array,
-): boolean {
-  const prev = new Int32Array(cols * rows).fill(-1);
-  const seen = new Uint8Array(cols * rows);
-  const q = [from];
-  seen[from] = 1;
-  let head = 0;
-  let found = -1;
-  while (head < q.length) {
-    const cur = q[head++] as number;
-    if (cur !== from && tiles[cur] === TILE_GROUND && reached[cur]) {
-      found = cur;
-      break;
-    }
-    const cx = cur % cols;
-    const cy = (cur / cols) | 0;
-    for (const [dx, dy] of CARDINALS) {
-      const nx = cx + dx;
-      const ny = cy + dy;
-      if (!inBounds(nx, ny, cols, rows)) continue;
-      const ni = idx(nx, ny, cols);
-      if (!seen[ni]) {
-        seen[ni] = 1;
-        prev[ni] = cur;
-        q.push(ni);
-      }
-    }
-  }
-  if (found < 0) return false;
-  for (let node = found; node !== -1 && node !== from; node = prev[node] as number) {
-    tiles[node] = TILE_GROUND;
-  }
-  return true;
-}
-
-/**
- * Guarantee the post-condition: EVERY ground tile is reachable from spawn (walk + hop). Bridges stranded
- * regions with ground, dissolves tiny nubs into the pit, and — as a final backstop — flips anything still
- * unreachable to pit. Pure + bounded (each step strictly reduces the unreached set).
- */
-function ensureConnected(tiles: Uint8Array, cols: number, rows: number, spawn: number): void {
-  const NUB = 3; // a stranded island this small is just dissolved into the pit
-  const maxRepairs = cols * rows; // far more than ever needed; the set strictly shrinks each pass
-  for (let r = 0; r < maxRepairs; r++) {
-    const reached = reachable(tiles, cols, rows, spawn);
-    let target = -1;
-    for (let i = 0; i < tiles.length; i++) {
-      if (tiles[i] === TILE_GROUND && !reached[i]) {
-        target = i;
-        break;
-      }
-    }
-    if (target < 0) return; // fully connected
-    const region = groundComponent(tiles, cols, rows, target);
-    if (region.length <= NUB || !carveBridge(tiles, cols, rows, target, reached)) {
-      for (const i of region) tiles[i] = TILE_PIT; // remove (nub, or unbridgeable)
-    }
-  }
-  // Backstop (should never fire): flip any residual unreachable ground to pit.
-  const reached = reachable(tiles, cols, rows, spawn);
-  for (let i = 0; i < tiles.length; i++)
-    if (tiles[i] === TILE_GROUND && !reached[i]) tiles[i] = TILE_PIT;
 }
 
 function groundDiscClear(
@@ -590,25 +331,17 @@ function groundDiscClear(
   return true;
 }
 
-export function generateArena(seeds: ArenaMapSeeds): ArenaMap {
-  const cols = Math.floor(ARENA_WIDTH / MAP_TILE);
-  const rows = Math.floor(ARENA_HEIGHT / MAP_TILE);
+export function generateArena(
+  seeds: ArenaMapSeeds,
+  arenaWidth = ARENA_WIDTH,
+  arenaHeight = ARENA_HEIGHT,
+): ArenaMap {
+  const cols = Math.floor(arenaWidth / MAP_TILE);
+  const rows = Math.floor(arenaHeight / MAP_TILE);
   const tiles = new Uint8Array(cols * rows); // all TILE_GROUND (0)
   const spawnCol = Math.floor(cols / 2);
   const spawnRow = Math.floor(rows / 2);
   const { zoneIds, zoneSeeds } = generateMapZones(seeds, cols, rows);
-
-  // Hazard pass — its own stream so tuning terrain elsewhere won't reshuffle pits.
-  const hz = makeRng(mixSeeds(seeds.seedHazard, seeds.seedTerrain, 0x1701));
-  for (const [sx, sy] of pitSites(hz, cols, rows, MAP_PIT_TARGET, zoneIds))
-    growBlob(tiles, cols, rows, sx, sy, hz);
-  smooth(tiles, cols, rows);
-  smooth(tiles, cols, rows);
-  // Clamp coverage under the ceiling: erode rim cells until pits are a hazard, not the whole floor.
-  const cap = Math.floor(cols * rows * MAP_PIT_MAX);
-  for (let g = 0; g < 8 && pitCount(tiles) > cap; g++) erode(tiles, cols, rows);
-  forceGround(tiles, cols, rows, spawnCol, spawnRow);
-  ensureConnected(tiles, cols, rows, idx(spawnCol, spawnRow, cols));
 
   return {
     cols,
@@ -631,39 +364,29 @@ export function tileAtPx(map: ArenaMap, px: number, py: number): number {
   return map.tiles[idx(x, y, map.cols)] as number;
 }
 
-/** True if a world px position is over a pit (§17 — fall trigger, once collision is wired in Phase 1). */
-export function isPitAtPx(map: ArenaMap, px: number, py: number): boolean {
-  return tileAtPx(map, px, py) === TILE_PIT;
+/** Exact tile query for the exempt lava dimension; ordinary arenas always return false. */
+export function isLavaGapAtPx(map: ArenaMap, px: number, py: number): boolean {
+  return map.lavaLayout !== undefined && tileAtPx(map, px, py) === TILE_LAVA_GAP;
 }
 
-/**
- * Player-only pit trigger at the visible ground contact under the upright paper rig. `isPitAtPx` remains
- * exact tile truth for enemies, spawns, recovery searches, and floor rendering; player fall damage samples
- * the feet instead of the torso/root centre so the hazard crosses the painted lip when the character does.
- */
-export function isPlayerGroundContactInPit(map: ArenaMap, rootX: number, rootY: number): boolean {
-  if (map.lavaLayout) {
-    return !isArenaDiscSafe(
-      map,
-      rootX,
-      rootY + PLAYER_GROUND_CONTACT_OFFSET_Y,
-      PLAYER_RADIUS,
-    );
-  }
-  return isPitAtPx(map, rootX, rootY + PLAYER_GROUND_CONTACT_OFFSET_Y);
+/** Lava-only player gap trigger using the collision derivation owned by the lava dimension. */
+export function isPlayerGroundContactInLavaGap(
+  map: ArenaMap,
+  rootX: number,
+  rootY: number,
+): boolean {
+  return (
+    map.lavaLayout !== undefined &&
+    !isArenaDiscSafe(map, rootX, rootY + PLAYER_GROUND_CONTACT_OFFSET_Y, PLAYER_RADIUS)
+  );
 }
 
-/** Fraction of the grid that is pit — for tuning + tests. */
-export function pitFraction(map: ArenaMap): number {
-  let pit = 0;
-  for (let i = 0; i < map.tiles.length; i++) if (map.tiles[i] === TILE_PIT) pit++;
-  return pit / map.tiles.length;
-}
-
-/** Nearest GROUND tile centre (world px) to a point — BFS over the grid, so it returns the closest safe
- *  tile by step distance. Used to snap a fallen player/enemy/drop back onto solid ground (the border ring
- *  is always ground, so this never fails). */
-export function nearestGroundPx(map: ArenaMap, px: number, py: number): { x: number; y: number } {
+/** Lava-only recovery search for the nearest collision-safe tile centre. */
+export function nearestLavaGroundPx(
+  map: ArenaMap,
+  px: number,
+  py: number,
+): { x: number; y: number } {
   const { tiles, cols, rows, tileSize } = map;
   const sx = Math.max(0, Math.min(cols - 1, Math.floor(px / tileSize)));
   const sy = Math.max(0, Math.min(rows - 1, Math.floor(py / tileSize)));
@@ -694,7 +417,7 @@ export function nearestGroundPx(map: ArenaMap, px: number, py: number): { x: num
   return center(Math.floor(cols / 2), Math.floor(rows / 2)); // unreachable (border is ground)
 }
 
-/** Nudge a spawn position onto solid GROUND so nothing spawns inside a pit and falls on the next tick. */
+/** Lava maps correct placements onto platforms; ordinary arenas are continuous and return the input. */
 export function safeSpawnPos(map: ArenaMap, x: number, y: number): { x: number; y: number } {
   if (map.lavaLayout) {
     const groundY = y + PLAYER_GROUND_CONTACT_OFFSET_Y;
@@ -702,17 +425,12 @@ export function safeSpawnPos(map: ArenaMap, x: number, y: number): { x: number; 
     const safe = nearestArenaDisc(map, x, groundY, PLAYER_RADIUS);
     return { x: safe.x, y: safe.y - PLAYER_GROUND_CONTACT_OFFSET_Y };
   }
-  return isPitAtPx(map, x, y) ? nearestGroundPx(map, x, y) : { x, y };
+  return { x, y };
 }
 
-/** True only when the COMPLETE objective disc lies on ground and inside the arena. Unlike `safeSpawnPos`,
- * this intentionally rejects a ground centre whose rim hangs over a pit. */
-export function isArenaDiscSafe(
-  map: ArenaMap,
-  x: number,
-  y: number,
-  radius: number,
-): boolean {
+/** True only when the COMPLETE objective disc lies on ground and inside the arena. On lava maps this
+ * intentionally rejects a platform centre whose footprint hangs over a gap. */
+export function isArenaDiscSafe(map: ArenaMap, x: number, y: number, radius: number): boolean {
   return (
     Number.isFinite(x) &&
     Number.isFinite(y) &&
@@ -778,9 +496,11 @@ export function placeArenaGatePair(
   radius = EXTRACT_RADIUS,
 ): ArenaGatePair {
   const minSeparation = radius * 2 + ARENA_GATE_PAIR_GAP;
+  const arenaWidth = map.cols * map.tileSize;
+  const arenaHeight = map.rows * map.tileSize;
   let extract = nearestArenaDisc(map, corpseX, corpseY, radius);
-  let centreX = ARENA_WIDTH / 2 - extract.x;
-  let centreY = ARENA_HEIGHT / 2 - extract.y;
+  let centreX = arenaWidth / 2 - extract.x;
+  let centreY = arenaHeight / 2 - extract.y;
   let centreDistance = Math.hypot(centreX, centreY);
   if (centreDistance <= 1e-6) {
     centreX = 0;
@@ -799,17 +519,9 @@ export function placeArenaGatePair(
     minSeparation,
   );
 
-  extract = nearestArenaDisc(
-    map,
-    corpseX,
-    corpseY,
-    radius,
-    rift.x,
-    rift.y,
-    minSeparation,
-  );
-  centreX = ARENA_WIDTH / 2 - extract.x;
-  centreY = ARENA_HEIGHT / 2 - extract.y;
+  extract = nearestArenaDisc(map, corpseX, corpseY, radius, rift.x, rift.y, minSeparation);
+  centreX = arenaWidth / 2 - extract.x;
+  centreY = arenaHeight / 2 - extract.y;
   centreDistance = Math.hypot(centreX, centreY);
   if (centreDistance <= 1e-6) {
     centreX = 0;
@@ -854,55 +566,6 @@ export function validateArenaGatePair(
   return { ok: true, reason: "" };
 }
 
-export type PitClassification = {
-  /** Per-cell region id (−1 for ground). */
-  regionOf: Int16Array;
-  /** Per region: is its narrowest span ≤ the jump reach (so a player can HOP across it somewhere)? Drives
-   *  the cosmetic rim telegraph — a thin solid lip ("hop me") vs the full chevron treatment ("go around"). */
-  hoppable: boolean[];
-};
-
-/** Group pit cells into 4-connected regions and flag each as hoppable (narrow enough to clear with a jump).
- *  Purely cosmetic — feeds the §17 rim's width-keyed danger vocabulary. */
-export function classifyPitRegions(map: ArenaMap): PitClassification {
-  const { tiles, cols, rows } = map;
-  const regionOf = new Int16Array(cols * rows).fill(-1);
-  const hoppable: boolean[] = [];
-  let id = 0;
-  for (let i = 0; i < tiles.length; i++) {
-    if (tiles[i] !== TILE_PIT || regionOf[i] !== -1) continue;
-    const stack = [i];
-    regionOf[i] = id;
-    let minX = cols;
-    let maxX = 0;
-    let minY = rows;
-    let maxY = 0;
-    while (stack.length) {
-      const cur = stack.pop() as number;
-      const cx = cur % cols;
-      const cy = (cur / cols) | 0;
-      if (cx < minX) minX = cx;
-      if (cx > maxX) maxX = cx;
-      if (cy < minY) minY = cy;
-      if (cy > maxY) maxY = cy;
-      for (const [dx, dy] of CARDINALS) {
-        const nx = cx + dx;
-        const ny = cy + dy;
-        if (inBounds(nx, ny, cols, rows)) {
-          const ni = idx(nx, ny, cols);
-          if (tiles[ni] === TILE_PIT && regionOf[ni] === -1) {
-            regionOf[ni] = id;
-            stack.push(ni);
-          }
-        }
-      }
-    }
-    hoppable[id] = Math.min(maxX - minX + 1, maxY - minY + 1) <= MAP_MAX_JUMP_TILES;
-    id++;
-  }
-  return { regionOf, hoppable };
-}
-
 export type ArenaNavigationAudit = Readonly<{
   ok: boolean;
   reason: string;
@@ -910,10 +573,20 @@ export type ArenaNavigationAudit = Readonly<{
   navigableCells: number;
 }>;
 
-/** Navigation proof for the generated arena. All ground cell centres must remain in the spawn component,
- * including exact hops across pit gaps no wider than the shared jump limit. */
+/** Navigation proof. Ordinary arenas are continuous; lava retains its authored gap-hop audit. */
 export function auditArenaNavigation(map: ArenaMap): ArenaNavigationAudit {
   const total = map.cols * map.rows;
+  if (!map.lavaLayout) {
+    for (let cell = 0; cell < total; cell++)
+      if (map.tiles[cell] !== TILE_GROUND)
+        return {
+          ok: false,
+          reason: `ordinary arena cell ${cell} is not continuous ground`,
+          reachableCells: cell,
+          navigableCells: total,
+        };
+    return { ok: true, reason: "", reachableCells: total, navigableCells: total };
+  }
   const passable = new Uint8Array(total);
   let navigableCells = 0;
   for (let row = 0; row < map.rows; row++)
@@ -947,12 +620,12 @@ export function auditArenaNavigation(map: ArenaMap): ArenaNavigationAudit {
           stack.push(walk);
         }
       }
-      for (let gap = 1; gap <= (map.maxJumpTiles ?? MAP_MAX_JUMP_TILES); gap++) {
-        const pitCol = col + dx * gap;
-        const pitRow = row + dy * gap;
+      for (let gap = 1; gap <= (map.maxJumpTiles ?? 0); gap++) {
+        const gapCol = col + dx * gap;
+        const gapRow = row + dy * gap;
         if (
-          !inBounds(pitCol, pitRow, map.cols, map.rows) ||
-          map.tiles[idx(pitCol, pitRow, map.cols)] !== TILE_PIT
+          !inBounds(gapCol, gapRow, map.cols, map.rows) ||
+          map.tiles[idx(gapCol, gapRow, map.cols)] !== TILE_LAVA_GAP
         )
           break;
         const landCol = col + dx * (gap + 1);
@@ -972,26 +645,12 @@ export function auditArenaNavigation(map: ArenaMap): ArenaNavigationAudit {
       reachableCells,
       navigableCells,
     };
-  if (map.lavaLayout) {
-    return { ok: true, reason: "", reachableCells, navigableCells };
-  }
-  const reachedByZone = new Uint8Array(MAP_ZONE_COUNT);
-  for (let i = 0; i < total; i++) if (seen[i]) reachedByZone[map.zoneIds[i] ?? MAP_ZONE_COMMONS] = 1;
-  for (let zoneId = 0; zoneId < MAP_ZONE_COUNT; zoneId++)
-    if (!reachedByZone[zoneId])
-      return {
-        ok: false,
-        reason: `zone ${zoneId} has no player-radius route from Commons`,
-        reachableCells,
-        navigableCells,
-      };
   return { ok: true, reason: "", reachableCells, navigableCells };
 }
 
 /**
  * Validate the post-conditions a generated map MUST satisfy (used by tests + as a server-side assert):
- * the spawn is ground, every ground tile is reachable from spawn (walk + hop), and the border ring is
- * solid ground. Returns `{ ok, reason }`.
+ * ordinary arenas are continuous ground, while lava keeps its platform navigation proof.
  */
 export function validateArena(
   map: ArenaMap,
@@ -1022,21 +681,6 @@ export function validateArena(
       )
         return { ok: false, reason: "Commons does not own the central identity core" };
     }
-  const spawn = idx(Math.floor(cols / 2), Math.floor(rows / 2), cols);
-  if (tiles[spawn] !== TILE_GROUND) return { ok: false, reason: "spawn tile is not ground" };
-  for (let x = 0; x < cols; x++) {
-    if (tiles[idx(x, 0, cols)] !== TILE_GROUND || tiles[idx(x, rows - 1, cols)] !== TILE_GROUND)
-      return { ok: false, reason: "border ring has a pit" };
-  }
-  for (let y = 0; y < rows; y++) {
-    if (tiles[idx(0, y, cols)] !== TILE_GROUND || tiles[idx(cols - 1, y, cols)] !== TILE_GROUND)
-      return { ok: false, reason: "border ring has a pit" };
-  }
-  const reached = reachable(tiles, cols, rows, spawn);
-  for (let i = 0; i < tiles.length; i++) {
-    if (tiles[i] === TILE_GROUND && !reached[i])
-      return { ok: false, reason: `ground tile ${i} stranded` };
-  }
   const navigation = auditArenaNavigation(map);
   if (!navigation.ok) return { ok: false, reason: navigation.reason };
   if (gates) {

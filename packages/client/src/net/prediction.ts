@@ -6,7 +6,6 @@ import {
   BELT_Y0,
   type BeltLevel,
   beltPlayableXBounds,
-  beltSafeX,
   DEPTH_MAX,
   DIST_JUMP_AIRTIME,
   DIST_JUMP_COOLDOWN,
@@ -332,8 +331,7 @@ export function writeDistanceJumpIndicator(
   );
   const boundedY = Math.max(PLAYER_RADIUS, Math.min(ARENA_HEIGHT - PLAYER_RADIUS, out.rawY));
   if (belt) {
-    const safeX = beltSafeX(belt, boundedX, x);
-    const resolved = resolveBeltNavigation(belt, safeX, boundedY, PLAYER_RADIUS);
+    const resolved = resolveBeltNavigation(belt, boundedX, boundedY, PLAYER_RADIUS);
     out.x = resolved.x;
     out.y = resolved.y;
   } else if (map) {
@@ -476,7 +474,7 @@ function steerDistanceJump(s: PredStanceState, cmd: PredCmd, dt: number): void {
 }
 
 /** One horizontal sim step — the same phase order as the server's movement block: steer+integrate+clamp,
- *  impulse on top. NOT replicated (server-only, corrections absorb them): pit teleports
+ *  impulse on top. NOT replicated (server-only, corrections absorb them): lava recoveries
  *  (teleportSeq hard-snap) and player-player BODY collisions — under sustained mutual contact the
  *  ~16px/patch pushout correction converges to a STABLE self-view offset of roughly 35-70px into the
  *  other player (no jitter/oscillation; verified by the adversarial review). Acceptable for co-op PvE;
@@ -1154,7 +1152,7 @@ export class SelfPredictor {
     this.pred.vy = impulse.vy;
   }
 
-  /** The client-side arena map, regenerated from synced seeds for pit-safe distance-jump endpoints. */
+  /** The client-side arena map, regenerated from synced seeds for valid distance-jump endpoints. */
   setMap(map: ArenaMap | undefined): void {
     this.map = map;
   }
@@ -1700,7 +1698,7 @@ export class SelfPredictor {
 
     if (teleported || this.needResync || pauseNow || this.paused) {
       // Replay-reset family — but the error-offset treatment differs by CAUSE:
-      // - a TELEPORT SNAPS (a rift/pit/restart is an authored cut): err = 0;
+      // - a TELEPORT SNAPS (a rift/lava-recovery/restart is an authored cut): err = 0;
       // - a stale SELF prediction rebase preserves the visible position and recovers through Smooth;
       // - ENTERING a downed pause FOLDS the visual lead into the offset so the rig
       //   GLIDES back instead of popping backward by ~RTT×speed;

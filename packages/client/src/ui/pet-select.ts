@@ -171,10 +171,10 @@ function petBonusCopy(id: PetId, level: number): readonly [string, string] {
       ];
     case "slate-tortoise":
       return [
-        `Pit / ground-hazard damage ×${mods.groundHazardDamageMultiplier.toFixed(3)}${nextCopy(
+        `Lava-gap / ground-hazard damage ×${mods.groundHazardDamageMultiplier.toFixed(3)}${nextCopy(
           `×${next.groundHazardDamageMultiplier.toFixed(3)}`,
         )}`,
-        "Level 10: post-pit regeneration ×1.5 for 3s",
+        "Level 10: post-lava-gap regeneration ×1.5 for 3s",
       ];
   }
 }

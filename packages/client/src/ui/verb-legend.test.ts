@@ -40,7 +40,7 @@ function onboarding(overrides: Partial<OnboardingSettings> = {}): OnboardingSett
       beamOverheat: 0,
       juggle: 0,
       ultimateReady: 0,
-      pitFall: 0,
+      lavaGapFall: 0,
       empoweredReturn: 0,
     },
     ...overrides,
@@ -127,7 +127,7 @@ describe("verb onboarding settings", () => {
       version: 1,
       onboarding: {
         verbLegendSeen: true,
-        contextHints: { beamOverheat: 99, juggle: 1.9, pitFall: -4 },
+        contextHints: { beamOverheat: 99, juggle: 1.9, lavaGapFall: -4 },
       },
     });
 
@@ -135,7 +135,7 @@ describe("verb onboarding settings", () => {
     expect(settings.onboarding.contextHints).toMatchObject({
       beamOverheat: 2,
       juggle: 1,
-      pitFall: 0,
+      lavaGapFall: 0,
       empoweredReturn: 0,
     });
   });

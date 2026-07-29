@@ -1341,7 +1341,7 @@ export class SpriteRig {
   /** Drive lasting pose/tint state exclusively from the synced nested UltimateState row. */
     declare setUltimatePresentation: OmitThisParameter<typeof rigCoreMethods.setUltimatePresentation>;
 
-  /** §20 detached death: crumple, through-plane flutter, tear, or the cheap overflow/pit fold. */
+  /** §20 detached death: crumple, through-plane flutter, tear, or the cheap overflow/lava-gap fold. */
     declare deathPop: OmitThisParameter<typeof rigCoreMethods.deathPop>;
 
   /** Advance a detached paper death. Returns false after it destroys its rig. */

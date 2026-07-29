@@ -6,6 +6,10 @@ const TERRAIN_LAYER = "Terrain";
 const ZONES_LAYER = "Zones";
 const GAMEPLAY_LAYER = "Gameplay";
 const PLAYER_SPAWN = "PlayerSpawn";
+// The LDtk owner playground is an offline 4,800px authoring canvas, not a runtime arena-size source.
+// Runtime arenas use the shared 38,400px constants; keeping this compact avoids a 480x480 JSON paint grid.
+const AUTHORED_CANVAS_PX = 4_800;
+const AUTHORED_TILE_PX = 80;
 const LEVEL_FIELDS = new Map([
   ["DisplayName", "String"],
   ["InitialDimensionId", "String"],
@@ -212,10 +216,10 @@ function validateProjectDefinitions(project, sourceLabel, gridSize) {
       .map((entry) => `${entry?.identifier}:${String(entry?.value)}`)
       .sort()
       .join(",");
-  if (valuePairs(terrainValues) !== "Pit:1")
+  if (valuePairs(terrainValues) !== "")
     fail(
       context,
-      `Terrain IntGrid values must be exactly Pit:1, observed ${valuePairs(terrainValues)}`,
+      `Terrain IntGrid values must be empty for continuous ground, observed ${valuePairs(terrainValues)}`,
     );
   if (valuePairs(zoneValues) !== "Cover:1,Scar:2")
     fail(
@@ -258,20 +262,17 @@ function validateSharedContract(shared, project, sourceLabel) {
     if (typeof shared?.[name] !== "function")
       fail(context, `shared map contract does not export ${name}`);
   const requiredIntegers = [
-    "ARENA_WIDTH",
-    "ARENA_HEIGHT",
     "MAP_TILE",
     "MAP_BORDER_TILES",
     "MAP_SPAWN_CLEAR_TILES",
-    "MAP_MAX_JUMP_TILES",
   ];
   for (const name of requiredIntegers)
     if (!isSafeInt(shared?.[name]))
       fail(context, `shared map contract does not export integer ${name}`);
-  if (shared.ARENA_WIDTH !== 4800 || shared.ARENA_HEIGHT !== 4800 || shared.MAP_TILE !== 80)
+  if (shared.MAP_TILE !== AUTHORED_TILE_PX)
     fail(
       context,
-      `shared fixed arena contract changed (expected 4800x4800 at 80px, observed ${shared.ARENA_WIDTH}x${shared.ARENA_HEIGHT} at ${shared.MAP_TILE}px); update the LDtk compiler deliberately`,
+      `shared tile contract changed (expected ${AUTHORED_TILE_PX}px, observed ${shared.MAP_TILE}px); update the LDtk compiler deliberately`,
     );
 }
 
@@ -476,18 +477,18 @@ function revisionFor(record) {
 function compileLevel(project, level, definitions, shared, sourceLabel) {
   const levelCtx = levelContext(project, level, sourceLabel);
   const id = normalizeArenaId(level.identifier, levelCtx);
-  const gridSize = shared.MAP_TILE;
-  const cols = shared.ARENA_WIDTH / gridSize;
-  const rows = shared.ARENA_HEIGHT / gridSize;
+  const gridSize = AUTHORED_TILE_PX;
+  const cols = AUTHORED_CANVAS_PX / gridSize;
+  const rows = AUTHORED_CANVAS_PX / gridSize;
   if (
     !isSafeInt(level.pxWid) ||
     !isSafeInt(level.pxHei) ||
-    level.pxWid !== shared.ARENA_WIDTH ||
-    level.pxHei !== shared.ARENA_HEIGHT
+    level.pxWid !== AUTHORED_CANVAS_PX ||
+    level.pxHei !== AUTHORED_CANVAS_PX
   )
     fail(
       levelCtx,
-      `level dimensions must be ${shared.ARENA_WIDTH}x${shared.ARENA_HEIGHT}px, observed ${String(level.pxWid)}x${String(level.pxHei)}px`,
+      `level dimensions must be ${AUTHORED_CANVAS_PX}x${AUTHORED_CANVAS_PX}px, observed ${String(level.pxWid)}x${String(level.pxHei)}px`,
     );
   if (!isSafeInt(level.uid) || !isSafeInt(level.worldX) || !isSafeInt(level.worldY))
     fail(levelCtx, "level uid/world coordinates must be finite safe integers");
@@ -525,7 +526,7 @@ function compileLevel(project, level, definitions, shared, sourceLabel) {
     sourceLabel,
     cols,
     rows,
-    new Set([0, 1]),
+    new Set([0]),
   );
   const zonesCsv = validateIntGrid(
     project,
@@ -667,7 +668,7 @@ function compileLevel(project, level, definitions, shared, sourceLabel) {
         cols,
         shared,
       ),
-      `shared validateArena rejected authored geometry: ${arenaValidation.reason} (jump limit ${shared.MAP_MAX_JUMP_TILES} tiles; spawn clear radius ${shared.MAP_SPAWN_CLEAR_TILES} tiles)`,
+      `shared validateArena rejected authored geometry: ${arenaValidation.reason} (spawn clear radius ${shared.MAP_SPAWN_CLEAR_TILES} tiles)`,
     );
   const navigation = shared.auditArenaNavigation(map);
   if (!navigation.ok)

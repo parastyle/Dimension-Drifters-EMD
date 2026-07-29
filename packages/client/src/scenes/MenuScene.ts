@@ -4052,7 +4052,7 @@ export class MenuScene extends Phaser.Scene {
       })
       .setOrigin(0.5, 0);
     // Palette swatch strip — the four signature theme colours, so each card reads as its own world.
-    const chips = [p.boundaryRail, p.pitAmberLip, p.spawnRingSafe, p.dustDrift];
+    const chips = [p.boundaryRail, p.gridColor2, p.spawnRingSafe, p.dustDrift];
     const stride = 34;
     const totalW = chips.length * 26 + (chips.length - 1) * (stride - 26);
     const swatches = chips.map((c, i) =>

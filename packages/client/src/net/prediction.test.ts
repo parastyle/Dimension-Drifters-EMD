@@ -1,5 +1,6 @@
 import {
   addImpulse,
+  ARENA_WIDTH,
   DIST_JUMP_VERTICAL_VELOCITY,
   INTERP_SNAP_PLAYER,
   stepImpulse,
@@ -217,7 +218,7 @@ describe("SelfPredictor — §4 v0.107 prediction + reconciliation", () => {
     const server = new MockServer();
     const pred = new SelfPredictor(server.view());
     run(pred, server, hold(1, 0, 10), 2);
-    server.teleport(3000, 3000); // rift descent / pit snap-back / restart
+    server.teleport(3000, 3000); // rift descent / lava recovery / restart
     run(pred, server, hold(0, 0, 3), 2);
     const r = pred.renderPos(0, 0, 0);
     expect(Math.hypot(r.x - 3000, r.y - 3000)).toBeLessThan(INTERP_SNAP_PLAYER); // snapped, not gliding
@@ -337,9 +338,10 @@ describe("SelfPredictor — jump-feel stance replay", () => {
     expect(pred.renderPos(1, 0, 0).height).toBeGreaterThan(0);
   });
 
-  it("predicts full airtime when endpoint safety collapses onto takeoff", async () => {
+  it("predicts full airtime when the hard arena boundary collapses the endpoint onto takeoff", async () => {
     const shared = await import("@dd/shared");
     const server = new MockServer();
+    server.x = shared.ARENA_WIDTH - shared.PLAYER_RADIUS;
     const pred = new SelfPredictor({ ...server.view(), moveStance: 0, stanceSeq: 0 });
     const map = shared.generateArena({
       seedTerrain: 1,
@@ -347,10 +349,6 @@ describe("SelfPredictor — jump-feel stance replay", () => {
       seedTheme: 3,
       seedDecor: 4,
     });
-    map.tiles.fill(shared.TILE_PIT);
-    const col = Math.floor(server.x / map.tileSize);
-    const row = Math.floor(server.y / map.tileSize);
-    map.tiles[row * map.cols + col] = shared.TILE_GROUND;
     pred.setMap(map);
 
     pred.tick(pred.mintCmd(1, 0, true, false, false, 1, 0));
@@ -443,7 +441,7 @@ describe("jump-feel input and indicator helpers", () => {
     expect(out.x).toBeCloseTo(1372, 6);
     expect(out.clamped).toBe(false);
 
-    expect(writeDistanceJumpIndicator(out, 4780, 1000, 1, 0, 0, 0)).toBe(true);
+    expect(writeDistanceJumpIndicator(out, ARENA_WIDTH - 20, 1000, 1, 0, 0, 0)).toBe(true);
     expect(out.x).toBeLessThan(out.rawX);
     expect(out.clamped).toBe(true);
   });

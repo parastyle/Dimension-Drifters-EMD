@@ -160,7 +160,7 @@ export const JIGGLE_LOD_MARGIN_PX = 240;
  * §7 v0.105 de-clunk — CLIENT render-lerp teleport SNAP thresholds (px). The client smooths each rig
  * toward its authoritative position with a τ≈154ms exponential lerp (great for the ~sub-49px
  * frame-to-frame gap), but when the SERVER teleports an entity — a rift descent (~3000px), a run
- * restart, a pit snap-back — that same lerp turns into a multi-second camera fly-by across the map. If
+ * restart, a lava-gap recovery — that same lerp turns into a multi-second camera fly-by across the map. If
  * the gap exceeds the threshold it's a teleport, not motion: hard-snap instead of gliding. Set well above
  * any legitimate single-tick move so knockback never false-snaps: players top out at IMPULSE_MAX
  * (780px/s → ~39px/tick) plus a little hit-stop catch-up; enemies get parry-knocked up to
@@ -207,7 +207,7 @@ export const CAM_FOLLOW_TAU = 0.18;
 /** Look-ahead lead (px at full move speed): the focus leads along the move direction. Small on purpose —
  *  enough to open up the approach, not so much it swims. Scales down with speed (0 at a standstill). */
 export const CAM_LOOKAHEAD = 74;
-/** A focus jump beyond this (px) is a TELEPORT (rift descent, respawn, pit snap-back), not motion — snap
+/** A focus jump beyond this (px) is a TELEPORT (rift descent, respawn, lava-gap recovery), not motion — snap
  *  the camera instead of gliding it across the whole map. Set above any legit single-frame move. */
 export const CAM_SNAP_DIST = 600;
 
@@ -280,50 +280,20 @@ export const MOVEMENT_CORRECTION_LARGE_PX = INTERP_SNAP_PLAYER;
 /** A parry/juggle launch owns the complete conservative airborne window. */
 export const SERVER_MOTION_LAUNCH_TICKS = 16;
 
-/** One big arena per stage (§5). Server-seeded procedural arenas come later (§4/§17). (tuning)
- *  v0.102 "release-roominess" pass: 2400² → 4800² (4× the area) so the arena reads as a WORLD you roam,
- *  not a pen — combat density is unchanged (enemies spawn on a ring around the players), the extra space
- *  is breathing room between the terrain features. */
-export const ARENA_WIDTH = 4800;
-export const ARENA_HEIGHT = 4800;
+/** One open arena per stage. The 38,400px square is eight times the former linear extent. */
+export const ARENA_WIDTH = 38_400;
+export const ARENA_HEIGHT = 38_400;
 
-/**
- * §17 procedural arena tiling. The map is a coarse integer grid of `MAP_TILE`-px cells (chosen to divide
- * the arena evenly: 4800 / 80 = 60 → a 60×60 grid). Generation (mapgen.ts) is server-seeded + shared so
- * every client reproduces the identical map. All TUNING. Phase 0 only produces + validates the grid; pit
- * rendering/collision is the §17 Phase 1 follow-up.
- */
+/** 80px cells produce the shared deterministic 480x480 macro-geography grid. */
 export const MAP_TILE = 80;
-/** Guaranteed-ground disc at the arena centre (tiles) — players spawn here, never on/over a pit. */
+/** Reserved spawn/decor clearing at the arena centre, in tiles. */
 export const MAP_SPAWN_CLEAR_TILES = 3;
-/** A solid ground ring this many tiles deep around the arena edge (no pit flush against the wall). */
+/** Boundary inset retained by authored-map validation and macro-zone seed placement. */
 export const MAP_BORDER_TILES = 1;
-/** Target pit coverage of the interior (fraction) — the generator aims near this. Kept LOW on purpose
- *  (roominess): pits are fewer, GRANDER features with open lanes between, not scattered pixel noise. */
-export const MAP_PIT_TARGET = 0.13;
-/** Hard ceiling on pit coverage — if blob growth + smoothing overshoot, an erosion pass trims pits back
- *  under this so the arena stays mostly playable (never swiss cheese). */
-export const MAP_PIT_MAX = 0.22;
-/** Minimum spacing between pit "seed" sites (tiles), so hazards spread out instead of clumping — wide
- *  enough that clear traversal lanes always exist between neighbouring pit features. */
-export const MAP_PIT_SPACING_TILES = 7;
-/**
- * Widest pit GAP (tiles) a player may be REQUIRED to cross by jumping — the connectivity guarantee treats
- * any straight gap up to this as "hoppable" and bridges anything wider with ground, so no region is ever
- * stranded behind an uncrossable pit. Derived from the asymmetric hop reach
- * (JUMP_AIRTIME × MOVE_SPEED ≈ 176px ≈ 2.2 tiles); kept conservative so a required hop is always
- * comfortable while the committed distance jump remains an optional route verb.
- */
-export const MAP_MAX_JUMP_TILES = 2;
 
 /** Blob body radius in px. Body collision is respected by all objects (§5) — added later. (tuning) */
 export const PLAYER_RADIUS = 24;
-/**
- * Skin-independent ground contact below the player root: the bottom of the authoritative body disc. It is
- * also within four world pixels of the default paper rig's scaled shadow contact at the painted pit lip.
- * Point-sampled floor hazards query here instead of at the torso/root centre. This translates the pit mask
- * for the upright paper character; it does not shrink pit geometry.
- */
+/** Lava collision samples the visible foot contact at the bottom of the body disc. */
 export const PLAYER_GROUND_CONTACT_OFFSET_Y = PLAYER_RADIUS;
 
 /**
@@ -420,7 +390,7 @@ export const BAG_CAP = 12;
  *  drop at your feet doesn't snap straight back. */
 export const DROP_GRACE_SECONDS = 0.7;
 
-/** §5 JUMP (Spacebar) — universal traversal that clears barriers + pitfalls, with no i-frames. Defensive
+/** §5 JUMP (Spacebar) — universal mobility that clears barriers, with no i-frames. Defensive
  *  channels stay distinct: parry answers WHITE and owns every reward; schema-23 slide opening answers
  *  RED-projectile and locked melee with safety only. Neither movement verb inherits the parry reward ladder. */
 export const JUMP_AIRTIME = 0.55;
@@ -434,7 +404,7 @@ export const JUMP_HOP_HEIGHT = 47;
 export const JUMP_BUFFER_SECONDS = 0.25;
 
 /** §5/§20 VERTICAL physics (Stage B) — the jump is now a real upward impulse under gravity, generalising
- *  the old fixed-duration hop into a HEIGHT axis (px above ground) that the §17 pit layer + the later
+ *  the old fixed-duration hop into a HEIGHT axis (px above ground) that the lava-gap layer + the later
  *  §8 parry-launch ride on. Tuned so airtime ≈ JUMP_AIRTIME (0.55s) and peak ≈ JUMP_HOP_HEIGHT (47px).
  *  PURE: a shared `stepVertical(height, vh, dt)` integrates it server-side + (future) in client prediction. */
 export const GRAVITY_RISE = 1250; // px/s² while vh > +GRAVITY_APEX_BAND
@@ -444,7 +414,7 @@ export const GRAVITY_APEX_BAND = 80; // px/s — the readable float window aroun
 /** Compatibility alias for old analytic callers. New vertical motion must use the three-zone profile. */
 export const GRAVITY = GRAVITY_RISE;
 export const JUMP_VELOCITY = 335; // px/s upward kick on a grounded jump
-/** Height (px) at/below which a player counts as GROUNDED (jump-ready + pit-fall-eligible). */
+/** Height (px) at/below which a player counts as GROUNDED (jump-ready + lava-gap-fall-eligible). */
 export const GROUND_EPSILON = 0.5;
 
 /** Jump-feel committed movement stances. Normal airborne phases remain derivable from height/vh. */
@@ -544,12 +514,9 @@ export const LANDING_SOLID_MIN_SPEED = 300;
 export const LANDING_HEAVY_MIN_SPEED = 520;
 export const LANDING_HORIZONTAL_WEIGHT = 0.3;
 
-/** §17 pitfall FALL consequence (Mike's ruling: chip + reposition, NOT run-ending). A grounded player
- *  whose body is over a pit falls: loses this fraction of max HP, snaps back to the last grounded tile,
- *  and gets a brief GRACE (i-frames + no re-fall) so a pit isn't a death spiral or a landing-gank. An
- *  AIRBORNE player (mid-jump, §5) is immune — the hop clears the gap. */
-export const PIT_FALL_DAMAGE_FRAC = 0.15;
-export const PIT_FALL_GRACE = 0.6;
+/** Lava-platform gap recovery. Ordinary arenas have no floor-fall path. */
+export const LAVA_GAP_FALL_DAMAGE_FRAC = 0.15;
+export const LAVA_GAP_FALL_GRACE = 0.6;
 
 /**
  * "Fists" placeholder melee — a stand-in so the level is playable before the real weapon

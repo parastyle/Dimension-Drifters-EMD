@@ -62,7 +62,7 @@ test("level-up window: earned XP opens the flex window; clicking a card's scene-
     // Conjure rushers (training-only dev summon) and cut them down for XP. Level 2 costs 6 XP and a
     // critter pays 1; the cleaver one-shots them at 1/1 attributes even under the requirement penalty
     // (4 x 0.76 > 3 hp), and MELEE kills land inside the 180px Echo auto-latch reach so every kill
-    // banks. Waves spawn on the 720px ring and the random map can pit-kill converging critters
+    // banks. Waves spawn on the 720px ring, so converging critters remain outside the modal
     // (terrain deaths pay nothing). A bounded page-side respawner supplies six waves while the flex
     // is pending; it must not wait for every stranded survivor to disappear before replacing losses.
     await page.evaluate(() => {

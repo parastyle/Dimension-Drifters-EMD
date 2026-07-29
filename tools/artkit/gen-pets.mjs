@@ -330,7 +330,7 @@ const PETS = [
     id: "slate-tortoise",
     displayName: "Slate Tortoise",
     dimension: DIMENSIONS.verdant,
-    mappingLane: "pit/ground-hazard mitigation plus post-pit regeneration boost",
+    mappingLane: "lava-gap/ground-hazard mitigation plus post-gap regeneration boost",
     identity: "A friendly palm-sized limbless rune-stone tortoise: low mask-head body peeking from a broad slate shell, moss seams, stacked cairn plates, recessed pale-blue core. Never a shield pickup, safe-zone marker, immunity tell, enemy tank, or creature with realistic legs.",
     palette: { ink: "#111318", structureDark: "#22252B", structureMid: "#5A6472", paperLight: "#6E7042", signature: "#3C6E6A", core: "#9FD8E8" },
     particle: "pet-slate-tortoise-rune-grit",

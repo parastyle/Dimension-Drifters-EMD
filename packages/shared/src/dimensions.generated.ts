@@ -22,16 +22,13 @@ export const EXTRA_DIMENSIONS: Record<string, DimensionDef> = {
     "boss": "the-hollow-king",
     "hazard": {
       "name": "Black-ice slicks",
-      "description": "Glassy frozen meltwater sheets the nave in dark mirror-slicks. Step on one and you keep sliding — momentum carries you past where you stopped steering, drifting into contact range or off the lip of a frozen pit. A pale freezing fog clings low over each slick so the edges read before you commit (§17)."
+      "description": "Glassy frozen meltwater sheets the nave in dark mirror-slicks. Step on one and you keep sliding — momentum carries you past where you stopped steering and into contact range. A pale freezing fog clings low over each slick so the edges read before you commit (§17)."
     },
     "palette": {
       "groundBed": 0x1c2330,
       "gridColor1": 0x1c2330,
       "gridColor2": 0x23303f,
       "boundaryRail": 0x3c6e6a,
-      "pitVoid": 0x070a12,
-      "pitRustBand": 0x2e6e9e,
-      "pitAmberLip": 0x9fd8e8,
       "spawnRingSafe": 0x33e6ff,
       "dustDrift": 0xcfe0e8
     },
@@ -61,9 +58,6 @@ export const EXTRA_DIMENSIONS: Record<string, DimensionDef> = {
       "gridColor1": 0x1c2a1e,
       "gridColor2": 0x243a26,
       "boundaryRail": 0x6e7042,
-      "pitVoid": 0x0a120c,
-      "pitRustBand": 0x3c6e3a,
-      "pitAmberLip": 0xc4b24a,
       "spawnRingSafe": 0x33e6ff,
       "dustDrift": 0x9cff3b
     },
@@ -86,16 +80,13 @@ export const EXTRA_DIMENSIONS: Record<string, DimensionDef> = {
     "boss": "molten-brute",
     "hazard": {
       "name": "Lava cracks & fire vents",
-      "description": "Glowing fissures split the basalt floor and pressure-vents flare on a cycle — the §17 pit-rim language re-skinned as molten cracks (hot amber lip = the burn telegraph). Standing on a lit crack or a venting tile chips you and snap-repositions, same as a Wild-West mineshaft fall; the cool cyan spawn ring stays the one safe pad."
+      "description": "Glowing fissures cross the continuous basalt floor and pressure-vents flare on a cycle. A hot amber telegraph marks the burn before a lit crack or venting tile chips anyone still standing on it."
     },
     "palette": {
       "groundBed": 0x1a1210,
       "gridColor1": 0x1a1210,
       "gridColor2": 0x261713,
       "boundaryRail": 0x9e3b36,
-      "pitVoid": 0x120608,
-      "pitRustBand": 0xc0341f,
-      "pitAmberLip": 0xff8a2b,
       "spawnRingSafe": 0x33e6ff,
       "dustDrift": 0x6e3a24
     },
@@ -125,9 +116,6 @@ export const EXTRA_DIMENSIONS: Record<string, DimensionDef> = {
       "gridColor1": 0x171a21,
       "gridColor2": 0x1e2a33,
       "boundaryRail": 0xff3bd4,
-      "pitVoid": 0x08060e,
-      "pitRustBand": 0xb14bff,
-      "pitAmberLip": 0x33e6ff,
       "spawnRingSafe": 0x9cff3b,
       "dustDrift": 0x3c6e6a
     },

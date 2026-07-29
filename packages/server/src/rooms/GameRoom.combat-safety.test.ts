@@ -4,7 +4,6 @@ import {
   BELT_LEVEL_IDS,
   BELT_Y0,
   beltLevelFor,
-  beltPitAtX,
   ChestState,
   CORPORATE_ELEVATOR_COUNTDOWN_TICKS,
   CORPORATE_ELEVATOR_DEPART_TICKS,
@@ -22,7 +21,6 @@ import {
   EnemyState,
   FISTS_WEAPON,
   getDimension,
-  isPitAtPx,
   MAX_ENEMIES,
   META_VITALITY_HP,
   MoneyDropState,
@@ -32,7 +30,7 @@ import {
   PARRY_IFRAMES,
   PARRY_LAUNCH,
   ParryReaction,
-  PIT_FALL_DAMAGE_FRAC,
+  LAVA_GAP_FALL_DAMAGE_FRAC,
   PickupState,
   PLAYER_MAX_HP,
   PLAYER_REGEN,
@@ -44,7 +42,6 @@ import {
   weaponDisassemblyValue,
   swingDescriptorFor,
   TILE_GROUND,
-  TILE_PIT,
   unpackParryGuardPose,
   unpackParryReaction,
   WEAPON_IDS,
@@ -285,7 +282,7 @@ function herePlayerJuggledDefault() {
 }
 
 // Jump-feel J1 — appended authoritative fixtures. Every pinned position starts from an all-ground map;
-// individual tests then author only the pit geometry they need.
+// individual tests then author only the state they need.
 function makeJumpFeelRoom(id = "jump-feel") {
   const h = makeRoom();
   h.join(id);
@@ -859,7 +856,7 @@ describe("GameRoom — §46 terminal quiescence + hostile projectile ceiling", (
     const rng = makeRng(0x46ce11a1);
     vi.spyOn(Math, "random").mockImplementation(() => rng.next());
     const p = h.state().players.get("p1");
-    // Map-RNG law: this test pins a volley path near spawn — random pits under it (likelier since
+    // Map-RNG law: this test pins a volley path near spawn and isolates combat from terrain state (likelier since
     // the QOL-03 gate-disc solver reshapes spawn-adjacent terrain) would annihilate the volley mid-step.
     h.room.map.tiles.fill(TILE_GROUND);
     const safe = { x: h.room.map.spawnX + 120, y: h.room.map.spawnY };
@@ -1023,7 +1020,7 @@ describe("GameRoom — §50 spin re-hits per revolution", () => {
   it("ONE whirlwind press (4π sweep) dips a pinned enemy at least twice", () => {
     const h = makeRoom();
     h.join("p1");
-    // Determinism: flatten the map to ground so a randomly-placed pit tile can't
+    // Determinism: flatten the map to ground so authored terrain state cannot
     // swallow the sweep in a full-suite RNG stream (matches the sibling parry test at ~L2570).
     h.room.map.tiles.fill(TILE_GROUND);
     h.send("p1", "toggleTraining");

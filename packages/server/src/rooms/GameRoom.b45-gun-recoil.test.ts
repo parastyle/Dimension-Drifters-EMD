@@ -4,7 +4,6 @@ import {
   PLAYER_GROUND_CONTACT_OFFSET_Y,
   PLAYER_RADIUS,
   TILE_GROUND,
-  TILE_PIT,
   WEAPONS,
 } from "@dd/shared";
 import { describe, expect, it, vi } from "vitest";
@@ -184,38 +183,6 @@ describe("GameRoom B45 physical gun recoil", () => {
     expect(player.x).toBeGreaterThanOrEqual(minX);
   });
 
-  it("can push a grounded shooter into a pit while the same airborne shot clears it", () => {
-    const run = (airborne: boolean) => {
-      const state = fixture("x2-calamity-howitzer");
-      const tileSize = state.room.map.tileSize;
-      const tileY = Math.floor(
-        (state.player.y + PLAYER_GROUND_CONTACT_OFFSET_Y) / tileSize,
-      );
-      const groundTileX = Math.floor(state.player.x / tileSize);
-      const boundaryX = (groundTileX + 1) * tileSize;
-      state.player.x = boundaryX - 5;
-      state.combat.lastGroundX = state.player.x;
-      state.combat.lastGroundY = state.player.y;
-      state.room.map.tiles[tileY * state.room.map.cols + groundTileX + 1] = TILE_PIT;
-      state.combat.aimX = -1;
-      state.combat.aimY = 0;
-      state.combat.targetX = state.player.x - 700;
-      state.combat.targetY = state.player.y;
-      if (airborne) state.player.height = 32;
-      const fellBefore = state.player.fellSeq;
-      const weapon = WEAPONS[state.player.weapon];
-      if (!weapon?.gun) throw new Error("missing pit recoil fixture");
-      state.room.fireGun(state.player, state.combat, weapon);
-      state.room.stepSim(0.05);
-      return { ...state, fellBefore, boundaryX };
-    };
-
-    const grounded = run(false);
-    expect(grounded.player.fellSeq).toBe(grounded.fellBefore + 1);
-    const airborne = run(true);
-    expect(airborne.player.fellSeq).toBe(airborne.fellBefore);
-    expect(airborne.player.x).toBeGreaterThan(airborne.boundaryX);
-  });
 });
 
 describe("GameRoom B45 beam/caster boundary", () => {

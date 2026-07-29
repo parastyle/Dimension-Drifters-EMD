@@ -207,7 +207,7 @@ export function addImpulse(
  * §5/§20 vertical physics (Stage B) — integrate a HEIGHT (px above ground) under an upward velocity `vh`
  * and gravity, landing (snap to 0) when it returns to the floor. PURE + deterministic. The jump seeds `vh`
  * with `JUMP_VELOCITY`; the later §8 parry-launch adds to it, so a chain of incoming hits can loft a player
- * higher and gravity reclaims them when it stops. `height > GROUND_EPSILON` = airborne (clears §17 pits).
+ * higher and gravity reclaims them when it stops. `height > GROUND_EPSILON` = airborne.
  */
 export function stepVertical(
   height: number,

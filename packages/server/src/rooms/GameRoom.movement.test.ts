@@ -4,7 +4,6 @@ import {
   BELT_LEVEL_IDS,
   BELT_Y0,
   beltLevelFor,
-  beltPitAtX,
   ChestState,
   CORPORATE_ELEVATOR_COUNTDOWN_TICKS,
   CORPORATE_ELEVATOR_DEPART_TICKS,
@@ -22,7 +21,6 @@ import {
   EnemyState,
   FISTS_WEAPON,
   getDimension,
-  isPitAtPx,
   MAX_ENEMIES,
   META_VITALITY_HP,
   MoneyDropState,
@@ -32,7 +30,7 @@ import {
   PARRY_IFRAMES,
   PARRY_LAUNCH,
   ParryReaction,
-  PIT_FALL_DAMAGE_FRAC,
+  LAVA_GAP_FALL_DAMAGE_FRAC,
   PickupState,
   PLAYER_GROUND_CONTACT_OFFSET_Y,
   PLAYER_MAX_HP,
@@ -45,7 +43,7 @@ import {
   weaponDisassemblyValue,
   swingDescriptorFor,
   TILE_GROUND,
-  TILE_PIT,
+  TILE_LAVA_GAP,
   unpackParryGuardPose,
   unpackParryReaction,
   WEAPON_IDS,
@@ -286,7 +284,7 @@ function herePlayerJuggledDefault() {
 }
 
 // Jump-feel J1 — appended authoritative fixtures. Every pinned position starts from an all-ground map;
-// individual tests then author only the pit geometry they need.
+// individual tests then author only the state they need.
 function makeJumpFeelRoom(id = "jump-feel") {
   const h = makeRoom();
   h.join(id);
@@ -564,119 +562,14 @@ function joinWeaponAccount(
 }
 
 
-describe("GameRoom — §17 pitfall + terrain-death + §9 gun cadence", () => {
-  // These run in TRAINING mode: it disables the arena spawn director (§21), so the only entities in play are
-  // the ones the test plants — no random horde to chip the player or fall in our test pit. The pitfall /
-  // pit-death / reload phases themselves run mode-agnostically, so the rules under test are unchanged.
+describe("GameRoom — §9 gun cadence", () => {
+  // Training mode disables the arena spawn director so only the player's weapon cadence is in play.
   function training() {
     const h = makeRoom();
     h.join("p1");
     h.send("p1", "toggleTraining");
     return h;
   }
-  // Force the tile under a world-px point to a pit (post-gen override — bypasses the cleared spawn disc).
-  function forcePit(h: ReturnType<typeof makeRoom>, px: number, py: number, rad = 0) {
-    const m = h.room.map;
-    const tx = Math.floor(px / m.tileSize);
-    const ty = Math.floor(py / m.tileSize);
-    for (let dy = -rad; dy <= rad; dy++)
-      for (let dx = -rad; dx <= rad; dx++) m.tiles[(ty + dy) * m.cols + (tx + dx)] = TILE_PIT;
-  }
-
-  it("a GROUNDED player over a pit falls: chip damage + snap-back to last ground + fellSeq", () => {
-    const h = training();
-    const p = h.state().players.get("p1");
-    const sx = h.room.map.spawnX;
-    const sy = h.room.map.spawnY;
-    p.x = sx;
-    p.y = sy;
-    h.tick(1); // stand on cleared ground → records lastGround at (sx,sy)
-    const fellBefore = p.fellSeq;
-    // Open a pit 3 tiles south and step onto it, grounded.
-    const pitY = sy + 3 * h.room.map.tileSize;
-    forcePit(h, sx, pitY);
-    p.x = sx;
-    p.y = pitY;
-    p.height = 0;
-    h.room.combat.get("p1").pitGrace = 0;
-    h.tick(1);
-    expect(p.fellSeq).toBeGreaterThan(fellBefore); // the fall fired
-    expect(isPitAtPx(h.room.map, p.x, p.y)).toBe(false); // snapped back onto solid ground
-    expect(Math.round(p.x)).toBe(Math.round(sx)); // … specifically the last-ground spot
-    expect(Math.round(p.y)).toBe(Math.round(sy));
-    expect(p.hp).toBeCloseTo(PLAYER_MAX_HP * (1 - PIT_FALL_DAMAGE_FRAC), 0); // took the chip (± a regen tick)
-  });
-
-  it("triggers pit damage at the visible foot contact, not the torso/root centre", () => {
-    const h = training();
-    const p = h.state().players.get("p1");
-    const map = h.room.map;
-    const col = Math.floor(map.spawnX / map.tileSize);
-    const groundRow = Math.floor(map.spawnY / map.tileSize);
-    const boundaryY = groundRow * map.tileSize;
-    map.tiles[(groundRow - 1) * map.cols + col] = TILE_PIT;
-    map.tiles[groundRow * map.cols + col] = 0;
-    p.x = (col + 0.5) * map.tileSize;
-    p.y = (groundRow + 0.5) * map.tileSize;
-    h.tick(1);
-
-    const fellBefore = p.fellSeq;
-    const hpBefore = p.hp;
-    const visibleGroundRootY = boundaryY - PLAYER_GROUND_CONTACT_OFFSET_Y + 0.25;
-    p.y = visibleGroundRootY;
-    h.room.combat.get("p1").pitGrace = 0;
-    h.tick(1);
-    expect(p.fellSeq).toBe(fellBefore);
-    expect(p.hp).toBe(hpBefore);
-
-    p.y = boundaryY - PLAYER_GROUND_CONTACT_OFFSET_Y - 0.25;
-    h.tick(1);
-    expect(p.fellSeq).toBe((fellBefore + 1) & 0xff);
-    expect(p.hp).toBeLessThan(hpBefore);
-    // Recovery accepts the last root whose feet were visibly on ground, even though its torso is over void.
-    expect(p.y).toBeCloseTo(visibleGroundRootY, 6);
-  });
-
-  it("an AIRBORNE player (mid-jump) clears the pit — no fall", () => {
-    const h = training();
-    const p = h.state().players.get("p1");
-    const sx = h.room.map.spawnX;
-    const sy = h.room.map.spawnY;
-    const pitY = sy + 3 * h.room.map.tileSize;
-    forcePit(h, sx, pitY);
-    p.x = sx;
-    p.y = pitY;
-    p.height = 100; // mid-hop, well above GROUND_EPSILON
-    const fellBefore = p.fellSeq;
-    h.tick(1);
-    expect(p.fellSeq).toBe(fellBefore); // the hop carried over the gap
-    expect(p.hp).toBe(PLAYER_MAX_HP); // no chip
-  });
-
-  it("a non-boss enemy that ends a tick over a pit dies with no money reward", () => {
-    const h = training();
-    const p = h.state().players.get("p1");
-    const sx = h.room.map.spawnX;
-    const sy = h.room.map.spawnY;
-    p.x = sx;
-    p.y = sy;
-    const moneyBefore = p.scrip;
-    // A 3x3 pit block 3 tiles east; plant a critter dead-centre so one tick of chase can't walk it off.
-    const pitX = sx + 3 * h.room.map.tileSize;
-    forcePit(h, pitX, sy, 1);
-    const e = new EnemyState();
-    e.id = "doomed";
-    e.kind = "critter";
-    e.hp = 999;
-    e.x = pitX;
-    e.y = sy;
-    h.state().enemies.set("doomed", e);
-    h.tick(1);
-    expect(h.state().enemies.has("doomed")).toBe(false); // fell in → despawned
-    expect(p.scrip).toBe(moneyBefore);
-    expect(h.state().moneyDrops.size).toBe(0);
-  });
-
   it("a gun fires past its authored magazine through Drive with reload fields retired", () => {
     const h = training();
     const p = h.state().players.get("p1");
@@ -732,7 +625,7 @@ describe("GameRoom — §17 pitfall + terrain-death + §9 gun cadence", () => {
     // offset 90px to the side — a plain bullet on that line never touches it, but the 130px blast where
     // the shell dies must catch it.
     // Pin both bodies to fixed solid-ground coordinates so the blast path is deterministic.
-    h.room.map.tiles.fill(TILE_GROUND); // pits are RNG too — the pinned spots must be solid
+    h.room.map.tiles.fill(TILE_GROUND); // pinned movement spots stay explicitly solid
     dummy.x = 2400;
     dummy.y = 2400;
     p.x = dummy.x - 650;
@@ -918,7 +811,7 @@ describe("GameRoom — §4 v0.107 seq'd input protocol (queue / ack / fixed time
     h.send("p1", "input", { seq: 1, dx: 1, dy: 0 });
     h.tick(1);
     expect(p.mvx).toBeGreaterThan(0);
-    h.room.zeroMoveVel("p1"); // any teleport site (pit / rift / restart / training / revive)
+    h.room.zeroMoveVel("p1"); // any teleport site (lava gap / rift / restart / training / revive)
     expect(p.teleportSeq).toBe(ts0 + 1);
     expect(p.mvx).toBe(0);
     h.tick(1); // the held direction was dropped too — no stale-intent glide after the teleport
@@ -1134,7 +1027,7 @@ describe("GameRoom — §6 dimension chain (v0.103: extract-vs-descend, bank-or-
     h.tick(10); // build some charge…
     expect(h.state().riftCharge).toBeGreaterThan(0);
     // …then step OUT — beyond the 90px rift ring but INSIDE the 240px guaranteed-clear spawn disc
-    // (any further and a random pit could snap the player straight back into the rift → flaky).
+    // (any further and the player could overlap the rift again → flaky).
     p.x = h.room.map.spawnX + 150;
     h.tick(30);
     expect(h.state().depth).toBe(1); // never committed
@@ -1221,7 +1114,7 @@ describe("GameRoom — Lava Foundry walkable-floor truth", () => {
     const player = h.state().players.get(id);
     player.hp = player.maxHp;
     const combat = h.room.combat.get(id);
-    combat.pitGrace = 0;
+    combat.lavaGapGrace = 0;
     return { h, player, combat };
   }
 
@@ -1252,7 +1145,7 @@ describe("GameRoom — Lava Foundry walkable-floor truth", () => {
     const row = Math.floor(player.y / map.tileSize);
     player.x = (col + 0.5) * map.tileSize;
     player.y = (row + 0.5) * map.tileSize;
-    map.tiles.fill(TILE_PIT);
+    map.tiles.fill(TILE_LAVA_GAP);
     map.tiles[row * map.cols + col] = TILE_GROUND;
     map.tiles[(row + 1) * map.cols + col] = TILE_GROUND;
     combat.lastGroundX = player.x;
@@ -1277,7 +1170,7 @@ describe("GameRoom — Lava Foundry walkable-floor truth", () => {
   });
 
   it.each(floorSamples)(
-    "does not pit-damage a player on radius-clear $prefabId art",
+    "does not lava-gap-damage a player on radius-clear $prefabId art",
     (sample) => {
       const { h, player, combat } = fixture(`floor-${sample.nodeId}`);
       const standing = standingRoot(h.room, sample);
@@ -1297,7 +1190,7 @@ describe("GameRoom — Lava Foundry walkable-floor truth", () => {
     },
   );
 
-  it("takes no pit damage anywhere along an arc between connected platform floors", () => {
+  it("takes no lava-gap damage anywhere along an arc between connected platform floors", () => {
     const { h, player, combat } = fixture("connected-platform-jump");
     const startSample = {
       nodeId: "spawn",
@@ -1342,7 +1235,7 @@ describe("GameRoom — Lava Foundry walkable-floor truth", () => {
     }
   });
 
-  it("traverses the glass-to-reactor bridge end to end without a pit reposition", () => {
+  it("traverses the glass-to-reactor bridge end to end without a lava-gap reposition", () => {
     const { h, player, combat } = fixture("bridge-walk", bridgeSeeds);
     const bridge = h.room.map.lavaLayout.rooms.find(
       (candidate: AnyRoom) => candidate.prefabId === "glass-to-reactor-vertical-bridge",

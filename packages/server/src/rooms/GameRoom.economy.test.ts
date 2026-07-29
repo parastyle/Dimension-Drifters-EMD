@@ -4,7 +4,6 @@ import {
   BELT_LEVEL_IDS,
   BELT_Y0,
   beltLevelFor,
-  beltPitAtX,
   ChestState,
   CORPORATE_ELEVATOR_COUNTDOWN_TICKS,
   CORPORATE_ELEVATOR_DEPART_TICKS,
@@ -22,7 +21,6 @@ import {
   EnemyState,
   FISTS_WEAPON,
   getDimension,
-  isPitAtPx,
   MAX_ENEMIES,
   META_VITALITY_HP,
   MoneyDropState,
@@ -32,7 +30,7 @@ import {
   PARRY_IFRAMES,
   PARRY_LAUNCH,
   ParryReaction,
-  PIT_FALL_DAMAGE_FRAC,
+  LAVA_GAP_FALL_DAMAGE_FRAC,
   PickupState,
   PLAYER_MAX_HP,
   PLAYER_REGEN,
@@ -44,7 +42,6 @@ import {
   weaponDisassemblyValue,
   swingDescriptorFor,
   TILE_GROUND,
-  TILE_PIT,
   unpackParryGuardPose,
   unpackParryReaction,
   WEAPON_IDS,
@@ -285,7 +282,7 @@ function herePlayerJuggledDefault() {
 }
 
 // Jump-feel J1 — appended authoritative fixtures. Every pinned position starts from an all-ground map;
-// individual tests then author only the pit geometry they need.
+// individual tests then author only the state they need.
 function makeJumpFeelRoom(id = "jump-feel") {
   const h = makeRoom();
   h.join(id);
@@ -798,15 +795,15 @@ describe("GameRoom — §M14 golden tick snapshot (the hand-numbered phase order
             "alive": true,
             "hp": 100,
             "id": "p1",
-            "x": 2536,
-            "y": 2342,
+            "x": 19336,
+            "y": 19142,
           },
           {
             "alive": true,
             "hp": 99,
             "id": "p2",
-            "x": 2364,
-            "y": 2380,
+            "x": 19164,
+            "y": 19180,
           },
         ],
         "portalOpen": false,
@@ -922,14 +919,13 @@ describe("GameRoom — §29 belt arsenal (3 slots + bag)", () => {
     expect(p.bag).toHaveLength(0);
   });
 
-  it("belt floor-weapon placement lands ON the deck band, nudged clear of pits", () => {
+  it("belt floor-weapon placement lands on the continuous deck band", () => {
     const h = makeRoom({ belt: true });
     h.join("p1");
     const level = beltLevelFor("sky-carrier");
-    // Place at a PIT x (1600 ∈ the 1560–1670 gap) with a y ABOVE the band. The shared floor-placement
-    // path used by bag swaps must nudge it onto solid deck and clamp it into the depth band.
+    // Continuous belt placement preserves x and clamps y into the depth band.
     const pos = h.room.placePickupPos(1600, BELT_Y0 - 500);
-    expect(beltPitAtX(level, pos.x)).toBe(false); // off the pit
+    expect(pos.x).toBe(1600);
     expect(pos.y).toBeGreaterThanOrEqual(BELT_Y0); // inside the depth band
     expect(pos.y).toBeLessThanOrEqual(BELT_Y0 + DEPTH_MAX);
   });

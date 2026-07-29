@@ -4,7 +4,6 @@ import {
   BELT_LEVEL_IDS,
   BELT_Y0,
   beltLevelFor,
-  beltPitAtX,
   ChestState,
   CORPORATE_ELEVATOR_COUNTDOWN_TICKS,
   CORPORATE_ELEVATOR_DEPART_TICKS,
@@ -22,7 +21,6 @@ import {
   EnemyState,
   FISTS_WEAPON,
   getDimension,
-  isPitAtPx,
   MAX_ENEMIES,
   META_VITALITY_HP,
   MoneyDropState,
@@ -32,7 +30,7 @@ import {
   PARRY_IFRAMES,
   PARRY_LAUNCH,
   ParryReaction,
-  PIT_FALL_DAMAGE_FRAC,
+  LAVA_GAP_FALL_DAMAGE_FRAC,
   PickupState,
   PLAYER_MAX_HP,
   PLAYER_REGEN,
@@ -44,7 +42,6 @@ import {
   weaponDisassemblyValue,
   swingDescriptorFor,
   TILE_GROUND,
-  TILE_PIT,
   unpackParryGuardPose,
   unpackParryReaction,
   ULTIMATES_ENABLED,
@@ -286,7 +283,7 @@ function herePlayerJuggledDefault() {
 }
 
 // Jump-feel J1 — appended authoritative fixtures. Every pinned position starts from an all-ground map;
-// individual tests then author only the pit geometry they need.
+// individual tests then author only the state they need.
 function makeJumpFeelRoom(id = "jump-feel") {
   const h = makeRoom();
   h.join(id);
@@ -675,6 +672,7 @@ describe("GameRoom — flavor-only character identity", () => {
     h.tick(1); // refill the action budget
     h.send("identity", "cycleCharacter");
     expect(player.character).toBe("proto-desert-nomad");
+    h.room.visitedDims.add("lava-foundry");
     h.room.transitionDimension();
     expect(player.runCharacter).toBe("proto-desert-nomad");
   });
@@ -935,19 +933,7 @@ describe("GameRoom — V7 fixed tumble roll", () => {
     expect(puddle.player.hp).toBeLessThan(hp);
   });
 
-  it("keeps pit cancellation and the attack/parry channel split", () => {
-    const pit = makeRollRoom("roll-pit");
-    beginRoll(pit);
-    const map = pit.h.room.map;
-    const col = Math.floor(pit.player.x / map.tileSize);
-    const row = Math.floor(pit.player.y / map.tileSize);
-    for (let y = row - 2; y <= row + 2; y++)
-      for (let x = col - 1; x <= col + 4; x++) map.tiles[y * map.cols + x] = TILE_PIT;
-    const fell = pit.player.fellSeq;
-    pit.h.tick(1);
-    expect(pit.player.fellSeq).toBe((fell + 1) & 0xff);
-    expect(pit.combat.stance).toBe(enemyComboShared.STANCE_NONE);
-
+  it("keeps the attack/parry channel split", () => {
     const attack = makeRollRoom("roll-attack");
     beginRoll(attack);
     attack.h.send(attack.player.id, "attack", { aimX: 1, aimY: 0 });
@@ -1024,50 +1010,6 @@ describe("GameRoom — MAP QOL extraction intent and tick-order fairness", () =>
     expect(h.state().outcome).toBe("victory");
   });
 
-  it("launches an accepted standard jump before same-tick movement can sample the pit", () => {
-    const fixture = makeJumpFeelRoom("qol-jump-lip");
-    const map = fixture.h.room.map;
-    const row = Math.floor(fixture.player.y / map.tileSize);
-    const col = Math.floor(fixture.player.x / map.tileSize);
-    const lip = (col + 1) * map.tileSize;
-    map.tiles[row * map.cols + col + 1] = TILE_PIT;
-    fixture.player.x = lip - 8;
-    fixture.player.y = (row + 0.5) * map.tileSize;
-    fixture.combat.lastGroundX = fixture.player.x;
-    fixture.combat.lastGroundY = fixture.player.y;
-    const input = fixture.h.room.inputs.get(fixture.player.id);
-    input.mvx = enemyComboShared.MOVE_SPEED;
-    fixture.player.mvx = input.mvx;
-    const fell = fixture.player.fellSeq;
-    sendJumpFeelInput(fixture.h, fixture.player.id, 1, { dx: 1, jump: true });
-    expect(fixture.player.x).toBe(lip - 8);
-    expect(isPitAtPx(map, fixture.player.x, fixture.player.y)).toBe(false);
-    expect(fixture.player.height).toBeGreaterThan(0);
-    expect(fixture.player.fellSeq).toBe(fell);
-  });
-
-  it("launches the default long jump before its same-tick lip movement and pit sample", () => {
-    const fixture = makeJumpFeelRoom("qol-long-jump-lip");
-    const map = fixture.h.room.map;
-    const row = Math.floor(fixture.player.y / map.tileSize);
-    const col = Math.floor(fixture.player.x / map.tileSize);
-    const lip = (col + 1) * map.tileSize;
-    map.tiles[row * map.cols + col + 1] = TILE_PIT;
-    fixture.player.x = lip - 20;
-    fixture.player.y = (row + 0.5) * map.tileSize;
-    fixture.combat.lastGroundX = fixture.player.x;
-    fixture.combat.lastGroundY = fixture.player.y;
-    const fell = fixture.player.fellSeq;
-    sendJumpFeelInput(fixture.h, fixture.player.id, 1, {
-      dx: 1,
-      jump: true,
-    });
-    expect(fixture.player.x).toBe(lip - 20);
-    expect(isPitAtPx(map, fixture.player.x, fixture.player.y)).toBe(false);
-    expect(fixture.combat.stance).toBe(enemyComboShared.STANCE_DASH);
-    expect(fixture.player.height).toBeGreaterThan(0);
-    expect(fixture.player.fellSeq).toBe(fell);
-  });
 });
 
 describe("GameRoom — MAP QOL final enemy-spawn fairness", () => {
@@ -1117,23 +1059,6 @@ describe("GameRoom — MAP QOL final enemy-spawn fairness", () => {
     expect(spawned).toBe(40);
   });
 
-  it("defers the spawn credit when every corrected candidate snaps inside the warning distance", () => {
-    const h = makeRoom();
-    h.join("qol-spawn-defer");
-    const player = h.state().players.get("qol-spawn-defer");
-    player.x = h.room.map.spawnX;
-    player.y = h.room.map.spawnY;
-    h.room.map.tiles.fill(TILE_PIT);
-    const col = Math.floor(player.x / h.room.map.tileSize);
-    const row = Math.floor(player.y / h.room.map.tileSize);
-    h.room.map.tiles[row * h.room.map.cols + col] = TILE_GROUND;
-    h.state().enemies.clear();
-    h.room.enemyGrid.clear();
-    h.room.spawnAccum = 2;
-    h.room.runSpawnDirector(0.05, [{ x: player.x, y: player.y }]);
-    expect(h.state().enemies.size).toBe(0);
-    expect(h.room.spawnAccum).toBeCloseTo(2.05, 8);
-  });
 });
 
 const describeUltimateImplementation = ULTIMATES_ENABLED ? describe : describe.skip;
@@ -1401,7 +1326,7 @@ describeUltimateImplementation("ULT U1 lifecycle, co-op, and schema 25", () => {
     h.join("ult-life-ally");
     h.send(id, "ultimate", { aimX: 1, aimY: 0, tx: 1400, ty: 1000 });
     h.tick();
-    h.room.zeroMoveVel(id); // pit/rift/revive share this authoritative external teleport signal.
+    h.room.zeroMoveVel(id); // lava-gap/rift/revive share this authoritative external teleport signal.
     h.tick();
     expect(player.ultPhase).toBe(enemyComboShared.UltimatePhase.Idle);
 

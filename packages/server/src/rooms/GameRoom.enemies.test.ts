@@ -4,7 +4,6 @@ import {
   BELT_LEVEL_IDS,
   BELT_Y0,
   beltLevelFor,
-  beltPitAtX,
   ChestState,
   CORPORATE_ELEVATOR_COUNTDOWN_TICKS,
   CORPORATE_ELEVATOR_DEPART_TICKS,
@@ -22,7 +21,6 @@ import {
   EnemyState,
   FISTS_WEAPON,
   getDimension,
-  isPitAtPx,
   MAX_ENEMIES,
   META_VITALITY_HP,
   MoneyDropState,
@@ -32,7 +30,7 @@ import {
   PARRY_IFRAMES,
   PARRY_LAUNCH,
   ParryReaction,
-  PIT_FALL_DAMAGE_FRAC,
+  LAVA_GAP_FALL_DAMAGE_FRAC,
   PickupState,
   PLAYER_MAX_HP,
   PLAYER_REGEN,
@@ -44,7 +42,6 @@ import {
   weaponDisassemblyValue,
   swingDescriptorFor,
   TILE_GROUND,
-  TILE_PIT,
   unpackParryGuardPose,
   unpackParryReaction,
   WEAPON_IDS,
@@ -285,7 +282,7 @@ function herePlayerJuggledDefault() {
 }
 
 // Jump-feel J1 — appended authoritative fixtures. Every pinned position starts from an all-ground map;
-// individual tests then author only the pit geometry they need.
+// individual tests then author only the state they need.
 function makeJumpFeelRoom(id = "jump-feel") {
   const h = makeRoom();
   h.join(id);
@@ -837,7 +834,7 @@ describe("GameRoom — §51 tough-enemy melee combos (Wave 1 authority)", () => 
 });
 
 describe("GameRoom — jump-feel J1 authoritative stance/physics", () => {
-  it("runs the 1250/900/2200 profile at ≈47px/0.55s and clears the required 160px gap", () => {
+  it("runs the 1250/900/2200 profile at ≈47px/0.55s", () => {
     let height = 0;
     let vh = enemyComboShared.JUMP_VELOCITY;
     let peak = 0;
@@ -856,29 +853,6 @@ describe("GameRoom — jump-feel J1 authoritative stance/physics", () => {
     expect(enemyComboShared.verticalPhase(10, 100)).toBe("rising");
     expect(enemyComboShared.verticalPhase(10, 0)).toBe("apex");
     expect(enemyComboShared.verticalPhase(10, -100)).toBe("falling");
-    expect(
-      enemyComboShared.verticalTimeToGround(0, enemyComboShared.JUMP_VELOCITY) *
-        enemyComboShared.MOVE_SPEED,
-    ).toBeGreaterThan(160);
-
-    const { h, player } = makeJumpFeelRoom("hop-gap");
-    const { cols, tileSize } = h.room.map;
-    const row = Math.floor(player.y / tileSize);
-    const col = Math.floor(player.x / tileSize);
-    h.room.map.tiles[row * cols + col + 1] = TILE_PIT;
-    h.room.map.tiles[row * cols + col + 2] = TILE_PIT;
-    const farEdge = (col + 3) * tileSize;
-    player.x = (col + 1) * tileSize - 1;
-    player.y = (row + 0.5) * tileSize;
-    const fell = player.fellSeq;
-    sendJumpFeelInput(h, player.id, 1, { jump: true });
-    let seq = 2;
-    while (player.height > 0 && seq < 30) {
-      sendJumpFeelInput(h, player.id, seq++, { dx: 1 });
-    }
-    sendJumpFeelInput(h, player.id, seq, { dx: 1 });
-    expect(player.x).toBeGreaterThan(farEdge);
-    expect(player.fellSeq).toBe(fell);
   });
 
   it("keeps wire fields transition-only and distinguishes organic aborts from forced cancels", () => {
@@ -945,18 +919,12 @@ describe("GameRoom — jump-feel J1 authoritative stance/physics", () => {
     expect(maxTurn).toBeLessThanOrEqual(enemyComboShared.DIST_JUMP_MAX_STEER_RADIANS + 1e-9);
   });
 
-  it("routes the raw distance-jump landing through safeSpawnPos before freezing its direction", () => {
+  it("keeps the raw distance-jump landing on continuous ground before freezing its direction", () => {
     const { h, player, combat } = makeJumpFeelRoom("dash-clamp");
     const rawX = player.x + enemyComboShared.DIST_JUMP_REACH;
     const rawY = player.y;
-    const tx = Math.floor(rawX / h.room.map.tileSize);
-    const ty = Math.floor(rawY / h.room.map.tileSize);
-    h.room.map.tiles[ty * h.room.map.cols + tx] = TILE_PIT;
-    const expected = enemyComboShared.safeSpawnPos(
-      h.room.map,
-      rawX,
-      rawY,
-    );
+    const expected = enemyComboShared.safeSpawnPos(h.room.map, rawX, rawY);
+    expect(expected).toEqual({ x: rawX, y: rawY });
     const dx = expected.x - player.x;
     const dy = expected.y - player.y;
     const d = Math.hypot(dx, dy);
@@ -1017,19 +985,12 @@ describe("GameRoom — jump-feel J1 authoritative stance/physics", () => {
     expect(combat.invuln).toBe(0);
   });
 
-  it("caps the decaying pound shove below one bodywidth and never pushes a pack across a pit lip", () => {
-    const { h, player, combat } = makeJumpFeelRoom("pound-pit");
-    const { cols, tileSize } = h.room.map;
-    const row = Math.floor(player.y / tileSize);
-    const col = Math.floor(player.x / tileSize);
-    const pitX = (col + 1) * tileSize;
-    for (let y = row - 1; y <= row + 1; y++) h.room.map.tiles[y * cols + col + 1] = TILE_PIT;
-    player.x = pitX - 61;
-    player.y = (row + 0.5) * tileSize;
+  it("caps the decaying pound shove below one bodywidth on continuous ground", () => {
+    const { h, player, combat } = makeJumpFeelRoom("pound-pack");
     player.height = 25;
     combat.vh = 0;
     const pack = [-60, 0, 60].map((dy, i) =>
-      addJumpDummy(h, `pound-pack-${i}`, pitX - 1, player.y + dy, 1_000),
+      addJumpDummy(h, `pound-pack-${i}`, player.x + 60, player.y + dy, 1_000),
     );
     const before = pack.map((enemy) => enemy.x);
     sendJumpFeelInput(h, player.id, 1, { pound: true });
@@ -1037,31 +998,8 @@ describe("GameRoom — jump-feel J1 authoritative stance/physics", () => {
     for (let i = 0; i < pack.length; i++) {
       const enemy = pack[i]!;
       expect(h.state().enemies.has(enemy.id)).toBe(true);
-      expect(isPitAtPx(h.room.map, enemy.x, enemy.y)).toBe(false);
       expect(Math.hypot(enemy.x - before[i]!, 0)).toBeLessThanOrEqual(40);
     }
-  });
-
-  it("keeps pit grace on a separate null-immunity channel so quakes cannot auto-parry", () => {
-    const { h, player, combat } = makeJumpFeelRoom("pit-mercy");
-    const { cols, tileSize } = h.room.map;
-    const row = Math.floor(player.y / tileSize);
-    const col = Math.floor(player.x / tileSize);
-    combat.lastGroundX = player.x - tileSize;
-    combat.lastGroundY = player.y;
-    h.room.map.tiles[row * cols + col] = TILE_PIT;
-    player.x = (col + 0.5) * tileSize;
-    player.y = (row + 0.5) * tileSize;
-    h.tick(1);
-    expect(combat.pitGrace).toBeGreaterThan(0);
-    expect(combat.invuln).toBe(0);
-    const hp = player.hp;
-    const parried = player.parriedSeq;
-    const parryCd = combat.parryCd;
-    h.room.applyBossQuake(player.x, player.y, 100, 20, 0);
-    expect(player.hp).toBe(hp);
-    expect(player.parriedSeq).toBe(parried);
-    expect(combat.parryCd).toBe(parryCd);
   });
 
   it("classifies landing tiers at the exact 300/520 boundaries", () => {

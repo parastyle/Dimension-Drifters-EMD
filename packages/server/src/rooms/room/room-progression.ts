@@ -61,9 +61,7 @@ import {
   beamSweepSampleCount,
   beltLevelFor,
   beltPlayableXBounds,
-  beltPitAtX,
   beltProjectileBlocked,
-  beltSafeX,
   CORPORATE_ELEVATOR_ARRIVAL_TICKS,
   CORPORATE_ELEVATOR_COUNTDOWN_TICKS,
   CORPORATE_ELEVATOR_DEPART_TICKS,
@@ -204,8 +202,8 @@ import {
   isBreakActionWeapon,
   isCharacterUnlocked,
   isPetId,
-  isPitAtPx,
-  isPlayerGroundContactInPit,
+  isLavaGapAtPx,
+  isPlayerGroundContactInLavaGap,
   isPlayableCharacter,
   isRareRelicId,
   isWholeArtCharacter,
@@ -245,7 +243,7 @@ import {
   meleeDamageHalfWidthAt,
   meleeDamageReachAt,
   mixSeeds,
-  nearestGroundPx,
+  nearestLavaGroundPx,
   nearestPoint,
   nextWeapon,
   nextWeaponUtilityMode,
@@ -275,8 +273,7 @@ import {
   type PetProgressReceipt,
   type PetStageBand,
   PICKUP_RADIUS,
-  PIT_FALL_DAMAGE_FRAC,
-  PIT_FALL_GRACE,
+  LAVA_GAP_FALL_GRACE,
   PickupState,
   PLAYER_MAX_HP,
   PLAYER_RADIUS,
@@ -552,7 +549,7 @@ export const SERVER_MOTION_SOURCES = [
   "enemy-commit-hit",
   "enemy-commit-launch",
   "hostile-projectile-hit",
-  "pit-snapback",
+  "lava-gap-recovery",
   "elevator-boarding",
   "revive-placement",
   "teleport-placement",
@@ -849,7 +846,7 @@ export interface DisconnectedPlayerReservation {
   combat: CombatState;
 }
 
-export type PlayerDamageKind = "pit" | "ground-hazard" | "enemy" | "self";
+export type PlayerDamageKind = "lava-gap" | "ground-hazard" | "enemy" | "self";
 
 export interface PetRunRuntime {
   petId: PetId;
@@ -866,7 +863,7 @@ export interface PetRunRuntime {
   acceptedActionsThisDimension: number;
   geckoFraction: number;
   geckoMinted: number;
-  tortoisePitRegenSeconds: number;
+  tortoiseLavaGapRegenSeconds: number;
   settled: boolean;
 }
 
@@ -996,13 +993,11 @@ export interface CombatState {
   slideParryLockT: number;
   lastLandingTier: LandingThumpTier;
   lastLandingSpeed: number;
-  /** §17 last GROUNDED position (world px) — where a pit-fall snaps the player back to. Updated every
-   *  tick the player stands on solid ground. */
+  /** Last lava-platform position, used only by the exempt lava dimension's gap recovery. */
   lastGroundX: number;
   lastGroundY: number;
-  /** §17 post-fall grace, sec: i-frames + a window where the player won't re-fall (so a pit isn't a death
-   *  spiral or a landing-gank). */
-  pitGrace: number;
+  /** Lava-only post-gap recovery grace, in seconds. */
+  lavaGapGrace: number;
   /** §8 Hair-Trigger augment: consecutive-parry streak (each parry within HAIRTRIGGER_WINDOW adds one). */
   hairStreak: number;
   /** §8 Hair-Trigger: run-elapsed (sec) of the last parry, for the streak window. */
@@ -1439,7 +1434,7 @@ export interface GameRoomContext extends Room<ArenaState> {
   refreshServerMotionState(player: PlayerState, id: string, dt: number): void;
   freshInputState(): InputState;
   stepSlideStance(player: PlayerState, c: CombatState): void;
-  damagePitFall(player: PlayerState): void;
+  damageLavaGapFall(player: PlayerState): void;
   presentedPlayerPosition(player: PlayerState): ClientPresentedSelfPosition | undefined;
   stepTraversalLaunches(dt: number): void;
   launchDistanceJump(player: PlayerState, c: CombatState, input: InputState): void;
@@ -2498,7 +2493,7 @@ export const roomProgressionMethods = {
     });
 
     // §5 JUMP (Spacebar) — a low all-class traversal HOP, then a cooldown so it isn't spammable. PURE
-    // movement, NOT a dodge (no i-frames — the parry stays the defensive tool). The §17 pitfall layer reads
+    // movement, not a dodge (no i-frames — the parry stays the defensive tool). Lava gap handling reads
     // `airborne` to let a hopping player clear a gap.
     // B20 L2 chest OPEN is a budgeted, distance-validated interaction. Contents are rolled only here,
     // from a chest/player-specific seed, and the consumed bit is written only after delivery.
@@ -2893,7 +2888,6 @@ export const roomProgressionMethods = {
         dummy.id = `dummy${i}`;
         dummy.kind = "dummy";
         dummy.hp = DUMMY_HP;
-        // A dummy is a non-boss enemy — over a pit the §17 terrain-death rule would delete it on tick 1.
         const sp = safeSpawnPos(this.map, cx + (i - 1) * 200, cy + 170);
         dummy.x = sp.x;
         dummy.y = sp.y;
@@ -2988,9 +2982,7 @@ export const roomProgressionMethods = {
 
   /** §31 (re)spawn the current showroom SUBCLASS: clear gallery pickups (`pk*`) and lay out the current
    *  GALLERY_GROUP in a grid above the player. Wraps the page index. Training mode only.
-   *  §41 cells keep their EXACT grid position — a cell over a pit is SKIPPED (the shelf shows a gap)
-   *  instead of safeSpawnPos NUDGING it: the old nudge scattered the neat grid and piled pickups onto their
-   *  neighbours, so E grabbed "the wrong thing" and pages read as disorganized. */
+   *  §41 cells keep their exact grid position so the shelf remains stable across page changes. */
   spawnGalleryPage(this: GameRoomContext): void {
     for (const id of [...this.state.pickups.keys()]) {
       if (id.startsWith("pk")) this.state.pickups.delete(id);
@@ -3010,7 +3002,7 @@ export const roomProgressionMethods = {
         const gx = cx + (col - (COLS - 1) / 2) * GAP;
         const gy = cy - 200 - row * GAP;
         if (gx < PICKUP_RADIUS || gx > ARENA_WIDTH - PICKUP_RADIUS || gy < PICKUP_RADIUS) continue;
-        if (isPitAtPx(this.map, gx, gy)) continue;
+        if (isLavaGapAtPx(this.map, gx, gy)) continue;
         cells.push({ x: gx, y: gy });
       }
     }
@@ -3440,7 +3432,7 @@ export const roomProgressionMethods = {
     this.materializeWeaponRun(player, account);
     this.createWeaponRun(client.sessionId, account);
     // Spawn on the map's guaranteed-clear spawn disc (§17), with a little scatter so blobs don't overlap
-    // (±100px stays inside the cleared centre, never over a pit). §29 belt spawns at the START of the belt
+    // (±100px stays inside the arena centre). §29 belt spawns at the start of the belt
     // (the mouth of room 0), mid-depth, so the room progression flows left→right.
     if (this.belt) {
       const floor = this.beltLevel ? corporateGridFloorForBelt(this.beltLevel) : undefined;
@@ -3558,7 +3550,7 @@ export const roomProgressionMethods = {
       lastLandingSpeed: 0,
       lastGroundX: player.x,
       lastGroundY: player.y,
-      pitGrace: 0,
+      lavaGapGrace: 0,
       hairStreak: 0,
       lastParryAt: -999,
       parryChain: 0,
@@ -3852,7 +3844,7 @@ export const roomProgressionMethods = {
     }
     this.stepVastagharAddBudget();
     this.rebuildEnemyGrid(); // §45 exactly once/ACTIVE sub-step; later enemy motion updates cell membership
-    // Accepted long jumps own the tick before pit sampling. Their launch tick advances height but defers
+    // Accepted long jumps own the tick before lava-gap sampling. Their launch tick advances height but defers
     // horizontal travel so the authored 12 flight samples still total exactly 372 px.
     this.stepTraversalLaunches(dt);
 
@@ -4217,7 +4209,7 @@ export const roomProgressionMethods = {
     }
 
     // Accepted client truth wins after the legacy friend-body pass. Reports were swept against navigation
-    // above, so this cannot restore a wall/pit clip; it only avoids making co-op friends authority walls.
+    // above, so this cannot restore an invalid navigation clip; it only avoids making co-op friends authority walls.
     for (const [id, movement] of this.acceptedClientMovement) {
       const player = this.state.players.get(id);
       if (!player?.alive || player.dualWield.serverMotionActive) continue;
@@ -4225,9 +4217,8 @@ export const roomProgressionMethods = {
       player.y = movement.y;
     }
 
-    // 2.5 §17 PITFALL — a GROUNDED player whose body is over a pit falls: chip damage + snap back to the
-    // last solid tile + a brief grace (i-frames, no re-fall). An AIRBORNE player (mid-jump, §5) clears the
-    // gap and is immune. We also remember the last grounded spot here so the snap-back has somewhere to go.
+    // Lava Foundry alone retains gaps: a grounded player outside a platform takes chip damage and recovers
+    // to the last collision-safe platform point. Ordinary arenas and belt stages have no floor-fall path.
     this.state.players.forEach((player, id) => {
       if (!player.alive) return;
       const c = this.combat.get(id);
@@ -4237,49 +4228,30 @@ export const roomProgressionMethods = {
         c.beamVentStacks = countAugment(player.augments, "beam-vent");
         c.beamFocusStacks = countAugment(player.augments, "beam-focus");
       }
-      if (c.pitGrace > 0) c.pitGrace = Math.max(0, c.pitGrace - dt);
+      if (!this.map.lavaLayout) return;
+      if (c.lavaGapGrace > 0) c.lavaGapGrace = Math.max(0, c.lavaGapGrace - dt);
       if (this.ultimateOwnsMovement(player)) return;
       const presented = this.presentedPlayerPosition(player);
       if (!presented) return;
       if (player.height > GROUND_EPSILON || c.vh > 0) return; // airborne distance jump / launch — the vertical sentence carries you over
-      // §29 belt PITS — gaps in the deck; grounded-over-a-gap falls (chip + snap back to the edge you came
-      // from), a jump clears it. Enemies (which can't jump) get kited in for free kills (5.6 below).
-      if (this.belt && this.beltLevel) {
-        const level = this.beltLevel;
-        if (!beltPitAtX(level, presented.x)) {
-          c.lastGroundX = presented.x;
-          return;
-        }
-        if (c.pitGrace > 0) return;
-        this.damagePitFall(player);
-        this.placeWithMotionEpoch(player, "pit-snapback", () => {
-          player.x = beltSafeX(level, presented.x, c.lastGroundX);
-          c.lastGroundX = player.x;
-          c.pitGrace = PIT_FALL_GRACE;
-          this.zeroMoveVel(id, undefined, "pit-snapback");
-        });
-        player.fellSeq++;
-        return;
-      }
-      const overPit = isPlayerGroundContactInPit(this.map, presented.x, presented.y);
-      if (!overPit) {
-        c.lastGroundX = presented.x; // standing on solid ground → remember the visible body
+      const overGap = isPlayerGroundContactInLavaGap(this.map, presented.x, presented.y);
+      if (!overGap) {
+        c.lastGroundX = presented.x;
         c.lastGroundY = presented.y;
         return;
       }
-      if (c.pitGrace > 0) return; // just fell/landed — don't immediately re-fall
-      // FALL.
-      this.damagePitFall(player);
-      const safe = isPlayerGroundContactInPit(this.map, c.lastGroundX, c.lastGroundY)
-        ? nearestGroundPx(this.map, presented.x, presented.y)
+      if (c.lavaGapGrace > 0) return;
+      this.damageLavaGapFall(player);
+      const safe = isPlayerGroundContactInLavaGap(this.map, c.lastGroundX, c.lastGroundY)
+        ? nearestLavaGroundPx(this.map, presented.x, presented.y)
         : { x: c.lastGroundX, y: c.lastGroundY };
-      this.placeWithMotionEpoch(player, "pit-snapback", () => {
+      this.placeWithMotionEpoch(player, "lava-gap-recovery", () => {
         player.x = safe.x;
         player.y = safe.y;
         c.lastGroundX = safe.x;
         c.lastGroundY = safe.y;
-        c.pitGrace = PIT_FALL_GRACE;
-        this.zeroMoveVel(id, undefined, "pit-snapback"); // §7 the snap-back is a teleport — carried steering would glide you back in
+        c.lavaGapGrace = LAVA_GAP_FALL_GRACE;
+        this.zeroMoveVel(id, undefined, "lava-gap-recovery");
       });
       player.fellSeq++;
     });
@@ -4837,22 +4809,14 @@ export const roomProgressionMethods = {
       });
     }
 
-    // 5.6 §17 PITFALL — a non-boss enemy whose body ends the tick over a pit falls in and DIES. Kite the
-    // horde into a pit (they can't jump) or knock one in with a parry = an instant kill. Boss is pit-immune.
-    // Terrain kills are free crowd control. §29 belt uses the authored pit x-ranges.
+    // Lava Foundry keeps its existing non-boss gap death.
     const fellIn: string[] = [];
     this.state.enemies.forEach((enemy, eid) => {
-      if (eid === this.bossId) return;
-      const over =
-        this.belt && this.beltLevel
-          ? beltPitAtX(this.beltLevel, enemy.x)
-          : !this.belt && isPitAtPx(this.map, enemy.x, enemy.y);
-      if (over) fellIn.push(eid);
+      if (eid !== this.bossId && isLavaGapAtPx(this.map, enemy.x, enemy.y)) fellIn.push(eid);
     });
     for (const eid of fellIn) {
       this.state.enemies.delete(eid);
-      // §51 pit cheese stays legal, but the dead choreography cannot leave a marker/token on the wire for
-      // one extra patch. Terrain death cleans the same rows the next-tick reaper would have removed.
+      // Terrain death cleans the same rows the next-tick reaper would have removed.
       const combo = this.comboState.get(eid);
       if (combo?.tg) this.removeTelegraphRow(combo.tg);
       this.meleeAttackTokens.releaseHolder(eid);
@@ -4949,16 +4913,16 @@ export const roomProgressionMethods = {
       anyAlive = true;
       const combat = this.combat.get(player.id);
       const pet = this.petRuns.get(player.id);
-      const pitRegenMultiplier =
-        pet && pet.tortoisePitRegenSeconds > 0 ? pet.mods.pitRegenMultiplier : 1;
+      const lavaGapRegenMultiplier =
+        pet && pet.tortoiseLavaGapRegenSeconds > 0 ? pet.mods.lavaGapRegenMultiplier : 1;
       const regen =
         (PLAYER_REGEN + relicHpRegenAdd(player.relics)) *
         (combat?.mods.regenMult ?? 1) *
         (pet?.mods.passiveRegenMultiplier ?? 1) *
-        pitRegenMultiplier;
+        lavaGapRegenMultiplier;
       player.hp = Math.min(player.maxHp, player.hp + regen * dt);
-      if (pet && pet.tortoisePitRegenSeconds > 0) {
-        pet.tortoisePitRegenSeconds = Math.max(0, pet.tortoisePitRegenSeconds - dt);
+      if (pet && pet.tortoiseLavaGapRegenSeconds > 0) {
+        pet.tortoiseLavaGapRegenSeconds = Math.max(0, pet.tortoiseLavaGapRegenSeconds - dt);
       }
     });
     // §6 WIPE: in a live run (survival OR boss rush), if there are players and NONE are still up, no one can
@@ -5146,7 +5110,7 @@ export const roomProgressionMethods = {
           if (combat) {
             combat.lastGroundX = player.x;
             combat.lastGroundY = player.y;
-            combat.pitGrace = 0;
+            combat.lavaGapGrace = 0;
           }
           this.zeroMoveVel(id, bumpTeleport, "elevator-boarding");
         },
@@ -5357,7 +5321,7 @@ export const roomProgressionMethods = {
         if (c) {
           c.lastGroundX = player.x;
           c.lastGroundY = player.y;
-          c.pitGrace = 0;
+          c.lavaGapGrace = 0;
           // The Hair-Trigger streak timestamps ride the elapsed clock, which just reset — clear them or the
           // first parry in the new dimension inherits the old dimension's streak (verify finding).
           c.lastParryAt = -999;

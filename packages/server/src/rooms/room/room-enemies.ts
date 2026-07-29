@@ -54,9 +54,7 @@ import {
   beamSweepSampleCount,
   beltLevelFor,
   beltPlayableXBounds,
-  beltPitAtX,
   beltProjectileBlocked,
-  beltSafeX,
   CORPORATE_ELEVATOR_ARRIVAL_TICKS,
   CORPORATE_ELEVATOR_COUNTDOWN_TICKS,
   CORPORATE_ELEVATOR_DEPART_TICKS,
@@ -195,7 +193,7 @@ import {
   isBreakActionWeapon,
   isCharacterUnlocked,
   isPetId,
-  isPitAtPx,
+  isLavaGapAtPx,
   isPlayableCharacter,
   isRareRelicId,
   isWholeArtCharacter,
@@ -236,7 +234,6 @@ import {
   meleeDamageHalfWidthAt,
   meleeDamageReachAt,
   mixSeeds,
-  nearestGroundPx,
   nearestPoint,
   nextWeapon,
   nextWholeArtCharacter,
@@ -265,8 +262,6 @@ import {
   type PetProgressReceipt,
   type PetStageBand,
   PICKUP_RADIUS,
-  PIT_FALL_DAMAGE_FRAC,
-  PIT_FALL_GRACE,
   PickupState,
   PLAYER_MAX_HP,
   PLAYER_RADIUS,
@@ -852,8 +847,8 @@ export const roomEnemyMethods = {
           const boss = this.bossId ? this.state.enemies.get(this.bossId) : undefined;
           if (boss) {
             // §36 belt: keep a REPOSITIONING boss on the deck. Bespoke arena bosses now run belt finales, and
-            // some (Nihil's blink, Grull's charge) drive moveBoss — un-clamped they'd leave the depth band or
-            // float over a pit. Clamp x to the level and y to the floor band (no-op in top-down arena).
+            // some (Nihil's blink, Grull's charge) drive moveBoss. Clamp x to the level and y to the floor
+            // band (no-op in top-down arena).
             if (this.belt && this.beltLevel) {
               const r = ENEMY_KINDS[boss.kind]?.radius ?? 40;
               boss.x = clamp(x, r, this.beltLevel.length - r);
@@ -877,7 +872,7 @@ export const roomEnemyMethods = {
           if (this.belt && this.beltLevel) {
             const bx = clamp(x, radius, this.beltLevel.length - radius);
             return {
-              x: beltSafeX(this.beltLevel, bx, bx),
+              x: bx,
               y: clampBeltFloorY(this.beltLevel, bx, y, radius),
             };
           }
@@ -973,7 +968,7 @@ export const roomEnemyMethods = {
       if (dx * dx + dy * dy > r2) return;
       if (p.height > GROUND_EPSILON) return; // JUMPED — airborne clears the quake
       const c = this.combat.get(p.id);
-      if (c && c.pitGrace > 0) return; // mercy nullifies damage but is never a rewarded parry
+      if (c && c.lavaGapGrace > 0) return; // mercy nullifies damage but is never a rewarded parry
       if (c && c.invuln > 0) {
         p.parriedSeq += 1; // PARRIED (i-frame window) — negate + trigger the white parry flash
         c.parryCd = Math.min(c.parryCd, PARRY_CHAIN_CD);
@@ -1029,7 +1024,7 @@ export const roomEnemyMethods = {
         this.resolveVastagharParry(player, combat, x, y, damage);
         return;
       }
-      if (combat && (combat.pitGrace > 0 || this.slideInvulnerable(combat) || combat.invuln > 0)) {
+      if (combat && (combat.lavaGapGrace > 0 || this.slideInvulnerable(combat) || combat.invuln > 0)) {
         if (this.slideInvulnerable(combat)) this.noteSlideDodge(player);
         return;
       }
@@ -1657,7 +1652,7 @@ export const roomEnemyMethods = {
     };
   },
 
-  /** Sample the complete accepted enemy segment so the fixed lunge cannot cross a pit. */
+  /** Sample the complete accepted enemy segment across obstacles and Lava Foundry gaps. */
   navValidEnemyLungeDest(this: GameRoomContext, enemy: EnemyState, targetX: number, targetY: number): Vec2 {
     const r = ENEMY_KINDS[enemy.kind]?.radius ?? ENEMY_RADIUS;
     const maxX = this.belt && this.beltLevel ? this.beltLevel.length - r : ARENA_WIDTH - r;
@@ -1673,13 +1668,12 @@ export const roomEnemyMethods = {
       const x = enemy.x + dx * t;
       const y = enemy.y + dy * t;
       if (this.belt && this.beltLevel) {
-        if (beltPitAtX(this.beltLevel, x)) break;
         const resolved = resolveBeltObstacles(this.beltLevel, x, y, r);
         if (Math.hypot(resolved.x - x, resolved.y - y) > 1e-6) break;
         safeX = x;
         safeY = clampBeltFloorY(this.beltLevel, x, y, r);
       } else {
-        if (isPitAtPx(this.map, x, y)) break;
+        if (isLavaGapAtPx(this.map, x, y)) break;
         safeX = x;
         safeY = y;
       }
@@ -2199,7 +2193,7 @@ export const roomEnemyMethods = {
     let y: number;
     if (this.belt && this.beltLevel) {
       const boundedX = clamp(rawX, r, this.beltLevel.length - r);
-      x = beltSafeX(this.beltLevel, boundedX, boundedX);
+      x = boundedX;
       y = clampBeltFloorY(this.beltLevel, x, rawY, r);
     } else {
       const safe = safeSpawnPos(
@@ -2330,7 +2324,7 @@ export const roomEnemyMethods = {
     enemy.y = clamp(enemy.y + (dy / d) * move, r, ARENA_HEIGHT - r);
   },
 
-  /** §51 schedule parry recoil as a continuous ≤90px/tick motion. Pits remain lethal. */
+  /** §51 schedule parry recoil as a continuous ≤90px/tick motion. */
   scheduleComboKnockback(this: GameRoomContext,
     enemy: EnemyState,
     st: DuelistComboState,
@@ -2599,7 +2593,7 @@ export const roomEnemyMethods = {
             x > ARENA_WIDTH - PLAYER_RADIUS ||
             y < PLAYER_RADIUS ||
             y > ARENA_HEIGHT - PLAYER_RADIUS ||
-            isPitAtPx(this.map, x, y)
+            isLavaGapAtPx(this.map, x, y)
           )
             return false;
           return true;
@@ -2608,7 +2602,7 @@ export const roomEnemyMethods = {
     }
     player.x = destination.x;
     player.y = destination.y;
-    if (player.height <= GROUND_EPSILON && pc.vh <= 0) {
+    if (this.map.lavaLayout && player.height <= GROUND_EPSILON && pc.vh <= 0) {
       pc.lastGroundX = player.x;
       pc.lastGroundY = player.y;
     }
@@ -2991,9 +2985,7 @@ export const roomEnemyMethods = {
         enemy.x = resolved.x;
         enemy.y = resolved.y;
       } else {
-        // Legacy belts retain their random room spread and pit avoidance.
-        let ex = x0 + 100 + Math.random() * Math.max(1, x1 - x0 - 200);
-        if (beltPitAtX(level, ex)) ex = beltSafeX(level, ex, x0);
+        const ex = x0 + 100 + Math.random() * Math.max(1, x1 - x0 - 200);
         enemy.x = ex;
         enemy.y = clampBeltFloorY(
           level,
@@ -3141,7 +3133,7 @@ export const roomEnemyMethods = {
   },
 
   /** §21 Dev summon: place ONE enemy of `kindId` on the spawn ring around `anchor`, optionally tough.
-   *  Mirrors spawnEnemy's placement (ring offset + pit-safe spawn) but with a CHOSEN kind/tier so the
+   *  Mirrors spawnEnemy's placement (ring offset plus valid spawn) but with a chosen kind/tier so the
    *  Testing-Grounds Tab menu can conjure exactly what the playtester wants to fight. */
   debugSpawnOne(this: GameRoomContext,
     kindId: string,

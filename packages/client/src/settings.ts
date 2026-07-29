@@ -30,7 +30,7 @@ export interface ContextHintSettings {
   beamOverheat: number;
   juggle: number;
   ultimateReady: number;
-  pitFall: number;
+  lavaGapFall: number;
   empoweredReturn: number;
 }
 
@@ -78,7 +78,7 @@ export const DEFAULT_SETTINGS: Readonly<ClientSettings> = Object.freeze({
       beamOverheat: 0,
       juggle: 0,
       ultimateReady: 0,
-      pitFall: 0,
+      lavaGapFall: 0,
       empoweredReturn: 0,
     }),
   }),
@@ -162,7 +162,7 @@ export function sanitizeSettings(value: unknown): ClientSettings {
         beamOverheat: hintCount(rawContextHints.beamOverheat),
         juggle: hintCount(rawContextHints.juggle),
         ultimateReady: hintCount(rawContextHints.ultimateReady),
-        pitFall: hintCount(rawContextHints.pitFall),
+        lavaGapFall: hintCount(rawContextHints.lavaGapFall),
         empoweredReturn: hintCount(rawContextHints.empoweredReturn),
       },
     },

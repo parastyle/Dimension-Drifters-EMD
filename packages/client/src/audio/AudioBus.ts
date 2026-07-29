@@ -78,7 +78,7 @@ export class AudioBus {
     "extract",
     "descent",
     "fall",
-    "pitdeath",
+    "lava-gap-death",
   ]);
 
   constructor() {
@@ -1753,7 +1753,7 @@ export class AudioBus {
         });
         break;
       }
-      case "pitdeath":
+      case "lava-gap-death":
         this.tone(300, 0.32, { type: "sine", gain: 0.2, sweepTo: 80, x });
         break;
       // §51 tough-combo presentation. All four ids are manifest-ready and sample-first; the compact synth

@@ -43,7 +43,7 @@ const phaseOrder = [
   "1 player movement",
   "2 player body collision",
   "2.4 belt player collision",
-  "2.5 player pitfalls",
+  "2.5 player lava gaps",
   "2.7 money/victory",
   "3 clock/spawn director",
   "4 player combat/resource",
@@ -58,7 +58,7 @@ const phaseOrder = [
   "5.4 zones",
   "5.5 enemy body collision",
   "5.55 belt enemy collision",
-  "5.6 enemy pitfalls",
+  "5.6 retired enemy floor falls",
   "6 enemy contact damage",
   "7 regen/death/status cleanup",
 ];

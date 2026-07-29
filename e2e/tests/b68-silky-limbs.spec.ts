@@ -6,7 +6,7 @@ import {
   type ArenaMap,
   type BeltLevel,
   isArenaDiscSafe,
-  isPitAtPx,
+  isLavaGapAtPx,
   PLAYER_RADIUS,
   resolveBeltNavigation,
 } from "@dd/shared";
@@ -260,7 +260,7 @@ function findClearPatch(map: ArenaMap): { x: number; y: number } {
     for (let x = edge + radius; x <= ARENA_WIDTH - edge - radius; x += 48) {
       let clear = true;
       for (let sampleX = x - radius; sampleX <= x + radius; sampleX += PLAYER_RADIUS) {
-        if (isPitAtPx(map, sampleX, y) || !isArenaDiscSafe(map, sampleX, y, PLAYER_RADIUS)) {
+        if (isLavaGapAtPx(map, sampleX, y) || !isArenaDiscSafe(map, sampleX, y, PLAYER_RADIUS)) {
           clear = false;
           break;
         }

@@ -54,9 +54,7 @@ import {
   beamSweepSampleCount,
   beltLevelFor,
   beltPlayableXBounds,
-  beltPitAtX,
   beltProjectileBlocked,
-  beltSafeX,
   CORPORATE_ELEVATOR_ARRIVAL_TICKS,
   CORPORATE_ELEVATOR_COUNTDOWN_TICKS,
   CORPORATE_ELEVATOR_DEPART_TICKS,
@@ -195,7 +193,7 @@ import {
   isBreakActionWeapon,
   isCharacterUnlocked,
   isPetId,
-  isPitAtPx,
+  isLavaGapAtPx,
   isPlayableCharacter,
   isRareRelicId,
   isWholeArtCharacter,
@@ -236,7 +234,6 @@ import {
   meleeDamageHalfWidthAt,
   meleeDamageReachAt,
   mixSeeds,
-  nearestGroundPx,
   nearestPoint,
   nextWeapon,
   nextWholeArtCharacter,
@@ -265,8 +262,7 @@ import {
   type PetProgressReceipt,
   type PetStageBand,
   PICKUP_RADIUS,
-  PIT_FALL_DAMAGE_FRAC,
-  PIT_FALL_GRACE,
+  LAVA_GAP_FALL_DAMAGE_FRAC,
   PickupState,
   PLAYER_MAX_HP,
   PLAYER_RADIUS,
@@ -555,7 +551,7 @@ export const roomMovementMethods = {
       c.rollCd <= 0 &&
       !c.juggleArmed &&
       c.invuln <= 0 &&
-      c.pitGrace <= 0
+      c.lavaGapGrace <= 0
     ) {
       let dx = cmd.dx;
       let dy = cmd.dy;
@@ -683,8 +679,7 @@ export const roomMovementMethods = {
           x < beltX.minX + PLAYER_RADIUS ||
           x > rightBound ||
           y < BELT_Y0 ||
-          y > BELT_Y0 + DEPTH_MAX ||
-          (grounded && beltPitAtX(level, x))
+          y > BELT_Y0 + DEPTH_MAX
         )
           return false;
         const resolved = resolveBeltNavigation(level, x, y, PLAYER_RADIUS);
@@ -702,7 +697,7 @@ export const roomMovementMethods = {
         x > ARENA_WIDTH - PLAYER_RADIUS ||
         y < PLAYER_RADIUS ||
         y > ARENA_HEIGHT - PLAYER_RADIUS ||
-        (grounded && isPitAtPx(this.map, x, y))
+        (grounded && isLavaGapAtPx(this.map, x, y))
       )
         return false;
     }
@@ -811,15 +806,15 @@ export const roomMovementMethods = {
     }
   },
 
-  damagePitFall(this: GameRoomContext, player: PlayerState): void {
-    this.damagePlayer(player, player.maxHp * PIT_FALL_DAMAGE_FRAC, "pit");
+  damageLavaGapFall(this: GameRoomContext, player: PlayerState): void {
+    this.damagePlayer(player, player.maxHp * LAVA_GAP_FALL_DAMAGE_FRAC, "lava-gap");
     const pet = this.petRuns.get(player.id);
-    if (player.hp > 0 && pet?.mods.pitRegenSeconds) {
-      pet.tortoisePitRegenSeconds = pet.mods.pitRegenSeconds;
+    if (player.hp > 0 && pet?.mods.lavaGapRegenSeconds) {
+      pet.tortoiseLavaGapRegenSeconds = pet.mods.lavaGapRegenSeconds;
     }
   },
 
-  /** Traversal acceptance runs before horizontal integration/pit sampling. Space consumes directly into
+  /** Traversal acceptance runs before horizontal integration. Space consumes directly into
    *  the authored distance jump; there is no ordinary-hop or crouch/charge intermediate sentence. */
   stepTraversalLaunches(this: GameRoomContext, dt: number): void {
     this.distanceJumpLaunches.clear();
@@ -892,8 +887,7 @@ export const roomMovementMethods = {
     let targetX: number;
     let targetY: number;
     if (this.belt && this.beltLevel) {
-      const safeX = beltSafeX(this.beltLevel, rawX, player.x);
-      const target = resolveBeltNavigation(this.beltLevel, safeX, rawY, PLAYER_RADIUS);
+      const target = resolveBeltNavigation(this.beltLevel, rawX, rawY, PLAYER_RADIUS);
       targetX = target.x;
       targetY = target.y;
     } else {
@@ -983,7 +977,7 @@ export const roomMovementMethods = {
     c.poundUsed = false;
   },
 
-  /** One postcondition for every blink/hop/dash endpoint: range, bounds, deck, pit, gate. */
+  /** One postcondition for every blink/hop/dash endpoint: range, bounds, deck, lava platform, gate. */
   navValidDest(this: GameRoomContext,
     player: PlayerState,
     c: CombatState,
@@ -1001,7 +995,7 @@ export const roomMovementMethods = {
       if (floor) {
         const min = floor.playableBounds.minX + PLAYER_RADIUS;
         const max = Math.min(right, floor.playableBounds.maxX - PLAYER_RADIUS);
-        const safeX = beltSafeX(this.beltLevel, clamp(ranged.x, min, max), player.x);
+        const safeX = clamp(ranged.x, min, max);
         const resolved = resolveBeltNavigation(
           this.beltLevel,
           safeX,
@@ -1011,32 +1005,27 @@ export const roomMovementMethods = {
         return { x: Math.min(max, resolved.x), y: resolved.y };
       }
       let x = clamp(ranged.x, PLAYER_RADIUS, right);
-      x = beltSafeX(this.beltLevel, x, player.x);
       const obstacle = resolveBeltObstacles(
         this.beltLevel,
         x,
         clamp(ranged.y, BELT_Y0, BELT_Y0 + DEPTH_MAX),
         PLAYER_RADIUS,
       );
-      x = Math.min(right, beltSafeX(this.beltLevel, obstacle.x, player.x));
+      x = Math.min(right, obstacle.x);
       return { x, y: clampBeltFloorY(this.beltLevel, x, obstacle.y, PLAYER_RADIUS) };
     }
     let x = clamp(ranged.x, PLAYER_RADIUS, ARENA_WIDTH - PLAYER_RADIUS);
     let y = clamp(ranged.y, PLAYER_RADIUS, ARENA_HEIGHT - PLAYER_RADIUS);
-    if (isPitAtPx(this.map, x, y)) {
-      const safe = nearestGroundPx(this.map, x, y);
-      x = safe.x;
-      y = safe.y;
-    }
+    let safe = safeSpawnPos(this.map, x, y);
+    x = safe.x;
+    y = safe.y;
     if (Number.isFinite(maxRange)) {
       const finalRange = clampQuakeEpicenter(player, { x, y }, Math.max(0, maxRange));
       x = clamp(finalRange.x, PLAYER_RADIUS, ARENA_WIDTH - PLAYER_RADIUS);
       y = clamp(finalRange.y, PLAYER_RADIUS, ARENA_HEIGHT - PLAYER_RADIUS);
-      if (isPitAtPx(this.map, x, y)) {
-        const safe = nearestGroundPx(this.map, x, y);
-        x = safe.x;
-        y = safe.y;
-      }
+      safe = safeSpawnPos(this.map, x, y);
+      x = safe.x;
+      y = safe.y;
     }
     return { x, y };
   },

@@ -54,9 +54,7 @@ import {
   beamSweepSampleCount,
   beltLevelFor,
   beltPlayableXBounds,
-  beltPitAtX,
   beltProjectileBlocked,
-  beltSafeX,
   CORPORATE_ELEVATOR_ARRIVAL_TICKS,
   CORPORATE_ELEVATOR_COUNTDOWN_TICKS,
   CORPORATE_ELEVATOR_DEPART_TICKS,
@@ -195,7 +193,6 @@ import {
   isBreakActionWeapon,
   isCharacterUnlocked,
   isPetId,
-  isPitAtPx,
   isPlayableCharacter,
   isRareRelicId,
   isWholeArtCharacter,
@@ -236,7 +233,6 @@ import {
   meleeDamageHalfWidthAt,
   meleeDamageReachAt,
   mixSeeds,
-  nearestGroundPx,
   nearestPoint,
   nextWeapon,
   nextWholeArtCharacter,
@@ -265,8 +261,6 @@ import {
   type PetProgressReceipt,
   type PetStageBand,
   PICKUP_RADIUS,
-  PIT_FALL_DAMAGE_FRAC,
-  PIT_FALL_GRACE,
   PickupState,
   PLAYER_MAX_HP,
   PLAYER_RADIUS,
@@ -553,7 +547,7 @@ export class GameRoom extends Room<ArenaState> {
   private beamCurrentLength = 0;
   /** One allocation-free muzzle seam shared by charge sync, live collision, and replicated geometry. */
   private readonly beamMuzzleScratch = { x: 0, y: 0 };
-  /** Tick-local launch markers defer only the first dash displacement while height/pit immunity begin now. */
+  /** Tick-local launch markers defer only the first dash displacement while height begins now. */
   private readonly distanceJumpLaunches = new Set<string>();
   private readonly inputs = new Map<string, InputState>();
   /** B42 accepted owner poses are re-applied after legacy player-body resolution; navigation was already
@@ -803,8 +797,8 @@ export class GameRoom extends Room<ArenaState> {
   /** polish #7 fixed preallocated authoritative combat receipt ring (v18). */
   private combatReceiptSeq = 0;
   private combatReceiptCursor = 0;
-  /** §17 the procedurally generated arena for this room — minted once at create from the seeds synced on
-   *  ArenaState, so the server holds the authoritative tile grid (pit collision/fall handling, §17 Phase 1).
+  /** The procedurally generated arena for this room — minted once at create from the seeds synced on
+   *  ArenaState, so the server holds authoritative ground and lava-platform collision.
    *  Clients reproduce the identical map from the same seeds. */
   private map!: ArenaMap;
   /** §16 boss/extraction run loop: has OLD RUST spawned this run, and its enemy id. */
@@ -823,7 +817,7 @@ export class GameRoom extends Room<ArenaState> {
   /** §6 chain (v0.103): the menu-picked dimension the room was created with — a run RESTART returns here
    *  (a wipe deep in the chain shouldn't strand the next expedition in a random dimension). */
   private homeDimension = DEFAULT_DIMENSION;
-  /** §29 v0.118 BELT mode — the SAME game, confined to a wide-shallow depth band + flat deck (no pits),
+  /** §29 v0.118 BELT mode — the same game, confined to a wide-shallow depth band and flat deck,
    *  rendered belt-scroller by the client. Set from the `belt` join option; all combat/enemies/bosses/loot
    *  are unchanged. */
   private belt = false;
@@ -1072,9 +1066,8 @@ export class GameRoom extends Room<ArenaState> {
 
   /** §31 (re)spawn the current showroom SUBCLASS: clear the gallery pickups (`pk*`) and lay out this
    *  subclass in a grid above the player. Wraps the page index. Training mode only.
-   *  §41 cells keep their EXACT grid position — a cell over a pit is SKIPPED (the shelf shows a gap)
-   *  instead of safeSpawnPos NUDGING it: the old nudge scattered the neat grid and piled pickups onto their
-   *  neighbours, so E grabbed "the wrong thing" and pages read as disorganized. */
+   *  §41 cells keep their exact grid position instead of safeSpawnPos nudging them: the old nudge scattered
+   *  the neat grid and piled pickups onto neighbours. */
     private declare spawnGalleryPage: OmitThisParameter<typeof roomProgressionMethods.spawnGalleryPage>;
 
     private declare restartRun: OmitThisParameter<typeof roomProgressionMethods.restartRun>;
@@ -1184,9 +1177,9 @@ export class GameRoom extends Room<ArenaState> {
   /** End the fixed roll after its eighth integrated sample; cooldown begins on this authored edge. */
     private declare stepSlideStance: OmitThisParameter<typeof roomMovementMethods.stepSlideStance>;
 
-    private declare damagePitFall: OmitThisParameter<typeof roomMovementMethods.damagePitFall>;
+    private declare damageLavaGapFall: OmitThisParameter<typeof roomMovementMethods.damageLavaGapFall>;
 
-  /** Traversal acceptance runs before horizontal integration/pit sampling. Space consumes directly into
+  /** Traversal acceptance runs before horizontal integration. Space consumes directly into
    *  the authored distance jump; there is no ordinary-hop or crouch/charge intermediate sentence. */
     private declare stepTraversalLaunches: OmitThisParameter<typeof roomMovementMethods.stepTraversalLaunches>;
 
@@ -1201,7 +1194,7 @@ export class GameRoom extends Room<ArenaState> {
 
     private declare enemyCommittedAttack: OmitThisParameter<typeof roomCombatMethods.enemyCommittedAttack>;
 
-  /** Decaying 260px/s shove totals <40px and refuses the one step that would cross a ground→pit edge. */
+  /** Decaying 260px/s shove totals less than 40px. */
     private declare stepPoundEnemyEffects: OmitThisParameter<typeof roomCombatMethods.stepPoundEnemyEffects>;
 
   /** Write into the fixed v18 ring. Every field comes from the accepted source epoch, never proximity. */
@@ -1237,7 +1230,7 @@ export class GameRoom extends Room<ArenaState> {
 
     private declare nearestDoorDecoy: OmitThisParameter<typeof roomCombatMethods.nearestDoorDecoy>;
 
-  /** One postcondition for every blink/hop/dash endpoint: range, bounds, deck, pit, gate. */
+  /** One postcondition for every blink/hop/dash endpoint: range, bounds, deck, lava platform, gate. */
     private declare navValidDest: OmitThisParameter<typeof roomMovementMethods.navValidDest>;
 
     private declare ultimateTargetPosition: OmitThisParameter<typeof roomCombatMethods.ultimateTargetPosition>;
@@ -1482,7 +1475,7 @@ export class GameRoom extends Room<ArenaState> {
     private declare stepGunBurst: OmitThisParameter<typeof roomCombatMethods.stepGunBurst>;
 
   /** Cogwright's Tesla-Rod: the cursor is intent only. The server resolves the full-distance endpoint through
-   * the same bounds/pit/deck validator as every other teleport, writes position itself, and bumps the
+   * the same bounds/lava-platform/deck validator as every other teleport, writes position itself, and bumps the
    * movement hard-resync edge before applying the small arrival burst. */
     private declare detonateWarpAtCursor: OmitThisParameter<typeof roomCombatMethods.detonateWarpAtCursor>;
 
@@ -1522,17 +1515,16 @@ export class GameRoom extends Room<ArenaState> {
   /** Apply `raw` damage, then perform shared kill, money, and portal bookkeeping. */
     private declare damageEnemy: OmitThisParameter<typeof roomCombatMethods.damageEnemy>;
 
-  /** §7 v0.105 zero a player's persistent steering velocity — call at every position TELEPORT (pit
-   *  snap-back, rift descent, restart, training reposition, revive) so carried momentum can't glide the
+  /** §7 v0.105 zero a player's persistent steering velocity — call at every position teleport (lava
+   *  recovery, rift descent, restart, training reposition, revive) so carried momentum can't glide the
    *  body away from where it was authoritatively placed. §4 v0.107: also DROPS the queued/held input
    *  direction (a teleport must not replay stale pre-teleport intent; the next command lands ≤50ms later),
    *  mirrors zero velocity, and normally bumps `teleportSeq`. Repeated elevator holds can suppress only
    *  that redundant bump while one server-motion epoch already owns the complete placement window. */
     private declare zeroMoveVel: OmitThisParameter<typeof roomCombatMethods.zeroMoveVel>;
 
-  /** §29 place a floor pickup on solid ground: the BELT deck (clamped into the depth band, nudged off any
-   *  pit gap) in belt mode, else the procgen arena's safe-spawn nudge. Keeps swaps and explicitly issued
-   *  pickups grabbable, never in a pit or off the walkable floor. */
+  /** §29 place a floor pickup on solid ground: the belt deck is clamped into its depth band; lava maps use
+   *  their platform-safe placement. Keeps swaps and explicitly issued pickups grabbable. */
     private declare placePickupPos: OmitThisParameter<typeof roomCombatMethods.placePickupPos>;
 
   /** Apply an AoE blast at (x,y): damage every enemy within `radius`, with the same kill/money/portal
@@ -1570,7 +1562,7 @@ export class GameRoom extends Room<ArenaState> {
   /** Capture one nav-valid endpoint and immutable target/vector at the white pop. */
     private declare planDuelistStrike: OmitThisParameter<typeof roomEnemyMethods.planDuelistStrike>;
 
-  /** Sample the complete accepted enemy segment so the fixed lunge cannot cross a pit. */
+  /** Sample the complete accepted enemy segment so the fixed lunge cannot leave valid navigation. */
     private declare navValidEnemyLungeDest: OmitThisParameter<typeof roomEnemyMethods.navValidEnemyLungeDest>;
 
     private declare captureAuthoredMeleeEscape: OmitThisParameter<typeof roomEnemyMethods.captureAuthoredMeleeEscape>;
@@ -1624,7 +1616,7 @@ export class GameRoom extends Room<ArenaState> {
    *  zero garbage-collector pressure. */
     private declare moveComboEnemyToward: OmitThisParameter<typeof roomEnemyMethods.moveComboEnemyToward>;
 
-  /** §51 schedule parry recoil as a continuous ≤90px/tick motion. Pits remain lethal. */
+  /** §51 schedule parry recoil as a continuous ≤90px/tick motion. */
     private declare scheduleComboKnockback: OmitThisParameter<typeof roomEnemyMethods.scheduleComboKnockback>;
 
   /** §51 advance one scheduled recoil slice; completion captures the ACTUAL post-knockback position from
@@ -1725,7 +1717,7 @@ export class GameRoom extends Room<ArenaState> {
     private declare spawnEnemy: OmitThisParameter<typeof roomEnemyMethods.spawnEnemy>;
 
   /** §21 Dev summon: place ONE enemy of `kindId` on the spawn ring around `anchor`, optionally tough.
-   *  Mirrors spawnEnemy's placement (ring offset + pit-safe spawn) but with a CHOSEN kind/tier so the
+   *  Mirrors spawnEnemy's placement (ring offset plus valid spawn) but with a chosen kind/tier so the
    *  Testing-Grounds Tab menu can conjure exactly what the playtester wants to fight. */
     private declare debugSpawnOne: OmitThisParameter<typeof roomEnemyMethods.debugSpawnOne>;
 
@@ -1918,7 +1910,7 @@ installPrototypeMembers(GameRoom, [
   [roomMovementMethods, "refreshServerMotionState"],
   [roomMovementMethods, "freshInputState"],
   [roomMovementMethods, "stepSlideStance"],
-  [roomMovementMethods, "damagePitFall"],
+  [roomMovementMethods, "damageLavaGapFall"],
   [roomMovementMethods, "stepTraversalLaunches"],
   [roomMovementMethods, "launchDistanceJump"],
   [roomMovementMethods, "steerDistanceJump"],

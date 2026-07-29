@@ -4,7 +4,7 @@ import {
   ARENA_HEIGHT,
   ARENA_WIDTH,
   type ArenaMap,
-  isPitAtPx,
+  isLavaGapAtPx,
   PLAYER_RADIUS,
   resolvePoiCollision,
 } from "@dd/shared";
@@ -404,7 +404,7 @@ function findClearPatch(map: ArenaMap): { x: number; y: number } {
       for (let sampleX = x - radius; sampleX <= x + radius; sampleX += PLAYER_RADIUS) {
         const resolved = resolvePoiCollision(map, sampleX, y, PLAYER_RADIUS);
         if (
-          isPitAtPx(map, sampleX, y) ||
+          isLavaGapAtPx(map, sampleX, y) ||
           Math.abs(resolved.x - sampleX) > 0.01 ||
           Math.abs(resolved.y - y) > 0.01
         ) {

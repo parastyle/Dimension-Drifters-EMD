@@ -1,5 +1,0 @@
-{
-  "description": "A pit in the required ground border must fail through shared validation.",
-  "expected": "shared validateArena rejected authored geometry: border ring has a pit",
-  "mutation": { "kind": "set-int-grid-cell", "layer": "Terrain", "col": 0, "row": 12, "value": 1 }
-}

@@ -23,6 +23,7 @@ export {
   MAP_ZONE_COVER,
   MAP_ZONE_SCAR,
   TILE_GROUND,
+  TILE_LAVA_GAP,
   TILE_PIT,
 } from "./mapgen.js";
 export { makeRng, mixSeeds } from "./rng.js";

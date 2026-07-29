@@ -39,9 +39,6 @@ function palette(p) {
     gridColor1: color(p.gridColor1),
     gridColor2: color(p.gridColor2),
     boundaryRail: color(p.boundaryRail),
-    pitVoid: color(p.pitVoid),
-    pitRustBand: color(p.pitRustBand),
-    pitAmberLip: color(p.pitAmberLip),
     spawnRingSafe: color(p.spawnRingSafe),
     dustDrift: color(p.dustDrift),
   };

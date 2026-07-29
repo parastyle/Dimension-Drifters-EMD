@@ -1206,7 +1206,7 @@ export function spawnSonicBoomRing(
   });
 }
 
-/** §17 "fell into the void" VFX — a dark puff that SINKS + a few dust motes that drop DOWNWARD, so a pit
+/** Lava "fell into the void" VFX — a dark puff that SINKS + a few dust motes that drop DOWNWARD, so a gap
  *  fall (player or enemy) reads as falling, not just a flat poof. Cosmetic, client-local. */
 export function spawnFallStreak(scene: Phaser.Scene, x: number, y: number): void {
   const puff = scene.add.circle(x, y, 11, 0x1a140f, 0.6).setDepth(99998);
