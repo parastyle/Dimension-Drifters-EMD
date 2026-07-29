@@ -284,6 +284,23 @@ export const SERVER_MOTION_LAUNCH_TICKS = 16;
 export const ARENA_WIDTH = 38_400;
 export const ARENA_HEIGHT = 38_400;
 
+/**
+ * The Lava Foundry keeps the PRE-EXPANSION bounds, and this is deliberate rather than an oversight.
+ *
+ * Ordinary arenas are continuous ground with no holes, so growing them 8x only costs walking time.
+ * Lava is the opposite: it is authored 4K platform prefabs placed with GUARANTEED clearance and
+ * GUARANTEED jumpable crossings (b90's two invariants), and that placement was constructed and swept
+ * against a 4,800px square. Handing it a 64x larger area does not make it better — it scatters a fixed
+ * set of islands across dead space, which b94 measured as a 19.8% destination-hero failure rate and a
+ * single map taking ~6.5s to generate.
+ *
+ * So the arena constant is no longer one global truth. Lava owns its own extent; everything else uses
+ * the open-arena size. Changing THIS number invalidates b90/b91/b92 and requires re-running the
+ * 2,000-seed sweep.
+ */
+export const LAVA_ARENA_WIDTH = 4_800;
+export const LAVA_ARENA_HEIGHT = 4_800;
+
 /** 80px cells produce the shared deterministic 480x480 macro-geography grid. */
 export const MAP_TILE = 80;
 /** Reserved spawn/decor clearing at the arena centre, in tiles. */

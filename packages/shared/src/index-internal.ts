@@ -5,6 +5,8 @@
 export {
   ARENA_HEIGHT,
   ARENA_WIDTH,
+  LAVA_ARENA_HEIGHT,
+  LAVA_ARENA_WIDTH,
   DIST_JUMP_REACH,
   PLAYER_RADIUS,
 } from "./constants.js";

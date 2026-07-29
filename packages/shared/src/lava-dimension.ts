@@ -1,6 +1,6 @@
 import {
-  ARENA_HEIGHT,
-  ARENA_WIDTH,
+  LAVA_ARENA_HEIGHT,
+  LAVA_ARENA_WIDTH,
   type ArenaMap,
   type ArenaMapSeeds,
   DIST_JUMP_REACH,
@@ -697,8 +697,8 @@ function normalizeToArena(rooms: readonly PlacedLavaRoom[]): PlacedLavaRoom[] | 
   const minY = Math.min(...rooms.map((room) => room.visibleBounds.y));
   const maxX = Math.max(...rooms.map((room) => room.visibleBounds.x + room.visibleBounds.width));
   const maxY = Math.max(...rooms.map((room) => room.visibleBounds.y + room.visibleBounds.height));
-  const availableWidth = ARENA_WIDTH - MAP_MARGIN * 2;
-  const availableHeight = ARENA_HEIGHT - MAP_MARGIN * 2;
+  const availableWidth = LAVA_ARENA_WIDTH - MAP_MARGIN * 2;
+  const availableHeight = LAVA_ARENA_HEIGHT - MAP_MARGIN * 2;
   if (maxX - minX > availableWidth || maxY - minY > availableHeight) return undefined;
   const desiredMinX = MAP_MARGIN + (availableWidth - (maxX - minX)) / 2;
   const desiredMinY = MAP_MARGIN + (availableHeight - (maxY - minY)) / 2;
@@ -916,8 +916,8 @@ function placeDebris(
     nonColliding: true;
   }> = [];
   for (let attempt = 0; attempt < 120 && debris.length < 5; attempt++) {
-    const x = 280 + random() * (ARENA_WIDTH - 560);
-    const y = 280 + random() * (ARENA_HEIGHT - 560);
+    const x = 280 + random() * (LAVA_ARENA_WIDTH - 560);
+    const y = 280 + random() * (LAVA_ARENA_HEIGHT - 560);
     if (rooms.some((room) => pointOnRoom(room, x, y))) continue;
     if (corridors.some((corridor) => distanceToSegment({ x, y }, corridor.a, corridor.b) < 420))
       continue;
@@ -944,8 +944,8 @@ function assertConstructedLayout(
     if (
       bounds.x < MAP_MARGIN - 1e-6 ||
       bounds.y < MAP_MARGIN - 1e-6 ||
-      bounds.x + bounds.width > ARENA_WIDTH - MAP_MARGIN + 1e-6 ||
-      bounds.y + bounds.height > ARENA_HEIGHT - MAP_MARGIN + 1e-6
+      bounds.x + bounds.width > LAVA_ARENA_WIDTH - MAP_MARGIN + 1e-6 ||
+      bounds.y + bounds.height > LAVA_ARENA_HEIGHT - MAP_MARGIN + 1e-6
     )
       throw new Error(`Lava Foundry construction invariant: ${room.nodeId} escaped arena bounds`);
   }
@@ -1118,8 +1118,8 @@ function polygonCentroid(polygon: readonly PrefabPoint[]): PrefabPoint {
 
 export function generateLavaArena(seeds: ArenaMapSeeds): ArenaMap {
   const lavaLayout = generateLavaLayout(seeds);
-  const cols = Math.floor(ARENA_WIDTH / LAVA_COLLISION_TILE_PX);
-  const rows = Math.floor(ARENA_HEIGHT / LAVA_COLLISION_TILE_PX);
+  const cols = Math.floor(LAVA_ARENA_WIDTH / LAVA_COLLISION_TILE_PX);
+  const rows = Math.floor(LAVA_ARENA_HEIGHT / LAVA_COLLISION_TILE_PX);
   const tiles = new Uint8Array(cols * rows).fill(TILE_PIT);
   const zoneIds = new Uint8Array(cols * rows).fill(MAP_ZONE_COMMONS);
   const roleZone = {
